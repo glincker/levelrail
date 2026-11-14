@@ -1,0 +1,27 @@
+{
+  "changes": [
+    {
+      "kind": "Setting",
+      "name": "heartbeat.job_max_attempts",
+      "action": "update",
+      "fields": [
+        {
+          "path": "value",
+          "op": "change",
+          "old": "3",
+          "new": "5"
+        }
+      ],
+      "file": "docs.yaml",
+      "line": 1
+    }
+  ],
+  "summary": {
+    "create": 0,
+    "update": 1,
+    "delete": 0,
+    "noop": 0,
+    "error": 0
+  },
+  "hash": "v2:84a95327cf111ec9fe4474447454ed918d750f63fd9b8ae8269c3d7c43ccaaba"
+}

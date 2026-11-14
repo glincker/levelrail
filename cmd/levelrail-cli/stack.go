@@ -3,6 +3,7 @@ package main
 import (
 	"bufio"
 	"context"
+	"crypto/rand"
 	"crypto/sha256"
 	"encoding/hex"
 	"encoding/json"
@@ -52,9 +53,12 @@ Commands:
   unpin <name>                          remove the pin
   unlock <name>                         release a stuck apply lease (root only)
   delete <name> [--mode forget|destroy] stop managing a stack, or also delete its resources
+  adopt-from-export <stack> -f DIR      write the live compose revision next to its referencing App, verify an empty plan
   drift <name>                          declared versus live drift; exit 2 when drifted, 0 when clean
   settings <name> [flags]               show or change --allow-prune, --drift, --require-approval (root only)
   trust add|list|remove <name> ...      OIDC trusts so CI needs no stored token (root only)
+  sync status|set|refresh|webhook-secret rotate <stack> ...   git sync of a stack
+  cloud-state list|recover <name> ...   list or clear quarantined cloud state (root only)
 
 Run '%[1]s stack <command> --help' for the flags of a command.
 `, prog)
@@ -104,12 +108,18 @@ func runStack(prog string, args []string, stdout, stderr io.Writer, lookupEnv fu
 		return stackSimple(prog, "unlock", rest, stdout, stderr, lookupEnv)
 	case "delete":
 		return stackDelete(prog, rest, stdout, stderr, lookupEnv)
+	case "adopt-from-export":
+		return stackAdoptFromExport(prog, rest, stdout, stderr, lookupEnv)
 	case "drift":
 		return stackDrift(prog, rest, stdout, stderr, lookupEnv)
 	case "settings":
 		return stackSettings(prog, rest, stdout, stderr, lookupEnv)
+	case "cloud-state":
+		return runStackCloudState(prog, rest, stdout, stderr, lookupEnv)
 	case "trust":
 		return runStackTrust(prog, rest, stdout, stderr, lookupEnv)
+	case "sync":
+		return runStackSync(prog, rest, stdout, stderr, lookupEnv)
 	}
 	_, _ = fmt.Fprintf(stderr, "%s stack: unknown command %q\n\n%s", prog, args[0], stackUsage(prog))
 	return exitUsage
@@ -442,6 +452,14 @@ type stackManifestFlags struct {
 	values   stringListFlag
 	allowEnv stringListFlag
 	secrets  stringMapFlag
+	// confirmDestroy is set only on plan and apply; nil elsewhere.
+	confirmDestroy *string
+}
+
+const confirmDestroyHelp = "stack name typed to allow deleting compose apps and cloud resources in this run (--yes never implies it)"
+
+func bindConfirmDestroy(fs *flag.FlagSet, f *stackManifestFlags) {
+	f.confirmDestroy = fs.String("confirm-destroy", "", confirmDestroyHelp)
 }
 
 func bindStackManifestFlags(fs *flag.FlagSet, withFiles bool) *stackManifestFlags {
@@ -531,7 +549,10 @@ func buildStackRequest(name string, f *stackManifestFlags, lookupEnv func(string
 	if len(f.files) == 0 {
 		return apiclient.StackRequest{}, newValidationError("pass at least one -f file, directory or -")
 	}
-	all, err := readIaCFilesNamed(f.files, true)
+	if f.confirmDestroy != nil && *f.confirmDestroy != "" && *f.confirmDestroy != name {
+		return apiclient.StackRequest{}, newValidationError("--confirm-destroy must equal the stack name %q", name)
+	}
+	all, attachments, err := readIaCInputNamed(f.files, true)
 	if err != nil {
 		return apiclient.StackRequest{}, err
 	}
@@ -542,7 +563,10 @@ func buildStackRequest(name string, f *stackManifestFlags, lookupEnv func(string
 	if len(files) == 0 {
 		return apiclient.StackRequest{}, newValidationError("the files hold only a Stack document, add the resources to apply")
 	}
-	req := apiclient.StackRequest{Files: files, Project: *f.project, Prune: *f.prune, AllowWeaken: *f.weaken}
+	req := apiclient.StackRequest{Files: files, Attachments: attachments, Project: *f.project, Prune: *f.prune, AllowWeaken: *f.weaken}
+	if f.confirmDestroy != nil {
+		req.ConfirmDestroy = *f.confirmDestroy
+	}
 	if doc != nil {
 		if doc.Metadata.Name != "" && doc.Metadata.Name != name {
 			return apiclient.StackRequest{}, newValidationError("the Stack document is named %q but the command names %q", doc.Metadata.Name, name)
@@ -609,6 +633,7 @@ func redactCall(c cliCall, secrets map[string]string) cliCall {
 func stackPlan(prog string, args []string, stdout, stderr io.Writer, lookupEnv func(string) (string, bool)) int {
 	var mf *stackManifestFlags
 	var exitCode *bool
+	var jf *stackJobFlags
 	c, code, ok := parseCLICall(prog, "stack plan", stackCmdUsage(prog, "plan", "<name> -f file|dir [flags]", `
 Prints what an apply would change and changes nothing. Any kind: Stack
 document in the files is removed before sending; it supplies the default
@@ -618,6 +643,7 @@ Flags:
   -f PATH              resource file, directory or "-" for stdin (repeatable)
   --project P          project of the stack (needed when the stack does not exist yet)
   --prune              plan deletions of resources the files no longer declare
+  --confirm-destroy S  stack name typed to allow deleting compose apps and cloud resources in this run
   --allow-weaken       accept Setting documents that weaken a security protection (human root session only)
   --var NAME=VALUE     value for a ${{ env.NAME }} placeholder (repeatable)
   --values FILE.yaml   flat YAML map of placeholder values (repeatable, later wins; beats --var-file)
@@ -625,9 +651,16 @@ Flags:
   --allow-env NAMES    names (or PREFIX*) placeholders may read from your environment
   --secret NAME=ENVVAR secret value read from a local environment variable; never printed
   --exit-code          exit 2 when changes are pending
+  --wait-timeout D     how long to wait for an async cloud plan job (default 30m)
+  --supersede          retire a revision awaiting approval that this plan replaces
+
+A cloud plan runs as a job: the command polls it and prints the plan like a
+sync one. Ctrl-C leaves the job running. A failed job exits 1 with its code.
 `), args, stdout, stderr, lookupEnv, func(fs *flag.FlagSet) {
 		mf = bindStackManifestFlags(fs, true)
+		bindConfirmDestroy(fs, mf)
 		exitCode = fs.Bool("exit-code", false, "exit 2 when changes are pending")
+		jf = bindStackJobFlags(fs)
 	})
 	if !ok {
 		return code
@@ -647,11 +680,11 @@ Flags:
 	}
 	c = redactCall(c, secrets)
 	req.Secrets = secrets
-	res, raw, err := c.client.PlanStack(context.Background(), pos[0], req)
+	res, raw, err := planStackWait(context.Background(), c, pos[0], req, jf)
 	if err != nil {
 		return iacFail(c, err)
 	}
-	if rc := c.render(raw, func() { printStackPlan(c.stdout, res) }); rc != exitOK {
+	if rc := c.render(raw, func() { printStackPlan(c.stdout, res); printDestroyHint(c.stdout, prog, pos[0], res.Plan, mf.files) }); rc != exitOK {
 		return rc
 	}
 	switch {
@@ -671,6 +704,7 @@ type stackRunFlags struct {
 	continueOnError *bool
 	idemKey         *string
 	yes             *bool
+	job             *stackJobFlags
 }
 
 func bindStackRunFlags(fs *flag.FlagSet, withFiles bool) *stackRunFlags {
@@ -678,8 +712,9 @@ func bindStackRunFlags(fs *flag.FlagSet, withFiles bool) *stackRunFlags {
 	f.expectedHash = fs.String("expected-plan-hash", "", "refuse to apply when the plan no longer has this hash")
 	f.noDeploy = fs.Bool("no-deploy", false, "do not restart running apps to apply env changes")
 	f.continueOnError = fs.Bool("continue-on-error", false, "keep applying after an item fails")
-	f.idemKey = fs.String("idempotency-key", "", "make a retry return the stored revision (default: derived from the CI run and the files)")
+	f.idemKey = fs.String("idempotency-key", "", "make a retry return the stored revision (default: the CI run when set, else random per run)")
 	f.yes = fs.Bool("yes", false, "do not ask for confirmation")
+	f.job = bindStackJobFlags(fs)
 	return f
 }
 
@@ -698,7 +733,7 @@ const stackRunFlagsHelp = `
   --continue-on-error      keep applying after an item fails
   --secret NAME=ENVVAR     secret value read from a local environment variable; never printed or stored
   --idempotency-key K      a retry with the same key returns the stored revision
-  --yes                    do not ask for confirmation
+  --yes                    do not ask for confirmation` + stackJobFlagsHelp + `
 `
 
 func stackApply(prog string, args []string, stdout, stderr io.Writer, lookupEnv func(string) (string, bool)) int {
@@ -709,7 +744,11 @@ are filled from GITHUB_* variables or the local checkout. Exit codes: 0 applied,
 1 error, 409/422 or a revision that ended partial or failed.
 
 Flags:
-  -f PATH, --project P, --prune, --allow-weaken, --var, --values, --var-file, --allow-env   as for plan`+stackRunFlagsHelp), args, stdout, stderr, lookupEnv, func(fs *flag.FlagSet) { rf = bindStackRunFlags(fs, true) })
+  --confirm-destroy S      stack name typed to allow deleting compose apps and cloud resources in this run; --yes does not imply it
+  -f PATH, --project P, --prune, --allow-weaken, --var, --values, --var-file, --allow-env   as for plan`+stackRunFlagsHelp), args, stdout, stderr, lookupEnv, func(fs *flag.FlagSet) {
+		rf = bindStackRunFlags(fs, true)
+		bindConfirmDestroy(fs, rf.stackManifestFlags)
+	})
 	if !ok {
 		return code
 	}
@@ -730,15 +769,12 @@ Flags:
 	rf.fill(&req, secrets, lookupEnv)
 	ctx := context.Background()
 	if !*rf.yes {
-		if rc, done := stackConfirmPlan(ctx, c, rf, name, &req); done {
+		if rc, done := stackConfirmPlan(ctx, prog, c, rf, name, &req); done {
 			return rc
 		}
 	}
-	req.IdempotencyKey = *rf.idemKey
-	if req.IdempotencyKey == "" {
-		req.IdempotencyKey = idempotencyKey(lookupEnv, time.Now(), "stack-apply", name, filesDigest(req.Files), req.ExpectedPlanHash)
-	}
-	res, raw, err := c.client.ApplyStack(ctx, name, req)
+	req.IdempotencyKey = stackIdemKey(*rf.idemKey, lookupEnv, "stack-apply", name, filesDigest(req.Files), req.ExpectedPlanHash)
+	res, raw, err := c.client.ApplyStack(apiclient.WithIdempotencyKey(ctx, req.IdempotencyKey), name, req)
 	if err != nil {
 		return iacFail(c, err)
 	}
@@ -748,18 +784,19 @@ Flags:
 // stackConfirmPlan prints the plan and asks. It pins the apply to the plan the
 // operator saw unless --expected-plan-hash was given. done is true when the
 // command should stop with rc.
-func stackConfirmPlan(ctx context.Context, c cliCall, rf *stackRunFlags, name string, req *apiclient.StackRequest) (rc int, done bool) {
+func stackConfirmPlan(ctx context.Context, prog string, c cliCall, rf *stackRunFlags, name string, req *apiclient.StackRequest) (rc int, done bool) {
 	for _, f := range rf.files {
 		if f == "-" {
 			return iacFail(c, errors.New("stdin holds the files, so confirmation is not possible: pass --yes")), true
 		}
 	}
-	plan, _, err := c.client.PlanStack(ctx, name, *req)
+	plan, _, err := planStackWait(ctx, c, name, *req, rf.job)
 	if err != nil {
 		return iacFail(c, err), true
 	}
 	if !c.jsonOut {
 		printStackPlan(c.stdout, plan)
+		printDestroyHint(c.stderr, prog, name, plan.Plan, rf.files)
 	}
 	if plan.Plan.Summary.Error > 0 && !*rf.continueOnError {
 		_, _ = fmt.Fprintln(c.stderr, "the plan has errors; nothing was applied (use --continue-on-error to apply the rest)")
@@ -831,11 +868,8 @@ Flags:`+stackRunFlagsHelp), args, stdout, stderr, lookupEnv, func(fs *flag.FlagS
 	}
 	var req apiclient.StackRequest
 	rf.fill(&req, secrets, lookupEnv)
-	req.IdempotencyKey = *rf.idemKey
-	if req.IdempotencyKey == "" {
-		req.IdempotencyKey = idempotencyKey(lookupEnv, time.Now(), "stack-rollback", pos[0], strconv.Itoa(n))
-	}
-	res, raw, err := c.client.RollbackStack(context.Background(), pos[0], n, req)
+	req.IdempotencyKey = stackIdemKey(*rf.idemKey, lookupEnv, "stack-rollback", pos[0], strconv.Itoa(n))
+	res, raw, err := c.client.RollbackStack(apiclient.WithIdempotencyKey(context.Background(), req.IdempotencyKey), pos[0], n, req)
 	if err != nil {
 		return iacFail(c, err)
 	}
@@ -844,7 +878,7 @@ Flags:`+stackRunFlagsHelp), args, stdout, stderr, lookupEnv, func(fs *flag.FlagS
 
 func stackApprove(prog string, args []string, stdout, stderr io.Writer, lookupEnv func(string) (string, bool)) int {
 	var mf *stackManifestFlags
-	var expected *string
+	var expected, idemKey, confirmDestroy *string
 	c, code, ok := parseCLICall(prog, "stack approve", stackCmdUsage(prog, "approve", "<name> <n> [flags]", `
 Approves a revision that is awaiting approval and applies it. Needs root, and
 the requester cannot approve their own revision. Secrets are never stored with
@@ -853,9 +887,13 @@ a pending revision, so pass them again here.
 Flags:
   --secret NAME=ENVVAR     secret value read from a local environment variable; never printed or stored
   --expected-plan-hash H   refuse (409) when the pending revision has another plan hash
+  --idempotency-key K      a retry with the same key returns the stored result (default: random per run)
+  --confirm-destroy NAME   the stack name, typed, to let the approved plan delete cloud resources
 `), args, stdout, stderr, lookupEnv, func(fs *flag.FlagSet) {
 		mf = bindStackManifestFlags(fs, false)
 		expected = fs.String("expected-plan-hash", "", "refuse when the pending revision has another plan hash")
+		idemKey = fs.String("idempotency-key", "", "a retry with the same key returns the stored result")
+		confirmDestroy = fs.String("confirm-destroy", "", "stack name typed to allow cloud deletions")
 	})
 	if !ok {
 		return code
@@ -868,12 +906,16 @@ Flags:
 	if err != nil {
 		return c.fail(err)
 	}
+	if *confirmDestroy != "" && *confirmDestroy != pos[0] {
+		return c.invalid("--confirm-destroy must equal the stack name %q", pos[0])
+	}
 	secrets, err := resolveStackSecrets(mf.secrets, lookupEnv)
 	if err != nil {
 		return iacFail(c, err)
 	}
 	c = redactCall(c, secrets)
-	res, raw, err := c.client.ApproveStack(context.Background(), pos[0], n, apiclient.StackApproveRequest{Secrets: secrets, ExpectedPlanHash: *expected})
+	key := stackIdemKey(*idemKey, lookupEnv, "stack-approve", pos[0], strconv.Itoa(n))
+	res, raw, err := c.client.ApproveStack(apiclient.WithIdempotencyKey(context.Background(), key), pos[0], n, apiclient.StackApproveRequest{Secrets: secrets, ExpectedPlanHash: *expected, ConfirmDestroy: *confirmDestroy})
 	if err != nil {
 		return iacFail(c, err)
 	}
@@ -906,6 +948,24 @@ Flags:
 		return iacFail(c, err)
 	}
 	return c.render(raw, func() { _, _ = fmt.Fprintf(c.stdout, "rejected revision %d of stack %s\n", n, pos[0]) })
+}
+
+// stackIdemKey picks the Idempotency-Key: the flag, else the CI run derived key so a
+// re-run job dedupes, else a random one per invocation.
+func stackIdemKey(flagVal string, lookup func(string) (string, bool), op string, parts ...string) string {
+	if flagVal != "" {
+		return flagVal
+	}
+	for _, k := range []string{"GITHUB_RUN_ID", "CI_PIPELINE_ID"} {
+		if v, _ := lookup(k); strings.TrimSpace(v) != "" {
+			return idempotencyKey(lookup, time.Now(), op, parts...)
+		}
+	}
+	var b [16]byte
+	if _, err := rand.Read(b[:]); err != nil {
+		return idempotencyKey(lookup, time.Now(), op, parts...)
+	}
+	return hex.EncodeToString(b[:])
 }
 
 func filesDigest(files []apiclient.IaCFile) string {
@@ -1007,4 +1067,20 @@ func stackDrift(prog string, args []string, stdout, stderr io.Writer, lookupEnv 
 		return exitValidation
 	}
 	return exitOK
+}
+
+// printDestroyHint prints the apply command that confirms deletions when the plan
+// refused them for lack of --confirm-destroy.
+func printDestroyHint(w io.Writer, prog, name string, plan iac.Plan, files []string) {
+	for _, ch := range plan.Changes {
+		if ch.Code != iac.CodeDestroyNotConfirmed {
+			continue
+		}
+		cmd := prog + " stack apply " + name
+		for _, f := range files {
+			cmd += " -f " + f
+		}
+		_, _ = fmt.Fprintf(w, "hint: the plan deletes resources that need a typed confirmation; review it, then re-run with: %s --confirm-destroy %s\n", cmd, name)
+		return
+	}
 }

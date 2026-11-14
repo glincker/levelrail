@@ -37,7 +37,20 @@ type Options struct {
 	NoDeploy bool
 	// ContinueOnError keeps applying after an item fails.
 	ContinueOnError bool
+	// Cloud is the approved cloud plan; without it every cloud write is refused.
+	Cloud *CloudApproval
+	// Attachments holds referenced compose files by cleaned relative path.
+	Attachments map[string][]byte
+	// ComposeEnvApplied maps a compose App to the env digest its stack last
+	// applied, since a compose revision never stores env values.
+	ComposeEnvApplied map[string]string
+	// ConfirmDestroy is set server side when the caller typed the stack name;
+	// a prune never removes a compose App without it.
+	ConfirmDestroy bool
 }
+
+// maxEnvironmentNameLen mirrors the API limit on environment names.
+const maxEnvironmentNameLen = 64
 
 var (
 	appNameRe = regexp.MustCompile(`^[a-z][a-z0-9-]*$`)
@@ -49,6 +62,11 @@ type issueSink struct {
 	issues []Issue
 }
 
+func (s *issueSink) atCode(code, path, format string, args ...any) {
+	s.at(path, format, args...)
+	s.issues[len(s.issues)-1].Code = code
+}
+
 func (s *issueSink) at(path, format string, args ...any) {
 	s.issues = append(s.issues, Issue{File: s.d.File, Path: path, Line: lineFor(s.d.Root, strings.Split(path, ".")), Message: fmt.Sprintf(format, args...)})
 }
@@ -58,9 +76,20 @@ func (s *issueSink) at(path, format string, args ...any) {
 // exists, so nothing is planned from a partly valid input.
 func Build(docs []*Document, opts Options) ([]*Resource, []Issue) {
 	var issues []Issue
+	if lim := composeLimits(); lim.Enabled && len(opts.Attachments) > 0 {
+		issues = append(issues, checkComposeAttachments(opts.Attachments, lim)...)
+	}
 	docs = append([]*Document(nil), docs...)
 	for i, d := range docs {
 		if d.Root == nil || d.Root.Kind != yaml.MappingNode {
+			continue
+		}
+		// Before the schema pass so a bad name is reported alongside other issues.
+		ns := &issueSink{d: d}
+		checkResourceName(d, ns)
+		issues = append(issues, ns.issues...)
+		if isCloudKind(d.Kind) && !cloudEnabled() {
+			issues = append(issues, cloudDisabledIssue(d))
 			continue
 		}
 		var subst map[string][]string
@@ -87,6 +116,9 @@ func Build(docs []*Document, opts Options) ([]*Resource, []Issue) {
 		r := buildOne(d, opts, sink)
 		checkPlaceholders(r, sink)
 		if r != nil && len(sink.issues) == 0 {
+			if w := betaWarning(r.Kind); w != "" {
+				r.Warnings = append(r.Warnings, w)
+			}
 			out = append(out, r)
 		}
 		issues = append(issues, sink.issues...)
@@ -159,6 +191,21 @@ func sortIssues(in []Issue) []Issue {
 	return in
 }
 
+// checkResourceName applies the API's own name rules at build time, so a
+// document the API would refuse at creation never reaches a plan.
+func checkResourceName(d *Document, s *issueSink) {
+	switch d.Kind {
+	case KindApp, KindDatabase:
+		if err := spec.ValidateServiceName(d.Name); err != nil {
+			s.atCode(CodeInvalidName, "metadata.name", "%s", err.Error())
+		}
+	case KindEnvironment:
+		if len(d.Name) > maxEnvironmentNameLen {
+			s.atCode(CodeInvalidName, "metadata.name", "name must be at most %d characters", maxEnvironmentNameLen)
+		}
+	}
+}
+
 func buildOne(d *Document, opts Options, s *issueSink) *Resource {
 	r := &Resource{Kind: d.Kind, Name: d.Name, Doc: d}
 	switch d.Kind {
@@ -186,6 +233,12 @@ func buildOne(d *Document, opts Options, s *issueSink) *Resource {
 			s.at("metadata.name", "tag names are at most 64 characters")
 		}
 		r.Fields = map[string]any{}
+	case KindCloudAccount, KindCloudNetwork, KindCloudInstance, KindCloudBucket:
+		r.Fields = buildCloud(d, s)
+		// Only warn while no planner is installed; otherwise the items are planned for real.
+		if !CloudPlannerInstalled() {
+			r.Warnings = append(r.Warnings, cloudValidateOnlyWarning)
+		}
 	case KindNode:
 		r.Fields = buildNode(d, s)
 	case KindSetting:
@@ -202,9 +255,6 @@ func buildOne(d *Document, opts Options, s *issueSink) *Resource {
 			} `yaml:"pooler"`
 		}
 		decodeSpec(d, &sp, s)
-		if !appNameRe.MatchString(d.Name) {
-			s.at("metadata.name", "database names are lowercase letters, digits and hyphens, starting with a letter")
-		}
 		r.Fields = map[string]any{"engine": sp.Engine}
 		putIf(r.Fields, "version", sp.Version)
 		putIf(r.Fields, "project", sp.Project)
@@ -384,9 +434,6 @@ func buildAlert(d *Document, s *issueSink) *Resource {
 }
 
 func buildApp(d *Document, opts Options, s *issueSink) *Resource {
-	if !appNameRe.MatchString(d.Name) {
-		s.at("metadata.name", "app names are lowercase letters, digits and hyphens, starting with a letter")
-	}
 	var sp struct {
 		Project     string   `yaml:"project"`
 		Environment string   `yaml:"environment"`
@@ -394,6 +441,9 @@ func buildApp(d *Document, opts Options, s *issueSink) *Resource {
 	}
 	decodeSpec(d, &sp, s)
 	svcNode := mapValue(d.SpecNode, "service")
+	if cn := mapValue(d.SpecNode, "compose"); cn != nil {
+		return buildComposeApp(d, cn, svcNode != nil, sp.Project, sp.Environment, sp.Tags, opts, s)
+	}
 	env, secrets, conns, existing, refs := appEnv(svcNode, s, opts)
 
 	trimmed := *svcNode
@@ -505,6 +555,11 @@ func checkSupportedService(svc *spec.Service, s *issueSink) {
 
 // appEnv returns literals, stored secret names, database connections, existing secret names and secret connection references.
 func appEnv(svcNode *yaml.Node, s *issueSink, opts Options) (map[string]string, []string, map[string]string, []string, map[string]string) {
+	return appEnvAt(svcNode, "spec.service.env.", s, opts)
+}
+
+// appEnvAt reads the env map of a node whose issue paths start with prefix.
+func appEnvAt(svcNode *yaml.Node, prefix string, s *issueSink, opts Options) (map[string]string, []string, map[string]string, []string, map[string]string) {
 	envNode := mapValue(svcNode, "env")
 	if envNode == nil {
 		return nil, nil, nil, nil, nil
@@ -515,7 +570,7 @@ func appEnv(svcNode *yaml.Node, s *issueSink, opts Options) (map[string]string, 
 	var secrets, existing []string
 	for i := 0; i+1 < len(envNode.Content); i += 2 {
 		k, vn := envNode.Content[i].Value, envNode.Content[i+1]
-		path := "spec.service.env." + k
+		path := prefix + k
 		if !envKeyRe.MatchString(k) {
 			s.at(path, "env names are letters, digits and underscores, not starting with a digit")
 			continue

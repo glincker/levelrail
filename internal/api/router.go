@@ -235,9 +235,10 @@ type Router struct {
 	sessions                *sessionStore
 	mfaPending              *mfaPendingStore // always set, same "always present, not an Option" shape sessions itself has
 	passkeyLogin            *loginLimiter
-	setupTokenGuess         *loginLimiter     // failed setup-token guesses per client IP
-	wakeTokenGuess          *loginLimiter     // failed wake-token guesses per client IP
-	functionLimiter         functions.Limiter // requests held per function while it wakes
+	setupTokenGuess         *loginLimiter       // failed setup-token guesses per client IP
+	wakeTokenGuess          *loginLimiter       // failed wake-token guesses per client IP
+	functionLimiter         functions.Limiter   // requests held per function while it wakes
+	wakeWaiters             appsleep.WaiterGate // requests held per app while it wakes
 	devicePollLimit         *apiRateLimiter
 	dbRevealLimit           *apiRateLimiter
 	emailRevealLimit        *apiRateLimiter

@@ -135,7 +135,51 @@
     },
     "appSpec": {
       "additionalProperties": false,
+      "anyOf": [
+        {
+          "required": [
+            "service"
+          ]
+        },
+        {
+          "required": [
+            "compose"
+          ]
+        }
+      ],
       "properties": {
+        "compose": {
+          "additionalProperties": false,
+          "description": "Run the app from a compose file kept next to the documents. Beta, off unless iac.compose_refs is on. Not combined with service.",
+          "properties": {
+            "env": {
+              "description": "Values for ${VAR} in the compose file: literals, ${{ env.NAME }} or secretRef.",
+              "maxProperties": 128,
+              "type": "object"
+            },
+            "path": {
+              "description": "Relative path of the compose file, below the folder you apply.",
+              "maxLength": 512,
+              "minLength": 1,
+              "type": "string"
+            },
+            "profiles": {
+              "description": "Compose profiles to enable.",
+              "items": {
+                "maxLength": 64,
+                "pattern": "^[A-Za-z0-9][A-Za-z0-9_.-]*$",
+                "type": "string"
+              },
+              "maxItems": 32,
+              "type": "array"
+            }
+          },
+          "required": [
+            "path"
+          ],
+          "type": "object",
+          "x-stability": "beta"
+        },
         "environment": {
           "description": "Name of the environment the app deploys to.",
           "minLength": 1,
@@ -160,9 +204,6 @@
           "type": "array"
         }
       },
-      "required": [
-        "service"
-      ],
       "type": "object"
     },
     "autoscale": {
@@ -390,6 +431,235 @@
           "type": "array"
         }
       },
+      "type": "object"
+    },
+    "cloudAccountSpec": {
+      "additionalProperties": false,
+      "description": "A cloud account. It holds no credential: auth names a secret in the secret store.",
+      "properties": {
+        "auth": {
+          "additionalProperties": false,
+          "properties": {
+            "method": {
+              "description": "How the credential is read.",
+              "enum": [
+                "secret_ref"
+              ]
+            },
+            "secretRef": {
+              "description": "Name of the secret that holds the credential.",
+              "pattern": "^[A-Za-z][A-Za-z0-9_.-]{0,127}$",
+              "type": "string"
+            }
+          },
+          "required": [
+            "method",
+            "secretRef"
+          ],
+          "type": "object"
+        },
+        "limits": {
+          "additionalProperties": false,
+          "description": "Spend and size limits every plan is checked against.",
+          "properties": {
+            "instances": {
+              "minimum": 0,
+              "type": "integer"
+            },
+            "memoryGB": {
+              "minimum": 0,
+              "type": "number"
+            },
+            "monthlyCost": {
+              "minimum": 0,
+              "type": "number"
+            },
+            "storageGB": {
+              "minimum": 0,
+              "type": "number"
+            },
+            "vcpus": {
+              "minimum": 0,
+              "type": "integer"
+            }
+          },
+          "type": "object"
+        },
+        "provider": {
+          "description": "Cloud provider module.",
+          "enum": [
+            "oracle"
+          ]
+        },
+        "region": {
+          "description": "Provider region identifier.",
+          "minLength": 1,
+          "type": "string"
+        },
+        "scope": {
+          "additionalProperties": false,
+          "description": "Where resources live, by identifier (not secret).",
+          "properties": {
+            "accountId": {
+              "description": "Account or project identifier.",
+              "minLength": 1,
+              "type": "string"
+            },
+            "compartment": {
+              "description": "Compartment identifier.",
+              "minLength": 1,
+              "type": "string"
+            }
+          },
+          "type": "object"
+        }
+      },
+      "required": [
+        "provider",
+        "region",
+        "auth",
+        "limits"
+      ],
+      "type": "object"
+    },
+    "cloudBucketSpec": {
+      "additionalProperties": false,
+      "properties": {
+        "account": {
+          "description": "Name of the CloudAccount.",
+          "minLength": 1,
+          "type": "string"
+        },
+        "namespace": {
+          "description": "Object storage namespace of the account. Planning a bucket without it fails.",
+          "minLength": 1,
+          "type": "string"
+        },
+        "region": {
+          "description": "Overrides the account region.",
+          "minLength": 1,
+          "type": "string"
+        },
+        "versioning": {
+          "type": "boolean"
+        }
+      },
+      "required": [
+        "account"
+      ],
+      "type": "object"
+    },
+    "cloudInstanceSpec": {
+      "additionalProperties": false,
+      "properties": {
+        "account": {
+          "description": "Name of the CloudAccount.",
+          "minLength": 1,
+          "type": "string"
+        },
+        "network": {
+          "description": "Name of the CloudNetwork.",
+          "minLength": 1,
+          "type": "string"
+        },
+        "node": {
+          "additionalProperties": false,
+          "description": "Join the new machine to this control plane as a node.",
+          "properties": {
+            "join": {
+              "type": "boolean"
+            },
+            "labels": {
+              "additionalProperties": {
+                "type": "string"
+              },
+              "type": "object"
+            },
+            "role": {
+              "minLength": 1,
+              "type": "string"
+            }
+          },
+          "type": "object"
+        },
+        "shape": {
+          "additionalProperties": false,
+          "properties": {
+            "arch": {
+              "enum": [
+                "amd64",
+                "arm64"
+              ]
+            },
+            "cpu": {
+              "minimum": 1,
+              "type": "integer"
+            },
+            "diskGB": {
+              "exclusiveMinimum": 0,
+              "type": "number"
+            },
+            "memoryGB": {
+              "exclusiveMinimum": 0,
+              "type": "number"
+            }
+          },
+          "required": [
+            "cpu",
+            "memoryGB"
+          ],
+          "type": "object"
+        }
+      },
+      "required": [
+        "account",
+        "network",
+        "shape"
+      ],
+      "type": "object"
+    },
+    "cloudNetworkSpec": {
+      "additionalProperties": false,
+      "properties": {
+        "account": {
+          "description": "Name of the CloudAccount.",
+          "minLength": 1,
+          "type": "string"
+        },
+        "cidr": {
+          "description": "Network range in CIDR form.",
+          "minLength": 1,
+          "type": "string"
+        },
+        "ingress": {
+          "description": "Inbound ports opened from the internet. Nothing else is open.",
+          "items": {
+            "additionalProperties": false,
+            "properties": {
+              "port": {
+                "maximum": 65535,
+                "minimum": 1,
+                "type": "integer"
+              },
+              "protocol": {
+                "enum": [
+                  "tcp",
+                  "udp"
+                ]
+              }
+            },
+            "required": [
+              "port"
+            ],
+            "type": "object"
+          },
+          "type": "array"
+        }
+      },
+      "required": [
+        "account",
+        "cidr"
+      ],
       "type": "object"
     },
     "contextConfig": {
@@ -2251,6 +2521,94 @@
       "if": {
         "properties": {
           "kind": {
+            "const": "CloudAccount"
+          }
+        },
+        "required": [
+          "kind"
+        ]
+      },
+      "then": {
+        "properties": {
+          "spec": {
+            "$ref": "#/$defs/cloudAccountSpec"
+          }
+        },
+        "required": [
+          "spec"
+        ]
+      }
+    },
+    {
+      "if": {
+        "properties": {
+          "kind": {
+            "const": "CloudNetwork"
+          }
+        },
+        "required": [
+          "kind"
+        ]
+      },
+      "then": {
+        "properties": {
+          "spec": {
+            "$ref": "#/$defs/cloudNetworkSpec"
+          }
+        },
+        "required": [
+          "spec"
+        ]
+      }
+    },
+    {
+      "if": {
+        "properties": {
+          "kind": {
+            "const": "CloudInstance"
+          }
+        },
+        "required": [
+          "kind"
+        ]
+      },
+      "then": {
+        "properties": {
+          "spec": {
+            "$ref": "#/$defs/cloudInstanceSpec"
+          }
+        },
+        "required": [
+          "spec"
+        ]
+      }
+    },
+    {
+      "if": {
+        "properties": {
+          "kind": {
+            "const": "CloudBucket"
+          }
+        },
+        "required": [
+          "kind"
+        ]
+      },
+      "then": {
+        "properties": {
+          "spec": {
+            "$ref": "#/$defs/cloudBucketSpec"
+          }
+        },
+        "required": [
+          "spec"
+        ]
+      }
+    },
+    {
+      "if": {
+        "properties": {
+          "kind": {
             "const": "Node"
           }
         },
@@ -2428,6 +2786,10 @@
         "Project",
         "Environment",
         "Tag",
+        "CloudAccount",
+        "CloudNetwork",
+        "CloudInstance",
+        "CloudBucket",
         "Node",
         "Setting",
         "Database",
@@ -2454,5 +2816,22 @@
     "metadata"
   ],
   "title": "Platform resource document",
-  "type": "object"
+  "type": "object",
+  "x-stability": {
+    "AlertRule": "beta",
+    "App": "stable",
+    "CloudAccount": "beta",
+    "CloudBucket": "beta",
+    "CloudInstance": "beta",
+    "CloudNetwork": "beta",
+    "Database": "stable",
+    "Domain": "stable",
+    "Environment": "stable",
+    "LoadBalancer": "beta",
+    "Node": "stable",
+    "Pipeline": "beta",
+    "Project": "stable",
+    "Setting": "stable",
+    "Tag": "stable"
+  }
 }

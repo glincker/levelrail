@@ -28,6 +28,7 @@ var catalog = map[Feature]Info{
 	AIModels:           {Name: "AI models", Summary: "Host AI models on GPU nodes.", DocsPath: "/ai-models", Maturity: MaturityExperimental},
 	LoadBalancer:       {Name: "Load balancer", Summary: "Spread traffic across an app's replicas with health aware balancing.", DocsPath: docsPath, Maturity: MaturityExperimental},
 	IaC:                {Name: "Platform as code", Summary: "Plan, apply and export the platform's resources from files.", DocsPath: docsPath, Maturity: MaturityExperimental},
+	Cloud:              {Name: "Cloud provisioning (preview, off by default)", Summary: "Plan and apply cloud infrastructure from reviewed modules with short-lived credentials. Preview: nothing runs until you enable it.", DocsPath: docsPath, Maturity: MaturityExperimental},
 	CloudflareTunnel:   {Name: "Cloudflare Tunnel", Summary: "Expose apps through a Cloudflare tunnel with no open inbound ports.", DocsPath: docsPath, Maturity: MaturityExperimental},
 	AccessRoles:        {Name: "Access roles", Summary: "Custom roles, the guest role and per-environment grants.", DocsPath: "/access-control", Maturity: MaturityExperimental},
 	GlobalEnvironments: {Name: "Global environments", Summary: "Instance-wide typed environments and the environment switcher.", DocsPath: "/environments", Maturity: MaturityExperimental},

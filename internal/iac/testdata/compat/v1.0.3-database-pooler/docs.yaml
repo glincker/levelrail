@@ -1,0 +1,4 @@
+version: 1
+kind: Database
+metadata: {name: main-db}
+spec: {engine: postgres, version: "16", pooler: {enabled: true}}

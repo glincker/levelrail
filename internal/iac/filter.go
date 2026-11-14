@@ -39,6 +39,9 @@ func FilterProject(docs []*Document, project string) []*Document {
 			keep = apps[d.Name]
 		case KindTag:
 			keep = tags[d.Name]
+		case KindCloudAccount, KindCloudNetwork, KindCloudInstance, KindCloudBucket:
+			// Cloud documents name an account, not a project; the project stack owns them.
+			keep = true
 		}
 		if keep {
 			out = append(out, d)

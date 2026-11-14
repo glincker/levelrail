@@ -1090,3 +1090,27 @@ func TestLedgerPruneRefusesDomainOfAppNowInAnotherStack(t *testing.T) {
 		t.Fatalf("a pruned a domain of b's app: %v", writesSince(f, before))
 	}
 }
+
+func TestNameValidation(t *testing.T) {
+	long := strings.Repeat("a", 64)
+	cases := []struct{ kind, name string }{
+		{"App", "Bad_Name"}, {"App", long}, {"Database", "Bad_Name"}, {"Environment", long + "a"},
+	}
+	for _, tc := range cases {
+		src := "version: 1\nkind: " + tc.kind + "\nmetadata: {name: " + tc.name + "}\nspec: {}\n"
+		docs, pi := ParseDocuments([]Source{{Name: "f.yaml", Data: []byte(src)}})
+		if len(pi) > 0 {
+			t.Fatalf("%s %s parse: %v", tc.kind, tc.name, pi)
+		}
+		_, issues := Build(docs, Options{})
+		found := false
+		for _, i := range issues {
+			if i.Code == CodeInvalidName && i.Path == "metadata.name" && i.File == "f.yaml" {
+				found = true
+			}
+		}
+		if !found {
+			t.Errorf("%s %q: want invalid_name, got %v", tc.kind, tc.name, issues)
+		}
+	}
+}

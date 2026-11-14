@@ -3613,7 +3613,8 @@
     "dialogTitle": "Exportar {{name}} como código",
     "dialogDescription": "O arquivo de recurso deste único recurso. Valores de segredos nunca são incluídos.",
     "loading": "Exportando...",
-    "empty": "Nada para exportar."
+    "empty": "Nada para exportar.",
+    "studioButton": "Exportar o estado atual como template"
   },
   "iacPlan": {
     "summary": "{{create}} a criar, {{update}} a atualizar, {{delete}} a excluir, {{noop}} sem alteração",
@@ -3963,5 +3964,34 @@
     "empty": "Nenhum provedor de segredos ainda.",
     "removeTitle": "Remover {{name}}?",
     "removeConsequence": "Apps que referenciam este provedor falharão ao iniciar até que ele seja adicionado novamente."
+  },
+  "iacStudio": {
+    "tabFiles": "Arquivos",
+    "tabStudio": "Studio",
+    "templates": "Templates",
+    "use": "Usar",
+    "copy": "Copiar",
+    "useNamed": "Usar o template {{name}}",
+    "copyNamed": "Copiar o template {{name}}",
+    "editor": "YAML do recurso",
+    "placeholder": "version: 1\nkind: App\nmetadata:\n  name: web",
+    "cloudNote": "Tipos de nuvem são rejeitados se o recurso de nuvem estiver desligado. Nenhuma credencial de nuvem é informada aqui.",
+    "planHash": "Plano",
+    "beta": "Beta",
+    "codeDoc": "Código de erro {{code}}, abrir a referência",
+    "applyDisabled": "Aplicar está desativado nesta instância. Os planos continuam funcionando.",
+    "replan": "Planejar de novo",
+    "viewLabel": "Visualização do editor",
+    "resultLabel": "Resultado do plano",
+    "copyFailed": "Não foi possível copiar para a área de transferência",
+    "viewYaml": "YAML",
+    "viewForm": "Formulário",
+    "formLoading": "Carregando o formulário",
+    "multiDoc": "Este texto tem mais de um documento. O formulário mostra o primeiro somente para leitura. Edite como YAML para alterar qualquer um.",
+    "parseLine": "Este documento não pôde ser lido (linha {{line}}).",
+    "editAsYaml": "Editar como YAML",
+    "exportedNote": "Exportado do estado ao vivo. Os segredos nunca são incluídos, são exportados como referências.",
+    "copyYaml": "Copiar YAML",
+    "copied": "Copiado"
   }
 }

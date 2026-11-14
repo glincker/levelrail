@@ -1,0 +1,21 @@
+version: 1
+kind: Project
+metadata: { name: sandbox }
+---
+version: 1
+kind: Database
+metadata: { name: dev-db }
+spec: { engine: postgres, version: "16", project: sandbox }
+---
+version: 1
+kind: App
+metadata: { name: dev-api }
+spec:
+  project: sandbox
+  service:
+    build: { type: image, image: "ghcr.io/acme/api:latest" }
+    port: 3000
+    replicas: 1
+    env:
+      LOG_LEVEL: ${{ env.LOG_LEVEL }}
+      DATABASE_URL: { from: { database: dev-db, field: url } }

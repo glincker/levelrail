@@ -7,6 +7,7 @@ import (
 	"testing"
 	"time"
 
+	"github.com/GLINCKER/levelrail/internal/iac"
 	"github.com/GLINCKER/levelrail/internal/store"
 )
 
@@ -311,5 +312,25 @@ func TestApprovalRejectLosesToInFlightApply(t *testing.T) {
 	}
 	if rev, _ := db.GetStackRevision(t.Context(), id, 1); rev.Status != store.StackRevApplying {
 		t.Fatalf("status = %q, want applying", rev.Status)
+	}
+}
+
+func TestStackApprovalCodes(t *testing.T) {
+	rt, _, cookie, approver := approvalFixture(t)
+	stackApply(t, rt, cookie, stackTestDocs("ghcr.io/acme/web:1.0.0"), nil)
+	var out iacErrorBody
+	if code := iacCall(t, rt, authedRequest(t, cookie, http.MethodPost, "/api/v1/stacks/shop-prod/revisions/1/approve", ""), &out); code != http.StatusForbidden || out.Code != iac.CodePermissionDenied {
+		t.Fatalf("self approve = %d %+v", code, out)
+	}
+	out = iacErrorBody{}
+	if code := tokenPost(t, rt, approver, "/api/v1/stacks/shop-prod/revisions/1/approve", `{"expected_plan_hash":"stale"}`, &out); code != http.StatusConflict || out.Code != iac.CodePlanStale {
+		t.Fatalf("stale hash = %d %+v", code, out)
+	}
+	if code := tokenPost(t, rt, approver, "/api/v1/stacks/shop-prod/revisions/1/reject", `{"reason":"no"}`, nil); code != http.StatusOK {
+		t.Fatalf("reject = %d", code)
+	}
+	out = iacErrorBody{}
+	if code := tokenPost(t, rt, approver, "/api/v1/stacks/shop-prod/revisions/1/approve", "", &out); code != http.StatusConflict || out.Code != iac.CodeOwnershipConflict {
+		t.Fatalf("approve after reject = %d %+v", code, out)
 	}
 }

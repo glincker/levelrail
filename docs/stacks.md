@@ -121,6 +121,8 @@ The directory holds `stack.yaml`, `project.yaml`, `databases.yaml`, `apps.yaml`,
 
 A stack owns the resources it created, and the resources it adopted. Prune deletes only owned resources that the files no longer declare. A resource that exists outside every stack makes the apply fail unless the apply sets `adopt`.
 
+Deleting a compose App or a cloud resource also needs `--confirm-destroy <stack name>` on `stack plan` and `stack apply` (API: `confirm_destroy`); the value must equal the stack name, applies only to that run, and is never implied by `--yes`.
+
 Prune is never turned on by a pull request. A `spec.prune` field in the `Stack` document or a `--prune` flag only asks for it (an explicit `--prune` or `--prune=false` on the command line always wins over `spec.prune`, so a pull request cannot turn prune on over a workflow input of `prune: false`). The apply is refused unless an administrator set `allow_prune` on the stack, so editing the files in git cannot widen what an apply deletes.
 
 Domains listed inline on an `App` are owned too, as `Domain/<host>` entries in the ledger. A second stack that declares the same host is refused with a ledger conflict. Removing a host from the files prunes it like any other owned resource, and a prune is refused when the app that carried the host now belongs to another stack. A host that was only ever declared inline before this was recorded becomes owned the next time the stack applies.
@@ -267,10 +269,7 @@ To point at a secret that is already in the store, add `existing: true`: `{ secr
 
 ## GitHub Action
 
-The stack action in `integrations/github-action/stack` runs the loop for you. On a pull request it runs a plan and posts one comment per stack. On merge it runs an apply.
-
-- Pass the same `secrets` list to the plan step and the apply step. The plan hash covers secret names, so a plan without them has a different hash.
-- In apply mode, exit code 2 means the revision awaits approval. It does not mean a change. The step reports the status `pending_approval`.
+The stack Action in `integrations/github-action/stack` plans on pull requests and applies on merge. The workflow, the secrets rule and the exit 2 meaning in apply mode are on [IaC in CI](/iac/ci).
 
 ## Status
 

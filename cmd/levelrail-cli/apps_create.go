@@ -1015,6 +1015,9 @@ func reportError(stdout, stderr io.Writer, jsonOut bool, err error) int {
 		} else if hint := publishedPortHint(apiErr.Code); hint != "" {
 			_, _ = fmt.Fprintf(stderr, "hint: %s\n", hint)
 		}
+		if !jsonOut {
+			printIssueLines(stderr, apiErr.Issues)
+		}
 		if apiErr.RequestID != "" {
 			_, _ = fmt.Fprintf(stderr, "request id: %s\n", apiErr.RequestID)
 		}

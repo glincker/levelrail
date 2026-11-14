@@ -293,6 +293,7 @@
               "log-explorer",
               "custom-dashboards",
               "tracing",
+              "otlp-ingest",
               "error-tracking",
               "loki-api",
               "log-pipelines",
@@ -442,6 +443,24 @@
             "icon": "/assets/icons/arrows-left-right.svg"
           },
           {
+            "group": "Infrastructure as code",
+            "pages": [
+              "iac/index",
+              "iac/templates",
+              "iac/how-it-works",
+              "iac/ci",
+              "iac/git-sync",
+              "iac/cloud-connect",
+              "iac/resources",
+              "iac/compose",
+              "iac/reference",
+              "iac/errors",
+              "platform-as-code",
+              "stacks"
+            ],
+            "icon": "/assets/icons/flask.svg"
+          },
+          {
             "group": "Beta and experimental",
             "pages": [
               "ai-assistant",
@@ -451,9 +470,7 @@
               "ai-assistant-chat",
               "ai-models",
               "load-balancing",
-              "platform-as-code",
               "leave-anytime",
-              "stacks",
               "resource-advisor",
               "cloud-connections",
               "cli-console",

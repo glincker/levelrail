@@ -202,6 +202,9 @@ func (c *Cache) Checkout(ctx context.Context, repoURL, ref, token string) (Check
 		if repo, err = git.PlainOpen(mirrorDir); err != nil {
 			return fail(fmt.Errorf("sourcecache: reopen mirror: %w", err))
 		}
+		if c.overBudget(ctx, mirrorDir, release) {
+			return Checkout{}, ErrOverBudget
+		}
 		if hash, ok = resolve(repo, ref); !ok {
 			return fail(fmt.Errorf("%w: %s", ErrCommitNotFound, shortRef(ref)))
 		}

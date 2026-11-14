@@ -3255,7 +3255,8 @@
     "running": "Exportando...",
     "textLabel": "Archivos de recursos exportados",
     "title": "Exportar",
-    "warning": "aviso: {{message}}"
+    "warning": "aviso: {{message}}",
+    "studioButton": "Exportar el estado actual como plantilla"
   },
   "iacPlan": {
     "denied": "denegado",
@@ -3917,5 +3918,34 @@
     "empty": "Aún no hay proveedores de secretos.",
     "removeTitle": "¿Quitar {{name}}?",
     "removeConsequence": "Las apps que usan este proveedor no arrancarán hasta que se vuelva a añadir."
+  },
+  "iacStudio": {
+    "tabFiles": "Archivos",
+    "tabStudio": "Studio",
+    "templates": "Plantillas",
+    "use": "Usar",
+    "copy": "Copiar",
+    "useNamed": "Usar la plantilla {{name}}",
+    "copyNamed": "Copiar la plantilla {{name}}",
+    "editor": "YAML del recurso",
+    "placeholder": "version: 1\nkind: App\nmetadata:\n  name: web",
+    "cloudNote": "Los tipos de nube se rechazan si la función de nube está desactivada. Aquí no se introducen credenciales de nube.",
+    "planHash": "Plan",
+    "beta": "Beta",
+    "codeDoc": "Código de error {{code}}, abrir la referencia",
+    "applyDisabled": "Aplicar está desactivado en esta instancia. Los planes siguen funcionando.",
+    "replan": "Planificar de nuevo",
+    "viewLabel": "Vista del editor",
+    "resultLabel": "Resultado del plan",
+    "copyFailed": "No se pudo copiar al portapapeles",
+    "viewYaml": "YAML",
+    "viewForm": "Formulario",
+    "formLoading": "Cargando el formulario",
+    "multiDoc": "Este texto tiene más de un documento. El formulario muestra el primero en solo lectura. Edita como YAML para cambiar cualquiera.",
+    "parseLine": "Este documento no se puede analizar (línea {{line}}).",
+    "editAsYaml": "Editar como YAML",
+    "exportedNote": "Exportado desde el estado en vivo. Los secretos nunca se incluyen, se exportan como referencias.",
+    "copyYaml": "Copiar YAML",
+    "copied": "Copiado"
   }
 }

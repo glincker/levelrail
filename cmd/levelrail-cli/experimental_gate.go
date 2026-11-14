@@ -2,11 +2,14 @@ package main
 
 import (
 	"context"
+	"errors"
 	"fmt"
 	"io"
+	"net/http"
 	"strings"
 	"time"
 
+	"github.com/GLINCKER/levelrail/internal/apiclient"
 	"github.com/GLINCKER/levelrail/internal/experimental"
 )
 
@@ -95,5 +98,15 @@ func syncServerBetaFeatures(prog string, args []string, lookupEnv func(string) (
 	}
 	ctx, cancel := context.WithTimeout(context.Background(), betaSyncTimeout)
 	defer cancel()
-	_ = apiClientFromFlags(prog, "", "", "", lookupEnv).SyncBetaFeatures(ctx)
+	err := apiClientFromFlags(prog, "", "", "", lookupEnv).SyncBetaFeatures(ctx)
+	var apiErr *apiclient.APIError
+	if errors.As(err, &apiErr) && apiErr.StatusCode == http.StatusForbidden && gated {
+		// A scoped token cannot read settings. The server enforces the gate itself.
+		on := map[experimental.Feature]bool{}
+		for _, x := range experimental.All() {
+			on[x] = experimental.Enabled(x)
+		}
+		on[f] = true
+		experimental.ApplyRemote(on)
+	}
 }

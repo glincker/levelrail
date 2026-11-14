@@ -6,6 +6,7 @@ import (
 	"strings"
 	"testing"
 
+	"github.com/GLINCKER/levelrail/internal/iac"
 	"github.com/GLINCKER/levelrail/internal/store"
 )
 
@@ -119,4 +120,204 @@ func TestStackDestroyKeepsDatabasesUnlessDeleteData(t *testing.T) {
 	if _, err := db.GetDesiredDatabase(t.Context(), "ordersdb"); err == nil {
 		t.Fatal("delete_data left the database behind")
 	}
+}
+
+func TestStackBootstrapNoSideEffectOnStalePlan(t *testing.T) {
+	rt, db := newTestRouter(t)
+	cookie := loginTestSession(t, rt, db)
+	var plan stackPlanResponse
+	if code := iacCall(t, rt, authedRequest(t, cookie, http.MethodPost, "/api/v1/stacks/qa1/plan", stackBody(t, iacTestDocs, nil)), &plan); code != http.StatusOK || plan.Plan == nil {
+		t.Fatalf("plan = %d", code)
+	}
+	var stale iacErrorBody
+	code := iacCall(t, rt, authedRequest(t, cookie, http.MethodPost, "/api/v1/stacks/qa1/apply", stackBody(t, iacTestDocs, map[string]any{"expected_plan_hash": "v2:wrong"})), &stale)
+	if code != http.StatusConflict || stale.Code != "plan_stale" {
+		t.Fatalf("stale apply = %d %+v", code, stale)
+	}
+	if _, err := db.GetStackByName(t.Context(), "qa1"); err == nil {
+		t.Fatal("a stale first apply created the stack")
+	}
+	if _, found := rt.projectByName(t.Context(), "shop"); found {
+		t.Fatal("a stale first apply created the project")
+	}
+	var out stackApplyResponse
+	code = iacCall(t, rt, authedRequest(t, cookie, http.MethodPost, "/api/v1/stacks/qa1/apply", stackBody(t, iacTestDocs, map[string]any{"expected_plan_hash": plan.Plan.Hash})), &out)
+	if code != http.StatusOK || out.Revision == nil {
+		t.Fatalf("apply with the planned hash = %d %+v", code, out)
+	}
+}
+
+func TestStackBootstrapCloudRefusedLeavesNothing(t *testing.T) {
+	rt, db, cookie, _ := approvalFixture(t)
+	iac.SetCloudPlanner(&fakeCloud{action: "create"})
+	t.Cleanup(func() { iac.SetCloudPlanner(nil) })
+	var out iacErrorBody
+	code := iacCall(t, rt, authedRequest(t, cookie, http.MethodPost, "/api/v1/stacks/qa-cloud/apply", stackBody(t, cloudStackDocs, map[string]any{"project": "shop"})), &out)
+	if code != http.StatusForbidden || out.Code != iac.CodeApprovalRequired || !strings.Contains(out.Error, "without applying") {
+		t.Fatalf("cloud first apply = %d %+v", code, out)
+	}
+	if _, err := db.GetStackByName(t.Context(), "qa-cloud"); err == nil {
+		t.Fatal("a refused cloud first apply created the stack")
+	}
+	var ok stackApplyResponse
+	if code := iacCall(t, rt, authedRequest(t, cookie, http.MethodPost, "/api/v1/stacks/qa-plain/apply", stackBody(t, iacTestDocs, nil)), &ok); code != http.StatusOK || ok.Revision == nil {
+		t.Fatalf("non-cloud first apply = %d %+v", code, ok)
+	}
+}
+
+func TestStackReviewedHashFirstApply(t *testing.T) {
+	docs := iacTestDocs + "      DB_PASSWORD: ${{ secrets.DB_PASSWORD }}\n---\nversion: 1\nkind: Environment\nmetadata: {name: staging}\nspec: {project: shop}\n"
+	variants := map[string]map[string]any{
+		"plain":     nil,
+		"secrets":   {"secrets": map[string]string{"DB_PASSWORD": "s3cret-value-9876"}},
+		"no_deploy": {"no_deploy": true},
+		"both":      {"no_deploy": true, "secrets": map[string]string{"DB_PASSWORD": "s3cret-value-9876"}},
+		"project":   {"project": "shop"},
+		"vars":      {"vars": map[string]string{"X": "1"}},
+	}
+	for name, extra := range variants {
+		t.Run(name, func(t *testing.T) {
+			rt, db := newTestRouter(t)
+			cookie := loginTestSession(t, rt, db)
+			var plan stackPlanResponse
+			if code := iacCall(t, rt, authedRequest(t, cookie, http.MethodPost, "/api/v1/stacks/qa1/plan", stackBody(t, docs, extra)), &plan); code != http.StatusOK || plan.Plan == nil {
+				t.Fatalf("plan = %d", code)
+			}
+			applyExtra := map[string]any{"expected_plan_hash": plan.Plan.Hash}
+			for k, v := range extra {
+				applyExtra[k] = v
+			}
+			var out stackApplyResponse
+			code := iacCall(t, rt, authedRequest(t, cookie, http.MethodPost, "/api/v1/stacks/qa1/apply", stackBody(t, docs, applyExtra)), &out)
+			if code != http.StatusOK || out.Revision == nil {
+				t.Fatalf("apply with the reviewed hash = %d %+v", code, out)
+			}
+		})
+	}
+}
+
+func TestStackReviewedHashFirstApplyBesideAnotherStack(t *testing.T) {
+	rt, db := newTestRouter(t)
+	cookie := loginTestSession(t, rt, db)
+	var first stackApplyResponse
+	if code := iacCall(t, rt, authedRequest(t, cookie, http.MethodPost, "/api/v1/stacks/s1/apply", stackBody(t, iacTestDocs, nil)), &first); code != http.StatusOK {
+		t.Fatalf("first stack = %d", code)
+	}
+	docs := strings.NewReplacer("shop", "shop2", "frontend", "frontend2", "web", "web2", "app.example.com", "app2.example.com").Replace(iacTestDocs)
+	extra := map[string]any{"no_deploy": true, "secrets": map[string]string{"DB_PASSWORD": "s3cret-value-9876"}}
+	var plan stackPlanResponse
+	if code := iacCall(t, rt, authedRequest(t, cookie, http.MethodPost, "/api/v1/stacks/s2/plan", stackBody(t, docs, extra)), &plan); code != http.StatusOK || plan.Plan == nil {
+		t.Fatalf("plan = %d", code)
+	}
+	extra["expected_plan_hash"] = plan.Plan.Hash
+	var out stackApplyResponse
+	code := iacCall(t, rt, authedRequest(t, cookie, http.MethodPost, "/api/v1/stacks/s2/apply", stackBody(t, docs, extra)), &out)
+	if code != http.StatusOK || out.Revision == nil {
+		t.Fatalf("apply with the reviewed hash = %d %+v", code, out)
+	}
+}
+
+func TestStackReviewedHashFirstApplyWithTokens(t *testing.T) {
+	for name, abilities := range map[string][]string{"root": {AbilityRoot}, "write": {AbilityRead, AbilityWrite}} {
+		t.Run(name, func(t *testing.T) {
+			rt, db := newTestRouter(t)
+			tok := seedApproverToken(t, db, "tok-"+name, abilities)
+			var plan stackPlanResponse
+			if code := tokenPost(t, rt, tok, "/api/v1/stacks/qa1/plan", stackBody(t, iacTestDocs, map[string]any{"no_deploy": true}), &plan); code != http.StatusOK || plan.Plan == nil {
+				t.Fatalf("plan = %d", code)
+			}
+			var out stackApplyResponse
+			body := stackBody(t, iacTestDocs, map[string]any{"no_deploy": true, "expected_plan_hash": plan.Plan.Hash})
+			if code := tokenPost(t, rt, tok, "/api/v1/stacks/qa1/apply", body, &out); code != http.StatusOK || out.Revision == nil {
+				t.Fatalf("apply = %d %+v", code, out)
+			}
+		})
+	}
+}
+
+func TestStackReviewedHashFirstApplyNewStackNewProject(t *testing.T) {
+	proj := "version: 1\nkind: Project\nmetadata: {name: pr2}\n---\n"
+	app := "version: 1\nkind: App\nmetadata: {name: web2}\nspec:\n  service:\n    build: {type: image, image: \"ghcr.io/acme/web:1.2.3\"}\n    port: 3000\n    env:\n      LOG_LEVEL: info\n"
+	appInProject := strings.Replace(app, "spec:\n", "spec:\n  project: pr2\n", 1)
+	cases := map[string]struct {
+		docs  string
+		extra map[string]any
+	}{
+		"doc only":          {proj + app, nil},
+		"doc and field":     {proj + app, map[string]any{"project": "pr2"}},
+		"doc with app ref":  {proj + appInProject, map[string]any{"project": "pr2"}},
+		"secrets no_deploy": {proj + appInProject, map[string]any{"project": "pr2", "no_deploy": true, "secrets": map[string]string{"DB_PASSWORD": "late-secret-value-1234"}}},
+	}
+	for name, c := range cases {
+		t.Run(name, func(t *testing.T) {
+			rt, db := newTestRouter(t)
+			cookie := loginTestSession(t, rt, db)
+			var plan stackPlanResponse
+			if code := iacCall(t, rt, authedRequest(t, cookie, http.MethodPost, "/api/v1/stacks/s2/plan", stackBody(t, c.docs, c.extra)), &plan); code != http.StatusOK || plan.Plan == nil {
+				t.Fatalf("plan = %d", code)
+			}
+			extra := map[string]any{"expected_plan_hash": plan.Plan.Hash}
+			for k, v := range c.extra {
+				extra[k] = v
+			}
+			var out stackApplyResponse
+			if code := iacCall(t, rt, authedRequest(t, cookie, http.MethodPost, "/api/v1/stacks/s2/apply", stackBody(t, c.docs, extra)), &out); code != http.StatusOK || out.Revision == nil {
+				t.Fatalf("apply = %d %+v", code, out)
+			}
+		})
+	}
+}
+
+func TestStackBootstrapLateFailureLeavesNothing(t *testing.T) {
+	// The document must embed the value or the plaintext guard has nothing to match.
+	leak := map[string]any{"secrets": map[string]string{"DB_PASSWORD": "late-secret-value-1234"}}
+	leakyDocs := strings.Replace(iacTestDocs, "LOG_LEVEL: info", "LOG_LEVEL: late-secret-value-1234", 1)
+
+	t.Run("new stack and new project", func(t *testing.T) {
+		rt, db := newTestRouter(t)
+		cookie := loginTestSession(t, rt, db)
+		code, body := rawCall(t, rt, authedRequest(t, cookie, http.MethodPost, "/api/v1/stacks/late1/apply", stackBody(t, leakyDocs, leak)))
+		if code != http.StatusUnprocessableEntity || !strings.Contains(body, "secret value") {
+			t.Fatalf("apply = %d %s", code, body)
+		}
+		if _, err := db.GetStackByName(t.Context(), "late1"); err == nil {
+			t.Fatal("a late refusal left the stack")
+		}
+		if projects, _ := db.ListProjects(t.Context()); len(projects) != 0 {
+			t.Fatalf("a late refusal left the project: %+v", projects)
+		}
+	})
+
+	t.Run("existing project is untouched", func(t *testing.T) {
+		rt, db := newTestRouter(t)
+		cookie := loginTestSession(t, rt, db)
+		if err := db.SaveProject(t.Context(), store.Project{ID: "p-shop", Name: "shop", CreatedAt: "2026-10-25T00:00:00Z"}); err != nil {
+			t.Fatal(err)
+		}
+		code, _ := rawCall(t, rt, authedRequest(t, cookie, http.MethodPost, "/api/v1/stacks/late2/apply", stackBody(t, leakyDocs, leak)))
+		if code != http.StatusUnprocessableEntity {
+			t.Fatalf("apply = %d", code)
+		}
+		if _, err := db.GetStackByName(t.Context(), "late2"); err == nil {
+			t.Fatal("a late refusal left the stack")
+		}
+		if projects, _ := db.ListProjects(t.Context()); len(projects) != 1 || projects[0].ID != "p-shop" {
+			t.Fatalf("existing project changed: %+v", projects)
+		}
+	})
+
+	t.Run("success path keeps the rows", func(t *testing.T) {
+		rt, db := newTestRouter(t)
+		cookie := loginTestSession(t, rt, db)
+		var out stackApplyResponse
+		if code := iacCall(t, rt, authedRequest(t, cookie, http.MethodPost, "/api/v1/stacks/late3/apply", stackBody(t, iacTestDocs, nil)), &out); code != http.StatusOK {
+			t.Fatalf("apply = %d", code)
+		}
+		if _, err := db.GetStackByName(t.Context(), "late3"); err != nil {
+			t.Fatalf("stack missing: %v", err)
+		}
+		if projects, _ := db.ListProjects(t.Context()); len(projects) != 1 {
+			t.Fatalf("projects = %+v", projects)
+		}
+	})
 }

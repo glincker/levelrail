@@ -48,7 +48,7 @@ func (r *statusComponentResource) Schema(_ context.Context, _ resource.SchemaReq
 	resp.Schema = schema.Schema{
 		Description: "One row on the public status page, backed by an app, a domain or a check.",
 		Attributes: map[string]schema.Attribute{
-			"id":     schema.StringAttribute{Computed: true, PlanModifiers: []planmodifier.String{stringplanmodifier.UseStateForUnknown()}},
+			"id":     schema.StringAttribute{Description: "Identifier assigned by the provider.", Computed: true, PlanModifiers: []planmodifier.String{stringplanmodifier.UseStateForUnknown()}},
 			"kind":   schema.StringAttribute{Required: true, Description: "One of app, domain or check."},
 			"target": schema.StringAttribute{Required: true, Description: "App name, domain host or check ID, depending on kind."},
 			"name":   schema.StringAttribute{Required: true, Description: "Label shown on the page."},

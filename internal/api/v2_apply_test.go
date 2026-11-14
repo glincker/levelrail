@@ -8,6 +8,7 @@ import (
 	"strings"
 	"testing"
 
+	"github.com/GLINCKER/levelrail/internal/iac"
 	"github.com/GLINCKER/levelrail/internal/store"
 )
 
@@ -58,12 +59,13 @@ func TestV2ApplyRefusesBadRequestsAndUnsupportedKinds(t *testing.T) {
 	cases := []struct {
 		name, target, ctype, body string
 		want                      int
+		code                      string
 	}{
-		{"no manager", "/api/v2/apps/web", "application/apply-patch+yaml", "spec: {service: {port: 81}}", http.StatusBadRequest},
-		{"merge patch", "/api/v2/apps/web?fieldManager=ci", "application/merge-patch+json", `{"spec":{}}`, http.StatusUnsupportedMediaType},
-		{"name mismatch", "/api/v2/apps/web?fieldManager=ci", "application/apply-patch+yaml", "metadata: {name: api}\nspec: {service: {port: 81}}", http.StatusBadRequest},
-		{"stale version", "/api/v2/apps/web?fieldManager=ci&resourceVersion=999999", "application/apply-patch+yaml", "spec: {service: {port: 81}}", http.StatusConflict},
-		{"nodes", "/api/v2/nodes/n1?fieldManager=ci", "application/apply-patch+yaml", "spec: {labels: {a: b}}", http.StatusMethodNotAllowed},
+		{"no manager", "/api/v2/apps/web", "application/apply-patch+yaml", "spec: {service: {port: 81}}", http.StatusBadRequest, iac.CodeInvalidRequest},
+		{"merge patch", "/api/v2/apps/web?fieldManager=ci", "application/merge-patch+json", `{"spec":{}}`, http.StatusUnsupportedMediaType, iac.CodeInvalidRequest},
+		{"name mismatch", "/api/v2/apps/web?fieldManager=ci", "application/apply-patch+yaml", "metadata: {name: api}\nspec: {service: {port: 81}}", http.StatusBadRequest, iac.CodeInvalidRequest},
+		{"stale version", "/api/v2/apps/web?fieldManager=ci&resourceVersion=999999", "application/apply-patch+yaml", "spec: {service: {port: 81}}", http.StatusConflict, iac.CodePlanStale},
+		{"nodes", "/api/v2/nodes/n1?fieldManager=ci", "application/apply-patch+yaml", "spec: {labels: {a: b}}", http.StatusMethodNotAllowed, iac.CodeInvalidRequest},
 	}
 	for _, c := range cases {
 		t.Run(c.name, func(t *testing.T) {
@@ -73,6 +75,9 @@ func TestV2ApplyRefusesBadRequestsAndUnsupportedKinds(t *testing.T) {
 			rt.Handler().ServeHTTP(rec, req)
 			if rec.Code != c.want {
 				t.Fatalf("status = %d, want %d: %s", rec.Code, c.want, rec.Body.String())
+			}
+			if !strings.Contains(rec.Body.String(), `"code":"`+c.code+`"`) {
+				t.Fatalf("want code %s: %s", c.code, rec.Body.String())
 			}
 		})
 	}

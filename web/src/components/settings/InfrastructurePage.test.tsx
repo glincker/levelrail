@@ -36,12 +36,34 @@ vi.mock('../../queries/iac', () => ({
   }),
 }))
 vi.mock('../IacExportCard', () => ({ IacExportCard: () => null }))
+vi.mock('../iac/IacStudio', () => ({
+  IacStudio: ({ seed }: { seed?: { text: string } }) => (
+    <pre data-testid="studio-seed">{seed?.text ?? ''}</pre>
+  ),
+}))
+vi.mock('../IacExportButton', () => ({
+  IacExportButton: ({ onExported }: { onExported: (y: string) => void }) => (
+    <button type="button" onClick={() => onExported('kind: App\n')}>
+      export-current
+    </button>
+  ),
+}))
+vi.mock('../iac/IacTemplateStrip', () => ({ IacTemplateStrip: () => null }))
 vi.mock('../IacPlanView', () => ({
   IacPlanView: () => null,
   IacResultView: () => null,
 }))
 
 describe('InfrastructurePage', () => {
+  it('opens the exported state in the Studio tab', async () => {
+    planState.error = null
+    render(<InfrastructurePage />)
+    fireEvent.click(screen.getByText('export-current'))
+    expect(await screen.findByTestId('studio-seed')).toHaveTextContent(
+      'kind: App',
+    )
+  })
+
   it('shows the hero banner with the upload action before any file is added', () => {
     planState.error = null
     render(<InfrastructurePage />)

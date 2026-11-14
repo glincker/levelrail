@@ -5,15 +5,18 @@ import i18next from 'i18next'
 import { I18nextProvider, initReactI18next } from 'react-i18next'
 import commonEn from '../../locales/en/common.json'
 import stacksEn from '../../locales/en/stacks.json'
+import stackSyncEn from '../../locales/en/stackSync.json'
 import type { Stack, StackRevisionSummary } from '../../types/stacks'
 
 const testI18n = i18next.createInstance()
 void testI18n.use(initReactI18next).init({
   lng: 'en',
   fallbackLng: 'en',
-  ns: ['common', 'stacks'],
+  ns: ['common', 'stacks', 'stackSync'],
   defaultNS: 'stacks',
-  resources: { en: { common: commonEn, stacks: stacksEn } },
+  resources: {
+    en: { common: commonEn, stacks: stacksEn, stackSync: stackSyncEn },
+  },
   interpolation: { escapeValue: false },
 })
 

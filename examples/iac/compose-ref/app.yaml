@@ -1,0 +1,16 @@
+version: 1
+kind: Project
+metadata:
+  name: shop
+spec: {}
+---
+version: 1
+kind: App
+metadata:
+  name: shop
+spec:
+  project: shop
+  compose:
+    path: shop/compose.yaml
+    env:
+      SHOP_TITLE: My shop

@@ -1,0 +1,32 @@
+{
+  "kindLabel": "Kind",
+  "beta": "Beta",
+  "betaHint": "Beta kind: the schema may still change.",
+  "formLabel": "{{kind}} document form",
+  "advanced": "Advanced ({{count}})",
+  "required": "required",
+  "defaultHint": "Default: {{value}}",
+  "listHint": "One per line",
+  "listPlaceholder": "one per line",
+  "keyPlaceholder": "Name",
+  "valuePlaceholder": "Value",
+  "secretRefPlaceholder": "Secret name",
+  "secretRefHint": "Reference name only. Raw secret values are never accepted here.",
+  "secretToggle": "Use a secret reference for {{key}}",
+  "secretToggleNew": "Use a secret reference",
+  "addRow": "Add {{label}} entry",
+  "removeRow": "Remove entry {{key}}",
+  "removeRowNew": "Remove entry",
+  "unsupported": "{{count}} fields are only editable in YAML and stay untouched.",
+  "parseError": "This YAML cannot be shown as a form (line {{line}}). Fix it in the editor or pick a kind to start over.",
+  "unknownKind": "Kind {{kind}} has no form. Pick a kind to start over.",
+  "issues": {
+    "required": "Required.",
+    "pattern": "Does not match the expected format.",
+    "min": "Must be at least {{param}}.",
+    "max": "Must be at most {{param}}.",
+    "minLength": "Needs at least {{param}} characters.",
+    "integer": "Enter a whole number.",
+    "secretLiteral": "{{param}} looks like a secret. Switch it to a secret reference."
+  }
+}

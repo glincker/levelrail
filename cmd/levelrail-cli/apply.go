@@ -186,7 +186,7 @@ func buildIaCRequest(af *applyFlags, lookupEnv func(string) (string, bool)) (api
 	if *af.prune && *af.source == "" {
 		return apiclient.IaCRequest{}, newValidationError("--prune needs --source: only resources that source created are ever deleted")
 	}
-	files, err := readIaCFiles(af.files)
+	files, attachments, err := readIaCInput(af.files)
 	if err != nil {
 		return apiclient.IaCRequest{}, err
 	}
@@ -200,7 +200,7 @@ func buildIaCRequest(af *applyFlags, lookupEnv func(string) (string, bool)) (api
 	}
 	return apiclient.IaCRequest{
 		Files: files, Source: *af.source, Project: *af.project, Prune: *af.prune, Secrets: secrets,
-		Vars: vars, NoDeploy: *af.noDeploy, ContinueOnError: *af.continueOnError,
+		Vars: vars, NoDeploy: *af.noDeploy, ContinueOnError: *af.continueOnError, Attachments: attachments,
 	}, nil
 }
 

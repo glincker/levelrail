@@ -34,9 +34,9 @@ func (r *domainResource) Schema(_ context.Context, _ resource.SchemaRequest, res
 	resp.Schema = schema.Schema{
 		Description: "One hostname routed to an app.",
 		Attributes: map[string]schema.Attribute{
-			"id":   schema.StringAttribute{Computed: true, PlanModifiers: []planmodifier.String{stringplanmodifier.UseStateForUnknown()}},
-			"app":  schema.StringAttribute{Required: true, PlanModifiers: replace},
-			"host": schema.StringAttribute{Required: true, PlanModifiers: replace},
+			"id":   schema.StringAttribute{Description: "Identifier assigned by the provider.", Computed: true, PlanModifiers: []planmodifier.String{stringplanmodifier.UseStateForUnknown()}},
+			"app":  schema.StringAttribute{Description: "Name of the app.", Required: true, PlanModifiers: replace},
+			"host": schema.StringAttribute{Description: "Hostname routed to the app.", Required: true, PlanModifiers: replace},
 		},
 	}
 }

@@ -8,11 +8,11 @@ import (
 	"fmt"
 	"io"
 	"net/http"
-	"os"
 	"time"
 
 	"github.com/GLINCKER/levelrail/internal/authengine"
 	"github.com/GLINCKER/levelrail/internal/iac"
+	"github.com/GLINCKER/levelrail/internal/runtimesettings"
 	"github.com/GLINCKER/levelrail/internal/store"
 )
 
@@ -25,14 +25,17 @@ import (
 const (
 	auditStackApprovalRequested = "stack.approval_requested"
 	auditStackApprove           = "stack.approve"
+	auditStackSoloSelfApprove   = "stack.solo_self_approve"
 	auditStackReject            = "stack.reject"
 
 	defaultStackApprovalTTL = 24 * time.Hour
 )
 
-func stackApprovalTTL() time.Duration {
-	if d, err := time.ParseDuration(os.Getenv("APP_STACK_APPROVAL_TTL")); err == nil && d > 0 {
-		return d
+func (rt *Router) stackApprovalTTL(ctx context.Context) time.Duration {
+	if rt.runtimeSettings != nil {
+		if d := rt.runtimeSettings.Duration(ctx, runtimesettings.KeyStackApprovalTTL); d > 0 {
+			return d
+		}
 	}
 	return defaultStackApprovalTTL
 }
@@ -67,6 +70,10 @@ type stackPendingMeta struct {
 type stackApproveRequest struct {
 	Secrets          map[string]string `json:"secrets,omitempty"`
 	ExpectedPlanHash string            `json:"expected_plan_hash,omitempty"`
+	// ConfirmStack is the stack name typed to allow a sole root user to approve their own change.
+	ConfirmStack string `json:"confirm_stack,omitempty"`
+	// ConfirmDestroy is the stack name typed to let the approved plan delete cloud resources or compose apps.
+	ConfirmDestroy string `json:"confirm_destroy,omitempty"`
 }
 
 type stackRejectRequest struct {
@@ -79,12 +86,12 @@ type stackRejectResponse struct {
 	Reason   string               `json:"reason,omitempty"`
 }
 
-func approvalExpiry(v store.StackRevisionRecord) time.Time {
-	return v.CreatedAt.Add(stackApprovalTTL())
+func (rt *Router) approvalExpiry(ctx context.Context, v store.StackRevisionRecord) time.Time {
+	return v.CreatedAt.Add(rt.stackApprovalTTL(ctx))
 }
 
-func approvalExpired(v store.StackRevisionRecord, now time.Time) bool {
-	return v.Status == store.StackRevPendingApproval && !now.Before(approvalExpiry(v))
+func (rt *Router) approvalExpired(ctx context.Context, v store.StackRevisionRecord, now time.Time) bool {
+	return v.Status == store.StackRevPendingApproval && !now.Before(rt.approvalExpiry(ctx, v))
 }
 
 func expiredResult() []byte {
@@ -101,7 +108,7 @@ func (rt *Router) expireStackApprovals(ctx context.Context, ss StackStore, s sto
 	}
 	now := time.Now()
 	for _, v := range revs {
-		if approvalExpired(v, now) {
+		if rt.approvalExpired(ctx, v, now) {
 			_, _ = failPending(context.WithoutCancel(ctx), ss, s.ID, v.Number, expiredResult(), now)
 		}
 	}
@@ -112,7 +119,7 @@ func (rt *Router) requestStackApproval(w http.ResponseWriter, r *http.Request, s
 	ctx := r.Context()
 	aps, ok := ss.(stackApprovalStore)
 	if !ok {
-		writeError(w, http.StatusNotImplemented, "approvals are not available on this store")
+		writeIaCError(w, http.StatusNotImplemented, iac.CodeUnavailable, "approvals are not available on this store", nil)
 		return
 	}
 	stack, req := run.stack, run.req
@@ -136,8 +143,8 @@ func (rt *Router) requestStackApproval(w http.ResponseWriter, r *http.Request, s
 		rt.writeStackError(w, run.action, fmt.Errorf("%w: it exceeds the mass-prune guard; plan to review, then pass allow_mass_prune", iac.ErrPruneNotAllowed))
 		return
 	}
-	if req.ExpectedPlanHash != "" && req.ExpectedPlanHash != plan.Hash {
-		rt.writeStackError(w, run.action, iac.ErrPlanChanged)
+	if err := iac.CheckPlanHash(req.ExpectedPlanHash, plan); err != nil {
+		rt.writeStackError(w, run.action, err)
 		return
 	}
 	caller := rt.stackCaller(r)
@@ -153,7 +160,7 @@ func (rt *Router) requestStackApproval(w http.ResponseWriter, r *http.Request, s
 		return
 	}
 	if rev.Replayed {
-		s := summarizeRevision(rev)
+		s := rt.summarizeRevision(ctx, rev)
 		writeJSON(w, http.StatusOK, stackApplyResponse{Stack: stack.Name, Revision: &s, Replayed: true})
 		return
 	}
@@ -165,13 +172,14 @@ func (rt *Router) requestStackApproval(w http.ResponseWriter, r *http.Request, s
 	rt.auditStack(r, auditStackApprovalRequested, map[string]any{
 		"stack": stack.Name, "revision": rev.Number, "plan_hash": plan.Hash, "git_sha": req.GitSHA, "rollback_of": run.rollbackOf, "allow_weaken": req.AllowWeaken,
 	})
+	rt.emitStackPlanEvent(ctx, stackEventApprovalRequested, stack.Name, caller.name, plan, rev.Number)
 	warnings := append(run.warnings, "approval required: nothing was applied; an administrator other than the requester must approve this revision and supply any secrets")
 	if req.AllowWeaken {
 		warnings = append(warnings, "this revision weakens a security protection (allow_weaken); only a human root session can approve it")
 	}
-	s := summarizeRevision(rev)
+	s := rt.summarizeRevision(ctx, rev)
 	writeJSON(w, http.StatusAccepted, stackApplyResponse{
-		Stack: stack.Name, Revision: &s, Plan: &plan, PendingApproval: true, ExpiresAt: fmtStackTime(approvalExpiry(rev)),
+		Stack: stack.Name, Revision: &s, Plan: &plan, PendingApproval: true, ExpiresAt: fmtStackTime(rt.approvalExpiry(ctx, rev)),
 		Warnings: warnings,
 	})
 }
@@ -216,16 +224,20 @@ func (rt *Router) pendingStillApprovable(ctx context.Context, w http.ResponseWri
 
 func (rt *Router) checkApprovable(ctx context.Context, w http.ResponseWriter, ss StackStore, stack store.StackRecord, v store.StackRevisionRecord) bool {
 	if v.Status == store.StackRevFailed && bytes.Equal(v.ResultJSON, expiredResult()) {
-		writeError(w, http.StatusGone, fmt.Sprintf("the approval for revision %d expired; request a new apply", v.Number))
+		writeIaCError(w, http.StatusGone, iac.CodePlanStale, fmt.Sprintf("the approval for revision %d expired; request a new apply", v.Number), nil)
+		return false
+	}
+	if revisionSuperseded(v) {
+		writePlanSuperseded(w, v.Number)
 		return false
 	}
 	if v.Status != store.StackRevPendingApproval {
-		writeError(w, http.StatusConflict, fmt.Sprintf("revision %d is %s, not awaiting approval", v.Number, v.Status))
+		writeIaCError(w, http.StatusConflict, iac.CodeOwnershipConflict, fmt.Sprintf("revision %d is %s, not awaiting approval", v.Number, v.Status), nil)
 		return false
 	}
-	if approvalExpired(v, time.Now()) {
+	if rt.approvalExpired(ctx, v, time.Now()) {
 		_, _ = failPending(context.WithoutCancel(ctx), ss, stack.ID, v.Number, expiredResult(), time.Now())
-		writeError(w, http.StatusGone, fmt.Sprintf("the approval for revision %d expired; request a new apply", v.Number))
+		writeIaCError(w, http.StatusGone, iac.CodePlanStale, fmt.Sprintf("the approval for revision %d expired; request a new apply", v.Number), nil)
 		return false
 	}
 	return true
@@ -234,13 +246,16 @@ func (rt *Router) checkApprovable(ctx context.Context, w http.ResponseWriter, ss
 func decodeOptionalJSON(w http.ResponseWriter, r *http.Request, out any) bool {
 	err := json.NewDecoder(http.MaxBytesReader(w, r.Body, maxIaCBodyBytes)).Decode(out)
 	if err != nil && !errors.Is(err, io.EOF) {
-		writeError(w, http.StatusBadRequest, "invalid request body: "+err.Error())
+		writeIaCError(w, http.StatusBadRequest, iac.CodeInvalidRequest, "invalid request body: "+err.Error(), nil)
 		return false
 	}
 	return true
 }
 
 func (rt *Router) handleStackApprove(w http.ResponseWriter, r *http.Request) {
+	if !rt.refuseApplyDisabled(w, r) {
+		return
+	}
 	ss, ok := rt.stackStoreOr501(w)
 	if !ok {
 		return
@@ -264,7 +279,7 @@ func (rt *Router) handleStackApprove(w http.ResponseWriter, r *http.Request) {
 	}
 	caller := rt.stackCaller(r)
 	if caller.isCI {
-		writeError(w, http.StatusForbidden, "a CI token cannot approve a stack revision")
+		writeIaCError(w, http.StatusForbidden, iac.CodePermissionDenied, "a CI token cannot approve a stack revision", nil)
 		return
 	}
 	if !rt.checkApprovable(r.Context(), w, ss, s, rev) {
@@ -273,7 +288,7 @@ func (rt *Router) handleStackApprove(w http.ResponseWriter, r *http.Request) {
 	if rev.RequesterUserID == "" && rev.TokenID != "" {
 		owner, err := rt.tokenOwnerOf(r.Context(), rev.TokenID)
 		if errors.Is(err, errApprovalOwnerUnknown) {
-			writeError(w, http.StatusForbidden, "the requester cannot approve their own revision; another administrator must approve it")
+			writeIaCError(w, http.StatusForbidden, iac.CodePermissionDenied, "the requester cannot approve their own revision; another administrator must approve it", nil)
 			return
 		}
 		if err != nil {
@@ -282,12 +297,34 @@ func (rt *Router) handleStackApprove(w http.ResponseWriter, r *http.Request) {
 		}
 		rev.RequesterUserID = owner
 	}
+	cloudPlan, isCloud := revisionCloudPlan(rev)
 	if !distinctApprover(caller, rev) {
-		writeError(w, http.StatusForbidden, "the requester cannot approve their own revision; another administrator must approve it")
+		if !rt.soloSelfApprove(r.Context(), caller, rev, s.Name, body.ConfirmStack) {
+			writeIaCError(w, http.StatusForbidden, iac.CodePermissionDenied, "the requester cannot approve their own revision; another administrator must approve it", nil)
+			return
+		}
+		detail := map[string]any{"stack": s.Name, "revision": rev.Number, "plan_hash": rev.PlanHash}
+		if isCloud {
+			detail["kind"] = "cloud"
+		}
+		rt.auditStack(r, auditStackSoloSelfApprove, detail)
+	}
+	if isCloud && rt.cloudApprovalTooOld(r.Context(), w, rev) {
 		return
 	}
+	if isCloud {
+		replaced, err := rt.cloudPlanReplaced(r.Context(), ss, s, rev, cloudPlan)
+		if err != nil {
+			rt.writeStackError(w, "approve", err)
+			return
+		}
+		if replaced {
+			writePlanSuperseded(w, rev.Number)
+			return
+		}
+	}
 	if body.ExpectedPlanHash != "" && body.ExpectedPlanHash != rev.PlanHash {
-		writeError(w, http.StatusConflict, "the plan changed since it was reviewed; re-plan and request approval again")
+		writeIaCError(w, http.StatusConflict, iac.CodePlanStale, "the plan changed since it was reviewed; re-plan and request approval again", nil)
 		return
 	}
 	files, err := decodeRenderedFiles(rev.RenderedDocs)
@@ -302,9 +339,12 @@ func (rt *Router) handleStackApprove(w http.ResponseWriter, r *http.Request) {
 	req := stackRequest{
 		Files: files, Secrets: body.Secrets, Prune: meta.Prune, AllowMassPrune: meta.AllowMassPrune, Adopt: meta.Adopt,
 		NoDeploy: meta.NoDeploy, ContinueOnError: meta.ContinueOnError, AllowWeaken: meta.AllowWeaken, ExpectedPlanHash: rev.PlanHash,
-		GitRepo: rev.GitRepo, GitRef: rev.GitRef, GitSHA: rev.GitSHA, CIRunURL: rev.CIRunURL,
+		// The approver types it again, as for cloud deletes; without it the compose delete plan no longer matches.
+		ConfirmDestroy: body.ConfirmDestroy,
+		GitRepo:        rev.GitRepo, GitRef: rev.GitRef, GitSHA: rev.GitSHA, CIRunURL: rev.CIRunURL,
 	}
-	run := stackRun{stack: s, req: req, rollbackOf: rev.RollbackOf, action: auditStackApprove, pending: &rev}
+	run := stackRun{stack: s, req: req, rollbackOf: rev.RollbackOf, action: auditStackApprove, pending: &rev,
+		cloud: cloudApprovalOf(cloudPlan, body.ConfirmDestroy != "" && body.ConfirmDestroy == s.Name)}
 	if rev.RollbackOf > 0 {
 		run.warnings = []string{rollbackWarning}
 	}
@@ -386,7 +426,7 @@ func (rt *Router) handleStackReject(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 	if rev.Status != store.StackRevPendingApproval {
-		writeError(w, http.StatusConflict, fmt.Sprintf("revision %d is %s, not awaiting approval", n, rev.Status))
+		writeIaCError(w, http.StatusConflict, iac.CodeOwnershipConflict, fmt.Sprintf("revision %d is %s, not awaiting approval", n, rev.Status), nil)
 		return
 	}
 	if stackRejectAfterRead != nil {
@@ -400,12 +440,25 @@ func (rt *Router) handleStackReject(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 	if !ok {
-		writeError(w, http.StatusConflict, fmt.Sprintf("revision %d is no longer awaiting approval", n))
+		writeIaCError(w, http.StatusConflict, iac.CodeOwnershipConflict, fmt.Sprintf("revision %d is no longer awaiting approval", n), nil)
 		return
 	}
 	rev.Status = store.StackRevFailed
 	now := time.Now()
 	rev.FinishedAt = &now
 	rt.auditStack(r, auditStackReject, map[string]any{"stack": s.Name, "revision": n, "plan_hash": rev.PlanHash, "requested_by": rev.Actor, "reason": body.Reason})
-	writeJSON(w, http.StatusOK, stackRejectResponse{Stack: s.Name, Revision: summarizeRevision(rev), Reason: body.Reason})
+	writeJSON(w, http.StatusOK, stackRejectResponse{Stack: s.Name, Revision: rt.summarizeRevision(r.Context(), rev), Reason: body.Reason})
+}
+
+// soloSelfApprove lets the only root user approve their own change, and only
+// when the setting is on and the stack name was typed to confirm it.
+func (rt *Router) soloSelfApprove(ctx context.Context, caller stackCaller, rev store.StackRevisionRecord, stack, confirm string) bool {
+	if rt.runtimeSettings == nil || rt.roles == nil || !rt.runtimeSettings.Bool(ctx, runtimesettings.KeyStacksSoloSelfApprove) {
+		return false
+	}
+	if caller.userID == "" || caller.userID != rev.RequesterUserID || confirm != stack {
+		return false
+	}
+	others, err := rt.roles.CountRootUsersExcept(ctx, caller.userID)
+	return err == nil && others == 0
 }

@@ -14,8 +14,8 @@ Push to deploy with HTTPS, logs, metrics and one-step rollback. One Go binary, n
   <a href="https://discord.gg/Ar5pcaZB99"><img src="https://img.shields.io/discord/829168897080557579?style=flat&logo=discord&logoColor=white&label=discord&color=5865F2" alt="Discord"></a>
 </p>
 <p>
-  <a href="https://levelrail.com">Website</a> &middot;
-  <a href="https://docs.levelrail.com">Docs</a> &middot;
+  <a href="https://levelrail.com?utm_source=github&amp;utm_medium=readme&amp;utm_campaign=nav">Website</a> &middot;
+  <a href="https://docs.levelrail.com?utm_source=github&amp;utm_medium=readme&amp;utm_campaign=nav">Docs</a> &middot;
   <a href="#install">Install</a> &middot;
   <a href="#vs-coolify-dokploy-caprover-and-dokku">Compare</a> &middot;
   <a href="#faq">FAQ</a> &middot;
@@ -73,6 +73,17 @@ levelrail-cli import https://github.com/your-org/your-app --deploy
 
 Using a coding agent? `npx skills add https://github.com/glincker/levelrail --skill levelrail`, then ask it to deploy your repo. See [Agents](docs/mcp.md).
 
+### Install with your coding agent
+
+Paste this into Claude Code, Cursor or any agent that can run shell commands on your server:
+
+```text
+Install Levelrail on this server: run `curl -fsSL https://levelrail.com/install.sh | sudo sh`.
+Open the setup link it prints and tell me, because I choose the password myself.
+Then run `levelrail-cli doctor` and `levelrail-cli status` and report anything that fails.
+Do not write any token or password to a file or into this chat.
+```
+
 ## Why Levelrail
 
 **Deploys that do not surprise you. Servers that explain themselves. Agents that stay in their lane.**
@@ -103,7 +114,7 @@ Using a coding agent? `npx skills add https://github.com/glincker/levelrail --sk
   </tr>
 </table>
 
-All screenshots are captured from a real running control plane. More in the [Product tour](https://docs.levelrail.com/product-tour).
+All screenshots are captured from a real running control plane. More in the [Product tour](https://docs.levelrail.com/product-tour?utm_source=github&utm_medium=readme&utm_campaign=tour).
 
 ## Who it is for
 

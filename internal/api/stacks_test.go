@@ -187,7 +187,7 @@ func TestStackUnlockClearsStaleLease(t *testing.T) {
 	if err != nil {
 		t.Fatal(err)
 	}
-	if _, err := db.AcquireStackLock(t.Context(), s.ID, "crashed-runner", 1, stackLockTTL(), time.Now()); err != nil {
+	if _, err := db.AcquireStackLock(t.Context(), s.ID, "crashed-runner", 1, rt.stackLockTTL(t.Context()), time.Now()); err != nil {
 		t.Fatal(err)
 	}
 	if code, _ := stackApply(t, rt, cookie, stackTestDocs("ghcr.io/acme/web:1.0.0"), nil); code != http.StatusConflict {
@@ -399,7 +399,7 @@ func seedCIToken(t *testing.T, db *store.DB, name string, abilities []string) st
 }
 
 func TestSummarizeRevisionMarksRejected(t *testing.T) {
-	rej := summarizeRevision(store.StackRevisionRecord{Number: 3, Status: store.StackRevFailed, ResultJSON: []byte(`{"error":"rejected","rejected_by":"qa2"}`)})
+	rej := (&Router{}).summarizeRevision(t.Context(), store.StackRevisionRecord{Number: 3, Status: store.StackRevFailed, ResultJSON: []byte(`{"error":"rejected","rejected_by":"qa2"}`)})
 	if !rej.Rejected || rej.Status != store.StackRevFailed {
 		t.Fatalf("rejected summary = %+v", rej)
 	}
@@ -408,7 +408,7 @@ func TestSummarizeRevisionMarksRejected(t *testing.T) {
 		{Status: store.StackRevFailed},
 		{Status: store.StackRevApplied, ResultJSON: []byte(`{"error":"rejected"}`)},
 	} {
-		if summarizeRevision(v).Rejected {
+		if (&Router{}).summarizeRevision(t.Context(), v).Rejected {
 			t.Errorf("wrongly marked rejected: %+v", v)
 		}
 	}

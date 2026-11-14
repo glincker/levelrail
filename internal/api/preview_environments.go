@@ -386,6 +386,9 @@ func (rt *Router) deployPreviewSingle(ctx context.Context, appName, previewName 
 	}
 	applyPreviewPolicy(&svcSpec, vars, attachmentVar)
 	if previewInheritsEnv(vars.Fork, vars.Policy) {
+		for _, k := range rt.previewEnvExcludes(ctx, appName) {
+			delete(svcSpec.Env, k)
+		}
 		applyPreviewEnvOverrides(&svcSpec, prod.PreviewEnvOverrides)
 		contexts, err := rt.loadContextConfigs(ctx, appName)
 		if err != nil {

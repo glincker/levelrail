@@ -434,6 +434,10 @@ func Wake(ctx context.Context, sleep interface {
 	SetAppSleeping(ctx context.Context, serviceName string, sleeping bool, now time.Time) error
 	GetAppSleep(ctx context.Context, serviceName string) (store.AppSleep, error)
 }, apps Apps, nudger Nudger, name string, now time.Time) (bool, error) {
+	// Serialize per app so a burst of requests starts it once, not once each.
+	mu := wakeLock(name)
+	mu.Lock()
+	defer mu.Unlock()
 	a, err := sleep.GetAppSleep(ctx, name)
 	if err != nil {
 		return false, err

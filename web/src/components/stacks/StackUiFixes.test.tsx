@@ -211,7 +211,9 @@ describe('stacks locale', () => {
     const dir = __dirname
     const keys = new Set<string>()
     for (const f of readdirSync(dir)) {
-      if (!/\.tsx?$/.test(f) || /\.test\./.test(f)) continue
+      // StackSyncCard has its own lazy namespace.
+      if (!/\.tsx?$/.test(f) || /\.test\./.test(f) || f.startsWith('StackSync'))
+        continue
       const src = readFileSync(join(dir, f), 'utf8')
       for (const m of src.matchAll(/\bt\(\s*'([\w.]+)'/g)) keys.add(m[1] ?? '')
       for (const m of src.matchAll(/'((?:\w+\.)+\w+)'/g)) {

@@ -95,7 +95,7 @@ func (p *planner) planEnvironment(r *Resource) {
 		return
 	}
 	if !p.projectKnown(r.Scope) {
-		p.fail(r, "project %q does not exist and is not declared in the files", r.Scope)
+		p.failCode(r, CodeRefProjectMissing, "project %q does not exist and is not declared in the files", r.Scope)
 		return
 	}
 	protected, _ := r.Fields["protected"].(bool)
@@ -168,7 +168,7 @@ func (p *planner) planDatabase(r *Resource) {
 	}
 	project := stringField(r.Fields, "project")
 	if project != "" && !p.projectKnown(project) {
-		p.fail(r, "project %q does not exist and is not declared in the files", project)
+		p.failCode(r, CodeRefProjectMissing, "project %q does not exist and is not declared in the files", project)
 		return
 	}
 	wantPooler, poolerDeclared := r.Fields["pooler"].(bool)
@@ -191,11 +191,11 @@ func (p *planner) planDatabase(r *Resource) {
 		return
 	}
 	if e := stringField(r.Fields, "engine"); e != live.Engine {
-		p.fail(r, "engine cannot change (live %s, declared %s); databases hold data, recreate it deliberately", live.Engine, e)
+		p.failCode(r, CodeImmutableField, "engine cannot change (live %s, declared %s); databases hold data, recreate it deliberately", live.Engine, e)
 		return
 	}
 	if v := stringField(r.Fields, "version"); v != "" && v != live.Version {
-		p.fail(r, "version cannot change through apply (live %s, declared %s)", live.Version, v)
+		p.failCode(r, CodeImmutableField, "version cannot change through apply (live %s, declared %s)", live.Version, v)
 		return
 	}
 	var ch []FieldChange
@@ -242,7 +242,7 @@ func (p *planner) planDomain(r *Resource) {
 		return
 	}
 	if !p.appKnown(app) {
-		p.fail(r, "app %q does not exist and is not declared in the files", app)
+		p.failCode(r, CodeRefAppMissing, "app %q does not exist and is not declared in the files", app)
 		return
 	}
 	if live, ok := p.st.apps[app]; ok {
@@ -274,7 +274,7 @@ func (p *planner) planLB(r *Resource) {
 		return
 	}
 	if !p.appKnown(r.Name) {
-		p.fail(r, "app %q does not exist and is not declared in the files", r.Name)
+		p.failCode(r, CodeRefAppMissing, "app %q does not exist and is not declared in the files", r.Name)
 		return
 	}
 	put := func(ctx context.Context, x *executor) error {
@@ -287,7 +287,7 @@ func (p *planner) planLB(r *Resource) {
 	}
 	var cfg loadbalancer.Config
 	if err := remarshal(lb.Config, &cfg); err != nil {
-		p.fail(r, "read live load balancer: %v", err)
+		p.failCode(r, CodeReadFailed, "read live load balancer: %v", err)
 		return
 	}
 	changes, _ := diffFields(r.Fields, toMap(cfg.Defaults()), nil, false)
@@ -307,7 +307,7 @@ func (p *planner) planPipeline(r *Resource) {
 		return
 	}
 	if !p.appKnown(r.Scope) {
-		p.fail(r, "app %q does not exist and is not declared in the files", r.Scope)
+		p.failCode(r, CodeRefAppMissing, "app %q does not exist and is not declared in the files", r.Scope)
 		return
 	}
 	base := "/api/v1/apps/" + esc(r.Scope) + "/pipelines"
@@ -320,7 +320,7 @@ func (p *planner) planPipeline(r *Resource) {
 		return
 	}
 	if live.Source == "repo" {
-		p.fail(r, "this pipeline is synced from the repository; change it there")
+		p.failCode(r, CodeSyncedExternally, "this pipeline is synced from the repository; change it there")
 		return
 	}
 	var changes []FieldChange

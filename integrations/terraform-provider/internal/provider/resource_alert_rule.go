@@ -65,18 +65,18 @@ func (r *alertRuleResource) Schema(_ context.Context, _ resource.SchemaRequest, 
 	resp.Schema = schema.Schema{
 		Description: "An alert rule on one app, for example a metric threshold or a crash loop.",
 		Attributes: map[string]schema.Attribute{
-			"id":                      schema.StringAttribute{Computed: true, PlanModifiers: []planmodifier.String{stringplanmodifier.UseStateForUnknown()}},
+			"id":                      schema.StringAttribute{Description: "Identifier assigned by the provider.", Computed: true, PlanModifiers: []planmodifier.String{stringplanmodifier.UseStateForUnknown()}},
 			"app":                     schema.StringAttribute{Required: true, PlanModifiers: replace, Description: "App name that owns the rule."},
-			"name":                    schema.StringAttribute{Required: true},
+			"name":                    schema.StringAttribute{Description: "Name of the resource.", Required: true},
 			"kind":                    schema.StringAttribute{Required: true, PlanModifiers: replace, Description: "Rule kind, for example threshold or crashloop."},
 			"metric":                  emptyStr("Metric a threshold rule watches."),
 			"comparator":              emptyStr("Comparator of a threshold rule."),
-			"threshold":               schema.Float64Attribute{Optional: true, Computed: true, Default: float64default.StaticFloat64(0)},
+			"threshold":               schema.Float64Attribute{Description: "Value that triggers the rule.", Optional: true, Computed: true, Default: float64default.StaticFloat64(0)},
 			"for_duration":            emptyStr("How long the condition must hold, as a duration such as 5m."),
 			"restart_count_threshold": schema.Int64Attribute{Optional: true, Computed: true, Default: int64default.StaticInt64(0), Description: "Restarts that trip a crashloop rule."},
 			"restart_window":          emptyStr("Window of a crashloop rule, as a duration."),
 			"channel_id":              emptyStr("Notification channel to alert."),
-			"enabled":                 schema.BoolAttribute{Optional: true, Computed: true, Default: booldefault.StaticBool(true)},
+			"enabled":                 schema.BoolAttribute{Description: "Whether the rule is active.", Optional: true, Computed: true, Default: booldefault.StaticBool(true)},
 		},
 	}
 }

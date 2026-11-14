@@ -45,6 +45,9 @@ type iacRequest struct {
 	NoDeploy         bool              `json:"no_deploy,omitempty"`
 	ContinueOnError  bool              `json:"continue_on_error,omitempty"`
 	ExpectedPlanHash string            `json:"expected_plan_hash,omitempty"`
+	Attachments      map[string]string `json:"attachments,omitempty"`
+	// confirmDestroy is derived server side from a stack request, never decoded.
+	confirmDestroy bool
 }
 
 type iacPlanResponse struct {
@@ -82,19 +85,19 @@ func (rt *Router) iacDoer(r *http.Request) iac.Doer {
 func decodeIaCRequest(w http.ResponseWriter, r *http.Request) (iacRequest, bool) {
 	var req iacRequest
 	if err := json.NewDecoder(http.MaxBytesReader(w, r.Body, maxIaCBodyBytes)).Decode(&req); err != nil {
-		writeError(w, http.StatusBadRequest, "invalid request body: "+err.Error())
+		writeIaCError(w, http.StatusBadRequest, iac.CodeInvalidRequest, "invalid request body: "+err.Error(), nil)
 		return req, false
 	}
 	if len(req.Files) == 0 || len(req.Files) > maxIaCFiles {
-		writeError(w, http.StatusBadRequest, "files must hold between 1 and "+strconv.Itoa(maxIaCFiles)+" entries")
+		writeIaCError(w, http.StatusBadRequest, iac.CodeInvalidRequest, "files must hold between 1 and "+strconv.Itoa(maxIaCFiles)+" entries", nil)
 		return req, false
 	}
 	if req.Source != "" && !iacSourceRe.MatchString(req.Source) {
-		writeError(w, http.StatusBadRequest, "source may hold letters, digits, dots, underscores and hyphens, up to 48 characters")
+		writeIaCError(w, http.StatusBadRequest, iac.CodeInvalidRequest, "source may hold letters, digits, dots, underscores and hyphens, up to 48 characters", nil)
 		return req, false
 	}
 	if req.Prune && req.Source == "" {
-		writeError(w, http.StatusBadRequest, "prune needs a source: only resources this source created are ever deleted")
+		writeIaCError(w, http.StatusBadRequest, iac.CodeInvalidRequest, "prune needs a source: only resources this source created are ever deleted", nil)
 		return req, false
 	}
 	return req, true
@@ -105,7 +108,24 @@ func (req iacRequest) build() ([]*iac.Resource, iac.Options, []iac.Issue) {
 	for i, f := range req.Files {
 		sources[i] = iac.Source{Name: f.Name, Data: []byte(f.Content)}
 	}
-	opts := iac.Options{Vars: req.Vars, Source: req.Source, Project: req.Project, Secrets: req.Secrets, Prune: req.Prune, NoDeploy: req.NoDeploy, ContinueOnError: req.ContinueOnError}
+	opts := iac.Options{Vars: req.Vars, Source: req.Source, Project: req.Project, Secrets: req.Secrets, Prune: req.Prune, NoDeploy: req.NoDeploy, ContinueOnError: req.ContinueOnError, ConfirmDestroy: req.confirmDestroy}
+	// Stack revisions keep referenced compose files among the files, so every replay splits them the same way.
+	sources, split, issues := iac.SplitComposeRefs(sources)
+	if len(issues) > 0 {
+		return nil, opts, issues
+	}
+	if len(req.Attachments) > 0 || len(split) > 0 {
+		opts.Attachments = make(map[string][]byte, len(req.Attachments)+len(split))
+		for n, c := range req.Attachments {
+			opts.Attachments[n] = []byte(c)
+		}
+		for n, c := range split {
+			if prev, dup := opts.Attachments[n]; dup && !bytes.Equal(prev, c) {
+				return nil, opts, []iac.Issue{{File: n, Code: iac.CodeInvalidRequest, Message: "compose file " + n + " is sent twice with different content"}}
+			}
+			opts.Attachments[n] = c
+		}
+	}
 	docs, issues := iac.ParseDocuments(sources)
 	if len(issues) > 0 {
 		return nil, opts, issues
@@ -128,7 +148,7 @@ func (rt *Router) handleIaCPlan(w http.ResponseWriter, r *http.Request) {
 	res, opts, issues := req.build()
 	opts = rt.belowRootOpts(r, opts)
 	if len(issues) > 0 {
-		writeJSON(w, http.StatusUnprocessableEntity, iacPlanResponse{Issues: issues})
+		writeIaCInvalid(w, issues)
 		return
 	}
 	st, err := iac.Load(r.Context(), rt.iacDoer(r), res, opts)
@@ -141,6 +161,9 @@ func (rt *Router) handleIaCPlan(w http.ResponseWriter, r *http.Request) {
 }
 
 func (rt *Router) handleIaCApply(w http.ResponseWriter, r *http.Request) {
+	if !rt.refuseApplyDisabled(w, r) {
+		return
+	}
 	req, ok := decodeIaCRequest(w, r)
 	if !ok {
 		return
@@ -148,7 +171,7 @@ func (rt *Router) handleIaCApply(w http.ResponseWriter, r *http.Request) {
 	res, opts, issues := req.build()
 	opts = rt.belowRootOpts(r, opts)
 	if len(issues) > 0 {
-		writeJSON(w, http.StatusUnprocessableEntity, iacApplyResponse{Issues: issues})
+		writeIaCInvalid(w, issues)
 		return
 	}
 	expected := req.ExpectedPlanHash
@@ -162,8 +185,10 @@ func (rt *Router) handleIaCApply(w http.ResponseWriter, r *http.Request) {
 			return
 		}
 		plan := iac.PlanFor(st, res, opts)
-		if expected != "" && expected != plan.Hash {
-			writeError(w, http.StatusConflict, iac.ErrPlanChanged.Error())
+		if err := iac.CheckPlanHash(expected, plan); err != nil {
+			if !writePlanHashError(w, err) {
+				rt.internalError(w, "api: iac apply failed", err)
+			}
 			return
 		}
 		if !rt.refuseStackOwned(w, r, ss, res, plan) {
@@ -173,8 +198,7 @@ func (rt *Router) handleIaCApply(w http.ResponseWriter, r *http.Request) {
 		expected = plan.Hash
 	}
 	out, err := iac.Apply(r.Context(), rt.iacDoer(r), res, opts, expected)
-	if errors.Is(err, iac.ErrPlanChanged) {
-		writeError(w, http.StatusConflict, err.Error())
+	if writePlanHashError(w, err) {
 		return
 	}
 	if err != nil {
@@ -193,7 +217,7 @@ func (rt *Router) refuseStackSource(w http.ResponseWriter, r *http.Request, ss S
 	for _, name := range []string{source, strings.ToLower(source)} {
 		_, err := ss.GetStackByName(r.Context(), name)
 		if err == nil {
-			writeError(w, http.StatusConflict, fmt.Sprintf("source %q is a stack; change its resources through /api/v1/stacks/%s/apply", source, name))
+			writeIaCError(w, http.StatusConflict, iac.CodeOwnershipConflict, fmt.Sprintf("source %q is a stack; change its resources through /api/v1/stacks/%s/apply", source, name), nil)
 			return false
 		}
 		if !errors.Is(err, store.ErrStackNotFound) {
@@ -238,7 +262,7 @@ func (rt *Router) refuseStackOwned(w http.ResponseWriter, r *http.Request, ss St
 		}
 	}
 	if len(owned) > 0 {
-		writeError(w, http.StatusConflict, fmt.Sprintf("these resources belong to a stack and change only through the stack API: %s", strings.Join(owned, ", ")))
+		writeIaCError(w, http.StatusConflict, iac.CodeOwnershipConflict, fmt.Sprintf("these resources belong to a stack and change only through the stack API: %s", strings.Join(owned, ", ")), nil)
 		return false
 	}
 	return true
@@ -250,7 +274,7 @@ func (rt *Router) handleIaCExport(w http.ResponseWriter, r *http.Request) {
 	if opts.Settings {
 		abilities, aerr := rt.callerAbilities(r)
 		if aerr != nil || !hasAbilityExactRoot(abilities) {
-			writeError(w, http.StatusForbidden, "exporting settings needs a root caller")
+			writeIaCError(w, http.StatusForbidden, iac.CodePermissionDenied, "exporting settings needs a root caller", nil)
 			return
 		}
 	}
@@ -258,7 +282,7 @@ func (rt *Router) handleIaCExport(w http.ResponseWriter, r *http.Request) {
 	if err != nil {
 		var se *iac.StatusError
 		if errors.As(err, &se) && se.Status >= 400 && se.Status < 500 {
-			writeError(w, se.Status, se.Message)
+			writeIaCError(w, se.Status, iacStatusCode(se.Status), se.Message, nil)
 			return
 		}
 		rt.internalError(w, "api: iac export failed", err)
@@ -287,12 +311,17 @@ func (b *bufferedResponse) Write(p []byte) (int, error) { return b.body.Write(p)
 
 func (l *loopbackDoer) Do(ctx context.Context, method, path string, body, out any) error {
 	var rdr io.Reader
-	if body != nil {
+	ctype := ""
+	if cb, ok := body.(iac.ComposeBody); ok {
+		// The context value marks an IaC compose deploy; no HTTP caller can set it.
+		rdr, ctype = bytes.NewReader(cb.Data), "application/yaml"
+		ctx = context.WithValue(ctx, iacComposeKey{}, iacComposeInput{env: cb.Env})
+	} else if body != nil {
 		raw, err := json.Marshal(body)
 		if err != nil {
 			return fmt.Errorf("encode request body: %w", err)
 		}
-		rdr = bytes.NewReader(raw)
+		rdr, ctype = bytes.NewReader(raw), "application/json"
 	}
 	req, err := http.NewRequestWithContext(ctx, method, path, rdr)
 	if err != nil {
@@ -303,8 +332,8 @@ func (l *loopbackDoer) Do(ctx context.Context, method, path string, body, out an
 			req.Header[h] = v
 		}
 	}
-	if body != nil {
-		req.Header.Set("Content-Type", "application/json")
+	if ctype != "" {
+		req.Header.Set("Content-Type", ctype)
 	}
 	req.RemoteAddr, req.Host, req.TLS = l.orig.RemoteAddr, l.orig.Host, l.orig.TLS
 	rec := &bufferedResponse{header: http.Header{}, status: http.StatusOK}

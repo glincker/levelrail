@@ -44,6 +44,7 @@ func (rt *Router) Handler() http.Handler {
 	rt.registerImageRoutes(mux)
 	rt.registerIaCRoutes(mux)
 	rt.registerStackRoutes(mux)
+	rt.registerStackSyncRoutes(mux)
 	rt.registerResourceLabelRoutes(mux)
 	rt.registerDockerGuardRoutes(mux)
 	rt.registerCleanupRoutes(mux)
@@ -66,6 +67,10 @@ func (rt *Router) Handler() http.Handler {
 	rt.registerSecretProviderRoutes(mux)
 	rt.registerSecretConnectionRoutes(mux)
 	rt.registerCloudConnectionRoutes(mux)
+	// Seal an uploaded OCI API key and create a static Oracle connection. Root only, preview gated, https required off loopback.
+	// The response and the audit row never carry the key, the user OCID or the sealed reference.
+	// 409 connection_exists when the name is taken.
+	mux.HandleFunc("POST /api/v1/settings/cloud-connections/oracle", rt.requireAbility(AbilityRoot, rt.handleCreateOracleConnection))
 	rt.registerArchiveRoutes(mux)
 	rt.registerSpendCapRoutes(mux)
 	rt.registerAppAbuseRoutes(mux)

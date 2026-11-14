@@ -273,12 +273,19 @@ func (r *Revision) Validate() error {
 	return nil
 }
 
+// MinSecretMatchLen is the shortest secret value matched by substring. Shorter
+// values would match ordinary document text; plans warn about them instead.
+const MinSecretMatchLen = 4
+
+// ShortSecretWarning is the plan warning for values under MinSecretMatchLen.
+const ShortSecretWarning = "secret value too short to be checked against the documents"
+
 // LeakedSecret returns the name of a secret whose value appears in docs, so a
-// revision can be refused before it is stored. Empty values are skipped.
+// revision can be refused before it is stored. Values under MinSecretMatchLen are skipped.
 func LeakedSecret(docs []byte, secrets map[string]string) (string, bool) {
 	text := string(docs)
 	for _, name := range sortedKeys(secrets) {
-		if v := secrets[name]; v != "" && strings.Contains(text, v) {
+		if v := secrets[name]; len(v) >= MinSecretMatchLen && strings.Contains(text, v) {
 			return name, true
 		}
 	}

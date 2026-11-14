@@ -15,6 +15,8 @@ run() {
 
 run go run ./scripts/gen-api-reference
 run go run ./scripts/gen-runtime-settings-docs
+run go run ./scripts/geniacref
+run scripts/gen-skill-references.sh
 # Template generators feed docs/template-catalog.md, gen-template-gallery/catalog-index.json
 # and docs/self-host. CODEGEN_SKIP_TEMPLATES=1 opts out for local iteration.
 if [ "${CODEGEN_SKIP_TEMPLATES:-off}" != on ]; then

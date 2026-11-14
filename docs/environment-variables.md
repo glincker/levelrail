@@ -67,6 +67,13 @@ These variables only seed the default of a [runtime setting](/runtime-settings).
 | `APP_AUDIT_ANCHOR_WEBHOOK_URL` | [`audit.anchor_webhook_url`](/runtime-settings#security) | empty |
 | `APP_AUTH_ENGINE_RATE_LIMIT_PER_EMAIL` | [`auth.engine_rate_limit_per_email`](/runtime-settings#security) | `60` |
 | `APP_AUTH_ENGINE_RATE_LIMIT_PER_IP` | [`auth.engine_rate_limit_per_ip`](/runtime-settings#security) | `60` |
+| `APP_CLOUD_ALLOW_CHECKSUM_ONLY` | [`cloud.allow_checksum_only`](/runtime-settings#security) | `false` |
+| `APP_CLOUD_ALLOW_PROTECTED_DELETE` | [`cloud.allow_protected_delete`](/runtime-settings#security) | `false` |
+| `APP_CLOUD_ENGINE_DENY_ADDRESSES` | [`cloud.engine_deny_addresses`](/runtime-settings#security) | empty |
+| `APP_CLOUD_ENGINE_IMAGE` | [`cloud.engine_image`](/runtime-settings#security) | empty |
+| `APP_CLOUD_ENGINE_NETWORK` | [`cloud.engine_network`](/runtime-settings#security) | empty |
+| `APP_CLOUD_ENGINE_USER` | [`cloud.engine_user`](/runtime-settings#security) | `65532:65532` |
+| `APP_CLOUD_REQUIRE_FULL_ESTIMATE` | [`cloud.require_full_estimate`](/runtime-settings#security) | `true` |
 | `APP_DESKTOP_SESSION_TTL` | [`desktop.session_ttl`](/runtime-settings#security) | `12h` |
 | `APP_FIREWALL_CONFIRM_WINDOW` | [`firewall.confirm_window`](/runtime-settings#security) | `60s` |
 | `APP_FIXIT_MAX_PER_HOUR` | [`fixit.max_per_hour`](/runtime-settings#security) | `0` |
@@ -74,6 +81,7 @@ These variables only seed the default of a [runtime setting](/runtime-settings).
 | `APP_GIT_SSH_SCAN_ALLOW_INTERNAL` | [`git.ssh_scan_allow_internal`](/runtime-settings#security) | empty |
 | `APP_GIT_SUBMODULES_ALLOWED_CIDRS` | [`git.submodules_allowed_cidrs`](/runtime-settings#security) | empty |
 | `APP_GIT_SUBMODULES_CREDENTIAL_HOSTS` | [`git.submodules_credential_hosts`](/runtime-settings#security) | empty |
+| `APP_IAC_V1_HASH_ACCEPTED` | [`iac.v1_hash_accepted`](/runtime-settings#security) | `true` |
 | `APP_MCP_DEFAULT_TOKEN_SCOPE` | [`mcp.default_token_scope`](/runtime-settings#security) | `read_only` |
 | `APP_NODES_PATCH_ADOPT_LIMIT` | [`nodes.patch_adopt_limit`](/runtime-settings#security) | `20` |
 | `APP_NODES_PATCH_APPLY_TIMEOUT` | [`nodes.patch_apply_timeout`](/runtime-settings#security) | `30m` |
@@ -101,8 +109,11 @@ These variables only seed the default of a [runtime setting](/runtime-settings).
 | `APP_BUILD_NETWORK` | [`security.build_network`](/runtime-settings#security) | `open` |
 | `APP_WEBHOOK_REPLAY_PROTECTION` | [`security.webhook_replay_protection`](/runtime-settings#security) | `true` |
 | `APP_WEBHOOK_REPLAY_WINDOW` | [`security.webhook_replay_window`](/runtime-settings#security) | `10m` |
+| `APP_STACK_DRIFT_TOKEN_TTL` | [`stacks.drift_rotation_minutes`](/runtime-settings#security) | `120` |
+| `APP_STACK_OIDC_TTL` | [`stacks.oidc_ttl`](/runtime-settings#security) | `15m` |
 | `APP_STACK_PRUNE_MAX_COUNT` | [`stacks.prune_max_count`](/runtime-settings#security) | `10` |
 | `APP_STACK_PRUNE_MAX_PERCENT` | [`stacks.prune_max_percent`](/runtime-settings#security) | `50` |
+| `APP_STACK_SOLO_SELF_APPROVE` | [`stacks.solo_self_approve`](/runtime-settings#security) | `false` |
 | `APP_SCAN_DEFAULT_ENABLED` | [`supply_chain.default_enabled`](/runtime-settings#security) | `false` |
 | `APP_SCAN_DEFAULT_GATE` | [`supply_chain.default_gate`](/runtime-settings#security) | `off` |
 | `APP_TEMPLATE_CAP_NET_ADMIN` | [`templates.capability_net_admin_enabled`](/runtime-settings#security) | `false` |
@@ -181,6 +192,8 @@ These variables only seed the default of a [runtime setting](/runtime-settings).
 | `APP_RUN_MAX_CONCURRENT_PER_APP` | [`apps_run.max_concurrent_per_app`](/runtime-settings#deploys) | `3` |
 | `APP_RUN_MAX_TIMEOUT_SECONDS` | [`apps_run.max_timeout_seconds`](/runtime-settings#deploys) | `3600` |
 | `APP_RUN_MEMORY_LIMIT_MB` | [`apps_run.memory_limit_mb`](/runtime-settings#deploys) | `0` |
+| `APP_SLEEP_MAX_WAITERS` | [`appsleep.max_waiters`](/runtime-settings#deploys) | `200` |
+| `APP_SLEEP_WAKE_WAIT_SECONDS` | [`appsleep.wake_wait_seconds`](/runtime-settings#deploys) | `0` |
 | `APP_BACKUP_LOCAL_ROOT` | [`backup.local_root`](/runtime-settings#deploys) | empty |
 | `APP_BOOT_DEFERRED_STAGES` | [`boot.deferred_stages`](/runtime-settings#deploys) | `false` |
 | `APP_BOOT_EVENT_RECHECK` | [`boot.event_recheck`](/runtime-settings#deploys) | `3s` |
@@ -194,6 +207,21 @@ These variables only seed the default of a [runtime setting](/runtime-settings).
 | `APP_BUILD_NEXT_MIN_FREE_MEMORY_MIB` | [`build.next_min_free_memory_mib`](/runtime-settings#deploys) | `2048` |
 | `APP_BUILD_MEMORY_MB` | [`builds.memory_limit_mb`](/runtime-settings#deploys) | `0` |
 | `APP_BUILD_SETTING_VALUE_MAX_BYTES` | [`builds.setting_value_max_bytes`](/runtime-settings#deploys) | `128` |
+| `APP_CLOUD_DEFAULT_MONTHLY_COST_LIMIT` | [`cloud.default_monthly_cost_limit`](/runtime-settings#deploys) | `0` |
+| `APP_CLOUD_ENGINE_CPUS` | [`cloud.engine_cpus`](/runtime-settings#deploys) | `1` |
+| `APP_CLOUD_ENGINE_MEMORY_MB` | [`cloud.engine_memory_mb`](/runtime-settings#deploys) | `1024` |
+| `APP_CLOUD_ENGINE_PIDS` | [`cloud.engine_pids`](/runtime-settings#deploys) | `256` |
+| `APP_CLOUD_ENGINE_RUN_MIN_FREE_MB` | [`cloud.engine_run_min_free_mb`](/runtime-settings#deploys) | `512` |
+| `APP_CLOUD_ENGINE_TIMEOUT_SECONDS` | [`cloud.engine_timeout_seconds`](/runtime-settings#deploys) | `1800` |
+| `APP_CLOUD_ENGINE_TMP_MB` | [`cloud.engine_tmp_mb`](/runtime-settings#deploys) | `64` |
+| `APP_CLOUD_FETCH_MAX_MB` | [`cloud.fetch_max_mb`](/runtime-settings#deploys) | `256` |
+| `APP_CLOUD_FETCH_MIN_FREE_MB` | [`cloud.fetch_min_free_mb`](/runtime-settings#deploys) | `4096` |
+| `APP_CLOUD_FETCH_TIMEOUT_SECONDS` | [`cloud.fetch_timeout_seconds`](/runtime-settings#deploys) | `300` |
+| `APP_CLOUD_MAX_CONCURRENT_PLANS` | [`cloud.max_concurrent_plans`](/runtime-settings#deploys) | `2` |
+| `APP_CLOUD_MAX_DESTROYS` | [`cloud.max_destroys`](/runtime-settings#deploys) | `0` |
+| `APP_CLOUD_PLAN_JOB_RETENTION_HOURS` | [`cloud.plan_job_retention_hours`](/runtime-settings#deploys) | `24` |
+| `APP_CLOUD_PLAN_MAX_AGE_MINUTES` | [`cloud.plan_max_age_minutes`](/runtime-settings#deploys) | `60` |
+| `APP_CLOUD_STATE_MAX_KB` | [`cloud.state_max_kb`](/runtime-settings#deploys) | `1024` |
 | `APP_COMPOSE_DEPENDS_ON_TIMEOUT` | [`compose.depends_on_timeout`](/runtime-settings#deploys) | `120s` |
 | `APP_COMPOSE_REPO_DEPLOY_TIMEOUT` | [`compose.repo_deploy_timeout`](/runtime-settings#deploys) | `10m` |
 | `APP_COMPOSE_REPO_FILE_MAX_BYTES` | [`compose.repo_file_max_bytes`](/runtime-settings#deploys) | `524288` |
@@ -246,6 +274,11 @@ These variables only seed the default of a [runtime setting](/runtime-settings).
 | `APP_GIT_TRIGGER_PATTERN_MAX_LENGTH` | [`git.trigger_pattern_max_length`](/runtime-settings#deploys) | `128` |
 | `APP_GIT_TRIGGER_PATTERNS_MAX` | [`git.trigger_patterns_max`](/runtime-settings#deploys) | `32` |
 | `APP_GIT_TRIGGER_REF_MAX_BYTES` | [`git.trigger_ref_max_bytes`](/runtime-settings#deploys) | `1024` |
+| `APP_IAC_APPLY_ENABLED` | [`iac.apply_enabled`](/runtime-settings#deploys) | `true` |
+| `APP_IAC_COMPOSE_MAX_FILE_KB` | [`iac.compose_max_file_kb`](/runtime-settings#deploys) | `256` |
+| `APP_IAC_COMPOSE_MAX_FILES` | [`iac.compose_max_files`](/runtime-settings#deploys) | `20` |
+| `APP_IAC_COMPOSE_MAX_TOTAL_KB` | [`iac.compose_max_total_kb`](/runtime-settings#deploys) | `2048` |
+| `APP_IAC_COMPOSE_REFS` | [`iac.compose_refs`](/runtime-settings#deploys) | `false` |
 | `APP_IAC_PLAN_VALUE_MAX` | [`iac.plan_value_max`](/runtime-settings#deploys) | `120` |
 | `APP_IMAGE_KEEP_PER_APP` | [`images.keep_per_app`](/runtime-settings#deploys) | `3` |
 | `APP_IMAGES_PULL_CONCURRENCY` | [`images.pull_concurrency`](/runtime-settings#deploys) | `3` |
@@ -280,7 +313,20 @@ These variables only seed the default of a [runtime setting](/runtime-settings).
 | `APP_RUNTIME_TMPFS_MAX_BYTES` | [`runtime.tmpfs_max_bytes`](/runtime-settings#deploys) | `1073741824` |
 | `APP_RUNTIME_ULIMIT_BYTES_MAX` | [`runtime.ulimit_bytes_max`](/runtime-settings#deploys) | `1073741824` |
 | `APP_RUNTIME_ULIMIT_COUNT_MAX` | [`runtime.ulimit_count_max`](/runtime-settings#deploys) | `4194304` |
+| `APP_STACK_APPROVAL_TTL` | [`stacks.approval_ttl`](/runtime-settings#deploys) | `24h` |
+| `APP_STACK_DRIFT_INTERVAL` | [`stacks.drift_interval_seconds`](/runtime-settings#deploys) | `900` |
 | `APP_STACK_HISTORY_LIMIT` | [`stacks.history_limit`](/runtime-settings#deploys) | `50` |
+| `APP_STACK_LOCK_RENEW_FRACTION` | [`stacks.lock_renew_fraction`](/runtime-settings#deploys) | `3` |
+| `APP_STACK_LOCK_TTL` | [`stacks.lock_ttl`](/runtime-settings#deploys) | `10m` |
+| `APP_STACK_SYNC_FETCH_TIMEOUT_SECONDS` | [`stacks.sync_fetch_timeout_seconds`](/runtime-settings#deploys) | `120` |
+| `APP_STACK_SYNC_MAX_FILE_KB` | [`stacks.sync_max_file_kb`](/runtime-settings#deploys) | `1024` |
+| `APP_STACK_SYNC_MAX_FILES` | [`stacks.sync_max_files`](/runtime-settings#deploys) | `200` |
+| `APP_STACK_SYNC_MAX_REPO_MB` | [`stacks.sync_max_repo_mb`](/runtime-settings#deploys) | `50` |
+| `APP_STACK_SYNC_MIN_FREE_MB` | [`stacks.sync_min_free_mb`](/runtime-settings#deploys) | `2048` |
+| `APP_STACK_SYNC_MIN_INTERVAL_SECONDS` | [`stacks.sync_min_interval_seconds`](/runtime-settings#deploys) | `60` |
+| `APP_STACK_SYNC_REFRESH_MIN_SECONDS` | [`stacks.sync_refresh_min_seconds`](/runtime-settings#deploys) | `30` |
+| `APP_STACK_SYNC_TICK_SECONDS` | [`stacks.sync_tick_seconds`](/runtime-settings#deploys) | `60` |
+| `APP_STACK_SYNC_WEBHOOK_MAX_BODY_KB` | [`stacks.sync_webhook_max_body_kb`](/runtime-settings#deploys) | `64` |
 | `APP_MAX_TAGS_PER_APP` | [`tags.max_per_app`](/runtime-settings#deploys) | `20` |
 | `APP_MAX_TAGS_PER_RESOURCE` | [`tags.max_per_resource`](/runtime-settings#deploys) | `20` |
 | `APP_TEMPLATE_FILE_INPUT_MAX_BYTES` | [`templates.file_input_max_bytes`](/runtime-settings#deploys) | `16384` |
@@ -325,6 +371,8 @@ These variables only seed the default of a [runtime setting](/runtime-settings).
 | `APP_DISK_HISTORY_SAMPLE_INTERVAL` | [`disk.history_sample_interval`](/runtime-settings#observability) | `24h` |
 | `APP_DISK_LOW_FREE_MB` | [`disk.low_free_mb`](/runtime-settings#observability) | `1024` |
 | `APP_DISK_RESERVE_MB` | [`disk.reserve_mb`](/runtime-settings#observability) | `16` |
+| `APP_ERROR_DEDUP_HOURS` | [`errors.dedup_hours`](/runtime-settings#observability) | `168` |
+| `APP_ERROR_DEDUP_MAX` | [`errors.dedup_max`](/runtime-settings#observability) | `50000` |
 | `APP_CHANGES_STREAM_BUFFER` | [`events.changes_buffer`](/runtime-settings#observability) | `64` |
 | `APP_CHANGES_STREAM_HEARTBEAT` | [`events.changes_heartbeat`](/runtime-settings#observability) | `20s` |
 | `APP_CHANGES_STREAM_MAX_PER_CALLER` | [`events.changes_max_streams_per_caller`](/runtime-settings#observability) | `4` |
@@ -354,10 +402,15 @@ These variables only seed the default of a [runtime setting](/runtime-settings).
 | `APP_NODES_PATCH_OUTPUT_TAIL_LINES` | [`nodes.patch_output_tail_lines`](/runtime-settings#observability) | `200` |
 | `APP_NODES_PATCH_POLL_INTERVAL` | [`nodes.patch_poll_interval`](/runtime-settings#observability) | `2s` |
 | `APP_METRICS_SCRAPE_ENABLED` | [`observability.metrics_scrape_enabled`](/runtime-settings#observability) | `true` |
+| `APP_OTLP_INGEST_ENABLED` | [`otlp.ingest_enabled`](/runtime-settings#observability) | `false` |
+| `APP_OTLP_INGEST_MAX_BODY_BYTES` | [`otlp.ingest_max_body_bytes`](/runtime-settings#observability) | `4194304` |
+| `APP_OTLP_INGEST_MAX_LINE_BYTES` | [`otlp.ingest_max_line_bytes`](/runtime-settings#observability) | `8192` |
+| `APP_OTLP_INGEST_MAX_RECORDS` | [`otlp.ingest_max_records`](/runtime-settings#observability) | `5000` |
 | `APP_PERF_SLOW_STATEMENT_MS` | [`perf.slow_statement_ms`](/runtime-settings#observability) | `100` |
 | `APP_PERF_SLOW_STATEMENT_RING` | [`perf.slow_statement_ring`](/runtime-settings#observability) | `20` |
 | `APP_PERF_STATEMENT_TIMING` | [`perf.statement_timing`](/runtime-settings#observability) | `false` |
 | `APP_RECONCILE_RESYNC_SECONDS` | [`reconcile.resync_seconds`](/runtime-settings#observability) | `30` |
+| `APP_STACK_DRIFT_SUMMARY_MAX` | [`stacks.drift_summary_max`](/runtime-settings#observability) | `50` |
 | `APP_STORAGE_CRITICAL_FREE_PERCENT` | [`storage.critical_free_percent`](/runtime-settings#observability) | `5` |
 | `APP_STORAGE_LARGE_UNMANAGED_IMAGE_MB` | [`storage.large_unmanaged_image_mb`](/runtime-settings#observability) | `500` |
 | `APP_STORAGE_LOW_FREE_PERCENT` | [`storage.low_free_percent`](/runtime-settings#observability) | `15` |
@@ -640,6 +693,7 @@ The edge hardening limits are in [Domains and ingress](/domains-and-ingress#edge
 | Variable | Default | Meaning |
 | --- | --- | --- |
 | `APP_INGRESS_RETRY_INTERVAL` | `250ms` | Pause between retries when a proxied backend cannot be reached during the `APP_INGRESS_RETRY_WINDOW`. A negative or unparseable value is a startup error, not a silent fallback. |
+| `APP_INGRESS_ADMIN_ADDR` | `localhost:2019` | Bind address of the embedded edge admin API, read at boot. Accepts `host:port`, `127.0.0.1:0` (a free port, so a second instance on one machine does not collide) or `off` / `disabled`. Config reloads run in process and do not need it. With `off` or port `0` the load balancer upstream counters are unavailable and the dashboard shows none. |
 | `APP_INGRESS_SOCKET_ACTIVATION` | `auto` | Controls use of sockets inherited from systemd. `auto` uses them if present. `true` (also `1`, `on`) makes missing inherited sockets a startup error. `false` (also `0`, `off`) ignores them. See [Surviving a control plane restart](/domains-and-ingress#surviving-a-control-plane-restart). |
 | `APP_CLOUDFLARED_IMAGE` | `cloudflare/cloudflared:2026.10.7` | Image that runs the Cloudflare Tunnel daemon. Set it to bump the pinned tag or point at a mirror without a new release. Control plane. Source: `internal/reconcile/cloudflaretunnel/controller.go`. |
 | `APP_INGRESS_CACHE_REASON_KEYS` | ``32`` | Distinct reason keys counted per cache window. Keys past the limit are folded together. Ingress. |
@@ -1007,6 +1061,9 @@ These tune `levelrail-cli doctor` and the structured diagnosis of failed deploys
 | `APP_API_TOKEN` | computed | API token the CLI uses when no --token flag or profile token is given. CLI. |
 | `APP_AUDIT_ANCHOR_FETCH_TIMEOUT` | ``30s`` | Time limit for the CLI to fetch an audit anchor. CLI. |
 | `APP_CLI_PROVISION_POLL_INTERVAL` | ``1s`` | How often the CLI polls a database provision for progress. CLI. |
+| `APP_CLOUD_CONNECT_TIMEOUT_SECONDS` | `120` | Seconds one `oci` call may take during `levelrail-cli cloud connect oci`. Integer above zero; anything else uses the default. CLI. |
+| `APP_CLOUD_ENGINE_STOP_GRACE_SECONDS` | `5` | Seconds a cancelled cloud engine step gets after the interrupt before its runtime client is killed and the container removed. Control plane. |
+| `APP_CLOUD_ENGINE_REMOVE_TIMEOUT_SECONDS` | `15` | Seconds the best effort container removal after a cancelled cloud engine step may take. Control plane. |
 | `APP_CLI_PROVISION_WAIT_TIMEOUT` | ``15m`` | How long the CLI waits for a database provision before it gives up. CLI. |
 | `APP_DEPLOY_CERT_WAIT` | ``2m`` | How long the deploy command waits for the certificate to become ready. CLI. |
 | `APP_UPLOAD_MAX_BYTES` | computed | Largest deploy upload the CLI sends, in bytes. CLI. |

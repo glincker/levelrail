@@ -54,6 +54,7 @@ type v2ApplyResponse struct {
 	Conflicts     []ssaConflict    `json:"conflicts,omitempty"`
 	Issues        []iac.Issue      `json:"issues,omitempty"`
 	Error         string           `json:"error,omitempty"`
+	Code          string           `json:"code,omitempty"`
 }
 
 type v2ApplyParams struct {
@@ -81,20 +82,20 @@ func groupManagedFields(fields []store.ManagedField) []v2ManagedField {
 // handleApplyUnsupported answers PATCH on kinds without a write path yet.
 func (s *v2Server) handleApplyUnsupported(w http.ResponseWriter, r *http.Request) {
 	w.Header().Set("Allow", "GET")
-	writeError(w, http.StatusMethodNotAllowed, fmt.Sprintf("server-side apply is not supported for %q yet: it works on apps and databases; stacks change through their stack apply", r.PathValue("kind")))
+	writeIaCError(w, http.StatusMethodNotAllowed, iac.CodeInvalidRequest, fmt.Sprintf("server-side apply is not supported for %q yet: it works on apps and databases; stacks change through their stack apply", r.PathValue("kind")), nil)
 }
 
 func parseV2ApplyRequest(w http.ResponseWriter, r *http.Request, kind, name string) (v2ApplyParams, bool) {
 	var p v2ApplyParams
 	ct, _, _ := mime.ParseMediaType(r.Header.Get("Content-Type"))
 	if !v2ApplyContentTypes[ct] {
-		writeError(w, http.StatusUnsupportedMediaType, "send a partial manifest as application/apply-patch+yaml or application/apply-patch+json")
+		writeIaCError(w, http.StatusUnsupportedMediaType, iac.CodeInvalidRequest, "send a partial manifest as application/apply-patch+yaml or application/apply-patch+json", nil)
 		return p, false
 	}
 	q := r.URL.Query()
 	p.manager = q.Get("fieldManager")
 	if !v2FieldManagerRe.MatchString(p.manager) {
-		writeError(w, http.StatusBadRequest, "fieldManager is required: up to 128 letters, digits, dots, colons, underscores or hyphens")
+		writeIaCError(w, http.StatusBadRequest, iac.CodeInvalidRequest, "fieldManager is required: up to 128 letters, digits, dots, colons, underscores or hyphens", nil)
 		return p, false
 	}
 	p.force = q.Get("force") == "true"
@@ -103,12 +104,12 @@ func parseV2ApplyRequest(w http.ResponseWriter, r *http.Request, kind, name stri
 	case "All", "all", "true", "server":
 		p.dryRun = true
 	default:
-		writeError(w, http.StatusBadRequest, "dryRun must be All")
+		writeIaCError(w, http.StatusBadRequest, iac.CodeInvalidRequest, "dryRun must be All", nil)
 		return p, false
 	}
 	raw, err := io.ReadAll(http.MaxBytesReader(w, r.Body, maxIaCBodyBytes))
 	if err != nil {
-		writeError(w, http.StatusBadRequest, "invalid request body: "+err.Error())
+		writeIaCError(w, http.StatusBadRequest, iac.CodeInvalidRequest, "invalid request body: "+err.Error(), nil)
 		return p, false
 	}
 	var doc struct {
@@ -120,19 +121,19 @@ func parseV2ApplyRequest(w http.ResponseWriter, r *http.Request, kind, name stri
 		Spec map[string]any `yaml:"spec"`
 	}
 	if err := yaml.Unmarshal(raw, &doc); err != nil {
-		writeError(w, http.StatusBadRequest, "invalid manifest: "+err.Error())
+		writeIaCError(w, http.StatusBadRequest, iac.CodeInvalidRequest, "invalid manifest: "+err.Error(), nil)
 		return p, false
 	}
 	if want := v2KindFor(kind); doc.Kind != "" && !strings.EqualFold(doc.Kind, want) {
-		writeError(w, http.StatusBadRequest, fmt.Sprintf("kind %q does not match the %s route", doc.Kind, want))
+		writeIaCError(w, http.StatusBadRequest, iac.CodeInvalidRequest, fmt.Sprintf("kind %q does not match the %s route", doc.Kind, want), nil)
 		return p, false
 	}
 	if doc.Metadata.Name != "" && doc.Metadata.Name != name {
-		writeError(w, http.StatusBadRequest, fmt.Sprintf("metadata.name %q does not match %q in the path", doc.Metadata.Name, name))
+		writeIaCError(w, http.StatusBadRequest, iac.CodeInvalidRequest, fmt.Sprintf("metadata.name %q does not match %q in the path", doc.Metadata.Name, name), nil)
 		return p, false
 	}
 	if len(doc.Spec) == 0 {
-		writeError(w, http.StatusBadRequest, "spec must hold at least one field")
+		writeIaCError(w, http.StatusBadRequest, iac.CodeInvalidRequest, "spec must hold at least one field", nil)
 		return p, false
 	}
 	p.spec = doc.Spec
@@ -149,12 +150,15 @@ func (s *v2Server) handleApply(kind string) http.HandlerFunc {
 	return func(w http.ResponseWriter, r *http.Request) {
 		fs, ok := s.rt.apps.(v2FieldStore)
 		if s.changes == nil || !ok {
-			writeError(w, http.StatusNotImplemented, "server-side apply is not available on this store")
+			writeIaCError(w, http.StatusNotImplemented, iac.CodeUnavailable, "server-side apply is not available on this store", nil)
 			return
 		}
 		name := r.PathValue("name")
 		p, ok := parseV2ApplyRequest(w, r, kind, name)
 		if !ok {
+			return
+		}
+		if !p.dryRun && !s.rt.refuseApplyDisabled(w, r) {
 			return
 		}
 		// One apply at a time keeps the version check and the write together.
@@ -173,14 +177,14 @@ func (s *v2Server) applyLocked(w http.ResponseWriter, r *http.Request, fs v2Fiel
 		return
 	}
 	if p.version != "" && p.version != strconv.FormatInt(versions[name], 10) {
-		writeError(w, http.StatusConflict, fmt.Sprintf("resourceVersion precondition failed: %s is at %d, not %s; re-read it and apply again", name, versions[name], p.version))
+		writeIaCError(w, http.StatusConflict, iac.CodePlanStale, fmt.Sprintf("resourceVersion precondition failed: %s is at %d, not %s; re-read it and apply again", name, versions[name], p.version), nil)
 		return
 	}
 	docVersion, current, err := s.currentSpec(r, kind, name)
 	if err != nil {
 		var se *iac.StatusError
 		if errors.As(err, &se) && se.Status >= 400 && se.Status < 500 {
-			writeError(w, se.Status, se.Message)
+			writeIaCError(w, se.Status, iacStatusCode(se.Status), se.Message, nil)
 			return
 		}
 		s.rt.internalError(w, "api: v2 apply: read "+kind, err)
@@ -188,7 +192,7 @@ func (s *v2Server) applyLocked(w http.ResponseWriter, r *http.Request, fs v2Fiel
 	}
 	sent, err := flattenSpec(p.spec)
 	if err != nil {
-		writeError(w, http.StatusBadRequest, err.Error())
+		writeIaCError(w, http.StatusBadRequest, iac.CodeInvalidRequest, err.Error(), nil)
 		return
 	}
 	owners, err := fs.ListManagedFields(ctx, storeKind, name)
@@ -203,6 +207,7 @@ func (s *v2Server) applyLocked(w http.ResponseWriter, r *http.Request, fs v2Fiel
 			paths[i] = c.Path + " (" + c.Manager + ")"
 		}
 		writeJSON(w, http.StatusConflict, v2ApplyResponse{
+			Code:      iac.CodeOwnershipConflict,
 			Error:     "apply conflicts with fields owned by other managers: " + strings.Join(paths, ", ") + "; pass force=true to take them over",
 			Conflicts: out.conflicts,
 		})
@@ -227,7 +232,7 @@ func (s *v2Server) applyMerged(w http.ResponseWriter, r *http.Request, fs v2Fiel
 	res, opts, issues := req.build()
 	opts = s.rt.belowRootOpts(r, opts)
 	if len(issues) > 0 {
-		writeJSON(w, http.StatusUnprocessableEntity, v2ApplyResponse{Error: "the merged manifest is invalid", Issues: issues})
+		writeJSON(w, http.StatusUnprocessableEntity, v2ApplyResponse{Code: iac.CodeInvalidDocument, Error: "the merged manifest is invalid", Issues: issues})
 		return
 	}
 	st, err := iac.Load(ctx, s.rt.iacDoer(r), res, opts)
@@ -237,7 +242,7 @@ func (s *v2Server) applyMerged(w http.ResponseWriter, r *http.Request, fs v2Fiel
 	}
 	plan := iac.PlanFor(st, res, opts)
 	if plan.Summary.Error > 0 {
-		writeJSON(w, http.StatusUnprocessableEntity, v2ApplyResponse{Error: "the plan has errors; nothing was applied", Plan: &plan})
+		writeJSON(w, http.StatusUnprocessableEntity, v2ApplyResponse{Code: iac.CodeItemFailed, Error: "the plan has errors; nothing was applied", Plan: &plan})
 		return
 	}
 	if ss := s.rt.stackStore(); ss != nil && !s.rt.refuseStackOwned(w, r, ss, res, plan) {
@@ -252,8 +257,7 @@ func (s *v2Server) applyMerged(w http.ResponseWriter, r *http.Request, fs v2Fiel
 		return
 	}
 	result, err := iac.Apply(ctx, s.rt.iacDoer(r), res, opts, plan.Hash)
-	if errors.Is(err, iac.ErrPlanChanged) {
-		writeError(w, http.StatusConflict, err.Error())
+	if writePlanHashError(w, err) {
 		return
 	}
 	if err != nil {
@@ -262,7 +266,7 @@ func (s *v2Server) applyMerged(w http.ResponseWriter, r *http.Request, fs v2Fiel
 	}
 	resp.Plan, resp.Result = nil, &result
 	if !result.OK() {
-		resp.Error = "some changes failed to apply; ownership was not recorded"
+		resp.Code, resp.Error = iac.CodeItemFailed, "some changes failed to apply; ownership was not recorded"
 		writeJSON(w, http.StatusUnprocessableEntity, resp)
 		return
 	}

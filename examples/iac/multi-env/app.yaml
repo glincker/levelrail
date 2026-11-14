@@ -1,0 +1,22 @@
+version: 1
+kind: Project
+metadata: { name: shop }
+---
+version: 1
+kind: Database
+metadata: { name: shop-db }
+spec: { engine: postgres, version: "16", project: shop }
+---
+version: 1
+kind: App
+metadata: { name: shop-web }
+spec:
+  project: shop
+  service:
+    build: { type: image, image: "ghcr.io/acme/shop:${{ env.IMAGE_TAG }}" }
+    port: 3000
+    replicas: "${{ env.REPLICAS }}"
+    domains: ["${{ env.DOMAIN }}"]
+    env:
+      LOG_LEVEL: ${{ env.LOG_LEVEL }}
+      DATABASE_URL: { from: { database: shop-db, field: url } }

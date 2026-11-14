@@ -126,3 +126,17 @@ func TestStackScopeContextAndLease(t *testing.T) {
 		t.Fatal("unknown delete mode must fail")
 	}
 }
+
+func TestSecretGuardShortValues(t *testing.T) {
+	docs := []byte("env:\n  MODE: x\n  NAME: abc\n")
+	if _, leaked := LeakedSecret(docs, map[string]string{"S": "x", "T": "abc"}); leaked {
+		t.Fatal("values under the minimum are not substring matched")
+	}
+	if _, leaked := LeakedSecret([]byte("MODE: abcd\n"), map[string]string{"S": "abcd"}); !leaked {
+		t.Fatal("a 4 character value keeps the guard")
+	}
+	plan := PlanFor(&State{}, nil, Options{Secrets: map[string]string{"S": "x", "T": "y"}})
+	if len(plan.Warnings) != 1 || plan.Warnings[0] != ShortSecretWarning {
+		t.Fatalf("warnings = %v", plan.Warnings)
+	}
+}

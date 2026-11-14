@@ -38,6 +38,7 @@ func (r *projectResource) Schema(_ context.Context, _ resource.SchemaRequest, re
 		Description: "A project groups apps, databases and environments.",
 		Attributes: map[string]schema.Attribute{
 			"id": schema.StringAttribute{
+				Description:   "Identifier assigned by the provider.",
 				Computed:      true,
 				PlanModifiers: []planmodifier.String{stringplanmodifier.UseStateForUnknown()},
 			},

@@ -26,6 +26,10 @@ type StackRequest struct {
 	GitSHA           string            `json:"git_sha,omitempty"`
 	CIRunURL         string            `json:"ci_run_url,omitempty"`
 	IdempotencyKey   string            `json:"idempotency_key,omitempty"`
+	// Attachments are compose files referenced by App documents, keyed by path under the -f root.
+	Attachments map[string]string `json:"attachments,omitempty"`
+	// ConfirmDestroy is the stack name typed to allow deleting compose apps and cloud resources.
+	ConfirmDestroy string `json:"confirm_destroy,omitempty"`
 }
 
 // StackLock is the apply lease held on a stack.
@@ -141,6 +145,8 @@ type StackApplyResponse struct {
 type StackApproveRequest struct {
 	Secrets          map[string]string `json:"secrets,omitempty"`
 	ExpectedPlanHash string            `json:"expected_plan_hash,omitempty"`
+	// ConfirmDestroy is the stack name typed to let the approved plan delete cloud resources.
+	ConfirmDestroy string `json:"confirm_destroy,omitempty"`
 }
 
 // StackRejectResponse is the result of rejecting a pending revision.

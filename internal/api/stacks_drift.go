@@ -12,6 +12,8 @@ import (
 
 	"github.com/GLINCKER/levelrail/internal/attention"
 	"github.com/GLINCKER/levelrail/internal/iac"
+	"github.com/GLINCKER/levelrail/internal/runtimesettings"
+	"github.com/GLINCKER/levelrail/internal/stackdrift"
 	"github.com/GLINCKER/levelrail/internal/store"
 )
 
@@ -29,6 +31,10 @@ func (rt *Router) stackDriftTokenLife(ctx context.Context) (ttl, renew time.Dura
 	ttl = envDuration(envStackDriftTTL, defaultStackDriftTokenTTL)
 	renew = ttl / 4
 	if rt.runtimeSettings != nil {
+		// The registry seeds this from the env, so the default is unchanged.
+		if m := rt.runtimeSettings.Int(ctx, runtimesettings.KeyStackDriftRotationMinutes); m > 0 {
+			ttl = time.Duration(m) * time.Minute
+		}
 		renew = rt.runtimeSettings.SystemTokenRotationLead(ctx)
 	}
 	return ttl, effectiveRotationLead(renew, ttl)
@@ -262,4 +268,70 @@ func (rt *Router) stackDriftAttentionItems(r *http.Request, abilities []string) 
 // StackProjectName resolves a project id to its name for the drift checker.
 func (rt *Router) StackProjectName(ctx context.Context, id string) string {
 	return rt.projectName(ctx, id)
+}
+
+// StackDriftInterval is the live drift pass interval; 0 means off. Without
+// runtime settings it falls back to the env seed.
+func (rt *Router) StackDriftInterval(ctx context.Context) time.Duration {
+	if rt.runtimeSettings == nil {
+		return stackdrift.IntervalFromEnv()
+	}
+	return time.Duration(rt.runtimeSettings.Int(ctx, runtimesettings.KeyStackDriftIntervalSecs)) * time.Second
+}
+
+// StackDriftSummaryMax is the live cap on items in one drift summary.
+func (rt *Router) StackDriftSummaryMax(ctx context.Context) int {
+	if rt.runtimeSettings == nil {
+		return 0
+	}
+	return rt.runtimeSettings.Int(ctx, runtimesettings.KeyStackDriftSummaryMax)
+}
+
+// driftEventStore wraps the checker store: it caps the summary by the live
+// setting and emits stacks.drifted when a stack newly turns drifted.
+type driftEventStore struct {
+	stackdrift.Store
+	rt *Router
+}
+
+// StackDriftStore wraps a checker store so drift passes emit events and honor live settings.
+func (rt *Router) StackDriftStore(inner stackdrift.Store) stackdrift.Store {
+	return driftEventStore{Store: inner, rt: rt}
+}
+
+func (s driftEventStore) SetStackDrift(ctx context.Context, d store.StackDrift) error {
+	if m := s.rt.StackDriftSummaryMax(ctx); m > 0 && len(d.Summary) > m {
+		d.Summary = d.Summary[:m]
+	}
+	wasDrifted := false
+	if rd, ok := s.Store.(stackDriftReader); ok {
+		prev, found, err := rd.GetStackDrift(ctx, d.StackID)
+		wasDrifted = err == nil && found && prev.Status == store.StackDriftDrifted
+	}
+	if err := s.Store.SetStackDrift(ctx, d); err != nil {
+		return err
+	}
+	if d.Status == store.StackDriftDrifted && !wasDrifted {
+		s.rt.emitDriftEvent(ctx, s.Store, d)
+	}
+	return nil
+}
+
+// emitDriftEvent names drifted items and their count, never a live or desired value.
+func (rt *Router) emitDriftEvent(ctx context.Context, st stackdrift.Store, d store.StackDrift) {
+	stacks, err := st.ListStacks(ctx)
+	if err != nil {
+		return
+	}
+	name := d.StackID
+	for _, sr := range stacks {
+		if sr.ID == d.StackID {
+			name = sr.Name
+		}
+	}
+	names := make([]string, 0, len(d.Summary))
+	for _, it := range d.Summary {
+		names = append(names, it.Kind+"/"+it.Name)
+	}
+	rt.emitStackEvent(ctx, stackEventDrifted, name, "system:drift-check", "", d.Revision, names, map[string]int{"drifted": len(d.Summary)})
 }

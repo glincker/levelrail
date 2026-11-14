@@ -11,17 +11,18 @@ import (
 )
 
 // startStackDrift records, on an interval, whether each stack's latest applied
-// revision still matches live state. It never applies anything;
-// APP_STACK_DRIFT_INTERVAL=0 turns it off.
+// revision still matches live state. It never applies anything; the live
+// interval setting (0 = off) is re-read every tick.
 func startStackDrift(ctx context.Context, logger *slog.Logger, db *store.DB, rt *api.Router) {
-	interval := stackdrift.IntervalFromEnv()
 	c := &stackdrift.Checker{
-		Store:       db,
+		Store:       rt.StackDriftStore(db),
 		Live:        rt.StackDriftLive,
 		ProjectName: rt.StackProjectName,
 		Logger:      logger,
 		StartDelay:  time.Minute,
+		Interval:    rt.StackDriftInterval,
+		SummaryMax:  rt.StackDriftSummaryMax,
 	}
 	rt.RevokeStaleStackDriftTokens(ctx)
-	go c.Run(ctx, interval)
+	go c.RunLive(ctx)
 }

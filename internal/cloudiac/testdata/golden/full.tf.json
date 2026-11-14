@@ -1,0 +1,131 @@
+{
+  "provider": {
+    "oci": {
+      "region": "${var.region}"
+    }
+  },
+  "resource": {
+    "oci_core_instance": {
+      "worker_1": {
+        "availability_domain": "AD-1",
+        "compartment_id": "${var.compartment_ocid}",
+        "create_vnic_details": {
+          "assign_public_ip": true,
+          "subnet_id": "${oci_core_subnet.lr_net.id}"
+        },
+        "display_name": "worker-1",
+        "shape": "VM.Standard.A1.Flex",
+        "shape_config": {
+          "memory_in_gbs": 6,
+          "ocpus": 1
+        },
+        "source_details": {
+          "source_id": "ocid1.image.oc1..example",
+          "source_type": "image"
+        }
+      }
+    },
+    "oci_core_internet_gateway": {
+      "lr_net": {
+        "compartment_id": "${var.compartment_ocid}",
+        "enabled": true,
+        "vcn_id": "${oci_core_vcn.lr_net.id}"
+      }
+    },
+    "oci_core_route_table": {
+      "lr_net": {
+        "compartment_id": "${var.compartment_ocid}",
+        "route_rules": [
+          {
+            "destination": "0.0.0.0/0",
+            "destination_type": "CIDR_BLOCK",
+            "network_entity_id": "${oci_core_internet_gateway.lr_net.id}"
+          }
+        ],
+        "vcn_id": "${oci_core_vcn.lr_net.id}"
+      }
+    },
+    "oci_core_security_list": {
+      "lr_net": {
+        "compartment_id": "${var.compartment_ocid}",
+        "egress_security_rules": [
+          {
+            "destination": "0.0.0.0/0",
+            "protocol": "all"
+          }
+        ],
+        "ingress_security_rules": [
+          {
+            "protocol": "6",
+            "source": "0.0.0.0/0",
+            "tcp_options": {
+              "max": 80,
+              "min": 80
+            }
+          },
+          {
+            "protocol": "6",
+            "source": "0.0.0.0/0",
+            "tcp_options": {
+              "max": 443,
+              "min": 443
+            }
+          }
+        ],
+        "vcn_id": "${oci_core_vcn.lr_net.id}"
+      }
+    },
+    "oci_core_subnet": {
+      "lr_net": {
+        "cidr_block": "10.30.0.0/16",
+        "compartment_id": "${var.compartment_ocid}",
+        "route_table_id": "${oci_core_route_table.lr_net.id}",
+        "security_list_ids": [
+          "${oci_core_security_list.lr_net.id}"
+        ],
+        "vcn_id": "${oci_core_vcn.lr_net.id}"
+      }
+    },
+    "oci_core_vcn": {
+      "lr_net": {
+        "cidr_blocks": [
+          "10.30.0.0/16"
+        ],
+        "compartment_id": "${var.compartment_ocid}",
+        "display_name": "lr-net"
+      }
+    },
+    "oci_objectstorage_bucket": {
+      "lr_data": {
+        "access_type": "NoPublicAccess",
+        "compartment_id": "${var.compartment_ocid}",
+        "lifecycle": {
+          "prevent_destroy": true
+        },
+        "name": "lr-data",
+        "namespace": "ns"
+      },
+      "lr_scratch": {
+        "access_type": "NoPublicAccess",
+        "compartment_id": "${var.compartment_ocid}",
+        "name": "lr-scratch",
+        "namespace": "ns"
+      }
+    }
+  },
+  "terraform": {
+    "required_providers": {
+      "oci": {
+        "source": "oracle/oci"
+      }
+    }
+  },
+  "variable": {
+    "compartment_ocid": {
+      "type": "string"
+    },
+    "region": {
+      "type": "string"
+    }
+  }
+}

@@ -200,7 +200,7 @@ func decodeResponse(resp *http.Response, out any) error {
 	if resp.StatusCode < 200 || resp.StatusCode >= 300 {
 		var coded apiErrorBody
 		_ = json.Unmarshal(data, &coded)
-		return &APIError{StatusCode: resp.StatusCode, Message: ExtractErrorMessage(data), RetryAfter: retryAfterHeader(resp.Header), Code: coded.Code, RequestID: coded.RequestID, Fix: coded.fixText(), MissingVariables: coded.MissingVariables}
+		return &APIError{StatusCode: resp.StatusCode, Message: ExtractErrorMessage(data), RetryAfter: retryAfterHeader(resp.Header), Code: coded.Code, RequestID: coded.RequestID, Fix: coded.fixText(), MissingVariables: coded.MissingVariables, Issues: coded.Issues}
 	}
 	if out != nil && len(data) > 0 {
 		if err := json.Unmarshal(data, out); err != nil {
@@ -713,6 +713,16 @@ func (c *Client) SetAppPreviewEnvOverride(ctx context.Context, name, key, value 
 // ClearAppPreviewEnvOverride calls DELETE /api/v1/apps/{name}/preview-env/{key}.
 func (c *Client) ClearAppPreviewEnvOverride(ctx context.Context, name, key string) error {
 	return c.do(ctx, http.MethodDelete, "/api/v1/apps/"+PathEscape(name)+"/preview-env/"+PathEscape(key), nil, nil)
+}
+
+// SetAppPreviewEnvExclude calls PUT (exclude) or DELETE (include) on
+// /api/v1/apps/{name}/preview-env-exclude/{key}.
+func (c *Client) SetAppPreviewEnvExclude(ctx context.Context, name, key string, exclude bool) error {
+	method := http.MethodDelete
+	if exclude {
+		method = http.MethodPut
+	}
+	return c.do(ctx, method, "/api/v1/apps/"+PathEscape(name)+"/preview-env-exclude/"+PathEscape(key), nil, nil)
 }
 
 // ListAppBranchEnv calls GET /api/v1/apps/{name}/branch-env: every

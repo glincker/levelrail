@@ -2,9 +2,6 @@ package iac
 
 import (
 	"context"
-	"crypto/sha256"
-	"encoding/hex"
-	"encoding/json"
 	"fmt"
 	"sort"
 )
@@ -30,7 +27,11 @@ type Change struct {
 	Fields   []FieldChange `json:"fields,omitempty"`
 	Kept     []FieldChange `json:"kept,omitempty"`
 	Warnings []string      `json:"warnings,omitempty"`
-	Reason   string        `json:"reason,omitempty"`
+	// Services are display only compose preview rows; the plan hash never reads them.
+	Services []ComposeServiceRow `json:"services,omitempty"`
+	Reason   string              `json:"reason,omitempty"`
+	// Code is the frozen machine code of a failed item; empty otherwise.
+	Code string `json:"code,omitempty"`
 	// DependsOn lists the resources this item reads from, applied first.
 	DependsOn []string `json:"dependsOn,omitempty"`
 	Denied    bool     `json:"denied,omitempty"`
@@ -38,6 +39,10 @@ type Change struct {
 	LiveID string `json:"-"`
 	File   string `json:"file,omitempty"`
 	Line   int    `json:"line,omitempty"`
+	// CloudPlanHash names the sealed engine plan a cloud item runs; approval binds to it.
+	CloudPlanHash string `json:"cloudPlanHash,omitempty"`
+	// ComposeDigest covers a compose App's file bytes and inputs; it never leaves the process.
+	ComposeDigest string `json:"-"`
 }
 
 // Key is the change's stable identity.
@@ -59,6 +64,8 @@ type Plan struct {
 	Changes []Change `json:"changes"`
 	Summary Summary  `json:"summary"`
 	Hash    string   `json:"hash"`
+	// Warnings are plan-wide notes; the hash never reads them.
+	Warnings []string `json:"warnings,omitempty"`
 }
 
 // Pending reports whether applying would change anything.
@@ -68,24 +75,39 @@ type item struct {
 	Change
 	res  *Resource
 	exec func(ctx context.Context, x *executor) error
+	// cloudType is the provider type of a cloud item, for policy checks only.
+	cloudType string
+	// pinned marks a cloud item taken from an approved plan; policy was judged at plan time.
+	pinned bool
 }
 
 type planner struct {
+	// ctx bounds the cloud engine calls a plan makes; it is never nil.
+	ctx   context.Context
 	st    *State
 	res   []*Resource
 	opts  Options
 	byKey map[string]*Resource
 	items []*item
+	// cloudStack holds cloud documents planned together as one stack.
+	cloudStack []*Resource
+	// cloudRuns runs each approved engine plan once, however many items share it.
+	cloudRuns map[string]*cloudRun
 }
 
 // PlanFor computes the plan for resources against live state.
 func PlanFor(st *State, res []*Resource, opts Options) Plan {
-	plan, _ := buildPlan(st, res, opts)
+	return PlanForContext(context.Background(), st, res, opts)
+}
+
+// PlanForContext is PlanFor with a context that cancels or times out the cloud engine calls.
+func PlanForContext(ctx context.Context, st *State, res []*Resource, opts Options) Plan {
+	plan, _ := buildPlan(ctx, st, res, opts)
 	return plan
 }
 
-func buildPlan(st *State, res []*Resource, opts Options) (Plan, []*item) {
-	p := &planner{st: st, res: res, opts: opts, byKey: map[string]*Resource{}}
+func buildPlan(ctx context.Context, st *State, res []*Resource, opts Options) (Plan, []*item) {
+	p := &planner{ctx: ctx, st: st, res: res, opts: opts, byKey: map[string]*Resource{}}
 	for _, r := range res {
 		p.byKey[r.Key()] = r
 	}
@@ -99,9 +121,13 @@ func buildPlan(st *State, res []*Resource, opts Options) (Plan, []*item) {
 	if opts.Prune {
 		p.planPrune()
 	}
+	p.applyCloudPolicy()
 	sortItems(p.items)
 	plan := Plan{Source: opts.Source, Prune: opts.Prune, Changes: make([]Change, len(p.items))}
 	for i, it := range p.items {
+		if it.Action == ActionError && it.Code == "" {
+			it.Code = CodeItemFailed
+		}
 		plan.Changes[i] = it.Change
 		switch it.Action {
 		case ActionCreate:
@@ -116,14 +142,32 @@ func buildPlan(st *State, res []*Resource, opts Options) (Plan, []*item) {
 			plan.Summary.Error++
 		}
 	}
-	plan.Hash = planHash(plan.Changes)
+	for _, v := range opts.Secrets {
+		if v != "" && len(v) < MinSecretMatchLen {
+			plan.Warnings = append(plan.Warnings, ShortSecretWarning)
+			break
+		}
+	}
+	plan.Hash = planHashV2(opts.Source, opts.Prune, plan.Changes, planSecretNames(p.items))
 	return plan, p.items
 }
 
-func planHash(changes []Change) string {
-	raw, _ := json.Marshal(changes)
-	sum := sha256.Sum256(raw)
-	return hex.EncodeToString(sum[:8])
+func planSecretNames(items []*item) []string {
+	seen := map[string]bool{}
+	var out []string
+	for _, it := range items {
+		if it.res == nil {
+			continue
+		}
+		for _, n := range it.res.SecretRefs {
+			k := it.res.Key() + "/" + n
+			if !seen[k] {
+				seen[k] = true
+				out = append(out, k)
+			}
+		}
+	}
+	return out
 }
 
 func sortItems(items []*item) {
@@ -143,7 +187,7 @@ func sortItems(items []*item) {
 }
 
 func (p *planner) add(r *Resource, action Action, fields, kept []FieldChange, exec func(ctx context.Context, x *executor) error) *item {
-	it := &item{res: r, exec: exec, Change: Change{Kind: r.Kind, Name: r.Name, Scope: r.Scope, Action: action, Fields: fields, Kept: kept, Warnings: r.Warnings}}
+	it := &item{res: r, exec: exec, Change: Change{Kind: r.Kind, Name: r.Name, Scope: r.Scope, Action: action, Fields: fields, Kept: kept, Warnings: r.Warnings, ComposeDigest: r.ComposeDigest}}
 	if r.Doc != nil {
 		it.File, it.Line = r.Doc.File, r.Doc.Line
 	}
@@ -152,7 +196,12 @@ func (p *planner) add(r *Resource, action Action, fields, kept []FieldChange, ex
 }
 
 func (p *planner) fail(r *Resource, format string, args ...any) {
+	p.failCode(r, CodeItemFailed, format, args...)
+}
+
+func (p *planner) failCode(r *Resource, code, format string, args ...any) {
 	it := p.add(r, ActionError, nil, nil, nil)
+	it.Code = code
 	it.Reason = fmt.Sprintf(format, args...)
 }
 
@@ -160,8 +209,10 @@ func (p *planner) deniedItem(r *Resource, key string) bool {
 	if err, ok := p.st.denied[key]; ok {
 		it := p.add(r, ActionError, nil, nil, nil)
 		if IsUnavailable(err) {
+			it.Code = CodeUnavailable
 			it.Reason = "not available on this control plane: " + err.Error()
 		} else {
+			it.Code = CodePermissionDenied
 			it.Reason = "not permitted: " + err.Error()
 			it.Denied = true
 		}
@@ -194,6 +245,8 @@ func (p *planner) planResource(r *Resource) {
 		p.planPipeline(r)
 	case KindAlertRule:
 		p.planAlert(r)
+	case KindCloudAccount, KindCloudNetwork, KindCloudInstance, KindCloudBucket:
+		p.planCloud(r)
 	}
 }
 

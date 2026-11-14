@@ -1,0 +1,57 @@
+version: 1
+kind: AlertRule
+metadata: {name: high-cpu}
+spec: {app: web, type: threshold, metric: cpu_percent, comparator: ">", threshold: 90, for: 5m, channel: ops}
+---
+version: 1
+kind: Pipeline
+metadata: {name: ci}
+spec:
+  app: web
+  yaml: |
+    version: 1
+    jobs:
+      test:
+        image: golang:1.22
+        steps:
+          - run: go test ./...
+---
+version: 1
+kind: LoadBalancer
+metadata: {name: web}
+spec: {algorithm: least_conn}
+---
+version: 1
+kind: Domain
+metadata: {name: www.example.com}
+spec: {app: web}
+---
+version: 1
+kind: App
+metadata: {name: web}
+spec:
+  project: shop
+  environment: production
+  tags: [frontend]
+  service:
+    build: {type: image, image: "ghcr.io/acme/web:1.2.3"}
+    port: 3000
+    domains: [app.example.com]
+---
+version: 1
+kind: Database
+metadata: {name: main-db}
+spec: {engine: postgres, version: "16", project: shop}
+---
+version: 1
+kind: Tag
+metadata: {name: frontend}
+---
+version: 1
+kind: Environment
+metadata: {name: production}
+spec: {project: shop, protected: true}
+---
+version: 1
+kind: Project
+metadata: {name: shop}

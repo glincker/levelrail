@@ -57,6 +57,18 @@ func (rt *Router) attachGuardSources() {
 	iac.SetPlanValueSource(lim(runtimesettings.KeyIaCPlanValueMax))
 	pct, cnt := lim(runtimesettings.KeyStackPruneMaxPercent), lim(runtimesettings.KeyStackPruneMaxCount)
 	iac.SetPruneGuardSource(func() iac.PruneGuard { return iac.PruneGuard{MaxPercent: pct(), MaxCount: cnt()} })
+	iac.SetV1HashAcceptedSource(func() bool {
+		return rt.runtimeSettings.Bool(context.Background(), runtimesettings.KeyIaCV1HashAccepted)
+	})
+	iac.SetComposeSource(func() iac.ComposeLimits {
+		ctx := context.Background()
+		return iac.ComposeLimits{
+			Enabled:       rt.runtimeSettings.Bool(ctx, runtimesettings.KeyIaCComposeRefs),
+			MaxFileBytes:  rt.runtimeSettings.Limit(ctx, runtimesettings.KeyIaCComposeMaxFileKB) << 10,
+			MaxFiles:      rt.runtimeSettings.Limit(ctx, runtimesettings.KeyIaCComposeMaxFiles),
+			MaxTotalBytes: rt.runtimeSettings.Limit(ctx, runtimesettings.KeyIaCComposeMaxTotalKB) << 10,
+		}
+	})
 	placement.SetAffinityTermsSource(lim(runtimesettings.KeyPlacementAffinityTerms))
 	models.SetHFLimitSource(func() (time.Duration, int64) {
 		sec := rt.runtimeSettings.Limit(context.Background(), runtimesettings.KeyHFTimeoutSeconds)

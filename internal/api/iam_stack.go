@@ -295,7 +295,7 @@ func hiddenStackRead(r *http.Request) string {
 	}
 	_, path, _ := strings.Cut(r.Pattern, " ")
 	switch stackReadPatterns[path] {
-	case "app":
+	case "app", "app-owned":
 		return "app not found"
 	case "database":
 		return "database not found"
@@ -363,6 +363,7 @@ var stackReadPatterns = map[string]string{
 	"/api/v1/apps/{name}/pipelines":         "app",
 	"/api/v1/apps/{name}/pipelines/{pname}": "app",
 	"/api/v1/apps/{name}/alerts":            "app",
+	"/api/v1/apps/{name}/protection":        "app-owned",
 	"/api/v1/databases/{name}":              "database",
 	"/api/v1/projects/{id}":                 "project",
 	"/api/v1/projects/{id}/env":             "project",
@@ -481,6 +482,14 @@ func (rt *Router) stackTargetAllowed(r *http.Request, db stackGateStore, stack s
 		return stack.ProjectID != "" && r.PathValue("id") == stack.ProjectID, nil
 	case "environment":
 		return environmentInStackProject(ctx, db, stack, r.PathValue("id"))
+	case "app-owned":
+		// Only this stack's ledger or this call's creates: no project fallback, no unowned names.
+		key := ledgerKeyOf(iac.KindApp, r.PathValue("name"))
+		e, found, err := db.GetStackResourceOwner(ctx, string(iac.KindApp), key)
+		if err != nil {
+			return false, err
+		}
+		return found && e.StackID == stack.ID || call.wasCreated(key), nil
 	case "app", "database":
 		kind, name := iac.KindApp, r.PathValue("name")
 		ownerOf := db.OwnerOfApp

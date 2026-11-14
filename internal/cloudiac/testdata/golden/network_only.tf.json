@@ -1,0 +1,86 @@
+{
+  "provider": {
+    "oci": {
+      "region": "${var.region}"
+    }
+  },
+  "resource": {
+    "oci_core_internet_gateway": {
+      "n1": {
+        "compartment_id": "${var.compartment_ocid}",
+        "enabled": true,
+        "vcn_id": "${oci_core_vcn.n1.id}"
+      }
+    },
+    "oci_core_route_table": {
+      "n1": {
+        "compartment_id": "${var.compartment_ocid}",
+        "route_rules": [
+          {
+            "destination": "0.0.0.0/0",
+            "destination_type": "CIDR_BLOCK",
+            "network_entity_id": "${oci_core_internet_gateway.n1.id}"
+          }
+        ],
+        "vcn_id": "${oci_core_vcn.n1.id}"
+      }
+    },
+    "oci_core_security_list": {
+      "n1": {
+        "compartment_id": "${var.compartment_ocid}",
+        "egress_security_rules": [
+          {
+            "destination": "0.0.0.0/0",
+            "protocol": "all"
+          }
+        ],
+        "ingress_security_rules": [
+          {
+            "protocol": "6",
+            "source": "0.0.0.0/0",
+            "tcp_options": {
+              "max": 22,
+              "min": 22
+            }
+          }
+        ],
+        "vcn_id": "${oci_core_vcn.n1.id}"
+      }
+    },
+    "oci_core_subnet": {
+      "n1": {
+        "cidr_block": "10.0.0.0/24",
+        "compartment_id": "${var.compartment_ocid}",
+        "route_table_id": "${oci_core_route_table.n1.id}",
+        "security_list_ids": [
+          "${oci_core_security_list.n1.id}"
+        ],
+        "vcn_id": "${oci_core_vcn.n1.id}"
+      }
+    },
+    "oci_core_vcn": {
+      "n1": {
+        "cidr_blocks": [
+          "10.0.0.0/24"
+        ],
+        "compartment_id": "${var.compartment_ocid}",
+        "display_name": "n1"
+      }
+    }
+  },
+  "terraform": {
+    "required_providers": {
+      "oci": {
+        "source": "oracle/oci"
+      }
+    }
+  },
+  "variable": {
+    "compartment_ocid": {
+      "type": "string"
+    },
+    "region": {
+      "type": "string"
+    }
+  }
+}

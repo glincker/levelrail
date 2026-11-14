@@ -168,6 +168,9 @@ type CaddyAdminStats struct {
 
 // UpstreamStats implements StatsSource.
 func (c CaddyAdminStats) UpstreamStats(ctx context.Context) (map[string]Stats, error) {
+	if c.Addr == "" {
+		return nil, fmt.Errorf("loadbalancer: upstream stats unavailable, the ingress admin API is off or on an ephemeral port (APP_INGRESS_ADMIN_ADDR)")
+	}
 	client := c.Client
 	if client == nil {
 		client = &http.Client{Timeout: 3 * time.Second}

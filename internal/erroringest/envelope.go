@@ -28,20 +28,33 @@ var ErrMalformed = errors.New("sentry: malformed envelope or event")
 
 var droppableKeys = []string{"breadcrumbs", "modules", "extra", "contexts", "sdk", "user", "tags"}
 
+// CheckIn is a Sentry cron check-in item. Status is one of in_progress, ok, error.
+type CheckIn struct {
+	Slug   string
+	Status string
+}
+
 // ParseEnvelope returns the error events of a Sentry envelope. Items of any
 // other type (sessions, transactions, attachments, ...) are skipped.
 func ParseEnvelope(body []byte) ([]telemetry.ErrorEvent, error) {
+	evs, _, err := ParseEnvelopeItems(body)
+	return evs, err
+}
+
+// ParseEnvelopeItems returns the error events and cron check-ins of an envelope.
+func ParseEnvelopeItems(body []byte) ([]telemetry.ErrorEvent, []CheckIn, error) {
 	rest := body
 	line, rest, ok := nextLine(rest)
 	if !ok || len(bytes.TrimSpace(line)) == 0 {
-		return nil, ErrMalformed
+		return nil, nil, ErrMalformed
 	}
 	var hdr map[string]json.RawMessage
 	if err := json.Unmarshal(line, &hdr); err != nil {
-		return nil, ErrMalformed
+		return nil, nil, ErrMalformed
 	}
 	var out []telemetry.ErrorEvent
-	for len(bytes.TrimSpace(rest)) > 0 && len(out) < MaxEventsPerEnvelope {
+	var checks []CheckIn
+	for len(bytes.TrimSpace(rest)) > 0 && len(out) < MaxEventsPerEnvelope && len(checks) < MaxEventsPerEnvelope {
 		var ih []byte
 		ih, rest, _ = nextLine(rest)
 		if len(bytes.TrimSpace(ih)) == 0 {
@@ -52,13 +65,13 @@ func ParseEnvelope(body []byte) ([]telemetry.ErrorEvent, error) {
 			Length *int   `json:"length"`
 		}
 		if err := json.Unmarshal(ih, &item); err != nil {
-			return out, ErrMalformed
+			return out, checks, ErrMalformed
 		}
 		var payload []byte
 		if item.Length != nil {
 			n := *item.Length
 			if n < 0 || n > len(rest) {
-				return out, ErrMalformed
+				return out, checks, ErrMalformed
 			}
 			payload, rest = rest[:n], rest[n:]
 			if len(rest) > 0 && rest[0] == '\n' {
@@ -66,6 +79,12 @@ func ParseEnvelope(body []byte) ([]telemetry.ErrorEvent, error) {
 			}
 		} else {
 			payload, rest, _ = nextLine(rest)
+		}
+		if item.Type == "check_in" && len(checks) < MaxEventsPerEnvelope {
+			if ci, ok := parseCheckIn(payload); ok {
+				checks = append(checks, ci)
+			}
+			continue
 		}
 		if item.Type != "event" {
 			continue
@@ -76,7 +95,22 @@ func ParseEnvelope(body []byte) ([]telemetry.ErrorEvent, error) {
 		}
 		out = append(out, ev)
 	}
-	return out, nil
+	return out, checks, nil
+}
+
+func parseCheckIn(payload []byte) (CheckIn, bool) {
+	var c struct {
+		Slug   string `json:"monitor_slug"`
+		Status string `json:"status"`
+	}
+	if json.Unmarshal(payload, &c) != nil || c.Slug == "" || len(c.Slug) > 120 {
+		return CheckIn{}, false
+	}
+	switch c.Status {
+	case "in_progress", "ok", "error":
+		return CheckIn{Slug: c.Slug, Status: c.Status}, true
+	}
+	return CheckIn{}, false
 }
 
 // ParseStore decodes the body of the legacy /store/ endpoint: a JSON event,

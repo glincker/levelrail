@@ -10,10 +10,12 @@ import (
 	"fmt"
 	"io"
 	"log/slog"
+	"maps"
 	"net/http"
 	"net/url"
-	"os"
+	"path"
 	"regexp"
+	"slices"
 	"sort"
 	"strconv"
 	"strings"
@@ -26,8 +28,9 @@ import (
 )
 
 const (
-	defaultStackLockTTL = 10 * time.Minute
-	stackCIPrefix       = "ci:"
+	defaultStackLockTTL       = 10 * time.Minute
+	defaultStackRenewFraction = 3
+	stackCIPrefix             = "ci:"
 )
 
 // Audit action names for stack verbs.
@@ -84,11 +87,10 @@ func (rt *Router) stackStore() StackStore {
 func stackResourceFromPath(r *http.Request) string { return "stack:" + r.PathValue("name") }
 
 // stackLockRenewEvery is how often an apply renews its lease: the TTL divided
-// by APP_STACK_LOCK_RENEW_FRACTION (default 3), so one missed tick is survivable.
-func stackLockRenewEvery(ttl time.Duration) time.Duration {
-	fraction := 3
-	if n, err := strconv.Atoi(os.Getenv("APP_STACK_LOCK_RENEW_FRACTION")); err == nil && n >= 2 {
-		fraction = n
+// by the stacks.lock_renew_fraction setting (default 3), so one missed tick is survivable.
+func stackLockRenewEvery(ttl time.Duration, fraction int) time.Duration {
+	if fraction < 2 {
+		fraction = defaultStackRenewFraction
 	}
 	return ttl / time.Duration(fraction)
 }
@@ -98,13 +100,13 @@ var errStackLeaseLost = errors.New("the stack lease was lost during apply; anoth
 
 // keepStackLease renews the lease until stop is called and cancels the
 // returned context when a renewal finds the lease gone.
-func keepStackLease(ctx context.Context, ss StackStore, stackID, holder string, ttl time.Duration) (context.Context, func() bool) {
+func keepStackLease(ctx context.Context, ss StackStore, stackID, holder string, ttl time.Duration, fraction int) (context.Context, func() bool) {
 	lctx, cancel := context.WithCancelCause(ctx)
 	done := make(chan struct{})
 	finished := make(chan struct{})
 	go func() {
 		defer close(finished)
-		t := time.NewTicker(stackLockRenewEvery(ttl))
+		t := time.NewTicker(stackLockRenewEvery(ttl, fraction))
 		defer t.Stop()
 		for {
 			select {
@@ -132,11 +134,23 @@ func keepStackLease(ctx context.Context, ss StackStore, stackID, holder string, 
 // stackBeforeApply is a test seam that runs right before iac.Apply.
 var stackBeforeApply func()
 
-func stackLockTTL() time.Duration {
-	if d, err := time.ParseDuration(os.Getenv("APP_STACK_LOCK_TTL")); err == nil && d > 0 {
-		return d
+// stackLockTTL reads the live lease length; the registry seeds it from env.
+func (rt *Router) stackLockTTL(ctx context.Context) time.Duration {
+	if rt.runtimeSettings != nil {
+		if d := rt.runtimeSettings.Duration(ctx, runtimesettings.KeyStackLockTTL); d > 0 {
+			return d
+		}
 	}
 	return defaultStackLockTTL
+}
+
+func (rt *Router) stackLockRenewFraction(ctx context.Context) int {
+	if rt.runtimeSettings != nil {
+		if n := rt.runtimeSettings.Int(ctx, runtimesettings.KeyStackLockRenewFraction); n >= 2 {
+			return n
+		}
+	}
+	return defaultStackRenewFraction
 }
 
 func (rt *Router) stackHistoryLimit(ctx context.Context) int {
@@ -163,6 +177,10 @@ type stackRequest struct {
 	IdempotencyKey   string            `json:"idempotency_key,omitempty"`
 	// AllowWeaken lets Setting documents weaken a protection; human root sessions only.
 	AllowWeaken bool `json:"allow_weaken,omitempty"`
+	// Attachments are referenced compose files; they are stored among the files of the revision.
+	Attachments map[string]string `json:"attachments,omitempty"`
+	// ConfirmDestroy is the stack name typed to let a prune delete compose apps.
+	ConfirmDestroy string `json:"confirm_destroy,omitempty"`
 }
 
 type stackLockResource struct {
@@ -224,6 +242,9 @@ type stackPlanResponse struct {
 	Plan        *iac.Plan   `json:"plan,omitempty"`
 	Issues      []iac.Issue `json:"issues,omitempty"`
 	Warnings    []string    `json:"warnings,omitempty"`
+	// Error and Code appear only on a refused request, like every other IaC error.
+	Error string `json:"error,omitempty"`
+	Code  string `json:"code,omitempty"`
 }
 
 type stackApplyResponse struct {
@@ -231,6 +252,8 @@ type stackApplyResponse struct {
 	Revision *stackRevisionSummary `json:"revision,omitempty"`
 	Result   *iac.ApplyResult      `json:"result,omitempty"`
 	Issues   []iac.Issue           `json:"issues,omitempty"`
+	Error    string                `json:"error,omitempty"`
+	Code     string                `json:"code,omitempty"`
 	Replayed bool                  `json:"replayed,omitempty"`
 	// Noop answers 200 when nothing changed: Revision is the existing latest one.
 	Noop     bool     `json:"noop,omitempty"`
@@ -273,7 +296,7 @@ type stackDeleteResponse struct {
 
 func fmtStackTime(t time.Time) string { return t.UTC().Format(time.RFC3339) }
 
-func summarizeRevision(v store.StackRevisionRecord) stackRevisionSummary {
+func (rt *Router) summarizeRevision(ctx context.Context, v store.StackRevisionRecord) stackRevisionSummary {
 	out := stackRevisionSummary{
 		Number: v.Number, Status: v.Status, PlanHash: v.PlanHash, RollbackOf: v.RollbackOf, IdempotencyKey: v.IdempotencyKey,
 		Actor: v.Actor, TokenID: v.TokenID, GitRepo: v.GitRepo, GitRef: v.GitRef, GitSHA: v.GitSHA, CIRunURL: v.CIRunURL,
@@ -283,7 +306,7 @@ func summarizeRevision(v store.StackRevisionRecord) stackRevisionSummary {
 		out.FinishedAt = fmtStackTime(*v.FinishedAt)
 	}
 	if v.Status == store.StackRevPendingApproval {
-		out.ExpiresAt = fmtStackTime(approvalExpiry(v))
+		out.ExpiresAt = fmtStackTime(rt.approvalExpiry(ctx, v))
 	}
 	out.Rejected = v.Status == store.StackRevFailed && revisionRejected(v.ResultJSON)
 	return out
@@ -307,12 +330,19 @@ func (rt *Router) writeStackError(w http.ResponseWriter, what string, err error)
 	err = mapStackStoreError(err)
 	switch {
 	case errors.Is(err, store.ErrStackNotFound), errors.Is(err, store.ErrStackRevisionNotFound):
-		writeError(w, http.StatusNotFound, err.Error())
-	case errors.Is(err, store.ErrStackExists), errors.Is(err, iac.ErrStackLocked), errors.Is(err, iac.ErrStackPinned),
-		errors.Is(err, iac.ErrLedgerConflict), errors.Is(err, iac.ErrPlanChanged), errors.Is(err, store.ErrStackBadTransition):
-		writeError(w, http.StatusConflict, err.Error())
-	case errors.Is(err, iac.ErrPruneNotAllowed), errors.Is(err, store.ErrStackSecretLeak):
-		writeError(w, http.StatusUnprocessableEntity, err.Error())
+		writeIaCError(w, http.StatusNotFound, errorCodeForStatus(http.StatusNotFound), err.Error(), nil)
+	case errors.Is(err, iac.ErrPlanHashVersion):
+		writeIaCError(w, http.StatusConflict, iac.CodePlanHashVersion, err.Error(), nil)
+	case errors.Is(err, iac.ErrPlanChanged):
+		writeIaCError(w, http.StatusConflict, iac.CodePlanStale, err.Error(), nil)
+	case errors.Is(err, iac.ErrStackLocked), errors.Is(err, iac.ErrStackPinned):
+		writeIaCError(w, http.StatusConflict, iac.CodeStackLocked, err.Error(), nil)
+	case errors.Is(err, store.ErrStackExists), errors.Is(err, iac.ErrLedgerConflict), errors.Is(err, store.ErrStackBadTransition):
+		writeIaCError(w, http.StatusConflict, iac.CodeOwnershipConflict, err.Error(), nil)
+	case errors.Is(err, iac.ErrPruneNotAllowed):
+		writeIaCError(w, http.StatusUnprocessableEntity, iac.CodePruneGuard, err.Error(), nil)
+	case errors.Is(err, store.ErrStackSecretLeak):
+		writeIaCError(w, http.StatusUnprocessableEntity, iac.CodeInvalidDocument, err.Error(), nil)
 	default:
 		rt.internalError(w, "api: stack "+what+" failed", err)
 	}
@@ -321,7 +351,7 @@ func (rt *Router) writeStackError(w http.ResponseWriter, what string, err error)
 func (rt *Router) stackStoreOr501(w http.ResponseWriter) (StackStore, bool) {
 	ss := rt.stackStore()
 	if ss == nil || rt.projects == nil {
-		writeError(w, http.StatusNotImplemented, "stacks are not available on this store")
+		writeIaCError(w, http.StatusNotImplemented, iac.CodeUnavailable, "stacks are not available on this store", nil)
 		return nil, false
 	}
 	return ss, true
@@ -426,18 +456,22 @@ func decodeStackRequest(w http.ResponseWriter, r *http.Request, filesOptional bo
 	var req stackRequest
 	err := json.NewDecoder(http.MaxBytesReader(w, r.Body, maxIaCBodyBytes)).Decode(&req)
 	if err != nil && (!filesOptional || !errors.Is(err, io.EOF)) {
-		writeError(w, http.StatusBadRequest, "invalid request body: "+err.Error())
+		writeIaCError(w, http.StatusBadRequest, iac.CodeInvalidRequest, "invalid request body: "+err.Error(), nil)
 		return req, false
 	}
+	for _, n := range slices.Sorted(maps.Keys(req.Attachments)) {
+		req.Files = append(req.Files, iacFile{Name: n, Content: req.Attachments[n]})
+	}
+	req.Attachments = nil
 	if !filesOptional && (len(req.Files) == 0 || len(req.Files) > maxIaCFiles) {
-		writeError(w, http.StatusBadRequest, "files must hold between 1 and "+strconv.Itoa(maxIaCFiles)+" entries")
+		writeIaCError(w, http.StatusBadRequest, iac.CodeInvalidRequest, "files must hold between 1 and "+strconv.Itoa(maxIaCFiles)+" entries", nil)
 		return req, false
 	}
 	if req.IdempotencyKey == "" {
 		req.IdempotencyKey = r.Header.Get(headerIdempotencyKey)
 	}
 	if len(req.IdempotencyKey) > idempotencyKeyMaxLen {
-		writeError(w, http.StatusBadRequest, "idempotency key must be at most 255 characters")
+		writeIaCError(w, http.StatusBadRequest, iac.CodeInvalidRequest, "idempotency key must be at most 255 characters", nil)
 		return req, false
 	}
 	return req, true
@@ -447,13 +481,55 @@ func (req stackRequest) iac(stack, project string, prune bool) iacRequest {
 	return iacRequest{
 		Files: req.Files, Source: stack, Project: project, Prune: prune, Vars: req.Vars, Secrets: req.Secrets,
 		NoDeploy: req.NoDeploy, ContinueOnError: req.ContinueOnError,
+		confirmDestroy: req.ConfirmDestroy != "" && req.ConfirmDestroy == stack,
 	}
 }
 
+// stackComposeEnv reads the compose env digests of the stack's last applied
+// revision, so unchanged declared env plans as a noop. Nil when none applies.
+func stackComposeEnv(ctx context.Context, ss StackStore, stackID, project string, res []*iac.Resource) map[string]string {
+	if !slices.ContainsFunc(res, func(r *iac.Resource) bool { return r.ComposeDigest != "" }) {
+		return nil
+	}
+	revs, err := ss.ListStackRevisions(ctx, stackID, 0)
+	if err != nil {
+		return nil
+	}
+	for _, v := range revs {
+		if v.Status != store.StackRevApplied {
+			continue
+		}
+		rev, err := ss.GetStackRevision(ctx, stackID, v.Number)
+		if err != nil {
+			return nil
+		}
+		files, err := decodeRenderedFiles(rev.RenderedDocs)
+		if err != nil {
+			return nil
+		}
+		srcs := make([]iac.Source, len(files))
+		for i, f := range files {
+			srcs[i] = iac.Source{Name: f.Name, Data: []byte(f.Content)}
+		}
+		return iac.ComposeEnvDigests(srcs, project)
+	}
+	return nil
+}
+
 // renderStackFiles substitutes ${{ env.NAME }} so a revision replays without vars.
+// Referenced compose files are stored as received, so their digest holds.
 func renderStackFiles(files []iacFile, vars map[string]string) []iacFile {
+	srcs := make([]iac.Source, len(files))
+	for i, f := range files {
+		srcs[i] = iac.Source{Name: f.Name, Data: []byte(f.Content)}
+	}
+	refs := iac.ComposeRefPaths(srcs)
 	out := make([]iacFile, len(files))
 	for i, f := range files {
+		if slices.Contains(refs, path.Clean(f.Name)) {
+			out[i] = f
+			continue
+		}
 		content := stackEnvRe.ReplaceAllStringFunc(f.Content, func(m string) string {
 			if v, ok := vars[stackEnvRe.FindStringSubmatch(m)[1]]; ok {
 				return v
@@ -559,38 +635,38 @@ func (rt *Router) handleCreateStack(w http.ResponseWriter, r *http.Request) {
 	}
 	var in stackCreateRequest
 	if err := json.NewDecoder(http.MaxBytesReader(w, r.Body, maxIaCBodyBytes)).Decode(&in); err != nil {
-		writeError(w, http.StatusBadRequest, "invalid request body: "+err.Error())
+		writeIaCError(w, http.StatusBadRequest, iac.CodeInvalidRequest, "invalid request body: "+err.Error(), nil)
 		return
 	}
 	if err := iac.ValidateStackName(in.Name); err != nil {
-		writeError(w, http.StatusUnprocessableEntity, err.Error())
+		writeIaCError(w, http.StatusUnprocessableEntity, iac.CodeInvalidRequest, err.Error(), nil)
 		return
 	}
 	scope, err := iac.ParseStackLevel(in.Scope)
 	if err != nil {
-		writeError(w, http.StatusUnprocessableEntity, err.Error())
+		writeIaCError(w, http.StatusUnprocessableEntity, iac.CodeInvalidRequest, err.Error(), nil)
 		return
 	}
 	var proj store.Project
 	if scope == iac.LevelInstall {
 		// Only a human root session may create install-wide state, never a token.
 		if !rt.lockOverrideAllowed(r) {
-			writeError(w, http.StatusForbidden, "only a human root session may create an install stack")
+			writeIaCError(w, http.StatusForbidden, iac.CodePermissionDenied, "only a human root session may create an install stack", nil)
 			return
 		}
 		if in.Project != "" {
-			writeError(w, http.StatusUnprocessableEntity, "an install stack has no project")
+			writeIaCError(w, http.StatusUnprocessableEntity, iac.CodeInvalidRequest, "an install stack has no project", nil)
 			return
 		}
 	} else {
 		var found bool
 		if proj, found = rt.projectByName(r.Context(), in.Project); !found {
-			writeError(w, http.StatusUnprocessableEntity, fmt.Sprintf("project %q was not found", in.Project))
+			writeIaCError(w, http.StatusUnprocessableEntity, iac.CodeInvalidRequest, fmt.Sprintf("project %q was not found", in.Project), nil)
 			return
 		}
 	}
 	if (in.AllowPrune || in.RequireApproval || in.DriftPolicy != "") && !rt.callerIsAdmin(r) {
-		writeError(w, http.StatusForbidden, "only an administrator may set allow_prune, drift_policy or require_approval")
+		writeIaCError(w, http.StatusForbidden, iac.CodePermissionDenied, "only an administrator may set allow_prune, drift_policy or require_approval", nil)
 		return
 	}
 	rec, err := rt.createStack(r, ss, in, proj.ID)
@@ -599,7 +675,7 @@ func (rt *Router) handleCreateStack(w http.ResponseWriter, r *http.Request) {
 			rt.writeStackError(w, "create", err)
 			return
 		}
-		writeError(w, http.StatusUnprocessableEntity, err.Error())
+		writeIaCError(w, http.StatusUnprocessableEntity, iac.CodeInvalidRequest, err.Error(), nil)
 		return
 	}
 	rt.auditStack(r, auditStackCreate, map[string]any{"stack": rec.Name, "project": proj.Name, "scope": stackScopeOf(rec)})
@@ -612,7 +688,7 @@ func (rt *Router) handleUpdateStackSettings(w http.ResponseWriter, r *http.Reque
 		return
 	}
 	if rt.stackCaller(r).isCI {
-		writeError(w, http.StatusForbidden, "a CI token cannot change stack settings")
+		writeIaCError(w, http.StatusForbidden, iac.CodePermissionDenied, "a CI token cannot change stack settings", nil)
 		return
 	}
 	s, ok := rt.loadStack(w, r, ss)
@@ -621,7 +697,7 @@ func (rt *Router) handleUpdateStackSettings(w http.ResponseWriter, r *http.Reque
 	}
 	var in stackSettingsRequest
 	if err := json.NewDecoder(http.MaxBytesReader(w, r.Body, maxIaCBodyBytes)).Decode(&in); err != nil {
-		writeError(w, http.StatusBadRequest, "invalid request body: "+err.Error())
+		writeIaCError(w, http.StatusBadRequest, iac.CodeInvalidRequest, "invalid request body: "+err.Error(), nil)
 		return
 	}
 	if in.AllowPrune != nil {
@@ -633,7 +709,7 @@ func (rt *Router) handleUpdateStackSettings(w http.ResponseWriter, r *http.Reque
 	if in.DriftPolicy != nil {
 		p, err := iac.ParseDriftPolicy(*in.DriftPolicy)
 		if err != nil {
-			writeError(w, http.StatusUnprocessableEntity, err.Error())
+			writeIaCError(w, http.StatusUnprocessableEntity, iac.CodeInvalidRequest, err.Error(), nil)
 			return
 		}
 		s.DriftPolicy = string(p)
@@ -687,13 +763,20 @@ func (rt *Router) handleStackPlan(w http.ResponseWriter, r *http.Request) {
 	}
 	res, opts, issues := req.iac(name, project, prune).build()
 	opts = rt.belowRootOpts(r, opts)
+	if resp.StackExists {
+		opts.ComposeEnvApplied = stackComposeEnv(r.Context(), ss, stack.ID, project, res)
+	}
 	if len(issues) > 0 {
-		resp.Issues = issues
+		resp.Issues, resp.Error, resp.Code = codedIssues(issues), issuesMessage(issues), iac.CodeInvalidDocument
 		writeJSON(w, http.StatusUnprocessableEntity, resp)
 		return
 	}
 	if !resp.StackExists && len(res) == 0 {
-		writeError(w, http.StatusUnprocessableEntity, emptyStackReason(req, project))
+		writeIaCError(w, http.StatusUnprocessableEntity, iac.CodeInvalidRequest, emptyStackReason(req, project), nil)
+		return
+	}
+	if resourcesHaveCloud(res) {
+		rt.startCloudPlanJob(w, r, ss, planJobInput{stack: stack, exists: resp.StackExists, name: name, project: project, res: res, opts: opts, req: req, resp: resp})
 		return
 	}
 	lctx, err := rt.stackLedgerContext(r.Context(), ss, stack.ID, name, project, stack.Scope, res, req)
@@ -720,6 +803,10 @@ type stackRun struct {
 	warnings   []string
 	// pending is the revision an approval is applying; nil for a fresh apply.
 	pending *store.StackRevisionRecord
+	// hashChecked means a first apply already compared expected_plan_hash before creating anything.
+	hashChecked bool
+	// cloud pins the approved cloud plan of a pending revision; nil refuses cloud writes.
+	cloud *iac.CloudApproval
 }
 
 func newHolder(c stackCaller) string {
@@ -729,6 +816,9 @@ func newHolder(c stackCaller) string {
 }
 
 func (rt *Router) handleStackApply(w http.ResponseWriter, r *http.Request) {
+	if !rt.refuseApplyDisabled(w, r) {
+		return
+	}
 	ss, ok := rt.stackStoreOr501(w)
 	if !ok {
 		return
@@ -737,59 +827,130 @@ func (rt *Router) handleStackApply(w http.ResponseWriter, r *http.Request) {
 	if !ok || rt.refuseWeaken(w, r, req) {
 		return
 	}
+	checked := false
 	stack, err := ss.GetStackByName(r.Context(), r.PathValue("name"))
 	if errors.Is(err, store.ErrStackNotFound) {
-		stack, ok = rt.createStackOnApply(w, r, ss, req)
+		var made newRows
+		stack, made, ok = rt.createStackOnApply(w, r, ss, req)
 		if !ok {
 			return
 		}
+		checked = true
+		rec := &statusRecorder{ResponseWriter: w}
+		// Some refusals (the revision secret guard) only surface after the rows exist.
+		defer rt.undoFirstApply(r, ss, made, stack, rec)
+		w = rec
 	} else if err != nil {
 		rt.writeStackError(w, "apply", err)
 		return
 	}
-	rt.runStack(w, r, ss, stackRun{stack: stack, req: req, action: auditStackApply})
+	rt.runStack(w, r, ss, stackRun{stack: stack, req: req, action: auditStackApply, hashChecked: checked})
+}
+
+// newRows records what one first apply created, so a late refusal removes only that.
+type newRows struct {
+	stack   bool
+	project string
+}
+
+// undoFirstApply deletes the rows this call created when the apply answered an
+// error and left no revision behind. A pre-existing project is never touched.
+func (rt *Router) undoFirstApply(r *http.Request, ss StackStore, made newRows, stack store.StackRecord, rec *statusRecorder) {
+	if rec.status < http.StatusBadRequest {
+		return
+	}
+	ctx := context.WithoutCancel(r.Context())
+	if revs, err := ss.ListStackRevisions(ctx, stack.ID, 1); err != nil || len(revs) > 0 {
+		return
+	}
+	if made.stack {
+		if _, err := ss.DeleteStack(ctx, stack.ID, ""); err != nil && !errors.Is(err, store.ErrStackNotFound) {
+			slog.Warn("api: undo first apply: delete stack failed", slog.String("stack", stack.Name), slog.Any("error", err))
+			return
+		}
+	}
+	if made.project != "" {
+		if err := rt.projects.DeleteProject(ctx, made.project); err != nil && !errors.Is(err, store.ErrProjectNotFound) {
+			slog.Warn("api: undo first apply: delete project failed", slog.String("project", made.project), slog.Any("error", err))
+		}
+	}
 }
 
 // createStackOnApply makes a first apply self-contained: it resolves the project
 // (creating it when the files declare it and the caller may), refuses an empty
 // plan, then creates the stack. Nothing is written before every check passes.
-func (rt *Router) createStackOnApply(w http.ResponseWriter, r *http.Request, ss StackStore, req stackRequest) (store.StackRecord, bool) {
+func (rt *Router) createStackOnApply(w http.ResponseWriter, r *http.Request, ss StackStore, req stackRequest) (store.StackRecord, newRows, bool) {
 	name := r.PathValue("name")
 	if err := iac.ValidateStackName(name); err != nil {
-		writeError(w, http.StatusUnprocessableEntity, err.Error())
-		return store.StackRecord{}, false
+		writeIaCError(w, http.StatusUnprocessableEntity, iac.CodeInvalidRequest, err.Error(), nil)
+		return store.StackRecord{}, newRows{}, false
 	}
 	project, create, ok := rt.resolveNewStack(w, r, req)
 	if !ok {
-		return store.StackRecord{}, false
+		return store.StackRecord{}, newRows{}, false
 	}
-	res, _, issues := req.iac(name, project, false).build()
+	res, opts, issues := req.iac(name, project, false).build()
+	opts = rt.belowRootOpts(r, opts)
 	if len(issues) > 0 {
-		writeJSON(w, http.StatusUnprocessableEntity, stackApplyResponse{Stack: name, Issues: issues})
-		return store.StackRecord{}, false
+		writeJSON(w, http.StatusUnprocessableEntity, invalidStackApply(name, issues))
+		return store.StackRecord{}, newRows{}, false
 	}
 	if len(res) == 0 {
-		writeError(w, http.StatusUnprocessableEntity, emptyStackReason(req, project))
-		return store.StackRecord{}, false
+		writeIaCError(w, http.StatusUnprocessableEntity, iac.CodeInvalidRequest, emptyStackReason(req, project), nil)
+		return store.StackRecord{}, newRows{}, false
 	}
+	if resourcesHaveCloud(res) {
+		writeIaCError(w, http.StatusForbidden, iac.CodeApprovalRequired,
+			"a new stack with cloud kinds cannot be applied on first use; create the stack without applying, then plan, have another administrator approve and apply", nil)
+		return store.StackRecord{}, newRows{}, false
+	}
+	// The hash comes from a plan made before the project existed, so it is compared
+	// here, before any row is written; creating first would change the plan.
+	if req.ExpectedPlanHash != "" && !rt.checkNewStackHash(w, r, ss, name, project, res, opts, req) {
+		return store.StackRecord{}, newRows{}, false
+	}
+	var made newRows
 	proj, found := rt.projectByName(r.Context(), project)
 	if create {
 		if proj, ok = rt.createProjectForStack(w, r, project); !ok {
-			return store.StackRecord{}, false
+			return store.StackRecord{}, newRows{}, false
 		}
+		made.project = proj.ID
 	} else if !found {
-		writeError(w, http.StatusUnprocessableEntity, missingProjectMessage(project))
-		return store.StackRecord{}, false
+		writeIaCError(w, http.StatusUnprocessableEntity, iac.CodeInvalidRequest, missingProjectMessage(project), nil)
+		return store.StackRecord{}, newRows{}, false
 	}
 	rec, err := rt.createStack(r, ss, stackCreateRequest{Name: name, Project: project}, proj.ID)
 	if errors.Is(err, store.ErrStackExists) {
 		rec, err = ss.GetStackByName(r.Context(), name)
+	} else if err == nil {
+		made.stack = true
 	}
 	if err != nil {
 		rt.writeStackError(w, "create", err)
-		return store.StackRecord{}, false
+		rt.undoFirstApply(r, ss, made, rec, &statusRecorder{status: http.StatusInternalServerError})
+		return store.StackRecord{}, newRows{}, false
 	}
-	return rec, true
+	return rec, made, true
+}
+
+// checkNewStackHash plans a not yet existing stack exactly as the plan endpoint does and compares the hash.
+func (rt *Router) checkNewStackHash(w http.ResponseWriter, r *http.Request, ss StackStore, name, project string, res []*iac.Resource, opts iac.Options, req stackRequest) bool {
+	lctx, err := rt.stackLedgerContext(r.Context(), ss, "", name, project, "", res, req)
+	if err != nil {
+		rt.writeStackError(w, "apply", err)
+		return false
+	}
+	st, err := iac.Load(lctx, rt.iacDoer(r), res, opts)
+	if err != nil {
+		rt.internalError(w, "api: stack apply load failed", err)
+		return false
+	}
+	if err := iac.CheckPlanHash(req.ExpectedPlanHash, iac.PlanFor(st, res, opts)); err != nil {
+		rt.writeStackError(w, "apply", err)
+		return false
+	}
+	return true
 }
 
 // runStack is the shared apply path for apply and rollback: pin check, lease,
@@ -815,8 +976,12 @@ func (rt *Router) runStack(w http.ResponseWriter, r *http.Request, ss StackStore
 	project := rt.projectName(ctx, stack.ProjectID)
 	res, opts, issues := req.iac(stack.Name, project, req.Prune).build()
 	opts = rt.belowRootOpts(r, opts)
+	if run.pending != nil {
+		opts.Cloud = run.cloud
+	}
+	opts.ComposeEnvApplied = stackComposeEnv(ctx, ss, stack.ID, project, res)
 	if len(issues) > 0 {
-		writeJSON(w, http.StatusUnprocessableEntity, stackApplyResponse{Stack: stack.Name, Issues: issues})
+		writeJSON(w, http.StatusUnprocessableEntity, invalidStackApply(stack.Name, issues))
 		return
 	}
 	// A stack apply is a write path for every app it declares.
@@ -827,15 +992,20 @@ func (rt *Router) runStack(w http.ResponseWriter, r *http.Request, ss StackStore
 	}
 	if req.IdempotencyKey != "" {
 		if prev, found := rt.findStackRevisionByKey(ctx, ss, stack.ID, req.IdempotencyKey); found {
-			s := summarizeRevision(prev)
+			s := rt.summarizeRevision(ctx, prev)
 			writeJSON(w, http.StatusOK, stackApplyResponse{Stack: stack.Name, Revision: &s, Replayed: true})
 			return
 		}
 	}
 
+	// Before the no-op answer so the version check gives one answer either way.
+	if err := iac.CheckHashVersion(req.ExpectedPlanHash); err != nil {
+		rt.writeStackError(w, run.action, err)
+		return
+	}
 	if run.pending == nil {
 		if cur, same := rt.stackNoop(ctx, ss, run, res, opts, project, rt.iacDoer(r)); same {
-			s := summarizeRevision(cur)
+			s := rt.summarizeRevision(ctx, cur)
 			writeJSON(w, http.StatusOK, stackApplyResponse{Stack: stack.Name, Revision: &s, Noop: true, Warnings: run.warnings})
 			return
 		}
@@ -853,7 +1023,7 @@ func (rt *Router) runStack(w http.ResponseWriter, r *http.Request, ss StackStore
 		next = revs[0].Number + 1
 	}
 	holder := newHolder(caller)
-	if _, err := ss.AcquireStackLock(ctx, stack.ID, holder, next, stackLockTTL(), time.Now()); err != nil {
+	if _, err := ss.AcquireStackLock(ctx, stack.ID, holder, next, rt.stackLockTTL(ctx), time.Now()); err != nil {
 		rt.writeStackError(w, run.action, err)
 		return
 	}
@@ -897,8 +1067,11 @@ func (rt *Router) runStack(w http.ResponseWriter, r *http.Request, ss StackStore
 		rt.writeStackError(w, run.action, fmt.Errorf("%w: it exceeds the mass-prune guard (APP_STACK_PRUNE_MAX_PERCENT, APP_STACK_PRUNE_MAX_COUNT); plan to review, then pass allow_mass_prune", iac.ErrPruneNotAllowed))
 		return
 	}
-	if req.ExpectedPlanHash != "" && req.ExpectedPlanHash != plan.Hash {
-		rt.writeStackError(w, run.action, iac.ErrPlanChanged)
+	if err := iac.CheckPlanHash(req.ExpectedPlanHash, plan); err != nil && !run.hashChecked {
+		rt.writeStackError(w, run.action, err)
+		return
+	}
+	if refuseUnapprovedCloud(w, run, plan) {
 		return
 	}
 	rev, ok := rt.startStackRevision(ctx, w, ss, run, caller, plan)
@@ -906,16 +1079,21 @@ func (rt *Router) runStack(w http.ResponseWriter, r *http.Request, ss StackStore
 		return
 	}
 	if rev.Replayed {
-		s := summarizeRevision(rev)
+		s := rt.summarizeRevision(ctx, rev)
 		writeJSON(w, http.StatusOK, stackApplyResponse{Stack: stack.Name, Revision: &s, Replayed: true})
 		return
 	}
 
-	leaseCtx, stopLease := keepStackLease(lctx, ss, stack.ID, holder, stackLockTTL())
+	if run.pending != nil {
+		rt.emitStackPlanEvent(ctx, stackEventApproved, stack.Name, caller.name, plan, rev.Number)
+	}
+	leaseCtx, stopLease := keepStackLease(lctx, ss, stack.ID, holder, rt.stackLockTTL(ctx), rt.stackLockRenewFraction(ctx))
 	if stackBeforeApply != nil {
 		stackBeforeApply()
 	}
 	applyCtx := iac.WithStackScope(leaseCtx, iac.StackScope{StackID: stack.ID, StackName: stack.Name, Revision: rev.Number})
+	cloudReport := &iac.CloudReport{}
+	applyCtx = iac.WithCloudReport(applyCtx, cloudReport)
 	out, aerr := iac.Apply(applyCtx, doer, res, opts, plan.Hash)
 	leaseLost := stopLease()
 	status := store.StackRevFailed
@@ -938,16 +1116,24 @@ func (rt *Router) runStack(w http.ResponseWriter, r *http.Request, ss StackStore
 		rt.logger.Warn("api: stack revision status failed", slog.String("error", err.Error()), slog.String("stack", stack.Name))
 	}
 	warnings := run.warnings
+	if aerr == nil && !leaseLost {
+		warnings = append(warnings, rt.recordStackLedger(fin, ss, stack.ID, rev.Number, res, out, doer)...)
+	} else {
+		// Nothing reaches the ledger here, so a compose App this apply created would run unowned.
+		warnings = append(warnings, removeUnownedCompose(fin, doer, iac.ComposeCreated(res, out))...)
+	}
 	if aerr == nil {
-		warnings = append(warnings, rt.recordStackLedger(fin, ss, stack.ID, rev.Number, res, out)...)
 		rt.auditSettingWeakens(r, stack.Name, rev.Number, out)
 	}
 	rt.auditStack(r, run.action, map[string]any{
 		"stack": stack.Name, "revision": rev.Number, "plan_hash": plan.Hash, "git_sha": req.GitSHA, "status": status, "rollback_of": run.rollbackOf,
 		"counts": map[string]int{"create": plan.Summary.Create, "update": plan.Summary.Update, "delete": plan.Summary.Delete, "noop": plan.Summary.Noop, "error": plan.Summary.Error},
 	})
+	if !rt.emitCloudDiverged(ctx, stack.Name, caller.name, rev.Number, cloudReport.Runs()) {
+		rt.emitStackOutcome(ctx, run, caller.name, plan, rev.Number, status, aerr)
+	}
 	if leaseLost {
-		writeError(w, http.StatusConflict, errStackLeaseLost.Error()+"; the revision was marked failed, re-plan and apply again")
+		writeIaCError(w, http.StatusConflict, iac.CodeStackLocked, errStackLeaseLost.Error()+"; the revision was marked failed, re-plan and apply again", nil)
 		return
 	}
 	if aerr != nil {
@@ -957,7 +1143,7 @@ func (rt *Router) runStack(w http.ResponseWriter, r *http.Request, ss StackStore
 	rev.Status = status
 	now := time.Now()
 	rev.FinishedAt = &now
-	s := summarizeRevision(rev)
+	s := rt.summarizeRevision(ctx, rev)
 	writeJSON(w, http.StatusOK, stackApplyResponse{Stack: stack.Name, Revision: &s, Result: &out, Warnings: warnings})
 }
 
@@ -1042,8 +1228,12 @@ func (rt *Router) stackLedgerContext(ctx context.Context, ss StackStore, stackID
 
 // recordStackLedger claims every declared resource this apply created or
 // confirmed, of any kind, and releases what it pruned.
-func (rt *Router) recordStackLedger(ctx context.Context, ss StackStore, stackID string, rev int, res []*iac.Resource, out iac.ApplyResult) []string {
+func (rt *Router) recordStackLedger(ctx context.Context, ss StackStore, stackID string, rev int, res []*iac.Resource, out iac.ApplyResult, doer iac.Doer) []string {
 	var warnings []string
+	created := map[string]bool{}
+	for _, n := range iac.ComposeCreated(res, out) {
+		created[n] = true
+	}
 	u := iac.LedgerChanges(stackID, rev, res, out)
 	for _, e := range u.Release {
 		if err := ss.DeleteStackResource(ctx, stackID, string(e.Kind), e.Key); err != nil {
@@ -1054,7 +1244,24 @@ func (rt *Router) recordStackLedger(ctx context.Context, ss StackStore, stackID 
 		err := ss.UpsertStackResource(ctx, store.StackLedgerEntry{StackID: stackID, Kind: string(e.Kind), Key: e.Key, LiveID: e.LiveID, SinceRevision: rev})
 		if err != nil {
 			warnings = append(warnings, mapStackStoreError(err).Error())
+			if e.Kind == iac.KindApp && created[e.LiveID] {
+				warnings = append(warnings, removeUnownedCompose(ctx, doer, []string{e.LiveID})...)
+			}
 		}
+	}
+	return warnings
+}
+
+// removeUnownedCompose removes compose Apps whose ledger row could not be
+// written, through the compose delete path that keeps named volumes.
+func removeUnownedCompose(ctx context.Context, doer iac.Doer, names []string) []string {
+	var warnings []string
+	for _, n := range names {
+		if err := iac.RemoveCompose(ctx, doer, n); err != nil {
+			warnings = append(warnings, iac.CodeComposeApplyFailed+": compose app "+n+" has no ledger row and removing it failed: "+err.Error())
+			continue
+		}
+		warnings = append(warnings, iac.CodeComposeApplyFailed+": compose app "+n+" has no ledger row, so the services it deployed were removed")
 	}
 	return warnings
 }
@@ -1070,7 +1277,7 @@ func (rt *Router) handleStackPin(w http.ResponseWriter, r *http.Request) {
 	}
 	var in stackPinRequest
 	if err := json.NewDecoder(http.MaxBytesReader(w, r.Body, maxIaCBodyBytes)).Decode(&in); err != nil || in.Revision < 1 {
-		writeError(w, http.StatusBadRequest, "body must be {\"revision\": n} with n >= 1")
+		writeIaCError(w, http.StatusBadRequest, iac.CodeInvalidRequest, "body must be {\"revision\": n} with n >= 1", nil)
 		return
 	}
 	if err := ss.SetStackPin(r.Context(), s.ID, in.Revision); err != nil {
@@ -1107,7 +1314,7 @@ func (rt *Router) handleStackUnlock(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 	if rt.stackCaller(r).isCI {
-		writeError(w, http.StatusForbidden, "a CI token cannot force-release a stack lock")
+		writeIaCError(w, http.StatusForbidden, iac.CodePermissionDenied, "a CI token cannot force-release a stack lock", nil)
 		return
 	}
 	s, ok := rt.loadStack(w, r, ss)
@@ -1130,22 +1337,22 @@ func (rt *Router) handleDeleteStack(w http.ResponseWriter, r *http.Request) {
 	}
 	mode, err := iac.ParseStackDeleteMode(r.URL.Query().Get("mode"))
 	if err != nil {
-		writeError(w, http.StatusBadRequest, err.Error())
+		writeIaCError(w, http.StatusBadRequest, iac.CodeInvalidRequest, err.Error(), nil)
 		return
 	}
 	caller := rt.stackCaller(r)
 	// Forget releases the whole ledger for adoption, so it is gated like destroy.
 	if caller.isCI || !rt.callerIsAdmin(r) {
-		writeError(w, http.StatusForbidden, "deleting a stack needs an administrator session or token and is never allowed from CI")
+		writeIaCError(w, http.StatusForbidden, iac.CodePermissionDenied, "deleting a stack needs an administrator session or token and is never allowed from CI", nil)
 		return
 	}
 	deleteData := r.URL.Query().Get("delete_data") == "true"
 	if deleteData && mode != iac.StackDestroy {
-		writeError(w, http.StatusBadRequest, "delete_data only applies with mode=destroy")
+		writeIaCError(w, http.StatusBadRequest, iac.CodeInvalidRequest, "delete_data only applies with mode=destroy", nil)
 		return
 	}
 	if deleteData && !rt.callerHasAbility(r, AbilityWriteSensitive) {
-		writeError(w, http.StatusForbidden, "deleting database data needs the root or write:sensitive ability")
+		writeIaCError(w, http.StatusForbidden, iac.CodePermissionDenied, "deleting database data needs the root or write:sensitive ability", nil)
 		return
 	}
 	s, ok := rt.loadStack(w, r, ss)
@@ -1153,7 +1360,7 @@ func (rt *Router) handleDeleteStack(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 	holder := newHolder(caller)
-	if _, err := ss.AcquireStackLock(r.Context(), s.ID, holder, s.PinnedRevision, stackLockTTL(), time.Now()); err != nil {
+	if _, err := ss.AcquireStackLock(r.Context(), s.ID, holder, s.PinnedRevision, rt.stackLockTTL(r.Context()), time.Now()); err != nil {
 		rt.writeStackError(w, "delete", err)
 		return
 	}
@@ -1204,6 +1411,7 @@ func (rt *Router) handleDeleteStack(w http.ResponseWriter, r *http.Request) {
 		rt.writeStackError(w, "delete", err)
 		return
 	}
+	rt.removeStackSyncSecret(r.Context(), s.ID)
 	rt.auditStack(r, auditStackDestroy, map[string]any{"stack": s.Name, "mode": string(mode), "destroyed": len(resp.Destroyed), "forgotten": len(resp.Forgotten), "delete_data": deleteData, "databases_deleted": dbsDeleted})
 	writeJSON(w, http.StatusOK, resp)
 }
@@ -1250,4 +1458,25 @@ func (rt *Router) stackNoop(ctx context.Context, ss StackStore, run stackRun, re
 		return store.StackRevisionRecord{}, false
 	}
 	return latest, true
+}
+
+// codedIssues fills the invalid_document fallback so every issue carries a code.
+func codedIssues(in []iac.Issue) []iac.Issue {
+	out := make([]iac.Issue, len(in))
+	for i, is := range in {
+		if is.Code == "" {
+			is.Code = iac.CodeInvalidDocument
+		}
+		out[i] = is
+	}
+	return out
+}
+
+func issuesMessage(in []iac.Issue) string {
+	return "the documents have " + strconv.Itoa(len(in)) + " problem(s)"
+}
+
+// invalidStackApply keeps the stack field for clients and adds the coded envelope.
+func invalidStackApply(stack string, issues []iac.Issue) stackApplyResponse {
+	return stackApplyResponse{Stack: stack, Issues: codedIssues(issues), Error: issuesMessage(issues), Code: iac.CodeInvalidDocument}
 }

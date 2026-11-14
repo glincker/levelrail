@@ -1,0 +1,35 @@
+{
+  "provider": {
+    "oci": {
+      "region": "${var.region}"
+    }
+  },
+  "resource": {
+    "oci_objectstorage_bucket": {
+      "data": {
+        "access_type": "NoPublicAccess",
+        "compartment_id": "${var.compartment_ocid}",
+        "lifecycle": {
+          "prevent_destroy": true
+        },
+        "name": "data",
+        "namespace": "ns"
+      }
+    }
+  },
+  "terraform": {
+    "required_providers": {
+      "oci": {
+        "source": "oracle/oci"
+      }
+    }
+  },
+  "variable": {
+    "compartment_ocid": {
+      "type": "string"
+    },
+    "region": {
+      "type": "string"
+    }
+  }
+}

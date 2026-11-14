@@ -7,6 +7,8 @@ import (
 	"github.com/hashicorp/terraform-plugin-framework/path"
 	"github.com/hashicorp/terraform-plugin-framework/resource"
 	"github.com/hashicorp/terraform-plugin-framework/resource/schema"
+	"github.com/hashicorp/terraform-plugin-framework/resource/schema/boolplanmodifier"
+	"github.com/hashicorp/terraform-plugin-framework/resource/schema/int64planmodifier"
 	"github.com/hashicorp/terraform-plugin-framework/resource/schema/planmodifier"
 	"github.com/hashicorp/terraform-plugin-framework/resource/schema/stringplanmodifier"
 	"github.com/hashicorp/terraform-plugin-framework/types"
@@ -19,6 +21,9 @@ type databaseModel struct {
 	Engine    types.String `tfsdk:"engine"`
 	Version   types.String `tfsdk:"version"`
 	ProjectID types.String `tfsdk:"project_id"`
+	Pooler    types.Bool   `tfsdk:"pooler_enabled"`
+	PoolSize  types.Int64  `tfsdk:"pooler_pool_size"`
+	MaxConn   types.Int64  `tfsdk:"pooler_max_client_conn"`
 }
 
 // NewDatabaseResource returns the managed database resource.
@@ -34,6 +39,7 @@ func (r *databaseResource) Schema(_ context.Context, _ resource.SchemaRequest, r
 		Attributes: map[string]schema.Attribute{
 			"name": schema.StringAttribute{
 				Required:      true,
+				Description:   "Database name. Changing it replaces the database.",
 				PlanModifiers: []planmodifier.String{stringplanmodifier.RequiresReplace()},
 			},
 			"engine": schema.StringAttribute{
@@ -44,12 +50,29 @@ func (r *databaseResource) Schema(_ context.Context, _ resource.SchemaRequest, r
 			"version": schema.StringAttribute{
 				Optional:      true,
 				Computed:      true,
+				Description:   "Engine version. Defaults to the engine's current default.",
 				PlanModifiers: []planmodifier.String{stringplanmodifier.RequiresReplace(), stringplanmodifier.UseStateForUnknown()},
 			},
 			"project_id": schema.StringAttribute{
 				Optional:      true,
 				Computed:      true,
+				Description:   "Project the database belongs to.",
 				PlanModifiers: []planmodifier.String{stringplanmodifier.UseStateForUnknown()},
+			},
+			"pooler_enabled": schema.BoolAttribute{
+				Optional: true, Computed: true,
+				Description:   "Route linked apps through a connection pooler. Toggled in place.",
+				PlanModifiers: []planmodifier.Bool{boolplanmodifier.UseStateForUnknown()},
+			},
+			"pooler_pool_size": schema.Int64Attribute{
+				Optional: true, Computed: true,
+				Description:   "Server connections per pool. Used when the pooler is enabled.",
+				PlanModifiers: []planmodifier.Int64{int64planmodifier.UseStateForUnknown()},
+			},
+			"pooler_max_client_conn": schema.Int64Attribute{
+				Optional: true, Computed: true,
+				Description:   "Client connections the pooler accepts. Used when the pooler is enabled.",
+				PlanModifiers: []planmodifier.Int64{int64planmodifier.UseStateForUnknown()},
 			},
 		},
 	}
@@ -74,6 +97,10 @@ func (r *databaseResource) Create(ctx context.Context, req resource.CreateReques
 			resp.Diagnostics.AddError("Assign database to project failed", err.Error())
 			return
 		}
+	}
+	if err := r.setPooler(ctx, plan, false); err != nil {
+		resp.Diagnostics.AddError("Configure database pooler failed", err.Error())
+		return
 	}
 	var out wireDatabase
 	if err := r.client.do(ctx, http.MethodGet, "/api/v1/databases/"+esc(plan.Name.ValueString()), nil, &out); err != nil {
@@ -112,6 +139,32 @@ func apply(m *databaseModel, w wireDatabase) {
 	m.Engine = types.StringValue(w.Engine)
 	m.Version = types.StringValue(w.Version)
 	m.ProjectID = types.StringValue(w.ProjectID)
+	m.Pooler = types.BoolValue(w.Pooler)
+	m.PoolSize = types.Int64Value(w.PoolSize)
+	m.MaxConn = types.Int64Value(w.MaxConn)
+}
+
+// setPooler calls the pooler routes only when the plan asks for a change
+// (enabled flips, or sizes are set while enabled).
+func (r *databaseResource) setPooler(ctx context.Context, plan databaseModel, update bool) error {
+	path := "/api/v1/databases/" + esc(plan.Name.ValueString()) + "/pooler"
+	if plan.Pooler.IsNull() || plan.Pooler.IsUnknown() {
+		return nil
+	}
+	if !plan.Pooler.ValueBool() {
+		if !update {
+			return nil
+		}
+		return r.client.do(ctx, http.MethodDelete, path, nil, nil)
+	}
+	body := map[string]int64{}
+	if !plan.PoolSize.IsUnknown() && !plan.PoolSize.IsNull() {
+		body["pool_size"] = plan.PoolSize.ValueInt64()
+	}
+	if !plan.MaxConn.IsUnknown() && !plan.MaxConn.IsNull() {
+		body["max_client_conn"] = plan.MaxConn.ValueInt64()
+	}
+	return r.client.do(ctx, http.MethodPost, path, body, nil)
 }
 
 func (r *databaseResource) Update(ctx context.Context, req resource.UpdateRequest, resp *resource.UpdateResponse) {
@@ -126,6 +179,16 @@ func (r *databaseResource) Update(ctx context.Context, req resource.UpdateReques
 			return
 		}
 	}
+	if err := r.setPooler(ctx, plan, true); err != nil {
+		resp.Diagnostics.AddError("Configure database pooler failed", err.Error())
+		return
+	}
+	var out wireDatabase
+	if err := r.client.do(ctx, http.MethodGet, "/api/v1/databases/"+esc(plan.Name.ValueString()), nil, &out); err != nil {
+		resp.Diagnostics.AddError("Read database failed", err.Error())
+		return
+	}
+	apply(&plan, out)
 	resp.Diagnostics.Append(resp.State.Set(ctx, plan)...)
 }
 

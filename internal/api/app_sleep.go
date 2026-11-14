@@ -16,6 +16,7 @@ import (
 	"github.com/GLINCKER/levelrail/internal/functions"
 	"github.com/GLINCKER/levelrail/internal/ingress"
 	"github.com/GLINCKER/levelrail/internal/reconcile"
+	"github.com/GLINCKER/levelrail/internal/runtimesettings"
 	"github.com/GLINCKER/levelrail/internal/store"
 )
 
@@ -278,6 +279,9 @@ func (rt *Router) handleWakeHook(w http.ResponseWriter, r *http.Request) {
 	timing := rt.wakeTiming(r.Context(), name)
 	cfg := appsleep.ConfigFromEnv(nil)
 	hold := cfg.HoldTimeout(timing.ReadyP95Ms)
+	if secs := rt.tunableInt(r.Context(), runtimesettings.KeyAppSleepWakeWaitSeconds, "APP_SLEEP_WAKE_WAIT_SECONDS", 0); secs > 0 {
+		hold = time.Duration(secs) * time.Second
+	}
 	if setting.HoldRequests {
 		fnSettings := rt.loadFunctionSettings(r.Context(), name)
 		lim := functions.LimitsFromEnv(nil)
@@ -289,6 +293,16 @@ func (rt *Router) handleWakeHook(w http.ResponseWriter, r *http.Request) {
 			rt.logger.Warn("api: wake hook: function at max concurrency", slog.String("function", name))
 			w.Header().Set("Retry-After", strconv.Itoa(wakeRetryAfterSeconds(timing)))
 			writeError(w, http.StatusTooManyRequests, "function is at its concurrency limit")
+			return
+		}
+		defer release()
+	}
+	if setting.HoldRequests {
+		maxWaiters := rt.tunableInt(r.Context(), runtimesettings.KeyAppSleepMaxWaiters, "APP_SLEEP_MAX_WAITERS", 200)
+		release, ok := rt.wakeWaiters.Acquire(name, maxWaiters)
+		if !ok {
+			w.Header().Set("Retry-After", strconv.Itoa(wakeRetryAfterSeconds(timing)))
+			writeError(w, http.StatusServiceUnavailable, "too many requests are waiting for this app to wake")
 			return
 		}
 		defer release()

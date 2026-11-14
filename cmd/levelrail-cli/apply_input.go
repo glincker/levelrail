@@ -12,6 +12,7 @@ import (
 	"strings"
 
 	"github.com/GLINCKER/levelrail/internal/apiclient"
+	"github.com/GLINCKER/levelrail/internal/iac"
 )
 
 // stringListFlag is a repeatable string flag.
@@ -39,18 +40,41 @@ func readIaCFiles(paths []string) ([]apiclient.IaCFile, error) {
 	return readIaCFilesNamed(paths, false)
 }
 
+// iacEntry is one file read for apply: its display name, its path relative to
+// the -f root and that root, so compose references resolve against the root.
+type iacEntry struct {
+	file apiclient.IaCFile
+	rel  string
+	root string
+}
+
 // readIaCFilesNamed reads like readIaCFiles. With relative set, each file is
 // named by its path under the -f root (the base name for a plain file), so
 // stored names do not carry a workstation or CI directory.
 func readIaCFilesNamed(paths []string, relative bool) ([]apiclient.IaCFile, error) {
-	var out []apiclient.IaCFile
+	entries, err := collectIaCEntries(paths)
+	if err != nil {
+		return nil, err
+	}
+	out := make([]apiclient.IaCFile, len(entries))
+	for i, e := range entries {
+		out[i] = e.file
+		if relative {
+			out[i].Name = e.rel
+		}
+	}
+	return out, nil
+}
+
+func collectIaCEntries(paths []string) ([]iacEntry, error) {
+	var out []iacEntry
 	for _, p := range paths {
 		if p == "-" {
 			data, err := io.ReadAll(io.LimitReader(stdinSource, 8<<20))
 			if err != nil {
 				return nil, fmt.Errorf("read stdin: %w", err)
 			}
-			out = append(out, apiclient.IaCFile{Name: "stdin", Content: string(data)})
+			out = append(out, iacEntry{file: apiclient.IaCFile{Name: "stdin", Content: string(data)}, rel: "stdin"})
 			continue
 		}
 		info, err := os.Stat(p)
@@ -62,10 +86,7 @@ func readIaCFilesNamed(paths []string, relative bool) ([]apiclient.IaCFile, erro
 			if err != nil {
 				return nil, err
 			}
-			if relative {
-				f.Name = filepath.Base(p)
-			}
-			out = append(out, f)
+			out = append(out, iacEntry{file: f, rel: filepath.Base(p), root: filepath.Dir(p)})
 			continue
 		}
 		var found []string
@@ -87,18 +108,106 @@ func readIaCFilesNamed(paths []string, relative bool) ([]apiclient.IaCFile, erro
 			if err != nil {
 				return nil, err
 			}
-			if relative {
-				if rel, err := filepath.Rel(p, path); err == nil {
-					f.Name = filepath.ToSlash(rel)
-				}
+			rel := f.Name
+			if r, err := filepath.Rel(p, path); err == nil {
+				rel = filepath.ToSlash(r)
 			}
-			out = append(out, f)
+			out = append(out, iacEntry{file: f, rel: rel, root: p})
 		}
 	}
 	if len(out) == 0 {
 		return nil, errors.New("no resource files found")
 	}
 	return out, nil
+}
+
+// readIaCInput reads the -f inputs and moves compose files that App documents
+// reference out of the document list into attachments. Referenced files are
+// read below their root with no symlink on the way.
+func readIaCInput(paths []string) ([]apiclient.IaCFile, map[string]string, error) {
+	return readIaCInputNamed(paths, false)
+}
+
+// readIaCInputNamed is readIaCInput; relative names each document by its path under the -f root.
+func readIaCInputNamed(paths []string, relative bool) ([]apiclient.IaCFile, map[string]string, error) {
+	entries, err := collectIaCEntries(paths)
+	if err != nil {
+		return nil, nil, err
+	}
+	byRoot := map[string][]iacEntry{}
+	var roots []string
+	for _, e := range entries {
+		if _, ok := byRoot[e.root]; !ok {
+			roots = append(roots, e.root)
+		}
+		byRoot[e.root] = append(byRoot[e.root], e)
+	}
+	var files []apiclient.IaCFile
+	att := map[string]string{}
+	for _, root := range roots {
+		group := byRoot[root]
+		srcs := make([]iac.Source, len(group))
+		display := map[string]apiclient.IaCFile{}
+		for i, e := range group {
+			srcs[i] = iac.Source{Name: e.rel, Data: []byte(e.file.Content)}
+			display[e.rel] = e.file
+		}
+		docs, atts, _ := iac.SplitComposeRefs(srcs)
+		for _, d := range docs {
+			f := display[d.Name]
+			if relative {
+				f.Name = d.Name
+			}
+			files = append(files, f)
+		}
+		for name, data := range atts {
+			if err := checkNoSymlink(root, name); err != nil {
+				return nil, nil, err
+			}
+			att[name] = string(data)
+		}
+		for _, ref := range iac.ComposeRefPaths(docs) {
+			if _, have := att[ref]; have || root == "" {
+				continue
+			}
+			data, err := readBelowRoot(root, ref)
+			if err != nil {
+				if errors.Is(err, fs.ErrNotExist) {
+					continue // the server reports compose_ref_missing
+				}
+				return nil, nil, err
+			}
+			att[ref] = data
+		}
+	}
+	if len(att) == 0 {
+		att = nil
+	}
+	return files, att, nil
+}
+
+// checkNoSymlink refuses a symlink on any segment of rel below root.
+func checkNoSymlink(root, rel string) error {
+	cur := root
+	for _, seg := range strings.Split(rel, "/") {
+		cur = filepath.Join(cur, seg)
+		fi, err := os.Lstat(cur)
+		if err != nil {
+			return err
+		}
+		if fi.Mode()&os.ModeSymlink != 0 {
+			return fmt.Errorf("compose file %s: symlinks are not allowed on a compose path", rel)
+		}
+	}
+	return nil
+}
+
+func readBelowRoot(root, rel string) (string, error) {
+	if err := checkNoSymlink(root, rel); err != nil {
+		return "", err
+	}
+	data, err := os.ReadFile(filepath.Join(root, filepath.FromSlash(rel))) //nolint:gosec // the path was cleaned and checked for symlinks
+	return string(data), err
 }
 
 func readOneIaCFile(path string) (apiclient.IaCFile, error) {

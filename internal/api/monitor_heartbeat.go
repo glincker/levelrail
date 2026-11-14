@@ -15,6 +15,7 @@ import (
 type MonitorHeartbeats interface {
 	Ping(ctx context.Context, token, signal string) error
 	RotateToken(ctx context.Context, id string) (monitor.Monitor, error)
+	CheckIn(ctx context.Context, name, signal string) error
 	Config() monitor.Config
 }
 

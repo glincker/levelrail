@@ -38,7 +38,7 @@ type stackDiffResponse struct {
 func revisionNumber(w http.ResponseWriter, r *http.Request) (int, bool) {
 	n, err := strconv.Atoi(r.PathValue("n"))
 	if err != nil || n < 1 {
-		writeError(w, http.StatusBadRequest, "revision number must be a positive integer")
+		writeIaCError(w, http.StatusBadRequest, iac.CodeInvalidRequest, "revision number must be a positive integer", nil)
 		return 0, false
 	}
 	return n, true
@@ -64,7 +64,7 @@ func (rt *Router) handleStackRevisions(w http.ResponseWriter, r *http.Request) {
 	}
 	out := make([]stackRevisionSummary, 0, len(revs))
 	for _, v := range revs {
-		out = append(out, summarizeRevision(v))
+		out = append(out, rt.summarizeRevision(r.Context(), v))
 	}
 	writeJSON(w, http.StatusOK, map[string]any{"stack": s.Name, "pinned_revision": s.PinnedRevision, "revisions": out})
 }
@@ -100,7 +100,7 @@ func (rt *Router) handleStackRevision(w http.ResponseWriter, r *http.Request) {
 		rt.internalError(w, "api: stack revision documents unreadable", err)
 		return
 	}
-	writeJSON(w, http.StatusOK, stackRevisionDetail{stackRevisionSummary: summarizeRevision(v), Files: files, Plan: v.PlanJSON, Result: v.ResultJSON})
+	writeJSON(w, http.StatusOK, stackRevisionDetail{stackRevisionSummary: rt.summarizeRevision(r.Context(), v), Files: files, Plan: v.PlanJSON, Result: v.ResultJSON})
 }
 
 // stackResources parses stored documents into resources keyed by identity.
@@ -246,7 +246,7 @@ func (rt *Router) handleStackDiff(w http.ResponseWriter, r *http.Request) {
 	}
 	m, err := strconv.Atoi(against)
 	if err != nil || m < 1 {
-		writeError(w, http.StatusBadRequest, "against must be a revision number or \"live\"")
+		writeIaCError(w, http.StatusBadRequest, iac.CodeInvalidRequest, "against must be a revision number or \"live\"", nil)
 		return
 	}
 	other, err := ss.GetStackRevision(r.Context(), s.ID, m)
@@ -269,10 +269,13 @@ func (rt *Router) handleStackDiff(w http.ResponseWriter, r *http.Request) {
 			return
 		}
 	}
-	writeError(w, http.StatusUnprocessableEntity, err.Error())
+	writeIaCError(w, http.StatusUnprocessableEntity, iac.CodeInvalidDocument, err.Error(), nil)
 }
 
 func (rt *Router) handleStackRollback(w http.ResponseWriter, r *http.Request) {
+	if !rt.refuseApplyDisabled(w, r) {
+		return
+	}
 	ss, ok := rt.stackStoreOr501(w)
 	if !ok {
 		return

@@ -73,6 +73,12 @@ func (rt *Router) handleDeployCompose(w http.ResponseWriter, r *http.Request) {
 	}
 
 	opts := composeDeployOpts{profiles: splitProfiles(r.URL.Query().Get("profiles")), source: store.ComposeRevisionSourceAPI}
+	if in, ok := r.Context().Value(iacComposeKey{}).(iacComposeInput); ok {
+		if !strictIaCCompose(w, body, in.env) {
+			return
+		}
+		opts.interpEnv = in.env
+	}
 	if id := r.URL.Query().Get("template"); id != "" {
 		if instanceOnlyTemplates[id] && !callerIsInstance(r) {
 			writeError(w, http.StatusForbidden, msgTemplateInstanceOnly)

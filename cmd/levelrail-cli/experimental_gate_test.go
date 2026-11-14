@@ -2,10 +2,13 @@ package main
 
 import (
 	"bytes"
+	"net/http"
+	"net/http/httptest"
 	"os"
 	"strings"
 	"testing"
 
+	"github.com/GLINCKER/levelrail/internal/apiclient"
 	"github.com/GLINCKER/levelrail/internal/experimental"
 )
 
@@ -74,5 +77,45 @@ func TestDataExportCommandsNotGatedByIaC(t *testing.T) {
 		if rejectDisabledExperimental("prog", args, &stderr) {
 			t.Errorf("%v rejected while iac is off: %q", args, stderr.String())
 		}
+	}
+}
+
+func scopedTokenServer(t *testing.T, precheckStatus int, body string) *httptest.Server {
+	t.Helper()
+	stack := (&stackFake{t: t, plan: pendingPlan()}).handler()
+	return httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		if r.URL.Path == "/api/v1/settings/beta-features" {
+			w.Header().Set("Content-Type", "application/json")
+			w.WriteHeader(precheckStatus)
+			_, _ = w.Write([]byte(body))
+			return
+		}
+		stack.ServeHTTP(w, r)
+	}))
+}
+
+func TestExperimentalGate_ForbiddenPrecheckProceeds(t *testing.T) {
+	restoreAllExperimental(t)
+	experimental.Set()
+	srv := scopedTokenServer(t, http.StatusForbidden, `{"error":"forbidden"}`)
+	defer srv.Close()
+	dir := composeStackDir(t)
+	env := map[string]string{apiclient.EnvAPIToken: "stack-token", apiclient.EnvAPIURL: srv.URL}
+	code, out, errOut := runIaC([]string{"stack", "plan", "shop", "-f", dir, "--api-url", srv.URL}, env)
+	if code != exitOK {
+		t.Fatalf("exit = %d\n%s\n%s", code, out, errOut)
+	}
+}
+
+func TestExperimentalGate_DisabledPrecheckStillRefuses(t *testing.T) {
+	restoreAllExperimental(t)
+	experimental.Set()
+	srv := scopedTokenServer(t, http.StatusOK, `[{"id":"iac","enabled":false}]`)
+	defer srv.Close()
+	dir := composeStackDir(t)
+	env := map[string]string{apiclient.EnvAPIToken: "tok", apiclient.EnvAPIURL: srv.URL}
+	code, _, errOut := runIaC([]string{"stack", "plan", "shop", "-f", dir}, env)
+	if code != exitUsage || !strings.Contains(errOut, experimental.EnvVar) {
+		t.Fatalf("exit = %d, stderr = %q", code, errOut)
 	}
 }

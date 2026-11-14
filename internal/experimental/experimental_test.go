@@ -36,6 +36,7 @@ func TestParse(t *testing.T) {
 	}{
 		{"", 0, false},
 		{"iac,ai-chat", 2, false},
+		{"cloud", 1, false},
 		{"iac,nope", 0, true},
 	}
 	for _, tc := range tests {
@@ -43,6 +44,20 @@ func TestParse(t *testing.T) {
 		if (err != nil) != tc.wantErr || len(got) != tc.want {
 			t.Errorf("Parse(%q) = %v, %v", tc.in, got, err)
 		}
+	}
+}
+
+func TestCloudDefaultOff(t *testing.T) {
+	t.Setenv(EnvVar, "")
+	Reset()
+	defer Reset()
+	if Enabled(Cloud) {
+		t.Fatal("cloud must default off")
+	}
+	t.Setenv(EnvVar, "cloud")
+	Reset()
+	if !Enabled(Cloud) {
+		t.Fatal("cloud should enable from APP_EXPERIMENTAL")
 	}
 }
 

@@ -319,6 +319,10 @@ func runDispatch(prog string, args []string, stdout, stderr io.Writer, lookupEnv
 		return runCp(prog, args[1:], stdout, stderr, lookupEnv)
 	case "config":
 		return runConfig(prog, args[1:], stdout, stderr, lookupEnv)
+	case "mcp":
+		return runMCP(prog, args[1:], stdout, stderr, lookupEnv)
+	case "docs":
+		return runDocs(prog, args[1:], stdout, stderr, lookupEnv)
 	case "api-docs":
 		return runAPIDocs(prog, args[1:], stdout, stderr, lookupEnv)
 	case "deploy-link":
@@ -499,7 +503,7 @@ Usage:
   %[1]s apply -f file|dir|- [--dry-run] [--prune --source S] [flags]   converge to YAML resource files: plan, diff, apply
   %[1]s diff -f dir [flags]                                    drift between the files and live state, exit 2 when they differ
   %[1]s export [--project P] [--app A] [-o dir|-] [flags]      write live state as stable resource files
-  %[1]s stack list|show|create|plan|apply|history|show-revision|diff|rollback|pin|unpin|unlock|delete|settings|drift <name> [flags]   stacks: named, versioned sets of resources with revisions and rollback
+  %[1]s stack list|show|create|plan|apply|history|show-revision|diff|rollback|pin|unpin|unlock|delete|settings|drift|adopt-from-export <name> [flags]   stacks: named, versioned sets of resources with revisions and rollback
   %[1]s export destinations list|create|test|status|enable|disable|delete, export audit   send logs, audit events and metrics to your own tools
   %[1]s otel destinations list|add|test|remove                 OTLP/HTTP metric and log export to your own collector
   %[1]s event-webhooks list|create|test|deliveries|replay|enable|disable|rotate-secret|delete   signed outbound event webhooks with a delivery log
@@ -563,6 +567,8 @@ Usage:
   %[1]s edit app <name> [--yes]                                edit the app document in $EDITOR and apply it
   %[1]s port-forward <app|db/name> [LOCAL:]REMOTE              friendly alias over the app and database tunnels
   %[1]s cp <app/volume:path> <local>                           copy a file to or from an app volume
+  %[1]s mcp add <client> [--yes] [--dry-run]                  add the MCP server to a client config, token by env reference
+  %[1]s docs [--format markdown|json] [--out-dir DIR]        dump the command tree with help text, offline
   %[1]s api-docs [flags]                                      every registered HTTP route, the same data as Settings > API explorer
   %[1]s deploy-link --image REF --name N --port P [flags]     print a "Deploy with" link and README button for an image, git repo or template
   %[1]s containers [flags]                                    every container on this node, managed by %[1]s or not
@@ -602,6 +608,7 @@ Usage:
   %[1]s migrate coolify --url URL --token TOKEN [flags]   migrate apps from a Coolify instance
   %[1]s import platform coolify|dokploy|caprover|heroku|vercel|render --url URL [flags]   import apps from another platform, see "%[1]s import platform -h"
   %[1]s import config [dir] [--out FILE] [--strict] [--json]   offline: propose an app.yaml from Procfile, app.json and vercel.json, see "%[1]s import config -h"
+  %[1]s import compose-ref [dir] [--write DIR] [--json]   offline: emit documents for the image services of compose files, see "%[1]s import compose-ref -h"
   %[1]s import takeover plan|run|status|rollback [flags]   move this server's ports 80 and 443 from the old proxy to the built-in ingress, see "%[1]s import takeover -h"
   %[1]s completion bash|zsh|fish                          print a shell completion script, see "%[1]s completion -h"
   %[1]s settings oauth|email|ingress|ai-assistant get|set [flags]   configure OAuth sign-in, outbound email, ingress/ACME, and the BYOK AI assistant

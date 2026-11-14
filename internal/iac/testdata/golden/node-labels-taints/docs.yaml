@@ -1,0 +1,9 @@
+version: 1
+kind: Node
+metadata:
+  name: worker-1
+spec:
+  labels:
+    zone: a
+  taints:
+    - {key: gpu, value: "true", effect: NoSchedule}

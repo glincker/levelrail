@@ -251,3 +251,26 @@ func TestAppSleepNow(t *testing.T) {
 		t.Errorf("second sleep now = %d, want 409", got)
 	}
 }
+
+func TestWakeHookRefusesPastWaiterLimit(t *testing.T) {
+	t.Setenv("APP_SLEEP_MAX_WAITERS", "1")
+	rt, db, _ := newSafetyRouter(t, stubResolver{digest: newDigest})
+	rt.wakeToken = "tok"
+	ctx := context.Background()
+	if err := db.SaveDesiredService(ctx, store.DesiredService{Name: "web", Image: "nginx:1", Port: 80, Domains: []string{"web.example.com"}}); err != nil {
+		t.Fatal(err)
+	}
+	if rec := sleepPut(t, rt.handleSetAppSleep, `{"idle_minutes":30}`); rec.Code != http.StatusOK {
+		t.Fatalf("enable = %d", rec.Code)
+	}
+	if err := db.SetAppSleepHold(ctx, "web", true, time.Now()); err != nil {
+		t.Fatal(err)
+	}
+	if _, ok := rt.wakeWaiters.Acquire("web", 1); !ok {
+		t.Fatal("first slot refused")
+	}
+	rec := wakeHook(rt, "web", "/")
+	if rec.Code != http.StatusServiceUnavailable || rec.Header().Get("Retry-After") == "" {
+		t.Fatalf("overflow = %d retry-after=%q, want 503 with Retry-After", rec.Code, rec.Header().Get("Retry-After"))
+	}
+}

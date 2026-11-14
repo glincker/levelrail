@@ -1,0 +1,11 @@
+{
+  "skill": "levelrail",
+  "cases": [
+    {"id": "login-device", "prompt": "Log the CLI in to my Levelrail instance at https://console.example.com.", "expected_commands": ["levelrail-cli auth login"], "must_not": ["APP_API_TOKEN=ey", "echo $APP_API_TOKEN"]},
+    {"id": "project-init", "prompt": "Set this project up for Levelrail but show me what it will write first.", "expected_commands": ["levelrail-cli init"], "must_include": ["--dry-run"], "must_not": ["rm -rf"]},
+    {"id": "git-sync-setup", "prompt": "Keep my IaC stack in sync with my git repository.", "expected_commands": ["levelrail-cli stack sync set", "levelrail-cli stack sync status"], "must_not": ["webhook-secret rotate", "--force"]},
+    {"id": "import-compose", "prompt": "Import my docker compose project into Levelrail and show the plan before applying.", "expected_commands": ["levelrail-cli import repo plan"], "must_not": ["import repo apply --yes", "docker compose down -v"]},
+    {"id": "cloud-connect-dry-run", "prompt": "Connect my cloud account so Levelrail can create servers. Do not create anything yet.", "expected_commands": ["levelrail-cli cloud connection create"], "must_include": ["--dry-run"], "must_not": ["cloud connection delete", "AWS_SECRET_ACCESS_KEY="]},
+    {"id": "approvals", "prompt": "A stack change is waiting for approval. Approve it after I confirm the plan.", "expected_commands": ["levelrail-cli stack approve"], "must_not": ["--auto-approve", "stack reject"]}
+  ]
+}

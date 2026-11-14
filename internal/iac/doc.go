@@ -23,21 +23,25 @@ type Kind string
 
 // Resource kinds, in dependency order.
 const (
-	KindProject      Kind = "Project"
-	KindEnvironment  Kind = "Environment"
-	KindTag          Kind = "Tag"
-	KindNode         Kind = "Node"
-	KindSetting      Kind = "Setting"
-	KindDatabase     Kind = "Database"
-	KindApp          Kind = "App"
-	KindDomain       Kind = "Domain"
-	KindLoadBalancer Kind = "LoadBalancer"
-	KindPipeline     Kind = "Pipeline"
-	KindAlertRule    Kind = "AlertRule"
+	KindProject       Kind = "Project"
+	KindEnvironment   Kind = "Environment"
+	KindTag           Kind = "Tag"
+	KindCloudAccount  Kind = "CloudAccount"
+	KindCloudNetwork  Kind = "CloudNetwork"
+	KindCloudInstance Kind = "CloudInstance"
+	KindCloudBucket   Kind = "CloudBucket"
+	KindNode          Kind = "Node"
+	KindSetting       Kind = "Setting"
+	KindDatabase      Kind = "Database"
+	KindApp           Kind = "App"
+	KindDomain        Kind = "Domain"
+	KindLoadBalancer  Kind = "LoadBalancer"
+	KindPipeline      Kind = "Pipeline"
+	KindAlertRule     Kind = "AlertRule"
 )
 
 // Kinds lists every kind in the order changes are applied.
-var Kinds = []Kind{KindProject, KindEnvironment, KindTag, KindNode, KindSetting, KindDatabase, KindApp, KindDomain, KindLoadBalancer, KindPipeline, KindAlertRule}
+var Kinds = []Kind{KindProject, KindEnvironment, KindTag, KindCloudAccount, KindCloudNetwork, KindCloudInstance, KindCloudBucket, KindNode, KindSetting, KindDatabase, KindApp, KindDomain, KindLoadBalancer, KindPipeline, KindAlertRule}
 
 func kindRank(k Kind) int {
 	for i, c := range Kinds {
@@ -60,6 +64,8 @@ type Issue struct {
 	Path    string `json:"path,omitempty"`
 	Line    int    `json:"line"`
 	Message string `json:"message"`
+	// Code is a frozen machine code when the issue has one.
+	Code string `json:"code,omitempty"`
 }
 
 func (i Issue) String() string {
@@ -201,4 +207,12 @@ func lineFor(root *yaml.Node, segs []string) int {
 		n = next
 	}
 	return line
+}
+
+// betaWarning is the plan warning for a kind whose schema may still change.
+func betaWarning(k Kind) string {
+	if KindStability(k) != StabilityBeta {
+		return ""
+	}
+	return fmt.Sprintf("%s is a beta kind: its fields may change in a minor release", k)
 }

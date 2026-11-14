@@ -10,6 +10,27 @@ The provider drives the same REST API as the dashboard and CLI, with your own to
 **Not published yet.** The provider is built from source for now. Publishing to the Terraform and OpenTofu registries is a later step, so there is no `terraform init` download yet.
 </Warning>
 
+## Installing from source today and from the registry later
+
+The provider is not on the Terraform or OpenTofu registry yet, so `terraform init` cannot download it. Build it and point the CLI at the binary with `dev_overrides`:
+
+```bash
+cd integrations/terraform-provider
+go build -o ~/go/bin/terraform-provider-levelrail .
+```
+
+```hcl
+# ~/.terraformrc (or the file named by TF_CLI_CONFIG_FILE)
+provider_installation {
+  dev_overrides {
+    "glincker/levelrail" = "/home/you/go/bin"
+  }
+  direct {}
+}
+```
+
+With `dev_overrides` skip `terraform init` for this provider and run `plan` and `apply` directly. When the registry release exists, the `source = "registry.terraform.io/glincker/levelrail"` address in the example above will work without the override. The release plan is in `integrations/terraform-provider/release/README.md`.
+
 ## Where the name lives
 
 Everything that carries the product name is in one file, `integrations/terraform-provider/internal/provider/brand.go`: the resource prefix, the registry address, and the environment variable names. A rename is that one edit plus the module path in `integrations/terraform-provider/go.mod`. Resource type names are built from the prefix at runtime, so no other Go file repeats it.
@@ -39,14 +60,42 @@ provider "levelrail" {
 | --- | --- | --- |
 | `levelrail_project` | A project | project ID |
 | `levelrail_environment` | An environment of a project, including `protected` | `project_id/environment_name` |
-| `levelrail_app` | Image, port, replicas, strategy, bind address, plain env vars, project | app name |
+| `levelrail_app` | Image, port, replicas, strategy, bind address, plain env vars, project, command, labels, memory and CPU limits, restart policy, readiness and liveness paths, published ports | app name |
 | `levelrail_domain` | One hostname routed to an app | `app_name/host` |
-| `levelrail_database` | A managed database and its project | database name |
+| `levelrail_database` | A managed database, its project and its connection pooler (`pooler_enabled`, `pooler_pool_size`, `pooler_max_client_conn`) | database name |
 | `levelrail_environment_variables` | Variables shared by a project or an environment | `project/<id>` or `environment/<id>` |
 | `levelrail_status_page` | The public status page settings: `enabled`, `title`, `description`, `custom_domain` (one per control plane) | any value, for example `status-page` |
+| `levelrail_app_secret` | One secret value for an app (write only: the API never returns values, so only a missing key shows as drift; the value is kept in state) | `app/key` |
+| `levelrail_alert_rule` | An alert rule on one app (threshold or crash loop) | `app/rule_id` |
 | `levelrail_status_component` | One status page row: `kind` (`app`, `domain` or `check`), `target`, `name`, `order` | component ID |
+| `levelrail_setting` | One runtime setting (`key`, `value`); destroy resets it to the default | setting key |
+| `levelrail_node_labels` | Labels and taints on an existing node, by name | node name or ID |
 
-Data sources: `levelrail_apps` lists every app with its image, port, project and domains. `levelrail_nodes` lists the fleet and needs a root token.
+Data sources: `levelrail_apps` lists every app with its image, port, project and domains. `levelrail_nodes` lists the fleet and needs a root token. `levelrail_app_secrets` lists the secret key names, lock and age of one app, never values.
+
+## Coverage
+
+Gap analysis of what each resource exposes against what the REST API and the IaC kinds support. "Not covered" means the API has it but it is not stable in the IaC schema yet, or it has no stable route.
+
+| Resource or data source | Exposed | Not covered |
+| --- | --- | --- |
+| `levelrail_project` | name | shared env (use `levelrail_environment_variables`) |
+| `levelrail_environment` | project, name, protected | environment env (use `levelrail_environment_variables`) |
+| `levelrail_app` | image, port, replicas, strategy, bind address, env, project, command, labels, memory (`memory_mb`) and CPU (`cpus`) limits, restart policy, readiness and liveness probes (path, exec or TCP), published ports, named volumes, tags | bind mounts, hooks, probe timings, egress, GPU, tolerations, affinity, database env references, files (they can hold secrets and have no stable read-back of their content) |
+| `levelrail_domain` | app, host | TLS, redirects, headers, WAF, caching, auth gates (not in the IaC Domain schema yet) |
+| `levelrail_database` | engine, version, project, pooler settings | backup schedules, placement, public access (not in the IaC Database schema yet), users |
+| `levelrail_environment_variables` | keys at a project or environment scope | vault-backed variables |
+| `levelrail_app_secret` | one secret value | bulk import |
+| `levelrail_alert_rule` | threshold and crash loop rules on an app | notification channel management |
+| `levelrail_status_page` | enabled, title, description, custom domain | incidents |
+| `levelrail_status_component` | kind, target, name, order | none |
+| `levelrail_setting` | key and value of any setting that is not marked sensitive | sensitive settings (credentials), which are refused so they never reach state |
+| `levelrail_node_labels` | labels and taints of an existing node | creating or deleting nodes, drains, region, workloads |
+| Data `levelrail_apps`, `levelrail_nodes`, `levelrail_app_secrets` | listings | filters |
+
+Every resource supports `terraform import`, treats a 404 on read as drift (removed from state), and reads the live object after each write. Lists, sets and maps on `levelrail_app` (command, labels, published ports, volumes, tags, exec probes, env) are managed only when set, so leaving one unset never wipes what the dashboard configured; a resource that is imported shows them as unset until you add them to the configuration.
+
+Memory and CPU use friendly units: `memory_mb` (MiB) and `cpus` (fractions allowed, `0.5` is half a CPU). The older `memory_bytes` and `nano_cpus` still work and are deprecated; set only one of each pair. Volumes are applied through the volumes route and tags are lowercase `key` or `key:value`.
 
 ## Complete example
 
@@ -110,14 +159,24 @@ output "node_count" {
 - `levelrail_status_page` is a singleton. Destroying it turns the page off and clears its fields. See `examples/terraform-provider/status-page.tf`.
 - `levelrail_status_component` is matched by ID, so a component deleted outside Terraform is planned for re-creation. Status incidents are not managed.
 
+## Settings, node labels and tokens
+
+- `levelrail_setting` writes through the same validation as the CLI. A change that weakens a security protection is refused until you confirm it in the CLI or dashboard, and settings marked sensitive are refused outright, so a credential never lands in state. Destroying the resource resets the key to its default. Writing settings needs a root token.
+- `levelrail_node_labels` never creates or deletes a node. It owns only the label keys and the taints (key plus effect) you list: others set from the CLI are left alone and never show as drift, and destroy removes only what the resource set. Importing by node name adopts every label and taint the node has.
+- There is no token resource. The API only lets an interactive session create or revoke tokens, never a bearer token, so a provider holding a token cannot mint another one. Create tokens in the dashboard or CLI and pass them in as variables.
+
+## Retries
+
+Requests are retried with exponential backoff and jitter on 429, 5xx and connection resets, honoring `Retry-After`. Only safe requests are retried: GET, HEAD, PUT and DELETE, and POST only when it carries an `Idempotency-Key`. A 4xx other than 429 is never retried. Tune it with `max_retries` (default 4, `0` turns it off) and `retry_wait_max_seconds` (default 30, which also caps a long `Retry-After`) in the provider block.
+
 ## What is not covered
 
-- App secrets and vault-backed variables (`secret_env`, `vault_env`): values would land in Terraform state, so use the secrets API or the CLI.
-- Volumes, bind mounts, resource limits, health checks, hooks, labels, commands and egress policy on apps.
+- Vault-backed variables (`vault_env`) and bulk secret import. Single secret values can be set with `levelrail_app_secret`, but they land in Terraform state, so protect the state.
+- Volumes, bind mounts, hooks, exec and TCP probes, egress policy, GPU requests and placement on apps.
 - Git and build sources, deploys and rollbacks (these are actions, not state).
 - Per-domain settings such as TLS certificates, redirects, headers, WAF, caching and auth gates.
-- Nodes (read only through the data source), load balancers, alerts, pipelines, notification channels, backups, teams, users, roles and tokens.
-- Database users, backup schedules, public access and upgrades.
+- Creating or removing nodes (the `levelrail_nodes` data source reads them), load balancers, pipelines, notification channels, backups, teams, users, roles and tokens.
+- Database users, backup schedules, placement, public access and upgrades.
 
 For several of these, [Platform as code](platform-as-code.md) covers them through the CLI.
 
