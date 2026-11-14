@@ -47,6 +47,8 @@ provider "levelrail" {
 | `levelrail_app_secret` | One secret value for an app (write only: the API never returns values, so only a missing key shows as drift; the value is kept in state) | `app/key` |
 | `levelrail_alert_rule` | An alert rule on one app (threshold or crash loop) | `app/rule_id` |
 | `levelrail_status_component` | One status page row: `kind` (`app`, `domain` or `check`), `target`, `name`, `order` | component ID |
+| `levelrail_setting` | One runtime setting (`key`, `value`); destroy resets it to the default | setting key |
+| `levelrail_node_labels` | Labels and taints on an existing node, by name | node name or ID |
 
 Data sources: `levelrail_apps` lists every app with its image, port, project and domains. `levelrail_nodes` lists the fleet and needs a root token. `levelrail_app_secrets` lists the secret key names, lock and age of one app, never values.
 
@@ -66,6 +68,8 @@ Gap analysis of what each resource exposes against what the REST API and the IaC
 | `levelrail_alert_rule` | threshold and crash loop rules on an app | notification channel management |
 | `levelrail_status_page` | enabled, title, description, custom domain | incidents |
 | `levelrail_status_component` | kind, target, name, order | none |
+| `levelrail_setting` | key and value of any setting that is not marked sensitive | sensitive settings (credentials), which are refused so they never reach state |
+| `levelrail_node_labels` | labels and taints of an existing node | creating or deleting nodes, drains, region, workloads |
 | Data `levelrail_apps`, `levelrail_nodes`, `levelrail_app_secrets` | listings | filters |
 
 Every resource supports `terraform import`, treats a 404 on read as drift (removed from state), and reads the live object after each write. Lists and maps on `levelrail_app` (command, labels, published ports, env) are managed only when set, so leaving one unset never wipes what the dashboard configured; a resource that is imported shows them as unset until you add them to the configuration.
@@ -132,13 +136,23 @@ output "node_count" {
 - `levelrail_status_page` is a singleton. Destroying it turns the page off and clears its fields. See `examples/terraform-provider/status-page.tf`.
 - `levelrail_status_component` is matched by ID, so a component deleted outside Terraform is planned for re-creation. Status incidents are not managed.
 
+## Settings, node labels and tokens
+
+- `levelrail_setting` writes through the same validation as the CLI. A change that weakens a security protection is refused until you confirm it in the CLI or dashboard, and settings marked sensitive are refused outright, so a credential never lands in state. Destroying the resource resets the key to its default. Writing settings needs a root token.
+- `levelrail_node_labels` never creates or deletes a node. It owns only the label keys and the taints (key plus effect) you list: others set from the CLI are left alone and never show as drift, and destroy removes only what the resource set. Importing by node name adopts every label and taint the node has.
+- There is no token resource. The API only lets an interactive session create or revoke tokens, never a bearer token, so a provider holding a token cannot mint another one. Create tokens in the dashboard or CLI and pass them in as variables.
+
+## Retries
+
+Requests are retried with exponential backoff and jitter on 429, 5xx and connection resets, honoring `Retry-After`. Only safe requests are retried: GET, HEAD, PUT and DELETE, and POST only when it carries an `Idempotency-Key`. A 4xx other than 429 is never retried. Tune it with `max_retries` (default 4, `0` turns it off) and `retry_wait_max_seconds` (default 30, which also caps a long `Retry-After`) in the provider block.
+
 ## What is not covered
 
 - Vault-backed variables (`vault_env`) and bulk secret import. Single secret values can be set with `levelrail_app_secret`, but they land in Terraform state, so protect the state.
 - Volumes, bind mounts, hooks, exec and TCP probes, egress policy, GPU requests and placement on apps.
 - Git and build sources, deploys and rollbacks (these are actions, not state).
 - Per-domain settings such as TLS certificates, redirects, headers, WAF, caching and auth gates.
-- Nodes (read only through the data source), load balancers, pipelines, notification channels, backups, teams, users, roles and tokens.
+- Creating or removing nodes (the `levelrail_nodes` data source reads them), load balancers, pipelines, notification channels, backups, teams, users, roles and tokens.
 - Database users, backup schedules, placement, public access and upgrades.
 
 For several of these, [Platform as code](platform-as-code.md) covers them through the CLI.

@@ -115,6 +115,8 @@ func (p *controlPlaneProvider) Resources(context.Context) []func() resource.Reso
 		NewStatusComponentResource,
 		NewAppSecretResource,
 		NewAlertRuleResource,
+		NewSettingResource,
+		NewNodeLabelsResource,
 	}
 }
 
