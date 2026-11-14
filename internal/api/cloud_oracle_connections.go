@@ -1,6 +1,7 @@
 package api
 
 import (
+	"context"
 	"crypto/rand"
 	"encoding/hex"
 	"encoding/json"
@@ -83,11 +84,19 @@ func (rt *Router) handleCreateOracleConnection(w http.ResponseWriter, r *http.Re
 		rt.internalError(w, "api: oracle seal key failed", err)
 		return
 	}
-	ref, err := cloudconn.SealOracleSecret(r.Context(), rt.composeSecrets, oracleSealedNamespace, req.Name+"."+hex.EncodeToString(suffix), cred.Secret)
+	sealKey := req.Name + "." + hex.EncodeToString(suffix)
+	ref, err := cloudconn.SealOracleSecret(r.Context(), rt.composeSecrets, oracleSealedNamespace, sealKey, cred.Secret)
 	if err != nil {
 		rt.writeCloudConnectionError(w, "api: seal oracle credential failed", err)
 		return
 	}
+	// Only the value this call sealed is removed, so a racing create keeps its own bundle.
+	created := false
+	defer func() {
+		if !created {
+			rt.dropSealedOracle(context.WithoutCancel(r.Context()), sealKey)
+		}
+	}()
 	_, actor, _, _ := rt.callerPrincipal(r)
 	c, err := svc.Create(r.Context(), actor, req.Name, cloudconn.Input{
 		Provider: cloudconn.ProviderOracle, AuthMethod: cloudconn.AuthStatic, CredentialRef: ref,
@@ -101,9 +110,27 @@ func (rt *Router) handleCreateOracleConnection(w http.ResponseWriter, r *http.Re
 		rt.writeCloudConnectionError(w, "api: create oracle connection failed", err)
 		return
 	}
+	created = true
 	rt.auditCloudConnection(r, auditCloudConnCreated, c, "static oracle key sealed, fingerprint "+fingerprintPrefix(req.Fingerprint))
 	writeJSON(w, http.StatusCreated, oracleConnectionResponse{
 		Name: c.Name, Provider: c.Provider, AuthMethod: c.AuthMethod, Region: c.Config.Region,
 		CompartmentOCID: c.Config.Compartment, FingerprintPrefix: fingerprintPrefix(req.Fingerprint),
 	})
+}
+
+// sealedValueDeleter is the optional delete surface of the sealed secret store.
+type sealedValueDeleter interface {
+	DeleteValue(ctx context.Context, serviceName, envKey string) error
+}
+
+// dropSealedOracle removes a sealed bundle no connection points to; the key stays out of the log.
+func (rt *Router) dropSealedOracle(ctx context.Context, key string) {
+	d, ok := rt.composeSecrets.(sealedValueDeleter)
+	if !ok {
+		rt.logger.Warn("api: sealed oracle credential left behind: the secret store cannot delete")
+		return
+	}
+	if err := d.DeleteValue(ctx, oracleSealedNamespace, key); err != nil {
+		rt.logger.Warn("api: removing an unused sealed oracle credential failed")
+	}
 }

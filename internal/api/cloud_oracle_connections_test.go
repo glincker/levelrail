@@ -9,6 +9,7 @@ import (
 	"crypto/x509"
 	"encoding/json"
 	"encoding/pem"
+	"errors"
 	"fmt"
 	"log/slog"
 	"net/http"
@@ -165,5 +166,53 @@ func TestOracleConnectionNeedsRoot(t *testing.T) {
 	f.rt.Handler().ServeHTTP(rec, req)
 	if rec.Code != http.StatusForbidden {
 		t.Fatalf("non-root = %d", rec.Code)
+	}
+}
+
+// failingConnRows fails every create with err, as a lost duplicate race or a store fault would.
+type failingConnRows struct {
+	cloudconn.Rows
+	err error
+}
+
+func (f failingConnRows) CreateCloudConnection(context.Context, store.CloudConnection) error {
+	return f.err
+}
+
+func TestOracleConnectionFailedCreateRemovesItsSealedValue(t *testing.T) {
+	f := newOracleFixture(t)
+	cookie := loginTestSession(t, f.rt, f.db)
+	if rec := f.post(t, cookie, "127.0.0.1:5000", f.body("oci-main", ocComp, f.keyPEM)); rec.Code != http.StatusCreated {
+		t.Fatalf("create = %d %s", rec.Code, rec.Body.String())
+	}
+	orig := f.rt.cloudConnRows
+	for _, tc := range []struct {
+		name string
+		err  error
+		want int
+	}{
+		{"oci-race", store.ErrCloudConnectionExists, http.StatusConflict},
+		{"oci-fault", errors.New("disk full"), http.StatusInternalServerError},
+	} {
+		f.rt.cloudConnRows = failingConnRows{Rows: orig, err: tc.err}
+		if rec := f.post(t, cookie, "127.0.0.1:5000", f.body(tc.name, ocComp, f.keyPEM)); rec.Code != tc.want {
+			t.Fatalf("%s create = %d %s, want %d", tc.name, rec.Code, rec.Body.String(), tc.want)
+		}
+	}
+	f.rt.cloudConnRows = orig
+	keys, err := f.db.ListSecretKeys(context.Background(), oracleSealedNamespace)
+	if err != nil || len(keys) != 1 || !strings.HasPrefix(keys[0].Key, "oci-main.") {
+		t.Fatalf("sealed values after failed creates = %+v %v, want only oci-main", keys, err)
+	}
+	svc := &cloudconn.Service{Rows: orig, Providers: cloudconn.DefaultRegistry()}
+	c, err := svc.Get(context.Background(), "oci-main")
+	if err != nil {
+		t.Fatal(err)
+	}
+	if _, err := cloudconn.OpenOracleSealed(context.Background(), f.mgr, c); err != nil {
+		t.Fatalf("the other connection lost its sealed bundle: %v", err)
+	}
+	if strings.Contains(f.logs.String(), "oci-race.") || strings.Contains(f.logs.String(), "oci-fault.") {
+		t.Fatal("the sealed ref reached the log")
 	}
 }
