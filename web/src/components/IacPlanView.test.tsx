@@ -126,4 +126,42 @@ describe('IacResultView', () => {
     expect(screen.getByText('App/victim')).toBeTruthy()
     expect(screen.getByText(/403 forbidden/)).toBeTruthy()
   })
+
+  it('shows a readable message and fix for a known code', () => {
+    render(
+      <IacPlanView
+        plan={{
+          hash: 'h',
+          summary: { create: 0, update: 0, delete: 0, noop: 0, error: 1 },
+          changes: [
+            {
+              kind: 'App',
+              name: 'web',
+              action: 'error',
+              code: 'environment_protected',
+            },
+          ],
+        }}
+      />,
+    )
+    expect(screen.getByText('environment_protected')).toBeTruthy()
+    expect(screen.getByText(/bound into a protected environment/)).toBeTruthy()
+    expect(screen.getByText(/Fix: Unprotect the environment/)).toBeTruthy()
+  })
+
+  it('shows only the raw code for an unknown code', () => {
+    render(
+      <IacPlanView
+        plan={{
+          hash: 'h',
+          summary: { create: 0, update: 0, delete: 0, noop: 0, error: 1 },
+          changes: [
+            { kind: 'App', name: 'web', action: 'error', code: 'future_code' },
+          ],
+        }}
+      />,
+    )
+    expect(screen.getByText('future_code')).toBeTruthy()
+    expect(screen.queryByText(/Fix:/)).toBeNull()
+  })
 })

@@ -64,6 +64,8 @@ export interface IacKindModel {
 
 export const DEFAULT_IAC_KINDS = [
   'App',
+  'AlertRule',
+  'CronJob',
   'Database',
   'Domain',
   'Environment',

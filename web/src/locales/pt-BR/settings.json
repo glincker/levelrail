@@ -3629,6 +3629,89 @@
       "denied": "negado",
       "skipped": "ignorado",
       "noop": "sem alteração"
+    },
+    "fix": "Correção: {{hint}}",
+    "codes": {
+      "item_failed": {
+        "message": "O item falhou.",
+        "fix": "Leia a mensagem na linha do plano."
+      },
+      "permission_denied": {
+        "message": "O token não pode alterar este recurso.",
+        "fix": "Use um token com a permissão necessária ou remova o recurso dos arquivos."
+      },
+      "protected_resource": {
+        "message": "O recurso está protegido contra esta alteração.",
+        "fix": "Desproteja-o ou declare-o nos arquivos."
+      },
+      "immutable_field": {
+        "message": "Um campo não pode ser alterado no local.",
+        "fix": "Recrie o recurso de propósito ou volte o campo ao valor atual."
+      },
+      "synced_externally": {
+        "message": "Uma fonte externa é dona deste recurso.",
+        "fix": "Altere-o na origem."
+      },
+      "ref_project_missing": {
+        "message": "O projeto não existe e não foi declarado.",
+        "fix": "Adicione um documento Project ou corrija o nome."
+      },
+      "ref_environment_missing": {
+        "message": "O ambiente não existe e não foi declarado.",
+        "fix": "Adicione um documento Environment ou corrija o nome."
+      },
+      "ref_app_missing": {
+        "message": "O app não existe e não foi declarado.",
+        "fix": "Adicione o documento App ou corrija o nome."
+      },
+      "ref_secret_missing": {
+        "message": "O segredo apontado pela referência não existe.",
+        "fix": "Crie o segredo primeiro ou remova existing: true."
+      },
+      "schema_unknown_field": {
+        "message": "Um campo não faz parte do esquema deste tipo.",
+        "fix": "Confira a grafia na referência ou remova o campo."
+      },
+      "plan_stale": {
+        "message": "O estado atual mudou depois que o plano foi criado.",
+        "fix": "Execute o plano de novo e aplique o novo."
+      },
+      "stack_locked": {
+        "message": "O stack está bloqueado para alterações manuais.",
+        "fix": "Altere o manifesto e aplique, ou peça a um administrador."
+      },
+      "prune_guard": {
+        "message": "A remoção apagaria mais do que a proteção permite.",
+        "fix": "Confira o plano e confirme a remoção em massa se for intencional."
+      },
+      "invalid_document": {
+        "message": "O documento falhou na validação.",
+        "fix": "Leia as linhas de problemas com arquivo, linha e campo."
+      },
+      "invalid_name": {
+        "message": "O nome do recurso quebra a regra de nomes.",
+        "fix": "Use minúsculas, dígitos e hífens em metadata.name."
+      },
+      "cron_schedule_invalid": {
+        "message": "O horário cron não é válido.",
+        "fix": "Corrija spec.schedule, por exemplo 0 3 * * *."
+      },
+      "cron_job_invalid": {
+        "message": "A tarefa cron tem nome, comando, fuso horário ou limite inválido.",
+        "fix": "Leia a linha do problema para ver o campo e corrija."
+      },
+      "cron_http_invalid": {
+        "message": "A chamada http da tarefa cron é inválida.",
+        "fix": "Mantenha o caminho no app e dê a cada cabeçalho um valor ou um secretRef."
+      },
+      "alert_rule_invalid": {
+        "message": "A regra de alerta não tem métrica, comparador ou limite.",
+        "fix": "Defina os três, com comparador >, <, >= ou <=."
+      },
+      "environment_protected": {
+        "message": "Um app seria vinculado a um ambiente protegido.",
+        "fix": "Desproteja o ambiente ou faça o deploy pelo caminho normal de aprovação."
+      }
     }
   },
   "iacImport": {
@@ -4009,6 +4092,12 @@
     "editAsYaml": "Editar como YAML",
     "exportedNote": "Exportado do estado ao vivo. Os segredos nunca são incluídos, são exportados como referências.",
     "copyYaml": "Copiar YAML",
-    "copied": "Copiado"
+    "copied": "Copiado",
+    "localTemplates": {
+      "cron-job": {
+        "title": "Tarefa cron",
+        "description": "Executa um comando ou chama um caminho de um app em um horário."
+      }
+    }
   }
 }

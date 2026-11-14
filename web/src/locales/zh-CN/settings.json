@@ -2524,6 +2524,97 @@
     "editAsYaml": "以 YAML 编辑",
     "exportedNote": "已从实时状态导出。密钥不会被包含，而是以引用形式导出。",
     "copyYaml": "复制 YAML",
-    "copied": "已复制"
+    "copied": "已复制",
+    "localTemplates": {
+      "cron-job": {
+        "title": "定时任务",
+        "description": "按计划运行命令，或调用应用上的路径。"
+      }
+    }
+  },
+  "iacPlan": {
+    "fix": "解决办法：{{hint}}",
+    "codes": {
+      "item_failed": {
+        "message": "该项失败。",
+        "fix": "查看计划行上的消息。"
+      },
+      "permission_denied": {
+        "message": "该令牌无权修改此资源。",
+        "fix": "使用具备所需权限的令牌，或从文件中移除该资源。"
+      },
+      "protected_resource": {
+        "message": "该资源受保护，不能做此更改。",
+        "fix": "取消保护，或在文件中声明它。"
+      },
+      "immutable_field": {
+        "message": "某个字段不能就地修改。",
+        "fix": "有意重建该资源，或把字段改回当前值。"
+      },
+      "synced_externally": {
+        "message": "此资源由外部来源管理。",
+        "fix": "请在其来源处修改。"
+      },
+      "ref_project_missing": {
+        "message": "项目不存在，也未声明。",
+        "fix": "添加 Project 文档或修正名称。"
+      },
+      "ref_environment_missing": {
+        "message": "环境不存在，也未声明。",
+        "fix": "添加 Environment 文档或修正名称。"
+      },
+      "ref_app_missing": {
+        "message": "应用不存在，也未声明。",
+        "fix": "添加 App 文档或修正名称。"
+      },
+      "ref_secret_missing": {
+        "message": "引用指向的密钥不存在。",
+        "fix": "先创建该密钥，或去掉 existing: true。"
+      },
+      "schema_unknown_field": {
+        "message": "某个字段不属于该类型的架构。",
+        "fix": "对照参考文档检查拼写，或移除该字段。"
+      },
+      "plan_stale": {
+        "message": "计划生成后，实际状态已发生变化。",
+        "fix": "重新运行计划并应用新计划。"
+      },
+      "stack_locked": {
+        "message": "该堆栈已锁定，禁止手动更改。",
+        "fix": "修改清单后应用，或联系管理员。"
+      },
+      "prune_guard": {
+        "message": "清理将删除超过保护阈值的内容。",
+        "fix": "检查计划，若确为有意操作再确认批量清理。"
+      },
+      "invalid_document": {
+        "message": "文档未通过校验。",
+        "fix": "查看问题行中的文件、行号和字段。"
+      },
+      "invalid_name": {
+        "message": "资源名称不符合命名规则。",
+        "fix": "在 metadata.name 中使用小写字母、数字和连字符。"
+      },
+      "cron_schedule_invalid": {
+        "message": "定时表达式无效。",
+        "fix": "修正 spec.schedule，例如 0 3 * * *。"
+      },
+      "cron_job_invalid": {
+        "message": "定时任务的名称、命令、时区或限制无效。",
+        "fix": "查看问题行中的字段并修正。"
+      },
+      "cron_http_invalid": {
+        "message": "定时任务的 http 调用无效。",
+        "fix": "路径保持在应用上，并为每个请求头提供值或 secretRef。"
+      },
+      "alert_rule_invalid": {
+        "message": "告警规则缺少指标、比较符或阈值。",
+        "fix": "三者都要设置，比较符为 >、<、>= 或 <=。"
+      },
+      "environment_protected": {
+        "message": "应用将被绑定到受保护的环境。",
+        "fix": "取消环境保护，或通过正常审批流程部署。"
+      }
+    }
   }
 }

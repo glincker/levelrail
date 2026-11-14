@@ -4,7 +4,7 @@ import { useTranslation } from 'react-i18next'
 import { CopyGlassIcon, FileCodeGlassIcon } from '@thesvg/ui-react'
 import { Badge } from '@/components/ui/badge'
 import { Button } from '@/components/ui/button'
-import { joinTemplateFiles } from './iacTemplates'
+import { joinTemplateFiles, LOCAL_IAC_TEMPLATES } from './iacTemplates'
 import {
   stackTemplateRenderQueryOptions,
   stackTemplatesQueryOptions,
@@ -19,9 +19,19 @@ export function IacTemplateStrip({
   const queryClient = useQueryClient()
   const { data } = useQuery(stackTemplatesQueryOptions())
   const [note, setNote] = useState('')
-  if (!data || data.length === 0) return null
+  const cards = [
+    ...LOCAL_IAC_TEMPLATES.map((l) => ({
+      id: `local:${l.id}`,
+      title: t(`iacStudio.localTemplates.${l.id}.title`),
+      description: t(`iacStudio.localTemplates.${l.id}.description`),
+      resource_kinds: l.kinds,
+    })),
+    ...(data ?? []).slice(0, MAX_CARDS),
+  ]
 
   async function render(id: string): Promise<string> {
+    const local = LOCAL_IAC_TEMPLATES.find((l) => `local:${l.id}` === id)
+    if (local) return local.yaml
     const out = await queryClient.fetchQuery(
       stackTemplateRenderQueryOptions(id, {}),
     )
@@ -46,7 +56,7 @@ export function IacTemplateStrip({
         {note}
       </p>
       <ul className="grid gap-2 sm:grid-cols-2 lg:grid-cols-4">
-        {data.slice(0, MAX_CARDS).map((tpl) => (
+        {cards.map((tpl) => (
           <li
             key={tpl.id}
             className="flex flex-col gap-2 rounded-xl border bg-card p-3"

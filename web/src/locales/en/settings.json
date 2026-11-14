@@ -3583,6 +3583,89 @@
       "denied": "denied",
       "skipped": "skipped",
       "noop": "unchanged"
+    },
+    "fix": "Fix: {{hint}}",
+    "codes": {
+      "item_failed": {
+        "message": "The item failed.",
+        "fix": "Read the message on the plan line."
+      },
+      "permission_denied": {
+        "message": "The token may not change this resource.",
+        "fix": "Use a token with the needed ability, or remove the resource from the files."
+      },
+      "protected_resource": {
+        "message": "The resource is protected from this change.",
+        "fix": "Unprotect it, or declare it in the files."
+      },
+      "immutable_field": {
+        "message": "A field cannot change in place.",
+        "fix": "Recreate the resource on purpose, or set the field back to the live value."
+      },
+      "synced_externally": {
+        "message": "An outside source owns this resource.",
+        "fix": "Change it at its source."
+      },
+      "ref_project_missing": {
+        "message": "The project does not exist and is not declared.",
+        "fix": "Add a Project document or fix the name."
+      },
+      "ref_environment_missing": {
+        "message": "The environment does not exist and is not declared.",
+        "fix": "Add an Environment document or fix the name."
+      },
+      "ref_app_missing": {
+        "message": "The app does not exist and is not declared.",
+        "fix": "Add the App document or fix the name."
+      },
+      "ref_secret_missing": {
+        "message": "The secret the reference points at is missing.",
+        "fix": "Create the secret first, or drop existing: true."
+      },
+      "schema_unknown_field": {
+        "message": "A field is not part of this kind's schema.",
+        "fix": "Check the spelling against the reference, or remove the field."
+      },
+      "plan_stale": {
+        "message": "The live state changed after the plan was made.",
+        "fix": "Run the plan again and apply the new one."
+      },
+      "stack_locked": {
+        "message": "The stack is locked against manual changes.",
+        "fix": "Change the manifest and apply it, or ask an administrator."
+      },
+      "prune_guard": {
+        "message": "Prune would delete more than the guard allows.",
+        "fix": "Check the plan, then confirm the mass prune if intended."
+      },
+      "invalid_document": {
+        "message": "The document failed validation.",
+        "fix": "Read the issue lines for the file, line and field."
+      },
+      "invalid_name": {
+        "message": "The resource name breaks the naming rule.",
+        "fix": "Use lowercase letters, digits and hyphens in metadata.name."
+      },
+      "cron_schedule_invalid": {
+        "message": "The cron schedule is not valid.",
+        "fix": "Fix spec.schedule, for example 0 3 * * *."
+      },
+      "cron_job_invalid": {
+        "message": "The cron job has an invalid name, command, timezone or limit.",
+        "fix": "Read the issue line for the field and fix it."
+      },
+      "cron_http_invalid": {
+        "message": "The http call of the cron job is invalid.",
+        "fix": "Keep the path on the app, and give each header a value or a secretRef."
+      },
+      "alert_rule_invalid": {
+        "message": "The alert rule lacks a metric, comparator or threshold.",
+        "fix": "Set all three, with a comparator of >, <, >= or <=."
+      },
+      "environment_protected": {
+        "message": "An app would be bound into a protected environment.",
+        "fix": "Unprotect the environment, or deploy through the normal approval path."
+      }
     }
   },
   "iacImport": {
@@ -3963,6 +4046,12 @@
     "editAsYaml": "Edit as YAML",
     "exportedNote": "Exported from live state. Secrets are never included, they are exported as references.",
     "copyYaml": "Copy YAML",
-    "copied": "Copied"
+    "copied": "Copied",
+    "localTemplates": {
+      "cron-job": {
+        "title": "Cron job",
+        "description": "Run a command or call a path on an app on a schedule."
+      }
+    }
   }
 }

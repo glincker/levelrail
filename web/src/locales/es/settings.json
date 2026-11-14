@@ -3271,7 +3271,90 @@
     },
     "summary": "{{create}} por crear, {{update}} por actualizar, {{delete}} por eliminar, {{noop}} sin cambios",
     "summaryErrors": "{{create}} por crear, {{update}} por actualizar, {{delete}} por eliminar, {{noop}} sin cambios, {{error}} con errores",
-    "warning": "aviso: {{message}}"
+    "warning": "aviso: {{message}}",
+    "fix": "Solución: {{hint}}",
+    "codes": {
+      "item_failed": {
+        "message": "El elemento falló.",
+        "fix": "Lee el mensaje de la línea del plan."
+      },
+      "permission_denied": {
+        "message": "El token no puede cambiar este recurso.",
+        "fix": "Usa un token con el permiso necesario o quita el recurso de los archivos."
+      },
+      "protected_resource": {
+        "message": "El recurso está protegido contra este cambio.",
+        "fix": "Desprotégelo o decláralo en los archivos."
+      },
+      "immutable_field": {
+        "message": "Un campo no se puede cambiar en el sitio.",
+        "fix": "Recrea el recurso a propósito o devuelve el campo al valor actual."
+      },
+      "synced_externally": {
+        "message": "Una fuente externa es dueña de este recurso.",
+        "fix": "Cámbialo en su origen."
+      },
+      "ref_project_missing": {
+        "message": "El proyecto no existe y no está declarado.",
+        "fix": "Añade un documento Project o corrige el nombre."
+      },
+      "ref_environment_missing": {
+        "message": "El entorno no existe y no está declarado.",
+        "fix": "Añade un documento Environment o corrige el nombre."
+      },
+      "ref_app_missing": {
+        "message": "La app no existe y no está declarada.",
+        "fix": "Añade el documento App o corrige el nombre."
+      },
+      "ref_secret_missing": {
+        "message": "Falta el secreto al que apunta la referencia.",
+        "fix": "Crea el secreto primero o quita existing: true."
+      },
+      "schema_unknown_field": {
+        "message": "Un campo no forma parte del esquema de este tipo.",
+        "fix": "Revisa la ortografía en la referencia o quita el campo."
+      },
+      "plan_stale": {
+        "message": "El estado actual cambió después de crear el plan.",
+        "fix": "Ejecuta el plan de nuevo y aplica el nuevo."
+      },
+      "stack_locked": {
+        "message": "El stack está bloqueado contra cambios manuales.",
+        "fix": "Cambia el manifiesto y aplícalo, o pide ayuda a un administrador."
+      },
+      "prune_guard": {
+        "message": "La poda borraría más de lo que permite la protección.",
+        "fix": "Revisa el plan y confirma la poda masiva si es lo que quieres."
+      },
+      "invalid_document": {
+        "message": "El documento no pasó la validación.",
+        "fix": "Lee las líneas de problemas con archivo, línea y campo."
+      },
+      "invalid_name": {
+        "message": "El nombre del recurso incumple la regla de nombres.",
+        "fix": "Usa minúsculas, dígitos y guiones en metadata.name."
+      },
+      "cron_schedule_invalid": {
+        "message": "El horario cron no es válido.",
+        "fix": "Corrige spec.schedule, por ejemplo 0 3 * * *."
+      },
+      "cron_job_invalid": {
+        "message": "La tarea cron tiene un nombre, comando, zona horaria o límite no válido.",
+        "fix": "Lee la línea del problema para ver el campo y corrígelo."
+      },
+      "cron_http_invalid": {
+        "message": "La llamada http de la tarea cron no es válida.",
+        "fix": "Mantén la ruta en la app y da a cada cabecera un valor o un secretRef."
+      },
+      "alert_rule_invalid": {
+        "message": "A la regla de alerta le falta métrica, comparador o umbral.",
+        "fix": "Define los tres, con un comparador >, <, >= o <=."
+      },
+      "environment_protected": {
+        "message": "Una app se vincularía a un entorno protegido.",
+        "fix": "Desprotege el entorno o despliega por la vía normal de aprobación."
+      }
+    }
   },
   "iacImport": {
     "button": "Importar YAML",
@@ -3963,6 +4046,12 @@
     "editAsYaml": "Editar como YAML",
     "exportedNote": "Exportado desde el estado en vivo. Los secretos nunca se incluyen, se exportan como referencias.",
     "copyYaml": "Copiar YAML",
-    "copied": "Copiado"
+    "copied": "Copiado",
+    "localTemplates": {
+      "cron-job": {
+        "title": "Tarea cron",
+        "description": "Ejecuta un comando o llama a una ruta de una app según un horario."
+      }
+    }
   }
 }

@@ -7,6 +7,8 @@ import type {
 } from '../queries/iac'
 import { CodeBlock } from '@/components/ui/code-block'
 import { labelOf } from '../lib/labelOf'
+import { IAC_CODE_KEYS } from '../lib/iacPlanCodes'
+import { IacCodeBadge } from './iac/IacCodeBadge'
 
 const actionStyle: Record<string, string> = {
   create: 'text-green-700 dark:text-green-400',
@@ -57,6 +59,26 @@ export function IacSummaryLine({ plan }: { plan: IacPlan }) {
   )
 }
 
+function CodeHint({ code }: { code: string }) {
+  const { t } = useTranslation('settings')
+  const base = labelOf(IAC_CODE_KEYS, code)
+  // An unknown code resolves to itself, so only the raw badge shows.
+  const known = base !== code
+  return (
+    <div className="mt-1 flex flex-wrap items-baseline gap-x-2 gap-y-1 text-sm">
+      <IacCodeBadge code={code} />
+      {known ? (
+        <>
+          <span className="text-foreground">{t(`${base}.message`)}</span>
+          <span className="text-muted-foreground">
+            {t('iacPlan.fix', { hint: t(`${base}.fix`) })}
+          </span>
+        </>
+      ) : null}
+    </div>
+  )
+}
+
 function ChangeRow({ change }: { change: IacChange }) {
   const { t } = useTranslation('settings')
   return (
@@ -86,6 +108,7 @@ function ChangeRow({ change }: { change: IacChange }) {
           </span>
         ) : null}
       </div>
+      {change.code ? <CodeHint code={change.code} /> : null}
       {change.reason ? (
         <p className="mt-1 text-sm text-red-700 dark:text-red-400">
           {change.reason}
