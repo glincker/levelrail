@@ -67,8 +67,8 @@ func (execRunner) Run(ctx context.Context, name string, args []string) ([]byte, 
 	cmd.Stdout, cmd.Stderr = &out, &errb
 	if err := cmd.Run(); err != nil {
 		msg := strings.TrimSpace(errb.String())
-		if len(msg) > 600 {
-			msg = msg[len(msg)-600:]
+		if m := ociErrorMax(); len(msg) > m {
+			msg = msg[:m]
 		}
 		return out.Bytes(), fmt.Errorf("%w: %s", err, msg)
 	}
