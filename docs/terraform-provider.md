@@ -39,9 +39,9 @@ provider "levelrail" {
 | --- | --- | --- |
 | `levelrail_project` | A project | project ID |
 | `levelrail_environment` | An environment of a project, including `protected` | `project_id/environment_name` |
-| `levelrail_app` | Image, port, replicas, strategy, bind address, plain env vars, project | app name |
+| `levelrail_app` | Image, port, replicas, strategy, bind address, plain env vars, project, command, labels, memory and CPU limits, restart policy, readiness and liveness paths, published ports | app name |
 | `levelrail_domain` | One hostname routed to an app | `app_name/host` |
-| `levelrail_database` | A managed database and its project | database name |
+| `levelrail_database` | A managed database, its project and its connection pooler (`pooler_enabled`, `pooler_pool_size`, `pooler_max_client_conn`) | database name |
 | `levelrail_environment_variables` | Variables shared by a project or an environment | `project/<id>` or `environment/<id>` |
 | `levelrail_status_page` | The public status page settings: `enabled`, `title`, `description`, `custom_domain` (one per control plane) | any value, for example `status-page` |
 | `levelrail_app_secret` | One secret value for an app (write only: the API never returns values, so only a missing key shows as drift; the value is kept in state) | `app/key` |
@@ -49,6 +49,26 @@ provider "levelrail" {
 | `levelrail_status_component` | One status page row: `kind` (`app`, `domain` or `check`), `target`, `name`, `order` | component ID |
 
 Data sources: `levelrail_apps` lists every app with its image, port, project and domains. `levelrail_nodes` lists the fleet and needs a root token. `levelrail_app_secrets` lists the secret key names, lock and age of one app, never values.
+
+## Coverage
+
+Gap analysis of what each resource exposes against what the REST API and the IaC kinds support. "Not covered" means the API has it but it is not stable in the IaC schema yet, or it has no stable route.
+
+| Resource or data source | Exposed | Not covered |
+| --- | --- | --- |
+| `levelrail_project` | name | shared env (use `levelrail_environment_variables`) |
+| `levelrail_environment` | project, name, protected | environment env (use `levelrail_environment_variables`) |
+| `levelrail_app` | image, port, replicas, strategy, bind address, env, project, command, labels, memory and CPU limits, restart policy, readiness and liveness paths, published ports | volumes, bind mounts, hooks, exec and TCP probes and probe timings, egress, GPU, tolerations, affinity, tags, database env references, files |
+| `levelrail_domain` | app, host | TLS, redirects, headers, WAF, caching, auth gates (not in the IaC Domain schema yet) |
+| `levelrail_database` | engine, version, project, pooler settings | backup schedules, placement, public access (not in the IaC Database schema yet), users |
+| `levelrail_environment_variables` | keys at a project or environment scope | vault-backed variables |
+| `levelrail_app_secret` | one secret value | bulk import |
+| `levelrail_alert_rule` | threshold and crash loop rules on an app | notification channel management |
+| `levelrail_status_page` | enabled, title, description, custom domain | incidents |
+| `levelrail_status_component` | kind, target, name, order | none |
+| Data `levelrail_apps`, `levelrail_nodes`, `levelrail_app_secrets` | listings | filters |
+
+Every resource supports `terraform import`, treats a 404 on read as drift (removed from state), and reads the live object after each write. Lists and maps on `levelrail_app` (command, labels, published ports, env) are managed only when set, so leaving one unset never wipes what the dashboard configured; a resource that is imported shows them as unset until you add them to the configuration.
 
 ## Complete example
 
@@ -115,11 +135,11 @@ output "node_count" {
 ## What is not covered
 
 - Vault-backed variables (`vault_env`) and bulk secret import. Single secret values can be set with `levelrail_app_secret`, but they land in Terraform state, so protect the state.
-- Volumes, bind mounts, resource limits, health checks, hooks, labels, commands and egress policy on apps.
+- Volumes, bind mounts, hooks, exec and TCP probes, egress policy, GPU requests and placement on apps.
 - Git and build sources, deploys and rollbacks (these are actions, not state).
 - Per-domain settings such as TLS certificates, redirects, headers, WAF, caching and auth gates.
 - Nodes (read only through the data source), load balancers, pipelines, notification channels, backups, teams, users, roles and tokens.
-- Database users, backup schedules, public access and upgrades.
+- Database users, backup schedules, placement, public access and upgrades.
 
 For several of these, [Platform as code](platform-as-code.md) covers them through the CLI.
 
