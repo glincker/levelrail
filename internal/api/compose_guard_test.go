@@ -1,6 +1,7 @@
 package api
 
 import (
+	"context"
 	"crypto/sha256"
 	"encoding/hex"
 	"encoding/json"
@@ -21,6 +22,42 @@ func TestComposeDown_RefusesProtectedApp(t *testing.T) {
 	rt.handleComposeDown(w, r)
 	if w.Code != http.StatusLocked || !strings.Contains(w.Body.String(), "app is protected: demo week") {
 		t.Fatalf("got %d %s, want 423 with the protection reason", w.Code, w.Body.String())
+	}
+}
+
+type fakeGroupLister struct {
+	AppGroupLister
+	services []store.DesiredService
+}
+
+func (f *fakeGroupLister) ListServicesByApp(context.Context, string) ([]store.DesiredService, error) {
+	return f.services, nil
+}
+
+type protectOnly struct {
+	fakeProtectApps
+	name string
+}
+
+func (p *protectOnly) GetAppProtection(_ context.Context, app string) (*store.AppProtection, error) {
+	if app == p.name {
+		return &store.AppProtection{Reason: "member held"}, nil
+	}
+	return nil, nil
+}
+
+func TestComposeDown_RefusesWhenAMemberServiceIsProtected(t *testing.T) {
+	t.Parallel()
+	rt := &Router{
+		apps:      &protectOnly{name: "stack-db"},
+		appGroups: &fakeGroupLister{services: []store.DesiredService{{Name: "stack-web"}, {Name: "stack-db"}}},
+	}
+	w := httptest.NewRecorder()
+	r := httptest.NewRequest(http.MethodDelete, "/api/v1/apps/stack/compose", nil)
+	r.SetPathValue("name", "stack")
+	rt.handleComposeDown(w, r)
+	if w.Code != http.StatusLocked || !strings.Contains(w.Body.String(), "member held") {
+		t.Fatalf("got %d %s, want 423 for the protected member", w.Code, w.Body.String())
 	}
 }
 
