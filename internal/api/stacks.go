@@ -1380,6 +1380,7 @@ func (rt *Router) handleDeleteStack(w http.ResponseWriter, r *http.Request) {
 		rt.writeStackError(w, "delete", err)
 		return
 	}
+	rt.removeStackSyncSecret(r.Context(), s.ID)
 	rt.auditStack(r, auditStackDestroy, map[string]any{"stack": s.Name, "mode": string(mode), "destroyed": len(resp.Destroyed), "forgotten": len(resp.Forgotten), "delete_data": deleteData, "databases_deleted": dbsDeleted})
 	writeJSON(w, http.StatusOK, resp)
 }

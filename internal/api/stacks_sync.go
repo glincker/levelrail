@@ -198,8 +198,35 @@ func (rt *Router) emitStackSyncEvent(ctx context.Context, typ string, rec store.
 }
 
 type stackSyncResource struct {
-	Config *iac.StackSync         `json:"config"`
-	Status *stackSyncStatusOutput `json:"status,omitempty"`
+	Config *iac.StackSync `json:"config"`
+	// WebhookSecretSet says whether a secret is stored, never its value.
+	WebhookSecretSet bool                   `json:"webhook_secret_set"`
+	Status           *stackSyncStatusOutput `json:"status,omitempty"`
+}
+
+// stackSyncSecretDeleter is the optional delete side of the sealed store.
+type stackSyncSecretDeleter interface {
+	DeleteAll(ctx context.Context, serviceName string) error
+}
+
+// removeStackSyncSecret drops the sealed webhook secret of a deleted stack so
+// a later stack never inherits it. Failure is logged, the delete already won.
+func (rt *Router) removeStackSyncSecret(ctx context.Context, stackID string) {
+	d, ok := rt.gitSourceSecrets.(stackSyncSecretDeleter)
+	if !ok {
+		return
+	}
+	if err := d.DeleteAll(context.WithoutCancel(ctx), store.StackSyncSecretsKey(stackID)); err != nil {
+		rt.logger.Warn("api: remove stack sync webhook secret failed", slog.String("stack_id", stackID), slog.Any("error", err))
+	}
+}
+
+func (rt *Router) stackSyncWebhookSecretSet(ctx context.Context, stackID string) bool {
+	if rt.gitSourceSecrets == nil {
+		return false
+	}
+	has, _ := rt.gitSourceSecrets.Exists(ctx, store.StackSyncSecretsKey(stackID), stackSyncWebhookSecretKey)
+	return has
 }
 
 type stackSyncStatusOutput struct {
@@ -262,7 +289,9 @@ func (rt *Router) handleGetStackSync(w http.ResponseWriter, r *http.Request) {
 		rt.internalError(w, "api: get stack sync failed", err)
 		return
 	}
-	writeJSON(w, http.StatusOK, toStackSyncResource(rec, found))
+	out := toStackSyncResource(rec, found)
+	out.WebhookSecretSet = rt.stackSyncWebhookSecretSet(r.Context(), stack.ID)
+	writeJSON(w, http.StatusOK, out)
 }
 
 // handlePutStackSync handles PUT /api/v1/stacks/{name}/sync.
@@ -314,7 +343,9 @@ func (rt *Router) handlePutStackSync(w http.ResponseWriter, r *http.Request) {
 		rt.internalError(w, "api: get stack sync failed", err)
 		return
 	}
-	writeJSON(w, http.StatusOK, toStackSyncResource(rec, found))
+	out := toStackSyncResource(rec, found)
+	out.WebhookSecretSet = rt.stackSyncWebhookSecretSet(r.Context(), stack.ID)
+	writeJSON(w, http.StatusOK, out)
 }
 
 // handleRefreshStackSync handles POST /api/v1/stacks/{name}/sync/refresh.
