@@ -106,9 +106,11 @@ export function IacStudio({ seed }: Readonly<{ seed?: StudioSeed }>) {
         : 0
     let next: StudioView | null = null
     if (step !== 0) {
-      next = VIEWS[(VIEWS.indexOf(view) + step + VIEWS.length) % VIEWS.length]
-    } else if (e.key === 'Home') next = VIEWS[0]
-    else if (e.key === 'End') next = VIEWS[VIEWS.length - 1]
+      next =
+        VIEWS[(VIEWS.indexOf(view) + step + VIEWS.length) % VIEWS.length] ??
+        null
+    } else if (e.key === 'Home') next = 'yaml'
+    else if (e.key === 'End') next = 'form'
     if (!next) return
     e.preventDefault()
     pickView(next)

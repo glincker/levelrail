@@ -36,7 +36,7 @@ import {
   type StackSyncStatus,
 } from '../../queries/stackSync'
 
-const KNOWN_CODES = new Set([
+const KNOWN_CODES = [
   'sync_repo_unreachable',
   'sync_path_invalid',
   'sync_limits_exceeded',
@@ -44,7 +44,12 @@ const KNOWN_CODES = new Set([
   'sync_secret_in_repo',
   'sync_disk_low',
   'sync_apply_failed',
-])
+] as const
+type KnownCode = (typeof KNOWN_CODES)[number]
+
+function isKnownCode(c: string): c is KnownCode {
+  return (KNOWN_CODES as readonly string[]).includes(c)
+}
 
 // Mirrors the server refresh cooldown default; the server message is still shown.
 const COOLDOWN_MS =
@@ -148,7 +153,7 @@ function StatusRow({
   return (
     <div className="space-y-1.5">
       <div className="flex flex-wrap items-center gap-2 text-xs">
-        <Badge variant={enabled ? 'success' : 'secondary'}>
+        <Badge variant={enabled ? 'success' : 'muted'}>
           {enabled ? t('status.enabled') : t('status.disabled')}
         </Badge>
         {s ? (
@@ -206,7 +211,7 @@ function StatusRow({
         <div className="flex flex-wrap items-center gap-2 text-xs">
           <IacCodeBadge code={code} />
           <span>
-            {KNOWN_CODES.has(code) ? t(`codes.${code}`) : t('codes.unknown')}
+            {isKnownCode(code) ? t(`codes.${code}`) : t('codes.unknown')}
           </span>
           {s?.detail ? (
             <span className="font-mono break-all text-muted-foreground">
@@ -337,7 +342,7 @@ function WebhookSection({
     <div className="flex flex-wrap items-center justify-between gap-2">
       <div className="flex items-center gap-2 text-sm">
         <span className="font-medium">{t('webhook.title')}</span>
-        <Badge variant={secretSet ? 'success' : 'secondary'}>
+        <Badge variant={secretSet ? 'success' : 'muted'}>
           {secretSet ? t('webhook.secretSet') : t('webhook.noSecret')}
         </Badge>
       </div>
