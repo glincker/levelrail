@@ -39,6 +39,9 @@ func (rt *Router) handleOTLPMetrics(w http.ResponseWriter, r *http.Request) {
 	rt.ingestOTLP(w, r, false)
 }
 
+// errCodeFeatureDisabled marks a 501 that an operator can fix by turning a setting on.
+const errCodeFeatureDisabled = "feature_disabled"
+
 // ingestOTLP handles POST /api/v1/otlp/v1/{logs,metrics}. It reuses the
 // per-app tracing key, is off unless the runtime setting is on, and maps the
 // payload into the existing log and metric stores.
@@ -46,7 +49,7 @@ func (rt *Router) ingestOTLP(w http.ResponseWriter, r *http.Request, logs bool) 
 	set := rt.changesSettings()
 	sink := rt.otlpSink()
 	if sink == nil || !set.Bool(r.Context(), runtimesettings.KeyOTLPIngestEnabled) {
-		writeError(w, http.StatusNotImplemented, "OTLP logs and metrics ingest is not enabled on this control plane")
+		writeJSON(w, http.StatusNotImplemented, apiError{Error: "OTLP logs and metrics ingest is not enabled on this control plane", Code: errCodeFeatureDisabled, RequestID: w.Header().Get(requestIDHeader)})
 		return
 	}
 	app := rt.authTraceIngest(r, r.Header.Get("Authorization"))

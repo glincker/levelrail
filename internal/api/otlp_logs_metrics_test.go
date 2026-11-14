@@ -7,6 +7,7 @@ import (
 	"encoding/json"
 	"net/http"
 	"net/http/httptest"
+	"strings"
 	"testing"
 	"time"
 
@@ -52,6 +53,11 @@ func TestOTLPLogsAndMetricsIngest(t *testing.T) {
 	}
 	if c := post("/api/v1/otlp/v1/logs", logBody); c != http.StatusNotImplemented {
 		t.Fatalf("disabled = %d, want 501", c)
+	}
+	off := httptest.NewRecorder()
+	rt.Handler().ServeHTTP(off, httptest.NewRequest(http.MethodPost, "/api/v1/otlp/v1/metrics", strings.NewReader("")))
+	if !strings.Contains(off.Body.String(), `"code":"feature_disabled"`) {
+		t.Fatalf("disabled body = %s", off.Body.String())
 	}
 	rt.runtimeSettings = runtimesettings.New(nil, func(k string) (string, bool) { return "true", k == "APP_OTLP_INGEST_ENABLED" })
 	if c := post("/api/v1/otlp/v1/logs", logBody); c != http.StatusOK {

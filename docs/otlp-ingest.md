@@ -8,7 +8,7 @@ Apps that already send [traces](/tracing) can also send logs and metrics to the 
 
 ## Turn it on
 
-Set the `otlp.ingest_enabled` runtime setting to `true` (Settings, Runtime, Observability, or `levelrail-cli settings runtime set otlp.ingest_enabled true`). Tracing must be enabled for the app, because the same per-app bearer key authorizes the request. While the setting is off, both endpoints answer `501`. A missing or wrong key answers `401`.
+Set the `otlp.ingest_enabled` runtime setting to `true` (Settings, Runtime, Observability, or `levelrail-cli settings runtime set otlp.ingest_enabled true`). Tracing must be enabled for the app, because the same per-app bearer key authorizes the request. While the setting is off, both endpoints answer `501` with the error code `feature_disabled`. A missing or wrong key answers `401`.
 
 ## Endpoints
 
