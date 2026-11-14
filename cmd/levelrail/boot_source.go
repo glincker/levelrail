@@ -152,6 +152,7 @@ func dynamicSource(deps dynamicSourceDeps) reconcile.Source {
 			ingressreconcile.WithAuditRecorder(deps.db),
 			ingressreconcile.WithListenAddr(deps.ingressHTTPSAddr),
 			ingressreconcile.WithHTTPListenAddr(deps.ingressHTTPAddr),
+			ingressAdminOption(),
 			ingressreconcile.WithHTTPRedirect(deps.httpRedirect),
 			ingressreconcile.WithRequestStats(),
 			ingressreconcile.WithFirewall(),

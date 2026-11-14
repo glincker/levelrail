@@ -31,7 +31,6 @@ import (
 	"github.com/GLINCKER/levelrail/internal/reconcile"
 	"github.com/GLINCKER/levelrail/internal/reconcile/application"
 	databasereconcile "github.com/GLINCKER/levelrail/internal/reconcile/database"
-	ingressreconcile "github.com/GLINCKER/levelrail/internal/reconcile/ingress"
 	"github.com/GLINCKER/levelrail/internal/runtimesettings"
 	"github.com/GLINCKER/levelrail/internal/scheduledtask"
 	"github.com/GLINCKER/levelrail/internal/secrets"
@@ -299,7 +298,7 @@ func (s *bootState) startMesh() error {
 	telemetryDB := s.telemetryDB
 	lbRegistry := loadbalancer.NewRegistry()
 	lbRegistry.SetTrafficSource(lbTrafficSource(), telemetry.LatencyBucketsMS)
-	lbStats := loadbalancer.CaddyAdminStats{Addr: ingressreconcile.DefaultAdminListen}
+	lbStats := loadbalancer.CaddyAdminStats{Addr: ingressAdminDialAddr()}
 	apiRouter.SetLoadBalancers(db, lbRegistry, lbStats)
 	if experimental.Enabled(experimental.LoadBalancer) {
 		go runLoadBalancerTelemetry(ctx, lbRegistry, lbStats, telemetryDB, metricsCollectionInterval, logger)

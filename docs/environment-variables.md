@@ -693,6 +693,7 @@ The edge hardening limits are in [Domains and ingress](/domains-and-ingress#edge
 | Variable | Default | Meaning |
 | --- | --- | --- |
 | `APP_INGRESS_RETRY_INTERVAL` | `250ms` | Pause between retries when a proxied backend cannot be reached during the `APP_INGRESS_RETRY_WINDOW`. A negative or unparseable value is a startup error, not a silent fallback. |
+| `APP_INGRESS_ADMIN_ADDR` | `localhost:2019` | Bind address of the embedded edge admin API, read at boot. Accepts `host:port`, `127.0.0.1:0` (a free port, so a second instance on one machine does not collide) or `off` / `disabled`. Config reloads run in process and do not need it. With `off` or port `0` the load balancer upstream counters are unavailable and the dashboard shows none. |
 | `APP_INGRESS_SOCKET_ACTIVATION` | `auto` | Controls use of sockets inherited from systemd. `auto` uses them if present. `true` (also `1`, `on`) makes missing inherited sockets a startup error. `false` (also `0`, `off`) ignores them. See [Surviving a control plane restart](/domains-and-ingress#surviving-a-control-plane-restart). |
 | `APP_CLOUDFLARED_IMAGE` | `cloudflare/cloudflared:2026.10.7` | Image that runs the Cloudflare Tunnel daemon. Set it to bump the pinned tag or point at a mirror without a new release. Control plane. Source: `internal/reconcile/cloudflaretunnel/controller.go`. |
 | `APP_INGRESS_CACHE_REASON_KEYS` | ``32`` | Distinct reason keys counted per cache window. Keys past the limit are folded together. Ingress. |

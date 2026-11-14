@@ -830,10 +830,37 @@ func BuildProxyConfig(opts ProxyOptions) (*Config, error) {
 func newAdminConfig(adminListen string) *AdminConfig {
 	noPersist := false
 	admin := &AdminConfig{Config: &AdminConfigSettings{Persist: &noPersist}}
-	if adminListen != "" {
-		admin.Listen = adminListen
-	}
+	listen, disabled := ResolveAdminListen(adminListen)
+	admin.Listen = listen
+	admin.Disabled = disabled
 	return admin
+}
+
+// ResolveAdminListen maps the boot-time admin setting to a Caddy listen
+// address. "off" or "disabled" turns the listener off, empty keeps Caddy's
+// default, anything else is used as given (127.0.0.1:0 picks a free port).
+func ResolveAdminListen(raw string) (listen string, disabled bool) {
+	switch strings.ToLower(strings.TrimSpace(raw)) {
+	case "":
+		return "", false
+	case "off", "disabled":
+		return "", true
+	}
+	return strings.TrimSpace(raw), false
+}
+
+// AdminAddrKnown reports whether a fixed admin address can be dialed: false
+// when the listener is off or bound to an ephemeral port.
+func AdminAddrKnown(raw string) bool {
+	listen, disabled := ResolveAdminListen(raw)
+	if disabled {
+		return false
+	}
+	if listen == "" {
+		return true
+	}
+	i := strings.LastIndex(listen, ":")
+	return i < 0 || listen[i+1:] != "0"
 }
 
 // internalIssuerTLSApp builds a TLSApp with a single automation policy

@@ -13,6 +13,7 @@ import (
 	"github.com/GLINCKER/levelrail/internal/api"
 	"github.com/GLINCKER/levelrail/internal/exposure"
 	ingressdriver "github.com/GLINCKER/levelrail/internal/ingress"
+	ingressreconcile "github.com/GLINCKER/levelrail/internal/reconcile/ingress"
 	"github.com/GLINCKER/levelrail/internal/runtimesettings"
 )
 
@@ -180,6 +181,36 @@ func ingressHTTPSAddr() string {
 		addr = defaultIngressHTTPSAddr
 	}
 	return addr
+}
+
+// ingressAdminAddr reads APP_INGRESS_ADMIN_ADDR: an address, "off" or
+// "disabled". Empty keeps the embedded edge default (localhost:2019).
+func ingressAdminAddr() string {
+	return strings.TrimSpace(os.Getenv("APP_INGRESS_ADMIN_ADDR"))
+}
+
+// ingressAdminOption passes the configured admin address to the edge, and
+// is a no-op when unset so the default stays in one place.
+func ingressAdminOption() ingressreconcile.Option {
+	raw := ingressAdminAddr()
+	return func(c *ingressreconcile.Controller) {
+		if raw != "" {
+			ingressreconcile.WithAdminListen(raw)(c)
+		}
+	}
+}
+
+// ingressAdminDialAddr is the admin address in-process callers may dial,
+// or empty when it is off or ephemeral.
+func ingressAdminDialAddr() string {
+	raw := ingressAdminAddr()
+	if !ingressdriver.AdminAddrKnown(raw) {
+		return ""
+	}
+	if raw == "" {
+		return ingressreconcile.DefaultAdminListen
+	}
+	return raw
 }
 
 // ingressHTTPAddr reads APP_INGRESS_HTTP_ADDR, defaulting to
