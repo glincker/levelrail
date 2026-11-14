@@ -62,7 +62,7 @@ jobs:
         run: levelrail-cli apply -f infra/ --source infra-repo --yes --secret API_KEY=env:PROD_API_KEY --allow-env REGION
 ```
 
-Pass placeholder values with `--var`, `--values` or `--allow-env`. The plan job needs the same flags as the apply job. The runner's own credentials (`GITHUB_TOKEN`, `ACTIONS_*`, cloud keys) are never read unless you name them exactly.
+Pass placeholder values with `--var`, `--values` or `--allow-env`. The plan job needs the same flags as the apply job. The first run with `--source` also plans a `managed-by:<source>` tag change that plain `diff` does not show, so it can exit 2 even when the files match live state; later runs are stable. The runner's own credentials (`GITHUB_TOKEN`, `ACTIONS_*`, cloud keys) are never read unless you name them exactly.
 
 ## GitHub Actions with the stack Action
 

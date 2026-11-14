@@ -40,7 +40,7 @@ levelrail-cli apply -f infra/ --yes
 
 ## 3. Add a database
 
-Add this document to the same file. The app reads the connection by reference, so no password lands in git. The full file is `examples/iac/app-database/app.yaml`.
+Add this document to the same file. The app reads the connection by reference, so no password lands in git. A similar full file is `examples/iac/app-database/app.yaml`.
 
 ```yaml
 version: 1
@@ -57,8 +57,10 @@ Then point the app at it with `env: { DATABASE_URL: { from: { database: main-db,
 ## 4. Export what exists
 
 ```bash
-levelrail-cli export --project demo -o infra/
+levelrail-cli export --project demo -o exported/
 ```
+
+Export to a new directory, not the one you apply from.
 
 ## 5. Move it into a stack
 
