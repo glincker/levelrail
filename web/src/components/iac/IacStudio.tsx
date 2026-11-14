@@ -34,6 +34,9 @@ const HASH_PREFIX_LEN = 8
 const studioName = 'studio.yaml'
 const VIEW_KEY = 'levelrail.iacStudio.view'
 const IacStudioForm = lazy(() => import('./IacStudioForm'))
+const IacStackPanel = lazy(() =>
+  import('./IacStackPanel').then((m) => ({ default: m.IacStackPanel })),
+)
 
 type StudioView = 'yaml' | 'form'
 
@@ -310,6 +313,10 @@ export function IacStudio({ seed }: Readonly<{ seed?: StudioSeed }>) {
           </>
         ) : null}
       </div>
+
+      <Suspense fallback={null}>
+        <IacStackPanel />
+      </Suspense>
 
       {applyCode === 'apply_disabled' ? (
         <p

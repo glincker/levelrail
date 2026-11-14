@@ -3941,6 +3941,23 @@
     "viewYaml": "YAML",
     "viewForm": "Form",
     "formLoading": "Loading the form",
+    "stack": {
+      "title": "Stack history",
+      "pick": "Stack",
+      "none": "No stacks yet. Revisions appear here once a stack is applied.",
+      "timeline": "Revision timeline",
+      "noRevisions": "No revisions yet.",
+      "loadFailed": "Could not load the revisions.",
+      "driftNone": "No drift from the last applied revision.",
+      "diffLive": "Compare with live state"
+    },
+    "planAction": {
+      "create": "Create",
+      "update": "Update",
+      "delete": "Delete",
+      "noop": "Unchanged",
+      "error": "Error"
+    },
     "multiDoc": "This text has more than one document. The form shows the first one read only. Edit as YAML to change any of them.",
     "parseLine": "This document does not parse (line {{line}}).",
     "editAsYaml": "Edit as YAML",

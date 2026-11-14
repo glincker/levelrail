@@ -3941,6 +3941,23 @@
     "viewYaml": "YAML",
     "viewForm": "Formulario",
     "formLoading": "Cargando el formulario",
+    "stack": {
+      "title": "Historial del stack",
+      "pick": "Stack",
+      "none": "Aún no hay stacks. Las revisiones aparecen aquí cuando se aplica un stack.",
+      "timeline": "Línea de tiempo de revisiones",
+      "noRevisions": "Aún no hay revisiones.",
+      "loadFailed": "No se pudieron cargar las revisiones.",
+      "driftNone": "Sin deriva respecto a la última revisión aplicada.",
+      "diffLive": "Comparar con el estado en vivo"
+    },
+    "planAction": {
+      "create": "Crear",
+      "update": "Actualizar",
+      "delete": "Eliminar",
+      "noop": "Sin cambios",
+      "error": "Error"
+    },
     "multiDoc": "Este texto tiene más de un documento. El formulario muestra el primero en solo lectura. Edita como YAML para cambiar cualquiera.",
     "parseLine": "Este documento no se puede analizar (línea {{line}}).",
     "editAsYaml": "Editar como YAML",

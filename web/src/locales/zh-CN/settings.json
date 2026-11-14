@@ -2502,6 +2502,23 @@
     "viewYaml": "YAML",
     "viewForm": "表单",
     "formLoading": "正在加载表单",
+    "stack": {
+      "title": "Stack 历史",
+      "pick": "Stack",
+      "none": "还没有 stack。应用 stack 后,修订会显示在这里。",
+      "timeline": "修订时间线",
+      "noRevisions": "还没有修订。",
+      "loadFailed": "无法加载修订。",
+      "driftNone": "与最近一次应用的修订没有偏差。",
+      "diffLive": "与实时状态比较"
+    },
+    "planAction": {
+      "create": "创建",
+      "update": "更新",
+      "delete": "删除",
+      "noop": "无变化",
+      "error": "错误"
+    },
     "multiDoc": "此文本包含多个文档。表单以只读方式显示第一个。请使用 YAML 编辑以修改任何一个。",
     "parseLine": "此文档无法解析（第 {{line}} 行）。",
     "editAsYaml": "以 YAML 编辑",
