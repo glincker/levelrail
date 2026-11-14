@@ -86,6 +86,7 @@ type Syncer struct {
 	running bool
 	last    map[string]time.Time
 	stackMu sync.Map
+	slots   map[string]*triggerSlot
 }
 
 // Start records the lifetime context and starts the loop if any stack syncs.

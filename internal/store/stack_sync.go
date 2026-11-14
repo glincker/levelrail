@@ -71,6 +71,12 @@ func scanStackSync(sc interface{ Scan(...any) error }) (StackSyncRecord, error) 
 	return r, nil
 }
 
+// StackSyncSecretsKey is the sealed secrets namespace of a stack's sync webhook,
+// keyed by id so a rename keeps the secret.
+func StackSyncSecretsKey(stackID string) string {
+	return "stack-sync/" + stackID
+}
+
 // GetStackSync returns the sync row of a stack; found is false when it has none.
 func (db *DB) GetStackSync(ctx context.Context, stackID string) (StackSyncRecord, bool, error) {
 	r, err := scanStackSync(db.QueryRowContext(ctx, "SELECT "+stackSyncCols+" FROM stack_sync y JOIN stacks s ON s.id = y.stack_id WHERE y.stack_id = ?", stackID))

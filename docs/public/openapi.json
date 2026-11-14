@@ -93299,6 +93299,130 @@
         ]
       }
     },
+    "/api/v1/hooks/stacks/{name}/refresh": {
+      "post": {
+        "description": "Same as the sync webhook, but the queued run only plans, whatever the stack's apply flag says.\n\nNo authentication required.",
+        "operationId": "handleStackSyncRefreshWebhook",
+        "parameters": [
+          {
+            "in": "path",
+            "name": "name",
+            "required": true,
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "additionalProperties": true,
+                "type": "object"
+              }
+            }
+          },
+          "required": false
+        },
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": {}
+              }
+            },
+            "description": "Successful response. The body shape is not described in this document."
+          },
+          "4XX": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            },
+            "description": "Client error."
+          },
+          "default": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            },
+            "description": "Error response."
+          }
+        },
+        "security": [],
+        "summary": "Same as the sync webhook, but the queued run only plans, whatever the stack's apply flag says.",
+        "tags": [
+          "Other"
+        ]
+      }
+    },
+    "/api/v1/hooks/stacks/{name}/sync": {
+      "post": {
+        "description": "Git push webhook for a stack sync: no session, authenticated only by X-Hub-Signature-256 (HMAC SHA-256 of the raw body; SHA-1 alone is refused) or X-Gitlab-Token against the stack's webhook secret. JSON body capped by stacks.sync_webhook_max_body_kb (413). Only ref and after are read: a push to the configured branch queues one sync that plans and applies per the stack's apply flags; other branches, tags and deletes answer 202 with ignored. Unknown stack, sync off and a bad signature all answer the same 404. Returns 202 without waiting; bursts coalesce into one pending run.\n\nNo authentication required.",
+        "operationId": "handleStackSyncWebhook",
+        "parameters": [
+          {
+            "in": "path",
+            "name": "name",
+            "required": true,
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "additionalProperties": true,
+                "type": "object"
+              }
+            }
+          },
+          "required": false
+        },
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": {}
+              }
+            },
+            "description": "Successful response. The body shape is not described in this document."
+          },
+          "4XX": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            },
+            "description": "Client error."
+          },
+          "default": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            },
+            "description": "Error response."
+          }
+        },
+        "security": [],
+        "summary": "Git push webhook for a stack sync: no session, authenticated only by X-Hub-Signature-256 (HMAC SHA-256 of the raw body; SHA-1 alone is refused) or X-Gitlab-Token against the stack's webhook secret.",
+        "tags": [
+          "Other"
+        ]
+      }
+    },
     "/api/v1/hooks/wake": {
       "get": {
         "description": "No authentication required.",
@@ -149396,6 +149520,95 @@
           }
         ],
         "summary": "Fetch the configured branch and plan it now; applies only when the stack sync sets apply.",
+        "tags": [
+          "IaC Stacks"
+        ],
+        "x-required-ability": "root"
+      }
+    },
+    "/api/v1/stacks/{name}/sync/webhook-secret/rotate": {
+      "post": {
+        "description": "Rotate the signing secret of the stack sync webhook and return it once with Cache-Control no-store; no GET ever returns it. Root or stack admin, audited. 501 without a master key.\n\nRequires the `root` ability.",
+        "operationId": "handleRotateStackSyncWebhookSecret",
+        "parameters": [
+          {
+            "in": "path",
+            "name": "name",
+            "required": true,
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "additionalProperties": true,
+                "type": "object"
+              }
+            }
+          },
+          "required": false
+        },
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": {}
+              }
+            },
+            "description": "Successful response. The body shape is not described in this document."
+          },
+          "401": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            },
+            "description": "Missing or invalid credentials."
+          },
+          "403": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            },
+            "description": "The token lacks the required ability."
+          },
+          "4XX": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            },
+            "description": "Client error."
+          },
+          "default": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            },
+            "description": "Error response."
+          }
+        },
+        "security": [
+          {
+            "bearerAuth": [
+              "root"
+            ]
+          }
+        ],
+        "summary": "Rotate the signing secret of the stack sync webhook and return it once with Cache-Control no-store; no GET ever returns it.",
         "tags": [
           "IaC Stacks"
         ],

@@ -1578,6 +1578,7 @@ Declarative plan, apply, export, stacks, revisions, approvals and CI trusts.
 | GET | /api/v1/stacks/{name}/sync | AbilityRead | handleGetStackSync |
 | PUT | /api/v1/stacks/{name}/sync | AbilityRoot | handlePutStackSync |
 | POST | /api/v1/stacks/{name}/sync/refresh | AbilityRoot | handleRefreshStackSync |
+| POST | /api/v1/stacks/{name}/sync/webhook-secret/rotate | AbilityRoot | handleRotateStackSyncWebhookSecret |
 
 ## Other
 
@@ -2363,6 +2364,8 @@ Routes that do not fit an existing group.
 | POST | /api/v1/otlp/v1/logs | Public | handleOTLPLogs |
 | POST | /api/v1/otlp/v1/metrics | Public | handleOTLPMetrics |
 | POST | /mcp | Public |  |
+| POST | /api/v1/hooks/stacks/{name}/sync | Public | handleStackSyncWebhook |
+| POST | /api/v1/hooks/stacks/{name}/refresh | Public | handleStackSyncRefreshWebhook |
 
 ## See also
 

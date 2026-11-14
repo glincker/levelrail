@@ -11,4 +11,10 @@ func (rt *Router) registerStackSyncRoutes(mux *http.ServeMux) {
 	mux.HandleFunc("PUT /api/v1/stacks/{name}/sync", rt.requireAbilityForResource(AbilityRoot, stackResourceFromPath, rt.handlePutStackSync))
 	// Fetch the configured branch and plan it now; applies only when the stack sync sets apply. 409 when sync is off, 429 inside stacks.sync_refresh_min_seconds. Error codes: docs/iac/errors.md.
 	mux.HandleFunc("POST /api/v1/stacks/{name}/sync/refresh", rt.requireAbilityForResource(AbilityRoot, stackResourceFromPath, rt.handleRefreshStackSync))
+	// Rotate the signing secret of the stack sync webhook and return it once with Cache-Control no-store; no GET ever returns it. Root or stack admin, audited. 501 without a master key.
+	mux.HandleFunc("POST /api/v1/stacks/{name}/sync/webhook-secret/rotate", rt.requireAbilityForResource(AbilityRoot, stackResourceFromPath, rt.handleRotateStackSyncWebhookSecret))
+	// Git push webhook for a stack sync: no session, authenticated only by X-Hub-Signature-256 (HMAC SHA-256 of the raw body; SHA-1 alone is refused) or X-Gitlab-Token against the stack's webhook secret. JSON body capped by stacks.sync_webhook_max_body_kb (413). Only ref and after are read: a push to the configured branch queues one sync that plans and applies per the stack's apply flags; other branches, tags and deletes answer 202 with ignored. Unknown stack, sync off and a bad signature all answer the same 404. Returns 202 without waiting; bursts coalesce into one pending run.
+	mux.HandleFunc("POST /api/v1/hooks/stacks/{name}/sync", rt.handleStackSyncWebhook)
+	// Same as the sync webhook, but the queued run only plans, whatever the stack's apply flag says.
+	mux.HandleFunc("POST /api/v1/hooks/stacks/{name}/refresh", rt.handleStackSyncRefreshWebhook)
 }

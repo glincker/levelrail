@@ -14,7 +14,7 @@ type openAPIRoute struct {
 	Description string
 }
 
-// openAPIRoutes holds all 2131 routes known to scripts/gen-api-reference at
+// openAPIRoutes holds all 2134 routes known to scripts/gen-api-reference at
 // generation time. Run `go run ./scripts/gen-api-reference` after changing
 // any routes*.go registration and commit the result.
 var openAPIRoutes = []openAPIRoute{
@@ -920,6 +920,7 @@ var openAPIRoutes = []openAPIRoute{
 	{Method: "GET", Path: "/api/v1/stacks/{name}/sync", Ability: "AbilityRead", Group: "IaC Stacks", Handler: "handleGetStackSync", Description: "Show the git sync settings of a stack and its latest result: commit, plan hash, counts, pending and a code on failure. Never repository content or credentials."},
 	{Method: "PUT", Path: "/api/v1/stacks/{name}/sync", Ability: "AbilityRoot", Group: "IaC Stacks", Handler: "handlePutStackSync", Description: "Set the git sync of a stack: https or ssh repo_url, branch, relative path, credential_ref naming a connected app, interval_seconds, webhook_only, enabled (off by default), and apply, prune and deploy, each required and off unless true; prune and deploy need apply. A sync apply runs the manual apply path on a token scoped to this stack, so require_approval leaves it pending. Root or stack admin; credential_ref needs an administrator. Audited."},
 	{Method: "POST", Path: "/api/v1/stacks/{name}/sync/refresh", Ability: "AbilityRoot", Group: "IaC Stacks", Handler: "handleRefreshStackSync", Description: "Fetch the configured branch and plan it now; applies only when the stack sync sets apply. 409 when sync is off, 429 inside stacks.sync_refresh_min_seconds. Error codes: docs/iac/errors.md."},
+	{Method: "POST", Path: "/api/v1/stacks/{name}/sync/webhook-secret/rotate", Ability: "AbilityRoot", Group: "IaC Stacks", Handler: "handleRotateStackSyncWebhookSecret", Description: "Rotate the signing secret of the stack sync webhook and return it once with Cache-Control no-store; no GET ever returns it. Root or stack admin, audited. 501 without a master key."},
 	{Method: "POST", Path: "/api/v1/stacks/{name}/unlock", Ability: "AbilityRoot", Group: "IaC Stacks", Handler: "handleStackUnlock", Description: "Release a stuck apply lease. Root only."},
 	{Method: "GET", Path: "/api/v1/apps/{name}/branch-env", Ability: "AbilityRead", Group: "Ingress / Certificates / Domains / Email / Cloudflare", Handler: "handleListAppBranchEnv", Description: "Branch-scoped env var overrides (apps_branch_env.go): a narrower, pattern-matched sibling of PUT/DELETE .../preview-env just above, only applied when a preview's own branch matches. POST can carry a secret-marked value, so it's gated at AbilityWriteSensitive, the same tier PUT .../secrets/{key} uses; GET and DELETE never expose or require a value, so they stay at AbilityRead/AbilityWrite."},
 	{Method: "POST", Path: "/api/v1/apps/{name}/branch-env", Ability: "AbilityWriteSensitive", Group: "Ingress / Certificates / Domains / Email / Cloudflare", Handler: "handleSetAppBranchEnv", Description: ""},
@@ -1383,6 +1384,8 @@ var openAPIRoutes = []openAPIRoute{
 	{Method: "POST", Path: "/api/v1/hooks/deploy/{id}/{token}", Ability: "Public", Group: "Other", Handler: "handleBuildHookTrigger", Description: ""},
 	{Method: "POST", Path: "/api/v1/hooks/image-update/{name}/{token}", Ability: "Public", Group: "Other", Handler: "handleImageUpdateWebhook", Description: ""},
 	{Method: "POST", Path: "/api/v1/hooks/pipeline/{id}/{token}", Ability: "Public", Group: "Other", Handler: "handlePipelineWebhook", Description: ""},
+	{Method: "POST", Path: "/api/v1/hooks/stacks/{name}/refresh", Ability: "Public", Group: "Other", Handler: "handleStackSyncRefreshWebhook", Description: "Same as the sync webhook, but the queued run only plans, whatever the stack's apply flag says."},
+	{Method: "POST", Path: "/api/v1/hooks/stacks/{name}/sync", Ability: "Public", Group: "Other", Handler: "handleStackSyncWebhook", Description: "Git push webhook for a stack sync: no session, authenticated only by X-Hub-Signature-256 (HMAC SHA-256 of the raw body; SHA-1 alone is refused) or X-Gitlab-Token against the stack's webhook secret. JSON body capped by stacks.sync_webhook_max_body_kb (413). Only ref and after are read: a push to the configured branch queues one sync that plans and applies per the stack's apply flags; other branches, tags and deletes answer 202 with ignored. Unknown stack, sync off and a bad signature all answer the same 404. Returns 202 without waiting; bursts coalesce into one pending run."},
 	{Method: "GET", Path: "/api/v1/hooks/wake", Ability: "Public", Group: "Other", Handler: "handleWakeHook", Description: ""},
 	{Method: "GET", Path: "/api/v1/images", Ability: "AbilityRead", Group: "Other", Handler: "handleListImageInventory", Description: ""},
 	{Method: "POST", Path: "/api/v1/images/gc", Ability: "AbilityRoot", Group: "Other", Handler: "handleImageGC", Description: ""},

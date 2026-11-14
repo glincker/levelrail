@@ -420,3 +420,4 @@ stacks.sync_max_files
 stacks.sync_max_file_kb
 stacks.sync_refresh_min_seconds
 stacks.sync_min_free_mb
+stacks.sync_webhook_max_body_kb

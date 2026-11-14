@@ -103,6 +103,8 @@ var restExemptions = restExemptionSet(map[string][]string{
 		"POST /api/v1/hooks/image-update/{name}/{token}",
 		"POST /api/v1/hooks/pipeline/{id}/{token}",
 		"POST /api/v1/webhooks/github/{name}",
+		"POST /api/v1/hooks/stacks/{name}/sync",
+		"POST /api/v1/hooks/stacks/{name}/refresh",
 		"POST /api/v1/webhooks/functions/{name}",
 		"POST /api/v1/webhooks/slack/interactions",
 		"POST /api/v1/webhooks/discord/interactions",

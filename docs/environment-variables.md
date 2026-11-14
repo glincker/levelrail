@@ -326,6 +326,7 @@ These variables only seed the default of a [runtime setting](/runtime-settings).
 | `APP_STACK_SYNC_MIN_INTERVAL_SECONDS` | [`stacks.sync_min_interval_seconds`](/runtime-settings#deploys) | `60` |
 | `APP_STACK_SYNC_REFRESH_MIN_SECONDS` | [`stacks.sync_refresh_min_seconds`](/runtime-settings#deploys) | `30` |
 | `APP_STACK_SYNC_TICK_SECONDS` | [`stacks.sync_tick_seconds`](/runtime-settings#deploys) | `60` |
+| `APP_STACK_SYNC_WEBHOOK_MAX_BODY_KB` | [`stacks.sync_webhook_max_body_kb`](/runtime-settings#deploys) | `64` |
 | `APP_MAX_TAGS_PER_APP` | [`tags.max_per_app`](/runtime-settings#deploys) | `20` |
 | `APP_MAX_TAGS_PER_RESOURCE` | [`tags.max_per_resource`](/runtime-settings#deploys) | `20` |
 | `APP_TEMPLATE_FILE_INPUT_MAX_BYTES` | [`templates.file_input_max_bytes`](/runtime-settings#deploys) | `16384` |
