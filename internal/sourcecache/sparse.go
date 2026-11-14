@@ -33,7 +33,8 @@ func (c *Cache) SparseCheckout(ctx context.Context, repoURL, branch, subPath, to
 		_ = os.RemoveAll(dest)
 		return Checkout{}, err
 	}
-	env := append(os.Environ(), "GIT_TERMINAL_PROMPT=0", "GIT_ALLOW_PROTOCOL="+sparseProtocols, "GIT_CONFIG_GLOBAL=/dev/null", "GIT_CONFIG_SYSTEM=/dev/null")
+	// A minimal env keeps server settings and secrets out of the git child.
+	env := append([]string{"PATH=" + os.Getenv("PATH"), "HOME=" + dest}, "GIT_TERMINAL_PROMPT=0", "GIT_ALLOW_PROTOCOL="+sparseProtocols, "GIT_CONFIG_GLOBAL=/dev/null", "GIT_CONFIG_SYSTEM=/dev/null")
 	if token != "" {
 		basic := base64.StdEncoding.EncodeToString([]byte("x-access-token:" + token))
 		env = append(env, "GIT_CONFIG_COUNT=1", "GIT_CONFIG_KEY_0=http.extraHeader", "GIT_CONFIG_VALUE_0=Authorization: Basic "+basic)
