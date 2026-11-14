@@ -2476,5 +2476,37 @@
     "activeBody": "正在 {{host}} 提供镜像。应用无需在这里配置凭据即可从中拉取。",
     "setUp": "设置内置镜像仓库",
     "manage": "管理"
+  },
+  "iacExport": {
+    "studioButton": "将当前状态导出为模板"
+  },
+  "iacStudio": {
+    "tabFiles": "文件",
+    "tabStudio": "Studio",
+    "templates": "模板",
+    "use": "使用",
+    "copy": "复制",
+    "useNamed": "使用模板 {{name}}",
+    "copyNamed": "复制模板 {{name}}",
+    "editor": "资源 YAML",
+    "placeholder": "version: 1\nkind: App\nmetadata:\n  name: web",
+    "cloudNote": "未开启云功能时，云类型会被拒绝。此处不需要输入云凭据。",
+    "planHash": "计划",
+    "beta": "测试版",
+    "codeDoc": "错误代码 {{code}}，打开参考文档",
+    "applyDisabled": "此实例已关闭应用操作。计划仍然可用。",
+    "replan": "重新计划",
+    "viewLabel": "编辑器视图",
+    "resultLabel": "计划结果",
+    "copyFailed": "无法复制到剪贴板",
+    "viewYaml": "YAML",
+    "viewForm": "表单",
+    "formLoading": "正在加载表单",
+    "multiDoc": "此文本包含多个文档。表单以只读方式显示第一个。请使用 YAML 编辑以修改任何一个。",
+    "parseLine": "此文档无法解析（第 {{line}} 行）。",
+    "editAsYaml": "以 YAML 编辑",
+    "exportedNote": "已从实时状态导出。密钥不会被包含，而是以引用形式导出。",
+    "copyYaml": "复制 YAML",
+    "copied": "已复制"
   }
 }
