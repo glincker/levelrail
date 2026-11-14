@@ -10,7 +10,6 @@ import (
 // A own process group lets cancel reach git-remote-https and index-pack too.
 func groupKill(cmd *exec.Cmd) {
 	cmd.SysProcAttr = &syscall.SysProcAttr{Setpgid: true}
-	dieWithParent(cmd.SysProcAttr)
 	cmd.Cancel = func() error {
 		if cmd.Process == nil {
 			return nil
