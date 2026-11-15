@@ -241,6 +241,8 @@ host.pressure_mem_full_warn
 host.pressure_mem_warn
 host.pressure_resume_jitter
 host.pressure_shed_enabled
+host.protected_oom_score_adj
+host.unclean_restart_window
 iac.apply_enabled
 iac.compose_max_file_kb
 iac.compose_max_files

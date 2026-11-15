@@ -2,6 +2,7 @@ package api
 
 import (
 	"bytes"
+	"context"
 	"fmt"
 	"os"
 	"path/filepath"
@@ -10,6 +11,7 @@ import (
 	"time"
 
 	"github.com/GLINCKER/levelrail/internal/runmarker"
+	"github.com/GLINCKER/levelrail/internal/runtimesettings"
 )
 
 const (
@@ -17,16 +19,32 @@ const (
 	procMeminfoPath  = "/proc/meminfo"
 	protectionGlob   = "/etc/systemd/system/*.service.d/30-protection.conf"
 	protectionMarker = "host protection"
-	envProtectedAdj  = "APP_PROTECTED_OOM_SCORE_ADJ"
-	defaultProtected = -500
 )
+
+// protectionPaths are the host files the protection check reads; tests point them at a temp tree.
+type protectionPaths struct {
+	oomScoreAdj string
+	dropinGlob  string
+	meminfo     string
+}
+
+var hostProtectionPaths = protectionPaths{oomScoreAdj: procOOMScoreAdj, dropinGlob: protectionGlob, meminfo: procMeminfoPath}
 
 // doctorCheckUnitProtection reports whether the running process is shielded
 // from the kernel OOM killer and whether it was recently killed. Swap is shown
 // for context only; the host pressure checks own the swap verdict.
-func (rt *Router) doctorCheckUnitProtection(now time.Time) doctorCheckResource {
+func (rt *Router) doctorCheckUnitProtection(ctx context.Context, now time.Time) doctorCheckResource {
+	rs := rt.runtimeSettings
+	window := rs.Duration(ctx, runtimesettings.KeyHostUncleanRestartWindow)
+	if window <= 0 {
+		window = runmarker.WindowFromEnv(os.Getenv)
+	}
+	return unitProtectionCheck(hostProtectionPaths, rs.Int(ctx, runtimesettings.KeyHostProtectedOOMScoreAdj), rt.dataDir, window, now)
+}
+
+func unitProtectionCheck(p protectionPaths, limit int, dataDir string, window time.Duration, now time.Time) doctorCheckResource {
 	const code, name = "unit_protection", "Control plane protection"
-	raw, err := os.ReadFile(procOOMScoreAdj)
+	raw, err := os.ReadFile(p.oomScoreAdj) //nolint:gosec // fixed path, injectable for tests
 	if err != nil {
 		return doctorCheckResource{Code: code, Name: name, Status: doctorStatusUnknown, Message: "The OOM score is not readable on this operating system, so protection was not checked."}
 	}
@@ -34,17 +52,13 @@ func (rt *Router) doctorCheckUnitProtection(now time.Time) doctorCheckResource {
 	if perr != nil {
 		return doctorCheckResource{Code: code, Name: name, Status: doctorStatusUnknown, Message: "The OOM score could not be parsed."}
 	}
-	limit := defaultProtected
-	if v, e := strconv.Atoi(os.Getenv(envProtectedAdj)); e == nil {
-		limit = v
-	}
 	protected := adj <= limit
-	dropin := protectionDropinExists()
-	facts := fmt.Sprintf("OOM score adjustment %d, drop-in %s, %s", adj, presence(dropin), swapSummary())
+	dropin := protectionDropinExists(p.dropinGlob)
+	facts := fmt.Sprintf("OOM score adjustment %d, drop-in %s, %s", adj, presence(dropin), swapSummary(p.meminfo))
 
 	var recent []runmarker.Incident
-	if rt.dataDir != "" {
-		recent = runmarker.Recent(rt.dataDir, runmarker.WindowFromEnv(os.Getenv), now)
+	if dataDir != "" {
+		recent = runmarker.Recent(dataDir, window, now)
 	}
 	switch {
 	case len(recent) > 0:
@@ -68,10 +82,10 @@ func (rt *Router) doctorCheckUnitProtection(now time.Time) doctorCheckResource {
 	return doctorCheckResource{Code: code, Name: name, Status: doctorStatusOK, Message: facts}
 }
 
-func protectionDropinExists() bool {
-	files, _ := filepath.Glob(protectionGlob)
+func protectionDropinExists(glob string) bool {
+	files, _ := filepath.Glob(glob)
 	for _, f := range files {
-		if b, err := os.ReadFile(f); err == nil && bytes.Contains(bytes.ToLower(b), []byte(protectionMarker)) { //nolint:gosec // glob under /etc/systemd/system
+		if b, err := os.ReadFile(f); err == nil && bytes.Contains(bytes.ToLower(b), []byte(protectionMarker)) { //nolint:gosec // glob under the unit directory
 			return true
 		}
 	}
@@ -85,8 +99,8 @@ func presence(ok bool) string {
 	return "missing"
 }
 
-func swapSummary() string {
-	b, err := os.ReadFile(procMeminfoPath)
+func swapSummary(meminfo string) string {
+	b, err := os.ReadFile(meminfo) //nolint:gosec // fixed path, injectable for tests
 	if err != nil {
 		return "swap unknown"
 	}

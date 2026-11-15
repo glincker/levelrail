@@ -45,11 +45,11 @@ At boot the control plane writes a small marker file in its data directory with 
 
 When the `oom_kill` counter rose since the marker was written, the item says the host likely killed Levelrail for memory, and recommends adding swap, lowering build concurrency, setting app memory limits and checking which containers use the most memory. The marker holds no secrets and no process list. Where `/proc/vmstat` does not exist the item still appears but makes no claim about memory.
 
-The item stays for `APP_UNCLEAN_RESTART_WINDOW` (default `72h`) and can be silenced like any attention item.
+The item stays for the `host.unclean_restart_window` setting (default `72h`, seeded from `APP_UNCLEAN_RESTART_WINDOW`, changed live in Settings or the API) and can be silenced like any attention item.
 
 ## Doctor row
 
-**Control plane protection** (`unit_protection`) shows the running OOM score adjustment, whether the drop-in exists, swap for context, and recent unclean restarts. It warns when the process is not shielded or was restarted recently. Swap itself is judged by the host memory checks, not this row. `APP_PROTECTED_OOM_SCORE_ADJ` (default `-500`) is the score at or below which the process counts as protected.
+**Control plane protection** (`unit_protection`) shows the running OOM score adjustment, whether the drop-in exists, swap for context, and recent unclean restarts. It warns when the process is not shielded or was restarted recently. Swap itself is judged by the host memory checks, not this row. The `host.protected_oom_score_adj` setting (default `-500`, seeded from `APP_PROTECTED_OOM_SCORE_ADJ`, changed live) is the score at or below which the process counts as protected.
 
 ## Adding swap
 

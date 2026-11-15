@@ -1,6 +1,7 @@
 package api
 
 import (
+	"context"
 	"fmt"
 	"os"
 	"strconv"
@@ -8,6 +9,7 @@ import (
 
 	"github.com/GLINCKER/levelrail/internal/attention"
 	"github.com/GLINCKER/levelrail/internal/runmarker"
+	"github.com/GLINCKER/levelrail/internal/runtimesettings"
 )
 
 const (
@@ -17,11 +19,15 @@ const (
 
 // uncleanRestartAttentionItems reports the newest unclean restart inside the
 // retention window. It carries no process list or environment, only times.
-func (rt *Router) uncleanRestartAttentionItems(abilities []string, now time.Time) []attention.Item {
+func (rt *Router) uncleanRestartAttentionItems(ctx context.Context, abilities []string, now time.Time) []attention.Item {
 	if rt.dataDir == "" || !hasAbility(abilities, AbilityRead) {
 		return nil
 	}
-	recent := runmarker.Recent(rt.dataDir, runmarker.WindowFromEnv(os.Getenv), now)
+	window := rt.runtimeSettings.Duration(ctx, runtimesettings.KeyHostUncleanRestartWindow)
+	if window <= 0 {
+		window = runmarker.WindowFromEnv(os.Getenv)
+	}
+	recent := runmarker.Recent(rt.dataDir, window, now)
 	if len(recent) == 0 {
 		return nil
 	}

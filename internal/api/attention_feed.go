@@ -61,7 +61,7 @@ func (rt *Router) attentionFeedItems(r *http.Request, abilities []string, now ti
 	items = append(items, rt.stackDriftAttentionItems(r, abilities)...)
 	items = append(items, rt.advisoryAttentionItems(r, abilities)...)
 	items = append(items, rt.interruptedDeployAttentionItems(r, abilities)...)
-	items = append(items, rt.uncleanRestartAttentionItems(abilities, now)...)
+	items = append(items, rt.uncleanRestartAttentionItems(r.Context(), abilities, now)...)
 	return withoutSilenced(items, rt.activeSilences(r.Context(), now), now)
 }
 

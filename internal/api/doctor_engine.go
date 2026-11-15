@@ -82,7 +82,7 @@ func (rt *Router) doctorDefs() []doctorCheckDef {
 		one("host_pressure", doctorGroupHost, rt.doctorCheckHostPressure),
 		one("host_swap", doctorGroupHost, rt.doctorCheckNoSwap),
 		one("build_memory", doctorGroupHost, rt.doctorCheckBuildMemory),
-		one("unit_protection", doctorGroupHost, func(context.Context) doctorCheckResource { return rt.doctorCheckUnitProtection(time.Now()) }),
+		one("unit_protection", doctorGroupHost, func(ctx context.Context) doctorCheckResource { return rt.doctorCheckUnitProtection(ctx, time.Now()) }),
 		one("cpu", doctorGroupHost, func(context.Context) doctorCheckResource { return rt.doctorCheckCPU() }),
 		one("disk_io_latency", doctorGroupHost, func(context.Context) doctorCheckResource { return rt.doctorCheckDiskIOLatency() }),
 		one("database", doctorGroupHost, rt.doctorCheckDatabase),
