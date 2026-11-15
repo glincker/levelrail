@@ -179,8 +179,6 @@ export interface CreateTokenResponse extends TokenResource {
 export interface RotateTokenResponse extends CreateTokenResponse {
   replaces: string
   previous_valid_until?: string | null
-  // Former name of previous_valid_until, read as a fallback until servers all send the new one.
-  old_token_valid_until?: string | null
 }
 
 // Mirrors internal/api's isPlatformToken: system scope and no agent. The

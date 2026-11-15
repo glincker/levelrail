@@ -38,9 +38,7 @@ export function RotateTokenDialog({
   const { copied, copy } = useCopyToClipboard()
   const [result, setResult] = useState<RotateTokenResponse | null>(null)
   const [failure, setFailure] = useState<Error | null>(null)
-  const validUntil = result
-    ? (result.previous_valid_until ?? result.old_token_valid_until)
-    : null
+  const validUntil = result ? result.previous_valid_until : null
   const cli = `${brand.BinaryName || 'levelrail-cli'} tokens rotate ${token.name}`
 
   const close = () => {
