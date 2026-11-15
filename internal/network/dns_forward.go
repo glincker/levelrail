@@ -168,7 +168,8 @@ func (f *Forwarder) FallbackAddr() string {
 	return ""
 }
 
-// Resolve answers req from cache or upstream. reason says which; guard (may be nil) runs before a cache insert.
+// Resolve answers req from cache or upstream. reason says which; guard (may be nil) runs on every
+// answer for this caller, so the shared cache only ever holds unfiltered upstream replies.
 func (f *Forwarder) Resolve(ctx context.Context, src netip.Addr, req *dns.Msg, guard ResponseGuardFunc) (*dns.Msg, string, error) {
 	q := req.Question[0]
 	key := cacheKey{name: strings.ToLower(q.Name), qtype: q.Qtype, qclass: q.Qclass}
@@ -177,7 +178,7 @@ func (f *Forwarder) Resolve(ctx context.Context, src netip.Addr, req *dns.Msg, g
 	}
 	if hit := f.cache.get(key); hit != nil {
 		hit.Id = req.Id
-		return hit, ReasonCached, nil
+		return applyResponseGuard(guard, src, req, hit), ReasonCached, nil
 	}
 	if !f.allow(src) {
 		return nil, ReasonRefused, ErrForwardRateLimited
@@ -191,11 +192,6 @@ func (f *Forwarder) Resolve(ctx context.Context, src netip.Addr, req *dns.Msg, g
 		if err != nil {
 			return nil, err
 		}
-		if guard != nil {
-			if g, _ := guard(src, req, resp); g != nil {
-				resp = g
-			}
-		}
 		f.cache.put(key, resp)
 		return resp, nil
 	})
@@ -204,7 +200,19 @@ func (f *Forwarder) Resolve(ctx context.Context, src netip.Addr, req *dns.Msg, g
 	}
 	out := v.(*dns.Msg).Copy()
 	out.Id = req.Id
-	return out, ReasonForwarded, nil
+	return applyResponseGuard(guard, src, req, out), ReasonForwarded, nil
+}
+
+// applyResponseGuard lets the per-source guard replace resp; a nil guard or result keeps it.
+func applyResponseGuard(guard ResponseGuardFunc, src netip.Addr, req, resp *dns.Msg) *dns.Msg {
+	if guard == nil {
+		return resp
+	}
+	if g, _ := guard(src, req, resp.Copy()); g != nil {
+		g.Id = req.Id
+		return g
+	}
+	return resp
 }
 
 // exchangeAll tries upstreams healthiest first within the total query budget.

@@ -295,3 +295,32 @@ func TestDNSServer_ForwardsOutsideZone(t *testing.T) {
 		t.Fatalf("forwarded answer wrong: %v", resp)
 	}
 }
+
+func TestForwarder_GuardRunsPerSourceOnCacheHits(t *testing.T) {
+	up := startUpstream(t, answerA60(), nil)
+	f := testForwarder(up.addr)
+	guard := func(src netip.Addr, _, resp *dns.Msg) (*dns.Msg, string) {
+		if src != testSrc {
+			return nil, ""
+		}
+		g := resp.Copy()
+		g.Rcode = dns.RcodeNameError
+		g.Answer = nil
+		return g, "filtered"
+	}
+	other := netip.MustParseAddr("172.17.0.9")
+	m := new(dns.Msg)
+	m.SetQuestion("g.test.", dns.TypeA)
+	first, _, err := f.Resolve(context.Background(), other, m, guard)
+	if err != nil || len(first.Answer) == 0 {
+		t.Fatalf("unfiltered source: %v %v", first, err)
+	}
+	hit, reason, err := f.Resolve(context.Background(), testSrc, m, guard)
+	if err != nil || reason != ReasonCached || hit.Rcode != dns.RcodeNameError || len(hit.Answer) != 0 {
+		t.Fatalf("filtered source got the shared answer: reason=%q rcode=%d err=%v", reason, hit.Rcode, err)
+	}
+	again, _, _ := f.Resolve(context.Background(), other, m, guard)
+	if len(again.Answer) == 0 {
+		t.Fatal("a filtered answer leaked into the cache")
+	}
+}

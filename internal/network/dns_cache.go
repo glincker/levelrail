@@ -12,7 +12,7 @@ import (
 // cacheShards splits lock contention only; the byte budget is per cache, not per shard count.
 const cacheShards = 8
 
-// cacheKey includes view so answers filtered for one audience can never be served to another.
+// cacheKey holds unfiltered upstream answers; view stays empty because the guard runs per caller.
 type cacheKey struct {
 	name   string
 	qtype  uint16
