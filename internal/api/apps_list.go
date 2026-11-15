@@ -119,8 +119,17 @@ func (rt *Router) composeAwareRead(ctx context.Context, scope *resourceScope, ca
 			sharingErr = err
 			return
 		}
+		// A retained deploy copy inherits the app's AppID but is not a member of it.
+		copies, err := rt.retainedDeployServicesStrict(ctx)
+		if err != nil {
+			sharingErr = err
+			return
+		}
 		sharing = map[string][]string{}
 		for _, sv := range svcs {
+			if copies[sv.Name] {
+				continue
+			}
 			if sv.AppID != "" && sv.AppID != sv.Name {
 				sharing[sv.AppID] = append(sharing[sv.AppID], sv.Name)
 			}

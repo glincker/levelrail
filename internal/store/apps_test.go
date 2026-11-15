@@ -322,3 +322,23 @@ func TestAppsMigration_BackfillsExistingServices(t *testing.T) {
 		t.Errorf("service.AppID = %q after backfill, want %q", svc.AppID, app.ID)
 	}
 }
+
+func TestListServicesByApp_SkipsRetainedDeployCopies(t *testing.T) {
+	db := openTestDB(t)
+	ctx := context.Background()
+	app := newTestApp()
+	seedAppWithWebWorker(t, db, app)
+	if err := db.SaveDesiredService(ctx, DesiredService{Name: "web-dep1abcd", Image: "img:v0", Port: 8080, AppID: app.ID}); err != nil {
+		t.Fatalf("SaveDesiredService(copy) error = %v", err)
+	}
+	if err := db.SaveDeployURL(ctx, DeployURL{ServiceName: "web-dep1abcd", AppName: "web", AttemptID: "a1"}); err != nil {
+		t.Fatalf("SaveDeployURL error = %v", err)
+	}
+	got, err := db.ListServicesByApp(ctx, app.ID)
+	if err != nil {
+		t.Fatalf("ListServicesByApp() error = %v", err)
+	}
+	if len(got) != 2 || got[0].Name != "web" || got[1].Name != "worker" {
+		t.Fatalf("ListServicesByApp() = %+v, want [web, worker] without the copy", got)
+	}
+}
