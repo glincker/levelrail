@@ -1,4 +1,5 @@
 import { render, screen, waitFor, within } from '@testing-library/react'
+import { commandText } from '@/test/commandText'
 import userEvent from '@testing-library/user-event'
 import { QueryClientProvider } from '@tanstack/react-query'
 import { afterEach, describe, expect, it, vi } from 'vitest'
@@ -447,7 +448,9 @@ describe('UpgradeNow', () => {
       },
     })
     expect(
-      await screen.findByText('sudo levelrail self-upgrade --to v1.1.0'),
+      await screen.findByText(
+        commandText('sudo levelrail self-upgrade --to v1.1.0'),
+      ),
     ).toBeInTheDocument()
     expect(screen.getByText(/not root/)).toBeInTheDocument()
     expect(

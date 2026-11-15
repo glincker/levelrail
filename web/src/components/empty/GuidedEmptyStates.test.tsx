@@ -1,4 +1,5 @@
 import { describe, expect, it } from 'vitest'
+import { commandText } from '@/test/commandText'
 import { screen } from '@testing-library/react'
 import type { ComponentType } from 'react'
 import { renderInRouter } from '../../test/renderInRouter'
@@ -36,7 +37,7 @@ describe.each(CASES)('%s empty state', (_name, State, args, action) => {
       </BrandContext.Provider>,
     )
     expect(screen.getByRole('link', { name: action })).toBeTruthy()
-    expect(screen.getByText(`cli ${args}`, { exact: false })).toBeTruthy()
+    expect(screen.getByText(commandText(`cli ${args}`))).toBeTruthy()
   })
 
   it('renders nothing when rows exist but are filtered away', async () => {

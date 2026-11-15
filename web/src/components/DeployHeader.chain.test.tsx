@@ -1,7 +1,8 @@
 import type { AnchorHTMLAttributes, ReactNode } from 'react'
-import { render, screen } from '@testing-library/react'
+import { screen } from '@testing-library/react'
 import { describe, expect, it, vi } from 'vitest'
 import { DeployDetailI18n } from '../test/deployDetailI18n'
+import { renderWithQuery } from '../test/renderWithQuery'
 import type { DeployAttempt } from '../types/deployAttempt'
 import { DeployHeader } from './DeployHeader'
 
@@ -38,7 +39,7 @@ const attempt: DeployAttempt = {
 }
 
 function renderHeader(a: DeployAttempt) {
-  render(
+  renderWithQuery(
     <DeployDetailI18n>
       <DeployHeader appName="web" attempt={a} isLive={false} />
     </DeployDetailI18n>,

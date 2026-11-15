@@ -42,7 +42,7 @@ describe('IacSchemaForm', () => {
   it('renders the required name field and calls onChange with yaml', () => {
     const onChange = vi.fn()
     renderForm('', onChange)
-    const name = screen.getByRole('textbox', { name: /^Name/ })
+    const name = screen.getByRole('textbox', { name: /^Name(?!s)/ })
     fireEvent.change(name, { target: { value: 'shop' } })
     expect(onChange).toHaveBeenLastCalledWith(
       expect.stringContaining('name: shop'),

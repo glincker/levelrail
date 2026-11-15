@@ -1,4 +1,5 @@
 import { render, screen, waitFor } from '@testing-library/react'
+import { commandText } from '@/test/commandText'
 import userEvent from '@testing-library/user-event'
 import { QueryClientProvider } from '@tanstack/react-query'
 import i18next from 'i18next'
@@ -120,7 +121,9 @@ describe('HostFirewallCard', () => {
     await userEvent.click(
       await screen.findByRole('button', { name: 'Turn on firewall' }),
     )
-    expect(await screen.findByText(/ufw allow 22\/tcp/)).toBeInTheDocument()
+    expect(
+      await screen.findByText(commandText('ufw allow 22/tcp')),
+    ).toBeInTheDocument()
     expect(calls.filter((c) => c.startsWith('POST'))).toEqual([])
     expect(calls.filter((c) => c.startsWith('GET'))).toHaveLength(1)
 
@@ -240,10 +243,8 @@ describe('HostFirewallCard', () => {
         await screen.findByText(`${backend} (read only)`),
       ).toBeInTheDocument()
       expect(screen.getByText(/Commands to review/)).toBeInTheDocument()
-      expect(
-        screen.getByText(new RegExp(inspect.replace(/[-]/g, '\\-'))),
-      ).toBeInTheDocument()
-      expect(screen.queryByText(/ufw (allow|--force)/)).toBeNull()
+      expect(screen.getByText(commandText(inspect))).toBeInTheDocument()
+      expect(screen.queryByText(commandText(/ufw (allow|--force)/))).toBeNull()
     },
   )
 
