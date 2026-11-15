@@ -164,8 +164,12 @@ func (rt *Router) handleSetConnectionMeta(w http.ResponseWriter, r *http.Request
 		writeError(w, http.StatusBadRequest, "scope_type must be instance, org or app")
 		return
 	}
+	// Every meta write, expiry and rotation included, needs authority over the current scope.
+	if !rt.authorizeScopeOwner(w, r, oldType, oldID) {
+		return
+	}
 	if cur.ScopeType != oldType || cur.ScopeID != oldID {
-		if !rt.authorizeScopeChange(w, r, oldType, oldID, cur.ScopeType, cur.ScopeID) {
+		if !rt.authorizeScopeTarget(w, r, cur.ScopeType, cur.ScopeID) {
 			return
 		}
 		if !rt.refuseOrphanedBindings(w, r, conn, cur.ScopeType, cur.ScopeID) {
@@ -208,24 +212,43 @@ func (rt *Router) handleListAppBindings(w http.ResponseWriter, r *http.Request) 
 		rt.internalError(w, "api: list app bindings failed", err)
 		return
 	}
-	resolved, err := rt.resolveAppBindings(r.Context(), hub, name, list)
+	target, byRef, err := rt.appBindingScope(r.Context(), hub, name)
+	if err != nil {
+		rt.internalError(w, "api: app bindings: load scope failed", err)
+		return
+	}
+	resolved, err := rt.resolveAppBindings(r.Context(), list, target, byRef)
 	if err != nil {
 		rt.internalError(w, "api: resolve app bindings failed", err)
 		return
 	}
-	writeJSON(w, http.StatusOK, appBindingsResponse{Bindings: list, Resolved: resolved})
+	writeJSON(w, http.StatusOK, appBindingsResponse{Bindings: connhub.CoveredBindings(list, byRef, target), Resolved: resolved})
+}
+
+// appBindingScope returns the app as a binding target and every connection by
+// ref, the inputs of the scope rule that decides which stored rows count.
+func (rt *Router) appBindingScope(ctx context.Context, hub *connhub.Service, name string) (connhub.Target, map[string]connhub.Connection, error) {
+	team, err := rt.appTeam(ctx, name)
+	if err != nil {
+		return connhub.Target{}, nil, err
+	}
+	conns, err := hub.List(ctx, connhub.Filter{})
+	if err != nil {
+		return connhub.Target{}, nil, err
+	}
+	byRef := make(map[string]connhub.Connection, len(conns))
+	for _, c := range conns {
+		byRef[c.Ref] = c
+	}
+	return connhub.Target{Type: store.BindingTargetApp, ID: name, TeamID: team}, byRef, nil
 }
 
 // resolveAppBindings adds the app's org defaults under the app's own rows and
 // drops any stored row whose connection scope no longer covers the app.
-func (rt *Router) resolveAppBindings(ctx context.Context, hub *connhub.Service, name string, own []connhub.Binding) ([]connhub.ResolvedBinding, error) {
-	team, err := rt.appTeam(ctx, name)
-	if err != nil {
-		return nil, err
-	}
+func (rt *Router) resolveAppBindings(ctx context.Context, own []connhub.Binding, target connhub.Target, byRef map[string]connhub.Connection) ([]connhub.ResolvedBinding, error) {
 	var org []connhub.Binding
 	if bs, ok := any(rt.apps).(bindingStore); ok {
-		rows, err := bs.ListConnectionBindingsByTarget(ctx, store.BindingTargetOrg, team)
+		rows, err := bs.ListConnectionBindingsByTarget(ctx, store.BindingTargetOrg, target.TeamID)
 		if err != nil {
 			return nil, err
 		}
@@ -233,21 +256,24 @@ func (rt *Router) resolveAppBindings(ctx context.Context, hub *connhub.Service, 
 			org = append(org, bindingView(b))
 		}
 	}
-	conns, err := hub.List(ctx, connhub.Filter{})
-	if err != nil {
-		return nil, err
-	}
-	byRef := make(map[string]connhub.Connection, len(conns))
-	for _, c := range conns {
-		byRef[c.Ref] = c
-	}
-	return connhub.Resolve(own, org, byRef, connhub.Target{Type: store.BindingTargetApp, ID: name, TeamID: team}), nil
+	return connhub.Resolve(own, org, byRef, target), nil
 }
 
-// authorizeScopeChange needs authority over both ends: write:sensitive on an
-// app scope, admin on an org scope, so a scope never moves off a resource the
-// caller does not manage.
-func (rt *Router) authorizeScopeChange(w http.ResponseWriter, r *http.Request, oldType, oldID, newType, newID string) bool {
+// authorizeScopeOwner needs authority over the current scope: write:sensitive
+// on an app, admin on an org, an instance admin for an instance connection or
+// one whose app or org was deleted.
+func (rt *Router) authorizeScopeOwner(w http.ResponseWriter, r *http.Request, oldType, oldID string) bool {
+	if oldType == store.ConnectionScopeInstance || oldID == "" {
+		ok, err := rt.instanceAdministrable(r)
+		if err != nil {
+			rt.internalError(w, "api: set connection meta: instance access", err)
+			return false
+		}
+		if !ok {
+			writeError(w, http.StatusForbidden, "changing an instance connection needs an instance admin")
+		}
+		return ok
+	}
 	switch oldType {
 	case store.ConnectionScopeApp:
 		if !rt.authorizeRefs(w, r, AbilityWriteSensitive, notFoundAs(http.StatusForbidden, "changing this connection's scope needs write access to its current app"), appRef(oldID)) {
@@ -264,6 +290,12 @@ func (rt *Router) authorizeScopeChange(w http.ResponseWriter, r *http.Request, o
 			return false
 		}
 	}
+	return true
+}
+
+// authorizeScopeTarget needs authority over the new scope too, so a scope
+// never moves onto a resource the caller does not manage.
+func (rt *Router) authorizeScopeTarget(w http.ResponseWriter, r *http.Request, newType, newID string) bool {
 	switch newType {
 	case store.ConnectionScopeApp:
 		if _, err := rt.apps.GetDesiredService(r.Context(), newID); errors.Is(err, store.ErrServiceNotFound) {

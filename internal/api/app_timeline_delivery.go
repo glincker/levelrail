@@ -5,6 +5,7 @@ import (
 	"log/slog"
 	"strings"
 
+	"github.com/GLINCKER/levelrail/internal/connhub"
 	"github.com/GLINCKER/levelrail/internal/pipeline"
 	"github.com/GLINCKER/levelrail/internal/store"
 )
@@ -43,7 +44,19 @@ func (rt *Router) deliveryTimelineItems(ctx context.Context, app string, cursor 
 		if err != nil {
 			rt.logger.Warn("api: timeline: list bindings failed", slog.String("error", err.Error()), slog.String("app_name", app))
 		}
+		// Same scope rule as the resolved bindings; without it no binding row is shown.
+		var target connhub.Target
+		var byRef map[string]connhub.Connection
+		if len(list) > 0 {
+			if target, byRef, err = rt.appBindingScope(ctx, rt.connectionHub(), app); err != nil {
+				rt.logger.Warn("api: timeline: load binding scope failed", slog.String("error", err.Error()), slog.String("app_name", app))
+				list = nil
+			}
+		}
 		for _, b := range list {
+			if c, ok := byRef[b.Ref]; !ok || !connhub.Covers(c, target) {
+				continue
+			}
 			it := bindingTimelineItem(b)
 			if timelineBefore(it.At, it.ID, cursor) {
 				items = append(items, it)

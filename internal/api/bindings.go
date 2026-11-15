@@ -5,6 +5,7 @@ import (
 	"encoding/json"
 	"errors"
 	"io"
+	"log/slog"
 	"net/http"
 	"strings"
 
@@ -56,6 +57,16 @@ func (rt *Router) bindingRulesMaxBytes(ctx context.Context) int {
 	return defaultBindingRulesMaxBytes
 }
 
+func (rt *Router) bindingRuleLimits(ctx context.Context) connhub.RuleLimits {
+	lim := connhub.RuleLimits{MaxBytes: rt.bindingRulesMaxBytes(ctx), MaxValueLen: connhub.DefaultRuleValueMaxLen}
+	if rt.runtimeSettings != nil {
+		if n := rt.runtimeSettings.Int(ctx, runtimesettings.KeyConnectionBindingRuleValueMaxLen); n > 0 {
+			lim.MaxValueLen = n
+		}
+	}
+	return lim
+}
+
 func bindingView(b store.ConnectionBinding) connhub.Binding {
 	return connhub.Binding{ID: b.ID, Ref: b.Ref, TargetType: b.TargetType, TargetID: b.TargetID, Role: b.Role, Rules: b.Rules, Origin: "binding"}
 }
@@ -92,16 +103,17 @@ func (rt *Router) bindingCallerScope(r *http.Request) (*teamScope, []string, err
 // connectionReadable is "may this caller read the connection": instance
 // connections need instance read:sensitive, org ones a role in that org that
 // grants it, app ones read:sensitive on that app.
+// A scope whose app or org was deleted has no id and reads like an instance one.
 func (rt *Router) connectionReadable(r *http.Request, c connhub.Connection) (bool, error) {
-	if c.ScopeType == store.ConnectionScopeApp {
+	if c.ScopeType == store.ConnectionScopeApp && c.ScopeID != "" {
 		denied, err := rt.firstDeniedRef(r, AbilityReadSensitive, []resourceRef{appRef(c.ScopeID)})
-		return denied == nil && c.ScopeID != "", err
+		return denied == nil, err
 	}
 	scope, abilities, err := rt.bindingCallerScope(r)
 	if err != nil {
 		return false, err
 	}
-	if c.ScopeType == store.ConnectionScopeOrg {
+	if c.ScopeType == store.ConnectionScopeOrg && c.ScopeID != "" {
 		if scope == nil {
 			return hasAbility(abilities, AbilityReadSensitive), nil
 		}
@@ -125,6 +137,27 @@ func (rt *Router) orgAdministrable(r *http.Request, orgID string) (bool, error) 
 	}
 	role := scope.roleOfTeam(orgID)
 	return store.TeamRoleAtLeast(role, store.TeamRoleAdmin) && hasAbility(capAbilities(abilities, orgID, role), AbilityWriteSensitive), nil
+}
+
+// instanceAdministrable is "may this caller manage instance wide state": root,
+// an unscoped caller with write:sensitive, or an admin of the default org.
+func (rt *Router) instanceAdministrable(r *http.Request) (bool, error) {
+	if rt.callerIsRoot(r) {
+		return true, nil
+	}
+	scope, _, err := rt.bindingCallerScope(r)
+	if err != nil {
+		return false, err
+	}
+	if scope != nil && !scope.instance {
+		return false, nil
+	}
+	return rt.orgAdministrable(r, store.DefaultTeamID)
+}
+
+// instanceScoped reports a connection every target can see.
+func instanceScoped(c connhub.Connection) bool {
+	return c.ScopeType == "" || c.ScopeType == store.ConnectionScopeInstance
 }
 
 // loadBindableConnection answers 404 both for a missing ref and one the
@@ -178,8 +211,8 @@ func decodeBindingRequest(w http.ResponseWriter, r *http.Request, maxRules int) 
 // read the connection, its scope covers the target, it can fill the role, and
 // the rules fit the role's schema.
 func (rt *Router) createBinding(w http.ResponseWriter, r *http.Request, bs bindingStore, target connhub.Target) {
-	maxRules := rt.bindingRulesMaxBytes(r.Context())
-	req, ok := decodeBindingRequest(w, r, maxRules)
+	lim := rt.bindingRuleLimits(r.Context())
+	req, ok := decodeBindingRequest(w, r, lim.MaxBytes)
 	if !ok {
 		return
 	}
@@ -191,11 +224,17 @@ func (rt *Router) createBinding(w http.ResponseWriter, r *http.Request, bs bindi
 		writeError(w, http.StatusBadRequest, "this connection's scope does not include this "+target.Type)
 		return
 	}
+	// An org default reaches every app in the org, so handing an instance
+	// connection to an org other than the default one is a root decision.
+	if target.Type == store.BindingTargetOrg && target.ID != store.DefaultTeamID && instanceScoped(c) && !rt.callerIsRoot(r) {
+		writeError(w, http.StatusForbidden, "making an instance connection an organization default needs root")
+		return
+	}
 	if !connhub.RoleSupported(c, req.Role) {
 		writeError(w, http.StatusBadRequest, "this connection cannot be used for the "+req.Role+" role")
 		return
 	}
-	rules, err := connhub.ValidateRules(req.Role, req.Rules, maxRules)
+	rules, err := connhub.ValidateRules(req.Role, req.Rules, lim)
 	if err != nil {
 		writeError(w, http.StatusBadRequest, strings.TrimPrefix(err.Error(), connhub.ErrInvalid.Error()+": "))
 		return
@@ -216,7 +255,29 @@ func (rt *Router) createBinding(w http.ResponseWriter, r *http.Request, bs bindi
 		rt.internalError(w, "api: create binding failed", err)
 		return
 	}
+	if !rt.bindingStillCovered(w, r, bs, b, target) {
+		return
+	}
 	writeJSON(w, http.StatusCreated, bindingView(b))
+}
+
+// bindingStillCovered re-reads the connection after the insert: a scope change
+// that landed in between removes the new row again, so no stored binding sits
+// outside its connection's scope.
+func (rt *Router) bindingStillCovered(w http.ResponseWriter, r *http.Request, bs bindingStore, b store.ConnectionBinding, target connhub.Target) bool {
+	c, err := rt.connectionHub().Get(r.Context(), b.Ref)
+	if err == nil && connhub.Covers(c, target) {
+		return true
+	}
+	if err != nil && !errors.Is(err, connhub.ErrNotFound) {
+		rt.logger.Warn("api: binding: re-check connection failed", slog.String("error", err.Error()))
+	}
+	if derr := bs.DeleteConnectionBinding(context.WithoutCancel(r.Context()), b.ID); derr != nil && !errors.Is(derr, store.ErrConnectionBindingNotFound) {
+		rt.internalError(w, "api: binding: remove uncovered binding failed", derr)
+		return false
+	}
+	writeError(w, http.StatusConflict, "this connection's scope changed while binding; try again")
+	return false
 }
 
 // deleteBinding only finds ids among the target's own rows, so an id from

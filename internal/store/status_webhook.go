@@ -171,6 +171,9 @@ func (db *DB) DeleteStatusWebhook(ctx context.Context, id string) error {
 	if _, err := tx.ExecContext(ctx, `DELETE FROM status_webhooks WHERE id = ?`, id); err != nil {
 		return fmt.Errorf("store: delete status webhook: %w", err)
 	}
+	if err := forgetConnectionRef(ctx, tx, ConnectionRefStatusWebhook+id); err != nil {
+		return err
+	}
 	return tx.Commit()
 }
 

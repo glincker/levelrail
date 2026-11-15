@@ -220,6 +220,9 @@ func (db *DB) DeleteGitConnection(ctx context.Context, id string) error {
 			return fmt.Errorf("store: promote default git connection: %w", err)
 		}
 	}
+	if err := forgetConnectionRef(ctx, tx, ConnectionRefGit+id); err != nil {
+		return err
+	}
 	if err := tx.Commit(); err != nil {
 		return fmt.Errorf("store: delete git connection %q: %w", id, err)
 	}

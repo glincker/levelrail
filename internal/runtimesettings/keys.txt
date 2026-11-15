@@ -112,6 +112,7 @@ cloud.state_max_kb
 compose.depends_on_timeout
 compose.repo_deploy_timeout
 compose.repo_file_max_bytes
+connections.binding_rule_value_max_len
 connections.binding_rules_max_bytes
 connections.expiry_warn
 containers.log_max_files

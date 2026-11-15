@@ -7,6 +7,8 @@ import (
 	"slices"
 	"sort"
 	"strings"
+	"unicode"
+	"unicode/utf8"
 )
 
 // Binding roles and the connection capabilities that can fill each one.
@@ -80,9 +82,22 @@ var ruleSchemas = map[string]map[string]ruleField{
 	"dns":           {},
 }
 
-// ValidateRules checks raw against the role's schema and the size cap, and
+// DefaultRuleValueMaxLen bounds one rule string when no limit is configured.
+const DefaultRuleValueMaxLen = 512
+
+// RuleLimits caps the whole rules document and each string inside it.
+type RuleLimits struct {
+	MaxBytes    int
+	MaxValueLen int
+}
+
+// ValidateRules checks raw against the role's schema and the size caps, and
 // returns the canonical JSON to store. Empty input means no rules.
-func ValidateRules(role string, raw []byte, maxBytes int) (string, error) {
+func ValidateRules(role string, raw []byte, lim RuleLimits) (string, error) {
+	maxBytes := lim.MaxBytes
+	if lim.MaxValueLen <= 0 {
+		lim.MaxValueLen = DefaultRuleValueMaxLen
+	}
 	schema, ok := ruleSchemas[role]
 	if !ok {
 		return "", fmt.Errorf("%w: unknown role %q", ErrInvalid, role)
@@ -104,7 +119,7 @@ func ValidateRules(role string, raw []byte, maxBytes int) (string, error) {
 		if !ok {
 			return "", fmt.Errorf("%w: rule %q is not valid for role %s", ErrInvalid, key, role)
 		}
-		v, err := f.decode(key, val)
+		v, err := f.decode(key, val, lim.MaxValueLen)
 		if err != nil {
 			return "", err
 		}
@@ -117,7 +132,7 @@ func ValidateRules(role string, raw []byte, maxBytes int) (string, error) {
 	return string(b), nil
 }
 
-func (f ruleField) decode(key string, val json.RawMessage) (any, error) {
+func (f ruleField) decode(key string, val json.RawMessage, maxLen int) (any, error) {
 	switch f.kind {
 	case ruleBool:
 		var b bool
@@ -131,6 +146,9 @@ func (f ruleField) decode(key string, val json.RawMessage) (any, error) {
 			return nil, fmt.Errorf("%w: rule %q must be a list of strings", ErrInvalid, key)
 		}
 		for _, s := range list {
+			if err := checkRuleString(key, s, maxLen); err != nil {
+				return nil, err
+			}
 			if err := f.checkEnum(key, s); err != nil {
 				return nil, err
 			}
@@ -145,8 +163,28 @@ func (f ruleField) decode(key string, val json.RawMessage) (any, error) {
 			return nil, fmt.Errorf("%w: rule %q must be a string", ErrInvalid, key)
 		}
 		s = strings.TrimSpace(s)
+		if err := checkRuleString(key, s, maxLen); err != nil {
+			return nil, err
+		}
 		return s, f.checkEnum(key, s)
 	}
+}
+
+// checkRuleString keeps rule strings to one line of printable text within
+// maxLen bytes, since branch names and path globs reach git and glob code.
+func checkRuleString(key, s string, maxLen int) error {
+	if len(s) > maxLen {
+		return fmt.Errorf("%w: rule %q values must be at most %d bytes", ErrInvalid, key, maxLen)
+	}
+	if !utf8.ValidString(s) {
+		return fmt.Errorf("%w: rule %q must be valid UTF-8", ErrInvalid, key)
+	}
+	for _, r := range s {
+		if unicode.IsControl(r) || r == '\u2028' || r == '\u2029' {
+			return fmt.Errorf("%w: rule %q must not contain control characters or line breaks", ErrInvalid, key)
+		}
+	}
+	return nil
 }
 
 func (f ruleField) checkEnum(key, v string) error {
@@ -213,6 +251,19 @@ func Resolve(app, org []Binding, conns map[string]Connection, target Target) []R
 		}
 		return !out[i].Overridden && out[j].Overridden
 	})
+	return out
+}
+
+// CoveredBindings keeps the rows Resolve would keep from an app's own list:
+// derived rows, and stored rows whose connection still covers the target.
+func CoveredBindings(rows []Binding, conns map[string]Connection, target Target) []Binding {
+	out := make([]Binding, 0, len(rows))
+	for _, b := range rows {
+		if b.Origin == "binding" && !inScope(b, conns, target) {
+			continue
+		}
+		out = append(out, b)
+	}
 	return out
 }
 

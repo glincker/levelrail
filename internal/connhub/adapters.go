@@ -144,7 +144,7 @@ func (s *Service) listGit(ctx context.Context) ([]Connection, error) {
 			host = hostOf(g.InstanceURL)
 		}
 		out = append(out, Connection{
-			Ref: "git:" + g.ID, Kind: KindGit, Provider: g.Provider, Label: g.Label, Account: g.AccountName, Host: host,
+			Ref: store.ConnectionRefGit + g.ID, Kind: KindGit, Provider: g.Provider, Label: g.Label, Account: g.AccountName, Host: host,
 			AuthMethod: auth, Health: health, HealthDetail: detail, CheckedAt: checked, Capabilities: gitCaps(g.Provider),
 			BoundCount: len(bound), CreatedAt: parseTime(g.CreatedAt), IsDefault: g.IsDefault,
 		})
@@ -163,7 +163,7 @@ func (s *Service) listRegistry(ctx context.Context) ([]Connection, error) {
 	out := make([]Connection, 0, len(creds))
 	for _, c := range creds {
 		conn := Connection{
-			Ref: "registry:" + c.ID, Kind: KindRegistry, Provider: registryProvider(c), Label: c.Name, Account: c.Username, Host: c.RegistryHost,
+			Ref: store.ConnectionRefRegistry + c.ID, Kind: KindRegistry, Provider: registryProvider(c), Label: c.Name, Account: c.Username, Host: c.RegistryHost,
 			AuthMethod: AuthToken, Health: HealthUnknown, ExpiresAt: ptrTime(derefTime(c.ExpiresAt)),
 			Capabilities: []string{CapRegistryPull}, CreatedAt: parseTime(c.CreatedAt),
 		}
@@ -234,7 +234,7 @@ func (s *Service) listSecrets(ctx context.Context) ([]Connection, error) {
 	for _, c := range conns {
 		created := c.CreatedAt
 		out = append(out, Connection{
-			Ref: "secret:" + c.Name, Kind: KindSecret, Provider: c.Type, Label: c.Name, AuthMethod: AuthToken,
+			Ref: store.ConnectionRefSecret + c.Name, Kind: KindSecret, Provider: c.Type, Label: c.Name, AuthMethod: AuthToken,
 			Health: HealthUnknown, Capabilities: []string{CapSecrets}, CreatedAt: ptrTime(created),
 		})
 	}
@@ -288,7 +288,7 @@ func (s *Service) listCloud(ctx context.Context) ([]Connection, error) {
 	out := make([]Connection, 0, len(conns))
 	for _, c := range conns {
 		conn := Connection{
-			Ref: "cloud:" + c.Name, Kind: KindCloud, Provider: c.Provider, Label: c.Name, AuthMethod: cloudAuth(c.AuthMethod),
+			Ref: store.ConnectionRefCloud + c.Name, Kind: KindCloud, Provider: c.Provider, Label: c.Name, AuthMethod: cloudAuth(c.AuthMethod),
 			Health: HealthUnknown, CheckedAt: ptrTime(c.LastCheckedAt), Capabilities: []string{CapProvisionHost},
 			CreatedAt: ptrTime(c.CreatedAt),
 		}
@@ -326,7 +326,7 @@ func (s *Service) listWebhooks(ctx context.Context) ([]Connection, error) {
 	}
 	for _, w := range events {
 		c := Connection{
-			Ref: "webhook:event:" + w.ID, Kind: KindWebhook, Provider: "event", Label: w.Name, AuthMethod: AuthURLSecret,
+			Ref: store.ConnectionRefEventWebhook + w.ID, Kind: KindWebhook, Provider: "event", Label: w.Name, AuthMethod: AuthURLSecret,
 			Health: HealthUnknown, Capabilities: []string{CapWebhook}, CreatedAt: parseTime(w.CreatedAt),
 		}
 		if !w.Enabled {
@@ -340,7 +340,7 @@ func (s *Service) listWebhooks(ctx context.Context) ([]Connection, error) {
 	}
 	for _, w := range status {
 		c := Connection{
-			Ref: "webhook:status:" + w.ID, Kind: KindWebhook, Provider: "status", Label: w.Label, AuthMethod: AuthURLSecret,
+			Ref: store.ConnectionRefStatusWebhook + w.ID, Kind: KindWebhook, Provider: "status", Label: w.Label, AuthMethod: AuthURLSecret,
 			Health: HealthOK, Capabilities: []string{CapWebhook}, CreatedAt: ptrTime(w.CreatedAt),
 		}
 		switch {
@@ -370,5 +370,5 @@ func (s *Service) legacyAppBindings(ctx context.Context, app string) ([]Binding,
 	if src == nil || src.ConnectionID == "" {
 		return nil, nil
 	}
-	return []Binding{{Ref: "git:" + src.ConnectionID, TargetType: "app", TargetID: app, Role: "source", Origin: "legacy"}}, nil
+	return []Binding{{Ref: store.ConnectionRefGit + src.ConnectionID, TargetType: "app", TargetID: app, Role: "source", Origin: "legacy"}}, nil
 }

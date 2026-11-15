@@ -74,6 +74,7 @@ These variables only seed the default of a [runtime setting](/runtime-settings).
 | `APP_CLOUD_ENGINE_NETWORK` | [`cloud.engine_network`](/runtime-settings#security) | empty |
 | `APP_CLOUD_ENGINE_USER` | [`cloud.engine_user`](/runtime-settings#security) | `65532:65532` |
 | `APP_CLOUD_REQUIRE_FULL_ESTIMATE` | [`cloud.require_full_estimate`](/runtime-settings#security) | `true` |
+| `APP_CONNECTION_BINDING_RULE_VALUE_MAX_LEN` | [`connections.binding_rule_value_max_len`](/runtime-settings#security) | `512` |
 | `APP_CONNECTION_BINDING_RULES_MAX_BYTES` | [`connections.binding_rules_max_bytes`](/runtime-settings#security) | `4096` |
 | `APP_CONNECTION_EXPIRY_WARN` | [`connections.expiry_warn`](/runtime-settings#security) | `336h` |
 | `APP_CREDENTIAL_REMINDER_INTERVAL` | [`credential_expiry.reminder_interval`](/runtime-settings#security) | `6h` |

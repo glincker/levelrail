@@ -3,6 +3,7 @@ package store
 import (
 	"context"
 	"crypto/rand"
+	"database/sql"
 	"encoding/hex"
 	"errors"
 	"fmt"
@@ -136,6 +137,46 @@ func (db *DB) DeleteConnectionBinding(ctx context.Context, id string) error {
 	}
 	if n, _ := res.RowsAffected(); n == 0 {
 		return ErrConnectionBindingNotFound
+	}
+	return nil
+}
+
+// Ref prefixes of the stored connection kinds, shared with the hub read model.
+const (
+	ConnectionRefGit           = "git:"
+	ConnectionRefRegistry      = "registry:"
+	ConnectionRefSecret        = "secret:"
+	ConnectionRefCloud         = "cloud:"
+	ConnectionRefEventWebhook  = "webhook:event:"
+	ConnectionRefStatusWebhook = "webhook:status:"
+)
+
+type connExecer interface {
+	ExecContext(ctx context.Context, query string, args ...any) (sql.Result, error)
+}
+
+// forgetConnectionRef drops a removed connection's bindings and sidecar, so a
+// later connection reusing the ref starts unbound at the instance default.
+func forgetConnectionRef(ctx context.Context, ex connExecer, ref string) error {
+	if _, err := ex.ExecContext(ctx, `DELETE FROM connection_bindings WHERE ref = ?`, ref); err != nil {
+		return fmt.Errorf("store: clear bindings of %q: %w", ref, err)
+	}
+	if _, err := ex.ExecContext(ctx, `DELETE FROM connection_meta WHERE ref = ?`, ref); err != nil {
+		return fmt.Errorf("store: clear connection meta of %q: %w", ref, err)
+	}
+	return nil
+}
+
+// forgetBindingTarget drops a deleted app's or org's bindings and detaches the
+// connections scoped to it: the scope id is cleared, which covers no target and
+// leaves the scope to an instance admin, so a reused name inherits nothing.
+func forgetBindingTarget(ctx context.Context, ex connExecer, targetType, id string) error {
+	if _, err := ex.ExecContext(ctx, `DELETE FROM connection_bindings WHERE target_type = ? AND target_id = ?`, targetType, id); err != nil {
+		return fmt.Errorf("store: clear bindings of %s %q: %w", targetType, id, err)
+	}
+	if _, err := ex.ExecContext(ctx, `UPDATE connection_meta SET scope_id = '', updated_at = ? WHERE scope_type = ? AND scope_id = ?`,
+		time.Now().UTC().Format(time.RFC3339Nano), targetType, id); err != nil {
+		return fmt.Errorf("store: detach connections scoped to %s %q: %w", targetType, id, err)
 	}
 	return nil
 }

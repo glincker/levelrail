@@ -179,7 +179,12 @@ func collectDesiredServices(rows *sql.Rows) ([]DesiredService, error) {
 // ErrServiceNotFound if it does not exist. It does not stop running
 // containers; converging to zero is the reconciler's job.
 func (db *DB) DeleteDesiredService(ctx context.Context, name string) error {
-	res, err := db.ExecContext(ctx, `DELETE FROM desired_services WHERE name = ?`, name)
+	tx, err := db.BeginTx(ctx, nil)
+	if err != nil {
+		return fmt.Errorf("store: delete desired service %q: %w", name, err)
+	}
+	defer func() { _ = tx.Rollback() }()
+	res, err := tx.ExecContext(ctx, `DELETE FROM desired_services WHERE name = ?`, name)
 	if err != nil {
 		return fmt.Errorf("store: delete desired service %q: %w", name, err)
 	}
@@ -189,6 +194,13 @@ func (db *DB) DeleteDesiredService(ctx context.Context, name string) error {
 	}
 	if n == 0 {
 		return ErrServiceNotFound
+	}
+	// A recreated app of the same name, in any org, starts with no bindings.
+	if err := forgetBindingTarget(ctx, tx, BindingTargetApp, name); err != nil {
+		return fmt.Errorf("store: delete desired service %q: %w", name, err)
+	}
+	if err := tx.Commit(); err != nil {
+		return fmt.Errorf("store: delete desired service %q: %w", name, err)
 	}
 	// A recreated app of the same name must not inherit the old commit order.
 	if _, err := db.ExecContext(ctx, `DELETE FROM deploy_cursors WHERE service_name = ?`, name); err != nil {
