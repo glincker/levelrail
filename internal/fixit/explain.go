@@ -86,6 +86,8 @@ func buildExplainTable() map[string]Explanation {
 			"Add a 1 to 2 GB swap file, then press Re-check.", "", KindManual),
 		ex("build_memory", "The host has less memory than a typical web build needs.", "Builds may fail with out-of-memory errors.",
 			"Add swap or memory, or build on a bigger node. Open Settings, then Builds, to pick the build node.", "", KindGuided),
+		ex("build_cache_budget", "The builder cache is over its size budget.", "The disk fills with old build layers until another build prunes them.",
+			"Let the next build prune the cache, raise build.cache_budget_max_mb in Settings, then Runtime, or set build.cache_budget to off.", "", KindManual),
 		ex("unit_protection", "The control plane is not shielded from the kernel out-of-memory killer, or it was restarted after an unclean stop.", "On a crowded host the kernel can kill the control plane, and apps are unmanaged until it restarts.",
 			"Open the check details, then on the host apply the protect command as root and restart the service. Add swap or lower build concurrency. See Host protection in the docs.", "", KindManual),
 		ex("cpu", "The host processor is busy most of the time.", "Everything on the host slows down.",

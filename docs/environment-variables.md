@@ -223,6 +223,9 @@ These variables only seed the default of a [runtime setting](/runtime-settings).
 | `APP_BOOTSTRAP_SCRIPT_MAX_BYTES` | [`bootstrap_scripts.max_bytes`](/runtime-settings#deploys) | `65536` |
 | `APP_BOOTSTRAP_SCRIPT_MAX_COUNT` | [`bootstrap_scripts.max_count`](/runtime-settings#deploys) | `50` |
 | `APP_BUILD_CACHE_APP_QUOTA_GB` | [`build.cache_app_quota_gb`](/runtime-settings#deploys) | `0` |
+| `APP_BUILD_CACHE_BUDGET` | [`build.cache_budget`](/runtime-settings#deploys) | `auto` |
+| `APP_BUILDKIT_GC_KEEP_MB` | [`build.cache_budget_max_mb`](/runtime-settings#deploys) | `0` |
+| `APP_BUILDKIT_GC_RESERVED_MB` | [`build.cache_budget_reserved_mb`](/runtime-settings#deploys) | `0` |
 | `APP_BUILD_CACHE_PER_APP` | [`build.cache_per_app`](/runtime-settings#deploys) | `true` |
 | `APP_BUILD_CACHE_RECLAIM_MAX_RECORDS` | [`build.cache_reclaim_max_records`](/runtime-settings#deploys) | `50` |
 | `APP_BUILD_CACHE_RECLAIM_TIMEOUT` | [`build.cache_reclaim_timeout`](/runtime-settings#deploys) | `2m` |
@@ -591,7 +594,6 @@ The control plane builds images with BuildKit. By default each build starts from
 | `APP_PLATFORM_MISMATCH` | `refuse-when-no-emulation` | What a deploy does when the image has no build for the node CPU architecture. `refuse-when-no-emulation` fails the deploy with a clear reason unless the node has qemu binfmt emulation for the image architecture (it then warns that the app runs under emulation and may be slow, and only warns if emulation cannot be checked). `warn` never refuses. `refuse` always refuses. Control plane. |
 | `APP_BUILDKIT_IMAGE` | ``docker.io/moby/buildkit:v0.34.1-rootless`` | BuildKit image the build daemon runs. Control plane. |
 | `APP_BUILDKIT_SNAPSHOTTER` | ``auto`` | Snapshotter the build daemon uses. An unknown value fails startup. Control plane. |
-| `APP_BUILDKIT_GC_KEEP_MB` | computed | Build cache size in MB that garbage collection keeps. Control plane. |
 | `APP_BUILDKIT_GC_KEEP_DURATION` | computed | How long unused build cache is kept before garbage collection. Control plane. |
 | `APP_BUILDKIT_HEALTH_TIMEOUT` | computed | Time limit for the build daemon health check. Control plane. |
 | `APP_BUILDKIT_IDLE_STOP` | computed | How long the build daemon may sit idle before it stops. Control plane. |

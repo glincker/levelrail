@@ -358,15 +358,24 @@ func (rt *Router) runCacheReclaim(base context.Context, r *http.Request, app, tr
 }
 
 // AfterBuildFinish is the post build hook shared by the API and push webhook
-// build paths; it trims the app's cache to its quota and only logs failures.
+// build paths; it trims the app's cache to its quota, then the whole cache to
+// its budget, and only logs failures.
 func (rt *Router) AfterBuildFinish(app string) {
 	ctx := context.Background()
+	defer rt.pruneCacheToBudgetBounded(ctx)
 	if rt.appCacheQuotaBytes(ctx) <= 0 {
 		return
 	}
 	if _, err := rt.runCacheReclaim(ctx, nil, app, cacheReclaimTriggerAuto); err != nil {
 		rt.logger.Warn("api: build cache quota reclaim failed", slog.String("app", app), slog.String("error", err.Error()))
 	}
+}
+
+// pruneCacheToBudgetBounded reuses the reclaim timeout so a wedged builder cannot hold the hook.
+func (rt *Router) pruneCacheToBudgetBounded(base context.Context) {
+	ctx, cancel := context.WithTimeout(base, runtimesettings.ClampBuildCacheReclaimTimeout(rt.runtimeSettings.Duration(base, runtimesettings.KeyBuildCacheReclaimTimeout)))
+	defer cancel()
+	rt.pruneCacheToBudget(ctx)
 }
 
 func (rt *Router) auditCacheReclaim(ctx context.Context, r *http.Request, e cacheReclaimEntry) {

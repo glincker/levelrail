@@ -59,6 +59,20 @@ func (c Config) sizeGC(total int64) gcSizing {
 	return gcSizing{ReservedBytes: reserved, MaxUsedBytes: maxUsed, MinFreePct: minFree, SourceMaxByte: c.GCSourceMaxMB * mib}
 }
 
+// Budget is the builder cache size a post build prune keeps the cache under.
+type Budget struct {
+	ReservedBytes int64
+	MaxUsedBytes  int64
+}
+
+// BudgetFor sizes the cache budget with the same rules as the GC policy, for
+// builders this package does not start (the engine's own BuildKit).
+// Explicit MB values win; 0 sizes them from totalDiskBytes.
+func BudgetFor(totalDiskBytes, reservedMB, maxUsedMB int64) Budget {
+	s := Config{GCKeepMB: maxUsedMB, GCReservedMB: reservedMB}.sizeGC(totalDiskBytes)
+	return Budget{ReservedBytes: s.ReservedBytes, MaxUsedBytes: s.MaxUsedBytes}
+}
+
 // gcPolicyTOML renders the three rules: short lived source data, anything
 // idle past the keep duration, then a capped catch-all. keepBytes is
 // deprecated in BuildKit v0.34 and acts as a never-reclaimed floor.
