@@ -19,7 +19,7 @@ func TestAuthorizeURL(t *testing.T) {
 			clientID:    "abc",
 			redirectURI: "https://example.com/cb",
 			state:       "xyz",
-			want:        "https://gitlab.com/oauth/authorize?client_id=abc&redirect_uri=https%3A%2F%2Fexample.com%2Fcb&response_type=code&scope=api&state=xyz",
+			want:        "https://gitlab.com/oauth/authorize?client_id=abc&code_challenge=chal&code_challenge_method=S256&redirect_uri=https%3A%2F%2Fexample.com%2Fcb&response_type=code&scope=api&state=xyz",
 		},
 		{
 			name:        "self-hosted with trailing slash",
@@ -27,7 +27,7 @@ func TestAuthorizeURL(t *testing.T) {
 			clientID:    "abc",
 			redirectURI: "https://example.com/cb",
 			state:       "xyz",
-			want:        "https://gitlab.internal.example.com/oauth/authorize?client_id=abc&redirect_uri=https%3A%2F%2Fexample.com%2Fcb&response_type=code&scope=api&state=xyz",
+			want:        "https://gitlab.internal.example.com/oauth/authorize?client_id=abc&code_challenge=chal&code_challenge_method=S256&redirect_uri=https%3A%2F%2Fexample.com%2Fcb&response_type=code&scope=api&state=xyz",
 		},
 		{
 			name:        "empty instance URL",
@@ -35,7 +35,7 @@ func TestAuthorizeURL(t *testing.T) {
 			clientID:    "abc",
 			redirectURI: "https://example.com/cb",
 			state:       "xyz",
-			want:        "/oauth/authorize?client_id=abc&redirect_uri=https%3A%2F%2Fexample.com%2Fcb&response_type=code&scope=api&state=xyz",
+			want:        "/oauth/authorize?client_id=abc&code_challenge=chal&code_challenge_method=S256&redirect_uri=https%3A%2F%2Fexample.com%2Fcb&response_type=code&scope=api&state=xyz",
 		},
 		{
 			name:        "different client ID and redirect URI",
@@ -43,12 +43,12 @@ func TestAuthorizeURL(t *testing.T) {
 			clientID:    "def",
 			redirectURI: "https://app.example.com/oauth/callback",
 			state:       "123",
-			want:        "https://gitlab.com/oauth/authorize?client_id=def&redirect_uri=https%3A%2F%2Fapp.example.com%2Foauth%2Fcallback&response_type=code&scope=api&state=123",
+			want:        "https://gitlab.com/oauth/authorize?client_id=def&code_challenge=chal&code_challenge_method=S256&redirect_uri=https%3A%2F%2Fapp.example.com%2Foauth%2Fcallback&response_type=code&scope=api&state=123",
 		},
 	}
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
-			got := AuthorizeURL(tt.instanceURL, tt.clientID, tt.redirectURI, tt.state)
+			got := AuthorizeURL(tt.instanceURL, tt.clientID, tt.redirectURI, tt.state, "chal")
 			if got != tt.want {
 				t.Errorf("AuthorizeURL() = %q, want %q", got, tt.want)
 			}

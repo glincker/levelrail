@@ -47,12 +47,20 @@ func (rt *Router) handleStartGitConnect(provider string) http.HandlerFunc {
 			rt.internalError(w, "api: get ingress settings for git connect failed", err, slog.String("provider", provider))
 			return
 		}
-		state, err := rt.gitConnState.begin(conn.ID)
+		var verifier, challenge string
+		if adapter.pkce {
+			if verifier, err = newGitPKCEVerifier(); err != nil {
+				rt.internalError(w, "api: begin git oauth pkce failed", err, slog.String("connection", conn.ID))
+				return
+			}
+			challenge = gitPKCEChallenge(verifier)
+		}
+		state, err := rt.gitConnState.begin(joinGitStateValue(conn.ID, verifier))
 		if err != nil {
 			rt.internalError(w, "api: begin git oauth state failed", err, slog.String("connection", conn.ID))
 			return
 		}
-		http.Redirect(w, r, adapter.authorizeURL(conn, baseURL+adapter.callbackPath, state), http.StatusFound)
+		http.Redirect(w, r, adapter.authorizeURL(conn, baseURL+adapter.callbackPath, state, challenge), http.StatusFound)
 	}
 }
 
@@ -92,9 +100,15 @@ func (rt *Router) handleGitConnectCallback(provider string) http.HandlerFunc {
 			writeError(w, http.StatusBadRequest, "missing state parameter")
 			return
 		}
-		connID, ok := rt.gitConnState.consume(state)
+		stateValue, ok := rt.gitConnState.consume(state)
 		if !ok {
 			writeError(w, http.StatusBadRequest, "state parameter is invalid, expired, or already used")
+			return
+		}
+		connID, verifier := splitGitStateValue(stateValue)
+		// Fail closed: a PKCE provider never exchanges a code without its stored verifier.
+		if adapter.pkce && verifier == "" {
+			writeError(w, http.StatusBadRequest, "the authorization attempt has no PKCE verifier, start the connection again")
 			return
 		}
 		ctx := r.Context()
@@ -113,7 +127,7 @@ func (rt *Router) handleGitConnectCallback(provider string) http.HandlerFunc {
 			rt.internalError(w, "api: get base url for git callback failed", err, slog.String("connection", conn.ID))
 			return
 		}
-		tokens, err := adapter.exchange(ctx, conn, secret, baseURL+adapter.callbackPath, code)
+		tokens, err := adapter.exchange(ctx, conn, secret, baseURL+adapter.callbackPath, code, verifier)
 		if err != nil {
 			rt.logger.Error("api: exchange git oauth code failed", slog.String("connection", conn.ID), slog.String("error", err.Error()))
 			writeError(w, http.StatusBadGateway, "failed to exchange the authorization code with "+adapter.label)

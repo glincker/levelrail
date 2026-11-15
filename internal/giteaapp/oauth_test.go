@@ -6,7 +6,7 @@ import (
 )
 
 func TestAuthorizeURL(t *testing.T) {
-	got := AuthorizeURL("https://gitea.example.com/", "client-1", "https://cp.example.com/api/v1/gitea-app/callback", "state-1")
+	got := AuthorizeURL("https://gitea.example.com/", "client-1", "https://cp.example.com/api/v1/gitea-app/callback", "state-1", "chal")
 
 	u, err := url.Parse(got)
 	if err != nil {
@@ -24,6 +24,9 @@ func TestAuthorizeURL(t *testing.T) {
 	}
 	if q.Get("response_type") != "code" {
 		t.Errorf("response_type = %q, want code", q.Get("response_type"))
+	}
+	if q.Get("code_challenge") != "chal" || q.Get("code_challenge_method") != "S256" {
+		t.Errorf("challenge = %q/%q, want chal/S256", q.Get("code_challenge"), q.Get("code_challenge_method"))
 	}
 	if q.Get("state") != "state-1" {
 		t.Errorf("state = %q, want state-1", q.Get("state"))

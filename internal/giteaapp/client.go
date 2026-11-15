@@ -97,13 +97,14 @@ func toTokens(resp tokenResponse) Tokens {
 // ExchangeCode exchanges an OAuth authorization code for an access
 // token, Gitea's documented POST {instance}/login/oauth/access_token
 // (docs.gitea.com/development/oauth2-provider).
-func (c *Client) ExchangeCode(ctx context.Context, instanceURL, clientID, clientSecret, redirectURI, code string) (Tokens, error) {
+func (c *Client) ExchangeCode(ctx context.Context, instanceURL, clientID, clientSecret, redirectURI, code, codeVerifier string) (Tokens, error) {
 	form := url.Values{
 		"grant_type":    {"authorization_code"},
 		"client_id":     {clientID},
 		"client_secret": {clientSecret},
 		"code":          {code},
 		"redirect_uri":  {redirectURI},
+		"code_verifier": {codeVerifier},
 	}
 	return c.token(ctx, instanceURL, form)
 }

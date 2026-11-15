@@ -105,7 +105,7 @@ If the control plane has no publicly reachable primary domain yet, create the Ap
 
 Open the GitLab App settings page (`/settings/gitlab-app`).
 
-Register an OAuth Application in GitLab with redirect URI `<your control plane>/api/v1/gitlab-app/callback` and scope `api`, then paste its `instance_url`, `client_id`, and `client_secret`. Authorize through the redirect to your instance's `/oauth/authorize`.
+Register an OAuth Application in GitLab with redirect URI `<your control plane>/api/v1/gitlab-app/callback` and scope `api`, then paste its `instance_url`, `client_id`, and `client_secret`. Authorize through the redirect to your instance's `/oauth/authorize`. The authorization request carries a PKCE S256 challenge, and the matching verifier is kept only in control plane memory until the callback consumes it once.
 
 </Tab>
 <Tab title="Bitbucket">
@@ -119,7 +119,7 @@ Register an OAuth consumer in Bitbucket Cloud, then paste its key and secret and
 
 Open the Gitea App settings page (`/settings/gitea-app`).
 
-Register an OAuth2 application in Gitea, then paste its `instance_url`, `client_id`, and `client_secret`. Authorize through the redirect to your instance's `/login/oauth/authorize`.
+Register an OAuth2 application in Gitea, then paste its `instance_url`, `client_id`, and `client_secret`. Authorize through the redirect to your instance's `/login/oauth/authorize`. Gitea and Forgejo use the same PKCE S256 challenge and single use verifier.
 
 </Tab>
 </Tabs>
