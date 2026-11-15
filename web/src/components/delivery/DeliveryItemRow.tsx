@@ -32,7 +32,7 @@ function CommitStatusBody({ item }: { item: TimelineItem }) {
   const { t } = useTranslation('delivery')
   const info = parseCommitStatus(item)
   const brand = brandForProvider(info.provider)
-  const postFailed = item.status === 'failed'
+  const postFailed = info.error !== ''
   return (
     <div className="mt-1 space-y-1.5">
       <div className="flex flex-wrap items-center gap-x-2 gap-y-1 text-xs text-muted-foreground">
@@ -70,7 +70,7 @@ function CommitStatusBody({ item }: { item: TimelineItem }) {
           <p
             className={`mt-1 rounded-md border px-2 py-1.5 font-mono break-words ${TONE.danger.soft} ${TONE.danger.border}`}
           >
-            {info.error || t('row.noErrorDetail')}
+            {info.error}
           </p>
         </details>
       ) : null}

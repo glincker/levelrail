@@ -5,6 +5,7 @@ import {
   filterItems,
   groupByDay,
   parseCommitStatus,
+  postErrored,
   postStatusFailing,
 } from './deliveryTimeline'
 import type { TimelineItem } from '../types/appDelivery'
@@ -93,6 +94,34 @@ describe('commit status', () => {
       description: 'Build failed',
       error: '403 token ***',
     })
+  })
+
+  const stateFailed = item({
+    kind: 'commit_status',
+    status: 'failed',
+    title: 'levelrail/ci failure on abcdef1234',
+    detail: 'github; Build failed',
+  })
+
+  it('does not treat a failed commit state without an error as a failed post', () => {
+    expect(parseCommitStatus(stateFailed).error).toBe('')
+    expect(postErrored(stateFailed)).toBe(false)
+    expect(postStatusFailing([stateFailed])).toBe(false)
+  })
+
+  it('reads the error when the description is empty', () => {
+    const post = item({
+      kind: 'commit_status',
+      status: 'failed',
+      title: 'levelrail/ci status post failed on abcdef1234',
+      detail: 'github; 403 forbidden',
+    })
+    expect(parseCommitStatus(post)).toMatchObject({
+      provider: 'github',
+      description: '',
+      error: '403 forbidden',
+    })
+    expect(postErrored(post)).toBe(true)
   })
 
   it('flags a failing post from the latest status only', () => {

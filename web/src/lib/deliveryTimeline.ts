@@ -90,6 +90,7 @@ export interface CommitStatusInfo {
 }
 
 const SHA_RE = /\bon ([0-9a-f]{7,40})\b/i
+const POST_FAILED_RE = /\bstatus post failed on\b/i
 
 // Title is "<context> <state> on <sha>"; detail is "provider; description; error".
 export function parseCommitStatus(item: TimelineItem): CommitStatusInfo {
@@ -98,11 +99,18 @@ export function parseCommitStatus(item: TimelineItem): CommitStatusInfo {
   const provider = parts[0] ?? ''
   let description = ''
   let error = ''
+  // The server titles a failed forge post "<ctx> status post failed on <sha>"; the status
+  // alone cannot tell it from a commit state of failure.
+  const errored = POST_FAILED_RE.test(item.title)
+  if (errored && parts.length === 1) {
+    return { sha, provider: '', description: '', error: parts[0] ?? '' }
+  }
   if (parts.length >= 3) {
     error = parts[parts.length - 1] ?? ''
     description = parts.slice(1, -1).join('; ')
   } else if (parts.length === 2) {
-    description = parts[1] ?? ''
+    if (errored) error = parts[1] ?? ''
+    else description = parts[1] ?? ''
   }
   return { sha, provider, description, error }
 }
@@ -119,6 +127,12 @@ export function latestOfKind(
   return best
 }
 
+// A failed post is exactly a commit status with an error part; a failed commit state alone is not.
+export function postErrored(item: TimelineItem): boolean {
+  return item.kind === 'commit_status' && parseCommitStatus(item).error !== ''
+}
+
 export function postStatusFailing(items: readonly TimelineItem[]): boolean {
-  return latestOfKind(items, 'commit_status')?.status === 'failed'
+  const latest = latestOfKind(items, 'commit_status')
+  return latest !== undefined && postErrored(latest)
 }

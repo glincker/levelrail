@@ -80,6 +80,18 @@ function renderView() {
 afterEach(() => vi.unstubAllGlobals())
 
 describe('DeliveryView', () => {
+  it('shows no post warning for a failed commit state without an error', async () => {
+    const stateOnly = {
+      ...failedStatus,
+      detail: 'github; Build failed',
+    }
+    mockApi({ '': { items: [stateOnly] } })
+    renderView()
+    expect(await screen.findByText(stateOnly.title)).toBeInTheDocument()
+    expect(screen.queryByText('Post to the forge failed')).toBeNull()
+    expect(screen.queryByRole('status')).toBeNull()
+  })
+
   it('renders a failed commit status with a collapsed masked error and a warning', async () => {
     mockApi({ '': { items: [failedStatus] } })
     renderView()
