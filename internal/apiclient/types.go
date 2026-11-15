@@ -1667,7 +1667,7 @@ type RotatedToken struct {
 	Token              string     `json:"token"`
 	ExpiresAt          *time.Time `json:"expires_at,omitempty"`
 	Replaces           string     `json:"replaces"`
-	OldTokenValidUntil *time.Time `json:"old_token_valid_until"`
+	PreviousValidUntil *time.Time `json:"previous_valid_until"`
 }
 
 // MyAccessResource mirrors internal/api's myAccessResponse (account_access.go).

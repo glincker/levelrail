@@ -29,7 +29,7 @@ levelrail-cli auth rotate
 
 `tokens rotate` takes an id or an unambiguous name. `auth rotate` replaces the token behind the current profile and rewrites that profile in the credentials file atomically, with mode 0600, keeping the new expiry. A token can rotate itself only when it holds the write ability; a read-only token is rotated by its owner. Platform tokens are refused. If no master key is configured the old token is revoked at once, because the grace period could not be remembered across a restart.
 
-The API call is `POST /api/v1/auth/tokens/{id}/rotate`. It answers 201 with the new token (including `token`, shown once), `replaces`, and `old_token_valid_until`. While the grace runs, the token list shows `revokes_at` on the old token. Each rotation is written to the audit log and emits a `tokens.rotated` event.
+The API call is `POST /api/v1/auth/tokens/{id}/rotate`. It answers 201 with the new token (including `token`, shown once), `replaces`, and `previous_valid_until`. While the grace runs, the token list shows `revokes_at` on the old token. Each rotation is written to the audit log and emits a `tokens.rotated` event.
 
 ## Settings
 

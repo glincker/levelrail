@@ -21,12 +21,12 @@ type rotateResult struct {
 	Token              string     `json:"token"`
 	ExpiresAt          *time.Time `json:"expires_at,omitempty"`
 	Replaces           string     `json:"replaces"`
-	OldTokenValidUntil *time.Time `json:"old_token_valid_until"`
+	PreviousValidUntil *time.Time `json:"previous_valid_until"`
 	CredentialsUpdated bool       `json:"credentials_updated,omitempty"`
 }
 
 func toRotateResult(r apiclient.RotatedToken) rotateResult {
-	return rotateResult{ID: r.ID, Name: r.Name, Token: r.Token, ExpiresAt: r.ExpiresAt, Replaces: r.Replaces, OldTokenValidUntil: r.OldTokenValidUntil}
+	return rotateResult{ID: r.ID, Name: r.Name, Token: r.Token, ExpiresAt: r.ExpiresAt, Replaces: r.Replaces, PreviousValidUntil: r.PreviousValidUntil}
 }
 
 func printRotateResult(out io.Writer, r rotateResult, note string) {
@@ -34,8 +34,8 @@ func printRotateResult(out io.Writer, r rotateResult, note string) {
 	if r.ExpiresAt != nil {
 		_, _ = fmt.Fprintf(out, "expires:   %s\n", r.ExpiresAt.Local().Format("2006-01-02"))
 	}
-	if r.OldTokenValidUntil != nil {
-		_, _ = fmt.Fprintf(out, "old token keeps working until %s\n", r.OldTokenValidUntil.Local().Format(time.RFC3339))
+	if r.PreviousValidUntil != nil {
+		_, _ = fmt.Fprintf(out, "old token keeps working until %s\n", r.PreviousValidUntil.Local().Format(time.RFC3339))
 	}
 	if note != "" {
 		_, _ = fmt.Fprintln(out, note)

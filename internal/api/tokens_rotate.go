@@ -17,8 +17,8 @@ import (
 type rotateTokenResponse struct {
 	createTokenResponse
 	Replaces string `json:"replaces"`
-	// OldTokenValidUntil is null when the old token was revoked at once.
-	OldTokenValidUntil *time.Time `json:"old_token_valid_until"`
+	// PreviousValidUntil is null when the old token was revoked at once.
+	PreviousValidUntil *time.Time `json:"previous_valid_until"`
 }
 
 // sessionOrSelfToken lets a signed-in session or a write token reach the handler;
@@ -105,7 +105,7 @@ func (rt *Router) handleRotateToken(w http.ResponseWriter, r *http.Request) {
 	rt.EmitEvent(eventTokenRotated, map[string]any{"token_id": id, "replacement_id": fresh.ID, "name": old.Name})
 	_ = rt.tokenStateUpdate(ctx, tokenStateNotices, func(m map[string]int64) { delete(m, id) })
 	writeJSON(w, http.StatusCreated, rotateTokenResponse{
-		createTokenResponse: createTokenResponse{tokenResource: fresh, Token: raw}, Replaces: id, OldTokenValidUntil: validUntil,
+		createTokenResponse: createTokenResponse{tokenResource: fresh, Token: raw}, Replaces: id, PreviousValidUntil: validUntil,
 	})
 }
 

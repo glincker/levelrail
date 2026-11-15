@@ -58,7 +58,7 @@ func TestRotateTokenKeepsOldValidDuringGraceThenRevokes(t *testing.T) {
 	if err := json.Unmarshal(rec.Body.Bytes(), &out); err != nil {
 		t.Fatal(err)
 	}
-	if out.Token == "" || out.Token == old.Token || out.Replaces != old.ID || out.Name != "ci" || out.OldTokenValidUntil == nil {
+	if out.Token == "" || out.Token == old.Token || out.Replaces != old.ID || out.Name != "ci" || out.PreviousValidUntil == nil {
 		t.Fatalf("unexpected rotate response: %+v", out)
 	}
 	ctx := context.Background()
