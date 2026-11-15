@@ -34,6 +34,10 @@ Login pins the server. `auth login` prints the server's name and fingerprint (co
 
 Manage more than one control plane with named profiles: `levelrail-cli auth login --profile staging`, then `--profile staging` on any command. `levelrail-cli profile list` shows them.
 
+Sign-in reuses what already works. `auth login` first checks the profile's saved or env token with one cheap call; if the server accepts it, it stops (no new session, no approval) and `--force` signs in again. A password login stores a per-machine trusted-device id in the profile (mode 0600) so a repeat login from this machine skips new-device approval, and it ends its throwaway session once the token is minted. A genuinely new machine still needs approval.
+
+`levelrail-cli whoami [--json]` shows the profile and where its name came from, API URL, identity, scope, expiry and whether the server accepted the login just now. It exits non-zero when nothing is usable and prints the exact command a person must run. The profile is picked by `--profile`, then `APP_PROFILE`, then a `.levelrail/profile` file found by walking up from the current directory (profile name and API URL only, written by `init --profile NAME`), then `default`. With no terminal (agents, CI) a missing login never starts a prompt: it exits non-zero and names the command. A warning goes to stderr, once per run, when the saved token expires within `APP_EXPIRY_WARN_WINDOW` (a Go duration, default 168h).
+
 ## Updating the CLI {#updating}
 
 ```bash
@@ -824,6 +828,8 @@ levelrail-cli models cache prune [--dry-run] [volume...] [flags]
 ```
 levelrail-cli auth login [--device] [--profile NAME] [flags]
 levelrail-cli auth login --reauth [--device] [flags]
+levelrail-cli auth login [--force] [flags]
+levelrail-cli whoami [--json] [flags]
 levelrail-cli auth whoami [--access] [flags]
 levelrail-cli auth status [flags]
 levelrail-cli auth trust-server [--yes] [flags]
@@ -869,9 +875,9 @@ Shows which auth engine is active, the areas served by the library, and the shad
 ## Profile
 
 ```
-levelrail-cli profile list [flags]
+levelrail-cli profile list [--verify] [flags]
 ```
-List configured credentials profiles and their API URLs.
+List configured credentials profiles with API URL, whether each holds a token, its expiry and trusted-device state. `--verify` checks each token live and shows identity and scope.
 
 ## Tokens
 

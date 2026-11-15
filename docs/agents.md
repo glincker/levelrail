@@ -41,6 +41,8 @@ The repository ships an agent skill that covers the deploy, wait, diagnose and r
 npx skills add https://github.com/glincker/levelrail --skill levelrail
 ```
 
+The skill makes the agent run `levelrail-cli whoami --json` first and reuse the saved login. Only when that reports no usable credential does it hand you the exact command to run; it never signs in or approves a sign-in for itself. A repeat `auth login` on a machine that already has a working login changes nothing, and this machine keeps a trusted-device id per profile, so it is not asked for new-device approval again.
+
 Then ask your agent: "Deploy this repo to my Levelrail and tell me when it is live." The skill makes it block on `levelrail-cli apps wait <app>`, whose exit code (and `--json` outcome) says whether that exact deploy converged.
 
 `levelrail-cli init` writes the same guidance into a project's own `AGENTS.md`, filled in with that project's app name and API URL.
