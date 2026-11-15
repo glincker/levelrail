@@ -36,3 +36,17 @@ func TestDerivedMaxConcurrent(t *testing.T) {
 		}
 	}
 }
+
+func TestAdmitImagePullGate(t *testing.T) {
+	SetHostGate(nil)
+	if err := AdmitImagePull(context.Background(), nil); err != nil {
+		t.Fatalf("no gate must admit: %v", err)
+	}
+	g := &fakeGate{}
+	SetHostGate(g)
+	t.Cleanup(func() { SetHostGate(nil) })
+	var msgs []string
+	if err := AdmitImagePull(context.Background(), func(m string) { msgs = append(msgs, m) }); err != nil || len(msgs) != 1 {
+		t.Fatalf("gated pull: err=%v msgs=%v", err, msgs)
+	}
+}

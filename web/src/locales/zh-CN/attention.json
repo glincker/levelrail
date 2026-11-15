@@ -108,7 +108,14 @@
     "dockerGuardDeniedDetail": "多数由规则 {{rule}} 触发。如果你信任的工作负载被阻止了,请将防护放宽为审计。",
     "openCliAccess": "查看登录",
     "openApprovals": "查看审批",
-    "openItem": "打开"
+    "openItem": "打开",
+    "hostPressureCriticalTitle": "主机处于严重压力状态",
+    "hostPressureWarnTitle": "主机处于压力状态",
+    "interruptedTitle": "{{name}} 的部署被中断",
+    "interruptedDetail": "部署运行期间控制平面重启了。请重新部署以重试。",
+    "uncleanRestartTitle": "控制平面意外重启",
+    "uncleanRestartDetail_other": "最近有 {{count}} 次未正常关闭就停止了。",
+    "uncleanRestartOom": "内核可能因内存不足终止了它。请在系统状态中检查单元保护。"
   },
   "channel": {
     "notifyDeviceLogin": "CLI 登录等待时通知",

@@ -1,5 +1,7 @@
+import { useTranslation } from 'react-i18next'
 import { RelativeTime } from '@/components/kit'
 import type { Deployment } from '../../types/deployment'
+import { deployInterruption } from '../../lib/deployInterruption'
 import { queueLabel, shortId } from '../../lib/deploymentPresentation'
 
 function DeployRefLink({
@@ -30,6 +32,15 @@ export function DeploymentNote({
   d: Deployment
   onOpen: (id: string) => void
 }) {
+  const { t } = useTranslation('deploys')
+  const kind = deployInterruption(d.reason)
+  if (kind) {
+    return (
+      <span className="text-sm text-muted-foreground">
+        {t(`interruption.${kind}`)}. {t('interruption.retry')}.
+      </span>
+    )
+  }
   if (d.status === 'queued') {
     return (
       <span className="text-xs text-muted-foreground">

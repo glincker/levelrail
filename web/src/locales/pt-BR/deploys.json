@@ -679,5 +679,10 @@
     "viewQueue": "Ver fila",
     "progress": "{{received}} de {{required}} aprovadores distintos até agora. O deploy executa quando o último aprovar.",
     "recorded": "Aprovação registrada: {{received}} de {{required}} aprovadores distintos."
+  },
+  "interruption": {
+    "interrupted": "Interrompido: o plano de controle reiniciou enquanto este deploy rodava",
+    "orphaned": "Órfão: nenhum build estava rodando para este deploy, então ele foi cancelado",
+    "retry": "Faça o deploy de novo para tentar outra vez"
   }
 }

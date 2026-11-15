@@ -108,7 +108,14 @@
     "dockerGuardDeniedDetail": "最も多いルールは {{rule}} です。信頼しているワークロードがブロックされた場合は、ガードを監査モードに緩めてください。",
     "openCliAccess": "ログインを確認",
     "openApprovals": "承認を確認",
-    "openItem": "開く"
+    "openItem": "開く",
+    "hostPressureCriticalTitle": "ホストが深刻な負荷状態です",
+    "hostPressureWarnTitle": "ホストが高負荷状態です",
+    "interruptedTitle": "{{name}} のデプロイが中断されました",
+    "interruptedDetail": "実行中にコントロールプレーンが再起動しました。もう一度デプロイしてください。",
+    "uncleanRestartTitle": "コントロールプレーンが予期せず再起動しました",
+    "uncleanRestartDetail_other": "最近 {{count}} 回、正常にシャットダウンされずに停止しました。",
+    "uncleanRestartOom": "メモリ不足でカーネルに終了された可能性があります。システムステータスでユニット保護を確認してください。"
   },
   "channel": {
     "notifyDeviceLogin": "CLIログインが待機しているときに通知",

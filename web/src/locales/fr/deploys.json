@@ -679,5 +679,10 @@
     "viewQueue": "Voir la file",
     "progress": "{{received}} approbateurs distincts sur {{required}} jusqu'ici. Le deploy s'exécute quand le dernier approuve.",
     "recorded": "Approbation enregistrée : {{received}} approbateurs distincts sur {{required}}."
+  },
+  "interruption": {
+    "interrupted": "Interrompu : le plan de contrôle a redémarré pendant ce déploiement",
+    "orphaned": "Orphelin : aucune compilation n'était en cours pour ce déploiement, il a donc été annulé",
+    "retry": "Relancez le déploiement pour réessayer"
   }
 }

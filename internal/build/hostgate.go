@@ -40,6 +40,16 @@ func admitLocal(ctx context.Context, node string, limit int, progress func(Progr
 	return (*g).BuildCap(limit), nil
 }
 
+// AdmitImagePull holds an image-pull deploy while the host is critical, reporting the reason once through note.
+// It is a no-op without a gate or when pressure is fine, so default behaviour is unchanged.
+func AdmitImagePull(ctx context.Context, note func(msg string)) error {
+	g := hostGate.Load()
+	if g == nil {
+		return nil
+	}
+	return (*g).Admit(ctx, note)
+}
+
 // DerivedMaxConcurrent is the build slot count used when none is configured: one slot per two CPUs and per 4 GiB of RAM, at least 1.
 func DerivedMaxConcurrent(cpus, memMB int) int {
 	const mibPerBuild = 4096

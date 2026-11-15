@@ -117,7 +117,15 @@
     "dockerGuardDeniedDetail": "Am häufigsten durch Regel {{rule}}. Wurde eine vertrauenswürdige Workload blockiert, lockern Sie den Guard auf Audit.",
     "openCliAccess": "Anmeldung prüfen",
     "openApprovals": "Genehmigungen prüfen",
-    "openItem": "Öffnen"
+    "openItem": "Öffnen",
+    "hostPressureCriticalTitle": "Host steht unter kritischer Last",
+    "hostPressureWarnTitle": "Host steht unter Last",
+    "interruptedTitle": "Deploy von {{name}} wurde unterbrochen",
+    "interruptedDetail": "Die Steuerungsebene wurde währenddessen neu gestartet. Deploy erneut starten, um es zu wiederholen.",
+    "uncleanRestartTitle": "Steuerungsebene unerwartet neu gestartet",
+    "uncleanRestartDetail_one": "Sie wurde zuletzt {{count}} Mal ohne sauberes Herunterfahren beendet.",
+    "uncleanRestartDetail_other": "Sie wurde zuletzt {{count}} Mal ohne sauberes Herunterfahren beendet.",
+    "uncleanRestartOom": "Der Kernel hat sie vermutlich wegen Speichermangels beendet. Prüfe den Einheitenschutz im Systemstatus."
   },
   "channel": {
     "notifyDeviceLogin": "Benachrichtigen, wenn eine CLI-Anmeldung wartet",

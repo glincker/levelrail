@@ -673,5 +673,10 @@
     "viewQueue": "Warteschlange ansehen",
     "progress": "Bisher {{received}} von {{required}} verschiedenen Genehmigern. Der Deploy läuft, wenn der letzte genehmigt.",
     "recorded": "Genehmigung festgehalten: {{received}} von {{required}} verschiedenen Genehmigern."
+  },
+  "interruption": {
+    "interrupted": "Unterbrochen: Die Steuerungsebene wurde während dieses Deploys neu gestartet",
+    "orphaned": "Verwaist: Für dieses Deploy lief kein Build, daher wurde es abgebrochen",
+    "retry": "Deploy erneut starten, um es zu wiederholen"
   }
 }

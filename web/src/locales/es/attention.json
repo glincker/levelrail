@@ -117,7 +117,15 @@
     "dockerGuardDeniedDetail": "La mayoría por la regla {{rule}}. Si se bloqueó una carga de confianza, pasa el guard a audit.",
     "openCliAccess": "Revisar inicio de sesión",
     "openApprovals": "Revisar aprobaciones",
-    "openItem": "Abrir"
+    "openItem": "Abrir",
+    "hostPressureCriticalTitle": "El host está bajo presión crítica",
+    "hostPressureWarnTitle": "El host está bajo presión",
+    "interruptedTitle": "Se interrumpió el despliegue de {{name}}",
+    "interruptedDetail": "El plano de control se reinició mientras se ejecutaba. Despliega de nuevo para reintentar.",
+    "uncleanRestartTitle": "El plano de control se reinició de forma inesperada",
+    "uncleanRestartDetail_one": "Se detuvo sin un apagado limpio {{count}} vez recientemente.",
+    "uncleanRestartDetail_other": "Se detuvo sin un apagado limpio {{count}} veces recientemente.",
+    "uncleanRestartOom": "Es probable que el kernel lo cerrara por falta de memoria. Revisa la protección de la unidad en el estado del sistema."
   },
   "channel": {
     "notifyDeviceLogin": "Notificar cuando un inicio de sesión de CLI esté en espera",

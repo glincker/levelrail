@@ -188,3 +188,41 @@ describe('bell notifications from attention', () => {
     expect(buildNotifications({ attention: [] })).toEqual([])
   })
 })
+
+describe('host protection feed items', () => {
+  function feedOf(kind: string, params: Record<string, string>) {
+    return {
+      id: `${kind}:x`,
+      severity: 'warning',
+      kind,
+      subject: 'x',
+      detail: 'server english',
+      title: 'server title',
+      action: '',
+      link: '/status',
+      params,
+    } as AttentionFeedItem
+  }
+
+  it('maps pressure, interrupted deploy and unclean restart to keys and keeps the kind', () => {
+    const items = buildWaitingItems({
+      now: NOW,
+      t,
+      feed: [
+        feedOf('host_pressure', { state: 'critical' }),
+        feedOf('deploy_interrupted', { app: 'web' }),
+        feedOf('unclean_restart', { count: '2', oom_likely: 'true' }),
+      ],
+    })
+    expect(items.map((i) => i.title)).toEqual([
+      'items.hostPressureCriticalTitle',
+      'items.interruptedTitle',
+      'items.uncleanRestartTitle',
+    ])
+    expect(items.map((i) => i.kind)).toEqual([
+      'host_pressure',
+      'deploy_interrupted',
+      'unclean_restart',
+    ])
+  })
+})

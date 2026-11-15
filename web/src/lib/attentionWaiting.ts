@@ -194,6 +194,7 @@ function feedItems(feed: AttentionFeedItem[], t: AttentionT): AttentionItem[] {
     const name = p.name ?? f.subject
     const base = {
       id: f.id,
+      kind: f.kind,
       severity: f.severity,
       action: f.action,
       class: f.class,
@@ -320,6 +321,34 @@ function feedItems(feed: AttentionFeedItem[], t: AttentionT): AttentionItem[] {
         }
       case 'docker_guard':
         return { ...base, ...dockerGuardCopy(p, t) }
+      case 'host_pressure':
+        return {
+          ...base,
+          title: t(
+            p.state === 'critical'
+              ? 'items.hostPressureCriticalTitle'
+              : 'items.hostPressureWarnTitle',
+          ),
+          detail: f.detail,
+        }
+      case 'deploy_interrupted':
+        return {
+          ...base,
+          title: t('items.interruptedTitle', { name: p.app ?? f.subject }),
+          detail: t('items.interruptedDetail'),
+        }
+      case 'unclean_restart': {
+        const count = Number.parseInt(p.count ?? '1', 10) || 1
+        const detail = t('items.uncleanRestartDetail', { count })
+        return {
+          ...base,
+          title: t('items.uncleanRestartTitle'),
+          detail:
+            p.oom_likely === 'true'
+              ? `${detail} ${t('items.uncleanRestartOom')}`
+              : detail,
+        }
+      }
       default:
         return { ...base, title: f.title || f.subject, detail: f.detail }
     }

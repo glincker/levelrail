@@ -673,5 +673,10 @@
     "viewQueue": "View queue",
     "progress": "{{received}} of {{required}} distinct approvers so far. The deploy runs when the last one approves.",
     "recorded": "Approval recorded: {{received}} of {{required}} distinct approvers."
+  },
+  "interruption": {
+    "interrupted": "Interrupted: the control plane restarted while this deploy was running",
+    "orphaned": "Orphaned: no build was running for this deploy, so it was canceled",
+    "retry": "Deploy again to retry"
   }
 }

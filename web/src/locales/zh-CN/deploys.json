@@ -667,5 +667,10 @@
     "viewQueue": "查看队列",
     "progress": "目前已有 {{required}} 位不同批准者中的 {{received}} 位。最后一位批准时部署才会运行。",
     "recorded": "已记录批准:{{required}} 位不同批准者中的 {{received}} 位。"
+  },
+  "interruption": {
+    "interrupted": "已中断：此部署运行期间控制平面重启了",
+    "orphaned": "孤立：没有构建在为此部署运行，因此已取消",
+    "retry": "重新部署以重试"
   }
 }

@@ -126,7 +126,15 @@
     "dockerGuardDeniedDetail": "Surtout par la règle {{rule}}. Si une charge de confiance a été bloquée, assouplissez la protection en mode audit.",
     "openCliAccess": "Vérifier la connexion",
     "openApprovals": "Vérifier les approbations",
-    "openItem": "Ouvrir"
+    "openItem": "Ouvrir",
+    "hostPressureCriticalTitle": "L'hôte est sous pression critique",
+    "hostPressureWarnTitle": "L'hôte est sous pression",
+    "interruptedTitle": "Le déploiement de {{name}} a été interrompu",
+    "interruptedDetail": "Le plan de contrôle a redémarré pendant son exécution. Relancez le déploiement pour réessayer.",
+    "uncleanRestartTitle": "Le plan de contrôle a redémarré de façon inattendue",
+    "uncleanRestartDetail_one": "Il s'est arrêté sans arrêt propre {{count}} fois récemment.",
+    "uncleanRestartDetail_other": "Il s'est arrêté sans arrêt propre {{count}} fois récemment.",
+    "uncleanRestartOom": "Le noyau l'a probablement arrêté faute de mémoire. Vérifiez la protection de l'unité dans l'état du système."
   },
   "channel": {
     "notifyDeviceLogin": "Notifier quand une connexion CLI est en attente",

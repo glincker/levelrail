@@ -673,5 +673,10 @@
     "viewQueue": "Ver cola",
     "progress": "{{received}} de {{required}} aprobadores distintos por ahora. El despliegue se ejecuta cuando apruebe el último.",
     "recorded": "Aprobación registrada: {{received}} de {{required}} aprobadores distintos."
+  },
+  "interruption": {
+    "interrupted": "Interrumpido: el plano de control se reinició mientras se ejecutaba este despliegue",
+    "orphaned": "Huérfano: no había ninguna compilación en curso para este despliegue, por eso se canceló",
+    "retry": "Despliega de nuevo para reintentar"
   }
 }
