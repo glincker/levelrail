@@ -1,5 +1,28 @@
 # Changelog
 
+## [1.3.0](https://github.com/glincker/levelrail/compare/v1.2.0...v1.3.0) (2026-11-15)
+
+
+### Features
+
+* detect an unclean control plane restart and show host protection state (beta) ([91e351f](https://github.com/glincker/levelrail/commit/91e351f2387290554fd9057f5b61b3ee3694b65c))
+* extra internal DNS names per app (beta, spec, API, resolver) ([91e351f](https://github.com/glincker/levelrail/commit/91e351f2387290554fd9057f5b61b3ee3694b65c))
+* hold new builds under host pressure and derive build slots from CPU and RAM (beta) ([91e351f](https://github.com/glincker/levelrail/commit/91e351f2387290554fd9057f5b61b3ee3694b65c))
+* host pressure guard with doctor rows, attention item and event (beta) ([91e351f](https://github.com/glincker/levelrail/commit/91e351f2387290554fd9057f5b61b3ee3694b65c))
+* IaC App dns names with plan, apply, export and codes ([91e351f](https://github.com/glincker/levelrail/commit/91e351f2387290554fd9057f5b61b3ee3694b65c))
+* Levelrail v1.3.0 ([91e351f](https://github.com/glincker/levelrail/commit/91e351f2387290554fd9057f5b61b3ee3694b65c))
+* mesh DNS on bridge gateways with firewall rule and doctor check (beta) ([91e351f](https://github.com/glincker/levelrail/commit/91e351f2387290554fd9057f5b61b3ee3694b65c))
+* out-of-memory protection drop-in for the control plane unit (beta) ([91e351f](https://github.com/glincker/levelrail/commit/91e351f2387290554fd9057f5b61b3ee3694b65c))
+* per-app mesh DNS query visibility (beta, off by default) ([91e351f](https://github.com/glincker/levelrail/commit/91e351f2387290554fd9057f5b61b3ee3694b65c))
+* terraform levelrail_app internal_dns_names ([91e351f](https://github.com/glincker/levelrail/commit/91e351f2387290554fd9057f5b61b3ee3694b65c))
+
+
+### Bug Fixes
+
+* protection tunables are runtime settings, doctor row has tests ([91e351f](https://github.com/glincker/levelrail/commit/91e351f2387290554fd9057f5b61b3ee3694b65c))
+* self-upgrade writes the host protection drop-in ([91e351f](https://github.com/glincker/levelrail/commit/91e351f2387290554fd9057f5b61b3ee3694b65c))
+* settle deploys a restart left running and cancel orphaned builds ([91e351f](https://github.com/glincker/levelrail/commit/91e351f2387290554fd9057f5b61b3ee3694b65c))
+
 ## [1.2.0](https://github.com/glincker/levelrail/compare/v1.1.2...v1.2.0) (2026-11-15)
 
 

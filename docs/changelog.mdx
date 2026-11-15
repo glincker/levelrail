@@ -4,6 +4,28 @@ description: Every Levelrail release with highlights, fixes and upgrade notes.
 "og:url": "https://docs.levelrail.com/changelog"
 ---
 
+<Update label="1.3.0" description="2026-11-15">
+**Features**
+
+* detect an unclean control plane restart and show host protection state (beta)
+* extra internal DNS names per app (beta, spec, API, resolver)
+* hold new builds under host pressure and derive build slots from CPU and RAM (beta)
+* host pressure guard with doctor rows, attention item and event (beta)
+* IaC App dns names with plan, apply, export and codes
+* Levelrail v1.3.0
+* mesh DNS on bridge gateways with firewall rule and doctor check (beta)
+* out-of-memory protection drop-in for the control plane unit (beta)
+* per-app mesh DNS query visibility (beta, off by default)
+* terraform levelrail_app internal_dns_names
+
+
+**Bug Fixes**
+
+* protection tunables are runtime settings, doctor row has tests
+* self-upgrade writes the host protection drop-in
+* settle deploys a restart left running and cancel orphaned builds
+</Update>
+
 <Update label="1.2.0" description="2026-11-15">
 **Features**
 
