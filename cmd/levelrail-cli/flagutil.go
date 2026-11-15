@@ -163,7 +163,7 @@ func apiClientFromFlags(prog, apiURLFlag, tokenFlag, profileFlag string, lookupE
 	if token == "" {
 		return NewClient(apiURL, token, apiclient.WithNoCredentialsFix(notSignedInFix(prog, profile, apiURL)))
 	}
-	return NewClient(apiURL, token)
+	return NewClient(apiURL, token, apiclient.WithRejectedCredentialFix(nextStepLine(prog, profile, apiURL)))
 }
 
 // Bundled to keep parameter counts under golangci-lint's limit.

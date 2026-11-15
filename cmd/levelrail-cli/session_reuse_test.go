@@ -2,6 +2,7 @@ package main
 
 import (
 	"bytes"
+	"context"
 	"encoding/json"
 	"net/http"
 	"net/http/httptest"
@@ -195,5 +196,98 @@ func TestInit_WritesPointerWithoutSecrets(t *testing.T) {
 	got, ok := apiclient.FindRepoPointer(dir)
 	if !ok || got.Profile != "work" || got.APIURL != "https://cp.example.com" {
 		t.Fatalf("pointer = %+v ok=%v", got, ok)
+	}
+}
+
+func TestHumanLeft_DaysThenHours(t *testing.T) {
+	cases := map[time.Duration]string{2160 * time.Hour: "90 days", 49 * time.Hour: "2 days", 47 * time.Hour: "47 hours", 2 * time.Hour: "2 hours", 10 * time.Minute: "under an hour", -time.Minute: "expired"}
+	for d, want := range cases {
+		if got := humanLeft(d); got != want {
+			t.Errorf("humanLeft(%v) = %q, want %q", d, got, want)
+		}
+	}
+}
+
+func TestExpiryOutput_UsesDaysNotHours(t *testing.T) {
+	soon := time.Now().Add(2160 * time.Hour).UTC().Format(time.RFC3339)
+	if got := expiryNote(soon); !strings.Contains(got, "in 89 days") && !strings.Contains(got, "in 90 days") || strings.Contains(got, "h0m") {
+		t.Errorf("expiryNote = %q", got)
+	}
+	var b bytes.Buffer
+	printProfileRows(&b, []profileRow{{Name: "p", ExpiresAt: soon}})
+	if !strings.Contains(b.String(), "days") || strings.Contains(b.String(), "h0m") {
+		t.Errorf("profile list = %q", b.String())
+	}
+}
+
+func TestRejectedToken_ErrorEndsWithNextStep(t *testing.T) {
+	srv := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, _ *http.Request) {
+		w.WriteHeader(http.StatusUnauthorized)
+		_, _ = w.Write([]byte(`{"error":"token revoked"}`))
+	}))
+	defer srv.Close()
+	t.Setenv("HOME", t.TempDir())
+	c := apiClientFromFlags("lr-test-401", srv.URL, "stale", "", envMap())
+	_, err := c.Whoami(context.Background())
+	want := nextStepLine("lr-test-401", defaultProfile, srv.URL)
+	if err == nil || !strings.Contains(err.Error(), "token revoked") || !strings.HasSuffix(err.Error(), want) || !strings.Contains(want, "whoami --json") {
+		t.Errorf("err = %v, want suffix %q", err, want)
+	}
+}
+
+func TestLoginForce_RevokesPreviousSavedToken(t *testing.T) {
+	t.Setenv("HOME", t.TempDir())
+	const prog = "lr-test-force"
+	var revoked []string
+	mux := http.NewServeMux()
+	mux.HandleFunc("POST /api/v1/auth/login", func(w http.ResponseWriter, _ *http.Request) {
+		_ = json.NewEncoder(w).Encode(loginResponse{Username: "admin"})
+	})
+	mux.HandleFunc("POST /api/v1/auth/logout", func(w http.ResponseWriter, _ *http.Request) { w.WriteHeader(http.StatusNoContent) })
+	mux.HandleFunc("POST /api/v1/auth/tokens", func(w http.ResponseWriter, _ *http.Request) {
+		w.WriteHeader(http.StatusCreated)
+		_ = json.NewEncoder(w).Encode(createTokenResponse{tokenResource: tokenResource{ID: "tok_new", Name: "new"}, Token: "new-tok"})
+	})
+	mux.HandleFunc("GET /api/v1/auth/tokens", func(w http.ResponseWriter, _ *http.Request) {
+		_ = json.NewEncoder(w).Encode([]tokenResource{{ID: "tok_old", Name: "old"}, {ID: "tok_new", Name: "new"}})
+	})
+	mux.HandleFunc("DELETE /api/v1/auth/tokens/{id}", func(w http.ResponseWriter, r *http.Request) {
+		revoked = append(revoked, r.PathValue("id"))
+		w.WriteHeader(http.StatusNoContent)
+	})
+	mux.HandleFunc("GET /api/v1/auth/whoami", func(w http.ResponseWriter, r *http.Request) {
+		if r.Header.Get("Authorization") != "Bearer old-tok" {
+			w.WriteHeader(http.StatusUnauthorized)
+			return
+		}
+		_ = json.NewEncoder(w).Encode(map[string]any{"kind": "token", "name": "old"})
+	})
+	srv := httptest.NewServer(mux)
+	defer srv.Close()
+	if err := writeCredentialsFile(prog, defaultProfile, credentials{APIURL: srv.URL, Token: "old-tok"}); err != nil {
+		t.Fatal(err)
+	}
+	var out, errb bytes.Buffer
+	args := []string{"auth", "login", "--force", "--api-url", srv.URL, "--username", "admin", "--password", "pw"}
+	if code := run(prog, args, &out, &errb, envMap()); code != exitOK {
+		t.Fatalf("exit = %d, stderr %q", code, errb.String())
+	}
+	if len(revoked) != 1 || revoked[0] != "tok_old" {
+		t.Errorf("revoked = %v, want only tok_old", revoked)
+	}
+
+	// An env-sourced token is never revoked.
+	revoked = nil
+	if err := writeCredentialsFile(prog, defaultProfile, credentials{APIURL: srv.URL, Token: "old-tok"}); err != nil {
+		t.Fatal(err)
+	}
+	env := func(k string) (string, bool) {
+		if k == envAPIToken {
+			return "env-tok", true
+		}
+		return "", false
+	}
+	if _, ok := savedLoginToReplace(prog, defaultProfile, srv.URL, env); ok {
+		t.Errorf("with an environment token set, nothing may be revoked")
 	}
 }

@@ -45,8 +45,10 @@ type Client struct {
 	hc        *http.Client
 	userAgent string
 	noAuthFix string
-	retry     RetryPolicy
-	sleep     func(context.Context, time.Duration) error
+	// rejectedFix is appended to the message of a 401 answered to a request that did carry a token.
+	rejectedFix string
+	retry       RetryPolicy
+	sleep       func(context.Context, time.Duration) error
 }
 
 // Option configures a Client at construction time. See WithUserAgent.
@@ -73,6 +75,12 @@ func WithTransport(rt http.RoundTripper) Option {
 // that carried no token, so the caller can name the exact command that fixes it.
 func WithNoCredentialsFix(msg string) Option {
 	return func(c *Client) { c.noAuthFix = msg }
+}
+
+// WithRejectedCredentialFix appends the next step to a 401 answered to a
+// request that carried a token, so a revoked or expired login names its fix.
+func WithRejectedCredentialFix(msg string) Option {
+	return func(c *Client) { c.rejectedFix = msg }
 }
 
 // NewClient builds a Client. baseURL should not have a trailing slash
@@ -184,6 +192,9 @@ func (c *Client) doOnce(ctx context.Context, method, path string, payload []byte
 	var apiErr *APIError
 	if c.token == "" && c.noAuthFix != "" && errors.As(err, &apiErr) && apiErr.StatusCode == http.StatusUnauthorized {
 		apiErr.Message = c.noAuthFix
+	}
+	if c.token != "" && c.rejectedFix != "" && errors.As(err, &apiErr) && apiErr.StatusCode == http.StatusUnauthorized {
+		apiErr.Message += ". " + c.rejectedFix
 	}
 	return resp.Header, err
 }

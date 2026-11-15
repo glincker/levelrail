@@ -51,6 +51,37 @@ func durationEnv(lookupEnv func(string) (string, bool), key string, def time.Dur
 	return def
 }
 
+// humanLeft shows a remaining lifetime in days, or hours under two days, never as 2160h0m0s.
+func humanLeft(d time.Duration) string {
+	switch {
+	case d >= 48*time.Hour:
+		return fmt.Sprintf("%d days", int(d.Hours()/24))
+	case d >= time.Hour:
+		return fmt.Sprintf("%d hours", int(d.Hours()))
+	case d > 0:
+		return "under an hour"
+	}
+	return "expired"
+}
+
+// expiryNote is the human form of a stored expiry: the date and how long is left.
+func expiryNote(raw string) string {
+	exp, ok := parseExpiry(raw)
+	if !ok {
+		return raw
+	}
+	left := time.Until(exp)
+	if left <= 0 {
+		return raw + " (expired)"
+	}
+	return raw + " (in " + humanLeft(left) + ")"
+}
+
+// nextStepLine ends a rejected-credential error with the commands whoami reports.
+func nextStepLine(prog, profile, apiURL string) string {
+	return fmt.Sprintf("next: %s whoami --json shows the state; a person at a terminal runs: %s", prog, loginFix(prog, profile, apiURL))
+}
+
 func parseExpiry(raw string) (time.Time, bool) {
 	if raw == "" {
 		return time.Time{}, false
@@ -156,7 +187,7 @@ func noteExpiry(prog, profile, token string, lookupEnv func(string) (string, boo
 		_, _ = fmt.Fprintf(stderr, "warning: the saved login for profile %q expired on %s. A person must renew it: %s\n", profile, exp.Local().Format("2006-01-02"), loginFix(prog, profile, creds.APIURL))
 		return
 	}
-	_, _ = fmt.Fprintf(stderr, "warning: the saved login for profile %q expires in %s. A person should renew it before then: %s\n", profile, left.Round(time.Hour), loginFix(prog, profile, creds.APIURL))
+	_, _ = fmt.Fprintf(stderr, "warning: the saved login for profile %q expires in %s. A person should renew it before then: %s\n", profile, humanLeft(left), loginFix(prog, profile, creds.APIURL))
 }
 
 // reusableLogin is the check "login" runs first: a valid saved or env credential means no new login, no new session, no approval.
@@ -174,7 +205,7 @@ func printStatus(w io.Writer, st sessionStatus) {
 		_, _ = fmt.Fprintf(w, "scope:       %s\n", strings.Join(st.Scope, ", "))
 	}
 	if st.ExpiresAt != "" {
-		_, _ = fmt.Fprintf(w, "expires at:  %s\n", st.ExpiresAt)
+		_, _ = fmt.Fprintf(w, "expires at:  %s\n", expiryNote(st.ExpiresAt))
 	}
 	_, _ = fmt.Fprintf(w, "verified:    %t\n", st.Verified)
 	_, _ = fmt.Fprintf(w, "trusted device on this machine: %t\n", st.TrustedDevice)
@@ -288,7 +319,7 @@ func printProfileRows(out io.Writer, rows []profileRow) {
 		if r.Verified != nil {
 			verified = fmt.Sprintf("%t", *r.Verified)
 		}
-		_, _ = fmt.Fprintf(tw, "%s\t%s\t%t\t%t\t%s\t%s\t%s\n", r.Name, r.APIURL, r.Active, r.HasToken, r.ExpiresAt, verified, r.Identity)
+		_, _ = fmt.Fprintf(tw, "%s\t%s\t%t\t%t\t%s\t%s\t%s\n", r.Name, r.APIURL, r.Active, r.HasToken, expiryNote(r.ExpiresAt), verified, r.Identity)
 	}
 	_ = tw.Flush()
 	for _, r := range rows {

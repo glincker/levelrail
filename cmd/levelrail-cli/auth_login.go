@@ -88,6 +88,11 @@ func runAuthLogin(prog string, args []string, stdout, stderr io.Writer, lookupEn
 	if err != nil {
 		return reportError(stdout, stderr, jsonOut, err)
 	}
+	var old replacedLogin
+	var haveOld bool
+	if forceFlag || reauthFlag {
+		old, haveOld = savedLoginToReplace(prog, profile, apiURL, lookupEnv)
+	}
 	sessionClient, loginResp, err := loggedInSessionClient(ctx, sf, prog, lookupEnv, stdin, stderr)
 	if err != nil {
 		return reportError(stdout, stderr, jsonOut, err)
@@ -100,6 +105,9 @@ func runAuthLogin(prog string, args []string, stdout, stderr io.Writer, lookupEn
 
 	if err := writeCredentialsFile(prog, profile, withServerPin(credentials{APIURL: apiURL, Token: created.Token, TrustedDevice: sessionClient.trustedDevice(), TokenExpiresAt: expiryString(created.ExpiresAt)}, serverInfo)); err != nil {
 		return reportError(stdout, stderr, jsonOut, fmt.Errorf("save credentials: %w", err))
+	}
+	if haveOld {
+		revokeReplaced(ctx, sessionClient, old, created.ID)
 	}
 	// The token carries on its own; ending the login session keeps the server's session list to real browsers.
 	_ = sessionClient.Logout(ctx)
