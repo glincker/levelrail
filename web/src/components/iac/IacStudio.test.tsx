@@ -142,7 +142,8 @@ describe('IacStudio form mode', () => {
       target: { value: FORM_YAML },
     })
     fireEvent.click(screen.getByRole('radio', { name: 'Form' }))
-    const name = await screen.findByRole('textbox', { name: /^Name/ })
+    // Exclude the "Names" field so the query matches only "Name".
+    const name = await screen.findByRole('textbox', { name: /^Name(?!s)/ })
     expect(name).toHaveValue('web')
     fireEvent.change(name, { target: { value: 'api' } })
     fireEvent.click(screen.getByRole('radio', { name: 'YAML' }))
@@ -170,7 +171,7 @@ describe('IacStudio form mode', () => {
     await waitFor(() =>
       expect(screen.getByText(/more than one document/)).toBeInTheDocument(),
     )
-    expect(screen.getByRole('textbox', { name: /^Name/ })).toBeDisabled()
+    expect(screen.getByRole('textbox', { name: /^Name(?!s)/ })).toBeDisabled()
     fireEvent.click(screen.getByRole('radio', { name: 'YAML' }))
     expect(screen.getByLabelText('Resource YAML')).toHaveValue(multi)
   })
