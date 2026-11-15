@@ -138,7 +138,9 @@
     "tokensExpiredInUseTitle": "{{count}} expired API tokens are still in use",
     "tokenGroupExpiringDetail": "{{names}}. Anything using them will stop working. Rotate them from the token list.",
     "tokenGroupExpiredDetail": "{{names}}. Requests using them are rejected. Remove them from the token list.",
-    "tokenGroupExpiredInUseDetail": "{{names}}. A client may still depend on them. Replace them and update that caller."
+    "tokenGroupExpiredInUseDetail": "{{names}}. A client may still depend on them. Replace them and update that caller.",
+    "buildQueuePausedTitle": "Build queue is paused",
+    "buildQueueDrainingTitle": "Build queue is draining"
   },
   "channel": {
     "notifyDeviceLogin": "Notify when a CLI login is waiting",

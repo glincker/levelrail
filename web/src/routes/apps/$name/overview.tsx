@@ -5,6 +5,7 @@ import { useApp } from '../../../queries/apps'
 import { deployAttemptsQueryOptions } from '../../../queries/deployAttempts'
 import { useDeployProgress } from '../../../hooks/useDeployProgress'
 import { SleepHistoryCard } from '../../../components/SleepHistoryCard'
+import { BuildQueueBanner } from '../../../components/buildQueue/BuildQueueBanner'
 import { OverviewPage } from '../../../components/overview/OverviewPage'
 import { AppEdgeCard } from '../../../components/apps/AppEdgeCard'
 import { ManagedByStackPanel } from '../../../components/apps/ManagedByStackPanel'
@@ -57,6 +58,7 @@ function OverviewSection() {
   const { attempts, conditions } = useDeployProgress(name)
   return (
     <div className="space-y-6">
+      <BuildQueueBanner />
       <ManagedByStackPanel stack={app.managed_by_stack} />
       <PendingChangesNotice appName={name} />
       <TemplateUpgradeBadge appName={name} />

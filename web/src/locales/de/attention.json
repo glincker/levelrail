@@ -138,7 +138,9 @@
     "tokensExpiredInUseTitle": "{{count}} abgelaufene API-Tokens werden noch genutzt",
     "tokenGroupExpiringDetail": "{{names}}. Alles, was sie nutzt, funktioniert dann nicht mehr. Rotieren Sie sie in der Token-Liste.",
     "tokenGroupExpiredDetail": "{{names}}. Anfragen mit ihnen werden abgelehnt. Entfernen Sie sie aus der Token-Liste.",
-    "tokenGroupExpiredInUseDetail": "{{names}}. Ein Client könnte noch davon abhängen. Ersetzen Sie sie und aktualisieren Sie den Aufrufer."
+    "tokenGroupExpiredInUseDetail": "{{names}}. Ein Client könnte noch davon abhängen. Ersetzen Sie sie und aktualisieren Sie den Aufrufer.",
+    "buildQueuePausedTitle": "Build-Warteschlange ist pausiert",
+    "buildQueueDrainingTitle": "Build-Warteschlange läuft aus"
   },
   "channel": {
     "notifyDeviceLogin": "Benachrichtigen, wenn eine CLI-Anmeldung wartet",

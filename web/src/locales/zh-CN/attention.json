@@ -128,7 +128,9 @@
     "tokensExpiredInUseTitle": "{{count}} 个已过期的 API 令牌仍在使用",
     "tokenGroupExpiringDetail": "{{names}}。使用它们的内容将停止工作。请在令牌列表中轮换。",
     "tokenGroupExpiredDetail": "{{names}}。使用它们的请求会被拒绝。请从令牌列表中删除。",
-    "tokenGroupExpiredInUseDetail": "{{names}}。可能仍有客户端依赖它们。请替换并更新该调用方。"
+    "tokenGroupExpiredInUseDetail": "{{names}}。可能仍有客户端依赖它们。请替换并更新该调用方。",
+    "buildQueuePausedTitle": "构建队列已暂停",
+    "buildQueueDrainingTitle": "构建队列正在排空"
   },
   "channel": {
     "notifyDeviceLogin": "CLI 登录等待时通知",

@@ -349,6 +349,16 @@ function feedItems(feed: AttentionFeedItem[], t: AttentionT): AttentionItem[] {
           title: t('items.interruptedTitle', { name: p.app ?? f.subject }),
           detail: t('items.interruptedDetail'),
         }
+      case 'build_queue_paused':
+        return {
+          ...base,
+          title: t(
+            p.state === 'draining'
+              ? 'items.buildQueueDrainingTitle'
+              : 'items.buildQueuePausedTitle',
+          ),
+          detail: f.detail,
+        }
       case 'unclean_restart': {
         const count = Number.parseInt(p.count ?? '1', 10) || 1
         const detail = t('items.uncleanRestartDetail', { count })

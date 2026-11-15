@@ -673,5 +673,69 @@
     "interrupted": "中断: このデプロイの実行中にコントロールプレーンが再起動しました",
     "orphaned": "孤立: このデプロイに対応するビルドが実行されていないため、キャンセルされました",
     "retry": "もう一度デプロイして再試行してください"
+  },
+  "buildQueue": {
+    "chip": "{{state}}、スロット {{used}}/{{total}}",
+    "state": {
+      "running": "実行中",
+      "paused": "一時停止中",
+      "draining": "排出中"
+    },
+    "by": "{{actor}} による",
+    "menu": "キューの操作",
+    "resume": "ビルドを再開",
+    "drain": "キューを排出",
+    "drainHint": "実行中のビルドは完了させ、新しいビルドは保留します",
+    "done": {
+      "pause": "ビルドキューを一時停止しました。",
+      "drain": "ビルドキューを排出中です。",
+      "resume": "ビルドキューを再開しました。"
+    },
+    "conflict": {
+      "pause": "キューはすでに一時停止中です。",
+      "drain": "キューはすでに排出中です。",
+      "resume": "キューはすでに実行中です。"
+    },
+    "failed": "ビルドキューを変更できませんでした。",
+    "pause": {
+      "action": "ビルドを一時停止",
+      "title": "ビルドキューを一時停止",
+      "description": "実行中のビルドは完了します。新しいビルドは再開するまで待機します。",
+      "reasonLabel": "理由 (任意)",
+      "reasonPlaceholder": "例: レジストリのメンテナンス",
+      "submit": "一時停止"
+    },
+    "kill": {
+      "action": "すべてのビルドを強制終了",
+      "title": "すべてのビルドを強制終了しますか?",
+      "description": "実行中 {{running}} 件と待機中 {{queued}} 件のビルドをキャンセルします。",
+      "confirm": "すべて強制終了",
+      "confirming": "強制終了中",
+      "none": "現在、実行中または待機中のビルドはありません。",
+      "more": "ほか {{count}} 件",
+      "alsoPause": "キューも一時停止する",
+      "stepUp": "すべてのビルドをキャンセルするには、パスワードを確認してください。",
+      "done_other": "{{count}} 件のビルドをキャンセルしました。",
+      "someFailed": "{{count}} 件をキャンセルできませんでした: {{apps}}",
+      "conflict": "確認中にキューが変更されました。キューを確認してやり直してください。",
+      "failed": "ビルドをキャンセルできませんでした。"
+    },
+    "banner": {
+      "paused": "ビルドは一時停止中です",
+      "draining": "ビルドは排出中です"
+    },
+    "autoResume": "自動で再開します",
+    "panel": {
+      "title": "ビルドキュー",
+      "summary": "実行中 {{running}} 件、待機中 {{queued}} 件、スロット {{used}}/{{total}} 使用中",
+      "position": "#{{position}}",
+      "waiting": "待機中: {{reason}}"
+    },
+    "phase": {
+      "preparing": "準備中",
+      "held": "保留中",
+      "waiting": "待機中",
+      "building": "ビルド中"
+    }
   }
 }

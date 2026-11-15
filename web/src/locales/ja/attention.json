@@ -128,7 +128,9 @@
     "tokensExpiredInUseTitle": "期限切れの {{count}} 件のAPIトークンがまだ使われています",
     "tokenGroupExpiringDetail": "{{names}}。使っているものは動かなくなります。トークン一覧からローテーションしてください。",
     "tokenGroupExpiredDetail": "{{names}}。これらを使うリクエストは拒否されます。トークン一覧から削除してください。",
-    "tokenGroupExpiredInUseDetail": "{{names}}。クライアントがまだ依存している可能性があります。置き換えて呼び出し元を更新してください。"
+    "tokenGroupExpiredInUseDetail": "{{names}}。クライアントがまだ依存している可能性があります。置き換えて呼び出し元を更新してください。",
+    "buildQueuePausedTitle": "ビルドキューは一時停止中です",
+    "buildQueueDrainingTitle": "ビルドキューは排出中です"
   },
   "channel": {
     "notifyDeviceLogin": "CLIログインが待機しているときに通知",

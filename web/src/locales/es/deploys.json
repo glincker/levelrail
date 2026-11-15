@@ -679,5 +679,70 @@
     "interrupted": "Interrumpido: el plano de control se reinició mientras se ejecutaba este despliegue",
     "orphaned": "Huérfano: no había ninguna compilación en curso para este despliegue, por eso se canceló",
     "retry": "Despliega de nuevo para reintentar"
+  },
+  "buildQueue": {
+    "chip": "{{state}}, {{used}} de {{total}} espacios",
+    "state": {
+      "running": "En marcha",
+      "paused": "En pausa",
+      "draining": "Vaciando"
+    },
+    "by": "por {{actor}}",
+    "menu": "Acciones de la cola",
+    "resume": "Reanudar compilaciones",
+    "drain": "Vaciar la cola",
+    "drainHint": "Deja terminar las compilaciones en curso y retiene las nuevas",
+    "done": {
+      "pause": "Cola de compilaciones en pausa.",
+      "drain": "Cola de compilaciones vaciándose.",
+      "resume": "Cola de compilaciones reanudada."
+    },
+    "conflict": {
+      "pause": "La cola ya está en pausa.",
+      "drain": "La cola ya se está vaciando.",
+      "resume": "La cola ya está en marcha."
+    },
+    "failed": "No se pudo cambiar la cola de compilaciones.",
+    "pause": {
+      "action": "Pausar compilaciones",
+      "title": "Pausar la cola de compilaciones",
+      "description": "Las compilaciones en curso terminan. Las nuevas esperan hasta que reanudes.",
+      "reasonLabel": "Motivo (opcional)",
+      "reasonPlaceholder": "Por ejemplo, mantenimiento del registro",
+      "submit": "Pausar"
+    },
+    "kill": {
+      "action": "Cancelar todas las compilaciones",
+      "title": "¿Cancelar todas las compilaciones?",
+      "description": "Esto cancela {{running}} compilaciones en curso y {{queued}} en cola.",
+      "confirm": "Cancelar todas",
+      "confirming": "Cancelando",
+      "none": "Ahora no hay compilaciones en curso ni en cola.",
+      "more": "y {{count}} más",
+      "alsoPause": "Pausar también la cola",
+      "stepUp": "Confirma tu contraseña para cancelar todas las compilaciones.",
+      "done_one": "{{count}} compilación cancelada.",
+      "done_other": "{{count}} compilaciones canceladas.",
+      "someFailed": "No se pudieron cancelar {{count}}: {{apps}}",
+      "conflict": "La cola cambió mientras confirmabas. Revísala e inténtalo de nuevo.",
+      "failed": "No se pudieron cancelar las compilaciones."
+    },
+    "banner": {
+      "paused": "Las compilaciones están en pausa",
+      "draining": "Las compilaciones se están vaciando"
+    },
+    "autoResume": "Se reanuda automáticamente",
+    "panel": {
+      "title": "Cola de compilaciones",
+      "summary": "{{running}} en curso, {{queued}} en cola, {{used}} de {{total}} espacios en uso",
+      "position": "#{{position}}",
+      "waiting": "Esperando: {{reason}}"
+    },
+    "phase": {
+      "preparing": "Preparando",
+      "held": "Retenida",
+      "waiting": "Esperando",
+      "building": "Compilando"
+    }
   }
 }

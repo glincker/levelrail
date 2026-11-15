@@ -138,7 +138,9 @@
     "tokensExpiredInUseTitle": "{{count}} tokens de API caducados siguen en uso",
     "tokenGroupExpiringDetail": "{{names}}. Lo que los use dejará de funcionar. Rótalos desde la lista de tokens.",
     "tokenGroupExpiredDetail": "{{names}}. Las solicitudes con ellos se rechazan. Elimínalos de la lista de tokens.",
-    "tokenGroupExpiredInUseDetail": "{{names}}. Un cliente aún puede depender de ellos. Reemplázalos y actualiza ese cliente."
+    "tokenGroupExpiredInUseDetail": "{{names}}. Un cliente aún puede depender de ellos. Reemplázalos y actualiza ese cliente.",
+    "buildQueuePausedTitle": "La cola de compilaciones está en pausa",
+    "buildQueueDrainingTitle": "La cola de compilaciones se está vaciando"
   },
   "channel": {
     "notifyDeviceLogin": "Notificar cuando un inicio de sesión de CLI esté en espera",

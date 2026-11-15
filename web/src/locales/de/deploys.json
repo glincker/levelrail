@@ -679,5 +679,70 @@
     "interrupted": "Unterbrochen: Die Steuerungsebene wurde während dieses Deploys neu gestartet",
     "orphaned": "Verwaist: Für dieses Deploy lief kein Build, daher wurde es abgebrochen",
     "retry": "Deploy erneut starten, um es zu wiederholen"
+  },
+  "buildQueue": {
+    "chip": "{{state}}, {{used}} von {{total}} Slots",
+    "state": {
+      "running": "Läuft",
+      "paused": "Pausiert",
+      "draining": "Läuft aus"
+    },
+    "by": "von {{actor}}",
+    "menu": "Warteschlangenaktionen",
+    "resume": "Builds fortsetzen",
+    "drain": "Warteschlange leeren",
+    "drainHint": "Laufende Builds beenden, neue zurückhalten",
+    "done": {
+      "pause": "Build-Warteschlange pausiert.",
+      "drain": "Build-Warteschlange läuft aus.",
+      "resume": "Build-Warteschlange fortgesetzt."
+    },
+    "conflict": {
+      "pause": "Die Warteschlange ist bereits pausiert.",
+      "drain": "Die Warteschlange läuft bereits aus.",
+      "resume": "Die Warteschlange läuft bereits."
+    },
+    "failed": "Die Build-Warteschlange konnte nicht geändert werden.",
+    "pause": {
+      "action": "Builds pausieren",
+      "title": "Build-Warteschlange pausieren",
+      "description": "Laufende Builds werden beendet. Neue Builds warten, bis Sie fortsetzen.",
+      "reasonLabel": "Grund (optional)",
+      "reasonPlaceholder": "Zum Beispiel Registry-Wartung",
+      "submit": "Pausieren"
+    },
+    "kill": {
+      "action": "Alle Builds abbrechen",
+      "title": "Alle Builds abbrechen?",
+      "description": "Dies bricht {{running}} laufende und {{queued}} wartende Builds ab.",
+      "confirm": "Alle Builds abbrechen",
+      "confirming": "Wird abgebrochen",
+      "none": "Derzeit laufen oder warten keine Builds.",
+      "more": "und {{count}} weitere",
+      "alsoPause": "Warteschlange ebenfalls pausieren",
+      "stepUp": "Bestätigen Sie Ihr Passwort, um alle Builds abzubrechen.",
+      "done_one": "{{count}} Build abgebrochen.",
+      "done_other": "{{count}} Builds abgebrochen.",
+      "someFailed": "{{count}} konnten nicht abgebrochen werden: {{apps}}",
+      "conflict": "Die Warteschlange hat sich während der Bestätigung geändert. Prüfen Sie sie und versuchen Sie es erneut.",
+      "failed": "Die Builds konnten nicht abgebrochen werden."
+    },
+    "banner": {
+      "paused": "Builds sind pausiert",
+      "draining": "Builds laufen aus"
+    },
+    "autoResume": "Wird automatisch fortgesetzt",
+    "panel": {
+      "title": "Build-Warteschlange",
+      "summary": "{{running}} laufend, {{queued}} wartend, {{used}} von {{total}} Slots belegt",
+      "position": "#{{position}}",
+      "waiting": "Wartet: {{reason}}"
+    },
+    "phase": {
+      "preparing": "Wird vorbereitet",
+      "held": "Zurückgehalten",
+      "waiting": "Wartet",
+      "building": "Wird gebaut"
+    }
   }
 }

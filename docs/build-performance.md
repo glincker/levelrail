@@ -77,6 +77,17 @@ Select a stage to open its log. A running build tails live, and a finished build
 
 Stage data is read from `GET /api/v1/apps/{name}/deploys/{deployId}/stages`, and one stage's log from `GET /api/v1/apps/{name}/deploys/{deployId}/logs?stage=<stage>`. The page polls the stages every few seconds while the build runs and stops once it ends. Set `VITE_BUILD_STAGES_POLL_MS` when building the dashboard to change the interval. Deploys that ran before stages were recorded show an empty state.
 
+## Controlling the build queue
+
+The Deployments page header shows the queue state (Running, Paused or Draining) with the slots in use. People with the `write:sensitive` ability can change it.
+
+- **Pause** stops new builds from starting. Running builds finish, and queued builds show "Waiting: builds are paused". An optional reason is shown to everyone.
+- **Drain** (in the overflow menu) lets running builds finish while holding new ones.
+- **Resume** returns the queue to normal. The banner on the Deployments page and on each app's Overview and Deploys pages has a Resume button while the queue is not running.
+- **Kill all builds** cancels every running and queued build. The dialog lists the counts and app names, asks you to type `KILL`, offers to pause the queue too, and asks for your password again. Builds that could not be canceled are listed afterwards.
+
+A queue paused longer than the configured warning time also appears in the attention list. The same controls exist in the CLI as `builds pause`, `builds drain`, `builds resume` and `builds kill-all`.
+
 ## Reading the trend
 
 The app's **Deploys** page shows a build performance card for the last 20 builds: median (p50), p95, cache hit rate and the number of failed or timed out builds, with a bar per build.

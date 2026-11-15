@@ -673,5 +673,69 @@
     "interrupted": "已中断：此部署运行期间控制平面重启了",
     "orphaned": "孤立：没有构建在为此部署运行，因此已取消",
     "retry": "重新部署以重试"
+  },
+  "buildQueue": {
+    "chip": "{{state}},槽位 {{used}}/{{total}}",
+    "state": {
+      "running": "运行中",
+      "paused": "已暂停",
+      "draining": "排空中"
+    },
+    "by": "由 {{actor}}",
+    "menu": "队列操作",
+    "resume": "恢复构建",
+    "drain": "排空队列",
+    "drainHint": "让运行中的构建完成,暂缓新的构建",
+    "done": {
+      "pause": "构建队列已暂停。",
+      "drain": "构建队列正在排空。",
+      "resume": "构建队列已恢复。"
+    },
+    "conflict": {
+      "pause": "队列已处于暂停状态。",
+      "drain": "队列已在排空。",
+      "resume": "队列已在运行。"
+    },
+    "failed": "无法更改构建队列。",
+    "pause": {
+      "action": "暂停构建",
+      "title": "暂停构建队列",
+      "description": "运行中的构建会完成。新的构建将等待,直到你恢复。",
+      "reasonLabel": "原因(可选)",
+      "reasonPlaceholder": "例如:镜像仓库维护",
+      "submit": "暂停"
+    },
+    "kill": {
+      "action": "终止所有构建",
+      "title": "终止所有构建?",
+      "description": "这将取消 {{running}} 个运行中和 {{queued}} 个排队中的构建。",
+      "confirm": "全部终止",
+      "confirming": "正在终止",
+      "none": "目前没有运行中或排队中的构建。",
+      "more": "以及另外 {{count}} 个",
+      "alsoPause": "同时暂停队列",
+      "stepUp": "请确认你的密码以取消所有构建。",
+      "done_other": "已取消 {{count}} 个构建。",
+      "someFailed": "{{count}} 个无法取消:{{apps}}",
+      "conflict": "确认期间队列已发生变化。请检查队列后重试。",
+      "failed": "无法取消构建。"
+    },
+    "banner": {
+      "paused": "构建已暂停",
+      "draining": "构建正在排空"
+    },
+    "autoResume": "将自动恢复",
+    "panel": {
+      "title": "构建队列",
+      "summary": "{{running}} 个运行中,{{queued}} 个排队中,已用槽位 {{used}}/{{total}}",
+      "position": "第 {{position}} 位",
+      "waiting": "等待中:{{reason}}"
+    },
+    "phase": {
+      "preparing": "准备中",
+      "held": "已挂起",
+      "waiting": "等待中",
+      "building": "构建中"
+    }
   }
 }

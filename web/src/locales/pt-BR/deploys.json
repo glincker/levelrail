@@ -685,5 +685,70 @@
     "interrupted": "Interrompido: o plano de controle reiniciou enquanto este deploy rodava",
     "orphaned": "Órfão: nenhum build estava rodando para este deploy, então ele foi cancelado",
     "retry": "Faça o deploy de novo para tentar outra vez"
+  },
+  "buildQueue": {
+    "chip": "{{state}}, {{used}} de {{total}} vagas",
+    "state": {
+      "running": "Em execução",
+      "paused": "Pausada",
+      "draining": "Esvaziando"
+    },
+    "by": "por {{actor}}",
+    "menu": "Ações da fila",
+    "resume": "Retomar builds",
+    "drain": "Esvaziar a fila",
+    "drainHint": "Deixa os builds em andamento terminarem e segura os novos",
+    "done": {
+      "pause": "Fila de builds pausada.",
+      "drain": "Fila de builds esvaziando.",
+      "resume": "Fila de builds retomada."
+    },
+    "conflict": {
+      "pause": "A fila já está pausada.",
+      "drain": "A fila já está esvaziando.",
+      "resume": "A fila já está em execução."
+    },
+    "failed": "Não foi possível alterar a fila de builds.",
+    "pause": {
+      "action": "Pausar builds",
+      "title": "Pausar a fila de builds",
+      "description": "Os builds em andamento terminam. Os novos esperam até você retomar.",
+      "reasonLabel": "Motivo (opcional)",
+      "reasonPlaceholder": "Por exemplo, manutenção do registro",
+      "submit": "Pausar"
+    },
+    "kill": {
+      "action": "Cancelar todos os builds",
+      "title": "Cancelar todos os builds?",
+      "description": "Isso cancela {{running}} builds em andamento e {{queued}} na fila.",
+      "confirm": "Cancelar todos",
+      "confirming": "Cancelando",
+      "none": "Nenhum build em andamento ou na fila agora.",
+      "more": "e mais {{count}}",
+      "alsoPause": "Pausar a fila também",
+      "stepUp": "Confirme sua senha para cancelar todos os builds.",
+      "done_one": "{{count}} build cancelado.",
+      "done_other": "{{count}} builds cancelados.",
+      "someFailed": "{{count}} não puderam ser cancelados: {{apps}}",
+      "conflict": "A fila mudou enquanto você confirmava. Confira a fila e tente de novo.",
+      "failed": "Não foi possível cancelar os builds."
+    },
+    "banner": {
+      "paused": "Os builds estão pausados",
+      "draining": "Os builds estão esvaziando"
+    },
+    "autoResume": "Retoma automaticamente",
+    "panel": {
+      "title": "Fila de builds",
+      "summary": "{{running}} em andamento, {{queued}} na fila, {{used}} de {{total}} vagas em uso",
+      "position": "nº {{position}}",
+      "waiting": "Aguardando: {{reason}}"
+    },
+    "phase": {
+      "preparing": "Preparando",
+      "held": "Retido",
+      "waiting": "Aguardando",
+      "building": "Compilando"
+    }
   }
 }

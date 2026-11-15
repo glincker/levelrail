@@ -679,5 +679,70 @@
     "interrupted": "Interrupted: the control plane restarted while this deploy was running",
     "orphaned": "Orphaned: no build was running for this deploy, so it was canceled",
     "retry": "Deploy again to retry"
+  },
+  "buildQueue": {
+    "chip": "{{state}}, {{used}} of {{total}} slots",
+    "state": {
+      "running": "Running",
+      "paused": "Paused",
+      "draining": "Draining"
+    },
+    "by": "by {{actor}}",
+    "menu": "Queue actions",
+    "resume": "Resume builds",
+    "drain": "Drain queue",
+    "drainHint": "Let running builds finish, hold new ones",
+    "done": {
+      "pause": "Build queue paused.",
+      "drain": "Build queue draining.",
+      "resume": "Build queue resumed."
+    },
+    "conflict": {
+      "pause": "The queue is already paused.",
+      "drain": "The queue is already draining.",
+      "resume": "The queue is already running."
+    },
+    "failed": "Could not change the build queue.",
+    "pause": {
+      "action": "Pause builds",
+      "title": "Pause the build queue",
+      "description": "Running builds finish. New builds wait until you resume.",
+      "reasonLabel": "Reason (optional)",
+      "reasonPlaceholder": "For example, registry maintenance",
+      "submit": "Pause"
+    },
+    "kill": {
+      "action": "Kill all builds",
+      "title": "Kill all builds?",
+      "description": "This cancels {{running}} running and {{queued}} queued builds.",
+      "confirm": "Kill all builds",
+      "confirming": "Killing",
+      "none": "No builds are running or queued right now.",
+      "more": "and {{count}} more",
+      "alsoPause": "Also pause the queue",
+      "stepUp": "Confirm your password to cancel every build.",
+      "done_one": "Canceled {{count}} build.",
+      "done_other": "Canceled {{count}} builds.",
+      "someFailed": "{{count}} could not be canceled: {{apps}}",
+      "conflict": "The queue changed while you confirmed. Check the queue and try again.",
+      "failed": "Could not cancel the builds."
+    },
+    "banner": {
+      "paused": "Builds are paused",
+      "draining": "Builds are draining"
+    },
+    "autoResume": "Resumes automatically",
+    "panel": {
+      "title": "Build queue",
+      "summary": "{{running}} running, {{queued}} queued, {{used}} of {{total}} slots in use",
+      "position": "#{{position}}",
+      "waiting": "Waiting: {{reason}}"
+    },
+    "phase": {
+      "preparing": "Preparing",
+      "held": "Held",
+      "waiting": "Waiting",
+      "building": "Building"
+    }
   }
 }

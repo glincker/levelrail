@@ -685,5 +685,70 @@
     "interrupted": "Interrompu : le plan de contrôle a redémarré pendant ce déploiement",
     "orphaned": "Orphelin : aucune compilation n'était en cours pour ce déploiement, il a donc été annulé",
     "retry": "Relancez le déploiement pour réessayer"
+  },
+  "buildQueue": {
+    "chip": "{{state}}, {{used}} sur {{total}} emplacements",
+    "state": {
+      "running": "En cours",
+      "paused": "En pause",
+      "draining": "Vidage"
+    },
+    "by": "par {{actor}}",
+    "menu": "Actions de la file",
+    "resume": "Reprendre les builds",
+    "drain": "Vider la file",
+    "drainHint": "Laisse finir les builds en cours et retient les nouveaux",
+    "done": {
+      "pause": "File de builds en pause.",
+      "drain": "File de builds en cours de vidage.",
+      "resume": "File de builds reprise."
+    },
+    "conflict": {
+      "pause": "La file est déjà en pause.",
+      "drain": "La file se vide déjà.",
+      "resume": "La file est déjà en cours."
+    },
+    "failed": "Impossible de modifier la file de builds.",
+    "pause": {
+      "action": "Mettre les builds en pause",
+      "title": "Mettre la file de builds en pause",
+      "description": "Les builds en cours se terminent. Les nouveaux attendent votre reprise.",
+      "reasonLabel": "Motif (facultatif)",
+      "reasonPlaceholder": "Par exemple, maintenance du registre",
+      "submit": "Mettre en pause"
+    },
+    "kill": {
+      "action": "Annuler tous les builds",
+      "title": "Annuler tous les builds ?",
+      "description": "Cela annule {{running}} builds en cours et {{queued}} en file.",
+      "confirm": "Tout annuler",
+      "confirming": "Annulation",
+      "none": "Aucun build en cours ni en file pour le moment.",
+      "more": "et {{count}} de plus",
+      "alsoPause": "Mettre aussi la file en pause",
+      "stepUp": "Confirmez votre mot de passe pour annuler tous les builds.",
+      "done_one": "{{count}} build annulé.",
+      "done_other": "{{count}} builds annulés.",
+      "someFailed": "{{count}} n'ont pas pu être annulés : {{apps}}",
+      "conflict": "La file a changé pendant votre confirmation. Vérifiez-la puis réessayez.",
+      "failed": "Impossible d'annuler les builds."
+    },
+    "banner": {
+      "paused": "Les builds sont en pause",
+      "draining": "Les builds se vident"
+    },
+    "autoResume": "Reprise automatique",
+    "panel": {
+      "title": "File de builds",
+      "summary": "{{running}} en cours, {{queued}} en file, {{used}} sur {{total}} emplacements utilisés",
+      "position": "n° {{position}}",
+      "waiting": "En attente : {{reason}}"
+    },
+    "phase": {
+      "preparing": "Préparation",
+      "held": "Retenu",
+      "waiting": "En attente",
+      "building": "Build en cours"
+    }
   }
 }

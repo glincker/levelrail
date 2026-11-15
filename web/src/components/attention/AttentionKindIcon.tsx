@@ -1,5 +1,6 @@
 import {
   ClockGlassIcon,
+  LayersGlassIcon,
   CpuGlassIcon,
   UnplugGlassIcon,
   RotateCcwGlassIcon,
@@ -14,6 +15,7 @@ const ICONS = {
   git_connection_reauth: UnplugGlassIcon,
   git_token_expiring: ClockGlassIcon,
   token_grace_sweep_failing: ShieldAlertGlassIcon,
+  build_queue_paused: LayersGlassIcon,
 } as const
 
 export function AttentionKindIcon({
