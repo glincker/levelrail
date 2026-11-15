@@ -203,6 +203,8 @@ type appFields struct {
 	Restart        string                `json:"restart,omitempty"`
 	// Placement is nil when undeclared, so live rules stay unmanaged.
 	Placement *placementFields `json:"placement,omitempty"`
+	// DNS is nil when undeclared, so live extra names stay unmanaged.
+	DNS *dnsFields `json:"dns,omitempty"`
 }
 
 // normPorts spells out the protocol and sorts, so live and declared lists compare equal.
@@ -385,6 +387,7 @@ func appFromWire(a wireApp, names idNames) appFields {
 		f.Restart = a.Health.Restart
 	}
 	f.Placement = placementFromWire(a)
+	f.DNS = dnsFromWire(a.DNSNames)
 	for _, v := range a.Volumes {
 		n, _ := v["name"].(string)
 		path, _ := v["container_path"].(string)

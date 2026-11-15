@@ -107,6 +107,7 @@ No fields.
 | `spec.service.command` | list of string | no | Command that overrides the image's default CMD. |
 | `spec.service.contexts` | object | no | Per-context overrides for deploy previews and branch deploys. |
 | `spec.service.dependsOn` | list of string | no | Sibling services that must have a running container before this one starts. |
+| `spec.service.dns` | object | no | Internal DNS options (beta). |
 | `spec.service.domains` | list of string | no | Hostnames routed to this service. |
 | `spec.service.egress` | object | no | Outbound network allowlist for the container. |
 | `spec.service.env` | object | no | Environment variables, as literal strings or secret and reference objects. |

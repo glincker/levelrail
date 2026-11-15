@@ -506,6 +506,7 @@ func buildApp(d *Document, opts Options, s *issueSink) *Resource {
 	}
 	f.Rollout = rolloutFromSpec(svc.Rollout)
 	f.Placement = placementFromSpec(svc.Tolerations, svc.Affinity)
+	f.DNS = dnsFromSpec(svc.DNS, s)
 	if len(svc.Files) > 0 {
 		f.Files = filesFromSpec(svc.Files)
 	}

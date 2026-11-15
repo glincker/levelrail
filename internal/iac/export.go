@@ -84,6 +84,7 @@ type outService struct {
 	Command        []string               `yaml:"command,omitempty"`
 	Tolerations    []placement.Toleration `yaml:"tolerations,omitempty"`
 	Affinity       *placement.Affinity    `yaml:"affinity,omitempty"`
+	DNS            *dnsFields             `yaml:"dns,omitempty"`
 	Volumes        []outVolume            `yaml:"volumes,omitempty"`
 }
 
@@ -285,6 +286,9 @@ func (e *exporter) app(ctx context.Context, l loader, a wireApp) error {
 			svc.Tolerations = *f.Placement.Tolerations
 		}
 		svc.Affinity = f.Placement.Affinity
+	}
+	if f.DNS != nil {
+		svc.DNS = f.DNS
 	}
 	if f.BindAddress != bindaddr.Default {
 		svc.BindAddress = f.BindAddress
