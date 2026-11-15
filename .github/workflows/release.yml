@@ -519,6 +519,38 @@ jobs:
           git push
           rm -f ~/.ssh/bucket_key
 
+  publish-aur-nix:
+    name: Attach AUR and Nix files
+    needs: release
+    # Off until AUR_NIX_ENABLED is set. Output is release assets only.
+    if: (github.event_name == 'workflow_dispatch' || github.ref_type == 'tag') && vars.AUR_NIX_ENABLED == 'true'
+    runs-on: ubuntu-latest
+    timeout-minutes: 10
+    permissions:
+      contents: write
+    steps:
+      - name: Checkout
+        uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7
+        with:
+          ref: ${{ env.RELEASE_TAG }}
+
+      - name: Download release checksums
+        env:
+          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+        run: gh release download "${{ env.RELEASE_TAG }}" --repo "${{ github.repository }}" --pattern checksums.txt --dir dist
+
+      - name: Render PKGBUILD and flake
+        run: scripts/release/gen-aur-nix.sh "${{ env.RELEASE_TAG }}" dist/checksums.txt rendered
+
+      - name: Attach to the release
+        env:
+          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+        run: |
+          mkdir -p assets
+          cp rendered/aur/PKGBUILD assets/levelrail-cli-bin.PKGBUILD
+          cp rendered/nix/flake.nix assets/levelrail-cli.flake.nix
+          gh release upload "${{ env.RELEASE_TAG }}" assets/* --repo "${{ github.repository }}" --clobber
+
   publish-npm:
     name: Publish CLI to npm
     needs: release
