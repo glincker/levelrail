@@ -54,7 +54,7 @@ cosign verify ghcr.io/glincker/levelrail:beta \
   --certificate-oidc-issuer https://token.actions.githubusercontent.com
 ```
 
-Use `ghcr.io/glincker/levelrail-agent` for the node agent. Tags are listed in [Installing](/installing#option-2-docker). Pin an exact `:vX.Y.Z` tag for anything that must not move, because `:latest` and `:beta` change.
+Use `ghcr.io/glincker/levelrail-agent` for the node agent. The Docker Hub mirror (`docker.io/levelrail/levelrail`) carries the same digest, so the same signature verifies there too. Tags are listed in [Installing](/installing#option-2-docker). Pin an exact `:vX.Y.Z` tag for anything that must not move, because `:latest` and `:beta` change.
 
 ## Read the SBOM and provenance
 
