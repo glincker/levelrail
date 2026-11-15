@@ -201,3 +201,68 @@ func (c *Client) ReclaimAppBuildCache(ctx context.Context, app string) (BuildCac
 	err := c.do(ctx, http.MethodPost, "/api/v1/apps/"+url.PathEscape(app)+"/build-cache/reclaim", nil, &out)
 	return out, err
 }
+
+// BuildQueue is GET /api/v1/builds/queue.
+type BuildQueue struct {
+	State        string     `json:"state"`
+	Reason       string     `json:"reason,omitempty"`
+	Actor        string     `json:"actor,omitempty"`
+	Since        *time.Time `json:"since,omitempty"`
+	AutoResumeAt *time.Time `json:"auto_resume_at,omitempty"`
+	Drained      bool       `json:"drained"`
+	Slots        struct {
+		Used  int `json:"used"`
+		Total int `json:"total"`
+	} `json:"slots"`
+	Running []struct {
+		DeployID       string  `json:"deploy_id,omitempty"`
+		App            string  `json:"app"`
+		Node           string  `json:"node,omitempty"`
+		Phase          string  `json:"phase"`
+		ElapsedSeconds float64 `json:"elapsed_seconds"`
+	} `json:"running"`
+	Queued []struct {
+		DeployID    string  `json:"deploy_id"`
+		App         string  `json:"app"`
+		Position    int     `json:"position"`
+		WaitSeconds float64 `json:"wait_seconds"`
+		WaitReason  string  `json:"wait_reason,omitempty"`
+	} `json:"queued"`
+}
+
+// KillAllBuildsResult is POST /api/v1/builds/kill-all.
+type KillAllBuildsResult struct {
+	Canceled []KillAllBuildsItem `json:"canceled"`
+	Failed   []KillAllBuildsItem `json:"failed"`
+	Paused   bool                `json:"paused"`
+}
+
+// KillAllBuildsItem is one build kill-all touched.
+type KillAllBuildsItem struct {
+	DeployID string `json:"deploy_id"`
+	App      string `json:"app"`
+	Was      string `json:"was"`
+	Error    string `json:"error,omitempty"`
+}
+
+// GetBuildQueue calls GET /api/v1/builds/queue.
+func (c *Client) GetBuildQueue(ctx context.Context) (BuildQueue, error) {
+	var out BuildQueue
+	err := c.do(ctx, http.MethodGet, "/api/v1/builds/queue", nil, &out)
+	return out, err
+}
+
+// SetBuildQueue calls POST /api/v1/builds/queue/{pause|resume|drain}.
+func (c *Client) SetBuildQueue(ctx context.Context, action, reason string) (BuildQueue, error) {
+	var out BuildQueue
+	err := c.do(ctx, http.MethodPost, "/api/v1/builds/queue/"+url.PathEscape(action), map[string]string{"reason": reason}, &out)
+	return out, err
+}
+
+// KillAllBuilds calls POST /api/v1/builds/kill-all with the token owner's step-up proof.
+func (c *Client) KillAllBuilds(ctx context.Context, reason string, pause bool, proof *StepUpProof) (KillAllBuildsResult, error) {
+	var out KillAllBuildsResult
+	body := map[string]any{"reason": reason, "pause": pause, "step_up": proof}
+	err := c.do(ctx, http.MethodPost, "/api/v1/builds/kill-all", body, &out)
+	return out, err
+}

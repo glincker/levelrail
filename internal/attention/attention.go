@@ -115,6 +115,7 @@ const (
 	KindAdvisoryMatch           = "advisory_match"
 	KindDeployInterrupted       = "deploy_interrupted"
 	KindDeployRefused           = "deploy_refused"
+	KindBuildQueuePaused        = "build_queue_paused"
 )
 
 func deviceLoginItems(devices []apiclient.DevicePendingLogin, now time.Time) []Item {

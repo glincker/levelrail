@@ -235,6 +235,7 @@ func (s *bootState) wireRouter() {
 	apiRouter.WarmTrustRoot()
 	if buildLimiter != nil {
 		apiRouter.SetBuildLoad(buildLimiter)
+		build.SetQueueGate(apiRouter.BuildQueueGate())
 	}
 	if wh, ok := webhookHandler.(*webhook.Handler); ok {
 		wh.UseSourceCache(apiRouter.SourceCache())

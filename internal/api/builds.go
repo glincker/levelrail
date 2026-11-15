@@ -489,7 +489,7 @@ func (rt *Router) handleTriggerBuild(w http.ResponseWriter, r *http.Request) {
 
 	rt.buildStartMu.Lock()
 	if rt.deploySafety != nil {
-		if rt.deployBlocker(r.Context(), name) {
+		if rt.buildsHeld(r.Context()) || rt.deployBlocker(r.Context(), name) {
 			resp, err := rt.enqueueManualBuild(attemptCtx, *existing, req, buildReq, freezeNote, allowPrivateRepoAuth)
 			rt.buildStartMu.Unlock()
 			if err != nil {

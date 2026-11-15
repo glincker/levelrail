@@ -112,7 +112,7 @@ func (rt *Router) queueIfBusy(ctx context.Context, name string, gs store.GitSour
 	}
 	rt.buildStartMu.Lock()
 	defer rt.buildStartMu.Unlock()
-	blocked := rt.deployBlocker(ctx, name)
+	blocked := rt.buildsHeld(ctx) || rt.deployBlocker(ctx, name)
 	if !blocked {
 		rt.startingDeploys[name]++
 		var once sync.Once
@@ -257,6 +257,10 @@ func (rt *Router) DrainDeployQueue(ctx context.Context) {
 }
 
 func (rt *Router) startQueued(ctx context.Context) []store.DeployAttempt {
+	// Every queued attempt is a build, so a held queue starts none of them.
+	if rt.buildsHeld(ctx) {
+		return nil
+	}
 	queued, err := rt.deploySafety.ListQueuedDeployAttempts(ctx)
 	if err != nil || len(queued) == 0 {
 		if err != nil {
@@ -460,7 +464,11 @@ func (rt *Router) waitFor(ctx context.Context, a store.DeployAttempt, app []stor
 			full = rt.projectBuildFull(ctx, a.ServiceName, rt.runningApps(attemptApps(running)))
 		}
 	}
-	return computeWait(a, app, frozen, frozenUntil, full)
+	w := computeWait(a, app, frozen, frozenUntil, full)
+	if st, _ := rt.buildQueueState(ctx); st.State != store.BuildQueueRunning && w.BlockedBy == "" {
+		w.Reason = buildQueueWaitReason(st)
+	}
+	return w
 }
 
 func queuedFreezeExempt(a store.DeployAttempt) bool {

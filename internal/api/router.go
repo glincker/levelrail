@@ -258,6 +258,7 @@ type Router struct {
 	serverProfile           serverProfileState                                            // see server_profile.go
 	fixit                   fixitState                                                    // see fixit.go
 	buildPerf               BuildPerformanceStore                                         // see build_performance.go
+	buildQueue              buildQueueControl                                             // operator pause, drain and resume of new builds
 	buildLoad               BuildLoadSource                                               // nil: the build center shows no live slot usage
 	appBuildCache           AppBuildCacher                                                // nil: per app build cache routes return 501
 	buildCacheNodes         BuildCacheResolver                                            // nil: build cache routes return 501

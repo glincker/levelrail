@@ -86,6 +86,8 @@ func buildExplainTable() map[string]Explanation {
 			"Add a 1 to 2 GB swap file, then press Re-check.", "", KindManual),
 		ex("build_memory", "The host has less memory than a typical web build needs.", "Builds may fail with out-of-memory errors.",
 			"Add swap or memory, or build on a bigger node. Open Settings, then Builds, to pick the build node.", "", KindGuided),
+		ex("build_queue", "The build queue has been paused or draining for a long time.", "New builds and webhook deploys wait in the queue until someone resumes it.",
+			"Open Deployments and press Resume, or run levelrail-cli builds resume.", "", KindManual),
 		ex("build_cache_budget", "The builder cache is over its size budget.", "The disk fills with old build layers until another build prunes them.",
 			"Let the next build prune the cache, raise build.cache_budget_max_mb in Settings, then Runtime, or set build.cache_budget to off.", "", KindManual),
 		ex("unit_protection", "The control plane is not shielded from the kernel out-of-memory killer, or it was restarted after an unclean stop.", "On a crowded host the kernel can kill the control plane, and apps are unmanaged until it restarts.",

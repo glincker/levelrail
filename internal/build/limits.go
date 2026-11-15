@@ -148,6 +148,10 @@ type Limiter struct {
 
 	cgMu   sync.Mutex
 	cgBusy map[string]bool
+
+	activeMu  sync.Mutex
+	active    map[uint64]*ActiveBuild
+	activeSeq uint64
 }
 
 type nodeSlots struct {
@@ -189,6 +193,12 @@ func (l *Limiter) run(ctx context.Context, tag, srcDir string, progress func(Pro
 	if l.node != nil {
 		nodeID = l.node(ctx)
 	}
+	trackID, phase := l.track(tag, nodeID)
+	defer l.untrack(trackID)
+	if err := holdQueue(ctx, progress); err != nil {
+		return nil, fmt.Errorf("build: waiting for the build queue to resume: %w", err)
+	}
+	phase(ActiveWaiting)
 	capped, gerr := admitLocal(ctx, nodeID, lim.MaxConcurrent, progress)
 	if gerr != nil {
 		return nil, fmt.Errorf("build: waiting for host pressure: %w", gerr)
@@ -198,6 +208,7 @@ func (l *Limiter) run(ctx context.Context, tag, srcDir string, progress func(Pro
 		return nil, fmt.Errorf("build: waiting for a build slot: %w", err)
 	}
 	defer l.release(nodeID)
+	phase(ActiveBuilding)
 
 	started := l.clock.Now()
 	run := Run{App: AppFromTag(tag), Tag: tag, StartedAt: started, QueueWait: started.Sub(queued), Node: nodeID, Platform: HostPlatform()}

@@ -14,7 +14,7 @@ type openAPIRoute struct {
 	Description string
 }
 
-// openAPIRoutes holds all 2146 routes known to scripts/gen-api-reference at
+// openAPIRoutes holds all 2151 routes known to scripts/gen-api-reference at
 // generation time. Run `go run ./scripts/gen-api-reference` after changing
 // any routes*.go registration and commit the result.
 var openAPIRoutes = []openAPIRoute{
@@ -1183,6 +1183,11 @@ var openAPIRoutes = []openAPIRoute{
 	{Method: "GET", Path: "/api/v1/builds/cache", Ability: "AbilityRead", Group: "Other", Handler: "handleBuildCache", Description: ""},
 	{Method: "POST", Path: "/api/v1/builds/cache/prune", Ability: "AbilityWriteSensitive", Group: "Other", Handler: "handleBuildCachePrune", Description: "Pruning frees disk shared by every app's builds, so write-sensitive even as a preview."},
 	{Method: "GET", Path: "/api/v1/builds/cache/quota", Ability: "AbilityRead", Group: "Other", Handler: "handleBuildCacheQuota", Description: "The report filters reclaims to the caller's apps; budgets change through runtime settings."},
+	{Method: "POST", Path: "/api/v1/builds/kill-all", Ability: "AbilityWriteSensitive", Group: "Other", Handler: "handleKillAllBuilds", Description: ""},
+	{Method: "GET", Path: "/api/v1/builds/queue", Ability: "AbilityRead", Group: "Other", Handler: "handleGetBuildQueue", Description: ""},
+	{Method: "POST", Path: "/api/v1/builds/queue/drain", Ability: "AbilityWriteSensitive", Group: "Other", Handler: "handleBuildQueueDrain", Description: ""},
+	{Method: "POST", Path: "/api/v1/builds/queue/pause", Ability: "AbilityWriteSensitive", Group: "Other", Handler: "handleBuildQueuePause", Description: "Holding or killing builds stops every app's deploys, so write-sensitive; kill-all also needs step-up."},
+	{Method: "POST", Path: "/api/v1/builds/queue/resume", Ability: "AbilityWriteSensitive", Group: "Other", Handler: "handleBuildQueueResume", Description: ""},
 	{Method: "GET", Path: "/api/v1/builds/{id}", Ability: "AbilityRead", Group: "Other", Handler: "handleGetBuild", Description: ""},
 	{Method: "GET", Path: "/api/v1/cdn/overview", Ability: "AbilityRead", Group: "Other", Handler: "handleCDNOverview", Description: ""},
 	{Method: "GET", Path: "/api/v1/changelog", Ability: "AbilityRead", Group: "Other", Handler: "handleGetChangelog", Description: "\"What's new\" dashboard panel: recent entries parsed from the repo's own CHANGELOG.md, AbilityRead like updates above."},
