@@ -12,6 +12,7 @@ import {
 } from '@tanstack/react-query'
 import { databaseKeys } from './databases'
 import { ApiError, readErrorMessage } from '../lib/apiError'
+import { useInvalidatingMutation } from '../lib/useInvalidatingMutation'
 import type {
   DbPage,
   DbPageParams,
@@ -172,19 +173,14 @@ export function useQueryHistory(name: string) {
 }
 
 export function useClearQueryHistory(name: string) {
-  const queryClient = useQueryClient()
-  return useMutation({
+  return useInvalidatingMutation({
     mutationFn: () =>
       request<void>(
         `${base(name)}/query-history`,
         { method: 'DELETE' },
         'clear history',
       ),
-    onSuccess: () => {
-      void queryClient.invalidateQueries({
-        queryKey: databaseViewerKeys.history(name),
-      })
-    },
+    invalidate: () => [databaseViewerKeys.history(name)],
   })
 }
 
@@ -201,8 +197,7 @@ export function useSavedQueries(name: string) {
 }
 
 export function useSaveQuery(name: string) {
-  const queryClient = useQueryClient()
-  return useMutation({
+  return useInvalidatingMutation({
     meta: { errorToast: false },
     mutationFn: (input: { name: string; sql: string }) =>
       request<DbSavedQuery>(
@@ -210,28 +205,19 @@ export function useSaveQuery(name: string) {
         postJson(input),
         'save query',
       ),
-    onSuccess: () => {
-      void queryClient.invalidateQueries({
-        queryKey: databaseViewerKeys.saved(name),
-      })
-    },
+    invalidate: () => [databaseViewerKeys.saved(name)],
   })
 }
 
 export function useDeleteSavedQuery(name: string) {
-  const queryClient = useQueryClient()
-  return useMutation({
+  return useInvalidatingMutation({
     mutationFn: (id: string) =>
       request<void>(
         `${base(name)}/saved-queries/${encodeURIComponent(id)}`,
         { method: 'DELETE' },
         'delete saved query',
       ),
-    onSuccess: () => {
-      void queryClient.invalidateQueries({
-        queryKey: databaseViewerKeys.saved(name),
-      })
-    },
+    invalidate: () => [databaseViewerKeys.saved(name)],
   })
 }
 

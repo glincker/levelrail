@@ -1,8 +1,9 @@
 // Alert templates (POST /api/v1/apps/{name}/alerts/apply-template) and
 // channel quiet hours (/api/v1/notification-channels/{id}/quiet-hours).
 
-import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query'
+import { useQuery } from '@tanstack/react-query'
 import { ApiError, readErrorMessage } from '../lib/apiError'
+import { useInvalidatingMutation } from '../lib/useInvalidatingMutation'
 import { alertRuleKeys } from './alerts'
 import type { AlertRule } from '../types/alerts'
 
@@ -30,8 +31,7 @@ async function ensureOk(res: Response, fallback: string): Promise<void> {
 }
 
 export function useApplyAlertTemplate(appName: string) {
-  const queryClient = useQueryClient()
-  return useMutation({
+  return useInvalidatingMutation({
     mutationFn: async (req: {
       profile: AlertProfile
       channel_id?: string
@@ -47,11 +47,7 @@ export function useApplyAlertTemplate(appName: string) {
       await ensureOk(res, `apply alert template failed: ${res.status}`)
       return (await res.json()) as ApplyAlertTemplateResult
     },
-    onSuccess: () => {
-      void queryClient.invalidateQueries({
-        queryKey: alertRuleKeys.list(appName),
-      })
-    },
+    invalidate: () => [alertRuleKeys.list(appName)],
   })
 }
 
@@ -69,8 +65,7 @@ export function useChannelQuietHours(channelId: string) {
 }
 
 export function useSaveChannelQuietHours(channelId: string) {
-  const queryClient = useQueryClient()
-  return useMutation({
+  return useInvalidatingMutation({
     mutationFn: async (q: QuietHours | null): Promise<void> => {
       const res = await fetch(
         `/api/v1/notification-channels/${encodeURIComponent(channelId)}/quiet-hours`,
@@ -84,8 +79,6 @@ export function useSaveChannelQuietHours(channelId: string) {
       )
       await ensureOk(res, `save quiet hours failed: ${res.status}`)
     },
-    onSuccess: () => {
-      void queryClient.invalidateQueries({ queryKey: quietKey(channelId) })
-    },
+    invalidate: () => [quietKey(channelId)],
   })
 }
