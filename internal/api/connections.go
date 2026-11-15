@@ -4,6 +4,7 @@ import (
 	"context"
 	"encoding/json"
 	"errors"
+	"fmt"
 	"net/http"
 	"strings"
 	"time"
@@ -22,7 +23,8 @@ type connectionCatalogResponse struct {
 }
 
 type appBindingsResponse struct {
-	Bindings []connhub.Binding `json:"bindings"`
+	Bindings []connhub.Binding         `json:"bindings"`
+	Resolved []connhub.ResolvedBinding `json:"resolved"`
 }
 
 // connectionMetaRequest: an empty scope_type keeps the scope; a nil time keeps it and "" clears it.
@@ -124,7 +126,8 @@ func (rt *Router) handleSetConnectionMeta(w http.ResponseWriter, r *http.Request
 		return
 	}
 	ref := r.PathValue("ref")
-	if _, err := rt.connectionHub().Get(r.Context(), ref); errors.Is(err, connhub.ErrNotFound) {
+	conn, err := rt.connectionHub().Get(r.Context(), ref)
+	if errors.Is(err, connhub.ErrNotFound) {
 		writeError(w, http.StatusNotFound, "connection not found")
 		return
 	} else if err != nil {
@@ -142,6 +145,10 @@ func (rt *Router) handleSetConnectionMeta(w http.ResponseWriter, r *http.Request
 		return
 	}
 	cur.Ref = ref
+	oldType, oldID := cur.ScopeType, cur.ScopeID
+	if oldType == "" {
+		oldType = store.ConnectionScopeInstance
+	}
 	if req.ScopeType != "" {
 		cur.ScopeType, cur.ScopeID = req.ScopeType, strings.TrimSpace(req.ScopeID)
 	}
@@ -157,8 +164,11 @@ func (rt *Router) handleSetConnectionMeta(w http.ResponseWriter, r *http.Request
 		writeError(w, http.StatusBadRequest, "scope_type must be instance, org or app")
 		return
 	}
-	if cur.ScopeType == store.ConnectionScopeApp {
-		if !rt.authorizeRefs(w, r, AbilityWriteSensitive, notFoundAs(http.StatusBadRequest, "unknown app for scope_id"), appRef(cur.ScopeID)) {
+	if cur.ScopeType != oldType || cur.ScopeID != oldID {
+		if !rt.authorizeScopeChange(w, r, oldType, oldID, cur.ScopeType, cur.ScopeID) {
+			return
+		}
+		if !rt.refuseOrphanedBindings(w, r, conn, cur.ScopeType, cur.ScopeID) {
 			return
 		}
 	}
@@ -192,10 +202,118 @@ func (rt *Router) handleListAppBindings(w http.ResponseWriter, r *http.Request) 
 		rt.internalError(w, "api: list app bindings: load app failed", err)
 		return
 	}
-	list, err := rt.connectionHub().AppBindings(r.Context(), name)
+	hub := rt.connectionHub()
+	list, err := hub.AppBindings(r.Context(), name)
 	if err != nil {
 		rt.internalError(w, "api: list app bindings failed", err)
 		return
 	}
-	writeJSON(w, http.StatusOK, appBindingsResponse{Bindings: list})
+	resolved, err := rt.resolveAppBindings(r.Context(), hub, name, list)
+	if err != nil {
+		rt.internalError(w, "api: resolve app bindings failed", err)
+		return
+	}
+	writeJSON(w, http.StatusOK, appBindingsResponse{Bindings: list, Resolved: resolved})
+}
+
+// resolveAppBindings adds the app's org defaults under the app's own rows and
+// drops any stored row whose connection scope no longer covers the app.
+func (rt *Router) resolveAppBindings(ctx context.Context, hub *connhub.Service, name string, own []connhub.Binding) ([]connhub.ResolvedBinding, error) {
+	team, err := rt.appTeam(ctx, name)
+	if err != nil {
+		return nil, err
+	}
+	var org []connhub.Binding
+	if bs, ok := any(rt.apps).(bindingStore); ok {
+		rows, err := bs.ListConnectionBindingsByTarget(ctx, store.BindingTargetOrg, team)
+		if err != nil {
+			return nil, err
+		}
+		for _, b := range rows {
+			org = append(org, bindingView(b))
+		}
+	}
+	conns, err := hub.List(ctx, connhub.Filter{})
+	if err != nil {
+		return nil, err
+	}
+	byRef := make(map[string]connhub.Connection, len(conns))
+	for _, c := range conns {
+		byRef[c.Ref] = c
+	}
+	return connhub.Resolve(own, org, byRef, connhub.Target{Type: store.BindingTargetApp, ID: name, TeamID: team}), nil
+}
+
+// authorizeScopeChange needs authority over both ends: write:sensitive on an
+// app scope, admin on an org scope, so a scope never moves off a resource the
+// caller does not manage.
+func (rt *Router) authorizeScopeChange(w http.ResponseWriter, r *http.Request, oldType, oldID, newType, newID string) bool {
+	switch oldType {
+	case store.ConnectionScopeApp:
+		if !rt.authorizeRefs(w, r, AbilityWriteSensitive, notFoundAs(http.StatusForbidden, "changing this connection's scope needs write access to its current app"), appRef(oldID)) {
+			return false
+		}
+	case store.ConnectionScopeOrg:
+		ok, err := rt.orgAdministrable(r, oldID)
+		if err != nil {
+			rt.internalError(w, "api: set connection meta: org access", err)
+			return false
+		}
+		if !ok {
+			writeError(w, http.StatusForbidden, "changing this connection's scope needs admin on its current organization")
+			return false
+		}
+	}
+	switch newType {
+	case store.ConnectionScopeApp:
+		if _, err := rt.apps.GetDesiredService(r.Context(), newID); errors.Is(err, store.ErrServiceNotFound) {
+			writeError(w, http.StatusBadRequest, "unknown app for scope_id")
+			return false
+		} else if err != nil {
+			rt.internalError(w, "api: set connection meta: load app", err)
+			return false
+		}
+		return rt.authorizeRefs(w, r, AbilityWriteSensitive, notFoundAs(http.StatusBadRequest, "unknown app for scope_id"), appRef(newID))
+	case store.ConnectionScopeOrg:
+		if rt.organizations == nil {
+			writeError(w, http.StatusBadRequest, "unknown organization for scope_id")
+			return false
+		}
+		if _, err := rt.organizations.GetOrganization(r.Context(), newID); errors.Is(err, store.ErrOrganizationNotFound) {
+			writeError(w, http.StatusBadRequest, "unknown organization for scope_id")
+			return false
+		} else if err != nil {
+			rt.internalError(w, "api: set connection meta: load organization", err)
+			return false
+		}
+		ok, err := rt.orgAdministrable(r, newID)
+		if err != nil {
+			rt.internalError(w, "api: set connection meta: org access", err)
+			return false
+		}
+		if !ok {
+			writeError(w, http.StatusBadRequest, "unknown organization for scope_id")
+		}
+		return ok
+	}
+	return true
+}
+
+// refuseOrphanedBindings keeps every existing binding inside the scope.
+func (rt *Router) refuseOrphanedBindings(w http.ResponseWriter, r *http.Request, c connhub.Connection, scopeType, scopeID string) bool {
+	bs, ok := any(rt.apps).(bindingStore)
+	if !ok {
+		return true
+	}
+	c.ScopeType, c.ScopeID = scopeType, scopeID
+	n, err := rt.bindingsOutsideScope(r.Context(), bs, c)
+	if err != nil {
+		rt.internalError(w, "api: set connection meta: check bindings", err)
+		return false
+	}
+	if n > 0 {
+		writeError(w, http.StatusConflict, fmt.Sprintf("%d bindings fall outside the new scope; unbind them first", n))
+		return false
+	}
+	return true
 }

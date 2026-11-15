@@ -785,6 +785,8 @@ Endpoints for:
 | GET | /api/v1/apps/{name}/egress-report | AbilityRead | handleAppEgressReport |
 | GET | /api/v1/apps/{name}/bindings | AbilityRead | handleListAppBindings |
 | GET | /api/v1/apps/{name}/deploys/{deployId}/stages | AbilityRead | handleGetDeployStages |
+| POST | /api/v1/apps/{name}/bindings | AbilityWrite | handleCreateAppBinding |
+| DELETE | /api/v1/apps/{name}/bindings/{id} | AbilityWrite | handleDeleteAppBinding |
 | GET | /api/v1/apps/{name}/notes | AbilityRead |  |
 | PUT | /api/v1/apps/{name}/notes | AbilityWrite |  |
 
@@ -1070,6 +1072,9 @@ Endpoints for:
 | PUT | /api/v1/projects/{id}/default-environment | AbilityWrite | handleSetProjectDefaultEnvironment |
 | POST | /api/v1/projects/default-environments/backfill | AbilityWrite | handleBackfillDefaultEnvironments |
 | POST | /api/v1/projects/{id}/clone | AbilityWrite | handleCloneProject |
+| GET | /api/v1/organizations/{id}/bindings | AbilityRead | handleListOrgBindings |
+| POST | /api/v1/organizations/{id}/bindings | AbilityWriteSensitive | handleCreateOrgBinding |
+| DELETE | /api/v1/organizations/{id}/bindings/{bid} | AbilityWriteSensitive | handleDeleteOrgBinding |
 
 ## Nodes
 
