@@ -373,16 +373,18 @@ Already running everything else as containers? See [Docker](/docker) for `docker
 
 Images (both `linux/amd64` and `linux/arm64`, multi-arch):
 
-- `ghcr.io/glincker/levelrail` (control plane)
-- `ghcr.io/glincker/levelrail-agent` (node agent)
+- `ghcr.io/glincker/levelrail` and `docker.io/levelrail/levelrail` (control plane)
+- `ghcr.io/glincker/levelrail-agent` and `docker.io/levelrail/levelrail-agent` (node agent)
+
+GitHub Container Registry always has every tag. Docker Hub carries the same tags and the same digest once the maintainers enable the mirror, so check the release notes if a Docker Hub pull is missing.
 
 | Tag | Built from | Stability |
 | --- | --- | --- |
-| `:latest`, `:vX.Y`, `:vX.Y.Z` | a non-prerelease tag (`v1.2.3`) | stable release |
-| `:beta` | a prerelease tag (`v1.2.3-beta.1`, `-rc.1`, etc.) | prerelease |
+| `:latest`, `:X`, `:X.Y`, `:X.Y.Z` and the same with a `v` prefix (`:vX`, `:vX.Y`, `:vX.Y.Z`) | a non-prerelease tag (`v1.2.3`) | stable release |
+| `:vX.Y.Z-rc.1` (exact), `:beta` (moving) | a prerelease tag (`v1.2.3-beta.1`, `-rc.1`, etc.) | prerelease |
 | `:edge` | manual dispatch of the Release workflow against `main` | unreleased, use for testing only |
 
-`:latest` and `:vX.Y` only move on a stable tag; `:beta` moves on every prerelease tag. `:edge` moves only when someone manually triggers a build against `main`, not on every push. Pin an exact `:vX.Y.Z` tag for anything you care about staying still.
+`:latest`, `:X` and `:X.Y` (and their `v` forms) only move on a stable tag; `:beta` moves on every prerelease tag. `:edge` moves only when someone manually triggers a build against `main`, not on every push. Pin an exact `:X.Y.Z` (or `:vX.Y.Z`) tag for anything you care about staying still.
 
 <Tip>
 `install.sh` remains the recommended path for a real single-node deployment since it also provisions Docker and a systemd unit. The Docker image is for operators who want Levelrail to fit into an existing container-only setup.
