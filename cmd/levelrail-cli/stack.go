@@ -442,16 +442,17 @@ func stackDiff(prog string, args []string, stdout, stderr io.Writer, lookupEnv f
 
 // stackManifestFlags are the flags shared by plan, apply and rollback.
 type stackManifestFlags struct {
-	files    stringListFlag
-	project  *string
-	prune    *bool
-	pruneSet bool
-	weaken   *bool
-	vars     stringMapFlag
-	varFiles stringListFlag
-	values   stringListFlag
-	allowEnv stringListFlag
-	secrets  stringMapFlag
+	files     stringListFlag
+	project   *string
+	prune     *bool
+	pruneSet  bool
+	weaken    *bool
+	massPrune *bool
+	vars      stringMapFlag
+	varFiles  stringListFlag
+	values    stringListFlag
+	allowEnv  stringListFlag
+	secrets   stringMapFlag
 	// confirmDestroy is set only on plan and apply; nil elsewhere.
 	confirmDestroy *string
 }
@@ -463,9 +464,10 @@ func bindConfirmDestroy(fs *flag.FlagSet, f *stackManifestFlags) {
 }
 
 func bindStackManifestFlags(fs *flag.FlagSet, withFiles bool) *stackManifestFlags {
-	f := &stackManifestFlags{vars: stringMapFlag{}, secrets: stringMapFlag{}, weaken: new(bool)}
+	f := &stackManifestFlags{vars: stringMapFlag{}, secrets: stringMapFlag{}, weaken: new(bool), massPrune: new(bool)}
 	if withFiles {
 		fs.BoolVar(f.weaken, "allow-weaken", false, "accept Setting documents that weaken a security protection (human root session only)")
+		fs.BoolVar(f.massPrune, "allow-mass-prune", false, "let a prune delete more than the stack prune guard allows (see settings stacks.prune_max_percent and stacks.prune_max_count)")
 		fs.Var(&f.files, "f", "resource file, directory or - for stdin (repeatable)")
 		f.project = fs.String("project", "", "project of the stack (default: the Stack document)")
 		f.prune = new(bool)
@@ -563,7 +565,7 @@ func buildStackRequest(name string, f *stackManifestFlags, lookupEnv func(string
 	if len(files) == 0 {
 		return apiclient.StackRequest{}, newValidationError("the files hold only a Stack document, add the resources to apply")
 	}
-	req := apiclient.StackRequest{Files: files, Attachments: attachments, Project: *f.project, Prune: *f.prune, AllowWeaken: *f.weaken}
+	req := apiclient.StackRequest{Files: files, Attachments: attachments, Project: *f.project, Prune: *f.prune, AllowWeaken: *f.weaken, AllowMassPrune: *f.massPrune}
 	if f.confirmDestroy != nil {
 		req.ConfirmDestroy = *f.confirmDestroy
 	}
@@ -645,6 +647,7 @@ Flags:
   --prune              plan deletions of resources the files no longer declare
   --confirm-destroy S  stack name typed to allow deleting compose apps and cloud resources in this run
   --allow-weaken       accept Setting documents that weaken a security protection (human root session only)
+  --allow-mass-prune   let a prune delete more than the prune guard allows (runtime settings stacks.prune_max_percent, stacks.prune_max_count)
   --var NAME=VALUE     value for a ${{ env.NAME }} placeholder (repeatable)
   --values FILE.yaml   flat YAML map of placeholder values (repeatable, later wins; beats --var-file)
   --var-file PATH      KEY=VALUE lines for placeholders (repeatable)
@@ -705,6 +708,7 @@ type stackRunFlags struct {
 	idemKey         *string
 	yes             *bool
 	job             *stackJobFlags
+	wait            *applyWaitFlags
 }
 
 func bindStackRunFlags(fs *flag.FlagSet, withFiles bool) *stackRunFlags {
@@ -733,7 +737,7 @@ const stackRunFlagsHelp = `
   --continue-on-error      keep applying after an item fails
   --secret NAME=ENVVAR     secret value read from a local environment variable; never printed or stored
   --idempotency-key K      a retry with the same key returns the stored revision
-  --yes                    do not ask for confirmation` + stackJobFlagsHelp + `
+  --yes                    do not ask for confirmation` + stackJobFlagsHelp + applyWaitHelp + `
 `
 
 func stackApply(prog string, args []string, stdout, stderr io.Writer, lookupEnv func(string) (string, bool)) int {
@@ -745,8 +749,9 @@ are filled from GITHUB_* variables or the local checkout. Exit codes: 0 applied,
 
 Flags:
   --confirm-destroy S      stack name typed to allow deleting compose apps and cloud resources in this run; --yes does not imply it
-  -f PATH, --project P, --prune, --allow-weaken, --var, --values, --var-file, --allow-env   as for plan`+stackRunFlagsHelp), args, stdout, stderr, lookupEnv, func(fs *flag.FlagSet) {
+  -f PATH, --project P, --prune, --allow-weaken, --allow-mass-prune, --var, --values, --var-file, --allow-env   as for plan`+stackRunFlagsHelp), args, stdout, stderr, lookupEnv, func(fs *flag.FlagSet) {
 		rf = bindStackRunFlags(fs, true)
+		rf.wait = bindApplyWaitFlags(fs)
 		bindConfirmDestroy(fs, rf.stackManifestFlags)
 	})
 	if !ok {
@@ -778,7 +783,10 @@ Flags:
 	if err != nil {
 		return iacFail(c, err)
 	}
-	return finishStackRun(c, raw, res, "applied")
+	if !*rf.wait.on {
+		return finishStackRun(c, raw, res, "applied")
+	}
+	return finishStackWait(ctx, c, rf.wait, lookupEnv, res)
 }
 
 // stackConfirmPlan prints the plan and asks. It pins the apply to the plan the
@@ -823,6 +831,10 @@ func finishStackRun(c cliCall, raw json.RawMessage, res apiclient.StackApplyResp
 	if rc != exitOK {
 		return rc
 	}
+	return stackRunExit(c, res)
+}
+
+func stackRunExit(c cliCall, res apiclient.StackApplyResponse) int {
 	if res.Revision == nil {
 		return iacExitError
 	}

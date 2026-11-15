@@ -232,18 +232,19 @@ type wireDatabase struct {
 }
 
 type wireApp struct {
-	Name        string            `json:"name"`
-	Image       string            `json:"image"`
-	Port        int64             `json:"port"`
-	BindAddress string            `json:"bind_address"`
-	Strategy    string            `json:"strategy"`
-	Replicas    int64             `json:"replicas"`
-	Domains     []string          `json:"domains"`
-	Env         map[string]string `json:"env"`
-	ProjectID   string            `json:"project_id"`
-	Command     []string          `json:"command"`
-	Labels      map[string]string `json:"labels"`
-	Resources   struct {
+	Name               string            `json:"name"`
+	Image              string            `json:"image"`
+	RegistryCredential string            `json:"registry_credential,omitempty"`
+	Port               int64             `json:"port"`
+	BindAddress        string            `json:"bind_address"`
+	Strategy           string            `json:"strategy"`
+	Replicas           int64             `json:"replicas"`
+	Domains            []string          `json:"domains"`
+	Env                map[string]string `json:"env"`
+	ProjectID          string            `json:"project_id"`
+	Command            []string          `json:"command"`
+	Labels             map[string]string `json:"labels"`
+	Resources          struct {
 		MemoryBytes int64 `json:"memory_bytes"`
 		NanoCPUs    int64 `json:"nano_cpus"`
 	} `json:"resources"`

@@ -2502,11 +2502,247 @@
     "viewYaml": "YAML",
     "viewForm": "表单",
     "formLoading": "正在加载表单",
+    "stack": {
+      "title": "Stack 历史",
+      "pick": "Stack",
+      "none": "还没有 stack。应用 stack 后,修订会显示在这里。",
+      "timeline": "修订时间线",
+      "noRevisions": "还没有修订。",
+      "loadFailed": "无法加载修订。",
+      "driftNone": "与最近一次应用的修订没有偏差。",
+      "diffLive": "与实时状态比较"
+    },
+    "planAction": {
+      "create": "创建",
+      "update": "更新",
+      "delete": "删除",
+      "noop": "无变化",
+      "error": "错误"
+    },
     "multiDoc": "此文本包含多个文档。表单以只读方式显示第一个。请使用 YAML 编辑以修改任何一个。",
     "parseLine": "此文档无法解析（第 {{line}} 行）。",
     "editAsYaml": "以 YAML 编辑",
     "exportedNote": "已从实时状态导出。密钥不会被包含，而是以引用形式导出。",
     "copyYaml": "复制 YAML",
-    "copied": "已复制"
+    "copied": "已复制",
+    "localTemplates": {
+      "cron-job": {
+        "title": "定时任务",
+        "description": "按计划运行命令，或调用应用上的路径。"
+      }
+    }
+  },
+  "iacPlan": {
+    "fix": "解决办法：{{hint}}",
+    "codes": {
+      "item_failed": {
+        "message": "该项失败。",
+        "fix": "查看计划行上的消息。"
+      },
+      "permission_denied": {
+        "message": "该令牌无权修改此资源。",
+        "fix": "使用具备所需权限的令牌，或从文件中移除该资源。"
+      },
+      "protected_resource": {
+        "message": "该资源受保护，不能做此更改。",
+        "fix": "取消保护，或在文件中声明它。"
+      },
+      "immutable_field": {
+        "message": "某个字段不能就地修改。",
+        "fix": "有意重建该资源，或把字段改回当前值。"
+      },
+      "synced_externally": {
+        "message": "此资源由外部来源管理。",
+        "fix": "请在其来源处修改。"
+      },
+      "ref_project_missing": {
+        "message": "项目不存在，也未声明。",
+        "fix": "添加 Project 文档或修正名称。"
+      },
+      "ref_environment_missing": {
+        "message": "环境不存在，也未声明。",
+        "fix": "添加 Environment 文档或修正名称。"
+      },
+      "ref_app_missing": {
+        "message": "应用不存在，也未声明。",
+        "fix": "添加 App 文档或修正名称。"
+      },
+      "ref_secret_missing": {
+        "message": "引用指向的密钥不存在。",
+        "fix": "先创建该密钥，或去掉 existing: true。"
+      },
+      "schema_unknown_field": {
+        "message": "某个字段不属于该类型的架构。",
+        "fix": "对照参考文档检查拼写，或移除该字段。"
+      },
+      "plan_stale": {
+        "message": "计划生成后，实际状态已发生变化。",
+        "fix": "重新运行计划并应用新计划。"
+      },
+      "stack_locked": {
+        "message": "该堆栈已锁定，禁止手动更改。",
+        "fix": "修改清单后应用，或联系管理员。"
+      },
+      "prune_guard": {
+        "message": "清理将删除超过保护阈值的内容。",
+        "fix": "检查计划，若确为有意操作再确认批量清理。"
+      },
+      "invalid_document": {
+        "message": "文档未通过校验。",
+        "fix": "查看问题行中的文件、行号和字段。"
+      },
+      "invalid_name": {
+        "message": "资源名称不符合命名规则。",
+        "fix": "在 metadata.name 中使用小写字母、数字和连字符。"
+      },
+      "cron_schedule_invalid": {
+        "message": "定时表达式无效。",
+        "fix": "修正 spec.schedule，例如 0 3 * * *。"
+      },
+      "cron_job_invalid": {
+        "message": "定时任务的名称、命令、时区或限制无效。",
+        "fix": "查看问题行中的字段并修正。"
+      },
+      "cron_http_invalid": {
+        "message": "定时任务的 http 调用无效。",
+        "fix": "路径保持在应用上，并为每个请求头提供值或 secretRef。"
+      },
+      "alert_rule_invalid": {
+        "message": "告警规则缺少指标、比较符或阈值。",
+        "fix": "三者都要设置，比较符为 >、<、>= 或 <=。"
+      },
+      "registry_credential_not_found": {
+        "message": "构建引用了控制平面上不存在的镜像仓库凭据。",
+        "fix": "请先用 registry-credentials create 创建该凭据，或修正名称。"
+      },
+      "environment_protected": {
+        "message": "应用将被绑定到受保护的环境。",
+        "fix": "取消环境保护，或通过正常审批流程部署。"
+      },
+      "unavailable": {
+        "message": "控制平面不提供此类资源。",
+        "fix": "请确认控制平面运行的版本支持该类型。"
+      },
+      "read_failed": {
+        "message": "无法读取该资源的当前状态,因此无法比较。",
+        "fix": "请重试。若反复出现,请查看控制平面日志。"
+      },
+      "schema_version_unsupported": {
+        "message": "文档的 version 不是此控制平面可读取的版本。",
+        "fix": "请设置 version: 1。"
+      },
+      "ownership_conflict": {
+        "message": "该资源已归属于另一个堆栈或来源。",
+        "fix": "请从拥有它的堆栈或来源应用,或先在那里释放它。"
+      },
+      "plan_hash_version": {
+        "message": "提交的计划哈希使用旧的无密钥格式,此控制平面不再接受。",
+        "fix": "请重新运行计划以获取当前哈希。"
+      },
+      "stack_source_sync": {
+        "message": "该堆栈从某个来源同步,因此直接应用被拒绝。",
+        "fix": "请修改来源,而不是堆栈。"
+      },
+      "apply_disabled": {
+        "message": "此控制平面或堆栈已关闭应用功能。",
+        "fix": "请联系管理员启用。"
+      },
+      "invalid_request": {
+        "message": "请求本身格式错误,例如缺少字段或字段无法读取。",
+        "fix": "请修正请求后重新发送。"
+      },
+      "approval_pending": {
+        "message": "云计划会替换某个待审批修订已保存的引擎计划。",
+        "fix": "请先批准或拒绝所指修订,或使用 supersede=true 规划以废弃它。"
+      },
+      "plan_superseded": {
+        "message": "后来的计划替换了此审批所指的已保存引擎计划。",
+        "fix": "请重新规划并申请新的审批。"
+      },
+      "interrupted": {
+        "message": "计划任务运行期间控制平面已停止。",
+        "fix": "请重新规划。"
+      },
+      "plan_job_not_found": {
+        "message": "该堆栈不存在此 ID 的计划任务,或已在保留期后被删除。",
+        "fix": "请检查任务 ID,或重新规划。"
+      },
+      "plan_timeout": {
+        "message": "计划任务运行超过了 cloud.engine_timeout_seconds。",
+        "fix": "请重新规划,或调高 cloud.engine_timeout_seconds。"
+      },
+      "sync_repo_unreachable": {
+        "message": "无法获取已同步堆栈的 git 仓库,或无法使用其凭据。",
+        "fix": "请检查仓库 URL、分支和 credential_ref,然后执行同步刷新。"
+      },
+      "sync_path_invalid": {
+        "message": "同步路径超出检出目录、指向 .git 或包含符号链接。",
+        "fix": "请使用不含 .. 且不含符号链接的相对路径。"
+      },
+      "sync_limits_exceeded": {
+        "message": "仓库或同步路径下的文件超出了大小或数量限制。",
+        "fix": "请精简路径,或调高 stacks.sync_max_repo_mb、stacks.sync_max_files 或 stacks.sync_max_file_kb。"
+      },
+      "sync_plan_failed": {
+        "message": "同步路径下的文档未通过校验或无法规划。",
+        "fix": "请在同一提交上运行 CLI 计划以查看每个问题。"
+      },
+      "compose_path_invalid": {
+        "message": "spec.compose.path 是绝对路径、包含 ..、反斜杠或 NUL 字节,或经过符号链接。",
+        "fix": "请使用所应用文件夹内的相对路径,例如 compose/shop.yaml。"
+      },
+      "compose_ref_missing": {
+        "message": "某个 App 引用了未随请求发送的 compose 文件。",
+        "fix": "请使用当前版本 CLI,在包含该文件的文件夹中应用,并检查路径。"
+      },
+      "compose_too_large": {
+        "message": "单个 compose 文件或全部文件合计超出大小上限。",
+        "fix": "请拆分项目,或调高 iac.compose_max_file_kb 或 iac.compose_max_total_kb。"
+      },
+      "compose_too_many_files": {
+        "message": "请求中的 compose 文件数量超过上限。",
+        "fix": "请一次应用更少的 compose App,或调高 iac.compose_max_files。"
+      },
+      "compose_mode_conflict": {
+        "message": "某个 App 同时设置了 spec.compose 和 spec.service。",
+        "fix": "请只保留一个:compose 项目用 spec.compose,单个服务用 spec.service。"
+      },
+      "compose_unsupported_key": {
+        "message": "被引用的 compose 文件使用了严格模式拒绝的键,例如 build、env_file、include、extends.file 或未知的顶层键。",
+        "fix": "请移除该键;把值放入 spec.compose.env,并在应用前构建镜像。"
+      },
+      "compose_rejected": {
+        "message": "被引用的 compose 文件违反了防护规则,例如 privileged、主机网络、绑定挂载、套接字挂载或有风险的 extra_hosts 条目。消息会指明具体规则。",
+        "fix": "请移除规则所指的设置;IaC 的 compose App 永远不会获得主机访问权限。"
+      },
+      "compose_secret_literal": {
+        "message": "被引用的 compose 文件包含疑似明文密钥的内容。消息会指明服务和键,绝不显示值。",
+        "fix": "请把该值替换为 ${NAME},并在 spec.compose.env 中用 secretRef 声明 NAME。"
+      },
+      "compose_var_missing": {
+        "message": "被引用的 compose 文件中的 ${VAR} 未在 spec.compose.env 中声明。主机环境变量永远不会被读取。",
+        "fix": "请在 spec.compose.env 中声明该变量,或用 ${VAR:-value} 提供默认值。"
+      },
+      "compose_no_deploy_unsupported": {
+        "message": "对包含 compose App 的计划请求了 no_deploy,而 compose 端点每次保存都会部署。",
+        "fix": "请不使用 no_deploy 应用,或在本次应用中排除该 compose App。"
+      },
+      "compose_apply_failed": {
+        "message": "compose App 已部署,但随后设置其项目、环境或标签,或把它记入堆栈账本时失败。首次部署会通过 compose 删除路径撤回(保留命名卷);重新部署则保持运行。",
+        "fix": "请修复错误中指出的原因,然后重新规划并应用;重新部署失败后,下一次计划会显示漂移。"
+      },
+      "sync_secret_in_repo": {
+        "message": "已同步的文档包含明文密钥值。状态会指明文件和行号,绝不显示值。",
+        "fix": "请把明文替换为 secretRef,通过密钥 API 设置该值,并轮换已泄露的凭据。"
+      },
+      "sync_disk_low": {
+        "message": "可用磁盘低于 stacks.sync_min_free_mb,因此同步未获取任何内容。",
+        "fix": "请释放控制平面数据卷的磁盘空间,或调低该设置。"
+      },
+      "sync_apply_failed": {
+        "message": "同步应用被拒绝或失败,堆栈保持不变。",
+        "fix": "请在同一提交上运行堆栈计划;检查堆栈锁、受保护的应用和应用设置。"
+      }
+    }
   }
 }

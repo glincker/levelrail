@@ -19,6 +19,7 @@ func appBody(f appFields) map[string]any {
 	setOrClear(body, "secret_env", f.SecretEnv, len(f.SecretEnv) > 0)
 	setOrClear(body, "labels", f.Labels, len(f.Labels) > 0)
 	setOrClear(body, "command", f.Command, len(f.Command) > 0)
+	setOrClear(body, "registry_credential", f.RegistryCredential, f.RegistryCredential != "")
 	if f.HostPort > 0 {
 		body["host_port"] = f.HostPort
 	} else {

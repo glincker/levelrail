@@ -89,15 +89,20 @@ func TestMobileAPI_Live_PairAndRevoke(t *testing.T) {
 		_ = resp.Body.Close()
 		return resp.StatusCode
 	}
+	dump := func() string {
+		_, audit := call(admin, http.MethodGet, "/api/v1/audit-log", "")
+		_, devices := call(admin, http.MethodGet, "/api/v1/mobile/devices", "")
+		return "audit log: " + string(audit) + "\ndevices: " + string(devices)
+	}
 	if got := bearer(http.MethodGet, "/api/v1/mobile/overview"); got != http.StatusOK {
-		t.Fatalf("overview with device token = %d", got)
+		t.Fatalf("overview with device token = %d\n%s", got, dump())
 	}
 
 	if status, body := call(admin, http.MethodDelete, "/api/v1/mobile/devices/"+dev.DeviceID, ""); status != http.StatusNoContent {
 		t.Fatalf("revoke = %d %s", status, body)
 	}
 	if got := bearer(http.MethodGet, "/api/v1/mobile/overview"); got != http.StatusUnauthorized {
-		t.Fatalf("revoked token = %d, want 401", got)
+		t.Fatalf("revoked token = %d, want 401\n%s", got, dump())
 	}
 
 	// Pairing and revoke must both leave an audit trail.
@@ -107,7 +112,7 @@ func TestMobileAPI_Live_PairAndRevoke(t *testing.T) {
 	}
 	for _, action := range []string{"mobile.pairing_created", "mobile.paired", "mobile.revoked"} {
 		if !strings.Contains(string(body), `"`+action+`"`) {
-			t.Errorf("audit log lacks %s: %s", action, body)
+			t.Errorf("audit log lacks %s: %s\n%s", action, body, dump())
 		}
 	}
 }

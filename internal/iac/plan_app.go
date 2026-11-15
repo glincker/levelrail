@@ -30,11 +30,16 @@ func copyFields(in map[string]any) map[string]any {
 // domain list, so the two declaration styles never fight over ownership.
 func (p *planner) desiredDomains(r *Resource) []string {
 	hosts := stringList(r.Fields["domains"])
-	for _, o := range p.res {
-		if o.Kind == KindDomain && stringField(o.Fields, "app") == r.Name {
-			hosts = append(hosts, o.Name)
+	if p.domainsByApp == nil {
+		p.domainsByApp = map[string][]string{}
+		for _, o := range p.res {
+			if o.Kind == KindDomain {
+				app := stringField(o.Fields, "app")
+				p.domainsByApp[app] = append(p.domainsByApp[app], o.Name)
+			}
 		}
 	}
+	hosts = append(hosts, p.domainsByApp[r.Name]...)
 	return sortedUnique(hosts)
 }
 
@@ -191,6 +196,9 @@ func livePlacement(live, want any) any {
 }
 
 func (p *planner) checkAppRefs(r *Resource, f map[string]any) bool {
+	if !p.checkRegistryCredential(r, f) {
+		return false
+	}
 	if proj := stringField(f, "project"); proj != "" && !p.projectKnown(proj) {
 		p.failCode(r, CodeRefProjectMissing, "project %q does not exist and is not declared in the files", proj)
 		return false
@@ -206,6 +214,24 @@ func (p *planner) checkAppRefs(r *Resource, f map[string]any) bool {
 		p.failCode(r, CodeRefEnvironmentMissing, "environment %q does not exist in project %q and is not declared in the files", env, proj)
 		return false
 	}
+	return !p.refuseProtectedEnvBind(r, proj, env)
+}
+
+// refuseProtectedEnvBind fails the plan when an App would be bound into a protected
+// environment, because the bind endpoint demands a confirm flag plan and apply cannot carry.
+func (p *planner) refuseProtectedEnvBind(r *Resource, proj, env string) bool {
+	live, liveOK := p.st.envs[envKey(proj, env)]
+	protected := liveOK && live.Protected
+	if d, ok := p.byKey[resourceKey(KindEnvironment, proj, env)]; ok {
+		protected, _ = d.Fields["protected"].(bool)
+	}
+	if !protected {
+		return false
+	}
+	if app, ok := p.st.apps[r.Name]; ok && liveOK && app.wire.EnvironmentID == live.ID {
+		return false
+	}
+	p.failCode(r, CodeEnvironmentProtected, "IaC binding into a protected environment is unsupported: environment %q is protected; unprotect it or deploy through the normal approval path", env)
 	return true
 }
 
@@ -279,4 +305,21 @@ func withDefaultTag(ref string) string {
 		return ref + ":latest"
 	}
 	return ref
+}
+
+// checkRegistryCredential fails the plan for a credential name the control plane does not list.
+func (p *planner) checkRegistryCredential(r *Resource, f map[string]any) bool {
+	name := stringField(f, "registryCredential")
+	if name == "" {
+		return true
+	}
+	if err, denied := p.st.denied[keyRegistryList]; denied {
+		p.failCode(r, CodeReadFailed, "registry credentials cannot be read to check %q: %v", name, err)
+		return false
+	}
+	if !p.st.credentials[name] {
+		p.failCode(r, CodeRegistryCredentialNotFound, "registry credential %q does not exist; create it with registry-credentials create first", name)
+		return false
+	}
+	return true
 }

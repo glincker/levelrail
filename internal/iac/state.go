@@ -30,10 +30,12 @@ type State struct {
 	envs         map[string]wireEnvironment
 	envsByID     map[string]wireEnvironment
 	tags         map[string]wireTag
-	databases    map[string]wireDatabase
-	nodes        map[string]*liveNode
-	nodeDupes    map[string]bool
-	nodeNames    map[string]string
+	// credentials holds live registry credential names; read only when an App declares one.
+	credentials map[string]bool
+	databases   map[string]wireDatabase
+	nodes       map[string]*liveNode
+	nodeDupes   map[string]bool
+	nodeNames   map[string]string
 	// settings maps a declared key to its live value; nil means the key is unknown.
 	settings   map[string]*liveSetting
 	apps       map[string]*liveApp
@@ -75,7 +77,7 @@ func envKey(project, name string) string { return project + "/" + name }
 func newState() *State {
 	return &State{
 		projects: map[string]wireProject{}, projectsByID: map[string]wireProject{}, envs: map[string]wireEnvironment{}, envsByID: map[string]wireEnvironment{},
-		tags: map[string]wireTag{}, databases: map[string]wireDatabase{}, nodes: map[string]*liveNode{}, nodeDupes: map[string]bool{}, nodeNames: map[string]string{}, settings: map[string]*liveSetting{}, apps: map[string]*liveApp{}, lbs: map[string]wireLB{},
+		tags: map[string]wireTag{}, credentials: map[string]bool{}, databases: map[string]wireDatabase{}, nodes: map[string]*liveNode{}, nodeDupes: map[string]bool{}, nodeNames: map[string]string{}, settings: map[string]*liveSetting{}, apps: map[string]*liveApp{}, lbs: map[string]wireLB{},
 		pipelines: map[string]map[string]wirePipeline{}, alerts: map[string]map[string]wireAlert{}, channels: map[string]string{},
 		projectEnv: map[string]map[string]string{}, envEnv: map[string]map[string]string{}, managed: map[string]bool{}, protected: map[string]bool{}, compose: map[string]*liveCompose{}, denied: map[string]error{}, envsLoaded: map[string]bool{},
 	}
@@ -160,7 +162,7 @@ func referencedApps(res []*Resource) map[string]bool {
 			if a, _ := r.Fields["app"].(string); a != "" {
 				out[a] = true
 			}
-		case KindPipeline, KindAlertRule:
+		case KindPipeline, KindAlertRule, KindCronJob:
 			out[r.Scope] = true
 		}
 	}
@@ -208,6 +210,9 @@ func (l loader) base(ctx context.Context, res []*Resource) error {
 	}
 	for _, db := range dbs {
 		l.st.databases[db.Name] = db
+	}
+	if err := l.registryCredentials(ctx, res); err != nil {
+		return err
 	}
 	if err := l.nodes(ctx, res); err != nil {
 		return err
@@ -371,6 +376,8 @@ func (l loader) scopedOne(ctx context.Context, r *Resource, loadEnvs func(string
 		return l.pipelinesOf(ctx, r.Scope)
 	case KindAlertRule:
 		return l.alertsOf(ctx, r.Scope)
+	case KindCronJob:
+		return l.jobsOf(ctx, r.Scope)
 	}
 	return nil
 }
@@ -527,3 +534,26 @@ func (st *State) ManagedApps() []string {
 	sort.Strings(out)
 	return out
 }
+
+// registryCredentials lists credential names only when an App references one.
+func (l loader) registryCredentials(ctx context.Context, res []*Resource) error {
+	want := false
+	for _, r := range res {
+		want = want || (r.Kind == KindApp && stringField(r.Fields, "registryCredential") != "")
+	}
+	if !want {
+		return nil
+	}
+	var list []struct {
+		Name string `json:"name"`
+	}
+	if err := l.fetch(ctx, keyRegistryList, "list registry credentials", "/api/v1/registry-credentials", &list); err != nil {
+		return err
+	}
+	for _, c := range list {
+		l.st.credentials[c.Name] = true
+	}
+	return nil
+}
+
+const keyRegistryList = "registry-list"

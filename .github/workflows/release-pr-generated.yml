@@ -1,0 +1,59 @@
+name: release-pr-generated
+
+# Regenerates docs/changelog.mdx on the release-please PR branch. The push
+# needs the release App token (var RELEASE_APP_CLIENT_ID, secret
+# RELEASE_APP_PRIVATE_KEY) or secret RELEASE_PLEASE_TOKEN, otherwise CI
+# would not re-run on the new head. Without either, this job skips.
+on:
+  pull_request:
+    branches: [main]
+
+permissions:
+  contents: read
+
+jobs:
+  regenerate:
+    runs-on: ubuntu-latest
+    if: ${{ startsWith(github.head_ref, 'release-please--') && github.event.pull_request.head.repo.full_name == github.repository }}
+    env:
+      HAS_APP: ${{ vars.RELEASE_APP_CLIENT_ID != '' }}
+      HAS_PAT: ${{ secrets.RELEASE_PLEASE_TOKEN != '' }}
+    steps:
+      - name: Skip notice when no re-triggering token exists
+        if: ${{ env.HAS_APP != 'true' && env.HAS_PAT != 'true' }}
+        run: echo "::notice::No RELEASE_APP_CLIENT_ID var or RELEASE_PLEASE_TOKEN secret, skipping changelog regeneration."
+
+      - id: app-token
+        if: ${{ env.HAS_APP == 'true' }}
+        uses: actions/create-github-app-token@64ab729a6294000f5aa4a4bc0b73d1f32bc45510 # v3.3.0
+        with:
+          client-id: ${{ vars.RELEASE_APP_CLIENT_ID }}
+          private-key: ${{ secrets.RELEASE_APP_PRIVATE_KEY }}
+
+      - name: Checkout PR branch
+        if: ${{ env.HAS_APP == 'true' || env.HAS_PAT == 'true' }}
+        uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+        with:
+          ref: ${{ github.head_ref }}
+          token: ${{ steps.app-token.outputs.token || secrets.RELEASE_PLEASE_TOKEN }}
+
+      - uses: actions/setup-node@949feb2413d6458794dcd2491c4babbbce0c15c1 # v7
+        if: ${{ env.HAS_APP == 'true' || env.HAS_PAT == 'true' }}
+        with:
+          node-version: 22
+
+      - name: Regenerate and push when changed
+        if: ${{ env.HAS_APP == 'true' || env.HAS_PAT == 'true' }}
+        env:
+          HEAD_REF: ${{ github.head_ref }}
+        run: |
+          node scripts/gen-docs-pages.mjs
+          if git diff --quiet -- docs/changelog.mdx; then
+            echo "docs/changelog.mdx already fresh"
+            exit 0
+          fi
+          git config user.name "levelrail-release[bot]"
+          git config user.email "levelrail-release[bot]@users.noreply.github.com"
+          git add docs/changelog.mdx
+          git commit -m "chore: regenerate changelog page"
+          git push origin "HEAD:${HEAD_REF}"

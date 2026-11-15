@@ -1,0 +1,7 @@
+version: 1
+kind: App
+metadata: {name: web}
+spec:
+  service:
+    build: {type: image, image: "registry.example.com/acme/web:1.0.0", registryCredential: acme-pull}
+    port: 3000

@@ -105,6 +105,11 @@ func (rt *Router) createProjectForStack(w http.ResponseWriter, r *http.Request, 
 
 // emptyStackReason explains why the files plan to zero resources, naming what the project filter dropped.
 func emptyStackReason(req stackRequest, project string) string {
+	return emptyStackReasonMax(req, project, 0)
+}
+
+// emptyStackReasonMax lists at most maxNames dropped documents; 0 lists all.
+func emptyStackReasonMax(req stackRequest, project string, maxNames int) string {
 	docs := stackFileDocs(req)
 	if len(docs) == 0 {
 		return "the files hold no resource documents, so there is nothing to create"
@@ -122,7 +127,12 @@ func emptyStackReason(req stackRequest, project string) string {
 	if len(dropped) == 0 {
 		return "the files plan to zero resources, so there is nothing to create"
 	}
-	return fmt.Sprintf("the plan is empty: the project filter %q dropped %d of %d documents (%s); name the right project or fix their spec.project", project, len(dropped), len(docs), strings.Join(dropped, ", "))
+	total := len(dropped)
+	more := ""
+	if maxNames > 0 && total > maxNames {
+		dropped, more = dropped[:maxNames], fmt.Sprintf(" and %d more", total-maxNames)
+	}
+	return fmt.Sprintf("the plan is empty: the project filter %q dropped %d of %d documents (%s%s); name the right project or fix their spec.project", project, total, len(docs), strings.Join(dropped, ", "), more)
 }
 
 // resolveNewStack decides project and emptiness for a stack that does not exist yet.

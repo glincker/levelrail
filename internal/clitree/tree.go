@@ -472,7 +472,7 @@ var Tree = map[string]*Node{
 	"assets":         {Subs: map[string]*Node{"buckets": {Subs: map[string]*Node{"list": nil, "create": nil, "show": nil, "set": nil, "probe": nil, "delete": nil}}, "usage": nil, "ls": nil, "upload": nil, "url": nil, "rm": nil}},
 	"stack":          {Subs: map[string]*Node{"templates": nil, "init": nil, "list": nil, "show": nil, "create": nil, "plan": nil, "apply": nil, "history": nil, "show-revision": nil, "diff": nil, "rollback": nil, "approve": nil, "reject": nil, "pin": nil, "unpin": nil, "unlock": nil, "delete": nil, "settings": nil, "drift": nil, "adopt-from-export": nil, "trust": {Subs: map[string]*Node{"add": nil, "list": nil, "remove": nil}}, "sync": {Subs: map[string]*Node{"status": nil, "set": nil, "refresh": nil, "webhook-secret": {Subs: map[string]*Node{"rotate": nil}}}}, "cloud-state": {Subs: map[string]*Node{"list": nil, "recover": nil}}}},
 	"export":         {Subs: map[string]*Node{"destinations": {Subs: map[string]*Node{"list": nil, "create": nil, "test": nil, "status": nil, "enable": nil, "disable": nil, "delete": nil}}, "audit": nil}},
-	"import":         {Subs: map[string]*Node{"config": nil, "compose-ref": nil, "vercel": nil, "repo": {Subs: map[string]*Node{"plan": nil, "apply": nil}}, "platform": {Subs: map[string]*Node{"coolify": nil, "dokploy": nil, "caprover": nil}}, "k8s": nil, "cutover": {Subs: map[string]*Node{"plan": nil, "run": nil, "status": nil, "rollback": nil, "confirm-dns": nil}}, "takeover": {Subs: map[string]*Node{"plan": nil, "run": nil, "status": nil, "rollback": nil}}}},
+	"import":         {Subs: map[string]*Node{"config": nil, "compose-ref": nil, "deploy-yml": nil, "portainer": nil, "vercel": nil, "repo": {Subs: map[string]*Node{"plan": nil, "apply": nil}}, "platform": {Subs: map[string]*Node{"coolify": nil, "dokploy": nil, "caprover": nil}}, "k8s": nil, "cutover": {Subs: map[string]*Node{"plan": nil, "run": nil, "status": nil, "rollback": nil, "confirm-dns": nil}}, "takeover": {Subs: map[string]*Node{"plan": nil, "run": nil, "status": nil, "rollback": nil}}}},
 	"completion":     {Subs: map[string]*Node{"bash": nil, "zsh": nil, "fish": nil}},
 	"settings": {Subs: map[string]*Node{
 		"heartbeat":     {Subs: map[string]*Node{"show": nil, "set": nil, "clear": nil}},
@@ -541,4 +541,8 @@ func TierOf(verb string) Tier {
 }
 
 // db is the short alias for databases and shares its subtree.
-func init() { Tree["db"] = Tree["databases"] }
+func init() {
+	Tree["db"] = Tree["databases"]
+	// Top-level alias so scripts can create a project before a stack or app.
+	Tree["projects"] = Tree["apps"].Subs["projects"]
+}

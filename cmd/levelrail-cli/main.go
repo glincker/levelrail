@@ -97,6 +97,8 @@ func runDispatch(prog string, args []string, stdout, stderr io.Writer, lookupEnv
 		return runAnalysis(prog, args[1:], stdout, stderr, lookupEnv)
 	case "apps":
 		return runApps(prog, args[1:], stdout, stderr, lookupEnv)
+	case "projects":
+		return runAppsProjects(prog, args[1:], stdout, stderr, lookupEnv)
 	case "git":
 		return runGit(prog, args[1:], stdout, stderr, lookupEnv)
 	case "previews":
@@ -433,6 +435,7 @@ Usage:
   %[1]s vm init|start|stop|status|shell|set [flags]   run Levelrail in a private macOS VM (experimental, APP_VM_EXPERIMENTAL=on)
   %[1]s backup <database> [--target ID] [flags]   back a database up now, same as backups trigger
   %[1]s restore <database> --latest --confirm NAME [flags]   restore a database, same as backups restore
+  %[1]s projects list|get|create|delete [flags]   manage projects, same as apps projects
   %[1]s apps create [flags]         create an app
   %[1]s apps list [flags]             list apps
   %[1]s apps get <name> [flags]       show one app
@@ -609,6 +612,7 @@ Usage:
   %[1]s import platform coolify|dokploy|caprover|heroku|vercel|render --url URL [flags]   import apps from another platform, see "%[1]s import platform -h"
   %[1]s import config [dir] [--out FILE] [--strict] [--json]   offline: propose an app.yaml from Procfile, app.json and vercel.json, see "%[1]s import config -h"
   %[1]s import compose-ref [dir] [--write DIR] [--json]   offline: emit documents for the image services of compose files, see "%[1]s import compose-ref -h"
+  %[1]s import deploy-yml|portainer FILE [--write DIR] [--json]   offline: emit documents from a deploy.yml or a Portainer stack, see "%[1]s import deploy-yml -h"
   %[1]s import takeover plan|run|status|rollback [flags]   move this server's ports 80 and 443 from the old proxy to the built-in ingress, see "%[1]s import takeover -h"
   %[1]s completion bash|zsh|fish                          print a shell completion script, see "%[1]s completion -h"
   %[1]s settings oauth|email|ingress|ai-assistant get|set [flags]   configure OAuth sign-in, outbound email, ingress/ACME, and the BYOK AI assistant

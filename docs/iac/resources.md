@@ -12,7 +12,7 @@ A file holds one or more YAML documents separated by `---`. Every document has t
 
 ```yaml
 version: 1              # schema version, the only accepted value
-kind: App               # Project, Environment, Tag, Database, App, Domain, LoadBalancer, Pipeline, AlertRule
+kind: App               # Project, Environment, Tag, Database, App, Domain, LoadBalancer, Pipeline, AlertRule, CronJob
 metadata:
   name: web             # unique per kind (see each kind below)
   labels: {}            # free form, for your own tooling; not stored
@@ -122,6 +122,8 @@ The value is never read by apply. Apply records the reference (the same connecti
 `service.published_ports` binds ports straight on the host beside the routed `port`, for UDP services such as DNS or WireGuard. Each entry is `container_port`, `host_port` and `protocol` (`tcp`, the default, or `udp`), the same shape as app.yaml and the API. A port out of range, a protocol other than tcp or udp, or the same host port and protocol twice is rejected before the plan. Apply runs the same host port admission as `POST /api/v1/apps`: a port another app already publishes, a reserved port, or a service placed on a remote node fails the apply with the API's own message, and nothing is saved for that app.
 
 `service.port` may be left out when the service has at least one `published_ports` entry (a UDP-only DNS or VPN app). A service with `domains` still needs a `port`, since the proxy routes HTTP to it, and a service with neither a `port` nor `published_ports` is rejected.
+
+`service.build.registryCredential` names an existing registry credential used for private pulls. It is a reference only, never a secret value, and credentials are not a managed kind: create one first with `registry-credentials create`. A name the control plane does not list fails the plan with `registry_credential_not_found`. Changing the name is drift and shows as an update, and removing the line clears the credential. An export writes the name back.
 
 `service.restart` takes `no`, `on-failure` or `on-failure:N` for a service that runs to completion (a migration or seed job), and `always` or `unless-stopped`. The plan shows changes as `publishedPorts` and `restart`, an out-of-band change to either is drift, and revisions and rollbacks keep both. An app document without `published_ports` or `restart` leaves the live values alone; `published_ports: []` clears the ports.
 

@@ -17,14 +17,15 @@ import (
 type appResource struct{ resourceBase }
 
 type appModel struct {
-	Name        types.String `tfsdk:"name"`
-	Image       types.String `tfsdk:"image"`
-	Port        types.Int64  `tfsdk:"port"`
-	Replicas    types.Int64  `tfsdk:"replicas"`
-	Strategy    types.String `tfsdk:"strategy"`
-	BindAddress types.String `tfsdk:"bind_address"`
-	ProjectID   types.String `tfsdk:"project_id"`
-	Env         types.Map    `tfsdk:"env"`
+	Name               types.String `tfsdk:"name"`
+	Image              types.String `tfsdk:"image"`
+	RegistryCredential types.String `tfsdk:"registry_credential"`
+	Port               types.Int64  `tfsdk:"port"`
+	Replicas           types.Int64  `tfsdk:"replicas"`
+	Strategy           types.String `tfsdk:"strategy"`
+	BindAddress        types.String `tfsdk:"bind_address"`
+	ProjectID          types.String `tfsdk:"project_id"`
+	Env                types.Map    `tfsdk:"env"`
 
 	Command        []types.String          `tfsdk:"command"`
 	Labels         map[string]types.String `tfsdk:"labels"`
@@ -69,7 +70,8 @@ func (r *appResource) Schema(_ context.Context, _ resource.SchemaRequest, resp *
 				Required:      true,
 				PlanModifiers: []planmodifier.String{stringplanmodifier.RequiresReplace()},
 			},
-			"image": schema.StringAttribute{Required: true, Description: "Container image reference, for example nginx:1.27."},
+			"image":               schema.StringAttribute{Required: true, Description: "Container image reference, for example nginx:1.27."},
+			"registry_credential": schema.StringAttribute{Optional: true, Description: "Name of an existing registry credential used to pull the image. Never a secret value; create the credential separately. Unset leaves the live credential untouched."},
 			"port": schema.Int64Attribute{
 				Optional:      true,
 				Computed:      true,
@@ -165,6 +167,9 @@ func (m appModel) body(base map[string]any, withName bool) map[string]any {
 		body["name"] = m.Name.ValueString()
 	}
 	body["image"] = m.Image.ValueString()
+	if knownVal(m.RegistryCredential) {
+		body["registry_credential"] = m.RegistryCredential.ValueString()
+	}
 	if !m.Port.IsNull() && !m.Port.IsUnknown() {
 		body["port"] = m.Port.ValueInt64()
 	}
@@ -248,6 +253,9 @@ func (m appModel) collectionsBody(body map[string]any) {
 
 func (m *appModel) fromWire(w wireApp) {
 	m.Image = types.StringValue(w.Image)
+	if !m.RegistryCredential.IsNull() {
+		m.RegistryCredential = types.StringValue(w.RegistryCredential)
+	}
 	m.Port = types.Int64Value(w.Port)
 	m.Replicas = types.Int64Value(w.Replicas)
 	m.Strategy = types.StringValue(w.Strategy)

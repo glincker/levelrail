@@ -318,13 +318,32 @@ func (rt *Router) handleRedeployCompose(w http.ResponseWriter, r *http.Request) 
 	writeJSON(w, http.StatusAccepted, map[string]any{"app_id": appID, "restarted": restarted})
 }
 
+// refuseIfServiceProtected refuses a teardown when any member service is protected,
+// because only the member apps exist to be protected, never the compose App itself.
+func (rt *Router) refuseIfServiceProtected(w http.ResponseWriter, r *http.Request, appID string) bool {
+	if rt.appGroups == nil {
+		return false
+	}
+	services, err := rt.appGroups.ListServicesByApp(r.Context(), appID)
+	if err != nil {
+		rt.internalError(w, "api: compose: list services failed", err, slog.String("app", appID))
+		return true
+	}
+	for _, s := range services {
+		if rt.refuseIfProtected(w, r, s.Name) {
+			return true
+		}
+	}
+	return false
+}
+
 // handleComposeDown handles DELETE /api/v1/apps/{name}/compose: removes
 // every member, its containers and history. Named volumes are kept unless
 // ?volumes=true, which additionally needs AbilityWriteSensitive.
 func (rt *Router) handleComposeDown(w http.ResponseWriter, r *http.Request) {
 	appID := r.PathValue("name")
 	// Same guard as DELETE /apps/{name}: protection must stop a whole compose teardown too.
-	if rt.refuseIfProtected(w, r, appID) {
+	if rt.refuseIfProtected(w, r, appID) || rt.refuseIfServiceProtected(w, r, appID) {
 		return
 	}
 	removeVolumes := r.URL.Query().Get("volumes") == "true"

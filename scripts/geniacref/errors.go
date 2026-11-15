@@ -25,6 +25,7 @@ var codeDocs = map[string]codeDoc{
 	iac.CodeRefEnvironmentMissing:      {"A resource names an environment that does not exist in the project and is not declared in the files.", "Add an `Environment` document or fix the name."},
 	iac.CodeRefAppMissing:              {"A resource names an app that does not exist and is not declared in the files.", "Add the `App` document or fix the name."},
 	iac.CodeRefSecretMissing:           {"A `secretRef` marked `existing: true` points at a secret the app does not have.", "Create the secret first, or drop `existing: true` and pass the value with `--secret`."},
+	iac.CodeRegistryCredentialNotFound: {"An App names a `build.registryCredential` that does not exist on the control plane. Registry credentials are not managed as code.", "Create the credential first with `registry-credentials create`, or fix the name."},
 	iac.CodeSchemaUnknownField:         {"A document has a field that is not part of its kind's schema.", "Check the spelling against the [reference](/iac/reference), or remove the field."},
 	iac.CodeSchemaVersionUnsupported:   {"The document `version` is not one this control plane reads.", "Set `version: 1`."},
 	iac.CodeOwnershipConflict:          {"The resource is already owned by a different stack or source.", "Apply it from the stack or source that owns it, or release it there first."},
@@ -36,6 +37,10 @@ var codeDocs = map[string]codeDoc{
 	iac.CodePlanHashVersion:            {"The submitted plan hash has the old unkeyed shape, which this control plane no longer accepts.", "Run the plan again to get a current hash."},
 	iac.CodeInvalidRequest:             {"The request itself is malformed, for example a missing or unreadable field.", "Fix the request and send it again."},
 	iac.CodeInvalidDocument:            {"A document failed validation.", "Read the issue lines; each names the file, line and field."},
+	iac.CodeCronScheduleInvalid:        {"A CronJob schedule is not a valid cron expression.", "Fix spec.schedule, for example `0 3 * * *`."},
+	iac.CodeCronHTTPInvalid:            {"The http request of a CronJob breaks a path, method or header rule, or is set together with a command.", "Read the issue line, keep the path on the app, and give each header a value or a secretRef."},
+	iac.CodeCronJobInvalid:             {"A CronJob name, command, timezone, retries or limits break a rule.", "Read the issue line for the field and fix it."},
+	iac.CodeAlertRuleInvalid:           {"A threshold AlertRule lacks its metric, comparator or threshold.", "Set all three, with a comparator of `>`, `<`, `>=` or `<=`."},
 	iac.CodeApprovalPending:            {"A cloud plan would replace the saved engine plan of a revision awaiting approval.", "Approve or reject the named revision first, or plan with supersede=true to retire it."},
 	iac.CodePlanSuperseded:             {"A later plan replaced the saved engine plan this approval named.", "Plan again and request a new approval."},
 	iac.CodeInterrupted:                {"The control plane stopped while the plan job ran.", "Plan again."},
@@ -59,6 +64,7 @@ var codeDocs = map[string]codeDoc{
 	iac.CodeSyncPlanFailed:             {"The documents under the sync path did not validate or could not be planned.", "Run the CLI plan on the same commit to see each issue."},
 	iac.CodeSyncSecretInRepo:           {"A synced document holds a literal secret value. The status names the file and line, never the value.", "Replace the literal with a secretRef, set the value with the secrets API, then rotate the leaked credential."},
 	iac.CodeSyncDiskLow:                {"Free disk was below stacks.sync_min_free_mb, so the sync fetched nothing.", "Free disk on the control plane data volume or lower the setting."},
+	iac.CodeEnvironmentProtected:       {"An App or compose App would be bound into a protected environment. IaC plan and apply carry no confirm flag, so the bind would be refused at apply.", "Unprotect the environment, or deploy into it through the normal approval path."},
 	iac.CodeSyncApplyFailed:            {"A sync apply was refused or failed and the stack was left unchanged.", "Run the stack plan on the same commit; check the stack lock, protected apps and the apply setting."},
 }
 

@@ -33,6 +33,10 @@ Codes are frozen: a released code is never renamed or reused, only added to. Mat
 | `invalid_request` | The request itself is malformed, for example a missing or unreadable field. | Fix the request and send it again. |
 | `invalid_document` | A document failed validation. | Read the issue lines; each names the file, line and field. |
 | `invalid_name` | A resource name breaks the rule the API enforces: lowercase letters, digits and hyphens, starting with a letter, at most 63 characters (64 for an Environment). | Rename the resource in metadata.name. |
+| `cron_schedule_invalid` | A CronJob schedule is not a valid cron expression. | Fix spec.schedule, for example `0 3 * * *`. |
+| `cron_job_invalid` | A CronJob name, command, timezone, retries or limits break a rule. | Read the issue line for the field and fix it. |
+| `cron_http_invalid` | The http request of a CronJob breaks a path, method or header rule, or is set together with a command. | Read the issue line, keep the path on the app, and give each header a value or a secretRef. |
+| `alert_rule_invalid` | A threshold AlertRule lacks its metric, comparator or threshold. | Set all three, with a comparator of `>`, `<`, `>=` or `<=`. |
 | `approval_pending` | A cloud plan would replace the saved engine plan of a revision awaiting approval. | Approve or reject the named revision first, or plan with supersede=true to retire it. |
 | `plan_superseded` | A later plan replaced the saved engine plan this approval named. | Plan again and request a new approval. |
 | `interrupted` | The control plane stopped while the plan job ran. | Plan again. |
@@ -56,3 +60,5 @@ Codes are frozen: a released code is never renamed or reused, only added to. Mat
 | `sync_secret_in_repo` | A synced document holds a literal secret value. The status names the file and line, never the value. | Replace the literal with a secretRef, set the value with the secrets API, then rotate the leaked credential. |
 | `sync_disk_low` | Free disk was below stacks.sync_min_free_mb, so the sync fetched nothing. | Free disk on the control plane data volume or lower the setting. |
 | `sync_apply_failed` | A sync apply was refused or failed and the stack was left unchanged. | Run the stack plan on the same commit; check the stack lock, protected apps and the apply setting. |
+| `environment_protected` | An App or compose App would be bound into a protected environment. IaC plan and apply carry no confirm flag, so the bind would be refused at apply. | Unprotect the environment, or deploy into it through the normal approval path. |
+| `registry_credential_not_found` | An App names a `build.registryCredential` that does not exist on the control plane. Registry credentials are not managed as code. | Create the credential first with `registry-credentials create`, or fix the name. |

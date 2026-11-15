@@ -7,6 +7,8 @@ import (
 	"regexp"
 	"strings"
 	"time"
+
+	"github.com/GLINCKER/levelrail/internal/store"
 )
 
 // Contract types for stacks (ADR 042). The store and the stack API share
@@ -273,9 +275,9 @@ func (r *Revision) Validate() error {
 	return nil
 }
 
-// MinSecretMatchLen is the shortest secret value matched by substring. Shorter
-// values would match ordinary document text; plans warn about them instead.
-const MinSecretMatchLen = 4
+// MinSecretMatchLen is the shortest secret value matched by substring, a live
+// runtime setting. Shorter values would match ordinary text; plans warn instead.
+func MinSecretMatchLen() int { return store.SecretMatchMin() }
 
 // ShortSecretWarning is the plan warning for values under MinSecretMatchLen.
 const ShortSecretWarning = "secret value too short to be checked against the documents"
@@ -284,8 +286,9 @@ const ShortSecretWarning = "secret value too short to be checked against the doc
 // revision can be refused before it is stored. Values under MinSecretMatchLen are skipped.
 func LeakedSecret(docs []byte, secrets map[string]string) (string, bool) {
 	text := string(docs)
+	minLen := MinSecretMatchLen()
 	for _, name := range sortedKeys(secrets) {
-		if v := secrets[name]; len(v) >= MinSecretMatchLen && strings.Contains(text, v) {
+		if v := secrets[name]; len(v) >= minLen && strings.Contains(text, v) {
 			return name, true
 		}
 	}

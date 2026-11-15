@@ -36,8 +36,14 @@ export function ChangeList({
           className="space-y-1 px-3 py-2"
         >
           <div className="flex flex-wrap items-center gap-2 text-sm">
-            <Badge variant={ACTION_VARIANT[c.action]}>
-              {t(`diff.action.${c.action}`)}
+            <Badge
+              variant={
+                Object.hasOwn(ACTION_VARIANT, c.action)
+                  ? ACTION_VARIANT[c.action]
+                  : 'muted'
+              }
+            >
+              {t(`diff.action.${c.action}`, { defaultValue: c.action })}
             </Badge>
             <span className="font-mono text-xs text-muted-foreground">
               {c.kind}

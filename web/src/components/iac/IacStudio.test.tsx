@@ -33,6 +33,7 @@ vi.mock('./IacTemplateStrip', () => ({
     </button>
   ),
 }))
+vi.mock('./IacStackPanel', () => ({ IacStackPanel: () => null }))
 vi.mock('../IacPlanView', () => ({
   IacPlanView: () => <div>plan-view</div>,
   IacResultView: () => null,

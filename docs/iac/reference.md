@@ -184,3 +184,24 @@ No fields.
 | `spec.restartWindow` | string | no | Window the restart count is measured over. |
 | `spec.threshold` | number | no | Value the metric is compared against. |
 | `spec.type` | `backup_copy_behind`, `backup_failed`, `backup_missing`, `budget_threshold`, `cert_expiring`, `cert_expiry`, `cert_renewal_stalled`, `cleanup_failing`, `control_plane_backup_stale`, `crashloop`, `database_backup_failing`, `database_backup_stale`, `database_connections_high`, `database_disk_high`, `database_down`, `deploy_failed`, `domain_health`, `domain_not_resolving`, `domain_traffic_drop`, `email_delivery_failing`, `export_behind`, `log_archive_stale`, `log_level_rate`, `log_pattern`, `monitor_down`, `node_cert_expiring`, `node_disk_space`, `node_host_guardrail`, `node_offline`, `node_resource_usage`, `oom_killed`, `parked_domain_cert_expiry`, `patch_status`, `pooler_saturated`, `registry_refresh_failing`, `restore_drill_failed`, `scheduled_task_failure`, `scheduled_task_missed`, `scheduled_task_running_long`, `slo_burn`, `threshold`, `version_skew` | yes | Kind of alert rule. Decides which other fields apply, such as metric, comparator and threshold for a threshold rule. |
+
+## CronJob
+
+| Field | Type | Required | Description |
+| --- | --- | --- | --- |
+| `spec.app` | string | yes | Name of the app the job belongs to. |
+| `spec.catchUp` | `skip`, `run-once` | no | What to do about runs missed while down. |
+| `spec.catchUpLookback` | string | no | How far back missed runs are considered. |
+| `spec.command` | list of string | no | Command to run, as an argument list. |
+| `spec.concurrency` | `allow`, `forbid`, `replace` | no | Overlap policy when a run is still going. |
+| `spec.cpu` | number | no | CPU limit for the job container. |
+| `spec.enabled` | boolean | no | Whether the job is scheduled. |
+| `spec.http` | object | no | Call a path on the app instead of running a command. Set either command or http. |
+| `spec.memory` | string | no | Memory limit for the job container, such as 512Mi. |
+| `spec.mode` | `fresh`, `exec` | no | fresh starts a new container from the app image; exec runs inside the running one. |
+| `spec.retries` | integer | no | Retries after a failed run. |
+| `spec.retryBackoff` | string | no | Wait between retries. |
+| `spec.schedule` | string | yes | Cron expression for when the job runs. |
+| `spec.timeout` | string | no | Maximum run time before the job is stopped. |
+| `spec.timezone` | string | no | IANA time zone the schedule is read in. Defaults to UTC. |
+| `spec.warnAfter` | string | no | Run time after which a warning is raised. |

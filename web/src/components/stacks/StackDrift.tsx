@@ -58,7 +58,9 @@ export function DriftSummary({
               {item.scope ? `${item.scope}/` : ''}
               {item.kind}/{item.name}
             </span>
-            <Badge variant="muted">{t(`drift.action.${item.action}`)}</Badge>
+            <Badge variant="muted">
+              {t(`drift.action.${item.action}`, { defaultValue: item.action })}
+            </Badge>
             {item.fields && item.fields.length > 0 ? (
               <span className="font-mono text-xs text-muted-foreground">
                 {item.fields.join(', ')}

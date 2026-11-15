@@ -3629,6 +3629,217 @@
       "denied": "negado",
       "skipped": "ignorado",
       "noop": "sem alteração"
+    },
+    "fix": "Correção: {{hint}}",
+    "codes": {
+      "item_failed": {
+        "message": "O item falhou.",
+        "fix": "Leia a mensagem na linha do plano."
+      },
+      "permission_denied": {
+        "message": "O token não pode alterar este recurso.",
+        "fix": "Use um token com a permissão necessária ou remova o recurso dos arquivos."
+      },
+      "protected_resource": {
+        "message": "O recurso está protegido contra esta alteração.",
+        "fix": "Desproteja-o ou declare-o nos arquivos."
+      },
+      "immutable_field": {
+        "message": "Um campo não pode ser alterado no local.",
+        "fix": "Recrie o recurso de propósito ou volte o campo ao valor atual."
+      },
+      "synced_externally": {
+        "message": "Uma fonte externa é dona deste recurso.",
+        "fix": "Altere-o na origem."
+      },
+      "ref_project_missing": {
+        "message": "O projeto não existe e não foi declarado.",
+        "fix": "Adicione um documento Project ou corrija o nome."
+      },
+      "ref_environment_missing": {
+        "message": "O ambiente não existe e não foi declarado.",
+        "fix": "Adicione um documento Environment ou corrija o nome."
+      },
+      "ref_app_missing": {
+        "message": "O app não existe e não foi declarado.",
+        "fix": "Adicione o documento App ou corrija o nome."
+      },
+      "ref_secret_missing": {
+        "message": "O segredo apontado pela referência não existe.",
+        "fix": "Crie o segredo primeiro ou remova existing: true."
+      },
+      "schema_unknown_field": {
+        "message": "Um campo não faz parte do esquema deste tipo.",
+        "fix": "Confira a grafia na referência ou remova o campo."
+      },
+      "plan_stale": {
+        "message": "O estado atual mudou depois que o plano foi criado.",
+        "fix": "Execute o plano de novo e aplique o novo."
+      },
+      "stack_locked": {
+        "message": "O stack está bloqueado para alterações manuais.",
+        "fix": "Altere o manifesto e aplique, ou peça a um administrador."
+      },
+      "prune_guard": {
+        "message": "A remoção apagaria mais do que a proteção permite.",
+        "fix": "Confira o plano e confirme a remoção em massa se for intencional."
+      },
+      "invalid_document": {
+        "message": "O documento falhou na validação.",
+        "fix": "Leia as linhas de problemas com arquivo, linha e campo."
+      },
+      "invalid_name": {
+        "message": "O nome do recurso quebra a regra de nomes.",
+        "fix": "Use minúsculas, dígitos e hífens em metadata.name."
+      },
+      "cron_schedule_invalid": {
+        "message": "O horário cron não é válido.",
+        "fix": "Corrija spec.schedule, por exemplo 0 3 * * *."
+      },
+      "cron_job_invalid": {
+        "message": "A tarefa cron tem nome, comando, fuso horário ou limite inválido.",
+        "fix": "Leia a linha do problema para ver o campo e corrija."
+      },
+      "cron_http_invalid": {
+        "message": "A chamada http da tarefa cron é inválida.",
+        "fix": "Mantenha o caminho no app e dê a cada cabeçalho um valor ou um secretRef."
+      },
+      "alert_rule_invalid": {
+        "message": "A regra de alerta não tem métrica, comparador ou limite.",
+        "fix": "Defina os três, com comparador >, <, >= ou <=."
+      },
+      "registry_credential_not_found": {
+        "message": "Um build nomeia uma credencial de registro que não existe no plano de controle.",
+        "fix": "Crie primeiro a credencial com registry-credentials create, ou corrija o nome."
+      },
+      "environment_protected": {
+        "message": "Um app seria vinculado a um ambiente protegido.",
+        "fix": "Desproteja o ambiente ou faça o deploy pelo caminho normal de aprovação."
+      },
+      "unavailable": {
+        "message": "O plano de controle não atende este tipo de recurso.",
+        "fix": "Verifique se o plano de controle executa uma versão que conhece o tipo."
+      },
+      "read_failed": {
+        "message": "Não foi possível ler o estado ativo do recurso, então ele não pode ser comparado.",
+        "fix": "Tente de novo. Se repetir, verifique os logs do plano de controle."
+      },
+      "schema_version_unsupported": {
+        "message": "A version do documento não é uma que este plano de controle leia.",
+        "fix": "Defina version: 1."
+      },
+      "ownership_conflict": {
+        "message": "O recurso já pertence a outro stack ou fonte.",
+        "fix": "Aplique-o a partir do stack ou da fonte que o possui, ou libere-o lá primeiro."
+      },
+      "plan_hash_version": {
+        "message": "O hash do plano enviado tem o formato antigo sem chave, que este plano de controle não aceita mais.",
+        "fix": "Execute o plano de novo para obter um hash atual."
+      },
+      "stack_source_sync": {
+        "message": "O stack é sincronizado a partir de uma fonte, então a aplicação direta é recusada.",
+        "fix": "Altere a fonte, não o stack."
+      },
+      "apply_disabled": {
+        "message": "Aplicar está desativado para este plano de controle ou stack.",
+        "fix": "Peça a um administrador que o ative."
+      },
+      "invalid_request": {
+        "message": "A própria requisição está malformada, por exemplo um campo ausente ou ilegível.",
+        "fix": "Corrija a requisição e envie de novo."
+      },
+      "approval_pending": {
+        "message": "Um plano cloud substituiria o plano de motor salvo de uma revisão aguardando aprovação.",
+        "fix": "Aprove ou rejeite antes a revisão indicada, ou planeje com supersede=true para aposentá-la."
+      },
+      "plan_superseded": {
+        "message": "Um plano posterior substituiu o plano de motor salvo citado por esta aprovação.",
+        "fix": "Planeje de novo e solicite uma nova aprovação."
+      },
+      "interrupted": {
+        "message": "O plano de controle parou enquanto o trabalho de plano era executado.",
+        "fix": "Planeje de novo."
+      },
+      "plan_job_not_found": {
+        "message": "Não existe um trabalho de plano com este id para o stack, ou ele foi removido após o período de retenção.",
+        "fix": "Verifique o id do trabalho ou planeje de novo."
+      },
+      "plan_timeout": {
+        "message": "O trabalho de plano excedeu cloud.engine_timeout_seconds.",
+        "fix": "Planeje de novo ou aumente cloud.engine_timeout_seconds."
+      },
+      "sync_repo_unreachable": {
+        "message": "Não foi possível buscar o repositório git de um stack sincronizado, ou sua credencial não pôde ser usada.",
+        "fix": "Verifique a URL do repositório, o branch e credential_ref, e execute uma atualização de sincronização."
+      },
+      "sync_path_invalid": {
+        "message": "O caminho de sincronização sai do checkout, aponta para .git ou contém um link simbólico.",
+        "fix": "Use um caminho relativo sem .. e sem links simbólicos."
+      },
+      "sync_limits_exceeded": {
+        "message": "O repositório ou os arquivos no caminho de sincronização passaram de um limite de tamanho ou quantidade.",
+        "fix": "Reduza o caminho ou aumente stacks.sync_max_repo_mb, stacks.sync_max_files ou stacks.sync_max_file_kb."
+      },
+      "sync_plan_failed": {
+        "message": "Os documentos no caminho de sincronização não validaram ou não puderam ser planejados.",
+        "fix": "Execute o plano da CLI no mesmo commit para ver cada problema."
+      },
+      "compose_path_invalid": {
+        "message": "spec.compose.path é absoluto, contém .., uma barra invertida ou um byte NUL, ou passa por um link simbólico.",
+        "fix": "Use um caminho relativo dentro da pasta que você aplica, como compose/shop.yaml."
+      },
+      "compose_ref_missing": {
+        "message": "Um App referencia um arquivo compose que não foi enviado com a requisição.",
+        "fix": "Aplique a partir da pasta que contém o arquivo com uma CLI atual e verifique o caminho."
+      },
+      "compose_too_large": {
+        "message": "Um arquivo compose, ou todos juntos, passa do limite de tamanho.",
+        "fix": "Divida o projeto ou aumente iac.compose_max_file_kb ou iac.compose_max_total_kb."
+      },
+      "compose_too_many_files": {
+        "message": "A requisição contém mais arquivos compose que o limite.",
+        "fix": "Aplique menos Apps compose por vez ou aumente iac.compose_max_files."
+      },
+      "compose_mode_conflict": {
+        "message": "Um App define spec.compose e spec.service ao mesmo tempo.",
+        "fix": "Mantenha um: spec.compose para um projeto compose, spec.service para um serviço único."
+      },
+      "compose_unsupported_key": {
+        "message": "Um arquivo compose referenciado usa uma chave que o modo estrito recusa, como build, env_file, include, extends.file ou uma chave de nível superior desconhecida.",
+        "fix": "Remova a chave; coloque os valores em spec.compose.env e construa as imagens antes de aplicar."
+      },
+      "compose_rejected": {
+        "message": "Um arquivo compose referenciado quebra uma regra de proteção, como privileged, rede do host, um bind mount, um mount de socket ou uma entrada extra_hosts arriscada. A mensagem nomeia a regra.",
+        "fix": "Remova a configuração que a regra nomeia; Apps compose de IaC nunca recebem acesso ao host."
+      },
+      "compose_secret_literal": {
+        "message": "Um arquivo compose referenciado contém algo que parece um segredo literal. A mensagem nomeia o serviço e a chave, nunca o valor.",
+        "fix": "Substitua o valor por ${NAME} e declare NAME em spec.compose.env com um secretRef."
+      },
+      "compose_var_missing": {
+        "message": "Um ${VAR} de um arquivo compose referenciado não está declarado em spec.compose.env. O ambiente do host nunca é lido.",
+        "fix": "Declare a variável em spec.compose.env ou dê um padrão com ${VAR:-value}."
+      },
+      "compose_no_deploy_unsupported": {
+        "message": "no_deploy foi pedido para um plano que contém um App compose, e o endpoint compose faz deploy a cada salvamento.",
+        "fix": "Aplique sem no_deploy, ou deixe o App compose fora desta aplicação."
+      },
+      "compose_apply_failed": {
+        "message": "Um App compose foi implantado e depois falhou ao definir projeto, ambiente ou tags, ou ao registrá-lo no livro do stack. Um primeiro deploy é removido pelo caminho de exclusão compose (volumes nomeados são mantidos); um redeploy continua rodando.",
+        "fix": "Corrija a causa indicada no erro, depois planeje e aplique de novo; após um redeploy com falha, o próximo plano mostra o desvio."
+      },
+      "sync_secret_in_repo": {
+        "message": "Um documento sincronizado contém um valor secreto literal. O status nomeia o arquivo e a linha, nunca o valor.",
+        "fix": "Substitua o literal por um secretRef, defina o valor com a API de segredos e rotacione a credencial vazada."
+      },
+      "sync_disk_low": {
+        "message": "O disco livre estava abaixo de stacks.sync_min_free_mb, então a sincronização não buscou nada.",
+        "fix": "Libere disco no volume de dados do plano de controle ou reduza a configuração."
+      },
+      "sync_apply_failed": {
+        "message": "Uma aplicação de sincronização foi recusada ou falhou e o stack ficou sem mudanças.",
+        "fix": "Execute o plano do stack no mesmo commit; verifique o bloqueio do stack, apps protegidos e a configuração de aplicar."
+      }
     }
   },
   "iacImport": {
@@ -3987,11 +4198,34 @@
     "viewYaml": "YAML",
     "viewForm": "Formulário",
     "formLoading": "Carregando o formulário",
+    "stack": {
+      "title": "Histórico do stack",
+      "pick": "Stack",
+      "none": "Ainda não há stacks. As revisões aparecem aqui depois que um stack é aplicado.",
+      "timeline": "Linha do tempo de revisões",
+      "noRevisions": "Ainda não há revisões.",
+      "loadFailed": "Não foi possível carregar as revisões.",
+      "driftNone": "Sem desvio da última revisão aplicada.",
+      "diffLive": "Comparar com o estado ao vivo"
+    },
+    "planAction": {
+      "create": "Criar",
+      "update": "Atualizar",
+      "delete": "Excluir",
+      "noop": "Sem alterações",
+      "error": "Erro"
+    },
     "multiDoc": "Este texto tem mais de um documento. O formulário mostra o primeiro somente para leitura. Edite como YAML para alterar qualquer um.",
     "parseLine": "Este documento não pôde ser lido (linha {{line}}).",
     "editAsYaml": "Editar como YAML",
     "exportedNote": "Exportado do estado ao vivo. Os segredos nunca são incluídos, são exportados como referências.",
     "copyYaml": "Copiar YAML",
-    "copied": "Copiado"
+    "copied": "Copiado",
+    "localTemplates": {
+      "cron-job": {
+        "title": "Tarefa cron",
+        "description": "Executa um comando ou chama um caminho de um app em um horário."
+      }
+    }
   }
 }

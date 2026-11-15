@@ -61,7 +61,7 @@ type Limits struct {
 type CodedError struct {
 	Code string
 	Msg  string
-	// Detail is a file:line at most, never a value from the repository.
+	// Detail is a file:line or a kind/name list, never a value from the repository.
 	Detail string
 }
 
@@ -217,7 +217,7 @@ func (s *Syncer) SyncOne(ctx context.Context, rec store.StackSyncRecord) store.S
 	if err != nil {
 		st.Code = codeOf(err)
 		st.Detail = detailOf(err)
-		s.logger().Warn("stack sync failed", slog.String("stack", rec.StackName), slog.String("code", st.Code))
+		s.logger().Warn("stack sync failed", slog.String("stack", rec.StackName), slog.String("code", st.Code), slog.String("detail", st.Detail))
 		if st.Code != prev.Code {
 			s.emit(ctx, EventFailed, rec, st)
 		}

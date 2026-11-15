@@ -245,7 +245,8 @@ export function IacSchemaForm({
       )}
       {model.unsupported.length > 0 && (
         <p className="text-xs text-muted-foreground">
-          {t('unsupported', { count: model.unsupported.length })}
+          {t('unsupported', { count: model.unsupported.length })}{' '}
+          <code className="font-mono">{model.unsupported.join(', ')}</code>
         </p>
       )}
     </form>

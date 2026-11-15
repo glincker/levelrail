@@ -13,6 +13,7 @@ import (
 	"os"
 	"path/filepath"
 	"regexp"
+	"strconv"
 	"strings"
 
 	"github.com/GLINCKER/levelrail/internal/cloudconn"
@@ -32,6 +33,7 @@ type ociConnectOpts struct {
 	userOCID, fingerprint, compartmentOCID, keyEnv          string
 	apiURL, lrProfile                                       string
 	jsonOut                                                 bool
+	userEmail                                               string
 }
 
 // ociIDs holds what each step created; empty means not created yet.
@@ -59,6 +61,7 @@ func runCloudConnectOCI(prog string, args []string, stdout, stderr io.Writer, lo
 	fs.BoolVar(&o.dryRun, "dry-run", true, "print the plan and run nothing")
 	fs.BoolVar(&o.yes, "yes", false, "run the plan")
 	fs.BoolVar(&o.jsonOut, "json", false, "print the plan or result as JSON; refuses prompts, needs --yes to act")
+	fs.StringVar(&o.userEmail, "user-email", "", "email for the API only user; identity domain tenancies often require one")
 	fs.BoolVar(&o.paste, "paste", false, "store a scoped credential you already made")
 	fs.StringVar(&o.userOCID, "user-ocid", "", "--paste: the dedicated user OCID")
 	fs.StringVar(&o.fingerprint, "fingerprint", "", "--paste: the API key fingerprint")
@@ -147,10 +150,14 @@ func ociSteps(o ociConnectOpts, ids ociIDs, pubKeyPath string) ([]ociStep, error
 	_ = enc.Encode(policy)
 	stJSON := strings.TrimSpace(buf.String())
 	with := func(a ...string) []string { return append(a, auth...) }
+	userArgs := []string{"iam", "user", "create", "--name", rn, "--description", "Levelrail connection " + o.name}
+	if o.userEmail != "" {
+		userArgs = append(userArgs, "--email", o.userEmail)
+	}
 	return []ociStep{
 		{"create the compartment " + o.compartmentName, with("iam", "compartment", "create", "--compartment-id", o.parent, "--name", o.compartmentName, "--description", "Resources managed by Levelrail", "--wait-for-state", "ACTIVE"), "compartment"},
 		{"create the group " + rn, with("iam", "group", "create", "--name", rn, "--description", "Levelrail connection "+o.name), "group"},
-		{"create the API only user " + rn, with("iam", "user", "create", "--name", rn, "--description", "Levelrail connection "+o.name), "user"},
+		{"create the API only user " + rn, with(userArgs...), "user"},
 		{"turn off console password and other credential types for the user", with("iam", "user", "update-user-capabilities", "--user-id", usr, "--can-use-console-password", "false", "--can-use-auth-tokens", "false", "--can-use-customer-secret-keys", "false", "--can-use-smtp-credentials", "false", "--can-use-api-keys", "true"), ""},
 		{"add the user to the group", with("iam", "group", "add-user", "--group-id", grp, "--user-id", usr), "member"},
 		{"create the policy " + rn + " scoped to the compartment only", with("iam", "policy", "create", "--compartment-id", o.parent, "--name", rn, "--description", "Levelrail connection "+o.name, "--statements", stJSON), "policy"},
@@ -176,7 +183,8 @@ func ociCleanup(o ociConnectOpts, ids ociIDs) []string {
 	if ids.group != "" {
 		out = append(out, "oci iam group delete --group-id "+ids.group+" --force"+a)
 	}
-	if ids.compartment != "" {
+	// Never name a parent or tenancy: only the compartment this run created.
+	if ids.compartment != "" && ids.compartment != o.parent && ids.compartment != o.tenancy {
 		out = append(out, "oci iam compartment delete --compartment-id "+ids.compartment+" --force"+a)
 	}
 	return out
@@ -192,6 +200,19 @@ func printCleanup(w io.Writer, o ociConnectOpts, ids ociIDs) {
 	for _, c := range cmds {
 		_, _ = fmt.Fprintln(w, "  "+c)
 	}
+}
+
+// createdOCID reads data.id, the object the step created, never the parent's compartment-id field.
+func createdOCID(kind string, out []byte) string {
+	var r struct {
+		Data struct {
+			ID string `json:"id"`
+		} `json:"data"`
+	}
+	if json.Unmarshal(out, &r) != nil || !strings.HasPrefix(r.Data.ID, "ocid1."+kind+".") {
+		return ""
+	}
+	return r.Data.ID
 }
 
 func firstOCID(kind string, out []byte) string {
@@ -210,7 +231,7 @@ func runOCIBootstrap(ctx context.Context, prog string, o ociConnectOpts, stdout,
 		defer cancel()
 		out, err := d.runner.Run(cctx, bin, args)
 		if err != nil {
-			err = errors.New(redactOutput(red, err.Error()))
+			err = errors.New(ociErrText(red, err.Error()))
 		}
 		return out, err
 	}
@@ -234,13 +255,17 @@ func runOCIBootstrap(ctx context.Context, prog string, o ociConnectOpts, stdout,
 	if err != nil {
 		return ociFail(stdout, stderr, o, prog, exitValidation, err.Error())
 	}
+	notes := ociPreflightNotes(o)
 	if o.jsonOut && (o.dryRun || !o.yes) {
-		return ociPlanJSON(stdout, stderr, o, steps)
+		return ociPlanJSON(stdout, stderr, o, steps, notes)
 	}
 	if !o.jsonOut {
 		_, _ = fmt.Fprintf(stdout, "Plan for connection %q (profile %s, region %s):\n", o.name, o.profile, orPlaceholder(o.region, "profile default"))
 		for i, s := range steps {
 			_, _ = fmt.Fprintf(stdout, "%d. %s\n   oci %s\n", i+1, s.title, shellJoin(s.args))
+		}
+		for _, n := range notes {
+			_, _ = fmt.Fprintln(stdout, "Note: "+n)
 		}
 		_, _ = fmt.Fprintf(stdout, "%d. send tenancy, region, compartment, user, fingerprint and the private key to Levelrail over the authenticated API, then wipe the local copy\n", len(steps)+1)
 	}
@@ -279,6 +304,9 @@ func executeOCIPlan(ctx context.Context, prog string, o ociConnectOpts, stdout, 
 	}
 	var ids ociIDs
 	fail := func(step string, err error) int {
+		if strings.Contains(step, "API only user") {
+			err = fmt.Errorf("%w (identity domain tenancies often need --user-email; the full OCI error is above and anything already created is listed below)", err)
+		}
 		if o.jsonOut {
 			return ociFail(stdout, stderr, o, prog, exitAPIError, fmt.Sprintf("%s failed: %v. %s", step, err, strings.Join(ociCleanup(o, ids), "; ")))
 		}
@@ -332,7 +360,7 @@ func ociCapture(ids *ociIDs, kind string, out []byte) error {
 		}
 		return nil
 	}
-	id := firstOCID(kind, out)
+	id := createdOCID(kind, out)
 	if id == "" {
 		return fmt.Errorf("oci returned no %s OCID", kind)
 	}
@@ -471,6 +499,7 @@ type ociResult struct {
 	CompartmentID     string        `json:"compartment_id,omitempty"`
 	FingerprintPrefix string        `json:"fingerprint_prefix,omitempty"`
 	Steps             []ociPlanStep `json:"steps,omitempty"`
+	Notes             []string      `json:"notes,omitempty"`
 }
 
 func ociWriteJSON(stdout, stderr io.Writer, v any) int {
@@ -481,8 +510,8 @@ func ociWriteJSON(stdout, stderr io.Writer, v any) int {
 	return exitOK
 }
 
-func ociPlanJSON(stdout, stderr io.Writer, o ociConnectOpts, steps []ociStep) int {
-	res := ociResult{DryRun: true, Connection: o.name, Profile: o.profile, Region: o.region}
+func ociPlanJSON(stdout, stderr io.Writer, o ociConnectOpts, steps []ociStep, notes []string) int {
+	res := ociResult{DryRun: true, Connection: o.name, Profile: o.profile, Region: o.region, Notes: notes}
 	for i, s := range steps {
 		res.Steps = append(res.Steps, ociPlanStep{Index: i + 1, Title: s.title, Command: "oci " + shellJoin(s.args)})
 	}
@@ -511,4 +540,41 @@ func ociFail(stdout, stderr io.Writer, o ociConnectOpts, prog string, code int, 
 	}
 	_ = writeJSONValue(stdout, jsonError{Error: msg, Code: cat, ExitCode: code})
 	return code
+}
+
+// ociPreflightNotes warns about the user create requirements and the env the stack commands need.
+func ociPreflightNotes(o ociConnectOpts) []string {
+	n := []string{"APP_EXPERIMENTAL=iac,cloud must be set in the environment of the Levelrail server and of the CLI before using `stack` commands with this connection."}
+	if o.userEmail == "" {
+		n = append(n, "creating the user can fail with HTTP 400 on tenancies that use identity domains and need an email; pass --user-email if it does.")
+	}
+	return n
+}
+
+const defaultOCIErrorMax = 4000
+
+// ociErrorMax caps shown OCI error text; override with APP_CLOUD_CONNECT_ERROR_MAX_BYTES.
+func ociErrorMax() int {
+	if v, err := strconv.Atoi(strings.TrimSpace(os.Getenv("APP_CLOUD_CONNECT_ERROR_MAX_BYTES"))); err == nil && v > 0 {
+		return v
+	}
+	return defaultOCIErrorMax
+}
+
+var ociErrCodeRe = regexp.MustCompile(`"(code|message)"\s*:\s*"((?:[^"\\]|\\.)*)"`)
+
+// ociErrText redacts the error, leads with the OCI code and message when present and caps the length.
+func ociErrText(r *secretsource.Redactor, s string) string {
+	s = redactOutput(r, s)
+	var lead []string
+	for _, m := range ociErrCodeRe.FindAllStringSubmatch(s, -1) {
+		lead = append(lead, m[1]+"="+m[2])
+	}
+	if len(lead) > 0 {
+		s = "OCI " + strings.Join(lead, " ") + " | " + s
+	}
+	if limit := ociErrorMax(); len(s) > limit {
+		s = s[:limit] + "...(truncated, raise APP_CLOUD_CONNECT_ERROR_MAX_BYTES)"
+	}
+	return s
 }

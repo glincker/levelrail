@@ -93,6 +93,15 @@ func (rt *Router) stackSyncLimits(ctx context.Context) stacksync.Limits {
 	}
 }
 
+// stackSyncSparseWatch is the size check cadence, clamped like the setting.
+func (rt *Router) stackSyncSparseWatch(ctx context.Context) time.Duration {
+	ms := 500
+	if rt.runtimeSettings != nil {
+		ms = rt.runtimeSettings.Int(ctx, runtimesettings.KeyStackSyncSparseWatchMS)
+	}
+	return time.Duration(min(max(ms, 50), 5000)) * time.Millisecond
+}
+
 // stackSyncFetch reuses the app git fetcher. A credential ref only lends an
 // app's key or token to the exact repository that app is connected to.
 func (rt *Router) stackSyncFetch(ctx context.Context, rec store.StackSyncRecord) (string, string, func(), error) {
@@ -119,6 +128,19 @@ func (rt *Router) stackSyncFetch(ctx context.Context, rec store.StackSyncRecord)
 	}
 	// The mirror may hold history the checkout does not: cap it at the repo cap too.
 	fctx = sourcecache.WithMaxMirrorBytes(fctx, rt.stackSyncLimits(ctx).MaxRepoBytes)
+	// Only the sync path is needed: try a shallow sparse clone before the full mirror.
+	if strings.HasPrefix(url, "https://") {
+		// Its own sub-deadline leaves the mirror fallback the rest of the fetch time.
+		sctx, scancel := sparseDeadline(fctx, rt.stackSyncLimits(ctx).FetchTimeout)
+		co, serr := rt.sourceCache.SparseCheckout(sctx, url, rec.Config.Branch, rec.Config.Path, token, rt.stackSyncLimits(ctx).MaxRepoBytes, rt.stackSyncSparseWatch(ctx))
+		scancel()
+		if serr == nil {
+			return co.Dir, co.Commit, co.Cleanup, nil
+		}
+		if errors.Is(serr, sourcecache.ErrOverBudget) {
+			return "", "", nil, &stacksync.CodedError{Code: iac.CodeSyncLimitsExceeded, Msg: "repository is larger than the size limit"}
+		}
+	}
 	dir, commit, cleanup, err := rt.gitCheckout(fctx, url, rec.Config.Branch, token)
 	if errors.Is(err, sourcecache.ErrOverBudget) {
 		return "", "", nil, &stacksync.CodedError{Code: iac.CodeSyncLimitsExceeded, Msg: "repository is larger than the size limit"}
@@ -127,6 +149,19 @@ func (rt *Router) stackSyncFetch(ctx context.Context, rec store.StackSyncRecord)
 		return "", "", nil, &stacksync.CodedError{Code: iac.CodeSyncRepoUnreachable, Msg: "fetch failed"}
 	}
 	return dir, commit, cleanup, nil
+}
+
+// sparseDeadline gives the sparse attempt half of the time left, or half the
+// configured fetch timeout when the context has no deadline.
+func sparseDeadline(ctx context.Context, fetchTimeout time.Duration) (context.Context, context.CancelFunc) {
+	left := fetchTimeout
+	if dl, ok := ctx.Deadline(); ok {
+		left = time.Until(dl)
+	}
+	if left <= 0 {
+		return context.WithCancel(ctx)
+	}
+	return context.WithTimeout(ctx, left/2)
 }
 
 func sameRepo(a, b string) bool {
@@ -160,6 +195,13 @@ func (rt *Router) stackSyncPlan(ctx context.Context, rec store.StackSyncRecord, 
 	}
 	if len(issues) > 0 {
 		return iac.Plan{}, &stacksync.CodedError{Code: iac.CodeSyncPlanFailed, Msg: "documents do not validate"}
+	}
+	maxNames := 0
+	if rt.runtimeSettings != nil {
+		maxNames = rt.runtimeSettings.Int(ctx, runtimesettings.KeyStackDriftSummaryMax)
+	}
+	if ce := syncProjectDropped(req, project, len(res), maxNames); ce != nil {
+		return iac.Plan{}, ce
 	}
 	if resourcesHaveCloud(res) {
 		return iac.Plan{}, &stacksync.CodedError{Code: iac.CodeSyncPlanFailed, Msg: "cloud kinds are not planned by sync"}
@@ -502,4 +544,15 @@ func syncApplyRequest(rec store.StackSyncRecord, files []stacksync.File, commit 
 		body.Files[i] = iacFile{Name: f.Name, Content: f.Content}
 	}
 	return body
+}
+
+// syncProjectDropped makes an empty plan loud when the project filter removed
+// every document, instead of letting the sync report "create 0".
+func syncProjectDropped(req stackRequest, project string, resources, maxNames int) *stacksync.CodedError {
+	if project == "" || resources > 0 || len(stackFileDocs(req)) == 0 {
+		return nil
+	}
+	// Detail is what status, --json and the CLI show; kind/name pairs only, no values.
+	msg := emptyStackReasonMax(req, project, maxNames)
+	return &stacksync.CodedError{Code: iac.CodeSyncPlanFailed, Msg: msg, Detail: msg}
 }

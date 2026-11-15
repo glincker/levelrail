@@ -169,26 +169,28 @@ type hookFields struct {
 // appFields is the canonical, comparable shape of an app on both the
 // desired and the live side.
 type appFields struct {
-	Image       string            `json:"image"`
-	Port        int               `json:"port"`
-	HostPort    int               `json:"hostPort,omitempty"`
-	BindAddress string            `json:"bindAddress"`
-	Replicas    int               `json:"replicas"`
-	Strategy    string            `json:"strategy"`
-	Domains     []string          `json:"domains,omitempty"`
-	Env         map[string]string `json:"env,omitempty"`
-	SecretEnv   []string          `json:"secretEnv,omitempty"`
-	Resources   *resourceFields   `json:"resources,omitempty"`
-	Security    *securityFields   `json:"security,omitempty"`
-	Health      *healthFields     `json:"health,omitempty"`
-	Hooks       *hookFields       `json:"hooks,omitempty"`
-	Rollout     *rolloutFields    `json:"rollout,omitempty"`
-	Files       []fileFields      `json:"files,omitempty"`
-	Labels      map[string]string `json:"labels,omitempty"`
-	Command     []string          `json:"command,omitempty"`
-	Project     string            `json:"project,omitempty"`
-	Environment string            `json:"environment,omitempty"`
-	Tags        []string          `json:"tags,omitempty"`
+	Image string `json:"image"`
+	// RegistryCredential names a stored credential for private pulls; never a secret value.
+	RegistryCredential string            `json:"registryCredential,omitempty"`
+	Port               int               `json:"port"`
+	HostPort           int               `json:"hostPort,omitempty"`
+	BindAddress        string            `json:"bindAddress"`
+	Replicas           int               `json:"replicas"`
+	Strategy           string            `json:"strategy"`
+	Domains            []string          `json:"domains,omitempty"`
+	Env                map[string]string `json:"env,omitempty"`
+	SecretEnv          []string          `json:"secretEnv,omitempty"`
+	Resources          *resourceFields   `json:"resources,omitempty"`
+	Security           *securityFields   `json:"security,omitempty"`
+	Health             *healthFields     `json:"health,omitempty"`
+	Hooks              *hookFields       `json:"hooks,omitempty"`
+	Rollout            *rolloutFields    `json:"rollout,omitempty"`
+	Files              []fileFields      `json:"files,omitempty"`
+	Labels             map[string]string `json:"labels,omitempty"`
+	Command            []string          `json:"command,omitempty"`
+	Project            string            `json:"project,omitempty"`
+	Environment        string            `json:"environment,omitempty"`
+	Tags               []string          `json:"tags,omitempty"`
 	// Connections maps an env var to "database.field"; never a value.
 	Connections map[string]string `json:"connections,omitempty"`
 	// SecretRefs maps an env var to a secret://conn/path#key reference; never a value.
@@ -367,7 +369,7 @@ func resourcesToStore(r *resourceFields) *store.ServiceResources {
 // appFromWire builds the canonical live shape; names resolves ids to names.
 func appFromWire(a wireApp, names idNames) appFields {
 	f := appFields{
-		Image: a.Image, Port: a.Port, BindAddress: a.BindAddress, Replicas: a.Replicas, Strategy: a.Strategy,
+		Image: a.Image, RegistryCredential: a.RegistryCredential, Port: a.Port, BindAddress: a.BindAddress, Replicas: a.Replicas, Strategy: a.Strategy,
 		Domains: sortedUnique(a.Domains), Env: nonEmptyMap(a.Env), SecretEnv: sortedUnique(a.SecretEnv),
 		Resources: resourcesFromStore(a.Resources), Security: securityFromStore(a.Resources), Health: healthFromStore(a.Health), Labels: nonEmptyMap(a.Labels),
 		Command: a.Command, Project: names.project(a.ProjectID), Environment: names.environment(a.EnvironmentID), Tags: sortedUnique(a.Tags),

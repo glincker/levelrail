@@ -43,7 +43,10 @@ export function RevisionStatusBadge({
   if (!status) {
     return <Badge variant="muted">{t('status.none')}</Badge>
   }
-  const view = STATUS_VIEW[status]
+  // A status from a newer server renders neutral instead of crashing.
+  const view = Object.hasOwn(STATUS_VIEW, status)
+    ? STATUS_VIEW[status]
+    : STATUS_VIEW.superseded
   return (
     <StatusBadge
       tone={view.tone}

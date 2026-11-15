@@ -98,6 +98,7 @@ levelrail-cli apply -f file|dir|- [--dry-run] [--prune] [--yes] [--project P]
                     [--source NAME] [--secret ...] [--var NAME=VALUE]
                     [--var-file PATH] [--allow-env NAME[,NAME...]]
                     [--no-deploy] [--continue-on-error] [--exit-code]
+                    [--wait] [--ready-timeout D] [--ready-interval D]
 levelrail-cli diff  -f dir        # the same as apply --dry-run --exit-code
 ```
 
@@ -108,6 +109,7 @@ levelrail-cli diff  -f dir        # the same as apply --dry-run --exit-code
 Everything is validated first, then planned against live state, then executed item by item. Apply is safe to repeat. The full flow is on [How it works](/iac/how-it-works). The plan carries a hash so an apply only proceeds if live state still matches what was reviewed.
 
 - A plan that contains an error item (a missing project, a read you are not permitted to make) applies nothing unless `--continue-on-error` is set.
+- `apply` and `stack apply` only record desired state, so an app whose image cannot be pulled still reports applied. Add `--wait` to poll every app the run wrote until it is running, stopped or failed (`Attention needed`, with the reason such as an image pull error or a crash loop). Exit 1 when any app failed or was still not settled at the end. `--ready-timeout` and `--ready-interval` set the limits (defaults from `LEVELRAIL_APPLY_WAIT_TIMEOUT`, 5m, and `LEVELRAIL_APPLY_WAIT_INTERVAL`, 3s). With `--json` the output is `{"result": ..., "wait": [...]}` for `apply` and `{"apply": ..., "wait": [...]}` for `stack apply`. `--wait` is not supported with `--server-side`.
 - Lists and maps on an App (`domains`, `tags`, `env`, `labels`, secret names) are additive. Live entries the files do not mention are kept and shown as `keep` in the plan. Everything else on a declared resource is authoritative.
 
 ### Deploys

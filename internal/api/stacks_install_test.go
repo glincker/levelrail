@@ -39,3 +39,12 @@ func TestInstallStackCreateIsHumanRootAndRefusesApps(t *testing.T) {
 		t.Fatalf("plan = %d %s", code, out)
 	}
 }
+
+func TestStackCreateMissingProjectSaysHowToProceed(t *testing.T) {
+	rt, db := newTestRouter(t)
+	cookie := loginTestSession(t, rt, db)
+	code, out := rawCall(t, rt, authedRequest(t, cookie, http.MethodPost, "/api/v1/stacks", `{"name":"s1","project":"nope"}`))
+	if code != http.StatusUnprocessableEntity || !strings.Contains(out, "stack apply") || !strings.Contains(out, "dashboard") {
+		t.Fatalf("create with a missing project = %d %s", code, out)
+	}
+}

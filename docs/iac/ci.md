@@ -129,7 +129,7 @@ Rules that bite:
 - Environments are the approval gate: give the production apply job `environment: production` with required reviewers, and keep one token secret per environment.
 - Approvals need a root token and a different person from the one who applied, so a CI token cannot approve. See [Approvals](/stacks#approvals).
 
-Inputs, outputs and the full recipe are in `integrations/github-action/stack/README.md`.
+Inputs, outputs and the full recipe are in `integrations/github-action/stack/README.md` and [GitHub Action for IaC](/iac/github-action).
 
 ## No stored secret
 

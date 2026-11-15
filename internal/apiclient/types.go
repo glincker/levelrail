@@ -60,6 +60,8 @@ type ServiceHooks struct {
 type AppResource struct {
 	Name  string `json:"name"`
 	Image string `json:"image"`
+	// RegistryCredential names a stored registry credential, set on create, replaced or cleared on update.
+	RegistryCredential string `json:"registry_credential,omitempty"`
 	// RequireRefWarnings lists literal secrets held in an environment that requires references; names only.
 	RequireRefWarnings []string `json:"require_ref_warnings,omitempty"`
 	// TemplateID is the catalog template the app was deployed from, empty otherwise.
@@ -4869,6 +4871,9 @@ type AppStatusEntry struct {
 	Status struct {
 		Label   string `json:"label"`
 		Variant string `json:"variant"`
+		// Reason and Message name the first failing condition, empty when healthy.
+		Reason  string `json:"reason,omitempty"`
+		Message string `json:"message,omitempty"`
 	} `json:"status"`
 }
 

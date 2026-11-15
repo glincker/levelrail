@@ -58,6 +58,10 @@ inputs:
     description: 'Set to "true" to post or update one sticky pull request comment with the plan (plan mode only, needs pull-requests: write)'
     required: false
     default: 'false'
+  comment-max-chars:
+    description: 'Cap for the pull request comment length. Longer plans are cut and point to the job summary.'
+    required: false
+    default: '60000'
   github-token:
     description: 'Token used to post the comment'
     required: false
@@ -70,6 +74,9 @@ outputs:
   plan-hash:
     description: 'Hash of the plan, pass it to the apply step as expected-plan-hash (plan mode)'
     value: ${{ steps.plan.outputs.plan-hash }}
+  exit-code:
+    description: 'CLI exit code: 0 no changes (or applied), 2 changes pending (plan) or awaiting approval (apply). Exit 1 fails the step.'
+    value: ${{ steps.plan.outputs.exit-code || steps.apply.outputs.exit-code }}
   revision:
     description: 'Revision number written by the apply (apply mode)'
     value: ${{ steps.apply.outputs.revision }}
@@ -151,6 +158,7 @@ runs:
         LR_PRUNE: ${{ inputs.prune }}
         LR_VARS: ${{ inputs.vars }}
         LR_SECRETS: ${{ inputs.secrets }}
+        LR_COMMENT_MAX: ${{ inputs.comment-max-chars }}
       run: |
         set -uo pipefail
         [ -z "$LEVELRAIL_TOKEN" ] || echo "::add-mask::$LEVELRAIL_TOKEN"
@@ -185,31 +193,14 @@ runs:
         [ "$rc" -ne 2 ] || has_changes=true
         hash=$(jq -r '.plan.hash // ""' "$out")
         echo "has-changes=$has_changes" >> "$GITHUB_OUTPUT"
+        echo "exit-code=$rc" >> "$GITHUB_OUTPUT"
         echo "plan-hash=$hash" >> "$GITHUB_OUTPUT"
 
         md="${RUNNER_TEMP:-/tmp}/lr-stack-comment.md"
-        {
-          echo "<!-- levelrail-stack:${LR_STACK} -->"
-          echo "### Levelrail stack plan: \`${LR_STACK}\`"
-          echo
-          jq -r '
-            (.plan.summary // {}) as $s
-            | "**\($s.create // 0)** to add, **\($s.update // 0)** to change, **\($s.delete // 0)** to remove, \($s.noop // 0) unchanged"
-              + (if ($s.error // 0) > 0 then ", **\($s.error)** with errors" else "" end),
-              "",
-              (if (.pinned_revision // 0) > 0 then "Pinned to revision \(.pinned_revision): applies are refused until the pin is removed.\n" else "" end),
-              ([.plan.changes[]? | select(.action != "noop")] as $c
-                | if ($c | length) == 0 then "No changes."
-                  else "| Action | Resource | Fields |\n| --- | --- | --- |\n"
-                    + ($c | map("| \(.action) | `\(.kind)/\(.name)` | \((.fields // []) | length) |") | join("\n"))
-                  end),
-              "",
-              (if ((.issues // []) | length) > 0 then "Issues:\n" + ((.issues // []) | map("- \(.message // tostring)") | join("\n")) + "\n" else "" end),
-              (if ((.warnings // []) | length) > 0 then "Warnings:\n" + ((.warnings // []) | map("- \(.)") | join("\n")) + "\n" else "" end)
-          ' "$out"
-          echo "Plan hash: \`${hash}\`"
-        } > "$md"
-        cat "$md" >> "$GITHUB_STEP_SUMMARY"
+        # The step summary gets the full text, the PR comment the capped one.
+        LR_COMMENT_MAX_CHARS=1000000 bash "${GITHUB_ACTION_PATH}/render-comment.sh" "$out" "$LR_STACK" "$hash" > "${md}.full"
+        bash "${GITHUB_ACTION_PATH}/render-comment.sh" "$out" "$LR_STACK" "$hash" "$LR_COMMENT_MAX" > "$md"
+        cat "${md}.full" >> "$GITHUB_STEP_SUMMARY"
 
     - name: Sticky plan comment
       if: ${{ inputs.mode == 'plan' && inputs.comment == 'true' && github.event.pull_request.number }}
@@ -286,6 +277,7 @@ runs:
           status=pending_approval
         fi
         echo "revision=$revision" >> "$GITHUB_OUTPUT"
+        echo "exit-code=$rc" >> "$GITHUB_OUTPUT"
         echo "status=$status" >> "$GITHUB_OUTPUT"
         echo "expires_at=$expires_at" >> "$GITHUB_OUTPUT"
         {

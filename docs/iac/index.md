@@ -75,4 +75,4 @@ levelrail-cli stack apply demo-prod -f stack-infra/ --yes
 
 To bring the resources from step 2 into a stack instead, delete them first. The REST stack apply also accepts `adopt: true`, which claims existing resources, but the CLI has no flag for it.
 
-Next: [IaC reference](/iac/reference), [Platform as code](/platform-as-code), [Stacks and GitOps](/stacks).
+Next: [IaC reference](/iac/reference), [Cron jobs and alert rules](/iac/cron-and-alerts), [Importing a deploy.yml or Portainer stack](/iac/importers), [GitHub Action](/iac/github-action), [Platform as code](/platform-as-code), [Stacks and GitOps](/stacks).

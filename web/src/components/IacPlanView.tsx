@@ -6,6 +6,9 @@ import type {
   IacPlan,
 } from '../queries/iac'
 import { CodeBlock } from '@/components/ui/code-block'
+import { labelOf } from '../lib/labelOf'
+import { isIacPlanCode } from '../lib/iacPlanCodes'
+import { IacCodeBadge } from './iac/IacCodeBadge'
 
 const actionStyle: Record<string, string> = {
   create: 'text-green-700 dark:text-green-400',
@@ -56,13 +59,42 @@ export function IacSummaryLine({ plan }: { plan: IacPlan }) {
   )
 }
 
+function CodeHint({ code }: { code: string }) {
+  const { t } = useTranslation('settings')
+  // An unknown code shows only the raw badge.
+  return (
+    <div className="mt-1 flex flex-wrap items-baseline gap-x-2 gap-y-1 text-sm">
+      <IacCodeBadge code={code} />
+      {isIacPlanCode(code) ? (
+        <>
+          <span className="text-foreground">
+            {t(`iacPlan.codes.${code}.message`)}
+          </span>
+          <span className="text-muted-foreground">
+            {t('iacPlan.fix', { hint: t(`iacPlan.codes.${code}.fix`) })}
+          </span>
+        </>
+      ) : null}
+    </div>
+  )
+}
+
 function ChangeRow({ change }: { change: IacChange }) {
   const { t } = useTranslation('settings')
   return (
     <li className="rounded-md border border-border p-3">
       <div className="flex flex-wrap items-baseline gap-2 font-mono text-sm">
-        <span className={actionStyle[change.action]}>
-          {actionMark[change.action]}
+        <span className={labelOf(actionStyle, change.action)}>
+          {Object.hasOwn(actionMark, change.action)
+            ? actionMark[change.action]
+            : '?'}
+        </span>
+        <span
+          className={`rounded border px-1.5 text-xs ${labelOf(actionStyle, change.action)}`}
+        >
+          {t(`iacStudio.planAction.${change.action}`, {
+            defaultValue: change.action,
+          })}
         </span>
         <span className="text-foreground">{changeKey(change)}</span>
         {change.file ? (
@@ -76,6 +108,7 @@ function ChangeRow({ change }: { change: IacChange }) {
           </span>
         ) : null}
       </div>
+      {change.code ? <CodeHint code={change.code} /> : null}
       {change.reason ? (
         <p className="mt-1 text-sm text-red-700 dark:text-red-400">
           {change.reason}
@@ -134,7 +167,7 @@ export function IacResultView({ results }: { results: IacItemResult[] }) {
     <ul className="space-y-1.5">
       {shown.map((r) => (
         <li key={changeKey(r) + r.action} className="font-mono text-sm">
-          <span className={statusStyle[r.status]}>
+          <span className={labelOf(statusStyle, r.status)}>
             {t(`iacPlan.status.${r.status}`, { defaultValue: r.status })}
           </span>{' '}
           <span className="text-foreground">{changeKey(r)}</span>

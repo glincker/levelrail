@@ -8,6 +8,7 @@ import (
 	"io"
 	"regexp"
 	"strings"
+	"sync"
 	"testing"
 	"time"
 
@@ -91,21 +92,28 @@ func liveRemoteTransport(t *testing.T, containerNamePrefix string) (Transport, s
 	return waitForTransport(t, registry, identity.NodeID), id
 }
 
-// readUntilRemote reads from r until want appears or readUntilTimeout
-// passes, returning everything read either way.
-func readUntilRemote(t *testing.T, r io.Reader, want string) string {
-	t.Helper()
-	var sb strings.Builder
-	found := make(chan struct{})
+// ttyReader owns the single reader of a session so no output is lost or
+// raced between waits; the goroutine ends when the session closes.
+type ttyReader struct {
+	mu     sync.Mutex
+	buf    strings.Builder
+	cursor int
+	wake   chan struct{}
+}
+
+func newTTYReader(r io.Reader) *ttyReader {
+	tr := &ttyReader{wake: make(chan struct{}, 1)}
 	go func() {
-		buf := make([]byte, 4096)
+		chunk := make([]byte, 4096)
 		for {
-			n, err := r.Read(buf)
+			n, err := r.Read(chunk)
 			if n > 0 {
-				sb.WriteString(string(buf[:n]))
-				if strings.Contains(sb.String(), want) {
-					close(found)
-					return
+				tr.mu.Lock()
+				tr.buf.Write(chunk[:n])
+				tr.mu.Unlock()
+				select {
+				case tr.wake <- struct{}{}:
+				default:
 				}
 			}
 			if err != nil {
@@ -113,11 +121,37 @@ func readUntilRemote(t *testing.T, r io.Reader, want string) string {
 			}
 		}
 	}()
-	select {
-	case <-found:
-	case <-time.After(readUntilTimeout):
+	return tr
+}
+
+// unread returns output not yet consumed by a wait, and whether want is in it.
+func (tr *ttyReader) unread(want string) (string, bool) {
+	tr.mu.Lock()
+	defer tr.mu.Unlock()
+	out := tr.buf.String()[tr.cursor:]
+	if strings.Contains(out, want) {
+		tr.cursor += len(out)
+		return out, true
 	}
-	return sb.String()
+	return out, false
+}
+
+// readUntilRemote waits until want appears in new output or readUntilTimeout
+// passes, returning the output seen in that wait either way.
+func readUntilRemote(t *testing.T, tr *ttyReader, want string) string {
+	t.Helper()
+	deadline := time.After(readUntilTimeout)
+	for {
+		if out, ok := tr.unread(want); ok {
+			return out
+		}
+		select {
+		case <-tr.wake:
+		case <-deadline:
+			out, _ := tr.unread(want)
+			return out
+		}
+	}
 }
 
 func TestLive_ExecTTY_RemoteInteractiveShell(t *testing.T) {
@@ -140,11 +174,12 @@ func TestLive_ExecTTY_RemoteInteractiveShell(t *testing.T) {
 		t.Fatalf("ExecTTY() error = %v", err)
 	}
 	defer func() { _ = sess.Close() }()
+	tr := newTTYReader(sess)
 
 	if _, err := io.WriteString(sess, "tty -s && echo REMOTE_HAS_TTY\n"); err != nil {
 		t.Fatalf("Write() error = %v", err)
 	}
-	if got := readUntilRemote(t, sess, "REMOTE_HAS_TTY"); !strings.Contains(got, "REMOTE_HAS_TTY") {
+	if got := readUntilRemote(t, tr, "REMOTE_HAS_TTY"); !strings.Contains(got, "REMOTE_HAS_TTY") {
 		t.Fatalf("remote terminal output = %q, want it to contain REMOTE_HAS_TTY", got)
 	}
 
@@ -152,7 +187,7 @@ func TestLive_ExecTTY_RemoteInteractiveShell(t *testing.T) {
 	if _, err := io.WriteString(sess, "stty size\n"); err != nil {
 		t.Fatalf("Write() error = %v", err)
 	}
-	if got := readUntilRemote(t, sess, "24 80"); !strings.Contains(got, "24 80") {
+	if got := readUntilRemote(t, tr, "24 80"); !strings.Contains(got, "24 80") {
 		t.Fatalf("remote stty size = %q, want it to contain \"24 80\"", got)
 	}
 
@@ -163,7 +198,7 @@ func TestLive_ExecTTY_RemoteInteractiveShell(t *testing.T) {
 	if _, err := io.WriteString(sess, "stty size\n"); err != nil {
 		t.Fatalf("Write() after resize error = %v", err)
 	}
-	if got := readUntilRemote(t, sess, "50 120"); !strings.Contains(got, "50 120") {
+	if got := readUntilRemote(t, tr, "50 120"); !strings.Contains(got, "50 120") {
 		t.Fatalf("remote stty size after Resize = %q, want it to contain \"50 120\"", got)
 	}
 }
@@ -190,10 +225,11 @@ func TestLive_ExecTTY_RemoteCloseStopsProcess(t *testing.T) {
 	if err != nil {
 		t.Fatalf("ExecTTY() error = %v", err)
 	}
+	tr := newTTYReader(sess)
 	if _, err := io.WriteString(sess, "echo REMOTE_READY\n"); err != nil {
 		t.Fatalf("Write() error = %v", err)
 	}
-	if got := readUntilRemote(t, sess, "REMOTE_READY"); !strings.Contains(got, "REMOTE_READY") {
+	if got := readUntilRemote(t, tr, "REMOTE_READY"); !strings.Contains(got, "REMOTE_READY") {
 		t.Fatalf("remote terminal output = %q, want it to contain REMOTE_READY", got)
 	}
 	if err := sess.Close(); err != nil {
@@ -212,8 +248,41 @@ func TestLive_ExecTTY_RemoteCloseStopsProcess(t *testing.T) {
 			return
 		}
 		if time.Now().After(deadline) {
-			t.Fatalf("the remote shell is still running after Close(): %q", out)
+			t.Fatalf("the remote shell is still running after Close(): %q\n%s", out, closeDiagnostics(ctx, transport, containerID))
 		}
 		time.Sleep(250 * time.Millisecond)
 	}
+}
+
+// closeDiagnostics reports the full process table and the state of every
+// exec in the container, so a CI failure shows why the shell outlived Close.
+func closeDiagnostics(ctx context.Context, transport Transport, containerID string) string {
+	var sb strings.Builder
+	if rc, err := transport.Exec(ctx, containerID, []string{"ps", "-o", "pid,stat,args"}); err != nil {
+		fmt.Fprintf(&sb, "ps pid,stat,args: error %v\n", err)
+	} else {
+		out, _ := io.ReadAll(rc)
+		_ = rc.Close()
+		fmt.Fprintf(&sb, "ps pid,stat,args:\n%s\n", out)
+	}
+	cli, err := dockerclient.NewClientWithOpts(dockerclient.FromEnv, dockerclient.WithAPIVersionNegotiation())
+	if err != nil {
+		fmt.Fprintf(&sb, "exec inspect: no docker client: %v\n", err)
+		return sb.String()
+	}
+	defer func() { _ = cli.Close() }()
+	info, err := cli.ContainerInspect(ctx, containerID)
+	if err != nil {
+		fmt.Fprintf(&sb, "container inspect: %v\n", err)
+		return sb.String()
+	}
+	for _, id := range info.ExecIDs {
+		ex, err := cli.ContainerExecInspect(ctx, id)
+		if err != nil {
+			fmt.Fprintf(&sb, "exec %s inspect: %v\n", id, err)
+			continue
+		}
+		fmt.Fprintf(&sb, "exec %s running=%v pid=%d exit=%d\n", id, ex.Running, ex.Pid, ex.ExitCode)
+	}
+	return sb.String()
 }

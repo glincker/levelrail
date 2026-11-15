@@ -27,6 +27,8 @@ const (
 	CodeRefEnvironmentMissing = "ref_environment_missing"
 	CodeRefAppMissing         = "ref_app_missing"
 	CodeRefSecretMissing      = "ref_secret_missing"
+	// CodeRegistryCredentialNotFound means an App names a registry credential the control plane does not have.
+	CodeRegistryCredentialNotFound = "registry_credential_not_found" //nolint:gosec // error code name, not a credential
 )
 
 // Document and request codes, set outside planning (schema, stacks, apply).
@@ -44,6 +46,14 @@ const (
 	CodeInvalidDocument          = "invalid_document"
 	// CodeInvalidName means a resource name breaks the rule the API enforces at creation.
 	CodeInvalidName = "invalid_name"
+	// CodeCronScheduleInvalid means a CronJob schedule is not a valid cron expression.
+	CodeCronScheduleInvalid = "cron_schedule_invalid"
+	// CodeCronJobInvalid means a CronJob breaks a name, command, timezone or limit rule.
+	CodeCronJobInvalid = "cron_job_invalid"
+	// CodeCronHTTPInvalid means the http request of a CronJob breaks a path, method, header or exclusivity rule.
+	CodeCronHTTPInvalid = "cron_http_invalid"
+	// CodeAlertRuleInvalid means an AlertRule lacks the fields its type needs.
+	CodeAlertRuleInvalid = "alert_rule_invalid"
 )
 
 // Compose reference codes (ADR 081).
@@ -104,6 +114,9 @@ const (
 	CodeSyncApplyFailed = "sync_apply_failed"
 )
 
+// CodeEnvironmentProtected means an App would be bound into a protected environment, which IaC cannot confirm.
+const CodeEnvironmentProtected = "environment_protected"
+
 // AllCodes lists every frozen code, for docs and guard tests.
 var AllCodes = []string{
 	CodeItemFailed, CodePermissionDenied, CodeUnavailable, CodeReadFailed,
@@ -112,10 +125,12 @@ var AllCodes = []string{
 	CodeSchemaUnknownField, CodeSchemaVersionUnsupported, CodeOwnershipConflict,
 	CodePlanStale, CodePlanHashVersion, CodeStackLocked, CodeStackSourceSync, CodePruneGuard, CodeApplyDisabled,
 	CodeInvalidRequest, CodeInvalidDocument, CodeInvalidName,
+	CodeCronScheduleInvalid, CodeCronJobInvalid, CodeCronHTTPInvalid, CodeAlertRuleInvalid,
 	CodeApprovalPending, CodePlanSuperseded, CodeInterrupted, CodePlanJobNotFound, CodePlanTimeout,
 	CodeSyncRepoUnreachable, CodeSyncPathInvalid, CodeSyncLimitsExceeded, CodeSyncPlanFailed,
 	CodeComposePathInvalid, CodeComposeRefMissing, CodeComposeTooLarge, CodeComposeTooManyFiles,
 	CodeComposeModeConflict, CodeComposeUnsupportedKey, CodeComposeRejected, CodeComposeSecretLiteral,
 	CodeComposeVarMissing, CodeComposeNoDeployUnsupported, CodeComposeApplyFailed,
-	CodeSyncSecretInRepo, CodeSyncDiskLow, CodeSyncApplyFailed,
+	CodeSyncSecretInRepo, CodeSyncDiskLow, CodeSyncApplyFailed, CodeEnvironmentProtected,
+	CodeRegistryCredentialNotFound,
 }

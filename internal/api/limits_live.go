@@ -8,6 +8,7 @@ import (
 	"github.com/GLINCKER/levelrail/internal/models"
 	"github.com/GLINCKER/levelrail/internal/placement"
 	"github.com/GLINCKER/levelrail/internal/runtimesettings"
+	"github.com/GLINCKER/levelrail/internal/store"
 )
 
 // attachLiveLimits points the request limiters at the runtime settings so a saved change reaches the next request.
@@ -54,6 +55,7 @@ func (rt *Router) attachGuardSources() {
 	lim := func(key string) func() int {
 		return func() int { return rt.runtimeSettings.Limit(context.Background(), key) }
 	}
+	store.SetSecretMatchMinSource(lim(runtimesettings.KeyIaCSecretMatchMinLen))
 	iac.SetPlanValueSource(lim(runtimesettings.KeyIaCPlanValueMax))
 	pct, cnt := lim(runtimesettings.KeyStackPruneMaxPercent), lim(runtimesettings.KeyStackPruneMaxCount)
 	iac.SetPruneGuardSource(func() iac.PruneGuard { return iac.PruneGuard{MaxPercent: pct(), MaxCount: cnt()} })

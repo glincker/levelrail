@@ -62,4 +62,38 @@ describe('schemaToFields', () => {
     expect(isSecretLikeName('port')).toBe(false)
     expect(labelFromName('ephemeralInPreviews')).toBe('Ephemeral in previews')
   })
+
+  it('models CronJob with a command list and an http group', () => {
+    const m = schemaToFields(realSchema, 'CronJob')
+    const byId = Object.fromEntries(m.fields.map((f) => [f.id, f]))
+    expect(byId['spec.schedule']?.required).toBe(true)
+    expect(byId['spec.command']?.type).toBe('stringList')
+    expect(byId['spec.http']?.type).toBe('group')
+    expect(byId['spec.http.path']?.type).toBe('string')
+    expect(m.unsupported).toContain('spec.http.headers')
+  })
+
+  it('models AlertRule fields and never throws on a oneOf shape', () => {
+    const m = schemaToFields(realSchema, 'AlertRule')
+    expect(m.fields.find((f) => f.id === 'spec.type')?.type).toBe('enum')
+    const odd = {
+      ...realSchema,
+      allOf: [
+        {
+          if: { properties: { kind: { const: 'X' } } },
+          then: {
+            properties: {
+              spec: {
+                type: 'object',
+                properties: {
+                  mode: { oneOf: [{ type: 'string' }, { type: 'object' }] },
+                },
+              },
+            },
+          },
+        },
+      ],
+    }
+    expect(schemaToFields(odd, 'X').unsupported).toEqual(['spec.mode'])
+  })
 })
