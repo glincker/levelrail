@@ -229,6 +229,7 @@ type meshSetup struct {
 	coordinator *network.Coordinator
 	resolver    *network.Resolver
 	hubHost     *network.HubHostResolver
+	dnsServer   *network.DNSServer
 	// Never nil when meshSetup is non-nil: NewDevice always returns a usable Mesh.
 	device network.Mesh
 	// Use the actually bound address, which can differ from the configured one.
@@ -352,6 +353,7 @@ func setupMesh(ctx context.Context, db *store.DB, b *brand.Brand, dataDir string
 		hubHost:     hubHost,
 		device:      device,
 		dnsAddr:     dnsServer.Addr(),
+		dnsServer:   dnsServer,
 		settings:    hubSettings,
 		close: func() {
 			cancelHeartbeat()

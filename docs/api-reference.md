@@ -2365,6 +2365,8 @@ Routes that do not fit an existing group.
 | POST | /api/v1/otlp/v1/metrics | Public | handleOTLPMetrics |
 | POST | /api/v1/hooks/stacks/{name}/sync | Public | handleStackSyncWebhook |
 | POST | /api/v1/hooks/stacks/{name}/refresh | Public | handleStackSyncRefreshWebhook |
+| GET | /api/v1/dns/queries | AbilityRead | handleListDNSQueries |
+| GET | /api/v1/dns/stats | AbilityRead | handleDNSStats |
 | POST | /mcp | Public |  |
 
 ## See also

@@ -871,6 +871,8 @@ type Router struct {
 	meshPaths meshpath.Resolver
 	// meshHubResolver turns a hostname advertise host into the mesh endpoint IP; nil keeps the IP-only rule.
 	meshHubResolver *meshnet.HubHostResolver
+	// dnsQueryLog is nil when mesh DNS query visibility is not wired; the routes then report disabled.
+	dnsQueryLog *meshnet.QueryLog
 	// multiNode holds node moves, drains, labels and selectors; nil means 501.
 	multiNode *multiNodeState
 	// nodeFailure is nil unless WithNodeFailure was applied.

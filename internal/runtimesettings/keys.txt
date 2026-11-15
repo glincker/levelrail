@@ -161,6 +161,10 @@ disk.history_retention_days
 disk.history_sample_interval
 disk.low_free_mb
 disk.reserve_mb
+dns.query_log_app_refresh
+dns.query_log_enabled
+dns.query_log_privacy
+dns.query_log_size
 dns.verify_provider_on_save
 doctor.reachability_dialback_allow_private
 doctor.reachability_dialback_url

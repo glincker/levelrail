@@ -328,6 +328,11 @@ func (s *bootState) startMesh() error {
 	go apiRouter.RunNodeMoves(ctx)
 	go apiRouter.RunNodeOnboarding(ctx)
 	go apiRouter.RunNodeFailure(ctx)
+	if meshCfg != nil && meshCfg.dnsServer != nil {
+		qlog := newMeshDNSQueryLog(meshCfg.settings, client, logger)
+		meshCfg.dnsServer.SetQueryLog(qlog)
+		apiRouter.SetDNSQueryLog(qlog)
+	}
 	// Resolved once: the bridge gateway IP does not change while the process runs.
 	meshDNSAddr := containerDNSAddr(ctx, client, meshCfg, logger)
 	if meshDNSAddr != "" && meshCfg != nil && meshCfg.resolver != nil {

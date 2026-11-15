@@ -373,6 +373,10 @@ These variables only seed the default of a [runtime setting](/runtime-settings).
 | `APP_DISK_HISTORY_SAMPLE_INTERVAL` | [`disk.history_sample_interval`](/runtime-settings#observability) | `24h` |
 | `APP_DISK_LOW_FREE_MB` | [`disk.low_free_mb`](/runtime-settings#observability) | `1024` |
 | `APP_DISK_RESERVE_MB` | [`disk.reserve_mb`](/runtime-settings#observability) | `16` |
+| `LEVELRAIL_DNS_QUERY_LOG_APP_REFRESH` | [`dns.query_log_app_refresh`](/runtime-settings#observability) | `10s` |
+| `LEVELRAIL_DNS_QUERY_LOG_ENABLED` | [`dns.query_log_enabled`](/runtime-settings#observability) | `false` |
+| `LEVELRAIL_DNS_QUERY_LOG_PRIVACY` | [`dns.query_log_privacy`](/runtime-settings#observability) | `names_only` |
+| `LEVELRAIL_DNS_QUERY_LOG_SIZE` | [`dns.query_log_size`](/runtime-settings#observability) | `1000` |
 | `APP_ERROR_DEDUP_HOURS` | [`errors.dedup_hours`](/runtime-settings#observability) | `168` |
 | `APP_ERROR_DEDUP_MAX` | [`errors.dedup_max`](/runtime-settings#observability) | `50000` |
 | `APP_CHANGES_STREAM_BUFFER` | [`events.changes_buffer`](/runtime-settings#observability) | `64` |

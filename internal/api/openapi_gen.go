@@ -14,7 +14,7 @@ type openAPIRoute struct {
 	Description string
 }
 
-// openAPIRoutes holds all 2134 routes known to scripts/gen-api-reference at
+// openAPIRoutes holds all 2136 routes known to scripts/gen-api-reference at
 // generation time. Run `go run ./scripts/gen-api-reference` after changing
 // any routes*.go registration and commit the result.
 var openAPIRoutes = []openAPIRoute{
@@ -1247,6 +1247,8 @@ var openAPIRoutes = []openAPIRoute{
 	{Method: "GET", Path: "/api/v1/dns/health-checks", Ability: "AbilityRead", Group: "Other", Handler: "handleListDNSHealthChecks", Description: ""},
 	{Method: "POST", Path: "/api/v1/dns/health-checks", Ability: "AbilityRoot", Group: "Other", Handler: "handleCreateDNSHealthCheck", Description: ""},
 	{Method: "DELETE", Path: "/api/v1/dns/health-checks/{id}", Ability: "AbilityRoot", Group: "Other", Handler: "handleDeleteDNSHealthCheck", Description: ""},
+	{Method: "GET", Path: "/api/v1/dns/queries", Ability: "AbilityRead", Group: "Other", Handler: "handleListDNSQueries", Description: ""},
+	{Method: "GET", Path: "/api/v1/dns/stats", Ability: "AbilityRead", Group: "Other", Handler: "handleDNSStats", Description: ""},
 	{Method: "GET", Path: "/api/v1/dns/templates", Ability: "AbilityRead", Group: "Other", Handler: "handleListDNSTemplates", Description: ""},
 	{Method: "GET", Path: "/api/v1/dns/zone", Ability: "AbilityRead", Group: "Other", Handler: "handleDNSZone", Description: ""},
 	{Method: "GET", Path: "/api/v1/dns/zones", Ability: "AbilityRead", Group: "Other", Handler: "handleListDNSZones", Description: ""},

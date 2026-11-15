@@ -243,6 +243,7 @@
               "dynamic-dns",
               "dns",
               "dns-zones",
+              "dns-visibility",
               "mail-dns",
               "mail-template",
               "mail-mailboxes",

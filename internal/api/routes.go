@@ -107,6 +107,7 @@ func (rt *Router) Handler() http.Handler {
 	rt.registerStandaloneDomainRoutes(mux)
 	rt.registerParkedDomainRoutes(mux)
 	rt.registerDNSWatchRoutes(mux)
+	rt.registerDNSQueryRoutes(mux)
 	rt.registerLogExplorerRoutes(mux)
 	rt.registerMobileRoutes(mux)
 	shell := rt.registerShellRoutes(mux)
