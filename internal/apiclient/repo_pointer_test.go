@@ -24,6 +24,10 @@ func TestResolveProfileSource_PointerPrecedence(t *testing.T) {
 		t.Fatal(err)
 	}
 	t.Chdir(nested)
+	t.Setenv("HOME", t.TempDir())
+	if err := WriteCredentialsFile("lr-test-none", "work", Credentials{APIURL: "https://work.example.com"}); err != nil {
+		t.Fatal(err)
+	}
 
 	cases := []struct {
 		name, flag, env, want, wantSource string
@@ -92,5 +96,35 @@ func TestWriteCredentialsFile_KeepsTrustedDeviceAndMode(t *testing.T) {
 	}
 	if st.Mode().Perm() != 0o600 {
 		t.Errorf("credentials mode = %v, want 0600", st.Mode().Perm())
+	}
+}
+
+func TestFindRepoPointer_PlainHTTPOnlyForLoopback(t *testing.T) {
+	cases := []struct {
+		url     string
+		allowed bool
+	}{
+		{"http://203.0.113.7:8080", false},
+		{"http://levelrail.example.com", false},
+		{"http://127.0.0.1:8080", true},
+		{"http://localhost:8080", true},
+		{"http://[::1]:8080", true},
+		{"https://levelrail.example.com", true},
+	}
+	for _, c := range cases {
+		dir := t.TempDir()
+		if err := os.MkdirAll(filepath.Join(dir, ".levelrail"), 0o750); err != nil {
+			t.Fatal(err)
+		}
+		if err := os.WriteFile(filepath.Join(dir, RepoPointerPath), []byte("api_url="+c.url+"\n"), 0o644); err != nil { //nolint:gosec // test fixture
+			t.Fatal(err)
+		}
+		p, ok := FindRepoPointer(dir)
+		if !ok {
+			t.Fatalf("%s: pointer not found", c.url)
+		}
+		if got := p.APIURL == c.url; got != c.allowed || (p.Problem == "") != c.allowed {
+			t.Errorf("%s: api_url %q problem %q, allowed want %v", c.url, p.APIURL, p.Problem, c.allowed)
+		}
 	}
 }

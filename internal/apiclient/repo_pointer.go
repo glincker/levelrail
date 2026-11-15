@@ -2,6 +2,7 @@ package apiclient
 
 import (
 	"bufio"
+	"fmt"
 	"net/url"
 	"os"
 	"path/filepath"
@@ -16,6 +17,9 @@ type RepoPointer struct {
 	Profile string
 	APIURL  string
 	Path    string
+	// Problem says why api_url was not accepted; RejectedURL is that value.
+	Problem     string
+	RejectedURL string
 }
 
 // FindRepoPointer walks up from dir to the first pointer file. Only the
@@ -69,15 +73,25 @@ func readRepoPointer(path string) (RepoPointer, bool) {
 		case "profile":
 			p.Profile = value
 		case "api_url":
-			if u, err := url.Parse(value); err == nil && (u.Scheme == "http" || u.Scheme == "https") && u.Host != "" {
+			u, err := url.Parse(value)
+			switch {
+			case err != nil || u.Host == "" || (u.Scheme != "http" && u.Scheme != "https"):
+			case u.Scheme == "http" && !isLoopbackHost(u.Hostname()):
+				p.RejectedURL = value
+				p.Problem = fmt.Sprintf("api_url %s uses plain http to another machine; only https, or http to localhost, 127.0.0.1 or ::1, is accepted", value)
+			default:
 				p.APIURL = value
 			}
 		}
 	}
-	if p.Profile == "" && p.APIURL == "" {
+	if p.Profile == "" && p.APIURL == "" && p.Problem == "" {
 		return RepoPointer{}, false
 	}
 	return p, true
+}
+
+func isLoopbackHost(host string) bool {
+	return host == "localhost" || host == "127.0.0.1" || host == "::1"
 }
 
 // RepoPointerContent renders the pointer file body.

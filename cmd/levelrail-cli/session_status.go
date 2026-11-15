@@ -119,9 +119,9 @@ func collectStatus(prog, profileFlag, apiURLFlag, tokenFlag string, verify bool,
 	st.HasCredential = token != ""
 	creds, _ := readCredentialsFile(prog, profile)
 	st.TrustedDevice = creds.TrustedDevice != ""
-	if m, bad := savedLoginMismatch(tokenFlag, apiURLFlag, lookupEnv, prog, profile); bad {
+	if m, bad := savedLoginMismatch(apiURLFlag, lookupEnv, prog, profile); bad {
 		st.Problem = m.Error()
-		st.NextCommand = fmt.Sprintf("%s auth login --reauth --profile %s --api-url %s", prog, profile, m.PointerURL)
+		st.NextCommand = m.NextCommand()
 		st.RunBy = "a person at a terminal, only if the pointer address is the one meant"
 		return st
 	}
@@ -338,16 +338,12 @@ func printProfileRows(out io.Writer, rows []profileRow) {
 	}
 }
 
-// savedLoginMismatch reports a repo pointer address that differs from the one the profile's saved login belongs to.
-// Only a saved token is guarded: a token passed explicitly is the caller's own choice.
-func savedLoginMismatch(tokenFlag, apiURLFlag string, lookupEnv func(string) (string, bool), prog, profile string) (apiclient.PointerMismatch, bool) {
-	if tokenFlag != "" {
-		return apiclient.PointerMismatch{}, false
-	}
-	if v, ok := lookupEnv(apiclient.EnvAPIToken); ok && v != "" {
-		return apiclient.PointerMismatch{}, false
-	}
-	return apiclient.FindPointerMismatch(apiURLFlag, lookupEnv, prog, profile)
+// savedLoginMismatch reports a repo pointer address no saved profile uses. Every token is held
+// back from it, whether saved, passed with --token or set in the environment.
+func savedLoginMismatch(apiURLFlag string, lookupEnv func(string) (string, bool), prog, profile string) (apiclient.PointerMismatch, bool) {
+	m, bad := apiclient.FindPointerMismatch(apiURLFlag, lookupEnv, prog, profile)
+	m.Prog = prog
+	return m, bad
 }
 
 // savedTokenMayBeSent is false when the saved token would go to an address other than the one it was saved for,

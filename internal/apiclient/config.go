@@ -103,25 +103,11 @@ func (c Credentials) pin() ServerPin {
 }
 
 // ResolveAPIURL picks the base API URL by precedence: flagURL, then
-// EnvAPIURL, then profile's section of the credentials file, then
-// DefaultAPIURL.
+// EnvAPIURL, then a repo pointer address a saved profile uses, then
+// profile's section of the credentials file, then DefaultAPIURL.
 func ResolveAPIURL(flagURL string, lookupEnv func(string) (string, bool), prog, profile string) string {
-	if flagURL != "" {
-		return flagURL
-	}
-	if v, ok := lookupEnv(EnvAPIURL); ok && v != "" {
-		return v
-	}
-	// The pointer's URL only applies to the profile it names, so another profile keeps its own.
-	// A profile with a saved login keeps its saved address; callers refuse the mismatch via FindPointerMismatch.
-	_, mismatch := FindPointerMismatch("", lookupEnv, prog, profile)
-	if p, ok := FindRepoPointerFromCwd(); ok && !mismatch && p.APIURL != "" && (p.Profile == "" || p.Profile == profile) {
-		return p.APIURL
-	}
-	if creds, err := ReadCredentialsFile(prog, profile); err == nil && creds.APIURL != "" {
-		return creds.APIURL
-	}
-	return DefaultAPIURL
+	// Never a pointer-only address, so a caller that ignores the origin still sends nothing there.
+	return ResolveAPIURLOrigin(flagURL, lookupEnv, prog, profile).URL
 }
 
 // Credentials is ReadCredentialsFile/WriteCredentialsFile's in-memory

@@ -52,11 +52,9 @@ func runAuthLogin(prog string, args []string, stdout, stderr io.Writer, lookupEn
 	}
 	of := outputFlags{format, *queryFlagP}
 
-	if !reauthFlag {
-		profile := resolveProfile(*profileFlagP, lookupEnv)
-		if m, bad := savedLoginMismatch("", *apiURLFlagP, lookupEnv, prog, profile); bad {
-			return reportError(stdout, stderr, jsonOut, m)
-		}
+	// A password, device cookie or minted token only goes to an address the user saved or typed.
+	if m, bad := savedLoginMismatch(*apiURLFlagP, lookupEnv, prog, resolveProfile(*profileFlagP, lookupEnv)); bad {
+		return reportError(stdout, stderr, jsonOut, m)
 	}
 
 	if !forceFlag && !reauthFlag {
