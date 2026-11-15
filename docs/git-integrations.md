@@ -206,7 +206,13 @@ levelrail-cli git-providers repos gitlab --connection <id>
 
 The answer holds the provider, `auth_method` (`oauth_app` or `token`), the granted `scopes` with `scopes_known` and `scopes_source`, `expires_at` and `last_used_at` when the provider reports them, and `visible_accounts` (a bounded list of group or account names with a total). A `capabilities` list covers `list_repos`, `clone_sync`, `register_webhook`, `tag_push_trigger`, `commit_status`, `mr_comments`, `deployments_report`, `registry_pull` and `import_group`. Each has a state of `allowed`, `not_allowed` or `needs_scope`, the `needs_scope` that would fix it, and `verified`, which is true only when the state follows from scopes the provider itself reported.
 
-GitLab reports scopes, so a token with only `read_api` shows webhooks, commit statuses and comments as `needs_scope: api`. Gitea, Forgejo and Bitbucket do not report scopes, so they answer `scopes_known: false` and inferred states. If the provider cannot be reached the call still returns 200 with the stored facts and a `live_check_error`. Live results are reused for `git.access_cache_ttl_seconds` (env `APP_GIT_ACCESS_CACHE_TTL_SECONDS`, default 60) and the name list is capped by `git.access_names_max`.
+GitLab reports scopes, so a token with only `read_api` shows webhooks, commit statuses and comments as `needs_scope: api`. Bitbucket does not report scopes, so it answers `scopes_known: false` and inferred states. Gitea and Forgejo report no scopes either, so their capabilities come from the repository permissions the server reports for the repositories the token can reach: webhooks need admin on a repository, commit statuses and comments need write. `expires_at` shows the expiry of an OAuth token; a personal token on these servers does not expire. If the provider cannot be reached the call still returns 200 with the stored facts and a `live_check_error`. Live results are reused for `git.access_cache_ttl_seconds` (env `APP_GIT_ACCESS_CACHE_TTL_SECONDS`, default 60) and the name list is capped by `git.access_names_max`.
+
+## Gitea and Forgejo checks
+
+The Gitea and Forgejo clients are exercised against throwaway local containers of the official images, started on random loopback ports with no volumes. The run covers OAuth application creation by API, the authorization code flow with PKCE and token refresh, repository listing by owner and organization, an idempotent webhook with a signed delivery for a test event, a push and a pull request, commit statuses, one updated pull request comment, and changed file lists. Run it with `scripts/qa/forge-gitea.sh`. It needs Docker, pulls two small images, removes the containers when done and the images unless `KEEP_IMAGES=1`.
+
+The webhook secret is verified from the `X-Gitea-Signature` header (hex HMAC-SHA256 of the body), which both servers send.
 
 ## Credential health, auto-renew and rotation
 
