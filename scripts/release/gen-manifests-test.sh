@@ -26,4 +26,12 @@ grep -q '"version": "9.9.9"' "$work/win/scoop/levelrail-cli.json" || fail "scoop
 if grep -rq '@[A-Z_]*@' "$work/win"; then fail "unreplaced placeholder"; fi
 if "$here/gen-windows-manifests.sh" "$tag" /dev/null "$work/none" >/dev/null 2>&1; then fail "missing checksum should fail"; fi
 
+echo "== aur and nix"
+"$here/gen-aur-nix.sh" "$tag" "$work/checksums.txt" "$work/an"
+grep -q '^pkgver=9.9.9$' "$work/an/aur/PKGBUILD" || fail "pkgver"
+grep -q "sha256sums_x86_64=('0*1')" "$work/an/aur/PKGBUILD" || fail "aur amd64 sha"
+bash -n "$work/an/aur/PKGBUILD" || fail "PKGBUILD syntax"
+grep -q 'version = "9.9.9"' "$work/an/nix/flake.nix" || fail "flake version"
+if "$here/gen-aur-nix.sh" "$tag" /dev/null "$work/none2" >/dev/null 2>&1; then fail "missing checksum should fail"; fi
+
 echo "OK"
