@@ -14,6 +14,7 @@ import (
 	"github.com/GLINCKER/levelrail/internal/store"
 	"github.com/GLINCKER/levelrail/internal/store/storetest"
 	"github.com/GLINCKER/levelrail/internal/telemetry"
+	"github.com/GLINCKER/levelrail/internal/testutil"
 )
 
 type sink struct {
@@ -58,14 +59,7 @@ func (s *sink) setFail(v bool) {
 
 func waitFor(t *testing.T, what string, cond func() bool) {
 	t.Helper()
-	deadline := time.Now().Add(5 * time.Second)
-	for time.Now().Before(deadline) {
-		if cond() {
-			return
-		}
-		time.Sleep(10 * time.Millisecond)
-	}
-	t.Fatalf("timed out waiting for %s", what)
+	testutil.WaitFor(t, 5*time.Second, 10*time.Millisecond, what, cond)
 }
 
 func newTestService(t *testing.T, db *store.DB, b *telemetry.LogBroadcaster) *Service {

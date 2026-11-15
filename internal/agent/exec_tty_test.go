@@ -12,6 +12,7 @@ import (
 	"time"
 
 	"github.com/GLINCKER/levelrail/internal/docker"
+	"github.com/GLINCKER/levelrail/internal/testutil"
 )
 
 // fakeTTYSession is a docker.ExecSession the test drives: output comes
@@ -236,12 +237,5 @@ func TestExecTTY_AttachFailureSurfaces(t *testing.T) {
 
 func waitFor(t *testing.T, cond func() bool, what string) {
 	t.Helper()
-	deadline := time.Now().Add(5 * time.Second)
-	for time.Now().Before(deadline) {
-		if cond() {
-			return
-		}
-		time.Sleep(10 * time.Millisecond)
-	}
-	t.Fatalf("timed out waiting for %s", what)
+	testutil.WaitFor(t, 5*time.Second, 10*time.Millisecond, what, cond)
 }

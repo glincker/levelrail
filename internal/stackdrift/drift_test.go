@@ -15,6 +15,7 @@ import (
 
 	"github.com/GLINCKER/levelrail/internal/iac"
 	"github.com/GLINCKER/levelrail/internal/store"
+	"github.com/GLINCKER/levelrail/internal/testutil"
 )
 
 const projectDoc = "version: 1\nkind: Project\nmetadata: {name: shop}\nspec:\n  env:\n    REGION: eu\n    FEATURE_SET: declared-value-1\n"
@@ -440,10 +441,5 @@ func TestRunLive_HonorsLiveIntervalAndCap(t *testing.T) {
 
 func waitFor(t *testing.T, ok func() bool) {
 	t.Helper()
-	for end := time.Now().Add(2 * time.Second); time.Now().Before(end); time.Sleep(5 * time.Millisecond) {
-		if ok() {
-			return
-		}
-	}
-	t.Fatal("condition not met")
+	testutil.WaitFor(t, 2*time.Second, 5*time.Millisecond, "condition", ok)
 }

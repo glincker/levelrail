@@ -7,6 +7,7 @@ import (
 	"time"
 
 	"github.com/GLINCKER/levelrail/internal/reconcile"
+	"github.com/GLINCKER/levelrail/internal/testutil"
 )
 
 type scheduled struct {
@@ -99,11 +100,5 @@ func TestWakerRunsEnginePassWithinBound(t *testing.T) {
 
 func waitFor(t *testing.T, cond func() bool) {
 	t.Helper()
-	deadline := time.Now().Add(5 * time.Second)
-	for !cond() {
-		if time.Now().After(deadline) {
-			t.Fatal("no reconcile pass within 5s")
-		}
-		time.Sleep(5 * time.Millisecond)
-	}
+	testutil.WaitFor(t, 5*time.Second, 5*time.Millisecond, "reconcile pass", cond)
 }

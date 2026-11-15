@@ -4,6 +4,7 @@ import (
 	"context"
 	"errors"
 	"fmt"
+	"github.com/GLINCKER/levelrail/internal/testutil"
 	"runtime"
 	"slices"
 	"strings"
@@ -48,13 +49,7 @@ func newPooledEngine(t *testing.T, workers int, keyTimeout time.Duration, ctrls 
 
 func waitFor(t *testing.T, bound time.Duration, what string, ok func() bool) {
 	t.Helper()
-	deadline := time.Now().Add(bound)
-	for !ok() {
-		if time.Now().After(deadline) {
-			t.Fatalf("not within %v: %s", bound, what)
-		}
-		time.Sleep(2 * time.Millisecond)
-	}
+	testutil.WaitFor(t, bound, 2*time.Millisecond, what, ok)
 }
 
 func TestKeyedPool_SlowAppDoesNotDelayOthers(t *testing.T) {
