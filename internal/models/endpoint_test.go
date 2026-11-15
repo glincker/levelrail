@@ -14,6 +14,7 @@ import (
 	"time"
 
 	"github.com/GLINCKER/levelrail/internal/store"
+	"github.com/GLINCKER/levelrail/internal/store/storetest"
 )
 
 type credStore struct {
@@ -338,7 +339,7 @@ type extGW struct {
 func newExternalGateway(t *testing.T, primaryURL string, ep store.InferenceEndpoint, fallback *store.Model) extGW {
 	t.Helper()
 	t.Setenv(EndpointAllowPrivateEnv, "true")
-	db := openDB(t)
+	db := storetest.Open(t)
 	key, hash, prefix, err := NewAPIKey()
 	if err != nil {
 		t.Fatal(err)

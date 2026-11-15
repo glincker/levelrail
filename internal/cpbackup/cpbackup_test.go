@@ -2,26 +2,16 @@ package cpbackup
 
 import (
 	"context"
-	"path/filepath"
 	"testing"
 	"time"
 
 	"github.com/GLINCKER/levelrail/internal/store"
+	"github.com/GLINCKER/levelrail/internal/store/storetest"
 )
-
-func openDB(t *testing.T) *store.DB {
-	t.Helper()
-	db, err := store.Open(context.Background(), filepath.Join(t.TempDir(), "levelrail.db"))
-	if err != nil {
-		t.Fatalf("open: %v", err)
-	}
-	t.Cleanup(func() { _ = db.Close() })
-	return db
-}
 
 func TestManager_CreateListPrune(t *testing.T) {
 	ctx := context.Background()
-	m := NewManager(openDB(t), t.TempDir())
+	m := NewManager(storetest.Open(t), t.TempDir())
 	base := time.Date(2026, 1, 1, 0, 0, 0, 0, time.UTC)
 	tick := 0
 	m.now = func() time.Time { tick++; return base.Add(time.Duration(tick) * time.Minute) }
@@ -57,7 +47,7 @@ func TestManager_CreateListPrune(t *testing.T) {
 
 func TestManager_SameSecondDoesNotCollide(t *testing.T) {
 	ctx := context.Background()
-	m := NewManager(openDB(t), t.TempDir())
+	m := NewManager(storetest.Open(t), t.TempDir())
 	m.now = func() time.Time { return time.Date(2026, 1, 1, 0, 0, 0, 0, time.UTC) }
 	a, err := m.Create(ctx)
 	if err != nil {

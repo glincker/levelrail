@@ -15,6 +15,7 @@ import (
 	"google.golang.org/protobuf/encoding/protowire"
 
 	"github.com/GLINCKER/levelrail/internal/store"
+	"github.com/GLINCKER/levelrail/internal/store/storetest"
 )
 
 type rwSeries struct {
@@ -142,7 +143,7 @@ func TestRemoteWriteDestinationDelivers(t *testing.T) {
 	}
 	for _, tc := range tests {
 		t.Run(tc.name, func(t *testing.T) {
-			svc := newTestService(t, openDB(t), nil)
+			svc := newTestService(t, storetest.Open(t), nil)
 			in := tc.in
 			in.Name, in.Kind, in.Endpoint = "rw", store.ExportKindMetricsRemoteWrite, srv.URL+"/api/v1/push"
 			d, err := svc.Create(context.Background(), in)
@@ -172,7 +173,7 @@ func TestRemoteWriteDestinationDelivers(t *testing.T) {
 }
 
 func TestRemoteWriteValidation(t *testing.T) {
-	svc := newTestService(t, openDB(t), nil)
+	svc := newTestService(t, storetest.Open(t), nil)
 	bad := []Input{
 		{Name: "a", Kind: store.ExportKindMetricsRemoteWrite, Endpoint: "ftp://x"},
 		{Name: "a", Kind: store.ExportKindMetricsRemoteWrite, Endpoint: "http://x", MinLevel: "info"},

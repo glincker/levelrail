@@ -17,6 +17,7 @@ import (
 	"time"
 
 	"github.com/GLINCKER/levelrail/internal/store"
+	"github.com/GLINCKER/levelrail/internal/store/storetest"
 )
 
 const splunkToken = "11111111-2222-3333-4444-555555555555"
@@ -76,7 +77,7 @@ func seedChainedAudit(t *testing.T, db *store.DB, n int) {
 }
 
 func TestSplunkSinkDeliversWithTokenMetadataAndChainFields(t *testing.T) {
-	db := openDB(t)
+	db := storetest.Open(t)
 	rcv := &hecSink{}
 	srv := httptest.NewServer(rcv)
 	defer srv.Close()
@@ -116,7 +117,7 @@ func TestSplunkSinkDeliversWithTokenMetadataAndChainFields(t *testing.T) {
 }
 
 func TestSplunkHalfSuccessAdvancesCursorOnlyForAcceptedBatch(t *testing.T) {
-	db := openDB(t)
+	db := storetest.Open(t)
 	rcv := &hecSink{okLimit: 1}
 	srv := httptest.NewServer(rcv)
 	defer srv.Close()
@@ -167,7 +168,7 @@ func TestSplunkTLSVerifyIsOnByDefault(t *testing.T) {
 	rcv := &hecSink{}
 	srv := httptest.NewTLSServer(rcv)
 	defer srv.Close()
-	db := openDB(t)
+	db := storetest.Open(t)
 	svc := newTestService(t, db, nil)
 	d, err := svc.Create(context.Background(), Input{
 		Name: "splunk", Kind: store.ExportKindAuditSplunk, Endpoint: srv.URL, APIKey: splunkToken,
@@ -196,7 +197,7 @@ func TestSplunkBadTokenClassified(t *testing.T) {
 		_, _ = io.WriteString(w, `{"text":"Invalid token","code":4}`)
 	}))
 	defer srv.Close()
-	svc := newTestService(t, openDB(t), nil)
+	svc := newTestService(t, storetest.Open(t), nil)
 	d, err := svc.Create(context.Background(), Input{Name: "splunk", Kind: store.ExportKindAuditSplunk, Endpoint: srv.URL, APIKey: splunkToken})
 	if err != nil {
 		t.Fatal(err)
@@ -387,7 +388,7 @@ func TestOTLPAuditSinkUsesBrandServiceNameAndSecretHeaders(t *testing.T) {
 		_, _ = io.WriteString(w, `{}`)
 	}))
 	defer srv.Close()
-	svc := newTestService(t, openDB(t), nil)
+	svc := newTestService(t, storetest.Open(t), nil)
 	d, err := svc.Create(context.Background(), Input{
 		Name: "otel", Kind: store.ExportKindAuditOTLP, Endpoint: srv.URL, Headers: map[string]string{"X-Api-Key": "s3cr3t-value"},
 		Options: store.ExportOptions{Labels: map[string]string{"deployment_environment": "prod"}},
@@ -447,7 +448,7 @@ func TestOTLPAuditSinkUsesBrandServiceNameAndSecretHeaders(t *testing.T) {
 }
 
 func TestAuditSinkValidationAndSSRF(t *testing.T) {
-	svc := NewService(Deps{Store: openDB(t), Secrets: &memSecrets{}, Config: fastConfig(), Brand: "plat"})
+	svc := NewService(Deps{Store: storetest.Open(t), Secrets: &memSecrets{}, Config: fastConfig(), Brand: "plat"})
 	ctx := context.Background()
 	tests := []struct {
 		name string

@@ -8,13 +8,13 @@ import (
 	"io"
 	"log/slog"
 	"os"
-	"path/filepath"
 	"strings"
 	"testing"
 	"time"
 
 	"github.com/GLINCKER/levelrail/internal/envredact"
 	"github.com/GLINCKER/levelrail/internal/store"
+	"github.com/GLINCKER/levelrail/internal/store/storetest"
 )
 
 func testSigner() *Signer { return NewSigner([]byte("0123456789abcdef0123456789abcdef")) }
@@ -126,16 +126,6 @@ func TestRedact_MasksSecretsAndTokens(t *testing.T) {
 	}
 }
 
-func openDB(t *testing.T) *store.DB {
-	t.Helper()
-	db, err := store.Open(context.Background(), filepath.Join(t.TempDir(), "levelrail.db"))
-	if err != nil {
-		t.Fatalf("store.Open: %v", err)
-	}
-	t.Cleanup(func() { _ = db.Close() })
-	return db
-}
-
 func newTestService(t *testing.T, db *store.DB, users UserRemover) *Service {
 	t.Helper()
 	logger := slog.New(slog.NewTextHandler(io.Discard, nil))
@@ -161,7 +151,7 @@ func (f *fakeRemover) RemoveUser(_ context.Context, id, _ string) error {
 
 func TestCampaign_RevokeAppliesAndIsAudited(t *testing.T) {
 	ctx := context.Background()
-	db := openDB(t)
+	db := storetest.Open(t)
 	seedToken(t, db, "tok_keep")
 	seedToken(t, db, "tok_drop")
 	svc := newTestService(t, db, &fakeRemover{})
@@ -223,7 +213,7 @@ func (failingRemover) RemoveUser(context.Context, string, string) error {
 
 func TestCampaign_FailedRevocationKeepsCampaignOpen(t *testing.T) {
 	ctx := context.Background()
-	db := openDB(t)
+	db := storetest.Open(t)
 	if err := db.CreateUser(ctx, store.User{ID: "usr_a", Email: "a@example.com", Abilities: []string{"read"}, CreatedAt: time.Now()}); err != nil {
 		t.Fatalf("CreateUser: %v", err)
 	}
@@ -258,7 +248,7 @@ func TestCampaign_FailedRevocationKeepsCampaignOpen(t *testing.T) {
 
 func TestEvidencePack_FailedGenerationLeavesNoCompletePack(t *testing.T) {
 	ctx := context.Background()
-	db := openDB(t)
+	db := storetest.Open(t)
 	svc := newTestService(t, db, nil)
 	svc.sections = func(time.Time, time.Time) []Section {
 		return []Section{
@@ -286,7 +276,7 @@ func TestEvidencePack_FailedGenerationLeavesNoCompletePack(t *testing.T) {
 
 func TestEvidencePack_GeneratesVerifiableArchive(t *testing.T) {
 	ctx := context.Background()
-	db := openDB(t)
+	db := storetest.Open(t)
 	svc := newTestService(t, db, nil)
 	p, err := svc.StartPack(ctx, time.Now().Add(-24*time.Hour), time.Now().Add(time.Hour), Actor{Name: "root"})
 	if err != nil {
@@ -313,7 +303,7 @@ func TestEvidencePack_GeneratesVerifiableArchive(t *testing.T) {
 }
 
 func TestStartPack_RejectsBadRange(t *testing.T) {
-	svc := newTestService(t, openDB(t), nil)
+	svc := newTestService(t, storetest.Open(t), nil)
 	now := time.Now()
 	for _, r := range [][2]time.Time{{now, now}, {now, now.Add(-time.Hour)}, {now.AddDate(-3, 0, 0), now}} {
 		if _, err := svc.StartPack(context.Background(), r[0], r[1], Actor{}); !errors.Is(err, ErrInvalidRange) {

@@ -4,7 +4,6 @@ import (
 	"context"
 	"errors"
 	"log/slog"
-	"path/filepath"
 	"strings"
 	"testing"
 	"time"
@@ -13,6 +12,7 @@ import (
 	"github.com/GLINCKER/levelrail/internal/reconcile/application"
 	"github.com/GLINCKER/levelrail/internal/spec"
 	"github.com/GLINCKER/levelrail/internal/store"
+	"github.com/GLINCKER/levelrail/internal/store/storetest"
 )
 
 const testInstance = "inst-1"
@@ -51,16 +51,6 @@ func (f *fakeVolumes) RemoveVolume(_ context.Context, n string) error {
 
 func ours(name string) docker.ContainerState {
 	return docker.ContainerState{ID: "id-" + name, Name: name, Labels: map[string]string{spec.InstanceLabelKey: testInstance}}
-}
-
-func openDB(t *testing.T) *store.DB {
-	t.Helper()
-	db, err := store.Open(context.Background(), filepath.Join(t.TempDir(), "l.db"))
-	if err != nil {
-		t.Fatal(err)
-	}
-	t.Cleanup(func() { _ = db.Close() })
-	return db
 }
 
 func seedService(t *testing.T, db *store.DB, name string) store.DesiredService {
@@ -166,7 +156,7 @@ func newReaper(t *testing.T, db *store.DB, rt *fakeRuntime, vols VolumeBackend, 
 
 func TestReapGraceDryRunAndIdempotence(t *testing.T) {
 	ctx := context.Background()
-	db := openDB(t)
+	db := storetest.Open(t)
 	kept := seedService(t, db, "web")
 	rt := &fakeRuntime{containers: []docker.ContainerState{
 		ours(application.ContainerName("web", application.NameImage(kept), "")),
@@ -212,7 +202,7 @@ func TestReapGraceDryRunAndIdempotence(t *testing.T) {
 
 func TestReapRemoveFailureRetriesAndKeepsSighting(t *testing.T) {
 	ctx := context.Background()
-	db := openDB(t)
+	db := storetest.Open(t)
 	seedService(t, db, "web")
 	rt := &fakeRuntime{containers: []docker.ContainerState{ours(application.ContainerName("gone", "i", ""))}, removeErr: errors.New("busy")}
 	now := time.Now()
@@ -239,7 +229,7 @@ func TestReapRemoveFailureRetriesAndKeepsSighting(t *testing.T) {
 
 func TestReapRefusesWhenNothingDesiredAndCapsPerPass(t *testing.T) {
 	ctx := context.Background()
-	db := openDB(t)
+	db := storetest.Open(t)
 	rt := &fakeRuntime{containers: []docker.ContainerState{ours(application.ContainerName("a", "i", ""))}}
 	now := time.Now()
 	cfg := DefaultConfig()
@@ -264,7 +254,7 @@ func TestReapRefusesWhenNothingDesiredAndCapsPerPass(t *testing.T) {
 
 func TestReapVolumesOptInAndNeverDatabaseVolumes(t *testing.T) {
 	ctx := context.Background()
-	db := openDB(t)
+	db := storetest.Open(t)
 	seedService(t, db, "web")
 	rt := &fakeRuntime{}
 	vols := &fakeVolumes{vols: []docker.NamedVolume{{Name: "app-old"}, {Name: "db-gone-data"}, {Name: "app-used", Mounted: true}}}
@@ -302,7 +292,7 @@ type multiNodeRuntimes map[string]*fakeRuntime
 
 func TestReapMisplacedContainerOnlyWhenTargetNodeRuns(t *testing.T) {
 	ctx := context.Background()
-	db := openDB(t)
+	db := storetest.Open(t)
 	svc := store.DesiredService{Name: "web", Image: "img:v1", Port: 80, NodeID: "n2"}
 	if err := db.SaveDesiredService(ctx, svc); err != nil {
 		t.Fatal(err)
@@ -373,7 +363,7 @@ func TestServedSet(t *testing.T) {
 
 func TestReapStaleCertificates(t *testing.T) {
 	ctx := context.Background()
-	db := openDB(t)
+	db := storetest.Open(t)
 	seedService(t, db, "web")
 	certs := &fakeCerts{keys: map[string]bool{}}
 	for _, d := range []string{"live.example.com", "old.example.com", "wildcard_.apps.dev"} {

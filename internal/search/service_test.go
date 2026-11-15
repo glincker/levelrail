@@ -4,13 +4,12 @@ import (
 	"context"
 	"errors"
 	"fmt"
-	"path/filepath"
 	"slices"
 	"testing"
 	"time"
 
 	"github.com/GLINCKER/levelrail/internal/search"
-	"github.com/GLINCKER/levelrail/internal/store"
+	"github.com/GLINCKER/levelrail/internal/store/storetest"
 )
 
 type staticProvider struct {
@@ -24,16 +23,6 @@ func (p staticProvider) Docs(context.Context) ([]search.Doc, error) { return p.d
 type allowFunc func(prefix, name, ability string) bool
 
 func (f allowFunc) Allowed(prefix, name, ability string) bool { return f(prefix, name, ability) }
-
-func openDB(t *testing.T) *store.DB {
-	t.Helper()
-	db, err := store.Open(context.Background(), filepath.Join(t.TempDir(), "s.db"))
-	if err != nil {
-		t.Fatalf("open: %v", err)
-	}
-	t.Cleanup(func() { _ = db.Close() })
-	return db
-}
 
 func appDoc(name, body string, tags ...string) search.Doc {
 	return search.Doc{Ref: "app:" + name, Kind: search.KindApp, Title: name, Body: body, Tags: tags, Env: "prod",
@@ -71,7 +60,7 @@ func TestParseQuery(t *testing.T) {
 }
 
 func TestSearchFiltersAndRanks(t *testing.T) {
-	db := openDB(t)
+	db := storetest.Open(t)
 	svc := search.New(db, nil,
 		staticProvider{search.KindApp, []search.Doc{appDoc("api", "nginx:1", "backend"), appDoc("web", "node:20", "frontend"), appDoc("rapid-worker", "go")}},
 		staticProvider{search.KindAction, actionDocs("api", "web")},
@@ -114,7 +103,7 @@ func TestSearchFiltersAndRanks(t *testing.T) {
 }
 
 func TestSearchPagingAndUsageBoost(t *testing.T) {
-	db := openDB(t)
+	db := storetest.Open(t)
 	var docs []search.Doc
 	for i := range 30 {
 		docs = append(docs, appDoc(fmt.Sprintf("svc-%02d", i), "common"))
@@ -148,7 +137,7 @@ func TestSearchPagingAndUsageBoost(t *testing.T) {
 }
 
 func TestRecordUseHidesUnauthorizedRefs(t *testing.T) {
-	db := openDB(t)
+	db := storetest.Open(t)
 	svc := search.New(db, nil, staticProvider{search.KindApp, []search.Doc{appDoc("secret", "x")}})
 	if err := svc.Reconcile(context.Background()); err != nil {
 		t.Fatal(err)
@@ -160,7 +149,7 @@ func TestRecordUseHidesUnauthorizedRefs(t *testing.T) {
 }
 
 func TestReconcileDropsRemovedDocs(t *testing.T) {
-	db := openDB(t)
+	db := storetest.Open(t)
 	p := &mutableProvider{docs: []search.Doc{appDoc("alpha", "x"), appDoc("beta", "x")}}
 	svc := search.New(db, nil, p)
 	c := search.Caller{PrincipalID: "u", Authz: allowFunc(func(string, string, string) bool { return true })}
@@ -183,7 +172,7 @@ func (p *mutableProvider) Kind() search.Kind                          { return s
 func (p *mutableProvider) Docs(context.Context) ([]search.Doc, error) { return p.docs, nil }
 
 func TestSavedSearchesAreOwnerScoped(t *testing.T) {
-	db := openDB(t)
+	db := storetest.Open(t)
 	svc := search.New(db, nil)
 	ctx := context.Background()
 	s, err := svc.SaveSearch(ctx, "user:1", "prod apis", "env:prod api")
@@ -220,7 +209,7 @@ func TestDocValidateRejectsMissingAuthzFields(t *testing.T) {
 			t.Errorf("%s: doc should be invalid", name)
 		}
 	}
-	db := openDB(t)
+	db := storetest.Open(t)
 	bad := good
 	bad.Prefix = ""
 	svc := search.New(db, nil, staticProvider{search.KindApp, []search.Doc{bad}})
@@ -234,7 +223,7 @@ type recordingAuthz struct{ calls int }
 func (r *recordingAuthz) Allowed(string, string, string) bool { r.calls++; return true }
 
 func TestSearchCallsAuthorizerForEveryHit(t *testing.T) {
-	db := openDB(t)
+	db := storetest.Open(t)
 	svc := search.New(db, nil, staticProvider{search.KindApp, []search.Doc{appDoc("a1", "x"), appDoc("a2", "x"), appDoc("a3", "x")}})
 	rec := &recordingAuthz{}
 	r, err := svc.Search(context.Background(), search.Caller{PrincipalID: "u", Authz: rec}, search.Request{Q: "x"})
@@ -244,7 +233,7 @@ func TestSearchCallsAuthorizerForEveryHit(t *testing.T) {
 }
 
 func TestSearchCandidatesAreCapped(t *testing.T) {
-	db := openDB(t)
+	db := storetest.Open(t)
 	docs := make([]search.Doc, 0, 700)
 	for i := range 700 {
 		docs = append(docs, appDoc(fmt.Sprintf("svc-%03d", i), "shared body"))

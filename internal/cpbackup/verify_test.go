@@ -6,12 +6,14 @@ import (
 	"os"
 	"path/filepath"
 	"testing"
+
+	"github.com/GLINCKER/levelrail/internal/store/storetest"
 )
 
 func TestManager_Verify(t *testing.T) {
 	ctx := context.Background()
 	dir := t.TempDir()
-	m := NewManager(openDB(t), dir)
+	m := NewManager(storetest.Open(t), dir)
 	info, err := m.Create(ctx)
 	if err != nil {
 		t.Fatalf("create: %v", err)
