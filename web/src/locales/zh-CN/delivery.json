@@ -1,0 +1,70 @@
+{
+  "title": "交付",
+  "category": {
+    "deploys": "部署",
+    "builds": "构建",
+    "statuses": "状态",
+    "previews": "预览",
+    "integrations": "集成",
+    "other": "其他"
+  },
+  "status": {
+    "succeeded": "成功",
+    "failed": "失败",
+    "in_progress": "进行中",
+    "pending": "待处理",
+    "info": "信息",
+    "unknown": "未知"
+  },
+  "health": {
+    "ok": "正常",
+    "degraded": "降级",
+    "needs_reconnect": "需要重新连接",
+    "expired": "已过期",
+    "unknown": "未知"
+  },
+  "filters": {
+    "kind": "按类型筛选",
+    "status": "状态",
+    "search": "搜索时间线",
+    "searchPlaceholder": "搜索标题或详情",
+    "statusOption": {
+      "all": "所有状态",
+      "failed": "失败",
+      "in_progress": "进行中",
+      "succeeded": "成功"
+    }
+  },
+  "row": {
+    "openPreview": "打开预览",
+    "openRun": "打开运行",
+    "openLink": "打开链接",
+    "openIntegrations": "打开集成",
+    "postFailed": "向代码托管平台发布失败",
+    "noErrorDetail": "未记录错误详情。"
+  },
+  "header": {
+    "label": "交付概览",
+    "source": "来源",
+    "reporting": "状态上报",
+    "lastDeploy": "最近一次部署",
+    "none": "未连接",
+    "postFailing": "提交状态发布失败。代码托管平台上可能显示过时的状态。"
+  },
+  "day": {
+    "today": "今天",
+    "yesterday": "昨天",
+    "unknown": "日期未知"
+  },
+  "loadMore": "加载更多",
+  "retry": "重试",
+  "empty": {
+    "title": "暂无交付活动",
+    "description": "此应用的部署、代码托管状态、预览和连接变更会显示在这里。"
+  },
+  "noMatch": {
+    "title": "没有符合这些筛选条件的内容",
+    "description": "请尝试其他类型、状态或搜索词。",
+    "clear": "清除筛选"
+  }
+}

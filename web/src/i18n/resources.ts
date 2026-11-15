@@ -79,6 +79,7 @@ import type observability from '../locales/en/observability.json'
 import type trialApp from '../locales/en/trialApp.json'
 import type tags from '../locales/en/tags.json'
 import type previews from '../locales/en/previews.json'
+import type delivery from '../locales/en/delivery.json'
 import type branchDeploys from '../locales/en/branchDeploys.json'
 import type deployContexts from '../locales/en/deployContexts.json'
 import type backups from '../locales/en/backups.json'
@@ -230,6 +231,7 @@ declare module 'i18next' {
       domainPolicies: typeof domainPolicies
       observability: typeof observability
       previews: typeof previews
+      delivery: typeof delivery
       branchDeploys: typeof branchDeploys
       deployContexts: typeof deployContexts
       backups: typeof backups

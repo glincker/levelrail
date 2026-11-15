@@ -1,0 +1,70 @@
+{
+  "title": "Entrega",
+  "category": {
+    "deploys": "Despliegues",
+    "builds": "Compilaciones",
+    "statuses": "Estados",
+    "previews": "Vistas previas",
+    "integrations": "Integraciones",
+    "other": "Otros"
+  },
+  "status": {
+    "succeeded": "Correcto",
+    "failed": "Fallido",
+    "in_progress": "En curso",
+    "pending": "Pendiente",
+    "info": "Info",
+    "unknown": "Desconocido"
+  },
+  "health": {
+    "ok": "Sano",
+    "degraded": "Degradado",
+    "needs_reconnect": "Requiere reconexión",
+    "expired": "Caducado",
+    "unknown": "Desconocido"
+  },
+  "filters": {
+    "kind": "Filtrar por tipo",
+    "status": "Estado",
+    "search": "Buscar en la línea de tiempo",
+    "searchPlaceholder": "Buscar por título o detalle",
+    "statusOption": {
+      "all": "Todos los estados",
+      "failed": "Fallido",
+      "in_progress": "En curso",
+      "succeeded": "Correcto"
+    }
+  },
+  "row": {
+    "openPreview": "Abrir vista previa",
+    "openRun": "Abrir ejecución",
+    "openLink": "Abrir enlace",
+    "openIntegrations": "Abrir Integraciones",
+    "postFailed": "Falló la publicación en el repositorio",
+    "noErrorDetail": "No se registró ningún detalle del error."
+  },
+  "header": {
+    "label": "Resumen de entrega",
+    "source": "Origen",
+    "reporting": "Informe de estado",
+    "lastDeploy": "Último despliegue",
+    "none": "Sin conectar",
+    "postFailing": "Falla la publicación del estado del commit. El repositorio puede mostrar un estado desactualizado."
+  },
+  "day": {
+    "today": "Hoy",
+    "yesterday": "Ayer",
+    "unknown": "Fecha desconocida"
+  },
+  "loadMore": "Cargar más",
+  "retry": "Reintentar",
+  "empty": {
+    "title": "Aún no hay actividad de entrega",
+    "description": "Aquí aparecen los despliegues, estados del repositorio, vistas previas y cambios de conexión de esta app."
+  },
+  "noMatch": {
+    "title": "Nada coincide con estos filtros",
+    "description": "Prueba con otro tipo, estado o búsqueda.",
+    "clear": "Borrar filtros"
+  }
+}

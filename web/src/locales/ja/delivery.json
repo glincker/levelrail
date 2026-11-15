@@ -1,0 +1,70 @@
+{
+  "title": "デリバリー",
+  "category": {
+    "deploys": "デプロイ",
+    "builds": "ビルド",
+    "statuses": "ステータス",
+    "previews": "プレビュー",
+    "integrations": "連携",
+    "other": "その他"
+  },
+  "status": {
+    "succeeded": "成功",
+    "failed": "失敗",
+    "in_progress": "進行中",
+    "pending": "保留中",
+    "info": "情報",
+    "unknown": "不明"
+  },
+  "health": {
+    "ok": "正常",
+    "degraded": "低下",
+    "needs_reconnect": "再接続が必要",
+    "expired": "期限切れ",
+    "unknown": "不明"
+  },
+  "filters": {
+    "kind": "種類で絞り込む",
+    "status": "ステータス",
+    "search": "タイムラインを検索",
+    "searchPlaceholder": "タイトルまたは詳細を検索",
+    "statusOption": {
+      "all": "すべてのステータス",
+      "failed": "失敗",
+      "in_progress": "進行中",
+      "succeeded": "成功"
+    }
+  },
+  "row": {
+    "openPreview": "プレビューを開く",
+    "openRun": "実行を開く",
+    "openLink": "リンクを開く",
+    "openIntegrations": "連携を開く",
+    "postFailed": "リポジトリへの投稿に失敗しました",
+    "noErrorDetail": "エラーの詳細は記録されていません。"
+  },
+  "header": {
+    "label": "デリバリーの概要",
+    "source": "ソース",
+    "reporting": "ステータス報告",
+    "lastDeploy": "最後のデプロイ",
+    "none": "未接続",
+    "postFailing": "コミットステータスの投稿に失敗しています。リポジトリ側の表示が古い可能性があります。"
+  },
+  "day": {
+    "today": "今日",
+    "yesterday": "昨日",
+    "unknown": "日付不明"
+  },
+  "loadMore": "さらに読み込む",
+  "retry": "再試行",
+  "empty": {
+    "title": "デリバリーのアクティビティはまだありません",
+    "description": "このアプリのデプロイ、リポジトリのステータス、プレビュー、接続の変更がここに表示されます。"
+  },
+  "noMatch": {
+    "title": "条件に一致する項目がありません",
+    "description": "別の種類、ステータス、検索語をお試しください。",
+    "clear": "絞り込みを解除"
+  }
+}

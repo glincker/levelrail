@@ -64,6 +64,7 @@ export const NAMESPACES = [
   'domainPolicies',
   'observability',
   'previews',
+  'delivery',
   'branchDeploys',
   'deployContexts',
   'backups',

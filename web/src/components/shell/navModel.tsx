@@ -39,6 +39,7 @@ import {
   PlugGlassIcon,
   RestoreGlassIcon,
   RocketGlassIcon,
+  WorkflowGlassIcon,
   ScrollGlassIcon,
   ServerGlassIcon,
   SettingsGlassIcon,
@@ -599,6 +600,7 @@ export function chordFor(to: string): string[] | undefined {
 export type AppTo =
   | '/apps/$name/overview'
   | '/apps/$name/deploys'
+  | '/apps/$name/delivery'
   | '/apps/$name/source'
   | '/apps/$name/previews'
   | '/apps/$name/deploy-settings'
@@ -678,6 +680,12 @@ export const APP_NAV_SECTIONS: AppNavSection[] = [
         glass(RestoreGlassIcon),
       ),
       item('source', 'Source', '/apps/$name/source', glass(GitBranchGlassIcon)),
+      item(
+        'delivery',
+        'Delivery',
+        '/apps/$name/delivery',
+        glass(WorkflowGlassIcon),
+      ),
       item(
         'previews',
         'Previews',

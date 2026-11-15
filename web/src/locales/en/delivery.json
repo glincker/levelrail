@@ -1,0 +1,70 @@
+{
+  "title": "Delivery",
+  "category": {
+    "deploys": "Deploys",
+    "builds": "Builds",
+    "statuses": "Statuses",
+    "previews": "Previews",
+    "integrations": "Integrations",
+    "other": "Other"
+  },
+  "status": {
+    "succeeded": "Succeeded",
+    "failed": "Failed",
+    "in_progress": "In progress",
+    "pending": "Pending",
+    "info": "Info",
+    "unknown": "Unknown"
+  },
+  "health": {
+    "ok": "Healthy",
+    "degraded": "Degraded",
+    "needs_reconnect": "Needs reconnect",
+    "expired": "Expired",
+    "unknown": "Unknown"
+  },
+  "filters": {
+    "kind": "Filter by kind",
+    "status": "Status",
+    "search": "Search the timeline",
+    "searchPlaceholder": "Search title or detail",
+    "statusOption": {
+      "all": "All statuses",
+      "failed": "Failed",
+      "in_progress": "In progress",
+      "succeeded": "Succeeded"
+    }
+  },
+  "row": {
+    "openPreview": "Open preview",
+    "openRun": "Open run",
+    "openLink": "Open link",
+    "openIntegrations": "Open Integrations",
+    "postFailed": "Post to the forge failed",
+    "noErrorDetail": "No error detail was recorded."
+  },
+  "header": {
+    "label": "Delivery summary",
+    "source": "Source",
+    "reporting": "Status reporting",
+    "lastDeploy": "Last deploy",
+    "none": "None connected",
+    "postFailing": "Posting commit status is failing. The forge may show a stale state."
+  },
+  "day": {
+    "today": "Today",
+    "yesterday": "Yesterday",
+    "unknown": "Unknown date"
+  },
+  "loadMore": "Load more",
+  "retry": "Retry",
+  "empty": {
+    "title": "No delivery activity yet",
+    "description": "Deploys, forge statuses, previews and connection changes for this app show up here."
+  },
+  "noMatch": {
+    "title": "Nothing matches these filters",
+    "description": "Try a different kind, status or search.",
+    "clear": "Clear filters"
+  }
+}

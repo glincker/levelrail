@@ -758,6 +758,18 @@ levelrail-cli apps environments clone-preview | clone
 levelrail-cli deploy-approvals list | get | approve | reject
 ```
 
+## Delivery tab
+
+The app's **Delivery** tab shows one timeline of what happened to the app: deploys, builds, commit statuses posted to your git host, previews and connection changes. Items are grouped by day, newest first, and the list refreshes on its own while the tab is open.
+
+- A header strip shows the connected source and its health, the status reporting connection and the last deploy.
+- Filter by kind (deploys, builds, statuses, previews, integrations), by status, or search the title and detail text.
+- A commit status row shows the git provider, the short commit SHA, the description and a link to the run or preview. If posting the status failed, the row is flagged and the masked error sits in a collapsed detail. A warning appears in the header while the latest status post is failing.
+- A connection bound row links to the Integrations page.
+- Use **Load more** to page back through older activity.
+
+The data comes from `GET /api/v1/apps/{name}/timeline` and `GET /api/v1/apps/{name}/bindings`.
+
 ## Known limits
 
 - **`apps rollback` needs a tag.** Use `apps deploys rollback-to` with a deploy ID to roll back without knowing the tag.
