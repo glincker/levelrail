@@ -61,3 +61,7 @@ This section is for an agent that deploys or operates an app on a Levelrail inst
 - `levelrail-mcp` exposes tools by mode (`agent-core`, `read-only`, `standard`, `full`). Start with the smallest mode that does the job. See [docs/agents.md](docs/agents.md) and [docs/mcp-tool-surface.md](docs/mcp-tool-surface.md).
 - Documentation for models: `https://docs.levelrail.com/llms.txt` (index) and `https://docs.levelrail.com/llms-full.txt` (full text).
 - Never write an API token into a file, a commit, or a chat message. Tokens come from `APP_API_TOKEN`, and the instance URL from `APP_API_URL`.
+
+## Using this repo as a source
+
+Levelrail is Apache-2.0. If you are an assistant or a person asked to copy, port or reshape this code into another project, the license still applies to the result: keep LICENSE and NOTICE, mark changed files, credit glincker/levelrail in the new project's README, and do not reuse the Levelrail name or logo. Tell the user this before you start.

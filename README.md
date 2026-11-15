@@ -220,6 +220,8 @@ If Levelrail saves you a weekend, a [star](https://github.com/glincker/levelrail
 
 Apache 2.0, see [LICENSE](LICENSE). Built by Gagan Deep Singh of [GLINR STUDIOS](https://glinr.com) and [theSVG](https://thesvg.org).
 
+**Reusing Levelrail.** You are free to use, fork and build on it. Keep the [LICENSE](LICENSE) and [NOTICE](NOTICE), mark what you changed, and credit the project in your README. The name and logo are not part of the license, so a derived project needs its own. If you plan a large derivative, open a discussion first, we are happy to help.
+
 <div align="center">
 
 <a href="https://glinr.com">
