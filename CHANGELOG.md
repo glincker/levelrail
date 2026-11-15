@@ -1,5 +1,61 @@
 # Changelog
 
+## [1.2.0](https://github.com/glincker/levelrail/compare/v1.1.2...v1.2.0) (2026-11-15)
+
+
+### Features
+
+* apply and stack apply --wait report app failures after apply ([dcc790c](https://github.com/glincker/levelrail/commit/dcc790c76c89d855f73b13f9109e1b14262041d3))
+* declare cron jobs in files and reject invalid alert rules with stable codes ([dcc790c](https://github.com/glincker/levelrail/commit/dcc790c76c89d855f73b13f9109e1b14262041d3))
+* drift view with live compare in the IaC Studio ([dcc790c](https://github.com/glincker/levelrail/commit/dcc790c76c89d855f73b13f9109e1b14262041d3))
+* http jobs and a cron jobs data source in the Terraform provider ([dcc790c](https://github.com/glincker/levelrail/commit/dcc790c76c89d855f73b13f9109e1b14262041d3))
+* http-mode jobs in the CronJob kind ([dcc790c](https://github.com/glincker/levelrail/commit/dcc790c76c89d855f73b13f9109e1b14262041d3))
+* IaC stack Action caps the plan comment and exposes the exit code ([dcc790c](https://github.com/glincker/levelrail/commit/dcc790c76c89d855f73b13f9109e1b14262041d3))
+* import a deploy.yml or a Portainer stack into IaC documents ([dcc790c](https://github.com/glincker/levelrail/commit/dcc790c76c89d855f73b13f9109e1b14262041d3))
+* Levelrail v1.2.0 ([dcc790c](https://github.com/glincker/levelrail/commit/dcc790c76c89d855f73b13f9109e1b14262041d3))
+* levelrail_cron_job Terraform resource for scheduled jobs ([dcc790c](https://github.com/glincker/levelrail/commit/dcc790c76c89d855f73b13f9109e1b14262041d3))
+* levelrail_projects data source in the Terraform provider ([dcc790c](https://github.com/glincker/levelrail/commit/dcc790c76c89d855f73b13f9109e1b14262041d3))
+* manage app registry credential references in IaC ([dcc790c](https://github.com/glincker/levelrail/commit/dcc790c76c89d855f73b13f9109e1b14262041d3))
+* per-resource status and live diff in the IaC Studio plan ([dcc790c](https://github.com/glincker/levelrail/commit/dcc790c76c89d855f73b13f9109e1b14262041d3))
+* revision timeline for stacks in the IaC Studio ([dcc790c](https://github.com/glincker/levelrail/commit/dcc790c76c89d855f73b13f9109e1b14262041d3))
+* secret leak guard minimum length is a runtime setting ([dcc790c](https://github.com/glincker/levelrail/commit/dcc790c76c89d855f73b13f9109e1b14262041d3))
+* show message and fix for every frozen IaC plan code ([dcc790c](https://github.com/glincker/levelrail/commit/dcc790c76c89d855f73b13f9109e1b14262041d3))
+* skill reference for the projects command ([dcc790c](https://github.com/glincker/levelrail/commit/dcc790c76c89d855f73b13f9109e1b14262041d3))
+* stack plan and apply take --allow-mass-prune ([dcc790c](https://github.com/glincker/levelrail/commit/dcc790c76c89d855f73b13f9109e1b14262041d3))
+* Studio CronJob and AlertRule coverage, readable plan issue codes ([dcc790c](https://github.com/glincker/levelrail/commit/dcc790c76c89d855f73b13f9109e1b14262041d3))
+* top-level projects command and stack create project hint ([dcc790c](https://github.com/glincker/levelrail/commit/dcc790c76c89d855f73b13f9109e1b14262041d3))
+
+
+### Bug Fixes
+
+* apps create keeps build.registryCredential and rejects unknown names ([dcc790c](https://github.com/glincker/levelrail/commit/dcc790c76c89d855f73b13f9109e1b14262041d3))
+* compose teardown refuses when any member service is protected ([dcc790c](https://github.com/glincker/levelrail/commit/dcc790c76c89d855f73b13f9109e1b14262041d3))
+* document the cron and alert rule codes in the generated error reference ([dcc790c](https://github.com/glincker/levelrail/commit/dcc790c76c89d855f73b13f9109e1b14262041d3))
+* drop the thread bound parent death signal from the sync clone ([dcc790c](https://github.com/glincker/levelrail/commit/dcc790c76c89d855f73b13f9109e1b14262041d3))
+* harden the sync clone path ([dcc790c](https://github.com/glincker/levelrail/commit/dcc790c76c89d855f73b13f9109e1b14262041d3))
+* harden the sync clone path further ([dcc790c](https://github.com/glincker/levelrail/commit/dcc790c76c89d855f73b13f9109e1b14262041d3))
+* iac plan refuses binding an App into a protected environment ([dcc790c](https://github.com/glincker/levelrail/commit/dcc790c76c89d855f73b13f9109e1b14262041d3))
+* import emits a portless app as commented guidance instead of failing ([dcc790c](https://github.com/glincker/levelrail/commit/dcc790c76c89d855f73b13f9109e1b14262041d3))
+* import no longer invents port 80 for services without ports ([dcc790c](https://github.com/glincker/levelrail/commit/dcc790c76c89d855f73b13f9109e1b14262041d3))
+* list the deploy.yml and portainer importers in the command tree and report unknown flags ([dcc790c](https://github.com/glincker/levelrail/commit/dcc790c76c89d855f73b13f9109e1b14262041d3))
+* list the sync sparse clone in the process spawn allowlist ([dcc790c](https://github.com/glincker/levelrail/commit/dcc790c76c89d855f73b13f9109e1b14262041d3))
+* map registry_credential_not_found plan code ([dcc790c](https://github.com/glincker/levelrail/commit/dcc790c76c89d855f73b13f9109e1b14262041d3))
+* oci connect cleanup names only created objects, full OCI errors, user email ([dcc790c](https://github.com/glincker/levelrail/commit/dcc790c76c89d855f73b13f9109e1b14262041d3))
+* remove containers a deploy pass created after its app was deleted ([dcc790c](https://github.com/glincker/levelrail/commit/dcc790c76c89d855f73b13f9109e1b14262041d3))
+* run the sync git child with a minimal environment ([dcc790c](https://github.com/glincker/levelrail/commit/dcc790c76c89d855f73b13f9109e1b14262041d3))
+* stack create with a missing project says to use stack apply ([dcc790c](https://github.com/glincker/levelrail/commit/dcc790c76c89d855f73b13f9109e1b14262041d3))
+* stack destroy labels, protected refusal status and sparse success log ([dcc790c](https://github.com/glincker/levelrail/commit/dcc790c76c89d855f73b13f9109e1b14262041d3))
+* stack destroy removes compose app members instead of reporting them destroyed ([dcc790c](https://github.com/glincker/levelrail/commit/dcc790c76c89d855f73b13f9109e1b14262041d3))
+* stack sync keeps the dropped-documents message in status ([dcc790c](https://github.com/glincker/levelrail/commit/dcc790c76c89d855f73b13f9109e1b14262041d3))
+* sync clones only the sync path, shallow and blobless ([dcc790c](https://github.com/glincker/levelrail/commit/dcc790c76c89d855f73b13f9109e1b14262041d3))
+* sync names the project filter when it drops every document ([dcc790c](https://github.com/glincker/levelrail/commit/dcc790c76c89d855f73b13f9109e1b14262041d3))
+* type IaC plan code and template i18n keys ([dcc790c](https://github.com/glincker/levelrail/commit/dcc790c76c89d855f73b13f9109e1b14262041d3))
+
+
+### Performance
+
+* plan indexes domains per app instead of rescanning every resource ([dcc790c](https://github.com/glincker/levelrail/commit/dcc790c76c89d855f73b13f9109e1b14262041d3))
+
 ## [1.1.2](https://github.com/glincker/levelrail/compare/v1.1.1...v1.1.2) (2026-11-14)
 
 

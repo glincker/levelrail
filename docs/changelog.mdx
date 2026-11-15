@@ -4,6 +4,61 @@ description: Every Levelrail release with highlights, fixes and upgrade notes.
 "og:url": "https://docs.levelrail.com/changelog"
 ---
 
+<Update label="1.2.0" description="2026-11-15">
+**Features**
+
+* apply and stack apply --wait report app failures after apply
+* declare cron jobs in files and reject invalid alert rules with stable codes
+* drift view with live compare in the IaC Studio
+* http jobs and a cron jobs data source in the Terraform provider
+* http-mode jobs in the CronJob kind
+* IaC stack Action caps the plan comment and exposes the exit code
+* import a deploy.yml or a Portainer stack into IaC documents
+* Levelrail v1.2.0
+* levelrail_cron_job Terraform resource for scheduled jobs
+* levelrail_projects data source in the Terraform provider
+* manage app registry credential references in IaC
+* per-resource status and live diff in the IaC Studio plan
+* revision timeline for stacks in the IaC Studio
+* secret leak guard minimum length is a runtime setting
+* show message and fix for every frozen IaC plan code
+* skill reference for the projects command
+* stack plan and apply take --allow-mass-prune
+* Studio CronJob and AlertRule coverage, readable plan issue codes
+* top-level projects command and stack create project hint
+
+
+**Bug Fixes**
+
+* apps create keeps build.registryCredential and rejects unknown names
+* compose teardown refuses when any member service is protected
+* document the cron and alert rule codes in the generated error reference
+* drop the thread bound parent death signal from the sync clone
+* harden the sync clone path
+* harden the sync clone path further
+* iac plan refuses binding an App into a protected environment
+* import emits a portless app as commented guidance instead of failing
+* import no longer invents port 80 for services without ports
+* list the deploy.yml and portainer importers in the command tree and report unknown flags
+* list the sync sparse clone in the process spawn allowlist
+* map registry_credential_not_found plan code
+* oci connect cleanup names only created objects, full OCI errors, user email
+* remove containers a deploy pass created after its app was deleted
+* run the sync git child with a minimal environment
+* stack create with a missing project says to use stack apply
+* stack destroy labels, protected refusal status and sparse success log
+* stack destroy removes compose app members instead of reporting them destroyed
+* stack sync keeps the dropped-documents message in status
+* sync clones only the sync path, shallow and blobless
+* sync names the project filter when it drops every document
+* type IaC plan code and template i18n keys
+
+
+**Performance**
+
+* plan indexes domains per app instead of rescanning every resource
+</Update>
+
 <Update label="1.1.2" description="2026-11-14">
 **Bug Fixes**
 
