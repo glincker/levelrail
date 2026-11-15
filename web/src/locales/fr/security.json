@@ -461,7 +461,6 @@
     "hostAccess": "Je peux exécuter des commandes sur le serveur",
     "noChannelFix": "Envoyez un e-mail de test depuis les réglages de messagerie, créez un jeton signin:approve ou cochez la case pour confirmer que vous pouvez exécuter des commandes sur le serveur.",
     "channel": {
-      "verified_mail": "Code par e-mail (un e-mail de test a été envoyé récemment)",
       "approve_token": "Un jeton signin:approve détenu par un administrateur",
       "host_command": "La commande approve-signin sur le serveur"
     }

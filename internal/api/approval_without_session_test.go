@@ -245,3 +245,28 @@ func TestApprovalWithoutSession_ConcurrentPairMakesOnePendingApproval(t *testing
 		t.Fatalf("pending approvals = %d (%v), want 1", len(pending), err)
 	}
 }
+
+func TestApprovalWithoutSession_HoldNoteAndChannels(t *testing.T) {
+	h := newCodeHarness(t, true)
+	admin := loginTestSession(t, h.rt, h.db)
+	if got := h.rt.approvalChannels(context.Background(), ""); len(got) != 1 || got[0] != approvalChannelHostCommand {
+		t.Fatalf("channels = %v, want only the host command", got)
+	}
+	h.setApprovalMode(approvalWithoutSessionHold)
+	rec := h.send(http.MethodGet, "/api/v1/security/policy", "", "", admin)
+	var out securityPolicyResource
+	if err := json.Unmarshal(rec.Body.Bytes(), &out); err != nil {
+		t.Fatal(err)
+	}
+	if !strings.Contains(out.ApprovalHoldNote, "trusted") {
+		t.Fatalf("hold note = %q", out.ApprovalHoldNote)
+	}
+	if note := h.rt.approvalHoldNote(securityPolicy{ApprovalScope: approvalScopePasswordOnly}); !strings.Contains(note, "SSO and passkey") {
+		t.Fatalf("scope note missing: %q", note)
+	}
+	h.setApprovalMode(approvalWithoutSessionAllow)
+	rec = h.send(http.MethodGet, "/api/v1/security/policy", "", "", admin)
+	if strings.Contains(rec.Body.String(), "approval_hold_note") {
+		t.Fatalf("allow mode must carry no hold note: %s", rec.Body.String())
+	}
+}

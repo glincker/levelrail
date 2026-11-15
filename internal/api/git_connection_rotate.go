@@ -9,6 +9,7 @@ import (
 	"net/http"
 	"strconv"
 	"strings"
+	"sync"
 	"time"
 
 	"github.com/GLINCKER/levelrail/internal/gitprovider"
@@ -21,7 +22,26 @@ type gitlabTokenRotator interface {
 	RotateSelf(ctx context.Context, instanceURL, accessToken string, expiresAt time.Time) (token, newExpiry string, err error)
 }
 
-const gitRotateSaveAttempts = 3
+const (
+	gitRotateSaveAttempts = 3
+	envGitRotateSaveWait  = "APP_GIT_ROTATE_SAVE_BACKOFF"
+	defaultGitRotateWait  = 500 * time.Millisecond
+)
+
+// gitPendingKey and gitPendingToken hold a rotated token that could not be saved,
+// in memory only, until the next attempt or until the connection is reconnected.
+type gitPendingKey struct {
+	rt *Router
+	id string
+}
+
+type gitPendingToken struct {
+	token     string
+	exp       time.Time
+	newExpiry string
+}
+
+var gitPendingTokens sync.Map
 
 type rotateGitConnectionRequest struct {
 	// ExpiresAt is an optional YYYY-MM-DD date for the new token; the host may cap it.
@@ -105,6 +125,9 @@ func (rt *Router) rotateGitLabToken(ctx context.Context, c store.GitConnection, 
 	}
 	unlock := rt.gitOAuthLocks.lock(c.ID)
 	defer unlock()
+	if exp, handled, err := rt.savePendingGitToken(ctx, c); handled {
+		return exp, err
+	}
 	old, err := rt.gitConnSecrets.Resolve(ctx, c.SecretsKey, gitConnAccessTokenKey)
 	if err != nil {
 		return "", err
@@ -116,22 +139,53 @@ func (rt *Router) rotateGitLabToken(ctx context.Context, c store.GitConnection, 
 	if newToken == "" {
 		return "", errors.New("the host returned no token")
 	}
-	exp := parseGitExpiry(newExpiry)
+	return rt.finishGitRotate(ctx, c, gitPendingToken{token: newToken, exp: parseGitExpiry(newExpiry), newExpiry: newExpiry})
+}
+
+// finishGitRotate saves a rotated token with backoff. When every attempt fails the token is
+// kept in memory for a later retry and the connection is marked for reconnect.
+func (rt *Router) finishGitRotate(ctx context.Context, c store.GitConnection, p gitPendingToken) (string, error) {
+	// The host already replaced the old token, so a cancelled request must not abandon the save.
+	sctx := context.WithoutCancel(ctx)
+	wait := envDuration(envGitRotateSaveWait, defaultGitRotateWait)
 	var saveErr error
-	for range gitRotateSaveAttempts {
-		if saveErr = rt.saveRotatedGitToken(ctx, c, newToken, exp); saveErr == nil {
+	for i := range gitRotateSaveAttempts {
+		if i > 0 {
+			time.Sleep(wait * time.Duration(1<<(i-1)))
+		}
+		if saveErr = rt.saveRotatedGitToken(sctx, c, p.token, p.exp); saveErr == nil {
 			break
 		}
 	}
 	if saveErr != nil {
+		gitPendingTokens.Store(gitPendingKey{rt: rt, id: c.ID}, p)
+		rt.recordGitConn(sctx, &gitConnError{Provider: c.Provider, Key: c.ID, Status: store.GitConnNeedsReauthorize,
+			Detail: "the host rotated the token but it could not be saved; reconnect this connection", Err: errGitRotateLost})
 		return "", errGitRotateLost
 	}
+	gitPendingTokens.Delete(gitPendingKey{rt: rt, id: c.ID})
 	rt.markGitConnOK(ctx, c.ID)
 	rt.clearGitExpiryNotice(ctx, c.ID)
 	gitAccessCacheMu.Lock()
 	delete(gitAccessCache, c.ID)
 	gitAccessCacheMu.Unlock()
-	return newExpiry, nil
+	return p.newExpiry, nil
+}
+
+// savePendingGitToken retries a token kept from an earlier failed save, but only while the
+// connection still waits for it; a reconnect since then makes it stale.
+func (rt *Router) savePendingGitToken(ctx context.Context, c store.GitConnection) (string, bool, error) {
+	v, ok := gitPendingTokens.Load(gitPendingKey{rt: rt, id: c.ID})
+	if !ok {
+		return "", false, nil
+	}
+	if rt.gitConnHealth(ctx, c.ID).Status != store.GitConnNeedsReauthorize {
+		gitPendingTokens.Delete(gitPendingKey{rt: rt, id: c.ID})
+		return "", false, nil
+	}
+	p, _ := v.(gitPendingToken)
+	exp, err := rt.finishGitRotate(ctx, c, p)
+	return exp, true, err
 }
 
 // saveRotatedGitToken writes the expiry before the token so a half save never leaves a fresh token with a stale date.

@@ -460,7 +460,6 @@
     "hostAccess": "Ich kann Befehle auf dem Server ausführen",
     "noChannelFix": "Senden Sie eine Test-E-Mail in den Mail-Einstellungen, erstellen Sie ein signin:approve-Token oder bestätigen Sie per Häkchen, dass Sie Befehle auf dem Server ausführen können.",
     "channel": {
-      "verified_mail": "E-Mail-Code (kürzlich wurde eine Test-E-Mail gesendet)",
       "approve_token": "Ein signin:approve-Token eines Admins",
       "host_command": "Der Befehl approve-signin auf dem Server"
     }

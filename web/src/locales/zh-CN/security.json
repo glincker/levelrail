@@ -459,7 +459,6 @@
     "hostAccess": "我可以在服务器上运行命令",
     "noChannelFix": "请在邮件设置中发送测试邮件、创建 signin:approve 令牌,或勾选复选框确认你可以在服务器上运行命令。",
     "channel": {
-      "verified_mail": "邮件验证码(最近发送过测试邮件)",
       "approve_token": "管理员持有的 signin:approve 令牌",
       "host_command": "服务器上的 approve-signin 命令"
     }

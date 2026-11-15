@@ -459,7 +459,6 @@
     "hostAccess": "サーバーでコマンドを実行できます",
     "noChannelFix": "メール設定からテストメールを送信するか、signin:approve トークンを作成するか、チェックボックスでサーバーでコマンドを実行できることを確認してください。",
     "channel": {
-      "verified_mail": "メールのコード(最近テストメールを送信済み)",
       "approve_token": "管理者が所有する signin:approve トークン",
       "host_command": "サーバー上の approve-signin コマンド"
     }

@@ -148,6 +148,9 @@ export function ApprovalWithoutSessionCard({
               <li key={c}>{t(`withoutSession.channel.${c}`)}</li>
             ))}
           </ul>
+          {policy.approval_hold_note ? (
+            <p className="text-muted-foreground">{policy.approval_hold_note}</p>
+          ) : null}
           <label className="flex items-start gap-2">
             <Checkbox
               checked={confirmHost}

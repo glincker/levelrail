@@ -53,12 +53,13 @@ export interface SecurityPosture {
 export type ApprovalScope = 'password_only' | 'all_methods'
 
 export type ApprovalWithoutSession = 'allow' | 'hold'
-export type ApprovalChannel = 'verified_mail' | 'approve_token' | 'host_command'
+export type ApprovalChannel = 'approve_token' | 'host_command'
 
 export interface SecurityPolicy {
   approval_scope: ApprovalScope
   approval_without_session: ApprovalWithoutSession
   approval_channels: ApprovalChannel[]
+  approval_hold_note?: string
   max_token_lifetime_days: number
   warn_unused_days: number
   disable_unused_days: number

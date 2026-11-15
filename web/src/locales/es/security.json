@@ -460,7 +460,6 @@
     "hostAccess": "Puedo ejecutar comandos en el servidor",
     "noChannelFix": "Envíe un correo de prueba desde los ajustes de correo, cree un token signin:approve o marque la casilla para confirmar que puede ejecutar comandos en el servidor.",
     "channel": {
-      "verified_mail": "Código por correo (se envió un correo de prueba hace poco)",
       "approve_token": "Un token signin:approve de un administrador",
       "host_command": "El comando approve-signin en el servidor"
     }

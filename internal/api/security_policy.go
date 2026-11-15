@@ -112,7 +112,9 @@ type securityPolicy struct {
 
 type securityPolicyResource struct {
 	securityPolicy
-	ApprovalChannels  []string          `json:"approval_channels"`
+	ApprovalChannels []string `json:"approval_channels"`
+	// ApprovalHoldNote says where hold has no effect; empty unless the mode is hold.
+	ApprovalHoldNote  string            `json:"approval_hold_note,omitempty"`
 	Sources           map[string]string `json:"sources"`
 	NewDeviceApproval bool              `json:"new_device_approval"`
 	NoticeGraceDays   int               `json:"notice_grace_days"`
@@ -199,8 +201,15 @@ func (rt *Router) securityPolicyResource(ctx context.Context) (securityPolicyRes
 	if err != nil {
 		return securityPolicyResource{}, err
 	}
-	return securityPolicyResource{securityPolicy: p, ApprovalChannels: rt.approvalChannels(ctx), Sources: sources, NewDeviceApproval: rt.newDeviceApproval,
+	return securityPolicyResource{securityPolicy: p, ApprovalChannels: rt.approvalChannels(ctx, ""), ApprovalHoldNote: rt.holdNoteFor(p), Sources: sources, NewDeviceApproval: rt.newDeviceApproval,
 		NoticeGraceDays: int(tokenHygieneGrace().Hours() / 24)}, nil
+}
+
+func (rt *Router) holdNoteFor(p securityPolicy) string {
+	if p.ApprovalWithoutSession != approvalWithoutSessionHold {
+		return ""
+	}
+	return rt.approvalHoldNote(p)
 }
 
 func tokenHygieneGrace() time.Duration {

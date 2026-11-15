@@ -108,18 +108,18 @@ By default a sign-in with a correct password and no other live session goes stra
 | `allow` (default) | signs in, unless the account asked for approval itself |
 | `hold` | waits for approval from a path outside the browser |
 
-Use `hold` when you want a password alone never to be enough on a new browser. A held sign-in is approved by the emailed code, by a `signin:approve` token, or on the server with the host `approve-signin` command. Browsers that are already trusted keep skipping the pause.
+Use `hold` when you want a password alone never to be enough on a new browser. A held sign-in is approved by a `signin:approve` token owned by the account that signed in, or on the server with the host `approve-signin` command. Browsers that are already trusted keep skipping the pause.
 
 Only a root user can change it, after a fresh password check (and authenticator code if the account has one). Every change is audited and emailed to the admins when mail is set up. Set it in the **Policy** tab, with `levelrail-cli security policy set --approval-without-session hold`, or `PUT /api/v1/security/policy` with `approval_without_session` and `step_up`. It cannot be set from an apply file or a stack sync. `APP_AUTH_APPROVAL_WITHOUT_SESSION` only seeds a fresh install.
 
 Safeguards against locking yourself out:
 
-- `hold` is refused (409 `approval_hold_no_channel`) unless a test email was sent within `APP_AUTH_HOLD_MAIL_VERIFY_MAX_AGE` (default 7 days), an admin owns a live `signin:approve` token, or you confirm you can run commands on the server (`confirm_host_access`, `--confirm-host-access`, or the checkbox in the dashboard).
+- `hold` is refused (409 `approval_hold_no_channel`) unless you own a live `signin:approve` token or you confirm you can run commands on the server (`confirm_host_access`, `--confirm-host-access`, or the checkbox in the dashboard).
 - The browser or CLI that sets `hold` stays trusted.
 - If the policy cannot be read, the last value read is used, never a guess.
 - On the server, `sudo APP_DATA_DIR=/var/lib/levelrail-data /usr/local/bin/levelrail security reset-approval-policy` sets it back to `allow` with the API down and writes an audit row. See [Emergency access](/emergency-access).
 
-[Doctor](/doctor) shows the mode and which approval paths exist, and the posture lists `allow` as a low hardening suggestion, never a failure.
+The policy response carries `approval_hold_note` in hold mode, and Doctor repeats it: hold has no effect while new-device approval is off, SSO and passkey sign-ins are not held under `password_only`, and trusted browsers skip it. [Doctor](/doctor) shows the mode and which approval paths exist, and the posture lists `allow` as a low hardening suggestion, never a failure.
 
 Each account can also turn on **Require approval for new browsers on my account** in the Policy tab (`PUT /api/v1/security/account`). That applies approval to every method for that account whatever the platform scope is. Turning it off needs a signed-in dashboard session; a token can only turn it on.
 

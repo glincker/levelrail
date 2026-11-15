@@ -16,8 +16,6 @@ import (
 
 const (
 	envApprovalWithoutSession = "APP_AUTH_APPROVAL_WITHOUT_SESSION"
-	envHoldMailVerifyMaxAge   = "APP_AUTH_HOLD_MAIL_VERIFY_MAX_AGE"
-	defaultHoldMailVerifyAge  = 7 * 24 * time.Hour
 
 	approvalWithoutSessionAllow = "allow"
 	approvalWithoutSessionHold  = "hold"
@@ -26,7 +24,6 @@ const (
 
 	errCodeApprovalHoldNoChannel = "approval_hold_no_channel"
 
-	approvalChannelMail         = "verified_mail"
 	approvalChannelApproveToken = "approve_token"
 	approvalChannelHostCommand  = "host_command"
 )
@@ -98,26 +95,17 @@ func (rt *Router) holdWithoutLiveSession(ctx context.Context, userID string) boo
 	return uerr == nil && us.RequireNewDeviceApproval
 }
 
-// approvalChannels lists the out-of-band approval paths for a held sign-in.
-// The host command always works, so it is listed last and never counts alone.
-func (rt *Router) approvalChannels(ctx context.Context) []string {
+// approvalChannels lists the out-of-band approval paths for a held sign-in
+// that userID could use. An approval is bound to the account that signed in,
+// so only that account's own signin:approve token counts; "" means any admin's
+// (the doctor view). The host command always works, so it is listed last and
+// never counts alone.
+func (rt *Router) approvalChannels(ctx context.Context, userID string) []string {
 	var out []string
-	if rt.mailVerifiedRecently(ctx) {
-		out = append(out, approvalChannelMail)
-	}
-	if rt.adminApproveTokenLive(ctx) {
+	if rt.adminApproveTokenLive(ctx, userID) {
 		out = append(out, approvalChannelApproveToken)
 	}
 	return append(out, approvalChannelHostCommand)
-}
-
-func (rt *Router) mailVerifiedRecently(ctx context.Context) bool {
-	if rt.emailSender == nil || rt.emailDeliveries == nil {
-		return false
-	}
-	since := time.Now().Add(-envDuration(envHoldMailVerifyMaxAge, defaultHoldMailVerifyAge))
-	sent, err := rt.emailDeliveries.ListEmailDeliveries(ctx, store.EmailDeliveryFilter{Kind: "test", Status: store.EmailDeliverySent, Since: since, Limit: 1})
-	return err == nil && len(sent) > 0
 }
 
 func (rt *Router) adminIDs(ctx context.Context) map[string]string {
@@ -137,7 +125,7 @@ func (rt *Router) adminIDs(ctx context.Context) map[string]string {
 	return out
 }
 
-func (rt *Router) adminApproveTokenLive(ctx context.Context) bool {
+func (rt *Router) adminApproveTokenLive(ctx context.Context, userID string) bool {
 	toks, err := rt.libraryListTokens(ctx, "", true)
 	if err != nil {
 		return false
@@ -146,6 +134,9 @@ func (rt *Router) adminApproveTokenLive(ctx context.Context) bool {
 	now := time.Now()
 	for _, t := range toks {
 		if t.RevokedAt != nil || (t.ExpiresAt != nil && !now.Before(*t.ExpiresAt)) {
+			continue
+		}
+		if userID != "" && t.OwnerUserID != userID {
 			continue
 		}
 		if _, ok := admins[t.OwnerUserID]; ok && slices.Contains(t.Abilities, AbilitySignInApprove) {
@@ -167,10 +158,9 @@ func (rt *Router) applyApprovalWithoutSession(w http.ResponseWriter, r *http.Req
 		return "", false
 	}
 	if want == approvalWithoutSessionHold && !req.ConfirmHostAccess {
-		channels := rt.approvalChannels(r.Context())
-		if !slices.Contains(channels, approvalChannelMail) && !slices.Contains(channels, approvalChannelApproveToken) {
+		if !slices.Contains(rt.approvalChannels(r.Context(), owner), approvalChannelApproveToken) {
 			writeCodedError(w, http.StatusConflict, errCodeApprovalHoldNoChannel,
-				"hold needs a way to approve a sign-in from outside: send a test email, create a signin:approve token, or confirm you can run commands on the server")
+				"hold needs a way to approve a sign-in from outside: create a signin:approve token you own, or confirm you can run commands on the server")
 			return "", false
 		}
 	}
@@ -215,13 +205,27 @@ func (rt *Router) doctorCheckApprovalWithoutSession(ctx context.Context) doctorC
 	if err != nil {
 		return doctorCheckResource{Code: code, Name: name, Status: doctorStatusUnknown, Message: "could not read the security policy"}
 	}
-	channels := rt.approvalChannels(ctx)
+	channels := rt.approvalChannels(ctx, "")
 	if p.ApprovalWithoutSession == approvalWithoutSessionHold {
+		note := rt.approvalHoldNote(p)
 		if len(channels) == 1 {
 			return doctorCheckResource{Code: code, Name: name, Status: doctorStatusWarn, DocsPath: "/security-center#approval-without-session",
-				Message: "mode hold: only the host command can approve a sign-in that has no other live session; verify mail or create a signin:approve token"}
+				Message: "mode hold: only the host command can approve a sign-in that has no other live session; create a signin:approve token. " + note}
 		}
-		return doctorCheckResource{Code: code, Name: name, Status: doctorStatusOK, Message: "mode hold, approval paths: " + strings.Join(channels, ", ")}
+		return doctorCheckResource{Code: code, Name: name, Status: doctorStatusOK, Message: "mode hold, approval paths: " + strings.Join(channels, ", ") + ". " + note}
 	}
 	return doctorCheckResource{Code: code, Name: name, Status: doctorStatusOK, Message: "mode allow: a correct password with no other live session signs in, unless the account asks for approval"}
+}
+
+// approvalHoldNote says where hold does not apply, so a saved mode is never read as a blanket guarantee.
+func (rt *Router) approvalHoldNote(p securityPolicy) string {
+	var parts []string
+	if !rt.newDeviceApproval {
+		parts = append(parts, "new-device approval is off, so hold has no effect")
+	}
+	if p.ApprovalScope == approvalScopePasswordOnly {
+		parts = append(parts, "approval scope is password_only, so SSO and passkey sign-ins are not held")
+	}
+	parts = append(parts, "browsers already trusted skip the hold")
+	return strings.Join(parts, "; ")
 }

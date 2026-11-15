@@ -446,8 +446,8 @@
     "allow": "Allow",
     "hold": "Hold",
     "allowBody": "Allow: the sign-in goes straight in, unless the account asked for approval itself. This is the default.",
-    "holdBody": "Hold: the sign-in waits until it is approved by an emailed code, a signin:approve token or the host command. Browsers you already trust keep signing in.",
-    "safeguards": "To avoid a lockout, hold needs a verified test email, a signin:approve token owned by an admin, or your confirmation that you can run commands on the server. The browser you change it from stays trusted.",
+    "holdBody": "Hold: the sign-in waits until it is approved by a signin:approve token you own or the host command. Browsers you already trust keep signing in.",
+    "safeguards": "To avoid a lockout, hold needs a signin:approve token you own, or your confirmation that you can run commands on the server. The browser you change it from stays trusted.",
     "reset": "To undo it from the server, run:",
     "saved": "Sign-in approval setting saved.",
     "saveError": "Could not save this setting.",
@@ -458,10 +458,9 @@
     "confirm": "Hold sign-ins",
     "confirming": "Saving...",
     "hostAccess": "I can run commands on the server",
-    "noChannelFix": "Send a test email from the mail settings, create a signin:approve token, or tick the box to confirm you can run commands on the server.",
+    "noChannelFix": "Create a signin:approve token you own, or tick the box to confirm you can run commands on the server.",
     "channel": {
-      "verified_mail": "Emailed code (a test email was sent recently)",
-      "approve_token": "A signin:approve token owned by an admin",
+      "approve_token": "A signin:approve token you own",
       "host_command": "The approve-signin command on the server"
     }
   }
