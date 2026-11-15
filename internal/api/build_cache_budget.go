@@ -7,7 +7,7 @@ import (
 	"runtime"
 
 	"github.com/GLINCKER/levelrail/internal/build"
-	"github.com/GLINCKER/levelrail/internal/build/buildkitd"
+	"github.com/GLINCKER/levelrail/internal/build/cachebudget"
 	"github.com/GLINCKER/levelrail/internal/runtimesettings"
 	"github.com/GLINCKER/levelrail/internal/telemetry"
 )
@@ -16,14 +16,14 @@ import (
 // *build.Client satisfies it.
 type BuildCacheBudgeter interface {
 	CacheBudgetEngine(ctx context.Context) (build.CacheBudgetEngine, error)
-	PruneCacheToBudget(ctx context.Context, b buildkitd.Budget) (build.CacheBudgetPrune, error)
+	PruneCacheToBudget(ctx context.Context, b build.CacheBudget) (build.CacheBudgetPrune, error)
 }
 
 // cacheBudgetPlan is the resolved budget for one engine reading.
 type cacheBudgetPlan struct {
 	Enabled bool
 	Reason  string
-	Budget  buildkitd.Budget
+	Budget  build.CacheBudget
 	Engine  build.CacheBudgetEngine
 }
 
@@ -71,7 +71,7 @@ func (rt *Router) planCacheBudget(ctx context.Context, b BuildCacheBudgeter) (ca
 			total = t
 		}
 	}
-	plan.Budget = buildkitd.BudgetFor(total, int64(reservedMB), int64(maxMB))
+	plan.Budget = build.CacheBudget(cachebudget.BudgetFor(total, int64(reservedMB), int64(maxMB)))
 	return plan, nil
 }
 

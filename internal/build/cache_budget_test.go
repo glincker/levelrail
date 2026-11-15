@@ -5,8 +5,6 @@ import (
 	"testing"
 
 	bkclient "github.com/moby/buildkit/client"
-
-	"github.com/GLINCKER/levelrail/internal/build/buildkitd"
 )
 
 type budgetSpy struct{ info bkclient.PruneInfo }
@@ -21,7 +19,7 @@ func (b *budgetSpy) Prune(_ context.Context, ch chan bkclient.UsageInfo, opts ..
 
 func TestPruneToBudgetKeepsReservedAndMaxWithNoMinFree(t *testing.T) {
 	spy := &budgetSpy{}
-	res, err := pruneToBudget(context.Background(), spy, buildkitd.Budget{ReservedBytes: 2 << 30, MaxUsedBytes: 10 << 30})
+	res, err := pruneToBudget(context.Background(), spy, CacheBudget{ReservedBytes: 2 << 30, MaxUsedBytes: 10 << 30})
 	if err != nil {
 		t.Fatal(err)
 	}
@@ -33,8 +31,5 @@ func TestPruneToBudgetKeepsReservedAndMaxWithNoMinFree(t *testing.T) {
 	}
 	if IsDesktopEngine("Ubuntu 24.04 LTS") || !IsDesktopEngine("Docker Desktop") {
 		t.Fatal("desktop detection")
-	}
-	if b := buildkitd.BudgetFor(0, 0, 0); b.MaxUsedBytes != 5120<<20 {
-		t.Fatalf("unknown disk budget = %d", b.MaxUsedBytes)
 	}
 }

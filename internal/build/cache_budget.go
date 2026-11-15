@@ -6,9 +6,14 @@ import (
 	"strings"
 
 	bkclient "github.com/moby/buildkit/client"
-
-	"github.com/GLINCKER/levelrail/internal/build/buildkitd"
 )
+
+// CacheBudget is the builder cache size a post build prune keeps the cache
+// under. It mirrors cachebudget.Budget so this package stays free of that import.
+type CacheBudget struct {
+	ReservedBytes int64
+	MaxUsedBytes  int64
+}
 
 // CacheBudgetEngine describes the builder's engine for sizing the cache budget.
 type CacheBudgetEngine struct {
@@ -55,7 +60,7 @@ func IsDesktopEngine(osName string) bool {
 // PruneCacheToBudget prunes the builder cache down to b. Min free stays 0
 // because the engine's disk may not be the one this process can stat, and
 // records held by a running build are never removed by BuildKit.
-func (c *Client) PruneCacheToBudget(ctx context.Context, b buildkitd.Budget) (CacheBudgetPrune, error) {
+func (c *Client) PruneCacheToBudget(ctx context.Context, b CacheBudget) (CacheBudgetPrune, error) {
 	if c == nil || c.bk == nil {
 		return CacheBudgetPrune{}, ErrAppCacheNoBuilder
 	}
@@ -66,7 +71,7 @@ type budgetPruner interface {
 	Prune(ctx context.Context, ch chan bkclient.UsageInfo, opts ...bkclient.PruneOption) error
 }
 
-func pruneToBudget(ctx context.Context, bk budgetPruner, b buildkitd.Budget) (CacheBudgetPrune, error) {
+func pruneToBudget(ctx context.Context, bk budgetPruner, b CacheBudget) (CacheBudgetPrune, error) {
 	var res CacheBudgetPrune
 	if b.MaxUsedBytes <= 0 {
 		return res, nil
