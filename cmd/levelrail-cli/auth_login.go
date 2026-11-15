@@ -52,6 +52,13 @@ func runAuthLogin(prog string, args []string, stdout, stderr io.Writer, lookupEn
 	}
 	of := outputFlags{format, *queryFlagP}
 
+	if !reauthFlag {
+		profile := resolveProfile(*profileFlagP, lookupEnv)
+		if m, bad := savedLoginMismatch("", *apiURLFlagP, lookupEnv, prog, profile); bad {
+			return reportError(stdout, stderr, jsonOut, m)
+		}
+	}
+
 	if !forceFlag && !reauthFlag {
 		if st, ok := reusableLogin(prog, *profileFlagP, *apiURLFlagP, lookupEnv); ok {
 			return reportReused(st, stdout, stderr, of)

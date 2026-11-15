@@ -26,6 +26,9 @@ func newReuseServer(t *testing.T, goodToken string) *reuseServer {
 	t.Helper()
 	rs := &reuseServer{}
 	mux := http.NewServeMux()
+	mux.HandleFunc("GET /api/v1/instance", func(w http.ResponseWriter, _ *http.Request) {
+		_ = json.NewEncoder(w).Encode(apiclient.InstanceInfo{InstanceID: "inst-1", Name: "test", Fingerprint: "fp-1"})
+	})
 	mux.HandleFunc("POST /api/v1/auth/login", func(w http.ResponseWriter, r *http.Request) {
 		rs.logins.Add(1)
 		if c, err := r.Cookie("trusted_device"); err == nil && c.Value == "dev-1" {
@@ -105,7 +108,7 @@ func TestLogin_ExpiredCredentialFallsThroughToLogin(t *testing.T) {
 	t.Setenv("HOME", t.TempDir())
 	rs := newReuseServer(t, "fresh-token")
 	const prog = "lr-test-expired"
-	if err := writeCredentialsFile(prog, defaultProfile, credentials{APIURL: rs.srv.URL, Token: "stale-token", TrustedDevice: "dev-1"}); err != nil {
+	if err := writeCredentialsFile(prog, defaultProfile, credentials{APIURL: rs.srv.URL, Token: "stale-token", TrustedDevice: "dev-1", InstanceID: "inst-1", Fingerprint: "fp-1"}); err != nil {
 		t.Fatal(err)
 	}
 	code, out, e := runLoginCmd(t, prog, "--api-url", rs.srv.URL)
@@ -140,7 +143,7 @@ func TestWhoami_VerifiesLive(t *testing.T) {
 	t.Setenv("HOME", t.TempDir())
 	rs := newReuseServer(t, "live-token")
 	const prog = "lr-test-who"
-	if err := writeCredentialsFile(prog, defaultProfile, credentials{APIURL: rs.srv.URL, Token: "live-token"}); err != nil {
+	if err := writeCredentialsFile(prog, defaultProfile, credentials{APIURL: rs.srv.URL, Token: "live-token", InstanceID: "inst-1", Fingerprint: "fp-1"}); err != nil {
 		t.Fatal(err)
 	}
 	var out, errb bytes.Buffer

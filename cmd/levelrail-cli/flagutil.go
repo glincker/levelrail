@@ -151,6 +151,9 @@ func apiClientFromFlags(prog, apiURLFlag, tokenFlag, profileFlag string, lookupE
 	profile := resolveProfile(profileFlag, lookupEnv)
 	applyScope(prog, profile, lookupEnv)
 	apiURL := resolveAPIURL(apiURLFlag, lookupEnv, prog, profile)
+	if m, bad := savedLoginMismatch(tokenFlag, apiURLFlag, lookupEnv, prog, profile); bad {
+		return NewClient(apiURL, "", apiclient.WithTransport(apiclient.RefusingTransport(m)))
+	}
 	token := resolveToken(tokenFlag, lookupEnv, prog, profile)
 	if token != "" {
 		noteExpiry(prog, profile, token, lookupEnv, os.Stderr)
@@ -214,7 +217,7 @@ func loggedInSessionClient(ctx context.Context, sf sessionFlags, prog string, lo
 		return nil, loginResponse{}, err
 	}
 
-	if saved, rerr := readCredentialsFile(prog, profile); rerr == nil {
+	if saved, rerr := readCredentialsFile(prog, profile); rerr == nil && savedDeviceMatchesServer(saved, sessionClient.baseURL) {
 		sessionClient.seedTrustedDevice(saved.TrustedDevice)
 	}
 	loginResp, err := sessionClient.Login(ctx, resolvedUsername, resolvedPassword)
@@ -394,4 +397,13 @@ func reorderArgsFlagsFirst(fs *flag.FlagSet, args []string) []string {
 		}
 	}
 	return append(flags, positional...)
+}
+
+// savedDeviceMatchesServer is true only when the server at apiURL is the one the saved device cookie was issued for.
+func savedDeviceMatchesServer(saved credentials, apiURL string) bool {
+	if saved.TrustedDevice == "" || saved.InstanceID == "" {
+		return false
+	}
+	info, err := apiclient.FetchInstanceInfo(context.Background(), nil, apiURL)
+	return err == nil && info != nil && info.InstanceID == saved.InstanceID && info.Fingerprint == saved.Fingerprint
 }

@@ -113,7 +113,9 @@ func ResolveAPIURL(flagURL string, lookupEnv func(string) (string, bool), prog, 
 		return v
 	}
 	// The pointer's URL only applies to the profile it names, so another profile keeps its own.
-	if p, ok := FindRepoPointerFromCwd(); ok && p.APIURL != "" && (p.Profile == "" || p.Profile == profile) {
+	// A profile with a saved login keeps its saved address; callers refuse the mismatch via FindPointerMismatch.
+	_, mismatch := FindPointerMismatch("", lookupEnv, prog, profile)
+	if p, ok := FindRepoPointerFromCwd(); ok && !mismatch && p.APIURL != "" && (p.Profile == "" || p.Profile == profile) {
 		return p.APIURL
 	}
 	if creds, err := ReadCredentialsFile(prog, profile); err == nil && creds.APIURL != "" {
@@ -347,8 +349,9 @@ func WriteCredentialsFile(prog, profile string, creds Credentials) error {
 		parsed.order = append(parsed.order, profile)
 	}
 	// A later login by another flow must not forget this machine's trusted-device id.
-	if creds.TrustedDevice == "" {
-		creds.TrustedDevice = parsed.sections[profile].TrustedDevice
+	// Only carried over for the same server: a device cookie belongs to the instance that issued it.
+	if prev := parsed.sections[profile]; creds.TrustedDevice == "" && prev.InstanceID == creds.InstanceID {
+		creds.TrustedDevice = prev.TrustedDevice
 	}
 	parsed.sections[profile] = creds
 

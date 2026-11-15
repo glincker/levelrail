@@ -119,6 +119,12 @@ func collectStatus(prog, profileFlag, apiURLFlag, tokenFlag string, verify bool,
 	st.HasCredential = token != ""
 	creds, _ := readCredentialsFile(prog, profile)
 	st.TrustedDevice = creds.TrustedDevice != ""
+	if m, bad := savedLoginMismatch(tokenFlag, apiURLFlag, lookupEnv, prog, profile); bad {
+		st.Problem = m.Error()
+		st.NextCommand = fmt.Sprintf("%s auth login --reauth --profile %s --api-url %s", prog, profile, m.PointerURL)
+		st.RunBy = "a person at a terminal, only if the pointer address is the one meant"
+		return st
+	}
 	if exp, ok := parseExpiry(creds.TokenExpiresAt); ok && strings.HasPrefix(st.CredentialSource, "profile") {
 		st.ExpiresAt = creds.TokenExpiresAt
 		st.ExpiringSoon = time.Until(exp) < durationEnv(lookupEnv, envExpiryWarnWindow, defaultExpiryWarnWindow)
@@ -192,6 +198,9 @@ func noteExpiry(prog, profile, token string, lookupEnv func(string) (string, boo
 
 // reusableLogin is the check "login" runs first: a valid saved or env credential means no new login, no new session, no approval.
 func reusableLogin(prog, profileFlag, apiURLFlag string, lookupEnv func(string) (string, bool)) (sessionStatus, bool) {
+	if !savedTokenMayBeSent(prog, profileFlag, apiURLFlag, lookupEnv) {
+		return sessionStatus{}, false
+	}
 	st := collectStatus(prog, profileFlag, apiURLFlag, "", true, lookupEnv)
 	return st, st.Verified
 }
@@ -327,4 +336,34 @@ func printProfileRows(out io.Writer, rows []profileRow) {
 			_, _ = fmt.Fprintf(out, "%s: a person runs: %s\n", r.Name, r.NextCommand)
 		}
 	}
+}
+
+// savedLoginMismatch reports a repo pointer address that differs from the one the profile's saved login belongs to.
+// Only a saved token is guarded: a token passed explicitly is the caller's own choice.
+func savedLoginMismatch(tokenFlag, apiURLFlag string, lookupEnv func(string) (string, bool), prog, profile string) (apiclient.PointerMismatch, bool) {
+	if tokenFlag != "" {
+		return apiclient.PointerMismatch{}, false
+	}
+	if v, ok := lookupEnv(apiclient.EnvAPIToken); ok && v != "" {
+		return apiclient.PointerMismatch{}, false
+	}
+	return apiclient.FindPointerMismatch(apiURLFlag, lookupEnv, prog, profile)
+}
+
+// savedTokenMayBeSent is false when the saved token would go to an address other than the one it was saved for,
+// or when the profile has no server pin to check the answering server against.
+func savedTokenMayBeSent(prog, profileFlag, apiURLFlag string, lookupEnv func(string) (string, bool)) bool {
+	if v, ok := lookupEnv(apiclient.EnvAPIToken); ok && v != "" {
+		return true
+	}
+	profile := resolveProfile(profileFlag, lookupEnv)
+	creds, err := readCredentialsFile(prog, profile)
+	if err != nil || creds.Token == "" {
+		return true
+	}
+	if creds.InstanceID == "" {
+		return false
+	}
+	target := resolveAPIURL(apiURLFlag, lookupEnv, prog, profile)
+	return creds.APIURL == "" || strings.TrimRight(target, "/") == strings.TrimRight(creds.APIURL, "/")
 }
