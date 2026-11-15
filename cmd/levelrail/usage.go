@@ -15,7 +15,7 @@ var serverSubcommands = map[string]bool{
 	"self-upgrade": true, "restore-point": true, "migrate-check": true, "recover-admin": true,
 	"emergency-token": true, "approve-signin": true, "restore-db": true, "restore-snapshot": true,
 	"restore": true, "setup-token": true, "healthcheck": true, "demo": true, "access-policy-reset": true,
-	"plugin-egress": true, "wrap-master-key": true, "enable-https": true,
+	"plugin-egress": true, "wrap-master-key": true, "enable-https": true, "security": true,
 }
 
 const serverUsageBody = `Usage:
@@ -32,6 +32,7 @@ Commands:
   approve-signin     approve a waiting new-browser sign-in from the host (<request id> --match <number>)
   enable-https       turn on HTTPS for a domain (--domain HOST --email ADDRESS [--staging])
   access-policy-reset  remove every session policy (IP allowlist lockout recovery)
+  security           host security recovery (reset-approval-policy: allow sign-ins without a live session again)
   restore-db         restore the database from a backup file
   restore-snapshot   restore a full snapshot
   restore            restore from a backup target
