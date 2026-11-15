@@ -7,7 +7,8 @@
 
 import { useMutation, useQueryClient } from '@tanstack/react-query'
 import { appKeys } from './apps'
-import { ApiError, readErrorMessage } from '../lib/apiError'
+import { ApiError } from '../lib/apiError'
+import { apiRequest } from '../lib/apiRequest'
 import type { AppVolume } from '../types/appDetail'
 
 function appVolumesPath(appName: string): string {
@@ -24,18 +25,11 @@ async function setAppVolumes(
   appName: string,
   volumes: AppVolume[],
 ): Promise<SetAppVolumesResponse> {
-  const res = await fetch(appVolumesPath(appName), {
+  return apiRequest<SetAppVolumesResponse>(appVolumesPath(appName), {
     method: 'PUT',
-    headers: { 'Content-Type': 'application/json' },
-    body: JSON.stringify({ volumes }),
+    body: { volumes },
+    fallbackMessage: 'set app volumes failed',
   })
-  if (!res.ok) {
-    throw new ApiError(
-      res.status,
-      await readErrorMessage(res, `set app volumes failed: ${res.status}`),
-    )
-  }
-  return (await res.json()) as SetAppVolumesResponse
 }
 
 // Writes the server's response volumes straight into the app detail

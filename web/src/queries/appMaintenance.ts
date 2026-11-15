@@ -8,7 +8,8 @@ import {
   useQuery,
   useQueryClient,
 } from '@tanstack/react-query'
-import { ApiError, readErrorMessage } from '../lib/apiError'
+import { ApiError } from '../lib/apiError'
+import { apiRequest } from '../lib/apiRequest'
 import {
   fleetMaintenanceKey,
   type DomainMaintenance,
@@ -36,19 +37,15 @@ function path(app: string): string {
   return `/api/v1/apps/${encodeURIComponent(app)}/maintenance`
 }
 
-async function request(
+function request(
   app: string,
-  init: RequestInit | undefined,
+  init: { method?: string; body?: unknown } | undefined,
   what: string,
 ): Promise<AppMaintenance> {
-  const res = await fetch(path(app), init)
-  if (!res.ok) {
-    throw new ApiError(
-      res.status,
-      await readErrorMessage(res, `${what} failed: ${res.status}`),
-    )
-  }
-  return (await res.json()) as AppMaintenance
+  return apiRequest<AppMaintenance>(path(app), {
+    ...init,
+    fallbackMessage: `${what} failed`,
+  })
 }
 
 export function appMaintenanceQueryOptions(app: string) {
@@ -84,11 +81,7 @@ export function useSetAppMaintenance(app: string) {
     mutationFn: (body) =>
       request(
         app,
-        {
-          method: 'PUT',
-          headers: { 'Content-Type': 'application/json' },
-          body: JSON.stringify(body ?? {}),
-        },
+        { method: 'PUT', body: body ?? {} },
         'enable app maintenance',
       ),
     onSuccess: refresh,

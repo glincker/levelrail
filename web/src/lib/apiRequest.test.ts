@@ -20,6 +20,7 @@ describe('apiRequest', () => {
       method: undefined,
       headers: undefined,
       body: undefined,
+      signal: undefined,
     })
   })
 
@@ -34,6 +35,7 @@ describe('apiRequest', () => {
       method: 'PUT',
       headers: { 'Content-Type': 'application/json' },
       body: '{"a":1}',
+      signal: undefined,
     })
   })
 

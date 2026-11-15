@@ -4,7 +4,7 @@
 
 import { queryOptions, useQuery } from '@tanstack/react-query'
 import { appKeys } from './apps'
-import { ApiError, readErrorMessage } from '../lib/apiError'
+import { apiRequest } from '../lib/apiRequest'
 
 export interface HookRun {
   hook_type: 'pre_deploy' | 'post_deploy'
@@ -25,17 +25,11 @@ export const appHookRunsKeys = {
     [...appKeys.detail(appName), 'hook-runs'] as const,
 }
 
-export async function fetchAppHookRuns(appName: string): Promise<AppHookRuns> {
-  const res = await fetch(
+export function fetchAppHookRuns(appName: string): Promise<AppHookRuns> {
+  return apiRequest<AppHookRuns>(
     `/api/v1/apps/${encodeURIComponent(appName)}/hook-runs`,
+    { fallbackMessage: 'fetch app hook runs failed' },
   )
-  if (!res.ok) {
-    throw new ApiError(
-      res.status,
-      await readErrorMessage(res, `fetch app hook runs failed: ${res.status}`),
-    )
-  }
-  return (await res.json()) as AppHookRuns
 }
 
 export function appHookRunsQueryOptions(appName: string) {
