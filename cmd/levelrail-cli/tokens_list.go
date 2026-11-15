@@ -8,6 +8,7 @@ import (
 	"fmt"
 	"io"
 	"text/tabwriter"
+	"time"
 )
 
 // Token endpoints accept only a session cookie, so this establishes one first.
@@ -79,11 +80,13 @@ func printTokensTable(out io.Writer, tokens []tokenResource) {
 		return
 	}
 	tw := tabwriter.NewWriter(out, 0, 2, 2, ' ', 0)
-	_, _ = fmt.Fprintln(tw, "ID\tNAME\tAGENT\tACCESS\tABILITIES\tCREATED\tREVOKED")
+	_, _ = fmt.Fprintln(tw, "ID\tNAME\tAGENT\tACCESS\tABILITIES\tCREATED\tEXPIRES\tREVOKED")
 	for _, t := range tokens {
 		revoked := "no"
 		if t.RevokedAt != nil {
 			revoked = "yes"
+		} else if t.RevokesAt != nil {
+			revoked = "on " + t.RevokesAt.Local().Format("2006-01-02")
 		}
 		agent := "-"
 		if t.Agent != nil {
@@ -93,7 +96,7 @@ func printTokensTable(out io.Writer, tokens []tokenResource) {
 		if access == "" {
 			access = "-"
 		}
-		_, _ = fmt.Fprintf(tw, "%s\t%s\t%s\t%s\t%v\t%s\t%s\n", t.ID, t.Name, agent, access, t.Abilities, t.CreatedAt.Format("2006-01-02T15:04:05Z07:00"), revoked)
+		_, _ = fmt.Fprintf(tw, "%s\t%s\t%s\t%s\t%v\t%s\t%s\t%s\n", t.ID, t.Name, agent, access, t.Abilities, t.CreatedAt.Format("2006-01-02T15:04:05Z07:00"), expiryLabel(t, time.Now(), defaultExpiryWarnWindow), revoked)
 	}
 	_ = tw.Flush()
 }

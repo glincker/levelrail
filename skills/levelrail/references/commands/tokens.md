@@ -11,6 +11,7 @@ Usage:
   levelrail-cli tokens create --name NAME --abilities LIST [flags]   mint a new API token
   levelrail-cli tokens list [flags]                                       list tokens (never shows a secret)
   levelrail-cli tokens revoke <id> [flags]                              revoke a token
+  levelrail-cli tokens rotate <id|name> [flags]                  replace a token, old one works for a grace period
   levelrail-cli tokens unused [flags]                                     list tokens idle past tokens.unused_alert_days
   levelrail-cli tokens scrape [--rotate]                                  create the Prometheus scrape token, print a scrape config
   levelrail-cli tokens cleanup [--older-than-days N]                   remove old revoked tokens (root API token)

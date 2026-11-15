@@ -4,6 +4,7 @@ import (
 	"context"
 	"encoding/json"
 	"net/http"
+	"net/url"
 )
 
 // AuthEngineStatusResource mirrors internal/api's authEngineStatusResponse.
@@ -22,6 +23,13 @@ func (c *Client) GetAuthEngineStatus(ctx context.Context) (AuthEngineStatusResou
 }
 
 // ListTokensRaw calls GET /api/v1/auth/tokens with the client's bearer token (root ability), returning the JSON array undecoded.
+// RotateToken calls POST /api/v1/auth/tokens/{id}/rotate.
+func (c *Client) RotateToken(ctx context.Context, id string) (RotatedToken, error) {
+	var out RotatedToken
+	err := c.do(ctx, http.MethodPost, "/api/v1/auth/tokens/"+url.PathEscape(id)+"/rotate", nil, &out)
+	return out, err
+}
+
 func (c *Client) ListTokensRaw(ctx context.Context) (json.RawMessage, error) {
 	var out json.RawMessage
 	err := c.do(ctx, http.MethodGet, "/api/v1/auth/tokens", nil, &out)

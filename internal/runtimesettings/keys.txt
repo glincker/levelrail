@@ -112,6 +112,9 @@ connections.expiry_warn
 containers.log_max_files
 containers.log_max_size_mb
 containers.restart_policy
+credential_expiry.reminder_interval
+credential_expiry.reminder_windows_days
+credential_expiry.rotation_grace
 cutover.verify_cert_fail_days
 cutover.verify_cert_warn_days
 cutover.verify_hsts_min_age

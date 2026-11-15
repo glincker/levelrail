@@ -374,7 +374,24 @@ func WriteCredentialsFile(prog, profile string, creds Credentials) error {
 		sb.WriteString("\n")
 	}
 
-	if err := os.WriteFile(path, []byte(sb.String()), 0o600); err != nil {
+	// Temp file plus rename so a crash never leaves a half-written credentials file.
+	tmp, err := os.CreateTemp(dir, ".credentials-*")
+	if err != nil {
+		return fmt.Errorf("write credentials file %s: %w", path, err)
+	}
+	defer func() { _ = os.Remove(tmp.Name()) }()
+	if err := tmp.Chmod(0o600); err != nil {
+		_ = tmp.Close()
+		return fmt.Errorf("write credentials file %s: %w", path, err)
+	}
+	if _, err := tmp.WriteString(sb.String()); err != nil {
+		_ = tmp.Close()
+		return fmt.Errorf("write credentials file %s: %w", path, err)
+	}
+	if err := tmp.Close(); err != nil {
+		return fmt.Errorf("write credentials file %s: %w", path, err)
+	}
+	if err := os.Rename(tmp.Name(), path); err != nil {
 		return fmt.Errorf("write credentials file %s: %w", path, err)
 	}
 	return nil

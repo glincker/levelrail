@@ -155,6 +155,7 @@ var restExemptions = restExemptionSet(map[string][]string{
 		"POST /api/v1/auth/cli-pairing",
 		"POST /api/v1/auth/tokens",
 		"DELETE /api/v1/auth/tokens/{id}",
+		"POST /api/v1/auth/tokens/{id}/rotate",
 		"POST /api/v1/hooks/deploy/{id}/{token}",
 		"POST /api/v1/auth/step-up/passkey/finish",
 		"POST /api/v1/auth/step-up",

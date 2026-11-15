@@ -44,9 +44,10 @@ func (rt *Router) tokenAttentionItems(r *http.Request, abilities []string, now t
 	}
 	window := rt.attentionTokenWindow(r)
 	days := int(window / (24 * time.Hour))
+	rotating, _ := rt.tokenStateLoad(r.Context(), tokenStateRotation)
 	var expiring, inUse, idle []tokenResource
 	for _, t := range tokens {
-		if t.RevokedAt != nil || t.ExpiresAt == nil || isPlatformToken(t) {
+		if _, replaced := rotating[t.ID]; replaced || t.RevokedAt != nil || t.ExpiresAt == nil || isPlatformToken(t) {
 			continue
 		}
 		left := t.ExpiresAt.Sub(now)

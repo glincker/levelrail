@@ -154,6 +154,7 @@ type tokenResource struct {
 	LastUsedAt *time.Time  `json:"last_used_at,omitempty"`
 	ExpiresAt  *time.Time  `json:"expires_at,omitempty"`
 	RevokedAt  *time.Time  `json:"revoked_at,omitempty"`
+	RevokesAt  *time.Time  `json:"revokes_at,omitempty"`
 	Agent      *tokenAgent `json:"agent,omitempty"`
 }
 
@@ -217,6 +218,13 @@ func (c *authSessionClient) ListUnusedTokens(ctx context.Context) (unusedTokensR
 // RevokeToken calls DELETE /api/v1/auth/tokens/{id}.
 func (c *authSessionClient) RevokeToken(ctx context.Context, id string) error {
 	return c.do(ctx, http.MethodDelete, "/api/v1/auth/tokens/"+pathEscape(id), nil, nil)
+}
+
+// RotateToken calls POST /api/v1/auth/tokens/{id}/rotate.
+func (c *authSessionClient) RotateToken(ctx context.Context, id string) (apiclient.RotatedToken, error) {
+	var out apiclient.RotatedToken
+	err := c.do(ctx, http.MethodPost, "/api/v1/auth/tokens/"+pathEscape(id)+"/rotate", nil, &out)
+	return out, err
 }
 
 // sessionInfoResponse mirrors internal/api's sessionInfoResponse

@@ -14,7 +14,7 @@ type openAPIRoute struct {
 	Description string
 }
 
-// openAPIRoutes holds all 2143 routes known to scripts/gen-api-reference at
+// openAPIRoutes holds all 2144 routes known to scripts/gen-api-reference at
 // generation time. Run `go run ./scripts/gen-api-reference` after changing
 // any routes*.go registration and commit the result.
 var openAPIRoutes = []openAPIRoute{
@@ -613,6 +613,7 @@ var openAPIRoutes = []openAPIRoute{
 	{Method: "POST", Path: "/api/v1/auth/tokens", Ability: "Session", Group: "Auth / 2FA / Users / Roles / IAM / Device Auth / OAuth", Handler: "handleCreateToken", Description: "API tokens: create/revoke are session-only, deliberately never bearer-token authenticated (list also takes a root token). A token cannot mint or revoke another token on its own behalf; only an interactive human session can manage the token set, the same boundary that stops a leaked scoped token from escalating itself by minting a broader one."},
 	{Method: "POST", Path: "/api/v1/auth/tokens/cleanup", Ability: "AbilityRoot", Group: "Auth / 2FA / Users / Roles / IAM / Device Auth / OAuth", Handler: "handleCleanupTokens", Description: "Removing revoked tokens is irreversible bookkeeping on the token set, so AbilityRoot."},
 	{Method: "DELETE", Path: "/api/v1/auth/tokens/{id}", Ability: "Session", Group: "Auth / 2FA / Users / Roles / IAM / Device Auth / OAuth", Handler: "handleRevokeToken", Description: ""},
+	{Method: "POST", Path: "/api/v1/auth/tokens/{id}/rotate", Ability: "Public", Group: "Auth / 2FA / Users / Roles / IAM / Device Auth / OAuth", Handler: "handleRotateToken", Description: ""},
 	{Method: "GET", Path: "/api/v1/auth/trusted-devices", Ability: "Public", Group: "Auth / 2FA / Users / Roles / IAM / Device Auth / OAuth", Handler: "handleListTrustedDevices", Description: ""},
 	{Method: "DELETE", Path: "/api/v1/auth/trusted-devices/{id}", Ability: "Public", Group: "Auth / 2FA / Users / Roles / IAM / Device Auth / OAuth", Handler: "handleRevokeTrustedDevice", Description: ""},
 	{Method: "POST", Path: "/api/v1/auth/users", Ability: "AbilityRoot", Group: "Auth / 2FA / Users / Roles / IAM / Device Auth / OAuth", Handler: "handleCreateUser", Description: "Multi-user: creating another local-password user (see handleRegister's own doc comment) is AbilityRoot, not merely requireAuth: the caller also picks the new user's Abilities, so anyone able to reach this route can mint access at any tier, themselves included, only a root caller may do that. Listing stays AbilityRead, same tier as every other passive view."},

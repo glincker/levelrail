@@ -19,6 +19,8 @@ func runAuth(prog string, args []string, stdout, stderr io.Writer, lookupEnv fun
 		return exitOK
 	case "login":
 		return runAuthLogin(prog, args[1:], stdout, stderr, lookupEnv, os.Stdin)
+	case "rotate":
+		return runAuthRotate(prog, args[1:], stdout, stderr, lookupEnv)
 	case "whoami":
 		return runAuthWhoami(prog, args[1:], stdout, stderr, lookupEnv)
 	case "status":
@@ -65,6 +67,7 @@ func runAuth(prog string, args []string, stdout, stderr io.Writer, lookupEnv fun
 func authUsage(prog string) string {
 	return fmt.Sprintf(`Usage:
   %[1]s auth login [flags]           authenticate and persist a new API token
+  %[1]s auth rotate [flags]          replace the current token and update the saved profile
   %[1]s auth whoami [flags]          show who the current token authenticates as
   %[1]s auth status [flags]          show the server this profile is pinned to and check it
   %[1]s auth trust-server [flags]    pin the server at the profile's URL (after confirming its fingerprint)

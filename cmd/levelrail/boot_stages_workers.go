@@ -523,6 +523,13 @@ func (s *bootState) startSchedulers() {
 		}
 	}()
 
+	// Token expiry reminders and revocation of rotated tokens after their grace.
+	go func() {
+		if err := apiRouter.RunTokenExpiryReminders(ctx); err != nil && !errors.Is(err, context.Canceled) {
+			logger.Error("token expiry reminders stopped", slog.String("error", err.Error()))
+		}
+	}()
+
 	// The per-request expiry check already blocks stale approvals; this sweep only updates UI state.
 	go func() {
 		if err := apiRouter.RunDeployApprovalExpirySweep(ctx, deployApprovalSweepInterval(logger)); err != nil && !errors.Is(err, context.Canceled) {
