@@ -659,6 +659,7 @@
     "importTitle": "Alles importieren",
     "importLabel": "Repository-URL, Image, docker-run-Befehl, Compose-Datei oder Dockerfile",
     "importPlaceholder": "Fügen Sie eine Repo-URL, ein Image, einen docker-run-Befehl, eine docker-compose.yml oder ein Dockerfile ein",
+    "importShortcutHint": "Zum Fortfahren {{keys}} drücken",
     "previewPlan": "Plan in der Vorschau ansehen",
     "reading": "Wird gelesen...",
     "uploadFile": "Datei hochladen",

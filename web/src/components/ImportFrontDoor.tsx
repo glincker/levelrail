@@ -20,6 +20,13 @@ import {
 
 const MAX_UPLOAD_BYTES = 512 * 1024
 
+// Shown only to tell the user which modifier submits; the handler accepts both.
+const SUBMIT_KEYS =
+  typeof navigator !== 'undefined' &&
+  /mac|iphone|ipad/i.test(navigator.platform)
+    ? 'Cmd+Enter'
+    : 'Ctrl+Enter'
+
 /**
  * The single smart input at the top of "New app": one field that accepts a
  * repo URL, image, docker run command, compose file or Dockerfile, and asks
@@ -76,8 +83,12 @@ export function ImportFrontDoor({
         spellCheck={false}
         aria-label={t('wizard.importLabel')}
         placeholder={t('wizard.importPlaceholder')}
+        aria-describedby="import-front-door-hint"
         className="font-mono text-xs"
       />
+      <p id="import-front-door-hint" className="text-xs text-muted-foreground">
+        {t('wizard.importShortcutHint', { keys: SUBMIT_KEYS })}
+      </p>
       <div className="flex flex-wrap items-center gap-2">
         <Button
           type="button"

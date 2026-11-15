@@ -659,6 +659,7 @@
     "importTitle": "Import anything",
     "importLabel": "Repository URL, image, docker run command, compose file or Dockerfile",
     "importPlaceholder": "Paste a repo URL, an image, a docker run command, a docker-compose.yml or a Dockerfile",
+    "importShortcutHint": "Press {{keys}} to continue",
     "previewPlan": "Preview plan",
     "reading": "Reading...",
     "uploadFile": "Upload file",

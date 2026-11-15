@@ -651,6 +651,7 @@
     "importTitle": "导入任何内容",
     "importLabel": "仓库 URL、镜像、docker run 命令、Compose 文件或 Dockerfile",
     "importPlaceholder": "粘贴仓库 URL、镜像、docker run 命令、docker-compose.yml 或 Dockerfile",
+    "importShortcutHint": "按 {{keys}} 继续",
     "previewPlan": "预览计划",
     "reading": "读取中...",
     "uploadFile": "上传文件",
