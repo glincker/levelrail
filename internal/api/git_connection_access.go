@@ -9,6 +9,7 @@ import (
 	"sync"
 	"time"
 
+	"github.com/GLINCKER/levelrail/internal/giteaapp"
 	"github.com/GLINCKER/levelrail/internal/gitlabapp"
 	"github.com/GLINCKER/levelrail/internal/gitprovider"
 	"github.com/GLINCKER/levelrail/internal/runtimesettings"
@@ -73,8 +74,9 @@ type gitAccessResource struct {
 	Visible      gitAccessNames        `json:"visible_accounts"`
 	Capabilities []gitAccessCapability `json:"capabilities"`
 	CheckedAt    string                `json:"checked_at"`
-	Cached       bool                  `json:"cached"`
-	LiveCheckErr string                `json:"live_check_error,omitempty"`
+	giteaProbe   *giteaapp.Access
+	Cached       bool   `json:"cached"`
+	LiveCheckErr string `json:"live_check_error,omitempty"`
 }
 
 type gitAccessCacheEntry struct {
@@ -156,6 +158,9 @@ func (rt *Router) buildGitAccess(ctx context.Context, c store.GitConnection) (gi
 		res.LiveCheckErr = err.Error()
 	}
 	res.Capabilities = gitCapabilities(c.Provider, res.Scopes, res.ScopesKnown, res.ScopesSource == gitScopesFromHost)
+	if res.giteaProbe != nil {
+		res.Capabilities = giteaCapabilities(*res.giteaProbe)
+	}
 	return res, err == nil
 }
 
@@ -188,6 +193,9 @@ func (rt *Router) liveGitAccess(ctx context.Context, c store.GitConnection, patA
 		}
 		trunc = lr.Truncated
 	default:
+		if handled, perr := rt.liveGiteaAccess(ctx, c, token, limit, res); handled {
+			return perr
+		}
 		rs, lr, lerr := rt.giteaAppClient.ListRepos(ctx, c.InstanceURL, token, gitprovider.ListOptions{MaxItems: gitTokenRepoSample})
 		if lerr != nil {
 			return errors.New("list repositories: " + gitAccessErrText(lerr))

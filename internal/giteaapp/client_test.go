@@ -167,10 +167,15 @@ func TestClient_CreateRepoWebhook_SendsGiteaShapedConfig(t *testing.T) {
 		if r.URL.Path != "/api/v1/repos/acme/widgets/hooks" {
 			t.Errorf("path = %q, want /api/v1/repos/acme/widgets/hooks", r.URL.Path)
 		}
+		if r.Method == http.MethodGet {
+			_, _ = w.Write([]byte("[]"))
+			return
+		}
 		if err := json.NewDecoder(r.Body).Decode(&gotBody); err != nil {
 			t.Fatalf("decode request body: %v", err)
 		}
 		w.WriteHeader(http.StatusCreated)
+		_, _ = w.Write([]byte(`{"id":1}`))
 	}))
 	defer srv.Close()
 
