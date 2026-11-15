@@ -1114,6 +1114,20 @@ levelrail-cli channels quiet-hours <id> [--start HH:MM --end HH:MM [--timezone Z
 ```
 Valid `--kind` values: `generic`, `slack`, `discord`, `telegram`, `email`, `pushover`, `pagerduty`, `teams`, `resend`, `ntfy`, `gotify`, `mattermost`, `lark`, `rocketchat`, `opsgenie`, `webex`, `googlechat`. For `telegram`, add `&message_thread_id=N` to the sendMessage URL to post into one forum topic. `update` fully replaces a channel's configuration. `--notify-device-login` opts a channel into a link-only notice when a CLI login is waiting. `test` sends a real test message; `deliveries` lists a channel's recorded send history, newest first. See [Email notifications](/email-notifications).
 
+## Connections
+
+```
+levelrail-cli connections list [--kind KIND] [--scope SCOPE] [--health HEALTH] [flags]
+levelrail-cli connections show <ref> [flags]
+levelrail-cli connections catalog [flags]
+```
+Read-only view of every connected integration (git hosts, registries, secret stores, DNS, cloud, webhooks and notification channels). `list` prints the ref, kind, provider, label, scope, health, time to expiry (days, or hours under 48) and how many apps use each connection, and prints `No connections` when there are none. `show` prints one connection, `catalog` the providers that can be connected. Secrets are never returned.
+
+```
+levelrail-cli connections list --kind git --health ok --json
+levelrail-cli connections show <ref> --json
+```
+
 ## Push subscriptions
 
 ```

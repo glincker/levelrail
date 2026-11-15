@@ -157,6 +157,8 @@ func runDispatch(prog string, args []string, stdout, stderr io.Writer, lookupEnv
 		return runVault(prog, args[1:], stdout, stderr, lookupEnv)
 	case "registry":
 		return runRegistry(prog, args[1:], stdout, stderr, lookupEnv)
+	case "connections":
+		return runConnections(prog, args[1:], stdout, stderr, lookupEnv)
 	case "channels":
 		return runChannels(prog, args[1:], stdout, stderr, lookupEnv)
 	case "push-subscriptions":
