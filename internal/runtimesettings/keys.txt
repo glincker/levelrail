@@ -226,6 +226,8 @@ games.status_cache
 games.status_timeout
 git.access_cache_ttl_seconds
 git.access_names_max
+git.gitlab_deployments
+git.gitlab_deployments_connections
 git.lfs_hosts
 git.oauth_refresh_enabled
 git.oauth_refresh_failure_grace

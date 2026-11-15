@@ -297,7 +297,7 @@ func gitCapabilities(provider string, scopes []string, known, proven bool) []git
 				out[i].Note = "the stored scopes are unknown; assumed from the connection type"
 			}
 		}
-		out[6] = gitAccessCapability{ID: capDeploymentsReprt, State: gitCapAllowed, Note: "scopes unknown; reporting is not implemented for this provider yet"}
+		out[6] = gitAccessCapability{ID: capDeploymentsReprt, State: gitCapAllowed, Note: "scopes unknown; assumed from the connection type. Reporting is off until git.gitlab_deployments is on"}
 		out[7] = inferred(capRegistryPull)
 		out[8] = inferred(capImportGroup)
 	}
@@ -324,7 +324,7 @@ func gitlabCapabilities(scopes []string, proven bool) []gitAccessCapability {
 		mk(capTagPushTrigger, api, "api", false, role),
 		mk(capCommitStatus, api, "api", false, "also needs Developer access on the project, which scopes cannot show"),
 		mk(capMRComments, api, "api", false, "also needs Reporter access on the project, which scopes cannot show"),
-		mk(capDeploymentsReprt, api, "api", false, "reporting to the Deployments API is not implemented for this provider yet"),
+		mk(capDeploymentsReprt, api, "api", false, "also needs Developer access on the project, which scopes cannot show. Reports to Deployments and Environments when git.gitlab_deployments is on"),
 		mk(capRegistryPull, hasAnyScope(scopes, "read_registry", "api"), "read_registry", hasAnyScope(scopes, "read_registry"), ""),
 		mk(capImportGroup, hasAnyScope(scopes, "api", "read_api"), "read_api", true, ""),
 	}

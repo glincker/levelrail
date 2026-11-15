@@ -788,3 +788,7 @@ The deployment spec behind multi-service deploys.
 
 </Card>
 </CardGroup>
+
+## GitLab deployments and environments
+
+With `git.gitlab_deployments` on (off by default), a deploy of an app whose source is on GitLab creates an environment named `<app>/production` or `<app>/preview-<n>` and a deployment with status `running`, then `success`, `failed` or `canceled` when the deploy ends. The environment links to the app URL, or to the app's deployments page when it has none. Closing a merge request stops its preview environment. The call needs a token with the `api` scope and Developer access on the project: when the connection's stored scopes lack `api`, the `deployments_report` capability reads `needs_scope` and nothing is sent. Set `git.gitlab_deployments_connections` to limit reporting to chosen connections. Each post and each failure shows on the app timeline with the error text masked.

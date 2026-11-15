@@ -294,6 +294,8 @@ These variables only seed the default of a [runtime setting](/runtime-settings).
 | `APP_REGISTRY_PUSH_TIMEOUT` | [`deploys.registry_push_timeout`](/runtime-settings#deploys) | `5m` |
 | `APP_GIT_ACCESS_CACHE_TTL_SECONDS` | [`git.access_cache_ttl_seconds`](/runtime-settings#deploys) | `60` |
 | `APP_GIT_ACCESS_NAMES_MAX` | [`git.access_names_max`](/runtime-settings#deploys) | `25` |
+| `APP_GIT_GITLAB_DEPLOYMENTS` | [`git.gitlab_deployments`](/runtime-settings#deploys) | `false` |
+| `APP_GIT_GITLAB_DEPLOYMENTS_CONNECTIONS` | [`git.gitlab_deployments_connections`](/runtime-settings#deploys) | empty |
 | `APP_GIT_POLL_CONCURRENCY` | [`git.poll_concurrency`](/runtime-settings#deploys) | `4` |
 | `APP_GIT_POLL_ENABLED` | [`git.poll_enabled`](/runtime-settings#deploys) | `true` |
 | `APP_GIT_POLL_INTERVAL` | [`git.poll_interval`](/runtime-settings#deploys) | `5m` |
