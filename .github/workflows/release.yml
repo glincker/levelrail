@@ -859,11 +859,11 @@ jobs:
           src="ghcr.io/glincker/levelrail:${{ needs.image-channel.outputs.primary_tag }}"
           tag_args=()
           for t in ${{ needs.image-channel.outputs.tags }}; do
-            tag_args+=(-t "docker.io/${{ vars.DOCKERHUB_NAMESPACE || 'glincker' }}/levelrail:$t")
+            tag_args+=(-t "docker.io/${{ vars.DOCKERHUB_NAMESPACE || 'levelrail' }}/levelrail:$t")
           done
           docker buildx imagetools create "${tag_args[@]}" "$src"
           digest="sha256:$(docker buildx imagetools inspect "$src" --raw | sha256sum | cut -d' ' -f1)"
-          cosign sign --yes "docker.io/${{ vars.DOCKERHUB_NAMESPACE || 'glincker' }}/levelrail@${digest}"
+          cosign sign --yes "docker.io/${{ vars.DOCKERHUB_NAMESPACE || 'levelrail' }}/levelrail@${digest}"
 
   build-image-levelrail-agent:
     name: Build levelrail-agent image (${{ matrix.platform }})
@@ -996,11 +996,11 @@ jobs:
           src="ghcr.io/glincker/levelrail-agent:${{ needs.image-channel.outputs.primary_tag }}"
           tag_args=()
           for t in ${{ needs.image-channel.outputs.tags }}; do
-            tag_args+=(-t "docker.io/${{ vars.DOCKERHUB_NAMESPACE || 'glincker' }}/levelrail-agent:$t")
+            tag_args+=(-t "docker.io/${{ vars.DOCKERHUB_NAMESPACE || 'levelrail' }}/levelrail-agent:$t")
           done
           docker buildx imagetools create "${tag_args[@]}" "$src"
           digest="sha256:$(docker buildx imagetools inspect "$src" --raw | sha256sum | cut -d' ' -f1)"
-          cosign sign --yes "docker.io/${{ vars.DOCKERHUB_NAMESPACE || 'glincker' }}/levelrail-agent@${digest}"
+          cosign sign --yes "docker.io/${{ vars.DOCKERHUB_NAMESPACE || 'levelrail' }}/levelrail-agent@${digest}"
 
   release-notes:
     name: Write release notes
