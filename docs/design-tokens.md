@@ -112,7 +112,8 @@ One palette for every code, terminal and log surface, in the `code` group (`--gl
 Rules:
 
 - Every text role is at least 4.5:1 on `code-bg` in light and dark, and `code-fg` stays readable on the selection, line highlight, match and diff tints. `web/scripts/code-contrast.test.mjs` fails otherwise. Check it when you change a value.
-- ANSI black and white are remapped per theme so they stay readable (black is a muted grey, white is dark in light mode). Escapes are still stripped when rendering; `lib/ansiPalette.ts` maps SGR codes to the tokens.
+- ANSI black and white are remapped per theme so they stay readable (black is a muted grey, white is dark in light mode). The log viewer renders SGR colour, bold, dim and underline as spans with these token classes (`lib/ansiRender.ts`); 256 and truecolor map to the nearest of the 16, background colours and every other control sequence are dropped, and search and copy use the plain text.
+- The log viewer stays dark in both themes, like a terminal. Add the `glinr-terminal` class to the container: it is a second selector on the dark token block, so every `--glinr-*` variable under it takes its dark value while the rest of the page keeps the user theme. Controls drawn over the viewer carry the class too.
 - Colour is never the only cue. Error lines carry a gutter bar and an icon, diff lines keep their `+` or `-` sign, level tags are text.
 - `CodeBlock`, `CommandBlock` and `TerminalBlock` use the palette. `CodeBlock` highlights `yaml`, `json`, `bash` and `diff` through `lib/codeHighlight.ts`, which never changes the text.
 

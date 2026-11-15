@@ -1,12 +1,17 @@
-import { useMemo } from 'react'
+import { Fragment, useMemo } from 'react'
 import { useTranslation } from 'react-i18next'
 import {
   ChevronDownGlassIcon,
   ChevronRightGlassIcon,
   CircleAlertGlassIcon,
 } from '@thesvg/ui-react'
-import { stripAnsiCodes } from '../lib/ansi'
-import { splitByNeedle } from '../lib/logHighlight'
+import {
+  DEFAULT_ANSI_STYLE,
+  ansiClassName,
+  parseAnsiLine,
+  type AnsiStyle,
+} from '../lib/ansiRender'
+import { highlightStyled } from '../lib/logHighlight'
 import { detectLogLevel, prettyJsonLine } from '../lib/logLevel'
 import { formatLogAbsolute, formatLogRelative } from '../lib/logTime'
 import { LogLevelTag } from './LogLevelTag'
@@ -24,6 +29,7 @@ export function LogRow({
   highlight = '',
   wrap = true,
   now,
+  ansiStart = DEFAULT_ANSI_STYLE,
 }: {
   logLine: LogLine
   index: number
@@ -37,9 +43,18 @@ export function LogRow({
   wrap?: boolean
   /** Epoch ms used for relative times; the row shows no time when omitted. */
   now?: number
+  /** Colour carried over from earlier lines in the stream (ANSI state persists until reset). */
+  ansiStart?: AnsiStyle
 }) {
   const { t } = useTranslation('common')
-  const text = stripAnsiCodes(logLine.line)
+  const pieces = useMemo(
+    () =>
+      highlightStyled(
+        parseAnsiLine(logLine.line, ansiStart).segments,
+        highlight,
+      ),
+    [logLine.line, ansiStart, highlight],
+  )
   const level = detectLogLevel(logLine.line)
   const isStderr = logLine.stream === 'stderr'
   // Level-detected errors on stdout (build tools often print to stdout) get the same highlight.
@@ -133,18 +148,20 @@ export function LogRow({
         <span
           className={`flex-1 select-text ${wrap ? 'min-w-0 break-words whitespace-pre-wrap' : 'whitespace-pre'}`}
         >
-          {splitByNeedle(text, highlight).map((seg, i) =>
-            seg.match ? (
+          {pieces.map((p, i) => {
+            const cls = ansiClassName(p.style)
+            const node = cls ? <span className={cls}>{p.text}</span> : p.text
+            return p.match ? (
               <mark
                 key={i}
                 className="rounded-sm bg-glinr-code-match text-inherit"
               >
-                {seg.text}
+                {node}
               </mark>
             ) : (
-              seg.text
-            ),
-          )}
+              <Fragment key={i}>{node}</Fragment>
+            )
+          })}
         </span>
       </div>
       {expanded && pretty !== null ? (

@@ -2,8 +2,9 @@ import { CopyGlassIcon, PauseGlassIcon, PlayGlassIcon } from '@thesvg/ui-react'
 import { useCallback } from 'react'
 import { Button } from '@/components/ui/button'
 import { LogTerminal } from '../LogTerminal'
-import { useLogStream, type LogLine } from '../../hooks/useLogStream'
+import { useLogStream } from '../../hooks/useLogStream'
 import { buildStageLogUrl } from '../../queries/buildStages'
+import { logLinesToText } from '../../lib/logFilter'
 import type { BuildStageName } from '../../lib/buildStages'
 import { useDeployDetailT } from '../deployDetail/useDeployDetailT'
 
@@ -23,9 +24,7 @@ export function StageLogPanel({
   const url = buildStageLogUrl(appName, deployId, stage)
   const { lines, isPaused, pause, resume, connectionState } = useLogStream(url)
   const copy = useCallback(() => {
-    void navigator.clipboard.writeText(
-      lines.map((l: LogLine) => l.line).join('\n'),
-    )
+    void navigator.clipboard.writeText(logLinesToText(lines))
   }, [lines])
   const stageName = t(`buildStages.stage.${stage}`)
   return (

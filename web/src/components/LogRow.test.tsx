@@ -63,6 +63,13 @@ describe('LogRow', () => {
     expect(screen.queryByRole('button')).not.toBeInTheDocument()
   })
 
+  it('renders SGR colour as token-class spans with the escapes removed', () => {
+    renderRow('\u001b[32mok\u001b[0m built', false)
+    const span = screen.getByText('ok')
+    expect(span).toHaveClass('text-glinr-code-ansi-green')
+    expect(span.parentElement?.textContent).toBe('ok built')
+  })
+
   it('has no per-line copy control', () => {
     renderRow('{"level":"error","msg":"boom"}', true)
     expect(screen.queryByRole('button', { name: /copy/i })).toBeNull()

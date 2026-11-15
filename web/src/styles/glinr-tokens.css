@@ -234,7 +234,7 @@
   --glinr-scrollbar-size: 10px;
 }
 
-.dark, [data-mode="dark"] {
+.dark, [data-mode="dark"], .glinr-terminal {
   --glinr-bg: oklch(0.145 0 0);
   --glinr-surface: oklch(0.205 0 0);
   --glinr-border: oklch(1 0 0 / 9%);

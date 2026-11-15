@@ -79,7 +79,7 @@ export function build(tree) {
   }
 
   const rules = (set, withOled) =>
-    `:root, [data-mode="light"] {\n${set[0].join('\n')}\n}\n\n.dark, [data-mode="dark"] {\n${set[1].join('\n')}\n}\n${withOled ? `\n${oledRule(set[2])}` : ''}`
+    `:root, [data-mode="light"] {\n${set[0].join('\n')}\n}\n\n.dark, [data-mode="dark"], .glinr-terminal {\n${set[1].join('\n')}\n}\n${withOled ? `\n${oledRule(set[2])}` : ''}`
   // Doubled selectors beat .dark even when this sheet is linked before the bundle.
   const oledRule = (lines) =>
     `.dark.oled, [data-mode="oled"][data-mode] {\n${lines.join('\n')}\n}\n`

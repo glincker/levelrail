@@ -7,6 +7,7 @@ import {
   LoaderCircleGlassIcon,
   type UiIcon,
 } from '@thesvg/ui-react'
+import { TONE } from '@/components/kit/tone'
 import type { DeployStage, DeployStageStatus } from '../lib/deployStages'
 import { formatDurationMs } from '../lib/deployDuration'
 import { useNowTick } from '../hooks/useNowTick'
@@ -63,7 +64,7 @@ const STATUS_ICON: Record<DeployStageStatus, UiIcon> = {
 const STATUS_ICON_CLASS: Record<DeployStageStatus, string> = {
   pending: 'text-muted-foreground',
   running: 'text-primary animate-spin motion-reduce:animate-none',
-  done: 'text-green-600 dark:text-green-400',
+  done: TONE.success.text,
   failed: 'text-destructive',
   skipped: 'text-muted-foreground/60',
   unknown: 'text-muted-foreground/60',

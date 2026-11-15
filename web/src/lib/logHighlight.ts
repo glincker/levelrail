@@ -20,3 +20,41 @@ export function splitByNeedle(text: string, rawNeedle: string): TextSegment[] {
   if (from < text.length) out.push({ text: text.slice(from), match: false })
   return out
 }
+
+export interface StyledPiece<S> {
+  text: string
+  style: S
+  match: boolean
+}
+
+/** Marks needle matches on the joined plain text while keeping each piece's own style. */
+export function highlightStyled<S>(
+  segments: readonly { text: string; style: S }[],
+  rawNeedle: string,
+): StyledPiece<S>[] {
+  const plain = segments.map((s) => s.text).join('')
+  const hits = splitByNeedle(plain, rawNeedle)
+  const out: StyledPiece<S>[] = []
+  let si = 0
+  let used = 0
+  for (const hit of hits) {
+    let left = hit.text.length
+    while (left > 0 && si < segments.length) {
+      const seg = segments[si]
+      if (!seg) break
+      const take = Math.min(left, seg.text.length - used)
+      out.push({
+        text: seg.text.slice(used, used + take),
+        style: seg.style,
+        match: hit.match,
+      })
+      used += take
+      left -= take
+      if (used >= seg.text.length) {
+        si++
+        used = 0
+      }
+    }
+  }
+  return out
+}
