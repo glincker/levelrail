@@ -251,3 +251,18 @@ func doctorFirewallOptionsFix() string {
 	}
 	return strings.Join(parts, "; ")
 }
+
+// doctorMeshDNSIPv6Note is appended to the OK text because the DNS accept is installed for IPv4 only.
+const doctorMeshDNSIPv6Note = " (IPv4 only, IPv6 is not supported)"
+
+// meshDNSFindingRows turns detected firewall problems into coded warn rows carrying the operator command.
+func meshDNSFindingRows(findings []hostfw.DNSFinding) []doctorCheckResource {
+	rows := make([]doctorCheckResource, 0, len(findings))
+	for _, f := range findings {
+		rows = append(rows, doctorCheckResource{
+			Code: f.Code, Name: "Mesh DNS host firewall", Status: doctorStatusWarn,
+			Message: f.Message, Fix: f.Command, DocsPath: "/host-firewall#dns-on-bridge-gateways",
+		})
+	}
+	return rows
+}

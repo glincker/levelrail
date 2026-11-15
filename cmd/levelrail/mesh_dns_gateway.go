@@ -133,6 +133,7 @@ func (m *meshGatewayDNS) status(ctx context.Context) network.GatewayStatus {
 	if ifaces := m.gw.Interfaces(); len(ifaces) > 0 {
 		present, err := m.rules.Present(ctx, ifaces)
 		st.FirewallPresent = present
+		st.FirewallFindings = m.rules.Diagnose(ctx, ifaces)
 		if err != nil {
 			st.FirewallError = err.Error()
 		}

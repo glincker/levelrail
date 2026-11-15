@@ -33,6 +33,7 @@ func meshDNSDoctorRows(st network.GatewayStatus) []doctorCheckResource {
 	}
 	rows := []doctorCheckResource{meshDNSListenerRow(st)}
 	rows = append(rows, meshDNSFirewallRow(st), meshDNSUsageRow(st))
+	rows = append(rows, meshDNSFindingRows(st.FirewallFindings)...)
 	return rows
 }
 
@@ -78,7 +79,7 @@ func meshDNSFirewallRow(st network.GatewayStatus) doctorCheckResource {
 		row.Message = "INPUT accept for udp and tcp 53 is missing on " + strings.Join(missing, ", ") + ", containers cannot reach the resolver"
 		row.Fix = "wait for the next sync, or add the accept for those interfaces"
 	default:
-		row.Status, row.Message = doctorStatusOK, "INPUT accept present via "+st.FirewallBackend
+		row.Status, row.Message = doctorStatusOK, "INPUT accept present via "+st.FirewallBackend+doctorMeshDNSIPv6Note
 	}
 	return row
 }
