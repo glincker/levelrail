@@ -1,0 +1,43 @@
+{
+  "title": "Connecter {{provider}} en quatre étapes",
+  "stepApp": "Ouvrez la page des applications OAuth et créez une application.",
+  "openApp": "Ouvrir la page des applications de {{host}}",
+  "appHint": {
+    "gitlab": "Dans Paramètres utilisateur, Applications. Une application de groupe ou d'administrateur fonctionne aussi.",
+    "gitea": "Dans Paramètres, Applications, Gérer les applications OAuth2. Cochez Client confidentiel.",
+    "forgejo": "Dans Paramètres, Applications, Gérer les applications OAuth2. Cochez Client confidentiel.",
+    "bitbucket": "Ouvrez l'espace de travail, puis Paramètres, Consommateurs OAuth, Ajouter un consommateur. Cochez consommateur privé."
+  },
+  "stepRedirect": "Définissez l'URI de redirection (URL de rappel) exactement sur cette valeur.",
+  "redirectLabel": "URI de redirection",
+  "copy": "Copier",
+  "copied": "Copié",
+  "copyFailed": "Copie impossible. Sélectionnez l'URI et copiez-la à la main.",
+  "stepScopes": "Sélectionnez ces portées.",
+  "scopesLabel": "Portées à sélectionner",
+  "scopesNone": "Ce fournisseur n'a pas de liste de portées. Accordez la lecture et l'écriture des dépôts quand il le demande.",
+  "stepPaste": "Collez ci-dessous l'ID client et le secret, puis enregistrez et autorisez.",
+  "hint": {
+    "https": "Cette adresse est en HTTPS, le fournisseur l'acceptera comme URI de redirection.",
+    "loopback": "C'est une adresse locale. La plupart des fournisseurs l'acceptent seulement pour tester depuis ce navigateur.",
+    "insecure": "Cette adresse est en HTTP simple et la plupart des fournisseurs la refusent comme URI de redirection. Utilisez HTTPS ou connectez-vous avec un jeton."
+  },
+  "fallback": {
+    "title": "OAuth impossible ici ?",
+    "body": "Un jeton n'exige ni URI de redirection, ni domaine public, ni application.",
+    "action": "Se connecter avec un jeton"
+  },
+  "field": {
+    "empty": "Ce champ est obligatoire.",
+    "whitespace": "Supprimez les espaces ou sauts de ligne de la valeur collée.",
+    "unusual": "Cela ne ressemble pas à une valeur {{provider}} habituelle. Vérifiez que tout est copié."
+  },
+  "name": {
+    "gitlab": "GitLab",
+    "gitea": "Gitea",
+    "forgejo": "Forgejo",
+    "bitbucket": "Bitbucket Cloud",
+    "bitbucket_server": "Bitbucket Server",
+    "azure_devops": "Azure DevOps"
+  }
+}

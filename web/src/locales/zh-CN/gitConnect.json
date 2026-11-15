@@ -1,0 +1,43 @@
+{
+  "title": "分四步连接 {{provider}}",
+  "stepApp": "打开 OAuth 应用页面并创建一个应用。",
+  "openApp": "打开 {{host}} 的应用页面",
+  "appHint": {
+    "gitlab": "位于用户设置的应用程序中。群组或管理员应用也可以。",
+    "gitea": "位于设置、应用、管理 OAuth2 应用。勾选机密客户端。",
+    "forgejo": "位于设置、应用、管理 OAuth2 应用。勾选机密客户端。",
+    "bitbucket": "打开工作区,依次进入设置、OAuth 使用者、添加使用者。勾选私有使用者。"
+  },
+  "stepRedirect": "将重定向 URI(回调地址)设置为与下面完全一致的值。",
+  "redirectLabel": "重定向 URI",
+  "copy": "复制",
+  "copied": "已复制",
+  "copyFailed": "无法复制。请选中 URI 后手动复制。",
+  "stepScopes": "选择以下权限范围。",
+  "scopesLabel": "需要选择的权限范围",
+  "scopesNone": "该提供方没有权限范围列表。被询问时请授予仓库读写权限。",
+  "stepPaste": "在下方粘贴客户端 ID 和密钥,然后保存并授权。",
+  "hint": {
+    "https": "该地址使用 HTTPS,提供方会接受它作为重定向 URI。",
+    "loopback": "这是本地地址。多数提供方只在此浏览器中测试时接受它。",
+    "insecure": "该地址是普通 HTTP,多数提供方会拒绝将其用作重定向 URI。请使用 HTTPS 或改用令牌连接。"
+  },
+  "fallback": {
+    "title": "这里无法使用 OAuth?",
+    "body": "令牌不需要重定向 URI、公网域名或应用。",
+    "action": "改用令牌连接"
+  },
+  "field": {
+    "empty": "此项为必填。",
+    "whitespace": "请删除粘贴内容中的空格或换行。",
+    "unusual": "这不像常见的 {{provider}} 值。请确认已复制完整内容。"
+  },
+  "name": {
+    "gitlab": "GitLab",
+    "gitea": "Gitea",
+    "forgejo": "Forgejo",
+    "bitbucket": "Bitbucket Cloud",
+    "bitbucket_server": "Bitbucket Server",
+    "azure_devops": "Azure DevOps"
+  }
+}

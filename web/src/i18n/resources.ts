@@ -39,6 +39,7 @@ import type assets from '../locales/en/assets.json'
 import type uiShared from '../locales/en/uiShared.json'
 import type relatedLinks from '../locales/en/relatedLinks.json'
 import type gitSource from '../locales/en/gitSource.json'
+import type gitConnect from '../locales/en/gitConnect.json'
 import type certBudget from '../locales/en/certBudget.json'
 import type appRows from '../locales/en/appRows.json'
 import type tokensNotices from '../locales/en/tokensNotices.json'
@@ -320,6 +321,7 @@ declare module 'i18next' {
       palette: typeof palette
       paletteSettings: typeof paletteSettings
       gitSource: typeof gitSource
+      gitConnect: typeof gitConnect
       projectExport: typeof projectExport
       projectClone: typeof projectClone
     }

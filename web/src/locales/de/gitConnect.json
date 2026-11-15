@@ -1,0 +1,43 @@
+{
+  "title": "{{provider}} in vier Schritten verbinden",
+  "stepApp": "Öffnen Sie die OAuth-Anwendungsseite und legen Sie eine Anwendung an.",
+  "openApp": "Anwendungsseite von {{host}} öffnen",
+  "appHint": {
+    "gitlab": "Unter Benutzereinstellungen, Anwendungen. Eine Gruppen- oder Admin-Anwendung funktioniert auch.",
+    "gitea": "Unter Einstellungen, Anwendungen, OAuth2-Anwendungen verwalten. Vertraulicher Client ankreuzen.",
+    "forgejo": "Unter Einstellungen, Anwendungen, OAuth2-Anwendungen verwalten. Vertraulicher Client ankreuzen.",
+    "bitbucket": "Workspace öffnen, dann Einstellungen, OAuth-Consumer, Consumer hinzufügen. Privaten Consumer ankreuzen."
+  },
+  "stepRedirect": "Setzen Sie die Redirect-URI (Callback-URL) genau auf diesen Wert.",
+  "redirectLabel": "Redirect-URI",
+  "copy": "Kopieren",
+  "copied": "Kopiert",
+  "copyFailed": "Kopieren nicht möglich. Markieren Sie die URI und kopieren Sie sie von Hand.",
+  "stepScopes": "Wählen Sie diese Scopes.",
+  "scopesLabel": "Zu wählende Scopes",
+  "scopesNone": "Dieser Anbieter hat keine Scope-Liste. Gewähren Sie Lese- und Schreibzugriff auf Repositories, wenn danach gefragt wird.",
+  "stepPaste": "Fügen Sie unten Client-ID und Secret ein, dann speichern und autorisieren.",
+  "hint": {
+    "https": "Diese Adresse nutzt HTTPS, der Anbieter akzeptiert sie als Redirect-URI.",
+    "loopback": "Dies ist eine lokale Adresse. Die meisten Anbieter akzeptieren sie nur zum Testen in diesem Browser.",
+    "insecure": "Diese Adresse ist reines HTTP und wird von den meisten Anbietern als Redirect-URI abgelehnt. Nutzen Sie HTTPS oder verbinden Sie mit einem Token."
+  },
+  "fallback": {
+    "title": "OAuth hier nicht möglich?",
+    "body": "Ein Token braucht keine Redirect-URI, keine öffentliche Domain und keine Anwendung.",
+    "action": "Stattdessen mit einem Token verbinden"
+  },
+  "field": {
+    "empty": "Dieses Feld ist erforderlich.",
+    "whitespace": "Entfernen Sie Leerzeichen oder Zeilenumbrüche aus dem eingefügten Wert.",
+    "unusual": "Das sieht nicht nach einem üblichen {{provider}}-Wert aus. Prüfen Sie, ob Sie alles kopiert haben."
+  },
+  "name": {
+    "gitlab": "GitLab",
+    "gitea": "Gitea",
+    "forgejo": "Forgejo",
+    "bitbucket": "Bitbucket Cloud",
+    "bitbucket_server": "Bitbucket Server",
+    "azure_devops": "Azure DevOps"
+  }
+}

@@ -1,0 +1,43 @@
+{
+  "title": "Conecta {{provider}} en cuatro pasos",
+  "stepApp": "Abre la página de aplicaciones OAuth y crea una aplicación.",
+  "openApp": "Abrir la página de aplicaciones de {{host}}",
+  "appHint": {
+    "gitlab": "En Ajustes de usuario, Aplicaciones. También sirve una aplicación de grupo o de administrador.",
+    "gitea": "En Ajustes, Aplicaciones, Gestionar aplicaciones OAuth2. Marca Cliente confidencial.",
+    "forgejo": "En Ajustes, Aplicaciones, Gestionar aplicaciones OAuth2. Marca Cliente confidencial.",
+    "bitbucket": "Abre el espacio de trabajo, luego Ajustes, Consumidores OAuth, Añadir consumidor. Marca consumidor privado."
+  },
+  "stepRedirect": "Define el URI de redirección (URL de callback) exactamente con este valor.",
+  "redirectLabel": "URI de redirección",
+  "copy": "Copiar",
+  "copied": "Copiado",
+  "copyFailed": "No se pudo copiar. Selecciona el URI y cópialo a mano.",
+  "stepScopes": "Selecciona estos permisos.",
+  "scopesLabel": "Permisos a seleccionar",
+  "scopesNone": "Este proveedor no tiene lista de permisos. Concede lectura y escritura de repositorios cuando lo pida.",
+  "stepPaste": "Pega abajo el ID de cliente y el secreto, luego guarda y autoriza.",
+  "hint": {
+    "https": "Esta dirección usa HTTPS, así que el proveedor la aceptará como URI de redirección.",
+    "loopback": "Es una dirección local. La mayoría de proveedores la aceptan solo para pruebas desde este navegador.",
+    "insecure": "Esta dirección es HTTP simple y la mayoría de proveedores la rechaza como URI de redirección. Usa HTTPS o conecta con un token."
+  },
+  "fallback": {
+    "title": "¿No puedes usar OAuth aquí?",
+    "body": "Un token no necesita URI de redirección, dominio público ni aplicación.",
+    "action": "Conectar con un token"
+  },
+  "field": {
+    "empty": "Este campo es obligatorio.",
+    "whitespace": "Quita los espacios o saltos de línea del valor pegado.",
+    "unusual": "No parece un valor habitual de {{provider}}. Comprueba que copiaste todo."
+  },
+  "name": {
+    "gitlab": "GitLab",
+    "gitea": "Gitea",
+    "forgejo": "Forgejo",
+    "bitbucket": "Bitbucket Cloud",
+    "bitbucket_server": "Bitbucket Server",
+    "azure_devops": "Azure DevOps"
+  }
+}

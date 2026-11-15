@@ -93,6 +93,14 @@ export function GitConnectionsCard({
         existing={connections}
         open={adding}
         onOpenChange={setAdding}
+        onUseToken={
+          tokenHost
+            ? () => {
+                setAdding(false)
+                setTokenOpen(true)
+              }
+            : undefined
+        }
       />
     </Card>
   )

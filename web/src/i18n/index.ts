@@ -162,6 +162,7 @@ export const NAMESPACES = [
   'uiShared',
   'relatedLinks',
   'gitSource',
+  'gitConnect',
   'projectExport',
   'projectClone',
   'certBudget',
