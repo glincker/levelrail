@@ -79,7 +79,10 @@ func (rt *Router) doctorDefs() []doctorCheckDef {
 		one("disk_hygiene", doctorGroupHost, rt.doctorCheckDiskHygiene),
 		one("data_dir_writable", doctorGroupHost, func(context.Context) doctorCheckResource { return rt.doctorCheckDataDirWritable() }),
 		one("ram", doctorGroupHost, func(context.Context) doctorCheckResource { return rt.doctorCheckRAM() }),
+		one("host_pressure", doctorGroupHost, rt.doctorCheckHostPressure),
+		one("host_swap", doctorGroupHost, rt.doctorCheckNoSwap),
 		one("build_memory", doctorGroupHost, rt.doctorCheckBuildMemory),
+		one("unit_protection", doctorGroupHost, func(ctx context.Context) doctorCheckResource { return rt.doctorCheckUnitProtection(ctx, time.Now()) }),
 		one("cpu", doctorGroupHost, func(context.Context) doctorCheckResource { return rt.doctorCheckCPU() }),
 		one("disk_io_latency", doctorGroupHost, func(context.Context) doctorCheckResource { return rt.doctorCheckDiskIOLatency() }),
 		one("database", doctorGroupHost, rt.doctorCheckDatabase),
@@ -101,6 +104,7 @@ func (rt *Router) doctorDefs() []doctorCheckDef {
 			return rt.doctorCheckIngressSurvives(time.Now())
 		}),
 		many("exposure", doctorGroupNetwork, rt.doctorCheckExposure),
+		many("mesh_dns", doctorGroupNetwork, rt.doctorCheckMeshDNS),
 		many("cloud", doctorGroupNetwork, rt.doctorCheckCloud),
 		one("certificates", doctorGroupNetwork, rt.doctorCheckCertExpiry),
 		one("certificate_budget", doctorGroupNetwork, rt.doctorCheckCertBudget),

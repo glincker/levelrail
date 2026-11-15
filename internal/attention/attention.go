@@ -96,6 +96,7 @@ const (
 	KindDBEOL                   = "db_eol"
 	KindDBUpgradeFailed         = "db_upgrade_failed"
 	KindDockerGuard             = "docker_guard"
+	KindHostPressure            = "host_pressure"
 	KindUpgradeBlocked          = "upgrade_blocked"
 	KindResourceAdvice          = "resource_advice"
 	KindSecretRotationDue       = "secret_rotation_due"
@@ -107,7 +108,9 @@ const (
 	KindFirewallAttackSuggested = "firewall_attack_suggested"
 	KindNodeCapacity            = "node_capacity"
 	KindStackDrift              = "stack_drift"
+	KindUncleanRestart          = "unclean_restart"
 	KindAdvisoryMatch           = "advisory_match"
+	KindDeployInterrupted       = "deploy_interrupted"
 )
 
 func deviceLoginItems(devices []apiclient.DevicePendingLogin, now time.Time) []Item {

@@ -186,6 +186,11 @@ func (l *Limiter) run(ctx context.Context, tag, srcDir string, progress func(Pro
 	if l.node != nil {
 		nodeID = l.node(ctx)
 	}
+	capped, gerr := admitLocal(ctx, nodeID, lim.MaxConcurrent, progress)
+	if gerr != nil {
+		return nil, fmt.Errorf("build: waiting for host pressure: %w", gerr)
+	}
+	lim.MaxConcurrent = capped
 	if err := l.acquire(ctx, nodeID, lim.MaxConcurrent); err != nil {
 		return nil, fmt.Errorf("build: waiting for a build slot: %w", err)
 	}

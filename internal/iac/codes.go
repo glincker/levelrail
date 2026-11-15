@@ -54,6 +54,12 @@ const (
 	CodeCronHTTPInvalid = "cron_http_invalid"
 	// CodeAlertRuleInvalid means an AlertRule lacks the fields its type needs.
 	CodeAlertRuleInvalid = "alert_rule_invalid"
+	// CodeDNSNameInvalid means an App dns name breaks the label, wildcard or limit rules.
+	CodeDNSNameInvalid = "dns_name_invalid"
+	// CodeDNSNameReserved means an App claims a reserved internal name.
+	CodeDNSNameReserved = "dns_name_reserved"
+	// CodeDNSNameConflict means an App claims a name another app already owns.
+	CodeDNSNameConflict = "dns_name_conflict"
 )
 
 // Compose reference codes (ADR 081).
@@ -126,6 +132,7 @@ var AllCodes = []string{
 	CodePlanStale, CodePlanHashVersion, CodeStackLocked, CodeStackSourceSync, CodePruneGuard, CodeApplyDisabled,
 	CodeInvalidRequest, CodeInvalidDocument, CodeInvalidName,
 	CodeCronScheduleInvalid, CodeCronJobInvalid, CodeCronHTTPInvalid, CodeAlertRuleInvalid,
+	CodeDNSNameInvalid, CodeDNSNameReserved, CodeDNSNameConflict,
 	CodeApprovalPending, CodePlanSuperseded, CodeInterrupted, CodePlanJobNotFound, CodePlanTimeout,
 	CodeSyncRepoUnreachable, CodeSyncPathInvalid, CodeSyncLimitsExceeded, CodeSyncPlanFailed,
 	CodeComposePathInvalid, CodeComposeRefMissing, CodeComposeTooLarge, CodeComposeTooManyFiles,

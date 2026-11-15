@@ -110,6 +110,7 @@ type wireApp struct {
 	DatabaseEnv        map[string]wireDBRef      `json:"database_env,omitempty"`
 	Tolerations        []placement.Toleration    `json:"tolerations,omitempty"`
 	Affinity           *placement.Affinity       `json:"affinity,omitempty"`
+	DNSNames           []string                  `json:"dns_names,omitempty"`
 }
 
 type wireDBRef struct {

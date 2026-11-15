@@ -248,10 +248,11 @@ type Controller struct {
 	probeUnreachableLogged atomic.Bool
 	probeLimits            probe.Limits
 	readyBudget            time.Duration
-	completionBudget       time.Duration  // 0 reads EnvOneShotTimeout, see effectiveCompletionBudget
-	secretResolver         SecretResolver // nil is valid: a service with no secret-backed env vars never needs one
-	deployRecorder         DeployRecorder // nil is valid: deploy frequency just isn't recorded
-	meshDNSAddr            string         // empty is valid: no mesh DNS server is running, or it hasn't resolved a container-reachable address, see WithMeshDNSAddr
+	completionBudget       time.Duration              // 0 reads EnvOneShotTimeout, see effectiveCompletionBudget
+	secretResolver         SecretResolver             // nil is valid: a service with no secret-backed env vars never needs one
+	deployRecorder         DeployRecorder             // nil is valid: deploy frequency just isn't recorded
+	meshDNSAddr            string                     // empty is valid: no mesh DNS server is running, or it hasn't resolved a container-reachable address, see WithMeshDNSAddr
+	meshDNSFn              func(nodeID string) string // nil falls back to meshDNSAddr, see WithMeshDNSFunc
 	meshDB                 *MeshDatabaseConfig
 	meshZone               string                  // empty is valid: resolveDatabaseField falls back to the database's container name, see WithMeshZone
 	nodeGPU                NodeGPUChecker          // nil is valid: no GPU placement check, see WithNodeGPU
@@ -1472,8 +1473,8 @@ func (c *Controller) createAndStart(ctx context.Context, name string, desired *s
 		spec.RegistryAuth = auth
 	}
 	traceRegistryAuth(ctx, tr, desired, spec.RegistryAuth)
-	if c.meshDNSAddr != "" {
-		spec.DNS = append([]string{c.meshDNSAddr}, spec.DNS...)
+	if dnsAddr := c.meshDNSFor(desired.NodeID); dnsAddr != "" {
+		spec.DNS = append([]string{dnsAddr}, spec.DNS...)
 		// The mesh resolver counts against the resolver limit; user entries beyond it are dropped.
 		if limit := appspec.RuntimeDNSMax(); len(spec.DNS) > limit {
 			slog.Warn("application: resolver limit reached, dropping user resolvers", slog.String("service", desired.Name), slog.Any("dropped", spec.DNS[limit:]))

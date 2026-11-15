@@ -229,12 +229,16 @@ type meshSetup struct {
 	coordinator *network.Coordinator
 	resolver    *network.Resolver
 	hubHost     *network.HubHostResolver
+	dnsServer   *network.DNSServer
 	// Never nil when meshSetup is non-nil: NewDevice always returns a usable Mesh.
 	device network.Mesh
 	// Use the actually bound address, which can differ from the configured one.
 	dnsAddr  netip.AddrPort
 	close    func()
 	settings *runtimesettings.Service
+	// gatewayDNS is set at boot when the bridge gateway resolver is wired.
+	gatewayDNS *meshGatewayDNS
+	queryLog   *network.QueryLog
 }
 
 // meshApplyPolicy bounds each mesh config push; values come from runtime settings so changes apply on the next pass.
@@ -352,6 +356,7 @@ func setupMesh(ctx context.Context, db *store.DB, b *brand.Brand, dataDir string
 		hubHost:     hubHost,
 		device:      device,
 		dnsAddr:     dnsServer.Addr(),
+		dnsServer:   dnsServer,
 		settings:    hubSettings,
 		close: func() {
 			cancelHeartbeat()

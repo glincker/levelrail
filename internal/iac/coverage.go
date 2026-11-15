@@ -48,7 +48,7 @@ var coverageMatrix = []CoverageRow{
 		Probe: "version: 1\nkind: Database\nmetadata: {name: a}\nspec: {engine: postgres, version: \"16\", backup: {schedule: \"0 3 * * *\"}}\n"},
 	{Kind: KindDatabase, Feature: "database placement", Status: CoverageNotYet, Code: CodeSchemaUnknownField, Reason: unknownFn,
 		Probe: "version: 1\nkind: Database\nmetadata: {name: a}\nspec: {engine: postgres, version: \"16\", placement: {node: n1}}\n"},
-	{Kind: KindApp, Feature: "image builds, env, ports, health, resources, replicas, rollout, files, jobs, volumes, placement", Status: CoverageInFiles},
+	{Kind: KindApp, Feature: "image builds, env, ports, health, resources, replicas, rollout, files, jobs, volumes, placement, internal dns names", Status: CoverageInFiles},
 	{Kind: KindApp, Feature: "git-source builds", Status: CoverageNotYet, Reason: "apply manages apps that run a prebuilt image",
 		Probe: "version: 1\nkind: App\nmetadata: {name: a}\nspec:\n  service:\n    build: {type: dockerfile}\n    port: 80\n"},
 	{Kind: KindApp, Feature: "egress policies", Status: CoverageNotYet, Reason: "egress policies are not supported by apply yet",

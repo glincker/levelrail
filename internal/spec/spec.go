@@ -115,6 +115,9 @@ type Service struct {
 	Tolerations []placement.Toleration `yaml:"tolerations,omitempty"`
 	Affinity    *placement.Affinity    `yaml:"affinity,omitempty"`
 
+	// DNS lists extra internal names that resolve to this service (beta).
+	DNS *DNS `yaml:"dns,omitempty"`
+
 	// Workload, PerNode and Ordered are reserved, not yet scheduled: they
 	// validate but the reconciler does not read them yet.
 	Workload string   `yaml:"workload,omitempty"`

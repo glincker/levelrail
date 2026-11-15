@@ -81,6 +81,7 @@ import (
 	"github.com/GLINCKER/levelrail/internal/compliance"
 	"github.com/GLINCKER/levelrail/internal/diskguard"
 	"github.com/GLINCKER/levelrail/internal/functions"
+	"github.com/GLINCKER/levelrail/internal/hostpressure"
 	"github.com/GLINCKER/levelrail/internal/nodefailure"
 	"github.com/GLINCKER/levelrail/internal/repolayout"
 	"github.com/GLINCKER/levelrail/internal/repolist"
@@ -248,6 +249,7 @@ type Router struct {
 	volumeTransfers         volumeTransferGuard
 	dataDir                 string // "" means "don't report disk usage", set via WithDataDir
 	diskGuard               *diskguard.Guard
+	hostPressure            *hostpressure.Guard
 	localNodeID             string // "" means "not mesh-enabled", set via WithLocalNodeID; the one node HostDiskCollector/HostMemoryCollector's readings are real for
 	meshZone                string // "" means mesh DNS resolution is off, set via SetMeshZone; mirrors application.Controller's own meshZone, see GET /api/v1/apps/{name}/connections' own doc comment
 	readiness               ReadinessProbes
@@ -871,6 +873,10 @@ type Router struct {
 	meshPaths meshpath.Resolver
 	// meshHubResolver turns a hostname advertise host into the mesh endpoint IP; nil keeps the IP-only rule.
 	meshHubResolver *meshnet.HubHostResolver
+	// dnsQueryLog is nil when mesh DNS query visibility is not wired; the routes then report disabled.
+	dnsQueryLog *meshnet.QueryLog
+	// meshDNSStatus is nil unless the bridge gateway resolver is wired; the doctor check then stays silent.
+	meshDNSStatus func(ctx context.Context) meshnet.GatewayStatus
 	// multiNode holds node moves, drains, labels and selectors; nil means 501.
 	multiNode *multiNodeState
 	// nodeFailure is nil unless WithNodeFailure was applied.

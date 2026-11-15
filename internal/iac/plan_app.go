@@ -67,6 +67,9 @@ func (p *planner) planApp(r *Resource) {
 	if d := p.desiredDomains(r); len(d) > 0 {
 		f["domains"] = anyList(d)
 	}
+	if !p.checkAppDNS(r, f) {
+		return
+	}
 	if !p.checkAppRefs(r, f) {
 		return
 	}
@@ -128,6 +131,11 @@ func (p *planner) planApp(r *Resource) {
 		if _, want := f[k]; !want {
 			delete(liveMap, k)
 		}
+	}
+	if _, want := f["dns"]; !want {
+		delete(liveMap, "dns")
+	} else if liveMap["dns"] == nil {
+		liveMap["dns"] = map[string]any{}
 	}
 	liveMap["placement"] = livePlacement(liveMap["placement"], f["placement"])
 	if liveMap["placement"] == nil {

@@ -143,6 +143,11 @@ func (svc *Service) validate(name string) error {
 	if err := placement.ValidateRules(svc.Tolerations, svc.Affinity); err != nil {
 		return fmt.Errorf("spec: service %q: %w", name, err)
 	}
+	if svc.DNS != nil {
+		if err := ValidateDNSNameSyntax(svc.DNS.Names); err != nil {
+			return fmt.Errorf("spec: service %q: dns.names: %w", name, err)
+		}
+	}
 	if err := svc.LoadBalancer.Validate(); err != nil {
 		return fmt.Errorf("spec: service %q: %w", name, err)
 	}

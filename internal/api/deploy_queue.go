@@ -24,6 +24,7 @@ type DeployQueueStore interface {
 	StartQueuedDeployAttempt(ctx context.Context, id string, now time.Time) (bool, error)
 	FinishRunningDeployAttempt(ctx context.Context, id, status string, finishedAt time.Time, errMsg string) (bool, error)
 	CancelDeployAttempt(ctx context.Context, id, from, by string, now time.Time) (bool, error)
+	CancelOrphanedDeployAttempt(ctx context.Context, id, by string, now time.Time) (bool, error)
 	SupersedeQueuedDeployAttempt(ctx context.Context, id, by string, now time.Time) (bool, error)
 	GetServiceCancelSuperseded(ctx context.Context, name string) (bool, error)
 	SetServiceCancelSuperseded(ctx context.Context, name string, enabled bool) error

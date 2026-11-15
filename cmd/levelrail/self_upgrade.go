@@ -160,6 +160,7 @@ func runSelfUpgrade(ctx context.Context, args []string, dataDir string, stdin io
 	deps.VerifySig = selfUpgradeSigner(f.verify, repo, dataDir, target, logger, notice).Verify
 	deps.WorkDir = filepath.Join(dataDir, selfUpgradeWorkDir)
 
+	applyHostProtection(ctx, name, logger)
 	if err := retainRunning(exe, name); err != nil {
 		logger.Warn("running release not retained for rollback", slog.String("error", err.Error()))
 	}

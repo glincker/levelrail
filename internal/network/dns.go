@@ -83,6 +83,10 @@ type Placement struct {
 	// defines it, which is why BuildRecords needs to be told which node
 	// ID that is rather than being able to infer it.
 	NodeID string
+
+	// Aliases are extra names under the zone that resolve like Service.
+	// A clash is skipped and reported, never fatal.
+	Aliases []string
 }
 
 // Record is one resolvable name.
@@ -191,6 +195,7 @@ func BuildRecords(zone, selfID string, placements []Placement, nodes []NodeInfo)
 		set.Records = append(set.Records, Record{
 			Name: name, Address: node.Address, Service: p.Service, NodeID: nodeID,
 		})
+		aliasRecords(&set, seen, zone, p, nodeID, node.Address)
 	}
 
 	for _, n := range nodes {

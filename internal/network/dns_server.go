@@ -75,6 +75,9 @@ type DNSServer struct {
 	// Guarding it with mu would deadlock exactly when a listener fails to
 	// activate, which is the one case the readiness wait exists for.
 	closed atomic.Bool
+
+	qlog   atomic.Pointer[QueryLog]
+	access atomic.Pointer[func(netip.Addr) bool]
 }
 
 // NewDNSServer builds a server for resolver. It does not listen until
@@ -246,19 +249,63 @@ func (s *DNSServer) Close() error {
 	return firstErr
 }
 
-// handle answers one query.
+// SetQueryLog attaches the per-app query log. Nil detaches it.
+func (s *DNSServer) SetQueryLog(l *QueryLog) { s.qlog.Store(l) }
+
+// SetAccess restricts which source addresses are answered; others get REFUSED. Nil lifts the limit.
+func (s *DNSServer) SetAccess(allow func(netip.Addr) bool) {
+	if allow == nil {
+		s.access.Store(nil)
+		return
+	}
+	s.access.Store(&allow)
+}
+
+// handle answers one query and, when a query log is attached, records it.
 func (s *DNSServer) handle(w dns.ResponseWriter, req *dns.Msg) {
+	start := time.Now()
+	if allow := s.access.Load(); allow != nil {
+		var from netip.Addr
+		if ap, err := netip.ParseAddrPort(w.RemoteAddr().String()); err == nil {
+			from = ap.Addr().Unmap()
+		}
+		if !from.IsValid() || !(*allow)(from) {
+			denied := new(dns.Msg)
+			denied.SetRcode(req, dns.RcodeRefused)
+			s.write(w, denied)
+			return
+		}
+	}
+	resp, reason := s.answer(req)
+	s.write(w, resp)
+	l := s.qlog.Load()
+	if !l.Enabled() {
+		return
+	}
+	qname, qtype := "", ""
+	if len(req.Question) > 0 {
+		qname, qtype = req.Question[0].Name, dns.TypeToString[req.Question[0].Qtype]
+	}
+	var src netip.Addr
+	if ap, err := netip.ParseAddrPort(w.RemoteAddr().String()); err == nil {
+		src = ap.Addr().Unmap()
+	}
+	l.Observe(src, qname, qtype, dns.RcodeToString[resp.Rcode], reason, len(resp.Answer), time.Since(start), start)
+}
+
+// answer builds the response and the reason code explaining it.
+func (s *DNSServer) answer(req *dns.Msg) (*dns.Msg, string) {
 	resp := new(dns.Msg)
 	resp.SetReply(req)
 	resp.Authoritative = true
 	resp.RecursionAvailable = false
+	reason := ReasonNoData
 
 	if len(req.Question) != 1 {
 		// A multi-question query is legal to send and universally
 		// unsupported to answer; every real resolver sends exactly one.
 		resp.Rcode = dns.RcodeFormatError
-		s.write(w, resp)
-		return
+		return resp, ReasonFormatError
 	}
 	q := req.Question[0]
 
@@ -267,17 +314,15 @@ func (s *DNSServer) handle(w dns.ResponseWriter, req *dns.Msg) {
 		// client knows to ask someone else, instead of concluding the
 		// name does not exist anywhere. See this file's header.
 		resp.Rcode = dns.RcodeRefused
-		s.write(w, resp)
-		return
+		return resp, ReasonRefused
 	}
 
-	switch q.Qtype {
-	case dns.TypeA:
-		addr, ok := s.resolver.Lookup(q.Name)
-		if !ok || !addr.Is4() {
-			resp.Rcode = dns.RcodeNameError
-			break
-		}
+	addr, ok := s.resolver.Lookup(q.Name)
+	switch {
+	case !ok:
+		resp.Rcode = dns.RcodeNameError
+		reason = ReasonNoSuchApp
+	case q.Qtype == dns.TypeA && addr.Is4():
 		resp.Answer = append(resp.Answer, &dns.A{
 			Hdr: dns.RR_Header{
 				Name:   q.Name,
@@ -287,26 +332,15 @@ func (s *DNSServer) handle(w dns.ResponseWriter, req *dns.Msg) {
 			},
 			A: net.IP(addr.AsSlice()),
 		})
-
-	case dns.TypeAAAA:
-		// The mesh is IPv4 only (see validateCIDR). An empty NOERROR,
-		// not NXDOMAIN: the name exists, it just has no AAAA. Returning
-		// NXDOMAIN here would make a dual-stack client that happens to
-		// ask AAAA first conclude the name does not exist and never ask
-		// for the A record, which is a real and confusing failure.
-		if _, ok := s.resolver.Lookup(q.Name); !ok {
-			resp.Rcode = dns.RcodeNameError
-		}
-
-	default:
-		// Any other type for a name in our zone: NOERROR with no answer,
-		// same reasoning as AAAA.
-		if _, ok := s.resolver.Lookup(q.Name); !ok {
-			resp.Rcode = dns.RcodeNameError
-		}
+		reason = ReasonLocalRecord
+	case q.Qtype == dns.TypeA:
+		resp.Rcode = dns.RcodeNameError
+		reason = ReasonNoSuchApp
 	}
-
-	s.write(w, resp)
+	// The mesh is IPv4 only (see validateCIDR), so AAAA and every other
+	// type for an existing name is an empty NOERROR, not NXDOMAIN: a
+	// dual-stack client asking AAAA first must still go on to ask for A.
+	return resp, reason
 }
 
 func (s *DNSServer) write(w dns.ResponseWriter, resp *dns.Msg) {

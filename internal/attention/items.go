@@ -68,6 +68,7 @@ var kindInfos = map[string]kindInfo{
 	KindDBEOL:                   {"%s runs a release past its end of life", "Plan a major upgrade or restore into a supported version", linkDBs, true},
 	KindDBUpgradeFailed:         {"Upgrade of %s did not complete", "Open the database's Upgrades tab and read the reason", linkDBs, true},
 	KindDockerGuard:             {"Docker API guard needs a decision", "Review the would-be denials and switch the guard to enforce", linkSecurity, false},
+	KindHostPressure:            {"The host is under resource pressure", "Add swap, lower build concurrency or set app memory limits", linkStatus, false},
 	KindUpgradeBlocked:          {"The scheduled upgrade to %s did not run", "Open Updates, fix the blocker and re-check or reschedule", linkUpdates, false},
 	KindResourceAdvice:          {"Resource advice for %s", "Open the resource advisor and review the suggestion", linkAdvisor, false},
 	KindSecretRotationDue:       {"Secret %s is due for rotation", "Open the app environment and rotate it or set a new value", linkApps, false},
@@ -79,6 +80,7 @@ var kindInfos = map[string]kindInfo{
 	KindStackDrift:              {"Stack %s has drifted from its last applied revision", "Open the stack, review the drifted resources and re-apply or update the revision", linkStacks, false},
 	KindAdvisoryMatch:           {"%s match a known advisory", "Open the advisories tab, then refresh each app onto a fixed image", linkCenter + "?tab=advisories", false},
 	KindFirewallAttackSuggested: {"Blocked traffic is spiking", "Open the firewall and turn on attack mode if this is an attack", linkFirewall, false},
+	KindUncleanRestart:          {"Control plane restarted after an unclean stop", "Open Doctor, read the Control plane protection row and the host memory rows", linkStatus, false},
 	KindAccessReviewOverdue:     {"Access review %s is overdue", "Open the compliance tab and finish the review", linkCenter + "?tab=compliance", false},
 }
 

@@ -2151,6 +2151,21 @@
           "minItems": 1,
           "type": "array"
         },
+        "dns": {
+          "additionalProperties": false,
+          "description": "Internal DNS options (beta).",
+          "properties": {
+            "names": {
+              "description": "Extra lowercase names under the mesh zone that resolve like the service name. Needs the runtime setting dns.internal_names_enabled.",
+              "items": {
+                "pattern": "^[a-z0-9]([a-z0-9-]*[a-z0-9])?(\\.[a-z0-9]([a-z0-9-]*[a-z0-9])?)*$",
+                "type": "string"
+              },
+              "type": "array"
+            }
+          },
+          "type": "object"
+        },
         "domains": {
           "description": "Hostnames routed to this service.",
           "items": {

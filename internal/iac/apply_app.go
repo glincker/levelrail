@@ -59,6 +59,14 @@ func appBody(f appFields) map[string]any {
 			body["affinity"] = *f.Placement.Affinity
 		}
 	}
+	if f.DNS != nil {
+		// [] clears; an undeclared block keeps the stored names.
+		names := f.DNS.Names
+		if names == nil {
+			names = []string{}
+		}
+		body["dns_names"] = names
+	}
 	return body
 }
 

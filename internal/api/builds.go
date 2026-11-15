@@ -594,6 +594,9 @@ func specServiceFromDesired(svc store.DesiredService, buildCfg spec.Build) spec.
 		out.Egress = specEgressFromStore(*svc.Egress)
 	}
 	out.Tolerations, out.Affinity = placement.DecodeRules(svc.Tolerations, svc.Affinity)
+	if len(svc.InternalDNSNames) > 0 {
+		out.DNS = &spec.DNS{Names: svc.InternalDNSNames}
+	}
 	return out.WithNextCache(svc.NextCache).WithNextImageCache(svc.NextImageCache)
 }
 

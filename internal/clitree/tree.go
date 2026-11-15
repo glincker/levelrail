@@ -439,6 +439,8 @@ var Tree = map[string]*Node{
 		"zones":         {Subs: map[string]*Node{"list": nil, "create": nil, "delete": nil, "nameservers": nil, "verify": nil}},
 		"records":       {Subs: map[string]*Node{"list": nil, "add": nil, "update": nil, "delete": nil, "import": nil, "export": nil, "template": nil}},
 		"check":         nil,
+		"queries":       nil,
+		"stats":         nil,
 		"health-checks": {Subs: map[string]*Node{"list": nil, "create": nil, "delete": nil}},
 	}},
 	"iam": {Subs: map[string]*Node{

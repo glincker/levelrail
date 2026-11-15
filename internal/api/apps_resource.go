@@ -88,6 +88,8 @@ type appResource struct {
 	// keeps the stored rules, [] clears tolerations and {} clears affinity.
 	Tolerations []placement.Toleration `json:"tolerations,omitempty"`
 	Affinity    *placement.Affinity    `json:"affinity,omitempty"`
+	// DNSNames are extra internal names under the mesh zone (beta). On update, omitted keeps them and [] clears them.
+	DNSNames []string `json:"dns_names,omitempty"`
 	// Strategy and Replicas have no omitempty: reads always carry the resolved
 	// value, and an empty value on input falls to the store defaults.
 	Strategy string `json:"strategy"`
@@ -305,6 +307,7 @@ func toAppResourceRaw(svc store.DesiredService) appResource {
 		Egress:              svc.Egress,
 		Tolerations:         tols,
 		Affinity:            aff,
+		DNSNames:            svc.InternalDNSNames,
 		Strategy:            svc.Strategy,
 		Replicas:            svc.Replicas,
 		NextCache:           svc.NextCache,
@@ -334,25 +337,26 @@ func toAppResourceRaw(svc store.DesiredService) appResource {
 func (a appResource) toDesiredService() store.DesiredService {
 	tj, aj := placement.EncodeRules(a.Tolerations, a.Affinity)
 	return store.DesiredService{
-		Name:           a.Name,
-		Image:          a.Image,
-		Port:           a.Port,
-		HostPort:       a.HostPort,
-		BindAddress:    a.BindAddress,
-		Domains:        a.Domains,
-		Env:            a.Env,
-		Resources:      a.Resources,
-		Health:         a.Health,
-		Hooks:          a.Hooks,
-		Strategy:       a.Strategy,
-		Replicas:       a.Replicas,
-		NextCache:      a.NextCache,
-		NextImageCache: a.NextImageCache,
-		Labels:         a.Labels,
-		Command:        a.Command,
-		PublishedPorts: a.PublishedPorts,
-		Tolerations:    tj,
-		Affinity:       aj,
+		Name:             a.Name,
+		Image:            a.Image,
+		Port:             a.Port,
+		HostPort:         a.HostPort,
+		BindAddress:      a.BindAddress,
+		Domains:          a.Domains,
+		Env:              a.Env,
+		Resources:        a.Resources,
+		Health:           a.Health,
+		Hooks:            a.Hooks,
+		Strategy:         a.Strategy,
+		Replicas:         a.Replicas,
+		NextCache:        a.NextCache,
+		NextImageCache:   a.NextImageCache,
+		Labels:           a.Labels,
+		Command:          a.Command,
+		PublishedPorts:   a.PublishedPorts,
+		Tolerations:      tj,
+		Affinity:         aj,
+		InternalDNSNames: a.DNSNames,
 	}
 }
 

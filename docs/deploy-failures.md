@@ -172,3 +172,9 @@ For the structured failure object with all fields, check the API response: `GET 
 ### Fixes matched from the build log
 
 When a build fails, the log is also matched against common errors (registry timeouts, out of memory, no space left, missing credentials, a missing base image, peer dependency conflicts, missing modules, an old Go image, permission errors). Each match is a typed fix under `failure.fixes` with a `kind`: `rerun` (the dashboard shows a Retry button), `raise_memory`, `free_disk`, `set_secret` or `edit_source` (each links to the page where it is applied). `levelrail-cli apps deploys show` prints them as `match:` lines.
+
+### A build left running after a restart
+
+If the control plane stops while a deploy is running (an out-of-memory kill, a crash, a host reboot), the build dies with it. On the next start every attempt still marked running is settled before the queue drains: it is marked failed with the reason `interrupted: the control plane restarted while this deploy was running`, the app gets a timeline event and an attention item, and queued deploys stay queued and run again. A deploy that had already written desired state is not failed: it is marked succeeded and the reconciler finishes the rollout.
+
+A stuck running deploy can also be canceled by hand. When no build in this control plane owns it and it started longer ago than `deploy.orphan_grace_seconds` (default 120, `APP_DEPLOY_ORPHAN_GRACE_SECONDS`), cancel finishes it as canceled with the reason `orphaned: no build is running for this deploy`. Inside the grace window cancel answers 409, so a deploy that is only just starting is never canceled by mistake. Deploy the app again afterwards.

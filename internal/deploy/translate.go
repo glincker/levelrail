@@ -123,6 +123,9 @@ func toDesiredService(name, image string, svc spec.Service) (store.DesiredServic
 	}
 
 	d.Tolerations, d.Affinity = placement.EncodeRules(svc.Tolerations, svc.Affinity)
+	if svc.DNS != nil {
+		d.InternalDNSNames = spec.NormalizeDNSNames(svc.DNS.Names, "")
+	}
 
 	d.Files = toServiceFiles(name, svc.Files)
 

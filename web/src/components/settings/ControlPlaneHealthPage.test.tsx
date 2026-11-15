@@ -101,6 +101,18 @@ describe('ControlPlaneHealthPage', () => {
     ).toBeTruthy()
   })
 
+  it('renders when an older server sends null lists', () => {
+    const h = health([])
+    state.health = {
+      ...h,
+      findings: null,
+      db: { ...h.db, recent_slow: null },
+      footprint: { ...h.footprint, loops: null },
+    } as unknown as CPHealth
+    render(<ControlPlaneHealthPage />)
+    expect(screen.getByTestId('page-banner-compact')).toBeTruthy()
+  })
+
   it('shows read pool queueing and usage when the pool is enabled', () => {
     state.health = health([])
     render(<ControlPlaneHealthPage />)

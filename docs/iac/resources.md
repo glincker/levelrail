@@ -125,6 +125,8 @@ The value is never read by apply. Apply records the reference (the same connecti
 
 `service.build.registryCredential` names an existing registry credential used for private pulls. It is a reference only, never a secret value, and credentials are not a managed kind: create one first with `registry-credentials create`. A name the control plane does not list fails the plan with `registry_credential_not_found`. Changing the name is drift and shows as an update, and removing the line clears the credential. An export writes the name back.
 
+`service.dns.names` (beta) lists extra internal names under the mesh zone that resolve like the app name, for example `[shop, www.shop]`. Lowercase letters, digits and hyphens only, no wildcards, and no name another app uses. It needs the runtime setting `dns.internal_names_enabled`; limits come from the `dns.internal_*` settings. An app document without `dns` leaves the live names alone; `names: []` clears them. A name taken by an app outside the files is refused at apply with `dns_name_conflict`.
+
 `service.restart` takes `no`, `on-failure` or `on-failure:N` for a service that runs to completion (a migration or seed job), and `always` or `unless-stopped`. The plan shows changes as `publishedPorts` and `restart`, an out-of-band change to either is drift, and revisions and rollbacks keep both. An app document without `published_ports` or `restart` leaves the live values alone; `published_ports: []` clears the ports.
 
 ```yaml

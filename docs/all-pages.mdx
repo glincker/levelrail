@@ -112,6 +112,7 @@ The complete index of the Levelrail docs. For a self-hosted app gallery, see the
 - [Deploy trace](/deploy-trace): The step-by-step pipeline every deploy records, with or without a build, and how to read it in the dashboard, the CLI and the log stream.
 - [Deploy event timeline](/deploy-event-timeline): One screen per deploy that shows the whole story in order, from trigger and build to cutover, post-deploy watch and rollback, live and replayable.
 - [Build performance](/build-performance): Cap build time and parallel builds, and read the per-app build duration trend and cache hit rate.
+- [Host protection](/host-protection): Keep the control plane alive on a crowded host, see when the kernel killed it for memory, and add swap safely. Beta.
 - [Build center](/build-center): One place to see and control builds: the queue, running builds, history with duration and cache hit ratio, and the BuildKit cache of each node.
 - [Scheduled deploys](/scheduled-deploys): Redeploy the latest commit on a branch on a cron schedule, or schedule a one-shot image or git ref deploy, with freeze windows and catch-up.
 - [Pull request comment commands](/pr-comment-commands): Redeploy, roll back or check an app from a GitHub pull request comment. Limited to users with write access, off by default, with the same policy checks.
@@ -156,6 +157,8 @@ The complete index of the Levelrail docs. For a self-hosted app gallery, see the
 - [Dynamic DNS](/dynamic-dns): Keep a DNS name pointed at a server whose public IPv4 changes. Configure it from the dashboard or the CLI, no restart needed.
 - [DNS zones and records](/dns): Manage DNS zones and records at Cloudflare, Route53 or Google Cloud DNS, move name servers, verify delegation and propagation, and serve wildcard subdomains.
 - [DNS zones and nameserver delegation](/dns-zones): Check that your registrar points a domain at the nameservers of its DNS zone, and what each delegation state means.
+- [DNS query visibility (beta)](/dns-visibility): See which app asks the mesh DNS server for which name, with per-app counters, a bounded in-memory log and three privacy levels. Off by default.
+- [Mesh DNS on the bridge gateways (beta)](/mesh-dns): Let app containers on this node resolve through the mesh DNS server, with the firewall rule and checks it needs. Off by default.
 - [Mail DNS](/mail-dns): Build, review, apply and check the DNS records a domain needs for email, for your own mail server or an external provider. Add-only by default.
 - [Mail server template](/mail-template): Install the mox mail server as a one-click template, with private admin ports, your own certificate, optional relay mode and backup notes.
 - [Mailboxes, aliases and the mail queue](/mail-mailboxes): Create team owned mailboxes on the mox mail server, suspend and reset them, forward addresses with aliases, and hold or release outgoing mail.
@@ -279,6 +282,7 @@ The complete index of the Levelrail docs. For a self-hosted app gallery, see the
 - [Pre-deploy database snapshots](/predeploy-snapshot): Snapshot an app's linked databases before each deploy and roll back the code together with the data.
 - [Resilience: what survives a control plane crash](/resilience): What survives when the control plane process crashes, what does not, and why, measured with a real SIGKILL against a real control plane, not assumed.
 - [Resilience, in short](/resilience-summary): A short answer to what survives a control plane crash, with a link to the full measured page.
+- [Host pressure guard (beta)](/host-pressure): How Levelrail notices a host running out of CPU or memory, holds new builds until it recovers, and tells you what to change.
 - [Chaos test coverage](/chaos-coverage): Which failure scenarios have a test, what each test asserts, and whether it runs under -short with a fake Docker client or live against a real daemon.
 - [Observability: metrics, logs, and alerts](/observability): Node-local metrics, logs, and alerts with federated queries, no central ingestion.
 - [Traffic observability: rate, errors and duration](/traffic-observability): Per app and per replica request rate, error rate and p50/p95/p99 latency measured at the ingress, with slow request samples and SLO error-budget burn.

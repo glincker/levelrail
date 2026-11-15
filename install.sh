@@ -4,7 +4,7 @@
 # Installs the levelrail control plane binary, a systemd unit, and Docker
 # (if missing) on a single Linux host.
 #
-# Usage: install.sh [install|check|upgrade|retain|install-cosign|uninstall] [--force] [--purge]
+# Usage: install.sh [install|check|upgrade|retain|install-cosign|uninstall|protect] [--force] [--purge] [--dry-run]
 #                   [--coexist|--no-coexist] [--yes] [--no-cosign] [--http-port N]
 #                   [--https-port N] [--domain HOST] [--profile minimal|standard|suite]
 #   install    (default) preflight checks, then install or repair. Safe to re-run.
@@ -22,6 +22,9 @@
 #   install-cosign  install the pinned cosign release to /usr/local/bin/cosign
 #              so release signatures can be verified. install and upgrade do
 #              this on their own when cosign is missing.
+#   protect    write the 30-protection.conf drop-in (OOM score, restart
+#              backoff, memory protection) on an existing install; --dry-run
+#              prints it and needs no root. install and upgrade do this too.
 #   uninstall  remove the service, unit, and binary. Data is kept unless
 #              --purge is given.
 #   --force    continue even if a preflight check fails.
@@ -210,12 +213,14 @@ fatal() {
 
 usage() {
 	cat <<'EOF'
-Usage: install.sh [install|check|upgrade|retain|install-cosign|uninstall] [--force] [--purge]
+Usage: install.sh [install|check|upgrade|retain|install-cosign|uninstall|protect] [--force] [--purge] [--dry-run]
                   [--coexist|--no-coexist] [--yes] [--no-cosign] [--http-port N]
                   [--https-port N] [--domain HOST] [--email ADDRESS]
                   [--profile minimal|standard|suite] [--runtime auto|docker|podman|existing]
   install    (default) preflight checks, then install or repair
   check      (also --check) read-only readiness report and recommended mode
+  protect    write the out-of-memory protection drop-in on an existing install
+             (--dry-run prints it without root and changes nothing)
   upgrade    replace the binary with a newer release and restart
   retain     download and verify LEVELRAIL_VERSION and keep it for rollback
   install-cosign  install cosign so release signatures can be verified
@@ -244,6 +249,7 @@ EOF
 }
 
 MODE="install"
+DRY_RUN=0
 FORCE=0
 PURGE=0
 while [ "$#" -gt 0 ]; do
@@ -257,7 +263,8 @@ while [ "$#" -gt 0 ]; do
 		;;
 	esac
 	case "$arg" in
-	install | check | upgrade | retain | install-cosign | uninstall) MODE="$arg" ;;
+	install | check | upgrade | retain | install-cosign | uninstall | protect) MODE="$arg" ;;
+	--dry-run) DRY_RUN=1 ;;
 	--check) MODE="check" ;;
 	--no-coexist) NO_COEXIST=1 ;;
 	--no-cosign) NO_COSIGN=1 ;;
@@ -358,7 +365,7 @@ case "${LEVELRAIL_VERSION:-}" in
 *[!A-Za-z0-9._+-]*) fatal "LEVELRAIL_VERSION may only contain letters, digits, dot, dash, plus and underscore" ;;
 esac
 
-if [ "$MODE" != "check" ] && [ "$(id -u)" -ne 0 ]; then
+if [ "$MODE" != "check" ] && { [ "$MODE" != "protect" ] || [ "$DRY_RUN" -eq 0 ]; } && [ "$(id -u)" -ne 0 ]; then
 	if [ -f "$0" ]; then fatal "must run as root, e.g.: sudo sh $0"; fi
 	fatal "must run as root, e.g.: curl -fsSL <url> | sudo sh"
 fi
@@ -1288,6 +1295,88 @@ write_restart_policy() {
 		"[Service]" "RestartPreventExitStatus=78" >"$RESTART_POLICY_PATH"
 }
 
+# write_protection keeps the kernel OOM killer away from the control plane and
+# bounds restarts. It is a drop-in so the main unit and other drop-ins stay
+# untouched; a later 40-*.conf overrides any value. LEVELRAIL_PROTECT=0 skips it.
+PROTECT_CHANGED=0
+PROTECT_PATH="${DROPIN_DIR}/30-protection.conf"
+PROTECT_MARK="# Written by install.sh (levelrail host protection)."
+render_protection() {
+	oom="${LEVELRAIL_OOM_SCORE_ADJUST:--900}"
+	rsec="${LEVELRAIL_RESTART_SEC:-5}"
+	burst="${LEVELRAIL_START_LIMIT_BURST:-20}"
+	window="${LEVELRAIL_START_LIMIT_INTERVAL_SEC:-600}"
+	mlow="${LEVELRAIL_MEMORY_LOW:-256M}"
+	case "$oom$rsec$burst$window" in
+	*[!0-9-]*) fatal "LEVELRAIL_OOM_SCORE_ADJUST, LEVELRAIL_RESTART_SEC, LEVELRAIL_START_LIMIT_BURST and LEVELRAIL_START_LIMIT_INTERVAL_SEC must be integers" ;;
+	esac
+	case "$mlow" in
+	*[!0-9KMGkmg]*) fatal "LEVELRAIL_MEMORY_LOW must look like 256M" ;;
+	esac
+	cat <<EOF
+${PROTECT_MARK}
+# Why: on a busy host the kernel OOM killer picks the biggest victims, and a
+# killed control plane leaves every app unmanaged. A negative OOMScoreAdjust makes
+# other processes die first. Restart=always with a start limit restarts a killed
+# process after RestartSec but stops a crash loop instead of spinning forever.
+# Override: add ${DROPIN_DIR}/40-local.conf (it sorts later), then
+# systemctl daemon-reload && systemctl restart ${SERVICE_NAME}.
+[Unit]
+StartLimitIntervalSec=${window}
+StartLimitBurst=${burst}
+
+[Service]
+OOMScoreAdjust=${oom}
+Restart=always
+RestartSec=${rsec}
+TasksMax=infinity
+MemoryLow=${mlow}
+EOF
+}
+
+# apply_protection reports what it did on one line and returns 0 when the file
+# is already current, so reruns on every upgrade are no-ops.
+apply_protection() {
+	[ "${LEVELRAIL_PROTECT:-1}" != "0" ] || {
+		log "Host protection drop-in skipped (LEVELRAIL_PROTECT=0)."
+		return 0
+	}
+	if [ "$DRY_RUN" -eq 1 ]; then
+		log "Dry run: would write ${PROTECT_PATH}:"
+		render_protection
+		return 0
+	fi
+	if ! command -v systemctl >/dev/null 2>&1 || [ ! -d /run/systemd/system ]; then
+		warn "systemd not detected, skipping the host protection drop-in"
+		return 0
+	fi
+	if [ -f "$PROTECT_PATH" ] && ! grep -qF "$PROTECT_MARK" "$PROTECT_PATH"; then
+		log "Kept ${PROTECT_PATH}: it was edited by hand."
+		return 0
+	fi
+	protect_tmp="$(mktemp)"
+	render_protection >"$protect_tmp"
+	if [ -f "$PROTECT_PATH" ] && cmp -s "$protect_tmp" "$PROTECT_PATH"; then
+		rm -f "$protect_tmp"
+		log "Host protection drop-in already current."
+		return 0
+	fi
+	mkdir -p "$DROPIN_DIR"
+	cat "$protect_tmp" >"$PROTECT_PATH"
+	rm -f "$protect_tmp"
+	PROTECT_CHANGED=1
+	log "Wrote ${PROTECT_PATH} (applies on the next restart of ${SERVICE_NAME})."
+}
+
+do_protect() {
+	[ "$DRY_RUN" -eq 1 ] || [ -f "$UNIT_PATH" ] || fatal "${UNIT_PATH} not found, install Levelrail first."
+	apply_protection
+	if [ "$PROTECT_CHANGED" -eq 1 ]; then
+		systemctl daemon-reload
+		log "Restart when convenient to apply it: systemctl restart ${SERVICE_NAME}"
+	fi
+}
+
 # write_dropin stores every installer-chosen address, so upgrades keep them.
 write_dropin() {
 	mkdir -p "$DROPIN_DIR"
@@ -1925,6 +2014,7 @@ do_install() {
 	write_brand
 	ensure_dropin
 	write_restart_policy
+	apply_protection
 	write_unit
 	[ "$SOCKET_ACTIVATION" != "1" ] || write_socket_units
 	configure_ufw
@@ -1958,11 +2048,14 @@ do_upgrade() {
 	install_binary
 	if [ "$SAME_BINARY" -eq 1 ] && [ -z "$SOCKET_ACTIVATION" ] && [ "$COEXIST" -eq 0 ] && [ "$SETTINGS_CHANGED" -eq 0 ] && service_active; then
 		rm -f "$pre_upgrade_bin"
+		apply_protection
+		[ "$PROTECT_CHANGED" -eq 0 ] || systemctl daemon-reload
 		log "Already on ${VERSION}, nothing to do."
 		return 0
 	fi
 	ensure_dropin
 	write_restart_policy
+	apply_protection
 	case "$SOCKET_ACTIVATION" in
 	1)
 		[ "$UNIT_DRIFTED" -eq 0 ] || cp -p "$UNIT_PATH" "${UNIT_PATH}.pre-upgrade"
@@ -2032,7 +2125,7 @@ do_uninstall() {
 	if [ -f "$UNIT_PATH" ]; then
 		systemctl disable --now "$SERVICE_NAME" >/dev/null 2>&1 || true
 		remove_socket_units
-		rm -f "$UNIT_PATH" "$DROPIN_PATH" "$RESTART_POLICY_PATH"
+		rm -f "$UNIT_PATH" "$DROPIN_PATH" "$RESTART_POLICY_PATH" "$PROTECT_PATH"
 		rmdir "$DROPIN_DIR" 2>/dev/null || true
 		systemctl daemon-reload
 	fi
@@ -2063,6 +2156,7 @@ install) do_install ;;
 check) do_check ;;
 upgrade) do_upgrade ;;
 retain) do_retain ;;
+protect) do_protect ;;
 install-cosign) do_install_cosign ;;
 uninstall) do_uninstall ;;
 esac
