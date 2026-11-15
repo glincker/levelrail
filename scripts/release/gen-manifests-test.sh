@@ -47,4 +47,14 @@ grep -qx 'org.opencontainers.image.version=1.4.0' <<<"$lab" || fail "label versi
 grep -qx 'org.opencontainers.image.revision=abc123' <<<"$lab" || fail "label revision"
 grep -qx 'org.opencontainers.image.licenses=Apache-2.0' <<<"$lab" || fail "label license"
 
+echo "== image notes"
+printf 'Notes\n' >"$work/body.md"
+n1="$(IMAGE_NOTES_BODY_FILE="$work/body.md" IMAGE_PRIMARY_TAG=v1.4.0 CP_MIRRORED=true "$here/image-notes.sh" v1.4.0 --dry-run)"
+grep -q 'docker.io/levelrail/levelrail:v1.4.0' <<<"$n1" || fail "notes mirror line"
+if grep -q 'docker.io/levelrail/levelrail-agent' <<<"$n1"; then fail "agent not mirrored"; fi
+printf '%s\n' "$n1" >"$work/body2.md"
+n2="$(IMAGE_NOTES_BODY_FILE="$work/body2.md" IMAGE_PRIMARY_TAG=v1.4.0 "$here/image-notes.sh" v1.4.0 --dry-run)"
+[ "$(grep -c 'images:start' <<<"$n2")" = 1 ] || fail "notes block not idempotent"
+if grep -q 'docker.io' <<<"$n2"; then fail "stale mirror block kept"; fi
+
 echo "OK"
