@@ -164,6 +164,27 @@ export interface CPHealth {
   findings: CPHealthFinding[]
 }
 
+// Older servers serialize empty slices as null; the page expects arrays.
+export function normalizeCPHealth(h: CPHealth): CPHealth {
+  return {
+    ...h,
+    findings: h.findings ?? [],
+    db: { ...h.db, recent_slow: h.db?.recent_slow ?? [] },
+    reconcile: h.reconcile && {
+      ...h.reconcile,
+      guard: h.reconcile.guard && {
+        ...h.reconcile.guard,
+        breakers: h.reconcile.guard.breakers ?? [],
+      },
+    },
+    footprint: { ...h.footprint, loops: h.footprint?.loops ?? [] },
+    idle_footprint: h.idle_footprint && {
+      ...h.idle_footprint,
+      checks: h.idle_footprint.checks ?? [],
+    },
+  }
+}
+
 const URL = '/api/v1/system/control-plane-health'
 const KEY = ['control-plane-health']
 
@@ -181,7 +202,7 @@ export function useControlPlaneHealth() {
           ),
         )
       }
-      return (await res.json()) as CPHealth
+      return normalizeCPHealth((await res.json()) as CPHealth)
     },
     refetchInterval: pollMs('active'),
   })
@@ -208,7 +229,7 @@ export function useApplyControlPlaneFix() {
           ),
         )
       }
-      return (await res.json()) as CPHealth
+      return normalizeCPHealth((await res.json()) as CPHealth)
     },
     onSuccess: (data) => {
       qc.setQueryData(KEY, data)

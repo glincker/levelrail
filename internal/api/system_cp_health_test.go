@@ -55,6 +55,40 @@ func TestCPHealthFixAndFindings(t *testing.T) {
 	}
 }
 
+func TestCPHealthFixResponseHasNoNullSlices(t *testing.T) {
+	rt, db := newTestRouter(t)
+	cookie := loginTestSession(t, rt, db)
+	rt.SetControlPlaneProbe(ControlPlaneProbe{DB: &fakeCPDB{}, Reconcile: func() reconcile.Stats { return reconcile.Stats{} }})
+
+	rec := httptest.NewRecorder()
+	rt.Handler().ServeHTTP(rec, authedRequest(t, cookie, http.MethodPost, "/api/v1/system/control-plane-health/fix", `{"fix":"reset_slow_log"}`))
+	if rec.Code != http.StatusOK {
+		t.Fatalf("fix = %d %s", rec.Code, rec.Body.String())
+	}
+	var body struct {
+		Findings  []json.RawMessage `json:"findings"`
+		Footprint struct {
+			Loops      []json.RawMessage `json:"loops"`
+			Goroutines []json.RawMessage `json:"goroutines_by_subsystem"`
+		} `json:"footprint"`
+		DB struct {
+			RecentSlow []json.RawMessage `json:"recent_slow"`
+		} `json:"db"`
+		Reconcile struct {
+			Guard struct {
+				Breakers []json.RawMessage `json:"breakers"`
+			} `json:"guard"`
+		} `json:"reconcile"`
+	}
+	if err := json.Unmarshal(rec.Body.Bytes(), &body); err != nil {
+		t.Fatal(err)
+	}
+	if body.Findings == nil || body.Footprint.Loops == nil || body.Footprint.Goroutines == nil ||
+		body.DB.RecentSlow == nil || body.Reconcile.Guard.Breakers == nil {
+		t.Fatalf("null slice in fix response: %s", rec.Body.String())
+	}
+}
+
 func TestCPHealthReconcileQueue(t *testing.T) {
 	cases := []struct {
 		name  string

@@ -217,7 +217,7 @@ export function ControlPlaneHealthPage() {
     )
   }
 
-  const hero = Boolean(error) || (data?.findings.length ?? 0) > 0
+  const hero = Boolean(error) || (data?.findings?.length ?? 0) > 0
   const size = hero ? 'hero' : 'compact'
   const statusVariant =
     data?.status === 'ok'
@@ -296,7 +296,7 @@ export function ControlPlaneHealthPage() {
       ) : null}
       {data ? (
         <div className="space-y-(--glinr-page-gap)">
-          {data.findings.length === 0 ? (
+          {(data.findings ?? []).length === 0 ? (
             <Banner
               variant="success"
               title={t('controlPlaneHealth.allClear')}
@@ -307,11 +307,11 @@ export function ControlPlaneHealthPage() {
                 {t('controlPlaneHealth.findingsTitle')}{' '}
                 <span className="font-normal text-muted-foreground">
                   {t('controlPlaneHealth.findingsCount', {
-                    count: data.findings.length,
+                    count: (data.findings ?? []).length,
                   })}
                 </span>
               </h2>
-              {data.findings.map((f) => {
+              {(data.findings ?? []).map((f) => {
                 const v = formatFinding(f)
                 return (
                   <Card key={f.id}>
@@ -392,12 +392,12 @@ export function ControlPlaneHealthPage() {
               <CardTitle>{t('controlPlaneHealth.loops.title')}</CardTitle>
             </CardHeader>
             <CardContent className="space-y-2">
-              {data.footprint.loops.length === 0 ? (
+              {(data.footprint.loops ?? []).length === 0 ? (
                 <p className="text-sm text-muted-foreground">
                   {t('controlPlaneHealth.loops.empty')}
                 </p>
               ) : (
-                data.footprint.loops.map((l) => (
+                (data.footprint.loops ?? []).map((l) => (
                   <div
                     key={l.name}
                     className="flex flex-wrap items-center justify-between gap-3 text-sm"
@@ -429,12 +429,12 @@ export function ControlPlaneHealthPage() {
               </CardTitle>
             </CardHeader>
             <CardContent className="space-y-2">
-              {data.db.recent_slow.length === 0 ? (
+              {(data.db.recent_slow ?? []).length === 0 ? (
                 <p className="text-sm text-muted-foreground">
                   {t('controlPlaneHealth.noSlowQueries')}
                 </p>
               ) : (
-                data.db.recent_slow
+                (data.db.recent_slow ?? [])
                   .slice(-10)
                   .reverse()
                   .map((q) => (

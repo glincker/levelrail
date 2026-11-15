@@ -248,21 +248,35 @@ func (rt *Router) cpHealthSnapshot() (cpHealthResource, bool) {
 	return res, true
 }
 
+// normalizeSlices turns nil slices into empty ones so they serialize as [], not null.
+func (r *cpHealthResource) normalizeSlices() {
+	if r.Findings == nil {
+		r.Findings = []cphealth.Finding{}
+	}
+	if r.Footprint.Loops == nil {
+		r.Footprint.Loops = []footprint.LoopInfo{}
+	}
+	if r.Footprint.Goroutines == nil {
+		r.Footprint.Goroutines = []footprint.SubsystemCount{}
+	}
+	if r.DB.RecentSlow == nil {
+		r.DB.RecentSlow = []store.SlowQuery{}
+	}
+	if r.Reconcile.Guard.Breakers == nil {
+		r.Reconcile.Guard.Breakers = []reconcile.BreakerStatus{}
+	}
+	if r.Idle.Checks == nil {
+		r.Idle.Checks = []footprint.MetricCheck{}
+	}
+}
+
 func (rt *Router) handleGetCPHealth(w http.ResponseWriter, _ *http.Request) {
 	res, ok := rt.cpHealthSnapshot()
 	if !ok {
 		writeError(w, http.StatusNotImplemented, "control plane health is not available")
 		return
 	}
-	if res.Findings == nil {
-		res.Findings = []cphealth.Finding{}
-	}
-	if res.Footprint.Loops == nil {
-		res.Footprint.Loops = []footprint.LoopInfo{}
-	}
-	if res.DB.RecentSlow == nil {
-		res.DB.RecentSlow = []store.SlowQuery{}
-	}
+	res.normalizeSlices()
 	writeJSON(w, http.StatusOK, res)
 }
 
@@ -324,9 +338,7 @@ func (rt *Router) handleCPHealthFix(w http.ResponseWriter, r *http.Request) {
 	}
 	rt.logger.Info("api: control plane health fix applied", slog.String("fix", req.Fix), slog.String("actor", actor))
 	res, _ := rt.cpHealthSnapshot()
-	if res.Findings == nil {
-		res.Findings = []cphealth.Finding{}
-	}
+	res.normalizeSlices()
 	writeJSON(w, http.StatusOK, res)
 }
 
