@@ -19,7 +19,7 @@ func runAppsTimeline(prog string, args []string, stdout, stderr io.Writer, looku
 	var limit int
 	fs.IntVar(&limit, "limit", defaultTimelineLimit, "how many entries to show, newest first")
 	fs.Usage = func() {
-		_, _ = fmt.Fprintf(stderr, "Usage:\n  %s apps timeline <name> [--limit N] [flags]\n\nShows what happened to an app, newest first: deploys, rollbacks, restarts,\nenv, secret and config changes (key names only, never values), scaling,\nstop and start.\n\nFlags:\n", prog)
+		_, _ = fmt.Fprintf(stderr, "Usage:\n  %s apps timeline <name> [--limit N] [flags]\n\nShows what happened to an app, newest first: deploys, rollbacks, restarts,\nenv, secret and config changes (key names only, never values), scaling,\nstop and start, commit statuses posted to the git forge and connection bindings.\n\nFlags:\n", prog)
 		fs.PrintDefaults()
 	}
 	client, name, jsonOut, of, exitCode, ok := parseSingleArgClient(fs, args, apiFlagPtrs{tokenFlagP, apiURLFlagP, profileFlagP, jsonOutP, outputFlagP, queryFlagP}, stderr, singleArgCmd{prog, "apps timeline", "app name"}, lookupEnv)
@@ -47,6 +47,9 @@ func printTimelineHuman(out io.Writer, resp apiclient.TimelineResponse) {
 		what := it.Title
 		if it.Detail != "" {
 			what += " (" + it.Detail + ")"
+		}
+		if it.URL != "" {
+			what += " " + it.URL
 		}
 		_, _ = fmt.Fprintf(tw, "%s\t%s\t%s\t%s\t%s\n", formatTimelineTime(it.At), it.Kind, it.Status, it.Actor, what)
 	}

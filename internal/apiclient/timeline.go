@@ -22,6 +22,7 @@ type TimelineItem struct {
 	Actor  string       `json:"actor"`
 	Title  string       `json:"title"`
 	Detail string       `json:"detail,omitempty"`
+	URL    string       `json:"url,omitempty"`
 	Ref    *TimelineRef `json:"ref,omitempty"`
 }
 
