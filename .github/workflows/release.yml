@@ -692,22 +692,20 @@ jobs:
       tags: ${{ steps.resolve.outputs.tags }}
       primary_tag: ${{ steps.resolve.outputs.primary_tag }}
     steps:
+      - name: Checkout
+        uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7
+        with:
+          sparse-checkout: scripts/release
+
       # Shared by both merge-image-* jobs: dispatching against main gets
-      # :edge, a prerelease tag gets :beta, a stable tag gets :vX.Y.Z,
-      # :vX.Y, and :latest.
+      # :edge, a prerelease tag gets :vX.Y.Z-pre and :beta, a stable tag gets
+      # vX.Y.Z, X.Y.Z, vX.Y, X.Y, vX, X and :latest.
       - name: Resolve
         id: resolve
         env:
           IS_MAIN_PUSH: ${{ github.event_name == 'push' && github.ref == 'refs/heads/main' }}
         run: |
-          if [ "$IS_MAIN_PUSH" = "true" ]; then
-            tags="edge"
-          elif [[ "$RELEASE_TAG" == *-* ]]; then
-            tags="$RELEASE_TAG beta"
-          else
-            major_minor="$(echo "$RELEASE_TAG" | sed -E 's/^(v[0-9]+\.[0-9]+)\.[0-9]+$/\1/')"
-            tags="$RELEASE_TAG latest $major_minor"
-          fi
+          tags="$(scripts/release/image-tags.sh "$RELEASE_TAG" "$IS_MAIN_PUSH")"
           echo "tags=$tags" >> "$GITHUB_OUTPUT"
           echo "primary_tag=$(echo "$tags" | awk '{print $1}')" >> "$GITHUB_OUTPUT"
 

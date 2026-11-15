@@ -34,4 +34,17 @@ bash -n "$work/an/aur/PKGBUILD" || fail "PKGBUILD syntax"
 grep -q 'version = "9.9.9"' "$work/an/nix/flake.nix" || fail "flake version"
 if "$here/gen-aur-nix.sh" "$tag" /dev/null "$work/none2" >/dev/null 2>&1; then fail "missing checksum should fail"; fi
 
+echo "== image tags"
+eq() { [ "$1" = "$2" ] || fail "tags: got '$1' want '$2'"; }
+eq "$("$here/image-tags.sh" v1.4.0 false)" "v1.4.0 1.4.0 v1.4 1.4 v1 1 latest"
+eq "$("$here/image-tags.sh" v1.4.0-rc.1 false)" "v1.4.0-rc.1 beta"
+eq "$("$here/image-tags.sh" main true)" "edge"
+if "$here/image-tags.sh" nonsense false >/dev/null 2>&1; then fail "bad tag should fail"; fi
+
+echo "== image labels"
+lab="$("$here/image-labels.sh" levelrail "A description" v1.4.0 abc123 2026-01-02T03:04:05Z)"
+grep -qx 'org.opencontainers.image.version=1.4.0' <<<"$lab" || fail "label version"
+grep -qx 'org.opencontainers.image.revision=abc123' <<<"$lab" || fail "label revision"
+grep -qx 'org.opencontainers.image.licenses=Apache-2.0' <<<"$lab" || fail "label license"
+
 echo "OK"
