@@ -94,34 +94,38 @@ export function ApprovalWithoutSessionCard({
         <CardTitle>{t('withoutSession.title')}</CardTitle>
         <CardDescription>{t('withoutSession.description')}</CardDescription>
       </CardHeader>
-      <CardContent className="space-y-3 text-sm">
-        <SegmentedControl<ApprovalWithoutSession>
-          aria-label={t('withoutSession.title')}
-          value={current}
-          disabled={!editable || update.isPending}
-          onValueChange={choose}
-          options={[
-            { value: 'allow', label: t('withoutSession.allow') },
-            { value: 'hold', label: t('withoutSession.hold') },
-          ]}
-        />
-        <p className="text-muted-foreground">
+      <CardContent className="space-y-4 text-sm">
+        <div className="flex flex-col gap-2 sm:flex-row sm:items-center sm:gap-4">
+          <SegmentedControl<ApprovalWithoutSession>
+            aria-label={t('withoutSession.title')}
+            value={current}
+            disabled={!editable || update.isPending}
+            onValueChange={choose}
+            options={[
+              { value: 'allow', label: t('withoutSession.allow') },
+              { value: 'hold', label: t('withoutSession.hold') },
+            ]}
+          />
+          {editable ? null : (
+            <p className="text-[13px] text-muted-foreground">
+              {t('policy.adminOnly')}
+            </p>
+          )}
+        </div>
+        <p aria-live="polite" className="max-w-prose text-foreground">
           {current === 'hold'
             ? t('withoutSession.holdBody')
             : t('withoutSession.allowBody')}
         </p>
-        <p className="text-muted-foreground">
-          {t('withoutSession.safeguards')}
-        </p>
-        <p className="text-muted-foreground">
-          {t('withoutSession.reset')}{' '}
-          <code className="rounded bg-muted px-1 py-0.5 font-mono text-xs">
-            {resetCommand}
-          </code>
-        </p>
-        {editable ? null : (
-          <p className="text-muted-foreground">{t('policy.adminOnly')}</p>
-        )}
+        <ul className="divide-y divide-border border-t border-border text-[13px] text-muted-foreground">
+          <li className="py-3">{t('withoutSession.safeguards')}</li>
+          <li className="pt-3">
+            {t('withoutSession.reset')}{' '}
+            <code className="rounded-(--glinr-radius-xs) bg-muted px-1 py-0.5 font-mono text-xs break-all text-foreground">
+              {resetCommand}
+            </code>
+          </li>
+        </ul>
       </CardContent>
       <ConfirmDialog
         open={confirmOpen}

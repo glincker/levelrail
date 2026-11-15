@@ -53,15 +53,18 @@ export function TokenTable({ tokens, rotatableIds }: TokenTableProps) {
     <div className="space-y-4">
       <TokenRows tokens={real} rotatableIds={rotatableIds} />
       {fixtures.length > 0 ? (
-        <Collapsible className="rounded-lg border border-border px-4 py-3">
-          <CollapsibleTrigger className="flex items-center justify-between gap-2 text-sm font-medium">
+        <Collapsible className="border-t border-border pt-4">
+          <CollapsibleTrigger className="group/fixtures flex w-full items-center justify-between gap-2 rounded-(--glinr-radius-sm) text-sm font-medium focus-visible:ring-2 focus-visible:ring-ring focus-visible:outline-none">
             <span className="flex items-center gap-2">
               {t('tokens.devFixtureGroup')}
               <Badge variant="muted">
                 {t('tokens.devFixtureGroupCount', { count: fixtures.length })}
               </Badge>
             </span>
-            <ChevronDownGlassIcon className="size-5" aria-hidden="true" />
+            <ChevronDownGlassIcon
+              className="size-5 text-muted-foreground transition-transform duration-(--glinr-motion-fast) group-data-[panel-open]/fixtures:rotate-180 motion-reduce:transition-none"
+              aria-hidden="true"
+            />
           </CollapsibleTrigger>
           <CollapsiblePanel className="space-y-3 pt-3">
             <p className="text-sm text-muted-foreground">
@@ -186,7 +189,7 @@ function TokenRows({ tokens, rotatableIds }: TokenTableProps) {
             <span className="inline-flex items-center gap-1.5">
               {isActiveNow(token.last_used_at) ? (
                 <span
-                  className="size-1.5 rounded-full bg-green-500"
+                  className="size-1.5 rounded-full bg-tone-success-solid"
                   role="img"
                   aria-label={t('tokens.activeNow')}
                 />

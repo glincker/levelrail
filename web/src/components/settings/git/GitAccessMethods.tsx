@@ -2,7 +2,6 @@ import { useState } from 'react'
 import { Link } from '@tanstack/react-router'
 import { useTranslation } from 'react-i18next'
 import {
-  CircleCheckGlassIcon,
   KeyGlassIcon,
   PlugGlassIcon,
   RocketGlassIcon,
@@ -11,7 +10,9 @@ import {
 import type { UiIcon } from '@thesvg/ui-react'
 import { Badge } from '@/components/ui/badge'
 import { Button } from '@/components/ui/button'
-import { Card } from '@/components/ui/card'
+import { StatusBadge } from '@/components/ui/status-badge'
+import type { StatusState } from '@/components/kit/tone'
+import { CardGrid, ObjectCard } from '../../cards/ObjectCard'
 import {
   GIT_ACCESS_METHODS,
   methodStatus,
@@ -29,12 +30,16 @@ const ICON: Record<AccessMethodId, UiIcon> = {
   ci_job: RocketGlassIcon,
 }
 
-const BADGE = {
-  connected: 'success',
-  not_connected: 'muted',
-  needs_attention: 'destructive',
-  expires_soon: 'warning',
-} as const
+// Same status language as the Integrations cards: shape plus tone plus text.
+const STATE: Record<
+  'connected' | 'not_connected' | 'needs_attention' | 'expires_soon',
+  StatusState
+> = {
+  connected: 'healthy',
+  not_connected: 'pending',
+  needs_attention: 'failed',
+  expires_soon: 'degraded',
+}
 
 // The ways in for one provider, each with what it unlocks and one action.
 export function GitAccessMethods({
@@ -58,44 +63,36 @@ export function GitAccessMethods({
   const [now] = useState(() => Date.now())
 
   return (
-    <section aria-labelledby="git-access-methods" className="space-y-3">
-      <h2 id="git-access-methods" className="text-sm font-medium">
+    <section aria-labelledby="git-access-methods" className="space-y-4">
+      <h2
+        id="git-access-methods"
+        className="font-(family-name:--glinr-font-display) text-(length:--glinr-type-size-section) leading-(--glinr-type-leading-section) font-(weight:--glinr-type-heading-weight)"
+      >
         {t('methods.title')}
       </h2>
-      <ul className="grid gap-3 sm:grid-cols-2 2xl:grid-cols-4">
+      <CardGrid min="sm">
         {methods.map((method) => {
           const status = methodStatus(method, connections, info, now)
           const Icon = ICON[method]
           return (
-            <li key={method} className="flex">
-              <Card size="sm" className="w-full justify-between">
-                <div className="space-y-2 px-(--card-spacing)">
-                  <div className="flex flex-wrap items-center gap-2">
-                    <Icon className="size-5" aria-hidden="true" />
-                    <h3 className="text-sm font-medium">
-                      {t(`methods.${method}.name`)}
-                    </h3>
-                    {method === recommended ? (
-                      <Badge variant="accent">{t('methods.recommended')}</Badge>
-                    ) : null}
-                  </div>
-                  <p className="text-xs text-muted-foreground">
-                    {t(`methods.${method}.unlocks`)}
-                  </p>
-                  {status === 'separate' ? null : (
-                    <Badge
-                      variant={
-                        status === 'connected' ? 'success' : BADGE[status]
-                      }
-                    >
-                      {status === 'connected' ? (
-                        <CircleCheckGlassIcon aria-hidden="true" />
-                      ) : null}
-                      {t(`methods.status.${status}`)}
-                    </Badge>
-                  )}
-                </div>
-                <div className="px-(--card-spacing)">
+            <li key={method} className="flex min-w-0">
+              <ObjectCard
+                icon={<Icon aria-hidden="true" />}
+                title={t(`methods.${method}.name`)}
+                badges={
+                  method === recommended ? (
+                    <Badge variant="accent">{t('methods.recommended')}</Badge>
+                  ) : null
+                }
+                status={
+                  status === 'separate' ? null : (
+                    <StatusBadge
+                      state={STATE[status]}
+                      label={t(`methods.status.${status}`)}
+                    />
+                  )
+                }
+                actions={
                   <MethodAction
                     method={method}
                     primary={method === recommended}
@@ -103,12 +100,16 @@ export function GitAccessMethods({
                     onToken={onToken}
                     label={t(`methods.${method}.action`)}
                   />
-                </div>
-              </Card>
+                }
+              >
+                <p className="text-[13px] text-muted-foreground">
+                  {t(`methods.${method}.unlocks`)}
+                </p>
+              </ObjectCard>
             </li>
           )
         })}
-      </ul>
+      </CardGrid>
       {provider === 'gitlab' ? (
         <p className="text-xs text-muted-foreground">
           {t('methods.selfManaged')}

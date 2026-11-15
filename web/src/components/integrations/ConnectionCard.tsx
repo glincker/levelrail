@@ -13,9 +13,9 @@ import {
   healthState,
 } from '../../lib/connections'
 import type { Connection } from '../../types/connections'
-import { cn } from '@/lib/utils'
 import { GitCredentialStatus } from '../settings/git/GitCredentialStatus'
 import type { GitCredentialKind } from '../../types/gitConnections'
+import { MetaRow, ObjectCard } from '../cards/ObjectCard'
 import { ConnectionGlyph } from './ConnectionGlyph'
 
 // The hub read model only knows the auth method, which is enough to tell
@@ -69,85 +69,80 @@ export function ConnectionCard({
   useEffect(() => {
     if (highlight) reconnectRef.current?.focus({ preventScroll: true })
   }, [highlight])
-  const meta = [
-    conn.last_used_at
-      ? t('card.lastUsed', { when: formatRelativeTime(conn.last_used_at, now) })
-      : t('card.neverUsed'),
-    t('card.bound', { count: conn.bound_count }),
-  ]
+  const scope =
+    conn.scope_type === 'instance'
+      ? t('scopes.instance')
+      : t(`scopes.${conn.scope_type}`) +
+        (conn.scope_id ? `: ${conn.scope_id}` : '')
 
   return (
-    <li
-      id={`integration-${conn.ref}`}
-      data-highlighted={highlight || undefined}
-      className={cn(
-        'flex flex-col gap-3 py-3 sm:flex-row sm:items-center',
-        highlight &&
-          'rounded-md bg-tone-warning-soft px-2 ring-2 ring-tone-warning-border',
-      )}
-    >
-      <div className="flex min-w-0 flex-1 items-start gap-3">
-        <ConnectionGlyph provider={conn.provider} kind={conn.kind} />
-        <div className="min-w-0 flex-1 space-y-1">
-          <div className="flex flex-wrap items-center gap-x-2 gap-y-1">
-            <span className="truncate text-sm font-medium text-foreground">
-              {conn.label}
-            </span>
-            <StatusBadge
-              form="dot"
-              state={healthState(health)}
-              label={t(`health.${health}`)}
-            />
-            <Badge variant="muted">
-              {conn.scope_type === 'instance'
-                ? t('scopes.instance')
-                : t(`scopes.${conn.scope_type}`) +
-                  (conn.scope_id ? `: ${conn.scope_id}` : '')}
-            </Badge>
-            {conn.is_default ? (
-              <Badge variant="outline">{t('card.default')}</Badge>
-            ) : null}
-          </div>
-          <p className="truncate text-xs text-muted-foreground">
-            {identity}
-            {' · '}
-            {t(`authMethods.${conn.auth_method}`, {
-              defaultValue: conn.auth_method,
-            })}
-          </p>
-          <p className="flex flex-wrap gap-x-3 text-xs text-muted-foreground">
-            {meta.map((m) => (
-              <span key={m}>{m}</span>
-            ))}
-            {kind ? null : <ExpiryText conn={conn} now={now} />}
-          </p>
-          {kind ? (
-            <GitCredentialStatus
-              kind={kind}
-              expiresAt={conn.expires_at}
-              now={now}
-            />
-          ) : null}
-          {conn.health_detail && health !== 'ok' ? (
-            <p className="text-xs text-muted-foreground">
-              {conn.health_detail}
-            </p>
+    <li className="flex min-w-0">
+      <ObjectCard
+        id={`integration-${conn.ref}`}
+        data-highlighted={highlight || undefined}
+        highlight={highlight}
+        icon={<ConnectionGlyph provider={conn.provider} kind={conn.kind} />}
+        title={conn.label}
+        status={
+          <StatusBadge
+            state={healthState(health)}
+            label={t(`health.${health}`)}
+          />
+        }
+        meta={[
+          identity,
+          t(`authMethods.${conn.auth_method}`, {
+            defaultValue: conn.auth_method,
+          }),
+        ]}
+        actions={
+          <Button
+            ref={reconnectRef}
+            variant={reconnect || highlight ? 'default' : 'outline'}
+            size="sm"
+            render={<Link to={MANAGE_PATH[conn.kind]} />}
+            aria-label={t(
+              reconnect ? 'card.reconnectNamed' : 'card.manageNamed',
+              { name: conn.label },
+            )}
+          >
+            {t(reconnect ? 'card.reconnect' : 'card.manage')}
+            <ExternalLinkGlassIcon aria-hidden="true" />
+          </Button>
+        }
+      >
+        <div className="flex flex-wrap items-center gap-1.5">
+          <Badge variant="muted">{scope}</Badge>
+          {conn.is_default ? (
+            <Badge variant="outline">{t('card.default')}</Badge>
           ) : null}
         </div>
-      </div>
-      <Button
-        ref={reconnectRef}
-        variant={reconnect || highlight ? 'default' : 'outline'}
-        size="sm"
-        className="self-start sm:self-center"
-        render={<Link to={MANAGE_PATH[conn.kind]} />}
-        aria-label={t(reconnect ? 'card.reconnectNamed' : 'card.manageNamed', {
-          name: conn.label,
-        })}
-      >
-        {t(reconnect ? 'card.reconnect' : 'card.manage')}
-        <ExternalLinkGlassIcon aria-hidden="true" />
-      </Button>
+        <MetaRow
+          items={[
+            conn.last_used_at
+              ? t('card.lastUsed', {
+                  when: formatRelativeTime(conn.last_used_at, now),
+                })
+              : t('card.neverUsed'),
+            t('card.bound', { count: conn.bound_count }),
+            kind || expiryInfo(conn, now).days === null ? null : (
+              <ExpiryText conn={conn} now={now} />
+            ),
+          ]}
+        />
+        {kind ? (
+          <GitCredentialStatus
+            kind={kind}
+            expiresAt={conn.expires_at}
+            now={now}
+          />
+        ) : null}
+        {conn.health_detail && health !== 'ok' ? (
+          <p className="text-xs break-words text-muted-foreground">
+            {conn.health_detail}
+          </p>
+        ) : null}
+      </ObjectCard>
     </li>
   )
 }

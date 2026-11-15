@@ -3,10 +3,10 @@ import { useTranslation } from 'react-i18next'
 import { PlusGlassIcon } from '@thesvg/ui-react'
 import { Button } from '@/components/ui/button'
 import { EmptyState } from '@/components/ui/empty-state'
-import { Skeleton } from '@/components/ui/skeleton'
 import { catalogDestination, groupCatalog } from '../../lib/connections'
 import { useConnectionCatalog } from '../../queries/connections'
 import type { CatalogEntry, ConnectMethod } from '../../types/connections'
+import { CardGrid, ObjectCard, ObjectCardSkeleton } from '../cards/ObjectCard'
 import { ConnectionGlyph } from './ConnectionGlyph'
 
 const METHOD_ORDER: readonly ConnectMethod[] = [
@@ -25,27 +25,27 @@ function CatalogCard({ entry }: Readonly<{ entry: CatalogEntry }>) {
   const primary = methods[0] ?? 'settings_page'
   const to = catalogDestination(entry.category)
   return (
-    <li className="flex items-center gap-3 rounded-lg border border-border bg-card p-3">
-      <ConnectionGlyph provider={entry.id} kind={entry.category} />
-      <div className="min-w-0 flex-1">
-        <p className="truncate text-sm font-medium text-foreground">
-          {entry.name}
-        </p>
-        <p className="truncate text-xs text-muted-foreground">
-          {methods.length > 0
-            ? methods.map((m) => t(`methods.${m}`)).join(' · ')
-            : t('methods.settings_page')}
-        </p>
-      </div>
-      <Button
-        variant="outline"
-        size="sm"
-        render={<Link to={to} />}
-        aria-label={t('catalog.connectNamed', { name: entry.name })}
-      >
-        <PlusGlassIcon aria-hidden="true" />
-        {t(`connect.${primary}`)}
-      </Button>
+    <li className="flex min-w-0">
+      <ObjectCard
+        icon={<ConnectionGlyph provider={entry.id} kind={entry.category} />}
+        title={entry.name}
+        titleAs="h4"
+        meta={(methods.length > 0 ? methods : ['settings_page' as const]).map(
+          (m) => t(`methods.${m}`),
+        )}
+        inlineActions
+        actions={
+          <Button
+            variant="outline"
+            size="sm"
+            render={<Link to={to} />}
+            aria-label={t('catalog.connectNamed', { name: entry.name })}
+          >
+            <PlusGlassIcon aria-hidden="true" />
+            {t(`connect.${primary}`)}
+          </Button>
+        }
+      />
     </li>
   )
 }
@@ -57,7 +57,7 @@ export function CatalogSection() {
 
   let body: React.ReactNode
   if (isPending) {
-    body = <Skeleton className="h-24 w-full" />
+    body = <ObjectCardSkeleton count={3} footer={false} />
   } else if (isError) {
     body = (
       <EmptyState
@@ -87,17 +87,17 @@ export function CatalogSection() {
     )
   } else {
     body = (
-      <div className="space-y-5">
+      <div className="space-y-6">
         {groups.map((g) => (
           <div key={g.category} className="space-y-2">
             <h3 className="text-xs font-semibold text-muted-foreground">
               {t(`categories.${g.category}`, { defaultValue: g.category })}
             </h3>
-            <ul className="grid gap-2 md:grid-cols-2 xl:grid-cols-3">
+            <CardGrid>
               {g.items.map((entry) => (
                 <CatalogCard key={entry.id} entry={entry} />
               ))}
-            </ul>
+            </CardGrid>
           </div>
         ))}
       </div>
@@ -108,12 +108,12 @@ export function CatalogSection() {
     <section
       id="integrations-catalog"
       aria-labelledby="integrations-catalog-title"
-      className="scroll-mt-4 space-y-3"
+      className="scroll-mt-4 space-y-4"
     >
-      <div>
+      <div className="space-y-1">
         <h2
           id="integrations-catalog-title"
-          className="text-base font-semibold text-foreground"
+          className="font-(family-name:--glinr-font-display) text-(length:--glinr-type-size-section) leading-(--glinr-type-leading-section) font-(weight:--glinr-type-heading-weight) text-foreground"
         >
           {t('catalog.title')}
         </h2>

@@ -81,7 +81,7 @@ export function RotateTokenDialog({
               />
               <AlertDescription>{t('rotate.warning')}</AlertDescription>
             </Alert>
-            <div className="flex items-center gap-2 rounded-lg border border-input bg-muted/50 p-2">
+            <div className="flex items-center gap-2 rounded-(--glinr-radius-control) border border-input bg-muted/50 p-2">
               <code
                 aria-label={t('rotate.secretLabel')}
                 className="min-w-0 flex-1 overflow-x-auto text-xs break-all select-all"
@@ -130,7 +130,7 @@ export function RotateTokenDialog({
             </p>
             <p className="text-xs text-muted-foreground">
               {t('rotate.cli')}{' '}
-              <code className="rounded bg-muted px-1.5 py-0.5 font-mono break-all">
+              <code className="rounded-(--glinr-radius-xs) bg-muted px-1.5 py-0.5 font-mono break-all">
                 {cli}
               </code>
             </p>

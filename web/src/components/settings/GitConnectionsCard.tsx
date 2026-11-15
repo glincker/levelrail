@@ -54,7 +54,7 @@ export function GitConnectionsCard({
           }
         />
       ) : (
-        <section className="space-y-3">
+        <section className="space-y-4">
           {connections.map((c) => (
             <GitAccessPanel
               key={c.id}

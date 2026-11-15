@@ -4,7 +4,6 @@ import { PlugGlassIcon } from '@thesvg/ui-react'
 import { PageTemplate } from '@/components/shell/PageTemplate'
 import { Button } from '@/components/ui/button'
 import { EmptyState } from '@/components/ui/empty-state'
-import { Skeleton } from '@/components/ui/skeleton'
 import {
   DEFAULT_FILTERS,
   attentionList,
@@ -13,6 +12,7 @@ import {
   type ConnectionFilters,
 } from '../../lib/connections'
 import { useConnections } from '../../queries/connections'
+import { CardGrid, ObjectCardSkeleton } from '../cards/ObjectCard'
 import { AttentionStrip } from './AttentionStrip'
 import { CatalogSection } from './CatalogSection'
 import { ConnectionCard } from './ConnectionCard'
@@ -64,7 +64,7 @@ export function IntegrationsPage({
 
   let connected: React.ReactNode
   if (isPending) {
-    connected = <Skeleton className="h-32 w-full" />
+    connected = <ObjectCardSkeleton count={3} />
   } else if (isError) {
     connected = (
       <EmptyState
@@ -114,20 +114,21 @@ export function IntegrationsPage({
     )
   } else {
     connected = (
-      <div className="space-y-4">
+      <div className="space-y-6">
         {groups.map((g) => (
           <section
             key={g.kind}
             aria-labelledby={`integrations-kind-${g.kind}`}
-            className="rounded-lg border border-border bg-card px-3"
+            className="space-y-2"
           >
             <h3
               id={`integrations-kind-${g.kind}`}
-              className="border-b border-border py-2 text-xs font-semibold text-muted-foreground"
+              className="flex items-baseline gap-1.5 text-xs font-semibold text-muted-foreground"
             >
-              {t(`kinds.${g.kind}`)} ({g.items.length})
+              {t(`kinds.${g.kind}`)}
+              <span className="font-normal tabular-nums">{g.items.length}</span>
             </h3>
-            <ul className="divide-y divide-border">
+            <CardGrid min="lg">
               {g.items.map((c) => (
                 <ConnectionCard
                   key={c.ref}
@@ -136,7 +137,7 @@ export function IntegrationsPage({
                   highlight={c.ref === targetRef}
                 />
               ))}
-            </ul>
+            </CardGrid>
           </section>
         ))}
       </div>
@@ -152,10 +153,10 @@ export function IntegrationsPage({
     >
       <div className="space-y-6">
         <AttentionStrip items={attentionList(all, now)} now={now} />
-        <section aria-labelledby="integrations-connected" className="space-y-3">
+        <section aria-labelledby="integrations-connected" className="space-y-4">
           <h2
             id="integrations-connected"
-            className="text-base font-semibold text-foreground"
+            className="font-(family-name:--glinr-font-display) text-(length:--glinr-type-size-section) leading-(--glinr-type-leading-section) font-(weight:--glinr-type-heading-weight) text-foreground"
           >
             {t('connected.title')}
           </h2>

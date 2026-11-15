@@ -1,7 +1,7 @@
 import { Link } from '@tanstack/react-router'
 import { useTranslation } from 'react-i18next'
 import { Button } from '@/components/ui/button'
-import { Card } from '@/components/ui/card'
+import { CardGrid, ObjectCard } from '../../cards/ObjectCard'
 
 interface Step {
   id: 'import' | 'previews' | 'ci' | 'webhook' | 'registry'
@@ -21,31 +21,31 @@ const STEPS: readonly Step[] = [
 export function GitNextSteps() {
   const { t } = useTranslation('gitConnect')
   return (
-    <section aria-labelledby="git-next-steps" className="space-y-3">
-      <h2 id="git-next-steps" className="text-sm font-medium">
+    <section aria-labelledby="git-next-steps" className="space-y-4">
+      <h2
+        id="git-next-steps"
+        className="font-(family-name:--glinr-font-display) text-(length:--glinr-type-size-section) leading-(--glinr-type-leading-section) font-(weight:--glinr-type-heading-weight)"
+      >
         {t('next.title')}
       </h2>
-      <ul className="grid gap-3 sm:grid-cols-2 xl:grid-cols-3">
+      <CardGrid min="sm">
         {STEPS.map((step) => (
-          <li key={step.id} className="flex">
-            <Card size="sm" className="w-full justify-between">
-              <div className="space-y-1 px-(--card-spacing)">
-                <h3 className="text-sm font-medium">
-                  {t(`next.${step.id}.title`)}
-                </h3>
-                <p className="text-xs text-muted-foreground">
-                  {t(`next.${step.id}.body`)}
-                </p>
-              </div>
-              <div className="px-(--card-spacing)">
+          <li key={step.id} className="flex min-w-0">
+            <ObjectCard
+              title={t(`next.${step.id}.title`)}
+              actions={
                 <Button size="sm" variant="outline" render={step.link}>
                   {t(`next.${step.id}.action`)}
                 </Button>
-              </div>
-            </Card>
+              }
+            >
+              <p className="text-[13px] text-muted-foreground">
+                {t(`next.${step.id}.body`)}
+              </p>
+            </ObjectCard>
           </li>
         ))}
-      </ul>
+      </CardGrid>
     </section>
   )
 }

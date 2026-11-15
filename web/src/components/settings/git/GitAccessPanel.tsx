@@ -2,12 +2,13 @@ import { useState } from 'react'
 import { useTranslation } from 'react-i18next'
 import {
   CircleCheckGlassIcon,
+  CircleDashedGlassIcon,
+  CircleQuestionMarkGlassIcon,
   CircleXGlassIcon,
   KeyGlassIcon,
   PlusGlassIcon,
   TriangleAlertGlassIcon,
 } from '@thesvg/ui-react'
-import { Badge } from '@/components/ui/badge'
 import { Button } from '@/components/ui/button'
 import { Card, CardContent } from '@/components/ui/card'
 import {
@@ -15,6 +16,8 @@ import {
   TooltipContent,
   TooltipTrigger,
 } from '@/components/ui/tooltip'
+import { cn } from '@/lib/utils'
+import { ConnectionActions } from '../../ConnectionCard'
 import {
   CAPABILITY_IDS,
   type CapabilityId,
@@ -29,50 +32,58 @@ import { GitConnectionRow } from '../GitConnectionRow'
 import { GitCredentialStatus } from './GitCredentialStatus'
 import { RotateGitTokenDialog } from './RotateGitTokenDialog'
 
-function StateBadge({
+const CAP_STATE = {
+  allowed: { Icon: CircleCheckGlassIcon, tone: 'text-tone-success' },
+  needs_scope: { Icon: TriangleAlertGlassIcon, tone: 'text-tone-warning' },
+  not_allowed: { Icon: CircleXGlassIcon, tone: 'text-tone-danger' },
+  unknown: { Icon: CircleQuestionMarkGlassIcon, tone: 'text-muted-foreground' },
+} as const
+
+// Icon, tone and words each carry the state, so none depends on colour alone.
+function CapabilityState({
   state,
   inferred,
 }: Readonly<{ state: CapabilityState; inferred: boolean }>) {
   const { t } = useTranslation('gitConnect')
-  const mark = inferred ? (
-    <span className="text-xs text-muted-foreground">
-      {t('access.inferred')}
-    </span>
-  ) : null
+  let key: keyof typeof CAP_STATE
+  let label: string
   switch (state.kind) {
     case 'allowed':
-      return (
-        <span className="flex items-center gap-2">
-          {mark}
-          <Badge variant="success">
-            <CircleCheckGlassIcon aria-hidden="true" />
-            {t('access.allowed')}
-          </Badge>
-        </span>
-      )
+      key = 'allowed'
+      label = t('access.allowed')
+      break
     case 'needs_scope':
-      return (
-        <span className="flex items-center gap-2">
-          {mark}
-          <Badge variant="warning">
-            <TriangleAlertGlassIcon aria-hidden="true" />
-            {t('access.needsScope', { scope: state.scope })}
-          </Badge>
-        </span>
-      )
+      key = 'needs_scope'
+      label = t('access.needsScope', { scope: state.scope })
+      break
     case 'not_allowed':
-      return (
-        <span className="flex items-center gap-2">
-          {mark}
-          <Badge variant="destructive">
-            <CircleXGlassIcon aria-hidden="true" />
-            {t('access.notAllowed')}
-          </Badge>
-        </span>
-      )
+      key = 'not_allowed'
+      label = t('access.notAllowed')
+      break
     default:
-      return <Badge variant="muted">{t('access.notReported')}</Badge>
+      key = 'unknown'
+      label = t('access.notReported')
   }
+  const { Icon, tone } = CAP_STATE[key]
+  return (
+    <span className="flex shrink-0 flex-wrap items-center justify-end gap-x-2 gap-y-1">
+      {inferred && key !== 'unknown' ? (
+        <span className="inline-flex items-center gap-1 text-xs text-muted-foreground">
+          <CircleDashedGlassIcon className="size-3.5" aria-hidden="true" />
+          {t('access.inferred')}
+        </span>
+      ) : null}
+      <span
+        className={cn(
+          'inline-flex items-center gap-1.5 text-[13px] font-medium',
+          tone,
+        )}
+      >
+        <Icon className="size-4 shrink-0" aria-hidden="true" />
+        {label}
+      </span>
+    </span>
+  )
 }
 
 function DisabledAction({
@@ -141,7 +152,7 @@ export function GitAccessPanel({
 
   return (
     <Card>
-      <CardContent className="space-y-5">
+      <CardContent className="space-y-6">
         <ul data-slot="grouped-list">
           <GitConnectionRow
             connection={connection}
@@ -160,74 +171,84 @@ export function GitAccessPanel({
               : undefined
           }
         />
-        <div className="grid gap-5 lg:grid-cols-[minmax(0,2fr)_minmax(0,1fr)]">
-          <section aria-label={t('access.matrix')} className="space-y-2">
-            <h3 className="text-sm font-medium">{t('access.matrix')}</h3>
+        <div className="grid gap-6 lg:grid-cols-[minmax(0,2fr)_minmax(0,1fr)]">
+          <section
+            aria-labelledby={`git-access-${connection.id}`}
+            className="space-y-2"
+          >
+            <h3
+              id={`git-access-${connection.id}`}
+              className="font-(family-name:--glinr-font-display) text-(length:--glinr-type-size-banner) leading-(--glinr-type-leading-banner) font-(weight:--glinr-type-heading-weight)"
+            >
+              {t('access.matrix')}
+            </h3>
             {granted === null ? (
               <p className="text-xs text-muted-foreground">
                 {t('access.scopesUnknown')}
               </p>
             ) : null}
-            <ul className="divide-y divide-border rounded-md border border-border">
+            <ul className="divide-y divide-border">
               {CAPABILITY_IDS.map((id) => (
                 <li
                   key={id}
-                  className="flex flex-wrap items-center justify-between gap-2 px-3 py-2"
+                  className="flex min-h-(--glinr-row-h) flex-wrap items-center justify-between gap-x-3 gap-y-1 py-2"
                 >
-                  <span className="text-sm">{t(`cap.${id}`)}</span>
-                  <StateBadge {...capabilityFor(id)} />
+                  <span className="min-w-0 text-sm">{t(`cap.${id}`)}</span>
+                  <CapabilityState {...capabilityFor(id)} />
                 </li>
               ))}
             </ul>
           </section>
-          <dl className="space-y-3 text-sm">
+          <div className="space-y-4 text-sm lg:border-l lg:border-border lg:pl-6">
             {info?.live_check_error ? (
               <p role="status" className="text-xs text-muted-foreground">
                 {info.live_check_error}
               </p>
             ) : null}
-            <Fact label={t('access.scopes')}>
-              {granted && granted.length > 0 ? (
-                <ul className="flex flex-wrap gap-1.5">
-                  {granted.map((s) => (
-                    <li key={s}>
-                      <code className="rounded bg-muted px-1.5 py-0.5 text-xs">
-                        {s}
-                      </code>
-                    </li>
-                  ))}
-                </ul>
-              ) : (
-                none
-              )}
-            </Fact>
-            <Fact label={t('access.sees')}>
-              {info
-                ? [
-                    info.visible_accounts.names.join(', '),
-                    t('access.projects', {
-                      count: info.visible_accounts.total,
-                    }),
-                  ]
-                    .filter(Boolean)
-                    .join(' · ')
-                : none}
-            </Fact>
-            <Fact label={t('access.expires')}>
-              {connection.expires_at || info?.expires_at
-                ? new Date(
-                    connection.expires_at ?? info?.expires_at ?? '',
-                  ).toLocaleDateString()
-                : t('credential.noExpiry')}
-            </Fact>
-            <Fact label={t('access.lastUsed')}>
-              {info?.last_used_at
-                ? new Date(info.last_used_at).toLocaleString()
-                : none}
-            </Fact>
-          </dl>
+            <dl className="space-y-4">
+              <Fact label={t('access.scopes')}>
+                {granted && granted.length > 0 ? (
+                  <ul className="flex flex-wrap gap-1.5">
+                    {granted.map((s) => (
+                      <li key={s}>
+                        <code className="rounded-(--glinr-radius-xs) bg-muted px-1.5 py-0.5 text-xs">
+                          {s}
+                        </code>
+                      </li>
+                    ))}
+                  </ul>
+                ) : (
+                  none
+                )}
+              </Fact>
+              <Fact label={t('access.sees')}>
+                {info
+                  ? [
+                      info.visible_accounts.names.join(', '),
+                      t('access.projects', {
+                        count: info.visible_accounts.total,
+                      }),
+                    ]
+                      .filter(Boolean)
+                      .join(' · ')
+                  : none}
+              </Fact>
+              <Fact label={t('access.expires')}>
+                {connection.expires_at || info?.expires_at
+                  ? new Date(
+                      connection.expires_at ?? info?.expires_at ?? '',
+                    ).toLocaleDateString()
+                  : t('credential.noExpiry')}
+              </Fact>
+              <Fact label={t('access.lastUsed')}>
+                {info?.last_used_at
+                  ? new Date(info.last_used_at).toLocaleString()
+                  : none}
+              </Fact>
+            </dl>
+          </div>
         </div>
-        <div className="flex flex-wrap gap-2 border-t border-border pt-4">
+        <ConnectionActions>
           <DisabledAction
             icon={<PlusGlassIcon className="size-5" aria-hidden="true" />}
             label={t('access.addScope')}
@@ -263,7 +284,7 @@ export function GitAccessPanel({
             <PlusGlassIcon className="size-5" aria-hidden="true" />
             {t('access.addAnother')}
           </Button>
-        </div>
+        </ConnectionActions>
         {canRotate ? (
           <RotateGitTokenDialog
             connection={connection}

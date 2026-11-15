@@ -1,13 +1,14 @@
 import { useTranslation } from 'react-i18next'
-import { Badge } from '@/components/ui/badge'
+import { StatusBadge } from '@/components/ui/status-badge'
 import { RelativeTime } from '../kit/RelativeTime'
 import { hoursUntil, tokenExpiry } from '../../lib/tokenExpiry'
 import type { TokenResource } from '../../types/token'
 
-const BADGE_VARIANT = {
-  ok: 'success',
-  soon: 'warning',
-  expired: 'destructive',
+// Shared status language: shape and tone come from the status map, not colour alone.
+const STATE = {
+  ok: 'healthy',
+  soon: 'degraded',
+  expired: 'expired',
 } as const
 
 // Expiry badge plus the time left, and a note while a rotated token is in its grace period.
@@ -30,9 +31,10 @@ export function TokenExpiryCell({
         <span className="text-muted-foreground">{ts('tokens.never')}</span>
       ) : (
         <div className="flex flex-wrap items-center gap-1.5">
-          <Badge variant={BADGE_VARIANT[expiry.state]}>
-            {t(`badge.${expiry.state}`)}
-          </Badge>
+          <StatusBadge
+            state={STATE[expiry.state]}
+            label={t(`badge.${expiry.state}`)}
+          />
           <span className="text-muted-foreground">
             {expiry.state === 'expired' && token.expires_at ? (
               <RelativeTime at={token.expires_at} />
