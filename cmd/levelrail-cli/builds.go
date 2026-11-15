@@ -21,6 +21,7 @@ func buildsUsage(prog string) string {
   %[1]s builds cache quota [--app-quota-gb N] [--reclaim APP]
   %[1]s builds prune [--node N] [--older-than-hours H] [--apply]
   %[1]s builds queue [--json]
+  %[1]s builds runners [--json]
   %[1]s builds pause [--reason TEXT]
   %[1]s builds drain [--reason TEXT]
   %[1]s builds resume
@@ -62,6 +63,8 @@ func runBuilds(prog string, args []string, stdout, stderr io.Writer, lookupEnv f
 		return runBuildsPrune(prog, args[1:], stdout, stderr, lookupEnv)
 	case "queue":
 		return runBuildsQueue(prog, args[1:], stdout, stderr, lookupEnv)
+	case "runners":
+		return runBuildsRunners(prog, args[1:], stdout, stderr, lookupEnv)
 	case "pause", "resume", "drain":
 		return runBuildsQueueChange(prog, args[0], args[1:], stdout, stderr, lookupEnv)
 	case "kill-all":

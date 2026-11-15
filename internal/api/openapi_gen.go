@@ -14,7 +14,7 @@ type openAPIRoute struct {
 	Description string
 }
 
-// openAPIRoutes holds all 2156 routes known to scripts/gen-api-reference at
+// openAPIRoutes holds all 2160 routes known to scripts/gen-api-reference at
 // generation time. Run `go run ./scripts/gen-api-reference` after changing
 // any routes*.go registration and commit the result.
 var openAPIRoutes = []openAPIRoute{
@@ -166,6 +166,9 @@ var openAPIRoutes = []openAPIRoute{
 	{Method: "DELETE", Path: "/api/v1/apps/{name}/build-limits", Ability: "AbilityRoot", Group: "Apps CRUD / Lifecycle / Deploy", Handler: "handleResetAppBuildLimits", Description: ""},
 	{Method: "GET", Path: "/api/v1/apps/{name}/build-limits", Ability: "AbilityRead", Group: "Apps CRUD / Lifecycle / Deploy", Handler: "handleGetAppBuildLimits", Description: ""},
 	{Method: "PUT", Path: "/api/v1/apps/{name}/build-limits", Ability: "AbilityRoot", Group: "Apps CRUD / Lifecycle / Deploy", Handler: "handleSetAppBuildLimits", Description: "An app's CPU and memory cap decides how much of the host its builds can take, so root only."},
+	{Method: "DELETE", Path: "/api/v1/apps/{name}/build-runner", Ability: "AbilityDeploy", Group: "Apps CRUD / Lifecycle / Deploy", Handler: "handleClearAppBuildRunner", Description: ""},
+	{Method: "GET", Path: "/api/v1/apps/{name}/build-runner", Ability: "AbilityRead", Group: "Apps CRUD / Lifecycle / Deploy", Handler: "handleGetAppBuildRunner", Description: ""},
+	{Method: "PUT", Path: "/api/v1/apps/{name}/build-runner", Ability: "AbilityDeploy", Group: "Apps CRUD / Lifecycle / Deploy", Handler: "handleSetAppBuildRunner", Description: "Choosing where an app builds changes where its source and secrets are read, so deploy rights on the app."},
 	{Method: "GET", Path: "/api/v1/apps/{name}/build-settings", Ability: "AbilityRead", Group: "Apps CRUD / Lifecycle / Deploy", Handler: "handleGetAppBuildSettings", Description: ""},
 	{Method: "PUT", Path: "/api/v1/apps/{name}/build-settings", Ability: "AbilityWrite", Group: "Apps CRUD / Lifecycle / Deploy", Handler: "handleSetAppBuildSettings", Description: ""},
 	{Method: "GET", Path: "/api/v1/apps/{name}/build-speed", Ability: "AbilityRead", Group: "Apps CRUD / Lifecycle / Deploy", Handler: "handleBuildSpeed", Description: ""},
@@ -1190,6 +1193,7 @@ var openAPIRoutes = []openAPIRoute{
 	{Method: "POST", Path: "/api/v1/builds/queue/drain", Ability: "AbilityWriteSensitive", Group: "Other", Handler: "handleBuildQueueDrain", Description: ""},
 	{Method: "POST", Path: "/api/v1/builds/queue/pause", Ability: "AbilityWriteSensitive", Group: "Other", Handler: "handleBuildQueuePause", Description: "Holding or killing builds stops every app's deploys, so write-sensitive; kill-all also needs step-up."},
 	{Method: "POST", Path: "/api/v1/builds/queue/resume", Ability: "AbilityWriteSensitive", Group: "Other", Handler: "handleBuildQueueResume", Description: ""},
+	{Method: "GET", Path: "/api/v1/builds/runners", Ability: "AbilityRead", Group: "Other", Handler: "handleListBuildRunners", Description: ""},
 	{Method: "GET", Path: "/api/v1/builds/{id}", Ability: "AbilityRead", Group: "Other", Handler: "handleGetBuild", Description: ""},
 	{Method: "GET", Path: "/api/v1/cdn/overview", Ability: "AbilityRead", Group: "Other", Handler: "handleCDNOverview", Description: ""},
 	{Method: "GET", Path: "/api/v1/changelog", Ability: "AbilityRead", Group: "Other", Handler: "handleGetChangelog", Description: "\"What's new\" dashboard panel: recent entries parsed from the repo's own CHANGELOG.md, AbilityRead like updates above."},

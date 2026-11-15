@@ -35,6 +35,9 @@ type BuildResource struct {
 	ImageBytes      int64      `json:"image_bytes,omitempty"`
 	ImageDeltaBytes *int64     `json:"image_delta_bytes,omitempty"`
 	Node            string     `json:"node,omitempty"`
+	RunnerName      string     `json:"runner_name,omitempty"`
+	RunnerReason    string     `json:"runner_reason,omitempty"`
+	QueueWaitMS     int64      `json:"queue_wait_ms"`
 	Platform        string     `json:"platform,omitempty"`
 	Error           string     `json:"error,omitempty"`
 	Hint            *BuildHint `json:"hint,omitempty"`
@@ -264,5 +267,40 @@ func (c *Client) KillAllBuilds(ctx context.Context, reason string, pause bool, p
 	var out KillAllBuildsResult
 	body := map[string]any{"reason": reason, "pause": pause, "step_up": proof}
 	err := c.do(ctx, http.MethodPost, "/api/v1/builds/kill-all", body, &out)
+	return out, err
+}
+
+// BuildRunner is one build-capable node in GET /api/v1/builds/runners.
+type BuildRunner struct {
+	ID            string     `json:"id"`
+	Name          string     `json:"name"`
+	Kind          string     `json:"kind"`
+	Status        string     `json:"status"`
+	Health        string     `json:"health"`
+	SlotsUsed     int        `json:"slots_used"`
+	SlotsTotal    int        `json:"slots_total"`
+	Waiting       int        `json:"waiting"`
+	Load          float64    `json:"load"`
+	Pressure      string     `json:"pressure"`
+	Architecture  string     `json:"architecture,omitempty"`
+	CPUCores      int        `json:"cpu_cores,omitempty"`
+	Labels        []string   `json:"labels"`
+	LastSeenAt    *time.Time `json:"last_seen_at,omitempty"`
+	LastBuildAt   *time.Time `json:"last_build_at,omitempty"`
+	LastBuildApp  string     `json:"last_build_app,omitempty"`
+	LastBuildStat string     `json:"last_build_status,omitempty"`
+	CacheBytes    *int64     `json:"cache_bytes,omitempty"`
+}
+
+// BuildRunners is the GET /api/v1/builds/runners response.
+type BuildRunners struct {
+	Strategy string        `json:"strategy"`
+	Runners  []BuildRunner `json:"runners"`
+}
+
+// GetBuildRunners calls GET /api/v1/builds/runners.
+func (c *Client) GetBuildRunners(ctx context.Context) (BuildRunners, error) {
+	var out BuildRunners
+	err := c.do(ctx, http.MethodGet, "/api/v1/builds/runners", nil, &out)
 	return out, err
 }

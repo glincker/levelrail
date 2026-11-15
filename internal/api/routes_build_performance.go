@@ -10,6 +10,11 @@ func (rt *Router) registerBuildPerformanceRoutes(mux *http.ServeMux) {
 	// The report filters reclaims to the caller's apps; budgets change through runtime settings.
 	mux.HandleFunc("GET /api/v1/builds/cache/quota", rt.requireAbility(AbilityRead, rt.handleBuildCacheQuota))
 	mux.HandleFunc("POST /api/v1/apps/{name}/build-cache/reclaim", rt.requireAbilityForResource(AbilityDeploy, appResourceFromPath, rt.handleReclaimAppBuildCache))
+	mux.HandleFunc("GET /api/v1/builds/runners", rt.requireAbility(AbilityRead, rt.handleListBuildRunners))
+	mux.HandleFunc("GET /api/v1/apps/{name}/build-runner", rt.requireAbilityForResource(AbilityRead, appResourceFromPath, rt.handleGetAppBuildRunner))
+	// Choosing where an app builds changes where its source and secrets are read, so deploy rights on the app.
+	mux.HandleFunc("PUT /api/v1/apps/{name}/build-runner", rt.requireAbilityForResource(AbilityDeploy, appResourceFromPath, rt.handleSetAppBuildRunner))
+	mux.HandleFunc("DELETE /api/v1/apps/{name}/build-runner", rt.requireAbilityForResource(AbilityDeploy, appResourceFromPath, rt.handleClearAppBuildRunner))
 	mux.HandleFunc("GET /api/v1/builds/queue", rt.requireAbility(AbilityRead, rt.handleGetBuildQueue))
 	// Holding or killing builds stops every app's deploys, so write-sensitive; kill-all also needs step-up.
 	mux.HandleFunc("POST /api/v1/builds/queue/pause", rt.requireAbility(AbilityWriteSensitive, rt.handleBuildQueuePause))

@@ -104,5 +104,6 @@ func (s *bootState) startHostPressure() {
 	}
 	s.apiRouter.SetHostPressure(g)
 	build.SetHostGate(g)
+	build.SetLocalPressure(func() string { return string(g.Status().State) })
 	go g.Run(s.ctx)
 }

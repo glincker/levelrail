@@ -140,7 +140,7 @@ func (s *bootState) startBuildAndIngress() {
 	telemetryDB := s.telemetryDB
 	supplyChainSvc := newSupplyChainService(ctx, logger, db, client, agentDataDir, b.ShortName)
 
-	builder, buildLimiter, closeBuilder, err := loadBuilder(ctx, logger, db, telemetryDB, secretsManager, agentRegistry, supplyChainSvc, guard, func(c *build.Client) { s.buildClient = c })
+	builder, buildLimiter, closeBuilder, err := loadBuilder(ctx, logger, db, telemetryDB, secretsManager, agentRegistry, s.hostReports, supplyChainSvc, guard, func(c *build.Client) { s.buildClient = c })
 	if err != nil {
 		// Non-fatal: the control plane still starts, with build-dependent paths unavailable.
 		logger.Warn("builder not configured: git webhook deploys and manual build trigger are both unavailable", slog.String("error", err.Error()))
@@ -235,6 +235,7 @@ func (s *bootState) wireRouter() {
 	apiRouter.WarmTrustRoot()
 	if buildLimiter != nil {
 		apiRouter.SetBuildLoad(buildLimiter)
+		apiRouter.SetBuildRunnerNodes(buildRunnerNodeSource(db, agentRegistry, hostReports))
 		build.SetQueueGate(apiRouter.BuildQueueGate())
 	}
 	if wh, ok := webhookHandler.(*webhook.Handler); ok {

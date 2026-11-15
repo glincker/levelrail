@@ -180,7 +180,7 @@ func loadOrGenerateMasterKey(dataDir string) (mk *secrets.MasterKey, keyPath str
 
 // Shared by the git webhook and the manual build trigger, so both use one BuildKit connection.
 // Returns an error rather than a partially wired builder; the caller treats it as non-fatal.
-func loadBuilder(ctx context.Context, logger *slog.Logger, db *store.DB, telemetryDB *telemetry.DB, secretsManager *secrets.Manager, agentRegistry *agent.Registry, supplyChain *supplychain.Service, guard dockerguard.Booted, onClient func(*build.Client)) (*deploy.Pipeline, *build.Limiter, func() error, error) {
+func loadBuilder(ctx context.Context, logger *slog.Logger, db *store.DB, telemetryDB *telemetry.DB, secretsManager *secrets.Manager, agentRegistry *agent.Registry, hostReports *agent.HostReportStore, supplyChain *supplychain.Service, guard dockerguard.Booted, onClient func(*build.Client)) (*deploy.Pipeline, *build.Limiter, func() error, error) {
 	rawDockerCli, err := rawDockerClient(guard.Host)
 	if err != nil {
 		return nil, nil, nil, fmt.Errorf("new docker client for buildkit: %w", err)
@@ -244,12 +244,22 @@ func loadBuilder(ctx context.Context, logger *slog.Logger, db *store.DB, telemet
 			deploy.WithBuildSecretSource(&pkgregistry.Resolver{Store: db, Secrets: secretsManager}))
 	}
 
-	router := build.NewRouter(buildClient, buildNodeSource(db, agentRegistry), agent.NewBuildDispatcher(agentRegistry), build.WithRouterLogger(logger))
 	memGuard := build.MemGuardFromEnv(os.LookupEnv)
-	limiter := build.NewLimiter(router, api.BuildLimitsSourceWithMemory(db, derivedBuildLimits(), buildMemoryCap(memGuard)),
+	limitsSource := api.BuildLimitsSourceWithMemory(db, derivedBuildLimits(), buildMemoryCap(memGuard))
+	var limiter *build.Limiter
+	router := build.NewRouter(buildClient, buildRunnerNodeSource(db, agentRegistry, hostReports), agent.NewBuildDispatcher(agentRegistry), build.WithRouterLogger(logger),
+		build.WithRouterQuery(buildRunnerQuery(db)),
+		build.WithRouterLoad(func() []build.NodeLoad {
+			if limiter == nil {
+				return nil
+			}
+			return limiter.Load()
+		}),
+		build.WithRouterSlotLimit(func(ctx context.Context, app string) int { return limitsSource(ctx, app).MaxConcurrent }))
+	limiter = build.NewLimiter(router, limitsSource,
 		build.WithMemoryGuard(memGuard, hostMemoryMB),
 		build.WithRunRecorder(api.BuildRunRecorder(db)), build.WithLimiterLogger(logger),
-		build.WithNodeResolver(router.SelectedNode), build.WithImageSizer(router.ImageSize),
+		build.WithDecider(router.Decide), build.WithImageSizer(router.ImageSize),
 		build.WithCgroupProvisioner(build.NewCgroupProvisioner(os.Getenv(build.EnvBuildCgroupRoot))))
 	return deploy.New(limiter, db, deployOpts...), limiter, closer, nil
 }

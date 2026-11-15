@@ -787,6 +787,9 @@ Endpoints for:
 | GET | /api/v1/apps/{name}/deploys/{deployId}/stages | AbilityRead | handleGetDeployStages |
 | POST | /api/v1/apps/{name}/bindings | AbilityWrite | handleCreateAppBinding |
 | DELETE | /api/v1/apps/{name}/bindings/{id} | AbilityWrite | handleDeleteAppBinding |
+| GET | /api/v1/apps/{name}/build-runner | AbilityRead | handleGetAppBuildRunner |
+| PUT | /api/v1/apps/{name}/build-runner | AbilityDeploy | handleSetAppBuildRunner |
+| DELETE | /api/v1/apps/{name}/build-runner | AbilityDeploy | handleClearAppBuildRunner |
 | GET | /api/v1/apps/{name}/notes | AbilityRead |  |
 | PUT | /api/v1/apps/{name}/notes | AbilityWrite |  |
 
@@ -2387,6 +2390,7 @@ Routes that do not fit an existing group.
 | POST | /api/v1/builds/queue/resume | AbilityWriteSensitive | handleBuildQueueResume |
 | POST | /api/v1/builds/queue/drain | AbilityWriteSensitive | handleBuildQueueDrain |
 | POST | /api/v1/builds/kill-all | AbilityWriteSensitive | handleKillAllBuilds |
+| GET | /api/v1/builds/runners | AbilityRead | handleListBuildRunners |
 | POST | /mcp | Public |  |
 
 ## See also

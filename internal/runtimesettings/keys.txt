@@ -366,8 +366,8 @@ retention.audit_security_days
 retention.auth_expired_days
 retention.email_log_days
 retention.event_webhook_days
-retention.forge_status_days
 retention.expired_token_days
+retention.forge_status_days
 retention.probe_attempt_days
 retention.restore_history_days
 retention.revoked_token_days

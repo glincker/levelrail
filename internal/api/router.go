@@ -259,6 +259,7 @@ type Router struct {
 	fixit                   fixitState                                                    // see fixit.go
 	buildPerf               BuildPerformanceStore                                         // see build_performance.go
 	buildQueue              buildQueueControl                                             // operator pause, drain and resume of new builds
+	buildRunnerNodes        build.NodeSource                                              // nil: the runner list shows the control plane only
 	buildLoad               BuildLoadSource                                               // nil: the build center shows no live slot usage
 	appBuildCache           AppBuildCacher                                                // nil: per app build cache routes return 501
 	buildCacheNodes         BuildCacheResolver                                            // nil: build cache routes return 501

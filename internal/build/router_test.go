@@ -71,7 +71,7 @@ func TestRouter_SelectNode(t *testing.T) {
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
 			r := NewRouter(nil, tt.nodes, tt.remote)
-			got, err := r.selectNode(t.Context())
+			got, err := r.selectNode(t.Context(), "")
 			if tt.wantErr != nil {
 				if !errors.Is(err, tt.wantErr) {
 					t.Fatalf("selectNode() err = %v, want %v", err, tt.wantErr)

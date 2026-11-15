@@ -56,3 +56,43 @@ func DerivedMaxConcurrent(cpus, memMB int) int {
 	n := min(cpus/2, memMB/mibPerBuild)
 	return max(n, 1)
 }
+
+var localPressure atomic.Pointer[func() string]
+
+// SetLocalPressure wires the reader behind the control plane's own pressure level; nil removes it.
+func SetLocalPressure(f func() string) {
+	if f == nil {
+		localPressure.Store(nil)
+		return
+	}
+	localPressure.Store(&f)
+}
+
+// LocalPressure is the control plane host's pressure level, PressureUnknown before the guard runs.
+func LocalPressure() string {
+	if f := localPressure.Load(); f != nil {
+		if v := (*f)(); v != "" {
+			return v
+		}
+	}
+	return PressureUnknown
+}
+
+// Process-wide routing policy, set from live settings at boot so a change applies to the next build.
+var runnerPolicy atomic.Pointer[func(ctx context.Context) Policy]
+
+// SetRunnerPolicyResolver wires the live routing settings; nil restores the original first-online choice.
+func SetRunnerPolicyResolver(f func(ctx context.Context) Policy) {
+	if f == nil {
+		runnerPolicy.Store(nil)
+		return
+	}
+	runnerPolicy.Store(&f)
+}
+
+func currentRunnerPolicy() func(ctx context.Context) Policy {
+	if f := runnerPolicy.Load(); f != nil {
+		return *f
+	}
+	return nil
+}

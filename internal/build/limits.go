@@ -117,6 +117,12 @@ type ImageSizer func(ctx context.Context, tag string) int64
 // WithNodeResolver makes the concurrency limit apply per node instead of globally.
 func WithNodeResolver(n NodeResolver) LimiterOption { return func(l *Limiter) { l.node = n } }
 
+// WithDecider places each build and records why. It supersedes WithNodeResolver
+// and hands the answer to the router through the build context.
+func WithDecider(d func(ctx context.Context, app string) Decision) LimiterOption {
+	return func(l *Limiter) { l.decide = d }
+}
+
 // WithImageSizer records the size of every built image.
 func WithImageSizer(s ImageSizer) LimiterOption { return func(l *Limiter) { l.sizer = s } }
 
@@ -137,11 +143,12 @@ type Limiter struct {
 	clock  Clock
 	log    *slog.Logger
 
-	node  NodeResolver
-	sizer ImageSizer
-	cg    CgroupProvisioner
-	guard MemGuard
-	host  func() int
+	node   NodeResolver
+	decide func(ctx context.Context, app string) Decision
+	sizer  ImageSizer
+	cg     CgroupProvisioner
+	guard  MemGuard
+	host   func() int
 
 	mu    sync.Mutex
 	slots map[string]*nodeSlots
@@ -189,8 +196,13 @@ func (l *Limiter) BuildRailpack(ctx context.Context, req RailpackRequest, progre
 func (l *Limiter) run(ctx context.Context, tag, srcDir string, progress func(ProgressEvent), do func(context.Context, func(ProgressEvent), string, int) (*Result, error)) (*Result, error) {
 	lim := l.limits(ctx, AppFromTag(tag))
 	queued := l.clock.Now()
-	nodeID := ""
-	if l.node != nil {
+	nodeID, reason := "", ""
+	switch {
+	case l.decide != nil:
+		d := l.decide(ctx, AppFromTag(tag))
+		nodeID, reason = d.Node, d.Reason
+		ctx = WithDecision(ctx, d)
+	case l.node != nil:
 		nodeID = l.node(ctx)
 	}
 	trackID, phase := l.track(tag, nodeID)
@@ -211,7 +223,7 @@ func (l *Limiter) run(ctx context.Context, tag, srcDir string, progress func(Pro
 	phase(ActiveBuilding)
 
 	started := l.clock.Now()
-	run := Run{App: AppFromTag(tag), Tag: tag, StartedAt: started, QueueWait: started.Sub(queued), Node: nodeID, Platform: HostPlatform()}
+	run := Run{App: AppFromTag(tag), Tag: tag, StartedAt: started, QueueWait: started.Sub(queued), Node: nodeID, RunnerReason: reason, Platform: HostPlatform()}
 
 	bctx, cancel := context.WithCancelCause(ctx)
 	defer cancel(nil)

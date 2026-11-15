@@ -22,28 +22,29 @@ const (
 
 // BuildRun is one finished build as stored.
 type BuildRun struct {
-	App         string
-	Tag         string
-	StartedAt   time.Time
-	DurationMS  int64
-	QueueWaitMS int64
-	Status      string
-	CachedSteps int
-	TotalSteps  int
-	Error       string
-	NodeID      string
-	Platform    string
-	ImageBytes  int64
+	App          string
+	Tag          string
+	StartedAt    time.Time
+	DurationMS   int64
+	QueueWaitMS  int64
+	Status       string
+	CachedSteps  int
+	TotalSteps   int
+	Error        string
+	NodeID       string
+	RunnerReason string
+	Platform     string
+	ImageBytes   int64
 }
 
 // RecordBuildRun appends one finished build and trims the app's history.
 func (db *DB) RecordBuildRun(ctx context.Context, r BuildRun) error {
 	r.Error = secretmask.Mask(r.Error)
 	_, err := db.ExecContext(ctx, `INSERT INTO build_runs
-		(app_name, tag, started_at, duration_ms, queue_wait_ms, status, cached_steps, total_steps, error, node_id, platform, image_bytes)
-		VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)`,
+		(app_name, tag, started_at, duration_ms, queue_wait_ms, status, cached_steps, total_steps, error, node_id, runner_reason, platform, image_bytes)
+		VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)`,
 		r.App, r.Tag, r.StartedAt.UTC().Format(time.RFC3339Nano), r.DurationMS, r.QueueWaitMS,
-		r.Status, r.CachedSteps, r.TotalSteps, r.Error, r.NodeID, r.Platform, r.ImageBytes)
+		r.Status, r.CachedSteps, r.TotalSteps, r.Error, r.NodeID, r.RunnerReason, r.Platform, r.ImageBytes)
 	if err != nil {
 		return fmt.Errorf("store: record build run: %w", err)
 	}
@@ -82,7 +83,7 @@ func (db *DB) ListBuildAttempts(ctx context.Context, limit int) ([]DeployAttempt
 }
 
 func (db *DB) queryBuildRuns(ctx context.Context, clause string, args ...any) ([]BuildRun, error) {
-	rows, err := db.QueryContext(ctx, `SELECT app_name, tag, started_at, duration_ms, queue_wait_ms, status, cached_steps, total_steps, error, node_id, platform, image_bytes
+	rows, err := db.QueryContext(ctx, `SELECT app_name, tag, started_at, duration_ms, queue_wait_ms, status, cached_steps, total_steps, error, node_id, runner_reason, platform, image_bytes
 		FROM build_runs `+clause, args...) //nolint:gosec // clause is a package-internal constant
 	if err != nil {
 		return nil, fmt.Errorf("store: list build runs: %w", err)
@@ -92,7 +93,7 @@ func (db *DB) queryBuildRuns(ctx context.Context, clause string, args ...any) ([
 	for rows.Next() {
 		var r BuildRun
 		var started string
-		if err := rows.Scan(&r.App, &r.Tag, &started, &r.DurationMS, &r.QueueWaitMS, &r.Status, &r.CachedSteps, &r.TotalSteps, &r.Error, &r.NodeID, &r.Platform, &r.ImageBytes); err != nil {
+		if err := rows.Scan(&r.App, &r.Tag, &started, &r.DurationMS, &r.QueueWaitMS, &r.Status, &r.CachedSteps, &r.TotalSteps, &r.Error, &r.NodeID, &r.RunnerReason, &r.Platform, &r.ImageBytes); err != nil {
 			return nil, fmt.Errorf("store: scan build run: %w", err)
 		}
 		r.StartedAt, _ = time.Parse(time.RFC3339Nano, started)

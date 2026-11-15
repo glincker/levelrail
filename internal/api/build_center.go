@@ -52,6 +52,9 @@ type buildRow struct {
 	ImageBytes      int64      `json:"image_bytes,omitempty"`
 	ImageDeltaBytes *int64     `json:"image_delta_bytes,omitempty"`
 	Node            string     `json:"node,omitempty"`
+	RunnerName      string     `json:"runner_name,omitempty"`
+	RunnerReason    string     `json:"runner_reason,omitempty"`
+	QueueWaitMS     int64      `json:"queue_wait_ms"`
 	Platform        string     `json:"platform,omitempty"`
 	Error           string     `json:"error,omitempty"`
 	Hint            *buildHint `json:"hint,omitempty"`
@@ -200,6 +203,7 @@ func assembleBuildRows(attempts []store.DeployAttempt, runs []store.BuildRun) []
 			d := float64(r.DurationMS) / 1000
 			row.DurationSeconds = &d
 			row.Node, row.Platform, row.ImageBytes = r.NodeID, r.Platform, r.ImageBytes
+			row.RunnerReason, row.QueueWaitMS = r.RunnerReason, r.QueueWaitMS
 			if r.TotalSteps > 0 {
 				ratio := float64(r.CachedSteps) / float64(r.TotalSteps)
 				row.CacheHitRatio = &ratio
@@ -337,6 +341,7 @@ func (rt *Router) handleListBuilds(w http.ResponseWriter, r *http.Request) {
 		}
 		rows = kept
 	}
+	rt.nameBuildRunners(r.Context(), rows)
 	maxConc := rt.buildLimitsView(r.Context()).Effective.MaxConcurrent
 	resp := buildCenterResponse{
 		Rows: rows, Counts: countBuildRows(rows), Nodes: []buildNodeLoadResource{}, Limit: maxConc,
@@ -363,7 +368,9 @@ func (rt *Router) handleGetBuild(w http.ResponseWriter, r *http.Request) {
 	id := r.PathValue("id")
 	for _, row := range rows {
 		if row.ID == id {
-			writeJSON(w, http.StatusOK, row)
+			one := []buildRow{row}
+			rt.nameBuildRunners(r.Context(), one)
+			writeJSON(w, http.StatusOK, one[0])
 			return
 		}
 	}
