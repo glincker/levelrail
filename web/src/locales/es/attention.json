@@ -125,7 +125,18 @@
     "uncleanRestartTitle": "El plano de control se reinició de forma inesperada",
     "uncleanRestartDetail_one": "Se detuvo sin un apagado limpio {{count}} vez recientemente.",
     "uncleanRestartDetail_other": "Se detuvo sin un apagado limpio {{count}} veces recientemente.",
-    "uncleanRestartOom": "Es probable que el kernel lo cerrara por falta de memoria. Revisa la protección de la unidad en el estado del sistema."
+    "uncleanRestartOom": "Es probable que el kernel lo cerrara por falta de memoria. Revisa la protección de la unidad en el estado del sistema.",
+    "gitReauthTitle": "La conexión Git {{name}} debe reconectarse",
+    "gitReauthDetail": "El proveedor rechazó su credencial. Reconéctala para que los builds y pulls sigan funcionando.",
+    "gitTokenExpiringTitle": "El token Git de {{name}} caduca pronto",
+    "gitTokenExpiringDetail": "Caduca el {{date}}. Rotálo antes para que los builds y pulls sigan funcionando.",
+    "tokenExpiredInUseTitle": "El token de API {{name}} caducó pero sigue en uso",
+    "tokensExpiringTitle": "{{count}} tokens de API caducan pronto",
+    "tokensExpiredTitle": "{{count}} tokens de API han caducado",
+    "tokensExpiredInUseTitle": "{{count}} tokens de API caducados siguen en uso",
+    "tokenGroupExpiringDetail": "{{names}}. Lo que los use dejará de funcionar. Rótalos desde la lista de tokens.",
+    "tokenGroupExpiredDetail": "{{names}}. Las solicitudes con ellos se rechazan. Elimínalos de la lista de tokens.",
+    "tokenGroupExpiredInUseDetail": "{{names}}. Un cliente aún puede depender de ellos. Reemplázalos y actualiza ese cliente."
   },
   "channel": {
     "notifyDeviceLogin": "Notificar cuando un inicio de sesión de CLI esté en espera",

@@ -1,0 +1,43 @@
+{
+  "badge": {
+    "ok": "Valide",
+    "soon": "Expire bientôt",
+    "expired": "Expiré"
+  },
+  "left": {
+    "days_one": "dans {{count}} jour",
+    "days_other": "dans {{count}} jours",
+    "hours_one": "dans {{count}} heure",
+    "hours_other": "dans {{count}} heures"
+  },
+  "revokesIn_one": "Révocation dans {{count}} heure",
+  "revokesIn_other": "Révocation dans {{count}} heures",
+  "policy": "Rappels {{windows}} jours avant l'expiration. Un token renouvelé continue de fonctionner pendant {{grace}}.",
+  "rotate": {
+    "platformTooltip": "Les tokens de plateforme se renouvellent seuls et ne peuvent pas l'être ici.",
+    "title": "Renouveler {{name}} ?",
+    "body": "Un nouveau token est créé avec le même nom, les mêmes droits et le même périmètre, et une nouvelle durée de vie.",
+    "grace": "L'ancien token continue de fonctionner pendant {{grace}} pour que vous changiez les appelants, puis il est révoqué.",
+    "noGrace": "L'ancien token est révoqué immédiatement.",
+    "cli": "Depuis un terminal :",
+    "cancel": "Annuler",
+    "confirm": "Renouveler le token",
+    "pending": "Renouvellement...",
+    "doneTitle": "Nouveau token pour {{name}}",
+    "doneBody": "Mettez à jour tout ce qui utilise l'ancien token avec ce secret.",
+    "warning": "Copiez ce token maintenant. Il n'est affiché qu'une fois et ne pourra pas être récupéré.",
+    "secretLabel": "Secret du nouveau token",
+    "copy": "Copier",
+    "copied": "Copié",
+    "oldUntil": "L'ancien token fonctionne jusqu'à {{time}}.",
+    "oldRevoked": "L'ancien token a été révoqué immédiatement.",
+    "done": "Terminé",
+    "errors": {
+      "forbidden": "Les tokens de plateforme se renouvellent seuls et ne peuvent pas l'être ici.",
+      "conflict": "Ce token est déjà révoqué, il n'y a rien à renouveler. La liste a été actualisée.",
+      "notFound": "Ce token n'existe plus ou appartient à quelqu'un d'autre.",
+      "network": "Serveur injoignable. Rien n'a été renouvelé, réessayez.",
+      "generic": "Échec du renouvellement : {{message}}"
+    }
+  }
+}

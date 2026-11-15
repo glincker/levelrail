@@ -121,6 +121,7 @@ export const NAMESPACES = [
   'statePlaceholders',
   'secretScan',
   'appExpiry',
+  'tokenExpiry',
   'appRestartSchedule',
   'appFiles',
   'appContainers',

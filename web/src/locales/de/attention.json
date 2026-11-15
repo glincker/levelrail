@@ -125,7 +125,18 @@
     "uncleanRestartTitle": "Steuerungsebene unerwartet neu gestartet",
     "uncleanRestartDetail_one": "Sie wurde zuletzt {{count}} Mal ohne sauberes Herunterfahren beendet.",
     "uncleanRestartDetail_other": "Sie wurde zuletzt {{count}} Mal ohne sauberes Herunterfahren beendet.",
-    "uncleanRestartOom": "Der Kernel hat sie vermutlich wegen Speichermangels beendet. Prüfe den Einheitenschutz im Systemstatus."
+    "uncleanRestartOom": "Der Kernel hat sie vermutlich wegen Speichermangels beendet. Prüfe den Einheitenschutz im Systemstatus.",
+    "gitReauthTitle": "Git-Verbindung {{name}} muss neu verbunden werden",
+    "gitReauthDetail": "Der Anbieter hat die Zugangsdaten abgelehnt. Verbinden Sie neu, damit Builds und Pulls weiter funktionieren.",
+    "gitTokenExpiringTitle": "Git-Token für {{name}} läuft bald ab",
+    "gitTokenExpiringDetail": "Läuft am {{date}} ab. Rotieren Sie ihn vorher, damit Builds und Pulls weiter funktionieren.",
+    "tokenExpiredInUseTitle": "API-Token {{name}} ist abgelaufen, wird aber noch genutzt",
+    "tokensExpiringTitle": "{{count}} API-Tokens laufen bald ab",
+    "tokensExpiredTitle": "{{count}} API-Tokens sind abgelaufen",
+    "tokensExpiredInUseTitle": "{{count}} abgelaufene API-Tokens werden noch genutzt",
+    "tokenGroupExpiringDetail": "{{names}}. Alles, was sie nutzt, funktioniert dann nicht mehr. Rotieren Sie sie in der Token-Liste.",
+    "tokenGroupExpiredDetail": "{{names}}. Anfragen mit ihnen werden abgelehnt. Entfernen Sie sie aus der Token-Liste.",
+    "tokenGroupExpiredInUseDetail": "{{names}}. Ein Client könnte noch davon abhängen. Ersetzen Sie sie und aktualisieren Sie den Aufrufer."
   },
   "channel": {
     "notifyDeviceLogin": "Benachrichtigen, wenn eine CLI-Anmeldung wartet",

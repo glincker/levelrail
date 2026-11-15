@@ -115,7 +115,18 @@
     "interruptedDetail": "実行中にコントロールプレーンが再起動しました。もう一度デプロイしてください。",
     "uncleanRestartTitle": "コントロールプレーンが予期せず再起動しました",
     "uncleanRestartDetail_other": "最近 {{count}} 回、正常にシャットダウンされずに停止しました。",
-    "uncleanRestartOom": "メモリ不足でカーネルに終了された可能性があります。システムステータスでユニット保護を確認してください。"
+    "uncleanRestartOom": "メモリ不足でカーネルに終了された可能性があります。システムステータスでユニット保護を確認してください。",
+    "gitReauthTitle": "Git接続 {{name}} の再接続が必要です",
+    "gitReauthDetail": "プロバイダーが認証情報を拒否しました。ビルドとプルを続けるには再接続してください。",
+    "gitTokenExpiringTitle": "{{name}} のGitトークンがまもなく期限切れになります",
+    "gitTokenExpiringDetail": "{{date}} に期限切れになります。ビルドとプルを続けるため、それまでにローテーションしてください。",
+    "tokenExpiredInUseTitle": "APIトークン {{name}} は期限切れですが、まだ使われています",
+    "tokensExpiringTitle": "{{count}} 件のAPIトークンがまもなく期限切れになります",
+    "tokensExpiredTitle": "{{count}} 件のAPIトークンが期限切れです",
+    "tokensExpiredInUseTitle": "期限切れの {{count}} 件のAPIトークンがまだ使われています",
+    "tokenGroupExpiringDetail": "{{names}}。使っているものは動かなくなります。トークン一覧からローテーションしてください。",
+    "tokenGroupExpiredDetail": "{{names}}。これらを使うリクエストは拒否されます。トークン一覧から削除してください。",
+    "tokenGroupExpiredInUseDetail": "{{names}}。クライアントがまだ依存している可能性があります。置き換えて呼び出し元を更新してください。"
   },
   "channel": {
     "notifyDeviceLogin": "CLIログインが待機しているときに通知",

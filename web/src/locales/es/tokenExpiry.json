@@ -1,0 +1,43 @@
+{
+  "badge": {
+    "ok": "Válido",
+    "soon": "Caduca pronto",
+    "expired": "Caducado"
+  },
+  "left": {
+    "days_one": "en {{count}} día",
+    "days_other": "en {{count}} días",
+    "hours_one": "en {{count}} hora",
+    "hours_other": "en {{count}} horas"
+  },
+  "revokesIn_one": "Se revoca en {{count}} hora",
+  "revokesIn_other": "Se revoca en {{count}} horas",
+  "policy": "Avisos {{windows}} días antes de caducar. Un token rotado sigue funcionando durante {{grace}}.",
+  "rotate": {
+    "platformTooltip": "Los tokens de plataforma se rotan solos y no se pueden rotar aquí.",
+    "title": "¿Rotar {{name}}?",
+    "body": "Se crea un token nuevo con el mismo nombre, permisos y alcance, y una vida útil nueva.",
+    "grace": "El token anterior sigue funcionando durante {{grace}} para que cambies los clientes y luego se revoca.",
+    "noGrace": "El token anterior se revoca de inmediato.",
+    "cli": "Desde una terminal:",
+    "cancel": "Cancelar",
+    "confirm": "Rotar token",
+    "pending": "Rotando...",
+    "doneTitle": "Token nuevo para {{name}}",
+    "doneBody": "Actualiza todo lo que use el token anterior con este secreto.",
+    "warning": "Copia este token ahora. Se muestra una sola vez y no se puede recuperar después.",
+    "secretLabel": "Secreto del token nuevo",
+    "copy": "Copiar",
+    "copied": "Copiado",
+    "oldUntil": "El token anterior funciona hasta {{time}}.",
+    "oldRevoked": "El token anterior se revocó de inmediato.",
+    "done": "Listo",
+    "errors": {
+      "forbidden": "Los tokens de plataforma se rotan solos y no se pueden rotar aquí.",
+      "conflict": "Este token ya está revocado, no hay nada que rotar. Se actualizó la lista.",
+      "notFound": "Este token ya no existe o pertenece a otra persona.",
+      "network": "No se pudo contactar con el servidor. No se rotó nada, inténtalo de nuevo.",
+      "generic": "Falló la rotación: {{message}}"
+    }
+  }
+}

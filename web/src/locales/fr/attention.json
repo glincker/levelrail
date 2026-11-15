@@ -134,7 +134,18 @@
     "uncleanRestartTitle": "Le plan de contrôle a redémarré de façon inattendue",
     "uncleanRestartDetail_one": "Il s'est arrêté sans arrêt propre {{count}} fois récemment.",
     "uncleanRestartDetail_other": "Il s'est arrêté sans arrêt propre {{count}} fois récemment.",
-    "uncleanRestartOom": "Le noyau l'a probablement arrêté faute de mémoire. Vérifiez la protection de l'unité dans l'état du système."
+    "uncleanRestartOom": "Le noyau l'a probablement arrêté faute de mémoire. Vérifiez la protection de l'unité dans l'état du système.",
+    "gitReauthTitle": "La connexion Git {{name}} doit être reconnectée",
+    "gitReauthDetail": "Le fournisseur a rejeté son identifiant. Reconnectez-la pour que les builds et les pulls continuent de fonctionner.",
+    "gitTokenExpiringTitle": "Le token Git de {{name}} expire bientôt",
+    "gitTokenExpiringDetail": "Expire le {{date}}. Renouvelez-le avant pour que les builds et les pulls continuent de fonctionner.",
+    "tokenExpiredInUseTitle": "Le token d'API {{name}} a expiré mais est encore utilisé",
+    "tokensExpiringTitle": "{{count}} tokens d'API expirent bientôt",
+    "tokensExpiredTitle": "{{count}} tokens d'API ont expiré",
+    "tokensExpiredInUseTitle": "{{count}} tokens d'API expirés sont encore utilisés",
+    "tokenGroupExpiringDetail": "{{names}}. Tout ce qui les utilise cessera de fonctionner. Renouvelez-les depuis la liste des tokens.",
+    "tokenGroupExpiredDetail": "{{names}}. Les requêtes avec ces tokens sont rejetées. Supprimez-les de la liste des tokens.",
+    "tokenGroupExpiredInUseDetail": "{{names}}. Un client peut encore en dépendre. Remplacez-les et mettez à jour cet appelant."
   },
   "channel": {
     "notifyDeviceLogin": "Notifier quand une connexion CLI est en attente",

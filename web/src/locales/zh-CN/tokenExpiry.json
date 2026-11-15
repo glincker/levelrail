@@ -1,0 +1,40 @@
+{
+  "badge": {
+    "ok": "有效",
+    "soon": "即将过期",
+    "expired": "已过期"
+  },
+  "left": {
+    "days_other": "{{count}} 天后",
+    "hours_other": "{{count}} 小时后"
+  },
+  "revokesIn_other": "{{count}} 小时后撤销",
+  "policy": "在到期前 {{windows}} 天提醒。轮换后的令牌在 {{grace}} 内仍可使用。",
+  "rotate": {
+    "platformTooltip": "平台令牌会自动轮换，无法在此处轮换。",
+    "title": "轮换 {{name}}？",
+    "body": "将创建一个名称、权限和范围相同、有效期重新计算的新令牌。",
+    "grace": "旧令牌在 {{grace}} 内仍可使用，方便你切换调用方，之后会被撤销。",
+    "noGrace": "旧令牌将立即撤销。",
+    "cli": "在终端中：",
+    "cancel": "取消",
+    "confirm": "轮换令牌",
+    "pending": "正在轮换...",
+    "doneTitle": "{{name}} 的新令牌",
+    "doneBody": "请用此密钥更新所有使用旧令牌的地方。",
+    "warning": "请立即复制此令牌。它只显示一次，之后无法再次获取。",
+    "secretLabel": "新令牌密钥",
+    "copy": "复制",
+    "copied": "已复制",
+    "oldUntil": "旧令牌可用至 {{time}}。",
+    "oldRevoked": "旧令牌已立即撤销。",
+    "done": "完成",
+    "errors": {
+      "forbidden": "平台令牌会自动轮换，无法在此处轮换。",
+      "conflict": "此令牌已被撤销，无需轮换。列表已刷新。",
+      "notFound": "此令牌不存在或属于其他人。",
+      "network": "无法连接服务器。未轮换任何内容，请重试。",
+      "generic": "轮换失败：{{message}}"
+    }
+  }
+}

@@ -10,11 +10,12 @@ import { useBrand } from '../../hooks/useBrand'
 import { TableSkeleton } from '@/components/ui/table-skeleton'
 import { PageTemplate } from '@/components/shell/PageTemplate'
 import { Badge } from '@/components/ui/badge'
+import { useTokenExpiryPolicy } from '../../hooks/useTokenExpiryPolicy'
 import { TokensNotices } from '../../components/tokens/TokensNotices'
 import { useTranslation } from 'react-i18next'
 import { SettingsPageTitle } from '../../components/settings/SettingsPageTitle'
 
-const EXPIRING_SOON_MS = 14 * 24 * 60 * 60 * 1000
+const DAY_MS = 24 * 60 * 60 * 1000
 
 // Account-level, so it lives under routes/settings/. The loader primes
 // the cache; the component only reads it.
@@ -33,7 +34,10 @@ function TokensPage() {
   const longLivedRoot = active.filter(
     (tok) => tok.abilities.includes('root') && !tok.expires_at,
   ).length
-  const [soonCutoff] = useState(() => Date.now() + EXPIRING_SOON_MS)
+  const policy = useTokenExpiryPolicy()
+  const [now] = useState(() => Date.now())
+  const soonCutoff = now + policy.soonDays * DAY_MS
+  const { t: te } = useTranslation('tokenExpiry')
   const expiringSoon = active.filter(
     (tok) => tok.expires_at && Date.parse(tok.expires_at) < soonCutoff,
   ).length
@@ -69,6 +73,11 @@ function TokensPage() {
         >
           {t('tokensPage.docsLink')}
         </a>
+      ) : null}
+      {policy.windows && policy.grace ? (
+        <p className="text-xs text-muted-foreground">
+          {te('policy', { windows: policy.windows, grace: policy.grace })}
+        </p>
       ) : null}
       <TokenTable tokens={active} />
       <RevokedTokensCard tokens={tokens} />

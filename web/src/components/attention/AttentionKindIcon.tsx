@@ -1,5 +1,7 @@
 import {
+  ClockGlassIcon,
   CpuGlassIcon,
+  UnplugGlassIcon,
   RotateCcwGlassIcon,
   ShieldAlertGlassIcon,
 } from '@thesvg/ui-react'
@@ -9,6 +11,8 @@ const ICONS = {
   host_pressure: CpuGlassIcon,
   deploy_interrupted: RotateCcwGlassIcon,
   unclean_restart: ShieldAlertGlassIcon,
+  git_connection_reauth: UnplugGlassIcon,
+  git_token_expiring: ClockGlassIcon,
 } as const
 
 export function AttentionKindIcon({

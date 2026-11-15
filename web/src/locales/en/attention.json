@@ -125,7 +125,18 @@
     "uncleanRestartTitle": "Control plane restarted unexpectedly",
     "uncleanRestartDetail_one": "It stopped without a clean shutdown {{count}} time recently.",
     "uncleanRestartDetail_other": "It stopped without a clean shutdown {{count}} times recently.",
-    "uncleanRestartOom": "The kernel likely killed it for lack of memory. Check unit protection in system status."
+    "uncleanRestartOom": "The kernel likely killed it for lack of memory. Check unit protection in system status.",
+    "gitReauthTitle": "Git connection {{name}} needs to be reconnected",
+    "gitReauthDetail": "The provider rejected its credential. Reconnect it so builds and pulls keep working.",
+    "gitTokenExpiringTitle": "Git token for {{name}} expires soon",
+    "gitTokenExpiringDetail": "Expires {{date}}. Rotate it before then so builds and pulls keep working.",
+    "tokenExpiredInUseTitle": "API token {{name}} expired but is still in use",
+    "tokensExpiringTitle": "{{count}} API tokens expire soon",
+    "tokensExpiredTitle": "{{count}} API tokens have expired",
+    "tokensExpiredInUseTitle": "{{count}} expired API tokens are still in use",
+    "tokenGroupExpiringDetail": "{{names}}. Anything using them will stop working. Rotate them from the token list.",
+    "tokenGroupExpiredDetail": "{{names}}. Requests using them are rejected. Remove them from the token list.",
+    "tokenGroupExpiredInUseDetail": "{{names}}. A client may still depend on them. Replace them and update that caller."
   },
   "channel": {
     "notifyDeviceLogin": "Notify when a CLI login is waiting",

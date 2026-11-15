@@ -115,7 +115,18 @@
     "interruptedDetail": "部署运行期间控制平面重启了。请重新部署以重试。",
     "uncleanRestartTitle": "控制平面意外重启",
     "uncleanRestartDetail_other": "最近有 {{count}} 次未正常关闭就停止了。",
-    "uncleanRestartOom": "内核可能因内存不足终止了它。请在系统状态中检查单元保护。"
+    "uncleanRestartOom": "内核可能因内存不足终止了它。请在系统状态中检查单元保护。",
+    "gitReauthTitle": "需要重新连接 Git 连接 {{name}}",
+    "gitReauthDetail": "提供方拒绝了其凭据。请重新连接，以便构建和拉取继续工作。",
+    "gitTokenExpiringTitle": "{{name}} 的 Git 令牌即将过期",
+    "gitTokenExpiringDetail": "将于 {{date}} 过期。请在此之前轮换，以便构建和拉取继续工作。",
+    "tokenExpiredInUseTitle": "API 令牌 {{name}} 已过期但仍在使用",
+    "tokensExpiringTitle": "{{count}} 个 API 令牌即将过期",
+    "tokensExpiredTitle": "{{count}} 个 API 令牌已过期",
+    "tokensExpiredInUseTitle": "{{count}} 个已过期的 API 令牌仍在使用",
+    "tokenGroupExpiringDetail": "{{names}}。使用它们的内容将停止工作。请在令牌列表中轮换。",
+    "tokenGroupExpiredDetail": "{{names}}。使用它们的请求会被拒绝。请从令牌列表中删除。",
+    "tokenGroupExpiredInUseDetail": "{{names}}。可能仍有客户端依赖它们。请替换并更新该调用方。"
   },
   "channel": {
     "notifyDeviceLogin": "CLI 登录等待时通知",

@@ -142,6 +142,10 @@ export interface TokenResource {
   last_used_at?: string
   expires_at?: string
   revoked_at?: string
+  // Set while a rotated token still works during its grace period.
+  revokes_at?: string
+  // Set when the token is limited to one team; team_id "system" marks a platform token.
+  scope?: { team_id: string; project_id?: string; team_role?: string }
   // Server the token is bound to and the address it was last seen from.
   instance_id?: string
   last_ip?: string
@@ -168,4 +172,19 @@ export interface CreateTokenRequest {
 // TokenResource / the list endpoint.
 export interface CreateTokenResponse extends TokenResource {
   token: string
+}
+
+// Matches rotateTokenResponse: the replacement with its one-time secret, the
+// id it replaces and when the old one stops working (null when revoked at once).
+export interface RotateTokenResponse extends CreateTokenResponse {
+  replaces: string
+  previous_valid_until?: string | null
+  // Former name of previous_valid_until, read as a fallback until servers all send the new one.
+  old_token_valid_until?: string | null
+}
+
+// Mirrors internal/api's isPlatformToken: system scope and no agent. The
+// server also checks the owner, so a 403 stays possible and is shown honestly.
+export function isPlatformToken(token: TokenResource): boolean {
+  return token.scope?.team_id === 'system' && !token.agent
 }
