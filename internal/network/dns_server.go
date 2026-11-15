@@ -76,7 +76,8 @@ type DNSServer struct {
 	// activate, which is the one case the readiness wait exists for.
 	closed atomic.Bool
 
-	qlog atomic.Pointer[QueryLog]
+	qlog   atomic.Pointer[QueryLog]
+	access atomic.Pointer[func(netip.Addr) bool]
 }
 
 // NewDNSServer builds a server for resolver. It does not listen until
@@ -251,9 +252,30 @@ func (s *DNSServer) Close() error {
 // SetQueryLog attaches the per-app query log. Nil detaches it.
 func (s *DNSServer) SetQueryLog(l *QueryLog) { s.qlog.Store(l) }
 
+// SetAccess restricts which source addresses are answered; others get REFUSED. Nil lifts the limit.
+func (s *DNSServer) SetAccess(allow func(netip.Addr) bool) {
+	if allow == nil {
+		s.access.Store(nil)
+		return
+	}
+	s.access.Store(&allow)
+}
+
 // handle answers one query and, when a query log is attached, records it.
 func (s *DNSServer) handle(w dns.ResponseWriter, req *dns.Msg) {
 	start := time.Now()
+	if allow := s.access.Load(); allow != nil {
+		var from netip.Addr
+		if ap, err := netip.ParseAddrPort(w.RemoteAddr().String()); err == nil {
+			from = ap.Addr().Unmap()
+		}
+		if !from.IsValid() || !(*allow)(from) {
+			denied := new(dns.Msg)
+			denied.SetRcode(req, dns.RcodeRefused)
+			s.write(w, denied)
+			return
+		}
+	}
 	resp, reason := s.answer(req)
 	s.write(w, resp)
 	l := s.qlog.Load()

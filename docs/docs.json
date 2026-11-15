@@ -244,6 +244,7 @@
               "dns",
               "dns-zones",
               "dns-visibility",
+              "mesh-dns",
               "mail-dns",
               "mail-template",
               "mail-mailboxes",

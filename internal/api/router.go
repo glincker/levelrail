@@ -873,6 +873,8 @@ type Router struct {
 	meshHubResolver *meshnet.HubHostResolver
 	// dnsQueryLog is nil when mesh DNS query visibility is not wired; the routes then report disabled.
 	dnsQueryLog *meshnet.QueryLog
+	// meshDNSStatus is nil unless the bridge gateway resolver is wired; the doctor check then stays silent.
+	meshDNSStatus func(ctx context.Context) meshnet.GatewayStatus
 	// multiNode holds node moves, drains, labels and selectors; nil means 501.
 	multiNode *multiNodeState
 	// nodeFailure is nil unless WithNodeFailure was applied.

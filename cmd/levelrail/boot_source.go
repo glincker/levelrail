@@ -360,6 +360,9 @@ func appOptionsFor(deps dynamicSourceDeps) []application.Option {
 	if deps.meshDNSAddr != "" {
 		appOpts = append(appOpts, application.WithMeshDNSAddr(deps.meshDNSAddr))
 	}
+	if deps.meshCfg != nil && deps.meshCfg.gatewayDNS != nil {
+		appOpts = append(appOpts, application.WithMeshDNSFunc(deps.meshCfg.gatewayDNS.dnsFor))
+	}
 	if deps.meshDNSAddr != "" && deps.meshCfg != nil && deps.meshCfg.resolver != nil {
 		appOpts = append(appOpts, application.WithMeshZone(deps.meshCfg.resolver.Zone()))
 	}

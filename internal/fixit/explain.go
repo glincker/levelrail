@@ -118,6 +118,8 @@ func buildExplainTable() map[string]Explanation {
 			"Open the check details for the missing restart setting and apply it, then press Re-check.", "", KindGuided),
 		ex("exposure", "An app or database port is open to the internet.", "Anyone can try to connect to it.",
 			"Open the app, go to Exposure and switch it to proxied or private unless the open port is on purpose.", "", KindGuided),
+		ex("mesh_dns", "The mesh DNS server is not reachable from your app containers.", "Lookups through it fail or are slow, and per-app DNS visibility stays empty.",
+			"Free port 53 on the bridge address or open udp and tcp 53 from the Levelrail bridges in your host firewall, then press Re-check.", "", KindGuided),
 		ex("cloud", "The cloud account that backs this host reports a problem.", "Firewall rules or addresses may differ from what you expect.",
 			"Open Settings, then Cloud, and reconnect the account or review the listed finding.", "", KindGuided),
 		ex("certificates", "A certificate is expired or about to expire.", "Browsers show a warning and visitors leave.",

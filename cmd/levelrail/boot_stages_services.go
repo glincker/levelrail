@@ -10,6 +10,7 @@ import (
 	"net/http"
 	"os"
 	"path/filepath"
+	"strings"
 	"time"
 
 	"github.com/GLINCKER/levelrail/internal/agent"
@@ -331,10 +332,20 @@ func (s *bootState) startMesh() error {
 	if meshCfg != nil && meshCfg.dnsServer != nil {
 		qlog := newMeshDNSQueryLog(meshCfg.settings, client, logger)
 		meshCfg.dnsServer.SetQueryLog(qlog)
+		meshCfg.queryLog = qlog
 		apiRouter.SetDNSQueryLog(qlog)
 	}
 	// Resolved once: the bridge gateway IP does not change while the process runs.
 	meshDNSAddr := containerDNSAddr(ctx, client, meshCfg, logger)
+	if meshCfg != nil && meshCfg.resolver != nil && meshCfg.settings != nil {
+		gwDNS := newMeshGatewayDNS(client, meshCfg, meshDNSAddr, strings.ToLower(b.ShortName)+"-mesh-dns", logger)
+		if meshCfg.dnsServer != nil {
+			gwDNS.gw.SetQueryLog(meshCfg.queryLog)
+		}
+		meshCfg.gatewayDNS = gwDNS
+		apiRouter.SetMeshDNSStatus(gwDNS.status)
+		go gwDNS.run(ctx)
+	}
 	if meshDNSAddr != "" && meshCfg != nil && meshCfg.resolver != nil {
 		apiRouter.SetMeshZone(meshCfg.resolver.Zone())
 	}

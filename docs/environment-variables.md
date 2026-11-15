@@ -134,6 +134,8 @@ These variables only seed the default of a [runtime setting](/runtime-settings).
 | `APP_CUTOVER_VERIFY_SLOW_TTFB` | [`cutover.verify_slow_ttfb`](/runtime-settings#networking) | `1500ms` |
 | `APP_CUTOVER_VERIFY_REQUEST_TIMEOUT` | [`cutover.verify_timeout`](/runtime-settings#networking) | `5s` |
 | `APP_DATABASE_IMPORT_MAX_BYTES` | [`databases.import_max_bytes`](/runtime-settings#networking) | `1073741824` |
+| `LEVELRAIL_DNS_MESH_RESOLVER_ENABLED` | [`dns.mesh_resolver_enabled`](/runtime-settings#networking) | `false` |
+| `LEVELRAIL_DNS_MESH_RESOLVER_INTERVAL` | [`dns.mesh_resolver_interval`](/runtime-settings#networking) | `15s` |
 | `APP_DNS_VERIFY_PROVIDER_ON_SAVE` | [`dns.verify_provider_on_save`](/runtime-settings#networking) | `true` |
 | `APP_AUTH_GATE_TIMEOUT` | [`domains.auth_gate_timeout`](/runtime-settings#networking) | `5s` |
 | `APP_DOMAINS_BATCH_MAX_ITEMS` | [`domains.batch_max_items`](/runtime-settings#networking) | `50` |

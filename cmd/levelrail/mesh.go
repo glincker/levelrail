@@ -236,6 +236,9 @@ type meshSetup struct {
 	dnsAddr  netip.AddrPort
 	close    func()
 	settings *runtimesettings.Service
+	// gatewayDNS is set at boot when the bridge gateway resolver is wired.
+	gatewayDNS *meshGatewayDNS
+	queryLog   *network.QueryLog
 }
 
 // meshApplyPolicy bounds each mesh config push; values come from runtime settings so changes apply on the next pass.
