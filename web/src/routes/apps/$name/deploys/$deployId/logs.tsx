@@ -12,6 +12,7 @@ import { buildDeployStepStreamUrl } from '../../../../../queries/deploySteps'
 import { deployAttemptsQueryOptions } from '../../../../../queries/deployAttempts'
 import { useDeployProgress } from '../../../../../hooks/useDeployProgress'
 import { useApp } from '../../../../../queries/apps'
+import { useBuildRunnerInfo } from '../../../../../queries/buildRunners'
 import { useGitSource } from '../../../../../queries/gitSources'
 import {
   computeDeployStages,
@@ -141,6 +142,10 @@ function DeployLogsPage() {
   )
   const { data: app } = useApp(name)
   const { data: gitSource } = useGitSource(name)
+  const { data: buildRow } = useBuildRunnerInfo(
+    deployId,
+    attempt?.status === 'running' || attempt?.status === 'queued',
+  )
   const { data: probeAttempts } = useProbeAttempts(
     name,
     deployId,
@@ -234,6 +239,7 @@ function DeployLogsPage() {
         domain={app.domains?.[0]}
         branch={attempt.source === 'webhook' ? gitSource?.branch : undefined}
         isLive={attempt.rollout_state === 'serving'}
+        build={buildRow}
         displayStatus={{
           tone: state.tone,
           label: msg(state.label),

@@ -750,5 +750,67 @@
       "waiting": "En attente",
       "building": "Build en cours"
     }
+  },
+  "runners": {
+    "title": "Runners de build",
+    "strategy": "Stratégie : {{strategy}}",
+    "changeStrategy": "Changer la stratégie",
+    "strategies": {
+      "first": "premier disponible",
+      "least_loaded": "le moins chargé",
+      "sticky_per_app": "fixe par app"
+    },
+    "kind": {
+      "control_plane": "Plan de contrôle",
+      "node": "Nœud de build"
+    },
+    "status": {
+      "ready": "Prêt",
+      "busy": "Occupé",
+      "pressure": "Sous pression",
+      "draining": "Vidage",
+      "offline": "Hors ligne"
+    },
+    "cores_one": "{{count}} cœur",
+    "cores_other": "{{count}} cœurs",
+    "load": "Charge {{load}}",
+    "slots": "{{used}} sur {{total}} emplacements ({{percent}} %)",
+    "waiting_one": "{{count}} en attente",
+    "waiting_other": "{{count}} en attente",
+    "capacityLabel": "Emplacements de build utilisés sur {{name}}",
+    "labels": "Étiquettes",
+    "lastBuild": "Dernier build :",
+    "noBuilds": "Aucun build pour l’instant",
+    "cache": "Cache de build {{size}}",
+    "builtOn": "Compilé sur {{name}}",
+    "queued": "En file {{wait}}",
+    "error": {
+      "title": "Impossible de charger les runners de build",
+      "description": "La liste des runners ne s’est pas chargée. Les builds ne sont pas affectés.",
+      "retry": "Recharger"
+    },
+    "empty": {
+      "title": "Ajouter un nœud de build",
+      "description": "Les builds s’exécutent sur le plan de contrôle. Enrôlez un second nœud avec les builds activés pour les sortir de la machine qui sert vos apps.",
+      "action": "Ouvrir Nœuds",
+      "docs": "Routage des nœuds de build"
+    }
+  },
+  "runnerPref": {
+    "title": "Runner de build",
+    "description": "Choisissez où cette app est compilée. Laissez vide pour suivre la stratégie globale.",
+    "node": "Nœud de build",
+    "anyNode": "Tout nœud de build",
+    "labels": "Étiquettes",
+    "labelsPlaceholder": "gpu, arch=arm64",
+    "pin": "Épingler à ce nœud",
+    "pinHint": "Si ce nœud ne peut pas compiler, le plan de contrôle est utilisé, jamais un autre nœud.",
+    "pinNeedsNode": "Choisissez un nœud pour l’épingler.",
+    "noAbility": "Il faut l’accès au déploiement pour modifier ceci.",
+    "clear": "Effacer",
+    "save": "Enregistrer",
+    "saved": "Runner de build enregistré",
+    "cleared": "Runner de build effacé",
+    "retry": "Réessayer"
   }
 }

@@ -8,6 +8,7 @@ import { HooksEditor } from '../../../components/HooksEditor'
 import { DeploySafetyCard } from '../../../components/DeploySafetyCard'
 import { PostDeployWatchCard } from '../../../components/PostDeployWatchCard'
 import { BuildCacheCard } from '../../../components/BuildCacheCard'
+import { RunnerPreferenceCard } from '../../../components/buildRunners/RunnerPreferenceCard'
 import { DeployFreezeCard } from '../../../components/DeployFreezeCard'
 import { ScheduledDeployCard } from '../../../components/ScheduledDeployCard'
 import { CancelSupersededCard } from '../../../components/CancelSupersededCard'
@@ -75,6 +76,9 @@ function DeploySettingsSection() {
         </CardHelp>
         <CardHelp card="buildCache">
           <BuildCacheCard appName={name} />
+        </CardHelp>
+        <CardHelp card="buildRunner">
+          <RunnerPreferenceCard appName={name} />
         </CardHelp>
       </SettingsGroup>
       <SettingsGroup id="run">

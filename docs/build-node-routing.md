@@ -23,13 +23,42 @@ What the flag does not do:
 
 ## How a build picks its node
 
-For each build, the control plane looks at every registered node with `accepts_build_workloads` set:
+For each build, the control plane looks at every registered node with `accepts_build_workloads` set. A node is skipped when it is offline, draining, or has not been seen within `build.runner_stale_after`. The strategy in `build.runner_strategy` then picks among the rest:
 
-1. If none has it set, the build runs locally, as on a fresh single-node install.
-2. If at least one is online, the online one with the lexicographically smallest ID runs the build. This is a fixed tie-break, not load-based scheduling. Levelrail does not do bin-packing, affinity or autoscaling.
-3. If some have it set but none is online, the build falls back to the primary node.
+- `first`: the usable node with the lexicographically smallest ID. A fixed tie-break, and the default.
+- `least_loaded`: the node with the most free build slots, counting queued builds and a warning pressure level against it.
+- `sticky_per_app`: the node that last built this app, so its layer cache is reused, while it still has a free slot.
+
+With `least_loaded` and `sticky_per_app`, a build for a given architecture only goes to nodes of that architecture, and with `build.remote_pressure_hold` on, nodes under critical host pressure are skipped. Required labels apply to every strategy. If nothing qualifies, the build runs on the control plane instead of failing, so a build node going offline never fails a deploy. Levelrail does not do bin-packing, affinity or autoscaling.
 
 When a build runs on another node, the built image is streamed back and loaded into the control plane's own image store, so the rest of the deploy works the same as for a local build.
+
+The strategy and both timings are runtime settings: change them under Settings, Security and runtime (deploys category). They apply live.
+
+## The Runners panel
+
+The Deployments page lists every runner as a card, polled while the page is open:
+
+- The status badge reads Ready, Busy, Under pressure, Draining or Offline.
+- The capacity bar is slots in use over total slots, with the number of builds waiting for a slot.
+- Each card also shows load, architecture, CPU cores, labels and the last build (app, outcome and age). The control plane card adds the build cache size.
+- The active strategy is shown above the cards, with a link to the setting.
+
+With only the control plane listed, the panel explains how to add a build node and links to the Nodes page.
+
+## Per-app preference
+
+An app can prefer a build node. On the app's Deploy settings page, under Build, pick a node, a set of labels (`key` or `key=value`, comma separated), or both. A chosen node is a soft preference. Turn on pin to make it strict: if that node cannot build, the build runs on the control plane, never on another node. Clear removes the preference and the app follows the global strategy again. Changing it needs deploy access on the app, because it decides where the app's source and secrets are read.
+
+```bash
+curl -X PUT $LEVELRAIL_URL/api/v1/apps/web/build-runner \
+  -H "Authorization: Bearer $LEVELRAIL_TOKEN" \
+  -d '{"node_id":"<build-node-id>","pinned":false,"labels":["arch=arm64"]}'
+```
+
+## Where a build ran
+
+The run page header shows the runner a build used and how long it waited in the queue. The same fields, `runner_name`, `runner_reason` and `queue_wait_ms`, are on each row of `GET /api/v1/builds` and `GET /api/v1/builds/{id}`. Deploys without a build, such as image-only deploys, show nothing.
 
 ## Mark a node build-only
 

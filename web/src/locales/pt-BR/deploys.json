@@ -750,5 +750,67 @@
       "waiting": "Aguardando",
       "building": "Compilando"
     }
+  },
+  "runners": {
+    "title": "Runners de build",
+    "strategy": "Estratégia: {{strategy}}",
+    "changeStrategy": "Alterar estratégia",
+    "strategies": {
+      "first": "primeiro disponível",
+      "least_loaded": "menos carregado",
+      "sticky_per_app": "fixo por app"
+    },
+    "kind": {
+      "control_plane": "Plano de controle",
+      "node": "Nó de build"
+    },
+    "status": {
+      "ready": "Pronto",
+      "busy": "Ocupado",
+      "pressure": "Sob pressão",
+      "draining": "Drenando",
+      "offline": "Offline"
+    },
+    "cores_one": "{{count}} núcleo",
+    "cores_other": "{{count}} núcleos",
+    "load": "Carga {{load}}",
+    "slots": "{{used}} de {{total}} vagas ({{percent}}%)",
+    "waiting_one": "{{count}} aguardando",
+    "waiting_other": "{{count}} aguardando",
+    "capacityLabel": "Vagas de build em uso em {{name}}",
+    "labels": "Rótulos",
+    "lastBuild": "Último build:",
+    "noBuilds": "Nenhum build ainda",
+    "cache": "Cache de build {{size}}",
+    "builtOn": "Compilado em {{name}}",
+    "queued": "Na fila {{wait}}",
+    "error": {
+      "title": "Não foi possível carregar os runners de build",
+      "description": "A lista de runners não carregou. Os builds não são afetados.",
+      "retry": "Recarregar"
+    },
+    "empty": {
+      "title": "Adicione um nó de build",
+      "description": "Os builds rodam no plano de controle. Registre um segundo nó com builds ativados para tirá-los da máquina que serve seus apps.",
+      "action": "Abrir Nós",
+      "docs": "Roteamento de nós de build"
+    }
+  },
+  "runnerPref": {
+    "title": "Runner de build",
+    "description": "Escolha onde este app é compilado. Deixe vazio para seguir a estratégia global.",
+    "node": "Nó de build",
+    "anyNode": "Qualquer nó de build",
+    "labels": "Rótulos",
+    "labelsPlaceholder": "gpu, arch=arm64",
+    "pin": "Fixar neste nó",
+    "pinHint": "Se este nó não puder compilar, usa o plano de controle, nunca outro nó.",
+    "pinNeedsNode": "Escolha um nó para fixá-lo.",
+    "noAbility": "Você precisa de acesso de deploy para alterar isto.",
+    "clear": "Limpar",
+    "save": "Salvar",
+    "saved": "Runner de build salvo",
+    "cleared": "Runner de build limpo",
+    "retry": "Tentar de novo"
   }
 }

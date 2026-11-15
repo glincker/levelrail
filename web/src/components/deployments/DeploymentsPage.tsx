@@ -54,6 +54,7 @@ import {
 import { BuildQueueBanner } from '../buildQueue/BuildQueueBanner'
 import { BuildQueueControls } from '../buildQueue/BuildQueueControls'
 import { BuildQueuePanel } from '../buildQueue/BuildQueuePanel'
+import { RunnersPanel } from '../buildRunners/RunnersPanel'
 import { BuildingNowLane } from './BuildingNowLane'
 import { CancelSupersededPopover } from './CancelSupersededPopover'
 import { ConfirmActionDialog } from './ConfirmActionDialog'
@@ -300,6 +301,7 @@ export function DeploymentsPage({
       )}
 
       <BuildQueuePanel />
+      <RunnersPanel />
       <BuildingNowLane
         rows={laneRows}
         now={now}

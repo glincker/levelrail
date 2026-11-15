@@ -27,6 +27,8 @@ import { RelativeTime, StatusPill, type Tone } from './kit'
 import { DeployRunActions } from './deployDetail/DeployRunActions'
 import { DeployReceiptButton } from './deploy/DeployReceiptButton'
 import { Button } from '@/components/ui/button'
+import { RunnerChip } from './buildRunners/RunnerChip'
+import type { BuildRunnerInfo } from '../queries/buildRunners'
 
 const SHA_RE = /^[0-9a-f]{40}$/
 
@@ -56,6 +58,7 @@ export function DeployHeader({
   branch,
   isLive,
   displayStatus,
+  build,
 }: {
   appName: string
   attempt: DeployAttempt
@@ -64,6 +67,8 @@ export function DeployHeader({
   isLive: boolean
   /** Replaces the raw attempt badge with the page's single derived state. */
   displayStatus?: { tone: Tone; label: string; live?: boolean }
+  /** Build row fields for the runner badge and queue wait; absent shows nothing. */
+  build?: BuildRunnerInfo | null
 }) {
   const { t } = useTranslation('deployDetail')
   const [copied, setCopied] = useState(false)
@@ -149,6 +154,7 @@ export function DeployHeader({
                 {DEPLOY_ATTEMPT_SOURCE_LABEL[attempt.source]}
               </Meta>
             ) : null}
+            <RunnerChip info={build} />
             <Meta icon={<ClockGlassIcon className="size-5" />}>
               <RelativeTime at={attempt.started_at} live />
               <span aria-hidden="true">·</span>

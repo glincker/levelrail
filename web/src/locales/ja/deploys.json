@@ -737,5 +737,65 @@
       "waiting": "待機中",
       "building": "ビルド中"
     }
+  },
+  "runners": {
+    "title": "ビルドランナー",
+    "strategy": "戦略: {{strategy}}",
+    "changeStrategy": "戦略を変更",
+    "strategies": {
+      "first": "最初に空いているもの",
+      "least_loaded": "負荷が最小のもの",
+      "sticky_per_app": "アプリごとに固定"
+    },
+    "kind": {
+      "control_plane": "コントロールプレーン",
+      "node": "ビルドノード"
+    },
+    "status": {
+      "ready": "準備完了",
+      "busy": "ビジー",
+      "pressure": "高負荷",
+      "draining": "ドレイン中",
+      "offline": "オフライン"
+    },
+    "cores_other": "{{count}} コア",
+    "load": "負荷 {{load}}",
+    "slots": "{{total}} スロット中 {{used}} 使用 ({{percent}}%)",
+    "waiting_other": "{{count}} 件待機",
+    "capacityLabel": "{{name}} で使用中のビルドスロット",
+    "labels": "ラベル",
+    "lastBuild": "直近のビルド:",
+    "noBuilds": "まだビルドがありません",
+    "cache": "ビルドキャッシュ {{size}}",
+    "builtOn": "{{name}} でビルド",
+    "queued": "待機 {{wait}}",
+    "error": {
+      "title": "ビルドランナーを読み込めませんでした",
+      "description": "ランナー一覧を読み込めませんでした。ビルドには影響しません。",
+      "retry": "再読み込み"
+    },
+    "empty": {
+      "title": "ビルドノードを追加",
+      "description": "ビルドはコントロールプレーンで実行されます。ビルドを有効にした2台目のノードを登録すると、アプリを提供するマシンからビルドを切り離せます。",
+      "action": "ノードを開く",
+      "docs": "ビルドノードのルーティング"
+    }
+  },
+  "runnerPref": {
+    "title": "ビルドランナー",
+    "description": "このアプリをビルドする場所を選びます。空のままにするとグローバル戦略に従います。",
+    "node": "ビルドノード",
+    "anyNode": "任意のビルドノード",
+    "labels": "ラベル",
+    "labelsPlaceholder": "gpu, arch=arm64",
+    "pin": "このノードに固定",
+    "pinHint": "このノードでビルドできない場合は、他のノードではなくコントロールプレーンを使います。",
+    "pinNeedsNode": "固定するにはノードを選んでください。",
+    "noAbility": "変更するにはデプロイ権限が必要です。",
+    "clear": "クリア",
+    "save": "保存",
+    "saved": "ビルドランナーを保存しました",
+    "cleared": "ビルドランナーをクリアしました",
+    "retry": "再試行"
   }
 }

@@ -744,5 +744,67 @@
       "waiting": "Wartet",
       "building": "Wird gebaut"
     }
+  },
+  "runners": {
+    "title": "Build-Runner",
+    "strategy": "Strategie: {{strategy}}",
+    "changeStrategy": "Strategie ändern",
+    "strategies": {
+      "first": "erster verfügbarer",
+      "least_loaded": "am wenigsten ausgelastet",
+      "sticky_per_app": "fest pro App"
+    },
+    "kind": {
+      "control_plane": "Control Plane",
+      "node": "Build-Knoten"
+    },
+    "status": {
+      "ready": "Bereit",
+      "busy": "Beschäftigt",
+      "pressure": "Unter Last",
+      "draining": "Wird geleert",
+      "offline": "Offline"
+    },
+    "cores_one": "{{count}} Kern",
+    "cores_other": "{{count}} Kerne",
+    "load": "Last {{load}}",
+    "slots": "{{used}} von {{total}} Slots ({{percent}} %)",
+    "waiting_one": "{{count}} wartet",
+    "waiting_other": "{{count}} warten",
+    "capacityLabel": "Belegte Build-Slots auf {{name}}",
+    "labels": "Labels",
+    "lastBuild": "Letzter Build:",
+    "noBuilds": "Noch keine Builds",
+    "cache": "Build-Cache {{size}}",
+    "builtOn": "Gebaut auf {{name}}",
+    "queued": "In Warteschlange {{wait}}",
+    "error": {
+      "title": "Build-Runner konnten nicht geladen werden",
+      "description": "Die Runner-Liste wurde nicht geladen. Builds sind nicht betroffen.",
+      "retry": "Neu laden"
+    },
+    "empty": {
+      "title": "Build-Knoten hinzufügen",
+      "description": "Builds laufen auf der Control Plane. Nimm einen zweiten Knoten mit aktivierten Builds auf, um sie vom Rechner mit deinen Apps zu trennen.",
+      "action": "Knoten öffnen",
+      "docs": "Build-Knoten-Routing"
+    }
+  },
+  "runnerPref": {
+    "title": "Build-Runner",
+    "description": "Wähle, wo diese App gebaut wird. Leer lassen, um der globalen Strategie zu folgen.",
+    "node": "Build-Knoten",
+    "anyNode": "Beliebiger Build-Knoten",
+    "labels": "Labels",
+    "labelsPlaceholder": "gpu, arch=arm64",
+    "pin": "An diesen Knoten binden",
+    "pinHint": "Kann dieser Knoten nicht bauen, läuft der Build auf der Control Plane, nie auf einem anderen Knoten.",
+    "pinNeedsNode": "Wähle einen Knoten zum Binden.",
+    "noAbility": "Zum Ändern brauchst du Deploy-Zugriff.",
+    "clear": "Zurücksetzen",
+    "save": "Speichern",
+    "saved": "Build-Runner gespeichert",
+    "cleared": "Build-Runner zurückgesetzt",
+    "retry": "Erneut versuchen"
   }
 }

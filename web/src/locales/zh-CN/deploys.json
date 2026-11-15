@@ -737,5 +737,65 @@
       "waiting": "等待中",
       "building": "构建中"
     }
+  },
+  "runners": {
+    "title": "构建运行器",
+    "strategy": "策略:{{strategy}}",
+    "changeStrategy": "更改策略",
+    "strategies": {
+      "first": "首个可用",
+      "least_loaded": "负载最低",
+      "sticky_per_app": "按应用固定"
+    },
+    "kind": {
+      "control_plane": "控制平面",
+      "node": "构建节点"
+    },
+    "status": {
+      "ready": "就绪",
+      "busy": "繁忙",
+      "pressure": "压力过大",
+      "draining": "排空中",
+      "offline": "离线"
+    },
+    "cores_other": "{{count}} 核",
+    "load": "负载 {{load}}",
+    "slots": "{{total}} 个槽位中已用 {{used}} 个({{percent}}%)",
+    "waiting_other": "{{count}} 个等待中",
+    "capacityLabel": "{{name}} 上已用的构建槽位",
+    "labels": "标签",
+    "lastBuild": "最近构建:",
+    "noBuilds": "暂无构建",
+    "cache": "构建缓存 {{size}}",
+    "builtOn": "构建于 {{name}}",
+    "queued": "排队 {{wait}}",
+    "error": {
+      "title": "无法加载构建运行器",
+      "description": "运行器列表未能加载。构建不受影响。",
+      "retry": "重新加载"
+    },
+    "empty": {
+      "title": "添加构建节点",
+      "description": "构建在控制平面上运行。注册第二个已启用构建的节点,可把构建移出承载应用的机器。",
+      "action": "打开节点",
+      "docs": "构建节点路由"
+    }
+  },
+  "runnerPref": {
+    "title": "构建运行器",
+    "description": "选择此应用的构建位置。留空则遵循全局策略。",
+    "node": "构建节点",
+    "anyNode": "任意构建节点",
+    "labels": "标签",
+    "labelsPlaceholder": "gpu, arch=arm64",
+    "pin": "固定到此节点",
+    "pinHint": "此节点无法构建时改用控制平面,绝不使用其他节点。",
+    "pinNeedsNode": "请先选择节点再固定。",
+    "noAbility": "更改需要部署权限。",
+    "clear": "清除",
+    "save": "保存",
+    "saved": "构建运行器已保存",
+    "cleared": "构建运行器已清除",
+    "retry": "重试"
   }
 }

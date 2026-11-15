@@ -744,5 +744,67 @@
       "waiting": "Waiting",
       "building": "Building"
     }
+  },
+  "runners": {
+    "title": "Build runners",
+    "strategy": "Strategy: {{strategy}}",
+    "changeStrategy": "Change strategy",
+    "strategies": {
+      "first": "first available",
+      "least_loaded": "least loaded",
+      "sticky_per_app": "sticky per app"
+    },
+    "kind": {
+      "control_plane": "Control plane",
+      "node": "Build node"
+    },
+    "status": {
+      "ready": "Ready",
+      "busy": "Busy",
+      "pressure": "Under pressure",
+      "draining": "Draining",
+      "offline": "Offline"
+    },
+    "cores_one": "{{count}} core",
+    "cores_other": "{{count}} cores",
+    "load": "Load {{load}}",
+    "slots": "{{used}} of {{total}} slots ({{percent}}%)",
+    "waiting_one": "{{count}} waiting",
+    "waiting_other": "{{count}} waiting",
+    "capacityLabel": "Build slots in use on {{name}}",
+    "labels": "Labels",
+    "lastBuild": "Last build:",
+    "noBuilds": "No builds yet",
+    "cache": "Build cache {{size}}",
+    "builtOn": "Built on {{name}}",
+    "queued": "Queued {{wait}}",
+    "error": {
+      "title": "Could not load build runners",
+      "description": "The runner list did not load. Builds are not affected.",
+      "retry": "Reload"
+    },
+    "empty": {
+      "title": "Add a build node",
+      "description": "Builds run on the control plane. Enroll a second node with builds enabled to move them off the machine that serves your apps.",
+      "action": "Open Nodes",
+      "docs": "Build node routing"
+    }
+  },
+  "runnerPref": {
+    "title": "Build runner",
+    "description": "Choose where this app builds. Leave empty to follow the global strategy.",
+    "node": "Build node",
+    "anyNode": "Any build node",
+    "labels": "Labels",
+    "labelsPlaceholder": "gpu, arch=arm64",
+    "pin": "Pin to this node",
+    "pinHint": "If this node cannot build, use the control plane, never another node.",
+    "pinNeedsNode": "Pick a node to pin it.",
+    "noAbility": "You need deploy access to change this.",
+    "clear": "Clear",
+    "save": "Save",
+    "saved": "Build runner saved",
+    "cleared": "Build runner cleared",
+    "retry": "Retry"
   }
 }
