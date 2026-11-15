@@ -65,4 +65,12 @@ for img in levelrail levelrail-agent; do
 	if jq -r .full_description <<<"$d" | grep -q '@TAG@'; then fail "unreplaced tag"; fi
 done
 
+echo "== absent scripts on older refs"
+wf="$here/../../.github/workflows/release.yml"
+if [ -f "$wf" ]; then
+	for sc in image-tags image-labels image-notes dockerhub-describe; do
+		grep -q "\[ -f scripts/release/$sc.sh \]\|\[ ! -f scripts/release/$sc.sh \]" "$wf" || fail "no absent-script guard for $sc"
+	done
+fi
+
 echo "OK"
