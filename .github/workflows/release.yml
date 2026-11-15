@@ -1159,3 +1159,17 @@ jobs:
             exit 0
           fi
           scripts/release/image-notes.sh "$RELEASE_TAG"
+
+      # Runs last so it sees the generator and image blocks. Adds only what is
+      # missing, never fails the release.
+      - name: Add header, highlights and provenance to the release
+        continue-on-error: true
+        env:
+          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+          DOCKERHUB_NAMESPACE: ${{ vars.DOCKERHUB_NAMESPACE || 'levelrail' }}
+        run: |
+          if [ ! -f scripts/release/polish-notes.sh ]; then
+            echo "::notice::scripts/release/polish-notes.sh missing on this ref, skipping"
+            exit 0
+          fi
+          POLISH_DOCKERHUB_NS="$DOCKERHUB_NAMESPACE" scripts/release/polish-notes.sh "$RELEASE_TAG"
