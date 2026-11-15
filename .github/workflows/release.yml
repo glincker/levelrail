@@ -448,6 +448,77 @@ jobs:
           git push
           rm -f ~/.ssh/tap_key
 
+  publish-windows-packages:
+    name: Publish winget and Scoop manifests
+    needs: release
+    # Off until WINDOWS_PACKAGES_ENABLED is set; prereleases never go to winget.
+    if: (github.event_name == 'workflow_dispatch' || github.ref_type == 'tag') && vars.WINDOWS_PACKAGES_ENABLED == 'true' && !contains(github.event.inputs.tag || github.ref_name, '-')
+    runs-on: ubuntu-latest
+    timeout-minutes: 10
+    permissions:
+      contents: write
+    env:
+      HAS_WINGET_TOKEN: ${{ secrets.WINGET_TOKEN != '' }}
+      HAS_SCOOP_KEY: ${{ secrets.SCOOP_BUCKET_DEPLOY_KEY != '' }}
+    steps:
+      - name: Checkout
+        uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7
+        with:
+          ref: ${{ env.RELEASE_TAG }}
+
+      - name: Download release checksums
+        env:
+          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+        run: gh release download "${{ env.RELEASE_TAG }}" --repo "${{ github.repository }}" --pattern checksums.txt --dir dist
+
+      - name: Render manifests
+        run: scripts/release/gen-windows-manifests.sh "${{ env.RELEASE_TAG }}" dist/checksums.txt rendered
+
+      # Needs no credentials, so a maintainer can submit by hand when the
+      # token or key below is missing.
+      - name: Attach manifests to the release
+        env:
+          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+        run: |
+          mkdir -p assets
+          cp rendered/scoop/levelrail-cli.json assets/levelrail-cli.scoop.json
+          for f in rendered/winget/manifests/g/Glincker/LevelrailCli/*/*.yaml; do
+            cp "$f" "assets/winget-$(basename "$f")"
+          done
+          gh release upload "${{ env.RELEASE_TAG }}" assets/* --repo "${{ github.repository }}" --clobber
+
+      # The package must already exist in winget-pkgs; the first submission is by hand.
+      - name: Open the winget PR
+        if: env.HAS_WINGET_TOKEN == 'true'
+        uses: vedantmgoyal9/winget-releaser@b7370d4d152efdce803a26cc6ca9eee58cb2ad54 # v2
+        with:
+          identifier: Glincker.LevelrailCli
+          version: ${{ env.RELEASE_TAG }}
+          release-tag: ${{ env.RELEASE_TAG }}
+          installers-regex: 'levelrail-cli-windows-.*\.exe$'
+          token: ${{ secrets.WINGET_TOKEN }}
+
+      - name: Update Scoop bucket
+        if: env.HAS_SCOOP_KEY == 'true'
+        env:
+          BUCKET_DEPLOY_KEY: ${{ secrets.SCOOP_BUCKET_DEPLOY_KEY }}
+        run: |
+          set -euo pipefail
+          install -d -m 700 ~/.ssh
+          printf '%s\n' "$BUCKET_DEPLOY_KEY" > ~/.ssh/bucket_key
+          chmod 600 ~/.ssh/bucket_key
+          export GIT_SSH_COMMAND="ssh -i $HOME/.ssh/bucket_key -o IdentitiesOnly=yes -o StrictHostKeyChecking=accept-new"
+          git clone --depth 1 git@github.com:glincker/scoop-bucket.git bucket
+          mkdir -p bucket/bucket
+          cp rendered/scoop/levelrail-cli.json bucket/bucket/levelrail-cli.json
+          cd bucket
+          git config user.name "levelrail release"
+          git config user.email "support@levelrail.com"
+          git add bucket/levelrail-cli.json
+          git diff --cached --quiet || git commit -m "levelrail-cli ${{ env.RELEASE_TAG }}"
+          git push
+          rm -f ~/.ssh/bucket_key
+
   publish-npm:
     name: Publish CLI to npm
     needs: release
