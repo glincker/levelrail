@@ -422,9 +422,9 @@ Three optional channels run after the release job. None of them runs until its r
 
 ### Docker Hub mirror
 
-Variable `DOCKERHUB_PUBLISH_ENABLED=true` makes both `merge-image-*` jobs copy the finished multi-arch index to `docker.io/<namespace>/levelrail` and `levelrail-agent` with the same tags, then cosign-sign the same digest. Secrets: `DOCKERHUB_USERNAME` and `DOCKERHUB_TOKEN` (an access token with read and write scope). Optional variable `DOCKERHUB_NAMESPACE` (default `glincker`).
+Variable `DOCKERHUB_PUBLISH_ENABLED=true` makes both `merge-image-*` jobs copy the finished multi-arch index to `docker.io/<namespace>/levelrail` and `levelrail-agent` with the same tags, then cosign-sign the same digest. Secrets: `DOCKERHUB_USERNAME` and `DOCKERHUB_TOKEN` (an access token with read and write scope). Optional variable `DOCKERHUB_NAMESPACE` (default `levelrail`, a Docker Hub account dedicated to the project; the GHCR images stay under `ghcr.io/glincker`).
 
-One-time owner steps: create the Docker Hub organization and the two repositories (or let the first push create them), create the access token, set the two secrets, then set the variable. The GHCR images must be public so the copy can read them.
+One-time owner steps: create the `levelrail` Docker Hub account (its profile names GLINR STUDIOS as the company) and the two public repositories (or let the first push create them), create the access token, set the two secrets, then set the variable. The GHCR images must be public so the copy can read them.
 
 ### winget and Scoop
 
