@@ -424,6 +424,8 @@ Three optional channels run after the release job. None of them runs until its r
 
 Variable `DOCKERHUB_PUBLISH_ENABLED=true` makes both `merge-image-*` jobs copy the finished multi-arch index to `docker.io/<namespace>/levelrail` and `levelrail-agent` with the same tags, then cosign-sign the same digest. Secrets: `DOCKERHUB_USERNAME` and `DOCKERHUB_TOKEN` (an access token with read and write scope). Optional variable `DOCKERHUB_NAMESPACE` (default `levelrail`, a Docker Hub account dedicated to the project; the GHCR images stay under `ghcr.io/glincker`).
 
+The Docker Hub overview texts live in `scripts/release/dockerhub/` (not under `docs/`, which the docs site publishes). Every release step that calls a `scripts/release` script skips with a notice when the script is missing on the dispatched ref; the tag step falls back to inline logic.
+
 One-time owner steps: create the `levelrail` Docker Hub account (its profile names GLINR STUDIOS as the company) and the two public repositories (or let the first push create them), create the access token, set the two secrets, then set the variable. The GHCR images must be public so the copy can read them.
 
 ### winget and Scoop
