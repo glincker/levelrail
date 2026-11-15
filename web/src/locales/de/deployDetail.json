@@ -434,5 +434,23 @@
     "redeployFailed": "Erneutes Deployen fehlgeschlagen.",
     "rollbackStarted": "Zurücksetzen ausgelöst.",
     "rollbackFailed": "Zurücksetzen fehlgeschlagen."
+  },
+  "noStages": {
+    "prebuilt": "Keine Build-Stufen: Dieses Deploy nutzte ein fertiges Image.",
+    "label": "Phasen dieses Deploys",
+    "step": {
+      "pull": "Image laden",
+      "create": "Container erstellen",
+      "readiness": "Bereitschaft",
+      "rollout": "Ausrollen"
+    },
+    "status": {
+      "pending": "Wartet",
+      "running": "Läuft",
+      "done": "Fertig",
+      "failed": "Fehlgeschlagen",
+      "skipped": "Übersprungen",
+      "unknown": "Wartet"
+    }
   }
 }

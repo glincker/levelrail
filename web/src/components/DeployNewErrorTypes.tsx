@@ -27,7 +27,7 @@ export function DeployNewErrorTypes({
     return null
   }
   return (
-    <p className="mt-3 flex flex-wrap items-center gap-2 rounded-lg border border-border px-3 py-2 text-sm">
+    <p className="flex flex-wrap items-center gap-2 text-sm">
       <SparklesGlassIcon
         className="size-5 text-tone-warning"
         aria-hidden="true"

@@ -434,5 +434,23 @@
     "redeployFailed": "Could not redeploy.",
     "rollbackStarted": "Rollback triggered.",
     "rollbackFailed": "Could not roll back."
+  },
+  "noStages": {
+    "prebuilt": "No build stages: this deploy used a prebuilt image.",
+    "label": "Phases of this deploy",
+    "step": {
+      "pull": "Pull image",
+      "create": "Create container",
+      "readiness": "Readiness",
+      "rollout": "Roll out"
+    },
+    "status": {
+      "pending": "Waiting",
+      "running": "In progress",
+      "done": "Done",
+      "failed": "Failed",
+      "skipped": "Skipped",
+      "unknown": "Waiting"
+    }
   }
 }

@@ -44,6 +44,11 @@ import { Button } from '@/components/ui/button'
 import { Link } from '@tanstack/react-router'
 import { RunSection } from '../../../../../components/buildStages/RunSection'
 import { RunSectionNav } from '../../../../../components/buildStages/RunSectionNav'
+import {
+  NoBuildStages,
+  type NoStageStep,
+} from '../../../../../components/buildStages/NoBuildStages'
+import { RunDiagnosis } from '../../../../../components/deployDetail/RunDiagnosis'
 import { StageOverview } from '../../../../../components/buildStages/StageOverview'
 import { StageLogPanel } from '../../../../../components/buildStages/StageLogPanel'
 import { StageWaterfall } from '../../../../../components/buildStages/StageWaterfall'
@@ -224,6 +229,21 @@ function DeployLogsPage() {
     attempt.finished_at,
   )
 
+  const noStageSteps: NoStageStep[] = [
+    {
+      key: 'pull',
+      status:
+        attempt.status === 'running' || attempt.status === 'queued'
+          ? 'running'
+          : attempt.status === 'failed' && subStages[0].status === 'skipped'
+            ? 'failed'
+            : 'done',
+    },
+    { key: 'create', status: rolloutTabStage.status },
+    { key: 'readiness', status: subStages[0].status },
+    { key: 'rollout', status: subStages[1].status },
+  ]
+
   return (
     <div className="flex h-full flex-col gap-5 overflow-y-auto">
       <Breadcrumbs
@@ -253,33 +273,6 @@ function DeployLogsPage() {
           goToSection('logs')
         }}
       />
-      <DeployExplainPanel
-        deployId={deployId}
-        failed={attempt.status === 'failed'}
-      />
-      <DeployNewErrorTypes appName={name} startedAt={attempt.started_at} />
-      <DeployFailureSummaryCard
-        appName={name}
-        attempt={attempt}
-        attempts={attempts}
-        stages={stages}
-        conditions={conditions}
-        lines={lines}
-      />
-      <DeployExitCard
-        appName={name}
-        deployId={deployId}
-        failed={attempt.status === 'failed'}
-      />
-
-      <DeployPhases
-        deployId={deployId}
-        running={!attemptFinished}
-        lastEventAt={lastEventAt}
-        streamHealthy={transport === 'sse' && connectionState === 'open'}
-        latestLine={lines.at(-1)?.line ?? null}
-      />
-
       <StreamDropBanner
         transport={transport}
         connectionState={connectionState}
@@ -287,16 +280,6 @@ function DeployLogsPage() {
         onRetry={retry}
         onSwitchToPolling={switchToPolling}
         downloadUrl={deployLogDownloadURL(name, deployId)}
-      />
-
-      <StageOverview
-        appName={name}
-        deployId={deployId}
-        selected={stageFilter}
-        onSelect={(stage) => {
-          setStageFilter(stage)
-          goToSection('logs')
-        }}
       />
 
       <RunSectionNav />
@@ -307,6 +290,36 @@ function DeployLogsPage() {
           title={t('sections.summary')}
           chip={attempt.commit_sha?.slice(0, 7)}
         >
+          <RunDiagnosis>
+            <DeployExplainPanel
+              deployId={deployId}
+              failed={attempt.status === 'failed'}
+            />
+            <DeployFailureSummaryCard
+              appName={name}
+              attempt={attempt}
+              attempts={attempts}
+              stages={stages}
+              conditions={conditions}
+              lines={lines}
+            />
+            <DeployExitCard
+              appName={name}
+              deployId={deployId}
+              failed={attempt.status === 'failed'}
+            />
+            <DeployNewErrorTypes
+              appName={name}
+              startedAt={attempt.started_at}
+            />
+            <DeployPhases
+              deployId={deployId}
+              running={!attemptFinished}
+              lastEventAt={lastEventAt}
+              streamHealthy={transport === 'sse' && connectionState === 'open'}
+              latestLine={lines.at(-1)?.line ?? null}
+            />
+          </RunDiagnosis>
           <BuildTab
             part="summary"
             appName={name}
@@ -333,17 +346,28 @@ function DeployLogsPage() {
           id="waterfall"
           title={t('sections.waterfall')}
           chip={
-            stageData
+            stageData && stageData.stages.length > 0
               ? t('run.stageCount', { count: stageData.stages.length })
               : undefined
           }
         >
-          {stageData && stageData.stages.length > 0 ? (
-            <StageWaterfall data={stageData} nowMs={nowMs} />
+          {stageData && stageData.stages.length === 0 ? (
+            <NoBuildStages prebuilt={noBuildStep} steps={noStageSteps} />
           ) : (
-            <p className="text-sm text-muted-foreground">
-              {t('buildStages.empty')}
-            </p>
+            <>
+              <StageOverview
+                appName={name}
+                deployId={deployId}
+                selected={stageFilter}
+                onSelect={(stage) => {
+                  setStageFilter(stage)
+                  goToSection('logs')
+                }}
+              />
+              {stageData ? (
+                <StageWaterfall data={stageData} nowMs={nowMs} />
+              ) : null}
+            </>
           )}
         </RunSection>
 

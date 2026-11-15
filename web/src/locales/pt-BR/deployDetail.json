@@ -438,5 +438,23 @@
     "redeployFailed": "Não foi possível reimplantar.",
     "rollbackStarted": "Reversão iniciada.",
     "rollbackFailed": "Não foi possível reverter."
+  },
+  "noStages": {
+    "prebuilt": "Sem etapas de build: este deploy usou uma imagem pré-construída.",
+    "label": "Fases deste deploy",
+    "step": {
+      "pull": "Baixar imagem",
+      "create": "Criar contêiner",
+      "readiness": "Prontidão",
+      "rollout": "Distribuição"
+    },
+    "status": {
+      "pending": "Aguardando",
+      "running": "Em andamento",
+      "done": "Concluído",
+      "failed": "Falhou",
+      "skipped": "Ignorado",
+      "unknown": "Aguardando"
+    }
   }
 }

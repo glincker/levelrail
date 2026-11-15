@@ -434,5 +434,23 @@
     "redeployFailed": "No se pudo volver a desplegar.",
     "rollbackStarted": "Reversión iniciada.",
     "rollbackFailed": "No se pudo revertir."
+  },
+  "noStages": {
+    "prebuilt": "Sin etapas de build: este despliegue usó una imagen ya construida.",
+    "label": "Fases de este despliegue",
+    "step": {
+      "pull": "Descargar imagen",
+      "create": "Crear contenedor",
+      "readiness": "Disponibilidad",
+      "rollout": "Despliegue"
+    },
+    "status": {
+      "pending": "En espera",
+      "running": "En curso",
+      "done": "Hecho",
+      "failed": "Fallido",
+      "skipped": "Omitido",
+      "unknown": "En espera"
+    }
   }
 }

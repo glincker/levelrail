@@ -430,5 +430,23 @@
     "redeployFailed": "无法重新部署。",
     "rollbackStarted": "已触发回滚。",
     "rollbackFailed": "无法回滚。"
+  },
+  "noStages": {
+    "prebuilt": "没有构建阶段：此部署使用了预构建镜像。",
+    "label": "此部署的阶段",
+    "step": {
+      "pull": "拉取镜像",
+      "create": "创建容器",
+      "readiness": "就绪检查",
+      "rollout": "发布"
+    },
+    "status": {
+      "pending": "等待中",
+      "running": "进行中",
+      "done": "已完成",
+      "failed": "失败",
+      "skipped": "已跳过",
+      "unknown": "等待中"
+    }
   }
 }

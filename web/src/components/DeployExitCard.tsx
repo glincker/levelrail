@@ -6,10 +6,7 @@ import { ContainerExitBanner } from './ContainerExitBanner'
 export function DeployExitBody({ exit }: { exit: ContainerExit }) {
   const { t } = useTranslation('observability')
   return (
-    <section
-      aria-label={t('containerExit.deployTitle')}
-      className="space-y-3 rounded-xl border border-tone-danger-border bg-card p-4"
-    >
+    <section aria-label={t('containerExit.deployTitle')} className="space-y-3">
       <div>
         <h2 className="text-(length:--glinr-type-size-section) font-(weight:--glinr-type-heading-weight) text-foreground">
           {t('containerExit.deployTitle')}

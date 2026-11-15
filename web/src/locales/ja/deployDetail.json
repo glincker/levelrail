@@ -430,5 +430,23 @@
     "redeployFailed": "再デプロイできませんでした。",
     "rollbackStarted": "ロールバックを開始しました。",
     "rollbackFailed": "ロールバックできませんでした。"
+  },
+  "noStages": {
+    "prebuilt": "ビルドステージなし: このデプロイはビルド済みイメージを使用しました。",
+    "label": "このデプロイのフェーズ",
+    "step": {
+      "pull": "イメージ取得",
+      "create": "コンテナ作成",
+      "readiness": "準備確認",
+      "rollout": "ロールアウト"
+    },
+    "status": {
+      "pending": "待機中",
+      "running": "実行中",
+      "done": "完了",
+      "failed": "失敗",
+      "skipped": "スキップ",
+      "unknown": "待機中"
+    }
   }
 }

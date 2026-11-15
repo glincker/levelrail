@@ -438,5 +438,23 @@
     "redeployFailed": "Redéploiement impossible.",
     "rollbackStarted": "Retour arrière lancé.",
     "rollbackFailed": "Retour arrière impossible."
+  },
+  "noStages": {
+    "prebuilt": "Aucune étape de build : ce déploiement a utilisé une image préconstruite.",
+    "label": "Phases de ce déploiement",
+    "step": {
+      "pull": "Récupérer l'image",
+      "create": "Créer le conteneur",
+      "readiness": "Disponibilité",
+      "rollout": "Déploiement"
+    },
+    "status": {
+      "pending": "En attente",
+      "running": "En cours",
+      "done": "Terminé",
+      "failed": "Échec",
+      "skipped": "Ignoré",
+      "unknown": "En attente"
+    }
   }
 }

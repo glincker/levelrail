@@ -26,7 +26,6 @@ import { useGitSource } from '../queries/gitSources'
 import { useRebuildApp } from '../queries/rebuildApp'
 import { RetrySplitButton } from './RetrySplitButton'
 import { Button } from '@/components/ui/button'
-import { Card, CardContent } from '@/components/ui/card'
 import { toast } from '@/components/ui/toast'
 
 const MESSAGE_PREVIEW_CHARS = 240
@@ -125,146 +124,139 @@ export function DeployFailureSummaryCard({
 
   return (
     <section aria-labelledby={headingId}>
-      <Card className="border-destructive/40">
-        <CardContent className="space-y-3">
-          <h2
-            id={headingId}
-            className="flex items-center gap-2 text-sm font-semibold text-foreground"
-          >
-            <CircleAlertGlassIcon
-              className="size-5 text-destructive"
-              aria-hidden="true"
-            />
-            {t('failureCard.title')}
-          </h2>
-          <dl className="space-y-3 text-sm">
-            <div>
-              <FieldLabel as="dt">{t('failureCard.stage')}</FieldLabel>
-              <dd className="mt-1 text-foreground">{summary.stageLabel}</dd>
-            </div>
-            <div>
-              <FieldLabel as="dt">{t('failureCard.error')}</FieldLabel>
-              <dd className="mt-1">
-                <p
-                  id={messageId}
-                  className="break-words whitespace-pre-wrap rounded bg-muted px-2 py-1.5 font-mono text-xs text-foreground"
+      <div className="space-y-3">
+        <h2
+          id={headingId}
+          className="flex items-center gap-2 text-sm font-semibold text-foreground"
+        >
+          <CircleAlertGlassIcon
+            className="size-5 text-destructive"
+            aria-hidden="true"
+          />
+          {t('failureCard.title')}
+        </h2>
+        <dl className="space-y-3 text-sm">
+          <div>
+            <FieldLabel as="dt">{t('failureCard.stage')}</FieldLabel>
+            <dd className="mt-1 text-foreground">{summary.stageLabel}</dd>
+          </div>
+          <div>
+            <FieldLabel as="dt">{t('failureCard.error')}</FieldLabel>
+            <dd className="mt-1">
+              <p
+                id={messageId}
+                className="break-words whitespace-pre-wrap rounded bg-muted px-2 py-1.5 font-mono text-xs text-foreground"
+              >
+                {shown}
+              </p>
+              {long ? (
+                <Button
+                  type="button"
+                  variant="ghost"
+                  size="xs"
+                  className="mt-1"
+                  aria-expanded={expanded}
+                  aria-controls={messageId}
+                  onClick={() => setExpanded((v) => !v)}
                 >
-                  {shown}
-                </p>
-                {long ? (
-                  <Button
-                    type="button"
-                    variant="ghost"
-                    size="xs"
-                    className="mt-1"
-                    aria-expanded={expanded}
-                    aria-controls={messageId}
-                    onClick={() => setExpanded((v) => !v)}
+                  {expanded
+                    ? t('failureCard.showLess')
+                    : t('failureCard.showMore')}
+                </Button>
+              ) : null}
+            </dd>
+          </div>
+          {summary.cause ? (
+            <div>
+              <FieldLabel as="dt" className="flex items-center gap-1">
+                <LightbulbGlassIcon className="size-5" aria-hidden="true" />
+                Likely cause and fix
+              </FieldLabel>
+              <dd className="mt-1 text-foreground">
+                <p className="font-medium">{summary.cause.title}</p>
+                <p className="text-muted-foreground">{summary.cause.hint}</p>
+                {summary.evidence ? (
+                  <p className="mt-1 truncate font-mono text-xs text-muted-foreground">
+                    {summary.evidence}
+                  </p>
+                ) : null}
+                {summary.docsUrl?.startsWith('https://') ? (
+                  <a
+                    href={summary.docsUrl}
+                    target="_blank"
+                    rel="noopener noreferrer"
+                    className="mt-1 inline-block text-xs underline underline-offset-2"
                   >
-                    {expanded
-                      ? t('failureCard.showLess')
-                      : t('failureCard.showMore')}
-                  </Button>
+                    {t('fix.docs')}
+                  </a>
                 ) : null}
               </dd>
             </div>
-            {summary.cause ? (
-              <div>
-                <FieldLabel as="dt" className="flex items-center gap-1">
-                  <LightbulbGlassIcon className="size-5" aria-hidden="true" />
-                  Likely cause and fix
-                </FieldLabel>
-                <dd className="mt-1 text-foreground">
-                  <p className="font-medium">{summary.cause.title}</p>
-                  <p className="text-muted-foreground">{summary.cause.hint}</p>
-                  {summary.evidence ? (
-                    <p className="mt-1 truncate font-mono text-xs text-muted-foreground">
-                      {summary.evidence}
-                    </p>
-                  ) : null}
-                  {summary.docsUrl?.startsWith('https://') ? (
-                    <a
-                      href={summary.docsUrl}
-                      target="_blank"
-                      rel="noopener noreferrer"
-                      className="mt-1 inline-block text-xs underline underline-offset-2"
-                    >
-                      {t('fix.docs')}
-                    </a>
-                  ) : null}
-                </dd>
-              </div>
-            ) : null}
-          </dl>
-          <DiagnosisFixes appName={appName} deployId={attempt.id} />
-          <DeployFixRow
-            appName={appName}
-            stage={summary.stageKey}
-            causeId={summary.cause?.id}
-            fixes={summary.fixes}
-            deployId={attempt.id}
+          ) : null}
+        </dl>
+        <DiagnosisFixes appName={appName} deployId={attempt.id} />
+        <DeployFixRow
+          appName={appName}
+          stage={summary.stageKey}
+          causeId={summary.cause?.id}
+          fixes={summary.fixes}
+          deployId={attempt.id}
+        />
+        <div className="flex flex-wrap items-center gap-2">
+          <Button type="button" variant="outline" size="sm" onClick={viewLogs}>
+            <TerminalGlassIcon size="1.4em" aria-hidden="true" />
+            View full logs
+          </Button>
+          <RetrySplitButton
+            pending={retry.isPending || rebuild.isPending}
+            canRebuild={gitSource !== undefined}
+            noCacheSupported={gitSource?.build_type === 'dockerfile'}
+            onRetry={retry.redeploy}
+            onRebuild={() => {
+              runRebuild(false)
+            }}
+            onRebuildNoCache={() => {
+              runRebuild(true)
+            }}
           />
-          <div className="flex flex-wrap items-center gap-2">
+          {lastGood ? (
             <Button
               type="button"
               variant="outline"
               size="sm"
-              onClick={viewLogs}
+              disabled={rollback.isPending}
+              onClick={rollBack}
             >
-              <TerminalGlassIcon size="1.4em" aria-hidden="true" />
-              View full logs
+              <RotateCcwGlassIcon size="1.4em" aria-hidden="true" />
+              Roll back to last good
             </Button>
-            <RetrySplitButton
-              pending={retry.isPending || rebuild.isPending}
-              canRebuild={gitSource !== undefined}
-              noCacheSupported={gitSource?.build_type === 'dockerfile'}
-              onRetry={retry.redeploy}
-              onRebuild={() => {
-                runRebuild(false)
-              }}
-              onRebuildNoCache={() => {
-                runRebuild(true)
-              }}
-            />
-            {lastGood ? (
-              <Button
-                type="button"
-                variant="outline"
-                size="sm"
-                disabled={rollback.isPending}
-                onClick={rollBack}
-              >
-                <RotateCcwGlassIcon size="1.4em" aria-hidden="true" />
-                Roll back to last good
-              </Button>
-            ) : null}
-            <CopyReportButton
-              getInput={() => ({
-                appName,
-                deployId: attempt.id,
-                stageLabel: summary.stageLabel,
-                error: summary.message,
-                causeTitle: summary.cause?.title,
-                causeHint: summary.cause?.hint,
-                lines: lines.map((l) => l.line),
-                config: {
-                  Image: attempt.image,
-                  Source: attempt.source,
-                  Branch: attempt.branch,
-                  Commit: attempt.commit_sha?.slice(0, 12),
-                  Framework: attempt.detected_framework,
-                },
-              })}
-            />
-            {extraActions}
-          </div>
-          {lastGood ? (
-            <p className="text-xs text-muted-foreground">
-              {t('rollback.note', { image: lastGood.image })}
-            </p>
           ) : null}
-        </CardContent>
-      </Card>
+          <CopyReportButton
+            getInput={() => ({
+              appName,
+              deployId: attempt.id,
+              stageLabel: summary.stageLabel,
+              error: summary.message,
+              causeTitle: summary.cause?.title,
+              causeHint: summary.cause?.hint,
+              lines: lines.map((l) => l.line),
+              config: {
+                Image: attempt.image,
+                Source: attempt.source,
+                Branch: attempt.branch,
+                Commit: attempt.commit_sha?.slice(0, 12),
+                Framework: attempt.detected_framework,
+              },
+            })}
+          />
+          {extraActions}
+        </div>
+        {lastGood ? (
+          <p className="text-xs text-muted-foreground">
+            {t('rollback.note', { image: lastGood.image })}
+          </p>
+        ) : null}
+      </div>
     </section>
   )
 }
