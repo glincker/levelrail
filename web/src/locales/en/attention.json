@@ -128,6 +128,8 @@
     "uncleanRestartOom": "The kernel likely killed it for lack of memory. Check unit protection in system status.",
     "gitReauthTitle": "Git connection {{name}} needs to be reconnected",
     "gitReauthDetail": "The provider rejected its credential. Reconnect it so builds and pulls keep working.",
+    "tokenGraceSweepTitle": "Rotated API tokens are not being revoked",
+    "tokenGraceSweepDetail": "The token expiry loop cannot read its state, so old tokens stay valid past their grace. Check the control plane health.",
     "gitTokenExpiringTitle": "Git token for {{name}} expires soon",
     "gitTokenExpiringDetail": "Expires {{date}}. Rotate it before then so builds and pulls keep working.",
     "tokenExpiredInUseTitle": "API token {{name}} expired but is still in use",

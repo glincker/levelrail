@@ -107,3 +107,13 @@ func groupedTokenItem(severity, kind string, toks []tokenResource, plural, singu
 	}
 	return it
 }
+
+// tokenGraceSweepAttentionItems warns an admin while rotated tokens cannot be
+// revoked after their grace; the row clears as soon as a sweep succeeds.
+func (rt *Router) tokenGraceSweepAttentionItems(abilities []string) []attention.Item {
+	if !hasAbility(abilities, AbilityRoot) || !rt.tokenState.isGraceFailing() {
+		return nil
+	}
+	return []attention.Item{feedItem(attention.Warning, attention.KindTokenGraceSweepFailing, "token-grace-sweep",
+		"rotated tokens stay valid past their grace until the sweep can read its state again", nil)}
+}

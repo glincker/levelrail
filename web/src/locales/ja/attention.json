@@ -118,6 +118,8 @@
     "uncleanRestartOom": "メモリ不足でカーネルに終了された可能性があります。システムステータスでユニット保護を確認してください。",
     "gitReauthTitle": "Git接続 {{name}} の再接続が必要です",
     "gitReauthDetail": "プロバイダーが認証情報を拒否しました。ビルドとプルを続けるには再接続してください。",
+    "tokenGraceSweepTitle": "ローテーション済みの API トークンが失効されていません",
+    "tokenGraceSweepDetail": "トークン期限ループが状態を読み取れないため、古いトークンが猶予後も有効なままです。コントロールプレーンの状態を確認してください。",
     "gitTokenExpiringTitle": "{{name}} のGitトークンがまもなく期限切れになります",
     "gitTokenExpiringDetail": "{{date}} に期限切れになります。ビルドとプルを続けるため、それまでにローテーションしてください。",
     "tokenExpiredInUseTitle": "APIトークン {{name}} は期限切れですが、まだ使われています",

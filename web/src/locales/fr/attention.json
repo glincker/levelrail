@@ -137,6 +137,8 @@
     "uncleanRestartOom": "Le noyau l'a probablement arrêté faute de mémoire. Vérifiez la protection de l'unité dans l'état du système.",
     "gitReauthTitle": "La connexion Git {{name}} doit être reconnectée",
     "gitReauthDetail": "Le fournisseur a rejeté son identifiant. Reconnectez-la pour que les builds et les pulls continuent de fonctionner.",
+    "tokenGraceSweepTitle": "Les jetons d'API renouvelés ne sont pas révoqués",
+    "tokenGraceSweepDetail": "La boucle d'expiration des jetons ne peut pas lire son état, donc les anciens jetons restent valides après leur délai de grâce. Vérifiez l'état du plan de contrôle.",
     "gitTokenExpiringTitle": "Le token Git de {{name}} expire bientôt",
     "gitTokenExpiringDetail": "Expire le {{date}}. Renouvelez-le avant pour que les builds et les pulls continuent de fonctionner.",
     "tokenExpiredInUseTitle": "Le token d'API {{name}} a expiré mais est encore utilisé",

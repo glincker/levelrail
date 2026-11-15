@@ -13,6 +13,7 @@ const ICONS = {
   unclean_restart: ShieldAlertGlassIcon,
   git_connection_reauth: UnplugGlassIcon,
   git_token_expiring: ClockGlassIcon,
+  token_grace_sweep_failing: ShieldAlertGlassIcon,
 } as const
 
 export function AttentionKindIcon({

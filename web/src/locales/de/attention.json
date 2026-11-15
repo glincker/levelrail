@@ -128,6 +128,8 @@
     "uncleanRestartOom": "Der Kernel hat sie vermutlich wegen Speichermangels beendet. Prüfe den Einheitenschutz im Systemstatus.",
     "gitReauthTitle": "Git-Verbindung {{name}} muss neu verbunden werden",
     "gitReauthDetail": "Der Anbieter hat die Zugangsdaten abgelehnt. Verbinden Sie neu, damit Builds und Pulls weiter funktionieren.",
+    "tokenGraceSweepTitle": "Rotierte API-Tokens werden nicht widerrufen",
+    "tokenGraceSweepDetail": "Die Token-Ablaufschleife kann ihren Zustand nicht lesen, daher bleiben alte Tokens über ihre Karenzzeit hinaus gültig. Prüfen Sie den Zustand der Steuerungsebene.",
     "gitTokenExpiringTitle": "Git-Token für {{name}} läuft bald ab",
     "gitTokenExpiringDetail": "Läuft am {{date}} ab. Rotieren Sie ihn vorher, damit Builds und Pulls weiter funktionieren.",
     "tokenExpiredInUseTitle": "API-Token {{name}} ist abgelaufen, wird aber noch genutzt",

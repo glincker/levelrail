@@ -4,6 +4,7 @@ export const KIND_ICON_KINDS = [
   'unclean_restart',
   'git_connection_reauth',
   'git_token_expiring',
+  'token_grace_sweep_failing',
 ] as const
 
 export type KindWithIcon = (typeof KIND_ICON_KINDS)[number]

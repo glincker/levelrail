@@ -118,6 +118,8 @@
     "uncleanRestartOom": "内核可能因内存不足终止了它。请在系统状态中检查单元保护。",
     "gitReauthTitle": "需要重新连接 Git 连接 {{name}}",
     "gitReauthDetail": "提供方拒绝了其凭据。请重新连接，以便构建和拉取继续工作。",
+    "tokenGraceSweepTitle": "已轮换的 API 令牌未被撤销",
+    "tokenGraceSweepDetail": "令牌过期循环无法读取其状态，旧令牌在宽限期后仍然有效。请检查控制平面健康状态。",
     "gitTokenExpiringTitle": "{{name}} 的 Git 令牌即将过期",
     "gitTokenExpiringDetail": "将于 {{date}} 过期。请在此之前轮换，以便构建和拉取继续工作。",
     "tokenExpiredInUseTitle": "API 令牌 {{name}} 已过期但仍在使用",

@@ -128,6 +128,8 @@
     "uncleanRestartOom": "Es probable que el kernel lo cerrara por falta de memoria. Revisa la protección de la unidad en el estado del sistema.",
     "gitReauthTitle": "La conexión Git {{name}} debe reconectarse",
     "gitReauthDetail": "El proveedor rechazó su credencial. Reconéctala para que los builds y pulls sigan funcionando.",
+    "tokenGraceSweepTitle": "Los tokens de API rotados no se están revocando",
+    "tokenGraceSweepDetail": "El ciclo de caducidad de tokens no puede leer su estado, así que los tokens antiguos siguen siendo válidos tras su periodo de gracia. Revise el estado del plano de control.",
     "gitTokenExpiringTitle": "El token Git de {{name}} caduca pronto",
     "gitTokenExpiringDetail": "Caduca el {{date}}. Rotálo antes para que los builds y pulls sigan funcionando.",
     "tokenExpiredInUseTitle": "El token de API {{name}} caducó pero sigue en uso",

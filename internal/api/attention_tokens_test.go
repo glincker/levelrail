@@ -218,3 +218,23 @@ func TestDriftTokenRotationAuditNotesFailedRevoke(t *testing.T) {
 		t.Errorf("detail = %s, want old_revoked false", detail)
 	}
 }
+
+func TestAttentionFeed_GraceSweepFailureRowClears(t *testing.T) {
+	rt, db := newTestRouter(t)
+	admin := loginTestSession(t, rt, db)
+	feed := func() []attention.Item {
+		return fetchFeed(t, rt, authedRequest(t, admin, "GET", "/api/v1/attention/feed", ""))
+	}
+	if got := rowsOfKind(feed(), attention.KindTokenGraceSweepFailing); len(got) != 0 {
+		t.Fatalf("row before any failure: %+v", got)
+	}
+	rt.tokenState.setGraceFailing(true)
+	got := rowsOfKind(feed(), attention.KindTokenGraceSweepFailing)
+	if len(got) != 1 || got[0].Severity != attention.Warning {
+		t.Fatalf("rows = %+v, want one warning", got)
+	}
+	rt.tokenState.setGraceFailing(false)
+	if got := rowsOfKind(feed(), attention.KindTokenGraceSweepFailing); len(got) != 0 {
+		t.Fatalf("row after recovery: %+v", got)
+	}
+}

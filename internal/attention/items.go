@@ -58,6 +58,7 @@ var kindInfos = map[string]kindInfo{
 	KindTokenExpired:            {"API tokens have expired", "Remove the expired tokens from the token list", linkTokens, false},
 	KindTokenExpiredInUse:       {"API tokens expired but were used recently", "Create a replacement token, update its caller and remove the old one", linkTokens, false},
 	KindGitConnectionReauth:     {"A git connection needs to be authorized again", "Open the connection and use Re-authorize", linkGitConns, false},
+	KindTokenGraceSweepFailing:  {"Rotated API tokens are not being revoked", "Open Status and read the token expiry loop error", linkStatus, false},
 	KindGitTokenExpiring:        {"A git access token expires soon", "Rotate the token or paste a new one before it expires", linkGitConns, false},
 	KindDataCopy:                {"Data copy into %s needs attention", "Open the database and retry the copy", linkDBs, true},
 	KindBackupOverdue:           {"Backup of %s is overdue", "Open the database and run a backup", linkDBs, true},

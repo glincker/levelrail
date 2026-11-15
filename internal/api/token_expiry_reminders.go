@@ -75,6 +75,7 @@ func (rt *Router) RunTokenExpiryReminders(ctx context.Context) error {
 		now := time.Now()
 		// A grace sweep error is returned so the loop records it in control plane health.
 		graceErr := rt.sweepRotationGrace(ctx, now)
+		rt.tokenState.setGraceFailing(graceErr != nil)
 		if now.Sub(last) < interval {
 			return graceErr
 		}

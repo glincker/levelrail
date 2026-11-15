@@ -85,7 +85,8 @@ const (
 	KindTokenExpired            = "token_expired"        //nolint:gosec // item kind name, not a credential
 	KindTokenExpiredInUse       = "token_expired_in_use" //nolint:gosec // item kind name, not a credential
 	KindGitConnectionReauth     = "git_connection_reauth"
-	KindGitTokenExpiring        = "git_token_expiring" //nolint:gosec // item kind name, not a credential
+	KindTokenGraceSweepFailing  = "token_grace_sweep_failing" //nolint:gosec // item kind name, not a credential
+	KindGitTokenExpiring        = "git_token_expiring"        //nolint:gosec // item kind name, not a credential
 	KindDataCopy                = "data_copy"
 	KindBackupOverdue           = "backup_overdue"
 	KindInvites                 = "invites"

@@ -211,6 +211,12 @@ function feedItems(feed: AttentionFeedItem[], t: AttentionT): AttentionItem[] {
           title: t('items.gitReauthTitle', { name }),
           detail: t('items.gitReauthDetail'),
         }
+      case 'token_grace_sweep_failing':
+        return {
+          ...base,
+          title: t('items.tokenGraceSweepTitle'),
+          detail: t('items.tokenGraceSweepDetail'),
+        }
       case 'git_token_expiring':
         return {
           ...base,

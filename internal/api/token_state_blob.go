@@ -21,6 +21,20 @@ type tokenStateBook struct {
 	mem map[string]map[string]int64
 	// rotating holds the token ids with a rotation in flight, so one token has at most one.
 	rotating map[string]bool
+	// graceFailing is set while the rotation grace sweep cannot run, for the attention feed.
+	graceFailing bool
+}
+
+func (b *tokenStateBook) setGraceFailing(v bool) {
+	b.mu.Lock()
+	defer b.mu.Unlock()
+	b.graceFailing = v
+}
+
+func (b *tokenStateBook) isGraceFailing() bool {
+	b.mu.Lock()
+	defer b.mu.Unlock()
+	return b.graceFailing
 }
 
 // claimRotation marks id as rotating; the returned release must run when the rotation ends.

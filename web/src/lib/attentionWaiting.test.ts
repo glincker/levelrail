@@ -272,4 +272,10 @@ describe('token attention rows', () => {
       'server detail',
     )
   })
+
+  it('handles the token grace sweep kind', () => {
+    expect(first(tk('token_grace_sweep_failing', {}))?.title).toBe(
+      'items.tokenGraceSweepTitle',
+    )
+  })
 })

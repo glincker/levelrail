@@ -137,6 +137,8 @@
     "uncleanRestartOom": "O kernel provavelmente o encerrou por falta de memória. Confira a proteção da unidade no status do sistema.",
     "gitReauthTitle": "A conexão Git {{name}} precisa ser reconectada",
     "gitReauthDetail": "O provedor rejeitou a credencial. Reconecte para que builds e pulls continuem funcionando.",
+    "tokenGraceSweepTitle": "Tokens de API rotacionados não estão sendo revogados",
+    "tokenGraceSweepDetail": "O ciclo de expiração de tokens não consegue ler seu estado, então tokens antigos continuam válidos após o período de tolerância. Verifique a saúde do plano de controle.",
     "gitTokenExpiringTitle": "O token Git de {{name}} expira em breve",
     "gitTokenExpiringDetail": "Expira em {{date}}. Rotacione antes para que builds e pulls continuem funcionando.",
     "tokenExpiredInUseTitle": "O token de API {{name}} expirou mas ainda está em uso",
