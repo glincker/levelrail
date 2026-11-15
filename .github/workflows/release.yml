@@ -506,7 +506,13 @@ jobs:
               echo "Skipping ${name}@${version} (already published)"
               continue
             fi
-            (cd "$dir" && npm publish --provenance --access public --tag "$dist_tag")
+            # Brand-name forwarders may not exist on npm yet (first publish needs a
+            # manual step), so their failure warns instead of failing the release.
+            case "$name" in
+              levelrail-cli|levelrail-cli-*) (cd "$dir" && npm publish --provenance --access public --tag "$dist_tag") ;;
+              *) (cd "$dir" && npm publish --provenance --access public --tag "$dist_tag") \
+                   || echo "::warning::${name}@${version} was not published; see docs/ci.md" ;;
+            esac
           done
 
   # Dogfood: install what publish-npm just shipped, from the registry, on
