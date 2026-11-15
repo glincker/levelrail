@@ -2,7 +2,6 @@ package spec
 
 import (
 	"fmt"
-	"github.com/GLINCKER/levelrail/internal/dnsnames"
 	"path/filepath"
 	"regexp"
 	"sort"
@@ -145,7 +144,7 @@ func (svc *Service) validate(name string) error {
 		return fmt.Errorf("spec: service %q: %w", name, err)
 	}
 	if svc.DNS != nil {
-		if err := dnsnames.ValidateSyntax(svc.DNS.Names); err != nil {
+		if err := ValidateDNSNameSyntax(svc.DNS.Names); err != nil {
 			return fmt.Errorf("spec: service %q: dns.names: %w", name, err)
 		}
 	}

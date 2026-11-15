@@ -4,6 +4,8 @@ import (
 	"context"
 	"fmt"
 	"time"
+
+	"github.com/GLINCKER/levelrail/internal/secretmask"
 )
 
 // Reasons recorded on attempts that a restart or a lost build left behind.
@@ -78,7 +80,7 @@ func (db *DB) CancelOrphanedDeployAttempt(ctx context.Context, id, by string, no
 	res, err := db.ExecContext(ctx, `
 		UPDATE deploy_attempts SET status = ?, reason = ?, canceled_by = ?, finished_at = ?
 		WHERE id = ? AND status = ?
-	`, DeployAttemptStatusCanceled, DeployReasonOrphaned, by, now.UTC().Format(time.RFC3339Nano), id, DeployAttemptStatusRunning)
+	`, DeployAttemptStatusCanceled, secretmask.Mask(DeployReasonOrphaned), secretmask.Mask(by), now.UTC().Format(time.RFC3339Nano), id, DeployAttemptStatusRunning)
 	if err != nil {
 		return false, fmt.Errorf("store: cancel orphaned deploy attempt %q: %w", id, err)
 	}

@@ -3,7 +3,6 @@ package deploy
 import (
 	"context"
 	"fmt"
-	"github.com/GLINCKER/levelrail/internal/dnsnames"
 	"sort"
 	"strconv"
 	"strings"
@@ -125,7 +124,7 @@ func toDesiredService(name, image string, svc spec.Service) (store.DesiredServic
 
 	d.Tolerations, d.Affinity = placement.EncodeRules(svc.Tolerations, svc.Affinity)
 	if svc.DNS != nil {
-		d.InternalDNSNames = dnsnames.Normalize(svc.DNS.Names, "")
+		d.InternalDNSNames = spec.NormalizeDNSNames(svc.DNS.Names, "")
 	}
 
 	d.Files = toServiceFiles(name, svc.Files)

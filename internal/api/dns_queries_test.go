@@ -24,9 +24,11 @@ func dnsQueriesTestRouter(enabled bool) *Router {
 }
 
 func TestDNSQueriesHandlerFiltersAndCaps(t *testing.T) {
-	rt := dnsQueriesTestRouter(true)
+	rt, db := newTestRouter(t)
+	rt.SetDNSQueryLog(dnsQueriesTestRouter(true).dnsQueryLog)
+	cookie := sessionCookieForTest(t, rt, storeUserWithAbilitiesForTest(t, db, "root@example.com", []string{AbilityRoot}).ID)
 	rec := httptest.NewRecorder()
-	rt.handleListDNSQueries(rec, httptest.NewRequest(http.MethodGet, "/api/v1/dns/queries?rcode=nxdomain&app=web&since=1h&limit=999999", nil))
+	rt.handleListDNSQueries(rec, authedRequest(t, cookie, http.MethodGet, "/api/v1/dns/queries?rcode=nxdomain&app=web&since=1h&limit=999999", ""))
 	if rec.Code != http.StatusOK {
 		t.Fatalf("status %d: %s", rec.Code, rec.Body)
 	}

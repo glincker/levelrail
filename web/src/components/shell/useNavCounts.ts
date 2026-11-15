@@ -12,7 +12,7 @@ export function useNavCounts(): Record<string, number> {
   const approvals = useDeployApprovalsOptional('pending')
   const attention = useAttentionItems().items
   const inbox = inboxUnread(useInboxEntries().entries)
-  const functions = useFunctions('1h').data?.functions.length ?? 0
+  const functions = useFunctions('1h').data?.functions?.length ?? 0
   const traffic = attentionCounts(useTrafficSummary().data)
   return {
     functions,

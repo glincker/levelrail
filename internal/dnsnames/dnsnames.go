@@ -4,31 +4,24 @@ package dnsnames
 
 import (
 	"fmt"
-	"regexp"
-	"sort"
 	"strings"
+
+	"github.com/GLINCKER/levelrail/internal/spec"
 )
 
 // Frozen error codes, mirrored by internal/iac/codes.go.
 const (
-	CodeInvalid  = "dns_name_invalid"
+	CodeInvalid  = spec.DNSCodeInvalid
 	CodeReserved = "dns_name_reserved"
 	CodeConflict = "dns_name_conflict"
 )
 
 // Error carries a frozen code so callers can surface it unchanged.
-type Error struct {
-	Code string
-	Msg  string
-}
-
-func (e *Error) Error() string { return e.Msg }
+type Error = spec.DNSNameError
 
 func fail(code, format string, args ...any) error {
 	return &Error{Code: code, Msg: fmt.Sprintf(format, args...)}
 }
-
-var labelRe = regexp.MustCompile(`^[a-z0-9]([a-z0-9-]*[a-z0-9])?$`)
 
 // Limits are caps read from runtime settings; a zero cap means unchecked.
 type Limits struct {
@@ -49,46 +42,11 @@ func ParseReserved(csv string) map[string]bool {
 	return out
 }
 
-// Normalize lowercases, drops a trailing dot and the mesh zone suffix, then
-// dedupes and sorts so stored, declared and live lists compare equal.
-func Normalize(names []string, zone string) []string {
-	if len(names) == 0 {
-		return nil
-	}
-	suffix := "." + strings.ToLower(strings.Trim(zone, "."))
-	seen := make(map[string]bool, len(names))
-	out := make([]string, 0, len(names))
-	for _, n := range names {
-		n = strings.TrimSuffix(strings.ToLower(strings.TrimSpace(n)), ".")
-		if zone != "" {
-			n = strings.TrimSuffix(n, suffix)
-		}
-		if !seen[n] {
-			seen[n] = true
-			out = append(out, n)
-		}
-	}
-	sort.Strings(out)
-	return out
-}
+// Normalize delegates to the shared rule in internal/spec.
+func Normalize(names []string, zone string) []string { return spec.NormalizeDNSNames(names, zone) }
 
-// ValidateSyntax checks strict lowercase LDH labels and refuses wildcards.
-func ValidateSyntax(names []string) error {
-	for _, n := range names {
-		if n == "" {
-			return fail(CodeInvalid, "dns name must not be empty")
-		}
-		if strings.Contains(n, "*") {
-			return fail(CodeInvalid, "dns name %q: wildcards are not supported", n)
-		}
-		for _, label := range strings.Split(n, ".") {
-			if !labelRe.MatchString(label) {
-				return fail(CodeInvalid, "dns name %q: each label must be lowercase letters, digits or hyphens, not starting or ending with a hyphen", n)
-			}
-		}
-	}
-	return nil
-}
+// ValidateSyntax delegates to the shared rule in internal/spec.
+func ValidateSyntax(names []string) error { return spec.ValidateDNSNameSyntax(names) }
 
 // Validate applies syntax, the setting caps and the reserved list.
 func Validate(names []string, l Limits) error {

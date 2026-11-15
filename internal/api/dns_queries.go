@@ -38,6 +38,9 @@ func (rt *Router) handleListDNSQueries(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 	limit = min(limit, runtimesettings.DNSQueryLogSizeMax)
+	if !rt.authorizeRefs(w, r, AbilityRead, notFoundAs(http.StatusNotFound, "app not found"), appRef(q.Get("app"))) {
+		return
+	}
 	f := network.QueryFilter{
 		App: q.Get("app"), Prefix: strings.TrimSpace(q.Get("qname")), RCode: q.Get("rcode"), Limit: limit,
 	}

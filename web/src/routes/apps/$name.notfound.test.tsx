@@ -1,4 +1,4 @@
-import { act, render, screen } from '@testing-library/react'
+import { act, render, screen, waitFor } from '@testing-library/react'
 import { QueryClientProvider } from '@tanstack/react-query'
 import {
   RouterProvider,
@@ -80,6 +80,9 @@ describe.skipIf(!routeTree)('/apps/$name for a missing app', () => {
         if (/\/brand$/.test(url)) return json(BRAND)
         if (/\/demo$/.test(url)) return json({ enabled: false })
         if (/\/(session|me)$/.test(url)) return json({ username: 'dev' })
+        // Object-shaped payloads the shell reads; a bare [] would crash the nav counts.
+        if (/\/functions$/.test(url)) return json({ functions: [] })
+        if (/\/self-upgrade\/attempts$/.test(url)) return json({ attempts: [] })
         return json([])
       }),
     )
@@ -107,7 +110,9 @@ describe.skipIf(!routeTree)('/apps/$name for a missing app', () => {
     await act(async () => {
       await import('../../components/AppScopedSidebar')
     })
-    expect(document.querySelector('[data-sidebar="sidebar"]')).not.toBeNull()
+    await waitFor(() =>
+      expect(document.querySelector('[data-sidebar="sidebar"]')).not.toBeNull(),
+    )
     expect(screen.queryByText('Something went wrong')).toBeNull()
   })
 })
