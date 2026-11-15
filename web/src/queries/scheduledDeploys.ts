@@ -58,7 +58,7 @@ export function useScheduledDeploys(appName: string) {
     queryFn: async (): Promise<ScheduledDeploy[]> => {
       const res = await fetch(baseURL(appName))
       if (!res.ok) return fail(res, 'fetch scheduled deploys')
-      return (await res.json()) as ScheduledDeploy[]
+      return ((await res.json()) as ScheduledDeploy[] | null) ?? []
     },
     retry: false,
   })

@@ -45,7 +45,7 @@ async function fetchOrphanedVolumes(): Promise<OrphanedVolume[]> {
       ),
     )
   }
-  return (await res.json()) as OrphanedVolume[]
+  return ((await res.json()) as OrphanedVolume[] | null) ?? []
 }
 
 // useOrphanedVolumes is a plain (non-suspense) query: the General

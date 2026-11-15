@@ -44,7 +44,7 @@ export async function fetchProjects(): Promise<ProjectResource[]> {
       await readErrorMessage(res, `fetch projects failed: ${res.status}`),
     )
   }
-  return (await res.json()) as ProjectResource[]
+  return ((await res.json()) as ProjectResource[] | null) ?? []
 }
 
 export function projectListQueryOptions() {

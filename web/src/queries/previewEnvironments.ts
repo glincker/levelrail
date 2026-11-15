@@ -37,7 +37,7 @@ export async function fetchPreviewEnvironments(
       ),
     )
   }
-  return (await res.json()) as PreviewEnvironment[]
+  return ((await res.json()) as PreviewEnvironment[] | null) ?? []
 }
 
 // Polls while any preview is still 'deploying', the same conditional

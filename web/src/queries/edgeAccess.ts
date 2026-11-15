@@ -34,7 +34,7 @@ export function edgeAccessQueryOptions(app: string, f: EdgeAccessFilters) {
           await readErrorMessage(res, `list requests failed: ${res.status}`),
         )
       }
-      return (await res.json()) as AccessRecord[]
+      return ((await res.json()) as AccessRecord[] | null) ?? []
     },
   })
 }

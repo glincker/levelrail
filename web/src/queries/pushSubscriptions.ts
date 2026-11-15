@@ -60,7 +60,7 @@ export async function fetchPushSubscriptions(): Promise<PushSubscription[]> {
       ),
     )
   }
-  return (await res.json()) as PushSubscription[]
+  return ((await res.json()) as PushSubscription[] | null) ?? []
 }
 
 export function pushSubscriptionListQueryOptions() {

@@ -103,7 +103,7 @@ export async function listAiSessions(): Promise<AiSessionListItem[]> {
       await readErrorMessage(res, `list AI sessions failed: ${res.status}`),
     )
   }
-  return (await res.json()) as AiSessionListItem[]
+  return ((await res.json()) as AiSessionListItem[] | null) ?? []
 }
 
 export function aiSessionsQueryOptions() {

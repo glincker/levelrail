@@ -61,7 +61,7 @@ export async function fetchDatabases(
       await readErrorMessage(res, `fetch databases failed: ${res.status}`),
     )
   }
-  return (await res.json()) as DatabaseListEntry[]
+  return ((await res.json()) as DatabaseListEntry[] | null) ?? []
 }
 
 // Shared options object between the route loader's

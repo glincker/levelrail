@@ -40,7 +40,7 @@ export async function fetchBackupTargets(): Promise<BackupTarget[]> {
       await readErrorMessage(res, `fetch backup targets failed: ${res.status}`),
     )
   }
-  return (await res.json()) as BackupTarget[]
+  return ((await res.json()) as BackupTarget[] | null) ?? []
 }
 
 export function backupTargetListQueryOptions() {

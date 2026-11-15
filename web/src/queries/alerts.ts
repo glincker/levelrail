@@ -41,7 +41,7 @@ export async function fetchAlertRules(appName: string): Promise<AlertRule[]> {
       await readErrorMessage(res, `fetch alert rules failed: ${res.status}`),
     )
   }
-  return (await res.json()) as AlertRule[]
+  return ((await res.json()) as AlertRule[] | null) ?? []
 }
 
 export function alertRuleListQueryOptions(appName: string) {

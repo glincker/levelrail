@@ -54,7 +54,7 @@ export async function fetchDeployNotifyTargets(
       ),
     )
   }
-  return (await res.json()) as DeployNotifyTarget[]
+  return ((await res.json()) as DeployNotifyTarget[] | null) ?? []
 }
 
 export function deployNotifyTargetListQueryOptions(appName: string) {

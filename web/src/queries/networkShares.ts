@@ -32,7 +32,7 @@ export async function fetchNetworkShares(): Promise<NetworkShare[]> {
       await readErrorMessage(res, `fetch network shares failed: ${res.status}`),
     )
   }
-  return (await res.json()) as NetworkShare[]
+  return ((await res.json()) as NetworkShare[] | null) ?? []
 }
 
 export function networkShareListQueryOptions() {

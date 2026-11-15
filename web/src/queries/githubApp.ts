@@ -281,7 +281,7 @@ export async function fetchGitHubAppBranches(
       ),
     )
   }
-  return (await res.json()) as GitHubAppBranch[]
+  return ((await res.json()) as GitHubAppBranch[] | null) ?? []
 }
 
 export function useGitHubAppBranches(

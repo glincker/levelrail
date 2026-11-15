@@ -132,7 +132,7 @@ export async function fetchServiceTemplates(): Promise<
       ),
     )
   }
-  return (await res.json()) as ServiceTemplateListItem[]
+  return ((await res.json()) as ServiceTemplateListItem[] | null) ?? []
 }
 
 export async function fetchServiceTemplate(

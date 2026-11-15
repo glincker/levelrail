@@ -50,7 +50,7 @@ export async function fetchEnvironmentChoices(): Promise<EnvironmentChoice[]> {
   if (!res.ok) {
     throw await failed(res, 'fetch environments')
   }
-  return (await res.json()) as EnvironmentChoice[]
+  return ((await res.json()) as EnvironmentChoice[] | null) ?? []
 }
 
 export function useEnvironmentChoices(enabled: boolean) {

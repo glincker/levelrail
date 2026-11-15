@@ -45,7 +45,7 @@ export async function fetchTokens(): Promise<TokenResource[]> {
   if (!res.ok) {
     throw new Error(`fetch tokens failed: ${res.status}`)
   }
-  return (await res.json()) as TokenResource[]
+  return ((await res.json()) as TokenResource[] | null) ?? []
 }
 
 export function tokenListQueryOptions() {

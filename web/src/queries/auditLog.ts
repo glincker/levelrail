@@ -127,7 +127,7 @@ export async function fetchAuditLog(
       await readErrorMessage(res, `fetch audit log failed: ${res.status}`),
     )
   }
-  return (await res.json()) as AuditLogEntry[]
+  return ((await res.json()) as AuditLogEntry[] | null) ?? []
 }
 
 // AUDIT_LOG_EXPORT_LIMIT mirrors internal/api/audit.go's own

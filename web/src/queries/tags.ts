@@ -37,7 +37,7 @@ export async function fetchTags(): Promise<Tag[]> {
       await readErrorMessage(res, `fetch tags failed: ${res.status}`),
     )
   }
-  return (await res.json()) as Tag[]
+  return ((await res.json()) as Tag[] | null) ?? []
 }
 
 export function tagsQueryOptions() {

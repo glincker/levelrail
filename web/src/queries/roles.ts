@@ -42,7 +42,7 @@ export async function fetchRoles(): Promise<RoleResource[]> {
       await readErrorMessage(res, `fetch roles failed: ${res.status}`),
     )
   }
-  return (await res.json()) as RoleResource[]
+  return ((await res.json()) as RoleResource[] | null) ?? []
 }
 
 export function roleListQueryOptions() {

@@ -117,7 +117,7 @@ async function fetchAppScheduleHistory(
       ),
     )
   }
-  return (await res.json()) as AppScheduleHistoryEntry[]
+  return ((await res.json()) as AppScheduleHistoryEntry[] | null) ?? []
 }
 
 export function useAppScheduleHistory(appName: string, enabled: boolean) {

@@ -38,7 +38,7 @@ export function bootstrapScriptsQueryOptions() {
     queryKey: KEY,
     queryFn: async (): Promise<BootstrapScript[]> => {
       const res = await call(BASE, 'fetch bootstrap scripts')
-      return (await res.json()) as BootstrapScript[]
+      return ((await res.json()) as BootstrapScript[] | null) ?? []
     },
   })
 }

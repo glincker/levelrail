@@ -25,7 +25,7 @@ export async function fetchGitProviders(): Promise<GitProviderStatus[]> {
       await readErrorMessage(res, `fetch git providers failed: ${res.status}`),
     )
   }
-  return (await res.json()) as GitProviderStatus[]
+  return ((await res.json()) as GitProviderStatus[] | null) ?? []
 }
 
 export function gitProvidersQueryOptions() {

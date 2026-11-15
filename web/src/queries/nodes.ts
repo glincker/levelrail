@@ -55,7 +55,7 @@ export async function fetchNodes(): Promise<NodeResource[]> {
       await readErrorMessage(res, `fetch nodes failed: ${res.status}`),
     )
   }
-  return (await res.json()) as NodeResource[]
+  return ((await res.json()) as NodeResource[] | null) ?? []
 }
 
 export const NODE_PAGE_SIZE = 100
@@ -264,7 +264,7 @@ export async function fetchNodeEvents(id: string): Promise<NodeStatusEvent[]> {
       await readErrorMessage(res, `fetch node events failed: ${res.status}`),
     )
   }
-  return (await res.json()) as NodeStatusEvent[]
+  return ((await res.json()) as NodeStatusEvent[] | null) ?? []
 }
 
 export function useNodeEvents(id: string) {

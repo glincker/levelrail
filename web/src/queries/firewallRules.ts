@@ -26,7 +26,7 @@ export async function fetchFirewallRules(): Promise<FirewallRule[]> {
       await readErrorMessage(res, `fetch firewall rules failed: ${res.status}`),
     )
   }
-  return (await res.json()) as FirewallRule[]
+  return ((await res.json()) as FirewallRule[] | null) ?? []
 }
 
 export function firewallRuleListQueryOptions() {

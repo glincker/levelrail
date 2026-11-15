@@ -32,7 +32,7 @@ export async function fetchOrganizations(): Promise<OrganizationResource[]> {
       await readErrorMessage(res, `fetch organizations failed: ${res.status}`),
     )
   }
-  return (await res.json()) as OrganizationResource[]
+  return ((await res.json()) as OrganizationResource[] | null) ?? []
 }
 
 export function organizationListQueryOptions() {

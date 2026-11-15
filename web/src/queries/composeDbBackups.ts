@@ -54,7 +54,7 @@ export async function fetchComposeDbServices(
     `/api/v1/apps/${encodeURIComponent(app)}/compose-db-services`,
   )
   await ensureOk(res, 'fetch compose db services')
-  return (await res.json()) as ComposeDbService[]
+  return ((await res.json()) as ComposeDbService[] | null) ?? []
 }
 
 export function useComposeDbServices(app: string) {
@@ -70,7 +70,7 @@ export async function fetchComposeDbRuns(
 ): Promise<ComposeDbBackupRun[]> {
   const res = await fetch(`${servicePath(app, service)}/backups`)
   await ensureOk(res, 'fetch compose db backups')
-  return (await res.json()) as ComposeDbBackupRun[]
+  return ((await res.json()) as ComposeDbBackupRun[] | null) ?? []
 }
 
 // Polls only while the newest run is still running.

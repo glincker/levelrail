@@ -59,7 +59,7 @@ export async function fetchAppConnections(
       ),
     )
   }
-  return (await res.json()) as AppConnection[]
+  return ((await res.json()) as AppConnection[] | null) ?? []
 }
 
 export function appConnectionsQueryOptions(appName: string) {
@@ -89,7 +89,7 @@ export async function fetchConnectableDatabases(
       ),
     )
   }
-  return (await res.json()) as ConnectableDatabase[]
+  return ((await res.json()) as ConnectableDatabase[] | null) ?? []
 }
 
 export function connectableDatabasesQueryOptions(appName: string) {

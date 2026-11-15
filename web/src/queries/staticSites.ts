@@ -29,7 +29,7 @@ export async function fetchStaticSites(): Promise<StaticSite[]> {
       await readErrorMessage(res, `fetch static sites failed: ${res.status}`),
     )
   }
-  return (await res.json()) as StaticSite[]
+  return ((await res.json()) as StaticSite[] | null) ?? []
 }
 
 // staleTime matches certificatesQueryOptions's own reasoning: this is an
