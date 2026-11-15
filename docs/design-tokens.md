@@ -97,7 +97,36 @@ Dark mode uses a darker translucent shadow plus a 1px top highlight (`--glinr-hi
 3. Run `npm run tokens` in `web/` and commit the regenerated CSS.
 4. Use it as `var(--glinr-...)` or the Tailwind utility. Do not hardcode hex or px in a component when a token exists.
 
+## Code and log palette
+
+One palette for every code, terminal and log surface, in the `code` group (`--glinr-code-*`, Tailwind `bg-glinr-code-bg`, `text-glinr-code-keyword`, `selection:bg-glinr-code-selection`). It follows the user theme: a light surface in light mode, a dark one in dark mode. Never hardcode neutral or hex colours on a code surface.
+
+| Role      | Tokens                                                                                                                                        |
+| --------- | --------------------------------------------------------------------------------------------------------------------------------------------- |
+| Surface   | `code-bg`, `code-fg`, `code-muted`, `code-border`, `code-selection`, `code-line-highlight`, `code-match`                                      |
+| Syntax    | `code-keyword`, `code-string`, `code-number`, `code-comment`, `code-function`, `code-type`, `code-property`, `code-punctuation`               |
+| Diff      | `code-added`, `code-removed`, `code-added-bg`, `code-removed-bg`                                                                              |
+| ANSI      | `code-ansi-<black..white>` and `code-ansi-bright-<black..white>`                                                                              |
+| Log level | `code-log-info`, `-warn`, `-error`, `-success`, `-debug`, `-timestamp`, plus `code-log-error-bg`, `code-log-error-border`, `code-log-warn-bg` |
+
+Rules:
+
+- Every text role is at least 4.5:1 on `code-bg` in light and dark, and `code-fg` stays readable on the selection, line highlight, match and diff tints. `web/scripts/code-contrast.test.mjs` fails otherwise. Check it when you change a value.
+- ANSI black and white are remapped per theme so they stay readable (black is a muted grey, white is dark in light mode). Escapes are still stripped when rendering; `lib/ansiPalette.ts` maps SGR codes to the tokens.
+- Colour is never the only cue. Error lines carry a gutter bar and an icon, diff lines keep their `+` or `-` sign, level tags are text.
+- `CodeBlock`, `CommandBlock` and `TerminalBlock` use the palette. `CodeBlock` highlights `yaml`, `json`, `bash` and `diff` through `lib/codeHighlight.ts`, which never changes the text.
+
+## Scrollbars
+
+`styles/scrollbar.css` skins every scroll container from the `scrollbar` group: `--glinr-scrollbar-track` (transparent so it overlays dialogs, drawers and tables), `-thumb`, `-thumb-hover`, `-thumb-active` and `-size` (the 10px hit area, the visible thumb is thinner). Chromium and WebKit use `::-webkit-scrollbar`; Firefox uses `scrollbar-width: thin` and `scrollbar-color`.
+
+- `scrollbar-native` opts an element out, for example an editor that brings its own bar.
+- `scrollbar-stable` sets `scrollbar-gutter: stable`. Use it only where a bar appearing would shift content, like the log viewer.
+- Scrolling behaviour is never changed, and scroll regions keep `tabIndex` and their focus ring.
+
 ## Changelog
+
+2026-11-15, code and log palette. New `code` group (surface, syntax, diff, 16 ANSI, log levels) and `scrollbar` group (track, thumb, thumb-hover, thumb-active, size). Additive, no existing variable changed. The `.nav-scroll` rule is gone; the sidebar uses the global scrollbar skin.
 
 2026-10-12, type scale and hero fix. Page titles 24 to 20px, banner and section titles 18 and 16 to 14 and 15px, all weight 600 in the Display family (previously 300 Geist next to 500 system-ui). Greeting 24/30 to 28px weight 500. Eyebrow 12 to 11px. `--glinr-hero-tile-size-comfortable` now equals `--glinr-hero-tile-size` (2.5rem) so the hero tile no longer changes size with density. New tokens: `type-heading-weight`, `type-greeting-weight`, `type-size-banner|section|page|greeting|eyebrow`, `type-leading-banner|section|page|greeting`.
 

@@ -188,7 +188,7 @@ export function RunCommandCard({
                   <p className="text-sm font-medium text-muted-foreground">
                     {t('output')}
                   </p>
-                  <pre className="max-h-80 overflow-auto rounded-md border bg-muted/40 p-3 font-mono text-xs break-all whitespace-pre-wrap">
+                  <pre className="max-h-80 overflow-auto rounded-md border border-glinr-code-border bg-glinr-code-bg p-3 font-mono text-xs break-all whitespace-pre-wrap text-glinr-code-fg">
                     {job.output_withheld
                       ? t('outputWithheld')
                       : job.output || t('empty')}

@@ -2348,5 +2348,644 @@
         }
       }
     }
+  },
+  "code": {
+    "$type": "color",
+    "bg": {
+      "$value": {
+        "light": "oklch(0.97 0.006 250)",
+        "dark": "oklch(0.17 0.012 255)"
+      },
+      "$description": "Code, terminal and log surface. Follows the user theme.",
+      "$extensions": {
+        "glinr": {
+          "stability": "experimental",
+          "tailwind": "color-glinr-code-bg"
+        }
+      }
+    },
+    "fg": {
+      "$value": {
+        "light": "oklch(0.25 0.015 260)",
+        "dark": "oklch(0.9 0.01 250)"
+      },
+      "$description": "Default code and log text.",
+      "$extensions": {
+        "glinr": {
+          "stability": "experimental",
+          "tailwind": "color-glinr-code-fg"
+        }
+      }
+    },
+    "muted": {
+      "$value": {
+        "light": "oklch(0.48 0.02 255)",
+        "dark": "oklch(0.76 0.02 255)"
+      },
+      "$description": "Secondary code text: line numbers, gutters, prompts.",
+      "$extensions": {
+        "glinr": {
+          "stability": "experimental",
+          "tailwind": "color-glinr-code-muted"
+        }
+      }
+    },
+    "border": {
+      "$value": {
+        "light": "oklch(0.88 0.01 255)",
+        "dark": "oklch(0.3 0.015 255)"
+      },
+      "$description": "Code surface border and dividers.",
+      "$extensions": {
+        "glinr": {
+          "stability": "experimental",
+          "tailwind": "color-glinr-code-border"
+        }
+      }
+    },
+    "selection": {
+      "$value": {
+        "light": "oklch(0.6 0.12 250 / 24%)",
+        "dark": "oklch(0.45 0.12 250 / 40%)"
+      },
+      "$description": "Text selection background inside code. Text on it uses code-fg.",
+      "$extensions": {
+        "glinr": {
+          "stability": "experimental",
+          "tailwind": "color-glinr-code-selection"
+        }
+      }
+    },
+    "line-highlight": {
+      "$value": {
+        "light": "oklch(0.2 0.01 260 / 6%)",
+        "dark": "oklch(1 0 0 / 5%)"
+      },
+      "$description": "Hovered or focused line background.",
+      "$extensions": {
+        "glinr": {
+          "stability": "experimental",
+          "tailwind": "color-glinr-code-line-highlight"
+        }
+      }
+    },
+    "match": {
+      "$value": {
+        "light": "oklch(0.8 0.15 85 / 45%)",
+        "dark": "oklch(0.5 0.1 85 / 35%)"
+      },
+      "$description": "Search match highlight background. Text on it uses code-fg.",
+      "$extensions": {
+        "glinr": {
+          "stability": "experimental",
+          "tailwind": "color-glinr-code-match"
+        }
+      }
+    },
+    "keyword": {
+      "$value": {
+        "light": "oklch(0.46 0.14 320)",
+        "dark": "oklch(0.78 0.14 320)"
+      },
+      "$description": "Syntax: keywords and booleans.",
+      "$extensions": {
+        "glinr": {
+          "stability": "experimental",
+          "tailwind": "color-glinr-code-keyword"
+        }
+      }
+    },
+    "string": {
+      "$value": {
+        "light": "oklch(0.46 0.13 150)",
+        "dark": "oklch(0.78 0.13 150)"
+      },
+      "$description": "Syntax: strings and quoted values.",
+      "$extensions": {
+        "glinr": {
+          "stability": "experimental",
+          "tailwind": "color-glinr-code-string"
+        }
+      }
+    },
+    "number": {
+      "$value": {
+        "light": "oklch(0.46 0.14 60)",
+        "dark": "oklch(0.78 0.14 60)"
+      },
+      "$description": "Syntax: numbers and units.",
+      "$extensions": {
+        "glinr": {
+          "stability": "experimental",
+          "tailwind": "color-glinr-code-number"
+        }
+      }
+    },
+    "function": {
+      "$value": {
+        "light": "oklch(0.46 0.14 250)",
+        "dark": "oklch(0.78 0.14 250)"
+      },
+      "$description": "Syntax: function and command names.",
+      "$extensions": {
+        "glinr": {
+          "stability": "experimental",
+          "tailwind": "color-glinr-code-function"
+        }
+      }
+    },
+    "type": {
+      "$value": {
+        "light": "oklch(0.46 0.11 195)",
+        "dark": "oklch(0.78 0.11 195)"
+      },
+      "$description": "Syntax: types, classes and resource kinds.",
+      "$extensions": {
+        "glinr": {
+          "stability": "experimental",
+          "tailwind": "color-glinr-code-type"
+        }
+      }
+    },
+    "property": {
+      "$value": {
+        "light": "oklch(0.46 0.1 225)",
+        "dark": "oklch(0.78 0.1 225)"
+      },
+      "$description": "Syntax: keys and properties.",
+      "$extensions": {
+        "glinr": {
+          "stability": "experimental",
+          "tailwind": "color-glinr-code-property"
+        }
+      }
+    },
+    "added": {
+      "$value": {
+        "light": "oklch(0.46 0.15 150)",
+        "dark": "oklch(0.78 0.15 150)"
+      },
+      "$description": "Diff: added line text, paired with a plus gutter sign.",
+      "$extensions": {
+        "glinr": {
+          "stability": "experimental",
+          "tailwind": "color-glinr-code-added"
+        }
+      }
+    },
+    "removed": {
+      "$value": {
+        "light": "oklch(0.46 0.17 25)",
+        "dark": "oklch(0.78 0.17 25)"
+      },
+      "$description": "Diff: removed line text, paired with a minus gutter sign.",
+      "$extensions": {
+        "glinr": {
+          "stability": "experimental",
+          "tailwind": "color-glinr-code-removed"
+        }
+      }
+    },
+    "comment": {
+      "$value": {
+        "light": "oklch(0.5 0.02 255)",
+        "dark": "oklch(0.72 0.02 255)"
+      },
+      "$description": "Syntax: comments.",
+      "$extensions": {
+        "glinr": {
+          "stability": "experimental",
+          "tailwind": "color-glinr-code-comment"
+        }
+      }
+    },
+    "punctuation": {
+      "$value": {
+        "light": "oklch(0.4 0.015 255)",
+        "dark": "oklch(0.78 0.015 255)"
+      },
+      "$description": "Syntax: punctuation and operators.",
+      "$extensions": {
+        "glinr": {
+          "stability": "experimental",
+          "tailwind": "color-glinr-code-punctuation"
+        }
+      }
+    },
+    "added-bg": {
+      "$value": {
+        "light": "oklch(0.6 0.15 150 / 14%)",
+        "dark": "oklch(0.72 0.16 150 / 11%)"
+      },
+      "$description": "Diff: added line background.",
+      "$extensions": {
+        "glinr": {
+          "stability": "experimental",
+          "tailwind": "color-glinr-code-added-bg"
+        }
+      }
+    },
+    "removed-bg": {
+      "$value": {
+        "light": "oklch(0.6 0.17 25 / 14%)",
+        "dark": "oklch(0.72 0.17 25 / 11%)"
+      },
+      "$description": "Diff: removed line background.",
+      "$extensions": {
+        "glinr": {
+          "stability": "experimental",
+          "tailwind": "color-glinr-code-removed-bg"
+        }
+      }
+    },
+    "ansi-black": {
+      "$value": {
+        "light": "oklch(0.5 0.015 255)",
+        "dark": "oklch(0.62 0.015 255)"
+      },
+      "$description": "ANSI colour black. Lightness is adjusted per theme so it stays readable on code-bg.",
+      "$extensions": {
+        "glinr": {
+          "stability": "experimental",
+          "tailwind": "color-glinr-code-ansi-black"
+        }
+      }
+    },
+    "ansi-red": {
+      "$value": {
+        "light": "oklch(0.46 0.17 25)",
+        "dark": "oklch(0.78 0.17 25)"
+      },
+      "$description": "ANSI colour red. Lightness is adjusted per theme so it stays readable on code-bg.",
+      "$extensions": {
+        "glinr": {
+          "stability": "experimental",
+          "tailwind": "color-glinr-code-ansi-red"
+        }
+      }
+    },
+    "ansi-green": {
+      "$value": {
+        "light": "oklch(0.46 0.15 150)",
+        "dark": "oklch(0.78 0.15 150)"
+      },
+      "$description": "ANSI colour green. Lightness is adjusted per theme so it stays readable on code-bg.",
+      "$extensions": {
+        "glinr": {
+          "stability": "experimental",
+          "tailwind": "color-glinr-code-ansi-green"
+        }
+      }
+    },
+    "ansi-yellow": {
+      "$value": {
+        "light": "oklch(0.46 0.14 90)",
+        "dark": "oklch(0.82 0.14 90)"
+      },
+      "$description": "ANSI colour yellow. Lightness is adjusted per theme so it stays readable on code-bg.",
+      "$extensions": {
+        "glinr": {
+          "stability": "experimental",
+          "tailwind": "color-glinr-code-ansi-yellow"
+        }
+      }
+    },
+    "ansi-blue": {
+      "$value": {
+        "light": "oklch(0.46 0.14 255)",
+        "dark": "oklch(0.78 0.14 255)"
+      },
+      "$description": "ANSI colour blue. Lightness is adjusted per theme so it stays readable on code-bg.",
+      "$extensions": {
+        "glinr": {
+          "stability": "experimental",
+          "tailwind": "color-glinr-code-ansi-blue"
+        }
+      }
+    },
+    "ansi-magenta": {
+      "$value": {
+        "light": "oklch(0.46 0.15 330)",
+        "dark": "oklch(0.78 0.15 330)"
+      },
+      "$description": "ANSI colour magenta. Lightness is adjusted per theme so it stays readable on code-bg.",
+      "$extensions": {
+        "glinr": {
+          "stability": "experimental",
+          "tailwind": "color-glinr-code-ansi-magenta"
+        }
+      }
+    },
+    "ansi-cyan": {
+      "$value": {
+        "light": "oklch(0.46 0.11 200)",
+        "dark": "oklch(0.78 0.11 200)"
+      },
+      "$description": "ANSI colour cyan. Lightness is adjusted per theme so it stays readable on code-bg.",
+      "$extensions": {
+        "glinr": {
+          "stability": "experimental",
+          "tailwind": "color-glinr-code-ansi-cyan"
+        }
+      }
+    },
+    "ansi-white": {
+      "$value": {
+        "light": "oklch(0.38 0.01 255)",
+        "dark": "oklch(0.9 0.01 255)"
+      },
+      "$description": "ANSI colour white. Lightness is adjusted per theme so it stays readable on code-bg.",
+      "$extensions": {
+        "glinr": {
+          "stability": "experimental",
+          "tailwind": "color-glinr-code-ansi-white"
+        }
+      }
+    },
+    "ansi-bright-black": {
+      "$value": {
+        "light": "oklch(0.42 0.015 255)",
+        "dark": "oklch(0.72 0.015 255)"
+      },
+      "$description": "ANSI bright black. Lightness is adjusted per theme so it stays readable on code-bg.",
+      "$extensions": {
+        "glinr": {
+          "stability": "experimental",
+          "tailwind": "color-glinr-code-ansi-bright-black"
+        }
+      }
+    },
+    "ansi-bright-red": {
+      "$value": {
+        "light": "oklch(0.4 0.17 25)",
+        "dark": "oklch(0.84 0.17 25)"
+      },
+      "$description": "ANSI bright red. Lightness is adjusted per theme so it stays readable on code-bg.",
+      "$extensions": {
+        "glinr": {
+          "stability": "experimental",
+          "tailwind": "color-glinr-code-ansi-bright-red"
+        }
+      }
+    },
+    "ansi-bright-green": {
+      "$value": {
+        "light": "oklch(0.4 0.15 150)",
+        "dark": "oklch(0.84 0.15 150)"
+      },
+      "$description": "ANSI bright green. Lightness is adjusted per theme so it stays readable on code-bg.",
+      "$extensions": {
+        "glinr": {
+          "stability": "experimental",
+          "tailwind": "color-glinr-code-ansi-bright-green"
+        }
+      }
+    },
+    "ansi-bright-yellow": {
+      "$value": {
+        "light": "oklch(0.4 0.14 90)",
+        "dark": "oklch(0.88 0.14 90)"
+      },
+      "$description": "ANSI bright yellow. Lightness is adjusted per theme so it stays readable on code-bg.",
+      "$extensions": {
+        "glinr": {
+          "stability": "experimental",
+          "tailwind": "color-glinr-code-ansi-bright-yellow"
+        }
+      }
+    },
+    "ansi-bright-blue": {
+      "$value": {
+        "light": "oklch(0.4 0.14 255)",
+        "dark": "oklch(0.84 0.14 255)"
+      },
+      "$description": "ANSI bright blue. Lightness is adjusted per theme so it stays readable on code-bg.",
+      "$extensions": {
+        "glinr": {
+          "stability": "experimental",
+          "tailwind": "color-glinr-code-ansi-bright-blue"
+        }
+      }
+    },
+    "ansi-bright-magenta": {
+      "$value": {
+        "light": "oklch(0.4 0.15 330)",
+        "dark": "oklch(0.84 0.15 330)"
+      },
+      "$description": "ANSI bright magenta. Lightness is adjusted per theme so it stays readable on code-bg.",
+      "$extensions": {
+        "glinr": {
+          "stability": "experimental",
+          "tailwind": "color-glinr-code-ansi-bright-magenta"
+        }
+      }
+    },
+    "ansi-bright-cyan": {
+      "$value": {
+        "light": "oklch(0.4 0.11 200)",
+        "dark": "oklch(0.84 0.11 200)"
+      },
+      "$description": "ANSI bright cyan. Lightness is adjusted per theme so it stays readable on code-bg.",
+      "$extensions": {
+        "glinr": {
+          "stability": "experimental",
+          "tailwind": "color-glinr-code-ansi-bright-cyan"
+        }
+      }
+    },
+    "ansi-bright-white": {
+      "$value": {
+        "light": "oklch(0.3 0.01 255)",
+        "dark": "oklch(0.96 0.01 255)"
+      },
+      "$description": "ANSI bright white. Lightness is adjusted per theme so it stays readable on code-bg.",
+      "$extensions": {
+        "glinr": {
+          "stability": "experimental",
+          "tailwind": "color-glinr-code-ansi-bright-white"
+        }
+      }
+    },
+    "log-info": {
+      "$value": {
+        "light": "oklch(0.46 0.14 250)",
+        "dark": "oklch(0.78 0.14 250)"
+      },
+      "$description": "Log level info text. Always paired with a text label or icon.",
+      "$extensions": {
+        "glinr": {
+          "stability": "experimental",
+          "tailwind": "color-glinr-code-log-info"
+        }
+      }
+    },
+    "log-warn": {
+      "$value": {
+        "light": "oklch(0.46 0.14 80)",
+        "dark": "oklch(0.78 0.14 80)"
+      },
+      "$description": "Log level warn text. Always paired with a text label or icon.",
+      "$extensions": {
+        "glinr": {
+          "stability": "experimental",
+          "tailwind": "color-glinr-code-log-warn"
+        }
+      }
+    },
+    "log-error": {
+      "$value": {
+        "light": "oklch(0.46 0.17 25)",
+        "dark": "oklch(0.78 0.17 25)"
+      },
+      "$description": "Log level error text. Always paired with a text label or icon.",
+      "$extensions": {
+        "glinr": {
+          "stability": "experimental",
+          "tailwind": "color-glinr-code-log-error"
+        }
+      }
+    },
+    "log-success": {
+      "$value": {
+        "light": "oklch(0.46 0.15 150)",
+        "dark": "oklch(0.78 0.15 150)"
+      },
+      "$description": "Log level success text. Always paired with a text label or icon.",
+      "$extensions": {
+        "glinr": {
+          "stability": "experimental",
+          "tailwind": "color-glinr-code-log-success"
+        }
+      }
+    },
+    "log-debug": {
+      "$value": {
+        "light": "oklch(0.48 0.02 255)",
+        "dark": "oklch(0.74 0.02 255)"
+      },
+      "$description": "Log level debug text.",
+      "$extensions": {
+        "glinr": {
+          "stability": "experimental",
+          "tailwind": "color-glinr-code-log-debug"
+        }
+      }
+    },
+    "log-timestamp": {
+      "$value": {
+        "light": "oklch(0.48 0.02 255)",
+        "dark": "oklch(0.74 0.02 255)"
+      },
+      "$description": "Log line timestamp text.",
+      "$extensions": {
+        "glinr": {
+          "stability": "experimental",
+          "tailwind": "color-glinr-code-log-timestamp"
+        }
+      }
+    },
+    "log-error-bg": {
+      "$value": {
+        "light": "oklch(0.6 0.17 25 / 12%)",
+        "dark": "oklch(0.72 0.17 25 / 11%)"
+      },
+      "$description": "Error log line background. Paired with a gutter marker and icon.",
+      "$extensions": {
+        "glinr": {
+          "stability": "experimental",
+          "tailwind": "color-glinr-code-log-error-bg"
+        }
+      }
+    },
+    "log-error-border": {
+      "$value": {
+        "light": "oklch(0.55 0.2 25)",
+        "dark": "oklch(0.7 0.17 25)"
+      },
+      "$description": "Error log line gutter bar.",
+      "$extensions": {
+        "glinr": {
+          "stability": "experimental",
+          "tailwind": "color-glinr-code-log-error-border"
+        }
+      }
+    },
+    "log-warn-bg": {
+      "$value": {
+        "light": "oklch(0.7 0.15 80 / 14%)",
+        "dark": "oklch(0.8 0.15 80 / 9%)"
+      },
+      "$description": "Warning log line background.",
+      "$extensions": {
+        "glinr": {
+          "stability": "experimental",
+          "tailwind": "color-glinr-code-log-warn-bg"
+        }
+      }
+    }
+  },
+  "scrollbar": {
+    "$type": "color",
+    "track": {
+      "$value": {
+        "light": "transparent",
+        "dark": "transparent"
+      },
+      "$description": "Scrollbar track. Transparent so it overlays dialogs, drawers and tables.",
+      "$extensions": {
+        "glinr": {
+          "stability": "experimental"
+        }
+      }
+    },
+    "thumb": {
+      "$value": {
+        "light": "oklch(0.2 0.01 260 / 30%)",
+        "dark": "oklch(1 0 0 / 24%)"
+      },
+      "$description": "Scrollbar thumb at rest, visible but quiet.",
+      "$extensions": {
+        "glinr": {
+          "stability": "experimental"
+        }
+      }
+    },
+    "thumb-hover": {
+      "$value": {
+        "light": "oklch(0.2 0.01 260 / 48%)",
+        "dark": "oklch(1 0 0 / 42%)"
+      },
+      "$description": "Scrollbar thumb on hover.",
+      "$extensions": {
+        "glinr": {
+          "stability": "experimental"
+        }
+      }
+    },
+    "thumb-active": {
+      "$value": {
+        "light": "oklch(0.2 0.01 260 / 64%)",
+        "dark": "oklch(1 0 0 / 58%)"
+      },
+      "$description": "Scrollbar thumb while dragged.",
+      "$extensions": {
+        "glinr": {
+          "stability": "experimental"
+        }
+      }
+    },
+    "size": {
+      "$value": {
+        "light": "10px",
+        "dark": "10px"
+      },
+      "$description": "Scrollbar hit area. The visible thumb is thinner than this.",
+      "$extensions": {
+        "glinr": {
+          "stability": "experimental"
+        }
+      },
+      "$type": "dimension"
+    }
   }
 }

@@ -71,7 +71,7 @@ const LineGutter = memo(function LineGutter({
     <pre
       ref={gutterRef}
       aria-hidden="true"
-      className="max-h-96 min-h-48 overflow-hidden rounded-md border bg-muted/40 px-2 py-2 text-right font-mono text-xs leading-[1.625] text-muted-foreground select-none"
+      className="max-h-96 min-h-48 overflow-hidden rounded-md border border-glinr-code-border bg-glinr-code-bg px-2 py-2 text-right font-mono text-xs leading-[1.625] text-glinr-code-muted select-none"
     >
       {Array.from({ length: count }, (_, i) => i + 1).join('\n')}
     </pre>
@@ -247,7 +247,7 @@ export function IacStudio({ seed }: Readonly<{ seed?: StudioSeed }>) {
             onChange={(e) => setYaml(e.target.value)}
             spellCheck={false}
             placeholder={t('iacStudio.placeholder')}
-            className="max-h-96 min-h-48 min-w-0 flex-1 overflow-x-auto font-mono text-xs leading-[1.625] whitespace-pre"
+            className="max-h-96 min-h-48 min-w-0 flex-1 overflow-x-auto border-glinr-code-border bg-glinr-code-bg font-mono text-xs leading-[1.625] whitespace-pre text-glinr-code-fg selection:bg-glinr-code-selection"
           />
         </div>
       )}

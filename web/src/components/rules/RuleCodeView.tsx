@@ -39,7 +39,7 @@ export function RuleCodeView({ code }: { code: string }) {
       <pre
         tabIndex={0}
         aria-label={t('builder.codeLabel')}
-        className="max-h-72 overflow-auto rounded-lg bg-muted p-3 font-mono text-xs leading-5 text-foreground"
+        className="max-h-72 overflow-auto rounded-lg border border-glinr-code-border bg-glinr-code-bg p-3 font-mono text-xs leading-5 text-glinr-code-fg selection:bg-glinr-code-selection"
       >
         {code}
       </pre>

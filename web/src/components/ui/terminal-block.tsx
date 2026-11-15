@@ -78,7 +78,7 @@ export function TerminalCopyButton({
   )
 }
 
-// Tints through existing tokens only: flags and URLs read as info.
+// Command word, flags and URLs take the shared code palette.
 function Tinted({ text }: { text: string }) {
   const parts = text.split(/(\s+)/)
   const binaryAt = parts.findIndex((p) => !/^\s*$/.test(p))
@@ -94,8 +94,8 @@ function Tinted({ text }: { text: string }) {
           <span
             key={i}
             className={cn(
-              isBinary && 'font-medium text-foreground',
-              accent && 'text-tone-info',
+              isBinary && 'font-medium text-glinr-code-function',
+              accent && 'text-glinr-code-property',
             )}
           >
             {part}
@@ -129,7 +129,7 @@ export function TerminalBlock({
   return (
     <div
       className={cn(
-        'min-w-0 rounded-lg border border-border bg-muted/60',
+        'min-w-0 rounded-lg border border-glinr-code-border bg-glinr-code-bg text-glinr-code-fg',
         className,
       )}
     >
@@ -138,7 +138,7 @@ export function TerminalBlock({
           role="group"
           tabIndex={0}
           aria-label={label}
-          className="min-w-0 flex-1 overflow-x-auto rounded-sm p-1 font-mono text-xs leading-5 whitespace-pre focus-visible:ring-2 focus-visible:ring-ring focus-visible:outline-none"
+          className="min-w-0 flex-1 overflow-x-auto rounded-sm p-1 font-mono text-xs leading-5 whitespace-pre selection:bg-glinr-code-selection focus-visible:ring-2 focus-visible:ring-ring focus-visible:outline-none"
         >
           <code>
             {lines.map((line, i) => (
@@ -146,7 +146,7 @@ export function TerminalBlock({
                 {line.kind === 'command' ? (
                   <span
                     aria-hidden="true"
-                    className="w-4 shrink-0 text-tone-success select-none"
+                    className="w-4 shrink-0 text-glinr-code-log-success select-none"
                   >
                     {prompt}
                   </span>
@@ -154,7 +154,7 @@ export function TerminalBlock({
                 <span
                   className={cn(
                     'min-w-0',
-                    line.kind === 'comment' && 'text-muted-foreground',
+                    line.kind === 'comment' && 'text-glinr-code-comment',
                   )}
                 >
                   {line.kind === 'comment' ? (
@@ -170,7 +170,7 @@ export function TerminalBlock({
         {commands ? <TerminalCopyButton text={commands} /> : null}
       </div>
       {footer ? (
-        <div className="flex flex-wrap items-center gap-2 border-t border-border px-3 py-2">
+        <div className="flex flex-wrap items-center gap-2 border-t border-glinr-code-border px-3 py-2">
           {footer}
         </div>
       ) : null}

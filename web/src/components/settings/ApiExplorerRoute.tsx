@@ -214,7 +214,10 @@ export function ApiExplorerRoute({ route }: { route: OpenAPIRoute }) {
                 {result.status || 'network error'} ·{' '}
                 {Math.round(result.durationMs)}ms
               </Badge>
-              <CodeBlock code={result.body} />
+              <CodeBlock
+                code={result.body}
+                language={/^\s*[[{]/.test(result.body) ? 'json' : undefined}
+              />
             </div>
           )}
         </div>

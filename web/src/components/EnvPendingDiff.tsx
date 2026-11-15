@@ -1,7 +1,21 @@
 import { diffEnv } from '../lib/envParse'
 import { Badge } from '@/components/ui/badge'
 
-function KeyList({ label, keys }: { label: string; keys: string[] }) {
+const SIGN_CLASS = {
+  '+': 'text-glinr-code-added',
+  '~': 'text-glinr-code-log-warn',
+  '-': 'text-glinr-code-removed',
+} as const
+
+function KeyList({
+  label,
+  keys,
+  sign,
+}: {
+  label: string
+  keys: string[]
+  sign: keyof typeof SIGN_CLASS
+}) {
   if (keys.length === 0) return null
   return (
     <div className="flex flex-wrap items-center gap-1.5">
@@ -10,6 +24,12 @@ function KeyList({ label, keys }: { label: string; keys: string[] }) {
       </Badge>
       {keys.map((k) => (
         <span key={k} className="font-mono text-xs">
+          <span
+            aria-hidden="true"
+            className={`mr-1 font-semibold select-none ${SIGN_CLASS[sign]}`}
+          >
+            {sign}
+          </span>
           {k}
         </span>
       ))}
@@ -42,9 +62,9 @@ export function EnvPendingDiff({
       <p className="text-xs font-medium text-muted-foreground">
         Unsaved changes
       </p>
-      <KeyList label="Added" keys={added} />
-      <KeyList label="Changed" keys={changed} />
-      <KeyList label="Removed" keys={removed} />
+      <KeyList label="Added" keys={added} sign="+" />
+      <KeyList label="Changed" keys={changed} sign="~" />
+      <KeyList label="Removed" keys={removed} sign="-" />
     </div>
   )
 }

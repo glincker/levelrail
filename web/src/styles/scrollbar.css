@@ -1,0 +1,47 @@
+/* Global scrollbar skin, driven by the --glinr-scrollbar-* tokens.
+   Engines that know ::-webkit-scrollbar get the rounded 10px hit area; the rest (Firefox) get the
+   standard properties. Never both, because scrollbar-color switches the pseudo-elements off. */
+@layer base {
+  @supports not selector(::-webkit-scrollbar) {
+    * {
+      scrollbar-width: thin;
+      scrollbar-color: var(--glinr-scrollbar-thumb) var(--glinr-scrollbar-track);
+    }
+    .scrollbar-native {
+      scrollbar-width: auto;
+      scrollbar-color: auto;
+    }
+  }
+
+  @supports selector(::-webkit-scrollbar) {
+    *:not(.scrollbar-native)::-webkit-scrollbar {
+      width: var(--glinr-scrollbar-size);
+      height: var(--glinr-scrollbar-size);
+      background: transparent;
+    }
+    *:not(.scrollbar-native)::-webkit-scrollbar-track {
+      background: var(--glinr-scrollbar-track);
+    }
+    *:not(.scrollbar-native)::-webkit-scrollbar-corner {
+      background: transparent;
+    }
+    /* The transparent border insets the visible thumb inside the larger hit area. */
+    *:not(.scrollbar-native)::-webkit-scrollbar-thumb {
+      background-color: var(--glinr-scrollbar-thumb);
+      background-clip: padding-box;
+      border: 3px solid transparent;
+      border-radius: 9999px;
+    }
+    *:not(.scrollbar-native)::-webkit-scrollbar-thumb:hover {
+      background-color: var(--glinr-scrollbar-thumb-hover);
+    }
+    *:not(.scrollbar-native)::-webkit-scrollbar-thumb:active {
+      background-color: var(--glinr-scrollbar-thumb-active);
+    }
+  }
+}
+
+/* Reserves the bar's width so content does not jump when a region starts to scroll. */
+@utility scrollbar-stable {
+  scrollbar-gutter: stable;
+}

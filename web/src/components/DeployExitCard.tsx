@@ -38,13 +38,15 @@ export function DeployExitBody({ exit }: { exit: ContainerExit }) {
           <pre
             tabIndex={0}
             aria-label={t('containerExit.linesLabel')}
-            className="max-h-72 overflow-auto rounded-lg border border-neutral-800 bg-neutral-950 p-3 font-mono text-xs leading-5 text-neutral-200"
+            className="max-h-72 overflow-auto rounded-lg border border-glinr-code-border bg-glinr-code-bg p-3 font-mono text-xs leading-5 text-glinr-code-fg"
           >
             {exit.lines.map((l, i) => (
               <span
                 key={`${l.timestamp}-${i}`}
-                className={`block whitespace-pre-wrap ${
-                  l.stream === 'stderr' ? 'text-tone-danger' : ''
+                className={`block border-l-2 pl-2 whitespace-pre-wrap ${
+                  l.stream === 'stderr'
+                    ? 'border-glinr-code-log-error-border bg-glinr-code-log-error-bg text-glinr-code-log-error'
+                    : 'border-transparent'
                 }`}
               >
                 {l.message}

@@ -27,7 +27,7 @@ export function ContainerOutput({ failure }: { failure: Failure }) {
           <summary className="cursor-pointer text-muted-foreground">
             {t('provision.containerOutput')}
           </summary>
-          <pre className="mt-1 max-h-64 overflow-auto rounded-md bg-muted p-2 font-mono whitespace-pre-wrap break-words">
+          <pre className="mt-1 max-h-64 overflow-auto rounded-md border border-glinr-code-border bg-glinr-code-bg p-2 font-mono whitespace-pre-wrap break-words text-glinr-code-fg">
             {tail}
           </pre>
         </details>

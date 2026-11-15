@@ -11,10 +11,10 @@ import { isIacPlanCode } from '../lib/iacPlanCodes'
 import { IacCodeBadge } from './iac/IacCodeBadge'
 
 const actionStyle: Record<string, string> = {
-  create: 'text-green-700 dark:text-green-400',
-  update: 'text-amber-700 dark:text-amber-400',
-  delete: 'text-red-700 dark:text-red-400',
-  error: 'text-red-700 dark:text-red-400',
+  create: 'text-glinr-code-added',
+  update: 'text-glinr-code-log-warn',
+  delete: 'text-glinr-code-removed',
+  error: 'text-glinr-code-removed',
   noop: 'text-muted-foreground',
 }
 
@@ -103,16 +103,14 @@ function ChangeRow({ change }: { change: IacChange }) {
           </span>
         ) : null}
         {change.denied ? (
-          <span className="text-xs text-red-700 dark:text-red-400">
+          <span className="text-xs text-glinr-code-removed">
             {t('iacPlan.denied')}
           </span>
         ) : null}
       </div>
       {change.code ? <CodeHint code={change.code} /> : null}
       {change.reason ? (
-        <p className="mt-1 text-sm text-red-700 dark:text-red-400">
-          {change.reason}
-        </p>
+        <p className="mt-1 text-sm text-glinr-code-removed">{change.reason}</p>
       ) : null}
       {change.fields?.length || change.kept?.length ? (
         <CodeBlock
@@ -153,9 +151,9 @@ export function IacPlanView({ plan }: { plan: IacPlan }) {
 }
 
 const statusStyle: Record<string, string> = {
-  applied: 'text-green-700 dark:text-green-400',
-  failed: 'text-red-700 dark:text-red-400',
-  denied: 'text-red-700 dark:text-red-400',
+  applied: 'text-glinr-code-added',
+  failed: 'text-glinr-code-removed',
+  denied: 'text-glinr-code-removed',
   skipped: 'text-amber-700 dark:text-amber-400',
   noop: 'text-muted-foreground',
 }
