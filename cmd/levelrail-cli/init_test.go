@@ -48,7 +48,7 @@ func TestInit_WritesThreeFiles(t *testing.T) {
 	if err := json.Unmarshal([]byte(stdout), &res); err != nil {
 		t.Fatalf("stdout not JSON: %v\n%s", err, stdout)
 	}
-	if !res.Written || res.Stack.Provider != "golang" || len(res.Files) != 3 {
+	if !res.Written || res.Stack.Provider != "golang" || len(res.Files) != 4 {
 		t.Fatalf("unexpected result: %+v", res)
 	}
 	mcp := readProjectFile(t, dir, ".mcp.json")

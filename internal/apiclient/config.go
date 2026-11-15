@@ -44,13 +44,31 @@ const DefaultProfile = "default"
 // flagProfile, then EnvProfile, then DefaultProfile. It never returns
 // an empty string.
 func ResolveProfile(flagProfile string, lookupEnv func(string) (string, bool)) string {
+	name, _ := ResolveProfileSource(flagProfile, lookupEnv)
+	return name
+}
+
+// Profile name sources, in precedence order, reported by ResolveProfileSource.
+const (
+	SourceFlag    = "flag"
+	SourceEnv     = "env"
+	SourceRepo    = "repo pointer"
+	SourceDefault = "default"
+)
+
+// ResolveProfileSource is ResolveProfile plus where the name came from:
+// flag, then env, then the repo pointer file, then the default profile.
+func ResolveProfileSource(flagProfile string, lookupEnv func(string) (string, bool)) (name, source string) {
 	if flagProfile != "" {
-		return flagProfile
+		return flagProfile, SourceFlag
 	}
 	if v, ok := lookupEnv(EnvProfile); ok && v != "" {
-		return v
+		return v, SourceEnv
 	}
-	return DefaultProfile
+	if p, ok := FindRepoPointerFromCwd(); ok && p.Profile != "" {
+		return p.Profile, SourceRepo
+	}
+	return DefaultProfile, SourceDefault
 }
 
 // ResolveToken picks an API token by precedence: flagToken, then
@@ -94,6 +112,10 @@ func ResolveAPIURL(flagURL string, lookupEnv func(string) (string, bool), prog, 
 	if v, ok := lookupEnv(EnvAPIURL); ok && v != "" {
 		return v
 	}
+	// The pointer's URL only applies to the profile it names, so another profile keeps its own.
+	if p, ok := FindRepoPointerFromCwd(); ok && p.APIURL != "" && (p.Profile == "" || p.Profile == profile) {
+		return p.APIURL
+	}
 	if creds, err := ReadCredentialsFile(prog, profile); err == nil && creds.APIURL != "" {
 		return creds.APIURL
 	}
@@ -109,6 +131,12 @@ type Credentials struct {
 	InstanceID  string
 	Fingerprint string
 	ServerName  string
+	// TrustedDevice is the server-issued device cookie value that lets a repeat
+	// login from this machine skip new-device approval. A secret, kept 0600.
+	TrustedDevice string
+	// TokenExpiresAt is the token's expiry (RFC3339) as reported at login, so
+	// expiry warnings need no network call.
+	TokenExpiresAt string
 }
 
 // Credentials file keys for the server pin. Not env vars: the file is the only reader.
@@ -116,6 +144,8 @@ const (
 	keyInstanceID  = "APP_INSTANCE_ID"
 	keyFingerprint = "APP_SERVER_FINGERPRINT"
 	keyServerName  = "APP_SERVER_NAME"
+	keyTrustedDev  = "APP_TRUSTED_DEVICE"
+	keyTokenExpiry = "APP_TOKEN_EXPIRES_AT" //nolint:gosec // a file key name, not a credential
 )
 
 // ConfigDir is "~/.config/<prog>", prog being the caller's own binary
@@ -230,6 +260,10 @@ func (p *parsedCredentialsFile) setKeyValueLine(section, line string) {
 		creds.Fingerprint = value
 	case keyServerName:
 		creds.ServerName = value
+	case keyTrustedDev:
+		creds.TrustedDevice = value
+	case keyTokenExpiry:
+		creds.TokenExpiresAt = value
 	}
 	p.sections[section] = creds
 }
@@ -312,6 +346,10 @@ func WriteCredentialsFile(prog, profile string, creds Credentials) error {
 	if _, seen := parsed.sections[profile]; !seen {
 		parsed.order = append(parsed.order, profile)
 	}
+	// A later login by another flow must not forget this machine's trusted-device id.
+	if creds.TrustedDevice == "" {
+		creds.TrustedDevice = parsed.sections[profile].TrustedDevice
+	}
 	parsed.sections[profile] = creds
 
 	var sb strings.Builder
@@ -325,7 +363,7 @@ func WriteCredentialsFile(prog, profile string, creds Credentials) error {
 		if c.Token != "" {
 			sb.WriteString(EnvAPIToken + "=" + c.Token + "\n")
 		}
-		for _, kv := range [][2]string{{keyInstanceID, c.InstanceID}, {keyFingerprint, c.Fingerprint}, {keyServerName, c.ServerName}} {
+		for _, kv := range [][2]string{{keyInstanceID, c.InstanceID}, {keyFingerprint, c.Fingerprint}, {keyServerName, c.ServerName}, {keyTrustedDev, c.TrustedDevice}, {keyTokenExpiry, c.TokenExpiresAt}} {
 			if kv[1] != "" {
 				sb.WriteString(kv[0] + "=" + kv[1] + "\n")
 			}

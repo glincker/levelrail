@@ -59,7 +59,7 @@ func runAuthLoginDevice(prog, apiURLFlag, profileFlag, clientNameFlag string, re
 		return reportError(stdout, stderr, jsonOut, err)
 	}
 
-	if err := writeCredentialsFile(prog, profile, withServerPin(credentials{APIURL: apiURL, Token: granted.Token}, serverInfo)); err != nil {
+	if err := writeCredentialsFile(prog, profile, withServerPin(credentials{APIURL: apiURL, Token: granted.Token, TokenExpiresAt: expiryString(granted.ExpiresAt)}, serverInfo)); err != nil {
 		return reportError(stdout, stderr, jsonOut, fmt.Errorf("save credentials: %w", err))
 	}
 

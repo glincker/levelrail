@@ -5,7 +5,6 @@ import (
 	"flag"
 	"fmt"
 	"io"
-	"text/tabwriter"
 )
 
 func runProfile(prog string, args []string, stdout, stderr io.Writer, lookupEnv func(string) (string, bool)) int {
@@ -41,10 +40,11 @@ Run "%[1]s profile <subcommand> -h" for a subcommand's own flags.
 }
 
 // Prints profile names and API URLs only, never tokens.
-func runProfileList(prog string, args []string, stdout, stderr io.Writer, _ func(string) (string, bool)) int {
+func runProfileList(prog string, args []string, stdout, stderr io.Writer, lookupEnv func(string) (string, bool)) int {
 	fs := flag.NewFlagSet(prog+" profile list", flag.ContinueOnError)
 	fs.SetOutput(stderr)
-	var jsonOut bool
+	var jsonOut, verify bool
+	fs.BoolVar(&verify, "verify", false, "check every saved token against its server and show identity and scope (one call per profile)")
 	fs.BoolVar(&jsonOut, "json", false, "print profiles as a JSON array to stdout and nothing else")
 	outputFlagP, queryFlagP := bindOutputQueryFlags(fs)
 	fs.Usage = func() { _, _ = fmt.Fprint(stderr, profileListUsage(prog)) }
@@ -66,34 +66,26 @@ func runProfileList(prog string, args []string, stdout, stderr io.Writer, _ func
 		return reportError(stdout, stderr, jsonOut, fmt.Errorf("list profiles: %w", err))
 	}
 
-	if err := renderResult(stdout, format, *queryFlagP, profiles, func() { printProfilesTable(stdout, profiles) }); err != nil {
+	rows := buildProfileRows(prog, profiles, verify, lookupEnv)
+	if err := renderResult(stdout, format, *queryFlagP, rows, func() { printProfileRows(stdout, rows) }); err != nil {
 		_, _ = fmt.Fprintln(stderr, err)
 		return exitCodeForError(err)
 	}
 	return exitOK
 }
 
-func printProfilesTable(out io.Writer, profiles []profileSummary) {
-	if len(profiles) == 0 {
-		_, _ = fmt.Fprintln(out, "no profiles configured")
-		return
-	}
-	tw := tabwriter.NewWriter(out, 0, 2, 2, ' ', 0)
-	_, _ = fmt.Fprintln(tw, "NAME\tAPI URL")
-	for _, p := range profiles {
-		_, _ = fmt.Fprintf(tw, "%s\t%s\n", p.Name, p.APIURL)
-	}
-	_ = tw.Flush()
-}
-
 func profileListUsage(prog string) string {
 	return fmt.Sprintf(`Usage:
   %[1]s profile list [flags]
 
-Lists every profile configured in ~/.config/%[1]s/credentials: its name
-and API URL, never its token value.
+Lists every profile configured in ~/.config/%[1]s/credentials: its name,
+API URL, whether it is the active one, whether it holds a token, the token's
+expiry and whether this machine is a trusted device, never the token value.
+--verify also checks each token live and shows the identity and scope. A
+profile with no usable token lists the exact command a person must run.
 
 Flags:
+  --verify                check each saved token against its server
   --json                  print profiles as a JSON array to stdout, nothing else
   --output string         output format: json, table, or text (default table; --json is shorthand for --output json)
   --query string          JMESPath expression to filter the result before printing

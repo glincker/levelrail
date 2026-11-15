@@ -11,7 +11,7 @@ import (
 
 // notSignedInFix is the 401 message for a request sent with no token, naming the exact fix.
 func notSignedInFix(prog, profile, apiURL string) string {
-	return fmt.Sprintf("not signed in: no saved login for profile %q. Run: %s login --api-url %s (or pass --token, or set %s)", profile, prog, apiURL, apiTokenEnvHelp)
+	return fmt.Sprintf("not signed in: no saved login for profile %q. A person must run once at a terminal: %s login --api-url %s --profile %s (agents and CI cannot answer the prompts or approve their own sign-in; or pass --token, or set %s). Machine-readable state: %s whoami --json", profile, prog, apiURL, profile, apiTokenEnvHelp, prog)
 }
 
 // isLoopbackURL reports whether rawURL points at this machine, where password login over plain http is fine.

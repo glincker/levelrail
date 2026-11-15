@@ -152,6 +152,9 @@ func apiClientFromFlags(prog, apiURLFlag, tokenFlag, profileFlag string, lookupE
 	applyScope(prog, profile, lookupEnv)
 	apiURL := resolveAPIURL(apiURLFlag, lookupEnv, prog, profile)
 	token := resolveToken(tokenFlag, lookupEnv, prog, profile)
+	if token != "" {
+		noteExpiry(prog, profile, token, lookupEnv, os.Stderr)
+	}
 	if token == "" && firstRunInteractive() {
 		if u, t, ok := offerFirstRunLogin(prog, profile, apiURL, lookupEnv, os.Stdin, os.Stdout, os.Stderr); ok {
 			apiURL, token = u, t
@@ -211,6 +214,9 @@ func loggedInSessionClient(ctx context.Context, sf sessionFlags, prog string, lo
 		return nil, loginResponse{}, err
 	}
 
+	if saved, rerr := readCredentialsFile(prog, profile); rerr == nil {
+		sessionClient.seedTrustedDevice(saved.TrustedDevice)
+	}
 	loginResp, err := sessionClient.Login(ctx, resolvedUsername, resolvedPassword)
 	if err == nil && loginResp.ApprovalRequired {
 		loginResp, err = sessionClient.awaitApproval(ctx, prog, loginResp, lookupEnv, stderr)
