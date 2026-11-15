@@ -1120,12 +1120,20 @@ Valid `--kind` values: `generic`, `slack`, `discord`, `telegram`, `email`, `push
 levelrail-cli connections list [--kind KIND] [--scope SCOPE] [--health HEALTH] [flags]
 levelrail-cli connections show <ref> [flags]
 levelrail-cli connections catalog [flags]
+levelrail-cli connections bind <ref> --app NAME|--org ID --role ROLE [--rules JSON] [flags]
+levelrail-cli connections unbind <id> --app NAME|--org ID [flags]
+levelrail-cli connections bindings --app NAME|--org ID [flags]
 ```
-Read-only view of every connected integration (git hosts, registries, secret stores, DNS, cloud, webhooks and notification channels). `list` prints the ref, kind, provider, label, scope, health, time to expiry (days, or hours under 48) and how many apps use each connection, and prints `No connections` when there are none. `show` prints one connection, `catalog` the providers that can be connected. Secrets are never returned.
+View of every connected integration (git hosts, registries, secret stores, DNS, cloud, webhooks and notification channels). `list` prints the ref, kind, provider, label, scope, health, time to expiry (days, or hours under 48) and how many apps use each connection, and prints `No connections` when there are none. `show` prints one connection, `catalog` the providers that can be connected. Secrets are never returned.
+
+`bind` uses a connection for one role (`source`, `deploy_report`, `registry_pull`, `notify`, `secrets`, `dns`) on an app, or as an organization default that every app in the organization inherits; `--rules` takes a JSON object checked against the role. The connection must be readable by you, its scope must include the target and it must be able to fill the role. Org defaults need an organization admin. `unbind` removes a binding by id. `bindings --app` lists the app's own rows and the effective set, marking org defaults the app overrides; `bindings --org` lists the org defaults. A server refusal is printed as sent.
 
 ```
 levelrail-cli connections list --kind git --health ok --json
 levelrail-cli connections show <ref> --json
+levelrail-cli connections bind registry:hub --app web --role registry_pull
+levelrail-cli connections bindings --app web --json
+levelrail-cli connections unbind <id> --app web
 ```
 
 ## Push subscriptions

@@ -167,3 +167,54 @@ func TestBindingsListsNeverNull(t *testing.T) {
 		t.Errorf("org bindings = %d %s", rec.Code, rec.Body.String())
 	}
 }
+
+// An org-scoped token manages org defaults only with an admin role there; a developer role is refused.
+func TestBindingsOrgTokenAdminAndRead(t *testing.T) {
+	f := newTeamFixture(t)
+	ctx := context.Background()
+	if err := f.db.SaveRegistryCredential(ctx, store.RegistryCredential{ID: "rc1", Name: "hub", RegistryHost: "registry.example.com", Username: "u", CreatedAt: "2026-01-01T00:00:00Z"}); err != nil {
+		t.Fatal(err)
+	}
+	root := testAdminTokenFor(t, f.db)
+	if rec := bindingsDo(t, f.rt, http.MethodPut, "/api/v1/connections/registry:rc1/meta", root, `{"scope_type":"org","scope_id":"`+teamA+`"}`); rec.Code != http.StatusOK {
+		t.Fatalf("scope to org = %d %s", rec.Code, rec.Body.String())
+	}
+	orgToken := func(id, role string) string {
+		plain := "org-bind-" + id
+		abilities := []string{AbilityRead, AbilityReadSensitive, AbilityWriteSensitive}
+		if err := f.db.SaveAPIToken(ctx, store.APIToken{ID: id, Name: id, TokenHash: hashToken(plain), Abilities: abilities, OwnerUserID: f.members[role].ID}); err != nil {
+			t.Fatal(err)
+		}
+		if err := f.db.SetAPITokenScope(ctx, store.APITokenScope{TokenID: id, TeamID: teamA, Role: role}); err != nil {
+			t.Fatal(err)
+		}
+		return plain
+	}
+	admin, dev := orgToken("tok-bind-admin", store.TeamRoleAdmin), orgToken("tok-bind-dev", store.TeamRoleDeveloper)
+	path := "/api/v1/organizations/" + teamA + "/bindings"
+	body := `{"ref":"registry:rc1","role":"registry_pull"}`
+
+	if rec := bindingsDo(t, f.rt, http.MethodPost, path, dev, body); rec.Code != http.StatusForbidden {
+		t.Errorf("non-admin POST = %d %s, want 403", rec.Code, rec.Body.String())
+	}
+	rec := bindingsDo(t, f.rt, http.MethodPost, path, admin, body)
+	if rec.Code != http.StatusCreated {
+		t.Fatalf("admin POST = %d %s", rec.Code, rec.Body.String())
+	}
+	var created struct {
+		ID string `json:"id"`
+	}
+	_ = json.Unmarshal(rec.Body.Bytes(), &created)
+	if rec := bindingsDo(t, f.rt, http.MethodGet, path, admin, ""); rec.Code != http.StatusOK || !strings.Contains(rec.Body.String(), created.ID) {
+		t.Errorf("admin GET = %d %s", rec.Code, rec.Body.String())
+	}
+	if rec := bindingsDo(t, f.rt, http.MethodDelete, path+"/"+created.ID, dev, ""); rec.Code != http.StatusForbidden {
+		t.Errorf("non-admin DELETE = %d, want 403", rec.Code)
+	}
+	if rec := bindingsDo(t, f.rt, http.MethodGet, "/api/v1/organizations/"+teamB+"/bindings", admin, ""); rec.Code == http.StatusOK {
+		t.Errorf("token for another org read = %d, want refusal", rec.Code)
+	}
+	if rec := bindingsDo(t, f.rt, http.MethodDelete, path+"/"+created.ID, admin, ""); rec.Code != http.StatusNoContent {
+		t.Errorf("admin DELETE = %d %s, want 204", rec.Code, rec.Body.String())
+	}
+}

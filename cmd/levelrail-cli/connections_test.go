@@ -135,3 +135,115 @@ func TestRun_ConnectionsCatalog(t *testing.T) {
 		t.Errorf("url=%q stdout=%q", got, out)
 	}
 }
+
+func bindingsServer(t *testing.T, got *[]string, gotBody *string, status int, body any) *httptest.Server {
+	t.Helper()
+	return httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		*got = append(*got, r.Method+" "+r.URL.RequestURI())
+		if r.Body != nil {
+			b := new(bytes.Buffer)
+			_, _ = b.ReadFrom(r.Body)
+			*gotBody = b.String()
+		}
+		w.Header().Set("Content-Type", "application/json")
+		w.WriteHeader(status)
+		if body != nil {
+			_ = json.NewEncoder(w).Encode(body)
+		}
+	}))
+}
+
+func TestRun_ConnectionsBindApp(t *testing.T) {
+	var got []string
+	var sent string
+	srv := bindingsServer(t, &got, &sent, http.StatusCreated, apiclient.ConnectionBinding{ID: "b1", Ref: "registry:rc1", TargetType: "app", TargetID: "web", Role: "registry_pull", Origin: "binding"})
+	defer srv.Close()
+	out, _ := runCLIExpectOK(t, []string{"connections", "bind", "registry:rc1", "--app", "web", "--role", "registry_pull", "--rules", `{"host":"r.example.com"}`, "--api-url", srv.URL})
+	if len(got) != 1 || got[0] != "POST /api/v1/apps/web/bindings" {
+		t.Errorf("requests = %v", got)
+	}
+	if !strings.Contains(sent, `"role":"registry_pull"`) || !strings.Contains(sent, `"host":"r.example.com"`) {
+		t.Errorf("body = %s", sent)
+	}
+	if !strings.Contains(out, "Bound registry:rc1") || !strings.Contains(out, "b1") {
+		t.Errorf("stdout = %q", out)
+	}
+}
+
+func TestRun_ConnectionsBindOrgAndUsage(t *testing.T) {
+	var got []string
+	var sent string
+	srv := bindingsServer(t, &got, &sent, http.StatusCreated, apiclient.ConnectionBinding{ID: "b2", Ref: "notify:n", TargetType: "org", TargetID: "acme", Role: "notify"})
+	defer srv.Close()
+	runCLIExpectOK(t, []string{"connections", "bind", "notify:n", "--org", "acme", "--role", "notify", "--api-url", srv.URL})
+	if len(got) != 1 || got[0] != "POST /api/v1/organizations/acme/bindings" {
+		t.Errorf("requests = %v", got)
+	}
+	for name, args := range map[string][]string{
+		"neither":     {"connections", "bind", "r", "--role", "notify"},
+		"both":        {"connections", "bind", "r", "--app", "a", "--org", "o", "--role", "notify"},
+		"no role":     {"connections", "bind", "r", "--app", "a"},
+		"bad rules":   {"connections", "bind", "r", "--app", "a", "--role", "notify", "--rules", "{nope"},
+		"unbind bare": {"connections", "unbind", "b1"},
+		"list bare":   {"connections", "bindings"},
+	} {
+		var out, errb bytes.Buffer
+		if code := run("levelrail-cli-test", args, &out, &errb, envMap()); code != exitUsage {
+			t.Errorf("%s: exit = %d, want %d", name, code, exitUsage)
+		}
+	}
+}
+
+func TestRun_ConnectionsUnbind(t *testing.T) {
+	var got []string
+	var sent string
+	srv := bindingsServer(t, &got, &sent, http.StatusNoContent, nil)
+	defer srv.Close()
+	runCLIExpectOK(t, []string{"connections", "unbind", "b1", "--app", "web", "--api-url", srv.URL})
+	runCLIExpectOK(t, []string{"connections", "unbind", "b2", "--org", "acme", "--api-url", srv.URL})
+	if len(got) != 2 || got[0] != "DELETE /api/v1/apps/web/bindings/b1" || got[1] != "DELETE /api/v1/organizations/acme/bindings/b2" {
+		t.Errorf("requests = %v", got)
+	}
+}
+
+func TestRun_ConnectionsBindings(t *testing.T) {
+	var got []string
+	var sent string
+	srv := bindingsServer(t, &got, &sent, http.StatusOK, apiclient.AppConnectionBindings{
+		Bindings: []apiclient.ConnectionBinding{{ID: "a1", Ref: "registry:app", Role: "registry_pull", Origin: "binding"}},
+		Resolved: []apiclient.ResolvedConnectionBinding{
+			{ConnectionBinding: apiclient.ConnectionBinding{ID: "a1", Ref: "registry:app", Role: "registry_pull", Origin: "binding"}},
+			{ConnectionBinding: apiclient.ConnectionBinding{ID: "o1", Ref: "registry:org", Role: "registry_pull", Origin: "inherited"}, InheritedFrom: "acme", Overridden: true},
+		},
+	})
+	defer srv.Close()
+	out, _ := runCLIExpectOK(t, []string{"connections", "bindings", "--app", "web", "--api-url", srv.URL})
+	if got[0] != "GET /api/v1/apps/web/bindings" {
+		t.Errorf("requests = %v", got)
+	}
+	for _, want := range []string{"registry:app", "own", "org acme (overridden)"} {
+		if !strings.Contains(out, want) {
+			t.Errorf("stdout missing %q: %q", want, out)
+		}
+	}
+	js, _ := runCLIExpectOK(t, []string{"connections", "bindings", "--app", "web", "--json", "--api-url", srv.URL})
+	var res apiclient.AppConnectionBindings
+	if err := json.Unmarshal([]byte(js), &res); err != nil || len(res.Resolved) != 2 {
+		t.Errorf("json = %q err=%v", js, err)
+	}
+}
+
+func TestRun_ConnectionsBindingsOrgEmpty(t *testing.T) {
+	var got []string
+	var sent string
+	srv := bindingsServer(t, &got, &sent, http.StatusOK, map[string]any{"bindings": nil})
+	defer srv.Close()
+	out, _ := runCLIExpectOK(t, []string{"connections", "bindings", "--org", "acme", "--api-url", srv.URL})
+	if got[0] != "GET /api/v1/organizations/acme/bindings" || strings.TrimSpace(out) != "No bindings" {
+		t.Errorf("requests=%v stdout=%q", got, out)
+	}
+	js, _ := runCLIExpectOK(t, []string{"connections", "bindings", "--org", "acme", "--json", "--api-url", srv.URL})
+	if strings.TrimSpace(js) != "[]" {
+		t.Errorf("json = %q", js)
+	}
+}
