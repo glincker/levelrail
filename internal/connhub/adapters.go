@@ -8,6 +8,7 @@ import (
 	"time"
 
 	"github.com/GLINCKER/levelrail/internal/cloudconn"
+	"github.com/GLINCKER/levelrail/internal/registryvendor"
 	"github.com/GLINCKER/levelrail/internal/store"
 )
 
@@ -170,6 +171,8 @@ func (s *Service) listRegistry(ctx context.Context) ([]Connection, error) {
 			conn.AuthMethod = AuthWorkloadIdentity
 		}
 		switch {
+		case c.LastRefreshError == registryvendor.DockerHubRejected:
+			conn.Health, conn.HealthDetail = HealthNeedsReconnect, c.LastRefreshError
 		case c.LastRefreshError != "":
 			conn.Health, conn.HealthDetail = HealthDegraded, clip(c.LastRefreshError)
 		case c.LastRefreshedAt != nil:
@@ -183,6 +186,9 @@ func (s *Service) listRegistry(ctx context.Context) ([]Connection, error) {
 func registryProvider(c store.RegistryCredential) string {
 	if c.Preset != "" {
 		return c.Preset
+	}
+	if registryvendor.IsDockerHubHost(c.RegistryHost) {
+		return "dockerhub"
 	}
 	return c.RegistryHost
 }

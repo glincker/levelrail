@@ -14,7 +14,7 @@ type openAPIRoute struct {
 	Description string
 }
 
-// openAPIRoutes holds all 2160 routes known to scripts/gen-api-reference at
+// openAPIRoutes holds all 2163 routes known to scripts/gen-api-reference at
 // generation time. Run `go run ./scripts/gen-api-reference` after changing
 // any routes*.go registration and commit the result.
 var openAPIRoutes = []openAPIRoute{
@@ -2052,11 +2052,14 @@ var openAPIRoutes = []openAPIRoute{
 	{Method: "GET", Path: "/api/v1/domains/{domain}/watch", Ability: "AbilityRead", Group: "Static Sites / Backup Targets / Registry Credentials", Handler: "handleDomainWatchSnapshot", Description: ""},
 	{Method: "GET", Path: "/api/v1/registry-credentials", Ability: "AbilityRead", Group: "Static Sites / Backup Targets / Registry Credentials", Handler: "handleListRegistryCredentials", Description: "Registry credentials (registry_credentials.go): same ability tiers as backup targets just above, same reasoning (POST/PUT/DELETE handle live pull credentials)."},
 	{Method: "POST", Path: "/api/v1/registry-credentials", Ability: "AbilityWriteSensitive", Group: "Static Sites / Backup Targets / Registry Credentials", Handler: "handleCreateRegistryCredential", Description: ""},
+	{Method: "POST", Path: "/api/v1/registry-credentials/dockerhub/test", Ability: "AbilityWriteSensitive", Group: "Static Sites / Backup Targets / Registry Credentials", Handler: "handleProbeDockerHub", Description: ""},
 	{Method: "POST", Path: "/api/v1/registry-credentials/presets/test", Ability: "AbilityWriteSensitive", Group: "Static Sites / Backup Targets / Registry Credentials", Handler: "handleTestRegistryPreset", Description: ""},
 	{Method: "POST", Path: "/api/v1/registry-credentials/test", Ability: "AbilityWriteSensitive", Group: "Static Sites / Backup Targets / Registry Credentials", Handler: "handleProbeRegistryCredential", Description: ""},
 	{Method: "DELETE", Path: "/api/v1/registry-credentials/{id}", Ability: "AbilityWriteSensitive", Group: "Static Sites / Backup Targets / Registry Credentials", Handler: "handleDeleteRegistryCredential", Description: ""},
 	{Method: "GET", Path: "/api/v1/registry-credentials/{id}", Ability: "AbilityRead", Group: "Static Sites / Backup Targets / Registry Credentials", Handler: "handleGetRegistryCredential", Description: ""},
 	{Method: "PUT", Path: "/api/v1/registry-credentials/{id}", Ability: "AbilityWriteSensitive", Group: "Static Sites / Backup Targets / Registry Credentials", Handler: "handleUpdateRegistryCredential", Description: ""},
+	{Method: "GET", Path: "/api/v1/registry-credentials/{id}/dockerhub", Ability: "AbilityReadSensitive", Group: "Static Sites / Backup Targets / Registry Credentials", Handler: "handleDockerHubStatus", Description: ""},
+	{Method: "GET", Path: "/api/v1/registry-credentials/{id}/limits", Ability: "AbilityReadSensitive", Group: "Static Sites / Backup Targets / Registry Credentials", Handler: "handleDockerHubLimits", Description: ""},
 	{Method: "POST", Path: "/api/v1/registry-credentials/{id}/refresh", Ability: "AbilityWriteSensitive", Group: "Static Sites / Backup Targets / Registry Credentials", Handler: "handleRefreshRegistryCredential", Description: ""},
 	{Method: "GET", Path: "/api/v1/registry-credentials/{id}/repositories", Ability: "AbilityReadSensitive", Group: "Static Sites / Backup Targets / Registry Credentials", Handler: "handleListRegistryCredentialRepositories", Description: "Registry credential browsing (registry_catalog.go): repository/tag lookup for a stored external credential, the same generic catalog client GET /api/v1/registry/repositories and /api/v1/registry/tags use above for the built-in registry. AbilityReadSensitive, the same tier GET /api/v1/git-providers and the github-app/gitlab-app/ bitbucket-app repo-browsing routes below use: read-only, but only works because a stored credential's secret is resolved server-side."},
 	{Method: "GET", Path: "/api/v1/registry-credentials/{id}/tags", Ability: "AbilityReadSensitive", Group: "Static Sites / Backup Targets / Registry Credentials", Handler: "handleListRegistryCredentialTags", Description: ""},

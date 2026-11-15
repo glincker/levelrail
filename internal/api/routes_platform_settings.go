@@ -164,6 +164,9 @@ func (rt *Router) registerSettingsRoutes(mux *http.ServeMux) {
 	mux.HandleFunc("POST /api/v1/registry-credentials/presets/test", rt.requireAbility(AbilityWriteSensitive, rt.handleTestRegistryPreset))
 	mux.HandleFunc("POST /api/v1/registry-credentials/{id}/refresh", rt.requireAbility(AbilityWriteSensitive, rt.handleRefreshRegistryCredential))
 	mux.HandleFunc("POST /api/v1/registry-credentials/test", rt.requireAbility(AbilityWriteSensitive, rt.handleProbeRegistryCredential))
+	mux.HandleFunc("POST /api/v1/registry-credentials/dockerhub/test", rt.requireAbility(AbilityWriteSensitive, rt.handleProbeDockerHub))
+	mux.HandleFunc("GET /api/v1/registry-credentials/{id}/limits", rt.requireAbility(AbilityReadSensitive, rt.handleDockerHubLimits))
+	mux.HandleFunc("GET /api/v1/registry-credentials/{id}/dockerhub", rt.requireAbility(AbilityReadSensitive, rt.handleDockerHubStatus))
 	mux.HandleFunc("GET /api/v1/registry-vendors", rt.requireAbility(AbilityRead, rt.handleListRegistryVendors))
 	// Private package registries for builds: secrets mounted into
 	// Dockerfile builds, never returned by any route.

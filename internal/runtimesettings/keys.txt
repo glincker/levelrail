@@ -357,6 +357,10 @@ projects.clone_placeholder_domain
 projects.default_environment
 projects.default_environment_name
 reconcile.resync_seconds
+registry.dockerhub.limit_warn_percent
+registry.dockerhub.limits_cache_seconds
+registry.dockerhub.tag_page_size
+registry.dockerhub.use_credential
 registry.mirror_prefix
 resources.description_max_chars
 resources.notes_max_bytes

@@ -10,6 +10,7 @@ const KNOWN_CODES = [
   'build_timeout',
   'image_pull_failed',
   'registry_auth_failed',
+  'registry_rate_limited',
   'platform_mismatch',
   'lockfile_out_of_sync',
   'port_not_listening',

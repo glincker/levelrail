@@ -68,6 +68,7 @@ const TARGETS: Record<string, FailureTarget> = {
   build_timeout: RAISE_BUILD_LIMIT,
   image_pull_failed: REGISTRY,
   registry_auth_failed: REGISTRY,
+  registry_rate_limited: REGISTRY,
   registry_push_failed: REGISTRY,
   platform_mismatch: NODES,
   disk_full: FREE_SPACE,

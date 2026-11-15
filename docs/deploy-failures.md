@@ -82,6 +82,9 @@ The image could not be pulled: wrong name or tag, or the registry denied access.
 ### registry_auth_failed
 The registry rejected the credentials or none was supplied for a private registry (`no basic auth credentials`, `unauthorized: authentication required`). Add or refresh the registry credential for that host and check its token scope and expiry.
 
+### registry_rate_limited
+The registry refused a pull with `toomanyrequests` or HTTP 429 because the pull limit was reached. Docker Hub counts anonymous pulls per IP address, so a shared server runs out quickly. Add a Docker Hub access token under Integrations so pulls are authenticated, check the remaining quota with `levelrail-cli registries dockerhub status`, or wait for the window to reset. Retryable.
+
 ### platform_mismatch
 The image targets a different CPU architecture than the node (`exec format error`, `no matching manifest for linux/amd64`). Build for the node's platform or pick a tag that publishes it.
 

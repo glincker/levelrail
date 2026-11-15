@@ -41,6 +41,19 @@ levelrail-cli registry credentials delete <id>
 
 `add` reads the password from stdin or a no-echo prompt when `--password` is omitted. Every command takes `--json`.
 
+## Docker Hub
+
+Add Docker Hub under Integrations with your Docker Hub user name and an access token. Levelrail checks the token with Docker Hub when you save it and refuses one Docker Hub rejects.
+
+- Personal access token: pick the Read-only repository permission to see private repositories. Public Repo Read-only works for public images only.
+- Organization access token: use the organization name as the user name and grant `scope-image-pull`, `scope-repository-read`, `scope-tag-read` and `scope-repository-list`. Without the list scope Docker Hub leaves private repositories out of lists without an error.
+- Never grant a write scope. Docker Hub does not report a token's permission level and Levelrail never attempts a write, so it cannot prove a token is read-only.
+- Docker Hub does not expose when a token expires. The status shows the expiry only if you recorded one.
+
+`GET /api/v1/registry-credentials/{id}/dockerhub` returns whether the token is valid, its kind, the scopes Docker granted, which checks passed and the pull limit. `GET /api/v1/registry-credentials/{id}/limits` returns only the pull limit (limit, remaining, window and source), read with a request that does not use a pull. Both appear in `GET /api/v1/connections` health as well. Anonymous pulls share a limit per IP address, which a shared server can use up; a token raises it. When Docker Hub answers 429, the failure is reported as `registry_rate_limited` (see [deploy failures](/deploy-failures#registry_rate_limited)).
+
+Settings (applied live, the environment variable only seeds the default): `registry.dockerhub.limit_warn_percent`, `registry.dockerhub.limits_cache_seconds`, `registry.dockerhub.tag_page_size` and `registry.dockerhub.use_credential`, the switch that turns the token off for docker.io pulls. Doctor reports a rejected token and a low or empty pull limit.
+
 ## Run your own registry
 
 The catalog has a template for the open source Docker registry with basic auth, `docker-registry-auth` (image `registry:3`, port 5000, data in the `registry_auth_data` volume). There is also an open one, `registry`, with no auth. Do not expose that one to the internet. Levelrail also has a built in registry, see `levelrail-cli registry enable` in the [CLI reference](/cli-reference#registry).

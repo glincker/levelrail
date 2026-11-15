@@ -787,7 +787,8 @@ The data comes from `GET /api/v1/apps/{name}/timeline` and `GET /api/v1/apps/{na
 | `a deploy for this app is already running` (409) | `POST .../builds` or `POST .../deploys` | Wait with `levelrail-cli apps wait NAME`, or cancel the running build with `POST /api/v1/apps/{name}/builds/{id}/cancel`. |
 | `insufficient disk space at "...": N bytes free, need at least M bytes` | Build fails before BuildKit starts | Free disk space, or lower the floor with `APP_MIN_BUILD_DISK_MB`. See the disk preflight note under [From a git repository](#from-a-git-repository). |
 | Any deploy reason such as `ReadinessFailed` | `apps deploys list` | See [Status reasons](/status-reasons) for the meaning and next step of every reason. |
-| `image_pull_failed` (`manifest unknown`, `unauthorized`, `toomanyrequests`) | `apps deploys show NAME` | Fix the image name or tag, add a registry credential, or wait out the rate limit. |
+| `image_pull_failed` (`manifest unknown`, `unauthorized`) | `apps deploys show NAME` | Fix the image name or tag, or add a registry credential. |
+| `registry_rate_limited` (`toomanyrequests`) | `apps deploys show NAME` | Add a Docker Hub token under Integrations, or wait out the limit. See [private registries](/private-registries#docker-hub). |
 | `apps wait` exits 5 | CI step | The deploy finished as a failure. Run `apps deploys show NAME` for the reason. |
 | `apps wait` exits 6 | CI step | The wait timed out before the deploy finished. Raise `--timeout` or check the attempt's status. |
 

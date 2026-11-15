@@ -1357,6 +1357,9 @@ Endpoints for:
 | GET | /api/v1/domains/export | AbilityRead | handleDomainsExport |
 | GET | /api/v1/domains/{domain}/changes | AbilityRead | handleListDomainChanges |
 | POST | /api/v1/domains/{domain}/changes/{id}/rollback | AbilityRoot | handleRollbackDomainChange |
+| POST | /api/v1/registry-credentials/dockerhub/test | AbilityWriteSensitive | handleProbeDockerHub |
+| GET | /api/v1/registry-credentials/{id}/limits | AbilityReadSensitive | handleDockerHubLimits |
+| GET | /api/v1/registry-credentials/{id}/dockerhub | AbilityReadSensitive | handleDockerHubStatus |
 
 ## Built-in Container Registry
 

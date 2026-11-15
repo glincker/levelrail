@@ -233,6 +233,9 @@ These variables only seed the default of a [runtime setting](/runtime-settings).
 | `APP_BUILD_NEXT_MIN_FREE_MEMORY_MIB` | [`build.next_min_free_memory_mib`](/runtime-settings#deploys) | `2048` |
 | `APP_BUILD_QUEUE_AUTO_RESUME_AFTER` | [`build.queue_auto_resume_after`](/runtime-settings#deploys) | `0s` |
 | `APP_BUILD_QUEUE_PAUSED_WARN_AFTER` | [`build.queue_paused_warn_after`](/runtime-settings#deploys) | `1h` |
+| `APP_BUILD_REMOTE_PRESSURE_HOLD` | [`build.remote_pressure_hold`](/runtime-settings#deploys) | `true` |
+| `APP_BUILD_RUNNER_STALE_AFTER` | [`build.runner_stale_after`](/runtime-settings#deploys) | `2m` |
+| `APP_BUILD_RUNNER_STRATEGY` | [`build.runner_strategy`](/runtime-settings#deploys) | `first` |
 | `APP_BUILD_STAGE_LOG_TAIL_LINES` | [`build.stage_log_tail_lines`](/runtime-settings#deploys) | `200` |
 | `APP_BUILD_MEMORY_MB` | [`builds.memory_limit_mb`](/runtime-settings#deploys) | `0` |
 | `APP_BUILD_SETTING_VALUE_MAX_BYTES` | [`builds.setting_value_max_bytes`](/runtime-settings#deploys) | `128` |
@@ -334,6 +337,10 @@ These variables only seed the default of a [runtime setting](/runtime-settings).
 | `APP_PROJECT_CLONE_PLACEHOLDER_DOMAIN` | [`projects.clone_placeholder_domain`](/runtime-settings#deploys) | `clone.invalid` |
 | `APP_PROJECTS_DEFAULT_ENVIRONMENT` | [`projects.default_environment`](/runtime-settings#deploys) | `false` |
 | `APP_PROJECTS_DEFAULT_ENVIRONMENT_NAME` | [`projects.default_environment_name`](/runtime-settings#deploys) | `production` |
+| `APP_REGISTRY_DOCKERHUB_LIMIT_WARN_PERCENT` | [`registry.dockerhub.limit_warn_percent`](/runtime-settings#deploys) | `20` |
+| `APP_REGISTRY_DOCKERHUB_LIMITS_CACHE_SECONDS` | [`registry.dockerhub.limits_cache_seconds`](/runtime-settings#deploys) | `300` |
+| `APP_REGISTRY_DOCKERHUB_TAG_PAGE_SIZE` | [`registry.dockerhub.tag_page_size`](/runtime-settings#deploys) | `25` |
+| `APP_REGISTRY_DOCKERHUB_USE_CREDENTIAL` | [`registry.dockerhub.use_credential`](/runtime-settings#deploys) | `true` |
 | `APP_REGISTRY_MIRROR_PREFIX` | [`registry.mirror_prefix`](/runtime-settings#deploys) | empty |
 | `APP_RESOURCE_DESCRIPTION_MAX_CHARS` | [`resources.description_max_chars`](/runtime-settings#deploys) | `280` |
 | `APP_RESOURCE_NOTES_MAX_BYTES` | [`resources.notes_max_bytes`](/runtime-settings#deploys) | `65536` |

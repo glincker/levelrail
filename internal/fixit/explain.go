@@ -120,6 +120,8 @@ func buildExplainTable() map[string]Explanation {
 			"Check the registry address under Settings, then Registries, and the host's outbound network. Press Re-check afterwards.", "", KindGuided),
 		ex("registry_mirror", "GitHub, ghcr.io or Docker Hub cannot be reached from this host.", "Installs, upgrades, builds and node setup that download from them fail or stall.",
 			"If your network restricts them, set a registry mirror under Settings and follow the install from mainland China page. Press Re-check afterwards.", "", KindGuided),
+		ex("dockerhub", "The Docker Hub token is rejected, or few pulls are left in the current window.", "Image pulls from Docker Hub fail or are refused until the limit resets.",
+			"Open Integrations, then Docker Hub, and replace the token or check the remaining pulls. Press Re-check afterwards.", "", KindGuided),
 		ex("cross_node_ingress", "Traffic cannot get from the entry node to an app on another node.", "Visitors see a TLS or gateway error.",
 			"Open Nodes, pick the node and press Test connection. The mesh checks explain what is blocked.", "", KindGuided),
 		ex("ingress_edge", "The edge proxy is not routing as configured.", "Some domains may not serve the right app.",
