@@ -3,6 +3,7 @@ package ingress
 import (
 	"context"
 	"errors"
+	"log/slog"
 	"slices"
 	"testing"
 
@@ -41,7 +42,7 @@ func TestController_Reconcile_RoutesActiveEnvironmentDomains(t *testing.T) {
 			rt.seedRunning(application.ContainerName(desired.Name, desired.Image, ""), 34567)
 			st := &envDomainStore{fakeStore: &fakeStore{services: []store.DesiredService{desired}}, sets: tt.sets, err: tt.listErr}
 			applier := &fakeApplier{}
-			c := New(st, rt, applier, WithLogger(discardLogger()))
+			c := New(st, rt, applier, WithLogger(slog.New(slog.DiscardHandler)))
 
 			if _, err := c.Reconcile(context.Background()); err != nil {
 				t.Fatalf("Reconcile() error = %v", err)

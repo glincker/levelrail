@@ -3,6 +3,7 @@ package ingress
 import (
 	"context"
 	"errors"
+	"log/slog"
 	"strings"
 	"testing"
 
@@ -38,7 +39,7 @@ func abuseFixture(rows []store.AppAbusePolicy, settings store.IngressSettings) (
 	rt.seedRunning(application.ContainerName(api.Name, api.Image, ""), 34002)
 	st := &abuseFakeStore{fakeStore: &fakeStore{services: []store.DesiredService{web, api}, settings: settings}, rows: rows}
 	applier := &fakeApplier{}
-	return New(st, rt, applier, WithLogger(discardLogger())), applier, st
+	return New(st, rt, applier, WithLogger(slog.New(slog.DiscardHandler))), applier, st
 }
 
 func TestController_AbusePoliciesAttachPerApp(t *testing.T) {

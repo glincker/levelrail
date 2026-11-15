@@ -3,6 +3,7 @@ package ingress
 import (
 	"context"
 	"errors"
+	"log/slog"
 	"testing"
 
 	"github.com/GLINCKER/levelrail/internal/docker"
@@ -56,7 +57,7 @@ func TestController_Reconcile_AppStream_RoutedToRunningContainer(t *testing.T) {
 		},
 	}
 	applier := &fakeApplier{}
-	c := New(st, rt, applier, WithLogger(discardLogger()))
+	c := New(st, rt, applier, WithLogger(slog.New(slog.DiscardHandler)))
 
 	if _, err := c.Reconcile(context.Background()); err != nil {
 		t.Fatalf("Reconcile() error = %v", err)
@@ -101,7 +102,7 @@ func TestController_Reconcile_AppStream_NoRunningContainer_SkippedNotFailed(t *t
 		},
 	}
 	applier := &fakeApplier{}
-	c := New(st, rt, applier, WithLogger(discardLogger()))
+	c := New(st, rt, applier, WithLogger(slog.New(slog.DiscardHandler)))
 
 	result, err := c.Reconcile(context.Background())
 	if err != nil {
@@ -128,7 +129,7 @@ func TestController_Reconcile_AppStream_OrphanedService_SkippedNotFailed(t *test
 		},
 	}
 	applier := &fakeApplier{}
-	c := New(st, rt, applier, WithLogger(discardLogger()))
+	c := New(st, rt, applier, WithLogger(slog.New(slog.DiscardHandler)))
 
 	result, err := c.Reconcile(context.Background())
 	if err != nil {
@@ -151,7 +152,7 @@ func TestController_Reconcile_AppStream_StoreError_FailsReconcile(t *testing.T) 
 	rt := newFakeRuntime()
 	st := &fakeStore{streamsErr: errors.New("app_streams table locked")}
 	applier := &fakeApplier{}
-	c := New(st, rt, applier, WithLogger(discardLogger()))
+	c := New(st, rt, applier, WithLogger(slog.New(slog.DiscardHandler)))
 
 	_, err := c.Reconcile(context.Background())
 	if err == nil {

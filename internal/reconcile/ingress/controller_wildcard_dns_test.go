@@ -4,6 +4,7 @@ import (
 	"context"
 	"encoding/json"
 	"errors"
+	"log/slog"
 	"strings"
 	"testing"
 
@@ -47,7 +48,7 @@ func TestController_Reconcile_CloudflareDNSDisabledByDefault_RegressionUnchanged
 	}
 	resolver := &fakeDNSTokenResolver{token: "should-not-be-used"}
 	applier := &fakeApplier{}
-	c := New(st, rt, applier, WithLogger(discardLogger()), WithCloudflareDNSTokens(resolver))
+	c := New(st, rt, applier, WithLogger(slog.New(slog.DiscardHandler)), WithCloudflareDNSTokens(resolver))
 
 	if _, err := c.Reconcile(context.Background()); err != nil {
 		t.Fatalf("Reconcile() error = %v", err)
@@ -85,7 +86,7 @@ func TestController_Reconcile_CloudflareDNSEnabled_ThreadsTokenIntoConfig(t *tes
 	}
 	resolver := &fakeDNSTokenResolver{token: "cf-test-token"}
 	applier := &fakeApplier{}
-	c := New(st, rt, applier, WithLogger(discardLogger()), WithCloudflareDNSTokens(resolver))
+	c := New(st, rt, applier, WithLogger(slog.New(slog.DiscardHandler)), WithCloudflareDNSTokens(resolver))
 
 	if _, err := c.Reconcile(context.Background()); err != nil {
 		t.Fatalf("Reconcile() error = %v", err)
@@ -129,7 +130,7 @@ func TestController_Reconcile_CloudflareDNSResolveError_FailsOpen(t *testing.T) 
 	}
 	resolver := &fakeDNSTokenResolver{err: errors.New("secrets: master key not set")}
 	applier := &fakeApplier{}
-	c := New(st, rt, applier, WithLogger(discardLogger()), WithCloudflareDNSTokens(resolver))
+	c := New(st, rt, applier, WithLogger(slog.New(slog.DiscardHandler)), WithCloudflareDNSTokens(resolver))
 
 	if _, err := c.Reconcile(context.Background()); err != nil {
 		t.Fatalf("Reconcile() error = %v, want nil: a token-resolve failure must not fail the whole reconcile", err)

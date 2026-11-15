@@ -2,6 +2,7 @@ package ingress
 
 import (
 	"context"
+	"log/slog"
 	"testing"
 
 	"github.com/GLINCKER/levelrail/internal/ingress"
@@ -16,7 +17,7 @@ func TestController_Sleep_SleepingAppGetsWakeRoute(t *testing.T) {
 	svc := store.DesiredService{Name: "web", Image: "img:v1", Port: 80, Replicas: 1, Suspended: true, Domains: []string{"web.example.com"}}
 	applier := &fakeApplier{}
 	src := fakeSleepSource{rows: []store.AppSleep{{ServiceName: "web", IdleMinutes: 30, Sleeping: true}}}
-	c := New(&fakeStore{services: []store.DesiredService{svc}}, newFakeRuntime(), applier, WithLogger(discardLogger()), WithAppWake(src, "127.0.0.1:8080", "tok"))
+	c := New(&fakeStore{services: []store.DesiredService{svc}}, newFakeRuntime(), applier, WithLogger(slog.New(slog.DiscardHandler)), WithAppWake(src, "127.0.0.1:8080", "tok"))
 	if _, err := c.Reconcile(context.Background()); err != nil {
 		t.Fatal(err)
 	}
@@ -46,7 +47,7 @@ func TestController_Sleep_RunningAppKeepsNormalRoute(t *testing.T) {
 	rt.seedRunning(replicaName(svc, 0), 30000)
 	applier := &fakeApplier{}
 	src := fakeSleepSource{rows: []store.AppSleep{{ServiceName: "web", IdleMinutes: 30, Sleeping: true}}}
-	c := New(&fakeStore{services: []store.DesiredService{svc}}, rt, applier, WithLogger(discardLogger()), WithAppWake(src, "127.0.0.1:8080", "tok"))
+	c := New(&fakeStore{services: []store.DesiredService{svc}}, rt, applier, WithLogger(slog.New(slog.DiscardHandler)), WithAppWake(src, "127.0.0.1:8080", "tok"))
 	if _, err := c.Reconcile(context.Background()); err != nil {
 		t.Fatal(err)
 	}

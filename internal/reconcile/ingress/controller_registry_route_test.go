@@ -2,6 +2,7 @@ package ingress
 
 import (
 	"context"
+	"log/slog"
 	"testing"
 
 	"github.com/GLINCKER/levelrail/internal/ingress"
@@ -17,7 +18,7 @@ func TestController_Reconcile_RegistryRoute_Added(t *testing.T) {
 	st := &fakeStore{registry: store.RegistrySettings{Enabled: true, Host: "registry.example.com"}}
 	rt := newFakeRuntime()
 	applier := &fakeApplier{}
-	c := New(st, rt, applier, WithLogger(discardLogger()), WithRegistryDial("127.0.0.1:5540"))
+	c := New(st, rt, applier, WithLogger(slog.New(slog.DiscardHandler)), WithRegistryDial("127.0.0.1:5540"))
 
 	result, err := c.Reconcile(context.Background())
 	if err != nil {
@@ -51,7 +52,7 @@ func TestController_Reconcile_RegistryRoute_NoDial_Skipped(t *testing.T) {
 	st := &fakeStore{registry: store.RegistrySettings{Enabled: true, Host: "registry.example.com"}}
 	rt := newFakeRuntime()
 	applier := &fakeApplier{}
-	c := New(st, rt, applier, WithLogger(discardLogger())) // no WithRegistryDial
+	c := New(st, rt, applier, WithLogger(slog.New(slog.DiscardHandler))) // no WithRegistryDial
 
 	result, err := c.Reconcile(context.Background())
 	if err != nil {
@@ -69,7 +70,7 @@ func TestController_Reconcile_RegistryRoute_Disabled_Skipped(t *testing.T) {
 	st := &fakeStore{registry: store.RegistrySettings{Enabled: false, Host: "registry.example.com"}}
 	rt := newFakeRuntime()
 	applier := &fakeApplier{}
-	c := New(st, rt, applier, WithLogger(discardLogger()), WithRegistryDial("127.0.0.1:5540"))
+	c := New(st, rt, applier, WithLogger(slog.New(slog.DiscardHandler)), WithRegistryDial("127.0.0.1:5540"))
 
 	result, err := c.Reconcile(context.Background())
 	if err != nil {
@@ -97,7 +98,7 @@ func TestController_Reconcile_RegistryRoute_ConflictsWithService_Skipped(t *test
 		registry: store.RegistrySettings{Enabled: true, Host: "registry.example.com"},
 	}
 	applier := &fakeApplier{}
-	c := New(st, rt, applier, WithLogger(discardLogger()), WithRegistryDial("127.0.0.1:5540"))
+	c := New(st, rt, applier, WithLogger(slog.New(slog.DiscardHandler)), WithRegistryDial("127.0.0.1:5540"))
 
 	result, err := c.Reconcile(context.Background())
 	if err != nil {

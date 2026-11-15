@@ -5,6 +5,7 @@ import (
 	"crypto/tls"
 	"fmt"
 	"io"
+	"log/slog"
 	"net"
 	"net/http"
 	"path/filepath"
@@ -132,7 +133,7 @@ func TestController_Reconcile_Live(t *testing.T) {
 	adminPort := freePort(t)
 	adminAddr := fmt.Sprintf("127.0.0.1:%d", adminPort)
 
-	driver := ingress.New(discardLogger())
+	driver := ingress.New(slog.New(slog.DiscardHandler))
 	t.Cleanup(func() {
 		if err := driver.Stop(context.Background()); err != nil {
 			t.Errorf("Driver.Stop() error = %v", err)
@@ -144,7 +145,7 @@ func TestController_Reconcile_Live(t *testing.T) {
 		WithListenAddr(caddyAddr),
 		WithAdminListen(adminAddr),
 		WithCertStore(db),
-		WithLogger(discardLogger()),
+		WithLogger(slog.New(slog.DiscardHandler)),
 	)
 
 	reconcileCtx, reconcileCancel := context.WithTimeout(longCtx, 30*time.Second)

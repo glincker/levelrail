@@ -2,6 +2,7 @@ package ingress
 
 import (
 	"context"
+	"log/slog"
 	"testing"
 	"time"
 
@@ -55,7 +56,7 @@ func rollbackRig(t *testing.T, v1Started time.Time, notReady bool, readyAt time.
 		st.notReadyServices = map[string]bool{"web": true}
 	}
 	applier := &fakeApplier{}
-	return New(st, rt, applier, WithLogger(discardLogger())), applier
+	return New(st, rt, applier, WithLogger(slog.New(slog.DiscardHandler))), applier
 }
 
 // R1-1: a digest-pinned rollback restarts the held v1 container in place.
@@ -112,7 +113,7 @@ func TestRollback_DifferentRef_PrefersHeldSameContent(t *testing.T) {
 		}},
 	}
 	applier := &fakeApplier{}
-	c := New(st, rt, applier, WithLogger(discardLogger()))
+	c := New(st, rt, applier, WithLogger(slog.New(slog.DiscardHandler)))
 	if _, err := c.Reconcile(context.Background()); err != nil {
 		t.Fatal(err)
 	}
@@ -142,7 +143,7 @@ func TestDeploy_NewContentWarming_StaysOnServingRelease(t *testing.T) {
 		}},
 	}
 	applier := &fakeApplier{}
-	c := New(st, rt, applier, WithLogger(discardLogger()))
+	c := New(st, rt, applier, WithLogger(slog.New(slog.DiscardHandler)))
 	if _, err := c.Reconcile(context.Background()); err != nil {
 		t.Fatal(err)
 	}
@@ -172,7 +173,7 @@ func TestDeploy_BuildInProgress_KeepsServingTarget(t *testing.T) {
 		readyAt: map[string]time.Time{"web": now.Add(-time.Minute)},
 	}
 	applier := &fakeApplier{}
-	c := New(st, rt, applier, WithLogger(discardLogger()))
+	c := New(st, rt, applier, WithLogger(slog.New(slog.DiscardHandler)))
 	if _, err := c.Reconcile(context.Background()); err != nil {
 		t.Fatal(err)
 	}

@@ -3,6 +3,7 @@ package deploylog
 import (
 	"context"
 	"errors"
+	"log/slog"
 	"testing"
 
 	"github.com/GLINCKER/levelrail/internal/build"
@@ -12,7 +13,7 @@ import (
 // nothing partial is stored, and the next attempt persists once space returns.
 func TestChaosPack_DiskFullOnLogWrite_LiveFeedIntactAndNextAttemptPersists(t *testing.T) {
 	store := &fakeStore{err: errors.New("write deploy_logs: no space left on device")}
-	r := NewRecorder(store, discardLogger())
+	r := NewRecorder(store, slog.New(slog.DiscardHandler))
 
 	r.Start("dep_1")
 	lines, live, unsub, ok := r.Snapshot("dep_1")

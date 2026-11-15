@@ -4,6 +4,7 @@ import (
 	"context"
 	"encoding/json"
 	"errors"
+	"log/slog"
 	"strings"
 	"testing"
 
@@ -59,7 +60,7 @@ func TestStandaloneDomains_RouteEveryTargetKind(t *testing.T) {
 		{Domain: "ui.example.com", Target: "container:redis-ui:8081", WebSocket: true, HostHeader: "upstream"},
 	}}
 	applier := &fakeApplier{}
-	c := New(st, rt, applier, WithLogger(discardLogger()))
+	c := New(st, rt, applier, WithLogger(slog.New(slog.DiscardHandler)))
 	res, err := c.Reconcile(context.Background())
 	if err != nil {
 		t.Fatalf("Reconcile: %v", err)
@@ -99,7 +100,7 @@ func TestStandaloneDomains_HalfSucceeded(t *testing.T) {
 		{Domain: "meta.example.com", Target: "169.254.169.254:80", WebSocket: true},
 	}}
 	applier := &fakeApplier{applyErr: errors.New("caddy rejected config")}
-	c := New(st, rt, applier, WithLogger(discardLogger()))
+	c := New(st, rt, applier, WithLogger(slog.New(slog.DiscardHandler)))
 	if _, err := c.Reconcile(context.Background()); err == nil {
 		t.Fatal("first pass should surface the apply failure")
 	}
@@ -158,7 +159,7 @@ func TestStandaloneDomains_FeaturesAndConflicts(t *testing.T) {
 		},
 	}
 	applier := &fakeApplier{}
-	c := New(st, rt, applier, WithLogger(discardLogger()))
+	c := New(st, rt, applier, WithLogger(slog.New(slog.DiscardHandler)))
 	res, err := c.Reconcile(context.Background())
 	if err != nil {
 		t.Fatal(err)
@@ -184,7 +185,7 @@ func TestStandaloneDomains_FeaturesAndConflicts(t *testing.T) {
 func TestStandaloneDomains_DeleteRemovesRoute(t *testing.T) {
 	st := &standaloneFakeStore{fakeStore: &fakeStore{}, standalone: []store.StandaloneDomain{{Domain: "test.example.com", Target: "127.0.0.1:3000", WebSocket: true}}}
 	applier := &fakeApplier{}
-	c := New(st, newFakeRuntime(), applier, WithLogger(discardLogger()))
+	c := New(st, newFakeRuntime(), applier, WithLogger(slog.New(slog.DiscardHandler)))
 	if _, err := c.Reconcile(context.Background()); err != nil {
 		t.Fatal(err)
 	}
@@ -202,7 +203,7 @@ func TestStandaloneDomains_DeleteRemovesRoute(t *testing.T) {
 
 func TestStandaloneDomains_StoreErrorFailsPass(t *testing.T) {
 	st := &standaloneFakeStore{fakeStore: &fakeStore{}, standaloneErr: errors.New("db down")}
-	c := New(st, newFakeRuntime(), &fakeApplier{}, WithLogger(discardLogger()))
+	c := New(st, newFakeRuntime(), &fakeApplier{}, WithLogger(slog.New(slog.DiscardHandler)))
 	if _, err := c.Reconcile(context.Background()); err == nil {
 		t.Fatal("a store error must fail the pass rather than drop every standalone route")
 	}

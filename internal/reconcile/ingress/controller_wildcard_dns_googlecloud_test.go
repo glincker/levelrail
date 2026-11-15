@@ -3,6 +3,7 @@ package ingress
 import (
 	"context"
 	"encoding/json"
+	"log/slog"
 	"strings"
 	"testing"
 
@@ -44,7 +45,7 @@ func TestController_Reconcile_GoogleCloudDNS(t *testing.T) {
 				gcdSettings: tc.settings,
 			}
 			applier := &fakeApplier{}
-			c := New(st, rt, applier, WithLogger(discardLogger()), WithGoogleCloudDNSKey(fakeGCDKeyResolver{key: tc.key}))
+			c := New(st, rt, applier, WithLogger(slog.New(slog.DiscardHandler)), WithGoogleCloudDNSKey(fakeGCDKeyResolver{key: tc.key}))
 			if _, err := c.Reconcile(context.Background()); err != nil {
 				t.Fatalf("Reconcile() error = %v", err)
 			}

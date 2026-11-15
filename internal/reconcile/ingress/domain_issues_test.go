@@ -3,6 +3,7 @@ package ingress
 import (
 	"context"
 	"errors"
+	"log/slog"
 	"testing"
 	"time"
 
@@ -36,7 +37,7 @@ func TestDomainIssues_UnresolvedCustomCertIsDegradedNotSilent(t *testing.T) {
 		tlsCerts: []store.DomainTLSCert{{Domain: "web.example.com", UploadedAt: time.Now(), ExpiresAt: time.Now().AddDate(1, 0, 0)}},
 	}
 	rec := &fakeDomainConds{}
-	c := New(st, rt, &fakeApplier{}, WithLogger(discardLogger()), WithDomainConditionsRecorder(rec),
+	c := New(st, rt, &fakeApplier{}, WithLogger(slog.New(slog.DiscardHandler)), WithDomainConditionsRecorder(rec),
 		WithDomainTLSCertSecrets(&fakePEMResolver{err: errors.New("secret missing")}))
 
 	result, err := c.Reconcile(context.Background())
@@ -62,7 +63,7 @@ func TestDomainIssues_DroppedClearsOnceFixed(t *testing.T) {
 	}
 	rec := &fakeDomainConds{}
 	resolver := &fakePasswordResolver{err: errors.New("gone")}
-	c := New(st, rt, &fakeApplier{}, WithLogger(discardLogger()), WithDomainConditionsRecorder(rec), WithDomainBasicAuthSecrets(resolver))
+	c := New(st, rt, &fakeApplier{}, WithLogger(slog.New(slog.DiscardHandler)), WithDomainConditionsRecorder(rec), WithDomainBasicAuthSecrets(resolver))
 
 	if _, err := c.Reconcile(context.Background()); err != nil {
 		t.Fatalf("Reconcile() error = %v", err)
@@ -91,7 +92,7 @@ func TestDomainIssues_WildcardWithoutDNSProviderIsDegraded(t *testing.T) {
 	rt.seedRunning(application.ContainerName(desired.Name, desired.Image, ""), 34567)
 	st := &fakeStore{services: []store.DesiredService{desired}, settings: store.IngressSettings{ACMEEnabled: true}}
 	rec := &fakeDomainConds{}
-	c := New(st, rt, &fakeApplier{}, WithLogger(discardLogger()), WithDomainConditionsRecorder(rec))
+	c := New(st, rt, &fakeApplier{}, WithLogger(slog.New(slog.DiscardHandler)), WithDomainConditionsRecorder(rec))
 
 	if _, err := c.Reconcile(context.Background()); err != nil {
 		t.Fatalf("Reconcile() error = %v", err)
@@ -117,7 +118,7 @@ func TestDomainIssues_BadHostDoesNotBreakSiblingHosts(t *testing.T) {
 	}
 	rec := &fakeDomainConds{}
 	applier := &fakeApplier{}
-	c := New(st, rt, applier, WithLogger(discardLogger()), WithDomainConditionsRecorder(rec),
+	c := New(st, rt, applier, WithLogger(slog.New(slog.DiscardHandler)), WithDomainConditionsRecorder(rec),
 		WithDomainBasicAuthSecrets(&fakePasswordResolver{err: errors.New("gone")}))
 
 	result, err := c.Reconcile(context.Background())

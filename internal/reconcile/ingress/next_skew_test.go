@@ -2,6 +2,7 @@ package ingress
 
 import (
 	"context"
+	"log/slog"
 	"testing"
 	"time"
 
@@ -29,7 +30,7 @@ func TestNextSkewForExcludesEveryCurrentReplicaAndMapsIDsToReleases(t *testing.T
 		skewContainer(oldA, "img:v2", 9200, time.Hour),
 		skewContainer(oldB, "img:v1", 9300, 2*time.Hour),
 	}}
-	c := New(&fakeStore{}, rt, &fakeApplier{}, WithLogger(discardLogger()), WithNextGraces(func(string, time.Time) []store.NextAssetGrace {
+	c := New(&fakeStore{}, rt, &fakeApplier{}, WithLogger(slog.New(slog.DiscardHandler)), WithNextGraces(func(string, time.Time) []store.NextAssetGrace {
 		return []store.NextAssetGrace{
 			{Service: "web", DeploymentID: "id-v2", Image: "img:v2"},
 			{Service: "web", DeploymentID: "id-v1", Image: "img:v1"},

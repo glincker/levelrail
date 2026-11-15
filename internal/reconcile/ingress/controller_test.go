@@ -376,17 +376,13 @@ func conditionOf(t *testing.T, result reconcile.Result) reconcile.Condition {
 	return result.Conditions[0]
 }
 
-func discardLogger() *slog.Logger {
-	return slog.New(slog.NewTextHandler(nil, &slog.HandlerOptions{Level: slog.LevelError + 1}))
-}
-
 func TestController_Reconcile_NoServicesWithDomains(t *testing.T) {
 	st := &fakeStore{services: []store.DesiredService{
 		{Name: "worker", Image: "img:v1", Port: 0}, // no domains at all
 	}}
 	rt := newFakeRuntime()
 	applier := &fakeApplier{}
-	c := New(st, rt, applier, WithLogger(discardLogger()))
+	c := New(st, rt, applier, WithLogger(slog.New(slog.DiscardHandler)))
 
 	result, err := c.Reconcile(context.Background())
 	if err != nil {
@@ -418,7 +414,7 @@ func TestController_Reconcile_NoDomains_NoPublicHost_StillNoRoute(t *testing.T) 
 
 	st := &fakeStore{services: []store.DesiredService{desired}}
 	applier := &fakeApplier{}
-	c := New(st, rt, applier, WithLogger(discardLogger())) // no WithPublicHost
+	c := New(st, rt, applier, WithLogger(slog.New(slog.DiscardHandler))) // no WithPublicHost
 
 	result, err := c.Reconcile(context.Background())
 	if err != nil {
@@ -446,7 +442,7 @@ func TestController_Reconcile_NoDomains_PublicHostSet_FallbackRouteAppears(t *te
 
 	st := &fakeStore{services: []store.DesiredService{desired}}
 	applier := &fakeApplier{}
-	c := New(st, rt, applier, WithLogger(discardLogger()), WithPublicHost("203.0.113.5"))
+	c := New(st, rt, applier, WithLogger(slog.New(slog.DiscardHandler)), WithPublicHost("203.0.113.5"))
 
 	result, err := c.Reconcile(context.Background())
 	if err != nil {
@@ -479,7 +475,7 @@ func TestController_Reconcile_NoDomains_PublicHostPrivate_NoRoute(t *testing.T) 
 
 	st := &fakeStore{services: []store.DesiredService{desired}}
 	applier := &fakeApplier{}
-	c := New(st, rt, applier, WithLogger(discardLogger()), WithPublicHost("10.0.0.5"))
+	c := New(st, rt, applier, WithLogger(slog.New(slog.DiscardHandler)), WithPublicHost("10.0.0.5"))
 
 	result, err := c.Reconcile(context.Background())
 	if err != nil {
@@ -504,7 +500,7 @@ func TestController_Reconcile_NoDomains_PublicHostSet_ContainerNotRunning_NoRout
 
 	st := &fakeStore{services: []store.DesiredService{desired}}
 	applier := &fakeApplier{}
-	c := New(st, rt, applier, WithLogger(discardLogger()), WithPublicHost("203.0.113.5"))
+	c := New(st, rt, applier, WithLogger(slog.New(slog.DiscardHandler)), WithPublicHost("203.0.113.5"))
 
 	result, err := c.Reconcile(context.Background())
 	if err != nil {
@@ -527,7 +523,7 @@ func TestController_Reconcile_OneServiceRunning_RouteAppears(t *testing.T) {
 
 	st := &fakeStore{services: []store.DesiredService{desired}}
 	applier := &fakeApplier{}
-	c := New(st, rt, applier, WithLogger(discardLogger()))
+	c := New(st, rt, applier, WithLogger(slog.New(slog.DiscardHandler)))
 
 	result, err := c.Reconcile(context.Background())
 	if err != nil {
@@ -563,7 +559,7 @@ func TestController_Reconcile_ContainerNotRunning_SkippedNotFailed(t *testing.T)
 
 	st := &fakeStore{services: []store.DesiredService{desired}}
 	applier := &fakeApplier{}
-	c := New(st, rt, applier, WithLogger(discardLogger()))
+	c := New(st, rt, applier, WithLogger(slog.New(slog.DiscardHandler)))
 
 	result, err := c.Reconcile(context.Background())
 	if err != nil {
@@ -585,7 +581,7 @@ func TestController_Reconcile_ContainerMissing_SkippedNotFailed(t *testing.T) {
 	rt := newFakeRuntime()
 	st := &fakeStore{services: []store.DesiredService{desired}}
 	applier := &fakeApplier{}
-	c := New(st, rt, applier, WithLogger(discardLogger()))
+	c := New(st, rt, applier, WithLogger(slog.New(slog.DiscardHandler)))
 
 	result, err := c.Reconcile(context.Background())
 	if err != nil {
@@ -606,7 +602,7 @@ func TestController_Reconcile_RunningNoPorts_SkippedNotFailed(t *testing.T) {
 
 	st := &fakeStore{services: []store.DesiredService{desired}}
 	applier := &fakeApplier{}
-	c := New(st, rt, applier, WithLogger(discardLogger()))
+	c := New(st, rt, applier, WithLogger(slog.New(slog.DiscardHandler)))
 
 	result, err := c.Reconcile(context.Background())
 	if err != nil {
@@ -631,7 +627,7 @@ func TestController_Reconcile_InspectError_SkippedNotFailed(t *testing.T) {
 
 	st := &fakeStore{services: []store.DesiredService{desired}}
 	applier := &fakeApplier{}
-	c := New(st, rt, applier, WithLogger(discardLogger()))
+	c := New(st, rt, applier, WithLogger(slog.New(slog.DiscardHandler)))
 
 	result, err := c.Reconcile(context.Background())
 	if err != nil {
@@ -652,7 +648,7 @@ func TestController_Reconcile_TwoServicesDistinctDomains_BothRouted(t *testing.T
 
 	st := &fakeStore{services: []store.DesiredService{web, api}}
 	applier := &fakeApplier{}
-	c := New(st, rt, applier, WithLogger(discardLogger()))
+	c := New(st, rt, applier, WithLogger(slog.New(slog.DiscardHandler)))
 
 	result, err := c.Reconcile(context.Background())
 	if err != nil {
@@ -687,7 +683,7 @@ func TestController_Reconcile_MixedRoutableAndNot(t *testing.T) {
 
 	st := &fakeStore{services: []store.DesiredService{web, stillDeploying, noDomains}}
 	applier := &fakeApplier{}
-	c := New(st, rt, applier, WithLogger(discardLogger()))
+	c := New(st, rt, applier, WithLogger(slog.New(slog.DiscardHandler)))
 
 	result, err := c.Reconcile(context.Background())
 	if err != nil {
@@ -702,7 +698,7 @@ func TestController_Reconcile_StoreError(t *testing.T) {
 	st := &fakeStore{err: errors.New("db unreachable")}
 	rt := newFakeRuntime()
 	applier := &fakeApplier{}
-	c := New(st, rt, applier, WithLogger(discardLogger()))
+	c := New(st, rt, applier, WithLogger(slog.New(slog.DiscardHandler)))
 
 	result, err := c.Reconcile(context.Background())
 	if err == nil {
@@ -726,7 +722,7 @@ func TestController_Reconcile_ApplyFailed(t *testing.T) {
 
 	st := &fakeStore{services: []store.DesiredService{desired}}
 	applier := &fakeApplier{applyErr: errors.New("caddy rejected config")}
-	c := New(st, rt, applier, WithLogger(discardLogger()))
+	c := New(st, rt, applier, WithLogger(slog.New(slog.DiscardHandler)))
 
 	result, err := c.Reconcile(context.Background())
 	if err == nil {
@@ -809,7 +805,7 @@ func TestController_Reconcile_CustomListenAddrs_AppliedToConfig(t *testing.T) {
 	st := &fakeStore{services: []store.DesiredService{desired}}
 	applier := &fakeApplier{}
 	c := New(st, rt, applier,
-		WithLogger(discardLogger()),
+		WithLogger(slog.New(slog.DiscardHandler)),
 		WithListenAddr(":8443"),
 		WithHTTPListenAddr(":8080"),
 	)
@@ -843,7 +839,7 @@ func TestController_Reconcile_NoDomains_TCPOnlyApp_NoFallbackRoute(t *testing.T)
 
 	st := &fakeStore{services: []store.DesiredService{desired}}
 	applier := &fakeApplier{}
-	c := New(st, rt, applier, WithLogger(discardLogger()), WithPublicHost("203.0.113.5"))
+	c := New(st, rt, applier, WithLogger(slog.New(slog.DiscardHandler)), WithPublicHost("203.0.113.5"))
 	if _, err := c.Reconcile(context.Background()); err != nil {
 		t.Fatalf("Reconcile() error = %v", err)
 	}
@@ -865,7 +861,7 @@ func TestController_Reconcile_TCPPublishedWithDomain_StillRouted(t *testing.T) {
 
 	st := &fakeStore{services: []store.DesiredService{desired}}
 	applier := &fakeApplier{}
-	c := New(st, rt, applier, WithLogger(discardLogger()), WithPublicHost("203.0.113.5"))
+	c := New(st, rt, applier, WithLogger(slog.New(slog.DiscardHandler)), WithPublicHost("203.0.113.5"))
 	if _, err := c.Reconcile(context.Background()); err != nil {
 		t.Fatalf("Reconcile() error = %v", err)
 	}
@@ -893,7 +889,7 @@ func TestController_Reconcile_FallbackCertsMode(t *testing.T) {
 			rt.seedRunning(target, 34567)
 			applier := &fakeApplier{}
 			c := New(&fakeStore{services: []store.DesiredService{desired}}, rt, applier,
-				WithLogger(discardLogger()), WithPublicHost("203.0.113.5"), WithFallbackCerts(tc.mode))
+				WithLogger(slog.New(slog.DiscardHandler)), WithPublicHost("203.0.113.5"), WithFallbackCerts(tc.mode))
 			if _, err := c.Reconcile(context.Background()); err != nil {
 				t.Fatalf("Reconcile() error = %v", err)
 			}
@@ -928,7 +924,7 @@ func TestController_Reconcile_LazyFallback_UserDomainSameAsFallbackStaysEager(t 
 
 	st := &fakeStore{services: []store.DesiredService{owner, web}}
 	applier := &fakeApplier{}
-	c := New(st, rt, applier, WithLogger(discardLogger()), WithPublicHost("203.0.113.5"),
+	c := New(st, rt, applier, WithLogger(slog.New(slog.DiscardHandler)), WithPublicHost("203.0.113.5"),
 		WithFallbackCerts(func(context.Context) string { return "lazy" }))
 	if _, err := c.Reconcile(context.Background()); err != nil {
 		t.Fatalf("Reconcile() error = %v", err)

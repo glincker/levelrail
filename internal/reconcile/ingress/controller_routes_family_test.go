@@ -2,6 +2,7 @@ package ingress
 
 import (
 	"context"
+	"log/slog"
 	"testing"
 	"time"
 
@@ -45,7 +46,7 @@ func TestController_PreviewServiceNeverClaimsPrimaryHost(t *testing.T) {
 	seedRelease(rt, "web", "img:v1", 34567, time.Now())
 	seedRelease(rt, "web-dep209p", "rb:dep_209", 34999, time.Now())
 	applier := &fakeApplier{}
-	c := New(&fakeStore{services: []store.DesiredService{preview, primary}}, rt, applier, WithLogger(discardLogger()))
+	c := New(&fakeStore{services: []store.DesiredService{preview, primary}}, rt, applier, WithLogger(slog.New(slog.DiscardHandler)))
 
 	if _, err := c.Reconcile(context.Background()); err != nil {
 		t.Fatal(err)
@@ -65,7 +66,7 @@ func TestController_PreviewServiceDoesNotTakeOverWhenPrimaryNotReady(t *testing.
 	seedRelease(rt, "web-dep209p", "rb:dep_209", 34999, time.Now())
 	applier := &fakeApplier{}
 	st := &fakeStore{services: []store.DesiredService{preview, primary}, notReadyServices: map[string]bool{"web": true}}
-	c := New(st, rt, applier, WithLogger(discardLogger()))
+	c := New(st, rt, applier, WithLogger(slog.New(slog.DiscardHandler)))
 
 	if _, err := c.Reconcile(context.Background()); err != nil {
 		t.Fatal(err)
@@ -89,7 +90,7 @@ func TestController_DialPreviousRelease_PrefersLastReadyRelease(t *testing.T) {
 		notReadyServices: map[string]bool{"web": true},
 		attempts:         map[string][]store.DeployAttempt{"web": {failed("img:v3"), failed("img:v2"), succeeded("img:v1")}},
 	}
-	c := New(st, rt, applier, WithLogger(discardLogger()))
+	c := New(st, rt, applier, WithLogger(slog.New(slog.DiscardHandler)))
 
 	if _, err := c.Reconcile(context.Background()); err != nil {
 		t.Fatal(err)
@@ -115,7 +116,7 @@ func TestController_LoadBalancer_OnlyHeldReleaseServesDuringCutover(t *testing.T
 		services: []store.DesiredService{svc},
 		attempts: map[string][]store.DeployAttempt{"web": {succeeded("img:v1"), succeeded("img:v0")}},
 	}
-	c := New(st, rt, applier, WithLogger(discardLogger()), WithLoadBalancers(fakeLBSource{configs: map[string]string{"web": `{}`}}, loadbalancer.NewRegistry()))
+	c := New(st, rt, applier, WithLogger(slog.New(slog.DiscardHandler)), WithLoadBalancers(fakeLBSource{configs: map[string]string{"web": `{}`}}, loadbalancer.NewRegistry()))
 
 	if _, err := c.Reconcile(context.Background()); err != nil {
 		t.Fatal(err)
@@ -144,7 +145,7 @@ func TestController_StreamFallsBackToServingRelease(t *testing.T) {
 		streams:  []store.AppStream{{ID: "s", ServiceName: "pg", ContainerPort: 5433, HostPort: 15432, Protocol: store.AppStreamProtocolTCP}},
 	}
 	applier := &fakeApplier{}
-	c := New(st, rt, applier, WithLogger(discardLogger()))
+	c := New(st, rt, applier, WithLogger(slog.New(slog.DiscardHandler)))
 
 	if _, err := c.Reconcile(context.Background()); err != nil {
 		t.Fatal(err)
@@ -178,7 +179,7 @@ func TestController_RollbackTargetKeepsServingWhileStaleReadyIsFalse(t *testing.
 			{Image: "img:v2", Status: store.DeployAttemptStatusRunning, StartedAt: time.Now()}, failed("img:v3"), succeeded("img:v2"), succeeded("img:v1"),
 		}},
 	}
-	c := New(st, rt, applier, WithLogger(discardLogger()))
+	c := New(st, rt, applier, WithLogger(slog.New(slog.DiscardHandler)))
 
 	if _, err := c.Reconcile(context.Background()); err != nil {
 		t.Fatal(err)
@@ -202,7 +203,7 @@ func TestController_UnprovenTargetStaysBehindServingReleaseWhenNotReady(t *testi
 		notReadyServices: map[string]bool{"web": true},
 		attempts:         map[string][]store.DeployAttempt{"web": {failed("img:v2"), succeeded("img:v1")}},
 	}
-	c := New(st, rt, applier, WithLogger(discardLogger()))
+	c := New(st, rt, applier, WithLogger(slog.New(slog.DiscardHandler)))
 
 	if _, err := c.Reconcile(context.Background()); err != nil {
 		t.Fatal(err)
@@ -228,7 +229,7 @@ func TestController_FreshContainerOfProvenImageWaitsForReady(t *testing.T) {
 			{Image: "img:v2", Status: store.DeployAttemptStatusRunning, StartedAt: time.Now()}, succeeded("img:v2"), succeeded("img:v1"),
 		}},
 	}
-	c := New(st, rt, applier, WithLogger(discardLogger()))
+	c := New(st, rt, applier, WithLogger(slog.New(slog.DiscardHandler)))
 
 	if _, err := c.Reconcile(context.Background()); err != nil {
 		t.Fatal(err)
@@ -255,7 +256,7 @@ func TestController_DialPreviousRelease_PodmanQualifiedImageNames(t *testing.T) 
 		notReadyServices: map[string]bool{"web": true},
 		attempts:         map[string][]store.DeployAttempt{"web": {failed("traefik/whoami:v3"), failed("traefik/whoami:v2"), succeeded("traefik/whoami:v1")}},
 	}
-	c := New(st, rt, applier, WithLogger(discardLogger()))
+	c := New(st, rt, applier, WithLogger(slog.New(slog.DiscardHandler)))
 
 	if _, err := c.Reconcile(context.Background()); err != nil {
 		t.Fatal(err)

@@ -2,6 +2,7 @@ package ingress
 
 import (
 	"context"
+	"log/slog"
 	"strings"
 	"testing"
 
@@ -51,7 +52,7 @@ func TestController_RemoteService_RoutesOverMesh(t *testing.T) {
 			remote.containers[name] = &docker.ContainerState{Name: name, Running: true, Ports: []docker.PortBinding{{ContainerPort: 80, HostPort: 32768, HostIP: tt.hostIP}}}
 			applier := &fakeApplier{}
 			c := New(&fakeStore{services: []store.DesiredService{svc}}, newFakeRuntime(), applier,
-				WithLogger(discardLogger()), WithLocalNodeID("node-1"),
+				WithLogger(slog.New(slog.DiscardHandler)), WithLocalNodeID("node-1"),
 				WithNodeUpstreams(fakeNodes{rt: remote, host: "10.181.0.2"}), WithMeshPaths(&fakePaths{path: tt.path}))
 			res, err := c.Reconcile(context.Background())
 			if err != nil {
@@ -85,7 +86,7 @@ func TestController_RemoteService_ConditionClearsWhenMeshComesUp(t *testing.T) {
 	paths := &fakePaths{path: meshpath.Path{Reason: "node has not joined the mesh yet"}}
 	applier := &fakeApplier{}
 	c := New(&fakeStore{services: []store.DesiredService{svc}}, newFakeRuntime(), applier,
-		WithLogger(discardLogger()), WithLocalNodeID("node-1"),
+		WithLogger(slog.New(slog.DiscardHandler)), WithLocalNodeID("node-1"),
 		WithNodeUpstreams(fakeNodes{rt: remote, host: "10.181.0.2"}), WithMeshPaths(paths))
 
 	res, err := c.Reconcile(context.Background())
@@ -109,7 +110,7 @@ func TestController_RemoteService_NotReadyStaysQuiet(t *testing.T) {
 	svc := remoteSvc()
 	remote := newFakeRuntime()
 	st := &fakeStore{services: []store.DesiredService{svc}}
-	c := New(st, newFakeRuntime(), &fakeApplier{}, WithLogger(discardLogger()), WithLocalNodeID("node-1"),
+	c := New(st, newFakeRuntime(), &fakeApplier{}, WithLogger(slog.New(slog.DiscardHandler)), WithLocalNodeID("node-1"),
 		WithNodeUpstreams(fakeNodes{rt: remote, host: "10.181.0.2"}),
 		WithMeshPaths(&fakePaths{path: meshpath.Path{Usable: true, Address: "10.181.0.2"}}))
 	res, err := c.Reconcile(context.Background())

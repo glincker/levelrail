@@ -3,6 +3,7 @@ package ingress
 import (
 	"context"
 	"errors"
+	"log/slog"
 	"testing"
 
 	"golang.org/x/crypto/bcrypt"
@@ -49,7 +50,7 @@ func TestController_Reconcile_DomainBasicAuth_NoResolverConfigured_RegressionUnc
 		basicAuth: []store.DomainBasicAuth{{Domain: "web.example.com", Username: "operator"}},
 	}
 	applier := &fakeApplier{}
-	c := New(st, rt, applier, WithLogger(discardLogger())) // no WithDomainBasicAuthSecrets
+	c := New(st, rt, applier, WithLogger(slog.New(slog.DiscardHandler))) // no WithDomainBasicAuthSecrets
 
 	result, err := c.Reconcile(context.Background())
 	if err != nil {
@@ -81,7 +82,7 @@ func TestController_Reconcile_DomainBasicAuth_ProtectedDomain_GetsAuthHandler(t 
 	key := store.DomainBasicAuthSecretsKey("web.example.com")
 	resolver := &fakePasswordResolver{passwords: map[string]string{key: "hunter2"}}
 	applier := &fakeApplier{}
-	c := New(st, rt, applier, WithLogger(discardLogger()), WithDomainBasicAuthSecrets(resolver))
+	c := New(st, rt, applier, WithLogger(slog.New(slog.DiscardHandler)), WithDomainBasicAuthSecrets(resolver))
 
 	result, err := c.Reconcile(context.Background())
 	if err != nil {
@@ -143,7 +144,7 @@ func TestController_Reconcile_DomainBasicAuth_ResolveError_DomainSkippedNotFaile
 	}
 	resolver := &fakePasswordResolver{err: errors.New("secrets: master key not set")}
 	applier := &fakeApplier{}
-	c := New(st, rt, applier, WithLogger(discardLogger()), WithDomainBasicAuthSecrets(resolver))
+	c := New(st, rt, applier, WithLogger(slog.New(slog.DiscardHandler)), WithDomainBasicAuthSecrets(resolver))
 
 	result, err := c.Reconcile(context.Background())
 	if err != nil {
@@ -179,7 +180,7 @@ func TestController_Reconcile_DomainBasicAuth_MixedDomains_SplitsIntoTwoRoutes(t
 	key := store.DomainBasicAuthSecretsKey("protected.example.com")
 	resolver := &fakePasswordResolver{passwords: map[string]string{key: "hunter2"}}
 	applier := &fakeApplier{}
-	c := New(st, rt, applier, WithLogger(discardLogger()), WithDomainBasicAuthSecrets(resolver))
+	c := New(st, rt, applier, WithLogger(slog.New(slog.DiscardHandler)), WithDomainBasicAuthSecrets(resolver))
 
 	if _, err := c.Reconcile(context.Background()); err != nil {
 		t.Fatalf("Reconcile() error = %v", err)

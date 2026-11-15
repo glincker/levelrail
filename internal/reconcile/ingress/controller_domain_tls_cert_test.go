@@ -3,6 +3,7 @@ package ingress
 import (
 	"context"
 	"errors"
+	"log/slog"
 	"testing"
 	"time"
 
@@ -55,7 +56,7 @@ func TestController_Reconcile_DomainTLSCert_NoResolverConfigured_RegressionUncha
 		tlsCerts: []store.DomainTLSCert{{Domain: "web.example.com", UploadedAt: time.Now(), ExpiresAt: time.Now().AddDate(1, 0, 0)}},
 	}
 	applier := &fakeApplier{}
-	c := New(st, rt, applier, WithLogger(discardLogger())) // no WithDomainTLSCertSecrets
+	c := New(st, rt, applier, WithLogger(slog.New(slog.DiscardHandler))) // no WithDomainTLSCertSecrets
 
 	result, err := c.Reconcile(context.Background())
 	if err != nil {
@@ -87,7 +88,7 @@ func TestController_Reconcile_DomainTLSCert_Configured_LoadsPEMCertificate(t *te
 	}
 	resolver := newFakePEMResolverFor("web.example.com", "cert-pem", "key-pem")
 	applier := &fakeApplier{}
-	c := New(st, rt, applier, WithLogger(discardLogger()), WithDomainTLSCertSecrets(resolver))
+	c := New(st, rt, applier, WithLogger(slog.New(slog.DiscardHandler)), WithDomainTLSCertSecrets(resolver))
 
 	result, err := c.Reconcile(context.Background())
 	if err != nil {
@@ -139,7 +140,7 @@ func TestController_Reconcile_DomainTLSCert_ResolveError_FallsBackToAutomaticIss
 	}
 	resolver := &fakePEMResolver{err: errors.New("secrets: master key not set")}
 	applier := &fakeApplier{}
-	c := New(st, rt, applier, WithLogger(discardLogger()), WithDomainTLSCertSecrets(resolver))
+	c := New(st, rt, applier, WithLogger(slog.New(slog.DiscardHandler)), WithDomainTLSCertSecrets(resolver))
 
 	result, err := c.Reconcile(context.Background())
 	if err != nil {
@@ -162,7 +163,7 @@ func TestController_Reconcile_DomainTLSCert_ResolveError_FallsBackToAutomaticIss
 func TestController_Reconcile_DomainTLSCert_StoreListError_FailsReconcile(t *testing.T) {
 	st := &fakeStore{tlsCertsErr: errors.New("db: connection lost")}
 	applier := &fakeApplier{}
-	c := New(st, newFakeRuntime(), applier, WithLogger(discardLogger()))
+	c := New(st, newFakeRuntime(), applier, WithLogger(slog.New(slog.DiscardHandler)))
 
 	if _, err := c.Reconcile(context.Background()); err == nil {
 		t.Fatal("Reconcile() error = nil, want an error when ListDomainTLSCerts fails")

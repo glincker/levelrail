@@ -1,6 +1,7 @@
 package deploylog
 
 import (
+	"log/slog"
 	"strings"
 	"testing"
 
@@ -14,7 +15,7 @@ const proofCanary = "canary-build-secret-7731" //nolint:gosec // synthetic test 
 func TestBuildOutputNeverCarriesRegisteredSecret(t *testing.T) {
 	secretmask.Add(proofCanary)
 	st := &fakeStore{}
-	r := NewRecorder(st, discardLogger())
+	r := NewRecorder(st, slog.New(slog.DiscardHandler))
 	r.Start("dep_proof")
 	_, live, unsub, ok := r.Snapshot("dep_proof")
 	if !ok {
