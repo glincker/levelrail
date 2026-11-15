@@ -42,6 +42,7 @@ const (
 	CauseBuildOOM        = "BUILD_OUT_OF_MEMORY"
 	CauseReadiness       = "READINESS_FAILING"
 	CauseCrashloop       = "CRASHLOOP"
+	CauseExited          = "CONTAINER_EXITED"
 	CauseMissingSecret   = "MISSING_SECRET"
 	CauseDependency      = "DEPENDENCY_NOT_READY"
 	CausePlacement       = "PLACEMENT_IMPOSSIBLE"
@@ -248,6 +249,12 @@ var table = []row{
 		explanation: "It starts, exits, and is restarted over and over, so it never stays up long enough to be ready.",
 		reasons:     []string{"CrashLoop", "CrashLoopBackOff"},
 		ctxMatch:    func(c Context) (string, bool) { return "crashloop alert is firing", c.Crashloop },
+		actions:     logsRetryRecheck,
+	},
+	{
+		code: CauseExited, title: "The container exited right away",
+		explanation: "It stopped by itself before it became ready, so it is a command that finishes, not a server. Check the image command or entrypoint, or use a long-running command.",
+		reasons:     []string{"ExitedDuringReadiness", "ExitedDuringWindow"},
 		actions:     logsRetryRecheck,
 	},
 	{

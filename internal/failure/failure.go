@@ -249,6 +249,9 @@ func match(in Input, lines []string) (*class, string, []string) {
 	for i, l := range lines {
 		lower[i] = strings.ToLower(ansiRe.ReplaceAllString(l, ""))
 	}
+	if c := exitedClass(in); c != nil {
+		return c, "", nil
+	}
 	build := inBuildPhase(in)
 	held := in.Status == statusHeld
 	var best *class
@@ -368,4 +371,36 @@ func excerpt(lines []string, pattern string, opts Options) string {
 		out = append(out, strings.ReplaceAll(untrusted.Redact(untrusted.Clean(l)), "build: build: ", "build: "))
 	}
 	return untrusted.Truncate(strings.Join(out, "\n"), opts.MaxBytes)
+}
+
+var exitCodeRe = regexp.MustCompile(`exited with code (\d+)`)
+
+// exitedClass names a container that stopped by itself. Its error text also
+// mentions the readiness probe, which would otherwise read as a slow start.
+func exitedClass(in Input) *class {
+	if in.Condition == nil {
+		return nil
+	}
+	if r := in.Condition.Reason; r != deploysafety.ReasonExitedDuringReadiness && r != deploysafety.ReasonExitedDuringWindow {
+		return nil
+	}
+	base := classByCode(CodeContainerCrashed)
+	if base == nil {
+		return nil
+	}
+	c := *base
+	code := ""
+	if m := exitCodeRe.FindStringSubmatch(in.Condition.Message); m != nil {
+		code = m[1]
+	}
+	if code == "" {
+		return &c
+	}
+	c.cause = "The container exited right away with code " + code + ": its command finishes instead of staying up like a server."
+	c.fix = "Check the image command or entrypoint, or use a long-running command that keeps serving."
+	if code != "0" {
+		c.cause = "The container exited right away with code " + code + ", so nothing was left to answer the readiness check."
+		c.fix = "Read the log excerpt for the start-up error, check the image command or entrypoint, fix it and redeploy."
+	}
+	return &c
 }

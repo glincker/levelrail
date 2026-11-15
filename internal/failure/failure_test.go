@@ -212,3 +212,15 @@ func TestBuildStepVersusDependencyInstall(t *testing.T) {
 		})
 	}
 }
+
+func TestExitedZeroNamesACommandThatFinishes(t *testing.T) {
+	in := Input{Status: "succeeded", Error: "readiness probe: container x has no published tcp port to probe",
+		Condition: &Condition{Reason: "ExitedDuringReadiness", Message: "Container exited with code 0 immediately, before it became ready"}}
+	got, ok := Classify(in, Options{})
+	if !ok || got.Code != CodeContainerCrashed {
+		t.Fatalf("Classify() = %+v, %v", got, ok)
+	}
+	if !strings.Contains(got.Cause, "exited right away with code 0") || strings.Contains(got.SuggestedFix, "readyTimeout") {
+		t.Errorf("cause %q fix %q", got.Cause, got.SuggestedFix)
+	}
+}

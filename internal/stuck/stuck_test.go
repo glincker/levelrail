@@ -23,6 +23,7 @@ func TestExplain(t *testing.T) {
 		{"node offline by context", Input{Kind: KindDatabase, Conditions: notReady("StartFailed", "x", time.Hour), Ctx: Context{NodeStatus: "offline"}}, CauseNodeOffline, true, ""},
 		{"build out of memory by text", Input{Kind: KindApp, Conditions: notReady("BuildFailed", "build exceeded its memory limit (512 MB): see builds.memory_limit_mb", time.Hour)}, CauseBuildOOM, true, ""},
 		{"port conflict by text only", Input{Kind: KindApp, Conditions: notReady("StartFailed", "bind: address already in use", time.Hour)}, CausePortConflict, true, ""},
+		{"exited beats readiness text", Input{Kind: KindApp, Conditions: notReady("ExitedDuringReadiness", "readiness probe: Container exited with code 0 immediately", 2*time.Minute)}, CauseExited, false, ""},
 		{"readiness", Input{Kind: KindApp, Conditions: notReady("ReadinessFailed", "", 2*time.Minute)}, CauseReadiness, false, ""},
 		{"dependency by context", Input{Kind: KindApp, Conditions: notReady("Pending", "", time.Hour), Ctx: Context{DependencyNotReady: "database/main"}}, CauseDependency, true, ""},
 		{"placement by text", Input{Kind: KindApp, Conditions: notReady("Pending", "no schedulable node for memory 64Gi", time.Hour)}, CausePlacement, true, ""},

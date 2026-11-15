@@ -9,6 +9,7 @@ import {
 } from '@thesvg/ui-react'
 import { Badge } from '@/components/ui/badge'
 import { Button, buttonVariants } from '@/components/ui/button'
+import { deployHasBuild } from '../../lib/deployHasBuild'
 import { failureLinesToText } from '../../lib/observabilityFormat'
 import { useFailureContext } from '../../queries/investigate'
 import { useStuck, type StuckAction } from '../../queries/stuck'
@@ -170,7 +171,9 @@ export function DiagnosisCard({
           >
             {t('diagnosis.openLogs')}
           </Link>
-          {deployId ? (
+          {deployId &&
+          latest?.id === deployId &&
+          deployHasBuild(latest.source) ? (
             <Link
               to="/apps/$name/deploys/$deployId/logs"
               params={{ name: appName, deployId }}
