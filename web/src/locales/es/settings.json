@@ -315,6 +315,10 @@
         "title": "Registro de auditoría",
         "description": "Quién cambió qué, en cada sesión y token de API."
       },
+      "integrations": {
+        "title": "Integraciones",
+        "description": "Todos los servicios conectados, su estado y caducidad, y dónde añadir más."
+      },
       "git-connections": {
         "title": "Conexiones Git",
         "description": "Todas las cuentas de GitHub, GitLab, Bitbucket, Gitea y Forgejo en un solo lugar."

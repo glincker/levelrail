@@ -698,6 +698,10 @@
         "title": "审计日志",
         "description": "谁更改了什么，涵盖所有会话和 API 令牌。"
       },
+      "integrations": {
+        "title": "集成",
+        "description": "查看所有已连接的服务、其状态和到期时间，以及添加更多服务的位置。"
+      },
       "git-connections": {
         "title": "Git 连接",
         "description": "所有 GitHub、GitLab、Bitbucket、Gitea 和 Forgejo 账户集中在一处。"

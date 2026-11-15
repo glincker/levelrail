@@ -1,0 +1,111 @@
+{
+  "title": "Integrations",
+  "description": "Every connected service, its health and expiry, and where to add more.",
+  "retry": "Retry",
+  "loadFailed": "Could not load connections.",
+  "connected": {
+    "title": "Connected"
+  },
+  "empty": {
+    "title": "Nothing connected yet",
+    "description": "Connect a git host, registry or notification channel from the catalogue below.",
+    "noMatch": "No connections match these filters."
+  },
+  "filters": {
+    "searchLabel": "Search connections",
+    "searchPlaceholder": "Search by name, account or host",
+    "kind": "Kind",
+    "scope": "Scope",
+    "health": "Health",
+    "allKinds": "All kinds",
+    "allScopes": "All scopes",
+    "allHealth": "Any health",
+    "clear": "Clear filters"
+  },
+  "kinds": {
+    "git": "Git",
+    "registry": "Registries",
+    "notify": "Notifications",
+    "secret": "Secrets",
+    "dns": "DNS",
+    "cloud": "Cloud",
+    "webhook": "Webhooks"
+  },
+  "scopes": {
+    "instance": "Instance",
+    "org": "Org",
+    "app": "App"
+  },
+  "health": {
+    "ok": "Healthy",
+    "degraded": "Degraded",
+    "needs_reconnect": "Needs reconnect",
+    "expired": "Expired",
+    "unknown": "Not checked"
+  },
+  "authMethods": {
+    "app_install": "App install",
+    "oauth": "OAuth",
+    "token": "Token",
+    "workload_identity": "Workload identity",
+    "url_secret": "Secret URL"
+  },
+  "categories": {
+    "git": "Git",
+    "registry": "Registries",
+    "notify": "Notifications",
+    "secret": "Secrets",
+    "dns": "DNS",
+    "cloud": "Cloud",
+    "webhook": "Webhooks",
+    "ci": "CI identity",
+    "observability": "Observability",
+    "addon": "App add-ons"
+  },
+  "methods": {
+    "one_click": "One click",
+    "guided_oauth": "Guided OAuth",
+    "token": "Token",
+    "settings_page": "Settings page"
+  },
+  "connect": {
+    "one_click": "Connect",
+    "guided_oauth": "Set up",
+    "token": "Add token",
+    "settings_page": "Open"
+  },
+  "card": {
+    "lastUsed": "Used {{when}}",
+    "neverUsed": "Never used",
+    "default": "Default",
+    "manage": "Manage",
+    "reconnect": "Reconnect",
+    "manageNamed": "Manage {{name}}",
+    "reconnectNamed": "Reconnect {{name}}",
+    "bound_one": "{{count}} binding",
+    "bound_other": "{{count}} bindings"
+  },
+  "expiry": {
+    "expiresToday": "Expires today",
+    "autoRenew": "auto renews",
+    "expiresInDays_one": "Expires in {{count}} day",
+    "expiresInDays_other": "Expires in {{count}} days",
+    "expiredDaysAgo_one": "Expired {{count}} day ago",
+    "expiredDaysAgo_other": "Expired {{count}} days ago"
+  },
+  "attention": {
+    "title_one": "{{count}} connection needs attention",
+    "title_other": "{{count}} connections need attention"
+  },
+  "catalog": {
+    "title": "Add an integration",
+    "description": "Each button opens the page that owns that connection.",
+    "empty": "No integrations are available.",
+    "loadFailed": "Could not load the catalogue.",
+    "connectNamed": "Connect {{name}}"
+  },
+  "wizard": {
+    "title": "Integration",
+    "description": "Connect a git host, registry, notifier or cloud account."
+  }
+}

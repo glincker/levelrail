@@ -167,6 +167,7 @@
       "settings-registry-credentials": "Credenciais de registries de container privados, usadas para baixar imagens.",
       "settings-backup-targets": "Onde os backups são armazenados.",
       "settings-storage": "Destinos de armazenamento de objetos.",
+      "settings-integrations": "Todos os serviços conectados, o estado e a validade, e onde adicionar mais.",
       "settings-git-connections": "Conecte GitHub, GitLab e outros hosts git.",
       "settings-notification-channels": "Alertas por Slack, Discord, e-mail e webhook.",
       "settings-users": "Pessoas que podem entrar e os papéis delas.",

@@ -714,6 +714,10 @@
         "title": "Log de auditoria",
         "description": "Quem alterou o quê, em todas as sessões e tokens de API."
       },
+      "integrations": {
+        "title": "Integrações",
+        "description": "Todos os serviços conectados, o estado e a validade, e onde adicionar mais."
+      },
       "git-connections": {
         "title": "Conexões Git",
         "description": "Todas as contas GitHub, GitLab, Bitbucket, Gitea e Forgejo em um só lugar."

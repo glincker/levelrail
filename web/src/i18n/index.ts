@@ -172,6 +172,7 @@ export const NAMESPACES = [
   'newAppNoGit',
   'appOverview',
   'webVitals',
+  'integrations',
 ] as const
 
 void i18n

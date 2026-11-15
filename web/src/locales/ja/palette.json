@@ -167,6 +167,7 @@
       "settings-registry-credentials": "イメージの取得に使う、プライベートコンテナレジストリの認証情報です。",
       "settings-backup-targets": "バックアップの保存先です。",
       "settings-storage": "オブジェクトストレージの保存先です。",
+      "settings-integrations": "接続済みのサービス、その状態と期限、追加先をまとめて確認します。",
       "settings-git-connections": "GitHub、GitLab、そのほかのGitホストに接続します。",
       "settings-notification-channels": "Slack、Discord、メール、Webhookによるアラートです。",
       "settings-users": "サインインできる人と、そのロールです。",

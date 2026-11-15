@@ -1,0 +1,107 @@
+{
+  "title": "連携",
+  "description": "接続済みのサービス、その状態と期限、追加先をまとめて確認します。",
+  "retry": "再試行",
+  "loadFailed": "接続を読み込めませんでした。",
+  "connected": {
+    "title": "接続済み"
+  },
+  "empty": {
+    "title": "まだ何も接続されていません",
+    "description": "下のカタログから Git ホスト、レジストリ、通知チャンネルを接続します。",
+    "noMatch": "この条件に合う接続はありません。"
+  },
+  "filters": {
+    "searchLabel": "接続を検索",
+    "searchPlaceholder": "名前、アカウント、ホストで検索",
+    "kind": "種類",
+    "scope": "スコープ",
+    "health": "状態",
+    "allKinds": "すべての種類",
+    "allScopes": "すべてのスコープ",
+    "allHealth": "すべての状態",
+    "clear": "絞り込みを解除"
+  },
+  "kinds": {
+    "git": "Git",
+    "registry": "レジストリ",
+    "notify": "通知",
+    "secret": "シークレット",
+    "dns": "DNS",
+    "cloud": "クラウド",
+    "webhook": "Webhook"
+  },
+  "scopes": {
+    "instance": "インスタンス",
+    "org": "組織",
+    "app": "アプリ"
+  },
+  "health": {
+    "ok": "正常",
+    "degraded": "低下",
+    "needs_reconnect": "再接続が必要",
+    "expired": "期限切れ",
+    "unknown": "未確認"
+  },
+  "authMethods": {
+    "app_install": "アプリのインストール",
+    "oauth": "OAuth",
+    "token": "トークン",
+    "workload_identity": "ワークロードID",
+    "url_secret": "シークレットURL"
+  },
+  "categories": {
+    "git": "Git",
+    "registry": "レジストリ",
+    "notify": "通知",
+    "secret": "シークレット",
+    "dns": "DNS",
+    "cloud": "クラウド",
+    "webhook": "Webhook",
+    "ci": "CI ID",
+    "observability": "オブザーバビリティ",
+    "addon": "アプリのアドオン"
+  },
+  "methods": {
+    "one_click": "ワンクリック",
+    "guided_oauth": "ガイド付き OAuth",
+    "token": "トークン",
+    "settings_page": "設定ページ"
+  },
+  "connect": {
+    "one_click": "接続",
+    "guided_oauth": "設定",
+    "token": "トークンを追加",
+    "settings_page": "開く"
+  },
+  "card": {
+    "lastUsed": "{{when}}に使用",
+    "neverUsed": "未使用",
+    "default": "既定",
+    "manage": "管理",
+    "reconnect": "再接続",
+    "manageNamed": "{{name}} を管理",
+    "reconnectNamed": "{{name}} を再接続",
+    "bound_other": "バインド {{count}} 件"
+  },
+  "expiry": {
+    "expiresToday": "今日期限切れ",
+    "autoRenew": "自動更新",
+    "expiresInDays_other": "あと {{count}} 日で期限切れ",
+    "expiredDaysAgo_other": "{{count}} 日前に期限切れ"
+  },
+  "attention": {
+    "title_other": "対応が必要な接続が {{count}} 件あります"
+  },
+  "catalog": {
+    "title": "連携を追加",
+    "description": "各ボタンは、その接続を管理するページを開きます。",
+    "empty": "利用できる連携はありません。",
+    "loadFailed": "カタログを読み込めませんでした。",
+    "connectNamed": "{{name}} を接続"
+  },
+  "wizard": {
+    "title": "連携",
+    "description": "Git ホスト、レジストリ、通知先、クラウドアカウントを接続します。"
+  }
+}

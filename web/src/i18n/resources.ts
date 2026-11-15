@@ -36,6 +36,7 @@ import type iacForm from '../locales/en/iacForm.json'
 import type stackSync from '../locales/en/stackSync.json'
 import type statusPage from '../locales/en/statusPage.json'
 import type assets from '../locales/en/assets.json'
+import type integrations from '../locales/en/integrations.json'
 import type uiShared from '../locales/en/uiShared.json'
 import type relatedLinks from '../locales/en/relatedLinks.json'
 import type gitSource from '../locales/en/gitSource.json'
@@ -189,6 +190,7 @@ declare module 'i18next' {
       stackSync: typeof stackSync
       statusPage: typeof statusPage
       assets: typeof assets
+      integrations: typeof integrations
       uiShared: typeof uiShared
       relatedLinks: typeof relatedLinks
       certBudget: typeof certBudget

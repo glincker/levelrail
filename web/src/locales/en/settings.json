@@ -706,6 +706,10 @@
         "title": "Audit log",
         "description": "Who changed what, across every session and API token."
       },
+      "integrations": {
+        "title": "Integrations",
+        "description": "Every connected service, its health and expiry, and where to add more."
+      },
       "git-connections": {
         "title": "Git connections",
         "description": "Every GitHub, GitLab, Bitbucket, Gitea and Forgejo account in one place."
