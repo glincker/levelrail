@@ -158,6 +158,8 @@ func buildExplainTable() map[string]Explanation {
 			"Open Settings, then Notifications, and add a channel, or add an email provider under Settings, then Email.", "", KindGuided),
 		ex("approval_without_session", "Shows how a sign-in with no other live session of the account is handled, and which ways exist to approve one.", "With hold and no way to approve, a sign-in waits until someone runs the host command.",
 			"Open Security, then Policy. Send a test email or create a signin:approve token before choosing hold. On the server, security reset-approval-policy sets it back to allow.", "", KindGuided),
+		ex("git_oauth_refresh", "Automatic token renewal for git connections is off, or a connection needs to be authorized again.", "A git connection stops working when its access token expires, and pushes or previews stop until someone reconnects.",
+			"Open Settings, then Integrations, and press Reconnect on the connection, or turn git.oauth_refresh_enabled back on in Settings, then Runtime.", "", KindGuided),
 		ex("secret_reveal_policy", "Showing secret values does not require a fresh confirmation.", "A stolen session could read secrets.",
 			"Open Settings, then Security, and set secret reveal to require step-up.", "", KindGuided),
 		ex("legacy_tokens", "Some API tokens use the old format.", "They cannot be limited or tracked like current tokens.",
