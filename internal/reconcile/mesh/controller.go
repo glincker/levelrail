@@ -84,6 +84,8 @@ type Controller struct {
 	resolver    *network.Resolver
 	logger      *slog.Logger
 	hiddenApps  func(ctx context.Context) (map[string]bool, error)
+	// aliasesOn gates extra internal names; nil means off.
+	aliasesOn func(ctx context.Context) bool
 }
 
 // Option configures New.
@@ -102,6 +104,11 @@ func WithLogger(l *slog.Logger) Option {
 // the cross-node half of private network default-deny.
 func WithHiddenApps(f func(ctx context.Context) (map[string]bool, error)) Option {
 	return func(c *Controller) { c.hiddenApps = f }
+}
+
+// WithInternalNames serves each app's extra internal names while enabled reports true.
+func WithInternalNames(enabled func(ctx context.Context) bool) Option {
+	return func(c *Controller) { c.aliasesOn = enabled }
 }
 
 // New builds the mesh controller. resolver is swapped wholesale on every
@@ -290,11 +297,16 @@ func (c *Controller) placements(ctx context.Context) ([]network.Placement, error
 	}
 
 	out := make([]network.Placement, 0, len(services)+len(databases))
+	aliases := c.aliasesOn != nil && c.aliasesOn(ctx)
 	for _, s := range services {
 		if s.AppID != "" && hidden[s.AppID] {
 			continue
 		}
-		out = append(out, network.Placement{Service: s.Name, NodeID: s.NodeID})
+		p := network.Placement{Service: s.Name, NodeID: s.NodeID}
+		if aliases {
+			p.Aliases = s.InternalDNSNames
+		}
+		out = append(out, p)
 	}
 	for _, d := range databases {
 		out = append(out, network.Placement{Service: d.Name, NodeID: d.NodeID})

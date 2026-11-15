@@ -39,7 +39,7 @@ func decodeAppUpdate(w http.ResponseWriter, r *http.Request, req *appResource) (
 // appUpdateFields lists the keys mergeOmittedAppFields can fill from storage.
 var appUpdateFields = []string{
 	"image", "port", "host_port", "published_ports", "bind_address", "domains", "env",
-	"resources", "health", "hooks", "strategy", "replicas", "next_cache", "next_image_cache", "labels", "command", "tolerations", "affinity",
+	"resources", "health", "hooks", "strategy", "replicas", "next_cache", "next_image_cache", "labels", "command", "tolerations", "affinity", "dns_names",
 	"registry_credential",
 }
 
@@ -68,6 +68,7 @@ func mergeOmittedAppFields(req *appResource, existing store.DesiredService, sent
 	keep("labels", func() { req.Labels = existing.Labels })
 	keep("command", func() { req.Command = existing.Command })
 	keep("tolerations", func() { req.Tolerations, _ = placement.DecodeRules(existing.Tolerations, nil) })
+	keep("dns_names", func() { req.DNSNames = existing.InternalDNSNames })
 	keep("affinity", func() { _, req.Affinity = placement.DecodeRules(nil, existing.Affinity) })
 }
 

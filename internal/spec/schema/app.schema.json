@@ -135,6 +135,18 @@
           "items": { "$ref": "#/$defs/toleration" }
         },
         "affinity": { "description": "Rules that attract or repel this service by node and workload labels.", "$ref": "#/$defs/affinity" },
+        "dns": {
+          "description": "Internal DNS options (beta).",
+          "type": "object",
+          "additionalProperties": false,
+          "properties": {
+            "names": {
+              "description": "Extra lowercase names under the mesh zone that resolve like the service name. Needs the runtime setting dns.internal_names_enabled.",
+              "type": "array",
+              "items": { "type": "string", "pattern": "^[a-z0-9]([a-z0-9-]*[a-z0-9])?(\\.[a-z0-9]([a-z0-9-]*[a-z0-9])?)*$" }
+            }
+          }
+        },
         "loadbalancer": { "description": "Load balancing, health and timeout settings across replicas.", "$ref": "#/$defs/loadbalancer" },
         "budget": { "description": "Egress and cost limits with an action when crossed.", "$ref": "#/$defs/budget" },
         "autoscale": { "description": "Autoscaling of replicas on a metric target.", "$ref": "#/$defs/autoscale" },

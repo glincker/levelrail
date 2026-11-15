@@ -161,6 +161,11 @@ disk.history_retention_days
 disk.history_sample_interval
 disk.low_free_mb
 disk.reserve_mb
+dns.internal_label_max_length
+dns.internal_name_max_length
+dns.internal_names_enabled
+dns.internal_names_max
+dns.internal_names_reserved
 dns.query_log_app_refresh
 dns.query_log_enabled
 dns.query_log_privacy

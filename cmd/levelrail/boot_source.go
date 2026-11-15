@@ -272,7 +272,10 @@ func dynamicSource(deps dynamicSourceDeps) reconcile.Source {
 		controllers = append(controllers, exposurereconcile.New(deps.db, newExposureManager(deps.firewallRulePrefix), deps.logger, exposurereconcile.WithPodmanCheck(runtimeIsPodman(deps.runtime))))
 
 		if deps.meshCfg != nil {
-			controllers = append(controllers, meshreconcile.New(deps.meshCfg.localNodeID, deps.db, deps.meshCfg.coordinator, deps.meshCfg.resolver, meshreconcile.WithLogger(deps.logger), meshreconcile.WithHiddenApps(privateNetworkHiddenApps(deps.db))))
+			controllers = append(controllers, meshreconcile.New(deps.meshCfg.localNodeID, deps.db, deps.meshCfg.coordinator, deps.meshCfg.resolver, meshreconcile.WithLogger(deps.logger), meshreconcile.WithHiddenApps(privateNetworkHiddenApps(deps.db)), meshreconcile.WithInternalNames(func(ctx context.Context) bool {
+				s := deps.settingsService()
+				return s != nil && s.Bool(ctx, runtimesettings.KeyDNSInternalNamesEnabled)
+			})))
 		}
 		return controllers, nil
 	}
