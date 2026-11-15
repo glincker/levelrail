@@ -39,8 +39,11 @@ type EmitApp struct {
 	Project     string
 	Environment string
 	// Image is the prebuilt image. Empty means use EmitOptions.ImageRepo.
-	Image       string
-	Port        int
+	Image string
+	Port  int
+	// PortlessOK marks a source where a service may have no port (stack files):
+	// no port is assumed and the App is emitted as commented guidance.
+	PortlessOK  bool
 	Replicas    int
 	Env         map[string]string
 	Secrets     []EmitSecret
@@ -323,6 +326,10 @@ func emitAppDoc(a *EmitApp, o EmitOptions) (emitDoc, []EmitSecret, error) {
 			return emitDoc{}, nil, fmt.Errorf("app %s has no image: pass --image-repo REGISTRY/NAMESPACE so its image is named REGISTRY/NAMESPACE/%s:latest", a.Name, a.Name)
 		}
 		image = strings.TrimRight(o.ImageRepo, "/") + "/" + a.Name + ":latest"
+	}
+	if a.Port == 0 && !a.PortlessOK {
+		a.Port = 80
+		a.Notes = append(a.Notes, "the source names no port, 80 is assumed: set the port the image listens on")
 	}
 	if a.Port == 0 {
 		a.Notes = append(a.Notes, "the source names no port, none is invented: set port (HTTP) or published_ports (other protocols) before applying")

@@ -163,7 +163,7 @@ func portainerInput(data []byte, path string) (platformimport.EmitInput, string,
 			in.Notes = append(in.Notes, fmt.Sprintf("service %s has a build context, skipped: build and push an image, then add an App for it", n))
 			continue
 		}
-		app := platformimport.EmitApp{Name: platformimport.SanitizeName(n), Image: svc.Image}
+		app := platformimport.EmitApp{Name: platformimport.SanitizeName(n), Image: svc.Image, PortlessOK: true}
 		if len(svc.Ports) > 0 {
 			app.Port = svc.Ports[0].ContainerPort
 		}

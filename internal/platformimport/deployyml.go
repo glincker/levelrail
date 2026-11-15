@@ -64,7 +64,7 @@ func DeployYMLToEmit(data []byte) (EmitInput, error) {
 	if service == "" || image == "" {
 		return in, fmt.Errorf("deploy.yml needs both service and image")
 	}
-	base := EmitApp{Name: SanitizeName(service), Image: image}
+	base := EmitApp{Name: SanitizeName(service), Image: image, PortlessOK: true}
 	if !strings.Contains(image[strings.LastIndex(image, "/")+1:], ":") {
 		in.Notes = append(in.Notes, fmt.Sprintf("image %s has no tag: the source tool appended the release version, pin a tag before apply", image))
 	}
@@ -207,7 +207,7 @@ func deployYMLAccessories(v any, in *EmitInput) error {
 		if !ok {
 			return fmt.Errorf("deploy.yml accessories.%s must be a mapping", name)
 		}
-		app := EmitApp{Name: SanitizeName(name)}
+		app := EmitApp{Name: SanitizeName(name), PortlessOK: true}
 		for _, k := range sortedAnyKeys(am) {
 			switch k {
 			case "image":

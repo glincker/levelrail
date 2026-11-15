@@ -8,7 +8,7 @@ import (
 )
 
 func TestEmitDoesNotInventAPort(t *testing.T) {
-	files, err := EmitStack(EmitInput{Source: "test", Apps: []EmitApp{{Name: "cache", Image: "redis:7"}}}, EmitOptions{Stack: "s", Project: "p"})
+	files, err := EmitStack(EmitInput{Source: "test", Apps: []EmitApp{{Name: "cache", Image: "redis:7", PortlessOK: true}}}, EmitOptions{Stack: "s", Project: "p"})
 	if err != nil {
 		t.Fatal(err)
 	}
@@ -20,7 +20,7 @@ func TestEmitDoesNotInventAPort(t *testing.T) {
 }
 
 func TestEmitPortlessAppIsGuidanceAndKeepsOthers(t *testing.T) {
-	in := EmitInput{Source: "test", Apps: []EmitApp{{Name: "cache", Image: "redis:7"}, {Name: "web", Image: "nginx", Port: 8080}}}
+	in := EmitInput{Source: "test", Apps: []EmitApp{{Name: "cache", Image: "redis:7", PortlessOK: true}, {Name: "web", Image: "nginx", Port: 8080}}}
 	files, err := EmitStack(in, EmitOptions{Stack: "s", Project: "p"})
 	if err != nil {
 		t.Fatal(err)
@@ -42,5 +42,19 @@ func TestEmitPortlessAppIsGuidanceAndKeepsOthers(t *testing.T) {
 	}
 	if len(issues) > 0 {
 		t.Fatalf("output must validate: %v", issues)
+	}
+}
+
+func TestEmitAssumesPortWhenPortlessNotAllowed(t *testing.T) {
+	files, err := EmitStack(EmitInput{Source: "test", Apps: []EmitApp{{Name: "web", Image: "nginx"}}}, EmitOptions{Stack: "s", Project: "p"})
+	if err != nil {
+		t.Fatal(err)
+	}
+	found := false
+	for _, f := range files {
+		found = found || strings.Contains(string(f.Content), "port: 80")
+	}
+	if !found {
+		t.Fatal("expected the default port for sources that always have one")
 	}
 }
