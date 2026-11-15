@@ -416,6 +416,30 @@ After that, every release publishes with no token. If a publish fails, use "Re-r
 
 An `NPM_TOKEN` secret, including one set at the organization level, is not used and can stay as it is for other repositories.
 
+## Extra distribution channels (off by default)
+
+Three optional channels run after the release job. None of them runs until its repository variable is `true`, and a missing secret skips the step instead of failing the release. Turn one on under Settings, Secrets and variables, Actions, Variables. `scripts/release/gen-manifests-test.sh` dry-runs the generators with fake checksums.
+
+### Docker Hub mirror
+
+Variable `DOCKERHUB_PUBLISH_ENABLED=true` makes both `merge-image-*` jobs copy the finished multi-arch index to `docker.io/<namespace>/levelrail` and `levelrail-agent` with the same tags, then cosign-sign the same digest. Secrets: `DOCKERHUB_USERNAME` and `DOCKERHUB_TOKEN` (an access token with read and write scope). Optional variable `DOCKERHUB_NAMESPACE` (default `glincker`).
+
+One-time owner steps: create the Docker Hub organization and the two repositories (or let the first push create them), create the access token, set the two secrets, then set the variable. The GHCR images must be public so the copy can read them.
+
+### winget and Scoop
+
+Variable `WINDOWS_PACKAGES_ENABLED=true` runs `publish-windows-packages` for stable tags. `scripts/release/gen-windows-manifests.sh` renders a portable-installer winget manifest set and `levelrail-cli.json` for Scoop from the two Windows `.exe` assets. The job attaches them to the release as `winget-*.yaml` and `levelrail-cli.scoop.json`, so no credential is needed for that part.
+
+Optional secrets: `WINGET_TOKEN` (a classic personal access token with `public_repo`) lets the pinned winget-releaser action open the winget-pkgs PR; `SCOOP_BUCKET_DEPLOY_KEY` (a write deploy key on `glincker/scoop-bucket`) pushes `bucket/levelrail-cli.json`. Each step skips when its secret is missing.
+
+One-time owner steps: submit the first `Glincker.LevelrailCli` manifest to winget-pkgs by hand (the action only updates an existing package) using the attached files, create the `glincker/scoop-bucket` repo, add the deploy key, set the secrets, then set the variable. Users run `winget install Glincker.LevelrailCli` or `scoop bucket add glincker https://github.com/glincker/scoop-bucket` then `scoop install levelrail-cli`.
+
+### AUR and Nix
+
+Variable `AUR_NIX_ENABLED=true` runs `publish-aur-nix`. `scripts/release/gen-aur-nix.sh` renders the `levelrail-cli-bin` PKGBUILD and a `flake.nix` that fetches the release binaries, and the job attaches them as `levelrail-cli-bin.PKGBUILD` and `levelrail-cli.flake.nix`. It needs no secrets and publishes nothing by itself.
+
+One-time owner steps: register the `levelrail-cli-bin` package on the AUR with your own SSH key and push the attached PKGBUILD (run `makepkg --printsrcinfo > .SRCINFO` first), and copy the flake into a `glincker/nix` repo or the main repo if you want `nix run github:glincker/nix`. Automating the AUR push needs an AUR SSH key secret and is left out on purpose.
+
 ## Caching
 
 Set the repository variable `GOCACHE_BUCKET` (plus `GOCACHE_REGION`,
