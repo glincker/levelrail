@@ -326,9 +326,16 @@ func (rt *Router) handleSetAppBuildRunner(w http.ResponseWriter, r *http.Request
 		writeError(w, http.StatusBadRequest, "pinning needs a node_id")
 		return
 	}
-	if req.NodeID != "" && !rt.isBuildRunnerNode(r.Context(), req.NodeID) {
-		writeError(w, http.StatusBadRequest, "node_id is not a build node")
-		return
+	if req.NodeID != "" {
+		// Resolve a name to its ID first so a policy on node:<id> cannot be sidestepped.
+		id, found := rt.buildRunnerNodeID(r.Context(), req.NodeID)
+		if !found {
+			writeError(w, http.StatusNotFound, "node not found")
+			return
+		}
+		if !rt.authorizeRefs(w, r, AbilityRead, notFoundAs(http.StatusNotFound, "node not found"), nodeRef(id)) {
+			return
+		}
 	}
 	if _, err := rt.apps.GetDesiredService(r.Context(), app); errors.Is(err, store.ErrServiceNotFound) {
 		writeError(w, http.StatusNotFound, "app not found")
@@ -359,13 +366,14 @@ func (rt *Router) handleClearAppBuildRunner(w http.ResponseWriter, r *http.Reque
 	writeJSON(w, http.StatusOK, toAppBuildRunner(app, store.BuildRunnerPref{}))
 }
 
-func (rt *Router) isBuildRunnerNode(ctx context.Context, id string) bool {
+// buildRunnerNodeID resolves a node ID or name to its ID. The control plane never qualifies.
+func (rt *Router) buildRunnerNodeID(ctx context.Context, ref string) (string, bool) {
 	for _, n := range rt.buildRunnerList(ctx) {
-		if !n.Local && (n.ID == id || n.Name == id) {
-			return true
+		if !n.Local && (n.ID == ref || n.Name == ref) {
+			return n.ID, true
 		}
 	}
-	return false
+	return "", false
 }
 
 // nameBuildRunners adds the runner's display name to rows that ran on a build run.
