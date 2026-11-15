@@ -381,6 +381,7 @@
               "predeploy-snapshot",
               "resilience",
               "resilience-summary",
+              "host-pressure",
               "chaos-coverage",
               "observability",
               "traffic-observability",

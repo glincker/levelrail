@@ -38,6 +38,7 @@ import (
 // startTelemetry starts the metric and log collectors.
 func (s *bootState) startTelemetry() {
 	s.wireStorageSettings()
+	s.startHostPressure()
 	ctx, logger := s.ctx, s.logger
 	agentDataDir := s.agentDataDir
 	agentRegistry := s.agentRegistry
