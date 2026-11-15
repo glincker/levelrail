@@ -108,6 +108,7 @@ const (
 	KindNodeCapacity            = "node_capacity"
 	KindStackDrift              = "stack_drift"
 	KindAdvisoryMatch           = "advisory_match"
+	KindDeployInterrupted       = "deploy_interrupted"
 )
 
 func deviceLoginItems(devices []apiclient.DevicePendingLogin, now time.Time) []Item {

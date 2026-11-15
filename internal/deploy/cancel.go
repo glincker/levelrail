@@ -67,6 +67,15 @@ func (r *CancelRegistry) Bind(parent context.Context, id string) context.Context
 	return ctx
 }
 
+// Registered reports whether this process is tracking deploy id, without
+// touching it. False for a deploy a previous process left behind.
+func (r *CancelRegistry) Registered(id string) bool {
+	r.mu.Lock()
+	defer r.mu.Unlock()
+	_, ok := r.entries[id]
+	return ok
+}
+
 // Cancel stops deploy id unless it already committed. by is recorded for
 // Canceled.
 func (r *CancelRegistry) Cancel(id, by string) CancelOutcome {

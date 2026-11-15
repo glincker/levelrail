@@ -16,13 +16,15 @@ import (
 // App event kinds recorded in app_events. Deploys and rollbacks are not
 // events: the timeline derives them from deploy attempts.
 const (
-	AppEventRestart      = "restart"
-	AppEventEnvChange    = "env_change"
-	AppEventSecretChange = "secret_change"
-	AppEventConfigChange = "config_change"
-	AppEventScale        = "scale"
-	AppEventSuspend      = "suspend"
-	AppEventResume       = "resume"
+	AppEventRestart = "restart"
+	// AppEventDeployInterrupted marks a deploy a control plane restart cut short.
+	AppEventDeployInterrupted = "deploy_interrupted"
+	AppEventEnvChange         = "env_change"
+	AppEventSecretChange      = "secret_change"
+	AppEventConfigChange      = "config_change"
+	AppEventScale             = "scale"
+	AppEventSuspend           = "suspend"
+	AppEventResume            = "resume"
 	// AppEventSlept and AppEventWoke mark sleep-when-idle stopping and starting an app.
 	AppEventSlept          = "slept"
 	AppEventWoke           = "woke"

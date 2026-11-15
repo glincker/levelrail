@@ -252,6 +252,7 @@ These variables only seed the default of a [runtime setting](/runtime-settings).
 | `APP_DEPLOY_NEXT_ASSET_GRACE_MAX_HELD` | [`deploy.next_asset_grace_max_held`](/runtime-settings#deploys) | `1` |
 | `APP_DEPLOY_NEXT_ASSET_GRACE_SECONDS` | [`deploy.next_asset_grace_seconds`](/runtime-settings#deploys) | `1800` |
 | `APP_DEPLOY_NEXT_DEPLOYMENT_ID` | [`deploy.next_deployment_id`](/runtime-settings#deploys) | `true` |
+| `APP_DEPLOY_ORPHAN_GRACE_SECONDS` | [`deploy.orphan_grace_seconds`](/runtime-settings#deploys) | `120` |
 | `APP_DEPLOY_PHASES_SAMPLES` | [`deploy.phases_samples`](/runtime-settings#deploys) | `5` |
 | `APP_DEPLOY_PREVIEW_CACHE_MODE` | [`deploy.preview_cache_mode`](/runtime-settings#deploys) | `isolated` |
 | `APP_DEPLOY_PREVIOUS_RELEASE_HOLD` | [`deploy.previous_release_hold`](/runtime-settings#deploys) | `3m` |

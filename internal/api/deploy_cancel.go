@@ -76,12 +76,14 @@ func (rt *Router) handleCancelDeploy(w http.ResponseWriter, r *http.Request) {
 			writeError(w, http.StatusConflict, "this deploy already cut over to the new release (desired state written), so it can no longer be canceled; roll back instead")
 			return
 		case deploy.CancelUnknown:
-			rt.writeCancelConflict(w, r, a.ID, "this deploy is not in progress on this control plane")
-			return
-		}
-		if _, err := rt.deploySafety.CancelDeployAttempt(ctx, a.ID, store.DeployAttemptStatusRunning, by, time.Now()); err != nil {
-			rt.internalError(w, "api: record canceled deploy failed", err, slog.String("attempt_id", a.ID))
-			return
+			if !rt.cancelOrphanedDeploy(w, r, a, by) {
+				return
+			}
+		default:
+			if _, err := rt.deploySafety.CancelDeployAttempt(ctx, a.ID, store.DeployAttemptStatusRunning, by, time.Now()); err != nil {
+				rt.internalError(w, "api: record canceled deploy failed", err, slog.String("attempt_id", a.ID))
+				return
+			}
 		}
 	case store.DeployAttemptStatusAwaitingApproval:
 		if !rt.cancelAwaitingApproval(w, r, a) {

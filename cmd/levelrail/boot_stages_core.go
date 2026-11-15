@@ -102,12 +102,8 @@ func (s *bootState) openDocker() error {
 	dockerguard.LogPrivilege(ctx, logger, client)
 
 	// Must run before anything below can create a new deploy attempt:
-	// see FailOrphanedDeployAttempts' own doc comment.
-	if n, err := db.FailOrphanedDeployAttempts(ctx, time.Now()); err != nil {
-		logger.Error("fail orphaned deploy attempts", slog.String("error", err.Error()))
-	} else if n > 0 {
-		logger.Warn("marked orphaned deploy attempts as failed", slog.Int("count", n))
-	}
+	// see RecoverInterruptedDeployAttempts' own doc comment.
+	recoverInterruptedDeploys(ctx, db, logger)
 	s.instanceID = instanceID
 	s.guard = guard
 	s.client = client
