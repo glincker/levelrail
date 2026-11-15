@@ -1640,6 +1640,19 @@ func TestWithMeshDNSAddr_SetsContainerSpecDNS(t *testing.T) {
 	}
 }
 
+func TestWithMeshDNSFunc_WinsOverStaticAddr(t *testing.T) {
+	rt := newFakeRuntime()
+	desired := &store.DesiredDatabase{Name: "main", Engine: store.EngineRedis, Version: "7"}
+	c := New("main", &fakeStore{db: desired}, rt, WithMeshDNSAddr("172.17.0.1"),
+		WithMeshDNSFunc(func() []string { return []string{"172.18.0.1", "10.0.0.2"} }))
+	if _, err := c.Reconcile(context.Background()); err != nil {
+		t.Fatalf("Reconcile() error = %v", err)
+	}
+	if want := []string{"172.18.0.1", "10.0.0.2"}; !reflect.DeepEqual(rt.lastCreateSpec.DNS, want) {
+		t.Errorf("DNS = %+v, want %+v", rt.lastCreateSpec.DNS, want)
+	}
+}
+
 // TestWithMeshDNSAddr_NotConfigured_LeavesDNSNil is the regression-safety
 // half of the mesh DNS test: without WithMeshDNSAddr (the default, and
 // every database before this option existed), Create must never see a

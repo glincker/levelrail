@@ -28,7 +28,8 @@ const (
 // level-triggered, and safe to interrupt by design).
 type Controller struct {
 	runtime     docker.Runtime
-	meshDNSAddr string // empty is valid: no mesh DNS server is running, or it hasn't resolved a container-reachable address, see WithMeshDNSAddr
+	meshDNSFn   func() []string // live pick, wins over meshDNSAddr, see WithMeshDNSFunc
+	meshDNSAddr string          // empty is valid: no mesh DNS server is running, or it hasn't resolved a container-reachable address, see WithMeshDNSAddr
 }
 
 // Option configures optional Controller behavior.
@@ -45,6 +46,11 @@ type Option func(*Controller)
 // override at all.
 func WithMeshDNSAddr(addr string) Option {
 	return func(c *Controller) { c.meshDNSAddr = addr }
+}
+
+// WithMeshDNSFunc picks the container DNS servers at create time, so a gateway listener that comes up later is used.
+func WithMeshDNSFunc(fn func() []string) Option {
+	return func(c *Controller) { c.meshDNSFn = fn }
 }
 
 // New builds a Controller against the given Runtime. Pass a fake in
@@ -69,7 +75,9 @@ func (c *Controller) Reconcile(ctx context.Context) (reconcile.Result, error) {
 
 	if state == nil {
 		spec := docker.ContainerSpec{Name: ContainerName, Image: image}
-		if c.meshDNSAddr != "" {
+		if c.meshDNSFn != nil {
+			spec.DNS = c.meshDNSFn()
+		} else if c.meshDNSAddr != "" {
 			spec.DNS = []string{c.meshDNSAddr}
 		}
 		id, err := c.runtime.Create(ctx, spec)

@@ -6,6 +6,7 @@ import (
 	"net"
 	"net/netip"
 	"strings"
+	"sync"
 	"sync/atomic"
 	"time"
 
@@ -27,6 +28,8 @@ type meshGatewayDNS struct {
 	defaultGW   atomic.Pointer[netip.Addr]
 	fwClean     bool
 	fwErr       string
+	fwdOnce     sync.Once
+	fwd         *network.Forwarder
 }
 
 // newMeshGatewayDNS builds the manager. legacy is the static :53 address, if any, kept for non-gateway setups.
@@ -42,8 +45,46 @@ func newMeshGatewayDNS(client *docker.Client, meshCfg *meshSetup, legacy, tag st
 		MeshCIDR: func() netip.Prefix { return meshCIDR(logger) },
 		Port:     dockerNameserverPort, Resolver: meshCfg.resolver, Logger: logger,
 		BindTimeout: bootDockerCallTimeout,
+		Forwarder:   m.forwarder,
+		Hooks: func() network.DNSHooks {
+			return network.DNSHooks{LocalAnswer: meshLocalAnswer(), ResponseGuard: meshResponseGuard()}
+		},
 	})
 	return m
+}
+
+// upstreams builds the forwarder on first use, so a node with the resolver off allocates nothing.
+func (m *meshGatewayDNS) upstreams() *network.Forwarder {
+	m.fwdOnce.Do(func() {
+		ctx := context.Background()
+		st := m.settings
+		nodeID := m.localNodeID
+		if nodeID == "" {
+			nodeID = "local"
+		}
+		m.fwd = network.NewForwarder(network.ForwarderConfig{
+			NodeID:         nodeID,
+			Upstreams:      func() []string { return st.List(ctx, runtimesettings.KeyDNSForwardUpstreams) },
+			AttemptTimeout: func() time.Duration { return st.Duration(ctx, runtimesettings.KeyDNSForwardAttemptTimeout) },
+			QueryTimeout:   func() time.Duration { return st.Duration(ctx, runtimesettings.KeyDNSForwardQueryTimeout) },
+			CacheBytes:     func() int { return st.Int(ctx, runtimesettings.KeyDNSCacheBytes) },
+			CacheMaxTTL:    func() time.Duration { return st.Duration(ctx, runtimesettings.KeyDNSCacheMaxTTL) },
+			CacheNegTTL:    func() time.Duration { return st.Duration(ctx, runtimesettings.KeyDNSCacheNegativeMaxTTL) },
+			RateQPS:        func() int { return st.Int(ctx, runtimesettings.KeyDNSRateLimitQPS) },
+			RateBurst:      func() int { return st.Int(ctx, runtimesettings.KeyDNSRateLimitBurst) },
+			Self:           m.gw.ListenAddrs,
+			Logger:         m.logger,
+		})
+	})
+	return m.fwd
+}
+
+// forwarder is nil while forwarding is switched off, which makes the listeners refuse public names again.
+func (m *meshGatewayDNS) forwarder() *network.Forwarder {
+	if !m.settings.Bool(context.Background(), runtimesettings.KeyDNSForwardEnabled) {
+		return nil
+	}
+	return m.upstreams()
 }
 
 func (m *meshGatewayDNS) bridges(ctx context.Context) ([]network.GatewayBridge, error) {
@@ -100,8 +141,13 @@ func (m *meshGatewayDNS) tick(ctx context.Context) {
 }
 
 // dnsFor is the create-time DNS pick: only a local node with a confirmed gateway listener gets one.
-func (m *meshGatewayDNS) dnsFor(nodeID string) string {
-	return pickContainerDNS(nodeID == "" || nodeID == m.localNodeID, m.gatewayConfirmed(), m.legacy)
+func (m *meshGatewayDNS) dnsFor(nodeID string) []string {
+	gw := m.gatewayConfirmed()
+	fallback := ""
+	if gw != "" && m.settings.String(context.Background(), runtimesettings.KeyDNSContainerFallback) == runtimesettings.DNSFallbackHostUpstream {
+		fallback = m.upstreams().FallbackAddr()
+	}
+	return pickContainerDNS(nodeID == "" || nodeID == m.localNodeID, gw, m.legacy, fallback)
 }
 
 func (m *meshGatewayDNS) gatewayConfirmed() string {
@@ -115,14 +161,19 @@ func (m *meshGatewayDNS) gatewayConfirmed() string {
 }
 
 // pickContainerDNS never returns an address for a remote node: no agent runs a resolver, so it would be dead.
-func pickContainerDNS(local bool, gateway, legacy string) string {
-	if !local {
-		return ""
+// The fallback follows the gateway so a closed listener fails fast onto a working server.
+func pickContainerDNS(local bool, gateway, legacy, fallback string) []string {
+	switch {
+	case !local:
+		return nil
+	case gateway != "" && fallback != "":
+		return []string{gateway, fallback}
+	case gateway != "":
+		return []string{gateway}
+	case legacy != "":
+		return []string{legacy}
 	}
-	if gateway != "" {
-		return gateway
-	}
-	return legacy
+	return nil
 }
 
 func (m *meshGatewayDNS) status(ctx context.Context) network.GatewayStatus {

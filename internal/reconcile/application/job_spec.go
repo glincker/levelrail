@@ -82,8 +82,8 @@ func (c *Controller) BuildJobSpec(ctx context.Context, desired *store.DesiredSer
 		}
 		spec.RegistryAuth = auth
 	}
-	if dnsAddr := c.meshDNSFor(desired.NodeID); dnsAddr != "" {
-		spec.DNS = []string{dnsAddr}
+	if mesh := c.meshDNSFor(desired.NodeID); len(mesh) > 0 {
+		spec.DNS = mesh
 	}
 	if spec.ExtraHosts, err = c.databaseExtraHosts(ctx, desired); err != nil {
 		return JobSpec{}, fmt.Errorf("database mesh hosts: %w", err)

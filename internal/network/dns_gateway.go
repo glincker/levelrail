@@ -39,6 +39,10 @@ type GatewayDNSConfig struct {
 	Logger   *slog.Logger
 	// BindTimeout bounds how long one listener may take to come up.
 	BindTimeout time.Duration
+	// Forwarder returns the upstream forwarder, or nil while forwarding is off; read on every reconcile.
+	Forwarder func() *Forwarder
+	// Hooks returns the optional answer and guard hooks.
+	Hooks func() DNSHooks
 }
 
 // GatewayListener is the state of one bridge gateway listener.
@@ -194,6 +198,34 @@ func (g *GatewayDNS) Reconcile(ctx context.Context) {
 			g.bind(ctx, a, b)
 		}
 	}
+	g.mu.Lock()
+	for _, s := range g.srv {
+		g.configure(s)
+	}
+	g.mu.Unlock()
+}
+
+// configure applies the live forwarder and hooks; a nil forwarder means forwarding is off.
+func (g *GatewayDNS) configure(s *DNSServer) {
+	var f *Forwarder
+	if g.cfg.Forwarder != nil {
+		f = g.cfg.Forwarder()
+	}
+	s.SetForwarder(f)
+	if g.cfg.Hooks != nil {
+		s.SetHooks(g.cfg.Hooks())
+	}
+}
+
+// ListenAddrs lists the gateway addresses currently serving.
+func (g *GatewayDNS) ListenAddrs() []netip.Addr {
+	g.mu.Lock()
+	defer g.mu.Unlock()
+	out := make([]netip.Addr, 0, len(g.srv))
+	for a := range g.srv {
+		out = append(out, a)
+	}
+	return out
 }
 
 func (g *GatewayDNS) bind(ctx context.Context, gw netip.Addr, b GatewayBridge) {
@@ -205,6 +237,7 @@ func (g *GatewayDNS) bind(ctx context.Context, gw netip.Addr, b GatewayBridge) {
 	}
 	srv := NewDNSServer(g.cfg.Resolver, g.cfg.Logger)
 	srv.SetAccess(g.allowed)
+	g.configure(srv)
 	addr := net.JoinHostPort(gw.String(), strconv.Itoa(g.cfg.Port))
 	if err := srv.Start(bctx, addr); err != nil {
 		code := classifyBindError(err)

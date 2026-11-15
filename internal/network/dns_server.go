@@ -3,17 +3,10 @@ package network
 // This file: the DNS wire protocol half of the internal DNS.
 // The decisions live in dns.go; this only speaks the protocol.
 //
-// Authoritative-only, deliberately. This server answers for its own zone
-// and nothing else: no recursion, no forwarding, no upstream. A container
-// therefore needs this resolver *in addition to* whatever it already
-// uses for public names, not instead of it, which is exactly how
-// Docker's own --dns list works (resolvers are tried in order). The
-// alternative, forwarding everything not in our zone, would make this
-// process a full recursive resolver for every container on the node: a
-// much larger surface, a new failure mode for every public DNS lookup an
-// app makes, and no benefit, since the node already has a working
-// resolver configured.
-//
+// Authoritative for the mesh zone. Names outside it are forwarded to the
+// host's own upstream resolvers when a Forwarder is set (see dns_forward.go),
+// and REFUSED otherwise, so a container never loses public DNS to this process.
+
 // A container can now be pointed at this server: docker.ContainerSpec.DNS,
 // the agent's protobuf ContainerSpec.dns, and internal/docker.Client.Create
 // all carry it through, and every reconcile controller
@@ -78,6 +71,20 @@ type DNSServer struct {
 
 	qlog   atomic.Pointer[QueryLog]
 	access atomic.Pointer[func(netip.Addr) bool]
+	fwd    atomic.Pointer[Forwarder]
+	hooks  atomic.Pointer[DNSHooks]
+}
+
+// LocalAnswerFunc may answer a name outside the mesh zone itself; nil, false means keep going.
+type LocalAnswerFunc func(src netip.Addr, req *dns.Msg) (*dns.Msg, bool)
+
+// ResponseGuardFunc inspects a fresh upstream answer before it is cached; a non-nil result replaces it.
+type ResponseGuardFunc func(src netip.Addr, req, resp *dns.Msg) (*dns.Msg, string)
+
+// DNSHooks are the optional extension points of the forwarding path. Nil fields are skipped.
+type DNSHooks struct {
+	LocalAnswer   LocalAnswerFunc
+	ResponseGuard ResponseGuardFunc
 }
 
 // NewDNSServer builds a server for resolver. It does not listen until
@@ -252,6 +259,12 @@ func (s *DNSServer) Close() error {
 // SetQueryLog attaches the per-app query log. Nil detaches it.
 func (s *DNSServer) SetQueryLog(l *QueryLog) { s.qlog.Store(l) }
 
+// SetForwarder attaches the upstream forwarder. Nil turns forwarding off, so names outside the zone get REFUSED.
+func (s *DNSServer) SetForwarder(f *Forwarder) { s.fwd.Store(f) }
+
+// SetHooks attaches the optional answer and guard hooks.
+func (s *DNSServer) SetHooks(h DNSHooks) { s.hooks.Store(&h) }
+
 // SetAccess restricts which source addresses are answered; others get REFUSED. Nil lifts the limit.
 func (s *DNSServer) SetAccess(allow func(netip.Addr) bool) {
 	if allow == nil {
@@ -264,19 +277,21 @@ func (s *DNSServer) SetAccess(allow func(netip.Addr) bool) {
 // handle answers one query and, when a query log is attached, records it.
 func (s *DNSServer) handle(w dns.ResponseWriter, req *dns.Msg) {
 	start := time.Now()
-	if allow := s.access.Load(); allow != nil {
-		var from netip.Addr
-		if ap, err := netip.ParseAddrPort(w.RemoteAddr().String()); err == nil {
-			from = ap.Addr().Unmap()
-		}
-		if !from.IsValid() || !(*allow)(from) {
-			denied := new(dns.Msg)
-			denied.SetRcode(req, dns.RcodeRefused)
-			s.write(w, denied)
-			return
-		}
+	var src netip.Addr
+	if ap, err := netip.ParseAddrPort(w.RemoteAddr().String()); err == nil {
+		src = ap.Addr().Unmap()
 	}
-	resp, reason := s.answer(req)
+	if allow := s.access.Load(); allow != nil && (!src.IsValid() || !(*allow)(src)) {
+		denied := new(dns.Msg)
+		denied.SetRcode(req, dns.RcodeRefused)
+		s.write(w, denied)
+		return
+	}
+	if f := s.fwd.Load(); f != nil && f.IsLoop(req) {
+		// Our own forwarded query came back to us; answering would only extend the loop.
+		return
+	}
+	resp, reason := s.answer(req, src, w.RemoteAddr().Network())
 	s.write(w, resp)
 	l := s.qlog.Load()
 	if !l.Enabled() {
@@ -286,15 +301,11 @@ func (s *DNSServer) handle(w dns.ResponseWriter, req *dns.Msg) {
 	if len(req.Question) > 0 {
 		qname, qtype = req.Question[0].Name, dns.TypeToString[req.Question[0].Qtype]
 	}
-	var src netip.Addr
-	if ap, err := netip.ParseAddrPort(w.RemoteAddr().String()); err == nil {
-		src = ap.Addr().Unmap()
-	}
 	l.Observe(src, qname, qtype, dns.RcodeToString[resp.Rcode], reason, len(resp.Answer), time.Since(start), start)
 }
 
 // answer builds the response and the reason code explaining it.
-func (s *DNSServer) answer(req *dns.Msg) (*dns.Msg, string) {
+func (s *DNSServer) answer(req *dns.Msg, src netip.Addr, network string) (*dns.Msg, string) {
 	resp := new(dns.Msg)
 	resp.SetReply(req)
 	resp.Authoritative = true
@@ -310,11 +321,7 @@ func (s *DNSServer) answer(req *dns.Msg) (*dns.Msg, string) {
 	q := req.Question[0]
 
 	if !s.resolver.Authoritative(q.Name) {
-		// Not our zone at all. REFUSED rather than NXDOMAIN so the
-		// client knows to ask someone else, instead of concluding the
-		// name does not exist anywhere. See this file's header.
-		resp.Rcode = dns.RcodeRefused
-		return resp, ReasonRefused
+		return s.outside(req, resp, src, network)
 	}
 
 	addr, ok := s.resolver.Lookup(q.Name)
@@ -340,6 +347,46 @@ func (s *DNSServer) answer(req *dns.Msg) (*dns.Msg, string) {
 	// The mesh is IPv4 only (see validateCIDR), so AAAA and every other
 	// type for an existing name is an empty NOERROR, not NXDOMAIN: a
 	// dual-stack client asking AAAA first must still go on to ask for A.
+	return resp, reason
+}
+
+// outside handles a name outside the mesh zone: a local hook, then the forwarder, else REFUSED.
+func (s *DNSServer) outside(req, refused *dns.Msg, src netip.Addr, network string) (*dns.Msg, string) {
+	var guard ResponseGuardFunc
+	if h := s.hooks.Load(); h != nil {
+		if h.LocalAnswer != nil {
+			if local, ok := h.LocalAnswer(src, req); ok && local != nil {
+				return local, ReasonLocalRecord
+			}
+		}
+		guard = h.ResponseGuard
+	}
+	f := s.fwd.Load()
+	if f == nil {
+		// REFUSED rather than NXDOMAIN so the client asks someone else instead of
+		// concluding the name does not exist anywhere.
+		refused.Rcode = dns.RcodeRefused
+		return refused, ReasonRefused
+	}
+	resp, reason, err := f.Resolve(context.Background(), src, req, guard)
+	if err != nil {
+		refused.Authoritative = false
+		refused.RecursionAvailable = true
+		if reason == ReasonRefused {
+			refused.Rcode = dns.RcodeRefused
+		} else {
+			refused.Rcode = dns.RcodeServerFailure
+			s.logger.Debug("dns forward failed", slog.String("error", err.Error()))
+		}
+		return refused, reason
+	}
+	if network == "udp" {
+		size := dns.MinMsgSize
+		if opt := req.IsEdns0(); opt != nil {
+			size = int(opt.UDPSize())
+		}
+		resp.Truncate(size)
+	}
 	return resp, reason
 }
 

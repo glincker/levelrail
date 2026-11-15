@@ -262,7 +262,8 @@ type Controller struct {
 	tlsOptional     bool
 	redisBlocked    bool
 	redisCreds      *RedisCredentials
-	meshDNSAddr     string // empty is valid: no mesh DNS server is running, or it hasn't resolved a container-reachable address, see WithMeshDNSAddr
+	meshDNSFn       func() []string // live pick, wins over meshDNSAddr, see WithMeshDNSFunc
+	meshDNSAddr     string          // empty is valid: no mesh DNS server is running, or it hasn't resolved a container-reachable address, see WithMeshDNSAddr
 	meshEndpoints   meshEndpointResolver
 	meshPorts       MeshPortLookup
 	// slowQueryThresholdMs is 0 (the default) whenever WithSlowQueryThreshold
@@ -357,6 +358,11 @@ func WithTLSDisabled() Option {
 // not validate it.
 func WithMeshDNSAddr(addr string) Option {
 	return func(c *Controller) { c.meshDNSAddr = addr }
+}
+
+// WithMeshDNSFunc picks the container DNS servers at create time, so a gateway listener that comes up later is used.
+func WithMeshDNSFunc(fn func() []string) Option {
+	return func(c *Controller) { c.meshDNSFn = fn }
 }
 
 // WithSlowQueryThreshold sets the Postgres log_min_duration_statement/
@@ -764,7 +770,9 @@ func (c *Controller) reconcileEngine(ctx context.Context, desired *store.Desired
 			Name: walArchiveVolumeName(c.dbName), ContainerPath: archivePath,
 		})
 	}
-	if c.meshDNSAddr != "" {
+	if c.meshDNSFn != nil {
+		spec.DNS = c.meshDNSFn()
+	} else if c.meshDNSAddr != "" {
 		spec.DNS = []string{c.meshDNSAddr}
 	}
 	// PubliclyAccessible/PublicPort (migrations/0026_database_public_access.sql):

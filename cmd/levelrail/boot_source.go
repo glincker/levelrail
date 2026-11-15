@@ -458,6 +458,10 @@ func databaseControllersFor(ctx context.Context, deps dynamicSourceDeps, databas
 		if deps.meshDNSAddr != "" {
 			dbOpts = append(dbOpts, database.WithMeshDNSAddr(deps.meshDNSAddr))
 		}
+		if deps.meshCfg != nil && deps.meshCfg.gatewayDNS != nil {
+			nodeID := desired.NodeID
+			dbOpts = append(dbOpts, database.WithMeshDNSFunc(func() []string { return deps.meshCfg.gatewayDNS.dnsFor(nodeID) }))
+		}
 		if deps.meshCfg != nil {
 			dbOpts = append(dbOpts, database.WithMeshEndpoint(newMeshPathResolver(deps.meshCfg, deps.db), deps.db))
 		}

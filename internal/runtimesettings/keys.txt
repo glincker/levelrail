@@ -163,6 +163,14 @@ disk.history_sample_interval
 disk.low_free_mb
 disk.reserve_mb
 dns.egress_report_max_names
+dns.cache_bytes
+dns.cache_max_ttl
+dns.cache_negative_max_ttl
+dns.container_fallback
+dns.forward_attempt_timeout
+dns.forward_enabled
+dns.forward_query_timeout
+dns.forward_upstreams
 dns.internal_label_max_length
 dns.internal_name_max_length
 dns.internal_names_enabled
@@ -174,6 +182,8 @@ dns.query_log_app_refresh
 dns.query_log_enabled
 dns.query_log_privacy
 dns.query_log_size
+dns.rate_limit_burst
+dns.rate_limit_qps
 dns.verify_provider_on_save
 doctor.reachability_dialback_allow_private
 doctor.reachability_dialback_url
