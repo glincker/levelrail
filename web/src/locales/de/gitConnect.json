@@ -39,5 +39,95 @@
     "bitbucket": "Bitbucket Cloud",
     "bitbucket_server": "Bitbucket Server",
     "azure_devops": "Azure DevOps"
+  },
+  "methods": {
+    "title": "Verbindungsarten",
+    "recommended": "Empfohlen",
+    "selfManaged": "Self-managed GitLab funktioniert mit jeder Art: Geben Sie Ihre Basis-URL im Verbindungsbereich ein.",
+    "status": {
+      "connected": "Verbunden",
+      "not_connected": "Nicht verbunden",
+      "needs_attention": "Aktion nötig",
+      "expires_soon": "Läuft bald ab"
+    },
+    "oauth": {
+      "name": "OAuth-Anwendung",
+      "unlocks": "Anmeldung über den Anbieter. Schaltet Repositories, Webhooks, Status und Kommentare frei und erneuert sich selbst.",
+      "action": "Mit OAuth verbinden"
+    },
+    "token": {
+      "name": "Zugriffstoken",
+      "unlocks": "Persönlichen, Projekt- oder Gruppentoken einfügen. Keine Redirect-URI und keine öffentliche Domain nötig.",
+      "action": "Mit Token verbinden"
+    },
+    "deploy_token": {
+      "name": "Deploy-Token",
+      "unlocks": "Nur lesende Registry-Pulls (read_registry) zum Deployen von Images.",
+      "action": "Registry-Zugangsdaten"
+    },
+    "ci_job": {
+      "name": "CI-Job-Token oder OIDC",
+      "unlocks": "Pipeline-Jobs deployen ohne gespeichertes Geheimnis.",
+      "action": "CI-Vertrauen einrichten"
+    }
+  },
+  "access": {
+    "matrix": "Zugriff und Scope",
+    "allowed": "Erlaubt",
+    "notAllowed": "Nicht erlaubt",
+    "needsScope": "Braucht {{scope}}",
+    "notReported": "Nicht gemeldet",
+    "scopesUnknown": "Die Control Plane meldet die gewährten Scopes für dieses Konto noch nicht, daher zeigt jede Funktion Nicht gemeldet.",
+    "scopes": "Gewährte Scopes",
+    "sees": "Sichtbar",
+    "projects_one": "{{count}} Projekt",
+    "projects_other": "{{count}} Projekte",
+    "expires": "Token-Ablauf",
+    "lastUsed": "Zuletzt verwendet",
+    "addScope": "Scope hinzufügen",
+    "addScopeMissing": "Braucht einen Endpunkt zum Erweitern von Scopes. Bis dahin neu autorisieren oder einen Token mit mehr Scopes hinzufügen.",
+    "rotate": "Token rotieren",
+    "rotateMissing": "Braucht einen Endpunkt zur Token-Rotation. Bis dahin einen neuen Token hinzufügen und den alten trennen.",
+    "addAnother": "Weiteres Konto hinzufügen",
+    "inferred": "Abgeleitet"
+  },
+  "cap": {
+    "list_repos": "Repositories auflisten",
+    "clone_sync": "Klonen und synchronisieren",
+    "commit_status": "Commit-Status",
+    "mr_comments": "Merge-Request-Kommentare und Vorschauen",
+    "registry_pull": "Registry-Pull",
+    "import_group": "Gruppe importieren",
+    "register_webhook": "Webhooks automatisch anlegen",
+    "tag_push_trigger": "Tag- und Push-Trigger",
+    "deployments_report": "Deployment-Meldungen"
+  },
+  "next": {
+    "title": "Was Sie hinzufügen können",
+    "import": {
+      "title": "Repositories importieren",
+      "body": "Wählen Sie Repositories oder eine ganze Gruppe und machen Sie Apps daraus.",
+      "action": "Quellen öffnen"
+    },
+    "previews": {
+      "title": "Merge-Request-Vorschauen aktivieren",
+      "body": "Für jeden offenen Merge Request eine Vorschau deployen.",
+      "action": "Quellen öffnen"
+    },
+    "ci": {
+      "title": "CI-Vertrauen hinzufügen",
+      "body": "Pipeline-Jobs deployen mit einer kurzlebigen Identität.",
+      "action": "Pipelines öffnen"
+    },
+    "webhook": {
+      "title": "Webhook hinzufügen",
+      "body": "Deploy- und Build-Ereignisse an einen anderen Dienst senden.",
+      "action": "Webhooks öffnen"
+    },
+    "registry": {
+      "title": "Registry verbinden",
+      "body": "Pull-Zugangsdaten für private Images speichern.",
+      "action": "Registry-Zugangsdaten öffnen"
+    }
   }
 }

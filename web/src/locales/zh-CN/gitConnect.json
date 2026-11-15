@@ -39,5 +39,95 @@
     "bitbucket": "Bitbucket Cloud",
     "bitbucket_server": "Bitbucket Server",
     "azure_devops": "Azure DevOps"
+  },
+  "methods": {
+    "title": "连接方式",
+    "recommended": "推荐",
+    "selfManaged": "自托管 GitLab 也支持所有方式:在连接面板中填写你的基础 URL。",
+    "status": {
+      "connected": "已连接",
+      "not_connected": "未连接",
+      "needs_attention": "需要处理",
+      "expires_soon": "即将过期"
+    },
+    "oauth": {
+      "name": "OAuth 应用",
+      "unlocks": "通过提供方登录。可用于仓库、Webhook、状态和评论,并会自动刷新。",
+      "action": "使用 OAuth 连接"
+    },
+    "token": {
+      "name": "访问令牌",
+      "unlocks": "粘贴个人、项目或群组令牌。无需重定向 URI 或公网域名。",
+      "action": "使用令牌连接"
+    },
+    "deploy_token": {
+      "name": "部署令牌",
+      "unlocks": "用于部署镜像的只读镜像仓库拉取(read_registry)。",
+      "action": "镜像仓库凭据"
+    },
+    "ci_job": {
+      "name": "CI 任务令牌或 OIDC",
+      "unlocks": "让流水线任务无需存储密钥即可部署。",
+      "action": "设置 CI 信任"
+    }
+  },
+  "access": {
+    "matrix": "访问与权限范围",
+    "allowed": "允许",
+    "notAllowed": "不允许",
+    "needsScope": "需要 {{scope}}",
+    "notReported": "未上报",
+    "scopesUnknown": "控制平面暂未上报此账号已授予的权限范围,因此每项功能都显示为未上报。",
+    "scopes": "已授予的权限范围",
+    "sees": "可见范围",
+    "projects_one": "{{count}} 个项目",
+    "projects_other": "{{count}} 个项目",
+    "expires": "令牌到期时间",
+    "lastUsed": "最近使用",
+    "addScope": "添加权限范围",
+    "addScopeMissing": "需要一个升级权限范围的接口。目前请重新授权,或添加权限更多的令牌。",
+    "rotate": "轮换令牌",
+    "rotateMissing": "需要一个令牌轮换接口。目前请添加新令牌并断开旧令牌。",
+    "addAnother": "添加另一个账号",
+    "inferred": "推断"
+  },
+  "cap": {
+    "list_repos": "列出仓库",
+    "clone_sync": "克隆与同步",
+    "commit_status": "提交状态",
+    "mr_comments": "合并请求评论与预览",
+    "registry_pull": "镜像仓库拉取",
+    "import_group": "导入群组",
+    "register_webhook": "自动注册 Webhook",
+    "tag_push_trigger": "标签与推送触发",
+    "deployments_report": "部署上报"
+  },
+  "next": {
+    "title": "接下来可以添加",
+    "import": {
+      "title": "导入仓库",
+      "body": "选择仓库或整个群组并将其变成应用。",
+      "action": "打开来源"
+    },
+    "previews": {
+      "title": "启用合并请求预览",
+      "body": "为每个打开的合并请求部署预览。",
+      "action": "打开来源"
+    },
+    "ci": {
+      "title": "添加 CI 信任",
+      "body": "让流水线任务使用短期身份部署。",
+      "action": "打开流水线"
+    },
+    "webhook": {
+      "title": "添加 Webhook",
+      "body": "将部署和构建事件发送到其他服务。",
+      "action": "打开 Webhook"
+    },
+    "registry": {
+      "title": "连接镜像仓库",
+      "body": "保存私有镜像的拉取凭据。",
+      "action": "打开镜像仓库凭据"
+    }
   }
 }

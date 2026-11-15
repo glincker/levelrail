@@ -39,5 +39,95 @@
     "bitbucket": "Bitbucket Cloud",
     "bitbucket_server": "Bitbucket Server",
     "azure_devops": "Azure DevOps"
+  },
+  "methods": {
+    "title": "Façons de se connecter",
+    "recommended": "Recommandé",
+    "selfManaged": "GitLab auto-hébergé fonctionne avec chaque méthode : saisissez votre URL de base dans le panneau de connexion.",
+    "status": {
+      "connected": "Connecté",
+      "not_connected": "Non connecté",
+      "needs_attention": "À vérifier",
+      "expires_soon": "Expire bientôt"
+    },
+    "oauth": {
+      "name": "Application OAuth",
+      "unlocks": "Connexion via le fournisseur. Donne accès aux dépôts, webhooks, statuts et commentaires, et se renouvelle seule.",
+      "action": "Se connecter avec OAuth"
+    },
+    "token": {
+      "name": "Jeton d'accès",
+      "unlocks": "Collez un jeton personnel, de projet ou de groupe. Aucune URI de redirection ni domaine public requis.",
+      "action": "Se connecter avec un jeton"
+    },
+    "deploy_token": {
+      "name": "Jeton de déploiement",
+      "unlocks": "Pulls du registre en lecture seule (read_registry) pour déployer des images.",
+      "action": "Identifiants du registre"
+    },
+    "ci_job": {
+      "name": "Jeton de job CI ou OIDC",
+      "unlocks": "Permet aux jobs du pipeline de déployer sans secret stocké.",
+      "action": "Configurer la confiance CI"
+    }
+  },
+  "access": {
+    "matrix": "Accès et portées",
+    "allowed": "Autorisé",
+    "notAllowed": "Non autorisé",
+    "needsScope": "Nécessite {{scope}}",
+    "notReported": "Non communiqué",
+    "scopesUnknown": "Le plan de contrôle ne communique pas encore les portées accordées à ce compte, chaque fonction affiche donc Non communiqué.",
+    "scopes": "Portées accordées",
+    "sees": "Peut voir",
+    "projects_one": "{{count}} projet",
+    "projects_other": "{{count}} projets",
+    "expires": "Expiration du jeton",
+    "lastUsed": "Dernière utilisation",
+    "addScope": "Ajouter une portée",
+    "addScopeMissing": "Nécessite un point d'accès qui élargit les portées. En attendant, réautorisez ou ajoutez un jeton avec plus de portées.",
+    "rotate": "Renouveler le jeton",
+    "rotateMissing": "Nécessite un point d'accès de rotation des jetons. En attendant, ajoutez un nouveau jeton et déconnectez l'ancien.",
+    "addAnother": "Ajouter un autre compte",
+    "inferred": "Déduit"
+  },
+  "cap": {
+    "list_repos": "Lister les dépôts",
+    "clone_sync": "Cloner et synchroniser",
+    "commit_status": "Statut des commits",
+    "mr_comments": "Commentaires et aperçus des merge requests",
+    "registry_pull": "Pull du registre",
+    "import_group": "Importer un groupe",
+    "register_webhook": "Enregistrer les webhooks automatiquement",
+    "tag_push_trigger": "Déclencheurs de tags et de push",
+    "deployments_report": "Rapport des déploiements"
+  },
+  "next": {
+    "title": "Ce que vous pouvez ajouter",
+    "import": {
+      "title": "Importer des dépôts",
+      "body": "Choisissez des dépôts ou un groupe entier et transformez-les en apps.",
+      "action": "Ouvrir les sources"
+    },
+    "previews": {
+      "title": "Activer les aperçus de merge requests",
+      "body": "Déployez un aperçu pour chaque merge request ouverte.",
+      "action": "Ouvrir les sources"
+    },
+    "ci": {
+      "title": "Ajouter la confiance CI",
+      "body": "Les jobs du pipeline déploient avec une identité de courte durée.",
+      "action": "Ouvrir les pipelines"
+    },
+    "webhook": {
+      "title": "Ajouter un webhook",
+      "body": "Envoyez les événements de déploiement et de build à un autre service.",
+      "action": "Ouvrir les webhooks"
+    },
+    "registry": {
+      "title": "Connecter un registre",
+      "body": "Stockez des identifiants de pull pour les images privées.",
+      "action": "Ouvrir les identifiants du registre"
+    }
   }
 }

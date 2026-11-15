@@ -39,5 +39,95 @@
     "bitbucket": "Bitbucket Cloud",
     "bitbucket_server": "Bitbucket Server",
     "azure_devops": "Azure DevOps"
+  },
+  "methods": {
+    "title": "Formas de conectar",
+    "recommended": "Recomendado",
+    "selfManaged": "O GitLab auto-hospedado funciona com todos os métodos: informe sua URL base no painel de conexão.",
+    "status": {
+      "connected": "Conectado",
+      "not_connected": "Não conectado",
+      "needs_attention": "Precisa de atenção",
+      "expires_soon": "Expira em breve"
+    },
+    "oauth": {
+      "name": "Aplicativo OAuth",
+      "unlocks": "Entre pelo provedor. Libera repositórios, webhooks, status e comentários, e se renova sozinho.",
+      "action": "Conectar com OAuth"
+    },
+    "token": {
+      "name": "Token de acesso",
+      "unlocks": "Cole um token pessoal, de projeto ou de grupo. Não precisa de URI de redirecionamento nem de domínio público.",
+      "action": "Conectar com um token"
+    },
+    "deploy_token": {
+      "name": "Token de deploy",
+      "unlocks": "Pulls somente leitura do registro (read_registry) para fazer deploy de imagens.",
+      "action": "Credenciais do registro"
+    },
+    "ci_job": {
+      "name": "Token de job de CI ou OIDC",
+      "unlocks": "Permite que jobs do pipeline façam deploy sem um segredo armazenado.",
+      "action": "Configurar confiança de CI"
+    }
+  },
+  "access": {
+    "matrix": "Acesso e escopos",
+    "allowed": "Permitido",
+    "notAllowed": "Não permitido",
+    "needsScope": "Precisa de {{scope}}",
+    "notReported": "Não informado",
+    "scopesUnknown": "O plano de controle ainda não informa os escopos concedidos a esta conta, então cada recurso mostra Não informado.",
+    "scopes": "Escopos concedidos",
+    "sees": "Pode ver",
+    "projects_one": "{{count}} projeto",
+    "projects_other": "{{count}} projetos",
+    "expires": "Expiração do token",
+    "lastUsed": "Último uso",
+    "addScope": "Adicionar escopo",
+    "addScopeMissing": "Precisa de um endpoint que amplie escopos. Por enquanto, reautorize ou adicione um token com mais escopos.",
+    "rotate": "Rotacionar token",
+    "rotateMissing": "Precisa de um endpoint de rotação de token. Por enquanto, adicione um token novo e desconecte o antigo.",
+    "addAnother": "Adicionar outra conta",
+    "inferred": "Inferido"
+  },
+  "cap": {
+    "list_repos": "Listar repositórios",
+    "clone_sync": "Clonar e sincronizar",
+    "commit_status": "Status de commit",
+    "mr_comments": "Comentários e prévias de merge requests",
+    "registry_pull": "Pull do registro",
+    "import_group": "Importar um grupo",
+    "register_webhook": "Registrar webhooks automaticamente",
+    "tag_push_trigger": "Gatilhos de tag e push",
+    "deployments_report": "Relatório de deploys"
+  },
+  "next": {
+    "title": "O que você pode adicionar",
+    "import": {
+      "title": "Importar repositórios",
+      "body": "Escolha repositórios ou um grupo inteiro e transforme em apps.",
+      "action": "Abrir fontes"
+    },
+    "previews": {
+      "title": "Ativar prévias de merge requests",
+      "body": "Faça deploy de uma prévia para cada merge request aberto.",
+      "action": "Abrir fontes"
+    },
+    "ci": {
+      "title": "Adicionar confiança de CI",
+      "body": "Jobs do pipeline fazem deploy com uma identidade de curta duração.",
+      "action": "Abrir pipelines"
+    },
+    "webhook": {
+      "title": "Adicionar um webhook",
+      "body": "Envie eventos de deploy e build para outro serviço.",
+      "action": "Abrir webhooks"
+    },
+    "registry": {
+      "title": "Conectar um registro",
+      "body": "Guarde credenciais de pull para imagens privadas.",
+      "action": "Abrir credenciais do registro"
+    }
   }
 }

@@ -4,13 +4,13 @@ import { PlugGlassIcon, PlusGlassIcon } from '@thesvg/ui-react'
 import { Button } from '@/components/ui/button'
 import { BrandTile } from '../BrandLogoBadge'
 import {
-  Dialog,
-  DialogContent,
-  DialogDescription,
-  DialogFooter,
-  DialogHeader,
-  DialogTitle,
-} from '@/components/ui/dialog'
+  Sheet,
+  SheetContent,
+  SheetDescription,
+  SheetFooter,
+  SheetHeader,
+  SheetTitle,
+} from '@/components/ui/sheet'
 import { Field, FieldDescription, FieldLabel } from '@/components/ui/field'
 import { Input } from '@/components/ui/input'
 import { SecretInput } from '@/components/ui/secret-input'
@@ -138,30 +138,30 @@ export function AddGitConnectionDialog({
   const callback = gitRedirectUri(window.location.origin, provider)
 
   return (
-    <Dialog
+    <Sheet
       open={open}
       onOpenChange={(next) => {
         if (!next) reset()
         onOpenChange(next)
       }}
     >
-      <DialogContent className="sm:max-w-lg">
-        <DialogHeader>
-          <DialogTitle className="flex items-center gap-2">
+      <SheetContent className="overflow-y-auto data-[side=right]:sm:max-w-2xl">
+        <SheetHeader>
+          <SheetTitle className="flex items-center gap-2">
             <BrandTile
               name={BRAND_MARK[provider]}
               label={t(`gitConnections.add.title.${provider}`)}
               size="sm"
             />
             {t(`gitConnections.add.title.${provider}`)}
-          </DialogTitle>
-          <DialogDescription>
+          </SheetTitle>
+          <SheetDescription>
             {tokenAuth
               ? t('gitConnections.add.tokenDescription')
               : t('gitConnections.add.description', { callback })}
-          </DialogDescription>
-        </DialogHeader>
-        <div className="space-y-4">
+          </SheetDescription>
+        </SheetHeader>
+        <div className="space-y-4 px-4">
           {existing.length > 0 && !tokenAuth ? (
             <Field>
               <FieldLabel htmlFor="git-conn-source">
@@ -319,7 +319,7 @@ export function AddGitConnectionDialog({
             </p>
           ) : null}
         </div>
-        <DialogFooter>
+        <SheetFooter>
           <Button
             type="button"
             variant="outline"
@@ -345,8 +345,8 @@ export function AddGitConnectionDialog({
                     : 'gitConnections.add.submit',
                 )}
           </Button>
-        </DialogFooter>
-      </DialogContent>
-    </Dialog>
+        </SheetFooter>
+      </SheetContent>
+    </Sheet>
   )
 }

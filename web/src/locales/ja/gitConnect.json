@@ -39,5 +39,95 @@
     "bitbucket": "Bitbucket Cloud",
     "bitbucket_server": "Bitbucket Server",
     "azure_devops": "Azure DevOps"
+  },
+  "methods": {
+    "title": "接続方法",
+    "recommended": "おすすめ",
+    "selfManaged": "セルフマネージドのGitLabもどの方法でも使えます。接続パネルでベースURLを入力してください。",
+    "status": {
+      "connected": "接続済み",
+      "not_connected": "未接続",
+      "needs_attention": "要確認",
+      "expires_soon": "まもなく期限切れ"
+    },
+    "oauth": {
+      "name": "OAuthアプリケーション",
+      "unlocks": "プロバイダー経由でサインインします。リポジトリ、Webhook、ステータス、コメントが使え、自動で更新されます。",
+      "action": "OAuthで接続"
+    },
+    "token": {
+      "name": "アクセストークン",
+      "unlocks": "個人、プロジェクト、グループのトークンを貼り付けます。リダイレクトURIや公開ドメインは不要です。",
+      "action": "トークンで接続"
+    },
+    "deploy_token": {
+      "name": "デプロイトークン",
+      "unlocks": "イメージのデプロイ用に、読み取り専用のレジストリプル(read_registry)ができます。",
+      "action": "レジストリ認証情報"
+    },
+    "ci_job": {
+      "name": "CIジョブトークンまたはOIDC",
+      "unlocks": "保存したシークレットなしでパイプラインジョブがデプロイできます。",
+      "action": "CI信頼を設定"
+    }
+  },
+  "access": {
+    "matrix": "アクセスとスコープ",
+    "allowed": "許可",
+    "notAllowed": "不許可",
+    "needsScope": "{{scope}}が必要",
+    "notReported": "未報告",
+    "scopesUnknown": "コントロールプレーンはこのアカウントの付与済みスコープをまだ報告しないため、各機能は未報告と表示されます。",
+    "scopes": "付与済みスコープ",
+    "sees": "参照できる範囲",
+    "projects_one": "{{count}}件のプロジェクト",
+    "projects_other": "{{count}}件のプロジェクト",
+    "expires": "トークンの有効期限",
+    "lastUsed": "最終使用",
+    "addScope": "スコープを追加",
+    "addScopeMissing": "スコープを拡張するエンドポイントが必要です。現状は再認可するか、スコープの多いトークンを追加してください。",
+    "rotate": "トークンをローテーション",
+    "rotateMissing": "トークンをローテーションするエンドポイントが必要です。現状は新しいトークンを追加し、古いものを切断してください。",
+    "addAnother": "別のアカウントを追加",
+    "inferred": "推定"
+  },
+  "cap": {
+    "list_repos": "リポジトリの一覧",
+    "clone_sync": "クローンと同期",
+    "commit_status": "コミットステータス",
+    "mr_comments": "マージリクエストのコメントとプレビュー",
+    "registry_pull": "レジストリプル",
+    "import_group": "グループのインポート",
+    "register_webhook": "Webhookの自動登録",
+    "tag_push_trigger": "タグとプッシュのトリガー",
+    "deployments_report": "デプロイの報告"
+  },
+  "next": {
+    "title": "追加できること",
+    "import": {
+      "title": "リポジトリをインポート",
+      "body": "リポジトリやグループ全体を選んでアプリにします。",
+      "action": "ソースを開く"
+    },
+    "previews": {
+      "title": "マージリクエストのプレビューを有効化",
+      "body": "開いているマージリクエストごとにプレビューをデプロイします。",
+      "action": "ソースを開く"
+    },
+    "ci": {
+      "title": "CI信頼を追加",
+      "body": "パイプラインジョブが短期間のIDでデプロイできます。",
+      "action": "パイプラインを開く"
+    },
+    "webhook": {
+      "title": "Webhookを追加",
+      "body": "デプロイとビルドのイベントを別のサービスに送ります。",
+      "action": "Webhookを開く"
+    },
+    "registry": {
+      "title": "レジストリを接続",
+      "body": "プライベートイメージ用のプル認証情報を保存します。",
+      "action": "レジストリ認証情報を開く"
+    }
   }
 }

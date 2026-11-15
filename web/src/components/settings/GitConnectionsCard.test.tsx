@@ -8,6 +8,7 @@ import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest'
 import { GitConnectionsCard } from './GitConnectionsCard'
 import commonEn from '../../locales/en/common.json'
 import settingsEn from '../../locales/en/settings.json'
+import gitConnectEn from '../../locales/en/gitConnect.json'
 import type { GitProviderConnection } from '../../types/gitConnections'
 import { createTestQueryClient } from '@/test/testQueryClient'
 
@@ -15,9 +16,11 @@ const testI18n = i18next.createInstance()
 void testI18n.use(initReactI18next).init({
   lng: 'en',
   fallbackLng: 'en',
-  ns: ['common', 'settings'],
+  ns: ['common', 'settings', 'gitConnect'],
   defaultNS: 'common',
-  resources: { en: { common: commonEn, settings: settingsEn } },
+  resources: {
+    en: { common: commonEn, settings: settingsEn, gitConnect: gitConnectEn },
+  },
   interpolation: { escapeValue: false },
 })
 
@@ -43,6 +46,12 @@ function conn(
   }
 }
 
+vi.mock('@tanstack/react-router', () => ({
+  Link: ({ children, ...rest }: { children?: React.ReactNode }) => (
+    <a {...rest}>{children}</a>
+  ),
+}))
+
 let connections: GitProviderConnection[]
 let calls: { method: string; url: string; body?: string }[]
 
@@ -67,6 +76,9 @@ beforeEach(() => {
             : input.url
       const method = init?.method ?? 'GET'
       calls.push({ method, url, body: init?.body as string | undefined })
+      if (url.includes('/access')) {
+        return Promise.resolve(new Response('{}', { status: 404 }))
+      }
       const body =
         method === 'DELETE'
           ? { disconnected: true, token_revoked: true, note: 'revoked' }
@@ -87,6 +99,11 @@ afterEach(() => {
   vi.unstubAllGlobals()
 })
 
+async function accountRows() {
+  const all = await screen.findAllByRole('listitem')
+  return all.filter((li) => li.parentElement?.dataset.slot === 'grouped-list')
+}
+
 function renderCard() {
   const queryClient = createTestQueryClient()
   render(
@@ -103,7 +120,7 @@ function renderCard() {
 describe('GitConnectionsCard', () => {
   it('lists every account with its host, state and sources', async () => {
     renderCard()
-    const rows = await screen.findAllByRole('listitem')
+    const rows = await accountRows()
     expect(rows).toHaveLength(3)
     expect(within(rows[0]!).getByText('Default')).toBeInTheDocument()
     expect(within(rows[0]!).getByText(/2 git sources/)).toBeInTheDocument()
@@ -114,7 +131,7 @@ describe('GitConnectionsCard', () => {
       within(rows[2]!).getByRole('button', { name: 'Authorize' }),
     ).toBeInTheDocument()
     expect(
-      screen.getByRole('button', { name: 'Add another account' }),
+      screen.getAllByRole('button', { name: 'Add another account' })[0]!,
     ).toBeInTheDocument()
   })
 
@@ -122,7 +139,7 @@ describe('GitConnectionsCard', () => {
     const assign = vi.fn()
     vi.stubGlobal('location', { ...window.location, assign })
     renderCard()
-    const rows = await screen.findAllByRole('listitem')
+    const rows = await accountRows()
     await userEvent.click(
       within(rows[1]!).getByRole('button', { name: 'Reconnect' }),
     )
@@ -133,7 +150,7 @@ describe('GitConnectionsCard', () => {
 
   it('renames one account and makes another the default', async () => {
     renderCard()
-    const rows = await screen.findAllByRole('listitem')
+    const rows = await accountRows()
     await userEvent.click(
       within(rows[1]!).getByRole('button', { name: 'Rename' }),
     )
@@ -149,7 +166,7 @@ describe('GitConnectionsCard', () => {
       })
     })
 
-    const fresh = await screen.findAllByRole('listitem')
+    const fresh = await accountRows()
     await userEvent.click(
       within(fresh[1]!).getByRole('button', { name: 'Set default' }),
     )
@@ -166,7 +183,7 @@ describe('GitConnectionsCard', () => {
 
   it('disconnects only the chosen account after telling you what happens to its sources', async () => {
     renderCard()
-    const rows = await screen.findAllByRole('listitem')
+    const rows = await accountRows()
     await userEvent.click(
       within(rows[0]!).getByRole('button', { name: 'Disconnect' }),
     )
@@ -193,7 +210,9 @@ describe('GitConnectionsCard', () => {
     vi.stubGlobal('location', { ...window.location, assign })
     renderCard()
     await userEvent.click(
-      await screen.findByRole('button', { name: 'Add another account' }),
+      (
+        await screen.findAllByRole('button', { name: 'Add another account' })
+      )[0]!,
     )
     const dialog = await screen.findByRole('dialog')
     await userEvent.click(within(dialog).getByRole('combobox'))

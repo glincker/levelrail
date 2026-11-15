@@ -39,5 +39,95 @@
     "bitbucket": "Bitbucket Cloud",
     "bitbucket_server": "Bitbucket Server",
     "azure_devops": "Azure DevOps"
+  },
+  "methods": {
+    "title": "Ways to connect",
+    "recommended": "Recommended",
+    "selfManaged": "Self-managed GitLab works with every method: enter your base URL in the connect panel.",
+    "status": {
+      "connected": "Connected",
+      "not_connected": "Not connected",
+      "needs_attention": "Needs attention",
+      "expires_soon": "Expires soon"
+    },
+    "oauth": {
+      "name": "OAuth application",
+      "unlocks": "Sign in through the provider. Unlocks repositories, webhooks, status and comments, and refreshes by itself.",
+      "action": "Connect with OAuth"
+    },
+    "token": {
+      "name": "Access token",
+      "unlocks": "Paste a personal, project or group token. No redirect URI or public domain needed.",
+      "action": "Connect with a token"
+    },
+    "deploy_token": {
+      "name": "Deploy token",
+      "unlocks": "Read-only registry pulls (read_registry) for deploying images.",
+      "action": "Registry credentials"
+    },
+    "ci_job": {
+      "name": "CI job token or OIDC",
+      "unlocks": "Let pipeline jobs deploy without a stored secret.",
+      "action": "Set up CI trust"
+    }
+  },
+  "access": {
+    "matrix": "Access and scope",
+    "allowed": "Allowed",
+    "notAllowed": "Not allowed",
+    "needsScope": "Needs {{scope}}",
+    "notReported": "Not reported",
+    "scopesUnknown": "The control plane does not report the granted scopes for this account yet, so each feature shows Not reported.",
+    "scopes": "Granted scopes",
+    "sees": "Can see",
+    "projects_one": "{{count}} project",
+    "projects_other": "{{count}} projects",
+    "expires": "Token expiry",
+    "lastUsed": "Last used",
+    "addScope": "Add scope",
+    "addScopeMissing": "Needs an endpoint that upgrades scopes. For now, re-authorize or add a token with more scopes.",
+    "rotate": "Rotate token",
+    "rotateMissing": "Needs a token rotation endpoint. For now, add a new token and disconnect the old one.",
+    "addAnother": "Add another account",
+    "inferred": "Inferred"
+  },
+  "cap": {
+    "list_repos": "List repositories",
+    "clone_sync": "Clone and sync",
+    "commit_status": "Commit status",
+    "mr_comments": "Merge request comments and previews",
+    "registry_pull": "Registry pull",
+    "import_group": "Import a group",
+    "register_webhook": "Auto-register webhooks",
+    "tag_push_trigger": "Tag and push triggers",
+    "deployments_report": "Deployments reporting"
+  },
+  "next": {
+    "title": "What you can add",
+    "import": {
+      "title": "Import repositories",
+      "body": "Pick repositories or a whole group and turn them into apps.",
+      "action": "Open sources"
+    },
+    "previews": {
+      "title": "Enable merge request previews",
+      "body": "Deploy a preview for each open merge request.",
+      "action": "Open sources"
+    },
+    "ci": {
+      "title": "Add CI trust",
+      "body": "Let pipeline jobs deploy with a short-lived identity.",
+      "action": "Open pipelines"
+    },
+    "webhook": {
+      "title": "Add a webhook",
+      "body": "Send deploy and build events to another service.",
+      "action": "Open webhooks"
+    },
+    "registry": {
+      "title": "Connect a registry",
+      "body": "Store pull credentials for private images.",
+      "action": "Open registry credentials"
+    }
   }
 }

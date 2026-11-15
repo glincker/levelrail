@@ -15,6 +15,9 @@ import {
   type GitConnectProvider,
 } from '../../lib/gitHost'
 
+// Token-only providers return early, so they never reach the hint lookup.
+type OAuthProvider = 'gitlab' | 'gitea' | 'forgejo' | 'bitbucket'
+
 // Guided OAuth steps for one provider: where to register the application,
 // the exact redirect URI and scopes, and a token fallback so nobody is stuck.
 export function GitConnectGuide({
@@ -68,7 +71,7 @@ export function GitConnectGuide({
             </a>
           ) : null}
           <p className="text-xs text-muted-foreground">
-            {t(`appHint.${provider}`)}
+            {t(`appHint.${provider as OAuthProvider}`)}
           </p>
         </li>
         <li className="space-y-1.5">

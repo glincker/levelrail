@@ -17,6 +17,7 @@ import type {
   GitProviderConnection,
   UseRepoAsSourceRequest,
 } from '../types/gitConnections'
+import type { GitAccessInfo } from '../types/gitAccess'
 import type { GitDisconnectResult } from '../types/gitProviders'
 import type { GitSourceResource } from '../types/gitSource'
 import { gitProviderKeys } from './gitProviders'
@@ -211,4 +212,19 @@ export function connectRepoAsSource(
     json('POST', req),
     'use repository as source failed',
   )
+}
+
+// Access details for one connection. A failure (endpoint not served yet, or
+// the provider unreachable) leaves the data undefined so the panel degrades.
+export function useGitConnectionAccess(id: string) {
+  return useQuery({
+    queryKey: [...gitConnectionKeys.all, 'access', id],
+    queryFn: () =>
+      request<GitAccessInfo>(
+        `/api/v1/git-connections/${encodeURIComponent(id)}/access`,
+        undefined,
+        'Could not load access details',
+      ),
+    retry: false,
+  })
 }
