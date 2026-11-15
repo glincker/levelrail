@@ -14,7 +14,7 @@ type openAPIRoute struct {
 	Description string
 }
 
-// openAPIRoutes holds all 2137 routes known to scripts/gen-api-reference at
+// openAPIRoutes holds all 2138 routes known to scripts/gen-api-reference at
 // generation time. Run `go run ./scripts/gen-api-reference` after changing
 // any routes*.go registration and commit the result.
 var openAPIRoutes = []openAPIRoute{
@@ -1372,6 +1372,7 @@ var openAPIRoutes = []openAPIRoute{
 	{Method: "DELETE", Path: "/api/v1/git-connections/{id}", Ability: "AbilityRoot", Group: "Other", Handler: "handleDisconnectGitConnection", Description: ""},
 	{Method: "GET", Path: "/api/v1/git-connections/{id}", Ability: "AbilityReadSensitive", Group: "Other", Handler: "handleGetGitConnection", Description: ""},
 	{Method: "PATCH", Path: "/api/v1/git-connections/{id}", Ability: "AbilityRoot", Group: "Other", Handler: "handleRenameGitConnection", Description: ""},
+	{Method: "GET", Path: "/api/v1/git-connections/{id}/access", Ability: "AbilityReadSensitive", Group: "Other", Handler: "handleGetGitConnectionAccess", Description: ""},
 	{Method: "GET", Path: "/api/v1/git-connections/{id}/branches", Ability: "AbilityReadSensitive", Group: "Other", Handler: "handleListGitConnectionBranches", Description: ""},
 	{Method: "POST", Path: "/api/v1/git-connections/{id}/default", Ability: "AbilityRoot", Group: "Other", Handler: "handleSetDefaultGitConnection", Description: ""},
 	{Method: "POST", Path: "/api/v1/git-connections/{id}/use-as-source", Ability: "AbilityWriteSensitive", Group: "Other", Handler: "handleUseGitConnectionRepoAsSource", Description: ""},

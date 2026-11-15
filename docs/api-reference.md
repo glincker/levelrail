@@ -2369,6 +2369,7 @@ Routes that do not fit an existing group.
 | GET | /api/v1/dns/queries | AbilityRead | handleListDNSQueries |
 | GET | /api/v1/dns/stats | AbilityRead | handleDNSStats |
 | POST | /mcp | Public |  |
+| GET | /api/v1/git-connections/{id}/access | AbilityReadSensitive | handleGetGitConnectionAccess |
 
 ## See also
 

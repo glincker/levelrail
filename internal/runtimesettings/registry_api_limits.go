@@ -10,6 +10,8 @@ const (
 	KeyFixitMaxPerHour               = "fixit.max_per_hour"
 	KeyDeployApprovalClaimTimeoutSec = "deploy.approval_claim_timeout_seconds"
 	KeyApproveDigestCheckTimeoutSec  = "deploy.approve_digest_check_timeout_seconds"
+	KeyGitAccessCacheTTL             = "git.access_cache_ttl_seconds"
+	KeyGitAccessNamesMax             = "git.access_names_max"
 )
 
 func init() {
@@ -53,4 +55,14 @@ func init() {
 		Title:       "Approval digest check timeout",
 		Description: "Seconds the registry digest check may take when an approval is granted. 0 uses the request deadline. From 0 to 600.",
 	}, 0, 600)
+	registerLimit(Definition{
+		Key: KeyGitAccessCacheTTL, Category: CategoryDeploys, Default: "60", Env: "APP_GIT_ACCESS_CACHE_TTL_SECONDS", Apply: ApplyLive,
+		Title:       "Git access check cache",
+		Description: "Seconds the live provider check behind a git connection's access view is reused, so the dashboard cannot hammer the provider. From 5 to 3600.",
+	}, 5, 3600)
+	registerLimit(Definition{
+		Key: KeyGitAccessNamesMax, Category: CategoryDeploys, Default: "25", Env: "APP_GIT_ACCESS_NAMES_MAX", Apply: ApplyLive,
+		Title:       "Git access account names",
+		Description: "Most account or group names a git connection's access view lists; the total count is still reported. From 1 to 200.",
+	}, 1, 200)
 }

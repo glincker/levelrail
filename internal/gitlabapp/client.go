@@ -364,20 +364,61 @@ type Account struct {
 
 // TokenInfo is what GitLab reports about a personal, project or group access token.
 type TokenInfo struct {
-	Name   string
-	Scopes []string
+	Name       string
+	Scopes     []string
+	ExpiresAt  string
+	LastUsedAt string
 }
 
 // TokenInfo reads the scopes of the token itself (GitLab 15.5 and newer).
 func (c *Client) TokenInfo(ctx context.Context, instanceURL, accessToken string) (TokenInfo, error) {
 	var resp struct {
-		Name   string   `json:"name"`
-		Scopes []string `json:"scopes"`
+		Name       string   `json:"name"`
+		Scopes     []string `json:"scopes"`
+		ExpiresAt  string   `json:"expires_at"`
+		LastUsedAt string   `json:"last_used_at"`
 	}
 	if err := c.do(ctx, http.MethodGet, apiBaseURL(instanceURL)+"/personal_access_tokens/self", "Bearer "+accessToken, nil, &resp); err != nil {
 		return TokenInfo{}, err
 	}
-	return TokenInfo{Name: resp.Name, Scopes: resp.Scopes}, nil
+	return TokenInfo{Name: resp.Name, Scopes: resp.Scopes, ExpiresAt: resp.ExpiresAt, LastUsedAt: resp.LastUsedAt}, nil
+}
+
+// OAuthTokenInfo reads the scopes and lifetime of an OAuth access token.
+func (c *Client) OAuthTokenInfo(ctx context.Context, instanceURL, accessToken string) (TokenInfo, error) {
+	var resp struct {
+		Scopes    []string `json:"scope"`
+		ExpiresIn int64    `json:"expires_in"`
+		CreatedAt int64    `json:"created_at"`
+	}
+	u := strings.TrimRight(instanceURL, "/") + "/oauth/token/info"
+	if err := c.do(ctx, http.MethodGet, u, "Bearer "+accessToken, nil, &resp); err != nil {
+		return TokenInfo{}, err
+	}
+	info := TokenInfo{Scopes: resp.Scopes}
+	if resp.CreatedAt > 0 && resp.ExpiresIn > 0 {
+		info.ExpiresAt = time.Unix(resp.CreatedAt+resp.ExpiresIn, 0).UTC().Format(time.RFC3339)
+	}
+	return info, nil
+}
+
+// ListGroups returns the full paths of up to limit groups the token's user belongs to.
+// more is true when GitLab holds further groups past the limit.
+func (c *Client) ListGroups(ctx context.Context, instanceURL, accessToken string, limit int) (paths []string, more bool, err error) {
+	var resp []struct {
+		FullPath string `json:"full_path"`
+	}
+	u := fmt.Sprintf("%s/groups?min_access_level=10&order_by=path&per_page=%d", apiBaseURL(instanceURL), limit+1)
+	if err := c.do(ctx, http.MethodGet, u, "Bearer "+accessToken, nil, &resp); err != nil {
+		return nil, false, err
+	}
+	for _, g := range resp {
+		paths = append(paths, g.FullPath)
+	}
+	if len(paths) > limit {
+		return paths[:limit], true, nil
+	}
+	return paths, false, nil
 }
 
 // CurrentUser returns the user an access token belongs to.
