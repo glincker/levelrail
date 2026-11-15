@@ -7,10 +7,12 @@ import (
 	"os"
 	"os/signal"
 	"syscall"
+	"time"
 
 	"github.com/GLINCKER/levelrail/internal/demo"
 	"github.com/GLINCKER/levelrail/internal/experimental"
 	"github.com/GLINCKER/levelrail/internal/footprint"
+	"github.com/GLINCKER/levelrail/internal/runmarker"
 	"github.com/GLINCKER/levelrail/internal/runtimesettings"
 	"github.com/GLINCKER/levelrail/internal/safemode"
 	"github.com/GLINCKER/levelrail/internal/version"
@@ -33,6 +35,18 @@ func run(logger *slog.Logger) error {
 	ctx, stop := signal.NotifyContext(context.Background(), os.Interrupt, syscall.SIGTERM)
 	defer stop()
 
+	// A SIGKILL (for example the kernel OOM killer) skips the defer, so the next boot sees an unclean marker.
+	marker, unclean := runmarker.Begin(dataDirFromEnv(), time.Now())
+	if unclean != nil {
+		logger.Warn("control plane restarted after an unclean stop",
+			slog.Time("previous_start", unclean.PrevStartedAt), slog.Bool("likely_out_of_memory", unclean.OOMLikely))
+	}
+	defer func() {
+		if ctx.Err() != nil {
+			marker.Clean()
+		}
+	}()
+
 	ledger, policy, entry := prepareBoot(ctx, logger)
 	if entry == nil {
 		err := bootAndServe(ctx, stop, logger, ledger, policy)
@@ -44,6 +58,7 @@ func run(logger *slog.Logger) error {
 			entry = &sm.entry
 		case err == nil || errors.Is(err, errRestartRequested):
 			ledger.MarkClean()
+			marker.Clean()
 			return err
 		default:
 			if !errors.As(err, &refusal) {

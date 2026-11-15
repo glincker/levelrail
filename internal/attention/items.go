@@ -79,6 +79,7 @@ var kindInfos = map[string]kindInfo{
 	KindStackDrift:              {"Stack %s has drifted from its last applied revision", "Open the stack, review the drifted resources and re-apply or update the revision", linkStacks, false},
 	KindAdvisoryMatch:           {"%s match a known advisory", "Open the advisories tab, then refresh each app onto a fixed image", linkCenter + "?tab=advisories", false},
 	KindFirewallAttackSuggested: {"Blocked traffic is spiking", "Open the firewall and turn on attack mode if this is an attack", linkFirewall, false},
+	KindUncleanRestart:          {"Control plane restarted after an unclean stop", "Open Doctor, read the Control plane protection row and the host memory rows", linkStatus, false},
 	KindAccessReviewOverdue:     {"Access review %s is overdue", "Open the compliance tab and finish the review", linkCenter + "?tab=compliance", false},
 }
 

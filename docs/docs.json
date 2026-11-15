@@ -196,6 +196,7 @@
               "deploy-trace",
               "deploy-event-timeline",
               "build-performance",
+              "host-protection",
               "build-center",
               "scheduled-deploys",
               "pr-comment-commands",

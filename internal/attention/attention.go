@@ -107,6 +107,7 @@ const (
 	KindFirewallAttackSuggested = "firewall_attack_suggested"
 	KindNodeCapacity            = "node_capacity"
 	KindStackDrift              = "stack_drift"
+	KindUncleanRestart          = "unclean_restart"
 	KindAdvisoryMatch           = "advisory_match"
 	KindDeployInterrupted       = "deploy_interrupted"
 )

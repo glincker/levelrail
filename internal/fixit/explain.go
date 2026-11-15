@@ -82,6 +82,8 @@ func buildExplainTable() map[string]Explanation {
 			"Stop apps you do not need or add memory or swap, then press Re-check.", "", KindManual),
 		ex("build_memory", "The host has less memory than a typical web build needs.", "Builds may fail with out-of-memory errors.",
 			"Add swap or memory, or build on a bigger node. Open Settings, then Builds, to pick the build node.", "", KindGuided),
+		ex("unit_protection", "The control plane is not shielded from the kernel out-of-memory killer, or it was restarted after an unclean stop.", "On a crowded host the kernel can kill the control plane, and apps are unmanaged until it restarts.",
+			"Open the check details, then on the host apply the protect command as root and restart the service. Add swap or lower build concurrency. See Host protection in the docs.", "", KindManual),
 		ex("cpu", "The host processor is busy most of the time.", "Everything on the host slows down.",
 			"Open Resources to see which app uses the most, then lower its limit or move it to another node.", "", KindGuided),
 		ex("disk_io_latency", "Writes to disk are slow.", "Every deploy and database on this host slows down, and freeing space does not help.",
