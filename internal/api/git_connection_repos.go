@@ -113,18 +113,30 @@ func (rt *Router) handleUseGitConnectionRepoAsSource(w http.ResponseWriter, r *h
 		rt.internalError(w, "api: resolve git source webhook secret failed", err, slog.String("app_name", req.AppName))
 		return
 	}
-	if err := adapter.webhook(ctx, conn, token, repo, result.Resource.WebhookURL, webhookSecret); err != nil {
-		rt.recordWebhookRegistration(ctx, req.AppName, err)
-		rt.logger.Error("api: register git repo webhook failed", slog.String("connection", conn.ID), slog.String("repo", repo), slog.String("app_name", req.AppName), slog.String("error", err.Error()))
-		writeError(w, http.StatusBadGateway, "git source connected, but registering the webhook on "+adapter.label+" failed; add it manually")
-		return
-	}
-	rt.recordWebhookRegistration(ctx, req.AppName, nil)
-	result.Resource.WebhookSecret = ""
 	status := http.StatusOK
 	if result.Creating {
 		status = http.StatusCreated
 	}
+	hookErr := adapter.webhook(ctx, conn, token, repo, result.Resource.WebhookURL, webhookSecret)
+	rt.recordWebhookRegistration(ctx, req.AppName, hookErr)
+	if hookErr != nil {
+		rt.logger.Error("api: register git repo webhook failed", slog.String("connection", conn.ID), slog.String("repo", repo), slog.String("app_name", req.AppName), slog.String("error", hookErr.Error()))
+		if conn.Provider == gitProviderGitLab {
+			// Like GitHub: the source stays connected and the response keeps the secret so the hook can be added by hand.
+			writeJSON(w, status, useGitHubRepoAsSourceResponse{
+				gitSourceResource: result.Resource, WebhookRegistered: false,
+				WebhookError: "registering the webhook on " + adapter.label + " failed; add it manually with the webhook url and secret",
+			})
+			return
+		}
+		writeError(w, http.StatusBadGateway, "git source connected, but registering the webhook on "+adapter.label+" failed; add it manually")
+		return
+	}
+	result.Resource.WebhookSecret = ""
 	rt.logger.Info("api: git repo connected as git source", slog.String("app_name", req.AppName), slog.String("connection", conn.ID), slog.String("repo", repo), slog.Bool("creating", result.Creating))
+	if conn.Provider == gitProviderGitLab {
+		writeJSON(w, status, useGitHubRepoAsSourceResponse{gitSourceResource: result.Resource, WebhookRegistered: true})
+		return
+	}
 	writeJSON(w, status, result.Resource)
 }

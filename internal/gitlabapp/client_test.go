@@ -207,6 +207,9 @@ func TestClient_CreateProjectWebhook(t *testing.T) {
 	if !gotBody.PushEvents {
 		t.Error("push_events = false, want true")
 	}
+	if !gotBody.TagPushEvents {
+		t.Error("tag_push_events = false, want true")
+	}
 	if !gotBody.MergeRequestsEvents {
 		t.Error("merge_requests_events = false, want true")
 	}

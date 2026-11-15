@@ -275,6 +275,7 @@ func (c *Client) ListBranches(ctx context.Context, instanceURL, accessToken stri
 type createWebhookRequest struct {
 	URL                   string `json:"url"`
 	PushEvents            bool   `json:"push_events"`
+	TagPushEvents         bool   `json:"tag_push_events"`
 	MergeRequestsEvents   bool   `json:"merge_requests_events"`
 	Token                 string `json:"token"`
 	EnableSSLVerification bool   `json:"enable_ssl_verification"`
@@ -290,7 +291,7 @@ type createWebhookRequest struct {
 // environments would silently never trigger for a connected project.
 func (c *Client) CreateProjectWebhook(ctx context.Context, instanceURL, accessToken string, projectID int64, hookURL, secretToken string) error {
 	body, err := json.Marshal(createWebhookRequest{
-		URL: hookURL, PushEvents: true, MergeRequestsEvents: true, Token: secretToken, EnableSSLVerification: true,
+		URL: hookURL, PushEvents: true, TagPushEvents: true, MergeRequestsEvents: true, Token: secretToken, EnableSSLVerification: true,
 	})
 	if err != nil {
 		return fmt.Errorf("gitlabapp: marshal webhook request: %w", err)

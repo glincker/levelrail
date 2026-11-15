@@ -265,7 +265,7 @@ webhook_url:         https://levelrail.example.com/api/v1/webhooks/github/storef
 webhook_registered:  true
 ```
 
-If webhook registration fails, GitHub still connects the repository and reports `webhook_registered: false` with a `webhook_error` (typically an installation that predates the `repository_hooks:write` permission). GitLab, Bitbucket, and Gitea fail the whole request with a `502` instead.
+If webhook registration fails, GitHub and GitLab still connect the repository and report `webhook_registered: false` with a `webhook_error` and the webhook secret, so you can add the hook by hand (for GitHub, typically an installation that predates the `repository_hooks:write` permission). Bitbucket and Gitea fail the whole request with a `502` instead. The hook GitLab registers subscribes to push, tag push and merge request events, so [release trigger mode](#deploy-triggers-push-or-release) works from an auto-registered hook.
 
 For an app that already exists, `levelrail-cli apps git-source get|set|delete <name>` manages the git source directly.
 
