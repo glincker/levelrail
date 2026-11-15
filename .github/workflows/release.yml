@@ -693,6 +693,8 @@ jobs:
       contents: read
       packages: write
       id-token: write
+    env:
+      HAS_DOCKERHUB: ${{ secrets.DOCKERHUB_TOKEN != '' && secrets.DOCKERHUB_USERNAME != '' }}
     steps:
       - name: Download digests
         uses: actions/download-artifact@9000827ccba6bdab643e8b6fd33ac0654aef8333 # v8.0.2
@@ -736,6 +738,29 @@ jobs:
         run: |
           digest="sha256:$(docker buildx imagetools inspect ghcr.io/glincker/levelrail:${{ needs.image-channel.outputs.primary_tag }} --raw | sha256sum | cut -d' ' -f1)"
           cosign sign --yes "ghcr.io/glincker/levelrail@${digest}"
+
+      # Off until the owner sets DOCKERHUB_PUBLISH_ENABLED and both secrets;
+      # a missing secret skips the mirror and never fails the release.
+      - name: Log in to Docker Hub
+        if: vars.DOCKERHUB_PUBLISH_ENABLED == 'true' && env.HAS_DOCKERHUB == 'true'
+        uses: docker/login-action@8aa5831fb8d48d8f76594c7ddde61ae58019f550 # v4
+        with:
+          username: ${{ secrets.DOCKERHUB_USERNAME }}
+          password: ${{ secrets.DOCKERHUB_TOKEN }}
+
+      # Copies the already pushed multi-arch index, so Docker Hub gets the
+      # same digest and the cosign signature below covers both registries.
+      - name: Mirror image to Docker Hub
+        if: vars.DOCKERHUB_PUBLISH_ENABLED == 'true' && env.HAS_DOCKERHUB == 'true'
+        run: |
+          src="ghcr.io/glincker/levelrail:${{ needs.image-channel.outputs.primary_tag }}"
+          tag_args=()
+          for t in ${{ needs.image-channel.outputs.tags }}; do
+            tag_args+=(-t "docker.io/${{ vars.DOCKERHUB_NAMESPACE || 'glincker' }}/levelrail:$t")
+          done
+          docker buildx imagetools create "${tag_args[@]}" "$src"
+          digest="sha256:$(docker buildx imagetools inspect "$src" --raw | sha256sum | cut -d' ' -f1)"
+          cosign sign --yes "docker.io/${{ vars.DOCKERHUB_NAMESPACE || 'glincker' }}/levelrail@${digest}"
 
   build-image-levelrail-agent:
     name: Build levelrail-agent image (${{ matrix.platform }})
@@ -809,6 +834,8 @@ jobs:
       contents: read
       packages: write
       id-token: write
+    env:
+      HAS_DOCKERHUB: ${{ secrets.DOCKERHUB_TOKEN != '' && secrets.DOCKERHUB_USERNAME != '' }}
     steps:
       - name: Download digests
         uses: actions/download-artifact@9000827ccba6bdab643e8b6fd33ac0654aef8333 # v8.0.2
@@ -848,6 +875,29 @@ jobs:
         run: |
           digest="sha256:$(docker buildx imagetools inspect ghcr.io/glincker/levelrail-agent:${{ needs.image-channel.outputs.primary_tag }} --raw | sha256sum | cut -d' ' -f1)"
           cosign sign --yes "ghcr.io/glincker/levelrail-agent@${digest}"
+
+      # Off until the owner sets DOCKERHUB_PUBLISH_ENABLED and both secrets;
+      # a missing secret skips the mirror and never fails the release.
+      - name: Log in to Docker Hub
+        if: vars.DOCKERHUB_PUBLISH_ENABLED == 'true' && env.HAS_DOCKERHUB == 'true'
+        uses: docker/login-action@8aa5831fb8d48d8f76594c7ddde61ae58019f550 # v4
+        with:
+          username: ${{ secrets.DOCKERHUB_USERNAME }}
+          password: ${{ secrets.DOCKERHUB_TOKEN }}
+
+      # Copies the already pushed multi-arch index, so Docker Hub gets the
+      # same digest and the cosign signature below covers both registries.
+      - name: Mirror image to Docker Hub
+        if: vars.DOCKERHUB_PUBLISH_ENABLED == 'true' && env.HAS_DOCKERHUB == 'true'
+        run: |
+          src="ghcr.io/glincker/levelrail-agent:${{ needs.image-channel.outputs.primary_tag }}"
+          tag_args=()
+          for t in ${{ needs.image-channel.outputs.tags }}; do
+            tag_args+=(-t "docker.io/${{ vars.DOCKERHUB_NAMESPACE || 'glincker' }}/levelrail-agent:$t")
+          done
+          docker buildx imagetools create "${tag_args[@]}" "$src"
+          digest="sha256:$(docker buildx imagetools inspect "$src" --raw | sha256sum | cut -d' ' -f1)"
+          cosign sign --yes "docker.io/${{ vars.DOCKERHUB_NAMESPACE || 'glincker' }}/levelrail-agent@${digest}"
 
   release-notes:
     name: Write release notes
