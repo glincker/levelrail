@@ -20,12 +20,18 @@ import { FilterBar } from './FilterBar'
 
 export function IntegrationsPage({
   focusCatalog = false,
-}: Readonly<{ focusCatalog?: boolean }>) {
+  reauthorizeConnection,
+}: Readonly<{
+  focusCatalog?: boolean
+  /** Git connection id from an attention link: scroll to its card and ready Reconnect. */
+  reauthorizeConnection?: string
+}>) {
   const { t } = useTranslation('integrations')
   const { data, isPending, isError, refetch } = useConnections()
   const [filters, setFilters] = useState<ConnectionFilters>(DEFAULT_FILTERS)
   const [now] = useState(() => Date.now())
   const catalogRef = useRef<HTMLDivElement>(null)
+  const targetRef = reauthorizeConnection ? `git:${reauthorizeConnection}` : ''
 
   // Create modal entry lands here with the catalogue in view.
   useEffect(() => {
@@ -33,7 +39,22 @@ export function IntegrationsPage({
   }, [focusCatalog])
 
   const all = data ?? []
-  const visible = filterConnections(all, filters, now)
+  const targetFound = targetRef !== '' && all.some((c) => c.ref === targetRef)
+
+  useEffect(() => {
+    if (!targetFound) return
+    const reduce = window.matchMedia('(prefers-reduced-motion: reduce)').matches
+    document.getElementById(`integration-${targetRef}`)?.scrollIntoView({
+      block: 'center',
+      behavior: reduce ? 'auto' : 'smooth',
+    })
+  }, [targetFound, targetRef])
+
+  // The linked card must stay visible whatever filter was left on.
+  const matched = filterConnections(all, filters, now)
+  const linked = all.find((c) => c.ref === targetRef)
+  const visible =
+    linked && !matched.includes(linked) ? [...matched, linked] : matched
   const groups = groupByKind(visible)
   const filtered =
     filters.kind !== 'all' ||
@@ -108,7 +129,12 @@ export function IntegrationsPage({
             </h3>
             <ul className="divide-y divide-border">
               {g.items.map((c) => (
-                <ConnectionCard key={c.ref} conn={c} now={now} />
+                <ConnectionCard
+                  key={c.ref}
+                  conn={c}
+                  now={now}
+                  highlight={c.ref === targetRef}
+                />
               ))}
             </ul>
           </section>

@@ -87,9 +87,10 @@
     "addScope": "スコープを追加",
     "addScopeMissing": "スコープを拡張するエンドポイントが必要です。現状は再認可するか、スコープの多いトークンを追加してください。",
     "rotate": "トークンをローテーション",
-    "rotateMissing": "トークンをローテーションするエンドポイントが必要です。現状は新しいトークンを追加し、古いものを切断してください。",
     "addAnother": "別のアカウントを追加",
-    "inferred": "推定"
+    "inferred": "推定",
+    "rotateOauth": "OAuth 接続は自動で更新されるため、ローテーションするトークンはありません。",
+    "rotateUnsupported": "このプロバイダーではこの認証情報をローテーションできません。新しいトークンを追加し、古いものを切断してください。"
   },
   "cap": {
     "list_repos": "リポジトリの一覧",
@@ -128,6 +129,38 @@
       "title": "レジストリを接続",
       "body": "プライベートイメージ用のプル認証情報を保存します。",
       "action": "レジストリ認証情報を開く"
+    }
+  },
+  "credential": {
+    "noExpiry": "有効期限の報告なし",
+    "autoRenews": "自動更新",
+    "expiresInHours_one": "あと{{count}}時間で期限切れ",
+    "expiresInHours_other": "あと{{count}}時間で期限切れ",
+    "expiresInDays_one": "あと{{count}}日で期限切れ",
+    "expiresInDays_other": "あと{{count}}日で期限切れ",
+    "expired_one": "{{count}}日前に期限切れ",
+    "expired_other": "{{count}}日前に期限切れ",
+    "lastRefresh": "{{when}}に更新",
+    "refreshFailing": "更新に失敗しています",
+    "reauthorize": "再認可"
+  },
+  "rotate": {
+    "title": "{{label}} のトークンをローテーションしますか?",
+    "description": "プロバイダー上のアクセストークンを置き換えます。",
+    "consequence": "GitLab が新しいトークンを発行し、古いトークンは直ちに使えなくなります。この接続を使うビルドとプルは自動で切り替わります。",
+    "confirm": "トークンをローテーション",
+    "pending": "ローテーション中",
+    "expiryLabel": "新しいトークンの有効期限 (YYYY-MM-DD)",
+    "expiryHint": "ローテーション期間 {{days}} 日から入力済みです。空にするとプロバイダーが決めます。",
+    "errors": {
+      "noMasterKey": "ローテーションにはコントロールプレーンのマスターキーが必要です。暗号鍵で設定してから再試行してください。",
+      "provider": "プロバイダーがローテーションを完了しませんでした。現在のトークンは変わりません。少し待って再試行してください。",
+      "badDate": "YYYY-MM-DD 形式の日付を入力してください。"
+    },
+    "toast": {
+      "done": "トークンをローテーションしました",
+      "expires": "新しいトークンは {{date}} に期限切れになります。",
+      "noExpiry": "新しいトークンの有効期限はプロバイダーから報告されませんでした。"
     }
   }
 }

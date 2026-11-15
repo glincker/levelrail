@@ -1,3 +1,4 @@
+import { useEffect, useRef } from 'react'
 import { Link } from '@tanstack/react-router'
 import { useTranslation } from 'react-i18next'
 import { ExternalLinkGlassIcon } from '@thesvg/ui-react'
@@ -12,7 +13,19 @@ import {
   healthState,
 } from '../../lib/connections'
 import type { Connection } from '../../types/connections'
+import { cn } from '@/lib/utils'
+import { GitCredentialStatus } from '../settings/git/GitCredentialStatus'
+import type { GitCredentialKind } from '../../types/gitConnections'
 import { ConnectionGlyph } from './ConnectionGlyph'
+
+// The hub read model only knows the auth method, which is enough to tell
+// a self-renewing OAuth grant from a pasted token on a git connection.
+function credentialKind(conn: Connection): GitCredentialKind | undefined {
+  if (conn.kind !== 'git') return undefined
+  if (conn.auth_method === 'oauth') return 'oauth_auto_renew'
+  if (conn.auth_method === 'token') return 'static_token'
+  return undefined
+}
 
 function ExpiryText({
   conn,
@@ -43,11 +56,19 @@ function ExpiryText({
 export function ConnectionCard({
   conn,
   now,
-}: Readonly<{ conn: Connection; now: number }>) {
+  highlight = false,
+}: Readonly<{ conn: Connection; now: number; highlight?: boolean }>) {
   const { t } = useTranslation('integrations')
   const health = effectiveHealth(conn, now)
   const reconnect = health === 'needs_reconnect' || health === 'expired'
   const identity = conn.account ?? conn.host ?? conn.provider
+  const kind = credentialKind(conn)
+  const reconnectRef = useRef<HTMLButtonElement>(null)
+
+  // A deep link from an attention item lands on the card with Reconnect ready.
+  useEffect(() => {
+    if (highlight) reconnectRef.current?.focus({ preventScroll: true })
+  }, [highlight])
   const meta = [
     conn.last_used_at
       ? t('card.lastUsed', { when: formatRelativeTime(conn.last_used_at, now) })
@@ -56,7 +77,15 @@ export function ConnectionCard({
   ]
 
   return (
-    <li className="flex flex-col gap-3 py-3 sm:flex-row sm:items-center">
+    <li
+      id={`integration-${conn.ref}`}
+      data-highlighted={highlight || undefined}
+      className={cn(
+        'flex flex-col gap-3 py-3 sm:flex-row sm:items-center',
+        highlight &&
+          'rounded-md bg-tone-warning-soft px-2 ring-2 ring-tone-warning-border',
+      )}
+    >
       <div className="flex min-w-0 flex-1 items-start gap-3">
         <ConnectionGlyph provider={conn.provider} kind={conn.kind} />
         <div className="min-w-0 flex-1 space-y-1">
@@ -90,8 +119,15 @@ export function ConnectionCard({
             {meta.map((m) => (
               <span key={m}>{m}</span>
             ))}
-            <ExpiryText conn={conn} now={now} />
+            {kind ? null : <ExpiryText conn={conn} now={now} />}
           </p>
+          {kind ? (
+            <GitCredentialStatus
+              kind={kind}
+              expiresAt={conn.expires_at}
+              now={now}
+            />
+          ) : null}
           {conn.health_detail && health !== 'ok' ? (
             <p className="text-xs text-muted-foreground">
               {conn.health_detail}
@@ -100,7 +136,8 @@ export function ConnectionCard({
         </div>
       </div>
       <Button
-        variant={reconnect ? 'default' : 'outline'}
+        ref={reconnectRef}
+        variant={reconnect || highlight ? 'default' : 'outline'}
         size="sm"
         className="self-start sm:self-center"
         render={<Link to={MANAGE_PATH[conn.kind]} />}

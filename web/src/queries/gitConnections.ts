@@ -15,6 +15,7 @@ import type {
   GitConnectionBranch,
   GitConnectionProvider,
   GitProviderConnection,
+  RotateGitConnectionResult,
   UseRepoAsSourceRequest,
 } from '../types/gitConnections'
 import type { GitAccessInfo } from '../types/gitAccess'
@@ -162,6 +163,25 @@ export function useSetDefaultGitConnection() {
         `/api/v1/git-connections/${encodeURIComponent(id)}/default`,
         json('POST'),
         'set default failed',
+      ),
+    onSuccess: invalidate,
+  })
+}
+
+// Root only. The new token never reaches the browser; the server keeps it.
+export function useRotateGitConnection() {
+  const invalidate = useInvalidateGitConnections()
+  return useMutation<
+    RotateGitConnectionResult,
+    ApiError,
+    { id: string; expiresAt?: string }
+  >({
+    meta: { errorToast: false },
+    mutationFn: ({ id, expiresAt }) =>
+      request(
+        `/api/v1/git-connections/${encodeURIComponent(id)}/rotate`,
+        json('POST', expiresAt ? { expires_at: expiresAt } : undefined),
+        'rotate token failed',
       ),
     onSuccess: invalidate,
   })

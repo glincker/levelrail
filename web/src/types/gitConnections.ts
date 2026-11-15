@@ -31,6 +31,23 @@ export interface GitProviderConnection {
   authorize_path: string
   /** "token" for a pasted access token, "oauth" for an OAuth application. */
   auth_method?: 'token' | 'oauth'
+  /** Omitted while the connection is not authorized. */
+  credential_kind?: GitCredentialKind
+  auto_renew?: boolean
+  /** OAuth access token expiry, or the expiry the host reports for a static token. */
+  expires_at?: string
+  last_refresh_at?: string
+  /** Only present while refreshing fails. */
+  last_refresh_error?: string
+  can_rotate?: boolean
+}
+
+export type GitCredentialKind = 'oauth_auto_renew' | 'static_token'
+
+export interface RotateGitConnectionResult {
+  rotated: boolean
+  expires_at?: string
+  connection: GitProviderConnection
 }
 
 export interface CreateGitConnectionRequest {

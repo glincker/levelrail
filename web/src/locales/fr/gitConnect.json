@@ -87,9 +87,10 @@
     "addScope": "Ajouter une portée",
     "addScopeMissing": "Nécessite un point d'accès qui élargit les portées. En attendant, réautorisez ou ajoutez un jeton avec plus de portées.",
     "rotate": "Renouveler le jeton",
-    "rotateMissing": "Nécessite un point d'accès de rotation des jetons. En attendant, ajoutez un nouveau jeton et déconnectez l'ancien.",
     "addAnother": "Ajouter un autre compte",
-    "inferred": "Déduit"
+    "inferred": "Déduit",
+    "rotateOauth": "Les connexions OAuth se renouvellent seules, il n'y a pas de jeton à renouveler.",
+    "rotateUnsupported": "Ce fournisseur ne peut pas renouveler cet identifiant. Ajoutez un nouveau jeton et déconnectez l'ancien."
   },
   "cap": {
     "list_repos": "Lister les dépôts",
@@ -128,6 +129,38 @@
       "title": "Connecter un registre",
       "body": "Stockez des identifiants de pull pour les images privées.",
       "action": "Ouvrir les identifiants du registre"
+    }
+  },
+  "credential": {
+    "noExpiry": "Aucune expiration signalée",
+    "autoRenews": "Se renouvelle seule",
+    "expiresInHours_one": "Expire dans {{count}} heure",
+    "expiresInHours_other": "Expire dans {{count}} heures",
+    "expiresInDays_one": "Expire dans {{count}} jour",
+    "expiresInDays_other": "Expire dans {{count}} jours",
+    "expired_one": "Expiré il y a {{count}} jour",
+    "expired_other": "Expiré il y a {{count}} jours",
+    "lastRefresh": "Renouvelée {{when}}",
+    "refreshFailing": "Le renouvellement échoue",
+    "reauthorize": "Réautoriser"
+  },
+  "rotate": {
+    "title": "Renouveler le jeton de {{label}} ?",
+    "description": "Cela remplace le jeton d'accès chez le fournisseur.",
+    "consequence": "GitLab émet un nouveau jeton et l'ancien cesse de fonctionner immédiatement. Les builds et pulls de cette connexion basculent automatiquement.",
+    "confirm": "Renouveler le jeton",
+    "pending": "Renouvellement",
+    "expiryLabel": "Expiration du nouveau jeton (AAAA-MM-JJ)",
+    "expiryHint": "Prérempli avec la durée de rotation de {{days}} jours. Videz le champ pour laisser le fournisseur décider.",
+    "errors": {
+      "noMasterKey": "Le renouvellement exige une clé maître sur le plan de contrôle. Configurez-en une dans les clés de chiffrement, puis réessayez.",
+      "provider": "Le fournisseur n'a pas terminé le renouvellement. Le jeton actuel est inchangé, réessayez dans un instant.",
+      "badDate": "Utilisez une date au format AAAA-MM-JJ."
+    },
+    "toast": {
+      "done": "Jeton renouvelé",
+      "expires": "Le nouveau jeton expire le {{date}}.",
+      "noExpiry": "Le fournisseur n'a signalé aucune expiration pour le nouveau jeton."
     }
   }
 }

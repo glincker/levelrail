@@ -1,3 +1,4 @@
+import { useState } from 'react'
 import { useTranslation } from 'react-i18next'
 import {
   CircleCheckGlassIcon,
@@ -25,6 +26,8 @@ import type { GitConnectProvider } from '../../../lib/gitHost'
 import { useGitConnectionAccess } from '../../../queries/gitConnections'
 import type { GitProviderConnection } from '../../../types/gitConnections'
 import { GitConnectionRow } from '../GitConnectionRow'
+import { GitCredentialStatus } from './GitCredentialStatus'
+import { RotateGitTokenDialog } from './RotateGitTokenDialog'
 
 function StateBadge({
   state,
@@ -112,7 +115,10 @@ export function GitAccessPanel({
   const granted = info?.scopes_known
     ? info.scopes
     : parseScopes(connection.scopes)
+  const [now] = useState(() => Date.now())
+  const [rotateOpen, setRotateOpen] = useState(false)
   const isToken = connection.auth_method === 'token'
+  const canRotate = connection.can_rotate === true
   const none = t('access.notReported')
   const capabilityFor = (
     id: CapabilityId,
@@ -142,6 +148,18 @@ export function GitAccessPanel({
             canSetDefault={canSetDefault}
           />
         </ul>
+        <GitCredentialStatus
+          kind={connection.credential_kind}
+          expiresAt={connection.expires_at}
+          lastRefreshAt={connection.last_refresh_at}
+          lastRefreshError={connection.last_refresh_error}
+          now={now}
+          onReauthorize={
+            connection.authorize_path
+              ? () => window.location.assign(connection.authorize_path)
+              : undefined
+          }
+        />
         <div className="grid gap-5 lg:grid-cols-[minmax(0,2fr)_minmax(0,1fr)]">
           <section aria-label={t('access.matrix')} className="space-y-2">
             <h3 className="text-sm font-medium">{t('access.matrix')}</h3>
@@ -196,9 +214,11 @@ export function GitAccessPanel({
                 : none}
             </Fact>
             <Fact label={t('access.expires')}>
-              {info?.expires_at
-                ? new Date(info.expires_at).toLocaleDateString()
-                : none}
+              {connection.expires_at || info?.expires_at
+                ? new Date(
+                    connection.expires_at ?? info?.expires_at ?? '',
+                  ).toLocaleDateString()
+                : t('credential.noExpiry')}
             </Fact>
             <Fact label={t('access.lastUsed')}>
               {info?.last_used_at
@@ -213,11 +233,25 @@ export function GitAccessPanel({
             label={t('access.addScope')}
             reason={t('access.addScopeMissing')}
           />
-          {isToken ? (
+          {canRotate ? (
+            <Button
+              type="button"
+              size="sm"
+              variant="outline"
+              onClick={() => setRotateOpen(true)}
+            >
+              <KeyGlassIcon className="size-5" aria-hidden="true" />
+              {t('access.rotate')}
+            </Button>
+          ) : isToken || connection.credential_kind ? (
             <DisabledAction
               icon={<KeyGlassIcon className="size-5" aria-hidden="true" />}
               label={t('access.rotate')}
-              reason={t('access.rotateMissing')}
+              reason={t(
+                connection.credential_kind === 'oauth_auto_renew'
+                  ? 'access.rotateOauth'
+                  : 'access.rotateUnsupported',
+              )}
             />
           ) : null}
           <Button
@@ -230,6 +264,13 @@ export function GitAccessPanel({
             {t('access.addAnother')}
           </Button>
         </div>
+        {canRotate ? (
+          <RotateGitTokenDialog
+            connection={connection}
+            open={rotateOpen}
+            onOpenChange={setRotateOpen}
+          />
+        ) : null}
       </CardContent>
     </Card>
   )

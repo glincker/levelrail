@@ -87,9 +87,10 @@
     "addScope": "Scope hinzufügen",
     "addScopeMissing": "Braucht einen Endpunkt zum Erweitern von Scopes. Bis dahin neu autorisieren oder einen Token mit mehr Scopes hinzufügen.",
     "rotate": "Token rotieren",
-    "rotateMissing": "Braucht einen Endpunkt zur Token-Rotation. Bis dahin einen neuen Token hinzufügen und den alten trennen.",
     "addAnother": "Weiteres Konto hinzufügen",
-    "inferred": "Abgeleitet"
+    "inferred": "Abgeleitet",
+    "rotateOauth": "OAuth-Verbindungen erneuern sich selbst, es gibt keinen Token zu rotieren.",
+    "rotateUnsupported": "Dieser Anbieter kann diese Zugangsdaten nicht rotieren. Neuen Token hinzufügen und den alten trennen."
   },
   "cap": {
     "list_repos": "Repositories auflisten",
@@ -128,6 +129,38 @@
       "title": "Registry verbinden",
       "body": "Pull-Zugangsdaten für private Images speichern.",
       "action": "Registry-Zugangsdaten öffnen"
+    }
+  },
+  "credential": {
+    "noExpiry": "Kein Ablauf gemeldet",
+    "autoRenews": "Erneuert sich automatisch",
+    "expiresInHours_one": "Läuft in {{count}} Stunde ab",
+    "expiresInHours_other": "Läuft in {{count}} Stunden ab",
+    "expiresInDays_one": "Läuft in {{count}} Tag ab",
+    "expiresInDays_other": "Läuft in {{count}} Tagen ab",
+    "expired_one": "Vor {{count}} Tag abgelaufen",
+    "expired_other": "Vor {{count}} Tagen abgelaufen",
+    "lastRefresh": "Erneuert {{when}}",
+    "refreshFailing": "Erneuerung schlägt fehl",
+    "reauthorize": "Neu autorisieren"
+  },
+  "rotate": {
+    "title": "Token für {{label}} rotieren?",
+    "description": "Dadurch wird der Zugriffstoken beim Anbieter ersetzt.",
+    "consequence": "GitLab stellt einen neuen Token aus und der alte funktioniert sofort nicht mehr. Builds und Pulls dieser Verbindung wechseln automatisch.",
+    "confirm": "Token rotieren",
+    "pending": "Rotiert",
+    "expiryLabel": "Ablauf des neuen Tokens (JJJJ-MM-TT)",
+    "expiryHint": "Vorbelegt aus der Rotationsdauer von {{days}} Tagen. Leer lassen, damit der Anbieter entscheidet.",
+    "errors": {
+      "noMasterKey": "Die Rotation braucht einen Master-Key auf der Control Plane. Richte einen unter Verschlüsselungsschlüssel ein und versuche es erneut.",
+      "provider": "Der Anbieter hat die Rotation nicht abgeschlossen. Der aktuelle Token ist unverändert, versuche es gleich noch einmal.",
+      "badDate": "Verwende ein Datum im Format JJJJ-MM-TT."
+    },
+    "toast": {
+      "done": "Token rotiert",
+      "expires": "Neuer Token läuft am {{date}} ab.",
+      "noExpiry": "Der Anbieter meldet für den neuen Token keinen Ablauf."
     }
   }
 }

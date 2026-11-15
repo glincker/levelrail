@@ -87,9 +87,10 @@
     "addScope": "Añadir permiso",
     "addScopeMissing": "Requiere un endpoint que amplíe permisos. Por ahora, reautoriza o añade un token con más permisos.",
     "rotate": "Rotar token",
-    "rotateMissing": "Requiere un endpoint de rotación de tokens. Por ahora, añade un token nuevo y desconecta el anterior.",
     "addAnother": "Añadir otra cuenta",
-    "inferred": "Inferido"
+    "inferred": "Inferido",
+    "rotateOauth": "Las conexiones OAuth se renuevan solas, no hay token que rotar.",
+    "rotateUnsupported": "Este proveedor no puede rotar esta credencial. Añade un token nuevo y desconecta el anterior."
   },
   "cap": {
     "list_repos": "Listar repositorios",
@@ -128,6 +129,38 @@
       "title": "Conectar un registro",
       "body": "Guarda credenciales de descarga para imágenes privadas.",
       "action": "Abrir credenciales del registro"
+    }
+  },
+  "credential": {
+    "noExpiry": "Sin caducidad informada",
+    "autoRenews": "Se renueva sola",
+    "expiresInHours_one": "Caduca en {{count}} hora",
+    "expiresInHours_other": "Caduca en {{count}} horas",
+    "expiresInDays_one": "Caduca en {{count}} día",
+    "expiresInDays_other": "Caduca en {{count}} días",
+    "expired_one": "Caducó hace {{count}} día",
+    "expired_other": "Caducó hace {{count}} días",
+    "lastRefresh": "Renovada {{when}}",
+    "refreshFailing": "La renovación falla",
+    "reauthorize": "Reautorizar"
+  },
+  "rotate": {
+    "title": "¿Rotar el token de {{label}}?",
+    "description": "Esto sustituye el token de acceso en el proveedor.",
+    "consequence": "GitLab emite un token nuevo y el anterior deja de funcionar al instante. Las compilaciones y descargas de esta conexión cambian solas.",
+    "confirm": "Rotar token",
+    "pending": "Rotando",
+    "expiryLabel": "Caducidad del token nuevo (AAAA-MM-DD)",
+    "expiryHint": "Rellenada con la vida de rotación de {{days}} días. Vacíala para que decida el proveedor.",
+    "errors": {
+      "noMasterKey": "La rotación necesita una clave maestra en el plano de control. Configura una en claves de cifrado y vuelve a intentarlo.",
+      "provider": "El proveedor no completó la rotación. El token actual no cambia, inténtalo de nuevo en un momento.",
+      "badDate": "Usa una fecha con formato AAAA-MM-DD."
+    },
+    "toast": {
+      "done": "Token rotado",
+      "expires": "El token nuevo caduca el {{date}}.",
+      "noExpiry": "El proveedor no informó caducidad para el token nuevo."
     }
   }
 }

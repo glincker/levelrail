@@ -87,9 +87,10 @@
     "addScope": "Add scope",
     "addScopeMissing": "Needs an endpoint that upgrades scopes. For now, re-authorize or add a token with more scopes.",
     "rotate": "Rotate token",
-    "rotateMissing": "Needs a token rotation endpoint. For now, add a new token and disconnect the old one.",
     "addAnother": "Add another account",
-    "inferred": "Inferred"
+    "inferred": "Inferred",
+    "rotateOauth": "OAuth connections renew themselves, so there is no token to rotate.",
+    "rotateUnsupported": "This provider cannot rotate this credential. Add a new token and disconnect the old one."
   },
   "cap": {
     "list_repos": "List repositories",
@@ -128,6 +129,38 @@
       "title": "Connect a registry",
       "body": "Store pull credentials for private images.",
       "action": "Open registry credentials"
+    }
+  },
+  "credential": {
+    "noExpiry": "No expiry reported",
+    "autoRenews": "Auto-renews",
+    "expiresInHours_one": "Expires in {{count}} hour",
+    "expiresInHours_other": "Expires in {{count}} hours",
+    "expiresInDays_one": "Expires in {{count}} day",
+    "expiresInDays_other": "Expires in {{count}} days",
+    "expired_one": "Expired {{count}} day ago",
+    "expired_other": "Expired {{count}} days ago",
+    "lastRefresh": "Refreshed {{when}}",
+    "refreshFailing": "Refresh failing",
+    "reauthorize": "Re-authorize"
+  },
+  "rotate": {
+    "title": "Rotate the token for {{label}}?",
+    "description": "This replaces the access token on the provider.",
+    "consequence": "GitLab issues a new token and the old one stops working at once. Builds and pulls that use this connection switch over automatically.",
+    "confirm": "Rotate token",
+    "pending": "Rotating",
+    "expiryLabel": "New token expiry (YYYY-MM-DD)",
+    "expiryHint": "Prefilled from the {{days}} day rotation lifetime. Clear it to let the provider decide.",
+    "errors": {
+      "noMasterKey": "Rotation needs a master key on the control plane. Set one up under encryption keys, then try again.",
+      "provider": "The provider did not complete the rotation. The current token is unchanged, try again in a moment.",
+      "badDate": "Use a date in YYYY-MM-DD format."
+    },
+    "toast": {
+      "done": "Token rotated",
+      "expires": "New token expires {{date}}.",
+      "noExpiry": "The provider reported no expiry for the new token."
     }
   }
 }

@@ -87,9 +87,10 @@
     "addScope": "添加权限范围",
     "addScopeMissing": "需要一个升级权限范围的接口。目前请重新授权,或添加权限更多的令牌。",
     "rotate": "轮换令牌",
-    "rotateMissing": "需要一个令牌轮换接口。目前请添加新令牌并断开旧令牌。",
     "addAnother": "添加另一个账号",
-    "inferred": "推断"
+    "inferred": "推断",
+    "rotateOauth": "OAuth 连接会自动续期,没有需要轮换的令牌。",
+    "rotateUnsupported": "该提供方无法轮换此凭据。请添加新令牌并断开旧令牌。"
   },
   "cap": {
     "list_repos": "列出仓库",
@@ -128,6 +129,38 @@
       "title": "连接镜像仓库",
       "body": "保存私有镜像的拉取凭据。",
       "action": "打开镜像仓库凭据"
+    }
+  },
+  "credential": {
+    "noExpiry": "未报告到期时间",
+    "autoRenews": "自动续期",
+    "expiresInHours_one": "{{count}} 小时后到期",
+    "expiresInHours_other": "{{count}} 小时后到期",
+    "expiresInDays_one": "{{count}} 天后到期",
+    "expiresInDays_other": "{{count}} 天后到期",
+    "expired_one": "{{count}} 天前已到期",
+    "expired_other": "{{count}} 天前已到期",
+    "lastRefresh": "{{when}}已刷新",
+    "refreshFailing": "刷新失败",
+    "reauthorize": "重新授权"
+  },
+  "rotate": {
+    "title": "轮换 {{label}} 的令牌?",
+    "description": "这会替换提供方上的访问令牌。",
+    "consequence": "GitLab 会签发新令牌,旧令牌立即失效。使用此连接的构建和拉取会自动切换。",
+    "confirm": "轮换令牌",
+    "pending": "轮换中",
+    "expiryLabel": "新令牌到期日 (YYYY-MM-DD)",
+    "expiryHint": "已按 {{days}} 天的轮换周期预填。清空则由提供方决定。",
+    "errors": {
+      "noMasterKey": "轮换需要控制平面上有主密钥。请先在加密密钥中设置,然后重试。",
+      "provider": "提供方未完成轮换。当前令牌保持不变,请稍后重试。",
+      "badDate": "请使用 YYYY-MM-DD 格式的日期。"
+    },
+    "toast": {
+      "done": "令牌已轮换",
+      "expires": "新令牌将于 {{date}} 到期。",
+      "noExpiry": "提供方未报告新令牌的到期时间。"
     }
   }
 }
