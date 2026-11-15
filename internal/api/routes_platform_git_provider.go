@@ -46,6 +46,7 @@ func (rt *Router) registerGitProviderRoutes(mux *http.ServeMux) {
 	mux.HandleFunc("PATCH /api/v1/git-connections/{id}", rt.requireAbility(AbilityRoot, rt.handleRenameGitConnection))
 	mux.HandleFunc("DELETE /api/v1/git-connections/{id}", rt.requireAbility(AbilityRoot, rt.handleDisconnectGitConnection))
 	mux.HandleFunc("POST /api/v1/git-connections/{id}/default", rt.requireAbility(AbilityRoot, rt.handleSetDefaultGitConnection))
+	mux.HandleFunc("POST /api/v1/git-connections/{id}/rotate", rt.requireAbility(AbilityRoot, rt.handleRotateGitConnection))
 	mux.HandleFunc("GET /api/v1/git-connections/{id}/branches", rt.requireAbility(AbilityReadSensitive, rt.handleListGitConnectionBranches))
 	mux.HandleFunc("GET /api/v1/git-connections/{id}/access", rt.requireAbility(AbilityReadSensitive, rt.handleGetGitConnectionAccess))
 	mux.HandleFunc("POST /api/v1/git-connections/{id}/use-as-source", rt.requireAbility(AbilityWriteSensitive, rt.handleUseGitConnectionRepoAsSource))

@@ -523,6 +523,13 @@ func (s *bootState) startSchedulers() {
 		}
 	}()
 
+	// Git OAuth access tokens refresh ahead of expiry; pasted tokens report their expiry.
+	go func() {
+		if err := apiRouter.RunGitCredentialRefresh(ctx); err != nil && !errors.Is(err, context.Canceled) {
+			logger.Error("git credential refresh stopped", slog.String("error", err.Error()))
+		}
+	}()
+
 	// Token expiry reminders and revocation of rotated tokens after their grace.
 	go func() {
 		if err := apiRouter.RunTokenExpiryReminders(ctx); err != nil && !errors.Is(err, context.Canceled) {

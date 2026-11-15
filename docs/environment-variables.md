@@ -82,6 +82,11 @@ These variables only seed the default of a [runtime setting](/runtime-settings).
 | `APP_FIREWALL_CONFIRM_WINDOW` | [`firewall.confirm_window`](/runtime-settings#security) | `60s` |
 | `APP_FIXIT_MAX_PER_HOUR` | [`fixit.max_per_hour`](/runtime-settings#security) | `0` |
 | `APP_GIT_LFS_HOSTS` | [`git.lfs_hosts`](/runtime-settings#security) | empty |
+| `APP_GIT_OAUTH_REFRESH_ENABLED` | [`git.oauth_refresh_enabled`](/runtime-settings#security) | `true` |
+| `APP_GIT_OAUTH_REFRESH_FAILURE_GRACE` | [`git.oauth_refresh_failure_grace`](/runtime-settings#security) | `30m` |
+| `APP_GIT_OAUTH_REFRESH_INTERVAL` | [`git.oauth_refresh_interval`](/runtime-settings#security) | `1m` |
+| `APP_GIT_OAUTH_REFRESH_LEAD` | [`git.oauth_refresh_lead`](/runtime-settings#security) | `10m` |
+| `APP_GIT_ROTATE_LIFETIME_DAYS` | [`git.rotate_lifetime_days`](/runtime-settings#security) | `90` |
 | `APP_GIT_SSH_SCAN_ALLOW_INTERNAL` | [`git.ssh_scan_allow_internal`](/runtime-settings#security) | empty |
 | `APP_GIT_SUBMODULES_ALLOWED_CIDRS` | [`git.submodules_allowed_cidrs`](/runtime-settings#security) | empty |
 | `APP_GIT_SUBMODULES_CREDENTIAL_HOSTS` | [`git.submodules_credential_hosts`](/runtime-settings#security) | empty |

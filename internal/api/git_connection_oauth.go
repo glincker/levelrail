@@ -313,7 +313,7 @@ func (rt *Router) gitConnToken(ctx context.Context, id string) (store.GitConnect
 				return adapter.refresh(ctx, conn, secret, refresh)
 			},
 			save: func(ctx context.Context, t gitOAuthTokens) error { return rt.saveGitTokens(ctx, conn, t) },
-		})
+		}, gitOAuthRefreshMargin)
 		if err != nil {
 			return store.GitConnection{}, "", err
 		}

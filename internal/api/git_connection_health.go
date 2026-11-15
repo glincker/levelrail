@@ -202,6 +202,7 @@ type gitOAuthSpec struct {
 	save     func(ctx context.Context, t gitOAuthTokens) error
 }
 
+// gitOAuthRefreshMargin is the lead an on-demand caller uses; the background loop passes its own setting.
 const gitOAuthRefreshMargin = 60 * time.Second
 
 // refreshGitOAuth refreshes a connection's access token once at a time. A
@@ -209,7 +210,7 @@ const gitOAuthRefreshMargin = 60 * time.Second
 // token another caller just refreshed; before saving, the refresh token
 // that was spent is compared with the stored one so a rotating refresh
 // token is never used twice and a reconnect in between is not overwritten.
-func (rt *Router) refreshGitOAuth(ctx context.Context, spec gitOAuthSpec) (string, error) {
+func (rt *Router) refreshGitOAuth(ctx context.Context, spec gitOAuthSpec, lead time.Duration) (string, error) {
 	unlock := rt.gitOAuthLocks.lock(spec.key)
 	defer unlock()
 
@@ -217,13 +218,15 @@ func (rt *Router) refreshGitOAuth(ctx context.Context, spec gitOAuthSpec) (strin
 	if err != nil {
 		return "", fmt.Errorf("read %s oauth state: %w", spec.provider, err)
 	}
-	if time.Now().Add(gitOAuthRefreshMargin).Before(time.Unix(state.ExpiresUnix, 0)) {
+	if time.Now().Add(lead).Before(time.Unix(state.ExpiresUnix, 0)) {
 		return state.Access, nil
 	}
 
 	tokens, err := spec.exchange(ctx, state.Refresh)
 	if err != nil {
-		return "", rt.gitConnRecordFailure(ctx, spec.provider, spec.key, fmt.Errorf("refresh %s access token: %w", spec.provider, err), false)
+		failure := rt.gitConnRecordFailure(ctx, spec.provider, spec.key, fmt.Errorf("refresh %s access token: %w", spec.provider, err), false)
+		rt.noteGitRefresh(ctx, spec.key, failure)
+		return "", failure
 	}
 	if tokens.Refresh == "" {
 		tokens.Refresh = state.Refresh
@@ -234,7 +237,7 @@ func (rt *Router) refreshGitOAuth(ctx context.Context, spec gitOAuthSpec) (strin
 		return "", fmt.Errorf("re-read %s oauth state: %w", spec.provider, err)
 	}
 	if current.Refresh != state.Refresh {
-		if time.Now().Add(gitOAuthRefreshMargin).Before(time.Unix(current.ExpiresUnix, 0)) {
+		if time.Now().Add(lead).Before(time.Unix(current.ExpiresUnix, 0)) {
 			return current.Access, nil
 		}
 		ce := &gitConnError{Provider: spec.provider, Key: spec.key, Status: store.GitConnNeedsReauthorize, Detail: "the connection changed while refreshing", Err: errors.New("refresh token changed during refresh")}
@@ -245,6 +248,7 @@ func (rt *Router) refreshGitOAuth(ctx context.Context, spec gitOAuthSpec) (strin
 		return "", fmt.Errorf("save refreshed %s tokens: %w", spec.provider, err)
 	}
 	rt.markGitConnOK(ctx, spec.key)
+	rt.noteGitRefresh(ctx, spec.key, nil)
 	return tokens.Access, nil
 }
 

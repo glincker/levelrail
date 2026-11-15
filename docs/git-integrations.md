@@ -208,6 +208,16 @@ The answer holds the provider, `auth_method` (`oauth_app` or `token`), the grant
 
 GitLab reports scopes, so a token with only `read_api` shows webhooks, commit statuses and comments as `needs_scope: api`. Gitea, Forgejo and Bitbucket do not report scopes, so they answer `scopes_known: false` and inferred states. If the provider cannot be reached the call still returns 200 with the stored facts and a `live_check_error`. Live results are reused for `git.access_cache_ttl_seconds` (env `APP_GIT_ACCESS_CACHE_TTL_SECONDS`, default 60) and the name list is capped by `git.access_names_max`.
 
+## Credential health, auto-renew and rotation
+
+Each connection says what kind of credential it holds. `credential_kind` is `oauth_auto_renew` when a refresh token is stored, and `static_token` for a pasted token. The connection also reports `auto_renew`, `expires_at`, `last_refresh_at`, `last_refresh_error` and `can_rotate`. None of these carry a secret.
+
+An OAuth connection renews itself. A background check runs every `git.oauth_refresh_interval` (env `APP_GIT_OAUTH_REFRESH_INTERVAL`, default 1m) and refreshes any access token that expires within `git.oauth_refresh_lead` (default 10m). A refresh that works is silent. A grant the provider rejects raises an alert at once; a provider that is only unreachable raises one after `git.oauth_refresh_failure_grace` (default 30m). The alert is one Status row (`git_connection_reauth`, with a Re-authorize link) and one `git_connections.reauth_needed` event, and both clear when a refresh works again. Connections that already need a new authorization are skipped, not retried. Turn the whole loop off with `git.oauth_refresh_enabled` (env `APP_GIT_OAUTH_REFRESH_ENABLED`); tokens are then refreshed only when a request needs them, and the System Doctor row `git_oauth_refresh` warns while it is off.
+
+A pasted token cannot renew itself. When the host reports an expiry (GitLab does), the control plane sends one `git_connections.expiring` event per window in `credential_expiry.reminder_windows_days` and shows a `git_token_expiring` row on Status inside the widest window. The event carries the connection, the expiry and the rotate path, never the token.
+
+`POST /api/v1/git-connections/{id}/rotate` replaces a pasted GitLab personal access token through GitLab's own rotation call. It needs the root ability, is audited as `git_connection.rotated`, and the token needs the `self_rotate` scope. The body is optional: `{"expires_at": "YYYY-MM-DD"}`, otherwise the new token lasts `git.rotate_lifetime_days` (default 90). GitLab revokes the old token at once. The answer is `{"rotated": true, "expires_at": "...", "connection": {...}}` and never contains the new secret. It answers 409 for an OAuth connection, a connection that is not authorized, a provider that cannot rotate, or a token without the scope.
+
 ## Reconnecting a provider
 
 Each connection has a health state, shown on its settings page, in `GET /api/v1/git-providers` (`connection.status`), in `levelrail-cli git-providers` and in the System Doctor check `git_connections`.

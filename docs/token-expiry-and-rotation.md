@@ -41,3 +41,5 @@ The API call is `POST /api/v1/auth/tokens/{id}/rotate`. It answers 201 with the 
 | `tokens.expiry_warning_days` | `7` | Window for the grouped Status row |
 
 See [Runtime settings](/runtime-settings) for ranges and environment seeds.
+
+Git provider credentials follow the same windows: see [credential health, auto-renew and rotation](/git-integrations#credential-health-auto-renew-and-rotation).

@@ -20,6 +20,7 @@ var knownEventTypes = []string{
 	"databases.create", "databases.delete",
 	"users.create", "users.update", "users.delete",
 	"tokens.create", "tokens.delete", "tokens.rotated", "tokens.expiring", "tokens.expired",
+	"git_connections.reauth_needed", "git_connections.expiring",
 	"settings.update",
 	"cleanup.run", "cleanup.failed",
 	"stacks.applied", "stacks.approval_requested", "stacks.approved",

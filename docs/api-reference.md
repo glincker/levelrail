@@ -2375,6 +2375,7 @@ Routes that do not fit an existing group.
 | GET | /api/v1/connections/{ref} | AbilityReadSensitive | handleGetConnection |
 | PUT | /api/v1/connections/{ref}/meta | AbilityWriteSensitive | handleSetConnectionMeta |
 | GET | /api/v1/git-connections/{id}/access | AbilityReadSensitive | handleGetGitConnectionAccess |
+| POST | /api/v1/git-connections/{id}/rotate | AbilityRoot | handleRotateGitConnection |
 | POST | /mcp | Public |  |
 
 ## See also

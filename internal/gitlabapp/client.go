@@ -384,6 +384,23 @@ func (c *Client) TokenInfo(ctx context.Context, instanceURL, accessToken string)
 	return TokenInfo{Name: resp.Name, Scopes: resp.Scopes, ExpiresAt: resp.ExpiresAt, LastUsedAt: resp.LastUsedAt}, nil
 }
 
+// RotateSelf replaces the calling personal access token (needs the self_rotate scope).
+// The old token stops working at once; the new secret is returned once, with its expiry date.
+func (c *Client) RotateSelf(ctx context.Context, instanceURL, accessToken string, expiresAt time.Time) (token, newExpiry string, err error) {
+	var resp struct {
+		Token     string `json:"token"`
+		ExpiresAt string `json:"expires_at"`
+	}
+	endpoint := apiBaseURL(instanceURL) + "/personal_access_tokens/self/rotate"
+	if !expiresAt.IsZero() {
+		endpoint += "?expires_at=" + expiresAt.UTC().Format("2006-01-02")
+	}
+	if err := c.do(ctx, http.MethodPost, endpoint, "Bearer "+accessToken, nil, &resp); err != nil {
+		return "", "", err
+	}
+	return resp.Token, resp.ExpiresAt, nil
+}
+
 // OAuthTokenInfo reads the scopes and lifetime of an OAuth access token.
 func (c *Client) OAuthTokenInfo(ctx context.Context, instanceURL, accessToken string) (TokenInfo, error) {
 	var resp struct {

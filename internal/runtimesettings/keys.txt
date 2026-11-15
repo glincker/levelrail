@@ -222,10 +222,15 @@ games.status_timeout
 git.access_cache_ttl_seconds
 git.access_names_max
 git.lfs_hosts
+git.oauth_refresh_enabled
+git.oauth_refresh_failure_grace
+git.oauth_refresh_interval
+git.oauth_refresh_lead
 git.poll_concurrency
 git.poll_enabled
 git.poll_interval
 git.poll_max_backoff
+git.rotate_lifetime_days
 git.ssh_scan_allow_internal
 git.submodules_allowed_cidrs
 git.submodules_credential_hosts
