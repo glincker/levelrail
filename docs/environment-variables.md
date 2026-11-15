@@ -415,6 +415,8 @@ These variables only seed the default of a [runtime setting](/runtime-settings).
 | `APP_HOST_PRESSURE_MEM_WARN` | [`host.pressure_mem_warn`](/runtime-settings#observability) | `15` |
 | `APP_HOST_PRESSURE_RESUME_JITTER` | [`host.pressure_resume_jitter`](/runtime-settings#observability) | `30s` |
 | `APP_HOST_PRESSURE_SHED_ENABLED` | [`host.pressure_shed_enabled`](/runtime-settings#observability) | `true` |
+| `APP_PROTECTED_OOM_SCORE_ADJ` | [`host.protected_oom_score_adj`](/runtime-settings#observability) | `-500` |
+| `APP_UNCLEAN_RESTART_WINDOW` | [`host.unclean_restart_window`](/runtime-settings#observability) | `72h` |
 | `APP_INCIDENT_POSTMORTEM_ACTION_ITEMS_MAX` | [`incidents.postmortem_action_items_max`](/runtime-settings#observability) | `50` |
 | `APP_INCIDENT_POSTMORTEM_BODY_MAX` | [`incidents.postmortem_body_max`](/runtime-settings#observability) | `1048576` |
 | `APP_INCIDENT_POSTMORTEM_FIELD_MAX` | [`incidents.postmortem_field_max`](/runtime-settings#observability) | `8000` |
