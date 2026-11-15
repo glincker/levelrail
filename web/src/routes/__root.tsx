@@ -223,8 +223,13 @@ function AppShell() {
         <main
           id={MAIN_CONTENT_ID}
           tabIndex={-1}
-          className="mr-[var(--dock-push-r,0px)] mb-[var(--dock-push-b,0px)] flex-1 overflow-y-auto px-4 pt-4 pb-24 outline-none [view-transition-name:page-content] md:px-(--glinr-page-pad-x) md:pt-6 md:pb-18"
+          className="relative mr-[var(--dock-push-r,0px)] mb-[var(--dock-push-b,0px)] flex-1 overflow-y-auto px-4 pt-4 pb-24 outline-none [view-transition-name:page-content] md:px-(--glinr-page-pad-x) md:pt-6 md:pb-18"
         >
+          <div
+            aria-hidden="true"
+            data-main-sentinel=""
+            className="pointer-events-none absolute inset-x-0 top-0 h-2"
+          />
           <div className="mx-auto w-full min-w-0 max-w-(--glinr-content-max) has-[[data-page-width=full]]:max-w-none has-[[data-page-width=wide]]:max-w-(--glinr-content-max-wide)">
             <div className="mb-4 empty:hidden"></div>
             <div className="mb-4 border-b border-border empty:hidden">
