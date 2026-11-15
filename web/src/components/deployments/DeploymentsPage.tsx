@@ -289,7 +289,7 @@ export function DeploymentsPage({
           loading={summary.isPending}
           failed={summary.isError}
           onNeedsAttention={() => {
-            setFilters({ ...filters, status: ['held'] })
+            setFilters({ ...filters, status: ['held', 'failed', 'refused'] })
           }}
         />
       )}

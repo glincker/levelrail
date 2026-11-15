@@ -2,6 +2,7 @@ import { describe, expect, it } from 'vitest'
 import {
   canRedeploy,
   commitSubject,
+  headline,
   statusView,
 } from './deploymentPresentation'
 import type { Deployment } from '../types/deployment'
@@ -29,5 +30,28 @@ describe('refused deploys', () => {
     expect(statusView('refused').tone).toBe('warning')
     const d = { status: 'refused', image: 'nginx:1' } as Deployment
     expect(canRedeploy(d)).toBe(true)
+  })
+})
+
+describe('first deploy title', () => {
+  const base = {
+    image: 'busybox:latest',
+    id: 'dep_1',
+    trigger: 'manual',
+    rollback_of: null,
+    commit_sha: '',
+    commit_message: '',
+    branch: '',
+  } as unknown as Deployment
+
+  it('is not called a redeploy', () => {
+    expect(headline({ ...base, first_deploy: true })).toBe(
+      'Deploy of busybox:latest',
+    )
+  })
+  it('stays a redeploy once the app has history', () => {
+    expect(headline({ ...base, first_deploy: false })).toBe(
+      'Redeploy of busybox:latest',
+    )
   })
 })

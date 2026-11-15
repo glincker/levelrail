@@ -99,11 +99,18 @@ export function deploymentsLaneOptions() {
 }
 
 export function deploymentsSummaryOptions() {
+  // Same scope as the list, so the header counts describe the rows below it.
+  const environment = getEnvironmentScope()
+  const project = getProjectScope()
+  const params = new URLSearchParams()
+  if (environment) params.set('environment', environment)
+  if (project) params.set('project', project)
+  const qs = params.toString()
   return queryOptions({
-    queryKey: deploymentKeys.summary(),
+    queryKey: [...deploymentKeys.summary(), { environment, project }] as const,
     queryFn: () =>
       getJson<DeploymentsSummary>(
-        '/api/v1/deployments/summary',
+        `/api/v1/deployments/summary${qs ? `?${qs}` : ''}`,
         'deployments summary',
       ),
   })

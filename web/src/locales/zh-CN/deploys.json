@@ -555,7 +555,7 @@
     "medianDuration": "中位时长",
     "medianDurationTip": "最近 24 小时内已完成部署的中位耗时。",
     "needsAttention": "需要处理",
-    "needsAttentionTip": "已暂缓的部署,以及与运行中版本不同的线上镜像。选择即可显示已暂缓的部署。",
+    "needsAttentionTip": "已暂停的部署、与运行中不一致的在线镜像，以及最近一次部署失败或被拒绝的应用。点击查看。",
     "deploys14": "部署(14 天)",
     "deploys14Tip": "最近 14 天每天开始的部署数。"
   },

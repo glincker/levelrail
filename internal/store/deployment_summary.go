@@ -11,7 +11,8 @@ import (
 )
 
 // briefFromSQL skips the display-only joins; preview rows are unique per app.
-const briefFromSQL = `FROM deploy_attempts d JOIN ` + deploymentServicesSQL + ` s ON s.name = d.service_name`
+const briefFromSQL = `FROM deploy_attempts d JOIN ` + deploymentServicesSQL + ` s ON s.name = d.service_name
+	LEFT JOIN environments env ON env.id = s.environment_id`
 
 // DeploymentBrief is the slim row deployment summaries are computed from.
 type DeploymentBrief struct {
@@ -51,7 +52,13 @@ const DeploymentSummaryDays = 14
 // The rolled-back and live flags are derived in one pass over each app's
 // succeeded attempts instead of a correlated subquery per row.
 func (db *DB) ListDeploymentBriefs(ctx context.Context, since time.Time, visibleApps []string) ([]DeploymentBrief, error) {
-	where, args, err := deploymentWhere(DeploymentFilter{VisibleApps: visibleApps}, false)
+	return db.ListDeploymentBriefsScoped(ctx, since, visibleApps, "", "")
+}
+
+// ListDeploymentBriefsScoped narrows ListDeploymentBriefs to an environment and
+// project, so summary counts match the rows the list shows for the same scope.
+func (db *DB) ListDeploymentBriefsScoped(ctx context.Context, since time.Time, visibleApps []string, environment, project string) ([]DeploymentBrief, error) {
+	where, args, err := deploymentWhere(DeploymentFilter{VisibleApps: visibleApps, Environment: environment, Project: project}, false)
 	if err != nil {
 		return nil, err
 	}

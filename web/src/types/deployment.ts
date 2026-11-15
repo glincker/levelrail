@@ -35,6 +35,8 @@ export interface DeploymentSteps {
 
 /** Wire shape of one row from GET /api/v1/deployments. */
 export interface Deployment {
+  /** True for the first attempt the app ever had, so it is not a redeploy. */
+  first_deploy?: boolean
   id: string
   app: string
   status: DeploymentStatus

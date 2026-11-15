@@ -48,6 +48,8 @@ type Deployment struct {
 	RolledBackBy string
 	PRNumber     int
 	IsLive       bool
+	// First is true for the earliest attempt the app ever had.
+	First bool
 }
 
 // DeploymentFilter narrows ListDeployments. Zero values mean no filter.
@@ -352,7 +354,9 @@ func (db *DB) ListDeployments(ctx context.Context, f DeploymentFilter) ([]Deploy
 		CASE WHEN ` + rollbackAttemptForD + ` THEN COALESCE(` + rollbackTargetForD + `, '') ELSE '' END,
 		CASE WHEN d.status = 'superseded' THEN COALESCE(NULLIF(d.superseded_by, ''), (SELECT n.id FROM deploy_attempts n
 			WHERE n.service_name = d.service_name AND n.started_at > d.started_at
-			ORDER BY n.started_at ASC LIMIT 1), '') ELSE '' END ` +
+			ORDER BY n.started_at ASC LIMIT 1), '') ELSE '' END,
+		NOT EXISTS (SELECT 1 FROM deploy_attempts p WHERE p.service_name = d.service_name
+			AND (p.started_at < d.started_at OR (p.started_at = d.started_at AND p.id < d.id))) ` +
 		deploymentFromSQL + where + ` ORDER BY d.started_at DESC, d.id DESC LIMIT ?`
 	args = append(args, limit+1)
 
@@ -367,7 +371,7 @@ func (db *DB) ListDeployments(ctx context.Context, f DeploymentFilter) ([]Deploy
 		var d Deployment
 		var configBranch string
 		a, err := scanDeployAttempt(func(dest ...any) error {
-			return rows.Scan(append(dest, &d.Status, &d.Environment, &configBranch, &d.PRNumber, &d.IsLive, &d.RolledBackBy, &d.RollbackOf, &d.SupersededBy)...)
+			return rows.Scan(append(dest, &d.Status, &d.Environment, &configBranch, &d.PRNumber, &d.IsLive, &d.RolledBackBy, &d.RollbackOf, &d.SupersededBy, &d.First)...)
 		})
 		if err != nil {
 			return nil, "", fmt.Errorf("store: scan deployment row: %w", err)

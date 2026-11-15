@@ -561,7 +561,7 @@
     "medianDuration": "Median duration",
     "medianDurationTip": "Median time of deploys that finished in the last 24 hours.",
     "needsAttention": "Needs attention",
-    "needsAttentionTip": "Held deploys, and live images that differ from what is running. Select to show held deploys.",
+    "needsAttentionTip": "Held deploys, live images that differ from what is running, and apps whose latest deploy failed or was refused. Select to show them.",
     "deploys14": "Deploys (14 days)",
     "deploys14Tip": "Deploys started per day over the last 14 days."
   },

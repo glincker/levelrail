@@ -156,7 +156,12 @@ export function isRollback(d: Deployment): boolean {
 
 /** A redeploy re-ships an existing image: no commit, no branch, not a rollback. */
 export function isRedeploy(d: Deployment): boolean {
-  return !isRollback(d) && d.commit_sha === '' && d.branch === ''
+  return (
+    !isRollback(d) &&
+    d.first_deploy !== true &&
+    d.commit_sha === '' &&
+    d.branch === ''
+  )
 }
 
 export type RowKind =
@@ -201,6 +206,9 @@ export function headline(d: Deployment): string {
   }
   if (d.commit_message) return commitSubject(d.commit_message)
   if (isRedeploy(d)) return `Redeploy of ${imageTag(d.image)}`
+  if (d.first_deploy === true && d.commit_sha === '') {
+    return `Deploy of ${imageTag(d.image)}`
+  }
   return imageTag(d.image) || d.id
 }
 

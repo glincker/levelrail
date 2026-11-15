@@ -567,7 +567,7 @@
     "medianDuration": "Duração mediana",
     "medianDurationTip": "Tempo mediano dos deploys concluídos nas últimas 24 horas.",
     "needsAttention": "Requer atenção",
-    "needsAttentionTip": "Deploys retidos e imagens ao vivo que diferem do que está em execução. Selecione para mostrar os deploys retidos.",
+    "needsAttentionTip": "Deploys retidos, imagens ativas diferentes das em execução e apps cujo último deploy falhou ou foi recusado. Selecione para exibi-los.",
     "deploys14": "Deploys (14 dias)",
     "deploys14Tip": "Deploys iniciados por dia nos últimos 14 dias."
   },

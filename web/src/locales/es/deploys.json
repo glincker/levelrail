@@ -561,7 +561,7 @@
     "medianDuration": "Duración mediana",
     "medianDurationTip": "Tiempo mediano de los despliegues que terminaron en las últimas 24 horas.",
     "needsAttention": "Requiere atención",
-    "needsAttentionTip": "Despliegues retenidos e imágenes en vivo que difieren de lo que se ejecuta. Selecciona para ver los retenidos.",
+    "needsAttentionTip": "Despliegues retenidos, imágenes en vivo que difieren de lo que se ejecuta y apps cuyo último despliegue falló o fue rechazado. Selecciona para verlos.",
     "deploys14": "Despliegues (14 días)",
     "deploys14Tip": "Despliegues iniciados por día en los últimos 14 días."
   },
