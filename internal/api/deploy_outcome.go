@@ -18,6 +18,7 @@ const (
 	OutcomeCanceled   = "canceled"
 	OutcomeSuperseded = "superseded"
 	OutcomeBlocked    = "blocked"
+	OutcomeRefused    = "refused"
 	// OutcomeStopped: the build finished but the app is stopped, so nothing went live.
 	OutcomeStopped = "stopped"
 )
@@ -56,6 +57,8 @@ func computeDeployOutcome(a store.DeployAttempt, newest bool, conds []reconcile.
 	switch a.Status {
 	case store.DeployAttemptStatusFailed:
 		return OutcomeFailed
+	case store.DeployAttemptStatusRefused:
+		return OutcomeRefused
 	case store.DeployAttemptStatusCanceled:
 		return OutcomeCanceled
 	case store.DeployAttemptStatusSuperseded:
@@ -119,6 +122,8 @@ func deployOutcomeReason(a store.DeployAttempt, outcome string, conds []reconcil
 		return "replaced by a newer deploy"
 	case OutcomeCanceled:
 		return "canceled"
+	case OutcomeRefused:
+		return outcomeReasonLine(a.Error, "refused by a node guard")
 	}
 	return ""
 }

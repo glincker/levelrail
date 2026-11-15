@@ -22,6 +22,7 @@ const (
 	DeploymentCanceled   = "canceled"
 	DeploymentRolledBack = "rolled_back"
 	DeploymentSuperseded = "superseded"
+	DeploymentRefused    = "refused"
 )
 
 // Deployment triggers exposed by the cross-app deployments list.
@@ -159,6 +160,8 @@ func storedStatusesFor(statuses []string) []string {
 			}
 		case DeploymentSuperseded:
 			add(DeployAttemptStatusSuperseded)
+		case DeploymentRefused:
+			add(DeployAttemptStatusRefused)
 		}
 	}
 	return out

@@ -602,7 +602,8 @@
       "held": "已暂缓",
       "awaiting_approval": "等待批准",
       "rolled_back": "已回滚",
-      "superseded": "已被取代"
+      "superseded": "已被取代",
+      "refused": "已拒绝"
     },
     "trigger": {
       "git push": "Git 推送",

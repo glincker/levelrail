@@ -97,6 +97,13 @@ export const STATUS_VIEW: Record<DeploymentStatus, StatusView> = {
     tone: 'neutral',
     icon: SkipForwardGlassIcon,
   },
+  refused: {
+    get label() {
+      return translateShared('deploys:deployList.status.refused', 'Refused')
+    },
+    tone: 'warning',
+    icon: BanGlassIcon,
+  },
 }
 
 export function statusView(status: string): StatusView {
@@ -214,6 +221,7 @@ export function queueLabel(d: Deployment): string {
 export function subtitle(d: Deployment): string {
   switch (d.status) {
     case 'failed':
+    case 'refused':
       return d.error_summary ?? d.reason
     case 'superseded':
       return d.superseded_by
@@ -285,6 +293,7 @@ export const REDEPLOYABLE: DeploymentStatus[] = [
   'rolled_back',
   'superseded',
   'canceled',
+  'refused',
 ]
 
 export function canRedeploy(d: Deployment): boolean {

@@ -608,7 +608,8 @@
       "held": "En espera",
       "awaiting_approval": "Esperando aprobación",
       "rolled_back": "Revertido",
-      "superseded": "Reemplazado"
+      "superseded": "Reemplazado",
+      "refused": "Rechazado"
     },
     "trigger": {
       "git push": "Git push",

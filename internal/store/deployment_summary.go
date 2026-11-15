@@ -15,6 +15,7 @@ const briefFromSQL = `FROM deploy_attempts d JOIN ` + deploymentServicesSQL + ` 
 
 // DeploymentBrief is the slim row deployment summaries are computed from.
 type DeploymentBrief struct {
+	Service      string
 	Status       string
 	RolloutState string
 	IsLive       bool
@@ -127,6 +128,7 @@ func (db *DB) ListDeploymentBriefs(ctx context.Context, since time.Time, visible
 	out := make([]DeploymentBrief, 0, len(raw))
 	for _, r := range raw {
 		b := r.brief
+		b.Service = r.service
 		switch r.stored {
 		case "running":
 			b.Status = DeploymentBuilding
@@ -222,7 +224,7 @@ func BuildDeploymentSummary(briefs []DeploymentBrief, now time.Time, window time
 	now = now.UTC()
 	s := DeploymentSummary{Counts: map[string]int{
 		DeploymentHeld: 0, DeploymentQueued: 0, DeploymentAwaiting: 0, DeploymentBuilding: 0, DeploymentReady: 0, DeploymentFailed: 0,
-		DeploymentCanceled: 0, DeploymentRolledBack: 0, DeploymentSuperseded: 0,
+		DeploymentCanceled: 0, DeploymentRolledBack: 0, DeploymentSuperseded: 0, DeploymentRefused: 0,
 	}}
 	today := time.Date(now.Year(), now.Month(), now.Day(), 0, 0, 0, 0, time.UTC)
 	firstDay := today.AddDate(0, 0, -(DeploymentSummaryDays - 1))
@@ -234,9 +236,16 @@ func BuildDeploymentSummary(briefs []DeploymentBrief, now time.Time, window time
 	windowStart := now.Add(-window)
 	dayAgo := now.Add(-24 * time.Hour)
 	var durations []int64
+	// An app whose newest deploy failed or was refused needs a look too.
+	newest := map[string]DeploymentBrief{}
 	var failed24, done24 int
 	for _, b := range briefs {
 		started := b.StartedAt.UTC()
+		if b.Service != "" {
+			if cur, ok := newest[b.Service]; !ok || b.StartedAt.After(cur.StartedAt) {
+				newest[b.Service] = b
+			}
+		}
 		if b.Status == DeploymentBuilding {
 			s.InProgress++
 		}
@@ -269,6 +278,11 @@ func BuildDeploymentSummary(briefs []DeploymentBrief, now time.Time, window time
 			if d := b.FinishedAt.Sub(started).Milliseconds(); d >= 0 {
 				durations = append(durations, d)
 			}
+		}
+	}
+	for _, b := range newest {
+		if b.Status == DeploymentFailed || b.Status == DeploymentRefused {
+			s.NeedsAttention++
 		}
 	}
 	if done24 > 0 {

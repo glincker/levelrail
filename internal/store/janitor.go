@@ -163,11 +163,11 @@ func (db *DB) ListPrunableDeployAttempts(ctx context.Context, cutoff time.Time, 
 				ROW_NUMBER() OVER (PARTITION BY service_name ORDER BY started_at DESC) AS rn
 			FROM deploy_attempts)
 		WHERE rn > ? AND started_at < ?
-			AND status IN (?, ?, ?, ?)
+			AND status IN (?, ?, ?, ?, ?)
 			AND id NOT IN (SELECT deploy_attempt_id FROM rollback_pins)
 		ORDER BY started_at LIMIT ?`,
 		keep, cutoff.UTC().Format(time.RFC3339Nano),
-		DeployAttemptStatusFailed, DeployAttemptStatusSuperseded, DeployAttemptStatusCanceled, DeployAttemptStatusHeld, limit)
+		DeployAttemptStatusFailed, DeployAttemptStatusSuperseded, DeployAttemptStatusCanceled, DeployAttemptStatusHeld, DeployAttemptStatusRefused, limit)
 	if err != nil {
 		return nil, fmt.Errorf("store: list prunable deploy attempts: %w", err)
 	}

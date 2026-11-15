@@ -358,7 +358,7 @@ func (rt *Router) handleTriggerBuild(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	if rt.refuseNodeCritical(r.Context(), w, existing.NodeID) {
+	if rt.refuseNodeCritical(r.Context(), w, *existing, existing.Image, store.DeployAttemptSourceManual) {
 		return
 	}
 

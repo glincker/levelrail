@@ -67,6 +67,7 @@ const (
 	VerdictFailed     Verdict = "failed"
 	VerdictRolledBack Verdict = "rolled_back"
 	VerdictCanceled   Verdict = "canceled"
+	VerdictRefused    Verdict = "refused"
 	VerdictQueued     Verdict = "queued"
 )
 

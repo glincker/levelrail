@@ -1,5 +1,10 @@
 import { describe, expect, it } from 'vitest'
-import { commitSubject } from './deploymentPresentation'
+import {
+  canRedeploy,
+  commitSubject,
+  statusView,
+} from './deploymentPresentation'
+import type { Deployment } from '../types/deployment'
 
 describe('commitSubject', () => {
   it('keeps only the first line of a squash-merge body', () => {
@@ -16,5 +21,13 @@ describe('commitSubject', () => {
 
   it('returns short single-line messages unchanged', () => {
     expect(commitSubject('fix: typo')).toBe('fix: typo')
+  })
+})
+
+describe('refused deploys', () => {
+  it('has its own warning status and can be retried', () => {
+    expect(statusView('refused').tone).toBe('warning')
+    const d = { status: 'refused', image: 'nginx:1' } as Deployment
+    expect(canRedeploy(d)).toBe(true)
   })
 })

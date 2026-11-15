@@ -127,7 +127,7 @@ func serverRolloutOutcome(attempt deployAttemptResource) (rolloutOutcome, bool) 
 		return rolloutOutcome{state: "succeeded", reason: attempt.OutcomeReason}, true
 	case apiclient.DeployOutcomeInProgress:
 		return rolloutOutcome{state: "pending", reason: attempt.OutcomeReason}, true
-	case "failed", "canceled", "superseded", "blocked", apiclient.DeployOutcomeStopped:
+	case "failed", "canceled", "superseded", "blocked", "refused", apiclient.DeployOutcomeStopped:
 		return rolloutOutcome{state: "failed", reason: attempt.OutcomeReason}, true
 	}
 	return rolloutOutcome{}, false
@@ -135,7 +135,7 @@ func serverRolloutOutcome(attempt deployAttemptResource) (rolloutOutcome, bool) 
 
 // localRolloutOutcome is the older-server fallback.
 func localRolloutOutcome(attempt deployAttemptResource, conditions []conditionResource) rolloutOutcome {
-	if attempt.Status == "failed" || attempt.Status == "canceled" || attempt.Status == "superseded" {
+	if attempt.Status == "failed" || attempt.Status == "canceled" || attempt.Status == "superseded" || attempt.Status == "refused" {
 		return rolloutOutcome{state: "failed"}
 	}
 	if attempt.Status == "running" || attempt.Status == "queued" || attempt.FinishedAt == nil {

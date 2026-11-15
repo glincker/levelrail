@@ -254,6 +254,9 @@ const (
 	// DeployAttemptStatusPending is a change accepted for an offline node on
 	// the operator's say-so; the node applies it when it reconnects.
 	DeployAttemptStatusPending = "pending"
+	// DeployAttemptStatusRefused is a deploy or build a node guard turned away
+	// before any work started; Reason holds the guard code, Error the message.
+	DeployAttemptStatusRefused = "refused"
 )
 
 // Deploy attempt trigger sources, one per real call site: the

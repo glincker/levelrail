@@ -134,6 +134,7 @@ const maxScanLines = 5000
 
 const (
 	statusFailed   = "failed"
+	statusRefused  = "refused"
 	statusHeld     = "held"
 	buildPhaseMark = ": build: "
 )
@@ -198,7 +199,7 @@ func buildFixes(step string, lines []string) []Fix {
 
 func isFailing(in Input) bool {
 	switch in.Status {
-	case statusFailed, statusHeld:
+	case statusFailed, statusHeld, statusRefused:
 		return true
 	}
 	return in.Condition != nil && RolloutFailureReasons[in.Condition.Reason]

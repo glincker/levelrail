@@ -23,6 +23,7 @@ export type DeployAttemptStatus =
   | 'queued'
   | 'canceled'
   | 'pending'
+  | 'refused'
 
 // Mirrors internal/store.DeployAttemptSource* on the wire: 'webhook' for
 // an unattended git-push build, 'manual' for a dashboard-triggered
@@ -84,7 +85,13 @@ export interface DeployAttempt {
   rollout_state?: 'serving' | 'mismatch' | 'superseded'
   /** The server's computed deploy outcome; absent on older servers. */
   outcome?:
-    'in_progress' | 'healthy' | 'failed' | 'canceled' | 'superseded' | 'blocked'
+    | 'in_progress'
+    | 'healthy'
+    | 'failed'
+    | 'canceled'
+    | 'superseded'
+    | 'blocked'
+    | 'refused'
   /** One-line why behind outcome. */
   outcome_reason?: string
   /** Restart count at which a never-serving rollout counts as failed. */

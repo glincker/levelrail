@@ -10,6 +10,7 @@ export const DEPLOYMENT_STATUSES = [
   'awaiting_approval',
   'rolled_back',
   'superseded',
+  'refused',
 ] as const
 
 export type DeploymentStatus = (typeof DEPLOYMENT_STATUSES)[number]

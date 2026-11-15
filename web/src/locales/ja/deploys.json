@@ -602,7 +602,8 @@
       "held": "保留中",
       "awaiting_approval": "承認待ち",
       "rolled_back": "ロールバック済み",
-      "superseded": "置き換え済み"
+      "superseded": "置き換え済み",
+      "refused": "拒否"
     },
     "trigger": {
       "git push": "Git push",

@@ -140,14 +140,40 @@ func (rt *Router) nodeBlockReason(ctx context.Context, id string) string {
 }
 
 // refuseNodeCritical writes a 507 and reports true when the node is at its critical floor.
-func (rt *Router) refuseNodeCritical(ctx context.Context, w http.ResponseWriter, id string) bool {
-	reason := rt.nodeBlockReason(ctx, id)
+func (rt *Router) refuseNodeCritical(ctx context.Context, w http.ResponseWriter, svc store.DesiredService, image, source string) bool {
+	reason := rt.nodeBlockReason(ctx, svc.NodeID)
 	if reason == "" {
 		return false
 	}
+	rt.recordRefusedAttempt(ctx, svc, image, source, errCodeNodeCapacity, "this node is out of room ("+reason+")")
 	writeCodedError(w, http.StatusInsufficientStorage, errCodeNodeCapacity,
 		"this node is out of room ("+reason+"): the running version keeps serving, free space on the node and try again")
 	return true
+}
+
+// recordRefusedAttempt leaves a finished refused row so a turned-away deploy
+// shows in history, the overview and the attention feed, not only in the 507.
+func (rt *Router) recordRefusedAttempt(ctx context.Context, svc store.DesiredService, image, source, code, msg string) {
+	if rt.deployAttempts == nil {
+		return
+	}
+	id, err := store.NewDeployAttemptID()
+	if err != nil {
+		rt.logger.Error("api: record refused attempt: mint id failed", slog.String("error", err.Error()), slog.String("name", svc.Name))
+		return
+	}
+	now := time.Now()
+	if err := rt.deployAttempts.SaveDeployAttempt(ctx, store.DeployAttempt{
+		ID: id, ServiceName: svc.Name, Image: image, Source: source,
+		Status: store.DeployAttemptStatusRefused, StartedAt: now,
+		Snapshot: store.NewDeployAttemptSnapshot(svc), Reason: code,
+	}); err != nil {
+		rt.logger.Error("api: record refused attempt failed", slog.String("error", err.Error()), slog.String("name", svc.Name))
+		return
+	}
+	if err := rt.deployAttempts.FinishDeployAttempt(ctx, id, store.DeployAttemptStatusRefused, now, msg); err != nil {
+		rt.logger.Error("api: finish refused attempt failed", slog.String("error", err.Error()), slog.String("name", svc.Name))
+	}
 }
 
 type nodeCapacityResponse struct {

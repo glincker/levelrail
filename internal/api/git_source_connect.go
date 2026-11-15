@@ -363,7 +363,7 @@ func (rt *Router) handleGitSourceDeploy(w http.ResponseWriter, r *http.Request) 
 		release()
 		return
 	}
-	if rt.refuseNodeCritical(ctx, w, existing.NodeID) {
+	if rt.refuseNodeCritical(ctx, w, *existing, existing.Image, store.DeployAttemptSourceManual) {
 		release()
 		return
 	}

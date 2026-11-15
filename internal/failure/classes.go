@@ -22,6 +22,7 @@ const (
 	CodeMissingEnv         = "missing_env"
 	CodeRegistryPushFailed = "registry_push_failed"
 	CodeDiskFull           = "disk_full"
+	CodeNodeOutOfRoom      = "node_out_of_room"
 	CodeImageCorrupt       = "image_corrupt"
 	CodeFreezeWindow       = "freeze_window_hold"
 	CodeApprovalPending    = "approval_pending"
@@ -96,6 +97,12 @@ var classes = []class{
 		cause:    "A required environment variable or secret has no value.",
 		fix:      "Set the missing variable or secret on the app (the error names it), then redeploy.",
 		patterns: []string{"is required but no secret value", "missing required env", "required environment variable", "references database", "vault secret, but vault integration"},
+	},
+	{
+		code: CodeNodeOutOfRoom, retryable: true,
+		cause:    "The node refused this deploy because it is out of room, so nothing was started and the running version keeps serving.",
+		fix:      "Free space on the node (prune unused images and build cache), or open Nodes, then Capacity, to review the limits, then retry.",
+		patterns: []string{"this node is out of room"},
 	},
 	{
 		code:     CodeDiskFull,

@@ -14,7 +14,7 @@ type FailedDeploy struct {
 }
 
 // ListFailedDeploysSince returns, per existing app, its latest attempt when
-// that attempt failed and started at or after since, newest first.
+// that attempt failed or was refused and started at or after since, newest first.
 func (db *DB) ListFailedDeploysSince(ctx context.Context, since time.Time) ([]FailedDeploy, error) {
 	rows, err := db.QueryContext(ctx, `
 		SELECT d.id, d.service_name, d.image, d.commit_sha, d.source, d.status, d.started_at, d.finished_at, d.error, d.config_snapshot, d.detected_framework, d.image_digest, d.digest_reason, d.rollout_state, d.running_image_id, d.sequence, d.reason, d.held_request, d.branch, d.commit_message, d.author, d.queued_at, d.superseded_by, d.canceled_by, d.rerun_of,
@@ -22,11 +22,11 @@ func (db *DB) ListFailedDeploysSince(ctx context.Context, since time.Time) ([]Fa
 				WHERE g.service_name = d.service_name AND g.status = ? AND g.image <> ''
 				ORDER BY g.started_at DESC LIMIT 1), '')
 		FROM deploy_attempts d
-		WHERE d.status = ?
+		WHERE d.status IN (?, ?)
 			AND d.service_name IN (SELECT name FROM desired_services)
 			AND d.started_at = (SELECT MAX(l.started_at) FROM deploy_attempts l WHERE l.service_name = d.service_name)
 		ORDER BY d.started_at DESC
-	`, DeployAttemptStatusSucceeded, DeployAttemptStatusFailed)
+	`, DeployAttemptStatusSucceeded, DeployAttemptStatusFailed, DeployAttemptStatusRefused)
 	if err != nil {
 		return nil, fmt.Errorf("store: list failed deploys: %w", err)
 	}

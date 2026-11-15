@@ -114,6 +114,7 @@ const (
 	KindUncleanRestart          = "unclean_restart"
 	KindAdvisoryMatch           = "advisory_match"
 	KindDeployInterrupted       = "deploy_interrupted"
+	KindDeployRefused           = "deploy_refused"
 )
 
 func deviceLoginItems(devices []apiclient.DevicePendingLogin, now time.Time) []Item {

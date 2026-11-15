@@ -93,7 +93,7 @@ func isQueuedStatus(s string) bool {
 
 func isFinishedStatus(s string) bool {
 	return s == store.DeployAttemptStatusSucceeded || s == store.DeployAttemptStatusFailed ||
-		s == store.DeployAttemptStatusCanceled || s == store.DeployAttemptStatusSuperseded
+		s == store.DeployAttemptStatusCanceled || s == store.DeployAttemptStatusSuperseded || s == store.DeployAttemptStatusRefused
 }
 
 // matchBuildRuns pairs each attempt with the build run of the same app and
@@ -190,7 +190,7 @@ func assembleBuildRows(attempts []store.DeployAttempt, runs []store.BuildRun) []
 			Image: a.Image, QueuedAt: a.QueuedAt, StartedAt: a.StartedAt, FinishedAt: a.FinishedAt, Error: a.Error,
 			LogsPath:  "/api/v1/apps/" + a.ServiceName + "/deploys/" + a.ID + "/logs",
 			CanCancel: isQueuedStatus(a.Status) || a.Status == store.DeployAttemptStatusRunning,
-			CanRetry:  a.Status == store.DeployAttemptStatusFailed || a.Status == store.DeployAttemptStatusCanceled,
+			CanRetry:  a.Status == store.DeployAttemptStatusFailed || a.Status == store.DeployAttemptStatusCanceled || a.Status == store.DeployAttemptStatusRefused,
 		}
 		if a.FinishedAt != nil && !a.FinishedAt.Before(a.StartedAt) {
 			d := a.FinishedAt.Sub(a.StartedAt).Seconds()
@@ -395,8 +395,8 @@ func (rt *Router) handleRetryBuild(w http.ResponseWriter, r *http.Request) {
 	if !ok {
 		return
 	}
-	if a.Status != store.DeployAttemptStatusFailed && a.Status != store.DeployAttemptStatusCanceled {
-		writeError(w, http.StatusConflict, "only a failed or canceled build can be retried (this one is "+a.Status+")")
+	if a.Status != store.DeployAttemptStatusFailed && a.Status != store.DeployAttemptStatusCanceled && a.Status != store.DeployAttemptStatusRefused {
+		writeError(w, http.StatusConflict, "only a failed, refused or canceled build can be retried (this one is "+a.Status+")")
 		return
 	}
 	if a.Source == store.DeployAttemptSourceImage || a.Source == store.DeployAttemptSourceCompose {

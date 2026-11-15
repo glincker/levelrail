@@ -48,6 +48,14 @@ func (rt *Router) interruptedDeployAttentionItems(r *http.Request, abilities []s
 	}
 	var out []attention.Item
 	for _, f := range failed {
+		if f.Attempt.Status == store.DeployAttemptStatusRefused {
+			it := feedItem(attention.Warning, attention.KindDeployRefused, f.Attempt.ServiceName,
+				"Refused: "+f.Attempt.Error+". Free space on the node or open Nodes, Capacity, then retry",
+				map[string]string{"app": f.Attempt.ServiceName, "deploy": f.Attempt.ID})
+			it.Title = "Deploy of " + f.Attempt.ServiceName + " was refused"
+			out = append(out, it)
+			continue
+		}
 		if f.Attempt.Reason != store.DeployReasonInterrupted {
 			continue
 		}

@@ -109,6 +109,9 @@ Pushing the built image failed. Retryable. Check the registry credential, reposi
 ### disk_full
 The host ran out of disk, or the build disk preflight found less free space than `APP_MIN_BUILD_DISK_MB`. Prune unused images and build cache, then retry. Deploys, backups and pulls are also refused before they start when the data or Docker volume is below `APP_DISK_CRITICAL_FREE_MB`; use **Free space now** on the System status page.
 
+### node_out_of_room
+The node's capacity guard refused the deploy or build before it started, so the running version keeps serving. The attempt is recorded as refused with the guard's reason. Free space on the node, or open Nodes, then Capacity, to review the limits, then retry.
+
 ### docker_unreachable
 The control plane could not reach the Docker daemon on the target node. Retryable once the daemon is back.
 
