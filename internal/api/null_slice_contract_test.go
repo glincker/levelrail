@@ -10,11 +10,11 @@ import (
 	"time"
 )
 
-// TestListEndpointsNeverReturnNullOnEmptyStore walks every parameterless
+// TestListRoutesReturnEmptyArrays walks every parameterless
 // GET route on an empty store and fails when a response body is a bare
 // JSON null or an object with a top-level null field. The dashboard calls
 // .length and .map on these, so a Go nil slice must never reach it.
-func TestListEndpointsNeverReturnNullOnEmptyStore(t *testing.T) {
+func TestListRoutesReturnEmptyArrays(t *testing.T) {
 	rt, db := newTestRouter(t)
 	cookie := loginTestSession(t, rt, db)
 	h := rt.Handler()
