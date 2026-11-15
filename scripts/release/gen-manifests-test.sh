@@ -57,4 +57,12 @@ n2="$(IMAGE_NOTES_BODY_FILE="$work/body2.md" IMAGE_PRIMARY_TAG=v1.4.0 "$here/ima
 [ "$(grep -c 'images:start' <<<"$n2")" = 1 ] || fail "notes block not idempotent"
 if grep -q 'docker.io' <<<"$n2"; then fail "stale mirror block kept"; fi
 
+echo "== dockerhub describe"
+for img in levelrail levelrail-agent; do
+	d="$("$here/dockerhub-describe.sh" "$img" v1.4.0 --dry-run)"
+	[ "$(jq -r '.description|length' <<<"$d")" -le 100 ] || fail "short description too long"
+	jq -r .full_description <<<"$d" | grep -q 'releases/tag/v1.4.0' || fail "overview tag link"
+	if jq -r .full_description <<<"$d" | grep -q '@TAG@'; then fail "unreplaced tag"; fi
+done
+
 echo "OK"
