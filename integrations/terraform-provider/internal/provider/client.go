@@ -243,6 +243,7 @@ type wireApp struct {
 	Env                map[string]string `json:"env"`
 	ProjectID          string            `json:"project_id"`
 	Command            []string          `json:"command"`
+	DNSNames           []string          `json:"dns_names"`
 	Labels             map[string]string `json:"labels"`
 	Resources          struct {
 		MemoryBytes int64 `json:"memory_bytes"`

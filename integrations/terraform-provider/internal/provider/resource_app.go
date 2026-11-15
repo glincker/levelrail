@@ -27,14 +27,15 @@ type appModel struct {
 	ProjectID          types.String `tfsdk:"project_id"`
 	Env                types.Map    `tfsdk:"env"`
 
-	Command        []types.String          `tfsdk:"command"`
-	Labels         map[string]types.String `tfsdk:"labels"`
-	MemoryBytes    types.Int64             `tfsdk:"memory_bytes"`
-	NanoCPUs       types.Int64             `tfsdk:"nano_cpus"`
-	Restart        types.String            `tfsdk:"restart"`
-	ReadinessPath  types.String            `tfsdk:"readiness_path"`
-	LivenessPath   types.String            `tfsdk:"liveness_path"`
-	PublishedPorts []publishedPortModel    `tfsdk:"published_ports"`
+	Command          []types.String          `tfsdk:"command"`
+	InternalDNSNames []types.String          `tfsdk:"internal_dns_names"`
+	Labels           map[string]types.String `tfsdk:"labels"`
+	MemoryBytes      types.Int64             `tfsdk:"memory_bytes"`
+	NanoCPUs         types.Int64             `tfsdk:"nano_cpus"`
+	Restart          types.String            `tfsdk:"restart"`
+	ReadinessPath    types.String            `tfsdk:"readiness_path"`
+	LivenessPath     types.String            `tfsdk:"liveness_path"`
+	PublishedPorts   []publishedPortModel    `tfsdk:"published_ports"`
 
 	MemoryMB      types.Float64  `tfsdk:"memory_mb"`
 	CPUs          types.Float64  `tfsdk:"cpus"`
@@ -91,6 +92,11 @@ func (r *appResource) Schema(_ context.Context, _ resource.SchemaRequest, resp *
 				Optional:    true,
 				ElementType: types.StringType,
 				Description: "Overrides the image command. Unset leaves the live command untouched.",
+			},
+			"internal_dns_names": schema.ListAttribute{
+				Optional:    true,
+				ElementType: types.StringType,
+				Description: "Extra internal DNS names under the mesh zone that resolve like the app name (beta, needs the runtime setting dns.internal_names_enabled). Unset leaves the live names untouched, an empty list clears them.",
 			},
 			"labels": schema.MapAttribute{
 				Optional:    true,
@@ -206,6 +212,13 @@ func subMap(body map[string]any, key string) map[string]any {
 }
 
 func (m appModel) collectionsBody(body map[string]any) {
+	if m.InternalDNSNames != nil {
+		names := make([]string, 0, len(m.InternalDNSNames))
+		for _, n := range m.InternalDNSNames {
+			names = append(names, n.ValueString())
+		}
+		body["dns_names"] = names
+	}
 	if m.Command != nil {
 		cmd := make([]string, 0, len(m.Command))
 		for _, c := range m.Command {
@@ -381,6 +394,12 @@ func (m *appModel) collectionsFromWire(w wireApp) {
 	m.Volumes = volumesFromWire(m.Volumes, w)
 	m.Tags = tagsFromWire(m.Tags, w)
 	m.Restart = types.StringValue(w.Health.Restart)
+	if m.InternalDNSNames != nil {
+		m.InternalDNSNames = make([]types.String, 0, len(w.DNSNames))
+		for _, n := range w.DNSNames {
+			m.InternalDNSNames = append(m.InternalDNSNames, types.StringValue(n))
+		}
+	}
 	if m.Command != nil {
 		m.Command = make([]types.String, 0, len(w.Command))
 		for _, c := range w.Command {

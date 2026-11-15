@@ -25,6 +25,8 @@ resource "levelrail_app" "web" {
   strategy   = "rolling"
   project_id = levelrail_project.shop.id
 
+  internal_dns_names = ["shop"]
+
   memory_mb = 256
   cpus      = 0.5
   restart   = "on-failure:3"
