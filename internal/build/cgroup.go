@@ -8,8 +8,9 @@ import (
 	"github.com/opencontainers/go-digest"
 )
 
-// CgroupProvisioner creates a resource-capped cgroup for one build. parent is
-// the value BuildKit takes as its cgroup parent; cleanup removes the cgroup.
+// CgroupProvisioner creates a resource-capped cgroup for one build. name is
+// stable per app and held by one build at a time; parent is the value BuildKit
+// takes as its cgroup parent and enters every exec cache key.
 type CgroupProvisioner interface {
 	Provision(id string, memoryMB, cpuMillis int) (parent string, cleanup func(), err error)
 }

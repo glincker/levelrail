@@ -41,27 +41,31 @@ func (c cgroupV2) Provision(id string, memoryMB, cpuMillis int) (string, func(),
 	if err := os.WriteFile(filepath.Join(group, "cgroup.subtree_control"), []byte("+memory +cpu"), 0o600); err != nil {
 		return "", nil, fmt.Errorf("enable cgroup controllers: %w", err)
 	}
-	name := cgroupUnsafe.ReplaceAllString(id, "_") + "-" + strconv.FormatInt(int64(os.Getpid()), 10)
+	// No commit or pid in the name: the parent path is part of the cache key.
+	name := cgroupUnsafe.ReplaceAllString(id, "_")
 	dir := filepath.Join(group, name)
 	if err := os.Mkdir(dir, 0o750); err != nil && !os.IsExist(err) {
 		return "", nil, fmt.Errorf("create cgroup %s: %w", dir, err)
 	}
+	// rmdir fails while processes remain, so a cgroup still in use is kept.
 	cleanup := func() { _ = os.Remove(dir) }
+	// A reused directory may carry an older build's caps, so every file is rewritten.
+	mem, cpu := "max", fmt.Sprintf("max %d", cgroupCPUPeriod)
 	if memoryMB > 0 {
-		v := strconv.FormatInt(int64(memoryMB)*1024*1024, 10)
-		if err := os.WriteFile(filepath.Join(dir, "memory.max"), []byte(v), 0o600); err != nil {
-			cleanup()
-			return "", nil, fmt.Errorf("set memory limit: %w", err)
-		}
-		// Swap is allowed up to the memory cap so a build cannot swap past it.
-		_ = os.WriteFile(filepath.Join(dir, "memory.swap.max"), []byte(v), 0o600)
+		mem = strconv.FormatInt(int64(memoryMB)*1024*1024, 10)
 	}
 	if cpuMillis > 0 {
-		v := fmt.Sprintf("%d %d", cpuMillis*cgroupCPUPeriod/1000, cgroupCPUPeriod)
-		if err := os.WriteFile(filepath.Join(dir, "cpu.max"), []byte(v), 0o600); err != nil {
-			cleanup()
-			return "", nil, fmt.Errorf("set cpu limit: %w", err)
-		}
+		cpu = fmt.Sprintf("%d %d", cpuMillis*cgroupCPUPeriod/1000, cgroupCPUPeriod)
+	}
+	if err := os.WriteFile(filepath.Join(dir, "memory.max"), []byte(mem), 0o600); err != nil {
+		cleanup()
+		return "", nil, fmt.Errorf("set memory limit: %w", err)
+	}
+	// Swap is allowed up to the memory cap so a build cannot swap past it.
+	_ = os.WriteFile(filepath.Join(dir, "memory.swap.max"), []byte(mem), 0o600)
+	if err := os.WriteFile(filepath.Join(dir, "cpu.max"), []byte(cpu), 0o600); err != nil {
+		cleanup()
+		return "", nil, fmt.Errorf("set cpu limit: %w", err)
 	}
 	return filepath.Join(cgroupGroupName, name), cleanup, nil
 }

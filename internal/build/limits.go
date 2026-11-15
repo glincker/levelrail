@@ -145,6 +145,9 @@ type Limiter struct {
 
 	mu    sync.Mutex
 	slots map[string]*nodeSlots
+
+	cgMu   sync.Mutex
+	cgBusy map[string]bool
 }
 
 type nodeSlots struct {
@@ -214,7 +217,9 @@ func (l *Limiter) run(ctx context.Context, tag, srcDir string, progress func(Pro
 
 	cgroupParent := ""
 	if l.cg != nil && (lim.MemoryMB > 0 || lim.CPUMillis > 0) {
-		parent, cleanup, cerr := l.cg.Provision(tag, lim.MemoryMB, lim.CPUMillis)
+		name, free := l.takeCgroupName(run.App)
+		defer free()
+		parent, cleanup, cerr := l.cg.Provision(name, lim.MemoryMB, lim.CPUMillis)
 		if cerr != nil {
 			l.log.Warn("build: resource limits not enforced", slog.String("app", run.App), slog.String("error", cerr.Error()))
 		} else {
@@ -279,6 +284,27 @@ func (l *Limiter) run(ctx context.Context, tag, srcDir string, progress func(Pro
 	}
 	l.record(ctx, run)
 	return res, err
+}
+
+// takeCgroupName returns a cgroup name that is stable per app, because BuildKit
+// hashes the cgroup parent into every exec cache key. An overlapping build of
+// the same app gets the next free index, so each build keeps its own limits.
+func (l *Limiter) takeCgroupName(app string) (string, func()) {
+	l.cgMu.Lock()
+	defer l.cgMu.Unlock()
+	if l.cgBusy == nil {
+		l.cgBusy = map[string]bool{}
+	}
+	name := app
+	for i := 1; l.cgBusy[name]; i++ {
+		name = fmt.Sprintf("%s.slot%d", app, i)
+	}
+	l.cgBusy[name] = true
+	return name, func() {
+		l.cgMu.Lock()
+		delete(l.cgBusy, name)
+		l.cgMu.Unlock()
+	}
 }
 
 // isMemoryKill matches the SIGKILL and OOM wording BuildKit surfaces for a cgroup memory kill.
