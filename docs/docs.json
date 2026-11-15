@@ -245,6 +245,7 @@
               "dns",
               "dns-zones",
               "dns-visibility",
+              "egress-dry-run",
               "mesh-dns",
               "mail-dns",
               "mail-template",

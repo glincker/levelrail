@@ -781,6 +781,7 @@ Endpoints for:
 | POST | /api/v1/apps/{name}/resume | AbilityDeploy | handleResumeApp |
 | PUT | /api/v1/apps/{name}/preview-env-exclude/{key} | AbilityWrite | handleSetAppPreviewEnvExclude |
 | DELETE | /api/v1/apps/{name}/preview-env-exclude/{key} | AbilityWrite | handleSetAppPreviewEnvExclude |
+| GET | /api/v1/apps/{name}/egress-report | AbilityRead | handleAppEgressReport |
 | GET | /api/v1/apps/{name}/notes | AbilityRead |  |
 | PUT | /api/v1/apps/{name}/notes | AbilityWrite |  |
 

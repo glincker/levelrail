@@ -376,6 +376,7 @@ These variables only seed the default of a [runtime setting](/runtime-settings).
 | `APP_DISK_HISTORY_SAMPLE_INTERVAL` | [`disk.history_sample_interval`](/runtime-settings#observability) | `24h` |
 | `APP_DISK_LOW_FREE_MB` | [`disk.low_free_mb`](/runtime-settings#observability) | `1024` |
 | `APP_DISK_RESERVE_MB` | [`disk.reserve_mb`](/runtime-settings#observability) | `16` |
+| `LEVELRAIL_DNS_EGRESS_REPORT_MAX_NAMES` | [`dns.egress_report_max_names`](/runtime-settings#observability) | `500` |
 | `LEVELRAIL_DNS_INTERNAL_LABEL_MAX_LENGTH` | [`dns.internal_label_max_length`](/runtime-settings#observability) | `63` |
 | `LEVELRAIL_DNS_INTERNAL_NAME_MAX_LENGTH` | [`dns.internal_name_max_length`](/runtime-settings#observability) | `120` |
 | `LEVELRAIL_DNS_INTERNAL_NAMES_ENABLED` | [`dns.internal_names_enabled`](/runtime-settings#observability) | `false` |

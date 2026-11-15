@@ -178,7 +178,7 @@ var Tree = map[string]*Node{
 		"pr-env":             {Subs: map[string]*Node{"list": nil, "set": nil, "clear": nil}},
 		"tag":                nil,
 		"untag":              nil,
-		"egress":             {Subs: map[string]*Node{"get": nil, "set": nil, "clear": nil}},
+		"egress":             {Subs: map[string]*Node{"get": nil, "set": nil, "clear": nil, "report": nil}},
 		"backups":            {Subs: map[string]*Node{"services": nil, "schedule": {Subs: map[string]*Node{"set": nil, "clear": nil, "pause": nil, "resume": nil}}, "runs": nil, "run": nil, "restore": nil}},
 		"build-cache":        {Subs: map[string]*Node{"show": nil, "set": nil, "clear": nil, "remove": nil}},
 		"build-settings":     {Subs: map[string]*Node{"show": nil, "set": nil}},

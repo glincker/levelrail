@@ -162,6 +162,7 @@ disk.history_retention_days
 disk.history_sample_interval
 disk.low_free_mb
 disk.reserve_mb
+dns.egress_report_max_names
 dns.internal_label_max_length
 dns.internal_name_max_length
 dns.internal_names_enabled

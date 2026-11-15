@@ -828,13 +828,14 @@ Run "levelrail-cli apps domains <subcommand> -h" for a subcommand's own flags.
 
 ## levelrail-cli apps egress
 
-Subcommands: clear, get, set
+Subcommands: clear, get, report, set
 
 ```
 Usage:
   levelrail-cli apps egress get <name> [flags]                                    show an app's current outbound network allowlist
   levelrail-cli apps egress set <name> --allow host:port [--allow host:port ...]  restrict an app's outbound traffic to an allowlist
   levelrail-cli apps egress clear <name> [flags]                                  opt an app back out to unrestricted egress
+  levelrail-cli apps egress report <name> [flags]                                 dry run: names the app asked for that the allowlist would deny
 
 Unconfigured (the default) means unrestricted egress, unchanged from
 today. "set" restricts an app's container to only reach the declared

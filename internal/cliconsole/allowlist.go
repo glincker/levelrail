@@ -43,6 +43,7 @@ var allowlist = []AllowEntry{
 	{"apps deploys wait", "read: polls the API until a state is reached"},
 	{"apps domains list", "read: lists records from the API"},
 	{"apps egress get", "read: shows one record from the API, secrets masked server side"},
+	{"apps egress report", "read: lists records from the API"},
 	{"apps error-tracking status", "read: reports status from the API"},
 	{"apps errors get", "read: shows one record from the API, secrets masked server side"},
 	{"apps errors list", "read: lists records from the API"},
