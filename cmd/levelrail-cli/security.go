@@ -49,7 +49,7 @@ func securityUsage(prog string) string {
   %[1]s security sessions revoke <id> [--user ID]        end one session
   %[1]s security sessions revoke-others [--user ID]      end every session but this one
   %[1]s security policy get [flags]                      show the security policy and where each value comes from
-  %[1]s security policy set [policy flags] [flags]       change the policy (root)
+  %[1]s security policy set [policy flags] [flags]       change the policy (root); --approval-without-session allow|hold [--confirm-host-access] asks for your password
   %[1]s security hsts status|enable|disable [flags]      HSTS state and trusted-certificate probe; enable is refused until every domain passes (root)
   %[1]s security advisories list|match [flags]           advisories in the configured feed, and running images that match them (feed is off unless APP_ADVISORY_FEED is set)
   %[1]s security advisories refresh <app> [--confirm]    redeploy a matched app on the newest digest of its tag through the normal deploy gates (needs APP_ADVISORY_REFRESH_ACTION=on and a verified feed)
@@ -231,7 +231,8 @@ func runSecurityPolicy(prog string, args []string, stdout, stderr io.Writer, loo
 		return exitUsage
 	}
 	verb := args[0]
-	var scope string
+	var scope, withoutSession string
+	var confirmHost bool
 	var maxLife, warn, disable int
 	extra := func(fs *flag.FlagSet) {
 		if verb != "set" {
@@ -240,6 +241,8 @@ func runSecurityPolicy(prog string, args []string, stdout, stderr io.Writer, loo
 		fs.StringVar(&scope, "approval-scope", "", "password_only or all_methods: which sign-ins need new-browser approval")
 		fs.IntVar(&maxLife, "max-token-lifetime-days", 0, "longest lifetime a new API token may have, 0 for no limit")
 		fs.IntVar(&warn, "warn-unused-days", 0, "flag tokens unused this long in the posture, 0 to stop")
+		fs.StringVar(&withoutSession, "approval-without-session", "", "allow or hold: what happens to a sign-in with no other live session; asks for your password")
+		fs.BoolVar(&confirmHost, "confirm-host-access", false, "with hold: you can run commands on the server, so approval never depends on mail or a token")
 		fs.IntVar(&disable, "disable-unused-days", 0, "disable tokens unused this long after a notice, 0 to stop")
 	}
 	client, fs, jsonOut, of, code, ok := securityCommand(prog, "security policy "+verb, "print the policy as JSON to stdout and nothing else", args[1:], stderr, lookupEnv, extra)
@@ -263,13 +266,28 @@ func runSecurityPolicy(prog string, args []string, stdout, stderr io.Writer, loo
 				in.WarnUnusedDays = &warn
 			case "disable-unused-days":
 				in.DisableUnusedDays = &disable
+			case "approval-without-session":
+				in.ApprovalWithoutSession = &withoutSession
+			case "confirm-host-access":
+				in.ConfirmHostAccess = confirmHost
 			}
 		})
-		if in == (apiclient.SecurityPolicyUpdate{}) {
+		if in.ApprovalWithoutSession == nil && in.ConfirmHostAccess {
+			_, _ = fmt.Fprintf(stderr, "%s: --confirm-host-access only goes with --approval-without-session\n", prog)
+			return exitUsage
+		}
+		if in.ApprovalWithoutSession == nil && in.ApprovalScope == nil && in.MaxTokenLifetimeDays == nil && in.WarnUnusedDays == nil && in.DisableUnusedDays == nil {
 			_, _ = fmt.Fprintf(stderr, "%s: security policy set needs at least one policy flag\n", prog)
 			return exitUsage
 		}
-		p, err = client.UpdateSecurityPolicy(ctx, in)
+		if in.ApprovalWithoutSession != nil {
+			p, err = withStepUp(stderr, func(proof *apiclient.StepUpProof) (apiclient.SecurityPolicy, error) {
+				in.StepUp = proof
+				return client.UpdateSecurityPolicy(ctx, in)
+			})
+		} else {
+			p, err = client.UpdateSecurityPolicy(ctx, in)
+		}
 	}
 	if err != nil {
 		return reportError(stdout, stderr, jsonOut, fmt.Errorf("security policy %s: %w", verb, err))
@@ -288,6 +306,7 @@ func printPolicy(w io.Writer, p apiclient.SecurityPolicy) {
 	_, _ = fmt.Fprintf(tw, "max_token_lifetime_days\t%d\t%s\n", p.MaxTokenLifetimeDays, p.Sources["max_token_lifetime_days"])
 	_, _ = fmt.Fprintf(tw, "warn_unused_days\t%d\t%s\n", p.WarnUnusedDays, p.Sources["warn_unused_days"])
 	_, _ = fmt.Fprintf(tw, "disable_unused_days\t%d\t%s\n", p.DisableUnusedDays, p.Sources["disable_unused_days"])
+	_, _ = fmt.Fprintf(tw, "approval_without_session\t%s\t%s\n", p.ApprovalWithoutSession, p.Sources["approval_without_session"])
 	_, _ = fmt.Fprintf(tw, "new_device_approval\t%t\tenv\n", p.NewDeviceApproval)
 	_ = tw.Flush()
 }

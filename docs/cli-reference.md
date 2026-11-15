@@ -1487,10 +1487,12 @@ levelrail-cli security sessions list [--user ID] [flags]
 levelrail-cli security sessions revoke <id> [--user ID] [flags]
 levelrail-cli security sessions revoke-others [--user ID] [flags]
 levelrail-cli security policy get [flags]
-levelrail-cli security policy set [--approval-scope password_only|all_methods] [--max-token-lifetime-days N] [--warn-unused-days N] [--disable-unused-days N] [flags]
+levelrail-cli security policy set [--approval-scope password_only|all_methods] [--approval-without-session allow|hold [--confirm-host-access]] [--max-token-lifetime-days N] [--warn-unused-days N] [--disable-unused-days N] [flags]
 levelrail-cli security hsts status|enable|disable [flags]
 levelrail-cli security reachability [--recheck] [--fix ID] [flags]
 ```
+
+`--approval-without-session` changes how a sign-in with no other live session is handled (see [Security center](/security-center#approval-without-session)). It asks for your password, and the authenticator code when the account has one, at the prompt. `hold` is refused with `approval_hold_no_channel` unless a test email went out recently, a `signin:approve` token owned by an admin exists, or you pass `--confirm-host-access` to say you can run commands on the server.
 
 `security reachability` (root) lists what the internet can reach per app and database. `--recheck` re-measures instead of using the cached audit, and `--fix ID` applies a finding's automatic fix and re-checks. See [Exposure report](/security-center#exposure-report).
 

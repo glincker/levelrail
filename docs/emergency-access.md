@@ -14,6 +14,14 @@ sudo APP_DATA_DIR=/var/lib/levelrail-data /usr/local/bin/levelrail recover-admin
 
 This sets a new random password and prints it once. It also ends that account's sessions and clears its login lockout. Use it when you can reach the sign-in page but cannot get past it.
 
+## Allow sign-ins again after a hold
+
+```bash
+sudo APP_DATA_DIR=/var/lib/levelrail-data /usr/local/bin/levelrail security reset-approval-policy
+```
+
+If `auth.approval_without_session` is `hold` and no one can approve a sign-in, this sets it back to `allow` and writes an audit row. It works with the control plane stopped. The host `approve-signin` command also keeps working while the setting is `hold`. See [Security center](/security-center#approval-without-session).
+
 ## Mint a short-lived root token
 
 ```bash

@@ -5,7 +5,10 @@ import (
 	"encoding/json"
 	"errors"
 	"net/http"
+	"net/http/httptest"
+	"strconv"
 	"strings"
+	"sync"
 	"testing"
 	"time"
 
@@ -170,5 +173,75 @@ func TestApprovalWithoutSession_PostureSuggestsWithoutScore(t *testing.T) {
 	}
 	if postureScore(items) != 100 {
 		t.Fatalf("score = %d, allow must not cost score", postureScore(items))
+	}
+}
+
+// tokenApprove decides id as a signin:approve token owned by owner, sending the shown number.
+func (h *codeHarness) tokenApprove(id, owner string) *httptest.ResponseRecorder {
+	h.t.Helper()
+	a, err := h.db.GetLoginApproval(context.Background(), id)
+	if err != nil {
+		h.t.Fatal(err)
+	}
+	tok := &store.APIToken{ID: "tok_" + owner, OwnerUserID: owner, Abilities: []string{AbilitySignInApprove}}
+	req := httptest.NewRequest(http.MethodPost, "/api/v1/auth/login-approvals/x/approve", strings.NewReader(`{"match":`+strconv.Itoa(approvalMatch(a.BrowserHash))+`}`))
+	req = req.WithContext(withTokenIdentity(req.Context(), tok))
+	req.SetPathValue("id", id)
+	rec := httptest.NewRecorder()
+	h.rt.handleApproveLoginApproval(rec, req)
+	return rec
+}
+
+func TestApprovalWithoutSession_OnlyTheOwnersTokenApproves(t *testing.T) {
+	h := newCodeHarness(t, true)
+	h.setApprovalMode(approvalWithoutSessionHold)
+	id, binding := h.pendingApproval(h.passwordLogin())
+	if rec := h.tokenApprove(id, "user_other"); rec.Code != http.StatusNotFound {
+		t.Fatalf("another user's token = %d, want 404", rec.Code)
+	}
+	if out, _ := h.poll(binding); out.Status != approvalPollPending {
+		t.Fatalf("poll = %q, a foreign token must leave it pending", out.Status)
+	}
+	if rec := h.tokenApprove(id, h.user.ID); rec.Code != http.StatusNoContent {
+		t.Fatalf("own token = %d (%s), want 204", rec.Code, rec.Body.String())
+	}
+	if out, _ := h.poll(binding); out.Status != approvalPollApproved {
+		t.Fatalf("poll = %q, want approved", out.Status)
+	}
+}
+
+func TestApprovalWithoutSession_FirstLoginTrustStillWins(t *testing.T) {
+	h := newFirstUserHarness(t)
+	h.setApprovalMode(approvalWithoutSessionHold)
+	h.setupSession()
+	h.wantThrough(h.passwordLogin())
+	if !containsAction(h.auditActions(), store.AuditActionFirstLoginTrust) {
+		t.Fatalf("audit actions %v lack %s", h.auditActions(), store.AuditActionFirstLoginTrust)
+	}
+	// The trust is one-shot: the next browser is held.
+	h.pendingApproval(h.passwordLogin())
+}
+
+func TestApprovalWithoutSession_ConcurrentPairMakesOnePendingApproval(t *testing.T) {
+	h := newCodeHarness(t, true)
+	h.setApprovalMode(approvalWithoutSessionHold)
+	var wg sync.WaitGroup
+	recs := make([]*httptest.ResponseRecorder, 2)
+	for i := range recs {
+		wg.Add(1)
+		go func() {
+			defer wg.Done()
+			recs[i] = h.passwordLogin()
+		}()
+	}
+	wg.Wait()
+	for _, rec := range recs {
+		if responseCookie(rec, sessionCookieName) != nil {
+			t.Fatalf("a held sign-in must not get a session: %s", rec.Body.String())
+		}
+	}
+	pending, err := h.db.ListPendingLoginApprovalsForUser(context.Background(), h.user.ID, time.Now())
+	if err != nil || len(pending) != 1 {
+		t.Fatalf("pending approvals = %d (%v), want 1", len(pending), err)
 	}
 }

@@ -3,6 +3,7 @@ package main
 import (
 	"bytes"
 	"encoding/json"
+	"io"
 	"net/http"
 	"net/http/httptest"
 	"strings"
@@ -95,5 +96,36 @@ func TestSecurityPostureFailUnderRejectsUnknown(t *testing.T) {
 	args = []string{"security", "posture", "--api-url", srv.URL, "--token", "t"}
 	if got := run("levelrail-cli-test", args, &stdout, &stderr, envMap()); got != exitOK {
 		t.Fatalf("without the floor, exit = %d, want 0", got)
+	}
+}
+
+func TestSecurityPolicySetApprovalWithoutSession(t *testing.T) {
+	var gotBody map[string]any
+	srv := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		gotBody = nil
+		_ = json.NewDecoder(r.Body).Decode(&gotBody)
+		w.Header().Set("Content-Type", "application/json")
+		_, _ = w.Write([]byte(`{"approval_scope":"password_only","approval_without_session":"hold","approval_channels":["host_command"],"sources":{"approval_without_session":"saved"}}`))
+	}))
+	defer srv.Close()
+	old := promptHidden
+	promptHidden = func(io.Writer, string) (string, error) { return "pw", nil }
+	defer func() { promptHidden = old }()
+	var stdout, stderr bytes.Buffer
+	args := []string{"security", "policy", "set", "--approval-without-session", "hold", "--confirm-host-access", "--api-url", srv.URL, "--token", "t"}
+	if got := run("levelrail-cli-test", args, &stdout, &stderr, envMap()); got != exitOK {
+		t.Fatalf("exit = %d (stderr=%q)", got, stderr.String())
+	}
+	proof, _ := gotBody["step_up"].(map[string]any)
+	if gotBody["approval_without_session"] != "hold" || gotBody["confirm_host_access"] != true || proof["password"] != "pw" {
+		t.Fatalf("body = %v", gotBody)
+	}
+	if !strings.Contains(stdout.String(), "approval_without_session") {
+		t.Fatalf("stdout %q", stdout.String())
+	}
+	stderr.Reset()
+	args = []string{"security", "policy", "set", "--confirm-host-access", "--api-url", srv.URL, "--token", "t"}
+	if got := run("levelrail-cli-test", args, &stdout, &stderr, envMap()); got != exitUsage {
+		t.Fatalf("a lone --confirm-host-access must be a usage error, got %d", got)
 	}
 }

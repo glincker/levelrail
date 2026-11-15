@@ -52,8 +52,13 @@ export interface SecurityPosture {
 
 export type ApprovalScope = 'password_only' | 'all_methods'
 
+export type ApprovalWithoutSession = 'allow' | 'hold'
+export type ApprovalChannel = 'verified_mail' | 'approve_token' | 'host_command'
+
 export interface SecurityPolicy {
   approval_scope: ApprovalScope
+  approval_without_session: ApprovalWithoutSession
+  approval_channels: ApprovalChannel[]
   max_token_lifetime_days: number
   warn_unused_days: number
   disable_unused_days: number
@@ -66,11 +71,18 @@ export type SecurityPolicyUpdate = Partial<
   Pick<
     SecurityPolicy,
     | 'approval_scope'
+    | 'approval_without_session'
     | 'max_token_lifetime_days'
     | 'warn_unused_days'
     | 'disable_unused_days'
   >
->
+> & { confirm_host_access?: boolean }
+
+// The dashboard confirms it is you first; the grant is scoped to this app id.
+export const approvalPolicyStepUp = {
+  action: 'manage',
+  app: 'security-policy',
+} as const
 
 export interface SessionEntry {
   id: string

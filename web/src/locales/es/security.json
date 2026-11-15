@@ -294,6 +294,11 @@
       "title": "El registro de auditoría no se envía a ningún sitio",
       "pass": "El registro de auditoría se reenvía a un destino externo",
       "why": "Un flujo de auditoría fuera de esta máquina conserva el rastro de acciones de agentes y despliegues aunque se pierda este host."
+    },
+    "approval_without_session_allow": {
+      "title": "Se permiten inicios de sesión sin otra sesión activa",
+      "pass": "Los inicios de sesión sin otra sesión activa esperan aprobación",
+      "why": "Una contraseña correcta basta cuando no hay otra sesión abierta. Retener hace que esos inicios esperen una aprobación fuera del navegador."
     }
   },
   "actions": {
@@ -434,5 +439,30 @@
     "rootOnly": "Solo una cuenta root puede cambiar esta política.",
     "loading": "Cargando la política",
     "error": "No se pudo cargar la política de escaneo."
+  },
+  "withoutSession": {
+    "title": "Inicios de sesión sin otra sesión",
+    "description": "Qué ocurre cuando se usa una contraseña correcta en un navegador nuevo y la cuenta no tiene otra sesión activa que lo apruebe.",
+    "allow": "Permitir",
+    "hold": "Retener",
+    "allowBody": "Permitir: el inicio de sesión entra directamente, salvo que la cuenta pida aprobación. Es el valor por defecto.",
+    "holdBody": "Retener: el inicio de sesión espera una aprobación por código de correo, token signin:approve o el comando del host. Los navegadores de confianza siguen entrando.",
+    "safeguards": "Para evitar un bloqueo, retener necesita un correo de prueba verificado, un token signin:approve de un administrador o su confirmación de que puede ejecutar comandos en el servidor. El navegador desde el que lo cambia sigue siendo de confianza.",
+    "reset": "Para deshacerlo desde el servidor, ejecute:",
+    "saved": "Ajuste guardado.",
+    "saveError": "No se pudo guardar este ajuste.",
+    "stepUp": "Confirme su identidad para cambiar cómo se tratan los inicios de sesión sin otra sesión.",
+    "confirmTitle": "¿Retener los inicios de sesión sin otra sesión?",
+    "confirmBody": "Una contraseña correcta ya no bastará en un navegador nuevo cuando no haya otra sesión abierta. Asegúrese de que exista al menos una vía de aprobación.",
+    "pathsTitle": "Vías para aprobar ahora un inicio retenido",
+    "confirm": "Retener inicios",
+    "confirming": "Guardando...",
+    "hostAccess": "Puedo ejecutar comandos en el servidor",
+    "noChannelFix": "Envíe un correo de prueba desde los ajustes de correo, cree un token signin:approve o marque la casilla para confirmar que puede ejecutar comandos en el servidor.",
+    "channel": {
+      "verified_mail": "Código por correo (se envió un correo de prueba hace poco)",
+      "approve_token": "Un token signin:approve de un administrador",
+      "host_command": "El comando approve-signin en el servidor"
+    }
   }
 }

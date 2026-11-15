@@ -15,6 +15,7 @@ const KNOWN = new Set<string>([
   'new_device_approval_off',
   'secret_reveal_allow',
   'approval_password_only',
+  'approval_without_session_allow',
   'code_login_admins',
   'public_exposure',
   'docker_api_exposed',
