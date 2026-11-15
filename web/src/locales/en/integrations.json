@@ -83,7 +83,11 @@
     "manageNamed": "Manage {{name}}",
     "reconnectNamed": "Reconnect {{name}}",
     "bound_one": "{{count}} binding",
-    "bound_other": "{{count}} bindings"
+    "bound_other": "{{count}} bindings",
+    "bind": "Bind",
+    "unbind": "Unbind",
+    "bindNamed": "Bind {{name}}",
+    "unbindNamed": "Unbind {{name}}"
   },
   "expiry": {
     "expiresToday": "Expires today",

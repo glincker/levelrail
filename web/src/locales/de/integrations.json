@@ -83,7 +83,11 @@
     "manageNamed": "{{name}} verwalten",
     "reconnectNamed": "{{name}} neu verbinden",
     "bound_one": "{{count}} Bindung",
-    "bound_other": "{{count}} Bindungen"
+    "bound_other": "{{count}} Bindungen",
+    "bind": "Binden",
+    "unbind": "Lösen",
+    "bindNamed": "{{name}} binden",
+    "unbindNamed": "{{name}} lösen"
   },
   "expiry": {
     "expiresToday": "Läuft heute ab",

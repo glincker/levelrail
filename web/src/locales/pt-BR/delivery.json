@@ -49,7 +49,14 @@
     "reporting": "Relato de status",
     "lastDeploy": "Último deploy",
     "none": "Nada conectado",
-    "postFailing": "A publicação do status do commit está falhando. O repositório pode mostrar um estado desatualizado."
+    "postFailing": "A publicação do status do commit está falhando. O repositório pode mostrar um estado desatualizado.",
+    "inherited": "Herdado de {{org}}",
+    "overrides": "Substitui o padrão de {{org}}",
+    "change": "Alterar",
+    "bind": "Vincular",
+    "unbind": "Desvincular",
+    "bindOther": "Vincular uma conexão",
+    "other": "Outros vínculos"
   },
   "day": {
     "today": "Hoje",
@@ -66,5 +73,40 @@
     "title": "Nada corresponde a estes filtros",
     "description": "Tente outro tipo, status ou pesquisa.",
     "clear": "Limpar filtros"
+  },
+  "bind": {
+    "title": "Vincular {{name}}",
+    "titleGeneric": "Vincular uma conexão",
+    "description": "Escolha o papel desta conexão. O servidor verifica o escopo e as regras.",
+    "confirm": "Vincular",
+    "binding": "Vinculando",
+    "toast": "{{name}} vinculada a {{app}}",
+    "app": "App",
+    "appPlaceholder": "Escolha um app",
+    "connection": "Conexão",
+    "connectionPlaceholder": "Escolha uma conexão",
+    "noConnections": "Nenhuma conexão pode cumprir este papel",
+    "role": "Papel",
+    "roles": {
+      "source": "Origem",
+      "deploy_report": "Relatório de deploy",
+      "registry_pull": "Pull do registro",
+      "notify": "Notificações",
+      "secrets": "Segredos",
+      "dns": "DNS"
+    },
+    "rules": "Regras (opcional)",
+    "rulesHint": "Um objeto JSON, verificado conforme o papel.",
+    "rulesInvalid": "As regras devem ser um objeto JSON."
+  },
+  "unbind": {
+    "title": "Desvincular {{name}}",
+    "description": "O app deixa de usar esta conexão para o papel. A conexão em si permanece.",
+    "confirm": "Desvincular",
+    "unbinding": "Desvinculando",
+    "toast": "{{name}} desvinculada de {{app}}",
+    "binding": "Vínculo",
+    "pick": "Escolha um vínculo",
+    "noneForApp": "Este app não tem vínculo para ela"
   }
 }

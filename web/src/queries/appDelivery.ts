@@ -4,7 +4,7 @@ import { useInfiniteQuery, useQuery } from '@tanstack/react-query'
 import { ApiError, readErrorMessage } from '../lib/apiError'
 import { pollMs } from '../lib/pollTier'
 import type {
-  AppBinding,
+  AppBindingsData,
   AppBindingsResponse,
   TimelinePage,
 } from '../types/appDelivery'
@@ -50,12 +50,14 @@ export async function fetchTimelinePage(
   }
 }
 
-export async function fetchAppBindings(app: string): Promise<AppBinding[]> {
+// An older server without `resolved` falls back to the app's own rows.
+export async function fetchAppBindings(app: string): Promise<AppBindingsData> {
   const body = await getJson<AppBindingsResponse | null>(
     `/api/v1/apps/${encodeURIComponent(app)}/bindings`,
     'fetch app bindings',
   )
-  return body?.bindings ?? []
+  const bindings = body?.bindings ?? []
+  return { bindings, resolved: body?.resolved ?? bindings }
 }
 
 export function useAppDelivery(app: string) {

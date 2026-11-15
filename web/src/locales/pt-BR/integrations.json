@@ -84,7 +84,11 @@
     "reconnectNamed": "Reconectar {{name}}",
     "bound_one": "{{count}} vínculo",
     "bound_many": "{{count}} vínculos",
-    "bound_other": "{{count}} vínculos"
+    "bound_other": "{{count}} vínculos",
+    "bind": "Vincular",
+    "unbind": "Desvincular",
+    "bindNamed": "Vincular {{name}}",
+    "unbindNamed": "Desvincular {{name}}"
   },
   "expiry": {
     "expiresToday": "Expira hoje",

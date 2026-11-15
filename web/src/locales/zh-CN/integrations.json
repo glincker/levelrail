@@ -82,7 +82,11 @@
     "reconnect": "重新连接",
     "manageNamed": "管理 {{name}}",
     "reconnectNamed": "重新连接 {{name}}",
-    "bound_other": "{{count}} 个绑定"
+    "bound_other": "{{count}} 个绑定",
+    "bind": "绑定",
+    "unbind": "解绑",
+    "bindNamed": "绑定 {{name}}",
+    "unbindNamed": "解绑 {{name}}"
   },
   "expiry": {
     "expiresToday": "今天到期",

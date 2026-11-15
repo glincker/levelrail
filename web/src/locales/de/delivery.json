@@ -49,7 +49,14 @@
     "reporting": "Statusmeldung",
     "lastDeploy": "Letztes Deployment",
     "none": "Nicht verbunden",
-    "postFailing": "Das Senden des Commit-Status schlägt fehl. Die Forge zeigt möglicherweise einen veralteten Stand."
+    "postFailing": "Das Senden des Commit-Status schlägt fehl. Die Forge zeigt möglicherweise einen veralteten Stand.",
+    "inherited": "Geerbt von {{org}}",
+    "overrides": "Überschreibt Standard von {{org}}",
+    "change": "Ändern",
+    "bind": "Binden",
+    "unbind": "Lösen",
+    "bindOther": "Verbindung binden",
+    "other": "Weitere Bindungen"
   },
   "day": {
     "today": "Heute",
@@ -66,5 +73,40 @@
     "title": "Keine Treffer für diese Filter",
     "description": "Versuche eine andere Art, einen anderen Status oder eine andere Suche.",
     "clear": "Filter zurücksetzen"
+  },
+  "bind": {
+    "title": "{{name}} binden",
+    "titleGeneric": "Verbindung binden",
+    "description": "Wähle die Rolle dieser Verbindung. Der Server prüft Geltungsbereich und Regeln.",
+    "confirm": "Binden",
+    "binding": "Wird gebunden",
+    "toast": "{{name}} an {{app}} gebunden",
+    "app": "App",
+    "appPlaceholder": "App wählen",
+    "connection": "Verbindung",
+    "connectionPlaceholder": "Verbindung wählen",
+    "noConnections": "Keine Verbindung kann diese Rolle übernehmen",
+    "role": "Rolle",
+    "roles": {
+      "source": "Quelle",
+      "deploy_report": "Deploy-Meldungen",
+      "registry_pull": "Registry-Pull",
+      "notify": "Benachrichtigungen",
+      "secrets": "Secrets",
+      "dns": "DNS"
+    },
+    "rules": "Regeln (optional)",
+    "rulesHint": "Ein JSON-Objekt, geprüft gegen die Rolle.",
+    "rulesInvalid": "Regeln müssen ein JSON-Objekt sein."
+  },
+  "unbind": {
+    "title": "{{name}} lösen",
+    "description": "Die App nutzt diese Verbindung nicht mehr für die Rolle. Die Verbindung selbst bleibt bestehen.",
+    "confirm": "Lösen",
+    "unbinding": "Wird gelöst",
+    "toast": "{{name}} von {{app}} gelöst",
+    "binding": "Bindung",
+    "pick": "Bindung wählen",
+    "noneForApp": "Diese App hat dafür keine Bindung"
   }
 }

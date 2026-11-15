@@ -49,7 +49,14 @@
     "reporting": "Status reporting",
     "lastDeploy": "Last deploy",
     "none": "None connected",
-    "postFailing": "Posting commit status is failing. The forge may show a stale state."
+    "postFailing": "Posting commit status is failing. The forge may show a stale state.",
+    "inherited": "Inherited from {{org}}",
+    "overrides": "Overrides {{org}} default",
+    "change": "Change",
+    "bind": "Bind",
+    "unbind": "Unbind",
+    "bindOther": "Bind a connection",
+    "other": "Other bindings"
   },
   "day": {
     "today": "Today",
@@ -66,5 +73,40 @@
     "title": "Nothing matches these filters",
     "description": "Try a different kind, status or search.",
     "clear": "Clear filters"
+  },
+  "bind": {
+    "title": "Bind {{name}}",
+    "titleGeneric": "Bind a connection",
+    "description": "Choose the role this connection fills. The server checks scope and rules.",
+    "confirm": "Bind",
+    "binding": "Binding",
+    "toast": "{{name}} bound to {{app}}",
+    "app": "App",
+    "appPlaceholder": "Choose an app",
+    "connection": "Connection",
+    "connectionPlaceholder": "Choose a connection",
+    "noConnections": "No connection can fill this role",
+    "role": "Role",
+    "roles": {
+      "source": "Source",
+      "deploy_report": "Deploy reporting",
+      "registry_pull": "Registry pull",
+      "notify": "Notifications",
+      "secrets": "Secrets",
+      "dns": "DNS"
+    },
+    "rules": "Rules (optional)",
+    "rulesHint": "A JSON object, checked against the role.",
+    "rulesInvalid": "Rules must be a JSON object."
+  },
+  "unbind": {
+    "title": "Unbind {{name}}",
+    "description": "The app stops using this connection for the role. The connection itself stays.",
+    "confirm": "Unbind",
+    "unbinding": "Unbinding",
+    "toast": "{{name}} unbound from {{app}}",
+    "binding": "Binding",
+    "pick": "Choose a binding",
+    "noneForApp": "This app has no binding for it"
   }
 }

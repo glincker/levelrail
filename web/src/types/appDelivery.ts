@@ -31,10 +31,24 @@ export interface AppBinding {
   target_type: string
   target_id: string
   role: string
-  rules?: Record<string, unknown>
+  // The server stores rules as canonical JSON text.
+  rules?: string
   origin: string
+}
+
+export interface ResolvedBinding extends AppBinding {
+  /** Org id the row comes from when it is an inherited default. */
+  inherited_from?: string
+  /** An org default the app's own binding for the same role replaces. */
+  overridden?: boolean
 }
 
 export interface AppBindingsResponse {
   bindings: AppBinding[] | null
+  resolved?: ResolvedBinding[] | null
+}
+
+export interface AppBindingsData {
+  bindings: AppBinding[]
+  resolved: ResolvedBinding[]
 }

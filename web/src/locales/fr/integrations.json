@@ -83,7 +83,11 @@
     "manageNamed": "Gérer {{name}}",
     "reconnectNamed": "Reconnecter {{name}}",
     "bound_one": "{{count}} liaison",
-    "bound_other": "{{count}} liaisons"
+    "bound_other": "{{count}} liaisons",
+    "bind": "Lier",
+    "unbind": "Délier",
+    "bindNamed": "Lier {{name}}",
+    "unbindNamed": "Délier {{name}}"
   },
   "expiry": {
     "expiresToday": "Expire aujourd'hui",

@@ -49,7 +49,14 @@
     "reporting": "ステータス報告",
     "lastDeploy": "最後のデプロイ",
     "none": "未接続",
-    "postFailing": "コミットステータスの投稿に失敗しています。リポジトリ側の表示が古い可能性があります。"
+    "postFailing": "コミットステータスの投稿に失敗しています。リポジトリ側の表示が古い可能性があります。",
+    "inherited": "{{org}} から継承",
+    "overrides": "{{org}} の既定を上書き",
+    "change": "変更",
+    "bind": "紐付け",
+    "unbind": "解除",
+    "bindOther": "接続を紐付ける",
+    "other": "その他の紐付け"
   },
   "day": {
     "today": "今日",
@@ -66,5 +73,40 @@
     "title": "条件に一致する項目がありません",
     "description": "別の種類、ステータス、検索語をお試しください。",
     "clear": "絞り込みを解除"
+  },
+  "bind": {
+    "title": "{{name}} を紐付ける",
+    "titleGeneric": "接続を紐付ける",
+    "description": "この接続の役割を選びます。範囲とルールはサーバーが確認します。",
+    "confirm": "紐付ける",
+    "binding": "紐付け中",
+    "toast": "{{name}} を {{app}} に紐付けました",
+    "app": "アプリ",
+    "appPlaceholder": "アプリを選択",
+    "connection": "接続",
+    "connectionPlaceholder": "接続を選択",
+    "noConnections": "この役割を担える接続がありません",
+    "role": "役割",
+    "roles": {
+      "source": "ソース",
+      "deploy_report": "デプロイ報告",
+      "registry_pull": "レジストリ取得",
+      "notify": "通知",
+      "secrets": "シークレット",
+      "dns": "DNS"
+    },
+    "rules": "ルール（任意）",
+    "rulesHint": "役割に照らして検証される JSON オブジェクト。",
+    "rulesInvalid": "ルールは JSON オブジェクトにしてください。"
+  },
+  "unbind": {
+    "title": "{{name}} の紐付けを解除",
+    "description": "アプリはこの役割でこの接続を使わなくなります。接続自体は残ります。",
+    "confirm": "解除",
+    "unbinding": "解除中",
+    "toast": "{{app}} から {{name}} を解除しました",
+    "binding": "紐付け",
+    "pick": "紐付けを選択",
+    "noneForApp": "このアプリには該当する紐付けがありません"
   }
 }

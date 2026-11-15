@@ -97,7 +97,8 @@ export function DeliveryView({ app }: { app: string }) {
     <div className="space-y-4">
       <DeliveryHeader
         items={all}
-        bindings={bindings.data ?? []}
+        app={app}
+        bindings={bindings.data?.resolved ?? []}
         connections={connections.data ?? []}
       />
       <DeliveryFilters value={filters} onChange={setFilters} />

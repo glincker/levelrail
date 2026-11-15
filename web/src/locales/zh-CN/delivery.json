@@ -49,7 +49,14 @@
     "reporting": "状态上报",
     "lastDeploy": "最近一次部署",
     "none": "未连接",
-    "postFailing": "提交状态发布失败。代码托管平台上可能显示过时的状态。"
+    "postFailing": "提交状态发布失败。代码托管平台上可能显示过时的状态。",
+    "inherited": "继承自 {{org}}",
+    "overrides": "覆盖 {{org}} 的默认设置",
+    "change": "更改",
+    "bind": "绑定",
+    "unbind": "解绑",
+    "bindOther": "绑定连接",
+    "other": "其他绑定"
   },
   "day": {
     "today": "今天",
@@ -66,5 +73,40 @@
     "title": "没有符合这些筛选条件的内容",
     "description": "请尝试其他类型、状态或搜索词。",
     "clear": "清除筛选"
+  },
+  "bind": {
+    "title": "绑定 {{name}}",
+    "titleGeneric": "绑定连接",
+    "description": "选择此连接承担的角色。服务器会检查范围和规则。",
+    "confirm": "绑定",
+    "binding": "绑定中",
+    "toast": "{{name}} 已绑定到 {{app}}",
+    "app": "应用",
+    "appPlaceholder": "选择应用",
+    "connection": "连接",
+    "connectionPlaceholder": "选择连接",
+    "noConnections": "没有连接可承担此角色",
+    "role": "角色",
+    "roles": {
+      "source": "来源",
+      "deploy_report": "部署上报",
+      "registry_pull": "镜像仓库拉取",
+      "notify": "通知",
+      "secrets": "密钥",
+      "dns": "DNS"
+    },
+    "rules": "规则（可选）",
+    "rulesHint": "一个 JSON 对象，按角色校验。",
+    "rulesInvalid": "规则必须是 JSON 对象。"
+  },
+  "unbind": {
+    "title": "解绑 {{name}}",
+    "description": "应用将不再用此连接承担该角色。连接本身会保留。",
+    "confirm": "解绑",
+    "unbinding": "解绑中",
+    "toast": "已将 {{name}} 从 {{app}} 解绑",
+    "binding": "绑定",
+    "pick": "选择绑定",
+    "noneForApp": "此应用没有对应的绑定"
   }
 }

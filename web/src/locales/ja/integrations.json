@@ -82,7 +82,11 @@
     "reconnect": "再接続",
     "manageNamed": "{{name}} を管理",
     "reconnectNamed": "{{name}} を再接続",
-    "bound_other": "バインド {{count}} 件"
+    "bound_other": "バインド {{count}} 件",
+    "bind": "紐付け",
+    "unbind": "解除",
+    "bindNamed": "{{name}} を紐付ける",
+    "unbindNamed": "{{name}} の紐付けを解除"
   },
   "expiry": {
     "expiresToday": "今日期限切れ",
