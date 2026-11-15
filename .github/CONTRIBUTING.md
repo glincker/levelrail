@@ -276,6 +276,10 @@ meaningfully extends a prior architectural decision, add a new ADR
 rather than editing history in place, and reference the one it
 supersedes.
 
+## Sign-off and licensing
+
+Levelrail is Apache-2.0. By contributing you confirm you wrote the change or have the right to submit it under that license, as set out in the [Developer Certificate of Origin](https://developercertificate.org). Sign off each commit with `git commit -s`, which adds a `Signed-off-by:` line with your name and email. Contributions stay under Apache-2.0 and keep the project's [NOTICE](../NOTICE).
+
 ## Reporting bugs and requesting features
 
 Use the issue templates. For security issues, see
