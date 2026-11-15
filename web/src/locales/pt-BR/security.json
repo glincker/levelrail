@@ -447,8 +447,8 @@
     "allow": "Permitir",
     "hold": "Reter",
     "allowBody": "Permitir: o login entra direto, a menos que a conta peça aprovação. É o padrão.",
-    "holdBody": "Reter: o login aguarda aprovação por código de e-mail, token signin:approve ou comando do host. Navegadores já confiáveis continuam entrando.",
-    "safeguards": "Para evitar um bloqueio, reter exige um e-mail de teste verificado, um token signin:approve de um administrador ou sua confirmação de que você pode executar comandos no servidor. O navegador usado para a mudança continua confiável.",
+    "holdBody": "Reter: o login aguarda aprovação por um token signin:approve que você possui ou pelo comando do host. Navegadores já confiáveis continuam entrando.",
+    "safeguards": "Para evitar um bloqueio, reter exige um token signin:approve que você possui ou sua confirmação de que pode executar comandos no servidor. O navegador usado para a mudança continua confiável.",
     "reset": "Para desfazer pelo servidor, execute:",
     "saved": "Configuração salva.",
     "saveError": "Não foi possível salvar esta configuração.",
@@ -459,9 +459,9 @@
     "confirm": "Reter logins",
     "confirming": "Salvando...",
     "hostAccess": "Posso executar comandos no servidor",
-    "noChannelFix": "Envie um e-mail de teste nas configurações de e-mail, crie um token signin:approve ou marque a caixa para confirmar que pode executar comandos no servidor.",
+    "noChannelFix": "Crie um token signin:approve que você possui ou marque a caixa para confirmar que pode executar comandos no servidor.",
     "channel": {
-      "approve_token": "Um token signin:approve de um administrador",
+      "approve_token": "Um token signin:approve que você possui",
       "host_command": "O comando approve-signin no servidor"
     }
   }

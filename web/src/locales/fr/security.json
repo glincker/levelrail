@@ -447,8 +447,8 @@
     "allow": "Autoriser",
     "hold": "Retenir",
     "allowBody": "Autoriser : la connexion passe directement, sauf si le compte demande lui-même une approbation. C'est la valeur par défaut.",
-    "holdBody": "Retenir : la connexion attend une approbation par code e-mail, jeton signin:approve ou commande de l'hôte. Les navigateurs de confiance se connectent toujours.",
-    "safeguards": "Pour éviter un blocage, retenir exige un e-mail de test vérifié, un jeton signin:approve détenu par un administrateur, ou votre confirmation que vous pouvez exécuter des commandes sur le serveur. Le navigateur depuis lequel vous changez reste de confiance.",
+    "holdBody": "Retenir : la connexion attend une approbation par un jeton signin:approve que vous détenez ou par la commande de l'hôte. Les navigateurs de confiance se connectent toujours.",
+    "safeguards": "Pour éviter un blocage, retenir exige un jeton signin:approve que vous détenez, ou votre confirmation que vous pouvez exécuter des commandes sur le serveur. Le navigateur depuis lequel vous changez reste de confiance.",
     "reset": "Pour annuler depuis le serveur, exécutez :",
     "saved": "Réglage enregistré.",
     "saveError": "Impossible d'enregistrer ce réglage.",
@@ -459,9 +459,9 @@
     "confirm": "Retenir les connexions",
     "confirming": "Enregistrement...",
     "hostAccess": "Je peux exécuter des commandes sur le serveur",
-    "noChannelFix": "Envoyez un e-mail de test depuis les réglages de messagerie, créez un jeton signin:approve ou cochez la case pour confirmer que vous pouvez exécuter des commandes sur le serveur.",
+    "noChannelFix": "Créez un jeton signin:approve que vous détenez ou cochez la case pour confirmer que vous pouvez exécuter des commandes sur le serveur.",
     "channel": {
-      "approve_token": "Un jeton signin:approve détenu par un administrateur",
+      "approve_token": "Un jeton signin:approve que vous détenez",
       "host_command": "La commande approve-signin sur le serveur"
     }
   }

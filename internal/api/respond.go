@@ -8,7 +8,6 @@ import (
 	"net/http"
 	"reflect"
 	"strings"
-	"unsafe"
 )
 
 // apiError is the JSON body every non-2xx response returns. A stable,
@@ -222,28 +221,11 @@ func canHoldNil(t reflect.Type) bool {
 func fixStruct(sv reflect.Value) (reflect.Value, bool) {
 	t := sv.Type()
 	var cp reflect.Value
-	var base reflect.Value
 	for i := 0; i < t.NumField(); i++ {
 		f := t.Field(i)
 		if !f.IsExported() {
-			if !embedsStruct(f) {
-				continue
-			}
-			// encoding/json promotes exported fields of an unexported embedded struct, so fix them too.
-			if !base.IsValid() {
-				base = reflect.New(t).Elem()
-				base.Set(sv)
-			}
-			emb := reflect.NewAt(f.Type, unsafe.Pointer(base.Field(i).UnsafeAddr())).Elem() //nolint:gosec // reflect cannot read an unexported embedded field otherwise
-			e, ok := emptyNotNull(emb, false)
-			if !ok {
-				continue
-			}
-			if !cp.IsValid() {
-				cp = reflect.New(t).Elem()
-				cp.Set(sv)
-			}
-			reflect.NewAt(f.Type, unsafe.Pointer(cp.Field(i).UnsafeAddr())).Elem().Set(e) //nolint:gosec // same: writing the fixed embedded copy
+			// Nil slices and maps inside unexported embedded structs stay as they are:
+			// reflect cannot set them without unsafe writes.
 			continue
 		}
 		tag := f.Tag.Get("json")
@@ -266,15 +248,4 @@ func fixStruct(sv reflect.Value) (reflect.Value, bool) {
 		cp.Field(i).Set(e)
 	}
 	return cp, cp.IsValid()
-}
-
-func embedsStruct(f reflect.StructField) bool {
-	if !f.Anonymous {
-		return false
-	}
-	t := f.Type
-	if t.Kind() == reflect.Pointer {
-		t = t.Elem()
-	}
-	return t.Kind() == reflect.Struct
 }

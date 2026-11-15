@@ -17,7 +17,7 @@ type embeddedHolder struct {
 	Tags []string `json:"tags"`
 }
 
-func TestWriteJSONKeepsUnexportedEmbeddedFields(t *testing.T) {
+func TestWriteJSONLeavesUnexportedEmbeddedUnchanged(t *testing.T) {
 	rec := httptest.NewRecorder()
 	writeJSON(rec, http.StatusOK, embeddedHolder{embeddedBase: embeddedBase{ID: "x"}})
 	var got map[string]any
@@ -27,9 +27,11 @@ func TestWriteJSONKeepsUnexportedEmbeddedFields(t *testing.T) {
 	if got["id"] != "x" {
 		t.Fatalf("promoted field lost: %s", rec.Body.String())
 	}
-	for _, k := range []string{"items", "tags"} {
-		if arr, ok := got[k].([]any); !ok || len(arr) != 0 {
-			t.Fatalf("%s should be an empty array: %s", k, rec.Body.String())
-		}
+	// Nil slices inside the unexported embedded struct are left as they are.
+	if v, ok := got["items"]; ok && v != nil {
+		t.Fatalf("embedded items should stay null: %s", rec.Body.String())
+	}
+	if arr, ok := got["tags"].([]any); !ok || len(arr) != 0 {
+		t.Fatalf("tags should be an empty array: %s", rec.Body.String())
 	}
 }

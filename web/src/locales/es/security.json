@@ -446,8 +446,8 @@
     "allow": "Permitir",
     "hold": "Retener",
     "allowBody": "Permitir: el inicio de sesión entra directamente, salvo que la cuenta pida aprobación. Es el valor por defecto.",
-    "holdBody": "Retener: el inicio de sesión espera una aprobación por código de correo, token signin:approve o el comando del host. Los navegadores de confianza siguen entrando.",
-    "safeguards": "Para evitar un bloqueo, retener necesita un correo de prueba verificado, un token signin:approve de un administrador o su confirmación de que puede ejecutar comandos en el servidor. El navegador desde el que lo cambia sigue siendo de confianza.",
+    "holdBody": "Retener: el inicio de sesión espera una aprobación mediante un token signin:approve que usted posee o el comando del host. Los navegadores de confianza siguen entrando.",
+    "safeguards": "Para evitar un bloqueo, retener necesita un token signin:approve que usted posee o su confirmación de que puede ejecutar comandos en el servidor. El navegador desde el que lo cambia sigue siendo de confianza.",
     "reset": "Para deshacerlo desde el servidor, ejecute:",
     "saved": "Ajuste guardado.",
     "saveError": "No se pudo guardar este ajuste.",
@@ -458,9 +458,9 @@
     "confirm": "Retener inicios",
     "confirming": "Guardando...",
     "hostAccess": "Puedo ejecutar comandos en el servidor",
-    "noChannelFix": "Envíe un correo de prueba desde los ajustes de correo, cree un token signin:approve o marque la casilla para confirmar que puede ejecutar comandos en el servidor.",
+    "noChannelFix": "Cree un token signin:approve que usted posee o marque la casilla para confirmar que puede ejecutar comandos en el servidor.",
     "channel": {
-      "approve_token": "Un token signin:approve de un administrador",
+      "approve_token": "Un token signin:approve que usted posee",
       "host_command": "El comando approve-signin en el servidor"
     }
   }

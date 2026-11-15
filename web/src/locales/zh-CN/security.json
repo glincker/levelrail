@@ -445,8 +445,8 @@
     "allow": "允许",
     "hold": "保留",
     "allowBody": "允许:除非账户自己要求批准,否则直接登录。这是默认值。",
-    "holdBody": "保留:登录需等待邮件验证码、signin:approve 令牌或主机命令的批准。已受信任的浏览器仍可登录。",
-    "safeguards": "为避免被锁在门外,保留需要一封已验证的测试邮件、管理员持有的 signin:approve 令牌,或你确认可以在服务器上运行命令。你用来更改的浏览器会保持受信任。",
+    "holdBody": "保留:登录需等待你持有的 signin:approve 令牌或主机命令的批准。已受信任的浏览器仍可登录。",
+    "safeguards": "为避免被锁在门外,保留需要你持有的 signin:approve 令牌,或你确认可以在服务器上运行命令。你用来更改的浏览器会保持受信任。",
     "reset": "要在服务器上撤销,请运行:",
     "saved": "设置已保存。",
     "saveError": "无法保存此设置。",
@@ -457,9 +457,9 @@
     "confirm": "保留登录",
     "confirming": "正在保存...",
     "hostAccess": "我可以在服务器上运行命令",
-    "noChannelFix": "请在邮件设置中发送测试邮件、创建 signin:approve 令牌,或勾选复选框确认你可以在服务器上运行命令。",
+    "noChannelFix": "请创建你持有的 signin:approve 令牌,或勾选复选框确认你可以在服务器上运行命令。",
     "channel": {
-      "approve_token": "管理员持有的 signin:approve 令牌",
+      "approve_token": "你持有的 signin:approve 令牌",
       "host_command": "服务器上的 approve-signin 命令"
     }
   }
