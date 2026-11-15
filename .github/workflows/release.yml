@@ -824,7 +824,6 @@ jobs:
         with:
           sparse-checkout: |
             scripts/release
-            docs/dockerhub
 
       - name: Download digests
         uses: actions/download-artifact@9000827ccba6bdab643e8b6fd33ac0654aef8333 # v8.0.2
@@ -1008,7 +1007,6 @@ jobs:
         with:
           sparse-checkout: |
             scripts/release
-            docs/dockerhub
 
       - name: Download digests
         uses: actions/download-artifact@9000827ccba6bdab643e8b6fd33ac0654aef8333 # v8.0.2

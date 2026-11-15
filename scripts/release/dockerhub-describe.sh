@@ -10,7 +10,7 @@ tag="${2:?tag}"
 dry_run="${3:-}"
 ns="${DOCKERHUB_NAMESPACE:-levelrail}"
 root="$(cd "$(dirname "${BASH_SOURCE[0]}")/../.." && pwd)"
-overview="$root/docs/dockerhub/$image.md"
+overview="$root/scripts/release/dockerhub/$image.md"
 
 case "$image" in
 levelrail) short="Self-hosted PaaS control plane: git push deploys, automatic HTTPS, logs and rollback." ;;
