@@ -46,7 +46,8 @@
     "superseded": "Substituído",
     "queued": "Na fila",
     "canceled": "Cancelado",
-    "pending": "Na fila até o node voltar"
+    "pending": "Na fila até o node voltar",
+    "refused": "Recusado"
   },
   "deployDetails": {
     "title": "Deploy {{status}}",

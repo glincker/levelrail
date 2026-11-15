@@ -28,7 +28,8 @@
     "held": "保留中",
     "awaiting_approval": "承認待ち",
     "rolled_back": "ロールバック済み",
-    "superseded": "置き換え済み"
+    "superseded": "置き換え済み",
+    "refused": "拒否"
   },
   "stream": {
     "connecting": "接続中",
@@ -110,7 +111,8 @@
       "superseded": "置き換え済み",
       "queued": "待機中",
       "canceled": "キャンセル済み",
-      "pending": "保留"
+      "pending": "保留",
+      "refused": "拒否"
     }
   }
 }

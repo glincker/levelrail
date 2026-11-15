@@ -28,7 +28,8 @@
     "held": "已暂缓",
     "awaiting_approval": "等待批准",
     "rolled_back": "已回滚",
-    "superseded": "已被取代"
+    "superseded": "已被取代",
+    "refused": "已拒绝"
   },
   "stream": {
     "connecting": "正在连接",
@@ -110,7 +111,8 @@
       "superseded": "已被取代",
       "queued": "排队中",
       "canceled": "已取消",
-      "pending": "待处理"
+      "pending": "待处理",
+      "refused": "已拒绝"
     }
   }
 }

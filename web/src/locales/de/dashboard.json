@@ -186,7 +186,8 @@
       "superseded": "Abgelöst",
       "queued": "In der Warteschlange",
       "canceled": "Abgebrochen",
-      "pending": "In der Warteschlange, bis der Node zurückkehrt"
+      "pending": "In der Warteschlange, bis der Node zurückkehrt",
+      "refused": "Abgelehnt"
     }
   },
   "strip": {

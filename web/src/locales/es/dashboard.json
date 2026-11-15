@@ -186,7 +186,8 @@
       "superseded": "Reemplazado",
       "queued": "En cola",
       "canceled": "Cancelado",
-      "pending": "En cola hasta que el nodo vuelva"
+      "pending": "En cola hasta que el nodo vuelva",
+      "refused": "Rechazado"
     }
   },
   "strip": {
