@@ -10,6 +10,7 @@ import (
 
 	dockerclient "github.com/docker/docker/client"
 	bkclient "github.com/moby/buildkit/client"
+	"github.com/opencontainers/go-digest"
 	"golang.org/x/sync/errgroup"
 
 	"github.com/GLINCKER/levelrail/internal/secretmask"
@@ -231,8 +232,11 @@ func (nopWriteCloser) Close() error { return nil }
 // solve finishes (success or failure), so this always returns once the
 // build is done.
 func relayProgress(ch <-chan *bkclient.SolveStatus, progress func(ProgressEvent)) {
+	// Log lines carry only a vertex digest; remember names so each line can name its step.
+	names := map[digest.Digest]string{}
 	for st := range ch {
 		for _, v := range st.Vertexes {
+			names[v.Digest] = v.Name
 			switch {
 			case v.Error != "":
 				progress(ProgressEvent{Step: v.Name, Error: v.Error, Completed: true})
@@ -241,7 +245,7 @@ func relayProgress(ch <-chan *bkclient.SolveStatus, progress func(ProgressEvent)
 			}
 		}
 		for _, l := range st.Logs {
-			progress(ProgressEvent{Log: string(l.Data), Stream: vertexLogStream(l.Stream)})
+			progress(ProgressEvent{Step: names[l.Vertex], Log: string(l.Data), Stream: vertexLogStream(l.Stream)})
 		}
 	}
 }
@@ -294,7 +298,7 @@ func loadImage(ctx context.Context, docker *dockerclient.Client, r io.Reader, ta
 			return fmt.Errorf("build: docker image load %q: %s", tag, msg.Error)
 		}
 		if msg.Stream != "" {
-			progress(ProgressEvent{Log: msg.Stream, Stream: "stdout"})
+			progress(ProgressEvent{Step: "load image", Log: msg.Stream, Stream: "stdout"})
 		}
 	}
 }

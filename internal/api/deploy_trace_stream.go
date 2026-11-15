@@ -59,7 +59,7 @@ func toSSETraceEvent(s store.DeployTraceStep) sseStepEvent {
 	}
 	ev := sseStepEvent{
 		Step: s.Step, Status: s.Status, Timestamp: ts.UTC().Format(time.RFC3339Nano),
-		Key: s.Key, Reason: s.Reason, Detail: s.Detail, Service: s.Service,
+		Key: s.Key, Reason: s.Reason, Detail: deploytrace.SummaryLine(s.Detail), Service: s.Service,
 		StartedAt: s.StartedAt.UTC().Format(time.RFC3339Nano), DurationMS: s.DurationMS, Attempts: s.Attempts,
 	}
 	if !s.EndedAt.IsZero() {
@@ -127,6 +127,9 @@ func (rt *Router) serveTraceSteps(ctx context.Context, w http.ResponseWriter, at
 func traceLogEntries(attemptID string, rows []store.DeployTraceStep) []telemetry.DeployLogEntry {
 	out := make([]telemetry.DeployLogEntry, 0, len(rows))
 	for _, r := range rows {
+		if r.Step == deploytrace.StepBuildStage {
+			continue // stage rows have their own view, not a log line
+		}
 		ts := r.StartedAt
 		if !r.EndedAt.IsZero() {
 			ts = r.EndedAt

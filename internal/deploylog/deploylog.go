@@ -25,6 +25,7 @@ import (
 	"time"
 
 	"github.com/GLINCKER/levelrail/internal/build"
+	"github.com/GLINCKER/levelrail/internal/deploytrace"
 	"github.com/GLINCKER/levelrail/internal/secretmask"
 	"github.com/GLINCKER/levelrail/internal/telemetry"
 	"github.com/GLINCKER/levelrail/kit/untrusted"
@@ -80,6 +81,8 @@ type Event struct {
 	Stream string
 	// At is when the line was recorded; zero for lines built outside Progress.
 	At time.Time
+	// Stage is the build stage the line belongs to, empty when stages are not tracked.
+	Stage string
 }
 
 // StepEvent is one named, coarse-grained deploy-pipeline phase
@@ -106,6 +109,8 @@ type attemptState struct {
 
 	steps    []StepEvent // every step transition so far, for SnapshotSteps' replay slice
 	stepSubs []chan StepEvent
+
+	stages *deploytrace.StageTracker
 }
 
 // Recorder turns one attempt's build.ProgressEvent stream into both a
@@ -119,6 +124,18 @@ type Recorder struct {
 	mu       sync.Mutex
 	active   map[string]*attemptState
 	feedSubs []chan StateEvent
+
+	stageSink deploytrace.Sink
+	stageTail func() int
+}
+
+// SetStages makes later attempts record one trace row per build stage into
+// sink; tailLines gives the live per-stage log tail size. Call it at boot,
+// before builds start.
+func (r *Recorder) SetStages(sink deploytrace.Sink, tailLines func() int) {
+	r.mu.Lock()
+	defer r.mu.Unlock()
+	r.stageSink, r.stageTail = sink, tailLines
 }
 
 // NewRecorder builds a Recorder. store may be nil (see LogStore's own
@@ -143,7 +160,11 @@ func NewRecorder(store LogStore, logger *slog.Logger) *Recorder {
 func (r *Recorder) Start(attemptID string) {
 	r.mu.Lock()
 	defer r.mu.Unlock()
-	r.active[attemptID] = &attemptState{}
+	st := &attemptState{}
+	if r.stageSink != nil {
+		st.stages = deploytrace.NewStageTracker(deploytrace.New(r.stageSink, attemptID, r.logger), r.stageTail)
+	}
+	r.active[attemptID] = st
 	r.publishStateLocked(StateEvent{AttemptID: attemptID, Kind: StateStarted})
 }
 
@@ -167,17 +188,23 @@ func (r *Recorder) Start(attemptID string) {
 // state here is under Recorder's single mutex.
 func (r *Recorder) Progress(attemptID string) func(build.ProgressEvent) {
 	return func(ev build.ProgressEvent) {
+		// Mask before the line is kept or fanned out: live viewers and replay read this copy, not the store's.
+		ev.Log = secretmask.Mask(untrusted.RedactTokens(ev.Log))
+		r.mu.Lock()
+		tracker := r.stageTrackerLocked(attemptID)
+		r.mu.Unlock()
+		stage := tracker.Observe(context.Background(), deploytrace.StageObs{
+			Step: ev.Step, Cached: ev.Cached, Completed: ev.Completed, Error: ev.Error, Log: ev.Log,
+		})
 		if ev.Log == "" {
-			return // step-lifecycle event, not output: nothing to record
+			return // step-lifecycle event, not output: nothing more to record
 		}
 		stream := ev.Stream
 		if stream == "" {
 			stream = "stdout"
 		}
-		// Mask before the line is kept or fanned out: live viewers and replay read this copy, not the store's.
-		ev.Log = secretmask.Mask(untrusted.RedactTokens(ev.Log))
 		now := time.Now()
-		line := Event{Line: ev.Log, Stream: stream, At: now}
+		line := Event{Line: ev.Log, Stream: stream, At: now, Stage: stage}
 
 		r.mu.Lock()
 		st, ok := r.active[attemptID]
@@ -209,6 +236,13 @@ func (r *Recorder) Progress(attemptID string) func(build.ProgressEvent) {
 			r.flush(attemptID, toFlush)
 		}
 	}
+}
+
+func (r *Recorder) stageTrackerLocked(attemptID string) *deploytrace.StageTracker {
+	if st, ok := r.active[attemptID]; ok {
+		return st.stages
+	}
+	return nil
 }
 
 // Step records one named pipeline-phase transition for attemptID and
@@ -319,12 +353,15 @@ func (r *Recorder) Finish(ctx context.Context, attemptID string) {
 		return
 	}
 	toFlush := st.buf
+	stages := st.stages
 	subs := st.subs
 	stepSubs := st.stepSubs
 	delete(r.active, attemptID)
 	r.publishStateLocked(StateEvent{AttemptID: attemptID, Kind: StateFinished})
 	r.mu.Unlock()
 
+	// Before subscribers close, so a viewer that sees the end finds final stage rows.
+	stages.Finish(ctx)
 	if r.store != nil && len(toFlush) > 0 {
 		if err := r.store.WriteDeployLogBatch(ctx, toFlush); err != nil {
 			r.logger.Error("deploylog: final flush failed",

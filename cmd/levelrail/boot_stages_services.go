@@ -153,6 +153,14 @@ func (s *bootState) startBuildAndIngress() {
 		})
 	}
 
+	// Stage rows go to the state store; the tail size is read live so a settings change applies to the next build.
+	deployRecorder.SetStages(db, func() int {
+		if s.apiRouter != nil && s.apiRouter.RuntimeSettings() != nil {
+			return s.apiRouter.RuntimeSettings().Limit(ctx, runtimesettings.KeyBuildStageLogTailLines)
+		}
+		return runtimesettings.ClampLimit(runtimesettings.KeyBuildStageLogTailLines, 0)
+	})
+
 	// Created before the router and webhook handler, which both need it; safe to call before Run starts.
 	engine := reconcile.NewEngine(logger)
 

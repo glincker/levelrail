@@ -16044,7 +16044,7 @@
     },
     "/api/v1/apps/{name}/deploys/{deployId}/probes": {
       "get": {
-        "description": "Deploy-attempt readiness-probe attempts (deploy_probes.go): plain polling JSON, not SSE, the individual probe attempts (internal/probe.WithOnAttempt) one deploy's cutover made. Same AbilityRead boundary as the step/log streams above.\n\nRequires the `read` ability.",
+        "description": "Requires the `read` ability.",
         "operationId": "handleListProbeAttempts",
         "parameters": [
           {
@@ -16121,7 +16121,7 @@
             ]
           }
         ],
-        "summary": "Deploy-attempt readiness-probe attempts (deploy_probes.go): plain polling JSON, not SSE, the individual probe attempts (internal/probe.WithOnAttempt) one deploy's cutover made.",
+        "summary": "List Probe Attempts",
         "tags": [
           "Apps CRUD / Lifecycle / Deploy"
         ],
@@ -16423,6 +16423,92 @@
           "Apps CRUD / Lifecycle / Deploy"
         ],
         "x-required-ability": "deploy"
+      }
+    },
+    "/api/v1/apps/{name}/deploys/{deployId}/stages": {
+      "get": {
+        "description": "Deploy-attempt readiness-probe attempts (deploy_probes.go): plain polling JSON, not SSE, the individual probe attempts (internal/probe.WithOnAttempt) one deploy's cutover made. Same AbilityRead boundary as the step/log streams above.\n\nRequires the `read` ability.",
+        "operationId": "handleGetDeployStages",
+        "parameters": [
+          {
+            "in": "path",
+            "name": "name",
+            "required": true,
+            "schema": {
+              "type": "string"
+            }
+          },
+          {
+            "in": "path",
+            "name": "deployId",
+            "required": true,
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": {}
+              }
+            },
+            "description": "Successful response. The body shape is not described in this document."
+          },
+          "401": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            },
+            "description": "Missing or invalid credentials."
+          },
+          "403": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            },
+            "description": "The token lacks the required ability."
+          },
+          "4XX": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            },
+            "description": "Client error."
+          },
+          "default": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            },
+            "description": "Error response."
+          }
+        },
+        "security": [
+          {
+            "bearerAuth": [
+              "read"
+            ]
+          }
+        ],
+        "summary": "Deploy-attempt readiness-probe attempts (deploy_probes.go): plain polling JSON, not SSE, the individual probe attempts (internal/probe.WithOnAttempt) one deploy's cutover made.",
+        "tags": [
+          "Apps CRUD / Lifecycle / Deploy"
+        ],
+        "x-required-ability": "read"
       }
     },
     "/api/v1/apps/{name}/deploys/{deployId}/steps": {

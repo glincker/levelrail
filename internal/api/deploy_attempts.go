@@ -13,6 +13,7 @@ import (
 	"github.com/GLINCKER/levelrail/internal/alerting"
 	"github.com/GLINCKER/levelrail/internal/build"
 	"github.com/GLINCKER/levelrail/internal/deploy"
+	"github.com/GLINCKER/levelrail/internal/deploytrace"
 	"github.com/GLINCKER/levelrail/internal/failure"
 	"github.com/GLINCKER/levelrail/internal/footprint"
 	"github.com/GLINCKER/levelrail/internal/secretmask"
@@ -481,6 +482,14 @@ func (rt *Router) handleDeployLogStream(w http.ResponseWriter, r *http.Request) 
 		return
 	}
 
+	if stage := r.URL.Query().Get("stage"); stage != "" {
+		if !deploytrace.IsStage(stage) {
+			writeError(w, http.StatusBadRequest, "unknown build stage")
+			return
+		}
+		rt.serveStageLog(w, r, attempt, stage)
+		return
+	}
 	if attempt.FinishedAt != nil {
 		rt.serveFinishedDeployLog(r.Context(), w, deployID)
 		return

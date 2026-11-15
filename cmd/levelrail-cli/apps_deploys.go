@@ -48,6 +48,8 @@ func runAppsDeploys(prog string, args []string, stdout, stderr io.Writer, lookup
 		return runAppsDeploysTimeline(prog, args[1:], stdout, stderr, lookupEnv)
 	case "steps":
 		return runAppsDeploysSteps(prog, args[1:], stdout, stderr, lookupEnv)
+	case "stages":
+		return runAppsDeploysStages(prog, args[1:], stdout, stderr, lookupEnv)
 	case "probes":
 		return runAppsDeploysProbes(prog, args[1:], stdout, stderr, lookupEnv)
 	case "gate", "status":
@@ -83,6 +85,7 @@ func appsDeploysUsage(prog string) string {
   %[1]s apps deploys failed [--since 24h] [flags]                 every app's latest failed deploy in the window, fleet-wide
   %[1]s apps deploys timeline [--since 24h] [flags]               fleet-wide deploys as bars on a shared time axis
   %[1]s apps deploys steps <name> <deploy-id> [flags]             one deploy attempt's pipeline steps, live until it ends
+  %[1]s apps deploys stages <name> <deploy-id> [--tail S]         build stages with timings and cache state, or one stage's log
   %[1]s apps deploys probes <name> <deploy-id> [flags]            readiness-probe attempts a deploy's cutover made
   %[1]s apps deploys gate <name> [deploy-id] [--watch]            readiness gate, cutover, drain and post-deploy watch timeline
   %[1]s apps deploys build-report <name> <deploy-id> [flags]      Next.js route table and build warnings from one attempt's log

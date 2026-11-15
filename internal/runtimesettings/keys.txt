@@ -74,6 +74,7 @@ bootstrap_scripts.max_count
 build.cache_app_quota_gb
 build.cache_reclaim_max_records
 build.cache_reclaim_timeout
+build.stage_log_tail_lines
 builds.memory_limit_mb
 builds.setting_value_max_bytes
 cdn.purge_history

@@ -784,6 +784,7 @@ Endpoints for:
 | DELETE | /api/v1/apps/{name}/preview-env-exclude/{key} | AbilityWrite | handleSetAppPreviewEnvExclude |
 | GET | /api/v1/apps/{name}/egress-report | AbilityRead | handleAppEgressReport |
 | GET | /api/v1/apps/{name}/bindings | AbilityRead | handleListAppBindings |
+| GET | /api/v1/apps/{name}/deploys/{deployId}/stages | AbilityRead | handleGetDeployStages |
 | GET | /api/v1/apps/{name}/notes | AbilityRead |  |
 | PUT | /api/v1/apps/{name}/notes | AbilityWrite |  |
 
