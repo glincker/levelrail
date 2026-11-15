@@ -79,6 +79,8 @@ func (rt *Router) doctorDefs() []doctorCheckDef {
 		one("disk_hygiene", doctorGroupHost, rt.doctorCheckDiskHygiene),
 		one("data_dir_writable", doctorGroupHost, func(context.Context) doctorCheckResource { return rt.doctorCheckDataDirWritable() }),
 		one("ram", doctorGroupHost, func(context.Context) doctorCheckResource { return rt.doctorCheckRAM() }),
+		one("host_pressure", doctorGroupHost, rt.doctorCheckHostPressure),
+		one("host_swap", doctorGroupHost, rt.doctorCheckNoSwap),
 		one("build_memory", doctorGroupHost, rt.doctorCheckBuildMemory),
 		one("unit_protection", doctorGroupHost, func(context.Context) doctorCheckResource { return rt.doctorCheckUnitProtection(time.Now()) }),
 		one("cpu", doctorGroupHost, func(context.Context) doctorCheckResource { return rt.doctorCheckCPU() }),

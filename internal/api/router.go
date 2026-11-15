@@ -81,6 +81,7 @@ import (
 	"github.com/GLINCKER/levelrail/internal/compliance"
 	"github.com/GLINCKER/levelrail/internal/diskguard"
 	"github.com/GLINCKER/levelrail/internal/functions"
+	"github.com/GLINCKER/levelrail/internal/hostpressure"
 	"github.com/GLINCKER/levelrail/internal/nodefailure"
 	"github.com/GLINCKER/levelrail/internal/repolayout"
 	"github.com/GLINCKER/levelrail/internal/repolist"
@@ -248,6 +249,7 @@ type Router struct {
 	volumeTransfers         volumeTransferGuard
 	dataDir                 string // "" means "don't report disk usage", set via WithDataDir
 	diskGuard               *diskguard.Guard
+	hostPressure            *hostpressure.Guard
 	localNodeID             string // "" means "not mesh-enabled", set via WithLocalNodeID; the one node HostDiskCollector/HostMemoryCollector's readings are real for
 	meshZone                string // "" means mesh DNS resolution is off, set via SetMeshZone; mirrors application.Controller's own meshZone, see GET /api/v1/apps/{name}/connections' own doc comment
 	readiness               ReadinessProbes

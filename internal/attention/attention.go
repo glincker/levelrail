@@ -96,6 +96,7 @@ const (
 	KindDBEOL                   = "db_eol"
 	KindDBUpgradeFailed         = "db_upgrade_failed"
 	KindDockerGuard             = "docker_guard"
+	KindHostPressure            = "host_pressure"
 	KindUpgradeBlocked          = "upgrade_blocked"
 	KindResourceAdvice          = "resource_advice"
 	KindSecretRotationDue       = "secret_rotation_due"
