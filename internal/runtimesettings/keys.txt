@@ -108,6 +108,7 @@ cloud.state_max_kb
 compose.depends_on_timeout
 compose.repo_deploy_timeout
 compose.repo_file_max_bytes
+connections.expiry_warn
 containers.log_max_files
 containers.log_max_size_mb
 containers.restart_policy
@@ -162,11 +163,11 @@ disk.history_retention_days
 disk.history_sample_interval
 disk.low_free_mb
 disk.reserve_mb
-dns.egress_report_max_names
 dns.cache_bytes
 dns.cache_max_ttl
 dns.cache_negative_max_ttl
 dns.container_fallback
+dns.egress_report_max_names
 dns.forward_attempt_timeout
 dns.forward_enabled
 dns.forward_query_timeout

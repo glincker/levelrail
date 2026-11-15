@@ -782,6 +782,7 @@ Endpoints for:
 | PUT | /api/v1/apps/{name}/preview-env-exclude/{key} | AbilityWrite | handleSetAppPreviewEnvExclude |
 | DELETE | /api/v1/apps/{name}/preview-env-exclude/{key} | AbilityWrite | handleSetAppPreviewEnvExclude |
 | GET | /api/v1/apps/{name}/egress-report | AbilityRead | handleAppEgressReport |
+| GET | /api/v1/apps/{name}/bindings | AbilityRead | handleListAppBindings |
 | GET | /api/v1/apps/{name}/notes | AbilityRead |  |
 | PUT | /api/v1/apps/{name}/notes | AbilityWrite |  |
 
@@ -2368,8 +2369,12 @@ Routes that do not fit an existing group.
 | POST | /api/v1/hooks/stacks/{name}/refresh | Public | handleStackSyncRefreshWebhook |
 | GET | /api/v1/dns/queries | AbilityRead | handleListDNSQueries |
 | GET | /api/v1/dns/stats | AbilityRead | handleDNSStats |
-| POST | /mcp | Public |  |
+| GET | /api/v1/connections | AbilityReadSensitive | handleListConnections |
+| GET | /api/v1/connections/catalog | AbilityRead | handleConnectionCatalog |
+| GET | /api/v1/connections/{ref} | AbilityReadSensitive | handleGetConnection |
+| PUT | /api/v1/connections/{ref}/meta | AbilityWriteSensitive | handleSetConnectionMeta |
 | GET | /api/v1/git-connections/{id}/access | AbilityReadSensitive | handleGetGitConnectionAccess |
+| POST | /mcp | Public |  |
 
 ## See also
 

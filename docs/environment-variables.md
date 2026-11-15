@@ -74,6 +74,7 @@ These variables only seed the default of a [runtime setting](/runtime-settings).
 | `APP_CLOUD_ENGINE_NETWORK` | [`cloud.engine_network`](/runtime-settings#security) | empty |
 | `APP_CLOUD_ENGINE_USER` | [`cloud.engine_user`](/runtime-settings#security) | `65532:65532` |
 | `APP_CLOUD_REQUIRE_FULL_ESTIMATE` | [`cloud.require_full_estimate`](/runtime-settings#security) | `true` |
+| `APP_CONNECTION_EXPIRY_WARN` | [`connections.expiry_warn`](/runtime-settings#security) | `336h` |
 | `APP_DESKTOP_SESSION_TTL` | [`desktop.session_ttl`](/runtime-settings#security) | `12h` |
 | `APP_FIREWALL_CONFIRM_WINDOW` | [`firewall.confirm_window`](/runtime-settings#security) | `60s` |
 | `APP_FIXIT_MAX_PER_HOUR` | [`fixit.max_per_hour`](/runtime-settings#security) | `0` |
