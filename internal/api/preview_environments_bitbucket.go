@@ -57,8 +57,10 @@ func (rt *Router) notifyPreviewPendingBitbucket(ctx context.Context, appName str
 	if !ok {
 		return
 	}
-	if err := rt.bitbucketAppClient.CreateCommitBuildStatus(ctx, accessToken, fullName, headSHA,
-		bitbucketapp.BuildStatusInProgress, "", "Deploying preview environment...", previewStatusContext); err != nil {
+	err := rt.bitbucketAppClient.CreateCommitBuildStatus(ctx, accessToken, fullName, headSHA,
+		bitbucketapp.BuildStatusInProgress, "", "Deploying preview environment...", previewStatusContext)
+	rt.recordPreviewStatus(ctx, appName, forgeBitbucket, headSHA, previewStatePending, "", "Deploying preview environment...", err)
+	if err != nil {
 		rt.logger.Warn("api: post preview pending bitbucket build status failed", slog.String("error", err.Error()), slog.String("app_name", appName))
 	}
 }
@@ -78,8 +80,10 @@ func (rt *Router) notifyPreviewSuccessBitbucket(ctx context.Context, appName str
 		description = "Preview deployed: " + previewURL
 	}
 
-	if err := rt.bitbucketAppClient.CreateCommitBuildStatus(ctx, accessToken, fullName, headSHA,
-		bitbucketapp.BuildStatusSuccessful, targetURL, description, previewStatusContext); err != nil {
+	err := rt.bitbucketAppClient.CreateCommitBuildStatus(ctx, accessToken, fullName, headSHA,
+		bitbucketapp.BuildStatusSuccessful, targetURL, description, previewStatusContext)
+	rt.recordPreviewStatus(ctx, appName, forgeBitbucket, headSHA, previewStateSuccess, targetURL, description, err)
+	if err != nil {
 		rt.logger.Warn("api: post preview success bitbucket build status failed", slog.String("error", err.Error()), slog.String("app_name", appName))
 	}
 }
@@ -93,8 +97,10 @@ func (rt *Router) notifyPreviewFailureBitbucket(ctx context.Context, appName str
 	if !ok {
 		return
 	}
-	if err := rt.bitbucketAppClient.CreateCommitBuildStatus(ctx, accessToken, fullName, headSHA,
-		bitbucketapp.BuildStatusFailed, "", reason, previewStatusContext); err != nil {
+	err := rt.bitbucketAppClient.CreateCommitBuildStatus(ctx, accessToken, fullName, headSHA,
+		bitbucketapp.BuildStatusFailed, "", reason, previewStatusContext)
+	rt.recordPreviewStatus(ctx, appName, forgeBitbucket, headSHA, previewStateFailure, "", reason, err)
+	if err != nil {
 		rt.logger.Warn("api: post preview failure bitbucket build status failed", slog.String("error", err.Error()), slog.String("app_name", appName))
 	}
 }

@@ -61,8 +61,10 @@ func (rt *Router) notifyPreviewPendingGitea(ctx context.Context, appName string,
 	if !ok {
 		return
 	}
-	if err := rt.giteaAppClient.CreateCommitStatus(ctx, instanceURL, accessToken, fullName, headSHA,
-		giteaapp.CommitStatusPending, "", "Deploying preview environment...", previewStatusContext); err != nil {
+	err := rt.giteaAppClient.CreateCommitStatus(ctx, instanceURL, accessToken, fullName, headSHA,
+		giteaapp.CommitStatusPending, "", "Deploying preview environment...", previewStatusContext)
+	rt.recordPreviewStatus(ctx, appName, forgeGitea, headSHA, previewStatePending, "", "Deploying preview environment...", err)
+	if err != nil {
 		rt.logger.Warn("api: post preview pending gitea commit status failed", slog.String("error", err.Error()), slog.String("app_name", appName))
 	}
 }
@@ -82,8 +84,10 @@ func (rt *Router) notifyPreviewSuccessGitea(ctx context.Context, appName string,
 		description = "Preview deployed: " + previewURL
 	}
 
-	if err := rt.giteaAppClient.CreateCommitStatus(ctx, instanceURL, accessToken, fullName, headSHA,
-		giteaapp.CommitStatusSuccess, targetURL, description, previewStatusContext); err != nil {
+	err := rt.giteaAppClient.CreateCommitStatus(ctx, instanceURL, accessToken, fullName, headSHA,
+		giteaapp.CommitStatusSuccess, targetURL, description, previewStatusContext)
+	rt.recordPreviewStatus(ctx, appName, forgeGitea, headSHA, previewStateSuccess, targetURL, description, err)
+	if err != nil {
 		rt.logger.Warn("api: post preview success gitea commit status failed", slog.String("error", err.Error()), slog.String("app_name", appName))
 	}
 }
@@ -97,8 +101,10 @@ func (rt *Router) notifyPreviewFailureGitea(ctx context.Context, appName string,
 	if !ok {
 		return
 	}
-	if err := rt.giteaAppClient.CreateCommitStatus(ctx, instanceURL, accessToken, fullName, headSHA,
-		giteaapp.CommitStatusFailure, "", reason, previewStatusContext); err != nil {
+	err := rt.giteaAppClient.CreateCommitStatus(ctx, instanceURL, accessToken, fullName, headSHA,
+		giteaapp.CommitStatusFailure, "", reason, previewStatusContext)
+	rt.recordPreviewStatus(ctx, appName, forgeGitea, headSHA, previewStateFailure, "", reason, err)
+	if err != nil {
 		rt.logger.Warn("api: post preview failure gitea commit status failed", slog.String("error", err.Error()), slog.String("app_name", appName))
 	}
 }

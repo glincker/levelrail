@@ -237,8 +237,8 @@ func TestRetentionTargetsPreviewMatchesRun(t *testing.T) {
 func TestRetentionTargetsAreNewAndPreview(t *testing.T) {
 	e := newRetentionEnv(t)
 	targets := e.reg.Targets()
-	if len(targets) != 7 {
-		t.Fatalf("registered %d targets, want 7", len(targets))
+	if len(targets) != 8 {
+		t.Fatalf("registered %d targets, want 8", len(targets))
 	}
 	for _, tg := range targets {
 		m := tg.Meta()

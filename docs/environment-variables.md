@@ -524,6 +524,7 @@ These variables only seed the default of a [runtime setting](/runtime-settings).
 | `APP_EMAIL_LOG_RETENTION_DAYS` | [`retention.email_log_days`](/runtime-settings#data-retention) | `30` |
 | `APP_EVENT_WEBHOOK_RETENTION` | [`retention.event_webhook_days`](/runtime-settings#data-retention) | `30` |
 | `APP_RETENTION_EXPIRED_TOKEN_DAYS` | [`retention.expired_token_days`](/runtime-settings#data-retention) | `90` |
+| `APP_RETENTION_FORGE_STATUS_DAYS` | [`retention.forge_status_days`](/runtime-settings#data-retention) | `30` |
 | `APP_RETENTION_PROBE_ATTEMPT_DAYS` | [`retention.probe_attempt_days`](/runtime-settings#data-retention) | `90` |
 | `APP_RETENTION_RESTORE_HISTORY_DAYS` | [`retention.restore_history_days`](/runtime-settings#data-retention) | `90` |
 | `APP_RETENTION_REVOKED_TOKEN_DAYS` | [`retention.revoked_token_days`](/runtime-settings#data-retention) | `90` |

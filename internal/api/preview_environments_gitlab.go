@@ -74,8 +74,10 @@ func (rt *Router) notifyPreviewPendingGitLab(ctx context.Context, appName string
 	if !ok {
 		return
 	}
-	if err := rt.gitlabAppClient.CreateCommitStatus(ctx, instanceURL, accessToken, projectPath, headSHA,
-		gitlabapp.CommitStatePending, "", "Deploying preview environment...", previewStatusContext); err != nil {
+	err := rt.gitlabAppClient.CreateCommitStatus(ctx, instanceURL, accessToken, projectPath, headSHA,
+		gitlabapp.CommitStatePending, "", "Deploying preview environment...", previewStatusContext)
+	rt.recordPreviewStatus(ctx, appName, forgeGitLab, headSHA, previewStatePending, "", "Deploying preview environment...", err)
+	if err != nil {
 		rt.logger.Warn("api: post preview pending gitlab commit status failed", slog.String("error", err.Error()), slog.String("app_name", appName))
 	}
 }
@@ -95,8 +97,10 @@ func (rt *Router) notifyPreviewSuccessGitLab(ctx context.Context, appName string
 		description = "Preview deployed: " + previewURL
 	}
 
-	if err := rt.gitlabAppClient.CreateCommitStatus(ctx, instanceURL, accessToken, projectPath, headSHA,
-		gitlabapp.CommitStateSuccess, targetURL, description, previewStatusContext); err != nil {
+	err := rt.gitlabAppClient.CreateCommitStatus(ctx, instanceURL, accessToken, projectPath, headSHA,
+		gitlabapp.CommitStateSuccess, targetURL, description, previewStatusContext)
+	rt.recordPreviewStatus(ctx, appName, forgeGitLab, headSHA, previewStateSuccess, targetURL, description, err)
+	if err != nil {
 		rt.logger.Warn("api: post preview success gitlab commit status failed", slog.String("error", err.Error()), slog.String("app_name", appName))
 	}
 }
@@ -108,8 +112,10 @@ func (rt *Router) notifyPreviewFailureGitLab(ctx context.Context, appName string
 	if !ok {
 		return
 	}
-	if err := rt.gitlabAppClient.CreateCommitStatus(ctx, instanceURL, accessToken, projectPath, headSHA,
-		gitlabapp.CommitStateFailed, "", truncateStatusDescription(reason, gitLabStatusDescriptionMax), previewStatusContext); err != nil {
+	err := rt.gitlabAppClient.CreateCommitStatus(ctx, instanceURL, accessToken, projectPath, headSHA,
+		gitlabapp.CommitStateFailed, "", truncateStatusDescription(reason, gitLabStatusDescriptionMax), previewStatusContext)
+	rt.recordPreviewStatus(ctx, appName, forgeGitLab, headSHA, previewStateFailure, "", truncateStatusDescription(reason, gitLabStatusDescriptionMax), err)
+	if err != nil {
 		rt.logger.Warn("api: post preview failure gitlab commit status failed", slog.String("error", err.Error()), slog.String("app_name", appName))
 	}
 }

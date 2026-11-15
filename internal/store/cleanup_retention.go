@@ -24,6 +24,7 @@ const (
 	RetentionBackupDrills    RetentionTable = "backup_drills"
 	RetentionProbeAttempts   RetentionTable = "probe_attempts"
 	RetentionAppEvents       RetentionTable = "app_events"
+	RetentionForgeStatus     RetentionTable = "forge_status_reports"
 	RetentionAppSchedule     RetentionTable = "app_schedule_history"
 	RetentionCanaryOutcomes  RetentionTable = "canary_outcomes"
 	RetentionUsageCostDaily  RetentionTable = "usage_cost_daily"
@@ -164,6 +165,12 @@ var retentionTables = map[RetentionTable]retentionSpec{
 		stats:       `SELECT COUNT(*), COALESCE(MIN(created_at), '') FROM app_events`,
 		countOlder:  `SELECT COUNT(*) FROM app_events WHERE created_at < ?`,
 		deleteOlder: `DELETE FROM app_events WHERE id IN (SELECT id FROM app_events WHERE created_at < ? LIMIT ?)`,
+	},
+	RetentionForgeStatus: {
+		arg: argEventTime, parse: parseDriverTime,
+		stats:       `SELECT COUNT(*), COALESCE(MIN(created_at), '') FROM forge_status_reports`,
+		countOlder:  `SELECT COUNT(*) FROM forge_status_reports WHERE created_at < ?`,
+		deleteOlder: `DELETE FROM forge_status_reports WHERE id IN (SELECT id FROM forge_status_reports WHERE created_at < ? LIMIT ?)`,
 	},
 	RetentionAppSchedule: {
 		arg: argRFC3339Nano, parse: parseDriverTime,
