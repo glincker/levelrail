@@ -29,7 +29,17 @@ levelrail-cli auth rotate
 
 `tokens rotate` takes an id or an unambiguous name. `auth rotate` replaces the token behind the current profile and rewrites that profile in the credentials file atomically, with mode 0600, keeping the new expiry. A token can rotate itself only when it holds the write ability; a read-only token is rotated by its owner. Platform tokens are refused. If no master key is configured the old token is revoked at once, because the grace period could not be remembered across a restart.
 
-The API call is `POST /api/v1/auth/tokens/{id}/rotate`. It answers 201 with the new token (including `token`, shown once), `replaces`, and `previous_valid_until`. While the grace runs, the token list shows `revokes_at` on the old token. Each rotation is written to the audit log and emits a `tokens.rotated` event.
+A rotation follows the same rules as creating a token:
+
+- One rotation per token. A token that was already rotated and is in its grace period cannot be rotated again (409): use its replacement. The time the old token stops working never moves.
+- Abilities come from the owner as they are now. If the owner no longer holds one of the token's abilities, the rotation is refused (403) with the ability named, and you create a new token instead. `signin:approve` and `secrets:reveal` carry over only when the owner rotates from a signed-in session, never when a token rotates itself.
+- Lifetime follows the security policy. When `max_token_lifetime_days` is set, the replacement never exceeds it, and a token without an expiry gets the default lifetime. A token without an expiry keeps none only while its owner holds root and no maximum is set.
+- If the old token is revoked while the replacement is being minted, the replacement is revoked too and the call answers 409.
+- Tokens issued to an MCP client through OAuth sign-in are refused (409). The client renews them itself; reconnect the client to get a fresh one.
+
+Every rotation attempt, including a refused one, is written to the audit log with the real actor: the signed-in user, or the token itself when it rotated itself. If the background check cannot read the pending revocations, it logs a warning and the error shows on the token expiry reminders loop on the control plane health page, since rotated tokens stay valid until it can.
+
+The API call is `POST /api/v1/auth/tokens/{id}/rotate`. It answers 201 with the new token (including `token`, shown once), `replaces`, and `previous_valid_until`. While the grace runs, the token list shows `revokes_at` on the old token. Each successful rotation emits a `tokens.rotated` event.
 
 ## Settings
 

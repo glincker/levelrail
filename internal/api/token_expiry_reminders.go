@@ -3,6 +3,7 @@ package api
 import (
 	"context"
 	"errors"
+	"fmt"
 	"log/slog"
 	"slices"
 	"strconv"
@@ -72,12 +73,13 @@ func (rt *Router) RunTokenExpiryReminders(ctx context.Context) error {
 			interval = rt.runtimeSettings.Duration(ctx, runtimesettings.KeyTokensReminderInterval)
 		}
 		now := time.Now()
-		rt.sweepRotationGrace(ctx, now)
+		// A grace sweep error is returned so the loop records it in control plane health.
+		graceErr := rt.sweepRotationGrace(ctx, now)
 		if now.Sub(last) < interval {
-			return nil
+			return graceErr
 		}
 		last = now
-		return rt.SweepTokenExpiry(ctx, now)
+		return errors.Join(graceErr, rt.SweepTokenExpiry(ctx, now))
 	})
 }
 
@@ -145,11 +147,16 @@ func (rt *Router) SweepTokenExpiry(ctx context.Context, now time.Time) error {
 	})
 }
 
-// sweepRotationGrace revokes old tokens whose grace has ended.
-func (rt *Router) sweepRotationGrace(ctx context.Context, now time.Time) {
+// sweepRotationGrace revokes old tokens whose grace has ended. It reports an
+// unreadable state, since rotated tokens then stay valid past their grace.
+func (rt *Router) sweepRotationGrace(ctx context.Context, now time.Time) error {
 	pending, err := rt.tokenStateLoad(ctx, tokenStateRotation)
-	if err != nil || len(pending) == 0 {
-		return
+	if err != nil {
+		rt.logger.Warn("api: rotation grace sweep cannot read pending revocations, rotated tokens stay valid until it can", slog.String("error", err.Error()))
+		return fmt.Errorf("api: rotation grace sweep: %w", err)
+	}
+	if len(pending) == 0 {
+		return nil
 	}
 	var done []string
 	for id, at := range pending {
@@ -163,7 +170,7 @@ func (rt *Router) sweepRotationGrace(ctx context.Context, now time.Time) {
 		done = append(done, id)
 	}
 	if len(done) == 0 {
-		return
+		return nil
 	}
 	if err := rt.tokenStateUpdate(ctx, tokenStateRotation, func(m map[string]int64) {
 		for _, id := range done {
@@ -172,6 +179,7 @@ func (rt *Router) sweepRotationGrace(ctx context.Context, now time.Time) {
 	}); err != nil {
 		rt.logger.Warn("api: clear rotated token state failed", slog.String("error", err.Error()))
 	}
+	return nil
 }
 
 func isTokenGone(err error) bool { return errors.Is(err, store.ErrAPITokenNotFound) }

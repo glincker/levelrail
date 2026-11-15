@@ -19,6 +19,26 @@ const (
 type tokenStateBook struct {
 	mu  sync.Mutex
 	mem map[string]map[string]int64
+	// rotating holds the token ids with a rotation in flight, so one token has at most one.
+	rotating map[string]bool
+}
+
+// claimRotation marks id as rotating; the returned release must run when the rotation ends.
+func (b *tokenStateBook) claimRotation(id string) (func(), bool) {
+	b.mu.Lock()
+	defer b.mu.Unlock()
+	if b.rotating[id] {
+		return nil, false
+	}
+	if b.rotating == nil {
+		b.rotating = map[string]bool{}
+	}
+	b.rotating[id] = true
+	return func() {
+		b.mu.Lock()
+		defer b.mu.Unlock()
+		delete(b.rotating, id)
+	}, true
 }
 
 func (rt *Router) tokenStateLoad(ctx context.Context, key string) (map[string]int64, error) {

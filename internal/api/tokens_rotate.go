@@ -6,6 +6,7 @@ import (
 	"fmt"
 	"log/slog"
 	"net/http"
+	"strings"
 	"time"
 
 	"github.com/GLINCKER/levelrail/internal/authengine"
@@ -43,13 +44,30 @@ func (rt *Router) rotationGrace(ctx context.Context) time.Duration {
 	return rt.runtimeSettings.Duration(ctx, runtimesettings.KeyTokensRotationGrace)
 }
 
+// rotationAfterMint runs between minting the replacement and rechecking the old token; tests set it.
+var rotationAfterMint func(oldID string)
+
 // handleRotateToken handles POST /api/v1/auth/tokens/{id}/rotate: a replacement
 // with the same name, abilities, scope, policies and a fresh lifetime. The old
 // token is revoked after the grace period. Platform tokens are refused.
 func (rt *Router) handleRotateToken(w http.ResponseWriter, r *http.Request) {
+	if _, ok := bearerToken(r); ok {
+		// requireAbility already audits this request with the token as the actor.
+		rt.rotateToken(w, r, "", false)
+		return
+	}
+	ctx := r.Context()
+	callerID, _ := rt.currentSessionUserID(r)
+	rec := &statusRecorder{ResponseWriter: w, status: http.StatusOK}
+	rt.rotateToken(rec, r, callerID, true)
+	rt.recordAudit(ctx, r, AbilityWrite, auditActorSession, callerID, rt.auditActorName(ctx, auditActorSession, callerID, ""), rec.status)
+}
+
+// rotateToken does the rotation for a session caller, or for a bearer token rotating itself.
+func (rt *Router) rotateToken(w http.ResponseWriter, r *http.Request, callerID string, fromSession bool) {
 	ctx, id := r.Context(), r.PathValue("id")
-	callerID, isSession := rt.currentSessionUserID(r)
-	if raw, ok := bearerToken(r); ok && !isSession {
+	if !fromSession {
+		raw, _ := bearerToken(r)
 		self, err := rt.lookupBearerToken(ctx, raw)
 		if err != nil {
 			writeError(w, http.StatusUnauthorized, "authentication required")
@@ -61,8 +79,7 @@ func (rt *Router) handleRotateToken(w http.ResponseWriter, r *http.Request) {
 		}
 		callerID = self.OwnerUserID
 	}
-	admin := rt.callerIsAdmin(r)
-	old, ok := rt.findTokenForRotation(ctx, id, callerID, admin)
+	old, ok := rt.findTokenForRotation(ctx, id, callerID, rt.callerIsAdmin(r))
 	switch {
 	case !ok:
 		writeError(w, http.StatusNotFound, "token not found")
@@ -73,8 +90,31 @@ func (rt *Router) handleRotateToken(w http.ResponseWriter, r *http.Request) {
 	case old.RevokedAt != nil:
 		writeError(w, http.StatusConflict, "token is already revoked")
 		return
+	case isMCPOAuthTokenResource(old):
+		writeError(w, http.StatusConflict, "tokens issued to an MCP client through OAuth sign-in are renewed by that client: reconnect the client instead of rotating")
+		return
 	}
-	expiresAt, problem := rt.rotationExpiry(ctx, old)
+	release, claimed := rt.tokenState.claimRotation(id)
+	if !claimed {
+		writeError(w, http.StatusConflict, "a rotation of this token is already in progress")
+		return
+	}
+	defer release()
+	pending, err := rt.tokenStateLoad(ctx, tokenStateRotation)
+	if err != nil {
+		rt.internalError(w, "api: rotate token: read pending rotations failed", err, slog.String("token_id", id))
+		return
+	}
+	if _, rotating := pending[id]; rotating {
+		writeError(w, http.StatusConflict, "token was already rotated and stays valid only until its grace period ends: use its replacement")
+		return
+	}
+	ownerAbilities, status, problem := rt.rotationAbilitiesProblem(r, old, callerID)
+	if problem != "" {
+		writeError(w, status, problem)
+		return
+	}
+	expiresAt, problem := rt.rotationExpiry(ctx, old, hasAbility(ownerAbilities, AbilityRoot))
 	if problem != "" {
 		writeError(w, http.StatusBadRequest, problem)
 		return
@@ -84,12 +124,35 @@ func (rt *Router) handleRotateToken(w http.ResponseWriter, r *http.Request) {
 		rt.internalError(w, "api: rotate token: mint replacement failed", err, slog.String("token_id", id))
 		return
 	}
+	if rotationAfterMint != nil {
+		rotationAfterMint(id)
+	}
+	// A revoke that landed while minting must not leave a live replacement behind.
+	if cur, live := rt.findTokenForRotation(ctx, id, old.OwnerUserID, false); !live || cur.RevokedAt != nil {
+		rt.abandonReplacement(ctx, fresh.ID)
+		writeError(w, http.StatusConflict, "token was revoked during the rotation, so its replacement was revoked too")
+		return
+	}
 	grace := rt.rotationGrace(ctx)
 	var validUntil *time.Time
 	if grace > 0 {
 		until := time.Now().Add(grace)
 		validUntil = &until
-		if err := rt.tokenStateUpdate(ctx, tokenStateRotation, func(m map[string]int64) { m[id] = until.Unix() }); err != nil {
+		already := false
+		err := rt.tokenStateUpdate(ctx, tokenStateRotation, func(m map[string]int64) {
+			// An existing pending revocation keeps its earlier time.
+			if _, ok := m[id]; ok {
+				already = true
+				return
+			}
+			m[id] = until.Unix()
+		})
+		switch {
+		case err == nil && already:
+			rt.abandonReplacement(ctx, fresh.ID)
+			writeError(w, http.StatusConflict, "token was already rotated and stays valid only until its grace period ends: use its replacement")
+			return
+		case err != nil:
 			validUntil = nil
 			grace = 0
 			rt.logger.Warn("api: rotate token: remember grace failed", slog.String("token_id", id), slog.String("error", err.Error()))
@@ -101,12 +164,50 @@ func (rt *Router) handleRotateToken(w http.ResponseWriter, r *http.Request) {
 			return
 		}
 	}
-	rt.recordAudit(ctx, r, AbilityWrite, auditActorSession, callerID, "", http.StatusCreated)
 	rt.EmitEvent(eventTokenRotated, map[string]any{"token_id": id, "replacement_id": fresh.ID, "name": old.Name})
 	_ = rt.tokenStateUpdate(ctx, tokenStateNotices, func(m map[string]int64) { delete(m, id) })
 	writeJSON(w, http.StatusCreated, rotateTokenResponse{
 		createTokenResponse: createTokenResponse{tokenResource: fresh, Token: raw}, Replaces: id, PreviousValidUntil: validUntil,
 	})
+}
+
+// isMCPOAuthTokenResource reports a token issued through MCP OAuth sign-in: its grant names the old token id.
+func isMCPOAuthTokenResource(t tokenResource) bool {
+	return t.Agent != nil && strings.HasPrefix(t.Agent.Name, mcpOAuthAgentPrefix)
+}
+
+// rotationAbilitiesProblem holds the replacement to the checks a new token
+// gets: every ability must still be held by the owner, and the session-only
+// abilities carry over only when the owner rotates from a signed-in session.
+func (rt *Router) rotationAbilitiesProblem(r *http.Request, old tokenResource, callerID string) ([]string, int, string) {
+	owner, err := rt.auth.GetUserByID(r.Context(), old.OwnerUserID)
+	if errors.Is(err, store.ErrUserNotFound) {
+		return nil, http.StatusForbidden, "the token owner no longer exists, so the token cannot be rotated"
+	}
+	if err != nil {
+		rt.logger.Warn("api: rotate token: load owner failed", slog.String("token_id", old.ID), slog.String("error", err.Error()))
+		return nil, http.StatusInternalServerError, "could not load the token owner"
+	}
+	ownerSession := rt.signedInUserSession(r) && callerID == old.OwnerUserID
+	for _, a := range old.Abilities {
+		switch {
+		case a == AbilitySignInApprove && !ownerSession:
+			return nil, http.StatusForbidden, AbilitySignInApprove + " carries over only when the token owner rotates from a signed-in session"
+		case a == AbilitySecretsReveal && (!ownerSession || !hasAbility(owner.Abilities, AbilityReadSensitive)):
+			return nil, http.StatusForbidden, AbilitySecretsReveal + " carries over only when the token owner rotates from a signed-in session and still holds " + AbilityReadSensitive
+		case a == AbilitySignInApprove || a == AbilitySecretsReveal:
+		case !hasAbility(owner.Abilities, a):
+			return nil, http.StatusForbidden, fmt.Sprintf("the token owner no longer holds %s: create a new token with the abilities they hold now", a)
+		}
+	}
+	return owner.Abilities, 0, ""
+}
+
+// abandonReplacement revokes a replacement that must not outlive a refused rotation.
+func (rt *Router) abandonReplacement(ctx context.Context, id string) {
+	if err := rt.libraryRevokeToken(ctx, id); err != nil && !isTokenGone(err) {
+		rt.logger.Warn("api: rotate token: revoke abandoned replacement failed", slog.String("token_id", id), slog.String("error", err.Error()))
+	}
 }
 
 func (rt *Router) findTokenForRotation(ctx context.Context, id, callerID string, admin bool) (tokenResource, bool) {
@@ -127,20 +228,24 @@ func (rt *Router) findTokenForRotation(ctx context.Context, id, callerID string,
 	return tokenResource{}, false
 }
 
-// rotationExpiry keeps the old lifetime, or no expiry when the old token had none.
-func (rt *Router) rotationExpiry(ctx context.Context, old tokenResource) (*time.Time, string) {
-	if old.ExpiresAt == nil {
-		return nil, ""
-	}
-	days := int((old.ExpiresAt.Sub(old.CreatedAt) + 24*time.Hour - 1) / (24 * time.Hour))
-	if days < 1 {
-		days = rt.defaultTokenLifetimeDays(ctx)
+// rotationExpiry keeps the old lifetime within the policy. A token without an
+// expiry keeps none only while its owner holds root and no maximum lifetime is set.
+func (rt *Router) rotationExpiry(ctx context.Context, old tokenResource, ownerRoot bool) (*time.Time, string) {
+	days := 0
+	if old.ExpiresAt != nil {
+		days = int((old.ExpiresAt.Sub(old.CreatedAt) + 24*time.Hour - 1) / (24 * time.Hour))
+		if days < 1 {
+			days = rt.defaultTokenLifetimeDays(ctx)
+		}
 	}
 	msg, err := rt.tokenLifetimeProblem(ctx, days)
 	if err != nil {
 		return nil, "could not load the security policy"
 	}
-	if msg != "" {
+	if days == 0 && msg == "" && ownerRoot {
+		return nil, ""
+	}
+	if msg != "" || days == 0 {
 		days = rt.defaultTokenLifetimeDays(ctx)
 	}
 	exp := time.Now().Add(time.Duration(days) * 24 * time.Hour)
