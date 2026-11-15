@@ -346,5 +346,89 @@
     "error": "エラー",
     "showLess": "表示を減らす",
     "showMore": "もっと見る"
+  },
+  "buildStages": {
+    "title": "ビルドステージ",
+    "graphLabel": "順に並んだビルドステージ",
+    "waterfallLabel": "1つの時間軸上のステージ所要時間",
+    "loading": "ビルドステージを読み込み中",
+    "error": "ビルドステージを読み込めませんでした。",
+    "retry": "再試行",
+    "empty": "このデプロイにはビルドステージが記録されていません。",
+    "pickHint": "ステージを選ぶとそのログを読めます。",
+    "failedHint": "{{stage}}ステージが失敗しました。ログを開いて原因を確認してください。",
+    "nodeLabel": "{{stage}}、{{status}}、{{duration}}",
+    "barLabel": "{{stage}}のバー、タイムラインの{{percent}}パーセント",
+    "totals": "経過時間 {{wall}}、ステージ合計 {{stages}}。",
+    "gap": {
+      "outside": "ステージの間または外で{{time}}が経過しました。",
+      "overlap": "ステージが{{time}}重なりました。"
+    },
+    "stage": {
+      "source": "ソース",
+      "detect": "検出",
+      "install": "インストール",
+      "build": "ビルド",
+      "export": "エクスポート",
+      "push": "プッシュ"
+    },
+    "status": {
+      "running": "実行中",
+      "done": "完了",
+      "failed": "失敗"
+    },
+    "cache": {
+      "hit": "キャッシュヒット",
+      "miss": "キャッシュミス",
+      "partial": "キャッシュ {{cached}}/{{total}}"
+    },
+    "logTitle": "{{stage}}のログ",
+    "logLabel": "{{stage}}のログ出力",
+    "logEmpty": "このステージの出力はまだありません。",
+    "logError": "ステージのログストリームが切れました。自動で再接続します。",
+    "followOn": "追従中",
+    "followOff": "追従",
+    "copy": "コピー"
+  },
+  "sections": {
+    "summary": "概要",
+    "waterfall": "ウォーターフォール",
+    "rollout": "ロールアウト",
+    "logs": "ログ",
+    "compare": "比較",
+    "navLabel": "実行のセクション"
+  },
+  "run": {
+    "progressLabel": "ステージ別の進捗",
+    "elapsed": "経過 {{time}}",
+    "stageCount": "{{count}}ステージ",
+    "stageFilter": "ステージ",
+    "allStages": "すべてのステージ",
+    "compareBody": "この実行を直前の成功した実行とステージごとに比較します。",
+    "compareCta": "前回の実行と比較",
+    "titleRunning": "ビルド中:",
+    "titleFailed": "失敗:",
+    "doneToast": "実行が完了しました。",
+    "failedToast": "実行が失敗しました。"
+  },
+  "runActions": {
+    "cancel": "ビルドをキャンセル",
+    "cancelWhy": "実行中のビルドを停止します。",
+    "cancelOff": "実行中または待機中のデプロイのみキャンセルできます。",
+    "redeploy": "再デプロイ",
+    "retry": "再試行",
+    "redeployWhy": "このイメージを新たにデプロイします。",
+    "redeployOff": "実行の完了を待ってください。",
+    "rollback": "これにロールバック",
+    "rollbackWhy": "このリリースを再び配信します。",
+    "rollbackOff": "成功済みでライブでないデプロイのみロールバックできます。",
+    "copyLink": "ログのリンクをコピー",
+    "copyLinkWhy": "ログへのリンクをコピーします。",
+    "copied": "コピーしました",
+    "download": "ログをダウンロード",
+    "redeployStarted": "再デプロイを開始しました。",
+    "redeployFailed": "再デプロイできませんでした。",
+    "rollbackStarted": "ロールバックを開始しました。",
+    "rollbackFailed": "ロールバックできませんでした。"
   }
 }

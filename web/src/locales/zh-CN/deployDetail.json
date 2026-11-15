@@ -346,5 +346,89 @@
     "error": "错误",
     "showLess": "收起",
     "showMore": "展开"
+  },
+  "buildStages": {
+    "title": "构建阶段",
+    "graphLabel": "按顺序排列的构建阶段",
+    "waterfallLabel": "同一时间轴上的阶段耗时",
+    "loading": "正在加载构建阶段",
+    "error": "无法加载构建阶段。",
+    "retry": "重试",
+    "empty": "此部署没有记录构建阶段。",
+    "pickHint": "选择一个阶段以查看其日志。",
+    "failedHint": "{{stage}}阶段失败。打开其日志查看原因。",
+    "nodeLabel": "{{stage}},{{status}},{{duration}}",
+    "barLabel": "{{stage}}条形,占时间线的百分之{{percent}}",
+    "totals": "总耗时 {{wall}},各阶段合计 {{stages}}。",
+    "gap": {
+      "outside": "阶段之间或阶段之外经过了{{time}}。",
+      "overlap": "各阶段重叠了{{time}}。"
+    },
+    "stage": {
+      "source": "源码",
+      "detect": "检测",
+      "install": "安装",
+      "build": "构建",
+      "export": "导出",
+      "push": "推送"
+    },
+    "status": {
+      "running": "运行中",
+      "done": "完成",
+      "failed": "失败"
+    },
+    "cache": {
+      "hit": "缓存命中",
+      "miss": "缓存未命中",
+      "partial": "缓存 {{cached}}/{{total}}"
+    },
+    "logTitle": "{{stage}}日志",
+    "logLabel": "{{stage}}日志输出",
+    "logEmpty": "此阶段暂无输出。",
+    "logError": "阶段日志流已断开,将自动重连。",
+    "followOn": "跟随中",
+    "followOff": "跟随",
+    "copy": "复制"
+  },
+  "sections": {
+    "summary": "摘要",
+    "waterfall": "瀑布图",
+    "rollout": "发布",
+    "logs": "日志",
+    "compare": "对比",
+    "navLabel": "运行分区"
+  },
+  "run": {
+    "progressLabel": "各阶段进度",
+    "elapsed": "已用 {{time}}",
+    "stageCount": "{{count}}个阶段",
+    "stageFilter": "阶段",
+    "allStages": "所有阶段",
+    "compareBody": "按阶段将此次运行与上一次成功的运行对比。",
+    "compareCta": "与上一次运行对比",
+    "titleRunning": "构建中:",
+    "titleFailed": "失败:",
+    "doneToast": "运行已结束。",
+    "failedToast": "运行失败。"
+  },
+  "runActions": {
+    "cancel": "取消构建",
+    "cancelWhy": "停止正在进行的构建。",
+    "cancelOff": "只能取消运行中或排队中的部署。",
+    "redeploy": "重新部署",
+    "retry": "重试",
+    "redeployWhy": "重新部署此镜像。",
+    "redeployOff": "请等待运行结束。",
+    "rollback": "回滚到此版本",
+    "rollbackWhy": "重新提供此发布版本。",
+    "rollbackOff": "只能回滚到已成功且未上线的部署。",
+    "copyLink": "复制日志链接",
+    "copyLinkWhy": "复制日志链接。",
+    "copied": "已复制",
+    "download": "下载日志",
+    "redeployStarted": "已开始重新部署。",
+    "redeployFailed": "无法重新部署。",
+    "rollbackStarted": "已触发回滚。",
+    "rollbackFailed": "无法回滚。"
   }
 }

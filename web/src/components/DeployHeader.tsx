@@ -1,10 +1,9 @@
 import { Display } from '@/components/ui/typography'
 import { useState } from 'react'
-import { Link, useNavigate } from '@tanstack/react-router'
+import { Link } from '@tanstack/react-router'
 import { useTranslation } from 'react-i18next'
 import {
   ArrowLeftGlassIcon,
-  BanGlassIcon,
   CheckGlassIcon,
   ClockGlassIcon,
   CommitGraphGlassIcon,
@@ -12,7 +11,6 @@ import {
   ExternalLinkGlassIcon,
   GitBranchGlassIcon,
   GitCompareGlassIcon,
-  RotateCcwGlassIcon,
   UserGlassIcon,
   ZapGlassIcon,
 } from '@thesvg/ui-react'
@@ -25,12 +23,10 @@ import {
 import { commitSubject } from '../lib/deploymentPresentation'
 import { formatDeployDuration } from '../lib/deployDuration'
 import { imageTagOf } from './overview/imageTag'
-import { useRollbackToDeploy } from '../queries/deployControl'
 import { RelativeTime, StatusPill, type Tone } from './kit'
-import { CancelDeployDialog } from './CancelDeployDialog'
+import { DeployRunActions } from './deployDetail/DeployRunActions'
 import { DeployReceiptButton } from './deploy/DeployReceiptButton'
 import { Button } from '@/components/ui/button'
-import { toast } from '@/components/ui/toast'
 
 const SHA_RE = /^[0-9a-f]{40}$/
 
@@ -70,16 +66,7 @@ export function DeployHeader({
   displayStatus?: { tone: Tone; label: string; live?: boolean }
 }) {
   const { t } = useTranslation('deployDetail')
-  const navigate = useNavigate()
-  const rollback = useRollbackToDeploy(appName)
-  const [cancelOpen, setCancelOpen] = useState(false)
   const [copied, setCopied] = useState(false)
-  const cancelable =
-    attempt.status === 'running' ||
-    attempt.status === 'queued' ||
-    attempt.status === 'held' ||
-    attempt.status === 'awaiting_approval'
-  const canRollback = attempt.status === 'succeeded' && !isLive
   const tag = imageTagOf(attempt.image)
   const title =
     (attempt.commit_message && commitSubject(attempt.commit_message)) ||
@@ -94,27 +81,6 @@ export function DeployHeader({
         setCopied(false)
       }, 1500)
     })
-  }
-
-  const doRollback = () => {
-    rollback.mutate(
-      { deployId: attempt.id, confirm: false },
-      {
-        onSuccess: () => {
-          toast.add({ title: 'Rollback triggered.', type: 'success' })
-          void navigate({
-            to: '/apps/$name/overview',
-            params: { name: appName },
-          })
-        },
-        onError: (e) =>
-          toast.add({
-            title: 'Could not roll back.',
-            description: e.message,
-            type: 'error',
-          }),
-      },
-    )
   }
 
   return (
@@ -192,31 +158,11 @@ export function DeployHeader({
         </div>
 
         <div className="flex flex-wrap items-center gap-2">
-          {cancelable ? (
-            <Button
-              variant="outline"
-              size="sm"
-              writeAction
-              onClick={() => {
-                setCancelOpen(true)
-              }}
-            >
-              <BanGlassIcon className="size-5" data-icon="inline-start" />
-              Cancel deploy
-            </Button>
-          ) : null}
-          {canRollback ? (
-            <Button
-              variant="outline"
-              size="sm"
-              writeAction
-              disabled={rollback.isPending}
-              onClick={doRollback}
-            >
-              <RotateCcwGlassIcon className="size-5" data-icon="inline-start" />
-              Roll back to this
-            </Button>
-          ) : null}
+          <DeployRunActions
+            appName={appName}
+            attempt={attempt}
+            isLive={isLive}
+          />
           <Button
             variant="outline"
             size="sm"
@@ -262,16 +208,6 @@ export function DeployHeader({
           ) : null}
         </div>
       </div>
-
-      {cancelable ? (
-        <CancelDeployDialog
-          appName={appName}
-          deployId={attempt.id}
-          running={attempt.status === 'running'}
-          open={cancelOpen}
-          onOpenChange={setCancelOpen}
-        />
-      ) : null}
     </header>
   )
 }

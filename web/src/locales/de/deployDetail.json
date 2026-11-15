@@ -350,5 +350,89 @@
     "error": "Fehler",
     "showLess": "Weniger anzeigen",
     "showMore": "Mehr anzeigen"
+  },
+  "buildStages": {
+    "title": "Build-Stufen",
+    "graphLabel": "Build-Stufen in Reihenfolge",
+    "waterfallLabel": "Stufendauer auf einer Zeitachse",
+    "loading": "Build-Stufen werden geladen",
+    "error": "Die Build-Stufen konnten nicht geladen werden.",
+    "retry": "Erneut versuchen",
+    "empty": "Für dieses Deployment wurden keine Build-Stufen aufgezeichnet.",
+    "pickHint": "Wähle eine Stufe, um ihr Log zu lesen.",
+    "failedHint": "Die Stufe {{stage}} ist fehlgeschlagen. Öffne ihr Log, um den Grund zu sehen.",
+    "nodeLabel": "{{stage}}, {{status}}, {{duration}}",
+    "barLabel": "Balken {{stage}}, {{percent}} Prozent der Zeitachse",
+    "totals": "Gesamtzeit {{wall}}, Summe der Stufen {{stages}}.",
+    "gap": {
+      "outside": "{{time}} lagen zwischen oder außerhalb der Stufen.",
+      "overlap": "Die Stufen überlappten sich um {{time}}."
+    },
+    "stage": {
+      "source": "Quelle",
+      "detect": "Erkennung",
+      "install": "Installation",
+      "build": "Build",
+      "export": "Export",
+      "push": "Push"
+    },
+    "status": {
+      "running": "läuft",
+      "done": "fertig",
+      "failed": "fehlgeschlagen"
+    },
+    "cache": {
+      "hit": "Cache-Treffer",
+      "miss": "Cache-Fehlschlag",
+      "partial": "Cache {{cached}} von {{total}}"
+    },
+    "logTitle": "Log {{stage}}",
+    "logLabel": "Logausgabe {{stage}}",
+    "logEmpty": "Noch keine Ausgabe für diese Stufe.",
+    "logError": "Der Stufen-Logstream ist abgebrochen. Er verbindet sich selbst neu.",
+    "followOn": "Folgt",
+    "followOff": "Folgen",
+    "copy": "Kopieren"
+  },
+  "sections": {
+    "summary": "Zusammenfassung",
+    "waterfall": "Wasserfall",
+    "rollout": "Ausrollen",
+    "logs": "Logs",
+    "compare": "Vergleich",
+    "navLabel": "Abschnitte des Laufs"
+  },
+  "run": {
+    "progressLabel": "Fortschritt nach Stufe",
+    "elapsed": "Verstrichen {{time}}",
+    "stageCount": "{{count}} Stufen",
+    "stageFilter": "Stufe",
+    "allStages": "Alle Stufen",
+    "compareBody": "Vergleiche diesen Lauf Stufe für Stufe mit dem letzten erfolgreichen.",
+    "compareCta": "Mit vorherigem Lauf vergleichen",
+    "titleRunning": "Build läuft:",
+    "titleFailed": "Fehlgeschlagen:",
+    "doneToast": "Der Lauf ist beendet.",
+    "failedToast": "Der Lauf ist fehlgeschlagen."
+  },
+  "runActions": {
+    "cancel": "Build abbrechen",
+    "cancelWhy": "Stoppt den laufenden Build.",
+    "cancelOff": "Nur ein laufendes oder wartendes Deployment kann abgebrochen werden.",
+    "redeploy": "Erneut deployen",
+    "retry": "Wiederholen",
+    "redeployWhy": "Startet ein neues Deployment dieses Images.",
+    "redeployOff": "Warte, bis der Lauf beendet ist.",
+    "rollback": "Auf dieses zurücksetzen",
+    "rollbackWhy": "Liefert dieses Release wieder aus.",
+    "rollbackOff": "Nur ein erfolgreiches, nicht aktives Deployment kann wiederhergestellt werden.",
+    "copyLink": "Loglink kopieren",
+    "copyLinkWhy": "Kopiert einen Link zu den Logs.",
+    "copied": "Kopiert",
+    "download": "Logs herunterladen",
+    "redeployStarted": "Neues Deployment gestartet.",
+    "redeployFailed": "Erneutes Deployen fehlgeschlagen.",
+    "rollbackStarted": "Zurücksetzen ausgelöst.",
+    "rollbackFailed": "Zurücksetzen fehlgeschlagen."
   }
 }

@@ -354,5 +354,89 @@
     "error": "Erro",
     "showLess": "Mostrar menos",
     "showMore": "Mostrar mais"
+  },
+  "buildStages": {
+    "title": "Etapas do build",
+    "graphLabel": "Etapas do build em ordem",
+    "waterfallLabel": "Duração das etapas em um eixo de tempo",
+    "loading": "Carregando etapas do build",
+    "error": "Não foi possível carregar as etapas do build.",
+    "retry": "Tentar de novo",
+    "empty": "Nenhuma etapa de build foi registrada para este deploy.",
+    "pickHint": "Selecione uma etapa para ler o log dela.",
+    "failedHint": "A etapa {{stage}} falhou. Abra o log dela para ver o motivo.",
+    "nodeLabel": "{{stage}}, {{status}}, {{duration}}",
+    "barLabel": "Barra de {{stage}}, {{percent}} por cento da linha do tempo",
+    "totals": "Tempo total {{wall}}, soma das etapas {{stages}}.",
+    "gap": {
+      "outside": "{{time}} passaram entre as etapas ou fora delas.",
+      "overlap": "As etapas se sobrepuseram por {{time}}."
+    },
+    "stage": {
+      "source": "Origem",
+      "detect": "Detecção",
+      "install": "Instalação",
+      "build": "Build",
+      "export": "Exportação",
+      "push": "Envio"
+    },
+    "status": {
+      "running": "em andamento",
+      "done": "concluída",
+      "failed": "falhou"
+    },
+    "cache": {
+      "hit": "Cache acertado",
+      "miss": "Cache perdido",
+      "partial": "Cache {{cached}} de {{total}}"
+    },
+    "logTitle": "Log de {{stage}}",
+    "logLabel": "Saída do log de {{stage}}",
+    "logEmpty": "Ainda não há saída para esta etapa.",
+    "logError": "O fluxo de log da etapa caiu. Ele reconecta sozinho.",
+    "followOn": "Acompanhando",
+    "followOff": "Acompanhar",
+    "copy": "Copiar"
+  },
+  "sections": {
+    "summary": "Resumo",
+    "waterfall": "Cascata",
+    "rollout": "Rollout",
+    "logs": "Logs",
+    "compare": "Comparar",
+    "navLabel": "Seções da execução"
+  },
+  "run": {
+    "progressLabel": "Progresso por etapa",
+    "elapsed": "Decorrido {{time}}",
+    "stageCount": "{{count}} etapas",
+    "stageFilter": "Etapa",
+    "allStages": "Todas as etapas",
+    "compareBody": "Compare esta execução com a última bem-sucedida, etapa por etapa.",
+    "compareCta": "Comparar com a execução anterior",
+    "titleRunning": "Compilando:",
+    "titleFailed": "Falhou:",
+    "doneToast": "A execução terminou.",
+    "failedToast": "A execução falhou."
+  },
+  "runActions": {
+    "cancel": "Cancelar build",
+    "cancelWhy": "Interrompe o build em andamento.",
+    "cancelOff": "Só é possível cancelar um deploy em andamento ou na fila.",
+    "redeploy": "Reimplantar",
+    "retry": "Tentar de novo",
+    "redeployWhy": "Inicia um novo deploy desta imagem.",
+    "redeployOff": "Espere a execução terminar.",
+    "rollback": "Voltar para este",
+    "rollbackWhy": "Serve esta versão novamente.",
+    "rollbackOff": "Só é possível voltar para um deploy bem-sucedido que não esteja ativo.",
+    "copyLink": "Copiar link do log",
+    "copyLinkWhy": "Copia um link para os logs.",
+    "copied": "Copiado",
+    "download": "Baixar logs",
+    "redeployStarted": "Reimplantação iniciada.",
+    "redeployFailed": "Não foi possível reimplantar.",
+    "rollbackStarted": "Reversão iniciada.",
+    "rollbackFailed": "Não foi possível reverter."
   }
 }
