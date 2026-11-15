@@ -7,6 +7,7 @@ import (
 	"strings"
 
 	"github.com/GLINCKER/levelrail/internal/hostfw"
+	"github.com/GLINCKER/levelrail/internal/network"
 )
 
 // doctorCheckFirewallCtx wraps doctorCheckFirewall with the real
@@ -256,7 +257,7 @@ func doctorFirewallOptionsFix() string {
 const doctorMeshDNSIPv6Note = " (IPv4 only, IPv6 is not supported)"
 
 // meshDNSFindingRows turns detected firewall problems into coded warn rows carrying the operator command.
-func meshDNSFindingRows(findings []hostfw.DNSFinding) []doctorCheckResource {
+func meshDNSFindingRows(findings []network.DNSFirewallFinding) []doctorCheckResource {
 	rows := make([]doctorCheckResource, 0, len(findings))
 	for _, f := range findings {
 		rows = append(rows, doctorCheckResource{

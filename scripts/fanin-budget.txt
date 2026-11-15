@@ -70,3 +70,5 @@ kit/semver 32
 kit/ticker 31
 kit/timeutil 171
 kit/upgrade 27
+# connhub reads cloud account auth classes from cloudconn, which resolves secrets
+internal/secretsource 21

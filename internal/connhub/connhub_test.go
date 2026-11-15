@@ -8,7 +8,6 @@ import (
 	"testing"
 	"time"
 
-	"github.com/GLINCKER/levelrail/internal/alerting"
 	"github.com/GLINCKER/levelrail/internal/store"
 )
 
@@ -47,8 +46,8 @@ func (f fakeRegistry) ListRegistryCredentials(context.Context) ([]store.Registry
 
 type fakeNotify struct{}
 
-func (fakeNotify) ListNotificationChannels(context.Context) ([]alerting.NotificationChannel, error) {
-	return []alerting.NotificationChannel{{ID: "chn_1", Name: "ops", Kind: alerting.NotifySlack, NotifyURL: "https://hooks.example/SECRET-TOKEN", InteractiveSecret: "SECRET-SIGN", Enabled: true}}, nil
+func (fakeNotify) ListNotificationChannels(context.Context) ([]NotifyChannel, error) {
+	return []NotifyChannel{{ID: "chn_1", Name: "ops", Kind: "slack", Enabled: true}}, nil
 }
 
 type fakeWebhooks struct{}

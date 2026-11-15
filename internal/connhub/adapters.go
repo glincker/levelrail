@@ -205,7 +205,7 @@ func (s *Service) listNotify(ctx context.Context) ([]Connection, error) {
 	out := make([]Connection, 0, len(chans))
 	for _, c := range chans {
 		conn := Connection{
-			Ref: "notify:" + c.ID, Kind: KindNotify, Provider: string(c.Kind), Label: c.Name, AuthMethod: AuthURLSecret,
+			Ref: "notify:" + c.ID, Kind: KindNotify, Provider: c.Kind, Label: c.Name, AuthMethod: AuthURLSecret,
 			Health: HealthUnknown, Capabilities: []string{CapNotify}, CreatedAt: parseTime(c.CreatedAt),
 		}
 		if !c.Enabled {

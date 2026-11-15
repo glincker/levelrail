@@ -3,11 +3,20 @@ package connhub
 import (
 	"context"
 
-	"github.com/GLINCKER/levelrail/internal/alerting"
 	"github.com/GLINCKER/levelrail/internal/store"
 )
 
-// The narrow readers below are satisfied by *store.DB (and *alerting.DB for notify), so tests use
+// NotifyChannel is the slice of a notification channel the hub shows, kept here so this package
+// does not import the alerting package and its large dependency tree.
+type NotifyChannel struct {
+	ID        string
+	Name      string
+	Kind      string
+	Enabled   bool
+	CreatedAt string
+}
+
+// The narrow readers below are satisfied by *store.DB (notify goes through an adapter in the api layer), so tests use
 // small fakes. A nil source is skipped: its kind simply lists nothing.
 type (
 	// GitReader reads forge connections and their recorded health.
@@ -25,7 +34,7 @@ type (
 	}
 	// NotifyReader reads notification channels.
 	NotifyReader interface {
-		ListNotificationChannels(ctx context.Context) ([]alerting.NotificationChannel, error)
+		ListNotificationChannels(ctx context.Context) ([]NotifyChannel, error)
 	}
 	// SecretReader reads named secret provider connections.
 	SecretReader interface {

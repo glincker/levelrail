@@ -51,7 +51,7 @@ func (rt *Router) connectionHub() *connhub.Service {
 	src.Webhooks, _ = st.(connhub.WebhookReader)
 	src.Meta, _ = st.(connhub.MetaReader)
 	if rt.notificationChannels != nil {
-		src.Notify = rt.notificationChannels
+		src.Notify = notifyChannelReader{rt.notificationChannels}
 	}
 	return connhub.New(src, func(ctx context.Context) time.Duration {
 		if rt.runtimeSettings == nil {
@@ -59,6 +59,21 @@ func (rt *Router) connectionHub() *connhub.Service {
 		}
 		return rt.runtimeSettings.Duration(ctx, runtimesettings.KeyConnectionExpiryWarn)
 	})
+}
+
+// notifyChannelReader maps alerting channels to the hub's narrow view, dropping secrets and URLs.
+type notifyChannelReader struct{ src NotificationChannels }
+
+func (n notifyChannelReader) ListNotificationChannels(ctx context.Context) ([]connhub.NotifyChannel, error) {
+	chans, err := n.src.ListNotificationChannels(ctx)
+	if err != nil {
+		return nil, err
+	}
+	out := make([]connhub.NotifyChannel, 0, len(chans))
+	for _, c := range chans {
+		out = append(out, connhub.NotifyChannel{ID: c.ID, Name: c.Name, Kind: string(c.Kind), Enabled: c.Enabled, CreatedAt: c.CreatedAt})
+	}
+	return out, nil
 }
 
 func (rt *Router) handleListConnections(w http.ResponseWriter, r *http.Request) {
