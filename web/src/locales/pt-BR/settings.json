@@ -3712,6 +3712,18 @@
         "message": "A regra de alerta não tem métrica, comparador ou limite.",
         "fix": "Defina os três, com comparador >, <, >= ou <=."
       },
+      "dns_name_invalid": {
+        "message": "Um nome DNS do app não é um nome simples, é um curinga ou excede um limite.",
+        "fix": "Use letras minúsculas, dígitos e hífens, como shop, dentro dos limites de dns.internal_*."
+      },
+      "dns_name_reserved": {
+        "message": "O nome DNS do app está na lista reservada.",
+        "fix": "Escolha outro nome."
+      },
+      "dns_name_conflict": {
+        "message": "Outro app já usa este nome DNS.",
+        "fix": "Escolha um nome que nenhum outro app use."
+      },
       "registry_credential_not_found": {
         "message": "Um build nomeia uma credencial de registro que não existe no plano de controle.",
         "fix": "Crie primeiro a credencial com registry-credentials create, ou corrija o nome."
