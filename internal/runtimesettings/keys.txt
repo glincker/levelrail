@@ -378,6 +378,10 @@ projects.clone_placeholder_domain
 projects.default_environment
 projects.default_environment_name
 provision.allow_unknown_price
+provision.capabilities.cache_ttl_seconds
+provision.capabilities.probe_concurrency
+provision.capabilities.recheck_interval_minutes
+provision.capabilities.refresh_min_interval_seconds
 provision.enroll_timeout
 provision.eur_to_usd_rate
 provision.max_monthly_price_usd

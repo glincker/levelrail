@@ -14,7 +14,7 @@ type openAPIRoute struct {
 	Description string
 }
 
-// openAPIRoutes holds all 2176 routes known to scripts/gen-api-reference at
+// openAPIRoutes holds all 2177 routes known to scripts/gen-api-reference at
 // generation time. Run `go run ./scripts/gen-api-reference` after changing
 // any routes*.go registration and commit the result.
 var openAPIRoutes = []openAPIRoute{
@@ -1667,6 +1667,7 @@ var openAPIRoutes = []openAPIRoute{
 	{Method: "GET", Path: "/api/v1/node-providers", Ability: "AbilityRead", Group: "Other", Handler: "handleListNodeProviders", Description: "Provider connections: seeing status and catalogs is a plain read (no credential value is ever returned); connecting, testing and disconnecting is write:sensitive so a team can be granted exactly that. Creating VMs and join tokens stays AbilityRoot below."},
 	{Method: "POST", Path: "/api/v1/node-providers", Ability: "AbilityWriteSensitive", Group: "Other", Handler: "handleSetNodeProviderCredential", Description: ""},
 	{Method: "DELETE", Path: "/api/v1/node-providers/{provider}", Ability: "AbilityWriteSensitive", Group: "Other", Handler: "handleDisconnectNodeProvider", Description: ""},
+	{Method: "GET", Path: "/api/v1/node-providers/{provider}/capabilities", Ability: "AbilityRoot", Group: "Other", Handler: "handleGetNodeProviderCapabilities", Description: ""},
 	{Method: "GET", Path: "/api/v1/node-providers/{provider}/regions", Ability: "AbilityRead", Group: "Other", Handler: "handleListNodeProviderRegions", Description: ""},
 	{Method: "GET", Path: "/api/v1/node-providers/{provider}/sizes", Ability: "AbilityRead", Group: "Other", Handler: "handleListNodeProviderSizes", Description: ""},
 	{Method: "POST", Path: "/api/v1/node-providers/{provider}/test", Ability: "AbilityWriteSensitive", Group: "Other", Handler: "handleTestNodeProvider", Description: ""},

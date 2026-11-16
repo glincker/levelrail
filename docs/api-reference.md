@@ -2407,6 +2407,7 @@ Routes that do not fit an existing group.
 | GET | /api/v1/clusters/{name}/deployments/{app} | AbilityRoot | handleGetK8sDeploymentStatus |
 | GET | /api/v1/clusters/{name}/deployments/{app}/logs | AbilityRoot | handleGetK8sDeploymentLogs |
 | DELETE | /api/v1/clusters/{name}/deployments/{app} | AbilityRoot | handleRemoveK8sDeployment |
+| GET | /api/v1/node-providers/{provider}/capabilities | AbilityRoot | handleGetNodeProviderCapabilities |
 | POST | /mcp | Public |  |
 
 ## See also

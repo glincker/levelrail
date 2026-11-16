@@ -52,7 +52,7 @@ var nodeProviderMethods = map[string][]string{
 // shown when a test is refused by the provider.
 var nodeProviderTestPermissions = map[string]string{
 	"hetzner":      "a Read & Write project API token (Hetzner has no finer scopes)",
-	"digitalocean": "a token with the droplet read and create scopes, plus ssh_key read and create",
+	"digitalocean": "a token with the regions read, sizes read, droplet read, droplet create and droplet delete scopes",
 	"aws":          "ec2:DescribeRegions, ec2:DescribeInstanceTypes, ec2:DescribeInstances, ec2:RunInstances, ec2:TerminateInstances, ec2:CreateTags, ec2:DescribeImages and the security group and VPC actions; for assume_role the base identity needs sts:AssumeRole on the role",
 	"azure":        "Reader on the subscription plus Virtual Machine Contributor and Network Contributor on the resource group",
 	"gcp":          "compute.regions.list, compute.machineTypes.list, compute.instances.create, compute.instances.get, compute.instances.delete",
@@ -306,6 +306,9 @@ func (rt *Router) testNodeProviderValue(ctx context.Context, provider, value str
 	if _, err := p.ListRegions(ctx); err != nil {
 		var pe *provision.ProviderError
 		if errors.As(err, &pe) && (pe.Status == http.StatusUnauthorized || pe.Status == http.StatusForbidden) {
+			if se, ok := provision.ScopeFromError(provider, "regions.read", err); ok {
+				return false, "The provider refused the credential (" + http.StatusText(pe.Status) + "). It needs the " + se.Needs + " scope. Full set: " + nodeProviderTestPermissions[provider] + "."
+			}
 			return false, "The provider refused the credential (" + http.StatusText(pe.Status) + "). It needs: " + nodeProviderTestPermissions[provider] + "."
 		}
 		return false, "Could not complete a read-only call to the provider: " + sanitizeProviderErr(err)
@@ -391,6 +394,7 @@ func (rt *Router) handleSetNodeProviderCredential(w http.ResponseWriter, r *http
 		return
 	}
 	rt.nodeProviderCatalog.invalidate(req.Provider)
+	rt.providerCaps.invalidate(req.Provider)
 	rt.saveNodeProviderConnection(r, req)
 	writeJSON(w, http.StatusOK, rt.nodeProviderResourceFor(r.Context(), req.Provider))
 }
@@ -509,5 +513,6 @@ func (rt *Router) handleDisconnectNodeProvider(w http.ResponseWriter, r *http.Re
 		}
 	}
 	rt.nodeProviderCatalog.invalidate(provider)
+	rt.providerCaps.invalidate(provider)
 	w.WriteHeader(http.StatusNoContent)
 }
