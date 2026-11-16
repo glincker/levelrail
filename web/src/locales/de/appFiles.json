@@ -43,5 +43,10 @@
     "saveFailed": "Datei konnte nicht gespeichert werden.",
     "deleted": "Datei gelöscht.",
     "deleteFailed": "Datei konnte nicht gelöscht werden."
+  },
+  "volumes": {
+    "emptyTitle": "Keine Volumes",
+    "empty": "Daten, die im Container geschrieben werden, gehen beim erneuten Deployment verloren.",
+    "add": "Volume hinzufügen"
   }
 }

@@ -7,6 +7,7 @@ import { AppMaintenanceToggle } from '../../../components/maintenance/AppMainten
 import { DomainEditor } from '../../../components/DomainEditor'
 import { AppIngressLimitsCard } from '../../../components/AppIngressLimitsCard'
 import { ShieldRecommendedCard } from '../../../components/ShieldRecommendedCard'
+import { showDomainExtras } from '../../../lib/appTabState'
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card'
 import { Skeleton } from '@/components/ui/skeleton'
 
@@ -28,8 +29,12 @@ function DomainsSection() {
     <div className="space-y-4">
       <AppMaintenanceToggle appName={name} />
       <DomainEditor app={app} />
-      <ShieldRecommendedCard appName={name} />
-      <AppIngressLimitsCard appName={name} />
+      {showDomainExtras(app.domains) ? (
+        <>
+          <ShieldRecommendedCard appName={name} />
+          <AppIngressLimitsCard appName={name} />
+        </>
+      ) : null}
     </div>
   )
 }

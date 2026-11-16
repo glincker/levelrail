@@ -43,5 +43,10 @@
     "saveFailed": "No se pudo guardar el archivo.",
     "deleted": "Archivo eliminado.",
     "deleteFailed": "No se pudo eliminar el archivo."
+  },
+  "volumes": {
+    "emptyTitle": "Sin volúmenes",
+    "empty": "Los datos escritos dentro del contenedor se pierden al volver a desplegar.",
+    "add": "Añadir volumen"
   }
 }

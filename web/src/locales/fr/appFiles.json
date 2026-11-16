@@ -43,5 +43,10 @@
     "saveFailed": "Impossible d'enregistrer le fichier.",
     "deleted": "Fichier supprimé.",
     "deleteFailed": "Impossible de supprimer le fichier."
+  },
+  "volumes": {
+    "emptyTitle": "Aucun volume",
+    "empty": "Les données écrites dans le conteneur sont perdues au redéploiement.",
+    "add": "Ajouter un volume"
   }
 }
