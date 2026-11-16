@@ -2395,6 +2395,13 @@ Routes that do not fit an existing group.
 | POST | /api/v1/builds/kill-all | AbilityWriteSensitive | handleKillAllBuilds |
 | GET | /api/v1/builds/runners | AbilityRead | handleListBuildRunners |
 | DELETE | /api/v1/node-provisions/{id} | AbilityRoot | handleDestroyNodeProvision |
+| GET | /api/v1/clusters | AbilityRoot | handleListK8sClusters |
+| POST | /api/v1/clusters | AbilityRoot | handleConnectK8sCluster |
+| GET | /api/v1/clusters/{name} | AbilityRoot | handleGetK8sCluster |
+| DELETE | /api/v1/clusters/{name} | AbilityRoot | handleDisconnectK8sCluster |
+| POST | /api/v1/clusters/{name}/test | AbilityRoot | handleTestK8sCluster |
+| GET | /api/v1/clusters/{name}/nodes | AbilityRoot | handleListK8sNodes |
+| GET | /api/v1/clusters/{name}/namespaces | AbilityRoot | handleListK8sNamespaces |
 | POST | /mcp | Public |  |
 
 ## See also

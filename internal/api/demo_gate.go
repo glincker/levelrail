@@ -53,6 +53,11 @@ var demoReadDenylist = []string{
 	"/api/v1/system/cli-console/commands",
 	"/api/v1/system/cli-console/session",
 	"/api/v1/firewall/host",
+	// Connected cluster records and live reads.
+	"/api/v1/clusters",
+	"/api/v1/clusters/{name}",
+	"/api/v1/clusters/{name}/nodes",
+	"/api/v1/clusters/{name}/namespaces",
 	// Bulk exports and downloads.
 	"/api/v1/apps/{name}/env/export",
 	"/api/v1/export",

@@ -14,7 +14,7 @@ type openAPIRoute struct {
 	Description string
 }
 
-// openAPIRoutes holds all 2164 routes known to scripts/gen-api-reference at
+// openAPIRoutes holds all 2171 routes known to scripts/gen-api-reference at
 // generation time. Run `go run ./scripts/gen-api-reference` after changing
 // any routes*.go registration and commit the result.
 var openAPIRoutes = []openAPIRoute{
@@ -1203,6 +1203,13 @@ var openAPIRoutes = []openAPIRoute{
 	{Method: "PUT", Path: "/api/v1/cleanup/{id}/mode", Ability: "AbilityRoot", Group: "Other", Handler: "handleSetCleanupMode", Description: ""},
 	{Method: "POST", Path: "/api/v1/cleanup/{id}/preview", Ability: "AbilityRoot", Group: "Other", Handler: "handlePreviewCleanup", Description: "A preview reads row counts only, but it is the same decision surface as a run, so it shares the Root gate."},
 	{Method: "POST", Path: "/api/v1/cleanup/{id}/run", Ability: "AbilityRoot", Group: "Other", Handler: "handleRunCleanup", Description: "A run deletes data permanently."},
+	{Method: "GET", Path: "/api/v1/clusters", Ability: "AbilityRoot", Group: "Other", Handler: "handleListK8sClusters", Description: ""},
+	{Method: "POST", Path: "/api/v1/clusters", Ability: "AbilityRoot", Group: "Other", Handler: "handleConnectK8sCluster", Description: ""},
+	{Method: "DELETE", Path: "/api/v1/clusters/{name}", Ability: "AbilityRoot", Group: "Other", Handler: "handleDisconnectK8sCluster", Description: ""},
+	{Method: "GET", Path: "/api/v1/clusters/{name}", Ability: "AbilityRoot", Group: "Other", Handler: "handleGetK8sCluster", Description: ""},
+	{Method: "GET", Path: "/api/v1/clusters/{name}/namespaces", Ability: "AbilityRoot", Group: "Other", Handler: "handleListK8sNamespaces", Description: ""},
+	{Method: "GET", Path: "/api/v1/clusters/{name}/nodes", Ability: "AbilityRoot", Group: "Other", Handler: "handleListK8sNodes", Description: ""},
+	{Method: "POST", Path: "/api/v1/clusters/{name}/test", Ability: "AbilityRoot", Group: "Other", Handler: "handleTestK8sCluster", Description: ""},
 	{Method: "GET", Path: "/api/v1/compliance/access-reviews", Ability: "AbilityRoot", Group: "Other", Handler: "handleListAccessReviews", Description: ""},
 	{Method: "POST", Path: "/api/v1/compliance/access-reviews", Ability: "AbilityRoot", Group: "Other", Handler: "handleCreateAccessReview", Description: ""},
 	{Method: "GET", Path: "/api/v1/compliance/access-reviews/{id}", Ability: "AbilityRoot", Group: "Other", Handler: "handleGetAccessReview", Description: ""},
