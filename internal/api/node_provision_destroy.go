@@ -44,6 +44,11 @@ func (rt *Router) handleDestroyNodeProvision(w http.ResponseWriter, r *http.Requ
 		return
 	}
 
+	if p.Status == store.NodeProvisionStatusCreating && p.ProviderServerID == "" {
+		writeError(w, http.StatusConflict, "the server is still being created, retry the destroy shortly")
+		return
+	}
+
 	force := r.URL.Query().Get("force") == "true"
 	if p.NodeID != "" && !force {
 		if busy, err := rt.provisionedNodeHasWorkloads(r.Context(), p.NodeID); err != nil {
@@ -61,13 +66,16 @@ func (rt *Router) handleDestroyNodeProvision(w http.ResponseWriter, r *http.Requ
 			writeError(w, status, msg)
 			return
 		}
-		if err := rt.markProvisionDestroying(r.Context(), p); err != nil {
+		if err := rt.markProvisionDestroying(r.Context(), p); errors.Is(err, errProvisionStatusChanged) {
+			writeError(w, http.StatusConflict, "the provision changed while destroying, retry the destroy")
+			return
+		} else if err != nil {
 			rt.internalError(w, "api: destroy node provision: mark destroying failed", err, slog.String("provision_id", id))
 			return
 		}
 		if err := deleteRecordedServer(r.Context(), provisioner, p.ProviderServerID); err != nil {
-			// The provider error can echo request detail, so only the id goes to the log.
-			rt.logger.Error("api: destroy node provision: provider delete failed", slog.String("provision_id", id), slog.String("provider", p.Provider))
+			// The provider error can echo request detail, so only its status code is logged.
+			rt.logger.Error("api: destroy node provision: provider delete failed", slog.String("provision_id", id), slog.String("provider", p.Provider), slog.Int("provider_status", providerErrorStatus(err)))
 			rt.auditNodeProvisionDestroy(r, p, http.StatusBadGateway)
 			writeError(w, http.StatusBadGateway, "the provider could not delete the server, retry the destroy")
 			return
@@ -75,7 +83,13 @@ func (rt *Router) handleDestroyNodeProvision(w http.ResponseWriter, r *http.Requ
 	}
 
 	now := time.Now()
-	if err := rt.nodeProvisions.UpdateNodeProvisionStatus(r.Context(), id, store.NodeProvisionStatusDestroyed, "", p.IPAddress, p.NodeID, "", now); err != nil {
+	notCreating := func(c store.NodeProvision) bool {
+		return c.Status != store.NodeProvisionStatusCreating || c.ProviderServerID != ""
+	}
+	if _, err := rt.transitionNodeProvision(r.Context(), id, notCreating, store.NodeProvisionStatusDestroyed, "", p.IPAddress, p.NodeID, ""); errors.Is(err, errProvisionStatusChanged) {
+		writeError(w, http.StatusConflict, "the server is still being created, retry the destroy shortly")
+		return
+	} else if err != nil {
 		rt.internalError(w, "api: destroy node provision: record destroyed failed", err, slog.String("provision_id", id))
 		return
 	}
@@ -93,7 +107,11 @@ func (rt *Router) markProvisionDestroying(ctx context.Context, p store.NodeProvi
 	if p.Status == store.NodeProvisionStatusDestroying {
 		return nil
 	}
-	return rt.nodeProvisions.UpdateNodeProvisionStatus(ctx, p.ID, store.NodeProvisionStatusDestroying, "", p.IPAddress, p.NodeID, "", time.Now())
+	notCreating := func(c store.NodeProvision) bool {
+		return c.Status != store.NodeProvisionStatusDestroyed && (c.Status != store.NodeProvisionStatusCreating || c.ProviderServerID != "")
+	}
+	_, err := rt.transitionNodeProvision(ctx, p.ID, notCreating, store.NodeProvisionStatusDestroying, "", p.IPAddress, p.NodeID, "")
+	return err
 }
 
 // deleteRecordedServer treats a provider 404 as success so a retry after a

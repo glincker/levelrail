@@ -2,6 +2,7 @@ package runtimesettings
 
 import (
 	"fmt"
+	"math"
 	"strconv"
 	"strings"
 	"time"
@@ -25,7 +26,7 @@ func decimalCheck(allowEmpty bool) func(string) error {
 			return nil
 		}
 		f, err := strconv.ParseFloat(v, 64)
-		if err != nil || f < 0 || f > 1e6 {
+		if err != nil || math.IsNaN(f) || math.IsInf(f, 0) || f < 0 || f > 1e6 {
 			return fmt.Errorf("value must be a decimal number from 0 to 1000000")
 		}
 		return nil

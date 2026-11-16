@@ -8,6 +8,7 @@ import (
 	"net/http"
 	"net/http/httptest"
 	"strings"
+	"sync"
 	"testing"
 	"time"
 
@@ -61,6 +62,8 @@ var errNodeProviderSecretNotFound = context.DeadlineExceeded // any distinct sen
 
 // fakeNodeProvisioner is a hand-written fake for NodeProvisioner.
 type fakeNodeProvisioner struct {
+	mu sync.Mutex
+
 	regions []provision.Region
 	sizes   []provision.Size
 
@@ -97,17 +100,23 @@ func (f *fakeNodeProvisioner) ListSizes(context.Context, string) ([]provision.Si
 }
 
 func (f *fakeNodeProvisioner) CreateServer(_ context.Context, opts provision.CreateOpts) (string, string, error) {
+	f.mu.Lock()
+	defer f.mu.Unlock()
 	f.createCalls++
 	f.lastCreateOpts = opts
 	return f.createServerID, f.createIPAddr, f.createErr
 }
 
 func (f *fakeNodeProvisioner) GetServer(context.Context, string) (provision.ServerStatus, string, error) {
+	f.mu.Lock()
+	defer f.mu.Unlock()
 	f.getCalls++
 	return f.getStatus, f.getIPAddr, f.getErr
 }
 
 func (f *fakeNodeProvisioner) DeleteServer(_ context.Context, id string) error {
+	f.mu.Lock()
+	defer f.mu.Unlock()
 	f.deletedIDs = append(f.deletedIDs, id)
 	return f.deleteErr
 }
