@@ -42,6 +42,7 @@ export interface ConnectClusterInput {
   server?: string
   token?: string
   ca?: string
+  allow_cluster_admin?: boolean
 }
 
 export interface DeployK8sInput {

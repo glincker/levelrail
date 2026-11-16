@@ -77,4 +77,41 @@ describe('ConnectClusterForm', () => {
     })
     expect(screen.queryByText('apiVersion: v1')).not.toBeInTheDocument()
   })
+  it('shows a warning and sends allow_cluster_admin only when ticked', async () => {
+    const user = userEvent.setup()
+    const fetchMock = vi.fn(() =>
+      Promise.resolve(
+        new Response(JSON.stringify({ name: 'lab', server: 'https://x' }), {
+          status: 201,
+          headers: { 'Content-Type': 'application/json' },
+        }),
+      ),
+    )
+    vi.stubGlobal('fetch', fetchMock)
+    wrap(<ConnectClusterForm existing={[]} />)
+
+    expect(screen.queryByRole('note')).not.toBeInTheDocument()
+    await user.type(screen.getByLabelText('Name'), 'lab')
+    await user.type(screen.getByLabelText('Server URL'), 'https://x:6443')
+    await user.click(screen.getByLabelText('Service account token'))
+    await user.paste('tok')
+    await user.click(
+      screen.getByRole('checkbox', {
+        name: /Accept a cluster-admin credential/,
+      }),
+    )
+    expect(screen.getByRole('note')).toHaveTextContent(
+      'k8s.allow_cluster_admin',
+    )
+    await user.click(screen.getByRole('button', { name: 'Connect' }))
+
+    await waitFor(() => {
+      expect(fetchMock).toHaveBeenCalled()
+    })
+    const calls = fetchMock.mock.calls as unknown as [string, RequestInit][]
+    const body = JSON.parse(calls[0]?.[1].body as string) as {
+      allow_cluster_admin?: boolean
+    }
+    expect(body.allow_cluster_admin).toBe(true)
+  })
 })

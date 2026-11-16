@@ -31,7 +31,9 @@
     "done": "Cluster connected.",
     "serverPlaceholder": "https://203.0.113.10:6443",
     "caPlaceholder": "-----BEGIN CERTIFICATE-----",
-    "kubeconfigPlaceholder": "apiVersion: v1"
+    "kubeconfigPlaceholder": "apiVersion: v1",
+    "allowClusterAdmin": "Accept a cluster-admin credential",
+    "allowClusterAdminWarning": "Weakens security: this credential can do anything in the cluster. Prefer a namespaced Role from levelrail clusters rbac. It only works while the runtime setting k8s.allow_cluster_admin is on."
   },
   "auth": {
     "token": "Token",

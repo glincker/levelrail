@@ -31,7 +31,9 @@
     "done": "Clúster conectado.",
     "serverPlaceholder": "https://203.0.113.10:6443",
     "caPlaceholder": "-----BEGIN CERTIFICATE-----",
-    "kubeconfigPlaceholder": "apiVersion: v1"
+    "kubeconfigPlaceholder": "apiVersion: v1",
+    "allowClusterAdmin": "Aceptar una credencial de administrador del clúster",
+    "allowClusterAdminWarning": "Reduce la seguridad: esta credencial puede hacer cualquier cosa en el clúster. Es mejor un Role de espacio de nombres de levelrail clusters rbac. Solo funciona mientras el ajuste k8s.allow_cluster_admin esté activado."
   },
   "auth": {
     "token": "Token",

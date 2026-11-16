@@ -31,7 +31,9 @@
     "done": "集群已连接。",
     "serverPlaceholder": "https://203.0.113.10:6443",
     "caPlaceholder": "-----BEGIN CERTIFICATE-----",
-    "kubeconfigPlaceholder": "apiVersion: v1"
+    "kubeconfigPlaceholder": "apiVersion: v1",
+    "allowClusterAdmin": "接受集群管理员凭据",
+    "allowClusterAdminWarning": "会削弱安全性：此凭据可在集群中执行任何操作。建议使用 levelrail clusters rbac 生成的命名空间 Role。仅在运行时设置 k8s.allow_cluster_admin 开启时有效。"
   },
   "auth": {
     "token": "令牌",

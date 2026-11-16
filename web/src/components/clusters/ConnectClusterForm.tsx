@@ -2,6 +2,7 @@ import { useState, type FormEvent } from 'react'
 import { useTranslation } from 'react-i18next'
 import { PlusGlassIcon } from '@thesvg/ui-react'
 import { Button } from '@/components/ui/button'
+import { Checkbox } from '@/components/ui/checkbox'
 import { Input } from '@/components/ui/input'
 import { Label } from '@/components/ui/label'
 import { SecretInput } from '@/components/ui/secret-input'
@@ -29,6 +30,7 @@ export function ConnectClusterForm({
   const [ca, setCa] = useState('')
   const [kubeconfig, setKubeconfig] = useState('')
   const [context, setContext] = useState('')
+  const [allowAdmin, setAllowAdmin] = useState(false)
 
   const effectiveName = nameTouched ? name : suggestClusterName(server)
   const taken = existing.includes(effectiveName)
@@ -48,12 +50,13 @@ export function ConnectClusterForm({
     setCa('')
     setKubeconfig('')
     setContext('')
+    setAllowAdmin(false)
   }
 
   function submit(e: FormEvent) {
     e.preventDefault()
     if (!canSubmit) return
-    const input: ConnectClusterInput =
+    const base: ConnectClusterInput =
       mode === 'token'
         ? {
             name: effectiveName,
@@ -66,6 +69,9 @@ export function ConnectClusterForm({
             kubeconfig,
             ...(context.trim() ? { context: context.trim() } : {}),
           }
+    const input: ConnectClusterInput = allowAdmin
+      ? { ...base, allow_cluster_admin: true }
+      : base
     connect.mutate(input, {
       onSuccess: () => {
         toast.add({ title: t('connect.done'), type: 'success' })
@@ -75,7 +81,8 @@ export function ConnectClusterForm({
   }
 
   const errorText = connect.error?.message ?? ''
-  const blocked = /refused|unusable/i.test(errorText)
+  const adminRefused = /cluster-admin/i.test(errorText)
+  const blocked = !adminRefused && /refused|unusable/i.test(errorText)
 
   return (
     <form
@@ -203,6 +210,27 @@ export function ConnectClusterForm({
           ) : null}
         </div>
       ) : null}
+
+      <div className="flex flex-col gap-1">
+        <label
+          htmlFor="cluster-allow-admin"
+          className="flex items-center gap-2 text-sm"
+        >
+          <Checkbox
+            id="cluster-allow-admin"
+            checked={allowAdmin}
+            onCheckedChange={(checked) => {
+              setAllowAdmin(checked === true)
+            }}
+          />
+          {t('connect.allowClusterAdmin')}
+        </label>
+        {allowAdmin ? (
+          <p role="note" className="text-xs text-destructive">
+            {t('connect.allowClusterAdminWarning')}
+          </p>
+        ) : null}
+      </div>
 
       <div className="flex justify-end">
         <Button type="submit" size="sm" disabled={!canSubmit}>

@@ -31,7 +31,9 @@
     "done": "クラスターを接続しました。",
     "serverPlaceholder": "https://203.0.113.10:6443",
     "caPlaceholder": "-----BEGIN CERTIFICATE-----",
-    "kubeconfigPlaceholder": "apiVersion: v1"
+    "kubeconfigPlaceholder": "apiVersion: v1",
+    "allowClusterAdmin": "クラスター管理者の認証情報を許可する",
+    "allowClusterAdminWarning": "セキュリティが弱まります。この認証情報はクラスター内で何でも実行できます。levelrail clusters rbac で作成した名前空間限定のRoleを推奨します。ランタイム設定 k8s.allow_cluster_admin が有効な間のみ機能します。"
   },
   "auth": {
     "token": "トークン",

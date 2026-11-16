@@ -31,7 +31,9 @@
     "done": "Cluster connecté.",
     "serverPlaceholder": "https://203.0.113.10:6443",
     "caPlaceholder": "-----BEGIN CERTIFICATE-----",
-    "kubeconfigPlaceholder": "apiVersion: v1"
+    "kubeconfigPlaceholder": "apiVersion: v1",
+    "allowClusterAdmin": "Accepter un identifiant administrateur du cluster",
+    "allowClusterAdminWarning": "Réduit la sécurité : cet identifiant peut tout faire dans le cluster. Préférez un Role limité à un namespace via levelrail clusters rbac. Ne fonctionne que si le réglage k8s.allow_cluster_admin est activé."
   },
   "auth": {
     "token": "Jeton",
