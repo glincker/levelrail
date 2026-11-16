@@ -50,7 +50,7 @@ import {
 import { labelOf } from '@/lib/labelOf'
 
 export type ProviderId =
-  'hetzner' | 'digitalocean' | 'aws' | 'azure' | 'gcp' | 'oracle'
+  'hetzner' | 'vultr' | 'digitalocean' | 'aws' | 'azure' | 'gcp' | 'oracle'
 type Step =
   | 'method'
   | 'region'
@@ -63,6 +63,7 @@ type Step =
 
 const PROVIDER_LABELS: Record<ProviderId, string> = {
   hetzner: 'Hetzner',
+  vultr: 'Vultr',
   digitalocean: 'DigitalOcean',
   aws: 'AWS',
   azure: 'Azure',
