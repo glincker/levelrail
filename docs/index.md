@@ -2,7 +2,7 @@
 title: "Levelrail documentation"
 icon: "/assets/icons/house.svg"
 sidebarTitle: "What is Levelrail"
-description: Self-hosted deployment platform. Push to git, get a running app with TLS, logs, metrics and rollback. One Go binary, no Kubernetes.
+description: Self-hosted deployment platform. Git deploys, one-click templates, edge and TLS, cloud nodes, managed databases and built-in observability. One Go binary.
 "og:image": "https://docs.levelrail.com/public/og/index.png"
 "twitter:image": "https://docs.levelrail.com/public/og/index.png"
 "og:url": "https://docs.levelrail.com/index"
@@ -24,6 +24,20 @@ Levelrail turns one or more Linux servers into a private cloud. Push to a git re
     The reconciler, the node agent and how state flows.
   </Card>
 </CardGroup>
+
+## What is in the product
+
+| Area | Contents |
+| --- | --- |
+| Deploy | Git deploys from GitHub, GitLab, Bitbucket, Gitea and Forgejo. Dockerfile, Compose and Railpack builds. Canaries, split tests, previews, approvals, rollback. See [Deploying apps](/deploying-apps). |
+| Templates | 574 catalog entries, 346 with a recorded real-engine pass and 228 marked preview. See [Template catalog](/template-catalog). |
+| Networking and edge | Embedded ingress, automatic TLS, per-domain traffic controls, firewall with browser challenge, per-app rate limits, replica balancing. See [Domains and ingress](/domains-and-ingress) and [Firewall](/firewall). |
+| Cloud and nodes | Provision nodes at Hetzner, DigitalOcean, AWS, Azure, GCP or Oracle Cloud, or join any Linux host. Connect existing Kubernetes clusters (experimental, off by default). See [Node provisioning](/node-provisioning) and [Cloud integrations](/cloud-integrations). |
+| Data and backups | 13 database engines in code (9 live-verified), backups to S3-compatible, R2 or local targets, restore drills and point-in-time recovery for Postgres. See [Managed databases](/managed-databases). |
+| Observability | Metrics, logs, log archive, OTLP ingest, status page, alerts to 18 channel kinds. See [Monitors](/monitors) and [Status page](/status-page). |
+| Automation | CLI, HTTP API, Terraform and OpenTofu provider, pipelines, 11 per-app integrations, 259 MCP tools. See [CLI reference](/cli-reference), [API reference](/api-reference) and [Terraform provider](/terraform-provider). |
+
+Every feature is labelled stable, beta or experimental in [Feature status](/feature-status).
 
 ## Identity and access
 

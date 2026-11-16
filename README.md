@@ -1,8 +1,8 @@
 <div align="center">
 <img src="docs/assets/brand/levelrail-default.svg" alt="Levelrail logo" width="56" height="56">
 <h1>Levelrail</h1>
-<p><strong>Your own Vercel, on your own servers.</strong><br>
-Push to deploy with HTTPS, logs, metrics and one-step rollback. One Go binary, no Kubernetes. Apache 2.0.</p>
+<p><strong>A self-hosted deployment platform for your own servers and cloud accounts.</strong><br>
+Git deploys, 346 proven one-click templates, edge and TLS, nodes at six clouds, managed databases with backups with restore drills, and built-in observability. One Go binary, Apache 2.0.</p>
 <p>
   <a href="https://github.com/glincker/levelrail/stargazers"><img src="https://img.shields.io/github/stars/glincker/levelrail?style=flat&logo=github" alt="GitHub stars"></a>
   <a href="LICENSE"><img src="https://img.shields.io/github/license/glincker/levelrail" alt="License: Apache 2.0"></a>
@@ -27,21 +27,27 @@ Push to deploy with HTTPS, logs, metrics and one-step rollback. One Go binary, n
 <!-- i18n-nav:start -->
 <p>English &middot; <a href="docs/i18n/README.zh-Hans.md">简体中文</a> &middot; <a href="docs/i18n/README.es.md">Español</a> &middot; <a href="docs/i18n/README.pt-BR.md">Português (BR)</a> &middot; <a href="docs/i18n/README.de.md">Deutsch</a> &middot; <a href="docs/i18n/README.fr.md">Français</a> &middot; <a href="docs/i18n/README.ja.md">日本語</a></p>
 <!-- i18n-nav:end -->
-<picture><source media="(prefers-color-scheme: dark)" srcset="docs/assets/brand/social/github-social-1280x640.jpg"><img src="docs/assets/brand/social/github-social-1280x640-light.jpg" alt="Levelrail: your own Vercel, on your server. The lightweight, self-hosted alternative to Vercel, Heroku and Coolify." width="880"></picture>
+<picture><source media="(prefers-color-scheme: dark)" srcset="docs/assets/brand/social/github-social-1280x640.jpg"><img src="docs/assets/brand/social/github-social-1280x640-light.jpg" alt="Levelrail: a self-hosted deployment platform with Git deploys, templates, edge, databases and observability." width="880"></picture>
 </div>
 
-Turn any Linux server into a private cloud: Git deploys, HTTPS, databases with verified backups, metrics, logs and alerts, without Kubernetes and without a monitoring stack to bolt on. Pre-1.0: single-server is production ready, multi-node is beta ([Feature status](docs/feature-status.md)).
+Levelrail turns Linux servers into a private cloud and works with the Kubernetes clusters and cloud accounts you already have. Pre-1.0: single-server is production ready, multi-node is beta. Every feature carries a stable, beta or experimental label in [Feature status](docs/feature-status.md), and the labels below follow it.
 
 <p align="center"><img src="docs/assets/demos/product-tour.gif" alt="Levelrail dashboard tour: fleet overview, apps list, deploy history and built-in metrics" width="880"></p>
 
-<table>
-  <tr>
-    <td align="center"><h3>200 MB</h3><sub>idle RAM, 1.5% of one CPU<br><a href="docs/benchmarks.md">measured, method included</a></sub></td>
-    <td align="center"><h3>1 binary</h3><sub>Go control plane, Docker runtime<br>no Kubernetes</sub></td>
-    <td align="center"><h3>360</h3><sub>one-click service templates<br><a href="docs/templates-status.md">smoke-tested</a></sub></td>
-    <td align="center"><h3>240+</h3><sub>MCP tools for coding agents<br><a href="docs/mcp.md">scoped, read-only by default</a></sub></td>
-  </tr>
-</table>
+## What you get
+
+| Area | What is in the 1.4.0 tree |
+| --- | --- |
+| **Deploy** | Git push or webhook deploys from GitHub, GitLab, Bitbucket, Gitea and Forgejo. Dockerfile, Compose and Railpack builds with a build queue. Readiness-gated rollouts, canaries, split tests, previews per pull request, one-step rollback, approvals and deploy freezes. Functions in Node, Python or Go ([beta](docs/feature-status.md)). |
+| **Templates** | 574 catalog entries in 22 categories, 346 with a recorded real-engine pass and 228 marked preview (installable, no recorded pass yet). [Catalog](docs/template-catalog.md), [how templates work](docs/templates-and-registry.md). |
+| **Networking and edge** | Embedded ingress with automatic TLS (HTTP-01 and DNS-01 wildcards), per-domain headers, forwarders, geo rules, caching and redirects. Firewall rules, IP lists, browser challenge, bot lists, attack mode and per-app rate limits ([beta](docs/abuse-defense.md)). Round-robin balancing across replicas. Private networks and a WireGuard mesh ([beta](docs/multi-node.md)). |
+| **Cloud and nodes** | Provision nodes at Hetzner, DigitalOcean, AWS, Azure, GCP or Oracle Cloud, or join any Linux host with a single-use token over mTLS ([provisioning](docs/node-provisioning.md), beta). DNS at Cloudflare and Route53, image registries on ECR, Artifact Registry and ACR ([per-cloud status](docs/cloud-integrations.md)). Connect existing Kubernetes clusters and deploy to them (experimental, off by default), and [import Kubernetes manifests](docs/import-kubernetes.md). |
+| **Data and backups** | 13 database engines in code, 9 live-verified and 4 built but not yet live-verified. Backups to S3-compatible, R2 or local targets, with restore drills and point-in-time recovery for Postgres ([managing databases](docs/managing-databases.md)). |
+| **Observability** | Built-in metrics, log search and log archive, OTLP ingest, a public status page, deploy traces and traffic export. Alerts to 18 notification channel kinds. HTTP, TCP, heartbeat and TLS uptime monitors (experimental). |
+| **Security and access** | Passwords, passkeys, TOTP, OAuth sign-in with 20 providers plus generic OIDC, SAML and SCIM (beta, off by default), IAM policies, teams, a hash-chained audit log and encrypted secrets. Signed releases. |
+| **Automation and integrations** | `levelrail-cli`, an HTTP API, a Terraform and OpenTofu provider, YAML platform as code (experimental), CI pipelines, 11 per-app integrations (Sentry, PostHog, Datadog and more), signed plugins for notification channels, and 259 MCP tools for coding agents. A mail server template with mailboxes and DNS records is available as an experimental feature. |
+
+Footprint: about 200 MB idle RAM and 1.5% of one CPU on a 2 vCPU box ([measured, method included](docs/benchmarks.md)). Runs on Linux amd64 and arm64 with systemd and Docker.
 
 ## Install
 
@@ -86,23 +92,6 @@ Then run `levelrail-cli doctor` and `levelrail-cli status` and report anything t
 Do not write any token or password to a file or into this chat.
 ```
 
-## Why Levelrail
-
-**Deploys that do not surprise you. Servers that explain themselves. Agents that stay in their lane.**
-
-<table>
-  <tr>
-    <td width="33%" valign="top"><b>Safe deploys</b><br><i>Ship on a Friday.</i><br>Readiness-gated rollouts, canaries, approvals, one-step rollback.</td>
-    <td width="33%" valign="top"><b>Observability built in</b><br><i>See everything. Install nothing.</i><br>Metrics, logs, traces and alerts. No Grafana stack.</td>
-    <td width="33%" valign="top"><b>Agents, not SSH</b><br><i>No inbound ports to defend.</i><br>Nodes dial out over mTLS. No shelling out to <code>docker</code>.</td>
-  </tr>
-  <tr>
-    <td width="33%" valign="top"><b>Verified backups</b><br><i>A backup you never restored is a hope.</i><br>Every backup is re-downloaded and checksummed, with restore drills.</td>
-    <td width="33%" valign="top"><b>Secure by default</b><br><i>Secure before you configure.</i><br>Hash-chained audit log, encrypted secrets, passkeys, signed releases.</td>
-    <td width="33%" valign="top"><b>Made for AI agents</b><br><i>Let agents deploy. Keep the keys.</i><br>MCP server plus a skill. AI is never in the reconcile path.</td>
-  </tr>
-</table>
-
 <table>
   <tr>
     <td width="33%" valign="top"><a href="docs/product-tour.mdx"><picture><source media="(prefers-color-scheme: dark)" srcset="docs/assets/screenshots/dashboard-home.png"><img src="docs/assets/screenshots/dashboard-home-light.png" alt="Levelrail dashboard home: fleet health, requests and recent deploys" loading="lazy"></picture></a><br><sub><b>The control plane at a glance</b></sub></td>
@@ -124,7 +113,7 @@ All screenshots are captured from a real running control plane. More in the [Pro
 
 | You are | You get | Start |
 | --- | --- | --- |
-| A solo developer with one VPS | Git deploys, HTTPS in one click and about 200 MB idle, no Kubernetes | `curl -fsSL https://levelrail.com/install.sh \| sudo sh` |
+| A solo developer with one VPS | Git deploys, HTTPS in one click and about 200 MB idle | `curl -fsSL https://levelrail.com/install.sh \| sudo sh` |
 | Building with Claude Code, Cursor or another coding agent | An MCP server that deploys, waits, diagnoses and rolls back inside the token's limits | `npx skills add https://github.com/glincker/levelrail --skill levelrail` |
 | An agency or team | Approvals, deploy freezes, IAM policies, a verifiable audit log, OIDC sign-in | [Identity and access](docs/identity-and-access.md) |
 | On Coolify, Dokploy, CapRover or Dokku today | A dry run first, and the old server keeps serving | `levelrail-cli import platform coolify --url https://coolify.example.com --dry-run` |
@@ -200,7 +189,7 @@ Maintain an open-source app? Add a one-click button: [Deploy button](docs/deploy
 
 ## FAQ
 
-**Does it need Kubernetes?** No. One Go binary with a Docker runtime.
+**Does it need Kubernetes?** No. The control plane is one Go binary with a Docker runtime. If you already run Kubernetes, you can connect a cluster and deploy to it (experimental, off by default).
 
 **What does it cost?** Nothing. Apache 2.0, one edition, no license key. You pay for your own servers ([Pricing](docs/pricing.md)).
 
