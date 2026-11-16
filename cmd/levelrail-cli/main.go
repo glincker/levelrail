@@ -42,6 +42,9 @@ func runDispatch(prog string, args []string, stdout, stderr io.Writer, lookupEnv
 	}
 	args, debug := extractDebugFlag(args)
 	args, noColorFlag = extractNoColorFlag(args)
+	args, insecureHTTP := extractInsecureHTTPFlag(args)
+	// Always set so a previous run() in this process never leaks the opt-in.
+	apiclient.SetInsecureHTTP(insecureHTTP)
 	args, scopeFlags = extractScopeFlags(expandOutputShorthand(args))
 	installServerTrust(prog, args, stderr, lookupEnv)
 	apiclient.ResetServerPins()
@@ -638,6 +641,8 @@ Usage:
 
 Auth and target:
   --no-color              disable ANSI color (also NO_COLOR and CI mode)
+  --insecure-http         allow sending the token over plain http to a non-loopback host
+                          (default: refused; APP_INSECURE_HTTP=1 does the same)
   --debug                 trace every outgoing request's method, URL, and
                           response status/timing to stderr (never stdout);
                           Authorization and any token are always redacted
