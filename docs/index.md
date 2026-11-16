@@ -30,7 +30,7 @@ Levelrail turns one or more Linux servers into a private cloud. Push to a git re
 | Area | Contents |
 | --- | --- |
 | Deploy | Git deploys from GitHub, GitLab, Bitbucket, Gitea and Forgejo. Dockerfile, Compose and Railpack builds. Canaries, split tests, previews, approvals, rollback. See [Deploying apps](/deploying-apps). |
-| Templates | 574 catalog entries, 346 with a recorded real-engine pass and 228 marked preview. See [Template catalog](/template-catalog). |
+| Templates | 574 catalog entries (565 active), 346 with a recorded real-engine pass and 228 marked preview. See [Template catalog](/template-catalog). |
 | Networking and edge | Embedded ingress, automatic TLS, per-domain traffic controls, firewall with browser challenge, per-app rate limits, replica balancing. See [Domains and ingress](/domains-and-ingress) and [Firewall](/firewall). |
 | Cloud and nodes | Provision nodes at Hetzner, DigitalOcean, AWS, Azure, GCP or Oracle Cloud, or join any Linux host. Connect existing Kubernetes clusters (experimental, off by default). See [Node provisioning](/node-provisioning) and [Cloud integrations](/cloud-integrations). |
 | Data and backups | 13 database engines in code (9 live-verified), backups to S3-compatible, R2 or local targets, restore drills and point-in-time recovery for Postgres. See [Managed databases](/managed-databases). |

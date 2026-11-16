@@ -2,7 +2,7 @@
 <img src="docs/assets/brand/levelrail-default.svg" alt="Levelrail logo" width="56" height="56">
 <h1>Levelrail</h1>
 <p><strong>A self-hosted deployment platform for your own servers and cloud accounts.</strong><br>
-Git deploys, 346 proven one-click templates, edge and TLS, nodes at six clouds, managed databases with restore-drilled backups, and built-in observability. One Go binary, Apache 2.0.</p>
+Git deploys, 565 one-click templates (346 proven on a real engine), edge and TLS, nodes at six clouds, managed databases with restore-drilled backups, and built-in observability. One Go binary, Apache 2.0.</p>
 <p>
   <a href="https://github.com/glincker/levelrail/stargazers"><img src="https://img.shields.io/github/stars/glincker/levelrail?style=flat&logo=github" alt="GitHub stars"></a>
   <a href="LICENSE"><img src="https://img.shields.io/github/license/glincker/levelrail" alt="License: Apache 2.0"></a>
@@ -39,7 +39,7 @@ Levelrail turns Linux servers into a private cloud and works with the Kubernetes
 | Area | What is in the 1.4.0 tree |
 | --- | --- |
 | **Deploy** | Git push or webhook deploys from GitHub, GitLab, Bitbucket, Gitea and Forgejo. Dockerfile, Compose and Railpack builds with a build queue. Readiness-gated rollouts, canaries, split tests, previews per pull request, one-step rollback, approvals and deploy freezes. Functions in Node, Python or Go ([beta](docs/feature-status.md)). |
-| **Templates** | 574 catalog entries in 22 categories, 346 with a recorded real-engine pass and 228 marked preview (installable, no recorded pass yet). [Catalog](docs/template-catalog.md), [how templates work](docs/templates-and-registry.md). |
+| **Templates** | 574 catalog entries (565 active, 9 deprecated) in 22 categories, 346 with a recorded real-engine pass and 228 marked preview (installable, no recorded pass yet). [Catalog](docs/template-catalog.md), [how templates work](docs/templates-and-registry.md). |
 | **Networking and edge** | Embedded ingress with automatic TLS (HTTP-01 and DNS-01 wildcards), per-domain headers, forwarders, geo rules, caching and redirects. Firewall rules, IP lists, browser challenge, bot lists, attack mode and per-app rate limits ([beta](docs/abuse-defense.md)). Round-robin balancing across replicas. Private networks and a WireGuard mesh ([beta](docs/multi-node.md)). |
 | **Cloud and nodes** | Provision nodes at Hetzner, DigitalOcean, AWS, Azure, GCP or Oracle Cloud, or join any Linux host with a single-use token over mTLS ([provisioning](docs/node-provisioning.md), beta). DNS at Cloudflare and Route53, image registries on ECR, Artifact Registry and ACR ([per-cloud status](docs/cloud-integrations.md)). Connect existing Kubernetes clusters and deploy to them (experimental, off by default), and [import Kubernetes manifests](docs/import-kubernetes.md). |
 | **Data and backups** | 13 database engines in code, 9 live-verified and 4 built but not yet live-verified. Backups to S3-compatible, R2 or local targets, with restore drills and point-in-time recovery for Postgres ([managing databases](docs/managing-databases.md)). |
