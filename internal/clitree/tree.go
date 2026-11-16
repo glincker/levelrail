@@ -352,7 +352,7 @@ var Tree = map[string]*Node{
 		"add": nil, "move": nil, "moves": nil, "drains": nil, "resources": nil, "labels": nil, "taint": nil, "zones": nil, "simulate": nil, "failure": nil, "failure-policy": {Subs: map[string]*Node{"get": nil, "set": nil}}, "lost": nil, "failure-resolve": nil, "placement": nil, "allocations": nil, "connectivity": nil,
 		"mesh": nil, "rotate-key": nil, "rejoin-mesh": nil, "reenroll-token": nil, "revoke-cert": nil, "security": nil,
 		"cert":           {Subs: map[string]*Node{"renew": nil, "drill": nil}},
-		"providers":      {Subs: map[string]*Node{"list": nil, "set-credential": nil, "connect": nil, "regions": nil, "sizes": nil, "test": nil, "disconnect": nil}},
+		"providers":      {Subs: map[string]*Node{"list": nil, "set-credential": nil, "connect": nil, "regions": nil, "sizes": nil, "test": nil, "capabilities": nil, "disconnect": nil}},
 		"provision":      nil,
 		"provisions":     {Subs: map[string]*Node{"list": nil, "show": nil, "destroy": nil}},
 		"ssh-provision":  nil,

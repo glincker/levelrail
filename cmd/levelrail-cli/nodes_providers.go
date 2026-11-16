@@ -9,6 +9,7 @@ import (
 	"strings"
 	"text/tabwriter"
 
+	"github.com/GLINCKER/levelrail/internal/apiclient"
 	"golang.org/x/term"
 )
 
@@ -35,6 +36,8 @@ func runNodesProviders(prog string, args []string, stdout, stderr io.Writer, loo
 		return runNodesProvidersCatalog(prog, args[1:], stdout, stderr, lookupEnv, true)
 	case "test":
 		return runNodesProvidersTest(prog, args[1:], stdout, stderr, lookupEnv)
+	case "capabilities":
+		return runNodesProvidersCapabilities(prog, args[1:], stdout, stderr, lookupEnv)
 	case "disconnect":
 		return runNodesProvidersDisconnect(prog, args[1:], stdout, stderr, lookupEnv)
 	default:
@@ -51,6 +54,7 @@ func nodesProvidersUsage(prog string) string {
   %[1]s nodes providers regions --provider NAME [flags]                       list the provider's regions
   %[1]s nodes providers sizes --provider NAME [--region ID] [flags]           list the provider's sizes (oracle Flex sizes are ids like VM.Standard.A1.Flex:1:6)
   %[1]s nodes providers test --provider NAME [flags]                          run a read-only connection test against the stored credential
+  %[1]s nodes providers capabilities --provider NAME [--refresh] [flags]      show which permissions the stored token has (granted, missing, unknown)
   %[1]s nodes providers disconnect --provider NAME [flags]                    remove the stored credential
   %[1]s nodes providers set-credential --provider NAME --provider-token TOKEN [flags]   store (or replace) a provider's API token without testing
 
@@ -385,4 +389,52 @@ func runNodesProvidersDisconnect(prog string, args []string, stdout, stderr io.W
 		return exitCodeForError(err)
 	}
 	return exitOK
+}
+
+func runNodesProvidersCapabilities(prog string, args []string, stdout, stderr io.Writer, lookupEnv func(string) (string, bool)) int {
+	fs, tokenFlagP, apiURLFlagP, profileFlagP, jsonOutP, outputFlagP, queryFlagP := apiFlagSet(prog, "nodes providers capabilities", "print the capabilities as JSON to stdout and nothing else", stderr)
+	var provider string
+	var refresh bool
+	fs.StringVar(&provider, "provider", "", "provider to check (required)")
+	fs.BoolVar(&refresh, "refresh", false, "run a new read-only check instead of using the cached result")
+	tokenFlag, apiURLFlag, profileFlag, jsonOut, of, exitCode, ok := parseAPIFlags(fs, args, apiFlagPtrs{tokenFlagP, apiURLFlagP, profileFlagP, jsonOutP, outputFlagP, queryFlagP}, prog, stderr)
+	if !ok {
+		return exitCode
+	}
+	if provider == "" {
+		return reportError(stdout, stderr, jsonOut, newValidationError("--provider is required"))
+	}
+	client := apiClientFromFlags(prog, apiURLFlag, tokenFlag, profileFlag, lookupEnv)
+	res, err := client.GetNodeProviderCapabilities(context.Background(), provider, refresh)
+	if err != nil {
+		return reportError(stdout, stderr, jsonOut, fmt.Errorf("provider %q capabilities: %w", provider, err))
+	}
+	if err := renderResult(stdout, of.Format, of.Query, res, func() { printProviderCapabilities(stdout, res) }); err != nil {
+		_, _ = fmt.Fprintln(stderr, err)
+		return exitCodeForError(err)
+	}
+	return exitOK
+}
+
+// printProviderCapabilities groups by state so the scopes to add come first.
+func printProviderCapabilities(out io.Writer, res apiclient.ProviderCapabilities) {
+	_, _ = fmt.Fprintf(out, "%s permissions, checked %s\n", res.Provider, res.CheckedAt.Format("2006-01-02 15:04"))
+	if res.LiveCheckError != "" {
+		_, _ = fmt.Fprintf(out, "note: %s\n", res.LiveCheckError)
+	}
+	tw := tabwriter.NewWriter(out, 0, 2, 2, ' ', 0)
+	_, _ = fmt.Fprintln(tw, "STATE\tCAPABILITY\tSCOPE\tUSED BY")
+	for _, state := range []string{"missing", "unknown", "granted"} {
+		for _, c := range res.Capabilities {
+			if c.State != state {
+				continue
+			}
+			scope := c.Needs
+			if state == "missing" && scope != "" {
+				scope = "add " + scope
+			}
+			_, _ = fmt.Fprintf(tw, "%s\t%s\t%s\t%s\n", c.State, c.ID, scope, strings.Join(c.UsedBy, ", "))
+		}
+	}
+	_ = tw.Flush()
 }

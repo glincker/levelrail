@@ -177,3 +177,35 @@ func TestRun_NodesProviders_Help(t *testing.T) {
 		t.Errorf("stdout = %q, want usage text", stdout)
 	}
 }
+
+func TestRun_NodesProvidersCapabilities(t *testing.T) {
+	var gotPath, gotQuery string
+	srv := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		gotPath, gotQuery = r.URL.Path, r.URL.RawQuery
+		_, _ = io.WriteString(w, `{"provider":"digitalocean","method":"probe","checked_at":"2026-11-16T10:00:00Z","capabilities":[`+
+			`{"id":"regions.read","state":"granted","needs":"regions:read","used_by":["provision form"]},`+
+			`{"id":"billing.balance","state":"missing","needs":"billing:read","used_by":["spend"]},`+
+			`{"id":"instances.create","state":"unknown","needs":"droplet:create","used_by":["provision server"]}]}`)
+	}))
+	defer srv.Close()
+
+	stdout, _ := runCLIExpectOK(t, []string{"nodes", "providers", "capabilities", "--provider", "digitalocean", "--refresh", "--api-url", srv.URL})
+	if gotPath != "/api/v1/node-providers/digitalocean/capabilities" || gotQuery != "refresh=1" {
+		t.Fatalf("request = %s?%s", gotPath, gotQuery)
+	}
+	if !strings.Contains(stdout, "add billing:read") || !strings.Contains(stdout, "unknown") || !strings.Contains(stdout, "granted") {
+		t.Fatalf("stdout = %q", stdout)
+	}
+	if strings.Index(stdout, "missing") > strings.Index(stdout, "granted") {
+		t.Fatalf("missing must be listed first: %q", stdout)
+	}
+
+	jsonOut, _ := runCLIExpectOK(t, []string{"nodes", "providers", "capabilities", "--provider", "digitalocean", "--json", "--api-url", srv.URL})
+	var got map[string]any
+	if err := json.Unmarshal([]byte(jsonOut), &got); err != nil || got["provider"] != "digitalocean" {
+		t.Fatalf("json = %q err=%v", jsonOut, err)
+	}
+	if gotQuery != "" {
+		t.Fatalf("no refresh flag must not send refresh, query=%q", gotQuery)
+	}
+}

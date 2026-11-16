@@ -22,6 +22,31 @@ type NodeProviderResource struct {
 	LastTestedAt   *time.Time `json:"last_tested_at,omitempty"`
 	LastTestOK     *bool      `json:"last_test_ok,omitempty"`
 	LastTestDetail string     `json:"last_test_detail,omitempty"`
+
+	Capabilities *ProviderCapabilities `json:"capabilities,omitempty"`
+}
+
+// ProviderCapability mirrors internal/provision's Capability.
+type ProviderCapability struct {
+	ID         string    `json:"id"`
+	Group      string    `json:"group"`
+	State      string    `json:"state"`
+	Evidence   string    `json:"evidence"`
+	Needs      string    `json:"needs"`
+	UsedBy     []string  `json:"used_by"`
+	ObservedAt time.Time `json:"observed_at"`
+}
+
+// ProviderCapabilities mirrors internal/provision's ProviderCapabilities.
+type ProviderCapabilities struct {
+	Provider       string               `json:"provider"`
+	AccountID      string               `json:"account_id"`
+	Method         string               `json:"method"`
+	CheckedAt      time.Time            `json:"checked_at"`
+	Cached         bool                 `json:"cached"`
+	NextCheckAt    *time.Time           `json:"next_check_at,omitempty"`
+	LiveCheckError string               `json:"live_check_error,omitempty"`
+	Capabilities   []ProviderCapability `json:"capabilities"`
 }
 
 // NodeProviderTestResult mirrors internal/api's nodeProviderTestResult.
@@ -29,6 +54,10 @@ type NodeProviderTestResult struct {
 	OK       bool      `json:"ok"`
 	Message  string    `json:"message"`
 	TestedAt time.Time `json:"tested_at"`
+	Code     string    `json:"code,omitempty"`
+	Needs    string    `json:"needs,omitempty"`
+
+	Capabilities *ProviderCapabilities `json:"capabilities,omitempty"`
 }
 
 // NodeProviderRegionResource mirrors internal/api's
@@ -185,5 +214,17 @@ func (c *Client) DestroyNodeProvision(ctx context.Context, id string, force bool
 	}
 	var out NodeProvisionResource
 	err := c.do(ctx, http.MethodDelete, path, nil, &out)
+	return out, err
+}
+
+// GetNodeProviderCapabilities calls GET /api/v1/node-providers/{provider}/capabilities,
+// with ?refresh=1 to force a new probe.
+func (c *Client) GetNodeProviderCapabilities(ctx context.Context, provider string, refresh bool) (ProviderCapabilities, error) {
+	path := nodeProvidersPath() + "/" + PathEscape(provider) + "/capabilities"
+	if refresh {
+		path += "?refresh=1"
+	}
+	var out ProviderCapabilities
+	err := c.do(ctx, http.MethodGet, path, nil, &out)
 	return out, err
 }

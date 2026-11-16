@@ -127,7 +127,7 @@ Flags:
 
 ## levelrail-cli nodes providers
 
-Subcommands: connect, disconnect, list, regions, set-credential, sizes, test
+Subcommands: capabilities, connect, disconnect, list, regions, set-credential, sizes, test
 
 ```
 Usage:
@@ -136,6 +136,7 @@ Usage:
   levelrail-cli nodes providers regions --provider NAME [flags]                       list the provider's regions
   levelrail-cli nodes providers sizes --provider NAME [--region ID] [flags]           list the provider's sizes (oracle Flex sizes are ids like VM.Standard.A1.Flex:1:6)
   levelrail-cli nodes providers test --provider NAME [flags]                          run a read-only connection test against the stored credential
+  levelrail-cli nodes providers capabilities --provider NAME [--refresh] [flags]      show which permissions the stored token has (granted, missing, unknown)
   levelrail-cli nodes providers disconnect --provider NAME [flags]                    remove the stored credential
   levelrail-cli nodes providers set-credential --provider NAME --provider-token TOKEN [flags]   store (or replace) a provider's API token without testing
 
