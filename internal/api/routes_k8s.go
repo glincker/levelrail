@@ -11,4 +11,6 @@ func (rt *Router) registerK8sRoutes(mux *http.ServeMux) {
 	mux.HandleFunc("GET "+k8sClustersPath+"/{name}", rt.requireAbility(AbilityRoot, rt.handleGetK8sCluster))
 	mux.HandleFunc("DELETE "+k8sClustersPath+"/{name}", rt.requireAbility(AbilityRoot, rt.handleDisconnectK8sCluster))
 	mux.HandleFunc("POST "+k8sClustersPath+"/{name}/test", rt.requireAbility(AbilityRoot, rt.handleTestK8sCluster))
+	mux.HandleFunc("GET "+k8sClustersPath+"/{name}/nodes", rt.requireAbility(AbilityRoot, rt.handleListK8sNodes))
+	mux.HandleFunc("GET "+k8sClustersPath+"/{name}/namespaces", rt.requireAbility(AbilityRoot, rt.handleListK8sNamespaces))
 }
