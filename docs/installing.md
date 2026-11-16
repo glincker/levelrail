@@ -754,7 +754,7 @@ Likely cause: Docker is not running, the socket has wrong permissions, or the so
 
 How to confirm: run `sudo docker ps` to confirm Docker itself works, or check Settings > General > Docker status in the dashboard. Also try `levelrail-cli status --json` to see the full error.
 
-Fix: start Docker with `sudo systemctl start docker`, fix socket permissions with `sudo chmod 666 /var/run/docker.sock`, or set `DOCKER_HOST` if the socket is at a non-standard path and re-run the control plane.
+Fix: start Docker with `sudo systemctl start docker`, check that the socket exists and is owned by root with group `docker` and mode 660 (`ls -l /var/run/docker.sock`), or set `DOCKER_HOST` if the socket is at a non-standard path and re-run the control plane. Do not make the socket world-writable (for example with `chmod 666`): any local user could then control Docker, which is the same as root on the host.
 
 ### The setup link does not work or the token expired
 
