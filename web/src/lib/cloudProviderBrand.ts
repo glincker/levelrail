@@ -4,7 +4,7 @@ import { nodeProviderBrand } from './providerBrands'
 // firewalls, volumes, DOKS) adds its id here, registers a component in
 // components/cloudProvider/sections.tsx and lists the id per provider below.
 export type CloudProviderFeature =
-  'connection' | 'capabilities' | 'servers' | 'create'
+  'connection' | 'capabilities' | 'servers' | 'create' | 'resources' | 'spend'
 
 export const CLOUD_PROVIDER_IDS = [
   'digitalocean',
@@ -56,7 +56,7 @@ export const CLOUD_PROVIDERS: Record<
     tokenUrl: 'https://cloud.digitalocean.com/account/api/tokens',
     docsUrl:
       'https://docs.digitalocean.com/reference/api/create-personal-access-token/',
-    features: BASE,
+    features: [...BASE, 'resources'],
     quickFactRegions: true,
   },
   hetzner: {

@@ -256,5 +256,44 @@
   "breadcrumb": {
     "integrations": "Integrations",
     "cloudProviders": "Cloud providers"
+  },
+  "refresh": {
+    "label": "Atualizar",
+    "refreshing": "Atualizando",
+    "rateLimited": "Acabou de ser atualizado. Tente novamente em {{seconds}} segundos.",
+    "rateLimitedNoWait": "Acabou de ser atualizado. Tente novamente em instantes.",
+    "error": "Não foi possível atualizar: {{message}}"
+  },
+  "resources": {
+    "title": "{{servers}} na conta",
+    "asOf": "em",
+    "filter": {
+      "label": "Filtrar por origem",
+      "all": "Todos",
+      "managed": "Gerenciados",
+      "discovered": "Descobertos"
+    },
+    "monthly": "Mensal est.",
+    "origin": "Origem",
+    "managed": "Gerenciado pelo Levelrail",
+    "discovered": "Descoberto",
+    "noPrice": "Sem preço de tabela",
+    "total": "{{count}} no total, custo mensal estimado pelos preços de tabela",
+    "tableLabel": "{{servers}} na conta do provedor",
+    "empty": "Nenhum item de {{servers}} encontrado nesta conta.",
+    "notConnected": "Conecte {{name}} para listar as máquinas da conta.",
+    "scopeMissing": "A credencial ainda não pode listar {{servers}}.",
+    "unsupported": "Listar máquinas ainda não está disponível para {{name}}.",
+    "loadError": "Não foi possível carregar a lista: {{message}}",
+    "readOnlyNote": "As máquinas descobertas são somente leitura aqui. Só as criadas pelo Levelrail têm ações.",
+    "status": {
+      "active": "Ativo",
+      "running": "Em execução",
+      "new": "Novo",
+      "initializing": "Inicializando",
+      "off": "Desligado",
+      "stopped": "Parado",
+      "archive": "Arquivado"
+    }
   }
 }

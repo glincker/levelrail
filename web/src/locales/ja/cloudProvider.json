@@ -256,5 +256,44 @@
   "breadcrumb": {
     "integrations": "Integrations",
     "cloudProviders": "Cloud providers"
+  },
+  "refresh": {
+    "label": "更新",
+    "refreshing": "更新中",
+    "rateLimited": "更新したばかりです。{{seconds}}秒後にもう一度お試しください。",
+    "rateLimitedNoWait": "更新したばかりです。しばらくしてからお試しください。",
+    "error": "更新できませんでした: {{message}}"
+  },
+  "resources": {
+    "title": "アカウント内の{{servers}}",
+    "asOf": "時点",
+    "filter": {
+      "label": "管理元で絞り込む",
+      "all": "すべて",
+      "managed": "管理中",
+      "discovered": "検出済み"
+    },
+    "monthly": "月額目安",
+    "origin": "管理元",
+    "managed": "Levelrailが管理",
+    "discovered": "検出済み",
+    "noPrice": "定価なし",
+    "total": "合計{{count}}件、定価に基づく月額の見積もり",
+    "tableLabel": "プロバイダーアカウント内の{{servers}}",
+    "empty": "このアカウントに{{servers}}は見つかりませんでした。",
+    "notConnected": "{{name}}を接続すると、アカウント内のマシンを一覧表示できます。",
+    "scopeMissing": "この認証情報ではまだ{{servers}}を一覧表示できません。",
+    "unsupported": "{{name}}ではマシンの一覧表示にまだ対応していません。",
+    "loadError": "一覧を読み込めませんでした: {{message}}",
+    "readOnlyNote": "検出されたマシンはここでは読み取り専用です。操作できるのはLevelrailが作成したマシンのみです。",
+    "status": {
+      "active": "稼働中",
+      "running": "実行中",
+      "new": "新規",
+      "initializing": "初期化中",
+      "off": "停止",
+      "stopped": "停止済み",
+      "archive": "アーカイブ"
+    }
   }
 }

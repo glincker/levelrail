@@ -256,5 +256,44 @@
   "breadcrumb": {
     "integrations": "Integrations",
     "cloudProviders": "Cloud providers"
+  },
+  "refresh": {
+    "label": "Actualiser",
+    "refreshing": "Actualisation",
+    "rateLimited": "Vient d'être actualisé. Réessayez dans {{seconds}} secondes.",
+    "rateLimitedNoWait": "Vient d'être actualisé. Réessayez dans un instant.",
+    "error": "Actualisation impossible : {{message}}"
+  },
+  "resources": {
+    "title": "{{servers}} du compte",
+    "asOf": "au",
+    "filter": {
+      "label": "Filtrer par origine",
+      "all": "Tous",
+      "managed": "Gérés",
+      "discovered": "Découverts"
+    },
+    "monthly": "Mensuel est.",
+    "origin": "Origine",
+    "managed": "Géré par Levelrail",
+    "discovered": "Découvert",
+    "noPrice": "Pas de prix catalogue",
+    "total": "{{count}} au total, coût mensuel estimé d'après les prix catalogue",
+    "tableLabel": "{{servers}} du compte du fournisseur",
+    "empty": "Aucun élément de type {{servers}} trouvé dans ce compte.",
+    "notConnected": "Connectez {{name}} pour lister les machines du compte.",
+    "scopeMissing": "Le jeton ne peut pas encore lister {{servers}}.",
+    "unsupported": "Lister les machines n'est pas encore disponible pour {{name}}.",
+    "loadError": "Impossible de charger la liste : {{message}}",
+    "readOnlyNote": "Les machines découvertes sont en lecture seule ici. Seules celles créées par Levelrail proposent des actions.",
+    "status": {
+      "active": "Actif",
+      "running": "En cours",
+      "new": "Nouveau",
+      "initializing": "Initialisation",
+      "off": "Éteint",
+      "stopped": "Arrêté",
+      "archive": "Archivé"
+    }
   }
 }

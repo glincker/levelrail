@@ -256,5 +256,44 @@
   "breadcrumb": {
     "integrations": "Integrations",
     "cloudProviders": "Cloud providers"
+  },
+  "refresh": {
+    "label": "Refresh",
+    "refreshing": "Refreshing",
+    "rateLimited": "Just refreshed. Try again in {{seconds}} seconds.",
+    "rateLimitedNoWait": "Just refreshed. Try again shortly.",
+    "error": "Could not refresh: {{message}}"
+  },
+  "resources": {
+    "title": "{{servers}} in the account",
+    "asOf": "as of",
+    "filter": {
+      "label": "Filter by origin",
+      "all": "All",
+      "managed": "Managed",
+      "discovered": "Discovered"
+    },
+    "monthly": "Est. monthly",
+    "origin": "Origin",
+    "managed": "Managed by Levelrail",
+    "discovered": "Discovered",
+    "noPrice": "No list price",
+    "total": "{{count}} total, estimated monthly cost from list prices",
+    "tableLabel": "{{servers}} in the provider account",
+    "empty": "No {{servers}} found in this account.",
+    "notConnected": "Connect {{name}} to list the machines in the account.",
+    "scopeMissing": "The credential cannot list {{servers}} yet.",
+    "unsupported": "Listing machines is not available for {{name}} yet.",
+    "loadError": "Could not load the list: {{message}}",
+    "readOnlyNote": "Discovered machines are read-only here. Only machines Levelrail created offer actions.",
+    "status": {
+      "active": "Active",
+      "running": "Running",
+      "new": "New",
+      "initializing": "Initializing",
+      "off": "Off",
+      "stopped": "Stopped",
+      "archive": "Archived"
+    }
   }
 }

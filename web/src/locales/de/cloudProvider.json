@@ -256,5 +256,44 @@
   "breadcrumb": {
     "integrations": "Integrations",
     "cloudProviders": "Cloud providers"
+  },
+  "refresh": {
+    "label": "Aktualisieren",
+    "refreshing": "Wird aktualisiert",
+    "rateLimited": "Gerade erst aktualisiert. Versuche es in {{seconds}} Sekunden erneut.",
+    "rateLimitedNoWait": "Gerade erst aktualisiert. Versuche es gleich erneut.",
+    "error": "Aktualisieren fehlgeschlagen: {{message}}"
+  },
+  "resources": {
+    "title": "{{servers}} im Konto",
+    "asOf": "Stand",
+    "filter": {
+      "label": "Nach Herkunft filtern",
+      "all": "Alle",
+      "managed": "Verwaltet",
+      "discovered": "Entdeckt"
+    },
+    "monthly": "Gesch. pro Monat",
+    "origin": "Herkunft",
+    "managed": "Von Levelrail verwaltet",
+    "discovered": "Entdeckt",
+    "noPrice": "Kein Listenpreis",
+    "total": "{{count}} gesamt, geschätzte Monatskosten nach Listenpreisen",
+    "tableLabel": "{{servers}} im Konto des Anbieters",
+    "empty": "In diesem Konto wurden keine {{servers}} gefunden.",
+    "notConnected": "Verbinde {{name}}, um die Maschinen im Konto aufzulisten.",
+    "scopeMissing": "Der Zugangsschlüssel darf {{servers}} noch nicht auflisten.",
+    "unsupported": "Das Auflisten von Maschinen ist für {{name}} noch nicht verfügbar.",
+    "loadError": "Die Liste konnte nicht geladen werden: {{message}}",
+    "readOnlyNote": "Entdeckte Maschinen sind hier schreibgeschützt. Nur von Levelrail erstellte Maschinen bieten Aktionen.",
+    "status": {
+      "active": "Aktiv",
+      "running": "Läuft",
+      "new": "Neu",
+      "initializing": "Wird initialisiert",
+      "off": "Aus",
+      "stopped": "Gestoppt",
+      "archive": "Archiviert"
+    }
   }
 }

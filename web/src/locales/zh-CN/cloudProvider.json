@@ -256,5 +256,44 @@
   "breadcrumb": {
     "integrations": "Integrations",
     "cloudProviders": "Cloud providers"
+  },
+  "refresh": {
+    "label": "刷新",
+    "refreshing": "正在刷新",
+    "rateLimited": "刚刚刷新过。请在 {{seconds}} 秒后重试。",
+    "rateLimitedNoWait": "刚刚刷新过。请稍后重试。",
+    "error": "无法刷新：{{message}}"
+  },
+  "resources": {
+    "title": "账户中的{{servers}}",
+    "asOf": "截至",
+    "filter": {
+      "label": "按来源筛选",
+      "all": "全部",
+      "managed": "已托管",
+      "discovered": "已发现"
+    },
+    "monthly": "预计月费",
+    "origin": "来源",
+    "managed": "由 Levelrail 托管",
+    "discovered": "已发现",
+    "noPrice": "无标价",
+    "total": "共 {{count}} 项，按标价估算的月费",
+    "tableLabel": "服务商账户中的{{servers}}",
+    "empty": "此账户中未找到{{servers}}。",
+    "notConnected": "连接 {{name}} 后可列出账户中的机器。",
+    "scopeMissing": "该凭据暂时无法列出{{servers}}。",
+    "unsupported": "{{name}} 暂不支持列出机器。",
+    "loadError": "无法加载列表：{{message}}",
+    "readOnlyNote": "已发现的机器在此为只读。只有 Levelrail 创建的机器提供操作。",
+    "status": {
+      "active": "活动",
+      "running": "运行中",
+      "new": "新建",
+      "initializing": "初始化中",
+      "off": "已关机",
+      "stopped": "已停止",
+      "archive": "已归档"
+    }
   }
 }

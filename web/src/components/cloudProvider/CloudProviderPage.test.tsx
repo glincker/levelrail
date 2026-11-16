@@ -54,16 +54,24 @@ function respond(provisions: unknown[] = []) {
       ? provisions
       : url.endsWith('/node-providers')
         ? CLOUD_PROVIDER_IDS.map((p) => ({ provider: p, has_token: true }))
-        : url.includes('/regions')
-          ? [{ id: 'a', name: 'A' }]
-          : {
+        : url.includes('/resources')
+          ? {
               provider: 'x',
-              account_id: 'x',
-              method: 'none',
-              checked_at: new Date().toISOString(),
+              generated_at: new Date().toISOString(),
               cached: false,
-              capabilities: [],
+              count: 0,
+              resources: [],
             }
+          : url.includes('/regions')
+            ? [{ id: 'a', name: 'A' }]
+            : {
+                provider: 'x',
+                account_id: 'x',
+                method: 'none',
+                checked_at: new Date().toISOString(),
+                cached: false,
+                capabilities: [],
+              }
     return Promise.resolve(new Response(JSON.stringify(body), { status: 200 }))
   })
 }

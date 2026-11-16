@@ -6,6 +6,7 @@ import type {
 import type { NodeProviderResource } from '../../types/nodeProvision'
 import { ProviderConnectionSection } from './ProviderConnectionSection'
 import { ProviderCapabilitiesPanel } from './ProviderCapabilitiesPanel'
+import { ProviderResourcesSection } from './ProviderResourcesSection'
 import { ProviderServersSection } from './ProviderServersSection'
 import type { ProviderLabels } from './useProviderLabels'
 
@@ -24,10 +25,12 @@ export const SECTIONS: Partial<
   connection: ProviderConnectionSection,
   capabilities: ProviderCapabilitiesPanel,
   servers: ProviderServersSection,
+  resources: ProviderResourcesSection,
 }
 
 export const SECTION_ORDER: readonly CloudProviderFeature[] = [
   'connection',
   'capabilities',
   'servers',
+  'resources',
 ]
