@@ -343,7 +343,7 @@ var Tree = map[string]*Node{
 	"lb":           {Subs: map[string]*Node{"list": nil, "show": nil, "set": nil, "clear": nil, "status": nil, "check": nil, "history": nil, "upstream": nil, "export": nil, "import": nil}},
 	"certs":        {Subs: map[string]*Node{"budget": nil}},
 	"tags":         {Subs: map[string]*Node{"list": nil, "create": nil, "rename": nil, "delete": nil, "apps": nil, "databases": nil}},
-	"clusters":     {Subs: map[string]*Node{"connect": nil, "list": nil, "show": nil, "test": nil, "nodes": nil, "namespaces": nil, "disconnect": nil, "rbac": nil, "deploy": nil, "deployments": nil, "status": nil, "logs": nil, "remove": nil}},
+	"clusters":     {Subs: map[string]*Node{"connect": nil, "list": nil, "show": nil, "test": nil, "nodes": nil, "namespaces": nil, "disconnect": nil, "rbac": nil, "deploy": nil, "deployments": nil, "status": nil, "logs": nil, "remove": nil, "pull-secret": {Subs: map[string]*Node{"add": nil, "list": nil, "remove": nil}}}},
 	"nodes": {Subs: map[string]*Node{
 		"list": nil, "get": nil, "delete": nil, "join-token": nil, "join-tokens": nil, "revoke-join-token": nil,
 		"cordon": nil, "uncordon": nil, "drain": nil, "workloads": nil, "set-labels": nil,

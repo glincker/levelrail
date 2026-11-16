@@ -13,7 +13,7 @@ import (
 func runClustersDeploy(prog string, args []string, stdout, stderr io.Writer, lookupEnv func(string) (string, bool)) int {
 	name, rest := splitClusterName(args)
 	fs, tokenP, apiURLP, profileP, jsonOutP, outputP, queryP := apiFlagSet(prog, "clusters deploy", "print the result as JSON to stdout and nothing else", stderr)
-	var app, image, envFile, host, namespace string
+	var app, image, envFile, host, namespace, pullSecret string
 	var port, replicas int
 	var allowRoot bool
 	fs.StringVar(&app, "app", "", "app name")
@@ -23,6 +23,7 @@ func runClustersDeploy(prog string, args []string, stdout, stderr io.Writer, loo
 	fs.StringVar(&envFile, "env-file", "", "KEY=VALUE file, or - for stdin; values are never printed")
 	fs.StringVar(&host, "host", "", "ingress host name")
 	fs.StringVar(&namespace, "namespace", "", "namespace (default: the server default)")
+	fs.StringVar(&pullSecret, "pull-secret", "", "stored registry credential for a private image (see clusters pull-secret add)")
 	fs.BoolVar(&allowRoot, "allow-root", false, "let the image run as its own user, which may be root")
 	tokenFlag, apiURLFlag, profileFlag, jsonOut, of, exitCode, ok := parseAPIFlags(fs, rest, apiFlagPtrs{tokenP, apiURLP, profileP, jsonOutP, outputP, queryP}, prog, stderr)
 	if !ok {
@@ -34,7 +35,7 @@ func runClustersDeploy(prog string, args []string, stdout, stderr io.Writer, loo
 	if name == "" || app == "" || image == "" || port <= 0 {
 		return reportError(stdout, stderr, jsonOut, newValidationError("a cluster name, --app, --image and --port are required"))
 	}
-	req := apiclient.K8sDeployRequest{App: app, Namespace: namespace, Image: image, Port: port, Host: host, AllowRoot: allowRoot}
+	req := apiclient.K8sDeployRequest{App: app, Namespace: namespace, Image: image, Port: port, Host: host, AllowRoot: allowRoot, PullSecret: pullSecret}
 	if replicas > 0 {
 		req.Replicas = &replicas
 	}

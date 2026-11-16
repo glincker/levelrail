@@ -119,6 +119,8 @@ type K8sDeployRequest struct {
 	Env       map[string]string `json:"env,omitempty"`
 	Host      string            `json:"host,omitempty"`
 	AllowRoot bool              `json:"allow_root,omitempty"`
+	// PullSecret names a stored registry credential for a private image.
+	PullSecret string `json:"pull_secret,omitempty"`
 }
 
 // K8sDeployResult lists the objects the deploy applied.
