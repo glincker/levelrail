@@ -123,8 +123,9 @@ describe('BindConnectionDialog', () => {
     })
     await userEvent.click(screen.getByRole('button', { name: 'Bind' }))
     await waitFor(() => expect(calls).toHaveLength(1))
-    expect(calls[0].url).toBe('/api/v1/apps/web/bindings')
-    expect(JSON.parse(calls[0].body)).toEqual({
+    const [call] = calls
+    expect(call?.url).toBe('/api/v1/apps/web/bindings')
+    expect(JSON.parse(call?.body ?? '')).toEqual({
       ref: 'git:gc1',
       role: 'source',
       rules: { branch: 'main' },

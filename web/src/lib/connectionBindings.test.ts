@@ -32,9 +32,11 @@ describe('connectionBindings', () => {
   })
 
   it('filters connections for a role and knows role names', () => {
-    const list = [conn('a', ['registry_pull']), conn('b', ['dns'])]
+    const registry = conn('a', ['registry_pull'])
+    const dns = conn('b', ['dns'])
+    const list = [registry, dns]
     expect(connectionsForRole(list, 'dns').map((c) => c.ref)).toEqual(['b'])
-    expect(canFillRole(list[0], 'dns')).toBe(false)
+    expect(canFillRole(registry, 'dns')).toBe(false)
     expect(isBindingRole('notify')).toBe(true)
     expect(isBindingRole('bogus')).toBe(false)
   })
