@@ -59,8 +59,6 @@ import { BuildQueuePanel } from '../buildQueue/BuildQueuePanel'
 import { RunnersPanel } from '../buildRunners/RunnersPanel'
 import { BuildingNowLane } from './BuildingNowLane'
 import { CancelSupersededPopover } from './CancelSupersededPopover'
-import { ConfirmActionDialog } from './ConfirmActionDialog'
-import { DeploymentDrawer } from './DeploymentDrawer'
 import { DeploymentList, DeploymentsSkeleton, LoadMore } from './DeploymentList'
 import { DeploymentsFilterBar } from './DeploymentsFilterBar'
 import { DeploymentsSummary } from './DeploymentsSummary'
@@ -69,6 +67,15 @@ import { pageProblems, pageState } from './deploymentsPageState'
 import type { Deployment } from '../../types/deployment'
 
 const SavedViewsMenu = lazy(() => import('../SavedViewsMenu'))
+// The drawer and confirm dialog only mount after a click, so they stay off first paint.
+const DeploymentDrawer = lazy(() =>
+  import('./DeploymentDrawer').then((m) => ({ default: m.DeploymentDrawer })),
+)
+const ConfirmActionDialog = lazy(() =>
+  import('./ConfirmActionDialog').then((m) => ({
+    default: m.ConfirmActionDialog,
+  })),
+)
 
 const AT_TOP_PX = 32
 const MIN_AUTHOR_ROWS = 20
@@ -511,23 +518,29 @@ export function DeploymentsPage({
         </div>
       )}
 
-      <DeploymentDrawer
-        id={openId}
-        deployment={drawerRow}
-        searching={searching}
-        now={now}
-        onClose={() => {
-          setOpen('')
-        }}
-        onAction={actions.request}
-        onOpenDeployment={setOpen}
-      />
-      <ConfirmActionDialog
-        action={actions.pending}
-        busy={actions.busy}
-        onConfirm={actions.confirm}
-        onDismiss={actions.dismiss}
-      />
+      <Suspense fallback={null}>
+        {openId ? (
+          <DeploymentDrawer
+            id={openId}
+            deployment={drawerRow}
+            searching={searching}
+            now={now}
+            onClose={() => {
+              setOpen('')
+            }}
+            onAction={actions.request}
+            onOpenDeployment={setOpen}
+          />
+        ) : null}
+        {actions.pending ? (
+          <ConfirmActionDialog
+            action={actions.pending}
+            busy={actions.busy}
+            onConfirm={actions.confirm}
+            onDismiss={actions.dismiss}
+          />
+        ) : null}
+      </Suspense>
     </PageTemplate>
   )
 }
