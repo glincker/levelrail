@@ -16,6 +16,7 @@ import {
   useNodeProviders,
 } from '../../queries/nodeProvision'
 import type { NodeProviderResource } from '../../types/nodeProvision'
+import { CloudProvidersBreadcrumb } from './CloudProvidersBreadcrumb'
 import { ProviderLinks } from './ProviderLinks'
 import { SECTIONS, SECTION_ORDER } from './sections'
 import { useProviderLabels } from './useProviderLabels'
@@ -72,14 +73,7 @@ function ProviderLanding({
           labelled
         />
       }
-      breadcrumb={
-        <Link
-          to="/integrations"
-          className="text-xs text-muted-foreground hover:text-foreground hover:underline"
-        >
-          {t('page.back')}
-        </Link>
-      }
+      breadcrumb={<CloudProvidersBreadcrumb current={labels.name} />}
       actions={
         provider.features.includes('create') ? (
           canCreate ? (

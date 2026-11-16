@@ -165,7 +165,9 @@
       "learned_ok": "worked in a real action",
       "learned_403": "refused in a real action",
       "not_probed": "not checked"
-    }
+    },
+    "rowSummary": "{{granted}} of {{total}} capabilities granted",
+    "notChecked": "Not checked yet"
   },
   "cap": {
     "instances.read": "List servers",
@@ -236,5 +238,9 @@
     "needs": "Needs scope {{scope}}",
     "needsGeneric": "Needs a provider permission",
     "link": "Open permissions panel"
+  },
+  "breadcrumb": {
+    "integrations": "Integrations",
+    "cloudProviders": "Cloud providers"
   }
 }

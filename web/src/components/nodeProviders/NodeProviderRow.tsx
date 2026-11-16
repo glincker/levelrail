@@ -6,6 +6,7 @@ import { Button } from '@/components/ui/button'
 import { BrandTile } from '../BrandLogoBadge'
 import { StatusPill } from '../kit/StatusPill'
 import { useUrlDialog } from '../kit/useUrlDialog'
+import { ProviderRowStatus } from '../cloudProvider/ProviderRowStatus'
 import { RelativeTime } from '../kit/RelativeTime'
 import { nodeProviderBrand } from '../../lib/providerBrands'
 import type { NodeProviderResource } from '../../types/nodeProvision'
@@ -62,7 +63,7 @@ export function NodeProviderRow({
         : ''
 
   return (
-    <li className="flex flex-wrap items-center gap-x-3 gap-y-2 py-3">
+    <li className="relative flex flex-wrap items-center gap-x-3 gap-y-2 rounded-md py-3 hover:bg-muted/40">
       <BrandTile
         name={nodeProviderBrand(provider.provider)}
         label={label}
@@ -73,7 +74,7 @@ export function NodeProviderRow({
           <Link
             to="/integrations/cloud/$provider"
             params={{ provider: provider.provider }}
-            className="rounded-sm hover:underline focus-visible:outline-2 focus-visible:outline-offset-2"
+            className="rounded-sm after:absolute after:inset-0 hover:underline focus-visible:outline-2 focus-visible:outline-offset-2"
           >
             {label}
           </Link>
@@ -90,6 +91,9 @@ export function NodeProviderRow({
               </>
             ) : null}
           </p>
+        ) : null}
+        {connected && provider.provider !== 'custom' ? (
+          <ProviderRowStatus provider={provider.provider} />
         ) : null}
       </div>
       <StatusPill
@@ -108,6 +112,7 @@ export function NodeProviderRow({
         ref={triggerRef}
         type="button"
         variant="outline"
+        className="relative z-10"
         size="sm"
         aria-label={t('nodeProviders.configureFor', { provider: label })}
         onClick={() => {

@@ -9,6 +9,7 @@ import {
   nodeProviderListQueryOptions,
   useNodeProviders,
 } from '../../queries/nodeProvision'
+import { CloudProvidersBreadcrumb } from '../../components/cloudProvider/CloudProvidersBreadcrumb'
 import { NodeProviderCredentialsCard } from '../../components/NodeProviderCredentialsCard'
 import {
   SettingsCardSkeleton,
@@ -69,6 +70,7 @@ function NodeProvidersSettingsPage() {
         />
       }
     >
+      <CloudProvidersBreadcrumb />
       <NodeProviderCredentialsCard />
     </PageTemplate>
   )
