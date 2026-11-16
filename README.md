@@ -8,12 +8,13 @@ Git deploys, 570+ templates in the catalog (346 proven on a real engine), edge a
   <a href="LICENSE"><img src="https://img.shields.io/github/license/glincker/levelrail" alt="License: Apache 2.0"></a>
   <a href="https://github.com/glincker/levelrail/releases"><img src="https://img.shields.io/github/v/release/glincker/levelrail?include_prereleases&label=release" alt="Latest release"></a>
   <a href="https://github.com/glincker/levelrail/actions/workflows/ci.yml"><img src="https://github.com/glincker/levelrail/actions/workflows/ci.yml/badge.svg" alt="CI status"></a>
-  <a href="https://github.com/glincker/levelrail/commits/main"><img src="https://img.shields.io/github/last-commit/glincker/levelrail?style=flat" alt="Last commit"></a>
+  <a href="https://github.com/glincker/levelrail/actions/workflows/codeql.yml"><img src="https://github.com/glincker/levelrail/actions/workflows/codeql.yml/badge.svg?branch=main" alt="CodeQL scan status"></a>
   <a href="https://www.npmjs.com/package/levelrail-cli"><img src="https://img.shields.io/npm/v/levelrail-cli?style=flat&logo=npm&label=npm" alt="levelrail-cli on npm"></a>
-  <a href="https://registry.terraform.io/providers/glincker/levelrail/latest"><img src="https://img.shields.io/github/v/release/glincker/terraform-provider-levelrail?style=flat&logo=terraform&label=terraform" alt="Terraform provider on the registry"></a>
   <a href="https://hub.docker.com/r/levelrail/levelrail"><img src="https://img.shields.io/docker/pulls/levelrail/levelrail?style=flat&logo=docker&label=docker%20pulls" alt="Docker pulls"></a>
-  <a href="docs/mcp.md"><img src="https://img.shields.io/badge/MCP-server-8A2BE2?style=flat" alt="MCP server"></a>
   <a href="https://discord.gg/Ar5pcaZB99"><img src="https://img.shields.io/discord/829168897080557579?style=flat&logo=discord&logoColor=white&label=discord&color=5865F2" alt="Discord"></a>
+</p>
+<p>
+  <a href="https://docs.levelrail.com?utm_source=github&amp;utm_medium=readme&amp;utm_campaign=nav">Docs</a> &middot; <a href="docs/features.md">Features</a> &middot; <a href="docs/faq.md">FAQ</a> &middot; <a href="https://github.com/glincker/levelrail/discussions">Discussions</a> &middot; <a href="https://discord.gg/Ar5pcaZB99">Discord</a>
 </p>
 <p>
   <a href="https://levelrail.com?utm_source=github&amp;utm_medium=readme&amp;utm_campaign=nav">Website</a> &middot;
