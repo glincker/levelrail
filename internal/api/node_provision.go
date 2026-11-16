@@ -529,7 +529,7 @@ func (rt *Router) nodeNameTaken(ctx context.Context, name string) (bool, error) 
 		return false, fmt.Errorf("list node provisions: %w", err)
 	}
 	for _, p := range provisions {
-		if p.Name == name && p.Status != store.NodeProvisionStatusFailed {
+		if p.Name == name && p.Status != store.NodeProvisionStatusFailed && p.Status != store.NodeProvisionStatusDestroyed {
 			return true, nil
 		}
 	}
@@ -580,7 +580,7 @@ func (rt *Router) handleGetNodeProvision(w http.ResponseWriter, r *http.Request)
 		return
 	}
 
-	if p.Status == store.NodeProvisionStatusReady || p.Status == store.NodeProvisionStatusFailed {
+	if nodeProvisionSettled(p.Status) {
 		writeJSON(w, http.StatusOK, toNodeProvisionResource(p))
 		return
 	}

@@ -14,7 +14,7 @@ type openAPIRoute struct {
 	Description string
 }
 
-// openAPIRoutes holds all 2163 routes known to scripts/gen-api-reference at
+// openAPIRoutes holds all 2164 routes known to scripts/gen-api-reference at
 // generation time. Run `go run ./scripts/gen-api-reference` after changing
 // any routes*.go registration and commit the result.
 var openAPIRoutes = []openAPIRoute{
@@ -1659,6 +1659,7 @@ var openAPIRoutes = []openAPIRoute{
 	{Method: "GET", Path: "/api/v1/node-providers/{provider}/sizes", Ability: "AbilityRead", Group: "Other", Handler: "handleListNodeProviderSizes", Description: ""},
 	{Method: "POST", Path: "/api/v1/node-providers/{provider}/test", Ability: "AbilityWriteSensitive", Group: "Other", Handler: "handleTestNodeProvider", Description: ""},
 	{Method: "GET", Path: "/api/v1/node-provisions", Ability: "AbilityRoot", Group: "Other", Handler: "handleListNodeProvisions", Description: ""},
+	{Method: "DELETE", Path: "/api/v1/node-provisions/{id}", Ability: "AbilityRoot", Group: "Other", Handler: "handleDestroyNodeProvision", Description: ""},
 	{Method: "GET", Path: "/api/v1/node-provisions/{id}", Ability: "AbilityRoot", Group: "Other", Handler: "handleGetNodeProvision", Description: ""},
 	{Method: "GET", Path: "/api/v1/openapi.json", Ability: "AbilityRead", Group: "Other", Handler: "handleOpenAPISpec", Description: "Route metadata for the in-app API explorer (web/src/routes/settings/api-explorer.tsx): AbilityRead, same tier as system/status, since this is the API surface's own shape, not resource data."},
 	{Method: "POST", Path: "/api/v1/otlp/v1/logs", Ability: "Public", Group: "Other", Handler: "handleOTLPLogs", Description: ""},

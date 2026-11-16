@@ -65,6 +65,7 @@ func (rt *Router) registerNodeRoutes(mux *http.ServeMux) {
 	rt.registerBootstrapScriptRoutes(mux)
 	mux.HandleFunc("GET /api/v1/node-provisions", rt.requireAbility(AbilityRoot, rt.handleListNodeProvisions))
 	mux.HandleFunc("GET /api/v1/node-provisions/{id}", rt.requireAbility(AbilityRoot, rt.handleGetNodeProvision))
+	mux.HandleFunc("DELETE /api/v1/node-provisions/{id}", rt.requireAbility(AbilityRoot, rt.handleDestroyNodeProvision))
 	// SSH node provisioning: AbilityRoot like every node route (an SSH credential is as sensitive as a join token).
 	// The show route stays a top-level sibling: nesting {id} under /nodes/ would conflict with /nodes/{id}/health.
 	mux.HandleFunc("POST /api/v1/nodes/ssh-provision", rt.requireAbility(AbilityRoot, rt.handleCreateSSHNodeProvision))

@@ -564,6 +564,11 @@ These variables only seed the default of a [runtime setting](/runtime-settings).
 | `APP_K8S_STATUS_POLL_INTERVAL` | [`k8s.status_poll_interval`](/runtime-settings#experimental) | `10s` |
 | `APP_ONBOARDING_ENABLED` | [`onboarding.enabled`](/runtime-settings#experimental) | `true` |
 | `APP_ONBOARDING_RESTORE_REMINDER_DAYS` | [`onboarding.restore_reminder_days`](/runtime-settings#experimental) | `7` |
+| `APP_PROVISION_ALLOW_UNKNOWN_PRICE` | [`provision.allow_unknown_price`](/runtime-settings#experimental) | `false` |
+| `APP_NODE_PROVISION_TIMEOUT` | [`provision.enroll_timeout`](/runtime-settings#experimental) | `20m` |
+| `APP_PROVISION_EUR_TO_USD_RATE` | [`provision.eur_to_usd_rate`](/runtime-settings#experimental) | `1.10` |
+| `APP_PROVISION_MAX_MONTHLY_PRICE_USD` | [`provision.max_monthly_price_usd`](/runtime-settings#experimental) | `25` |
+| `APP_PROVISION_MAX_SERVERS` | [`provision.max_servers`](/runtime-settings#experimental) | `1` |
 | `APP_UPDATE_CHANNELS_OFFERED` | [`updates.offered_channels`](/runtime-settings#experimental) | `stable` |
 <!-- runtime-settings:end -->
 

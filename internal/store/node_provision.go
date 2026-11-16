@@ -18,6 +18,8 @@ const (
 	NodeProvisionStatusEnrolling  = "enrolling"
 	NodeProvisionStatusReady      = "ready"
 	NodeProvisionStatusFailed     = "failed"
+	NodeProvisionStatusDestroying = "destroying"
+	NodeProvisionStatusDestroyed  = "destroyed"
 )
 
 // NodeProvision tracks one cloud VM created on an operator's behalf,

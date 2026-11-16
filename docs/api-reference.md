@@ -2394,6 +2394,7 @@ Routes that do not fit an existing group.
 | POST | /api/v1/builds/queue/drain | AbilityWriteSensitive | handleBuildQueueDrain |
 | POST | /api/v1/builds/kill-all | AbilityWriteSensitive | handleKillAllBuilds |
 | GET | /api/v1/builds/runners | AbilityRead | handleListBuildRunners |
+| DELETE | /api/v1/node-provisions/{id} | AbilityRoot | handleDestroyNodeProvision |
 | POST | /mcp | Public |  |
 
 ## See also
