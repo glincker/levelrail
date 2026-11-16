@@ -194,6 +194,7 @@ function feedItems(feed: AttentionFeedItem[], t: AttentionT): AttentionItem[] {
     const name = p.name ?? f.subject
     const base = {
       id: f.id,
+      kind: f.kind,
       severity: f.severity,
       action: f.action,
       class: f.class,
@@ -201,16 +202,28 @@ function feedItems(feed: AttentionFeedItem[], t: AttentionT): AttentionItem[] {
     }
     switch (f.kind) {
       case 'token_expiring':
-        return {
-          ...base,
-          title: t('items.tokenExpiringTitle', { name }),
-          detail: t('items.tokenExpiringDetail', { date: shortDate(p.at) }),
-        }
       case 'token_expired':
+      case 'token_expired_in_use':
+        return { ...base, ...tokenCopy(f, p, name, t) }
+      case 'git_connection_reauth':
         return {
           ...base,
-          title: t('items.tokenExpiredTitle', { name }),
-          detail: t('items.tokenExpiredDetail', { date: shortDate(p.at) }),
+          title: t('items.gitReauthTitle', { name }),
+          detail: t('items.gitReauthDetail'),
+        }
+      case 'token_grace_sweep_failing':
+        return {
+          ...base,
+          title: t('items.tokenGraceSweepTitle'),
+          detail: t('items.tokenGraceSweepDetail'),
+        }
+      case 'git_token_expiring':
+        return {
+          ...base,
+          title: t('items.gitTokenExpiringTitle', { name }),
+          detail: p.at
+            ? t('items.gitTokenExpiringDetail', { date: shortDate(p.at) })
+            : f.detail,
         }
       case 'data_copy':
         return {
@@ -320,10 +333,102 @@ function feedItems(feed: AttentionFeedItem[], t: AttentionT): AttentionItem[] {
         }
       case 'docker_guard':
         return { ...base, ...dockerGuardCopy(p, t) }
+      case 'host_pressure':
+        return {
+          ...base,
+          title: t(
+            p.state === 'critical'
+              ? 'items.hostPressureCriticalTitle'
+              : 'items.hostPressureWarnTitle',
+          ),
+          detail: f.detail,
+        }
+      case 'deploy_interrupted':
+        return {
+          ...base,
+          title: t('items.interruptedTitle', { name: p.app ?? f.subject }),
+          detail: t('items.interruptedDetail'),
+        }
+      case 'build_queue_paused':
+        return {
+          ...base,
+          title: t(
+            p.state === 'draining'
+              ? 'items.buildQueueDrainingTitle'
+              : 'items.buildQueuePausedTitle',
+          ),
+          detail: f.detail,
+        }
+      case 'unclean_restart': {
+        const count = Number.parseInt(p.count ?? '1', 10) || 1
+        const detail = t('items.uncleanRestartDetail', { count })
+        return {
+          ...base,
+          title: t('items.uncleanRestartTitle'),
+          detail:
+            p.oom_likely === 'true'
+              ? `${detail} ${t('items.uncleanRestartOom')}`
+              : detail,
+        }
+      }
       default:
         return { ...base, title: f.title || f.subject, detail: f.detail }
     }
   })
+}
+
+const TOKEN_LIST_SHOWN = 5
+
+// The server folds token expiry into one row per kind with `count` and
+// `names` (internal/api/attention_tokens.go). A row with a single `name`
+// and `at` is the older per-token shape and keeps its dated copy.
+function tokenCopy(
+  f: AttentionFeedItem,
+  p: Record<string, string>,
+  name: string,
+  t: AttentionT,
+): { title: string; detail: string } {
+  const expired = f.kind === 'token_expired'
+  if (p.names === undefined) {
+    return expired
+      ? {
+          title: t('items.tokenExpiredTitle', { name }),
+          detail: t('items.tokenExpiredDetail', { date: shortDate(p.at) }),
+        }
+      : {
+          title: t('items.tokenExpiringTitle', { name }),
+          detail: t('items.tokenExpiringDetail', { date: shortDate(p.at) }),
+        }
+  }
+  const all = p.names.split(',').filter(Boolean)
+  const count = Number.parseInt(p.count ?? '', 10) || all.length || 1
+  const shown = all.slice(0, TOKEN_LIST_SHOWN).join(', ')
+  const more = count - Math.min(all.length, TOKEN_LIST_SHOWN)
+  const names = more > 0 ? `${shown} +${more}` : shown
+  const label = all[0] ?? name
+  const single = count === 1
+  if (f.kind === 'token_expired_in_use') {
+    return {
+      title: single
+        ? t('items.tokenExpiredInUseTitle', { name: label })
+        : t('items.tokensExpiredInUseTitle', { count }),
+      detail: t('items.tokenGroupExpiredInUseDetail', { names }),
+    }
+  }
+  if (expired) {
+    return {
+      title: single
+        ? t('items.tokenExpiredTitle', { name: label })
+        : t('items.tokensExpiredTitle', { count }),
+      detail: t('items.tokenGroupExpiredDetail', { names }),
+    }
+  }
+  return {
+    title: single
+      ? t('items.tokenExpiringTitle', { name: label })
+      : t('items.tokensExpiringTitle', { count }),
+    detail: t('items.tokenGroupExpiringDetail', { names }),
+  }
 }
 
 // The guard item has four shapes: a host-level audit finding, a plain audit

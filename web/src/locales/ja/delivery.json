@@ -1,0 +1,112 @@
+{
+  "title": "デリバリー",
+  "category": {
+    "deploys": "デプロイ",
+    "builds": "ビルド",
+    "statuses": "ステータス",
+    "previews": "プレビュー",
+    "integrations": "連携",
+    "other": "その他"
+  },
+  "status": {
+    "succeeded": "成功",
+    "failed": "失敗",
+    "in_progress": "進行中",
+    "pending": "保留中",
+    "info": "情報",
+    "unknown": "不明"
+  },
+  "health": {
+    "ok": "正常",
+    "degraded": "低下",
+    "needs_reconnect": "再接続が必要",
+    "expired": "期限切れ",
+    "unknown": "不明"
+  },
+  "filters": {
+    "kind": "種類で絞り込む",
+    "status": "ステータス",
+    "search": "タイムラインを検索",
+    "searchPlaceholder": "タイトルまたは詳細を検索",
+    "statusOption": {
+      "all": "すべてのステータス",
+      "failed": "失敗",
+      "in_progress": "進行中",
+      "succeeded": "成功"
+    }
+  },
+  "row": {
+    "openPreview": "プレビューを開く",
+    "openRun": "実行を開く",
+    "openLink": "リンクを開く",
+    "openIntegrations": "連携を開く",
+    "postFailed": "リポジトリへの投稿に失敗しました",
+    "noErrorDetail": "エラーの詳細は記録されていません。"
+  },
+  "header": {
+    "label": "デリバリーの概要",
+    "source": "ソース",
+    "reporting": "ステータス報告",
+    "lastDeploy": "最後のデプロイ",
+    "none": "未接続",
+    "postFailing": "コミットステータスの投稿に失敗しています。リポジトリ側の表示が古い可能性があります。",
+    "inherited": "{{org}} から継承",
+    "overrides": "{{org}} の既定を上書き",
+    "change": "変更",
+    "bind": "紐付け",
+    "unbind": "解除",
+    "bindOther": "接続を紐付ける",
+    "other": "その他の紐付け"
+  },
+  "day": {
+    "today": "今日",
+    "yesterday": "昨日",
+    "unknown": "日付不明"
+  },
+  "loadMore": "さらに読み込む",
+  "retry": "再試行",
+  "empty": {
+    "title": "デリバリーのアクティビティはまだありません",
+    "description": "このアプリのデプロイ、リポジトリのステータス、プレビュー、接続の変更がここに表示されます。"
+  },
+  "noMatch": {
+    "title": "条件に一致する項目がありません",
+    "description": "別の種類、ステータス、検索語をお試しください。",
+    "clear": "絞り込みを解除"
+  },
+  "bind": {
+    "title": "{{name}} を紐付ける",
+    "titleGeneric": "接続を紐付ける",
+    "description": "この接続の役割を選びます。範囲とルールはサーバーが確認します。",
+    "confirm": "紐付ける",
+    "binding": "紐付け中",
+    "toast": "{{name}} を {{app}} に紐付けました",
+    "app": "アプリ",
+    "appPlaceholder": "アプリを選択",
+    "connection": "接続",
+    "connectionPlaceholder": "接続を選択",
+    "noConnections": "この役割を担える接続がありません",
+    "role": "役割",
+    "roles": {
+      "source": "ソース",
+      "deploy_report": "デプロイ報告",
+      "registry_pull": "レジストリ取得",
+      "notify": "通知",
+      "secrets": "シークレット",
+      "dns": "DNS"
+    },
+    "rules": "ルール（任意）",
+    "rulesHint": "役割に照らして検証される JSON オブジェクト。",
+    "rulesInvalid": "ルールは JSON オブジェクトにしてください。"
+  },
+  "unbind": {
+    "title": "{{name}} の紐付けを解除",
+    "description": "アプリはこの役割でこの接続を使わなくなります。接続自体は残ります。",
+    "confirm": "解除",
+    "unbinding": "解除中",
+    "toast": "{{app}} から {{name}} を解除しました",
+    "binding": "紐付け",
+    "pick": "紐付けを選択",
+    "noneForApp": "このアプリには該当する紐付けがありません"
+  }
+}

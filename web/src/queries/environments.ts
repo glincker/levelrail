@@ -39,7 +39,7 @@ export async function fetchEnvironments(
       await readErrorMessage(res, `fetch environments failed: ${res.status}`),
     )
   }
-  return (await res.json()) as EnvironmentResource[]
+  return ((await res.json()) as EnvironmentResource[] | null) ?? []
 }
 
 export function environmentListQueryOptions(projectId: string) {

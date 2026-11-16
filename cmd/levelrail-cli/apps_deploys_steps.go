@@ -68,6 +68,9 @@ func formatStepLine(ev deployStepEvent) string {
 
 // runAppsDeploysSteps implements "apps deploys steps <name> <deploy-id>".
 func runAppsDeploysSteps(prog string, args []string, stdout, stderr io.Writer, lookupEnv func(string) (string, bool)) int {
+	if rest, stages := withoutStagesFlag(args); stages {
+		return runAppsDeploysStages(prog, rest, stdout, stderr, lookupEnv)
+	}
 	fs, tokenFlagP, apiURLFlagP, profileFlagP, jsonOutP, outputFlagP, queryFlagP := apiFlagSet(prog, "apps deploys steps", "print one JSON object per step event instead of text", stderr)
 	fs.Usage = func() { _, _ = fmt.Fprint(stderr, appsDeploysStepsUsage(prog)) }
 
@@ -130,6 +133,8 @@ shows: for every deploy, build or not, the image resolution, pull, create,
 start, readiness probes, cutover and retained image, each with its status,
 duration and reason. It exits when the trace's summary step lands: 0 on
 success, non-zero on failure. A finished attempt replays its stored trace.
+Add --stages to see the build stages (source, detect, install, build, export,
+push) with timings and cache state instead; see "apps deploys stages -h".
 Find a deploy-id with "apps deploys list <name>".
 
 Flags:

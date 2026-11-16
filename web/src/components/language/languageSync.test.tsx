@@ -1,5 +1,6 @@
 import { QueryClient } from '@tanstack/react-query'
-import { fireEvent, render, screen, waitFor } from '@testing-library/react'
+import { render, screen, waitFor } from '@testing-library/react'
+import userEvent from '@testing-library/user-event'
 import { describe, expect, it, vi } from 'vitest'
 import { accountSelfKeys, type Preferences } from '../../queries/accountSelf'
 import { HeaderLanguageSelect } from './HeaderLanguageSelect'
@@ -38,8 +39,10 @@ describe('language sync across controls', () => {
       </>,
       { wrapper: makeWrap(i18n, qc) },
     )
-    const [header, field] = screen.getAllByRole('combobox')
-    fireEvent.change(header as HTMLElement, { target: { value: 'es' } })
-    await waitFor(() => expect(field).toHaveValue('es'))
+    await userEvent.click(screen.getByRole('button', { name: /English/ }))
+    await userEvent.click(
+      await screen.findByRole('menuitem', { name: /Español/ }),
+    )
+    await waitFor(() => expect(screen.getByRole('combobox')).toHaveValue('es'))
   })
 })

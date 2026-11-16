@@ -85,6 +85,7 @@ var demoReadDenylist = []string{
 	"/api/v1/git-connections",
 	"/api/v1/git-connections/{id}",
 	"/api/v1/git-connections/{id}/branches",
+	"/api/v1/git-connections/{id}/access",
 	"/api/v1/gitlab-app/callback",
 	"/api/v1/gitlab-app/connect",
 	"/api/v1/gitea-app/callback",

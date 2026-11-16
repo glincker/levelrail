@@ -4,6 +4,7 @@ import (
 	"context"
 	"encoding/json"
 	"net/http"
+	"net/url"
 )
 
 // AuthEngineStatusResource mirrors internal/api's authEngineStatusResponse.
@@ -18,6 +19,13 @@ type AuthEngineStatusResource struct {
 func (c *Client) GetAuthEngineStatus(ctx context.Context) (AuthEngineStatusResource, error) {
 	var out AuthEngineStatusResource
 	err := c.do(ctx, http.MethodGet, "/api/v1/auth-engine/status", nil, &out)
+	return out, err
+}
+
+// RotateToken calls POST /api/v1/auth/tokens/{id}/rotate.
+func (c *Client) RotateToken(ctx context.Context, id string) (RotatedToken, error) {
+	var out RotatedToken
+	err := c.do(ctx, http.MethodPost, "/api/v1/auth/tokens/"+url.PathEscape(id)+"/rotate", nil, &out)
 	return out, err
 }
 

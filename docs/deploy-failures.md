@@ -82,6 +82,9 @@ The image could not be pulled: wrong name or tag, or the registry denied access.
 ### registry_auth_failed
 The registry rejected the credentials or none was supplied for a private registry (`no basic auth credentials`, `unauthorized: authentication required`). Add or refresh the registry credential for that host and check its token scope and expiry.
 
+### registry_rate_limited
+The registry refused a pull with `toomanyrequests` or HTTP 429 because the pull limit was reached. Docker Hub counts anonymous pulls per IP address, so a shared server runs out quickly. Add a Docker Hub access token under Integrations so pulls are authenticated, check the remaining quota with `levelrail-cli registries dockerhub status`, or wait for the window to reset. Retryable.
+
 ### platform_mismatch
 The image targets a different CPU architecture than the node (`exec format error`, `no matching manifest for linux/amd64`). Build for the node's platform or pick a tag that publishes it.
 
@@ -108,6 +111,9 @@ Pushing the built image failed. Retryable. Check the registry credential, reposi
 
 ### disk_full
 The host ran out of disk, or the build disk preflight found less free space than `APP_MIN_BUILD_DISK_MB`. Prune unused images and build cache, then retry. Deploys, backups and pulls are also refused before they start when the data or Docker volume is below `APP_DISK_CRITICAL_FREE_MB`; use **Free space now** on the System status page.
+
+### node_out_of_room
+The node's capacity guard refused the deploy or build before it started, so the running version keeps serving. The attempt is recorded as refused with the guard's reason. Free space on the node, or open Nodes, then Capacity, to review the limits, then retry.
 
 ### docker_unreachable
 The control plane could not reach the Docker daemon on the target node. Retryable once the daemon is back.

@@ -51,7 +51,7 @@ func apiBaseURL(instanceURL string) string {
 }
 
 func (c *Client) do(ctx context.Context, method, fullURL, authHeader string, body io.Reader, out any) error {
-	req, err := http.NewRequestWithContext(ctx, method, fullURL, body)
+	req, err := http.NewRequestWithContext(ctx, method, fullURL, body) //nolint:gosec // fullURL is built from the saved instance URL and sent through the netguard client
 	if err != nil {
 		return fmt.Errorf("%s: build request: %w", errPrefix, err)
 	}
@@ -99,13 +99,14 @@ func toTokens(resp tokenResponse) Tokens {
 // ExchangeCode exchanges an OAuth authorization code for an access
 // token, GitLab's documented POST {instance}/oauth/token grant_type
 // "authorization_code" (docs.gitlab.com/ee/api/oauth2.html).
-func (c *Client) ExchangeCode(ctx context.Context, instanceURL, clientID, clientSecret, redirectURI, code string) (Tokens, error) {
+func (c *Client) ExchangeCode(ctx context.Context, instanceURL, clientID, clientSecret, redirectURI, code, codeVerifier string) (Tokens, error) {
 	form := url.Values{
 		"grant_type":    {"authorization_code"},
 		"client_id":     {clientID},
 		"client_secret": {clientSecret},
 		"code":          {code},
 		"redirect_uri":  {redirectURI},
+		"code_verifier": {codeVerifier},
 	}
 	return c.token(ctx, instanceURL, form)
 }
@@ -275,6 +276,7 @@ func (c *Client) ListBranches(ctx context.Context, instanceURL, accessToken stri
 type createWebhookRequest struct {
 	URL                   string `json:"url"`
 	PushEvents            bool   `json:"push_events"`
+	TagPushEvents         bool   `json:"tag_push_events"`
 	MergeRequestsEvents   bool   `json:"merge_requests_events"`
 	Token                 string `json:"token"`
 	EnableSSLVerification bool   `json:"enable_ssl_verification"`
@@ -290,7 +292,7 @@ type createWebhookRequest struct {
 // environments would silently never trigger for a connected project.
 func (c *Client) CreateProjectWebhook(ctx context.Context, instanceURL, accessToken string, projectID int64, hookURL, secretToken string) error {
 	body, err := json.Marshal(createWebhookRequest{
-		URL: hookURL, PushEvents: true, MergeRequestsEvents: true, Token: secretToken, EnableSSLVerification: true,
+		URL: hookURL, PushEvents: true, TagPushEvents: true, MergeRequestsEvents: true, Token: secretToken, EnableSSLVerification: true,
 	})
 	if err != nil {
 		return fmt.Errorf("gitlabapp: marshal webhook request: %w", err)
@@ -362,20 +364,78 @@ type Account struct {
 
 // TokenInfo is what GitLab reports about a personal, project or group access token.
 type TokenInfo struct {
-	Name   string
-	Scopes []string
+	Name       string
+	Scopes     []string
+	ExpiresAt  string
+	LastUsedAt string
 }
 
 // TokenInfo reads the scopes of the token itself (GitLab 15.5 and newer).
 func (c *Client) TokenInfo(ctx context.Context, instanceURL, accessToken string) (TokenInfo, error) {
 	var resp struct {
-		Name   string   `json:"name"`
-		Scopes []string `json:"scopes"`
+		Name       string   `json:"name"`
+		Scopes     []string `json:"scopes"`
+		ExpiresAt  string   `json:"expires_at"`
+		LastUsedAt string   `json:"last_used_at"`
 	}
 	if err := c.do(ctx, http.MethodGet, apiBaseURL(instanceURL)+"/personal_access_tokens/self", "Bearer "+accessToken, nil, &resp); err != nil {
 		return TokenInfo{}, err
 	}
-	return TokenInfo{Name: resp.Name, Scopes: resp.Scopes}, nil
+	return TokenInfo{Name: resp.Name, Scopes: resp.Scopes, ExpiresAt: resp.ExpiresAt, LastUsedAt: resp.LastUsedAt}, nil
+}
+
+// RotateSelf replaces the calling personal access token (needs the self_rotate scope).
+// The old token stops working at once; the new secret is returned once, with its expiry date.
+func (c *Client) RotateSelf(ctx context.Context, instanceURL, accessToken string, expiresAt time.Time) (token, newExpiry string, err error) {
+	var resp struct {
+		Token     string `json:"token"`
+		ExpiresAt string `json:"expires_at"`
+	}
+	endpoint := apiBaseURL(instanceURL) + "/personal_access_tokens/self/rotate"
+	if !expiresAt.IsZero() {
+		endpoint += "?expires_at=" + expiresAt.UTC().Format("2006-01-02")
+	}
+	if err := c.do(ctx, http.MethodPost, endpoint, "Bearer "+accessToken, nil, &resp); err != nil {
+		return "", "", err
+	}
+	return resp.Token, resp.ExpiresAt, nil
+}
+
+// OAuthTokenInfo reads the scopes and lifetime of an OAuth access token.
+func (c *Client) OAuthTokenInfo(ctx context.Context, instanceURL, accessToken string) (TokenInfo, error) {
+	var resp struct {
+		Scopes    []string `json:"scope"`
+		ExpiresIn int64    `json:"expires_in"`
+		CreatedAt int64    `json:"created_at"`
+	}
+	u := strings.TrimRight(instanceURL, "/") + "/oauth/token/info"
+	if err := c.do(ctx, http.MethodGet, u, "Bearer "+accessToken, nil, &resp); err != nil {
+		return TokenInfo{}, err
+	}
+	info := TokenInfo{Scopes: resp.Scopes}
+	if resp.CreatedAt > 0 && resp.ExpiresIn > 0 {
+		info.ExpiresAt = time.Unix(resp.CreatedAt+resp.ExpiresIn, 0).UTC().Format(time.RFC3339)
+	}
+	return info, nil
+}
+
+// ListGroups returns the full paths of up to limit groups the token's user belongs to.
+// more is true when GitLab holds further groups past the limit.
+func (c *Client) ListGroups(ctx context.Context, instanceURL, accessToken string, limit int) (paths []string, more bool, err error) {
+	var resp []struct {
+		FullPath string `json:"full_path"`
+	}
+	u := fmt.Sprintf("%s/groups?min_access_level=10&order_by=path&per_page=%d", apiBaseURL(instanceURL), limit+1)
+	if err := c.do(ctx, http.MethodGet, u, "Bearer "+accessToken, nil, &resp); err != nil {
+		return nil, false, err
+	}
+	for _, g := range resp {
+		paths = append(paths, g.FullPath)
+	}
+	if len(paths) > limit {
+		return paths[:limit], true, nil
+	}
+	return paths, false, nil
 }
 
 // CurrentUser returns the user an access token belongs to.

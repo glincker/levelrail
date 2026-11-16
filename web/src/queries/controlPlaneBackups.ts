@@ -44,7 +44,7 @@ export async function fetchControlPlaneBackups(): Promise<
       await readErrorMessage(res, `list backups failed: ${res.status}`),
     )
   }
-  return (await res.json()) as ControlPlaneBackup[]
+  return ((await res.json()) as ControlPlaneBackup[] | null) ?? []
 }
 
 export async function createControlPlaneBackup(): Promise<ControlPlaneBackup> {

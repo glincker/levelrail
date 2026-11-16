@@ -1,4 +1,5 @@
 import { render, screen, waitFor } from '@testing-library/react'
+import { commandText } from '@/test/commandText'
 import userEvent from '@testing-library/user-event'
 import { QueryClientProvider } from '@tanstack/react-query'
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest'
@@ -82,7 +83,9 @@ describe('TracingSetupCard', () => {
     await waitFor(() => {
       expect(
         screen.getByText(
-          /OTEL_EXPORTER_OTLP_HEADERS=Authorization=Bearer d2Vi.secret/,
+          commandText(
+            'OTEL_EXPORTER_OTLP_HEADERS=Authorization=Bearer d2Vi.secret',
+          ),
         ),
       ).toBeInTheDocument()
     })

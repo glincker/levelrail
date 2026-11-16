@@ -1053,7 +1053,8 @@
       "badge": "Shows a live deploy status badge you can embed in a README.",
       "githubActions": "Lets a GitHub Actions workflow deploy this app.",
       "ciDeploy": "Gives your CI system a token and a command to deploy this app.",
-      "rolloutPolicy": "Limits how many replicas may surge or go unavailable while a rolling release rolls out."
+      "rolloutPolicy": "Limits how many replicas may surge or go unavailable while a rolling release rolls out.",
+      "buildRunner": "Picks which build node this app builds on, or lets the global strategy decide."
     },
     "whatItDoes": "What this does:"
   },
@@ -1559,6 +1560,8 @@
     "label": "Language",
     "change": "Change language, current: {{language}}",
     "browserDefault": "Browser default",
-    "saveFailed": "Could not save your language."
+    "saveFailed": "Could not save your language.",
+    "menuTitle": "Language",
+    "useBrowser": "Use browser language"
   }
 }

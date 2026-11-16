@@ -4,6 +4,7 @@ import (
 	"context"
 	"errors"
 	"fmt"
+	"github.com/GLINCKER/levelrail/internal/testutil"
 	"strings"
 	"sync"
 	"testing"
@@ -68,13 +69,7 @@ func eventN(i int) Event {
 
 func waitFor(t *testing.T, cond func() bool) {
 	t.Helper()
-	deadline := time.Now().Add(3 * time.Second)
-	for !cond() {
-		if time.Now().After(deadline) {
-			t.Fatal("condition not met in time")
-		}
-		time.Sleep(time.Millisecond)
-	}
+	testutil.WaitFor(t, 3*time.Second, time.Millisecond, "condition", cond)
 }
 
 func closeAll(t *testing.T, p *Pipeline) {

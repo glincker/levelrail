@@ -93,6 +93,8 @@ export const ITEM_KEYWORDS: Readonly<Record<string, string>> = {
   'settings-email': 'smtp mail email notification',
   'settings-notification-channels':
     'alert slack discord webhook notify notification',
+  'settings-integrations':
+    'integration connection connect health expiry token oauth scope catalog',
   'settings-git-connections': 'git github gitlab repo repository source',
   'settings-github-app': 'github git repo repository app',
   'settings-agents': 'agent node worker connect',

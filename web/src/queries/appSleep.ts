@@ -10,6 +10,7 @@ import {
 } from '@tanstack/react-query'
 import { appKeys } from './apps'
 import { ApiError, readErrorMessage } from '../lib/apiError'
+import { apiRequest } from '../lib/apiRequest'
 
 export interface AppSleep {
   enabled: boolean
@@ -102,27 +103,16 @@ export const appSleepKeys = {
   detail: (appName: string) => [...appKeys.detail(appName), 'sleep'] as const,
 }
 
-async function request(
+function request(
   appName: string,
   method: string,
   suffix: string,
   body?: unknown,
 ): Promise<AppSleep> {
-  const res = await fetch(
+  return apiRequest<AppSleep>(
     `/api/v1/apps/${encodeURIComponent(appName)}/sleep${suffix}`,
-    {
-      method,
-      headers: body ? { 'Content-Type': 'application/json' } : undefined,
-      body: body ? JSON.stringify(body) : undefined,
-    },
+    { method, body, fallbackMessage: 'sleep request failed' },
   )
-  if (!res.ok) {
-    throw new ApiError(
-      res.status,
-      await readErrorMessage(res, `sleep request failed: ${res.status}`),
-    )
-  }
-  return (await res.json()) as AppSleep
 }
 
 const API_PREFIX = '/api/v1'

@@ -142,7 +142,7 @@ func TestRefreshGitOAuth_DiscardsResultWhenRefreshTokenChangedUnderneath(t *test
 		},
 		save: func(context.Context, gitOAuthTokens) error { saved = true; return nil },
 	}
-	got, err := rt.refreshGitOAuth(t.Context(), spec)
+	got, err := rt.refreshGitOAuth(t.Context(), spec, gitOAuthRefreshMargin)
 	if err != nil || got != "reconnected" || saved {
 		t.Fatalf("got %q, err %v, saved %v; want the reconnected token and no overwrite", got, err, saved)
 	}

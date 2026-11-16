@@ -1,0 +1,166 @@
+{
+  "title": "{{provider}} in vier Schritten verbinden",
+  "stepApp": "Öffnen Sie die OAuth-Anwendungsseite und legen Sie eine Anwendung an.",
+  "openApp": "Anwendungsseite von {{host}} öffnen",
+  "appHint": {
+    "gitlab": "Unter Benutzereinstellungen, Anwendungen. Eine Gruppen- oder Admin-Anwendung funktioniert auch.",
+    "gitea": "Unter Einstellungen, Anwendungen, OAuth2-Anwendungen verwalten. Vertraulicher Client ankreuzen.",
+    "forgejo": "Unter Einstellungen, Anwendungen, OAuth2-Anwendungen verwalten. Vertraulicher Client ankreuzen.",
+    "bitbucket": "Workspace öffnen, dann Einstellungen, OAuth-Consumer, Consumer hinzufügen. Privaten Consumer ankreuzen."
+  },
+  "stepRedirect": "Setzen Sie die Redirect-URI (Callback-URL) genau auf diesen Wert.",
+  "redirectLabel": "Redirect-URI",
+  "copy": "Kopieren",
+  "copied": "Kopiert",
+  "copyFailed": "Kopieren nicht möglich. Markieren Sie die URI und kopieren Sie sie von Hand.",
+  "stepScopes": "Wählen Sie diese Scopes.",
+  "scopesLabel": "Zu wählende Scopes",
+  "scopesNone": "Dieser Anbieter hat keine Scope-Liste. Gewähren Sie Lese- und Schreibzugriff auf Repositories, wenn danach gefragt wird.",
+  "stepPaste": "Fügen Sie unten Client-ID und Secret ein, dann speichern und autorisieren.",
+  "hint": {
+    "https": "Diese Adresse nutzt HTTPS, der Anbieter akzeptiert sie als Redirect-URI.",
+    "loopback": "Dies ist eine lokale Adresse. Die meisten Anbieter akzeptieren sie nur zum Testen in diesem Browser.",
+    "insecure": "Diese Adresse ist reines HTTP und wird von den meisten Anbietern als Redirect-URI abgelehnt. Nutzen Sie HTTPS oder verbinden Sie mit einem Token."
+  },
+  "fallback": {
+    "title": "OAuth hier nicht möglich?",
+    "body": "Ein Token braucht keine Redirect-URI, keine öffentliche Domain und keine Anwendung.",
+    "action": "Stattdessen mit einem Token verbinden"
+  },
+  "field": {
+    "empty": "Dieses Feld ist erforderlich.",
+    "whitespace": "Entfernen Sie Leerzeichen oder Zeilenumbrüche aus dem eingefügten Wert.",
+    "unusual": "Das sieht nicht nach einem üblichen {{provider}}-Wert aus. Prüfen Sie, ob Sie alles kopiert haben."
+  },
+  "name": {
+    "gitlab": "GitLab",
+    "gitea": "Gitea",
+    "forgejo": "Forgejo",
+    "bitbucket": "Bitbucket Cloud",
+    "bitbucket_server": "Bitbucket Server",
+    "azure_devops": "Azure DevOps"
+  },
+  "methods": {
+    "title": "Verbindungsarten",
+    "recommended": "Empfohlen",
+    "selfManaged": "Self-managed GitLab funktioniert mit jeder Art: Geben Sie Ihre Basis-URL im Verbindungsbereich ein.",
+    "status": {
+      "connected": "Verbunden",
+      "not_connected": "Nicht verbunden",
+      "needs_attention": "Aktion nötig",
+      "expires_soon": "Läuft bald ab"
+    },
+    "oauth": {
+      "name": "OAuth-Anwendung",
+      "unlocks": "Anmeldung über den Anbieter. Schaltet Repositories, Webhooks, Status und Kommentare frei und erneuert sich selbst.",
+      "action": "Mit OAuth verbinden"
+    },
+    "token": {
+      "name": "Zugriffstoken",
+      "unlocks": "Persönlichen, Projekt- oder Gruppentoken einfügen. Keine Redirect-URI und keine öffentliche Domain nötig.",
+      "action": "Mit Token verbinden"
+    },
+    "deploy_token": {
+      "name": "Deploy-Token",
+      "unlocks": "Nur lesende Registry-Pulls (read_registry) zum Deployen von Images.",
+      "action": "Registry-Zugangsdaten"
+    },
+    "ci_job": {
+      "name": "CI-Job-Token oder OIDC",
+      "unlocks": "Pipeline-Jobs deployen ohne gespeichertes Geheimnis.",
+      "action": "CI-Vertrauen einrichten"
+    }
+  },
+  "access": {
+    "matrix": "Zugriff und Scope",
+    "allowed": "Erlaubt",
+    "notAllowed": "Nicht erlaubt",
+    "needsScope": "Braucht {{scope}}",
+    "notReported": "Nicht gemeldet",
+    "scopesUnknown": "Die Control Plane meldet die gewährten Scopes für dieses Konto noch nicht, daher zeigt jede Funktion Nicht gemeldet.",
+    "scopes": "Gewährte Scopes",
+    "sees": "Sichtbar",
+    "projects_one": "{{count}} Projekt",
+    "projects_other": "{{count}} Projekte",
+    "expires": "Token-Ablauf",
+    "lastUsed": "Zuletzt verwendet",
+    "addScope": "Scope hinzufügen",
+    "addScopeMissing": "Braucht einen Endpunkt zum Erweitern von Scopes. Bis dahin neu autorisieren oder einen Token mit mehr Scopes hinzufügen.",
+    "rotate": "Token rotieren",
+    "addAnother": "Weiteres Konto hinzufügen",
+    "inferred": "Abgeleitet",
+    "rotateOauth": "OAuth-Verbindungen erneuern sich selbst, es gibt keinen Token zu rotieren.",
+    "rotateUnsupported": "Dieser Anbieter kann diese Zugangsdaten nicht rotieren. Neuen Token hinzufügen und den alten trennen."
+  },
+  "cap": {
+    "list_repos": "Repositories auflisten",
+    "clone_sync": "Klonen und synchronisieren",
+    "commit_status": "Commit-Status",
+    "mr_comments": "Merge-Request-Kommentare und Vorschauen",
+    "registry_pull": "Registry-Pull",
+    "import_group": "Gruppe importieren",
+    "register_webhook": "Webhooks automatisch anlegen",
+    "tag_push_trigger": "Tag- und Push-Trigger",
+    "deployments_report": "Deployment-Meldungen"
+  },
+  "next": {
+    "title": "Was Sie hinzufügen können",
+    "import": {
+      "title": "Repositories importieren",
+      "body": "Wählen Sie Repositories oder eine ganze Gruppe und machen Sie Apps daraus.",
+      "action": "Quellen öffnen"
+    },
+    "previews": {
+      "title": "Merge-Request-Vorschauen aktivieren",
+      "body": "Für jeden offenen Merge Request eine Vorschau deployen.",
+      "action": "Quellen öffnen"
+    },
+    "ci": {
+      "title": "CI-Vertrauen hinzufügen",
+      "body": "Pipeline-Jobs deployen mit einer kurzlebigen Identität.",
+      "action": "Pipelines öffnen"
+    },
+    "webhook": {
+      "title": "Webhook hinzufügen",
+      "body": "Deploy- und Build-Ereignisse an einen anderen Dienst senden.",
+      "action": "Webhooks öffnen"
+    },
+    "registry": {
+      "title": "Registry verbinden",
+      "body": "Pull-Zugangsdaten für private Images speichern.",
+      "action": "Registry-Zugangsdaten öffnen"
+    }
+  },
+  "credential": {
+    "noExpiry": "Kein Ablauf gemeldet",
+    "autoRenews": "Erneuert sich automatisch",
+    "expiresInHours_one": "Läuft in {{count}} Stunde ab",
+    "expiresInHours_other": "Läuft in {{count}} Stunden ab",
+    "expiresInDays_one": "Läuft in {{count}} Tag ab",
+    "expiresInDays_other": "Läuft in {{count}} Tagen ab",
+    "expired_one": "Vor {{count}} Tag abgelaufen",
+    "expired_other": "Vor {{count}} Tagen abgelaufen",
+    "lastRefresh": "Erneuert {{when}}",
+    "refreshFailing": "Erneuerung schlägt fehl",
+    "reauthorize": "Neu autorisieren"
+  },
+  "rotate": {
+    "title": "Token für {{label}} rotieren?",
+    "description": "Dadurch wird der Zugriffstoken beim Anbieter ersetzt.",
+    "consequence": "GitLab stellt einen neuen Token aus und der alte funktioniert sofort nicht mehr. Builds und Pulls dieser Verbindung wechseln automatisch.",
+    "confirm": "Token rotieren",
+    "pending": "Rotiert",
+    "expiryLabel": "Ablauf des neuen Tokens (JJJJ-MM-TT)",
+    "expiryHint": "Vorbelegt aus der Rotationsdauer von {{days}} Tagen. Leer lassen, damit der Anbieter entscheidet.",
+    "errors": {
+      "noMasterKey": "Die Rotation braucht einen Master-Key auf der Control Plane. Richte einen unter Verschlüsselungsschlüssel ein und versuche es erneut.",
+      "provider": "Der Anbieter hat die Rotation nicht abgeschlossen. Der aktuelle Token ist unverändert, versuche es gleich noch einmal.",
+      "badDate": "Verwende ein Datum im Format JJJJ-MM-TT."
+    },
+    "toast": {
+      "done": "Token rotiert",
+      "expires": "Neuer Token läuft am {{date}} ab.",
+      "noExpiry": "Der Anbieter meldet für den neuen Token keinen Ablauf."
+    }
+  }
+}

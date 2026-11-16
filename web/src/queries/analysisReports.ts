@@ -20,7 +20,7 @@ export async function fetchAnalysisReports(
   )
   if (res.status === 404 || res.status === 501) return []
   if (!res.ok) throw new Error(`fetch analysis reports failed: ${res.status}`)
-  return (await res.json()) as AnalysisReportSummary[]
+  return ((await res.json()) as AnalysisReportSummary[] | null) ?? []
 }
 
 export async function fetchAnalysisReport(

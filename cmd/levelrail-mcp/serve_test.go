@@ -2,7 +2,6 @@ package main
 
 import (
 	"context"
-	"io"
 	"log/slog"
 	"net/http"
 	"net/http/httptest"
@@ -12,10 +11,6 @@ import (
 	"github.com/GLINCKER/levelrail/internal/mcptools"
 	"github.com/modelcontextprotocol/go-sdk/mcp"
 )
-
-func discardLogger() *slog.Logger {
-	return slog.New(slog.NewTextHandler(io.Discard, nil))
-}
 
 // bearerRoundTripper injects an Authorization header on every request, so
 // tests can drive mcp.StreamableClientTransport (which has no header
@@ -93,7 +88,7 @@ func TestRun_HTTPTransportRefusesToStartWithoutToken(t *testing.T) {
 	t.Setenv("HOME", home)
 	t.Setenv("XDG_CONFIG_HOME", home)
 	lookupEnv := func(string) (string, bool) { return "", false }
-	err := run("levelrail-mcp", []string{"--transport", "http"}, lookupEnv, discardLogger())
+	err := run("levelrail-mcp", []string{"--transport", "http"}, lookupEnv, slog.New(slog.DiscardHandler))
 	if err == nil {
 		t.Fatal("run() with --transport=http and no token = nil error, want an error")
 	}

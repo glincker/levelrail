@@ -38,7 +38,7 @@ export async function fetchAppResourceUsage(
       ),
     )
   }
-  return (await res.json()) as AppResourceUsage[]
+  return ((await res.json()) as AppResourceUsage[] | null) ?? []
 }
 
 export function appResourceUsageQueryOptions() {

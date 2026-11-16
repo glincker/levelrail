@@ -287,6 +287,7 @@ func (rt *Router) registerAppRoutes(mux *http.ServeMux) {
 	// polling JSON, not SSE, the individual probe attempts
 	// (internal/probe.WithOnAttempt) one deploy's cutover made. Same
 	// AbilityRead boundary as the step/log streams above.
+	mux.HandleFunc("GET /api/v1/apps/{name}/deploys/{deployId}/stages", rt.requireAbilityForResource(AbilityRead, appResourceFromPath, rt.handleGetDeployStages))
 	mux.HandleFunc("GET /api/v1/apps/{name}/deploys/{deployId}/probes", rt.requireAbilityForResource(AbilityRead, appResourceFromPath, rt.handleListProbeAttempts))
 
 	// Deploy-attempt log download (deploy_log_download.go): the same

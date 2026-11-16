@@ -118,7 +118,7 @@ export function useRefreshBackupProtection() {
         body: '{}',
       })
       if (!res.ok) return failure(res, 'probe backup buckets')
-      return (await res.json()) as TargetProtection[]
+      return ((await res.json()) as TargetProtection[] | null) ?? []
     },
     onSuccess: () => {
       void queryClient.invalidateQueries({

@@ -36,9 +36,11 @@ import type iacForm from '../locales/en/iacForm.json'
 import type stackSync from '../locales/en/stackSync.json'
 import type statusPage from '../locales/en/statusPage.json'
 import type assets from '../locales/en/assets.json'
+import type integrations from '../locales/en/integrations.json'
 import type uiShared from '../locales/en/uiShared.json'
 import type relatedLinks from '../locales/en/relatedLinks.json'
 import type gitSource from '../locales/en/gitSource.json'
+import type gitConnect from '../locales/en/gitConnect.json'
 import type certBudget from '../locales/en/certBudget.json'
 import type appRows from '../locales/en/appRows.json'
 import type tokensNotices from '../locales/en/tokensNotices.json'
@@ -77,6 +79,7 @@ import type observability from '../locales/en/observability.json'
 import type trialApp from '../locales/en/trialApp.json'
 import type tags from '../locales/en/tags.json'
 import type previews from '../locales/en/previews.json'
+import type delivery from '../locales/en/delivery.json'
 import type branchDeploys from '../locales/en/branchDeploys.json'
 import type deployContexts from '../locales/en/deployContexts.json'
 import type backups from '../locales/en/backups.json'
@@ -152,6 +155,7 @@ import type demo from '../locales/en/demo.json'
 import type statePlaceholders from '../locales/en/statePlaceholders.json'
 import type secretScan from '../locales/en/secretScan.json'
 import type appExpiry from '../locales/en/appExpiry.json'
+import type tokenExpiry from '../locales/en/tokenExpiry.json'
 import type appRestartSchedule from '../locales/en/appRestartSchedule.json'
 import type appFiles from '../locales/en/appFiles.json'
 import type appContainers from '../locales/en/appContainers.json'
@@ -188,6 +192,7 @@ declare module 'i18next' {
       stackSync: typeof stackSync
       statusPage: typeof statusPage
       assets: typeof assets
+      integrations: typeof integrations
       uiShared: typeof uiShared
       relatedLinks: typeof relatedLinks
       certBudget: typeof certBudget
@@ -226,6 +231,7 @@ declare module 'i18next' {
       domainPolicies: typeof domainPolicies
       observability: typeof observability
       previews: typeof previews
+      delivery: typeof delivery
       branchDeploys: typeof branchDeploys
       deployContexts: typeof deployContexts
       backups: typeof backups
@@ -293,6 +299,7 @@ declare module 'i18next' {
       statePlaceholders: typeof statePlaceholders
       secretScan: typeof secretScan
       appExpiry: typeof appExpiry
+      tokenExpiry: typeof tokenExpiry
       appRestartSchedule: typeof appRestartSchedule
       appFiles: typeof appFiles
       appContainers: typeof appContainers
@@ -320,6 +327,7 @@ declare module 'i18next' {
       palette: typeof palette
       paletteSettings: typeof paletteSettings
       gitSource: typeof gitSource
+      gitConnect: typeof gitConnect
       projectExport: typeof projectExport
       projectClone: typeof projectClone
     }

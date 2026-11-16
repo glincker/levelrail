@@ -10,6 +10,7 @@ package ingress
 import (
 	"context"
 	"errors"
+	"log/slog"
 	"testing"
 
 	"github.com/GLINCKER/levelrail/internal/ingress"
@@ -29,7 +30,7 @@ func TestController_Reconcile_StaticSite_RouteAppears(t *testing.T) {
 	}}
 	rt := newFakeRuntime()
 	applier := &fakeApplier{}
-	c := New(st, rt, applier, WithLogger(discardLogger()))
+	c := New(st, rt, applier, WithLogger(slog.New(slog.DiscardHandler)))
 
 	result, err := c.Reconcile(context.Background())
 	if err != nil {
@@ -74,7 +75,7 @@ func TestController_Reconcile_StaticSiteNoDomains_Skipped(t *testing.T) {
 	}}
 	rt := newFakeRuntime()
 	applier := &fakeApplier{}
-	c := New(st, rt, applier, WithLogger(discardLogger()))
+	c := New(st, rt, applier, WithLogger(slog.New(slog.DiscardHandler)))
 
 	result, err := c.Reconcile(context.Background())
 	if err != nil {
@@ -101,7 +102,7 @@ func TestController_Reconcile_ContainerAndStaticSite_BothRouted(t *testing.T) {
 		staticSites: []store.StaticSite{{Name: "docs", Domains: []string{"docs.example.com"}, RootDir: "/data/static/docs"}},
 	}
 	applier := &fakeApplier{}
-	c := New(st, rt, applier, WithLogger(discardLogger()))
+	c := New(st, rt, applier, WithLogger(slog.New(slog.DiscardHandler)))
 
 	result, err := c.Reconcile(context.Background())
 	if err != nil {
@@ -150,7 +151,7 @@ func TestController_Reconcile_StaticSiteAndContainer_DomainCollision_LoserSkippe
 		staticSites: []store.StaticSite{{Name: "docs", Domains: []string{"shared.example.com"}, RootDir: "/data/static/docs"}},
 	}
 	applier := &fakeApplier{}
-	c := New(st, rt, applier, WithLogger(discardLogger()))
+	c := New(st, rt, applier, WithLogger(slog.New(slog.DiscardHandler)))
 
 	result, err := c.Reconcile(context.Background())
 	if err != nil {
@@ -180,7 +181,7 @@ func TestController_Reconcile_StaticSitesListError_Fails(t *testing.T) {
 	st := &fakeStore{staticSitesErr: errors.New("database is locked")}
 	rt := newFakeRuntime()
 	applier := &fakeApplier{}
-	c := New(st, rt, applier, WithLogger(discardLogger()))
+	c := New(st, rt, applier, WithLogger(slog.New(slog.DiscardHandler)))
 
 	result, err := c.Reconcile(context.Background())
 	if err == nil {
@@ -202,7 +203,7 @@ func TestController_Reconcile_StaticSiteRemoved_RouteDrops(t *testing.T) {
 		{Name: "docs", Domains: []string{"docs.example.com"}, RootDir: "/data/static/docs/abc"},
 	}}
 	applier := &fakeApplier{}
-	c := New(st, newFakeRuntime(), applier, WithLogger(discardLogger()))
+	c := New(st, newFakeRuntime(), applier, WithLogger(slog.New(slog.DiscardHandler)))
 
 	if _, err := c.Reconcile(context.Background()); err != nil {
 		t.Fatal(err)
@@ -227,7 +228,7 @@ func TestController_Reconcile_StaticSite_GatedDomain(t *testing.T) {
 		key := store.DomainBasicAuthSecretsKey("prev.example.com")
 		resolver := &fakePasswordResolver{passwords: map[string]string{key: "pw"}}
 		applier := &fakeApplier{}
-		c := New(&fakeStore{staticSites: sites, basicAuth: gate}, newFakeRuntime(), applier, WithLogger(discardLogger()), WithDomainBasicAuthSecrets(resolver))
+		c := New(&fakeStore{staticSites: sites, basicAuth: gate}, newFakeRuntime(), applier, WithLogger(slog.New(slog.DiscardHandler)), WithDomainBasicAuthSecrets(resolver))
 		if _, err := c.Reconcile(context.Background()); err != nil {
 			t.Fatal(err)
 		}
@@ -242,7 +243,7 @@ func TestController_Reconcile_StaticSite_GatedDomain(t *testing.T) {
 
 	t.Run("unresolvable gate drops the route", func(t *testing.T) {
 		applier := &fakeApplier{}
-		c := New(&fakeStore{staticSites: sites, basicAuth: gate}, newFakeRuntime(), applier, WithLogger(discardLogger()))
+		c := New(&fakeStore{staticSites: sites, basicAuth: gate}, newFakeRuntime(), applier, WithLogger(slog.New(slog.DiscardHandler)))
 		if _, err := c.Reconcile(context.Background()); err != nil {
 			t.Fatal(err)
 		}

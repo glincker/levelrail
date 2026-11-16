@@ -7,6 +7,7 @@ import fixitEn from '../../locales/en/fixit.json'
 import type { FailureContext } from '../../types/investigate'
 import type { Diagnosis } from '../../types/diagnosis'
 import type { StuckReport } from '../../queries/stuck'
+import type { DeployAttempt } from '../../types/deployAttempt'
 import { DiagnosisCard } from './DiagnosisCard'
 
 vi.mock('@tanstack/react-router', () => ({
@@ -55,10 +56,10 @@ void i18n.use(initReactI18next).init({
   interpolation: { escapeValue: false },
 })
 
-const view = () =>
+const view = (latest?: DeployAttempt) =>
   render(
     <I18nextProvider i18n={i18n}>
-      <DiagnosisCard appName="web" />
+      <DiagnosisCard appName="web" latest={latest} />
     </I18nextProvider>,
   )
 
@@ -148,10 +149,38 @@ describe('DiagnosisCard', () => {
       total_lines: 0,
       deploy: { id: 'dpl_1', image: 'web:v2', error: 'probe failed' },
     } as unknown as FailureContext
-    view()
+    view({
+      id: 'dpl_1',
+      service_name: 'web',
+      image: 'web:v2',
+      source: 'manual',
+      status: 'failed',
+      started_at: '2026-11-15T00:00:00Z',
+    })
     expect(screen.getByText('The latest deploy failed')).toBeInTheDocument()
     expect(screen.getByText('Retry deploy')).toBeInTheDocument()
     expect(screen.getByText('View the build log')).toBeInTheDocument()
+  })
+
+  it('hides the build log link for an image deploy that has no build', () => {
+    stuck = undefined
+    failure = {
+      state: 'deploy_failed',
+      restarts_in_window: 0,
+      window_seconds: 900,
+      lines: [],
+      total_lines: 0,
+      deploy: { id: 'dpl_1', image: 'busybox', error: 'exited' },
+    } as unknown as FailureContext
+    view({
+      id: 'dpl_1',
+      service_name: 'web',
+      image: 'busybox',
+      source: 'image',
+      status: 'failed',
+      started_at: '2026-11-15T00:00:00Z',
+    })
+    expect(screen.queryByText('View the build log')).toBeNull()
   })
 
   it('shows the terms link and applies the EULA fix once on click', () => {

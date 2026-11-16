@@ -561,7 +561,7 @@
     "medianDuration": "Duración mediana",
     "medianDurationTip": "Tiempo mediano de los despliegues que terminaron en las últimas 24 horas.",
     "needsAttention": "Requiere atención",
-    "needsAttentionTip": "Despliegues retenidos e imágenes en vivo que difieren de lo que se ejecuta. Selecciona para ver los retenidos.",
+    "needsAttentionTip": "Despliegues retenidos, imágenes en vivo que difieren de lo que se ejecuta y apps cuyo último despliegue falló o fue rechazado. Selecciona para verlos.",
     "deploys14": "Despliegues (14 días)",
     "deploys14Tip": "Despliegues iniciados por día en los últimos 14 días."
   },
@@ -608,7 +608,8 @@
       "held": "En espera",
       "awaiting_approval": "Esperando aprobación",
       "rolled_back": "Revertido",
-      "superseded": "Reemplazado"
+      "superseded": "Reemplazado",
+      "refused": "Rechazado"
     },
     "trigger": {
       "git push": "Git push",
@@ -673,5 +674,137 @@
     "viewQueue": "Ver cola",
     "progress": "{{received}} de {{required}} aprobadores distintos por ahora. El despliegue se ejecuta cuando apruebe el último.",
     "recorded": "Aprobación registrada: {{received}} de {{required}} aprobadores distintos."
+  },
+  "interruption": {
+    "interrupted": "Interrumpido: el plano de control se reinició mientras se ejecutaba este despliegue",
+    "orphaned": "Huérfano: no había ninguna compilación en curso para este despliegue, por eso se canceló",
+    "retry": "Despliega de nuevo para reintentar"
+  },
+  "buildQueue": {
+    "chip": "{{state}}, {{used}} de {{total}} espacios",
+    "state": {
+      "running": "En marcha",
+      "paused": "En pausa",
+      "draining": "Vaciando"
+    },
+    "by": "por {{actor}}",
+    "menu": "Acciones de la cola",
+    "resume": "Reanudar compilaciones",
+    "drain": "Vaciar la cola",
+    "drainHint": "Deja terminar las compilaciones en curso y retiene las nuevas",
+    "done": {
+      "pause": "Cola de compilaciones en pausa.",
+      "drain": "Cola de compilaciones vaciándose.",
+      "resume": "Cola de compilaciones reanudada."
+    },
+    "conflict": {
+      "pause": "La cola ya está en pausa.",
+      "drain": "La cola ya se está vaciando.",
+      "resume": "La cola ya está en marcha."
+    },
+    "failed": "No se pudo cambiar la cola de compilaciones.",
+    "pause": {
+      "action": "Pausar compilaciones",
+      "title": "Pausar la cola de compilaciones",
+      "description": "Las compilaciones en curso terminan. Las nuevas esperan hasta que reanudes.",
+      "reasonLabel": "Motivo (opcional)",
+      "reasonPlaceholder": "Por ejemplo, mantenimiento del registro",
+      "submit": "Pausar"
+    },
+    "kill": {
+      "action": "Cancelar todas las compilaciones",
+      "title": "¿Cancelar todas las compilaciones?",
+      "description": "Esto cancela {{running}} compilaciones en curso y {{queued}} en cola.",
+      "confirm": "Cancelar todas",
+      "confirming": "Cancelando",
+      "none": "Ahora no hay compilaciones en curso ni en cola.",
+      "more": "y {{count}} más",
+      "alsoPause": "Pausar también la cola",
+      "stepUp": "Confirma tu contraseña para cancelar todas las compilaciones.",
+      "done_one": "{{count}} compilación cancelada.",
+      "done_other": "{{count}} compilaciones canceladas.",
+      "someFailed": "No se pudieron cancelar {{count}}: {{apps}}",
+      "conflict": "La cola cambió mientras confirmabas. Revísala e inténtalo de nuevo.",
+      "failed": "No se pudieron cancelar las compilaciones."
+    },
+    "banner": {
+      "paused": "Las compilaciones están en pausa",
+      "draining": "Las compilaciones se están vaciando"
+    },
+    "autoResume": "Se reanuda automáticamente",
+    "panel": {
+      "title": "Cola de compilaciones",
+      "summary": "{{running}} en curso, {{queued}} en cola, {{used}} de {{total}} espacios en uso",
+      "position": "#{{position}}",
+      "waiting": "Esperando: {{reason}}"
+    },
+    "phase": {
+      "preparing": "Preparando",
+      "held": "Retenida",
+      "waiting": "Esperando",
+      "building": "Compilando"
+    }
+  },
+  "runners": {
+    "title": "Runners de build",
+    "strategy": "Estrategia: {{strategy}}",
+    "changeStrategy": "Cambiar estrategia",
+    "strategies": {
+      "first": "primero disponible",
+      "least_loaded": "menos cargado",
+      "sticky_per_app": "fijo por app"
+    },
+    "kind": {
+      "control_plane": "Plano de control",
+      "node": "Nodo de build"
+    },
+    "status": {
+      "ready": "Listo",
+      "busy": "Ocupado",
+      "pressure": "Bajo presión",
+      "draining": "Drenando",
+      "offline": "Sin conexión"
+    },
+    "cores_one": "{{count}} núcleo",
+    "cores_other": "{{count}} núcleos",
+    "load": "Carga {{load}}",
+    "slots": "{{used}} de {{total}} ranuras ({{percent}} %)",
+    "waiting_one": "{{count}} en espera",
+    "waiting_other": "{{count}} en espera",
+    "capacityLabel": "Ranuras de build en uso en {{name}}",
+    "labels": "Etiquetas",
+    "lastBuild": "Último build:",
+    "noBuilds": "Aún no hay builds",
+    "cache": "Caché de build {{size}}",
+    "builtOn": "Compilado en {{name}}",
+    "queued": "En cola {{wait}}",
+    "error": {
+      "title": "No se pudieron cargar los runners de build",
+      "description": "La lista de runners no se cargó. Los builds no se ven afectados.",
+      "retry": "Recargar"
+    },
+    "empty": {
+      "title": "Añade un nodo de build",
+      "description": "Los builds se ejecutan en el plano de control. Registra un segundo nodo con builds activados para sacarlos de la máquina que sirve tus apps.",
+      "action": "Abrir Nodos",
+      "docs": "Enrutamiento de nodos de build"
+    }
+  },
+  "runnerPref": {
+    "title": "Runner de build",
+    "description": "Elige dónde se compila esta app. Déjalo vacío para seguir la estrategia global.",
+    "node": "Nodo de build",
+    "anyNode": "Cualquier nodo de build",
+    "labels": "Etiquetas",
+    "labelsPlaceholder": "gpu, arch=arm64",
+    "pin": "Fijar a este nodo",
+    "pinHint": "Si este nodo no puede compilar, se usa el plano de control, nunca otro nodo.",
+    "pinNeedsNode": "Elige un nodo para fijarlo.",
+    "noAbility": "Necesitas acceso de despliegue para cambiar esto.",
+    "clear": "Borrar",
+    "save": "Guardar",
+    "saved": "Runner de build guardado",
+    "cleared": "Runner de build borrado",
+    "retry": "Reintentar"
   }
 }

@@ -2,6 +2,7 @@ package webhook
 
 import (
 	"context"
+	"log/slog"
 	"net/http"
 	"testing"
 
@@ -34,7 +35,7 @@ func TestPushDeployUsesStoredNextCache(t *testing.T) {
 				cfg.Service.Next = &spec.Next{Cache: tt.specCache}
 			}
 			deployer := &fakeDeployer{tag: "levelrail/web:sha1"}
-			h := New(cfg, deployer, &desiredAttempts{cache: tt.stored}, nil, nil, nil, discardLogger())
+			h := New(cfg, deployer, &desiredAttempts{cache: tt.stored}, nil, nil, nil, slog.New(slog.DiscardHandler))
 			h.fetch = func(_ context.Context, _, _ string, _ func(build.ProgressEvent)) (string, func(), error) {
 				return "/tmp/checkout-dir", func() {}, nil
 			}

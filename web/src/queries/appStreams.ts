@@ -24,7 +24,7 @@ export async function fetchAppStreams(name: string): Promise<AppStream[]> {
       await readErrorMessage(res, `fetch app streams failed: ${res.status}`),
     )
   }
-  return (await res.json()) as AppStream[]
+  return ((await res.json()) as AppStream[] | null) ?? []
 }
 
 export function appStreamListQueryOptions(name: string) {

@@ -15,13 +15,16 @@ const DefaultScope = "read:repository write:repository read:user"
 // point: a real browser redirect (GET), the same "the operator's browser
 // must navigate here itself" shape internal/gitlabapp.AuthorizeURL's own
 // doc comment describes.
-func AuthorizeURL(instanceURL, clientID, redirectURI, state string) string {
+func AuthorizeURL(instanceURL, clientID, redirectURI, state, codeChallenge string) string {
 	q := url.Values{
 		"client_id":     {clientID},
 		"redirect_uri":  {redirectURI},
 		"response_type": {"code"},
 		"scope":         {DefaultScope},
 		"state":         {state},
+		// S256 only: the plain method adds nothing over the state value.
+		"code_challenge":        {codeChallenge},
+		"code_challenge_method": {"S256"},
 	}
 	return strings.TrimRight(instanceURL, "/") + "/login/oauth/authorize?" + q.Encode()
 }

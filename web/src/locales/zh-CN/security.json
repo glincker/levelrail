@@ -294,6 +294,11 @@
       "title": "审计日志没有发送到任何地方",
       "pass": "审计日志已转发到外部目的地",
       "why": "此机器之外的审计流会保留 Agent 和部署操作的记录,即使此主机丢失也一样。"
+    },
+    "approval_without_session_allow": {
+      "title": "允许没有其他活动会话的登录",
+      "pass": "没有其他活动会话的登录需等待批准",
+      "why": "没有其他会话打开时,正确的密码就能登录。设为保留后,这类登录需要在浏览器之外获得批准。"
     }
   },
   "actions": {
@@ -433,5 +438,29 @@
     "rootOnly": "只有 root 账户可以更改此策略。",
     "loading": "正在加载策略",
     "error": "无法加载扫描策略。"
+  },
+  "withoutSession": {
+    "title": "没有其他会话的登录",
+    "description": "在新浏览器上使用了正确的密码,而账户没有其他活动会话可以批准时的处理方式。",
+    "allow": "允许",
+    "hold": "保留",
+    "allowBody": "允许:除非账户自己要求批准,否则直接登录。这是默认值。",
+    "holdBody": "保留:登录需等待你持有的 signin:approve 令牌或主机命令的批准。已受信任的浏览器仍可登录。",
+    "safeguards": "为避免被锁在门外,保留需要你持有的 signin:approve 令牌,或你确认可以在服务器上运行命令。你用来更改的浏览器会保持受信任。",
+    "reset": "要在服务器上撤销,请运行:",
+    "saved": "设置已保存。",
+    "saveError": "无法保存此设置。",
+    "stepUp": "请确认是你本人,以更改没有其他会话的登录的处理方式。",
+    "confirmTitle": "保留没有其他会话的登录?",
+    "confirmBody": "没有其他会话打开时,在新浏览器上仅凭正确的密码将无法登录。请确保至少有一种批准方式。",
+    "pathsTitle": "现在可批准被保留登录的方式",
+    "confirm": "保留登录",
+    "confirming": "正在保存...",
+    "hostAccess": "我可以在服务器上运行命令",
+    "noChannelFix": "请创建你持有的 signin:approve 令牌,或勾选复选框确认你可以在服务器上运行命令。",
+    "channel": {
+      "approve_token": "你持有的 signin:approve 令牌",
+      "host_command": "服务器上的 approve-signin 命令"
+    }
   }
 }

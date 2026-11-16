@@ -52,6 +52,9 @@ type buildRow struct {
 	ImageBytes      int64      `json:"image_bytes,omitempty"`
 	ImageDeltaBytes *int64     `json:"image_delta_bytes,omitempty"`
 	Node            string     `json:"node,omitempty"`
+	RunnerName      string     `json:"runner_name,omitempty"`
+	RunnerReason    string     `json:"runner_reason,omitempty"`
+	QueueWaitMS     int64      `json:"queue_wait_ms"`
 	Platform        string     `json:"platform,omitempty"`
 	Error           string     `json:"error,omitempty"`
 	Hint            *buildHint `json:"hint,omitempty"`
@@ -93,7 +96,7 @@ func isQueuedStatus(s string) bool {
 
 func isFinishedStatus(s string) bool {
 	return s == store.DeployAttemptStatusSucceeded || s == store.DeployAttemptStatusFailed ||
-		s == store.DeployAttemptStatusCanceled || s == store.DeployAttemptStatusSuperseded
+		s == store.DeployAttemptStatusCanceled || s == store.DeployAttemptStatusSuperseded || s == store.DeployAttemptStatusRefused
 }
 
 // matchBuildRuns pairs each attempt with the build run of the same app and
@@ -190,7 +193,7 @@ func assembleBuildRows(attempts []store.DeployAttempt, runs []store.BuildRun) []
 			Image: a.Image, QueuedAt: a.QueuedAt, StartedAt: a.StartedAt, FinishedAt: a.FinishedAt, Error: a.Error,
 			LogsPath:  "/api/v1/apps/" + a.ServiceName + "/deploys/" + a.ID + "/logs",
 			CanCancel: isQueuedStatus(a.Status) || a.Status == store.DeployAttemptStatusRunning,
-			CanRetry:  a.Status == store.DeployAttemptStatusFailed || a.Status == store.DeployAttemptStatusCanceled,
+			CanRetry:  a.Status == store.DeployAttemptStatusFailed || a.Status == store.DeployAttemptStatusCanceled || a.Status == store.DeployAttemptStatusRefused,
 		}
 		if a.FinishedAt != nil && !a.FinishedAt.Before(a.StartedAt) {
 			d := a.FinishedAt.Sub(a.StartedAt).Seconds()
@@ -200,6 +203,7 @@ func assembleBuildRows(attempts []store.DeployAttempt, runs []store.BuildRun) []
 			d := float64(r.DurationMS) / 1000
 			row.DurationSeconds = &d
 			row.Node, row.Platform, row.ImageBytes = r.NodeID, r.Platform, r.ImageBytes
+			row.RunnerReason, row.QueueWaitMS = r.RunnerReason, r.QueueWaitMS
 			if r.TotalSteps > 0 {
 				ratio := float64(r.CachedSteps) / float64(r.TotalSteps)
 				row.CacheHitRatio = &ratio
@@ -337,6 +341,7 @@ func (rt *Router) handleListBuilds(w http.ResponseWriter, r *http.Request) {
 		}
 		rows = kept
 	}
+	rt.nameBuildRunners(r.Context(), rows)
 	maxConc := rt.buildLimitsView(r.Context()).Effective.MaxConcurrent
 	resp := buildCenterResponse{
 		Rows: rows, Counts: countBuildRows(rows), Nodes: []buildNodeLoadResource{}, Limit: maxConc,
@@ -363,7 +368,9 @@ func (rt *Router) handleGetBuild(w http.ResponseWriter, r *http.Request) {
 	id := r.PathValue("id")
 	for _, row := range rows {
 		if row.ID == id {
-			writeJSON(w, http.StatusOK, row)
+			one := []buildRow{row}
+			rt.nameBuildRunners(r.Context(), one)
+			writeJSON(w, http.StatusOK, one[0])
 			return
 		}
 	}
@@ -395,8 +402,8 @@ func (rt *Router) handleRetryBuild(w http.ResponseWriter, r *http.Request) {
 	if !ok {
 		return
 	}
-	if a.Status != store.DeployAttemptStatusFailed && a.Status != store.DeployAttemptStatusCanceled {
-		writeError(w, http.StatusConflict, "only a failed or canceled build can be retried (this one is "+a.Status+")")
+	if a.Status != store.DeployAttemptStatusFailed && a.Status != store.DeployAttemptStatusCanceled && a.Status != store.DeployAttemptStatusRefused {
+		writeError(w, http.StatusConflict, "only a failed, refused or canceled build can be retried (this one is "+a.Status+")")
 		return
 	}
 	if a.Source == store.DeployAttemptSourceImage || a.Source == store.DeployAttemptSourceCompose {

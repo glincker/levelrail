@@ -118,12 +118,20 @@ func (db *DB) SetCloudConnectionCheck(ctx context.Context, name, class string, a
 
 // DeleteCloudConnection removes a connection; a missing one is ErrCloudConnectionNotFound.
 func (db *DB) DeleteCloudConnection(ctx context.Context, name string) error {
-	res, err := db.ExecContext(ctx, `DELETE FROM cloud_connections WHERE name = ?`, name)
+	tx, err := db.BeginTx(ctx, nil)
+	if err != nil {
+		return fmt.Errorf("store: delete cloud connection: %w", err)
+	}
+	defer func() { _ = tx.Rollback() }()
+	res, err := tx.ExecContext(ctx, `DELETE FROM cloud_connections WHERE name = ?`, name)
 	if err != nil {
 		return fmt.Errorf("store: delete cloud connection: %w", err)
 	}
 	if n, _ := res.RowsAffected(); n == 0 {
 		return ErrCloudConnectionNotFound
 	}
-	return nil
+	if err := forgetConnectionRef(ctx, tx, ConnectionRefCloud+name); err != nil {
+		return err
+	}
+	return tx.Commit()
 }

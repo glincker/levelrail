@@ -1,3 +1,4 @@
+import { BuildQueueBanner } from '../../../../components/buildQueue/BuildQueueBanner'
 import { useState } from 'react'
 import { Link, createFileRoute } from '@tanstack/react-router'
 import { useTranslation } from 'react-i18next'
@@ -52,6 +53,7 @@ function DeploysSection() {
 
   return (
     <div className="space-y-6">
+      <BuildQueueBanner />
       <AppHistoryTimeline
         appName={name}
         attempts={attempts}

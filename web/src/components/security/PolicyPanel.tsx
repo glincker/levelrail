@@ -22,6 +22,7 @@ import {
 } from '@/components/ui/select'
 import { Switch } from '@/components/ui/switch'
 import { toast } from '@/components/ui/toast'
+import { ApprovalWithoutSessionCard } from './ApprovalWithoutSessionCard'
 import { useIsRoot } from '../../hooks/useIsRoot'
 import {
   type ApprovalScope,
@@ -213,6 +214,9 @@ export function PolicyPanel() {
   return (
     <div className="space-y-6">
       <AccountApprovalCard />
+      {policy ? (
+        <ApprovalWithoutSessionCard policy={policy} editable={isRoot} />
+      ) : null}
       <Card>
         <CardHeader>
           <CardTitle>{t('policy.title')}</CardTitle>

@@ -73,6 +73,8 @@ export interface AttentionDeviceMeta {
 
 export interface AttentionItem {
   id: string
+  // Server feed kind, used to pick a kind-specific icon.
+  kind?: string
   severity: AttentionSeverity
   title: string
   detail: string

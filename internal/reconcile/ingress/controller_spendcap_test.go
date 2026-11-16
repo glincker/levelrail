@@ -3,9 +3,10 @@ package ingress
 import (
 	"context"
 	"errors"
-	"github.com/GLINCKER/levelrail/internal/ingress"
 	"testing"
 	"time"
+
+	"github.com/GLINCKER/levelrail/internal/ingress"
 
 	"github.com/GLINCKER/levelrail/internal/spendcap"
 	"github.com/GLINCKER/levelrail/internal/store"

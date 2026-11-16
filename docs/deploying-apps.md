@@ -340,7 +340,7 @@ From the CLI, `apps status NAME` prints a "pending changes" line, and `apps env 
 
 ### App timeline
 
-`GET /api/v1/apps/{name}/timeline?limit=50&before=<cursor>` merges recorded events (`restart`, `env_change`, `secret_change`, `config_change`, `scale`, `suspend`, `resume`, `freeze_override`) with deploy attempts (`deploy`, `rollback`, and `in_progress` for a running one), newest first. Each item has `id`, `at`, `kind`, `status`, `actor` (a user, `token:<name>`, or `system`), `title`, an optional `detail`, and for deploys `ref: { type: "deploy_attempt", id }`. Events carry env and secret key names and non-secret scalar from and to values only. Pass the previous page's `next_cursor` as `before`. CLI: `levelrail-cli apps timeline NAME`. MCP: `get_app_timeline`.
+`GET /api/v1/apps/{name}/timeline?limit=50&before=<cursor>` merges recorded events (`restart`, `env_change`, `secret_change`, `config_change`, `scale`, `suspend`, `resume`, `freeze_override`) with deploy attempts (`deploy`, `rollback`, and `in_progress` for a running one), commit statuses Levelrail posted to the git forge (`commit_status`, from pipeline runs and MR or PR previews, with an optional `url` to the run or preview) and connection bindings (`connection_bound`), newest first. Status rows are kept for `retention.forge_status_days` (default 30, seeded from `APP_RETENTION_FORGE_STATUS_DAYS`). Each item has `id`, `at`, `kind`, `status`, `actor` (a user, `token:<name>`, or `system`), `title`, an optional `detail`, and for deploys `ref: { type: "deploy_attempt", id }`. Events carry env and secret key names and non-secret scalar from and to values only. Pass the previous page's `next_cursor` as `before`. CLI: `levelrail-cli apps timeline NAME`. MCP: `get_app_timeline`.
 
 ### Environment variables and secrets
 
@@ -758,6 +758,18 @@ levelrail-cli apps environments clone-preview | clone
 levelrail-cli deploy-approvals list | get | approve | reject
 ```
 
+## Delivery tab
+
+The app's **Delivery** tab shows one timeline of what happened to the app: deploys, builds, commit statuses posted to your git host, previews and connection changes. Items are grouped by day, newest first, and the list refreshes on its own while the tab is open.
+
+- A header strip shows the connected source and its health, the status reporting connection and the last deploy.
+- Filter by kind (deploys, builds, statuses, previews, integrations), by status, or search the title and detail text.
+- A commit status row shows the git provider, the short commit SHA, the description and a link to the run or preview. If posting the status failed, the row is flagged and the masked error sits in a collapsed detail. A warning appears in the header while the latest status post is failing.
+- A connection bound row links to the Integrations page.
+- Use **Load more** to page back through older activity.
+
+The data comes from `GET /api/v1/apps/{name}/timeline` and `GET /api/v1/apps/{name}/bindings`.
+
 ## Known limits
 
 - **`apps rollback` needs a tag.** Use `apps deploys rollback-to` with a deploy ID to roll back without knowing the tag.
@@ -775,7 +787,8 @@ levelrail-cli deploy-approvals list | get | approve | reject
 | `a deploy for this app is already running` (409) | `POST .../builds` or `POST .../deploys` | Wait with `levelrail-cli apps wait NAME`, or cancel the running build with `POST /api/v1/apps/{name}/builds/{id}/cancel`. |
 | `insufficient disk space at "...": N bytes free, need at least M bytes` | Build fails before BuildKit starts | Free disk space, or lower the floor with `APP_MIN_BUILD_DISK_MB`. See the disk preflight note under [From a git repository](#from-a-git-repository). |
 | Any deploy reason such as `ReadinessFailed` | `apps deploys list` | See [Status reasons](/status-reasons) for the meaning and next step of every reason. |
-| `image_pull_failed` (`manifest unknown`, `unauthorized`, `toomanyrequests`) | `apps deploys show NAME` | Fix the image name or tag, add a registry credential, or wait out the rate limit. |
+| `image_pull_failed` (`manifest unknown`, `unauthorized`) | `apps deploys show NAME` | Fix the image name or tag, or add a registry credential. |
+| `registry_rate_limited` (`toomanyrequests`) | `apps deploys show NAME` | Add a Docker Hub token under Integrations, or wait out the limit. See [private registries](/private-registries#docker-hub). |
 | `apps wait` exits 5 | CI step | The deploy finished as a failure. Run `apps deploys show NAME` for the reason. |
 | `apps wait` exits 6 | CI step | The wait timed out before the deploy finished. Raise `--timeout` or check the attempt's status. |
 

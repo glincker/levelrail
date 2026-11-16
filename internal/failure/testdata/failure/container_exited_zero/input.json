@@ -1,0 +1,8 @@
+{
+  "Status": "succeeded",
+  "Condition": {
+    "Reason": "ExitedDuringReadiness",
+    "Message": "Container exited with code 0 immediately, before it became ready"
+  },
+  "Error": "readiness probe: container demo has no published tcp port to probe"
+}

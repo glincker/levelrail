@@ -76,7 +76,7 @@ export async function fetchCertificates(): Promise<CertificateStatus[]> {
       await readErrorMessage(res, `fetch certificates failed: ${res.status}`),
     )
   }
-  return (await res.json()) as CertificateStatus[]
+  return ((await res.json()) as CertificateStatus[] | null) ?? []
 }
 
 // staleTime matches systemStatusQueryOptions's own reasoning: a settings

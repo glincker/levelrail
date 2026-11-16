@@ -41,7 +41,7 @@ export async function fetchRegistryCredentials(): Promise<
       ),
     )
   }
-  return (await res.json()) as RegistryCredential[]
+  return ((await res.json()) as RegistryCredential[] | null) ?? []
 }
 
 export function registryCredentialListQueryOptions() {

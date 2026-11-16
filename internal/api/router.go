@@ -258,6 +258,8 @@ type Router struct {
 	serverProfile           serverProfileState                                            // see server_profile.go
 	fixit                   fixitState                                                    // see fixit.go
 	buildPerf               BuildPerformanceStore                                         // see build_performance.go
+	buildQueue              buildQueueControl                                             // operator pause, drain and resume of new builds
+	buildRunnerNodes        build.NodeSource                                              // nil: the runner list shows the control plane only
 	buildLoad               BuildLoadSource                                               // nil: the build center shows no live slot usage
 	appBuildCache           AppBuildCacher                                                // nil: per app build cache routes return 501
 	buildCacheNodes         BuildCacheResolver                                            // nil: build cache routes return 501
@@ -714,6 +716,7 @@ type Router struct {
 	githubAppState               *pendingState                                              // always set (NewRouter constructs one unconditionally); purely in-memory bookkeeping, see pendingState's own doc comment
 	githubAppManifestConfig      githubapp.ManifestConfig                                   // always set, defaulted to githubapp.DefaultManifestConfig() in NewRouter, overridable via WithGitHubAppManifestConfig: the permissions/events a fresh App registration requests
 	gitConns                     GitConnectionsStore                                        // always set: GitLab, Bitbucket and Gitea connections, many per provider
+	tokenState                   tokenStateBook                                             // reminder levels and pending rotation revocations
 	gitConnSecrets               GitConnSecrets                                             // nil is valid: every git connection route that needs it returns 501
 	gitConnState                 *pendingState                                              // always set; in-memory OAuth CSRF state carrying the connection id of each attempt
 	gitAccountTried              sync.Map                                                   // connection ids whose account lookup was already attempted this process

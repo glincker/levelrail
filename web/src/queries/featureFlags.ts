@@ -29,7 +29,7 @@ export async function fetchFeatureFlags(
       await readErrorMessage(res, `fetch feature flags failed: ${res.status}`),
     )
   }
-  return (await res.json()) as FeatureFlag[]
+  return ((await res.json()) as FeatureFlag[] | null) ?? []
 }
 
 export function featureFlagListQueryOptions(appName: string) {

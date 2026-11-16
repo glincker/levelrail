@@ -51,7 +51,7 @@ async function readList(url: string, signal?: AbortSignal) {
       await readErrorMessage(res, `load maintenance failed: ${res.status}`),
     )
   }
-  return (await res.json()) as ScheduledMaintenance[]
+  return ((await res.json()) as ScheduledMaintenance[] | null) ?? []
 }
 
 export function useScheduledMaintenance() {

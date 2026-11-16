@@ -88,7 +88,7 @@ async function fetchHistory(): Promise<JanitorPlanReport[]> {
       await readErrorMessage(res, `load cleanup history failed: ${res.status}`),
     )
   }
-  return (await res.json()) as JanitorPlanReport[]
+  return ((await res.json()) as JanitorPlanReport[] | null) ?? []
 }
 
 export function useJanitorPlanHistory(enabled: boolean) {

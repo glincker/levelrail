@@ -15,8 +15,10 @@ import type {
   GitConnectionBranch,
   GitConnectionProvider,
   GitProviderConnection,
+  RotateGitConnectionResult,
   UseRepoAsSourceRequest,
 } from '../types/gitConnections'
+import type { GitAccessInfo } from '../types/gitAccess'
 import type { GitDisconnectResult } from '../types/gitProviders'
 import type { GitSourceResource } from '../types/gitSource'
 import { gitProviderKeys } from './gitProviders'
@@ -166,6 +168,25 @@ export function useSetDefaultGitConnection() {
   })
 }
 
+// Root only. The new token never reaches the browser; the server keeps it.
+export function useRotateGitConnection() {
+  const invalidate = useInvalidateGitConnections()
+  return useMutation<
+    RotateGitConnectionResult,
+    ApiError,
+    { id: string; expiresAt?: string }
+  >({
+    meta: { errorToast: false },
+    mutationFn: ({ id, expiresAt }) =>
+      request(
+        `/api/v1/git-connections/${encodeURIComponent(id)}/rotate`,
+        json('POST', expiresAt ? { expires_at: expiresAt } : undefined),
+        'rotate token failed',
+      ),
+    onSuccess: invalidate,
+  })
+}
+
 export function useDisconnectGitConnection() {
   const invalidate = useInvalidateGitConnections()
   const queryClient = useQueryClient()
@@ -211,4 +232,19 @@ export function connectRepoAsSource(
     json('POST', req),
     'use repository as source failed',
   )
+}
+
+// Access details for one connection. A failure (endpoint not served yet, or
+// the provider unreachable) leaves the data undefined so the panel degrades.
+export function useGitConnectionAccess(id: string) {
+  return useQuery({
+    queryKey: [...gitConnectionKeys.all, 'access', id],
+    queryFn: () =>
+      request<GitAccessInfo>(
+        `/api/v1/git-connections/${encodeURIComponent(id)}/access`,
+        undefined,
+        'Could not load access details',
+      ),
+    retry: false,
+  })
 }

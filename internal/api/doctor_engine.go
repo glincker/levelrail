@@ -82,6 +82,8 @@ func (rt *Router) doctorDefs() []doctorCheckDef {
 		one("host_pressure", doctorGroupHost, rt.doctorCheckHostPressure),
 		one("host_swap", doctorGroupHost, rt.doctorCheckNoSwap),
 		one("build_memory", doctorGroupHost, rt.doctorCheckBuildMemory),
+		one("build_queue", doctorGroupHost, rt.doctorCheckBuildQueue),
+		one("build_cache_budget", doctorGroupHost, rt.doctorCheckBuildCacheBudget),
 		one("unit_protection", doctorGroupHost, func(ctx context.Context) doctorCheckResource { return rt.doctorCheckUnitProtection(ctx, time.Now()) }),
 		one("cpu", doctorGroupHost, func(context.Context) doctorCheckResource { return rt.doctorCheckCPU() }),
 		one("disk_io_latency", doctorGroupHost, func(context.Context) doctorCheckResource { return rt.doctorCheckDiskIOLatency() }),
@@ -98,6 +100,7 @@ func (rt *Router) doctorDefs() []doctorCheckDef {
 		one("dashboard_https", doctorGroupNetwork, rt.doctorCheckDashboardHTTPS),
 		many("registry", doctorGroupNetwork, rt.doctorCheckRegistryReachability),
 		one("registry_mirror", doctorGroupNetwork, rt.doctorCheckMirrorReachability),
+		many("dockerhub", doctorGroupNetwork, rt.doctorCheckDockerHub),
 		many("cross_node_ingress", doctorGroupNetwork, rt.doctorCheckCrossNodeIngress),
 		many("ingress_edge", doctorGroupNetwork, rt.doctorCheckIngressEdge),
 		many("ingress_survives", doctorGroupNetwork, func(context.Context) []doctorCheckResource {
@@ -118,7 +121,9 @@ func (rt *Router) doctorDefs() []doctorCheckDef {
 		one("secret_reveal_policy", doctorGroupSecurity, func(context.Context) doctorCheckResource { return doctorCheckSecretReveal() }),
 		one("legacy_tokens", doctorGroupSecurity, rt.doctorCheckLegacyTokens),
 		one("git_connections", doctorGroupSecurity, rt.doctorCheckGitConnections),
+		one("git_oauth_refresh", doctorGroupSecurity, rt.doctorCheckGitOAuthRefresh),
 		one("token_hygiene", doctorGroupSecurity, rt.doctorCheckTokenHygiene),
+		one("approval_without_session", doctorGroupSecurity, rt.doctorCheckApprovalWithoutSession),
 		one("signature_pin", doctorGroupSecurity, func(context.Context) doctorCheckResource { return rt.doctorCheckReleaseSignature() }),
 
 		one("control_plane_backup", doctorGroupBackups, func(context.Context) doctorCheckResource { return rt.doctorCheckControlPlaneBackup() }),

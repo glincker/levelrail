@@ -1,0 +1,43 @@
+{
+  "badge": {
+    "ok": "Valid",
+    "soon": "Expires soon",
+    "expired": "Expired"
+  },
+  "left": {
+    "days_one": "in {{count}} day",
+    "days_other": "in {{count}} days",
+    "hours_one": "in {{count}} hour",
+    "hours_other": "in {{count}} hours"
+  },
+  "revokesIn_one": "Revokes in {{count}} hour",
+  "revokesIn_other": "Revokes in {{count}} hours",
+  "policy": "Reminders {{windows}} days before expiry. A rotated token keeps working for {{grace}}.",
+  "rotate": {
+    "platformTooltip": "Platform tokens rotate themselves and cannot be rotated here.",
+    "title": "Rotate {{name}}?",
+    "body": "A new token is created with the same name, abilities and scope, and a fresh lifetime.",
+    "grace": "The old token keeps working for {{grace}} so you can switch callers, then it is revoked.",
+    "noGrace": "The old token is revoked at once.",
+    "cli": "From a terminal:",
+    "cancel": "Cancel",
+    "confirm": "Rotate token",
+    "pending": "Rotating...",
+    "doneTitle": "New token for {{name}}",
+    "doneBody": "Update everything that uses the old token with this secret.",
+    "warning": "Copy this token now. It is shown once and cannot be retrieved later.",
+    "secretLabel": "New token secret",
+    "copy": "Copy",
+    "copied": "Copied",
+    "oldUntil": "The old token works until {{time}}.",
+    "oldRevoked": "The old token was revoked at once.",
+    "done": "Done",
+    "errors": {
+      "forbidden": "Platform tokens rotate themselves and cannot be rotated here.",
+      "conflict": "This token is already revoked, so there is nothing to rotate. The list was refreshed.",
+      "notFound": "This token no longer exists or belongs to someone else.",
+      "network": "Could not reach the server. Nothing was rotated, try again.",
+      "generic": "Rotation failed: {{message}}"
+    }
+  }
+}

@@ -7,6 +7,7 @@ import {
   type BuildStep,
   type LogPhase,
 } from '../../lib/buildLogPhases'
+import { stageDurationMs, type BuildStage } from '../../lib/buildStages'
 import { useDeployDetailT } from './useDeployDetailT'
 
 const TOTAL_PHASES: Exclude<LogPhase, 'other'>[] = ['install', 'build', 'push']
@@ -15,9 +16,12 @@ const TOTAL_PHASES: Exclude<LogPhase, 'other'>[] = ['install', 'build', 'push']
 export function BuildStepList({
   analysis,
   onJump,
+  stages = [],
 }: {
   analysis: BuildLogAnalysis
   onJump: (step: BuildStep) => void
+  /** Recorded stages; their timing wins over the one parsed from the log. */
+  stages?: BuildStage[]
 }) {
   const { t } = useDeployDetailT()
   const [open, setOpen] = useState(false)
@@ -25,6 +29,12 @@ export function BuildStepList({
     return null
   }
   const Caret = open ? ChevronDownGlassIcon : ChevronRightGlassIcon
+  const recorded = (phase: Exclude<LogPhase, 'other'>): number => {
+    const stage = stages.find((s) => s.stage === phase)
+    return stage && stage.status !== 'running' ? stageDurationMs(stage, 0) : 0
+  }
+  const phaseMs = (phase: Exclude<LogPhase, 'other'>): number =>
+    recorded(phase) || analysis.durations[phase]
   const steps = [...analysis.steps].sort((a, b) => a.firstLine - b.firstLine)
 
   return (
@@ -50,8 +60,8 @@ export function BuildStepList({
               {t('phases.total', {
                 phase: t(`phases.${phase}`),
                 time:
-                  analysis.durations[phase] > 0
-                    ? formatStepDuration(analysis.durations[phase])
+                  phaseMs(phase) > 0
+                    ? formatStepDuration(phaseMs(phase))
                     : t('phases.noTiming'),
               })}
             </li>

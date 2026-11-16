@@ -28,7 +28,8 @@
     "held": "Suspendu",
     "awaiting_approval": "En attente d'approbation",
     "rolled_back": "Annulé par rollback",
-    "superseded": "Remplacé"
+    "superseded": "Remplacé",
+    "refused": "Refusé"
   },
   "stream": {
     "connecting": "Connexion",
@@ -110,7 +111,8 @@
       "superseded": "Remplacé",
       "queued": "En file d'attente",
       "canceled": "Annulé",
-      "pending": "En attente"
+      "pending": "En attente",
+      "refused": "Refusé"
     }
   }
 }

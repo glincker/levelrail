@@ -171,17 +171,25 @@ func (db *DB) ListEventWebhooks(ctx context.Context) ([]EventWebhook, error) {
 
 // DeleteEventWebhook removes a webhook and its delivery log.
 func (db *DB) DeleteEventWebhook(ctx context.Context, id string) error {
-	if _, err := db.ExecContext(ctx, `DELETE FROM event_webhook_deliveries WHERE webhook_id = ?`, id); err != nil {
+	tx, err := db.BeginTx(ctx, nil)
+	if err != nil {
+		return fmt.Errorf("store: delete event webhook %q: %w", id, err)
+	}
+	defer func() { _ = tx.Rollback() }()
+	if _, err := tx.ExecContext(ctx, `DELETE FROM event_webhook_deliveries WHERE webhook_id = ?`, id); err != nil {
 		return fmt.Errorf("store: delete event webhook deliveries %q: %w", id, err)
 	}
-	res, err := db.ExecContext(ctx, `DELETE FROM event_webhooks WHERE id = ?`, id)
+	res, err := tx.ExecContext(ctx, `DELETE FROM event_webhooks WHERE id = ?`, id)
 	if err != nil {
 		return fmt.Errorf("store: delete event webhook %q: %w", id, err)
 	}
 	if n, _ := res.RowsAffected(); n == 0 {
 		return ErrEventWebhookNotFound
 	}
-	return nil
+	if err := forgetConnectionRef(ctx, tx, ConnectionRefEventWebhook+id); err != nil {
+		return err
+	}
+	return tx.Commit()
 }
 
 const eventDeliveryColumns = `id, webhook_id, event_id, event_type, payload, state, attempts, response_status, last_error, next_attempt_at, created_at, updated_at`

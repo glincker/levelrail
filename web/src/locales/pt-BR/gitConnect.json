@@ -1,0 +1,166 @@
+{
+  "title": "Conecte {{provider}} em quatro passos",
+  "stepApp": "Abra a página de aplicativos OAuth e crie um aplicativo.",
+  "openApp": "Abrir a página de aplicativos de {{host}}",
+  "appHint": {
+    "gitlab": "Em Configurações do usuário, Aplicativos. Um aplicativo de grupo ou de administrador também funciona.",
+    "gitea": "Em Configurações, Aplicativos, Gerenciar aplicativos OAuth2. Marque Cliente confidencial.",
+    "forgejo": "Em Configurações, Aplicativos, Gerenciar aplicativos OAuth2. Marque Cliente confidencial.",
+    "bitbucket": "Abra o workspace, depois Configurações, Consumidores OAuth, Adicionar consumidor. Marque consumidor privado."
+  },
+  "stepRedirect": "Defina o URI de redirecionamento (URL de callback) exatamente com este valor.",
+  "redirectLabel": "URI de redirecionamento",
+  "copy": "Copiar",
+  "copied": "Copiado",
+  "copyFailed": "Não foi possível copiar. Selecione o URI e copie manualmente.",
+  "stepScopes": "Selecione estes escopos.",
+  "scopesLabel": "Escopos a selecionar",
+  "scopesNone": "Este provedor não tem lista de escopos. Conceda leitura e escrita de repositórios quando ele pedir.",
+  "stepPaste": "Cole abaixo o ID do cliente e o segredo, depois salve e autorize.",
+  "hint": {
+    "https": "Este endereço usa HTTPS, então o provedor o aceita como URI de redirecionamento.",
+    "loopback": "É um endereço local. A maioria dos provedores o aceita só para testes neste navegador.",
+    "insecure": "Este endereço é HTTP simples e a maioria dos provedores o recusa como URI de redirecionamento. Use HTTPS ou conecte com um token."
+  },
+  "fallback": {
+    "title": "Não pode usar OAuth aqui?",
+    "body": "Um token não precisa de URI de redirecionamento, domínio público nem aplicativo.",
+    "action": "Conectar com um token"
+  },
+  "field": {
+    "empty": "Este campo é obrigatório.",
+    "whitespace": "Remova espaços ou quebras de linha do valor colado.",
+    "unusual": "Isso não parece um valor comum de {{provider}}. Confira se copiou tudo."
+  },
+  "name": {
+    "gitlab": "GitLab",
+    "gitea": "Gitea",
+    "forgejo": "Forgejo",
+    "bitbucket": "Bitbucket Cloud",
+    "bitbucket_server": "Bitbucket Server",
+    "azure_devops": "Azure DevOps"
+  },
+  "methods": {
+    "title": "Formas de conectar",
+    "recommended": "Recomendado",
+    "selfManaged": "O GitLab auto-hospedado funciona com todos os métodos: informe sua URL base no painel de conexão.",
+    "status": {
+      "connected": "Conectado",
+      "not_connected": "Não conectado",
+      "needs_attention": "Precisa de atenção",
+      "expires_soon": "Expira em breve"
+    },
+    "oauth": {
+      "name": "Aplicativo OAuth",
+      "unlocks": "Entre pelo provedor. Libera repositórios, webhooks, status e comentários, e se renova sozinho.",
+      "action": "Conectar com OAuth"
+    },
+    "token": {
+      "name": "Token de acesso",
+      "unlocks": "Cole um token pessoal, de projeto ou de grupo. Não precisa de URI de redirecionamento nem de domínio público.",
+      "action": "Conectar com um token"
+    },
+    "deploy_token": {
+      "name": "Token de deploy",
+      "unlocks": "Pulls somente leitura do registro (read_registry) para fazer deploy de imagens.",
+      "action": "Credenciais do registro"
+    },
+    "ci_job": {
+      "name": "Token de job de CI ou OIDC",
+      "unlocks": "Permite que jobs do pipeline façam deploy sem um segredo armazenado.",
+      "action": "Configurar confiança de CI"
+    }
+  },
+  "access": {
+    "matrix": "Acesso e escopos",
+    "allowed": "Permitido",
+    "notAllowed": "Não permitido",
+    "needsScope": "Precisa de {{scope}}",
+    "notReported": "Não informado",
+    "scopesUnknown": "O plano de controle ainda não informa os escopos concedidos a esta conta, então cada recurso mostra Não informado.",
+    "scopes": "Escopos concedidos",
+    "sees": "Pode ver",
+    "projects_one": "{{count}} projeto",
+    "projects_other": "{{count}} projetos",
+    "expires": "Expiração do token",
+    "lastUsed": "Último uso",
+    "addScope": "Adicionar escopo",
+    "addScopeMissing": "Precisa de um endpoint que amplie escopos. Por enquanto, reautorize ou adicione um token com mais escopos.",
+    "rotate": "Rotacionar token",
+    "addAnother": "Adicionar outra conta",
+    "inferred": "Inferido",
+    "rotateOauth": "Conexões OAuth se renovam sozinhas, não há token para rotacionar.",
+    "rotateUnsupported": "Este provedor não pode rotacionar esta credencial. Adicione um token novo e desconecte o antigo."
+  },
+  "cap": {
+    "list_repos": "Listar repositórios",
+    "clone_sync": "Clonar e sincronizar",
+    "commit_status": "Status de commit",
+    "mr_comments": "Comentários e prévias de merge requests",
+    "registry_pull": "Pull do registro",
+    "import_group": "Importar um grupo",
+    "register_webhook": "Registrar webhooks automaticamente",
+    "tag_push_trigger": "Gatilhos de tag e push",
+    "deployments_report": "Relatório de deploys"
+  },
+  "next": {
+    "title": "O que você pode adicionar",
+    "import": {
+      "title": "Importar repositórios",
+      "body": "Escolha repositórios ou um grupo inteiro e transforme em apps.",
+      "action": "Abrir fontes"
+    },
+    "previews": {
+      "title": "Ativar prévias de merge requests",
+      "body": "Faça deploy de uma prévia para cada merge request aberto.",
+      "action": "Abrir fontes"
+    },
+    "ci": {
+      "title": "Adicionar confiança de CI",
+      "body": "Jobs do pipeline fazem deploy com uma identidade de curta duração.",
+      "action": "Abrir pipelines"
+    },
+    "webhook": {
+      "title": "Adicionar um webhook",
+      "body": "Envie eventos de deploy e build para outro serviço.",
+      "action": "Abrir webhooks"
+    },
+    "registry": {
+      "title": "Conectar um registro",
+      "body": "Guarde credenciais de pull para imagens privadas.",
+      "action": "Abrir credenciais do registro"
+    }
+  },
+  "credential": {
+    "noExpiry": "Sem expiração informada",
+    "autoRenews": "Renova sozinha",
+    "expiresInHours_one": "Expira em {{count}} hora",
+    "expiresInHours_other": "Expira em {{count}} horas",
+    "expiresInDays_one": "Expira em {{count}} dia",
+    "expiresInDays_other": "Expira em {{count}} dias",
+    "expired_one": "Expirou há {{count}} dia",
+    "expired_other": "Expirou há {{count}} dias",
+    "lastRefresh": "Renovada {{when}}",
+    "refreshFailing": "A renovação está falhando",
+    "reauthorize": "Reautorizar"
+  },
+  "rotate": {
+    "title": "Rotacionar o token de {{label}}?",
+    "description": "Isso substitui o token de acesso no provedor.",
+    "consequence": "O GitLab emite um token novo e o antigo para de funcionar na hora. Builds e pulls desta conexão trocam sozinhos.",
+    "confirm": "Rotacionar token",
+    "pending": "Rotacionando",
+    "expiryLabel": "Expiração do token novo (AAAA-MM-DD)",
+    "expiryHint": "Preenchida com a vida de rotação de {{days}} dias. Limpe para o provedor decidir.",
+    "errors": {
+      "noMasterKey": "A rotação precisa de uma chave mestra no plano de controle. Configure uma em chaves de criptografia e tente de novo.",
+      "provider": "O provedor não concluiu a rotação. O token atual não mudou, tente de novo em instantes.",
+      "badDate": "Use uma data no formato AAAA-MM-DD."
+    },
+    "toast": {
+      "done": "Token rotacionado",
+      "expires": "O token novo expira em {{date}}.",
+      "noExpiry": "O provedor não informou expiração para o token novo."
+    }
+  }
+}

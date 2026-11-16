@@ -3,6 +3,7 @@ import {
   DownloadGlassIcon,
   PackageGlassIcon,
 } from '@thesvg/ui-react'
+import { useQuery } from '@tanstack/react-query'
 import { useCallback, useMemo, useState } from 'react'
 import { useTranslation } from 'react-i18next'
 import { buttonVariants } from '@/components/ui/button'
@@ -15,6 +16,7 @@ import type { DeployStepEvent } from '../../hooks/useDeployStepStream'
 import type { DeployAttempt } from '../../types/deployAttempt'
 import type { GitSourceResource } from '../../types/gitSource'
 import { deployLogDownloadURL } from '../../queries/deployLogs'
+import { buildStagesQueryOptions } from '../../queries/buildStages'
 import { parseBuildCacheStats } from '../../lib/buildCacheStats'
 import { analyzeBuildLog, type BuildStep } from '../../lib/buildLogPhases'
 import { BuildPhaseChips, type PhaseFilter } from './BuildPhaseChips'
@@ -52,6 +54,7 @@ export function BuildTab({
   isPaused,
   pause,
   resume,
+  part = 'all',
 }: {
   appName: string
   deployId: string
@@ -64,6 +67,8 @@ export function BuildTab({
   isPaused: boolean
   pause: () => void
   resume: () => void
+  /** Which half to render when the run page stacks sections. */
+  part?: 'all' | 'summary' | 'logs'
 }) {
   const { t } = useDeployDetailT()
   const { t: tc } = useTranslation('deployContexts')
@@ -72,6 +77,7 @@ export function BuildTab({
     : undefined
   const cacheStats = useMemo(() => parseBuildCacheStats(lines), [lines])
   const analysis = useMemo(() => analyzeBuildLog(lines), [lines])
+  const stageData = useQuery(buildStagesQueryOptions(appName, deployId)).data
   const [phase, setPhase] = useState<PhaseFilter>('all')
   const [scrollTarget, setScrollTarget] = useState<{ id: number } | null>(null)
   const shownLines = useMemo(
@@ -110,7 +116,7 @@ export function BuildTab({
 
   return (
     <div className="space-y-3">
-      {hasSource ? (
+      {part !== 'logs' && hasSource ? (
         <section
           aria-label={t('build.source')}
           className="rounded-lg border border-border p-4"
@@ -145,7 +151,7 @@ export function BuildTab({
         </section>
       ) : null}
 
-      {steps.length > 0 ? (
+      {part !== 'summary' && steps.length > 0 ? (
         <details
           open={noBuildStep || !finished}
           className="rounded-lg border border-border px-3 py-2"
@@ -161,7 +167,7 @@ export function BuildTab({
         </details>
       ) : null}
 
-      {lines.length > 0 ? (
+      {part === 'summary' ? null : lines.length > 0 ? (
         <>
           <div className="flex flex-wrap items-center justify-between gap-2">
             <p
@@ -190,7 +196,11 @@ export function BuildTab({
             active={phase}
             onSelect={setPhase}
           />
-          <BuildStepList analysis={analysis} onJump={jumpToStep} />
+          <BuildStepList
+            analysis={analysis}
+            onJump={jumpToStep}
+            stages={stageData?.stages}
+          />
           <LogTerminal
             lines={shownLines}
             scrollTarget={scrollTarget}
@@ -224,14 +234,16 @@ export function BuildTab({
           </div>
         </div>
       )}
-      <details className="rounded-lg border border-border p-3">
-        <summary className="cursor-pointer text-sm font-medium text-foreground">
-          {tc('effective.title')}
-        </summary>
-        <div className="pt-3">
-          <EffectiveConfigPanel appName={appName} />
-        </div>
-      </details>
+      {part !== 'logs' ? (
+        <details className="rounded-lg border border-border p-3">
+          <summary className="cursor-pointer text-sm font-medium text-foreground">
+            {tc('effective.title')}
+          </summary>
+          <div className="pt-3">
+            <EffectiveConfigPanel appName={appName} />
+          </div>
+        </details>
+      ) : null}
     </div>
   )
 }

@@ -10,6 +10,7 @@ import (
 	"time"
 
 	"github.com/GLINCKER/levelrail/internal/store"
+	"github.com/GLINCKER/levelrail/internal/store/storetest"
 	"github.com/GLINCKER/levelrail/internal/telemetry"
 )
 
@@ -75,7 +76,7 @@ func TestVendorPayloads(t *testing.T) {
 }
 
 func TestVendorDestinationNeedsAKeyAndStoresItAsHeader(t *testing.T) {
-	db := openDB(t)
+	db := storetest.Open(t)
 	sec := &memSecrets{}
 	svc := newTestServiceWith(t, db, telemetry.NewLogBroadcaster(), sec)
 	ctx := context.Background()
@@ -106,7 +107,7 @@ func TestVendorDestinationNeedsAKeyAndStoresItAsHeader(t *testing.T) {
 }
 
 func TestVendorDestinationDeliversWithTheKeyHeader(t *testing.T) {
-	db := openDB(t)
+	db := storetest.Open(t)
 	b := telemetry.NewLogBroadcaster()
 	svc := newTestService(t, db, b)
 	rcv := &sink{}

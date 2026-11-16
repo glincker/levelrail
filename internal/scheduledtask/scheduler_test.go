@@ -2,22 +2,18 @@ package scheduledtask
 
 import (
 	"context"
-	"path/filepath"
 	"sync"
 	"testing"
 	"time"
 
 	"github.com/GLINCKER/levelrail/internal/store"
+	"github.com/GLINCKER/levelrail/internal/store/storetest"
 	"github.com/GLINCKER/levelrail/kit/cronexpr"
 )
 
 func openDB(t *testing.T) *store.DB {
 	t.Helper()
-	db, err := store.Open(context.Background(), filepath.Join(t.TempDir(), "jobs.db"))
-	if err != nil {
-		t.Fatalf("store.Open: %v", err)
-	}
-	t.Cleanup(func() { _ = db.Close() })
+	db := storetest.Open(t)
 	if err := db.SaveDesiredService(context.Background(), store.DesiredService{Name: "web", Image: "levelrail/web:1", Port: 3000}); err != nil {
 		t.Fatalf("seed service: %v", err)
 	}

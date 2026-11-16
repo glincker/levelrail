@@ -17,11 +17,14 @@ const (
 
 // Reason codes explain why a query was answered the way it was.
 const (
-	ReasonLocalRecord = "local_record"
-	ReasonNoData      = "no_data"
-	ReasonNoSuchApp   = "no_such_app"
-	ReasonRefused     = "refused"
-	ReasonFormatError = "format_error"
+	ReasonLocalRecord    = "local_record"
+	ReasonNoData         = "no_data"
+	ReasonNoSuchApp      = "no_such_app"
+	ReasonRefused        = "refused"
+	ReasonFormatError    = "format_error"
+	ReasonForwarded      = "forwarded"
+	ReasonCached         = "cached"
+	ReasonUpstreamFailed = "upstream_failed"
 )
 
 // unknownApp keys counters for sources that map to no known app container.

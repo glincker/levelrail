@@ -102,14 +102,22 @@ func (db *DB) UpdateSecretConnection(ctx context.Context, c SecretConnection) er
 
 // DeleteSecretConnection removes a connection; a missing one is ErrSecretConnectionNotFound.
 func (db *DB) DeleteSecretConnection(ctx context.Context, name string) error {
-	res, err := db.ExecContext(ctx, `DELETE FROM secret_connections WHERE name = ?`, name)
+	tx, err := db.BeginTx(ctx, nil)
+	if err != nil {
+		return fmt.Errorf("store: delete secret connection: %w", err)
+	}
+	defer func() { _ = tx.Rollback() }()
+	res, err := tx.ExecContext(ctx, `DELETE FROM secret_connections WHERE name = ?`, name)
 	if err != nil {
 		return fmt.Errorf("store: delete secret connection: %w", err)
 	}
 	if n, _ := res.RowsAffected(); n == 0 {
 		return ErrSecretConnectionNotFound
 	}
-	return nil
+	if err := forgetConnectionRef(ctx, tx, ConnectionRefSecret+name); err != nil {
+		return err
+	}
+	return tx.Commit()
 }
 
 func normalizePolicyJSON(p string) string {

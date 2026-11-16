@@ -567,7 +567,7 @@
     "medianDuration": "Duração mediana",
     "medianDurationTip": "Tempo mediano dos deploys concluídos nas últimas 24 horas.",
     "needsAttention": "Requer atenção",
-    "needsAttentionTip": "Deploys retidos e imagens ao vivo que diferem do que está em execução. Selecione para mostrar os deploys retidos.",
+    "needsAttentionTip": "Deploys retidos, imagens ativas diferentes das em execução e apps cujo último deploy falhou ou foi recusado. Selecione para exibi-los.",
     "deploys14": "Deploys (14 dias)",
     "deploys14Tip": "Deploys iniciados por dia nos últimos 14 dias."
   },
@@ -614,7 +614,8 @@
       "held": "Retido",
       "awaiting_approval": "Aguardando aprovação",
       "rolled_back": "Rollback feito",
-      "superseded": "Substituído"
+      "superseded": "Substituído",
+      "refused": "Recusado"
     },
     "trigger": {
       "git push": "Push do Git",
@@ -679,5 +680,137 @@
     "viewQueue": "Ver fila",
     "progress": "{{received}} de {{required}} aprovadores distintos até agora. O deploy executa quando o último aprovar.",
     "recorded": "Aprovação registrada: {{received}} de {{required}} aprovadores distintos."
+  },
+  "interruption": {
+    "interrupted": "Interrompido: o plano de controle reiniciou enquanto este deploy rodava",
+    "orphaned": "Órfão: nenhum build estava rodando para este deploy, então ele foi cancelado",
+    "retry": "Faça o deploy de novo para tentar outra vez"
+  },
+  "buildQueue": {
+    "chip": "{{state}}, {{used}} de {{total}} vagas",
+    "state": {
+      "running": "Em execução",
+      "paused": "Pausada",
+      "draining": "Esvaziando"
+    },
+    "by": "por {{actor}}",
+    "menu": "Ações da fila",
+    "resume": "Retomar builds",
+    "drain": "Esvaziar a fila",
+    "drainHint": "Deixa os builds em andamento terminarem e segura os novos",
+    "done": {
+      "pause": "Fila de builds pausada.",
+      "drain": "Fila de builds esvaziando.",
+      "resume": "Fila de builds retomada."
+    },
+    "conflict": {
+      "pause": "A fila já está pausada.",
+      "drain": "A fila já está esvaziando.",
+      "resume": "A fila já está em execução."
+    },
+    "failed": "Não foi possível alterar a fila de builds.",
+    "pause": {
+      "action": "Pausar builds",
+      "title": "Pausar a fila de builds",
+      "description": "Os builds em andamento terminam. Os novos esperam até você retomar.",
+      "reasonLabel": "Motivo (opcional)",
+      "reasonPlaceholder": "Por exemplo, manutenção do registro",
+      "submit": "Pausar"
+    },
+    "kill": {
+      "action": "Cancelar todos os builds",
+      "title": "Cancelar todos os builds?",
+      "description": "Isso cancela {{running}} builds em andamento e {{queued}} na fila.",
+      "confirm": "Cancelar todos",
+      "confirming": "Cancelando",
+      "none": "Nenhum build em andamento ou na fila agora.",
+      "more": "e mais {{count}}",
+      "alsoPause": "Pausar a fila também",
+      "stepUp": "Confirme sua senha para cancelar todos os builds.",
+      "done_one": "{{count}} build cancelado.",
+      "done_other": "{{count}} builds cancelados.",
+      "someFailed": "{{count}} não puderam ser cancelados: {{apps}}",
+      "conflict": "A fila mudou enquanto você confirmava. Confira a fila e tente de novo.",
+      "failed": "Não foi possível cancelar os builds."
+    },
+    "banner": {
+      "paused": "Os builds estão pausados",
+      "draining": "Os builds estão esvaziando"
+    },
+    "autoResume": "Retoma automaticamente",
+    "panel": {
+      "title": "Fila de builds",
+      "summary": "{{running}} em andamento, {{queued}} na fila, {{used}} de {{total}} vagas em uso",
+      "position": "nº {{position}}",
+      "waiting": "Aguardando: {{reason}}"
+    },
+    "phase": {
+      "preparing": "Preparando",
+      "held": "Retido",
+      "waiting": "Aguardando",
+      "building": "Compilando"
+    }
+  },
+  "runners": {
+    "title": "Runners de build",
+    "strategy": "Estratégia: {{strategy}}",
+    "changeStrategy": "Alterar estratégia",
+    "strategies": {
+      "first": "primeiro disponível",
+      "least_loaded": "menos carregado",
+      "sticky_per_app": "fixo por app"
+    },
+    "kind": {
+      "control_plane": "Plano de controle",
+      "node": "Nó de build"
+    },
+    "status": {
+      "ready": "Pronto",
+      "busy": "Ocupado",
+      "pressure": "Sob pressão",
+      "draining": "Drenando",
+      "offline": "Offline"
+    },
+    "cores_one": "{{count}} núcleo",
+    "cores_other": "{{count}} núcleos",
+    "load": "Carga {{load}}",
+    "slots": "{{used}} de {{total}} vagas ({{percent}}%)",
+    "waiting_one": "{{count}} aguardando",
+    "waiting_other": "{{count}} aguardando",
+    "capacityLabel": "Vagas de build em uso em {{name}}",
+    "labels": "Rótulos",
+    "lastBuild": "Último build:",
+    "noBuilds": "Nenhum build ainda",
+    "cache": "Cache de build {{size}}",
+    "builtOn": "Compilado em {{name}}",
+    "queued": "Na fila {{wait}}",
+    "error": {
+      "title": "Não foi possível carregar os runners de build",
+      "description": "A lista de runners não carregou. Os builds não são afetados.",
+      "retry": "Recarregar"
+    },
+    "empty": {
+      "title": "Adicione um nó de build",
+      "description": "Os builds rodam no plano de controle. Registre um segundo nó com builds ativados para tirá-los da máquina que serve seus apps.",
+      "action": "Abrir Nós",
+      "docs": "Roteamento de nós de build"
+    }
+  },
+  "runnerPref": {
+    "title": "Runner de build",
+    "description": "Escolha onde este app é compilado. Deixe vazio para seguir a estratégia global.",
+    "node": "Nó de build",
+    "anyNode": "Qualquer nó de build",
+    "labels": "Rótulos",
+    "labelsPlaceholder": "gpu, arch=arm64",
+    "pin": "Fixar neste nó",
+    "pinHint": "Se este nó não puder compilar, usa o plano de controle, nunca outro nó.",
+    "pinNeedsNode": "Escolha um nó para fixá-lo.",
+    "noAbility": "Você precisa de acesso de deploy para alterar isto.",
+    "clear": "Limpar",
+    "save": "Salvar",
+    "saved": "Runner de build salvo",
+    "cleared": "Runner de build limpo",
+    "retry": "Tentar de novo"
   }
 }

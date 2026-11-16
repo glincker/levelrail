@@ -31,6 +31,7 @@ Docker objects (stopped containers, images, build cache, orphaned volumes, old d
 | `auth.expired_credentials` | Expired sessions, device login codes and magic links, counted from their expiry | `retention.auth_expired_days` | 30 days | `APP_RETENTION_AUTH_EXPIRED_DAYS` | none |
 | `data.ai_history` | AI assistant chats idle past the window (with their messages) and AI usage metering | `retention.ai_history_days` | 90 days | `APP_RETENTION_AI_HISTORY_DAYS` | none |
 | `data.restore_history` | Finished restores, point-in-time restores and backup drills | `retention.restore_history_days` | 90 days | `APP_RETENTION_RESTORE_HISTORY_DAYS` | none |
+| `deploys.forge_status` | Commit statuses posted to a git forge, shown on the app timeline | `retention.forge_status_days` | 30 days | `APP_RETENTION_FORGE_STATUS_DAYS` | none |
 | `deploys.probe_attempts` | Per-attempt readiness probe detail | `retention.probe_attempt_days` | 90 days | `APP_RETENTION_PROBE_ATTEMPT_DAYS` | none |
 | `deploys.app_history` | App lifecycle events, scheduled deploy history, last canary outcomes | `retention.app_history_days` | 90 days | `APP_RETENTION_APP_HISTORY_DAYS` | none |
 | `observability.usage_cost` | Daily cost showback snapshots | `retention.usage_cost_days` | 90 days | `APP_RETENTION_USAGE_COST_DAYS` | none |

@@ -116,7 +116,7 @@ function Preview({
       </div>
       <pre
         aria-label={t('lb.export.contents', { file: data.filename })}
-        className="max-h-96 overflow-auto rounded-xl border bg-muted/40 p-3 font-mono text-xs leading-relaxed"
+        className="max-h-96 overflow-auto rounded-xl border border-glinr-code-border bg-glinr-code-bg p-3 font-mono text-xs leading-relaxed text-glinr-code-fg selection:bg-glinr-code-selection"
       >
         <code>
           {tokenize(data.body).map((t, i) => (

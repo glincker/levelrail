@@ -7,6 +7,7 @@
 @import './styles/glinr-tokens.css';
 @import './styles/glinr-theme.css';
 @import './styles/look.css';
+@import './styles/scrollbar.css';
 
 @custom-variant dark (&:is(.dark *));
 @custom-variant look-glass (html:not([data-look='restrained']) &);
@@ -936,8 +937,4 @@ body {
   }
 }
 
-/* Thin, quiet scrollbar for the sidebar nav list. */
-.nav-scroll {
-  scrollbar-width: thin;
-  scrollbar-color: var(--sidebar-border) transparent;
-}
+/* The sidebar nav list takes the global scrollbar skin from styles/scrollbar.css. */

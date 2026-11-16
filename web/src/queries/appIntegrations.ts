@@ -43,7 +43,7 @@ export async function fetchIntegrationCatalog(): Promise<
       ),
     )
   }
-  return (await res.json()) as IntegrationCatalogEntry[]
+  return ((await res.json()) as IntegrationCatalogEntry[] | null) ?? []
 }
 
 export function integrationCatalogQueryOptions() {
@@ -72,7 +72,7 @@ export async function fetchAppIntegrations(
       ),
     )
   }
-  return (await res.json()) as AppIntegration[]
+  return ((await res.json()) as AppIntegration[] | null) ?? []
 }
 
 export function appIntegrationListQueryOptions(appName: string) {

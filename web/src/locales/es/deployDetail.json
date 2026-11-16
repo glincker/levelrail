@@ -350,5 +350,107 @@
     "error": "Error",
     "showLess": "Mostrar menos",
     "showMore": "Mostrar más"
+  },
+  "buildStages": {
+    "title": "Etapas de compilación",
+    "graphLabel": "Etapas de compilación en orden",
+    "waterfallLabel": "Duración de las etapas en un eje de tiempo",
+    "loading": "Cargando etapas de compilación",
+    "error": "No se pudieron cargar las etapas de compilación.",
+    "retry": "Reintentar",
+    "empty": "No se registraron etapas de compilación para este despliegue.",
+    "pickHint": "Selecciona una etapa para leer su registro.",
+    "failedHint": "La etapa {{stage}} falló. Abre su registro para ver el motivo.",
+    "nodeLabel": "{{stage}}, {{status}}, {{duration}}",
+    "barLabel": "Barra de {{stage}}, {{percent}} por ciento de la línea de tiempo",
+    "totals": "Tiempo total {{wall}}, suma de etapas {{stages}}.",
+    "gap": {
+      "outside": "{{time}} transcurrieron entre etapas o fuera de ellas.",
+      "overlap": "Las etapas se solaparon {{time}}."
+    },
+    "stage": {
+      "source": "Origen",
+      "detect": "Detección",
+      "install": "Instalación",
+      "build": "Compilación",
+      "export": "Exportación",
+      "push": "Envío"
+    },
+    "status": {
+      "running": "en curso",
+      "done": "hecha",
+      "failed": "fallida"
+    },
+    "cache": {
+      "hit": "Caché acertada",
+      "miss": "Caché fallida",
+      "partial": "Caché {{cached}} de {{total}}"
+    },
+    "logTitle": "Registro de {{stage}}",
+    "logLabel": "Salida del registro de {{stage}}",
+    "logEmpty": "Aún no hay salida para esta etapa.",
+    "logError": "Se cortó el flujo de registro de la etapa. Se reconecta solo.",
+    "followOn": "Siguiendo",
+    "followOff": "Seguir",
+    "copy": "Copiar"
+  },
+  "sections": {
+    "summary": "Resumen",
+    "waterfall": "Cascada",
+    "rollout": "Despliegue",
+    "logs": "Registros",
+    "compare": "Comparar",
+    "navLabel": "Secciones de la ejecución"
+  },
+  "run": {
+    "progressLabel": "Progreso por etapa",
+    "elapsed": "Transcurrido {{time}}",
+    "stageCount": "{{count}} etapas",
+    "stageFilter": "Etapa",
+    "allStages": "Todas las etapas",
+    "compareBody": "Compara esta ejecución con la última correcta, etapa por etapa.",
+    "compareCta": "Comparar con la ejecución anterior",
+    "titleRunning": "Compilando:",
+    "titleFailed": "Fallo:",
+    "doneToast": "La ejecución terminó.",
+    "failedToast": "La ejecución falló."
+  },
+  "runActions": {
+    "cancel": "Cancelar compilación",
+    "cancelWhy": "Detiene la compilación en curso.",
+    "cancelOff": "Solo se puede cancelar un despliegue en curso o en cola.",
+    "redeploy": "Volver a desplegar",
+    "retry": "Reintentar",
+    "redeployWhy": "Inicia un nuevo despliegue de esta imagen.",
+    "redeployOff": "Espera a que termine la ejecución.",
+    "rollback": "Volver a esta versión",
+    "rollbackWhy": "Sirve de nuevo esta versión.",
+    "rollbackOff": "Solo se puede volver a un despliegue correcto que no esté activo.",
+    "copyLink": "Copiar enlace del registro",
+    "copyLinkWhy": "Copia un enlace a los registros.",
+    "copied": "Copiado",
+    "download": "Descargar registros",
+    "redeployStarted": "Redespliegue iniciado.",
+    "redeployFailed": "No se pudo volver a desplegar.",
+    "rollbackStarted": "Reversión iniciada.",
+    "rollbackFailed": "No se pudo revertir."
+  },
+  "noStages": {
+    "prebuilt": "Sin etapas de build: este despliegue usó una imagen ya construida.",
+    "label": "Fases de este despliegue",
+    "step": {
+      "pull": "Descargar imagen",
+      "create": "Crear contenedor",
+      "readiness": "Disponibilidad",
+      "rollout": "Despliegue"
+    },
+    "status": {
+      "pending": "En espera",
+      "running": "En curso",
+      "done": "Hecho",
+      "failed": "Fallido",
+      "skipped": "Omitido",
+      "unknown": "En espera"
+    }
   }
 }

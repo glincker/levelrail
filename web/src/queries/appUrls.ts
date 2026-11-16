@@ -1,6 +1,6 @@
 // Matches internal/api/app_urls.go: every way to reach one app right now.
 import { queryOptions, useQuery } from '@tanstack/react-query'
-import { ApiError, readErrorMessage } from '../lib/apiError'
+import { apiRequest } from '../lib/apiRequest'
 import { pollUnlessMissing } from '../lib/pollUnlessMissing'
 
 export type AppUrlKind = 'loopback' | 'lan' | 'public' | 'domain' | 'internal'
@@ -32,15 +32,10 @@ export const appUrlsKeys = {
   detail: (app: string) => ['apps', app, 'urls'] as const,
 }
 
-export async function fetchAppUrls(app: string): Promise<AppUrls> {
-  const res = await fetch(`/api/v1/apps/${encodeURIComponent(app)}/urls`)
-  if (!res.ok) {
-    throw new ApiError(
-      res.status,
-      await readErrorMessage(res, `fetch app urls failed: ${res.status}`),
-    )
-  }
-  return (await res.json()) as AppUrls
+export function fetchAppUrls(app: string): Promise<AppUrls> {
+  return apiRequest<AppUrls>(`/api/v1/apps/${encodeURIComponent(app)}/urls`, {
+    fallbackMessage: 'fetch app urls failed',
+  })
 }
 
 export function appUrlsQueryOptions(app: string) {

@@ -80,7 +80,7 @@ export async function fetchDomains(): Promise<Domain[]> {
       await readErrorMessage(res, `fetch domains failed: ${res.status}`),
     )
   }
-  return (await res.json()) as Domain[]
+  return ((await res.json()) as Domain[] | null) ?? []
 }
 
 // staleTime matches certificatesQueryOptions's own reasoning

@@ -3,6 +3,8 @@
 // the vendor defines one, and how long its tokens live.
 package registryvendor
 
+import "strings"
+
 // Vendor describes one container registry vendor preset.
 type Vendor struct {
 	ID   string `json:"id"`
@@ -18,13 +20,16 @@ type Vendor struct {
 	TokenLifetimeHours int `json:"token_lifetime_hours,omitempty"`
 	// Brand is the web BrandIcon key for the vendor logo.
 	Brand string `json:"brand"`
+	// TokenHint is the minimum token scope to ask the operator for.
+	TokenHint string `json:"token_hint,omitempty"`
 }
 
 // Generic is the ID of the any-registry preset.
 const Generic = "generic"
 
 var vendors = []Vendor{
-	{ID: "dockerhub", Name: "Docker Hub", DefaultHost: "docker.io", Brand: "docker"},
+	{ID: "dockerhub", Name: "Docker Hub", DefaultHost: "docker.io", Brand: "docker",
+		TokenHint: "Personal access token with Read-only repository permission (Public Repo Read-only covers public images only), or an organization access token with scope-image-pull, scope-repository-read, scope-tag-read and scope-repository-list. Never a write scope."},
 	{ID: "ghcr", Name: "GitHub Container Registry", DefaultHost: "ghcr.io", Brand: "github"},
 	{ID: "gitlab", Name: "GitLab", DefaultHost: "registry.gitlab.com", HostHint: "registry.gitlab.com or your self-hosted registry host", Brand: "gitlab"},
 	{ID: "ecr", Name: "AWS ECR", HostHint: "<account>.dkr.ecr.<region>.amazonaws.com", FixedUsername: "AWS", TokenLifetimeHours: 12, Brand: "ecr"},
@@ -51,3 +56,20 @@ func Find(id string) (Vendor, bool) {
 	}
 	return Vendor{}, false
 }
+
+// IsDockerHubHost reports whether a registry host string names Docker Hub,
+// with or without a scheme, port or path.
+func IsDockerHubHost(host string) bool {
+	h := strings.ToLower(strings.TrimSpace(host))
+	h = strings.TrimPrefix(strings.TrimPrefix(h, "https://"), "http://")
+	h, _, _ = strings.Cut(h, "/")
+	h, _, _ = strings.Cut(h, ":")
+	switch h {
+	case "docker.io", "index.docker.io", "registry-1.docker.io", "registry.hub.docker.com", "hub.docker.com":
+		return true
+	}
+	return false
+}
+
+// DockerHubRejected is the health text stored when Docker Hub refuses a token.
+const DockerHubRejected = "token rejected by Docker Hub"

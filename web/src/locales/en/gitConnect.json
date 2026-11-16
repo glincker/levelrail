@@ -1,0 +1,166 @@
+{
+  "title": "Connect {{provider}} in four steps",
+  "stepApp": "Open the OAuth application page and create an application.",
+  "openApp": "Open {{host}} application page",
+  "appHint": {
+    "gitlab": "Under User Settings, Applications. A group or admin application works too.",
+    "gitea": "Under Settings, Applications, Manage OAuth2 Applications. Tick Confidential Client.",
+    "forgejo": "Under Settings, Applications, Manage OAuth2 Applications. Tick Confidential Client.",
+    "bitbucket": "Open the workspace, then Settings, OAuth consumers, Add consumer. Tick This is a private consumer."
+  },
+  "stepRedirect": "Set the redirect URI (callback URL) to exactly this value.",
+  "redirectLabel": "Redirect URI",
+  "copy": "Copy",
+  "copied": "Copied",
+  "copyFailed": "Could not copy. Select the URI and copy it by hand.",
+  "stepScopes": "Select these scopes.",
+  "scopesLabel": "Scopes to select",
+  "scopesNone": "This provider has no scope list. Grant repository read and write when it asks.",
+  "stepPaste": "Paste the client ID and secret below, then save and authorize.",
+  "hint": {
+    "https": "This address is HTTPS, so the provider will accept it as a redirect URI.",
+    "loopback": "This is a local address. Most providers accept it for testing from this browser only.",
+    "insecure": "This address is plain HTTP and most providers refuse it as a redirect URI. Use HTTPS or connect with a token."
+  },
+  "fallback": {
+    "title": "Cannot use OAuth here?",
+    "body": "A token needs no redirect URI, no public domain and no application.",
+    "action": "Connect with a token instead"
+  },
+  "field": {
+    "empty": "This field is required.",
+    "whitespace": "Remove the spaces or line breaks from the pasted value.",
+    "unusual": "This does not look like a typical {{provider}} value. Check you copied the whole thing."
+  },
+  "name": {
+    "gitlab": "GitLab",
+    "gitea": "Gitea",
+    "forgejo": "Forgejo",
+    "bitbucket": "Bitbucket Cloud",
+    "bitbucket_server": "Bitbucket Server",
+    "azure_devops": "Azure DevOps"
+  },
+  "methods": {
+    "title": "Ways to connect",
+    "recommended": "Recommended",
+    "selfManaged": "Self-managed GitLab works with every method: enter your base URL in the connect panel.",
+    "status": {
+      "connected": "Connected",
+      "not_connected": "Not connected",
+      "needs_attention": "Needs attention",
+      "expires_soon": "Expires soon"
+    },
+    "oauth": {
+      "name": "OAuth application",
+      "unlocks": "Sign in through the provider. Unlocks repositories, webhooks, status and comments, and refreshes by itself.",
+      "action": "Connect with OAuth"
+    },
+    "token": {
+      "name": "Access token",
+      "unlocks": "Paste a personal, project or group token. No redirect URI or public domain needed.",
+      "action": "Connect with a token"
+    },
+    "deploy_token": {
+      "name": "Deploy token",
+      "unlocks": "Read-only registry pulls (read_registry) for deploying images.",
+      "action": "Registry credentials"
+    },
+    "ci_job": {
+      "name": "CI job token or OIDC",
+      "unlocks": "Let pipeline jobs deploy without a stored secret.",
+      "action": "Set up CI trust"
+    }
+  },
+  "access": {
+    "matrix": "Access and scope",
+    "allowed": "Allowed",
+    "notAllowed": "Not allowed",
+    "needsScope": "Needs {{scope}}",
+    "notReported": "Not reported",
+    "scopesUnknown": "The control plane does not report the granted scopes for this account yet, so each feature shows Not reported.",
+    "scopes": "Granted scopes",
+    "sees": "Can see",
+    "projects_one": "{{count}} project",
+    "projects_other": "{{count}} projects",
+    "expires": "Token expiry",
+    "lastUsed": "Last used",
+    "addScope": "Add scope",
+    "addScopeMissing": "Needs an endpoint that upgrades scopes. For now, re-authorize or add a token with more scopes.",
+    "rotate": "Rotate token",
+    "addAnother": "Add another account",
+    "inferred": "Inferred",
+    "rotateOauth": "OAuth connections renew themselves, so there is no token to rotate.",
+    "rotateUnsupported": "This provider cannot rotate this credential. Add a new token and disconnect the old one."
+  },
+  "cap": {
+    "list_repos": "List repositories",
+    "clone_sync": "Clone and sync",
+    "commit_status": "Commit status",
+    "mr_comments": "Merge request comments and previews",
+    "registry_pull": "Registry pull",
+    "import_group": "Import a group",
+    "register_webhook": "Auto-register webhooks",
+    "tag_push_trigger": "Tag and push triggers",
+    "deployments_report": "Deployments reporting"
+  },
+  "next": {
+    "title": "What you can add",
+    "import": {
+      "title": "Import repositories",
+      "body": "Pick repositories or a whole group and turn them into apps.",
+      "action": "Open sources"
+    },
+    "previews": {
+      "title": "Enable merge request previews",
+      "body": "Deploy a preview for each open merge request.",
+      "action": "Open sources"
+    },
+    "ci": {
+      "title": "Add CI trust",
+      "body": "Let pipeline jobs deploy with a short-lived identity.",
+      "action": "Open pipelines"
+    },
+    "webhook": {
+      "title": "Add a webhook",
+      "body": "Send deploy and build events to another service.",
+      "action": "Open webhooks"
+    },
+    "registry": {
+      "title": "Connect a registry",
+      "body": "Store pull credentials for private images.",
+      "action": "Open registry credentials"
+    }
+  },
+  "credential": {
+    "noExpiry": "No expiry reported",
+    "autoRenews": "Auto-renews",
+    "expiresInHours_one": "Expires in {{count}} hour",
+    "expiresInHours_other": "Expires in {{count}} hours",
+    "expiresInDays_one": "Expires in {{count}} day",
+    "expiresInDays_other": "Expires in {{count}} days",
+    "expired_one": "Expired {{count}} day ago",
+    "expired_other": "Expired {{count}} days ago",
+    "lastRefresh": "Refreshed {{when}}",
+    "refreshFailing": "Refresh failing",
+    "reauthorize": "Re-authorize"
+  },
+  "rotate": {
+    "title": "Rotate the token for {{label}}?",
+    "description": "This replaces the access token on the provider.",
+    "consequence": "GitLab issues a new token and the old one stops working at once. Builds and pulls that use this connection switch over automatically.",
+    "confirm": "Rotate token",
+    "pending": "Rotating",
+    "expiryLabel": "New token expiry (YYYY-MM-DD)",
+    "expiryHint": "Prefilled from the {{days}} day rotation lifetime. Clear it to let the provider decide.",
+    "errors": {
+      "noMasterKey": "Rotation needs a master key on the control plane. Set one up under encryption keys, then try again.",
+      "provider": "The provider did not complete the rotation. The current token is unchanged, try again in a moment.",
+      "badDate": "Use a date in YYYY-MM-DD format."
+    },
+    "toast": {
+      "done": "Token rotated",
+      "expires": "New token expires {{date}}.",
+      "noExpiry": "The provider reported no expiry for the new token."
+    }
+  }
+}

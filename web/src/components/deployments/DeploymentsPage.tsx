@@ -51,6 +51,10 @@ import {
   deploymentsLaneOptions,
   deploymentsSummaryOptions,
 } from '../../queries/deployments'
+import { BuildQueueBanner } from '../buildQueue/BuildQueueBanner'
+import { BuildQueueControls } from '../buildQueue/BuildQueueControls'
+import { BuildQueuePanel } from '../buildQueue/BuildQueuePanel'
+import { RunnersPanel } from '../buildRunners/RunnersPanel'
 import { BuildingNowLane } from './BuildingNowLane'
 import { CancelSupersededPopover } from './CancelSupersededPopover'
 import { ConfirmActionDialog } from './ConfirmActionDialog'
@@ -269,6 +273,7 @@ export function DeploymentsPage({
                 label={streamView.label}
                 live={stream.state === 'live'}
               />
+              <BuildQueueControls />
               <CancelSupersededPopover
                 apps={facetsFrom(all).app}
                 selected={filters.app}
@@ -282,6 +287,7 @@ export function DeploymentsPage({
       }
     >
       {tabs}
+      <BuildQueueBanner />
       <div ref={topRef} className="hidden" />
       {!isEmpty && (
         <DeploymentsSummary
@@ -289,11 +295,13 @@ export function DeploymentsPage({
           loading={summary.isPending}
           failed={summary.isError}
           onNeedsAttention={() => {
-            setFilters({ ...filters, status: ['held'] })
+            setFilters({ ...filters, status: ['held', 'failed', 'refused'] })
           }}
         />
       )}
 
+      <BuildQueuePanel />
+      <RunnersPanel />
       <BuildingNowLane
         rows={laneRows}
         now={now}

@@ -156,7 +156,12 @@ func (db *DB) UpdateRegistryCredential(ctx context.Context, id, name, registryHo
 // separately, after this succeeds, the same ordering BackupTarget uses.
 // Returns ErrRegistryCredentialNotFound if id doesn't exist.
 func (db *DB) DeleteRegistryCredential(ctx context.Context, id string) error {
-	res, err := db.ExecContext(ctx, `DELETE FROM registry_credentials WHERE id = ?`, id)
+	tx, err := db.BeginTx(ctx, nil)
+	if err != nil {
+		return fmt.Errorf("store: delete registry credential %q: %w", id, err)
+	}
+	defer func() { _ = tx.Rollback() }()
+	res, err := tx.ExecContext(ctx, `DELETE FROM registry_credentials WHERE id = ?`, id)
 	if err != nil {
 		return fmt.Errorf("store: delete registry credential %q: %w", id, err)
 	}
@@ -167,7 +172,10 @@ func (db *DB) DeleteRegistryCredential(ctx context.Context, id string) error {
 	if n == 0 {
 		return ErrRegistryCredentialNotFound
 	}
-	return nil
+	if err := forgetConnectionRef(ctx, tx, ConnectionRefRegistry+id); err != nil {
+		return err
+	}
+	return tx.Commit()
 }
 
 // RecordRegistryCredentialRefresh stores one refresh outcome in a single

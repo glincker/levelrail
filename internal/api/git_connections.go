@@ -47,6 +47,16 @@ type gitConnectionResource struct {
 	AuthorizePath string `json:"authorize_path"`
 	// AuthMethod is "token" for a pasted access token and "oauth" for an OAuth application.
 	AuthMethod string `json:"auth_method"`
+	// CredentialKind is oauth_auto_renew (refresh token held) or static_token (a pasted token).
+	CredentialKind string `json:"credential_kind,omitempty"`
+	// AutoRenew is true when the control plane refreshes the OAuth access token ahead of expiry.
+	AutoRenew bool `json:"auto_renew"`
+	// ExpiresAt is the access token expiry for OAuth, or the host reported expiry of a static token.
+	ExpiresAt        string `json:"expires_at,omitempty"`
+	LastRefreshAt    string `json:"last_refresh_at,omitempty"`
+	LastRefreshError string `json:"last_refresh_error,omitempty"`
+	// CanRotate is true when POST /git-connections/{id}/rotate can replace the credential.
+	CanRotate bool `json:"can_rotate"`
 }
 
 const (
@@ -70,6 +80,9 @@ func (rt *Router) gitConnectionResourceFor(ctx context.Context, c store.GitConne
 			rt.logger.Warn("api: check git connection authorization failed", slog.String("connection", c.ID), slog.String("error", err.Error()))
 		}
 		res.Authorized = ok
+		if ok {
+			rt.fillGitCredentialFields(ctx, c, &res)
+		}
 	}
 	if names, err := rt.gitConns.ListGitSourcesByConnection(ctx, c.ID); err == nil {
 		res.SourceCount = len(names)

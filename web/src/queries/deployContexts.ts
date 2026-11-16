@@ -26,7 +26,7 @@ export function useContextConfigs(app: string) {
     queryFn: async (): Promise<ContextConfig[]> => {
       const res = await fetch(`${base(app)}/contexts`)
       if (!res.ok) throw await failure(res, 'fetch contexts')
-      return (await res.json()) as ContextConfig[]
+      return ((await res.json()) as ContextConfig[] | null) ?? []
     },
   })
 }

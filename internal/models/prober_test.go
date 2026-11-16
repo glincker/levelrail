@@ -12,6 +12,7 @@ import (
 	"time"
 
 	"github.com/GLINCKER/levelrail/internal/store"
+	"github.com/GLINCKER/levelrail/internal/testutil"
 )
 
 type fakeOllama struct {
@@ -58,14 +59,7 @@ func (f *fakeOllama) ServeHTTP(w http.ResponseWriter, r *http.Request) {
 
 func waitFor(t *testing.T, what string, cond func() bool) {
 	t.Helper()
-	deadline := time.Now().Add(3 * time.Second)
-	for time.Now().Before(deadline) {
-		if cond() {
-			return
-		}
-		time.Sleep(10 * time.Millisecond)
-	}
-	t.Fatalf("timed out waiting for %s", what)
+	testutil.WaitFor(t, 3*time.Second, 10*time.Millisecond, what, cond)
 }
 
 func TestHTTPProber_OllamaLifecycle(t *testing.T) {

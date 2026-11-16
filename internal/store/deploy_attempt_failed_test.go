@@ -42,6 +42,12 @@ func TestListFailedDeploysSince(t *testing.T) {
 			attempts: []att{{"gone", "gone:2", DeployAttemptStatusFailed, time.Hour}},
 		},
 		{
+			name:     "refused latest attempt is reported",
+			apps:     []string{"web"},
+			attempts: []att{{"web", "web:2", DeployAttemptStatusRefused, time.Hour}},
+			wantSvc:  []string{"web"},
+		},
+		{
 			name:     "no good image yet",
 			apps:     []string{"web"},
 			attempts: []att{{"web", "web:1", DeployAttemptStatusFailed, time.Hour}},

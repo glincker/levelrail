@@ -3,13 +3,13 @@ package models
 import (
 	"context"
 	"errors"
-	"path/filepath"
 	"strings"
 	"testing"
 
 	"github.com/GLINCKER/levelrail/internal/gpu"
 	"github.com/GLINCKER/levelrail/internal/reconcile"
 	"github.com/GLINCKER/levelrail/internal/store"
+	"github.com/GLINCKER/levelrail/internal/store/storetest"
 )
 
 type memSecrets struct {
@@ -26,21 +26,11 @@ func (m *memSecrets) SetValue(_ context.Context, ns, key, v string) error {
 }
 func (m *memSecrets) DeleteAll(context.Context, string) error { return nil }
 
-func openDB(t *testing.T) *store.DB {
-	t.Helper()
-	db, err := store.Open(context.Background(), filepath.Join(t.TempDir(), "t.db"))
-	if err != nil {
-		t.Fatalf("open store: %v", err)
-	}
-	t.Cleanup(func() { _ = db.Close() })
-	return db
-}
-
 func fallbackFn(host, label string) (string, bool) { return label + "." + host + ".sslip.io", true }
 
 func newSvc(t *testing.T, secrets SecretWriter) (*Service, *store.DB) {
 	t.Helper()
-	db := openDB(t)
+	db := storetest.Open(t)
 	return NewService(db, secrets, NewHostResolver("1-2-3-4", fallbackFn), "local-id"), db
 }
 

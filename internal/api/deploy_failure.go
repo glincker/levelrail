@@ -43,7 +43,7 @@ func attemptFailureInput(a store.DeployAttempt, failingStep string) failure.Inpu
 // attachFailure sets res.Failure from the attempt row alone, with no log or
 // condition lookups, so list endpoints stay cheap.
 func (rt *Router) attachFailure(res *deployAttemptResource, a store.DeployAttempt) {
-	if a.Status != store.DeployAttemptStatusFailed && a.Status != store.DeployAttemptStatusHeld {
+	if a.Status != store.DeployAttemptStatusFailed && a.Status != store.DeployAttemptStatusHeld && a.Status != store.DeployAttemptStatusRefused {
 		return
 	}
 	if f, ok := failure.Classify(attemptFailureInput(a, rt.failingStep(a.ID)), failureOptions()); ok {

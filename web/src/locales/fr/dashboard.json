@@ -200,7 +200,8 @@
       "superseded": "Remplacé",
       "queued": "En file d'attente",
       "canceled": "Annulé",
-      "pending": "En file jusqu'au retour du node"
+      "pending": "En file jusqu'au retour du node",
+      "refused": "Refusé"
     }
   },
   "strip": {

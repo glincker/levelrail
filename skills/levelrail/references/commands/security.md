@@ -14,7 +14,7 @@ Usage:
   levelrail-cli security sessions revoke <id> [--user ID]        end one session
   levelrail-cli security sessions revoke-others [--user ID]      end every session but this one
   levelrail-cli security policy get [flags]                      show the security policy and where each value comes from
-  levelrail-cli security policy set [policy flags] [flags]       change the policy (root)
+  levelrail-cli security policy set [policy flags] [flags]       change the policy (root); --approval-without-session allow|hold [--confirm-host-access] asks for your password
   levelrail-cli security hsts status|enable|disable [flags]      HSTS state and trusted-certificate probe; enable is refused until every domain passes (root)
   levelrail-cli security advisories list|match [flags]           advisories in the configured feed, and running images that match them (feed is off unless APP_ADVISORY_FEED is set)
   levelrail-cli security advisories refresh <app> [--confirm]    redeploy a matched app on the newest digest of its tag through the normal deploy gates (needs APP_ADVISORY_REFRESH_ACTION=on and a verified feed)
@@ -35,7 +35,7 @@ Usage:
   levelrail-cli security sessions revoke <id> [--user ID]        end one session
   levelrail-cli security sessions revoke-others [--user ID]      end every session but this one
   levelrail-cli security policy get [flags]                      show the security policy and where each value comes from
-  levelrail-cli security policy set [policy flags] [flags]       change the policy (root)
+  levelrail-cli security policy set [policy flags] [flags]       change the policy (root); --approval-without-session allow|hold [--confirm-host-access] asks for your password
   levelrail-cli security hsts status|enable|disable [flags]      HSTS state and trusted-certificate probe; enable is refused until every domain passes (root)
   levelrail-cli security advisories list|match [flags]           advisories in the configured feed, and running images that match them (feed is off unless APP_ADVISORY_FEED is set)
   levelrail-cli security advisories refresh <app> [--confirm]    redeploy a matched app on the newest digest of its tag through the normal deploy gates (needs APP_ADVISORY_REFRESH_ACTION=on and a verified feed)
@@ -68,7 +68,7 @@ Usage:
   levelrail-cli security sessions revoke <id> [--user ID]        end one session
   levelrail-cli security sessions revoke-others [--user ID]      end every session but this one
   levelrail-cli security policy get [flags]                      show the security policy and where each value comes from
-  levelrail-cli security policy set [policy flags] [flags]       change the policy (root)
+  levelrail-cli security policy set [policy flags] [flags]       change the policy (root); --approval-without-session allow|hold [--confirm-host-access] asks for your password
   levelrail-cli security hsts status|enable|disable [flags]      HSTS state and trusted-certificate probe; enable is refused until every domain passes (root)
   levelrail-cli security advisories list|match [flags]           advisories in the configured feed, and running images that match them (feed is off unless APP_ADVISORY_FEED is set)
   levelrail-cli security advisories refresh <app> [--confirm]    redeploy a matched app on the newest digest of its tag through the normal deploy gates (needs APP_ADVISORY_REFRESH_ACTION=on and a verified feed)
@@ -89,7 +89,7 @@ Usage:
   levelrail-cli security sessions revoke <id> [--user ID]        end one session
   levelrail-cli security sessions revoke-others [--user ID]      end every session but this one
   levelrail-cli security policy get [flags]                      show the security policy and where each value comes from
-  levelrail-cli security policy set [policy flags] [flags]       change the policy (root)
+  levelrail-cli security policy set [policy flags] [flags]       change the policy (root); --approval-without-session allow|hold [--confirm-host-access] asks for your password
   levelrail-cli security hsts status|enable|disable [flags]      HSTS state and trusted-certificate probe; enable is refused until every domain passes (root)
   levelrail-cli security advisories list|match [flags]           advisories in the configured feed, and running images that match them (feed is off unless APP_ADVISORY_FEED is set)
   levelrail-cli security advisories refresh <app> [--confirm]    redeploy a matched app on the newest digest of its tag through the normal deploy gates (needs APP_ADVISORY_REFRESH_ACTION=on and a verified feed)
@@ -112,7 +112,7 @@ Usage:
   levelrail-cli security sessions revoke <id> [--user ID]        end one session
   levelrail-cli security sessions revoke-others [--user ID]      end every session but this one
   levelrail-cli security policy get [flags]                      show the security policy and where each value comes from
-  levelrail-cli security policy set [policy flags] [flags]       change the policy (root)
+  levelrail-cli security policy set [policy flags] [flags]       change the policy (root); --approval-without-session allow|hold [--confirm-host-access] asks for your password
   levelrail-cli security hsts status|enable|disable [flags]      HSTS state and trusted-certificate probe; enable is refused until every domain passes (root)
   levelrail-cli security advisories list|match [flags]           advisories in the configured feed, and running images that match them (feed is off unless APP_ADVISORY_FEED is set)
   levelrail-cli security advisories refresh <app> [--confirm]    redeploy a matched app on the newest digest of its tag through the normal deploy gates (needs APP_ADVISORY_REFRESH_ACTION=on and a verified feed)

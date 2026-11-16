@@ -41,17 +41,9 @@ func (f *fakeStore) snapshot() []telemetry.DeployLogEntry {
 	return out
 }
 
-func discardLogger() *slog.Logger {
-	return slog.New(slog.NewTextHandler(discardWriter{}, nil))
-}
-
-type discardWriter struct{}
-
-func (discardWriter) Write(p []byte) (int, error) { return len(p), nil }
-
 func TestRecorder_ProgressPersistsLogLines(t *testing.T) {
 	store := &fakeStore{}
-	r := NewRecorder(store, discardLogger())
+	r := NewRecorder(store, slog.New(slog.DiscardHandler))
 
 	r.Start("dep_1")
 	progress := r.Progress("dep_1")
@@ -74,7 +66,7 @@ func TestRecorder_ProgressPersistsLogLines(t *testing.T) {
 
 func TestRecorder_ProgressDefaultsEmptyStreamToStdout(t *testing.T) {
 	store := &fakeStore{}
-	r := NewRecorder(store, discardLogger())
+	r := NewRecorder(store, slog.New(slog.DiscardHandler))
 	r.Start("dep_1")
 	r.Progress("dep_1")(build.ProgressEvent{Log: "some output"}) // no Stream set
 	r.Finish(context.Background(), "dep_1")
@@ -87,7 +79,7 @@ func TestRecorder_ProgressDefaultsEmptyStreamToStdout(t *testing.T) {
 
 func TestRecorder_BatchesAtThreshold(t *testing.T) {
 	store := &fakeStore{}
-	r := NewRecorder(store, discardLogger())
+	r := NewRecorder(store, slog.New(slog.DiscardHandler))
 	r.Start("dep_1")
 	progress := r.Progress("dep_1")
 
@@ -115,7 +107,7 @@ func TestRecorder_BatchesAtThreshold(t *testing.T) {
 }
 
 func TestRecorder_SnapshotBeforeStartReturnsNotOK(t *testing.T) {
-	r := NewRecorder(&fakeStore{}, discardLogger())
+	r := NewRecorder(&fakeStore{}, slog.New(slog.DiscardHandler))
 	_, _, _, ok := r.Snapshot("dep_never-started")
 	if ok {
 		t.Error("Snapshot() ok = true for an attempt never Start()ed, want false")
@@ -123,7 +115,7 @@ func TestRecorder_SnapshotBeforeStartReturnsNotOK(t *testing.T) {
 }
 
 func TestRecorder_SnapshotAfterFinishReturnsNotOK(t *testing.T) {
-	r := NewRecorder(&fakeStore{}, discardLogger())
+	r := NewRecorder(&fakeStore{}, slog.New(slog.DiscardHandler))
 	r.Start("dep_1")
 	r.Finish(context.Background(), "dep_1")
 	_, _, _, ok := r.Snapshot("dep_1")
@@ -133,7 +125,7 @@ func TestRecorder_SnapshotAfterFinishReturnsNotOK(t *testing.T) {
 }
 
 func TestRecorder_SnapshotReturnsLinesSoFarAndLiveEvents(t *testing.T) {
-	r := NewRecorder(&fakeStore{}, discardLogger())
+	r := NewRecorder(&fakeStore{}, slog.New(slog.DiscardHandler))
 	r.Start("dep_1")
 	progress := r.Progress("dep_1")
 	progress(build.ProgressEvent{Log: "before subscribe", Stream: "stdout"})
@@ -171,7 +163,7 @@ func TestRecorder_SnapshotReturnsLinesSoFarAndLiveEvents(t *testing.T) {
 }
 
 func TestRecorder_UnsubscribeStopsDelivery(t *testing.T) {
-	r := NewRecorder(&fakeStore{}, discardLogger())
+	r := NewRecorder(&fakeStore{}, slog.New(slog.DiscardHandler))
 	r.Start("dep_1")
 	progress := r.Progress("dep_1")
 
@@ -201,7 +193,7 @@ func TestRecorder_UnsubscribeStopsDelivery(t *testing.T) {
 
 func TestRecorder_FinishFlushesRemainder(t *testing.T) {
 	store := &fakeStore{}
-	r := NewRecorder(store, discardLogger())
+	r := NewRecorder(store, slog.New(slog.DiscardHandler))
 	r.Start("dep_1")
 	progress := r.Progress("dep_1")
 	progress(build.ProgressEvent{Log: "only line", Stream: "stdout"})
@@ -218,13 +210,13 @@ func TestRecorder_FinishFlushesRemainder(t *testing.T) {
 }
 
 func TestRecorder_FinishOnUnknownAttemptIsNoop(_ *testing.T) {
-	r := NewRecorder(&fakeStore{}, discardLogger())
+	r := NewRecorder(&fakeStore{}, slog.New(slog.DiscardHandler))
 	r.Finish(context.Background(), "dep_never-started") // must not panic
 }
 
 func TestRecorder_StoreErrorIsLoggedNotPanicked(_ *testing.T) {
 	store := &fakeStore{err: errors.New("disk full")}
-	r := NewRecorder(store, discardLogger())
+	r := NewRecorder(store, slog.New(slog.DiscardHandler))
 	r.Start("dep_1")
 	progress := r.Progress("dep_1")
 	progress(build.ProgressEvent{Log: "line", Stream: "stdout"})
@@ -232,7 +224,7 @@ func TestRecorder_StoreErrorIsLoggedNotPanicked(_ *testing.T) {
 }
 
 func TestRecorder_NilStoreIsTolerated(_ *testing.T) {
-	r := NewRecorder(nil, discardLogger())
+	r := NewRecorder(nil, slog.New(slog.DiscardHandler))
 	r.Start("dep_1")
 	progress := r.Progress("dep_1")
 	progress(build.ProgressEvent{Log: "line", Stream: "stdout"})
@@ -247,7 +239,7 @@ func TestRecorder_NilStoreIsTolerated(_ *testing.T) {
 
 func TestRecorder_ProgressRedactsCredentials(t *testing.T) {
 	store := &fakeStore{}
-	r := NewRecorder(store, discardLogger())
+	r := NewRecorder(store, slog.New(slog.DiscardHandler))
 	r.Start("dep_1")
 	progress := r.Progress("dep_1")
 	progress(build.ProgressEvent{Log: "Cloning https://x-access-token:ghp_abcdefghijklmnopqrstuvwxyz0123@github.com/a/b.git...", Stream: "stdout"}) //nolint:gosec // fake credential for the redaction test

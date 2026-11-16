@@ -172,7 +172,8 @@
       "superseded": "已被取代",
       "queued": "排队中",
       "canceled": "已取消",
-      "pending": "排队至节点恢复"
+      "pending": "排队至节点恢复",
+      "refused": "已拒绝"
     }
   },
   "strip": {

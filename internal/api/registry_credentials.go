@@ -249,6 +249,12 @@ func (rt *Router) handleCreateRegistryCredential(w http.ResponseWriter, r *http.
 		return
 	}
 
+	hubChecked, hubRejected := rt.verifyDockerHubOnSave(r.Context(), req.RegistryHost, req.Username, req.Password)
+	if hubRejected {
+		writeError(w, http.StatusBadRequest, "Docker Hub rejected this username and token. Check the token and that it has not expired.")
+		return
+	}
+
 	id, err := randomRegistryCredentialID()
 	if err != nil {
 		rt.internalError(w, "api: create registry credential: generate id failed", err)
@@ -271,6 +277,9 @@ func (rt *Router) handleCreateRegistryCredential(w http.ResponseWriter, r *http.
 	if err := rt.registryCredentials.SaveRegistryCredential(r.Context(), cred); err != nil {
 		rt.internalError(w, "api: create registry credential: save failed", err, slog.String("id", id))
 		return
+	}
+	if hubChecked {
+		rt.recordDockerHubHealth(r.Context(), cred, "")
 	}
 
 	writeJSON(w, http.StatusCreated, rt.toRegistryCredentialResource(cred))
@@ -310,6 +319,11 @@ func (rt *Router) handleUpdateRegistryCredential(w http.ResponseWriter, r *http.
 		return
 	} else if err != nil && !errors.Is(err, store.ErrRegistryCredentialNotFound) {
 		rt.internalError(w, "api: update registry credential: check existing failed", err, slog.String("name", req.Name))
+		return
+	}
+
+	if _, rejected := rt.verifyDockerHubOnSave(r.Context(), req.RegistryHost, req.Username, req.Password); rejected {
+		writeError(w, http.StatusBadRequest, "Docker Hub rejected this username and token. Check the token and that it has not expired.")
 		return
 	}
 

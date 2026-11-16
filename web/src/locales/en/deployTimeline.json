@@ -28,7 +28,8 @@
     "held": "Held",
     "awaiting_approval": "Awaiting approval",
     "rolled_back": "Rolled back",
-    "superseded": "Superseded"
+    "superseded": "Superseded",
+    "refused": "Refused"
   },
   "stream": {
     "connecting": "Connecting",
@@ -110,7 +111,8 @@
       "superseded": "Superseded",
       "queued": "Queued",
       "canceled": "Canceled",
-      "pending": "Pending"
+      "pending": "Pending",
+      "refused": "Refused"
     }
   }
 }

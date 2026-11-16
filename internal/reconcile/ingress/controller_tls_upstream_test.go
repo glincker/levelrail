@@ -3,6 +3,7 @@ package ingress
 import (
 	"context"
 	"encoding/json"
+	"log/slog"
 	"strings"
 	"testing"
 
@@ -30,7 +31,7 @@ func TestController_Reconcile_TLSTerminatedUpstreamClearsStaleACMEFailures(t *te
 			rt := newFakeRuntime()
 			rt.seedRunning(application.ContainerName(desired.Name, desired.Image, ""), 34567)
 			st := &fakeStore{services: []store.DesiredService{desired}, settings: store.IngressSettings{ACMEEnabled: true, TLSTerminatedUpstream: tt.upstream}}
-			c := New(st, rt, &fakeApplier{}, WithLogger(discardLogger()))
+			c := New(st, rt, &fakeApplier{}, WithLogger(slog.New(slog.DiscardHandler)))
 			if _, err := c.Reconcile(context.Background()); err != nil {
 				t.Fatalf("Reconcile() error = %v", err)
 			}
@@ -57,7 +58,7 @@ func TestController_Reconcile_TLSTerminatedUpstreamSkipsACME(t *testing.T) {
 			rt.seedRunning(application.ContainerName(desired.Name, desired.Image, ""), 34567)
 			st := &fakeStore{services: []store.DesiredService{desired}, settings: tt.settings}
 			applier := &fakeApplier{}
-			c := New(st, rt, applier, WithLogger(discardLogger()))
+			c := New(st, rt, applier, WithLogger(slog.New(slog.DiscardHandler)))
 
 			if _, err := c.Reconcile(context.Background()); err != nil {
 				t.Fatalf("Reconcile() error = %v", err)

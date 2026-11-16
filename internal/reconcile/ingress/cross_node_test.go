@@ -2,6 +2,7 @@ package ingress
 
 import (
 	"context"
+	"log/slog"
 	"strings"
 	"testing"
 
@@ -43,7 +44,7 @@ func TestController_Reconcile_CrossNodeService_SurfacesCondition(t *testing.T) {
 	rt := newFakeRuntime()
 	st := &fakeStore{services: []store.DesiredService{desired}}
 	applier := &fakeApplier{}
-	c := New(st, rt, applier, WithLogger(discardLogger()), WithLocalNodeID("node-1"))
+	c := New(st, rt, applier, WithLogger(slog.New(slog.DiscardHandler)), WithLocalNodeID("node-1"))
 
 	result, err := c.Reconcile(context.Background())
 	if err != nil {
@@ -79,7 +80,7 @@ func TestController_Reconcile_LocalService_NoCrossNodeCondition(t *testing.T) {
 	rt.seedRunning(application.ContainerName(desired.Name, desired.Image, ""), 11111)
 	st := &fakeStore{services: []store.DesiredService{desired}}
 	applier := &fakeApplier{}
-	c := New(st, rt, applier, WithLogger(discardLogger()), WithLocalNodeID("node-1"))
+	c := New(st, rt, applier, WithLogger(slog.New(slog.DiscardHandler)), WithLocalNodeID("node-1"))
 
 	result, err := c.Reconcile(context.Background())
 	if err != nil {

@@ -520,6 +520,15 @@ func (p *Pipeline) deployImage(ctx context.Context, req Request) (string, error)
 		return "", fmt.Errorf("deploy: service %q: %w", req.ServiceName, err)
 	}
 
+	// A pull adds disk and memory load, so it waits out critical host pressure like a build.
+	if err := build.AdmitImagePull(ctx, func(msg string) {
+		if p.logger != nil {
+			p.logger.Info("deploy: image pull deferred", "service", req.ServiceName, "reason", msg)
+		}
+	}); err != nil {
+		return "", fmt.Errorf("deploy: service %q: image pull deferred by host pressure: %w", req.ServiceName, err)
+	}
+
 	desired, err := toDesiredService(req.ServiceName, req.Service.Build.Image, req.Service)
 	if err != nil {
 		return "", fmt.Errorf("deploy: service %q: %w", req.ServiceName, err)

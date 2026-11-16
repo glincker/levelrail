@@ -1,0 +1,112 @@
+{
+  "title": "Delivery",
+  "category": {
+    "deploys": "Deployments",
+    "builds": "Builds",
+    "statuses": "Status",
+    "previews": "Vorschauen",
+    "integrations": "Integrationen",
+    "other": "Sonstiges"
+  },
+  "status": {
+    "succeeded": "Erfolgreich",
+    "failed": "Fehlgeschlagen",
+    "in_progress": "Läuft",
+    "pending": "Ausstehend",
+    "info": "Info",
+    "unknown": "Unbekannt"
+  },
+  "health": {
+    "ok": "Gesund",
+    "degraded": "Eingeschränkt",
+    "needs_reconnect": "Neu verbinden",
+    "expired": "Abgelaufen",
+    "unknown": "Unbekannt"
+  },
+  "filters": {
+    "kind": "Nach Art filtern",
+    "status": "Status",
+    "search": "Zeitverlauf durchsuchen",
+    "searchPlaceholder": "Titel oder Details suchen",
+    "statusOption": {
+      "all": "Alle Status",
+      "failed": "Fehlgeschlagen",
+      "in_progress": "Läuft",
+      "succeeded": "Erfolgreich"
+    }
+  },
+  "row": {
+    "openPreview": "Vorschau öffnen",
+    "openRun": "Lauf öffnen",
+    "openLink": "Link öffnen",
+    "openIntegrations": "Integrationen öffnen",
+    "postFailed": "Senden an die Forge fehlgeschlagen",
+    "noErrorDetail": "Es wurde kein Fehlerdetail erfasst."
+  },
+  "header": {
+    "label": "Delivery-Übersicht",
+    "source": "Quelle",
+    "reporting": "Statusmeldung",
+    "lastDeploy": "Letztes Deployment",
+    "none": "Nicht verbunden",
+    "postFailing": "Das Senden des Commit-Status schlägt fehl. Die Forge zeigt möglicherweise einen veralteten Stand.",
+    "inherited": "Geerbt von {{org}}",
+    "overrides": "Überschreibt Standard von {{org}}",
+    "change": "Ändern",
+    "bind": "Binden",
+    "unbind": "Lösen",
+    "bindOther": "Verbindung binden",
+    "other": "Weitere Bindungen"
+  },
+  "day": {
+    "today": "Heute",
+    "yesterday": "Gestern",
+    "unknown": "Unbekanntes Datum"
+  },
+  "loadMore": "Mehr laden",
+  "retry": "Erneut versuchen",
+  "empty": {
+    "title": "Noch keine Delivery-Aktivität",
+    "description": "Deployments, Forge-Status, Vorschauen und Verbindungsänderungen dieser App erscheinen hier."
+  },
+  "noMatch": {
+    "title": "Keine Treffer für diese Filter",
+    "description": "Versuche eine andere Art, einen anderen Status oder eine andere Suche.",
+    "clear": "Filter zurücksetzen"
+  },
+  "bind": {
+    "title": "{{name}} binden",
+    "titleGeneric": "Verbindung binden",
+    "description": "Wähle die Rolle dieser Verbindung. Der Server prüft Geltungsbereich und Regeln.",
+    "confirm": "Binden",
+    "binding": "Wird gebunden",
+    "toast": "{{name}} an {{app}} gebunden",
+    "app": "App",
+    "appPlaceholder": "App wählen",
+    "connection": "Verbindung",
+    "connectionPlaceholder": "Verbindung wählen",
+    "noConnections": "Keine Verbindung kann diese Rolle übernehmen",
+    "role": "Rolle",
+    "roles": {
+      "source": "Quelle",
+      "deploy_report": "Deploy-Meldungen",
+      "registry_pull": "Registry-Pull",
+      "notify": "Benachrichtigungen",
+      "secrets": "Secrets",
+      "dns": "DNS"
+    },
+    "rules": "Regeln (optional)",
+    "rulesHint": "Ein JSON-Objekt, geprüft gegen die Rolle.",
+    "rulesInvalid": "Regeln müssen ein JSON-Objekt sein."
+  },
+  "unbind": {
+    "title": "{{name}} lösen",
+    "description": "Die App nutzt diese Verbindung nicht mehr für die Rolle. Die Verbindung selbst bleibt bestehen.",
+    "confirm": "Lösen",
+    "unbinding": "Wird gelöst",
+    "toast": "{{name}} von {{app}} gelöst",
+    "binding": "Bindung",
+    "pick": "Bindung wählen",
+    "noneForApp": "Diese App hat dafür keine Bindung"
+  }
+}

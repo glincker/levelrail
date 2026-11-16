@@ -186,7 +186,8 @@
       "superseded": "Superseded",
       "queued": "Queued",
       "canceled": "Canceled",
-      "pending": "Queued until node returns"
+      "pending": "Queued until node returns",
+      "refused": "Refused"
     }
   },
   "strip": {

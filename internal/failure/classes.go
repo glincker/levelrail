@@ -4,34 +4,36 @@ import "strings"
 
 // Failure codes.
 const (
-	CodeDockerfileError    = "dockerfile_error"
-	CodeDependencyInstall  = "dependency_install_failed"
-	CodeCompileError       = "compile_error"
-	CodeBuildStepFailed    = "build_step_failed"
-	CodeBuildConfigError   = "build_config_error"
-	CodeBuildOOM           = "build_out_of_memory"
-	CodeBuildTimeout       = "build_timeout"
-	CodeImagePullFailed    = "image_pull_failed"
-	CodeRegistryAuthFailed = "registry_auth_failed"
-	CodePlatformMismatch   = "platform_mismatch"
-	CodeLockfileOutOfSync  = "lockfile_out_of_sync"
-	CodePortNotListening   = "port_not_listening"
-	CodeHealthCheckFailed  = "health_check_failed"
-	CodeContainerCrashed   = "container_crashed"
-	CodeOOMKilled          = "oom_killed"
-	CodeMissingEnv         = "missing_env"
-	CodeRegistryPushFailed = "registry_push_failed"
-	CodeDiskFull           = "disk_full"
-	CodeImageCorrupt       = "image_corrupt"
-	CodeFreezeWindow       = "freeze_window_hold"
-	CodeApprovalPending    = "approval_pending"
-	CodeScanGateBlocked    = "scan_gate_blocked"
-	CodeRollbackTargetGone = "rollback_target_gone"
-	CodeDockerUnreachable  = "docker_unreachable"
-	CodeBuildEngineNoBuild = "build_engine_unsupported"
-	CodeGitHostUnreachable = "git_host_unreachable"
-	CodeSourceNotCached    = "source_not_cached"
-	CodeUnknown            = "unknown"
+	CodeDockerfileError     = "dockerfile_error"
+	CodeDependencyInstall   = "dependency_install_failed"
+	CodeCompileError        = "compile_error"
+	CodeBuildStepFailed     = "build_step_failed"
+	CodeBuildConfigError    = "build_config_error"
+	CodeBuildOOM            = "build_out_of_memory"
+	CodeBuildTimeout        = "build_timeout"
+	CodeImagePullFailed     = "image_pull_failed"
+	CodeRegistryAuthFailed  = "registry_auth_failed"
+	CodeRegistryRateLimited = "registry_rate_limited"
+	CodePlatformMismatch    = "platform_mismatch"
+	CodeLockfileOutOfSync   = "lockfile_out_of_sync"
+	CodePortNotListening    = "port_not_listening"
+	CodeHealthCheckFailed   = "health_check_failed"
+	CodeContainerCrashed    = "container_crashed"
+	CodeOOMKilled           = "oom_killed"
+	CodeMissingEnv          = "missing_env"
+	CodeRegistryPushFailed  = "registry_push_failed"
+	CodeDiskFull            = "disk_full"
+	CodeNodeOutOfRoom       = "node_out_of_room"
+	CodeImageCorrupt        = "image_corrupt"
+	CodeFreezeWindow        = "freeze_window_hold"
+	CodeApprovalPending     = "approval_pending"
+	CodeScanGateBlocked     = "scan_gate_blocked"
+	CodeRollbackTargetGone  = "rollback_target_gone"
+	CodeDockerUnreachable   = "docker_unreachable"
+	CodeBuildEngineNoBuild  = "build_engine_unsupported"
+	CodeGitHostUnreachable  = "git_host_unreachable"
+	CodeSourceNotCached     = "source_not_cached"
+	CodeUnknown             = "unknown"
 
 	docsPagePath = "/deploy-failures"
 )
@@ -98,6 +100,12 @@ var classes = []class{
 		patterns: []string{"is required but no secret value", "missing required env", "required environment variable", "references database", "vault secret, but vault integration"},
 	},
 	{
+		code: CodeNodeOutOfRoom, retryable: true,
+		cause:    "The node refused this deploy because it is out of room, so nothing was started and the running version keeps serving.",
+		fix:      "Free space on the node (prune unused images and build cache), or open Nodes, then Capacity, to review the limits, then retry.",
+		patterns: []string{"this node is out of room"},
+	},
+	{
 		code:     CodeDiskFull,
 		cause:    "The host ran out of disk space.",
 		fix:      "Free disk on the node (prune unused images and build cache, remove old logs), then retry.",
@@ -134,6 +142,12 @@ var classes = []class{
 		patterns: []string{"oomkilledduringreadiness", "oomkilled", "out of memory", "exit code 137", "exit status 137"},
 	},
 	{
+		code: CodeRegistryRateLimited, retryable: true,
+		cause:    "The registry refused the pull because the pull rate limit was reached (anonymous pulls share one limit per IP address).",
+		fix:      "Add a Docker Hub access token under Integrations so pulls are authenticated, or wait for the window to reset and retry.",
+		patterns: []string{"toomanyrequests", "pull rate limit", "429 too many requests"},
+	},
+	{
 		code: CodeRegistryPushFailed, retryable: true,
 		cause:    "Pushing the built image to the registry failed.",
 		fix:      "Check the registry credential and repository permissions, and that the registry is reachable from the build node, then retry.",
@@ -161,7 +175,7 @@ var classes = []class{
 		code:     CodeImagePullFailed,
 		cause:    "The image could not be pulled: it does not exist, the tag is wrong, or the registry denied access.",
 		fix:      "Check the image name and tag, and add or refresh the registry credential if the registry is private.",
-		patterns: []string{"pull access denied", "manifest unknown", "no such image", "repository does not exist", "toomanyrequests", "not found: manifest", "failed to resolve source metadata"},
+		patterns: []string{"pull access denied", "manifest unknown", "no such image", "repository does not exist", "not found: manifest", "failed to resolve source metadata"},
 	},
 	{
 		code:     CodeDockerfileError,

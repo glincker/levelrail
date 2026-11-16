@@ -119,6 +119,8 @@ func runDispatch(prog string, args []string, stdout, stderr io.Writer, lookupEnv
 		return runModels(prog, args[1:], stdout, stderr, lookupEnv)
 	case "auth":
 		return runAuth(prog, args[1:], stdout, stderr, lookupEnv)
+	case "whoami":
+		return runWhoami(prog, args[1:], stdout, stderr, lookupEnv)
 	case "profile":
 		return runProfile(prog, args[1:], stdout, stderr, lookupEnv)
 	case "tokens":
@@ -155,6 +157,8 @@ func runDispatch(prog string, args []string, stdout, stderr io.Writer, lookupEnv
 		return runVault(prog, args[1:], stdout, stderr, lookupEnv)
 	case "registry":
 		return runRegistry(prog, args[1:], stdout, stderr, lookupEnv)
+	case "connections":
+		return runConnections(prog, args[1:], stdout, stderr, lookupEnv)
 	case "channels":
 		return runChannels(prog, args[1:], stdout, stderr, lookupEnv)
 	case "push-subscriptions":

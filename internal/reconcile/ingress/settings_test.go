@@ -4,6 +4,7 @@ import (
 	"context"
 	"encoding/json"
 	"errors"
+	"log/slog"
 	"strings"
 	"testing"
 
@@ -31,7 +32,7 @@ func TestController_Reconcile_ACMEDisabledByDefault_RegressionUnchanged(t *testi
 
 	st := &fakeStore{services: []store.DesiredService{desired}} // settings left at zero value: ACME disabled
 	applier := &fakeApplier{}
-	c := New(st, rt, applier, WithLogger(discardLogger()))
+	c := New(st, rt, applier, WithLogger(slog.New(slog.DiscardHandler)))
 
 	if _, err := c.Reconcile(context.Background()); err != nil {
 		t.Fatalf("Reconcile() error = %v", err)
@@ -74,7 +75,7 @@ func TestController_Reconcile_ACMEEnabled_ThreadsSettingsIntoConfig(t *testing.T
 		},
 	}
 	applier := &fakeApplier{}
-	c := New(st, rt, applier, WithLogger(discardLogger()))
+	c := New(st, rt, applier, WithLogger(slog.New(slog.DiscardHandler)))
 
 	if _, err := c.Reconcile(context.Background()); err != nil {
 		t.Fatalf("Reconcile() error = %v", err)
@@ -112,7 +113,7 @@ func TestController_Reconcile_PlatformDomainRoute_Added(t *testing.T) {
 	st := &fakeStore{settings: store.IngressSettings{PrimaryDomain: "dashboard.example.com"}}
 	rt := newFakeRuntime()
 	applier := &fakeApplier{}
-	c := New(st, rt, applier, WithLogger(discardLogger()), WithDashboardDial("127.0.0.1:8080"))
+	c := New(st, rt, applier, WithLogger(slog.New(slog.DiscardHandler)), WithDashboardDial("127.0.0.1:8080"))
 
 	result, err := c.Reconcile(context.Background())
 	if err != nil {
@@ -142,7 +143,7 @@ func TestController_Reconcile_PlatformDomainRoute_NoDashboardDial_Skipped(t *tes
 	st := &fakeStore{settings: store.IngressSettings{PrimaryDomain: "dashboard.example.com"}}
 	rt := newFakeRuntime()
 	applier := &fakeApplier{}
-	c := New(st, rt, applier, WithLogger(discardLogger())) // no WithDashboardDial
+	c := New(st, rt, applier, WithLogger(slog.New(slog.DiscardHandler))) // no WithDashboardDial
 
 	result, err := c.Reconcile(context.Background())
 	if err != nil {
@@ -173,7 +174,7 @@ func TestController_Reconcile_PlatformDomainRoute_ConflictsWithService_Skipped(t
 		settings: store.IngressSettings{PrimaryDomain: "dashboard.example.com"},
 	}
 	applier := &fakeApplier{}
-	c := New(st, rt, applier, WithLogger(discardLogger()), WithDashboardDial("127.0.0.1:8080"))
+	c := New(st, rt, applier, WithLogger(slog.New(slog.DiscardHandler)), WithDashboardDial("127.0.0.1:8080"))
 
 	result, err := c.Reconcile(context.Background())
 	if err != nil {
@@ -252,7 +253,7 @@ func TestController_Reconcile_StatusPageRoute(t *testing.T) {
 				st.services = []store.DesiredService{*tt.conflictApp}
 			}
 			applier := &fakeApplier{}
-			opts := []Option{WithLogger(discardLogger())}
+			opts := []Option{WithLogger(slog.New(slog.DiscardHandler))}
 			if tt.withDashboard {
 				opts = append(opts, WithDashboardDial("127.0.0.1:8080"))
 			}
@@ -302,7 +303,7 @@ func TestController_Reconcile_GetIngressSettingsError(t *testing.T) {
 		settingsErr: errors.New("settings row locked"),
 	}
 	applier := &fakeApplier{}
-	c := New(st, rt, applier, WithLogger(discardLogger()))
+	c := New(st, rt, applier, WithLogger(slog.New(slog.DiscardHandler)))
 
 	result, err := c.Reconcile(context.Background())
 	if err == nil {

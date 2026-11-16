@@ -106,20 +106,29 @@ type securityPolicy struct {
 	MaxTokenLifetimeDays int    `json:"max_token_lifetime_days"`
 	WarnUnusedDays       int    `json:"warn_unused_days"`
 	DisableUnusedDays    int    `json:"disable_unused_days"`
+	// ApprovalWithoutSession is allow or hold for a sign-in with no other live session.
+	ApprovalWithoutSession string `json:"approval_without_session"`
 }
 
 type securityPolicyResource struct {
 	securityPolicy
+	ApprovalChannels []string `json:"approval_channels"`
+	// ApprovalHoldNote says where hold has no effect; empty unless the mode is hold.
+	ApprovalHoldNote  string            `json:"approval_hold_note,omitempty"`
 	Sources           map[string]string `json:"sources"`
 	NewDeviceApproval bool              `json:"new_device_approval"`
 	NoticeGraceDays   int               `json:"notice_grace_days"`
 }
 
 type securityPolicyRequest struct {
-	ApprovalScope        *string `json:"approval_scope"`
-	MaxTokenLifetimeDays *int    `json:"max_token_lifetime_days"`
-	WarnUnusedDays       *int    `json:"warn_unused_days"`
-	DisableUnusedDays    *int    `json:"disable_unused_days"`
+	ApprovalScope          *string      `json:"approval_scope"`
+	MaxTokenLifetimeDays   *int         `json:"max_token_lifetime_days"`
+	WarnUnusedDays         *int         `json:"warn_unused_days"`
+	DisableUnusedDays      *int         `json:"disable_unused_days"`
+	ApprovalWithoutSession *string      `json:"approval_without_session"`
+	StepUp                 *stepUpProof `json:"step_up,omitempty"`
+	// ConfirmHostAccess is the admin's statement that they can run the host commands.
+	ConfirmHostAccess bool `json:"confirm_host_access"`
 }
 
 func validApprovalScope(s string) bool {
@@ -153,6 +162,8 @@ func (rt *Router) effectiveSecurityPolicy(ctx context.Context) (securityPolicy, 
 	src("warn_unused_days", fromEnv)
 	p.DisableUnusedDays, fromEnv = envDays(envTokenDisableUnusedDays, 0)
 	src("disable_unused_days", fromEnv)
+	p.ApprovalWithoutSession, fromEnv = envApprovalWithoutSessionDefault()
+	src("approval_without_session", fromEnv)
 	if rt.security == nil {
 		return p, sources, nil
 	}
@@ -165,6 +176,9 @@ func (rt *Router) effectiveSecurityPolicy(ctx context.Context) (securityPolicy, 
 	}
 	if saved.ApprovalScope != nil && validApprovalScope(*saved.ApprovalScope) {
 		p.ApprovalScope, sources["approval_scope"] = *saved.ApprovalScope, policySourceSaved
+	}
+	if saved.ApprovalWithoutSession != nil && validApprovalWithoutSession(*saved.ApprovalWithoutSession) {
+		p.ApprovalWithoutSession, sources["approval_without_session"] = *saved.ApprovalWithoutSession, policySourceSaved
 	}
 	for _, f := range []struct {
 		key string
@@ -187,8 +201,15 @@ func (rt *Router) securityPolicyResource(ctx context.Context) (securityPolicyRes
 	if err != nil {
 		return securityPolicyResource{}, err
 	}
-	return securityPolicyResource{securityPolicy: p, Sources: sources, NewDeviceApproval: rt.newDeviceApproval,
+	return securityPolicyResource{securityPolicy: p, ApprovalChannels: rt.approvalChannels(ctx, ""), ApprovalHoldNote: rt.holdNoteFor(p), Sources: sources, NewDeviceApproval: rt.newDeviceApproval,
 		NoticeGraceDays: int(tokenHygieneGrace().Hours() / 24)}, nil
+}
+
+func (rt *Router) holdNoteFor(p securityPolicy) string {
+	if p.ApprovalWithoutSession != approvalWithoutSessionHold {
+		return ""
+	}
+	return rt.approvalHoldNote(p)
 }
 
 func tokenHygieneGrace() time.Duration {
@@ -217,6 +238,10 @@ func (rt *Router) handlePutSecurityPolicy(w http.ResponseWriter, r *http.Request
 		writeError(w, http.StatusBadRequest, "approval_scope must be "+approvalScopePasswordOnly+" or "+approvalScopeAllMethods)
 		return
 	}
+	if req.ApprovalWithoutSession != nil && !validApprovalWithoutSession(*req.ApprovalWithoutSession) {
+		writeError(w, http.StatusBadRequest, "approval_without_session must be "+approvalWithoutSessionAllow+" or "+approvalWithoutSessionHold)
+		return
+	}
 	for name, v := range map[string]*int{"max_token_lifetime_days": req.MaxTokenLifetimeDays, "warn_unused_days": req.WarnUnusedDays, "disable_unused_days": req.DisableUnusedDays} {
 		if v != nil && (*v < 0 || *v > maxPolicyDays) {
 			writeError(w, http.StatusBadRequest, fmt.Sprintf("%s must be from 0 to %d", name, maxPolicyDays))
@@ -228,6 +253,20 @@ func (rt *Router) handlePutSecurityPolicy(w http.ResponseWriter, r *http.Request
 	if err != nil {
 		rt.internalError(w, "api: put security policy: load failed", err)
 		return
+	}
+	modeOwner, modeChanged := "", false
+	if req.ApprovalWithoutSession != nil {
+		current, _, cerr := rt.effectiveSecurityPolicy(ctx)
+		if cerr != nil {
+			rt.internalError(w, "api: put security policy: load failed", cerr)
+			return
+		}
+		owner, ok := rt.applyApprovalWithoutSession(w, r, req, current.ApprovalWithoutSession)
+		if !ok {
+			return
+		}
+		modeOwner, modeChanged = owner, *req.ApprovalWithoutSession != current.ApprovalWithoutSession
+		saved.ApprovalWithoutSession = req.ApprovalWithoutSession
 	}
 	if req.ApprovalScope != nil {
 		saved.ApprovalScope = req.ApprovalScope
@@ -247,6 +286,9 @@ func (rt *Router) handlePutSecurityPolicy(w http.ResponseWriter, r *http.Request
 		return
 	}
 	rt.sec.posture.invalidate()
+	if modeChanged {
+		rt.afterApprovalModeChange(w, r, modeOwner, *req.ApprovalWithoutSession)
+	}
 	actorID, actorKind := rt.securityActor(r)
 	rt.auditSignIn(ctx, r, signInActor{kind: actorKind, id: actorID, name: rt.auditActorName(ctx, actorKind, actorID, "")},
 		store.AuditActionSecurityPolicyUpdate, "/api/v1/security/policy", http.StatusOK)

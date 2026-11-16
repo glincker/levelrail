@@ -314,7 +314,8 @@ Apply from the CLI with `levelrail-cli apps diagnose <name> --apply-fix N [--inp
 | `EXEC_FORMAT_ERROR` | "exec format error", "no matching manifest for", platform mismatch (a deploy is refused before start with a `PlatformMismatch` trace reason when the node has no emulation, see `APP_PLATFORM_MISMATCH`) | manual: rebuild for the node architecture or publish a multi-arch image |
 | `COMMAND_NOT_FOUND` | "executable file not found in $PATH", "not found" from sh, exit code 127, entrypoint "no such file" | manual: fix the entrypoint, shebang, line endings or executable bit |
 | `HEALTHCHECK_FAILING` | readiness probe timeout, refused connection, or a 404 | patch `health.readiness.path` to a candidate (`/healthz`, `/health`, `/`, ...) on a 404, otherwise a manual hint |
-| `IMAGE_PULL_FAILED` | manifest unknown (not found), unauthorized (credentials), toomanyrequests (rate limit) | manual: fix the reference or add a registry credential |
+| `IMAGE_PULL_FAILED` | manifest unknown (not found), unauthorized (credentials) | manual: fix the reference or add a registry credential |
+| `REGISTRY_RATE_LIMITED` | Docker Hub `toomanyrequests` or HTTP 429 on pull | manual: add or fix a docker.io credential, check remaining pulls in the registry credential limits view, or wait for the window to reset |
 | `BUILD_OUT_OF_DISK` | "no space left on device", `ENOSPC` | manual: prune images and build cache or add disk |
 | `CRASHLOOP_GENERIC` | crashloop alert firing or a non-zero exit, with no more specific cause | manual: read the logs right after startup |
 

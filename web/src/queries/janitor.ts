@@ -111,7 +111,7 @@ export function useJanitorStatus() {
 async function fetchRuns(): Promise<JanitorReport[]> {
   const res = await fetch('/api/v1/system/janitor/runs?limit=20')
   if (!res.ok) throw await failure(res, 'load cleanup history')
-  return (await res.json()) as JanitorReport[]
+  return ((await res.json()) as JanitorReport[] | null) ?? []
 }
 
 export function useJanitorRuns() {

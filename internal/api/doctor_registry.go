@@ -7,6 +7,10 @@ import (
 	"strconv"
 	"strings"
 	"sync"
+
+	"github.com/GLINCKER/levelrail/internal/registryvendor"
+	"github.com/GLINCKER/levelrail/internal/store"
+	"github.com/GLINCKER/levelrail/kit/dockerhub"
 )
 
 // defaultDoctorRegistryPort is the TLS port every OCI registry this
@@ -143,4 +147,77 @@ func (rt *Router) doctorCheckMirrorReachability(ctx context.Context) doctorCheck
 		Fix:      "If this network restricts these hosts (for example mainland China), set a registry mirror: the registry.mirror_prefix setting and the Docker daemon registry-mirrors option. Setup steps are on the install-from-china page.",
 		DocsPath: "/install-from-china",
 	}
+}
+
+// doctorCheckDockerHub reports the health of each stored Docker Hub token
+// and, from the cached quota reading, how many pulls are left. No row when
+// no Docker Hub credential exists.
+func (rt *Router) doctorCheckDockerHub(ctx context.Context) []doctorCheckResource {
+	if rt.registryCredentials == nil {
+		return nil
+	}
+	creds, err := rt.registryCredentials.ListRegistryCredentials(ctx)
+	if err != nil {
+		return nil
+	}
+	var out []doctorCheckResource
+	for _, c := range creds {
+		if !registryvendor.IsDockerHubHost(c.RegistryHost) {
+			continue
+		}
+		out = append(out, rt.doctorDockerHubCredential(c))
+		if row, ok := rt.doctorDockerHubLimit(ctx, c); ok {
+			out = append(out, row)
+		}
+	}
+	return out
+}
+
+func (rt *Router) doctorDockerHubCredential(c store.RegistryCredential) doctorCheckResource {
+	res := doctorCheckResource{Code: "dockerhub_credential_" + c.Name, Name: fmt.Sprintf("Docker Hub token (%s)", c.Name), DocsPath: "/private-registries#docker-hub"}
+	switch {
+	case c.LastRefreshError == registryvendor.DockerHubRejected:
+		res.Status, res.Message = doctorStatusFail, "Docker Hub rejected this token"
+		res.Fix = "Create a new token on Docker Hub and update this credential under Integrations."
+	case c.LastRefreshError != "":
+		res.Status, res.Message = doctorStatusWarn, "the last Docker Hub check failed: "+c.LastRefreshError
+		res.Fix = "Check outbound access to hub.docker.com and auth.docker.io, then open the credential to re-check it."
+	case c.LastRefreshedAt == nil:
+		res.Status, res.Message = doctorStatusUnknown, "this token has not been checked against Docker Hub yet"
+	default:
+		res.Status, res.Message = doctorStatusOK, "Docker Hub accepted this token"
+	}
+	return res
+}
+
+func (rt *Router) doctorDockerHubLimit(ctx context.Context, c store.RegistryCredential) (doctorCheckResource, bool) {
+	client := rt.dockerHubAccount()
+	if client == nil || rt.registryCredentialSecrets == nil || c.LastRefreshError == registryvendor.DockerHubRejected {
+		return doctorCheckResource{}, false
+	}
+	token, err := rt.registryCredentialSecrets.Resolve(ctx, store.RegistryCredentialSecretsKey(c.ID), "password")
+	if err != nil {
+		return doctorCheckResource{}, false
+	}
+	lctx, cancel := context.WithTimeout(ctx, rt.doctorNetworkTimeoutOrDefault())
+	defer cancel()
+	lim, at, cached, err := client.CachedPullLimits(lctx, dockerhub.Credentials{Username: c.Username, Token: token}, rt.dockerHubCacheTTL(ctx), false)
+	if err != nil || !lim.Known {
+		return doctorCheckResource{}, false
+	}
+	l := rt.toDockerHubLimits(ctx, c.ID, lim, at, cached)
+	res := doctorCheckResource{
+		Code: "dockerhub_limit_" + c.Name, Name: fmt.Sprintf("Docker Hub pull limit (%s)", c.Name),
+		Message:  fmt.Sprintf("%d of %d pulls left in this window", lim.Remaining, lim.Limit),
+		DocsPath: "/private-registries#docker-hub",
+	}
+	switch {
+	case lim.Remaining <= 0:
+		res.Status, res.Fix = doctorStatusFail, "Pulls from Docker Hub are refused until the window resets. Wait, or use a token on a plan with a higher limit."
+	case l.Low:
+		res.Status, res.Fix = doctorStatusWarn, "Few Docker Hub pulls are left. Pull less often, or use a token on a plan with a higher limit."
+	default:
+		res.Status = doctorStatusOK
+	}
+	return res, true
 }

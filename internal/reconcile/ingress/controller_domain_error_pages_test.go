@@ -3,6 +3,7 @@ package ingress
 import (
 	"context"
 	"errors"
+	"log/slog"
 	"testing"
 
 	"github.com/GLINCKER/levelrail/internal/ingress"
@@ -31,7 +32,7 @@ func TestController_Reconcile_DomainErrorPages_AddsHandleResponseAndSubroute(t *
 		},
 	}
 	applier := &fakeApplier{}
-	c := New(st, rt, applier, WithLogger(discardLogger()))
+	c := New(st, rt, applier, WithLogger(slog.New(slog.DiscardHandler)))
 
 	if _, err := c.Reconcile(context.Background()); err != nil {
 		t.Fatalf("Reconcile() error = %v", err)
@@ -80,7 +81,7 @@ func TestController_Reconcile_DomainErrorPages_NoConfig_PlainReverseProxy(t *tes
 
 	st := &fakeStore{services: []store.DesiredService{desired}}
 	applier := &fakeApplier{}
-	c := New(st, rt, applier, WithLogger(discardLogger()))
+	c := New(st, rt, applier, WithLogger(slog.New(slog.DiscardHandler)))
 
 	if _, err := c.Reconcile(context.Background()); err != nil {
 		t.Fatalf("Reconcile() error = %v", err)
@@ -101,7 +102,7 @@ func TestController_Reconcile_DomainErrorPages_NoConfig_PlainReverseProxy(t *tes
 func TestController_Reconcile_DomainErrorPages_ListError_Fails(t *testing.T) {
 	st := &fakeStore{errorPagesErr: errors.New("db unreachable")}
 	applier := &fakeApplier{}
-	c := New(st, newFakeRuntime(), applier, WithLogger(discardLogger()))
+	c := New(st, newFakeRuntime(), applier, WithLogger(slog.New(slog.DiscardHandler)))
 
 	result, err := c.Reconcile(context.Background())
 	if err == nil {

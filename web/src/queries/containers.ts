@@ -55,7 +55,7 @@ export async function fetchContainers(): Promise<ContainerResource[]> {
       await readErrorMessage(res, `list containers failed: ${res.status}`),
     )
   }
-  return (await res.json()) as ContainerResource[]
+  return ((await res.json()) as ContainerResource[] | null) ?? []
 }
 
 // A moderate staleTime, the same reasoning systemStatusQueryOptions

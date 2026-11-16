@@ -294,6 +294,11 @@
       "title": "O log de auditoria não é enviado a lugar nenhum",
       "pass": "O log de auditoria é encaminhado a um destino externo",
       "why": "Um stream de auditoria fora desta máquina guarda um registro das ações de agentes e de deploys mesmo que este host seja perdido."
+    },
+    "approval_without_session_allow": {
+      "title": "Logins sem outra sessão ativa são permitidos",
+      "pass": "Logins sem outra sessão ativa aguardam aprovação",
+      "why": "Uma senha correta basta quando não há outra sessão aberta. Reter faz esses logins aguardarem uma aprovação fora do navegador."
     }
   },
   "actions": {
@@ -435,5 +440,29 @@
     "rootOnly": "Somente uma conta root pode alterar esta política.",
     "loading": "Carregando a política",
     "error": "Não foi possível carregar a política de varredura."
+  },
+  "withoutSession": {
+    "title": "Logins sem outra sessão",
+    "description": "O que acontece quando uma senha correta é usada em um navegador novo e a conta não tem outra sessão ativa para aprovar.",
+    "allow": "Permitir",
+    "hold": "Reter",
+    "allowBody": "Permitir: o login entra direto, a menos que a conta peça aprovação. É o padrão.",
+    "holdBody": "Reter: o login aguarda aprovação por um token signin:approve que você possui ou pelo comando do host. Navegadores já confiáveis continuam entrando.",
+    "safeguards": "Para evitar um bloqueio, reter exige um token signin:approve que você possui ou sua confirmação de que pode executar comandos no servidor. O navegador usado para a mudança continua confiável.",
+    "reset": "Para desfazer pelo servidor, execute:",
+    "saved": "Configuração salva.",
+    "saveError": "Não foi possível salvar esta configuração.",
+    "stepUp": "Confirme que é você para mudar como logins sem outra sessão são tratados.",
+    "confirmTitle": "Reter logins sem outra sessão?",
+    "confirmBody": "Uma senha correta não bastará mais em um navegador novo quando não houver outra sessão aberta. Garanta que exista ao menos um meio de aprovação.",
+    "pathsTitle": "Meios de aprovar agora um login retido",
+    "confirm": "Reter logins",
+    "confirming": "Salvando...",
+    "hostAccess": "Posso executar comandos no servidor",
+    "noChannelFix": "Crie um token signin:approve que você possui ou marque a caixa para confirmar que pode executar comandos no servidor.",
+    "channel": {
+      "approve_token": "Um token signin:approve que você possui",
+      "host_command": "O comando approve-signin no servidor"
+    }
   }
 }

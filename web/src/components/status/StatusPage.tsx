@@ -25,6 +25,8 @@ import type { AttentionItem } from '@/lib/attention'
 import { StatusAdvisory } from '@/components/status/StatusAdvisory'
 import { ResolvedLoginControls } from '@/components/attention/ResolvedLoginControls'
 import { CopyFailureDetail } from '@/components/attention/CopyFailureDetail'
+import { AttentionKindIcon } from '@/components/attention/AttentionKindIcon'
+import { hasKindIcon } from '@/lib/attentionKindIcon'
 import { CopyItemControls } from '@/components/attention/CopyItemControls'
 import { useSnoozed } from '@/components/shell/snoozeStore'
 import { SilenceMenu } from '@/components/attention/SilenceMenu'
@@ -217,11 +219,16 @@ function ItemActions({ item }: { item: AttentionItem }) {
 
 function SeverityIcon({
   severity,
+  kind,
   className,
 }: {
   severity: AttentionItem['severity']
+  kind?: string
   className: string
 }) {
+  if (hasKindIcon(kind)) {
+    return <AttentionKindIcon kind={kind} className={className} />
+  }
   if (severity === 'critical') {
     return <CircleAlertGlassIcon className={className} aria-hidden="true" />
   }
@@ -239,6 +246,7 @@ function StatusRow({ item }: { item: AttentionItem }) {
       <div className="flex min-w-0 flex-1 items-start gap-2.5">
         <SeverityIcon
           severity={item.severity}
+          kind={item.kind}
           className={cn(
             'size-6 shrink-0',
             item.severity === 'critical'

@@ -151,11 +151,12 @@ func (db *DB) DeleteAppIfOrphaned(ctx context.Context, id string) (bool, error) 
 // ListServicesByApp returns every service belonging to appID, ordered
 // by name. This is the read side of stage 1 multi-service apps: an
 // app's member services, for a group-status rollup or a detail view.
+// Retained deploy copies share the AppID but are not members, so they are skipped.
 func (db *DB) ListServicesByApp(ctx context.Context, appID string) ([]DesiredService, error) {
 	rows, err := db.QueryContext(ctx, `
 		SELECT `+desiredServiceColumns+`
 		FROM desired_services
-		WHERE app_id = ?
+		WHERE app_id = ? AND name NOT IN (SELECT service_name FROM deploy_urls)
 		ORDER BY name
 	`, appID)
 	if err != nil {

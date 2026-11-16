@@ -48,6 +48,9 @@ func TestClient_ExchangeCode(t *testing.T) {
 		if r.Form.Get("code") != "the-code" {
 			t.Errorf("code = %q, want the-code", r.Form.Get("code"))
 		}
+		if r.Form.Get("code_verifier") != "the-verifier" {
+			t.Errorf("code_verifier = %q, want the-verifier", r.Form.Get("code_verifier"))
+		}
 		w.Header().Set("Content-Type", "application/json")
 		_ = json.NewEncoder(w).Encode(map[string]any{
 			"access_token": "at-1", "refresh_token": "rt-1", "expires_in": 7200, "created_at": 0,
@@ -56,7 +59,7 @@ func TestClient_ExchangeCode(t *testing.T) {
 	defer srv.Close()
 
 	c := &Client{HTTP: srv.Client()}
-	tok, err := c.ExchangeCode(context.Background(), srv.URL, "client", "secret", "https://example.com/cb", "the-code")
+	tok, err := c.ExchangeCode(context.Background(), srv.URL, "client", "secret", "https://example.com/cb", "the-code", "the-verifier")
 	if err != nil {
 		t.Fatalf("ExchangeCode() error = %v", err)
 	}
@@ -206,6 +209,9 @@ func TestClient_CreateProjectWebhook(t *testing.T) {
 	}
 	if !gotBody.PushEvents {
 		t.Error("push_events = false, want true")
+	}
+	if !gotBody.TagPushEvents {
+		t.Error("tag_push_events = false, want true")
 	}
 	if !gotBody.MergeRequestsEvents {
 		t.Error("merge_requests_events = false, want true")

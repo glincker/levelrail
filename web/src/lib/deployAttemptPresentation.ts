@@ -6,6 +6,7 @@ import {
   CountdownGlassIcon,
   HandGlassIcon,
   LoaderCircleGlassIcon,
+  ShieldAlertGlassIcon,
   SkipForwardGlassIcon,
   type UiIcon,
 } from '@thesvg/ui-react'
@@ -33,6 +34,7 @@ export const DEPLOY_ATTEMPT_STATUS_BADGE_VARIANT: Record<
   superseded: 'muted',
   queued: 'muted',
   canceled: 'muted',
+  refused: 'warning',
   pending: 'warning',
 }
 
@@ -45,6 +47,7 @@ export const DEPLOY_ATTEMPT_STATUS_TONE: Record<DeployAttemptStatus, Tone> = {
   superseded: 'neutral',
   queued: 'neutral',
   canceled: 'neutral',
+  refused: 'warning',
   pending: 'warning',
 }
 
@@ -57,6 +60,7 @@ export const DEPLOY_ATTEMPT_STATUS_ICON: Record<DeployAttemptStatus, UiIcon> = {
   superseded: SkipForwardGlassIcon,
   queued: CountdownGlassIcon,
   canceled: BanGlassIcon,
+  refused: ShieldAlertGlassIcon,
   pending: CountdownGlassIcon,
 }
 
@@ -70,6 +74,7 @@ export const DEPLOY_ATTEMPT_STATUS_LABEL: Record<DeployAttemptStatus, string> =
     superseded: 'Superseded',
     queued: 'Queued',
     canceled: 'Canceled',
+    refused: 'Refused',
     pending: 'Queued until node returns',
   }
 

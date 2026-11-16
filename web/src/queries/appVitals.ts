@@ -1,6 +1,7 @@
 // Matches internal/api/vitals.go: histogram-derived percentiles per metric and route.
 import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query'
-import { ApiError, readErrorMessage } from '../lib/apiError'
+import { ApiError } from '../lib/apiError'
+import { apiRequest } from '../lib/apiRequest'
 
 export type VitalsMetric = 'LCP' | 'INP' | 'CLS' | 'TTFB' | 'FCP'
 export type VitalsRating = 'good' | 'needs-improvement' | 'poor'
@@ -40,27 +41,16 @@ export const appVitalsKeys = {
   detail: (app: string) => ['apps', app, 'vitals'] as const,
 }
 
-async function request(
+function request(
   app: string,
   method: string,
   suffix = '',
   body?: unknown,
 ): Promise<AppVitals> {
-  const res = await fetch(
+  return apiRequest<AppVitals>(
     `/api/v1/apps/${encodeURIComponent(app)}/vitals${suffix}`,
-    {
-      method,
-      headers: body ? { 'Content-Type': 'application/json' } : undefined,
-      body: body ? JSON.stringify(body) : undefined,
-    },
+    { method, body, fallbackMessage: 'web vitals request failed' },
   )
-  if (!res.ok) {
-    throw new ApiError(
-      res.status,
-      await readErrorMessage(res, `web vitals request failed: ${res.status}`),
-    )
-  }
-  return (await res.json()) as AppVitals
 }
 
 export function useAppVitals(app: string) {

@@ -84,6 +84,9 @@ const (
 	KindTokenExpiring           = "token_expiring"       //nolint:gosec // item kind name, not a credential
 	KindTokenExpired            = "token_expired"        //nolint:gosec // item kind name, not a credential
 	KindTokenExpiredInUse       = "token_expired_in_use" //nolint:gosec // item kind name, not a credential
+	KindGitConnectionReauth     = "git_connection_reauth"
+	KindTokenGraceSweepFailing  = "token_grace_sweep_failing" //nolint:gosec // item kind name, not a credential
+	KindGitTokenExpiring        = "git_token_expiring"        //nolint:gosec // item kind name, not a credential
 	KindDataCopy                = "data_copy"
 	KindBackupOverdue           = "backup_overdue"
 	KindInvites                 = "invites"
@@ -111,6 +114,8 @@ const (
 	KindUncleanRestart          = "unclean_restart"
 	KindAdvisoryMatch           = "advisory_match"
 	KindDeployInterrupted       = "deploy_interrupted"
+	KindDeployRefused           = "deploy_refused"
+	KindBuildQueuePaused        = "build_queue_paused"
 )
 
 func deviceLoginItems(devices []apiclient.DevicePendingLogin, now time.Time) []Item {

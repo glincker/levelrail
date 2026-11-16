@@ -44,6 +44,7 @@ type timelineItem struct {
 	Actor  string       `json:"actor"`
 	Title  string       `json:"title"`
 	Detail string       `json:"detail,omitempty"`
+	URL    string       `json:"url,omitempty"`
 	Ref    *timelineRef `json:"ref,omitempty"`
 }
 
@@ -138,6 +139,8 @@ func (rt *Router) handleAppTimeline(w http.ResponseWriter, r *http.Request) {
 			}
 		}
 	}
+
+	items = append(items, rt.deliveryTimelineItems(r.Context(), name, cursor, limit+1)...)
 
 	sort.SliceStable(items, func(i, j int) bool {
 		if !items[i].At.Equal(items[j].At) {

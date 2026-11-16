@@ -3,6 +3,7 @@ package ingress
 import (
 	"context"
 	"encoding/json"
+	"log/slog"
 	"strings"
 	"testing"
 	"time"
@@ -49,7 +50,7 @@ func TestController_Maintenance_BypassGateAndPage(t *testing.T) {
 		}},
 	}
 	applier := &fakeApplier{}
-	if _, err := New(st, rt, applier, WithLogger(discardLogger())).Reconcile(context.Background()); err != nil {
+	if _, err := New(st, rt, applier, WithLogger(slog.New(slog.DiscardHandler))).Reconcile(context.Background()); err != nil {
 		t.Fatal(err)
 	}
 	got := appliedJSON(t, applier)
@@ -69,7 +70,7 @@ func TestController_Maintenance_BypassWithoutBackendStillServesPage(t *testing.T
 		settings:  []store.DomainMaintenance{{Domain: "ops.example.com", BypassCIDRs: []string{"203.0.113.0/24"}}},
 	}
 	applier := &fakeApplier{}
-	if _, err := New(st, newFakeRuntime(), applier, WithLogger(discardLogger())).Reconcile(context.Background()); err != nil {
+	if _, err := New(st, newFakeRuntime(), applier, WithLogger(slog.New(slog.DiscardHandler))).Reconcile(context.Background()); err != nil {
 		t.Fatal(err)
 	}
 	got := appliedJSON(t, applier)
@@ -89,7 +90,7 @@ func TestController_Maintenance_NoBypassKeepsPlainRoute(t *testing.T) {
 		settings:  []store.DomainMaintenance{{Domain: "ops.example.com", BypassHealthCheck: true, Message: "Back at noon"}},
 	}
 	applier := &fakeApplier{}
-	if _, err := New(st, rt, applier, WithLogger(discardLogger())).Reconcile(context.Background()); err != nil {
+	if _, err := New(st, rt, applier, WithLogger(slog.New(slog.DiscardHandler))).Reconcile(context.Background()); err != nil {
 		t.Fatal(err)
 	}
 	got := appliedJSON(t, applier)

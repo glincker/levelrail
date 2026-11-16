@@ -21,6 +21,7 @@ const (
 	KeyRestoreHistoryDays   = "retention.restore_history_days"
 	KeyProbeAttemptDays     = "retention.probe_attempt_days"
 	KeyAppHistoryDays       = "retention.app_history_days"
+	KeyForgeStatusDays      = "retention.forge_status_days"
 	KeyUsageCostDays        = "retention.usage_cost_days"
 	KeyStatusIncidentDays   = "retention.status_incident_days"
 	KeyCleanupInterval      = "cleanup.interval"
@@ -137,6 +138,8 @@ func init() {
 			"Days the per-attempt readiness probe detail of a deploy is kept. 0 keeps it forever."},
 		{KeyAppHistoryDays, "APP_RETENTION_APP_HISTORY_DAYS", "90", "Keep app events and schedule history for",
 			"Days app lifecycle events, scheduled deploy history and last canary outcomes are kept. 0 keeps them forever."},
+		{KeyForgeStatusDays, "APP_RETENTION_FORGE_STATUS_DAYS", "30", "Keep forge commit status reports for",
+			"Days a commit status Levelrail posted to a git forge stays on the app delivery timeline. 0 keeps them forever."},
 		{KeyUsageCostDays, "APP_RETENTION_USAGE_COST_DAYS", "90", "Keep daily cost snapshots for",
 			"Days a daily cost showback snapshot is kept. 0 keeps them forever."},
 		{KeyStatusIncidentDays, "APP_RETENTION_STATUS_INCIDENT_DAYS", "365", "Keep resolved status incidents for",

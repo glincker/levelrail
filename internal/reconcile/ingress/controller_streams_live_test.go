@@ -3,6 +3,7 @@ package ingress
 import (
 	"context"
 	"fmt"
+	"log/slog"
 	"net"
 	"testing"
 	"time"
@@ -110,7 +111,7 @@ func TestController_Reconcile_AppStream_Live(t *testing.T) {
 	// Caddy layer4 problem below.
 	waitForPong(t, fmt.Sprintf("127.0.0.1:%d", ephemeralPort))
 
-	driver := ingress.New(discardLogger())
+	driver := ingress.New(slog.New(slog.DiscardHandler))
 	t.Cleanup(func() {
 		if err := driver.Stop(context.Background()); err != nil {
 			t.Errorf("Driver.Stop() error = %v", err)
@@ -120,7 +121,7 @@ func TestController_Reconcile_AppStream_Live(t *testing.T) {
 		WithServerName("ingress-stream-live"),
 		WithListenAddr(fmt.Sprintf("127.0.0.1:%d", freePort(t))),
 		WithAdminListen(fmt.Sprintf("127.0.0.1:%d", freePort(t))),
-		WithLogger(discardLogger()),
+		WithLogger(slog.New(slog.DiscardHandler)),
 	)
 
 	reconcileCtx, reconcileCancel := context.WithTimeout(longCtx, 30*time.Second)

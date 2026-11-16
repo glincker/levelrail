@@ -4,6 +4,7 @@ import (
 	"context"
 	"encoding/json"
 	"errors"
+	"log/slog"
 	"strings"
 	"testing"
 
@@ -30,7 +31,7 @@ func policyFixture(t *testing.T, rows []store.DomainTrafficPolicy, listErr error
 	rt.seedRunning(application.ContainerName(api.Name, api.Image, ""), 34002)
 	st := &policyFakeStore{fakeStore: &fakeStore{services: []store.DesiredService{web, api}}, rows: rows, err: listErr}
 	applier := &fakeApplier{}
-	return New(st, rt, applier, WithLogger(discardLogger())), applier
+	return New(st, rt, applier, WithLogger(slog.New(slog.DiscardHandler))), applier
 }
 
 func routeJSON(t *testing.T, applier *fakeApplier, host string) string {
@@ -97,7 +98,7 @@ func TestController_TrafficPolicies_StoreWithoutSupport(t *testing.T) {
 	rt := newFakeRuntime()
 	rt.seedRunning(application.ContainerName(web.Name, web.Image, ""), 34001)
 	applier := &fakeApplier{}
-	c := New(&fakeStore{services: []store.DesiredService{web}}, rt, applier, WithLogger(discardLogger()))
+	c := New(&fakeStore{services: []store.DesiredService{web}}, rt, applier, WithLogger(slog.New(slog.DiscardHandler)))
 	if _, err := c.Reconcile(context.Background()); err != nil {
 		t.Fatalf("Reconcile() error = %v", err)
 	}

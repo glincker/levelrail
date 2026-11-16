@@ -29,7 +29,9 @@ type SecurityPolicy struct {
 	MaxTokenLifetimeDays *int
 	WarnUnusedDays       *int
 	DisableUnusedDays    *int
-	UpdatedAt            time.Time
+	// ApprovalWithoutSession is allow or hold; never settable from IaC, see the offline host reset.
+	ApprovalWithoutSession *string
+	UpdatedAt              time.Time
 }
 
 // UserSecuritySettings are one account's own security switches.
@@ -75,11 +77,11 @@ func intPtr(n sql.NullInt64) *int {
 
 // GetSecurityPolicy returns the stored policy; ok is false when none was saved.
 func (db *DB) GetSecurityPolicy(ctx context.Context) (p SecurityPolicy, ok bool, err error) {
-	var scope sql.NullString
+	var scope, without sql.NullString
 	var maxLife, warn, disable sql.NullInt64
 	var updated string
-	err = db.QueryRowContext(ctx, `SELECT approval_scope, max_token_lifetime_days, warn_unused_days, disable_unused_days, updated_at
-		FROM security_policy_settings WHERE id = 1`).Scan(&scope, &maxLife, &warn, &disable, &updated)
+	err = db.QueryRowContext(ctx, `SELECT approval_scope, max_token_lifetime_days, warn_unused_days, disable_unused_days, approval_without_session, updated_at
+		FROM security_policy_settings WHERE id = 1`).Scan(&scope, &maxLife, &warn, &disable, &without, &updated)
 	if errors.Is(err, sql.ErrNoRows) {
 		return p, false, nil
 	}
@@ -89,6 +91,10 @@ func (db *DB) GetSecurityPolicy(ctx context.Context) (p SecurityPolicy, ok bool,
 	if scope.Valid {
 		s := scope.String
 		p.ApprovalScope = &s
+	}
+	if without.Valid {
+		v := without.String
+		p.ApprovalWithoutSession = &v
 	}
 	p.MaxTokenLifetimeDays, p.WarnUnusedDays, p.DisableUnusedDays = intPtr(maxLife), intPtr(warn), intPtr(disable)
 	p.UpdatedAt = parseAuthTime(updated)
@@ -101,11 +107,16 @@ func (db *DB) SaveSecurityPolicy(ctx context.Context, p SecurityPolicy) error {
 	if p.ApprovalScope != nil {
 		scope = sql.NullString{String: *p.ApprovalScope, Valid: true}
 	}
-	_, err := db.ExecContext(ctx, `INSERT INTO security_policy_settings (id, approval_scope, max_token_lifetime_days, warn_unused_days, disable_unused_days, updated_at)
-		VALUES (1, ?, ?, ?, ?, ?)
+	var without sql.NullString
+	if p.ApprovalWithoutSession != nil {
+		without = sql.NullString{String: *p.ApprovalWithoutSession, Valid: true}
+	}
+	_, err := db.ExecContext(ctx, `INSERT INTO security_policy_settings (id, approval_scope, max_token_lifetime_days, warn_unused_days, disable_unused_days, approval_without_session, updated_at)
+		VALUES (1, ?, ?, ?, ?, ?, ?)
 		ON CONFLICT (id) DO UPDATE SET approval_scope = excluded.approval_scope, max_token_lifetime_days = excluded.max_token_lifetime_days,
-			warn_unused_days = excluded.warn_unused_days, disable_unused_days = excluded.disable_unused_days, updated_at = excluded.updated_at`,
-		scope, nullInt(p.MaxTokenLifetimeDays), nullInt(p.WarnUnusedDays), nullInt(p.DisableUnusedDays), FormatAuditTime(p.UpdatedAt))
+			warn_unused_days = excluded.warn_unused_days, disable_unused_days = excluded.disable_unused_days,
+			approval_without_session = excluded.approval_without_session, updated_at = excluded.updated_at`,
+		scope, nullInt(p.MaxTokenLifetimeDays), nullInt(p.WarnUnusedDays), nullInt(p.DisableUnusedDays), without, FormatAuditTime(p.UpdatedAt))
 	if err != nil {
 		return fmt.Errorf("store: save security policy: %w", err)
 	}

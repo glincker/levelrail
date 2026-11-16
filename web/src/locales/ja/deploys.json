@@ -555,7 +555,7 @@
     "medianDuration": "所要時間の中央値",
     "medianDurationTip": "直近24時間に完了したデプロイの所要時間の中央値です。",
     "needsAttention": "要対応",
-    "needsAttentionTip": "保留中のデプロイと、実行中のものと異なるライブイメージです。選択すると保留中のデプロイを表示します。",
+    "needsAttentionTip": "保留中のデプロイ、実行中と異なるライブイメージ、直近のデプロイが失敗または拒否されたアプリです。選択すると表示します。",
     "deploys14": "デプロイ(14日間)",
     "deploys14Tip": "直近14日間の、1日あたりに開始されたデプロイ数です。"
   },
@@ -602,7 +602,8 @@
       "held": "保留中",
       "awaiting_approval": "承認待ち",
       "rolled_back": "ロールバック済み",
-      "superseded": "置き換え済み"
+      "superseded": "置き換え済み",
+      "refused": "拒否"
     },
     "trigger": {
       "git push": "Git push",
@@ -667,5 +668,134 @@
     "viewQueue": "キューを表示",
     "progress": "これまでに {{required}} 人中 {{received}} 人の異なる承認者が承認しました。最後の承認者が承認するとデプロイが実行されます。",
     "recorded": "承認を記録しました: {{required}} 人中 {{received}} 人の異なる承認者。"
+  },
+  "interruption": {
+    "interrupted": "中断: このデプロイの実行中にコントロールプレーンが再起動しました",
+    "orphaned": "孤立: このデプロイに対応するビルドが実行されていないため、キャンセルされました",
+    "retry": "もう一度デプロイして再試行してください"
+  },
+  "buildQueue": {
+    "chip": "{{state}}、スロット {{used}}/{{total}}",
+    "state": {
+      "running": "実行中",
+      "paused": "一時停止中",
+      "draining": "排出中"
+    },
+    "by": "{{actor}} による",
+    "menu": "キューの操作",
+    "resume": "ビルドを再開",
+    "drain": "キューを排出",
+    "drainHint": "実行中のビルドは完了させ、新しいビルドは保留します",
+    "done": {
+      "pause": "ビルドキューを一時停止しました。",
+      "drain": "ビルドキューを排出中です。",
+      "resume": "ビルドキューを再開しました。"
+    },
+    "conflict": {
+      "pause": "キューはすでに一時停止中です。",
+      "drain": "キューはすでに排出中です。",
+      "resume": "キューはすでに実行中です。"
+    },
+    "failed": "ビルドキューを変更できませんでした。",
+    "pause": {
+      "action": "ビルドを一時停止",
+      "title": "ビルドキューを一時停止",
+      "description": "実行中のビルドは完了します。新しいビルドは再開するまで待機します。",
+      "reasonLabel": "理由 (任意)",
+      "reasonPlaceholder": "例: レジストリのメンテナンス",
+      "submit": "一時停止"
+    },
+    "kill": {
+      "action": "すべてのビルドを強制終了",
+      "title": "すべてのビルドを強制終了しますか?",
+      "description": "実行中 {{running}} 件と待機中 {{queued}} 件のビルドをキャンセルします。",
+      "confirm": "すべて強制終了",
+      "confirming": "強制終了中",
+      "none": "現在、実行中または待機中のビルドはありません。",
+      "more": "ほか {{count}} 件",
+      "alsoPause": "キューも一時停止する",
+      "stepUp": "すべてのビルドをキャンセルするには、パスワードを確認してください。",
+      "done_other": "{{count}} 件のビルドをキャンセルしました。",
+      "someFailed": "{{count}} 件をキャンセルできませんでした: {{apps}}",
+      "conflict": "確認中にキューが変更されました。キューを確認してやり直してください。",
+      "failed": "ビルドをキャンセルできませんでした。"
+    },
+    "banner": {
+      "paused": "ビルドは一時停止中です",
+      "draining": "ビルドは排出中です"
+    },
+    "autoResume": "自動で再開します",
+    "panel": {
+      "title": "ビルドキュー",
+      "summary": "実行中 {{running}} 件、待機中 {{queued}} 件、スロット {{used}}/{{total}} 使用中",
+      "position": "#{{position}}",
+      "waiting": "待機中: {{reason}}"
+    },
+    "phase": {
+      "preparing": "準備中",
+      "held": "保留中",
+      "waiting": "待機中",
+      "building": "ビルド中"
+    }
+  },
+  "runners": {
+    "title": "ビルドランナー",
+    "strategy": "戦略: {{strategy}}",
+    "changeStrategy": "戦略を変更",
+    "strategies": {
+      "first": "最初に空いているもの",
+      "least_loaded": "負荷が最小のもの",
+      "sticky_per_app": "アプリごとに固定"
+    },
+    "kind": {
+      "control_plane": "コントロールプレーン",
+      "node": "ビルドノード"
+    },
+    "status": {
+      "ready": "準備完了",
+      "busy": "ビジー",
+      "pressure": "高負荷",
+      "draining": "ドレイン中",
+      "offline": "オフライン"
+    },
+    "cores_other": "{{count}} コア",
+    "load": "負荷 {{load}}",
+    "slots": "{{total}} スロット中 {{used}} 使用 ({{percent}}%)",
+    "waiting_other": "{{count}} 件待機",
+    "capacityLabel": "{{name}} で使用中のビルドスロット",
+    "labels": "ラベル",
+    "lastBuild": "直近のビルド:",
+    "noBuilds": "まだビルドがありません",
+    "cache": "ビルドキャッシュ {{size}}",
+    "builtOn": "{{name}} でビルド",
+    "queued": "待機 {{wait}}",
+    "error": {
+      "title": "ビルドランナーを読み込めませんでした",
+      "description": "ランナー一覧を読み込めませんでした。ビルドには影響しません。",
+      "retry": "再読み込み"
+    },
+    "empty": {
+      "title": "ビルドノードを追加",
+      "description": "ビルドはコントロールプレーンで実行されます。ビルドを有効にした2台目のノードを登録すると、アプリを提供するマシンからビルドを切り離せます。",
+      "action": "ノードを開く",
+      "docs": "ビルドノードのルーティング"
+    }
+  },
+  "runnerPref": {
+    "title": "ビルドランナー",
+    "description": "このアプリをビルドする場所を選びます。空のままにするとグローバル戦略に従います。",
+    "node": "ビルドノード",
+    "anyNode": "任意のビルドノード",
+    "labels": "ラベル",
+    "labelsPlaceholder": "gpu, arch=arm64",
+    "pin": "このノードに固定",
+    "pinHint": "このノードでビルドできない場合は、他のノードではなくコントロールプレーンを使います。",
+    "pinNeedsNode": "固定するにはノードを選んでください。",
+    "noAbility": "変更するにはデプロイ権限が必要です。",
+    "clear": "クリア",
+    "save": "保存",
+    "saved": "ビルドランナーを保存しました",
+    "cleared": "ビルドランナーをクリアしました",
+    "retry": "再試行"
   }
 }

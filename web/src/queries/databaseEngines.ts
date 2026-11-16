@@ -34,7 +34,7 @@ export async function fetchDatabaseEngines(): Promise<DatabaseEngineInfo[]> {
       ),
     )
   }
-  return (await res.json()) as DatabaseEngineInfo[]
+  return ((await res.json()) as DatabaseEngineInfo[] | null) ?? []
 }
 
 // staleTime matches certificatesQueryOptions's own reasoning: this list

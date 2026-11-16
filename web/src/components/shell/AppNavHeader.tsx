@@ -3,7 +3,9 @@ import { ArrowLeftGlassIcon } from '@thesvg/ui-react'
 import { NAV_ROW_CLASS } from './CollapsibleSection'
 import { SidebarMenuButton, useSidebar } from '@/components/ui/sidebar'
 import { Sparkline, StatusPill, type Tone } from '@/components/kit'
-import { useApp } from '../../queries/apps'
+import { useQuery } from '@tanstack/react-query'
+import { ApiError } from '../../lib/apiError'
+import { appDetailQueryOptions } from '../../queries/apps'
 import { useDeployStatus } from '../../queries/deploys'
 import { useRequestRateSpark } from './useRequestRateSpark'
 import { summarizeAppStatus } from '../../lib/appStatus'
@@ -17,7 +19,9 @@ function toneFor(variant: string | null | undefined): Tone {
 }
 
 export function AppNavHeader({ name }: { name: string }) {
-  const { data: app } = useApp(name)
+  // A missing app is the route's own errorComponent to show; any other error still throws.
+  const { data: app, error } = useQuery(appDetailQueryOptions(name))
+  if (error && !(error instanceof ApiError && error.status === 404)) throw error
   const { data: conditions } = useDeployStatus(name)
   const { state } = useSidebar()
   const status = summarizeAppStatus(conditions, useAppAsleep(name))
@@ -38,7 +42,7 @@ export function AppNavHeader({ name }: { name: string }) {
         <div className="flex flex-col gap-1.5 rounded-xl border border-sidebar-border bg-sidebar-raised px-3 py-2">
           <div className="flex items-center justify-between gap-2">
             <span className="truncate text-sm font-semibold text-sidebar-foreground">
-              {app.name}
+              {app?.name ?? name}
             </span>
             <StatusPill
               tone={toneFor(status.variant)}

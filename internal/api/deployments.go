@@ -17,7 +17,7 @@ import (
 // *store.DB satisfies it.
 type deploymentStore interface {
 	ListDeployments(ctx context.Context, f store.DeploymentFilter) ([]store.Deployment, string, error)
-	ListDeploymentBriefs(ctx context.Context, since time.Time, visibleApps []string) ([]store.DeploymentBrief, error)
+	ListDeploymentBriefsScoped(ctx context.Context, since time.Time, visibleApps []string, environment, project string) ([]store.DeploymentBrief, error)
 }
 
 var errNoDeploymentStore = errors.New("api: deploy attempt store lacks cross-app deployment queries")
@@ -57,6 +57,7 @@ type deploymentResource struct {
 	RolledBackBy    *string             `json:"rolled_back_by"`
 	SupersededBy    *string             `json:"superseded_by"`
 	IsLive          bool                `json:"is_live"`
+	FirstDeploy     bool                `json:"first_deploy"`
 	ApprovalID      *string             `json:"approval_id"`
 	PreviewImageURL *string             `json:"preview_image_url"`
 	SBOMPackages    *int                `json:"sbom_packages"`
@@ -145,7 +146,7 @@ func (rt *Router) toDeploymentResource(d store.Deployment) deploymentResource {
 		StartedAt: a.StartedAt, FinishedAt: a.FinishedAt,
 		ReasonCode: deploymentReasonCode(a), Reason: deploymentReasonText(deploymentReasonCode(a)),
 		RollbackOf: strOrNil(d.RollbackOf), RolledBackBy: strOrNil(d.RolledBackBy), SupersededBy: strOrNil(d.SupersededBy),
-		IsLive: d.IsLive, QueuedAt: a.QueuedAt, CanceledBy: strOrNil(a.CanceledBy),
+		IsLive: d.IsLive, FirstDeploy: d.First, QueuedAt: a.QueuedAt, CanceledBy: strOrNil(a.CanceledBy),
 	}
 	if d.PRNumber > 0 {
 		res.PRNumber = &d.PRNumber
@@ -323,7 +324,7 @@ func (rt *Router) handleDeploymentsSummary(w http.ResponseWriter, r *http.Reques
 	if first := time.Date(now.Year(), now.Month(), now.Day(), 0, 0, 0, 0, time.UTC).AddDate(0, 0, -(store.DeploymentSummaryDays - 1)); first.Before(since) {
 		since = first
 	}
-	briefs, err := ds.ListDeploymentBriefs(r.Context(), since, visible)
+	briefs, err := ds.ListDeploymentBriefsScoped(r.Context(), since, visible, r.URL.Query().Get("environment"), r.URL.Query().Get("project"))
 	if err != nil {
 		rt.internalError(w, "api: deployments summary failed", err)
 		return

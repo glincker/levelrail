@@ -3,6 +3,7 @@ package build
 import (
 	"context"
 	"errors"
+	"github.com/GLINCKER/levelrail/internal/testutil"
 	"os"
 	"path/filepath"
 	"strings"
@@ -223,13 +224,7 @@ func TestLimiterCanceledWhileQueuedNeverRunsAndFreesNothing(t *testing.T) {
 
 func waitFor(t *testing.T, cond func() bool) {
 	t.Helper()
-	deadline := time.Now().Add(2 * time.Second)
-	for !cond() {
-		if time.Now().After(deadline) {
-			t.Fatal("condition not reached")
-		}
-		time.Sleep(time.Millisecond)
-	}
+	testutil.WaitFor(t, 2*time.Second, time.Millisecond, "condition", cond)
 }
 
 type fakeCgroups struct {

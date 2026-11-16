@@ -57,7 +57,7 @@ export async function fetchJobRuns(
       await readErrorMessage(res, `fetch job runs failed: ${res.status}`),
     )
   }
-  return (await res.json()) as JobRun[]
+  return ((await res.json()) as JobRun[] | null) ?? []
 }
 
 // useJobRuns polls while the table is open so a running job settles in
@@ -109,7 +109,7 @@ export async function fetchScheduledTasks(
       ),
     )
   }
-  return (await res.json()) as ScheduledTask[]
+  return ((await res.json()) as ScheduledTask[] | null) ?? []
 }
 
 export function scheduledTaskListQueryOptions(appName: string) {

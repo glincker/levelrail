@@ -170,7 +170,8 @@
               "alert-inbox",
               "event-webhooks",
               "heartbeat",
-              "attention-center"
+              "attention-center",
+              "token-expiry-and-rotation"
             ]
           },
           {
@@ -245,6 +246,7 @@
               "dns",
               "dns-zones",
               "dns-visibility",
+              "egress-dry-run",
               "mesh-dns",
               "mail-dns",
               "mail-template",

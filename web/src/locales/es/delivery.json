@@ -1,0 +1,112 @@
+{
+  "title": "Entrega",
+  "category": {
+    "deploys": "Despliegues",
+    "builds": "Compilaciones",
+    "statuses": "Estados",
+    "previews": "Vistas previas",
+    "integrations": "Integraciones",
+    "other": "Otros"
+  },
+  "status": {
+    "succeeded": "Correcto",
+    "failed": "Fallido",
+    "in_progress": "En curso",
+    "pending": "Pendiente",
+    "info": "Info",
+    "unknown": "Desconocido"
+  },
+  "health": {
+    "ok": "Sano",
+    "degraded": "Degradado",
+    "needs_reconnect": "Requiere reconexión",
+    "expired": "Caducado",
+    "unknown": "Desconocido"
+  },
+  "filters": {
+    "kind": "Filtrar por tipo",
+    "status": "Estado",
+    "search": "Buscar en la línea de tiempo",
+    "searchPlaceholder": "Buscar por título o detalle",
+    "statusOption": {
+      "all": "Todos los estados",
+      "failed": "Fallido",
+      "in_progress": "En curso",
+      "succeeded": "Correcto"
+    }
+  },
+  "row": {
+    "openPreview": "Abrir vista previa",
+    "openRun": "Abrir ejecución",
+    "openLink": "Abrir enlace",
+    "openIntegrations": "Abrir Integraciones",
+    "postFailed": "Falló la publicación en el repositorio",
+    "noErrorDetail": "No se registró ningún detalle del error."
+  },
+  "header": {
+    "label": "Resumen de entrega",
+    "source": "Origen",
+    "reporting": "Informe de estado",
+    "lastDeploy": "Último despliegue",
+    "none": "Sin conectar",
+    "postFailing": "Falla la publicación del estado del commit. El repositorio puede mostrar un estado desactualizado.",
+    "inherited": "Heredado de {{org}}",
+    "overrides": "Reemplaza el valor de {{org}}",
+    "change": "Cambiar",
+    "bind": "Vincular",
+    "unbind": "Desvincular",
+    "bindOther": "Vincular una conexión",
+    "other": "Otros vínculos"
+  },
+  "day": {
+    "today": "Hoy",
+    "yesterday": "Ayer",
+    "unknown": "Fecha desconocida"
+  },
+  "loadMore": "Cargar más",
+  "retry": "Reintentar",
+  "empty": {
+    "title": "Aún no hay actividad de entrega",
+    "description": "Aquí aparecen los despliegues, estados del repositorio, vistas previas y cambios de conexión de esta app."
+  },
+  "noMatch": {
+    "title": "Nada coincide con estos filtros",
+    "description": "Prueba con otro tipo, estado o búsqueda.",
+    "clear": "Borrar filtros"
+  },
+  "bind": {
+    "title": "Vincular {{name}}",
+    "titleGeneric": "Vincular una conexión",
+    "description": "Elige el rol de esta conexión. El servidor comprueba el alcance y las reglas.",
+    "confirm": "Vincular",
+    "binding": "Vinculando",
+    "toast": "{{name}} vinculada a {{app}}",
+    "app": "App",
+    "appPlaceholder": "Elige una app",
+    "connection": "Conexión",
+    "connectionPlaceholder": "Elige una conexión",
+    "noConnections": "Ninguna conexión puede cumplir este rol",
+    "role": "Rol",
+    "roles": {
+      "source": "Origen",
+      "deploy_report": "Informe de despliegues",
+      "registry_pull": "Descarga del registro",
+      "notify": "Notificaciones",
+      "secrets": "Secretos",
+      "dns": "DNS"
+    },
+    "rules": "Reglas (opcional)",
+    "rulesHint": "Un objeto JSON, comprobado con el rol.",
+    "rulesInvalid": "Las reglas deben ser un objeto JSON."
+  },
+  "unbind": {
+    "title": "Desvincular {{name}}",
+    "description": "La app deja de usar esta conexión para el rol. La conexión se conserva.",
+    "confirm": "Desvincular",
+    "unbinding": "Desvinculando",
+    "toast": "{{name}} desvinculada de {{app}}",
+    "binding": "Vínculo",
+    "pick": "Elige un vínculo",
+    "noneForApp": "Esta app no tiene un vínculo para ella"
+  }
+}

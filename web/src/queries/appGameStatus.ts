@@ -1,6 +1,6 @@
 // Matches internal/api/game_status.go: one ping of a game server's own port.
 import { queryOptions, useQuery } from '@tanstack/react-query'
-import { ApiError, readErrorMessage } from '../lib/apiError'
+import { apiRequest } from '../lib/apiRequest'
 import { pollUnlessMissing } from '../lib/pollUnlessMissing'
 
 export type GameExposure =
@@ -29,15 +29,11 @@ export const appGameStatusKeys = {
   detail: (app: string) => ['apps', app, 'game-status'] as const,
 }
 
-export async function fetchGameStatus(app: string): Promise<GameStatus> {
-  const res = await fetch(`/api/v1/apps/${encodeURIComponent(app)}/game-status`)
-  if (!res.ok) {
-    throw new ApiError(
-      res.status,
-      await readErrorMessage(res, `fetch game status failed: ${res.status}`),
-    )
-  }
-  return (await res.json()) as GameStatus
+export function fetchGameStatus(app: string): Promise<GameStatus> {
+  return apiRequest<GameStatus>(
+    `/api/v1/apps/${encodeURIComponent(app)}/game-status`,
+    { fallbackMessage: 'fetch game status failed' },
+  )
 }
 
 export function appGameStatusQueryOptions(app: string) {

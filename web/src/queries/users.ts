@@ -95,7 +95,7 @@ export async function fetchUsers(): Promise<UserResource[]> {
       await readErrorMessage(res, `fetch users failed: ${res.status}`),
     )
   }
-  return (await res.json()) as UserResource[]
+  return ((await res.json()) as UserResource[] | null) ?? []
 }
 
 export function userListQueryOptions() {

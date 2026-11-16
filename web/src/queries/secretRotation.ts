@@ -52,7 +52,7 @@ export function useAppRotationPolicies(app: string) {
         res,
         `list rotation policies failed: ${String(res.status)}`,
       )
-      return (await res.json()) as RotationPolicy[]
+      return ((await res.json()) as RotationPolicy[] | null) ?? []
     },
   })
 }
@@ -67,7 +67,7 @@ export function useRotationOverview() {
         res,
         `list rotation policies failed: ${String(res.status)}`,
       )
-      return (await res.json()) as RotationPolicy[]
+      return ((await res.json()) as RotationPolicy[] | null) ?? []
     },
   })
 }

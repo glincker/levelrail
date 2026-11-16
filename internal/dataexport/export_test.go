@@ -9,7 +9,6 @@ import (
 	"net"
 	"net/http"
 	"net/http/httptest"
-	"path/filepath"
 	"regexp"
 	"strings"
 	"sync"
@@ -54,16 +53,6 @@ func (s *memSecrets) DeleteAll(_ context.Context, svc string) error {
 		}
 	}
 	return nil
-}
-
-func openDB(t *testing.T) *store.DB {
-	t.Helper()
-	db, err := store.Open(context.Background(), filepath.Join(t.TempDir(), "t.db"))
-	if err != nil {
-		t.Fatalf("store.Open: %v", err)
-	}
-	t.Cleanup(func() { _ = db.Close() })
-	return db
 }
 
 func fastConfig() Config {

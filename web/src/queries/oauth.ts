@@ -57,7 +57,7 @@ export async function fetchPublicOAuthProviders(): Promise<
       ),
     )
   }
-  return (await res.json()) as PublicOAuthProvider[]
+  return ((await res.json()) as PublicOAuthProvider[] | null) ?? []
 }
 
 export function publicOAuthProvidersQueryOptions() {
@@ -77,7 +77,7 @@ export async function fetchOAuthSettings(): Promise<OAuthProviderSettings[]> {
       await readErrorMessage(res, `fetch oauth settings failed: ${res.status}`),
     )
   }
-  return (await res.json()) as OAuthProviderSettings[]
+  return ((await res.json()) as OAuthProviderSettings[] | null) ?? []
 }
 
 export function oauthSettingsQueryOptions() {

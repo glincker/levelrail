@@ -22,18 +22,19 @@ const (
 
 // Run is one finished build as the Limiter saw it.
 type Run struct {
-	App         string        `json:"app"`
-	Tag         string        `json:"tag"`
-	StartedAt   time.Time     `json:"started_at"`
-	Duration    time.Duration `json:"-"`
-	QueueWait   time.Duration `json:"-"`
-	Status      RunStatus     `json:"status"`
-	CachedSteps int           `json:"cached_steps"`
-	TotalSteps  int           `json:"total_steps"`
-	Error       string        `json:"error,omitempty"`
-	Node        string        `json:"node,omitempty"`
-	Platform    string        `json:"platform,omitempty"`
-	ImageBytes  int64         `json:"image_bytes,omitempty"`
+	App          string        `json:"app"`
+	Tag          string        `json:"tag"`
+	StartedAt    time.Time     `json:"started_at"`
+	Duration     time.Duration `json:"-"`
+	QueueWait    time.Duration `json:"-"`
+	Status       RunStatus     `json:"status"`
+	CachedSteps  int           `json:"cached_steps"`
+	TotalSteps   int           `json:"total_steps"`
+	Error        string        `json:"error,omitempty"`
+	Node         string        `json:"node,omitempty"`
+	RunnerReason string        `json:"runner_reason,omitempty"`
+	Platform     string        `json:"platform,omitempty"`
+	ImageBytes   int64         `json:"image_bytes,omitempty"`
 }
 
 // Trend summarises the last N builds of one app. Percentiles cover successful

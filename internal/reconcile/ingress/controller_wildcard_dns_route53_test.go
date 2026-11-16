@@ -4,6 +4,7 @@ import (
 	"context"
 	"encoding/json"
 	"errors"
+	"log/slog"
 	"strings"
 	"testing"
 
@@ -52,7 +53,7 @@ func TestController_Reconcile_Route53DNSDisabledByDefault_RegressionUnchanged(t 
 		store.Route53DNSSecretAccessKeyEnvKey: "should-not-be-used",
 	}}
 	applier := &fakeApplier{}
-	c := New(st, rt, applier, WithLogger(discardLogger()), WithRoute53DNSCredentials(resolver))
+	c := New(st, rt, applier, WithLogger(slog.New(slog.DiscardHandler)), WithRoute53DNSCredentials(resolver))
 
 	if _, err := c.Reconcile(context.Background()); err != nil {
 		t.Fatalf("Reconcile() error = %v", err)
@@ -93,7 +94,7 @@ func TestController_Reconcile_Route53DNSEnabled_ThreadsCredentialsIntoConfig(t *
 		store.Route53DNSSecretAccessKeyEnvKey: "shh",
 	}}
 	applier := &fakeApplier{}
-	c := New(st, rt, applier, WithLogger(discardLogger()), WithRoute53DNSCredentials(resolver))
+	c := New(st, rt, applier, WithLogger(slog.New(slog.DiscardHandler)), WithRoute53DNSCredentials(resolver))
 
 	if _, err := c.Reconcile(context.Background()); err != nil {
 		t.Fatalf("Reconcile() error = %v", err)
@@ -142,7 +143,7 @@ func TestController_Reconcile_Route53DNSResolveError_FailsOpen(t *testing.T) {
 	}
 	resolver := &fakeRoute53CredentialResolver{err: errors.New("secrets: master key not set")}
 	applier := &fakeApplier{}
-	c := New(st, rt, applier, WithLogger(discardLogger()), WithRoute53DNSCredentials(resolver))
+	c := New(st, rt, applier, WithLogger(slog.New(slog.DiscardHandler)), WithRoute53DNSCredentials(resolver))
 
 	if _, err := c.Reconcile(context.Background()); err != nil {
 		t.Fatalf("Reconcile() error = %v, want nil: a credential-resolve failure must not fail the whole reconcile", err)
@@ -176,7 +177,7 @@ func TestController_Reconcile_BothDNSProvidersEnabled_CloudflarePrecedence(t *te
 		store.Route53DNSSecretAccessKeyEnvKey: "should-not-be-used",
 	}}
 	applier := &fakeApplier{}
-	c := New(st, rt, applier, WithLogger(discardLogger()), WithCloudflareDNSTokens(cfResolver), WithRoute53DNSCredentials(r53Resolver))
+	c := New(st, rt, applier, WithLogger(slog.New(slog.DiscardHandler)), WithCloudflareDNSTokens(cfResolver), WithRoute53DNSCredentials(r53Resolver))
 
 	if _, err := c.Reconcile(context.Background()); err != nil {
 		t.Fatalf("Reconcile() error = %v", err)

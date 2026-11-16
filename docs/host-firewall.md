@@ -132,6 +132,18 @@ The `host_firewall_iptables` and other cloud checks are available from the relea
 
 The cloud checks are optional. Set `APP_DOCTOR_CLOUD_CHECKS=off` to skip them, `APP_DOCTOR_CLOUD_METADATA=on` to allow one short link-local metadata call (timeout `APP_DOCTOR_CLOUD_METADATA_TIMEOUT`, default 300ms), and `APP_DOCTOR_ORACLE_IDLE_PERCENT` and `APP_DOCTOR_ORACLE_IDLE_DAYS` to change the figures quoted in the informational `idle_reclaim_risk` note (defaults 20 and 7). Oracle's policy can change; read the [current terms](https://docs.oracle.com/en-us/iaas/Content/FreeTier/resourceref.htm).
 
+## DNS on bridge gateways
+
+When the beta mesh resolver is on, Levelrail listens on port 53 of each managed bridge gateway and keeps an INPUT accept for udp and tcp 53 from those bridges. The doctor checks that this accept can actually work. It only reports and prints a command; it never runs a firewall change for you. The accept is IPv4 only, IPv6 is not supported.
+
+Three cases show up as a warning on the "Mesh DNS host firewall" row:
+
+- `dns_firewall_managed_firewalld` or `dns_firewall_managed_ufw`: firewalld or ufw is active, so it can still drop the traffic. The fix is printed, for example `sudo ufw allow in on <iface> to any port 53`, or for firewalld `sudo firewall-cmd --permanent --zone=trusted --add-interface=<iface>` then `sudo firewall-cmd --reload`.
+- `dns_firewall_rule_shadowed`: a REJECT or DROP rule comes before our accept in the iptables INPUT chain (`iptables -S INPUT`), so the accept never matches. The printed command deletes the accept and inserts it again at position 1.
+- `dns_firewall_nft_no_table`: nft is the tool on this host but there is no `inet filter` table, so the accept cannot be inserted. The printed command creates the table and an input chain.
+
+Run the printed command yourself, then reload the doctor.
+
 ## Troubleshooting
 
 ### Ports 80 or 443 report as "blocked" in the preflight check

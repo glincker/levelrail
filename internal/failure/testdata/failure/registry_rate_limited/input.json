@@ -1,0 +1,9 @@
+{
+  "Status": "failed",
+  "FailingStep": "pulling",
+  "Error": "deploy: service \"web\": pull image: toomanyrequests: You have reached your unauthenticated pull rate limit",
+  "LogLines": [
+    "Pulling from library/postgres",
+    "Error response from daemon: toomanyrequests: You have reached your unauthenticated pull rate limit"
+  ]
+}

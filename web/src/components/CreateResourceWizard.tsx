@@ -1,4 +1,5 @@
 import { useState } from 'react'
+import { useNavigate } from '@tanstack/react-router'
 import { SectionTitle } from '@/components/ui/typography'
 import { useTranslation } from 'react-i18next'
 import {
@@ -6,6 +7,7 @@ import {
   GitBranchGlassIcon,
   LayersGlassIcon,
   PackageGlassIcon,
+  PlugGlassIcon,
   SearchGlassIcon,
 } from '@thesvg/ui-react'
 import {
@@ -152,6 +154,8 @@ export function CreateResourceWizard({
   initialTemplateId?: string
 }) {
   const { t } = useTranslation('databases')
+  const { t: ti } = useTranslation('integrations')
+  const navigate = useNavigate()
   const [innerOpen, setOpen] = useState(false)
   const open = controlledOpen ?? innerOpen
   const [selected, setSelected] = useState<string | null>(
@@ -428,6 +432,37 @@ export function CreateResourceWizard({
                   </span>
                 </button>
               </div>
+            ) : null}
+            {scope !== 'databases' &&
+            `${ti('wizard.title')} ${ti('wizard.description')}`
+              .toLowerCase()
+              .includes(normalizedSearch) ? (
+              <button
+                type="button"
+                onClick={() => {
+                  handleOpenChange(false)
+                  void navigate({
+                    to: '/settings/integrations',
+                    search: { view: 'catalog' },
+                  })
+                }}
+                className="flex w-full items-center gap-3 rounded-lg border border-border bg-card p-3 text-left text-sm transition-colors hover:border-primary/40 hover:bg-muted focus-visible:ring-2 focus-visible:ring-ring focus-visible:outline-none"
+              >
+                <span className="flex size-10 shrink-0 items-center justify-center rounded-lg border border-border bg-background">
+                  <PlugGlassIcon
+                    aria-hidden="true"
+                    className="size-6 text-muted-foreground"
+                  />
+                </span>
+                <span className="min-w-0">
+                  <span className="block font-medium">
+                    {ti('wizard.title')}
+                  </span>
+                  <span className="block text-xs text-muted-foreground">
+                    {ti('wizard.description')}
+                  </span>
+                </span>
+              </button>
             ) : null}
             {activeCategory === 'applications' &&
             filteredApplications.length === 0 ? (

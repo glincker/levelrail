@@ -27,6 +27,8 @@ type whoamiResponse struct {
 	Name      string   `json:"name"`
 	Abilities []string `json:"abilities"`
 	ExpiresAt string   `json:"expires_at"`
+	// TokenID is set for a bearer token so it can rotate itself.
+	TokenID string `json:"token_id,omitempty"`
 }
 
 // handleWhoami handles GET /api/v1/auth/whoami: the caller's own identity
@@ -63,5 +65,5 @@ func (rt *Router) handleWhoami(w http.ResponseWriter, r *http.Request) {
 	if rec.ExpiresAt != nil {
 		expires = rec.ExpiresAt.UTC().Format(time.RFC3339)
 	}
-	writeJSON(w, http.StatusOK, whoamiResponse{Kind: "token", Name: rec.Name, Abilities: nonNil(rec.Abilities), ExpiresAt: expires})
+	writeJSON(w, http.StatusOK, whoamiResponse{Kind: "token", TokenID: rec.ID, Name: rec.Name, Abilities: nonNil(rec.Abilities), ExpiresAt: expires})
 }

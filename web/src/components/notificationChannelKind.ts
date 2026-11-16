@@ -4,6 +4,7 @@
 
 import type { NotificationChannelKind } from '../types/notificationChannel'
 import type { BrandIconName } from './BrandIcon'
+import { INTEGRATION_GLYPHS } from '../lib/integrationBrands'
 
 export const CHANNEL_KIND_LABEL: Record<NotificationChannelKind, string> = {
   slack: 'Slack',
@@ -26,23 +27,12 @@ export const CHANNEL_KIND_LABEL: Record<NotificationChannelKind, string> = {
   webpush: 'Browser push',
 }
 
-// Only the brand-mark kinds map to a BrandIconName; generic/email/pushover/
-// gotify/lark render through a UI icon instead (BrandIcon.tsx's own
-// documented brand-vs-chrome boundary), chosen by the caller: gotify and
-// lark have no brand mark available in @thesvg/react yet.
+// Kinds with a brand mark, derived from the shared integration mapping; the
+// rest (generic, email, webpush) render through a UI icon chosen by the caller.
 export const CHANNEL_KIND_BRAND_ICON: Partial<
   Record<NotificationChannelKind, BrandIconName>
-> = {
-  slack: 'slack',
-  discord: 'discord',
-  telegram: 'telegram',
-  pagerduty: 'pagerduty',
-  teams: 'microsoft-teams',
-  mattermost: 'mattermost',
-  ntfy: 'ntfy',
-  resend: 'resend',
-  rocketchat: 'rocketchat',
-  opsgenie: 'opsgenie',
-  webex: 'webex',
-  googlechat: 'google-chat',
-}
+> = Object.fromEntries(
+  Object.entries(INTEGRATION_GLYPHS.notify).flatMap(([kind, spec]) =>
+    spec.brand ? [[kind, spec.brand]] : [],
+  ),
+)

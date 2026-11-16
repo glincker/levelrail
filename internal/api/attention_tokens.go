@@ -44,9 +44,10 @@ func (rt *Router) tokenAttentionItems(r *http.Request, abilities []string, now t
 	}
 	window := rt.attentionTokenWindow(r)
 	days := int(window / (24 * time.Hour))
+	rotating, _ := rt.tokenStateLoad(r.Context(), tokenStateRotation)
 	var expiring, inUse, idle []tokenResource
 	for _, t := range tokens {
-		if t.RevokedAt != nil || t.ExpiresAt == nil || isPlatformToken(t) {
+		if _, replaced := rotating[t.ID]; replaced || t.RevokedAt != nil || t.ExpiresAt == nil || isPlatformToken(t) {
 			continue
 		}
 		left := t.ExpiresAt.Sub(now)
@@ -105,4 +106,14 @@ func groupedTokenItem(severity, kind string, toks []tokenResource, plural, singu
 		it.Title = fmt.Sprintf("%d API tokens %s", len(toks), plural)
 	}
 	return it
+}
+
+// tokenGraceSweepAttentionItems warns an admin while rotated tokens cannot be
+// revoked after their grace; the row clears as soon as a sweep succeeds.
+func (rt *Router) tokenGraceSweepAttentionItems(abilities []string) []attention.Item {
+	if !hasAbility(abilities, AbilityRoot) || !rt.tokenState.isGraceFailing() {
+		return nil
+	}
+	return []attention.Item{feedItem(attention.Warning, attention.KindTokenGraceSweepFailing, "token-grace-sweep",
+		"rotated tokens stay valid past their grace until the sweep can read its state again", nil)}
 }

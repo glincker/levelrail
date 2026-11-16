@@ -84,7 +84,7 @@ export function useBoundEnv(app: string) {
           `load bound env failed: ${String(res.status)}`,
         )
       }
-      return (await res.json()) as BoundEnvEntry[]
+      return ((await res.json()) as BoundEnvEntry[] | null) ?? []
     },
   })
 }

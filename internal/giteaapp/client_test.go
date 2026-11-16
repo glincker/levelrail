@@ -48,6 +48,9 @@ func TestClient_ExchangeCode_SendsAuthorizationCodeGrant(t *testing.T) {
 		if r.Form.Get("code") != "the-code" {
 			t.Errorf("code = %q, want the-code", r.Form.Get("code"))
 		}
+		if r.Form.Get("code_verifier") != "the-verifier" {
+			t.Errorf("code_verifier = %q, want the-verifier", r.Form.Get("code_verifier"))
+		}
 		if r.URL.Path != "/login/oauth/access_token" {
 			t.Errorf("path = %q, want /login/oauth/access_token", r.URL.Path)
 		}
@@ -59,7 +62,7 @@ func TestClient_ExchangeCode_SendsAuthorizationCodeGrant(t *testing.T) {
 	defer srv.Close()
 
 	c := &Client{HTTP: srv.Client()}
-	tok, err := c.ExchangeCode(context.Background(), srv.URL, "the-id", "the-secret", "https://cp.example.com/api/v1/gitea-app/callback", "the-code")
+	tok, err := c.ExchangeCode(context.Background(), srv.URL, "the-id", "the-secret", "https://cp.example.com/api/v1/gitea-app/callback", "the-code", "the-verifier")
 	if err != nil {
 		t.Fatalf("ExchangeCode() error = %v", err)
 	}
@@ -164,10 +167,15 @@ func TestClient_CreateRepoWebhook_SendsGiteaShapedConfig(t *testing.T) {
 		if r.URL.Path != "/api/v1/repos/acme/widgets/hooks" {
 			t.Errorf("path = %q, want /api/v1/repos/acme/widgets/hooks", r.URL.Path)
 		}
+		if r.Method == http.MethodGet {
+			_, _ = w.Write([]byte("[]"))
+			return
+		}
 		if err := json.NewDecoder(r.Body).Decode(&gotBody); err != nil {
 			t.Fatalf("decode request body: %v", err)
 		}
 		w.WriteHeader(http.StatusCreated)
+		_, _ = w.Write([]byte(`{"id":1}`))
 	}))
 	defer srv.Close()
 

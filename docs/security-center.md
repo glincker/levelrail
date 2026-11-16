@@ -34,6 +34,7 @@ Anyone with `read` gets the score and counts, plus a short checklist for their o
 | API tokens unused for a long time | low | last use, `warn_unused_days` | Settings > API tokens |
 | Old sessions still signed in | low | sessions older than `APP_SECURITY_SESSION_MAX_AGE_DAYS` (default 7) | Sessions tab |
 | Only password sign-ins need new browser approval | low | `auth.approval_scope` | one click: every method |
+| Sign-ins with no other live session are allowed | low | `auth.approval_without_session` | one click: hold, once an approval path exists |
 | The master key is missing, or was rotated longer ago than the warn window | low | rotation history, `APP_DOCTOR_MASTER_KEY_ROTATION_WARN_DAYS` | `secrets rotate-master-key` |
 | Secrets older than 90 days | low | secret update times | rotate the secret |
 | Production environments without protection | high | environments of kind production and their protected flag | Settings > Environments |
@@ -97,6 +98,28 @@ New browser approval (see [Identity and access](/identity-and-access#new-browser
 | `all_methods` | held | held | held |
 
 A sign-in is only held when the account already has another live session, so the last way in is never blocked. A held OAuth sign-in returns to the sign-in page, which shows the number to type in the approving session. Set it in the **Policy** tab, with `levelrail-cli security policy set --approval-scope all_methods`, or `PUT /api/v1/security/policy` (root). `APP_AUTH_APPROVAL_SCOPE` sets the default before anyone saves one. If the policy cannot be read, the sign-in is held, never waved through.
+
+### Approval without a session
+
+By default a sign-in with a correct password and no other live session goes straight in, because there is no session that could approve it. `auth.approval_without_session` decides what happens then:
+
+| Value | Sign-in with no other live session |
+| --- | --- |
+| `allow` (default) | signs in, unless the account asked for approval itself |
+| `hold` | waits for approval from a path outside the browser |
+
+Use `hold` when you want a password alone never to be enough on a new browser. A held sign-in is approved by a `signin:approve` token owned by the account that signed in, or on the server with the host `approve-signin` command. Browsers that are already trusted keep skipping the pause.
+
+Only a root user can change it, after a fresh password check (and authenticator code if the account has one). Every change is audited and emailed to the admins when mail is set up. Set it in the **Policy** tab, with `levelrail-cli security policy set --approval-without-session hold`, or `PUT /api/v1/security/policy` with `approval_without_session` and `step_up`. It cannot be set from an apply file or a stack sync. `APP_AUTH_APPROVAL_WITHOUT_SESSION` only seeds a fresh install.
+
+Safeguards against locking yourself out:
+
+- `hold` is refused (409 `approval_hold_no_channel`) unless you own a live `signin:approve` token or you confirm you can run commands on the server (`confirm_host_access`, `--confirm-host-access`, or the checkbox in the dashboard).
+- The browser or CLI that sets `hold` stays trusted.
+- If the policy cannot be read, the last value read is used, never a guess.
+- On the server, `sudo APP_DATA_DIR=/var/lib/levelrail-data /usr/local/bin/levelrail security reset-approval-policy` sets it back to `allow` with the API down and writes an audit row. See [Emergency access](/emergency-access).
+
+The policy response carries `approval_hold_note` in hold mode, and Doctor repeats it: hold has no effect while new-device approval is off, SSO and passkey sign-ins are not held under `password_only`, and trusted browsers skip it. [Doctor](/doctor) shows the mode and which approval paths exist, and the posture lists `allow` as a low hardening suggestion, never a failure.
 
 Each account can also turn on **Require approval for new browsers on my account** in the Policy tab (`PUT /api/v1/security/account`). That applies approval to every method for that account whatever the platform scope is. Turning it off needs a signed-in dashboard session; a token can only turn it on.
 

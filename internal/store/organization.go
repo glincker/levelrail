@@ -94,7 +94,12 @@ func (db *DB) ListOrganizations(ctx context.Context) ([]Organization, error) {
 // ON DELETE SET NULL (migrations/0054), so every project in this
 // organization is left running, simply org-less again.
 func (db *DB) DeleteOrganization(ctx context.Context, id string) error {
-	res, err := db.ExecContext(ctx, `DELETE FROM organizations WHERE id = ?`, id)
+	tx, err := db.BeginTx(ctx, nil)
+	if err != nil {
+		return fmt.Errorf("store: delete organization %q: %w", id, err)
+	}
+	defer func() { _ = tx.Rollback() }()
+	res, err := tx.ExecContext(ctx, `DELETE FROM organizations WHERE id = ?`, id)
 	if err != nil {
 		return fmt.Errorf("store: delete organization %q: %w", id, err)
 	}
@@ -104,6 +109,12 @@ func (db *DB) DeleteOrganization(ctx context.Context, id string) error {
 	}
 	if n == 0 {
 		return ErrOrganizationNotFound
+	}
+	if err := forgetBindingTarget(ctx, tx, BindingTargetOrg, id); err != nil {
+		return fmt.Errorf("store: delete organization %q: %w", id, err)
+	}
+	if err := tx.Commit(); err != nil {
+		return fmt.Errorf("store: delete organization %q: %w", id, err)
 	}
 	return nil
 }

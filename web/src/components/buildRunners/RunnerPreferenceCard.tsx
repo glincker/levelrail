@@ -1,0 +1,187 @@
+import { useState } from 'react'
+import { useTranslation } from 'react-i18next'
+import { ServerGlassIcon } from '@thesvg/ui-react'
+import { Button } from '@/components/ui/button'
+import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card'
+import { Input } from '@/components/ui/input'
+import { Label } from '@/components/ui/label'
+import { NativeSelect } from '@/components/ui/native-select'
+import { Skeleton } from '@/components/ui/skeleton'
+import { Switch } from '@/components/ui/switch'
+import { toast } from '@/components/ui/toast'
+import { useCanDeploy } from '../../hooks/useCanDeploy'
+import { parseLabels } from '../../lib/buildRunnerFormat'
+import {
+  useAppBuildRunner,
+  useBuildRunners,
+  useClearAppBuildRunner,
+  useSaveAppBuildRunner,
+  type AppBuildRunner,
+} from '../../queries/buildRunners'
+
+function PreferenceForm({
+  appName,
+  pref,
+}: Readonly<{ appName: string; pref: AppBuildRunner }>) {
+  const { t } = useTranslation('deploys')
+  const canDeploy = useCanDeploy()
+  const { data } = useBuildRunners()
+  const save = useSaveAppBuildRunner(appName)
+  const clear = useClearAppBuildRunner(appName)
+  const [nodeId, setNodeId] = useState(pref.node_id)
+  const [pinned, setPinned] = useState(pref.pinned)
+  const [labels, setLabels] = useState((pref.labels ?? []).join(', '))
+  const nodes = (data?.runners ?? []).filter((r) => r.kind === 'node')
+  const error = save.error ?? clear.error
+  const busy = save.isPending || clear.isPending
+  const isSet =
+    pref.node_id !== '' || pref.pinned || (pref.labels ?? []).length > 0
+
+  const onSave = () => {
+    save.mutate(
+      {
+        node_id: nodeId,
+        pinned: pinned && nodeId !== '',
+        labels: parseLabels(labels),
+      },
+      {
+        onSuccess: () =>
+          toast.add({ title: t('runnerPref.saved'), type: 'success' }),
+      },
+    )
+  }
+  const onClear = () => {
+    clear.mutate(undefined, {
+      onSuccess: () => {
+        setNodeId('')
+        setPinned(false)
+        setLabels('')
+        toast.add({ title: t('runnerPref.cleared'), type: 'success' })
+      },
+    })
+  }
+
+  return (
+    <div className="space-y-4">
+      <div className="grid gap-4 sm:grid-cols-2">
+        <div className="space-y-1.5">
+          <Label htmlFor="runner-pref-node">{t('runnerPref.node')}</Label>
+          <NativeSelect
+            id="runner-pref-node"
+            className="w-full"
+            value={nodeId}
+            disabled={!canDeploy || busy}
+            onChange={(e) => {
+              setNodeId(e.target.value)
+              if (e.target.value === '') setPinned(false)
+            }}
+          >
+            <option value="">{t('runnerPref.anyNode')}</option>
+            {nodes.map((n) => (
+              <option key={n.id} value={n.id}>
+                {n.name}
+              </option>
+            ))}
+          </NativeSelect>
+        </div>
+        <div className="space-y-1.5">
+          <Label htmlFor="runner-pref-labels">{t('runnerPref.labels')}</Label>
+          <Input
+            id="runner-pref-labels"
+            value={labels}
+            placeholder={t('runnerPref.labelsPlaceholder')}
+            disabled={!canDeploy || busy}
+            onChange={(e) => {
+              setLabels(e.target.value)
+            }}
+          />
+        </div>
+      </div>
+      <div className="flex items-center gap-3">
+        <Switch
+          id="runner-pref-pin"
+          checked={pinned}
+          disabled={!canDeploy || busy || nodeId === ''}
+          onCheckedChange={setPinned}
+          aria-describedby="runner-pref-pin-hint"
+        />
+        <div className="min-w-0">
+          <Label htmlFor="runner-pref-pin">{t('runnerPref.pin')}</Label>
+          <p
+            id="runner-pref-pin-hint"
+            className="text-xs text-muted-foreground"
+          >
+            {nodeId === ''
+              ? t('runnerPref.pinNeedsNode')
+              : t('runnerPref.pinHint')}
+          </p>
+        </div>
+      </div>
+      {error ? (
+        <p role="alert" className="text-sm text-destructive">
+          {error.message}
+        </p>
+      ) : null}
+      {canDeploy ? null : (
+        <p className="text-xs text-muted-foreground">
+          {t('runnerPref.noAbility')}
+        </p>
+      )}
+      <div className="flex flex-wrap items-center justify-end gap-2">
+        <Button
+          variant="outline"
+          size="sm"
+          disabled={!canDeploy || busy || !isSet}
+          onClick={onClear}
+        >
+          {t('runnerPref.clear')}
+        </Button>
+        <Button size="sm" disabled={!canDeploy || busy} onClick={onSave}>
+          {t('runnerPref.save')}
+        </Button>
+      </div>
+    </div>
+  )
+}
+
+// Where this app prefers to build; an empty preference follows the global strategy.
+export function RunnerPreferenceCard({
+  appName,
+}: Readonly<{ appName: string }>) {
+  const { t } = useTranslation('deploys')
+  const { data, isPending, isError, error, refetch } =
+    useAppBuildRunner(appName)
+  return (
+    <Card>
+      <CardHeader>
+        <CardTitle className="flex items-center gap-2">
+          <ServerGlassIcon className="size-5" aria-hidden="true" />
+          {t('runnerPref.title')}
+        </CardTitle>
+        <p className="text-sm text-muted-foreground">
+          {t('runnerPref.description')}
+        </p>
+      </CardHeader>
+      <CardContent>
+        {isPending ? (
+          <Skeleton className="h-24 w-full" />
+        ) : isError ? (
+          <div className="flex flex-wrap items-center gap-3">
+            <p role="alert" className="text-sm text-destructive">
+              {error.message}
+            </p>
+            <Button variant="outline" size="sm" onClick={() => void refetch()}>
+              {t('runnerPref.retry')}
+            </Button>
+          </div>
+        ) : (
+          <PreferenceForm
+            key={`${data.node_id}|${String(data.pinned)}|${(data.labels ?? []).join(',')}`}
+            appName={appName}
+            pref={data}
+          />
+        )}
+      </CardContent>
+    </Card>
+  )
+}

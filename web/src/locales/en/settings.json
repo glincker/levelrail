@@ -706,6 +706,10 @@
         "title": "Audit log",
         "description": "Who changed what, across every session and API token."
       },
+      "integrations": {
+        "title": "Integrations",
+        "description": "Every connected service, its health and expiry, and where to add more."
+      },
       "git-connections": {
         "title": "Git connections",
         "description": "Every GitHub, GitLab, Bitbucket, Gitea and Forgejo account in one place."
@@ -3661,6 +3665,18 @@
       "alert_rule_invalid": {
         "message": "The alert rule lacks a metric, comparator or threshold.",
         "fix": "Set all three, with a comparator of >, <, >= or <=."
+      },
+      "dns_name_invalid": {
+        "message": "An app DNS name is not a plain name, is a wildcard, or exceeds a limit.",
+        "fix": "Use lowercase letters, digits and hyphens, such as shop, within the dns.internal_* limits."
+      },
+      "dns_name_reserved": {
+        "message": "The app DNS name is on the reserved list.",
+        "fix": "Pick another name."
+      },
+      "dns_name_conflict": {
+        "message": "Another app already uses this DNS name.",
+        "fix": "Pick a name no other app uses."
       },
       "registry_credential_not_found": {
         "message": "A build names a registry credential that does not exist on the control plane.",

@@ -41,7 +41,7 @@ func (r runRecorder) RecordBuildRun(ctx context.Context, run build.Run) error {
 		App: run.App, Tag: run.Tag, StartedAt: run.StartedAt,
 		DurationMS: run.Duration.Milliseconds(), QueueWaitMS: run.QueueWait.Milliseconds(),
 		Status: string(run.Status), CachedSteps: run.CachedSteps, TotalSteps: run.TotalSteps, Error: run.Error,
-		NodeID: run.Node, Platform: run.Platform, ImageBytes: run.ImageBytes,
+		NodeID: run.Node, RunnerReason: run.RunnerReason, Platform: run.Platform, ImageBytes: run.ImageBytes,
 	})
 }
 

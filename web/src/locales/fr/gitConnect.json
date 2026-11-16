@@ -1,0 +1,166 @@
+{
+  "title": "Connecter {{provider}} en quatre étapes",
+  "stepApp": "Ouvrez la page des applications OAuth et créez une application.",
+  "openApp": "Ouvrir la page des applications de {{host}}",
+  "appHint": {
+    "gitlab": "Dans Paramètres utilisateur, Applications. Une application de groupe ou d'administrateur fonctionne aussi.",
+    "gitea": "Dans Paramètres, Applications, Gérer les applications OAuth2. Cochez Client confidentiel.",
+    "forgejo": "Dans Paramètres, Applications, Gérer les applications OAuth2. Cochez Client confidentiel.",
+    "bitbucket": "Ouvrez l'espace de travail, puis Paramètres, Consommateurs OAuth, Ajouter un consommateur. Cochez consommateur privé."
+  },
+  "stepRedirect": "Définissez l'URI de redirection (URL de rappel) exactement sur cette valeur.",
+  "redirectLabel": "URI de redirection",
+  "copy": "Copier",
+  "copied": "Copié",
+  "copyFailed": "Copie impossible. Sélectionnez l'URI et copiez-la à la main.",
+  "stepScopes": "Sélectionnez ces portées.",
+  "scopesLabel": "Portées à sélectionner",
+  "scopesNone": "Ce fournisseur n'a pas de liste de portées. Accordez la lecture et l'écriture des dépôts quand il le demande.",
+  "stepPaste": "Collez ci-dessous l'ID client et le secret, puis enregistrez et autorisez.",
+  "hint": {
+    "https": "Cette adresse est en HTTPS, le fournisseur l'acceptera comme URI de redirection.",
+    "loopback": "C'est une adresse locale. La plupart des fournisseurs l'acceptent seulement pour tester depuis ce navigateur.",
+    "insecure": "Cette adresse est en HTTP simple et la plupart des fournisseurs la refusent comme URI de redirection. Utilisez HTTPS ou connectez-vous avec un jeton."
+  },
+  "fallback": {
+    "title": "OAuth impossible ici ?",
+    "body": "Un jeton n'exige ni URI de redirection, ni domaine public, ni application.",
+    "action": "Se connecter avec un jeton"
+  },
+  "field": {
+    "empty": "Ce champ est obligatoire.",
+    "whitespace": "Supprimez les espaces ou sauts de ligne de la valeur collée.",
+    "unusual": "Cela ne ressemble pas à une valeur {{provider}} habituelle. Vérifiez que tout est copié."
+  },
+  "name": {
+    "gitlab": "GitLab",
+    "gitea": "Gitea",
+    "forgejo": "Forgejo",
+    "bitbucket": "Bitbucket Cloud",
+    "bitbucket_server": "Bitbucket Server",
+    "azure_devops": "Azure DevOps"
+  },
+  "methods": {
+    "title": "Façons de se connecter",
+    "recommended": "Recommandé",
+    "selfManaged": "GitLab auto-hébergé fonctionne avec chaque méthode : saisissez votre URL de base dans le panneau de connexion.",
+    "status": {
+      "connected": "Connecté",
+      "not_connected": "Non connecté",
+      "needs_attention": "À vérifier",
+      "expires_soon": "Expire bientôt"
+    },
+    "oauth": {
+      "name": "Application OAuth",
+      "unlocks": "Connexion via le fournisseur. Donne accès aux dépôts, webhooks, statuts et commentaires, et se renouvelle seule.",
+      "action": "Se connecter avec OAuth"
+    },
+    "token": {
+      "name": "Jeton d'accès",
+      "unlocks": "Collez un jeton personnel, de projet ou de groupe. Aucune URI de redirection ni domaine public requis.",
+      "action": "Se connecter avec un jeton"
+    },
+    "deploy_token": {
+      "name": "Jeton de déploiement",
+      "unlocks": "Pulls du registre en lecture seule (read_registry) pour déployer des images.",
+      "action": "Identifiants du registre"
+    },
+    "ci_job": {
+      "name": "Jeton de job CI ou OIDC",
+      "unlocks": "Permet aux jobs du pipeline de déployer sans secret stocké.",
+      "action": "Configurer la confiance CI"
+    }
+  },
+  "access": {
+    "matrix": "Accès et portées",
+    "allowed": "Autorisé",
+    "notAllowed": "Non autorisé",
+    "needsScope": "Nécessite {{scope}}",
+    "notReported": "Non communiqué",
+    "scopesUnknown": "Le plan de contrôle ne communique pas encore les portées accordées à ce compte, chaque fonction affiche donc Non communiqué.",
+    "scopes": "Portées accordées",
+    "sees": "Peut voir",
+    "projects_one": "{{count}} projet",
+    "projects_other": "{{count}} projets",
+    "expires": "Expiration du jeton",
+    "lastUsed": "Dernière utilisation",
+    "addScope": "Ajouter une portée",
+    "addScopeMissing": "Nécessite un point d'accès qui élargit les portées. En attendant, réautorisez ou ajoutez un jeton avec plus de portées.",
+    "rotate": "Renouveler le jeton",
+    "addAnother": "Ajouter un autre compte",
+    "inferred": "Déduit",
+    "rotateOauth": "Les connexions OAuth se renouvellent seules, il n'y a pas de jeton à renouveler.",
+    "rotateUnsupported": "Ce fournisseur ne peut pas renouveler cet identifiant. Ajoutez un nouveau jeton et déconnectez l'ancien."
+  },
+  "cap": {
+    "list_repos": "Lister les dépôts",
+    "clone_sync": "Cloner et synchroniser",
+    "commit_status": "Statut des commits",
+    "mr_comments": "Commentaires et aperçus des merge requests",
+    "registry_pull": "Pull du registre",
+    "import_group": "Importer un groupe",
+    "register_webhook": "Enregistrer les webhooks automatiquement",
+    "tag_push_trigger": "Déclencheurs de tags et de push",
+    "deployments_report": "Rapport des déploiements"
+  },
+  "next": {
+    "title": "Ce que vous pouvez ajouter",
+    "import": {
+      "title": "Importer des dépôts",
+      "body": "Choisissez des dépôts ou un groupe entier et transformez-les en apps.",
+      "action": "Ouvrir les sources"
+    },
+    "previews": {
+      "title": "Activer les aperçus de merge requests",
+      "body": "Déployez un aperçu pour chaque merge request ouverte.",
+      "action": "Ouvrir les sources"
+    },
+    "ci": {
+      "title": "Ajouter la confiance CI",
+      "body": "Les jobs du pipeline déploient avec une identité de courte durée.",
+      "action": "Ouvrir les pipelines"
+    },
+    "webhook": {
+      "title": "Ajouter un webhook",
+      "body": "Envoyez les événements de déploiement et de build à un autre service.",
+      "action": "Ouvrir les webhooks"
+    },
+    "registry": {
+      "title": "Connecter un registre",
+      "body": "Stockez des identifiants de pull pour les images privées.",
+      "action": "Ouvrir les identifiants du registre"
+    }
+  },
+  "credential": {
+    "noExpiry": "Aucune expiration signalée",
+    "autoRenews": "Se renouvelle seule",
+    "expiresInHours_one": "Expire dans {{count}} heure",
+    "expiresInHours_other": "Expire dans {{count}} heures",
+    "expiresInDays_one": "Expire dans {{count}} jour",
+    "expiresInDays_other": "Expire dans {{count}} jours",
+    "expired_one": "Expiré il y a {{count}} jour",
+    "expired_other": "Expiré il y a {{count}} jours",
+    "lastRefresh": "Renouvelée {{when}}",
+    "refreshFailing": "Le renouvellement échoue",
+    "reauthorize": "Réautoriser"
+  },
+  "rotate": {
+    "title": "Renouveler le jeton de {{label}} ?",
+    "description": "Cela remplace le jeton d'accès chez le fournisseur.",
+    "consequence": "GitLab émet un nouveau jeton et l'ancien cesse de fonctionner immédiatement. Les builds et pulls de cette connexion basculent automatiquement.",
+    "confirm": "Renouveler le jeton",
+    "pending": "Renouvellement",
+    "expiryLabel": "Expiration du nouveau jeton (AAAA-MM-JJ)",
+    "expiryHint": "Prérempli avec la durée de rotation de {{days}} jours. Videz le champ pour laisser le fournisseur décider.",
+    "errors": {
+      "noMasterKey": "Le renouvellement exige une clé maître sur le plan de contrôle. Configurez-en une dans les clés de chiffrement, puis réessayez.",
+      "provider": "Le fournisseur n'a pas terminé le renouvellement. Le jeton actuel est inchangé, réessayez dans un instant.",
+      "badDate": "Utilisez une date au format AAAA-MM-JJ."
+    },
+    "toast": {
+      "done": "Jeton renouvelé",
+      "expires": "Le nouveau jeton expire le {{date}}.",
+      "noExpiry": "Le fournisseur n'a signalé aucune expiration pour le nouveau jeton."
+    }
+  }
+}

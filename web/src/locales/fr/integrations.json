@@ -1,0 +1,115 @@
+{
+  "title": "Intégrations",
+  "description": "Tous les services connectés, leur état et leur expiration, et où en ajouter.",
+  "retry": "Réessayer",
+  "loadFailed": "Impossible de charger les connexions.",
+  "connected": {
+    "title": "Connectées"
+  },
+  "empty": {
+    "title": "Rien de connecté pour le moment",
+    "description": "Connectez un hébergeur git, un registre ou un canal de notification depuis le catalogue ci-dessous.",
+    "noMatch": "Aucune connexion ne correspond à ces filtres."
+  },
+  "filters": {
+    "searchLabel": "Rechercher des connexions",
+    "searchPlaceholder": "Rechercher par nom, compte ou hôte",
+    "kind": "Type",
+    "scope": "Portée",
+    "health": "État",
+    "allKinds": "Tous les types",
+    "allScopes": "Toutes les portées",
+    "allHealth": "Tout état",
+    "clear": "Effacer les filtres"
+  },
+  "kinds": {
+    "git": "Git",
+    "registry": "Registres",
+    "notify": "Notifications",
+    "secret": "Secrets",
+    "dns": "DNS",
+    "cloud": "Cloud",
+    "webhook": "Webhooks"
+  },
+  "scopes": {
+    "instance": "Instance",
+    "org": "Organisation",
+    "app": "App"
+  },
+  "health": {
+    "ok": "Saine",
+    "degraded": "Dégradée",
+    "needs_reconnect": "À reconnecter",
+    "expired": "Expirée",
+    "unknown": "Non vérifiée"
+  },
+  "authMethods": {
+    "app_install": "Installation d'app",
+    "oauth": "OAuth",
+    "token": "Jeton",
+    "workload_identity": "Identité de charge",
+    "url_secret": "URL secrète"
+  },
+  "categories": {
+    "git": "Git",
+    "registry": "Registres",
+    "notify": "Notifications",
+    "secret": "Secrets",
+    "dns": "DNS",
+    "cloud": "Cloud",
+    "webhook": "Webhooks",
+    "ci": "Identité CI",
+    "observability": "Observabilité",
+    "addon": "Modules d'app"
+  },
+  "methods": {
+    "one_click": "Un clic",
+    "guided_oauth": "OAuth guidé",
+    "token": "Jeton",
+    "settings_page": "Page de réglages"
+  },
+  "connect": {
+    "one_click": "Connecter",
+    "guided_oauth": "Configurer",
+    "token": "Ajouter un jeton",
+    "settings_page": "Ouvrir"
+  },
+  "card": {
+    "lastUsed": "Utilisée {{when}}",
+    "neverUsed": "Jamais utilisée",
+    "default": "Par défaut",
+    "manage": "Gérer",
+    "reconnect": "Reconnecter",
+    "manageNamed": "Gérer {{name}}",
+    "reconnectNamed": "Reconnecter {{name}}",
+    "bound_one": "{{count}} liaison",
+    "bound_other": "{{count}} liaisons",
+    "bind": "Lier",
+    "unbind": "Délier",
+    "bindNamed": "Lier {{name}}",
+    "unbindNamed": "Délier {{name}}"
+  },
+  "expiry": {
+    "expiresToday": "Expire aujourd'hui",
+    "autoRenew": "renouvellement automatique",
+    "expiresInDays_one": "Expire dans {{count}} jour",
+    "expiresInDays_other": "Expire dans {{count}} jours",
+    "expiredDaysAgo_one": "Expirée depuis {{count}} jour",
+    "expiredDaysAgo_other": "Expirée depuis {{count}} jours"
+  },
+  "attention": {
+    "title_one": "{{count}} connexion demande votre attention",
+    "title_other": "{{count}} connexions demandent votre attention"
+  },
+  "catalog": {
+    "title": "Ajouter une intégration",
+    "description": "Chaque bouton ouvre la page qui gère cette connexion.",
+    "empty": "Aucune intégration disponible.",
+    "loadFailed": "Impossible de charger le catalogue.",
+    "connectNamed": "Connecter {{name}}"
+  },
+  "wizard": {
+    "title": "Intégration",
+    "description": "Connectez un hébergeur git, un registre, un notificateur ou un compte cloud."
+  }
+}

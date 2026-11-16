@@ -4,11 +4,13 @@ import (
 	"context"
 	"testing"
 	"time"
+
+	"github.com/GLINCKER/levelrail/internal/store/storetest"
 )
 
 func TestManager_Newest(t *testing.T) {
 	ctx := context.Background()
-	m := NewManager(openDB(t), t.TempDir())
+	m := NewManager(storetest.Open(t), t.TempDir())
 	if _, ok, err := m.Newest(); err != nil || ok {
 		t.Fatalf("empty dir: ok=%v err=%v, want false, nil", ok, err)
 	}

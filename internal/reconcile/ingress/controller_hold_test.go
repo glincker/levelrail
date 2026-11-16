@@ -2,6 +2,7 @@ package ingress
 
 import (
 	"context"
+	"log/slog"
 	"net/http/httptest"
 	"strings"
 	"testing"
@@ -20,7 +21,7 @@ func TestController_Reconcile_HoldsHostWhenBackendDisappears(t *testing.T) {
 	st := &fakeStore{services: []store.DesiredService{desired}}
 	applier := &fakeApplier{}
 	tracker := ingress.NewHoldTracker(time.Minute)
-	c := New(st, rt, applier, WithLogger(discardLogger()), WithHoldTracker(tracker), WithHardening(ingress.DefaultHardening()))
+	c := New(st, rt, applier, WithLogger(slog.New(slog.DiscardHandler)), WithHoldTracker(tracker), WithHardening(ingress.DefaultHardening()))
 
 	if _, err := c.Reconcile(context.Background()); err != nil {
 		t.Fatal(err)
@@ -54,7 +55,7 @@ func TestController_Reconcile_NeverRoutedHostIsNotHeld(t *testing.T) {
 	desired := store.DesiredService{Name: "web", Image: "img:v1", Port: 80, Domains: []string{"new.example.com"}}
 	st := &fakeStore{services: []store.DesiredService{desired}}
 	applier := &fakeApplier{}
-	c := New(st, newFakeRuntime(), applier, WithLogger(discardLogger()), WithHoldTracker(ingress.NewHoldTracker(time.Minute)))
+	c := New(st, newFakeRuntime(), applier, WithLogger(slog.New(slog.DiscardHandler)), WithHoldTracker(ingress.NewHoldTracker(time.Minute)))
 	if _, err := c.Reconcile(context.Background()); err != nil {
 		t.Fatal(err)
 	}
@@ -70,7 +71,7 @@ func holdPageFor(t *testing.T, desired store.DesiredService, attempts []store.De
 	rt.seedRunning(target, 34567)
 	st := &fakeStore{services: []store.DesiredService{desired}}
 	applier := &fakeApplier{}
-	opts := []Option{WithLogger(discardLogger()), WithHoldTracker(ingress.NewHoldTracker(time.Minute)), WithHardening(ingress.DefaultHardening())}
+	opts := []Option{WithLogger(slog.New(slog.DiscardHandler)), WithHoldTracker(ingress.NewHoldTracker(time.Minute)), WithHardening(ingress.DefaultHardening())}
 	if show != nil {
 		opts = append(opts, WithHoldReasonGate(show))
 	}

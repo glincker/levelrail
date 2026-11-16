@@ -3,6 +3,7 @@ package ingress
 import (
 	"context"
 	"fmt"
+	"github.com/GLINCKER/levelrail/internal/testutil"
 	"io"
 	"net"
 	"net/http"
@@ -110,15 +111,9 @@ func lbGet(t *testing.T, c *http.Client, url string) (int, string) {
 
 var lbClient = &http.Client{Timeout: 5 * time.Second, Transport: &http.Transport{DisableKeepAlives: true}}
 
-// waitFor polls cond until it holds or the window ends.
 func waitFor(t *testing.T, within time.Duration, what string, cond func() bool) {
 	t.Helper()
-	for deadline := time.Now().Add(within); time.Now().Before(deadline); time.Sleep(50 * time.Millisecond) {
-		if cond() {
-			return
-		}
-	}
-	t.Fatalf("timed out after %s waiting for %s", within, what)
+	testutil.WaitFor(t, within, 50*time.Millisecond, what, cond)
 }
 
 func TestDriver_LoadBalancer_WeightedSplit(t *testing.T) {

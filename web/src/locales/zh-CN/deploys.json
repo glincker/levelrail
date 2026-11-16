@@ -555,7 +555,7 @@
     "medianDuration": "中位时长",
     "medianDurationTip": "最近 24 小时内已完成部署的中位耗时。",
     "needsAttention": "需要处理",
-    "needsAttentionTip": "已暂缓的部署,以及与运行中版本不同的线上镜像。选择即可显示已暂缓的部署。",
+    "needsAttentionTip": "已暂停的部署、与运行中不一致的在线镜像，以及最近一次部署失败或被拒绝的应用。点击查看。",
     "deploys14": "部署(14 天)",
     "deploys14Tip": "最近 14 天每天开始的部署数。"
   },
@@ -602,7 +602,8 @@
       "held": "已暂缓",
       "awaiting_approval": "等待批准",
       "rolled_back": "已回滚",
-      "superseded": "已被取代"
+      "superseded": "已被取代",
+      "refused": "已拒绝"
     },
     "trigger": {
       "git push": "Git 推送",
@@ -667,5 +668,134 @@
     "viewQueue": "查看队列",
     "progress": "目前已有 {{required}} 位不同批准者中的 {{received}} 位。最后一位批准时部署才会运行。",
     "recorded": "已记录批准:{{required}} 位不同批准者中的 {{received}} 位。"
+  },
+  "interruption": {
+    "interrupted": "已中断：此部署运行期间控制平面重启了",
+    "orphaned": "孤立：没有构建在为此部署运行，因此已取消",
+    "retry": "重新部署以重试"
+  },
+  "buildQueue": {
+    "chip": "{{state}},槽位 {{used}}/{{total}}",
+    "state": {
+      "running": "运行中",
+      "paused": "已暂停",
+      "draining": "排空中"
+    },
+    "by": "由 {{actor}}",
+    "menu": "队列操作",
+    "resume": "恢复构建",
+    "drain": "排空队列",
+    "drainHint": "让运行中的构建完成,暂缓新的构建",
+    "done": {
+      "pause": "构建队列已暂停。",
+      "drain": "构建队列正在排空。",
+      "resume": "构建队列已恢复。"
+    },
+    "conflict": {
+      "pause": "队列已处于暂停状态。",
+      "drain": "队列已在排空。",
+      "resume": "队列已在运行。"
+    },
+    "failed": "无法更改构建队列。",
+    "pause": {
+      "action": "暂停构建",
+      "title": "暂停构建队列",
+      "description": "运行中的构建会完成。新的构建将等待,直到你恢复。",
+      "reasonLabel": "原因(可选)",
+      "reasonPlaceholder": "例如:镜像仓库维护",
+      "submit": "暂停"
+    },
+    "kill": {
+      "action": "终止所有构建",
+      "title": "终止所有构建?",
+      "description": "这将取消 {{running}} 个运行中和 {{queued}} 个排队中的构建。",
+      "confirm": "全部终止",
+      "confirming": "正在终止",
+      "none": "目前没有运行中或排队中的构建。",
+      "more": "以及另外 {{count}} 个",
+      "alsoPause": "同时暂停队列",
+      "stepUp": "请确认你的密码以取消所有构建。",
+      "done_other": "已取消 {{count}} 个构建。",
+      "someFailed": "{{count}} 个无法取消:{{apps}}",
+      "conflict": "确认期间队列已发生变化。请检查队列后重试。",
+      "failed": "无法取消构建。"
+    },
+    "banner": {
+      "paused": "构建已暂停",
+      "draining": "构建正在排空"
+    },
+    "autoResume": "将自动恢复",
+    "panel": {
+      "title": "构建队列",
+      "summary": "{{running}} 个运行中,{{queued}} 个排队中,已用槽位 {{used}}/{{total}}",
+      "position": "第 {{position}} 位",
+      "waiting": "等待中:{{reason}}"
+    },
+    "phase": {
+      "preparing": "准备中",
+      "held": "已挂起",
+      "waiting": "等待中",
+      "building": "构建中"
+    }
+  },
+  "runners": {
+    "title": "构建运行器",
+    "strategy": "策略:{{strategy}}",
+    "changeStrategy": "更改策略",
+    "strategies": {
+      "first": "首个可用",
+      "least_loaded": "负载最低",
+      "sticky_per_app": "按应用固定"
+    },
+    "kind": {
+      "control_plane": "控制平面",
+      "node": "构建节点"
+    },
+    "status": {
+      "ready": "就绪",
+      "busy": "繁忙",
+      "pressure": "压力过大",
+      "draining": "排空中",
+      "offline": "离线"
+    },
+    "cores_other": "{{count}} 核",
+    "load": "负载 {{load}}",
+    "slots": "{{total}} 个槽位中已用 {{used}} 个({{percent}}%)",
+    "waiting_other": "{{count}} 个等待中",
+    "capacityLabel": "{{name}} 上已用的构建槽位",
+    "labels": "标签",
+    "lastBuild": "最近构建:",
+    "noBuilds": "暂无构建",
+    "cache": "构建缓存 {{size}}",
+    "builtOn": "构建于 {{name}}",
+    "queued": "排队 {{wait}}",
+    "error": {
+      "title": "无法加载构建运行器",
+      "description": "运行器列表未能加载。构建不受影响。",
+      "retry": "重新加载"
+    },
+    "empty": {
+      "title": "添加构建节点",
+      "description": "构建在控制平面上运行。注册第二个已启用构建的节点,可把构建移出承载应用的机器。",
+      "action": "打开节点",
+      "docs": "构建节点路由"
+    }
+  },
+  "runnerPref": {
+    "title": "构建运行器",
+    "description": "选择此应用的构建位置。留空则遵循全局策略。",
+    "node": "构建节点",
+    "anyNode": "任意构建节点",
+    "labels": "标签",
+    "labelsPlaceholder": "gpu, arch=arm64",
+    "pin": "固定到此节点",
+    "pinHint": "此节点无法构建时改用控制平面,绝不使用其他节点。",
+    "pinNeedsNode": "请先选择节点再固定。",
+    "noAbility": "更改需要部署权限。",
+    "clear": "清除",
+    "save": "保存",
+    "saved": "构建运行器已保存",
+    "cleared": "构建运行器已清除",
+    "retry": "重试"
   }
 }

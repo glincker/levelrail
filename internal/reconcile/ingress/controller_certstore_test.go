@@ -2,6 +2,7 @@ package ingress
 
 import (
 	"context"
+	"log/slog"
 	"testing"
 	"time"
 
@@ -31,7 +32,7 @@ func TestController_Reconcile_DuplicateDomain_DefenseInDepthSkipsLoser(t *testin
 
 	st := &fakeStore{services: []store.DesiredService{first, second}}
 	applier := &fakeApplier{}
-	c := New(st, rt, applier, WithLogger(discardLogger()))
+	c := New(st, rt, applier, WithLogger(slog.New(slog.DiscardHandler)))
 
 	result, err := c.Reconcile(context.Background())
 	if err != nil {
@@ -87,7 +88,7 @@ func TestController_WithCertStore_UsesSQLiteStorageInsteadOfFile(t *testing.T) {
 	st := &fakeStore{services: []store.DesiredService{desired}}
 	applier := &fakeApplier{}
 	c := New(st, rt, applier,
-		WithLogger(discardLogger()),
+		WithLogger(slog.New(slog.DiscardHandler)),
 		WithStorageDir("/should/be/ignored"),
 		WithCertStore(fakeCertStore{}),
 	)

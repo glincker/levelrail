@@ -3,6 +3,7 @@ package ingress
 import (
 	"context"
 	"errors"
+	"log/slog"
 	"testing"
 
 	"github.com/GLINCKER/levelrail/internal/ingress"
@@ -33,7 +34,7 @@ func TestController_Reconcile_DomainWAF_Enabled_GetsWAFHandler(t *testing.T) {
 		},
 	}
 	applier := &fakeApplier{}
-	c := New(st, rt, applier, WithLogger(discardLogger()))
+	c := New(st, rt, applier, WithLogger(slog.New(slog.DiscardHandler)))
 
 	result, err := c.Reconcile(context.Background())
 	if err != nil {
@@ -93,7 +94,7 @@ func TestController_Reconcile_DomainWAF_RateLimitOnly_NoWAFHandler(t *testing.T)
 		waf:      []store.DomainWAF{{Domain: "limited.example.com", RateLimitRPS: 20, RateLimitBurst: 40}},
 	}
 	applier := &fakeApplier{}
-	c := New(st, rt, applier, WithLogger(discardLogger()))
+	c := New(st, rt, applier, WithLogger(slog.New(slog.DiscardHandler)))
 
 	if _, err := c.Reconcile(context.Background()); err != nil {
 		t.Fatalf("Reconcile() error = %v", err)
@@ -128,7 +129,7 @@ func TestController_Reconcile_DomainWAF_DisabledRow_NoHandlerAtAll(t *testing.T)
 		waf:      []store.DomainWAF{{Domain: "web.example.com", WAFEnabled: false, WAFMode: store.DomainWAFModeDetect, RateLimitRPS: 0}},
 	}
 	applier := &fakeApplier{}
-	c := New(st, rt, applier, WithLogger(discardLogger()))
+	c := New(st, rt, applier, WithLogger(slog.New(slog.DiscardHandler)))
 
 	if _, err := c.Reconcile(context.Background()); err != nil {
 		t.Fatalf("Reconcile() error = %v", err)
@@ -162,7 +163,7 @@ func TestController_Reconcile_DomainWAF_And_BasicAuth_Together(t *testing.T) {
 		waf:       []store.DomainWAF{{Domain: "both.example.com", WAFEnabled: true, WAFMode: store.DomainWAFModeBlock}},
 	}
 	applier := &fakeApplier{}
-	c := New(st, rt, applier, WithLogger(discardLogger()), WithDomainBasicAuthSecrets(resolver))
+	c := New(st, rt, applier, WithLogger(slog.New(slog.DiscardHandler)), WithDomainBasicAuthSecrets(resolver))
 
 	if _, err := c.Reconcile(context.Background()); err != nil {
 		t.Fatalf("Reconcile() error = %v", err)
@@ -208,7 +209,7 @@ func TestController_Reconcile_ListDomainWAFError(t *testing.T) {
 		wafErr:   errors.New("domain_waf table locked"),
 	}
 	applier := &fakeApplier{}
-	c := New(st, rt, applier, WithLogger(discardLogger()))
+	c := New(st, rt, applier, WithLogger(slog.New(slog.DiscardHandler)))
 
 	result, err := c.Reconcile(context.Background())
 	if err == nil {

@@ -3,6 +3,7 @@ package ingress
 import (
 	"context"
 	"errors"
+	"log/slog"
 	"testing"
 
 	"github.com/GLINCKER/levelrail/internal/reconcile/application"
@@ -14,7 +15,7 @@ func TestDialForService_KeepsLastBackendWhenDockerErrors(t *testing.T) {
 	name := application.ContainerName(svc.Name, application.NameImage(svc), svc.RestartNonce)
 	rt := newFakeRuntime()
 	rt.seedRunning(name, 4321)
-	c := New(&fakeStore{}, rt, &fakeApplier{}, WithLogger(discardLogger()))
+	c := New(&fakeStore{}, rt, &fakeApplier{}, WithLogger(slog.New(slog.DiscardHandler)))
 
 	dial, ok := c.dialForService(context.Background(), svc, true)
 	if !ok || dial != "127.0.0.1:4321" {

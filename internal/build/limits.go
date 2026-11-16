@@ -117,6 +117,12 @@ type ImageSizer func(ctx context.Context, tag string) int64
 // WithNodeResolver makes the concurrency limit apply per node instead of globally.
 func WithNodeResolver(n NodeResolver) LimiterOption { return func(l *Limiter) { l.node = n } }
 
+// WithDecider places each build and records why. It supersedes WithNodeResolver
+// and hands the answer to the router through the build context.
+func WithDecider(d func(ctx context.Context, app string) Decision) LimiterOption {
+	return func(l *Limiter) { l.decide = d }
+}
+
 // WithImageSizer records the size of every built image.
 func WithImageSizer(s ImageSizer) LimiterOption { return func(l *Limiter) { l.sizer = s } }
 
@@ -137,14 +143,22 @@ type Limiter struct {
 	clock  Clock
 	log    *slog.Logger
 
-	node  NodeResolver
-	sizer ImageSizer
-	cg    CgroupProvisioner
-	guard MemGuard
-	host  func() int
+	node   NodeResolver
+	decide func(ctx context.Context, app string) Decision
+	sizer  ImageSizer
+	cg     CgroupProvisioner
+	guard  MemGuard
+	host   func() int
 
 	mu    sync.Mutex
 	slots map[string]*nodeSlots
+
+	cgMu   sync.Mutex
+	cgBusy map[string]bool
+
+	activeMu  sync.Mutex
+	active    map[uint64]*ActiveBuild
+	activeSeq uint64
 }
 
 type nodeSlots struct {
@@ -182,10 +196,21 @@ func (l *Limiter) BuildRailpack(ctx context.Context, req RailpackRequest, progre
 func (l *Limiter) run(ctx context.Context, tag, srcDir string, progress func(ProgressEvent), do func(context.Context, func(ProgressEvent), string, int) (*Result, error)) (*Result, error) {
 	lim := l.limits(ctx, AppFromTag(tag))
 	queued := l.clock.Now()
-	nodeID := ""
-	if l.node != nil {
+	nodeID, reason := "", ""
+	switch {
+	case l.decide != nil:
+		d := l.decide(ctx, AppFromTag(tag))
+		nodeID, reason = d.Node, d.Reason
+		ctx = WithDecision(ctx, d)
+	case l.node != nil:
 		nodeID = l.node(ctx)
 	}
+	trackID, phase := l.track(tag, nodeID)
+	defer l.untrack(trackID)
+	if err := holdQueue(ctx, progress); err != nil {
+		return nil, fmt.Errorf("build: waiting for the build queue to resume: %w", err)
+	}
+	phase(ActiveWaiting)
 	capped, gerr := admitLocal(ctx, nodeID, lim.MaxConcurrent, progress)
 	if gerr != nil {
 		return nil, fmt.Errorf("build: waiting for host pressure: %w", gerr)
@@ -195,9 +220,10 @@ func (l *Limiter) run(ctx context.Context, tag, srcDir string, progress func(Pro
 		return nil, fmt.Errorf("build: waiting for a build slot: %w", err)
 	}
 	defer l.release(nodeID)
+	phase(ActiveBuilding)
 
 	started := l.clock.Now()
-	run := Run{App: AppFromTag(tag), Tag: tag, StartedAt: started, QueueWait: started.Sub(queued), Node: nodeID, Platform: HostPlatform()}
+	run := Run{App: AppFromTag(tag), Tag: tag, StartedAt: started, QueueWait: started.Sub(queued), Node: nodeID, RunnerReason: reason, Platform: HostPlatform()}
 
 	bctx, cancel := context.WithCancelCause(ctx)
 	defer cancel(nil)
@@ -214,7 +240,9 @@ func (l *Limiter) run(ctx context.Context, tag, srcDir string, progress func(Pro
 
 	cgroupParent := ""
 	if l.cg != nil && (lim.MemoryMB > 0 || lim.CPUMillis > 0) {
-		parent, cleanup, cerr := l.cg.Provision(tag, lim.MemoryMB, lim.CPUMillis)
+		name, free := l.takeCgroupName(run.App)
+		defer free()
+		parent, cleanup, cerr := l.cg.Provision(name, lim.MemoryMB, lim.CPUMillis)
 		if cerr != nil {
 			l.log.Warn("build: resource limits not enforced", slog.String("app", run.App), slog.String("error", cerr.Error()))
 		} else {
@@ -279,6 +307,27 @@ func (l *Limiter) run(ctx context.Context, tag, srcDir string, progress func(Pro
 	}
 	l.record(ctx, run)
 	return res, err
+}
+
+// takeCgroupName returns a cgroup name that is stable per app, because BuildKit
+// hashes the cgroup parent into every exec cache key. An overlapping build of
+// the same app gets the next free index, so each build keeps its own limits.
+func (l *Limiter) takeCgroupName(app string) (string, func()) {
+	l.cgMu.Lock()
+	defer l.cgMu.Unlock()
+	if l.cgBusy == nil {
+		l.cgBusy = map[string]bool{}
+	}
+	name := app
+	for i := 1; l.cgBusy[name]; i++ {
+		name = fmt.Sprintf("%s.slot%d", app, i)
+	}
+	l.cgBusy[name] = true
+	return name, func() {
+		l.cgMu.Lock()
+		delete(l.cgBusy, name)
+		l.cgMu.Unlock()
+	}
 }
 
 // isMemoryKill matches the SIGKILL and OOM wording BuildKit surfaces for a cgroup memory kill.

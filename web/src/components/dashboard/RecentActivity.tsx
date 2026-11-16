@@ -9,6 +9,7 @@ import {
   HandGlassIcon,
   LoaderCircleGlassIcon,
   RocketGlassIcon,
+  ShieldAlertGlassIcon,
 } from '@thesvg/ui-react'
 import { RelativeTime, SkeletonList, type Tone } from '@/components/kit'
 import { TONE } from '@/components/kit/tone'
@@ -56,6 +57,10 @@ const STATUS_VIEW: Record<
   canceled: {
     tone: 'neutral',
     icon: <CircleXGlassIcon className="text-tone-danger" size="1.4em" />,
+  },
+  refused: {
+    tone: 'warning',
+    icon: <ShieldAlertGlassIcon size="1.4em" />,
   },
   pending: { tone: 'warning', icon: <CirclePauseGlassIcon size="1.4em" /> },
 }

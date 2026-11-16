@@ -1034,6 +1034,18 @@ export const NAV_REGISTRY: readonly NavRegistryEntry[] = [
     settingsArea: 'notifications',
   },
   {
+    id: 'settings-integrations',
+    path: '/settings/integrations',
+    area: 'settings-integrations',
+    titleKey: 'settings:nav.items.integrations.title',
+    icon: 'Plug',
+    helpPath: null,
+    gated: null,
+    palette: true,
+    sidebar: false,
+    settingsArea: 'integrations',
+  },
+  {
     id: 'settings-git-connections',
     path: '/settings/git-connections',
     area: 'settings-integrations',

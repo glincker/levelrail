@@ -9,6 +9,7 @@ Subcommands: 2fa, activity, approve, code, code-login, delete-account, deny, dev
 ```
 Usage:
   levelrail-cli auth login [flags]           authenticate and persist a new API token
+  levelrail-cli auth rotate [flags]          replace the current token and update the saved profile
   levelrail-cli auth whoami [flags]          show who the current token authenticates as
   levelrail-cli auth status [flags]          show the server this profile is pinned to and check it
   levelrail-cli auth trust-server [flags]    pin the server at the profile's URL (after confirming its fingerprint)

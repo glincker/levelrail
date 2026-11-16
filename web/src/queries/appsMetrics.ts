@@ -27,7 +27,7 @@ export async function fetchAppsMetrics(
       await readErrorMessage(res, `fetch apps metrics failed: ${res.status}`),
     )
   }
-  return (await res.json()) as AppMetricsSummary[]
+  return ((await res.json()) as AppMetricsSummary[] | null) ?? []
 }
 
 export function appsMetricsQueryOptions() {

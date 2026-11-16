@@ -1,0 +1,115 @@
+{
+  "title": "Integrationen",
+  "description": "Alle verbundenen Dienste mit Zustand und Ablauf, und wo du weitere hinzufügst.",
+  "retry": "Erneut versuchen",
+  "loadFailed": "Verbindungen konnten nicht geladen werden.",
+  "connected": {
+    "title": "Verbunden"
+  },
+  "empty": {
+    "title": "Noch nichts verbunden",
+    "description": "Verbinde unten im Katalog einen Git-Host, eine Registry oder einen Benachrichtigungskanal.",
+    "noMatch": "Keine Verbindung passt zu diesen Filtern."
+  },
+  "filters": {
+    "searchLabel": "Verbindungen durchsuchen",
+    "searchPlaceholder": "Nach Name, Konto oder Host suchen",
+    "kind": "Art",
+    "scope": "Bereich",
+    "health": "Zustand",
+    "allKinds": "Alle Arten",
+    "allScopes": "Alle Bereiche",
+    "allHealth": "Jeder Zustand",
+    "clear": "Filter zurücksetzen"
+  },
+  "kinds": {
+    "git": "Git",
+    "registry": "Registries",
+    "notify": "Benachrichtigungen",
+    "secret": "Secrets",
+    "dns": "DNS",
+    "cloud": "Cloud",
+    "webhook": "Webhooks"
+  },
+  "scopes": {
+    "instance": "Instanz",
+    "org": "Organisation",
+    "app": "App"
+  },
+  "health": {
+    "ok": "Gesund",
+    "degraded": "Eingeschränkt",
+    "needs_reconnect": "Neu verbinden",
+    "expired": "Abgelaufen",
+    "unknown": "Nicht geprüft"
+  },
+  "authMethods": {
+    "app_install": "App-Installation",
+    "oauth": "OAuth",
+    "token": "Token",
+    "workload_identity": "Workload-Identität",
+    "url_secret": "Geheime URL"
+  },
+  "categories": {
+    "git": "Git",
+    "registry": "Registries",
+    "notify": "Benachrichtigungen",
+    "secret": "Secrets",
+    "dns": "DNS",
+    "cloud": "Cloud",
+    "webhook": "Webhooks",
+    "ci": "CI-Identität",
+    "observability": "Observability",
+    "addon": "App-Add-ons"
+  },
+  "methods": {
+    "one_click": "Ein Klick",
+    "guided_oauth": "Geführtes OAuth",
+    "token": "Token",
+    "settings_page": "Einstellungsseite"
+  },
+  "connect": {
+    "one_click": "Verbinden",
+    "guided_oauth": "Einrichten",
+    "token": "Token hinzufügen",
+    "settings_page": "Öffnen"
+  },
+  "card": {
+    "lastUsed": "Genutzt {{when}}",
+    "neverUsed": "Nie genutzt",
+    "default": "Standard",
+    "manage": "Verwalten",
+    "reconnect": "Neu verbinden",
+    "manageNamed": "{{name}} verwalten",
+    "reconnectNamed": "{{name}} neu verbinden",
+    "bound_one": "{{count}} Bindung",
+    "bound_other": "{{count}} Bindungen",
+    "bind": "Binden",
+    "unbind": "Lösen",
+    "bindNamed": "{{name}} binden",
+    "unbindNamed": "{{name}} lösen"
+  },
+  "expiry": {
+    "expiresToday": "Läuft heute ab",
+    "autoRenew": "erneuert sich automatisch",
+    "expiresInDays_one": "Läuft in {{count}} Tag ab",
+    "expiresInDays_other": "Läuft in {{count}} Tagen ab",
+    "expiredDaysAgo_one": "Vor {{count}} Tag abgelaufen",
+    "expiredDaysAgo_other": "Vor {{count}} Tagen abgelaufen"
+  },
+  "attention": {
+    "title_one": "{{count}} Verbindung braucht Aufmerksamkeit",
+    "title_other": "{{count}} Verbindungen brauchen Aufmerksamkeit"
+  },
+  "catalog": {
+    "title": "Integration hinzufügen",
+    "description": "Jede Schaltfläche öffnet die Seite, die diese Verbindung verwaltet.",
+    "empty": "Keine Integrationen verfügbar.",
+    "loadFailed": "Der Katalog konnte nicht geladen werden.",
+    "connectNamed": "{{name}} verbinden"
+  },
+  "wizard": {
+    "title": "Integration",
+    "description": "Einen Git-Host, eine Registry, einen Benachrichtiger oder ein Cloud-Konto verbinden."
+  }
+}

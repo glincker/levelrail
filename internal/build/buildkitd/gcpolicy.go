@@ -4,18 +4,15 @@ import (
 	"fmt"
 	"strings"
 	"time"
+
+	"github.com/GLINCKER/levelrail/internal/build/cachebudget"
 )
 
 const (
 	mib = int64(1024 * 1024)
 
-	defaultGCReservedMB    = 2048
-	defaultGCMaxUsedCapMB  = 10240
-	defaultGCMaxUsedPct    = 20
-	defaultGCUnknownDiskMB = 5120
-	defaultGCMinFreePct    = 15
-	defaultGCSourceKeep    = 48 * time.Hour
-	defaultGCSourceMaxMB   = 512
+	defaultGCSourceKeep  = 48 * time.Hour
+	defaultGCSourceMaxMB = 512
 )
 
 // gcSizing is the resolved byte budget written into the three GC rules.
@@ -26,37 +23,11 @@ type gcSizing struct {
 	SourceMaxByte int64
 }
 
-// sizeGC derives the cache budget from the disk holding BuildKit state.
-// An unknown disk (total <= 0) gets a small fixed budget so a failed statfs
-// never leaves the cache unbounded. Explicit overrides win, but reserved is
-// clamped to max used because BuildKit rejects a floor above the cap.
+// sizeGC resolves the byte budget for the GC rules from the disk holding
+// BuildKit state; the shared sizing rule lives in cachebudget.
 func (c Config) sizeGC(total int64) gcSizing {
-	maxUsed := c.GCKeepMB * mib
-	if maxUsed <= 0 {
-		if total > 0 {
-			maxUsed = total * defaultGCMaxUsedPct / 100
-			if capBytes := int64(defaultGCMaxUsedCapMB) * mib; maxUsed > capBytes {
-				maxUsed = capBytes
-			}
-		} else {
-			maxUsed = int64(defaultGCUnknownDiskMB) * mib
-		}
-	}
-	reserved := c.GCReservedMB * mib
-	if reserved <= 0 {
-		reserved = int64(defaultGCReservedMB) * mib
-		if reserved > maxUsed/2 {
-			reserved = maxUsed / 2
-		}
-	}
-	if reserved > maxUsed {
-		reserved = maxUsed
-	}
-	minFree := c.GCMinFreePct
-	if minFree <= 0 {
-		minFree = defaultGCMinFreePct
-	}
-	return gcSizing{ReservedBytes: reserved, MaxUsedBytes: maxUsed, MinFreePct: minFree, SourceMaxByte: c.GCSourceMaxMB * mib}
+	s := cachebudget.Size(total, c.GCKeepMB, c.GCReservedMB, c.GCMinFreePct)
+	return gcSizing{ReservedBytes: s.ReservedBytes, MaxUsedBytes: s.MaxUsedBytes, MinFreePct: s.MinFreePct, SourceMaxByte: c.GCSourceMaxMB * mib}
 }
 
 // gcPolicyTOML renders the three rules: short lived source data, anything

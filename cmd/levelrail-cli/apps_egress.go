@@ -23,6 +23,8 @@ func runAppsEgress(prog string, args []string, stdout, stderr io.Writer, lookupE
 		return runAppsEgressSet(prog, args[1:], stdout, stderr, lookupEnv)
 	case "clear":
 		return runAppsEgressClear(prog, args[1:], stdout, stderr, lookupEnv)
+	case "report":
+		return runAppsEgressReport(prog, args[1:], stdout, stderr, lookupEnv)
 	default:
 		_, _ = fmt.Fprintf(stderr, "%s: unknown apps egress subcommand %q\n\n", prog, args[0])
 		_, _ = fmt.Fprint(stderr, appsEgressUsage(prog))
@@ -35,6 +37,7 @@ func appsEgressUsage(prog string) string {
   %[1]s apps egress get <name> [flags]                                    show an app's current outbound network allowlist
   %[1]s apps egress set <name> --allow host:port [--allow host:port ...]  restrict an app's outbound traffic to an allowlist
   %[1]s apps egress clear <name> [flags]                                  opt an app back out to unrestricted egress
+  %[1]s apps egress report <name> [flags]                                 dry run: names the app asked for that the allowlist would deny
 
 Unconfigured (the default) means unrestricted egress, unchanged from
 today. "set" restricts an app's container to only reach the declared

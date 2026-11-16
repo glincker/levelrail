@@ -147,7 +147,7 @@ func runDeploymentsSummary(prog string, args []string, stdout, stderr io.Writer,
 
 func printDeploymentsSummary(out io.Writer, s apiclient.DeploymentSummary) {
 	_, _ = fmt.Fprintf(out, "window: %s\n", s.Window)
-	for _, k := range []string{"building", "ready", "failed", "canceled", "rolled_back", "superseded", "held"} {
+	for _, k := range []string{"building", "ready", "failed", "canceled", "rolled_back", "superseded", "held", "refused"} {
 		_, _ = fmt.Fprintf(out, "%-12s %d\n", k, s.Counts[k])
 	}
 	_, _ = fmt.Fprintf(out, "in progress: %d, needs attention: %d\n", s.InProgress, s.NeedsAttention)

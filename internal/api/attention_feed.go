@@ -39,6 +39,8 @@ func (rt *Router) handleAttentionFeed(w http.ResponseWriter, r *http.Request) {
 func (rt *Router) attentionFeedItems(r *http.Request, abilities []string, now time.Time) []attention.Item {
 	items := []attention.Item{}
 	items = append(items, rt.tokenAttentionItems(r, abilities, now)...)
+	items = append(items, rt.tokenGraceSweepAttentionItems(abilities)...)
+	items = append(items, rt.gitCredentialAttentionItems(r, abilities, now)...)
 	items = append(items, rt.databaseAttentionItems(r, abilities, now)...)
 	items = append(items, rt.upgradeAttentionItems(r, abilities)...)
 	items = append(items, rt.inviteAttentionItems(r, abilities, now)...)
@@ -61,6 +63,7 @@ func (rt *Router) attentionFeedItems(r *http.Request, abilities []string, now ti
 	items = append(items, rt.stackDriftAttentionItems(r, abilities)...)
 	items = append(items, rt.advisoryAttentionItems(r, abilities)...)
 	items = append(items, rt.interruptedDeployAttentionItems(r, abilities)...)
+	items = append(items, rt.buildQueueAttentionItems(r, abilities)...)
 	items = append(items, rt.uncleanRestartAttentionItems(r.Context(), abilities, now)...)
 	return withoutSilenced(items, rt.activeSilences(r.Context(), now), now)
 }

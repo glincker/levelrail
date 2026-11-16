@@ -1,22 +1,22 @@
 import { lazy, Suspense, useState } from 'react'
 import { useTranslation } from 'react-i18next'
-import { KeyGlassIcon, PlusGlassIcon, UsersGlassIcon } from '@thesvg/ui-react'
+import { PlusGlassIcon, UsersGlassIcon } from '@thesvg/ui-react'
 import { isTokenHost } from '../../lib/gitTokenGuides'
 import { Button } from '@/components/ui/button'
-import { Card, CardContent } from '@/components/ui/card'
 import { EmptyState } from '@/components/ui/empty-state'
 import { useGitConnections } from '../../queries/gitConnections'
 import type { GitConnectionProvider } from '../../types/gitConnections'
 import { AddGitConnectionDialog } from './AddGitConnectionDialog'
-import { GitConnectionRow } from './GitConnectionRow'
+import { GitAccessMethods } from './git/GitAccessMethods'
+import { GitAccessPanel } from './git/GitAccessPanel'
+import { GitNextSteps } from './git/GitNextSteps'
 
 const ConnectWithTokenDialog = lazy(
   () => import('../gitConnections/ConnectWithTokenDialog'),
 )
 
-// Every account connected for one provider, with Add another account.
-// Several GitLab groups, a personal and a work Bitbucket workspace, or two
-// Gitea servers live side by side; connecting one never replaces another.
+// The provider page body: ways to connect, one access panel per connected
+// account, and what to do next. Connecting never replaces an account.
 export function GitConnectionsCard({
   provider,
 }: Readonly<{ provider: GitConnectionProvider }>) {
@@ -27,58 +27,49 @@ export function GitConnectionsCard({
   const tokenHost = isTokenHost(provider) ? provider : undefined
   const authorizedCount = connections.filter((c) => c.authorized).length
 
+  function startToken() {
+    if (tokenHost) setTokenOpen(true)
+    else setAdding(true)
+  }
+
   return (
-    <Card>
-      <CardContent className="space-y-4">
-        {connections.length === 0 ? (
-          <EmptyState
-            compact
-            icon={<UsersGlassIcon className="size-6" />}
-            title={t('gitConnections.empty.title')}
-            description={t(`gitConnections.empty.description.${provider}`)}
-            action={
-              <Button type="button" size="sm" onClick={() => setAdding(true)}>
-                <PlusGlassIcon className="size-5" aria-hidden="true" />
-                {t('gitConnections.add.first')}
-              </Button>
-            }
-          />
-        ) : (
-          <>
-            <ul data-slot="grouped-list">
-              {connections.map((c) => (
-                <GitConnectionRow
-                  key={c.id}
-                  connection={c}
-                  canSetDefault={authorizedCount > 1}
-                />
-              ))}
-            </ul>
-            <div className="flex flex-wrap items-center justify-between gap-2 border-t border-border pt-4">
-              <p className="text-xs text-muted-foreground">
-                {t('gitConnections.scopeNote')}
-              </p>
-              <Button type="button" size="sm" onClick={() => setAdding(true)}>
-                <PlusGlassIcon className="size-5" aria-hidden="true" />
-                {t('gitConnections.add.another')}
-              </Button>
-            </div>
-          </>
-        )}
-      </CardContent>
-      {tokenHost ? (
-        <div className="border-t border-border px-4 py-3">
-          <Button
-            type="button"
-            size="sm"
-            variant="outline"
-            onClick={() => setTokenOpen(true)}
-          >
-            <KeyGlassIcon className="size-5" aria-hidden="true" />
-            {t('gitConnectionsHub.add.withToken')}
-          </Button>
-        </div>
-      ) : null}
+    <div className="space-y-6">
+      <GitAccessMethods
+        provider={provider}
+        connections={connections}
+        onOAuth={() => setAdding(true)}
+        onToken={startToken}
+      />
+      {connections.length === 0 ? (
+        <EmptyState
+          compact
+          icon={<UsersGlassIcon className="size-6" />}
+          title={t('gitConnections.empty.title')}
+          description={t(`gitConnections.empty.description.${provider}`)}
+          action={
+            <Button type="button" size="sm" onClick={() => setAdding(true)}>
+              <PlusGlassIcon className="size-5" aria-hidden="true" />
+              {t('gitConnections.add.first')}
+            </Button>
+          }
+        />
+      ) : (
+        <section className="space-y-4">
+          {connections.map((c) => (
+            <GitAccessPanel
+              key={c.id}
+              provider={provider}
+              connection={c}
+              canSetDefault={authorizedCount > 1}
+              onAddAnother={() => setAdding(true)}
+            />
+          ))}
+          <p className="text-xs text-muted-foreground">
+            {t('gitConnections.scopeNote')}
+          </p>
+        </section>
+      )}
+      <GitNextSteps />
       {tokenHost && tokenOpen ? (
         <Suspense fallback={null}>
           <ConnectWithTokenDialog
@@ -93,7 +84,15 @@ export function GitConnectionsCard({
         existing={connections}
         open={adding}
         onOpenChange={setAdding}
+        onUseToken={
+          tokenHost
+            ? () => {
+                setAdding(false)
+                setTokenOpen(true)
+              }
+            : undefined
+        }
       />
-    </Card>
+    </div>
   )
 }

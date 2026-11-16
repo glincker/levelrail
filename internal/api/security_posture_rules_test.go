@@ -17,7 +17,7 @@ func healthyPosture() postureInput {
 	used := postureNow.Add(-time.Hour)
 	return postureInput{
 		Now:    postureNow,
-		Policy: securityPolicy{ApprovalScope: approvalScopeAllMethods, WarnUnusedDays: 30},
+		Policy: securityPolicy{ApprovalScope: approvalScopeAllMethods, WarnUnusedDays: 30, ApprovalWithoutSession: approvalWithoutSessionHold},
 		Users: []postureUser{
 			{ID: "u1", Name: "admin@example.com", Admin: true, TOTP: true, RecoveryCodes: 8, Passkeys: 1},
 			{ID: "u2", Name: "dev@example.com", Passkeys: 0},

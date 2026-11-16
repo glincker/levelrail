@@ -420,3 +420,37 @@ func TestPendingChangesDatabaseLinkIsPendingAndApplyRestarts(t *testing.T) {
 		t.Fatalf("apply did not restart: nonce=%q dirty=%v", svc.RestartNonce, svc.EnvDirty)
 	}
 }
+
+func TestTimelineIncludesForgeStatusesAndBindings(t *testing.T) {
+	rt, db, cookie := newTimelineRouter(t)
+	ctx := context.Background()
+	now := time.Now().UTC()
+	if err := db.RecordForgeStatusReport(ctx, store.ForgeStatusReport{
+		AppName: "web", Provider: "gitea", SHA: "abcdef0123", Context: "levelrail/preview", State: "success",
+		Description: "Preview deployed", TargetURL: "https://pr-1.example.test", Source: store.ForgeStatusSourcePreview, CreatedAt: now,
+	}); err != nil {
+		t.Fatal(err)
+	}
+	if err := db.RecordForgeStatusReport(ctx, store.ForgeStatusReport{
+		AppName: "web", Provider: "gitea", SHA: "abcdef0123", Context: "levelrail/pipeline", State: "pending",
+		Error: "rate limited", Source: store.ForgeStatusSourcePipeline, CreatedAt: now.Add(-time.Minute),
+	}); err != nil {
+		t.Fatal(err)
+	}
+	var tl timelineResponse
+	if code := tlJSON(t, rt, cookie, http.MethodGet, "/api/v1/apps/web/timeline?limit=100", "", &tl); code != http.StatusOK {
+		t.Fatalf("timeline = %d", code)
+	}
+	var got []timelineItem
+	for _, it := range tl.Items {
+		if it.Kind == "commit_status" {
+			got = append(got, it)
+		}
+	}
+	if len(got) != 2 || got[0].Status != "succeeded" || got[0].URL != "https://pr-1.example.test" || got[0].Actor != "preview" {
+		t.Fatalf("commit statuses = %+v", got)
+	}
+	if got[1].Status != "failed" || !strings.Contains(got[1].Title, "abcdef0") || !strings.Contains(got[1].Detail, "rate limited") {
+		t.Fatalf("failed post = %+v", got[1])
+	}
+}

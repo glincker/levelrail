@@ -1,0 +1,166 @@
+{
+  "title": "分四步连接 {{provider}}",
+  "stepApp": "打开 OAuth 应用页面并创建一个应用。",
+  "openApp": "打开 {{host}} 的应用页面",
+  "appHint": {
+    "gitlab": "位于用户设置的应用程序中。群组或管理员应用也可以。",
+    "gitea": "位于设置、应用、管理 OAuth2 应用。勾选机密客户端。",
+    "forgejo": "位于设置、应用、管理 OAuth2 应用。勾选机密客户端。",
+    "bitbucket": "打开工作区,依次进入设置、OAuth 使用者、添加使用者。勾选私有使用者。"
+  },
+  "stepRedirect": "将重定向 URI(回调地址)设置为与下面完全一致的值。",
+  "redirectLabel": "重定向 URI",
+  "copy": "复制",
+  "copied": "已复制",
+  "copyFailed": "无法复制。请选中 URI 后手动复制。",
+  "stepScopes": "选择以下权限范围。",
+  "scopesLabel": "需要选择的权限范围",
+  "scopesNone": "该提供方没有权限范围列表。被询问时请授予仓库读写权限。",
+  "stepPaste": "在下方粘贴客户端 ID 和密钥,然后保存并授权。",
+  "hint": {
+    "https": "该地址使用 HTTPS,提供方会接受它作为重定向 URI。",
+    "loopback": "这是本地地址。多数提供方只在此浏览器中测试时接受它。",
+    "insecure": "该地址是普通 HTTP,多数提供方会拒绝将其用作重定向 URI。请使用 HTTPS 或改用令牌连接。"
+  },
+  "fallback": {
+    "title": "这里无法使用 OAuth?",
+    "body": "令牌不需要重定向 URI、公网域名或应用。",
+    "action": "改用令牌连接"
+  },
+  "field": {
+    "empty": "此项为必填。",
+    "whitespace": "请删除粘贴内容中的空格或换行。",
+    "unusual": "这不像常见的 {{provider}} 值。请确认已复制完整内容。"
+  },
+  "name": {
+    "gitlab": "GitLab",
+    "gitea": "Gitea",
+    "forgejo": "Forgejo",
+    "bitbucket": "Bitbucket Cloud",
+    "bitbucket_server": "Bitbucket Server",
+    "azure_devops": "Azure DevOps"
+  },
+  "methods": {
+    "title": "连接方式",
+    "recommended": "推荐",
+    "selfManaged": "自托管 GitLab 也支持所有方式:在连接面板中填写你的基础 URL。",
+    "status": {
+      "connected": "已连接",
+      "not_connected": "未连接",
+      "needs_attention": "需要处理",
+      "expires_soon": "即将过期"
+    },
+    "oauth": {
+      "name": "OAuth 应用",
+      "unlocks": "通过提供方登录。可用于仓库、Webhook、状态和评论,并会自动刷新。",
+      "action": "使用 OAuth 连接"
+    },
+    "token": {
+      "name": "访问令牌",
+      "unlocks": "粘贴个人、项目或群组令牌。无需重定向 URI 或公网域名。",
+      "action": "使用令牌连接"
+    },
+    "deploy_token": {
+      "name": "部署令牌",
+      "unlocks": "用于部署镜像的只读镜像仓库拉取(read_registry)。",
+      "action": "镜像仓库凭据"
+    },
+    "ci_job": {
+      "name": "CI 任务令牌或 OIDC",
+      "unlocks": "让流水线任务无需存储密钥即可部署。",
+      "action": "设置 CI 信任"
+    }
+  },
+  "access": {
+    "matrix": "访问与权限范围",
+    "allowed": "允许",
+    "notAllowed": "不允许",
+    "needsScope": "需要 {{scope}}",
+    "notReported": "未上报",
+    "scopesUnknown": "控制平面暂未上报此账号已授予的权限范围,因此每项功能都显示为未上报。",
+    "scopes": "已授予的权限范围",
+    "sees": "可见范围",
+    "projects_one": "{{count}} 个项目",
+    "projects_other": "{{count}} 个项目",
+    "expires": "令牌到期时间",
+    "lastUsed": "最近使用",
+    "addScope": "添加权限范围",
+    "addScopeMissing": "需要一个升级权限范围的接口。目前请重新授权,或添加权限更多的令牌。",
+    "rotate": "轮换令牌",
+    "addAnother": "添加另一个账号",
+    "inferred": "推断",
+    "rotateOauth": "OAuth 连接会自动续期,没有需要轮换的令牌。",
+    "rotateUnsupported": "该提供方无法轮换此凭据。请添加新令牌并断开旧令牌。"
+  },
+  "cap": {
+    "list_repos": "列出仓库",
+    "clone_sync": "克隆与同步",
+    "commit_status": "提交状态",
+    "mr_comments": "合并请求评论与预览",
+    "registry_pull": "镜像仓库拉取",
+    "import_group": "导入群组",
+    "register_webhook": "自动注册 Webhook",
+    "tag_push_trigger": "标签与推送触发",
+    "deployments_report": "部署上报"
+  },
+  "next": {
+    "title": "接下来可以添加",
+    "import": {
+      "title": "导入仓库",
+      "body": "选择仓库或整个群组并将其变成应用。",
+      "action": "打开来源"
+    },
+    "previews": {
+      "title": "启用合并请求预览",
+      "body": "为每个打开的合并请求部署预览。",
+      "action": "打开来源"
+    },
+    "ci": {
+      "title": "添加 CI 信任",
+      "body": "让流水线任务使用短期身份部署。",
+      "action": "打开流水线"
+    },
+    "webhook": {
+      "title": "添加 Webhook",
+      "body": "将部署和构建事件发送到其他服务。",
+      "action": "打开 Webhook"
+    },
+    "registry": {
+      "title": "连接镜像仓库",
+      "body": "保存私有镜像的拉取凭据。",
+      "action": "打开镜像仓库凭据"
+    }
+  },
+  "credential": {
+    "noExpiry": "未报告到期时间",
+    "autoRenews": "自动续期",
+    "expiresInHours_one": "{{count}} 小时后到期",
+    "expiresInHours_other": "{{count}} 小时后到期",
+    "expiresInDays_one": "{{count}} 天后到期",
+    "expiresInDays_other": "{{count}} 天后到期",
+    "expired_one": "{{count}} 天前已到期",
+    "expired_other": "{{count}} 天前已到期",
+    "lastRefresh": "{{when}}已刷新",
+    "refreshFailing": "刷新失败",
+    "reauthorize": "重新授权"
+  },
+  "rotate": {
+    "title": "轮换 {{label}} 的令牌?",
+    "description": "这会替换提供方上的访问令牌。",
+    "consequence": "GitLab 会签发新令牌,旧令牌立即失效。使用此连接的构建和拉取会自动切换。",
+    "confirm": "轮换令牌",
+    "pending": "轮换中",
+    "expiryLabel": "新令牌到期日 (YYYY-MM-DD)",
+    "expiryHint": "已按 {{days}} 天的轮换周期预填。清空则由提供方决定。",
+    "errors": {
+      "noMasterKey": "轮换需要控制平面上有主密钥。请先在加密密钥中设置,然后重试。",
+      "provider": "提供方未完成轮换。当前令牌保持不变,请稍后重试。",
+      "badDate": "请使用 YYYY-MM-DD 格式的日期。"
+    },
+    "toast": {
+      "done": "令牌已轮换",
+      "expires": "新令牌将于 {{date}} 到期。",
+      "noExpiry": "提供方未报告新令牌的到期时间。"
+    }
+  }
+}

@@ -64,7 +64,7 @@ export async function fetchApps(
       await readErrorMessage(res, `fetch apps failed: ${res.status}`),
     )
   }
-  return (await res.json()) as AppListEntry[]
+  return ((await res.json()) as AppListEntry[] | null) ?? []
 }
 
 // Shared options object between the route loader's

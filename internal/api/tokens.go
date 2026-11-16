@@ -30,6 +30,8 @@ type tokenResource struct {
 	LastUsedAt *time.Time `json:"last_used_at,omitempty"`
 	ExpiresAt  *time.Time `json:"expires_at,omitempty"`
 	RevokedAt  *time.Time `json:"revoked_at,omitempty"`
+	// RevokesAt is set while a rotated token is still valid for its grace period.
+	RevokesAt *time.Time `json:"revokes_at,omitempty"`
 	// Agent is set when the token was issued to an AI agent.
 	Agent *agentIdentity `json:"agent,omitempty"`
 	// Scope is set when the token is limited to one team.
@@ -216,6 +218,14 @@ func (rt *Router) handleListTokens(w http.ResponseWriter, r *http.Request) {
 	if err != nil {
 		rt.internalError(w, "api: list tokens failed", err)
 		return
+	}
+	if pending, perr := rt.tokenStateLoad(r.Context(), tokenStateRotation); perr == nil {
+		for i := range out {
+			if at, ok := pending[out[i].ID]; ok {
+				t := time.Unix(at, 0).UTC()
+				out[i].RevokesAt = &t
+			}
+		}
 	}
 	writeJSON(w, http.StatusOK, out)
 }

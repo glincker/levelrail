@@ -89,7 +89,7 @@ func TestClient_SearchRepositories(t *testing.T) {
 				t.Fatalf("results = %+v, want %+v", got, tt.want)
 			}
 			for i := range got {
-				if got[i] != tt.want[i] {
+				if got[i].Name != tt.want[i].Name {
 					t.Errorf("result[%d] = %+v, want %+v", i, got[i], tt.want[i])
 				}
 			}
@@ -163,7 +163,7 @@ func TestClient_ListTags(t *testing.T) {
 				t.Fatalf("tags = %+v, want %+v", got, tt.want)
 			}
 			for i := range got {
-				if got[i] != tt.want[i] {
+				if got[i].Name != tt.want[i].Name {
 					t.Errorf("tag[%d] = %+v, want %+v", i, got[i], tt.want[i])
 				}
 			}

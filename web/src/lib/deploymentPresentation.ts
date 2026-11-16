@@ -97,6 +97,13 @@ export const STATUS_VIEW: Record<DeploymentStatus, StatusView> = {
     tone: 'neutral',
     icon: SkipForwardGlassIcon,
   },
+  refused: {
+    get label() {
+      return translateShared('deploys:deployList.status.refused', 'Refused')
+    },
+    tone: 'warning',
+    icon: BanGlassIcon,
+  },
 }
 
 export function statusView(status: string): StatusView {
@@ -149,7 +156,12 @@ export function isRollback(d: Deployment): boolean {
 
 /** A redeploy re-ships an existing image: no commit, no branch, not a rollback. */
 export function isRedeploy(d: Deployment): boolean {
-  return !isRollback(d) && d.commit_sha === '' && d.branch === ''
+  return (
+    !isRollback(d) &&
+    d.first_deploy !== true &&
+    d.commit_sha === '' &&
+    d.branch === ''
+  )
 }
 
 export type RowKind =
@@ -194,6 +206,9 @@ export function headline(d: Deployment): string {
   }
   if (d.commit_message) return commitSubject(d.commit_message)
   if (isRedeploy(d)) return `Redeploy of ${imageTag(d.image)}`
+  if (d.first_deploy === true && d.commit_sha === '') {
+    return `Deploy of ${imageTag(d.image)}`
+  }
   return imageTag(d.image) || d.id
 }
 
@@ -214,6 +229,7 @@ export function queueLabel(d: Deployment): string {
 export function subtitle(d: Deployment): string {
   switch (d.status) {
     case 'failed':
+    case 'refused':
       return d.error_summary ?? d.reason
     case 'superseded':
       return d.superseded_by
@@ -285,6 +301,7 @@ export const REDEPLOYABLE: DeploymentStatus[] = [
   'rolled_back',
   'superseded',
   'canceled',
+  'refused',
 ]
 
 export function canRedeploy(d: Deployment): boolean {

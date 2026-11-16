@@ -15,6 +15,7 @@ export const APP_TAB_GROUPS: readonly AppTabGroupDef[] = [
       'overview',
       'deploys',
       'source',
+      'delivery',
       'previews',
       'deploy-settings',
       'pipelines',

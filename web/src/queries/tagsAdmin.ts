@@ -48,7 +48,7 @@ export function tagAppsQueryOptions(tagId: string) {
         'GET',
         'fetch tag apps',
       )
-      return (await res.json()) as TagApp[]
+      return ((await res.json()) as TagApp[] | null) ?? []
     },
   })
 }

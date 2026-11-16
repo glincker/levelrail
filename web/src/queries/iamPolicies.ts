@@ -63,7 +63,7 @@ export async function fetchPolicies(): Promise<PolicyResource[]> {
       await readErrorMessage(res, `fetch policies failed: ${res.status}`),
     )
   }
-  return (await res.json()) as PolicyResource[]
+  return ((await res.json()) as PolicyResource[] | null) ?? []
 }
 
 export function policyListQueryOptions() {
@@ -170,7 +170,7 @@ export async function fetchPolicyAttachments(
       await readErrorMessage(res, `fetch attachments failed: ${res.status}`),
     )
   }
-  return (await res.json()) as PolicyAttachment[]
+  return ((await res.json()) as PolicyAttachment[] | null) ?? []
 }
 
 export function policyAttachmentsQueryOptions(policyId: string) {

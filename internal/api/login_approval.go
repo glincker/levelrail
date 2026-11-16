@@ -20,6 +20,9 @@ import (
 const (
 	msgNoApprovalWaiting = "no sign-in is waiting for approval in this browser"
 	msgMatchMismatch     = "the number did not match the one shown in the waiting browser, so the sign-in was denied"
+
+	// hostApproverPrefix marks a sign-in approved by the host approve-signin command.
+	hostApproverPrefix = "host:"
 )
 
 // Statuses the waiting browser sees while it polls.
@@ -78,9 +81,9 @@ type approvalHold struct {
 }
 
 // holdForApproval stops a correct sign-in from an untrusted browser while
-// another session of the account was used recently enough that someone can
-// still approve from it; with none it lets the sign-in through so nobody is
-// locked out by sessions they can no longer reach. A nil hold and nil error mean "let it
+// another session of the account was used recently enough to approve it. With
+// none it lets the sign-in through unless the approval_without_session policy
+// or the account's own switch says hold. A nil hold and nil error mean "let it
 // through". token, when set, is the already issued session; it is revoked
 // whenever the sign-in is held or the check fails.
 func (rt *Router) holdForApproval(w http.ResponseWriter, r *http.Request, user store.User, token, method string) (*approvalHold, error) {
@@ -104,7 +107,7 @@ func (rt *Router) holdForApproval(w http.ResponseWriter, r *http.Request, user s
 		}
 		return nil, fmt.Errorf("count other sessions: %w", err)
 	}
-	if others == 0 {
+	if others == 0 && !rt.holdWithoutLiveSession(ctx, user.ID) {
 		return nil, nil
 	}
 	if err := sessions.RevokeChecked(ctx, token); err != nil {
@@ -356,7 +359,8 @@ func (rt *Router) handlePollLoginApproval(w http.ResponseWriter, r *http.Request
 		rt.internalError(w, "api: login approval: establish session failed", err, slog.String("user_id", a.UserID))
 		return
 	}
-	if !strings.HasPrefix(a.DecidedBy, rootApproverPrefix) {
+	// Root token and host approvals prove only that someone could approve, not that this device is the owner's.
+	if !strings.HasPrefix(a.DecidedBy, rootApproverPrefix) && !strings.HasPrefix(a.DecidedBy, hostApproverPrefix) {
 		rt.trustDevice(w, r, user.ID)
 	}
 	writeJSON(w, http.StatusOK, loginApprovalPollResponse{Status: approvalPollApproved, Email: user.Email, DisplayName: user.DisplayName})

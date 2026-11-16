@@ -28,7 +28,8 @@
     "held": "Zurückgehalten",
     "awaiting_approval": "Wartet auf Genehmigung",
     "rolled_back": "Zurückgerollt",
-    "superseded": "Abgelöst"
+    "superseded": "Abgelöst",
+    "refused": "Abgelehnt"
   },
   "stream": {
     "connecting": "Verbindet",
@@ -110,7 +111,8 @@
       "superseded": "Abgelöst",
       "queued": "In der Warteschlange",
       "canceled": "Abgebrochen",
-      "pending": "Ausstehend"
+      "pending": "Ausstehend",
+      "refused": "Abgelehnt"
     }
   }
 }

@@ -27,7 +27,7 @@ func runAuthLoginCode(prog, apiURLFlag, profileFlag, code, clientName string, re
 	if err != nil {
 		return reportError(stdout, stderr, jsonOut, fmt.Errorf("pair with the pairing code (it is single-use and expires in minutes; copy a new one from the dashboard): %w", err))
 	}
-	if err := writeCredentialsFile(prog, profile, withServerPin(credentials{APIURL: apiURL, Token: paired.Token}, serverInfo)); err != nil {
+	if err := writeCredentialsFile(prog, profile, withServerPin(credentials{APIURL: apiURL, Token: paired.Token, TokenExpiresAt: expiryString(&paired.ExpiresAt)}, serverInfo)); err != nil {
 		return reportError(stdout, stderr, jsonOut, fmt.Errorf("save credentials: %w", err))
 	}
 	if err := renderResult(stdout, of.Format, of.Query, paired, func() {

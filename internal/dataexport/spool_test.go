@@ -8,9 +8,11 @@ import (
 	"testing"
 	"time"
 
-	"github.com/GLINCKER/levelrail/internal/store"
-	"github.com/GLINCKER/levelrail/internal/telemetry"
 	"net/http/httptest"
+
+	"github.com/GLINCKER/levelrail/internal/store"
+	"github.com/GLINCKER/levelrail/internal/store/storetest"
+	"github.com/GLINCKER/levelrail/internal/telemetry"
 )
 
 func rec(msg string) LogRecord {
@@ -78,7 +80,7 @@ func TestSpoolResetsWhenNothingIsOwedAndCompacts(t *testing.T) {
 // TestBacklogSurvivesARestart is the point of the spool: lines that a down
 // receiver never got are delivered by the next run of the control plane.
 func TestBacklogSurvivesARestart(t *testing.T) {
-	db := openDB(t)
+	db := storetest.Open(t)
 	spool := t.TempDir()
 	rcv := &sink{}
 	srv := httptest.NewServer(rcv)

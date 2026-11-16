@@ -1,10 +1,10 @@
 import type { LogLevel } from '../lib/logLevel'
 
 const LEVEL_TAG: Record<LogLevel, { label: string; className: string }> = {
-  error: { label: 'ERR', className: 'text-red-400/80' },
-  warn: { label: 'WRN', className: 'text-amber-400/80' },
-  info: { label: 'INF', className: 'text-sky-400/70' },
-  debug: { label: 'DBG', className: 'text-neutral-400' },
+  error: { label: 'ERR', className: 'text-glinr-code-log-error' },
+  warn: { label: 'WRN', className: 'text-glinr-code-log-warn' },
+  info: { label: 'INF', className: 'text-glinr-code-log-info' },
+  debug: { label: 'DBG', className: 'text-glinr-code-log-debug' },
 }
 
 /** Level as visible text (not color alone) with the full name for screen readers. */

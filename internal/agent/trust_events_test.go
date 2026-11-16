@@ -16,6 +16,7 @@ import (
 
 	"github.com/GLINCKER/levelrail/internal/agent/agentpb"
 	"github.com/GLINCKER/levelrail/internal/store"
+	"github.com/GLINCKER/levelrail/internal/testutil"
 )
 
 func listEvents(t *testing.T, db *store.DB, nodeID, outcome string) []store.NodeSecurityEvent {
@@ -213,13 +214,7 @@ func TestTrustEvents_SessionAcceptedMatchesNodeRecord(t *testing.T) {
 
 func eventually(t *testing.T, what string, cond func() bool) {
 	t.Helper()
-	deadline := time.Now().Add(10 * time.Second)
-	for !cond() {
-		if time.Now().After(deadline) {
-			t.Fatalf("timed out waiting for %s", what)
-		}
-		time.Sleep(20 * time.Millisecond)
-	}
+	testutil.WaitFor(t, 10*time.Second, 20*time.Millisecond, what, cond)
 }
 
 func TestTrustEvents_RejectionFloodIsCoalescedAndBounded(t *testing.T) {

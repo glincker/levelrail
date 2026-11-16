@@ -1,0 +1,5 @@
+{
+  "Status": "refused",
+  "Reason": "node_capacity_critical",
+  "Error": "this node is out of room (disk space is down to 1.5% free)"
+}

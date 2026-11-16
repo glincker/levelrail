@@ -188,3 +188,94 @@ describe('bell notifications from attention', () => {
     expect(buildNotifications({ attention: [] })).toEqual([])
   })
 })
+
+describe('host protection feed items', () => {
+  function feedOf(kind: string, params: Record<string, string>) {
+    return {
+      id: `${kind}:x`,
+      severity: 'warning',
+      kind,
+      subject: 'x',
+      detail: 'server english',
+      title: 'server title',
+      action: '',
+      link: '/status',
+      params,
+    } as AttentionFeedItem
+  }
+
+  it('maps pressure, interrupted deploy and unclean restart to keys and keeps the kind', () => {
+    const items = buildWaitingItems({
+      now: NOW,
+      t,
+      feed: [
+        feedOf('host_pressure', { state: 'critical' }),
+        feedOf('deploy_interrupted', { app: 'web' }),
+        feedOf('unclean_restart', { count: '2', oom_likely: 'true' }),
+      ],
+    })
+    expect(items.map((i) => i.title)).toEqual([
+      'items.hostPressureCriticalTitle',
+      'items.interruptedTitle',
+      'items.uncleanRestartTitle',
+    ])
+    expect(items.map((i) => i.kind)).toEqual([
+      'host_pressure',
+      'deploy_interrupted',
+      'unclean_restart',
+    ])
+  })
+})
+
+describe('token attention rows', () => {
+  const tk = (
+    kind: string,
+    params: Record<string, string>,
+  ): AttentionFeedItem => ({
+    id: `${kind}:tokens`,
+    severity: 'warning',
+    kind,
+    subject: 'tokens',
+    title: 'server title',
+    detail: 'server detail',
+    action: '',
+    link: '/settings/tokens',
+    params,
+  })
+  const first = (f: AttentionFeedItem) =>
+    buildWaitingItems({ now: NOW, t, feed: [f] })[0]
+
+  it('labels a grouped row from count and names, not name and at', () => {
+    const it = first(tk('token_expiring', { count: '3', names: 'a,b,c' }))
+    expect(it?.title).toBe('items.tokensExpiringTitle')
+    expect(it?.detail).toBe('items.tokenGroupExpiringDetail')
+  })
+
+  it('uses the single-token title when the group has one name', () => {
+    const it = first(tk('token_expired_in_use', { count: '1', names: 'ci' }))
+    expect(it?.title).toBe('items.tokenExpiredInUseTitle')
+  })
+
+  it('keeps the dated copy for the older per-token shape', () => {
+    const it = first(
+      tk('token_expired', { name: 'ci', at: '2026-10-01T00:00:00Z' }),
+    )
+    expect(it?.title).toBe('items.tokenExpiredTitle')
+    expect(it?.detail).toBe('items.tokenExpiredDetail')
+  })
+
+  it('handles the git credential kinds', () => {
+    expect(first(tk('git_connection_reauth', { name: 'gh' }))?.title).toBe(
+      'items.gitReauthTitle',
+    )
+    expect(first(tk('git_token_expiring', { name: 'gh' }))?.detail).toBe(
+      'server detail',
+    )
+  })
+
+  it('handles the token grace sweep kind', () => {
+    expect(first(tk('token_grace_sweep_failing', {}))?.title).toBe(
+      'items.tokenGraceSweepTitle',
+    )
+  })
+})

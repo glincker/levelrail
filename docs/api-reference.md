@@ -329,6 +329,7 @@ Endpoints for:
 | DELETE | /api/v1/settings/secret-providers/{name} | AbilityRoot | handleDeleteSecretProvider |
 | POST | /api/v1/settings/secret-providers/{name}/test | AbilityRoot | handleTestSecretProvider |
 | POST | /api/v1/settings/cloud-connections/oracle | AbilityRoot | handleCreateOracleConnection |
+| POST | /api/v1/auth/tokens/{id}/rotate | Public | handleRotateToken |
 | GET | /api/v1/auth/2fa | Session |  |
 | POST | /api/v1/auth/2fa/setup | Session |  |
 | POST | /api/v1/auth/2fa/confirm | Session |  |
@@ -781,6 +782,14 @@ Endpoints for:
 | POST | /api/v1/apps/{name}/resume | AbilityDeploy | handleResumeApp |
 | PUT | /api/v1/apps/{name}/preview-env-exclude/{key} | AbilityWrite | handleSetAppPreviewEnvExclude |
 | DELETE | /api/v1/apps/{name}/preview-env-exclude/{key} | AbilityWrite | handleSetAppPreviewEnvExclude |
+| GET | /api/v1/apps/{name}/egress-report | AbilityRead | handleAppEgressReport |
+| GET | /api/v1/apps/{name}/bindings | AbilityRead | handleListAppBindings |
+| GET | /api/v1/apps/{name}/deploys/{deployId}/stages | AbilityRead | handleGetDeployStages |
+| POST | /api/v1/apps/{name}/bindings | AbilityWrite | handleCreateAppBinding |
+| DELETE | /api/v1/apps/{name}/bindings/{id} | AbilityWrite | handleDeleteAppBinding |
+| GET | /api/v1/apps/{name}/build-runner | AbilityRead | handleGetAppBuildRunner |
+| PUT | /api/v1/apps/{name}/build-runner | AbilityDeploy | handleSetAppBuildRunner |
+| DELETE | /api/v1/apps/{name}/build-runner | AbilityDeploy | handleClearAppBuildRunner |
 | GET | /api/v1/apps/{name}/notes | AbilityRead |  |
 | PUT | /api/v1/apps/{name}/notes | AbilityWrite |  |
 
@@ -1066,6 +1075,9 @@ Endpoints for:
 | PUT | /api/v1/projects/{id}/default-environment | AbilityWrite | handleSetProjectDefaultEnvironment |
 | POST | /api/v1/projects/default-environments/backfill | AbilityWrite | handleBackfillDefaultEnvironments |
 | POST | /api/v1/projects/{id}/clone | AbilityWrite | handleCloneProject |
+| GET | /api/v1/organizations/{id}/bindings | AbilityRead | handleListOrgBindings |
+| POST | /api/v1/organizations/{id}/bindings | AbilityWriteSensitive | handleCreateOrgBinding |
+| DELETE | /api/v1/organizations/{id}/bindings/{bid} | AbilityWriteSensitive | handleDeleteOrgBinding |
 
 ## Nodes
 
@@ -1345,6 +1357,9 @@ Endpoints for:
 | GET | /api/v1/domains/export | AbilityRead | handleDomainsExport |
 | GET | /api/v1/domains/{domain}/changes | AbilityRead | handleListDomainChanges |
 | POST | /api/v1/domains/{domain}/changes/{id}/rollback | AbilityRoot | handleRollbackDomainChange |
+| POST | /api/v1/registry-credentials/dockerhub/test | AbilityWriteSensitive | handleProbeDockerHub |
+| GET | /api/v1/registry-credentials/{id}/limits | AbilityReadSensitive | handleDockerHubLimits |
+| GET | /api/v1/registry-credentials/{id}/dockerhub | AbilityReadSensitive | handleDockerHubStatus |
 
 ## Built-in Container Registry
 
@@ -2367,6 +2382,18 @@ Routes that do not fit an existing group.
 | POST | /api/v1/hooks/stacks/{name}/refresh | Public | handleStackSyncRefreshWebhook |
 | GET | /api/v1/dns/queries | AbilityRead | handleListDNSQueries |
 | GET | /api/v1/dns/stats | AbilityRead | handleDNSStats |
+| GET | /api/v1/connections | AbilityReadSensitive | handleListConnections |
+| GET | /api/v1/connections/catalog | AbilityRead | handleConnectionCatalog |
+| GET | /api/v1/connections/{ref} | AbilityReadSensitive | handleGetConnection |
+| PUT | /api/v1/connections/{ref}/meta | AbilityWriteSensitive | handleSetConnectionMeta |
+| GET | /api/v1/git-connections/{id}/access | AbilityReadSensitive | handleGetGitConnectionAccess |
+| POST | /api/v1/git-connections/{id}/rotate | AbilityRoot | handleRotateGitConnection |
+| GET | /api/v1/builds/queue | AbilityRead | handleGetBuildQueue |
+| POST | /api/v1/builds/queue/pause | AbilityWriteSensitive | handleBuildQueuePause |
+| POST | /api/v1/builds/queue/resume | AbilityWriteSensitive | handleBuildQueueResume |
+| POST | /api/v1/builds/queue/drain | AbilityWriteSensitive | handleBuildQueueDrain |
+| POST | /api/v1/builds/kill-all | AbilityWriteSensitive | handleKillAllBuilds |
+| GET | /api/v1/builds/runners | AbilityRead | handleListBuildRunners |
 | POST | /mcp | Public |  |
 
 ## See also

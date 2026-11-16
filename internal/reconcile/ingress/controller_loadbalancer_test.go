@@ -3,6 +3,7 @@ package ingress
 import (
 	"context"
 	"errors"
+	"log/slog"
 	"testing"
 
 	"github.com/GLINCKER/levelrail/internal/docker"
@@ -85,7 +86,7 @@ func TestController_LoadBalancer_PoolsAllReplicas(t *testing.T) {
 	applier := &fakeApplier{}
 	reg := loadbalancer.NewRegistry()
 	src := fakeLBSource{configs: map[string]string{"web": `{"algorithm":"least_conn","active_health":{"path":"/healthz"}}`}}
-	c := New(&fakeStore{services: []store.DesiredService{svc}}, rt, applier, WithLogger(discardLogger()), WithLoadBalancers(src, reg))
+	c := New(&fakeStore{services: []store.DesiredService{svc}}, rt, applier, WithLogger(slog.New(slog.DiscardHandler)), WithLoadBalancers(src, reg))
 
 	res, err := c.Reconcile(context.Background())
 	if err != nil {
@@ -115,7 +116,7 @@ func TestController_LoadBalancer_HalfSucceeded_OneReplicaInspectFails(t *testing
 	applier := &fakeApplier{}
 	reg := loadbalancer.NewRegistry()
 	src := fakeLBSource{configs: map[string]string{"web": `{}`}}
-	c := New(&fakeStore{services: []store.DesiredService{svc}}, rt, applier, WithLogger(discardLogger()), WithLoadBalancers(src, reg))
+	c := New(&fakeStore{services: []store.DesiredService{svc}}, rt, applier, WithLogger(slog.New(slog.DiscardHandler)), WithLoadBalancers(src, reg))
 
 	res, err := c.Reconcile(context.Background())
 	if err != nil {
@@ -140,7 +141,7 @@ func TestController_LoadBalancer_ApplyFailureRecordsNothing(t *testing.T) {
 	applier := &fakeApplier{applyErr: errors.New("caddy rejected config")}
 	reg := loadbalancer.NewRegistry()
 	src := fakeLBSource{configs: map[string]string{"web": `{}`}}
-	c := New(&fakeStore{services: []store.DesiredService{svc}}, rt, applier, WithLogger(discardLogger()), WithLoadBalancers(src, reg))
+	c := New(&fakeStore{services: []store.DesiredService{svc}}, rt, applier, WithLogger(slog.New(slog.DiscardHandler)), WithLoadBalancers(src, reg))
 
 	if _, err := c.Reconcile(context.Background()); err == nil {
 		t.Fatal("want apply error")
@@ -161,7 +162,7 @@ func TestController_LoadBalancer_NoUpstreamsLeavesServiceUnrouted(t *testing.T) 
 	svc := lbService(2)
 	applier := &fakeApplier{}
 	src := fakeLBSource{configs: map[string]string{"web": `{}`}}
-	c := New(&fakeStore{services: []store.DesiredService{svc}}, newFakeRuntime(), applier, WithLogger(discardLogger()), WithLoadBalancers(src, nil))
+	c := New(&fakeStore{services: []store.DesiredService{svc}}, newFakeRuntime(), applier, WithLogger(slog.New(slog.DiscardHandler)), WithLoadBalancers(src, nil))
 
 	res, err := c.Reconcile(context.Background())
 	if err != nil {
@@ -186,7 +187,7 @@ func TestController_LoadBalancer_ServesPreviousReleaseDuringCutover(t *testing.T
 	applier := &fakeApplier{}
 	reg := loadbalancer.NewRegistry()
 	src := fakeLBSource{configs: map[string]string{"web": `{}`}}
-	c := New(&fakeStore{services: []store.DesiredService{svc}}, rt, applier, WithLogger(discardLogger()), WithLoadBalancers(src, reg))
+	c := New(&fakeStore{services: []store.DesiredService{svc}}, rt, applier, WithLogger(slog.New(slog.DiscardHandler)), WithLoadBalancers(src, reg))
 
 	res, err := c.Reconcile(context.Background())
 	if err != nil {
@@ -221,7 +222,7 @@ func TestController_LoadBalancer_RemoteNodeUpstreams(t *testing.T) {
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
 			applier := &fakeApplier{}
-			opts := []Option{WithLogger(discardLogger()), WithLoadBalancers(src, nil)}
+			opts := []Option{WithLogger(slog.New(slog.DiscardHandler)), WithLoadBalancers(src, nil)}
 			if tt.nodes != nil {
 				opts = append(opts, WithNodeUpstreams(tt.nodes))
 			}
@@ -249,7 +250,7 @@ func TestController_LoadBalancer_BadConfigFallsBackToPlainRoute(t *testing.T) {
 	rt.seedRunning(replicaName(svc, 0), 30000)
 	applier := &fakeApplier{}
 	src := fakeLBSource{configs: map[string]string{"web": `{"algorithm":"bogus"}`}}
-	c := New(&fakeStore{services: []store.DesiredService{svc}}, rt, applier, WithLogger(discardLogger()), WithLoadBalancers(src, nil))
+	c := New(&fakeStore{services: []store.DesiredService{svc}}, rt, applier, WithLogger(slog.New(slog.DiscardHandler)), WithLoadBalancers(src, nil))
 
 	res, err := c.Reconcile(context.Background())
 	if err != nil {
@@ -266,7 +267,7 @@ func TestController_LoadBalancer_BadConfigFallsBackToPlainRoute(t *testing.T) {
 }
 
 func TestController_LoadBalancer_StoreErrorIsNotReady(t *testing.T) {
-	c := New(&fakeStore{}, newFakeRuntime(), &fakeApplier{}, WithLogger(discardLogger()), WithLoadBalancers(fakeLBSource{err: errors.New("db down")}, nil))
+	c := New(&fakeStore{}, newFakeRuntime(), &fakeApplier{}, WithLogger(slog.New(slog.DiscardHandler)), WithLoadBalancers(fakeLBSource{err: errors.New("db down")}, nil))
 	res, err := c.Reconcile(context.Background())
 	if err == nil {
 		t.Fatal("want error")
@@ -283,7 +284,7 @@ func TestController_LoadBalancer_WeightedSlowStartRamps(t *testing.T) {
 	applier := &fakeApplier{}
 	reg := loadbalancer.NewRegistry()
 	src := fakeLBSource{configs: map[string]string{"web": `{"algorithm":"weighted","weights":[5,5],"slow_start":"1h"}`}}
-	c := New(&fakeStore{services: []store.DesiredService{svc}}, rt, applier, WithLogger(discardLogger()), WithLoadBalancers(src, reg))
+	c := New(&fakeStore{services: []store.DesiredService{svc}}, rt, applier, WithLogger(slog.New(slog.DiscardHandler)), WithLoadBalancers(src, reg))
 
 	if _, err := c.Reconcile(context.Background()); err != nil {
 		t.Fatal(err)
@@ -321,7 +322,7 @@ func TestController_ImplicitLoadBalancing(t *testing.T) {
 				rt.seedRunning(replicaName(svc, i), 30000+i)
 			}
 			applier := &fakeApplier{}
-			opts := []Option{WithLogger(discardLogger()), WithImplicitLoadBalancing(tt.implicit)}
+			opts := []Option{WithLogger(slog.New(slog.DiscardHandler)), WithImplicitLoadBalancing(tt.implicit)}
 			if tt.explicit != "" {
 				opts = append(opts, WithLoadBalancers(fakeLBSource{configs: map[string]string{"web": tt.explicit}}, loadbalancer.NewRegistry()))
 			}
@@ -349,7 +350,7 @@ func TestController_ImplicitLoadBalancing_LocalNodeIDIsNotRemote(t *testing.T) {
 	}
 	applier := &fakeApplier{}
 	c := New(&fakeStore{services: []store.DesiredService{svc}}, rt, applier,
-		WithLogger(discardLogger()),
+		WithLogger(slog.New(slog.DiscardHandler)),
 		WithImplicitLoadBalancing(true),
 		WithNodeUpstreams(fakeNodes{rt: rt, host: "127.0.0.1"}),
 	)

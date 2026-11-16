@@ -24,7 +24,7 @@
   --glinr-glass-inner: inset 0 -10px 20px -14px oklch(0.21 0.02 250 / 10%);
 }
 
-.dark, [data-mode="dark"] {
+.dark, [data-mode="dark"], .glinr-terminal {
   --glinr-surface-glass: oklch(0.235 0.016 250 / 88%);
   --glinr-material-ultrathin: oklch(0.235 0.016 250 / 55%);
   --glinr-material-thin: oklch(0.235 0.016 250 / 72%);

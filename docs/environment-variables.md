@@ -74,10 +74,21 @@ These variables only seed the default of a [runtime setting](/runtime-settings).
 | `APP_CLOUD_ENGINE_NETWORK` | [`cloud.engine_network`](/runtime-settings#security) | empty |
 | `APP_CLOUD_ENGINE_USER` | [`cloud.engine_user`](/runtime-settings#security) | `65532:65532` |
 | `APP_CLOUD_REQUIRE_FULL_ESTIMATE` | [`cloud.require_full_estimate`](/runtime-settings#security) | `true` |
+| `APP_CONNECTION_BINDING_RULE_VALUE_MAX_LEN` | [`connections.binding_rule_value_max_len`](/runtime-settings#security) | `512` |
+| `APP_CONNECTION_BINDING_RULES_MAX_BYTES` | [`connections.binding_rules_max_bytes`](/runtime-settings#security) | `4096` |
+| `APP_CONNECTION_EXPIRY_WARN` | [`connections.expiry_warn`](/runtime-settings#security) | `336h` |
+| `APP_CREDENTIAL_REMINDER_INTERVAL` | [`credential_expiry.reminder_interval`](/runtime-settings#security) | `6h` |
+| `APP_CREDENTIAL_REMINDER_WINDOWS_DAYS` | [`credential_expiry.reminder_windows_days`](/runtime-settings#security) | `14:7:1` |
+| `APP_CREDENTIAL_ROTATION_GRACE` | [`credential_expiry.rotation_grace`](/runtime-settings#security) | `24h` |
 | `APP_DESKTOP_SESSION_TTL` | [`desktop.session_ttl`](/runtime-settings#security) | `12h` |
 | `APP_FIREWALL_CONFIRM_WINDOW` | [`firewall.confirm_window`](/runtime-settings#security) | `60s` |
 | `APP_FIXIT_MAX_PER_HOUR` | [`fixit.max_per_hour`](/runtime-settings#security) | `0` |
 | `APP_GIT_LFS_HOSTS` | [`git.lfs_hosts`](/runtime-settings#security) | empty |
+| `APP_GIT_OAUTH_REFRESH_ENABLED` | [`git.oauth_refresh_enabled`](/runtime-settings#security) | `true` |
+| `APP_GIT_OAUTH_REFRESH_FAILURE_GRACE` | [`git.oauth_refresh_failure_grace`](/runtime-settings#security) | `30m` |
+| `APP_GIT_OAUTH_REFRESH_INTERVAL` | [`git.oauth_refresh_interval`](/runtime-settings#security) | `1m` |
+| `APP_GIT_OAUTH_REFRESH_LEAD` | [`git.oauth_refresh_lead`](/runtime-settings#security) | `10m` |
+| `APP_GIT_ROTATE_LIFETIME_DAYS` | [`git.rotate_lifetime_days`](/runtime-settings#security) | `90` |
 | `APP_GIT_SSH_SCAN_ALLOW_INTERNAL` | [`git.ssh_scan_allow_internal`](/runtime-settings#security) | empty |
 | `APP_GIT_SUBMODULES_ALLOWED_CIDRS` | [`git.submodules_allowed_cidrs`](/runtime-settings#security) | empty |
 | `APP_GIT_SUBMODULES_CREDENTIAL_HOSTS` | [`git.submodules_credential_hosts`](/runtime-settings#security) | empty |
@@ -134,8 +145,18 @@ These variables only seed the default of a [runtime setting](/runtime-settings).
 | `APP_CUTOVER_VERIFY_SLOW_TTFB` | [`cutover.verify_slow_ttfb`](/runtime-settings#networking) | `1500ms` |
 | `APP_CUTOVER_VERIFY_REQUEST_TIMEOUT` | [`cutover.verify_timeout`](/runtime-settings#networking) | `5s` |
 | `APP_DATABASE_IMPORT_MAX_BYTES` | [`databases.import_max_bytes`](/runtime-settings#networking) | `1073741824` |
+| `LEVELRAIL_DNS_CACHE_BYTES` | [`dns.cache_bytes`](/runtime-settings#networking) | `4194304` |
+| `LEVELRAIL_DNS_CACHE_MAX_TTL` | [`dns.cache_max_ttl`](/runtime-settings#networking) | `1h` |
+| `LEVELRAIL_DNS_CACHE_NEGATIVE_MAX_TTL` | [`dns.cache_negative_max_ttl`](/runtime-settings#networking) | `5m` |
+| `LEVELRAIL_DNS_CONTAINER_FALLBACK` | [`dns.container_fallback`](/runtime-settings#networking) | `host_upstream` |
+| `LEVELRAIL_DNS_FORWARD_ATTEMPT_TIMEOUT` | [`dns.forward_attempt_timeout`](/runtime-settings#networking) | `800ms` |
+| `LEVELRAIL_DNS_FORWARD_ENABLED` | [`dns.forward_enabled`](/runtime-settings#networking) | `true` |
+| `LEVELRAIL_DNS_FORWARD_QUERY_TIMEOUT` | [`dns.forward_query_timeout`](/runtime-settings#networking) | `2s` |
+| `LEVELRAIL_DNS_FORWARD_UPSTREAMS` | [`dns.forward_upstreams`](/runtime-settings#networking) | empty |
 | `LEVELRAIL_DNS_MESH_RESOLVER_ENABLED` | [`dns.mesh_resolver_enabled`](/runtime-settings#networking) | `false` |
 | `LEVELRAIL_DNS_MESH_RESOLVER_INTERVAL` | [`dns.mesh_resolver_interval`](/runtime-settings#networking) | `15s` |
+| `LEVELRAIL_DNS_RATE_LIMIT_BURST` | [`dns.rate_limit_burst`](/runtime-settings#networking) | `400` |
+| `LEVELRAIL_DNS_RATE_LIMIT_QPS` | [`dns.rate_limit_qps`](/runtime-settings#networking) | `200` |
 | `APP_DNS_VERIFY_PROVIDER_ON_SAVE` | [`dns.verify_provider_on_save`](/runtime-settings#networking) | `true` |
 | `APP_AUTH_GATE_TIMEOUT` | [`domains.auth_gate_timeout`](/runtime-settings#networking) | `5s` |
 | `APP_DOMAINS_BATCH_MAX_ITEMS` | [`domains.batch_max_items`](/runtime-settings#networking) | `50` |
@@ -204,10 +225,19 @@ These variables only seed the default of a [runtime setting](/runtime-settings).
 | `APP_BOOTSTRAP_SCRIPT_MAX_BYTES` | [`bootstrap_scripts.max_bytes`](/runtime-settings#deploys) | `65536` |
 | `APP_BOOTSTRAP_SCRIPT_MAX_COUNT` | [`bootstrap_scripts.max_count`](/runtime-settings#deploys) | `50` |
 | `APP_BUILD_CACHE_APP_QUOTA_GB` | [`build.cache_app_quota_gb`](/runtime-settings#deploys) | `0` |
+| `APP_BUILD_CACHE_BUDGET` | [`build.cache_budget`](/runtime-settings#deploys) | `auto` |
+| `APP_BUILDKIT_GC_KEEP_MB` | [`build.cache_budget_max_mb`](/runtime-settings#deploys) | `0` |
+| `APP_BUILDKIT_GC_RESERVED_MB` | [`build.cache_budget_reserved_mb`](/runtime-settings#deploys) | `0` |
 | `APP_BUILD_CACHE_PER_APP` | [`build.cache_per_app`](/runtime-settings#deploys) | `true` |
 | `APP_BUILD_CACHE_RECLAIM_MAX_RECORDS` | [`build.cache_reclaim_max_records`](/runtime-settings#deploys) | `50` |
 | `APP_BUILD_CACHE_RECLAIM_TIMEOUT` | [`build.cache_reclaim_timeout`](/runtime-settings#deploys) | `2m` |
 | `APP_BUILD_NEXT_MIN_FREE_MEMORY_MIB` | [`build.next_min_free_memory_mib`](/runtime-settings#deploys) | `2048` |
+| `APP_BUILD_QUEUE_AUTO_RESUME_AFTER` | [`build.queue_auto_resume_after`](/runtime-settings#deploys) | `0s` |
+| `APP_BUILD_QUEUE_PAUSED_WARN_AFTER` | [`build.queue_paused_warn_after`](/runtime-settings#deploys) | `1h` |
+| `APP_BUILD_REMOTE_PRESSURE_HOLD` | [`build.remote_pressure_hold`](/runtime-settings#deploys) | `true` |
+| `APP_BUILD_RUNNER_STALE_AFTER` | [`build.runner_stale_after`](/runtime-settings#deploys) | `2m` |
+| `APP_BUILD_RUNNER_STRATEGY` | [`build.runner_strategy`](/runtime-settings#deploys) | `first` |
+| `APP_BUILD_STAGE_LOG_TAIL_LINES` | [`build.stage_log_tail_lines`](/runtime-settings#deploys) | `200` |
 | `APP_BUILD_MEMORY_MB` | [`builds.memory_limit_mb`](/runtime-settings#deploys) | `0` |
 | `APP_BUILD_SETTING_VALUE_MAX_BYTES` | [`builds.setting_value_max_bytes`](/runtime-settings#deploys) | `128` |
 | `APP_CLOUD_DEFAULT_MONTHLY_COST_LIMIT` | [`cloud.default_monthly_cost_limit`](/runtime-settings#deploys) | `0` |
@@ -266,6 +296,10 @@ These variables only seed the default of a [runtime setting](/runtime-settings).
 | `APP_REGISTRY_PUSH_DEBOUNCE` | [`deploys.registry_push_debounce`](/runtime-settings#deploys) | `30s` |
 | `APP_REGISTRY_PUSH_MAX_BODY_BYTES` | [`deploys.registry_push_max_body_bytes`](/runtime-settings#deploys) | `262144` |
 | `APP_REGISTRY_PUSH_TIMEOUT` | [`deploys.registry_push_timeout`](/runtime-settings#deploys) | `5m` |
+| `APP_GIT_ACCESS_CACHE_TTL_SECONDS` | [`git.access_cache_ttl_seconds`](/runtime-settings#deploys) | `60` |
+| `APP_GIT_ACCESS_NAMES_MAX` | [`git.access_names_max`](/runtime-settings#deploys) | `25` |
+| `APP_GIT_GITLAB_DEPLOYMENTS` | [`git.gitlab_deployments`](/runtime-settings#deploys) | `false` |
+| `APP_GIT_GITLAB_DEPLOYMENTS_CONNECTIONS` | [`git.gitlab_deployments_connections`](/runtime-settings#deploys) | empty |
 | `APP_GIT_POLL_CONCURRENCY` | [`git.poll_concurrency`](/runtime-settings#deploys) | `4` |
 | `APP_GIT_POLL_ENABLED` | [`git.poll_enabled`](/runtime-settings#deploys) | `true` |
 | `APP_GIT_POLL_INTERVAL` | [`git.poll_interval`](/runtime-settings#deploys) | `5m` |
@@ -304,6 +338,10 @@ These variables only seed the default of a [runtime setting](/runtime-settings).
 | `APP_PROJECT_CLONE_PLACEHOLDER_DOMAIN` | [`projects.clone_placeholder_domain`](/runtime-settings#deploys) | `clone.invalid` |
 | `APP_PROJECTS_DEFAULT_ENVIRONMENT` | [`projects.default_environment`](/runtime-settings#deploys) | `false` |
 | `APP_PROJECTS_DEFAULT_ENVIRONMENT_NAME` | [`projects.default_environment_name`](/runtime-settings#deploys) | `production` |
+| `APP_REGISTRY_DOCKERHUB_LIMIT_WARN_PERCENT` | [`registry.dockerhub.limit_warn_percent`](/runtime-settings#deploys) | `20` |
+| `APP_REGISTRY_DOCKERHUB_LIMITS_CACHE_SECONDS` | [`registry.dockerhub.limits_cache_seconds`](/runtime-settings#deploys) | `300` |
+| `APP_REGISTRY_DOCKERHUB_TAG_PAGE_SIZE` | [`registry.dockerhub.tag_page_size`](/runtime-settings#deploys) | `25` |
+| `APP_REGISTRY_DOCKERHUB_USE_CREDENTIAL` | [`registry.dockerhub.use_credential`](/runtime-settings#deploys) | `true` |
 | `APP_REGISTRY_MIRROR_PREFIX` | [`registry.mirror_prefix`](/runtime-settings#deploys) | empty |
 | `APP_RESOURCE_DESCRIPTION_MAX_CHARS` | [`resources.description_max_chars`](/runtime-settings#deploys) | `280` |
 | `APP_RESOURCE_NOTES_MAX_BYTES` | [`resources.notes_max_bytes`](/runtime-settings#deploys) | `65536` |
@@ -376,6 +414,7 @@ These variables only seed the default of a [runtime setting](/runtime-settings).
 | `APP_DISK_HISTORY_SAMPLE_INTERVAL` | [`disk.history_sample_interval`](/runtime-settings#observability) | `24h` |
 | `APP_DISK_LOW_FREE_MB` | [`disk.low_free_mb`](/runtime-settings#observability) | `1024` |
 | `APP_DISK_RESERVE_MB` | [`disk.reserve_mb`](/runtime-settings#observability) | `16` |
+| `LEVELRAIL_DNS_EGRESS_REPORT_MAX_NAMES` | [`dns.egress_report_max_names`](/runtime-settings#observability) | `500` |
 | `LEVELRAIL_DNS_INTERNAL_LABEL_MAX_LENGTH` | [`dns.internal_label_max_length`](/runtime-settings#observability) | `63` |
 | `LEVELRAIL_DNS_INTERNAL_NAME_MAX_LENGTH` | [`dns.internal_name_max_length`](/runtime-settings#observability) | `120` |
 | `LEVELRAIL_DNS_INTERNAL_NAMES_ENABLED` | [`dns.internal_names_enabled`](/runtime-settings#observability) | `false` |
@@ -502,6 +541,7 @@ These variables only seed the default of a [runtime setting](/runtime-settings).
 | `APP_EMAIL_LOG_RETENTION_DAYS` | [`retention.email_log_days`](/runtime-settings#data-retention) | `30` |
 | `APP_EVENT_WEBHOOK_RETENTION` | [`retention.event_webhook_days`](/runtime-settings#data-retention) | `30` |
 | `APP_RETENTION_EXPIRED_TOKEN_DAYS` | [`retention.expired_token_days`](/runtime-settings#data-retention) | `90` |
+| `APP_RETENTION_FORGE_STATUS_DAYS` | [`retention.forge_status_days`](/runtime-settings#data-retention) | `30` |
 | `APP_RETENTION_PROBE_ATTEMPT_DAYS` | [`retention.probe_attempt_days`](/runtime-settings#data-retention) | `90` |
 | `APP_RETENTION_RESTORE_HISTORY_DAYS` | [`retention.restore_history_days`](/runtime-settings#data-retention) | `90` |
 | `APP_RETENTION_REVOKED_TOKEN_DAYS` | [`retention.revoked_token_days`](/runtime-settings#data-retention) | `90` |
@@ -567,7 +607,6 @@ The control plane builds images with BuildKit. By default each build starts from
 | `APP_PLATFORM_MISMATCH` | `refuse-when-no-emulation` | What a deploy does when the image has no build for the node CPU architecture. `refuse-when-no-emulation` fails the deploy with a clear reason unless the node has qemu binfmt emulation for the image architecture (it then warns that the app runs under emulation and may be slow, and only warns if emulation cannot be checked). `warn` never refuses. `refuse` always refuses. Control plane. |
 | `APP_BUILDKIT_IMAGE` | ``docker.io/moby/buildkit:v0.34.1-rootless`` | BuildKit image the build daemon runs. Control plane. |
 | `APP_BUILDKIT_SNAPSHOTTER` | ``auto`` | Snapshotter the build daemon uses. An unknown value fails startup. Control plane. |
-| `APP_BUILDKIT_GC_KEEP_MB` | computed | Build cache size in MB that garbage collection keeps. Control plane. |
 | `APP_BUILDKIT_GC_KEEP_DURATION` | computed | How long unused build cache is kept before garbage collection. Control plane. |
 | `APP_BUILDKIT_HEALTH_TIMEOUT` | computed | Time limit for the build daemon health check. Control plane. |
 | `APP_BUILDKIT_IDLE_STOP` | computed | How long the build daemon may sit idle before it stops. Control plane. |

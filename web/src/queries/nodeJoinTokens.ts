@@ -24,7 +24,7 @@ export async function fetchPendingJoinTokens(
       await readErrorMessage(res, `fetch join tokens failed: ${res.status}`),
     )
   }
-  return (await res.json()) as PendingJoinToken[]
+  return ((await res.json()) as PendingJoinToken[] | null) ?? []
 }
 
 export function usePendingJoinTokens() {

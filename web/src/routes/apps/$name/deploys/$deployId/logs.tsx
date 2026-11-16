@@ -12,6 +12,7 @@ import { buildDeployStepStreamUrl } from '../../../../../queries/deploySteps'
 import { deployAttemptsQueryOptions } from '../../../../../queries/deployAttempts'
 import { useDeployProgress } from '../../../../../hooks/useDeployProgress'
 import { useApp } from '../../../../../queries/apps'
+import { useBuildRunnerInfo } from '../../../../../queries/buildRunners'
 import { useGitSource } from '../../../../../queries/gitSources'
 import {
   computeDeployStages,
@@ -22,10 +23,6 @@ import { summarizeAppStatus } from '../../../../../lib/appStatus'
 import { Breadcrumbs } from '../../../../../components/Breadcrumbs'
 import { LogTerminal } from '../../../../../components/LogTerminal'
 import { DeployHeader } from '../../../../../components/DeployHeader'
-import {
-  DeployStageTabs,
-  type StageTab,
-} from '../../../../../components/DeployStageTabs'
 import { DeployFailureSummaryCard } from '../../../../../components/DeployFailureSummaryCard'
 import { DeployExitCard } from '../../../../../components/DeployExitCard'
 import { deployStageAnchorId } from '../../../../../lib/deployFailureSummary'
@@ -43,6 +40,31 @@ import { DeployPhases } from '../../../../../components/deployDetail/DeployPhase
 import { RolloutTab } from '../../../../../components/deployDetail/RolloutTab'
 import { buildTimelineRows } from '../../../../../components/deployDetail/timelineRows'
 import { Skeleton } from '@/components/ui/skeleton'
+import { Button } from '@/components/ui/button'
+import { Link } from '@tanstack/react-router'
+import { RunSection } from '../../../../../components/buildStages/RunSection'
+import { RunSectionNav } from '../../../../../components/buildStages/RunSectionNav'
+import {
+  NoBuildStages,
+  type NoStageStep,
+} from '../../../../../components/buildStages/NoBuildStages'
+import { RunDiagnosis } from '../../../../../components/deployDetail/RunDiagnosis'
+import { StageOverview } from '../../../../../components/buildStages/StageOverview'
+import { StageLogPanel } from '../../../../../components/buildStages/StageLogPanel'
+import { StageWaterfall } from '../../../../../components/buildStages/StageWaterfall'
+import {
+  useBuildStages,
+  useRefetchOnBuildSteps,
+} from '../../../../../components/buildStages/useBuildStages'
+import {
+  useRunLiveFeedback,
+  type RunLiveState,
+} from '../../../../../hooks/useRunLiveFeedback'
+import { goToSection } from '../../../../../lib/runSections'
+import {
+  isBuildStageName,
+  type BuildStageName,
+} from '../../../../../lib/buildStages'
 
 // Lazy so the report table stays out of the deploy detail chunk until the build tab opens.
 const BuildReportSection = lazy(() =>
@@ -125,6 +147,10 @@ function DeployLogsPage() {
   )
   const { data: app } = useApp(name)
   const { data: gitSource } = useGitSource(name)
+  const { data: buildRow } = useBuildRunnerInfo(
+    deployId,
+    attempt?.status === 'running' || attempt?.status === 'queued',
+  )
   const { data: probeAttempts } = useProbeAttempts(
     name,
     deployId,
@@ -134,7 +160,23 @@ function DeployLogsPage() {
     (attempt !== undefined && !attemptFinished) ||
       attempt?.status === 'succeeded',
   )
-  const [picked, setPicked] = useState<string | null>(null)
+  const [stageFilter, setStageFilter] = useState<BuildStageName | null>(null)
+  const { data: stageData } = useBuildStages(name, deployId)
+  useRefetchOnBuildSteps(name, deployId, steps)
+  const liveState: RunLiveState =
+    attempt?.status === 'running' || attempt?.status === 'queued'
+      ? 'running'
+      : attempt?.status === 'failed'
+        ? 'failed'
+        : attempt?.status === 'succeeded'
+          ? 'done'
+          : 'idle'
+  useRunLiveFeedback(liveState, {
+    running: t('run.titleRunning'),
+    failed: t('run.titleFailed'),
+    doneToast: t('run.doneToast'),
+    failedToast: t('run.failedToast'),
+  })
 
   if (!attempt) {
     return (
@@ -176,28 +218,31 @@ function DeployLogsPage() {
     stuckAfterMs: STUCK_AFTER_MS,
   })
 
-  const failedStage = stages.find((s) => s.status === 'failed')
-  const tab = picked ?? (failedStage?.key === 'rollout' ? 'rollout' : 'build')
   const rolloutTabStage =
     isStatic && state.phase === 'live'
       ? { ...stages[1], status: 'done' as const }
       : stages[1]
-  const tabs: StageTab[] = [
-    {
-      id: 'build',
-      label: noBuildStep ? t('tabs.image') : t('tabs.build'),
-      stage: stages[0],
-      hint: lines.length > 0 ? lines.length.toLocaleString() : undefined,
-    },
-    { id: 'rollout', label: t('tabs.rollout'), stage: rolloutTabStage },
-    { id: 'supply', label: t('tabs.supply') },
-  ]
   const rows = buildTimelineRows(
     stages[0],
     subStages,
     state,
     attempt.finished_at,
   )
+
+  const noStageSteps: NoStageStep[] = [
+    {
+      key: 'pull',
+      status:
+        attempt.status === 'running' || attempt.status === 'queued'
+          ? 'running'
+          : attempt.status === 'failed' && subStages[0].status === 'skipped'
+            ? 'failed'
+            : 'done',
+    },
+    { key: 'create', status: rolloutTabStage.status },
+    { key: 'readiness', status: subStages[0].status },
+    { key: 'rollout', status: subStages[1].status },
+  ]
 
   return (
     <div className="flex h-full flex-col gap-5 overflow-y-auto">
@@ -214,6 +259,7 @@ function DeployLogsPage() {
         domain={app.domains?.[0]}
         branch={attempt.source === 'webhook' ? gitSource?.branch : undefined}
         isLive={attempt.rollout_state === 'serving'}
+        build={buildRow}
         displayStatus={{
           tone: state.tone,
           label: msg(state.label),
@@ -224,87 +270,114 @@ function DeployLogsPage() {
         appName={name}
         state={state}
         onOpenBuild={() => {
-          setPicked('build')
+          goToSection('logs')
         }}
       />
-      <DeployExplainPanel
-        deployId={deployId}
-        failed={attempt.status === 'failed'}
-      />
-      <DeployNewErrorTypes appName={name} startedAt={attempt.started_at} />
-      <DeployFailureSummaryCard
-        appName={name}
-        attempt={attempt}
-        attempts={attempts}
-        stages={stages}
-        conditions={conditions}
-        lines={lines}
-      />
-      <DeployExitCard
-        appName={name}
-        deployId={deployId}
-        failed={attempt.status === 'failed'}
+      <StreamDropBanner
+        transport={transport}
+        connectionState={connectionState}
+        retryAt={retryAt}
+        onRetry={retry}
+        onSwitchToPolling={switchToPolling}
+        downloadUrl={deployLogDownloadURL(name, deployId)}
       />
 
-      <div className="flex min-h-0 flex-1 flex-col gap-3">
-        <div className="flex flex-wrap items-end justify-between gap-2">
-          <DeployStageTabs tabs={tabs} value={tab} onChange={setPicked} />
-          <div className="pb-1">
-            <DeployLiveStatus
-              transport={transport}
-              connectionState={connectionState}
-              lastEventAt={lastEventAt}
-              retryAt={retryAt}
-              onRetry={retry}
+      <RunSectionNav />
+
+      <div className="flex flex-col gap-4">
+        <RunSection
+          id="summary"
+          title={t('sections.summary')}
+          chip={attempt.commit_sha?.slice(0, 7)}
+        >
+          <RunDiagnosis>
+            <DeployExplainPanel
+              deployId={deployId}
+              failed={attempt.status === 'failed'}
             />
-          </div>
-        </div>
-
-        <DeployPhases
-          deployId={deployId}
-          running={!attemptFinished}
-          lastEventAt={lastEventAt}
-          streamHealthy={transport === 'sse' && connectionState === 'open'}
-          latestLine={lines.at(-1)?.line ?? null}
-        />
-
-        <StreamDropBanner
-          transport={transport}
-          connectionState={connectionState}
-          retryAt={retryAt}
-          onRetry={retry}
-          onSwitchToPolling={switchToPolling}
-          downloadUrl={deployLogDownloadURL(name, deployId)}
-        />
-
-        {tab === 'build' ? (
-          <div
-            id={deployStageAnchorId('build')}
-            tabIndex={-1}
-            className="outline-none"
-          >
-            <BuildTab
+            <DeployFailureSummaryCard
+              appName={name}
+              attempt={attempt}
+              attempts={attempts}
+              stages={stages}
+              conditions={conditions}
+              lines={lines}
+            />
+            <DeployExitCard
               appName={name}
               deployId={deployId}
-              attempt={attempt}
-              gitSource={gitSource}
-              lines={lines}
-              steps={steps}
-              noBuildStep={noBuildStep}
-              finished={attemptFinished}
-              isPaused={isPaused}
-              pause={pause}
-              resume={resume}
+              failed={attempt.status === 'failed'}
             />
-            {attemptFinished ? (
-              <Suspense fallback={null}>
-                <BuildReportSection appName={name} deployId={deployId} />
-              </Suspense>
-            ) : null}
-          </div>
-        ) : null}
+            <DeployNewErrorTypes
+              appName={name}
+              startedAt={attempt.started_at}
+            />
+            <DeployPhases
+              deployId={deployId}
+              running={!attemptFinished}
+              lastEventAt={lastEventAt}
+              streamHealthy={transport === 'sse' && connectionState === 'open'}
+              latestLine={lines.at(-1)?.line ?? null}
+            />
+          </RunDiagnosis>
+          <BuildTab
+            part="summary"
+            appName={name}
+            deployId={deployId}
+            attempt={attempt}
+            gitSource={gitSource}
+            lines={lines}
+            steps={steps}
+            noBuildStep={noBuildStep}
+            finished={attemptFinished}
+            isPaused={isPaused}
+            pause={pause}
+            resume={resume}
+          />
+          <SupplyChainSection
+            appName={name}
+            deploymentId={deployId}
+            sbomPackages={attempt.sbom_packages}
+          />
+          <SecretScanSection appName={name} deploymentId={deployId} />
+        </RunSection>
 
-        {tab === 'rollout' ? (
+        <RunSection
+          id="waterfall"
+          title={t('sections.waterfall')}
+          chip={
+            stageData && stageData.stages.length > 0
+              ? t('run.stageCount', { count: stageData.stages.length })
+              : undefined
+          }
+        >
+          {stageData && stageData.stages.length === 0 ? (
+            <NoBuildStages prebuilt={noBuildStep} steps={noStageSteps} />
+          ) : (
+            <>
+              <StageOverview
+                appName={name}
+                deployId={deployId}
+                selected={stageFilter}
+                onSelect={(stage) => {
+                  setStageFilter(stage)
+                  goToSection('logs')
+                }}
+              />
+              {stageData ? (
+                <StageWaterfall data={stageData} nowMs={nowMs} />
+              ) : null}
+            </>
+          )}
+        </RunSection>
+
+        <RunSection
+          id="rollout"
+          title={t('sections.rollout')}
+          chip={t(
+            `buildStages.status.${rolloutTabStage.status === 'failed' ? 'failed' : rolloutTabStage.status === 'done' ? 'done' : 'running'}`,
+          )}
+        >
           <div
             id={deployStageAnchorId('rollout')}
             tabIndex={-1}
@@ -320,18 +393,100 @@ function DeployLogsPage() {
               probeAttempts={probeAttempts}
             />
           </div>
-        ) : null}
+        </RunSection>
 
-        {tab === 'supply' ? (
-          <div className="space-y-6">
-            <SupplyChainSection
-              appName={name}
-              deploymentId={deployId}
-              sbomPackages={attempt.sbom_packages}
-            />
-            <SecretScanSection appName={name} deploymentId={deployId} />
+        <RunSection
+          id="logs"
+          title={t('sections.logs')}
+          chip={lines.length > 0 ? lines.length.toLocaleString() : undefined}
+        >
+          <div
+            id={deployStageAnchorId('build')}
+            tabIndex={-1}
+            className="space-y-3 outline-none"
+          >
+            <div className="flex flex-wrap items-center justify-between gap-2">
+              <label className="flex items-center gap-2 text-xs text-muted-foreground">
+                {t('run.stageFilter')}
+                <select
+                  value={stageFilter ?? ''}
+                  onChange={(e) => {
+                    const v = e.target.value
+                    setStageFilter(isBuildStageName(v) ? v : null)
+                  }}
+                  className="rounded-md border border-border bg-background px-2 py-1 text-sm text-foreground focus-visible:ring-2 focus-visible:ring-ring focus-visible:outline-none"
+                >
+                  <option value="">{t('run.allStages')}</option>
+                  {(stageData?.stages ?? []).map((s) => (
+                    <option key={s.stage} value={s.stage}>
+                      {t(`buildStages.stage.${s.stage}`)}
+                    </option>
+                  ))}
+                </select>
+              </label>
+              <DeployLiveStatus
+                transport={transport}
+                connectionState={connectionState}
+                lastEventAt={lastEventAt}
+                retryAt={retryAt}
+                onRetry={retry}
+              />
+            </div>
+            {stageFilter ? (
+              <StageLogPanel
+                key={stageFilter}
+                appName={name}
+                deployId={deployId}
+                stage={stageFilter}
+                finished={attemptFinished}
+              />
+            ) : (
+              <BuildTab
+                part="logs"
+                appName={name}
+                deployId={deployId}
+                attempt={attempt}
+                gitSource={gitSource}
+                lines={lines}
+                steps={steps}
+                noBuildStep={noBuildStep}
+                finished={attemptFinished}
+                isPaused={isPaused}
+                pause={pause}
+                resume={resume}
+              />
+            )}
+            {attemptFinished ? (
+              <Suspense fallback={null}>
+                <BuildReportSection appName={name} deployId={deployId} />
+              </Suspense>
+            ) : null}
           </div>
-        ) : null}
+        </RunSection>
+
+        <RunSection
+          id="compare"
+          title={t('sections.compare')}
+          defaultOpen={false}
+        >
+          <p className="text-sm text-muted-foreground">
+            {t('run.compareBody')}
+          </p>
+          <Button
+            variant="outline"
+            size="sm"
+            nativeButton={false}
+            render={
+              <Link
+                to="/apps/$name/deploys/compare"
+                params={{ name }}
+                search={{ from: attempt.id }}
+              />
+            }
+          >
+            {t('run.compareCta')}
+          </Button>
+        </RunSection>
       </div>
 
       <DeployQuickLinks appName={name} />

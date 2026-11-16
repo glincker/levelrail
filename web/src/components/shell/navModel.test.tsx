@@ -85,6 +85,7 @@ const FOLDED_PATHS = [
 const EXPECTED_APP = [
   'overview',
   'deploys',
+  'delivery',
   'source',
   'previews',
   'deploy-settings',

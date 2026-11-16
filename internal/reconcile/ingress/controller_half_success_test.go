@@ -3,6 +3,7 @@ package ingress
 import (
 	"context"
 	"errors"
+	"log/slog"
 	"testing"
 
 	"github.com/GLINCKER/levelrail/internal/reconcile"
@@ -18,7 +19,7 @@ func TestController_Reconcile_ApplyFailsThenRecovers(t *testing.T) {
 	rt := newFakeRuntime()
 	rt.seedRunning(application.ContainerName(desired.Name, desired.Image, ""), 34567)
 	applier := &fakeApplier{applyErr: errors.New("caddy rejected config")}
-	c := New(&fakeStore{services: []store.DesiredService{desired}}, rt, applier, WithLogger(discardLogger()))
+	c := New(&fakeStore{services: []store.DesiredService{desired}}, rt, applier, WithLogger(slog.New(slog.DiscardHandler)))
 
 	res, err := c.Reconcile(context.Background())
 	if err == nil {

@@ -1,4 +1,4 @@
-import { useCallback, useEffect, useRef, useState } from 'react'
+import { Fragment, useCallback, useEffect, useRef, useState } from 'react'
 import {
   CheckGlassIcon,
   CopyGlassIcon,
@@ -8,6 +8,14 @@ import {
 import { ListGlassIcon } from '@thesvg/ui-react'
 import { useTranslation } from 'react-i18next'
 import { COPY_FEEDBACK_MS } from '@/lib/copyFeedback'
+import {
+  DIFF_LINE_CLASS,
+  TOKEN_CLASS,
+  diffLineKind,
+  resolveLanguage,
+  tokenizeLine,
+  type CodeLanguage,
+} from '@/lib/codeHighlight'
 import { cn } from '@/lib/utils'
 import { Button } from '@/components/ui/button'
 
@@ -56,6 +64,25 @@ function useCopyFeedback(text: string) {
 // Keeps whitespace so a masked block has the same shape as the real one.
 function maskSecret(text: string): string {
   return text.replace(/\S/g, '•')
+}
+
+function HighlightedLine({
+  line,
+  lang,
+}: {
+  line: string
+  lang: CodeLanguage | null
+}) {
+  if (!lang) return <>{line}</>
+  return (
+    <>
+      {tokenizeLine(line, lang).map((tok, i) => (
+        <span key={i} className={TOKEN_CLASS[tok.kind]}>
+          {tok.text}
+        </span>
+      ))}
+    </>
+  )
 }
 
 function stripPrompt(code: string): string {
@@ -170,17 +197,19 @@ export function CodeBlock({
   const shown = secret && !revealed ? maskSecret(copyText) : copyText
   const lines = shown.split('\n')
   const decorated = lineNumbers || prompt
+  const lang = resolveLanguage(language)
+  const isDiff = lang === 'diff'
   const chip = language ?? label
 
   return (
     <div
       className={cn(
-        'overflow-hidden rounded-lg border border-border bg-muted/40',
+        'overflow-hidden rounded-lg border border-glinr-code-border bg-glinr-code-bg text-glinr-code-fg',
         className,
       )}
     >
-      <div className="flex min-h-9 items-center justify-between gap-2 border-b border-border px-2 py-1">
-        <span className="truncate font-mono text-xs text-muted-foreground">
+      <div className="flex min-h-9 items-center justify-between gap-2 border-b border-glinr-code-border px-2 py-1">
+        <span className="truncate font-mono text-xs text-glinr-code-muted">
           {chip}
         </span>
         <div className="flex shrink-0 items-center gap-1">
@@ -215,19 +244,25 @@ export function CodeBlock({
         tabIndex={0}
         aria-label={label ?? t('codeBlock.region')}
         className={cn(
-          'overflow-auto p-3 font-mono text-xs leading-5 text-foreground focus-visible:ring-2 focus-visible:ring-ring focus-visible:outline-none focus-visible:ring-inset',
+          'overflow-auto p-3 font-mono text-xs leading-5 text-glinr-code-fg selection:bg-glinr-code-selection focus-visible:ring-2 focus-visible:ring-ring focus-visible:outline-none focus-visible:ring-inset',
           MAX_HEIGHT[maxHeight],
           wrapped ? 'break-words whitespace-pre-wrap' : 'whitespace-pre',
         )}
       >
         <code>
-          {decorated
+          {decorated || isDiff
             ? lines.map((line, i) => (
-                <span key={i} className="flex">
+                <span
+                  key={i}
+                  className={cn(
+                    'flex',
+                    isDiff && DIFF_LINE_CLASS[diffLineKind(line)],
+                  )}
+                >
                   {lineNumbers ? (
                     <span
                       aria-hidden="true"
-                      className="w-8 shrink-0 pr-3 text-right text-muted-foreground tabular-nums select-none"
+                      className="w-8 shrink-0 pr-3 text-right text-glinr-code-muted tabular-nums select-none"
                     >
                       {i + 1}
                     </span>
@@ -235,15 +270,22 @@ export function CodeBlock({
                   {prompt ? (
                     <span
                       aria-hidden="true"
-                      className="shrink-0 text-muted-foreground select-none"
+                      className="shrink-0 text-glinr-code-muted select-none"
                     >
                       {PROMPT}
                     </span>
                   ) : null}
-                  <span className="min-w-0 flex-1">{line}</span>
+                  <span className="min-w-0 flex-1">
+                    <HighlightedLine line={line} lang={lang} />
+                  </span>
                 </span>
               ))
-            : shown}
+            : lines.map((line, i) => (
+                <Fragment key={i}>
+                  {i > 0 ? '\n' : null}
+                  <HighlightedLine line={line} lang={lang} />
+                </Fragment>
+              ))}
         </code>
       </pre>
     </div>
@@ -273,7 +315,7 @@ export function CommandBlock({
   return (
     <div
       className={cn(
-        'flex items-center gap-2 rounded-lg border border-border bg-muted/40 p-2',
+        'flex items-center gap-2 rounded-lg border border-glinr-code-border bg-glinr-code-bg p-2',
         className,
       )}
     >
@@ -282,19 +324,24 @@ export function CommandBlock({
         tabIndex={0}
         aria-label={label ?? t('codeBlock.commandRegion')}
         className={cn(
-          'min-w-0 flex-1 overflow-x-auto font-mono text-xs leading-5 text-foreground focus-visible:ring-2 focus-visible:ring-ring focus-visible:outline-none',
+          'min-w-0 flex-1 overflow-x-auto font-mono text-xs leading-5 text-glinr-code-fg selection:bg-glinr-code-selection focus-visible:ring-2 focus-visible:ring-ring focus-visible:outline-none',
           wrap ? 'break-all whitespace-pre-wrap' : 'whitespace-pre',
         )}
       >
         {prompt ? (
           <span
             aria-hidden="true"
-            className="text-muted-foreground select-none"
+            className="text-glinr-code-muted select-none"
           >
             {PROMPT}
           </span>
         ) : null}
-        <code>{shown}</code>
+        <code>
+          <HighlightedLine
+            line={shown}
+            lang={secret && !revealed ? null : 'shell'}
+          />
+        </code>
       </pre>
       {secret ? (
         <RevealButton

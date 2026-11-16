@@ -3,7 +3,6 @@ package demo
 import (
 	"context"
 	"errors"
-	"path/filepath"
 	"reflect"
 	"regexp"
 	"strings"
@@ -11,24 +10,15 @@ import (
 	"time"
 
 	"github.com/GLINCKER/levelrail/internal/store"
+	"github.com/GLINCKER/levelrail/internal/store/storetest"
 	"github.com/GLINCKER/levelrail/internal/telemetry"
 )
 
 var testAnchor = time.Date(2026, 10, 14, 12, 0, 0, 0, time.UTC)
 
-func openDB(t *testing.T) *store.DB {
-	t.Helper()
-	db, err := store.Open(context.Background(), filepath.Join(t.TempDir(), "demo.db"))
-	if err != nil {
-		t.Fatalf("store.Open() error = %v", err)
-	}
-	t.Cleanup(func() { _ = db.Close() })
-	return db
-}
-
 func seeded(t *testing.T, seed int64) *store.DB {
 	t.Helper()
-	db := openDB(t)
+	db := storetest.Open(t)
 	if _, err := Seed(context.Background(), db, Options{Seed: seed, Anchor: testAnchor}); err != nil {
 		t.Fatalf("Seed() error = %v", err)
 	}
@@ -117,7 +107,7 @@ func TestSeedIdempotentAndGuarded(t *testing.T) {
 		t.Errorf("re-seed with other seed error = %v, want ErrSeedMismatch", err)
 	}
 
-	live := openDB(t)
+	live := storetest.Open(t)
 	if err := live.CreateUser(ctx, store.User{ID: "user_real", Email: "owner", DisplayName: "owner", Abilities: []string{"root"}, IsFirstUser: true, CreatedAt: testAnchor}); err != nil {
 		t.Fatalf("CreateUser() error = %v", err)
 	}
@@ -262,7 +252,7 @@ func TestSeedReadiness(t *testing.T) {
 
 func TestSeedCalmScenario(t *testing.T) {
 	ctx := context.Background()
-	db := openDB(t)
+	db := storetest.Open(t)
 	if _, err := Seed(ctx, db, Options{Seed: 1, Anchor: testAnchor, Scenario: ScenarioCalm}); err != nil {
 		t.Fatalf("Seed() error = %v", err)
 	}
@@ -296,7 +286,7 @@ func TestSeedCalmScenario(t *testing.T) {
 }
 
 func TestSeedUnknownScenario(t *testing.T) {
-	db := openDB(t)
+	db := storetest.Open(t)
 	if _, err := Seed(context.Background(), db, Options{Seed: 1, Anchor: testAnchor, Scenario: "chaos"}); err == nil {
 		t.Fatal("Seed() with unknown scenario succeeded, want error")
 	}

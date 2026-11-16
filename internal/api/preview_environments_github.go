@@ -94,8 +94,10 @@ func (rt *Router) notifyPreviewPendingGitHub(ctx context.Context, appName string
 	if !ok {
 		return
 	}
-	if err := rt.githubAppClient.CreateCommitStatus(ctx, instanceURL, token, owner, repo, headSHA,
-		githubapp.CommitStatusPending, "", "Deploying preview environment...", previewStatusContext); err != nil {
+	err := rt.githubAppClient.CreateCommitStatus(ctx, instanceURL, token, owner, repo, headSHA,
+		githubapp.CommitStatusPending, "", "Deploying preview environment...", previewStatusContext)
+	rt.recordPreviewStatus(ctx, appName, forgeGitHub, headSHA, previewStatePending, "", "Deploying preview environment...", err)
+	if err != nil {
 		rt.logger.Warn("api: post preview pending commit status failed", slog.String("error", err.Error()), slog.String("app_name", appName))
 	}
 }
@@ -115,8 +117,10 @@ func (rt *Router) notifyPreviewSuccessGitHub(ctx context.Context, appName string
 		description = "Preview deployed: " + previewURL
 	}
 
-	if err := rt.githubAppClient.CreateCommitStatus(ctx, instanceURL, token, owner, repo, headSHA,
-		githubapp.CommitStatusSuccess, targetURL, description, previewStatusContext); err != nil {
+	err := rt.githubAppClient.CreateCommitStatus(ctx, instanceURL, token, owner, repo, headSHA,
+		githubapp.CommitStatusSuccess, targetURL, description, previewStatusContext)
+	rt.recordPreviewStatus(ctx, appName, forgeGitHub, headSHA, previewStateSuccess, targetURL, description, err)
+	if err != nil {
 		rt.logger.Warn("api: post preview success commit status failed", slog.String("error", err.Error()), slog.String("app_name", appName))
 	}
 }
@@ -128,8 +132,10 @@ func (rt *Router) notifyPreviewFailureGitHub(ctx context.Context, appName string
 	if !ok {
 		return
 	}
-	if err := rt.githubAppClient.CreateCommitStatus(ctx, instanceURL, token, owner, repo, headSHA,
-		githubapp.CommitStatusFailure, "", truncateStatusDescription(reason, githubStatusDescriptionMax), previewStatusContext); err != nil {
+	err := rt.githubAppClient.CreateCommitStatus(ctx, instanceURL, token, owner, repo, headSHA,
+		githubapp.CommitStatusFailure, "", truncateStatusDescription(reason, githubStatusDescriptionMax), previewStatusContext)
+	rt.recordPreviewStatus(ctx, appName, forgeGitHub, headSHA, previewStateFailure, "", truncateStatusDescription(reason, githubStatusDescriptionMax), err)
+	if err != nil {
 		rt.logger.Warn("api: post preview failure commit status failed", slog.String("error", err.Error()), slog.String("app_name", appName))
 	}
 }

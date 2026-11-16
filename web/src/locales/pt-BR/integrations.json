@@ -1,0 +1,119 @@
+{
+  "title": "Integrações",
+  "description": "Todos os serviços conectados, o estado e a validade, e onde adicionar mais.",
+  "retry": "Tentar de novo",
+  "loadFailed": "Não foi possível carregar as conexões.",
+  "connected": {
+    "title": "Conectadas"
+  },
+  "empty": {
+    "title": "Nada conectado ainda",
+    "description": "Conecte um host git, um registro ou um canal de notificação pelo catálogo abaixo.",
+    "noMatch": "Nenhuma conexão corresponde a esses filtros."
+  },
+  "filters": {
+    "searchLabel": "Buscar conexões",
+    "searchPlaceholder": "Buscar por nome, conta ou host",
+    "kind": "Tipo",
+    "scope": "Escopo",
+    "health": "Estado",
+    "allKinds": "Todos os tipos",
+    "allScopes": "Todos os escopos",
+    "allHealth": "Qualquer estado",
+    "clear": "Limpar filtros"
+  },
+  "kinds": {
+    "git": "Git",
+    "registry": "Registros",
+    "notify": "Notificações",
+    "secret": "Segredos",
+    "dns": "DNS",
+    "cloud": "Nuvem",
+    "webhook": "Webhooks"
+  },
+  "scopes": {
+    "instance": "Instância",
+    "org": "Organização",
+    "app": "App"
+  },
+  "health": {
+    "ok": "Saudável",
+    "degraded": "Degradada",
+    "needs_reconnect": "Reconectar",
+    "expired": "Expirada",
+    "unknown": "Não verificada"
+  },
+  "authMethods": {
+    "app_install": "Instalação de app",
+    "oauth": "OAuth",
+    "token": "Token",
+    "workload_identity": "Identidade de carga",
+    "url_secret": "URL secreta"
+  },
+  "categories": {
+    "git": "Git",
+    "registry": "Registros",
+    "notify": "Notificações",
+    "secret": "Segredos",
+    "dns": "DNS",
+    "cloud": "Nuvem",
+    "webhook": "Webhooks",
+    "ci": "Identidade de CI",
+    "observability": "Observabilidade",
+    "addon": "Complementos do app"
+  },
+  "methods": {
+    "one_click": "Um clique",
+    "guided_oauth": "OAuth guiado",
+    "token": "Token",
+    "settings_page": "Página de configurações"
+  },
+  "connect": {
+    "one_click": "Conectar",
+    "guided_oauth": "Configurar",
+    "token": "Adicionar token",
+    "settings_page": "Abrir"
+  },
+  "card": {
+    "lastUsed": "Usada {{when}}",
+    "neverUsed": "Nunca usada",
+    "default": "Padrão",
+    "manage": "Gerenciar",
+    "reconnect": "Reconectar",
+    "manageNamed": "Gerenciar {{name}}",
+    "reconnectNamed": "Reconectar {{name}}",
+    "bound_one": "{{count}} vínculo",
+    "bound_many": "{{count}} vínculos",
+    "bound_other": "{{count}} vínculos",
+    "bind": "Vincular",
+    "unbind": "Desvincular",
+    "bindNamed": "Vincular {{name}}",
+    "unbindNamed": "Desvincular {{name}}"
+  },
+  "expiry": {
+    "expiresToday": "Expira hoje",
+    "autoRenew": "renova sozinha",
+    "expiresInDays_one": "Expira em {{count}} dia",
+    "expiresInDays_many": "Expira em {{count}} dias",
+    "expiresInDays_other": "Expira em {{count}} dias",
+    "expiredDaysAgo_one": "Expirou há {{count}} dia",
+    "expiredDaysAgo_many": "Expirou há {{count}} dias",
+    "expiredDaysAgo_other": "Expirou há {{count}} dias"
+  },
+  "attention": {
+    "title_one": "{{count}} conexão precisa de atenção",
+    "title_many": "{{count}} conexões precisam de atenção",
+    "title_other": "{{count}} conexões precisam de atenção"
+  },
+  "catalog": {
+    "title": "Adicionar uma integração",
+    "description": "Cada botão abre a página que gerencia essa conexão.",
+    "empty": "Nenhuma integração disponível.",
+    "loadFailed": "Não foi possível carregar o catálogo.",
+    "connectNamed": "Conectar {{name}}"
+  },
+  "wizard": {
+    "title": "Integração",
+    "description": "Conecte um host git, um registro, um notificador ou uma conta de nuvem."
+  }
+}

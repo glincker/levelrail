@@ -17,9 +17,12 @@ import {
   useQueryClient,
   useSuspenseQuery,
 } from '@tanstack/react-query'
+import { ApiError } from '../lib/apiError'
+import { myCredentialsKey } from './myCredentials'
 import type {
   CreateTokenRequest,
   CreateTokenResponse,
+  RotateTokenResponse,
   TokenResource,
 } from '../types/token'
 
@@ -45,7 +48,7 @@ export async function fetchTokens(): Promise<TokenResource[]> {
   if (!res.ok) {
     throw new Error(`fetch tokens failed: ${res.status}`)
   }
-  return (await res.json()) as TokenResource[]
+  return ((await res.json()) as TokenResource[] | null) ?? []
 }
 
 export function tokenListQueryOptions() {
@@ -114,6 +117,36 @@ export function useRevokeToken() {
     mutationFn: revokeToken,
     onSuccess: () => {
       void queryClient.invalidateQueries({ queryKey: tokenKeys.list() })
+    },
+  })
+}
+
+// POST /api/v1/auth/tokens/{id}/rotate (internal/api/tokens_rotate.go). The
+// response carries the new secret once, so like createToken it is returned to
+// the caller and never written into a query cache. Errors keep their status:
+// 404 unknown, 403 platform token, 409 already revoked.
+export async function rotateToken(id: string): Promise<RotateTokenResponse> {
+  const res = await fetch(
+    `/api/v1/auth/tokens/${encodeURIComponent(id)}/rotate`,
+    { method: 'POST' },
+  )
+  if (!res.ok) {
+    throw new ApiError(
+      res.status,
+      await readErrorMessage(res, `rotate token failed: ${res.status}`),
+    )
+  }
+  return (await res.json()) as RotateTokenResponse
+}
+
+export function useRotateToken() {
+  const queryClient = useQueryClient()
+  return useMutation({
+    meta: { errorToast: false },
+    mutationFn: rotateToken,
+    onSettled: () => {
+      void queryClient.invalidateQueries({ queryKey: tokenKeys.list() })
+      void queryClient.invalidateQueries({ queryKey: myCredentialsKey })
     },
   })
 }

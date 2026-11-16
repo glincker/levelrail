@@ -27,10 +27,7 @@ export function DeployExplainPanel({
   if (!data || !data.failed) return null
 
   return (
-    <section
-      aria-label={t('explain.title')}
-      className="space-y-3 rounded-lg border border-tone-danger-border bg-tone-danger-soft p-4"
-    >
+    <section aria-label={t('explain.title')} className="space-y-3">
       <div className="flex flex-wrap items-center gap-x-3 gap-y-1">
         <CircleAlertGlassIcon
           className="size-5 shrink-0 text-tone-danger"

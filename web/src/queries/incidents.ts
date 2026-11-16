@@ -15,7 +15,7 @@ export async function fetchIncidents(): Promise<Incident[] | null> {
   if (res.status === 403 || res.status === 404 || res.status === 501)
     return null
   if (!res.ok) throw new Error(`fetch incidents failed: ${res.status}`)
-  return (await res.json()) as Incident[]
+  return ((await res.json()) as Incident[] | null) ?? []
 }
 
 export async function fetchIncident(id: string): Promise<Incident> {

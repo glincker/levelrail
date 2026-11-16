@@ -25,7 +25,7 @@ export async function fetchStorageEnvKeys(): Promise<string[]> {
       ),
     )
   }
-  return (await res.json()) as string[]
+  return ((await res.json()) as string[] | null) ?? []
 }
 
 // staleTime matches databaseEnginesQueryOptions's own reasoning: this

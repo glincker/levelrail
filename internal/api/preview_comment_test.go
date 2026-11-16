@@ -256,3 +256,19 @@ func TestPreviewComment_UnwritableMarkerMatchFallsBackToNewComment(t *testing.T)
 		})
 	}
 }
+
+func TestPreviewCommentNamesTheBuilder(t *testing.T) {
+	p := store.PreviewEnvironment{PreviewAppID: "web-pr-1", AppName: "web", HeadSHA: "abcdef1234", Domain: "p.example.com"}
+	body := renderPreviewCommentWith(p, previewCommentReady, "", time.Now(), previewCommentExtras{DeployURL: "https://dash.test/apps/web/deployments"})
+	for _, want := range []string{"**Built by:** [Levelrail](https://dash.test/apps/web/deployments)", "**URL:** https://p.example.com", "`abcdef1`", "**Status:** ready"} {
+		if !strings.Contains(body, want) {
+			t.Errorf("body lacks %q:\n%s", want, body)
+		}
+	}
+	if plain := renderPreviewComment(p, previewCommentBuilding, "", time.Now()); !strings.Contains(plain, "**Built by:** Levelrail") {
+		t.Errorf("no built-by line without a dashboard URL:\n%s", plain)
+	}
+	if gone := renderPreviewComment(p, previewCommentRemoved, "closed", time.Now()); strings.Contains(gone, "Built by") {
+		t.Errorf("a removed preview still claims a build:\n%s", gone)
+	}
+}

@@ -294,6 +294,11 @@
       "title": "Le journal d'audit n'est envoyé nulle part",
       "pass": "Le journal d'audit est transmis à une destination externe",
       "why": "Un flux d'audit en dehors de cette machine conserve une trace des actions des agents et des deploys même si cet hôte est perdu."
+    },
+    "approval_without_session_allow": {
+      "title": "Les connexions sans autre session active sont autorisées",
+      "pass": "Les connexions sans autre session active attendent une approbation",
+      "why": "Un mot de passe correct suffit quand aucune autre session n'est ouverte. Avec Retenir, ces connexions attendent une approbation hors du navigateur."
     }
   },
   "actions": {
@@ -435,5 +440,29 @@
     "rootOnly": "Seul un compte root peut modifier cette politique.",
     "loading": "Chargement de la politique",
     "error": "Impossible de charger la politique d'analyse."
+  },
+  "withoutSession": {
+    "title": "Connexions sans autre session",
+    "description": "Ce qui se passe quand un mot de passe correct est utilisé sur un nouveau navigateur et que le compte n'a aucune autre session active pour l'approuver.",
+    "allow": "Autoriser",
+    "hold": "Retenir",
+    "allowBody": "Autoriser : la connexion passe directement, sauf si le compte demande lui-même une approbation. C'est la valeur par défaut.",
+    "holdBody": "Retenir : la connexion attend une approbation par un jeton signin:approve que vous détenez ou par la commande de l'hôte. Les navigateurs de confiance se connectent toujours.",
+    "safeguards": "Pour éviter un blocage, retenir exige un jeton signin:approve que vous détenez, ou votre confirmation que vous pouvez exécuter des commandes sur le serveur. Le navigateur depuis lequel vous changez reste de confiance.",
+    "reset": "Pour annuler depuis le serveur, exécutez :",
+    "saved": "Réglage enregistré.",
+    "saveError": "Impossible d'enregistrer ce réglage.",
+    "stepUp": "Confirmez votre identité pour modifier le traitement des connexions sans autre session.",
+    "confirmTitle": "Retenir les connexions sans autre session ?",
+    "confirmBody": "Un mot de passe correct ne suffira plus sur un nouveau navigateur quand aucune autre session n'est ouverte. Vérifiez qu'au moins une voie d'approbation existe.",
+    "pathsTitle": "Voies pour approuver dès maintenant une connexion retenue",
+    "confirm": "Retenir les connexions",
+    "confirming": "Enregistrement...",
+    "hostAccess": "Je peux exécuter des commandes sur le serveur",
+    "noChannelFix": "Créez un jeton signin:approve que vous détenez ou cochez la case pour confirmer que vous pouvez exécuter des commandes sur le serveur.",
+    "channel": {
+      "approve_token": "Un jeton signin:approve que vous détenez",
+      "host_command": "La commande approve-signin sur le serveur"
+    }
   }
 }

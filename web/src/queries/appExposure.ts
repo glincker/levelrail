@@ -6,7 +6,7 @@ import {
   useQueryClient,
 } from '@tanstack/react-query'
 import { useQuery } from '@tanstack/react-query'
-import { ApiError, readErrorMessage } from '../lib/apiError'
+import { apiRequest } from '../lib/apiRequest'
 import { appNetworkKeys } from './appNetwork'
 
 export type ExposureMode = 'proxied' | 'direct'
@@ -78,25 +78,13 @@ function base(app: string): string {
   return `/api/v1/apps/${encodeURIComponent(app)}/exposure`
 }
 
-async function send<T>(
+function send<T>(
   url: string,
   method: string,
   body: unknown,
   what: string,
 ): Promise<T> {
-  const res = await fetch(url, {
-    method,
-    headers:
-      body === undefined ? undefined : { 'Content-Type': 'application/json' },
-    body: body === undefined ? undefined : JSON.stringify(body),
-  })
-  if (!res.ok) {
-    throw new ApiError(
-      res.status,
-      await readErrorMessage(res, `${what} failed: ${res.status}`),
-    )
-  }
-  return (await res.json()) as T
+  return apiRequest<T>(url, { method, body, fallbackMessage: `${what} failed` })
 }
 
 export function appExposureQueryOptions(app: string) {

@@ -667,6 +667,7 @@
     "importTitle": "Importe qualquer coisa",
     "importLabel": "URL de repositório, imagem, comando docker run, arquivo compose ou Dockerfile",
     "importPlaceholder": "Cole uma URL de repositório, uma imagem, um comando docker run, um docker-compose.yml ou um Dockerfile",
+    "importShortcutHint": "Pressione {{keys}} para continuar",
     "previewPlan": "Pré-visualizar plano",
     "reading": "Lendo...",
     "uploadFile": "Enviar arquivo",

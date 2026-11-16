@@ -1,13 +1,9 @@
 // Query keys, fetchers and hooks for silences, maintenance windows and
 // alert history (internal/api/alert_noise.go).
 
-import {
-  queryOptions,
-  useMutation,
-  useQuery,
-  useQueryClient,
-} from '@tanstack/react-query'
+import { queryOptions, useQuery } from '@tanstack/react-query'
 import { ApiError, readErrorMessage } from '../lib/apiError'
+import { useInvalidatingMutation } from '../lib/useInvalidatingMutation'
 import { alertRuleKeys } from './alerts'
 import { useEnvironmentScope } from '../lib/environmentScope'
 import { currentScope, withScope } from '../lib/scopeQuery'
@@ -74,51 +70,39 @@ export function useSilences(includeExpired: boolean) {
 }
 
 export function useCreateSilence() {
-  const queryClient = useQueryClient()
-  return useMutation({
+  return useInvalidatingMutation({
     mutationFn: (req: CreateSilenceRequest) =>
       request<Silence>(
         '/api/v1/alert-silences',
         'create silence',
         jsonInit('POST', req),
       ),
-    onSuccess: () => {
-      void queryClient.invalidateQueries({ queryKey: alertNoiseKeys.all })
-    },
+    invalidate: () => [alertNoiseKeys.all],
   })
 }
 
 export function useExpireSilence() {
-  const queryClient = useQueryClient()
-  return useMutation({
+  return useInvalidatingMutation({
     mutationFn: (id: string) =>
       request<Silence>(
         `/api/v1/alert-silences/${encodeURIComponent(id)}`,
         'expire silence',
         { method: 'DELETE' },
       ),
-    onSuccess: () => {
-      void queryClient.invalidateQueries({ queryKey: alertNoiseKeys.all })
-    },
+    invalidate: () => [alertNoiseKeys.all],
   })
 }
 
 // POST /api/v1/apps/{name}/alerts/{id}/silence: the quick action.
 export function useSilenceRule(appName: string) {
-  const queryClient = useQueryClient()
-  return useMutation({
+  return useInvalidatingMutation({
     mutationFn: ({ ruleId, duration }: { ruleId: string; duration: string }) =>
       request<Silence>(
         `/api/v1/apps/${encodeURIComponent(appName)}/alerts/${encodeURIComponent(ruleId)}/silence`,
         'silence alert rule',
         jsonInit('POST', { duration }),
       ),
-    onSuccess: () => {
-      void queryClient.invalidateQueries({ queryKey: alertNoiseKeys.all })
-      void queryClient.invalidateQueries({
-        queryKey: alertRuleKeys.all(appName),
-      })
-    },
+    invalidate: () => [alertNoiseKeys.all, alertRuleKeys.all(appName)],
   })
 }
 
@@ -138,8 +122,7 @@ export function useMaintenanceWindows() {
 }
 
 export function useSaveMaintenanceWindow() {
-  const queryClient = useQueryClient()
-  return useMutation({
+  return useInvalidatingMutation({
     meta: { errorToast: false },
     mutationFn: (w: MaintenanceWindow) =>
       request<MaintenanceWindow>(
@@ -149,24 +132,19 @@ export function useSaveMaintenanceWindow() {
         'save maintenance window',
         jsonInit(w.id ? 'PUT' : 'POST', w),
       ),
-    onSuccess: () => {
-      void queryClient.invalidateQueries({ queryKey: alertNoiseKeys.windows() })
-    },
+    invalidate: () => [alertNoiseKeys.windows()],
   })
 }
 
 export function useDeleteMaintenanceWindow() {
-  const queryClient = useQueryClient()
-  return useMutation({
+  return useInvalidatingMutation({
     mutationFn: (id: string) =>
       request<void>(
         `/api/v1/alert-maintenance-windows/${encodeURIComponent(id)}`,
         'delete maintenance window',
         { method: 'DELETE' },
       ),
-    onSuccess: () => {
-      void queryClient.invalidateQueries({ queryKey: alertNoiseKeys.windows() })
-    },
+    invalidate: () => [alertNoiseKeys.windows()],
   })
 }
 

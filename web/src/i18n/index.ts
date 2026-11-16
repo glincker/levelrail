@@ -64,6 +64,7 @@ export const NAMESPACES = [
   'domainPolicies',
   'observability',
   'previews',
+  'delivery',
   'branchDeploys',
   'deployContexts',
   'backups',
@@ -121,6 +122,7 @@ export const NAMESPACES = [
   'statePlaceholders',
   'secretScan',
   'appExpiry',
+  'tokenExpiry',
   'appRestartSchedule',
   'appFiles',
   'appContainers',
@@ -162,6 +164,7 @@ export const NAMESPACES = [
   'uiShared',
   'relatedLinks',
   'gitSource',
+  'gitConnect',
   'projectExport',
   'projectClone',
   'certBudget',
@@ -171,6 +174,7 @@ export const NAMESPACES = [
   'newAppNoGit',
   'appOverview',
   'webVitals',
+  'integrations',
 ] as const
 
 void i18n

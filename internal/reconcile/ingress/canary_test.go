@@ -2,6 +2,7 @@ package ingress
 
 import (
 	"context"
+	"log/slog"
 	"testing"
 
 	"github.com/GLINCKER/levelrail/internal/store"
@@ -23,7 +24,7 @@ func canaryFixture(weight int, seedCanary bool) (*fakeApplier, *Controller) {
 	}
 	applier := &fakeApplier{}
 	src := fakeCanarySource{releases: []store.CanaryRelease{{ServiceName: "web", CanaryService: canary.Name, Image: "img:v2", Weight: weight}}}
-	c := New(&fakeStore{services: []store.DesiredService{stable, canary}}, rt, applier, WithLogger(discardLogger()), WithCanaries(src))
+	c := New(&fakeStore{services: []store.DesiredService{stable, canary}}, rt, applier, WithLogger(slog.New(slog.DiscardHandler)), WithCanaries(src))
 	return applier, c
 }
 

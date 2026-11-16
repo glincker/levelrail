@@ -28,6 +28,17 @@ html:not([data-look='restrained'])
   }
 }
 
+@media (forced-colors: active) {
+  html:not([data-look='restrained'])
+    header[data-scrolled='true']
+    > [data-slot='bar-surface'] {
+    background-color: Canvas;
+    -webkit-backdrop-filter: none;
+    backdrop-filter: none;
+    border-color: CanvasText;
+  }
+}
+
 /* Large title collapses with the scroll where scroll-driven animation exists. */
 @keyframes lr-title-out {
   to {

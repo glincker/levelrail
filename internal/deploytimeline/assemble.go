@@ -448,6 +448,8 @@ func verdictOf(in Inputs) Verdict {
 	switch {
 	case a.Status == store.DeployAttemptStatusQueued || a.Status == store.DeployAttemptStatusHeld || a.Status == store.DeployAttemptStatusAwaitingApproval:
 		return VerdictQueued
+	case a.Status == store.DeployAttemptStatusRefused:
+		return VerdictRefused
 	case a.Status == store.DeployAttemptStatusCanceled || a.Status == store.DeployAttemptStatusSuperseded:
 		return VerdictCanceled
 	case rolledBack:
@@ -620,7 +622,7 @@ func Settled(in Inputs) bool {
 		}
 	}
 	switch a.Status {
-	case store.DeployAttemptStatusFailed, store.DeployAttemptStatusCanceled, store.DeployAttemptStatusSuperseded:
+	case store.DeployAttemptStatusFailed, store.DeployAttemptStatusCanceled, store.DeployAttemptStatusSuperseded, store.DeployAttemptStatusRefused:
 		return true
 	}
 	return now.After(a.FinishedAt.Add(in.Config.SettleIdle))

@@ -1657,6 +1657,17 @@ type WhoamiResource struct {
 	Name      string   `json:"name"`
 	Abilities []string `json:"abilities"`
 	ExpiresAt string   `json:"expires_at"`
+	TokenID   string   `json:"token_id,omitempty"`
+}
+
+// RotatedToken mirrors internal/api rotateTokenResponse; Token is the new secret, shown once.
+type RotatedToken struct {
+	ID                 string     `json:"id"`
+	Name               string     `json:"name"`
+	Token              string     `json:"token"`
+	ExpiresAt          *time.Time `json:"expires_at,omitempty"`
+	Replaces           string     `json:"replaces"`
+	PreviousValidUntil *time.Time `json:"previous_valid_until"`
 }
 
 // MyAccessResource mirrors internal/api's myAccessResponse (account_access.go).

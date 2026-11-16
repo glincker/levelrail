@@ -6,8 +6,9 @@
 // pattern-matched sibling of queries/appPreviewEnv.ts's own unscoped
 // override: this one only applies when a preview's own branch matches.
 
-import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query'
+import { useQuery } from '@tanstack/react-query'
 import { ApiError, readErrorMessage } from '../lib/apiError'
+import { useInvalidatingMutation } from '../lib/useInvalidatingMutation'
 
 export const appBranchEnvKeys = {
   all: ['app-branch-env'] as const,
@@ -114,16 +115,11 @@ export async function setAppBranchEnvOverride(
 }
 
 export function useSetAppBranchEnvOverride(appName: string) {
-  const queryClient = useQueryClient()
-  return useMutation({
+  return useInvalidatingMutation({
     meta: { errorToast: false },
     mutationFn: (input: SetAppBranchEnvOverrideInput) =>
       setAppBranchEnvOverride(appName, input),
-    onSuccess: () => {
-      void queryClient.invalidateQueries({
-        queryKey: appBranchEnvKeys.list(appName),
-      })
-    },
+    invalidate: () => [appBranchEnvKeys.list(appName)],
   })
 }
 
@@ -150,13 +146,8 @@ export async function deleteAppBranchEnvOverride(
 }
 
 export function useDeleteAppBranchEnvOverride(appName: string) {
-  const queryClient = useQueryClient()
-  return useMutation({
+  return useInvalidatingMutation({
     mutationFn: (id: string) => deleteAppBranchEnvOverride(appName, id),
-    onSuccess: () => {
-      void queryClient.invalidateQueries({
-        queryKey: appBranchEnvKeys.list(appName),
-      })
-    },
+    invalidate: () => [appBranchEnvKeys.list(appName)],
   })
 }

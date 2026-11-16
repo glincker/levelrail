@@ -55,7 +55,7 @@ export async function fetchCustomTemplates(): Promise<
       ),
     )
   }
-  return (await res.json()) as CustomTemplateListItem[]
+  return ((await res.json()) as CustomTemplateListItem[] | null) ?? []
 }
 
 export async function saveAppAsTemplate(

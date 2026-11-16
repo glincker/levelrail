@@ -23,7 +23,7 @@ export async function fetchStatusReasons(): Promise<StatusReason[]> {
       await readErrorMessage(res, `fetch status reasons failed: ${res.status}`),
     )
   }
-  return (await res.json()) as StatusReason[]
+  return ((await res.json()) as StatusReason[] | null) ?? []
 }
 
 // The catalog only changes with a release, so it is fetched once per session.

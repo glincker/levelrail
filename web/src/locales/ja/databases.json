@@ -651,6 +651,7 @@
     "importTitle": "何でもインポート",
     "importLabel": "リポジトリURL、イメージ、docker runコマンド、composeファイル、またはDockerfile",
     "importPlaceholder": "リポジトリURL、イメージ、docker runコマンド、docker-compose.yml、またはDockerfileを貼り付けてください",
+    "importShortcutHint": "{{keys}} を押して続行",
     "previewPlan": "計画をプレビュー",
     "reading": "読み取り中...",
     "uploadFile": "ファイルをアップロード",

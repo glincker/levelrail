@@ -1,4 +1,5 @@
 import { render, screen } from '@testing-library/react'
+import { commandText } from '@/test/commandText'
 import userEvent from '@testing-library/user-event'
 import { describe, expect, it, vi } from 'vitest'
 import i18next from 'i18next'
@@ -62,7 +63,9 @@ describe('UpgradeSafetyCard', () => {
     expect(screen.getByText('3 database migrations')).toBeInTheDocument()
     expect(screen.getByText(/Disk OK: 10 GiB free/)).toBeInTheDocument()
     expect(screen.getByText(/About 20 s offline/)).toBeInTheDocument()
-    expect(screen.getByText(/levelrail restore --latest/)).toBeInTheDocument()
+    expect(
+      screen.getByText(commandText('levelrail restore --latest')),
+    ).toBeInTheDocument()
   })
 
   it('keeps skip backup behind an expander, off by default', async () => {

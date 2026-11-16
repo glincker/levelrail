@@ -214,7 +214,7 @@ export async function fetchGitSourceSummaries(): Promise<
       ),
     )
   }
-  return (await res.json()) as GitSourceSummaryResource[]
+  return ((await res.json()) as GitSourceSummaryResource[] | null) ?? []
 }
 
 export function gitSourceSummariesQueryOptions() {

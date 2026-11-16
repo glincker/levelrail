@@ -3,6 +3,7 @@ package ingress
 import (
 	"context"
 	"errors"
+	"log/slog"
 	"testing"
 
 	"github.com/GLINCKER/levelrail/internal/ingress"
@@ -29,7 +30,7 @@ func TestController_Reconcile_DomainMaintenance_NoRunningContainer_StillRouted(t
 		maintenance: []string{"down.example.com"},
 	}
 	applier := &fakeApplier{}
-	c := New(st, rt, applier, WithLogger(discardLogger()))
+	c := New(st, rt, applier, WithLogger(slog.New(slog.DiscardHandler)))
 
 	result, err := c.Reconcile(context.Background())
 	if err != nil {
@@ -76,7 +77,7 @@ func TestController_Reconcile_DomainMaintenance_MixedDomains_SplitsIntoMaintenan
 		maintenance: []string{"down.example.com"},
 	}
 	applier := &fakeApplier{}
-	c := New(st, rt, applier, WithLogger(discardLogger()))
+	c := New(st, rt, applier, WithLogger(slog.New(slog.DiscardHandler)))
 
 	if _, err := c.Reconcile(context.Background()); err != nil {
 		t.Fatalf("Reconcile() error = %v", err)
@@ -118,7 +119,7 @@ func TestController_Reconcile_DomainMaintenance_MixedDomains_SplitsIntoMaintenan
 func TestController_Reconcile_DomainMaintenance_ListError_Fails(t *testing.T) {
 	st := &fakeStore{maintenanceErr: errors.New("db unreachable")}
 	applier := &fakeApplier{}
-	c := New(st, newFakeRuntime(), applier, WithLogger(discardLogger()))
+	c := New(st, newFakeRuntime(), applier, WithLogger(slog.New(slog.DiscardHandler)))
 
 	result, err := c.Reconcile(context.Background())
 	if err == nil {

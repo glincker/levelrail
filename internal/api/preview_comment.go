@@ -70,6 +70,8 @@ type previewCommentExtras struct {
 	// EnvOverrides counts this pull request's env overrides; only the count is
 	// shown, never a key or value.
 	EnvOverrides int
+	// DeployURL links the deploy page the preview was built from.
+	DeployURL string
 }
 
 func renderPreviewCommentWith(p store.PreviewEnvironment, state, detail string, now time.Time, x previewCommentExtras) string {
@@ -97,6 +99,13 @@ func renderPreviewCommentWith(p store.PreviewEnvironment, state, detail string, 
 	}
 	if !x.ExpiresAt.IsZero() && (state == previewCommentReady || state == previewCommentBuilding) {
 		fmt.Fprintf(&sb, "\n- **Cleanup:** removed when this pull request closes, or after %s without updates", x.ExpiresAt.UTC().Format("2006-01-02 15:04 UTC"))
+	}
+	if state != previewCommentRemoved {
+		if x.DeployURL != "" {
+			fmt.Fprintf(&sb, "\n- **Built by:** [Levelrail](%s)", x.DeployURL)
+		} else {
+			sb.WriteString("\n- **Built by:** Levelrail")
+		}
 	}
 	if detail = shortPreviewDetail(detail); detail != "" {
 		sb.WriteString("\n\n")
@@ -171,6 +180,7 @@ func (rt *Router) previewCommentExtras(ctx context.Context, p store.PreviewEnvir
 	var x previewCommentExtras
 	if base := strings.TrimRight(rt.dashboardURL(), "/"); base != "" {
 		x.LogsURL = base + "/apps/" + p.PreviewAppID + "/logs"
+		x.DeployURL = base + "/apps/" + p.AppName + "/deployments"
 	}
 	if overrides, err := rt.previewEnvironments.ListPRPreviewEnvOverrides(ctx, p.AppName, p.PRNumber); err == nil {
 		x.EnvOverrides = len(overrides)

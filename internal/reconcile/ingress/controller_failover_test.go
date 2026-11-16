@@ -2,6 +2,7 @@ package ingress
 
 import (
 	"context"
+	"log/slog"
 	"testing"
 
 	"github.com/GLINCKER/levelrail/internal/reconcile/application"
@@ -49,7 +50,7 @@ func TestFailoverRoute(t *testing.T) {
 			if tc.seedOld {
 				rt.containers[oldName].Image = oldSvc.Image
 			}
-			c := New(&fakeStore{}, rt, &fakeApplier{}, WithLogger(discardLogger()))
+			c := New(&fakeStore{}, rt, &fakeApplier{}, WithLogger(slog.New(slog.DiscardHandler)))
 			lb := c.failoverRoute(context.Background(), newSvc, tc.dial)
 			if tc.wantNil {
 				if lb != nil {

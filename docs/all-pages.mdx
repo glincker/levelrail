@@ -89,6 +89,7 @@ The complete index of the Levelrail docs. For a self-hosted app gallery, see the
 - [Event webhooks](/event-webhooks): Push signed events to your own HTTPS endpoint when something changes, with retries, a dead letter state, a delivery log and one click replay.
 - [Off-host heartbeat](/heartbeat): The control plane calls a URL you choose while it is healthy. An outside monitor alerts when the calls stop, even if the whole server is down.
 - [Attention center](/attention-center): How the dashboard surfaces what waits on an operator: CLI login approvals, deploy approvals, expiring tokens, failed data copies, overdue backups and renewals.
+- [Token expiry and rotation](/token-expiry-and-rotation): How Levelrail reminds you before an API token expires, how to rotate it without breaking the caller, and what the CLI does for a saved login.
 
 ### Deploying
 
@@ -158,6 +159,7 @@ The complete index of the Levelrail docs. For a self-hosted app gallery, see the
 - [DNS zones and records](/dns): Manage DNS zones and records at Cloudflare, Route53 or Google Cloud DNS, move name servers, verify delegation and propagation, and serve wildcard subdomains.
 - [DNS zones and nameserver delegation](/dns-zones): Check that your registrar points a domain at the nameservers of its DNS zone, and what each delegation state means.
 - [DNS query visibility (beta)](/dns-visibility): See which app asks the mesh DNS server for which name, with per-app counters, a bounded in-memory log and three privacy levels. Off by default.
+- [Egress dry run (beta)](/egress-dry-run): See which names an app asked the mesh DNS server for that its egress allowlist would deny, before you rely on the allowlist. Read only, nothing is enforced.
 - [Mesh DNS on the bridge gateways (beta)](/mesh-dns): Let app containers on this node resolve through the mesh DNS server, with the firewall rule and checks it needs. Off by default.
 - [Mail DNS](/mail-dns): Build, review, apply and check the DNS records a domain needs for email, for your own mail server or an external provider. Add-only by default.
 - [Mail server template](/mail-template): Install the mox mail server as a one-click template, with private admin ports, your own certificate, optional relay mode and backup notes.

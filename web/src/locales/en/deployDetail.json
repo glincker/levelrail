@@ -350,5 +350,107 @@
     "error": "Error",
     "showLess": "Show less",
     "showMore": "Show more"
+  },
+  "buildStages": {
+    "title": "Build stages",
+    "graphLabel": "Build stages in order",
+    "waterfallLabel": "Stage durations on one time axis",
+    "loading": "Loading build stages",
+    "error": "Build stages could not be loaded.",
+    "retry": "Retry",
+    "empty": "No build stages were recorded for this deploy.",
+    "pickHint": "Select a stage to read its log.",
+    "failedHint": "The {{stage}} stage failed. Open its log to see why.",
+    "nodeLabel": "{{stage}}, {{status}}, {{duration}}",
+    "barLabel": "{{stage}} bar, {{percent}} percent of the timeline",
+    "totals": "Wall time {{wall}}, stages total {{stages}}.",
+    "gap": {
+      "outside": "{{time}} passed between or outside stages.",
+      "overlap": "Stages overlapped by {{time}}."
+    },
+    "stage": {
+      "source": "Source",
+      "detect": "Detect",
+      "install": "Install",
+      "build": "Build",
+      "export": "Export",
+      "push": "Push"
+    },
+    "status": {
+      "running": "running",
+      "done": "done",
+      "failed": "failed"
+    },
+    "cache": {
+      "hit": "Cache hit",
+      "miss": "Cache miss",
+      "partial": "Cache {{cached}} of {{total}}"
+    },
+    "logTitle": "{{stage}} log",
+    "logLabel": "{{stage}} log output",
+    "logEmpty": "No output for this stage yet.",
+    "logError": "The stage log stream dropped. It reconnects on its own.",
+    "followOn": "Following",
+    "followOff": "Follow",
+    "copy": "Copy"
+  },
+  "sections": {
+    "summary": "Summary",
+    "waterfall": "Waterfall",
+    "rollout": "Roll out",
+    "logs": "Logs",
+    "compare": "Compare",
+    "navLabel": "Run sections"
+  },
+  "run": {
+    "progressLabel": "Progress by stage",
+    "elapsed": "Elapsed {{time}}",
+    "stageCount": "{{count}} stages",
+    "stageFilter": "Stage",
+    "allStages": "All stages",
+    "compareBody": "Compare this run with the previous successful one, stage by stage.",
+    "compareCta": "Compare with previous run",
+    "titleRunning": "Building:",
+    "titleFailed": "Failed:",
+    "doneToast": "The run finished.",
+    "failedToast": "The run failed."
+  },
+  "runActions": {
+    "cancel": "Cancel build",
+    "cancelWhy": "Stops the build in progress.",
+    "cancelOff": "Only a running or queued deploy can be canceled.",
+    "redeploy": "Redeploy",
+    "retry": "Retry",
+    "redeployWhy": "Starts a new deploy of this image.",
+    "redeployOff": "Wait for the run to finish first.",
+    "rollback": "Roll back to this",
+    "rollbackWhy": "Serve this release again.",
+    "rollbackOff": "Only a finished, successful deploy that is not live can be rolled back to.",
+    "copyLink": "Copy log link",
+    "copyLinkWhy": "Copies a link to the logs.",
+    "copied": "Copied",
+    "download": "Download logs",
+    "redeployStarted": "Redeploy started.",
+    "redeployFailed": "Could not redeploy.",
+    "rollbackStarted": "Rollback triggered.",
+    "rollbackFailed": "Could not roll back."
+  },
+  "noStages": {
+    "prebuilt": "No build stages: this deploy used a prebuilt image.",
+    "label": "Phases of this deploy",
+    "step": {
+      "pull": "Pull image",
+      "create": "Create container",
+      "readiness": "Readiness",
+      "rollout": "Roll out"
+    },
+    "status": {
+      "pending": "Waiting",
+      "running": "In progress",
+      "done": "Done",
+      "failed": "Failed",
+      "skipped": "Skipped",
+      "unknown": "Waiting"
+    }
   }
 }

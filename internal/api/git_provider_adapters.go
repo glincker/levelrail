@@ -46,7 +46,7 @@ type GitConnectionsStore interface {
 
 // GitLabAppClient is the surface internal/api needs from internal/gitlabapp.Client.
 type GitLabAppClient interface {
-	ExchangeCode(ctx context.Context, instanceURL, clientID, clientSecret, redirectURI, code string) (gitlabapp.Tokens, error)
+	ExchangeCode(ctx context.Context, instanceURL, clientID, clientSecret, redirectURI, code, codeVerifier string) (gitlabapp.Tokens, error)
 	RefreshToken(ctx context.Context, instanceURL, clientID, clientSecret, refreshToken string) (gitlabapp.Tokens, error)
 	RevokeToken(ctx context.Context, instanceURL, clientID, clientSecret, token string) error
 	CurrentUser(ctx context.Context, instanceURL, accessToken string) (gitlabapp.Account, error)
@@ -77,7 +77,7 @@ type BitbucketAppClient interface {
 
 // GiteaAppClient is the surface internal/api needs from internal/giteaapp.Client.
 type GiteaAppClient interface {
-	ExchangeCode(ctx context.Context, instanceURL, clientID, clientSecret, redirectURI, code string) (giteaapp.Tokens, error)
+	ExchangeCode(ctx context.Context, instanceURL, clientID, clientSecret, redirectURI, code, codeVerifier string) (giteaapp.Tokens, error)
 	RefreshToken(ctx context.Context, instanceURL, clientID, clientSecret, refreshToken string) (giteaapp.Tokens, error)
 	CurrentUser(ctx context.Context, instanceURL, accessToken string) (giteaapp.Account, error)
 	ListRepos(ctx context.Context, instanceURL, accessToken string, opts gitprovider.ListOptions) ([]giteaapp.Repo, gitprovider.ListResult, error)
@@ -132,8 +132,8 @@ type gitProviderAdapter struct {
 	callbackPath string
 	scopes       string
 	revokeNote   string
-	authorizeURL func(c store.GitConnection, redirectURI, state string) string
-	exchange     func(ctx context.Context, c store.GitConnection, secret, redirectURI, code string) (gitOAuthTokens, error)
+	authorizeURL func(c store.GitConnection, redirectURI, state, codeChallenge string) string
+	exchange     func(ctx context.Context, c store.GitConnection, secret, redirectURI, code, codeVerifier string) (gitOAuthTokens, error)
 	refresh      func(ctx context.Context, c store.GitConnection, secret, refreshToken string) (gitOAuthTokens, error)
 	revoke       func(ctx context.Context, c store.GitConnection, secret, token string) error
 	account      func(ctx context.Context, c store.GitConnection, token string) (gitAccountInfo, error)
@@ -141,7 +141,9 @@ type gitProviderAdapter struct {
 	branches     func(ctx context.Context, c store.GitConnection, token, repo string) ([]gitBranchInfo, error)
 	webhook      func(ctx context.Context, c store.GitConnection, token, repo, hookURL, secret string) error
 	// Set only by token-authenticated providers, which have no OAuth flow, refresh or client application.
-	patAuth       bool
+	patAuth bool
+	// pkce marks providers whose authorize and token calls carry an S256 code challenge and verifier.
+	pkce          bool
 	deleteWebhook func(ctx context.Context, c store.GitConnection, token, repo, hookURL string) error
 }
 
@@ -174,13 +176,13 @@ func gitlabProjectID(repo string) (int64, error) {
 func (rt *Router) gitlabAdapter() gitProviderAdapter {
 	c := rt.gitlabAppClient
 	return gitProviderAdapter{
-		provider: gitProviderGitLab, label: "GitLab", secretKey: gitConnClientSecretKey, callbackPath: gitlabCallbackPath, scopes: gitlabapp.DefaultScope,
+		provider: gitProviderGitLab, label: "GitLab", secretKey: gitConnClientSecretKey, callbackPath: gitlabCallbackPath, scopes: gitlabapp.DefaultScope, pkce: true,
 		revokeNote: "Revoke it yourself under User Settings, Applications on your GitLab instance.",
-		authorizeURL: func(conn store.GitConnection, redirectURI, state string) string {
-			return gitlabapp.AuthorizeURL(conn.InstanceURL, conn.ClientID, redirectURI, state)
+		authorizeURL: func(conn store.GitConnection, redirectURI, state, challenge string) string {
+			return gitlabapp.AuthorizeURL(conn.InstanceURL, conn.ClientID, redirectURI, state, challenge)
 		},
-		exchange: func(ctx context.Context, conn store.GitConnection, secret, redirectURI, code string) (gitOAuthTokens, error) {
-			t, err := c.ExchangeCode(ctx, conn.InstanceURL, conn.ClientID, secret, redirectURI, code)
+		exchange: func(ctx context.Context, conn store.GitConnection, secret, redirectURI, code, verifier string) (gitOAuthTokens, error) {
+			t, err := c.ExchangeCode(ctx, conn.InstanceURL, conn.ClientID, secret, redirectURI, code, verifier)
 			return gitOAuthTokens{Access: t.AccessToken, Refresh: t.RefreshToken, Expires: t.ExpiresAt}, err
 		},
 		refresh: func(ctx context.Context, conn store.GitConnection, secret, refresh string) (gitOAuthTokens, error) {
@@ -229,10 +231,10 @@ func (rt *Router) bitbucketAdapter() gitProviderAdapter {
 	return gitProviderAdapter{
 		provider: gitProviderBitbucket, label: "Bitbucket", secretKey: bitbucketSecretKey, callbackPath: bitbucketCallbackPath,
 		revokeNote: "Bitbucket has no API to revoke an OAuth consumer's tokens. Revoke access under Personal settings, App authorizations on bitbucket.org.",
-		authorizeURL: func(conn store.GitConnection, redirectURI, state string) string {
+		authorizeURL: func(conn store.GitConnection, redirectURI, state, _ string) string {
 			return bitbucketapp.AuthorizeURL(conn.ClientID, redirectURI, state)
 		},
-		exchange: func(ctx context.Context, conn store.GitConnection, secret, _, code string) (gitOAuthTokens, error) {
+		exchange: func(ctx context.Context, conn store.GitConnection, secret, _, code, _ string) (gitOAuthTokens, error) {
 			t, err := c.ExchangeCode(ctx, conn.ClientID, secret, code)
 			return gitOAuthTokens{Access: t.AccessToken, Refresh: t.RefreshToken, Expires: t.ExpiresAt}, err
 		},
@@ -265,13 +267,13 @@ func (rt *Router) bitbucketAdapter() gitProviderAdapter {
 func (rt *Router) giteaAdapter() gitProviderAdapter {
 	c := rt.giteaAppClient
 	return gitProviderAdapter{
-		provider: gitProviderGitea, label: "Gitea", secretKey: gitConnClientSecretKey, callbackPath: giteaCallbackPath, scopes: giteaapp.DefaultScope,
+		provider: gitProviderGitea, label: "Gitea", secretKey: gitConnClientSecretKey, callbackPath: giteaCallbackPath, scopes: giteaapp.DefaultScope, pkce: true,
 		revokeNote: "Gitea has no API to revoke an OAuth2 application's tokens. Remove the application under Settings, Applications on your Gitea instance.",
-		authorizeURL: func(conn store.GitConnection, redirectURI, state string) string {
-			return giteaapp.AuthorizeURL(conn.InstanceURL, conn.ClientID, redirectURI, state)
+		authorizeURL: func(conn store.GitConnection, redirectURI, state, challenge string) string {
+			return giteaapp.AuthorizeURL(conn.InstanceURL, conn.ClientID, redirectURI, state, challenge)
 		},
-		exchange: func(ctx context.Context, conn store.GitConnection, secret, redirectURI, code string) (gitOAuthTokens, error) {
-			t, err := c.ExchangeCode(ctx, conn.InstanceURL, conn.ClientID, secret, redirectURI, code)
+		exchange: func(ctx context.Context, conn store.GitConnection, secret, redirectURI, code, verifier string) (gitOAuthTokens, error) {
+			t, err := c.ExchangeCode(ctx, conn.InstanceURL, conn.ClientID, secret, redirectURI, code, verifier)
 			return gitOAuthTokens{Access: t.AccessToken, Refresh: t.RefreshToken, Expires: t.ExpiresAt}, err
 		},
 		refresh: func(ctx context.Context, conn store.GitConnection, secret, refresh string) (gitOAuthTokens, error) {

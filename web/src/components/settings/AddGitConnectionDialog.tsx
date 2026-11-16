@@ -1,24 +1,22 @@
 import { useState } from 'react'
 import { useTranslation } from 'react-i18next'
-import {
-  CheckGlassIcon,
-  CopyGlassIcon,
-  PlugGlassIcon,
-  PlusGlassIcon,
-} from '@thesvg/ui-react'
+import { PlugGlassIcon, PlusGlassIcon } from '@thesvg/ui-react'
 import { Button } from '@/components/ui/button'
 import { BrandTile } from '../BrandLogoBadge'
 import {
-  Dialog,
-  DialogContent,
-  DialogDescription,
-  DialogFooter,
-  DialogHeader,
-  DialogTitle,
-} from '@/components/ui/dialog'
+  Sheet,
+  SheetContent,
+  SheetDescription,
+  SheetFooter,
+  SheetHeader,
+  SheetTitle,
+} from '@/components/ui/sheet'
 import { Field, FieldDescription, FieldLabel } from '@/components/ui/field'
 import { Input } from '@/components/ui/input'
 import { SecretInput } from '@/components/ui/secret-input'
+import { gitRedirectUri } from '../../lib/gitHost'
+import { GitConnectGuide } from './GitConnectGuide'
+import { GitCredentialFields } from './GitCredentialFields'
 import {
   Select,
   SelectContent,
@@ -54,7 +52,7 @@ const BRAND_MARK: Record<GitConnectionProvider, string> = {
   forgejo: 'forgejo',
   bitbucket: 'bitbucket',
   bitbucket_server: 'bitbucket',
-  azure_devops: 'azure',
+  azure_devops: 'azure-devops',
 }
 
 // Registers an OAuth application (or, for Bitbucket Server, a personal access
@@ -64,11 +62,14 @@ export function AddGitConnectionDialog({
   existing,
   open,
   onOpenChange,
+  onUseToken,
 }: Readonly<{
   provider: GitConnectionProvider
   existing: GitProviderConnection[]
   open: boolean
   onOpenChange: (open: boolean) => void
+  /** Closes this dialog and opens the token form, the way out of OAuth. */
+  onUseToken?: () => void
 }>) {
   const { t } = useTranslation('settings')
   const create = useCreateGitConnection()
@@ -79,7 +80,6 @@ export function AddGitConnectionDialog({
   const [clientSecret, setClientSecret] = useState('')
   const [token, setToken] = useState('')
   const [label, setLabel] = useState('')
-  const [copied, setCopied] = useState(false)
 
   const tokenAuth =
     provider === 'bitbucket_server' || provider === 'azure_devops'
@@ -135,62 +135,33 @@ export function AddGitConnectionDialog({
     )
   }
 
-  const callback = `${window.location.origin}/api/v1/${provider}-app/callback`
+  const callback = gitRedirectUri(window.location.origin, provider)
 
   return (
-    <Dialog
+    <Sheet
       open={open}
       onOpenChange={(next) => {
         if (!next) reset()
         onOpenChange(next)
       }}
     >
-      <DialogContent className="sm:max-w-lg">
-        <DialogHeader>
-          <DialogTitle className="flex items-center gap-2">
+      <SheetContent className="overflow-y-auto data-[side=right]:sm:max-w-2xl">
+        <SheetHeader>
+          <SheetTitle className="flex items-center gap-2">
             <BrandTile
               name={BRAND_MARK[provider]}
               label={t(`gitConnections.add.title.${provider}`)}
               size="sm"
             />
             {t(`gitConnections.add.title.${provider}`)}
-          </DialogTitle>
-          <DialogDescription>
+          </SheetTitle>
+          <SheetDescription>
             {tokenAuth
               ? t('gitConnections.add.tokenDescription')
               : t('gitConnections.add.description', { callback })}
-          </DialogDescription>
-        </DialogHeader>
-        <div className="space-y-4">
-          {tokenAuth ? null : (
-            <div className="flex flex-wrap items-center gap-2 rounded-md border border-border bg-muted/30 p-2">
-              <span className="text-xs text-muted-foreground">
-                {t('gitConnections.add.callbackLabel')}
-              </span>
-              <code className="min-w-0 flex-1 break-all text-xs">
-                {callback}
-              </code>
-              <Button
-                type="button"
-                size="sm"
-                variant="outline"
-                onClick={() => {
-                  void navigator.clipboard.writeText(callback).then(() => {
-                    setCopied(true)
-                  })
-                }}
-              >
-                {copied ? (
-                  <CheckGlassIcon className="size-5" aria-hidden="true" />
-                ) : (
-                  <CopyGlassIcon className="size-5" aria-hidden="true" />
-                )}
-                {copied
-                  ? t('gitConnections.add.callbackCopied')
-                  : t('gitConnections.add.callbackCopy')}
-              </Button>
-            </div>
-          )}
+          </SheetDescription>
+        </SheetHeader>
+        <div className="space-y-4 px-4">
           {existing.length > 0 && !tokenAuth ? (
             <Field>
               <FieldLabel htmlFor="git-conn-source">
@@ -263,32 +234,20 @@ export function AddGitConnectionDialog({
                 </Field>
               ) : null}
               {tokenAuth ? null : (
-                <>
-                  <Field>
-                    <FieldLabel htmlFor="git-conn-client-id">
-                      {t(`gitConnections.add.clientId.${provider}`)}
-                    </FieldLabel>
-                    <Input
-                      id="git-conn-client-id"
-                      autoComplete="off"
-                      spellCheck={false}
-                      value={clientId}
-                      onChange={(e) => setClientId(e.target.value)}
-                    />
-                  </Field>
-                  <Field>
-                    <FieldLabel htmlFor="git-conn-client-secret">
-                      {t('gitConnections.add.clientSecret')}
-                    </FieldLabel>
-                    <SecretInput
-                      id="git-conn-client-secret"
-                      autoComplete="off"
-                      spellCheck={false}
-                      value={clientSecret}
-                      onChange={(e) => setClientSecret(e.target.value)}
-                    />
-                  </Field>
-                </>
+                <GitConnectGuide
+                  provider={provider}
+                  baseUrl={instanceUrl}
+                  onUseToken={onUseToken}
+                />
+              )}
+              {tokenAuth ? null : (
+                <GitCredentialFields
+                  provider={provider}
+                  clientId={clientId}
+                  clientSecret={clientSecret}
+                  onClientId={setClientId}
+                  onClientSecret={setClientSecret}
+                />
               )}
             </>
           )}
@@ -360,7 +319,7 @@ export function AddGitConnectionDialog({
             </p>
           ) : null}
         </div>
-        <DialogFooter>
+        <SheetFooter>
           <Button
             type="button"
             variant="outline"
@@ -386,8 +345,8 @@ export function AddGitConnectionDialog({
                     : 'gitConnections.add.submit',
                 )}
           </Button>
-        </DialogFooter>
-      </DialogContent>
-    </Dialog>
+        </SheetFooter>
+      </SheetContent>
+    </Sheet>
   )
 }

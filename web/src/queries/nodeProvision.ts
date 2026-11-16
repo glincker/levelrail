@@ -37,7 +37,7 @@ async function fetchNodeProviders(): Promise<NodeProviderResource[]> {
       await readErrorMessage(res, `fetch node providers failed: ${res.status}`),
     )
   }
-  return (await res.json()) as NodeProviderResource[]
+  return ((await res.json()) as NodeProviderResource[] | null) ?? []
 }
 
 export function nodeProviderListQueryOptions() {
@@ -177,7 +177,7 @@ async function fetchNodeProviderRegions(
       ),
     )
   }
-  return (await res.json()) as NodeProviderRegionResource[]
+  return ((await res.json()) as NodeProviderRegionResource[] | null) ?? []
 }
 
 // enabled gates the query on a provider actually being selected in the
@@ -209,7 +209,7 @@ async function fetchNodeProviderSizes(
       ),
     )
   }
-  return (await res.json()) as NodeProviderSizeResource[]
+  return ((await res.json()) as NodeProviderSizeResource[] | null) ?? []
 }
 
 export function useNodeProviderSizes(

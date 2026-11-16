@@ -58,7 +58,7 @@ export async function fetchInvites(): Promise<InviteResource[]> {
       await readErrorMessage(res, `fetch invites failed: ${res.status}`),
     )
   }
-  return (await res.json()) as InviteResource[]
+  return ((await res.json()) as InviteResource[] | null) ?? []
 }
 
 export function inviteListQueryOptions() {

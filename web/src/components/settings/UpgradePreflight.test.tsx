@@ -1,4 +1,6 @@
-import { render, screen } from '@testing-library/react'
+import { render, screen, within } from '@testing-library/react'
+import userEvent from '@testing-library/user-event'
+import { commandText } from '@/test/commandText'
 import { QueryClientProvider } from '@tanstack/react-query'
 import { afterEach, describe, expect, it, vi } from 'vitest'
 import i18next from 'i18next'
@@ -67,8 +69,25 @@ describe('UpgradePreflight', () => {
     renderWith(base)
     expect(await screen.findByText('Free disk space')).toBeInTheDocument()
     expect(screen.getByText('Pass')).toBeInTheDocument()
-    expect(screen.getByText('sh -s upgrade')).toBeInTheDocument()
+    expect(screen.getByText(commandText('sh -s upgrade'))).toBeInTheDocument()
     expect(screen.getByText('Fixes things')).toBeInTheDocument()
+  })
+
+  it('copies the plain command although the display is highlighted', async () => {
+    const writeText = vi.fn().mockResolvedValue(undefined)
+    renderWith(base)
+    await screen.findByText(commandText('sh -s upgrade'))
+    // user-event installs its own clipboard on setup, so stub after it.
+    const user = userEvent.setup()
+    Object.defineProperty(navigator, 'clipboard', {
+      value: { writeText },
+      configurable: true,
+    })
+    const block = screen.getByText(commandText('sh -s upgrade')).closest('div')
+    await user.click(
+      within(block as HTMLElement).getByRole('button', { name: /copy/i }),
+    )
+    expect(writeText).toHaveBeenCalledWith('sh -s upgrade')
   })
 
   it('hides the command and explains when blocked', async () => {

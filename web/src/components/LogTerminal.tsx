@@ -15,6 +15,7 @@ import {
   type LogFilter,
 } from '../lib/logFilter'
 import { useNowTick } from '../hooks/useNowTick'
+import { extendAnsiStates, newAnsiStateCache } from '../lib/ansiRender'
 import { readLogSelection } from '../lib/logSelection'
 import { LogRow, LOG_ROW_HEIGHT_PX as ROW_HEIGHT_PX } from './LogRow'
 import { LogToolbar } from './LogToolbar'
@@ -90,6 +91,12 @@ export function LogTerminal({
     [allLines, filter],
   )
   const parentRef = useRef<HTMLDivElement>(null)
+  // Colour state is tracked over the whole stream, not the filtered view, so a filter keeps it right.
+  const ansiCacheRef = useRef(newAnsiStateCache())
+  const ansiStarts = useMemo(
+    () => extendAnsiStates(ansiCacheRef.current, allLines),
+    [allLines],
+  )
   // Tick only when the stream actually carries timestamps.
   const hasTimes = allLines[allLines.length - 1]?.at !== undefined
   const now = useNowTick(hasTimes)
@@ -254,13 +261,13 @@ export function LogTerminal({
         role="region"
         aria-label="Log output"
         tabIndex={0}
-        className={`${isFullscreen ? 'h-full' : heightClassName} overflow-auto rounded-lg border border-neutral-800 bg-neutral-950 font-mono text-xs leading-5 text-neutral-200 focus-visible:ring-1 focus-visible:ring-neutral-400 focus-visible:outline-none`}
+        className={`glinr-terminal ${isFullscreen ? 'h-full' : heightClassName} scrollbar-stable overflow-auto rounded-lg border border-glinr-code-border bg-glinr-code-bg font-mono text-xs leading-5 text-glinr-code-fg selection:bg-glinr-code-selection focus-visible:ring-2 focus-visible:ring-ring focus-visible:outline-none`}
       >
         {lines.length === 0 ? (
-          <p className="flex items-center gap-2 px-3 py-2 text-neutral-400">
+          <p className="flex items-center gap-2 px-3 py-2 text-glinr-code-muted">
             <span
               aria-hidden="true"
-              className={`size-1.5 rounded-full bg-neutral-500 ${emptyStatePulse ? 'animate-pulse motion-reduce:animate-none' : ''}`}
+              className={`size-1.5 rounded-full bg-glinr-code-muted ${emptyStatePulse ? 'animate-pulse motion-reduce:animate-none' : ''}`}
             />
             {emptyStateMessage}
           </p>
@@ -292,6 +299,7 @@ export function LogTerminal({
                   highlight={filter.text}
                   wrap={wrap}
                   now={now}
+                  ansiStart={ansiStarts.get(logLine.id)}
                 />
               )
             })}
@@ -306,7 +314,7 @@ export function LogTerminal({
           setIsFullscreen((prev) => !prev)
         }}
         aria-label={isFullscreen ? 'Exit fullscreen' : 'View fullscreen'}
-        className="absolute top-12 right-2 rounded p-2 text-neutral-400 focus-visible:ring-1 focus-visible:ring-neutral-400 focus-visible:outline-none hover:bg-neutral-800 hover:text-neutral-100"
+        className="glinr-terminal absolute top-12 right-2 rounded p-2 text-glinr-code-muted focus-visible:ring-2 focus-visible:ring-ring focus-visible:outline-none hover:bg-glinr-code-line-highlight hover:text-glinr-code-fg"
       >
         {isFullscreen ? (
           <MinimizeGlassIcon className="size-5" aria-hidden="true" />
@@ -320,7 +328,7 @@ export function LogTerminal({
           type="button"
           onClick={pauseTracked}
           aria-label={t('live.pause')}
-          className="absolute top-12 right-10 rounded p-2 text-neutral-400 focus-visible:ring-1 focus-visible:ring-neutral-400 focus-visible:outline-none hover:bg-neutral-800 hover:text-neutral-100"
+          className="glinr-terminal absolute top-12 right-10 rounded p-2 text-glinr-code-muted focus-visible:ring-2 focus-visible:ring-ring focus-visible:outline-none hover:bg-glinr-code-line-highlight hover:text-glinr-code-fg"
         >
           <PauseGlassIcon className="size-5" aria-hidden="true" />
         </button>
@@ -330,7 +338,7 @@ export function LogTerminal({
         <button
           type="button"
           onClick={handleResumeClick}
-          className="absolute bottom-3 left-1/2 flex -translate-x-1/2 items-center gap-1.5 rounded-full bg-neutral-800 px-3 py-1.5 text-xs font-medium text-neutral-100 shadow-lg focus-visible:ring-2 focus-visible:ring-neutral-400 focus-visible:outline-none hover:bg-neutral-700"
+          className="glinr-terminal absolute bottom-3 left-1/2 flex -translate-x-1/2 items-center gap-1.5 rounded-full border border-glinr-code-border bg-glinr-code-bg px-3 py-1.5 text-xs font-medium text-glinr-code-fg shadow-lg focus-visible:ring-2 focus-visible:ring-ring focus-visible:outline-none hover:bg-glinr-code-line-highlight"
         >
           <ArrowDownGlassIcon className="size-5" aria-hidden="true" />
           {t('live.resume', {

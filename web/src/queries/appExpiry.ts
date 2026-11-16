@@ -1,5 +1,5 @@
 import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query'
-import { ApiError, readErrorMessage } from '../lib/apiError'
+import { apiRequest } from '../lib/apiRequest'
 
 // Matches internal/api's appExpiryResource.
 export interface AppExpiry {
@@ -28,36 +28,29 @@ export interface SetAppExpiryInput {
 const key = (app: string) => ['app-expiry', app] as const
 const path = (app: string) => `/api/v1/apps/${encodeURIComponent(app)}/expiry`
 
-async function json(res: Response, what: string): Promise<AppExpiry> {
-  if (!res.ok) {
-    throw new ApiError(
-      res.status,
-      await readErrorMessage(res, `${what} failed: ${res.status}`),
-    )
-  }
-  return (await res.json()) as AppExpiry
+function call(
+  app: string,
+  what: string,
+  init?: { method?: string; body?: unknown; signal?: AbortSignal },
+): Promise<AppExpiry> {
+  return apiRequest<AppExpiry>(path(app), {
+    ...init,
+    fallbackMessage: `${what} failed`,
+  })
 }
 
 export function useAppExpiry(app: string) {
   return useQuery({
     queryKey: key(app),
-    queryFn: async ({ signal }) =>
-      json(await fetch(path(app), { signal }), 'fetch app expiry'),
+    queryFn: ({ signal }) => call(app, 'fetch app expiry', { signal }),
   })
 }
 
 export function useSetAppExpiry(app: string) {
   const qc = useQueryClient()
   return useMutation({
-    mutationFn: async (input: SetAppExpiryInput) =>
-      json(
-        await fetch(path(app), {
-          method: 'PUT',
-          headers: { 'Content-Type': 'application/json' },
-          body: JSON.stringify(input),
-        }),
-        'set app expiry',
-      ),
+    mutationFn: (input: SetAppExpiryInput) =>
+      call(app, 'set app expiry', { method: 'PUT', body: input }),
     onSuccess: (data) => qc.setQueryData(key(app), data),
   })
 }
@@ -65,8 +58,7 @@ export function useSetAppExpiry(app: string) {
 export function useClearAppExpiry(app: string) {
   const qc = useQueryClient()
   return useMutation({
-    mutationFn: async () =>
-      json(await fetch(path(app), { method: 'DELETE' }), 'clear app expiry'),
+    mutationFn: () => call(app, 'clear app expiry', { method: 'DELETE' }),
     onSuccess: (data) => qc.setQueryData(key(app), data),
   })
 }

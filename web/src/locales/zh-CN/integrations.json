@@ -1,0 +1,111 @@
+{
+  "title": "集成",
+  "description": "查看所有已连接的服务、其状态和到期时间，以及添加更多服务的位置。",
+  "retry": "重试",
+  "loadFailed": "无法加载连接。",
+  "connected": {
+    "title": "已连接"
+  },
+  "empty": {
+    "title": "尚未连接任何服务",
+    "description": "从下方目录连接 Git 主机、镜像仓库或通知渠道。",
+    "noMatch": "没有符合这些筛选条件的连接。"
+  },
+  "filters": {
+    "searchLabel": "搜索连接",
+    "searchPlaceholder": "按名称、账号或主机搜索",
+    "kind": "类型",
+    "scope": "范围",
+    "health": "状态",
+    "allKinds": "所有类型",
+    "allScopes": "所有范围",
+    "allHealth": "任意状态",
+    "clear": "清除筛选"
+  },
+  "kinds": {
+    "git": "Git",
+    "registry": "镜像仓库",
+    "notify": "通知",
+    "secret": "密钥",
+    "dns": "DNS",
+    "cloud": "云",
+    "webhook": "Webhook"
+  },
+  "scopes": {
+    "instance": "实例",
+    "org": "组织",
+    "app": "应用"
+  },
+  "health": {
+    "ok": "正常",
+    "degraded": "降级",
+    "needs_reconnect": "需要重新连接",
+    "expired": "已过期",
+    "unknown": "未检查"
+  },
+  "authMethods": {
+    "app_install": "应用安装",
+    "oauth": "OAuth",
+    "token": "令牌",
+    "workload_identity": "工作负载身份",
+    "url_secret": "密钥 URL"
+  },
+  "categories": {
+    "git": "Git",
+    "registry": "镜像仓库",
+    "notify": "通知",
+    "secret": "密钥",
+    "dns": "DNS",
+    "cloud": "云",
+    "webhook": "Webhook",
+    "ci": "CI 身份",
+    "observability": "可观测性",
+    "addon": "应用附加组件"
+  },
+  "methods": {
+    "one_click": "一键",
+    "guided_oauth": "引导式 OAuth",
+    "token": "令牌",
+    "settings_page": "设置页面"
+  },
+  "connect": {
+    "one_click": "连接",
+    "guided_oauth": "设置",
+    "token": "添加令牌",
+    "settings_page": "打开"
+  },
+  "card": {
+    "lastUsed": "{{when}}使用过",
+    "neverUsed": "从未使用",
+    "default": "默认",
+    "manage": "管理",
+    "reconnect": "重新连接",
+    "manageNamed": "管理 {{name}}",
+    "reconnectNamed": "重新连接 {{name}}",
+    "bound_other": "{{count}} 个绑定",
+    "bind": "绑定",
+    "unbind": "解绑",
+    "bindNamed": "绑定 {{name}}",
+    "unbindNamed": "解绑 {{name}}"
+  },
+  "expiry": {
+    "expiresToday": "今天到期",
+    "autoRenew": "自动续期",
+    "expiresInDays_other": "{{count}} 天后到期",
+    "expiredDaysAgo_other": "{{count}} 天前已过期"
+  },
+  "attention": {
+    "title_other": "{{count}} 个连接需要处理"
+  },
+  "catalog": {
+    "title": "添加集成",
+    "description": "每个按钮都会打开管理该连接的页面。",
+    "empty": "暂无可用集成。",
+    "loadFailed": "无法加载目录。",
+    "connectNamed": "连接 {{name}}"
+  },
+  "wizard": {
+    "title": "集成",
+    "description": "连接 Git 主机、镜像仓库、通知服务或云账号。"
+  }
+}

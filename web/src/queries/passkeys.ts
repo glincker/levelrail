@@ -80,7 +80,7 @@ export async function fetchPasskeys(): Promise<PasskeyResource[]> {
   if (!res.ok) {
     await throwPasskeyError(res, `fetch passkeys failed: ${res.status}`)
   }
-  return (await res.json()) as PasskeyResource[]
+  return ((await res.json()) as PasskeyResource[] | null) ?? []
 }
 
 export function passkeysQueryOptions() {

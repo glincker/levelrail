@@ -97,13 +97,14 @@ func toTokens(resp tokenResponse) Tokens {
 // ExchangeCode exchanges an OAuth authorization code for an access
 // token, Gitea's documented POST {instance}/login/oauth/access_token
 // (docs.gitea.com/development/oauth2-provider).
-func (c *Client) ExchangeCode(ctx context.Context, instanceURL, clientID, clientSecret, redirectURI, code string) (Tokens, error) {
+func (c *Client) ExchangeCode(ctx context.Context, instanceURL, clientID, clientSecret, redirectURI, code, codeVerifier string) (Tokens, error) {
 	form := url.Values{
 		"grant_type":    {"authorization_code"},
 		"client_id":     {clientID},
 		"client_secret": {clientSecret},
 		"code":          {code},
 		"redirect_uri":  {redirectURI},
+		"code_verifier": {codeVerifier},
 	}
 	return c.token(ctx, instanceURL, form)
 }
@@ -148,6 +149,11 @@ type Repo struct {
 	WebURL        string
 	Archived      bool
 	Fork          bool
+	// Admin and Push are the token holder's rights on this repository as
+	// the server reports them, the only honest source of capability data.
+	Admin bool
+	Push  bool
+	Owner string
 }
 
 type repoResponse struct {
@@ -159,6 +165,13 @@ type repoResponse struct {
 	HTMLURL       string `json:"html_url"`
 	Archived      bool   `json:"archived"`
 	Fork          bool   `json:"fork"`
+	Permissions   struct {
+		Admin bool `json:"admin"`
+		Push  bool `json:"push"`
+	} `json:"permissions"`
+	Owner struct {
+		Login string `json:"login"`
+	} `json:"owner"`
 }
 
 func toRepo(r repoResponse) Repo {
@@ -171,6 +184,9 @@ func toRepo(r repoResponse) Repo {
 		WebURL:        r.HTMLURL,
 		Archived:      r.Archived,
 		Fork:          r.Fork,
+		Admin:         r.Permissions.Admin,
+		Push:          r.Permissions.Push,
+		Owner:         r.Owner.Login,
 	}
 }
 
@@ -270,7 +286,7 @@ type createWebhookRequest struct {
 	Active bool               `json:"active"`
 }
 
-// CreateRepoWebhook registers a push and pull_request webhook on
+// CreateRepoWebhook (idempotent through EnsureRepoWebhook) registers a push and pull_request webhook on
 // fullName ("owner/repo") pointed at hookURL, with secret set as the
 // value Gitea signs each delivery's X-Gitea-Signature header with
 // (HMAC-SHA256, hex digest, no prefix). Gitea also sends
@@ -285,17 +301,8 @@ type createWebhookRequest struct {
 // CreateProjectWebhook/CreateRepoWebhook already give for their own
 // merge/pull-request event keys.
 func (c *Client) CreateRepoWebhook(ctx context.Context, instanceURL, accessToken, fullName, hookURL, secret string) error {
-	body, err := json.Marshal(createWebhookRequest{ //nolint:gosec // secret is sent to Gitea to configure delivery signing, not a leaked credential
-		Type:   "gitea",
-		Config: giteaWebhookConfig{URL: hookURL, ContentType: "json", Secret: secret},
-		Events: []string{"push", "pull_request"},
-		Active: true,
-	})
-	if err != nil {
-		return fmt.Errorf("giteaapp: marshal webhook request: %w", err)
-	}
-	u := apiBaseURL(instanceURL) + "/repos/" + fullName + "/hooks"
-	return c.do(ctx, http.MethodPost, u, "Bearer "+accessToken, bytes.NewReader(body), nil)
+	_, err := c.EnsureRepoWebhook(ctx, instanceURL, accessToken, fullName, hookURL, secret)
+	return err
 }
 
 type createIssueCommentRequest struct {

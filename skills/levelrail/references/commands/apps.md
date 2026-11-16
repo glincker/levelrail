@@ -777,7 +777,7 @@ Flags:
 
 ## levelrail-cli apps deploys
 
-Subcommands: attempts, build-report, cancel, compare, failed, gate, list, logs, probes, promote, receipt, release-notes, rollback-to, show, status, steps, timeline, url, wait
+Subcommands: attempts, build-report, cancel, compare, failed, gate, list, logs, probes, promote, receipt, release-notes, rollback-to, show, stages, status, steps, timeline, url, wait
 
 ```
 Usage:
@@ -793,6 +793,7 @@ Usage:
   levelrail-cli apps deploys failed [--since 24h] [flags]                 every app's latest failed deploy in the window, fleet-wide
   levelrail-cli apps deploys timeline [--since 24h] [flags]               fleet-wide deploys as bars on a shared time axis
   levelrail-cli apps deploys steps <name> <deploy-id> [flags]             one deploy attempt's pipeline steps, live until it ends
+  levelrail-cli apps deploys stages <name> <deploy-id> [--tail S]         build stages with timings and cache state, or one stage's log
   levelrail-cli apps deploys probes <name> <deploy-id> [flags]            readiness-probe attempts a deploy's cutover made
   levelrail-cli apps deploys gate <name> [deploy-id] [--watch]            readiness gate, cutover, drain and post-deploy watch timeline
   levelrail-cli apps deploys build-report <name> <deploy-id> [flags]      Next.js route table and build warnings from one attempt's log
@@ -828,13 +829,14 @@ Run "levelrail-cli apps domains <subcommand> -h" for a subcommand's own flags.
 
 ## levelrail-cli apps egress
 
-Subcommands: clear, get, set
+Subcommands: clear, get, report, set
 
 ```
 Usage:
   levelrail-cli apps egress get <name> [flags]                                    show an app's current outbound network allowlist
   levelrail-cli apps egress set <name> --allow host:port [--allow host:port ...]  restrict an app's outbound traffic to an allowlist
   levelrail-cli apps egress clear <name> [flags]                                  opt an app back out to unrestricted egress
+  levelrail-cli apps egress report <name> [flags]                                 dry run: names the app asked for that the allowlist would deny
 
 Unconfigured (the default) means unrestricted egress, unchanged from
 today. "set" restricts an app's container to only reach the declared

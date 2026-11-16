@@ -36,7 +36,7 @@ export async function fetchNotificationChannels(): Promise<
       ),
     )
   }
-  return (await res.json()) as NotificationChannel[]
+  return ((await res.json()) as NotificationChannel[] | null) ?? []
 }
 
 export function notificationChannelListQueryOptions() {
@@ -243,7 +243,7 @@ export async function fetchNotificationDeliveries(
       ),
     )
   }
-  return (await res.json()) as NotificationDelivery[]
+  return ((await res.json()) as NotificationDelivery[] | null) ?? []
 }
 
 export function notificationDeliveriesQueryOptions(id: string) {

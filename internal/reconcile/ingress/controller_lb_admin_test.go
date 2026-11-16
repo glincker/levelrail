@@ -3,6 +3,7 @@ package ingress
 import (
 	"context"
 	"errors"
+	"log/slog"
 	"testing"
 
 	"github.com/GLINCKER/levelrail/internal/loadbalancer"
@@ -28,7 +29,7 @@ func newAdminController(t *testing.T, replicas int, states map[string]map[int]st
 		rt.seedRunning(replicaName(svc, i), 30000+i)
 	}
 	src := fakeLBAdminSource{fakeLBSource: fakeLBSource{configs: map[string]string{"web": `{}`}}, states: states}
-	return New(&fakeStore{services: []store.DesiredService{svc}}, rt, applier, WithLogger(discardLogger()), WithLoadBalancers(src, reg))
+	return New(&fakeStore{services: []store.DesiredService{svc}}, rt, applier, WithLogger(slog.New(slog.DiscardHandler)), WithLoadBalancers(src, reg))
 }
 
 func TestController_LoadBalancer_AdminStateHoldsUpstreamsOutOfPool(t *testing.T) {
@@ -122,7 +123,7 @@ func TestController_LoadBalancer_AllHeldOutLeavesServiceUnrouted(t *testing.T) {
 func TestController_LoadBalancer_AdminStateStoreErrorIsNotReady(t *testing.T) {
 	svc := lbService(1)
 	src := fakeLBAdminSource{fakeLBSource: fakeLBSource{configs: map[string]string{"web": `{}`}}, err: errors.New("db down")}
-	c := New(&fakeStore{services: []store.DesiredService{svc}}, newFakeRuntime(), &fakeApplier{}, WithLogger(discardLogger()), WithLoadBalancers(src, loadbalancer.NewRegistry()))
+	c := New(&fakeStore{services: []store.DesiredService{svc}}, newFakeRuntime(), &fakeApplier{}, WithLogger(slog.New(slog.DiscardHandler)), WithLoadBalancers(src, loadbalancer.NewRegistry()))
 	res, err := c.Reconcile(context.Background())
 	if err == nil {
 		t.Fatal("a failed admin state read must not fail open")

@@ -294,6 +294,11 @@
       "title": "Das Audit-Log wird nirgendwohin gesendet",
       "pass": "Das Audit-Log wird an ein externes Ziel weitergeleitet",
       "why": "Ein Audit-Stream außerhalb dieses Rechners bewahrt eine Aufzeichnung von Agent- und Deploy-Aktionen, auch wenn dieser Host verloren geht."
+    },
+    "approval_without_session_allow": {
+      "title": "Anmeldungen ohne weitere aktive Sitzung sind erlaubt",
+      "pass": "Anmeldungen ohne weitere aktive Sitzung warten auf Freigabe",
+      "why": "Ein korrektes Passwort genügt, wenn keine andere Sitzung offen ist. Mit „Halten“ warten solche Anmeldungen auf eine Freigabe außerhalb des Browsers."
     }
   },
   "actions": {
@@ -434,5 +439,29 @@
     "rootOnly": "Nur ein Root-Konto kann diese Richtlinie ändern.",
     "loading": "Die Richtlinie wird geladen",
     "error": "Die Scanrichtlinie konnte nicht geladen werden."
+  },
+  "withoutSession": {
+    "title": "Anmeldungen ohne weitere Sitzung",
+    "description": "Was passiert, wenn ein korrektes Passwort in einem neuen Browser verwendet wird und das Konto keine andere aktive Sitzung zur Freigabe hat.",
+    "allow": "Erlauben",
+    "hold": "Halten",
+    "allowBody": "Erlauben: Die Anmeldung geht direkt durch, außer das Konto verlangt selbst eine Freigabe. Das ist die Vorgabe.",
+    "holdBody": "Halten: Die Anmeldung wartet auf die Freigabe per signin:approve-Token, das Ihnen gehört, oder per Host-Befehl. Bereits vertraute Browser melden sich weiter an.",
+    "safeguards": "Um eine Aussperrung zu vermeiden, braucht „Halten“ ein signin:approve-Token, das Ihnen gehört, oder Ihre Bestätigung, dass Sie Befehle auf dem Server ausführen können. Der Browser, mit dem Sie umstellen, bleibt vertraut.",
+    "reset": "Zum Zurücksetzen auf dem Server ausführen:",
+    "saved": "Einstellung gespeichert.",
+    "saveError": "Die Einstellung konnte nicht gespeichert werden.",
+    "stepUp": "Bestätigen Sie Ihre Identität, um die Behandlung von Anmeldungen ohne weitere Sitzung zu ändern.",
+    "confirmTitle": "Anmeldungen ohne weitere Sitzung halten?",
+    "confirmBody": "Ein korrektes Passwort reicht in einem neuen Browser nicht mehr, wenn keine andere Sitzung offen ist. Stellen Sie sicher, dass mindestens ein Freigabeweg existiert.",
+    "pathsTitle": "Aktuelle Wege, eine gehaltene Anmeldung freizugeben",
+    "confirm": "Anmeldungen halten",
+    "confirming": "Speichern...",
+    "hostAccess": "Ich kann Befehle auf dem Server ausführen",
+    "noChannelFix": "Erstellen Sie ein signin:approve-Token, das Ihnen gehört, oder bestätigen Sie per Häkchen, dass Sie Befehle auf dem Server ausführen können.",
+    "channel": {
+      "approve_token": "Ein signin:approve-Token, das Ihnen gehört",
+      "host_command": "Der Befehl approve-signin auf dem Server"
+    }
   }
 }

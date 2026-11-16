@@ -12,7 +12,9 @@ import (
 	"time"
 
 	"github.com/GLINCKER/levelrail/internal/store"
+	"github.com/GLINCKER/levelrail/internal/store/storetest"
 	"github.com/GLINCKER/levelrail/internal/telemetry"
+	"github.com/GLINCKER/levelrail/internal/testutil"
 )
 
 type sink struct {
@@ -57,14 +59,7 @@ func (s *sink) setFail(v bool) {
 
 func waitFor(t *testing.T, what string, cond func() bool) {
 	t.Helper()
-	deadline := time.Now().Add(5 * time.Second)
-	for time.Now().Before(deadline) {
-		if cond() {
-			return
-		}
-		time.Sleep(10 * time.Millisecond)
-	}
-	t.Fatalf("timed out waiting for %s", what)
+	testutil.WaitFor(t, 5*time.Second, 10*time.Millisecond, what, cond)
 }
 
 func newTestService(t *testing.T, db *store.DB, b *telemetry.LogBroadcaster) *Service {
@@ -89,7 +84,7 @@ func saveAudit(t *testing.T, db *store.DB, id string, at time.Time, path string)
 }
 
 func TestCreateValidationAndWriteOnlySecrets(t *testing.T) {
-	db := openDB(t)
+	db := storetest.Open(t)
 	svc := newTestService(t, db, nil)
 	ctx := context.Background()
 
@@ -147,7 +142,7 @@ func TestCreateValidationAndWriteOnlySecrets(t *testing.T) {
 }
 
 func TestLogDestinationDeliversFilteredLinesAndSurvivesOutage(t *testing.T) {
-	db := openDB(t)
+	db := storetest.Open(t)
 	b := telemetry.NewLogBroadcaster()
 	svc := newTestService(t, db, b)
 	rcv := &sink{}
@@ -208,7 +203,7 @@ func (s *Service) mustID(t *testing.T, name string) string {
 }
 
 func TestAuditCursorIsRestartSafeAndAtLeastOnce(t *testing.T) {
-	db := openDB(t)
+	db := storetest.Open(t)
 	rcv := &sink{}
 	srv := httptest.NewServer(rcv)
 	defer srv.Close()
@@ -260,7 +255,7 @@ func TestAuditCursorIsRestartSafeAndAtLeastOnce(t *testing.T) {
 }
 
 func TestAuditFailureHoldsCursor(t *testing.T) {
-	db := openDB(t)
+	db := storetest.Open(t)
 	rcv := &sink{fail: true}
 	srv := httptest.NewServer(rcv)
 	defer srv.Close()
@@ -289,7 +284,7 @@ func TestAuditFailureHoldsCursor(t *testing.T) {
 }
 
 func TestStreamAuditRangeAndRedaction(t *testing.T) {
-	db := openDB(t)
+	db := storetest.Open(t)
 	base := time.Now().UTC().Add(-time.Hour).Truncate(time.Second)
 	saveAudit(t, db, "r1", base, "/a")
 	saveAudit(t, db, "r2", base.Add(time.Minute), "/api/v1/hooks/ghp_abcdefghijklmnopqrstuvwxyz0123456789")
@@ -314,7 +309,7 @@ func TestStreamAuditRangeAndRedaction(t *testing.T) {
 }
 
 func TestTestSendsProbeWithoutTouchingCounters(t *testing.T) {
-	db := openDB(t)
+	db := storetest.Open(t)
 	rcv := &sink{}
 	srv := httptest.NewServer(rcv)
 	defer srv.Close()

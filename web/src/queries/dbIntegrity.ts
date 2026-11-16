@@ -1,5 +1,6 @@
-import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query'
+import { useQuery } from '@tanstack/react-query'
 import { ApiError, readErrorMessage } from '../lib/apiError'
+import { useInvalidatingMutation } from '../lib/useInvalidatingMutation'
 import { EnvApiError } from './envProtection'
 import { pollMs } from '../lib/pollTier'
 
@@ -58,8 +59,7 @@ export function useIntegrity() {
 }
 
 export function useCheckIntegrity() {
-  const qc = useQueryClient()
-  return useMutation({
+  return useInvalidatingMutation({
     mutationFn: async (full: boolean): Promise<IntegrityStatus> => {
       const res = await fetch(`${URL}/check`, {
         method: 'POST',
@@ -69,16 +69,12 @@ export function useCheckIntegrity() {
       if (!res.ok) throw await failure(res, 'integrity check')
       return (await res.json()) as IntegrityStatus
     },
-    onSuccess: () => {
-      void qc.invalidateQueries({ queryKey: KEY })
-      void qc.invalidateQueries({ queryKey: ['control-plane-health'] })
-    },
+    invalidate: () => [KEY, ['control-plane-health']],
   })
 }
 
 export function useStageRestore() {
-  const qc = useQueryClient()
-  return useMutation({
+  return useInvalidatingMutation({
     meta: { errorToast: false },
     mutationFn: async (name: string): Promise<IntegrityPending> => {
       const res = await fetch(`${URL}/restore`, {
@@ -103,21 +99,16 @@ export function useStageRestore() {
       const body = (await res.json()) as { pending: IntegrityPending }
       return body.pending
     },
-    onSuccess: () => {
-      void qc.invalidateQueries({ queryKey: KEY })
-    },
+    invalidate: () => [KEY],
   })
 }
 
 export function useCancelRestore() {
-  const qc = useQueryClient()
-  return useMutation({
+  return useInvalidatingMutation({
     mutationFn: async (): Promise<void> => {
       const res = await fetch(`${URL}/restore`, { method: 'DELETE' })
       if (!res.ok) throw await failure(res, 'cancel restore')
     },
-    onSuccess: () => {
-      void qc.invalidateQueries({ queryKey: KEY })
-    },
+    invalidate: () => [KEY],
   })
 }

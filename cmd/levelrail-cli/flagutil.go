@@ -150,8 +150,22 @@ func bindOutputQueryFlags(fs *flag.FlagSet) (outputFlag, queryFlag *string) {
 func apiClientFromFlags(prog, apiURLFlag, tokenFlag, profileFlag string, lookupEnv func(string) (string, bool)) *Client {
 	profile := resolveProfile(profileFlag, lookupEnv)
 	applyScope(prog, profile, lookupEnv)
-	apiURL := resolveAPIURL(apiURLFlag, lookupEnv, prog, profile)
+	target := apiclient.ResolveAPIURLOrigin(apiURLFlag, lookupEnv, prog, profile)
 	token := resolveToken(tokenFlag, lookupEnv, prog, profile)
+	credURL, err := target.ForCredentials(token, prog)
+	if err != nil {
+		var m apiclient.PointerMismatch
+		if errors.As(err, &m) && token == "" && m.Reason == "" && firstRunInteractive() {
+			if u, t, ok := confirmPointerLogin(prog, profile, m, lookupEnv, os.Stdin, os.Stdout, os.Stderr); ok {
+				return NewClient(u, t, apiclient.WithRejectedCredentialFix(nextStepLine(prog, profile, u)))
+			}
+		}
+		return NewClient(target.URL, "", apiclient.WithTransport(apiclient.RefusingTransport(err)))
+	}
+	apiURL := credURL.String()
+	if token != "" {
+		noteExpiry(prog, profile, token, lookupEnv, os.Stderr)
+	}
 	if token == "" && firstRunInteractive() {
 		if u, t, ok := offerFirstRunLogin(prog, profile, apiURL, lookupEnv, os.Stdin, os.Stdout, os.Stderr); ok {
 			apiURL, token = u, t
@@ -160,7 +174,7 @@ func apiClientFromFlags(prog, apiURLFlag, tokenFlag, profileFlag string, lookupE
 	if token == "" {
 		return NewClient(apiURL, token, apiclient.WithNoCredentialsFix(notSignedInFix(prog, profile, apiURL)))
 	}
-	return NewClient(apiURL, token)
+	return NewClient(apiURL, token, apiclient.WithRejectedCredentialFix(nextStepLine(prog, profile, apiURL)))
 }
 
 // Bundled to keep parameter counts under golangci-lint's limit.
@@ -211,6 +225,9 @@ func loggedInSessionClient(ctx context.Context, sf sessionFlags, prog string, lo
 		return nil, loginResponse{}, err
 	}
 
+	if saved, rerr := readCredentialsFile(prog, profile); rerr == nil && savedDeviceMatchesServer(saved, sessionClient.baseURL) {
+		sessionClient.seedTrustedDevice(saved.TrustedDevice)
+	}
 	loginResp, err := sessionClient.Login(ctx, resolvedUsername, resolvedPassword)
 	if err == nil && loginResp.ApprovalRequired {
 		loginResp, err = sessionClient.awaitApproval(ctx, prog, loginResp, lookupEnv, stderr)
@@ -388,4 +405,45 @@ func reorderArgsFlagsFirst(fs *flag.FlagSet, args []string) []string {
 		}
 	}
 	return append(flags, positional...)
+}
+
+// savedDeviceMatchesServer is true only when the server at apiURL is the one the saved device cookie was issued for.
+func savedDeviceMatchesServer(saved credentials, apiURL string) bool {
+	if saved.TrustedDevice == "" || saved.InstanceID == "" {
+		return false
+	}
+	info, err := apiclient.FetchInstanceInfo(context.Background(), nil, apiURL)
+	return err == nil && info != nil && info.InstanceID == saved.InstanceID && info.Fingerprint == saved.Fingerprint
+}
+
+// confirmPointerLogin sends a password to a pointer-only address only after the person at the terminal types yes.
+func confirmPointerLogin(prog, profile string, m apiclient.PointerMismatch, lookupEnv func(string) (string, bool), in io.Reader, stdout, stderr io.Writer) (apiURL, token string, ok bool) {
+	_, _ = fmt.Fprintf(stderr, "No saved login for profile %q. The repo pointer %s names %s, which no saved profile uses.\nSign in there? Type yes to confirm, or rerun with --api-url: ", profile, m.Path, m.PointerURL)
+	if strings.ToLower(readLineUnbuffered(in)) != "yes" {
+		_, _ = fmt.Fprintln(stderr, m.Error())
+		return "", "", false
+	}
+	if code := runAuthLogin(prog, firstRunLoginArgs(m.PointerURL, profile), stdout, stderr, lookupEnv, in); code != exitOK {
+		return "", "", false
+	}
+	creds, err := readCredentialsFile(prog, profile)
+	if err != nil || creds.Token == "" {
+		return "", "", false
+	}
+	return m.PointerURL, creds.Token, true
+}
+
+// readLineUnbuffered reads one line a byte at a time, so the login prompts after it still see their input.
+func readLineUnbuffered(in io.Reader) string {
+	var sb strings.Builder
+	b := make([]byte, 1)
+	for {
+		n, err := in.Read(b)
+		if n == 1 && b[0] != '\n' {
+			sb.WriteByte(b[0])
+		}
+		if err != nil || (n == 1 && b[0] == '\n') {
+			return strings.TrimSpace(sb.String())
+		}
+	}
 }

@@ -24,6 +24,7 @@ const (
 	TargetRestoreHistory  = "data.restore_history"
 	TargetProbeAttempts   = "deploys.probe_attempts"
 	TargetAppHistory      = "deploys.app_history"
+	TargetForgeStatus     = "deploys.forge_status"
 	TargetUsageCost       = "observability.usage_cost"
 	TargetStatusIncidents = "observability.status_incidents"
 )
@@ -67,6 +68,10 @@ func retentionDefs() []retentionDef {
 			"App lifecycle events, scheduled deploy history and last canary outcomes.",
 			runtimesettings.KeyAppHistoryDays, CategoryDeploys,
 			[]store.RetentionTable{store.RetentionAppEvents, store.RetentionAppSchedule, store.RetentionCanaryOutcomes}},
+		{TargetForgeStatus, "Forge commit status reports",
+			"Commit statuses Levelrail posted to a git forge, shown on the app delivery timeline.",
+			runtimesettings.KeyForgeStatusDays, CategoryDeploys,
+			[]store.RetentionTable{store.RetentionForgeStatus}},
 		{TargetUsageCost, "Daily cost snapshots",
 			"One cost showback snapshot per day and resource.",
 			runtimesettings.KeyUsageCostDays, CategoryObservability,

@@ -21,8 +21,11 @@ import {
 import { RotateCliTokenDialog } from './cli/RotateCliTokenDialog'
 import { cliOrigin } from '../lib/cliConnection'
 import { RelativeTime } from './kit/RelativeTime'
+import { RotateTokenDialog } from './tokens/RotateTokenDialog'
+import { TokenExpiryCell } from './tokens/TokenExpiryCell'
+import { useTokenExpiryPolicy } from '../hooks/useTokenExpiryPolicy'
 import { RevokeTokenDialog } from './RevokeTokenDialog'
-import { TOKEN_ABILITY_BADGE_VARIANT } from '../types/token'
+import { isPlatformToken, TOKEN_ABILITY_BADGE_VARIANT } from '../types/token'
 import type { TokenResource } from '../types/token'
 
 // Revoked tokens are never hidden from this list (GET /api/v1/auth/tokens
@@ -50,15 +53,18 @@ export function TokenTable({ tokens, rotatableIds }: TokenTableProps) {
     <div className="space-y-4">
       <TokenRows tokens={real} rotatableIds={rotatableIds} />
       {fixtures.length > 0 ? (
-        <Collapsible className="rounded-lg border border-border px-4 py-3">
-          <CollapsibleTrigger className="flex items-center justify-between gap-2 text-sm font-medium">
+        <Collapsible className="border-t border-border pt-4">
+          <CollapsibleTrigger className="group/fixtures flex w-full items-center justify-between gap-2 rounded-(--glinr-radius-sm) text-sm font-medium focus-visible:ring-2 focus-visible:ring-ring focus-visible:outline-none">
             <span className="flex items-center gap-2">
               {t('tokens.devFixtureGroup')}
               <Badge variant="muted">
                 {t('tokens.devFixtureGroupCount', { count: fixtures.length })}
               </Badge>
             </span>
-            <ChevronDownGlassIcon className="size-5" aria-hidden="true" />
+            <ChevronDownGlassIcon
+              className="size-5 text-muted-foreground transition-transform duration-(--glinr-motion-fast) group-data-[panel-open]/fixtures:rotate-180 motion-reduce:transition-none"
+              aria-hidden="true"
+            />
           </CollapsibleTrigger>
           <CollapsiblePanel className="space-y-3 pt-3">
             <p className="text-sm text-muted-foreground">
@@ -74,7 +80,13 @@ export function TokenTable({ tokens, rotatableIds }: TokenTableProps) {
 
 function TokenRows({ tokens, rotatableIds }: TokenTableProps) {
   const { t } = useTranslation('settings')
+  const { t: te } = useTranslation('tokenExpiry')
+  const policy = useTokenExpiryPolicy()
+  const [now] = useState(() => Date.now())
   const [rotateTarget, setRotateTarget] = useState<TokenResource | null>(null)
+  const [newRotateTarget, setNewRotateTarget] = useState<TokenResource | null>(
+    null,
+  )
   if (tokens.length === 0) {
     return (
       <EmptyState
@@ -177,7 +189,7 @@ function TokenRows({ tokens, rotatableIds }: TokenTableProps) {
             <span className="inline-flex items-center gap-1.5">
               {isActiveNow(token.last_used_at) ? (
                 <span
-                  className="size-1.5 rounded-full bg-green-500"
+                  className="size-1.5 rounded-full bg-tone-success-solid"
                   role="img"
                   aria-label={t('tokens.activeNow')}
                 />
@@ -213,15 +225,8 @@ function TokenRows({ tokens, rotatableIds }: TokenTableProps) {
     {
       id: 'expires',
       header: t('tokens.expires'),
-      priority: 3,
       cell: (token) => (
-        <span className="text-muted-foreground">
-          {token.expires_at ? (
-            <RelativeTime at={token.expires_at} />
-          ) : (
-            t('tokens.never')
-          )}
-        </span>
+        <TokenExpiryCell token={token} now={now} soonDays={policy.soonDays} />
       ),
     },
     {
@@ -267,11 +272,41 @@ function TokenRows({ tokens, rotatableIds }: TokenTableProps) {
                   {t('tokens.rotate')}
                 </Button>
               ) : null}
+              {rotatableIds ? null : (
+                <span
+                  title={
+                    isPlatformToken(token)
+                      ? te('rotate.platformTooltip')
+                      : undefined
+                  }
+                >
+                  <Button
+                    variant="outline"
+                    size="sm"
+                    disabled={isPlatformToken(token)}
+                    aria-label={t('tokens.rotateLabel', { name: token.name })}
+                    onClick={() => {
+                      setNewRotateTarget(token)
+                    }}
+                  >
+                    {t('tokens.rotate')}
+                  </Button>
+                </span>
+              )}
               <RevokeTokenDialog token={token} />
             </div>
           )
         }
       />
+      {newRotateTarget ? (
+        <RotateTokenDialog
+          token={newRotateTarget}
+          grace={policy.grace}
+          onClose={() => {
+            setNewRotateTarget(null)
+          }}
+        />
+      ) : null}
       {rotateTarget ? (
         <RotateCliTokenDialog
           token={rotateTarget}

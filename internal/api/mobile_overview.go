@@ -186,7 +186,7 @@ func (rt *Router) mobileDeploys24h(r *http.Request, now time.Time) (int, error) 
 		return 0, err
 	}
 	since := now.Add(-24 * time.Hour)
-	briefs, err := ds.ListDeploymentBriefs(r.Context(), since, visible)
+	briefs, err := ds.ListDeploymentBriefsScoped(r.Context(), since, visible, "", "")
 	if err != nil {
 		return 0, err
 	}

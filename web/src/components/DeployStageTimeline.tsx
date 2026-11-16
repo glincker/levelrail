@@ -7,9 +7,11 @@ import {
   LoaderCircleGlassIcon,
   type UiIcon,
 } from '@thesvg/ui-react'
+import { TONE } from '@/components/kit/tone'
 import type { DeployStage, DeployStageStatus } from '../lib/deployStages'
 import { formatDurationMs } from '../lib/deployDuration'
 import { useNowTick } from '../hooks/useNowTick'
+import { BuildStagesPanel } from './buildStages/BuildStagesPanel'
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card'
 
 // The at-a-glance primary element for the live deploy view (Build, then
@@ -17,7 +19,16 @@ import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card'
 // overview's "Deploy in progress" banner links into. See
 // lib/deployStages.ts for how each stage's status is derived; this
 // component only renders it.
-export function DeployStageTimeline({ stages }: { stages: DeployStage[] }) {
+export function DeployStageTimeline({
+  stages,
+  appName,
+  deployId,
+}: {
+  stages: DeployStage[]
+  /** With a deploy id, the recorded build stage graph shows under the list. */
+  appName?: string
+  deployId?: string
+}) {
   return (
     <Card>
       <CardHeader>
@@ -31,6 +42,11 @@ export function DeployStageTimeline({ stages }: { stages: DeployStage[] }) {
             <DeployStageRow key={stage.key} stage={stage} />
           ))}
         </ol>
+        {appName && deployId ? (
+          <div className="mt-4">
+            <BuildStagesPanel appName={appName} deployId={deployId} />
+          </div>
+        ) : null}
       </CardContent>
     </Card>
   )
@@ -48,7 +64,7 @@ const STATUS_ICON: Record<DeployStageStatus, UiIcon> = {
 const STATUS_ICON_CLASS: Record<DeployStageStatus, string> = {
   pending: 'text-muted-foreground',
   running: 'text-primary animate-spin motion-reduce:animate-none',
-  done: 'text-green-600 dark:text-green-400',
+  done: TONE.success.text,
   failed: 'text-destructive',
   skipped: 'text-muted-foreground/60',
   unknown: 'text-muted-foreground/60',

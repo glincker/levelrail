@@ -8,6 +8,7 @@ import (
 	"io"
 	"net/http"
 	"net/http/cookiejar"
+	"net/url"
 	"strings"
 	"time"
 
@@ -31,6 +32,48 @@ func newAuthSessionClient(baseURL string) (*authSessionClient, error) {
 		baseURL: strings.TrimRight(baseURL, "/"),
 		hc:      &http.Client{Timeout: 30 * time.Second, Jar: jar},
 	}, nil
+}
+
+const (
+	trustedDeviceCookie = "trusted_device"
+	authCookiePath      = "/api/v1/auth"
+)
+
+func (c *authSessionClient) authCookieURL() *url.URL {
+	u, err := url.Parse(c.baseURL + authCookiePath + "/")
+	if err != nil {
+		return nil
+	}
+	return u
+}
+
+// seedTrustedDevice replays this machine's saved device cookie so the server
+// recognises it and skips new-device approval.
+func (c *authSessionClient) seedTrustedDevice(value string) {
+	u := c.authCookieURL()
+	if value == "" || u == nil {
+		return
+	}
+	c.hc.Jar.SetCookies(u, []*http.Cookie{{Name: trustedDeviceCookie, Value: value, Path: authCookiePath, HttpOnly: true, Secure: u.Scheme == "https", SameSite: http.SameSiteStrictMode}}) //nolint:gosec // Secure follows the scheme, plain http only on loopback
+}
+
+// trustedDevice is the device cookie the server issued or extended during this login.
+func (c *authSessionClient) trustedDevice() string {
+	u := c.authCookieURL()
+	if u == nil {
+		return ""
+	}
+	for _, ck := range c.hc.Jar.Cookies(u) {
+		if ck.Name == trustedDeviceCookie {
+			return ck.Value
+		}
+	}
+	return ""
+}
+
+// Logout revokes the throwaway login session once its token is minted, so repeat logins do not pile up sessions.
+func (c *authSessionClient) Logout(ctx context.Context) error {
+	return c.do(ctx, http.MethodPost, "/api/v1/auth/logout", nil, nil)
 }
 
 func (c *authSessionClient) do(ctx context.Context, method, path string, body, out any) error {
@@ -111,6 +154,7 @@ type tokenResource struct {
 	LastUsedAt *time.Time  `json:"last_used_at,omitempty"`
 	ExpiresAt  *time.Time  `json:"expires_at,omitempty"`
 	RevokedAt  *time.Time  `json:"revoked_at,omitempty"`
+	RevokesAt  *time.Time  `json:"revokes_at,omitempty"`
 	Agent      *tokenAgent `json:"agent,omitempty"`
 }
 
@@ -174,6 +218,13 @@ func (c *authSessionClient) ListUnusedTokens(ctx context.Context) (unusedTokensR
 // RevokeToken calls DELETE /api/v1/auth/tokens/{id}.
 func (c *authSessionClient) RevokeToken(ctx context.Context, id string) error {
 	return c.do(ctx, http.MethodDelete, "/api/v1/auth/tokens/"+pathEscape(id), nil, nil)
+}
+
+// RotateToken calls POST /api/v1/auth/tokens/{id}/rotate.
+func (c *authSessionClient) RotateToken(ctx context.Context, id string) (apiclient.RotatedToken, error) {
+	var out apiclient.RotatedToken
+	err := c.do(ctx, http.MethodPost, "/api/v1/auth/tokens/"+pathEscape(id)+"/rotate", nil, &out)
+	return out, err
 }
 
 // sessionInfoResponse mirrors internal/api's sessionInfoResponse

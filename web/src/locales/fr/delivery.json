@@ -1,0 +1,112 @@
+{
+  "title": "Livraison",
+  "category": {
+    "deploys": "Déploiements",
+    "builds": "Builds",
+    "statuses": "Statuts",
+    "previews": "Aperçus",
+    "integrations": "Intégrations",
+    "other": "Autres"
+  },
+  "status": {
+    "succeeded": "Réussi",
+    "failed": "Échoué",
+    "in_progress": "En cours",
+    "pending": "En attente",
+    "info": "Info",
+    "unknown": "Inconnu"
+  },
+  "health": {
+    "ok": "Sain",
+    "degraded": "Dégradé",
+    "needs_reconnect": "Reconnexion requise",
+    "expired": "Expiré",
+    "unknown": "Inconnu"
+  },
+  "filters": {
+    "kind": "Filtrer par type",
+    "status": "Statut",
+    "search": "Rechercher dans la chronologie",
+    "searchPlaceholder": "Rechercher un titre ou un détail",
+    "statusOption": {
+      "all": "Tous les statuts",
+      "failed": "Échoué",
+      "in_progress": "En cours",
+      "succeeded": "Réussi"
+    }
+  },
+  "row": {
+    "openPreview": "Ouvrir l'aperçu",
+    "openRun": "Ouvrir l'exécution",
+    "openLink": "Ouvrir le lien",
+    "openIntegrations": "Ouvrir Intégrations",
+    "postFailed": "Échec de la publication vers le dépôt",
+    "noErrorDetail": "Aucun détail d'erreur n'a été enregistré."
+  },
+  "header": {
+    "label": "Résumé de la livraison",
+    "source": "Source",
+    "reporting": "Remontée de statut",
+    "lastDeploy": "Dernier déploiement",
+    "none": "Aucune connexion",
+    "postFailing": "La publication du statut de commit échoue. Le dépôt peut afficher un état obsolète.",
+    "inherited": "Hérité de {{org}}",
+    "overrides": "Remplace la valeur de {{org}}",
+    "change": "Modifier",
+    "bind": "Lier",
+    "unbind": "Délier",
+    "bindOther": "Lier une connexion",
+    "other": "Autres liens"
+  },
+  "day": {
+    "today": "Aujourd'hui",
+    "yesterday": "Hier",
+    "unknown": "Date inconnue"
+  },
+  "loadMore": "Charger plus",
+  "retry": "Réessayer",
+  "empty": {
+    "title": "Aucune activité de livraison pour le moment",
+    "description": "Les déploiements, statuts du dépôt, aperçus et changements de connexion de cette app apparaissent ici."
+  },
+  "noMatch": {
+    "title": "Aucun résultat pour ces filtres",
+    "description": "Essayez un autre type, statut ou une autre recherche.",
+    "clear": "Effacer les filtres"
+  },
+  "bind": {
+    "title": "Lier {{name}}",
+    "titleGeneric": "Lier une connexion",
+    "description": "Choisissez le rôle de cette connexion. Le serveur vérifie la portée et les règles.",
+    "confirm": "Lier",
+    "binding": "Liaison en cours",
+    "toast": "{{name}} liée à {{app}}",
+    "app": "App",
+    "appPlaceholder": "Choisir une app",
+    "connection": "Connexion",
+    "connectionPlaceholder": "Choisir une connexion",
+    "noConnections": "Aucune connexion ne peut tenir ce rôle",
+    "role": "Rôle",
+    "roles": {
+      "source": "Source",
+      "deploy_report": "Rapport de déploiement",
+      "registry_pull": "Pull du registre",
+      "notify": "Notifications",
+      "secrets": "Secrets",
+      "dns": "DNS"
+    },
+    "rules": "Règles (facultatif)",
+    "rulesHint": "Un objet JSON, vérifié selon le rôle.",
+    "rulesInvalid": "Les règles doivent être un objet JSON."
+  },
+  "unbind": {
+    "title": "Délier {{name}}",
+    "description": "L'app n'utilise plus cette connexion pour ce rôle. La connexion reste en place.",
+    "confirm": "Délier",
+    "unbinding": "Déliaison en cours",
+    "toast": "{{name}} déliée de {{app}}",
+    "binding": "Lien",
+    "pick": "Choisir un lien",
+    "noneForApp": "Cette app n'a aucun lien pour elle"
+  }
+}

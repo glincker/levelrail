@@ -18,7 +18,7 @@ export async function fetchMonitors(): Promise<Monitor[] | null> {
   const res = await fetch('/api/v1/monitors')
   if (res.status === 404 || res.status === 501) return null
   if (!res.ok) throw new Error(`fetch monitors failed: ${res.status}`)
-  return (await res.json()) as Monitor[]
+  return ((await res.json()) as Monitor[] | null) ?? []
 }
 
 export async function fetchMonitorResults(id: string): Promise<MonitorResults> {

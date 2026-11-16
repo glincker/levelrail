@@ -17,6 +17,7 @@ export function cardAnchor(card: string): string {
 export type SettingsCardKey =
   | 'buildHooks'
   | 'buildCache'
+  | 'buildRunner'
   | 'supplyChain'
   | 'secretScan'
   | 'port'

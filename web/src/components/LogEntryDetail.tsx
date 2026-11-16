@@ -134,7 +134,7 @@ export function LogEntryDetail({
         </div>
       ) : null}
 
-      <pre className="mt-2 max-h-48 overflow-auto rounded bg-neutral-950 p-2 font-mono text-xs break-words whitespace-pre-wrap text-neutral-200">
+      <pre className="mt-2 max-h-48 overflow-auto rounded border border-glinr-code-border bg-glinr-code-bg p-2 font-mono text-xs break-words whitespace-pre-wrap text-glinr-code-fg">
         {entry.structured && entry.fields
           ? JSON.stringify(entry.fields, null, 2)
           : entry.message}

@@ -46,7 +46,8 @@
     "superseded": "置き換え済み",
     "queued": "待機中",
     "canceled": "キャンセル済み",
-    "pending": "ノードの復帰まで待機中"
+    "pending": "ノードの復帰まで待機中",
+    "refused": "拒否"
   },
   "deployDetails": {
     "title": "{{status}}のデプロイ",

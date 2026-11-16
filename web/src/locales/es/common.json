@@ -743,7 +743,8 @@
       "githubActions": "Permite que un flujo de trabajo de GitHub Actions despliegue esta aplicación.",
       "ciDeploy": "Da a tu sistema de CI un token y un comando para desplegar esta aplicación.",
       "rolloutPolicy": "Limita cuántas réplicas pueden sobrar o no estar disponibles durante una actualización progresiva.",
-      "predeploySnapshot": "Hace una copia de seguridad de las bases de datos vinculadas antes de cada despliegue, para que una reversión también pueda restaurar los datos."
+      "predeploySnapshot": "Hace una copia de seguridad de las bases de datos vinculadas antes de cada despliegue, para que una reversión también pueda restaurar los datos.",
+      "buildRunner": "Elige en qué nodo de build se compila esta app, o deja que decida la estrategia global."
     },
     "whatItDoes": "Qué hace esto:"
   },
@@ -1559,6 +1560,8 @@
     "label": "Idioma",
     "change": "Cambiar idioma, actual: {{language}}",
     "browserDefault": "Predeterminado del navegador",
-    "saveFailed": "No se pudo guardar tu idioma."
+    "saveFailed": "No se pudo guardar tu idioma.",
+    "menuTitle": "Idioma",
+    "useBrowser": "Usar el idioma del navegador"
   }
 }

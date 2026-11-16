@@ -3,6 +3,7 @@ package ingress
 import (
 	"context"
 	"errors"
+	"log/slog"
 	"testing"
 
 	"github.com/GLINCKER/levelrail/internal/store"
@@ -29,7 +30,7 @@ func TestController_Reconcile_ModelRoutes(t *testing.T) {
 
 	t.Run("hosts route to the dashboard dial", func(t *testing.T) {
 		applier := &fakeApplier{}
-		c := New(&fakeStore{}, newFakeRuntime(), applier, WithLogger(discardLogger()),
+		c := New(&fakeStore{}, newFakeRuntime(), applier, WithLogger(slog.New(slog.DiscardHandler)),
 			WithDashboardDial("127.0.0.1:8080"), WithModelHosts(fakeModelHosts{hosts: []string{"chat.example.com", "llm.example.com"}}))
 		if _, err := c.Reconcile(context.Background()); err != nil {
 			t.Fatalf("Reconcile: %v", err)
@@ -42,7 +43,7 @@ func TestController_Reconcile_ModelRoutes(t *testing.T) {
 
 	t.Run("no dashboard dial means no model route", func(t *testing.T) {
 		applier := &fakeApplier{}
-		c := New(&fakeStore{}, newFakeRuntime(), applier, WithLogger(discardLogger()), WithModelHosts(fakeModelHosts{hosts: []string{"chat.example.com"}}))
+		c := New(&fakeStore{}, newFakeRuntime(), applier, WithLogger(slog.New(slog.DiscardHandler)), WithModelHosts(fakeModelHosts{hosts: []string{"chat.example.com"}}))
 		if _, err := c.Reconcile(context.Background()); err != nil {
 			t.Fatalf("Reconcile: %v", err)
 		}
@@ -54,7 +55,7 @@ func TestController_Reconcile_ModelRoutes(t *testing.T) {
 	t.Run("a host claimed by a service is not stolen", func(t *testing.T) {
 		st := &fakeStore{settings: store.IngressSettings{PrimaryDomain: "chat.example.com"}}
 		applier := &fakeApplier{}
-		c := New(st, newFakeRuntime(), applier, WithLogger(discardLogger()),
+		c := New(st, newFakeRuntime(), applier, WithLogger(slog.New(slog.DiscardHandler)),
 			WithDashboardDial("127.0.0.1:8080"), WithModelHosts(fakeModelHosts{hosts: []string{"chat.example.com", "other.example.com"}}))
 		if _, err := c.Reconcile(context.Background()); err != nil {
 			t.Fatalf("Reconcile: %v", err)
@@ -66,7 +67,7 @@ func TestController_Reconcile_ModelRoutes(t *testing.T) {
 	})
 
 	t.Run("source error fails the pass", func(t *testing.T) {
-		c := New(&fakeStore{}, newFakeRuntime(), &fakeApplier{}, WithLogger(discardLogger()),
+		c := New(&fakeStore{}, newFakeRuntime(), &fakeApplier{}, WithLogger(slog.New(slog.DiscardHandler)),
 			WithDashboardDial("127.0.0.1:8080"), WithModelHosts(fakeModelHosts{err: errors.New("db down")}))
 		if _, err := c.Reconcile(context.Background()); err == nil {
 			t.Fatal("want error")

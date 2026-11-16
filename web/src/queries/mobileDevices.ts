@@ -48,7 +48,7 @@ export async function fetchMobileDevices(
       await readErrorMessage(res, `list devices failed: ${res.status}`),
     )
   }
-  return (await res.json()) as MobileDevice[]
+  return ((await res.json()) as MobileDevice[] | null) ?? []
 }
 
 export function mobileDevicesQueryOptions() {

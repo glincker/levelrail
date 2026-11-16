@@ -1046,7 +1046,8 @@
       "badge": "显示可嵌入 README 的实时部署状态徽章。",
       "githubActions": "允许 GitHub Actions 工作流部署此应用。",
       "ciDeploy": "为你的 CI 系统提供用于部署此应用的令牌和命令。",
-      "rolloutPolicy": "限制滚动发布期间可额外增加或不可用的副本数量。"
+      "rolloutPolicy": "限制滚动发布期间可额外增加或不可用的副本数量。",
+      "buildRunner": "选择此应用在哪个构建节点上构建,或交给全局策略决定。"
     },
     "whatItDoes": "作用："
   },
@@ -1550,6 +1551,8 @@
     "browserDefault": "浏览器默认",
     "change": "更改语言，当前：{{language}}",
     "label": "语言",
-    "saveFailed": "无法保存您的语言设置。"
+    "saveFailed": "无法保存您的语言设置。",
+    "menuTitle": "语言",
+    "useBrowser": "使用浏览器语言"
   }
 }

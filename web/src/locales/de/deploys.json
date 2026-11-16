@@ -561,7 +561,7 @@
     "medianDuration": "Mediandauer",
     "medianDurationTip": "Mediandauer der Deploys, die in den letzten 24 Stunden abgeschlossen wurden.",
     "needsAttention": "Erfordert Aufmerksamkeit",
-    "needsAttentionTip": "Zurückgehaltene Deploys und Live-Images, die von dem abweichen, was läuft. Auswählen, um zurückgehaltene Deploys anzuzeigen.",
+    "needsAttentionTip": "Angehaltene Deploys, Live-Images, die vom laufenden Stand abweichen, und Apps, deren letzter Deploy fehlschlug oder abgelehnt wurde. Auswählen zum Anzeigen.",
     "deploys14": "Deploys (14 Tage)",
     "deploys14Tip": "Gestartete Deploys pro Tag in den letzten 14 Tagen."
   },
@@ -608,7 +608,8 @@
       "held": "Zurückgehalten",
       "awaiting_approval": "Wartet auf Genehmigung",
       "rolled_back": "Zurückgerollt",
-      "superseded": "Abgelöst"
+      "superseded": "Abgelöst",
+      "refused": "Abgelehnt"
     },
     "trigger": {
       "git push": "Git-Push",
@@ -673,5 +674,137 @@
     "viewQueue": "Warteschlange ansehen",
     "progress": "Bisher {{received}} von {{required}} verschiedenen Genehmigern. Der Deploy läuft, wenn der letzte genehmigt.",
     "recorded": "Genehmigung festgehalten: {{received}} von {{required}} verschiedenen Genehmigern."
+  },
+  "interruption": {
+    "interrupted": "Unterbrochen: Die Steuerungsebene wurde während dieses Deploys neu gestartet",
+    "orphaned": "Verwaist: Für dieses Deploy lief kein Build, daher wurde es abgebrochen",
+    "retry": "Deploy erneut starten, um es zu wiederholen"
+  },
+  "buildQueue": {
+    "chip": "{{state}}, {{used}} von {{total}} Slots",
+    "state": {
+      "running": "Läuft",
+      "paused": "Pausiert",
+      "draining": "Läuft aus"
+    },
+    "by": "von {{actor}}",
+    "menu": "Warteschlangenaktionen",
+    "resume": "Builds fortsetzen",
+    "drain": "Warteschlange leeren",
+    "drainHint": "Laufende Builds beenden, neue zurückhalten",
+    "done": {
+      "pause": "Build-Warteschlange pausiert.",
+      "drain": "Build-Warteschlange läuft aus.",
+      "resume": "Build-Warteschlange fortgesetzt."
+    },
+    "conflict": {
+      "pause": "Die Warteschlange ist bereits pausiert.",
+      "drain": "Die Warteschlange läuft bereits aus.",
+      "resume": "Die Warteschlange läuft bereits."
+    },
+    "failed": "Die Build-Warteschlange konnte nicht geändert werden.",
+    "pause": {
+      "action": "Builds pausieren",
+      "title": "Build-Warteschlange pausieren",
+      "description": "Laufende Builds werden beendet. Neue Builds warten, bis Sie fortsetzen.",
+      "reasonLabel": "Grund (optional)",
+      "reasonPlaceholder": "Zum Beispiel Registry-Wartung",
+      "submit": "Pausieren"
+    },
+    "kill": {
+      "action": "Alle Builds abbrechen",
+      "title": "Alle Builds abbrechen?",
+      "description": "Dies bricht {{running}} laufende und {{queued}} wartende Builds ab.",
+      "confirm": "Alle Builds abbrechen",
+      "confirming": "Wird abgebrochen",
+      "none": "Derzeit laufen oder warten keine Builds.",
+      "more": "und {{count}} weitere",
+      "alsoPause": "Warteschlange ebenfalls pausieren",
+      "stepUp": "Bestätigen Sie Ihr Passwort, um alle Builds abzubrechen.",
+      "done_one": "{{count}} Build abgebrochen.",
+      "done_other": "{{count}} Builds abgebrochen.",
+      "someFailed": "{{count}} konnten nicht abgebrochen werden: {{apps}}",
+      "conflict": "Die Warteschlange hat sich während der Bestätigung geändert. Prüfen Sie sie und versuchen Sie es erneut.",
+      "failed": "Die Builds konnten nicht abgebrochen werden."
+    },
+    "banner": {
+      "paused": "Builds sind pausiert",
+      "draining": "Builds laufen aus"
+    },
+    "autoResume": "Wird automatisch fortgesetzt",
+    "panel": {
+      "title": "Build-Warteschlange",
+      "summary": "{{running}} laufend, {{queued}} wartend, {{used}} von {{total}} Slots belegt",
+      "position": "#{{position}}",
+      "waiting": "Wartet: {{reason}}"
+    },
+    "phase": {
+      "preparing": "Wird vorbereitet",
+      "held": "Zurückgehalten",
+      "waiting": "Wartet",
+      "building": "Wird gebaut"
+    }
+  },
+  "runners": {
+    "title": "Build-Runner",
+    "strategy": "Strategie: {{strategy}}",
+    "changeStrategy": "Strategie ändern",
+    "strategies": {
+      "first": "erster verfügbarer",
+      "least_loaded": "am wenigsten ausgelastet",
+      "sticky_per_app": "fest pro App"
+    },
+    "kind": {
+      "control_plane": "Control Plane",
+      "node": "Build-Knoten"
+    },
+    "status": {
+      "ready": "Bereit",
+      "busy": "Beschäftigt",
+      "pressure": "Unter Last",
+      "draining": "Wird geleert",
+      "offline": "Offline"
+    },
+    "cores_one": "{{count}} Kern",
+    "cores_other": "{{count}} Kerne",
+    "load": "Last {{load}}",
+    "slots": "{{used}} von {{total}} Slots ({{percent}} %)",
+    "waiting_one": "{{count}} wartet",
+    "waiting_other": "{{count}} warten",
+    "capacityLabel": "Belegte Build-Slots auf {{name}}",
+    "labels": "Labels",
+    "lastBuild": "Letzter Build:",
+    "noBuilds": "Noch keine Builds",
+    "cache": "Build-Cache {{size}}",
+    "builtOn": "Gebaut auf {{name}}",
+    "queued": "In Warteschlange {{wait}}",
+    "error": {
+      "title": "Build-Runner konnten nicht geladen werden",
+      "description": "Die Runner-Liste wurde nicht geladen. Builds sind nicht betroffen.",
+      "retry": "Neu laden"
+    },
+    "empty": {
+      "title": "Build-Knoten hinzufügen",
+      "description": "Builds laufen auf der Control Plane. Nimm einen zweiten Knoten mit aktivierten Builds auf, um sie vom Rechner mit deinen Apps zu trennen.",
+      "action": "Knoten öffnen",
+      "docs": "Build-Knoten-Routing"
+    }
+  },
+  "runnerPref": {
+    "title": "Build-Runner",
+    "description": "Wähle, wo diese App gebaut wird. Leer lassen, um der globalen Strategie zu folgen.",
+    "node": "Build-Knoten",
+    "anyNode": "Beliebiger Build-Knoten",
+    "labels": "Labels",
+    "labelsPlaceholder": "gpu, arch=arm64",
+    "pin": "An diesen Knoten binden",
+    "pinHint": "Kann dieser Knoten nicht bauen, läuft der Build auf der Control Plane, nie auf einem anderen Knoten.",
+    "pinNeedsNode": "Wähle einen Knoten zum Binden.",
+    "noAbility": "Zum Ändern brauchst du Deploy-Zugriff.",
+    "clear": "Zurücksetzen",
+    "save": "Speichern",
+    "saved": "Build-Runner gespeichert",
+    "cleared": "Build-Runner zurückgesetzt",
+    "retry": "Erneut versuchen"
   }
 }

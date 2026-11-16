@@ -354,5 +354,107 @@
     "error": "Erreur",
     "showLess": "Afficher moins",
     "showMore": "Afficher plus"
+  },
+  "buildStages": {
+    "title": "Étapes de build",
+    "graphLabel": "Étapes de build dans l'ordre",
+    "waterfallLabel": "Durée des étapes sur un axe de temps",
+    "loading": "Chargement des étapes de build",
+    "error": "Impossible de charger les étapes de build.",
+    "retry": "Réessayer",
+    "empty": "Aucune étape de build n'a été enregistrée pour ce déploiement.",
+    "pickHint": "Sélectionnez une étape pour lire son journal.",
+    "failedHint": "L'étape {{stage}} a échoué. Ouvrez son journal pour voir pourquoi.",
+    "nodeLabel": "{{stage}}, {{status}}, {{duration}}",
+    "barLabel": "Barre {{stage}}, {{percent}} pour cent de la chronologie",
+    "totals": "Durée totale {{wall}}, somme des étapes {{stages}}.",
+    "gap": {
+      "outside": "{{time}} se sont écoulées entre les étapes ou en dehors.",
+      "overlap": "Les étapes se sont chevauchées de {{time}}."
+    },
+    "stage": {
+      "source": "Source",
+      "detect": "Détection",
+      "install": "Installation",
+      "build": "Build",
+      "export": "Export",
+      "push": "Push"
+    },
+    "status": {
+      "running": "en cours",
+      "done": "terminée",
+      "failed": "échouée"
+    },
+    "cache": {
+      "hit": "Cache trouvé",
+      "miss": "Cache manqué",
+      "partial": "Cache {{cached}} sur {{total}}"
+    },
+    "logTitle": "Journal {{stage}}",
+    "logLabel": "Sortie du journal {{stage}}",
+    "logEmpty": "Pas encore de sortie pour cette étape.",
+    "logError": "Le flux du journal de l'étape s'est interrompu. Il se reconnecte seul.",
+    "followOn": "Suivi actif",
+    "followOff": "Suivre",
+    "copy": "Copier"
+  },
+  "sections": {
+    "summary": "Résumé",
+    "waterfall": "Cascade",
+    "rollout": "Déploiement",
+    "logs": "Journaux",
+    "compare": "Comparer",
+    "navLabel": "Sections de l'exécution"
+  },
+  "run": {
+    "progressLabel": "Progression par étape",
+    "elapsed": "Écoulé {{time}}",
+    "stageCount": "{{count}} étapes",
+    "stageFilter": "Étape",
+    "allStages": "Toutes les étapes",
+    "compareBody": "Comparez cette exécution à la dernière réussie, étape par étape.",
+    "compareCta": "Comparer avec l'exécution précédente",
+    "titleRunning": "Build en cours :",
+    "titleFailed": "Échec :",
+    "doneToast": "L'exécution est terminée.",
+    "failedToast": "L'exécution a échoué."
+  },
+  "runActions": {
+    "cancel": "Annuler le build",
+    "cancelWhy": "Arrête le build en cours.",
+    "cancelOff": "Seul un déploiement en cours ou en file peut être annulé.",
+    "redeploy": "Redéployer",
+    "retry": "Réessayer",
+    "redeployWhy": "Lance un nouveau déploiement de cette image.",
+    "redeployOff": "Attendez la fin de l'exécution.",
+    "rollback": "Revenir à celui-ci",
+    "rollbackWhy": "Sert de nouveau cette version.",
+    "rollbackOff": "Seul un déploiement réussi et non actif peut être restauré.",
+    "copyLink": "Copier le lien du journal",
+    "copyLinkWhy": "Copie un lien vers les journaux.",
+    "copied": "Copié",
+    "download": "Télécharger les journaux",
+    "redeployStarted": "Redéploiement lancé.",
+    "redeployFailed": "Redéploiement impossible.",
+    "rollbackStarted": "Retour arrière lancé.",
+    "rollbackFailed": "Retour arrière impossible."
+  },
+  "noStages": {
+    "prebuilt": "Aucune étape de build : ce déploiement a utilisé une image préconstruite.",
+    "label": "Phases de ce déploiement",
+    "step": {
+      "pull": "Récupérer l'image",
+      "create": "Créer le conteneur",
+      "readiness": "Disponibilité",
+      "rollout": "Déploiement"
+    },
+    "status": {
+      "pending": "En attente",
+      "running": "En cours",
+      "done": "Terminé",
+      "failed": "Échec",
+      "skipped": "Ignoré",
+      "unknown": "En attente"
+    }
   }
 }

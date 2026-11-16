@@ -1,0 +1,43 @@
+{
+  "badge": {
+    "ok": "Válido",
+    "soon": "Expira em breve",
+    "expired": "Expirado"
+  },
+  "left": {
+    "days_one": "em {{count}} dia",
+    "days_other": "em {{count}} dias",
+    "hours_one": "em {{count}} hora",
+    "hours_other": "em {{count}} horas"
+  },
+  "revokesIn_one": "Revogado em {{count}} hora",
+  "revokesIn_other": "Revogado em {{count}} horas",
+  "policy": "Lembretes {{windows}} dias antes de expirar. Um token rotacionado continua funcionando por {{grace}}.",
+  "rotate": {
+    "platformTooltip": "Tokens de plataforma se rotacionam sozinhos e não podem ser rotacionados aqui.",
+    "title": "Rotacionar {{name}}?",
+    "body": "Um novo token é criado com o mesmo nome, permissões e escopo, e um novo prazo de vida.",
+    "grace": "O token antigo continua funcionando por {{grace}} para você trocar os clientes, depois é revogado.",
+    "noGrace": "O token antigo é revogado imediatamente.",
+    "cli": "Em um terminal:",
+    "cancel": "Cancelar",
+    "confirm": "Rotacionar token",
+    "pending": "Rotacionando...",
+    "doneTitle": "Novo token para {{name}}",
+    "doneBody": "Atualize tudo que usa o token antigo com este segredo.",
+    "warning": "Copie este token agora. Ele é mostrado uma vez e não pode ser recuperado depois.",
+    "secretLabel": "Segredo do novo token",
+    "copy": "Copiar",
+    "copied": "Copiado",
+    "oldUntil": "O token antigo funciona até {{time}}.",
+    "oldRevoked": "O token antigo foi revogado imediatamente.",
+    "done": "Concluir",
+    "errors": {
+      "forbidden": "Tokens de plataforma se rotacionam sozinhos e não podem ser rotacionados aqui.",
+      "conflict": "Este token já está revogado, não há o que rotacionar. A lista foi atualizada.",
+      "notFound": "Este token não existe mais ou pertence a outra pessoa.",
+      "network": "Não foi possível alcançar o servidor. Nada foi rotacionado, tente de novo.",
+      "generic": "A rotação falhou: {{message}}"
+    }
+  }
+}

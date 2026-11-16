@@ -2,6 +2,7 @@ package api
 
 import (
 	"context"
+	"errors"
 	"strings"
 	"sync"
 	"sync/atomic"
@@ -106,6 +107,11 @@ type fakeGitLabAppClient struct {
 	branches    []gitlabapp.Branch
 	branchesErr error
 
+	// wantChallenge emulates the provider: the exchange fails unless the verifier hashes to it.
+	wantChallenge string
+	gotVerifier   string
+	exchangeCalls int
+
 	createHookErr    error
 	createHookURL    string
 	createHookTok    string
@@ -139,8 +145,12 @@ type fakeGitLabCommitStatus struct {
 	name             string
 }
 
-func (f *fakeGitLabAppClient) ExchangeCode(_ context.Context, _, _, _, _, code string) (gitlabapp.Tokens, error) {
-	f.gotCode = code
+func (f *fakeGitLabAppClient) ExchangeCode(_ context.Context, _, _, _, _, code, verifier string) (gitlabapp.Tokens, error) {
+	f.gotCode, f.gotVerifier = code, verifier
+	f.exchangeCalls++
+	if f.wantChallenge != "" && gitPKCEChallenge(verifier) != f.wantChallenge {
+		return gitlabapp.Tokens{}, errors.New("invalid_grant")
+	}
 	if t, ok := f.exchangeByCode[code]; ok {
 		return t, f.exchangeErr
 	}
@@ -328,6 +338,7 @@ type fakeGiteaAppClient struct {
 	exchangeTokens giteaapp.Tokens
 	exchangeErr    error
 	gotCode        string
+	gotVerifier    string
 
 	refreshTokens giteaapp.Tokens
 	refreshErr    error
@@ -374,8 +385,8 @@ type fakeGiteaCommitStatus struct {
 	context       string
 }
 
-func (f *fakeGiteaAppClient) ExchangeCode(_ context.Context, _, _, _, _, code string) (giteaapp.Tokens, error) {
-	f.gotCode = code
+func (f *fakeGiteaAppClient) ExchangeCode(_ context.Context, _, _, _, _, code, verifier string) (giteaapp.Tokens, error) {
+	f.gotCode, f.gotVerifier = code, verifier
 	return f.exchangeTokens, f.exchangeErr
 }
 

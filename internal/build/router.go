@@ -5,6 +5,7 @@ import (
 	"fmt"
 	"io"
 	"log/slog"
+	"time"
 
 	"golang.org/x/sync/errgroup"
 )
@@ -33,6 +34,13 @@ type Router struct {
 	remote NodeBuilder
 	logger *slog.Logger
 
+	// policy, query, loads and slotLimit feed ChooseBuildNode; all optional,
+	// and with none set the choice is the original first online node.
+	policy    func(ctx context.Context) Policy
+	query     func(ctx context.Context, app string) Query
+	loads     func() []NodeLoad
+	slotLimit func(ctx context.Context, app string) int
+
 	// load takes the image tar a dispatched build streamed back and puts
 	// it in this control plane's own image store. A field rather than a
 	// direct call so the dispatch path can be exercised without a live
@@ -47,6 +55,26 @@ type RouterOption func(*Router)
 // on. Defaults to slog.Default().
 func WithRouterLogger(logger *slog.Logger) RouterOption {
 	return func(r *Router) { r.logger = logger }
+}
+
+// WithRouterPolicy sets the live routing policy read on every build.
+func WithRouterPolicy(f func(ctx context.Context) Policy) RouterOption {
+	return func(r *Router) { r.policy = f }
+}
+
+// WithRouterQuery fills the per-app part of a placement: target architecture, labels, pinned or preferred runner.
+func WithRouterQuery(f func(ctx context.Context, app string) Query) RouterOption {
+	return func(r *Router) { r.query = f }
+}
+
+// WithRouterLoad supplies per-node slot usage, normally Limiter.Load.
+func WithRouterLoad(f func() []NodeLoad) RouterOption {
+	return func(r *Router) { r.loads = f }
+}
+
+// WithRouterSlotLimit supplies the slot limit assumed for a node that has not built yet.
+func WithRouterSlotLimit(f func(ctx context.Context, app string) int) RouterOption {
+	return func(r *Router) { r.slotLimit = f }
 }
 
 // NewRouter builds a Router over local. nodes and remote may both be nil,
@@ -65,7 +93,7 @@ func NewRouter(local *Client, nodes NodeSource, remote NodeBuilder, opts ...Rout
 
 // Build implements internal/deploy.ImageBuilder.
 func (r *Router) Build(ctx context.Context, req Request, progress func(ProgressEvent)) (*Result, error) {
-	nodeID, err := r.selectNode(ctx)
+	nodeID, err := r.selectNode(ctx, AppFromTag(req.Tag))
 	if err != nil {
 		return nil, err
 	}
@@ -91,7 +119,7 @@ func (r *Router) Build(ctx context.Context, req Request, progress func(ProgressE
 
 // BuildRailpack implements internal/deploy.ImageBuilder.
 func (r *Router) BuildRailpack(ctx context.Context, req RailpackRequest, progress func(ProgressEvent)) (*Result, error) {
-	nodeID, err := r.selectNode(ctx)
+	nodeID, err := r.selectNode(ctx, AppFromTag(req.Tag))
 	if err != nil {
 		return nil, err
 	}
@@ -111,11 +139,17 @@ func (r *Router) BuildRailpack(ctx context.Context, req RailpackRequest, progres
 
 // SelectedNode names the node the next build would run on, "" for the local one.
 func (r *Router) SelectedNode(ctx context.Context) string {
-	id, err := r.selectNode(ctx)
+	return r.Decide(ctx, "").Node
+}
+
+// Decide places a build of app and says why. A failure to list nodes means the
+// control plane, never a failed build.
+func (r *Router) Decide(ctx context.Context, app string) Decision {
+	d, err := r.decide(ctx, app)
 	if err != nil {
-		return ""
+		return Decision{Reason: "control plane: could not list build nodes"}
 	}
-	return id
+	return d
 }
 
 // ImageSize reports a built image's size in bytes from the local image store, 0 when unknown.
@@ -127,15 +161,89 @@ func (r *Router) ImageSize(ctx context.Context, tag string) int64 {
 	return info.Size
 }
 
-func (r *Router) selectNode(ctx context.Context) (string, error) {
+// selectNode honors a decision the Limiter already made for this build, so the
+// slot it queued on and the node it dispatches to cannot disagree.
+func (r *Router) selectNode(ctx context.Context, app string) (string, error) {
+	if d, ok := DecisionFrom(ctx); ok {
+		return d.Node, nil
+	}
+	d, err := r.decide(ctx, app)
+	return d.Node, err
+}
+
+func (r *Router) decide(ctx context.Context, app string) (Decision, error) {
 	if r.nodes == nil || r.remote == nil {
-		return "", nil
+		return Decision{Reason: "control plane: no build nodes configured"}, nil
 	}
 	nodes, err := r.nodes(ctx)
 	if err != nil {
-		return "", fmt.Errorf("build: list build nodes: %w", err)
+		return Decision{}, fmt.Errorf("build: list build nodes: %w", err)
 	}
-	return SelectBuildNode(nodes), nil
+	policy := r.policy
+	if policy == nil {
+		policy = currentRunnerPolicy()
+	}
+	if policy == nil {
+		id := SelectBuildNode(nodes)
+		if id == "" {
+			return Decision{Reason: "control plane: no build node is online and accepting work"}, nil
+		}
+		return Decision{Node: id, Reason: "first online build node"}, nil
+	}
+	if r.loads != nil {
+		nodes = ApplyLoad(nodes, r.loads(), r.defaultSlots(ctx, app))
+	}
+	var q Query
+	if r.query != nil {
+		q = r.query(ctx, app)
+	}
+	q.App = app
+	p := policy(ctx)
+	if p.Now.IsZero() {
+		p.Now = time.Now()
+	}
+	return ChooseBuildNode(nodes, q, p), nil
+}
+
+func (r *Router) defaultSlots(ctx context.Context, app string) int {
+	if r.slotLimit == nil {
+		return 0
+	}
+	return r.slotLimit(ctx, app)
+}
+
+type decisionKey struct{}
+
+// WithDecision carries a placement through the build call chain.
+func WithDecision(ctx context.Context, d Decision) context.Context {
+	return context.WithValue(ctx, decisionKey{}, d)
+}
+
+// DecisionFrom returns the placement already made for this build, if any.
+func DecisionFrom(ctx context.Context) (Decision, bool) {
+	d, ok := ctx.Value(decisionKey{}).(Decision)
+	return d, ok
+}
+
+// ApplyLoad copies slot usage onto nodes; a node without usage gets defaultTotal slots, 0 meaning unknown.
+func ApplyLoad(nodes []NodeInfo, loads []NodeLoad, defaultTotal int) []NodeInfo {
+	byNode := make(map[string]NodeLoad, len(loads))
+	for _, l := range loads {
+		byNode[l.Node] = l
+	}
+	out := make([]NodeInfo, len(nodes))
+	copy(out, nodes)
+	for i := range out {
+		l, ok := byNode[out[i].ID]
+		out[i].SlotsTotal = defaultTotal
+		if ok {
+			out[i].SlotsUsed, out[i].Waiting = l.Running, l.Waiting
+			if l.Limit > 0 {
+				out[i].SlotsTotal = l.Limit
+			}
+		}
+	}
+	return out
 }
 
 // dispatch runs req on nodeID and loads the image it streams back into

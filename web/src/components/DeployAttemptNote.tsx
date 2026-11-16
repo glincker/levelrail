@@ -2,6 +2,7 @@ import { useTranslation } from 'react-i18next'
 import type { DeployAttempt } from '../types/deployAttempt'
 import { InfoTip } from './kit'
 import { StatusReasonTip } from './StatusReasonTip'
+import { deployInterruption } from '../lib/deployInterruption'
 
 // The reason code a poll-started deploy carries; its label already says why.
 const POLLED_REASON = 'DetectedByPoll'
@@ -24,7 +25,9 @@ function attemptNote(attempt: DeployAttempt): string | undefined {
 
 export function DeployAttemptNote({ attempt }: { attempt: DeployAttempt }) {
   const { t } = useTranslation('common')
-  const note = attemptNote(attempt)
+  const { t: td } = useTranslation('deploys')
+  const kind = deployInterruption(attempt.reason)
+  const note = kind ? td(`interruption.${kind}`) : attemptNote(attempt)
   if (!note) return null
   return (
     <p className="mt-1.5 flex items-center gap-1 text-xs text-muted-foreground">
@@ -34,7 +37,11 @@ export function DeployAttemptNote({ attempt }: { attempt: DeployAttempt }) {
           {t('deployNote.queueBody')}
         </InfoTip>
       ) : null}
-      {note === attempt.reason ? (
+      {kind ? (
+        <InfoTip label={td('interruption.retry')}>
+          {td('interruption.retry')}
+        </InfoTip>
+      ) : note === attempt.reason ? (
         <StatusReasonTip code={attempt.reason} />
       ) : null}
     </p>

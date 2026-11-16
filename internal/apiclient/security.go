@@ -59,6 +59,9 @@ type SecurityPolicy struct {
 	Sources              map[string]string `json:"sources"`
 	NewDeviceApproval    bool              `json:"new_device_approval"`
 	NoticeGraceDays      int               `json:"notice_grace_days"`
+	// ApprovalWithoutSession is allow or hold; ApprovalChannels lists the approval paths a held sign-in has.
+	ApprovalWithoutSession string   `json:"approval_without_session"`
+	ApprovalChannels       []string `json:"approval_channels"`
 }
 
 // SecurityPolicyUpdate is the PUT body; nil fields keep their value.
@@ -67,6 +70,10 @@ type SecurityPolicyUpdate struct {
 	MaxTokenLifetimeDays *int    `json:"max_token_lifetime_days,omitempty"`
 	WarnUnusedDays       *int    `json:"warn_unused_days,omitempty"`
 	DisableUnusedDays    *int    `json:"disable_unused_days,omitempty"`
+	// ApprovalWithoutSession changes need a step-up proof; hold also needs a channel or ConfirmHostAccess.
+	ApprovalWithoutSession *string      `json:"approval_without_session,omitempty"`
+	ConfirmHostAccess      bool         `json:"confirm_host_access,omitempty"`
+	StepUp                 *StepUpProof `json:"step_up,omitempty"`
 }
 
 // Session mirrors internal/api's sessionResource.

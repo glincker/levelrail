@@ -20,6 +20,12 @@ func buildsUsage(prog string) string {
   %[1]s builds cache [--node N]
   %[1]s builds cache quota [--app-quota-gb N] [--reclaim APP]
   %[1]s builds prune [--node N] [--older-than-hours H] [--apply]
+  %[1]s builds queue [--json]
+  %[1]s builds runners [--json]
+  %[1]s builds pause [--reason TEXT]
+  %[1]s builds drain [--reason TEXT]
+  %[1]s builds resume
+  %[1]s builds kill-all --yes [--reason TEXT] [--pause]
 
 The build center: queued, running and finished builds across every app with
 duration, cache hit ratio, image size change and the node that ran each one.
@@ -27,7 +33,9 @@ retry rebuilds the connected branch of a failed or canceled build. prune
 previews by default and only removes idle BuildKit cache with --apply; cache
 an in-flight build holds is never removed. cache quota shows the per app quota
 (0 is off) and the recent reclaims; --app-quota-gb changes the live setting
-(root or admin), --reclaim trims one app now.
+(root or admin), --reclaim trims one app now. pause and drain hold new builds
+in the queue (running builds finish), resume starts them again, and kill-all
+cancels every queued and running build after a password step-up.
 `, prog)
 }
 
@@ -53,6 +61,14 @@ func runBuilds(prog string, args []string, stdout, stderr io.Writer, lookupEnv f
 		return runBuildsCache(prog, args[1:], stdout, stderr, lookupEnv)
 	case "prune":
 		return runBuildsPrune(prog, args[1:], stdout, stderr, lookupEnv)
+	case "queue":
+		return runBuildsQueue(prog, args[1:], stdout, stderr, lookupEnv)
+	case "runners":
+		return runBuildsRunners(prog, args[1:], stdout, stderr, lookupEnv)
+	case "pause", "resume", "drain":
+		return runBuildsQueueChange(prog, args[0], args[1:], stdout, stderr, lookupEnv)
+	case "kill-all":
+		return runBuildsKillAll(prog, args[1:], stdout, stderr, lookupEnv)
 	}
 	_, _ = fmt.Fprintf(stderr, "%s: unknown builds subcommand %q\n\n%s", prog, args[0], buildsUsage(prog))
 	return exitUsage

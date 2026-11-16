@@ -561,7 +561,7 @@
     "medianDuration": "Median duration",
     "medianDurationTip": "Median time of deploys that finished in the last 24 hours.",
     "needsAttention": "Needs attention",
-    "needsAttentionTip": "Held deploys, and live images that differ from what is running. Select to show held deploys.",
+    "needsAttentionTip": "Held deploys, live images that differ from what is running, and apps whose latest deploy failed or was refused. Select to show them.",
     "deploys14": "Deploys (14 days)",
     "deploys14Tip": "Deploys started per day over the last 14 days."
   },
@@ -608,7 +608,8 @@
       "held": "Held",
       "awaiting_approval": "Awaiting approval",
       "rolled_back": "Rolled back",
-      "superseded": "Superseded"
+      "superseded": "Superseded",
+      "refused": "Refused"
     },
     "trigger": {
       "git push": "Git push",
@@ -673,5 +674,137 @@
     "viewQueue": "View queue",
     "progress": "{{received}} of {{required}} distinct approvers so far. The deploy runs when the last one approves.",
     "recorded": "Approval recorded: {{received}} of {{required}} distinct approvers."
+  },
+  "interruption": {
+    "interrupted": "Interrupted: the control plane restarted while this deploy was running",
+    "orphaned": "Orphaned: no build was running for this deploy, so it was canceled",
+    "retry": "Deploy again to retry"
+  },
+  "buildQueue": {
+    "chip": "{{state}}, {{used}} of {{total}} slots",
+    "state": {
+      "running": "Running",
+      "paused": "Paused",
+      "draining": "Draining"
+    },
+    "by": "by {{actor}}",
+    "menu": "Queue actions",
+    "resume": "Resume builds",
+    "drain": "Drain queue",
+    "drainHint": "Let running builds finish, hold new ones",
+    "done": {
+      "pause": "Build queue paused.",
+      "drain": "Build queue draining.",
+      "resume": "Build queue resumed."
+    },
+    "conflict": {
+      "pause": "The queue is already paused.",
+      "drain": "The queue is already draining.",
+      "resume": "The queue is already running."
+    },
+    "failed": "Could not change the build queue.",
+    "pause": {
+      "action": "Pause builds",
+      "title": "Pause the build queue",
+      "description": "Running builds finish. New builds wait until you resume.",
+      "reasonLabel": "Reason (optional)",
+      "reasonPlaceholder": "For example, registry maintenance",
+      "submit": "Pause"
+    },
+    "kill": {
+      "action": "Kill all builds",
+      "title": "Kill all builds?",
+      "description": "This cancels {{running}} running and {{queued}} queued builds.",
+      "confirm": "Kill all builds",
+      "confirming": "Killing",
+      "none": "No builds are running or queued right now.",
+      "more": "and {{count}} more",
+      "alsoPause": "Also pause the queue",
+      "stepUp": "Confirm your password to cancel every build.",
+      "done_one": "Canceled {{count}} build.",
+      "done_other": "Canceled {{count}} builds.",
+      "someFailed": "{{count}} could not be canceled: {{apps}}",
+      "conflict": "The queue changed while you confirmed. Check the queue and try again.",
+      "failed": "Could not cancel the builds."
+    },
+    "banner": {
+      "paused": "Builds are paused",
+      "draining": "Builds are draining"
+    },
+    "autoResume": "Resumes automatically",
+    "panel": {
+      "title": "Build queue",
+      "summary": "{{running}} running, {{queued}} queued, {{used}} of {{total}} slots in use",
+      "position": "#{{position}}",
+      "waiting": "Waiting: {{reason}}"
+    },
+    "phase": {
+      "preparing": "Preparing",
+      "held": "Held",
+      "waiting": "Waiting",
+      "building": "Building"
+    }
+  },
+  "runners": {
+    "title": "Build runners",
+    "strategy": "Strategy: {{strategy}}",
+    "changeStrategy": "Change strategy",
+    "strategies": {
+      "first": "first available",
+      "least_loaded": "least loaded",
+      "sticky_per_app": "sticky per app"
+    },
+    "kind": {
+      "control_plane": "Control plane",
+      "node": "Build node"
+    },
+    "status": {
+      "ready": "Ready",
+      "busy": "Busy",
+      "pressure": "Under pressure",
+      "draining": "Draining",
+      "offline": "Offline"
+    },
+    "cores_one": "{{count}} core",
+    "cores_other": "{{count}} cores",
+    "load": "Load {{load}}",
+    "slots": "{{used}} of {{total}} slots ({{percent}}%)",
+    "waiting_one": "{{count}} waiting",
+    "waiting_other": "{{count}} waiting",
+    "capacityLabel": "Build slots in use on {{name}}",
+    "labels": "Labels",
+    "lastBuild": "Last build:",
+    "noBuilds": "No builds yet",
+    "cache": "Build cache {{size}}",
+    "builtOn": "Built on {{name}}",
+    "queued": "Queued {{wait}}",
+    "error": {
+      "title": "Could not load build runners",
+      "description": "The runner list did not load. Builds are not affected.",
+      "retry": "Reload"
+    },
+    "empty": {
+      "title": "Add a build node",
+      "description": "Builds run on the control plane. Enroll a second node with builds enabled to move them off the machine that serves your apps.",
+      "action": "Open Nodes",
+      "docs": "Build node routing"
+    }
+  },
+  "runnerPref": {
+    "title": "Build runner",
+    "description": "Choose where this app builds. Leave empty to follow the global strategy.",
+    "node": "Build node",
+    "anyNode": "Any build node",
+    "labels": "Labels",
+    "labelsPlaceholder": "gpu, arch=arm64",
+    "pin": "Pin to this node",
+    "pinHint": "If this node cannot build, use the control plane, never another node.",
+    "pinNeedsNode": "Pick a node to pin it.",
+    "noAbility": "You need deploy access to change this.",
+    "clear": "Clear",
+    "save": "Save",
+    "saved": "Build runner saved",
+    "cleared": "Build runner cleared",
+    "retry": "Retry"
   }
 }

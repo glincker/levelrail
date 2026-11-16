@@ -1,7 +1,7 @@
 // Fetchers for /api/v1/apps/{name}/build-cache (internal/api/apps_build_cache.go).
 
 import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query'
-import { ApiError, readErrorMessage } from '../lib/apiError'
+import { apiRequest } from '../lib/apiRequest'
 
 export interface AppBuildCache {
   cache_id: string
@@ -23,15 +23,11 @@ export const appBuildCacheKey = (app: string) =>
 const path = (app: string) =>
   `/api/v1/apps/${encodeURIComponent(app)}/build-cache`
 
-async function request<T>(url: string, init?: RequestInit): Promise<T> {
-  const res = await fetch(url, init)
-  if (!res.ok) {
-    throw new ApiError(
-      res.status,
-      await readErrorMessage(res, `build cache request failed: ${res.status}`),
-    )
-  }
-  return (await res.json()) as T
+function request<T>(url: string, init?: RequestInit): Promise<T> {
+  return apiRequest<T>(url, {
+    method: init?.method,
+    fallbackMessage: 'build cache request failed',
+  })
 }
 
 export function useAppBuildCache(app: string) {

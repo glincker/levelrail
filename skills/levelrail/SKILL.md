@@ -7,11 +7,18 @@ description: Entry point for working with a self-hosted Levelrail instance throu
 
 Levelrail is a self-hosted deployment platform. You drive it with the CLI (`levelrail-cli`) or the MCP server (`levelrail-mcp`). Both read the API token from `APP_API_TOKEN` and the instance URL from `APP_API_URL`. Never write a token into a file, a commit, or a chat message.
 
+## Sign in: reuse first
+
+1. Run `levelrail-cli whoami --json`. Exit 0 and `"verified": true` means a saved login works: use it and carry on. Do not log in again and do not ask the human to.
+2. Only when it reports no usable credential, tell the human the exact `next_command` it printed (a person runs it once at a terminal; it can need a password and a new-device approval). Never run `login`, `auth approve` or `auth code` yourself to get past it, and never approve your own sign-in.
+3. Which login is used: `--profile`, then `APP_PROFILE`, then `.levelrail/profile` (profile name and URL, never a secret, found by walking up from the current directory), then `default`. `levelrail-cli profile list --verify` shows all of them.
+4. A warning that a login expires soon means the human should renew it before it fails.
+
 ## Set up
 
 1. Install the CLI: `curl -fsSL https://levelrail.com/install-cli.sh | sh` (macOS and Linux, installs to `~/.local/bin`). Or with Node: `npx levelrail-cli <command>` / `npm install --global levelrail-cli` (client only, never the server).
-2. Point it at the instance and log in: `export APP_API_URL=https://console.example.com`, then `levelrail-cli auth login --device`. The user approves the code in the dashboard. In CI, use an API token instead.
-3. In a project, run `levelrail-cli init`. It writes `app.yaml`, an `AGENTS.md` with this project's deploy instructions, and an `.mcp.json` entry for `levelrail-mcp`. Add `--dry-run` to preview.
+2. Point it at the instance and log in: `export APP_API_URL=https://console.example.com`, then `levelrail-cli auth login --device`. The user approves the code in the dashboard. In CI, use an API token instead. A second `auth login` on a machine with a working login does nothing (it reuses it); `--force` signs in again.
+3. In a project, run `levelrail-cli init`. It writes `app.yaml`, an `AGENTS.md` with this project's deploy instructions, an `.mcp.json` entry for `levelrail-mcp`, and with `--profile` a `.levelrail/profile` pointer. Add `--dry-run` to preview.
 4. To see what a project is before deploying, run `levelrail-cli apps detect --json`. It reads the directory offline.
 
 For MCP, pick the smallest mode that does the job: `agent-core` (default), `read-only`, `standard`, or `full`.

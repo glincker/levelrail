@@ -215,6 +215,7 @@ func evaluatePosture(in postureInput) []postureItem {
 		boolRule("new_device_approval_off", postureHigh, &in.NewDeviceApproval, false, &postureFix{Kind: postureFixLink, Link: securityPage, CLI: envNewDeviceApproval + "=true"}),
 		boolRule("secret_reveal_allow", postureHigh, &in.SecretRevealAllow, true, &postureFix{Kind: postureFixLink, Link: securityPage, CLI: envSecretReveal + "=" + revealPolicyStepUp}),
 		approvalScopeRule(in),
+		approvalWithoutSessionRule(in),
 		boolRule("code_login_admins", postureMedium, in.CodeLoginAdmins, true, actionFix("disable_code_login_admins", nil, securityPage)),
 		exposureRule(in, false),
 		exposureRule(in, true),
@@ -305,6 +306,17 @@ func approvalScopeRule(in postureInput) postureItem {
 		return pass(id, postureLow)
 	}
 	return failing(id, postureLow, nil, actionFix("set_policy", map[string]string{"approval_scope": approvalScopeAllMethods}, ""))
+}
+
+// approvalWithoutSessionRule suggests hold as a hardening step; allow is the safe default, so it never costs score.
+func approvalWithoutSessionRule(in postureInput) postureItem {
+	const id = "approval_without_session_allow"
+	if !in.NewDeviceApproval || in.Policy.ApprovalWithoutSession == approvalWithoutSessionHold {
+		return pass(id, postureLow)
+	}
+	it := failing(id, postureLow, nil, &postureFix{Kind: postureFixLink, Link: "/security?tab=policy", CLI: "security policy set --approval-without-session hold"})
+	it.Recommended = true
+	return it
 }
 
 func exposureRule(in postureInput, dockerAPI bool) postureItem {

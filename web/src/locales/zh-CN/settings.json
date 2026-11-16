@@ -698,6 +698,10 @@
         "title": "审计日志",
         "description": "谁更改了什么，涵盖所有会话和 API 令牌。"
       },
+      "integrations": {
+        "title": "集成",
+        "description": "查看所有已连接的服务、其状态和到期时间，以及添加更多服务的位置。"
+      },
       "git-connections": {
         "title": "Git 连接",
         "description": "所有 GitHub、GitLab、Bitbucket、Gitea 和 Forgejo 账户集中在一处。"
@@ -2610,6 +2614,18 @@
       "alert_rule_invalid": {
         "message": "告警规则缺少指标、比较符或阈值。",
         "fix": "三者都要设置，比较符为 >、<、>= 或 <=。"
+      },
+      "dns_name_invalid": {
+        "message": "应用的 DNS 名称不是简单名称、是通配符或超出了限制。",
+        "fix": "使用小写字母、数字和连字符，例如 shop，并遵守 dns.internal_* 的限制。"
+      },
+      "dns_name_reserved": {
+        "message": "应用的 DNS 名称在保留列表中。",
+        "fix": "请换一个名称。"
+      },
+      "dns_name_conflict": {
+        "message": "另一个应用已在使用此 DNS 名称。",
+        "fix": "请选择其他应用未使用的名称。"
       },
       "registry_credential_not_found": {
         "message": "构建引用了控制平面上不存在的镜像仓库凭据。",

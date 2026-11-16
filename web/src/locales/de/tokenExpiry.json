@@ -1,0 +1,43 @@
+{
+  "badge": {
+    "ok": "Gültig",
+    "soon": "Läuft bald ab",
+    "expired": "Abgelaufen"
+  },
+  "left": {
+    "days_one": "in {{count}} Tag",
+    "days_other": "in {{count}} Tagen",
+    "hours_one": "in {{count}} Stunde",
+    "hours_other": "in {{count}} Stunden"
+  },
+  "revokesIn_one": "Wird in {{count}} Stunde widerrufen",
+  "revokesIn_other": "Wird in {{count}} Stunden widerrufen",
+  "policy": "Erinnerungen {{windows}} Tage vor Ablauf. Ein rotierter Token funktioniert weiter für {{grace}}.",
+  "rotate": {
+    "platformTooltip": "Plattform-Tokens rotieren sich selbst und können hier nicht rotiert werden.",
+    "title": "{{name}} rotieren?",
+    "body": "Ein neuer Token mit gleichem Namen, gleichen Berechtigungen und gleichem Geltungsbereich wird mit neuer Laufzeit erstellt.",
+    "grace": "Der alte Token funktioniert noch {{grace}}, damit Sie Aufrufer umstellen können, und wird dann widerrufen.",
+    "noGrace": "Der alte Token wird sofort widerrufen.",
+    "cli": "Im Terminal:",
+    "cancel": "Abbrechen",
+    "confirm": "Token rotieren",
+    "pending": "Rotiere...",
+    "doneTitle": "Neuer Token für {{name}}",
+    "doneBody": "Aktualisieren Sie alles, was den alten Token nutzt, mit diesem Geheimnis.",
+    "warning": "Kopieren Sie den Token jetzt. Er wird nur einmal angezeigt und kann später nicht abgerufen werden.",
+    "secretLabel": "Geheimnis des neuen Tokens",
+    "copy": "Kopieren",
+    "copied": "Kopiert",
+    "oldUntil": "Der alte Token funktioniert bis {{time}}.",
+    "oldRevoked": "Der alte Token wurde sofort widerrufen.",
+    "done": "Fertig",
+    "errors": {
+      "forbidden": "Plattform-Tokens rotieren sich selbst und können hier nicht rotiert werden.",
+      "conflict": "Dieser Token ist bereits widerrufen, es gibt nichts zu rotieren. Die Liste wurde aktualisiert.",
+      "notFound": "Dieser Token existiert nicht mehr oder gehört jemand anderem.",
+      "network": "Server nicht erreichbar. Es wurde nichts rotiert, versuchen Sie es erneut.",
+      "generic": "Rotation fehlgeschlagen: {{message}}"
+    }
+  }
+}

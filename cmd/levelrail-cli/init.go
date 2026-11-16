@@ -12,6 +12,7 @@ import (
 	"golang.org/x/term"
 
 	"github.com/GLINCKER/levelrail/internal/agentinit"
+	"github.com/GLINCKER/levelrail/internal/apiclient"
 	"github.com/GLINCKER/levelrail/internal/projecttpl"
 	"github.com/GLINCKER/levelrail/internal/scaffold"
 	"github.com/GLINCKER/levelrail/internal/spec"
@@ -128,6 +129,14 @@ func runInit(prog string, args []string, stdout, stderr io.Writer, lookupEnv fun
 		}
 		return exitOK
 	}
+	// The pointer names the profile and URL only, so later sessions here reuse the right saved login.
+	if profile != defaultProfile || apiURL != "" {
+		ptr := initFile{Path: apiclient.RepoPointerPath, content: apiclient.RepoPointerContent(profile, apiURL)}
+		if err := classifyInitFile(dir, &ptr, force); err != nil {
+			return reportError(stdout, stderr, jsonOut, err)
+		}
+		files = append(files, ptr)
+	}
 	res := initResult{
 		Dir:    dir,
 		Stack:  initStack{Provider: stack.Provider, Label: stack.Label, Build: stack.Build, Port: stack.Port, Notes: stack.Notes},
@@ -233,28 +242,35 @@ func planInit(dir string, stack stackdetect.Stack, opts agentinit.Options, force
 	files = append(files, initFile{Path: "AGENTS.md", content: agentsMD}, initFile{Path: ".mcp.json", content: mcp})
 
 	for i := range files {
-		f := &files[i]
-		if f.Action != "" {
-			continue
-		}
-		existing, err := os.ReadFile(filepath.Join(dir, f.Path)) //nolint:gosec // path is under the operator-chosen project dir
-		switch {
-		case errors.Is(err, os.ErrNotExist):
-			f.Action = initCreate
-		case err != nil:
-			return nil, fmt.Errorf("read %s: %w", f.Path, err)
-		case string(existing) == f.content:
-			f.Action = initUnchanged
-		default:
-			f.Diff = agentinit.Diff(string(existing), f.content)
-			if force {
-				f.Action = initOverwrite
-			} else {
-				f.Action, f.Reason = initSkip, "already exists, pass --force to overwrite"
-			}
+		if err := classifyInitFile(dir, &files[i], force); err != nil {
+			return nil, err
 		}
 	}
 	return files, nil
+}
+
+// classifyInitFile sets f's action from what already exists on disk.
+func classifyInitFile(dir string, f *initFile, force bool) error {
+	if f.Action != "" {
+		return nil
+	}
+	existing, err := os.ReadFile(filepath.Join(dir, f.Path)) //nolint:gosec // path is under the operator-chosen project dir
+	switch {
+	case errors.Is(err, os.ErrNotExist):
+		f.Action = initCreate
+	case err != nil:
+		return fmt.Errorf("read %s: %w", f.Path, err)
+	case string(existing) == f.content:
+		f.Action = initUnchanged
+	default:
+		f.Diff = agentinit.Diff(string(existing), f.content)
+		if force {
+			f.Action = initOverwrite
+		} else {
+			f.Action, f.Reason = initSkip, "already exists, pass --force to overwrite"
+		}
+	}
+	return nil
 }
 
 func writeInit(dir string, files []initFile) error {
@@ -346,6 +362,8 @@ Python, Java, static site) and writes three files into the directory:
   app.yaml    the app spec, validated with the platform's own validator
   AGENTS.md   how an AI agent deploys, checks and rolls back this app
   .mcp.json   MCP server config; the token is an env var reference, never a value
+  .levelrail/profile  only with a non-default profile or a known API URL: names the
+              profile and URL later sessions here reuse, never a secret
 
 Existing files are never overwritten unless --force is given; a diff of what
 would change is shown either way. Without --yes, a terminal is asked to confirm;

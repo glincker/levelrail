@@ -105,7 +105,7 @@ If the control plane has no publicly reachable primary domain yet, create the Ap
 
 Open the GitLab App settings page (`/settings/gitlab-app`).
 
-Register an OAuth Application in GitLab with redirect URI `<your control plane>/api/v1/gitlab-app/callback` and scope `api`, then paste its `instance_url`, `client_id`, and `client_secret`. Authorize through the redirect to your instance's `/oauth/authorize`.
+Register an OAuth Application in GitLab with redirect URI `<your control plane>/api/v1/gitlab-app/callback` and scope `api`, then paste its `instance_url`, `client_id`, and `client_secret`. Authorize through the redirect to your instance's `/oauth/authorize`. The authorization request carries a PKCE S256 challenge, and the matching verifier is kept only in control plane memory until the callback consumes it once.
 
 </Tab>
 <Tab title="Bitbucket">
@@ -119,7 +119,7 @@ Register an OAuth consumer in Bitbucket Cloud, then paste its key and secret and
 
 Open the Gitea App settings page (`/settings/gitea-app`).
 
-Register an OAuth2 application in Gitea, then paste its `instance_url`, `client_id`, and `client_secret`. Authorize through the redirect to your instance's `/login/oauth/authorize`.
+Register an OAuth2 application in Gitea, then paste its `instance_url`, `client_id`, and `client_secret`. Authorize through the redirect to your instance's `/login/oauth/authorize`. Gitea and Forgejo use the same PKCE S256 challenge and single use verifier.
 
 </Tab>
 </Tabs>
@@ -200,6 +200,30 @@ levelrail-cli git-providers repos gitea --refresh
 levelrail-cli git-providers repos gitlab --connection <id>
 ```
 
+## What a connection can do
+
+`GET /api/v1/git-connections/{id}/access` shows what a connection's credential allows, so a missing scope is visible before a feature fails. It needs the read ability and never returns a token or secret.
+
+The answer holds the provider, `auth_method` (`oauth_app` or `token`), the granted `scopes` with `scopes_known` and `scopes_source`, `expires_at` and `last_used_at` when the provider reports them, and `visible_accounts` (a bounded list of group or account names with a total). A `capabilities` list covers `list_repos`, `clone_sync`, `register_webhook`, `tag_push_trigger`, `commit_status`, `mr_comments`, `deployments_report`, `registry_pull` and `import_group`. Each has a state of `allowed`, `not_allowed` or `needs_scope`, the `needs_scope` that would fix it, and `verified`, which is true only when the state follows from scopes the provider itself reported.
+
+GitLab reports scopes, so a token with only `read_api` shows webhooks, commit statuses and comments as `needs_scope: api`. Bitbucket does not report scopes, so it answers `scopes_known: false` and inferred states. Gitea and Forgejo report no scopes either, so their capabilities come from the repository permissions the server reports for the repositories the token can reach: webhooks need admin on a repository, commit statuses and comments need write. `expires_at` shows the expiry of an OAuth token; a personal token on these servers does not expire. If the provider cannot be reached the call still returns 200 with the stored facts and a `live_check_error`. Live results are reused for `git.access_cache_ttl_seconds` (env `APP_GIT_ACCESS_CACHE_TTL_SECONDS`, default 60) and the name list is capped by `git.access_names_max`.
+
+## Gitea and Forgejo checks
+
+The Gitea and Forgejo clients are exercised against throwaway local containers of the official images, started on random loopback ports with no volumes. The run covers OAuth application creation by API, the authorization code flow with PKCE and token refresh, repository listing by owner and organization, an idempotent webhook with a signed delivery for a test event, a push and a pull request, commit statuses, one updated pull request comment, and changed file lists. Run it with `scripts/qa/forge-gitea.sh`. It needs Docker, pulls two small images, removes the containers when done and the images unless `KEEP_IMAGES=1`.
+
+The webhook secret is verified from the `X-Gitea-Signature` header (hex HMAC-SHA256 of the body), which both servers send.
+
+## Credential health, auto-renew and rotation
+
+Each connection says what kind of credential it holds. `credential_kind` is `oauth_auto_renew` when a refresh token is stored, and `static_token` for a pasted token. The connection also reports `auto_renew`, `expires_at`, `last_refresh_at`, `last_refresh_error` and `can_rotate`. None of these carry a secret.
+
+An OAuth connection renews itself. A background check runs every `git.oauth_refresh_interval` (env `APP_GIT_OAUTH_REFRESH_INTERVAL`, default 1m) and refreshes any access token that expires within `git.oauth_refresh_lead` (default 10m). A refresh that works is silent. A grant the provider rejects raises an alert at once; a provider that is only unreachable raises one after `git.oauth_refresh_failure_grace` (default 30m). The alert is one Status row (`git_connection_reauth`, with a Re-authorize link) and one `git_connections.reauth_needed` event, and both clear when a refresh works again. Connections that already need a new authorization are skipped, not retried. Turn the whole loop off with `git.oauth_refresh_enabled` (env `APP_GIT_OAUTH_REFRESH_ENABLED`); tokens are then refreshed only when a request needs them, and the System Doctor row `git_oauth_refresh` warns while it is off.
+
+A pasted token cannot renew itself. When the host reports an expiry (GitLab does), the control plane sends one `git_connections.expiring` event per window in `credential_expiry.reminder_windows_days` and shows a `git_token_expiring` row on Status inside the widest window. The event carries the connection, the expiry and the rotate path, never the token.
+
+`POST /api/v1/git-connections/{id}/rotate` replaces a pasted GitLab personal access token through GitLab's own rotation call. It needs the root ability, is audited as `git_connection.rotated`, and the token needs the `self_rotate` scope. The body is optional: `{"expires_at": "YYYY-MM-DD"}`, otherwise the new token lasts `git.rotate_lifetime_days` (default 90). GitLab revokes the old token at once. The answer is `{"rotated": true, "expires_at": "...", "connection": {...}}` and never contains the new secret. It answers 409 for an OAuth connection, a connection that is not authorized, a provider that cannot rotate, or a token without the scope.
+
 ## Reconnecting a provider
 
 Each connection has a health state, shown on its settings page, in `GET /api/v1/git-providers` (`connection.status`), in `levelrail-cli git-providers` and in the System Doctor check `git_connections`.
@@ -265,7 +289,7 @@ webhook_url:         https://levelrail.example.com/api/v1/webhooks/github/storef
 webhook_registered:  true
 ```
 
-If webhook registration fails, GitHub still connects the repository and reports `webhook_registered: false` with a `webhook_error` (typically an installation that predates the `repository_hooks:write` permission). GitLab, Bitbucket, and Gitea fail the whole request with a `502` instead.
+If webhook registration fails, GitHub and GitLab still connect the repository and report `webhook_registered: false` with a `webhook_error` and the webhook secret, so you can add the hook by hand (for GitHub, typically an installation that predates the `repository_hooks:write` permission). Bitbucket and Gitea fail the whole request with a `502` instead. The hook GitLab registers subscribes to push, tag push and merge request events, so [release trigger mode](#deploy-triggers-push-or-release) works from an auto-registered hook.
 
 For an app that already exists, `levelrail-cli apps git-source get|set|delete <name>` manages the git source directly.
 
@@ -564,7 +588,7 @@ levelrail-cli apps previews pr-status disable storefront
 
 When on, each preview deploy posts a `levelrail/preview` commit status on the pull request's head commit: `pending` while building, `success` once live (with the preview URL), `failure` if the deploy failed. Messages are truncated to 140 characters on GitHub and 255 on GitLab.
 
-Each pull request also carries a single comment, found by a hidden marker and edited in place, showing the state (building, ready with the URL, failed with a short reason, removed with the reason), the commit, and the last update time. If someone deletes it, the next update posts a fresh one. This uses the same connected provider credentials as repository and branch calls. If the repository is not hosted on the connected instance, or no provider is connected, it is a silent no-op that never fails the preview.
+Each pull request also carries a single comment, found by a hidden marker and edited in place, showing the state (building, ready with the URL, failed with a short reason, removed with the reason), the commit, a built-by line linking the deploy page, and the last update time. On GitLab this is a single merge request note, updated in place and edited to `removed` when the merge request closes. Draft merge requests are not treated differently yet. If someone deletes it, the next update posts a fresh one. This uses the same connected provider credentials as repository and branch calls. If the repository is not hosted on the connected instance, or no provider is connected, it is a silent no-op that never fails the preview.
 
 ### Preview environment variables
 
@@ -764,3 +788,7 @@ The deployment spec behind multi-service deploys.
 
 </Card>
 </CardGroup>
+
+## GitLab deployments and environments
+
+With `git.gitlab_deployments` on (off by default), a deploy of an app whose source is on GitLab creates an environment named `<app>/production` or `<app>/preview-<n>` and a deployment with status `running`, then `success`, `failed` or `canceled` when the deploy ends. The environment links to the app URL, or to the app's deployments page when it has none. Closing a merge request stops its preview environment. The call needs a token with the `api` scope and Developer access on the project: when the connection's stored scopes lack `api`, the `deployments_report` capability reads `needs_scope` and nothing is sent. Set `git.gitlab_deployments_connections` to limit reporting to chosen connections. Each post and each failure shows on the app timeline with the error text masked.

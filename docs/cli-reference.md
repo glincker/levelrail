@@ -34,6 +34,10 @@ Login pins the server. `auth login` prints the server's name and fingerprint (co
 
 Manage more than one control plane with named profiles: `levelrail-cli auth login --profile staging`, then `--profile staging` on any command. `levelrail-cli profile list` shows them.
 
+Sign-in reuses what already works. `auth login` first checks the profile's saved or env token with one cheap call; if the server accepts it, it stops (no new session, no approval) and `--force` signs in again. A password login stores the trusted-device cookie the server issued, when it issued one, in the profile (mode 0600). A repeat login from this machine skips new-device approval only when the server issued that cookie (dashboard approval, first-login trust, code login or MFA remember device) and the server is the one the profile is pinned to; signing in to another server clears it. Credentials (a saved token, a `--token` value, `APP_API_TOKEN` or `LEVELRAIL_TOKEN`, and a password) are only sent to an address you saved or typed. A repo pointer `api_url` is used only when it equals the address of a saved profile, and that profile's server pin applies; any other pointer address is refused with the two ways forward: pass `--api-url` for one command, or save it with `auth login --api-url`. The first-run sign-in shows a pointer-only address and asks you to type yes; without a terminal it refuses. `--api-url`, `APP_API_URL` and `LEVELRAIL_API_URL` always win. The pointer accepts https, and plain http only for localhost, 127.0.0.1 and ::1. Login ends its throwaway session once the token is minted. A new machine, or a device the server issued no cookie for, still needs approval.
+
+`levelrail-cli whoami [--json]` shows the profile and where its name came from, API URL, identity, scope, expiry and whether the server accepted the login just now. It exits non-zero when nothing is usable and prints the exact command a person must run. The profile is picked by `--profile`, then `APP_PROFILE`, then a `.levelrail/profile` file found by walking up from the current directory (profile name and API URL only, written by `init --profile NAME`), then `default`. With no terminal (agents, CI) a missing login never starts a prompt: it exits non-zero and names the command. A warning goes to stderr, once per run, when the saved token expires within `APP_EXPIRY_WARN_WINDOW` (a Go duration, default 168h).
+
 ## Updating the CLI {#updating}
 
 ```bash
@@ -326,7 +330,7 @@ levelrail-cli apps auto-rollback-slo-burn status <app-name> [flags]
 - `apps deploys failed` lists every app's latest failed deploy in the window (default set by the server), with the image of its newest good deploy as a rollback target.
 - `apps deploys cancel` cancels a queued or in-progress deploy before it cuts traffic. `apps deploys rollback-to` redeploys a past succeeded deploy's exact image, pinned by digest or rollback pin, with that deploy's config; `--watch` follows it through the readiness gate.
 - `apps deploys gate` (alias `deploy status`) prints a release's gate timeline: readiness passes, stable window, cutover, drain, rollback pin and post-deploy watch. `--watch` follows it until the release clears its watch, fails, is rolled back or is replaced. Exit 0 healthy or in progress, 7 failed or rolled back. `apps deploy-safety` shows and overrides the per-app thresholds (`set web --stable-window 20s --auto-rollback false`, `default` clears one) and lists pinned rollback targets. See [Deploy safety](/deploy-safety#readiness-gate).
-- `apps timeline` shows what happened to an app, newest first: deploys, rollbacks, restarts, env, secret and config changes (key names only, never values), scaling, stop and start.
+- `apps timeline` shows what happened to an app, newest first: deploys, rollbacks, restarts, env, secret and config changes (key names only, never values), scaling, stop and start, commit statuses posted to the git forge (pipeline runs and MR or PR previews) and connection bindings.
 - `apps diagnose` explains a failed deploy or crashloop and can apply a suggested fix with `--apply-fix N`. `apps preflight` runs pre-deploy checks (DNS, ports, disk, image, env).
 - `apps deploy`, `apps rollback`, `apps restart`, `apps start` and `apps stop` exit non-zero with code `node_offline` when the app's node is offline, naming the node and the fix (bring it back, or `apps move` / `nodes drain`). `--queue-while-offline` records the change as a `pending` attempt that the node applies when it returns.
 - `apps upgrade-plan` prints what moving a template app to the current catalog entry would change (risk, image, env, volume and port changes, blockers) and changes nothing. `apps upgrade` shows the same plan until `--yes` is given, then applies it, follows the release and reports a rollback if one happened; `--no-wait` returns once it has started. See `docs/template-upgrades.md`.
@@ -374,6 +378,7 @@ levelrail-cli apps streams delete <name> <id> [flags]
 levelrail-cli apps egress get <name> [flags]
 levelrail-cli apps egress set <name> --allow host:port [--allow host:port ...] [flags]
 levelrail-cli apps egress clear <name> [flags]
+levelrail-cli apps egress report <name> [flags]
 levelrail-cli apps exec-access enable|disable|status <name> [flags]
 levelrail-cli apps runtime show <name> [--service NAME] [flags]
 levelrail-cli apps runtime set <name> [--service NAME] [--tmpfs P:size=64m] [--ulimit nofile=65536] [--init] [--stop-timeout N] [--extra-host H:IP] [--dns IP] [--sysctl K=V] [--pids-limit N] [--unset KEYS] [flags]
@@ -823,6 +828,8 @@ levelrail-cli models cache prune [--dry-run] [volume...] [flags]
 ```
 levelrail-cli auth login [--device] [--profile NAME] [flags]
 levelrail-cli auth login --reauth [--device] [flags]
+levelrail-cli auth login [--force] [flags]
+levelrail-cli whoami [--json] [flags]
 levelrail-cli auth whoami [--access] [flags]
 levelrail-cli auth status [flags]
 levelrail-cli auth trust-server [--yes] [flags]
@@ -868,9 +875,9 @@ Shows which auth engine is active, the areas served by the library, and the shad
 ## Profile
 
 ```
-levelrail-cli profile list [flags]
+levelrail-cli profile list [--verify] [flags]
 ```
-List configured credentials profiles and their API URLs.
+List configured credentials profiles with API URL, whether each holds a token, its expiry and trusted-device state. `--verify` checks each token live and shows identity and scope.
 
 ## Tokens
 
@@ -1106,6 +1113,28 @@ levelrail-cli channels deliveries <id> [flags]
 levelrail-cli channels quiet-hours <id> [--start HH:MM --end HH:MM [--timezone Z] | --clear]
 ```
 Valid `--kind` values: `generic`, `slack`, `discord`, `telegram`, `email`, `pushover`, `pagerduty`, `teams`, `resend`, `ntfy`, `gotify`, `mattermost`, `lark`, `rocketchat`, `opsgenie`, `webex`, `googlechat`. For `telegram`, add `&message_thread_id=N` to the sendMessage URL to post into one forum topic. `update` fully replaces a channel's configuration. `--notify-device-login` opts a channel into a link-only notice when a CLI login is waiting. `test` sends a real test message; `deliveries` lists a channel's recorded send history, newest first. See [Email notifications](/email-notifications).
+
+## Connections
+
+```
+levelrail-cli connections list [--kind KIND] [--scope SCOPE] [--health HEALTH] [flags]
+levelrail-cli connections show <ref> [flags]
+levelrail-cli connections catalog [flags]
+levelrail-cli connections bind <ref> --app NAME|--org ID --role ROLE [--rules JSON] [flags]
+levelrail-cli connections unbind <id> --app NAME|--org ID [flags]
+levelrail-cli connections bindings --app NAME|--org ID [flags]
+```
+View of every connected integration (git hosts, registries, secret stores, DNS, cloud, webhooks and notification channels). `list` prints the ref, kind, provider, label, scope, health, time to expiry (days, or hours under 48) and how many apps use each connection, and prints `No connections` when there are none. `show` prints one connection, `catalog` the providers that can be connected. Secrets are never returned.
+
+`bind` uses a connection for one role (`source`, `deploy_report`, `registry_pull`, `notify`, `secrets`, `dns`) on an app, or as an organization default that every app in the organization inherits; `--rules` takes a JSON object checked against the role. The connection must be readable by you, its scope must include the target and it must be able to fill the role. Org defaults need an organization admin. `unbind` removes a binding by id. `bindings --app` lists the app's own rows and the effective set, marking org defaults the app overrides; `bindings --org` lists the org defaults. A server refusal is printed as sent.
+
+```
+levelrail-cli connections list --kind git --health ok --json
+levelrail-cli connections show <ref> --json
+levelrail-cli connections bind registry:hub --app web --role registry_pull
+levelrail-cli connections bindings --app web --json
+levelrail-cli connections unbind <id> --app web
+```
 
 ## Push subscriptions
 
@@ -1466,10 +1495,12 @@ levelrail-cli security sessions list [--user ID] [flags]
 levelrail-cli security sessions revoke <id> [--user ID] [flags]
 levelrail-cli security sessions revoke-others [--user ID] [flags]
 levelrail-cli security policy get [flags]
-levelrail-cli security policy set [--approval-scope password_only|all_methods] [--max-token-lifetime-days N] [--warn-unused-days N] [--disable-unused-days N] [flags]
+levelrail-cli security policy set [--approval-scope password_only|all_methods] [--approval-without-session allow|hold [--confirm-host-access]] [--max-token-lifetime-days N] [--warn-unused-days N] [--disable-unused-days N] [flags]
 levelrail-cli security hsts status|enable|disable [flags]
 levelrail-cli security reachability [--recheck] [--fix ID] [flags]
 ```
+
+`--approval-without-session` changes how a sign-in with no other live session is handled (see [Security center](/security-center#approval-without-session)). It asks for your password, and the authenticator code when the account has one, at the prompt. `hold` is refused with `approval_hold_no_channel` unless a test email went out recently, a `signin:approve` token owned by an admin exists, or you pass `--confirm-host-access` to say you can run commands on the server.
 
 `security reachability` (root) lists what the internet can reach per app and database. `--recheck` re-measures instead of using the cached audit, and `--fix ID` applies a finding's automatic fix and re-checks. See [Exposure report](/security-center#exposure-report).
 

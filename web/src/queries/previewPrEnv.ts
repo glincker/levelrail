@@ -44,7 +44,7 @@ export function usePrPreviewEnv(
           await readErrorMessage(res, `list pr env failed: ${res.status}`),
         )
       }
-      return (await res.json()) as PrPreviewEnvOverride[]
+      return ((await res.json()) as PrPreviewEnvOverride[] | null) ?? []
     },
   })
 }

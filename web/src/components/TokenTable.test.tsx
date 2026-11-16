@@ -7,6 +7,7 @@ import { TokenTable } from './TokenTable'
 import settingsEn from '../locales/en/settings.json'
 import signInEn from '../locales/en/signIn.json'
 import commonEn from '../locales/en/common.json'
+import tokenExpiryEn from '../locales/en/tokenExpiry.json'
 import { BrandContext } from '../lib/brandContext'
 import type { Brand } from '../types/brand'
 import type { TokenResource } from '../types/token'
@@ -15,10 +16,15 @@ const testI18n = i18next.createInstance()
 void testI18n.use(initReactI18next).init({
   lng: 'en',
   fallbackLng: 'en',
-  ns: ['settings', 'signIn', 'common'],
+  ns: ['settings', 'signIn', 'common', 'tokenExpiry'],
   defaultNS: 'settings',
   resources: {
-    en: { settings: settingsEn, signIn: signInEn, common: commonEn },
+    en: {
+      settings: settingsEn,
+      signIn: signInEn,
+      common: commonEn,
+      tokenExpiry: tokenExpiryEn,
+    },
   },
   interpolation: { escapeValue: false },
 })
@@ -71,7 +77,28 @@ describe('TokenTable', () => {
       }),
     ])
     expect(screen.getByText('Active')).toBeInTheDocument()
-    expect(screen.getByText('in 30d')).toBeInTheDocument()
+    expect(screen.getByText('Valid')).toBeInTheDocument()
+    expect(screen.getByText('in 30 days')).toBeInTheDocument()
+  })
+
+  it('flags soon, shows hours under 48h and the grace note', () => {
+    renderTable([
+      token({
+        expires_at: new Date(Date.now() + 5 * 3_600_000).toISOString(),
+        revokes_at: new Date(Date.now() + 3 * 3_600_000).toISOString(),
+      }),
+    ])
+    expect(screen.getByText('Expires soon')).toBeInTheDocument()
+    expect(screen.getByText('in 5 hours')).toBeInTheDocument()
+    expect(screen.getByText('Revokes in 3 hours')).toBeInTheDocument()
+  })
+
+  it('disables Rotate with a tooltip for a platform token', () => {
+    renderTable([token({ scope: { team_id: 'system' } })])
+    expect(screen.getByRole('button', { name: /^Rotate/ })).toBeDisabled()
+    expect(
+      screen.getByTitle(/Platform tokens rotate themselves/),
+    ).toBeInTheDocument()
   })
 
   it('renders the empty state copy from the locale', () => {

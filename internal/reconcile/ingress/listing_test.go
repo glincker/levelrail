@@ -3,6 +3,7 @@ package ingress
 import (
 	"context"
 	"fmt"
+	"log/slog"
 	"testing"
 
 	"github.com/GLINCKER/levelrail/internal/docker"
@@ -34,7 +35,7 @@ func TestController_PreviousReleaseLookups_ShareOneListingPerReconcile(t *testin
 		st.notReadyServices[name] = true
 	}
 	applier := &fakeApplier{}
-	c := New(st, rt, applier, WithLogger(discardLogger()))
+	c := New(st, rt, applier, WithLogger(slog.New(slog.DiscardHandler)))
 
 	if _, err := c.Reconcile(context.Background()); err != nil {
 		t.Fatalf("Reconcile() error = %v", err)
@@ -68,7 +69,7 @@ func TestController_PreviousReleaseLookups_ShareOneListingPerReconcile(t *testin
 func TestController_ListLocal_OutsideReconcileGoesToTheRuntime(t *testing.T) {
 	rt := &listCountRuntime{fakeRuntime: newFakeRuntime()}
 	rt.seedRunning("web-abc", 30000)
-	c := New(&fakeStore{}, rt, &fakeApplier{}, WithLogger(discardLogger()))
+	c := New(&fakeStore{}, rt, &fakeApplier{}, WithLogger(slog.New(slog.DiscardHandler)))
 
 	for i := 0; i < 3; i++ {
 		got, err := c.listLocal(context.Background(), "web-")
@@ -114,7 +115,7 @@ func TestController_LocalDials_ComeFromOneBatchedRead(t *testing.T) {
 		st.services = append(st.services, desired)
 	}
 	applier := &fakeApplier{}
-	c := New(st, rt, applier, WithLogger(discardLogger()))
+	c := New(st, rt, applier, WithLogger(slog.New(slog.DiscardHandler)))
 
 	if _, err := c.Reconcile(context.Background()); err != nil {
 		t.Fatalf("Reconcile() error = %v", err)
