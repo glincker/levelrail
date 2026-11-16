@@ -52,7 +52,7 @@ levelrail-cli clusters rbac --namespace levelrail-managed
 
 This prints a ServiceAccount, a Role and a RoleBinding in that namespace. The Role allows get, list, watch, create, update, patch and delete on `deployments`, `services`, `ingresses`, `pods`, `pods/log` and `secrets` in the API groups `""`, `apps` and `networking.k8s.io`. Use `--service-account NAME` to change the account and Role name (default `levelrail`).
 
-Listing nodes and namespaces needs cluster-scope reads, which that Role does not grant. Add `--cluster-read` to also print a read-only ClusterRole and ClusterRoleBinding for `nodes` and `namespaces`:
+Listing nodes and namespaces needs cluster-scope reads, which that Role does not grant. Add `--cluster-read` to also print a read-only ClusterRole and ClusterRoleBinding for `nodes`, `namespaces` and `ingresses` (the last lets a deploy with `--host` check that no other ingress claims the host):
 
 ```bash
 levelrail-cli clusters rbac --namespace levelrail-managed --cluster-read
@@ -147,7 +147,8 @@ The feature itself is experimental. See [Feature status](/feature-status) for ho
 - `cluster is unreachable or its credentials cannot be loaded`: run `clusters test NAME` and check the address and the token.
 - `the cluster refused the stored credential: it lacks the cluster-scope permission`: add the ClusterRole from `clusters rbac --cluster-read`.
 - `the namespace already exists and is not managed by levelrail; add it to k8s.allowed_namespaces to use it`: add it to the setting.
+- `the namespace does not exist and the service account cannot create namespaces`: deploy into the namespace the role was made for (`clusters rbac --namespace NS`). A namespace you created by hand also needs `k8s.allowed_namespaces`, unless it is the default namespace or carries the levelrail label.
 - `the host is already used by an ingress that levelrail does not own`: choose another host.
-- `the cluster did not allow listing ingresses, so the host cannot be verified`: grant list on ingresses. To override, send `skip_host_check` while `k8s.allow_unverified_hosts` is on; the CLI has no flag for it.
+- `the host cannot be verified: levelrail needs permission to list ingresses across namespaces`: apply `clusters rbac --cluster-read`. To override, send `skip_host_check` while `k8s.allow_unverified_hosts` is on; the CLI has no flag for it.
 - `an object with this name already exists in the namespace and is not managed by levelrail`: rename the app or remove the object.
 - `another deploy of this app on this cluster is already running`: wait and retry.

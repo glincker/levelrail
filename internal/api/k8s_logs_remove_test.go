@@ -118,3 +118,28 @@ func TestK8sRemoveRefusesUnlabelledService(t *testing.T) {
 		t.Fatalf("deletes = %v", k.deletes)
 	}
 }
+
+func TestK8sRemoveOnlyReportsRecordedObjectsAsAbsent(t *testing.T) {
+	kube, k := startLogsKube(t, logsInstLbl)
+	k.gone["/apis/networking.k8s.io/v1/namespaces/levelrail-managed/ingresses/whoami"] = true
+	do, db := newDeployEnv(t, kube, nil)
+	row := store.K8sDeployment{Cluster: "dev", App: "whoami", Namespace: "levelrail-managed", Image: "traefik/whoami:v1", Port: 80, Replicas: 1,
+		Objects: []string{"Deployment/whoami", "Service/whoami"}}
+	if err := db.UpsertK8sDeployment(context.Background(), row); err != nil {
+		t.Fatal(err)
+	}
+	rec := do("DELETE", k8sClustersPath+"/dev/deployments/whoami", "")
+	if rec.Code != http.StatusOK || strings.Contains(rec.Body.String(), "Ingress/whoami") {
+		t.Fatalf("remove = %d %s", rec.Code, rec.Body.String())
+	}
+}
+
+func TestRecordedOnly(t *testing.T) {
+	got := recordedOnly([]string{"Ingress/a", "Secret/s"}, []string{"Deployment/a", "Secret/s"})
+	if len(got) != 1 || got[0] != "Secret/s" {
+		t.Errorf("recordedOnly = %v", got)
+	}
+	if got := recordedOnly([]string{"Ingress/a"}, nil); len(got) != 1 {
+		t.Errorf("no record keeps the list, got %v", got)
+	}
+}

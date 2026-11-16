@@ -285,10 +285,12 @@ func (rt *Router) failK8sApply(w http.ResponseWriter, r *http.Request, cluster s
 	switch {
 	case errors.Is(err, k8sconn.ErrNamespaceNotManaged):
 		status, msg = http.StatusConflict, "the namespace already exists and is not managed by levelrail; add it to k8s.allowed_namespaces to use it"
+	case errors.Is(err, k8sconn.ErrNamespaceCreateForbidden):
+		status, msg = http.StatusConflict, "the namespace does not exist and the service account cannot create namespaces: deploy into the namespace the role was made for (`levelrail clusters rbac --namespace NS`), and add it to k8s.allowed_namespaces unless it is the default namespace or carries the levelrail label"
 	case errors.Is(err, k8sconn.ErrHostTaken):
 		status, msg = http.StatusConflict, "the host is already used by an ingress that levelrail does not own; nothing was changed"
 	case errors.Is(err, k8sconn.ErrHostUnverified):
-		status, msg = http.StatusConflict, "the cluster did not allow listing ingresses, so the host cannot be verified; set skip_host_check while k8s.allow_unverified_hosts is on to override"
+		status, msg = http.StatusConflict, "the host cannot be verified: levelrail needs permission to list ingresses across namespaces: apply `levelrail clusters rbac --cluster-read` or enable k8s.allow_unverified_hosts with skip_host_check"
 	case errors.Is(err, k8sconn.ErrNotManaged):
 		status, msg = http.StatusConflict, "an object with this name already exists in the namespace and is not managed by levelrail; it was not merged into"
 	}

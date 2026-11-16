@@ -37,6 +37,10 @@ func startDeployKube(t *testing.T, seed map[string]string) (*httptest.Server, *d
 			_, _ = w.Write([]byte(`{"status":{"resourceRules":[{"verbs":["get"],"apiGroups":[""],"resources":["pods"]}]}}`))
 			return
 		}
+		if r.Method == http.MethodPost && k.objects["forbid-post:"+r.URL.Path] != "" {
+			w.WriteHeader(http.StatusForbidden)
+			return
+		}
 		if r.Method == http.MethodPost {
 			b, _ := io.ReadAll(r.Body)
 			var m struct {

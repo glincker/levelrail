@@ -19,6 +19,9 @@ var ErrNotManaged = errors.New("k8sconn: an object with this name exists and is 
 // ErrNamespaceNotManaged means the namespace exists without our label and is not allowed.
 var ErrNamespaceNotManaged = errors.New("k8sconn: the namespace exists and is not managed by levelrail")
 
+// ErrNamespaceCreateForbidden means the namespace is missing and the credential may not create it.
+var ErrNamespaceCreateForbidden = errors.New("k8sconn: the credential cannot create the namespace")
+
 // ErrHostTaken means another Ingress we do not own already claims the host.
 var ErrHostTaken = errors.New("k8sconn: the ingress host is already used by an ingress levelrail does not own")
 
@@ -138,6 +141,9 @@ func (c *Client) EnsureNamespace(ctx context.Context, name string, allowUnmanage
 		"metadata": map[string]any{"name": name, "labels": map[string]any{LabelManagedBy: ManagedByValue}},
 	}
 	err = c.create(ctx, "/api/v1/namespaces", ns)
+	if isStatus(err, http.StatusForbidden) || isStatus(err, http.StatusUnauthorized) {
+		return ErrNamespaceCreateForbidden
+	}
 	if isStatus(err, http.StatusConflict) {
 		// Someone created it in between: judge the real object, never our own guess.
 		_, err = c.checkNamespace(ctx, name, allowUnmanaged)

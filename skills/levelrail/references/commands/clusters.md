@@ -23,7 +23,7 @@ Usage:
   levelrail-cli clusters pull-secret add <cluster> <name> --registry HOST --username U (--password-file FILE | --password-file -)  store a private registry credential
   levelrail-cli clusters pull-secret list <cluster> [flags]  stored registry credentials (names and hosts only)
   levelrail-cli clusters pull-secret remove <cluster> <name> [flags]  delete a stored registry credential
-  levelrail-cli clusters rbac --namespace NS [--cluster-read] [flags]  print a namespace-scoped ServiceAccount, Role and RoleBinding (--cluster-read adds a read-only ClusterRole for nodes and namespaces)
+  levelrail-cli clusters rbac --namespace NS [--cluster-read] [flags]  print a namespace-scoped ServiceAccount, Role and RoleBinding (--cluster-read adds a read-only ClusterRole for nodes, namespaces and ingresses, needed for --host)
 
 Credentials come from a file, or "-" for stdin, never from an argument.
 ```
@@ -49,7 +49,7 @@ Usage:
   levelrail-cli clusters pull-secret add <cluster> <name> --registry HOST --username U (--password-file FILE | --password-file -)  store a private registry credential
   levelrail-cli clusters pull-secret list <cluster> [flags]  stored registry credentials (names and hosts only)
   levelrail-cli clusters pull-secret remove <cluster> <name> [flags]  delete a stored registry credential
-  levelrail-cli clusters rbac --namespace NS [--cluster-read] [flags]  print a namespace-scoped ServiceAccount, Role and RoleBinding (--cluster-read adds a read-only ClusterRole for nodes and namespaces)
+  levelrail-cli clusters rbac --namespace NS [--cluster-read] [flags]  print a namespace-scoped ServiceAccount, Role and RoleBinding (--cluster-read adds a read-only ClusterRole for nodes, namespaces and ingresses, needed for --host)
 
 Credentials come from a file, or "-" for stdin, never from an argument.
 ```

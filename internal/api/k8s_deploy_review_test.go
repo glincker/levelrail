@@ -51,8 +51,9 @@ func TestK8sDeployRefusesHostOwnedByOtherIngress(t *testing.T) {
 func TestK8sDeployHostListForbidden(t *testing.T) {
 	kube, _ := startDeployKube(t, map[string]string{"/apis/networking.k8s.io/v1/ingresses": "forbidden"})
 	do, _ := newDeployEnv(t, kube, nil)
-	if rec := do("POST", k8sClustersPath+"/dev/deployments", deployBody); rec.Code != http.StatusConflict {
-		t.Fatalf("forbidden list = %d, want 409", rec.Code)
+	rec := do("POST", k8sClustersPath+"/dev/deployments", deployBody)
+	if rec.Code != http.StatusConflict || !strings.Contains(rec.Body.String(), "list ingresses across namespaces") || !strings.Contains(rec.Body.String(), "--cluster-read") {
+		t.Fatalf("forbidden list = %d %s, want 409 naming the permission", rec.Code, rec.Body.String())
 	}
 	skip := strings.Replace(deployBody, `"host"`, `"skip_host_check":true,"host"`, 1)
 	if rec := do("POST", k8sClustersPath+"/dev/deployments", skip); rec.Code != http.StatusBadRequest {

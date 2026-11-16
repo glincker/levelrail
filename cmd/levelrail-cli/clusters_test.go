@@ -166,3 +166,15 @@ func TestRun_ClustersConnectSendsAllowClusterAdmin(t *testing.T) {
 		t.Errorf("body = %v, want allow_cluster_admin true", gotBody)
 	}
 }
+
+func TestClustersRBACIngressListIsClusterReadOnlyAndFooterNamesNamespace(t *testing.T) {
+	def, _ := runCLIExpectOK(t, []string{"clusters", "rbac", "--namespace", "apps"})
+	if !strings.Contains(def, "k8s.allowed_namespaces") || !strings.Contains(def, "Deploy to namespace apps") {
+		t.Errorf("missing namespace comment:\n%s", def)
+	}
+	cr, _ := runCLIExpectOK(t, []string{"clusters", "rbac", "--namespace", "apps", "--cluster-read"})
+	cluster := cr[strings.Index(cr, "kind: ClusterRole\n"):]
+	if !strings.Contains(cluster, `resources: ["ingresses"]`) || strings.Contains(def, "kind: ClusterRole") {
+		t.Errorf("ingress list belongs only to the cluster-read role:\n%s", cr)
+	}
+}

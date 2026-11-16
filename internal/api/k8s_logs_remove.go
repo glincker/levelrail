@@ -4,6 +4,7 @@ import (
 	"errors"
 	"net/http"
 	"regexp"
+	"slices"
 	"strconv"
 
 	"github.com/GLINCKER/levelrail/internal/k8sconn"
@@ -162,7 +163,7 @@ func (rt *Router) handleRemoveK8sDeployment(w http.ResponseWriter, r *http.Reque
 		rt.internalError(w, "api: delete k8s deployment record failed", err)
 		return
 	}
-	out := k8sRemoveResponse{App: d.App, Namespace: d.Namespace, Deleted: res.Deleted, Absent: res.Absent}
+	out := k8sRemoveResponse{App: d.App, Namespace: d.Namespace, Deleted: res.Deleted, Absent: recordedOnly(res.Absent, d.Objects)}
 	if out.Deleted == nil {
 		out.Deleted = []string{}
 	}
@@ -170,4 +171,19 @@ func (rt *Router) handleRemoveK8sDeployment(w http.ResponseWriter, r *http.Reque
 		out.Absent = []string{}
 	}
 	writeJSON(w, http.StatusOK, out)
+}
+
+// recordedOnly keeps the absent objects the deployment row recorded, so an app that never had
+// an ingress is not reported as "already gone". A row with no record keeps the full list.
+func recordedOnly(absent, recorded []string) []string {
+	if len(recorded) == 0 {
+		return absent
+	}
+	var out []string
+	for _, a := range absent {
+		if slices.Contains(recorded, a) {
+			out = append(out, a)
+		}
+	}
+	return out
 }

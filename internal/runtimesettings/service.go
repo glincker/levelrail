@@ -417,9 +417,14 @@ func (s *Service) WeakensTo(ctx context.Context, key string, raw json.RawMessage
 
 // weaker reports whether next is a weaker canonical value than base for d.
 func weaker(d Definition, base, next string) bool {
+	// Re-saving the current value changes nothing, so it needs no confirmation.
+	if next == base {
+		return false
+	}
 	switch d.Kind {
 	case KindBool:
-		if d.TrueIsWeaker {
+		// A bool that ships off opens something up when on, so returning to the default never weakens.
+		if d.TrueIsWeaker || d.Default == "false" {
 			return next == "true"
 		}
 		return next == "false"

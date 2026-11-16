@@ -64,7 +64,7 @@ func clustersUsage(prog string) string {
   %[1]s clusters pull-secret add <cluster> <name> --registry HOST --username U (--password-file FILE | --password-file -)  store a private registry credential
   %[1]s clusters pull-secret list <cluster> [flags]  stored registry credentials (names and hosts only)
   %[1]s clusters pull-secret remove <cluster> <name> [flags]  delete a stored registry credential
-  %[1]s clusters rbac --namespace NS [--cluster-read] [flags]  print a namespace-scoped ServiceAccount, Role and RoleBinding (--cluster-read adds a read-only ClusterRole for nodes and namespaces)
+  %[1]s clusters rbac --namespace NS [--cluster-read] [flags]  print a namespace-scoped ServiceAccount, Role and RoleBinding (--cluster-read adds a read-only ClusterRole for nodes, namespaces and ingresses, needed for --host)
 
 Credentials come from a file, or "-" for stdin, never from an argument.
 `, prog)
