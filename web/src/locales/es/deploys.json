@@ -100,6 +100,12 @@
     "description": "Sirve un pequeño SVG público con el estado del último despliegue de esta aplicación y cuándo ocurrió, sin necesidad de autenticación. Déjala desactivada si el estado de despliegue de la aplicación no debe ser público.",
     "switchAriaLabel": "Insignia de estado de despliegue activada",
     "embedLabel": "Insertar en tu README",
+    "footerLabel": "Mostrar la insignia Deployed with Levelrail",
+    "footerStyleLabel": "Estilo",
+    "footerStyleSplit": "Dividido",
+    "footerStyleLight": "Claro",
+    "footerStyleDark": "Oscuro",
+    "footerAlt": "Deployed with Levelrail",
     "toast": {
       "enabled": "Insignia de estado de despliegue activada.",
       "disabled": "Insignia de estado de despliegue desactivada.",

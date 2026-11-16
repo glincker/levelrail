@@ -48,6 +48,27 @@ function CopySnippet({ text }: { text: string }) {
   )
 }
 
+type FooterStyle = 'split' | 'light' | 'dark'
+
+const FOOTER_STYLES: readonly FooterStyle[] = ['split', 'light', 'dark']
+const FOOTER_FILES: Record<FooterStyle, string> = {
+  split: 'deployed-with-split.svg',
+  light: 'deployed-with-gradient-light.svg',
+  dark: 'deployed-with-gradient-dark.svg',
+}
+const FOOTER_STYLE_KEYS = {
+  split: 'badgeSettings.footerStyleSplit',
+  light: 'badgeSettings.footerStyleLight',
+  dark: 'badgeSettings.footerStyleDark',
+} as const
+const FOOTER_ASSET_BASE =
+  'https://cdn.jsdelivr.net/gh/glincker/levelrail@main/docs/assets/brand'
+const FOOTER_LINK = 'https://levelrail.com'
+
+function footerBadgeSnippet(alt: string, style: FooterStyle): string {
+  return `[![${alt}](${FOOTER_ASSET_BASE}/${FOOTER_FILES[style]})](${FOOTER_LINK})`
+}
+
 // BadgeSettingsCard is the opt-in toggle for the public deploy status
 // badge (GET/PUT /api/v1/apps/{name}/badge, internal/api/app_badge.go):
 // off by default, the opposite shape ExecAccessCard's own opt-out
@@ -59,6 +80,7 @@ export function BadgeSettingsCard({ appName }: { appName: string }) {
   const { t } = useTranslation('deploys')
   const setting = useBadgeSetting(appName)
   const setBadge = useSetBadgeSetting(appName)
+  const [footerStyle, setFooterStyle] = useState<FooterStyle>('split')
   const badgeUrl = `${window.location.origin}/api/v1/apps/${encodeURIComponent(appName)}/badge.svg`
 
   function toggle(next: boolean) {
@@ -113,6 +135,37 @@ export function BadgeSettingsCard({ appName }: { appName: string }) {
             <CopySnippet text={`![deploy status](${badgeUrl})`} />
           </div>
         )}
+
+        <div className="space-y-2">
+          <div className="flex items-center justify-between gap-2">
+            <p className="text-sm font-medium text-foreground">
+              {t('badgeSettings.footerLabel')}
+            </p>
+            <div
+              role="group"
+              aria-label={t('badgeSettings.footerStyleLabel')}
+              className="flex gap-1"
+            >
+              {FOOTER_STYLES.map((style) => (
+                <Button
+                  key={style}
+                  type="button"
+                  size="sm"
+                  variant={footerStyle === style ? 'secondary' : 'outline'}
+                  aria-pressed={footerStyle === style}
+                  onClick={() => {
+                    setFooterStyle(style)
+                  }}
+                >
+                  {t(FOOTER_STYLE_KEYS[style])}
+                </Button>
+              ))}
+            </div>
+          </div>
+          <CopySnippet
+            text={footerBadgeSnippet(t('badgeSettings.footerAlt'), footerStyle)}
+          />
+        </div>
       </CardContent>
     </Card>
   )
