@@ -11,6 +11,7 @@ import { Textarea } from '@/components/ui/textarea'
 import { Button } from '@/components/ui/button'
 import { Alert, AlertDescription } from '@/components/ui/alert'
 import { toast } from '@/components/ui/toast'
+import { OracleKeyWizard } from './OracleKeyWizard'
 import {
   useDisconnectNodeProvider,
   useSetNodeProviderCredential,
@@ -126,6 +127,13 @@ export function OracleCredentialForm({
   return (
     <form onSubmit={submit} className="space-y-4" autoComplete="off">
       <p className="text-sm text-muted-foreground">{t('oracle.form.intro')}</p>
+      <OracleKeyWizard
+        connected={connected}
+        onUseKey={(pem, fp) => {
+          setPrivateKey(pem)
+          setFingerprint(fp)
+        }}
+      />
       <div className="grid gap-3 sm:grid-cols-2">
         <Field>
           <FieldLabel htmlFor={id('tenancy')}>
