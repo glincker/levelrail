@@ -7,6 +7,7 @@ import (
 	"net/http"
 	"strconv"
 	"sync"
+	"sync/atomic"
 	"time"
 
 	"github.com/GLINCKER/levelrail/internal/provision"
@@ -37,8 +38,9 @@ type capEntry struct {
 
 // providerCapCache is in memory: learned write states reset on restart.
 type providerCapCache struct {
-	mu      sync.Mutex
-	entries map[string]*capEntry
+	mu            sync.Mutex
+	entries       map[string]*capEntry
+	recheckActive atomic.Bool
 }
 
 func (c *providerCapCache) entry(provider string) *capEntry {
@@ -128,6 +130,68 @@ func overlayLearned(res *provision.ProviderCapabilities, learned map[string]capL
 	}
 }
 
+// capMode says how a caller wants capabilities: from cache, as a user
+// refresh bound by the cooldown, or a forced probe after a credential change.
+type capMode int
+
+const (
+	capServeCached capMode = iota
+	capUserRefresh
+	capForceProbe
+)
+
+// providerCapabilities serves cached capabilities or runs one probe. The
+// per-provider probeMu keeps concurrent callers to a single probe. A
+// non-zero retryAfter means the refresh cooldown refused the call.
+func (rt *Router) providerCapabilities(ctx context.Context, provider string, p NodeProvisioner, mode capMode) (out provision.ProviderCapabilities, retryAfter time.Duration) {
+	e := rt.providerCaps.entry(provider)
+	e.probeMu.Lock()
+	defer e.probeMu.Unlock()
+	return rt.providerCapabilitiesLocked(ctx, provider, p, e, mode)
+}
+
+// providerCapabilitiesLocked runs with e.probeMu held by the caller.
+func (rt *Router) providerCapabilitiesLocked(ctx context.Context, provider string, p NodeProvisioner, e *capEntry, mode capMode) (provision.ProviderCapabilities, time.Duration) {
+	ttl := time.Duration(rt.capSetting(ctx, runtimesettings.KeyProvisionCapCacheTTL, "APP_PROVISION_CAPABILITIES_CACHE_TTL_SECONDS", defaultCapCacheTTLSeconds)) * time.Second
+	gap := time.Duration(rt.capSetting(ctx, runtimesettings.KeyProvisionCapRefreshMinGap, "APP_PROVISION_CAPABILITIES_REFRESH_MIN_INTERVAL_SECONDS", defaultCapRefreshGapSecs)) * time.Second
+	parallel := rt.capSetting(ctx, runtimesettings.KeyProvisionCapProbeParallel, "APP_PROVISION_CAPABILITIES_PROBE_CONCURRENCY", defaultCapProbeParallel)
+	now := time.Now()
+	if mode == capUserRefresh && !e.lastRefresh.IsZero() && now.Sub(e.lastRefresh) < gap {
+		return provision.ProviderCapabilities{}, gap - now.Sub(e.lastRefresh)
+	}
+	fresh := e.result != nil && now.Sub(e.result.CheckedAt) < ttl
+	cached := fresh && mode == capServeCached
+	if !cached {
+		var res provision.ProviderCapabilities
+		if prober, ok := p.(provision.CapabilityProber); ok {
+			pctx, cancel := context.WithTimeout(ctx, capProbeOverallTimeout)
+			res = prober.ProbeCapabilities(pctx, parallel)
+			cancel()
+			if res.LiveCheckError != "" {
+				rt.logger.Warn("api: provider capability probe incomplete", slog.String("provider", provider))
+			}
+		} else {
+			res = provision.ProviderCapabilities{Provider: provider, AccountID: provider + "-default", Method: "none", CheckedAt: now.UTC(), Capabilities: []provision.Capability{}}
+		}
+		if res.CheckedAt.IsZero() {
+			res.CheckedAt = now.UTC()
+		}
+		if mode != capServeCached {
+			e.lastRefresh = now
+		}
+		e.result = &res
+	}
+	out := *e.result
+	out.Capabilities = append([]provision.Capability{}, out.Capabilities...)
+	overlayLearned(&out, e.learned)
+	out.Cached = cached
+	if iv := rt.capRecheckInterval(ctx); iv > 0 {
+		next := out.CheckedAt.Add(iv)
+		out.NextCheckAt = &next
+	}
+	return out, 0
+}
+
 // handleGetNodeProviderCapabilities handles GET
 // /api/v1/node-providers/{provider}/capabilities?refresh=1: granted, missing
 // or unknown per capability, from read-only probes, cached. Always 200 with a
@@ -143,54 +207,17 @@ func (rt *Router) handleGetNodeProviderCapabilities(w http.ResponseWriter, r *ht
 		writeError(w, status, msg)
 		return
 	}
-	ctx := r.Context()
-	ttl := time.Duration(rt.capSetting(ctx, runtimesettings.KeyProvisionCapCacheTTL, "APP_PROVISION_CAPABILITIES_CACHE_TTL_SECONDS", defaultCapCacheTTLSeconds)) * time.Second
-	gap := time.Duration(rt.capSetting(ctx, runtimesettings.KeyProvisionCapRefreshMinGap, "APP_PROVISION_CAPABILITIES_REFRESH_MIN_INTERVAL_SECONDS", defaultCapRefreshGapSecs)) * time.Second
-	parallel := rt.capSetting(ctx, runtimesettings.KeyProvisionCapProbeParallel, "APP_PROVISION_CAPABILITIES_PROBE_CONCURRENCY", defaultCapProbeParallel)
-	prober, canProbe := p.(provision.CapabilityProber)
-	e := rt.providerCaps.entry(provider)
-	force := r.URL.Query().Get("refresh") == "1"
-
-	e.probeMu.Lock()
-	defer e.probeMu.Unlock()
-	now := time.Now()
-	if force && !e.lastRefresh.IsZero() && now.Sub(e.lastRefresh) < gap {
-		retry := int((gap - now.Sub(e.lastRefresh)).Seconds()) + 1
-		w.Header().Set("Retry-After", strconv.Itoa(retry))
+	mode := capServeCached
+	if r.URL.Query().Get("refresh") == "1" {
+		mode = capUserRefresh
+	}
+	out, retry := rt.providerCapabilities(r.Context(), provider, p, mode)
+	if retry > 0 {
+		w.Header().Set("Retry-After", strconv.Itoa(int(retry.Seconds())+1))
 		writeError(w, http.StatusTooManyRequests, "provider permissions were just rechecked, try again shortly")
 		return
 	}
-	fresh := e.result != nil && now.Sub(e.result.CheckedAt) < ttl
-	cached := fresh && !force
-	if !cached {
-		var res provision.ProviderCapabilities
-		if canProbe {
-			pctx, cancel := context.WithTimeout(ctx, capProbeOverallTimeout)
-			res = prober.ProbeCapabilities(pctx, parallel)
-			cancel()
-			if res.LiveCheckError != "" {
-				rt.logger.Warn("api: provider capability probe incomplete", slog.String("provider", provider))
-			}
-		} else {
-			res = provision.ProviderCapabilities{Provider: provider, AccountID: provider + "-default", Method: "none", CheckedAt: now.UTC(), Capabilities: []provision.Capability{}}
-		}
-		if res.CheckedAt.IsZero() {
-			res.CheckedAt = now.UTC()
-		}
-		if force {
-			e.lastRefresh = now
-		}
-		e.result = &res
-	}
-	out := *e.result
-	out.Capabilities = append([]provision.Capability{}, out.Capabilities...)
-	overlayLearned(&out, e.learned)
-	out.Cached = cached
-	if iv := rt.capRecheckInterval(ctx); iv > 0 {
-		next := out.CheckedAt.Add(iv)
-		out.NextCheckAt = &next
-	}
-	if errors.Is(ctx.Err(), context.Canceled) {
+	if errors.Is(r.Context().Err(), context.Canceled) {
 		return
 	}
 	writeJSON(w, http.StatusOK, out)

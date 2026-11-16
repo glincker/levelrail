@@ -9,6 +9,7 @@ import (
 	"strings"
 	"sync/atomic"
 	"testing"
+	"time"
 
 	"github.com/GLINCKER/levelrail/internal/provision"
 	"github.com/GLINCKER/levelrail/internal/store"
@@ -98,5 +99,60 @@ func TestProviderScopeMissingResponse(t *testing.T) {
 	}
 	if !strings.Contains(rec.Body.String(), `"needs":"billing:read"`) || strings.Contains(rec.Body.String(), "raw") {
 		t.Fatalf("body = %s", rec.Body)
+	}
+}
+
+func TestProviderCapabilities_RecheckHonorsInterval(t *testing.T) {
+	rt, fake := newCapRouter(t)
+	ctx := context.Background()
+	t.Setenv("APP_PROVISION_CAPABILITIES_RECHECK_INTERVAL_MINUTES", "0")
+	rt.recheckProviderCapabilities(ctx)
+	if fake.probes.Load() != 0 {
+		t.Fatalf("interval 0 must disable the recheck, probes=%d", fake.probes.Load())
+	}
+	t.Setenv("APP_PROVISION_CAPABILITIES_RECHECK_INTERVAL_MINUTES", "5")
+	rt.recheckProviderCapabilities(ctx)
+	if fake.probes.Load() != 1 {
+		t.Fatalf("never probed provider must be probed, probes=%d", fake.probes.Load())
+	}
+	rt.recheckProviderCapabilities(ctx)
+	if fake.probes.Load() != 1 {
+		t.Fatalf("fresh result must not be re-probed, probes=%d", fake.probes.Load())
+	}
+	e := rt.providerCaps.entry("digitalocean")
+	e.probeMu.Lock()
+	e.result.CheckedAt = time.Now().Add(-10 * time.Minute)
+	e.probeMu.Unlock()
+	rt.recheckProviderCapabilities(ctx)
+	if fake.probes.Load() != 2 {
+		t.Fatalf("stale result must be re-probed, probes=%d", fake.probes.Load())
+	}
+}
+
+func TestProviderCapabilities_RecheckSkipsRunningProbe(t *testing.T) {
+	rt, fake := newCapRouter(t)
+	t.Setenv("APP_PROVISION_CAPABILITIES_RECHECK_INTERVAL_MINUTES", "5")
+	e := rt.providerCaps.entry("digitalocean")
+	e.probeMu.Lock()
+	rt.recheckProviderCapabilities(context.Background())
+	e.probeMu.Unlock()
+	if fake.probes.Load() != 0 {
+		t.Fatalf("a running probe must not be doubled, probes=%d", fake.probes.Load())
+	}
+}
+
+func TestProviderCapabilities_RecheckTickerStopsWithContext(t *testing.T) {
+	rt, _ := newCapRouter(t)
+	t.Setenv("APP_PROVISION_CAPABILITIES_RECHECK_POLL_SECONDS", "1")
+	ctx, cancel := context.WithCancel(context.Background())
+	rt.StartProviderCapabilityRecheck(ctx)
+	rt.StartProviderCapabilityRecheck(ctx)
+	cancel()
+	deadline := time.Now().Add(3 * time.Second)
+	for rt.providerCaps.recheckActive.Load() && time.Now().Before(deadline) {
+		time.Sleep(10 * time.Millisecond)
+	}
+	if rt.providerCaps.recheckActive.Load() {
+		t.Fatal("ticker did not stop with its context")
 	}
 }
