@@ -15,6 +15,7 @@ import (
 	"time"
 
 	"github.com/GLINCKER/levelrail/internal/provision"
+	"github.com/GLINCKER/levelrail/internal/runtimesettings"
 	"github.com/GLINCKER/levelrail/internal/store"
 	"github.com/GLINCKER/levelrail/internal/version"
 )
@@ -613,7 +614,7 @@ func (rt *Router) refreshNodeProvision(ctx context.Context, p store.NodeProvisio
 		rt.logger.Warn("api: node provision: list nodes failed", slog.String("provision_id", p.ID), slog.String("error", err.Error()))
 	}
 
-	if timeout := nodeProvisionTimeout(); time.Since(p.CreatedAt) > timeout {
+	if timeout := rt.nodeProvisionTimeout(ctx); time.Since(p.CreatedAt) > timeout {
 		reason := fmt.Sprintf("timed out after %s waiting for the node to enroll", timeout)
 		if p.ProviderServerID != "" {
 			provisioner, ok, _, _ := rt.resolveNodeProvisioner(ctx, p.Provider)
@@ -671,8 +672,11 @@ func (rt *Router) saveNodeProvisionUpdate(ctx context.Context, p store.NodeProvi
 	return p
 }
 
-func nodeProvisionTimeout() time.Duration {
-	return envDurationOr(nodeProvisionTimeoutEnv, defaultNodeProvisionTimeout)
+func (rt *Router) nodeProvisionTimeout(ctx context.Context) time.Duration {
+	if rt.runtimeSettings == nil {
+		return envDurationOr(nodeProvisionTimeoutEnv, defaultNodeProvisionTimeout)
+	}
+	return rt.tunableDuration(ctx, runtimesettings.KeyProvisionEnrollTimeout, nodeProvisionTimeoutEnv, defaultNodeProvisionTimeout)
 }
 
 // randomNodeProvisionID mirrors randomBackupTargetID/randomNodeJoinTokenID's

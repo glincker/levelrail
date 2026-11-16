@@ -365,6 +365,11 @@ projects.clone_max_apps
 projects.clone_placeholder_domain
 projects.default_environment
 projects.default_environment_name
+provision.allow_unknown_price
+provision.enroll_timeout
+provision.eur_to_usd_rate
+provision.max_monthly_price_usd
+provision.max_servers
 reconcile.resync_seconds
 registry.dockerhub.limit_warn_percent
 registry.dockerhub.limits_cache_seconds
