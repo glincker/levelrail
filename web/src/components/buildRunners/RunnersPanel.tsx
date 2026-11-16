@@ -84,7 +84,7 @@ export function RunnersPanel() {
                 <Button
                   size="sm"
                   nativeButton={false}
-                  render={<Link to="/nodes" />}
+                  render={<Link to="/nodes" search={{ builds: 1 }} />}
                 >
                   {t('runners.empty.action')}
                 </Button>

@@ -104,7 +104,9 @@ describe('RunnersPanel', () => {
     mockFetch(() => ok({ strategy: 'first', runners: [controlPlane] }))
     wrap(<RunnersPanel />)
     expect(await screen.findByText('Add a build node')).toBeInTheDocument()
-    expect(screen.getByRole('link', { name: 'Open Nodes' })).toBeInTheDocument()
+    expect(
+      screen.getByRole('link', { name: 'Add build node' }),
+    ).toBeInTheDocument()
   })
 
   it.each([[[]], [null]])('treats %j runners as empty', async (runners) => {

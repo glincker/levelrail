@@ -6,6 +6,8 @@ import {
   OctagonAlertGlassIcon,
   PauseGlassIcon,
   PlayGlassIcon,
+  SkipForwardGlassIcon,
+  KeyboardGlassIcon,
 } from '@thesvg/ui-react'
 import { Button } from '@/components/ui/button'
 import {
@@ -31,6 +33,7 @@ import {
   PopoverTrigger,
 } from '@/components/ui/popover'
 import { RoleGate } from '@/components/ui/RoleGate'
+import { useAbilities } from '@/hooks/useAbilities'
 import { useMediaQuery } from '@/hooks/useMediaQuery'
 import { useBuildQueue } from '../../queries/buildQueue'
 import { KillAllDialog } from './KillAllDialog'
@@ -38,11 +41,21 @@ import { PauseForm } from './PauseForm'
 import { QueueStateChip } from './QueueStateChip'
 import { useQueueChange } from './useQueueToasts'
 
-// Hub header cluster: state chip, pause or resume, drain, kill all. Below sm
-// everything but the chip folds into one overflow menu.
-export function BuildQueueControls() {
+export interface IdleExtras {
+  onQueue: () => void
+  onShortcuts: () => void
+}
+
+// Hub header cluster: one state chip, then actions. While builds run or wait
+// they stay direct buttons; when idle (or below sm) they fold into one menu.
+export function BuildQueueControls({
+  idleExtras,
+}: {
+  idleExtras?: IdleExtras
+}) {
   const { t } = useTranslation('deploys')
   const { data: queue } = useBuildQueue()
+  const { can } = useAbilities()
   const wide = useMediaQuery('(min-width: 640px)')
   const change = useQueueChange()
   const [pauseOpen, setPauseOpen] = useState(false)
@@ -50,6 +63,9 @@ export function BuildQueueControls() {
   if (!queue) return null
 
   const running = queue.state === 'running'
+  const active = queue.running.length > 0 || queue.queued.length > 0
+  const sensitive = can('write:sensitive')
+  const folded = !wide || !active
   const submitPause = (reason: string) => {
     change.run('pause', reason, () => {
       setPauseOpen(false)
@@ -59,27 +75,32 @@ export function BuildQueueControls() {
   const killDialog = (
     <KillAllDialog open={killOpen} onOpenChange={setKillOpen} queue={queue} />
   )
+  const menuTrigger = (
+    <DropdownMenuTrigger
+      render={
+        <Button
+          type="button"
+          size="icon-sm"
+          variant="outline"
+          aria-label={t('buildQueue.menu')}
+        />
+      }
+    >
+      <EllipsisGlassIcon size="1.4em" aria-hidden="true" />
+    </DropdownMenuTrigger>
+  )
 
-  if (!wide) {
+  if (folded) {
+    const showExtras = !active && idleExtras
     return (
       <>
         <QueueStateChip queue={queue} />
         <DropdownMenu>
-          <DropdownMenuTrigger
-            render={
-              <Button
-                type="button"
-                size="icon-sm"
-                variant="outline"
-                aria-label={t('buildQueue.menu')}
-              />
-            }
-          >
-            <EllipsisGlassIcon size="1.4em" aria-hidden="true" />
-          </DropdownMenuTrigger>
+          {menuTrigger}
           <DropdownMenuContent>
             {running ? (
               <DropdownMenuItem
+                disabled={!sensitive}
                 onClick={() => {
                   setPauseOpen(true)
                 }}
@@ -89,6 +110,7 @@ export function BuildQueueControls() {
               </DropdownMenuItem>
             ) : (
               <DropdownMenuItem
+                disabled={!sensitive || change.pending}
                 onClick={() => {
                   change.run('resume')
                 }}
@@ -106,16 +128,33 @@ export function BuildQueueControls() {
               <DropletsGlassIcon aria-hidden="true" />
               {t('buildQueue.drain')}
             </DropdownMenuItem>
-            <DropdownMenuSeparator />
-            <DropdownMenuItem
-              className="text-tone-danger [&_svg]:text-tone-danger"
-              onClick={() => {
-                setKillOpen(true)
-              }}
-            >
-              <OctagonAlertGlassIcon aria-hidden="true" />
-              {t('buildQueue.kill.action')}
-            </DropdownMenuItem>
+            {showExtras ? (
+              <>
+                <DropdownMenuItem onClick={idleExtras.onQueue}>
+                  <SkipForwardGlassIcon aria-hidden="true" />
+                  {t('supersededPopover.queue')}
+                </DropdownMenuItem>
+                <DropdownMenuItem onClick={idleExtras.onShortcuts}>
+                  <KeyboardGlassIcon aria-hidden="true" />
+                  {t('deployList.shortcuts')}
+                </DropdownMenuItem>
+              </>
+            ) : null}
+            {active ? (
+              <>
+                <DropdownMenuSeparator />
+                <DropdownMenuItem
+                  className="text-tone-danger [&_svg]:text-tone-danger"
+                  disabled={!sensitive}
+                  onClick={() => {
+                    setKillOpen(true)
+                  }}
+                >
+                  <OctagonAlertGlassIcon aria-hidden="true" />
+                  {t('buildQueue.kill.action')}
+                </DropdownMenuItem>
+              </>
+            ) : null}
           </DropdownMenuContent>
         </DropdownMenu>
         <Dialog open={pauseOpen} onOpenChange={setPauseOpen}>

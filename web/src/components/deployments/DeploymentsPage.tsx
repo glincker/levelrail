@@ -51,6 +51,7 @@ import {
   deploymentsLaneOptions,
   deploymentsSummaryOptions,
 } from '../../queries/deployments'
+import { useBuildQueue } from '../../queries/buildQueue'
 import { BuildQueueBanner } from '../buildQueue/BuildQueueBanner'
 import { BuildQueueControls } from '../buildQueue/BuildQueueControls'
 import { BuildQueuePanel } from '../buildQueue/BuildQueuePanel'
@@ -237,6 +238,11 @@ export function DeploymentsPage({
   }
 
   const filtered = activeFilterCount(filters) > 0
+  const buildQueue = useBuildQueue().data
+  const buildsActive =
+    (buildQueue?.running.length ?? 0) + (buildQueue?.queued.length ?? 0) > 0
+  const [queueOpen, setQueueOpen] = useState(false)
+  const [shortcutsOpen, setShortcutsOpen] = useState(false)
   const streamView =
     stream.state === 'live'
       ? { tone: 'success' as const, label: t('page.live') }
@@ -273,12 +279,38 @@ export function DeploymentsPage({
                 label={streamView.label}
                 live={stream.state === 'live'}
               />
-              <BuildQueueControls />
-              <CancelSupersededPopover
-                apps={facetsFrom(all).app}
-                selected={filters.app}
+              <BuildQueueControls
+                idleExtras={{
+                  onQueue: () => {
+                    setQueueOpen(true)
+                  },
+                  onShortcuts: () => {
+                    setShortcutsOpen(true)
+                  },
+                }}
               />
-              <ShortcutsHelp />
+              {buildsActive ? (
+                <>
+                  <CancelSupersededPopover
+                    apps={facetsFrom(all).app}
+                    selected={filters.app}
+                  />
+                  <ShortcutsHelp />
+                </>
+              ) : (
+                <>
+                  <CancelSupersededPopover
+                    apps={facetsFrom(all).app}
+                    selected={filters.app}
+                    open={queueOpen}
+                    onOpenChange={setQueueOpen}
+                  />
+                  <ShortcutsHelp
+                    open={shortcutsOpen}
+                    onOpenChange={setShortcutsOpen}
+                  />
+                </>
+              )}
             </>
           }
           illustration={<LazyDeploymentsDiagram size={bannerSize} />}

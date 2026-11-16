@@ -11,6 +11,13 @@ import {
   PopoverTitle,
   PopoverTrigger,
 } from '@/components/ui/popover'
+import {
+  Dialog,
+  DialogContent,
+  DialogDescription,
+  DialogHeader,
+  DialogTitle,
+} from '@/components/ui/dialog'
 import { Switch } from '@/components/ui/switch'
 import { toast } from '@/components/ui/toast'
 import {
@@ -62,17 +69,66 @@ function AppSetting({ app }: { app: string }) {
 export interface CancelSupersededPopoverProps {
   apps: string[]
   selected: string
+  // When set, renders a menu-driven dialog instead of the trigger popover.
+  open?: boolean
+  onOpenChange?: (open: boolean) => void
 }
 
 export function CancelSupersededPopover({
   apps,
   selected,
+  open,
+  onOpenChange,
 }: CancelSupersededPopoverProps) {
   const { t } = useTranslation('deploys')
   const [picked, setPicked] = useState('')
   const options =
     selected && !apps.includes(selected) ? [selected, ...apps] : apps
   const app = selected || picked || options[0] || ''
+  const content = (
+    <>
+      {app === '' ? (
+        <p className="text-xs text-muted-foreground">
+          {t('supersededPopover.noApps')}
+        </p>
+      ) : (
+        <>
+          {!selected && options.length > 1 && (
+            <select
+              aria-label={t('supersededPopover.appLabel')}
+              value={app}
+              onChange={(e) => {
+                setPicked(e.target.value)
+              }}
+              className="h-8 rounded-md border border-border bg-background px-2 text-sm"
+            >
+              {options.map((o) => (
+                <option key={o} value={o}>
+                  {o}
+                </option>
+              ))}
+            </select>
+          )}
+          <AppSetting key={app} app={app} />
+        </>
+      )}
+    </>
+  )
+  if (open !== undefined) {
+    return (
+      <Dialog open={open} onOpenChange={onOpenChange}>
+        <DialogContent>
+          <DialogHeader>
+            <DialogTitle>{t('supersededPopover.title')}</DialogTitle>
+            <DialogDescription>
+              {t('supersededPopover.description')}
+            </DialogDescription>
+          </DialogHeader>
+          {content}
+        </DialogContent>
+      </Dialog>
+    )
+  }
   return (
     <Popover>
       <PopoverTrigger
@@ -88,31 +144,7 @@ export function CancelSupersededPopover({
             {t('supersededPopover.description')}
           </PopoverDescription>
         </PopoverHeader>
-        {app === '' ? (
-          <p className="text-xs text-muted-foreground">
-            {t('supersededPopover.noApps')}
-          </p>
-        ) : (
-          <>
-            {!selected && options.length > 1 && (
-              <select
-                aria-label={t('supersededPopover.appLabel')}
-                value={app}
-                onChange={(e) => {
-                  setPicked(e.target.value)
-                }}
-                className="h-8 rounded-md border border-border bg-background px-2 text-sm"
-              >
-                {options.map((o) => (
-                  <option key={o} value={o}>
-                    {o}
-                  </option>
-                ))}
-              </select>
-            )}
-            <AppSetting key={app} app={app} />
-          </>
-        )}
+        {content}
       </PopoverContent>
     </Popover>
   )

@@ -792,7 +792,7 @@
     "empty": {
       "title": "Add a build node",
       "description": "Builds run on the control plane. Enroll a second node with builds enabled to move them off the machine that serves your apps.",
-      "action": "Open Nodes",
+      "action": "Add build node",
       "docs": "Build node routing"
     }
   },
