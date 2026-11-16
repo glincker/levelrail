@@ -68,6 +68,13 @@ export interface SetNodeProviderCredentialInput {
   region?: string
   role_arn?: string
   use_ambient_credentials?: boolean
+  // oracle api_key only; the private key is sealed server side, never returned.
+  tenancy_ocid?: string
+  user_ocid?: string
+  fingerprint?: string
+  private_key_pem?: string
+  compartment_ocid?: string
+  subnet_ocid?: string
 }
 
 async function setNodeProviderCredential(

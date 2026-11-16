@@ -1059,5 +1059,50 @@
     "title": "Limite de serveurs atteinte",
     "body": "{{reason}}",
     "hint": "Les limites sont les réglages provision.max_servers et provision.max_monthly_price_usd."
+  },
+  "oracle": {
+    "name": "Oracle Cloud",
+    "hint": "Clé de signature API, région, compartiment et sous-réseau.",
+    "form": {
+      "intro": "Une clé de signature API d'un utilisateur pouvant gérer des instances dans un compartiment. Elle sert uniquement à créer et inspecter des serveurs.",
+      "tenancy": "OCID du tenancy",
+      "user": "OCID de l'utilisateur",
+      "fingerprint": "Empreinte de la clé",
+      "region": "Région",
+      "compartment": "OCID du compartiment",
+      "compartmentHelp": "Par défaut, le tenancy (compartiment racine).",
+      "subnet": "OCID du sous-réseau",
+      "key": "Clé privée (PEM)",
+      "keyFile": "Charger depuis un fichier",
+      "keyHelp": "Non conservée dans le navigateur et jamais réaffichée après l'enregistrement.",
+      "keyStored": "Une clé est enregistrée. Collez-en une nouvelle pour la remplacer.",
+      "keyStoredHelp": "La clé enregistrée n'est jamais affichée. Collez-en une nouvelle pour la remplacer.",
+      "permissionsTitle": "Moindre privilège",
+      "permissions": "Gérer instance-family et utiliser virtual-network-family dans le compartiment, plus lecture des images et compartiments. Utilisez un utilisateur et une clé dédiés.",
+      "testAndConnect": "Tester et connecter",
+      "test": "Tester la connexion",
+      "testing": "Test en cours...",
+      "testStored": "Tester la connexion enregistrée",
+      "saving": "Enregistrement...",
+      "saved": "Identifiants {{provider}} enregistrés.",
+      "disconnect": "Déconnecter",
+      "confirmDisconnect": "Confirmer la déconnexion",
+      "disconnected": "{{provider}} déconnecté."
+    },
+    "sizes": {
+      "flex": "Forme flexible",
+      "preset": "{{ocpus}} OCPU, {{memory}} Go",
+      "ocpus": "OCPU",
+      "memory": "Mémoire (Go)",
+      "priceNote": "Oracle facture les formes Flex par OCPU et mémoire. Cette app ne sait pas si un serveur est couvert par le quota de votre tenancy, vérifiez votre console Oracle."
+    },
+    "guard": {
+      "title": "Oracle a refusé la création",
+      "enabled": "Le provisionnement Oracle est désactivé. Activez d'abord le réglage {{setting}}.",
+      "a1": "Le quota A1 est à 0 ou serait dépassé. Augmentez {{setting}} pour autoriser cette taille.",
+      "micro": "La limite des formes micro serait dépassée. Augmentez {{setting}}.",
+      "paidShape": "Cette forme n'est pas couverte par les limites de quota et peut être facturée. Activez {{setting}} pour l'utiliser.",
+      "unknownPrice": "Oracle n'indique aucun prix pour cette forme, le plafond de prix ne peut pas être vérifié. Activez {{setting}} (ou provision.allow_unknown_price) pour l'autoriser."
+    }
   }
 }

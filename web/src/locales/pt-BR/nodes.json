@@ -1059,5 +1059,50 @@
     "title": "Limite de servidores atingido",
     "body": "{{reason}}",
     "hint": "Os limites são as configurações provision.max_servers e provision.max_monthly_price_usd."
+  },
+  "oracle": {
+    "name": "Oracle Cloud",
+    "hint": "Chave de assinatura de API, região, compartimento e sub-rede.",
+    "form": {
+      "intro": "Uma chave de assinatura de API de um usuário que pode gerenciar instâncias em um compartimento. Serve apenas para criar e inspecionar servidores.",
+      "tenancy": "OCID do tenancy",
+      "user": "OCID do usuário",
+      "fingerprint": "Impressão digital da chave",
+      "region": "Região",
+      "compartment": "OCID do compartimento",
+      "compartmentHelp": "Por padrão, o tenancy (compartimento raiz).",
+      "subnet": "OCID da sub-rede",
+      "key": "Chave privada (PEM)",
+      "keyFile": "Carregar de arquivo",
+      "keyHelp": "Não fica no navegador e nunca é exibida de novo depois de salva.",
+      "keyStored": "Há uma chave salva. Cole uma nova para substituir.",
+      "keyStoredHelp": "A chave salva nunca é exibida. Cole uma nova para substituir.",
+      "permissionsTitle": "Privilégio mínimo",
+      "permissions": "Gerenciar instance-family e usar virtual-network-family no compartimento, mais leitura de imagens e compartimentos. Use um usuário e uma chave dedicados.",
+      "testAndConnect": "Testar e conectar",
+      "test": "Testar conexão",
+      "testing": "Testando...",
+      "testStored": "Testar conexão salva",
+      "saving": "Salvando...",
+      "saved": "Credencial de {{provider}} salva.",
+      "disconnect": "Desconectar",
+      "confirmDisconnect": "Confirmar desconexão",
+      "disconnected": "{{provider}} desconectado."
+    },
+    "sizes": {
+      "flex": "Shape flexível",
+      "preset": "{{ocpus}} OCPU, {{memory}} GB",
+      "ocpus": "OCPUs",
+      "memory": "Memória (GB)",
+      "priceNote": "A Oracle cobra shapes Flex por OCPU e memória. Este app não sabe se um servidor está coberto pela cota do seu tenancy, confira o console da Oracle."
+    },
+    "guard": {
+      "title": "A Oracle recusou a criação",
+      "enabled": "O provisionamento da Oracle está desligado. Ative primeiro a configuração {{setting}}.",
+      "a1": "A cota A1 é 0 ou seria excedida. Aumente {{setting}} para permitir este tamanho.",
+      "micro": "O limite de shapes micro seria excedido. Aumente {{setting}}.",
+      "paidShape": "Este shape não é coberto pelos limites de cota e pode gerar cobrança. Ative {{setting}} para usá-lo.",
+      "unknownPrice": "A Oracle não informa preço para este shape, então o teto de preço não pode ser verificado. Ative {{setting}} (ou provision.allow_unknown_price) para permitir."
+    }
   }
 }

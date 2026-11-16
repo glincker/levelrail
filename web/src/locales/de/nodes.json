@@ -1043,5 +1043,50 @@
     "title": "Serverlimit erreicht",
     "body": "{{reason}}",
     "hint": "Die Limits sind die Einstellungen provision.max_servers und provision.max_monthly_price_usd."
+  },
+  "oracle": {
+    "name": "Oracle Cloud",
+    "hint": "API-Signaturschlüssel, Region, Compartment und Subnetz.",
+    "form": {
+      "intro": "Ein API-Signaturschlüssel eines Benutzers, der Instanzen in einem Compartment verwalten darf. Er dient nur zum Erstellen und Prüfen von Servern.",
+      "tenancy": "Tenancy-OCID",
+      "user": "Benutzer-OCID",
+      "fingerprint": "Schlüssel-Fingerabdruck",
+      "region": "Region",
+      "compartment": "Compartment-OCID",
+      "compartmentHelp": "Standard ist die Tenancy (Root-Compartment).",
+      "subnet": "Subnetz-OCID",
+      "key": "Privater Schlüssel (PEM)",
+      "keyFile": "Aus Datei laden",
+      "keyHelp": "Wird nicht im Browser gespeichert und nach dem Speichern nie wieder angezeigt.",
+      "keyStored": "Ein Schlüssel ist gespeichert. Neuen einfügen zum Ersetzen.",
+      "keyStoredHelp": "Der gespeicherte Schlüssel wird nie angezeigt. Neuen einfügen zum Ersetzen.",
+      "permissionsTitle": "Minimale Rechte",
+      "permissions": "instance-family verwalten und virtual-network-family nutzen im Compartment, dazu Lesezugriff auf Images und Compartments. Nutze einen eigenen Benutzer und Schlüssel.",
+      "testAndConnect": "Testen und verbinden",
+      "test": "Verbindung testen",
+      "testing": "Teste...",
+      "testStored": "Gespeicherte Verbindung testen",
+      "saving": "Speichere...",
+      "saved": "{{provider}}-Zugangsdaten gespeichert.",
+      "disconnect": "Trennen",
+      "confirmDisconnect": "Trennen bestätigen",
+      "disconnected": "{{provider}} getrennt."
+    },
+    "sizes": {
+      "flex": "Flexible Shape",
+      "preset": "{{ocpus}} OCPU, {{memory}} GB",
+      "ocpus": "OCPUs",
+      "memory": "Speicher (GB)",
+      "priceNote": "Oracle rechnet Flex-Shapes nach OCPU und Speicher ab. Diese App kann nicht erkennen, ob ein Server durch das Kontingent deiner Tenancy gedeckt ist, prüfe deine Oracle-Konsole."
+    },
+    "guard": {
+      "title": "Oracle hat das Erstellen abgelehnt",
+      "enabled": "Oracle-Bereitstellung ist ausgeschaltet. Schalte zuerst die Einstellung {{setting}} ein.",
+      "a1": "Das A1-Kontingent ist 0 oder würde überschritten. Erhöhe {{setting}}, um diese Größe zu erlauben.",
+      "micro": "Das Limit für Micro-Shapes würde überschritten. Erhöhe {{setting}}.",
+      "paidShape": "Dieses Shape ist nicht durch die Kontingentgrenzen gedeckt und kann Kosten verursachen. Schalte {{setting}} ein, um es zu nutzen.",
+      "unknownPrice": "Oracle nennt keinen Preis für dieses Shape, die Preisgrenze kann nicht geprüft werden. Schalte {{setting}} (oder provision.allow_unknown_price) ein, um es zu erlauben."
+    }
   }
 }

@@ -11,6 +11,7 @@ import { ManualEnrollFields } from '../AddNodeDialog'
 import { nodeProviderBrand } from '../../lib/providerBrands'
 import type { NodeProviderResource } from '../../types/nodeProvision'
 import { NodeProviderForm } from './NodeProviderForm'
+import { OracleCredentialForm } from './OracleCredentialForm'
 
 const NAME_KEYS = {
   hetzner: 'nodeProviders.names.hetzner',
@@ -18,6 +19,7 @@ const NAME_KEYS = {
   aws: 'nodeProviders.names.aws',
   azure: 'nodeProviders.names.azure',
   gcp: 'nodeProviders.names.gcp',
+  oracle: 'nodes:oracle.name',
   custom: 'nodeProviders.names.custom',
 } as const
 
@@ -27,6 +29,7 @@ const HINT_KEYS = {
   aws: 'nodeProviders.hints.aws',
   azure: 'nodeProviders.hints.azure',
   gcp: 'nodeProviders.hints.gcp',
+  oracle: 'nodes:oracle.hint',
   custom: 'nodeProviders.hints.custom',
 } as const
 
@@ -43,7 +46,7 @@ export function NodeProviderRow({
 }: {
   provider: NodeProviderResource
 }) {
-  const { t } = useTranslation('settings')
+  const { t } = useTranslation(['settings', 'nodes'])
   const triggerRef = useRef<HTMLButtonElement>(null)
   const dialog = useUrlDialog(provider.provider, 'connect', DIALOG_PARAMS)
   const [addingNode, setAddingNode] = useState(false)
@@ -132,6 +135,12 @@ export function NodeProviderRow({
               onBack={() => setAddingNode(false)}
             />
           </div>
+        ) : provider.provider === 'oracle' ? (
+          <OracleCredentialForm
+            provider={provider}
+            label={label}
+            onSaved={dialog.close}
+          />
         ) : (
           <NodeProviderForm
             provider={provider}

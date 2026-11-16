@@ -18,6 +18,7 @@ const ALL: readonly NodeProviderMethod[] = [
   'ambient',
   'workload_identity_federation',
   'service_account_json',
+  'api_key',
   'manual',
 ]
 
@@ -28,6 +29,7 @@ const FALLBACK: Record<string, NodeProviderMethod[]> = {
   aws: ['access_key', 'assume_role', 'ambient'],
   azure: ['service_account_json', 'workload_identity_federation'],
   gcp: ['service_account_json'],
+  oracle: ['api_key'],
   custom: ['manual'],
 }
 

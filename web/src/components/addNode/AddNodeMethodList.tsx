@@ -12,7 +12,7 @@ import { nodeProviderBrand } from '../../lib/providerBrands'
 import { SectionTitle } from '@/components/ui/typography'
 
 export type CloudProviderId =
-  'hetzner' | 'digitalocean' | 'aws' | 'azure' | 'gcp'
+  'hetzner' | 'digitalocean' | 'aws' | 'azure' | 'gcp' | 'oracle'
 
 const CLOUD_PROVIDERS: readonly CloudProviderId[] = [
   'hetzner',
@@ -20,6 +20,7 @@ const CLOUD_PROVIDERS: readonly CloudProviderId[] = [
   'aws',
   'azure',
   'gcp',
+  'oracle',
 ]
 
 const NAME_KEYS = {
@@ -28,6 +29,7 @@ const NAME_KEYS = {
   aws: 'nodeProviders.names.aws',
   azure: 'nodeProviders.names.azure',
   gcp: 'nodeProviders.names.gcp',
+  oracle: 'nodes:oracle.name',
 } as const
 
 const HINT_KEYS = {
@@ -36,6 +38,7 @@ const HINT_KEYS = {
   aws: 'nodeProviders.hints.aws',
   azure: 'nodeProviders.hints.azure',
   gcp: 'nodeProviders.hints.gcp',
+  oracle: 'nodes:oracle.hint',
 } as const
 
 interface RowProps {
@@ -96,7 +99,7 @@ export function AddNodeMethodList({
   onSSH: () => void
   onManual: () => void
 }) {
-  const { t } = useTranslation('settings')
+  const { t } = useTranslation(['settings', 'nodes'])
   const ordered = [...CLOUD_PROVIDERS].sort(
     (a, b) => Number(connected.has(b)) - Number(connected.has(a)),
   )

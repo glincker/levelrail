@@ -1027,5 +1027,50 @@
     "title": "已达到服务器数量上限",
     "body": "{{reason}}",
     "hint": "上限由设置 provision.max_servers 和 provision.max_monthly_price_usd 控制。"
+  },
+  "oracle": {
+    "name": "Oracle Cloud",
+    "hint": "API 签名密钥、区域、区间和子网。",
+    "form": {
+      "intro": "某个可管理一个区间内实例的用户的 API 签名密钥,仅用于创建和检查服务器。",
+      "tenancy": "租户 OCID",
+      "user": "用户 OCID",
+      "fingerprint": "密钥指纹",
+      "region": "区域",
+      "compartment": "区间 OCID",
+      "compartmentHelp": "默认为租户(根区间)。",
+      "subnet": "子网 OCID",
+      "key": "私钥 (PEM)",
+      "keyFile": "从文件加载",
+      "keyHelp": "不会保存在浏览器中,保存后不再显示。",
+      "keyStored": "已保存密钥。粘贴新密钥可替换。",
+      "keyStoredHelp": "已保存的密钥不会显示。粘贴新密钥可替换。",
+      "permissionsTitle": "最小权限",
+      "permissions": "在该区间内管理 instance-family、使用 virtual-network-family,并可读取镜像和区间。请使用专用用户和密钥。",
+      "testAndConnect": "测试并连接",
+      "test": "测试连接",
+      "testing": "测试中...",
+      "testStored": "测试已保存的连接",
+      "saving": "保存中...",
+      "saved": "{{provider}} 凭据已保存。",
+      "disconnect": "断开连接",
+      "confirmDisconnect": "确认断开",
+      "disconnected": "{{provider}} 已断开。"
+    },
+    "sizes": {
+      "flex": "弹性规格",
+      "preset": "{{ocpus}} OCPU,{{memory}} GB",
+      "ocpus": "OCPU",
+      "memory": "内存 (GB)",
+      "priceNote": "Oracle 按 OCPU 和内存对 Flex 规格计费。本应用无法判断服务器是否在你租户的额度内,请在 Oracle 控制台确认。"
+    },
+    "guard": {
+      "title": "Oracle 拒绝了创建",
+      "enabled": "Oracle 配置已关闭。请先开启设置 {{setting}}。",
+      "a1": "A1 额度为 0 或将被超出。请提高 {{setting}} 以允许此规格。",
+      "micro": "将超出 micro 规格上限。请提高 {{setting}}。",
+      "paidShape": "此规格不在额度限制内,可能产生费用。开启 {{setting}} 才能使用。",
+      "unknownPrice": "Oracle 未给出此规格的价格,无法检查价格上限。开启 {{setting}}(或 provision.allow_unknown_price)以允许。"
+    }
   }
 }

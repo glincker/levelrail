@@ -36,6 +36,9 @@ import { SkeletonList } from './kit/Skeleton'
 import { ManualEnrollFields } from './AddNodeDialog'
 import { SSHEnrollFields } from './AddNodeWizardSSH'
 import { AddNodeMethodList } from './addNode/AddNodeMethodList'
+import { OracleFlexSizes } from './addNode/OracleFlexSizes'
+import { OracleGuardNotice } from './addNode/OracleGuardNotice'
+import { splitOracleSizes } from '../lib/oracleProvision'
 import { ProvisionProgress, StepShell } from './AddNodeWizardSteps'
 import {
   useCreateNodeProvision,
@@ -46,7 +49,8 @@ import {
 } from '../queries/nodeProvision'
 import { labelOf } from '@/lib/labelOf'
 
-type ProviderId = 'hetzner' | 'digitalocean' | 'aws' | 'azure' | 'gcp'
+type ProviderId =
+  'hetzner' | 'digitalocean' | 'aws' | 'azure' | 'gcp' | 'oracle'
 type Step =
   | 'method'
   | 'region'
@@ -63,6 +67,7 @@ const PROVIDER_LABELS: Record<ProviderId, string> = {
   aws: 'AWS',
   azure: 'Azure',
   gcp: 'Google Cloud',
+  oracle: 'Oracle Cloud',
 }
 
 // Suggests a node name from the provider and region already picked by
@@ -119,6 +124,11 @@ function WizardBody({ onClose }: { onClose: () => void }) {
   const regions = useNodeProviderRegions(provider ?? '', step === 'region')
   const sizes = useNodeProviderSizes(provider ?? '', region, step === 'size')
   const createProvision = useCreateNodeProvision()
+  // Only Oracle has Flex ids; every other provider lists as fixed sizes.
+  const oracleSplit =
+    provider === 'oracle'
+      ? splitOracleSizes(sizes.data ?? [])
+      : { fixed: sizes.data ?? [], flex: [] }
   const provision = useNodeProvision(step === 'progress' ? provisionId : null)
 
   if (step === 'manual') {
@@ -231,7 +241,12 @@ function WizardBody({ onClose }: { onClose: () => void }) {
           </Alert>
         ) : (
           <div className="space-y-2">
-            {(sizes.data ?? []).map((s) => (
+            {provider === 'oracle' ? (
+              <p className="text-xs text-muted-foreground">
+                {t('oracle.sizes.priceNote')}
+              </p>
+            ) : null}
+            {oracleSplit.fixed.map((s) => (
               <button
                 key={s.id}
                 type="button"
@@ -262,6 +277,13 @@ function WizardBody({ onClose }: { onClose: () => void }) {
                 )}
               </button>
             ))}
+            {provider === 'oracle' ? (
+              <OracleFlexSizes
+                shapes={oracleSplit.flex}
+                value={size}
+                onChange={setSize}
+              />
+            ) : null}
           </div>
         )}
       </StepShell>
@@ -390,7 +412,12 @@ function WizardBody({ onClose }: { onClose: () => void }) {
             </>
           ) : null}
         </dl>
-        {createProvision.isError ? (
+        {createProvision.isError &&
+        provider === 'oracle' &&
+        createProvision.error instanceof ApiError &&
+        createProvision.error.status === 409 ? (
+          <OracleGuardNotice message={createProvision.error.message} />
+        ) : createProvision.isError ? (
           <Alert variant="destructive">
             <TriangleAlertGlassIcon
               className="text-tone-warning"

@@ -1043,5 +1043,50 @@
     "title": "Server limit reached",
     "body": "{{reason}}",
     "hint": "Limits are the settings provision.max_servers and provision.max_monthly_price_usd."
+  },
+  "oracle": {
+    "name": "Oracle Cloud",
+    "hint": "API signing key, region, compartment and subnet.",
+    "form": {
+      "intro": "An API signing key for a user that can manage instances in one compartment. It is used only to create and inspect servers.",
+      "tenancy": "Tenancy OCID",
+      "user": "User OCID",
+      "fingerprint": "Key fingerprint",
+      "region": "Region",
+      "compartment": "Compartment OCID",
+      "compartmentHelp": "Defaults to the tenancy (root compartment).",
+      "subnet": "Subnet OCID",
+      "key": "Private key (PEM)",
+      "keyFile": "Load from file",
+      "keyHelp": "Not stored in the browser and never shown again once saved.",
+      "keyStored": "A key is stored. Paste a new one to replace it.",
+      "keyStoredHelp": "The saved key is never shown. Paste a new one to replace it.",
+      "permissionsTitle": "Least privilege",
+      "permissions": "Manage instance-family and use virtual-network-family in the compartment, plus read access to images and compartments. Use a dedicated user and key.",
+      "testAndConnect": "Test and connect",
+      "test": "Test connection",
+      "testing": "Testing...",
+      "testStored": "Test stored connection",
+      "saving": "Saving...",
+      "saved": "{{provider}} credential saved.",
+      "disconnect": "Disconnect",
+      "confirmDisconnect": "Confirm disconnect",
+      "disconnected": "{{provider}} disconnected."
+    },
+    "sizes": {
+      "flex": "Flexible shape",
+      "preset": "{{ocpus}} OCPU, {{memory}} GB",
+      "ocpus": "OCPUs",
+      "memory": "Memory (GB)",
+      "priceNote": "Oracle bills Flex shapes by OCPU and memory. This app cannot tell whether a server is covered by your tenancy allowance, so check your Oracle console."
+    },
+    "guard": {
+      "title": "Oracle create refused",
+      "enabled": "Oracle provisioning is switched off. Turn on the setting {{setting}} first.",
+      "a1": "The A1 allowance is 0 or would be exceeded. Raise {{setting}} to allow this size.",
+      "micro": "The micro shape limit would be exceeded. Raise {{setting}} to allow another.",
+      "paidShape": "This shape is not covered by the allowance limits and may bill. Turn on {{setting}} to use it.",
+      "unknownPrice": "Oracle lists no price for this shape, so the price cap cannot be checked. Turn on {{setting}} (or provision.allow_unknown_price) to allow it."
+    }
   }
 }

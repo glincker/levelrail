@@ -1027,5 +1027,50 @@
     "title": "サーバー数の上限に達しました",
     "body": "{{reason}}",
     "hint": "上限は設定 provision.max_servers と provision.max_monthly_price_usd です。"
+  },
+  "oracle": {
+    "name": "Oracle Cloud",
+    "hint": "API署名キー、リージョン、コンパートメント、サブネット。",
+    "form": {
+      "intro": "1つのコンパートメントでインスタンスを管理できるユーザーのAPI署名キーです。サーバーの作成と確認にのみ使います。",
+      "tenancy": "テナンシーOCID",
+      "user": "ユーザーOCID",
+      "fingerprint": "キーのフィンガープリント",
+      "region": "リージョン",
+      "compartment": "コンパートメントOCID",
+      "compartmentHelp": "既定はテナンシー(ルートコンパートメント)です。",
+      "subnet": "サブネットOCID",
+      "key": "秘密鍵 (PEM)",
+      "keyFile": "ファイルから読み込む",
+      "keyHelp": "ブラウザには保存されず、保存後は二度と表示されません。",
+      "keyStored": "キーは保存済みです。置き換えるには新しいキーを貼り付けてください。",
+      "keyStoredHelp": "保存済みのキーは表示されません。置き換えるには新しいキーを貼り付けてください。",
+      "permissionsTitle": "最小権限",
+      "permissions": "コンパートメント内でinstance-familyの管理とvirtual-network-familyの使用、イメージとコンパートメントの読み取りが必要です。専用のユーザーとキーを使ってください。",
+      "testAndConnect": "テストして接続",
+      "test": "接続をテスト",
+      "testing": "テスト中...",
+      "testStored": "保存済みの接続をテスト",
+      "saving": "保存中...",
+      "saved": "{{provider}}の認証情報を保存しました。",
+      "disconnect": "切断",
+      "confirmDisconnect": "切断を確認",
+      "disconnected": "{{provider}}を切断しました。"
+    },
+    "sizes": {
+      "flex": "フレキシブルシェイプ",
+      "preset": "{{ocpus}} OCPU、{{memory}} GB",
+      "ocpus": "OCPU",
+      "memory": "メモリ (GB)",
+      "priceNote": "OracleはFlexシェイプをOCPUとメモリで課金します。このアプリはサーバーがテナンシーの無料枠に含まれるか判断できないため、Oracleコンソールで確認してください。"
+    },
+    "guard": {
+      "title": "Oracleが作成を拒否しました",
+      "enabled": "Oracleのプロビジョニングはオフです。先に設定 {{setting}} をオンにしてください。",
+      "a1": "A1の枠が0、または超過します。このサイズを許可するには {{setting}} を引き上げてください。",
+      "micro": "マイクロシェイプの上限を超えます。{{setting}} を引き上げてください。",
+      "paidShape": "このシェイプは枠の上限の対象外で、課金される可能性があります。使うには {{setting}} をオンにしてください。",
+      "unknownPrice": "Oracleがこのシェイプの価格を提供しないため、価格上限を確認できません。許可するには {{setting}}(または provision.allow_unknown_price)をオンにしてください。"
+    }
   }
 }

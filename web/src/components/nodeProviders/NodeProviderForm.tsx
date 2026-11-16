@@ -34,6 +34,7 @@ import type {
 } from '../../types/nodeProvision'
 import { NodeProviderPermissions } from './NodeProviderPermissions'
 
+// api_key (oracle) has its own form, so it never reaches this table.
 const METHOD_KEYS = {
   api_token: {
     title: 'nodeProviders.methods.api_token.title',
@@ -65,6 +66,10 @@ const METHOD_KEYS = {
     description: 'nodeProviders.methods.manual.description',
   },
 } as const
+
+function methodKeys(m: NodeProviderMethod) {
+  return METHOD_KEYS[m === 'api_key' ? 'api_token' : m]
+}
 
 const JSON_PLACEHOLDER: Record<string, string> = {
   azure:
@@ -241,10 +246,10 @@ export function NodeProviderForm({
                 )}
               >
                 <span className="block font-medium">
-                  {t(METHOD_KEYS[m].title)}
+                  {t(methodKeys(m).title)}
                 </span>
                 <span className="block text-xs text-muted-foreground">
-                  {t(METHOD_KEYS[m].description)}
+                  {t(methodKeys(m).description)}
                 </span>
               </button>
             ))}
@@ -252,7 +257,7 @@ export function NodeProviderForm({
         </fieldset>
       ) : (
         <p className="text-sm text-muted-foreground">
-          {t(METHOD_KEYS[method].description)}
+          {t(methodKeys(method).description)}
         </p>
       )}
 

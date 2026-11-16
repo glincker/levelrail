@@ -9,6 +9,7 @@ export type NodeProviderMethod =
   | 'ambient'
   | 'workload_identity_federation'
   | 'service_account_json'
+  | 'api_key'
   | 'manual'
 
 export type NodeProviderStatus = 'connected' | 'not_connected' | 'test_failed'
