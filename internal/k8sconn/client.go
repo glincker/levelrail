@@ -153,6 +153,10 @@ func NewClient(ctx context.Context, cfg Config) (*Client, error) {
 
 // Do sends one request and returns the body of a 2xx response.
 func (c *Client) Do(ctx context.Context, method, path string, body []byte) ([]byte, error) {
+	return c.doType(ctx, method, path, "application/json", body)
+}
+
+func (c *Client) doType(ctx context.Context, method, path, contentType string, body []byte) ([]byte, error) {
 	var rd io.Reader
 	if body != nil {
 		rd = bytes.NewReader(body)
@@ -163,7 +167,7 @@ func (c *Client) Do(ctx context.Context, method, path string, body []byte) ([]by
 	}
 	req.Header.Set("Accept", "application/json")
 	if body != nil {
-		req.Header.Set("Content-Type", "application/json")
+		req.Header.Set("Content-Type", contentType)
 	}
 	if c.token != "" {
 		req.Header.Set("Authorization", "Bearer "+c.token)

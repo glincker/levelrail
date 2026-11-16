@@ -369,6 +369,11 @@ func (rt *Router) handleDisconnectK8sCluster(w http.ResponseWriter, r *http.Requ
 		rt.internalError(w, "api: delete k8s cluster failed", err)
 		return
 	}
+	if rt.k8sDeploymentRows != nil {
+		if err := rt.k8sDeploymentRows.DeleteK8sDeploymentsForCluster(r.Context(), name); err != nil {
+			rt.logger.Warn("api: delete k8s deployment records failed", slog.String("cluster", name))
+		}
+	}
 	rt.auditK8sCluster(r, auditK8sClusterDisconnected, prev, http.StatusOK)
 	w.WriteHeader(http.StatusNoContent)
 }

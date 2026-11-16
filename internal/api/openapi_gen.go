@@ -14,7 +14,7 @@ type openAPIRoute struct {
 	Description string
 }
 
-// openAPIRoutes holds all 2171 routes known to scripts/gen-api-reference at
+// openAPIRoutes holds all 2174 routes known to scripts/gen-api-reference at
 // generation time. Run `go run ./scripts/gen-api-reference` after changing
 // any routes*.go registration and commit the result.
 var openAPIRoutes = []openAPIRoute{
@@ -1207,6 +1207,9 @@ var openAPIRoutes = []openAPIRoute{
 	{Method: "POST", Path: "/api/v1/clusters", Ability: "AbilityRoot", Group: "Other", Handler: "handleConnectK8sCluster", Description: ""},
 	{Method: "DELETE", Path: "/api/v1/clusters/{name}", Ability: "AbilityRoot", Group: "Other", Handler: "handleDisconnectK8sCluster", Description: ""},
 	{Method: "GET", Path: "/api/v1/clusters/{name}", Ability: "AbilityRoot", Group: "Other", Handler: "handleGetK8sCluster", Description: ""},
+	{Method: "GET", Path: "/api/v1/clusters/{name}/deployments", Ability: "AbilityRoot", Group: "Other", Handler: "handleListK8sDeployments", Description: ""},
+	{Method: "POST", Path: "/api/v1/clusters/{name}/deployments", Ability: "AbilityRoot", Group: "Other", Handler: "handleDeployK8sApp", Description: ""},
+	{Method: "GET", Path: "/api/v1/clusters/{name}/deployments/{app}", Ability: "AbilityRoot", Group: "Other", Handler: "handleGetK8sDeploymentStatus", Description: ""},
 	{Method: "GET", Path: "/api/v1/clusters/{name}/namespaces", Ability: "AbilityRoot", Group: "Other", Handler: "handleListK8sNamespaces", Description: ""},
 	{Method: "GET", Path: "/api/v1/clusters/{name}/nodes", Ability: "AbilityRoot", Group: "Other", Handler: "handleListK8sNodes", Description: ""},
 	{Method: "POST", Path: "/api/v1/clusters/{name}/test", Ability: "AbilityRoot", Group: "Other", Handler: "handleTestK8sCluster", Description: ""},

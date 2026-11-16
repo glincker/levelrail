@@ -1,6 +1,10 @@
 package runtimesettings
 
-import "time"
+import (
+	"fmt"
+	"regexp"
+	"time"
+)
 
 // Kubernetes cluster connection settings. Env values only seed the defaults.
 const (
@@ -12,6 +16,14 @@ const (
 	KeyK8sMaxBodyBytes        = "k8s.max_body_bytes" // gitleaks:allow
 	KeyK8sLogTailLinesMax     = "k8s.log_tail_lines_max"
 	KeyK8sStatusPollInterval  = "k8s.status_poll_interval"
+	KeyK8sDefaultNamespace    = "k8s.default_namespace"
+	KeyK8sCPURequest          = "k8s.cpu_request"
+	KeyK8sMemoryRequest       = "k8s.memory_request"
+	KeyK8sCPULimit            = "k8s.cpu_limit" // gitleaks:allow
+	KeyK8sMemoryLimit         = "k8s.memory_limit"
+	KeyK8sMaxReplicas         = "k8s.max_replicas" // gitleaks:allow
+	KeyK8sMaxEnvVars          = "k8s.max_env_vars"
+	KeyK8sRunAsUser           = "k8s.run_as_user"
 	k8sKubeconfigMaxBytesCeil = 8 << 20
 	k8sMaxBodyBytesCeil       = 256 << 20
 	k8sLogTailLinesCeil       = 100000
@@ -46,6 +58,51 @@ func init() {
 		Key: KeyK8sStatusPollInterval, Category: cat, Kind: KindDuration, Default: "10s", Env: "APP_K8S_STATUS_POLL_INTERVAL", Apply: ApplyLive,
 		CheckValue: durationRangeCheck(time.Second, time.Hour),
 		Title:      "Kubernetes status poll interval", Description: "How often deployment status is refreshed from a cluster, from 1s to 1h.",
+	})
+	registerK8sQuantity(KeyK8sCPURequest, "APP_K8S_CPU_REQUEST", "100m", "Kubernetes CPU request",
+		"CPU request set on every deployed container, as a Kubernetes quantity such as 100m.")
+	registerK8sQuantity(KeyK8sMemoryRequest, "APP_K8S_MEMORY_REQUEST", "128Mi", "Kubernetes memory request",
+		"Memory request set on every deployed container, as a Kubernetes quantity such as 128Mi.")
+	registerK8sQuantity(KeyK8sCPULimit, "APP_K8S_CPU_LIMIT", "500m", "Kubernetes CPU limit",
+		"CPU limit set on every deployed container, as a Kubernetes quantity such as 500m.")
+	registerK8sQuantity(KeyK8sMemoryLimit, "APP_K8S_MEMORY_LIMIT", "512Mi", "Kubernetes memory limit",
+		"Memory limit set on every deployed container, as a Kubernetes quantity such as 512Mi.")
+	Register(Definition{
+		Key: KeyK8sDefaultNamespace, Category: cat, Kind: KindString, Default: "levelrail-managed", Env: "APP_K8S_DEFAULT_NAMESPACE", Apply: ApplyLive,
+		CheckValue: func(v string) error {
+			if !k8sDNSLabel.MatchString(v) {
+				return fmt.Errorf("must be a lowercase DNS label")
+			}
+			return nil
+		},
+		Title: "Kubernetes default namespace", Description: "Namespace used when a deploy request names none. Created with the managed-by label when missing.",
+	})
+	registerK8sInt(KeyK8sMaxReplicas, "APP_K8S_MAX_REPLICAS", "20", "Kubernetes replica cap",
+		"Most replicas one deploy request may ask for.", 1, 1000)
+	registerK8sInt(KeyK8sMaxEnvVars, "APP_K8S_MAX_ENV_VARS", "64", "Kubernetes env variable cap",
+		"Most environment variables one deploy request may carry.", 0, 1000)
+	registerK8sInt(KeyK8sRunAsUser, "APP_K8S_RUN_AS_USER", "10001", "Kubernetes non-root user id",
+		"User id forced on containers so they never run as root unless a deploy sets allow_root.", 1, 2147483647)
+}
+
+var (
+	k8sDNSLabel = regexp.MustCompile(`^[a-z0-9]([-a-z0-9]{0,61}[a-z0-9])?$`)
+	k8sQuantity = regexp.MustCompile(`^[0-9]+(\.[0-9]+)?(m|k|M|G|T|Ki|Mi|Gi|Ti)?$`)
+)
+
+// ValidK8sQuantity reports whether v is a plain Kubernetes resource quantity.
+func ValidK8sQuantity(v string) bool { return k8sQuantity.MatchString(v) }
+
+func registerK8sQuantity(key, env, def, title, desc string) {
+	Register(Definition{
+		Key: key, Category: CategoryExperimental, Kind: KindString, Default: def, Env: env, Apply: ApplyLive,
+		CheckValue: func(v string) error {
+			if !ValidK8sQuantity(v) {
+				return fmt.Errorf("must be a Kubernetes quantity such as 100m or 128Mi")
+			}
+			return nil
+		},
+		Title: title, Description: desc,
 	})
 }
 

@@ -2402,6 +2402,9 @@ Routes that do not fit an existing group.
 | POST | /api/v1/clusters/{name}/test | AbilityRoot | handleTestK8sCluster |
 | GET | /api/v1/clusters/{name}/nodes | AbilityRoot | handleListK8sNodes |
 | GET | /api/v1/clusters/{name}/namespaces | AbilityRoot | handleListK8sNamespaces |
+| GET | /api/v1/clusters/{name}/deployments | AbilityRoot | handleListK8sDeployments |
+| POST | /api/v1/clusters/{name}/deployments | AbilityRoot | handleDeployK8sApp |
+| GET | /api/v1/clusters/{name}/deployments/{app} | AbilityRoot | handleGetK8sDeploymentStatus |
 | POST | /mcp | Public |  |
 
 ## See also
