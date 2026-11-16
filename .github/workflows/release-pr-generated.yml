@@ -1,6 +1,6 @@
 name: release-pr-generated
 
-# Regenerates docs/changelog.mdx on the release-please PR branch. The push
+# Regenerates docs/changelog.mdx and the VERSIONING.md table on the release-please PR branch. The push
 # needs the release App token (var RELEASE_APP_CLIENT_ID, secret
 # RELEASE_APP_PRIVATE_KEY) or secret RELEASE_PLEASE_TOKEN, otherwise CI
 # would not re-run on the new head. Without either, this job skips.
@@ -48,12 +48,13 @@ jobs:
           HEAD_REF: ${{ github.head_ref }}
         run: |
           node scripts/gen-docs-pages.mjs
-          if git diff --quiet -- docs/changelog.mdx; then
-            echo "docs/changelog.mdx already fresh"
+          node scripts/gen-versions-table.mjs
+          if git diff --quiet -- docs/changelog.mdx VERSIONING.md; then
+            echo "docs/changelog.mdx and VERSIONING.md already fresh"
             exit 0
           fi
           git config user.name "levelrail-release[bot]"
           git config user.email "levelrail-release[bot]@users.noreply.github.com"
-          git add docs/changelog.mdx
+          git add docs/changelog.mdx VERSIONING.md
           git commit -m "chore: regenerate changelog page"
           git push origin "HEAD:${HEAD_REF}"

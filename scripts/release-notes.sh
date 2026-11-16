@@ -32,6 +32,22 @@ go -C "$root/tools" run ./releasenotes \
 	-image "ghcr.io/${image_owner}/${binary}-agent" \
 	-out "$notes"
 
+# Previous release tag in the same stream (newest first list), for the compare link.
+prev="$(gh api "repos/$repo/releases?per_page=100" --jq '.[].tag_name' 2>/dev/null |
+	grep -v / | awk -v t="$tag" 'f && !p {print; p=1} $0==t {f=1}' || true)"
+contributors=""
+if [ -n "$prev" ]; then
+	contributors="$(gh api "repos/$repo/compare/$prev...$tag" --jq '[.commits[].author.login // empty] | unique | join(",")' 2>/dev/null || true)"
+fi
+wrapped="$(mktemp)"
+trap 'rm -f "$notes" "$wrapped"' EXIT
+if RELEASE_REPO="$repo" RELEASE_DOCS_URL="$docs_url" node "$root/scripts/release-notes-wrap.mjs" \
+	--version "$tag" --prev "$prev" --body-file "$notes" --contributors "$contributors" >"$wrapped"; then
+	mv "$wrapped" "$notes"
+else
+	echo "::warning::release-notes: wrapper failed, publishing the unwrapped notes"
+fi
+
 if [ "$dry_run" = "--dry-run" ]; then
 	cat "$notes"
 	exit 0
