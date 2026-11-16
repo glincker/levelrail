@@ -1,5 +1,13 @@
 # Changelog
 
+## [1.3.2](https://github.com/glincker/levelrail/compare/v1.3.1...v1.3.2) (2026-11-16)
+
+
+### Features
+
+* copyable Deployed with Levelrail badge on the deploy status card ([14c474c](https://github.com/glincker/levelrail/commit/14c474cf54499798076af5fffdb192105571585d))
+* Levelrail v1.3.2 ([14c474c](https://github.com/glincker/levelrail/commit/14c474cf54499798076af5fffdb192105571585d))
+
 ## [1.3.1](https://github.com/glincker/levelrail/compare/v1.3.0...v1.3.1) (2026-11-16)
 
 
