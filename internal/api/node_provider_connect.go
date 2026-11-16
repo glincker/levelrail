@@ -41,6 +41,7 @@ const (
 var nodeProviderMethods = map[string][]string{
 	"hetzner":          {methodAPIToken},
 	"digitalocean":     {methodAPIToken},
+	"vultr":            {methodAPIToken},
 	"aws":              {methodAccessKey, methodAssumeRole, methodAmbient},
 	"azure":            {methodServiceAccountJSON, methodWorkloadIdentityFederation},
 	"gcp":              {methodServiceAccountJSON},
@@ -53,6 +54,7 @@ var nodeProviderMethods = map[string][]string{
 var nodeProviderTestPermissions = map[string]string{
 	"hetzner":      "a Read & Write project API token (Hetzner has no finer scopes)",
 	"digitalocean": "a token with the regions read, sizes read, droplet read, droplet create and droplet delete scopes",
+	"vultr":        "a Vultr API key (keys have no scopes) with this server's address in its access control list, so the regions, plans, instances and account reads and instance create and delete are allowed",
 	"aws":          "ec2:DescribeRegions, ec2:DescribeInstanceTypes, ec2:DescribeInstances, ec2:RunInstances, ec2:TerminateInstances, ec2:CreateTags, ec2:DescribeImages and the security group and VPC actions; for assume_role the base identity needs sts:AssumeRole on the role",
 	"azure":        "Reader on the subscription plus Virtual Machine Contributor and Network Contributor on the resource group",
 	"gcp":          "compute.regions.list, compute.machineTypes.list, compute.instances.create, compute.instances.get, compute.instances.delete",

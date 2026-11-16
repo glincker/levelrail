@@ -14,6 +14,20 @@
       "createLabel": "Create Droplet",
       "tokenHelp": "Create a personal access token with read and write access. Custom scopes need the exact scopes listed in the Permissions panel."
     },
+    "vultr": {
+      "name": "Vultr",
+      "tagline": "Computação em nuvem e bare metal em várias cidades do mundo.",
+      "terms": {
+        "server": "Instância",
+        "servers": "Instâncias",
+        "location": "Região",
+        "locations": "Regiões",
+        "size": "Plano",
+        "vocab": "Instâncias, Regiões, Plano"
+      },
+      "createLabel": "Criar instância",
+      "tokenHelp": "Crie uma chave de API em Account, API e adicione o endereço deste servidor à lista de controle de acesso dela."
+    },
     "hetzner": {
       "name": "Hetzner Cloud",
       "tagline": "Fast, low cost servers in European and US locations.",

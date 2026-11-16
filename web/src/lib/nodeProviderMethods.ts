@@ -26,6 +26,7 @@ const ALL: readonly NodeProviderMethod[] = [
 const FALLBACK: Record<string, NodeProviderMethod[]> = {
   hetzner: ['api_token'],
   digitalocean: ['api_token'],
+  vultr: ['api_token'],
   aws: ['access_key', 'assume_role', 'ambient'],
   azure: ['service_account_json', 'workload_identity_federation'],
   gcp: ['service_account_json'],

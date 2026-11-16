@@ -55,7 +55,7 @@ Usage:
   levelrail-cli nodes security <id> [--rejected] [flags]                     show how a node's agent is verified: fingerprints, renewal, recent security events
   levelrail-cli nodes cert renew <id> [flags]                                ask a connected node to renew its agent certificate now
   levelrail-cli nodes cert drill <id> [flags]                                rotate its certificate end to end and report each step
-  levelrail-cli nodes providers list|set-credential [flags]                  manage cloud provider credentials (hetzner, digitalocean)
+  levelrail-cli nodes providers list|set-credential [flags]                  manage cloud provider credentials (hetzner, digitalocean, vultr)
   levelrail-cli nodes provision --provider --region --size --name [flags]    create a server at a cloud provider and enroll it as a node
   levelrail-cli nodes provisions list|show <id> [flags]                      track a cloud node provision through to enrollment
   levelrail-cli nodes ssh-provision --host --user (--key-file|--password) --name [flags]   adopt a machine you already have over SSH and enroll it as a node
@@ -140,7 +140,7 @@ Usage:
   levelrail-cli nodes providers disconnect --provider NAME [flags]                    remove the stored credential
   levelrail-cli nodes providers set-credential --provider NAME --provider-token TOKEN [flags]   store (or replace) a provider's API token without testing
 
-NAME must be "hetzner", "digitalocean", "aws", "azure", "gcp", "oracle" or "custom".
+NAME must be "hetzner", "digitalocean", "vultr", "aws", "azure", "gcp", "oracle" or "custom".
 METHOD is api_token, access_key, assume_role, ambient, service_account_json,
 workload_identity_federation or manual; omit it to infer one.
 

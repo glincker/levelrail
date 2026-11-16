@@ -1621,7 +1621,8 @@
       "custom": "Servidor físico, local o cualquier VM sin API de nube.",
       "digitalocean": "Token de acceso personal con permiso de lectura y escritura.",
       "gcp": "JSON de la clave de cuenta de servicio.",
-      "hetzner": "Token de API del proyecto con acceso de lectura y escritura."
+      "hetzner": "Token de API del proyecto con acceso de lectura y escritura.",
+      "vultr": "Clave de API con la dirección de este servidor en su lista de acceso."
     },
     "lastTested": "última prueba",
     "methodLegend": "Método de conexión",
@@ -1661,7 +1662,8 @@
       "custom": "Centro de datos propio",
       "digitalocean": "DigitalOcean",
       "gcp": "Google Cloud",
-      "hetzner": "Hetzner"
+      "hetzner": "Hetzner",
+      "vultr": "Vultr"
     },
     "neverEchoed": "No se vuelve a mostrar una vez guardado.",
     "notConnected": "No conectado",
@@ -1672,7 +1674,8 @@
       "custom": "No se guarda ninguna credencial. El nodo se conecta hacia este plano de control con un token de unión de un solo uso.",
       "digitalocean": "Un token de acceso personal con permiso de lectura y escritura, o un permiso personalizado limitado a crear, leer y eliminar droplets y ssh_key.",
       "gcp": "compute.regions.list, compute.machineTypes.list, compute.instances.create, compute.instances.get y compute.instances.delete en el proyecto.",
-      "hetzner": "Un token de API de proyecto con acceso de lectura y escritura. Hetzner no tiene permisos más finos, así que usa un proyecto dedicado."
+      "hetzner": "Un token de API de proyecto con acceso de lectura y escritura. Hetzner no tiene permisos más finos, así que usa un proyecto dedicado.",
+      "vultr": "Una clave de API de Vultr. Las claves no tienen alcances, así que usa un subusuario dedicado y añade la dirección de este servidor a la lista de control de acceso."
     },
     "permissionsTitle": "Mínimo privilegio",
     "region": "Región (opcional)",

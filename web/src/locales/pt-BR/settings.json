@@ -2436,7 +2436,8 @@
       "aws": "AWS",
       "azure": "Azure",
       "gcp": "Google Cloud",
-      "custom": "Data center personalizado"
+      "custom": "Data center personalizado",
+      "vultr": "Vultr"
     },
     "methods": {
       "api_token": {
@@ -2475,7 +2476,8 @@
       "awsRole": "Com uma role, a identidade base precisa apenas de sts:AssumeRole no ARN dessa role. Coloque as ações acima na role.",
       "azure": "Reader na assinatura, mais Virtual Machine Contributor e Network Contributor no resource group de destino.",
       "gcp": "compute.regions.list, compute.machineTypes.list, compute.instances.create, compute.instances.get e compute.instances.delete no projeto.",
-      "custom": "Nenhuma credencial é armazenada. O node se conecta a este control plane com um join token de uso único."
+      "custom": "Nenhuma credencial é armazenada. O node se conecta a este control plane com um join token de uso único.",
+      "vultr": "Uma chave de API da Vultr. As chaves não têm escopos, então use um subusuário dedicado e adicione o endereço deste servidor à lista de controle de acesso."
     },
     "permissionsTitle": "Privilégio mínimo",
     "methodLegend": "Método de conexão",
@@ -2506,7 +2508,8 @@
       "digitalocean": "Token de acesso pessoal com escopo de leitura e escrita.",
       "aws": "Chave de acesso, ou a própria identidade AWS deste control plane.",
       "azure": "JSON de service principal, ou federação de identidade de workload.",
-      "gcp": "JSON da chave de conta de serviço."
+      "gcp": "JSON da chave de conta de serviço.",
+      "vultr": "Chave de API com o endereço deste servidor na lista de acesso."
     },
     "connected": "Conectado",
     "notConnected": "Não conectado",

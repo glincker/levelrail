@@ -14,7 +14,7 @@ func runNodesProvision(prog string, args []string, stdout, stderr io.Writer, loo
 	fs, tokenFlagP, apiURLFlagP, profileFlagP, jsonOutP, outputFlagP, queryFlagP := apiFlagSet(prog, "nodes provision", "print the new provision as JSON to stdout and nothing else", stderr)
 	var provider, region, size, name, role, controlPlaneAddr string
 	var allowSSHInbound bool
-	fs.StringVar(&provider, "provider", "", "hetzner, digitalocean, aws, azure, gcp or oracle (required)")
+	fs.StringVar(&provider, "provider", "", "hetzner, digitalocean, vultr, aws, azure, gcp or oracle (required)")
 	fs.StringVar(&region, "region", "", "provider region/location id, from \"nodes providers list\"'s regions (required)")
 	fs.StringVar(&size, "size", "", "provider server size/plan id (required); for oracle Flex shapes use the id from \"nodes providers sizes\", such as VM.Standard.A1.Flex:1:6")
 	fs.StringVar(&name, "name", "", "name for the new node: lowercase letters, digits, hyphens (required)")
@@ -81,7 +81,7 @@ func nodesProvisionUsage(prog string) string {
 	return fmt.Sprintf(`Usage:
   %[1]s nodes provision --provider NAME --region ID --size ID --name NAME [flags]
 
-Creates a server at a cloud provider (Hetzner, DigitalOcean, AWS, Azure
+Creates a server at a cloud provider (Hetzner, DigitalOcean, Vultr, AWS, Azure
 or GCP) and starts it enrolling as a new node: a fresh join token is
 minted, the server boots with a cloud-init script that installs Docker
 if missing and runs the node agent, and this command returns immediately
@@ -91,7 +91,7 @@ A credential must already be stored for the chosen provider ("nodes
 providers set-credential").
 
 Flags:
-  --provider string             hetzner, digitalocean, aws, azure, gcp or oracle (required)
+  --provider string             hetzner, digitalocean, vultr, aws, azure, gcp or oracle (required)
   --region string                provider region/location id, from "nodes providers list"'s regions (required)
   --size string                  provider server size/plan id (required)
   --name string                  name for the new node: lowercase letters, digits, hyphens (required)

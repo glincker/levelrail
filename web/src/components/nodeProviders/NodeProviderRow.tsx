@@ -16,6 +16,7 @@ import { NodeProviderConnectDialog } from './NodeProviderConnectDialog'
 const NAME_KEYS = {
   hetzner: 'nodeProviders.names.hetzner',
   digitalocean: 'nodeProviders.names.digitalocean',
+  vultr: 'nodeProviders.names.vultr',
   aws: 'nodeProviders.names.aws',
   azure: 'nodeProviders.names.azure',
   gcp: 'nodeProviders.names.gcp',
@@ -26,6 +27,7 @@ const NAME_KEYS = {
 const HINT_KEYS = {
   hetzner: 'nodeProviders.hints.hetzner',
   digitalocean: 'nodeProviders.hints.digitalocean',
+  vultr: 'nodeProviders.hints.vultr',
   aws: 'nodeProviders.hints.aws',
   azure: 'nodeProviders.hints.azure',
   gcp: 'nodeProviders.hints.gcp',

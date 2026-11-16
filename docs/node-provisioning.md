@@ -1,6 +1,6 @@
 ---
 title: "Node provisioning"
-description: "Create a server at Hetzner, DigitalOcean, AWS, Azure, GCP or Oracle Cloud and enroll it as a node, with the credential each needs, status polling, cost and known gaps."
+description: "Create a server at Hetzner, DigitalOcean, Vultr, AWS, Azure, GCP or Oracle Cloud and enroll it as a node, with the credential each needs, status polling, cost and known gaps."
 "og:url": "https://docs.levelrail.com/node-provisioning"
 ---
 
@@ -51,6 +51,15 @@ A project API token with **Read & Write** access. Tokens are scoped to one proje
 <Tab title="DigitalOcean">
 
 A personal access token with **read and write** scope.
+
+</Tab>
+<Tab title="Vultr">
+
+Create the key in the Vultr customer portal under **Account, API**, then **Enable API**. Vultr keys have no scopes: a key can do everything the account can, so create it on a dedicated sub-user if you want to limit it. Add the control plane's public address to the key's **Access Control** list, or every call returns 401.
+
+Levelrail needs to read regions, plans, operating systems, instances and the account, and to create and delete instances. Instances are tagged `levelrail` and `levelrail-provision-<id>`, and are created from the newest Ubuntu LTS image.
+
+Destroy deletes by the stored instance id only, never by tag or label, and a 404 from Vultr counts as already gone, so a retried destroy is safe. Plan prices come from the plan's monthly cost in USD and feed the price cap.
 
 </Tab>
 <Tab title="AWS">
@@ -180,7 +189,7 @@ Each provider offers only the methods the control plane can use today. Pick one 
 
 | Method | Providers | What it stores | Least privilege |
 | --- | --- | --- | --- |
-| `api_token` | Hetzner, DigitalOcean | One bearer token | Hetzner: Read & Write on a dedicated project. DigitalOcean: droplet and ssh_key create, read, delete |
+| `api_token` | Hetzner, DigitalOcean, Vultr | One bearer token | Hetzner: Read & Write on a dedicated project. DigitalOcean: droplet and ssh_key create, read, delete. Vultr: an API key with the control plane address in its access control list (keys have no scopes) |
 | `access_key` | AWS | Access key id and secret | `ec2:DescribeRegions`, `DescribeInstanceTypes`, `DescribeInstances`, `DescribeImages`, `RunInstances`, `TerminateInstances`, `CreateTags` and the security group and VPC actions |
 | `assume_role` | AWS | Role ARN, plus a base key or the control plane identity | Base identity: `sts:AssumeRole` on the role only. The role carries the EC2 actions above |
 | `ambient` | AWS | Nothing | The control plane's own identity (instance profile) needs the EC2 actions |
@@ -243,7 +252,7 @@ Every provider bills by the hour for as long as the server exists. Provisioning 
 
 Azure and GCP also bill for the networking resources created next to the VM: a public IP on Azure, and an external IPv4 address on GCP. These are small but not free.
 
-The size picker shows a live monthly price for Hetzner and DigitalOcean, because both return it from their APIs. For AWS, Azure and GCP it shows "pricing varies, see provider console", since those catalogs need a separate pricing API that Levelrail does not call. A `build` role node benefits from more CPU and memory.
+The size picker shows a live monthly price for Hetzner, DigitalOcean and Vultr, because each returns it from their APIs. For AWS, Azure and GCP it shows "pricing varies, see provider console", since those catalogs need a separate pricing API that Levelrail does not call. A `build` role node benefits from more CPU and memory.
 
 ## Known limitations
 

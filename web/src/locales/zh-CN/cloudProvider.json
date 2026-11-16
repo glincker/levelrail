@@ -14,6 +14,20 @@
       "createLabel": "Create Droplet",
       "tokenHelp": "Create a personal access token with read and write access. Custom scopes need the exact scopes listed in the Permissions panel."
     },
+    "vultr": {
+      "name": "Vultr",
+      "tagline": "遍布全球多个城市的云计算与裸金属服务。",
+      "terms": {
+        "server": "实例",
+        "servers": "实例",
+        "location": "区域",
+        "locations": "区域",
+        "size": "套餐",
+        "vocab": "实例, 区域, 套餐"
+      },
+      "createLabel": "创建实例",
+      "tokenHelp": "在 Account、API 下创建 API 密钥，并把此服务器的地址加入其访问控制列表。"
+    },
     "hetzner": {
       "name": "Hetzner Cloud",
       "tagline": "Fast, low cost servers in European and US locations.",

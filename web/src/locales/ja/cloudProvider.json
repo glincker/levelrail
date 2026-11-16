@@ -14,6 +14,20 @@
       "createLabel": "Create Droplet",
       "tokenHelp": "Create a personal access token with read and write access. Custom scopes need the exact scopes listed in the Permissions panel."
     },
+    "vultr": {
+      "name": "Vultr",
+      "tagline": "世界各地の都市で使えるクラウドコンピュートとベアメタル。",
+      "terms": {
+        "server": "インスタンス",
+        "servers": "インスタンス",
+        "location": "リージョン",
+        "locations": "リージョン",
+        "size": "プラン",
+        "vocab": "インスタンス, リージョン, プラン"
+      },
+      "createLabel": "インスタンスを作成",
+      "tokenHelp": "Account の API で API キーを作成し、このサーバーのアドレスをアクセス制御リストに追加してください。"
+    },
     "hetzner": {
       "name": "Hetzner Cloud",
       "tagline": "Fast, low cost servers in European and US locations.",

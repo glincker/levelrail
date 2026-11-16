@@ -18,6 +18,7 @@ export function dnsProviderBrand(provider: string): string {
 const NODE_PROVIDER_BRAND: Record<string, string> = {
   hetzner: 'hetzner',
   digitalocean: 'digitalocean',
+  vultr: 'vultr',
   aws: 'aws',
   azure: 'azure',
   gcp: 'google-cloud',

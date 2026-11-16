@@ -292,7 +292,7 @@ var settingPages = []staticPage{
 	{"status-page", "Status page", "public status page uptime", "/settings/status-page", AbilityRoot},
 	{"deploy-policies", "Deploy policies", "deploy gate freeze approval", "/settings/deploy-policies", AbilityRoot},
 	{"observability", "Observability", "metrics logs retention", "/settings/observability", AbilityRoot},
-	{"node-providers", "Node providers", "cloud provider hetzner digitalocean provision", "/settings/node-providers", AbilityRoot},
+	{"node-providers", "Node providers", "cloud provider hetzner digitalocean vultr provision", "/settings/node-providers", AbilityRoot},
 }
 
 func settingSearchDocs(context.Context) ([]search.Doc, error) {

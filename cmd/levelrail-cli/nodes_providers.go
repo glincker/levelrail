@@ -58,7 +58,7 @@ func nodesProvidersUsage(prog string) string {
   %[1]s nodes providers disconnect --provider NAME [flags]                    remove the stored credential
   %[1]s nodes providers set-credential --provider NAME --provider-token TOKEN [flags]   store (or replace) a provider's API token without testing
 
-NAME must be "hetzner", "digitalocean", "aws", "azure", "gcp", "oracle" or "custom".
+NAME must be "hetzner", "digitalocean", "vultr", "aws", "azure", "gcp", "oracle" or "custom".
 METHOD is api_token, access_key, assume_role, ambient, service_account_json,
 workload_identity_federation or manual; omit it to infer one.
 
@@ -93,7 +93,7 @@ func nodesProvidersListUsage(prog string) string {
 	return fmt.Sprintf(`Usage:
   %[1]s nodes providers list [flags]
 
-Lists every known cloud provider (hetzner, digitalocean, azure, gcp) and
+Lists every known cloud provider (hetzner, digitalocean, vultr, azure, gcp) and
 whether a credential is currently stored for it.
 
 Flags:
@@ -140,8 +140,8 @@ func runNodesProvidersSetCredential(prog string, args []string, stdout, stderr i
 	fs.StringVar(&location, "location", "", "custom only: a location label")
 	fs.StringVar(&notes, "notes", "", "custom only: free-form notes")
 	fs.BoolVar(&verify, "verify", verifyDefault, "run a read-only connection test first and store nothing when it fails")
-	fs.StringVar(&provider, "provider", "", "hetzner, digitalocean, aws, azure, gcp, oracle or custom (required)")
-	fs.StringVar(&providerToken, "provider-token", "", "the provider's credential (an API token for hetzner/digitalocean, the AWS access key id for aws, a single-line JSON object for azure, a service account JSON key for gcp); prefer piping it on stdin or the interactive prompt instead, a flag value is visible in shell history and the process list")
+	fs.StringVar(&provider, "provider", "", "hetzner, digitalocean, vultr, aws, azure, gcp, oracle or custom (required)")
+	fs.StringVar(&providerToken, "provider-token", "", "the provider's credential (an API token for hetzner/digitalocean/vultr, the AWS access key id for aws, a single-line JSON object for azure, a service account JSON key for gcp); prefer piping it on stdin or the interactive prompt instead, a flag value is visible in shell history and the process list")
 	fs.StringVar(&secretAccessKey, "secret-access-key", "", "aws only: the secret access key matching --provider-token's access key id (required unless --use-ambient-credentials); prefer piping it on stdin or the interactive prompt instead, a flag value is visible in shell history and the process list")
 	fs.StringVar(&sessionToken, "session-token", "", "aws only: a session token, for temporary credentials (optional)")
 	fs.StringVar(&region, "region", "", "aws only: the region these credentials default to when a provision doesn't pick one explicitly (optional, default us-east-1)")
@@ -253,7 +253,7 @@ Stores (or replaces) a cloud provider's credential, encrypted the same way
 every other integration credential in this platform is. It is never
 echoed back.
 
-For hetzner and digitalocean, --provider-token alone is the provider's
+For hetzner, digitalocean and vultr, --provider-token alone is the provider's
 single bearer API token. AWS has no such single token: --provider-token
 there is the access key id, paired with --secret-access-key (or pass
 --use-ambient-credentials to use this control plane's own AWS identity
@@ -275,7 +275,7 @@ interactively: a terminal stdin gets a no-echo prompt for each one in
 turn instead.
 
 Flags:
-  --provider string             hetzner, digitalocean, aws, azure, gcp or oracle (required)
+  --provider string             hetzner, digitalocean, vultr, aws, azure, gcp or oracle (required)
   --tenancy-ocid, --user-ocid, --fingerprint, --compartment-ocid string   oracle only: the API key identity and the compartment for new servers
   --key-file string             oracle only: PEM private key path, or - for stdin; never a flag value
   --subnet-ocid string          oracle only: reuse this subnet (optional)

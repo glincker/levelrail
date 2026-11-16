@@ -5,6 +5,7 @@ import type { NodeProviderMethod } from '../../types/nodeProvision'
 const PERMISSION_KEYS = {
   hetzner: 'nodeProviders.permissions.hetzner',
   digitalocean: 'nodeProviders.permissions.digitalocean',
+  vultr: 'nodeProviders.permissions.vultr',
   aws: 'nodeProviders.permissions.aws',
   azure: 'nodeProviders.permissions.azure',
   gcp: 'nodeProviders.permissions.gcp',

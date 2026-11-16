@@ -9,6 +9,7 @@ export type CloudProviderFeature =
 export const CLOUD_PROVIDER_IDS = [
   'digitalocean',
   'hetzner',
+  'vultr',
   'aws',
   'azure',
   'gcp',
@@ -67,6 +68,17 @@ export const CLOUD_PROVIDERS: Record<
     tokenUrl: 'https://console.hetzner.cloud/',
     docsUrl:
       'https://docs.hetzner.com/cloud/api/getting-started/generating-api-token/',
+    features: BASE,
+    quickFactRegions: true,
+  },
+  vultr: {
+    id: 'vultr',
+    brand: nodeProviderBrand('vultr'),
+    glowClass: 'from-blue-500/15',
+    chipClass: 'border-blue-500/40 bg-blue-500/10',
+    consoleUrl: 'https://my.vultr.com/',
+    tokenUrl: 'https://my.vultr.com/settings/#settingsapi',
+    docsUrl: 'https://docs.vultr.com/vultr-api',
     features: BASE,
     quickFactRegions: true,
   },
