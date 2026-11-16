@@ -399,7 +399,7 @@ The formula template is `deploy/packaging/homebrew/levelrail-cli.rb.tmpl`, and `
 
 ### npm
 
-`publish-npm` publishes `levelrail-cli` plus six platform packages (`levelrail-cli-<os>-<arch>`), then two forwarding packages that claim the brand names at the same version: `levelrail` (bin `levelrail`) and `@levelrail/cli` (bin `levelrail-scoped`, so no global bin collision). Both depend on exactly `levelrail-cli` and install the client only. They publish after `levelrail-cli` using npm trusted publishing, so no npm token is involved. Stable releases take the `latest` dist-tag and prereleases use `beta`. A version already on the registry is skipped, so re-running a partly failed release finishes the rest. The job only runs when the `NPM_PUBLISH_ENABLED` repo variable is `true`.
+`publish-npm` publishes `levelrail-cli` plus six platform packages (`levelrail-cli-<os>-<arch>`), then two forwarding packages that claim the brand names at the same version: `levelrail` (bin `levelrail`) and `@levelrail/cli` (bin `levelrail-scoped`, so no global bin collision). Both depend on exactly `levelrail-cli` and install the client only. They publish after `levelrail-cli` using npm trusted publishing, so no npm token is involved. Stable releases take the `latest` dist-tag and prereleases use `beta`. A version already on the registry is skipped, so re-running a partly failed release finishes the rest. A forwarder that fails to publish (for example before its first manual publish) logs a warning and does not fail the release. The job only runs when the `NPM_PUBLISH_ENABLED` repo variable is `true`.
 
 `verify-npm` then installs `levelrail-cli` from the registry in a clean directory on Linux (amd64 and arm64), macOS and Windows runners, waits with bounded backoff for the version to appear, checks that `levelrail-cli version` prints the release version, installs `levelrail` and `@levelrail/cli` and checks `npx --no-install levelrail version` and `levelrail-scoped version`, and runs `npm audit signatures`. It is non-blocking, because the registry can lag behind a publish, and it writes the package URL to the job summary.
 
@@ -415,6 +415,32 @@ It downloads the newest release's binaries, builds the nine packages, publishes 
 After that, every release publishes with no token. If a publish fails, use "Re-run failed jobs" on the workflow run; versions already on the registry are skipped.
 
 An `NPM_TOKEN` secret, including one set at the organization level, is not used and can stay as it is for other repositories.
+
+## Extra distribution channels (off by default)
+
+Three optional channels run after the release job. None of them runs until its repository variable is `true`, and a missing secret skips the step instead of failing the release. Turn one on under Settings, Secrets and variables, Actions, Variables. `scripts/release/gen-manifests-test.sh` dry-runs the generators with fake checksums.
+
+### Docker Hub mirror
+
+Variable `DOCKERHUB_PUBLISH_ENABLED=true` makes both `merge-image-*` jobs copy the finished multi-arch index to `docker.io/<namespace>/levelrail` and `levelrail-agent` with the same tags, then cosign-sign the same digest. Secrets: `DOCKERHUB_USERNAME` and `DOCKERHUB_TOKEN` (an access token with read and write scope). Optional variable `DOCKERHUB_NAMESPACE` (default `levelrail`, a Docker Hub account dedicated to the project; the GHCR images stay under `ghcr.io/glincker`).
+
+The Docker Hub overview texts live in `scripts/release/dockerhub/` (not under `docs/`, which the docs site publishes). Every release step that calls a `scripts/release` script skips with a notice when the script is missing on the dispatched ref; the tag step falls back to inline logic.
+
+One-time owner steps: create the `levelrail` Docker Hub account (its profile names GLINR STUDIOS as the company) and the two public repositories (or let the first push create them), create the access token, set the two secrets, then set the variable. The GHCR images must be public so the copy can read them.
+
+### winget and Scoop
+
+Variable `WINDOWS_PACKAGES_ENABLED=true` runs `publish-windows-packages` for stable tags. `scripts/release/gen-windows-manifests.sh` renders a portable-installer winget manifest set and `levelrail-cli.json` for Scoop from the two Windows `.exe` assets. The job attaches them to the release as `winget-*.yaml` and `levelrail-cli.scoop.json`, so no credential is needed for that part.
+
+Optional secrets: `WINGET_TOKEN` (a classic personal access token with `public_repo`) lets the pinned winget-releaser action open the winget-pkgs PR; `SCOOP_BUCKET_DEPLOY_KEY` (a write deploy key on `glincker/scoop-bucket`) pushes `bucket/levelrail-cli.json`. Each step skips when its secret is missing.
+
+One-time owner steps: submit the first `Glincker.LevelrailCli` manifest to winget-pkgs by hand (the action only updates an existing package) using the attached files, create the `glincker/scoop-bucket` repo, add the deploy key, set the secrets, then set the variable. Users run `winget install Glincker.LevelrailCli` or `scoop bucket add glincker https://github.com/glincker/scoop-bucket` then `scoop install levelrail-cli`.
+
+### AUR and Nix
+
+Variable `AUR_NIX_ENABLED=true` runs `publish-aur-nix`. `scripts/release/gen-aur-nix.sh` renders the `levelrail-cli-bin` PKGBUILD and a `flake.nix` that fetches the release binaries, and the job attaches them as `levelrail-cli-bin.PKGBUILD` and `levelrail-cli.flake.nix`. It needs no secrets and publishes nothing by itself.
+
+One-time owner steps: register the `levelrail-cli-bin` package on the AUR with your own SSH key and push the attached PKGBUILD (run `makepkg --printsrcinfo > .SRCINFO` first), and copy the flake into a `glincker/nix` repo or the main repo if you want `nix run github:glincker/nix`. Automating the AUR push needs an AUR SSH key secret and is left out on purpose.
 
 ## Caching
 

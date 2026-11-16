@@ -448,6 +448,109 @@ jobs:
           git push
           rm -f ~/.ssh/tap_key
 
+  publish-windows-packages:
+    name: Publish winget and Scoop manifests
+    needs: release
+    # Off until WINDOWS_PACKAGES_ENABLED is set; prereleases never go to winget.
+    if: (github.event_name == 'workflow_dispatch' || github.ref_type == 'tag') && vars.WINDOWS_PACKAGES_ENABLED == 'true' && !contains(github.event.inputs.tag || github.ref_name, '-')
+    runs-on: ubuntu-latest
+    timeout-minutes: 10
+    permissions:
+      contents: write
+    env:
+      HAS_WINGET_TOKEN: ${{ secrets.WINGET_TOKEN != '' }}
+      HAS_SCOOP_KEY: ${{ secrets.SCOOP_BUCKET_DEPLOY_KEY != '' }}
+    steps:
+      - name: Checkout
+        uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7
+        with:
+          ref: ${{ env.RELEASE_TAG }}
+
+      - name: Download release checksums
+        env:
+          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+        run: gh release download "${{ env.RELEASE_TAG }}" --repo "${{ github.repository }}" --pattern checksums.txt --dir dist
+
+      - name: Render manifests
+        run: scripts/release/gen-windows-manifests.sh "${{ env.RELEASE_TAG }}" dist/checksums.txt rendered
+
+      # Needs no credentials, so a maintainer can submit by hand when the
+      # token or key below is missing.
+      - name: Attach manifests to the release
+        env:
+          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+        run: |
+          mkdir -p assets
+          cp rendered/scoop/levelrail-cli.json assets/levelrail-cli.scoop.json
+          for f in rendered/winget/manifests/g/Glincker/LevelrailCli/*/*.yaml; do
+            cp "$f" "assets/winget-$(basename "$f")"
+          done
+          gh release upload "${{ env.RELEASE_TAG }}" assets/* --repo "${{ github.repository }}" --clobber
+
+      # The package must already exist in winget-pkgs; the first submission is by hand.
+      - name: Open the winget PR
+        if: env.HAS_WINGET_TOKEN == 'true'
+        uses: vedantmgoyal9/winget-releaser@b7370d4d152efdce803a26cc6ca9eee58cb2ad54 # v2
+        with:
+          identifier: Glincker.LevelrailCli
+          version: ${{ env.RELEASE_TAG }}
+          release-tag: ${{ env.RELEASE_TAG }}
+          installers-regex: 'levelrail-cli-windows-.*\.exe$'
+          token: ${{ secrets.WINGET_TOKEN }}
+
+      - name: Update Scoop bucket
+        if: env.HAS_SCOOP_KEY == 'true'
+        env:
+          BUCKET_DEPLOY_KEY: ${{ secrets.SCOOP_BUCKET_DEPLOY_KEY }}
+        run: |
+          set -euo pipefail
+          install -d -m 700 ~/.ssh
+          printf '%s\n' "$BUCKET_DEPLOY_KEY" > ~/.ssh/bucket_key
+          chmod 600 ~/.ssh/bucket_key
+          export GIT_SSH_COMMAND="ssh -i $HOME/.ssh/bucket_key -o IdentitiesOnly=yes -o StrictHostKeyChecking=accept-new"
+          git clone --depth 1 git@github.com:glincker/scoop-bucket.git bucket
+          mkdir -p bucket/bucket
+          cp rendered/scoop/levelrail-cli.json bucket/bucket/levelrail-cli.json
+          cd bucket
+          git config user.name "levelrail release"
+          git config user.email "support@levelrail.com"
+          git add bucket/levelrail-cli.json
+          git diff --cached --quiet || git commit -m "levelrail-cli ${{ env.RELEASE_TAG }}"
+          git push
+          rm -f ~/.ssh/bucket_key
+
+  publish-aur-nix:
+    name: Attach AUR and Nix files
+    needs: release
+    # Off until AUR_NIX_ENABLED is set. Output is release assets only.
+    if: (github.event_name == 'workflow_dispatch' || github.ref_type == 'tag') && vars.AUR_NIX_ENABLED == 'true'
+    runs-on: ubuntu-latest
+    timeout-minutes: 10
+    permissions:
+      contents: write
+    steps:
+      - name: Checkout
+        uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7
+        with:
+          ref: ${{ env.RELEASE_TAG }}
+
+      - name: Download release checksums
+        env:
+          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+        run: gh release download "${{ env.RELEASE_TAG }}" --repo "${{ github.repository }}" --pattern checksums.txt --dir dist
+
+      - name: Render PKGBUILD and flake
+        run: scripts/release/gen-aur-nix.sh "${{ env.RELEASE_TAG }}" dist/checksums.txt rendered
+
+      - name: Attach to the release
+        env:
+          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+        run: |
+          mkdir -p assets
+          cp rendered/aur/PKGBUILD assets/levelrail-cli-bin.PKGBUILD
+          cp rendered/nix/flake.nix assets/levelrail-cli.flake.nix
+          gh release upload "${{ env.RELEASE_TAG }}" assets/* --repo "${{ github.repository }}" --clobber
+
   publish-npm:
     name: Publish CLI to npm
     needs: release
@@ -506,7 +609,13 @@ jobs:
               echo "Skipping ${name}@${version} (already published)"
               continue
             fi
-            (cd "$dir" && npm publish --provenance --access public --tag "$dist_tag")
+            # Brand-name forwarders may not exist on npm yet (first publish needs a
+            # manual step), so their failure warns instead of failing the release.
+            case "$name" in
+              levelrail-cli|levelrail-cli-*) (cd "$dir" && npm publish --provenance --access public --tag "$dist_tag") ;;
+              *) (cd "$dir" && npm publish --provenance --access public --tag "$dist_tag") \
+                   || echo "::warning::${name}@${version} was not published; see docs/ci.md" ;;
+            esac
           done
 
   # Dogfood: install what publish-npm just shipped, from the registry, on
@@ -589,15 +698,22 @@ jobs:
       tags: ${{ steps.resolve.outputs.tags }}
       primary_tag: ${{ steps.resolve.outputs.primary_tag }}
     steps:
+      - name: Checkout
+        uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7
+        with:
+          sparse-checkout: scripts/release
+
       # Shared by both merge-image-* jobs: dispatching against main gets
-      # :edge, a prerelease tag gets :beta, a stable tag gets :vX.Y.Z,
-      # :vX.Y, and :latest.
+      # :edge, a prerelease tag gets :vX.Y.Z-pre and :beta, a stable tag gets
+      # vX.Y.Z, X.Y.Z, vX.Y, X.Y, vX, X and :latest.
       - name: Resolve
         id: resolve
         env:
           IS_MAIN_PUSH: ${{ github.event_name == 'push' && github.ref == 'refs/heads/main' }}
         run: |
-          if [ "$IS_MAIN_PUSH" = "true" ]; then
+          if [ -f scripts/release/image-tags.sh ]; then
+            tags="$(scripts/release/image-tags.sh "$RELEASE_TAG" "$IS_MAIN_PUSH")"
+          elif [ "$IS_MAIN_PUSH" = "true" ]; then
             tags="edge"
           elif [[ "$RELEASE_TAG" == *-* ]]; then
             tags="$RELEASE_TAG beta"
@@ -656,12 +772,30 @@ jobs:
           grep -q '^ENV NODE_OPTIONS=' deploy/docker/Dockerfile.levelrail || \
             sed -i 's|^RUN npm run build|ENV NODE_OPTIONS=--max-old-space-size=8192\nRUN npm run build|' deploy/docker/Dockerfile.levelrail
 
+      # Labels come from a script so the same text is testable offline.
+      - name: Image labels
+        id: labels
+        run: |
+          if [ ! -f scripts/release/image-labels.sh ]; then
+            echo "::notice::scripts/release missing on this ref, skipping"
+            echo 'labels=' >> "$GITHUB_OUTPUT"
+            exit 0
+          fi
+          {
+            echo 'labels<<EOF_LABELS'
+            scripts/release/image-labels.sh "levelrail" \
+              "Levelrail control plane: a self-hosted deployment platform with git push deploys, automatic HTTPS, logs, metrics and rollback." \
+              "$IMAGE_VERSION" "${{ github.sha }}"
+            echo 'EOF_LABELS'
+          } >> "$GITHUB_OUTPUT"
+
       - name: Build and push by digest
         id: build
         uses: docker/build-push-action@c3c9e263c25d99ce0380d002d59b67737d91b0dc # v7
         with:
           context: .
           file: deploy/docker/Dockerfile.levelrail
+          labels: ${{ steps.labels.outputs.labels }}
           platforms: ${{ matrix.platform }}
           outputs: type=image,name=ghcr.io/glincker/levelrail,push-by-digest=true,name-canonical=true,push=true
           build-args: VERSION=${{ env.IMAGE_VERSION }}
@@ -689,11 +823,22 @@ jobs:
     needs: [build-image-levelrail, image-channel]
     if: needs.build-image-levelrail.result == 'success'
     timeout-minutes: 10
+    outputs:
+      digest: ${{ steps.report.outputs.digest }}
+      mirrored: ${{ steps.report.outputs.mirrored }}
     permissions:
       contents: read
       packages: write
       id-token: write
+    env:
+      HAS_DOCKERHUB: ${{ secrets.DOCKERHUB_TOKEN != '' && secrets.DOCKERHUB_USERNAME != '' }}
     steps:
+      - name: Checkout release scripts
+        uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7
+        with:
+          sparse-checkout: |
+            scripts/release
+
       - name: Download digests
         uses: actions/download-artifact@9000827ccba6bdab643e8b6fd33ac0654aef8333 # v8.0.2
         with:
@@ -737,6 +882,54 @@ jobs:
           digest="sha256:$(docker buildx imagetools inspect ghcr.io/glincker/levelrail:${{ needs.image-channel.outputs.primary_tag }} --raw | sha256sum | cut -d' ' -f1)"
           cosign sign --yes "ghcr.io/glincker/levelrail@${digest}"
 
+      # Off until the owner sets DOCKERHUB_PUBLISH_ENABLED and both secrets;
+      # a missing secret skips the mirror and never fails the release.
+      - name: Log in to Docker Hub
+        if: vars.DOCKERHUB_PUBLISH_ENABLED == 'true' && env.HAS_DOCKERHUB == 'true'
+        uses: docker/login-action@8aa5831fb8d48d8f76594c7ddde61ae58019f550 # v4
+        with:
+          username: ${{ secrets.DOCKERHUB_USERNAME }}
+          password: ${{ secrets.DOCKERHUB_TOKEN }}
+
+      # Copies the already pushed multi-arch index, so Docker Hub gets the
+      # same digest and the cosign signature below covers both registries.
+      - name: Mirror image to Docker Hub
+        id: mirror
+        if: vars.DOCKERHUB_PUBLISH_ENABLED == 'true' && env.HAS_DOCKERHUB == 'true'
+        run: |
+          src="ghcr.io/glincker/levelrail:${{ needs.image-channel.outputs.primary_tag }}"
+          tag_args=()
+          for t in ${{ needs.image-channel.outputs.tags }}; do
+            tag_args+=(-t "docker.io/${{ vars.DOCKERHUB_NAMESPACE || 'levelrail' }}/levelrail:$t")
+          done
+          docker buildx imagetools create "${tag_args[@]}" "$src"
+          digest="sha256:$(docker buildx imagetools inspect "$src" --raw | sha256sum | cut -d' ' -f1)"
+          cosign sign --yes "docker.io/${{ vars.DOCKERHUB_NAMESPACE || 'levelrail' }}/levelrail@${digest}"
+
+      # Best effort: the script warns and exits 0 on any Docker Hub API error.
+      - name: Update Docker Hub description
+        if: steps.mirror.outcome == 'success' && needs.image-channel.outputs.primary_tag != 'edge'
+        continue-on-error: true
+        env:
+          DOCKERHUB_USERNAME: ${{ secrets.DOCKERHUB_USERNAME }}
+          DOCKERHUB_TOKEN: ${{ secrets.DOCKERHUB_TOKEN }}
+          DOCKERHUB_NAMESPACE: ${{ vars.DOCKERHUB_NAMESPACE || 'levelrail' }}
+        run: |
+          if [ ! -f scripts/release/dockerhub-describe.sh ]; then
+            echo "::notice::scripts/release missing on this ref, skipping"
+            exit 0
+          fi
+          scripts/release/dockerhub-describe.sh levelrail "$RELEASE_TAG"
+
+      # Feeds the release notes block; mirrored is true only when the mirror step ran.
+      - name: Report digest
+        id: report
+        if: always()
+        run: |
+          digest="sha256:$(docker buildx imagetools inspect ghcr.io/glincker/levelrail:${{ needs.image-channel.outputs.primary_tag }} --raw | sha256sum | cut -d' ' -f1)" || digest=""
+          echo "digest=$digest" >> "$GITHUB_OUTPUT"
+          echo "mirrored=${{ steps.mirror.outcome == 'success' }}" >> "$GITHUB_OUTPUT"
+
   build-image-levelrail-agent:
     name: Build levelrail-agent image (${{ matrix.platform }})
     if: github.event_name == 'workflow_dispatch' || github.ref_type == 'tag'
@@ -772,12 +965,30 @@ jobs:
           username: ${{ github.actor }}
           password: ${{ secrets.GITHUB_TOKEN }}
 
+      # Labels come from a script so the same text is testable offline.
+      - name: Image labels
+        id: labels
+        run: |
+          if [ ! -f scripts/release/image-labels.sh ]; then
+            echo "::notice::scripts/release missing on this ref, skipping"
+            echo 'labels=' >> "$GITHUB_OUTPUT"
+            exit 0
+          fi
+          {
+            echo 'labels<<EOF_LABELS'
+            scripts/release/image-labels.sh "levelrail-agent" \
+              "Levelrail node agent: runs deployments on an additional server managed by a Levelrail control plane." \
+              "$IMAGE_VERSION" "${{ github.sha }}"
+            echo 'EOF_LABELS'
+          } >> "$GITHUB_OUTPUT"
+
       - name: Build and push by digest
         id: build
         uses: docker/build-push-action@c3c9e263c25d99ce0380d002d59b67737d91b0dc # v7
         with:
           context: .
           file: deploy/docker/Dockerfile.levelrail-agent
+          labels: ${{ steps.labels.outputs.labels }}
           platforms: ${{ matrix.platform }}
           outputs: type=image,name=ghcr.io/glincker/levelrail-agent,push-by-digest=true,name-canonical=true,push=true
           build-args: VERSION=${{ env.IMAGE_VERSION }}
@@ -805,11 +1016,22 @@ jobs:
     needs: [build-image-levelrail-agent, image-channel]
     if: needs.build-image-levelrail-agent.result == 'success'
     timeout-minutes: 10
+    outputs:
+      digest: ${{ steps.report.outputs.digest }}
+      mirrored: ${{ steps.report.outputs.mirrored }}
     permissions:
       contents: read
       packages: write
       id-token: write
+    env:
+      HAS_DOCKERHUB: ${{ secrets.DOCKERHUB_TOKEN != '' && secrets.DOCKERHUB_USERNAME != '' }}
     steps:
+      - name: Checkout release scripts
+        uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7
+        with:
+          sparse-checkout: |
+            scripts/release
+
       - name: Download digests
         uses: actions/download-artifact@9000827ccba6bdab643e8b6fd33ac0654aef8333 # v8.0.2
         with:
@@ -849,11 +1071,59 @@ jobs:
           digest="sha256:$(docker buildx imagetools inspect ghcr.io/glincker/levelrail-agent:${{ needs.image-channel.outputs.primary_tag }} --raw | sha256sum | cut -d' ' -f1)"
           cosign sign --yes "ghcr.io/glincker/levelrail-agent@${digest}"
 
+      # Off until the owner sets DOCKERHUB_PUBLISH_ENABLED and both secrets;
+      # a missing secret skips the mirror and never fails the release.
+      - name: Log in to Docker Hub
+        if: vars.DOCKERHUB_PUBLISH_ENABLED == 'true' && env.HAS_DOCKERHUB == 'true'
+        uses: docker/login-action@8aa5831fb8d48d8f76594c7ddde61ae58019f550 # v4
+        with:
+          username: ${{ secrets.DOCKERHUB_USERNAME }}
+          password: ${{ secrets.DOCKERHUB_TOKEN }}
+
+      # Copies the already pushed multi-arch index, so Docker Hub gets the
+      # same digest and the cosign signature below covers both registries.
+      - name: Mirror image to Docker Hub
+        id: mirror
+        if: vars.DOCKERHUB_PUBLISH_ENABLED == 'true' && env.HAS_DOCKERHUB == 'true'
+        run: |
+          src="ghcr.io/glincker/levelrail-agent:${{ needs.image-channel.outputs.primary_tag }}"
+          tag_args=()
+          for t in ${{ needs.image-channel.outputs.tags }}; do
+            tag_args+=(-t "docker.io/${{ vars.DOCKERHUB_NAMESPACE || 'levelrail' }}/levelrail-agent:$t")
+          done
+          docker buildx imagetools create "${tag_args[@]}" "$src"
+          digest="sha256:$(docker buildx imagetools inspect "$src" --raw | sha256sum | cut -d' ' -f1)"
+          cosign sign --yes "docker.io/${{ vars.DOCKERHUB_NAMESPACE || 'levelrail' }}/levelrail-agent@${digest}"
+
+      # Best effort: the script warns and exits 0 on any Docker Hub API error.
+      - name: Update Docker Hub description
+        if: steps.mirror.outcome == 'success' && needs.image-channel.outputs.primary_tag != 'edge'
+        continue-on-error: true
+        env:
+          DOCKERHUB_USERNAME: ${{ secrets.DOCKERHUB_USERNAME }}
+          DOCKERHUB_TOKEN: ${{ secrets.DOCKERHUB_TOKEN }}
+          DOCKERHUB_NAMESPACE: ${{ vars.DOCKERHUB_NAMESPACE || 'levelrail' }}
+        run: |
+          if [ ! -f scripts/release/dockerhub-describe.sh ]; then
+            echo "::notice::scripts/release missing on this ref, skipping"
+            exit 0
+          fi
+          scripts/release/dockerhub-describe.sh levelrail-agent "$RELEASE_TAG"
+
+      # Feeds the release notes block; mirrored is true only when the mirror step ran.
+      - name: Report digest
+        id: report
+        if: always()
+        run: |
+          digest="sha256:$(docker buildx imagetools inspect ghcr.io/glincker/levelrail-agent:${{ needs.image-channel.outputs.primary_tag }} --raw | sha256sum | cut -d' ' -f1)" || digest=""
+          echo "digest=$digest" >> "$GITHUB_OUTPUT"
+          echo "mirrored=${{ steps.mirror.outcome == 'success' }}" >> "$GITHUB_OUTPUT"
+
   release-notes:
     name: Write release notes
     if: github.event_name == 'workflow_dispatch' || github.ref_type == 'tag'
     runs-on: ubuntu-latest
-    needs: [release, merge-image-levelrail, merge-image-levelrail-agent]
+    needs: [release, image-channel, merge-image-levelrail, merge-image-levelrail-agent]
     timeout-minutes: 10
     permissions:
       contents: write
@@ -876,3 +1146,22 @@ jobs:
         env:
           GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
         run: scripts/release-notes.sh "$RELEASE_TAG"
+
+      # Never fails the release: the script only warns when it cannot edit notes.
+      - name: Add image pull commands to the release
+        continue-on-error: true
+        env:
+          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+          IMAGE_PRIMARY_TAG: ${{ needs.image-channel.outputs.primary_tag }}
+          IMAGE_TAGS: ${{ needs.image-channel.outputs.tags }}
+          CP_DIGEST: ${{ needs.merge-image-levelrail.outputs.digest }}
+          AGENT_DIGEST: ${{ needs.merge-image-levelrail-agent.outputs.digest }}
+          CP_MIRRORED: ${{ needs.merge-image-levelrail.outputs.mirrored }}
+          AGENT_MIRRORED: ${{ needs.merge-image-levelrail-agent.outputs.mirrored }}
+          DOCKERHUB_NAMESPACE: ${{ vars.DOCKERHUB_NAMESPACE || 'levelrail' }}
+        run: |
+          if [ ! -f scripts/release/image-notes.sh ]; then
+            echo "::notice::scripts/release missing on this ref, skipping"
+            exit 0
+          fi
+          scripts/release/image-notes.sh "$RELEASE_TAG"

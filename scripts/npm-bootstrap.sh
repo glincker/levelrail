@@ -63,11 +63,12 @@ for dir in "${packages[@]}"; do
 		echo "skip     ${name}@${version} (already on npm)"
 		continue
 	fi
+	# Provenance needs a CI identity; the manual first publish has none.
 	echo "publish  ${name}@${version}"
 	if [ "$dry" -eq 1 ]; then
 		(cd "$work/out/$dir" && npm publish --dry-run --access public --tag "$dist_tag" >/dev/null)
 	else
-		(cd "$work/out/$dir" && npm publish --access public --tag "$dist_tag")
+		(cd "$work/out/$dir" && npm publish --provenance=false --access public --tag "$dist_tag")
 	fi
 done
 
