@@ -59,17 +59,19 @@ func (v *githubOIDCVerifier) VerifyStack(ctx context.Context, rawToken, audience
 		return CIStackClaims{}, fmt.Errorf("api: verify github oidc token: %w", err)
 	}
 	var c struct {
-		Repository  string `json:"repository"`
-		Ref         string `json:"ref"`
-		Environment string `json:"environment"`
-		SHA         string `json:"sha"`
-		RunID       string `json:"run_id"`
+		Repository   string `json:"repository"`
+		RepositoryID string `json:"repository_id"`
+		OwnerID      string `json:"repository_owner_id"`
+		Ref          string `json:"ref"`
+		Environment  string `json:"environment"`
+		SHA          string `json:"sha"`
+		RunID        string `json:"run_id"`
 	}
 	if err := tok.Claims(&c); err != nil {
 		return CIStackClaims{}, fmt.Errorf("api: read github oidc claims: %w", err)
 	}
 	return CIStackClaims{
-		CIClaims: CIClaims{Repository: c.Repository, Ref: c.Ref, Environment: c.Environment, Subject: tok.Subject},
+		CIClaims: CIClaims{Repository: c.Repository, RepositoryID: c.RepositoryID, RepositoryOwnerID: c.OwnerID, Ref: c.Ref, Environment: c.Environment, Subject: tok.Subject},
 		SHA:      c.SHA, RunID: c.RunID,
 	}, nil
 }
@@ -194,37 +196,42 @@ func globMatch(pattern, value string) bool {
 }
 
 type stackTrustRequest struct {
-	Provider       string   `json:"provider,omitempty"`
-	Issuer         string   `json:"issuer,omitempty"`
-	OrgID          string   `json:"org_id,omitempty"`
-	Repository     string   `json:"repository"`
-	RefPattern     string   `json:"ref_pattern"`
-	Environment    string   `json:"environment"`
-	SubjectPattern string   `json:"subject_pattern"`
-	Verbs          []string `json:"verbs"`
+	Provider   string `json:"provider,omitempty"`
+	Issuer     string `json:"issuer,omitempty"`
+	OrgID      string `json:"org_id,omitempty"`
+	Repository string `json:"repository"`
+	// RepositoryID and RepositoryOwnerID (GitHub only) bind the trust to immutable IDs, which survive renames and transfers.
+	RepositoryID      string   `json:"repository_id,omitempty"`
+	RepositoryOwnerID string   `json:"repository_owner_id,omitempty"`
+	RefPattern        string   `json:"ref_pattern"`
+	Environment       string   `json:"environment"`
+	SubjectPattern    string   `json:"subject_pattern"`
+	Verbs             []string `json:"verbs"`
 	// ProtectedRefOnly is a pointer so an omitted value takes the provider default (true for GitLab).
 	ProtectedRefOnly *bool `json:"protected_ref_only,omitempty"`
 }
 
 type stackTrustResource struct {
-	ID               string    `json:"id"`
-	Provider         string    `json:"provider"`
-	Issuer           string    `json:"issuer,omitempty"`
-	ProtectedRefOnly bool      `json:"protected_ref_only,omitempty"`
-	Warning          string    `json:"warning,omitempty"`
-	Stack            string    `json:"stack"`
-	Repository       string    `json:"repository"`
-	RefPattern       string    `json:"ref_pattern"`
-	Environment      string    `json:"environment"`
-	SubjectPattern   string    `json:"subject_pattern"`
-	Verbs            []string  `json:"verbs"`
-	CreatedBy        string    `json:"created_by"`
-	CreatedAt        time.Time `json:"created_at"`
+	ID                string    `json:"id"`
+	Provider          string    `json:"provider"`
+	Issuer            string    `json:"issuer,omitempty"`
+	ProtectedRefOnly  bool      `json:"protected_ref_only,omitempty"`
+	Warning           string    `json:"warning,omitempty"`
+	Stack             string    `json:"stack"`
+	Repository        string    `json:"repository"`
+	RepositoryID      string    `json:"repository_id,omitempty"`
+	RepositoryOwnerID string    `json:"repository_owner_id,omitempty"`
+	RefPattern        string    `json:"ref_pattern"`
+	Environment       string    `json:"environment"`
+	SubjectPattern    string    `json:"subject_pattern"`
+	Verbs             []string  `json:"verbs"`
+	CreatedBy         string    `json:"created_by"`
+	CreatedAt         time.Time `json:"created_at"`
 }
 
 func toStackTrustResource(stack string, t store.CIStackTrust) stackTrustResource {
 	return stackTrustResource{
-		ID: t.ID, Stack: stack, Provider: ciProviderName(t.Provider), Issuer: t.Issuer, ProtectedRefOnly: t.ProtectedRefOnly, Repository: t.Repository, RefPattern: t.RefPattern, Environment: t.Environment,
+		ID: t.ID, Stack: stack, Provider: ciProviderName(t.Provider), Issuer: t.Issuer, ProtectedRefOnly: t.ProtectedRefOnly, Repository: t.Repository, RepositoryID: t.RepositoryID, RepositoryOwnerID: t.RepositoryOwnerID, RefPattern: t.RefPattern, Environment: t.Environment,
 		SubjectPattern: t.SubjectPattern, Verbs: t.Verbs, CreatedBy: t.CreatedBy, CreatedAt: t.CreatedAt,
 	}
 }
@@ -233,12 +240,15 @@ func toStackTrustResource(stack string, t store.CIStackTrust) stackTrustResource
 // stricter bar than plan: an exact non-PR ref and a named environment, so a fork or PR run can never apply.
 func validateStackTrust(req *stackTrustRequest) string {
 	req.Repository = strings.TrimSpace(req.Repository)
+	req.RepositoryID = strings.TrimSpace(req.RepositoryID)
+	req.RepositoryOwnerID = strings.TrimSpace(req.RepositoryOwnerID)
 	req.RefPattern = strings.TrimSpace(req.RefPattern)
 	req.Environment = strings.TrimSpace(req.Environment)
 	req.SubjectPattern = strings.TrimSpace(req.SubjectPattern)
 	shared := ciTrustRequest{
 		Provider: req.Provider, Issuer: req.Issuer, OrgID: req.OrgID, Repository: req.Repository,
 		Environment: req.Environment, ProtectedRefOnly: req.ProtectedRefOnly,
+		RepositoryID: req.RepositoryID, RepositoryOwnerID: req.RepositoryOwnerID,
 	}
 	if msg := validateStackProvider(&shared); msg != "" {
 		return msg
@@ -344,6 +354,7 @@ func (rt *Router) handleCreateStackTrust(w http.ResponseWriter, r *http.Request)
 		ID: id, StackID: stack.ID, Repository: req.Repository, RefPattern: req.RefPattern, Environment: req.Environment,
 		SubjectPattern: req.SubjectPattern, Verbs: req.Verbs, CreatedBy: actor, CreatedAt: time.Now().UTC(),
 		Provider: req.Provider, Issuer: req.Issuer, ProtectedRefOnly: req.ProtectedRefOnly != nil && *req.ProtectedRefOnly,
+		RepositoryID: req.RepositoryID, RepositoryOwnerID: req.RepositoryOwnerID,
 	}
 	if err := ts.SaveCIStackTrust(r.Context(), t); err != nil {
 		if errors.Is(err, store.ErrCIStackTrustExists) {
@@ -357,10 +368,14 @@ func (rt *Router) handleCreateStackTrust(w http.ResponseWriter, r *http.Request)
 		"stack": stack.Name, "trust_id": t.ID, "repository": t.Repository, "ref_pattern": t.RefPattern,
 		"environment": t.Environment, "subject_pattern": t.SubjectPattern, "verbs": t.Verbs,
 		"provider": ciProviderName(t.Provider), "issuer": t.Issuer, "protected_ref_only": t.ProtectedRefOnly,
+		"repository_id": t.RepositoryID, "repository_owner_id": t.RepositoryOwnerID,
 	})
 	res := toStackTrustResource(stack.Name, t)
 	if t.Provider == ciProviderGitLab && !t.ProtectedRefOnly {
 		res.Warning = ciGitLabUnprotectedWarning
+	}
+	if ciProviderName(t.Provider) == ciProviderGitHub && (t.RepositoryID == "" || t.RepositoryOwnerID == "") {
+		res.Warning = ciGitHubNoIDsWarning
 	}
 	writeJSON(w, http.StatusCreated, res)
 }
@@ -407,7 +422,7 @@ func (rt *Router) handleDeleteStackTrust(w http.ResponseWriter, r *http.Request)
 // stackTrustMatches reports whether every claim constraint of t holds. An empty environment
 // constraint is open, but only plan trusts can be saved that way.
 func stackTrustMatches(t store.CIStackTrust, c CIClaims) bool {
-	if !ciIdentityAllowed(t.Provider, t.Issuer, t.Repository, t.Environment, t.ProtectedRefOnly, c) || !globMatch(t.RefPattern, c.Ref) {
+	if !ciIdentityAllowed(t.Provider, t.Issuer, t.Repository, t.Environment, t.ProtectedRefOnly, c) || !ciRepoIDsMatch(t.RepositoryID, t.RepositoryOwnerID, c) || !globMatch(t.RefPattern, c.Ref) {
 		return false
 	}
 	return t.SubjectPattern == "" || globMatch(t.SubjectPattern, c.Subject)
