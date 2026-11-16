@@ -134,7 +134,7 @@ The code defines 18 kinds. Maturity is from [Feature status](/feature-status).
 | Kind | Label in the dashboard | Maturity |
 | --- | --- | --- |
 | `generic` | Generic webhook | stable |
-| `email` | Email (SMTP) | stable |
+| `email` | Email | stable |
 | `slack` | Slack | beta |
 | `discord` | Discord | beta |
 | `telegram` | Telegram | beta |
