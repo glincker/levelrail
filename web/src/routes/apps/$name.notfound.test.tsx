@@ -13,6 +13,13 @@ import { setStoredUsername } from '../../lib/authStore'
 import { AllI18n } from '../../test/allI18n'
 import { createTestQueryClient } from '@/test/testQueryClient'
 
+// The settings sidebar pulls this in lazily and the chunk can resolve after the
+// environment is torn down; a stub keeps the test free of that race.
+vi.mock('../../components/settings/updates/SidebarUpgradeIndicator', () => ({
+  SidebarUpgradeIcon: ({ icon: Icon }: { icon: () => null }) => <Icon />,
+  SidebarUpgradeLabel: () => null,
+}))
+
 const BRAND = {
   Name: 'Brand',
   ShortName: 'brand',
