@@ -28,7 +28,7 @@ func init() {
 	boolDef(KeyK8sClustersEnabled, "APP_K8S_CLUSTERS_ENABLED", "Kubernetes clusters",
 		"Lets root connect external Kubernetes clusters and deploy apps to them. Off by default.", RiskNormal)
 	boolDef(KeyK8sInClusterEnabled, "APP_K8S_IN_CLUSTER_ENABLED", "Kubernetes in-cluster mode",
-		"Allows connecting the cluster Levelrail itself runs in. Off by default.", RiskNormal)
+		"Allows connecting the cluster Levelrail itself runs in. Off by default.", RiskWeakensSecurity)
 	boolDef(KeyK8sAllowPrivateAPI, "APP_K8S_ALLOW_PRIVATE_API", "Kubernetes private API servers",
 		"Allows cluster API servers on private or loopback addresses (local Kind or k3d, private networks). Metadata and link-local addresses stay refused.", RiskWeakensSecurity)
 	Register(Definition{
