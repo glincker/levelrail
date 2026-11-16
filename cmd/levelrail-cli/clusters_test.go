@@ -118,3 +118,32 @@ func TestClustersRBACClusterReadFlagAddsSeparateReadOnlyRole(t *testing.T) {
 		t.Errorf("cluster role must be read only:\n%s", out)
 	}
 }
+
+func TestRun_ClustersLogsAndRemove(t *testing.T) {
+	var gotPath, gotQuery, gotMethod string
+	srv := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		gotMethod, gotPath, gotQuery = r.Method, r.URL.Path, r.URL.RawQuery
+		if strings.HasSuffix(r.URL.Path, "/logs") {
+			_, _ = w.Write([]byte("hello\n"))
+			return
+		}
+		_, _ = w.Write([]byte(`{"app":"web","namespace":"ns","deleted":["Deployment/web"],"absent":[]}`))
+	}))
+	defer srv.Close()
+	stdout, _ := runCLIExpectOK(t, []string{"clusters", "logs", "lab", "web", "--tail", "5", "--pod", "web-1", "--api-url", srv.URL})
+	if gotPath != "/api/v1/clusters/lab/deployments/web/logs" || !strings.Contains(gotQuery, "tail=5") || !strings.Contains(gotQuery, "pod=web-1") || !strings.Contains(stdout, "hello") {
+		t.Errorf("logs: path=%s query=%s out=%q", gotPath, gotQuery, stdout)
+	}
+	gotMethod = ""
+	stdout, _ = runCLIExpectOK(t, []string{"clusters", "remove", "lab", "web", "--api-url", srv.URL})
+	if gotMethod != "" || !strings.Contains(stdout, "preview only") {
+		t.Errorf("remove without --yes must not call the API: %q %q", gotMethod, stdout)
+	}
+	stdout, _ = runCLIExpectOK(t, []string{"clusters", "remove", "lab", "web", "--yes", "--api-url", srv.URL})
+	if gotMethod != http.MethodDelete || gotPath != "/api/v1/clusters/lab/deployments/web" || !strings.Contains(stdout, "deleted Deployment/web") {
+		t.Errorf("remove: %s %s %q", gotMethod, gotPath, stdout)
+	}
+	if got := run("t", []string{"clusters", "remove", "lab", "--yes", "--api-url", srv.URL}, io.Discard, io.Discard, envMap()); got == exitOK {
+		t.Error("remove without an app should fail")
+	}
+}

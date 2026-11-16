@@ -32,6 +32,10 @@ func runClusters(prog string, args []string, stdout, stderr io.Writer, lookupEnv
 		return runClustersDeploy(prog, rest, stdout, stderr, lookupEnv)
 	case "deployments", "status":
 		return runClustersDeployVerb(prog, verb, rest, stdout, stderr, lookupEnv)
+	case "logs":
+		return runClustersLogs(prog, rest, stdout, stderr, lookupEnv)
+	case "remove":
+		return runClustersRemove(prog, rest, stdout, stderr, lookupEnv)
 	case "connect":
 		return runClustersConnect(prog, rest, stdout, stderr, lookupEnv)
 	default:
@@ -53,6 +57,8 @@ func clustersUsage(prog string) string {
   %[1]s clusters deploy <name> --app A --image I --port N [--env-file F] [--replicas N] [--host H] [--namespace NS] [--allow-root]
   %[1]s clusters deployments <name> [flags]   apps deployed to a cluster
   %[1]s clusters status <name> <app> [flags]  rollout state, conditions and ingress address
+  %[1]s clusters logs <name> <app> [--tail N] [--pod P] [flags]  tail the logs of a deployed app
+  %[1]s clusters remove <name> <app> [--yes]  delete the app's Deployment, Service and Ingress (the namespace stays)
   %[1]s clusters rbac --namespace NS [--cluster-read] [flags]  print a namespace-scoped ServiceAccount, Role and RoleBinding (--cluster-read adds a read-only ClusterRole for nodes and namespaces)
 
 Credentials come from a file, or "-" for stdin, never from an argument.
