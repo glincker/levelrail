@@ -4,17 +4,22 @@ import (
 	"context"
 	"errors"
 	"net/url"
+	"os"
+	"strconv"
 	"strings"
 )
 
-// oracleListLimit is OCI's page maximum. A full page cannot be proven
-// complete without paging, so it is treated as unreadable and refused.
+// oracleListLimit is OCI's page size; longer lists are followed through the
+// opc-next-page header up to oracleMaxPages, then refused.
 const oracleListLimit = 1000
 
 // Oracle usage scopes: which compartments the counts cover.
 const (
 	OracleScopeTenancy     = "tenancy"
 	OracleScopeCompartment = "compartment"
+	// OracleScopeAccessible is a partial tenancy view: only the compartments
+	// the key may read, so hidden ones are not counted.
+	OracleScopeAccessible = "accessible compartments"
 )
 
 // OracleUsage is what existing non-terminated instances already hold, whether
@@ -28,9 +33,11 @@ type OracleUsage struct {
 }
 
 type ociInstanceRow struct {
-	Shape       string `json:"shape"`
-	State       string `json:"lifecycleState"`
-	ShapeConfig struct {
+	ID           string            `json:"id"`
+	FreeformTags map[string]string `json:"freeformTags"`
+	Shape        string            `json:"shape"`
+	State        string            `json:"lifecycleState"`
+	ShapeConfig  struct {
 		Ocpus       float64 `json:"ocpus"`
 		MemoryInGBs float64 `json:"memoryInGBs"`
 	} `json:"shapeConfig"`
@@ -42,15 +49,46 @@ func IsOracleA1Shape(shape string) bool { return strings.HasPrefix(shape, "VM.St
 // IsOracleE2MicroShape reports the AMD micro shape name.
 func IsOracleE2MicroShape(shape string) bool { return shape == "VM.Standard.E2.1.Micro" }
 
+func oracleMaxPages() int {
+	if n, err := strconv.Atoi(os.Getenv("APP_PROVISION_ORACLE_MAX_PAGES")); err == nil && n > 0 {
+		return n
+	}
+	return 20
+}
+
+// listAll follows opc-next-page so a short page with a next-page header is
+// never taken as the whole list.
+func listAll[T any](ctx context.Context, c *httpClient, path string) ([]T, error) {
+	var all []T
+	page := ""
+	for i := 0; i < oracleMaxPages(); i++ {
+		p := path
+		if page != "" {
+			p += "&page=" + url.QueryEscape(page)
+		}
+		var rows []T
+		hdr, err := c.doHeaders(ctx, "GET", p, nil, nil, &rows)
+		if err != nil {
+			return nil, err
+		}
+		all = append(all, rows...)
+		page = hdr.Get("opc-next-page")
+		if page == "" {
+			return all, nil
+		}
+	}
+	return nil, errors.New("provision: oracle list is too long to count")
+}
+
 // OracleUsage counts A1 and micro instances across the tenancy when the key
-// may read every compartment, else in the configured compartment only.
+// may read every compartment. The compartment-only fallback needs the
+// AllowCompartmentScope setting and only follows a 403 or 404.
 func (o *Oracle) OracleUsage(ctx context.Context, region string) (OracleUsage, error) {
 	region = o.regionOr(region)
-	comps, err := o.readableCompartments(ctx, region)
-	scope := OracleScopeTenancy
+	comps, scope, err := o.readableCompartments(ctx, region)
 	if err != nil {
 		var pe *ProviderError
-		if !errors.As(err, &pe) || pe.Status < 400 || pe.Status >= 500 {
+		if !o.settings.AllowCompartmentScope || !errors.As(err, &pe) || (pe.Status != 403 && pe.Status != 404) {
 			return OracleUsage{}, err
 		}
 		comps, scope = []string{o.cred.CompartmentOCID}, OracleScopeCompartment
@@ -77,39 +115,56 @@ func (o *Oracle) OracleUsage(ctx context.Context, region string) (OracleUsage, e
 	return out, nil
 }
 
-// readableCompartments lists the tenancy root plus every accessible active
-// compartment. A 4xx means the key cannot read the tenancy tree.
-func (o *Oracle) readableCompartments(ctx context.Context, region string) ([]string, error) {
+func (o *Oracle) listCompartments(ctx context.Context, region, level string) ([]string, error) {
 	q := url.Values{}
 	q.Set("compartmentId", o.cred.TenancyOCID)
 	q.Set("compartmentIdInSubtree", "true")
-	q.Set("accessLevel", "ACCESSIBLE")
+	q.Set("accessLevel", level)
 	q.Set("lifecycleState", "ACTIVE")
-	q.Set("limit", "1000")
-	var comps []struct {
+	q.Set("limit", strconv.Itoa(oracleListLimit))
+	comps, err := listAll[struct {
 		ID string `json:"id"`
-	}
-	if err := o.identity(region).do(ctx, "GET", "/compartments?"+q.Encode(), nil, &comps); err != nil {
+	}](ctx, o.identity(region), "/compartments?"+q.Encode())
+	if err != nil {
 		return nil, err
 	}
-	if len(comps) >= oracleListLimit {
-		return nil, errors.New("provision: oracle compartment list is too long to count")
-	}
-	out := []string{o.cred.TenancyOCID}
+	ids := make([]string, 0, len(comps))
 	for _, c := range comps {
-		out = append(out, c.ID)
+		ids = append(ids, c.ID)
 	}
-	return out, nil
+	return ids, nil
+}
+
+// readableCompartments returns the tenancy root plus every accessible active
+// compartment. Scope is tenancy only when ACCESSIBLE matches ANY; otherwise
+// hidden compartments exist and the result is labelled accessible.
+func (o *Oracle) readableCompartments(ctx context.Context, region string) ([]string, string, error) {
+	accessible, err := o.listCompartments(ctx, region, "ACCESSIBLE")
+	if err != nil {
+		return nil, "", err
+	}
+	all, err := o.listCompartments(ctx, region, "ANY")
+	if err != nil {
+		return nil, "", err
+	}
+	have := map[string]bool{}
+	for _, id := range accessible {
+		have[id] = true
+	}
+	scope := OracleScopeTenancy
+	for _, id := range all {
+		if !have[id] {
+			scope = OracleScopeAccessible
+			break
+		}
+	}
+	if scope == OracleScopeAccessible && !o.settings.AllowCompartmentScope {
+		return nil, "", errors.New("provision: oracle key cannot read every compartment, turn on provision.oracle.allow_compartment_scope to count only the readable ones")
+	}
+	return append([]string{o.cred.TenancyOCID}, accessible...), scope, nil
 }
 
 func (o *Oracle) listInstances(ctx context.Context, region, compartment string) ([]ociInstanceRow, error) {
-	var rows []ociInstanceRow
-	path := "/instances?limit=1000&compartmentId=" + url.QueryEscape(compartment)
-	if err := o.iaas(region).do(ctx, "GET", path, nil, &rows); err != nil {
-		return nil, err
-	}
-	if len(rows) >= oracleListLimit {
-		return nil, errors.New("provision: oracle instance list is too long to count")
-	}
-	return rows, nil
+	path := "/instances?limit=" + strconv.Itoa(oracleListLimit) + "&compartmentId=" + url.QueryEscape(compartment)
+	return listAll[ociInstanceRow](ctx, o.iaas(region), path)
 }

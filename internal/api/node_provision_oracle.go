@@ -34,6 +34,9 @@ func (rt *Router) oracleSettings(ctx context.Context) provision.OracleSettings {
 		ImageOS:             rt.provisionSetting(ctx, runtimesettings.KeyProvisionOracleImageOS, "APP_PROVISION_ORACLE_IMAGE_OS"),
 		ImageOSVersion:      rt.provisionSetting(ctx, runtimesettings.KeyProvisionOracleImageOSVersion, "APP_PROVISION_ORACLE_IMAGE_OS_VERSION"),
 		LabelKey:            strings.ToLower(rt.brand.ShortName) + "-provision-id",
+
+		AllowCompartmentScope: rt.oracleBool(ctx, runtimesettings.KeyProvisionOracleCompartmentScope, "APP_PROVISION_ORACLE_ALLOW_COMPARTMENT_SCOPE"),
+		MaxBootVolumeGB:       rt.oracleLimit(ctx, runtimesettings.KeyProvisionOracleMaxBootVolumeGB, "APP_PROVISION_ORACLE_MAX_BOOT_VOLUME_GB"),
 	}
 }
 
@@ -63,29 +66,42 @@ type oracleUsageSource interface {
 
 // oracleSizeShape splits a size id such as "VM.Standard.A1.Flex:1:6" into its
 // shape and requested OCPU and memory; fixed shapes request zero.
-func oracleSizeShape(size string) (shape string, ocpu, memGB float64) {
+func oracleSizeShape(size string) (shape string, ocpu, memGB float64, err error) {
 	parts := strings.Split(size, ":")
 	shape = parts[0]
-	if len(parts) == 3 {
-		o, _ := strconv.Atoi(parts[1])
-		m, _ := strconv.Atoi(parts[2])
+	switch len(parts) {
+	case 1:
+		if strings.HasSuffix(shape, ".Flex") {
+			return shape, 0, 0, errors.New("flexible shapes need explicit ocpus and memory")
+		}
+	case 3:
+		o, e1 := strconv.Atoi(parts[1])
+		m, e2 := strconv.Atoi(parts[2])
+		if e1 != nil || e2 != nil || o <= 0 || m <= 0 {
+			return shape, 0, 0, errors.New("size id is not valid")
+		}
 		ocpu, memGB = float64(o), float64(m)
+	default:
+		return shape, 0, 0, errors.New("size id is not valid")
 	}
-	return shape, ocpu, memGB
+	return shape, ocpu, memGB, nil
 }
 
 // checkOracleAllowance refuses an Oracle create that is not switched on or
 // that would push existing plus requested A1 or micro use past the operator's
-// limits. Usage counts instances Levelrail did not create. The caller holds
-// nodeProvisionGuardMu.
-func (rt *Router) checkOracleAllowance(ctx context.Context, p NodeProvisioner, provider, region, size string) (string, error) {
+// limits. Usage counts instances Levelrail did not create. The caller takes
+// the live usage first (nil makes this fetch it) and holds nodeProvisionGuardMu.
+func (rt *Router) checkOracleAllowance(ctx context.Context, p NodeProvisioner, provider, region, size string, usage *provision.OracleUsage) (string, error) {
 	if provider != "oracle" {
 		return "", nil
 	}
 	if !rt.oracleBool(ctx, runtimesettings.KeyProvisionOracleEnabled, "APP_PROVISION_ORACLE_ENABLED") {
 		return "Oracle provisioning is off, turn on provision.oracle.enabled first", nil
 	}
-	shape, wantOCPU, wantMem := oracleSizeShape(size)
+	shape, wantOCPU, wantMem, serr := oracleSizeShape(size)
+	if serr != nil {
+		return "the Oracle size is not valid: " + serr.Error(), nil
+	}
 	a1, micro := provision.IsOracleA1Shape(shape), provision.IsOracleE2MicroShape(shape)
 	if !a1 && !micro {
 		if rt.oracleBool(ctx, runtimesettings.KeyProvisionOracleAllowPaidShapes, "APP_PROVISION_ORACLE_ALLOW_PAID_SHAPES") {
@@ -93,18 +109,21 @@ func (rt *Router) checkOracleAllowance(ctx context.Context, p NodeProvisioner, p
 		}
 		return "this Oracle shape is not covered by the allowance limits and may bill, turn on provision.oracle.allow_paid_shapes to use it", nil
 	}
-	src, ok := p.(oracleUsageSource)
-	if !ok {
-		return "the Oracle allowance cannot be checked for this provisioner", nil
+	if reason := rt.checkOracleHomeRegion(ctx, p, region); reason != "" {
+		return reason, nil
 	}
-	usage, err := src.OracleUsage(ctx, region)
-	if err != nil {
-		return fmt.Sprintf("the Oracle allowance could not be checked (%s), so the create is refused", providerErrorText(err)), nil
+	if usage == nil {
+		var reason string
+		if usage, reason = rt.oracleExistingUsage(ctx, p, region); reason != "" {
+			return reason, nil
+		}
 	}
 	pending, err := rt.oraclePendingUse(ctx)
 	if err != nil {
 		return "", err
 	}
+	u := *usage
+	usage = &u
 	usage.A1OCPU += pending.A1OCPU
 	usage.A1MemoryGB += pending.A1MemoryGB
 	usage.E2Micro += pending.E2Micro
@@ -138,7 +157,10 @@ func (rt *Router) oraclePendingUse(ctx context.Context) (provision.OracleUsage, 
 		if r.Provider != "oracle" || r.ProviderServerID != "" || !provisionCountsAgainstCap(r) {
 			continue
 		}
-		shape, oc, mem := oracleSizeShape(r.Size)
+		shape, oc, mem, serr := oracleSizeShape(r.Size)
+		if serr != nil {
+			continue
+		}
 		switch {
 		case provision.IsOracleA1Shape(shape):
 			out.A1OCPU += oc
@@ -207,4 +229,64 @@ func (rt *Router) newOracleProvisioner(token string) (NodeProvisioner, error) {
 		return provision.NewOracleWithEndpoints(cred, settings, rt.oracleTestBase, rt.oracleTestBase)
 	}
 	return provision.NewOracle(cred, settings)
+}
+
+// oracleExistingUsage counts what OCI already holds. It makes network calls,
+// so callers run it before taking nodeProvisionGuardMu.
+func (rt *Router) oracleExistingUsage(ctx context.Context, p NodeProvisioner, region string) (*provision.OracleUsage, string) {
+	src, ok := p.(oracleUsageSource)
+	if !ok {
+		return nil, "the Oracle allowance cannot be checked for this provisioner"
+	}
+	usage, err := src.OracleUsage(ctx, region)
+	if err != nil {
+		return nil, fmt.Sprintf("the Oracle allowance could not be checked (%s), so the create is refused", providerErrorText(err))
+	}
+	return &usage, ""
+}
+
+// oracleHomeSource is implemented by the Oracle driver only.
+type oracleHomeSource interface {
+	HomeRegion(ctx context.Context) (string, error)
+	EffectiveRegion(region string) string
+}
+
+// checkOracleHomeRegion refuses a free-shape create outside the home region,
+// where the allowance applies, because usage is only counted in one region.
+func (rt *Router) checkOracleHomeRegion(ctx context.Context, p NodeProvisioner, region string) string {
+	src, ok := p.(oracleHomeSource)
+	if !ok {
+		return "the Oracle home region cannot be checked for this provisioner"
+	}
+	home, err := src.HomeRegion(ctx)
+	if err != nil {
+		return fmt.Sprintf("the Oracle home region could not be checked (%s), so the create is refused", providerErrorText(err))
+	}
+	if src.EffectiveRegion(region) != home {
+		return "the Oracle free allowance applies in the home region only (" + home + "), pick that region or turn on provision.oracle.allow_paid_shapes for another shape"
+	}
+	return ""
+}
+
+// oracleDisabledMessage gates the Oracle catalog and connect calls behind the
+// enabled setting; destroy and refresh never call it.
+func (rt *Router) oracleDisabledMessage(ctx context.Context, provider string) string {
+	if provider == "oracle" && !rt.oracleBool(ctx, runtimesettings.KeyProvisionOracleEnabled, "APP_PROVISION_ORACLE_ENABLED") {
+		return "Oracle provisioning is off, turn on provision.oracle.enabled first"
+	}
+	return ""
+}
+
+// prefetchOracleUsage counts existing instances outside the guard lock; nil
+// means not applicable or unreadable, and the check then reads it itself.
+func (rt *Router) prefetchOracleUsage(ctx context.Context, p NodeProvisioner, provider, region, size string) *provision.OracleUsage {
+	if provider != "oracle" || rt.oracleDisabledMessage(ctx, provider) != "" {
+		return nil
+	}
+	shape, _, _, err := oracleSizeShape(size)
+	if err != nil || (!provision.IsOracleA1Shape(shape) && !provision.IsOracleE2MicroShape(shape)) {
+		return nil
+	}
+	usage, _ := rt.oracleExistingUsage(ctx, p, region)
+	return usage
 }

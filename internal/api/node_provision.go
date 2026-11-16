@@ -172,6 +172,10 @@ type nodeProviderRegionResource struct {
 // provider's own API, cached for nodeProvisionCatalogTTL.
 func (rt *Router) handleListNodeProviderRegions(w http.ResponseWriter, r *http.Request) {
 	provider := r.PathValue("provider")
+	if msg := rt.oracleDisabledMessage(r.Context(), provider); msg != "" {
+		writeError(w, http.StatusConflict, msg)
+		return
+	}
 	p, ok, status, msg := rt.resolveNodeProvisioner(r.Context(), provider)
 	if !ok {
 		writeError(w, status, msg)
@@ -231,6 +235,10 @@ type nodeProviderSizeResource struct {
 func (rt *Router) handleListNodeProviderSizes(w http.ResponseWriter, r *http.Request) {
 	provider := r.PathValue("provider")
 	region := r.URL.Query().Get("region")
+	if msg := rt.oracleDisabledMessage(r.Context(), provider); msg != "" {
+		writeError(w, http.StatusConflict, msg)
+		return
+	}
 	p, ok, status, msg := rt.resolveNodeProvisioner(r.Context(), provider)
 	if !ok {
 		writeError(w, status, msg)
@@ -456,8 +464,10 @@ func (rt *Router) handleCreateNodeProvision(w http.ResponseWriter, r *http.Reque
 		rt.internalError(w, "api: node provision: generate id failed", err)
 		return
 	}
+	// Live OCI counts are taken before the lock; only pending rows are rechecked under it.
+	oracleUsage := rt.prefetchOracleUsage(r.Context(), provisioner, req.Provider, req.Region, req.Size)
 	nodeProvisionGuardMu.Lock()
-	reason, err := rt.checkOracleAllowance(r.Context(), provisioner, req.Provider, req.Region, req.Size)
+	reason, err := rt.checkOracleAllowance(r.Context(), provisioner, req.Provider, req.Region, req.Size, oracleUsage)
 	if err == nil && reason == "" {
 		reason, err = rt.checkProvisionServerCap(r.Context())
 	}
@@ -495,12 +505,15 @@ func (rt *Router) handleCreateNodeProvision(w http.ResponseWriter, r *http.Reque
 	defer cancel()
 	fromCreating := func(p store.NodeProvision) bool { return p.Status == store.NodeProvisionStatusCreating }
 	serverID, ipAddr, err := provisioner.CreateServer(cctx, provision.CreateOpts{
-		Region: req.Region, Size: req.Size, Name: req.Name, UserData: userData,
+		Region: req.Region, Size: req.Size, Name: req.Name, UserData: userData, ProvisionID: id,
 		AllowSSHInbound: req.AllowSSHInbound,
 	})
 	if err != nil {
 		rt.logger.Error("api: node provision: create server failed", slog.String("provision_id", id), slog.Int("provider_status", providerErrorStatus(err)))
 		failure := "could not create the server: " + providerErrorText(err)
+		if serverID == "" {
+			serverID, failure = rt.findTaggedServer(cctx, provisioner, req.Region, id, failure)
+		}
 		if serverID != "" {
 			failure = rt.deleteOrphanedServer(cctx, provisioner, id, serverID, failure)
 		}
@@ -813,4 +826,24 @@ func (rt *Router) retryLeakedDelete(ctx context.Context, p store.NodeProvision) 
 		return
 	}
 	_, _ = rt.transitionNodeProvision(ctx, p.ID, provisionServerLeaked, store.NodeProvisionStatusFailed, "", p.IPAddress, "", p.FailureReason+provisionServerDeletedNote)
+}
+
+// oracleTagLookup is implemented by the Oracle driver only.
+type oracleTagLookup interface {
+	FindServerByTag(ctx context.Context, region, tag string) (string, error)
+}
+
+// findTaggedServer looks for an instance a failed create left behind, found by
+// the provision id tag, so it can be deleted instead of billing unseen.
+func (rt *Router) findTaggedServer(ctx context.Context, p NodeProvisioner, region, provisionID, failure string) (string, string) {
+	l, ok := p.(oracleTagLookup)
+	if !ok {
+		return "", failure
+	}
+	id, err := l.FindServerByTag(ctx, region, provisionID)
+	if err != nil {
+		rt.logger.Error("api: node provision: orphan lookup failed", slog.String("provision_id", provisionID), slog.Int("provider_status", providerErrorStatus(err)))
+		return "", failure + "; could not confirm no server was left, check the provider console for a server tagged " + provisionID
+	}
+	return id, failure
 }

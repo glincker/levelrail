@@ -11,21 +11,23 @@ import (
 // limits default to 0 so every capped create is refused until the operator
 // sets numbers checked against their own account.
 const (
-	KeyProvisionOracleEnabled         = "provision.oracle.enabled"
-	KeyProvisionOracleAllowUnknown    = "provision.oracle.allow_unknown_price"
-	KeyProvisionOracleMaxA1OCPU       = "provision.oracle.max_a1_ocpu"
-	KeyProvisionOracleMaxA1MemoryGB   = "provision.oracle.max_a1_memory_gb"
-	KeyProvisionOracleMaxE2Micro      = "provision.oracle.max_e2_micro"
-	KeyProvisionOracleAllowPaidShapes = "provision.oracle.allow_paid_shapes"
-	KeyProvisionOracleFlexPresets     = "provision.oracle.flex_presets"
-	KeyProvisionOracleBootVolumeGB    = "provision.oracle.boot_volume_gb"
-	KeyProvisionOracleAvailDomains    = "provision.oracle.availability_domains"
-	KeyProvisionOracleImageOS         = "provision.oracle.image_os"
-	KeyProvisionOracleImageOSVersion  = "provision.oracle.image_os_version"
-	KeyProvisionOracleVCNCIDR         = "provision.oracle.vcn_cidr"
-	provisionOracleAllowanceCeil      = 1000
-	provisionOracleBootVolumeMinGB    = 47
-	provisionOracleBootVolumeMaxGB    = 32768
+	KeyProvisionOracleEnabled          = "provision.oracle.enabled"
+	KeyProvisionOracleAllowUnknown     = "provision.oracle.allow_unknown_price"
+	KeyProvisionOracleMaxA1OCPU        = "provision.oracle.max_a1_ocpu"
+	KeyProvisionOracleMaxA1MemoryGB    = "provision.oracle.max_a1_memory_gb"
+	KeyProvisionOracleMaxE2Micro       = "provision.oracle.max_e2_micro"
+	KeyProvisionOracleAllowPaidShapes  = "provision.oracle.allow_paid_shapes"
+	KeyProvisionOracleFlexPresets      = "provision.oracle.flex_presets"
+	KeyProvisionOracleBootVolumeGB     = "provision.oracle.boot_volume_gb"
+	KeyProvisionOracleAvailDomains     = "provision.oracle.availability_domains"
+	KeyProvisionOracleImageOS          = "provision.oracle.image_os"
+	KeyProvisionOracleImageOSVersion   = "provision.oracle.image_os_version"
+	KeyProvisionOracleVCNCIDR          = "provision.oracle.vcn_cidr"
+	KeyProvisionOracleMaxBootVolumeGB  = "provision.oracle.max_boot_volume_gb"
+	KeyProvisionOracleCompartmentScope = "provision.oracle.allow_compartment_scope"
+	provisionOracleAllowanceCeil       = 1000
+	provisionOracleBootVolumeMinGB     = 47
+	provisionOracleBootVolumeMaxGB     = 32768
 )
 
 func flexPresetsCheck(v string) error {
@@ -104,6 +106,17 @@ func init() {
 		Title:       "Oracle cloud servers: boot volume (GB)",
 		Description: "Boot volume size for new Oracle servers, from 47 to 32768.",
 	}, provisionOracleBootVolumeMinGB, provisionOracleBootVolumeMaxGB)
+	registerLimit(Definition{
+		Key: KeyProvisionOracleMaxBootVolumeGB, Category: cat, Default: "200", Env: "APP_PROVISION_ORACLE_MAX_BOOT_VOLUME_GB", Apply: ApplyLive,
+		Title:       "Oracle cloud servers: largest boot volume (GB)",
+		Description: "Upper bound for the boot volume setting. A create is refused when the boot volume is larger, so storage stays inside the limit you chose.",
+	}, provisionOracleBootVolumeMinGB, provisionOracleBootVolumeMaxGB)
+	Register(Definition{
+		Key: KeyProvisionOracleCompartmentScope, Category: cat, Kind: KindBool, Default: "false", Env: "APP_PROVISION_ORACLE_ALLOW_COMPARTMENT_SCOPE", Apply: ApplyLive,
+		Risk:        RiskWeakensSecurity,
+		Title:       "Oracle cloud servers: count one compartment only",
+		Description: "When the key cannot read every compartment, count existing instances in the readable or configured compartment only. Instances elsewhere in the tenancy are then not counted against the limits.",
+	})
 	Register(Definition{
 		Key: KeyProvisionOracleAvailDomains, Category: cat, Kind: KindString, Default: "", Env: "APP_PROVISION_ORACLE_AVAILABILITY_DOMAINS", Apply: ApplyLive,
 		CheckValue:  nonEmptyLineFree,

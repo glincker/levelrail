@@ -53,7 +53,7 @@ func fakeOCIServer(t *testing.T, pub *rsa.PublicKey, fp string, launches *atomic
 		p := r.URL.Path
 		switch {
 		case strings.HasSuffix(p, "/regionSubscriptions"):
-			_, _ = w.Write([]byte(`[{"regionName":"us-phoenix-1","status":"READY"}]`))
+			_, _ = w.Write([]byte(`[{"regionName":"us-phoenix-1","status":"READY","isHomeRegion":true}]`))
 		case strings.HasSuffix(p, "/availabilityDomains"):
 			_, _ = w.Write([]byte(`[{"name":"x:PHX-AD-1"}]`))
 		case strings.HasSuffix(p, "/shapes"):
@@ -97,6 +97,10 @@ func TestOracleConnectAndCreateEndToEnd(t *testing.T) {
 		WithNodeProviderSecrets(secrets), WithAgentCAFingerprint("test-ca-fingerprint"))
 	rt.oracleTestBase = srv.URL
 	cookie := loginTestSession(t, rt, db)
+	if rec := provReq(rt, cookie, t, http.MethodGet, "/api/v1/node-providers/oracle/regions", ""); rec.Code != http.StatusConflict {
+		t.Fatalf("catalog while off = %d, want 409", rec.Code)
+	}
+	setSetting(t, rt, runtimesettings.KeyProvisionOracleEnabled, `true`)
 
 	connect := func(fingerprint string) *httptest.ResponseRecorder {
 		body, _ := json.Marshal(map[string]any{
@@ -125,11 +129,13 @@ func TestOracleConnectAndCreateEndToEnd(t *testing.T) {
 		return provReq(rt, cookie, t, http.MethodPost, "/api/v1/nodes/provision",
 			`{"provider":"oracle","region":"us-phoenix-1","size":"VM.Standard.A1.Flex:1:6","name":"`+name+`","control_plane_addr":"cp.example.com:9443"}`)
 	}
+	setSetting(t, rt, runtimesettings.KeyProvisionOracleEnabled, `false`)
 	if rec := create("ora-1"); rec.Code != http.StatusConflict || launches.Load() != 0 {
 		t.Fatalf("default off create = %d launches %d, want 409 and 0", rec.Code, launches.Load())
 	}
 	setSetting(t, rt, runtimesettings.KeyProvisionOracleEnabled, `true`)
 	setSetting(t, rt, runtimesettings.KeyProvisionOracleAllowUnknown, `true`)
+	setSetting(t, rt, runtimesettings.KeyProvisionOracleCompartmentScope, `true`)
 	setSetting(t, rt, runtimesettings.KeyProvisionOracleMaxA1OCPU, `1`)
 	setSetting(t, rt, runtimesettings.KeyProvisionOracleMaxA1MemoryGB, `6`)
 	if rec := create("ora-1"); rec.Code != http.StatusConflict || launches.Load() != 0 {

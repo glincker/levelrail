@@ -380,6 +380,10 @@ type oracleUsageFake struct {
 	usage provision.OracleUsage
 }
 
+func (f *oracleUsageFake) HomeRegion(context.Context) (string, error) { return "us-phoenix-1", nil }
+
+func (f *oracleUsageFake) EffectiveRegion(r string) string { return r }
+
 func (f *oracleUsageFake) OracleUsage(context.Context, string) (provision.OracleUsage, error) {
 	return f.usage, nil
 }
@@ -389,7 +393,7 @@ func TestOracleAllowanceGuard(t *testing.T) {
 	p := &oracleUsageFake{fakeNodeProvisioner: &fakeNodeProvisioner{}, usage: provision.OracleUsage{A1OCPU: 2, A1MemoryGB: 12, Scope: "tenancy"}}
 	rt, _, _ := guardFixture(t, p.fakeNodeProvisioner)
 	check := func() string {
-		reason, err := rt.checkOracleAllowance(ctx, p, "oracle", "us-phoenix-1", "VM.Standard.A1.Flex:1:6")
+		reason, err := rt.checkOracleAllowance(ctx, p, "oracle", "us-phoenix-1", "VM.Standard.A1.Flex:1:6", nil)
 		if err != nil {
 			t.Fatal(err)
 		}
@@ -417,5 +421,14 @@ func TestOracleAllowanceGuard(t *testing.T) {
 	}
 	if p.lastCreateOpts.Name != "" {
 		t.Fatal("guard must not launch anything")
+	}
+	if r, _ := rt.checkOracleAllowance(ctx, p, "oracle", "eu-frankfurt-1", "VM.Standard.A1.Flex:1:6", nil); !strings.Contains(r, "home region") {
+		t.Fatalf("free shape outside the home region must refuse, got %q", r)
+	}
+	if r, _ := rt.checkOracleAllowance(ctx, p, "oracle", "us-phoenix-1", "VM.Standard.A1.Flex", nil); !strings.Contains(r, "not valid") {
+		t.Fatalf("bare flex size must refuse, got %q", r)
+	}
+	if rt.oracleDisabledMessage(ctx, "oracle") != "" {
+		t.Fatal("enabled oracle must not be gated")
 	}
 }

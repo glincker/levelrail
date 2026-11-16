@@ -42,6 +42,11 @@ type fakeOCI struct {
 	delStatus int
 	delQuery  string
 	last      map[string]any
+	tokens    []string
+	dropPosts int
+	hidden    bool
+	nextPage  string
+	listJSON  string
 	srv       *httptest.Server
 }
 
@@ -58,14 +63,25 @@ func newFakeOCI(t *testing.T, pub *rsa.PublicKey) *fakeOCI {
 		p := r.URL.Path
 		switch {
 		case strings.HasSuffix(p, "/regionSubscriptions"):
-			_, _ = w.Write([]byte(`[{"regionName":"us-phoenix-1","status":"READY"},{"regionName":"us-ashburn-1","status":"IN_PROGRESS"}]`))
+			_, _ = w.Write([]byte(`[{"regionName":"us-phoenix-1","status":"READY","isHomeRegion":true},{"regionName":"us-ashburn-1","status":"IN_PROGRESS"}]`))
 		case strings.HasSuffix(p, "/availabilityDomains"):
 			_, _ = w.Write([]byte(`[{"name":"x:PHX-AD-1"},{"name":"x:PHX-AD-2"}]`))
 		case strings.HasSuffix(p, "/shapes"):
 			_, _ = w.Write([]byte(`[{"shape":"VM.Standard.E2.1.Micro","ocpus":1,"memoryInGBs":1},{"shape":"VM.Standard.A1.Flex","ocpuOptions":{"min":1,"max":80},"memoryOptions":{"minInGBs":1,"maxInGBs":512}}]`))
 		case strings.HasSuffix(p, "/compartments"):
+			if r.URL.Query().Get("accessLevel") == "ANY" && f.hidden {
+				_, _ = w.Write([]byte(`[{"id":"` + tComp + `"},{"id":"ocid1.compartment.oc1..hidden0000"}]`))
+				return
+			}
 			_, _ = w.Write([]byte(`[{"id":"` + tComp + `"}]`))
 		case p == "/instances" && r.Method == http.MethodGet:
+			if f.nextPage != "" && r.URL.Query().Get("page") == "" {
+				w.Header().Set("opc-next-page", f.nextPage)
+			}
+			if f.listJSON != "" {
+				_, _ = w.Write([]byte(f.listJSON))
+				return
+			}
 			if r.URL.Query().Get("compartmentId") == tComp {
 				_, _ = w.Write([]byte(`[{"shape":"VM.Standard.A1.Flex","lifecycleState":"RUNNING","shapeConfig":{"ocpus":1,"memoryInGBs":6}},{"shape":"VM.Standard.A1.Flex","lifecycleState":"TERMINATED","shapeConfig":{"ocpus":4,"memoryInGBs":24}},{"shape":"VM.Standard.E2.1.Micro","lifecycleState":"STOPPED"}]`))
 				return
@@ -78,6 +94,15 @@ func newFakeOCI(t *testing.T, pub *rsa.PublicKey) *fakeOCI {
 			var d map[string]any
 			_ = json.Unmarshal(body, &d)
 			f.last = d
+			f.tokens = append(f.tokens, r.Header.Get("opc-retry-token"))
+			if f.dropPosts > 0 {
+				f.dropPosts--
+				if hj, ok := w.(http.Hijacker); ok {
+					c, _, _ := hj.Hijack()
+					_ = c.Close()
+					return
+				}
+			}
 			ad, _ := d["availabilityDomain"].(string)
 			f.launchAD = append(f.launchAD, ad)
 			if f.capacity[ad] {
@@ -298,5 +323,87 @@ func TestOracleUsageCountsTenancyWide(t *testing.T) {
 	}
 	if u.Scope != OracleScopeTenancy || u.A1OCPU != 2 || u.A1MemoryGB != 12 || u.E2Micro != 1 {
 		t.Fatalf("usage = %+v", u)
+	}
+}
+
+func TestOracleDeleteUsesInstanceRegion(t *testing.T) {
+	o, f := newTestOracle(t)
+	var seen []string
+	o.onRegion = func(r string) { seen = append(seen, r) }
+	f.delStatus = 404
+	if err := o.DeleteServer(context.Background(), "ocid1.instance.oc1.iad.eeeeeeee"); err != nil {
+		t.Fatal(err)
+	}
+	if len(seen) != 1 || seen[0] != "us-ashburn-1" {
+		t.Fatalf("delete must act in the OCID region, saw %v", seen)
+	}
+	seen = nil
+	if _, _, err := o.GetServer(context.Background(), "ocid1.instance.oc1.fra.eeeeeeee"); err != nil || len(seen) != 1 || seen[0] != "eu-frankfurt-1" {
+		t.Fatalf("get region %v err %v", seen, err)
+	}
+}
+
+func TestOracleCreateRefusesUnsubscribedRegion(t *testing.T) {
+	o, f := newTestOracle(t)
+	_, _, err := o.CreateServer(context.Background(), CreateOpts{Region: "eu-frankfurt-1", Size: "VM.Standard.E2.1.Micro", Name: "n"})
+	if err == nil || len(f.launchAD) != 0 {
+		t.Fatalf("unsubscribed region must refuse before any launch: %v %v", err, f.launchAD)
+	}
+	if h, err := o.HomeRegion(context.Background()); err != nil || h != "us-phoenix-1" {
+		t.Fatalf("home %q %v", h, err)
+	}
+}
+
+func TestOracleBareFlexRejected(t *testing.T) {
+	o, f := newTestOracle(t)
+	if _, _, _, err := parseOracleSize("VM.Standard.A1.Flex"); err == nil {
+		t.Fatal("bare flex size accepted")
+	}
+	if _, _, err := o.CreateServer(context.Background(), CreateOpts{Size: "VM.Standard.E4.Flex", Name: "n"}); err == nil || len(f.launchAD) != 0 {
+		t.Fatalf("bare flex create must refuse: %v", err)
+	}
+}
+
+func TestOracleRetryTokenAndTransportRetry(t *testing.T) {
+	o, f := newTestOracle(t)
+	f.dropPosts = 1
+	id, _, err := o.CreateServer(context.Background(), CreateOpts{Size: "VM.Standard.E2.1.Micro", Name: "n", ProvisionID: "prov123"})
+	if err != nil || id != tInstance {
+		t.Fatalf("create %q %v", id, err)
+	}
+	if len(f.tokens) != 2 || f.tokens[0] != "prov123" || f.tokens[1] != "prov123" {
+		t.Fatalf("tokens %v", f.tokens)
+	}
+	if f.last["freeformTags"].(map[string]any)["levelrail-provision-id"] != "prov123" {
+		t.Fatalf("tags %v", f.last["freeformTags"])
+	}
+}
+
+func TestOracleFindServerByTag(t *testing.T) {
+	o, f := newTestOracle(t)
+	f.listJSON = `[{"id":"` + tInstance + `","shape":"VM.Standard.E2.1.Micro","lifecycleState":"RUNNING","freeformTags":{"levelrail-provision-id":"prov123"}}]`
+	if id, err := o.FindServerByTag(context.Background(), "", "prov123"); err != nil || id != tInstance {
+		t.Fatalf("found %q %v", id, err)
+	}
+	if id, _ := o.FindServerByTag(context.Background(), "", "other"); id != "" {
+		t.Fatalf("unexpected %q", id)
+	}
+}
+
+func TestOracleUsagePartialAndPaging(t *testing.T) {
+	o, f := newTestOracle(t)
+	f.hidden = true
+	if _, err := o.OracleUsage(context.Background(), ""); err == nil {
+		t.Fatal("partial compartment view must refuse without the opt-in")
+	}
+	o.settings.AllowCompartmentScope = true
+	u, err := o.OracleUsage(context.Background(), "")
+	if err != nil || u.Scope != OracleScopeAccessible {
+		t.Fatalf("usage %+v %v", u, err)
+	}
+	f.hidden, f.nextPage = false, "p2"
+	u, err = o.OracleUsage(context.Background(), "")
+	if err != nil || u.Scope != OracleScopeTenancy || u.A1OCPU != 4 {
+		t.Fatalf("paged usage must read both pages: %+v %v", u, err)
 	}
 }

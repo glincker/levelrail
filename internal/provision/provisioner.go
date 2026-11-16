@@ -45,6 +45,9 @@ type CreateOpts struct {
 	Name   string
 	// UserData is the cloud-init script run on first boot.
 	UserData string
+	// ProvisionID is the provision row id; drivers that support it use it as
+	// an idempotency token and a tag so a retried create cannot leak a server.
+	ProvisionID string
 	// AllowSSHInbound opts into an inbound rule for TCP 22, off by
 	// default to match this platform's "no inbound ports needed" node
 	// architecture (CLAUDE.md 4.3): the agent always dials out. Only AWS

@@ -51,6 +51,11 @@ type OracleSettings struct {
 	ImageOSVersion      string
 	// LabelKey prefixes the freeform tag that marks instances we launched.
 	LabelKey string
+	// AllowCompartmentScope lets the usage count fall back to the configured
+	// compartment when the key cannot read the whole tenancy tree.
+	AllowCompartmentScope bool
+	// MaxBootVolumeGB refuses a create whose boot volume is larger; 0 is no cap.
+	MaxBootVolumeGB int
 }
 
 func (s OracleSettings) withDefaults() OracleSettings {
@@ -80,6 +85,8 @@ type Oracle struct {
 	// iaasBase and identityBase are test seams; empty means derive from region.
 	iaasBase     string
 	identityBase string
+	// onRegion is a test seam that sees every region a request is built for.
+	onRegion func(string)
 }
 
 // NewOracle validates the credential and builds a driver for it.
@@ -156,6 +163,9 @@ func parseOraclePrivateKey(pemText string) (*rsa.PrivateKey, error) {
 }
 
 func (o *Oracle) iaas(region string) *httpClient {
+	if o.onRegion != nil {
+		o.onRegion(region)
+	}
 	if o.iaasBase != "" {
 		return newHTTPClientWithSigner(o.iaasBase, o.signer)
 	}
@@ -174,6 +184,91 @@ func (o *Oracle) regionOr(region string) string {
 		return region
 	}
 	return o.cred.Region
+}
+
+// EffectiveRegion is the region a request with this region value acts in.
+func (o *Oracle) EffectiveRegion(region string) string { return o.regionOr(region) }
+
+// oracleRegionKeys maps the short region key found in instance OCIDs to the
+// region name; an unlisted key makes callers search the subscribed regions.
+var oracleRegionKeys = map[string]string{
+	"iad": "us-ashburn-1", "phx": "us-phoenix-1", "ord": "us-chicago-1", "sjc": "us-sanjose-1",
+	"fra": "eu-frankfurt-1", "lhr": "uk-london-1", "cwl": "uk-cardiff-1", "ams": "eu-amsterdam-1",
+	"zrh": "eu-zurich-1", "arn": "eu-stockholm-1", "mrs": "eu-marseille-1", "cdg": "eu-paris-1",
+	"mad": "eu-madrid-1", "mil": "eu-milan-1", "yyz": "ca-toronto-1", "yul": "ca-montreal-1",
+	"nrt": "ap-tokyo-1", "kix": "ap-osaka-1", "icn": "ap-seoul-1", "yny": "ap-chuncheon-1",
+	"bom": "ap-mumbai-1", "hyd": "ap-hyderabad-1", "syd": "ap-sydney-1", "mel": "ap-melbourne-1",
+	"sin": "ap-singapore-1", "gru": "sa-saopaulo-1", "vcp": "sa-vinhedo-1", "scl": "sa-santiago-1",
+	"bog": "sa-bogota-1", "jed": "me-jeddah-1", "dxb": "me-dubai-1", "auh": "me-abudhabi-1",
+	"jnb": "af-johannesburg-1", "qro": "mx-queretaro-1", "mty": "mx-monterrey-1",
+}
+
+// instanceRegion reads the region segment of an instance OCID.
+func instanceRegion(id string) (string, bool) {
+	parts := strings.Split(id, ".")
+	if len(parts) < 5 {
+		return "", false
+	}
+	seg := parts[3]
+	if oracleRegionRe.MatchString(seg) {
+		return seg, true
+	}
+	r, ok := oracleRegionKeys[seg]
+	return r, ok
+}
+
+// instanceRegions lists where an instance may live: its own region when the
+// OCID names one, else every subscribed region so no lookup defaults to the
+// wrong one.
+func (o *Oracle) instanceRegions(ctx context.Context, id string) ([]string, error) {
+	if r, ok := instanceRegion(id); ok {
+		return []string{r}, nil
+	}
+	regs, err := o.ListRegions(ctx)
+	if err != nil {
+		return nil, err
+	}
+	out := []string{}
+	for _, r := range regs {
+		out = append(out, r.ID)
+	}
+	if len(out) == 0 {
+		return nil, errors.New("provision: oracle has no subscribed region to search")
+	}
+	return out, nil
+}
+
+// regionAllowed refuses a launch region the credential's tenancy is not
+// subscribed to.
+func (o *Oracle) regionAllowed(ctx context.Context, region string) error {
+	regs, err := o.ListRegions(ctx)
+	if err != nil {
+		return err
+	}
+	for _, r := range regs {
+		if r.ID == region {
+			return nil
+		}
+	}
+	return errors.New("provision: oracle region is not one this credential may use")
+}
+
+// HomeRegion returns the tenancy home region, where the free allowance lives.
+func (o *Oracle) HomeRegion(ctx context.Context) (string, error) {
+	var subs []struct {
+		RegionName string `json:"regionName"`
+		IsHome     bool   `json:"isHomeRegion"`
+	}
+	path := "/tenancies/" + url.PathEscape(o.cred.TenancyOCID) + "/regionSubscriptions"
+	if err := o.identity(o.cred.Region).do(ctx, "GET", path, nil, &subs); err != nil {
+		return "", err
+	}
+	for _, s := range subs {
+		if s.IsHome && s.RegionName != "" {
+			return s.RegionName, nil
+		}
+	}
+	return "", errors.New("provision: oracle home region could not be determined")
 }
 
 // ListRegions returns the regions the tenancy is subscribed to.
@@ -328,6 +423,9 @@ func parseOracleSize(id string) (shape string, p flexPreset, flex bool, err erro
 	parts := strings.Split(id, ":")
 	switch len(parts) {
 	case 1:
+		if strings.HasSuffix(parts[0], ".Flex") {
+			return "", flexPreset{}, false, errors.New("provision: oracle flexible shapes need explicit ocpus and memory")
+		}
 		return parts[0], flexPreset{}, false, nil
 	case 3:
 		oc, e1 := strconv.Atoi(parts[1])
@@ -381,6 +479,12 @@ func (o *Oracle) CreateServer(ctx context.Context, opts CreateOpts) (string, str
 	if err != nil {
 		return "", "", err
 	}
+	if m := o.settings.MaxBootVolumeGB; m > 0 && o.settings.BootVolumeGB > m {
+		return "", "", errors.New("provision: oracle boot volume is above provision.oracle.max_boot_volume_gb")
+	}
+	if err := o.regionAllowed(ctx, region); err != nil {
+		return "", "", err
+	}
 	encoded := base64.StdEncoding.EncodeToString([]byte(opts.UserData))
 	if len(encoded) > maxOracleMetadataBytes {
 		return "", "", errors.New("provision: oracle user data is larger than the metadata limit")
@@ -404,11 +508,15 @@ func (o *Oracle) CreateServer(ctx context.Context, opts CreateOpts) (string, str
 			return "", "", errors.New("provision: oracle size is outside the shape limits")
 		}
 	}
+	tagValue := opts.ProvisionID
+	if tagValue == "" {
+		tagValue = opts.Name
+	}
 	imageID, err := o.findImage(ctx, region, shape)
 	if err != nil {
 		return "", "", err
 	}
-	for _, ad := range ads {
+	for i, ad := range ads {
 		details := map[string]any{
 			"availabilityDomain": ad,
 			"compartmentId":      o.cred.CompartmentOCID,
@@ -424,7 +532,7 @@ func (o *Oracle) CreateServer(ctx context.Context, opts CreateOpts) (string, str
 				"assignPublicIp": true,
 			},
 			"metadata":     map[string]string{"user_data": encoded},
-			"freeformTags": map[string]string{o.settings.LabelKey: opts.Name},
+			"freeformTags": map[string]string{o.settings.LabelKey: tagValue},
 		}
 		if flex {
 			details["shapeConfig"] = map[string]any{"ocpus": preset.ocpus, "memoryInGBs": preset.memory}
@@ -432,7 +540,20 @@ func (o *Oracle) CreateServer(ctx context.Context, opts CreateOpts) (string, str
 		var inst struct {
 			ID string `json:"id"`
 		}
-		err := o.iaas(region).do(ctx, "POST", "/instances", details, &inst)
+		// One token per AD body: OCI rejects a token reused with a different body.
+		var hdr map[string]string
+		if opts.ProvisionID != "" {
+			token := opts.ProvisionID
+			if i > 0 {
+				token = fmt.Sprintf("%s-ad%d", token, i)
+			}
+			hdr = map[string]string{"opc-retry-token": token}
+		}
+		_, err := o.iaas(region).doHeaders(ctx, "POST", "/instances", hdr, details, &inst)
+		if err != nil && hdr != nil && ctx.Err() == nil && !isProviderErr(err) {
+			// Transport error: the launch may have landed, so replay with the same token.
+			_, err = o.iaas(region).doHeaders(ctx, "POST", "/instances", hdr, details, &inst)
+		}
 		if err == nil {
 			return inst.ID, "", nil
 		}
@@ -447,29 +568,46 @@ func validOracleInstanceID(id string) bool {
 	return strings.HasPrefix(id, "ocid1.instance.") && oracleOCIDRe.MatchString(id)
 }
 
+func isProviderErr(err error) bool {
+	var pe *ProviderError
+	return errors.As(err, &pe)
+}
+
 // GetServer maps the instance state and, once it exists, looks up the public
-// IP through its primary VNIC.
+// IP through its primary VNIC. It reads the instance's own region.
 func (o *Oracle) GetServer(ctx context.Context, id string) (ServerStatus, string, error) {
 	if !validOracleInstanceID(id) {
 		return ServerStatusError, "", errors.New("provision: oracle instance id is not valid")
 	}
-	c := o.iaas(o.cred.Region)
-	var inst struct {
-		State string `json:"lifecycleState"`
-	}
-	if err := c.do(ctx, "GET", "/instances/"+url.PathEscape(id), nil, &inst); err != nil {
+	regions, err := o.instanceRegions(ctx, id)
+	if err != nil {
 		return ServerStatusError, "", err
 	}
-	switch inst.State {
-	case "RUNNING":
-		return ServerStatusRunning, o.publicIP(ctx, c, id), nil
-	case "PROVISIONING", "STARTING", "CREATING_IMAGE", "MOVING":
-		return ServerStatusPending, "", nil
-	default:
-		return ServerStatusError, "", nil
+	var lastErr error
+	for _, region := range regions {
+		c := o.iaas(region)
+		var inst struct {
+			State string `json:"lifecycleState"`
+		}
+		if err := c.do(ctx, "GET", "/instances/"+url.PathEscape(id), nil, &inst); err != nil {
+			lastErr = err
+			var pe *ProviderError
+			if errors.As(err, &pe) && pe.Status == 404 {
+				continue
+			}
+			return ServerStatusError, "", err
+		}
+		switch inst.State {
+		case "RUNNING":
+			return ServerStatusRunning, o.publicIP(ctx, c, id), nil
+		case "PROVISIONING", "STARTING", "CREATING_IMAGE", "MOVING":
+			return ServerStatusPending, "", nil
+		default:
+			return ServerStatusError, "", nil
+		}
 	}
+	return ServerStatusError, "", lastErr
 }
-
 func (o *Oracle) publicIP(ctx context.Context, c *httpClient, instanceID string) string {
 	var atts []struct {
 		VnicID string `json:"vnicId"`
@@ -494,16 +632,40 @@ func (o *Oracle) publicIP(ctx context.Context, c *httpClient, instanceID string)
 	return ""
 }
 
-// DeleteServer terminates the instance and its boot volume. A missing
-// instance counts as already deleted.
+// DeleteServer terminates the instance and its boot volume in the instance's
+// own region. A 404 counts as deleted only when the OCID names that region or
+// every subscribed region answered 404.
 func (o *Oracle) DeleteServer(ctx context.Context, id string) error {
 	if !validOracleInstanceID(id) {
 		return errors.New("provision: oracle instance id is not valid")
 	}
-	err := o.iaas(o.cred.Region).do(ctx, "DELETE", "/instances/"+url.PathEscape(id)+"?preserveBootVolume=false", nil, nil)
-	var pe *ProviderError
-	if errors.As(err, &pe) && pe.Status == 404 {
-		return nil
+	regions, err := o.instanceRegions(ctx, id)
+	if err != nil {
+		return err
 	}
-	return err
+	for _, region := range regions {
+		err := o.iaas(region).do(ctx, "DELETE", "/instances/"+url.PathEscape(id)+"?preserveBootVolume=false", nil, nil)
+		var pe *ProviderError
+		if errors.As(err, &pe) && pe.Status == 404 {
+			continue
+		}
+		return err
+	}
+	return nil
+}
+
+// FindServerByTag returns a live instance carrying the provision row id tag,
+// so a create that failed without an id cannot leak a server.
+func (o *Oracle) FindServerByTag(ctx context.Context, region, tag string) (string, error) {
+	region = o.regionOr(region)
+	rows, err := o.listInstances(ctx, region, o.cred.CompartmentOCID)
+	if err != nil {
+		return "", err
+	}
+	for _, r := range rows {
+		if r.FreeformTags[o.settings.LabelKey] == tag && r.State != "TERMINATED" && r.State != "TERMINATING" && validOracleInstanceID(r.ID) {
+			return r.ID, nil
+		}
+	}
+	return "", nil
 }

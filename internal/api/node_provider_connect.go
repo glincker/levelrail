@@ -367,6 +367,10 @@ func (rt *Router) handleSetNodeProviderCredential(w http.ResponseWriter, r *http
 		rt.connectCustomProvider(w, r, req)
 		return
 	}
+	if msg := rt.oracleDisabledMessage(r.Context(), req.Provider); msg != "" {
+		writeError(w, http.StatusConflict, msg)
+		return
+	}
 	if rt.nodeProviderSecrets == nil {
 		writeError(w, http.StatusNotImplemented, "node provisioning is not configured on this control plane (no master key set)")
 		return
