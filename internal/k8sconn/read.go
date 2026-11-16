@@ -3,6 +3,7 @@ package k8sconn
 import (
 	"context"
 	"encoding/json"
+	"errors"
 	"fmt"
 	"strings"
 )
@@ -156,11 +157,21 @@ const ClusterAdminRefusal = "this credential is effectively cluster-admin (wildc
 	"create a namespaced Role and a limited service account with `levelrail clusters rbac --namespace NS`, then connect that token. " +
 	"To accept the risk, set allow_cluster_admin on the request (--allow-cluster-admin) and turn on the runtime setting k8s.allow_cluster_admin"
 
+// ErrAdminCheckUnverified means the rules review failed or was incomplete, so the credential cannot be proven non-admin.
+var ErrAdminCheckUnverified = errors.New("could not verify the credential is not cluster-admin")
+
 // CredentialIsClusterAdmin asks the API server whether this credential holds a wildcard rule.
+// It fails closed: an errored or incomplete review returns ErrAdminCheckUnverified.
 func (c *Client) CredentialIsClusterAdmin(ctx context.Context) (bool, error) {
 	review, err := c.ReviewRules(ctx, "default")
 	if err != nil {
-		return false, err
+		return false, ErrAdminCheckUnverified
 	}
-	return review.IsClusterAdmin(), nil
+	if review.IsClusterAdmin() {
+		return true, nil
+	}
+	if review.Incomplete {
+		return false, ErrAdminCheckUnverified
+	}
+	return false, nil
 }

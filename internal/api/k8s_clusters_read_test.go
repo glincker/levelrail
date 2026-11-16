@@ -17,6 +17,8 @@ import (
 func TestK8sListNodesAndNamespaces(t *testing.T) {
 	kube := httptest.NewTLSServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
 		switch r.URL.Path {
+		case "/apis/authorization.k8s.io/v1/selfsubjectrulesreviews":
+			_, _ = w.Write([]byte(`{"status":{"resourceRules":[{"verbs":["get"],"apiGroups":[""],"resources":["pods"]}]}}`))
 		case "/api/v1/nodes":
 			_, _ = w.Write([]byte(`{"items":[{"metadata":{"name":"n1","labels":{"node-role.kubernetes.io/control-plane":""}},"status":{"conditions":[{"type":"Ready","status":"True"}],"nodeInfo":{"kubeletVersion":"v1.30.0"}}}]}`))
 		case "/api/v1/namespaces":

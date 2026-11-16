@@ -221,15 +221,20 @@ func (rt *Router) handleConnectK8sCluster(w http.ResponseWriter, r *http.Request
 		rt.k8sConnectFailed(w, r, http.StatusBadRequest, failed, msg)
 		return
 	}
-	// A failed review is not treated as admin: the API server answers it for every authenticated caller.
+	// Fail closed: a review that errors or is incomplete counts as unverified and needs the same override.
 	adminOverride := false
-	if admin, aerr := client.CredentialIsClusterAdmin(ctx); aerr == nil && admin {
+	admin, aerr := client.CredentialIsClusterAdmin(ctx)
+	if aerr != nil || admin {
+		refusal := k8sconn.ClusterAdminRefusal
+		if aerr != nil {
+			refusal = k8sconn.ErrAdminCheckUnverified.Error() + "; to connect anyway, set allow_cluster_admin on the request (--allow-cluster-admin) and turn on the runtime setting k8s.allow_cluster_admin"
+		}
 		if !req.AllowClusterAdmin {
-			rt.k8sConnectFailed(w, r, http.StatusConflict, failed, k8sconn.ClusterAdminRefusal)
+			rt.k8sConnectFailed(w, r, http.StatusConflict, failed, refusal)
 			return
 		}
 		if !rt.runtimeSettings.Bool(ctx, runtimesettings.KeyK8sAllowClusterAdmin) {
-			rt.k8sConnectFailed(w, r, http.StatusConflict, failed, "allow_cluster_admin needs the runtime setting k8s.allow_cluster_admin turned on first; "+k8sconn.ClusterAdminRefusal)
+			rt.k8sConnectFailed(w, r, http.StatusConflict, failed, "allow_cluster_admin needs the runtime setting k8s.allow_cluster_admin turned on first; "+refusal)
 			return
 		}
 		adminOverride = true

@@ -35,6 +35,10 @@ func startLogsKube(t *testing.T, serviceLabels string) (*httptest.Server, *logsK
 		k.mu.Lock()
 		defer k.mu.Unlock()
 		p := r.URL.Path
+		if r.Method == http.MethodPost && strings.HasSuffix(p, "/selfsubjectrulesreviews") {
+			_, _ = w.Write([]byte(`{"status":{"resourceRules":[{"verbs":["get"],"apiGroups":[""],"resources":["pods"]}]}}`))
+			return
+		}
 		if r.Method == http.MethodDelete {
 			k.deletes = append(k.deletes, p)
 			k.gone[p] = true
