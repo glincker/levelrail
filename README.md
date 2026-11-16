@@ -8,9 +8,9 @@ Git deploys, 570+ templates in the catalog (346 proven on a real engine), edge a
   <a href="LICENSE"><img src="https://img.shields.io/github/license/glincker/levelrail" alt="License: Apache 2.0"></a>
   <a href="https://github.com/glincker/levelrail/releases"><img src="https://img.shields.io/github/v/release/glincker/levelrail?include_prereleases&label=release" alt="Latest release"></a>
   <a href="https://github.com/glincker/levelrail/actions/workflows/ci.yml"><img src="https://github.com/glincker/levelrail/actions/workflows/ci.yml/badge.svg" alt="CI status"></a>
-  <a href="https://github.com/glincker/levelrail/actions/workflows/codeql.yml"><img src="https://github.com/glincker/levelrail/actions/workflows/codeql.yml/badge.svg?branch=main" alt="CodeQL scan status"></a>
   <a href="https://www.npmjs.com/package/levelrail-cli"><img src="https://img.shields.io/npm/v/levelrail-cli?style=flat&logo=npm&label=npm" alt="levelrail-cli on npm"></a>
   <a href="https://hub.docker.com/r/levelrail/levelrail"><img src="https://img.shields.io/docker/pulls/levelrail/levelrail?style=flat&logo=docker&label=docker%20pulls" alt="Docker pulls"></a>
+  <a href="https://search.opentofu.org/provider/glincker/levelrail/latest"><img src="https://img.shields.io/github/v/release/glincker/terraform-provider-levelrail?style=flat&logo=terraform&label=terraform%20%2B%20opentofu" alt="Terraform and OpenTofu provider"></a>
   <a href="https://discord.gg/Ar5pcaZB99"><img src="https://img.shields.io/discord/829168897080557579?style=flat&logo=discord&logoColor=white&label=discord&color=5865F2" alt="Discord"></a>
 </p>
 <p>
@@ -163,7 +163,7 @@ Maturity follows [Feature status](docs/feature-status.md). Open the list under e
 
 **[CLI, API, Terraform and MCP](docs/cli-reference.md)**
 - 259 [MCP tools](docs/mcp.md) for coding agents
-- [Terraform and OpenTofu provider](docs/terraform-provider.md)
+- [Terraform and OpenTofu provider](docs/terraform-provider.md), on the [Terraform registry](https://registry.terraform.io/providers/glincker/levelrail/latest) and the [OpenTofu registry](https://search.opentofu.org/provider/glincker/levelrail/latest)
 - [HTTP API](docs/api-reference.md) and `levelrail-cli`
 - 11 per-app integrations, from error tracking to analytics
 
@@ -171,7 +171,7 @@ Maturity follows [Feature status](docs/feature-status.md). Open the list under e
 <summary>All automation features</summary>
 
 - `levelrail-cli` and an HTTP API. See [API reference](docs/api-reference.md).
-- Terraform and OpenTofu provider. See [Terraform provider](docs/terraform-provider.md).
+- Terraform and OpenTofu provider. See [Terraform provider](docs/terraform-provider.md), the [Terraform registry](https://registry.terraform.io/providers/glincker/levelrail/latest) and the [OpenTofu registry](https://search.opentofu.org/provider/glincker/levelrail/latest).
 - YAML platform as code (experimental). See [Platform as code](docs/platform-as-code.md).
 - CI pipelines. See [Pipelines](docs/pipelines.md).
 - 11 per-app integrations: Sentry, PostHog, GlitchTip, OneUptime, Plausible, Datadog, Axiom, Better Stack, LogSnag, Bugsnag and New Relic. See [Alerts](docs/alerts.md).
