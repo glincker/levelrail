@@ -97,7 +97,8 @@
     "pullSecret": "Pull secret (optional)",
     "pullSecretNone": "None (public image)",
     "pullSecretMismatch": "The image is on {{image}} but {{name}} is for {{secret}}.",
-    "pullSecretNoneStored": "No pull secrets stored. Add one in Pull secrets below."
+    "pullSecretNoneStored": "No pull secrets stored. Add one in Pull secrets below.",
+    "namespaceCreateHint": "The service account cannot create namespaces. Deploy into the namespace its role was made for (levelrail clusters rbac --namespace NS), and add it to k8s.allowed_namespaces unless it is the default namespace or carries the levelrail label."
   },
   "deployments": {
     "title": "Deployments",

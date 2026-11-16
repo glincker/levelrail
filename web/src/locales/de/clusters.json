@@ -97,7 +97,8 @@
     "pullSecret": "Pull-Secret (optional)",
     "pullSecretNone": "Keines (öffentliches Image)",
     "pullSecretMismatch": "Das Image liegt auf {{image}}, aber {{name}} gilt für {{secret}}.",
-    "pullSecretNoneStored": "Keine Pull-Secrets gespeichert. Unten unter Pull-Secrets eines hinzufügen."
+    "pullSecretNoneStored": "Keine Pull-Secrets gespeichert. Unten unter Pull-Secrets eines hinzufügen.",
+    "namespaceCreateHint": "Das Dienstkonto darf keine Namespaces anlegen. Stelle in den Namespace bereit, für den die Rolle erstellt wurde (levelrail clusters rbac --namespace NS), und füge ihn zu k8s.allowed_namespaces hinzu, außer er ist der Standard-Namespace oder trägt das levelrail-Label."
   },
   "deployments": {
     "title": "Deployments",

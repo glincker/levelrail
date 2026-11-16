@@ -14,6 +14,8 @@ import { useDeployApp, usePullSecrets } from '../../queries/clusters'
 import { useRuntimeSettings } from '../../queries/runtimeSettings'
 import type { DeployK8sInput } from '../../types/clusters'
 
+// The API refuses with this phrase when the namespace is missing and cannot be created.
+const NS_CREATE_REFUSAL = 'cannot create namespaces'
 const APP_RE = /^[a-z0-9]([a-z0-9-]{0,61}[a-z0-9])?$/
 
 export function DeployForm({ cluster }: Readonly<{ cluster: string }>) {
@@ -260,6 +262,11 @@ export function DeployForm({ cluster }: Readonly<{ cluster: string }>) {
       {deploy.isError ? (
         <p role="alert" className="text-sm text-destructive">
           {deploy.error.message}
+        </p>
+      ) : null}
+      {deploy.isError && deploy.error.message.includes(NS_CREATE_REFUSAL) ? (
+        <p id="k8s-namespace-hint" className="text-xs text-muted-foreground">
+          {t('deploy.namespaceCreateHint')}
         </p>
       ) : null}
     </form>

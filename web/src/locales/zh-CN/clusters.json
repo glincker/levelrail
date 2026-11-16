@@ -97,7 +97,8 @@
     "pullSecret": "拉取密钥(可选)",
     "pullSecretNone": "无(公开镜像)",
     "pullSecretMismatch": "镜像位于 {{image}},但 {{name}} 适用于 {{secret}}。",
-    "pullSecretNoneStored": "没有已保存的拉取密钥。请在下方的拉取密钥中添加。"
+    "pullSecretNoneStored": "没有已保存的拉取密钥。请在下方的拉取密钥中添加。",
+    "namespaceCreateHint": "该服务账号无法创建命名空间。请部署到其角色所对应的命名空间 (levelrail clusters rbac --namespace NS)，除非它是默认命名空间或带有 levelrail 标签，否则还需将其加入 k8s.allowed_namespaces。"
   },
   "deployments": {
     "title": "部署列表",

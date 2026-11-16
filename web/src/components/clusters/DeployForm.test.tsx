@@ -101,6 +101,38 @@ describe('DeployForm', () => {
     )
   })
 
+  it('shows the namespace hint when the service account cannot create it', async () => {
+    vi.stubGlobal(
+      'fetch',
+      vi.fn((_u: string, init?: RequestInit) =>
+        Promise.resolve(
+          init?.method === 'POST'
+            ? new Response(
+                JSON.stringify({
+                  error:
+                    'the namespace does not exist and the service account cannot create namespaces: deploy into the right one',
+                }),
+                {
+                  status: 409,
+                  headers: { 'Content-Type': 'application/json' },
+                },
+              )
+            : new Response(JSON.stringify({ settings: [] }), { status: 200 }),
+        ),
+      ),
+    )
+    const user = userEvent.setup()
+    wrap(<DeployForm cluster="c1" />)
+    await user.type(screen.getByLabelText('App name'), 'web')
+    await user.type(screen.getByLabelText('Image'), 'nginx')
+    await user.click(screen.getByRole('button', { name: 'Deploy' }))
+    expect(
+      await screen.findByText(
+        /k8s\.allowed_namespaces unless it is the default/,
+      ),
+    ).toBeInTheDocument()
+  })
+
   it('warns on a registry mismatch and shows the backend 400 readably', async () => {
     const msg =
       'the image is on registry docker.io but pull secret gh is for ghcr.io; nothing was sent'

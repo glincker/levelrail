@@ -97,7 +97,8 @@
     "pullSecret": "プルシークレット (任意)",
     "pullSecretNone": "なし (公開イメージ)",
     "pullSecretMismatch": "イメージは {{image}} にありますが、{{name}} は {{secret}} 用です。",
-    "pullSecretNoneStored": "保存済みのプルシークレットがありません。下のプルシークレットで追加してください。"
+    "pullSecretNoneStored": "保存済みのプルシークレットがありません。下のプルシークレットで追加してください。",
+    "namespaceCreateHint": "サービスアカウントは namespace を作成できません。ロールの作成時に指定した namespace にデプロイしてください (levelrail clusters rbac --namespace NS)。デフォルトの namespace か levelrail ラベル付きでない限り、k8s.allowed_namespaces への追加も必要です。"
   },
   "deployments": {
     "title": "デプロイ一覧",
