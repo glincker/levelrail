@@ -1,6 +1,7 @@
 import { lazy, Suspense, useState } from 'react'
-import { createFileRoute } from '@tanstack/react-router'
+import { createFileRoute, Link } from '@tanstack/react-router'
 import { useTranslation } from 'react-i18next'
+import { useQuery } from '@tanstack/react-query'
 import {
   ArchiveGlassIcon,
   GlobeGlassIcon,
@@ -9,6 +10,10 @@ import {
   TerminalGlassIcon,
 } from '@thesvg/ui-react'
 import { useDeployStatus } from '../../../queries/deploys'
+import { deployAttemptsQueryOptions } from '../../../queries/deployAttempts'
+import { logsTabState } from '../../../lib/appTabState'
+import { Button } from '@/components/ui/button'
+import { EmptyState } from '@/components/ui/empty-state'
 import { LogSearchPanel } from '../../../components/LogSearchPanel'
 import { LiveLogViewer } from '../../../components/LiveLogViewer'
 import { LogArchivePanel } from '../../../components/LogArchivePanel'
@@ -47,6 +52,8 @@ function LogsSection() {
   // Same cache key the Overview route primes: lets an empty live tail say
   // why (the app's current reconcile condition).
   const { data: conditions } = useDeployStatus(name)
+  // Shares the deploy-attempts cache with the Deployments tab, so no extra fetch.
+  const attempts = useQuery(deployAttemptsQueryOptions(name))
   const tab: LogsTab = search.tab ?? (search.from ? 'search' : 'live')
   const [alertDefaults, setAlertDefaults] = useState<LogAlertDefaults | null>(
     null,
@@ -71,6 +78,32 @@ function LogsSection() {
       },
       replace: true,
     })
+  }
+
+  const state = logsTabState({
+    loading: attempts.isLoading,
+    attemptCount: attempts.data?.length ?? 0,
+    conditionCount: conditions.length,
+  })
+  if (state === 'loading') return null
+  if (state === 'empty') {
+    return (
+      <EmptyState
+        kind="first-run"
+        icon={<TerminalGlassIcon className="size-5" aria-hidden="true" />}
+        title={t('liveLogs.neverDeployedTitle')}
+        description={t('liveLogs.neverDeployedBody')}
+        action={
+          <Button
+            size="sm"
+            render={<Link to="/apps/$name/deploys" params={{ name }} />}
+            nativeButton={false}
+          >
+            {t('liveLogs.neverDeployedAction')}
+          </Button>
+        }
+      />
+    )
   }
 
   return (

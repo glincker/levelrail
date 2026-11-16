@@ -158,7 +158,10 @@
     "lastOutput": "{{count}} lines: the last output of the stopped container",
     "waiting": "Waiting for log output...",
     "noContainer": "No container is running to produce logs: {{reason}}",
-    "viewDeploys": "Show last deploy log"
+    "viewDeploys": "Show last deploy log",
+    "neverDeployedTitle": "No logs yet",
+    "neverDeployedBody": "Logs appear after the first deploy.",
+    "neverDeployedAction": "Go to deploys"
   },
   "connection": {
     "connecting": "Connecting...",

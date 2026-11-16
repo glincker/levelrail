@@ -249,7 +249,10 @@
     "lastOutput": "{{count}} líneas: la última salida del contenedor detenido",
     "waiting": "Esperando salida de registros...",
     "noContainer": "No hay ningún contenedor en ejecución que genere registros: {{reason}}",
-    "viewDeploys": "Mostrar el último registro de despliegue"
+    "viewDeploys": "Mostrar el último registro de despliegue",
+    "neverDeployedTitle": "Aún no hay logs",
+    "neverDeployedBody": "Los logs aparecen tras el primer despliegue.",
+    "neverDeployedAction": "Ir a los despliegues"
   },
   "connection": {
     "connecting": "Conectando...",

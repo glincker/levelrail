@@ -36,3 +36,15 @@ export function showPreviewExtras(input: {
   if (input.loading) return false
   return input.prPreviewsOn || input.previewCount > 0
 }
+
+export type LogsTabState = 'loading' | 'empty' | 'ready'
+
+// Logs only exist once the app has deployed; before that there is nothing to tab through.
+export function logsTabState(input: {
+  loading: boolean
+  attemptCount: number
+  conditionCount: number
+}): LogsTabState {
+  if (input.loading) return 'loading'
+  return input.attemptCount > 0 || input.conditionCount > 0 ? 'ready' : 'empty'
+}

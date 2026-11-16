@@ -1,6 +1,7 @@
 import { describe, expect, it } from 'vitest'
 import {
   errorsPanelState,
+  logsTabState,
   showDomainExtras,
   showPreviewExtras,
   showVolumesEditor,
@@ -40,5 +41,14 @@ describe('appTabState', () => {
     expect(showPreviewExtras(base)).toBe(false)
     expect(showPreviewExtras({ ...base, prPreviewsOn: true })).toBe(true)
     expect(showPreviewExtras({ ...base, previewCount: 1 })).toBe(true)
+  })
+  it('shows logs tabs only once the app has deployed', () => {
+    const base = { loading: false, attemptCount: 0, conditionCount: 0 }
+    expect(logsTabState({ ...base, loading: true, attemptCount: 2 })).toBe(
+      'loading',
+    )
+    expect(logsTabState(base)).toBe('empty')
+    expect(logsTabState({ ...base, attemptCount: 1 })).toBe('ready')
+    expect(logsTabState({ ...base, conditionCount: 1 })).toBe('ready')
   })
 })

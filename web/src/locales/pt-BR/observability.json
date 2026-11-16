@@ -158,7 +158,10 @@
     "lastOutput": "{{count}} linhas: a última saída do container parado",
     "waiting": "Aguardando a saída de logs...",
     "noContainer": "Nenhum container está em execução para produzir logs: {{reason}}",
-    "viewDeploys": "Mostrar o log do último deploy"
+    "viewDeploys": "Mostrar o log do último deploy",
+    "neverDeployedTitle": "Ainda não há logs",
+    "neverDeployedBody": "Os logs aparecem após o primeiro deploy.",
+    "neverDeployedAction": "Ir para os deploys"
   },
   "connection": {
     "connecting": "Conectando...",
