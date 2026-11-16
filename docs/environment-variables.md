@@ -555,6 +555,8 @@ These variables only seed the default of a [runtime setting](/runtime-settings).
 | `APP_VITALS_RETENTION_DAYS` | [`vitals.retention_days`](/runtime-settings#data-retention) | `30` |
 | `APP_CLOUD_CONNECTIONS_ENABLED` | [`cloud.connections_enabled`](/runtime-settings#experimental) | `false` |
 | `APP_K8S_ALLOW_PRIVATE_API` | [`k8s.allow_private_api`](/runtime-settings#experimental) | `false` |
+| `APP_K8S_ALLOW_UNVERIFIED_HOSTS` | [`k8s.allow_unverified_hosts`](/runtime-settings#experimental) | `false` |
+| `APP_K8S_ALLOWED_NAMESPACES` | [`k8s.allowed_namespaces`](/runtime-settings#experimental) | empty |
 | `APP_K8S_CLUSTERS_ENABLED` | [`k8s.clusters_enabled`](/runtime-settings#experimental) | `false` |
 | `APP_K8S_CPU_LIMIT` | [`k8s.cpu_limit`](/runtime-settings#experimental) | `500m` |
 | `APP_K8S_CPU_REQUEST` | [`k8s.cpu_request`](/runtime-settings#experimental) | `100m` |
@@ -563,6 +565,7 @@ These variables only seed the default of a [runtime setting](/runtime-settings).
 | `APP_K8S_KUBECONFIG_MAX_BYTES` | [`k8s.kubeconfig_max_bytes`](/runtime-settings#experimental) | `65536` |
 | `APP_K8S_LOG_TAIL_LINES_MAX` | [`k8s.log_tail_lines_max`](/runtime-settings#experimental) | `500` |
 | `APP_K8S_MAX_BODY_BYTES` | [`k8s.max_body_bytes`](/runtime-settings#experimental) | `8388608` |
+| `APP_K8S_MAX_ENV_VALUE_BYTES` | [`k8s.max_env_value_bytes`](/runtime-settings#experimental) | `4096` |
 | `APP_K8S_MAX_ENV_VARS` | [`k8s.max_env_vars`](/runtime-settings#experimental) | `64` |
 | `APP_K8S_MAX_REPLICAS` | [`k8s.max_replicas`](/runtime-settings#experimental) | `20` |
 | `APP_K8S_MEMORY_LIMIT` | [`k8s.memory_limit`](/runtime-settings#experimental) | `512Mi` |

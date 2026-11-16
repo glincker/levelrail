@@ -8,6 +8,7 @@ import (
 	"net/http"
 	"regexp"
 	"strings"
+	"sync"
 	"time"
 
 	"github.com/GLINCKER/levelrail/internal/k8sconn"
@@ -18,10 +19,15 @@ import (
 const (
 	auditK8sDeployApplied = "k8s_deployment.applied"
 	auditK8sDeployRefused = "k8s_deployment.refused"
+	auditK8sDeployFailed  = "k8s_deployment.failed"
+	auditK8sDeployPartial = "k8s_deployment.partial"
 )
 
 var (
-	k8sImageRe   = regexp.MustCompile(`^[a-z0-9][a-z0-9._/-]{0,200}(:[A-Za-z0-9._-]{1,128})?(@sha256:[a-f0-9]{64})?$`)
+	// The optional first group is a registry host with a port (host:5000/img).
+	k8sImageRe = regexp.MustCompile(`^([a-z0-9]([a-z0-9.-]{0,251}[a-z0-9])?:[0-9]{1,5}/)?[a-z0-9][a-z0-9._/-]{0,200}(:[A-Za-z0-9._-]{1,128})?(@sha256:[a-f0-9]{64})?$`)
+	// App names become Service names, which must start with a letter.
+	k8sAppNameRe = regexp.MustCompile(`^[a-z]([-a-z0-9]{0,61}[a-z0-9])?$`)
 	k8sHostRe    = regexp.MustCompile(`^[a-z0-9]([a-z0-9-]{0,61}[a-z0-9])?(\.[a-z0-9]([a-z0-9-]{0,61}[a-z0-9])?)*$`)
 	k8sEnvNameRe = regexp.MustCompile(`^[A-Za-z_][A-Za-z0-9_]{0,127}$`)
 )
@@ -32,6 +38,20 @@ type K8sDeploymentRows interface {
 	GetK8sDeployment(ctx context.Context, cluster, app string) (store.K8sDeployment, error)
 	ListK8sDeployments(ctx context.Context, cluster string) ([]store.K8sDeployment, error)
 	DeleteK8sDeploymentsForCluster(ctx context.Context, cluster string) error
+	K8sInstanceID(ctx context.Context) (string, error)
+	ClaimK8sDeploy(ctx context.Context, cluster, app string, staleAfter time.Duration) (bool, error)
+	ReleaseK8sDeploy(ctx context.Context, cluster, app string) error
+}
+
+// k8sDeployLocks serialises deploys of one app on one cluster inside this process. The DB
+// claim covers a second process or a crash.
+var k8sDeployLocks sync.Map
+
+func lockK8sDeploy(cluster, app string) func() {
+	v, _ := k8sDeployLocks.LoadOrStore(cluster+"/"+app, &sync.Mutex{})
+	mu, _ := v.(*sync.Mutex)
+	mu.Lock()
+	return mu.Unlock
 }
 
 func k8sDeploymentStoreOf(s Store) K8sDeploymentRows {
@@ -53,6 +73,9 @@ type k8sDeployRequest struct {
 	// container is forced to a non-root user id.
 	AllowRoot bool   `json:"allow_root,omitempty"`
 	RunAsUser *int64 `json:"run_as_user,omitempty"`
+	// SkipHostCheck proceeds when the cluster refuses to list Ingresses. It works only while
+	// k8s.allow_unverified_hosts is on.
+	SkipHostCheck bool `json:"skip_host_check,omitempty"`
 }
 
 type k8sDeployResponse struct {
@@ -150,46 +173,116 @@ func (rt *Router) handleDeployK8sApp(w http.ResponseWriter, r *http.Request) {
 	}
 	spec, msg := rt.buildK8sSpec(ctx, req)
 	if msg != "" {
-		rt.auditK8sDeploy(r, auditK8sDeployRefused, c.Name, req, http.StatusBadRequest)
+		rt.auditK8sDeploy(r, auditK8sDeployRefused, c.Name, rt.k8sAuditFromRequest(ctx, req, msg), http.StatusBadRequest)
 		writeError(w, http.StatusBadRequest, msg)
 		return
 	}
+	detail := k8sAuditFromSpec(spec, req.AllowRoot)
+	instance, err := rt.k8sDeploymentRows.K8sInstanceID(ctx)
+	if err != nil {
+		detail.Reason = "instance id unavailable"
+		rt.auditK8sDeploy(r, auditK8sDeployFailed, c.Name, detail, http.StatusInternalServerError)
+		rt.internalError(w, "api: k8s instance id failed", err)
+		return
+	}
+	spec.InstanceID = instance
 	rendered, err := k8sconn.Render(spec)
 	if err != nil {
+		detail.Reason = "render failed"
+		rt.auditK8sDeploy(r, auditK8sDeployFailed, c.Name, detail, http.StatusBadRequest)
 		writeError(w, http.StatusBadRequest, "the app could not be rendered for the cluster")
 		return
 	}
+	unlock := lockK8sDeploy(c.Name, spec.Name)
+	defer unlock()
+	claimTTL := 10 * lim.Timeout
+	got, err := rt.k8sDeploymentRows.ClaimK8sDeploy(ctx, c.Name, spec.Name, claimTTL)
+	if err != nil {
+		rt.internalError(w, "api: claim k8s deploy failed", err)
+		return
+	}
+	if !got {
+		detail.Reason = "another deploy of this app is running"
+		rt.auditK8sDeploy(r, auditK8sDeployRefused, c.Name, detail, http.StatusConflict)
+		writeError(w, http.StatusConflict, "another deploy of this app on this cluster is already running")
+		return
+	}
+	defer func() { _ = rt.k8sDeploymentRows.ReleaseK8sDeploy(context.WithoutCancel(ctx), c.Name, spec.Name) }()
 	if prev, err := rt.k8sDeploymentRows.GetK8sDeployment(ctx, c.Name, spec.Name); err == nil && prev.Namespace != spec.Namespace {
+		detail.Reason = "app is deployed in another namespace"
+		rt.auditK8sDeploy(r, auditK8sDeployRefused, c.Name, detail, http.StatusConflict)
 		writeError(w, http.StatusConflict, "this app is already deployed to this cluster in another namespace")
 		return
 	}
 	cl, err := rt.loadK8sClient(ctx, c)
 	if err != nil {
+		detail.Reason = "cluster client could not be loaded"
+		rt.auditK8sDeploy(r, auditK8sDeployFailed, c.Name, detail, http.StatusBadGateway)
 		writeError(w, http.StatusBadGateway, "cluster is unreachable or its credentials cannot be loaded")
 		return
 	}
 	names, err := cl.Apply(ctx, spec, rendered)
-	if errors.Is(err, k8sconn.ErrNotManaged) {
-		rt.auditK8sDeploy(r, auditK8sDeployRefused, c.Name, req, http.StatusConflict)
-		writeError(w, http.StatusConflict, "an object with this name already exists in the namespace and is not managed by levelrail; it was left untouched")
-		return
-	}
+	detail.Objects = names
 	if err != nil {
-		rt.auditK8sDeploy(r, auditK8sDeployRefused, c.Name, req, http.StatusBadGateway)
-		writeK8sCallError(w, err)
+		rt.failK8sApply(w, r, c.Name, detail, err)
 		return
 	}
+	// Audit first: the cluster already changed, whatever the row write does next.
+	rt.auditK8sDeploy(r, auditK8sDeployApplied, c.Name, detail, http.StatusCreated)
 	_, actor, _, _ := rt.callerPrincipal(r)
 	row := store.K8sDeployment{
 		Cluster: c.Name, App: spec.Name, Namespace: spec.Namespace, Image: spec.Image, Port: spec.Port,
 		Replicas: spec.Replicas, Host: spec.Host, AllowRoot: req.AllowRoot, Objects: names, CreatedBy: actor,
 	}
 	if err := rt.k8sDeploymentRows.UpsertK8sDeployment(context.WithoutCancel(ctx), row); err != nil {
+		detail.Reason = "the cluster changed but the deployment record was not saved"
+		rt.auditK8sDeploy(r, auditK8sDeployFailed, c.Name, detail, http.StatusInternalServerError)
 		rt.internalError(w, "api: record k8s deployment failed", err)
 		return
 	}
-	rt.auditK8sDeploy(r, auditK8sDeployApplied, c.Name, req, http.StatusCreated)
 	writeJSON(w, http.StatusCreated, k8sDeployResponse{App: spec.Name, Namespace: spec.Namespace, Objects: names, AllowRoot: req.AllowRoot})
+}
+
+// failK8sApply audits and answers a failed Apply. A partial apply is logged as partial.
+func (rt *Router) failK8sApply(w http.ResponseWriter, r *http.Request, cluster string, d k8sDeployAudit, err error) {
+	status, msg := http.StatusBadGateway, ""
+	switch {
+	case errors.Is(err, k8sconn.ErrNamespaceNotManaged):
+		status, msg = http.StatusConflict, "the namespace already exists and is not managed by levelrail; add it to k8s.allowed_namespaces to use it"
+	case errors.Is(err, k8sconn.ErrHostTaken):
+		status, msg = http.StatusConflict, "the host is already used by an ingress that levelrail does not own; nothing was changed"
+	case errors.Is(err, k8sconn.ErrHostUnverified):
+		status, msg = http.StatusConflict, "the cluster did not allow listing ingresses, so the host cannot be verified; set skip_host_check while k8s.allow_unverified_hosts is on to override"
+	case errors.Is(err, k8sconn.ErrNotManaged):
+		status, msg = http.StatusConflict, "an object with this name already exists in the namespace and is not managed by levelrail; it was not merged into"
+	}
+	action := auditK8sDeployFailed
+	if status == http.StatusConflict {
+		action = auditK8sDeployRefused
+	}
+	if len(d.Objects) > 0 {
+		action = auditK8sDeployPartial
+		d.Reason = "some objects were applied before the failure"
+		rt.recordPartialK8s(r, cluster, d)
+	}
+	rt.auditK8sDeploy(r, action, cluster, d, status)
+	if msg != "" {
+		writeError(w, status, msg)
+		return
+	}
+	writeK8sCallError(w, err)
+}
+
+// recordPartialK8s keeps the row so status and removal see what was applied.
+func (rt *Router) recordPartialK8s(r *http.Request, cluster string, d k8sDeployAudit) {
+	_, actor, _, _ := rt.callerPrincipal(r)
+	row := store.K8sDeployment{
+		Cluster: cluster, App: d.App, Namespace: d.Namespace, Image: d.Image, Port: d.Port, Replicas: d.Replicas,
+		Host: d.Host, AllowRoot: d.AllowRoot, Objects: d.Objects, CreatedBy: actor,
+	}
+	if err := rt.k8sDeploymentRows.UpsertK8sDeployment(context.WithoutCancel(r.Context()), row); err != nil {
+		rt.logger.Warn("api: record partial k8s deployment failed", slog.String("cluster", cluster))
+	}
 }
 
 // buildK8sSpec validates the request. It returns a message for the caller on refusal.
@@ -208,8 +301,8 @@ func (rt *Router) buildK8sSpec(ctx context.Context, req k8sDeployRequest) (k8sco
 		replicas = *req.Replicas
 	}
 	switch {
-	case !k8sClusterNameRe.MatchString(req.App):
-		return k8sconn.AppSpec{}, "app must be lowercase letters, digits and dashes, up to 63 characters"
+	case !k8sAppNameRe.MatchString(req.App):
+		return k8sconn.AppSpec{}, "app must start with a lowercase letter, then letters, digits and dashes, up to 63 characters"
 	case !k8sClusterNameRe.MatchString(ns):
 		return k8sconn.AppSpec{}, "namespace must be lowercase letters, digits and dashes, up to 63 characters"
 	case !publicImage(req.Image):
@@ -222,14 +315,20 @@ func (rt *Router) buildK8sSpec(ctx context.Context, req k8sDeployRequest) (k8sco
 		return k8sconn.AppSpec{}, "host must be a lowercase DNS name"
 	case len(req.Env) > set.Limit(ctx, runtimesettings.KeyK8sMaxEnvVars):
 		return k8sconn.AppSpec{}, "env has more variables than k8s.max_env_vars allows"
+	case req.SkipHostCheck && !set.Bool(ctx, runtimesettings.KeyK8sAllowUnverifiedHost):
+		return k8sconn.AppSpec{}, "skip_host_check needs the k8s.allow_unverified_hosts setting"
 	case req.RunAsUser != nil && *req.RunAsUser < 0:
 		return k8sconn.AppSpec{}, "run_as_user must not be negative"
 	case req.RunAsUser != nil && *req.RunAsUser == 0 && !req.AllowRoot:
 		return k8sconn.AppSpec{}, "run_as_user 0 is root; set allow_root to true to run as root"
 	}
-	for k := range req.Env {
+	maxVal := set.Limit(ctx, runtimesettings.KeyK8sMaxEnvValueBytes)
+	for k, v := range req.Env {
 		if !k8sEnvNameRe.MatchString(k) {
 			return k8sconn.AppSpec{}, "env names must be letters, digits and underscores"
+		}
+		if len(v) > maxVal {
+			return k8sconn.AppSpec{}, "an env value is longer than k8s.max_env_value_bytes allows"
 		}
 	}
 	res, ok := rt.k8sResources(ctx)
@@ -238,7 +337,8 @@ func (rt *Router) buildK8sSpec(ctx context.Context, req k8sDeployRequest) (k8sco
 	}
 	spec := k8sconn.AppSpec{
 		Name: req.App, Namespace: ns, Image: req.Image, Port: req.Port, Replicas: replicas,
-		Env: req.Env, Host: req.Host, Resources: res,
+		Env: req.Env, Host: req.Host, Resources: res, AllowUnverifiedHost: req.SkipHostCheck,
+		AllowUnmanagedNamespace: ns == set.String(ctx, runtimesettings.KeyK8sDefaultNamespace) || k8sNamespaceAllowed(set.String(ctx, runtimesettings.KeyK8sAllowedNamespaces), ns),
 	}
 	switch {
 	case req.RunAsUser != nil && *req.RunAsUser > 0:
@@ -248,6 +348,15 @@ func (rt *Router) buildK8sSpec(ctx context.Context, req k8sDeployRequest) (k8sco
 		spec.RunAsUser = &uid
 	}
 	return spec, ""
+}
+
+func k8sNamespaceAllowed(list, ns string) bool {
+	for _, a := range runtimesettings.ParseK8sNamespaces(list) {
+		if a == ns {
+			return true
+		}
+	}
+	return false
 }
 
 func (rt *Router) handleListK8sDeployments(w http.ResponseWriter, r *http.Request) {
@@ -282,8 +391,41 @@ func (rt *Router) k8sDeploymentsReady(w http.ResponseWriter) bool {
 	return true
 }
 
-// auditK8sDeploy records names and the image, never env values or credentials.
-func (rt *Router) auditK8sDeploy(r *http.Request, action, cluster string, req k8sDeployRequest, status int) {
+// k8sDeployAudit is what a deploy audit entry carries: names and values, never env values.
+type k8sDeployAudit struct {
+	App, Namespace, Image, Host string
+	Port, Replicas              int
+	RunAsUser                   *int64
+	AllowRoot                   bool
+	Objects                     []string
+	Reason                      string
+}
+
+// k8sAuditFromRequest resolves the effective namespace and replicas for a request that
+// failed validation, so the entry still shows what would have been applied.
+func (rt *Router) k8sAuditFromRequest(ctx context.Context, req k8sDeployRequest, reason string) k8sDeployAudit {
+	ns := req.Namespace
+	if ns == "" {
+		ns = rt.runtimeSettings.String(ctx, runtimesettings.KeyK8sDefaultNamespace)
+	}
+	replicas := 1
+	if req.Replicas != nil {
+		replicas = *req.Replicas
+	}
+	return k8sDeployAudit{
+		App: req.App, Namespace: ns, Image: req.Image, Host: req.Host, Port: req.Port, Replicas: replicas,
+		RunAsUser: req.RunAsUser, AllowRoot: req.AllowRoot, Reason: reason,
+	}
+}
+
+func k8sAuditFromSpec(spec k8sconn.AppSpec, allowRoot bool) k8sDeployAudit {
+	return k8sDeployAudit{
+		App: spec.Name, Namespace: spec.Namespace, Image: spec.Image, Host: spec.Host, Port: spec.Port,
+		Replicas: spec.Replicas, RunAsUser: spec.RunAsUser, AllowRoot: allowRoot,
+	}
+}
+
+func (rt *Router) auditK8sDeploy(r *http.Request, action, cluster string, d k8sDeployAudit, status int) {
 	if rt.auditLog == nil {
 		return
 	}
@@ -296,9 +438,10 @@ func (rt *Router) auditK8sDeploy(r *http.Request, action, cluster string, req k8
 	if perr != nil {
 		ptype, pid = auditActorSystem, "unknown"
 	}
-	ns := req.Namespace
 	detail, _ := json.Marshal(map[string]any{
-		"cluster": cluster, "app": req.App, "namespace": ns, "image": req.Image, "allow_root": req.AllowRoot,
+		"cluster": cluster, "app": d.App, "namespace": d.Namespace, "image": d.Image, "host": d.Host,
+		"port": d.Port, "replicas": d.Replicas, "run_as_user": d.RunAsUser, "allow_root": d.AllowRoot,
+		"objects": d.Objects, "reason": d.Reason,
 	})
 	entry := store.AuditEntry{
 		ID: id, ActorType: ptype, ActorID: pid, ActorName: pid, Ability: AbilityRoot, Method: r.Method,

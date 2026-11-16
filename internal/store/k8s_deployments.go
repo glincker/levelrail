@@ -2,7 +2,9 @@ package store
 
 import (
 	"context"
+	"crypto/rand"
 	"database/sql"
+	"encoding/hex"
 	"encoding/json"
 	"errors"
 	"fmt"
@@ -99,6 +101,47 @@ func (db *DB) ListK8sDeployments(ctx context.Context, cluster string) ([]K8sDepl
 func (db *DB) DeleteK8sDeploymentsForCluster(ctx context.Context, cluster string) error {
 	if _, err := db.ExecContext(ctx, `DELETE FROM k8s_deployments WHERE cluster_name = ?`, cluster); err != nil {
 		return fmt.Errorf("store: delete k8s deployments: %w", err)
+	}
+	return nil
+}
+
+// K8sInstanceID returns the stable id of this install, creating it on first use. It is
+// stamped on every object so another Levelrail install cannot take over ours.
+func (db *DB) K8sInstanceID(ctx context.Context) (string, error) {
+	var b [12]byte
+	if _, err := rand.Read(b[:]); err != nil {
+		return "", fmt.Errorf("store: k8s instance id: %w", err)
+	}
+	if _, err := db.ExecContext(ctx, `INSERT OR IGNORE INTO k8s_instance (singleton, id) VALUES (1, ?)`, hex.EncodeToString(b[:])); err != nil {
+		return "", fmt.Errorf("store: k8s instance id: %w", err)
+	}
+	var id string
+	if err := db.QueryRowContext(ctx, `SELECT id FROM k8s_instance WHERE singleton = 1`).Scan(&id); err != nil {
+		return "", fmt.Errorf("store: k8s instance id: %w", err)
+	}
+	return id, nil
+}
+
+// ClaimK8sDeploy takes the (cluster, app) claim and reports false while a live one exists.
+// A claim older than staleAfter is taken over, so a crash never locks an app for good.
+func (db *DB) ClaimK8sDeploy(ctx context.Context, cluster, app string, staleAfter time.Duration) (bool, error) {
+	now := time.Now().UTC()
+	cutoff := now.Add(-staleAfter).Format(time.RFC3339Nano)
+	if _, err := db.ExecContext(ctx, `DELETE FROM k8s_deploy_claims WHERE cluster_name = ? AND app = ? AND claimed_at < ?`, cluster, app, cutoff); err != nil {
+		return false, fmt.Errorf("store: claim k8s deploy: %w", err)
+	}
+	res, err := db.ExecContext(ctx, `INSERT OR IGNORE INTO k8s_deploy_claims (cluster_name, app, claimed_at) VALUES (?, ?, ?)`, cluster, app, now.Format(time.RFC3339Nano))
+	if err != nil {
+		return false, fmt.Errorf("store: claim k8s deploy: %w", err)
+	}
+	n, _ := res.RowsAffected()
+	return n == 1, nil
+}
+
+// ReleaseK8sDeploy drops the claim taken by ClaimK8sDeploy.
+func (db *DB) ReleaseK8sDeploy(ctx context.Context, cluster, app string) error {
+	if _, err := db.ExecContext(ctx, `DELETE FROM k8s_deploy_claims WHERE cluster_name = ? AND app = ?`, cluster, app); err != nil {
+		return fmt.Errorf("store: release k8s deploy: %w", err)
 	}
 	return nil
 }

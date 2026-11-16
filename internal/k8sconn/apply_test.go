@@ -24,6 +24,7 @@ type applyFake struct {
 	mu      sync.Mutex
 	objects map[string]string
 	patches []patchRec
+	posts   []string
 }
 
 func newApplyFake(t *testing.T, seed map[string]string) (*Client, *applyFake) {
@@ -36,7 +37,32 @@ func newApplyFake(t *testing.T, seed map[string]string) (*Client, *applyFake) {
 		f.mu.Lock()
 		defer f.mu.Unlock()
 		switch r.Method {
+		case http.MethodPost:
+			b, _ := io.ReadAll(r.Body)
+			var m struct {
+				Metadata struct {
+					Name string `json:"name"`
+				} `json:"metadata"`
+			}
+			_ = json.Unmarshal(b, &m)
+			path := r.URL.Path + "/" + m.Metadata.Name
+			if _, ok := f.objects[path]; ok {
+				w.WriteHeader(http.StatusConflict)
+				return
+			}
+			f.posts = append(f.posts, path)
+			f.objects[path] = string(b)
+			w.WriteHeader(http.StatusCreated)
+			_, _ = w.Write(b)
 		case http.MethodGet:
+			if r.URL.Path == "/apis/networking.k8s.io/v1/ingresses" {
+				if b, ok := f.objects[r.URL.Path]; ok {
+					_, _ = w.Write([]byte(b))
+					return
+				}
+				_, _ = w.Write([]byte(`{"items":[]}`))
+				return
+			}
 			if b, ok := f.objects[r.URL.Path]; ok {
 				_, _ = w.Write([]byte(b))
 				return
@@ -73,13 +99,8 @@ func TestApplyServerSide(t *testing.T) {
 	if got := strings.Join(names, ","); got != "Deployment/whoami,Service/whoami,Ingress/whoami" {
 		t.Fatalf("names = %s", got)
 	}
-	if len(f.patches) != 4 {
-		t.Fatalf("patches = %d, want namespace plus three objects", len(f.patches))
-	}
-	for _, p := range f.patches {
-		if p.ContentType != "application/apply-patch+yaml" || !strings.Contains(p.Query, "fieldManager=levelrail") || strings.Contains(p.Query, "force") {
-			t.Fatalf("patch %+v: want apply content type, field manager, no force on new objects", p)
-		}
+	if len(f.posts) != 4 || len(f.patches) != 0 {
+		t.Fatalf("posts = %d patches = %d, want namespace plus three objects created with POST", len(f.posts), len(f.patches))
 	}
 	ns := f.objects["/api/v1/namespaces/apps"]
 	if !strings.Contains(ns, LabelManagedBy) {
@@ -91,8 +112,11 @@ func TestApplyServerSide(t *testing.T) {
 	if _, err := c.Apply(context.Background(), spec, r); err != nil {
 		t.Fatal(err)
 	}
+	if len(f.patches) != 3 {
+		t.Fatalf("re-apply patches = %d, want 3", len(f.patches))
+	}
 	for _, p := range f.patches {
-		if !strings.Contains(p.Query, "force=true") {
+		if p.ContentType != "application/apply-patch+yaml" || !strings.Contains(p.Query, "fieldManager=levelrail") || !strings.Contains(p.Query, "force=true") {
 			t.Fatalf("re-apply of our own object should force: %+v", p)
 		}
 	}
@@ -103,7 +127,7 @@ func TestApplyServerSide(t *testing.T) {
 
 func TestApplyRefusesUnlabelledTakeover(t *testing.T) {
 	c, f := newApplyFake(t, map[string]string{
-		"/api/v1/namespaces/apps":                 `{"metadata":{"name":"apps"}}`,
+		"/api/v1/namespaces/apps":                 `{"metadata":{"name":"apps","labels":{"app.kubernetes.io/managed-by":"levelrail"}}}`,
 		"/api/v1/namespaces/apps/services/whoami": `{"metadata":{"name":"whoami","labels":{"team":"other"}}}`,
 	})
 	spec := baseSpec()

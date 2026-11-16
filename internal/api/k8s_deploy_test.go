@@ -1,6 +1,7 @@
 package api
 
 import (
+	"context"
 	"encoding/base64"
 	"encoding/json"
 	"io"
@@ -14,6 +15,7 @@ import (
 	"encoding/pem"
 
 	"github.com/GLINCKER/levelrail/internal/runtimesettings"
+	"github.com/GLINCKER/levelrail/internal/store"
 )
 
 type deployKube struct {
@@ -31,6 +33,37 @@ func startDeployKube(t *testing.T, seed map[string]string) (*httptest.Server, *d
 	srv := httptest.NewTLSServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
 		k.mu.Lock()
 		defer k.mu.Unlock()
+		if r.Method == http.MethodPost {
+			b, _ := io.ReadAll(r.Body)
+			var m struct {
+				Metadata struct {
+					Name string `json:"name"`
+				} `json:"metadata"`
+			}
+			_ = json.Unmarshal(b, &m)
+			path := r.URL.Path + "/" + m.Metadata.Name
+			if _, ok := k.objects[path]; ok {
+				w.WriteHeader(http.StatusConflict)
+				return
+			}
+			k.patches[path] = string(b)
+			k.objects[path] = string(b)
+			w.WriteHeader(http.StatusCreated)
+			_, _ = w.Write(b)
+			return
+		}
+		if r.Method == http.MethodGet && r.URL.Path == "/apis/networking.k8s.io/v1/ingresses" {
+			if k.objects[r.URL.Path] == "forbidden" {
+				w.WriteHeader(http.StatusForbidden)
+				return
+			}
+			if b, ok := k.objects[r.URL.Path]; ok {
+				_, _ = w.Write([]byte(b))
+				return
+			}
+			_, _ = w.Write([]byte(`{"items":[]}`))
+			return
+		}
 		if r.Method == http.MethodPatch {
 			b, _ := io.ReadAll(r.Body)
 			if r.Header.Get("Content-Type") != "application/apply-patch+yaml" || !strings.Contains(r.URL.RawQuery, "fieldManager=levelrail") {
@@ -54,11 +87,26 @@ func startDeployKube(t *testing.T, seed map[string]string) (*httptest.Server, *d
 
 func newDeployHarness(t *testing.T, kube *httptest.Server) func(method, path, body string) *httptest.ResponseRecorder {
 	t.Helper()
+	do, _ := newDeployEnv(t, kube, nil)
+	return do
+}
+
+// testInstanceID is the install id the harness pins, so tests can label seeded objects as ours.
+const testInstanceID = "inst-test"
+
+func newDeployEnv(t *testing.T, kube *httptest.Server, extra map[string]string) (func(method, path, body string) *httptest.ResponseRecorder, *store.DB) {
+	t.Helper()
 	caB64 := base64.StdEncoding.EncodeToString(pem.EncodeToMemory(&pem.Block{Type: "CERTIFICATE", Bytes: kube.Certificate().Raw}))
 	db := openTestDB(t)
 	sec := &fakeK8sSecrets{vals: map[string]string{}}
 	rt := NewRouter(slog.New(slog.NewTextHandler(discardWriter{}, nil)), testBrand(), db, WithNodeProviderSecrets(sec))
+	if _, err := db.ExecContext(context.Background(), `INSERT INTO k8s_instance (singleton, id) VALUES (1, ?)`, testInstanceID); err != nil {
+		t.Fatal(err)
+	}
 	rt.runtimeSettings = runtimesettings.New(db, func(k string) (string, bool) {
+		if v, ok := extra[k]; ok {
+			return v, true
+		}
 		if k == "APP_K8S_CLUSTERS_ENABLED" || k == "APP_K8S_ALLOW_PRIVATE_API" {
 			return "true", true
 		}
@@ -74,13 +122,13 @@ func newDeployHarness(t *testing.T, kube *httptest.Server) func(method, path, bo
 	if rec := do("POST", k8sClustersPath, string(raw)); rec.Code != http.StatusCreated {
 		t.Fatalf("connect = %d %s", rec.Code, rec.Body.String())
 	}
-	return do
+	return do, db
 }
 
 const deployBody = `{"app":"whoami","image":"traefik/whoami:v1.10","port":80,"replicas":2,"host":"whoami.example.com","env":{"SECRET_THING":"hunter2"}}`
 
 func TestK8sDeployApplyAndStatus(t *testing.T) {
-	lbl := `"labels":{"app.kubernetes.io/managed-by":"levelrail","levelrail.dev/app":"whoami"}`
+	lbl := `"labels":{"app.kubernetes.io/managed-by":"levelrail","levelrail.dev/app":"whoami","levelrail.dev/instance":"` + testInstanceID + `"}`
 	kube, k := startDeployKube(t, map[string]string{
 		"/apis/apps/v1/namespaces/levelrail-managed/deployments/whoami": `{"metadata":{` + lbl + `},"status":{"replicas":2,"readyReplicas":0}}`,
 		"/api/v1/namespaces/levelrail-managed/pods":                     `{"items":[{"metadata":{"name":"p1"},"status":{"phase":"Pending","containerStatuses":[{"state":{"waiting":{"reason":"ImagePullBackOff"}}}]}}]}`,

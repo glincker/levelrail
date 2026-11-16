@@ -14,10 +14,14 @@ import (
 const (
 	LabelManagedBy = "app.kubernetes.io/managed-by"
 	LabelApp       = "levelrail.dev/app"
+	LabelInstance  = "levelrail.dev/instance"
 	ManagedByValue = "levelrail"
 )
 
 var dnsLabel = regexp.MustCompile(`^[a-z0-9]([-a-z0-9]{0,61}[a-z0-9])?$`)
+
+// appName must start with a letter because the Service name is a DNS-1035 label.
+var appName = regexp.MustCompile(`^[a-z]([-a-z0-9]{0,61}[a-z0-9])?$`)
 
 // Resources carries values the caller reads from runtime settings, so the
 // renderer holds no thresholds of its own.
@@ -32,10 +36,12 @@ type Resources struct {
 type AppSpec struct {
 	Name      string
 	Namespace string
-	Image     string
-	Port      int
-	Replicas  int
-	Env       map[string]string
+	// InstanceID is the install id stamped on labels and the Service selector; empty skips it.
+	InstanceID string
+	Image      string
+	Port       int
+	Replicas   int
+	Env        map[string]string
 	// Host empty means no Ingress is rendered.
 	Host         string
 	IngressClass string
@@ -44,6 +50,10 @@ type AppSpec struct {
 	Resources Resources
 	// RunAsUser is set only when the caller knows the image runs non-root.
 	RunAsUser *int64
+	// AllowUnmanagedNamespace lets Apply use an existing namespace without our label.
+	AllowUnmanagedNamespace bool
+	// AllowUnverifiedHost lets Apply proceed when Ingresses cannot be listed.
+	AllowUnverifiedHost bool
 }
 
 // Rendered holds the objects as maps ready for YAML or JSON.
@@ -53,14 +63,27 @@ type Rendered struct {
 	Ingress    map[string]any // nil when no host
 }
 
-// Labels returns the ownership labels for an app.
-func Labels(app string) map[string]string {
-	return map[string]string{LabelManagedBy: ManagedByValue, LabelApp: app}
+// Labels returns the ownership labels for an app. A non-empty instance adds the install id.
+func Labels(app, instance string) map[string]string {
+	l := map[string]string{LabelManagedBy: ManagedByValue, LabelApp: app}
+	if instance != "" {
+		l[LabelInstance] = instance
+	}
+	return l
+}
+
+// selector is the label set pods carry and Services and Deployments match.
+func selector(app, instance string) map[string]any {
+	m := map[string]any{LabelApp: app}
+	if instance != "" {
+		m[LabelInstance] = instance
+	}
+	return m
 }
 
 func (s AppSpec) validate() error {
 	switch {
-	case !dnsLabel.MatchString(s.Name):
+	case !appName.MatchString(s.Name):
 		return fmt.Errorf("render: invalid app name %q", s.Name)
 	case !dnsLabel.MatchString(s.Namespace):
 		return fmt.Errorf("render: invalid namespace %q", s.Namespace)
@@ -82,7 +105,7 @@ func Render(s AppSpec) (Rendered, error) {
 	if err := s.validate(); err != nil {
 		return Rendered{}, err
 	}
-	labels := Labels(s.Name)
+	labels := Labels(s.Name, s.InstanceID)
 	meta := func() map[string]any {
 		return map[string]any{"name": s.Name, "namespace": s.Namespace, "labels": toAny(labels)}
 	}
@@ -127,7 +150,7 @@ func Render(s AppSpec) (Rendered, error) {
 			"metadata":   meta(),
 			"spec": map[string]any{
 				"replicas": s.Replicas,
-				"selector": map[string]any{"matchLabels": map[string]any{LabelApp: s.Name}},
+				"selector": map[string]any{"matchLabels": selector(s.Name, s.InstanceID)},
 				"template": map[string]any{
 					"metadata": map[string]any{"labels": toAny(labels)},
 					"spec": map[string]any{
@@ -144,7 +167,7 @@ func Render(s AppSpec) (Rendered, error) {
 			"metadata":   meta(),
 			"spec": map[string]any{
 				"type":     "ClusterIP",
-				"selector": map[string]any{LabelApp: s.Name},
+				"selector": selector(s.Name, s.InstanceID),
 				"ports": []any{map[string]any{
 					"name": "http", "port": 80, "targetPort": "http", "protocol": "TCP",
 				}},

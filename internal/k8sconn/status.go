@@ -86,7 +86,7 @@ func (c *Client) DeploymentStatus(ctx context.Context, namespace, app string) (S
 	if err := json.Unmarshal(data, &d); err != nil {
 		return Status{}, fmt.Errorf("k8sconn: decode deployment: %w", err)
 	}
-	if !ownedBy(d.Metadata.Labels, app) {
+	if !ownedBy(d.Metadata.Labels, app, "") {
 		return Status{}, nil
 	}
 	st := Status{Found: true, Replicas: d.Status.Replicas, ReadyReplicas: d.Status.ReadyReplicas, UpdatedReplicas: d.Status.UpdatedReplicas}

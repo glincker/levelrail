@@ -3,6 +3,7 @@ package api
 import (
 	"errors"
 	"net/http"
+	"unicode/utf8"
 
 	"github.com/GLINCKER/levelrail/internal/store"
 )
@@ -88,8 +89,13 @@ func (rt *Router) handleGetK8sDeploymentStatus(w http.ResponseWriter, r *http.Re
 // truncateK8sMessage keeps cluster-authored text short so a status row stays small.
 func truncateK8sMessage(s string) string {
 	const limit = 300
-	if len(s) > limit {
-		return s[:limit]
+	if len(s) <= limit {
+		return s
 	}
-	return s
+	cut := limit
+	// Back up to a rune boundary so a multi-byte character is never split.
+	for cut > 0 && !utf8.RuneStart(s[cut]) {
+		cut--
+	}
+	return s[:cut]
 }

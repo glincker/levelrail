@@ -358,7 +358,14 @@ func (rt *Router) handleDisconnectK8sCluster(w http.ResponseWriter, r *http.Requ
 		rt.internalError(w, "api: get k8s cluster failed", err)
 		return
 	}
-	// Secrets go first and a failure keeps the row, so no stale secrets outlive a name.
+	// Deployment rows go first and a failure keeps the cluster, so a reconnect under the
+	// same name never inherits stale rows. Secrets follow, then the cluster row.
+	if rt.k8sDeploymentRows != nil {
+		if err := rt.k8sDeploymentRows.DeleteK8sDeploymentsForCluster(r.Context(), name); err != nil {
+			rt.internalError(w, "api: delete k8s deployment records failed", err)
+			return
+		}
+	}
 	if secrets, ok := rt.k8sSecrets(); ok {
 		if err := secrets.DeleteAll(r.Context(), store.K8sClusterSecretsKey(name)); err != nil {
 			rt.internalError(w, "api: delete k8s credentials failed", err)
@@ -368,11 +375,6 @@ func (rt *Router) handleDisconnectK8sCluster(w http.ResponseWriter, r *http.Requ
 	if err := rt.k8sClusterRows.DeleteK8sCluster(r.Context(), name); err != nil {
 		rt.internalError(w, "api: delete k8s cluster failed", err)
 		return
-	}
-	if rt.k8sDeploymentRows != nil {
-		if err := rt.k8sDeploymentRows.DeleteK8sDeploymentsForCluster(r.Context(), name); err != nil {
-			rt.logger.Warn("api: delete k8s deployment records failed", slog.String("cluster", name))
-		}
 	}
 	rt.auditK8sCluster(r, auditK8sClusterDisconnected, prev, http.StatusOK)
 	w.WriteHeader(http.StatusNoContent)

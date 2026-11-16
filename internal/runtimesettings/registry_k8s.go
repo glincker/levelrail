@@ -3,6 +3,7 @@ package runtimesettings
 import (
 	"fmt"
 	"regexp"
+	"strings"
 	"time"
 )
 
@@ -24,6 +25,9 @@ const (
 	KeyK8sMaxReplicas         = "k8s.max_replicas" // gitleaks:allow
 	KeyK8sMaxEnvVars          = "k8s.max_env_vars"
 	KeyK8sRunAsUser           = "k8s.run_as_user"
+	KeyK8sAllowedNamespaces   = "k8s.allowed_namespaces"
+	KeyK8sAllowUnverifiedHost = "k8s.allow_unverified_hosts"
+	KeyK8sMaxEnvValueBytes    = "k8s.max_env_value_bytes"
 	k8sKubeconfigMaxBytesCeil = 8 << 20
 	k8sMaxBodyBytesCeil       = 256 << 20
 	k8sLogTailLinesCeil       = 100000
@@ -81,6 +85,23 @@ func init() {
 		"Most replicas one deploy request may ask for.", 1, 1000)
 	registerK8sInt(KeyK8sMaxEnvVars, "APP_K8S_MAX_ENV_VARS", "64", "Kubernetes env variable cap",
 		"Most environment variables one deploy request may carry.", 0, 1000)
+	Register(Definition{
+		Key: KeyK8sAllowedNamespaces, Category: cat, Kind: KindString, Default: "", Env: "APP_K8S_ALLOWED_NAMESPACES", Apply: ApplyLive,
+		CheckValue: func(v string) error {
+			for _, ns := range ParseK8sNamespaces(v) {
+				if !k8sDNSLabel.MatchString(ns) {
+					return fmt.Errorf("%q is not a lowercase DNS label", ns)
+				}
+			}
+			return nil
+		},
+		Title:       "Kubernetes allowed existing namespaces",
+		Description: "Comma separated namespaces a deploy may use although Levelrail did not create them. The default namespace is always allowed. Empty by default.",
+	})
+	boolDef(KeyK8sAllowUnverifiedHost, "APP_K8S_ALLOW_UNVERIFIED_HOSTS", "Kubernetes unverified ingress hosts",
+		"Lets a deploy that sets skip_host_check proceed when the cluster refuses to list Ingresses, so host ownership cannot be verified.", RiskWeakensSecurity)
+	registerK8sInt(KeyK8sMaxEnvValueBytes, "APP_K8S_MAX_ENV_VALUE_BYTES", "4096", "Kubernetes env value size cap",
+		"Longest value, in bytes, one deploy environment variable may carry.", 1, 1<<20)
 	registerK8sInt(KeyK8sRunAsUser, "APP_K8S_RUN_AS_USER", "10001", "Kubernetes non-root user id",
 		"User id forced on containers so they never run as root unless a deploy sets allow_root.", 1, 2147483647)
 }
@@ -89,6 +110,17 @@ var (
 	k8sDNSLabel = regexp.MustCompile(`^[a-z0-9]([-a-z0-9]{0,61}[a-z0-9])?$`)
 	k8sQuantity = regexp.MustCompile(`^[0-9]+(\.[0-9]+)?(m|k|M|G|T|Ki|Mi|Gi|Ti)?$`)
 )
+
+// ParseK8sNamespaces splits a comma list, dropping blanks.
+func ParseK8sNamespaces(v string) []string {
+	var out []string
+	for _, p := range strings.Split(v, ",") {
+		if p = strings.TrimSpace(p); p != "" {
+			out = append(out, p)
+		}
+	}
+	return out
+}
 
 // ValidK8sQuantity reports whether v is a plain Kubernetes resource quantity.
 func ValidK8sQuantity(v string) bool { return k8sQuantity.MatchString(v) }
