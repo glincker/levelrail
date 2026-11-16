@@ -588,8 +588,7 @@ jobs:
           git clone --depth 1 git@github.com:glincker/terraform-provider-levelrail.git mirror
           git -C mirror config user.name "levelrail release"
           git -C mirror config user.email "support@levelrail.com"
-          version="${{ env.RELEASE_TAG }}"
-          integrations/terraform-provider/release/mirror-sync.sh --clone mirror --version "${version#v}" --yes
+          integrations/terraform-provider/release/mirror-sync.sh --clone mirror --yes
           rm -f ~/.ssh/mirror_key
 
   publish-npm:

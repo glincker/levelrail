@@ -22,13 +22,15 @@ while [ $# -gt 0 ]; do
     *) usage ;;
   esac
 done
+src="$(cd "$(dirname "${BASH_SOURCE[0]}")/.." && pwd)"
+# The provider has its own semver (VERSION), independent of the monorepo release tag.
+[ -n "$version" ] || { [ -f "$src/VERSION" ] && version="$(tr -d '[:space:]' < "$src/VERSION")"; }
 [ -n "$clone" ] && [ -n "$version" ] || usage
 case "$version" in
   [0-9]*.[0-9]*.[0-9]*) ;;
   *) echo "version must look like 1.2.3" >&2; exit 2 ;;
 esac
 
-src="$(cd "$(dirname "${BASH_SOURCE[0]}")/.." && pwd)"
 [ -d "$clone/.git" ] || { echo "not a git clone: $clone" >&2; exit 1; }
 
 remote="$(git -C "$clone" remote get-url origin)"
@@ -60,6 +62,14 @@ mkdir -p "$clone/.github/workflows"
 cp "$src/release/workflow.yml.example" "$clone/.github/workflows/release.yml"
 
 git -C "$clone" add -A
+if git -C "$clone" diff --cached --quiet; then
+  echo "mirror already matches the provider files, nothing to sync"
+  exit 0
+fi
+if git -C "$clone" ls-remote --exit-code --tags origin "refs/tags/v$version" >/dev/null 2>&1; then
+  echo "mirror content changed but v$version already exists: bump integrations/terraform-provider/VERSION" >&2
+  exit 1
+fi
 git -C "$clone" commit -m "chore: sync v$version"
 git -C "$clone" tag "v$version"
 git -C "$clone" push origin HEAD "v$version"

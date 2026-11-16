@@ -1,5 +1,5 @@
 # Run from the root of the mirror repo (see release/README.md), never from the monorepo.
-# Nothing here publishes on its own: the release stays a draft until a human publishes it.
+# A signed tag publishes the release; the registries only read published releases.
 version: 2
 
 before:
@@ -53,7 +53,7 @@ signs:
       - "${artifact}"
 
 release:
-  draft: true
+  draft: false
   extra_files:
     - glob: terraform-registry-manifest.json
       name_template: "{{ .ProjectName }}_{{ .Version }}_manifest.json"
