@@ -13,6 +13,7 @@ import (
 	"testing"
 
 	"github.com/GLINCKER/levelrail/internal/runtimesettings"
+	"github.com/GLINCKER/levelrail/internal/store"
 )
 
 type fakeK8sSecrets struct {
@@ -48,6 +49,25 @@ func (f *fakeK8sSecrets) DeleteAll(_ context.Context, svc string) error {
 			delete(f.vals, k)
 		}
 	}
+	return nil
+}
+
+func (f *fakeK8sSecrets) ListKeys(_ context.Context, svc string) ([]store.SecretKeyInfo, error) {
+	f.mu.Lock()
+	defer f.mu.Unlock()
+	var out []store.SecretKeyInfo
+	for k := range f.vals {
+		if key, ok := strings.CutPrefix(k, svc+"|"); ok {
+			out = append(out, store.SecretKeyInfo{Key: key})
+		}
+	}
+	return out, nil
+}
+
+func (f *fakeK8sSecrets) DeleteValue(_ context.Context, svc, key string) error {
+	f.mu.Lock()
+	defer f.mu.Unlock()
+	delete(f.vals, svc+"|"+key)
 	return nil
 }
 

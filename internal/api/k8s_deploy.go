@@ -60,7 +60,7 @@ func k8sDeploymentStoreOf(s Store) K8sDeploymentRows {
 	return r
 }
 
-// k8sDeployRequest takes a public image only. Env values go into the Deployment as
+// k8sDeployRequest takes a public image, or a private one with pull_secret. Env values go into the Deployment as
 // plain values and are never stored, logged or returned.
 type k8sDeployRequest struct {
 	App       string            `json:"app"`
@@ -77,6 +77,8 @@ type k8sDeployRequest struct {
 	// SkipHostCheck proceeds when the cluster refuses to list Ingresses. It works only while
 	// k8s.allow_unverified_hosts is on.
 	SkipHostCheck bool `json:"skip_host_check,omitempty"`
+	// PullSecret names a stored registry credential (clusters pull-secret add) for a private image.
+	PullSecret string `json:"pull_secret,omitempty"`
 }
 
 type k8sDeployResponse struct {
@@ -179,6 +181,19 @@ func (rt *Router) handleDeployK8sApp(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 	detail := k8sAuditFromSpec(spec, req.AllowRoot)
+	detail.PullSecret = req.PullSecret
+	var pull storedPullSecret
+	if req.PullSecret != "" {
+		var status int
+		pull, status, msg = rt.resolveK8sPullSecret(ctx, c.Name, req.PullSecret, spec.Image)
+		if msg != "" {
+			detail.Reason = msg
+			rt.auditK8sDeploy(r, auditK8sDeployRefused, c.Name, detail, status)
+			writeError(w, status, msg)
+			return
+		}
+		spec.PullSecretName = k8sconn.PullSecretName(spec.Name)
+	}
 	instance, err := rt.k8sDeploymentRows.K8sInstanceID(ctx)
 	if err != nil {
 		detail.Reason = "instance id unavailable"
@@ -188,6 +203,9 @@ func (rt *Router) handleDeployK8sApp(w http.ResponseWriter, r *http.Request) {
 	}
 	spec.InstanceID = instance
 	rendered, err := k8sconn.Render(spec)
+	if err == nil && req.PullSecret != "" {
+		rendered.Secret, err = k8sconn.BuildPullSecret(spec, pull.Registry, pull.Username, pull.Password)
+	}
 	if err != nil {
 		detail.Reason = "render failed"
 		rt.auditK8sDeploy(r, auditK8sDeployFailed, c.Name, detail, http.StatusBadRequest)
@@ -209,7 +227,8 @@ func (rt *Router) handleDeployK8sApp(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 	defer func() { _ = rt.k8sDeploymentRows.ReleaseK8sDeploy(context.WithoutCancel(ctx), c.Name, spec.Name) }()
-	if prev, err := rt.k8sDeploymentRows.GetK8sDeployment(ctx, c.Name, spec.Name); err == nil && prev.Namespace != spec.Namespace {
+	prev, prevErr := rt.k8sDeploymentRows.GetK8sDeployment(ctx, c.Name, spec.Name)
+	if prevErr == nil && prev.Namespace != spec.Namespace {
 		detail.Reason = "app is deployed in another namespace"
 		rt.auditK8sDeploy(r, auditK8sDeployRefused, c.Name, detail, http.StatusConflict)
 		writeError(w, http.StatusConflict, "this app is already deployed to this cluster in another namespace")
@@ -228,6 +247,10 @@ func (rt *Router) handleDeployK8sApp(w http.ResponseWriter, r *http.Request) {
 		rt.failK8sApply(w, r, c.Name, detail, err)
 		return
 	}
+	if prevErr == nil && req.PullSecret == "" {
+		names = rt.dropStalePullSecrets(ctx, cl, prev, spec, instance, names)
+		detail.Objects = names
+	}
 	// Audit first: the cluster already changed, whatever the row write does next.
 	rt.auditK8sDeploy(r, auditK8sDeployApplied, c.Name, detail, http.StatusCreated)
 	_, actor, _, _ := rt.callerPrincipal(r)
@@ -242,6 +265,18 @@ func (rt *Router) handleDeployK8sApp(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 	writeJSON(w, http.StatusCreated, k8sDeployResponse{App: spec.Name, Namespace: spec.Namespace, Objects: names, AllowRoot: req.AllowRoot})
+}
+
+// dropStalePullSecrets removes a pull secret an earlier deploy created once the app no longer
+// uses one. A secret that cannot be deleted stays in the tracked objects so remove retries it.
+func (rt *Router) dropStalePullSecrets(ctx context.Context, cl *k8sconn.Client, prev store.K8sDeployment, spec k8sconn.AppSpec, instance string, names []string) []string {
+	for _, n := range k8sPulledSecretNames(prev.Objects) {
+		if err := cl.DeletePullSecret(ctx, prev.Namespace, n, spec.Name, instance); err != nil {
+			rt.logger.Warn("api: delete stale k8s pull secret failed", slog.String("app", spec.Name))
+			names = append(names, "Secret/"+n)
+		}
+	}
+	return names
 }
 
 // failK8sApply audits and answers a failed Apply. A partial apply is logged as partial.
@@ -307,7 +342,7 @@ func (rt *Router) buildK8sSpec(ctx context.Context, req k8sDeployRequest) (k8sco
 	case !k8sClusterNameRe.MatchString(ns):
 		return k8sconn.AppSpec{}, "namespace must be lowercase letters, digits and dashes, up to 63 characters"
 	case !publicImage(req.Image):
-		return k8sconn.AppSpec{}, "image must be a public registry image such as nginx:1.27"
+		return k8sconn.AppSpec{}, "image must be a registry image such as nginx:1.27 (a private one needs pull_secret)"
 	case req.Port < 1 || req.Port > 65535:
 		return k8sconn.AppSpec{}, "port must be between 1 and 65535"
 	case replicas < 0 || replicas > set.Limit(ctx, runtimesettings.KeyK8sMaxReplicas):
@@ -400,6 +435,8 @@ type k8sDeployAudit struct {
 	AllowRoot                   bool
 	Objects                     []string
 	Reason                      string
+	// PullSecret is the stored credential's name, never its content.
+	PullSecret string
 }
 
 // k8sAuditFromRequest resolves the effective namespace and replicas for a request that
@@ -415,7 +452,7 @@ func (rt *Router) k8sAuditFromRequest(ctx context.Context, req k8sDeployRequest,
 	}
 	return k8sDeployAudit{
 		App: req.App, Namespace: ns, Image: req.Image, Host: req.Host, Port: req.Port, Replicas: replicas,
-		RunAsUser: req.RunAsUser, AllowRoot: req.AllowRoot, Reason: reason,
+		RunAsUser: req.RunAsUser, AllowRoot: req.AllowRoot, Reason: reason, PullSecret: req.PullSecret,
 	}
 }
 
@@ -442,7 +479,7 @@ func (rt *Router) auditK8sDeploy(r *http.Request, action, cluster string, d k8sD
 	detail, _ := json.Marshal(map[string]any{
 		"cluster": cluster, "app": d.App, "namespace": d.Namespace, "image": d.Image, "host": d.Host,
 		"port": d.Port, "replicas": d.Replicas, "run_as_user": d.RunAsUser, "allow_root": d.AllowRoot,
-		"objects": d.Objects, "reason": d.Reason,
+		"objects": d.Objects, "reason": d.Reason, "pull_secret": d.PullSecret,
 	})
 	entry := store.AuditEntry{
 		ID: id, ActorType: ptype, ActorID: pid, ActorName: pid, Ability: AbilityRoot, Method: r.Method,

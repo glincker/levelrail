@@ -50,6 +50,8 @@ type AppSpec struct {
 	Resources Resources
 	// RunAsUser is set only when the caller knows the image runs non-root.
 	RunAsUser *int64
+	// PullSecretName, when set, is the Secret the pods use to pull a private image.
+	PullSecretName string
 	// AllowRoot adds back the minimal capabilities root-start images need after drop ALL.
 	AllowRoot bool
 	// AllowUnmanagedNamespace lets Apply use an existing namespace without our label.
@@ -63,6 +65,8 @@ type Rendered struct {
 	Deployment map[string]any
 	Service    map[string]any
 	Ingress    map[string]any // nil when no host
+	// Secret is the pull secret, nil when none. It carries a credential, so YAML never prints it.
+	Secret map[string]any
 }
 
 // Labels returns the ownership labels for an app. A non-empty instance adds the install id.
@@ -153,6 +157,14 @@ func Render(s AppSpec) (Rendered, error) {
 		container["env"] = env
 	}
 
+	podSpec := map[string]any{
+		"automountServiceAccountToken": false,
+		"hostNetwork":                  false,
+		"containers":                   []any{container},
+	}
+	if s.PullSecretName != "" {
+		podSpec["imagePullSecrets"] = []any{map[string]any{"name": s.PullSecretName}}
+	}
 	r := Rendered{
 		Deployment: map[string]any{
 			"apiVersion": "apps/v1",
@@ -163,11 +175,7 @@ func Render(s AppSpec) (Rendered, error) {
 				"selector": map[string]any{"matchLabels": selector(s.Name, s.InstanceID)},
 				"template": map[string]any{
 					"metadata": map[string]any{"labels": toAny(labels)},
-					"spec": map[string]any{
-						"automountServiceAccountToken": false,
-						"hostNetwork":                  false,
-						"containers":                   []any{container},
-					},
+					"spec":     podSpec,
 				},
 			},
 		},

@@ -34,10 +34,15 @@ type ObjectRef struct {
 
 // Refs returns the API paths of every rendered object, namespace first.
 func (r Rendered) Refs(namespace string) []ObjectRef {
-	refs := []ObjectRef{
-		{Kind: "Deployment", Name: nameOf(r.Deployment), Path: "/apis/apps/v1/namespaces/" + namespace + "/deployments"},
-		{Kind: "Service", Name: nameOf(r.Service), Path: "/api/v1/namespaces/" + namespace + "/services"},
+	var refs []ObjectRef
+	if r.Secret != nil {
+		// First, so the pods never start before their pull credential exists.
+		refs = append(refs, ObjectRef{Kind: "Secret", Name: nameOf(r.Secret), Path: "/api/v1/namespaces/" + namespace + "/secrets"})
 	}
+	refs = append(refs,
+		ObjectRef{Kind: "Deployment", Name: nameOf(r.Deployment), Path: "/apis/apps/v1/namespaces/" + namespace + "/deployments"},
+		ObjectRef{Kind: "Service", Name: nameOf(r.Service), Path: "/api/v1/namespaces/" + namespace + "/services"},
+	)
 	if r.Ingress != nil {
 		refs = append(refs, ObjectRef{Kind: "Ingress", Name: nameOf(r.Ingress), Path: "/apis/networking.k8s.io/v1/namespaces/" + namespace + "/ingresses"})
 	}
@@ -206,7 +211,11 @@ func (c *Client) Apply(ctx context.Context, spec AppSpec, r Rendered) ([]string,
 		create bool
 	}
 	var steps []step
-	objs := []map[string]any{r.Deployment, r.Service}
+	var objs []map[string]any
+	if r.Secret != nil {
+		objs = append(objs, r.Secret)
+	}
+	objs = append(objs, r.Deployment, r.Service)
 	if r.Ingress != nil {
 		objs = append(objs, r.Ingress)
 	}

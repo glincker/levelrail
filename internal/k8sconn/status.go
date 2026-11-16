@@ -63,6 +63,15 @@ type deploymentDoc struct {
 	Metadata struct {
 		Labels map[string]string `json:"labels"`
 	} `json:"metadata"`
+	Spec struct {
+		Template struct {
+			Spec struct {
+				ImagePullSecrets []struct {
+					Name string `json:"name"`
+				} `json:"imagePullSecrets"`
+			} `json:"spec"`
+		} `json:"template"`
+	} `json:"spec"`
 	Status struct {
 		Replicas        int `json:"replicas"`
 		ReadyReplicas   int `json:"readyReplicas"`
@@ -106,6 +115,9 @@ func (c *Client) DeploymentStatus(ctx context.Context, namespace, app, instance 
 		for _, p := range st.Pods {
 			if p.Reason != "" {
 				st.Reason = readable(p.Reason)
+				if len(d.Spec.Template.Spec.ImagePullSecrets) > 0 && (p.Reason == "ErrImagePull" || p.Reason == "ImagePullBackOff") {
+					st.Reason = fmt.Sprintf("the image could not be pulled with pull secret %s (check the registry, username and password or token)", d.Spec.Template.Spec.ImagePullSecrets[0].Name)
+				}
 				break
 			}
 		}

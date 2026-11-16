@@ -258,7 +258,11 @@ func (rt *Router) handleConnectK8sCluster(w http.ResponseWriter, r *http.Request
 	bg := context.WithoutCancel(ctx)
 	ns := store.K8sClusterSecretsKey(req.Name)
 	// Clear anything a past cluster of this name left behind before writing our own.
-	if err := secrets.DeleteAll(ctx, ns); err != nil {
+	err = secrets.DeleteAll(ctx, ns)
+	if err == nil {
+		err = secrets.DeleteAll(ctx, k8sPullNamespace(req.Name))
+	}
+	if err != nil {
 		rt.rollbackK8sConnect(bg, req.Name)
 		rt.internalError(w, "api: clear k8s credentials failed", err)
 		rt.auditK8sCluster(r, auditK8sClusterConnectFailed, failed, http.StatusInternalServerError)
@@ -403,7 +407,11 @@ func (rt *Router) handleDisconnectK8sCluster(w http.ResponseWriter, r *http.Requ
 		}
 	}
 	if secrets, ok := rt.k8sSecrets(); ok {
-		if err := secrets.DeleteAll(r.Context(), store.K8sClusterSecretsKey(name)); err != nil {
+		err := secrets.DeleteAll(r.Context(), store.K8sClusterSecretsKey(name))
+		if err == nil {
+			err = secrets.DeleteAll(r.Context(), k8sPullNamespace(name))
+		}
+		if err != nil {
 			rt.internalError(w, "api: delete k8s credentials failed", err)
 			return
 		}

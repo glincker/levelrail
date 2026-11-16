@@ -142,7 +142,7 @@ func (rt *Router) handleRemoveK8sDeployment(w http.ResponseWriter, r *http.Reque
 		rt.internalError(w, "api: get k8s instance id failed", err)
 		return
 	}
-	res, err := cl.Remove(ctx, d.Namespace, d.App, instance)
+	res, err := cl.Remove(ctx, d.Namespace, d.App, instance, k8sPulledSecretNames(d.Objects)...)
 	audit.Objects = res.Deleted
 	if errors.Is(err, k8sconn.ErrNotManaged) {
 		audit.Reason = "an object is not labelled as ours; nothing was deleted"

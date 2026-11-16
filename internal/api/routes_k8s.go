@@ -18,4 +18,7 @@ func (rt *Router) registerK8sRoutes(mux *http.ServeMux) {
 	mux.HandleFunc("GET /api/v1/clusters/{name}/deployments/{app}", rt.requireAbility(AbilityRoot, rt.handleGetK8sDeploymentStatus))
 	mux.HandleFunc("GET /api/v1/clusters/{name}/deployments/{app}/logs", rt.requireAbility(AbilityRoot, rt.handleGetK8sDeploymentLogs))
 	mux.HandleFunc("DELETE /api/v1/clusters/{name}/deployments/{app}", rt.requireAbility(AbilityRoot, rt.handleRemoveK8sDeployment))
+	mux.HandleFunc("GET /api/v1/clusters/{name}/pull-secrets", rt.requireAbility(AbilityRoot, rt.handleListK8sPullSecrets))
+	mux.HandleFunc("POST /api/v1/clusters/{name}/pull-secrets", rt.requireAbility(AbilityRoot, rt.handleAddK8sPullSecret))
+	mux.HandleFunc("DELETE /api/v1/clusters/{name}/pull-secrets/{secret}", rt.requireAbility(AbilityRoot, rt.handleDeleteK8sPullSecret))
 }

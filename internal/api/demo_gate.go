@@ -61,6 +61,7 @@ var demoReadDenylist = []string{
 	"/api/v1/clusters/{name}/deployments",
 	"/api/v1/clusters/{name}/deployments/{app}",
 	"/api/v1/clusters/{name}/deployments/{app}/logs",
+	"/api/v1/clusters/{name}/pull-secrets",
 	// Bulk exports and downloads.
 	"/api/v1/apps/{name}/env/export",
 	"/api/v1/export",

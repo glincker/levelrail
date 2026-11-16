@@ -16,18 +16,21 @@ type RemoveResult struct {
 // Remove deletes the Deployment, Service and Ingress of one app, and nothing else. Every
 // object must carry our managed-by, app and instance labels or the call refuses before the
 // first delete. A missing object counts as success so a retry is safe. The namespace stays.
-func (c *Client) Remove(ctx context.Context, namespace, app, instance string) (RemoveResult, error) {
+// pullSecrets names Secrets we created for the app, deleted last under the same label rule.
+func (c *Client) Remove(ctx context.Context, namespace, app, instance string, pullSecrets ...string) (RemoveResult, error) {
 	ns := url.PathEscape(namespace)
-	name := url.PathEscape(app)
 	refs := []ObjectRef{
 		{Kind: "Deployment", Name: app, Path: "/apis/apps/v1/namespaces/" + ns + "/deployments"},
 		{Kind: "Service", Name: app, Path: "/api/v1/namespaces/" + ns + "/services"},
 		{Kind: "Ingress", Name: app, Path: "/apis/networking.k8s.io/v1/namespaces/" + ns + "/ingresses"},
 	}
+	for _, n := range pullSecrets {
+		refs = append(refs, ObjectRef{Kind: "Secret", Name: n, Path: "/api/v1/namespaces/" + ns + "/secrets"})
+	}
 	var res RemoveResult
 	var present []ObjectRef
 	for _, ref := range refs {
-		labels, found, err := c.getLabels(ctx, ref.Path+"/"+name)
+		labels, found, err := c.getLabels(ctx, ref.Path+"/"+url.PathEscape(ref.Name))
 		if err != nil {
 			return res, fmt.Errorf("%s %s: %w", ref.Kind, ref.Name, err)
 		}
@@ -42,7 +45,7 @@ func (c *Client) Remove(ctx context.Context, namespace, app, instance string) (R
 		present = append(present, ref)
 	}
 	for _, ref := range present {
-		_, err := c.Do(ctx, http.MethodDelete, ref.Path+"/"+name, nil)
+		_, err := c.Do(ctx, http.MethodDelete, ref.Path+"/"+url.PathEscape(ref.Name), nil)
 		if isStatus(err, http.StatusNotFound) {
 			res.Absent = append(res.Absent, ref.Kind+"/"+ref.Name)
 			continue
