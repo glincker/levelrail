@@ -1,0 +1,108 @@
+package apiclient
+
+import (
+	"context"
+	"net/http"
+	"time"
+)
+
+// K8sClusterResource is a connected cluster; the API never returns credentials.
+type K8sClusterResource struct {
+	Name           string     `json:"name"`
+	Server         string     `json:"server"`
+	AuthMode       string     `json:"auth_mode"`
+	CAFingerprint  string     `json:"ca_fingerprint,omitempty"`
+	Context        string     `json:"context,omitempty"`
+	CreatedBy      string     `json:"created_by,omitempty"`
+	CreatedAt      *time.Time `json:"created_at,omitempty"`
+	LastCheckedAt  *time.Time `json:"last_checked_at,omitempty"`
+	LastCheckClass string     `json:"last_check_class,omitempty"`
+}
+
+// ConnectK8sClusterRequest carries a kubeconfig, or a server with token and CA.
+type ConnectK8sClusterRequest struct {
+	Name       string `json:"name"`
+	Kubeconfig string `json:"kubeconfig,omitempty"`
+	Context    string `json:"context,omitempty"`
+	Server     string `json:"server,omitempty"`
+	Token      string `json:"token,omitempty"`
+	CA         string `json:"ca,omitempty"`
+}
+
+// K8sClusterTestResult is the read-only connection check outcome.
+type K8sClusterTestResult struct {
+	OK           bool   `json:"ok"`
+	Class        string `json:"class"`
+	ClusterAdmin bool   `json:"cluster_admin,omitempty"`
+}
+
+// K8sNodeRow is one node as the control plane reports it.
+type K8sNodeRow struct {
+	Name    string   `json:"name"`
+	Ready   bool     `json:"ready"`
+	Roles   []string `json:"roles"`
+	Kubelet string   `json:"kubelet_version"`
+}
+
+// K8sNamespaceRow is one namespace and its phase.
+type K8sNamespaceRow struct {
+	Name  string `json:"name"`
+	Phase string `json:"phase"`
+}
+
+func k8sClusterPath(name string) string {
+	return "/api/v1/clusters/" + PathEscape(name)
+}
+
+// ListK8sClusters calls GET /api/v1/clusters.
+func (c *Client) ListK8sClusters(ctx context.Context) ([]K8sClusterResource, error) {
+	var out struct {
+		Clusters []K8sClusterResource `json:"clusters"`
+	}
+	err := c.do(ctx, http.MethodGet, "/api/v1/clusters", nil, &out)
+	return out.Clusters, err
+}
+
+// ConnectK8sCluster calls POST /api/v1/clusters.
+func (c *Client) ConnectK8sCluster(ctx context.Context, req ConnectK8sClusterRequest) (K8sClusterResource, error) {
+	var out K8sClusterResource
+	err := c.do(ctx, http.MethodPost, "/api/v1/clusters", req, &out)
+	return out, err
+}
+
+// GetK8sCluster calls GET /api/v1/clusters/{name}.
+func (c *Client) GetK8sCluster(ctx context.Context, name string) (K8sClusterResource, error) {
+	var out K8sClusterResource
+	err := c.do(ctx, http.MethodGet, k8sClusterPath(name), nil, &out)
+	return out, err
+}
+
+// TestK8sCluster calls POST /api/v1/clusters/{name}/test.
+func (c *Client) TestK8sCluster(ctx context.Context, name string) (K8sClusterTestResult, error) {
+	var out K8sClusterTestResult
+	err := c.do(ctx, http.MethodPost, k8sClusterPath(name)+"/test", nil, &out)
+	return out, err
+}
+
+// ListK8sNodes calls GET /api/v1/clusters/{name}/nodes.
+func (c *Client) ListK8sNodes(ctx context.Context, name string) ([]K8sNodeRow, error) {
+	var out struct {
+		Nodes []K8sNodeRow `json:"nodes"`
+	}
+	err := c.do(ctx, http.MethodGet, k8sClusterPath(name)+"/nodes", nil, &out)
+	return out.Nodes, err
+}
+
+// ListK8sNamespaces calls GET /api/v1/clusters/{name}/namespaces.
+func (c *Client) ListK8sNamespaces(ctx context.Context, name string) ([]K8sNamespaceRow, error) {
+	var out struct {
+		Namespaces []K8sNamespaceRow `json:"namespaces"`
+	}
+	err := c.do(ctx, http.MethodGet, k8sClusterPath(name)+"/namespaces", nil, &out)
+	return out.Namespaces, err
+}
+
+// DisconnectK8sCluster calls DELETE /api/v1/clusters/{name}.
+func (c *Client) DisconnectK8sCluster(ctx context.Context, name string) error {
+	return c.do(ctx, http.MethodDelete, k8sClusterPath(name), nil, nil)
+}

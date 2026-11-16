@@ -249,6 +249,8 @@ func runDispatch(prog string, args []string, stdout, stderr io.Writer, lookupEnv
 		return runAppTypes(prog, args[1:], stdout, stderr, lookupEnv)
 	case "status-reasons":
 		return runStatusReasons(prog, args[1:], stdout, stderr, lookupEnv)
+	case "clusters":
+		return runClusters(prog, args[1:], stdout, stderr, lookupEnv)
 	case "nodes":
 		return runNodes(prog, args[1:], stdout, stderr, lookupEnv)
 	case "status":
@@ -520,6 +522,7 @@ Usage:
   %[1]s cdn overview [--window 1h]                          fleet traffic, edge cache hit rate and per-node request share
   %[1]s apps tag <name> <tag> [flags]                          attach a tag (by name) to an app
   %[1]s apps untag <name> <tag> [flags]                        detach a tag (by name) from an app
+  %[1]s clusters connect|list|show|test|nodes|namespaces|disconnect|rbac   connected Kubernetes clusters
   %[1]s nodes list|get|delete [flags]                        manage nodes
   %[1]s nodes join-token [flags]                             mint a one-time node enrollment token
   %[1]s nodes cordon|uncordon|drain|health|workloads <id> [flags]   node scheduling and maintenance
