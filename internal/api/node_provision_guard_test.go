@@ -357,3 +357,20 @@ func TestList_ReconcilesStaleRows(t *testing.T) {
 		t.Fatalf("deleted = %v r2 = %+v", fake.deletedIDs, r2)
 	}
 }
+
+func TestOracleSettingsReadLive(t *testing.T) {
+	fake := &fakeNodeProvisioner{}
+	rt, _, _ := guardFixture(t, fake)
+	if rt.oracleBool(context.Background(), runtimesettings.KeyProvisionOracleEnabled, "APP_PROVISION_ORACLE_ENABLED") {
+		t.Fatal("oracle must default off")
+	}
+	if n := rt.oracleLimit(context.Background(), runtimesettings.KeyProvisionOracleMaxA1OCPU, "APP_PROVISION_ORACLE_MAX_A1_OCPU"); n != 0 {
+		t.Fatalf("a1 limit default = %d, want 0", n)
+	}
+	setSetting(t, rt, runtimesettings.KeyProvisionOracleAvailDomains, `"AD-1, AD-2"`)
+	setSetting(t, rt, runtimesettings.KeyProvisionOracleBootVolumeGB, `60`)
+	s := rt.oracleSettings(context.Background())
+	if len(s.AvailabilityDomains) != 2 || s.AvailabilityDomains[1] != "AD-2" || s.BootVolumeGB != 60 || s.FlexPresets != "1:6,2:12" {
+		t.Fatalf("settings = %+v", s)
+	}
+}

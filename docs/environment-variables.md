@@ -580,6 +580,18 @@ These variables only seed the default of a [runtime setting](/runtime-settings).
 | `APP_PROVISION_EUR_TO_USD_RATE` | [`provision.eur_to_usd_rate`](/runtime-settings#experimental) | `1.10` |
 | `APP_PROVISION_MAX_MONTHLY_PRICE_USD` | [`provision.max_monthly_price_usd`](/runtime-settings#experimental) | `25` |
 | `APP_PROVISION_MAX_SERVERS` | [`provision.max_servers`](/runtime-settings#experimental) | `1` |
+| `APP_PROVISION_ORACLE_ALLOW_PAID_SHAPES` | [`provision.oracle.allow_paid_shapes`](/runtime-settings#experimental) | `false` |
+| `APP_PROVISION_ORACLE_ALLOW_UNKNOWN_PRICE` | [`provision.oracle.allow_unknown_price`](/runtime-settings#experimental) | `false` |
+| `APP_PROVISION_ORACLE_AVAILABILITY_DOMAINS` | [`provision.oracle.availability_domains`](/runtime-settings#experimental) | empty |
+| `APP_PROVISION_ORACLE_BOOT_VOLUME_GB` | [`provision.oracle.boot_volume_gb`](/runtime-settings#experimental) | `50` |
+| `APP_PROVISION_ORACLE_ENABLED` | [`provision.oracle.enabled`](/runtime-settings#experimental) | `false` |
+| `APP_PROVISION_ORACLE_FLEX_PRESETS` | [`provision.oracle.flex_presets`](/runtime-settings#experimental) | `1:6,2:12` |
+| `APP_PROVISION_ORACLE_IMAGE_OS` | [`provision.oracle.image_os`](/runtime-settings#experimental) | `Canonical Ubuntu` |
+| `APP_PROVISION_ORACLE_IMAGE_OS_VERSION` | [`provision.oracle.image_os_version`](/runtime-settings#experimental) | `24.04` |
+| `APP_PROVISION_ORACLE_MAX_A1_MEMORY_GB` | [`provision.oracle.max_a1_memory_gb`](/runtime-settings#experimental) | `0` |
+| `APP_PROVISION_ORACLE_MAX_A1_OCPU` | [`provision.oracle.max_a1_ocpu`](/runtime-settings#experimental) | `0` |
+| `APP_PROVISION_ORACLE_MAX_E2_MICRO` | [`provision.oracle.max_e2_micro`](/runtime-settings#experimental) | `0` |
+| `APP_PROVISION_ORACLE_VCN_CIDR` | [`provision.oracle.vcn_cidr`](/runtime-settings#experimental) | `10.0.0.0/16` |
 | `APP_UPDATE_CHANNELS_OFFERED` | [`updates.offered_channels`](/runtime-settings#experimental) | `stable` |
 <!-- runtime-settings:end -->
 
