@@ -14,7 +14,7 @@ All secrets (app env vars marked `secret: true`, email credentials, notification
 <Accordion title="What this does and does not require">
 
 
-Rotation runs live against the running control plane with zero downtime. The CLI calls an admin-only endpoint that re-wraps every DEK in a single database transaction. If any DEK fails to unwrap, the entire rotation aborts with no changes.
+Rotation runs live against the running control plane. The CLI calls an admin-only endpoint that re-wraps every DEK in a single database transaction. If any DEK fails to unwrap, the entire rotation aborts with no changes.
 
 While a rotation is in progress, all other secret reads and writes are blocked until it completes. This prevents mixing old and new keys.
 

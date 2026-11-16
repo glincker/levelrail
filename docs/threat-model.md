@@ -6,7 +6,7 @@ description: Trust boundaries, assets, attackers, the mitigations that exist tod
 
 This page describes what Levelrail defends, against whom, and where it does not yet. It is written for operators deciding how much to trust an install and for contributors deciding where a change needs extra care. For the user-facing configuration side, see the [Security overview](/security).
 
-Levelrail is pre-1.0. Anything marked "planned" is not shipped.
+Maturity varies by feature: see [Feature status](/feature-status) for the stable, beta and experimental labels. Anything marked "planned" is not shipped.
 
 ## Trust boundaries
 

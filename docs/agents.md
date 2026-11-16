@@ -54,9 +54,9 @@ The MCP server exposes a subset of its tools depending on the mode. Each mode lo
 | Mode | Tools | Use it for |
 | --- | --- | --- |
 | `agent-core` (a tool profile, `--tool-profile agent-core`) | 15 | Shipping and debugging one app. The default for `init`. |
-| `read-only` | over 240 tools in on-demand toolsets | Observers that must not change anything. |
-| `standard` | over 240 tools in on-demand toolsets | Read and mutating tools, no destructive ones. |
-| `full` | over 240 tools in on-demand toolsets | Every tool, including destructive ones. |
+| `read-only` | 259 tools in on-demand toolsets | Observers that must not change anything. |
+| `standard` | 259 tools in on-demand toolsets | Read and mutating tools, no destructive ones. |
+| `full` | 259 tools in on-demand toolsets | Every tool, including destructive ones. |
 
 Exact per-toolset counts are in [MCP tool surface](/mcp-tool-surface); [Agent tooling audit](/agent-tooling-audit) explains how token costs are measured.
 

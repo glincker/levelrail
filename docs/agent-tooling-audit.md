@@ -6,7 +6,7 @@ description: Size, overlap and annotation audit of the levelrail-mcp tool surfac
 
 An MCP client loads every tool definition from `tools/list` into the model's context before the first user message. This page records what that costs for `levelrail-mcp` in each mode, which tools overlap, and the tests that stop the listing growing unnoticed.
 
-Numbers are estimates: the serialized `tools/list` JSON length divided by 4 (no tokenizer is in `go.mod`). They are good for comparing modes and catching regressions, not for billing. They are a snapshot that drifts as tools are added (over 240 tools in on-demand toolsets, see [MCP tool surface](/mcp-tool-surface) for exact numbers), so rerun the commands below for current figures.
+Numbers are estimates: the serialized `tools/list` JSON length divided by 4 (no tokenizer is in `go.mod`). They are good for comparing modes and catching regressions, not for billing. They are a snapshot that drifts as tools are added (259 tools in on-demand toolsets, see [MCP tool surface](/mcp-tool-surface) for exact numbers), so rerun the commands below for current figures.
 
 [MCP tool surface](/mcp-tool-surface) counts each tool's name, description and input schema per toolset. This page measures the whole serialized `tools/list` response a client receives, which also carries output schemas and annotations, so its totals are larger.
 

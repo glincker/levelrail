@@ -351,7 +351,7 @@ curl -fsSL https://levelrail.com/install.sh | sudo sh -s -- install-cosign
 <Accordion title="Verify a download by hand">
 
 ```bash
-V=v0.1.0   # the release tag
+V=<version>   # the release tag, for example the newest one on the releases page
 BASE=https://github.com/glincker/levelrail/releases/download/$V
 curl -fsSLO $BASE/checksums.txt -O $BASE/checksums.txt.sigstore.json -O $BASE/levelrail-linux-amd64
 
@@ -644,7 +644,7 @@ To pin a release instead of the latest:
 
 ```bash
 curl -fsSL https://levelrail.com/install.sh \
-  | sudo LEVELRAIL_VERSION=v0.1.0 sh
+  | sudo LEVELRAIL_VERSION=<version> sh
 ```
 
 Re-running the installer without arguments also works: it repairs the installation and rewrites the unit file, still keeping the ports in the drop-in.

@@ -1,10 +1,10 @@
 ---
 title: "Kamal alternative with a dashboard, history and built-in observability"
-description: "Levelrail is an open source Kamal alternative: the same zero-downtime idea plus a control plane, dashboard, deploy history and built-in metrics."
+description: "Levelrail is an open source Kamal alternative: readiness-gated rollouts plus a control plane, dashboard, deploy history and built-in metrics."
 "og:url": "https://docs.levelrail.com/kamal-alternative"
 ---
 
-**Zero-downtime deploys, plus a control plane you can see**
+**Readiness-gated deploys, plus a control plane you can see**
 
 Kamal is deliberately minimal: no server component, just SSH from your machine or CI. Levelrail keeps readiness-gated cutover and adds a dashboard, history, rollback and observability.
 
@@ -73,7 +73,7 @@ Kamal is a sharp tool for people who want the fewest moving parts. These are the
   </Accordion>
 </AccordionGroup>
 
-## Keep the zero-downtime idea, add the dashboard
+## Keep the readiness-gated rollouts, add the dashboard
 
 Try it on one server beside your current setup.
 

@@ -4,7 +4,7 @@ description: Every Levelrail feature by area, with a docs link and a stable, bet
 "og:url": "https://docs.levelrail.com/features"
 ---
 
-This page lists what the 1.4.0 tree contains, grouped into eight areas. Labels follow [Feature status](/feature-status): a feature with no label there is core and on by default. For a shorter view, see the [README](https://github.com/glincker/levelrail#what-you-get).
+Levelrail is a lightweight, self-hosted deployment platform: one Go binary whose control plane idles at about 200 MB of RAM and 1.5 percent of one CPU on a 2 vCPU box ([Performance](/performance), [Benchmarks](/benchmarks)). This page lists what the 1.4.0 tree contains, grouped into eight areas. Labels follow [Feature status](/feature-status): a feature with no label there is core and on by default. For a shorter view, see the [README](https://github.com/glincker/levelrail#what-you-get).
 
 ## Ship with git push (deploy)
 
@@ -44,7 +44,7 @@ Guide: [Node provisioning](/node-provisioning).
 - Provision nodes at Hetzner, DigitalOcean, AWS, Azure, GCP or Oracle Cloud (beta).
 - Join any Linux host with a single-use token over mTLS. See [Add a node anywhere](/add-node-anywhere).
 - DNS at Cloudflare and Route53, image registries on ECR, Artifact Registry and ACR. See [Cloud integrations](/cloud-integrations) for per-cloud status.
-- Works with the clusters and cloud accounts you already have (experimental): connect existing Kubernetes clusters and deploy to them, off by default. See [Import Kubernetes manifests](/import-kubernetes).
+- Works with the clusters and cloud accounts you already have (experimental): connect existing Kubernetes clusters and deploy to them, off by default. See [Kubernetes clusters](/kubernetes-clusters) and [Import Kubernetes manifests](/import-kubernetes).
 
 ## Managed databases and backups
 
@@ -63,7 +63,7 @@ Guide: [Observability](/observability).
 - OTLP ingest. See [OTLP ingest](/otlp-ingest).
 - Public status page. See [Status page](/status-page).
 - Deploy traces and traffic export. See [Deploy trace](/deploy-trace) and [Traffic export](/traffic-export).
-- Alerts to 18 notification channel kinds. See [Integrations](/integrations).
+- Alerts to 18 notification channel kinds. See [Alerts](/alerts).
 - HTTP, TCP, heartbeat and TLS uptime monitors (experimental). See [Monitors](/monitors).
 
 ## SSO, RBAC and audit log (security and access)

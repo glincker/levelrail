@@ -167,7 +167,7 @@ avoids.
   Vercel's own AI integrations feel limited. The same HTTP API surface is
   exposed to AI agents, and AI is never in the reconcile path
   ([comparison.md](/comparison#where-levelrail-differs), labeled beta,
-  over 240 tools in on-demand toolsets, in
+  259 tools in on-demand toolsets, in
   [feature-status.md](/feature-status#ai-assistant-mcp-server-and-in-app-chat)).
 
 ### What to know before you rely on it

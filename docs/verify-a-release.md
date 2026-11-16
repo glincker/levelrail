@@ -24,7 +24,7 @@ Releases cut before signing was added carry no bundle.
 You need `curl`, `cosign`, `sha256sum` and, for the last step, the GitHub CLI (`gh`).
 
 ```bash
-V=v0.1.0   # the release tag
+V=<version>   # the release tag, for example the newest one on the releases page
 BASE=https://github.com/glincker/levelrail/releases/download/$V
 curl -fsSLO $BASE/checksums.txt -O $BASE/checksums.txt.sigstore.json -O $BASE/levelrail-linux-amd64
 

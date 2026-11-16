@@ -1,8 +1,8 @@
 <div align="center">
 <img src="docs/assets/brand/levelrail-default.svg" alt="Levelrail logo" width="56" height="56">
 <h1>Levelrail</h1>
-<p><strong>Self-hosted deployment platform: git push to production on your own servers and cloud accounts.</strong><br>
-Git deploys, 565 one-click templates (346 proven on a real engine), edge and TLS, nodes at six clouds, managed databases with restore-drilled backups, and built-in observability. One Go binary, Apache 2.0.</p>
+<p><strong>Lightweight, self-hosted deployment platform: git push to production on your own servers and cloud accounts.</strong><br>
+Git deploys, 565 one-click templates (346 proven on a real engine), edge and TLS, nodes at six clouds, managed databases with restore-drilled backups, and built-in observability. Lightweight: the control plane idles at about 200 MB of RAM and 1.5 percent of one CPU on a 2 vCPU box, one Go binary ([measured idle footprint](docs/performance.md), [method](docs/benchmarks.md)). Apps you deploy use their own resources on top. Apache 2.0.</p>
 <p>
   <a href="https://github.com/glincker/levelrail/stargazers"><img src="https://img.shields.io/github/stars/glincker/levelrail?style=flat&logo=github" alt="GitHub stars"></a>
   <a href="LICENSE"><img src="https://img.shields.io/github/license/glincker/levelrail" alt="License: Apache 2.0"></a>
@@ -30,9 +30,9 @@ Git deploys, 565 one-click templates (346 proven on a real engine), edge and TLS
 <picture><source media="(prefers-color-scheme: dark)" srcset="docs/assets/brand/social/github-social-1280x640.jpg"><img src="docs/assets/brand/social/github-social-1280x640-light.jpg" alt="Levelrail: a self-hosted deployment platform with Git deploys, templates, edge, databases and observability." width="880"></picture>
 </div>
 
-<p align="center"><a href="docs/template-catalog.md"><b>565</b> one-click templates</a> &middot; <a href="docs/node-provisioning.md"><b>6</b> clouds</a> &middot; <a href="docs/managing-databases.md"><b>13</b> database engines</a> &middot; <a href="docs/integrations.md"><b>18</b> alert channels</a> &middot; <a href="docs/benchmarks.md"><b>~200 MB</b> idle</a> &middot; <a href="docs/architecture.md"><b>1</b> binary</a></p>
+<p align="center"><a href="docs/performance.md"><b>~200 MB</b> control plane idle</a> &middot; <a href="docs/architecture.md"><b>1</b> binary</a> &middot; <a href="docs/template-catalog.md"><b>565</b> one-click templates</a> &middot; <a href="docs/node-provisioning.md"><b>6</b> clouds</a> &middot; <a href="docs/managing-databases.md"><b>13</b> database engines</a> &middot; <a href="docs/alerts.md"><b>18</b> alert channels</a></p>
 
-Levelrail turns Linux servers into a private cloud and works with the Kubernetes clusters and cloud accounts you already have. Pre-1.0: single-server is production ready, multi-node is beta. Every feature carries a stable, beta or experimental label in [Feature status](docs/feature-status.md), and the labels below follow it.
+Levelrail turns Linux servers into a private cloud and works with the Kubernetes clusters and cloud accounts you already have. Single-server is production ready, multi-node is beta. Every feature carries a stable, beta or experimental label in [Feature status](docs/feature-status.md), and the labels below follow it.
 
 <p align="center"><img src="docs/assets/demos/product-tour.gif" alt="Levelrail dashboard tour: fleet overview, apps list, deploy history and built-in metrics" width="880"></p>
 
@@ -95,7 +95,7 @@ Maturity follows [Feature status](docs/feature-status.md). Open the list under e
 - Provision nodes at 6 clouds (beta)
 - [Join any Linux host](docs/add-node-anywhere.md) with a single-use token
 - DNS and registries at the clouds you already use
-- [Existing Kubernetes clusters](docs/import-kubernetes.md) as deploy targets (experimental)
+- [Existing Kubernetes clusters](docs/kubernetes-clusters.md) as deploy targets (experimental)
 
 <details>
 <summary>All node and cloud features</summary>
@@ -103,7 +103,7 @@ Maturity follows [Feature status](docs/feature-status.md). Open the list under e
 - Provision nodes at Hetzner, DigitalOcean, AWS, Azure, GCP or Oracle Cloud (beta).
 - Join any Linux host with a single-use token over mTLS. See [Add a node anywhere](docs/add-node-anywhere.md).
 - DNS at Cloudflare and Route53, image registries on ECR, Artifact Registry and ACR. See [Cloud integrations](docs/cloud-integrations.md) for per-cloud status.
-- Works with the clusters and cloud accounts you already have (experimental): connect existing Kubernetes clusters and deploy to them, off by default. See [Import Kubernetes manifests](docs/import-kubernetes.md).
+- Works with the clusters and cloud accounts you already have (experimental): connect existing Kubernetes clusters and deploy to them, off by default. See [Kubernetes clusters](docs/kubernetes-clusters.md).
 
 </details>
 
@@ -136,7 +136,7 @@ Maturity follows [Feature status](docs/feature-status.md). Open the list under e
 - OTLP ingest. See [OTLP ingest](docs/otlp-ingest.md).
 - Public status page. See [Status page](docs/status-page.md).
 - Deploy traces and traffic export. See [Deploy trace](docs/deploy-trace.md) and [Traffic export](docs/traffic-export.md).
-- Alerts to 18 notification channel kinds. See [Integrations](docs/integrations.md).
+- Alerts to 18 notification channel kinds. See [Alerts](docs/alerts.md).
 - HTTP, TCP, heartbeat and TLS uptime monitors (experimental). See [Monitors](docs/monitors.md).
 
 </details>
@@ -173,7 +173,7 @@ Maturity follows [Feature status](docs/feature-status.md). Open the list under e
 - Terraform and OpenTofu provider. See [Terraform provider](docs/terraform-provider.md).
 - YAML platform as code (experimental). See [Platform as code](docs/platform-as-code.md).
 - CI pipelines. See [Pipelines](docs/pipelines.md).
-- 11 per-app integrations: Sentry, PostHog, GlitchTip, OneUptime, Plausible, Datadog, Axiom, Better Stack, LogSnag, Bugsnag and New Relic. See [Integrations](docs/integrations.md).
+- 11 per-app integrations: Sentry, PostHog, GlitchTip, OneUptime, Plausible, Datadog, Axiom, Better Stack, LogSnag, Bugsnag and New Relic. See [Alerts](docs/alerts.md).
 - Signed plugins for notification channels. See [Plugins](docs/plugins.md).
 - 259 MCP tools for coding agents. See [MCP](docs/mcp.md) and [Tool surface](docs/mcp-tool-surface.md).
 - A mail server template with mailboxes and DNS records (experimental). See [Mail template](docs/mail-template.md).
@@ -264,7 +264,7 @@ Deploy this repo to my Levelrail and tell me when it is live.
 
 - **Inside the token's limits.** The tool list follows the abilities of the token: a read token never sees a deploy tool, and `--readonly` refuses to start with a write token.
 - **Writes need a confirmation.** Mutations are confirm-gated and off until you pass `--allow-write`.
-- **Cheap to load.** About 2.4k tokens of tools by default, 240+ on demand in toolsets ([tool surface](docs/mcp-tool-surface.md)).
+- **Cheap to load.** About 2.4k tokens of tools by default, 259 tools in total, on demand in toolsets ([tool surface](docs/mcp-tool-surface.md)).
 - **Audited.** Every call is recorded with the caller surface (CLI, dashboard, MCP or API).
 - **Not in the control loop.** AI never sits in the reconcile path, so a wrong guess cannot wedge your servers.
 - **A skill, not just tools.** It deploys, waits for the rollout to converge, reads the failure and rolls back ([skill](skills/levelrail/SKILL.md), [MCP](docs/mcp.md), [threat model](docs/mcp.md#threat-model)).
@@ -324,7 +324,7 @@ Maintain an open-source app? Add a one-click button: [Deploy button](docs/deploy
 
 ## FAQ
 
-**Does it need Kubernetes?** No. The control plane is one Go binary with a Docker runtime. If you already run Kubernetes, you can connect a cluster and deploy to it (experimental, off by default).
+**Does it need Kubernetes?** No. The control plane is one Go binary with a Docker runtime. If you already run Kubernetes, you can connect a cluster and deploy to it (experimental, off by default). See [Kubernetes clusters](docs/kubernetes-clusters.md).
 
 **What does it cost?** Nothing. Apache 2.0, one edition, no license key. You pay for your own servers ([Pricing](docs/pricing.md)).
 
@@ -334,7 +334,7 @@ Maintain an open-source app? Add a one-click button: [Deploy button](docs/deploy
 
 ## Community
 
-[Discussions](https://github.com/glincker/levelrail/discussions) &middot; [Issues](https://github.com/glincker/levelrail/issues) &middot; [Discord](https://discord.gg/Ar5pcaZB99) &middot; [support@levelrail.com](mailto:support@levelrail.com) &middot; [Security policy](.github/SECURITY.md) &middot; [Contributing](.github/CONTRIBUTING.md) &middot; [llms.txt](llms.txt) and [AGENTS.md](AGENTS.md) for AI agents
+[Discussions](https://github.com/glincker/levelrail/discussions) &middot; [Issues](https://github.com/glincker/levelrail/issues) &middot; [Discord](https://discord.gg/Ar5pcaZB99) &middot; [support@levelrail.com](mailto:support@levelrail.com) &middot; [Security policy](.github/SECURITY.md) &middot; [Support](SUPPORT.md) &middot; [Accessibility](ACCESSIBILITY.md) &middot; [Versioning and version tracker](VERSIONING.md) &middot; [Contributing](.github/CONTRIBUTING.md) &middot; [llms.txt](llms.txt) and [AGENTS.md](AGENTS.md) for AI agents
 
 ## Star the repo
 

@@ -4,7 +4,7 @@ description: Draft compatibility and support policy for a future stable line. No
 "og:url": "https://docs.levelrail.com/support-policy"
 ---
 
-**Draft, not yet in force.** Levelrail is pre-1.0 and nothing on this page is promised today. It states what the project intends to commit to when a stable line is cut, so the terms can be reviewed first. Until then, read [Feature status](/feature-status) for what is proven and [Roadmap](/roadmap) for what is open.
+**Draft, not yet in force.** Nothing on this page is promised today. It states what the project intends to commit to when a stable line is cut, so the terms can be reviewed first. Until then, read [Feature status](/feature-status) for what is proven and [Roadmap](/roadmap) for what is open.
 
 ## What would be covered
 
@@ -66,5 +66,5 @@ Not yet proven, so not promised: systemd and agent reconnection after an upgrade
 ## Open questions
 
 - Which release becomes the first stable line, and what evidence is required first (see the graduation criteria in [Experimental features](/experimental-features#graduation-criteria-proposed)).
-- Whether multi-node joins the covered surface at 1.0 or later.
+- Whether multi-node joins the covered surface later.
 - The exact warning mechanism for each surface.

@@ -4,7 +4,7 @@ description: Per-feature maturity labels (stable, beta, hide-behind-flag) with t
 "og:url": "https://docs.levelrail.com/feature-status"
 ---
 
-This page labels every major feature by how much evidence backs it today. The evidence was first gathered on 2026-09-26. E2E rows were re-checked against main on 2026-10-05. Last updated 2026-11-09 (release/v0.9.6 branch). Counts come from the generated pages linked below. Every claim cites a path, and where evidence is missing the page says so.
+This page labels every major feature by how much evidence backs it today. The evidence was first gathered on 2026-09-26. E2E rows were re-checked against main on 2026-10-05. Last full review 2026-11-09. Template and tool counts refreshed for release 1.4.0. Counts come from the generated pages linked below. Every claim cites a path, and where evidence is missing the page says so.
 
 ## How to read the labels
 
@@ -54,7 +54,7 @@ Because tier 4 is empty for almost every row, the "real infra" column below read
 | Deploy freeze | stable | Live e2e proves a freeze blocks then allows a real deploy (`test/e2e/deploy_freeze_test.go`), documented in `docs/deploy-safety.md`. |
 | Post-deploy watch and auto rollback | stable (hard signals), beta (latency signal) | Live e2e on a real Docker engine and real ingress: a 5xx spike and a post-cutover crashloop each roll back to the previous pinned image, recorded in deploy history, the gate timeline, the audit log and a notification, and a healthy release is left alone (`test/e2e/reconcile/deploy_safety_live_test.go`, `deploy_watch_rollback_live_test.go`). The soft p95 latency signal is unit tested only. |
 | Feature flags | stable | Live e2e drives create, evaluate with a read-only token, kill switch, rollout, per-app scoping and delete through the API, the real CLI binary and the MCP read tools (`test/e2e/feature_flags_test.go`). Per-app only: no per-environment or attribute targeting (`docs/feature-flags.md`). |
-| Templates | beta | Catalog entries (the generated count is in the [catalog](/template-catalog)). Unit tests check shape and a floor of 180, a live e2e fleet of 16 templates, and a local deploy smoke that brought up 100 of 359 templates (93 healthy, 2026-10-25, `docs/templates-status.md`). The rest are untested. |
+| Templates | beta | Catalog entries (the generated count is in the [catalog](/template-catalog)). Unit tests check shape and unique IDs, a live e2e fleet of 16 templates, and a local deploy smoke (`docs/templates-status.md`). 346 entries have a recorded real-engine pass and 228 are marked preview, with no recorded pass yet (see the [catalog](/template-catalog)). |
 | Log archive | beta | Unit and e2e tests (`test/e2e/log_archive_test.go`), dedicated doc page (`docs/log-archive.md`). |
 | Automatic cleanup (janitor) | beta | Unit tests for every stage and safety rule, API test, CLI, MCP read tool, doc page (`docs/janitor.md`). No live disk-fill run yet; other nodes are not covered. |
 | Resilience check (data plane without the control plane) | beta | Proven in tests: route table keeps answering through a stalled control plane, sealed snapshot restores with the database down, the dry run flags stale or corrupt snapshots. Not proven: a real process kill under load on a real host. New containers use restart policy `unless-stopped` (setting `containers.restart_policy`; older ones keep `no` until redeployed), not yet proven on a real reboot; agents do not buffer telemetry (it stays node local, size not reported). |
@@ -66,7 +66,7 @@ Because tier 4 is empty for almost every row, the "real infra" column below read
 | Status page | stable | Live e2e enables, authors and serves it publicly (`test/e2e/status_page_test.go`). Off until enabled. |
 | Multi-cloud node onboarding | beta | Unit tests for metadata parsing (fake servers per provider), preflight judging, provider and zone spread, API, CLI, MCP read tool and dashboard; the two-Docker-daemon join test also checks preflight facts and label hand-off. No real cloud metadata endpoint and no real WAN mesh have been exercised. See [add a node anywhere](/add-node-anywhere). |
 | Multi-node and WireGuard | beta | Opt-in node failure policy (fakes only, no real hosts). Join flow verified locally across two real Docker daemons (enrollment, cordon, drain with real container relocation); the WireGuard mesh itself and cross-host remote transport are still unverified. |
-| AI assistant (MCP server) | beta | over 240 tools in toolsets an agent enables on demand (exact, generated numbers on the [MCP tool surface](/mcp-tool-surface) page), 31 test files in `internal/mcptools`, no e2e. |
+| AI assistant (MCP server) | beta | 259 tools in toolsets an agent enables on demand (exact, generated numbers on the [MCP tool surface](/mcp-tool-surface) page), 31 test files in `internal/mcptools`, no e2e. |
 | AI assistant (in-app chat) | beta (behind the `ai-chat` toggle) | Tested against fake Anthropic responses only (unit, plus a real-HTTP e2e session lifecycle test with a fake provider); `docs/ai-assistant-chat.md` now documents it. |
 | AI models (GPU) | hide-behind-flag | Needs NVIDIA hardware, every test uses fakes, docs state v1 scope is NVIDIA on Linux only. |
 | Load balancer | hide-behind-flag | Live e2e with real traffic and drain (`test/e2e/loadbalancer_test.go`), but gated behind `load-balancer` and not exercised across real hosts. |
@@ -287,7 +287,7 @@ Kinds, from the `NotifyKind` constants in `internal/alerting/rules.go`: generic,
 
 ### Templates
 
-- Unit: `internal/catalog/catalog_test.go` (asserts at least 180 templates, unique IDs) and `catalog_extra_test.go`; API `service_templates_test.go`; CLI `templates_test.go`; web `BrowseTemplatesFields.test.tsx`; `internal/registrycatalog/client_test.go`.
+- Unit: `internal/catalog/catalog_test.go` (asserts a minimum template count and unique IDs) and `catalog_extra_test.go`; API `service_templates_test.go`; CLI `templates_test.go`; web `BrowseTemplatesFields.test.tsx`; `internal/registrycatalog/client_test.go`.
 - E2E: `test/e2e/template_fleet_test.go` (`TestTemplateFleet_Live_DeploysAndTearsDownCleanly`) deploys the e2e fleet of 16 templates, a diverse sample, through the real one-click route and a real application controller, then tears them down and checks nothing leaks. Batch boot tests (`catalog_batch*_live_test.go`, `catalog_devtools_batch_live_test.go`) cover more, but not the whole catalog. `test/e2e/compose_healthcheck_test.go` covers Compose readiness generally.
 - Docs: `docs/templates-and-registry.md`.
 - Real infra: none found. Deploy evidence is the e2e fleet (16) and the deploy smoke (100 of 359 tested on 2026-10-25, 93 healthy, one arm64 Mac, not a VPS), so "works" is unverified for the other 259. `docs/templates-and-registry.md` also notes GPU passthrough is not translated for GPU templates.
@@ -356,7 +356,7 @@ These counts appear in the README, the landing page, and several guides. Re-chec
 
 | Number | Value | Source |
 | --- | --- | --- |
-| MCP tools | over 240, grouped into on-demand toolsets | The generated [MCP tool surface](/mcp-tool-surface) |
+| MCP tools | 259, grouped into on-demand toolsets | The generated [MCP tool surface](/mcp-tool-surface) |
 | Notification channel kinds | 18 | `NotifyKind` constants in `internal/alerting/rules.go` |
 | Alert rule kinds | 25 | `Kind` constants in `internal/alerting` |
 | Managed database engines | 9 supported; 4 more built but not yet live-verified | `internal/store/database.go`, [Managing databases](/managing-databases) |

@@ -53,7 +53,7 @@ Status words: **moves** means created on the new side, **reported** means the to
 | Team members, roles, API tokens | invisible | Not migrated by design. Recreate users and tokens here |
 | S3 storage destinations | reported | One row per destination with a `backup-targets create` command. Keys and bucket secrets are never read, so you enter them again |
 | SSH keys, GitHub App credentials | invisible | Credentials are never read. Add them again |
-| Notification channels (Discord, Slack, email) | invisible | Recreate them as [alert channels](/alert-inbox) |
+| Notification channels (Discord, Slack, email) | invisible | Recreate them as [alert channels](/alerts) |
 | Deploy history, logs, metrics | invisible | Not migrated |
 
 ## What the exit plan adds
