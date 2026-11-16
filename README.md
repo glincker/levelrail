@@ -2,7 +2,7 @@
 <img src="docs/assets/brand/levelrail-default.svg" alt="Levelrail logo" width="56" height="56">
 <h1>Levelrail</h1>
 <p><strong>A self-hosted deployment platform for your own servers and cloud accounts.</strong><br>
-Git deploys, 346 proven one-click templates, edge and TLS, nodes at six clouds, managed databases with backups with restore drills, and built-in observability. One Go binary, Apache 2.0.</p>
+Git deploys, 346 proven one-click templates, edge and TLS, nodes at six clouds, managed databases with restore-drilled backups, and built-in observability. One Go binary, Apache 2.0.</p>
 <p>
   <a href="https://github.com/glincker/levelrail/stargazers"><img src="https://img.shields.io/github/stars/glincker/levelrail?style=flat&logo=github" alt="GitHub stars"></a>
   <a href="LICENSE"><img src="https://img.shields.io/github/license/glincker/levelrail" alt="License: Apache 2.0"></a>
