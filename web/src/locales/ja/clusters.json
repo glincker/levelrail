@@ -60,7 +60,10 @@
     "ready": "Ready",
     "notReady": "Not Ready",
     "noNodes": "ノードが返されませんでした。",
-    "noNamespaces": "ネームスペースが返されませんでした。"
+    "noNamespaces": "ネームスペースが返されませんでした。",
+    "back": "クラスター一覧へ戻る",
+    "open": "開く",
+    "openNamed": "{{name}} を開く"
   },
   "disconnect": {
     "title": "{{name}} を切断しますか？",
@@ -68,5 +71,39 @@
     "confirm": "切断",
     "pending": "切断中",
     "done": "クラスターを切断しました。"
+  },
+  "deploy": {
+    "title": "アプリをデプロイ",
+    "app": "アプリ名",
+    "image": "公開イメージ",
+    "imagePlaceholder": "nginx:1.27",
+    "port": "ポート",
+    "replicas": "レプリカ数",
+    "namespace": "ネームスペース",
+    "host": "ホスト (任意)",
+    "hostPlaceholder": "app.example.com",
+    "env": "環境変数 (任意)",
+    "envPlaceholder": "KEY=value を1行ずつ",
+    "envHint": "書き込み専用です。値は再表示されません。",
+    "envInvalid": "{{line}} 行目が KEY=value ではありません。",
+    "allowRoot": "root での実行を許可",
+    "allowRootWarning": "root が必要なイメージ専用です。それ以外は非 root で動作します。",
+    "submit": "デプロイ",
+    "pending": "デプロイ中",
+    "done": "{{app}} をデプロイしました",
+    "pageDescription": "このクラスターに公開イメージをデプロイして状態を確認します。"
+  },
+  "deployments": {
+    "title": "デプロイ一覧",
+    "empty": "デプロイはまだありません。"
+  },
+  "deployment": {
+    "checking": "確認中",
+    "stale": "状態を取得できません",
+    "ready": "準備完了 {{ready}}/{{total}}",
+    "logs": "ログ",
+    "logsNamed": "{{name}} のログ",
+    "remove": "削除",
+    "removeNamed": "{{name}} を削除"
   }
 }

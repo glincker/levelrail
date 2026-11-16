@@ -1,4 +1,5 @@
 import { useState } from 'react'
+import { Link } from '@tanstack/react-router'
 import { useTranslation } from 'react-i18next'
 import {
   ChevronRightGlassIcon,
@@ -75,6 +76,16 @@ export function ClusterRow({ cluster }: Readonly<{ cluster: Cluster }>) {
           {t(`status.${statusKey}`)}
         </Badge>
         <div className="ml-auto flex items-center gap-2">
+          <Button
+            size="sm"
+            variant="outline"
+            aria-label={t('detail.openNamed', { name: cluster.name })}
+            render={
+              <Link to="/clusters/$name" params={{ name: cluster.name }} />
+            }
+          >
+            {t('detail.open')}
+          </Button>
           <Button
             type="button"
             size="sm"

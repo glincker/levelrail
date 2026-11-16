@@ -13,6 +13,9 @@ import type {
   ClusterNode,
   ClusterTestResult,
   ConnectClusterInput,
+  DeployK8sInput,
+  K8sDeployment,
+  K8sDeploymentStatus,
 } from '../types/clusters'
 
 export const clusterKeys = {
@@ -21,7 +24,14 @@ export const clusterKeys = {
   nodes: (name: string) => [...clusterKeys.all, 'nodes', name] as const,
   namespaces: (name: string) =>
     [...clusterKeys.all, 'namespaces', name] as const,
+  deployments: (name: string) =>
+    [...clusterKeys.all, 'deployments', name] as const,
+  status: (name: string, app: string) =>
+    [...clusterKeys.all, 'status', name, app] as const,
 }
+
+// Status polls only until the app is ready, then stops.
+const STATUS_POLL_MS = Number(import.meta.env.VITE_K8S_STATUS_POLL_MS) || 4000
 
 const root = '/api/v1/clusters'
 const base = (name: string) => `${root}/${encodeURIComponent(name)}`
@@ -140,5 +150,59 @@ export function useDisconnectCluster() {
       ),
     onSuccess: () =>
       queryClient.invalidateQueries({ queryKey: clusterKeys.all }),
+  })
+}
+
+const appBase = (name: string, app: string) =>
+  `${base(name)}/deployments/${encodeURIComponent(app)}`
+
+export function useClusterDeployments(name: string) {
+  return useQuery({
+    queryKey: clusterKeys.deployments(name),
+    retry: false,
+    queryFn: async () =>
+      (
+        await request<{ deployments: K8sDeployment[] }>(
+          `${base(name)}/deployments`,
+          undefined,
+          'list deployments',
+        )
+      ).deployments,
+  })
+}
+
+export function useDeploymentStatus(name: string, app: string) {
+  return useQuery({
+    queryKey: clusterKeys.status(name, app),
+    retry: false,
+    refetchInterval: (query) =>
+      query.state.data?.ready === true ? false : STATUS_POLL_MS,
+    queryFn: () =>
+      request<K8sDeploymentStatus>(
+        appBase(name, app),
+        undefined,
+        'deployment status',
+      ),
+  })
+}
+
+export function useDeployApp(name: string) {
+  const queryClient = useQueryClient()
+  return useMutation({
+    meta: { errorToast: false },
+    mutationFn: (input: DeployK8sInput) =>
+      request<{ app: string }>(
+        `${base(name)}/deployments`,
+        {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify(input),
+        },
+        'deploy app',
+      ),
+    onSuccess: () =>
+      queryClient.invalidateQueries({
+        queryKey: clusterKeys.deployments(name),
+      }),
   })
 }

@@ -60,7 +60,10 @@
     "ready": "Listo",
     "notReady": "No listo",
     "noNodes": "No se devolvieron nodos.",
-    "noNamespaces": "No se devolvieron espacios de nombres."
+    "noNamespaces": "No se devolvieron espacios de nombres.",
+    "back": "Volver a clústeres",
+    "open": "Abrir",
+    "openNamed": "Abrir {{name}}"
   },
   "disconnect": {
     "title": "¿Desconectar {{name}}?",
@@ -68,5 +71,39 @@
     "confirm": "Desconectar",
     "pending": "Desconectando",
     "done": "Clúster desconectado."
+  },
+  "deploy": {
+    "title": "Desplegar una app",
+    "app": "Nombre de la app",
+    "image": "Imagen pública",
+    "imagePlaceholder": "nginx:1.27",
+    "port": "Puerto",
+    "replicas": "Réplicas",
+    "namespace": "Namespace",
+    "host": "Host (opcional)",
+    "hostPlaceholder": "app.example.com",
+    "env": "Entorno (opcional)",
+    "envPlaceholder": "KEY=value, una por línea",
+    "envHint": "Solo escritura. Los valores no se vuelven a mostrar.",
+    "envInvalid": "La línea {{line}} no es KEY=value.",
+    "allowRoot": "Permitir ejecutar como root",
+    "allowRootWarning": "Solo para imágenes que necesitan root. El resto se ejecuta sin root.",
+    "submit": "Desplegar",
+    "pending": "Desplegando",
+    "done": "{{app}} desplegada",
+    "pageDescription": "Despliega una imagen pública en este clúster y sigue su estado."
+  },
+  "deployments": {
+    "title": "Despliegues",
+    "empty": "Aún no hay despliegues."
+  },
+  "deployment": {
+    "checking": "Comprobando",
+    "stale": "Estado no disponible",
+    "ready": "Listo {{ready}}/{{total}}",
+    "logs": "Registros",
+    "logsNamed": "Registros de {{name}}",
+    "remove": "Quitar",
+    "removeNamed": "Quitar {{name}}"
   }
 }

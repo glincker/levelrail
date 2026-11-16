@@ -60,7 +60,10 @@
     "ready": "Pronto",
     "notReady": "Não pronto",
     "noNodes": "Nenhum nó retornado.",
-    "noNamespaces": "Nenhum namespace retornado."
+    "noNamespaces": "Nenhum namespace retornado.",
+    "back": "Voltar aos clusters",
+    "open": "Abrir",
+    "openNamed": "Abrir {{name}}"
   },
   "disconnect": {
     "title": "Desconectar {{name}}?",
@@ -68,5 +71,39 @@
     "confirm": "Desconectar",
     "pending": "Desconectando",
     "done": "Cluster desconectado."
+  },
+  "deploy": {
+    "title": "Implantar um app",
+    "app": "Nome do app",
+    "image": "Imagem pública",
+    "imagePlaceholder": "nginx:1.27",
+    "port": "Porta",
+    "replicas": "Réplicas",
+    "namespace": "Namespace",
+    "host": "Host (opcional)",
+    "hostPlaceholder": "app.example.com",
+    "env": "Ambiente (opcional)",
+    "envPlaceholder": "KEY=value, uma por linha",
+    "envHint": "Somente escrita. Os valores nunca são exibidos de novo.",
+    "envInvalid": "A linha {{line}} não é KEY=value.",
+    "allowRoot": "Permitir execução como root",
+    "allowRootWarning": "Só para imagens que exigem root. As demais rodam sem root.",
+    "submit": "Implantar",
+    "pending": "Implantando",
+    "done": "{{app}} implantado",
+    "pageDescription": "Implante uma imagem pública neste cluster e acompanhe o status."
+  },
+  "deployments": {
+    "title": "Implantações",
+    "empty": "Nenhuma implantação ainda."
+  },
+  "deployment": {
+    "checking": "Verificando",
+    "stale": "Status indisponível",
+    "ready": "Pronto {{ready}}/{{total}}",
+    "logs": "Logs",
+    "logsNamed": "Logs de {{name}}",
+    "remove": "Remover",
+    "removeNamed": "Remover {{name}}"
   }
 }

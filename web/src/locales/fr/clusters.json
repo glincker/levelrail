@@ -60,7 +60,10 @@
     "ready": "Prêt",
     "notReady": "Pas prêt",
     "noNodes": "Aucun nœud renvoyé.",
-    "noNamespaces": "Aucun namespace renvoyé."
+    "noNamespaces": "Aucun namespace renvoyé.",
+    "back": "Retour aux clusters",
+    "open": "Ouvrir",
+    "openNamed": "Ouvrir {{name}}"
   },
   "disconnect": {
     "title": "Déconnecter {{name}} ?",
@@ -68,5 +71,39 @@
     "confirm": "Déconnecter",
     "pending": "Déconnexion",
     "done": "Cluster déconnecté."
+  },
+  "deploy": {
+    "title": "Déployer une app",
+    "app": "Nom de l'app",
+    "image": "Image publique",
+    "imagePlaceholder": "nginx:1.27",
+    "port": "Port",
+    "replicas": "Réplicas",
+    "namespace": "Namespace",
+    "host": "Hôte (facultatif)",
+    "hostPlaceholder": "app.example.com",
+    "env": "Environnement (facultatif)",
+    "envPlaceholder": "KEY=value, une par ligne",
+    "envHint": "Écriture seule. Les valeurs ne sont plus jamais affichées.",
+    "envInvalid": "La ligne {{line}} n'est pas KEY=value.",
+    "allowRoot": "Autoriser l'exécution en root",
+    "allowRootWarning": "Seulement pour les images qui exigent root. Les autres tournent sans root.",
+    "submit": "Déployer",
+    "pending": "Déploiement",
+    "done": "{{app}} déployée",
+    "pageDescription": "Déployez une image publique sur ce cluster et suivez son état."
+  },
+  "deployments": {
+    "title": "Déploiements",
+    "empty": "Aucun déploiement pour l'instant."
+  },
+  "deployment": {
+    "checking": "Vérification",
+    "stale": "État indisponible",
+    "ready": "Prêt {{ready}}/{{total}}",
+    "logs": "Journaux",
+    "logsNamed": "Journaux de {{name}}",
+    "remove": "Retirer",
+    "removeNamed": "Retirer {{name}}"
   }
 }

@@ -43,3 +43,53 @@ export interface ConnectClusterInput {
   token?: string
   ca?: string
 }
+
+export interface DeployK8sInput {
+  app: string
+  image: string
+  port: number
+  replicas?: number
+  namespace?: string
+  host?: string
+  env?: Record<string, string>
+  allow_root?: boolean
+}
+
+export interface K8sDeployment {
+  app: string
+  namespace: string
+  image: string
+  port: number
+  replicas: number
+  host?: string
+  allow_root: boolean
+  objects: string[]
+}
+
+export interface K8sCondition {
+  type: string
+  status: string
+  reason?: string
+  message?: string
+}
+
+export interface K8sPod {
+  name: string
+  phase: string
+  reason?: string
+  message?: string
+}
+
+export interface K8sDeploymentStatus {
+  app: string
+  namespace: string
+  found: boolean
+  ready: boolean
+  replicas: number
+  ready_replicas: number
+  updated_replicas: number
+  conditions: K8sCondition[]
+  pods: K8sPod[]
+  ingress_address?: string
+  reason?: string
+}

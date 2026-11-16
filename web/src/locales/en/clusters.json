@@ -60,7 +60,10 @@
     "ready": "Ready",
     "notReady": "Not ready",
     "noNodes": "No nodes returned.",
-    "noNamespaces": "No namespaces returned."
+    "noNamespaces": "No namespaces returned.",
+    "back": "Back to clusters",
+    "open": "Open",
+    "openNamed": "Open {{name}}"
   },
   "disconnect": {
     "title": "Disconnect {{name}}?",
@@ -68,5 +71,39 @@
     "confirm": "Disconnect",
     "pending": "Disconnecting",
     "done": "Cluster disconnected."
+  },
+  "deploy": {
+    "title": "Deploy an app",
+    "app": "App name",
+    "image": "Public image",
+    "imagePlaceholder": "nginx:1.27",
+    "port": "Port",
+    "replicas": "Replicas",
+    "namespace": "Namespace",
+    "host": "Host (optional)",
+    "hostPlaceholder": "app.example.com",
+    "env": "Environment (optional)",
+    "envPlaceholder": "KEY=value, one per line",
+    "envHint": "Write only. Values are never shown again.",
+    "envInvalid": "Line {{line}} is not KEY=value.",
+    "allowRoot": "Allow running as root",
+    "allowRootWarning": "Only for images that need root. Others run as non-root.",
+    "submit": "Deploy",
+    "pending": "Deploying",
+    "done": "Deployed {{app}}",
+    "pageDescription": "Deploy a public image to this cluster and watch its status."
+  },
+  "deployments": {
+    "title": "Deployments",
+    "empty": "No deployments yet."
+  },
+  "deployment": {
+    "checking": "Checking",
+    "stale": "Status unavailable",
+    "ready": "Ready {{ready}}/{{total}}",
+    "logs": "Logs",
+    "logsNamed": "Logs for {{name}}",
+    "remove": "Remove",
+    "removeNamed": "Remove {{name}}"
   }
 }

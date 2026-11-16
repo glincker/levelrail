@@ -60,7 +60,10 @@
     "ready": "就绪",
     "notReady": "未就绪",
     "noNodes": "未返回节点。",
-    "noNamespaces": "未返回命名空间。"
+    "noNamespaces": "未返回命名空间。",
+    "back": "返回集群列表",
+    "open": "打开",
+    "openNamed": "打开 {{name}}"
   },
   "disconnect": {
     "title": "断开 {{name}}？",
@@ -68,5 +71,39 @@
     "confirm": "断开连接",
     "pending": "断开中",
     "done": "集群已断开。"
+  },
+  "deploy": {
+    "title": "部署应用",
+    "app": "应用名称",
+    "image": "公开镜像",
+    "imagePlaceholder": "nginx:1.27",
+    "port": "端口",
+    "replicas": "副本数",
+    "namespace": "命名空间",
+    "host": "主机 (可选)",
+    "hostPlaceholder": "app.example.com",
+    "env": "环境变量 (可选)",
+    "envPlaceholder": "KEY=value，每行一个",
+    "envHint": "仅可写入，值不会再次显示。",
+    "envInvalid": "第 {{line}} 行不是 KEY=value。",
+    "allowRoot": "允许以 root 运行",
+    "allowRootWarning": "仅用于需要 root 的镜像，其他镜像以非 root 运行。",
+    "submit": "部署",
+    "pending": "部署中",
+    "done": "已部署 {{app}}",
+    "pageDescription": "将公开镜像部署到此集群并查看状态。"
+  },
+  "deployments": {
+    "title": "部署列表",
+    "empty": "暂无部署。"
+  },
+  "deployment": {
+    "checking": "检查中",
+    "stale": "状态不可用",
+    "ready": "就绪 {{ready}}/{{total}}",
+    "logs": "日志",
+    "logsNamed": "{{name}} 的日志",
+    "remove": "移除",
+    "removeNamed": "移除 {{name}}"
   }
 }

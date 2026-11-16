@@ -60,7 +60,10 @@
     "ready": "Bereit",
     "notReady": "Nicht bereit",
     "noNodes": "Keine Nodes zurückgegeben.",
-    "noNamespaces": "Keine Namespaces zurückgegeben."
+    "noNamespaces": "Keine Namespaces zurückgegeben.",
+    "back": "Zurück zu Clustern",
+    "open": "Öffnen",
+    "openNamed": "{{name}} öffnen"
   },
   "disconnect": {
     "title": "{{name}} trennen?",
@@ -68,5 +71,39 @@
     "confirm": "Trennen",
     "pending": "Trenne",
     "done": "Cluster getrennt."
+  },
+  "deploy": {
+    "title": "App bereitstellen",
+    "app": "App-Name",
+    "image": "Öffentliches Image",
+    "imagePlaceholder": "nginx:1.27",
+    "port": "Port",
+    "replicas": "Replikate",
+    "namespace": "Namespace",
+    "host": "Host (optional)",
+    "hostPlaceholder": "app.example.com",
+    "env": "Umgebung (optional)",
+    "envPlaceholder": "KEY=value, eine pro Zeile",
+    "envHint": "Nur schreibend. Werte werden nie wieder angezeigt.",
+    "envInvalid": "Zeile {{line}} ist nicht KEY=value.",
+    "allowRoot": "Ausführung als root erlauben",
+    "allowRootWarning": "Nur für Images, die root brauchen. Andere laufen als Nicht-root.",
+    "submit": "Bereitstellen",
+    "pending": "Wird bereitgestellt",
+    "done": "{{app}} bereitgestellt",
+    "pageDescription": "Ein öffentliches Image auf diesem Cluster bereitstellen und den Status verfolgen."
+  },
+  "deployments": {
+    "title": "Deployments",
+    "empty": "Noch keine Deployments."
+  },
+  "deployment": {
+    "checking": "Prüfe",
+    "stale": "Status nicht verfügbar",
+    "ready": "Bereit {{ready}}/{{total}}",
+    "logs": "Logs",
+    "logsNamed": "Logs für {{name}}",
+    "remove": "Entfernen",
+    "removeNamed": "{{name}} entfernen"
   }
 }
