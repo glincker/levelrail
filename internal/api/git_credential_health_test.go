@@ -203,11 +203,11 @@ func TestGitStaticTokenReminderWindows(t *testing.T) {
 	}
 }
 
-func postRotate(t *testing.T, rt *Router, db *store.DB, id, body string) *httptest.ResponseRecorder {
+func postRotate(t *testing.T, rt *Router, db *store.DB, id string) *httptest.ResponseRecorder {
 	t.Helper()
 	cookie := loginTestSession(t, rt, db)
 	rec := httptest.NewRecorder()
-	rt.Handler().ServeHTTP(rec, authedRequest(t, cookie, http.MethodPost, "/api/v1/git-connections/"+id+"/rotate", body))
+	rt.Handler().ServeHTTP(rec, authedRequest(t, cookie, http.MethodPost, "/api/v1/git-connections/"+id+"/rotate", ""))
 	return rec
 }
 
@@ -215,7 +215,7 @@ func TestGitLabRotateStoresNewTokenAndReturnsMetadataOnly(t *testing.T) {
 	fake := &credFakeGitLab{fakeGitLabAppClient: &fakeGitLabAppClient{}, rotateTok: "glpat-new-secret", rotateExp: "2027-01-31"}
 	rt, db, secrets, _ := newCredRouter(t, nil, fake)
 	c := staticGitLabConn(t, db, secrets, "ann")
-	rec := postRotate(t, rt, db, c.ID, "")
+	rec := postRotate(t, rt, db, c.ID)
 	if rec.Code != http.StatusOK {
 		t.Fatalf("status = %d body = %s", rec.Code, rec.Body.String())
 	}
@@ -238,11 +238,11 @@ func TestGitRotateRefusesOAuthWith409(t *testing.T) {
 	fake := &credFakeGitLab{fakeGitLabAppClient: &fakeGitLabAppClient{}}
 	rt, db, secrets, _ := newCredRouter(t, nil, fake)
 	c := seedGitConn(t, db, secrets, gitProviderGitLab, "gitlab.example.com", "ann", true)
-	rec := postRotate(t, rt, db, c.ID, "")
+	rec := postRotate(t, rt, db, c.ID)
 	if rec.Code != http.StatusConflict || fake.rotated != 0 {
 		t.Fatalf("status = %d rotated %d body %s", rec.Code, fake.rotated, rec.Body.String())
 	}
-	if rec := postRotate(t, rt, db, "gc_missing", ""); rec.Code != http.StatusNotFound {
+	if rec := postRotate(t, rt, db, "gc_missing"); rec.Code != http.StatusNotFound {
 		t.Fatalf("missing connection status = %d", rec.Code)
 	}
 }

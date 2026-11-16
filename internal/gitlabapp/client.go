@@ -51,7 +51,7 @@ func apiBaseURL(instanceURL string) string {
 }
 
 func (c *Client) do(ctx context.Context, method, fullURL, authHeader string, body io.Reader, out any) error {
-	req, err := http.NewRequestWithContext(ctx, method, fullURL, body)
+	req, err := http.NewRequestWithContext(ctx, method, fullURL, body) //nolint:gosec // fullURL is built from the saved instance URL and sent through the netguard client
 	if err != nil {
 		return fmt.Errorf("%s: build request: %w", errPrefix, err)
 	}

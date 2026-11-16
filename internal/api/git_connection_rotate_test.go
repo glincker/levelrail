@@ -15,7 +15,7 @@ func TestGitRotateKeepsUnsavedTokenAndMarksReconnect(t *testing.T) {
 	c := staticGitLabConn(t, db, secrets, "bea")
 
 	secrets.setErr = errFakeSecretNotSet
-	rec := postRotate(t, rt, db, c.ID, "")
+	rec := postRotate(t, rt, db, c.ID)
 	if rec.Code != http.StatusInternalServerError || strings.Contains(rec.Body.String(), "glpat-pending-secret") {
 		t.Fatalf("status = %d body = %s", rec.Code, rec.Body.String())
 	}
@@ -24,7 +24,7 @@ func TestGitRotateKeepsUnsavedTokenAndMarksReconnect(t *testing.T) {
 	}
 
 	secrets.setErr = nil
-	rec = postRotate(t, rt, db, c.ID, "")
+	rec = postRotate(t, rt, db, c.ID)
 	if rec.Code != http.StatusOK {
 		t.Fatalf("retry status = %d body = %s", rec.Code, rec.Body.String())
 	}

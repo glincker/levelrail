@@ -22,7 +22,6 @@ func (c *Client) GetAuthEngineStatus(ctx context.Context) (AuthEngineStatusResou
 	return out, err
 }
 
-// ListTokensRaw calls GET /api/v1/auth/tokens with the client's bearer token (root ability), returning the JSON array undecoded.
 // RotateToken calls POST /api/v1/auth/tokens/{id}/rotate.
 func (c *Client) RotateToken(ctx context.Context, id string) (RotatedToken, error) {
 	var out RotatedToken
@@ -30,6 +29,7 @@ func (c *Client) RotateToken(ctx context.Context, id string) (RotatedToken, erro
 	return out, err
 }
 
+// ListTokensRaw calls GET /api/v1/auth/tokens with the client's bearer token (root ability), returning the JSON array undecoded.
 func (c *Client) ListTokensRaw(ctx context.Context) (json.RawMessage, error) {
 	var out json.RawMessage
 	err := c.do(ctx, http.MethodGet, "/api/v1/auth/tokens", nil, &out)
