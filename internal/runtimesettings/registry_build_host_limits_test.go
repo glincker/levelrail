@@ -8,7 +8,7 @@ import (
 func TestBuildHostLimitSettings(t *testing.T) {
 	svc := New(newFakeStore(), envOf(map[string]string{"APP_BUILD_CPU_PERCENT": "50"}))
 	ctx := context.Background()
-	for key, def := range map[string]int{KeyBuildMemoryPercent: 75, KeyBuildkitdPidsLimit: 4096} {
+	for key, def := range map[string]int{KeyBuildMemoryPercent: 60, KeyBuildkitdPidsLimit: 4096} {
 		if got := svc.Int(ctx, key); got != def {
 			t.Fatalf("%s default = %d, want %d", key, got, def)
 		}

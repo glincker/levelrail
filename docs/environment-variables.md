@@ -233,7 +233,7 @@ These variables only seed the default of a [runtime setting](/runtime-settings).
 | `APP_BUILD_CACHE_RECLAIM_MAX_RECORDS` | [`build.cache_reclaim_max_records`](/runtime-settings#deploys) | `50` |
 | `APP_BUILD_CACHE_RECLAIM_TIMEOUT` | [`build.cache_reclaim_timeout`](/runtime-settings#deploys) | `2m` |
 | `APP_BUILD_CPU_PERCENT` | [`build.cpu_percent`](/runtime-settings#deploys) | `75` |
-| `APP_BUILD_MEMORY_PERCENT` | [`build.memory_percent`](/runtime-settings#deploys) | `75` |
+| `APP_BUILD_MEMORY_PERCENT` | [`build.memory_percent`](/runtime-settings#deploys) | `60` |
 | `APP_BUILD_NEXT_MIN_FREE_MEMORY_MIB` | [`build.next_min_free_memory_mib`](/runtime-settings#deploys) | `2048` |
 | `APP_BUILD_QUEUE_AUTO_RESUME_AFTER` | [`build.queue_auto_resume_after`](/runtime-settings#deploys) | `0s` |
 | `APP_BUILD_QUEUE_PAUSED_WARN_AFTER` | [`build.queue_paused_warn_after`](/runtime-settings#deploys) | `1h` |

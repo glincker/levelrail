@@ -14,7 +14,7 @@ const (
 	EnvBuildMemoryPercent  = "APP_BUILD_MEMORY_PERCENT"
 	EnvBuildMemoryReserve  = "APP_BUILD_MEMORY_RESERVE_MB"
 	EnvBuildNodeHeapPct    = "APP_BUILD_NODE_HEAP_PERCENT"
-	DefaultMemoryPercent   = 75
+	DefaultMemoryPercent   = 60
 	DefaultMemoryReserveMB = 512
 	DefaultNodeHeapPercent = 75
 

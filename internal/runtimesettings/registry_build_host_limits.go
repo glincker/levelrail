@@ -34,7 +34,7 @@ func zeroOrRangeCheck(floor, ceil int) func(string) error {
 
 func init() {
 	Register(Definition{
-		Key: KeyBuildMemoryPercent, Category: CategoryDeploys, Kind: KindInt, Default: "75",
+		Key: KeyBuildMemoryPercent, Category: CategoryDeploys, Kind: KindInt, Default: "60",
 		Env: "APP_BUILD_MEMORY_PERCENT", Apply: ApplyLive, CheckValue: zeroOrRangeCheck(buildPercentMin, buildPercentMax),
 		Title:       "Build memory limit (percent of host)",
 		Description: "Share of the host memory one build may use, from 5 to 100 percent, so a runaway build cannot starve the apps on the same host. 0 turns the limit off. Used when the build memory limit in MiB is 0, and a fixed MiB value wins over it. A change applies to the next build.",
