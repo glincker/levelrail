@@ -49,7 +49,7 @@ import {
 } from '../queries/nodeProvision'
 import { labelOf } from '@/lib/labelOf'
 
-type ProviderId =
+export type ProviderId =
   'hetzner' | 'digitalocean' | 'aws' | 'azure' | 'gcp' | 'oracle'
 type Step =
   | 'method'
@@ -87,17 +87,32 @@ function nodeNameFrom(provider: ProviderId, region: string): string {
 // AddNodeDialog's own manual join-token flow does. "I already have a
 // server" reuses that exact flow (ManualEnrollFields) as a step here
 // instead of a second implementation of it.
-export function AddNodeWizard() {
+export interface AddNodeWizardProps {
+  /** Skips the method step: a cloud provider goes to its regions, custom to manual enroll. */
+  preselect?: ProviderId | 'custom'
+  /** Starts with the build role chosen. */
+  builds?: boolean
+  /** Trigger text, defaults to "Add node". */
+  triggerLabel?: string
+}
+
+export function AddNodeWizard({
+  preselect,
+  builds = false,
+  triggerLabel = 'Add node',
+}: AddNodeWizardProps = {}) {
   const [open, setOpen] = useState(false)
   return (
     <Dialog open={open} onOpenChange={setOpen}>
       <DialogTrigger render={<Button size="sm" />}>
         <PlusGlassIcon size="1.4em" />
-        Add node
+        {triggerLabel}
       </DialogTrigger>
       <DialogContent className="sm:max-w-lg">
         <WizardBody
           key={open ? 'open' : 'closed'}
+          preselect={preselect}
+          builds={builds}
           onClose={() => setOpen(false)}
         />
       </DialogContent>
@@ -105,15 +120,29 @@ export function AddNodeWizard() {
   )
 }
 
-function WizardBody({ onClose }: { onClose: () => void }) {
+function WizardBody({
+  onClose,
+  preselect,
+  builds,
+}: {
+  onClose: () => void
+  preselect?: ProviderId | 'custom'
+  builds: boolean
+}) {
   const { t } = useTranslation('nodes')
   const navigate = useNavigate()
-  const [step, setStep] = useState<Step>('method')
-  const [provider, setProvider] = useState<ProviderId | null>(null)
+  const [step, setStep] = useState<Step>(
+    preselect === 'custom' ? 'manual' : preselect ? 'region' : 'method',
+  )
+  const [provider, setProvider] = useState<ProviderId | null>(
+    preselect && preselect !== 'custom' ? preselect : null,
+  )
   const [region, setRegion] = useState('')
   const [size, setSize] = useState('')
   const [name, setName] = useState('')
-  const [role, setRole] = useState<'general' | 'build'>('general')
+  const [role, setRole] = useState<'general' | 'build'>(
+    builds ? 'build' : 'general',
+  )
   const [allowSSHInbound, setAllowSSHInbound] = useState(false)
   const [controlPlaneAddr, setControlPlaneAddr] = useState(
     () => `${window.location.hostname}:9443`,

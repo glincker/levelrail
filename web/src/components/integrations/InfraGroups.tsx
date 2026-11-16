@@ -51,12 +51,15 @@ const LINK_GROUPS = [
 
 function ManageButton({
   to,
+  params,
   label,
 }: Readonly<{
   to:
     | '/settings/node-providers'
     | '/clusters'
     | (typeof LINK_GROUPS)[number]['to']
+    | '/integrations/cloud/$provider'
+  params?: { provider: string }
   label: string
 }>) {
   const { t } = useTranslation('integrations')
@@ -64,7 +67,7 @@ function ManageButton({
     <Button
       variant="outline"
       size="sm"
-      render={<Link to={to} />}
+      render={<Link to={to} params={params as never} />}
       aria-label={label}
     >
       {t('infra.manage')}
@@ -116,7 +119,8 @@ export function InfraGroups() {
                     inlineActions
                     actions={
                       <ManageButton
-                        to="/settings/node-providers"
+                        to="/integrations/cloud/$provider"
+                        params={{ provider: p.provider }}
                         label={t('infra.manageNamed', { name })}
                       />
                     }

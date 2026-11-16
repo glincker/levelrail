@@ -1,17 +1,16 @@
-import { useRef, useState } from 'react'
+import { useRef } from 'react'
+import { Link } from '@tanstack/react-router'
 import { useTranslation } from 'react-i18next'
 import { SettingsGlassIcon } from '@thesvg/ui-react'
 import { Button } from '@/components/ui/button'
 import { BrandTile } from '../BrandLogoBadge'
 import { StatusPill } from '../kit/StatusPill'
-import { UrlDialog } from '../kit/UrlDialog'
 import { useUrlDialog } from '../kit/useUrlDialog'
 import { RelativeTime } from '../kit/RelativeTime'
-import { ManualEnrollFields } from '../AddNodeDialog'
 import { nodeProviderBrand } from '../../lib/providerBrands'
 import type { NodeProviderResource } from '../../types/nodeProvision'
-import { NodeProviderForm } from './NodeProviderForm'
-import { OracleCredentialForm } from './OracleCredentialForm'
+import { CONNECT_DIALOG_PARAMS } from './connectDialogParams'
+import { NodeProviderConnectDialog } from './NodeProviderConnectDialog'
 
 const NAME_KEYS = {
   hetzner: 'nodeProviders.names.hetzner',
@@ -39,8 +38,6 @@ function asKnown(name: string): KnownProvider | null {
   return name in NAME_KEYS ? (name as KnownProvider) : null
 }
 
-const DIALOG_PARAMS = ['method'] as const
-
 export function NodeProviderRow({
   provider,
 }: {
@@ -48,8 +45,11 @@ export function NodeProviderRow({
 }) {
   const { t } = useTranslation(['settings', 'nodes'])
   const triggerRef = useRef<HTMLButtonElement>(null)
-  const dialog = useUrlDialog(provider.provider, 'connect', DIALOG_PARAMS)
-  const [addingNode, setAddingNode] = useState(false)
+  const dialog = useUrlDialog(
+    provider.provider,
+    'connect',
+    CONNECT_DIALOG_PARAMS,
+  )
   const known = asKnown(provider.provider)
   const label = known ? t(NAME_KEYS[known]) : provider.provider
   const connected = provider.has_token
@@ -69,7 +69,15 @@ export function NodeProviderRow({
         labelled
       />
       <div className="min-w-0 flex-1 basis-56">
-        <p className="text-sm font-medium">{label}</p>
+        <p className="text-sm font-medium">
+          <Link
+            to="/integrations/cloud/$provider"
+            params={{ provider: provider.provider }}
+            className="rounded-sm hover:underline focus-visible:outline-2 focus-visible:outline-offset-2"
+          >
+            {label}
+          </Link>
+        </p>
         <p className="truncate text-xs text-muted-foreground">{detail}</p>
         {connected && provider.connected_by ? (
           <p className="truncate text-xs text-muted-foreground">
@@ -103,57 +111,18 @@ export function NodeProviderRow({
         size="sm"
         aria-label={t('nodeProviders.configureFor', { provider: label })}
         onClick={() => {
-          setAddingNode(false)
           dialog.open()
         }}
       >
         <SettingsGlassIcon size="1.4em" aria-hidden="true" />
         {connected ? t('nodeProviders.update') : t('nodeProviders.connect')}
       </Button>
-      <UrlDialog
-        value={provider.provider}
-        ownedParams={DIALOG_PARAMS}
+      <NodeProviderConnectDialog
+        provider={provider}
+        label={label}
+        dialog={dialog}
         returnFocusRef={triggerRef}
-        title={
-          addingNode
-            ? t('nodeProviders.addNodeTitle', { provider: label })
-            : t('nodeProviders.sheetTitle', { provider: label })
-        }
-        description={
-          addingNode
-            ? t('nodeProviders.addNodeDescription')
-            : t('nodeProviders.sheetDescription')
-        }
-      >
-        {addingNode ? (
-          <div className="space-y-3">
-            <p className="rounded-lg border border-border bg-muted/30 p-3 text-xs text-muted-foreground">
-              {t('nodeProviders.firewallGuidance')}
-            </p>
-            <ManualEnrollFields
-              onDone={() => setAddingNode(false)}
-              onBack={() => setAddingNode(false)}
-            />
-          </div>
-        ) : provider.provider === 'oracle' ? (
-          <OracleCredentialForm
-            provider={provider}
-            label={label}
-            onSaved={dialog.close}
-          />
-        ) : (
-          <NodeProviderForm
-            provider={provider}
-            label={label}
-            onSaved={dialog.close}
-            onAddNode={
-              provider.provider === 'custom'
-                ? () => setAddingNode(true)
-                : undefined
-            }
-          />
-        )}
-      </UrlDialog>
+      />
     </li>
   )
 }
