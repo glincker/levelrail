@@ -93,7 +93,11 @@
     "submit": "Bereitstellen",
     "pending": "Wird bereitgestellt",
     "done": "{{app}} bereitgestellt",
-    "pageDescription": "Ein öffentliches Image auf diesem Cluster bereitstellen und den Status verfolgen."
+    "pageDescription": "Ein öffentliches Image auf diesem Cluster bereitstellen und den Status verfolgen.",
+    "pullSecret": "Pull-Secret (optional)",
+    "pullSecretNone": "Keines (öffentliches Image)",
+    "pullSecretMismatch": "Das Image liegt auf {{image}}, aber {{name}} gilt für {{secret}}.",
+    "pullSecretNoneStored": "Keine Pull-Secrets gespeichert. Unten unter Pull-Secrets eines hinzufügen."
   },
   "deployments": {
     "title": "Deployments",
@@ -106,7 +110,9 @@
     "logs": "Logs",
     "logsNamed": "Logs für {{name}}",
     "remove": "Entfernen",
-    "removeNamed": "{{name}} entfernen"
+    "removeNamed": "{{name}} entfernen",
+    "pullFailed": "Pull mit Secret {{name}} fehlgeschlagen",
+    "pullSecretsLink": "Pull-Secrets"
   },
   "logs": {
     "title": "Logs für {{name}}",
@@ -127,5 +133,27 @@
     "confirm": "App entfernen",
     "pending": "Wird entfernt",
     "done": "{{name}} entfernt"
+  },
+  "pullSecrets": {
+    "title": "Pull-Secrets",
+    "hint": "Registry-Zugangsdaten für private Images. Nur schreibend, werden nie wieder angezeigt.",
+    "empty": "Noch keine Pull-Secrets.",
+    "addTitle": "Pull-Secret hinzufügen",
+    "name": "Name",
+    "namePlaceholder": "ghcr-main",
+    "registry": "Registry-Host",
+    "registryPlaceholder": "ghcr.io",
+    "username": "Benutzername",
+    "password": "Passwort oder Token",
+    "add": "Hinzufügen",
+    "adding": "Wird hinzugefügt",
+    "added": "{{name}} hinzugefügt",
+    "delete": "Löschen",
+    "deleteNamed": "{{name}} löschen",
+    "deleteTitle": "{{name}} löschen?",
+    "deleteDescription": "Laufende Apps behalten ihre Kopie. Neue Deployments mit diesem Secret schlagen fehl. Zur Bestätigung den Namen eingeben.",
+    "deleteConfirm": "Secret löschen",
+    "deletePending": "Wird gelöscht",
+    "deleted": "{{name}} gelöscht"
   }
 }

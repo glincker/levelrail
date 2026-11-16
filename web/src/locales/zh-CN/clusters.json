@@ -93,7 +93,11 @@
     "submit": "部署",
     "pending": "部署中",
     "done": "已部署 {{app}}",
-    "pageDescription": "将公开镜像部署到此集群并查看状态。"
+    "pageDescription": "将公开镜像部署到此集群并查看状态。",
+    "pullSecret": "拉取密钥(可选)",
+    "pullSecretNone": "无(公开镜像)",
+    "pullSecretMismatch": "镜像位于 {{image}},但 {{name}} 适用于 {{secret}}。",
+    "pullSecretNoneStored": "没有已保存的拉取密钥。请在下方的拉取密钥中添加。"
   },
   "deployments": {
     "title": "部署列表",
@@ -106,7 +110,9 @@
     "logs": "日志",
     "logsNamed": "{{name}} 的日志",
     "remove": "移除",
-    "removeNamed": "移除 {{name}}"
+    "removeNamed": "移除 {{name}}",
+    "pullFailed": "使用密钥 {{name}} 拉取失败",
+    "pullSecretsLink": "拉取密钥"
   },
   "logs": {
     "title": "{{name}} 的日志",
@@ -127,5 +133,27 @@
     "confirm": "移除应用",
     "pending": "移除中",
     "done": "已移除 {{name}}"
+  },
+  "pullSecrets": {
+    "title": "拉取密钥",
+    "hint": "私有镜像的镜像仓库凭据。仅可写入,不会再次显示。",
+    "empty": "还没有拉取密钥。",
+    "addTitle": "添加拉取密钥",
+    "name": "名称",
+    "namePlaceholder": "ghcr-main",
+    "registry": "仓库主机",
+    "registryPlaceholder": "ghcr.io",
+    "username": "用户名",
+    "password": "密码或令牌",
+    "add": "添加",
+    "adding": "添加中",
+    "added": "已添加 {{name}}",
+    "delete": "删除",
+    "deleteNamed": "删除 {{name}}",
+    "deleteTitle": "删除 {{name}}?",
+    "deleteDescription": "运行中的应用保留其副本。使用此密钥的新部署将失败。输入名称以确认。",
+    "deleteConfirm": "删除密钥",
+    "deletePending": "删除中",
+    "deleted": "已删除 {{name}}"
   }
 }

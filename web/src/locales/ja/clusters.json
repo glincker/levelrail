@@ -93,7 +93,11 @@
     "submit": "デプロイ",
     "pending": "デプロイ中",
     "done": "{{app}} をデプロイしました",
-    "pageDescription": "このクラスターに公開イメージをデプロイして状態を確認します。"
+    "pageDescription": "このクラスターに公開イメージをデプロイして状態を確認します。",
+    "pullSecret": "プルシークレット (任意)",
+    "pullSecretNone": "なし (公開イメージ)",
+    "pullSecretMismatch": "イメージは {{image}} にありますが、{{name}} は {{secret}} 用です。",
+    "pullSecretNoneStored": "保存済みのプルシークレットがありません。下のプルシークレットで追加してください。"
   },
   "deployments": {
     "title": "デプロイ一覧",
@@ -106,7 +110,9 @@
     "logs": "ログ",
     "logsNamed": "{{name}} のログ",
     "remove": "削除",
-    "removeNamed": "{{name}} を削除"
+    "removeNamed": "{{name}} を削除",
+    "pullFailed": "シークレット {{name}} でのプルに失敗しました",
+    "pullSecretsLink": "プルシークレット"
   },
   "logs": {
     "title": "{{name}} のログ",
@@ -127,5 +133,27 @@
     "confirm": "アプリを削除",
     "pending": "削除中",
     "done": "{{name}} を削除しました"
+  },
+  "pullSecrets": {
+    "title": "プルシークレット",
+    "hint": "プライベートイメージ用のレジストリ認証情報です。書き込み専用で、再表示されません。",
+    "empty": "プルシークレットはまだありません。",
+    "addTitle": "プルシークレットを追加",
+    "name": "名前",
+    "namePlaceholder": "ghcr-main",
+    "registry": "レジストリホスト",
+    "registryPlaceholder": "ghcr.io",
+    "username": "ユーザー名",
+    "password": "パスワードまたはトークン",
+    "add": "追加",
+    "adding": "追加中",
+    "added": "{{name}} を追加しました",
+    "delete": "削除",
+    "deleteNamed": "{{name}} を削除",
+    "deleteTitle": "{{name}} を削除しますか?",
+    "deleteDescription": "実行中のアプリはコピーを保持します。このシークレットを使う新しいデプロイは失敗します。確認のため名前を入力してください。",
+    "deleteConfirm": "シークレットを削除",
+    "deletePending": "削除中",
+    "deleted": "{{name}} を削除しました"
   }
 }

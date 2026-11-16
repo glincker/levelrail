@@ -6,6 +6,7 @@ import { EmptyState } from '@/components/ui/empty-state'
 import { isClustersOff, useClusters } from '../../queries/clusters'
 import { ClusterDeployments } from './ClusterDeployments'
 import { DeployForm } from './DeployForm'
+import { PullSecretsPanel } from './PullSecretsPanel'
 
 export function ClusterDeploymentsPage({ name }: Readonly<{ name: string }>) {
   const { t } = useTranslation('clusters')
@@ -37,6 +38,7 @@ export function ClusterDeploymentsPage({ name }: Readonly<{ name: string }>) {
       ) : (
         <div className="flex flex-col gap-4">
           <DeployForm cluster={name} />
+          <PullSecretsPanel cluster={name} />
           <ClusterDeployments cluster={name} />
         </div>
       )}

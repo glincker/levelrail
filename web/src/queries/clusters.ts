@@ -7,6 +7,8 @@ import {
 } from '@tanstack/react-query'
 import { ApiError, readErrorMessage } from '../lib/apiError'
 import type {
+  AddPullSecretInput,
+  PullSecret,
   Cluster,
   ClusterList,
   ClusterNamespace,
@@ -28,6 +30,8 @@ export const clusterKeys = {
     [...clusterKeys.all, 'deployments', name] as const,
   logs: (name: string, app: string, pod: string, tail: number) =>
     [...clusterKeys.all, 'logs', name, app, pod, tail] as const,
+  pullSecrets: (name: string) =>
+    [...clusterKeys.all, 'pull-secrets', name] as const,
   status: (name: string, app: string) =>
     [...clusterKeys.all, 'status', name, app] as const,
 }
@@ -257,6 +261,59 @@ export function useRemoveDeployment(name: string) {
     onSuccess: () =>
       queryClient.invalidateQueries({
         queryKey: clusterKeys.deployments(name),
+      }),
+  })
+}
+
+export function usePullSecrets(name: string) {
+  return useQuery({
+    queryKey: clusterKeys.pullSecrets(name),
+    retry: false,
+    queryFn: async () =>
+      (
+        await request<{ pull_secrets: PullSecret[] }>(
+          `${base(name)}/pull-secrets`,
+          undefined,
+          'list pull secrets',
+        )
+      ).pull_secrets,
+  })
+}
+
+export function useAddPullSecret(name: string) {
+  const queryClient = useQueryClient()
+  return useMutation({
+    meta: { errorToast: false },
+    mutationFn: (input: AddPullSecretInput) =>
+      request<PullSecret>(
+        `${base(name)}/pull-secrets`,
+        {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify(input),
+        },
+        'add pull secret',
+      ),
+    onSuccess: () =>
+      queryClient.invalidateQueries({
+        queryKey: clusterKeys.pullSecrets(name),
+      }),
+  })
+}
+
+export function useDeletePullSecret(name: string) {
+  const queryClient = useQueryClient()
+  return useMutation({
+    meta: { errorToast: false },
+    mutationFn: (secret: string) =>
+      request<undefined>(
+        `${base(name)}/pull-secrets/${encodeURIComponent(secret)}`,
+        { method: 'DELETE' },
+        'delete pull secret',
+      ),
+    onSuccess: () =>
+      queryClient.invalidateQueries({
+        queryKey: clusterKeys.pullSecrets(name),
       }),
   })
 }

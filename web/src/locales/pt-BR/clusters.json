@@ -93,7 +93,11 @@
     "submit": "Implantar",
     "pending": "Implantando",
     "done": "{{app}} implantado",
-    "pageDescription": "Implante uma imagem pública neste cluster e acompanhe o status."
+    "pageDescription": "Implante uma imagem pública neste cluster e acompanhe o status.",
+    "pullSecret": "Pull secret (opcional)",
+    "pullSecretNone": "Nenhum (imagem pública)",
+    "pullSecretMismatch": "A imagem está em {{image}}, mas {{name}} é para {{secret}}.",
+    "pullSecretNoneStored": "Nenhum pull secret salvo. Adicione um em Pull secrets abaixo."
   },
   "deployments": {
     "title": "Implantações",
@@ -106,7 +110,9 @@
     "logs": "Logs",
     "logsNamed": "Logs de {{name}}",
     "remove": "Remover",
-    "removeNamed": "Remover {{name}}"
+    "removeNamed": "Remover {{name}}",
+    "pullFailed": "Falha no pull com o secret {{name}}",
+    "pullSecretsLink": "Pull secrets"
   },
   "logs": {
     "title": "Logs de {{name}}",
@@ -127,5 +133,27 @@
     "confirm": "Remover app",
     "pending": "Removendo",
     "done": "{{name}} removido"
+  },
+  "pullSecrets": {
+    "title": "Pull secrets",
+    "hint": "Credenciais de registro para imagens privadas. Somente escrita, nunca exibidas novamente.",
+    "empty": "Nenhum pull secret ainda.",
+    "addTitle": "Adicionar um pull secret",
+    "name": "Nome",
+    "namePlaceholder": "ghcr-main",
+    "registry": "Host do registro",
+    "registryPlaceholder": "ghcr.io",
+    "username": "Usuário",
+    "password": "Senha ou token",
+    "add": "Adicionar",
+    "adding": "Adicionando",
+    "added": "{{name}} adicionado",
+    "delete": "Excluir",
+    "deleteNamed": "Excluir {{name}}",
+    "deleteTitle": "Excluir {{name}}?",
+    "deleteDescription": "Apps em execução mantêm sua cópia. Novos deploys com este secret vão falhar. Digite o nome para confirmar.",
+    "deleteConfirm": "Excluir secret",
+    "deletePending": "Excluindo",
+    "deleted": "{{name}} excluído"
   }
 }

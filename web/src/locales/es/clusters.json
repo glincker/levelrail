@@ -93,7 +93,11 @@
     "submit": "Desplegar",
     "pending": "Desplegando",
     "done": "{{app}} desplegada",
-    "pageDescription": "Despliega una imagen pública en este clúster y sigue su estado."
+    "pageDescription": "Despliega una imagen pública en este clúster y sigue su estado.",
+    "pullSecret": "Pull secret (opcional)",
+    "pullSecretNone": "Ninguno (imagen pública)",
+    "pullSecretMismatch": "La imagen está en {{image}} pero {{name}} es para {{secret}}.",
+    "pullSecretNoneStored": "No hay pull secrets guardados. Añade uno en Pull secrets más abajo."
   },
   "deployments": {
     "title": "Despliegues",
@@ -106,7 +110,9 @@
     "logs": "Registros",
     "logsNamed": "Registros de {{name}}",
     "remove": "Quitar",
-    "removeNamed": "Quitar {{name}}"
+    "removeNamed": "Quitar {{name}}",
+    "pullFailed": "Falló la descarga con el secret {{name}}",
+    "pullSecretsLink": "Pull secrets"
   },
   "logs": {
     "title": "Registros de {{name}}",
@@ -127,5 +133,27 @@
     "confirm": "Quitar app",
     "pending": "Quitando",
     "done": "{{name}} quitada"
+  },
+  "pullSecrets": {
+    "title": "Pull secrets",
+    "hint": "Credenciales de registro para imágenes privadas. Solo escritura, nunca se vuelven a mostrar.",
+    "empty": "Aún no hay pull secrets.",
+    "addTitle": "Añadir un pull secret",
+    "name": "Nombre",
+    "namePlaceholder": "ghcr-main",
+    "registry": "Host del registro",
+    "registryPlaceholder": "ghcr.io",
+    "username": "Usuario",
+    "password": "Contraseña o token",
+    "add": "Añadir",
+    "adding": "Añadiendo",
+    "added": "{{name}} añadido",
+    "delete": "Eliminar",
+    "deleteNamed": "Eliminar {{name}}",
+    "deleteTitle": "¿Eliminar {{name}}?",
+    "deleteDescription": "Las apps en ejecución conservan su copia. Los nuevos despliegues con este secret fallarán. Escribe el nombre para confirmar.",
+    "deleteConfirm": "Eliminar secret",
+    "deletePending": "Eliminando",
+    "deleted": "{{name}} eliminado"
   }
 }

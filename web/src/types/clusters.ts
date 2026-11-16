@@ -54,6 +54,19 @@ export interface DeployK8sInput {
   host?: string
   env?: Record<string, string>
   allow_root?: boolean
+  pull_secret?: string
+}
+
+export interface PullSecret {
+  name: string
+  registry: string
+}
+
+export interface AddPullSecretInput {
+  name: string
+  registry: string
+  username: string
+  password: string
 }
 
 export interface K8sDeployment {
@@ -64,6 +77,7 @@ export interface K8sDeployment {
   replicas: number
   host?: string
   allow_root: boolean
+  pull_secret?: string
   objects: string[]
 }
 

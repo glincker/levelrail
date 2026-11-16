@@ -93,7 +93,11 @@
     "submit": "Déployer",
     "pending": "Déploiement",
     "done": "{{app}} déployée",
-    "pageDescription": "Déployez une image publique sur ce cluster et suivez son état."
+    "pageDescription": "Déployez une image publique sur ce cluster et suivez son état.",
+    "pullSecret": "Secret de pull (facultatif)",
+    "pullSecretNone": "Aucun (image publique)",
+    "pullSecretMismatch": "L'image est sur {{image}} mais {{name}} concerne {{secret}}.",
+    "pullSecretNoneStored": "Aucun secret de pull. Ajoutez-en un dans Secrets de pull ci-dessous."
   },
   "deployments": {
     "title": "Déploiements",
@@ -106,7 +110,9 @@
     "logs": "Journaux",
     "logsNamed": "Journaux de {{name}}",
     "remove": "Retirer",
-    "removeNamed": "Retirer {{name}}"
+    "removeNamed": "Retirer {{name}}",
+    "pullFailed": "Échec du pull avec le secret {{name}}",
+    "pullSecretsLink": "Secrets de pull"
   },
   "logs": {
     "title": "Journaux de {{name}}",
@@ -127,5 +133,27 @@
     "confirm": "Retirer l'app",
     "pending": "Retrait",
     "done": "{{name}} retirée"
+  },
+  "pullSecrets": {
+    "title": "Secrets de pull",
+    "hint": "Identifiants de registre pour les images privées. Écriture seule, jamais réaffichés.",
+    "empty": "Aucun secret de pull.",
+    "addTitle": "Ajouter un secret de pull",
+    "name": "Nom",
+    "namePlaceholder": "ghcr-main",
+    "registry": "Hôte du registre",
+    "registryPlaceholder": "ghcr.io",
+    "username": "Nom d'utilisateur",
+    "password": "Mot de passe ou jeton",
+    "add": "Ajouter",
+    "adding": "Ajout",
+    "added": "{{name}} ajouté",
+    "delete": "Supprimer",
+    "deleteNamed": "Supprimer {{name}}",
+    "deleteTitle": "Supprimer {{name}} ?",
+    "deleteDescription": "Les apps en cours gardent leur copie. Les nouveaux déploiements avec ce secret échoueront. Saisissez le nom pour confirmer.",
+    "deleteConfirm": "Supprimer le secret",
+    "deletePending": "Suppression",
+    "deleted": "{{name}} supprimé"
   }
 }

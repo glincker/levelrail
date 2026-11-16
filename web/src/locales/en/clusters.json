@@ -93,7 +93,11 @@
     "submit": "Deploy",
     "pending": "Deploying",
     "done": "Deployed {{app}}",
-    "pageDescription": "Deploy a public image to this cluster and watch its status."
+    "pageDescription": "Deploy a public image to this cluster and watch its status.",
+    "pullSecret": "Pull secret (optional)",
+    "pullSecretNone": "None (public image)",
+    "pullSecretMismatch": "The image is on {{image}} but {{name}} is for {{secret}}.",
+    "pullSecretNoneStored": "No pull secrets stored. Add one in Pull secrets below."
   },
   "deployments": {
     "title": "Deployments",
@@ -106,7 +110,9 @@
     "logs": "Logs",
     "logsNamed": "Logs for {{name}}",
     "remove": "Remove",
-    "removeNamed": "Remove {{name}}"
+    "removeNamed": "Remove {{name}}",
+    "pullFailed": "Pull failed with secret {{name}}",
+    "pullSecretsLink": "Pull secrets"
   },
   "logs": {
     "title": "Logs for {{name}}",
@@ -127,5 +133,27 @@
     "confirm": "Remove app",
     "pending": "Removing",
     "done": "Removed {{name}}"
+  },
+  "pullSecrets": {
+    "title": "Pull secrets",
+    "hint": "Registry credentials for private images. Write only, never shown again.",
+    "empty": "No pull secrets yet.",
+    "addTitle": "Add a pull secret",
+    "name": "Name",
+    "namePlaceholder": "ghcr-main",
+    "registry": "Registry host",
+    "registryPlaceholder": "ghcr.io",
+    "username": "Username",
+    "password": "Password or token",
+    "add": "Add",
+    "adding": "Adding",
+    "added": "Added {{name}}",
+    "delete": "Delete",
+    "deleteNamed": "Delete {{name}}",
+    "deleteTitle": "Delete {{name}}?",
+    "deleteDescription": "Running apps keep their copy. New deploys that use this secret will fail. Type the name to confirm.",
+    "deleteConfirm": "Delete secret",
+    "deletePending": "Deleting",
+    "deleted": "Deleted {{name}}"
   }
 }
