@@ -9,6 +9,7 @@
   "empty": {
     "title": "Rien de connecté pour le moment",
     "description": "Connectez un hébergeur git, un registre ou un canal de notification depuis le catalogue ci-dessous.",
+    "intro": "Connectez ci-dessous un hôte git, un registre ou un canal de notification pour commencer.",
     "noMatch": "Aucune connexion ne correspond à ces filtres."
   },
   "filters": {

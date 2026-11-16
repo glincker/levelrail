@@ -87,60 +87,66 @@ export function InfraGroups() {
       >
         {t('infra.title')}
       </h2>
-      <div className="space-y-2">
-        <h3 className="text-xs font-semibold text-muted-foreground">
-          {t('infra.cloud')}
-        </h3>
-        <CardGrid min="md">
-          {(providers.data ?? []).map((p) => {
-            const status =
-              p.status ?? (p.has_token ? 'connected' : 'not_connected')
-            const name = t(`infra.providers.${p.provider}`, {
-              defaultValue: p.label ?? p.provider,
-            })
-            return (
-              <li key={p.provider} className="flex min-w-0">
+      {providers.isPending ? null : (
+        <div className="space-y-2">
+          <h3 className="text-xs font-semibold text-muted-foreground">
+            {t('infra.cloud')}
+          </h3>
+          <CardGrid min="md">
+            {(providers.data ?? []).map((p) => {
+              const status =
+                p.status ?? (p.has_token ? 'connected' : 'not_connected')
+              const name = t(`infra.providers.${p.provider}`, {
+                defaultValue: p.label ?? p.provider,
+              })
+              return (
+                <li key={p.provider} className="flex min-w-0">
+                  <ObjectCard
+                    icon={
+                      <ConnectionGlyph provider={p.provider} kind="cloud" />
+                    }
+                    title={name}
+                    titleAs="h4"
+                    status={
+                      <StatusBadge
+                        tone={PROVIDER_TONE[status]}
+                        label={t(`infra.status.${status}`)}
+                      />
+                    }
+                    inlineActions
+                    actions={
+                      <ManageButton
+                        to="/settings/node-providers"
+                        label={t('infra.manageNamed', { name })}
+                      />
+                    }
+                  />
+                </li>
+              )
+            })}
+            {providers.data?.length ? null : (
+              <li className="flex min-w-0">
                 <ObjectCard
-                  icon={<ConnectionGlyph provider={p.provider} kind="cloud" />}
-                  title={name}
-                  titleAs="h4"
-                  status={
-                    <StatusBadge
-                      tone={PROVIDER_TONE[status]}
-                      label={t(`infra.status.${status}`)}
-                    />
+                  icon={
+                    <CloudGlassIcon className="size-5" aria-hidden="true" />
                   }
+                  title={t('infra.cloudAll')}
+                  titleAs="h4"
                   inlineActions
                   actions={
                     <ManageButton
                       to="/settings/node-providers"
-                      label={t('infra.manageNamed', { name })}
+                      label={t('infra.manageNamed', {
+                        name: t('infra.cloudAll'),
+                      })}
                     />
                   }
                 />
               </li>
-            )
-          })}
-          {providers.isPending || providers.data?.length ? null : (
-            <li className="flex min-w-0">
-              <ObjectCard
-                icon={<CloudGlassIcon className="size-5" aria-hidden="true" />}
-                title={t('infra.cloudAll')}
-                titleAs="h4"
-                inlineActions
-                actions={
-                  <ManageButton
-                    to="/settings/node-providers"
-                    label={t('infra.manageNamed', {
-                      name: t('infra.cloudAll'),
-                    })}
-                  />
-                }
-              />
-            </li>
-          )}
-        </CardGrid>
-      </div>
+            )}
+          </CardGrid>
+        </div>
+      )}
       <CardGrid min="md">
         <li className="flex min-w-0">
           <ObjectCard

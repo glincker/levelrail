@@ -84,8 +84,12 @@ export function FunctionsPage() {
             {body}
           </div>
         )}
-        <FunctionWorkbench items={items} />
-        <FunctionTriggers items={items} />
+        {isEmpty ? null : (
+          <>
+            <FunctionWorkbench items={items} />
+            <FunctionTriggers items={items} />
+          </>
+        )}
         <FunctionTemplates />
       </div>
     </div>

@@ -9,6 +9,7 @@
   "empty": {
     "title": "Todavía no hay nada conectado",
     "description": "Conecta un host de git, un registro o un canal de notificaciones desde el catálogo de abajo.",
+    "intro": "Conecta abajo un host de git, un registro o un canal de notificaciones para empezar.",
     "noMatch": "Ninguna conexión coincide con estos filtros."
   },
   "filters": {

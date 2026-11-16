@@ -9,6 +9,7 @@
   "empty": {
     "title": "Nothing connected yet",
     "description": "Connect a git host, registry or notification channel from the catalogue below.",
+    "intro": "Connect a git host, registry or notification channel below to get started.",
     "noMatch": "No connections match these filters."
   },
   "filters": {

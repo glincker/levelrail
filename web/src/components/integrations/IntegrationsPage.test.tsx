@@ -154,14 +154,17 @@ describe('IntegrationsPage states', () => {
     state.conns = { data: null, isPending: false, isError: false }
     state.catalog = { data: null, isPending: false, isError: false }
     wrap(<IntegrationsPage />)
-    expect(screen.getByText('Nothing connected yet')).toBeTruthy()
+    expect(screen.queryByRole('heading', { name: 'Connected' })).toBeNull()
+    expect(screen.getByText(/to get started/)).toBeTruthy()
     expect(screen.getByText('No integrations are available.')).toBeTruthy()
   })
   it('treats empty arrays the same', () => {
     state.conns = { data: [], isPending: false, isError: false }
     state.catalog = { data: [], isPending: false, isError: false }
     wrap(<IntegrationsPage />)
-    expect(screen.getByText('Nothing connected yet')).toBeTruthy()
+    expect(screen.queryByRole('heading', { name: 'Connected' })).toBeNull()
+    expect(screen.queryByText(/need.* attention/)).toBeNull()
+    expect(screen.getByText('Add an integration')).toBeTruthy()
   })
   it('shows an honest error with retry', () => {
     state.conns = { data: undefined, isPending: false, isError: true }
@@ -190,6 +193,8 @@ describe('IntegrationsPage states', () => {
       isError: false,
     }
     wrap(<IntegrationsPage />)
+    expect(screen.getByRole('heading', { name: 'Connected' })).toBeTruthy()
+    expect(screen.queryByText(/to get started/)).toBeNull()
     expect(screen.getByText('1 connection needs attention')).toBeTruthy()
     expect(screen.getByRole('link', { name: 'Connect GitHub' })).toBeTruthy()
   })

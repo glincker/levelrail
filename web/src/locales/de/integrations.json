@@ -9,6 +9,7 @@
   "empty": {
     "title": "Noch nichts verbunden",
     "description": "Verbinde unten im Katalog einen Git-Host, eine Registry oder einen Benachrichtigungskanal.",
+    "intro": "Verbinden Sie unten einen Git-Host, eine Registry oder einen Benachrichtigungskanal, um zu starten.",
     "noMatch": "Keine Verbindung passt zu diesen Filtern."
   },
   "filters": {
