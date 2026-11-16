@@ -756,6 +756,7 @@ type Router struct {
 	registry                     RegistryStore                                              // always set, same shape as cloudflareTunnel above
 	registrySecrets              RegistrySecrets                                            // nil is valid: PUT/DELETE /api/v1/settings/registry return 501, same shape as cloudflareTunnelSecrets above
 	secretConns                  SecretConnectionService                                    // nil until boot wires it: reads return an empty list, writes 501
+	k8sClusterRows               K8sClusterRows                                             // nil when the store lacks cluster tables: routes return 501
 	cloudConnRows                cloudconn.Rows                                             // nil when the store lacks cloud connections: routes return 501
 	cloudProviders               cloudconn.Registry                                         // nil means the built-in not-implemented providers
 	vault                        VaultSettingsStore                                         // always set, same shape as cloudflareTunnel above
@@ -974,6 +975,7 @@ func NewRouter(logger *slog.Logger, b *brand.Brand, s Store, opts ...Option) *Ro
 	rt := &Router{
 		predeploySnapshots:          predeployStoreOf(s),
 		cloudConnRows:               cloudConnStoreOf(s),
+		k8sClusterRows:              k8sClusterStoreOf(s),
 		logger:                      logger,
 		cancels:                     deploy.NewCancelRegistry(),
 		startingDeploys:             map[string]int{},

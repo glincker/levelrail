@@ -554,6 +554,14 @@ These variables only seed the default of a [runtime setting](/runtime-settings).
 | `LEVELRAIL_SPOOL_QUOTA_BYTES` | [`spool.quota_bytes`](/runtime-settings#data-retention) | `0` |
 | `APP_VITALS_RETENTION_DAYS` | [`vitals.retention_days`](/runtime-settings#data-retention) | `30` |
 | `APP_CLOUD_CONNECTIONS_ENABLED` | [`cloud.connections_enabled`](/runtime-settings#experimental) | `false` |
+| `APP_K8S_ALLOW_PRIVATE_API` | [`k8s.allow_private_api`](/runtime-settings#experimental) | `false` |
+| `APP_K8S_CLUSTERS_ENABLED` | [`k8s.clusters_enabled`](/runtime-settings#experimental) | `false` |
+| `APP_K8S_IN_CLUSTER_ENABLED` | [`k8s.in_cluster_enabled`](/runtime-settings#experimental) | `false` |
+| `APP_K8S_KUBECONFIG_MAX_BYTES` | [`k8s.kubeconfig_max_bytes`](/runtime-settings#experimental) | `65536` |
+| `APP_K8S_LOG_TAIL_LINES_MAX` | [`k8s.log_tail_lines_max`](/runtime-settings#experimental) | `500` |
+| `APP_K8S_MAX_BODY_BYTES` | [`k8s.max_body_bytes`](/runtime-settings#experimental) | `8388608` |
+| `APP_K8S_REQUEST_TIMEOUT` | [`k8s.request_timeout`](/runtime-settings#experimental) | `15s` |
+| `APP_K8S_STATUS_POLL_INTERVAL` | [`k8s.status_poll_interval`](/runtime-settings#experimental) | `10s` |
 | `APP_ONBOARDING_ENABLED` | [`onboarding.enabled`](/runtime-settings#experimental) | `true` |
 | `APP_ONBOARDING_RESTORE_REMINDER_DAYS` | [`onboarding.restore_reminder_days`](/runtime-settings#experimental) | `7` |
 | `APP_UPDATE_CHANNELS_OFFERED` | [`updates.offered_channels`](/runtime-settings#experimental) | `stable` |
