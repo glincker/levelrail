@@ -28,7 +28,7 @@ Levelrail is a lightweight, self-hosted deployment platform: one Go binary whose
 ## What is in the product
 
 - **Ship with git push.** Dockerfile, Compose and Railpack builds, previews, rollback. See [Deploying apps](/deploying-apps).
-- **One-click templates.** 565 active entries. See [Template catalog](/template-catalog).
+- **Templates.** 570+ templates in the catalog (574 catalog entries: 565 active, 9 deprecated). See [Template catalog](/template-catalog).
 - **Automatic HTTPS and edge.** Ingress, firewall, rate limits. See [Domains and ingress](/domains-and-ingress) and [Firewall](/firewall).
 - **Spin up nodes on any cloud.** Six providers. See [Node provisioning](/node-provisioning) and [Cloud integrations](/cloud-integrations).
 - **Managed databases and backups.** 13 engines, restore drills. See [Managed databases](/managed-databases).

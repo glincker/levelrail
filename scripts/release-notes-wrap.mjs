@@ -177,7 +177,7 @@ export function wrap({ version, prev, body, contributors }, cfg = config()) {
     '</picture>',
     '',
     `<h2>${title}</h2>`,
-    `<p>${cfg.product}, a self-hosted deployment platform: git push to production on your own servers and cloud accounts.</p>`,
+    `<p>${cfg.product}, a lightweight, self-hosted deployment platform: git push to production on your own servers and cloud accounts.</p>`,
     '<p>',
     `  ${badges}`,
     '</p>',

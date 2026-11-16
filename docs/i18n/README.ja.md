@@ -2,7 +2,7 @@
 <div align="center">
 <img src="../../docs/assets/brand/levelrail-default.svg" alt="Levelrail ロゴ" width="56" height="56">
 <h1>Levelrail</h1>
-<p><strong>セルフホストの PaaS：git push で自分のサーバーにデプロイでき、ログ、メトリクス、HTTPS、ロールバックを備えています。</strong><br>
+<p><strong>軽量なセルフホスト型デプロイプラットフォーム：git push で、自分のサーバーとクラウドアカウントの本番環境にデプロイできます。</strong><br>
 Go 製の単一バイナリ、Docker ランタイム、Kubernetes は不要。Apache 2.0。</p>
 <p>
   <a href="../../LICENSE"><img src="https://img.shields.io/github/license/glincker/levelrail" alt="ライセンス：Apache 2.0"></a>
@@ -36,7 +36,7 @@ Go 製の単一バイナリ、Docker ランタイム、Kubernetes は不要。Ap
 
 Levelrail は、自分が所有するサーバー上で Vercel、Heroku、Railway のようなワークフローを使いたい開発者や小規模チーム向けの、オープンソース（Apache 2.0）の**セルフホスト PaaS** です。小さな VPS からラックまで、あらゆる Linux サーバーで動作し（計測したホストは 2 vCPU、8 GB のマシン 1 台です）、通常のサーバーを、Git デプロイ（forge の Webhook 経由）、HTTPS、検証済みバックアップ付きのデータベース、メトリクス、ログ、アラートを備えたプライベートクラウドに変えます。Kubernetes は不要で、別途監視スタックを追加する必要もありません。
 
-**ステータス：** 1.0 より前（v0.x）。[機能ステータス](../../docs/feature-status.md)のとおり、単一サーバーは本番運用可能で、マルチノードはベータです。
+**ステータス：**[機能ステータス](../../docs/feature-status.md)のとおり、単一サーバーは本番運用可能で、マルチノードはベータです。軽量：コントロールプレーンは 2 vCPU のマシンでアイドル時に約 200 MB の RAM と CPU 1 コアの 1.5 パーセントを使い、Go の単一バイナリです（[測定したアイドル時の使用量](../../docs/performance.md)、[方法](../../docs/benchmarks.md)）。デプロイするアプリは、その上で独自のリソースを使います。カタログに 570+ のテンプレート（346 は実エンジンで検証済み）、259 の MCP ツール。
 
 ## どのインストール方法が自分に合う？
 
@@ -197,7 +197,7 @@ gh attestation verify levelrail-linux-amd64 --repo glincker/levelrail
 - **オブザーバビリティを標準搭載。** 15 秒解像度のノード別メトリクス、検索可能なログ、デプロイマーカー、トレース、SLO バーン、アラートインボックス、アイドル時のフットプリントのヘルスページ。Grafana スタックをインストールする必要はありません。
 - **守ってくれるデプロイ。** 準備完了ゲート付きのロールアウト、ロールバック用に固定されたイメージ、エラー時にロールバックするカナリアリリース、デプロイの差分、承認、フリーズ。
 - **デフォルトで安全。** 検証可能なハッシュチェーン式の監査ログ、SSRF ガード付きの外向き呼び出し、鍵ローテーション付きのエンベロープ暗号化シークレット、スコープ付きトークン、パスキーと TOTP の 2 要素認証、OAuth と OIDC によるサインイン、IAM ポリシー、署名付きリリース。SAML シングルサインオンと SCIM プロビジョニングは[ベータ機能](../../docs/sso-saml.md)として利用でき、デフォルトでは無効です。
-- **AI エージェント向けに構築。** オンデマンドのツールセットに分かれた 240 を超えるツールを持つ MCP サーバー（デフォルトの一覧は小さく、約 2.4k トークン。[ツールの範囲](../../docs/mcp-tool-surface.md)を参照）、スコープ付きトークンの権限モデル、エージェントスキル。
+- **AI エージェント向けに構築。** オンデマンドのツールセットに分かれた 259 のツールを持つ MCP サーバー（デフォルトの一覧は小さく、約 2.4k トークン。[ツールの範囲](../../docs/mcp-tool-surface.md)を参照）、スコープ付きトークンの権限モデル、エージェントスキル。
 
 ## 本番運用可能と根拠
 
@@ -227,7 +227,7 @@ gh attestation verify levelrail-linux-amd64 --repo glincker/levelrail
 | 監査ログ | ハッシュチェーン式、検証可能、CSV エクスポート、syslog、Webhook、バケットへの転送 | 各ドキュメントを参照 | 各ドキュメントを参照 | 各ドキュメントを参照 | 各ドキュメントを参照 |
 | IAM | アプリまたはデータベースごとの Allow と Deny のポリシー、スコープ付きトークン | 各ドキュメントを参照 | 各ドキュメントを参照 | 各ドキュメントを参照 | 各ドキュメントを参照 |
 
-これはポジショニングであってランキングではなく、ここに挙げたどのプロジェクトも使う価値があります。Levelrail が劣っている点：ここで最も新しいプロジェクトであり、ユーザーは少なく、本番での実績も少ないこと、そして SAML シングルサインオンと SCIM プロビジョニングがベータであることです（[詳細](../../docs/sso-saml.md)）。テンプレートカタログ（約 360 件）は Coolify と同程度の規模ですが、エンドツーエンドでデプロイされているのは一部のサンプルだけです（[ADR 015](../../adr/015-service-template-catalog-reversal.md)）。出典付きの完全な比較は[比較](../../docs/comparison.md)にあります。
+これはポジショニングであってランキングではなく、ここに挙げたどのプロジェクトも使う価値があります。Levelrail が劣っている点：ここで最も新しいプロジェクトであり、ユーザーは少なく、本番での実績も少ないこと、そして SAML シングルサインオンと SCIM プロビジョニングがベータであることです（[詳細](../../docs/sso-saml.md)）。テンプレートカタログ（カタログに 570+ 件）は Coolify と同程度の規模ですが、エンドツーエンドでデプロイされているのは一部のサンプルだけです（[ADR 015](../../adr/015-service-template-catalog-reversal.md)）。出典付きの完全な比較は[比較](../../docs/comparison.md)にあります。
 
 ## 主な機能
 
@@ -236,7 +236,7 @@ gh attestation verify levelrail-linux-amd64 --repo glincker/levelrail
 - **データベース：** Postgres、MySQL、MariaDB、MongoDB、Redis、KeyDB、Dragonfly、ClickHouse。定期バックアップ、Postgres のポイントインタイムリカバリ、リストア、パスワードのローテーションに対応します。[データベース](../../docs/managing-databases.md)
 - **すべてを 1 つの検索で：** アプリ、データベース、ノード、テンプレート、アクションを Cmd+K で横断検索し、実行できる操作で絞り込みます。[検索](../../docs/search.md)
 - **サーバー：** 1 回限りのトークンでノードを追加。WireGuard メッシュ、ゾーン、障害ドメインへの分散、配置のシミュレーション。[マルチノード](../../docs/multi-node.md)
-- **テンプレート：** 約 360 のワンクリックサービス。カタログ全体を対象にしたスモークテストがあります（2026-10-25 と 2026-10-27 の実行でテスト済み 108 件中 101 件が合格、[ステータス](../../docs/templates-status.md)）。[カタログ](../../docs/template-catalog.md)
+- **テンプレート：** カタログに 570+ のテンプレート：574 件のカタログエントリ（565 件が有効、9 件が非推奨）、346 件は実エンジンでの実行記録あり、228 件はプレビュー（[ステータス](../../docs/templates-status.md)）。[カタログ](../../docs/template-catalog.md)
 - **ID とアクセス：** パスワード、パスキー、TOTP、20 プロバイダーの OAuth と汎用 OIDC、IAM ポリシー、チーム、CSV エクスポート付きのハッシュチェーン式監査ログ。SAML シングルサインオンと SCIM プロビジョニングはベータで、デフォルトでは無効です。[ID とアクセス](../../docs/identity-and-access.md)、[SAML と SCIM](../../docs/sso-saml.md)
 - **プラグイン：** 署名付きのプラグインマーケットプレイス。ワンクリックでのインストール、ダッシュボードのパネル、公式のアラートチャンネルを備えます。[プラグイン](../../docs/plugins.md)
 - **自動化：** ダッシュボード、CLI、MCP サーバーの背後に 1 つの HTTP API があります。AI がリコンサイルの経路に入ることはありません。[CLI](../../docs/cli-reference.md)、[AI 制御](../../docs/ai-control.md)
@@ -321,6 +321,7 @@ gh attestation verify levelrail-linux-amd64 --repo glincker/levelrail
 - [GLINR Discord](https://discord.gg/Ar5pcaZB99)：メンテナーとのライブチャット。`#levelrail` フォーラムチャンネルで行っています。
 - 直接のサポートは [support@levelrail.com](mailto:support@levelrail.com)、脆弱性を非公開で報告するには[セキュリティポリシー](../../.github/SECURITY.md)をご覧ください。
 - [コントリビューション](../../.github/CONTRIBUTING.md)：開発ループ、テスト、コミット規約。ソースからのビルドには Go 1.27 以降と Docker が必要です。[インストール](../../docs/installing.md#option-3-build-from-source)を参照してください。
+- [サポート](../../SUPPORT.md)、[アクセシビリティ](../../ACCESSIBILITY.md)、[バージョニング](../../VERSIONING.md)。
 
 ## リポジトリにスターを付ける
 

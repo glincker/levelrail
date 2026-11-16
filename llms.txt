@@ -11,7 +11,7 @@
 - [Feature status](https://docs.levelrail.com/feature-status): what is stable and what is beta
 - [Alerts](https://docs.levelrail.com/alerts): notification channels, rules and the alert inbox
 - [Kubernetes clusters](https://docs.levelrail.com/kubernetes-clusters): connect existing clusters as deploy targets (experimental)
-- [Template catalog](https://docs.levelrail.com/template-catalog): 565 active one-click templates, 346 with a recorded real-engine pass
+- [Template catalog](https://docs.levelrail.com/template-catalog): 570+ templates in the catalog (574 catalog entries: 565 active, 9 deprecated), 346 with a recorded real-engine pass, 228 previews
 - [Comparison](https://docs.levelrail.com/comparison): Levelrail against Coolify, Dokploy, CapRover, Dokku and Kamal
 
 ## Identity and access

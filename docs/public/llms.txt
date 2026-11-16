@@ -139,7 +139,7 @@ There is no hosted public API. Every instance exposes its own REST API at `/api/
 - [AI assistant integration: levelrail-mcp](https://docs.levelrail.com/ai-assistant): run the MCP server over stdio or the network for an AI assistant, and scope its API token.
 - [Working with AI agents](https://docs.levelrail.com/agents): connect an AI coding agent to your instance and scope its token safely.
 - [Integrations](https://docs.levelrail.com/integrations): attach curated third-party tools like PostHog, Sentry, and Datadog to an app.
-- [Templates and registry](https://docs.levelrail.com/templates-and-registry): the curated one-click service catalog, searchable by name or category.
+- [Templates and registry](https://docs.levelrail.com/templates-and-registry): the curated service catalog (570+ templates in the catalog: 574 catalog entries, 565 active, 9 deprecated, 346 with a recorded real-engine pass, 228 previews), searchable by name or category.
 - [Starter kit templates](https://docs.levelrail.com/templates): curated starter-kit templates for real multi-service Compose patterns.
 - [Migration wizard](https://docs.levelrail.com/migration-wizard): the guided, resumable job for moving off Coolify, Dokploy, CapRover or an old server, with a safe-to-delete gate.
 - [Coolify exit gap report](https://docs.levelrail.com/coolify-exit-gap-report): what the Coolify importer moves, reports or cannot see, and what is not proven.

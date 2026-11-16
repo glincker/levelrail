@@ -2,7 +2,7 @@
 <img src="docs/assets/brand/levelrail-default.svg" alt="Levelrail logo" width="56" height="56">
 <h1>Levelrail</h1>
 <p><strong>Lightweight, self-hosted deployment platform: git push to production on your own servers and cloud accounts.</strong><br>
-Git deploys, 565 one-click templates (346 proven on a real engine), edge and TLS, nodes at six clouds, managed databases with restore-drilled backups, and built-in observability. Lightweight: the control plane idles at about 200 MB of RAM and 1.5 percent of one CPU on a 2 vCPU box, one Go binary ([measured idle footprint](docs/performance.md), [method](docs/benchmarks.md)). Apps you deploy use their own resources on top. Apache 2.0.</p>
+Git deploys, 570+ templates in the catalog (346 proven on a real engine), edge and TLS, nodes at six clouds, managed databases with restore-drilled backups, and built-in observability. Lightweight: the control plane idles at about 200 MB of RAM and 1.5 percent of one CPU on a 2 vCPU box, one Go binary ([measured idle footprint](docs/performance.md), [method](docs/benchmarks.md)). Apps you deploy use their own resources on top. Apache 2.0.</p>
 <p>
   <a href="https://github.com/glincker/levelrail/stargazers"><img src="https://img.shields.io/github/stars/glincker/levelrail?style=flat&logo=github" alt="GitHub stars"></a>
   <a href="LICENSE"><img src="https://img.shields.io/github/license/glincker/levelrail" alt="License: Apache 2.0"></a>
@@ -30,7 +30,7 @@ Git deploys, 565 one-click templates (346 proven on a real engine), edge and TLS
 <picture><source media="(prefers-color-scheme: dark)" srcset="docs/assets/brand/social/github-social-1280x640.jpg"><img src="docs/assets/brand/social/github-social-1280x640-light.jpg" alt="Levelrail: a self-hosted deployment platform with Git deploys, templates, edge, databases and observability." width="880"></picture>
 </div>
 
-<p align="center"><a href="docs/performance.md"><b>~200 MB</b> control plane idle</a> &middot; <a href="docs/architecture.md"><b>1</b> binary</a> &middot; <a href="docs/template-catalog.md"><b>565</b> one-click templates</a> &middot; <a href="docs/node-provisioning.md"><b>6</b> clouds</a> &middot; <a href="docs/managing-databases.md"><b>13</b> database engines</a> &middot; <a href="docs/alerts.md"><b>18</b> alert channels</a></p>
+<p align="center"><a href="docs/performance.md"><b>~200 MB</b> control plane idle</a> &middot; <a href="docs/architecture.md"><b>1</b> binary</a> &middot; <a href="docs/template-catalog.md"><b>570+</b> templates in the catalog</a> &middot; <a href="docs/node-provisioning.md"><b>6</b> clouds</a> &middot; <a href="docs/managing-databases.md"><b>13</b> database engines</a> &middot; <a href="docs/alerts.md"><b>18</b> alert channels</a></p>
 
 Levelrail turns Linux servers into a private cloud and works with the Kubernetes clusters and cloud accounts you already have. Single-server is production ready, multi-node is beta. Every feature carries a stable, beta or experimental label in [Feature status](docs/feature-status.md), and the labels below follow it.
 
@@ -60,7 +60,7 @@ Maturity follows [Feature status](docs/feature-status.md). Open the list under e
 </details>
 
 **[One-click templates](docs/template-catalog.md)**
-- 565 active templates, 346 with a recorded real-engine pass
+- 570+ templates in the catalog, 346 with a recorded real-engine pass
 - 22 categories, from databases to AI tools
 - [How templates work](docs/templates-and-registry.md)
 

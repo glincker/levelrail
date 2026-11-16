@@ -2,7 +2,7 @@
 <div align="center">
 <img src="../../docs/assets/brand/levelrail-default.svg" alt="Levelrail 标志" width="56" height="56">
 <h1>Levelrail</h1>
-<p><strong>自托管 PaaS：通过 git push 部署到你自己的服务器，附带日志、指标、HTTPS 和回滚。</strong><br>
+<p><strong>轻量的自托管部署平台：通过 git push 部署到你自己的服务器和云账户的生产环境。</strong><br>
 单个 Go 二进制文件，Docker 运行时，无需 Kubernetes。Apache 2.0。</p>
 <p>
   <a href="../../LICENSE"><img src="https://img.shields.io/github/license/glincker/levelrail" alt="许可证：Apache 2.0"></a>
@@ -36,7 +36,7 @@
 
 Levelrail 是一个开源（Apache 2.0）的**自托管 PaaS**，面向希望在自己拥有的服务器上获得 Vercel、Heroku 或 Railway 式工作流的开发者和小型团队。它可以运行在任何 Linux 服务器上，从小型 VPS 到机架服务器都行（实测过的那台主机是 2 vCPU、8 GB 的机器），并把普通服务器变成私有云，提供 Git 部署（通过 forge webhook）、HTTPS、带已验证备份的数据库、指标、日志和告警，无需 Kubernetes，也无需另行搭建监控栈。
 
-**状态：** 1.0 之前（v0.x）。按[功能状态](../../docs/feature-status.md)，单服务器已可用于生产；多节点处于 beta 阶段。
+**状态：**按[功能状态](../../docs/feature-status.md)，单服务器已可用于生产；多节点处于 beta 阶段。轻量：控制平面在 2 vCPU 的机器上空闲时约占用 200 MB 内存和一个 CPU 核心的 1.5%，是单个 Go 二进制文件（[实测空闲占用](../../docs/performance.md)，[方法](../../docs/benchmarks.md)）。你部署的应用在此之外使用各自的资源。目录中有 570+ 个模板（346 个已在真实引擎上验证），259 个 MCP 工具。
 
 ## 我该选哪种安装方式？
 
@@ -197,7 +197,7 @@ gh attestation verify levelrail-linux-amd64 --repo glincker/levelrail
 - **内置可观测性。** 每节点 15 秒分辨率的指标、可搜索的日志、部署标记、链路追踪、SLO 燃烧率、告警收件箱和空闲占用健康页。无需安装 Grafana 栈。
 - **保护你的部署。** 以就绪检查为门控的发布、为回滚固定的镜像、出错时自动回滚的金丝雀发布、部署差异对比、审批和冻结。
 - **默认安全。** 可验证的哈希链审计日志、带 SSRF 防护的出站调用、带密钥轮换的信封加密密钥、限定范围的令牌、passkey 和 TOTP 双因素认证、OAuth 和 OIDC 登录、IAM 策略、签名发布。SAML 单点登录和 SCIM 用户配置作为 [beta 功能](../../docs/sso-saml.md)提供，默认关闭。
-- **为 AI agent 而建。** 一个 MCP 服务器，提供 240 多个按需加载工具集中的工具（默认列表很小，约 2.4k tokens；参见[工具面](../../docs/mcp-tool-surface.md)）、限定范围令牌的权限模型和一个 agent skill。
+- **为 AI agent 而建。** 一个 MCP 服务器，提供 259 个按需加载工具集中的工具（默认列表很小，约 2.4k tokens；参见[工具面](../../docs/mcp-tool-surface.md)）、限定范围令牌的权限模型和一个 agent skill。
 
 ## 可用于生产环境与佐证
 
@@ -227,7 +227,7 @@ gh attestation verify levelrail-linux-amd64 --repo glincker/levelrail
 | 审计日志 | 哈希链、可验证、CSV 导出、转发到 syslog、webhook 或存储桶 | 见其文档 | 见其文档 | 见其文档 | 见其文档 |
 | IAM | 按应用或数据库的 Allow 和 Deny 策略、限定范围的令牌 | 见其文档 | 见其文档 | 见其文档 | 见其文档 |
 
-这只是定位说明，不是排名，这里的每个项目都值得使用。Levelrail 落后的地方：它是这里最年轻的项目，用户更少，生产环境的运行经验也更少，其 SAML 单点登录和 SCIM 用户配置仍为 beta（[详情](../../docs/sso-saml.md)）。它的模板目录（约 360 项）与 Coolify 处于同一量级，但只有一部分样本做过端到端部署（[ADR 015](../../adr/015-service-template-catalog-reversal.md)）。完整且附有来源的对比见[对比](../../docs/comparison.md)。
+这只是定位说明，不是排名，这里的每个项目都值得使用。Levelrail 落后的地方：它是这里最年轻的项目，用户更少，生产环境的运行经验也更少，其 SAML 单点登录和 SCIM 用户配置仍为 beta（[详情](../../docs/sso-saml.md)）。它的模板目录（目录中 570+ 项）与 Coolify 处于同一量级，但只有一部分样本做过端到端部署（[ADR 015](../../adr/015-service-template-catalog-reversal.md)）。完整且附有来源的对比见[对比](../../docs/comparison.md)。
 
 ## 你能获得什么
 
@@ -236,7 +236,7 @@ gh attestation verify levelrail-linux-amd64 --repo glincker/levelrail
 - **数据库：** Postgres、MySQL、MariaDB、MongoDB、Redis、KeyDB、Dragonfly 和 ClickHouse，支持定时备份、Postgres 时间点恢复、恢复和密码轮换。[数据库](../../docs/managing-databases.md)
 - **一个搜索框搜遍一切：** 用 Cmd+K 搜索应用、数据库、节点、模板和操作，并按你的权限过滤。[搜索](../../docs/search.md)
 - **服务器：** 使用一次性令牌添加节点，WireGuard 网格，可用区和故障域分散，放置情景模拟。[多节点](../../docs/multi-node.md)
-- **模板：** 约 360 个一键服务，并有覆盖整个目录的冒烟测试（2026-10-25 和 2026-10-27 的运行中，已测试的 108 个里 101 个通过，[状态](../../docs/templates-status.md)）。[目录](../../docs/template-catalog.md)
+- **模板：** 目录中有 570+ 个模板：574 个目录条目（565 个可用，9 个已弃用），346 个有真实引擎上的运行记录，228 个为预览（[状态](../../docs/templates-status.md)）。[目录](../../docs/template-catalog.md)
 - **身份与访问：** 密码、passkey、TOTP、支持 20 个提供商的 OAuth 以及通用 OIDC、IAM 策略、团队、可导出 CSV 的哈希链审计日志。SAML 单点登录和 SCIM 用户配置为 beta，默认关闭。[身份与访问](../../docs/identity-and-access.md)，[SAML 和 SCIM](../../docs/sso-saml.md)
 - **插件：** 带签名的插件市场，支持一键安装、仪表盘面板和官方告警渠道。[插件](../../docs/plugins.md)
 - **自动化：** 仪表盘、CLI 和 MCP 服务器背后是同一套 HTTP API。AI 永远不在 reconcile 路径中。[CLI](../../docs/cli-reference.md)，[AI 控制](../../docs/ai-control.md)
@@ -321,6 +321,7 @@ gh attestation verify levelrail-linux-amd64 --repo glincker/levelrail
 - [GLINR Discord](https://discord.gg/Ar5pcaZB99)：与维护者实时交流，位于 `#levelrail` 论坛频道。
 - 直接求助请发邮件至 [support@levelrail.com](mailto:support@levelrail.com)，私下报告漏洞请参阅[安全策略](../../.github/SECURITY.md)。
 - [贡献指南](../../.github/CONTRIBUTING.md)：开发循环、测试和提交规范。从源码构建需要 Go 1.27 或更高版本以及 Docker：参见[安装](../../docs/installing.md#option-3-build-from-source)。
+- [支持](../../SUPPORT.md)、[无障碍](../../ACCESSIBILITY.md)和[版本管理](../../VERSIONING.md)。
 
 ## 给仓库加星
 

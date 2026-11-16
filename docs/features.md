@@ -22,7 +22,7 @@ Guide: [Deploying apps](/deploying-apps).
 
 Guide: [Template catalog](/template-catalog). How they work: [Templates and registry](/templates-and-registry).
 
-- 574 catalog entries (565 active, 9 deprecated) in 22 categories.
+- 570+ templates in the catalog. Exact split: 574 catalog entries (565 active, 9 deprecated) in 22 categories.
 - 346 entries have a recorded real-engine pass.
 - 228 entries are marked preview: installable, with no recorded pass yet.
 

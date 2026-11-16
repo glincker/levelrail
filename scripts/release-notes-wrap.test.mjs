@@ -22,6 +22,7 @@ const out = wrap({ version: '1.4.0', prev: 'v1.3.2', body, contributors: people 
 
 test('header has logo, title, badges, links', () => {
   assert.match(out, /raw\.githubusercontent\.com\/glincker\/levelrail\/main\/docs\/assets\/brand\/png\/mark-1024\.png/)
+  assert.ok(out.includes('Levelrail, a lightweight, self-hosted deployment platform: git push to production on your own servers and cloud accounts.'))
   assert.match(out, /<h2>Levelrail 1\.4\.0: deploy: one-click rollback from the status card<\/h2>/)
   for (const b of ['release-1.4.0', 'img.shields.io/github/license', 'docker/pulls', 'github/stars', 'img.shields.io/discord']) assert.ok(out.includes(b), b)
   for (const l of ['/installing', '/upgrade-safely', '/changelog', '/features', '/verify-a-release', 'docs.levelrail.com/faq', 'compare/v1.3.2...v1.4.0', '/discussions']) assert.ok(out.includes(l), l)

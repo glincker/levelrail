@@ -9,7 +9,7 @@ Levelrail, a self-hosted deployment platform, runs on your own Linux servers. Th
 
 ## What is Levelrail?
 
-Levelrail is an open source, self-hosted deployment platform under the Apache 2.0 license. You install one control plane binary on a Linux server, and it builds and runs your apps in Docker with HTTPS, logs, metrics, previews and rollback. For the full list by area, see [All features](/features).
+Levelrail is a lightweight, self-hosted deployment platform. The control plane is one Go binary that idles at about 200 MB of RAM and 1.5 percent of one CPU on a 2 vCPU box; your apps use their own resources on top. For the full list by area, see [All features](/features).
 
 ## Does Levelrail need Kubernetes?
 
@@ -31,9 +31,9 @@ Connect a repository from GitHub, GitLab, Bitbucket, Gitea or Forgejo and each p
 
 Levelrail deploys a copy of the app with its own URL when a pull request opens, redeploys it on new commits and removes it when the pull request closes or merges. Each app opts in. Stable on GitHub, beta on GitLab and Bitbucket. See [Preview environments](/preview-environments).
 
-## How many one-click templates are there?
+## How many templates are in the catalog?
 
-574 catalog entries as of 1.4.0: 565 active and 9 deprecated, in 22 categories. 346 have a recorded pass on a real engine, and 228 are marked preview, which means installable with no recorded pass yet. Templates are labeled beta. See [Template catalog](/template-catalog).
+570+ templates in the catalog. Exact split as of 1.4.0: 574 catalog entries (565 active, 9 deprecated), in 22 categories. 346 have a recorded pass on a real engine, and 228 are marked preview, which means installable with no recorded pass yet. Templates are labeled beta. See [Template catalog](/template-catalog).
 
 ## How do I add a server as a node?
 
