@@ -16,7 +16,7 @@ Levelrail narrows this with an in-process Docker API guard. Each process starts 
 | `enforce` | A denied request gets `403` with the rule id and never reaches Docker. Every denial is written to the audit log as `docker_guard.denied` and logged with the rule id. |
 | `off` | No proxy. Clients dial the daemon directly, as before the guard existed. |
 
-`audit` is the default so an upgrade can't break a running deploy. After a week of audit mode with no would-be denials, the attention feed offers the switch to `enforce`. Change the mode from **Settings, Security, Docker API guard**, or with the CLI:
+`audit` is the default for upgrades so they can't break a running deploy. A fresh `install.sh` run on a host with no earlier install saves `enforce` in `docker-guard.json` (Podman hosts excluded); an existing install keeps what it had. After a week of audit mode with no would-be denials, the attention feed offers the switch to `enforce`. Change the mode from **Settings, Security, Docker API guard**, or with the CLI:
 
 ```
 levelrail-cli docker-guard status

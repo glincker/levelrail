@@ -1276,6 +1276,13 @@ WorkingDirectory=${DATA_DIR}
 Environment=APP_DATA_DIR=${DATA_DIR}
 Restart=on-failure
 RestartSec=5
+NoNewPrivileges=yes
+PrivateTmp=yes
+ProtectHome=yes
+ProtectKernelModules=yes
+ProtectControlGroups=yes
+RestrictSUIDSGID=yes
+LockPersonality=yes
 
 [Install]
 WantedBy=multi-user.target
@@ -2005,9 +2012,26 @@ install_cli() {
 	log "levelrail-cli not installed: run ${cli_hint}"
 }
 
+# is_fresh_install is true when no unit, guard setting or database exists yet.
+# Called before anything is written, so a re-run on a live host stays an upgrade.
+is_fresh_install() {
+	[ ! -f "$UNIT_PATH" ] && [ ! -f "${DATA_DIR}/docker-guard.json" ] && [ -z "$(ls -A "$DATA_DIR" 2>/dev/null)" ]
+}
+
+# seed_docker_guard makes a new install enforce the Docker guard; existing
+# hosts keep the audit default. A setting already saved or an env pin wins.
+seed_docker_guard() {
+	[ "$RUNTIME" != "podman" ] || return 0
+	mkdir -p "$DATA_DIR"
+	printf '{\n  "mode": "enforce"\n}\n' >"${DATA_DIR}/docker-guard.json"
+	chmod 600 "${DATA_DIR}/docker-guard.json"
+}
+
 do_install() {
 	[ -n "$SOCKET_ACTIVATION" ] || SOCKET_ACTIVATION=1
 	load_settings
+	FRESH_INSTALL=0
+	if is_fresh_install; then FRESH_INSTALL=1; fi
 	preflight
 	ensure_runtime
 	install_binary
@@ -2015,6 +2039,7 @@ do_install() {
 	ensure_dropin
 	write_restart_policy
 	apply_protection
+	[ "$FRESH_INSTALL" -eq 0 ] || seed_docker_guard
 	write_unit
 	[ "$SOCKET_ACTIVATION" != "1" ] || write_socket_units
 	configure_ufw
