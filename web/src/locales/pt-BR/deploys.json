@@ -560,7 +560,12 @@
     "drawerSearching": "Procurando este deploy",
     "drawerNotFoundTitle": "Deploy não encontrado",
     "drawerNotFound": "Deploy não encontrado. Ele pode ter sido removido pela retenção.",
-    "emptyAction": "Fazer deploy de um app"
+    "emptyAction": "Fazer deploy de um app",
+    "runnerProblem": "Problema no runner",
+    "emptyBuildsHint": "Os builds rodam nesta máquina.",
+    "emptyBuildsLink": "Adicione um nó de build para movê-los.",
+    "timelineEmpty": "Ainda não há deploys na linha do tempo. Faça deploy de um app e cada release aparece aqui.",
+    "buildsEmpty": "Ainda não há builds. Faça deploy de um app e os builds dele aparecem aqui."
   },
   "summary": {
     "label": "Resumo dos deploys",
@@ -800,7 +805,9 @@
       "description": "Os builds rodam no plano de controle. Registre um segundo nó com builds ativados para tirá-los da máquina que serve seus apps.",
       "action": "Abrir Nós",
       "docs": "Roteamento de nós de build"
-    }
+    },
+    "addNodeLink": "Adicionar um nó de build",
+    "dismissHint": "Dispensar a sugestão de nó de build"
   },
   "runnerPref": {
     "title": "Runner de build",

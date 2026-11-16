@@ -1,5 +1,6 @@
 import { useMemo, useState } from 'react'
 import { useTranslation } from 'react-i18next'
+import { Link } from '@tanstack/react-router'
 import { CircleAlertGlassIcon, RestoreGlassIcon } from '@thesvg/ui-react'
 import { Button } from '@/components/ui/button'
 import { EmptyState } from '@/components/ui/empty-state'
@@ -29,6 +30,7 @@ const STREAM_TONE = {
 
 export function DeployTimelinePage() {
   const { t } = useTranslation('deployTimeline')
+  const { t: td } = useTranslation('deploys')
   const [filters, setFilters] = useState<Filters>(DEFAULT_TIMELINE_FILTERS)
   const { query, items, alerts, streamState, windowStart, windowEnd } =
     useDeployTimeline(filters)
@@ -69,27 +71,31 @@ export function DeployTimelinePage() {
               : 'deployTimeline:subtitle'
           }
           action={
-            <StatusPill
-              size="sm"
-              tone={STREAM_TONE[streamState]}
-              label={t(`stream.${streamState}`)}
-              live={streamState === 'live'}
-            />
+            isEmpty ? null : (
+              <StatusPill
+                size="sm"
+                tone={STREAM_TONE[streamState]}
+                label={t(`stream.${streamState}`)}
+                live={streamState === 'live'}
+              />
+            )
           }
           illustration={<LazyDeploymentsDiagram size={size} />}
           size={size}
         />
       }
     >
-      <DeploymentsSectionTabs />
+      {isEmpty ? null : <DeploymentsSectionTabs />}
       <div className="flex flex-col gap-4">
-        <TimelineFilters
-          filters={filters}
-          apps={appNames}
-          projects={(projects ?? []).map((p) => ({ id: p.id, name: p.name }))}
-          nodes={(nodes ?? []).map((n) => ({ id: n.id, name: n.name }))}
-          onChange={setFilters}
-        />
+        {isEmpty ? null : (
+          <TimelineFilters
+            filters={filters}
+            apps={appNames}
+            projects={(projects ?? []).map((p) => ({ id: p.id, name: p.name }))}
+            nodes={(nodes ?? []).map((n) => ({ id: n.id, name: n.name }))}
+            onChange={setFilters}
+          />
+        )}
         {query.isPending ? (
           <SkeletonList rows={6} />
         ) : query.isError ? (
@@ -111,7 +117,22 @@ export function DeployTimelinePage() {
               </Button>
             }
           />
-        ) : isEmpty ? null : lanes.length === 0 ? (
+        ) : isEmpty ? (
+          <EmptyState
+            compact
+            icon={<RestoreGlassIcon className="size-6" />}
+            title={td('page.timelineEmpty')}
+            action={
+              <Button
+                size="sm"
+                render={<Link to="/apps/new" />}
+                nativeButton={false}
+              >
+                {td('page.emptyAction')}
+              </Button>
+            }
+          />
+        ) : lanes.length === 0 ? (
           <TimelineEmpty
             zoom={filters.zoom}
             windowStart={windowStart}

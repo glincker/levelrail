@@ -100,19 +100,34 @@ describe('RunnersPanel', () => {
     expect(bars[0]).toHaveAttribute('aria-valuenow', '25')
   })
 
-  it('explains how to add a build node when only the control plane exists', async () => {
+  it('offers a dismissible add-node link when only the control plane exists', async () => {
     mockFetch(() => ok({ strategy: 'first', runners: [controlPlane] }))
     wrap(<RunnersPanel />)
-    expect(await screen.findByText('Add a build node')).toBeInTheDocument()
     expect(
-      screen.getByRole('link', { name: 'Add build node' }),
+      await screen.findByRole('link', { name: 'Add a build node' }),
     ).toBeInTheDocument()
+    expect(screen.queryByText(/Strategy:/)).not.toBeInTheDocument()
+    await userEvent.click(
+      screen.getByRole('button', { name: 'Dismiss the build node suggestion' }),
+    )
+    expect(
+      screen.queryByRole('link', { name: 'Add a build node' }),
+    ).not.toBeInTheDocument()
+    window.localStorage.clear()
   })
 
-  it.each([[[]], [null]])('treats %j runners as empty', async (runners) => {
+  it('renders one compact line per runner when idle', async () => {
+    mockFetch(() => ok({ strategy: 'first', runners: [controlPlane] }))
+    wrap(<RunnersPanel compact />)
+    expect(await screen.findAllByTestId('runner-strip-item')).toHaveLength(1)
+    expect(screen.queryByTestId('runner-card')).not.toBeInTheDocument()
+    window.localStorage.clear()
+  })
+
+  it.each([[[]], [null]])('shows no cards for %j runners', async (runners) => {
     mockFetch(() => ok({ strategy: 'first', runners }))
     wrap(<RunnersPanel />)
-    expect(await screen.findByText('Add a build node')).toBeInTheDocument()
+    expect(await screen.findByText('Build runners')).toBeInTheDocument()
     expect(screen.queryByTestId('runner-card')).not.toBeInTheDocument()
   })
 

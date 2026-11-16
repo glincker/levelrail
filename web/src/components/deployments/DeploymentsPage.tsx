@@ -52,6 +52,7 @@ import {
   deploymentsSummaryOptions,
 } from '../../queries/deployments'
 import { useBuildQueue } from '../../queries/buildQueue'
+import { useBuildRunners } from '../../queries/buildRunners'
 import { BuildQueueBanner } from '../buildQueue/BuildQueueBanner'
 import { BuildQueueControls } from '../buildQueue/BuildQueueControls'
 import { BuildQueuePanel } from '../buildQueue/BuildQueuePanel'
@@ -64,6 +65,7 @@ import { DeploymentList, DeploymentsSkeleton, LoadMore } from './DeploymentList'
 import { DeploymentsFilterBar } from './DeploymentsFilterBar'
 import { DeploymentsSummary } from './DeploymentsSummary'
 import { ShortcutsHelp } from './ShortcutsHelp'
+import { pageProblems, pageState } from './deploymentsPageState'
 import type { Deployment } from '../../types/deployment'
 
 const SavedViewsMenu = lazy(() => import('../SavedViewsMenu'))
@@ -243,20 +245,18 @@ export function DeploymentsPage({
     (buildQueue?.running.length ?? 0) + (buildQueue?.queued.length ?? 0) > 0
   const [queueOpen, setQueueOpen] = useState(false)
   const [shortcutsOpen, setShortcutsOpen] = useState(false)
-  const streamView =
-    stream.state === 'live'
-      ? { tone: 'success' as const, label: t('page.live') }
-      : stream.state === 'reconnecting'
-        ? { tone: 'warning' as const, label: t('page.reconnecting') }
-        : { tone: 'neutral' as const, label: t('page.connecting') }
-
-  const isEmpty =
-    !listQuery.isPending &&
-    !listQuery.isError &&
-    rows.length === 0 &&
-    !listQuery.hasNextPage &&
-    !filtered
+  const runners = useBuildRunners().data?.runners ?? []
+  const loading = listQuery.isPending
+  const hasHistory =
+    rows.length > 0 ||
+    Boolean(listQuery.hasNextPage) ||
+    filtered ||
+    listQuery.isError
+  const state = pageState({ hasHistory, buildsActive })
+  const problems = pageProblems({ streamState: stream.state, runners })
+  const isEmpty = !loading && state === 'empty'
   const bannerSize = isEmpty ? 'hero' : 'compact'
+  const idleChrome = !loading && state === 'idle'
 
   return (
     <PageTemplate
@@ -272,53 +272,71 @@ export function DeploymentsPage({
               : 'deploys:banner.compactDescription'
           }
           action={
-            <>
-              <StatusPill
+            isEmpty ? (
+              <Button
                 size="sm"
-                tone={streamView.tone}
-                label={streamView.label}
-                live={stream.state === 'live'}
-              />
-              <BuildQueueControls
-                idleExtras={{
-                  onQueue: () => {
-                    setQueueOpen(true)
-                  },
-                  onShortcuts: () => {
-                    setShortcutsOpen(true)
-                  },
-                }}
-              />
-              {buildsActive ? (
-                <>
-                  <CancelSupersededPopover
-                    apps={facetsFrom(all).app}
-                    selected={filters.app}
+                render={<Link to="/apps/new" />}
+                nativeButton={false}
+              >
+                {t('page.emptyAction')}
+              </Button>
+            ) : loading ? null : (
+              <>
+                {problems.streamDown ? (
+                  <StatusPill
+                    size="sm"
+                    tone="warning"
+                    label={t('page.reconnecting')}
                   />
-                  <ShortcutsHelp />
-                </>
-              ) : (
-                <>
-                  <CancelSupersededPopover
-                    apps={facetsFrom(all).app}
-                    selected={filters.app}
-                    open={queueOpen}
-                    onOpenChange={setQueueOpen}
+                ) : null}
+                {problems.runnerProblem ? (
+                  <StatusPill
+                    size="sm"
+                    tone="warning"
+                    label={t('page.runnerProblem')}
                   />
-                  <ShortcutsHelp
-                    open={shortcutsOpen}
-                    onOpenChange={setShortcutsOpen}
-                  />
-                </>
-              )}
-            </>
+                ) : null}
+                <BuildQueueControls
+                  idleExtras={{
+                    onQueue: () => {
+                      setQueueOpen(true)
+                    },
+                    onShortcuts: () => {
+                      setShortcutsOpen(true)
+                    },
+                  }}
+                />
+                {buildsActive ? (
+                  <>
+                    <CancelSupersededPopover
+                      apps={facetsFrom(all).app}
+                      selected={filters.app}
+                    />
+                    <ShortcutsHelp />
+                  </>
+                ) : (
+                  <>
+                    <CancelSupersededPopover
+                      apps={facetsFrom(all).app}
+                      selected={filters.app}
+                      open={queueOpen}
+                      onOpenChange={setQueueOpen}
+                    />
+                    <ShortcutsHelp
+                      open={shortcutsOpen}
+                      onOpenChange={setShortcutsOpen}
+                    />
+                  </>
+                )}
+              </>
+            )
           }
           illustration={<LazyDeploymentsDiagram size={bannerSize} />}
           size={bannerSize}
         />
       }
     >
-      {tabs}
+      {isEmpty || loading ? null : tabs}
       <BuildQueueBanner />
       <div ref={topRef} className="hidden" />
       {!isEmpty && (
@@ -333,7 +351,7 @@ export function DeploymentsPage({
       )}
 
       <BuildQueuePanel />
-      <RunnersPanel />
+      {isEmpty || loading ? null : <RunnersPanel compact={idleChrome} />}
       <BuildingNowLane
         rows={laneRows}
         now={now}
@@ -438,20 +456,36 @@ export function DeploymentsPage({
             }
           />
         ) : (
-          <EmptyState
-            icon={<RocketGlassIcon size="1.4em" />}
-            title={t('page.emptyTitle')}
-            description={t('page.emptyDescription')}
-            action={
-              <Button
-                size="sm"
-                render={<Link to="/apps/new" />}
-                nativeButton={false}
-              >
-                {t('page.emptyAction')}
-              </Button>
-            }
-          />
+          <>
+            <EmptyState
+              icon={<RocketGlassIcon size="1.4em" />}
+              title={t('page.emptyTitle')}
+              description={t('page.emptyDescription')}
+              action={
+                state === 'empty' ? undefined : (
+                  <Button
+                    size="sm"
+                    render={<Link to="/apps/new" />}
+                    nativeButton={false}
+                  >
+                    {t('page.emptyAction')}
+                  </Button>
+                )
+              }
+            />
+            {state === 'empty' ? (
+              <p className="text-center text-xs text-muted-foreground">
+                {t('page.emptyBuildsHint')}{' '}
+                <Link
+                  to="/nodes"
+                  search={{ builds: 1 }}
+                  className="underline hover:text-foreground"
+                >
+                  {t('page.emptyBuildsLink')}
+                </Link>
+              </p>
+            ) : null}
+          </>
         )
       ) : (
         <div>
