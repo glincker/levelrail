@@ -28,6 +28,8 @@ const (
 	auditK8sClusterDisconnected  = "k8s_cluster.disconnected"
 	auditK8sClusterTested        = "k8s_cluster.tested"
 	auditK8sClusterConnectFailed = "k8s_cluster.connect_failed"
+	// Recorded when an admin credential is connected through the explicit override.
+	auditK8sClusterAdminOverride = "k8s_cluster.cluster_admin_override"
 )
 
 // Secret keys inside the per-cluster namespace.
@@ -85,6 +87,8 @@ type k8sConnectRequest struct {
 	Server     string `json:"server,omitempty"`
 	Token      string `json:"token,omitempty"`
 	CA         string `json:"ca,omitempty"`
+	// AllowClusterAdmin accepts a cluster-admin credential, and only works while k8s.allow_cluster_admin is on.
+	AllowClusterAdmin bool `json:"allow_cluster_admin,omitempty"`
 }
 
 type k8sTestResponse struct {
@@ -208,13 +212,27 @@ func (rt *Router) handleConnectK8sCluster(w http.ResponseWriter, r *http.Request
 	// From here the server URL is validated and carries no credentials, so it is safe to audit.
 	failed := store.K8sCluster{Name: req.Name, Server: creds.Server}
 	// Building the client runs the SSRF check once, so a refused address never gets stored.
-	if _, err := rt.newK8sClient(ctx, creds); err != nil {
+	client, err := rt.newK8sClient(ctx, creds)
+	if err != nil {
 		msg := "api server address refused or unusable"
 		if errors.Is(err, trafficpolicy.ErrBlockedTarget) {
 			msg = "api server address refused: private and loopback addresses need the runtime setting k8s.allow_private_api, metadata and link-local addresses are always refused"
 		}
 		rt.k8sConnectFailed(w, r, http.StatusBadRequest, failed, msg)
 		return
+	}
+	// A failed review is not treated as admin: the API server answers it for every authenticated caller.
+	adminOverride := false
+	if admin, aerr := client.CredentialIsClusterAdmin(ctx); aerr == nil && admin {
+		if !req.AllowClusterAdmin {
+			rt.k8sConnectFailed(w, r, http.StatusConflict, failed, k8sconn.ClusterAdminRefusal)
+			return
+		}
+		if !rt.runtimeSettings.Bool(ctx, runtimesettings.KeyK8sAllowClusterAdmin) {
+			rt.k8sConnectFailed(w, r, http.StatusConflict, failed, "allow_cluster_admin needs the runtime setting k8s.allow_cluster_admin turned on first; "+k8sconn.ClusterAdminRefusal)
+			return
+		}
+		adminOverride = true
 	}
 	_, actor, _, _ := rt.callerPrincipal(r)
 	row := store.K8sCluster{
@@ -255,6 +273,9 @@ func (rt *Router) handleConnectK8sCluster(w http.ResponseWriter, r *http.Request
 			rt.auditK8sCluster(r, auditK8sClusterConnectFailed, failed, http.StatusInternalServerError)
 			return
 		}
+	}
+	if adminOverride {
+		rt.auditK8sCluster(r, auditK8sClusterAdminOverride, row, http.StatusCreated)
 	}
 	rt.auditK8sCluster(r, auditK8sClusterConnected, row, http.StatusCreated)
 	created, err := rt.k8sClusterRows.GetK8sCluster(ctx, req.Name)

@@ -150,3 +150,17 @@ func (r RulesReview) IsClusterAdmin() bool {
 	}
 	return false
 }
+
+// ClusterAdminRefusal explains the default refusal and the namespaced alternative.
+const ClusterAdminRefusal = "this credential is effectively cluster-admin (wildcard verbs on all resources and api groups) and is refused; " +
+	"create a namespaced Role and a limited service account with `levelrail clusters rbac --namespace NS`, then connect that token. " +
+	"To accept the risk, set allow_cluster_admin on the request (--allow-cluster-admin) and turn on the runtime setting k8s.allow_cluster_admin"
+
+// CredentialIsClusterAdmin asks the API server whether this credential holds a wildcard rule.
+func (c *Client) CredentialIsClusterAdmin(ctx context.Context) (bool, error) {
+	review, err := c.ReviewRules(ctx, "default")
+	if err != nil {
+		return false, err
+	}
+	return review.IsClusterAdmin(), nil
+}

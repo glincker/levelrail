@@ -147,3 +147,22 @@ func TestRun_ClustersLogsAndRemove(t *testing.T) {
 		t.Error("remove without an app should fail")
 	}
 }
+
+func TestRun_ClustersConnectSendsAllowClusterAdmin(t *testing.T) {
+	var gotBody map[string]any
+	srv := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		b, _ := io.ReadAll(r.Body)
+		_ = json.Unmarshal(b, &gotBody)
+		w.Header().Set("Content-Type", "application/json")
+		_, _ = w.Write([]byte(`{"name":"lab","server":"https://10.0.0.1:6443","auth_mode":"token"}`))
+	}))
+	defer srv.Close()
+	kc := filepath.Join(t.TempDir(), "kubeconfig")
+	if err := os.WriteFile(kc, []byte("apiVersion: v1"), 0o600); err != nil {
+		t.Fatal(err)
+	}
+	runCLIExpectOK(t, []string{"clusters", "connect", "lab", "--kubeconfig", kc, "--allow-cluster-admin", "--api-url", srv.URL})
+	if gotBody["allow_cluster_admin"] != true {
+		t.Errorf("body = %v, want allow_cluster_admin true", gotBody)
+	}
+}

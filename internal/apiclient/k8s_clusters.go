@@ -27,6 +27,8 @@ type ConnectK8sClusterRequest struct {
 	Server     string `json:"server,omitempty"`
 	Token      string `json:"token,omitempty"`
 	CA         string `json:"ca,omitempty"`
+	// AllowClusterAdmin accepts a cluster-admin credential when the server setting k8s.allow_cluster_admin is on.
+	AllowClusterAdmin bool `json:"allow_cluster_admin,omitempty"`
 }
 
 // K8sClusterTestResult is the read-only connection check outcome.

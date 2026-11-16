@@ -47,7 +47,7 @@ func runClusters(prog string, args []string, stdout, stderr io.Writer, lookupEnv
 
 func clustersUsage(prog string) string {
 	return fmt.Sprintf(`Usage:
-  %[1]s clusters connect <name> (--kubeconfig FILE | --server URL --token-file FILE [--ca-file FILE]) [--context C] [flags]
+  %[1]s clusters connect <name> (--kubeconfig FILE | --server URL --token-file FILE [--ca-file FILE]) [--context C] [--allow-cluster-admin] [flags]
   %[1]s clusters list [flags]                 connected Kubernetes clusters
   %[1]s clusters show <name> [flags]          one cluster
   %[1]s clusters test <name> [flags]          read-only connection test
@@ -151,11 +151,13 @@ func runClustersConnect(prog string, args []string, stdout, stderr io.Writer, lo
 	name, rest := splitClusterName(args)
 	fs, tokenP, apiURLP, profileP, jsonOutP, outputP, queryP := apiFlagSet(prog, "clusters connect", "print the cluster as JSON to stdout and nothing else", stderr)
 	var kubeconfig, ctxName, server, tokenFile, caFile string
+	var allowAdmin bool
 	fs.StringVar(&kubeconfig, "kubeconfig", "", "kubeconfig file to read, or - for stdin; sent once, never stored locally")
 	fs.StringVar(&ctxName, "context", "", "kubeconfig context to use (default: the current one)")
 	fs.StringVar(&server, "server", "", "API server URL, for a service-account token instead of a kubeconfig")
 	fs.StringVar(&tokenFile, "token-file", "", "file holding the service-account token, or - for stdin")
 	fs.StringVar(&caFile, "ca-file", "", "file holding the cluster CA certificate (PEM)")
+	fs.BoolVar(&allowAdmin, "allow-cluster-admin", false, "accept a cluster-admin credential; also needs the server setting k8s.allow_cluster_admin")
 	tokenFlag, apiURLFlag, profileFlag, jsonOut, of, exitCode, ok := parseAPIFlags(fs, rest, apiFlagPtrs{tokenP, apiURLP, profileP, jsonOutP, outputP, queryP}, prog, stderr)
 	if !ok {
 		return exitCode
@@ -172,7 +174,7 @@ func runClustersConnect(prog string, args []string, stdout, stderr io.Writer, lo
 	if kubeconfig == "-" && tokenFile == "-" {
 		return reportError(stdout, stderr, jsonOut, newValidationError("only one input can read stdin"))
 	}
-	req := apiclient.ConnectK8sClusterRequest{Name: name, Context: ctxName, Server: server}
+	req := apiclient.ConnectK8sClusterRequest{Name: name, Context: ctxName, Server: server, AllowClusterAdmin: allowAdmin}
 	var err error
 	if kubeconfig != "" {
 		req.Kubeconfig, err = readSecretFileOrStdin(kubeconfig)

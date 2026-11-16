@@ -28,6 +28,7 @@ const (
 	KeyK8sAllowedNamespaces   = "k8s.allowed_namespaces"
 	KeyK8sAllowUnverifiedHost = "k8s.allow_unverified_hosts"
 	KeyK8sMaxEnvValueBytes    = "k8s.max_env_value_bytes"
+	KeyK8sAllowClusterAdmin   = "k8s.allow_cluster_admin"
 	k8sKubeconfigMaxBytesCeil = 8 << 20
 	k8sMaxBodyBytesCeil       = 256 << 20
 	k8sLogTailLinesCeil       = 100000
@@ -100,6 +101,8 @@ func init() {
 	})
 	boolDef(KeyK8sAllowUnverifiedHost, "APP_K8S_ALLOW_UNVERIFIED_HOSTS", "Kubernetes unverified ingress hosts",
 		"Lets a deploy that sets skip_host_check proceed when the cluster refuses to list Ingresses, so host ownership cannot be verified.", RiskWeakensSecurity)
+	boolDef(KeyK8sAllowClusterAdmin, "APP_K8S_ALLOW_CLUSTER_ADMIN", "Kubernetes cluster-admin credentials",
+		"Lets a connect request that sets allow_cluster_admin store a credential with wildcard access to the whole cluster. Refused by default; create a namespaced Role with levelrail clusters rbac instead.", RiskWeakensSecurity)
 	registerK8sInt(KeyK8sMaxEnvValueBytes, "APP_K8S_MAX_ENV_VALUE_BYTES", "4096", "Kubernetes env value size cap",
 		"Longest value, in bytes, one deploy environment variable may carry.", 1, 1<<20)
 	registerK8sInt(KeyK8sRunAsUser, "APP_K8S_RUN_AS_USER", "10001", "Kubernetes non-root user id",

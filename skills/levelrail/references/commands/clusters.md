@@ -8,7 +8,7 @@ Subcommands: connect, deploy, deployments, disconnect, list, logs, namespaces, n
 
 ```
 Usage:
-  levelrail-cli clusters connect <name> (--kubeconfig FILE | --server URL --token-file FILE [--ca-file FILE]) [--context C] [flags]
+  levelrail-cli clusters connect <name> (--kubeconfig FILE | --server URL --token-file FILE [--ca-file FILE]) [--context C] [--allow-cluster-admin] [flags]
   levelrail-cli clusters list [flags]                 connected Kubernetes clusters
   levelrail-cli clusters show <name> [flags]          one cluster
   levelrail-cli clusters test <name> [flags]          read-only connection test

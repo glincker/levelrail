@@ -33,6 +33,10 @@ func startDeployKube(t *testing.T, seed map[string]string) (*httptest.Server, *d
 	srv := httptest.NewTLSServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
 		k.mu.Lock()
 		defer k.mu.Unlock()
+		if r.Method == http.MethodPost && strings.HasSuffix(r.URL.Path, "/selfsubjectrulesreviews") {
+			_, _ = w.Write([]byte(`{"status":{"resourceRules":[{"verbs":["get"],"apiGroups":[""],"resources":["pods"]}]}}`))
+			return
+		}
 		if r.Method == http.MethodPost {
 			b, _ := io.ReadAll(r.Body)
 			var m struct {

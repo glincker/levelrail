@@ -554,6 +554,7 @@ These variables only seed the default of a [runtime setting](/runtime-settings).
 | `LEVELRAIL_SPOOL_QUOTA_BYTES` | [`spool.quota_bytes`](/runtime-settings#data-retention) | `0` |
 | `APP_VITALS_RETENTION_DAYS` | [`vitals.retention_days`](/runtime-settings#data-retention) | `30` |
 | `APP_CLOUD_CONNECTIONS_ENABLED` | [`cloud.connections_enabled`](/runtime-settings#experimental) | `false` |
+| `APP_K8S_ALLOW_CLUSTER_ADMIN` | [`k8s.allow_cluster_admin`](/runtime-settings#experimental) | `false` |
 | `APP_K8S_ALLOW_PRIVATE_API` | [`k8s.allow_private_api`](/runtime-settings#experimental) | `false` |
 | `APP_K8S_ALLOW_UNVERIFIED_HOSTS` | [`k8s.allow_unverified_hosts`](/runtime-settings#experimental) | `false` |
 | `APP_K8S_ALLOWED_NAMESPACES` | [`k8s.allowed_namespaces`](/runtime-settings#experimental) | empty |
@@ -580,6 +581,7 @@ These variables only seed the default of a [runtime setting](/runtime-settings).
 | `APP_PROVISION_EUR_TO_USD_RATE` | [`provision.eur_to_usd_rate`](/runtime-settings#experimental) | `1.10` |
 | `APP_PROVISION_MAX_MONTHLY_PRICE_USD` | [`provision.max_monthly_price_usd`](/runtime-settings#experimental) | `25` |
 | `APP_PROVISION_MAX_SERVERS` | [`provision.max_servers`](/runtime-settings#experimental) | `1` |
+| `APP_PROVISION_ORACLE_ALLOW_COMPARTMENT_SCOPE` | [`provision.oracle.allow_compartment_scope`](/runtime-settings#experimental) | `false` |
 | `APP_PROVISION_ORACLE_ALLOW_PAID_SHAPES` | [`provision.oracle.allow_paid_shapes`](/runtime-settings#experimental) | `false` |
 | `APP_PROVISION_ORACLE_ALLOW_UNKNOWN_PRICE` | [`provision.oracle.allow_unknown_price`](/runtime-settings#experimental) | `false` |
 | `APP_PROVISION_ORACLE_AVAILABILITY_DOMAINS` | [`provision.oracle.availability_domains`](/runtime-settings#experimental) | empty |
@@ -590,6 +592,7 @@ These variables only seed the default of a [runtime setting](/runtime-settings).
 | `APP_PROVISION_ORACLE_IMAGE_OS_VERSION` | [`provision.oracle.image_os_version`](/runtime-settings#experimental) | `24.04` |
 | `APP_PROVISION_ORACLE_MAX_A1_MEMORY_GB` | [`provision.oracle.max_a1_memory_gb`](/runtime-settings#experimental) | `0` |
 | `APP_PROVISION_ORACLE_MAX_A1_OCPU` | [`provision.oracle.max_a1_ocpu`](/runtime-settings#experimental) | `0` |
+| `APP_PROVISION_ORACLE_MAX_BOOT_VOLUME_GB` | [`provision.oracle.max_boot_volume_gb`](/runtime-settings#experimental) | `200` |
 | `APP_PROVISION_ORACLE_MAX_E2_MICRO` | [`provision.oracle.max_e2_micro`](/runtime-settings#experimental) | `0` |
 | `APP_PROVISION_ORACLE_VCN_CIDR` | [`provision.oracle.vcn_cidr`](/runtime-settings#experimental) | `10.0.0.0/16` |
 | `APP_UPDATE_CHANNELS_OFFERED` | [`updates.offered_channels`](/runtime-settings#experimental) | `stable` |

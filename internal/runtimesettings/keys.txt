@@ -301,6 +301,7 @@ ingress.proxy_cert_wait
 ingress.trusted_proxy_preset
 ingress.unmatched_mode
 ingress.unmatched_redirect_url
+k8s.allow_cluster_admin
 k8s.allow_private_api
 k8s.allow_unverified_hosts
 k8s.allowed_namespaces
