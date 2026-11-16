@@ -14,6 +14,9 @@ import { pickStringSearch } from '../../lib/urlDialog'
 import { RegistryVendorGrid } from '../../components/registry/RegistryVendorGrid'
 import { BuiltInRegistryCard } from '../../components/registry/BuiltInRegistryCard'
 import { PackageRegistriesCard } from '../../components/registry/PackageRegistriesCard'
+import { useRegistryStatus } from '../../queries/registry'
+import { usePackageRegistries } from '../../queries/registryVendors'
+import { showRegistryExtras } from '../../lib/settingsPageState'
 import { SettingsPageTitle } from '../../components/settings/SettingsPageTitle'
 
 const CloudRegistryCards = lazy(
@@ -40,6 +43,14 @@ function RegistryCredentialsPage() {
   const { data: credentials } = useSuspenseQuery(
     registryCredentialListQueryOptions(),
   )
+  const builtIn = useRegistryStatus()
+  const packages = usePackageRegistries()
+  const extras = showRegistryExtras({
+    loading: builtIn.isLoading || packages.isLoading,
+    credentialCount: credentials.length,
+    builtInEnabled: builtIn.data?.enabled ?? false,
+    packageRegistryCount: packages.data?.length ?? 0,
+  })
   const expired = credentials.filter((c) => c.expiry_status === 'expired')
   const expiring = credentials.filter(
     (c) => c.expiry_status === 'expiring_soon',
@@ -83,7 +94,7 @@ function RegistryCredentialsPage() {
       banners={banner}
     >
       <div className="space-y-8">
-        <BuiltInRegistryCard />
+        {extras ? <BuiltInRegistryCard /> : null}
         <Suspense fallback={null}>
           <CloudRegistryCards credentials={credentials} />
         </Suspense>
@@ -92,7 +103,7 @@ function RegistryCredentialsPage() {
           credentials={credentials}
           action={<CreateRegistryCredentialDialog />}
         />
-        <PackageRegistriesCard />
+        {extras ? <PackageRegistriesCard /> : null}
       </div>
     </PageTemplate>
   )

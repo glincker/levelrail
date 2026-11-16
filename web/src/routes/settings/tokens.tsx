@@ -13,6 +13,7 @@ import { Badge } from '@/components/ui/badge'
 import { useTokenExpiryPolicy } from '../../hooks/useTokenExpiryPolicy'
 import { TokensNotices } from '../../components/tokens/TokensNotices'
 import { useTranslation } from 'react-i18next'
+import { showRevokedTokens } from '../../lib/settingsPageState'
 import { SettingsPageTitle } from '../../components/settings/SettingsPageTitle'
 
 const DAY_MS = 24 * 60 * 60 * 1000
@@ -80,7 +81,9 @@ function TokensPage() {
         </p>
       ) : null}
       <TokenTable tokens={active} />
-      <RevokedTokensCard tokens={tokens} />
+      {showRevokedTokens(tokens.length - active.length) ? (
+        <RevokedTokensCard tokens={tokens} />
+      ) : null}
     </PageTemplate>
   )
 }

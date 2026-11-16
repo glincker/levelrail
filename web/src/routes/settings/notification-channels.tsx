@@ -11,6 +11,7 @@ import { CreateNotificationChannelDialog } from '../../components/CreateNotifica
 import { TableSkeleton } from '@/components/ui/table-skeleton'
 import { SetupStepHint } from '@/components/getStarted/SetupStepHint'
 import { HeartbeatCard } from '../../components/settings/HeartbeatCard'
+import { showHeartbeat } from '../../lib/settingsPageState'
 import { SettingsPageTitle } from '../../components/settings/SettingsPageTitle'
 
 // Account-level, mirroring routes/settings/backup-targets.tsx: connect
@@ -66,7 +67,7 @@ function NotificationChannelsPage() {
         channels={channels}
         action={<CreateNotificationChannelDialog />}
       />
-      <HeartbeatCard />
+      {showHeartbeat(channels.length) ? <HeartbeatCard /> : null}
     </PageTemplate>
   )
 }
