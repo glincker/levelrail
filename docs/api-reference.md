@@ -2413,6 +2413,7 @@ Routes that do not fit an existing group.
 | DELETE | /api/v1/clusters/{name}/pull-secrets/{secret} | AbilityRoot | handleDeleteK8sPullSecret |
 | GET | /api/v1/node-providers/{provider}/resources | AbilityRoot | handleListNodeProviderResources |
 | GET | /api/v1/node-providers/{provider}/spend | AbilityRoot | handleGetNodeProviderSpend |
+| GET | /api/v1/dns/authority | AbilityRead | handleDNSAuthority |
 | POST | /mcp | Public |  |
 
 ## See also

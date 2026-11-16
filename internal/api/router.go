@@ -769,6 +769,7 @@ type Router struct {
 	registryCatalogSecrets       RegistryCatalogSecrets                                     // nil is valid: GET /api/v1/registry/repositories and /api/v1/registry/tags return 501, same shape as registrySecrets above
 	dockerHubClient              DockerHubClient                                            // always set (NewRouter defaults it to a real *dockerhub.Client, unauthenticated so no secrets wiring needed), overridable in this package's own tests the same way registryCatalog is
 	emailSender                  email.Sender                                               // nil is valid: forgot-password still returns its generic success response
+	dnsAuthority                 dnsAuthorityDeps                                           // zero is valid: the who-answers check uses the system resolver and host addresses
 	mail                         mailState                                                  // zero is valid: the /api/v1/mail routes return 501 and system mail uses built-in templates
 	sessionLinkTokens            SessionLinkTokenStore                                      // always set, same shape as passwordResetTokens above
 	forgotPasswordByIP           *loginLimiter                                              // per-IP forgot-password budget, distinct from logins above

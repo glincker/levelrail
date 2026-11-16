@@ -101,3 +101,10 @@ func TestIsCloudflareProxyAddr(t *testing.T) {
 		}
 	}
 }
+
+func TestNetAuthorityResolverImplementsInterface(t *testing.T) {
+	var r AuthorityResolver = NetAuthorityResolver{}
+	if _, ok := r.(TTLResolver); ok {
+		t.Fatal("stdlib resolver cannot report TTL, it must not claim to")
+	}
+}

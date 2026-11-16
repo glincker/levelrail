@@ -122,6 +122,7 @@ var demoReadDenylist = []string{
 	"/api/v1/settings/ingress/check",
 	"/api/v1/ingress/connectivity",
 	"/api/v1/dns/check",
+	"/api/v1/dns/authority",
 	"/api/v1/dns/zones/{zone}/discover",
 	"/api/v1/apps/{name}/domains/{domain}/check",
 	"/api/v1/apps/{name}/domains/{domain}/search-visibility",

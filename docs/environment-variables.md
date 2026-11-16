@@ -145,6 +145,7 @@ These variables only seed the default of a [runtime setting](/runtime-settings).
 | `APP_CUTOVER_VERIFY_SLOW_TTFB` | [`cutover.verify_slow_ttfb`](/runtime-settings#networking) | `1500ms` |
 | `APP_CUTOVER_VERIFY_REQUEST_TIMEOUT` | [`cutover.verify_timeout`](/runtime-settings#networking) | `5s` |
 | `APP_DATABASE_IMPORT_MAX_BYTES` | [`databases.import_max_bytes`](/runtime-settings#networking) | `1073741824` |
+| `APP_DNS_AUTHORITY_WARN_TTL_SECONDS` | [`dns.authority_warn_ttl_seconds`](/runtime-settings#networking) | `3600` |
 | `LEVELRAIL_DNS_CACHE_BYTES` | [`dns.cache_bytes`](/runtime-settings#networking) | `4194304` |
 | `LEVELRAIL_DNS_CACHE_MAX_TTL` | [`dns.cache_max_ttl`](/runtime-settings#networking) | `1h` |
 | `LEVELRAIL_DNS_CACHE_NEGATIVE_MAX_TTL` | [`dns.cache_negative_max_ttl`](/runtime-settings#networking) | `5m` |
