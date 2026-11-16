@@ -1,0 +1,68 @@
+name: Package managers
+
+# Runs after a release and can be re-run for any existing tag. Nothing here
+# gates the release: the jobs are best effort and nothing depends on them.
+on:
+  workflow_run:
+    workflows: [Release]
+    types: [completed]
+  workflow_dispatch:
+    inputs:
+      tag:
+        description: 'Existing release tag to package (e.g. v1.4.0).'
+        required: true
+        type: string
+
+env:
+  # A tag push makes head_branch the tag name; branch runs fail the v* check.
+  PKG_TAG: ${{ inputs.tag || github.event.workflow_run.head_branch }}
+
+jobs:
+  linux-packages:
+    name: Build CLI deb and rpm
+    if: github.event_name == 'workflow_dispatch' || github.event.workflow_run.conclusion == 'success'
+    runs-on: ubuntu-latest
+    timeout-minutes: 15
+    continue-on-error: true
+    permissions:
+      contents: write
+    steps:
+      - name: Require a release tag
+        run: |
+          case "$PKG_TAG" in
+            v[0-9]*) ;;
+            *) echo "not a release tag: $PKG_TAG" >&2; exit 1 ;;
+          esac
+
+      - name: Checkout
+        uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7
+        with:
+          ref: ${{ env.PKG_TAG }}
+
+      - name: Download linux CLI binaries
+        env:
+          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+        run: |
+          gh release download "$PKG_TAG" --repo "$GITHUB_REPOSITORY" \
+            --pattern 'levelrail-cli-linux-*' --dir dist
+
+      # The tarball hash is pinned here, so a swapped upstream asset fails the check.
+      - name: Install nfpm
+        run: |
+          set -euo pipefail
+          ver=2.47.0
+          want=0660ca602b2d2d2ae4781a06c692b3eeb9d437ffea05b831d76e41f4a3188783
+          curl -fsSL -o nfpm.tar.gz "https://github.com/goreleaser/nfpm/releases/download/v${ver}/nfpm_${ver}_Linux_x86_64.tar.gz"
+          echo "${want}  nfpm.tar.gz" | sha256sum -c -
+          mkdir nfpm-bin
+          tar -xzf nfpm.tar.gz -C nfpm-bin nfpm
+
+      - name: Build packages
+        env:
+          NFPM: ${{ github.workspace }}/nfpm-bin/nfpm
+        run: scripts/release/build-cli-packages.sh "$PKG_TAG" dist out
+
+      - name: Upload to the release
+        env:
+          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+        run: gh release upload "$PKG_TAG" out/* --repo "$GITHUB_REPOSITORY" --clobber

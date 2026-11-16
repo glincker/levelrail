@@ -524,12 +524,43 @@ See the [CLI reference](/cli-reference) for every command.
 | Method | Command |
 | --- | --- |
 | Homebrew (macOS and Linux) | `brew install glincker/tap/levelrail-cli` |
-| Scoop and winget (Windows) | Planned. Use the PowerShell installer above for now. |
+| Scoop and winget (Windows) | See [Install on Windows and Linux](#install-on-windows-and-linux). Use the PowerShell installer above until then. |
 | npm, yarn or pnpm | `npx levelrail-cli <command>` or `npm install --global levelrail-cli` ([details](#use-the-cli-from-npm)) |
 | Go | `go install github.com/GLINCKER/levelrail/cmd/levelrail-cli@latest` |
 | Direct download | Pick `levelrail-cli-<os>-<arch>` (`linux`, `darwin`, or `windows`; `amd64` or `arm64`) from the [releases page](https://github.com/glincker/levelrail/releases). Windows files end in `.exe`. |
 
 Every release asset is listed in `checksums.txt`, which is signed with cosign and has a build provenance attestation. Windows binaries are published from the release after `v0.2.0-beta.15`; before that, run the install script from WSL.
+
+### Install on Windows and Linux
+
+These package manager installs are available from the first release that runs the package workflow, and not before. Until then, use the install scripts above.
+
+Windows with Scoop:
+
+```powershell
+scoop bucket add glincker https://github.com/glincker/scoop-bucket
+scoop install levelrail-cli
+```
+
+Windows with winget:
+
+```powershell
+winget install Glincker.LevelrailCli
+```
+
+Debian and Ubuntu (replace `amd64` with `arm64` where needed):
+
+```bash
+sudo dpkg -i levelrail-cli-linux-amd64.deb
+```
+
+Fedora and RHEL:
+
+```bash
+sudo rpm -i levelrail-cli-linux-amd64.rpm
+```
+
+The `.deb` and `.rpm` files are attached to the release page next to `package-checksums.txt`, which lists their SHA-256 sums.
 
 ### Use the CLI from npm
 
