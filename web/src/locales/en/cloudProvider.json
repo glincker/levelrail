@@ -295,5 +295,28 @@
       "stopped": "Stopped",
       "archive": "Archived"
     }
+  },
+  "spend": {
+    "title": "Spend",
+    "lagNote": "Provider billing data can lag by a day or more.",
+    "asOf": "as of",
+    "asOfTitle": "Data as of {{time}}",
+    "balance": "Balance",
+    "monthToDate": "Month to date",
+    "lastInvoice": "Last invoice",
+    "estimate": "Estimated monthly",
+    "priced": "({{priced}} of {{total}} priced)",
+    "unavailable": "Not available right now",
+    "scopeMissing": "Needs {{scope}}, see",
+    "scopeMissingGeneric": "Needs billing read scope, see",
+    "seeCapabilities": "capabilities",
+    "notConnected": "Connect {{name}} to read balance, invoices and a monthly estimate.",
+    "unsupported": "Spend is not available for {{name}} yet.",
+    "loadError": "Could not load spend: {{message}}",
+    "source": {
+      "list_prices": "from list prices",
+      "digitalocean_balance": "account balance",
+      "digitalocean_billing_history": "billing history"
+    }
   }
 }

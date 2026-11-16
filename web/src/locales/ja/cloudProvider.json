@@ -295,5 +295,28 @@
       "stopped": "停止済み",
       "archive": "アーカイブ"
     }
+  },
+  "spend": {
+    "title": "支出",
+    "lagNote": "プロバイダーの請求データは1日以上遅れることがあります。",
+    "asOf": "時点",
+    "asOfTitle": "{{time}}時点のデータ",
+    "balance": "残高",
+    "monthToDate": "今月これまで",
+    "lastInvoice": "直近の請求書",
+    "estimate": "月額の見積もり",
+    "priced": "({{total}}件中{{priced}}件に価格あり)",
+    "unavailable": "現在利用できません",
+    "scopeMissing": "{{scope}}が必要です。確認:",
+    "scopeMissingGeneric": "請求の読み取り権限が必要です。確認:",
+    "seeCapabilities": "権限",
+    "notConnected": "{{name}}を接続すると、残高、請求書、月額の見積もりを読み取れます。",
+    "unsupported": "{{name}}の支出表示にはまだ対応していません。",
+    "loadError": "支出を読み込めませんでした: {{message}}",
+    "source": {
+      "list_prices": "定価から算出",
+      "digitalocean_balance": "アカウント残高より",
+      "digitalocean_billing_history": "請求履歴より"
+    }
   }
 }

@@ -56,7 +56,7 @@ export const CLOUD_PROVIDERS: Record<
     tokenUrl: 'https://cloud.digitalocean.com/account/api/tokens',
     docsUrl:
       'https://docs.digitalocean.com/reference/api/create-personal-access-token/',
-    features: [...BASE, 'resources'],
+    features: [...BASE, 'resources', 'spend'],
     quickFactRegions: true,
   },
   hetzner: {

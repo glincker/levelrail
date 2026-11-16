@@ -295,5 +295,28 @@
       "stopped": "Parado",
       "archive": "Arquivado"
     }
+  },
+  "spend": {
+    "title": "Gastos",
+    "lagNote": "Os dados de cobrança do provedor podem atrasar um dia ou mais.",
+    "asOf": "em",
+    "asOfTitle": "Dados de {{time}}",
+    "balance": "Saldo",
+    "monthToDate": "Mês até agora",
+    "lastInvoice": "Última fatura",
+    "estimate": "Estimativa mensal",
+    "priced": "({{priced}} de {{total}} com preço)",
+    "unavailable": "Indisponível no momento",
+    "scopeMissing": "Precisa de {{scope}}, veja",
+    "scopeMissingGeneric": "Precisa de permissão de leitura de cobrança, veja",
+    "seeCapabilities": "permissões",
+    "notConnected": "Conecte {{name}} para ler saldo, faturas e uma estimativa mensal.",
+    "unsupported": "Os gastos ainda não estão disponíveis para {{name}}.",
+    "loadError": "Não foi possível carregar os gastos: {{message}}",
+    "source": {
+      "list_prices": "pelos preços de tabela",
+      "digitalocean_balance": "saldo da conta",
+      "digitalocean_billing_history": "histórico de cobrança"
+    }
   }
 }

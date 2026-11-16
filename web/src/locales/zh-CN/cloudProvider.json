@@ -295,5 +295,28 @@
       "stopped": "已停止",
       "archive": "已归档"
     }
+  },
+  "spend": {
+    "title": "支出",
+    "lagNote": "服务商的账单数据可能延迟一天或更久。",
+    "asOf": "截至",
+    "asOfTitle": "数据截至 {{time}}",
+    "balance": "余额",
+    "monthToDate": "本月至今",
+    "lastInvoice": "最近一张发票",
+    "estimate": "预计月费",
+    "priced": "（{{total}} 项中 {{priced}} 项有标价）",
+    "unavailable": "暂时无法获取",
+    "scopeMissing": "需要 {{scope}}，请查看",
+    "scopeMissingGeneric": "需要账单读取权限，请查看",
+    "seeCapabilities": "权限",
+    "notConnected": "连接 {{name}} 后可读取余额、发票和月费估算。",
+    "unsupported": "{{name}} 暂不支持支出信息。",
+    "loadError": "无法加载支出：{{message}}",
+    "source": {
+      "list_prices": "按标价估算",
+      "digitalocean_balance": "账户余额",
+      "digitalocean_billing_history": "账单历史"
+    }
   }
 }

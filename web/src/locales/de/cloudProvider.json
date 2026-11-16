@@ -295,5 +295,28 @@
       "stopped": "Gestoppt",
       "archive": "Archiviert"
     }
+  },
+  "spend": {
+    "title": "Kosten",
+    "lagNote": "Abrechnungsdaten des Anbieters können einen Tag oder länger hinterherhinken.",
+    "asOf": "Stand",
+    "asOfTitle": "Daten vom {{time}}",
+    "balance": "Guthaben",
+    "monthToDate": "Monat bisher",
+    "lastInvoice": "Letzte Rechnung",
+    "estimate": "Geschätzt pro Monat",
+    "priced": "({{priced}} von {{total}} mit Preis)",
+    "unavailable": "Gerade nicht verfügbar",
+    "scopeMissing": "Benötigt {{scope}}, siehe",
+    "scopeMissingGeneric": "Benötigt Leserecht für Abrechnung, siehe",
+    "seeCapabilities": "Berechtigungen",
+    "notConnected": "Verbinde {{name}}, um Guthaben, Rechnungen und eine Monatsschätzung zu lesen.",
+    "unsupported": "Kosten sind für {{name}} noch nicht verfügbar.",
+    "loadError": "Kosten konnten nicht geladen werden: {{message}}",
+    "source": {
+      "list_prices": "nach Listenpreisen",
+      "digitalocean_balance": "Kontostand",
+      "digitalocean_billing_history": "Abrechnungsverlauf"
+    }
   }
 }

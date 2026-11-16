@@ -295,5 +295,28 @@
       "stopped": "Arrêté",
       "archive": "Archivé"
     }
+  },
+  "spend": {
+    "title": "Dépenses",
+    "lagNote": "Les données de facturation du fournisseur peuvent avoir un jour de retard ou plus.",
+    "asOf": "au",
+    "asOfTitle": "Données au {{time}}",
+    "balance": "Solde",
+    "monthToDate": "Mois en cours",
+    "lastInvoice": "Dernière facture",
+    "estimate": "Estimation mensuelle",
+    "priced": "({{priced}} sur {{total}} avec prix)",
+    "unavailable": "Indisponible pour le moment",
+    "scopeMissing": "Nécessite {{scope}}, voir",
+    "scopeMissingGeneric": "Nécessite l'accès en lecture à la facturation, voir",
+    "seeCapabilities": "les autorisations",
+    "notConnected": "Connectez {{name}} pour lire le solde, les factures et une estimation mensuelle.",
+    "unsupported": "Les dépenses ne sont pas encore disponibles pour {{name}}.",
+    "loadError": "Impossible de charger les dépenses : {{message}}",
+    "source": {
+      "list_prices": "d'après les prix catalogue",
+      "digitalocean_balance": "solde du compte",
+      "digitalocean_billing_history": "historique de facturation"
+    }
   }
 }

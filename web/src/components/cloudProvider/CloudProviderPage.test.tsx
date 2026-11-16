@@ -62,16 +62,41 @@ function respond(provisions: unknown[] = []) {
               count: 0,
               resources: [],
             }
-          : url.includes('/regions')
-            ? [{ id: 'a', name: 'A' }]
-            : {
+          : url.includes('/spend')
+            ? {
                 provider: 'x',
-                account_id: 'x',
-                method: 'none',
-                checked_at: new Date().toISOString(),
+                currency: 'USD',
+                generated_at: new Date().toISOString(),
                 cached: false,
-                capabilities: [],
+                balance: {
+                  state: 'unavailable',
+                  account_balance: null,
+                  month_to_date_balance: null,
+                  month_to_date_usage: null,
+                  generated_at: null,
+                },
+                last_invoice: {
+                  state: 'unavailable',
+                  amount: null,
+                  date: null,
+                },
+                estimate: {
+                  state: 'unavailable',
+                  monthly_total: null,
+                  resource_count: 0,
+                  priced_count: 0,
+                },
               }
+            : url.includes('/regions')
+              ? [{ id: 'a', name: 'A' }]
+              : {
+                  provider: 'x',
+                  account_id: 'x',
+                  method: 'none',
+                  checked_at: new Date().toISOString(),
+                  cached: false,
+                  capabilities: [],
+                }
     return Promise.resolve(new Response(JSON.stringify(body), { status: 200 }))
   })
 }

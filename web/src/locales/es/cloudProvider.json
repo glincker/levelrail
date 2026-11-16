@@ -295,5 +295,28 @@
       "stopped": "Detenido",
       "archive": "Archivado"
     }
+  },
+  "spend": {
+    "title": "Gasto",
+    "lagNote": "Los datos de facturación del proveedor pueden tardar un día o más en actualizarse.",
+    "asOf": "a fecha de",
+    "asOfTitle": "Datos a fecha de {{time}}",
+    "balance": "Saldo",
+    "monthToDate": "Mes en curso",
+    "lastInvoice": "Última factura",
+    "estimate": "Estimado mensual",
+    "priced": "({{priced}} de {{total}} con precio)",
+    "unavailable": "No disponible ahora",
+    "scopeMissing": "Necesita {{scope}}, ver",
+    "scopeMissingGeneric": "Necesita permiso de lectura de facturación, ver",
+    "seeCapabilities": "permisos",
+    "notConnected": "Conecta {{name}} para leer el saldo, las facturas y una estimación mensual.",
+    "unsupported": "El gasto aún no está disponible para {{name}}.",
+    "loadError": "No se pudo cargar el gasto: {{message}}",
+    "source": {
+      "list_prices": "según precios de lista",
+      "digitalocean_balance": "saldo de la cuenta",
+      "digitalocean_billing_history": "historial de facturación"
+    }
   }
 }
