@@ -50,7 +50,7 @@ export const CLOUD_PROVIDERS: Record<
   digitalocean: {
     id: 'digitalocean',
     brand: nodeProviderBrand('digitalocean'),
-    glowClass: 'from-sky-500/15',
+    glowClass: 'text-sky-500',
     chipClass: 'border-sky-500/40 bg-sky-500/10',
     consoleUrl: 'https://cloud.digitalocean.com/',
     tokenUrl: 'https://cloud.digitalocean.com/account/api/tokens',
@@ -62,7 +62,7 @@ export const CLOUD_PROVIDERS: Record<
   hetzner: {
     id: 'hetzner',
     brand: nodeProviderBrand('hetzner'),
-    glowClass: 'from-red-500/15',
+    glowClass: 'text-red-500',
     chipClass: 'border-red-500/40 bg-red-500/10',
     consoleUrl: 'https://console.hetzner.cloud/',
     tokenUrl: 'https://console.hetzner.cloud/',
@@ -74,7 +74,7 @@ export const CLOUD_PROVIDERS: Record<
   vultr: {
     id: 'vultr',
     brand: nodeProviderBrand('vultr'),
-    glowClass: 'from-blue-500/15',
+    glowClass: 'text-blue-500',
     chipClass: 'border-blue-500/40 bg-blue-500/10',
     consoleUrl: 'https://my.vultr.com/',
     tokenUrl: 'https://my.vultr.com/settings/#settingsapi',
@@ -85,7 +85,7 @@ export const CLOUD_PROVIDERS: Record<
   aws: {
     id: 'aws',
     brand: nodeProviderBrand('aws'),
-    glowClass: 'from-amber-500/15',
+    glowClass: 'text-amber-500',
     chipClass: 'border-amber-500/40 bg-amber-500/10',
     consoleUrl: 'https://console.aws.amazon.com/',
     tokenUrl: 'https://console.aws.amazon.com/iam/home#/security_credentials',
@@ -97,7 +97,7 @@ export const CLOUD_PROVIDERS: Record<
   azure: {
     id: 'azure',
     brand: nodeProviderBrand('azure'),
-    glowClass: 'from-blue-500/15',
+    glowClass: 'text-blue-500',
     chipClass: 'border-blue-500/40 bg-blue-500/10',
     consoleUrl: 'https://portal.azure.com/',
     tokenUrl:
@@ -110,7 +110,7 @@ export const CLOUD_PROVIDERS: Record<
   gcp: {
     id: 'gcp',
     brand: nodeProviderBrand('gcp'),
-    glowClass: 'from-green-500/15',
+    glowClass: 'text-green-500',
     chipClass: 'border-green-500/40 bg-green-500/10',
     consoleUrl: 'https://console.cloud.google.com/',
     tokenUrl: 'https://console.cloud.google.com/iam-admin/serviceaccounts',
@@ -121,7 +121,7 @@ export const CLOUD_PROVIDERS: Record<
   oracle: {
     id: 'oracle',
     brand: nodeProviderBrand('oracle'),
-    glowClass: 'from-rose-500/15',
+    glowClass: 'text-rose-500',
     chipClass: 'border-rose-500/40 bg-rose-500/10',
     consoleUrl: 'https://cloud.oracle.com/',
     tokenUrl: 'https://cloud.oracle.com/identity/domains/my-profile/api-keys',

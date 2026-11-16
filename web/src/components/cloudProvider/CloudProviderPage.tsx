@@ -96,7 +96,9 @@ function ProviderLanding({
           <div
             aria-hidden="true"
             className={cn(
-              'pointer-events-none absolute inset-x-0 -top-24 -z-10 h-40 bg-linear-to-b to-transparent',
+              'pointer-events-none absolute -top-44 -right-4 -left-4 -z-10 h-80 md:-right-(--glinr-page-pad-x) md:-left-(--glinr-page-pad-x)',
+              'bg-[radial-gradient(ellipse_50%_55%_at_50%_45%,color-mix(in_oklab,currentColor_16%,transparent),transparent_100%)]',
+              '[mask-composite:intersect] [mask-image:linear-gradient(to_bottom,transparent,black_35%,black_65%,transparent),linear-gradient(to_right,transparent,black_25%,black_75%,transparent)] [-webkit-mask-composite:source-in]',
               provider.glowClass,
             )}
           />
