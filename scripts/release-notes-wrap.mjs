@@ -38,6 +38,7 @@ export function config() {
       features: env('RELEASE_DOC_FEATURES', 'features'),
       verify: env('RELEASE_DOC_VERIFY', 'verify-a-release'),
       changelog: env('RELEASE_DOC_CHANGELOG', 'changelog'),
+      faq: env('RELEASE_DOC_FAQ', 'faq'),
     },
   }
 }
@@ -60,6 +61,27 @@ export function stripBlocks(body) {
     return s.slice(0, i) + s.slice(j + b.length)
   }
   return cut(cut(body, HEAD_BEGIN, HEAD_END), FOOT_BEGIN, FOOT_END).trim()
+}
+
+// The wrapper footer owns contributors and the compare link, so the generator's
+// own copies are dropped; its other footer links stay.
+export function dedupeBody(body) {
+  const lines = body.split('\n')
+  const out = []
+  let skipping = false
+  for (const line of lines) {
+    if (/^##\s+contributors\s*$/i.test(line)) {
+      skipping = true
+      continue
+    }
+    if (skipping) {
+      if (!/^(##\s|<!--|\*\*Full changelog|\[Release page\])/i.test(line)) continue
+      skipping = false
+    }
+    if (/^\**Full changelog\**:?\**\s*https?:\/\/\S+\s*$/i.test(line)) continue
+    out.push(line.replace(/^\*\*Full changelog:\*\*\s*\[[^\]]*\]\([^)]*\)(\s*\|\s*)?/i, ''))
+  }
+  return out.join('\n').replace(/\n{3,}/g, '\n\n').trim()
 }
 
 // First feature bullet becomes the one-line theme when none is given.
@@ -101,7 +123,7 @@ export function wrap({ version, prev, body, contributors }, cfg = config()) {
   const web = `https://github.com/${cfg.repo}`
   const raw = `https://raw.githubusercontent.com/${cfg.repo}/${cfg.branch}`
   const docs = (p) => `${cfg.docsUrl}/${p}`
-  const clean = stripBlocks(body)
+  const clean = dedupeBody(stripBlocks(body))
   const theme = noDash(cfg.theme) || extractTheme(clean)
   const title = theme ? `${cfg.product} ${v}: ${theme}` : `${cfg.product} ${v}`
   const hub = `${cfg.hubNamespace}/${cfg.images[0]}`
@@ -123,9 +145,10 @@ export function wrap({ version, prev, body, contributors }, cfg = config()) {
     `<a href="${docs(cfg.docsPages.changelog)}">Changelog</a>`,
     `<a href="${docs(cfg.docsPages.features)}">Features</a>`,
     `<a href="${docs(cfg.docsPages.verify)}">Verify this release</a>`,
+    cfg.docsPages.faq ? `<a href="${docs(cfg.docsPages.faq)}">FAQ</a>` : '',
     `<a href="${compare}">Full diff</a>`,
     `[Discussions](${web}/discussions)`,
-  ].join(' &middot; ')
+  ].filter(Boolean).join(' &middot; ')
 
   const primary = cfg.primaryTag || tag
   const tags = (cfg.imageTags || primary).split(/\s+/).filter(Boolean)
