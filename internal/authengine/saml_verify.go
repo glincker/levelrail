@@ -68,7 +68,15 @@ func (e *Engine) VerifySAMLResponse(ctx context.Context, connID, samlResponse, r
 	if !answersRequest(assertion, requestID) {
 		return SAMLAssertion{}, fmt.Errorf("%w: no bearer confirmation for this request", ErrSAMLInvalid)
 	}
+	if !hasNameID(assertion) {
+		return SAMLAssertion{}, fmt.Errorf("%w: assertion has no NameID", ErrSAMLInvalid)
+	}
 	return mapSAMLAssertion(conn, assertion), nil
+}
+
+// hasNameID guards the identity key: an email is mutable, so it is never a stand-in for the subject.
+func hasNameID(a *saml.Assertion) bool {
+	return a != nil && a.Subject != nil && a.Subject.NameID != nil && strings.TrimSpace(a.Subject.NameID.Value) != ""
 }
 
 func (e *Engine) strictSP(conn SAMLConnection) (*saml.ServiceProvider, url.URL, error) {
@@ -173,10 +181,6 @@ func mapSAMLAssertion(conn SAMLConnection, a *saml.Assertion) SAMLAssertion {
 	}
 	if a.Subject != nil && a.Subject.NameID != nil {
 		out.NameID = a.Subject.NameID.Value
-	}
-	// The library keys the identity on the email when the subject has no NameID; mirror it.
-	if out.NameID == "" {
-		out.NameID = out.Email
 	}
 	return out
 }
