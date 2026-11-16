@@ -28,6 +28,10 @@ func runClusters(prog string, args []string, stdout, stderr io.Writer, lookupEnv
 		return runClustersVerb(prog, verb, false, rest, stdout, stderr, lookupEnv, clustersList)
 	case "show", "test", "nodes", "namespaces", "disconnect":
 		return runClustersVerb(prog, verb, true, rest, stdout, stderr, lookupEnv, nil)
+	case "deploy":
+		return runClustersDeploy(prog, rest, stdout, stderr, lookupEnv)
+	case "deployments", "status":
+		return runClustersDeployVerb(prog, verb, rest, stdout, stderr, lookupEnv)
 	case "connect":
 		return runClustersConnect(prog, rest, stdout, stderr, lookupEnv)
 	default:
@@ -46,6 +50,9 @@ func clustersUsage(prog string) string {
   %[1]s clusters nodes <name> [flags]         nodes with readiness and roles
   %[1]s clusters namespaces <name> [flags]    namespaces
   %[1]s clusters disconnect <name> [flags]    forget the stored credential
+  %[1]s clusters deploy <name> --app A --image I --port N [--env-file F] [--replicas N] [--host H] [--namespace NS] [--allow-root]
+  %[1]s clusters deployments <name> [flags]   apps deployed to a cluster
+  %[1]s clusters status <name> <app> [flags]  rollout state, conditions and ingress address
   %[1]s clusters rbac --namespace NS [flags]  print a namespace-scoped ServiceAccount, Role and RoleBinding
 
 Credentials come from a file, or "-" for stdin, never from an argument.

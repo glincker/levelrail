@@ -106,3 +106,91 @@ func (c *Client) ListK8sNamespaces(ctx context.Context, name string) ([]K8sNames
 func (c *Client) DisconnectK8sCluster(ctx context.Context, name string) error {
 	return c.do(ctx, http.MethodDelete, k8sClusterPath(name), nil, nil)
 }
+
+// K8sDeployRequest is the body of POST /clusters/{name}/deployments.
+type K8sDeployRequest struct {
+	App       string            `json:"app"`
+	Namespace string            `json:"namespace,omitempty"`
+	Image     string            `json:"image"`
+	Port      int               `json:"port"`
+	Replicas  *int              `json:"replicas,omitempty"`
+	Env       map[string]string `json:"env,omitempty"`
+	Host      string            `json:"host,omitempty"`
+	AllowRoot bool              `json:"allow_root,omitempty"`
+}
+
+// K8sDeployResult lists the objects the deploy applied.
+type K8sDeployResult struct {
+	App       string   `json:"app"`
+	Namespace string   `json:"namespace"`
+	Objects   []string `json:"objects"`
+	AllowRoot bool     `json:"allow_root"`
+}
+
+// K8sDeploymentRow is one recorded deployment; env values are never returned.
+type K8sDeploymentRow struct {
+	App       string     `json:"app"`
+	Namespace string     `json:"namespace"`
+	Image     string     `json:"image"`
+	Port      int        `json:"port"`
+	Replicas  int        `json:"replicas"`
+	Host      string     `json:"host,omitempty"`
+	AllowRoot bool       `json:"allow_root"`
+	Objects   []string   `json:"objects"`
+	CreatedBy string     `json:"created_by,omitempty"`
+	CreatedAt *time.Time `json:"created_at,omitempty"`
+	UpdatedAt *time.Time `json:"updated_at,omitempty"`
+}
+
+// K8sConditionRow is one workload condition.
+type K8sConditionRow struct {
+	Type    string `json:"type"`
+	Status  string `json:"status"`
+	Reason  string `json:"reason,omitempty"`
+	Message string `json:"message,omitempty"`
+}
+
+// K8sPodRow is one pod of the workload.
+type K8sPodRow struct {
+	Name   string `json:"name"`
+	Phase  string `json:"phase"`
+	Reason string `json:"reason,omitempty"`
+}
+
+// K8sDeploymentStatus is the live rollout state of one app.
+type K8sDeploymentStatus struct {
+	App            string            `json:"app"`
+	Namespace      string            `json:"namespace"`
+	Found          bool              `json:"found"`
+	Ready          bool              `json:"ready"`
+	Replicas       int               `json:"replicas"`
+	ReadyReplicas  int               `json:"ready_replicas"`
+	Updated        int               `json:"updated_replicas"`
+	Conditions     []K8sConditionRow `json:"conditions"`
+	Pods           []K8sPodRow       `json:"pods"`
+	IngressAddress string            `json:"ingress_address,omitempty"`
+	Reason         string            `json:"reason,omitempty"`
+}
+
+// DeployK8sApp calls POST /api/v1/clusters/{name}/deployments.
+func (c *Client) DeployK8sApp(ctx context.Context, name string, req K8sDeployRequest) (K8sDeployResult, error) {
+	var out K8sDeployResult
+	err := c.do(ctx, http.MethodPost, k8sClusterPath(name)+"/deployments", req, &out)
+	return out, err
+}
+
+// ListK8sDeployments calls GET /api/v1/clusters/{name}/deployments.
+func (c *Client) ListK8sDeployments(ctx context.Context, name string) ([]K8sDeploymentRow, error) {
+	var out struct {
+		Deployments []K8sDeploymentRow `json:"deployments"`
+	}
+	err := c.do(ctx, http.MethodGet, k8sClusterPath(name)+"/deployments", nil, &out)
+	return out.Deployments, err
+}
+
+// GetK8sDeploymentStatus calls GET /api/v1/clusters/{name}/deployments/{app}.
+func (c *Client) GetK8sDeploymentStatus(ctx context.Context, name, app string) (K8sDeploymentStatus, error) {
+	var out K8sDeploymentStatus
+	err := c.do(ctx, http.MethodGet, k8sClusterPath(name)+"/deployments/"+PathEscape(app), nil, &out)
+	return out, err
+}

@@ -66,3 +66,43 @@ func TestClustersRBACYAMLIsNamespaceScoped(t *testing.T) {
 		t.Errorf("exit = %d, want usage", got)
 	}
 }
+
+func TestRun_ClustersDeploySendsEnvFromFileAndHidesValues(t *testing.T) {
+	var gotPath string
+	var gotBody map[string]any
+	srv := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		gotPath = r.URL.Path
+		b, _ := io.ReadAll(r.Body)
+		_ = json.Unmarshal(b, &gotBody)
+		_, _ = w.Write([]byte(`{"app":"web","namespace":"apps","objects":["Deployment/web"]}`))
+	}))
+	defer srv.Close()
+	ef := filepath.Join(t.TempDir(), "app.env")
+	if err := os.WriteFile(ef, []byte("DB_PASS=SECRET-MARKER\n"), 0o600); err != nil {
+		t.Fatal(err)
+	}
+	stdout, stderr := runCLIExpectOK(t, []string{"clusters", "deploy", "lab", "--app", "web", "--image", "nginx:1", "--port", "80", "--env-file", ef, "--replicas", "2", "--api-url", srv.URL})
+	env, _ := gotBody["env"].(map[string]any)
+	if gotPath != "/api/v1/clusters/lab/deployments" || env["DB_PASS"] != "SECRET-MARKER" || gotBody["replicas"] != float64(2) {
+		t.Errorf("path=%s body=%v", gotPath, gotBody)
+	}
+	if strings.Contains(stdout+stderr, "SECRET-MARKER") || !strings.Contains(stdout, "Deployment/web") {
+		t.Errorf("output = %q", stdout)
+	}
+}
+
+func TestRun_ClustersStatusPrintsReadiness(t *testing.T) {
+	srv := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		if r.URL.Path != "/api/v1/clusters/lab/deployments/web" {
+			t.Errorf("path = %s", r.URL.Path)
+		}
+		_, _ = w.Write([]byte(`{"app":"web","namespace":"apps","found":true,"replicas":2,"ready_replicas":1,"conditions":[{"type":"Available","status":"False","reason":"MinimumReplicasUnavailable"}],"ingress_address":"10.0.0.5","reason":"rolling"}`))
+	}))
+	defer srv.Close()
+	stdout, _ := runCLIExpectOK(t, []string{"clusters", "status", "lab", "web", "--api-url", srv.URL})
+	for _, want := range []string{"1/2 replicas ready", "ingress: 10.0.0.5", "MinimumReplicasUnavailable", "reason: rolling"} {
+		if !strings.Contains(stdout, want) {
+			t.Errorf("missing %q in %q", want, stdout)
+		}
+	}
+}
