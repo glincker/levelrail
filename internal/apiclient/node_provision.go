@@ -82,6 +82,13 @@ type SetNodeProviderCredentialRequest struct {
 	Label                 string `json:"label,omitempty"`
 	Location              string `json:"location,omitempty"`
 	Notes                 string `json:"notes,omitempty"`
+	// Oracle API key fields. The private key is sent once and never echoed back.
+	TenancyOCID     string `json:"tenancy_ocid,omitempty"`
+	UserOCID        string `json:"user_ocid,omitempty"`
+	Fingerprint     string `json:"fingerprint,omitempty"`
+	PrivateKeyPEM   string `json:"private_key_pem,omitempty"`
+	CompartmentOCID string `json:"compartment_ocid,omitempty"`
+	SubnetOCID      string `json:"subnet_ocid,omitempty"`
 }
 
 // CreateNodeProvisionRequest is POST /api/v1/nodes/provision's body.

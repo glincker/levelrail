@@ -29,6 +29,10 @@ func runNodesProviders(prog string, args []string, stdout, stderr io.Writer, loo
 		return runNodesProvidersSetCredential(prog, args[1:], stdout, stderr, lookupEnv, false)
 	case "connect":
 		return runNodesProvidersSetCredential(prog, args[1:], stdout, stderr, lookupEnv, true)
+	case "regions":
+		return runNodesProvidersCatalog(prog, args[1:], stdout, stderr, lookupEnv, false)
+	case "sizes":
+		return runNodesProvidersCatalog(prog, args[1:], stdout, stderr, lookupEnv, true)
 	case "test":
 		return runNodesProvidersTest(prog, args[1:], stdout, stderr, lookupEnv)
 	case "disconnect":
@@ -44,11 +48,13 @@ func nodesProvidersUsage(prog string) string {
 	return fmt.Sprintf(`Usage:
   %[1]s nodes providers list [flags]                                          list known cloud providers and whether each has a stored credential
   %[1]s nodes providers connect --provider NAME [--method METHOD] [flags]   connect a provider (tests it first unless --verify=false)
+  %[1]s nodes providers regions --provider NAME [flags]                       list the provider's regions
+  %[1]s nodes providers sizes --provider NAME [--region ID] [flags]           list the provider's sizes (oracle Flex sizes are ids like VM.Standard.A1.Flex:1:6)
   %[1]s nodes providers test --provider NAME [flags]                          run a read-only connection test against the stored credential
   %[1]s nodes providers disconnect --provider NAME [flags]                    remove the stored credential
   %[1]s nodes providers set-credential --provider NAME --provider-token TOKEN [flags]   store (or replace) a provider's API token without testing
 
-NAME must be "hetzner", "digitalocean", "aws", "azure", "gcp" or "custom".
+NAME must be "hetzner", "digitalocean", "aws", "azure", "gcp", "oracle" or "custom".
 METHOD is api_token, access_key, assume_role, ambient, service_account_json,
 workload_identity_federation or manual; omit it to infer one.
 
@@ -122,6 +128,7 @@ func runNodesProvidersSetCredential(prog string, args []string, stdout, stderr i
 	fs, tokenFlagP, apiURLFlagP, profileFlagP, jsonOutP, outputFlagP, queryFlagP := apiFlagSet(prog, "nodes providers connect", "print the updated provider as JSON to stdout and nothing else", stderr)
 	var provider, providerToken, secretAccessKey, sessionToken, region, roleARN string
 	var useAmbient bool
+	var oraclePEM string
 	var method, label, location, notes string
 	verify := verifyDefault
 	fs.StringVar(&method, "method", "", "connection method: api_token, access_key, assume_role, ambient, service_account_json, workload_identity_federation or manual (default: inferred)")
@@ -129,13 +136,20 @@ func runNodesProvidersSetCredential(prog string, args []string, stdout, stderr i
 	fs.StringVar(&location, "location", "", "custom only: a location label")
 	fs.StringVar(&notes, "notes", "", "custom only: free-form notes")
 	fs.BoolVar(&verify, "verify", verifyDefault, "run a read-only connection test first and store nothing when it fails")
-	fs.StringVar(&provider, "provider", "", "hetzner, digitalocean, aws, azure, gcp or custom (required)")
+	fs.StringVar(&provider, "provider", "", "hetzner, digitalocean, aws, azure, gcp, oracle or custom (required)")
 	fs.StringVar(&providerToken, "provider-token", "", "the provider's credential (an API token for hetzner/digitalocean, the AWS access key id for aws, a single-line JSON object for azure, a service account JSON key for gcp); prefer piping it on stdin or the interactive prompt instead, a flag value is visible in shell history and the process list")
 	fs.StringVar(&secretAccessKey, "secret-access-key", "", "aws only: the secret access key matching --provider-token's access key id (required unless --use-ambient-credentials); prefer piping it on stdin or the interactive prompt instead, a flag value is visible in shell history and the process list")
 	fs.StringVar(&sessionToken, "session-token", "", "aws only: a session token, for temporary credentials (optional)")
 	fs.StringVar(&region, "region", "", "aws only: the region these credentials default to when a provision doesn't pick one explicitly (optional, default us-east-1)")
 	fs.StringVar(&roleARN, "role-arn", "", "aws only: an IAM role ARN to assume via STS before use, so the stored key only needs sts:AssumeRole on this role rather than direct EC2 permissions (optional)")
 	fs.BoolVar(&useAmbient, "use-ambient-credentials", false, "aws only: use this control plane's own AWS identity (env vars, shared config, or an EC2 instance profile) instead of a stored access key/secret")
+	var tenancyOCID, userOCID, fingerprint, keyFile, compartmentOCID, subnetOCID string
+	fs.StringVar(&tenancyOCID, "tenancy-ocid", "", "oracle only: the tenancy OCID")
+	fs.StringVar(&userOCID, "user-ocid", "", "oracle only: the OCID of the user that owns the API key")
+	fs.StringVar(&fingerprint, "fingerprint", "", "oracle only: the API key fingerprint shown by Oracle")
+	fs.StringVar(&keyFile, "key-file", "", "oracle only: path to the PEM private key, or - to read it from stdin; the key is never accepted as a flag value")
+	fs.StringVar(&compartmentOCID, "compartment-ocid", "", "oracle only: the compartment new servers are created in")
+	fs.StringVar(&subnetOCID, "subnet-ocid", "", "oracle only: an existing subnet to reuse (optional)")
 	fs.Usage = func() { _, _ = fmt.Fprint(stderr, nodesProvidersSetCredentialUsage(prog)) }
 
 	tokenFlag, apiURLFlag, profileFlag, jsonOut, of, exitCode, ok := parseAPIFlags(fs, args, apiFlagPtrs{tokenFlagP, apiURLFlagP, profileFlagP, jsonOutP, outputFlagP, queryFlagP}, prog, stderr)
@@ -153,6 +167,15 @@ func runNodesProvidersSetCredential(prog string, args []string, stdout, stderr i
 		if label == "" {
 			return reportError(stdout, stderr, jsonOut, newValidationError("--label is required for custom: a name for this data center"))
 		}
+	case provider == "oracle":
+		if tenancyOCID == "" || userOCID == "" || fingerprint == "" || compartmentOCID == "" || region == "" {
+			return reportError(stdout, stderr, jsonOut, newValidationError("--tenancy-ocid, --user-ocid, --fingerprint, --compartment-ocid and --region are required for oracle"))
+		}
+		pem, err := readOraclePrivateKey(keyFile, os.Stdin)
+		if err != nil {
+			return reportError(stdout, stderr, jsonOut, err)
+		}
+		oraclePEM = pem
 	case provider == "aws" && useAmbient:
 		// Nothing further to collect: the control plane resolves its own
 		// ambient AWS identity, optionally narrowed by --role-arn.
@@ -195,6 +218,13 @@ func runNodesProvidersSetCredential(prog string, args []string, stdout, stderr i
 	}
 	if provider == "aws" {
 		req.SecretAccessKey, req.SessionToken, req.Region, req.RoleARN, req.UseAmbientCredentials = secretAccessKey, sessionToken, region, roleARN, useAmbient
+	}
+	if provider == "oracle" {
+		req.Region, req.TenancyOCID, req.UserOCID, req.Fingerprint = region, tenancyOCID, userOCID, fingerprint
+		req.PrivateKeyPEM, req.CompartmentOCID, req.SubnetOCID = oraclePEM, compartmentOCID, subnetOCID
+		if req.Method == "" {
+			req.Method = "api_key"
+		}
 	}
 	updated, err := client.SetNodeProviderCredential(context.Background(), req)
 	if err != nil {
@@ -241,11 +271,15 @@ interactively: a terminal stdin gets a no-echo prompt for each one in
 turn instead.
 
 Flags:
-  --provider string             hetzner, digitalocean, aws, azure or gcp (required)
+  --provider string             hetzner, digitalocean, aws, azure, gcp or oracle (required)
+  --tenancy-ocid, --user-ocid, --fingerprint, --compartment-ocid string   oracle only: the API key identity and the compartment for new servers
+  --key-file string             oracle only: PEM private key path, or - for stdin; never a flag value
+  --subnet-ocid string          oracle only: reuse this subnet (optional)
   --provider-token string        the provider's credential, or the AWS access key id, see above
   --secret-access-key string    aws only: the secret access key (required unless --use-ambient-credentials); stdin/prompt fallback like --provider-token
   --session-token string        aws only: a session token, for temporary credentials (optional)
-  --region string                aws only: default region for these credentials (optional, default us-east-1)
+  --region string                aws default region (optional), oracle home or target region (required)
+  REGION_PLACEHOLDER for these credentials (optional, default us-east-1)
   --role-arn string              aws only: an IAM role ARN to assume via STS before use (optional)
   --use-ambient-credentials      aws only: use this control plane's own AWS identity instead of a stored key
   --method string                connection method: api_token, access_key, assume_role, ambient, service_account_json, workload_identity_federation or manual (default: inferred)

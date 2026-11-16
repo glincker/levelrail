@@ -14,9 +14,9 @@ func runNodesProvision(prog string, args []string, stdout, stderr io.Writer, loo
 	fs, tokenFlagP, apiURLFlagP, profileFlagP, jsonOutP, outputFlagP, queryFlagP := apiFlagSet(prog, "nodes provision", "print the new provision as JSON to stdout and nothing else", stderr)
 	var provider, region, size, name, role, controlPlaneAddr string
 	var allowSSHInbound bool
-	fs.StringVar(&provider, "provider", "", "hetzner, digitalocean, aws, azure or gcp (required)")
+	fs.StringVar(&provider, "provider", "", "hetzner, digitalocean, aws, azure, gcp or oracle (required)")
 	fs.StringVar(&region, "region", "", "provider region/location id, from \"nodes providers list\"'s regions (required)")
-	fs.StringVar(&size, "size", "", "provider server size/plan id (required)")
+	fs.StringVar(&size, "size", "", "provider server size/plan id (required); for oracle Flex shapes use the id from \"nodes providers sizes\", such as VM.Standard.A1.Flex:1:6")
 	fs.StringVar(&name, "name", "", "name for the new node: lowercase letters, digits, hyphens (required)")
 	fs.StringVar(&role, "role", "general", "general or build")
 	fs.StringVar(&controlPlaneAddr, "control-plane-addr", "", "host:port the new server dials to reach this control plane's agent listener (default: this command's --api-url host, port 9443)")
@@ -91,7 +91,7 @@ A credential must already be stored for the chosen provider ("nodes
 providers set-credential").
 
 Flags:
-  --provider string             hetzner, digitalocean, aws, azure or gcp (required)
+  --provider string             hetzner, digitalocean, aws, azure, gcp or oracle (required)
   --region string                provider region/location id, from "nodes providers list"'s regions (required)
   --size string                  provider server size/plan id (required)
   --name string                  name for the new node: lowercase letters, digits, hyphens (required)
