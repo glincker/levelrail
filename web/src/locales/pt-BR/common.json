@@ -1569,6 +1569,8 @@
     "browserDefault": "Padrão do navegador",
     "change": "Alterar idioma, atual: {{language}}",
     "label": "Idioma",
-    "saveFailed": "Não foi possível salvar seu idioma."
+    "saveFailed": "Não foi possível salvar seu idioma.",
+    "menuTitle": "Idioma",
+    "useBrowser": "Usar o idioma do navegador"
   }
 }

@@ -1551,6 +1551,8 @@
     "browserDefault": "浏览器默认",
     "change": "更改语言，当前：{{language}}",
     "label": "语言",
-    "saveFailed": "无法保存您的语言设置。"
+    "saveFailed": "无法保存您的语言设置。",
+    "menuTitle": "语言",
+    "useBrowser": "使用浏览器语言"
   }
 }

@@ -1560,6 +1560,8 @@
     "label": "Language",
     "change": "Change language, current: {{language}}",
     "browserDefault": "Browser default",
-    "saveFailed": "Could not save your language."
+    "saveFailed": "Could not save your language.",
+    "menuTitle": "Language",
+    "useBrowser": "Use browser language"
   }
 }

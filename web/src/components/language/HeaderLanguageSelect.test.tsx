@@ -1,5 +1,6 @@
 import { QueryClient } from '@tanstack/react-query'
-import { fireEvent, render, screen, waitFor } from '@testing-library/react'
+import { render, screen, waitFor } from '@testing-library/react'
+import userEvent from '@testing-library/user-event'
 import { beforeEach, describe, expect, it, vi } from 'vitest'
 import { accountSelfKeys, type Preferences } from '../../queries/accountSelf'
 import { HeaderLanguageSelect } from './HeaderLanguageSelect'
@@ -31,6 +32,13 @@ function client(withPrefs: boolean) {
   return qc
 }
 
+async function pickSpanish() {
+  await userEvent.click(screen.getAllByRole('button', { name: /English/ })[0]!)
+  await userEvent.click(
+    await screen.findByRole('menuitem', { name: /Español/ }),
+  )
+}
+
 describe('HeaderLanguageSelect', () => {
   it('signed in: retranslates, saves the preference and updates the cache', async () => {
     fetchMock.mockImplementation((_url: string, init?: RequestInit) =>
@@ -44,7 +52,7 @@ describe('HeaderLanguageSelect', () => {
     const i18n = makeI18n()
     const qc = client(true)
     render(<HeaderLanguageSelect />, { wrapper: makeWrap(i18n, qc) })
-    fireEvent.change(screen.getByRole('combobox'), { target: { value: 'es' } })
+    await pickSpanish()
     await waitFor(() => expect(i18n.language).toBe('es'))
     await waitFor(() =>
       expect(
@@ -63,7 +71,7 @@ describe('HeaderLanguageSelect', () => {
   it('signed out: applies the language and remembers it for after sign-in', async () => {
     const i18n = makeI18n()
     render(<HeaderLanguageSelect />, { wrapper: makeWrap(i18n, client(false)) })
-    fireEvent.change(screen.getByRole('combobox'), { target: { value: 'es' } })
+    await pickSpanish()
     await waitFor(() => expect(i18n.language).toBe('es'))
     await waitFor(() =>
       expect(window.localStorage.getItem('levelrail-language-chosen')).toBe(
@@ -85,8 +93,11 @@ describe('HeaderLanguageSelect', () => {
       </>,
       { wrapper: Wrap },
     )
-    const [a, b] = screen.getAllByRole('combobox')
-    fireEvent.change(a as HTMLElement, { target: { value: 'es' } })
-    await waitFor(() => expect(b).toHaveValue('es'))
+    await pickSpanish()
+    await waitFor(() =>
+      expect(screen.getAllByRole('button', { name: /Español/ })).toHaveLength(
+        2,
+      ),
+    )
   })
 })

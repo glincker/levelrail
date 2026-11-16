@@ -1551,6 +1551,8 @@
     "browserDefault": "ブラウザの既定",
     "change": "言語を変更、現在: {{language}}",
     "label": "言語",
-    "saveFailed": "言語を保存できませんでした。"
+    "saveFailed": "言語を保存できませんでした。",
+    "menuTitle": "言語",
+    "useBrowser": "ブラウザの言語を使用"
   }
 }
