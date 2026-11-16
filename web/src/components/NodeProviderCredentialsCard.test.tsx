@@ -51,9 +51,31 @@ const router = vi.hoisted(() => {
   return state
 })
 
-vi.mock('@tanstack/react-router', async () => {
+vi.mock('@tanstack/react-router', async (importOriginal) => {
   const React = await import('react')
+  const actual = await importOriginal<typeof import('@tanstack/react-router')>()
   return {
+    ...actual,
+    Link: ({
+      to,
+      params,
+      children,
+      ...rest
+    }: {
+      to: string
+      params?: Record<string, string>
+      children?: React.ReactNode
+    }) => (
+      <a
+        href={Object.entries(params ?? {}).reduce(
+          (href, [k, v]) => href.replace('$' + k, v),
+          to,
+        )}
+        {...rest}
+      >
+        {children}
+      </a>
+    ),
     useSearch: () =>
       React.useSyncExternalStore(
         (cb) => {
@@ -69,6 +91,11 @@ vi.mock('@tanstack/react-router', async () => {
     },
   }
 })
+
+// Row status is covered by its own tests; keep this card test off the network.
+vi.mock('../queries/providerCapabilities', () => ({
+  useProviderCapabilities: () => ({ isPending: true, data: undefined }),
+}))
 
 function renderCard() {
   return render(

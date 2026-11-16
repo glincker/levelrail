@@ -11,6 +11,7 @@ import { APP_NAV_SECTIONS } from '../components/shell/navModel'
 
 const routeDir = join(__dirname, '../routes/apps/$name')
 const routeSlugs = readdirSync(routeDir)
+  .filter((f) => !f.includes('.test.'))
   .map((f) => f.replace(/\.tsx$/, ''))
   .filter((f) => !['index', 'forms', 'deploys', 'pipelines'].includes(f))
   // domains_.$domain is a detail page under the domains tab, not a tab
