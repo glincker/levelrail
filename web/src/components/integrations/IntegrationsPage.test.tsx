@@ -47,6 +47,20 @@ vi.mock('../../queries/connections', () => ({
   useConnectionCatalog: () => ({ ...state.catalog, refetch: vi.fn() }),
 }))
 
+vi.mock('../../queries/clusters', () => ({
+  useClusters: () => ({
+    data: [{ name: 'k1' }, { name: 'k2' }],
+    isError: false,
+  }),
+  isClustersOff: () => false,
+}))
+vi.mock('../../queries/nodeProvision', () => ({
+  useNodeProviders: () => ({
+    data: [{ provider: 'oracle', has_token: true, status: 'connected' }],
+    isPending: false,
+  }),
+}))
+
 const i18n = i18next.createInstance()
 void i18n.use(initReactI18next).init({
   lng: 'en',
@@ -123,6 +137,19 @@ describe('ConnectionCard', () => {
 })
 
 describe('IntegrationsPage states', () => {
+  it('groups cloud providers, clusters and the setup pages', () => {
+    state.conns = { data: [], isPending: false, isError: false }
+    state.catalog = { data: [], isPending: false, isError: false }
+    wrap(<IntegrationsPage />)
+    expect(screen.getByText('Oracle Cloud')).toBeTruthy()
+    expect(screen.getByText('2 clusters connected')).toBeTruthy()
+    expect(
+      screen.getByRole('link', { name: 'Manage Kubernetes clusters' }),
+    ).toHaveAttribute('href', '/clusters')
+    expect(
+      screen.getByRole('link', { name: 'Manage Notifications' }),
+    ).toHaveAttribute('href', '/settings/notification-channels')
+  })
   it('treats null lists as empty without crashing', () => {
     state.conns = { data: null, isPending: false, isError: false }
     state.catalog = { data: null, isPending: false, isError: false }

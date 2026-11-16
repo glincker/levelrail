@@ -547,7 +547,8 @@
       "usage": "Usage and cost",
       "resources": "Resources",
       "security": "Security",
-      "console": "Console"
+      "console": "Console",
+      "integrations": "Integrations"
     },
     "quickNav": {
       "label": "Quick navigation (hold L)"

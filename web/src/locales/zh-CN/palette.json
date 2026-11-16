@@ -168,7 +168,7 @@
       "settings-registry-credentials": "用于拉取镜像的私有容器镜像仓库凭据。",
       "settings-backup-targets": "备份的存放位置。",
       "settings-storage": "对象存储目标。",
-      "settings-integrations": "查看所有已连接的服务、其状态和到期时间，以及添加更多服务的位置。",
+      "nav-integrations": "查看所有已连接的服务、其状态和到期时间，以及添加更多服务的位置。",
       "settings-git-connections": "连接 GitHub、GitLab 和其他 git 托管服务。",
       "settings-notification-channels": "Slack、Discord、邮件和 Webhook 告警。",
       "settings-users": "可以登录的人员及其角色。",

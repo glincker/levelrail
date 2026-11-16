@@ -107,5 +107,48 @@
   "wizard": {
     "title": "連携",
     "description": "Git ホスト、レジストリ、通知先、クラウドアカウントを接続します。"
+  },
+  "infra": {
+    "title": "クラウドとインフラ",
+    "cloud": "クラウドプロバイダー",
+    "cloudAll": "クラウドプロバイダー",
+    "manage": "管理",
+    "manageNamed": "{{name}}を管理",
+    "status": {
+      "connected": "接続済み",
+      "not_connected": "未接続",
+      "test_failed": "テスト失敗"
+    },
+    "providers": {
+      "oracle": "Oracle Cloud",
+      "aws": "AWS",
+      "azure": "Azure",
+      "gcp": "Google Cloud",
+      "hetzner": "Hetzner",
+      "digitalocean": "DigitalOcean"
+    },
+    "clusters": {
+      "title": "Kubernetesクラスター",
+      "off": "無効",
+      "connected_other": "{{count}}件のクラスターに接続済み"
+    },
+    "links": {
+      "git": {
+        "title": "Git",
+        "hint": "GitHub、GitLabなどのホスト"
+      },
+      "dns": {
+        "title": "DNS",
+        "hint": "ゾーンを管理するプロバイダー"
+      },
+      "tunnels": {
+        "title": "トンネル",
+        "hint": "ポートを開けずにサーバーへ接続"
+      },
+      "notifications": {
+        "title": "通知",
+        "hint": "アラートとイベントのチャネル"
+      }
+    }
   }
 }

@@ -411,7 +411,8 @@
       "resources": "Recursos",
       "security": "Centro de seguridad",
       "console": "Consola",
-      "inbox": "Bandeja de entrada"
+      "inbox": "Bandeja de entrada",
+      "integrations": "Integraciones"
     },
     "quickNav": {
       "label": "Navegación rápida (mantén L)"

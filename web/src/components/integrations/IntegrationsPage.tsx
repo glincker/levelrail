@@ -17,6 +17,7 @@ import { AttentionStrip } from './AttentionStrip'
 import { CatalogSection } from './CatalogSection'
 import { ConnectionCard } from './ConnectionCard'
 import { FilterBar } from './FilterBar'
+import { InfraGroups } from './InfraGroups'
 
 export function IntegrationsPage({
   focusCatalog = false,
@@ -153,6 +154,7 @@ export function IntegrationsPage({
     >
       <div className="space-y-6">
         <AttentionStrip items={attentionList(all, now)} now={now} />
+        <InfraGroups />
         <section aria-labelledby="integrations-connected" className="space-y-4">
           <h2
             id="integrations-connected"

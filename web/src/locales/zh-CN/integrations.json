@@ -107,5 +107,48 @@
   "wizard": {
     "title": "集成",
     "description": "连接 Git 主机、镜像仓库、通知服务或云账号。"
+  },
+  "infra": {
+    "title": "云与基础设施",
+    "cloud": "云服务商",
+    "cloudAll": "云服务商",
+    "manage": "管理",
+    "manageNamed": "管理 {{name}}",
+    "status": {
+      "connected": "已连接",
+      "not_connected": "未连接",
+      "test_failed": "测试失败"
+    },
+    "providers": {
+      "oracle": "Oracle Cloud",
+      "aws": "AWS",
+      "azure": "Azure",
+      "gcp": "Google Cloud",
+      "hetzner": "Hetzner",
+      "digitalocean": "DigitalOcean"
+    },
+    "clusters": {
+      "title": "Kubernetes 集群",
+      "off": "未启用",
+      "connected_other": "已连接 {{count}} 个集群"
+    },
+    "links": {
+      "git": {
+        "title": "Git",
+        "hint": "GitHub、GitLab 和其他托管服务"
+      },
+      "dns": {
+        "title": "DNS",
+        "hint": "管理你的区域的服务商"
+      },
+      "tunnels": {
+        "title": "隧道",
+        "hint": "无需开放端口即可访问服务器"
+      },
+      "notifications": {
+        "title": "通知",
+        "hint": "告警和事件的通知渠道"
+      }
+    }
   }
 }

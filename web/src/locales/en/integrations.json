@@ -111,5 +111,49 @@
   "wizard": {
     "title": "Integration",
     "description": "Connect a git host, registry, notifier or cloud account."
+  },
+  "infra": {
+    "title": "Cloud and infrastructure",
+    "cloud": "Cloud providers",
+    "cloudAll": "Cloud providers",
+    "manage": "Manage",
+    "manageNamed": "Manage {{name}}",
+    "status": {
+      "connected": "Connected",
+      "not_connected": "Not connected",
+      "test_failed": "Test failed"
+    },
+    "providers": {
+      "oracle": "Oracle Cloud",
+      "aws": "AWS",
+      "azure": "Azure",
+      "gcp": "Google Cloud",
+      "hetzner": "Hetzner",
+      "digitalocean": "DigitalOcean"
+    },
+    "clusters": {
+      "title": "Kubernetes clusters",
+      "off": "Not enabled",
+      "connected_one": "{{count}} cluster connected",
+      "connected_other": "{{count}} clusters connected"
+    },
+    "links": {
+      "git": {
+        "title": "Git",
+        "hint": "GitHub, GitLab and other hosts"
+      },
+      "dns": {
+        "title": "DNS",
+        "hint": "Providers that manage your zones"
+      },
+      "tunnels": {
+        "title": "Tunnels",
+        "hint": "Reach servers without open ports"
+      },
+      "notifications": {
+        "title": "Notifications",
+        "hint": "Channels for alerts and events"
+      }
+    }
   }
 }

@@ -542,7 +542,8 @@
       "usage": "用量与成本",
       "resources": "资源",
       "security": "安全",
-      "console": "控制台"
+      "console": "控制台",
+      "integrations": "集成"
     },
     "quickNav": {
       "label": "快速导航（按住 L）"

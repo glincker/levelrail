@@ -542,7 +542,8 @@
       "usage": "使用量とコスト",
       "resources": "リソース",
       "security": "セキュリティ",
-      "console": "コンソール"
+      "console": "コンソール",
+      "integrations": "連携"
     },
     "quickNav": {
       "label": "クイックナビゲーション (Lキーを長押し)"

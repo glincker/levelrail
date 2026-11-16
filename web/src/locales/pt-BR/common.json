@@ -552,7 +552,8 @@
       "usage": "Uso e custo",
       "resources": "Recursos",
       "security": "Segurança",
-      "console": "Console"
+      "console": "Console",
+      "integrations": "Integrações"
     },
     "quickNav": {
       "label": "Navegação rápida (segure L)"

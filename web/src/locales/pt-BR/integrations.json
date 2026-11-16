@@ -115,5 +115,49 @@
   "wizard": {
     "title": "Integração",
     "description": "Conecte um host git, um registro, um notificador ou uma conta de nuvem."
+  },
+  "infra": {
+    "title": "Nuvem e infraestrutura",
+    "cloud": "Provedores de nuvem",
+    "cloudAll": "Provedores de nuvem",
+    "manage": "Gerenciar",
+    "manageNamed": "Gerenciar {{name}}",
+    "status": {
+      "connected": "Conectado",
+      "not_connected": "Não conectado",
+      "test_failed": "Teste falhou"
+    },
+    "providers": {
+      "oracle": "Oracle Cloud",
+      "aws": "AWS",
+      "azure": "Azure",
+      "gcp": "Google Cloud",
+      "hetzner": "Hetzner",
+      "digitalocean": "DigitalOcean"
+    },
+    "clusters": {
+      "title": "Clusters Kubernetes",
+      "off": "Não habilitado",
+      "connected_one": "{{count}} cluster conectado",
+      "connected_other": "{{count}} clusters conectados"
+    },
+    "links": {
+      "git": {
+        "title": "Git",
+        "hint": "GitHub, GitLab e outros hosts"
+      },
+      "dns": {
+        "title": "DNS",
+        "hint": "Provedores que gerenciam suas zonas"
+      },
+      "tunnels": {
+        "title": "Túneis",
+        "hint": "Alcance servidores sem portas abertas"
+      },
+      "notifications": {
+        "title": "Notificações",
+        "hint": "Canais de alertas e eventos"
+      }
+    }
   }
 }
