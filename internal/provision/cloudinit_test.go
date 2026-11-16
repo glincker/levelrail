@@ -29,6 +29,7 @@ func TestRenderCloudInit(t *testing.T) {
 		"chown root:root /var/lib/acme-agent-data",
 		"chmod 700 /var/lib/acme-agent-data",
 		"--user 0:0",
+		"--security-opt no-new-privileges",
 	} {
 		if !strings.Contains(out, want) {
 			t.Errorf("rendered cloud-init missing %q", want)
