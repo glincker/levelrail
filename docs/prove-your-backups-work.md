@@ -1,6 +1,6 @@
 ---
 title: "Prove your backups work"
-description: Run restore drills to verify backups work before you need them.
+description: "Run a restore drill that restores a backup into a scratch resource and checks it, so the last verified restore is green before you need the backup."
 "og:url": "https://docs.levelrail.com/prove-your-backups-work"
 ---
 

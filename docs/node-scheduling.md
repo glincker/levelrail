@@ -1,7 +1,7 @@
 ---
 title: "Node scheduling: taints, tolerations, affinity and score mode"
 tag: "Beta"
-description: Keep workloads off a node with taints, let chosen apps onto it with tolerations, place apps near or away from each other with affinity, and pick spread or bin-pack scoring live.
+description: "Keep workloads off a node with taints, allow chosen apps with tolerations, set affinity between apps, and switch between spread and bin-pack scoring live."
 "og:url": "https://docs.levelrail.com/node-scheduling"
 ---
 

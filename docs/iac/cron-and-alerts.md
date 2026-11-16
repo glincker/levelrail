@@ -1,4 +1,9 @@
-# Cron jobs and alert rules in files
+---
+title: "Cron jobs and alert rules in files"
+sidebarTitle: "Cron and alert files"
+description: "Keep an app's scheduled commands and alert rules in your repository as CronJob and AlertRule documents, then plan, apply, export and prune them."
+"og:url": "https://docs.levelrail.com/iac/cron-and-alerts"
+---
 
 Scheduled commands and alert rules of an app can live in your repository next to the app, as their own documents. Plan shows what would change, apply writes it, export reads the live ones back, and prune removes what you dropped, but only on a stack the files own. Both kinds are beta.
 

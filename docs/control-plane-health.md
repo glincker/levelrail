@@ -61,7 +61,7 @@ Applying a fix needs a root token. Reading health needs read access. The API is 
 | `APP_DB_SLOW_QUERY_MS` | 200 | a statement slower than this is logged as slow |
 | `APP_DB_READ_CONNS` | 4 | read-only SQLite connections for dashboard reads, so they do not queue behind reconcile writes. 0 sends reads to the single writer connection |
 
-See [Benchmarks](/benchmarks#control-plane-at-1000-apps) for measured latency at 1000 apps.
+See [Benchmarks](/benchmarks#control-plane-at-1000-apps-2026-10-18) for measured latency at 1000 apps.
 
 ## Upload spool
 

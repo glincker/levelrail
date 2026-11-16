@@ -1,6 +1,7 @@
 ---
 title: "Keyboard shortcuts"
 description: "Single-key shortcuts for the dashboard lists and the deployments page."
+"og:url": "https://docs.levelrail.com/keyboard"
 ---
 
 ## Lists

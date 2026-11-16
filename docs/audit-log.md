@@ -1,6 +1,7 @@
 ---
 title: Audit log
 description: Search the audit log by time, actor, method and status, verify its hash chain, and export what you filtered.
+"og:url": "https://docs.levelrail.com/audit-log"
 ---
 
 Every write, deploy and root-tier request is recorded, newest first. The log is free, tamper-evident and exportable.

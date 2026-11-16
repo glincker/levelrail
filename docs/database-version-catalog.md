@@ -1,6 +1,7 @@
 ---
 title: "Database version catalog"
 description: "Where the database versions, release channels and end-of-life dates offered at create and upgrade time come from: a published, signed catalog file."
+"og:url": "https://docs.levelrail.com/database-version-catalog"
 ---
 
 The version lists, release channels and end-of-life dates offered when you create

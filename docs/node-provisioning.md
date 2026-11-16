@@ -1,6 +1,6 @@
 ---
 title: "Node provisioning"
-description: "Create a server at Hetzner, DigitalOcean, Vultr, AWS, Azure, GCP or Oracle Cloud and enroll it as a node, with the credential each needs, status polling, cost and known gaps."
+description: "Create a server at Hetzner, DigitalOcean, Vultr, AWS, Azure, GCP or Oracle Cloud and enroll it as a node, with credentials, status polling and known gaps."
 "og:url": "https://docs.levelrail.com/node-provisioning"
 ---
 

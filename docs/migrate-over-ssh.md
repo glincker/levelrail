@@ -1,6 +1,6 @@
-| `POST /api/v1/apps/import-bundle` | Import a tar from `apps export` (body is the tar; query `name`, `dry_run`, `deploy`, `replace`, `confirm`), `write` ability |
 ---
 title: "Migrate over SSH"
+sidebarTitle: "Migrate over SSH"
 description: "Import apps, env, images and volumes from an old Coolify, Dokploy, CapRover or Dokku host with only an SSH login. Read only, no agent, no remote command."
 "og:url": "https://docs.levelrail.com/migrate-over-ssh"
 ---

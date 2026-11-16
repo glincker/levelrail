@@ -2,6 +2,7 @@
 title: "IaC quickstart"
 tag: "Experimental"
 description: Describe an app and a database as YAML, preview the change, apply it, and export what exists. Five minutes.
+"og:url": "https://docs.levelrail.com/iac"
 ---
 
 <Warning>

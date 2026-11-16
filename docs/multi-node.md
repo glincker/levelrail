@@ -147,7 +147,7 @@ The node appears as soon as enrollment is saved, with `status: pending` until it
 </Step>
 <Step title="Use it for placement">
 
-Once connected, the node is a normal placement target. Pick it in an app or database create form, move an existing resource onto it, or let [auto-placement](#simple-spread-placement-auto-placement) send new resources there.
+Once connected, the node is a normal placement target. Pick it in an app or database create form, move an existing resource onto it, or let [auto-placement](#resource-aware-placement-auto-placement) send new resources there.
 
 A node accepts app workloads by default but not build workloads. See [Build node routing](/build-node-routing) to enable builds.
 

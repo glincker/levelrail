@@ -2,6 +2,7 @@
 title: "Connect a cloud account"
 tag: "Experimental"
 description: Give Levelrail a scoped Oracle Cloud credential. A guided bootstrap from your own machine, or paste one you made. Root and tenancy admin credentials are never accepted.
+"og:url": "https://docs.levelrail.com/iac/cloud-connect"
 ---
 
 <Warning>

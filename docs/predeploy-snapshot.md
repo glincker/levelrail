@@ -1,6 +1,7 @@
 ---
 title: "Pre-deploy database snapshots"
 description: "Snapshot an app's linked databases before each deploy and roll back the code together with the data."
+"og:url": "https://docs.levelrail.com/predeploy-snapshot"
 ---
 
 When an app is linked to a managed database, a deploy can run a migration that a plain code rollback cannot undo. Turn on pre-deploy snapshots and the control plane takes a backup of each linked database right before the deploy, records it on the deploy, and lets you roll back with the data.

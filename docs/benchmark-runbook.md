@@ -1,6 +1,7 @@
 ---
 title: "Benchmark runbook"
 description: Steps to measure load and failover on a labelled Linux server with a separate load generator, and how to publish the result.
+"og:url": "https://docs.levelrail.com/benchmark-runbook"
 ---
 
 Use this to produce rows for [Load and failover benchmarks](/benchmarks). The script never creates or deletes servers; you do that by hand.

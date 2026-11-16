@@ -1,6 +1,6 @@
 ---
 title: "Running Levelrail in Docker"
-description: Run Levelrail control plane and node agent as Docker containers.
+description: "Run the Levelrail control plane and node agent as Docker containers from GitHub Container Registry or Docker Hub, with image tags and signatures."
 "og:url": "https://docs.levelrail.com/docker"
 ---
 

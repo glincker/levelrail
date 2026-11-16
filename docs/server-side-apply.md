@@ -1,6 +1,7 @@
 ---
 title: Server-side apply
 description: Merge partial manifests on the server with per-field ownership, conflict detection, version preconditions and dry runs.
+"og:url": "https://docs.levelrail.com/server-side-apply"
 ---
 
 Server-side apply lets several tools (CI, an operator, the dashboard, a person running `edit`) each own part of one resource without overwriting each other. Each sends only the fields it cares about. The server merges them, remembers who set which field, and refuses a change to a field someone else owns.

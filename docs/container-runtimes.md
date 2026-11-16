@@ -3,6 +3,7 @@ title: "Container runtimes"
 icon: "/assets/icons/download-simple.svg"
 sidebarTitle: "Container runtimes"
 description: Which container runtimes Levelrail supports on a Linux server, how install.sh picks one, and the manual steps for Podman.
+"og:url": "https://docs.levelrail.com/container-runtimes"
 ---
 
 Levelrail talks to a Docker-compatible Engine API socket. Any runtime that serves that API can in principle run it, but only some are tested. This page says which, and how to set up the rest.

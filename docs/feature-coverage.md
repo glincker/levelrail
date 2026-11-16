@@ -96,12 +96,12 @@ The SSH deploy key, request body cap and runtime options rows marked Proven on a
 | Capability | Status | Read more |
 | --- | --- | --- |
 | Container pull request previews with their own URL, caps and optional database | Built and tested | [Preview environments](/preview-environments) |
-| Static site pull request previews, named `<app>-pr-<number>` | Built and tested | [Preview environments](/preview-environments#static-sites) |
+| Static site pull request previews, named `<app>-pr-<number>` | Built and tested | [Preview environments](/preview-environments#static-site-previews) |
 | Preview TTL, cap, idle sleep and cleanup when the pull request closes | Built and tested | [Previews](/previews) |
 | Basic auth gate on previews (`--gate`) | Built and tested | [Preview environments](/preview-environments) |
 | Previews list badge for the basic auth gate. It shows the app-wide policy on rows with a domain, not each domain's live state | Beta | [Previews](/previews) |
-| Static previews: the basic auth gate is applied, and a publish without it is refused and marked failed | Built and tested | [Preview environments](/preview-environments#static-sites) |
-| Static previews: a forward-auth gate on the preview domain is refused | Built and tested | [Preview environments](/preview-environments#static-sites) |
+| Static previews: the basic auth gate is applied, and a publish without it is refused and marked failed | Built and tested | [Preview environments](/preview-environments#static-site-previews) |
+| Static previews: a forward-auth gate on the preview domain is refused | Built and tested | [Preview environments](/preview-environments#static-site-previews) |
 | Migration step for a container preview with a database strategy, run after the database is ready | Beta | [Preview environments](/preview-environments) |
 
 ## Security

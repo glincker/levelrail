@@ -2,7 +2,7 @@
 title: "Add a server over SSH"
 tag: "Beta"
 sidebarTitle: "Add a server over SSH"
-description: "Adopt a Linux machine you already have by letting the control plane SSH in, install Docker if needed and install the node agent. Commands, host key checks and fixes for common failures."
+description: "Adopt an existing Linux machine as a node: the control plane connects over SSH, installs Docker if needed and the node agent, with host key checks."
 "og:url": "https://docs.levelrail.com/add-node-over-ssh"
 ---
 

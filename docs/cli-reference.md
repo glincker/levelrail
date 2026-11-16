@@ -1500,7 +1500,7 @@ levelrail-cli security hsts status|enable|disable [flags]
 levelrail-cli security reachability [--recheck] [--fix ID] [flags]
 ```
 
-`--approval-without-session` changes how a sign-in with no other live session is handled (see [Security center](/security-center#approval-without-session)). It asks for your password, and the authenticator code when the account has one, at the prompt. `hold` is refused with `approval_hold_no_channel` unless a test email went out recently, a `signin:approve` token owned by an admin exists, or you pass `--confirm-host-access` to say you can run commands on the server.
+`--approval-without-session` changes how a sign-in with no other live session is handled (see [Security center](/security-center#approval-without-a-session)). It asks for your password, and the authenticator code when the account has one, at the prompt. `hold` is refused with `approval_hold_no_channel` unless a test email went out recently, a `signin:approve` token owned by an admin exists, or you pass `--confirm-host-access` to say you can run commands on the server.
 
 `security reachability` (root) lists what the internet can reach per app and database. `--recheck` re-measures instead of using the cached audit, and `--fix ID` applies a finding's automatic fix and re-checks. See [Exposure report](/security-center#exposure-report).
 
@@ -1891,7 +1891,7 @@ levelrail-cli setup undo <step> [flags]
 levelrail-cli setup reset [flags]
 ```
 
-The dashboard's Get started checklist from a terminal. `status` prints every step with its state, time estimate and note, plus the "ready for production" percentage. `next` prints the one step to do next and where to do it. `skip` and `undo` record or clear an operator override for a step id such as `teammate`; `reset` clears every override and shows the guide again. The three writes need a root scoped token. Steps and their rules: [Getting started](/getting-started#finish-setting-up-for-real-use). Supports `--json`, `--output json|table|text`, and `--query`.
+The dashboard's Get started checklist from a terminal. `status` prints every step with its state, time estimate and note, plus the "ready for production" percentage. `next` prints the one step to do next and where to do it. `skip` and `undo` record or clear an operator override for a step id such as `teammate`; `reset` clears every override and shows the guide again. The three writes need a root scoped token. Steps and their rules: [Getting started](/getting-started#finish-setting-up). Supports `--json`, `--output json|table|text`, and `--query`.
 
 ## Proxy
 
@@ -2117,7 +2117,7 @@ levelrail-cli import takeover plan|run|status|rollback [flags]
 
 `import platform` reads apps, databases and settings from another platform (read only) and creates them here. Use `--dry-run` first. Databases and volumes are created empty; data is not migrated. Re-running skips what was already imported. The source token is read from `APP_IMPORT_SOURCE_TOKEN`, `--token-stdin` or `--token` (which lands in shell history). Other flags: `--only`, `--collision suffix|skip`, `--insecure-tls`, `--allow-private`, `--allow-loopback`. See [migrating from Coolify, Dokploy or CapRover](/migrating-from-coolify-dokploy-and-caprover).
 
-`import cutover` moves one staged app's traffic in a reversible flow. `plan` prints the readiness checklist, `run --dry-run` exercises everything except the switch, `run --confirm NAME` switches and verifies (rolling back on its own if verification fails), `status` shows the timeline, and `rollback` restores the previous DNS value and stops the staged app. Other flags: `--run ID`, `--accept-warnings`, `--no-wait`, `--wait DURATION`, `--json`. See [guided cutover](/migrating-from-coolify-dokploy-and-caprover#guided-cutover-of-one-staged-app).
+`import cutover` moves one staged app's traffic in a reversible flow. `plan` prints the readiness checklist, `run --dry-run` exercises everything except the switch, `run --confirm NAME` switches and verifies (rolling back on its own if verification fails), `status` shows the timeline, and `rollback` restores the previous DNS value and stops the staged app. Other flags: `--run ID`, `--accept-warnings`, `--no-wait`, `--wait DURATION`, `--json`. See [guided cutover](/migration-reference#guided-cutover-of-one-staged-app).
 
 `import config` reads `Procfile`, `app.json` and `vercel.json` from a directory (default: the current one) and prints a proposed `app.yaml`. Findings go to stderr, blockers first, each with a fix. It is offline and read-only, needs no token and creates nothing. `--out FILE` writes the spec to a file, `--json` prints `{detected, spec, findings, nextSteps}`; the human output ends with NEXT STEPS, the exact `apps create --file ... --service ... --secret KEY=VALUE` and `databases create` commands. A Heroku plus Vercel directory keeps both services when their names clash: the Heroku one keeps the name and the Vercel one gets a `-vercel` suffix (then `-vercel-2` and so on) with its own cron jobs, plus a warn finding. `apps create --file` refuses a spec with `databases:` or `from:` env references instead of dropping them, and `--strict` exits 2 when any finding is a blocker (otherwise it exits 0). `LEVELRAIL_IMPORT_WEB_PORT` (default 8080) and `LEVELRAIL_IMPORT_NODE_PORT` (default 3000) set the proposed ports.
 

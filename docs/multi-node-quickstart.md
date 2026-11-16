@@ -39,7 +39,7 @@ A node left `pending` after its token was spent shows as "Never connected". Dele
 </Step>
 <Step title="Place something on it">
 
-Pick the node in an app's create form, run `levelrail-cli apps set-node <name> <node-id>`, or let [auto-placement](/multi-node#simple-spread-placement-auto-placement) choose.
+Pick the node in an app's create form, run `levelrail-cli apps set-node <name> <node-id>`, or let [auto-placement](/multi-node#resource-aware-placement-auto-placement) choose.
 
 </Step>
 </Steps>
@@ -48,7 +48,7 @@ Pick the node in an app's create form, run `levelrail-cli apps set-node <name> <
 
 `scripts/install-agent.sh` turns the manual enrollment into one command on the second server. It installs Docker if it is missing, downloads the agent for the host architecture, checks its SHA-256 (and the release signature when `cosign` is installed), writes `/etc/levelrail-agent/agent.env` with mode 0600, installs a systemd unit and starts it.
 
-1. Install the control plane (see [install](/install)) and set `APP_AGENT_ADVERTISE_HOST`.
+1. Install the control plane (see [install](/installing)) and set `APP_AGENT_ADVERTISE_HOST`.
 2. Mint a token on the control plane: `levelrail-cli nodes add --name worker-1` (add `--mesh` for the WireGuard mesh). It prints the installer command with your token and CA fingerprint filled in.
 3. Run that command on the second server:
 

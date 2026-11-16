@@ -1,6 +1,7 @@
 ---
 title: "UI navigation"
 description: Rules for where a new dashboard setting or page goes, and the size caps that keep the sidebars lean.
+"og:url": "https://docs.levelrail.com/ui-navigation"
 ---
 
 ## Where a new setting goes

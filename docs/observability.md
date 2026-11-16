@@ -1084,7 +1084,7 @@ How to confirm: Check if slow queries are being logged: `levelrail-cli databases
 
 Fix: Lower the slow query threshold if it is too high: on the control plane, set `APP_DATABASE_SLOW_QUERY_THRESHOLD_MS` to a lower value (default is 1000 ms). Run a slow query intentionally to test: `psql ... -c "SELECT COUNT(*) FROM <large-table>"`. Wait for the next sample interval (15 seconds) and check again.
 
-Still stuck: See [Slow queries](/observability#slow-queries-database-logs) for per-database configuration.
+Still stuck: See [Slow queries](/observability#database-slow-query-log) for per-database configuration.
 
 ### Alert history shows many flapping alerts
 

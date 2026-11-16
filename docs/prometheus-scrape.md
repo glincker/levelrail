@@ -1,6 +1,7 @@
 ---
 title: "Prometheus scrape endpoint"
 description: "Scrape app, database, node and deploy metrics from GET /metrics with a read token."
+"og:url": "https://docs.levelrail.com/prometheus-scrape"
 ---
 
 `GET /metrics` serves app, database, node and deploy metrics in the Prometheus text format. It is never public: every request needs a read token, and a token limited to some apps only sees those apps.

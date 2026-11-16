@@ -2,6 +2,7 @@
 title: "Compose projects as code"
 tag: "Beta"
 description: Point an App document at an existing Docker Compose file instead of copying it. Plan, apply, import and adopt, with the exact limits strict mode enforces.
+"og:url": "https://docs.levelrail.com/iac/compose"
 ---
 
 An App can reference a Docker Compose file in place. The compose file stays the one definition of your services; the App document adds what Levelrail owns: project, environment, tags, domains and the values for `${VAR}`.

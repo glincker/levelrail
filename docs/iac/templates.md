@@ -2,6 +2,7 @@
 title: "IaC templates"
 tag: "Experimental"
 description: Copy a working Infrastructure as code starting point, one file per scenario, each checked against the schema in CI.
+"og:url": "https://docs.levelrail.com/iac/templates"
 ---
 
 Every file below lives in the repository under `examples/iac/` and is validated by the same parser that runs `levelrail-cli apply`. Copy one, change the names, then run `levelrail-cli diff -f infra/`. Set `APP_EXPERIMENTAL=iac` first, see the [quickstart](/iac/index).

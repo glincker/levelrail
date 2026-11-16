@@ -1,6 +1,6 @@
 ---
 title: "Domain traffic controls"
-description: "Per-domain traffic controls in the embedded ingress: header rules, path forwarders, country rules, caching, redirects, raw ports, and body and timeout limits, from the UI, CLI or API."
+description: "Set per-domain traffic controls in the embedded ingress: header rules, path forwarders, country rules, caching, redirects, raw ports and limits."
 "og:url": "https://docs.levelrail.com/domain-traffic-controls"
 ---
 

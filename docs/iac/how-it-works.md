@@ -2,6 +2,7 @@
 title: "How IaC apply works"
 tag: "Experimental"
 description: How files become a plan, an approved revision and a ledger of owned resources, and how prune and drift use that ledger. One page, one diagram.
+"og:url": "https://docs.levelrail.com/iac/how-it-works"
 ---
 
 There is no state file. The control plane keeps a ledger of what each stack owns, and every step below reads live state through the ordinary API with your token.

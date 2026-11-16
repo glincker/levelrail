@@ -1,8 +1,8 @@
 ---
-description: How to commit, describe and label changes so the release history stays readable as the repo grows.
+title: "Change tracking"
+description: "How to write commits, pull request descriptions, issues and labels so release notes and the history stay readable as the repo grows."
+"og:url": "https://docs.levelrail.com/change-tracking"
 ---
-
-# Change tracking
 
 How a change travels from commit to release notes, and where its status is recorded. Short rules, so reviewers and release notes stay readable as the repo grows.
 

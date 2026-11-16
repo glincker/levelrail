@@ -12,7 +12,7 @@ A deploy context is the kind of deploy an app is running: `production`, `deploy-
 
 | Setting | Meaning |
 | --- | --- |
-| `env` | Plain env vars for the context. Use [branch env overrides](/preview-environments#env-overrides-for-one-pull-request) when a value is a secret. |
+| `env` | Plain env vars for the context. Use [branch env overrides](/preview-environments#environment-overrides-for-one-pull-request) when a value is a secret. |
 | `build.command` | Static site build command (only for `build.type: static`). |
 | `build.publish` | Static site publish directory, relative to the base directory. |
 | `build.args` | Build args (Dockerfile `ARG` values, or build container variables for a static build). |

@@ -49,7 +49,7 @@ Concretely: from the moment the control plane process exits to the moment a new 
 
 This is a real outage window. Its length depends on how fast the control plane process comes back (a process supervisor restarting it in seconds, versus a human noticing and running `docker start` by hand). The reconciler cannot shorten it, because the reconciler is down too.
 
-**In-flight reconcile work is lost, not resumed mid-step.** If a deploy, a build, or a container removal was in progress when the process died, that specific in-flight operation does not continue from where it left off. It does not need to. Every controller here is level-triggered and idempotent (see [architecture.md](/architecture#control-plane)), so a restart works out what to do from scratch by diffing desired state against whatever Docker reports, the same as on any other reconcile pass.
+**In-flight reconcile work is lost, not resumed mid-step.** If a deploy, a build, or a container removal was in progress when the process died, that specific in-flight operation does not continue from where it left off. It does not need to. Every controller here is level-triggered and idempotent (see [architecture.md](/architecture#reconcile-loop-invariants)), so a restart works out what to do from scratch by diffing desired state against whatever Docker reports, the same as on any other reconcile pass.
 
 ## What happens when it restarts
 

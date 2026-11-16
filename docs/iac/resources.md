@@ -2,6 +2,7 @@
 title: "IaC resource kinds"
 tag: "Experimental"
 description: Each resource kind with a worked example and the rules that do not fit a field table. The field list itself is the generated reference.
+"og:url": "https://docs.levelrail.com/iac/resources"
 ---
 
 The field tables are in the [IaC reference](/iac/reference), generated from the schema. This page keeps one worked example per kind and the rules around it.

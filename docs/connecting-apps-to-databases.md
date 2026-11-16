@@ -1,6 +1,6 @@
 ---
 title: "Connecting apps to databases"
-description: Connect apps to multiple databases and view reachability badges.
+description: "Connect one app to several databases with connections, see reachability badges, and learn how connections differ from the older single database attachment."
 "og:url": "https://docs.levelrail.com/connecting-apps-to-databases"
 ---
 

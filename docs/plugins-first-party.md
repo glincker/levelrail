@@ -2,6 +2,7 @@
 title: "First-party plugins"
 tag: "Experimental"
 description: Notification channel plugins for services the built-in channels do not cover, built on the same public contract as any third-party plugin.
+"og:url": "https://docs.levelrail.com/plugins-first-party"
 ---
 
 These plugins add alert channels for services the built-in channels do not cover. Each is a small out-of-process program on the public [plugin contract](/plugins): it runs in a locked-down container, receives only the event and its own config, and gets the credential per call. They have no private channel to the control plane.

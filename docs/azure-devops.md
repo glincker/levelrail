@@ -1,6 +1,7 @@
 ---
 title: "Azure DevOps"
 description: "Deploy from Azure Repos with a personal access token and a push service hook."
+"og:url": "https://docs.levelrail.com/azure-devops"
 ---
 
 Azure DevOps Services (`dev.azure.com`) and Azure DevOps Server connect with a personal access token. There is no OAuth application to register and no public domain needed to connect.

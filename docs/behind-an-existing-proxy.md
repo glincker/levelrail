@@ -395,7 +395,7 @@ Likely cause: the proxy's route rule does not match the Host header, or Levelrai
 
 How to confirm: check the proxy configuration (Traefik, nginx, Caddy) and verify it has a route for the domain pointing to the correct Levelrail port (e.g., 8088). Also check that Levelrail is actually listening on that port with `sudo ss -tlnp | grep 8088`.
 
-Fix: verify Levelrail is running and listening on the correct port (set with `APP_INGRESS_HTTP_ADDR` or via the installer). Then add or update the proxy's route to forward the domain to that port. Refer to [Example proxy configs](/behind-an-existing-proxy#example-proxy-configs) above for the correct syntax for your proxy.
+Fix: verify Levelrail is running and listening on the correct port (set with `APP_INGRESS_HTTP_ADDR` or via the installer). Then add or update the proxy's route to forward the domain to that port. Refer to [Example proxy configs](/behind-an-existing-proxy#what-it-generates) above for the correct syntax for your proxy.
 
 ### The domain shows the proxy's default certificate
 

@@ -1,6 +1,7 @@
 ---
 title: "Tutorials"
 description: Step-by-step tutorials for self-hosting with Levelrail, from Docker deploys and Postgres to S3 backups, GitHub Actions, and built-in logs and metrics.
+"og:url": "https://docs.levelrail.com/tutorials"
 ---
 
 Each tutorial is a complete walkthrough you can finish in 10 to 15 minutes on your own server. The commands and sample output come from a real instance, so IDs, timestamps, and digests will differ on yours. If something does not match what you see, [open an issue](https://github.com/glincker/levelrail/issues).

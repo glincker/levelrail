@@ -1,4 +1,9 @@
-# Import from a deploy.yml or a Portainer stack
+---
+title: "Import from a deploy.yml or a Portainer stack"
+sidebarTitle: "Importers"
+description: "Turn an existing deploy.yml or Portainer stack file into reviewable Levelrail App documents with an offline dry run, and save them with --write."
+"og:url": "https://docs.levelrail.com/iac/importers"
+---
 
 Two offline importers turn an existing deployment definition into reviewable Levelrail documents (App kinds inside a Stack). Both are dry runs: nothing is written unless you pass `--write DIR`, and existing files are kept without `--force`.
 

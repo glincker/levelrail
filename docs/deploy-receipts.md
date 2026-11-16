@@ -1,6 +1,7 @@
 ---
 title: Deploy receipts
 description: A downloadable record of one deploy, with the commit, image digest, who asked, who approved and which gates ran.
+"og:url": "https://docs.levelrail.com/deploy-receipts"
 ---
 
 # Deploy receipts

@@ -1,6 +1,6 @@
 ---
 title: Install from mainland China
-description: "Install and run Levelrail where github.com, ghcr.io or Docker Hub are slow or blocked: release base URL, Docker mirrors, a registry mirror prefix, a pinned version and signature checks."
+description: "Install Levelrail where github.com, ghcr.io or Docker Hub are slow or blocked, using a release base URL, Docker mirrors, a pinned version and signature checks."
 "og:url": "https://docs.levelrail.com/install-from-china"
 ---
 
