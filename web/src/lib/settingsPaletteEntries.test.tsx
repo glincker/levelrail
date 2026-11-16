@@ -36,6 +36,8 @@ vi.mock('../hooks/useExperimental', () => ({
 const NOT_NAV_PAGES: Record<string, string> = {
   janitor: 'redirects to the Cleanup page',
   certificates: 'redirects to the Domains certificates tab',
+  // Integrations hub lives at /integrations, this route only redirects there.
+  integrations: 'redirects to /integrations',
 }
 
 const allItems = settingsNavSections.flatMap((s) =>
