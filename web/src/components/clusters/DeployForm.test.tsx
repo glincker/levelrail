@@ -61,7 +61,7 @@ describe('DeployForm', () => {
     wrap(<DeployForm cluster="c1" />)
 
     await user.type(screen.getByLabelText('App name'), 'web')
-    await user.type(screen.getByLabelText('Public image'), 'nginx:1.27')
+    await user.type(screen.getByLabelText('Image'), 'nginx:1.27')
     await user.type(
       screen.getByLabelText('Environment (optional)'),
       'TOKEN=hunter2',
@@ -94,10 +94,52 @@ describe('DeployForm', () => {
     const user = userEvent.setup()
     wrap(<DeployForm cluster="c1" />)
     await user.type(screen.getByLabelText('App name'), 'web')
-    await user.type(screen.getByLabelText('Public image'), 'nginx')
+    await user.type(screen.getByLabelText('Image'), 'nginx')
     await user.click(screen.getByRole('button', { name: 'Deploy' }))
     expect(await screen.findByRole('alert')).toHaveTextContent(
       'host already used',
     )
+  })
+
+  it('warns on a registry mismatch and shows the backend 400 readably', async () => {
+    const msg =
+      'the image is on registry docker.io but pull secret gh is for ghcr.io; nothing was sent'
+    const fetchMock = vi.fn((u: string, init?: RequestInit) => {
+      if (init?.method === 'POST') {
+        return Promise.resolve(
+          new Response(JSON.stringify({ error: msg }), {
+            status: 400,
+            headers: { 'Content-Type': 'application/json' },
+          }),
+        )
+      }
+      if (u.endsWith('/pull-secrets')) {
+        return Promise.resolve(
+          new Response(
+            JSON.stringify({
+              pull_secrets: [{ name: 'gh', registry: 'ghcr.io' }],
+            }),
+            { status: 200 },
+          ),
+        )
+      }
+      return Promise.resolve(
+        new Response(JSON.stringify({ settings: [] }), { status: 200 }),
+      )
+    })
+    vi.stubGlobal('fetch', fetchMock)
+    const user = userEvent.setup()
+    wrap(<DeployForm cluster="c1" />)
+    await user.type(screen.getByLabelText('App name'), 'web')
+    await user.type(screen.getByLabelText('Image'), 'index.docker.io/acme/web')
+    await user.selectOptions(
+      await screen.findByLabelText('Pull secret (optional)'),
+      'gh',
+    )
+    expect(
+      screen.getByText('The image is on docker.io but gh is for ghcr.io.'),
+    ).toBeInTheDocument()
+    await user.click(screen.getByRole('button', { name: 'Deploy' }))
+    expect(await screen.findByRole('alert')).toHaveTextContent(msg)
   })
 })

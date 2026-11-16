@@ -77,7 +77,7 @@
   "deploy": {
     "title": "Deploy an app",
     "app": "App name",
-    "image": "Public image",
+    "image": "Image",
     "imagePlaceholder": "nginx:1.27",
     "port": "Port",
     "replicas": "Replicas",

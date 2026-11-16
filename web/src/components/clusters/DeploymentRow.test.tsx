@@ -84,6 +84,32 @@ describe('DeploymentRow', () => {
     ).toBeInTheDocument()
   })
 
+  it('names the pull secret and links to the panel on a pull failure', async () => {
+    const pulling = {
+      ...crashing,
+      pods: [{ name: 'web-1', phase: 'Pending', reason: 'ImagePullBackOff' }],
+    }
+    vi.stubGlobal(
+      'fetch',
+      vi.fn(() =>
+        Promise.resolve(new Response(JSON.stringify(pulling), { status: 200 })),
+      ),
+    )
+    wrap(
+      <DeploymentRow
+        cluster="c1"
+        deployment={{ ...dep, pull_secret: 'ghcr-main' }}
+      />,
+    )
+    expect(
+      await screen.findByText('Pull failed with secret ghcr-main'),
+    ).toBeInTheDocument()
+    expect(screen.getByRole('link', { name: 'Pull secrets' })).toHaveAttribute(
+      'href',
+      '#pull-secrets',
+    )
+  })
+
   it('requires the typed app name before removing', async () => {
     const fetchMock = vi.fn((_u: string, init?: RequestInit) =>
       Promise.resolve(

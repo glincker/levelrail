@@ -29,6 +29,10 @@ export function DeploymentRow({
   const status = useDeploymentStatus(cluster, deployment.app)
   const s = status.data
   const bad = s && !s.ready ? crashPod(s.pods) : undefined
+  const pullFailed =
+    deployment.pull_secret !== undefined &&
+    deployment.pull_secret !== '' &&
+    (bad?.reason === 'ErrImagePull' || bad?.reason === 'ImagePullBackOff')
 
   return (
     <li className="flex flex-col gap-1 px-3 py-2 text-sm">
@@ -87,9 +91,22 @@ export function DeploymentRow({
           </span>
         ) : null}
       </div>
-      {bad?.message ? (
+      {bad?.message && !pullFailed ? (
         <p className="text-xs break-words text-muted-foreground">
           {bad.message}
+        </p>
+      ) : null}
+      {pullFailed ? (
+        <p className="flex flex-wrap items-center gap-x-2 text-xs text-destructive">
+          <span>
+            {t('deployment.pullFailed', { name: deployment.pull_secret })}
+          </span>
+          <a
+            href="#pull-secrets"
+            className="underline focus-visible:ring-2 focus-visible:ring-ring focus-visible:outline-none"
+          >
+            {t('deployment.pullSecretsLink')}
+          </a>
         </p>
       ) : null}
       {s && !s.ready && !bad && s.reason ? (
