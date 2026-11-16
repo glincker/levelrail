@@ -20,7 +20,8 @@ env:
 jobs:
   linux-packages:
     name: Build CLI deb and rpm
-    if: github.event_name == 'workflow_dispatch' || github.event.workflow_run.conclusion == 'success'
+    # Release can end red on an unrelated verify job after the assets are published, so accept success or failure.
+    if: github.event_name == 'workflow_dispatch' || github.event.workflow_run.conclusion == 'success' || github.event.workflow_run.conclusion == 'failure'
     runs-on: ubuntu-latest
     timeout-minutes: 15
     continue-on-error: true
