@@ -71,3 +71,45 @@ func TestClientGuardAndRedirect(t *testing.T) {
 		t.Error("redirect was followed")
 	}
 }
+
+func TestParseServerRejectsUserinfoQueryFragment(t *testing.T) {
+	for _, raw := range []string{"https://u:p@h:6443", "https://h:6443?x=1", "https://h:6443#f", "http://h", "https://h?"} {
+		if _, err := ParseServer(raw); err == nil {
+			t.Errorf("ParseServer(%q) accepted", raw)
+		} else if strings.Contains(err.Error(), "u:p") {
+			t.Errorf("error echoes credentials: %v", err)
+		}
+	}
+	if u, err := ParseServer("https://h:6443/prefix/"); err != nil || u.Path != "/prefix/" {
+		t.Fatalf("base path refused: %v", err)
+	}
+}
+
+func TestClientKeepsBasePathAndHonoursServerName(t *testing.T) {
+	srv := httptest.NewTLSServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		if r.URL.Path != "/prefix/version" {
+			w.WriteHeader(http.StatusNotFound)
+			return
+		}
+		_, _ = w.Write([]byte(`{}`))
+	}))
+	defer srv.Close()
+	guard := trafficpolicy.EgressGuard{AllowLoopback: true}
+	mk := func(serverName string) *Client {
+		creds := serverCreds(srv)
+		creds.Server += "/prefix"
+		creds.ServerName = serverName
+		c, err := NewClient(context.Background(), Config{Creds: creds, Guard: guard, Timeout: 5 * time.Second})
+		if err != nil {
+			t.Fatal(err)
+		}
+		return c
+	}
+	// The httptest certificate covers example.com, so a matching override verifies.
+	if _, err := mk("example.com").Do(context.Background(), "GET", "/version", nil); err != nil {
+		t.Fatalf("matching tls-server-name failed: %v", err)
+	}
+	if _, err := mk("wrong.invalid").Do(context.Background(), "GET", "/version", nil); err == nil || !strings.Contains(err.Error(), "tls verification failed") {
+		t.Fatalf("mismatched tls-server-name = %v, want tls failure", err)
+	}
+}

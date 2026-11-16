@@ -11,6 +11,7 @@ import (
 	"errors"
 	"fmt"
 	"math/big"
+	"strings"
 	"testing"
 	"time"
 )
@@ -94,5 +95,23 @@ func TestParseKubeconfig(t *testing.T) {
 	other := kubeconfigWith(ca, tok) + "- name: x\n  user:\n    exec: {command: aws}\n"
 	if _, err := ParseKubeconfig([]byte(other), "", 0); err != nil {
 		t.Errorf("unrelated exec user blocked import: %v", err)
+	}
+}
+
+func TestKubeconfigRefusesImpersonation(t *testing.T) {
+	_, err := ParseKubeconfig([]byte(kubeconfigWith("", "    token: t\n    as: admin")), "", 0)
+	if !errors.Is(err, ErrRefused) {
+		t.Fatalf("as = %v, want ErrRefused", err)
+	}
+}
+
+func TestKubeconfigCarriesTLSServerNameAndRefusesUserinfo(t *testing.T) {
+	c, err := ParseKubeconfig([]byte(kubeconfigWith("    tls-server-name: kube.internal", "    token: t")), "", 0)
+	if err != nil || c.ServerName != "kube.internal" {
+		t.Fatalf("server name = %q, %v", c.ServerName, err)
+	}
+	bad := strings.Replace(kubeconfigWith("", "    token: t"), "https://10.0.0.1", "https://u:p@10.0.0.1", 1)
+	if _, err := ParseKubeconfig([]byte(bad), "", 0); err == nil {
+		t.Fatal("userinfo server accepted")
 	}
 }

@@ -11,6 +11,7 @@ import (
 	"net"
 	"net/http"
 	"net/url"
+	"strings"
 	"time"
 
 	"github.com/GLINCKER/levelrail/internal/runtimesettings"
@@ -73,12 +74,25 @@ type StatusError struct{ Code int }
 
 func (e *StatusError) Error() string { return fmt.Sprintf("k8sconn: api server returned %d", e.Code) }
 
+// ParseServer accepts a plain https API server URL. Credentials, query and
+// fragment are refused so a secret can never be stored, audited or returned.
+func ParseServer(raw string) (*url.URL, error) {
+	u, err := url.Parse(raw)
+	if err != nil || u.Scheme != "https" || u.Hostname() == "" {
+		return nil, errors.New("k8sconn: server must be an https url")
+	}
+	if u.User != nil || u.RawQuery != "" || u.ForceQuery || u.Fragment != "" || strings.Contains(raw, "#") {
+		return nil, errors.New("k8sconn: server url must not carry credentials, a query or a fragment")
+	}
+	return u, nil
+}
+
 // NewClient checks the server address once and pins every dial to it, so a
 // DNS answer that changes later cannot redirect traffic to a refused host.
 func NewClient(ctx context.Context, cfg Config) (*Client, error) {
-	u, err := url.Parse(cfg.Creds.Server)
-	if err != nil || u.Scheme != "https" || u.Hostname() == "" {
-		return nil, errors.New("k8sconn: server must be an https url")
+	u, err := ParseServer(cfg.Creds.Server)
+	if err != nil {
+		return nil, err
 	}
 	res := cfg.Resolver
 	if res == nil {
@@ -111,6 +125,8 @@ func NewClient(ctx context.Context, cfg Config) (*Client, error) {
 	tr := &http.Transport{
 		Proxy:           nil,
 		TLSClientConfig: tlsCfg,
+		// One transport per client is never reused, so idle sockets would only leak.
+		DisableKeepAlives: true,
 		DialContext: func(ctx context.Context, network, _ string) (net.Conn, error) {
 			return dialer.DialContext(ctx, network, pinned)
 		},
@@ -129,7 +145,7 @@ func NewClient(ctx context.Context, cfg Config) (*Client, error) {
 			// A redirect would carry the bearer token to an unchecked host.
 			CheckRedirect: func(*http.Request, []*http.Request) error { return http.ErrUseLastResponse },
 		},
-		base:    "https://" + u.Host,
+		base:    "https://" + u.Host + strings.TrimRight(u.EscapedPath(), "/"),
 		token:   cfg.Creds.Token,
 		maxBody: limit,
 	}, nil

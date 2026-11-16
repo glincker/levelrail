@@ -144,6 +144,9 @@ func build(cl *rawCluster, us *rawUser) (Credentials, error) {
 	if out.Server == "" {
 		return Credentials{}, errors.New("k8sconn: cluster has no server")
 	}
+	if _, err := ParseServer(out.Server); err != nil {
+		return Credentials{}, err
+	}
 	var err error
 	if cl.CAData != "" {
 		if out.CA, err = decodePEM(cl.CAData); err != nil {
