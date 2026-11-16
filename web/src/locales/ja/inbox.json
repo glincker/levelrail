@@ -161,5 +161,14 @@
       "clearResolved_other": "解決済みの{{count}}件をクリアしました。",
       "deleteArchived_other": "アーカイブ済みの{{count}}件を削除しました。"
     }
+  },
+  "alertsPage": {
+    "emptyTitle": "アラートはまだありません",
+    "emptyBody": "証明書の期限が近い、ノードがオフラインになる、設定したルールが発火するとアラートが届きます。まず送信先を選んでください。",
+    "setup": "通知チャネルを設定",
+    "more": "その他のアラート設定",
+    "silences": "サイレンス",
+    "maintenance": "メンテナンス",
+    "back": "アラートに戻る"
   }
 }

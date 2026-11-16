@@ -189,5 +189,14 @@
       "deleteArchived_other": "{{count}} éléments archivés supprimés.",
       "deleteArchived_many": "{{count}} éléments archivés supprimés."
     }
+  },
+  "alertsPage": {
+    "emptyTitle": "Aucune alerte pour l'instant",
+    "emptyBody": "Les alertes arrivent quand un certificat approche de son expiration, qu'un nœud passe hors ligne ou qu'une de vos règles se déclenche. Choisissez d'abord où les envoyer.",
+    "setup": "Configurer les canaux de notification",
+    "more": "Autres réglages d'alertes",
+    "silences": "Silences",
+    "maintenance": "Maintenance",
+    "back": "Retour aux alertes"
   }
 }

@@ -175,5 +175,14 @@
       "deleteArchived_one": "{{count}} archivierten Eintrag gelöscht.",
       "deleteArchived_other": "{{count}} archivierte Einträge gelöscht."
     }
+  },
+  "alertsPage": {
+    "emptyTitle": "Noch keine Alarme",
+    "emptyBody": "Alarme erscheinen, wenn ein Zertifikat abläuft, ein Node offline geht oder eine Regel auslöst. Lege zuerst fest, wohin sie gesendet werden.",
+    "setup": "Benachrichtigungskanäle einrichten",
+    "more": "Weitere Alarmeinstellungen",
+    "silences": "Stummschaltungen",
+    "maintenance": "Wartung",
+    "back": "Zurück zu Alarmen"
   }
 }

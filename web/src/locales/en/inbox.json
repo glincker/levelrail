@@ -175,5 +175,14 @@
       "deleteArchived_one": "Deleted {{count}} archived item.",
       "deleteArchived_other": "Deleted {{count}} archived items."
     }
+  },
+  "alertsPage": {
+    "emptyTitle": "No alerts yet",
+    "emptyBody": "Alerts arrive when a certificate nears expiry, a node goes offline or a rule you set fires. Choose where they are sent first.",
+    "setup": "Set up notification channels",
+    "more": "More alert settings",
+    "silences": "Silences",
+    "maintenance": "Maintenance",
+    "back": "Back to alerts"
   }
 }

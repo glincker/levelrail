@@ -189,5 +189,14 @@
       "deleteArchived_many": "{{count}} itens arquivados excluídos.",
       "deleteArchived_other": "{{count}} itens arquivados excluídos."
     }
+  },
+  "alertsPage": {
+    "emptyTitle": "Nenhum alerta ainda",
+    "emptyBody": "Os alertas chegam quando um certificado está perto de expirar, um nó fica offline ou uma regra sua dispara. Escolha primeiro para onde enviá-los.",
+    "setup": "Configurar canais de notificação",
+    "more": "Mais ajustes de alertas",
+    "silences": "Silêncios",
+    "maintenance": "Manutenção",
+    "back": "Voltar aos alertas"
   }
 }

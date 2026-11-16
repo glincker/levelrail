@@ -175,5 +175,14 @@
       "deleteArchived_one": "Se eliminó {{count}} elemento archivado.",
       "deleteArchived_other": "Se eliminaron {{count}} elementos archivados."
     }
+  },
+  "alertsPage": {
+    "emptyTitle": "Aún no hay alertas",
+    "emptyBody": "Las alertas llegan cuando un certificado está por caducar, un nodo se desconecta o se activa una regla tuya. Elige primero adónde se envían.",
+    "setup": "Configurar canales de notificación",
+    "more": "Más ajustes de alertas",
+    "silences": "Silencios",
+    "maintenance": "Mantenimiento",
+    "back": "Volver a alertas"
   }
 }
