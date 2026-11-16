@@ -6,6 +6,8 @@
 
 - [Docs](https://docs.levelrail.com): hosted documentation
 - [Getting started](https://docs.levelrail.com/getting-started): install and first deploy
+- [All features](https://docs.levelrail.com/features): every feature by area with a stable, beta or experimental label
+- [FAQ](https://docs.levelrail.com/faq): short answers to common questions
 - [Feature status](https://docs.levelrail.com/feature-status): what is stable and what is beta
 - [Comparison](https://docs.levelrail.com/comparison): Levelrail against Coolify, Dokploy, CapRover, Dokku and Kamal
 
