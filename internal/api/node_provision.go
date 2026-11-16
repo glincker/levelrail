@@ -23,7 +23,7 @@ import (
 // nodeProviderNames are the providers this control plane knows how to
 // provision against. Adding a provider is a matter of an
 // internal/provision.Provisioner implementation plus a new entry here.
-var nodeProviderNames = []string{"hetzner", "digitalocean", "aws", "azure", "gcp"}
+var nodeProviderNames = []string{"hetzner", "digitalocean", "aws", "azure", "gcp", "oracle"}
 
 // unknownNodeProviderMessage is the shared "which providers exist" text
 // every unknown-provider validation error uses, derived from
@@ -100,6 +100,8 @@ func (rt *Router) defaultNodeProvisionerFactory(provider, token string) (NodePro
 		return provision.NewAzure(token)
 	case "gcp":
 		return provision.NewGCP(token)
+	case "oracle":
+		return rt.newOracleProvisioner(token)
 	default:
 		return nil, fmt.Errorf("unknown provider %q", provider)
 	}

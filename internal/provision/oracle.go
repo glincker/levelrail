@@ -87,6 +87,13 @@ func NewOracle(cred OracleCredential, settings OracleSettings) (*Oracle, error) 
 	return newOracle(cred, settings, "", "", false)
 }
 
+// NewOracleWithEndpoints points the driver at explicit plain HTTP base URLs.
+// Only Go callers can reach it, so tests can use a local fake without a
+// config switch that could redirect signed requests.
+func NewOracleWithEndpoints(cred OracleCredential, settings OracleSettings, iaasBase, identityBase string) (*Oracle, error) {
+	return newOracle(cred, settings, iaasBase, identityBase, true)
+}
+
 func newOracle(cred OracleCredential, settings OracleSettings, iaasBase, identityBase string, insecure bool) (*Oracle, error) {
 	for field, v := range map[string]string{
 		"tenancy": cred.TenancyOCID, "user": cred.UserOCID, "compartment": cred.CompartmentOCID,

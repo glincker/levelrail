@@ -1,8 +1,13 @@
 package api
 
 import (
+	"encoding/json"
+	"errors"
+	"regexp"
+
 	"context"
 	"fmt"
+	"github.com/GLINCKER/levelrail/internal/cloudconn"
 	"os"
 	"strconv"
 	"strings"
@@ -143,4 +148,63 @@ func (rt *Router) oraclePendingUse(ctx context.Context) (provision.OracleUsage, 
 		}
 	}
 	return out, nil
+}
+
+var oracleSubnetOCIDRe = regexp.MustCompile(`^ocid1\.subnet\.[a-z0-9]+\.[a-z0-9-]*\.[a-z0-9]+$`)
+
+// oracleStoredCredential is the one JSON value sealed for the oracle
+// provider. It is never logged or returned.
+type oracleStoredCredential struct {
+	TenancyOCID     string `json:"tenancy_ocid"`
+	UserOCID        string `json:"user_ocid"`
+	Fingerprint     string `json:"fingerprint"`
+	PrivateKeyPEM   string `json:"private_key_pem"`
+	Region          string `json:"region"`
+	CompartmentOCID string `json:"compartment_ocid"`
+	SubnetOCID      string `json:"subnet_ocid"`
+}
+
+// oracleCredentialValue validates the API key fields with the cloud
+// connection validators (shapes, key strength, fingerprint recomputed from
+// the key) and returns the JSON to seal. Messages never echo input.
+func oracleCredentialValue(req setNodeProviderCredentialRequest) (value, msg string) {
+	if req.PrivateKeyPEM == "" || req.TenancyOCID == "" || req.UserOCID == "" || req.Fingerprint == "" || req.CompartmentOCID == "" || req.Region == "" {
+		return "", "tenancy_ocid, user_ocid, fingerprint, private_key_pem, region and compartment_ocid are required"
+	}
+	if !oracleSubnetOCIDRe.MatchString(req.SubnetOCID) {
+		return "", "subnet_ocid is required and must be a subnet OCID"
+	}
+	cred := cloudconn.OracleCredential{
+		TenancyOCID: req.TenancyOCID, CompartmentOCID: req.CompartmentOCID, Region: req.Region,
+		Secret: cloudconn.NewOracleSecret(req.UserOCID, req.Fingerprint, []byte(req.PrivateKeyPEM)),
+	}
+	if err := cloudconn.ValidateOracle(cred); err != nil {
+		return "", "the Oracle credential is not valid: " + sanitizeProviderErr(err)
+	}
+	encoded, err := json.Marshal(oracleStoredCredential{
+		TenancyOCID: req.TenancyOCID, UserOCID: req.UserOCID, Fingerprint: req.Fingerprint, PrivateKeyPEM: req.PrivateKeyPEM,
+		Region: req.Region, CompartmentOCID: req.CompartmentOCID, SubnetOCID: req.SubnetOCID,
+	}) //nolint:gosec // sealed by nodeProviderSecrets.SetValue, never logged or returned
+	if err != nil {
+		return "", "internal error"
+	}
+	return string(encoded), ""
+}
+
+// newOracleProvisioner builds the driver from the sealed JSON, reading the
+// Oracle tunables live.
+func (rt *Router) newOracleProvisioner(token string) (NodeProvisioner, error) {
+	var c oracleStoredCredential
+	if err := json.Unmarshal([]byte(token), &c); err != nil {
+		return nil, errors.New("the stored Oracle credential is not readable")
+	}
+	cred := provision.OracleCredential{
+		TenancyOCID: c.TenancyOCID, UserOCID: c.UserOCID, Fingerprint: c.Fingerprint, PrivateKeyPEM: c.PrivateKeyPEM,
+		CompartmentOCID: c.CompartmentOCID, SubnetOCID: c.SubnetOCID, Region: c.Region,
+	}
+	settings := rt.oracleSettings(context.Background())
+	if rt.oracleTestBase != "" {
+		return provision.NewOracleWithEndpoints(cred, settings, rt.oracleTestBase, rt.oracleTestBase)
+	}
+	return provision.NewOracle(cred, settings)
 }

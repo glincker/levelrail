@@ -27,6 +27,7 @@ const (
 	methodWorkloadIdentityFederation = "workload_identity_federation"
 	methodServiceAccountJSON         = "service_account_json"
 	methodManual                     = "manual"
+	methodAPIKey                     = "api_key"
 	nodeProviderTestTimeout          = 20 * time.Second
 	nodeProviderStatusConnected      = "connected"
 	nodeProviderStatusNotConnected   = "not_connected"
@@ -43,6 +44,7 @@ var nodeProviderMethods = map[string][]string{
 	"aws":              {methodAccessKey, methodAssumeRole, methodAmbient},
 	"azure":            {methodServiceAccountJSON, methodWorkloadIdentityFederation},
 	"gcp":              {methodServiceAccountJSON},
+	"oracle":           {methodAPIKey},
 	nodeProviderCustom: {methodManual},
 }
 
@@ -54,6 +56,7 @@ var nodeProviderTestPermissions = map[string]string{
 	"aws":          "ec2:DescribeRegions, ec2:DescribeInstanceTypes, ec2:DescribeInstances, ec2:RunInstances, ec2:TerminateInstances, ec2:CreateTags, ec2:DescribeImages and the security group and VPC actions; for assume_role the base identity needs sts:AssumeRole on the role",
 	"azure":        "Reader on the subscription plus Virtual Machine Contributor and Network Contributor on the resource group",
 	"gcp":          "compute.regions.list, compute.machineTypes.list, compute.instances.create, compute.instances.get, compute.instances.delete",
+	"oracle":       "manage instance-family, use or manage virtual-network-family, read app-catalog-listing and inspect compartments, all in the compartment; read instances in tenancy only if the tenancy-wide allowance count is wanted",
 }
 
 func methodAllowed(provider, method string) bool {
@@ -167,6 +170,13 @@ type setNodeProviderCredentialRequest struct {
 	Label                 string `json:"label,omitempty"`
 	Location              string `json:"location,omitempty"`
 	Notes                 string `json:"notes,omitempty"`
+	// Oracle API key fields. PrivateKeyPEM is sealed with the rest and never returned.
+	TenancyOCID     string `json:"tenancy_ocid,omitempty"`
+	UserOCID        string `json:"user_ocid,omitempty"`
+	Fingerprint     string `json:"fingerprint,omitempty"`
+	PrivateKeyPEM   string `json:"private_key_pem,omitempty"`
+	CompartmentOCID string `json:"compartment_ocid,omitempty"`
+	SubnetOCID      string `json:"subnet_ocid,omitempty"`
 }
 
 // inferNodeProviderMethod keeps older clients that send no method working.
@@ -192,6 +202,8 @@ func inferNodeProviderMethod(req setNodeProviderCredentialRequest) string {
 		return methodServiceAccountJSON
 	case "gcp":
 		return methodServiceAccountJSON
+	case "oracle":
+		return methodAPIKey
 	case nodeProviderCustom:
 		return methodManual
 	default:
@@ -213,6 +225,8 @@ func nodeProviderCredentialValue(req setNodeProviderCredentialRequest) (value, m
 		return awsCredentialValue(req)
 	case methodServiceAccountJSON, methodWorkloadIdentityFederation:
 		return jsonCredentialValue(req)
+	case methodAPIKey:
+		return oracleCredentialValue(req)
 	default:
 		return "", "unsupported method"
 	}
