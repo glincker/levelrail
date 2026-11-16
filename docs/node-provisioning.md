@@ -1,6 +1,6 @@
 ---
 title: "Node provisioning"
-description: "Create a server at Hetzner, DigitalOcean, AWS, Azure or GCP and enroll it as a node, with the credential each needs, status polling, cost and known gaps."
+description: "Create a server at Hetzner, DigitalOcean, AWS, Azure, GCP or Oracle Cloud and enroll it as a node, with the credential each needs, status polling, cost and known gaps."
 "og:url": "https://docs.levelrail.com/node-provisioning"
 ---
 
@@ -139,6 +139,39 @@ A service account JSON key with the **Compute Instance Admin** role on the proje
 GCP has no workload identity federation mode. Google's `external_account` credential format has no `project_id` field, so the project cannot be read reliably from it. Supporting it would mean adding a GCP-specific field next to Google's file format, which would end the "paste the key as-is" behavior.
 
 </Tab>
+<Tab title="Oracle Cloud">
+
+Oracle uses an API signing key, not a bearer token. Create a dedicated user in its own group, give the group only the policy below, and add an API key to that user. Oracle shows the key fingerprint once you upload the public key.
+
+```text
+Allow group levelrail-provisioners to manage instance-family in compartment <name>
+Allow group levelrail-provisioners to manage virtual-network-family in compartment <name>
+Allow group levelrail-provisioners to read app-catalog-listing in tenancy
+```
+
+Connect it with the private key from a file or stdin. The key is never a flag value and is never echoed back:
+
+```bash
+levelrail-cli nodes providers connect --provider oracle \
+  --tenancy-ocid ocid1.tenancy... --user-ocid ocid1.user... \
+  --fingerprint aa:bb:... --key-file ./levelrail-oci.pem \
+  --region eu-frankfurt-1 --compartment-ocid ocid1.compartment... \
+  --subnet-ocid ocid1.subnet...
+```
+
+`--subnet-ocid` is optional. List what you can create, then create with a size id (Flex shapes carry their OCPU and memory in the id):
+
+```bash
+levelrail-cli nodes providers sizes --provider oracle --region eu-frankfurt-1
+levelrail-cli nodes provision --provider oracle --region eu-frankfurt-1 \
+  --size VM.Standard.A1.Flex:1:6 --name oci-1
+```
+
+Oracle provisioning is off until you turn on the `provision.oracle.enabled` setting, and it stays off by default. The Ampere A1 allowance settings `provision.oracle.max_a1_ocpu` and `provision.oracle.max_a1_memory_gb` default to 0, which refuses every A1 create until you raise them to what your tenancy allows. `provision.oracle.max_e2_micro` works the same way for micro instances, and other shapes need `provision.oracle.allow_paid_shapes`. Levelrail never claims a shape is free: Oracle's API does not mark one, so check your tenancy limits and pair this with a compartment quota. See [Install on Oracle Cloud](/install-on-oracle-cloud) for the quota and budget steps.
+
+To remove a server, run `levelrail-cli nodes provisions destroy <provision-id> --yes`. To remove access, run `levelrail-cli nodes providers disconnect --provider oracle` and delete the API key from the Oracle user.
+
+</Tab>
 </Tabs>
 
 ## Connection methods
@@ -151,6 +184,7 @@ Each provider offers only the methods the control plane can use today. Pick one 
 | `access_key` | AWS | Access key id and secret | `ec2:DescribeRegions`, `DescribeInstanceTypes`, `DescribeInstances`, `DescribeImages`, `RunInstances`, `TerminateInstances`, `CreateTags` and the security group and VPC actions |
 | `assume_role` | AWS | Role ARN, plus a base key or the control plane identity | Base identity: `sts:AssumeRole` on the role only. The role carries the EC2 actions above |
 | `ambient` | AWS | Nothing | The control plane's own identity (instance profile) needs the EC2 actions |
+| `api_key` | Oracle Cloud | Tenancy and user OCIDs, fingerprint, private key, region, compartment | The policy above on one compartment only |
 | `service_account_json` | Azure, GCP | Service principal or service account JSON | Azure: Reader on the subscription, Virtual Machine Contributor and Network Contributor on the resource group. GCP: `compute.regions.list`, `compute.machineTypes.list`, `compute.instances.create`, `get`, `delete` |
 | `workload_identity_federation` | Azure | JSON with `federated_token_file`, no client secret | Same Azure roles as above |
 | `manual` | Custom data center | Name, location and notes only | None, no cloud API is called |
