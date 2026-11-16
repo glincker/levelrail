@@ -12,10 +12,11 @@ import { nodeProviderBrand } from '../../lib/providerBrands'
 import { SectionTitle } from '@/components/ui/typography'
 
 export type CloudProviderId =
-  'hetzner' | 'digitalocean' | 'aws' | 'azure' | 'gcp' | 'oracle'
+  'hetzner' | 'vultr' | 'digitalocean' | 'aws' | 'azure' | 'gcp' | 'oracle'
 
 const CLOUD_PROVIDERS: readonly CloudProviderId[] = [
   'hetzner',
+  'vultr',
   'digitalocean',
   'aws',
   'azure',
@@ -25,6 +26,7 @@ const CLOUD_PROVIDERS: readonly CloudProviderId[] = [
 
 const NAME_KEYS = {
   hetzner: 'nodeProviders.names.hetzner',
+  vultr: 'nodeProviders.names.vultr',
   digitalocean: 'nodeProviders.names.digitalocean',
   aws: 'nodeProviders.names.aws',
   azure: 'nodeProviders.names.azure',
@@ -34,6 +36,7 @@ const NAME_KEYS = {
 
 const HINT_KEYS = {
   hetzner: 'nodeProviders.hints.hetzner',
+  vultr: 'nodeProviders.hints.vultr',
   digitalocean: 'nodeProviders.hints.digitalocean',
   aws: 'nodeProviders.hints.aws',
   azure: 'nodeProviders.hints.azure',
