@@ -224,6 +224,7 @@ These variables only seed the default of a [runtime setting](/runtime-settings).
 | `APP_BOOT_RECHECKS` | [`boot.rechecks`](/runtime-settings#deploys) | `3s:10s` |
 | `APP_BOOTSTRAP_SCRIPT_MAX_BYTES` | [`bootstrap_scripts.max_bytes`](/runtime-settings#deploys) | `65536` |
 | `APP_BOOTSTRAP_SCRIPT_MAX_COUNT` | [`bootstrap_scripts.max_count`](/runtime-settings#deploys) | `50` |
+| `APP_BUILDKIT_PIDS_LIMIT` | [`build.buildkitd_pids_limit`](/runtime-settings#deploys) | `4096` |
 | `APP_BUILD_CACHE_APP_QUOTA_GB` | [`build.cache_app_quota_gb`](/runtime-settings#deploys) | `0` |
 | `APP_BUILD_CACHE_BUDGET` | [`build.cache_budget`](/runtime-settings#deploys) | `auto` |
 | `APP_BUILDKIT_GC_KEEP_MB` | [`build.cache_budget_max_mb`](/runtime-settings#deploys) | `0` |
@@ -231,6 +232,8 @@ These variables only seed the default of a [runtime setting](/runtime-settings).
 | `APP_BUILD_CACHE_PER_APP` | [`build.cache_per_app`](/runtime-settings#deploys) | `true` |
 | `APP_BUILD_CACHE_RECLAIM_MAX_RECORDS` | [`build.cache_reclaim_max_records`](/runtime-settings#deploys) | `50` |
 | `APP_BUILD_CACHE_RECLAIM_TIMEOUT` | [`build.cache_reclaim_timeout`](/runtime-settings#deploys) | `2m` |
+| `APP_BUILD_CPU_PERCENT` | [`build.cpu_percent`](/runtime-settings#deploys) | `75` |
+| `APP_BUILD_MEMORY_PERCENT` | [`build.memory_percent`](/runtime-settings#deploys) | `75` |
 | `APP_BUILD_NEXT_MIN_FREE_MEMORY_MIB` | [`build.next_min_free_memory_mib`](/runtime-settings#deploys) | `2048` |
 | `APP_BUILD_QUEUE_AUTO_RESUME_AFTER` | [`build.queue_auto_resume_after`](/runtime-settings#deploys) | `0s` |
 | `APP_BUILD_QUEUE_PAUSED_WARN_AFTER` | [`build.queue_paused_warn_after`](/runtime-settings#deploys) | `1h` |
@@ -577,6 +580,10 @@ These variables only seed the default of a [runtime setting](/runtime-settings).
 | `APP_ONBOARDING_ENABLED` | [`onboarding.enabled`](/runtime-settings#experimental) | `true` |
 | `APP_ONBOARDING_RESTORE_REMINDER_DAYS` | [`onboarding.restore_reminder_days`](/runtime-settings#experimental) | `7` |
 | `APP_PROVISION_ALLOW_UNKNOWN_PRICE` | [`provision.allow_unknown_price`](/runtime-settings#experimental) | `false` |
+| `APP_PROVISION_CAPABILITIES_CACHE_TTL_SECONDS` | [`provision.capabilities.cache_ttl_seconds`](/runtime-settings#experimental) | `900` |
+| `APP_PROVISION_CAPABILITIES_PROBE_CONCURRENCY` | [`provision.capabilities.probe_concurrency`](/runtime-settings#experimental) | `4` |
+| `APP_PROVISION_CAPABILITIES_RECHECK_INTERVAL_MINUTES` | [`provision.capabilities.recheck_interval_minutes`](/runtime-settings#experimental) | `360` |
+| `APP_PROVISION_CAPABILITIES_REFRESH_MIN_INTERVAL_SECONDS` | [`provision.capabilities.refresh_min_interval_seconds`](/runtime-settings#experimental) | `60` |
 | `APP_NODE_PROVISION_TIMEOUT` | [`provision.enroll_timeout`](/runtime-settings#experimental) | `20m` |
 | `APP_PROVISION_EUR_TO_USD_RATE` | [`provision.eur_to_usd_rate`](/runtime-settings#experimental) | `1.10` |
 | `APP_PROVISION_MAX_MONTHLY_PRICE_USD` | [`provision.max_monthly_price_usd`](/runtime-settings#experimental) | `25` |
@@ -595,6 +602,10 @@ These variables only seed the default of a [runtime setting](/runtime-settings).
 | `APP_PROVISION_ORACLE_MAX_BOOT_VOLUME_GB` | [`provision.oracle.max_boot_volume_gb`](/runtime-settings#experimental) | `200` |
 | `APP_PROVISION_ORACLE_MAX_E2_MICRO` | [`provision.oracle.max_e2_micro`](/runtime-settings#experimental) | `0` |
 | `APP_PROVISION_ORACLE_VCN_CIDR` | [`provision.oracle.vcn_cidr`](/runtime-settings#experimental) | `10.0.0.0/16` |
+| `APP_PROVISION_RESOURCES_CACHE_TTL_SECONDS` | [`provision.resources.cache_ttl_seconds`](/runtime-settings#experimental) | `60` |
+| `APP_PROVISION_RESOURCES_REFRESH_MIN_INTERVAL_SECONDS` | [`provision.resources.refresh_min_interval_seconds`](/runtime-settings#experimental) | `15` |
+| `APP_PROVISION_SPEND_CACHE_TTL_SECONDS` | [`provision.spend.cache_ttl_seconds`](/runtime-settings#experimental) | `3600` |
+| `APP_PROVISION_SPEND_REFRESH_MIN_INTERVAL_SECONDS` | [`provision.spend.refresh_min_interval_seconds`](/runtime-settings#experimental) | `300` |
 | `APP_UPDATE_CHANNELS_OFFERED` | [`updates.offered_channels`](/runtime-settings#experimental) | `stable` |
 <!-- runtime-settings:end -->
 

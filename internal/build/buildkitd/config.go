@@ -84,6 +84,8 @@ type Config struct {
 	// MirrorPrefix returns the live registry.mirror_prefix at reconcile time.
 	// Nil keeps the env seeded image.
 	MirrorPrefix func(context.Context) string
+	// PidsLimit returns the live build.buildkitd_pids_limit at reconcile time; nil or 0 sets no limit.
+	PidsLimit func(context.Context) int
 }
 
 // SocketAddr is the unix address a BuildKit client dials.

@@ -46,6 +46,7 @@ type Supervisor struct {
 	retryAt      time.Time
 	upgradeSince time.Time
 	image        string
+	pids         int64
 }
 
 // imageRef is the live mirrored image once reconcile ran, else the seeded one.
@@ -157,6 +158,10 @@ func (s *Supervisor) reconcile(ctx context.Context) error {
 	if s.cfg.MirrorPrefix != nil {
 		s.image = registrymirror.Apply(s.cfg.Image, s.cfg.MirrorPrefix(ctx))
 	}
+	s.pids = 0
+	if s.cfg.PidsLimit != nil {
+		s.pids = int64(max(s.cfg.PidsLimit(ctx), 0))
+	}
 	if err := s.rt.EnsureVolume(ctx, VolumeName); err != nil {
 		return fmt.Errorf("buildkitd: state volume: %w", err)
 	}
@@ -256,6 +261,7 @@ func (s *Supervisor) spec() docker.ContainerSpec {
 		Name:        ContainerName,
 		Image:       s.imageRef(),
 		NetworkMode: "none",
+		PidsLimit:   s.pids,
 		Labels:      map[string]string{"levelrail.managed": "true", "levelrail.role": "buildkitd"},
 		Command: []string{
 			"buildkitd", "--addr", "unix://" + containerSocketDir + "/" + socketName,
