@@ -4,6 +4,79 @@ description: Every Levelrail release with highlights, fixes and upgrade notes.
 "og:url": "https://docs.levelrail.com/changelog"
 ---
 
+<Update label="1.3.1" description="2026-11-16">
+**Features**
+
+* **auth:** optional hold for sign-ins with no other live session
+* **auth:** policy toggle, CLI flag and docs for holding sign-ins without another session
+* bind and unbind connections from the Delivery strip and integration cards with inherited org defaults
+* blurred sticky top bar that separates from scrolled content
+* build queue controls in the dashboard
+* build queue pause, drain, resume and kill-all controls
+* build runner choice by capacity, pressure, architecture and labels, runners API and CLI
+* build runners panel, run header runner badge and per-app runner preference
+* build stage graph, stacked run sections, run actions and live feedback on the deploy run view
+* cli reuses saved logins, adds whoami, repo profile pointer and trusted device id
+* connection binding writes with scope checks
+* connection sidecar and bindings tables for the integrations hub
+* connections bind, unbind and bindings in the CLI with org default and scope tests
+* detect firewalld, ufw, shadowed and missing nft table for the mesh DNS accept
+* Docker Hub connection with token status and pull limits
+* egress dry run report from the mesh DNS query log
+* forward public DNS names from the mesh resolver and keep a fail open fallback
+* git credential health with OAuth auto-renew, expiry alerts and GitLab token rotation
+* Gitea and Forgejo OAuth app creation, idempotent webhooks, owner listing and real access view
+* guided connect panel for GitLab, Gitea, Forgejo and Bitbucket with redirect copy, scopes, app page link, inline checks and token fallback
+* hold image pulls under host pressure and label protection states in the dashboard
+* integrations hub page with connection cards, catalogue and create entry
+* integrations hub read model with connections and app bindings API
+* keep the builder cache within a size budget after each build
+* language menu with flags and native names
+* Levelrail v1.3.1
+* levelrail-cli connections list, show and catalog for the integrations hub
+* name the builder in the preview note and document the merge request note
+* per-app Delivery tab with pipeline and integrations timeline
+* PKCE S256 on the GitLab, Gitea and Forgejo OAuth connect flows
+* provider access cards, access and scope panel and connect drawer for git providers
+* raise an attention row while the token grace sweep keeps failing
+* record build stages as trace steps with per-stage log tail, API and CLI
+* record deploys refused by the node capacity guard so they show in history, overview and attention
+* render ANSI colours in log viewer on an always dark terminal surface
+* report deploys to GitLab Deployments and Environments
+* rotate git tokens and show auto-renew status in the dashboard
+* run page opens with the section nav and puts diagnosis in Summary
+* shared code and log colour palette tokens, token driven scrollbars
+* shared object card anatomy for integrations, git methods and token pages
+* show forge commit statuses and connection bindings on the app timeline
+* show what a git connection can do with a per-capability access view
+* store commit statuses posted to git forges per app and commit
+* token expiry badges and rotate with a one-time secret in the dashboard
+* token expiry reminders and rotation with a grace period
+
+
+**Bug Fixes**
+
+* correct brand and kind icons across integration, registry and notification lists
+* delivery failing post flag follows the error part, not the status
+* **deps:** update Go modules to clear known vulnerabilities
+* **deps:** update remaining Go dependencies
+* **deps:** update web dependencies to clear known vulnerabilities
+* harden token rotation (one pending rotation per token, recheck after mint, current abilities and lifetime limits)
+* keep build cache keys stable when build limits are set
+* keep retained deploy copies out of an app's member set so scoped CI tokens still reach it
+* map the dns name IaC error codes to messages in the dashboard
+* name a container that exits right away and hide the build log link for deploys with no build
+* never send null for Go nil slices and maps in API responses, guard list endpoints against it
+* never send saved credentials to an address that came only from the repo pointer
+* register GitLab tag push events and keep the source connected when webhook registration fails
+* revoke the token a forced login replaces, name the next step on 401, show expiry in days
+* run the DNS response guard per caller and keep the shared cache unfiltered
+* scope deployments summary like the list, count failed apps as needing attention, and title a first deploy correctly
+* send credentials only to addresses the user saved or typed
+* tie connection bindings and scope to the app and org they belong to
+* type-safe git guide hints, quiet missing app header and show the Ctrl+Enter hint
+</Update>
+
 <Update label="1.3.0" description="2026-11-15">
 **Features**
 
