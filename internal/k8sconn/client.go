@@ -11,17 +11,16 @@ import (
 	"net"
 	"net/http"
 	"net/url"
-	"os"
-	"strconv"
 	"time"
 
+	"github.com/GLINCKER/levelrail/internal/runtimesettings"
 	"github.com/GLINCKER/levelrail/internal/trafficpolicy"
 )
 
-// Env switches seeding the per-request limits.
+// Fallbacks for callers that build a Config without live limits.
 const (
-	EnvTimeoutSeconds = "APP_K8S_REQUEST_TIMEOUT_SECONDS"
-	EnvMaxBodyBytes   = "APP_K8S_MAX_BODY_BYTES"
+	defaultMaxBody = 8 << 20
+	defaultTimeout = 15 * time.Second
 )
 
 // Config describes one cluster connection.
@@ -33,19 +32,32 @@ type Config struct {
 	MaxBody  int64
 }
 
-// LimitsFromEnv returns the request timeout and body cap.
-func LimitsFromEnv(getenv func(string) string) (time.Duration, int64) {
-	if getenv == nil {
-		getenv = os.Getenv
+// Limits are the live runtime settings that bound one cluster call.
+type Limits struct {
+	Timeout       time.Duration
+	MaxBody       int64
+	KubeconfigMax int
+}
+
+// SettingsReader is the slice of the runtime settings service k8sconn needs.
+type SettingsReader interface {
+	Limit(ctx context.Context, key string) int
+	Duration(ctx context.Context, key string) time.Duration
+	Bool(ctx context.Context, key string) bool
+}
+
+// LoadLimits reads the limits live, so a settings change applies to the next call.
+func LoadLimits(ctx context.Context, s SettingsReader) Limits {
+	return Limits{
+		Timeout:       s.Duration(ctx, runtimesettings.KeyK8sRequestTimeout),
+		MaxBody:       int64(s.Limit(ctx, runtimesettings.KeyK8sMaxBodyBytes)),
+		KubeconfigMax: s.Limit(ctx, runtimesettings.KeyK8sKubeconfigMaxBytes),
 	}
-	t, b := 15, int64(8<<20)
-	if n, err := strconv.Atoi(getenv(EnvTimeoutSeconds)); err == nil && n > 0 {
-		t = n
-	}
-	if n, err := strconv.ParseInt(getenv(EnvMaxBodyBytes), 10, 64); err == nil && n > 0 {
-		b = n
-	}
-	return time.Duration(t) * time.Second, b
+}
+
+// AllowPrivateAPI reports whether private and loopback API servers may be dialed.
+func AllowPrivateAPI(ctx context.Context, s SettingsReader) bool {
+	return s.Bool(ctx, runtimesettings.KeyK8sAllowPrivateAPI)
 }
 
 // Client talks to one API server through a pinned, guard-checked address.
@@ -103,13 +115,12 @@ func NewClient(ctx context.Context, cfg Config) (*Client, error) {
 			return dialer.DialContext(ctx, network, pinned)
 		},
 	}
-	limit := cfg.MaxBody
+	limit, timeout := cfg.MaxBody, cfg.Timeout
 	if limit <= 0 {
-		_, limit = LimitsFromEnv(nil)
+		limit = defaultMaxBody
 	}
-	timeout := cfg.Timeout
 	if timeout <= 0 {
-		timeout, _ = LimitsFromEnv(nil)
+		timeout = defaultTimeout
 	}
 	return &Client{
 		http: &http.Client{

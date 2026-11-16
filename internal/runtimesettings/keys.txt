@@ -301,6 +301,14 @@ ingress.proxy_cert_wait
 ingress.trusted_proxy_preset
 ingress.unmatched_mode
 ingress.unmatched_redirect_url
+k8s.allow_private_api
+k8s.clusters_enabled
+k8s.in_cluster_enabled
+k8s.kubeconfig_max_bytes
+k8s.log_tail_lines_max
+k8s.max_body_bytes
+k8s.request_timeout
+k8s.status_poll_interval
 log_rules.eval_interval
 log_rules.max_rows
 log_rules.max_window

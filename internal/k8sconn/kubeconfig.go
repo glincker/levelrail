@@ -6,16 +6,11 @@ import (
 	"encoding/base64"
 	"errors"
 	"fmt"
-	"os"
-	"strconv"
 
 	"gopkg.in/yaml.v3"
 )
 
-// EnvKubeconfigMaxBytes seeds the uploaded kubeconfig size cap.
-const EnvKubeconfigMaxBytes = "APP_K8S_KUBECONFIG_MAX_BYTES"
-
-const defaultKubeconfigMaxBytes = 1 << 20
+const defaultKubeconfigMaxBytes = 64 << 10
 
 // ErrRefused marks a kubeconfig field Levelrail will not honour.
 var ErrRefused = errors.New("k8sconn: kubeconfig field refused")
@@ -70,17 +65,6 @@ type rawUser struct {
 	Username       string         `yaml:"username"`
 	Password       string         `yaml:"password"`
 	Impersonate    string         `yaml:"as"`
-}
-
-// KubeconfigMaxBytes reads the size cap, falling back to 1 MiB.
-func KubeconfigMaxBytes(getenv func(string) string) int {
-	if getenv == nil {
-		getenv = os.Getenv
-	}
-	if n, err := strconv.Atoi(getenv(EnvKubeconfigMaxBytes)); err == nil && n > 0 {
-		return n
-	}
-	return defaultKubeconfigMaxBytes
 }
 
 // ParseKubeconfig reduces one context (empty means current-context) to inline
