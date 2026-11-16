@@ -6,7 +6,7 @@ The Terraform and OpenTofu registries need a repository named `terraform-provide
 
 ## Files
 
-- `../.goreleaser.yml`: builds linux, darwin, windows and freebsd (amd64, arm64; no windows/arm64), CGO off, `-trimpath`, version injected into `main.version`, zip archives, a SHA256SUMS file signed with GPG, draft releases, no changelog (release-please owns it).
+- `../.goreleaser.yml`: builds linux, darwin, windows and freebsd (amd64, arm64; no windows/arm64), CGO off, `-trimpath`, version injected into `main.version`, zip archives, a SHA256SUMS file signed with GPG, published releases (draft: false), no changelog (release-please owns it).
 - `../terraform-registry-manifest.json`: protocol 6.0 (the provider uses terraform-plugin-framework and serves protocol 6).
 - `mirror-sync.sh`: copies the provider files into a clone of the mirror and tags it. Dry run by default, `--yes` to act, refuses any origin except the mirror repo, copies no history and no other directory.
 - `workflow.yml.example`: the release workflow for the mirror. It lives here as a template; the monorepo workflows are not touched.
@@ -25,10 +25,10 @@ The Terraform and OpenTofu registries need a repository named `terraform-provide
 The release workflow now runs these steps itself (job `publish-terraform-mirror`) once the repository secret `TF_MIRROR_DEPLOY_KEY` holds a write deploy key for the mirror. It skips when the provider did not change since the previous tag. The manual steps below stay as the fallback.
 
 1. Bump the version through the release-please trailer in the monorepo release flow; note the provider version.
-2. Clone the mirror and dry run: `release/mirror-sync.sh --clone <path> --version X.Y.Z`.
+2. Bump `../VERSION` (the provider semver, independent of the monorepo tag) when the provider changed. Clone the mirror and dry run: `release/mirror-sync.sh --clone <path>` (the version comes from `../VERSION`).
 3. Read the output, then run it again with `--yes`. It commits, tags `vX.Y.Z` and pushes to the mirror.
-4. The tag triggers the workflow. goreleaser builds and signs, and leaves a draft GitHub release.
-5. Review the draft, publish it. The registry webhook picks up the new version.
+4. The tag triggers the workflow. goreleaser builds, signs and publishes the GitHub release.
+5. The registry webhook picks up the new version. Check the release assets (SHA256SUMS, .sig, manifest).
 6. Check `terraform init` from a clean directory against the registry.
 
 ## Docs generation
