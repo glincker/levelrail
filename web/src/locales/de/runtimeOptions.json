@@ -14,14 +14,20 @@
     "label": "Zusätzliche Hosts",
     "hint": "Einer pro Zeile, hostname:ip. Bis zu {{max}}."
   },
-  "dns": { "label": "DNS-Server", "hint": "Eine IP pro Zeile. Bis zu {{max}}." },
+  "dns": {
+    "label": "DNS-Server",
+    "hint": "Eine IP pro Zeile. Bis zu {{max}}."
+  },
   "sysctls": {
     "label": "Sysctls",
     "hint": "Eines pro Zeile, key=value. Erlaubt: {{names}}."
   },
   "stopTimeout": { "label": "Stopp-Timeout (s)", "hint": "Bis zu {{max}}." },
   "pids": { "label": "Prozesslimit", "hint": "Bis zu {{max}}." },
-  "init": { "label": "Init-Prozess", "hint": "Einen minimalen Init als PID 1 ausführen." },
+  "init": {
+    "label": "Init-Prozess",
+    "hint": "Einen minimalen Init als PID 1 ausführen."
+  },
   "badUlimit": "Verwenden Sie in jeder Zeile name=soft oder name=soft:hard.",
   "badSysctl": "Verwenden Sie in jeder Zeile key=value.",
   "save": "Speichern",

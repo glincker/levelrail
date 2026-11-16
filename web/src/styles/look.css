@@ -2,11 +2,19 @@
 
 /* Field focus, both looks: accent border plus a soft halo, instant, never a thick ring. */
 :is(
-    input:not([type='checkbox'], [type='radio'], [type='range'], [type='button'], [type='submit'], [type='file'], [data-bare]),
-    textarea,
-    select,
-    [data-slot='select-trigger']
-  ):focus-visible {
+  input:not(
+    [type='checkbox'],
+    [type='radio'],
+    [type='range'],
+    [type='button'],
+    [type='submit'],
+    [type='file'],
+    [data-bare]
+  ),
+  textarea,
+  select,
+  [data-slot='select-trigger']
+):focus-visible {
   outline: none;
   border-color: var(--glinr-accent-ring);
   background-color: var(--glinr-field-focus-bg);
@@ -14,7 +22,15 @@
   transition: none;
 }
 :is(
-    input:not([type='checkbox'], [type='radio'], [type='range'], [type='button'], [type='submit'], [type='file'], [data-bare]),
+    input:not(
+      [type='checkbox'],
+      [type='radio'],
+      [type='range'],
+      [type='button'],
+      [type='submit'],
+      [type='file'],
+      [data-bare]
+    ),
     textarea,
     select,
     [data-slot='select-trigger']
@@ -24,11 +40,18 @@
 }
 @media (forced-colors: active), (prefers-contrast: more) {
   :is(
-      input:not([type='checkbox'], [type='radio'], [type='range'], [type='button'], [type='submit'], [type='file']),
-      textarea,
-      select,
-      [data-slot='select-trigger']
-    ):focus-visible {
+    input:not(
+      [type='checkbox'],
+      [type='radio'],
+      [type='range'],
+      [type='button'],
+      [type='submit'],
+      [type='file']
+    ),
+    textarea,
+    select,
+    [data-slot='select-trigger']
+  ):focus-visible {
     outline: 2px solid var(--glinr-accent-ring);
     outline-offset: 1px;
     box-shadow: none;

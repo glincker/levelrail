@@ -21,7 +21,10 @@
   },
   "stopTimeout": { "label": "停止タイムアウト (秒)", "hint": "最大{{max}}。" },
   "pids": { "label": "プロセス数の上限", "hint": "最大{{max}}。" },
-  "init": { "label": "Initプロセス", "hint": "PID 1として最小限のinitを実行します。" },
+  "init": {
+    "label": "Initプロセス",
+    "hint": "PID 1として最小限のinitを実行します。"
+  },
   "badUlimit": "各行は name=soft または name=soft:hard の形式にしてください。",
   "badSysctl": "各行は key=value の形式にしてください。",
   "save": "保存",
