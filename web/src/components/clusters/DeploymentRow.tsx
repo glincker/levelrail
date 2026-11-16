@@ -1,6 +1,16 @@
+import { useState } from 'react'
 import { useTranslation } from 'react-i18next'
+import { ScrollTextGlassIcon, TrashGlassIcon } from '@thesvg/ui-react'
+import { Button } from '@/components/ui/button'
+import { ConfirmDialog } from '@/components/ui/confirm-dialog'
+import { RoleGate } from '@/components/ui/RoleGate'
+import { toast } from '@/components/ui/toast'
 import { Badge } from '@/components/ui/badge'
-import { useDeploymentStatus } from '../../queries/clusters'
+import {
+  useDeploymentStatus,
+  useRemoveDeployment,
+} from '../../queries/clusters'
+import { DeploymentLogsSheet } from './DeploymentLogsSheet'
 import type { K8sDeployment, K8sPod } from '../../types/clusters'
 
 // The most useful failing pod wins: one with a reason, such as CrashLoopBackOff.
@@ -13,6 +23,9 @@ export function DeploymentRow({
   deployment,
 }: Readonly<{ cluster: string; deployment: K8sDeployment }>) {
   const { t } = useTranslation('clusters')
+  const [logsOpen, setLogsOpen] = useState(false)
+  const [confirming, setConfirming] = useState(false)
+  const remove = useRemoveDeployment(cluster)
   const status = useDeploymentStatus(cluster, deployment.app)
   const s = status.data
   const bad = s && !s.ready ? crashPod(s.pods) : undefined
@@ -41,6 +54,33 @@ export function DeploymentRow({
         <span className="min-w-0 truncate text-xs text-muted-foreground">
           {deployment.namespace} · {deployment.image}
         </span>
+        <Button
+          type="button"
+          size="sm"
+          variant="outline"
+          className="ml-auto"
+          aria-label={t('deployment.logsNamed', { name: deployment.app })}
+          onClick={() => {
+            setLogsOpen(true)
+          }}
+        >
+          <ScrollTextGlassIcon aria-hidden="true" />
+          {t('deployment.logs')}
+        </Button>
+        <RoleGate ability="root">
+          <Button
+            type="button"
+            size="sm"
+            variant="outline"
+            aria-label={t('deployment.removeNamed', { name: deployment.app })}
+            onClick={() => {
+              setConfirming(true)
+            }}
+          >
+            <TrashGlassIcon aria-hidden="true" />
+            {t('deployment.remove')}
+          </Button>
+        </RoleGate>
         {s?.ingress_address ? (
           <span className="text-xs text-muted-foreground tabular-nums">
             {s.ingress_address}
@@ -55,6 +95,37 @@ export function DeploymentRow({
       {s && !s.ready && !bad && s.reason ? (
         <p className="text-xs text-muted-foreground">{s.reason}</p>
       ) : null}
+      <ConfirmDialog
+        open={confirming}
+        onOpenChange={setConfirming}
+        tone="destructive"
+        title={t('remove.title', { name: deployment.app })}
+        description={t('remove.description')}
+        requireTyped={deployment.app}
+        confirmLabel={t('remove.confirm')}
+        pendingLabel={t('remove.pending')}
+        pending={remove.isPending}
+        error={remove.error?.message ?? null}
+        focusCancel
+        onConfirm={() => {
+          remove.mutate(deployment.app, {
+            onSuccess: () => {
+              setConfirming(false)
+              toast.add({
+                title: t('remove.done', { name: deployment.app }),
+                type: 'success',
+              })
+            },
+          })
+        }}
+      />
+      <DeploymentLogsSheet
+        cluster={cluster}
+        app={deployment.app}
+        pods={s?.pods ?? []}
+        open={logsOpen}
+        onOpenChange={setLogsOpen}
+      />
     </li>
   )
 }

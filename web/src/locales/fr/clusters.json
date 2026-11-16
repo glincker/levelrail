@@ -105,5 +105,25 @@
     "logsNamed": "Journaux de {{name}}",
     "remove": "Retirer",
     "removeNamed": "Retirer {{name}}"
+  },
+  "logs": {
+    "title": "Journaux de {{name}}",
+    "description": "Dernières lignes du journal d'un pod de cette app.",
+    "tail": "Lignes",
+    "pod": "Pod",
+    "anyPod": "N'importe quel pod",
+    "refresh": "Actualiser",
+    "copy": "Copier",
+    "copied": "Copié",
+    "truncated": "La sortie a été coupée à la limite de taille.",
+    "output": "Sortie du journal",
+    "empty": "Aucune sortie de journal pour l'instant."
+  },
+  "remove": {
+    "title": "Retirer {{name}} ?",
+    "description": "Supprime le Deployment, le Service et l'Ingress créés par Levelrail pour cette app. Les objets qu'il n'a pas créés ne sont pas touchés.",
+    "confirm": "Retirer l'app",
+    "pending": "Retrait",
+    "done": "{{name}} retirée"
   }
 }

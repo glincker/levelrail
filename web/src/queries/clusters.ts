@@ -26,6 +26,8 @@ export const clusterKeys = {
     [...clusterKeys.all, 'namespaces', name] as const,
   deployments: (name: string) =>
     [...clusterKeys.all, 'deployments', name] as const,
+  logs: (name: string, app: string, pod: string, tail: number) =>
+    [...clusterKeys.all, 'logs', name, app, pod, tail] as const,
   status: (name: string, app: string) =>
     [...clusterKeys.all, 'status', name, app] as const,
 }
@@ -199,6 +201,58 @@ export function useDeployApp(name: string) {
           body: JSON.stringify(input),
         },
         'deploy app',
+      ),
+    onSuccess: () =>
+      queryClient.invalidateQueries({
+        queryKey: clusterKeys.deployments(name),
+      }),
+  })
+}
+
+export interface DeploymentLogs {
+  text: string
+  truncated: boolean
+}
+
+export function useDeploymentLogs(
+  name: string,
+  app: string,
+  pod: string,
+  tail: number,
+  enabled: boolean,
+) {
+  return useQuery({
+    queryKey: clusterKeys.logs(name, app, pod, tail),
+    enabled,
+    retry: false,
+    staleTime: 0,
+    queryFn: async (): Promise<DeploymentLogs> => {
+      const qs = new URLSearchParams({ tail: String(tail) })
+      if (pod) qs.set('pod', pod)
+      const res = await fetch(`${appBase(name, app)}/logs?${qs.toString()}`)
+      if (!res.ok) {
+        throw new ApiError(
+          res.status,
+          await readErrorMessage(res, `logs failed: ${String(res.status)}`),
+        )
+      }
+      return {
+        text: await res.text(),
+        truncated: res.headers.get('X-Levelrail-Truncated') === 'true',
+      }
+    },
+  })
+}
+
+export function useRemoveDeployment(name: string) {
+  const queryClient = useQueryClient()
+  return useMutation({
+    meta: { errorToast: false },
+    mutationFn: (app: string) =>
+      request<{ app: string }>(
+        appBase(name, app),
+        { method: 'DELETE' },
+        'remove deployment',
       ),
     onSuccess: () =>
       queryClient.invalidateQueries({

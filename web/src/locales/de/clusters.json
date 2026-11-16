@@ -105,5 +105,25 @@
     "logsNamed": "Logs für {{name}}",
     "remove": "Entfernen",
     "removeNamed": "{{name}} entfernen"
+  },
+  "logs": {
+    "title": "Logs für {{name}}",
+    "description": "Letzte Logzeilen eines Pods dieser App.",
+    "tail": "Zeilen",
+    "pod": "Pod",
+    "anyPod": "Beliebiger Pod",
+    "refresh": "Aktualisieren",
+    "copy": "Kopieren",
+    "copied": "Kopiert",
+    "truncated": "Die Ausgabe wurde am Größenlimit abgeschnitten.",
+    "output": "Log-Ausgabe",
+    "empty": "Noch keine Log-Ausgabe."
+  },
+  "remove": {
+    "title": "{{name}} entfernen?",
+    "description": "Löscht Deployment, Service und Ingress, die Levelrail für diese App angelegt hat. Fremde Objekte bleiben unberührt.",
+    "confirm": "App entfernen",
+    "pending": "Wird entfernt",
+    "done": "{{name}} entfernt"
   }
 }

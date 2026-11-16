@@ -105,5 +105,25 @@
     "logsNamed": "{{name}} 的日志",
     "remove": "移除",
     "removeNamed": "移除 {{name}}"
+  },
+  "logs": {
+    "title": "{{name}} 的日志",
+    "description": "此应用某个 Pod 的最近日志行。",
+    "tail": "行数",
+    "pod": "Pod",
+    "anyPod": "任意 Pod",
+    "refresh": "刷新",
+    "copy": "复制",
+    "copied": "已复制",
+    "truncated": "输出已在大小上限处截断。",
+    "output": "日志输出",
+    "empty": "暂无日志输出。"
+  },
+  "remove": {
+    "title": "移除 {{name}}？",
+    "description": "删除 Levelrail 为此应用创建的 Deployment、Service 和 Ingress，不会触碰其创建之外的对象。",
+    "confirm": "移除应用",
+    "pending": "移除中",
+    "done": "已移除 {{name}}"
   }
 }

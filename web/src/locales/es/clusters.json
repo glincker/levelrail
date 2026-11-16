@@ -105,5 +105,25 @@
     "logsNamed": "Registros de {{name}}",
     "remove": "Quitar",
     "removeNamed": "Quitar {{name}}"
+  },
+  "logs": {
+    "title": "Registros de {{name}}",
+    "description": "Líneas recientes del registro de un pod de esta app.",
+    "tail": "Líneas",
+    "pod": "Pod",
+    "anyPod": "Cualquier pod",
+    "refresh": "Actualizar",
+    "copy": "Copiar",
+    "copied": "Copiado",
+    "truncated": "La salida se cortó en el límite de tamaño.",
+    "output": "Salida del registro",
+    "empty": "Aún no hay salida de registro."
+  },
+  "remove": {
+    "title": "¿Quitar {{name}}?",
+    "description": "Elimina el Deployment, el Service y el Ingress que Levelrail creó para esta app. Los objetos que no creó se dejan intactos.",
+    "confirm": "Quitar app",
+    "pending": "Quitando",
+    "done": "{{name}} quitada"
   }
 }

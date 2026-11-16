@@ -105,5 +105,25 @@
     "logsNamed": "Logs de {{name}}",
     "remove": "Remover",
     "removeNamed": "Remover {{name}}"
+  },
+  "logs": {
+    "title": "Logs de {{name}}",
+    "description": "Linhas recentes do log de um pod deste app.",
+    "tail": "Linhas",
+    "pod": "Pod",
+    "anyPod": "Qualquer pod",
+    "refresh": "Atualizar",
+    "copy": "Copiar",
+    "copied": "Copiado",
+    "truncated": "A saída foi cortada no limite de tamanho.",
+    "output": "Saída do log",
+    "empty": "Ainda não há saída de log."
+  },
+  "remove": {
+    "title": "Remover {{name}}?",
+    "description": "Exclui o Deployment, o Service e o Ingress que o Levelrail criou para este app. Objetos que ele não criou ficam intactos.",
+    "confirm": "Remover app",
+    "pending": "Removendo",
+    "done": "{{name}} removido"
   }
 }

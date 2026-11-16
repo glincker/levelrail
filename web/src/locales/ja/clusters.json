@@ -105,5 +105,25 @@
     "logsNamed": "{{name}} のログ",
     "remove": "削除",
     "removeNamed": "{{name}} を削除"
+  },
+  "logs": {
+    "title": "{{name}} のログ",
+    "description": "このアプリの Pod の最近のログ行です。",
+    "tail": "行数",
+    "pod": "Pod",
+    "anyPod": "任意の Pod",
+    "refresh": "更新",
+    "copy": "コピー",
+    "copied": "コピーしました",
+    "truncated": "出力はサイズ上限で切り詰められました。",
+    "output": "ログ出力",
+    "empty": "ログ出力はまだありません。"
+  },
+  "remove": {
+    "title": "{{name}} を削除しますか?",
+    "description": "Levelrail がこのアプリ用に作成した Deployment、Service、Ingress を削除します。作成していないオブジェクトには触れません。",
+    "confirm": "アプリを削除",
+    "pending": "削除中",
+    "done": "{{name}} を削除しました"
   }
 }
