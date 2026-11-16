@@ -24,6 +24,9 @@ type Size struct {
 	// price for this size.
 	PriceMonthly string
 	Currency     string
+	// Regions lists where the provider offers this size. Empty means the
+	// provider does not say, so no region check is possible.
+	Regions []string
 }
 
 // ServerStatus is a provider-reported server lifecycle state, normalized

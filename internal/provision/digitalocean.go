@@ -98,6 +98,7 @@ func (d *DigitalOcean) ListSizes(ctx context.Context, region string) ([]Size, er
 			sizes = append(sizes, Size{
 				ID: s.Slug, Name: s.Slug, VCPUs: s.VCPUs, Memory: s.Memory, Disk: s.Disk,
 				PriceMonthly: strconv.FormatFloat(s.PriceMonthly, 'f', 2, 64), Currency: "USD",
+				Regions: s.Regions,
 			})
 		}
 		path = d.client.relativePath(out.Links.Pages.Next)
@@ -115,11 +116,12 @@ func containsString(list []string, want string) bool {
 }
 
 type doCreateDropletRequest struct {
-	Name     string `json:"name"`
-	Region   string `json:"region"`
-	Size     string `json:"size"`
-	Image    string `json:"image"`
-	UserData string `json:"user_data"`
+	Name     string   `json:"name"`
+	Region   string   `json:"region"`
+	Size     string   `json:"size"`
+	Image    string   `json:"image"`
+	UserData string   `json:"user_data"`
+	Tags     []string `json:"tags,omitempty"`
 }
 
 type doDropletResponse struct {
@@ -146,12 +148,23 @@ func (d doDroplet) publicIPv4() string {
 	return ""
 }
 
+// doDropletTags marks a droplet as Levelrail-made and ties it to its
+// provision row so orphans are findable. DO creates unknown tags itself.
+func doDropletTags(provisionID string) []string {
+	tags := []string{"levelrail"}
+	if provisionID != "" {
+		tags = append(tags, "levelrail-provision-"+provisionID)
+	}
+	return tags
+}
+
 // CreateServer calls POST /v2/droplets.
 func (d *DigitalOcean) CreateServer(ctx context.Context, opts CreateOpts) (serverID, ipAddr string, err error) {
 	var out doDropletResponse
 	req := doCreateDropletRequest{
 		Name: opts.Name, Region: opts.Region, Size: opts.Size,
 		Image: digitaloceanImage, UserData: opts.UserData,
+		Tags: doDropletTags(opts.ProvisionID),
 	}
 	if err := d.client.do(ctx, http.MethodPost, "/droplets", req, &out); err != nil {
 		return "", "", fmt.Errorf("provision: digitalocean create droplet: %w", err)

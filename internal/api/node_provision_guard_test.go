@@ -432,3 +432,19 @@ func TestOracleAllowanceGuard(t *testing.T) {
 		t.Fatal("enabled oracle must not be gated")
 	}
 }
+
+func TestCreate_SizeNotInRegionRefusedBeforePrice(t *testing.T) {
+	fake := &fakeNodeProvisioner{sizes: []provision.Size{{ID: "cx22", Regions: []string{"nyc3", "tor1"}}}}
+	rt, _, cookie := guardFixture(t, fake)
+	setSetting(t, rt, runtimesettings.KeyProvisionMaxMonthlyPrice, `"12"`)
+	rec := provReq(rt, cookie, t, http.MethodPost, "/api/v1/nodes/provision", createBody("web-r1"))
+	if rec.Code != http.StatusBadRequest {
+		t.Fatalf("status = %d, want 400, body = %s", rec.Code, rec.Body.String())
+	}
+	if !strings.Contains(rec.Body.String(), "not available in region") || !strings.Contains(rec.Body.String(), "nyc3, tor1") {
+		t.Fatalf("body = %s", rec.Body.String())
+	}
+	if fake.createCalls != 0 {
+		t.Fatalf("created despite region mismatch")
+	}
+}

@@ -159,3 +159,33 @@ func TestDigitalOcean_DeleteServer_ErrorResponse(t *testing.T) {
 		t.Fatal("expected an error")
 	}
 }
+
+func TestDigitalOcean_CreateServer_SendsTags(t *testing.T) {
+	var got doCreateDropletRequest
+	d := newTestDigitalOcean(t, func(w http.ResponseWriter, r *http.Request) {
+		_ = json.NewDecoder(r.Body).Decode(&got)
+		_ = json.NewEncoder(w).Encode(map[string]any{"droplet": map[string]any{"id": 5, "status": "new"}})
+	})
+	if _, _, err := d.CreateServer(context.Background(), CreateOpts{Name: "a", Region: "nyc3", Size: "s", ProvisionID: "npv_1"}); err != nil {
+		t.Fatalf("CreateServer: %v", err)
+	}
+	if len(got.Tags) != 2 || got.Tags[0] != "levelrail" || got.Tags[1] != "levelrail-provision-npv_1" {
+		t.Errorf("tags = %v", got.Tags)
+	}
+}
+
+func TestDigitalOcean_ListSizes_CarriesRegions(t *testing.T) {
+	d := newTestDigitalOcean(t, func(w http.ResponseWriter, _ *http.Request) {
+		_ = json.NewEncoder(w).Encode(map[string]any{"sizes": []map[string]any{
+			{"slug": "s-1vcpu-512mb-10gb", "available": true, "regions": []string{"nyc3", "tor1"}},
+		}})
+	})
+	all, err := d.ListSizes(context.Background(), "")
+	if err != nil || len(all) != 1 || len(all[0].Regions) != 2 {
+		t.Fatalf("all = %+v err = %v", all, err)
+	}
+	nyc1, _ := d.ListSizes(context.Background(), "nyc1")
+	if len(nyc1) != 0 {
+		t.Errorf("nyc1 sizes = %+v", nyc1)
+	}
+}

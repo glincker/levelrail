@@ -405,6 +405,11 @@ func (rt *Router) handleCreateNodeProvision(w http.ResponseWriter, r *http.Reque
 		return
 	}
 
+	if reason := rt.checkProvisionSizeRegion(r.Context(), provisioner, req.Region, req.Size); reason != "" {
+		writeError(w, http.StatusBadRequest, reason)
+		return
+	}
+
 	if reason, err := rt.checkProvisionPriceCap(r.Context(), provisioner, req.Provider, req.Region, req.Size); err != nil {
 		rt.internalError(w, "api: node provision: price check failed", err)
 		return

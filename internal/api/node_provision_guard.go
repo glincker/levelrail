@@ -127,6 +127,28 @@ func (rt *Router) checkProvisionServerCap(ctx context.Context) (string, error) {
 	return "", nil
 }
 
+// checkProvisionSizeRegion refuses a size the provider does not offer in the
+// region, before the price check can mislead. A provider that does not list
+// regions, or a failed lookup, skips the check.
+func (rt *Router) checkProvisionSizeRegion(ctx context.Context, p NodeProvisioner, region, size string) string {
+	sizes, err := p.ListSizes(ctx, "")
+	if err != nil {
+		return ""
+	}
+	for _, s := range sizes {
+		if s.ID != size || len(s.Regions) == 0 {
+			continue
+		}
+		for _, r := range s.Regions {
+			if r == region {
+				return ""
+			}
+		}
+		return fmt.Sprintf("size %s is not available in region %s, available in: %s", size, region, strings.Join(s.Regions, ", "))
+	}
+	return ""
+}
+
 // checkProvisionPriceCap compares the chosen size's listed monthly price with
 // the USD cap. An empty cap disables the check; an unpriced size is refused
 // unless provision.allow_unknown_price is on.
