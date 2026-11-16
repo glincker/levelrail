@@ -127,17 +127,19 @@ Flags:
 
 ## levelrail-cli nodes providers
 
-Subcommands: list, set-credential
+Subcommands: connect, disconnect, list, regions, set-credential, sizes, test
 
 ```
 Usage:
   levelrail-cli nodes providers list [flags]                                          list known cloud providers and whether each has a stored credential
   levelrail-cli nodes providers connect --provider NAME [--method METHOD] [flags]   connect a provider (tests it first unless --verify=false)
+  levelrail-cli nodes providers regions --provider NAME [flags]                       list the provider's regions
+  levelrail-cli nodes providers sizes --provider NAME [--region ID] [flags]           list the provider's sizes (oracle Flex sizes are ids like VM.Standard.A1.Flex:1:6)
   levelrail-cli nodes providers test --provider NAME [flags]                          run a read-only connection test against the stored credential
   levelrail-cli nodes providers disconnect --provider NAME [flags]                    remove the stored credential
   levelrail-cli nodes providers set-credential --provider NAME --provider-token TOKEN [flags]   store (or replace) a provider's API token without testing
 
-NAME must be "hetzner", "digitalocean", "aws", "azure", "gcp" or "custom".
+NAME must be "hetzner", "digitalocean", "aws", "azure", "gcp", "oracle" or "custom".
 METHOD is api_token, access_key, assume_role, ambient, service_account_json,
 workload_identity_federation or manual; omit it to infer one.
 
@@ -146,12 +148,13 @@ Run "levelrail-cli nodes providers <subcommand> -h" for a subcommand's own flags
 
 ## levelrail-cli nodes provisions
 
-Subcommands: list, show
+Subcommands: destroy, list, show
 
 ```
 Usage:
   levelrail-cli nodes provisions list [flags]        list every cloud node provision, last known status
   levelrail-cli nodes provisions show <id> [flags]   show one provision, refreshed live against the provider and the node registry
+  levelrail-cli nodes provisions destroy <id> [--force] [--yes] [flags]   delete the cloud server this provision created
 
 Run "levelrail-cli nodes provisions <subcommand> -h" for a subcommand's own flags.
 ```

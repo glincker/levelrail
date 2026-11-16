@@ -17,21 +17,21 @@ func runClusters(prog string, args []string, stdout, stderr io.Writer, lookupEnv
 		_, _ = fmt.Fprint(stderr, clustersUsage(prog))
 		return exitUsage
 	}
-	verb, rest := args[0], args[1:]
-	switch verb {
+	sub, rest := args[0], args[1:]
+	switch sub {
 	case "-h", "--help", "help":
 		_, _ = fmt.Fprint(stdout, clustersUsage(prog))
 		return exitOK
 	case "rbac":
 		return runClustersRBAC(prog, rest, stdout, stderr)
 	case "list":
-		return runClustersVerb(prog, verb, false, rest, stdout, stderr, lookupEnv, clustersList)
+		return runClustersVerb(prog, sub, false, rest, stdout, stderr, lookupEnv, clustersList)
 	case "show", "test", "nodes", "namespaces", "disconnect":
-		return runClustersVerb(prog, verb, true, rest, stdout, stderr, lookupEnv, nil)
+		return runClustersVerb(prog, sub, true, rest, stdout, stderr, lookupEnv, nil)
 	case "deploy":
 		return runClustersDeploy(prog, rest, stdout, stderr, lookupEnv)
 	case "deployments", "status":
-		return runClustersDeployVerb(prog, verb, rest, stdout, stderr, lookupEnv)
+		return runClustersDeployVerb(prog, sub, rest, stdout, stderr, lookupEnv)
 	case "logs":
 		return runClustersLogs(prog, rest, stdout, stderr, lookupEnv)
 	case "remove":
@@ -39,7 +39,7 @@ func runClusters(prog string, args []string, stdout, stderr io.Writer, lookupEnv
 	case "connect":
 		return runClustersConnect(prog, rest, stdout, stderr, lookupEnv)
 	default:
-		_, _ = fmt.Fprintf(stderr, "%s: unknown clusters subcommand %q\n\n", prog, verb)
+		_, _ = fmt.Fprintf(stderr, "%s: unknown clusters subcommand %q\n\n", prog, sub)
 		_, _ = fmt.Fprint(stderr, clustersUsage(prog))
 		return exitUsage
 	}

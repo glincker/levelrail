@@ -11,6 +11,7 @@ import (
 // with the reason. Keep it short: a command that returns data or a status
 // an agent would branch on belongs on --json, not in this list.
 var jsonExempt = map[string]string{
+	"clusters rbac":                 "prints Kubernetes manifests to apply, not data an agent branches on",
 	"migrate coolify undo":          "prints a removal plan and asks for a typed confirmation before deleting data",
 	"migrate dokploy undo":          "prints a removal plan and asks for a typed confirmation before deleting data",
 	"vm destroy":                    "alias of vm uninstall, host-local lifecycle command, prints one line",
