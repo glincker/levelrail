@@ -1041,5 +1041,23 @@
     "description_one": "Laissez un champ vide pour suivre la valeur par défaut de la plateforme. Les alertes de CPU et de mémoire se déclenchent après {{count}} évaluation au-dessus de la limite.",
     "description_other": "Laissez un champ vide pour suivre la valeur par défaut de la plateforme. Les alertes de CPU et de mémoire se déclenchent après {{count}} évaluations consécutives au-dessus de la limite.",
     "description_many": "Laissez un champ vide pour suivre la valeur par défaut de la plateforme. Les alertes de CPU et de mémoire se déclenchent après {{count}} évaluations consécutives au-dessus de la limite."
+  },
+  "provisionDestroy": {
+    "trigger": "Détruire le serveur",
+    "title": "Détruire le serveur \"{{name}}\" ?",
+    "description": "Cela supprime définitivement le serveur cloud chez {{provider}} et retire le nœud. Le fournisseur cesse de facturer une fois le serveur supprimé. Action irréversible.",
+    "confirm": "Détruire le serveur",
+    "destroying": "Destruction...",
+    "destroyed": "Serveur \"{{name}}\" détruit.",
+    "workloadsTitle": "Ce nœud exécute encore des charges",
+    "workloadsBody": "Videz-le d'abord, ou détruisez-le quand même. Les apps et bases de données qu'il héberge seront perdues.",
+    "force": "Détruire quand même, j'accepte de perdre les charges de ce nœud",
+    "statusDestroying": "Destruction",
+    "statusDestroyed": "Détruit"
+  },
+  "provisionGuard": {
+    "title": "Limite de serveurs atteinte",
+    "body": "{{reason}}",
+    "hint": "Les limites sont les réglages provision.max_servers et provision.max_monthly_price_usd."
   }
 }

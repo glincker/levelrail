@@ -1025,5 +1025,23 @@
     "invalid": "Use a whole number from 1 to 100, or leave blank for the default.",
     "description_one": "Leave a field blank to follow the platform default. CPU and memory alerts fire after {{count}} evaluation over the limit.",
     "description_other": "Leave a field blank to follow the platform default. CPU and memory alerts fire after {{count}} evaluations in a row over the limit."
+  },
+  "provisionDestroy": {
+    "trigger": "Destroy server",
+    "title": "Destroy server \"{{name}}\"?",
+    "description": "This permanently deletes the cloud server at {{provider}} and removes the node. The provider stops billing once the server is gone. This cannot be undone.",
+    "confirm": "Destroy server",
+    "destroying": "Destroying...",
+    "destroyed": "Server \"{{name}}\" destroyed.",
+    "workloadsTitle": "This node still runs workloads",
+    "workloadsBody": "Drain it first, or destroy it anyway. Apps and databases on it will be lost.",
+    "force": "Destroy anyway, I accept losing the workloads on this node",
+    "statusDestroying": "Destroying",
+    "statusDestroyed": "Destroyed"
+  },
+  "provisionGuard": {
+    "title": "Server limit reached",
+    "body": "{{reason}}",
+    "hint": "Limits are the settings provision.max_servers and provision.max_monthly_price_usd."
   }
 }

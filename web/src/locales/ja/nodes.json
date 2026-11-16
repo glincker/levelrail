@@ -1009,5 +1009,23 @@
     "loading": "しきい値を読み込み中...",
     "invalid": "1から100の整数を使うか、既定値を使うには空欄のままにしてください。",
     "description_other": "空欄にすると、プラットフォームの既定値に従います。CPUとメモリのアラートは、上限を{{count}}回連続で超えた評価の後に発生します。"
+  },
+  "provisionDestroy": {
+    "trigger": "サーバーを破棄",
+    "title": "サーバー「{{name}}」を破棄しますか？",
+    "description": "{{provider}} のクラウドサーバーを完全に削除し、ノードを取り除きます。サーバーが消えるとプロバイダーの課金は止まります。この操作は元に戻せません。",
+    "confirm": "サーバーを破棄",
+    "destroying": "破棄中...",
+    "destroyed": "サーバー「{{name}}」を破棄しました。",
+    "workloadsTitle": "このノードではまだワークロードが動いています",
+    "workloadsBody": "先にドレインするか、そのまま破棄してください。上のアプリとデータベースは失われます。",
+    "force": "そのまま破棄する。このノード上のワークロードが失われることを了承します",
+    "statusDestroying": "破棄中",
+    "statusDestroyed": "破棄済み"
+  },
+  "provisionGuard": {
+    "title": "サーバー数の上限に達しました",
+    "body": "{{reason}}",
+    "hint": "上限は設定 provision.max_servers と provision.max_monthly_price_usd です。"
   }
 }

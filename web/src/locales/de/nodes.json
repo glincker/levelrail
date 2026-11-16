@@ -1025,5 +1025,23 @@
     "invalid": "Verwenden Sie eine ganze Zahl von 1 bis 100 oder lassen Sie das Feld für den Standard leer.",
     "description_one": "Lassen Sie ein Feld leer, um dem Plattformstandard zu folgen. CPU- und Arbeitsspeicher-Alarme lösen nach {{count}} Auswertung über dem Limit aus.",
     "description_other": "Lassen Sie ein Feld leer, um dem Plattformstandard zu folgen. CPU- und Arbeitsspeicher-Alarme lösen nach {{count}} Auswertungen in Folge über dem Limit aus."
+  },
+  "provisionDestroy": {
+    "trigger": "Server zerstören",
+    "title": "Server \"{{name}}\" zerstören?",
+    "description": "Dies löscht den Cloud-Server bei {{provider}} dauerhaft und entfernt den Knoten. Der Anbieter rechnet nicht mehr ab, sobald der Server weg ist. Das lässt sich nicht rückgängig machen.",
+    "confirm": "Server zerstören",
+    "destroying": "Wird zerstört...",
+    "destroyed": "Server \"{{name}}\" zerstört.",
+    "workloadsTitle": "Dieser Knoten führt noch Workloads aus",
+    "workloadsBody": "Leere ihn zuerst oder zerstöre ihn trotzdem. Apps und Datenbanken darauf gehen verloren.",
+    "force": "Trotzdem zerstören, der Verlust der Workloads auf diesem Knoten ist mir bewusst",
+    "statusDestroying": "Wird zerstört",
+    "statusDestroyed": "Zerstört"
+  },
+  "provisionGuard": {
+    "title": "Serverlimit erreicht",
+    "body": "{{reason}}",
+    "hint": "Die Limits sind die Einstellungen provision.max_servers und provision.max_monthly_price_usd."
   }
 }

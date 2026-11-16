@@ -1041,5 +1041,23 @@
     "description_one": "Deixe um campo em branco para seguir o padrão da plataforma. Os alertas de CPU e memória disparam após {{count}} avaliação acima do limite.",
     "description_many": "Deixe um campo em branco para seguir o padrão da plataforma. Os alertas de CPU e memória disparam após {{count}} avaliações seguidas acima do limite.",
     "description_other": "Deixe um campo em branco para seguir o padrão da plataforma. Os alertas de CPU e memória disparam após {{count}} avaliações seguidas acima do limite."
+  },
+  "provisionDestroy": {
+    "trigger": "Destruir servidor",
+    "title": "Destruir o servidor \"{{name}}\"?",
+    "description": "Isso exclui permanentemente o servidor na nuvem em {{provider}} e remove o nó. O provedor para de cobrar quando o servidor some. Não dá para desfazer.",
+    "confirm": "Destruir servidor",
+    "destroying": "Destruindo...",
+    "destroyed": "Servidor \"{{name}}\" destruído.",
+    "workloadsTitle": "Este nó ainda executa cargas",
+    "workloadsBody": "Esvazie-o antes ou destrua mesmo assim. Apps e bancos de dados nele serão perdidos.",
+    "force": "Destruir mesmo assim, aceito perder as cargas deste nó",
+    "statusDestroying": "Destruindo",
+    "statusDestroyed": "Destruído"
+  },
+  "provisionGuard": {
+    "title": "Limite de servidores atingido",
+    "body": "{{reason}}",
+    "hint": "Os limites são as configurações provision.max_servers e provision.max_monthly_price_usd."
   }
 }

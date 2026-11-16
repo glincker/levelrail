@@ -16,6 +16,7 @@ import type { NodeResource } from '../../types/nodeDetail'
 import { CordonNodeDialog } from '../CordonNodeDialog'
 import { DeleteNodeDialog } from '../DeleteNodeDialog'
 import { DrainNodeDialog } from '../DrainNodeDialog'
+import { DestroyServerAction } from './DestroyServerAction'
 
 // Same action bar shape as the app page: the common actions inline, Delete
 // behind the overflow menu so it never carries the weight of Drain.
@@ -57,6 +58,7 @@ export function NodeDetailHeader({
             ) : null}
             <CordonNodeDialog node={node} />
             <DrainNodeDialog node={node} />
+            <DestroyServerAction nodeId={node.id} />
             <ActionMenu
               trigger={
                 <Button

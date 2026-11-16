@@ -3,6 +3,8 @@ import {
   selectableCardClass,
 } from '@/components/ui/selectable-card'
 import { useState } from 'react'
+import { useTranslation } from 'react-i18next'
+import { ApiError } from '../lib/apiError'
 import { useNavigate } from '@tanstack/react-router'
 import {
   PlusGlassIcon,
@@ -99,6 +101,7 @@ export function AddNodeWizard() {
 }
 
 function WizardBody({ onClose }: { onClose: () => void }) {
+  const { t } = useTranslation('nodes')
   const navigate = useNavigate()
   const [step, setStep] = useState<Step>('method')
   const [provider, setProvider] = useState<ProviderId | null>(null)
@@ -393,7 +396,26 @@ function WizardBody({ onClose }: { onClose: () => void }) {
               className="text-tone-warning"
               size="1.7em"
             />
-            <AlertDescription>{createProvision.error.message}</AlertDescription>
+            <AlertDescription>
+              {createProvision.error instanceof ApiError &&
+              createProvision.error.status === 409 ? (
+                <>
+                  <span className="block font-medium">
+                    {t('provisionGuard.title')}
+                  </span>
+                  <span className="block">
+                    {t('provisionGuard.body', {
+                      reason: createProvision.error.message,
+                    })}
+                  </span>
+                  <span className="block text-muted-foreground">
+                    {t('provisionGuard.hint')}
+                  </span>
+                </>
+              ) : (
+                createProvision.error.message
+              )}
+            </AlertDescription>
           </Alert>
         ) : null}
       </StepShell>

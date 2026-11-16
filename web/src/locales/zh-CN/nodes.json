@@ -1009,5 +1009,23 @@
     "loading": "正在加载阈值...",
     "invalid": "请使用 1 到 100 之间的整数，或留空使用默认值。",
     "description_other": "留空的字段沿用平台默认值。CPU 和内存告警会在连续 {{count}} 次评估超过限制后触发。"
+  },
+  "provisionDestroy": {
+    "trigger": "销毁服务器",
+    "title": "销毁服务器“{{name}}”？",
+    "description": "这会永久删除 {{provider}} 上的云服务器并移除该节点。服务器删除后，服务商将停止计费。此操作无法撤销。",
+    "confirm": "销毁服务器",
+    "destroying": "正在销毁...",
+    "destroyed": "服务器“{{name}}”已销毁。",
+    "workloadsTitle": "此节点仍在运行工作负载",
+    "workloadsBody": "请先排空，或直接销毁。其上的应用和数据库将丢失。",
+    "force": "仍然销毁，我接受此节点上的工作负载丢失",
+    "statusDestroying": "销毁中",
+    "statusDestroyed": "已销毁"
+  },
+  "provisionGuard": {
+    "title": "已达到服务器数量上限",
+    "body": "{{reason}}",
+    "hint": "上限由设置 provision.max_servers 和 provision.max_monthly_price_usd 控制。"
   }
 }
