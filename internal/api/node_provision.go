@@ -395,7 +395,7 @@ func (rt *Router) handleCreateNodeProvision(w http.ResponseWriter, r *http.Reque
 		return
 	}
 
-	if reason, err := rt.checkProvisionPriceCap(r.Context(), provisioner, req.Region, req.Size); err != nil {
+	if reason, err := rt.checkProvisionPriceCap(r.Context(), provisioner, req.Provider, req.Region, req.Size); err != nil {
 		rt.internalError(w, "api: node provision: price check failed", err)
 		return
 	} else if reason != "" {
@@ -455,7 +455,10 @@ func (rt *Router) handleCreateNodeProvision(w http.ResponseWriter, r *http.Reque
 		return
 	}
 	nodeProvisionGuardMu.Lock()
-	reason, err := rt.checkProvisionServerCap(r.Context())
+	reason, err := rt.checkOracleAllowance(r.Context(), provisioner, req.Provider, req.Region, req.Size)
+	if err == nil && reason == "" {
+		reason, err = rt.checkProvisionServerCap(r.Context())
+	}
 	if err == nil && reason == "" {
 		// Re-checked under the lock: the early check can race a concurrent create.
 		var taken bool

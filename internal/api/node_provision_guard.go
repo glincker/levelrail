@@ -130,7 +130,7 @@ func (rt *Router) checkProvisionServerCap(ctx context.Context) (string, error) {
 // checkProvisionPriceCap compares the chosen size's listed monthly price with
 // the USD cap. An empty cap disables the check; an unpriced size is refused
 // unless provision.allow_unknown_price is on.
-func (rt *Router) checkProvisionPriceCap(ctx context.Context, p NodeProvisioner, region, size string) (string, error) {
+func (rt *Router) checkProvisionPriceCap(ctx context.Context, p NodeProvisioner, provider, region, size string) (string, error) {
 	capText := rt.provisionSetting(ctx, runtimesettings.KeyProvisionMaxMonthlyPrice, "APP_PROVISION_MAX_MONTHLY_PRICE_USD")
 	if capText == "" {
 		return "", nil
@@ -146,6 +146,9 @@ func (rt *Router) checkProvisionPriceCap(ctx context.Context, p NodeProvisioner,
 	usd, known := listedMonthlyUSD(sizes, size, rt.eurToUSD(ctx))
 	if !known {
 		if rt.runtimeSettings != nil && rt.runtimeSettings.Bool(ctx, runtimesettings.KeyProvisionAllowUnknownPrice) {
+			return "", nil
+		}
+		if provider == "oracle" && rt.oracleBool(ctx, runtimesettings.KeyProvisionOracleAllowUnknown, "APP_PROVISION_ORACLE_ALLOW_UNKNOWN_PRICE") {
 			return "", nil
 		}
 		return "the provider lists no usable price for this size, so the price cap cannot be checked", nil

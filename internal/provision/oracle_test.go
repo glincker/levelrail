@@ -63,6 +63,14 @@ func newFakeOCI(t *testing.T, pub *rsa.PublicKey) *fakeOCI {
 			_, _ = w.Write([]byte(`[{"name":"x:PHX-AD-1"},{"name":"x:PHX-AD-2"}]`))
 		case strings.HasSuffix(p, "/shapes"):
 			_, _ = w.Write([]byte(`[{"shape":"VM.Standard.E2.1.Micro","ocpus":1,"memoryInGBs":1},{"shape":"VM.Standard.A1.Flex","ocpuOptions":{"min":1,"max":80},"memoryOptions":{"minInGBs":1,"maxInGBs":512}}]`))
+		case strings.HasSuffix(p, "/compartments"):
+			_, _ = w.Write([]byte(`[{"id":"` + tComp + `"}]`))
+		case p == "/instances" && r.Method == http.MethodGet:
+			if r.URL.Query().Get("compartmentId") == tComp {
+				_, _ = w.Write([]byte(`[{"shape":"VM.Standard.A1.Flex","lifecycleState":"RUNNING","shapeConfig":{"ocpus":1,"memoryInGBs":6}},{"shape":"VM.Standard.A1.Flex","lifecycleState":"TERMINATED","shapeConfig":{"ocpus":4,"memoryInGBs":24}},{"shape":"VM.Standard.E2.1.Micro","lifecycleState":"STOPPED"}]`))
+				return
+			}
+			_, _ = w.Write([]byte(`[{"shape":"VM.Standard.A1.Flex","lifecycleState":"RUNNING","shapeConfig":{"ocpus":1,"memoryInGBs":6}}]`))
 		case strings.HasSuffix(p, "/images"):
 			_, _ = w.Write([]byte(`[{"id":"ocid1.image.oc1.phx.ffffffff"}]`))
 		case p == "/instances" && r.Method == http.MethodPost:
@@ -279,5 +287,16 @@ func TestOracleRejectsBadSizeAndKeyErrors(t *testing.T) {
 		PrivateKeyPEM: "-----BEGIN PRIVATE KEY-----\nTOPSECRETKEY\n-----END PRIVATE KEY-----", CompartmentOCID: tComp, Region: "us-phoenix-1"}, OracleSettings{}, "", "", false)
 	if err == nil || strings.Contains(err.Error(), "TOPSECRETKEY") {
 		t.Fatalf("err %v", err)
+	}
+}
+
+func TestOracleUsageCountsTenancyWide(t *testing.T) {
+	o, _ := newTestOracle(t)
+	u, err := o.OracleUsage(context.Background(), "")
+	if err != nil {
+		t.Fatal(err)
+	}
+	if u.Scope != OracleScopeTenancy || u.A1OCPU != 2 || u.A1MemoryGB != 12 || u.E2Micro != 1 {
+		t.Fatalf("usage = %+v", u)
 	}
 }

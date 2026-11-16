@@ -374,3 +374,48 @@ func TestOracleSettingsReadLive(t *testing.T) {
 		t.Fatalf("settings = %+v", s)
 	}
 }
+
+type oracleUsageFake struct {
+	*fakeNodeProvisioner
+	usage provision.OracleUsage
+}
+
+func (f *oracleUsageFake) OracleUsage(context.Context, string) (provision.OracleUsage, error) {
+	return f.usage, nil
+}
+
+func TestOracleAllowanceGuard(t *testing.T) {
+	ctx := context.Background()
+	p := &oracleUsageFake{fakeNodeProvisioner: &fakeNodeProvisioner{}, usage: provision.OracleUsage{A1OCPU: 2, A1MemoryGB: 12, Scope: "tenancy"}}
+	rt, _, _ := guardFixture(t, p.fakeNodeProvisioner)
+	check := func() string {
+		reason, err := rt.checkOracleAllowance(ctx, p, "oracle", "us-phoenix-1", "VM.Standard.A1.Flex:1:6")
+		if err != nil {
+			t.Fatal(err)
+		}
+		return reason
+	}
+	if !strings.Contains(check(), "provision.oracle.enabled") {
+		t.Fatal("disabled oracle must refuse")
+	}
+	setSetting(t, rt, runtimesettings.KeyProvisionOracleEnabled, `true`)
+	if !strings.Contains(check(), "max_a1_ocpu") {
+		t.Fatal("zero limits must refuse every A1 create")
+	}
+	setSetting(t, rt, runtimesettings.KeyProvisionOracleMaxA1OCPU, `2`)
+	setSetting(t, rt, runtimesettings.KeyProvisionOracleMaxA1MemoryGB, `12`)
+	if r := check(); !strings.Contains(r, "2 existing in the tenancy plus 1 requested") {
+		t.Fatalf("existing 2 plus 1 over max 2 must refuse, got %q", r)
+	}
+	setSetting(t, rt, runtimesettings.KeyProvisionOracleMaxA1OCPU, `3`)
+	if r := check(); !strings.Contains(r, "memory") {
+		t.Fatalf("memory over the limit must refuse, got %q", r)
+	}
+	setSetting(t, rt, runtimesettings.KeyProvisionOracleMaxA1MemoryGB, `18`)
+	if r := check(); r != "" {
+		t.Fatalf("inside the limits must pass, got %q", r)
+	}
+	if p.lastCreateOpts.Name != "" {
+		t.Fatal("guard must not launch anything")
+	}
+}
