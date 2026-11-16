@@ -168,3 +168,15 @@ func (c *Client) GetNodeProvision(ctx context.Context, id string) (NodeProvision
 	err := c.do(ctx, http.MethodGet, nodeProvisionsPath()+"/"+PathEscape(id), nil, &out)
 	return out, err
 }
+
+// DestroyNodeProvision calls DELETE /api/v1/node-provisions/{id}. force
+// adds ?force=true to destroy a server whose node still runs workloads.
+func (c *Client) DestroyNodeProvision(ctx context.Context, id string, force bool) (NodeProvisionResource, error) {
+	path := nodeProvisionsPath() + "/" + PathEscape(id)
+	if force {
+		path += "?force=true"
+	}
+	var out NodeProvisionResource
+	err := c.do(ctx, http.MethodDelete, path, nil, &out)
+	return out, err
+}
