@@ -83,6 +83,9 @@ func ScopeFromError(provider, capabilityID string, err error) (*ScopeMissingErro
 }
 
 func capabilityScope(provider, id string) (string, bool) {
+	if provider == "vultr" {
+		return vultrCapabilityScope(id)
+	}
 	if provider != "digitalocean" {
 		return "", false
 	}
