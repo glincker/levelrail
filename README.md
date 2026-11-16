@@ -243,6 +243,20 @@ Do not write any token or password to a file or into this chat.
 
 All screenshots are captured from a real running control plane. More in the [Product tour](https://docs.levelrail.com/product-tour?utm_source=github&utm_medium=readme&utm_campaign=tour).
 
+## Get Levelrail everywhere
+
+| Channel | What it is | Install or use |
+| --- | --- | --- |
+| <picture><source media="(prefers-color-scheme: dark)" srcset="https://thesvg.org/icons/github/dark.svg"><img src="https://thesvg.org/icons/github/light.svg" width="18" height="18" alt="GitHub"></picture> [GitHub Releases](https://github.com/glincker/levelrail/releases) | Signed binaries and release notes | `curl -fsSL https://levelrail.com/install.sh \| sudo sh` |
+| <img src="https://thesvg.org/icons/docker/default.svg" width="18" height="18" alt="Docker"> [Docker Hub](https://hub.docker.com/r/levelrail/levelrail) | Control plane image | `docker pull levelrail/levelrail:<tag>` |
+| <picture><source media="(prefers-color-scheme: dark)" srcset="https://thesvg.org/icons/github/dark.svg"><img src="https://thesvg.org/icons/github/light.svg" width="18" height="18" alt="GitHub"></picture> [GitHub Container Registry](https://github.com/glincker/levelrail/pkgs/container/levelrail) | Control plane and node agent images | `docker pull ghcr.io/glincker/levelrail:beta` |
+| <img src="https://thesvg.org/icons/npm/default.svg" width="18" height="18" alt="npm"> [npm](https://www.npmjs.com/package/levelrail-cli) | The CLI, no server | `npx levelrail-cli --help` |
+| <img src="https://thesvg.org/icons/homebrew/default.svg" width="18" height="18" alt="Homebrew"> [Homebrew tap](https://github.com/glincker/homebrew-tap) | The CLI on macOS and Linux | `brew install glincker/tap/levelrail-cli` |
+| <img src="https://thesvg.org/icons/terraform/default.svg" width="18" height="18" alt="Terraform"> [Terraform Registry](https://registry.terraform.io/providers/glincker/levelrail/latest) | Provider `glincker/levelrail` | `source = "registry.terraform.io/glincker/levelrail"` then `terraform init` |
+| <img src="https://thesvg.org/icons/opentofu/default.svg" width="18" height="18" alt="OpenTofu"> [OpenTofu Registry](https://search.opentofu.org/provider/glincker/levelrail/latest) | The same provider | `source = "registry.terraform.io/glincker/levelrail"` then `tofu init` |
+| <picture><source media="(prefers-color-scheme: dark)" srcset="https://thesvg.org/icons/model-context-protocol/dark.svg"><img src="https://thesvg.org/icons/model-context-protocol/light.svg" width="18" height="18" alt="MCP"></picture> [Glama](https://glama.ai/mcp/servers/glincker/levelrail) | MCP server listing | `levelrail-mcp` ([setup](https://docs.levelrail.com/ai-assistant)) |
+| <picture><source media="(prefers-color-scheme: dark)" srcset="https://thesvg.org/icons/go/dark.svg"><img src="https://thesvg.org/icons/go/light.svg" height="18" alt="Go"></picture> [pkg.go.dev](https://pkg.go.dev/github.com/GLINCKER/levelrail/kit) | Go kit packages | `go get github.com/GLINCKER/levelrail/kit` |
+
 ## Who it is for
 
 **Whoever you are, you start with one line.**
