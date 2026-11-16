@@ -105,6 +105,14 @@ func (db *DB) DeleteK8sDeploymentsForCluster(ctx context.Context, cluster string
 	return nil
 }
 
+// DeleteK8sDeployment drops one record. A missing row is not an error, so a retry is safe.
+func (db *DB) DeleteK8sDeployment(ctx context.Context, cluster, app string) error {
+	if _, err := db.ExecContext(ctx, `DELETE FROM k8s_deployments WHERE cluster_name = ? AND app = ?`, cluster, app); err != nil {
+		return fmt.Errorf("store: delete k8s deployment: %w", err)
+	}
+	return nil
+}
+
 // K8sInstanceID returns the stable id of this install, creating it on first use. It is
 // stamped on every object so another Levelrail install cannot take over ours.
 func (db *DB) K8sInstanceID(ctx context.Context) (string, error) {

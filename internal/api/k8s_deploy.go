@@ -38,6 +38,7 @@ type K8sDeploymentRows interface {
 	GetK8sDeployment(ctx context.Context, cluster, app string) (store.K8sDeployment, error)
 	ListK8sDeployments(ctx context.Context, cluster string) ([]store.K8sDeployment, error)
 	DeleteK8sDeploymentsForCluster(ctx context.Context, cluster string) error
+	DeleteK8sDeployment(ctx context.Context, cluster, app string) error
 	K8sInstanceID(ctx context.Context) (string, error)
 	ClaimK8sDeploy(ctx context.Context, cluster, app string, staleAfter time.Duration) (bool, error)
 	ReleaseK8sDeploy(ctx context.Context, cluster, app string) error
