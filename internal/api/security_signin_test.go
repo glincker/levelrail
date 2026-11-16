@@ -28,7 +28,9 @@ func TestApprovalScopeMatrix(t *testing.T) {
 			map[string]bool{signInMethodPassword: true, signInMethodPasskey: true, signInMethodOAuth: true}},
 		{"account opt-in gates every method", true, approvalScopePasswordOnly, true, true,
 			map[string]bool{signInMethodPassword: true, signInMethodPasskey: true, signInMethodOAuth: true}},
-		{"no other session never gates", true, approvalScopeAllMethods, true, false, map[string]bool{}},
+		{"account switch on holds without another session", true, approvalScopeAllMethods, true, false,
+			map[string]bool{signInMethodPassword: true, signInMethodPasskey: true, signInMethodOAuth: true}},
+		{"no other session and switch off never gates", true, approvalScopeAllMethods, false, false, map[string]bool{}},
 		{"break glass switch off never gates", false, approvalScopeAllMethods, true, true, map[string]bool{}},
 	}
 	for _, tt := range tests {

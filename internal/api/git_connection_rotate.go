@@ -217,7 +217,7 @@ func (rt *Router) writeGitRotateError(w http.ResponseWriter, c store.GitConnecti
 		writeError(w, http.StatusConflict, "this provider cannot replace a pasted token through its API")
 	case errors.Is(err, errGitRotateLost):
 		rt.logger.Error("api: git rotate could not save the new token; the connection must be reconnected", slog.String("connection", c.ID))
-		writeError(w, http.StatusInternalServerError, "the host rotated the token but it could not be saved; create a new token and reconnect this connection")
+		writeCodedError(w, http.StatusInternalServerError, "git_rotate_token_lost", "the host rotated the token but it could not be saved; create a new token and reconnect this connection")
 	case errors.As(err, &apiErr) && (apiErr.StatusCode == http.StatusForbidden || apiErr.StatusCode == http.StatusUnauthorized):
 		writeError(w, http.StatusConflict, "the host refused the rotation; the token needs the self_rotate scope")
 	case errors.As(err, &apiErr) && apiErr.StatusCode == http.StatusNotFound:
