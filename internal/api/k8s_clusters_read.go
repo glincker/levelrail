@@ -43,9 +43,14 @@ func (rt *Router) k8sReadClient(w http.ResponseWriter, r *http.Request) (*k8scon
 }
 
 // writeK8sCallError maps a cluster call failure to a status without echoing the server body.
-func writeK8sCallError(w http.ResponseWriter, err error) {
+// need names the permission the call required, empty when it is not a cluster-scope read.
+func writeK8sCallError(w http.ResponseWriter, err error, need string) {
 	switch classifyK8sError(err) {
 	case "unauthorized", "forbidden":
+		if need != "" {
+			writeError(w, http.StatusBadGateway, "the cluster refused the stored credential: it lacks the cluster-scope permission "+need+"; the namespaced role from clusters rbac does not grant it, add the read-only ClusterRole from clusters rbac --cluster-read")
+			return
+		}
 		writeError(w, http.StatusBadGateway, "the cluster refused the stored credential for this read")
 	default:
 		writeError(w, http.StatusBadGateway, "the cluster did not answer the request")
@@ -59,7 +64,7 @@ func (rt *Router) handleListK8sNodes(w http.ResponseWriter, r *http.Request) {
 	}
 	nodes, err := cl.ListNodes(r.Context())
 	if err != nil {
-		writeK8sCallError(w, err)
+		writeK8sCallError(w, err, "list nodes")
 		return
 	}
 	out := make([]k8sNodeRow, 0, len(nodes))
@@ -80,7 +85,7 @@ func (rt *Router) handleListK8sNamespaces(w http.ResponseWriter, r *http.Request
 	}
 	list, err := cl.ListNamespaces(r.Context())
 	if err != nil {
-		writeK8sCallError(w, err)
+		writeK8sCallError(w, err, "list namespaces")
 		return
 	}
 	out := make([]k8sNamespaceRow, 0, len(list))

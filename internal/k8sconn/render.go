@@ -50,6 +50,8 @@ type AppSpec struct {
 	Resources Resources
 	// RunAsUser is set only when the caller knows the image runs non-root.
 	RunAsUser *int64
+	// AllowRoot adds back the minimal capabilities root-start images need after drop ALL.
+	AllowRoot bool
 	// AllowUnmanagedNamespace lets Apply use an existing namespace without our label.
 	AllowUnmanagedNamespace bool
 	// AllowUnverifiedHost lets Apply proceed when Ingresses cannot be listed.
@@ -115,6 +117,14 @@ func Render(s AppSpec) (Rendered, error) {
 		"allowPrivilegeEscalation": false,
 		"capabilities":             map[string]any{"drop": []any{"ALL"}},
 		"seccompProfile":           map[string]any{"type": "RuntimeDefault"},
+	}
+	if s.AllowRoot {
+		// Same set the container engine adds back, so chown and port-binding entrypoints start.
+		add := make([]any, 0, len(minimalCapabilities))
+		for _, c := range minimalCapabilities {
+			add = append(add, c)
+		}
+		sec["capabilities"] = map[string]any{"drop": []any{"ALL"}, "add": add}
 	}
 	if s.RunAsUser != nil {
 		sec["runAsNonRoot"] = true
@@ -233,3 +243,6 @@ func toAny(m map[string]string) map[string]any {
 	}
 	return out
 }
+
+// minimalCapabilities mirrors internal/docker MinimalCapabilities.
+var minimalCapabilities = []string{"CHOWN", "DAC_OVERRIDE", "FOWNER", "FSETID", "KILL", "NET_BIND_SERVICE", "SETGID", "SETUID"}

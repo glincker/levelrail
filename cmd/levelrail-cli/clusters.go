@@ -53,7 +53,7 @@ func clustersUsage(prog string) string {
   %[1]s clusters deploy <name> --app A --image I --port N [--env-file F] [--replicas N] [--host H] [--namespace NS] [--allow-root]
   %[1]s clusters deployments <name> [flags]   apps deployed to a cluster
   %[1]s clusters status <name> <app> [flags]  rollout state, conditions and ingress address
-  %[1]s clusters rbac --namespace NS [flags]  print a namespace-scoped ServiceAccount, Role and RoleBinding
+  %[1]s clusters rbac --namespace NS [--cluster-read] [flags]  print a namespace-scoped ServiceAccount, Role and RoleBinding (--cluster-read adds a read-only ClusterRole for nodes and namespaces)
 
 Credentials come from a file, or "-" for stdin, never from an argument.
 `, prog)

@@ -106,3 +106,15 @@ func TestRun_ClustersStatusPrintsReadiness(t *testing.T) {
 		}
 	}
 }
+
+func TestClustersRBACClusterReadFlagAddsSeparateReadOnlyRole(t *testing.T) {
+	out, _ := runCLIExpectOK(t, []string{"clusters", "rbac", "--namespace", "apps", "--cluster-read"})
+	for _, want := range []string{"kind: ClusterRole\n", "kind: ClusterRoleBinding", `resources: ["nodes", "namespaces"]`, `verbs: ["get", "list"]`} {
+		if !strings.Contains(out, want) {
+			t.Errorf("missing %q:\n%s", want, out)
+		}
+	}
+	if strings.Contains(out, "delete") && strings.Contains(out[strings.Index(out, "kind: ClusterRole\n"):], "delete") {
+		t.Errorf("cluster role must be read only:\n%s", out)
+	}
+}

@@ -135,7 +135,7 @@ func printK8sStatus(out io.Writer, s apiclient.K8sDeploymentStatus) {
 		_, _ = fmt.Fprintf(tw, "condition\t%s\t%s\t%s\n", c.Type, c.Status, strings.TrimSpace(c.Reason+" "+c.Message))
 	}
 	for _, p := range s.Pods {
-		_, _ = fmt.Fprintf(tw, "pod\t%s\t%s\t%s\n", p.Name, p.Phase, p.Reason)
+		_, _ = fmt.Fprintf(tw, "pod\t%s\t%s\t%s\n", p.Name, p.Phase, strings.TrimSpace(p.Reason+" "+p.Message))
 	}
 	_ = tw.Flush()
 }

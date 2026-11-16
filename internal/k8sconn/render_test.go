@@ -21,8 +21,10 @@ func TestRenderGolden(t *testing.T) {
 	noHost.Host, noHost.IngressClass, noHost.RunAsUser, noHost.Env = "", "", nil, nil
 	tls := baseSpec()
 	tls.TLSIssuer = "letsencrypt"
+	root := baseSpec()
+	root.RunAsUser, root.AllowRoot = nil, true
 
-	cases := map[string]AppSpec{"basic": baseSpec(), "nohost": noHost, "tls": tls}
+	cases := map[string]AppSpec{"basic": baseSpec(), "nohost": noHost, "tls": tls, "allowroot": root}
 	for name, spec := range cases {
 		t.Run(name, func(t *testing.T) {
 			r, err := Render(spec)
@@ -72,6 +74,34 @@ func TestRenderValidation(t *testing.T) {
 		mut(&s)
 		if _, err := Render(s); err == nil {
 			t.Fatalf("case %d: expected error", i)
+		}
+	}
+}
+
+func TestRenderCapabilitiesDropAllThenAddOnlyWithAllowRoot(t *testing.T) {
+	r, err := Render(baseSpec())
+	if err != nil {
+		t.Fatal(err)
+	}
+	y, _ := r.YAML()
+	if strings.Contains(string(y), "add:") {
+		t.Fatalf("no capability may be added without allow_root:\n%s", y)
+	}
+	spec := baseSpec()
+	spec.AllowRoot = true
+	r, err = Render(spec)
+	if err != nil {
+		t.Fatal(err)
+	}
+	y, _ = r.YAML()
+	for _, want := range []string{"- ALL", "CHOWN", "DAC_OVERRIDE", "FOWNER", "FSETID", "KILL", "NET_BIND_SERVICE", "SETGID", "SETUID"} {
+		if !strings.Contains(string(y), want) {
+			t.Fatalf("missing %s:\n%s", want, y)
+		}
+	}
+	for _, bad := range []string{"SYS_ADMIN", "NET_RAW", "privileged: true"} {
+		if strings.Contains(string(y), bad) {
+			t.Fatalf("%s must not appear", bad)
 		}
 	}
 }

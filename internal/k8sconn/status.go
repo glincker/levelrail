@@ -7,6 +7,7 @@ import (
 	"fmt"
 	"net/http"
 	"net/url"
+	"unicode/utf8"
 )
 
 // Condition is one Deployment condition, trimmed.
@@ -22,6 +23,8 @@ type PodState struct {
 	Name   string
 	Phase  string
 	Reason string
+	// Message is the last terminated or waiting message, truncated; never env values.
+	Message string
 }
 
 // Status is what a deployment looks like right now.
@@ -71,8 +74,9 @@ type deploymentDoc struct {
 }
 
 // DeploymentStatus reads the deployment, its pods and its ingress. It only reads
-// objects that carry our labels, so a foreign object of the same name looks missing.
-func (c *Client) DeploymentStatus(ctx context.Context, namespace, app string) (Status, error) {
+// objects that carry our labels and this install's instance id, so a foreign object of the
+// same name looks missing. An empty instance skips the instance check.
+func (c *Client) DeploymentStatus(ctx context.Context, namespace, app, instance string) (Status, error) {
 	ns := url.PathEscape(namespace)
 	data, err := c.Do(ctx, http.MethodGet, "/apis/apps/v1/namespaces/"+ns+"/deployments/"+url.PathEscape(app), nil)
 	var se *StatusError
@@ -86,7 +90,7 @@ func (c *Client) DeploymentStatus(ctx context.Context, namespace, app string) (S
 	if err := json.Unmarshal(data, &d); err != nil {
 		return Status{}, fmt.Errorf("k8sconn: decode deployment: %w", err)
 	}
-	if !ownedBy(d.Metadata.Labels, app, "") {
+	if !ownedBy(d.Metadata.Labels, app, instance) {
 		return Status{}, nil
 	}
 	st := Status{Found: true, Replicas: d.Status.Replicas, ReadyReplicas: d.Status.ReadyReplicas, UpdatedReplicas: d.Status.UpdatedReplicas}
@@ -124,11 +128,8 @@ func podStates(data []byte) []PodState {
 					Type, Status, Reason string
 				} `json:"conditions"`
 				ContainerStatuses []struct {
-					State struct {
-						Waiting *struct {
-							Reason string `json:"reason"`
-						} `json:"waiting"`
-					} `json:"state"`
+					State     containerState `json:"state"`
+					LastState containerState `json:"lastState"`
 				} `json:"containerStatuses"`
 			} `json:"status"`
 		} `json:"items"`
@@ -140,10 +141,26 @@ func podStates(data []byte) []PodState {
 	for _, it := range l.Items {
 		p := PodState{Name: it.Metadata.Name, Phase: it.Status.Phase}
 		for _, cs := range it.Status.ContainerStatuses {
-			if w := cs.State.Waiting; w != nil && w.Reason != "" && w.Reason != "ContainerCreating" && p.Reason == "" {
-				p.Reason = w.Reason
+			if p.Reason != "" {
+				break
+			}
+			switch {
+			case cs.State.Waiting != nil && cs.State.Waiting.Reason != "" && cs.State.Waiting.Reason != "ContainerCreating":
+				p.Reason = cs.State.Waiting.Reason
+				p.Message = cs.State.Waiting.Message
+				// A crash loop keeps the last exit message in lastState.
+				if t := cs.LastState.Terminated; t != nil && t.Message != "" {
+					p.Message = t.Message
+				}
+			case cs.State.Terminated != nil && cs.State.Terminated.ExitCode != 0:
+				p.Reason = nonEmpty(cs.State.Terminated.Reason, "Error")
+				p.Message = cs.State.Terminated.Message
+			case cs.LastState.Terminated != nil && cs.LastState.Terminated.ExitCode != 0:
+				p.Reason = nonEmpty(cs.LastState.Terminated.Reason, "Error")
+				p.Message = cs.LastState.Terminated.Message
 			}
 		}
+		p.Message = truncateMessage(p.Message)
 		for _, cd := range it.Status.Conditions {
 			if cd.Type == "PodScheduled" && cd.Status == "False" && p.Reason == "" {
 				p.Reason = cd.Reason
@@ -170,4 +187,38 @@ func ingressAddress(data []byte) string {
 		return a.IP
 	}
 	return a.Hostname
+}
+
+type containerState struct {
+	Waiting *struct {
+		Reason  string `json:"reason"`
+		Message string `json:"message"`
+	} `json:"waiting"`
+	Terminated *struct {
+		Reason   string `json:"reason"`
+		Message  string `json:"message"`
+		ExitCode int    `json:"exitCode"`
+	} `json:"terminated"`
+}
+
+func nonEmpty(v, fallback string) string {
+	if v == "" {
+		return fallback
+	}
+	return v
+}
+
+// messageMax keeps cluster-authored text small in a status row.
+const messageMax = 300
+
+// truncateMessage cuts on a rune boundary so a multi-byte character is never split.
+func truncateMessage(s string) string {
+	if len(s) <= messageMax {
+		return s
+	}
+	cut := messageMax
+	for cut > 0 && !utf8.RuneStart(s[cut]) {
+		cut--
+	}
+	return s[:cut]
 }

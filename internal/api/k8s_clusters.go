@@ -10,6 +10,7 @@ import (
 	"errors"
 	"log/slog"
 	"net/http"
+	"os"
 	"regexp"
 	"time"
 
@@ -121,6 +122,15 @@ func (rt *Router) k8sGate(w http.ResponseWriter, r *http.Request) bool {
 	return true
 }
 
+// k8sSecretsUnavailableMessage tells a malformed APP_MASTER_KEY apart from a missing key
+// without echoing the value: boot leaves the secrets store unset in both cases.
+func k8sSecretsUnavailableMessage(envKeySet bool) string {
+	if envKeySet {
+		return "storing cluster credentials needs the secrets master key, but APP_MASTER_KEY is set and malformed; fix it or unset it to use the key file"
+	}
+	return "storing cluster credentials needs the secrets master key"
+}
+
 func (rt *Router) k8sSecrets() (k8sClusterSecrets, bool) {
 	s, ok := rt.nodeProviderSecrets.(k8sClusterSecrets)
 	return s, ok && s != nil
@@ -175,7 +185,7 @@ func (rt *Router) handleConnectK8sCluster(w http.ResponseWriter, r *http.Request
 	}
 	secrets, ok := rt.k8sSecrets()
 	if !ok {
-		writeError(w, http.StatusNotImplemented, "storing cluster credentials needs the secrets master key")
+		writeError(w, http.StatusNotImplemented, k8sSecretsUnavailableMessage(os.Getenv("APP_MASTER_KEY") != ""))
 		return
 	}
 	ctx := r.Context()

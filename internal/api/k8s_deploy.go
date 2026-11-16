@@ -270,7 +270,7 @@ func (rt *Router) failK8sApply(w http.ResponseWriter, r *http.Request, cluster s
 		writeError(w, status, msg)
 		return
 	}
-	writeK8sCallError(w, err)
+	writeK8sCallError(w, err, "")
 }
 
 // recordPartialK8s keeps the row so status and removal see what was applied.
@@ -337,7 +337,7 @@ func (rt *Router) buildK8sSpec(ctx context.Context, req k8sDeployRequest) (k8sco
 	}
 	spec := k8sconn.AppSpec{
 		Name: req.App, Namespace: ns, Image: req.Image, Port: req.Port, Replicas: replicas,
-		Env: req.Env, Host: req.Host, Resources: res, AllowUnverifiedHost: req.SkipHostCheck,
+		Env: req.Env, Host: req.Host, Resources: res, AllowRoot: req.AllowRoot, AllowUnverifiedHost: req.SkipHostCheck,
 		AllowUnmanagedNamespace: ns == set.String(ctx, runtimesettings.KeyK8sDefaultNamespace) || k8sNamespaceAllowed(set.String(ctx, runtimesettings.KeyK8sAllowedNamespaces), ns),
 	}
 	switch {

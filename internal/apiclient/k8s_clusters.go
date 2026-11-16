@@ -152,9 +152,10 @@ type K8sConditionRow struct {
 
 // K8sPodRow is one pod of the workload.
 type K8sPodRow struct {
-	Name   string `json:"name"`
-	Phase  string `json:"phase"`
-	Reason string `json:"reason,omitempty"`
+	Name    string `json:"name"`
+	Phase   string `json:"phase"`
+	Reason  string `json:"reason,omitempty"`
+	Message string `json:"message,omitempty"`
 }
 
 // K8sDeploymentStatus is the live rollout state of one app.

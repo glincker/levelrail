@@ -11,6 +11,7 @@ import (
 	"sync"
 	"testing"
 	"time"
+	"unicode/utf8"
 
 	"github.com/GLINCKER/levelrail/internal/trafficpolicy"
 )
@@ -148,7 +149,7 @@ func TestDeploymentStatusReadsReason(t *testing.T) {
 		"GET /api/v1/namespaces/apps/pods":                                `{"items":[{"metadata":{"name":"p1"},"status":{"phase":"Pending","containerStatuses":[{"state":{"waiting":{"reason":"ImagePullBackOff"}}}]}}]}`,
 		"GET /apis/networking.k8s.io/v1/namespaces/apps/ingresses/whoami": `{"status":{"loadBalancer":{"ingress":[{"ip":"10.0.0.9"}]}}}`,
 	})
-	st, err := c.DeploymentStatus(context.Background(), "apps", "whoami")
+	st, err := c.DeploymentStatus(context.Background(), "apps", "whoami", "")
 	if err != nil {
 		t.Fatal(err)
 	}
@@ -158,7 +159,43 @@ func TestDeploymentStatusReadsReason(t *testing.T) {
 	foreign := newFake(t, map[string]string{
 		"GET /apis/apps/v1/namespaces/apps/deployments/whoami": `{"metadata":{"labels":{"x":"y"}}}`,
 	})
-	if st, _ := foreign.DeploymentStatus(context.Background(), "apps", "whoami"); st.Found {
+	if st, _ := foreign.DeploymentStatus(context.Background(), "apps", "whoami", ""); st.Found {
 		t.Fatal("an unlabelled object must read as missing")
+	}
+}
+
+func TestDeploymentStatusChecksInstanceLabel(t *testing.T) {
+	lbl := `"labels":{"app.kubernetes.io/managed-by":"levelrail","levelrail.dev/app":"whoami","levelrail.dev/instance":"mine"}`
+	objs := map[string]string{"GET /apis/apps/v1/namespaces/apps/deployments/whoami": `{"metadata":{` + lbl + `},"status":{}}`}
+	if st, _ := newFake(t, objs).DeploymentStatus(context.Background(), "apps", "whoami", "other"); st.Found {
+		t.Fatal("another install's object must read as missing")
+	}
+	if st, _ := newFake(t, objs).DeploymentStatus(context.Background(), "apps", "whoami", "mine"); !st.Found {
+		t.Fatal("own object must be found")
+	}
+}
+
+func TestDeploymentStatusSurfacesCrashReasonAndMessage(t *testing.T) {
+	lbl := `"labels":{"app.kubernetes.io/managed-by":"levelrail","levelrail.dev/app":"whoami"}`
+	long := strings.Repeat("\u00e9", 400)
+	c := newFake(t, map[string]string{
+		"GET /apis/apps/v1/namespaces/apps/deployments/whoami": `{"metadata":{` + lbl + `},"status":{}}`,
+		"GET /api/v1/namespaces/apps/pods": `{"items":[` +
+			`{"metadata":{"name":"a"},"status":{"phase":"Running","containerStatuses":[{"state":{"waiting":{"reason":"CrashLoopBackOff"}},"lastState":{"terminated":{"exitCode":1,"reason":"Error","message":"` + long + `"}}}]}},` +
+			`{"metadata":{"name":"b"},"status":{"phase":"Running","containerStatuses":[{"state":{"terminated":{"exitCode":2,"reason":"Error","message":"boom"}}}]}}]}`,
+	})
+	st, err := c.DeploymentStatus(context.Background(), "apps", "whoami", "")
+	if err != nil {
+		t.Fatal(err)
+	}
+	if len(st.Pods) != 2 || st.Pods[0].Reason != "CrashLoopBackOff" || st.Pods[1].Reason != "Error" || st.Pods[1].Message != "boom" {
+		t.Fatalf("pods = %+v", st.Pods)
+	}
+	m := st.Pods[0].Message
+	if len(m) > messageMax || !utf8.ValidString(m) || m == "" {
+		t.Fatalf("message not truncated safely: len %d", len(m))
+	}
+	if !strings.Contains(st.Reason, "keeps crashing") {
+		t.Fatalf("reason = %q", st.Reason)
 	}
 }

@@ -44,10 +44,39 @@ subjects:
 `, namespace, account)
 }
 
+// Optional and separate so the default stays namespace-only: nodes and namespaces are cluster scoped.
+func clustersClusterReadYAML(namespace, account string) string {
+	return fmt.Sprintf(`---
+apiVersion: rbac.authorization.k8s.io/v1
+kind: ClusterRole
+metadata:
+  name: %[2]s-cluster-read
+rules:
+  - apiGroups: [""]
+    resources: ["nodes", "namespaces"]
+    verbs: ["get", "list"]
+---
+apiVersion: rbac.authorization.k8s.io/v1
+kind: ClusterRoleBinding
+metadata:
+  name: %[2]s-cluster-read
+roleRef:
+  apiGroup: rbac.authorization.k8s.io
+  kind: ClusterRole
+  name: %[2]s-cluster-read
+subjects:
+  - kind: ServiceAccount
+    name: %[2]s
+    namespace: %[1]s
+`, namespace, account)
+}
+
 func runClustersRBAC(prog string, args []string, stdout, stderr io.Writer) int {
 	fs := flag.NewFlagSet(prog+" clusters rbac", flag.ContinueOnError)
 	fs.SetOutput(stderr)
 	var namespace, account string
+	var clusterRead bool
+	fs.BoolVar(&clusterRead, "cluster-read", false, "also print a read-only ClusterRole and ClusterRoleBinding for nodes and namespaces (cluster scope)")
 	fs.StringVar(&namespace, "namespace", "", "namespace the account may manage (required)")
 	fs.StringVar(&account, "service-account", "levelrail", "ServiceAccount and Role name")
 	if err := fs.Parse(args); err != nil {
@@ -61,5 +90,8 @@ func runClustersRBAC(prog string, args []string, stdout, stderr io.Writer) int {
 		return exitUsage
 	}
 	_, _ = fmt.Fprint(stdout, clustersRBACYAML(namespace, account))
+	if clusterRead {
+		_, _ = fmt.Fprint(stdout, clustersClusterReadYAML(namespace, account))
+	}
 	return exitOK
 }

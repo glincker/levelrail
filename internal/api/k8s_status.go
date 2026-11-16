@@ -19,6 +19,8 @@ type k8sPodRow struct {
 	Name   string `json:"name"`
 	Phase  string `json:"phase"`
 	Reason string `json:"reason,omitempty"`
+	// Message is the last terminated or waiting message, already truncated.
+	Message string `json:"message,omitempty"`
 }
 
 type k8sDeploymentStatusResponse struct {
@@ -63,9 +65,14 @@ func (rt *Router) handleGetK8sDeploymentStatus(w http.ResponseWriter, r *http.Re
 		writeError(w, http.StatusBadGateway, "cluster is unreachable or its credentials cannot be loaded")
 		return
 	}
-	st, err := cl.DeploymentStatus(ctx, d.Namespace, d.App)
+	instance, err := rt.k8sDeploymentRows.K8sInstanceID(ctx)
 	if err != nil {
-		writeK8sCallError(w, err)
+		rt.internalError(w, "api: get k8s instance id failed", err)
+		return
+	}
+	st, err := cl.DeploymentStatus(ctx, d.Namespace, d.App, instance)
+	if err != nil {
+		writeK8sCallError(w, err, "")
 		return
 	}
 	out := k8sDeploymentStatusResponse{
@@ -81,7 +88,7 @@ func (rt *Router) handleGetK8sDeploymentStatus(w http.ResponseWriter, r *http.Re
 		out.Conditions = append(out.Conditions, k8sConditionRow{Type: cd.Type, Status: cd.Status, Reason: cd.Reason, Message: truncateK8sMessage(cd.Message)})
 	}
 	for _, p := range st.Pods {
-		out.Pods = append(out.Pods, k8sPodRow{Name: p.Name, Phase: p.Phase, Reason: p.Reason})
+		out.Pods = append(out.Pods, k8sPodRow{Name: p.Name, Phase: p.Phase, Reason: p.Reason, Message: p.Message})
 	}
 	writeJSON(w, http.StatusOK, out)
 }

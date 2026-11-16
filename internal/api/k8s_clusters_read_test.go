@@ -10,6 +10,7 @@ import (
 	"testing"
 
 	"encoding/pem"
+	"github.com/GLINCKER/levelrail/internal/k8sconn"
 	"github.com/GLINCKER/levelrail/internal/runtimesettings"
 )
 
@@ -56,5 +57,22 @@ func TestK8sListNodesAndNamespaces(t *testing.T) {
 	}
 	if rec := do("GET", k8sClustersPath+"/missing/nodes", ""); rec.Code != http.StatusNotFound {
 		t.Fatalf("missing cluster = %d, want 404", rec.Code)
+	}
+}
+
+func TestWriteK8sCallErrorNamesMissingPermission(t *testing.T) {
+	rec := httptest.NewRecorder()
+	writeK8sCallError(rec, &k8sconn.StatusError{Code: http.StatusForbidden}, "list nodes")
+	if rec.Code != http.StatusBadGateway || !strings.Contains(rec.Body.String(), "list nodes") || !strings.Contains(rec.Body.String(), "cluster-scope") {
+		t.Fatalf("got %d %s", rec.Code, rec.Body.String())
+	}
+}
+
+func TestK8sSecretsUnavailableMessageSaysMalformedWithoutKey(t *testing.T) {
+	if m := k8sSecretsUnavailableMessage(true); !strings.Contains(m, "malformed") || strings.Contains(m, "AGE-SECRET") {
+		t.Fatalf("message = %q", m)
+	}
+	if m := k8sSecretsUnavailableMessage(false); strings.Contains(m, "malformed") {
+		t.Fatalf("message = %q", m)
 	}
 }
