@@ -150,3 +150,40 @@ func TestProviderScope_ConnectionTestCarriesNeeds(t *testing.T) {
 		t.Fatalf("result = %s", rec.Body)
 	}
 }
+
+func TestProviderCapabilities_SaveAndTestResponses(t *testing.T) {
+	fake := &fakeCapProvisioner{}
+	rt, cookie, _ := scopeRouter(t, fake)
+	post := func(path, body string) *httptest.ResponseRecorder {
+		rec := httptest.NewRecorder()
+		rt.Handler().ServeHTTP(rec, authedRequest(t, cookie, http.MethodPost, path, body))
+		return rec
+	}
+	rec := post("/api/v1/node-providers", `{"provider":"digitalocean","token":"candidate-token"}`)
+	var saved nodeProviderResource
+	_ = json.Unmarshal(rec.Body.Bytes(), &saved)
+	if rec.Code != http.StatusOK || saved.Capabilities == nil || len(saved.Capabilities.Capabilities) != 2 {
+		t.Fatalf("save = %d %s", rec.Code, rec.Body)
+	}
+	if strings.Contains(rec.Body.String(), "candidate-token") {
+		t.Fatal("token echoed")
+	}
+
+	rec = post("/api/v1/node-providers/digitalocean/test", "")
+	var stored nodeProviderTestResult
+	_ = json.Unmarshal(rec.Body.Bytes(), &stored)
+	if stored.Capabilities == nil || fake.probes.Load() != 2 {
+		t.Fatalf("stored test = %s probes=%d", rec.Body, fake.probes.Load())
+	}
+
+	rec = post("/api/v1/node-providers/digitalocean/test", `{"provider":"digitalocean","token":"other"}`)
+	var cand nodeProviderTestResult
+	_ = json.Unmarshal(rec.Body.Bytes(), &cand)
+	if cand.Capabilities == nil || fake.probes.Load() != 3 {
+		t.Fatalf("candidate test = %s probes=%d", rec.Body, fake.probes.Load())
+	}
+	// A candidate probe must not replace the cached result of the stored credential.
+	if e := rt.providerCaps.entry("digitalocean"); e.result == nil {
+		t.Fatal("stored cache lost")
+	}
+}

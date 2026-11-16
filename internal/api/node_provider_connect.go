@@ -84,6 +84,9 @@ type nodeProviderResource struct {
 	LastTestedAt   *time.Time `json:"last_tested_at,omitempty"`
 	LastTestOK     *bool      `json:"last_test_ok,omitempty"`
 	LastTestDetail string     `json:"last_test_detail,omitempty"`
+	// Capabilities is set only on the save response, so the panel can render
+	// right after a token is stored.
+	Capabilities *provision.ProviderCapabilities `json:"capabilities,omitempty"`
 }
 
 // NodeProviderConnectionStore is the store surface for connection metadata.
@@ -290,6 +293,8 @@ type nodeProviderTestResult struct {
 	// Code and Needs are set only when the provider refused for a missing scope.
 	Code  string `json:"code,omitempty"`
 	Needs string `json:"needs,omitempty"`
+	// Capabilities is the read-only permission check run with the tested credential.
+	Capabilities *provision.ProviderCapabilities `json:"capabilities,omitempty"`
 }
 
 // testNodeProviderValue runs one read-only call (list regions) against the
@@ -406,7 +411,44 @@ func (rt *Router) handleSetNodeProviderCredential(w http.ResponseWriter, r *http
 	rt.nodeProviderCatalog.invalidate(req.Provider)
 	rt.providerCaps.invalidate(req.Provider)
 	rt.saveNodeProviderConnection(r, req)
-	writeJSON(w, http.StatusOK, rt.nodeProviderResourceFor(r.Context(), req.Provider))
+	res := rt.nodeProviderResourceFor(r.Context(), req.Provider)
+	res.Capabilities = rt.storedCredentialCapabilities(r.Context(), req.Provider)
+	writeJSON(w, http.StatusOK, res)
+}
+
+// storedCredentialCapabilities probes with the stored credential right after
+// it changed. It returns nil for providers with no safe probe.
+func (rt *Router) storedCredentialCapabilities(ctx context.Context, provider string) *provision.ProviderCapabilities {
+	p, ok, _, _ := rt.resolveNodeProvisioner(ctx, provider)
+	if !ok {
+		return nil
+	}
+	if _, can := p.(provision.CapabilityProber); !can {
+		return nil
+	}
+	out, _ := rt.providerCapabilities(ctx, provider, p, capForceProbe)
+	return &out
+}
+
+// candidateCapabilities probes a credential that is not stored. It uses a
+// throwaway entry so a test never fills or resets the provider's cache.
+func (rt *Router) candidateCapabilities(ctx context.Context, provider, value string) *provision.ProviderCapabilities {
+	factory := rt.nodeProvisionerFactory
+	if factory == nil {
+		factory = rt.defaultNodeProvisionerFactory
+	}
+	p, err := factory(provider, value)
+	if err != nil {
+		return nil
+	}
+	if _, can := p.(provision.CapabilityProber); !can {
+		return nil
+	}
+	e := &capEntry{learned: map[string]capLearned{}}
+	e.probeMu.Lock()
+	defer e.probeMu.Unlock()
+	out, _ := rt.providerCapabilitiesLocked(ctx, provider, p, e, capForceProbe)
+	return &out
 }
 
 func (rt *Router) connectCustomProvider(w http.ResponseWriter, r *http.Request, req setNodeProviderCredentialRequest) {
@@ -494,6 +536,11 @@ func (rt *Router) handleTestNodeProvider(w http.ResponseWriter, r *http.Request)
 		}
 	}
 	res := nodeProviderTestResult{OK: ok, Message: message, TestedAt: now}
+	if candidate {
+		res.Capabilities = rt.candidateCapabilities(r.Context(), provider, value)
+	} else {
+		res.Capabilities = rt.storedCredentialCapabilities(r.Context(), provider)
+	}
 	if scope != nil {
 		res.Code, res.Needs = errCodeProviderScope, scope.Needs
 	}
