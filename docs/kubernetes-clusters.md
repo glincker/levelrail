@@ -28,7 +28,7 @@ levelrail-cli clusters connect prod --server https://203.0.113.10:6443 --token-f
 
 Credentials come from a file, or `-` for stdin, never from an argument. Only one input can read stdin. The dashboard offers the same two methods under Clusters, Connect a cluster: "Kubeconfig" and "Server and token".
 
-Connecting a cluster stores the credential and checks it. It does not change anything on the cluster. Then run a read-only test:
+Connecting checks the credential and stores it. It does not deploy anything. To check the connection again, run a read-only test:
 
 ```bash
 levelrail-cli clusters test prod
