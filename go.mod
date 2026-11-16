@@ -6,16 +6,16 @@ require (
 	filippo.io/age v1.3.2
 	github.com/GLINCKER/levelrail/kit v0.0.0
 	github.com/SherClockHolmes/webpush-go v1.4.0
-	github.com/aws/aws-sdk-go-v2 v1.47.5
-	github.com/aws/aws-sdk-go-v2/config v1.33.13
-	github.com/aws/aws-sdk-go-v2/credentials v1.20.13
-	github.com/aws/aws-sdk-go-v2/feature/s3/manager v1.23.19
-	github.com/aws/aws-sdk-go-v2/service/ec2 v1.343.0
-	github.com/aws/aws-sdk-go-v2/service/route53 v1.70.6
-	github.com/aws/aws-sdk-go-v2/service/s3 v1.114.6
-	github.com/aws/aws-sdk-go-v2/service/sesv2 v1.79.5
-	github.com/aws/aws-sdk-go-v2/service/sts v1.51.6
-	github.com/aws/smithy-go v1.28.7
+	github.com/aws/aws-sdk-go-v2 v1.47.8
+	github.com/aws/aws-sdk-go-v2/config v1.33.17
+	github.com/aws/aws-sdk-go-v2/credentials v1.20.17
+	github.com/aws/aws-sdk-go-v2/feature/s3/manager v1.23.23
+	github.com/aws/aws-sdk-go-v2/service/ec2 v1.344.2
+	github.com/aws/aws-sdk-go-v2/service/route53 v1.70.9
+	github.com/aws/aws-sdk-go-v2/service/s3 v1.114.9
+	github.com/aws/aws-sdk-go-v2/service/sesv2 v1.79.8
+	github.com/aws/aws-sdk-go-v2/service/sts v1.51.9
+	github.com/aws/smithy-go v1.28.8
 	github.com/beevik/etree v1.8.1
 	github.com/caddy-dns/cloudflare v0.2.4
 	github.com/caddy-dns/route53 v1.6.2
@@ -44,15 +44,15 @@ require (
 	github.com/hashicorp/vault/api v1.23.0
 	github.com/hashicorp/vault/api/auth/approle v0.12.0
 	github.com/jmespath/go-jmespath v0.4.1-0.20220621161143-b0104c826a24
-	github.com/klauspost/compress v1.20.3
+	github.com/klauspost/compress v1.20.4
 	github.com/libdns/cloudflare v0.2.2
 	github.com/libdns/libdns v1.1.1
 	github.com/libdns/route53 v1.6.2
 	github.com/mattermost/xml-roundtrip-validator v0.1.0
-	github.com/mholt/caddy-l4 v0.1.2
+	github.com/mholt/caddy-l4 v0.1.3
 	github.com/mholt/caddy-ratelimit v0.1.0
 	github.com/miekg/dns v1.1.73
-	github.com/moby/buildkit v0.34.1
+	github.com/moby/buildkit v0.34.2
 	github.com/modelcontextprotocol/go-sdk v1.8.0
 	github.com/oklog/ulid/v2 v2.1.2
 	github.com/opencontainers/go-digest v1.0.0
@@ -62,20 +62,20 @@ require (
 	github.com/santhosh-tekuri/jsonschema/v6 v6.0.3
 	github.com/sigstore/sigstore-go v1.4.0
 	github.com/smallstep/certificates v0.30.2
-	github.com/tonistiigi/fsutil v0.0.0-20261009124904-c1c5bffae3b5
+	github.com/tonistiigi/fsutil v0.0.0-20261103091533-a72de9dcf763
 	go.opentelemetry.io/proto/otlp v1.11.1
 	golang.org/x/crypto v0.58.0
 	golang.org/x/net v0.62.0
-	golang.org/x/oauth2 v0.37.0
-	golang.org/x/sync v0.24.0
-	golang.org/x/sys v0.49.0
-	golang.org/x/term v0.47.0
-	golang.org/x/text v0.43.0
+	golang.org/x/oauth2 v0.38.0
+	golang.org/x/sync v0.25.0
+	golang.org/x/sys v0.50.0
+	golang.org/x/term v0.48.0
+	golang.org/x/text v0.44.0
 	golang.zx2c4.com/wireguard v0.0.0-20260522210424-ecfc5a8d5446
 	google.golang.org/grpc v1.85.0
 	google.golang.org/protobuf v1.36.12
 	gopkg.in/yaml.v3 v3.0.1
-	modernc.org/sqlite v1.61.1
+	modernc.org/sqlite v1.62.0
 )
 
 require (
@@ -103,18 +103,18 @@ require (
 	github.com/antlr4-go/antlr/v4 v4.13.1 // indirect
 	github.com/aryann/difflib v0.0.0-20210328193216-ff5ff6dc229b // indirect
 	github.com/asaskevich/govalidator v0.0.0-20230301143203-a9d515a09cc2 // indirect
-	github.com/aws/aws-sdk-go-v2/aws/protocol/eventstream v1.7.25 // indirect
-	github.com/aws/aws-sdk-go-v2/feature/ec2/imds v1.20.5 // indirect
-	github.com/aws/aws-sdk-go-v2/internal/configsources v1.5.8 // indirect
-	github.com/aws/aws-sdk-go-v2/internal/endpoints/v2 v2.8.8 // indirect
-	github.com/aws/aws-sdk-go-v2/internal/v4a v1.5.8 // indirect
-	github.com/aws/aws-sdk-go-v2/service/internal/accept-encoding v1.13.23 // indirect
-	github.com/aws/aws-sdk-go-v2/service/internal/checksum v1.11.9 // indirect
-	github.com/aws/aws-sdk-go-v2/service/internal/presigned-url v1.14.8 // indirect
-	github.com/aws/aws-sdk-go-v2/service/internal/s3shared v1.20.8 // indirect
-	github.com/aws/aws-sdk-go-v2/service/signin v1.12.1 // indirect
-	github.com/aws/aws-sdk-go-v2/service/sso v1.39.1 // indirect
-	github.com/aws/aws-sdk-go-v2/service/ssooidc v1.44.1 // indirect
+	github.com/aws/aws-sdk-go-v2/aws/protocol/eventstream v1.7.26 // indirect
+	github.com/aws/aws-sdk-go-v2/feature/ec2/imds v1.20.8 // indirect
+	github.com/aws/aws-sdk-go-v2/internal/configsources v1.5.11 // indirect
+	github.com/aws/aws-sdk-go-v2/internal/endpoints/v2 v2.8.11 // indirect
+	github.com/aws/aws-sdk-go-v2/internal/v4a v1.5.11 // indirect
+	github.com/aws/aws-sdk-go-v2/service/internal/accept-encoding v1.13.24 // indirect
+	github.com/aws/aws-sdk-go-v2/service/internal/checksum v1.11.12 // indirect
+	github.com/aws/aws-sdk-go-v2/service/internal/presigned-url v1.14.11 // indirect
+	github.com/aws/aws-sdk-go-v2/service/internal/s3shared v1.20.11 // indirect
+	github.com/aws/aws-sdk-go-v2/service/signin v1.13.0 // indirect
+	github.com/aws/aws-sdk-go-v2/service/sso v1.39.4 // indirect
+	github.com/aws/aws-sdk-go-v2/service/ssooidc v1.44.4 // indirect
 	github.com/aymanbagabas/go-osc52/v2 v2.0.1 // indirect
 	github.com/bahlo/generic-list-go v0.2.0 // indirect
 	github.com/beorn7/perks v1.0.1 // indirect
@@ -274,7 +274,7 @@ require (
 	github.com/pbnjay/memory v0.0.0-20210728143218-7b4eea64cf58 // indirect
 	github.com/petar-dambovaliev/aho-corasick v0.0.0-20250424160509-463d218d4745 // indirect
 	github.com/philhofer/fwd v1.2.0 // indirect
-	github.com/pires/go-proxyproto v0.15.0 // indirect
+	github.com/pires/go-proxyproto v0.16.0 // indirect
 	github.com/pjbgf/sha1cd v0.7.0 // indirect
 	github.com/pkg/errors v0.9.1 // indirect
 	github.com/planetscale/vtprotobuf v0.6.1-0.20240319094008-0393e58bdf10 // indirect
@@ -285,7 +285,7 @@ require (
 	github.com/prometheus/otlptranslator v1.0.0 // indirect
 	github.com/prometheus/procfs v0.22.0 // indirect
 	github.com/quic-go/qpack v0.6.0 // indirect
-	github.com/quic-go/quic-go v0.63.0 // indirect
+	github.com/quic-go/quic-go v0.64.1 // indirect
 	github.com/remyoudompheng/bigfft v0.0.0-20230129092748-24d4a6f8daec // indirect
 	github.com/rivo/uniseg v0.4.7 // indirect
 	github.com/rs/xid v1.6.0 // indirect
@@ -335,6 +335,7 @@ require (
 	github.com/transparency-dev/merkle v0.0.2 // indirect
 	github.com/urfave/cli v1.22.17 // indirect
 	github.com/valllabh/ocsf-schema-golang v1.0.3 // indirect
+	github.com/vnxme/hybrid v0.1.1 // indirect
 	github.com/x448/float16 v0.8.4 // indirect
 	github.com/xanzy/ssh-agent v0.3.3 // indirect
 	github.com/xo/terminfo v1.2.0 // indirect
@@ -392,7 +393,7 @@ require (
 	gopkg.in/yaml.v2 v2.4.0 // indirect
 	howett.net/plist v1.0.1 // indirect
 	k8s.io/klog/v2 v2.140.0 // indirect
-	modernc.org/libc v1.79.0 // indirect
+	modernc.org/libc v1.80.1 // indirect
 	modernc.org/mathutil v1.7.1 // indirect
 	modernc.org/memory v1.12.1 // indirect
 	mvdan.cc/sh/v3 v3.14.1 // indirect
