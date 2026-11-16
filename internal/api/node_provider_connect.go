@@ -287,19 +287,29 @@ type nodeProviderTestResult struct {
 	OK       bool      `json:"ok"`
 	Message  string    `json:"message"`
 	TestedAt time.Time `json:"tested_at"`
+	// Code and Needs are set only when the provider refused for a missing scope.
+	Code  string `json:"code,omitempty"`
+	Needs string `json:"needs,omitempty"`
 }
 
 // testNodeProviderValue runs one read-only call (list regions) against the
 // provider with the candidate credential value and describes the outcome
 // in plain language. The credential is never part of the message.
 func (rt *Router) testNodeProviderValue(ctx context.Context, provider, value string) (ok bool, message string) {
+	ok, message, _ = rt.testNodeProviderScope(ctx, provider, value)
+	return ok, message
+}
+
+// testNodeProviderScope is testNodeProviderValue plus the missing scope when
+// the provider refused for one, so callers can answer with a fixed code.
+func (rt *Router) testNodeProviderScope(ctx context.Context, provider, value string) (ok bool, message string, scope *provision.ScopeMissingError) {
 	factory := rt.nodeProvisionerFactory
 	if factory == nil {
 		factory = rt.defaultNodeProvisionerFactory
 	}
 	p, err := factory(provider, value)
 	if err != nil {
-		return false, "The credential could not be read: " + sanitizeProviderErr(err)
+		return false, "The credential could not be read: " + sanitizeProviderErr(err), nil
 	}
 	ctx, cancel := context.WithTimeout(ctx, nodeProviderTestTimeout)
 	defer cancel()
@@ -307,13 +317,13 @@ func (rt *Router) testNodeProviderValue(ctx context.Context, provider, value str
 		var pe *provision.ProviderError
 		if errors.As(err, &pe) && (pe.Status == http.StatusUnauthorized || pe.Status == http.StatusForbidden) {
 			if se, ok := provision.ScopeFromError(provider, "regions.read", err); ok {
-				return false, "The provider refused the credential (" + http.StatusText(pe.Status) + "). It needs the " + se.Needs + " scope. Full set: " + nodeProviderTestPermissions[provider] + "."
+				return false, "The provider refused the credential (" + http.StatusText(pe.Status) + "). It needs the " + se.Needs + " scope. Full set: " + nodeProviderTestPermissions[provider] + ".", se
 			}
-			return false, "The provider refused the credential (" + http.StatusText(pe.Status) + "). It needs: " + nodeProviderTestPermissions[provider] + "."
+			return false, "The provider refused the credential (" + http.StatusText(pe.Status) + "). It needs: " + nodeProviderTestPermissions[provider] + ".", nil
 		}
-		return false, "Could not complete a read-only call to the provider: " + sanitizeProviderErr(err)
+		return false, "Could not complete a read-only call to the provider: " + sanitizeProviderErr(err), nil
 	}
-	return true, "Connected: the provider accepted the credential for a read-only call."
+	return true, "Connected: the provider accepted the credential for a read-only call.", nil
 }
 
 // sanitizeProviderErr trims an upstream error to a short single line.
@@ -476,14 +486,18 @@ func (rt *Router) handleTestNodeProvider(w http.ResponseWriter, r *http.Request)
 		}
 		value = stored
 	}
-	ok, message := rt.testNodeProviderValue(r.Context(), provider, value)
+	ok, message, scope := rt.testNodeProviderScope(r.Context(), provider, value)
 	now := time.Now().UTC()
 	if !candidate && rt.nodeProviderConns != nil {
 		if err := rt.nodeProviderConns.RecordNodeProviderTest(r.Context(), provider, ok, message, now); err != nil && !errors.Is(err, store.ErrNodeProviderConnectionNotFound) {
 			rt.logger.Warn("api: record node provider test failed", slog.String("provider", provider), slog.String("error", err.Error()))
 		}
 	}
-	writeJSON(w, http.StatusOK, nodeProviderTestResult{OK: ok, Message: message, TestedAt: now})
+	res := nodeProviderTestResult{OK: ok, Message: message, TestedAt: now}
+	if scope != nil {
+		res.Code, res.Needs = errCodeProviderScope, scope.Needs
+	}
+	writeJSON(w, http.StatusOK, res)
 }
 
 // handleDisconnectNodeProvider handles DELETE /api/v1/node-providers/{provider}.

@@ -194,6 +194,9 @@ func (rt *Router) handleListNodeProviderRegions(w http.ResponseWriter, r *http.R
 
 	regions, err := p.ListRegions(r.Context())
 	if err != nil {
+		if rt.writeProviderScopeMissing(w, provider, "regions.read", err) {
+			return
+		}
 		rt.logger.Error("api: list node provider regions failed", slog.String("provider", provider), slog.String("reason", providerErrorText(err)))
 		writeError(w, http.StatusBadGateway, "could not reach the provider's API")
 		return
@@ -258,6 +261,9 @@ func (rt *Router) handleListNodeProviderSizes(w http.ResponseWriter, r *http.Req
 
 	sizes, err := p.ListSizes(r.Context(), region)
 	if err != nil {
+		if rt.writeProviderScopeMissing(w, provider, "sizes.read", err) {
+			return
+		}
 		rt.logger.Error("api: list node provider sizes failed", slog.String("provider", provider), slog.String("reason", providerErrorText(err)))
 		writeError(w, http.StatusBadGateway, "could not reach the provider's API")
 		return
@@ -525,9 +531,14 @@ func (rt *Router) handleCreateNodeProvision(w http.ResponseWriter, r *http.Reque
 		if _, uerr := rt.transitionNodeProvision(cctx, id, fromCreating, store.NodeProvisionStatusFailed, serverID, "", "", failure); uerr != nil {
 			rt.logger.Error("api: node provision: record failure failed", slog.String("provision_id", id), slog.String("error", uerr.Error()))
 		}
+		if rt.writeProviderScopeMissing(w, req.Provider, "instances.create", err) {
+			return
+		}
 		writeError(w, http.StatusBadGateway, "could not create the server at the provider")
 		return
 	}
+	// A created server is the only proof a write scope exists.
+	rt.recordProviderCapabilityLearned(req.Provider, "instances.create", nil)
 	rec.ProviderServerID = serverID
 	rec.IPAddress = ipAddr
 	rec.Status = store.NodeProvisionStatusBooting

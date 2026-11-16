@@ -77,9 +77,13 @@ func (rt *Router) handleDestroyNodeProvision(w http.ResponseWriter, r *http.Requ
 			// The provider error can echo request detail, so only its status code is logged.
 			rt.logger.Error("api: destroy node provision: provider delete failed", slog.String("provision_id", id), slog.String("provider", p.Provider), slog.Int("provider_status", providerErrorStatus(err)))
 			rt.auditNodeProvisionDestroy(r, p, http.StatusBadGateway)
+			if rt.writeProviderScopeMissing(w, p.Provider, "instances.delete", err) {
+				return
+			}
 			writeError(w, http.StatusBadGateway, "the provider could not delete the server, retry the destroy")
 			return
 		}
+		rt.recordProviderCapabilityLearned(p.Provider, "instances.delete", nil)
 	}
 
 	now := time.Now()
