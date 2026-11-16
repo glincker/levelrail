@@ -134,7 +134,7 @@ What exists for sign-in, authorization and audit, with the label each one carrie
 | Password sign-in | core, on by default | Local accounts with sessions. |
 | Passkeys (WebAuthn) | core, on by default | Register and sign in, with a guard for passkey-only rules (`internal/api/passkey_guard_test.go`). |
 | TOTP two-factor | core, on by default | Recovery codes included (`internal/authengine/mfa_test.go`). |
-| OAuth and OIDC sign-in | core, on by default once a provider is configured | 17 named providers plus generic OpenID Connect, 18 settings rows in all (`internal/store/oauth_identity.go`). Unit tests use a fake identity provider; the generic OIDC provider was also run against Keycloak 26.0.8 (code flow with PKCE, account creation, group to role mapping, domain refusal, no root from SSO). Not tested against Okta, Entra ID, Google or Cognito. [OIDC](/sso-oidc) |
+| OAuth and OIDC sign-in | core, on by default once a provider is configured | 20 named providers plus generic OpenID Connect (`internal/store/oauth_identity.go`). Unit tests use a fake identity provider; the generic OIDC provider was also run against Keycloak 26.0.8 (code flow with PKCE, account creation, group to role mapping, domain refusal, no root from SSO). Not tested against Okta, Entra ID, Google or Cognito. [OIDC](/sso-oidc) |
 | SAML single sign-on | beta | Built on the sign-in library, behind the `saml-scim` feature toggle (Settings, Beta features), off by default. Verified against Keycloak 26.0.8 and SimpleSAMLphp 1.15 in a local lab on 2026-10-20; not tested against Okta or Entra ID. [SAML](/sso-saml) |
 | SCIM provisioning | beta | Same toggle and same caveats. Users and groups under `/api/v1/scim/v2`. [SCIM](/scim) |
 | IAM policies | stable | See the IAM label above. |

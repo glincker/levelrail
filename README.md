@@ -38,77 +38,151 @@ Levelrail turns Linux servers into a private cloud and works with the Kubernetes
 
 ## What you get
 
-Every label below links to its docs page. Maturity follows [Feature status](docs/feature-status.md).
+Maturity follows [Feature status](docs/feature-status.md). Open the list under each area for every capability.
 
 **[Ship with git push](docs/deploying-apps.md)**
-- [Git push deploys](docs/git-push-deploy.md) from GitHub, GitLab, Bitbucket
-- [Preview environments per pull request](docs/deploy-previews.md)
-- [Readiness-gated rollouts](docs/zero-downtime-deploys.md) and [one-step rollback](docs/rollback.md)
-- [Canaries and split tests](docs/canary-deploys.md)
+- Push to GitHub, GitLab, Bitbucket, Gitea or Forgejo and it deploys
+- Rollouts wait for readiness, rollback is one step
+- [Preview environments](docs/deploy-previews.md) for every pull request
+- [Canaries and split tests](docs/canary-deploys.md) before full traffic
 
 <details>
 <summary>All deploy features</summary>
 
-- Webhook deploys from GitHub, GitLab, Bitbucket, Gitea and Forgejo ([Git integrations](docs/git-integrations.md))
-- Dockerfile, Compose and Railpack (beta) builds with a build queue ([Build Center](docs/build-center.md))
-- Previews: stable on GitHub, beta on GitLab and Bitbucket
-- Approvals and deploy freezes ([Deploy safety](docs/deploy-safety.md))
-- Functions in Node, Python or Go (beta) ([Functions](docs/functions.md))
+- Git push or webhook deploys from GitHub, GitLab, Bitbucket, Gitea and Forgejo. See [Git integrations](docs/git-integrations.md) and [Git push deploy](docs/git-push-deploy.md).
+- Dockerfile, Compose and Railpack builds (Railpack is beta) with a build queue. See [Build Center](docs/build-center.md).
+- Readiness-gated rollouts and one-step rollback. See [Zero-downtime deploys](docs/zero-downtime-deploys.md) and [Rollback](docs/rollback.md).
+- Canaries and split tests. See [Canary deploys](docs/canary-deploys.md) and [Split testing](docs/split-testing.md).
+- Preview environments per pull request: stable on GitHub, beta on GitLab and Bitbucket. See [Deploy previews](docs/deploy-previews.md).
+- Deploy approvals and deploy freezes. See [Deploy safety](docs/deploy-safety.md).
+- Functions in Node, Python or Go (beta). See [Functions](docs/functions.md).
 
 </details>
 
 **[One-click templates](docs/template-catalog.md)**
-- 565 active templates in 22 categories, 574 entries in all
-- 346 with a recorded real-engine pass, 228 marked preview ([how templates work](docs/templates-and-registry.md))
+- 565 active templates, 346 with a recorded real-engine pass
+- 22 categories, from databases to AI tools
+- [How templates work](docs/templates-and-registry.md)
+
+<details>
+<summary>All template details</summary>
+
+- 574 catalog entries (565 active, 9 deprecated) in 22 categories.
+- 346 entries have a recorded real-engine pass.
+- 228 entries are marked preview: installable, with no recorded pass yet.
+
+</details>
 
 **[Automatic HTTPS and edge](docs/domains-and-ingress.md)**
-- Automatic HTTPS with HTTP-01 and DNS-01 wildcards
-- [Firewall, bot lists and attack mode](docs/firewall.md)
-- [Per-app rate limits](docs/abuse-defense.md) (beta)
-- [Private networks and WireGuard mesh](docs/multi-node.md) (beta)
+- Certificates issued and renewed for you, wildcards included
+- [Firewall, bot lists and attack mode](docs/firewall.md) built in
+- Headers, redirects, geo rules and caching per domain
+- [Private networks](docs/multi-node.md) between nodes (beta)
+
+<details>
+<summary>All edge features</summary>
+
+- Embedded ingress with automatic TLS through HTTP-01 and DNS-01 wildcards.
+- Per-domain headers, forwarders, geo rules, caching and redirects. See [Domain traffic controls](docs/domain-traffic-controls.md).
+- Firewall rules, IP lists, browser challenge, bot lists and attack mode. See [Firewall](docs/firewall.md).
+- Per-app rate limits and deny lists (beta). See [Abuse defense](docs/abuse-defense.md).
+- Round-robin balancing across replicas. See [Load balancing](docs/load-balancing.md).
+- Private networks and a WireGuard mesh (beta). See [Multi-node](docs/multi-node.md).
+
+</details>
 
 **[Spin up nodes on any cloud](docs/node-provisioning.md)**
-- Provision nodes at six clouds (beta)
+- Provision nodes at 6 clouds (beta)
 - [Join any Linux host](docs/add-node-anywhere.md) with a single-use token
-- [DNS and registries](docs/cloud-integrations.md) at Cloudflare, Route53, ECR, ACR
-- Kubernetes: [works with the clusters and cloud accounts you already have](docs/import-kubernetes.md) (experimental)
+- DNS and registries at the clouds you already use
+- [Existing Kubernetes clusters](docs/import-kubernetes.md) as deploy targets (experimental)
+
+<details>
+<summary>All node and cloud features</summary>
+
+- Provision nodes at Hetzner, DigitalOcean, AWS, Azure, GCP or Oracle Cloud (beta).
+- Join any Linux host with a single-use token over mTLS. See [Add a node anywhere](docs/add-node-anywhere.md).
+- DNS at Cloudflare and Route53, image registries on ECR, Artifact Registry and ACR. See [Cloud integrations](docs/cloud-integrations.md) for per-cloud status.
+- Works with the clusters and cloud accounts you already have (experimental): connect existing Kubernetes clusters and deploy to them, off by default. See [Import Kubernetes manifests](docs/import-kubernetes.md).
+
+</details>
 
 **[Managed databases and backups](docs/managing-databases.md)**
-- 13 database engines: 9 live-verified, 4 built but not yet live-verified
-- [Backups to S3-compatible, R2 or local](docs/backups-and-storage.md) targets
-- [Backups with restore drills](docs/prove-your-backups-work.md)
+- 13 database engines from one place
+- [Backups](docs/backups-and-storage.md) to S3-compatible, R2 or local disk
+- [Restore drills](docs/prove-your-backups-work.md) prove a backup works
 - Point-in-time recovery for Postgres
 
 <details>
 <summary>All data and backup features</summary>
 
-- 13 engines in code. Built but not yet live-verified: Meilisearch, Qdrant, Typesense, Memcached
-- Backup targets: S3-compatible, R2 or local ([Backups and storage](docs/backups-and-storage.md))
-- Restore drills ([Prove your backups work](docs/prove-your-backups-work.md))
-- Point-in-time recovery for Postgres
+- 13 database engines in code. 9 are live-verified. 4 (Meilisearch, Qdrant, Typesense, Memcached) are built but not yet live-verified.
+- Backups to S3-compatible, R2 or local targets. See [Backups and storage](docs/backups-and-storage.md).
+- Restore drills that prove a backup works. See [Prove your backups work](docs/prove-your-backups-work.md).
+- Point-in-time recovery for Postgres.
 
 </details>
 
 **[Built-in metrics, logs and alerts](docs/observability.md)**
-- [Log search and archive](docs/log-explorer.md) with built-in metrics
-- [OTLP ingest](docs/otlp-ingest.md)
-- [Public status page](docs/status-page.md) and [alerts to 18 channel kinds](docs/integrations.md)
+- Alerts to 18 channel kinds, from Slack to PagerDuty
+- Metrics and [log search](docs/log-explorer.md) with no extra stack
+- [OTLP ingest](docs/otlp-ingest.md) for your own telemetry
+- [Public status page](docs/status-page.md) for your users
+
+<details>
+<summary>All observability features</summary>
+
+- Built-in metrics, log search and log archive. See [Log explorer](docs/log-explorer.md) and [Log archive](docs/log-archive.md).
+- OTLP ingest. See [OTLP ingest](docs/otlp-ingest.md).
+- Public status page. See [Status page](docs/status-page.md).
+- Deploy traces and traffic export. See [Deploy trace](docs/deploy-trace.md) and [Traffic export](docs/traffic-export.md).
+- Alerts to 18 notification channel kinds. See [Integrations](docs/integrations.md).
+- HTTP, TCP, heartbeat and TLS uptime monitors (experimental). See [Monitors](docs/monitors.md).
+
+</details>
 
 **[SSO, RBAC and audit log](docs/identity-and-access.md)**
-- Passkeys, TOTP and [OAuth with 20 providers plus OIDC](docs/sso-oidc.md)
-- [SAML and SCIM](docs/sso-saml.md) (beta, off by default)
+- Sign in with 20 OAuth providers plus generic [OIDC](docs/sso-oidc.md)
+- Passkeys and TOTP for local accounts
 - [IAM policies and teams](docs/teams-and-roles.md)
-- [Hash-chained audit log](docs/audit-log.md)
+- [Hash-chained audit log](docs/audit-log.md) you can verify
+
+<details>
+<summary>All security and access features</summary>
+
+- Passwords, passkeys and TOTP.
+- OAuth sign-in with 20 providers plus generic OIDC. See [OIDC](docs/sso-oidc.md).
+- SAML and SCIM (beta, off by default). See [SAML and SCIM](docs/sso-saml.md).
+- IAM policies and teams. See [Teams and roles](docs/teams-and-roles.md).
+- Hash-chained audit log. See [Audit log](docs/audit-log.md).
+- Encrypted secrets. See [Environment and secrets](docs/environment-and-secrets.md).
+- Signed releases. See [Verify a release](docs/verify-a-release.md).
+
+</details>
 
 **[CLI, API, Terraform and MCP](docs/cli-reference.md)**
+- 259 [MCP tools](docs/mcp.md) for coding agents
 - [Terraform and OpenTofu provider](docs/terraform-provider.md)
-- [MCP server with 259 tools](docs/mcp.md) for coding agents
 - [HTTP API](docs/api-reference.md) and `levelrail-cli`
-- [YAML platform as code](docs/platform-as-code.md) (experimental)
+- 11 per-app integrations, from error tracking to analytics
+
+<details>
+<summary>All automation features</summary>
+
+- `levelrail-cli` and an HTTP API. See [API reference](docs/api-reference.md).
+- Terraform and OpenTofu provider. See [Terraform provider](docs/terraform-provider.md).
+- YAML platform as code (experimental). See [Platform as code](docs/platform-as-code.md).
+- CI pipelines. See [Pipelines](docs/pipelines.md).
+- 11 per-app integrations: Sentry, PostHog, GlitchTip, OneUptime, Plausible, Datadog, Axiom, Better Stack, LogSnag, Bugsnag and New Relic. See [Integrations](docs/integrations.md).
+- Signed plugins for notification channels. See [Plugins](docs/plugins.md).
+- 259 MCP tools for coding agents. See [MCP](docs/mcp.md) and [Tool surface](docs/mcp-tool-surface.md).
+- A mail server template with mailboxes and DNS records (experimental). See [Mail template](docs/mail-template.md).
+
+</details>
 
 [All features, with maturity labels](docs/features.md)
 
-Footprint: about 200 MB idle RAM and 1.5% of one CPU on a 2 vCPU box ([measured, method included](docs/benchmarks.md)). Runs on Linux amd64 and arm64 with systemd and Docker.
+Runs on Linux amd64 and arm64 with systemd and Docker ([benchmarks](docs/benchmarks.md)).
 
 ## Install
 
