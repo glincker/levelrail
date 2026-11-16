@@ -106,6 +106,7 @@ describe('NavTabStrip', () => {
     renderAt('/nodes/bootstrap-scripts')
     expect(labels()).toEqual([
       'Servers',
+      'Clusters',
       'Cloud providers',
       'Bootstrap scripts',
     ])

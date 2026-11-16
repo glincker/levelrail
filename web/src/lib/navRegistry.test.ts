@@ -61,6 +61,7 @@ const ALLOWLIST: Record<string, string> = {
   '/sources': 'tab',
   '/security/image-scanning': 'tab',
   '/nodes/bootstrap-scripts': 'tab',
+  '/clusters': 'tab',
   '/deploy-timeline': 'tab',
   '/costs': 'tab',
   '/cdn/caches': 'tab',

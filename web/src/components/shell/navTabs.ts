@@ -30,6 +30,7 @@ export type NavTabId =
   | 'topology'
   | 'certificates'
   | 'channels'
+  | 'clusters'
   | 'status'
   | 'alerts'
   | 'pipelines'
@@ -130,6 +131,7 @@ export const NAV_TAB_GROUPS: readonly NavTabGroup[] = [
     id: 'servers',
     tabs: [
       { id: 'nodes', to: '/nodes' },
+      { id: 'clusters', to: '/clusters' },
       { id: 'providers', to: '/settings/node-providers' },
       { id: 'bootstrapScripts', to: '/nodes/bootstrap-scripts' },
     ],

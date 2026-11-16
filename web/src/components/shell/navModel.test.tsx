@@ -56,6 +56,7 @@ const EXPECTED_GLOBAL = [
   '/security',
   '/security/image-scanning',
   '/nodes/bootstrap-scripts',
+  '/clusters',
   '/models',
   '/pipelines',
   '/approvals',

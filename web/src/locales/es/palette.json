@@ -151,6 +151,7 @@
       "nav-tags": "Etiquetas para agrupar y filtrar apps. Renombra, elimina o mira qué cubre cada etiqueta.",
       "nav-scanning": "Política predeterminada de análisis de vulnerabilidades y puerta de despliegue de la instancia.",
       "nav-bootstrap": "Scripts que se ejecutan como root en los nodos de nube recién aprovisionados.",
+      "nav-clusters": "Clústeres de Kubernetes conectados, sus nodos y espacios de nombres.",
       "nav-storage": "Uso de disco de tus nodos: imágenes, contenedores, volúmenes y caché de compilación, con limpieza.",
       "nav-resources": "Todos los recursos de tu instancia en una sola lista.",
       "nav-resource-advisor": "Sugerencias de ajuste de CPU y memoria.",

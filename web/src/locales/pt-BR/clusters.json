@@ -1,0 +1,72 @@
+{
+  "title": "Clusters",
+  "description": "Conecte clusters Kubernetes, teste-os e veja seus nós e namespaces.",
+  "loadFailed": "Não foi possível carregar os clusters.",
+  "disabled": {
+    "title": "Os clusters Kubernetes estão desativados",
+    "description": "Ative a configuração de runtime k8s.clusters_enabled para conectar clusters."
+  },
+  "empty": {
+    "description": "Nenhum cluster conectado ainda. Adicione um abaixo."
+  },
+  "privateApiBlocked": "Endereços de API privados e de loopback estão bloqueados. Permita-os com a configuração k8s.allow_private_api se o cluster estiver na sua própria rede.",
+  "adminWarning": "Esta credencial é de administrador do cluster. Prefira uma conta de serviço restrita a um namespace.",
+  "connect": {
+    "title": "Conectar um cluster",
+    "mode": "Método de conexão",
+    "modeToken": "Servidor e token",
+    "modeKubeconfig": "Kubeconfig",
+    "name": "Nome",
+    "nameTaken": "Já existe um cluster com este nome.",
+    "server": "URL do servidor",
+    "token": "Token da conta de serviço",
+    "ca": "Certificado CA (opcional)",
+    "caHint": "PEM. Deixe vazio se o certificado do servidor de API for publicamente confiável.",
+    "kubeconfig": "Kubeconfig",
+    "kubeconfigHint": "Colado uma vez e guardado criptografado. Entradas exec e auth-provider são recusadas.",
+    "context": "Contexto",
+    "contextPlaceholder": "Contexto atual",
+    "submit": "Conectar",
+    "pending": "Conectando",
+    "done": "Cluster conectado.",
+    "serverPlaceholder": "https://203.0.113.10:6443",
+    "caPlaceholder": "-----BEGIN CERTIFICATE-----",
+    "kubeconfigPlaceholder": "apiVersion: v1"
+  },
+  "auth": {
+    "token": "Token",
+    "client_cert": "Certificado de cliente"
+  },
+  "status": {
+    "ok": "Acessível",
+    "unauthorized": "Não autorizado",
+    "forbidden": "Proibido",
+    "error": "Erro de API",
+    "unreachable": "Inacessível",
+    "untested": "Não testado"
+  },
+  "list": {
+    "toggle": "Mostrar nós e namespaces de {{name}}"
+  },
+  "actions": {
+    "test": "Testar",
+    "testing": "Testando",
+    "disconnect": "Desconectar",
+    "disconnectNamed": "Desconectar {{name}}"
+  },
+  "detail": {
+    "nodes": "Nós",
+    "namespaces": "Namespaces",
+    "ready": "Pronto",
+    "notReady": "Não pronto",
+    "noNodes": "Nenhum nó retornado.",
+    "noNamespaces": "Nenhum namespace retornado."
+  },
+  "disconnect": {
+    "title": "Desconectar {{name}}?",
+    "description": "As credenciais guardadas são apagadas. As cargas de trabalho no cluster não são tocadas. Digite o nome do cluster para confirmar.",
+    "confirm": "Desconectar",
+    "pending": "Desconectando",
+    "done": "Cluster desconectado."
+  }
+}

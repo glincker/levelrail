@@ -416,6 +416,7 @@
         "iam": "IAM policies",
         "imageScanning": "Image scanning",
         "bootstrapScripts": "Bootstrap scripts",
+        "clusters": "Clusters",
         "keys": "Keys and tokens",
         "team": "Team",
         "auditLog": "Audit log"

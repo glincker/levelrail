@@ -1,0 +1,72 @@
+{
+  "title": "クラスター",
+  "description": "Kubernetesクラスターを接続し、疎通を確認して、ノードとネームスペースを表示します。",
+  "loadFailed": "クラスターを読み込めませんでした。",
+  "disabled": {
+    "title": "Kubernetesクラスターは無効です",
+    "description": "クラスターを接続するには、ランタイム設定 k8s.clusters_enabled を有効にしてください。"
+  },
+  "empty": {
+    "description": "接続済みのクラスターはまだありません。下から追加してください。"
+  },
+  "privateApiBlocked": "プライベートおよびループバックのAPIアドレスはブロックされています。クラスターが自社ネットワーク内にある場合は、ランタイム設定 k8s.allow_private_api で許可してください。",
+  "adminWarning": "この認証情報はクラスター管理者です。ネームスペースに限定したサービスアカウントを推奨します。",
+  "connect": {
+    "title": "クラスターを接続",
+    "mode": "接続方法",
+    "modeToken": "サーバーとトークン",
+    "modeKubeconfig": "Kubeconfig",
+    "name": "名前",
+    "nameTaken": "この名前のクラスターは既に存在します。",
+    "server": "サーバーURL",
+    "token": "サービスアカウントトークン",
+    "ca": "CA証明書（任意）",
+    "caHint": "PEM形式。APIサーバーの証明書が公的に信頼されている場合は空のままにします。",
+    "kubeconfig": "Kubeconfig",
+    "kubeconfigHint": "一度だけ貼り付けられ、暗号化して保存されます。execとauth-providerのエントリは拒否されます。",
+    "context": "コンテキスト",
+    "contextPlaceholder": "現在のコンテキスト",
+    "submit": "接続",
+    "pending": "接続中",
+    "done": "クラスターを接続しました。",
+    "serverPlaceholder": "https://203.0.113.10:6443",
+    "caPlaceholder": "-----BEGIN CERTIFICATE-----",
+    "kubeconfigPlaceholder": "apiVersion: v1"
+  },
+  "auth": {
+    "token": "トークン",
+    "client_cert": "クライアント証明書"
+  },
+  "status": {
+    "ok": "到達可能",
+    "unauthorized": "未承認",
+    "forbidden": "禁止",
+    "error": "APIエラー",
+    "unreachable": "到達不能",
+    "untested": "未テスト"
+  },
+  "list": {
+    "toggle": "{{name}} のノードとネームスペースを表示"
+  },
+  "actions": {
+    "test": "テスト",
+    "testing": "テスト中",
+    "disconnect": "切断",
+    "disconnectNamed": "{{name}} を切断"
+  },
+  "detail": {
+    "nodes": "ノード",
+    "namespaces": "ネームスペース",
+    "ready": "Ready",
+    "notReady": "Not Ready",
+    "noNodes": "ノードが返されませんでした。",
+    "noNamespaces": "ネームスペースが返されませんでした。"
+  },
+  "disconnect": {
+    "title": "{{name}} を切断しますか？",
+    "description": "保存された認証情報は削除されます。クラスター上のワークロードには影響しません。確認のためクラスター名を入力してください。",
+    "confirm": "切断",
+    "pending": "切断中",
+    "done": "クラスターを切断しました。"
+  }
+}

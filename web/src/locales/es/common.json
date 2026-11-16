@@ -551,6 +551,7 @@
         "iam": "Políticas IAM",
         "imageScanning": "Escaneo de imágenes",
         "bootstrapScripts": "Scripts de arranque",
+        "clusters": "Clústeres",
         "keys": "Claves y tokens",
         "team": "Equipo",
         "auditLog": "Registro de auditoría"

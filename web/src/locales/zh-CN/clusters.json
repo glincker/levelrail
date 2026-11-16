@@ -1,0 +1,72 @@
+{
+  "title": "集群",
+  "description": "连接 Kubernetes 集群，测试连通性，并查看节点和命名空间。",
+  "loadFailed": "无法加载集群。",
+  "disabled": {
+    "title": "Kubernetes 集群已关闭",
+    "description": "开启运行时设置 k8s.clusters_enabled 后才能连接集群。"
+  },
+  "empty": {
+    "description": "尚未连接任何集群。请在下方添加。"
+  },
+  "privateApiBlocked": "私有和回环 API 地址已被阻止。如果集群位于你自己的网络，请通过运行时设置 k8s.allow_private_api 允许。",
+  "adminWarning": "此凭据是集群管理员。建议改用限定在命名空间内的服务账号。",
+  "connect": {
+    "title": "连接集群",
+    "mode": "连接方式",
+    "modeToken": "服务器和令牌",
+    "modeKubeconfig": "Kubeconfig",
+    "name": "名称",
+    "nameTaken": "已存在同名集群。",
+    "server": "服务器 URL",
+    "token": "服务账号令牌",
+    "ca": "CA 证书（可选）",
+    "caHint": "PEM 格式。如果 API 服务器证书已被公共信任，请留空。",
+    "kubeconfig": "Kubeconfig",
+    "kubeconfigHint": "只粘贴一次，并加密存储。exec 和 auth-provider 条目会被拒绝。",
+    "context": "上下文",
+    "contextPlaceholder": "当前上下文",
+    "submit": "连接",
+    "pending": "连接中",
+    "done": "集群已连接。",
+    "serverPlaceholder": "https://203.0.113.10:6443",
+    "caPlaceholder": "-----BEGIN CERTIFICATE-----",
+    "kubeconfigPlaceholder": "apiVersion: v1"
+  },
+  "auth": {
+    "token": "令牌",
+    "client_cert": "客户端证书"
+  },
+  "status": {
+    "ok": "可连通",
+    "unauthorized": "未授权",
+    "forbidden": "禁止访问",
+    "error": "API 错误",
+    "unreachable": "无法连通",
+    "untested": "未测试"
+  },
+  "list": {
+    "toggle": "显示 {{name}} 的节点和命名空间"
+  },
+  "actions": {
+    "test": "测试",
+    "testing": "测试中",
+    "disconnect": "断开连接",
+    "disconnectNamed": "断开 {{name}}"
+  },
+  "detail": {
+    "nodes": "节点",
+    "namespaces": "命名空间",
+    "ready": "就绪",
+    "notReady": "未就绪",
+    "noNodes": "未返回节点。",
+    "noNamespaces": "未返回命名空间。"
+  },
+  "disconnect": {
+    "title": "断开 {{name}}？",
+    "description": "已存储的凭据会被删除，集群上的工作负载不受影响。请输入集群名称以确认。",
+    "confirm": "断开连接",
+    "pending": "断开中",
+    "done": "集群已断开。"
+  }
+}

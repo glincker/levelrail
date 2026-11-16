@@ -412,6 +412,7 @@
         "iam": "IAM 策略",
         "imageScanning": "镜像扫描",
         "bootstrapScripts": "引导脚本",
+        "clusters": "集群",
         "keys": "密钥与令牌",
         "team": "团队",
         "auditLog": "审计日志"

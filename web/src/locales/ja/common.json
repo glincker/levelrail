@@ -412,6 +412,7 @@
         "iam": "IAMポリシー",
         "imageScanning": "イメージスキャン",
         "bootstrapScripts": "ブートストラップスクリプト",
+        "clusters": "クラスター",
         "keys": "キーとトークン",
         "team": "チーム",
         "auditLog": "監査ログ"

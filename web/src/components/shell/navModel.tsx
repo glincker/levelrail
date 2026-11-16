@@ -6,6 +6,7 @@ import {
   BinaryTreeGlassIcon,
   BookOpenGlassIcon,
   BotGlassIcon,
+  BoxesGlassIcon,
   BracesGlassIcon,
   BugGlassIcon,
   ContainerGlassIcon,
@@ -109,6 +110,7 @@ export type GlobalTo =
   | '/security'
   | '/security/image-scanning'
   | '/nodes/bootstrap-scripts'
+  | '/clusters'
   | '/settings/tokens'
   | '/settings/users'
   | '/settings/audit-log'
@@ -341,7 +343,7 @@ export const GLOBAL_NAV_GROUPS: GlobalNavGroup[] = [
         label: 'Servers',
         to: '/nodes',
         icon: glass(ServerGlassIcon),
-        alsoActive: ['/settings/node-providers'],
+        alsoActive: ['/settings/node-providers', '/clusters'],
       },
       {
         id: 'registry',
@@ -444,6 +446,7 @@ export const FOLDED_GLOBAL_PAGES: GlobalNavItem[] = [
     '/security/image-scanning',
     glass(ShieldAlertGlassIcon),
   ),
+  folded('clusters', 'Clusters', '/clusters', glass(BoxesGlassIcon)),
   folded(
     'bootstrap',
     'Bootstrap scripts',

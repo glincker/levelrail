@@ -1,0 +1,72 @@
+{
+  "title": "Clusters",
+  "description": "Connect Kubernetes clusters, check them and see their nodes and namespaces.",
+  "loadFailed": "Could not load clusters.",
+  "disabled": {
+    "title": "Kubernetes clusters are off",
+    "description": "Turn on the runtime setting k8s.clusters_enabled to connect clusters."
+  },
+  "empty": {
+    "description": "No clusters connected yet. Add one below."
+  },
+  "privateApiBlocked": "Private and loopback API addresses are blocked. Allow them with the runtime setting k8s.allow_private_api if this cluster is on your own network.",
+  "adminWarning": "This credential is cluster admin. Prefer a namespace-scoped service account.",
+  "connect": {
+    "title": "Connect a cluster",
+    "mode": "Connection method",
+    "modeToken": "Server and token",
+    "modeKubeconfig": "Kubeconfig",
+    "name": "Name",
+    "nameTaken": "A cluster with this name exists.",
+    "server": "Server URL",
+    "token": "Service account token",
+    "ca": "CA certificate (optional)",
+    "caHint": "PEM. Leave empty when the API server certificate is publicly trusted.",
+    "kubeconfig": "Kubeconfig",
+    "kubeconfigHint": "Pasted once and stored encrypted. Exec and auth-provider entries are refused.",
+    "context": "Context",
+    "contextPlaceholder": "Current context",
+    "submit": "Connect",
+    "pending": "Connecting",
+    "done": "Cluster connected.",
+    "serverPlaceholder": "https://203.0.113.10:6443",
+    "caPlaceholder": "-----BEGIN CERTIFICATE-----",
+    "kubeconfigPlaceholder": "apiVersion: v1"
+  },
+  "auth": {
+    "token": "Token",
+    "client_cert": "Client certificate"
+  },
+  "status": {
+    "ok": "Reachable",
+    "unauthorized": "Unauthorized",
+    "forbidden": "Forbidden",
+    "error": "API error",
+    "unreachable": "Unreachable",
+    "untested": "Not tested"
+  },
+  "list": {
+    "toggle": "Show nodes and namespaces for {{name}}"
+  },
+  "actions": {
+    "test": "Test",
+    "testing": "Testing",
+    "disconnect": "Disconnect",
+    "disconnectNamed": "Disconnect {{name}}"
+  },
+  "detail": {
+    "nodes": "Nodes",
+    "namespaces": "Namespaces",
+    "ready": "Ready",
+    "notReady": "Not ready",
+    "noNodes": "No nodes returned.",
+    "noNamespaces": "No namespaces returned."
+  },
+  "disconnect": {
+    "title": "Disconnect {{name}}?",
+    "description": "The stored credentials are deleted. Workloads on the cluster are not touched. Type the cluster name to confirm.",
+    "confirm": "Disconnect",
+    "pending": "Disconnecting",
+    "done": "Cluster disconnected."
+  }
+}

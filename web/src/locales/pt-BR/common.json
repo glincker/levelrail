@@ -420,6 +420,7 @@
         "iam": "Políticas de IAM",
         "imageScanning": "Varredura de imagens",
         "bootstrapScripts": "Scripts de bootstrap",
+        "clusters": "Clusters",
         "keys": "Chaves e tokens",
         "team": "Equipe",
         "auditLog": "Log de auditoria"

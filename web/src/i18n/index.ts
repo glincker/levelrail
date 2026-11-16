@@ -175,6 +175,7 @@ export const NAMESPACES = [
   'appOverview',
   'webVitals',
   'integrations',
+  'clusters',
 ] as const
 
 void i18n

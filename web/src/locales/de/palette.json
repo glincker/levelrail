@@ -147,6 +147,7 @@
       "nav-tags": "Labels zum Gruppieren und Filtern von Apps. Umbenennen, löschen oder sehen, was jedes Tag abdeckt.",
       "nav-scanning": "Standardrichtlinie für Schwachstellen-Scans und Deploy-Gate der Instanz.",
       "nav-bootstrap": "Skripte, die als Root auf neu bereitgestellten Cloud-Nodes laufen.",
+      "nav-clusters": "Verbundene Kubernetes-Cluster, ihre Nodes und Namespaces.",
       "nav-storage": "Speicherbelegung Ihrer Nodes: Images, Container, Volumes und Build-Cache, mit Bereinigung.",
       "nav-resources": "Jede Ressource Ihrer Instanz in einer Liste.",
       "nav-resource-advisor": "Vorschläge zur richtigen Dimensionierung von CPU und Arbeitsspeicher.",

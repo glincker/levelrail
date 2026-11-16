@@ -1,0 +1,72 @@
+{
+  "title": "Cluster",
+  "description": "Kubernetes-Cluster verbinden, prüfen und ihre Nodes und Namespaces ansehen.",
+  "loadFailed": "Cluster konnten nicht geladen werden.",
+  "disabled": {
+    "title": "Kubernetes-Cluster sind aus",
+    "description": "Aktiviere die Laufzeiteinstellung k8s.clusters_enabled, um Cluster zu verbinden."
+  },
+  "empty": {
+    "description": "Noch kein Cluster verbunden. Füge unten einen hinzu."
+  },
+  "privateApiBlocked": "Private und Loopback-API-Adressen sind gesperrt. Erlaube sie mit der Laufzeiteinstellung k8s.allow_private_api, wenn der Cluster in deinem eigenen Netz liegt.",
+  "adminWarning": "Diese Zugangsdaten sind Cluster-Admin. Besser ein Service-Account auf einen Namespace beschränkt.",
+  "connect": {
+    "title": "Cluster verbinden",
+    "mode": "Verbindungsart",
+    "modeToken": "Server und Token",
+    "modeKubeconfig": "Kubeconfig",
+    "name": "Name",
+    "nameTaken": "Ein Cluster mit diesem Namen existiert.",
+    "server": "Server-URL",
+    "token": "Service-Account-Token",
+    "ca": "CA-Zertifikat (optional)",
+    "caHint": "PEM. Leer lassen, wenn das Zertifikat des API-Servers öffentlich vertraut ist.",
+    "kubeconfig": "Kubeconfig",
+    "kubeconfigHint": "Wird einmal eingefügt und verschlüsselt gespeichert. Exec- und Auth-Provider-Einträge werden abgelehnt.",
+    "context": "Kontext",
+    "contextPlaceholder": "Aktueller Kontext",
+    "submit": "Verbinden",
+    "pending": "Verbinde",
+    "done": "Cluster verbunden.",
+    "serverPlaceholder": "https://203.0.113.10:6443",
+    "caPlaceholder": "-----BEGIN CERTIFICATE-----",
+    "kubeconfigPlaceholder": "apiVersion: v1"
+  },
+  "auth": {
+    "token": "Token",
+    "client_cert": "Client-Zertifikat"
+  },
+  "status": {
+    "ok": "Erreichbar",
+    "unauthorized": "Nicht autorisiert",
+    "forbidden": "Verboten",
+    "error": "API-Fehler",
+    "unreachable": "Nicht erreichbar",
+    "untested": "Nicht getestet"
+  },
+  "list": {
+    "toggle": "Nodes und Namespaces von {{name}} anzeigen"
+  },
+  "actions": {
+    "test": "Testen",
+    "testing": "Teste",
+    "disconnect": "Trennen",
+    "disconnectNamed": "{{name}} trennen"
+  },
+  "detail": {
+    "nodes": "Nodes",
+    "namespaces": "Namespaces",
+    "ready": "Bereit",
+    "notReady": "Nicht bereit",
+    "noNodes": "Keine Nodes zurückgegeben.",
+    "noNamespaces": "Keine Namespaces zurückgegeben."
+  },
+  "disconnect": {
+    "title": "{{name}} trennen?",
+    "description": "Die gespeicherten Zugangsdaten werden gelöscht. Workloads im Cluster bleiben unberührt. Gib zur Bestätigung den Clusternamen ein.",
+    "confirm": "Trennen",
+    "pending": "Trenne",
+    "done": "Cluster getrennt."
+  }
+}
