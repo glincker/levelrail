@@ -89,6 +89,10 @@ func (f *fakeNodeProvisioner) ListRegions(context.Context) ([]provision.Region, 
 
 func (f *fakeNodeProvisioner) ListSizes(context.Context, string) ([]provision.Size, error) {
 	f.sizeCalls++
+	if f.sizes == nil {
+		// Cheap listed prices keep the default spend guard out of tests that are not about it.
+		return []provision.Size{{ID: "cx22", PriceMonthly: "4.00", Currency: "USD"}, {ID: "s", PriceMonthly: "4.00", Currency: "USD"}, {ID: "t3.small", PriceMonthly: "4.00", Currency: "USD"}}, nil
+	}
 	return f.sizes, nil
 }
 

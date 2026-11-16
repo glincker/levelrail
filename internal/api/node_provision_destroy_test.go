@@ -2,6 +2,7 @@ package api
 
 import (
 	"context"
+	"encoding/json"
 	"net/http"
 	"net/http/httptest"
 	"strings"
@@ -9,6 +10,7 @@ import (
 	"time"
 
 	"github.com/GLINCKER/levelrail/internal/provision"
+	"github.com/GLINCKER/levelrail/internal/runtimesettings"
 	"github.com/GLINCKER/levelrail/internal/store"
 )
 
@@ -69,5 +71,39 @@ func TestHandleDestroyNodeProvision(t *testing.T) {
 	}
 	if body := rec.Body.String(); strings.Contains(body, "boom") {
 		t.Fatalf("body leaks provider detail: %s", body)
+	}
+}
+
+func TestHandleCreateNodeProvision_SpendGuard(t *testing.T) {
+	secrets := newFakeNodeProviderSecrets()
+	_ = secrets.SetValue(context.Background(), store.NodeProviderSecretsKey("hetzner"), store.NodeProviderTokenEnvKey, "tok")
+	fake := &fakeNodeProvisioner{createServerID: "s1", sizes: []provision.Size{{ID: "cx22", PriceMonthly: "50.00", Currency: "USD"}}}
+	rt, db := newTestRouterWithNodeProvisioning(t, secrets, fake)
+	cookie := loginTestSession(t, rt, db)
+	body := `{"provider":"hetzner","region":"fsn1","size":"cx22","name":"web-g1","control_plane_addr":"cp.example.com:9443"}`
+	setCap := func(raw string) {
+		if _, err := rt.runtimeSettings.Set(context.Background(), runtimesettings.KeyProvisionMaxMonthlyPrice, json.RawMessage(raw), "test"); err != nil {
+			t.Fatal(err)
+		}
+	}
+	post := func(b string) int {
+		rec := httptest.NewRecorder()
+		rt.Handler().ServeHTTP(rec, authedRequest(t, cookie, http.MethodPost, "/api/v1/nodes/provision", b))
+		return rec.Code
+	}
+
+	setCap(`"10"`)
+	if code := post(body); code != http.StatusConflict {
+		t.Fatalf("over price cap status = %d, want 409", code)
+	}
+	setCap(`""`)
+	if code := post(body); code != http.StatusCreated {
+		t.Fatalf("first create status = %d, want 201", code)
+	}
+	if code := post(`{"provider":"hetzner","region":"fsn1","size":"cx22","name":"web-g2","control_plane_addr":"cp.example.com:9443"}`); code != http.StatusConflict {
+		t.Fatalf("second create status = %d, want 409", code)
+	}
+	if fake.createCalls != 1 {
+		t.Fatalf("createCalls = %d, want 1: refused creates must not reach the provider", fake.createCalls)
 	}
 }

@@ -395,6 +395,14 @@ func (rt *Router) handleCreateNodeProvision(w http.ResponseWriter, r *http.Reque
 		return
 	}
 
+	if reason, err := rt.checkProvisionPriceCap(r.Context(), provisioner, req.Region, req.Size); err != nil {
+		rt.internalError(w, "api: node provision: price check failed", err)
+		return
+	} else if reason != "" {
+		writeError(w, http.StatusConflict, reason)
+		return
+	}
+
 	var bootstrapBody string
 	if req.BootstrapScriptID != "" {
 		if rt.bootstrapScripts == nil {
@@ -446,12 +454,25 @@ func (rt *Router) handleCreateNodeProvision(w http.ResponseWriter, r *http.Reque
 		rt.internalError(w, "api: node provision: generate id failed", err)
 		return
 	}
+	nodeProvisionGuardMu.Lock()
+	reason, err := rt.checkProvisionServerCap(r.Context())
+	if err != nil || reason != "" {
+		nodeProvisionGuardMu.Unlock()
+		if err != nil {
+			rt.internalError(w, "api: node provision: server cap check failed", err)
+			return
+		}
+		writeError(w, http.StatusConflict, reason)
+		return
+	}
 	now := time.Now()
 	rec := store.NodeProvision{
 		ID: id, Provider: req.Provider, Region: req.Region, Size: req.Size, Name: req.Name, Role: role,
 		Status: store.NodeProvisionStatusCreating, CreatedAt: now, UpdatedAt: now,
 	}
-	if err := rt.nodeProvisions.SaveNodeProvision(r.Context(), rec); err != nil {
+	saveErr := rt.nodeProvisions.SaveNodeProvision(r.Context(), rec)
+	nodeProvisionGuardMu.Unlock()
+	if err := saveErr; err != nil {
 		rt.internalError(w, "api: node provision: save failed", err)
 		return
 	}
