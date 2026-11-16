@@ -257,6 +257,34 @@ All screenshots are captured from a real running control plane. More in the [Pro
 | <picture><source media="(prefers-color-scheme: dark)" srcset="https://thesvg.org/icons/model-context-protocol/dark.svg"><img src="https://thesvg.org/icons/model-context-protocol/light.svg" width="18" height="18" alt="MCP"></picture> [Glama](https://glama.ai/mcp/servers/glincker/levelrail) | MCP server listing | [AI assistant setup](https://docs.levelrail.com/ai-assistant) |
 | <picture><source media="(prefers-color-scheme: dark)" srcset="https://thesvg.org/icons/go/dark.svg"><img src="https://thesvg.org/icons/go/light.svg" height="18" alt="Go"></picture> [pkg.go.dev](https://pkg.go.dev/github.com/GLINCKER/levelrail/kit) | Go kit packages | `go get github.com/GLINCKER/levelrail/kit` |
 
+<details>
+<summary>All packages and registries</summary>
+
+| Package or channel | What it is | Install or use | Status |
+| --- | --- | --- | --- |
+| [levelrail-cli](https://www.npmjs.com/package/levelrail-cli) | The CLI on npm | `npx levelrail-cli --help` | Live |
+| [levelrail-cli-linux-amd64](https://www.npmjs.com/package/levelrail-cli-linux-amd64), [linux-arm64](https://www.npmjs.com/package/levelrail-cli-linux-arm64), [darwin-amd64](https://www.npmjs.com/package/levelrail-cli-darwin-amd64), [darwin-arm64](https://www.npmjs.com/package/levelrail-cli-darwin-arm64), [windows-amd64](https://www.npmjs.com/package/levelrail-cli-windows-amd64), [windows-arm64](https://www.npmjs.com/package/levelrail-cli-windows-arm64) | The six platform binaries that `levelrail-cli` pulls in | Installed for you by `levelrail-cli` | Live |
+| [levelrail-mcp](https://www.npmjs.com/package/levelrail-mcp) | The MCP server on npm | `npx -y levelrail-mcp` (works from the next release) | Name reserved |
+| [levelrail-mcp-linux-amd64](https://www.npmjs.com/package/levelrail-mcp-linux-amd64), [linux-arm64](https://www.npmjs.com/package/levelrail-mcp-linux-arm64), [darwin-amd64](https://www.npmjs.com/package/levelrail-mcp-darwin-amd64), [darwin-arm64](https://www.npmjs.com/package/levelrail-mcp-darwin-arm64), [windows-amd64](https://www.npmjs.com/package/levelrail-mcp-windows-amd64), [windows-arm64](https://www.npmjs.com/package/levelrail-mcp-windows-arm64) | The six platform binaries that `levelrail-mcp` will pull in | Installed for you by `levelrail-mcp` | Name reserved |
+| [ghcr.io/glincker/levelrail](https://github.com/glincker/levelrail/pkgs/container/levelrail) | Control plane image | `docker pull ghcr.io/glincker/levelrail:beta` | Live |
+| [ghcr.io/glincker/levelrail-agent](https://github.com/glincker/levelrail/pkgs/container/levelrail-agent) | Node agent image | `docker pull ghcr.io/glincker/levelrail-agent:beta` | Live |
+| [Docker Hub levelrail/levelrail](https://hub.docker.com/r/levelrail/levelrail) | Mirror of the control plane image, it lags GHCR (latest tag today: `v1.3.0`) | `docker pull levelrail/levelrail:v1.3.0` | Live |
+| [Homebrew tap](https://github.com/glincker/homebrew-tap) | The CLI on macOS and Linux | `brew install glincker/tap/levelrail-cli` | Live |
+| [Scoop bucket](https://github.com/glincker/scoop-bucket) | The CLI on Windows, the manifest arrives with the next release | `scoop bucket add glincker https://github.com/glincker/scoop-bucket` then `scoop install levelrail-cli` | From the next release |
+| winget | The CLI on Windows, not yet submitted to winget-pkgs | `winget install Glincker.LevelrailCli` (does not install today) | Planned |
+| [levelrail-agent .deb and .rpm](https://github.com/glincker/levelrail/releases/tag/v1.3.2) | Node agent packages for Debian, Ubuntu, Fedora and RHEL, amd64 and arm64 | Download `levelrail-agent-linux-<arch>.deb` or `.rpm` from the release page | Live |
+| [levelrail-cli .deb and .rpm](https://github.com/glincker/levelrail/releases) | CLI packages attached to each release | `sudo dpkg -i levelrail-cli-linux-amd64.deb` or `sudo rpm -i levelrail-cli-linux-amd64.rpm` | From the next release |
+| [AUR and Nix files](https://github.com/glincker/levelrail/releases) | `levelrail-cli-bin.PKGBUILD` and `levelrail-cli.flake.nix`, attached to the release | Download from the release page | From the next release |
+| [Terraform Registry](https://registry.terraform.io/providers/glincker/levelrail/latest) | Provider `glincker/levelrail` | `source = "glincker/levelrail"` then `terraform init` | Live |
+| [OpenTofu Registry](https://search.opentofu.org/provider/glincker/levelrail/latest) | The same provider | `source = "glincker/levelrail"` then `tofu init` | Live |
+| [pkg.go.dev](https://pkg.go.dev/github.com/GLINCKER/levelrail/kit) | Go kit packages | `go get github.com/GLINCKER/levelrail/kit` | Live |
+| [Glama](https://glama.ai/mcp/servers/glincker/levelrail) | MCP server listing | [AI assistant setup](docs/ai-assistant.md) | Live |
+| [Official MCP Registry](docs/ai-assistant.md) | Entry `io.github.glincker/levelrail` | [AI assistant setup](docs/ai-assistant.md) | From the next release |
+| [GitHub Releases](https://github.com/glincker/levelrail/releases) | Signed binaries and release notes | `curl -fsSL https://levelrail.com/install.sh \| sudo sh` | Live |
+| [install.sh](https://levelrail.com/install.sh) | Installer script for the control plane | `curl -fsSL https://levelrail.com/install.sh \| sudo sh` | Live |
+
+</details>
+
 ## Who it is for
 
 **Whoever you are, you start with one line.**
