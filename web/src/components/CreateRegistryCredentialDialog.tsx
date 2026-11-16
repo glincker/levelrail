@@ -301,7 +301,7 @@ export function CreateRegistryCredentialDialog() {
                     <SelectItem value="acr">
                       <span className="flex items-center gap-2">
                         <BrandTile
-                          name="azure"
+                          name="azure-container-registry"
                           label={REGISTRY_HOST_PRESETS.acr.label}
                           size="xs"
                         />

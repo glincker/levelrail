@@ -23,7 +23,7 @@ const BRAND_MARK: Record<GitProvider, string> = {
   forgejo: 'forgejo',
   bitbucket: 'bitbucket',
   bitbucket_server: 'bitbucket',
-  azure_devops: 'azure',
+  azure_devops: 'azure-devops',
 }
 
 interface Copy {

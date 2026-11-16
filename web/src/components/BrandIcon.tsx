@@ -118,6 +118,15 @@ export type BrandIconName =
   | 'rubygems'
   | 'newrelic'
   | 'datadog'
+  | 'sonatype'
+  | 'pushover'
+  | 'lark'
+  | 'gotify'
+  | 'doppler'
+  | 'infisical'
+  | 'vault'
+  | 'onepassword'
+  | 'azure-devops'
   | 'axiom'
   | 'betterstack'
   | 'grafana'
@@ -267,6 +276,15 @@ const LOADERS: Record<
   rubygems: () => import('@thesvg/react/rubygems'),
   newrelic: () => import('@thesvg/react/new-relic'),
   datadog: () => import('@thesvg/react/datadog'),
+  sonatype: () => import('@thesvg/react/sonatype'),
+  pushover: () => import('@thesvg/react/pushover-badge'),
+  lark: () => import('@thesvg/react/lark-badge'),
+  gotify: () => import('@thesvg/react/gotify'),
+  doppler: () => import('@thesvg/react/doppler'),
+  infisical: () => import('@thesvg/react/infisical'),
+  vault: () => import('@thesvg/react/vault'),
+  onepassword: () => import('@thesvg/react/1password'),
+  'azure-devops': () => import('@thesvg/react/azure-azure-devops'),
   axiom: () => import('@thesvg/react/axiom'),
   betterstack: () => import('@thesvg/react/better-stack'),
   grafana: () => import('@thesvg/react/grafana'),

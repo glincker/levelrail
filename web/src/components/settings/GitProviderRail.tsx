@@ -22,7 +22,7 @@ const RAIL_BRAND: Record<RailProvider, string> = {
   forgejo: 'forgejo',
   bitbucket: 'bitbucket',
   bitbucket_server: 'bitbucket',
-  azure_devops: 'azure',
+  azure_devops: 'azure-devops',
 }
 
 export type RailProvider =

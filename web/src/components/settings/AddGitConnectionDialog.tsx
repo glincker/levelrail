@@ -52,7 +52,7 @@ const BRAND_MARK: Record<GitConnectionProvider, string> = {
   forgejo: 'forgejo',
   bitbucket: 'bitbucket',
   bitbucket_server: 'bitbucket',
-  azure_devops: 'azure',
+  azure_devops: 'azure-devops',
 }
 
 // Registers an OAuth application (or, for Bitbucket Server, a personal access
