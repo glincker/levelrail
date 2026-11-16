@@ -400,6 +400,10 @@ provision.oracle.max_a1_ocpu
 provision.oracle.max_boot_volume_gb
 provision.oracle.max_e2_micro
 provision.oracle.vcn_cidr
+provision.resources.cache_ttl_seconds
+provision.resources.refresh_min_interval_seconds
+provision.spend.cache_ttl_seconds
+provision.spend.refresh_min_interval_seconds
 reconcile.resync_seconds
 registry.dockerhub.limit_warn_percent
 registry.dockerhub.limits_cache_seconds

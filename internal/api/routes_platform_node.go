@@ -58,6 +58,8 @@ func (rt *Router) registerNodeRoutes(mux *http.ServeMux) {
 	mux.HandleFunc("GET /api/v1/node-providers/{provider}/regions", rt.requireAbility(AbilityRead, rt.handleListNodeProviderRegions))
 	mux.HandleFunc("GET /api/v1/node-providers/{provider}/sizes", rt.requireAbility(AbilityRead, rt.handleListNodeProviderSizes))
 	mux.HandleFunc("GET /api/v1/node-providers/{provider}/capabilities", rt.requireAbility(AbilityRoot, rt.handleGetNodeProviderCapabilities))
+	mux.HandleFunc("GET /api/v1/node-providers/{provider}/resources", rt.requireAbility(AbilityRoot, rt.handleListNodeProviderResources))
+	mux.HandleFunc("GET /api/v1/node-providers/{provider}/spend", rt.requireAbility(AbilityRoot, rt.handleGetNodeProviderSpend))
 	mux.HandleFunc("POST /api/v1/nodes/provision", rt.requireAbility(AbilityRoot, rt.handleCreateNodeProvision))
 	// A top-level sibling of /api/v1/nodes/{id}/..., not nested under it:
 	// "/api/v1/nodes/provisions/{id}" and "/api/v1/nodes/{id}/health"

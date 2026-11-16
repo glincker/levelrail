@@ -14,7 +14,7 @@ type openAPIRoute struct {
 	Description string
 }
 
-// openAPIRoutes holds all 2180 routes known to scripts/gen-api-reference at
+// openAPIRoutes holds all 2182 routes known to scripts/gen-api-reference at
 // generation time. Run `go run ./scripts/gen-api-reference` after changing
 // any routes*.go registration and commit the result.
 var openAPIRoutes = []openAPIRoute{
@@ -1672,7 +1672,9 @@ var openAPIRoutes = []openAPIRoute{
 	{Method: "DELETE", Path: "/api/v1/node-providers/{provider}", Ability: "AbilityWriteSensitive", Group: "Other", Handler: "handleDisconnectNodeProvider", Description: ""},
 	{Method: "GET", Path: "/api/v1/node-providers/{provider}/capabilities", Ability: "AbilityRoot", Group: "Other", Handler: "handleGetNodeProviderCapabilities", Description: ""},
 	{Method: "GET", Path: "/api/v1/node-providers/{provider}/regions", Ability: "AbilityRead", Group: "Other", Handler: "handleListNodeProviderRegions", Description: ""},
+	{Method: "GET", Path: "/api/v1/node-providers/{provider}/resources", Ability: "AbilityRoot", Group: "Other", Handler: "handleListNodeProviderResources", Description: ""},
 	{Method: "GET", Path: "/api/v1/node-providers/{provider}/sizes", Ability: "AbilityRead", Group: "Other", Handler: "handleListNodeProviderSizes", Description: ""},
+	{Method: "GET", Path: "/api/v1/node-providers/{provider}/spend", Ability: "AbilityRoot", Group: "Other", Handler: "handleGetNodeProviderSpend", Description: ""},
 	{Method: "POST", Path: "/api/v1/node-providers/{provider}/test", Ability: "AbilityWriteSensitive", Group: "Other", Handler: "handleTestNodeProvider", Description: ""},
 	{Method: "GET", Path: "/api/v1/node-provisions", Ability: "AbilityRoot", Group: "Other", Handler: "handleListNodeProvisions", Description: ""},
 	{Method: "DELETE", Path: "/api/v1/node-provisions/{id}", Ability: "AbilityRoot", Group: "Other", Handler: "handleDestroyNodeProvision", Description: ""},

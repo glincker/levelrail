@@ -41,6 +41,8 @@ type providerCapCache struct {
 	mu            sync.Mutex
 	entries       map[string]*capEntry
 	recheckActive atomic.Bool
+	resources     providerReadCache[resourceSnapshot]
+	spend         providerReadCache[provision.SpendReport]
 }
 
 func (c *providerCapCache) entry(provider string) *capEntry {
@@ -62,6 +64,8 @@ func (c *providerCapCache) invalidate(provider string) {
 	c.mu.Lock()
 	delete(c.entries, provider)
 	c.mu.Unlock()
+	c.resources.invalidate(provider)
+	c.spend.invalidate(provider)
 }
 
 // recordProviderCapabilityLearned stores the outcome of a real provider write

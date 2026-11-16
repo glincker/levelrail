@@ -2411,6 +2411,8 @@ Routes that do not fit an existing group.
 | GET | /api/v1/clusters/{name}/pull-secrets | AbilityRoot | handleListK8sPullSecrets |
 | POST | /api/v1/clusters/{name}/pull-secrets | AbilityRoot | handleAddK8sPullSecret |
 | DELETE | /api/v1/clusters/{name}/pull-secrets/{secret} | AbilityRoot | handleDeleteK8sPullSecret |
+| GET | /api/v1/node-providers/{provider}/resources | AbilityRoot | handleListNodeProviderResources |
+| GET | /api/v1/node-providers/{provider}/spend | AbilityRoot | handleGetNodeProviderSpend |
 | POST | /mcp | Public |  |
 
 ## See also
