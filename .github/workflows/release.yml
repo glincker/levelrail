@@ -1216,3 +1216,149 @@ jobs:
             exit 0
           fi
           scripts/release/image-notes.sh "$RELEASE_TAG"
+
+  # The three MCP jobs below are optional extras: no other job needs them, so a
+  # failure here can never block or delay the release.
+  build-mcp-binaries:
+    name: Build MCP server (${{ matrix.goos }}/${{ matrix.goarch }})
+    if: (github.event_name == 'workflow_dispatch' || github.ref_type == 'tag') && vars.NPM_PUBLISH_ENABLED == 'true'
+    needs: release-gate
+    runs-on: ubuntu-latest
+    continue-on-error: true
+    timeout-minutes: 20
+    permissions:
+      contents: read
+    strategy:
+      fail-fast: false
+      matrix:
+        goos: [linux, darwin, windows]
+        goarch: [amd64, arm64]
+        include:
+          - goos: windows
+            ext: .exe
+    steps:
+      - name: Checkout
+        uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7
+        with:
+          ref: ${{ env.RELEASE_TAG }}
+
+      - name: Set up Go
+        uses: actions/setup-go@b7ad1dad31e06c5925ef5d2fc7ad053ef454303e # v7
+        with:
+          go-version-file: go.mod
+
+      # Pure API client like levelrail-cli: no CGO, no embedded frontend.
+      - name: Build
+        env:
+          GOOS: ${{ matrix.goos }}
+          GOARCH: ${{ matrix.goarch }}
+          CGO_ENABLED: 0
+        run: go build -ldflags "-X github.com/GLINCKER/levelrail/internal/version.Version=${{ env.RELEASE_TAG }}" -o "levelrail-mcp-${{ matrix.goos }}-${{ matrix.goarch }}${{ matrix.ext }}" ./cmd/levelrail-mcp
+
+      # Not named cli-binary-*, so the release job never attaches these.
+      - name: Upload binary
+        uses: actions/upload-artifact@cf430e030ddbb5b0abf93d22962f4752f3646cd9 # v7
+        with:
+          name: mcp-binary-${{ matrix.goos }}-${{ matrix.goarch }}
+          path: levelrail-mcp-${{ matrix.goos }}-${{ matrix.goarch }}${{ matrix.ext }}
+          retention-days: 1
+
+  publish-npm-mcp:
+    name: Publish MCP server to npm
+    needs: [release, build-mcp-binaries]
+    if: (github.event_name == 'workflow_dispatch' || github.ref_type == 'tag') && vars.NPM_PUBLISH_ENABLED == 'true' && needs.build-mcp-binaries.result == 'success'
+    runs-on: ubuntu-latest
+    continue-on-error: true
+    timeout-minutes: 10
+    environment: npm-publish
+    permissions:
+      contents: read
+      id-token: write
+    steps:
+      - name: Checkout
+        uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7
+        with:
+          ref: ${{ env.RELEASE_TAG }}
+
+      - name: Download MCP binaries
+        uses: actions/download-artifact@9000827ccba6bdab643e8b6fd33ac0654aef8333 # v8
+        with:
+          pattern: mcp-binary-*
+          path: dist
+          merge-multiple: true
+
+      - name: Set up Node
+        uses: actions/setup-node@949feb2413d6458794dcd2491c4babbbce0c15c1 # v7
+        with:
+          node-version: 22
+          registry-url: https://registry.npmjs.org
+
+      - name: Upgrade npm for OIDC
+        run: npm install -g npm@11.18.0
+
+      # Same dist-tag rule and skip-if-published rule as the CLI packages.
+      - name: Publish npm packages
+        run: |
+          set -euo pipefail
+          scripts/build-mcp-npm-packages.sh "${{ env.RELEASE_TAG }}" dist npm-out
+          dist_tag=latest
+          case "${{ env.RELEASE_TAG }}" in
+            *-*)
+              has_stable=$(npm view levelrail-mcp versions --json 2>/dev/null | node -e 'const v=[].concat(JSON.parse(require("fs").readFileSync(0,"utf8")||"[]")); console.log(v.some((x) => !x.includes("-")))')
+              [ "$has_stable" = "true" ] && dist_tag=beta
+              ;;
+          esac
+          # Order matters: the launcher depends on the per-platform packages.
+          for dir in npm-out/levelrail-mcp-*/ npm-out/levelrail-mcp/; do
+            name=$(node -p "require('./${dir}package.json').name")
+            version=$(node -p "require('./${dir}package.json').version")
+            if npm view "${name}@${version}" version >/dev/null 2>&1; then
+              echo "Skipping ${name}@${version} (already published)"
+              continue
+            fi
+            (cd "$dir" && npm publish --provenance --access public --tag "$dist_tag")
+          done
+
+  publish-mcp-registry:
+    name: Publish to the MCP Registry
+    needs: publish-npm-mcp
+    if: needs.publish-npm-mcp.result == 'success' && !contains(github.event.inputs.tag || github.ref_name, '-')
+    runs-on: ubuntu-latest
+    # A registry problem must never fail the release.
+    continue-on-error: true
+    timeout-minutes: 10
+    permissions:
+      id-token: write
+      contents: read
+    env:
+      MCP_PUBLISHER_VERSION: v1.8.9
+      # sha256 of mcp-publisher_linux_amd64.tar.gz from the release's checksums file.
+      MCP_PUBLISHER_SHA256: 4d527ca8f1ced0394c962dc925c2a4a4addef441cbefd62501c875e9481823a8
+    steps:
+      - name: Checkout
+        uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7
+        with:
+          ref: ${{ env.RELEASE_TAG }}
+          sparse-checkout: |
+            server.json
+            scripts/render-mcp-server-json.mjs
+          sparse-checkout-cone-mode: false
+
+      - name: Install mcp-publisher
+        run: |
+          set -euo pipefail
+          archive="mcp-publisher_linux_amd64.tar.gz"
+          curl --fail --location --silent --show-error --output "$archive" \
+            "https://github.com/modelcontextprotocol/registry/releases/download/${MCP_PUBLISHER_VERSION}/${archive}"
+          echo "${MCP_PUBLISHER_SHA256}  ${archive}" | sha256sum --check --strict
+          tar xzf "$archive" mcp-publisher
+          rm -f "$archive"
+
+      - name: Render server.json for the tag
+        run: node scripts/render-mcp-server-json.mjs "$RELEASE_TAG" server.json
+
+      - name: Log in with GitHub OIDC
+        run: ./mcp-publisher login github-oidc
+
+      - name: Publish
+        run: ./mcp-publisher publish

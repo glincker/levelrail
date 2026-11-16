@@ -73,6 +73,27 @@ levelrail-mcp --transport=http --listen=127.0.0.1:8090 --token '<your API token>
 </Tab>
 </Tabs>
 
+### Run the MCP server with npx
+
+From the next release that publishes it, the server is also available as the `levelrail-mcp` npm package, so a client that can launch a subprocess does not need a separate download:
+
+```json
+{
+  "mcpServers": {
+    "levelrail": {
+      "command": "npx",
+      "args": ["-y", "levelrail-mcp"],
+      "env": {
+        "APP_API_TOKEN": "<your API token>",
+        "APP_API_URL": "https://levelrail.example.com"
+      }
+    }
+  }
+}
+```
+
+The package is also listed in the official MCP Registry as `io.github.glincker/levelrail` once a release has published it. Until then, use the `levelrail-mcp` binary as above.
+
 ## Modes and toolsets
 
 Every tool carries MCP annotations (`readOnlyHint`, `destructiveHint`, `idempotentHint`, `openWorldHint`, and a title), derived from one classification table in `internal/mcptools/classes.go`. Tools that touch credentials or command output also carry `_meta["levelrail/sensitive"] = true`. Annotations are hints only, so the server enforces the same split at registration time.
