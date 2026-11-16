@@ -5,6 +5,7 @@ import type {
 } from '../../lib/cloudProviderBrand'
 import type { NodeProviderResource } from '../../types/nodeProvision'
 import { ProviderConnectionSection } from './ProviderConnectionSection'
+import { ProviderCapabilitiesPanel } from './ProviderCapabilitiesPanel'
 import { ProviderServersSection } from './ProviderServersSection'
 import type { ProviderLabels } from './useProviderLabels'
 
@@ -21,6 +22,7 @@ export const SECTIONS: Partial<
   Record<CloudProviderFeature, ComponentType<SectionProps>>
 > = {
   connection: ProviderConnectionSection,
+  capabilities: ProviderCapabilitiesPanel,
   servers: ProviderServersSection,
 }
 
