@@ -2,13 +2,9 @@ package cloudconn
 
 import (
 	"context"
-	"crypto"
 	"crypto/md5" //nolint:gosec // the OCI key fingerprint is defined as an MD5 digest
-	"crypto/rand"
 	"crypto/rsa"
-	"crypto/sha256"
 	"crypto/x509"
-	"encoding/base64"
 	"encoding/json"
 	"encoding/pem"
 	"errors"
@@ -24,6 +20,7 @@ import (
 	"strings"
 	"time"
 
+	"github.com/GLINCKER/levelrail/internal/ocisign"
 	"github.com/GLINCKER/levelrail/internal/secretsource"
 )
 
@@ -355,39 +352,16 @@ func oracleRedactor(key []byte) *secretsource.Redactor {
 	return r
 }
 
-// oracleSigningString builds the string the OCI HTTP signature covers for a body-less request.
-// Header order follows the published example: date, (request-target), host.
-func oracleSigningString(req *http.Request) string {
-	target := req.URL.EscapedPath()
-	if req.URL.RawQuery != "" {
-		target += "?" + req.URL.RawQuery
-	}
-	host := req.Host
-	if host == "" {
-		host = req.URL.Host
-	}
-	return "date: " + req.Header.Get("Date") + "\n" +
-		"(request-target): " + strings.ToLower(req.Method) + " " + target + "\n" +
-		"host: " + host
-}
+// oracleSigningString keeps the body-less signing text reachable for this package's tests.
+func oracleSigningString(req *http.Request) string { return ocisign.SigningString(req) }
 
-// signOracleRequest adds Date and Authorization. Only GET is signed: this package is read-only.
+// signOracleRequest signs a GET. This package is read-only, so other methods are refused here
+// even though the shared signer supports them.
 func signOracleRequest(req *http.Request, keyID string, key *rsa.PrivateKey, now time.Time) error {
 	if req.Method != http.MethodGet {
 		return errors.New("cloudconn: only read-only GET requests are signed")
 	}
-	if req.Header.Get("Date") == "" {
-		req.Header.Set("Date", now.UTC().Format(http.TimeFormat))
-	}
-	digest := sha256.Sum256([]byte(oracleSigningString(req)))
-	sig, err := rsa.SignPKCS1v15(rand.Reader, key, crypto.SHA256, digest[:])
-	if err != nil {
-		return errors.New("cloudconn: request signing failed")
-	}
-	req.Header.Set("Authorization", fmt.Sprintf(
-		`Signature version="1",keyId="%s",algorithm="rsa-sha256",headers="date (request-target) host",signature="%s"`,
-		keyID, base64.StdEncoding.EncodeToString(sig)))
-	return nil
+	return ocisign.Signer{KeyID: keyID, Key: key, Now: func() time.Time { return now }, AllowInsecure: true}.Sign(req, nil)
 }
 
 // HealthChecker makes one read-only call with an OCI credential and returns a Class constant.
