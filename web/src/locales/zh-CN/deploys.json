@@ -100,6 +100,12 @@
     "description": "提供一个小型公开 SVG,显示此应用最新部署的状态和发生时间。无需认证。如果部署状态不应公开,请保持关闭。",
     "switchAriaLabel": "已启用部署状态徽章",
     "embedLabel": "嵌入到你的 README",
+    "footerLabel": "显示 Deployed with Levelrail 徽章",
+    "footerStyleLabel": "样式",
+    "footerStyleSplit": "分割",
+    "footerStyleLight": "浅色",
+    "footerStyleDark": "深色",
+    "footerAlt": "Deployed with Levelrail",
     "toast": {
       "enabled": "已启用部署状态徽章。",
       "disabled": "已禁用部署状态徽章。",

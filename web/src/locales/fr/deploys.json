@@ -100,6 +100,12 @@
     "description": "Sert un petit SVG public montrant le statut du dernier deploy de cette app et quand il a eu lieu. Aucune authentification n'est requise. Laissez désactivé si le statut des deploys ne doit pas être public.",
     "switchAriaLabel": "Badge de statut de deploy activé",
     "embedLabel": "Intégrer dans votre README",
+    "footerLabel": "Afficher le badge Deployed with Levelrail",
+    "footerStyleLabel": "Style",
+    "footerStyleSplit": "Divisé",
+    "footerStyleLight": "Clair",
+    "footerStyleDark": "Sombre",
+    "footerAlt": "Deployed with Levelrail",
     "toast": {
       "enabled": "Badge de statut de deploy activé.",
       "disabled": "Badge de statut de deploy désactivé.",

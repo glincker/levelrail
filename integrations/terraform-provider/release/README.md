@@ -22,6 +22,8 @@ The Terraform and OpenTofu registries need a repository named `terraform-provide
 
 ## Release checklist
 
+The release workflow now runs these steps itself (job `publish-terraform-mirror`) once the repository secret `TF_MIRROR_DEPLOY_KEY` holds a write deploy key for the mirror. It skips when the provider did not change since the previous tag. The manual steps below stay as the fallback.
+
 1. Bump the version through the release-please trailer in the monorepo release flow; note the provider version.
 2. Clone the mirror and dry run: `release/mirror-sync.sh --clone <path> --version X.Y.Z`.
 3. Read the output, then run it again with `--yes`. It commits, tags `vX.Y.Z` and pushes to the mirror.

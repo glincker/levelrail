@@ -89,6 +89,8 @@ Two badges, each in four styles. Use the matched gradient pair on a README so ea
 </a>
 ```
 
+The dashboard also gives you the Deployed with Levelrail snippet ready to copy, on the Deploy status badge card of an app's deploy settings. See [Deploy status badge](/deploy-status-badge).
+
 The images load from the jsDelivr CDN, which serves them from this repository.
 
 ## One line to use

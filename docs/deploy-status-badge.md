@@ -16,6 +16,16 @@ Open the app, then **Deploys**, and find the **Deploy status badge** card. Flip 
 
 Replace the URL with the one the dashboard shows you: it already has your server's address and the app's real name filled in.
 
+## Deployed with Levelrail footer badge
+
+The same card also shows a second snippet, a static "Deployed with Levelrail" badge for your README or site footer. It is always available, whether or not the status badge is enabled. Pick the split, light or dark style, then copy:
+
+```markdown
+[![Deployed with Levelrail](https://cdn.jsdelivr.net/gh/glincker/levelrail@main/docs/assets/brand/deployed-with-split.svg)](https://levelrail.com)
+```
+
+The light and dark styles are the gradient pair, for pages that follow the reader's theme. All badge files and usage rules are on the [brand page](/brand).
+
 ## What it looks like
 
 The badge is a flat, two-color pill, rendered as real SVG on every request:

@@ -100,6 +100,12 @@
     "description": "Serve um pequeno SVG público mostrando o status do último deploy deste app e quando ele aconteceu. Nenhuma autenticação é necessária. Deixe desativado se o status do deploy não deve ser público.",
     "switchAriaLabel": "Selo de status de deploy ativado",
     "embedLabel": "Incorporar no seu README",
+    "footerLabel": "Mostrar o selo Deployed with Levelrail",
+    "footerStyleLabel": "Estilo",
+    "footerStyleSplit": "Dividido",
+    "footerStyleLight": "Claro",
+    "footerStyleDark": "Escuro",
+    "footerAlt": "Deployed with Levelrail",
     "toast": {
       "enabled": "Selo de status de deploy ativado.",
       "disabled": "Selo de status de deploy desativado.",

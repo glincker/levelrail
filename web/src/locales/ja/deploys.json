@@ -100,6 +100,12 @@
     "description": "このアプリの最新のデプロイのステータスと日時を示す、小さな公開SVGを配信します。認証は不要です。デプロイのステータスを公開したくない場合は、オフのままにしてください。",
     "switchAriaLabel": "デプロイステータスのバッジを有効化",
     "embedLabel": "READMEに埋め込む",
+    "footerLabel": "Deployed with Levelrail バッジを表示",
+    "footerStyleLabel": "スタイル",
+    "footerStyleSplit": "分割",
+    "footerStyleLight": "ライト",
+    "footerStyleDark": "ダーク",
+    "footerAlt": "Deployed with Levelrail",
     "toast": {
       "enabled": "デプロイステータスのバッジを有効にしました。",
       "disabled": "デプロイステータスのバッジを無効にしました。",

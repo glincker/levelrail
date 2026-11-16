@@ -551,6 +551,47 @@ jobs:
           cp rendered/nix/flake.nix assets/levelrail-cli.flake.nix
           gh release upload "${{ env.RELEASE_TAG }}" assets/* --repo "${{ github.repository }}" --clobber
 
+  publish-terraform-mirror:
+    name: Sync Terraform provider mirror
+    needs: release
+    if: github.event_name == 'workflow_dispatch' || github.ref_type == 'tag'
+    runs-on: ubuntu-latest
+    timeout-minutes: 10
+    permissions:
+      contents: read
+    env:
+      HAS_MIRROR_KEY: ${{ secrets.TF_MIRROR_DEPLOY_KEY != '' }}
+    steps:
+      - name: Checkout
+        uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7
+        with:
+          ref: ${{ env.RELEASE_TAG }}
+          fetch-depth: 0
+
+      # Skipped, not failed, until the owner adds the deploy key. The mirror
+      # only gets a new version when the provider changed since the last tag.
+      - name: Sync the provider into the mirror and tag it
+        if: env.HAS_MIRROR_KEY == 'true'
+        env:
+          MIRROR_DEPLOY_KEY: ${{ secrets.TF_MIRROR_DEPLOY_KEY }}
+        run: |
+          set -euo pipefail
+          prev="$(git describe --tags --abbrev=0 --match 'v*' "${{ env.RELEASE_TAG }}^" 2>/dev/null || true)"
+          if [ -n "$prev" ] && git diff --quiet "$prev" "${{ env.RELEASE_TAG }}" -- integrations/terraform-provider; then
+            echo "provider unchanged since $prev, nothing to sync"
+            exit 0
+          fi
+          install -d -m 700 ~/.ssh
+          printf '%s\n' "$MIRROR_DEPLOY_KEY" > ~/.ssh/mirror_key
+          chmod 600 ~/.ssh/mirror_key
+          export GIT_SSH_COMMAND="ssh -i $HOME/.ssh/mirror_key -o IdentitiesOnly=yes -o StrictHostKeyChecking=accept-new"
+          git clone --depth 1 git@github.com:glincker/terraform-provider-levelrail.git mirror
+          git -C mirror config user.name "levelrail release"
+          git -C mirror config user.email "support@levelrail.com"
+          version="${{ env.RELEASE_TAG }}"
+          integrations/terraform-provider/release/mirror-sync.sh --clone mirror --version "${version#v}" --yes
+          rm -f ~/.ssh/mirror_key
+
   publish-npm:
     name: Publish CLI to npm
     needs: release

@@ -100,6 +100,12 @@
     "description": "Liefert ein kleines öffentliches SVG, das den Status des letzten Deploys dieser App und den Zeitpunkt zeigt. Es ist keine Authentifizierung nötig. Lassen Sie dies aus, wenn der Deploy-Status nicht öffentlich sein soll.",
     "switchAriaLabel": "Deploy-Status-Badge aktiviert",
     "embedLabel": "In Ihre README einbetten",
+    "footerLabel": "Abzeichen \"Deployed with Levelrail\" zeigen",
+    "footerStyleLabel": "Stil",
+    "footerStyleSplit": "Geteilt",
+    "footerStyleLight": "Hell",
+    "footerStyleDark": "Dunkel",
+    "footerAlt": "Deployed with Levelrail",
     "toast": {
       "enabled": "Deploy-Status-Badge aktiviert.",
       "disabled": "Deploy-Status-Badge deaktiviert.",
