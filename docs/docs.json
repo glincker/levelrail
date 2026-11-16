@@ -77,6 +77,7 @@
             "group": "Install and deploy",
             "pages": [
               "index",
+              "features",
               "first-15-minutes",
               "what-you-need",
               "installing",

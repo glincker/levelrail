@@ -1,7 +1,7 @@
 <div align="center">
 <img src="docs/assets/brand/levelrail-default.svg" alt="Levelrail logo" width="56" height="56">
 <h1>Levelrail</h1>
-<p><strong>A self-hosted deployment platform for your own servers and cloud accounts.</strong><br>
+<p><strong>Self-hosted deployment platform: git push to production on your own servers and cloud accounts.</strong><br>
 Git deploys, 565 one-click templates (346 proven on a real engine), edge and TLS, nodes at six clouds, managed databases with restore-drilled backups, and built-in observability. One Go binary, Apache 2.0.</p>
 <p>
   <a href="https://github.com/glincker/levelrail/stargazers"><img src="https://img.shields.io/github/stars/glincker/levelrail?style=flat&logo=github" alt="GitHub stars"></a>
@@ -30,22 +30,83 @@ Git deploys, 565 one-click templates (346 proven on a real engine), edge and TLS
 <picture><source media="(prefers-color-scheme: dark)" srcset="docs/assets/brand/social/github-social-1280x640.jpg"><img src="docs/assets/brand/social/github-social-1280x640-light.jpg" alt="Levelrail: a self-hosted deployment platform with Git deploys, templates, edge, databases and observability." width="880"></picture>
 </div>
 
+<p align="center"><a href="docs/template-catalog.md"><b>565</b> one-click templates</a> &middot; <a href="docs/node-provisioning.md"><b>6</b> clouds</a> &middot; <a href="docs/managing-databases.md"><b>13</b> database engines</a> &middot; <a href="docs/integrations.md"><b>18</b> alert channels</a> &middot; <a href="docs/benchmarks.md"><b>~200 MB</b> idle</a> &middot; <a href="docs/architecture.md"><b>1</b> binary</a></p>
+
 Levelrail turns Linux servers into a private cloud and works with the Kubernetes clusters and cloud accounts you already have. Pre-1.0: single-server is production ready, multi-node is beta. Every feature carries a stable, beta or experimental label in [Feature status](docs/feature-status.md), and the labels below follow it.
 
 <p align="center"><img src="docs/assets/demos/product-tour.gif" alt="Levelrail dashboard tour: fleet overview, apps list, deploy history and built-in metrics" width="880"></p>
 
 ## What you get
 
-| Area | What is in the 1.4.0 tree |
-| --- | --- |
-| **Deploy** | Git push or webhook deploys from GitHub, GitLab, Bitbucket, Gitea and Forgejo. Dockerfile, Compose and Railpack builds with a build queue. Readiness-gated rollouts, canaries, split tests, previews per pull request, one-step rollback, approvals and deploy freezes. Functions in Node, Python or Go ([beta](docs/feature-status.md)). |
-| **Templates** | 574 catalog entries (565 active, 9 deprecated) in 22 categories, 346 with a recorded real-engine pass and 228 marked preview (installable, no recorded pass yet). [Catalog](docs/template-catalog.md), [how templates work](docs/templates-and-registry.md). |
-| **Networking and edge** | Embedded ingress with automatic TLS (HTTP-01 and DNS-01 wildcards), per-domain headers, forwarders, geo rules, caching and redirects. Firewall rules, IP lists, browser challenge, bot lists, attack mode and per-app rate limits ([beta](docs/abuse-defense.md)). Round-robin balancing across replicas. Private networks and a WireGuard mesh ([beta](docs/multi-node.md)). |
-| **Cloud and nodes** | Provision nodes at Hetzner, DigitalOcean, AWS, Azure, GCP or Oracle Cloud, or join any Linux host with a single-use token over mTLS ([provisioning](docs/node-provisioning.md), beta). DNS at Cloudflare and Route53, image registries on ECR, Artifact Registry and ACR ([per-cloud status](docs/cloud-integrations.md)). Connect existing Kubernetes clusters and deploy to them (experimental, off by default), and [import Kubernetes manifests](docs/import-kubernetes.md). |
-| **Data and backups** | 13 database engines in code, 9 live-verified and 4 built but not yet live-verified. Backups to S3-compatible, R2 or local targets, with restore drills and point-in-time recovery for Postgres ([managing databases](docs/managing-databases.md)). |
-| **Observability** | Built-in metrics, log search and log archive, OTLP ingest, a public status page, deploy traces and traffic export. Alerts to 18 notification channel kinds. HTTP, TCP, heartbeat and TLS uptime monitors (experimental). |
-| **Security and access** | Passwords, passkeys, TOTP, OAuth sign-in with 20 providers plus generic OIDC, SAML and SCIM (beta, off by default), IAM policies, teams, a hash-chained audit log and encrypted secrets. Signed releases. |
-| **Automation and integrations** | `levelrail-cli`, an HTTP API, a Terraform and OpenTofu provider, YAML platform as code (experimental), CI pipelines, 11 per-app integrations (Sentry, PostHog, Datadog and more), signed plugins for notification channels, and 259 MCP tools for coding agents. A mail server template with mailboxes and DNS records is available as an experimental feature. |
+Every label below links to its docs page. Maturity follows [Feature status](docs/feature-status.md).
+
+**[Ship with git push](docs/deploying-apps.md)**
+- [Git push deploys](docs/git-push-deploy.md) from GitHub, GitLab, Bitbucket
+- [Preview environments per pull request](docs/deploy-previews.md)
+- [Readiness-gated rollouts](docs/zero-downtime-deploys.md) and [one-step rollback](docs/rollback.md)
+- [Canaries and split tests](docs/canary-deploys.md)
+
+<details>
+<summary>All deploy features</summary>
+
+- Webhook deploys from GitHub, GitLab, Bitbucket, Gitea and Forgejo ([Git integrations](docs/git-integrations.md))
+- Dockerfile, Compose and Railpack (beta) builds with a build queue ([Build Center](docs/build-center.md))
+- Previews: stable on GitHub, beta on GitLab and Bitbucket
+- Approvals and deploy freezes ([Deploy safety](docs/deploy-safety.md))
+- Functions in Node, Python or Go (beta) ([Functions](docs/functions.md))
+
+</details>
+
+**[One-click templates](docs/template-catalog.md)**
+- 565 active templates in 22 categories, 574 entries in all
+- 346 with a recorded real-engine pass, 228 marked preview ([how templates work](docs/templates-and-registry.md))
+
+**[Automatic HTTPS and edge](docs/domains-and-ingress.md)**
+- Automatic HTTPS with HTTP-01 and DNS-01 wildcards
+- [Firewall, bot lists and attack mode](docs/firewall.md)
+- [Per-app rate limits](docs/abuse-defense.md) (beta)
+- [Private networks and WireGuard mesh](docs/multi-node.md) (beta)
+
+**[Spin up nodes on any cloud](docs/node-provisioning.md)**
+- Provision nodes at six clouds (beta)
+- [Join any Linux host](docs/add-node-anywhere.md) with a single-use token
+- [DNS and registries](docs/cloud-integrations.md) at Cloudflare, Route53, ECR, ACR
+- Kubernetes: [works with the clusters and cloud accounts you already have](docs/import-kubernetes.md) (experimental)
+
+**[Managed databases and backups](docs/managing-databases.md)**
+- 13 database engines: 9 live-verified, 4 built but not yet live-verified
+- [Backups to S3-compatible, R2 or local](docs/backups-and-storage.md) targets
+- [Backups with restore drills](docs/prove-your-backups-work.md)
+- Point-in-time recovery for Postgres
+
+<details>
+<summary>All data and backup features</summary>
+
+- 13 engines in code. Built but not yet live-verified: Meilisearch, Qdrant, Typesense, Memcached
+- Backup targets: S3-compatible, R2 or local ([Backups and storage](docs/backups-and-storage.md))
+- Restore drills ([Prove your backups work](docs/prove-your-backups-work.md))
+- Point-in-time recovery for Postgres
+
+</details>
+
+**[Built-in metrics, logs and alerts](docs/observability.md)**
+- [Log search and archive](docs/log-explorer.md) with built-in metrics
+- [OTLP ingest](docs/otlp-ingest.md)
+- [Public status page](docs/status-page.md) and [alerts to 18 channel kinds](docs/integrations.md)
+
+**[SSO, RBAC and audit log](docs/identity-and-access.md)**
+- Passkeys, TOTP and [OAuth with 20 providers plus OIDC](docs/sso-oidc.md)
+- [SAML and SCIM](docs/sso-saml.md) (beta, off by default)
+- [IAM policies and teams](docs/teams-and-roles.md)
+- [Hash-chained audit log](docs/audit-log.md)
+
+**[CLI, API, Terraform and MCP](docs/cli-reference.md)**
+- [Terraform and OpenTofu provider](docs/terraform-provider.md)
+- [MCP server with 259 tools](docs/mcp.md) for coding agents
+- [HTTP API](docs/api-reference.md) and `levelrail-cli`
+- [YAML platform as code](docs/platform-as-code.md) (experimental)
+
+[All features, with maturity labels](docs/features.md)
 
 Footprint: about 200 MB idle RAM and 1.5% of one CPU on a 2 vCPU box ([measured, method included](docs/benchmarks.md)). Runs on Linux amd64 and arm64 with systemd and Docker.
 

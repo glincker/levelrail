@@ -27,15 +27,16 @@ Levelrail turns one or more Linux servers into a private cloud. Push to a git re
 
 ## What is in the product
 
-| Area | Contents |
-| --- | --- |
-| Deploy | Git deploys from GitHub, GitLab, Bitbucket, Gitea and Forgejo. Dockerfile, Compose and Railpack builds. Canaries, split tests, previews, approvals, rollback. See [Deploying apps](/deploying-apps). |
-| Templates | 574 catalog entries (565 active), 346 with a recorded real-engine pass and 228 marked preview. See [Template catalog](/template-catalog). |
-| Networking and edge | Embedded ingress, automatic TLS, per-domain traffic controls, firewall with browser challenge, per-app rate limits, replica balancing. See [Domains and ingress](/domains-and-ingress) and [Firewall](/firewall). |
-| Cloud and nodes | Provision nodes at Hetzner, DigitalOcean, AWS, Azure, GCP or Oracle Cloud, or join any Linux host. Connect existing Kubernetes clusters (experimental, off by default). See [Node provisioning](/node-provisioning) and [Cloud integrations](/cloud-integrations). |
-| Data and backups | 13 database engines in code (9 live-verified), backups to S3-compatible, R2 or local targets, restore drills and point-in-time recovery for Postgres. See [Managed databases](/managed-databases). |
-| Observability | Metrics, logs, log archive, OTLP ingest, status page, alerts to 18 channel kinds. See [Monitors](/monitors) and [Status page](/status-page). |
-| Automation | CLI, HTTP API, Terraform and OpenTofu provider, pipelines, 11 per-app integrations, 259 MCP tools. See [CLI reference](/cli-reference), [API reference](/api-reference) and [Terraform provider](/terraform-provider). |
+- **Ship with git push.** Dockerfile, Compose and Railpack builds, previews, rollback. See [Deploying apps](/deploying-apps).
+- **One-click templates.** 565 active entries. See [Template catalog](/template-catalog).
+- **Automatic HTTPS and edge.** Ingress, firewall, rate limits. See [Domains and ingress](/domains-and-ingress) and [Firewall](/firewall).
+- **Spin up nodes on any cloud.** Six providers. See [Node provisioning](/node-provisioning) and [Cloud integrations](/cloud-integrations).
+- **Managed databases and backups.** 13 engines, restore drills. See [Managed databases](/managed-databases).
+- **Built-in metrics, logs and alerts.** See [Monitors](/monitors) and [Status page](/status-page).
+- **SSO, RBAC and audit log.** See [Identity and access](/identity-and-access).
+- **CLI, API, Terraform and MCP.** See [CLI reference](/cli-reference), [API reference](/api-reference) and [Terraform provider](/terraform-provider).
+
+All of it with counts and labels is on [All features](/features).
 
 Every feature is labelled stable, beta or experimental in [Feature status](/feature-status).
 
