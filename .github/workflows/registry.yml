@@ -104,20 +104,18 @@ jobs:
         with:
           go-version-file: go.mod
 
-      # Legacy means listed in registry/legacy.txt or already present at the base
-      # commit. Legacy failures warn; new templates must pass.
+      # Legacy means listed in the frozen registry/baseline-ids.txt or registry/legacy.txt.
+      # Legacy failures warn; every other template must pass.
       - name: Classify template
         id: legacy
         env:
           ID: ${{ matrix.id }}
-          BASE: ${{ needs.validate.outputs.base }}
         run: |
           legacy=false
-          if grep -qxF "$ID" registry/legacy.txt; then legacy=true; fi
-          if git cat-file -e "$BASE:registry/templates/$ID/compose.yaml" 2>/dev/null; then legacy=true; fi
+          if grep -qxF "$ID" registry/baseline-ids.txt registry/legacy.txt; then legacy=true; fi
           echo "legacy=$legacy" >> "$GITHUB_OUTPUT"
           if [ "$legacy" = "true" ]; then
-            echo "::notice title=legacy template::$ID predates this change, smoke failures are warnings"
+            echo "::notice title=legacy template::$ID is in the frozen baseline, smoke failures are warnings"
           fi
 
       - name: Render through the engine
