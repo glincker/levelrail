@@ -6,6 +6,10 @@ description: How to add a template folder to registry/templates, the rules the v
 
 The registry is a folder of templates in the repository. Each template is one folder, and a pull request that adds or changes a folder is checked by CI. For the older manifest route see [Add a template](/add-a-template).
 
+## Submit without a pull request
+
+If you would rather not open a pull request, use the [submission page](https://levelrail.com/templates/submit/). It checks your answers and opens a prefilled GitHub issue under your account. You can also open the [issue form](https://github.com/glincker/levelrail/issues/new?template=template_submission.yml) directly. A maintainer reviews it and CI runs the template through the smoke test below.
+
 ## Add a template folder
 
 Create `registry/templates/<id>/` with two files:

@@ -1,0 +1,156 @@
+name: Template submission
+description: Contribute a working Compose setup for the template catalog
+title: "template: "
+labels: ["type/feature", "needs-triage"]
+body:
+  - type: markdown
+    attributes:
+      value: |
+        Use this form when you have a working Compose setup to contribute. If you only want an app listed and have no compose file, use the [template request](https://github.com/glincker/levelrail/issues/new?template=template_request.yml) form instead.
+
+        You can also fill this in on the [submission page](https://levelrail.com/templates/submit/), which opens this form prefilled. A maintainer reviews it, CI runs the template through a real compose smoke test, then it ships in the catalog. See [Contribute to the template registry](https://docs.levelrail.com/registry-contributing).
+
+  - type: input
+    id: name
+    attributes:
+      label: Template name
+      placeholder: Example App
+    validations:
+      required: true
+
+  - type: input
+    id: upstream
+    attributes:
+      label: Project URL
+      description: Project website or repository.
+      placeholder: "https://..."
+    validations:
+      required: true
+
+  - type: dropdown
+    id: licence
+    attributes:
+      label: Licence
+      description: Only open source licences can be listed. SSPL, BSL, proprietary and non-commercial licences cannot be listed.
+      options:
+        - MIT
+        - Apache-2.0
+        - BSD-2-Clause or BSD-3-Clause
+        - ISC
+        - MPL-2.0
+        - GPL-2.0 or GPL-3.0
+        - LGPL
+        - AGPL-3.0
+        - Other open source (say which in the notes)
+        - Not sure
+    validations:
+      required: true
+
+  - type: input
+    id: image
+    attributes:
+      label: Container image
+      description: The official image with a pinned tag, not latest.
+      placeholder: "ghcr.io/org/app:1.2.3"
+    validations:
+      required: true
+
+  - type: dropdown
+    id: category
+    attributes:
+      label: Category
+      options:
+        - AI
+        - Analytics
+        - Applications
+        - Automation
+        - Communication
+        - Dashboard
+        - Database Tools
+        - Developer Tools
+        - Finance
+        - Games
+        - Infrastructure
+        - IoT
+        - Media
+        - Monitoring
+        - Productivity
+        - Security
+        - Starter Kits
+        - Storage
+    validations:
+      required: true
+
+  - type: textarea
+    id: ports
+    attributes:
+      label: Ports
+      description: Each port and what it serves, for example 8080 for the web UI.
+    validations:
+      required: true
+
+  - type: textarea
+    id: services
+    attributes:
+      label: Other services
+      description: Databases or other services it needs, for example PostgreSQL 16 or Redis.
+    validations:
+      required: false
+
+  - type: textarea
+    id: volumes
+    attributes:
+      label: Volumes
+      description: Paths that hold state, for example /data.
+    validations:
+      required: false
+
+  - type: textarea
+    id: env
+    attributes:
+      label: Environment variables
+      description: Names and what they do, including secrets and required config. Do not paste secret values.
+    validations:
+      required: false
+
+  - type: input
+    id: docs_url
+    attributes:
+      label: Documentation URL
+      placeholder: "https://..."
+    validations:
+      required: true
+
+  - type: checkboxes
+    id: tested
+    attributes:
+      label: Tested
+      options:
+        - label: It runs with `docker compose up --wait`.
+
+  - type: dropdown
+    id: arm64
+    attributes:
+      label: arm64 support
+      options:
+        - "Yes"
+        - "No"
+        - Unknown
+    validations:
+      required: false
+
+  - type: textarea
+    id: notes
+    attributes:
+      label: Notes
+      description: Anything a reviewer should know. Paste the compose file here if you have one.
+    validations:
+      required: false
+
+  - type: checkboxes
+    id: no_secrets
+    attributes:
+      label: No secrets
+      options:
+        - label: This submission contains no passwords, tokens or other secrets.
+          required: true

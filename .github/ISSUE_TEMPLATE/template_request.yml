@@ -6,7 +6,7 @@ body:
   - type: markdown
     attributes:
       value: |
-        Check the existing catalog first. You can also list the app yourself by opening a pull request with two files under `internal/catalog/manifests/<id>/`. Listing is free. See [Add a template](https://docs.levelrail.com/add-a-template) and use the template submission pull request form.
+        Check the existing catalog first. You can also list the app yourself by opening a pull request with two files under `internal/catalog/manifests/<id>/`. Listing is free. See [Add a template](https://docs.levelrail.com/add-a-template) and use the template submission pull request form. If you have a working compose file but prefer not to open a pull request, use the [template submission](https://github.com/glincker/levelrail/issues/new?template=template_submission.yml) form.
 
   - type: input
     id: service
