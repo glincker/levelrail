@@ -18,6 +18,8 @@ type appSpec struct {
 }
 
 const (
+	kioskPrefix  = "kiosk-ui-"
+	kioskImage   = "registry.example.com/acme/kiosk-ui"
 	incidentApp  = "storefront-api"
 	crashloopApp = "billing-service"
 )
@@ -35,6 +37,11 @@ var appSpecs = []appSpec{
 	{"n8n", "docker.io/n8nio/n8n", "proj_internal_tools", "node_worker_nyc_1", "recreate", 5678, 1, []string{"automation"}, false},
 	{"uptime-kuma", "docker.io/louislam/uptime-kuma", "proj_internal_tools", "node_edge_fra_1", "recreate", 3001, 1, []string{"status-internal"}, false},
 	{"legacy-cms", "registry.example.com/acme/legacy-cms", "proj_internal_tools", "node_worker_sgp_1", "recreate", 8080, 1, []string{"cms"}, true},
+	{"image-resizer", "registry.example.com/acme/image-resizer", "proj_platform", "node_vps_ams_1", "rolling", 8090, 1, nil, false},
+	{"etl-nightly", "registry.example.com/acme/etl-nightly", "proj_platform", "node_aws_0a1b2c3d4e5f60718", "recreate", 9200, 1, nil, false},
+	{"kiosk-ui-pi-site-a-1", kioskImage, "proj_platform", "node_pi_site_a_1", "rolling", 8080, 1, nil, false},
+	{"kiosk-ui-pi-site-a-2", kioskImage, "proj_platform", "node_pi_site_a_2", "rolling", 8080, 1, nil, false},
+	{"kiosk-ui-pi-site-b-1", kioskImage, "proj_platform", "node_pi_site_b_1", "rolling", 8080, 1, nil, false},
 }
 
 func (s *seeder) services() error {
@@ -148,6 +155,8 @@ func (s *seeder) deploys() error {
 					sha: list[len(list)-1].sha, title: "rollback to previous healthy deploy", author: "system",
 					reason: "crashloop detected, rolled back automatically", dur: 31 * time.Second},
 			)
+		case "kiosk-ui-pi-site-a-1", "kiosk-ui-pi-site-a-2", "kiosk-ui-pi-site-b-1":
+			list = append(list, s.rolloutAttempt(a.name))
 		case "storefront-web", "admin-panel":
 			prev := list[len(list)-1]
 			list = append(list, attempt{
