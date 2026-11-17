@@ -1,5 +1,50 @@
 # Changelog
 
+## [1.4.0](https://github.com/glincker/levelrail/compare/v1.3.2...v1.4.0) (2026-11-17)
+
+
+### Features
+
+* accept the global --insecure-http flag on every CLI command ([a4068f0](https://github.com/glincker/levelrail/commit/a4068f084d437dd4b283d16f86aa89af4ee29c89))
+* add a Vultr node provider ([a4068f0](https://github.com/glincker/levelrail/commit/a4068f084d437dd4b283d16f86aa89af4ee29c89))
+* add an Oracle Cloud node provider with a spend and allowance guard, off by default behind provision.oracle.enabled, allowance limits default to 0 ([a4068f0](https://github.com/glincker/levelrail/commit/a4068f084d437dd4b283d16f86aa89af4ee29c89))
+* add DigitalOcean permission checks, droplet discovery and spend reporting ([a4068f0](https://github.com/glincker/levelrail/commit/a4068f084d437dd4b283d16f86aa89af4ee29c89))
+* add dns who-answers and GET /api/v1/dns/authority to show who answers for a domain and the failover risks, with the dns.authority_warn_ttl_seconds setting ([a4068f0](https://github.com/glincker/levelrail/commit/a4068f084d437dd4b283d16f86aa89af4ee29c89))
+* build deb and rpm packages and run package manager workflows including Scoop and winget manifests after each release ([a4068f0](https://github.com/glincker/levelrail/commit/a4068f084d437dd4b283d16f86aa89af4ee29c89))
+* clusters CLI with connect, rbac, deploy, deployments, status, logs, remove and pull secret commands, and a namespaced RBAC role you can extend with --cluster-read ([a4068f0](https://github.com/glincker/levelrail/commit/a4068f084d437dd4b283d16f86aa89af4ee29c89))
+* connect Kubernetes clusters with encrypted credentials, list their nodes and namespaces, from the API, CLI and dashboard ([a4068f0](https://github.com/glincker/levelrail/commit/a4068f084d437dd4b283d16f86aa89af4ee29c89))
+* dashboard clusters page with connect, test, nodes, namespaces, deploy form, logs drawer and pull secrets ([a4068f0](https://github.com/glincker/levelrail/commit/a4068f084d437dd4b283d16f86aa89af4ee29c89))
+* deploy apps to connected clusters with server side apply and read their status ([a4068f0](https://github.com/glincker/levelrail/commit/a4068f084d437dd4b283d16f86aa89af4ee29c89))
+* deploy to a connected cluster from a private registry with a pull secret ([a4068f0](https://github.com/glincker/levelrail/commit/a4068f084d437dd4b283d16f86aa89af4ee29c89))
+* destroy a cloud provisioned server from the API, CLI and node page ([a4068f0](https://github.com/glincker/levelrail/commit/a4068f084d437dd4b283d16f86aa89af4ee29c89))
+* guided Oracle API key setup with an in browser keypair, a Flex size picker and guard messages ([a4068f0](https://github.com/glincker/levelrail/commit/a4068f084d437dd4b283d16f86aa89af4ee29c89))
+* image build resource limits as live settings build.memory_percent (60), build.cpu_percent (75) and build.buildkitd_pids_limit (4096) ([a4068f0](https://github.com/glincker/levelrail/commit/a4068f084d437dd4b283d16f86aa89af4ee29c89))
+* Integrations hub in the main menu with cloud, cluster, git, DNS, tunnel and notification groups ([a4068f0](https://github.com/glincker/levelrail/commit/a4068f084d437dd4b283d16f86aa89af4ee29c89))
+* provider capabilities panel with scope missing errors and background rechecks, in the API, CLI and dashboard ([a4068f0](https://github.com/glincker/levelrail/commit/a4068f084d437dd4b283d16f86aa89af4ee29c89))
+* provider landing pages with connection, servers, managed and discovered machines and spend summary ([a4068f0](https://github.com/glincker/levelrail/commit/a4068f084d437dd4b283d16f86aa89af4ee29c89))
+* provision server cap, monthly price cap and enroll timeout as runtime settings, checked before any create ([a4068f0](https://github.com/glincker/levelrail/commit/a4068f084d437dd4b283d16f86aa89af4ee29c89))
+* publish the MCP server to npm and the official MCP Registry on release ([a4068f0](https://github.com/glincker/levelrail/commit/a4068f084d437dd4b283d16f86aa89af4ee29c89))
+* refuse cluster admin Kubernetes credentials by default, with an explicit override setting and a warning in the connect form ([a4068f0](https://github.com/glincker/levelrail/commit/a4068f084d437dd4b283d16f86aa89af4ee29c89))
+* state aware dashboard pages with calm empty states and hidden empty panels across Deployments, Alerts, Functions, app tabs, status page, tokens, registry and notification settings ([a4068f0](https://github.com/glincker/levelrail/commit/a4068f084d437dd4b283d16f86aa89af4ee29c89))
+* tail logs and remove apps on connected clusters ([a4068f0](https://github.com/glincker/levelrail/commit/a4068f084d437dd4b283d16f86aa89af4ee29c89))
+* v1.4.0 Kubernetes clusters, cloud providers and the Integrations hub ([a4068f0](https://github.com/glincker/levelrail/commit/a4068f084d437dd4b283d16f86aa89af4ee29c89))
+
+
+### Bug Fixes
+
+* bind CI OIDC stack trust to repository IDs (migrations 3266 and 3267) and stop returning app managed webhook secrets ([a4068f0](https://github.com/glincker/levelrail/commit/a4068f084d437dd4b283d16f86aa89af4ee29c89))
+* enforce the Docker guard on fresh installs and harden the systemd unit ([a4068f0](https://github.com/glincker/levelrail/commit/a4068f084d437dd4b283d16f86aa89af4ee29c89))
+* harden cloud provisioning cleanup and limit checks ([a4068f0](https://github.com/glincker/levelrail/commit/a4068f084d437dd4b283d16f86aa89af4ee29c89))
+* publish the Terraform provider mirror with a license, its own version and working releases ([a4068f0](https://github.com/glincker/levelrail/commit/a4068f084d437dd4b283d16f86aa89af4ee29c89))
+* refuse sizes not offered in the region and tag DigitalOcean droplets ([a4068f0](https://github.com/glincker/levelrail/commit/a4068f084d437dd4b283d16f86aa89af4ee29c89))
+* the CLI refuses to send credentials over plain http and SAML responses must carry a NameID ([a4068f0](https://github.com/glincker/levelrail/commit/a4068f084d437dd4b283d16f86aa89af4ee29c89))
+
+
+### Documentation
+
+* add pages for connecting Kubernetes clusters, alerts, frequently asked questions, accessibility, versioning and Oracle Cloud setup, and a table of every place to get Levelrail ([a4068f0](https://github.com/glincker/levelrail/commit/a4068f084d437dd4b283d16f86aa89af4ee29c89))
+* troubleshooting steps no longer suggest loosening Docker socket permissions ([a4068f0](https://github.com/glincker/levelrail/commit/a4068f084d437dd4b283d16f86aa89af4ee29c89))
+
 ## [1.3.2](https://github.com/glincker/levelrail/compare/v1.3.1...v1.3.2) (2026-11-16)
 
 
