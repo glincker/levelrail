@@ -97,8 +97,11 @@ func run(root, changed string, asJSON, strict bool, out, errOut io.Writer) int {
 	}
 	cats := knownCategories()
 	if len(enforce) > 0 {
-		problems := validateAll(root, enforce, cats)
+		problems, waived := splitLegacy(validateAll(root, enforce, cats), loadLegacy(filepath.Join(filepath.Dir(root), "legacy.txt")))
 		emit(out, root, problems, asJSON)
+		if waived > 0 && !asJSON {
+			_, _ = fmt.Fprintf(out, "%d known legacy problems waived (listed in registry/legacy.txt, remove an id once fixed)\n", waived)
+		}
 		if len(problems) > 0 {
 			return 1
 		}
@@ -111,6 +114,35 @@ func run(root, changed string, asJSON, strict bool, out, errOut io.Writer) int {
 		summary(out, len(ids), legacy)
 	}
 	return 0
+}
+
+// loadLegacy reads the ids whose known quality gaps (ports, healthcheck, image
+// pin) are waived until fixed. A missing file waives nothing.
+func loadLegacy(path string) map[string]bool {
+	b, err := os.ReadFile(path) //nolint:gosec // path is derived from the registry flag, a CI tool input
+	if err != nil {
+		return nil
+	}
+	set := map[string]bool{}
+	for _, l := range strings.Split(string(b), "\n") {
+		if l = strings.TrimSpace(l); l != "" && !strings.HasPrefix(l, "#") {
+			set[l] = true
+		}
+	}
+	return set
+}
+
+// splitLegacy drops waivable problems of legacy ids and counts them, so only
+// new or regressed problems fail CI.
+func splitLegacy(ps []Problem, legacy map[string]bool) (kept []Problem, waived int) {
+	for _, p := range ps {
+		if legacy[p.Template] && (p.Rule == rulePorts || p.Rule == ruleHealth || p.Rule == ruleImage) {
+			waived++
+			continue
+		}
+		kept = append(kept, p)
+	}
+	return kept, waived
 }
 
 func validateAll(root string, ids []string, cats map[string]bool) []Problem {

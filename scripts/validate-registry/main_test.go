@@ -88,3 +88,11 @@ func TestRunChangedOnlyAndLegacy(t *testing.T) {
 		t.Errorf("want legacy summary, got %q", out.String())
 	}
 }
+
+func TestSplitLegacy(t *testing.T) {
+	ps := []Problem{{Template: "old", Rule: rulePorts}, {Template: "old", Rule: ruleSecurity}, {Template: "new", Rule: rulePorts}}
+	kept, waived := splitLegacy(ps, map[string]bool{"old": true})
+	if waived != 1 || len(kept) != 2 {
+		t.Fatalf("want 1 waived and 2 kept, got %d waived, %d kept", waived, len(kept))
+	}
+}
