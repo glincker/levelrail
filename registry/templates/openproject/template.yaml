@@ -1,0 +1,12 @@
+# Adapted from Dokploy/templates (MIT, Copyright (c) 2024 Dokploy and Carlos Ortiz)
+id: openproject
+name: OpenProject
+slogan: Project management with work packages, Gantt charts and boards.
+description: Runs a web server, a background worker, a cron runner and a one time seeder that prepares the database on first start, so the first boot takes a few minutes. Served over HTTPS through the proxy. First login is admin with password admin, change it at once. SMTP and file storage are configured later in the admin settings. GPL v3 licence.
+category: Productivity
+documentation_url: https://www.openproject.org/docs/installation-and-operations/
+recommended_memory_bytes: 2147483648
+requires_gpu: false
+platforms:
+    - linux/amd64
+    - linux/arm64

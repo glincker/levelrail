@@ -1,0 +1,12 @@
+# Adapted from Dokploy/templates (MIT, Copyright (c) 2024 Dokploy and Carlos Ortiz)
+id: zitadel
+name: ZITADEL
+slogan: An identity and access management server with single sign on and OIDC.
+description: The external domain is bound to the instance on first start, so set the domain before the first deploy. Served over HTTPS through the proxy. First login is zitadel-admin@zitadel.localhost with the default password Password1!, change it at once. AGPL v3 licence.
+category: Security
+documentation_url: https://zitadel.com/docs
+recommended_memory_bytes: 536870912
+requires_gpu: false
+platforms:
+    - linux/amd64
+    - linux/arm64

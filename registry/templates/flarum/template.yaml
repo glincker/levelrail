@@ -1,0 +1,12 @@
+# Adapted from Dokploy/templates (MIT, Copyright (c) 2024 Dokploy and Carlos Ortiz)
+id: flarum
+name: Flarum
+slogan: A modern forum platform with a clean interface and extensions.
+description: Uses the community maintained crazymax image because Flarum publishes no official image. The first start installs the database and takes a minute. Sign in as flarum with the generated admin password. MIT licence.
+category: Communication
+documentation_url: https://docs.flarum.org/
+recommended_memory_bytes: 268435456
+requires_gpu: false
+platforms:
+    - linux/amd64
+    - linux/arm64
