@@ -1,5 +1,18 @@
 # Changelog
 
+## [1.4.1](https://github.com/glincker/levelrail/compare/v1.4.0...v1.4.1) (2026-11-17)
+
+
+### Bug Fixes
+
+* raise fan-in budgets for compose, dockerguard and the template registry ([fbd893f](https://github.com/glincker/levelrail/commit/fbd893ff34d60705675224459d98bb321bfae698))
+* raise fan-in budgets for compose, dockerguard and the template registry ([e8aa1f1](https://github.com/glincker/levelrail/commit/e8aa1f1063202fc03042efad30b2620401652bb7))
+
+
+### Documentation
+
+* refresh the social and OG images with the current positioning ([#1582](https://github.com/glincker/levelrail/issues/1582)) ([3062f28](https://github.com/glincker/levelrail/commit/3062f2840a324de41f23f222547fc9a1b8797ee1))
+
 ## [1.4.0](https://github.com/glincker/levelrail/compare/v1.3.2...v1.4.0) (2026-11-17)
 
 
