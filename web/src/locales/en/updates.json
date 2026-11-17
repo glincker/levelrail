@@ -722,5 +722,58 @@
       "dismiss": "Dismiss",
       "manage": "Manage"
     }
+  },
+  "quick": {
+    "title": "Automatic updates",
+    "off": "Updates are never installed on their own. You choose when to update.",
+    "onPatch": "Patch releases install automatically between {{start}} and {{end}}, {{days}}.",
+    "onAny": "New releases, including minor ones, install automatically between {{start}} and {{end}}, {{days}}.",
+    "days": {
+      "daily": "every night",
+      "weekdays": "on weekdays",
+      "weekends": "on weekends",
+      "custom": "on your custom schedule"
+    },
+    "dayOption": {
+      "daily": "Every day",
+      "weekdays": "Weekdays",
+      "weekends": "Weekends",
+      "custom": "Custom (keep current)"
+    },
+    "paused": "Automatic updates are paused until {{date}}.",
+    "next": "Next window starts {{time}}.",
+    "savedOn": "Automatic updates turned on.",
+    "savedOff": "Automatic updates turned off.",
+    "undo": "Undo",
+    "error": "Could not save: {{message}}",
+    "loadError": "Could not load automatic update settings.",
+    "scheduleToggle": "Schedule",
+    "scheduleSummary": "{{start}} to {{end}}, {{days}}",
+    "scheduleSaved": "Schedule saved.",
+    "level": {
+      "label": "What to install",
+      "patch": "Patch releases",
+      "any": "Minor and patch"
+    },
+    "start": "Start",
+    "length": "Length",
+    "hours": "{{hours}} h",
+    "daysLabel": "Days",
+    "zone": "Time zone",
+    "zoneHelp": "Server time zone is {{zone}}. Backups and safety checks still run first.",
+    "zoneInvalid": "Enter a valid time zone, for example Europe/Berlin.",
+    "channel": "Release channel",
+    "save": "Save schedule",
+    "released": "Released {{date}}",
+    "more": {
+      "checks": "Safety checks",
+      "history": "Update history",
+      "restore": "Restore points"
+    },
+    "rows": {
+      "notes": "Release notes",
+      "migrations": "Database changes",
+      "plan": "Backup and scheduling"
+    }
   }
 }

@@ -8,6 +8,7 @@ export interface DemoInfo {
   username?: string
   password?: string
   humanCheck?: boolean
+  analytics?: { provider: string; host: string; token: string }
 }
 
 type Listener = () => void

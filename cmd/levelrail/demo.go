@@ -157,10 +157,7 @@ func runDemoServe(ctx context.Context, logger *slog.Logger) error {
 	gen := &demo.Generator{Services: names, Logs: broadcaster, Samples: telemetryDB, Seed: time.Now().UnixNano()}
 	go gen.Run(ctx)
 
-	addr := os.Getenv("APP_HTTP_ADDR")
-	if addr == "" {
-		addr = demoDefaultAddr
-	}
+	addr := demo.ResolveAddr(os.Getenv, demo.InContainer, demoDefaultAddr)
 	srv := &http.Server{Addr: addr, Handler: handler, ReadHeaderTimeout: 5 * time.Second, ReadTimeout: 15 * time.Second, IdleTimeout: 60 * time.Second, MaxHeaderBytes: 16 << 10}
 	errCh := make(chan error, 1)
 	go func() { errCh <- srv.ListenAndServe() }()

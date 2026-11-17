@@ -31,12 +31,9 @@ import { markSeen, useSeen } from '@/lib/upgradeSeen'
 import { UpgradeResultCard } from './UpgradeResultCard'
 import { scheduleQueryOptions } from '@/queries/upgradeSchedule'
 import { formatRelative } from '@/components/kit/formatRelative'
-import { UpgradeNow } from '../UpgradeNow'
 import { UpdateChanges } from './UpdateChanges'
 import { deriveUpdateState } from './updateState'
 import { UpdateStatusView } from './UpdateStatusView'
-import { UpgradeStepper } from './UpgradeStepper'
-import { deriveStepper } from '@/lib/upgradeStepper'
 
 const RECENT_MS = 15 * 60_000
 const RELATIVE_TICK_MS = 30_000
@@ -87,7 +84,6 @@ export function UpdateStatusHeader({ initial }: { initial: UpdateStatus }) {
   const running = list.find((a) => a.outcome === 'running')
   const recentDone = recentFinished(list)
   const last = upgradeStatus.data?.last_finished ?? null
-  const panelSeen = useSeen('panel', recentDone?.id ?? '')
   const cardDismissed = useSeen('card', last?.id ?? '')
   const lastPanelSeen = useSeen('panel', last?.id ?? '')
   const showCard =
@@ -97,15 +93,15 @@ export function UpdateStatusHeader({ initial }: { initial: UpdateStatus }) {
     (last.outcome === 'succeeded' ||
       lastPanelSeen ||
       recentFinished([last]) === undefined)
-  const hideStepper = running !== undefined || (recentDone && !panelSeen)
-  const steps = deriveStepper({
-    updateAvailable: status.update_available,
-    checkFailed: query.isRefetchError,
-    preflightBlocked: preflight.data?.blocked === true,
-    attempt: running,
+  const lastOutcomeEarly = upgradeStatus.data?.last_finished?.outcome
+  // The plan is only needed to start or retry an update, so idle pages skip it.
+  const plan = useQuery({
+    ...selfUpgradePlanQueryOptions(''),
+    enabled:
+      status.update_available ||
+      lastOutcomeEarly === 'failed' ||
+      lastOutcomeEarly === 'rolled_back',
   })
-
-  const plan = useQuery(selfUpgradePlanQueryOptions(''))
   const start = useStartSelfUpgrade()
   const cancel = useCancelUpgrade()
   const retry = useRetryUpgrade()
@@ -210,24 +206,28 @@ export function UpdateStatusHeader({ initial }: { initial: UpdateStatus }) {
       releaseUrl={status.release_url}
       onCheck={check}
       hideActions
+      actions={
+        <UpdateActionBar
+          actions={actions}
+          targetVersion={
+            plan.data?.target_version ?? status.latest_version ?? ''
+          }
+          checking={checking}
+          busy={busy}
+          releaseUrl={status.release_url}
+          onCheck={check}
+          onUpdate={() => setUpdateOpen(true)}
+          onCancel={cancelRun}
+          onRetry={onRetry}
+          onRestart={() => setRestartOpen(true)}
+          onViewLogs={() => {
+            const el = document.getElementById(ATTEMPTS_SECTION_ID)
+            if (el instanceof HTMLDetailsElement) el.open = true
+            el?.scrollIntoView({ behavior: 'smooth', block: 'start' })
+          }}
+        />
+      }
     >
-      <UpdateActionBar
-        actions={actions}
-        targetVersion={plan.data?.target_version ?? status.latest_version ?? ''}
-        checking={checking}
-        busy={busy}
-        releaseUrl={status.release_url}
-        onCheck={check}
-        onUpdate={() => setUpdateOpen(true)}
-        onCancel={cancelRun}
-        onRetry={onRetry}
-        onRestart={() => setRestartOpen(true)}
-        onViewLogs={() =>
-          document
-            .getElementById(ATTEMPTS_SECTION_ID)
-            ?.scrollIntoView({ behavior: 'smooth', block: 'start' })
-        }
-      />
       {isRunning ? (
         <UpgradeLiveProgress
           step={runningAttempt.current_step}
@@ -279,7 +279,6 @@ export function UpdateStatusHeader({ initial }: { initial: UpdateStatus }) {
           }
         />
       ) : null}
-      {hideStepper ? null : <UpgradeStepper steps={steps} />}
       {showCard && last ? (
         <UpgradeResultCard
           attempt={last}
@@ -292,12 +291,12 @@ export function UpdateStatusHeader({ initial }: { initial: UpdateStatus }) {
           onDismiss={() => markSeen('card', last.id)}
         />
       ) : null}
-      {showChanges ? <UpdateChanges status={status} /> : null}
       {failedNow && !showCard && lastFinished?.failure ? (
         <UpgradeFailureNote failure={lastFinished.failure} />
       ) : null}
-      <UpgradeNow
-        externalActions
+      <UpdateChanges
+        status={status}
+        showChanges={showChanges}
         skipBackup={skipBackup}
         onSkipBackupChange={setSkipBackup}
         onRequestUpgrade={() => setUpdateOpen(true)}

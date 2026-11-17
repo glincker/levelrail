@@ -9,6 +9,7 @@ import {
 } from '@thesvg/ui-react'
 import { Button } from '@/components/ui/button'
 import { useCopyToClipboard } from '@/hooks/useCopyToClipboard'
+import { captureDemoEvent } from '@/lib/demoAnalytics'
 import { useDemoInfo } from '@/hooks/useDemo'
 import { sendDemoCta } from '@/queries/demo'
 
@@ -55,6 +56,7 @@ export function DemoBanner({ onTour }: { onTour: () => void }) {
             onClick={() => {
               copy(info.installCommand ?? '')
               sendDemoCta('install')
+              captureDemoEvent('demo_install_command_copied')
             }}
           >
             <span className="truncate">{info.installCommand}</span>
@@ -80,6 +82,7 @@ export function DemoBanner({ onTour }: { onTour: () => void }) {
                 rel="noreferrer"
                 onClick={() => {
                   sendDemoCta('github')
+                  captureDemoEvent('demo_github_click')
                 }}
               />
             }

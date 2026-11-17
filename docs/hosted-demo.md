@@ -40,7 +40,34 @@ This is the reverse proxy variant of [Run a read-only demo](/run-a-read-only-dem
 
 - Caddy access logs drop the client address, cookies and authorization headers, keep at most two files of 10MiB and delete them after 72 hours.
 - The demo process logs to the journal. Set `SystemMaxUse` and `MaxRetentionSec=3day` in `journald.conf` so the journal follows the same window.
-- Do not add analytics or request capture in front of the demo. The demo only keeps aggregate counters that carry no personal data.
+- Analytics are off by default, and a self-hosted instance never has them. The demo keeps aggregate counters that carry no personal data. See Analytics below for the opt-in.
+
+## Analytics (opt-in)
+
+The demo can send a few named events to a PostHog project. It stays off unless both variables are set on the demo process:
+
+- `APP_DEMO_ANALYTICS_HOST`: the https ingest origin, for example `https://us.i.posthog.com`.
+- `APP_DEMO_ANALYTICS_TOKEN`: the project token.
+
+With both set, `GET /api/v1/demo` returns an `analytics` object and the demo CSP allows that host. A real instance never returns it.
+
+What is collected: the events `demo_session_started`, `demo_route_viewed` (route pattern only), `demo_readonly_blocked` (HTTP method and route pattern only), `demo_install_command_copied` and `demo_github_click`, all tagged `surface=demo`, plus `utm_source`, `utm_medium` and `utm_campaign` when the landing URL has them.
+
+What is not collected: no cookies or local storage (memory persistence), no session recording, no autocapture, no record ids or query strings. Visitors with Do Not Track enabled load nothing and send nothing.
+
+IP addresses are seen by PostHog on receipt. Turn off IP capture in the PostHog project settings if you want to promise they are not stored.
+
+### Google Tag Manager (opt-in)
+
+Google Tag Manager is a second, independent provider. It works alone or next to PostHog. Set one variable on the demo process:
+
+- `APP_DEMO_GTM_ID`: the container id, for example `GTM-XXXXXXX`. It must match `^GTM-[A-Z0-9]{4,12}$`; anything else is ignored with a log warning. The id is supplied at deploy time and is never committed.
+
+Nothing loads unless the variable is set, and a real instance never returns it. With it set, `GET /api/v1/demo` returns `gtm: {"id": "..."}` and the demo CSP additionally allows `www.googletagmanager.com` (script, connect, image) plus `*.google-analytics.com`, `*.analytics.google.com` and `*.googletagmanager.com` (connect, image). The CSP still has no `unsafe-inline` or `unsafe-eval` for scripts.
+
+The page loads the standard `gtm.js` from Google and pushes the same five events as `{event, surface: "demo", ...}` into `window.dataLayer`, with the route pattern only and no ids or query strings. Build tags and triggers on those event names in the GTM account that owns the container. Levelrail does not configure the container.
+
+Google tags can set cookies and send visitor data to Google, so EU visitors may need consent. In GTM, enable Consent Mode with `analytics_storage` denied by default, and turn on IP anonymisation in GA4. Visitors with Do Not Track enabled load nothing and send nothing. The demo banner has no place for a privacy note today, so state the use of Google tags in your own privacy notice for the demo site.
 
 ## Check it
 

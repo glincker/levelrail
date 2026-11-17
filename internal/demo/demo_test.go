@@ -150,7 +150,7 @@ func TestCheckEnvironment(t *testing.T) {
 	}
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
-			err := CheckEnvironment(func(k string) string { return tt.env[k] })
+			err := CheckEnvironmentIn(func(k string) string { return tt.env[k] }, InContainer, noSocket)
 			if (err != nil) != tt.wantErr {
 				t.Errorf("CheckEnvironment() error = %v, wantErr %v", err, tt.wantErr)
 			}
@@ -302,5 +302,49 @@ func TestDemoDigestIsHexSHA256(t *testing.T) {
 	}
 	if d != demoDigest("acme/web", "a41c9e2") {
 		t.Fatal("digest not deterministic")
+	}
+}
+
+func TestSeedFleet(t *testing.T) {
+	ctx := context.Background()
+	db := seeded(t, 1)
+	nodes, err := db.ListNodes(ctx)
+	if err != nil {
+		t.Fatalf("ListNodes() error = %v", err)
+	}
+	var aws, arm64Sites int
+	for _, n := range nodes {
+		if n.Provider == "aws" && n.Region != "" {
+			aws++
+		}
+		labels, _ := db.GetNodeLabels(ctx, n.ID)
+		if n.AgentArch == "arm64" && labels["site"] != "" {
+			arm64Sites++
+		}
+	}
+	if aws != 1 || arm64Sites != 3 {
+		t.Errorf("aws nodes = %d, site devices = %d, want 1 and 3", aws, arm64Sites)
+	}
+	batches := map[string]bool{}
+	for _, a := range appSpecs {
+		if !strings.HasPrefix(a.name, kioskPrefix) {
+			continue
+		}
+		list, err := db.ListDeployAttempts(ctx, a.name)
+		if err != nil || len(list) == 0 {
+			t.Fatalf("attempts for %s: %d, %v", a.name, len(list), err)
+		}
+		last := list[0]
+		if last.Status != store.DeployAttemptStatusSucceeded || !strings.HasPrefix(last.Reason, "apps rollout") {
+			t.Errorf("%s last attempt = %s %q, want a succeeded rollout", a.name, last.Status, last.Reason)
+		}
+		batches[last.Reason] = true
+	}
+	if len(batches) != 2 {
+		t.Errorf("rollout batches = %v, want 2", batches)
+	}
+	tpls, err := db.ListCustomTemplates(ctx)
+	if err != nil || len(tpls) != len(customTemplates) {
+		t.Errorf("templates = %d, err = %v", len(tpls), err)
 	}
 }

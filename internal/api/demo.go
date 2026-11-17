@@ -4,8 +4,13 @@ import (
 	"context"
 	"encoding/json"
 	"errors"
+	"log/slog"
 	"net"
 	"net/http"
+	"net/url"
+	"os"
+	"regexp"
+	"strings"
 	"sync"
 	"time"
 )
@@ -47,12 +52,16 @@ func WithDemoMode(cfg DemoConfig) Option {
 		if cfg.SessionsPerMinute <= 0 {
 			cfg.SessionsPerMinute = demoSessionPerMinute
 		}
-		rt.demo = &demoState{cfg: cfg, ctaCounts: map[string]int{}, mints: map[string][]time.Time{}}
+		rt.demo = &demoState{cfg: cfg, ctaCounts: map[string]int{}, mints: map[string][]time.Time{}, analytics: demoAnalyticsFromEnv(os.Getenv), gtm: demoGTMFromEnv(os.Getenv)}
 	}
 }
 
 type demoState struct {
 	cfg DemoConfig
+	// analytics is nil unless the operator opted in with both env vars.
+	analytics *demoAnalytics
+	// gtm is nil unless APP_DEMO_GTM_ID holds a valid container id.
+	gtm *demoGTMInfo
 
 	mu        sync.Mutex
 	ctaCounts map[string]int
@@ -81,15 +90,103 @@ func (rt *Router) DemoStats() DemoStats {
 }
 
 type demoInfoResponse struct {
-	Enabled        bool       `json:"enabled"`
-	ResetsAt       *time.Time `json:"resetsAt,omitempty"`
-	InstallCommand string     `json:"installCommand,omitempty"`
-	RepoURL        string     `json:"repoUrl,omitempty"`
-	DocsURL        string     `json:"docsUrl,omitempty"`
-	Version        string     `json:"version,omitempty"`
-	Username       string     `json:"username,omitempty"`
-	Password       string     `json:"password,omitempty"`
-	HumanCheck     bool       `json:"humanCheck"`
+	Enabled        bool               `json:"enabled"`
+	ResetsAt       *time.Time         `json:"resetsAt,omitempty"`
+	InstallCommand string             `json:"installCommand,omitempty"`
+	RepoURL        string             `json:"repoUrl,omitempty"`
+	DocsURL        string             `json:"docsUrl,omitempty"`
+	Version        string             `json:"version,omitempty"`
+	Username       string             `json:"username,omitempty"`
+	Password       string             `json:"password,omitempty"`
+	HumanCheck     bool               `json:"humanCheck"`
+	Analytics      *demoAnalyticsInfo `json:"analytics,omitempty"`
+	GTM            *demoGTMInfo       `json:"gtm,omitempty"`
+}
+
+type demoAnalyticsInfo struct {
+	Provider string `json:"provider"`
+	Host     string `json:"host"`
+	Token    string `json:"token"`
+}
+
+// demoAnalytics is the opt-in, hosted-demo-only analytics target.
+type demoAnalytics struct {
+	info demoAnalyticsInfo
+	// csp is the Content-Security-Policy served in demo mode with the host allowed.
+	csp string
+}
+
+// demoAnalyticsFromEnv returns nil unless APP_DEMO_ANALYTICS_HOST (an https
+// origin) and APP_DEMO_ANALYTICS_TOKEN are both set, so a real instance never sends anything.
+func demoAnalyticsFromEnv(getenv func(string) string) *demoAnalytics {
+	raw := strings.TrimSpace(getenv("APP_DEMO_ANALYTICS_HOST"))
+	token := strings.TrimSpace(getenv("APP_DEMO_ANALYTICS_TOKEN"))
+	if raw == "" || token == "" || strings.ContainsAny(token, " \t\r\n\"'<>;") {
+		return nil
+	}
+	u, err := url.Parse(raw)
+	if err != nil || u.Scheme != "https" || u.Hostname() == "" {
+		return nil
+	}
+	origin := "https://" + u.Host
+	allowed := origin
+	// PostHog cloud serves its script from a sibling assets host.
+	if h := u.Hostname(); strings.HasSuffix(h, ".i.posthog.com") && !strings.Contains(h, "-assets.") {
+		allowed += " https://" + strings.Replace(h, ".i.posthog.com", "-assets.i.posthog.com", 1)
+	}
+	csp := strings.Replace(contentSecurityPolicy, "script-src 'self'", "script-src 'self' "+allowed, 1)
+	csp = strings.Replace(csp, "connect-src 'self'", "connect-src 'self' "+allowed, 1)
+	return &demoAnalytics{info: demoAnalyticsInfo{Provider: "posthog", Host: origin, Token: token}, csp: csp}
+}
+
+type demoGTMInfo struct {
+	ID string `json:"id"`
+}
+
+var demoGTMIDPattern = regexp.MustCompile(`^GTM-[A-Z0-9]{4,12}$`)
+
+// demoGTMFromEnv returns nil unless APP_DEMO_GTM_ID is a well-formed container id;
+// a malformed value is ignored so it can never reach a script URL or the CSP.
+func demoGTMFromEnv(getenv func(string) string) *demoGTMInfo {
+	id := strings.TrimSpace(getenv("APP_DEMO_GTM_ID"))
+	if id == "" {
+		return nil
+	}
+	if !demoGTMIDPattern.MatchString(id) {
+		slog.Warn("ignoring APP_DEMO_GTM_ID: not a valid GTM container id")
+		return nil
+	}
+	return &demoGTMInfo{ID: id}
+}
+
+// demoGTMCSP adds the Google Tag Manager and GA4 origins, never unsafe-inline or unsafe-eval.
+func demoGTMCSP(csp string) string {
+	const gtm = "https://www.googletagmanager.com"
+	const beacons = " https://*.google-analytics.com https://*.analytics.google.com https://*.googletagmanager.com"
+	csp = strings.Replace(csp, "script-src 'self'", "script-src 'self' "+gtm, 1)
+	csp = strings.Replace(csp, "connect-src 'self'", "connect-src 'self' "+gtm+beacons, 1)
+	return strings.Replace(csp, "img-src 'self'", "img-src 'self' "+gtm+beacons, 1)
+}
+
+// demoAnalyticsCSP widens the CSP to the analytics host in demo mode only.
+func (rt *Router) demoAnalyticsCSP(next http.Handler) http.Handler {
+	if rt.demo == nil {
+		return next
+	}
+	return http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		// Runs inside securityHeadersMiddleware, so this overrides its default.
+		csp := contentSecurityPolicy
+		if a := rt.demo.analytics; a != nil {
+			csp = a.csp
+		}
+		if rt.demo.gtm != nil {
+			csp = demoGTMCSP(csp)
+		}
+		if csp != contentSecurityPolicy {
+			w.Header().Set("Content-Security-Policy", csp)
+		}
+		next.ServeHTTP(w, r)
+	})
 }
 
 // handleDemoInfo serves GET /api/v1/demo: public, and {"enabled":false} on a real instance.
@@ -102,6 +199,14 @@ func (rt *Router) handleDemoInfo(w http.ResponseWriter, _ *http.Request) {
 	resp := demoInfoResponse{
 		Enabled: true, InstallCommand: c.InstallCommand, RepoURL: c.RepoURL, DocsURL: c.DocsURL,
 		Version: c.Version, Username: c.Username, Password: c.Password, HumanCheck: c.Verifier != nil,
+	}
+	if a := rt.demo.analytics; a != nil {
+		info := a.info
+		resp.Analytics = &info
+	}
+	if g := rt.demo.gtm; g != nil {
+		info := *g
+		resp.GTM = &info
 	}
 	if c.ResetsAt != nil {
 		t := c.ResetsAt()

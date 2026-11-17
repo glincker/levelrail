@@ -105,6 +105,12 @@ var nodeSpecs = []nodeSpec{
 	{"node_worker_nyc_1", "worker-nyc-1", "203.0.113.21:9443", false, true, store.NodeStatusOnline},
 	{"node_worker_sgp_1", "worker-sgp-1", "198.51.100.34:9443", false, true, store.NodeStatusOnline},
 	{"node_build_nyc_1", "build-nyc-1", "203.0.113.45:9443", true, false, store.NodeStatusOnline},
+	{"node_vps_ams_1", "vps-ams-1", "203.0.113.60:9443", false, true, store.NodeStatusOnline},
+	{"node_vps_sfo_1", "vps-sfo-1", "198.51.100.61:9443", false, true, store.NodeStatusOnline},
+	{"node_aws_0a1b2c3d4e5f60718", "i-0a1b2c3d4e5f60718", "198.51.100.62:9443", false, true, store.NodeStatusOnline},
+	{"node_pi_site_a_1", "pi-site-a-1", "192.0.2.11:9443", false, true, store.NodeStatusOnline},
+	{"node_pi_site_a_2", "pi-site-a-2", "192.0.2.12:9443", false, true, store.NodeStatusOnline},
+	{"node_pi_site_b_1", "pi-site-b-1", "192.0.2.21:9443", false, true, store.NodeStatusOnline},
 }
 
 func (s *seeder) nodes() error {
@@ -121,6 +127,9 @@ func (s *seeder) nodes() error {
 		}
 		if err := s.db.SaveNode(s.ctx, node); err != nil {
 			return fmt.Errorf("demo: save node %q: %w", n.id, err)
+		}
+		if err := s.nodeMeta(n.id, seen); err != nil {
+			return err
 		}
 	}
 	return nil

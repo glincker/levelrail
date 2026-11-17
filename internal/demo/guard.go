@@ -7,6 +7,7 @@ import (
 	"errors"
 	"fmt"
 	"net"
+	"os"
 	"sort"
 	"strings"
 
@@ -15,6 +16,13 @@ import (
 
 // EnvDemoMode is the explicit opt-in the demo entrypoint requires.
 const EnvDemoMode = "APP_DEMO_MODE"
+
+// EnvDemoContainer opts a containerised demo into a non-loopback bind. It is
+// honoured only when a container is detected.
+const EnvDemoContainer = "APP_DEMO_CONTAINER"
+
+// ContainerDefaultAddr is the bind used inside a container with the opt-in.
+const ContainerDefaultAddr = "0.0.0.0:8080"
 
 // ErrNotDemoInstance is returned when the data dir does not carry the seeder's marker.
 var ErrNotDemoInstance = errors.New("demo: data dir was not produced by the demo seeder")
@@ -40,8 +48,64 @@ func Enabled(getenv func(string) string) bool {
 // CheckEnvironment fails closed unless demo mode is explicitly enabled and
 // nothing that reaches a real host (Docker, ingress, agents, a public bind) is configured.
 func CheckEnvironment(getenv func(string) string) error {
+	return CheckEnvironmentIn(getenv, InContainer, os.Stat)
+}
+
+// InContainer reports a container signal: a runtime marker file or a
+// container runtime named in PID 1's cgroup.
+func InContainer() bool {
+	for _, m := range []string{"/.dockerenv", "/run/.containerenv"} {
+		if _, err := os.Stat(m); err == nil {
+			return true
+		}
+	}
+	b, err := os.ReadFile("/proc/1/cgroup")
+	if err != nil {
+		return false
+	}
+	for _, hint := range []string{"docker", "kubepods", "containerd", "libpod"} {
+		if strings.Contains(string(b), hint) {
+			return true
+		}
+	}
+	return false
+}
+
+// ContainerOptIn reports whether the container bind opt-in is set to a true value.
+func ContainerOptIn(getenv func(string) string) bool {
+	switch strings.ToLower(strings.TrimSpace(getenv(EnvDemoContainer))) {
+	case "1", "true", "on", "yes":
+		return true
+	}
+	return false
+}
+
+// ResolveAddr returns the bind address: APP_HTTP_ADDR if set, else the
+// container default only with the opt-in and a container, else loopback.
+func ResolveAddr(getenv func(string) string, inContainer func() bool, loopbackDefault string) string {
+	if a := strings.TrimSpace(getenv("APP_HTTP_ADDR")); a != "" {
+		return a
+	}
+	if ContainerOptIn(getenv) && inContainer() {
+		return ContainerDefaultAddr
+	}
+	return loopbackDefault
+}
+
+// dockerSockets are the socket paths whose presence means the process could
+// reach a real Docker daemon.
+var dockerSockets = []string{"/var/run/docker.sock", "/run/docker.sock"}
+
+// CheckEnvironmentIn is CheckEnvironment with injectable container and stat probes.
+func CheckEnvironmentIn(getenv func(string) string, inContainer func() bool, stat func(string) (os.FileInfo, error)) error {
 	if !Enabled(getenv) {
 		return fmt.Errorf("demo: %s must be set to 1 to run the demo entrypoint", EnvDemoMode)
+	}
+	// Checked before the opt-in so a mounted socket is refused in every mode.
+	for _, sock := range dockerSockets {
+		if _, err := stat(sock); err == nil {
+			return fmt.Errorf("demo: refusing to start, a Docker socket is present at %s; the demo must never have Docker access", sock)
+		}
 	}
 	var found []string
 	for _, k := range forbiddenEnv {
@@ -53,7 +117,11 @@ func CheckEnvironment(getenv func(string) string) error {
 		sort.Strings(found)
 		return fmt.Errorf("demo: refusing to start with real host surfaces configured: %s", strings.Join(found, ", "))
 	}
-	if addr := strings.TrimSpace(getenv("APP_HTTP_ADDR")); addr != "" && !isLoopbackAddr(addr) {
+	optIn := ContainerOptIn(getenv)
+	if optIn && !inContainer() {
+		return fmt.Errorf("demo: %s is set but no container was detected, refusing to start", EnvDemoContainer)
+	}
+	if addr := strings.TrimSpace(getenv("APP_HTTP_ADDR")); addr != "" && !optIn && !isLoopbackAddr(addr) {
 		return fmt.Errorf("demo: APP_HTTP_ADDR %q is not a loopback address", addr)
 	}
 	return nil
