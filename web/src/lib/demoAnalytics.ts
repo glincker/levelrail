@@ -18,8 +18,15 @@ interface PostHogLike {
 declare global {
   interface Window {
     posthog?: PostHogLike
+    dataLayer?: Record<string, unknown>[]
   }
 }
+
+// Not on DemoInfo so the GTM provider stays independent of the PostHog one.
+type GtmPayload = { gtm?: { id: string } }
+
+const GTM_ID = /^GTM-[A-Z0-9]{4,12}$/
+let gtmActive = false
 
 let client: PostHogLike | null = null
 let loading: Promise<void> | null = null
@@ -66,8 +73,28 @@ function loadScript(host: string): Promise<void> {
   })
 }
 
-/** initDemoAnalytics loads PostHog lazily, only when the server opted in and the visitor allows it. */
+// Standard external loader: no inline script, so the CSP needs no unsafe-inline.
+function initGtm(id: string): void {
+  if (gtmActive || !GTM_ID.test(id)) return
+  gtmActive = true
+  window.dataLayer = window.dataLayer || []
+  window.dataLayer.push({ 'gtm.start': Date.now(), event: 'gtm.js' })
+  const el = document.createElement('script')
+  el.async = true
+  el.src = `https://www.googletagmanager.com/gtm.js?id=${encodeURIComponent(id)}`
+  document.head.appendChild(el)
+}
+
+/** initDemoAnalytics loads each opted-in provider lazily, unless the visitor sends Do Not Track. */
 export function initDemoAnalytics(info: DemoInfo): Promise<void> {
+  if (info.enabled && typeof document !== 'undefined') {
+    const g = (info as DemoInfo & GtmPayload).gtm
+    if (g && !doNotTrackEnabled(navigator) && !gtmActive) {
+      utm = readUtm(window.location.search)
+      initGtm(g.id)
+      if (gtmActive) captureDemoEvent('demo_session_started')
+    }
+  }
   if (loading) return loading
   const a = info.analytics
   if (
@@ -104,11 +131,18 @@ export function initDemoAnalytics(info: DemoInfo): Promise<void> {
 }
 
 export function captureDemoEvent(name: DemoEventName, props: Props = {}): void {
-  client?.capture(name, { ...utm, ...props })
+  const merged = { ...utm, ...props }
+  client?.capture(name, merged)
+  if (gtmActive) {
+    window.dataLayer = window.dataLayer || []
+    window.dataLayer.push({ event: name, surface: 'demo', ...merged })
+  }
 }
 
 export function resetDemoAnalyticsForTest(): void {
   client = null
   loading = null
+  gtmActive = false
+  delete window.dataLayer
   utm = {}
 }

@@ -65,3 +65,50 @@ describe('demoAnalytics', () => {
     expect(readUtm('?utm_source=hn&foo=1')).toEqual({ utm_source: 'hn' })
   })
 })
+
+describe('demoAnalytics GTM', () => {
+  const gtmInfo = { enabled: true, gtm: { id: 'GTM-ABC123' } }
+  afterEach(() => {
+    resetDemoAnalyticsForTest()
+    vi.unstubAllGlobals()
+    document.head.innerHTML = ''
+  })
+
+  it('does not load with Do Not Track or an invalid id', async () => {
+    vi.stubGlobal('navigator', { doNotTrack: '1' })
+    await initDemoAnalytics(gtmInfo)
+    vi.stubGlobal('navigator', { doNotTrack: '0' })
+    await initDemoAnalytics({ enabled: true, gtm: { id: 'bad"id' } })
+    expect(document.head.querySelector('script')).toBeNull()
+    expect(window.dataLayer).toBeUndefined()
+  })
+
+  it('loads once and mirrors events without ids', async () => {
+    vi.stubGlobal('navigator', { doNotTrack: null })
+    await initDemoAnalytics(gtmInfo)
+    await initDemoAnalytics(gtmInfo)
+    const scripts = document.head.querySelectorAll('script')
+    expect(scripts).toHaveLength(1)
+    expect(scripts[0].src).toBe(
+      'https://www.googletagmanager.com/gtm.js?id=GTM-ABC123',
+    )
+    captureDemoEvent('demo_route_viewed', {
+      route: apiRoutePattern('/api/v1/apps/1234567890123456789?x=1'),
+    })
+    captureDemoEvent('demo_readonly_blocked')
+    captureDemoEvent('demo_install_command_copied')
+    captureDemoEvent('demo_github_click')
+    const events = (window.dataLayer ?? []).filter(
+      (e) => typeof e.event === 'string' && e.event.startsWith('demo_'),
+    )
+    expect(events.map((e) => e.event)).toEqual([
+      'demo_session_started',
+      'demo_route_viewed',
+      'demo_readonly_blocked',
+      'demo_install_command_copied',
+      'demo_github_click',
+    ])
+    expect(events.every((e) => e.surface === 'demo')).toBe(true)
+    expect(JSON.stringify(events)).not.toMatch(/1234567890|\?x=1/)
+  })
+})
