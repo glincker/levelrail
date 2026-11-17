@@ -7,3 +7,7 @@ category: Productivity
 documentation_url: https://otterwiki.com/Installation
 recommended_memory_bytes: 134217728
 requires_gpu: false
+source_repo: https://github.com/redimp/otterwiki
+license: MIT
+license_class: permissive
+license_url: https://github.com/redimp/otterwiki/blob/main/LICENSE

@@ -4,3 +4,6 @@ slogan: A well formed template.
 category: Productivity
 documentation_url: https://example.com
 icon: good-app
+source_repo: https://github.com/example/good
+license: MIT
+license_class: permissive

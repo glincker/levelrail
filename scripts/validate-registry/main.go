@@ -43,6 +43,7 @@ const (
 	ruleSecurity = "security"
 	rulePorts    = "ports"
 	ruleIcon     = "icon"
+	ruleMarket   = "marketplace"
 )
 
 var (
@@ -59,6 +60,22 @@ type meta struct {
 	Category         string `yaml:"category"`
 	DocumentationURL string `yaml:"documentation_url"`
 	Icon             string `yaml:"icon"`
+	SourceRepo       string `yaml:"source_repo"`
+	License          string `yaml:"license"`
+	LicenseClass     string `yaml:"license_class"`
+}
+
+var sourceRepoRe = regexp.MustCompile(`^https://[^\s/]+/\S+$`)
+
+// inCatalog lists ids that already ship from internal/catalog, which carry
+// their marketplace facts elsewhere and are exempt from the marketplace rule.
+func inCatalog(id string) bool {
+	for _, t := range catalog.Templates {
+		if t.ID == id {
+			return true
+		}
+	}
+	return false
 }
 
 // knownCategories are the categories the shipped catalog already uses.
@@ -136,7 +153,7 @@ func loadLegacy(path string) map[string]bool {
 // new or regressed problems fail CI.
 func splitLegacy(ps []Problem, legacy map[string]bool) (kept []Problem, waived int) {
 	for _, p := range ps {
-		if legacy[p.Template] && (p.Rule == rulePorts || p.Rule == ruleHealth || p.Rule == ruleImage) {
+		if legacy[p.Template] && (p.Rule == ruleMarket || p.Rule == rulePorts || p.Rule == ruleHealth || p.Rule == ruleImage) {
 			waived++
 			continue
 		}
@@ -277,12 +294,39 @@ func validateFolder(folder, id string, cats map[string]bool) []Problem {
 	if m.Icon != "" && !iconRe.MatchString(m.Icon) {
 		add(ruleIcon, "icon %q must match ^[a-z0-9-]+$", m.Icon)
 	}
+	if !inCatalog(id) {
+		ps = append(ps, validateMarketplace(id, m)...)
+	}
 	body, err := os.ReadFile(filepath.Join(folder, catalog.RegistryComposeFile)) //nolint:gosec // registry folder chosen by the caller
 	if err != nil {
 		add(ruleFields, "missing required field compose (%s)", catalog.RegistryComposeFile)
 		return ps
 	}
 	return append(ps, validateCompose(id, body)...)
+}
+
+// validateMarketplace requires the facts the catalog index prints for a
+// template that has no Go literal or template_meta.json row.
+func validateMarketplace(id string, m meta) []Problem {
+	var ps []Problem
+	add := func(format string, args ...any) {
+		ps = append(ps, Problem{Template: id, Rule: ruleMarket, Message: fmt.Sprintf(format, args...)})
+	}
+	if !sourceRepoRe.MatchString(m.SourceRepo) {
+		add("source_repo must be an https URL to the upstream project, got %q", m.SourceRepo)
+	}
+	if strings.TrimSpace(m.License) == "" {
+		add("missing required field license (SPDX id)")
+		return ps
+	}
+	if strings.TrimSpace(m.LicenseClass) == "" {
+		add("missing required field license_class")
+		return ps
+	}
+	for _, err := range catalog.CheckRegistryLicense(m.License, m.LicenseClass) {
+		add("%v", err)
+	}
+	return ps
 }
 
 func validateCompose(id string, body []byte) []Problem {

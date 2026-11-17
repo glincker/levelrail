@@ -10,3 +10,7 @@ requires_gpu: false
 platforms:
     - linux/amd64
     - linux/arm64
+source_repo: https://github.com/opf/openproject
+license: GPL-3.0
+license_class: copyleft
+license_url: https://github.com/opf/openproject/blob/dev/LICENSE

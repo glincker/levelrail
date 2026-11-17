@@ -1,4 +1,4 @@
-// Command gen-template-gallery exports internal/catalog.Templates as the
+// Command gen-template-gallery exports internal/catalog.Templates plus registry-only templates as the
 // versioned catalog index (docs/catalog-index.md) that the docs gallery,
 // the marketing site and a future catalog API all read.
 //
@@ -132,6 +132,12 @@ func detectPersist(_, _, _ string) error           { return nil }
 
 // buildEntry converts one catalog template, classifying env vars by name only.
 func buildEntry(t catalog.Template) (Entry, error) {
+	return buildEntryMeta(t, nil)
+}
+
+// buildEntryMeta is buildEntry with optional marketplace metadata from a
+// registry template.yaml, used when the id has no Go literal or meta row.
+func buildEntryMeta(t catalog.Template, rm *catalog.TemplateMeta) (Entry, error) {
 	e := Entry{
 		ID:               t.ID,
 		Aliases:          []string{},
@@ -153,6 +159,9 @@ func buildEntry(t catalog.Template) (Entry, error) {
 	}
 	e.Install = installFor(t.Manifest)
 	mp := catalog.MarketplaceFor(t)
+	if rm != nil {
+		mp = catalog.MarketplaceWithMeta(t, *rm)
+	}
 	e.SourceRepo, e.License, e.HostedUse, e.Aliases = mp.SourceRepo, mp.License, mp.HostedUse, mp.Aliases
 	e.Status, e.StatusReason, e.ReplacedBy = mp.Status, sanitize(mp.StatusReason), mp.ReplacedBy
 	if t.Manifest == nil && e.Description == "" {
@@ -248,10 +257,37 @@ func installFor(m *catalog.Manifest) *Install {
 	return in
 }
 
-func generate(templates []catalog.Template) ([]byte, error) {
-	out := make([]Entry, 0, len(templates))
+// registryOnly returns the registry entries whose id is not in the compiled
+// catalog; the catalog wins on overlap so existing entries never change.
+func registryOnly(templates []catalog.Template, reg []catalog.RegistryEntry) []catalog.RegistryEntry {
+	have := make(map[string]bool, len(templates))
+	for _, t := range templates {
+		have[t.ID] = true
+	}
+	var out []catalog.RegistryEntry
+	for _, r := range reg {
+		if !have[r.Template.ID] {
+			out = append(out, r)
+		}
+	}
+	return out
+}
+
+func generate(templates []catalog.Template, reg []catalog.RegistryEntry) ([]byte, error) {
+	out := make([]Entry, 0, len(templates)+len(reg))
 	for _, t := range templates {
 		e, err := buildEntry(t)
+		if err != nil {
+			return nil, err
+		}
+		out = append(out, e)
+	}
+	for _, r := range registryOnly(templates, reg) {
+		rm := catalog.TemplateMeta{
+			SourceRepo: r.Meta.SourceRepo, License: r.Meta.License, LicenseClass: r.Meta.LicenseClass,
+			LicenseURL: r.Meta.LicenseURL, Status: r.Meta.Status, Description: r.Meta.Description,
+		}
+		e, err := buildEntryMeta(r.Template, &rm)
 		if err != nil {
 			return nil, err
 		}
@@ -270,10 +306,16 @@ func generate(templates []catalog.Template) ([]byte, error) {
 
 func main() {
 	path := flag.String("out", "scripts/gen-template-gallery/catalog-index.json", "JSON file to write")
+	registry := flag.String("registry", "registry/templates", "registry templates directory; ids missing from the catalog are added")
 	check := flag.Bool("check", false, "fail instead of writing when the file is stale")
 	flag.Parse()
 
-	data, err := generate(catalog.Templates)
+	reg, err := catalog.LoadRegistryEntries(*registry)
+	if err != nil {
+		fmt.Fprintln(os.Stderr, err)
+		os.Exit(1)
+	}
+	data, err := generate(catalog.Templates, reg)
 	if err != nil {
 		fmt.Fprintln(os.Stderr, err)
 		os.Exit(1)

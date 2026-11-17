@@ -7,3 +7,7 @@ category: Automation
 documentation_url: https://automatisch.io/docs
 recommended_memory_bytes: 1073741824
 requires_gpu: false
+source_repo: https://github.com/automatisch/automatisch
+license: AGPL-3.0
+license_class: network-copyleft
+license_url: https://github.com/automatisch/automatisch/blob/main/LICENSE.agpl

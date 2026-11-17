@@ -23,17 +23,24 @@ const (
 // RegistryMeta is the on-disk template.yaml. The compose body lives beside
 // it in compose.yaml so it stays byte-for-byte.
 type RegistryMeta struct {
-	ID                     string    `yaml:"id"`
-	Name                   string    `yaml:"name"`
-	Slogan                 string    `yaml:"slogan"`
-	Description            string    `yaml:"description,omitempty"`
-	Category               string    `yaml:"category"`
-	DocumentationURL       string    `yaml:"documentation_url"`
-	RecommendedMemoryBytes int64     `yaml:"recommended_memory_bytes"`
-	RequiresGPU            bool      `yaml:"requires_gpu"`
-	Platforms              []string  `yaml:"platforms,omitempty"`
-	Icon                   string    `yaml:"icon,omitempty"`
-	Manifest               *Manifest `yaml:"manifest,omitempty"`
+	ID                     string   `yaml:"id"`
+	Name                   string   `yaml:"name"`
+	Slogan                 string   `yaml:"slogan"`
+	Description            string   `yaml:"description,omitempty"`
+	Category               string   `yaml:"category"`
+	DocumentationURL       string   `yaml:"documentation_url"`
+	RecommendedMemoryBytes int64    `yaml:"recommended_memory_bytes"`
+	RequiresGPU            bool     `yaml:"requires_gpu"`
+	Platforms              []string `yaml:"platforms,omitempty"`
+	Icon                   string   `yaml:"icon,omitempty"`
+	// Marketplace fields for registry-only templates, which have no Go literal
+	// or template_meta.json row to carry them.
+	SourceRepo   string    `yaml:"source_repo,omitempty"`
+	License      string    `yaml:"license,omitempty"`
+	LicenseClass string    `yaml:"license_class,omitempty"`
+	LicenseURL   string    `yaml:"license_url,omitempty"`
+	Status       string    `yaml:"status,omitempty"`
+	Manifest     *Manifest `yaml:"manifest,omitempty"`
 }
 
 // EncodeRegistryTemplate returns the template.yaml and compose.yaml bytes for t,
@@ -58,42 +65,62 @@ func EncodeRegistryTemplate(t Template) (meta, compose, manifestCompose []byte, 
 // LoadRegistryDir reads every <dir>/<id>/ folder into templates sorted by
 // ID. It is not wired into Templates; the registry becomes the source later.
 func LoadRegistryDir(dir string) ([]Template, error) {
+	es, err := LoadRegistryEntries(dir)
+	if err != nil {
+		return nil, err
+	}
+	out := make([]Template, 0, len(es))
+	for _, e := range es {
+		out = append(out, e.Template)
+	}
+	return out, nil
+}
+
+// RegistryEntry pairs a loaded template with its on-disk metadata, so callers
+// can read the marketplace fields that Template does not carry.
+type RegistryEntry struct {
+	Template Template
+	Meta     RegistryMeta
+}
+
+// LoadRegistryEntries is LoadRegistryDir plus each folder's template.yaml meta.
+func LoadRegistryEntries(dir string) ([]RegistryEntry, error) {
 	entries, err := os.ReadDir(dir)
 	if err != nil {
 		return nil, fmt.Errorf("read registry %s: %w", dir, err)
 	}
-	var out []Template
+	var out []RegistryEntry
 	for _, e := range entries {
 		if !e.IsDir() {
 			continue
 		}
-		t, err := loadRegistryTemplate(filepath.Join(dir, e.Name()))
+		t, m, err := loadRegistryTemplate(filepath.Join(dir, e.Name()))
 		if err != nil {
 			return nil, err
 		}
 		if t.ID != e.Name() {
 			return nil, fmt.Errorf("registry folder %s holds template id %q", e.Name(), t.ID)
 		}
-		out = append(out, t)
+		out = append(out, RegistryEntry{Template: t, Meta: m})
 	}
-	sort.Slice(out, func(i, j int) bool { return out[i].ID < out[j].ID })
+	sort.Slice(out, func(i, j int) bool { return out[i].Template.ID < out[j].Template.ID })
 	return out, nil
 }
 
-func loadRegistryTemplate(folder string) (Template, error) {
+func loadRegistryTemplate(folder string) (Template, RegistryMeta, error) {
 	metaBytes, err := os.ReadFile(filepath.Join(folder, RegistryMetaFile)) //nolint:gosec // registry folder chosen by the caller
 	if err != nil {
-		return Template{}, fmt.Errorf("read %s: %w", folder, err)
+		return Template{}, RegistryMeta{}, fmt.Errorf("read %s: %w", folder, err)
 	}
 	compose, err := os.ReadFile(filepath.Join(folder, RegistryComposeFile)) //nolint:gosec // registry folder chosen by the caller
 	if err != nil {
-		return Template{}, fmt.Errorf("read %s: %w", folder, err)
+		return Template{}, RegistryMeta{}, fmt.Errorf("read %s: %w", folder, err)
 	}
 	var m RegistryMeta
 	dec := yaml.NewDecoder(bytes.NewReader(metaBytes))
 	dec.KnownFields(true)
 	if err := dec.Decode(&m); err != nil {
-		return Template{}, fmt.Errorf("parse %s: %w", folder, err)
+		return Template{}, RegistryMeta{}, fmt.Errorf("parse %s: %w", folder, err)
 	}
 	if m.Manifest != nil {
 		m.Manifest.Compose = string(compose)
@@ -107,7 +134,7 @@ func loadRegistryTemplate(folder string) (Template, error) {
 		Category: m.Category, DocumentationURL: m.DocumentationURL, Compose: string(compose),
 		RecommendedMemoryBytes: m.RecommendedMemoryBytes, RequiresGPU: m.RequiresGPU,
 		Platforms: m.Platforms, Manifest: m.Manifest,
-	}, nil
+	}, m, nil
 }
 
 // normalizeEmpty turns empty slices into nil, since yaml writes a nil slice

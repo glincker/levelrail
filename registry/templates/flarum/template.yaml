@@ -10,3 +10,7 @@ requires_gpu: false
 platforms:
     - linux/amd64
     - linux/arm64
+source_repo: https://github.com/flarum/flarum
+license: MIT
+license_class: permissive
+license_url: https://github.com/flarum/flarum/blob/2.x/LICENSE

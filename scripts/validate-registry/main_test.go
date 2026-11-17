@@ -96,3 +96,40 @@ func TestSplitLegacy(t *testing.T) {
 		t.Fatalf("want 1 waived and 2 kept, got %d waived, %d kept", waived, len(kept))
 	}
 }
+
+func TestValidateMarketplace(t *testing.T) {
+	cases := []struct {
+		name string
+		m    meta
+		want int
+	}{
+		{"complete", meta{SourceRepo: "https://github.com/a/b", License: "MIT", LicenseClass: "permissive"}, 0},
+		{"licenseref", meta{SourceRepo: "https://github.com/a/b", License: "LicenseRef-x-BSD", LicenseClass: "permissive"}, 0},
+		{"unknown class", meta{SourceRepo: "https://github.com/a/b", License: "LicenseRef-x", LicenseClass: "unknown"}, 0},
+		{"missing all", meta{}, 2},
+		{"http repo", meta{SourceRepo: "http://github.com/a/b", License: "MIT", LicenseClass: "permissive"}, 1},
+		{"no class", meta{SourceRepo: "https://github.com/a/b", License: "MIT"}, 1},
+		{"bad spdx", meta{SourceRepo: "https://github.com/a/b", License: "Whatever", LicenseClass: "permissive"}, 1},
+		{"class mismatch", meta{SourceRepo: "https://github.com/a/b", License: "GPL-3.0", LicenseClass: "permissive"}, 1},
+		{"bad class", meta{SourceRepo: "https://github.com/a/b", License: "MIT", LicenseClass: "nice"}, 1},
+	}
+	for _, c := range cases {
+		if got := len(validateMarketplace("x", c.m)); got != c.want {
+			t.Errorf("%s: %d problems, want %d", c.name, got, c.want)
+		}
+	}
+}
+
+func TestMarketplaceRuleExemptions(t *testing.T) {
+	ps := validateFolder(filepath.Join(testRoot, "sock-ok"), "sock-ok", knownCategories())
+	if rules(ps)[ruleMarket] == 0 {
+		t.Fatalf("new folder without marketplace fields must fail, got %v", rules(ps))
+	}
+	kept, waived := splitLegacy([]Problem{{Template: "old", Rule: ruleMarket}}, map[string]bool{"old": true})
+	if len(kept) != 0 || waived != 1 {
+		t.Fatalf("legacy id must waive the marketplace rule, kept %v waived %d", kept, waived)
+	}
+	if !inCatalog("2fauth") || inCatalog("dagu") {
+		t.Error("inCatalog must be true for a compiled template and false for a registry-only one")
+	}
+}

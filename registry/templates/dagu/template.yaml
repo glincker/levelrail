@@ -7,3 +7,7 @@ category: Automation
 documentation_url: https://docs.dagu.sh/
 recommended_memory_bytes: 268435456
 requires_gpu: false
+source_repo: https://github.com/dagucloud/dagu
+license: GPL-3.0
+license_class: copyleft
+license_url: https://github.com/dagucloud/dagu/blob/main/LICENSE

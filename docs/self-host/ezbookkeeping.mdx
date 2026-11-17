@@ -1,0 +1,69 @@
+---
+title: "Self-host ezBookkeeping with Docker"
+sidebarTitle: "ezBookkeeping"
+description: "A personal finance app for tracking income, expenses and accounts."
+"og:url": "https://docs.levelrail.com/self-host/ezbookkeeping"
+---
+
+A personal finance app for tracking income, expenses and accounts.
+
+This page describes the Levelrail template for ezBookkeeping (Finance). It deploys the services below as one Docker Compose app on your own server. Project site: https://ezbookkeeping.mayswind.net/.
+
+Recommended memory: about 128 MiB.
+
+## Services, ports and volumes
+
+| Service | Image | Container ports | Volumes |
+| --- | --- | --- | --- |
+| `ezbookkeeping` | `mayswind/ezbookkeeping:2.1.1` | 8080 | `storage -&#62; /ezbookkeeping/storage`<br />`logs -&#62; /ezbookkeeping/log` |
+
+## Environment variables
+
+| Service | Variable | Value |
+| --- | --- | --- |
+| `ezbookkeeping` | `EBK_DATABASE_TYPE` | Preset in the template |
+| `ezbookkeeping` | `EBK_SECURITY_SECRET_KEY` | Generated at deploy |
+| `ezbookkeeping` | `EBK_SERVER_ENABLE_GZIP` | Preset in the template |
+
+Passwords and keys marked as generated are created for you when the app is deployed and stored as secrets. Values are not shown here.
+
+## Security and requirements
+
+Level: **Standard**.
+
+What this template needs:
+
+- Passwords and keys are generated at deploy time (`ezbookkeeping`): EBK_SECURITY_SECRET_KEY.
+- Stores data in named volumes (`ezbookkeeping`): logs, storage.
+
+What Levelrail adds around it:
+
+- Automatic HTTPS and an ingress shield in front of every domain.
+- Secrets are generated, stored encrypted and masked in logs and the UI.
+- Named volumes can be backed up and restored.
+- Deploys are gated on the health check before traffic switches.
+- One-step rollback to the previous revision.
+- Exposure report shows what is reachable from outside.
+- Host firewall rules managed for published ports.
+
+## Deploy ezBookkeeping with Levelrail
+
+In the dashboard, open **Apps**, choose **New app**, then **Browse templates**, and select ezBookkeeping. Review the Compose body and deploy.
+
+With the CLI:
+
+```bash
+levelrail-cli templates deploy ezbookkeeping --name my-ezbookkeeping
+```
+
+See the [service template catalog](/templates-and-registry) for how templates work, and [Getting started](/getting-started) if you have not installed Levelrail yet.
+
+## More Finance templates
+
+- [Actual Budget](/self-host/actual-budget)
+- [Actual Budget](/self-host/actualbudget)
+- [Budge](/self-host/budge)
+- [Dolibarr](/self-host/dolibarr)
+- [Firefly III](/self-host/firefly-iii)
+
+All templates are listed in the [self-host gallery](/self-host).

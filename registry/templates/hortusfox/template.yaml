@@ -7,3 +7,7 @@ category: Applications
 documentation_url: https://github.com/danielbrendel/hortusfox-web
 recommended_memory_bytes: 536870912
 requires_gpu: false
+source_repo: https://github.com/danielbrendel/hortusfox-web
+license: MIT
+license_class: permissive
+license_url: https://github.com/danielbrendel/hortusfox-web/blob/main/LICENSE.txt

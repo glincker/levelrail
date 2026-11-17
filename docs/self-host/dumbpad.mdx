@@ -1,0 +1,63 @@
+---
+title: "Self-host DumbPad with Docker"
+sidebarTitle: "DumbPad"
+description: "A simple notepad with auto-save and optional PIN protection."
+"og:url": "https://docs.levelrail.com/self-host/dumbpad"
+---
+
+A simple notepad with auto-save and optional PIN protection.
+
+This page describes the Levelrail template for DumbPad (Productivity). It deploys the services below as one Docker Compose app on your own server. Project site: https://github.com/DumbWareio/DumbPad.
+
+Recommended memory: about 128 MiB.
+
+## Services, ports and volumes
+
+| Service | Image | Container ports | Volumes |
+| --- | --- | --- | --- |
+| `dumbpad` | `dumbwareio/dumbpad:1.0.5` | 3000 | `dumbpad_data -&#62; /app/data` |
+
+## Environment variables
+
+This template sets no environment variables.
+
+Passwords and keys marked as generated are created for you when the app is deployed and stored as secrets. Values are not shown here.
+
+## Security and requirements
+
+Level: **Standard**.
+
+What this template needs:
+
+- Stores data in named volumes (`dumbpad`): dumbpad_data.
+
+What Levelrail adds around it:
+
+- Automatic HTTPS and an ingress shield in front of every domain.
+- Named volumes can be backed up and restored.
+- Deploys are gated on the health check before traffic switches.
+- One-step rollback to the previous revision.
+- Exposure report shows what is reachable from outside.
+- Host firewall rules managed for published ports.
+
+## Deploy DumbPad with Levelrail
+
+In the dashboard, open **Apps**, choose **New app**, then **Browse templates**, and select DumbPad. Review the Compose body and deploy.
+
+With the CLI:
+
+```bash
+levelrail-cli templates deploy dumbpad --name my-dumbpad
+```
+
+See the [service template catalog](/templates-and-registry) for how templates work, and [Getting started](/getting-started) if you have not installed Levelrail yet.
+
+## More Productivity templates
+
+- [AFFiNE](/self-host/affine)
+- [AppFlowy](/self-host/appflowy)
+- [ArchiveBox](/self-host/archivebox)
+- [Baby Buddy](/self-host/babybuddy)
+- [Baikal](/self-host/baikal)
+
+All templates are listed in the [self-host gallery](/self-host).

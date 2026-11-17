@@ -10,3 +10,7 @@ requires_gpu: false
 platforms:
     - linux/amd64
     - linux/arm64
+source_repo: https://github.com/zitadel/zitadel
+license: AGPL-3.0
+license_class: network-copyleft
+license_url: https://github.com/zitadel/zitadel/blob/main/LICENSE

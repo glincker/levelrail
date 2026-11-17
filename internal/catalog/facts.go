@@ -75,6 +75,17 @@ type Marketplace struct {
 // MarketplaceFor derives the marketplace facts of one template. A compose body
 // that fails to parse yields the facts without images, never an error.
 func MarketplaceFor(t Template) Marketplace {
+	meta, ok := MetaFor(t.ID)
+	return marketplaceFor(t, meta, ok)
+}
+
+// MarketplaceWithMeta derives facts for a registry-only template, whose
+// marketplace metadata comes from its template.yaml instead of template_meta.json.
+func MarketplaceWithMeta(t Template, meta TemplateMeta) Marketplace {
+	return marketplaceFor(t, meta, true)
+}
+
+func marketplaceFor(t Template, meta TemplateMeta, hasMeta bool) Marketplace {
 	m := Marketplace{Status: StatusActive, HostedUse: "unknown", Trust: Trust{Level: TrustListed}, Aliases: []string{}, Images: []ImageFact{}}
 	if mf := t.Manifest; mf != nil {
 		m.SourceRepo = mf.SourceRepo
@@ -90,7 +101,7 @@ func MarketplaceFor(t Template) Marketplace {
 		if len(mf.Aliases) > 0 {
 			m.Aliases = append([]string{}, mf.Aliases...)
 		}
-	} else if meta, ok := MetaFor(t.ID); ok {
+	} else if hasMeta {
 		m.SourceRepo = meta.SourceRepo
 		if meta.License != "" {
 			m.License = &License{SPDX: meta.License, Class: meta.LicenseClass, URL: meta.LicenseURL}
