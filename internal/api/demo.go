@@ -6,6 +6,9 @@ import (
 	"errors"
 	"net"
 	"net/http"
+	"net/url"
+	"os"
+	"strings"
 	"sync"
 	"time"
 )
@@ -47,12 +50,14 @@ func WithDemoMode(cfg DemoConfig) Option {
 		if cfg.SessionsPerMinute <= 0 {
 			cfg.SessionsPerMinute = demoSessionPerMinute
 		}
-		rt.demo = &demoState{cfg: cfg, ctaCounts: map[string]int{}, mints: map[string][]time.Time{}}
+		rt.demo = &demoState{cfg: cfg, ctaCounts: map[string]int{}, mints: map[string][]time.Time{}, analytics: demoAnalyticsFromEnv(os.Getenv)}
 	}
 }
 
 type demoState struct {
 	cfg DemoConfig
+	// analytics is nil unless the operator opted in with both env vars.
+	analytics *demoAnalytics
 
 	mu        sync.Mutex
 	ctaCounts map[string]int
@@ -81,15 +86,66 @@ func (rt *Router) DemoStats() DemoStats {
 }
 
 type demoInfoResponse struct {
-	Enabled        bool       `json:"enabled"`
-	ResetsAt       *time.Time `json:"resetsAt,omitempty"`
-	InstallCommand string     `json:"installCommand,omitempty"`
-	RepoURL        string     `json:"repoUrl,omitempty"`
-	DocsURL        string     `json:"docsUrl,omitempty"`
-	Version        string     `json:"version,omitempty"`
-	Username       string     `json:"username,omitempty"`
-	Password       string     `json:"password,omitempty"`
-	HumanCheck     bool       `json:"humanCheck"`
+	Enabled        bool               `json:"enabled"`
+	ResetsAt       *time.Time         `json:"resetsAt,omitempty"`
+	InstallCommand string             `json:"installCommand,omitempty"`
+	RepoURL        string             `json:"repoUrl,omitempty"`
+	DocsURL        string             `json:"docsUrl,omitempty"`
+	Version        string             `json:"version,omitempty"`
+	Username       string             `json:"username,omitempty"`
+	Password       string             `json:"password,omitempty"`
+	HumanCheck     bool               `json:"humanCheck"`
+	Analytics      *demoAnalyticsInfo `json:"analytics,omitempty"`
+}
+
+type demoAnalyticsInfo struct {
+	Provider string `json:"provider"`
+	Host     string `json:"host"`
+	Token    string `json:"token"`
+}
+
+// demoAnalytics is the opt-in, hosted-demo-only analytics target.
+type demoAnalytics struct {
+	info demoAnalyticsInfo
+	// csp is the Content-Security-Policy served in demo mode with the host allowed.
+	csp string
+}
+
+// demoAnalyticsFromEnv returns nil unless APP_DEMO_ANALYTICS_HOST (an https
+// origin) and APP_DEMO_ANALYTICS_TOKEN are both set, so a real instance never sends anything.
+func demoAnalyticsFromEnv(getenv func(string) string) *demoAnalytics {
+	raw := strings.TrimSpace(getenv("APP_DEMO_ANALYTICS_HOST"))
+	token := strings.TrimSpace(getenv("APP_DEMO_ANALYTICS_TOKEN"))
+	if raw == "" || token == "" || strings.ContainsAny(token, " \t\r\n\"'<>;") {
+		return nil
+	}
+	u, err := url.Parse(raw)
+	if err != nil || u.Scheme != "https" || u.Hostname() == "" {
+		return nil
+	}
+	origin := "https://" + u.Host
+	allowed := origin
+	// PostHog cloud serves its script from a sibling assets host.
+	if h := u.Hostname(); strings.HasSuffix(h, ".i.posthog.com") && !strings.Contains(h, "-assets.") {
+		allowed += " https://" + strings.Replace(h, ".i.posthog.com", "-assets.i.posthog.com", 1)
+	}
+	csp := strings.Replace(contentSecurityPolicy, "script-src 'self'", "script-src 'self' "+allowed, 1)
+	csp = strings.Replace(csp, "connect-src 'self'", "connect-src 'self' "+allowed, 1)
+	return &demoAnalytics{info: demoAnalyticsInfo{Provider: "posthog", Host: origin, Token: token}, csp: csp}
+}
+
+// demoAnalyticsCSP widens the CSP to the analytics host in demo mode only.
+func (rt *Router) demoAnalyticsCSP(next http.Handler) http.Handler {
+	if rt.demo == nil {
+		return next
+	}
+	return http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		// Runs inside securityHeadersMiddleware, so this overrides its default.
+		if a := rt.demo.analytics; a != nil {
+			w.Header().Set("Content-Security-Policy", a.csp)
+		}
+		next.ServeHTTP(w, r)
+	})
 }
 
 // handleDemoInfo serves GET /api/v1/demo: public, and {"enabled":false} on a real instance.
@@ -102,6 +158,10 @@ func (rt *Router) handleDemoInfo(w http.ResponseWriter, _ *http.Request) {
 	resp := demoInfoResponse{
 		Enabled: true, InstallCommand: c.InstallCommand, RepoURL: c.RepoURL, DocsURL: c.DocsURL,
 		Version: c.Version, Username: c.Username, Password: c.Password, HumanCheck: c.Verifier != nil,
+	}
+	if a := rt.demo.analytics; a != nil {
+		info := a.info
+		resp.Analytics = &info
 	}
 	if c.ResetsAt != nil {
 		t := c.ResetsAt()

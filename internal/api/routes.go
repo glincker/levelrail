@@ -129,6 +129,7 @@ func (rt *Router) Handler() http.Handler {
 	h = rt.serverTimingMiddleware(h)
 	h = compressMiddleware(h)
 	h = csrfOriginMiddleware(h)
+	h = rt.demoAnalyticsCSP(h)
 	h = securityHeadersMiddleware(rt.hstsEnabled)(h)
 	if !rt.hstsEnabled {
 		h = hstsDBOverrideMiddleware(rt)(h)

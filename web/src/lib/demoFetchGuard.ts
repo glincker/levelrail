@@ -3,6 +3,8 @@ import { DEMO_ERROR_PREFIX } from './demoStore'
 export interface DemoBlock {
   code: string
   message: string
+  method: string
+  path: string
 }
 
 let installed = false
@@ -14,13 +16,23 @@ export function installDemoFetchGuard(onBlocked: (b: DemoBlock) => void): void {
   const original = window.fetch.bind(window)
   window.fetch = async (...args: Parameters<typeof fetch>) => {
     const res = await original(...args)
+    const req = args[0]
+    const method = (
+      args[1]?.method ?? (req instanceof Request ? req.method : 'GET')
+    ).toUpperCase()
+    const rawUrl = req instanceof Request ? req.url : String(req)
     if (res.status === 403) {
       void res
         .clone()
         .json()
         .then((body: { error?: string; message?: string } | null) => {
           if (body?.error?.startsWith(DEMO_ERROR_PREFIX)) {
-            onBlocked({ code: body.error, message: body.message ?? '' })
+            onBlocked({
+              code: body.error,
+              message: body.message ?? '',
+              method,
+              path: new URL(rawUrl, window.location.origin).pathname,
+            })
           }
         })
         .catch(() => undefined)
