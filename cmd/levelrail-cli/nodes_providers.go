@@ -34,6 +34,8 @@ func runNodesProviders(prog string, args []string, stdout, stderr io.Writer, loo
 		return runNodesProvidersCatalog(prog, args[1:], stdout, stderr, lookupEnv, false)
 	case "sizes":
 		return runNodesProvidersCatalog(prog, args[1:], stdout, stderr, lookupEnv, true)
+	case "servers":
+		return runNodesProvidersServers(prog, args[1:], stdout, stderr, lookupEnv)
 	case "test":
 		return runNodesProvidersTest(prog, args[1:], stdout, stderr, lookupEnv)
 	case "capabilities":
@@ -53,6 +55,7 @@ func nodesProvidersUsage(prog string) string {
   %[1]s nodes providers connect --provider NAME [--method METHOD] [flags]   connect a provider (tests it first unless --verify=false)
   %[1]s nodes providers regions --provider NAME [flags]                       list the provider's regions
   %[1]s nodes providers sizes --provider NAME [--region ID] [flags]           list the provider's sizes (oracle Flex sizes are ids like VM.Standard.A1.Flex:1:6)
+  %[1]s nodes providers servers --provider NAME [--region ID] [--refresh] [flags]   list machines already in the account (for nodes import)
   %[1]s nodes providers test --provider NAME [flags]                          run a read-only connection test against the stored credential
   %[1]s nodes providers capabilities --provider NAME [--refresh] [flags]      show which permissions the stored token has (granted, missing, unknown)
   %[1]s nodes providers disconnect --provider NAME [flags]                    remove the stored credential
