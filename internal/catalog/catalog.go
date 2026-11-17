@@ -85,6 +85,17 @@ var compiledTemplates = concat(
 // Templates is compiledTemplates plus the registry-only ids (registry_embed.go).
 var Templates = concat(compiledTemplates, registryOnlyTemplates)
 
+// IsCompiledID reports whether a template is defined by Go sources, contrib
+// files or manifests, as opposed to being served only from the registry folder.
+func IsCompiledID(id string) bool {
+	for _, tpl := range compiledTemplates {
+		if tpl.ID == id {
+			return true
+		}
+	}
+	return false
+}
+
 // TemplateByID returns the Templates entry with this ID, or false if
 // none matches.
 func TemplateByID(id string) (Template, bool) {

@@ -67,16 +67,9 @@ type meta struct {
 
 var sourceRepoRe = regexp.MustCompile(`^https://[^\s/]+/\S+$`)
 
-// inCatalog lists ids that already ship from internal/catalog, which carry
+// inCatalog is true for ids defined by compiled catalog sources, which carry
 // their marketplace facts elsewhere and are exempt from the marketplace rule.
-func inCatalog(id string) bool {
-	for _, t := range catalog.Templates {
-		if t.ID == id {
-			return true
-		}
-	}
-	return false
-}
+func inCatalog(id string) bool { return catalog.IsCompiledID(id) }
 
 // knownCategories are the categories the shipped catalog already uses.
 func knownCategories() map[string]bool {
