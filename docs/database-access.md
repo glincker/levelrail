@@ -131,6 +131,7 @@ levelrail-cli databases rotate-password <database> --every-days 30
 levelrail-cli databases rotate-password <database> --status
 levelrail-cli databases access temp <database> --preset read_write --minutes 60
 levelrail-cli databases access list|revoke|who|grant <database> ...
+levelrail-cli databases connection-string <database> --format url
 levelrail-cli databases network show <database>
 levelrail-cli databases network allow <database> --source 203.0.113.7/32 --description laptop --confirm
 levelrail-cli databases network deny <database> --source 203.0.113.7/32 --confirm
@@ -139,6 +140,19 @@ levelrail-cli databases network tls <database> --require
 ```
 
 Every command takes `--json`.
+
+### Connection string
+
+```
+levelrail-cli databases connection-string <database> [--format url|env|json] [--reveal]
+```
+
+Prints a ready-made URL for postgres (`postgres://`), mysql and mariadb (`mysql://`),
+redis, valkey and keydb (`redis://`, `rediss://` with TLS) and mongodb (`mongodb://`).
+The password is masked as `xxxxxxxx` unless you pass `--reveal`, which is owner only,
+asks for step-up and is audited like `databases credentials`. `--format env` prints
+`DATABASE_URL=...`. Use `--host`, `--port`, `--user` and `--database` to override the
+defaults (host is the database name, port is the public port when public access is on).
 
 ## MCP
 
