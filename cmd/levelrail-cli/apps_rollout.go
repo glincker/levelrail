@@ -14,8 +14,10 @@ import (
 const (
 	rolloutTimeoutEnv     = "LEVELRAIL_ROLLOUT_BATCH_TIMEOUT"
 	rolloutTimeoutDefault = "5m"
-	rolloutPollEvery      = 2 * time.Second
 )
+
+// rolloutPollEvery is a var so tests can poll fast.
+var rolloutPollEvery = 2 * time.Second
 
 // rolloutTarget is one app on one matched node.
 type rolloutTarget struct {
