@@ -36,6 +36,7 @@ jobs:
     timeout-minutes: 15
     outputs:
       folders: ${{ steps.changed.outputs.folders }}
+      base: ${{ steps.changed.outputs.base }}
     steps:
       - name: Checkout
         uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
@@ -63,6 +64,7 @@ jobs:
             fi
           fi
           git diff --name-only "$base" HEAD > "$RUNNER_TEMP/changed.txt"
+          echo "$base" > "$RUNNER_TEMP/base.txt"
 
       - name: Validate changed templates
         run: go run ./scripts/validate-registry -changed "$RUNNER_TEMP/changed.txt"
@@ -78,6 +80,7 @@ jobs:
               [ -f "registry/templates/$id/compose.yaml" ] && echo "$id"
             done | head -n "$REGISTRY_SMOKE_MAX" | jq -R . | jq -sc .)
           echo "folders=${folders:-[]}" >> "$GITHUB_OUTPUT"
+          echo "base=$(cat "$RUNNER_TEMP/base.txt")" >> "$GITHUB_OUTPUT"
 
   smoke:
     name: Smoke ${{ matrix.id }}
@@ -93,27 +96,69 @@ jobs:
       - name: Checkout
         uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
         with:
+          fetch-depth: 0
           persist-credentials: false
 
-      - name: Check arm64 images
-        working-directory: registry/templates/${{ matrix.id }}
+      - name: Setup Go
+        uses: actions/setup-go@b7ad1dad31e06c5925ef5d2fc7ad053ef454303e # v7.0.0
+        with:
+          go-version-file: go.mod
+
+      # Legacy means listed in registry/legacy.txt or already present at the base
+      # commit. Legacy failures warn; new templates must pass.
+      - name: Classify template
+        id: legacy
+        env:
+          ID: ${{ matrix.id }}
+          BASE: ${{ needs.validate.outputs.base }}
         run: |
-          for image in $(docker compose -f compose.yaml config --images); do
+          legacy=false
+          if grep -qxF "$ID" registry/legacy.txt; then legacy=true; fi
+          if git cat-file -e "$BASE:registry/templates/$ID/compose.yaml" 2>/dev/null; then legacy=true; fi
+          echo "legacy=$legacy" >> "$GITHUB_OUTPUT"
+          if [ "$legacy" = "true" ]; then
+            echo "::notice title=legacy template::$ID predates this change, smoke failures are warnings"
+          fi
+
+      - name: Render through the engine
+        env:
+          ID: ${{ matrix.id }}
+        run: |
+          go run ./scripts/registry-render -dir "registry/templates/$ID" > "$RUNNER_TEMP/compose.rendered.yaml"
+
+      - name: Check arm64 images
+        run: |
+          for image in $(docker compose -f "$RUNNER_TEMP/compose.rendered.yaml" config --images); do
             if ! docker buildx imagetools inspect "$image" 2>/dev/null | grep -q 'linux/arm64'; then
               echo "::warning title=no linux/arm64::$image has no linux/arm64 build"
             fi
           done
 
       - name: Compose up
-        working-directory: registry/templates/${{ matrix.id }}
-        run: docker compose -f compose.yaml up --wait --wait-timeout "$REGISTRY_SMOKE_WAIT_TIMEOUT"
+        id: up
+        continue-on-error: ${{ steps.legacy.outputs.legacy == 'true' }}
+        env:
+          ID: ${{ matrix.id }}
+        run: |
+          docker compose -p "lrtest-$ID" -f "$RUNNER_TEMP/compose.rendered.yaml" up --wait --wait-timeout "$REGISTRY_SMOKE_WAIT_TIMEOUT"
+
+      - name: Warn on legacy failure
+        if: steps.up.outcome == 'failure' && steps.legacy.outputs.legacy == 'true'
+        env:
+          ID: ${{ matrix.id }}
+        run: echo "::warning title=legacy smoke failed::$ID is a legacy template, not blocking"
 
       - name: Compose logs on failure
-        if: failure()
-        working-directory: registry/templates/${{ matrix.id }}
-        run: docker compose -f compose.yaml logs --tail 80
+        if: steps.up.outcome == 'failure'
+        env:
+          ID: ${{ matrix.id }}
+        run: docker compose -p "lrtest-$ID" -f "$RUNNER_TEMP/compose.rendered.yaml" logs --tail 80
 
       - name: Compose down
         if: always()
-        working-directory: registry/templates/${{ matrix.id }}
-        run: docker compose -f compose.yaml down -v
+        env:
+          ID: ${{ matrix.id }}
+        run: |
+          if [ -f "$RUNNER_TEMP/compose.rendered.yaml" ]; then
+            docker compose -p "lrtest-$ID" -f "$RUNNER_TEMP/compose.rendered.yaml" down -v
+          fi

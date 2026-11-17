@@ -47,4 +47,6 @@ Folders that predate these rules are not enforced. Touching one means it must pa
 
 ## How the smoke test runs
 
-For each changed folder CI runs `docker compose -f compose.yaml up --wait --wait-timeout 240` and then `down -v`. The run is capped at 8 folders per change. A template whose images have no `linux/arm64` build gets a warning, not a failure. Run the same two commands inside your folder to reproduce a failure.
+For each changed folder CI renders the template through the Levelrail engine (`go run ./scripts/registry-render -dir registry/templates/<id>`), which fills magic variables like `$SERVICE_PASSWORD_32_X` and declares named volumes, then runs `docker compose up --wait --wait-timeout 240` on the result and `down -v`. The run is capped at 8 folders per change. A template whose images have no `linux/arm64` build gets a warning, not a failure. Reproduce locally by redirecting the render output to a file and passing it to `docker compose -f`.
+
+A template listed in `registry/legacy.txt`, or already present at the base commit of the change, is legacy: its smoke failure is a warning. A template new in the change must pass. An engine rejection in the render step is always a failure.
