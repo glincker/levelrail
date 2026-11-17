@@ -15,6 +15,12 @@ vi.mock('@tanstack/react-router', () => ({
   ),
 }))
 
+const STUB_CONNECTION = {
+  openConnect: () => undefined,
+  askDisconnect: () => undefined,
+  dialogs: null,
+}
+
 const testI18n = i18next.createInstance()
 void testI18n.use(initReactI18next).init({
   lng: 'en',
@@ -32,6 +38,7 @@ function Section() {
       provider={CLOUD_PROVIDERS.digitalocean}
       resource={{ provider: 'digitalocean', has_token: true }}
       labels={labels}
+      connection={STUB_CONNECTION}
     />
   )
 }

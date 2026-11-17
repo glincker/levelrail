@@ -1,4 +1,4 @@
-import { cleanup, render, screen, within } from '@testing-library/react'
+import { cleanup, render, screen } from '@testing-library/react'
 import { QueryClient, QueryClientProvider } from '@tanstack/react-query'
 import { afterEach, describe, expect, it, vi } from 'vitest'
 import i18next from 'i18next'
@@ -19,16 +19,25 @@ vi.mock('@/components/shell/PageTemplate', () => ({
   PageTemplate: ({
     title,
     actions,
+    status,
+    banners,
+    aside,
     children,
   }: {
     title: ReactNode
     actions?: ReactNode
+    status?: ReactNode
+    banners?: ReactNode
+    aside?: ReactNode
     children: ReactNode
   }) => (
     <div>
       <h1>{title}</h1>
+      {status}
       {actions}
+      {banners}
       {children}
+      {aside}
     </div>
   ),
 }))
@@ -129,9 +138,10 @@ describe('CloudProviderPage', () => {
       expect(
         screen.getByRole('heading', { level: 1, name: p.name }),
       ).toBeTruthy()
-      const chips = screen.getByRole('list', { name: p.name })
-      for (const term of p.terms.vocab.split(', ')) {
-        expect(within(chips).getByText(term)).toBeTruthy()
+      if (p.terms.vocab !== p.terms.servers) {
+        expect(
+          screen.getByText(p.terms.vocab.split(', ').join(' · ')),
+        ).toBeTruthy()
       }
       expect(
         await screen.findByRole('button', { name: p.createLabel }),
@@ -167,6 +177,25 @@ describe('CloudProviderPage', () => {
     cleanup()
     renderPage('digitalocean')
     expect(await screen.findByText(/No Droplets created/)).toBeTruthy()
+  })
+
+  it('shows one onboarding card and hides the empty sections when not connected', async () => {
+    vi.stubGlobal(
+      'fetch',
+      vi.fn(() =>
+        Promise.resolve(new Response(JSON.stringify([]), { status: 200 })),
+      ),
+    )
+    renderPage('hetzner')
+    expect(
+      await screen.findByRole('heading', {
+        level: 2,
+        name: 'Connect Hetzner Cloud',
+      }),
+    ).toBeTruthy()
+    expect(screen.getAllByText('Not connected')).toHaveLength(1)
+    expect(screen.queryByRole('heading', { name: 'Permissions' })).toBeNull()
+    expect(screen.queryByRole('button', { name: 'Create server' })).toBeNull()
   })
 
   it('shows a not found state for an unknown provider', () => {

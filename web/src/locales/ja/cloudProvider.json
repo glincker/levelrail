@@ -122,7 +122,8 @@
     "quickFacts": {
       "regions_one": "{{count}} {{label}} available",
       "regions_other": "{{count}} {{label}} available"
-    }
+    },
+    "railLabel": "{{name}} の接続と権限"
   },
   "links": {
     "label": "Provider links",
@@ -145,7 +146,11 @@
     "disconnectBody": "The stored credential is removed. Servers already created stay where they are.",
     "disconnectConfirm": "Disconnect",
     "disconnected": "{{name}} disconnected",
-    "notConnectedHint": "Connect {{name}} to create and manage {{servers}} from Levelrail."
+    "notConnectedHint": "Connect {{name}} to create and manage {{servers}} from Levelrail.",
+    "credential": "認証情報",
+    "by": "接続者",
+    "tested": "最終テスト",
+    "manualHint": "このプロバイダーには認証情報が保存されていません。"
   },
   "capabilities": {
     "title": "Permissions",
@@ -181,7 +186,8 @@
       "not_probed": "not checked"
     },
     "rowSummary": "{{granted}} of {{total}} capabilities granted",
-    "notChecked": "Not checked yet"
+    "notChecked": "Not checked yet",
+    "details": "必要な権限と根拠"
   },
   "cap": {
     "instances.read": "List servers",
@@ -317,6 +323,22 @@
       "list_prices": "定価から算出",
       "digitalocean_balance": "アカウント残高より",
       "digitalocean_billing_history": "請求履歴より"
+    }
+  },
+  "onboarding": {
+    "title": "{{name}} を接続",
+    "unlocksTitle": "接続すると使えること",
+    "stepsTitle": "3つの手順",
+    "unlock": {
+      "create": "Levelrail から {{servers}} を作成",
+      "manage": "{{servers}} を一か所で確認して管理",
+      "permissions": "操作前に認証情報の権限を確認",
+      "spend": "残高、請求書、月額の見積もり"
+    },
+    "step": {
+      "get": "トークンを取得",
+      "paste": "「接続」に貼り付け",
+      "verify": "Levelrail が読み取り専用の確認で検証"
     }
   }
 }

@@ -122,7 +122,8 @@
     "quickFacts": {
       "regions_one": "{{count}} {{label}} available",
       "regions_other": "{{count}} {{label}} available"
-    }
+    },
+    "railLabel": "{{name}} connection and permissions"
   },
   "links": {
     "label": "Provider links",
@@ -145,7 +146,11 @@
     "disconnectBody": "The stored credential is removed. Servers already created stay where they are.",
     "disconnectConfirm": "Disconnect",
     "disconnected": "{{name}} disconnected",
-    "notConnectedHint": "Connect {{name}} to create and manage {{servers}} from Levelrail."
+    "notConnectedHint": "Connect {{name}} to create and manage {{servers}} from Levelrail.",
+    "credential": "Credential",
+    "by": "Connected by",
+    "tested": "Last tested",
+    "manualHint": "No credential is stored for this provider."
   },
   "capabilities": {
     "title": "Permissions",
@@ -181,7 +186,8 @@
       "not_probed": "not checked"
     },
     "rowSummary": "{{granted}} of {{total}} capabilities granted",
-    "notChecked": "Not checked yet"
+    "notChecked": "Not checked yet",
+    "details": "Exact scopes and evidence"
   },
   "cap": {
     "instances.read": "List servers",
@@ -317,6 +323,22 @@
       "list_prices": "from list prices",
       "digitalocean_balance": "account balance",
       "digitalocean_billing_history": "billing history"
+    }
+  },
+  "onboarding": {
+    "title": "Connect {{name}}",
+    "unlocksTitle": "Connecting unlocks",
+    "stepsTitle": "Three steps",
+    "unlock": {
+      "create": "Create {{servers}} from Levelrail",
+      "manage": "See and manage your {{servers}} in one place",
+      "permissions": "Check what the credential may do before you act",
+      "spend": "Balance, invoices and a monthly estimate"
+    },
+    "step": {
+      "get": "Get a token",
+      "paste": "Paste it in Connect",
+      "verify": "Levelrail verifies it with a read-only check"
     }
   }
 }

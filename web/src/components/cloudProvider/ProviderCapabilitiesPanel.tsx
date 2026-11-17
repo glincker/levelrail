@@ -30,58 +30,104 @@ const STATE = {
   unknown: { Icon: CircleQuestionMarkGlassIcon, tone: 'text-muted-foreground' },
 } as const satisfies Record<ProviderCapabilityState, unknown>
 
-// Icon, tone and the word all carry the state, so colour is never the only cue.
-function StateChip({ state }: Readonly<{ state: ProviderCapabilityState }>) {
+// Icon shape, tone and a screen reader word all carry the state, so colour is never the only cue.
+function CapabilityChip({ cap }: Readonly<{ cap: ProviderCapability }>) {
   const { t } = useTranslation('cloudProvider')
-  const { Icon, tone } = STATE[state]
-  return (
-    <span
-      className={cn(
-        'inline-flex items-center gap-1.5 text-[13px] font-medium',
-        tone,
-      )}
-    >
-      <Icon className="size-4" aria-hidden="true" />
-      {t(`capabilities.${state}`)}
-    </span>
-  )
-}
-
-function CapabilityRow({ cap }: Readonly<{ cap: ProviderCapability }>) {
-  const { t } = useTranslation('cloudProvider')
+  const { Icon, tone } = STATE[cap.state]
   const label = t(`cap.${cap.id}` as 'cap.instances.read', {
     defaultValue: cap.id,
   })
-  const used = cap.used_by?.length
-    ? t('capabilities.usedBy', { features: cap.used_by.join(', ') })
-    : ''
   return (
-    <li className="flex min-h-(--glinr-row-h) flex-wrap items-center justify-between gap-x-3 gap-y-1 py-2">
-      <div className="min-w-0">
-        <p className="text-sm">{label}</p>
-        <p className="text-xs text-muted-foreground">
-          {cap.state === 'unknown' ? t('capabilities.unknownHint') : used}
-        </p>
-      </div>
-      <div className="flex flex-wrap items-center justify-end gap-x-3 gap-y-1">
-        {cap.needs ? (
-          <code className="rounded bg-muted px-1.5 py-0.5 text-xs">
-            {cap.state === 'missing'
-              ? t('capabilities.needs', { scope: cap.needs })
-              : cap.needs}
-          </code>
+    <li
+      data-state={cap.state}
+      className="flex min-w-0 items-start gap-1.5 rounded-md border border-border bg-muted/30 px-2 py-1 text-xs"
+    >
+      <Icon
+        className={cn('mt-px size-3.5 shrink-0', tone)}
+        aria-hidden="true"
+      />
+      <span className="min-w-0">
+        <span className="block break-words">{label}</span>
+        <span className="sr-only">{t(`capabilities.${cap.state}`)}</span>
+        {cap.state === 'missing' && cap.needs ? (
+          <span className="block break-all text-tone-danger">
+            {t('capabilities.needs', { scope: cap.needs })}
+          </span>
         ) : null}
-        <span className="sr-only">
-          {t(
-            `capabilities.evidence.${cap.evidence}` as 'capabilities.evidence.probe_ok',
-            {
-              defaultValue: cap.evidence,
-            },
-          )}
-        </span>
-        <StateChip state={cap.state} />
-      </div>
+      </span>
     </li>
+  )
+}
+
+const METER_TONE = {
+  granted: 'bg-tone-success',
+  missing: 'bg-tone-danger',
+  unknown: 'bg-muted-foreground/40',
+} as const satisfies Record<ProviderCapabilityState, string>
+
+// Segments, not a width, so the meter needs no inline style.
+function GrantMeter({
+  caps,
+  label,
+}: Readonly<{ caps: ProviderCapability[]; label: string }>) {
+  const order: ProviderCapabilityState[] = ['granted', 'missing', 'unknown']
+  const sorted = order.flatMap((s) => caps.filter((c) => c.state === s))
+  return (
+    <div
+      role="meter"
+      aria-label={label}
+      aria-valuemin={0}
+      aria-valuemax={caps.length}
+      aria-valuenow={caps.filter((c) => c.state === 'granted').length}
+      className="flex h-1.5 gap-0.5"
+    >
+      {sorted.map((c) => (
+        <span
+          key={c.id}
+          className={cn('h-full flex-1 rounded-full', METER_TONE[c.state])}
+        />
+      ))}
+    </div>
+  )
+}
+
+function CapabilityDetails({ caps }: Readonly<{ caps: ProviderCapability[] }>) {
+  const { t } = useTranslation('cloudProvider')
+  return (
+    <details className="group text-xs">
+      <summary className="cursor-pointer rounded-sm text-muted-foreground select-none hover:text-foreground focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-ring">
+        {t('capabilities.details')}
+      </summary>
+      <ul className="mt-1.5 divide-y divide-border">
+        {caps.map((cap) => {
+          const label = t(`cap.${cap.id}` as 'cap.instances.read', {
+            defaultValue: cap.id,
+          })
+          const used = cap.used_by?.length
+            ? t('capabilities.usedBy', { features: cap.used_by.join(', ') })
+            : ''
+          return (
+            <li key={cap.id} className="space-y-0.5 py-1.5">
+              <p className="flex flex-wrap items-center gap-x-2">
+                <span>{label}</span>
+                {cap.needs ? (
+                  <code className="rounded bg-muted px-1 py-0.5 break-all">
+                    {cap.needs}
+                  </code>
+                ) : null}
+              </p>
+              <p className="text-muted-foreground">
+                {cap.state === 'unknown' ? t('capabilities.unknownHint') : used}{' '}
+                {t(
+                  `capabilities.evidence.${cap.evidence}` as 'capabilities.evidence.probe_ok',
+                  { defaultValue: cap.evidence },
+                )}
+              </p>
+            </li>
+          )
+        })}
+      </ul>
+    </details>
   )
 }
 
@@ -132,11 +178,12 @@ export function ProviderCapabilitiesPanel({
   } else {
     body = (
       <>
-        <ul className="divide-y divide-border">
+        <ul className="grid grid-cols-[repeat(auto-fill,minmax(9.5rem,1fr))] gap-1.5">
           {data.capabilities.map((c) => (
-            <CapabilityRow key={c.id} cap={c} />
+            <CapabilityChip key={c.id} cap={c} />
           ))}
         </ul>
+        <CapabilityDetails caps={data.capabilities} />
         {data.live_check_error ? (
           <p className="text-xs text-muted-foreground">
             {t('capabilities.liveError')}
@@ -169,7 +216,7 @@ export function ProviderCapabilitiesPanel({
       aria-labelledby="cp-capabilities-title"
       className="space-y-2 rounded-lg border border-border p-3"
     >
-      <div className="flex flex-wrap items-center gap-x-3 gap-y-1">
+      <div className="flex flex-wrap items-center justify-between gap-x-3 gap-y-1">
         <h2 id="cp-capabilities-title" className="text-sm font-semibold">
           {t('capabilities.title')}
         </h2>
@@ -178,31 +225,35 @@ export function ProviderCapabilitiesPanel({
             {t('capabilities.summary', summary)}
           </span>
         ) : null}
-        {data && connected ? (
+      </div>
+      {hasProbe && data ? (
+        <GrantMeter
+          caps={data.capabilities}
+          label={t('capabilities.summary', summary ?? { granted: 0, total: 0 })}
+        />
+      ) : null}
+      {data && connected ? (
+        <div className="flex flex-wrap items-center justify-between gap-x-3 gap-y-1">
           <span className="text-xs text-muted-foreground">
             {t('capabilities.checkedAt')} <RelativeTime at={data.checked_at} />
             {data.cached ? ` (${t('capabilities.cachedNote')})` : ''}
           </span>
-        ) : null}
-        {connected && hasProbe ? (
-          <Button
-            type="button"
-            variant="outline"
-            size="sm"
-            className="ms-auto"
-            disabled={recheck.isPending}
-            onClick={() => recheck.mutate()}
-          >
-            <RefreshCwGlassIcon size="1.4em" aria-hidden="true" />
-            {recheck.isPending
-              ? t('capabilities.rechecking')
-              : t('capabilities.recheck')}
-          </Button>
-        ) : null}
-      </div>
-      <p className="text-xs text-muted-foreground">
-        {t('capabilities.description', { name: labels.name })}
-      </p>
+          {hasProbe ? (
+            <Button
+              type="button"
+              variant="outline"
+              size="sm"
+              disabled={recheck.isPending}
+              onClick={() => recheck.mutate()}
+            >
+              <RefreshCwGlassIcon size="1.4em" aria-hidden="true" />
+              {recheck.isPending
+                ? t('capabilities.rechecking')
+                : t('capabilities.recheck')}
+            </Button>
+          ) : null}
+        </div>
+      ) : null}
       {limited ? (
         <p role="status" className="text-xs text-tone-warning">
           {limited.retryAfterSeconds > 0

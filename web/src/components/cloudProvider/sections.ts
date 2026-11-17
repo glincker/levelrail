@@ -9,12 +9,14 @@ import { ProviderCapabilitiesPanel } from './ProviderCapabilitiesPanel'
 import { ProviderResourcesSection } from './ProviderResourcesSection'
 import { ProviderSpendSection } from './ProviderSpendSection'
 import { ProviderServersSection } from './ProviderServersSection'
+import type { ProviderConnection } from './useProviderConnection'
 import type { ProviderLabels } from './useProviderLabels'
 
 export interface SectionProps {
   provider: CloudProviderPresentation
   resource: NodeProviderResource
   labels: ProviderLabels
+  connection: ProviderConnection
 }
 
 // To add a section (discovery, spend, firewalls, volumes, DOKS): register its
@@ -36,4 +38,10 @@ export const SECTION_ORDER: readonly CloudProviderFeature[] = [
   'servers',
   'resources',
   'spend',
+]
+
+// Rail sections sit beside the main column from wide widths, below it on narrow.
+export const RAIL_SECTIONS: readonly CloudProviderFeature[] = [
+  'connection',
+  'capabilities',
 ]

@@ -122,7 +122,8 @@
     "quickFacts": {
       "regions_one": "{{count}} {{label}} available",
       "regions_other": "{{count}} {{label}} available"
-    }
+    },
+    "railLabel": "{{name}} 的连接与权限"
   },
   "links": {
     "label": "Provider links",
@@ -145,7 +146,11 @@
     "disconnectBody": "The stored credential is removed. Servers already created stay where they are.",
     "disconnectConfirm": "Disconnect",
     "disconnected": "{{name}} disconnected",
-    "notConnectedHint": "Connect {{name}} to create and manage {{servers}} from Levelrail."
+    "notConnectedHint": "Connect {{name}} to create and manage {{servers}} from Levelrail.",
+    "credential": "凭据",
+    "by": "连接者",
+    "tested": "上次测试",
+    "manualHint": "此提供商没有保存凭据。"
   },
   "capabilities": {
     "title": "Permissions",
@@ -181,7 +186,8 @@
       "not_probed": "not checked"
     },
     "rowSummary": "{{granted}} of {{total}} capabilities granted",
-    "notChecked": "Not checked yet"
+    "notChecked": "Not checked yet",
+    "details": "所需权限与依据"
   },
   "cap": {
     "instances.read": "List servers",
@@ -317,6 +323,22 @@
       "list_prices": "按标价估算",
       "digitalocean_balance": "账户余额",
       "digitalocean_billing_history": "账单历史"
+    }
+  },
+  "onboarding": {
+    "title": "连接 {{name}}",
+    "unlocksTitle": "连接后可以",
+    "stepsTitle": "三个步骤",
+    "unlock": {
+      "create": "在 Levelrail 中创建{{servers}}",
+      "manage": "在一处查看并管理你的{{servers}}",
+      "permissions": "操作前先检查凭据的权限",
+      "spend": "余额、账单和月度估算"
+    },
+    "step": {
+      "get": "获取令牌",
+      "paste": "粘贴到“连接”中",
+      "verify": "Levelrail 用只读检查进行验证"
     }
   }
 }

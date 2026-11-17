@@ -8,6 +8,12 @@ import { CLOUD_PROVIDERS } from '../../lib/cloudProviderBrand'
 import { ProviderCapabilitiesPanel } from './ProviderCapabilitiesPanel'
 import { useProviderLabels } from './useProviderLabels'
 
+const STUB_CONNECTION = {
+  openConnect: () => undefined,
+  askDisconnect: () => undefined,
+  dialogs: null,
+}
+
 const testI18n = i18next.createInstance()
 void testI18n.use(initReactI18next).init({
   lng: 'en',
@@ -25,6 +31,7 @@ function Panel({ connected }: { connected: boolean }) {
       provider={CLOUD_PROVIDERS.digitalocean}
       resource={{ provider: 'digitalocean', has_token: connected }}
       labels={labels}
+      connection={STUB_CONNECTION}
     />
   )
 }

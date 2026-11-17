@@ -1,8 +1,9 @@
 import { Link } from '@tanstack/react-router'
 import { useTranslation } from 'react-i18next'
-import { PlusGlassIcon } from '@thesvg/ui-react'
+import { PlugGlassIcon, PlusGlassIcon } from '@thesvg/ui-react'
 import { Button } from '@/components/ui/button'
 import { cn } from '@/lib/utils'
+import { StatusPill } from '../kit/StatusPill'
 import { PageTemplate } from '@/components/shell/PageTemplate'
 import { AddNodeWizard } from '../AddNodeWizard'
 import { BrandTile } from '../BrandLogoBadge'
@@ -18,7 +19,9 @@ import {
 import type { NodeProviderResource } from '../../types/nodeProvision'
 import { CloudProvidersBreadcrumb } from './CloudProvidersBreadcrumb'
 import { ProviderLinks } from './ProviderLinks'
-import { SECTIONS, SECTION_ORDER } from './sections'
+import { ProviderOnboarding } from './ProviderOnboarding'
+import { RAIL_SECTIONS, SECTIONS, SECTION_ORDER } from './sections'
+import { useProviderConnection } from './useProviderConnection'
 import { useProviderLabels } from './useProviderLabels'
 
 function UnknownProvider() {
@@ -60,6 +63,26 @@ function ProviderLanding({
   )
   const canCreate =
     provider.features.includes('create') && (connected || manual)
+  const connection = useProviderConnection(provider, resource, labels.name)
+  const failed = resource.status === 'test_failed'
+  const sectionProps = { provider, resource, labels, connection }
+  const render = (zone: 'rail' | 'main') =>
+    SECTION_ORDER.filter(
+      (f) =>
+        provider.features.includes(f) &&
+        RAIL_SECTIONS.includes(f) === (zone === 'rail'),
+    ).map((f) => {
+      const Section = SECTIONS[f]
+      return Section ? <Section key={f} {...sectionProps} /> : null
+    })
+  // Without a credential the other sections would all be empty, so one card replaces them.
+  const onboarding = !connected && !manual
+  const rail = onboarding ? null : (
+    <>
+      {render('rail')}
+      <ProviderLinks provider={provider} labels={labels} />
+    </>
+  )
 
   return (
     <PageTemplate
@@ -73,73 +96,71 @@ function ProviderLanding({
           labelled
         />
       }
-      breadcrumb={<CloudProvidersBreadcrumb current={labels.name} />}
-      actions={
-        provider.features.includes('create') ? (
-          canCreate ? (
-            <AddNodeWizard
-              preselect={provider.id}
-              builds={builds}
-              triggerLabel={labels.createLabel}
-            />
-          ) : (
-            <Button type="button" size="sm" disabled>
-              <PlusGlassIcon size="1.4em" aria-hidden="true" />
-              {labels.createLabel}
-            </Button>
-          )
-        ) : undefined
-      }
-    >
-      <div className="relative space-y-4">
-        {provider.glowClass ? (
-          <div
-            aria-hidden="true"
-            className={cn(
-              'pointer-events-none absolute -top-44 -right-4 -left-4 -z-10 h-80 md:-right-(--glinr-page-pad-x) md:-left-(--glinr-page-pad-x)',
-              'bg-[radial-gradient(ellipse_50%_55%_at_50%_45%,color-mix(in_oklab,currentColor_16%,transparent),transparent_100%)]',
-              '[mask-composite:intersect] [mask-image:linear-gradient(to_bottom,transparent,black_35%,black_65%,transparent),linear-gradient(to_right,transparent,black_25%,black_75%,transparent)] [-webkit-mask-composite:source-in]',
-              provider.glowClass,
-            )}
+      status={
+        manual ? undefined : (
+          <StatusPill
+            tone={failed ? 'danger' : connected ? 'success' : 'neutral'}
+            label={
+              failed
+                ? t('connection.testFailed')
+                : connected
+                  ? t('connection.connected')
+                  : t('connection.notConnected')
+            }
+            size="sm"
+            title={failed ? resource.last_test_detail : undefined}
           />
-        ) : null}
-        <ul
-          className="flex flex-wrap items-center gap-1.5"
-          aria-label={labels.name}
-        >
-          {labels.vocab.split(', ').map((term) => (
-            <li
-              key={term}
-              className={cn(
-                'rounded-full border px-2 py-0.5 text-xs',
-                provider.chipClass,
-              )}
-            >
-              {term}
-            </li>
-          ))}
+        )
+      }
+      breadcrumb={<CloudProvidersBreadcrumb current={labels.name} />}
+      banners={
+        <p className="flex flex-wrap items-center gap-x-2 gap-y-0.5 text-xs text-muted-foreground">
+          <span
+            aria-hidden="true"
+            className={cn('size-1.5 rounded-full', provider.dotClass)}
+          />
+          {labels.vocab !== labels.servers ? (
+            <span>{labels.vocab.split(', ').join(' · ')}</span>
+          ) : null}
           {regions.data?.length ? (
-            <li className="text-xs text-muted-foreground">
+            <span>
               {t('page.quickFacts.regions', {
                 count: regions.data.length,
                 label: labels.locations.toLowerCase(),
               })}
-            </li>
+            </span>
           ) : null}
-        </ul>
-        {SECTION_ORDER.filter((f) => provider.features.includes(f)).map((f) => {
-          const Section = SECTIONS[f]
-          return Section ? (
-            <Section
-              key={f}
-              provider={provider}
-              resource={resource}
-              labels={labels}
-            />
-          ) : null
-        })}
-        <ProviderLinks provider={provider} labels={labels} />
-      </div>
+        </p>
+      }
+      actions={
+        <>
+          {onboarding ? (
+            <Button type="button" size="sm" onClick={connection.openConnect}>
+              <PlugGlassIcon size="1.4em" aria-hidden="true" />
+              {t('connection.connect')}
+            </Button>
+          ) : null}
+          {provider.features.includes('create') && !onboarding ? (
+            canCreate ? (
+              <AddNodeWizard
+                preselect={provider.id}
+                builds={builds}
+                triggerLabel={labels.createLabel}
+              />
+            ) : (
+              <Button type="button" size="sm" disabled>
+                <PlusGlassIcon size="1.4em" aria-hidden="true" />
+                {labels.createLabel}
+              </Button>
+            )
+          ) : null}
+          {connection.dialogs}
+        </>
+      }
+      aside={rail}
+      asideLabel={t('page.railLabel', { name: labels.name })}
+    >
+      {onboarding ? <ProviderOnboarding {...sectionProps} /> : render('main')}
     </PageTemplate>
   )
 }

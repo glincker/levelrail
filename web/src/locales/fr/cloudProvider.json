@@ -122,7 +122,8 @@
     "quickFacts": {
       "regions_one": "{{count}} {{label}} available",
       "regions_other": "{{count}} {{label}} available"
-    }
+    },
+    "railLabel": "Connexion et permissions de {{name}}"
   },
   "links": {
     "label": "Provider links",
@@ -145,7 +146,11 @@
     "disconnectBody": "The stored credential is removed. Servers already created stay where they are.",
     "disconnectConfirm": "Disconnect",
     "disconnected": "{{name}} disconnected",
-    "notConnectedHint": "Connect {{name}} to create and manage {{servers}} from Levelrail."
+    "notConnectedHint": "Connect {{name}} to create and manage {{servers}} from Levelrail.",
+    "credential": "Identifiant",
+    "by": "Connecté par",
+    "tested": "Dernier test",
+    "manualHint": "Aucun identifiant n'est enregistré pour ce fournisseur."
   },
   "capabilities": {
     "title": "Permissions",
@@ -181,7 +186,8 @@
       "not_probed": "not checked"
     },
     "rowSummary": "{{granted}} of {{total}} capabilities granted",
-    "notChecked": "Not checked yet"
+    "notChecked": "Not checked yet",
+    "details": "Permissions exactes et preuves"
   },
   "cap": {
     "instances.read": "List servers",
@@ -317,6 +323,22 @@
       "list_prices": "d'après les prix catalogue",
       "digitalocean_balance": "solde du compte",
       "digitalocean_billing_history": "historique de facturation"
+    }
+  },
+  "onboarding": {
+    "title": "Connecter {{name}}",
+    "unlocksTitle": "La connexion débloque",
+    "stepsTitle": "Trois étapes",
+    "unlock": {
+      "create": "Créer des {{servers}} depuis Levelrail",
+      "manage": "Voir et gérer vos {{servers}} au même endroit",
+      "permissions": "Vérifier ce que l'identifiant peut faire avant d'agir",
+      "spend": "Solde, factures et une estimation mensuelle"
+    },
+    "step": {
+      "get": "Obtenir un jeton",
+      "paste": "Le coller dans Connecter",
+      "verify": "Levelrail le vérifie par un contrôle en lecture seule"
     }
   }
 }
