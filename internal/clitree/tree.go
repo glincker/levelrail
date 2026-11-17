@@ -394,7 +394,7 @@ var Tree = map[string]*Node{
 	"setup":                    {Subs: map[string]*Node{"status": nil, "next": nil, "skip": nil, "undo": nil, "reset": nil}},
 	"me":                       {Subs: map[string]*Node{"appearance": {Subs: map[string]*Node{"get": nil, "set": nil, "reset": nil}}}},
 	"onboarding":               {Subs: map[string]*Node{"status": nil, "skip": nil, "reset": nil}},
-	"proxy":                    {Subs: map[string]*Node{"setup": nil, "status": nil, "apply": nil, "verify": nil, "disable": nil}},
+	"proxy":                    {Subs: map[string]*Node{"setup": nil, "status": nil, "routes": nil, "apply": nil, "verify": nil, "disable": nil}},
 	"auth-engine":              {Subs: map[string]*Node{"status": nil}},
 	"api-docs":                 nil,
 	"api-resources":            nil,

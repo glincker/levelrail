@@ -36,7 +36,7 @@ func runProxyIntegration(prog, sub string, args []string, stdout, stderr io.Writ
 	switch sub {
 	case "setup":
 		res, err = client.SetupProxyIntegration(ctx, apiclient.ProxySetupRequest{Confirm: confirm, DynamicDir: dir, Provider: provider, CertDir: certDir})
-	case "status":
+	case "status", "routes":
 		res, err = client.GetProxyIntegration(ctx)
 	case "apply":
 		res, err = client.ApplyProxyIntegration(ctx)
@@ -48,7 +48,30 @@ func runProxyIntegration(prog, sub string, args []string, stdout, stderr io.Writ
 	if err != nil {
 		return reportError(stdout, stderr, jsonOut, fmt.Errorf("proxy %s: %w", sub, err))
 	}
-	return writeScheduledTaskResult(stdout, stderr, of, res, func() { printProxyIntegration(stdout, prog, sub, res) })
+	return writeScheduledTaskResult(stdout, stderr, of, res, func() {
+		if sub == "routes" {
+			printProxyRoutes(stdout, res)
+			return
+		}
+		printProxyIntegration(stdout, prog, sub, res)
+	})
+}
+
+// printProxyRoutes prints one line per managed route, using only fields the
+// server already reports, so nothing here is guessed from the proxy.
+func printProxyRoutes(out io.Writer, r apiclient.ProxyIntegration) {
+	_, _ = fmt.Fprintf(out, "provider: %s, integration: %s\n", orDash(r.Provider), r.Settings.Integration)
+	if len(r.Domains) == 0 {
+		_, _ = fmt.Fprintln(out, "no managed routes")
+		return
+	}
+	for _, d := range r.Domains {
+		tls := "unchecked"
+		if c := d.Certificate; c != nil {
+			tls = fmt.Sprintf("%s until %s valid=%v", orDash(c.Issuer), c.NotAfter, c.Valid)
+		}
+		_, _ = fmt.Fprintf(out, "%s -> %s (%s) file=%s state=%s tls=%s\n", d.Domain, d.Target, orDash(d.App), orDash(d.File), d.State, tls)
+	}
 }
 
 // disableProxyIntegration keeps the saved values so the next pass can find

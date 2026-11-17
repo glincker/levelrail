@@ -48,6 +48,8 @@ func TestProxyIntegrationCLI(t *testing.T) {
 	}{
 		{"status", []string{"proxy", "status"}, []proxyCall{{"GET", "/api/v1/system/proxy-integration", ""}},
 			[]string{"proxy: traefik in container coolify-proxy", "app.example.com -> app web [written] reachable=true cert=R11", "[done] routes"}},
+		{"routes", []string{"proxy", "routes"}, []proxyCall{{"GET", "/api/v1/system/proxy-integration", ""}},
+			[]string{"provider: -, integration: traefik_file", "app.example.com -> app (web) file=- state=written tls=R11 until 2027-01-01T00:00:00Z valid=true"}},
 		{"setup dry run", []string{"proxy", "setup"}, []proxyCall{{"POST", "/api/v1/system/proxy-integration/setup", `{"confirm":false}`}},
 			[]string{"setup would change integration: off -> traefik_file", "proxy setup --confirm"}},
 		{"setup confirm", []string{"proxy", "setup", "--confirm", "--dynamic-dir", "/srv/dyn"}, []proxyCall{{"POST", "/api/v1/system/proxy-integration/setup", `{"confirm":true,"dynamic_dir":"/srv/dyn"}`}},

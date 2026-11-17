@@ -13,7 +13,7 @@ func runProxy(prog string, args []string, stdout, stderr io.Writer, lookupEnv fu
 		switch args[0] {
 		case "install":
 			return runProxyInstall(prog, args[1:], stdout, stderr, lookupEnv)
-		case "setup", "status", "apply", "verify", "disable":
+		case "setup", "status", "apply", "verify", "disable", "routes":
 			return runProxyIntegration(prog, args[0], args[1:], stdout, stderr, lookupEnv)
 		}
 	}
@@ -68,9 +68,14 @@ func proxyUsage(prog string) string {
   %[1]s proxy setup [--confirm] [--provider traefik|nginx|caddy|haproxy|auto] [--dynamic-dir DIR] [--cert-dir DIR]
   %[1]s proxy install [--provider traefik] [--confirm]
   %[1]s proxy status
+  %[1]s proxy routes
   %[1]s proxy apply
   %[1]s proxy verify [--domain D [--retry-cert]]
   %[1]s proxy disable
+
+routes lists the domain to upstream routes this server manages for the detected proxy
+(nginx, Traefik) with the file, state and certificate of each. apply rewrites them and, for
+nginx, runs nginx -t and reloads only when it passes.
 
 Without a subcommand: shows what holds ports 80 and 443 and the configuration to paste
 into that proxy, for the dashboard (--domain) or an app's domain (--app).
