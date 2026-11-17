@@ -49,9 +49,12 @@ type State struct {
 	// protected holds managed apps that refuse deletes, so prune can refuse at plan time.
 	protected map[string]bool
 	// compose holds the latest stored revision of each declared compose App.
-	compose    map[string]*liveCompose
-	denied     map[string]error
-	envsLoaded map[string]bool
+	compose map[string]*liveCompose
+	// templates and templateApps back TemplateApp planning.
+	templates    map[string]*wireTemplate
+	templateApps map[string]*liveTemplateApp
+	denied       map[string]error
+	envsLoaded   map[string]bool
 	// ledger, when set, decides ownership and prune instead of the tag.
 	ledger *Ledger
 }
@@ -79,7 +82,7 @@ func newState() *State {
 		projects: map[string]wireProject{}, projectsByID: map[string]wireProject{}, envs: map[string]wireEnvironment{}, envsByID: map[string]wireEnvironment{},
 		tags: map[string]wireTag{}, credentials: map[string]bool{}, databases: map[string]wireDatabase{}, nodes: map[string]*liveNode{}, nodeDupes: map[string]bool{}, nodeNames: map[string]string{}, settings: map[string]*liveSetting{}, apps: map[string]*liveApp{}, lbs: map[string]wireLB{},
 		pipelines: map[string]map[string]wirePipeline{}, alerts: map[string]map[string]wireAlert{}, channels: map[string]string{},
-		projectEnv: map[string]map[string]string{}, envEnv: map[string]map[string]string{}, managed: map[string]bool{}, protected: map[string]bool{}, compose: map[string]*liveCompose{}, denied: map[string]error{}, envsLoaded: map[string]bool{},
+		projectEnv: map[string]map[string]string{}, envEnv: map[string]map[string]string{}, managed: map[string]bool{}, protected: map[string]bool{}, compose: map[string]*liveCompose{}, templates: map[string]*wireTemplate{}, templateApps: map[string]*liveTemplateApp{}, denied: map[string]error{}, envsLoaded: map[string]bool{},
 	}
 }
 
@@ -127,6 +130,14 @@ func Load(ctx context.Context, d Doer, res []*Resource, opts Options) (*State, e
 		}
 	}
 	for _, r := range res {
+		if r.tmpl != nil {
+			if err := l.templateOf(ctx, r.tmpl.template); err != nil {
+				return nil, err
+			}
+			if err := l.templateAppOf(ctx, r.Name); err != nil {
+				return nil, err
+			}
+		}
 		if r.compose != nil {
 			if err := l.composeOf(ctx, r.Name); err != nil {
 				return nil, err
@@ -156,7 +167,7 @@ func referencedApps(res []*Resource) map[string]bool {
 	out := map[string]bool{}
 	for _, r := range res {
 		switch r.Kind {
-		case KindApp, KindLoadBalancer:
+		case KindApp, KindLoadBalancer, KindTemplateApp:
 			out[r.Name] = true
 		case KindDomain:
 			if a, _ := r.Fields["app"].(string); a != "" {

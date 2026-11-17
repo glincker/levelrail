@@ -8,12 +8,12 @@
   "x-stability": {
     "Project": "stable", "Environment": "stable", "Tag": "stable", "Node": "stable", "Setting": "stable",
     "Database": "stable", "App": "stable", "Domain": "stable",
-    "LoadBalancer": "beta", "Pipeline": "beta", "AlertRule": "beta", "CronJob": "beta",
+    "LoadBalancer": "beta", "Pipeline": "beta", "AlertRule": "beta", "CronJob": "beta", "TemplateApp": "beta",
     "CloudAccount": "beta", "CloudNetwork": "beta", "CloudInstance": "beta", "CloudBucket": "beta"
   },
   "properties": {
     "version": { "const": 1 },
-    "kind": { "enum": ["Project", "Environment", "Tag", "CloudAccount", "CloudNetwork", "CloudInstance", "CloudBucket", "Node", "Setting", "Database", "App", "Domain", "LoadBalancer", "Pipeline", "AlertRule", "CronJob"] },
+    "kind": { "enum": ["Project", "Environment", "Tag", "CloudAccount", "CloudNetwork", "CloudInstance", "CloudBucket", "Node", "Setting", "Database", "App", "TemplateApp", "Domain", "LoadBalancer", "Pipeline", "AlertRule", "CronJob"] },
     "metadata": { "$ref": "#/$defs/metadata" },
     "spec": { "type": "object" }
   },
@@ -30,6 +30,7 @@
     { "if": { "properties": { "kind": { "const": "Setting" } }, "required": ["kind"] }, "then": { "required": ["spec"], "properties": { "spec": { "$ref": "#/$defs/settingSpec" } } } },
     { "if": { "properties": { "kind": { "const": "Database" } }, "required": ["kind"] }, "then": { "required": ["spec"], "properties": { "spec": { "$ref": "#/$defs/databaseSpec" } } } },
     { "if": { "properties": { "kind": { "const": "App" } }, "required": ["kind"] }, "then": { "required": ["spec"], "properties": { "spec": { "$ref": "#/$defs/appSpec" } } } },
+    { "if": { "properties": { "kind": { "const": "TemplateApp" } }, "required": ["kind"] }, "then": { "required": ["spec"], "properties": { "spec": { "$ref": "#/$defs/templateAppSpec" } } } },
     { "if": { "properties": { "kind": { "const": "Domain" } }, "required": ["kind"] }, "then": { "required": ["spec"], "properties": { "spec": { "$ref": "#/$defs/domainSpec" } } } },
     { "if": { "properties": { "kind": { "const": "LoadBalancer" } }, "required": ["kind"] }, "then": { "required": ["spec"], "properties": { "spec": { "$ref": "#/$defs/loadbalancer" } } } },
     { "if": { "properties": { "kind": { "const": "Pipeline" } }, "required": ["kind"] }, "then": { "required": ["spec"], "properties": { "spec": { "$ref": "#/$defs/pipelineSpec" } } } },
@@ -54,6 +55,17 @@
       "type": "object",
       "additionalProperties": false,
       "properties": { "env": { "description": "Environment variables shared by the project.", "$ref": "#/$defs/literalEnv" } }
+    },
+    "templateAppSpec": {
+      "type": "object",
+      "required": ["template"],
+      "additionalProperties": false,
+      "properties": {
+        "template": { "description": "Catalog template id to install.", "type": "string", "minLength": 1 },
+        "name": { "description": "App name; defaults to metadata.name.", "type": "string", "pattern": "^[a-z][a-z0-9-]{0,39}$" },
+        "env": { "description": "Values for the template's install form. Use ${{ env.NAME }} for secrets.", "$ref": "#/$defs/literalEnv" },
+        "domains": { "description": "Host per service the template offers a domain for.", "type": "object", "additionalProperties": { "type": "string", "minLength": 1 } }
+      }
     },
     "environmentSpec": {
       "type": "object",

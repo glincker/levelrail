@@ -275,6 +275,8 @@ func buildOne(d *Document, opts Options, s *issueSink) *Resource {
 		}
 	case KindApp:
 		return buildApp(d, opts, s)
+	case KindTemplateApp:
+		return buildTemplateApp(d, opts, s)
 	case KindDomain:
 		var sp struct {
 			App string `yaml:"app"`

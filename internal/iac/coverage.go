@@ -64,6 +64,7 @@ var coverageMatrix = []CoverageRow{
 		Probe: appProbe("    volumes: [{hostPath: /srv/data, path: /data}]\n")},
 	{Kind: KindApp, Feature: "pre-deploy snapshot policy", Status: CoverageNotYet, Code: CodeSchemaUnknownField, Reason: unknownFn,
 		Probe: "version: 1\nkind: App\nmetadata: {name: a}\nspec:\n  preDeploySnapshot: true\n  service:\n    build: {type: image, image: x}\n    port: 80\n"},
+	{Kind: KindTemplateApp, Feature: "catalog template id, app name, install form env and domains", Status: CoverageInFiles},
 	{Kind: KindDomain, Feature: "hostname attached to an app", Status: CoverageInFiles},
 	{Kind: KindDomain, Feature: "TLS settings", Status: CoverageNotYet, Code: CodeSchemaUnknownField, Reason: unknownFn,
 		Probe: "version: 1\nkind: Domain\nmetadata: {name: a.example.com}\nspec: {app: web, tls: {mode: auto}}\n"},

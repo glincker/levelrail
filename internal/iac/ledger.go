@@ -602,6 +602,10 @@ func LedgerChanges(stackID string, rev int, res []*Resource, out ApplyResult) Le
 			// The id survives a rename, the display name does not.
 			e.LiveID = it.LiveID
 		}
+		if it.Kind == KindTemplateApp {
+			// Installed apps hold data, so a stack never owns or prunes them.
+			continue
+		}
 		switch {
 		case it.Action == ActionDelete && (it.Status == StatusApplied || it.Status == StatusNoop):
 			u.Release = append(u.Release, e)

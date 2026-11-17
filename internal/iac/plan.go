@@ -240,6 +240,8 @@ func (p *planner) planResource(r *Resource) {
 		p.planDatabase(r)
 	case KindApp:
 		p.planApp(r)
+	case KindTemplateApp:
+		p.planTemplateApp(r)
 	case KindDomain:
 		p.planDomain(r)
 	case KindLoadBalancer:

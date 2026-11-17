@@ -28,6 +28,8 @@ type Resource struct {
 	ComposeDigest string
 	// compose holds what the executor needs to deploy and re-check the digest.
 	compose *composeInputs
+	// tmpl holds a TemplateApp's install inputs, env values included.
+	tmpl *templateAppInputs
 }
 
 // Key is the stable identity used in plans: kind plus scope plus name.

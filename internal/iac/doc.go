@@ -34,6 +34,7 @@ const (
 	KindSetting       Kind = "Setting"
 	KindDatabase      Kind = "Database"
 	KindApp           Kind = "App"
+	KindTemplateApp   Kind = "TemplateApp"
 	KindDomain        Kind = "Domain"
 	KindLoadBalancer  Kind = "LoadBalancer"
 	KindPipeline      Kind = "Pipeline"
@@ -42,7 +43,7 @@ const (
 )
 
 // Kinds lists every kind in the order changes are applied.
-var Kinds = []Kind{KindProject, KindEnvironment, KindTag, KindCloudAccount, KindCloudNetwork, KindCloudInstance, KindCloudBucket, KindNode, KindSetting, KindDatabase, KindApp, KindDomain, KindLoadBalancer, KindPipeline, KindAlertRule, KindCronJob}
+var Kinds = []Kind{KindProject, KindEnvironment, KindTag, KindCloudAccount, KindCloudNetwork, KindCloudInstance, KindCloudBucket, KindNode, KindSetting, KindDatabase, KindApp, KindTemplateApp, KindDomain, KindLoadBalancer, KindPipeline, KindAlertRule, KindCronJob}
 
 func kindRank(k Kind) int {
 	for i, c := range Kinds {
