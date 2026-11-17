@@ -82,7 +82,7 @@ func generateBlock(templates []catalog.Template) string {
 	order = append(order, extra...)
 
 	var b strings.Builder
-	fmt.Fprintf(&b, "Generated from `internal/catalog.Templates` (%d entries as of this build). ", len(templates))
+	fmt.Fprintf(&b, "Generated from `internal/catalog.Templates` plus registry-only templates (%d entries as of this build). ", len(templates))
 	b.WriteString("Run `go run ./scripts/gen-template-catalog-docs` after changing a `templates_*.go` file to refresh this section.\n\n")
 
 	b.WriteString("| Category | Templates |\n| --- | --- |\n")
@@ -135,8 +135,29 @@ func generate(doc string, templates []catalog.Template) (string, error) {
 	return before + "\n\n" + generateBlock(templates) + "\n" + after, nil
 }
 
+// withRegistryOnly appends registry templates whose id the compiled catalog
+// lacks, so the doc lists everything the catalog index lists.
+func withRegistryOnly(templates []catalog.Template, dir string) ([]catalog.Template, error) {
+	reg, err := catalog.LoadRegistryDir(dir)
+	if err != nil {
+		return nil, err
+	}
+	have := make(map[string]bool, len(templates))
+	for _, t := range templates {
+		have[t.ID] = true
+	}
+	out := append([]catalog.Template{}, templates...)
+	for _, t := range reg {
+		if !have[t.ID] {
+			out = append(out, t)
+		}
+	}
+	return out, nil
+}
+
 func main() {
 	check := flag.Bool("check", false, "fail if the doc is stale instead of writing it")
+	registry := flag.String("registry", "registry/templates", "registry templates directory; ids missing from the catalog are listed too")
 	docPath := flag.String("doc", "docs/template-catalog.md", "doc to update")
 	flag.Parse()
 
@@ -147,14 +168,19 @@ func main() {
 	}
 	doc := string(docBytes)
 
-	got, err := generate(doc, catalog.Templates)
+	all, err := withRegistryOnly(catalog.Templates, *registry)
+	if err != nil {
+		fmt.Fprintln(os.Stderr, err)
+		os.Exit(1)
+	}
+	got, err := generate(doc, all)
 	if err != nil {
 		fmt.Fprintln(os.Stderr, err)
 		os.Exit(1)
 	}
 
 	if got == doc {
-		fmt.Printf("%s up to date (%d templates)\n", *docPath, len(catalog.Templates))
+		fmt.Printf("%s up to date (%d templates)\n", *docPath, len(all))
 		return
 	}
 	if *check {
@@ -165,5 +191,5 @@ func main() {
 		fmt.Fprintln(os.Stderr, err)
 		os.Exit(1)
 	}
-	fmt.Printf("%s updated (%d templates)\n", *docPath, len(catalog.Templates))
+	fmt.Printf("%s updated (%d templates)\n", *docPath, len(all))
 }

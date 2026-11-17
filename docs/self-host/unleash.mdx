@@ -1,0 +1,73 @@
+---
+title: "Self-host Unleash with Docker"
+sidebarTitle: "Unleash"
+description: "A feature flag service with gradual rollouts and targeting rules."
+"og:url": "https://docs.levelrail.com/self-host/unleash"
+---
+
+A feature flag service with gradual rollouts and targeting rules.
+
+This page describes the Levelrail template for Unleash (Developer Tools). It deploys the services below as one Docker Compose app on your own server. Project site: https://docs.getunleash.io/.
+
+Recommended memory: about 512 MiB.
+
+## Services, ports and volumes
+
+| Service | Image | Container ports | Volumes |
+| --- | --- | --- | --- |
+| `db` | `postgres:16-alpine` | none | `db_data -&#62; /var/lib/postgresql/data` |
+| `unleash` | `unleashorg/unleash-server:7.4.0` | 4242 | none |
+
+## Environment variables
+
+| Service | Variable | Value |
+| --- | --- | --- |
+| `db` | `POSTGRES_DB` | Preset in the template |
+| `db` | `POSTGRES_PASSWORD` | Generated at deploy |
+| `db` | `POSTGRES_USER` | Preset in the template |
+| `unleash` | `DATABASE_SSL` | Preset in the template |
+| `unleash` | `DATABASE_URL` | Generated at deploy |
+| `unleash` | `LOG_LEVEL` | Preset in the template |
+
+Passwords and keys marked as generated are created for you when the app is deployed and stored as secrets. Values are not shown here.
+
+## Security and requirements
+
+Level: **Standard**.
+
+What this template needs:
+
+- Passwords and keys are generated at deploy time (`db`, `unleash`): DATABASE_URL, POSTGRES_PASSWORD.
+- Stores data in named volumes (`db`): db_data.
+
+What Levelrail adds around it:
+
+- Automatic HTTPS and an ingress shield in front of every domain.
+- Secrets are generated, stored encrypted and masked in logs and the UI.
+- Named volumes can be backed up and restored.
+- Deploys are gated on the health check before traffic switches.
+- One-step rollback to the previous revision.
+- Exposure report shows what is reachable from outside.
+- Host firewall rules managed for published ports.
+
+## Deploy Unleash with Levelrail
+
+In the dashboard, open **Apps**, choose **New app**, then **Browse templates**, and select Unleash. Review the Compose body and deploy.
+
+With the CLI:
+
+```bash
+levelrail-cli templates deploy unleash --name my-unleash
+```
+
+See the [service template catalog](/templates-and-registry) for how templates work, and [Getting started](/getting-started) if you have not installed Levelrail yet.
+
+## More Developer Tools templates
+
+- [Appsmith](/self-host/appsmith)
+- [Appwrite](/self-host/appwrite)
+- [Athens](/self-host/athens)
+- [Browserless](/self-host/browserless)
+- [ByteStash](/self-host/bytestash)
+
+All templates are listed in the [self-host gallery](/self-host).

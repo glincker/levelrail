@@ -1,6 +1,7 @@
 package main
 
 import (
+	"encoding/json"
 	"strings"
 	"testing"
 
@@ -52,9 +53,20 @@ func TestBuildEntryEnvKinds(t *testing.T) {
 }
 
 func TestGenerateWholeCatalog(t *testing.T) {
-	data, err := generate(catalog.Templates)
+	reg, err := catalog.LoadRegistryEntries("../../registry/templates")
 	if err != nil {
 		t.Fatal(err)
+	}
+	data, err := generate(catalog.Templates, reg)
+	if err != nil {
+		t.Fatal(err)
+	}
+	var idx Index
+	if err := json.Unmarshal(data, &idx); err != nil {
+		t.Fatal(err)
+	}
+	if want := len(catalog.Templates) + len(registryOnly(catalog.Templates, reg)); len(idx.Templates) != want {
+		t.Errorf("index has %d templates, want union %d", len(idx.Templates), want)
 	}
 	if strings.ContainsAny(string(data), "\u2014\u2013") {
 		t.Error("generated data contains an em or en dash")

@@ -7,3 +7,7 @@ category: Developer Tools
 documentation_url: https://docs.getunleash.io/
 recommended_memory_bytes: 536870912
 requires_gpu: false
+source_repo: https://github.com/Unleash/unleash
+license: Apache-2.0
+license_class: permissive
+license_url: https://github.com/Unleash/unleash/blob/v7.4.0/LICENSE

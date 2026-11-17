@@ -1,0 +1,75 @@
+---
+title: "Self-host I hate money with Docker"
+sidebarTitle: "I hate money"
+description: "A shared expense tracker for groups, with no account needed."
+"og:url": "https://docs.levelrail.com/self-host/ihatemoney"
+---
+
+A shared expense tracker for groups, with no account needed.
+
+This page describes the Levelrail template for I hate money (Finance). It deploys the services below as one Docker Compose app on your own server. Project site: https://ihatemoney.readthedocs.io/.
+
+Recommended memory: about 128 MiB.
+
+## Services, ports and volumes
+
+| Service | Image | Container ports | Volumes |
+| --- | --- | --- | --- |
+| `ihatemoney` | `ihatemoney/ihatemoney:7.2.1` | 8000 | `ihatemoney_data -&#62; /database` |
+
+## Environment variables
+
+| Service | Variable | Value |
+| --- | --- | --- |
+| `ihatemoney` | `ACTIVATE_ADMIN_DASHBOARD` | Preset in the template |
+| `ihatemoney` | `ACTIVATE_DEMO_PROJECT` | Preset in the template |
+| `ihatemoney` | `ALLOW_PUBLIC_PROJECT_CREATION` | Preset in the template |
+| `ihatemoney` | `BABEL_DEFAULT_TIMEZONE` | Preset in the template |
+| `ihatemoney` | `DEBUG` | Preset in the template |
+| `ihatemoney` | `SECRET_KEY` | Generated at deploy |
+| `ihatemoney` | `SESSION_COOKIE_SECURE` | Preset in the template |
+| `ihatemoney` | `SQLALCHEMY_DATABASE_URI` | Preset in the template |
+| `ihatemoney` | `SQLALCHEMY_TRACK_MODIFICATIONS` | Preset in the template |
+
+Passwords and keys marked as generated are created for you when the app is deployed and stored as secrets. Values are not shown here.
+
+## Security and requirements
+
+Level: **Standard**.
+
+What this template needs:
+
+- Passwords and keys are generated at deploy time (`ihatemoney`): SECRET_KEY.
+- Stores data in named volumes (`ihatemoney`): ihatemoney_data.
+
+What Levelrail adds around it:
+
+- Automatic HTTPS and an ingress shield in front of every domain.
+- Secrets are generated, stored encrypted and masked in logs and the UI.
+- Named volumes can be backed up and restored.
+- Deploys are gated on the health check before traffic switches.
+- One-step rollback to the previous revision.
+- Exposure report shows what is reachable from outside.
+- Host firewall rules managed for published ports.
+
+## Deploy I hate money with Levelrail
+
+In the dashboard, open **Apps**, choose **New app**, then **Browse templates**, and select I hate money. Review the Compose body and deploy.
+
+With the CLI:
+
+```bash
+levelrail-cli templates deploy ihatemoney --name my-ihatemoney
+```
+
+See the [service template catalog](/templates-and-registry) for how templates work, and [Getting started](/getting-started) if you have not installed Levelrail yet.
+
+## More Finance templates
+
+- [Actual Budget](/self-host/actual-budget)
+- [Actual Budget](/self-host/actualbudget)
+- [Budge](/self-host/budge)
+- [Dolibarr](/self-host/dolibarr)
+- [ezBookkeeping](/self-host/ezbookkeeping)
+
+All templates are listed in the [self-host gallery](/self-host).

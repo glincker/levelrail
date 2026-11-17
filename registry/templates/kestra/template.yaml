@@ -7,3 +7,7 @@ category: Automation
 documentation_url: https://kestra.io/docs
 recommended_memory_bytes: 1610612736
 requires_gpu: false
+source_repo: https://github.com/kestra-io/kestra
+license: Apache-2.0
+license_class: permissive
+license_url: https://github.com/kestra-io/kestra/blob/develop/LICENSE

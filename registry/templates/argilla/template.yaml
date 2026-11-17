@@ -7,3 +7,7 @@ category: AI
 documentation_url: https://docs.argilla.io/
 recommended_memory_bytes: 2147483648
 requires_gpu: false
+source_repo: https://github.com/argilla-io/argilla
+license: Apache-2.0
+license_class: permissive
+license_url: https://github.com/argilla-io/argilla/blob/develop/LICENSE
