@@ -23,8 +23,8 @@ func TestValidateFolder(t *testing.T) {
 	if ps := validateFolder(filepath.Join(testRoot, "good"), "good", cats); len(ps) != 0 {
 		t.Fatalf("good template reported problems: %v", ps)
 	}
-	if ps := validateFolder(filepath.Join(testRoot, "sock-ok"), "sock-ok", cats); len(ps) != 0 {
-		t.Fatalf("explicit docker socket template reported problems: %v", ps)
+	if got := rules(validateFolder(filepath.Join(testRoot, "sock-ok"), "sock-ok", cats)); got[ruleSecurity] == 0 {
+		t.Fatalf("docker socket template must be rejected, got %v", got)
 	}
 	got := rules(validateFolder(filepath.Join(testRoot, "bad-one"), "bad-one", cats))
 	for _, r := range []string{ruleID, ruleCategory, ruleIcon, ruleImage, ruleHealth, ruleSecurity, rulePorts} {
