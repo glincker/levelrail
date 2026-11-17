@@ -60,6 +60,7 @@ provider "levelrail" {
 | `levelrail_environment` | An environment of a project, including `protected` | `project_id/environment_name` |
 | `levelrail_app` | Image, port, replicas, strategy, bind address, plain env vars, project, command, labels, memory and CPU limits, restart policy, readiness and liveness paths, published ports | app name |
 | `levelrail_domain` | One hostname routed to an app | `app_name/host` |
+| `levelrail_template_app` | Any catalog template installed by id with its install form `env` (sensitive), `domains` and `name`. Inputs are fixed at install, a change replaces the app | app name |
 | `levelrail_database` | A managed database, its project and its connection pooler (`pooler_enabled`, `pooler_pool_size`, `pooler_max_client_conn`) | database name |
 | `levelrail_environment_variables` | Variables shared by a project or an environment | `project/<id>` or `environment/<id>` |
 | `levelrail_status_page` | The public status page settings: `enabled`, `title`, `description`, `custom_domain` (one per control plane) | any value, for example `status-page` |
@@ -139,6 +140,12 @@ resource "levelrail_app" "web" {
 resource "levelrail_domain" "web" {
   app  = levelrail_app.web.name
   host = "shop.example.com"
+}
+
+resource "levelrail_template_app" "archive" {
+  template = "archivebox"
+  env      = { ADMIN_USERNAME = "admin" }
+  domains  = { archivebox = "archive.example.com" }
 }
 
 data "levelrail_nodes" "all" {}

@@ -141,6 +141,15 @@ No fields.
 | `spec.service.working_dir` | string | no | Absolute working directory that overrides the image's WORKDIR. |
 | `spec.service.workload` | `replicated`, `per-node`, `ordered` | no | Reserved, not yet scheduled. Workload kind: replicated, per-node or ordered. |
 
+## TemplateApp
+
+| Field | Type | Required | Description |
+| --- | --- | --- | --- |
+| `spec.domains` | object | no | Host per service the template offers a domain for. |
+| `spec.env` | object | no | Values for the template's install form. Use ${{ env.NAME }} for secrets. |
+| `spec.name` | string | no | App name; defaults to metadata.name. |
+| `spec.template` | string | yes | Catalog template id to install. |
+
 ## Domain
 
 | Field | Type | Required | Description |
