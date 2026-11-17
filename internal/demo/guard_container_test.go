@@ -1,6 +1,13 @@
 package demo
 
-import "testing"
+import (
+	"errors"
+	"os"
+	"strings"
+	"testing"
+)
+
+func noSocket(string) (os.FileInfo, error) { return nil, errors.New("absent") }
 
 func TestGuardContainerOptIn(t *testing.T) {
 	yes := func() bool { return true }
@@ -31,7 +38,7 @@ func TestGuardContainerOptIn(t *testing.T) {
 	}
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
-			err := CheckEnvironmentIn(func(k string) string { return tt.env[k] }, tt.container)
+			err := CheckEnvironmentIn(func(k string) string { return tt.env[k] }, tt.container, noSocket)
 			if (err != nil) != tt.wantErr {
 				t.Errorf("error = %v, wantErr %v", err, tt.wantErr)
 			}
@@ -60,5 +67,31 @@ func TestGuardResolveAddr(t *testing.T) {
 				t.Errorf("got %q want %q", got, tt.want)
 			}
 		})
+	}
+}
+
+func TestGuardDockerSocket(t *testing.T) {
+	yes := func() bool { return true }
+	for _, sock := range dockerSockets {
+		for _, optIn := range []bool{false, true} {
+			env := map[string]string{EnvDemoMode: "1"}
+			if optIn {
+				env[EnvDemoContainer] = "1"
+			}
+			stat := func(p string) (os.FileInfo, error) {
+				if p == sock {
+					return nil, nil
+				}
+				return nil, errors.New("absent")
+			}
+			err := CheckEnvironmentIn(func(k string) string { return env[k] }, yes, stat)
+			if err == nil || !strings.Contains(err.Error(), "Docker socket is present at "+sock) {
+				t.Errorf("sock %s optIn %v: error = %v", sock, optIn, err)
+			}
+		}
+	}
+	env := map[string]string{EnvDemoMode: "1"}
+	if err := CheckEnvironmentIn(func(k string) string { return env[k] }, yes, noSocket); err != nil {
+		t.Errorf("no socket: unexpected error %v", err)
 	}
 }

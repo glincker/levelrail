@@ -150,7 +150,7 @@ func TestCheckEnvironment(t *testing.T) {
 	}
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
-			err := CheckEnvironment(func(k string) string { return tt.env[k] })
+			err := CheckEnvironmentIn(func(k string) string { return tt.env[k] }, InContainer, noSocket)
 			if (err != nil) != tt.wantErr {
 				t.Errorf("CheckEnvironment() error = %v, wantErr %v", err, tt.wantErr)
 			}

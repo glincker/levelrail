@@ -48,7 +48,7 @@ func Enabled(getenv func(string) string) bool {
 // CheckEnvironment fails closed unless demo mode is explicitly enabled and
 // nothing that reaches a real host (Docker, ingress, agents, a public bind) is configured.
 func CheckEnvironment(getenv func(string) string) error {
-	return CheckEnvironmentIn(getenv, InContainer)
+	return CheckEnvironmentIn(getenv, InContainer, os.Stat)
 }
 
 // InContainer reports a container signal: a runtime marker file or a
@@ -92,10 +92,20 @@ func ResolveAddr(getenv func(string) string, inContainer func() bool, loopbackDe
 	return loopbackDefault
 }
 
-// CheckEnvironmentIn is CheckEnvironment with an injectable container probe.
-func CheckEnvironmentIn(getenv func(string) string, inContainer func() bool) error {
+// dockerSockets are the socket paths whose presence means the process could
+// reach a real Docker daemon.
+var dockerSockets = []string{"/var/run/docker.sock", "/run/docker.sock"}
+
+// CheckEnvironmentIn is CheckEnvironment with injectable container and stat probes.
+func CheckEnvironmentIn(getenv func(string) string, inContainer func() bool, stat func(string) (os.FileInfo, error)) error {
 	if !Enabled(getenv) {
 		return fmt.Errorf("demo: %s must be set to 1 to run the demo entrypoint", EnvDemoMode)
+	}
+	// Checked before the opt-in so a mounted socket is refused in every mode.
+	for _, sock := range dockerSockets {
+		if _, err := stat(sock); err == nil {
+			return fmt.Errorf("demo: refusing to start, a Docker socket is present at %s; the demo must never have Docker access", sock)
+		}
 	}
 	var found []string
 	for _, k := range forbiddenEnv {
