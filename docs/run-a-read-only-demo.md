@@ -38,6 +38,26 @@ Put your own reverse proxy or tunnel in front of the loopback port. For a Caddy 
 
 Set `APP_DEMO_RESET_INTERVAL` (a duration such as `30m`, at least one minute) if your host re-seeds more often than daily; the banner then shows the matching next reset time.
 
+## Run it as a container
+
+`deploy/demo/container-entrypoint.sh` seeds a fresh temporary data directory and then runs `levelrail demo serve`, so every container start is a clean demo. Set these variables on the container:
+
+- `APP_DEMO_MODE=1` (the script sets it if missing).
+- `APP_DEMO_CONTAINER=1` permits a non-loopback bind, and only when a container is detected (`/.dockerenv`, `/run/.containerenv` or a container runtime in the PID 1 cgroup). Outside a container the variable is refused with an error. A normal instance never reads it.
+- `APP_HTTP_ADDR` is optional. With the opt-in inside a container the default is `0.0.0.0:8080`.
+- `DEMO_SEED` picks the data set (default `1`).
+- `APP_DEMO_RESET_INTERVAL` (for example `30m`) makes the script exit after that time. Use `restart: always` (or `--restart=always`) so the runtime starts a new container that reseeds.
+
+Every other check still applies: `DOCKER_HOST`, `APP_AGENT_ADDR` and the ingress addresses must be unset, and the data must be seeded-only. Mount nothing from the host, and give the container no Docker socket.
+
+```sh
+docker run -d --restart=always --read-only --tmpfs /tmp \
+  -e APP_DEMO_MODE=1 -e APP_DEMO_CONTAINER=1 -e APP_DEMO_RESET_INTERVAL=30m \
+  --entrypoint /bin/sh <image> /path/to/container-entrypoint.sh
+```
+
+Do not publish the port to the public internet. Reach it only through your own ingress or proxy on a private network, because the container binds all interfaces.
+
 ## What visitors can do
 
 Visitors sign in as a read-only account, either through the one-click demo session or with the credentials shown on the login form. Sessions last two hours.
