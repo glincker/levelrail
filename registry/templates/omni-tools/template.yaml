@@ -1,0 +1,9 @@
+# Adapted from Dokploy/templates (MIT, Copyright (c) 2024 Dokploy and Carlos Ortiz)
+id: omni-tools
+name: Omni Tools
+slogan: A collection of self-hosted web tools for files, text, images and data.
+description: MIT licensed. Stateless, all processing runs in the browser.
+category: Developer Tools
+documentation_url: https://github.com/iib0011/omni-tools
+recommended_memory_bytes: 67108864
+requires_gpu: false

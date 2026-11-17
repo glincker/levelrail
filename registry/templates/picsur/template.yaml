@@ -1,0 +1,9 @@
+# Adapted from Dokploy/templates (MIT, Copyright (c) 2024 Dokploy and Carlos Ortiz)
+id: picsur
+name: Picsur
+slogan: A simple image host with on-the-fly format conversion.
+description: AGPL 3.0 licensed. Sign in as admin with the generated admin password shown in the deployment variables.
+category: Media
+documentation_url: https://github.com/CaramelFur/Picsur
+recommended_memory_bytes: 536870912
+requires_gpu: false

@@ -1,0 +1,24 @@
+services:
+  ihatemoney:
+    image: ihatemoney/ihatemoney:7.2.1
+    ports: ["8000"]
+    environment:
+      DEBUG: "False"
+      ACTIVATE_DEMO_PROJECT: "False"
+      ACTIVATE_ADMIN_DASHBOARD: "False"
+      ALLOW_PUBLIC_PROJECT_CREATION: "True"
+      BABEL_DEFAULT_TIMEZONE: UTC
+      SECRET_KEY: $SERVICE_PASSWORD_SECRET
+      SESSION_COOKIE_SECURE: "False"
+      SQLALCHEMY_DATABASE_URI: sqlite:////database/ihatemoney.db
+      SQLALCHEMY_TRACK_MODIFICATIONS: "False"
+    volumes:
+      - ihatemoney_data:/database
+    healthcheck:
+      test: ["CMD-SHELL", "python3 -c \"import urllib.request;urllib.request.urlopen('http://127.0.0.1:8000/')\""]
+      interval: 10s
+      timeout: 5s
+      retries: 10
+      start_period: 30s
+volumes:
+  ihatemoney_data:
