@@ -1,0 +1,36 @@
+services:
+  kener:
+    image: rajnandan1/kener:4.2.1-alpine
+    ports: ["3000"]
+    environment:
+      TZ: UTC
+      KENER_SECRET_KEY: $SERVICE_PASSWORD_SECRET
+      ORIGIN: ${SERVICE_URL_KENER:-http://localhost:3000}
+      REDIS_URL: redis://redis:6379
+      DATABASE_URL: sqlite://./database/kener.sqlite.db
+    volumes:
+      - kener_data:/app/database
+      - kener_uploads:/app/uploads
+    depends_on:
+      redis:
+        condition: service_healthy
+    healthcheck:
+      test: ["CMD-SHELL", "wget --no-verbose --tries=1 --spider http://127.0.0.1:3000/ || exit 1"]
+      interval: 10s
+      timeout: 5s
+      retries: 10
+      start_period: 40s
+  redis:
+    image: redis:7-alpine
+    volumes:
+      - redis_data:/data
+    healthcheck:
+      test: ["CMD", "redis-cli", "ping"]
+      interval: 5s
+      timeout: 5s
+      retries: 10
+      start_period: 5s
+volumes:
+  kener_data:
+  kener_uploads:
+  redis_data:

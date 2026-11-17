@@ -1,0 +1,9 @@
+# Adapted from Dokploy/templates (MIT, Copyright (c) 2024 Dokploy and Carlos Ortiz)
+id: hortusfox
+name: HortusFox
+slogan: A collaborative plant management app for home gardens and plant collections.
+description: MIT licensed. Sign in with admin@example.com and the generated admin password shown in the deployment variables, then change the email.
+category: Applications
+documentation_url: https://github.com/danielbrendel/hortusfox-web
+recommended_memory_bytes: 536870912
+requires_gpu: false
