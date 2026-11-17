@@ -1,0 +1,10 @@
+id: drawio
+name: draw.io
+slogan: A self-hosted diagramming and whiteboarding editor for flowcharts, architecture diagrams, and more.
+category: Productivity
+documentation_url: https://www.drawio.com/doc/faq/docker
+recommended_memory_bytes: 268435456
+requires_gpu: false
+platforms:
+    - linux/amd64
+    - linux/arm64

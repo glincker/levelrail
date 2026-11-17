@@ -1,0 +1,47 @@
+id: promptfoo
+name: Promptfoo
+slogan: Test and compare prompts, models and agents with a local web UI for browsing evaluation results. Runs the viewer with results stored on a volume.
+description: Test and compare prompts, models and agents with a local web UI for browsing evaluation results. Runs the viewer with results stored on a volume.
+category: AI
+documentation_url: https://www.promptfoo.dev/docs/
+recommended_memory_bytes: 268435456
+requires_gpu: false
+manifest:
+    id: promptfoo
+    name: Promptfoo
+    description: Test and compare prompts, models and agents with a local web UI for browsing evaluation results. Runs the viewer with results stored on a volume.
+    icon: flask
+    category: AI
+    documentation_url: https://www.promptfoo.dev/docs/
+    source_repo: https://github.com/promptfoo/promptfoo
+    license: MIT
+    license_class: permissive
+    license_url: https://github.com/promptfoo/promptfoo/blob/HEAD/LICENSE
+    hosted_use: allowed
+    listing:
+        by: community
+        vendor_org: ""
+        proof: ""
+    status: active
+    status_reason: ""
+    replaced_by: ""
+    aliases: []
+    first_run:
+        - Open the address to browse evals. Run evaluations from the CLI with this server as the share target.
+    compose_file: compose.yaml
+    recommended_memory_bytes: 268435456
+    env: []
+    domains:
+        - service: promptfoo
+          port: 3000
+          description: Public address of the results viewer.
+    healthcheck:
+        service: promptfoo
+        port: 3000
+        path: /
+        expect: 0
+        kind: ""
+        reason: ""
+    first_boot_seconds: 0
+    console_command: []
+    capabilities: []

@@ -1,0 +1,13 @@
+# Adapted from Dokploy/templates (MIT, Copyright (c) 2024 Dokploy and Carlos Ortiz)
+id: novu
+name: Novu
+slogan: An open source notification infrastructure for email, SMS, push and in-app messages.
+description: Give the API and WebSocket services their own domains so the dashboard and Inbox can reach them. Create the first account from the dashboard sign-up page.
+category: Developer Tools
+documentation_url: https://docs.novu.co/community/self-hosting-novu/overview
+recommended_memory_bytes: 3221225472
+requires_gpu: false
+source_repo: https://github.com/novuhq/novu
+license: MIT
+license_class: permissive
+license_url: https://github.com/novuhq/novu/blob/next/LICENSE-MIT

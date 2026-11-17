@@ -1,0 +1,10 @@
+id: immich
+name: Immich
+slogan: Self-hosted photo and video backup with mobile apps, facial recognition, and timeline search.
+category: Media
+documentation_url: https://immich.app/docs
+recommended_memory_bytes: 1610612736
+requires_gpu: false
+platforms:
+    - linux/amd64
+    - linux/arm64

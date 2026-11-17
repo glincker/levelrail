@@ -1,0 +1,10 @@
+id: vert
+name: Vert
+slogan: A fast file converter for images, video, audio, and documents, processed entirely without a third-party upload.
+category: Productivity
+documentation_url: https://github.com/vert-sh/vert
+recommended_memory_bytes: 134217728
+requires_gpu: false
+platforms:
+    - linux/amd64
+    - linux/arm64

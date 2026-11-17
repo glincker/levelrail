@@ -1,0 +1,13 @@
+services:
+  factorio:
+    image: factoriotools/factorio:2.1.24
+    ports:
+      - "34197:34197/udp"
+    volumes:
+      - factorio_data:/factorio
+    healthcheck:
+      test: ["CMD-SHELL", "grep -qi ':8595 ' /proc/net/udp /proc/net/udp6"]
+      interval: 30s
+      timeout: 5s
+      retries: 5
+      start_period: 60s

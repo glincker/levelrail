@@ -1,0 +1,9 @@
+id: comfyui
+name: ComfyUI
+slogan: A node-graph editor for building and running Stable Diffusion and other image generation pipelines.
+category: AI
+documentation_url: https://docs.comfy.org
+recommended_memory_bytes: 8589934592
+requires_gpu: true
+platforms:
+    - linux/amd64

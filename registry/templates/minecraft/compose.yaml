@@ -1,0 +1,30 @@
+services:
+    minecraft:
+        image: itzg/minecraft-server:2026.10.1-java21
+        ports: ["25565:25565"]
+        x-levelrail-published-ports: [25565]
+        mem_limit: 2560M
+        environment:
+            EULA: ${SERVICE_PROMPT_EULA}
+            TYPE: VANILLA
+            VERSION: 1.21.11
+            MEMORY: 2G
+            USE_AIKAR_FLAGS: "true"
+            VIEW_DISTANCE: "8"
+            SIMULATION_DISTANCE: "6"
+            ENABLE_WHITELIST: "FALSE"
+            ENFORCE_WHITELIST: "FALSE"
+            WHITELIST: ""
+            OPS: ""
+            ENABLE_RCON: "true"
+            RCON_PASSWORD: ${SERVICE_PASSWORD_24_RCON_PASSWORD}
+            DIFFICULTY: normal
+            MAX_PLAYERS: "10"
+        volumes:
+            - minecraft_data:/data
+        healthcheck:
+            test: ["CMD-SHELL", "mc-health"]
+            interval: 30s
+            timeout: 10s
+            retries: 5
+            start_period: 120s

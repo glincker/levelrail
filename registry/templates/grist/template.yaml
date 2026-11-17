@@ -1,0 +1,10 @@
+id: grist
+name: Grist
+slogan: A modern relational spreadsheet that combines spreadsheet flexibility with database structure.
+category: Productivity
+documentation_url: https://support.getgrist.com
+recommended_memory_bytes: 536870912
+requires_gpu: false
+platforms:
+    - linux/amd64
+    - linux/arm64

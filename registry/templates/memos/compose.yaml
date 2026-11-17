@@ -1,0 +1,11 @@
+services:
+  memos:
+    image: neosmemo/memos:stable
+    ports: ["5230:5230"]
+    volumes:
+      - memos_data:/var/opt/memos
+    healthcheck:
+      test: ["CMD-SHELL", "wget -q -O /dev/null http://127.0.0.1:5230/healthz || curl -fsS -o /dev/null http://127.0.0.1:5230/healthz"]
+      interval: 10s
+      timeout: 5s
+      retries: 3

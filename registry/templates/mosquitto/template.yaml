@@ -1,0 +1,18 @@
+id: mosquitto
+name: Eclipse Mosquitto
+slogan: A lightweight MQTT broker for connecting IoT devices, sensors, and home automation hubs.
+description: |-
+    Anonymous access is off: clients log in with the generated MQTT_USER and MQTT_PASSWORD from the app's environment.
+    Port 1883 is plain MQTT without TLS and binds privately by default.
+    To reach it from other machines, set a public bind in the app's Network settings and open TCP 1883 in the firewall.
+category: IoT
+documentation_url: https://mosquitto.org/documentation/
+recommended_memory_bytes: 134217728
+requires_gpu: false
+platforms:
+    - linux/386
+    - linux/amd64
+    - linux/arm
+    - linux/arm64
+    - linux/ppc64le
+    - linux/s390x

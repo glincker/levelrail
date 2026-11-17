@@ -1,0 +1,20 @@
+services:
+  kopia:
+    image: kopia/kopia:0.19.0
+    ports: ["51515:51515"]
+    environment:
+      KOPIA_PASSWORD: $SERVICE_PASSWORD_REPO
+      KOPIA_SERVER_USERNAME: admin
+      KOPIA_SERVER_PASSWORD: $SERVICE_PASSWORD_ADMIN
+    entrypoint: ["/bin/sh", "-c", "kopia repository connect filesystem --path=/app/repository || kopia repository create filesystem --path=/app/repository; exec kopia server start --insecure --tls-generate-cert --address=0.0.0.0:51515 --server-username=admin --server-password=$KOPIA_SERVER_PASSWORD"]
+    volumes:
+      - kopia_repository:/app/repository
+      - kopia_config:/app/config
+      - kopia_cache:/app/cache
+      - kopia_logs:/app/logs
+    healthcheck:
+      test: ["CMD-SHELL", "curl -fsSk -u admin:$KOPIA_SERVER_PASSWORD -o /dev/null https://127.0.0.1:51515/ || exit 1"]
+      interval: 30s
+      timeout: 5s
+      retries: 3
+      start_period: 30s

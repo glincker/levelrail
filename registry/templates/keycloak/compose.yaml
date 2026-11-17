@@ -1,0 +1,26 @@
+services:
+  keycloak:
+    image: quay.io/keycloak/keycloak:26.1
+    command: ["start"]
+    ports: ["8080:8080"]
+    environment:
+      KC_BOOTSTRAP_ADMIN_USERNAME: $SERVICE_USER_ADMIN
+      KC_BOOTSTRAP_ADMIN_PASSWORD: $SERVICE_PASSWORD_ADMIN
+      KC_HTTP_ENABLED: "true"
+      KC_HEALTH_ENABLED: "true"
+      # Keycloak 26 moves /health/ready to a separate management port
+      # (9000) in start as well as start-dev; this keeps it on the main
+      # port so this platform's single-port probe can still reach it.
+      KC_LEGACY_OBSERVABILITY_INTERFACE: "true"
+      KC_HOSTNAME: ${SERVICE_URL_KEYCLOAK:-http://localhost:8080}
+      # Production mode (start) requires a configured hostname and
+      # rejects its own TLS assumptions; this platform's Caddy ingress
+      # terminates TLS in front, so Keycloak trusts its proxy headers.
+      KC_PROXY_HEADERS: xforwarded
+    volumes:
+      - keycloak_data:/opt/keycloak/data
+    healthcheck:
+      test: ["CMD-SHELL", "curl -fsS -o /dev/null http://127.0.0.1:8080/health/ready || wget -q -O /dev/null http://127.0.0.1:8080/health/ready || exit 1"]
+      interval: 30s
+      timeout: 5s
+      retries: 3

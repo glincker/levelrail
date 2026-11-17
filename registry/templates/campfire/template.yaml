@@ -1,0 +1,10 @@
+id: campfire
+name: Campfire
+slogan: 'Basecamp''s open-source group chat app: rooms, direct messages, and file sharing, self-hosted as one container.'
+category: Communication
+documentation_url: https://github.com/basecamp/once-campfire
+recommended_memory_bytes: 268435456
+requires_gpu: false
+platforms:
+    - linux/amd64
+    - linux/arm64

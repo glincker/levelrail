@@ -1,0 +1,11 @@
+services:
+  libretranslate:
+    image: libretranslate/libretranslate:v1.9.6
+    ports: ["5000:5000"]
+    volumes:
+      - libretranslate_data:/home/libretranslate/.local
+    healthcheck:
+      test: ["CMD-SHELL", "sh -c ': < /dev/tcp/127.0.0.1/5000' || exit 1"]
+      interval: 30s
+      timeout: 5s
+      retries: 3

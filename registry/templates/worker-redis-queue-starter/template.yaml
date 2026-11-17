@@ -1,0 +1,12 @@
+id: worker-redis-queue-starter
+name: Background Worker + Redis Queue
+slogan: A worker process pulling jobs off a Redis-backed queue, the base shape for async job processing.
+category: Starter Kits
+documentation_url: https://redis.io/docs/latest/develop/data-types/lists/
+recommended_memory_bytes: 201326592
+requires_gpu: false
+platforms:
+    - linux/amd64
+    - linux/arm
+    - linux/arm64
+    - linux/s390x

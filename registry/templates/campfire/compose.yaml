@@ -1,0 +1,17 @@
+services:
+  campfire:
+    image: ghcr.io/basecamp/once-campfire:main
+    ports: ["80:80"]
+    environment:
+      SECRET_KEY_BASE: $SERVICE_BASE64_64_CAMPFIRE
+      DISABLE_SSL: "true"
+      SSL_DOMAIN: "false"
+      SKIP_TELEMETRY: "true"
+    volumes:
+      - campfire_storage:/rails/storage
+    healthcheck:
+      test: ["CMD", "curl", "-f", "http://127.0.0.1/up"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+      start_period: 15s

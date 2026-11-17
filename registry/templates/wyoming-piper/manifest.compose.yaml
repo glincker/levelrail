@@ -1,0 +1,16 @@
+services:
+  wyoming-piper:
+    image: rhasspy/wyoming-piper:2.5.2
+    ports: ["10200"]
+    command: ["--voice", "en_US-lessac-medium"]
+    volumes:
+      - data:/data
+    healthcheck:
+      test: ["NONE"]
+    x-levelrail-healthcheck:
+      kind: tcp
+      port: 10200
+      interval: 15s
+      timeout: 8s
+      retries: 10
+      start_period: 20s

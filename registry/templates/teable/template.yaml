@@ -1,0 +1,10 @@
+id: teable
+name: Teable
+slogan: A spreadsheet-style visual database backed by real PostgreSQL, an Airtable alternative.
+category: Productivity
+documentation_url: https://help.teable.io/
+recommended_memory_bytes: 1073741824
+requires_gpu: false
+platforms:
+    - linux/amd64
+    - linux/arm64

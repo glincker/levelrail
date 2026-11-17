@@ -1,0 +1,70 @@
+id: archivebox
+name: ArchiveBox
+slogan: A self-hosted web archiver that saves pages as HTML, PDF, screenshots, WARC and media so links never rot. Creates the admin account on first start.
+description: A self-hosted web archiver that saves pages as HTML, PDF, screenshots, WARC and media so links never rot. Creates the admin account on first start.
+category: Productivity
+documentation_url: https://github.com/ArchiveBox/ArchiveBox/wiki/Docker
+recommended_memory_bytes: 1610612736
+requires_gpu: false
+platforms:
+    - linux/amd64
+    - linux/arm64
+manifest:
+    id: archivebox
+    name: ArchiveBox
+    description: A self-hosted web archiver that saves pages as HTML, PDF, screenshots, WARC and media so links never rot. Creates the admin account on first start.
+    icon: archive
+    category: Productivity
+    documentation_url: https://github.com/ArchiveBox/ArchiveBox/wiki/Docker
+    source_repo: https://github.com/ArchiveBox/ArchiveBox
+    license: MIT
+    license_class: permissive
+    license_url: https://github.com/ArchiveBox/ArchiveBox/blob/dev/LICENSE
+    hosted_use: ""
+    listing: null
+    status: ""
+    status_reason: ""
+    replaced_by: ""
+    aliases: []
+    first_run: []
+    compose_file: compose.yaml
+    recommended_memory_bytes: 1610612736
+    env:
+        - key: ADMIN_USERNAME
+          label: Admin username
+          description: Login of the admin account created on first start.
+          default: admin
+          generate: ""
+          length: 0
+          required: true
+          secret: false
+          type: ""
+          service: ""
+          path: ""
+          mode: ""
+        - key: ADMIN_PASSWORD
+          label: Admin password
+          description: Password of the admin account created on first start.
+          default: ""
+          generate: password
+          length: 24
+          required: false
+          secret: true
+          type: ""
+          service: ""
+          path: ""
+          mode: ""
+    domains:
+        - service: archivebox
+          port: 5797
+          description: Public address of ArchiveBox.
+    healthcheck:
+        service: archivebox
+        port: 5797
+        path: /health/
+        expect: 0
+        kind: ""
+        reason: ""
+    first_boot_seconds: 0
+    console_command: []
+    capabilities: []

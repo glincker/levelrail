@@ -1,0 +1,10 @@
+id: checkmate
+name: Checkmate
+slogan: An open-source uptime and server monitoring app with incident history and status pages.
+category: Monitoring
+documentation_url: https://docs.checkmate.so
+recommended_memory_bytes: 1073741824
+requires_gpu: false
+platforms:
+    - linux/amd64
+    - linux/arm64

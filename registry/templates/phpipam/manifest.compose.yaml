@@ -1,0 +1,32 @@
+services:
+  phpipam:
+    image: phpipam/phpipam-www:v1.9.0
+    ports: ["80"]
+    environment:
+      TZ: ${TZ}
+      IPAM_DATABASE_HOST: db
+      IPAM_DATABASE_USER: phpipam
+      IPAM_DATABASE_PASS: ${IPAM_DATABASE_PASS}
+      IPAM_DATABASE_NAME: phpipam
+      IPAM_DATABASE_WEBHOST: "%"
+    depends_on:
+      db:
+        condition: service_healthy
+    healthcheck:
+      test: ["CMD-SHELL", "curl -fsS -o /dev/null http://127.0.0.1:80/ || wget -q -O /dev/null http://127.0.0.1:80/"]
+      interval: 15s
+      timeout: 10s
+      retries: 10
+      start_period: 30s
+  db:
+    image: mariadb:11.8.9
+    environment:
+      MYSQL_ROOT_PASSWORD: ${MYSQL_ROOT_PASSWORD}
+    volumes:
+      - mariadb_data:/var/lib/mysql
+    healthcheck:
+      test: ["CMD-SHELL", "healthcheck.sh --connect --innodb_initialized"]
+      interval: 10s
+      timeout: 5s
+      retries: 12
+      start_period: 30s

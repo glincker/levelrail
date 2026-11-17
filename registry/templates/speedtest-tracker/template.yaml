@@ -1,0 +1,10 @@
+id: speedtest-tracker
+name: Speedtest Tracker
+slogan: Runs Ookla speed tests on a schedule and charts your connection's throughput, latency, and jitter over time.
+category: Monitoring
+documentation_url: https://docs.speedtest-tracker.dev
+recommended_memory_bytes: 268435456
+requires_gpu: false
+platforms:
+    - linux/amd64
+    - linux/arm64

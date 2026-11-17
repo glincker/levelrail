@@ -1,0 +1,18 @@
+services:
+  transmission:
+    image: lscr.io/linuxserver/transmission:4.0.6
+    ports: ["9091:9091"]
+    environment:
+      PUID: "1000"
+      PGID: "1000"
+      USER: $SERVICE_USER_ADMIN
+      PASS: $SERVICE_PASSWORD_ADMIN
+    volumes:
+      - transmission_config:/config
+      - transmission_downloads:/downloads
+      - transmission_watch:/watch
+    healthcheck:
+      test: ["CMD-SHELL", "sh -c ': < /dev/tcp/127.0.0.1/9091' || exit 1"]
+      interval: 30s
+      timeout: 5s
+      retries: 3

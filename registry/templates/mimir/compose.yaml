@@ -1,0 +1,61 @@
+services:
+    mimir:
+        image: grafana/mimir:3.2.4
+        ports: ["9009"]
+        command: ["-config.file=/etc/mimir/mimir.yaml"]
+        volumes:
+            - data:/data
+        healthcheck:
+            test: ["CMD-SHELL", "wget -q -O /dev/null http://127.0.0.1:9009/ready || exit 1"]
+            interval: 15s
+            timeout: 8s
+            retries: 10
+            start_period: 20s
+        configs:
+            - source: lr_file_mimir_config
+              target: /etc/mimir/mimir.yaml
+              mode: "0444"
+configs:
+    lr_file_mimir_config:
+        content: |
+            target: all
+            multitenancy_enabled: false
+            server:
+              http_listen_port: 9009
+              grpc_listen_port: 9095
+            common:
+              storage:
+                backend: filesystem
+                filesystem:
+                  dir: /data/common
+            blocks_storage:
+              storage_prefix: blocks
+              tsdb:
+                dir: /data/tsdb
+              bucket_store:
+                sync_dir: /data/tsdb-sync
+            compactor:
+              data_dir: /data/compactor
+              sharding_ring:
+                kvstore:
+                  store: inmemory
+            distributor:
+              ring:
+                instance_addr: 127.0.0.1
+                kvstore:
+                  store: inmemory
+            ingester:
+              ring:
+                instance_addr: 127.0.0.1
+                kvstore:
+                  store: inmemory
+                replication_factor: 1
+            store_gateway:
+              sharding_ring:
+                replication_factor: 1
+                kvstore:
+                  store: inmemory
+            ruler_storage:
+              storage_prefix: ruler
+            alertmanager_storage:
+              storage_prefix: alertmanager

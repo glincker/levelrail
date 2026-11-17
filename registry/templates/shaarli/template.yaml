@@ -1,0 +1,59 @@
+id: shaarli
+name: Shaarli
+slogan: A minimalist personal bookmark manager, link sharer and microblog with no database. zlib licensed. On first open, the install page asks you to create the admin login.
+description: A minimalist personal bookmark manager, link sharer and microblog with no database. zlib licensed. On first open, the install page asks you to create the admin login.
+category: Productivity
+documentation_url: https://shaarli.readthedocs.io/
+recommended_memory_bytes: 134217728
+requires_gpu: false
+platforms:
+    - linux/amd64
+    - linux/arm
+    - linux/arm64
+manifest:
+    id: shaarli
+    name: Shaarli
+    description: A minimalist personal bookmark manager, link sharer and microblog with no database. zlib licensed. On first open, the install page asks you to create the admin login.
+    icon: link
+    category: Productivity
+    documentation_url: https://shaarli.readthedocs.io/
+    source_repo: https://github.com/shaarli/Shaarli
+    license: Zlib
+    license_class: permissive
+    license_url: https://github.com/shaarli/Shaarli/blob/master/COPYING
+    hosted_use: ""
+    listing: null
+    status: ""
+    status_reason: ""
+    replaced_by: ""
+    aliases: []
+    first_run: []
+    compose_file: compose.yaml
+    recommended_memory_bytes: 134217728
+    env:
+        - key: TZ
+          label: Time zone
+          description: IANA time zone for bookmark dates.
+          default: Etc/UTC
+          generate: ""
+          length: 0
+          required: false
+          secret: false
+          type: ""
+          service: ""
+          path: ""
+          mode: ""
+    domains:
+        - service: shaarli
+          port: 80
+          description: Public address of Shaarli.
+    healthcheck:
+        service: shaarli
+        port: 80
+        path: /tpl/default/img/favicon.png
+        expect: 0
+        kind: ""
+        reason: ""
+    first_boot_seconds: 0
+    console_command: []
+    capabilities: []

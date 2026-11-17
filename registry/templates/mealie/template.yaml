@@ -1,0 +1,10 @@
+id: mealie
+name: Mealie
+slogan: A self-hosted recipe manager and meal planner with a clean web UI and API.
+category: Productivity
+documentation_url: https://docs.mealie.io
+recommended_memory_bytes: 536870912
+requires_gpu: false
+platforms:
+    - linux/amd64
+    - linux/arm64

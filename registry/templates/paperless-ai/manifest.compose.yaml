@@ -1,0 +1,14 @@
+services:
+  paperless-ai:
+    image: clusterzx/paperless-ai:4.0.0
+    ports: ["3000"]
+    environment:
+      PAPERLESS_AI_PORT: "3000"
+    volumes:
+      - data:/app/data
+    healthcheck:
+      test: ["CMD-SHELL", "wget -q -O /dev/null http://127.0.0.1:3000/health"]
+      interval: 15s
+      timeout: 8s
+      retries: 10
+      start_period: 60s

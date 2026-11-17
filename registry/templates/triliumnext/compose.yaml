@@ -1,0 +1,13 @@
+services:
+  triliumnext:
+    image: ghcr.io/triliumnext/trilium:stable
+    ports: ["8080:8080"]
+    environment:
+      TZ: UTC
+    volumes:
+      - triliumnext_data:/home/node/trilium-data
+    healthcheck:
+      test: ["CMD-SHELL", "node -e \"require('http').get('http://127.0.0.1:8080/api/health-check',r=>process.exit(r.statusCode<400?0:1)).on('error',()=>process.exit(1))\""]
+      interval: 10s
+      timeout: 5s
+      retries: 5

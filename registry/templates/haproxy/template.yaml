@@ -1,0 +1,81 @@
+id: haproxy
+name: HAProxy
+slogan: High-performance TCP and HTTP load balancer on the official image. The install form carries haproxy.cfg as an editable file, so it starts with a working config instead of exiting on a missing one.
+description: High-performance TCP and HTTP load balancer on the official image. The install form carries haproxy.cfg as an editable file, so it starts with a working config instead of exiting on a missing one.
+category: Infrastructure
+documentation_url: https://docs.haproxy.org/
+recommended_memory_bytes: 67108864
+requires_gpu: false
+manifest:
+    id: haproxy
+    name: HAProxy
+    description: High-performance TCP and HTTP load balancer on the official image. The install form carries haproxy.cfg as an editable file, so it starts with a working config instead of exiting on a missing one.
+    icon: shuffle
+    category: Infrastructure
+    documentation_url: https://docs.haproxy.org/
+    source_repo: https://github.com/haproxy/haproxy
+    license: GPL-2.0
+    license_class: copyleft
+    license_url: https://github.com/haproxy/haproxy/blob/master/LICENSE
+    hosted_use: allowed
+    listing:
+        by: community
+        vendor_org: ""
+        proof: ""
+    status: active
+    status_reason: ""
+    replaced_by: ""
+    aliases: []
+    first_run:
+        - Open the address to see the greeting, then edit the config file setting to add your own frontends and backends.
+    compose_file: compose.yaml
+    recommended_memory_bytes: 67108864
+    env:
+        - key: HAPROXY_GREETING
+          label: Greeting
+          description: Text the starter config answers with.
+          default: haproxy is up
+          generate: ""
+          length: 0
+          required: false
+          secret: false
+          type: ""
+          service: ""
+          path: ""
+          mode: ""
+        - key: HAPROXY_CONFIG
+          label: haproxy.cfg
+          description: The full HAProxy configuration, mounted read-only.
+          default: |
+            global
+              maxconn 256
+            defaults
+              mode http
+              timeout connect 5s
+              timeout client 30s
+              timeout server 30s
+            frontend web
+              bind :8080
+              http-request return status 200 content-type text/plain string "${HAPROXY_GREETING}"
+          generate: ""
+          length: 0
+          required: false
+          secret: false
+          type: file
+          service: haproxy
+          path: /usr/local/etc/haproxy/haproxy.cfg
+          mode: "0444"
+    domains:
+        - service: haproxy
+          port: 8080
+          description: Public address of the load balancer.
+    healthcheck:
+        service: haproxy
+        port: 8080
+        path: /
+        expect: 0
+        kind: ""
+        reason: ""
+    first_boot_seconds: 0
+    console_command: []
+    capabilities: []

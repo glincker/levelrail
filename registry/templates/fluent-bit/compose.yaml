@@ -1,0 +1,37 @@
+services:
+    fluent-bit:
+        image: fluent/fluent-bit:5.2.0
+        ports: ["2020", "24224"]
+        healthcheck:
+            test: ["NONE"]
+        x-levelrail-healthcheck:
+            kind: http
+            path: /api/v1/health
+            port: 2020
+            interval: 15s
+            timeout: 8s
+            retries: 10
+            start_period: 20s
+        configs:
+            - source: lr_file_fluentbit_config
+              target: /fluent-bit/etc/fluent-bit.conf
+              mode: "0444"
+configs:
+    lr_file_fluentbit_config:
+        content: |
+            [SERVICE]
+                Flush        1
+                Log_Level    info
+                HTTP_Server  On
+                HTTP_Listen  0.0.0.0
+                HTTP_Port    2020
+                Health_Check On
+
+            [INPUT]
+                Name   forward
+                Listen 0.0.0.0
+                Port   24224
+
+            [OUTPUT]
+                Name  stdout
+                Match *

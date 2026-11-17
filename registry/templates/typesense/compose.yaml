@@ -1,0 +1,14 @@
+services:
+  typesense:
+    image: typesense/typesense:30.2
+    ports: ["8108:8108"]
+    environment:
+      TYPESENSE_API_KEY: $SERVICE_HEX_32_APIKEY
+      TYPESENSE_DATA_DIR: /data
+    volumes:
+      - typesense_data:/data
+    healthcheck:
+      test: ["CMD-SHELL", "curl -fsS -o /dev/null http://127.0.0.1:8108/health || wget -q -O /dev/null http://127.0.0.1:8108/health || exit 1"]
+      interval: 30s
+      timeout: 5s
+      retries: 3

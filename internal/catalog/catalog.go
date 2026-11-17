@@ -38,7 +38,7 @@ type Template struct {
 // and GET /api/v1/service-templates/{id}. contribTemplates (contrib.go)
 // are contributor-submitted YAML entries, merged in last so they're
 // indistinguishable from the hand-written Go ones to every consumer.
-var Templates = concat(
+var compiledTemplates = concat(
 	starterKitsTemplates,
 	automationTemplates,
 	monitoringTemplates,
@@ -81,6 +81,20 @@ var Templates = concat(
 	contribTemplates,
 	manifestTemplates,
 )
+
+// Templates is compiledTemplates plus the registry-only ids (registry_embed.go).
+var Templates = concat(compiledTemplates, registryOnlyTemplates)
+
+// IsCompiledID reports whether a template is defined by Go sources, contrib
+// files or manifests, as opposed to being served only from the registry folder.
+func IsCompiledID(id string) bool {
+	for _, tpl := range compiledTemplates {
+		if tpl.ID == id {
+			return true
+		}
+	}
+	return false
+}
 
 // TemplateByID returns the Templates entry with this ID, or false if
 // none matches.

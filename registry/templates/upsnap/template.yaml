@@ -1,0 +1,47 @@
+id: upsnap
+name: UpSnap
+slogan: Web dashboard to wake, shut down and ping devices on your network, with scheduled wake ups and per device ports.
+description: Web dashboard to wake, shut down and ping devices on your network, with scheduled wake ups and per device ports.
+category: Networking
+documentation_url: https://github.com/seriousm4x/UpSnap/wiki
+recommended_memory_bytes: 134217728
+requires_gpu: false
+manifest:
+    id: upsnap
+    name: UpSnap
+    description: Web dashboard to wake, shut down and ping devices on your network, with scheduled wake ups and per device ports.
+    icon: power
+    category: Networking
+    documentation_url: https://github.com/seriousm4x/UpSnap/wiki
+    source_repo: https://github.com/seriousm4x/UpSnap
+    license: MIT
+    license_class: permissive
+    license_url: https://github.com/seriousm4x/UpSnap/blob/HEAD/LICENSE
+    hosted_use: allowed
+    listing:
+        by: community
+        vendor_org: ""
+        proof: ""
+    status: active
+    status_reason: ""
+    replaced_by: ""
+    aliases: []
+    first_run:
+        - Open the address and create the first admin account. Wake on LAN needs the container on the same network as the devices, so check reachability from a test device.
+    compose_file: compose.yaml
+    recommended_memory_bytes: 134217728
+    env: []
+    domains:
+        - service: upsnap
+          port: 8090
+          description: Public address of the dashboard.
+    healthcheck:
+        service: upsnap
+        port: 8090
+        path: /
+        expect: 0
+        kind: ""
+        reason: ""
+    first_boot_seconds: 0
+    console_command: []
+    capabilities: []

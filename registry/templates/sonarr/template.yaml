@@ -1,0 +1,10 @@
+id: sonarr
+name: Sonarr
+slogan: Watches your favorite indexers for new TV episodes and automatically grabs, sorts, and renames them.
+category: Media
+documentation_url: https://wiki.servarr.com/sonarr
+recommended_memory_bytes: 268435456
+requires_gpu: false
+platforms:
+    - linux/amd64
+    - linux/arm64

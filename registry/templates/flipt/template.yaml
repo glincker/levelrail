@@ -1,0 +1,10 @@
+id: flipt
+name: Flipt
+slogan: A self-hosted feature flag and experimentation platform with a built-in UI and REST/gRPC APIs.
+category: Developer Tools
+documentation_url: https://www.flipt.io/docs
+recommended_memory_bytes: 268435456
+requires_gpu: false
+platforms:
+    - linux/amd64
+    - linux/arm64

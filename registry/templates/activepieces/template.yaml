@@ -1,0 +1,10 @@
+id: activepieces
+name: Activepieces
+slogan: An open-source, no-code automation tool for connecting apps and building AI-powered workflows.
+category: Automation
+documentation_url: https://www.activepieces.com/docs
+recommended_memory_bytes: 536870912
+requires_gpu: false
+platforms:
+    - linux/amd64
+    - linux/arm64

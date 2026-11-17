@@ -1,0 +1,10 @@
+id: ollama-open-webui
+name: Ollama + Open WebUI
+slogan: A local LLM runtime paired with a ChatGPT-style web interface, for running open models on your own hardware.
+category: AI
+documentation_url: https://docs.openwebui.com/
+recommended_memory_bytes: 2147483648
+requires_gpu: false
+platforms:
+    - linux/amd64
+    - linux/arm64

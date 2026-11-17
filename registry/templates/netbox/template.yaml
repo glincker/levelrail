@@ -1,0 +1,10 @@
+id: netbox
+name: NetBox
+slogan: Source-of-truth IPAM and DCIM for tracking IP space, racks, devices, and cabling.
+category: Infrastructure
+documentation_url: https://github.com/netbox-community/netbox-docker
+recommended_memory_bytes: 1073741824
+requires_gpu: false
+platforms:
+    - linux/amd64
+    - linux/arm64

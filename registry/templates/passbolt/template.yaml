@@ -1,0 +1,10 @@
+id: passbolt
+name: Passbolt
+slogan: An open-source password manager built for teams, compatible with the usual browser extensions.
+category: Security
+documentation_url: https://www.passbolt.com/docs
+recommended_memory_bytes: 536870912
+requires_gpu: false
+platforms:
+    - linux/amd64
+    - linux/arm64

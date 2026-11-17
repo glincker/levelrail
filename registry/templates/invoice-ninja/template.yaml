@@ -1,0 +1,10 @@
+id: invoice-ninja
+name: Invoice Ninja
+slogan: Self-hosted invoicing, quotes, and payments for freelancers and small businesses.
+category: Finance
+documentation_url: https://invoiceninja.github.io
+recommended_memory_bytes: 536870912
+requires_gpu: false
+platforms:
+    - linux/amd64
+    - linux/arm64

@@ -1,0 +1,30 @@
+services:
+  windmill:
+    image: ghcr.io/windmill-labs/windmill:1.365.0
+    ports: ["8000:8000"]
+    environment:
+      MODE: standalone
+      DATABASE_URL: postgres://windmill:$SERVICE_PASSWORD_DB@db:5432/windmill?sslmode=disable
+      BASE_URL: ${SERVICE_URL_WINDMILL:-http://localhost:8000}
+    volumes:
+      - windmill_worker_logs:/tmp/windmill/logs
+      - windmill_worker_cache:/tmp/windmill/cache
+    healthcheck:
+      test: ["CMD-SHELL", "curl -fsS -o /dev/null http://127.0.0.1:8000/api/version || wget -q -O /dev/null http://127.0.0.1:8000/api/version || exit 1"]
+      interval: 30s
+      timeout: 5s
+      retries: 3
+      start_period: 60s
+  db:
+    image: postgres:16-alpine
+    environment:
+      POSTGRES_USER: windmill
+      POSTGRES_PASSWORD: $SERVICE_PASSWORD_DB
+      POSTGRES_DB: windmill
+    volumes:
+      - windmill_db_data:/var/lib/postgresql/data
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U windmill -d windmill"]
+      interval: 10s
+      timeout: 5s
+      retries: 5

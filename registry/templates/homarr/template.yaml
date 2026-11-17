@@ -1,0 +1,11 @@
+id: homarr
+name: Homarr
+slogan: A customizable start page dashboard for your self-hosted services with drag-and-drop widgets.
+category: Dashboard
+documentation_url: https://homarr.dev/docs/getting-started/
+recommended_memory_bytes: 268435456
+requires_gpu: false
+platforms:
+    - linux/amd64
+    - linux/arm
+    - linux/arm64

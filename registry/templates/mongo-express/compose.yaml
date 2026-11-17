@@ -1,0 +1,31 @@
+services:
+  mongo-express:
+    image: mongo-express:1.0.2-20-alpine3.19
+    ports: ["8081"]
+    environment:
+      ME_CONFIG_MONGODB_URL: mongodb://root:$SERVICE_PASSWORD_MONGO@mongo:27017/
+      ME_CONFIG_MONGODB_ENABLE_ADMIN: "true"
+      ME_CONFIG_BASICAUTH_USERNAME: $SERVICE_USER_MONGOEXPRESS
+      ME_CONFIG_BASICAUTH_PASSWORD: $SERVICE_PASSWORD_MONGOEXPRESS
+    depends_on:
+      mongo:
+        condition: service_healthy
+    healthcheck:
+      test: ["CMD-SHELL", "nc -z 127.0.0.1 8081"]
+      interval: 10s
+      timeout: 5s
+      retries: 10
+      start_period: 10s
+  mongo:
+    image: mongo:7
+    environment:
+      MONGO_INITDB_ROOT_USERNAME: root
+      MONGO_INITDB_ROOT_PASSWORD: $SERVICE_PASSWORD_MONGO
+    volumes:
+      - mongo_data:/data/db
+    healthcheck:
+      test: ["CMD-SHELL", "mongosh --quiet --eval \"db.adminCommand('ping').ok\" | grep -q 1"]
+      interval: 10s
+      timeout: 10s
+      retries: 10
+      start_period: 20s

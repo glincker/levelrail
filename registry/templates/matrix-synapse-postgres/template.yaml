@@ -1,0 +1,10 @@
+id: matrix-synapse-postgres
+name: Matrix Synapse (Postgres)
+slogan: A Matrix homeserver backed by Postgres, for self-hosted federated chat and voice/video signaling.
+category: Communication
+documentation_url: https://element-hq.github.io/synapse/latest/
+recommended_memory_bytes: 1073741824
+requires_gpu: false
+platforms:
+    - linux/amd64
+    - linux/arm64

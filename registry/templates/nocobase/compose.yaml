@@ -1,0 +1,35 @@
+services:
+  postgres:
+    image: postgres:17-alpine
+    environment:
+      POSTGRES_USER: nocobase
+      POSTGRES_PASSWORD: $SERVICE_PASSWORD_DB
+      POSTGRES_DB: nocobase
+    volumes:
+      - nocobase_postgres_data:/var/lib/postgresql/data
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U nocobase -d nocobase"]
+      interval: 5s
+      timeout: 5s
+      retries: 10
+  nocobase:
+    image: nocobase/nocobase:1.9.33
+    ports: ["13000:13000"]
+    depends_on:
+      postgres:
+        condition: service_healthy
+    environment:
+      APP_KEY: $SERVICE_BASE64_64_APPKEY
+      DB_DIALECT: postgres
+      DB_HOST: postgres
+      DB_PORT: "5432"
+      DB_DATABASE: nocobase
+      DB_USER: nocobase
+      DB_PASSWORD: $SERVICE_PASSWORD_DB
+    volumes:
+      - nocobase_storage:/app/nocobase/storage
+    healthcheck:
+      test: ["CMD-SHELL", "wget --spider -q http://127.0.0.1:13000/ || exit 1"]
+      interval: 15s
+      timeout: 10s
+      retries: 10

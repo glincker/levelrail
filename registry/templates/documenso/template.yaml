@@ -1,0 +1,10 @@
+id: documenso
+name: Documenso
+slogan: An open-source document signing platform, a self-hosted alternative to DocuSign.
+category: Productivity
+documentation_url: https://docs.documenso.com/
+recommended_memory_bytes: 536870912
+requires_gpu: false
+platforms:
+    - linux/amd64
+    - linux/arm64

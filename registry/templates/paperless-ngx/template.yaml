@@ -1,0 +1,10 @@
+id: paperless-ngx
+name: Paperless-ngx
+slogan: Scan, index, and archive your paper documents into a searchable digital library.
+category: Productivity
+documentation_url: https://docs.paperless-ngx.com
+recommended_memory_bytes: 536870912
+requires_gpu: false
+platforms:
+    - linux/amd64
+    - linux/arm64

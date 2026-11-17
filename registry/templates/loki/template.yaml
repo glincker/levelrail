@@ -1,0 +1,11 @@
+id: loki
+name: Grafana Loki
+slogan: A horizontally scalable log aggregation system that indexes labels, not full text, to keep storage cheap.
+category: Monitoring
+documentation_url: https://grafana.com/docs/loki/latest
+recommended_memory_bytes: 536870912
+requires_gpu: false
+platforms:
+    - linux/amd64
+    - linux/arm
+    - linux/arm64

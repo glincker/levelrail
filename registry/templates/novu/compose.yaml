@@ -1,0 +1,126 @@
+x-novu-env: &novu-env
+  NODE_ENV: production
+  IS_SELF_HOSTED: "true"
+  MONGO_URL: mongodb://root:$SERVICE_PASSWORD_MONGO@mongodb:27017/novu-db?authSource=admin
+  MONGO_AUTO_CREATE_INDEXES: "true"
+  MONGO_MIN_POOL_SIZE: "5"
+  MONGO_MAX_POOL_SIZE: "10"
+  REDIS_HOST: redis
+  REDIS_PORT: "6379"
+  REDIS_CACHE_SERVICE_HOST: redis
+  REDIS_CACHE_SERVICE_PORT: "6379"
+  S3_BUCKET_NAME: novu-local
+  S3_REGION: us-east-1
+  AWS_ACCESS_KEY_ID: test
+  AWS_SECRET_ACCESS_KEY: test
+  STORE_ENCRYPTION_KEY: $SERVICE_PASSWORD_32_STORE
+  SUBSCRIBER_WIDGET_JWT_EXPIRATION_TIME: 15d
+  NEW_RELIC_ENABLED: "false"
+
+services:
+  redis:
+    image: redis:7-alpine
+    command: redis-server --appendonly yes
+    volumes:
+      - redis_data:/data
+    healthcheck:
+      test: ["CMD", "redis-cli", "ping"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+      start_period: 5s
+  mongodb:
+    image: mongo:8.0.17
+    environment:
+      MONGO_INITDB_ROOT_USERNAME: root
+      MONGO_INITDB_ROOT_PASSWORD: $SERVICE_PASSWORD_MONGO
+    volumes:
+      - mongo_data:/data/db
+    healthcheck:
+      test: ["CMD-SHELL", "mongosh --quiet --username root --password $$MONGO_INITDB_ROOT_PASSWORD --eval \"db.adminCommand('ping').ok\" | grep 1"]
+      interval: 15s
+      timeout: 10s
+      retries: 5
+      start_period: 20s
+  api:
+    image: ghcr.io/novuhq/novu/api:3.18.0
+    depends_on:
+      mongodb:
+        condition: service_healthy
+      redis:
+        condition: service_healthy
+    ports: ["3000"]
+    environment:
+      <<: *novu-env
+      PORT: "3000"
+      API_ROOT_URL: ${SERVICE_URL_API:-http://localhost:3000}
+      FRONT_BASE_URL: ${SERVICE_URL_NOVU:-http://localhost:4000}
+      JWT_SECRET: $SERVICE_HEX_64_JWT
+      NOVU_SECRET_KEY: $SERVICE_HEX_64_SECRET
+      IS_API_IDEMPOTENCY_ENABLED: "false"
+      IS_API_RATE_LIMITING_ENABLED: "false"
+      IS_NEW_MESSAGES_API_RESPONSE_ENABLED: "true"
+      IS_V2_ENABLED: "true"
+    healthcheck:
+      test: ["CMD-SHELL", "wget --no-verbose --tries=1 --spider http://localhost:3000/v1/health-check || exit 1"]
+      interval: 20s
+      timeout: 10s
+      retries: 5
+      start_period: 60s
+  worker:
+    image: ghcr.io/novuhq/novu/worker:3.18.0
+    depends_on:
+      mongodb:
+        condition: service_healthy
+      redis:
+        condition: service_healthy
+    environment:
+      <<: *novu-env
+      PORT: "3004"
+      API_ROOT_URL: http://api:3000
+      BROADCAST_QUEUE_CHUNK_SIZE: "100"
+      MULTICAST_QUEUE_CHUNK_SIZE: "100"
+    healthcheck:
+      test: ["CMD-SHELL", "wget --no-verbose --tries=1 --spider http://localhost:3004/v1/health-check || exit 1"]
+      interval: 20s
+      timeout: 10s
+      retries: 5
+      start_period: 40s
+  ws:
+    image: ghcr.io/novuhq/novu/ws:3.18.0
+    depends_on:
+      mongodb:
+        condition: service_healthy
+      redis:
+        condition: service_healthy
+    ports: ["3002"]
+    environment:
+      <<: *novu-env
+      PORT: "3002"
+      JWT_SECRET: $SERVICE_HEX_64_JWT
+    healthcheck:
+      test: ["CMD-SHELL", "wget --no-verbose --tries=1 --spider http://localhost:3002/v1/health-check || exit 1"]
+      interval: 20s
+      timeout: 10s
+      retries: 5
+      start_period: 40s
+  novu:
+    image: ghcr.io/novuhq/novu/dashboard:3.18.0
+    depends_on:
+      api:
+        condition: service_healthy
+      worker:
+        condition: service_healthy
+    ports: ["4000"]
+    environment:
+      VITE_API_HOSTNAME: ${SERVICE_URL_API:-http://localhost:3000}
+      VITE_WEBSOCKET_HOSTNAME: ${SERVICE_URL_WS:-http://localhost:3002}
+    healthcheck:
+      test: ["CMD-SHELL", "node -e \"require('http').get({hostname:'localhost',port:4000,path:'/',timeout:5000},r=>process.exit(r.statusCode===200?0:1)).on('error',()=>process.exit(1))\""]
+      interval: 20s
+      timeout: 10s
+      retries: 5
+      start_period: 30s
+volumes:
+  redis_data:
+  mongo_data:

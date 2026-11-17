@@ -1,0 +1,11 @@
+id: searxng
+name: SearXNG
+slogan: A privacy-respecting metasearch engine that aggregates results from dozens of search services.
+category: Applications
+documentation_url: https://docs.searxng.org
+recommended_memory_bytes: 268435456
+requires_gpu: false
+platforms:
+    - linux/amd64
+    - linux/arm
+    - linux/arm64

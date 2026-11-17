@@ -1,0 +1,13 @@
+id: prometheus
+name: Prometheus
+slogan: A metrics time-series database and alerting engine built for pull-based scraping.
+category: Monitoring
+documentation_url: https://prometheus.io/docs/introduction/overview/
+recommended_memory_bytes: 536870912
+requires_gpu: false
+platforms:
+    - linux/amd64
+    - linux/arm
+    - linux/arm64
+    - linux/ppc64le
+    - linux/s390x

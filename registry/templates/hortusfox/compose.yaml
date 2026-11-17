@@ -1,0 +1,51 @@
+services:
+  app:
+    image: ghcr.io/danielbrendel/hortusfox-web:v6.4
+    ports: ["80"]
+    volumes:
+      - app_images:/var/www/html/public/img
+      - app_logs:/var/www/html/app/logs
+      - app_backup:/var/www/html/public/backup
+      - app_themes:/var/www/html/public/themes
+      - app_migrate:/var/www/html/app/migrations
+    environment:
+      APP_ADMIN_EMAIL: admin@example.com
+      APP_ADMIN_PASSWORD: $SERVICE_PASSWORD_ADMIN
+      APP_TIMEZONE: UTC
+      DB_HOST: db
+      DB_PORT: "3306"
+      DB_DATABASE: hortusfox
+      DB_USERNAME: hortusfox
+      DB_PASSWORD: $SERVICE_PASSWORD_DB
+      DB_CHARSET: utf8mb4
+    depends_on:
+      db:
+        condition: service_healthy
+    healthcheck:
+      test: ["CMD-SHELL", "curl -fsS -o /dev/null http://127.0.0.1:80/ || exit 1"]
+      interval: 10s
+      timeout: 5s
+      retries: 10
+      start_period: 60s
+  db:
+    image: mariadb:11
+    environment:
+      MARIADB_ROOT_PASSWORD: $SERVICE_PASSWORD_ROOT
+      MARIADB_DATABASE: hortusfox
+      MARIADB_USER: hortusfox
+      MARIADB_PASSWORD: $SERVICE_PASSWORD_DB
+    volumes:
+      - db_data:/var/lib/mysql
+    healthcheck:
+      test: ["CMD", "healthcheck.sh", "--connect", "--innodb_initialized"]
+      interval: 5s
+      timeout: 5s
+      retries: 20
+      start_period: 20s
+volumes:
+  db_data:
+  app_images:
+  app_logs:
+  app_backup:
+  app_themes:
+  app_migrate:

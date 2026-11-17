@@ -1,0 +1,22 @@
+services:
+  rallly:
+    image: lukevella/rallly:4.15.2
+    ports: ["3000:3000"]
+    environment:
+      DATABASE_URL: postgres://$SERVICE_USER_DB:$SERVICE_PASSWORD_DB@db:5432/rallly
+      SECRET_PASSWORD: $SERVICE_HEX_64_SECRET
+      NEXT_PUBLIC_BASE_URL: ${SERVICE_URL_RALLLY:-http://localhost:3000}
+    healthcheck:
+      test: ["CMD-SHELL", "curl -fsS -o /dev/null http://127.0.0.1:3000/"]
+      interval: 10s
+      timeout: 5s
+      retries: 3
+      start_period: 60s
+  db:
+    image: postgres:16-alpine
+    environment:
+      POSTGRES_USER: $SERVICE_USER_DB
+      POSTGRES_PASSWORD: $SERVICE_PASSWORD_DB
+      POSTGRES_DB: rallly
+    volumes:
+      - rallly_db_data:/var/lib/postgresql/data

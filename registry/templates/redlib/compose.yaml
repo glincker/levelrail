@@ -1,0 +1,9 @@
+services:
+  redlib:
+    image: quay.io/redlib/redlib:sha-a4d36e9
+    ports: ["8080:8080"]
+    healthcheck:
+      test: ["CMD-SHELL", "curl -fsS -o /dev/null http://127.0.0.1:8080/settings"]
+      interval: 10s
+      timeout: 5s
+      retries: 3

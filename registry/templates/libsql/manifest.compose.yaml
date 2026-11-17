@@ -1,0 +1,19 @@
+services:
+  libsql:
+    image: ghcr.io/tursodatabase/libsql-server:v0.24.32
+    ports: ["8080"]
+    environment:
+      SQLD_NODE: primary
+      SQLD_HTTP_LISTEN_ADDR: 0.0.0.0:8080
+    volumes:
+      - data:/var/lib/sqld
+    healthcheck:
+      test: ["NONE"]
+    x-levelrail-healthcheck:
+      kind: http
+      path: /health
+      port: 8080
+      interval: 15s
+      timeout: 8s
+      retries: 10
+      start_period: 20s

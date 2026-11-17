@@ -1,0 +1,47 @@
+id: gatus
+name: Gatus
+slogan: Developer-oriented status page and health dashboard. Ships with an example endpoint; edit the config file under the app's Files to monitor your own services.
+description: Developer-oriented status page and health dashboard. Ships with an example endpoint; edit the config file under the app's Files to monitor your own services.
+category: Monitoring
+documentation_url: https://github.com/TwiN/gatus#configuration
+recommended_memory_bytes: 67108864
+requires_gpu: false
+platforms:
+    - linux/amd64
+    - linux/arm
+    - linux/arm64
+manifest:
+    id: gatus
+    name: Gatus
+    description: Developer-oriented status page and health dashboard. Ships with an example endpoint; edit the config file under the app's Files to monitor your own services.
+    icon: heartbeat
+    category: Monitoring
+    documentation_url: https://github.com/TwiN/gatus#configuration
+    source_repo: https://github.com/TwiN/gatus
+    license: Apache-2.0
+    license_class: permissive
+    license_url: https://github.com/TwiN/gatus/blob/master/LICENSE
+    hosted_use: ""
+    listing: null
+    status: ""
+    status_reason: ""
+    replaced_by: ""
+    aliases: []
+    first_run: []
+    compose_file: compose.yaml
+    recommended_memory_bytes: 67108864
+    env: []
+    domains:
+        - service: gatus
+          port: 8080
+          description: Public address of the status page.
+    healthcheck:
+        service: gatus
+        port: 8080
+        path: /health
+        expect: 0
+        kind: ""
+        reason: ""
+    first_boot_seconds: 0
+    console_command: []
+    capabilities: []

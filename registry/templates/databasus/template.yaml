@@ -1,0 +1,10 @@
+id: databasus
+name: Databasus
+slogan: A free, self-hosted backup tool for Postgres, MySQL, and MongoDB databases.
+category: Developer Tools
+documentation_url: https://databasus.com/installation
+recommended_memory_bytes: 268435456
+requires_gpu: false
+platforms:
+    - linux/amd64
+    - linux/arm64

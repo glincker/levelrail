@@ -1,0 +1,10 @@
+id: apprise-api
+name: Apprise API
+slogan: A single HTTP endpoint that fans a notification out to 100+ services such as Slack, Discord, and email.
+category: Communication
+documentation_url: https://github.com/caronc/apprise-api
+recommended_memory_bytes: 134217728
+requires_gpu: false
+platforms:
+    - linux/amd64
+    - linux/arm64

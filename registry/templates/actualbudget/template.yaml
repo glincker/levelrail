@@ -1,0 +1,10 @@
+id: actualbudget
+name: Actual Budget
+slogan: A local-first personal finance and budgeting app with multi-device sync you fully own.
+category: Finance
+documentation_url: https://actualbudget.org/docs/install/docker
+recommended_memory_bytes: 268435456
+requires_gpu: false
+platforms:
+    - linux/amd64
+    - linux/arm64

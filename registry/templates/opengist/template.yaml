@@ -1,0 +1,49 @@
+id: opengist
+name: Opengist
+slogan: A self-hosted pastebin powered by Git, for sharing snippets and gists with revisions, topics and search. AGPL-3.0 licensed. Uses SQLite in one container. SSH Git access is off, so clone and push over HTTPS. The first account you register becomes the admin.
+description: A self-hosted pastebin powered by Git, for sharing snippets and gists with revisions, topics and search. AGPL-3.0 licensed. Uses SQLite in one container. SSH Git access is off, so clone and push over HTTPS. The first account you register becomes the admin.
+category: Developer Tools
+documentation_url: https://opengist.io/docs
+recommended_memory_bytes: 134217728
+requires_gpu: false
+platforms:
+    - linux/amd64
+    - linux/arm64
+manifest:
+    id: opengist
+    name: Opengist
+    description: A self-hosted pastebin powered by Git, for sharing snippets and gists with revisions, topics and search. AGPL-3.0 licensed. Uses SQLite in one container. SSH Git access is off, so clone and push over HTTPS. The first account you register becomes the admin.
+    icon: code
+    category: Developer Tools
+    documentation_url: https://opengist.io/docs
+    source_repo: https://github.com/thomiceli/opengist
+    license: AGPL-3.0
+    license_class: network-copyleft
+    license_url: https://github.com/thomiceli/opengist/blob/master/LICENSE
+    hosted_use: ""
+    listing:
+        by: community
+        vendor_org: ""
+        proof: ""
+    status: active
+    status_reason: ""
+    replaced_by: ""
+    aliases: []
+    first_run: []
+    compose_file: compose.yaml
+    recommended_memory_bytes: 134217728
+    env: []
+    domains:
+        - service: opengist
+          port: 6157
+          description: Public address of Opengist.
+    healthcheck:
+        service: opengist
+        port: 6157
+        path: /
+        expect: 0
+        kind: ""
+        reason: ""
+    first_boot_seconds: 0
+    console_command: []
+    capabilities: []

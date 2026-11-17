@@ -1,0 +1,10 @@
+id: grocy
+name: Grocy
+slogan: 'A self-hosted ERP for your household: groceries, chores, and a shopping list that stays in sync.'
+category: Productivity
+documentation_url: https://grocy.info/en/docs
+recommended_memory_bytes: 268435456
+requires_gpu: false
+platforms:
+    - linux/amd64
+    - linux/arm64

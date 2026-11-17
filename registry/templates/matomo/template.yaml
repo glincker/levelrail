@@ -1,0 +1,12 @@
+id: matomo
+name: Matomo
+slogan: A privacy-friendly, self-hosted alternative to Google Analytics with full data ownership.
+category: Analytics
+documentation_url: https://matomo.org/faq/how-to-install/install-matomo-with-docker/
+recommended_memory_bytes: 536870912
+requires_gpu: false
+platforms:
+    - linux/amd64
+    - linux/arm64
+    - linux/ppc64le
+    - linux/s390x

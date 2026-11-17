@@ -1,0 +1,9 @@
+id: gitlab
+name: GitLab
+slogan: 'GitLab Community Edition: Git hosting, CI/CD, issues, and a container registry in one Omnibus image.'
+category: Developer Tools
+documentation_url: https://docs.gitlab.com/ee/install/docker.html
+recommended_memory_bytes: 4294967296
+requires_gpu: false
+platforms:
+    - linux/amd64

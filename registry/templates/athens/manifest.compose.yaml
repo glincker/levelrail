@@ -1,0 +1,15 @@
+services:
+  athens:
+    image: gomods/athens:v0.20.0
+    ports: ["3000"]
+    environment:
+      ATHENS_STORAGE_TYPE: disk
+      ATHENS_DISK_STORAGE_ROOT: /var/lib/athens
+      ATHENS_PORT: "3000"
+    volumes:
+      - storage:/var/lib/athens
+    healthcheck:
+      test: ["CMD-SHELL", "wget -q -O /dev/null http://127.0.0.1:3000/healthz"]
+      interval: 15s
+      timeout: 5s
+      retries: 5

@@ -1,0 +1,17 @@
+services:
+  rocketchat:
+    image: rocketchat/rocket.chat:8.0.1
+    ports: ["3000:3000"]
+    environment:
+      MONGO_URL: mongodb://mongo:27017/rocketchat
+      MONGO_OPLOG_URL: mongodb://mongo:27017/local
+      ROOT_URL: ${SERVICE_URL_ROCKETCHAT:-http://localhost:3000}
+    healthcheck:
+      test: ["CMD-SHELL", "wget -q -O- http://127.0.0.1:3000/api/info || exit 1"]
+      interval: 30s
+      timeout: 5s
+      retries: 3
+  mongo:
+    image: mongo:7
+    volumes:
+      - rocketchat_mongo_data:/data/db

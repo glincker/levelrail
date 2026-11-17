@@ -1,0 +1,18 @@
+services:
+  baikal:
+    image: ckulka/baikal:0.10.1-nginx-php8.2
+    ports: ["80"]
+    environment:
+      TZ: UTC
+    volumes:
+      - baikal_config:/var/www/baikal/config
+      - baikal_data:/var/www/baikal/Specific
+    healthcheck:
+      test: ["CMD-SHELL", "curl -sS -o /dev/null http://127.0.0.1:80/ || exit 1"]
+      interval: 10s
+      timeout: 5s
+      retries: 10
+      start_period: 20s
+volumes:
+  baikal_config:
+  baikal_data:

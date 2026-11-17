@@ -1,0 +1,12 @@
+services:
+  syncthing:
+    image: lscr.io/linuxserver/syncthing:1.29.4
+    ports: ["8384:8384", "22000:22000"]
+    volumes:
+      - syncthing_config:/config
+      - syncthing_data:/data
+    healthcheck:
+      test: ["CMD-SHELL", "wget -q -O- http://127.0.0.1:8384/rest/noauth/health || exit 1"]
+      interval: 30s
+      timeout: 5s
+      retries: 3

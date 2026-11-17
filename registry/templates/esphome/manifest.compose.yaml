@@ -1,0 +1,16 @@
+services:
+  esphome:
+    image: esphome/esphome:2026.10.2
+    ports: ["6052"]
+    environment:
+      USERNAME: "admin"
+      PASSWORD: ${ADMIN_PASSWORD}
+      TZ: ${TZ}
+    volumes:
+      - config:/config
+    healthcheck:
+      test: ["CMD-SHELL", "curl -fsS -o /dev/null http://127.0.0.1:6052 || wget -q -O /dev/null http://127.0.0.1:6052"]
+      interval: 15s
+      timeout: 10s
+      retries: 10
+      start_period: 30s

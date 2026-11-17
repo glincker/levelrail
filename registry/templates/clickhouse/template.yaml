@@ -1,0 +1,10 @@
+id: clickhouse
+name: ClickHouse
+slogan: A columnar database built for fast analytical queries over large datasets.
+category: Database Tools
+documentation_url: https://hub.docker.com/r/clickhouse/clickhouse-server
+recommended_memory_bytes: 1073741824
+requires_gpu: false
+platforms:
+    - linux/amd64
+    - linux/arm64

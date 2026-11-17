@@ -1,0 +1,10 @@
+id: sonarqube
+name: SonarQube Community
+slogan: Continuous code quality and security analysis across 30+ languages, with quality gates for every pull request.
+category: Developer Tools
+documentation_url: https://docs.sonarsource.com/sonarqube-community-build
+recommended_memory_bytes: 3221225472
+requires_gpu: false
+platforms:
+    - linux/amd64
+    - linux/arm64

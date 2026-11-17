@@ -1,0 +1,41 @@
+services:
+  romm:
+    image: rommapp/romm:5.4.1
+    ports: ["8080"]
+    entrypoint: ["sh", "-c", "until nc -z db 3306; do sleep 2; done; exec /docker-entrypoint.sh /init"]
+    environment:
+      ROMM_DB_DRIVER: mariadb
+      DB_HOST: db
+      DB_PORT: "3306"
+      DB_NAME: romm
+      DB_USER: romm
+      DB_PASSWD: $SERVICE_PASSWORD_DB
+      ROMM_AUTH_SECRET_KEY: $SERVICE_HEX_32_AUTHKEY
+      DISABLE_DOWNLOAD_ENDPOINT_AUTH: "false"
+      TZ: ${TZ}
+    volumes:
+      - resources:/romm/resources
+      - library:/romm/library
+      - assets:/romm/assets
+      - config:/romm/config
+      - redis:/redis-data
+    healthcheck:
+      test: ["CMD-SHELL", "curl -fsS -o /dev/null http://127.0.0.1:8080/api/heartbeat || exit 1"]
+      interval: 15s
+      timeout: 6s
+      retries: 10
+      start_period: 60s
+  db:
+    image: mariadb:11.8.9
+    environment:
+      MARIADB_ROOT_PASSWORD: $SERVICE_PASSWORD_DBROOT
+      MARIADB_DATABASE: romm
+      MARIADB_USER: romm
+      MARIADB_PASSWORD: $SERVICE_PASSWORD_DB
+    volumes:
+      - dbdata:/var/lib/mysql
+    healthcheck:
+      test: ["CMD", "healthcheck.sh", "--connect", "--innodb_initialized"]
+      interval: 5s
+      timeout: 20s
+      retries: 10

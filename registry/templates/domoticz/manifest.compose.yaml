@@ -1,0 +1,14 @@
+services:
+  domoticz:
+    image: domoticz/domoticz:2026.4@sha256:ece392300d055395cac0b4edea4451b31f765ff5339e5597ca77371be8d7e93a
+    ports: ["8080"]
+    environment:
+      TZ: ${TZ}
+    volumes:
+      - userdata:/opt/domoticz/userdata
+    healthcheck:
+      test: ["CMD-SHELL", "curl -fsS -o /dev/null http://127.0.0.1:8080"]
+      interval: 15s
+      timeout: 10s
+      retries: 10
+      start_period: 30s

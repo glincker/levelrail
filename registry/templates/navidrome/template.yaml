@@ -1,0 +1,12 @@
+id: navidrome
+name: Navidrome
+slogan: Stream your own music collection from a Subsonic-compatible server to any device, anywhere.
+category: Media
+documentation_url: https://www.navidrome.org/docs/
+recommended_memory_bytes: 268435456
+requires_gpu: false
+platforms:
+    - linux/386
+    - linux/amd64
+    - linux/arm
+    - linux/arm64

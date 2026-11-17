@@ -1,0 +1,10 @@
+id: keycloak
+name: Keycloak
+slogan: An open-source identity and access management server with SSO, OAuth2, and SAML support.
+category: Security
+documentation_url: https://www.keycloak.org/documentation
+recommended_memory_bytes: 1073741824
+requires_gpu: false
+platforms:
+    - linux/amd64
+    - linux/arm64

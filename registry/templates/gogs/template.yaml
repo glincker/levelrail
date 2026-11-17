@@ -1,0 +1,47 @@
+id: gogs
+name: Gogs
+slogan: A painless self-hosted Git service written in Go, light enough to run on a small VPS.
+description: A painless self-hosted Git service written in Go, light enough to run on a small VPS.
+category: Developer Tools
+documentation_url: https://gogs.io/docs
+recommended_memory_bytes: 268435456
+requires_gpu: false
+platforms:
+    - linux/amd64
+    - linux/arm
+    - linux/arm64
+manifest:
+    id: gogs
+    name: Gogs
+    description: A painless self-hosted Git service written in Go, light enough to run on a small VPS.
+    icon: git-branch
+    category: Developer Tools
+    documentation_url: https://gogs.io/docs
+    source_repo: https://github.com/gogs/gogs
+    license: MIT
+    license_class: permissive
+    license_url: https://github.com/gogs/gogs/blob/main/LICENSE
+    hosted_use: ""
+    listing: null
+    status: ""
+    status_reason: ""
+    replaced_by: ""
+    aliases: []
+    first_run: []
+    compose_file: compose.yaml
+    recommended_memory_bytes: 268435456
+    env: []
+    domains:
+        - service: gogs
+          port: 3000
+          description: Public address of Gogs. Finish the install wizard on first visit.
+    healthcheck:
+        service: gogs
+        port: 3000
+        path: /healthcheck
+        expect: 0
+        kind: ""
+        reason: ""
+    first_boot_seconds: 0
+    console_command: []
+    capabilities: []

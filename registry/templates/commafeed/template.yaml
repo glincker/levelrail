@@ -1,0 +1,47 @@
+id: commafeed
+name: CommaFeed
+slogan: A fast self-hosted RSS reader with a clean web client and keyboard shortcuts. It uses an embedded database kept on a volume.
+description: A fast self-hosted RSS reader with a clean web client and keyboard shortcuts. It uses an embedded database kept on a volume.
+category: Productivity
+documentation_url: https://github.com/Athou/commafeed
+recommended_memory_bytes: 536870912
+requires_gpu: false
+manifest:
+    id: commafeed
+    name: CommaFeed
+    description: A fast self-hosted RSS reader with a clean web client and keyboard shortcuts. It uses an embedded database kept on a volume.
+    icon: rss
+    category: Productivity
+    documentation_url: https://github.com/Athou/commafeed
+    source_repo: https://github.com/Athou/commafeed
+    license: Apache-2.0
+    license_class: permissive
+    license_url: https://github.com/Athou/commafeed/blob/master/LICENSE
+    hosted_use: allowed
+    listing:
+        by: community
+        vendor_org: ""
+        proof: ""
+    status: active
+    status_reason: ""
+    replaced_by: ""
+    aliases: []
+    first_run:
+        - Sign in with the default admin account shown in the project docs and change the password right away.
+    compose_file: compose.yaml
+    recommended_memory_bytes: 536870912
+    env: []
+    domains:
+        - service: commafeed
+          port: 8082
+          description: Public address of CommaFeed.
+    healthcheck:
+        service: commafeed
+        port: 8082
+        path: /
+        expect: 0
+        kind: ""
+        reason: ""
+    first_boot_seconds: 0
+    console_command: []
+    capabilities: []

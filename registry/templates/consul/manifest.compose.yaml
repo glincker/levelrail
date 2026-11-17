@@ -1,0 +1,15 @@
+services:
+  consul:
+    image: hashicorp/consul:1.20
+    ports: ["8500"]
+    environment:
+      CONSUL_BIND_INTERFACE: eth0
+    command: ["agent", "-server", "-bootstrap-expect=1", "-ui", "-client=0.0.0.0", "-data-dir=/consul/data"]
+    volumes:
+      - data:/consul/data
+    healthcheck:
+      test: ["CMD-SHELL", "wget -q -O /dev/null http://127.0.0.1:8500/v1/status/leader"]
+      interval: 10s
+      timeout: 5s
+      retries: 10
+      start_period: 10s

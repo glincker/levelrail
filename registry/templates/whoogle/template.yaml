@@ -1,0 +1,11 @@
+id: whoogle
+name: Whoogle Search
+slogan: A privacy-focused front end for Google search results, with no tracking, ads, or JavaScript required.
+category: Security
+documentation_url: https://github.com/benbusby/whoogle-search
+recommended_memory_bytes: 268435456
+requires_gpu: false
+platforms:
+    - linux/amd64
+    - linux/arm
+    - linux/arm64

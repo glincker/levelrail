@@ -1,0 +1,10 @@
+id: penpot
+name: Penpot
+slogan: An open-source design and prototyping platform, a self-hosted alternative to Figma.
+category: Productivity
+documentation_url: https://help.penpot.app
+recommended_memory_bytes: 2147483648
+requires_gpu: false
+platforms:
+    - linux/amd64
+    - linux/arm64

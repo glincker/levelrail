@@ -1,0 +1,10 @@
+id: freshrss
+name: FreshRSS
+slogan: A lightweight, self-hosted RSS aggregator with multi-user support and a mobile-friendly API.
+category: Productivity
+documentation_url: https://freshrss.github.io/FreshRSS/
+recommended_memory_bytes: 268435456
+requires_gpu: false
+platforms:
+    - linux/amd64
+    - linux/arm64

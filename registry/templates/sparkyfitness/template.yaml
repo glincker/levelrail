@@ -1,0 +1,10 @@
+id: sparkyfitness
+name: SparkyFitness
+slogan: A fitness tracker for nutrition, exercise, and body measurements.
+category: Productivity
+documentation_url: https://codewithcj.github.io/SparkyFitness/
+recommended_memory_bytes: 536870912
+requires_gpu: false
+platforms:
+    - linux/amd64
+    - linux/arm64

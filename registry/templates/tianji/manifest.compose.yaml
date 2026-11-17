@@ -1,0 +1,31 @@
+services:
+  tianji:
+    image: moonrailgun/tianji:1.33.9
+    ports: ["12345"]
+    environment:
+      DATABASE_URL: postgresql://tianji:${DB_PASSWORD}@db:5432/tianji
+      JWT_SECRET: ${JWT_SECRET}
+      ALLOW_REGISTER: "false"
+      ALLOW_OPENAPI: "true"
+    depends_on:
+      db:
+        condition: service_healthy
+    healthcheck:
+      test: ["CMD-SHELL", "curl -fsS -o /dev/null http://127.0.0.1:12345/ || wget -q -O /dev/null http://127.0.0.1:12345/"]
+      interval: 15s
+      timeout: 10s
+      retries: 10
+      start_period: 40s
+  db:
+    image: postgres:16-alpine
+    environment:
+      POSTGRES_USER: tianji
+      POSTGRES_PASSWORD: ${DB_PASSWORD}
+      POSTGRES_DB: tianji
+    volumes:
+      - pgdata:/var/lib/postgresql/data
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U tianji -d tianji"]
+      interval: 5s
+      timeout: 5s
+      retries: 10

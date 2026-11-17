@@ -1,0 +1,10 @@
+id: pgbackweb
+name: PG Back Web
+slogan: A web UI for scheduling, encrypting, and restoring PostgreSQL backups.
+category: Database Tools
+documentation_url: https://github.com/eduardolat/pgbackweb
+recommended_memory_bytes: 268435456
+requires_gpu: false
+platforms:
+    - linux/amd64
+    - linux/arm64

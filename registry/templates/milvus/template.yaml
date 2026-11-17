@@ -1,0 +1,10 @@
+id: milvus
+name: Milvus
+slogan: A cloud-native vector database built for billion-scale similarity search, run here as a single standalone node. Has no authentication, so reach it from other services in this project at milvus:19530, or attach a domain (it routes to port 19530 only) only behind Basic Auth. Not published on the host.
+category: Database Tools
+documentation_url: https://milvus.io/docs
+recommended_memory_bytes: 4294967296
+requires_gpu: false
+platforms:
+    - linux/amd64
+    - linux/arm64

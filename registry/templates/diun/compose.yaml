@@ -1,0 +1,17 @@
+services:
+  diun:
+    image: crazymax/diun:4.29.0
+    environment:
+      TZ: "Etc/UTC"
+      LOG_LEVEL: "info"
+      DIUN_WATCH_WORKERS: "20"
+      DIUN_WATCH_SCHEDULE: "0 */6 * * *"
+      DIUN_PROVIDERS_DOCKER: "true"
+      DIUN_PROVIDERS_DOCKER_WATCHBYDEFAULT: "true"
+    volumes:
+      - diun_data:/data
+    healthcheck:
+      test: ["CMD-SHELL", "pgrep diun || exit 1"]
+      interval: 30s
+      timeout: 5s
+      retries: 3

@@ -1,0 +1,11 @@
+id: healthchecks
+name: Healthchecks
+slogan: 'Cron job and scheduled task monitoring: get alerted the moment a periodic job stops checking in.'
+category: Monitoring
+documentation_url: https://healthchecks.io/docs/self_hosted/
+recommended_memory_bytes: 268435456
+requires_gpu: false
+platforms:
+    - linux/amd64
+    - linux/arm
+    - linux/arm64

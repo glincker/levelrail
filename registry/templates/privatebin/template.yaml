@@ -1,0 +1,14 @@
+id: privatebin
+name: PrivateBin
+slogan: A minimalist, encrypted pastebin where the server has zero knowledge of what you paste.
+category: Security
+documentation_url: https://github.com/PrivateBin/PrivateBin/blob/master/doc/README.md
+recommended_memory_bytes: 134217728
+requires_gpu: false
+platforms:
+    - linux/386
+    - linux/amd64
+    - linux/arm
+    - linux/arm64
+    - linux/ppc64le
+    - linux/s390x

@@ -1,0 +1,11 @@
+id: vaultwarden
+name: Vaultwarden
+slogan: A lightweight, self-hosted password manager server compatible with the Bitwarden clients.
+category: Security
+documentation_url: https://github.com/dani-garcia/vaultwarden/wiki
+recommended_memory_bytes: 268435456
+requires_gpu: false
+platforms:
+    - linux/amd64
+    - linux/arm
+    - linux/arm64

@@ -1,0 +1,59 @@
+id: raneto
+name: Raneto
+slogan: A flat file knowledge base that renders a folder of Markdown files as a searchable wiki, packaged by the community maintainers. MIT licensed. Edit pages from the file volume or the built-in editor.
+description: A flat file knowledge base that renders a folder of Markdown files as a searchable wiki, packaged by the community maintainers. MIT licensed. Edit pages from the file volume or the built-in editor.
+category: Productivity
+documentation_url: https://github.com/ryanlelek/Raneto
+recommended_memory_bytes: 201326592
+requires_gpu: false
+manifest:
+    id: raneto
+    name: Raneto
+    description: A flat file knowledge base that renders a folder of Markdown files as a searchable wiki, packaged by the community maintainers. MIT licensed. Edit pages from the file volume or the built-in editor.
+    icon: book
+    category: Productivity
+    documentation_url: https://github.com/ryanlelek/Raneto
+    source_repo: https://github.com/ryanlelek/Raneto
+    license: MIT
+    license_class: permissive
+    license_url: https://github.com/ryanlelek/Raneto/blob/HEAD/LICENSE
+    hosted_use: ""
+    listing:
+        by: community
+        vendor_org: ""
+        proof: ""
+    status: active
+    status_reason: ""
+    replaced_by: ""
+    aliases: []
+    first_run:
+        - Open the site, then edit the Markdown under the config volume to add pages.
+    compose_file: compose.yaml
+    recommended_memory_bytes: 201326592
+    env:
+        - key: TZ
+          label: Time zone
+          description: IANA time zone for logs and schedules.
+          default: Etc/UTC
+          generate: ""
+          length: 0
+          required: false
+          secret: false
+          type: ""
+          service: ""
+          path: ""
+          mode: ""
+    domains:
+        - service: raneto
+          port: 3000
+          description: Public address of Raneto.
+    healthcheck:
+        service: raneto
+        port: 3000
+        path: /
+        expect: 0
+        kind: ""
+        reason: ""
+    first_boot_seconds: 0
+    console_command: []
+    capabilities: []

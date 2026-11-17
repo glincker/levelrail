@@ -1,0 +1,47 @@
+id: arangodb
+name: ArangoDB
+slogan: A multi model database for documents, graphs and key value data with a web interface, a generated root password and a data volume. Source available under the BSL for the community line.
+description: A multi model database for documents, graphs and key value data with a web interface, a generated root password and a data volume. Source available under the BSL for the community line.
+category: Database Tools
+documentation_url: https://docs.arangodb.com/3.12/
+recommended_memory_bytes: 1073741824
+requires_gpu: false
+manifest:
+    id: arangodb
+    name: ArangoDB
+    description: A multi model database for documents, graphs and key value data with a web interface, a generated root password and a data volume. Source available under the BSL for the community line.
+    icon: graph
+    category: Database Tools
+    documentation_url: https://docs.arangodb.com/3.12/
+    source_repo: https://github.com/arangodb/arangodb
+    license: LicenseRef-BUSL-1.1
+    license_class: source-available
+    license_url: https://github.com/arangodb/arangodb
+    hosted_use: restricted
+    listing:
+        by: community
+        vendor_org: ""
+        proof: ""
+    status: active
+    status_reason: ""
+    replaced_by: ""
+    aliases: []
+    first_run:
+        - Open the web interface and sign in as root with the generated password from the app secrets.
+    compose_file: compose.yaml
+    recommended_memory_bytes: 1073741824
+    env: []
+    domains:
+        - service: arangodb
+          port: 8529
+          description: Public address of the web page.
+    healthcheck:
+        service: arangodb
+        port: 8529
+        path: ""
+        expect: 0
+        kind: tcp
+        reason: ""
+    first_boot_seconds: 0
+    console_command: []
+    capabilities: []

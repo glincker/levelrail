@@ -1,0 +1,13 @@
+services:
+  vaultwarden:
+    image: vaultwarden/server:1.32.1
+    ports: ["8080:80"]
+    environment:
+      ADMIN_TOKEN: $SERVICE_HEX_64_ADMINTOKEN
+    volumes:
+      - vaultwarden_data:/data
+    healthcheck:
+      test: ["CMD-SHELL", "curl -fsS -o /dev/null http://127.0.0.1:80/alive || wget -q -O /dev/null http://127.0.0.1:80/alive || exit 1"]
+      interval: 30s
+      timeout: 5s
+      retries: 3

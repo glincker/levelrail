@@ -1,0 +1,55 @@
+services:
+  teable-db:
+    image: postgres:15.4
+    environment:
+      POSTGRES_USER: teable
+      POSTGRES_PASSWORD: $SERVICE_PASSWORD_DB
+      POSTGRES_DB: teable
+    volumes:
+      - teable_db_data:/var/lib/postgresql/data
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U teable -d teable"]
+      interval: 5s
+      timeout: 5s
+      retries: 10
+  teable-cache:
+    image: redis:7.2.4
+    volumes:
+      - teable_cache_data:/data
+    healthcheck:
+      test: ["CMD-SHELL", "redis-cli ping | grep -q PONG"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+  teable-db-migrate:
+    image: ghcr.io/teableio/teable-db-migrate:latest
+    restart: "no"
+    depends_on:
+      teable-db:
+        condition: service_healthy
+    environment:
+      PRISMA_DATABASE_URL: postgresql://teable:$SERVICE_PASSWORD_DB@teable-db:5432/teable
+  teable:
+    image: ghcr.io/teableio/teable:latest
+    ports: ["3000:3000"]
+    depends_on:
+      teable-cache:
+        condition: service_started
+      teable-db:
+        condition: service_healthy
+      teable-db-migrate:
+        condition: service_completed_successfully
+    environment:
+      PUBLIC_ORIGIN: ${SERVICE_URL_TEABLE:-http://localhost:3000}
+      PRISMA_DATABASE_URL: postgresql://teable:$SERVICE_PASSWORD_DB@teable-db:5432/teable
+      SECRET_KEY: $SERVICE_PASSWORD_64_SECRETKEY
+      PORT: "3000"
+      BACKEND_CACHE_PROVIDER: redis
+      BACKEND_CACHE_REDIS_URI: redis://teable-cache:6379/0
+    volumes:
+      - teable_data:/app/.assets
+    healthcheck:
+      test: ["CMD-SHELL", "curl -f http://127.0.0.1:3000"]
+      interval: 10s
+      timeout: 5s
+      retries: 10

@@ -1,0 +1,10 @@
+id: freescout
+name: FreeScout
+slogan: A free, self-hosted help desk and shared mailbox, a lighter alternative to Zendesk or Help Scout.
+category: Communication
+documentation_url: https://github.com/freescout-helpdesk/freescout/wiki
+recommended_memory_bytes: 536870912
+requires_gpu: false
+platforms:
+    - linux/amd64
+    - linux/arm64

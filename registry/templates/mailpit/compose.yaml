@@ -1,0 +1,13 @@
+services:
+  mailpit:
+    image: axllent/mailpit:v1.21.8
+    ports: ["8025:8025"]
+    volumes:
+      - mailpit_data:/data
+    environment:
+      MP_DATABASE: /data/mailpit.db
+    healthcheck:
+      test: ["CMD-SHELL", "wget -q -O- http://127.0.0.1:8025/livez || exit 1"]
+      interval: 10s
+      timeout: 5s
+      retries: 3

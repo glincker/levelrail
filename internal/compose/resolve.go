@@ -47,6 +47,9 @@ func (u UnresolvedVar) String() string {
 // (persisted and added to secretEnv), the same as a whole-value
 // generatable token, since it now contains one. A default-less,
 // non-generatable token in that position is unresolved.
+//
+// "$$" in command, entrypoint and healthcheck.test becomes a literal "$"
+// (Compose's escape); those fields never receive magic-var secrets.
 func ResolveMagicVars(
 	f *File,
 	generate func(kind, key string, length int) (string, error),
@@ -70,6 +73,13 @@ func resolveMagicVars(
 		svc := f.Services[svcKey]
 		changed := false
 
+		if hasDollarEscape(svc) {
+			if f.dollarEscaped == nil {
+				f.dollarEscaped = map[string]bool{}
+			}
+			f.dollarEscaped[svcKey] = true
+		}
+
 		if len(svc.Command) > 0 {
 			newCommand := make(Command, len(svc.Command))
 			for i, entry := range svc.Command {
@@ -78,6 +88,17 @@ func resolveMagicVars(
 				unresolved = append(unresolved, entryUnresolved...)
 			}
 			svc.Command = newCommand
+			changed = true
+		}
+
+		if len(svc.Entrypoint) > 0 {
+			svc.Entrypoint = unescapeEntries(svc.Entrypoint)
+			changed = true
+		}
+		if svc.Healthcheck != nil && len(svc.Healthcheck.Test) > 0 {
+			hc := *svc.Healthcheck
+			hc.Test = unescapeEntries(hc.Test)
+			svc.Healthcheck = &hc
 			changed = true
 		}
 
@@ -221,9 +242,12 @@ func resolveDomainVar(f *File, svcKey string, v MagicVar) (string, bool) {
 // value in (see ResolveMagicVars), so it's reported as unresolved
 // instead of generated.
 func resolveCommandEntry(f *File, svcKey string, index int, entry string) (string, []UnresolvedVar) {
+	// "$$" is held as a sentinel while tokens resolve, so "$$SERVICE_X" stays
+	// a literal for the container shell and is never read as a magic var.
+	entry = strings.ReplaceAll(strings.ReplaceAll(entry, "\x00", ""), "$$", dollarSentinel)
 	vars := FindMagicVars(entry)
 	if len(vars) == 0 {
-		return entry, nil
+		return unescapeDollar(entry), nil
 	}
 
 	location := fmt.Sprintf("command[%d]", index)
@@ -244,7 +268,17 @@ func resolveCommandEntry(f *File, svcKey string, index int, entry string) (strin
 		}
 		unresolved = append(unresolved, UnresolvedVar{Service: svcKey, EnvKey: location, Token: v.Token})
 	}
-	return resolved, unresolved
+	return unescapeDollar(resolved), unresolved
+}
+
+// unescapeEntries turns Compose's "$$" escape into a literal "$" in argv
+// entries that never receive magic-var values, so secrets stay out of argv.
+func unescapeEntries(in []string) []string {
+	out := make([]string, len(in))
+	for i, e := range in {
+		out[i] = unescapeDollar(strings.ReplaceAll(strings.ReplaceAll(e, "\x00", ""), "$$", dollarSentinel))
+	}
+	return out
 }
 
 func resolveGenerated(cache map[string]string, v MagicVar, generate func(kind, key string, length int) (string, error)) (string, error) {
@@ -279,5 +313,20 @@ func resolveScalarField(f *File, svcKey, key, value string, interpolate bool) (s
 			value = strings.Replace(value, v.Token, v.Default, 1)
 		}
 	}
-	return value, nil
+	return unescapeDollar(value), nil
+}
+
+func hasDollarEscape(svc Service) bool {
+	lists := [][]string{svc.Command, svc.Entrypoint}
+	if svc.Healthcheck != nil {
+		lists = append(lists, svc.Healthcheck.Test)
+	}
+	for _, l := range lists {
+		for _, e := range l {
+			if strings.Contains(e, "$$") {
+				return true
+			}
+		}
+	}
+	return false
 }

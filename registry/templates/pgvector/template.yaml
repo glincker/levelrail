@@ -1,0 +1,10 @@
+id: pgvector
+name: pgvector Postgres
+slogan: PostgreSQL 17 with the pgvector extension preinstalled, for embeddings next to your relational data.
+category: Database Tools
+documentation_url: https://github.com/pgvector/pgvector
+recommended_memory_bytes: 536870912
+requires_gpu: false
+platforms:
+    - linux/amd64
+    - linux/arm64

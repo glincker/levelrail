@@ -1,0 +1,10 @@
+id: pingvin-share
+name: Pingvin Share
+slogan: A self-hosted, ad-free alternative to WeTransfer for sending files with expiring links.
+category: Storage
+documentation_url: https://github.com/stonith404/pingvin-share
+recommended_memory_bytes: 268435456
+requires_gpu: false
+platforms:
+    - linux/amd64
+    - linux/arm64

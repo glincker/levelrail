@@ -1,0 +1,15 @@
+services:
+  convertx:
+    image: ghcr.io/c4illin/convertx:latest
+    ports: ["3000:3000"]
+    environment:
+      JWT_SECRET: $SERVICE_PASSWORD_JWTSECRET
+      ACCOUNT_REGISTRATION: "false"
+      HTTP_ALLOWED: "true"
+    volumes:
+      - convertx_data:/app/data
+    healthcheck:
+      test: ["CMD-SHELL", "curl -fsS -o /dev/null http://127.0.0.1:3000/"]
+      interval: 10s
+      timeout: 5s
+      retries: 3

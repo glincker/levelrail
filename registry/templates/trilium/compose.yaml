@@ -1,0 +1,11 @@
+services:
+  trilium:
+    image: ghcr.io/triliumnext/trilium:stable
+    ports: ["8080:8080"]
+    volumes:
+      - trilium_data:/home/node/trilium-data
+    healthcheck:
+      test: ["CMD-SHELL", "curl -fsS -o /dev/null http://127.0.0.1:8080/api/health-check"]
+      interval: 10s
+      timeout: 5s
+      retries: 3

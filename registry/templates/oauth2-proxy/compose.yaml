@@ -1,0 +1,30 @@
+services:
+    oauth2-proxy:
+        image: quay.io/oauth2-proxy/oauth2-proxy:v7.15.6
+        ports: ["4180"]
+        command: ["--config=/etc/oauth2-proxy.cfg"]
+        healthcheck:
+            test: ["NONE"]
+        x-levelrail-healthcheck:
+            kind: http
+            path: /ping
+            port: 4180
+            interval: 15s
+            timeout: 8s
+            retries: 10
+            start_period: 20s
+        secrets:
+            - source: lr_file_oauth2_proxy_config
+              target: /etc/oauth2-proxy.cfg
+              mode: "0444"
+secrets:
+    lr_file_oauth2_proxy_config:
+        content: |
+            http_address = "0.0.0.0:4180"
+            provider = "github"
+            client_id = "replace-with-client-id"
+            client_secret = "${SERVICE_PASSWORD_32_OAUTH2_CLIENT_SECRET}"
+            cookie_secret = "${SERVICE_PASSWORD_32_OAUTH2_COOKIE_SECRET}"
+            cookie_secure = false
+            email_domains = ["*"]
+            upstreams = ["static://202"]

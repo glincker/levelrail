@@ -1,0 +1,50 @@
+id: rss-bridge
+name: RSS-Bridge
+slogan: Generates RSS and Atom feeds for websites that do not offer them, using a library of small bridges. Unlicense (public domain). Runs in one container with no database. Public to anyone with the link, so restrict it if you only want private use.
+description: Generates RSS and Atom feeds for websites that do not offer them, using a library of small bridges. Unlicense (public domain). Runs in one container with no database. Public to anyone with the link, so restrict it if you only want private use.
+category: Applications
+documentation_url: https://rss-bridge.github.io/rss-bridge/
+recommended_memory_bytes: 134217728
+requires_gpu: false
+platforms:
+    - linux/amd64
+    - linux/arm
+    - linux/arm64
+manifest:
+    id: rss-bridge
+    name: RSS-Bridge
+    description: Generates RSS and Atom feeds for websites that do not offer them, using a library of small bridges. Unlicense (public domain). Runs in one container with no database. Public to anyone with the link, so restrict it if you only want private use.
+    icon: rss
+    category: Applications
+    documentation_url: https://rss-bridge.github.io/rss-bridge/
+    source_repo: https://github.com/RSS-Bridge/rss-bridge
+    license: Unlicense
+    license_class: permissive
+    license_url: https://github.com/RSS-Bridge/rss-bridge/blob/master/UNLICENSE
+    hosted_use: ""
+    listing:
+        by: community
+        vendor_org: ""
+        proof: ""
+    status: active
+    status_reason: ""
+    replaced_by: ""
+    aliases: []
+    first_run: []
+    compose_file: compose.yaml
+    recommended_memory_bytes: 134217728
+    env: []
+    domains:
+        - service: rss-bridge
+          port: 80
+          description: Public address of RSS-Bridge.
+    healthcheck:
+        service: rss-bridge
+        port: 80
+        path: /
+        expect: 0
+        kind: ""
+        reason: ""
+    first_boot_seconds: 0
+    console_command: []
+    capabilities: []

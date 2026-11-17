@@ -1,0 +1,10 @@
+id: babybuddy
+name: Baby Buddy
+slogan: Track sleep, feeding, diaper changes, and growth for a baby or toddler, with charts and timers.
+category: Productivity
+documentation_url: https://docs.baby-buddy.net/
+recommended_memory_bytes: 268435456
+requires_gpu: false
+platforms:
+    - linux/amd64
+    - linux/arm64

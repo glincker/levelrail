@@ -1,0 +1,10 @@
+id: nodebb
+name: NodeBB
+slogan: A modern forum platform with real-time discussions, SSO, and a plugin ecosystem, backed by Postgres.
+category: Communication
+documentation_url: https://docs.nodebb.org/
+recommended_memory_bytes: 536870912
+requires_gpu: false
+platforms:
+    - linux/amd64
+    - linux/arm64

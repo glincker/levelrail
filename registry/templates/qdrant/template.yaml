@@ -1,0 +1,10 @@
+id: qdrant
+name: Qdrant
+slogan: A vector similarity search engine for storing, searching, and managing embeddings.
+category: Database Tools
+documentation_url: https://qdrant.tech/documentation/
+recommended_memory_bytes: 536870912
+requires_gpu: false
+platforms:
+    - linux/amd64
+    - linux/arm64

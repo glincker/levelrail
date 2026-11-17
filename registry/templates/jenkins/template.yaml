@@ -1,0 +1,13 @@
+id: jenkins
+name: Jenkins
+slogan: The long-running automation server for building, testing, and deploying with thousands of plugins.
+category: Developer Tools
+documentation_url: https://www.jenkins.io/doc
+recommended_memory_bytes: 1073741824
+requires_gpu: false
+platforms:
+    - linux/amd64
+    - linux/arm64
+    - linux/ppc64le
+    - linux/riscv64
+    - linux/s390x

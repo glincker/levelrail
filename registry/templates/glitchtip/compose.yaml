@@ -1,0 +1,28 @@
+services:
+  glitchtip:
+    image: glitchtip/glitchtip:6.0
+    ports: ["8080:8080"]
+    environment:
+      SECRET_KEY: $SERVICE_HEX_64_SECRETKEY
+      DATABASE_URL: postgres://glitchtip:$SERVICE_PASSWORD_DB@db:5432/glitchtip
+      REDIS_URL: redis://redis:6379
+      GLITCHTIP_DOMAIN: ${SERVICE_URL_GLITCHTIP:-http://localhost:8080}
+      DEFAULT_FROM_EMAIL: admin@example.com
+    healthcheck:
+      test: ["CMD-SHELL", "curl -fsS -o /dev/null http://127.0.0.1:8080/_health/"]
+      interval: 10s
+      timeout: 5s
+      retries: 3
+      start_period: 120s
+  db:
+    image: postgres:16-alpine
+    environment:
+      POSTGRES_USER: glitchtip
+      POSTGRES_PASSWORD: $SERVICE_PASSWORD_DB
+      POSTGRES_DB: glitchtip
+    volumes:
+      - glitchtip_db_data:/var/lib/postgresql/data
+  redis:
+    image: redis:7-alpine
+    volumes:
+      - glitchtip_redis_data:/data

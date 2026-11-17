@@ -1,0 +1,11 @@
+id: komga
+name: Komga
+slogan: A media server for comics, manga, and digital books with a clean reading interface.
+category: Media
+documentation_url: https://komga.org/docs/installation/docker
+recommended_memory_bytes: 268435456
+requires_gpu: false
+platforms:
+    - linux/amd64
+    - linux/arm
+    - linux/arm64

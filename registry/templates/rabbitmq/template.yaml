@@ -1,0 +1,15 @@
+id: rabbitmq
+name: RabbitMQ
+slogan: A widely used open-source message broker supporting AMQP, MQTT, and STOMP.
+category: Infrastructure
+documentation_url: https://www.rabbitmq.com/documentation.html
+recommended_memory_bytes: 536870912
+requires_gpu: false
+platforms:
+    - linux/386
+    - linux/amd64
+    - linux/arm
+    - linux/arm64
+    - linux/ppc64le
+    - linux/riscv64
+    - linux/s390x

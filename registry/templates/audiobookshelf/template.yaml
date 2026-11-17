@@ -1,0 +1,10 @@
+id: audiobookshelf
+name: Audiobookshelf
+slogan: A self-hosted server for your audiobooks and podcasts, with sync across every device.
+category: Media
+documentation_url: https://www.audiobookshelf.org/docs
+recommended_memory_bytes: 536870912
+requires_gpu: false
+platforms:
+    - linux/amd64
+    - linux/arm64

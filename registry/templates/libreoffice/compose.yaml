@@ -1,0 +1,16 @@
+services:
+  libreoffice:
+    image: lscr.io/linuxserver/libreoffice:latest
+    ports: ["3000:3000"]
+    environment:
+      PUID: "1000"
+      PGID: "1000"
+      TZ: Etc/UTC
+    volumes:
+      - libreoffice_config:/config
+    healthcheck:
+      test: ["CMD", "wget", "-q", "--spider", "http://127.0.0.1:3000"]
+      interval: 15s
+      timeout: 10s
+      retries: 10
+      start_period: 30s

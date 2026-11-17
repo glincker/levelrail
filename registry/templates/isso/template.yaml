@@ -1,0 +1,46 @@
+id: isso
+name: Isso
+slogan: A lightweight self-hosted comment server for static sites with a small JavaScript embed. Comments live in a SQLite file on a volume.
+description: A lightweight self-hosted comment server for static sites with a small JavaScript embed. Comments live in a SQLite file on a volume.
+category: Productivity
+documentation_url: https://github.com/isso-comments/isso
+recommended_memory_bytes: 134217728
+requires_gpu: false
+manifest:
+    id: isso
+    name: Isso
+    description: A lightweight self-hosted comment server for static sites with a small JavaScript embed. Comments live in a SQLite file on a volume.
+    icon: chat-circle
+    category: Productivity
+    documentation_url: https://github.com/isso-comments/isso
+    source_repo: https://github.com/isso-comments/isso
+    license: MIT
+    license_class: permissive
+    license_url: https://github.com/isso-comments/isso/blob/master/LICENSE
+    hosted_use: allowed
+    listing:
+        by: community
+        vendor_org: ""
+        proof: ""
+    status: active
+    status_reason: ""
+    replaced_by: ""
+    aliases: []
+    first_run: []
+    compose_file: compose.yaml
+    recommended_memory_bytes: 134217728
+    env: []
+    domains:
+        - service: isso
+          port: 8080
+          description: Public address of Isso.
+    healthcheck:
+        service: isso
+        port: 8080
+        path: /info
+        expect: 0
+        kind: ""
+        reason: ""
+    first_boot_seconds: 0
+    console_command: []
+    capabilities: []

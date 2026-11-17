@@ -1,0 +1,17 @@
+services:
+  commafeed:
+    image: athou/commafeed:6.0.0-h2
+    ports: ["8082"]
+    volumes:
+      - data:/commafeed/data
+    healthcheck:
+      test:
+        - CMD
+        - perl
+        - -MIO::Socket::INET
+        - -e
+        - "$s=IO::Socket::INET->new('127.0.0.1:8082') or exit 1; print $s \"GET / HTTP/1.0\\r\\n\\r\\n\"; exit(<$s> =~ / 200 / ? 0 : 1)"
+      interval: 15s
+      timeout: 5s
+      retries: 10
+      start_period: 40s

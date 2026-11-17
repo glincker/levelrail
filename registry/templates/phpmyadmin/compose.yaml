@@ -1,0 +1,12 @@
+services:
+  phpmyadmin:
+    image: phpmyadmin:5.2.2
+    ports: ["8080:80"]
+    environment:
+      PMA_ARBITRARY: "1"
+      UPLOAD_LIMIT: 64M
+    healthcheck:
+      test: ["CMD", "curl", "-f", "http://127.0.0.1:80"]
+      interval: 10s
+      timeout: 10s
+      retries: 5

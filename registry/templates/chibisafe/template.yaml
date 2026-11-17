@@ -1,0 +1,10 @@
+id: chibisafe
+name: Chibisafe
+slogan: A file vault for uploading and sharing files from the cloud.
+category: Storage
+documentation_url: https://chibisafe.app/docs/intro
+recommended_memory_bytes: 536870912
+requires_gpu: false
+platforms:
+    - linux/amd64
+    - linux/arm64

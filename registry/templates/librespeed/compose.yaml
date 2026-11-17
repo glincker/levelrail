@@ -1,0 +1,13 @@
+services:
+  librespeed:
+    image: ghcr.io/librespeed/speedtest:6.3.0
+    ports: ["82:82"]
+    environment:
+      MODE: standalone
+      TELEMETRY: "false"
+      WEBPORT: "82"
+    healthcheck:
+      test: ["CMD-SHELL", "curl -fsS -o /dev/null http://127.0.0.1:82/"]
+      interval: 10s
+      timeout: 5s
+      retries: 3

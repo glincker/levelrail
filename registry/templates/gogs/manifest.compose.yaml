@@ -1,0 +1,12 @@
+services:
+  gogs:
+    image: gogs/gogs:0.13.3
+    ports: ["3000"]
+    volumes:
+      - data:/data
+    healthcheck:
+      test: ["CMD-SHELL", "wget -q -O /dev/null http://127.0.0.1:3000/healthcheck"]
+      interval: 10s
+      timeout: 5s
+      retries: 10
+      start_period: 20s

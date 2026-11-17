@@ -1,0 +1,11 @@
+id: homebox
+name: Homebox
+slogan: A home inventory and organization system for tracking what you own and where it is.
+category: Productivity
+documentation_url: https://homebox.software/en/quick-start/install/
+recommended_memory_bytes: 268435456
+requires_gpu: false
+platforms:
+    - linux/amd64
+    - linux/arm
+    - linux/arm64

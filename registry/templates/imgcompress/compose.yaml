@@ -1,0 +1,9 @@
+services:
+  imgcompress:
+    image: karimz1/imgcompress:0.9.0
+    ports: ["5000:5000"]
+    healthcheck:
+      test: ["CMD", "curl", "-f", "http://127.0.0.1:5000"]
+      interval: 15s
+      timeout: 10s
+      retries: 5

@@ -1,0 +1,10 @@
+id: strapi
+name: Strapi
+slogan: An open-source headless CMS with a customizable admin panel and a REST/GraphQL content API.
+category: Developer Tools
+documentation_url: https://docs.strapi.io/
+recommended_memory_bytes: 536870912
+requires_gpu: false
+platforms:
+    - linux/amd64
+    - linux/arm64

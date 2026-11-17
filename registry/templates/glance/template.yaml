@@ -1,0 +1,11 @@
+id: glance
+name: Glance
+slogan: A fast, self-hosted dashboard that pulls RSS, weather, and other widgets onto one page.
+category: Dashboard
+documentation_url: https://github.com/glanceapp/glance/blob/main/docs/configuration.md
+recommended_memory_bytes: 134217728
+requires_gpu: false
+platforms:
+    - linux/amd64
+    - linux/arm
+    - linux/arm64

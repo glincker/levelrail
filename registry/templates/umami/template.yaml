@@ -1,0 +1,10 @@
+id: umami
+name: Umami
+slogan: Simple, privacy-focused website analytics without tracking cookies or ad-tech.
+category: Analytics
+documentation_url: https://umami.is/docs
+recommended_memory_bytes: 536870912
+requires_gpu: false
+platforms:
+    - linux/amd64
+    - linux/arm64

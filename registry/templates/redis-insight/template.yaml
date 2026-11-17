@@ -1,0 +1,10 @@
+id: redis-insight
+name: Redis Insight
+slogan: A GUI for exploring keys, running commands, and profiling workloads on any Redis-compatible server.
+category: Database Tools
+documentation_url: https://redis.io/docs/latest/operate/redisinsight/
+recommended_memory_bytes: 536870912
+requires_gpu: false
+platforms:
+    - linux/amd64
+    - linux/arm64

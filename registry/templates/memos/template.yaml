@@ -1,0 +1,11 @@
+id: memos
+name: Memos
+slogan: A lightweight, privacy-first note-taking service for jotting down quick thoughts.
+category: Productivity
+documentation_url: https://www.usememos.com/docs
+recommended_memory_bytes: 134217728
+requires_gpu: false
+platforms:
+    - linux/amd64
+    - linux/arm
+    - linux/arm64

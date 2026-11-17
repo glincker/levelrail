@@ -1,0 +1,11 @@
+id: nginx-proxy-manager
+name: Nginx Proxy Manager
+slogan: A web UI for managing Nginx reverse-proxy hosts, redirects, and Let's Encrypt certificates.
+category: Infrastructure
+documentation_url: https://nginxproxymanager.com/guide/
+recommended_memory_bytes: 268435456
+requires_gpu: false
+platforms:
+    - linux/amd64
+    - linux/arm
+    - linux/arm64

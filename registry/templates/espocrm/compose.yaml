@@ -1,0 +1,38 @@
+services:
+  espocrm:
+    image: espocrm/espocrm:10
+    ports: ["8080:80"]
+    environment:
+      ESPOCRM_ADMIN_USERNAME: admin
+      ESPOCRM_ADMIN_PASSWORD: $SERVICE_PASSWORD_ADMIN
+      ESPOCRM_DATABASE_PLATFORM: Mysql
+      ESPOCRM_DATABASE_HOST: espocrm-db
+      ESPOCRM_DATABASE_NAME: espocrm
+      ESPOCRM_DATABASE_USER: $SERVICE_USER_MARIADB
+      ESPOCRM_DATABASE_PASSWORD: $SERVICE_PASSWORD_MARIADB
+      ESPOCRM_SITE_URL: ${SERVICE_URL_ESPOCRM:-http://localhost:8080}
+    volumes:
+      - espocrm_data:/var/www/html/data
+      - espocrm_custom:/var/www/html/custom
+    depends_on: [espocrm-db]
+    healthcheck:
+      test: ["CMD", "bin/command", "app-check"]
+      interval: 30s
+      timeout: 15s
+      retries: 5
+      start_period: 30s
+  espocrm-db:
+    image: mariadb:12.3
+    environment:
+      MARIADB_DATABASE: espocrm
+      MARIADB_USER: $SERVICE_USER_MARIADB
+      MARIADB_PASSWORD: $SERVICE_PASSWORD_MARIADB
+      MARIADB_ROOT_PASSWORD: $SERVICE_PASSWORD_ROOT
+    volumes:
+      - espocrm_db_data:/var/lib/mysql
+    healthcheck:
+      test: ["CMD", "healthcheck.sh", "--connect", "--innodb_initialized"]
+      interval: 15s
+      timeout: 10s
+      retries: 5
+      start_period: 15s

@@ -1,0 +1,11 @@
+id: nocodb
+name: NocoDB
+slogan: Turn any database into a smart spreadsheet, with a real-time collaborative grid UI.
+category: Database Tools
+documentation_url: https://docs.nocodb.com
+recommended_memory_bytes: 536870912
+requires_gpu: false
+platforms:
+    - linux/amd64
+    - linux/arm
+    - linux/arm64

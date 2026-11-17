@@ -1,0 +1,33 @@
+services:
+  ghostfolio:
+    image: ghostfolio/ghostfolio:3.72.0
+    ports: ["3333:3333"]
+    environment:
+      DATABASE_URL: postgresql://ghostfolio:$SERVICE_PASSWORD_DB@db:5432/ghostfolio?connect_timeout=300&sslmode=prefer
+      REDIS_HOST: redis
+      REDIS_PORT: "6379"
+      ACCESS_TOKEN_SALT: $SERVICE_HEX_32_ACCESSSALT
+      JWT_SECRET_KEY: $SERVICE_HEX_32_JWT
+    healthcheck:
+      test: ["CMD-SHELL", "curl -fsS -o /dev/null http://127.0.0.1:3333/api/v1/health || wget -q -O /dev/null http://127.0.0.1:3333/api/v1/health || exit 1"]
+      interval: 30s
+      timeout: 5s
+      retries: 3
+      start_period: 60s
+  db:
+    image: postgres:16-alpine
+    environment:
+      POSTGRES_USER: ghostfolio
+      POSTGRES_PASSWORD: $SERVICE_PASSWORD_DB
+      POSTGRES_DB: ghostfolio
+    volumes:
+      - ghostfolio_db_data:/var/lib/postgresql/data
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U ghostfolio -d ghostfolio"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+  redis:
+    image: redis:7-alpine
+    volumes:
+      - ghostfolio_redis_data:/data

@@ -1,0 +1,49 @@
+services:
+  database:
+    image: postgres:17
+    environment:
+      POSTGRES_USER: documenso
+      POSTGRES_PASSWORD: $SERVICE_PASSWORD_DB
+      POSTGRES_DB: documenso
+    volumes:
+      - documenso_postgresql_data:/var/lib/postgresql/data
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U documenso -d documenso"]
+      interval: 5s
+      timeout: 5s
+      retries: 10
+  documenso:
+    image: documenso/documenso:v1.12.10
+    ports: ["3000:3000"]
+    depends_on:
+      database:
+        condition: service_healthy
+    environment:
+      NEXTAUTH_URL: ${SERVICE_URL_DOCUMENSO:-http://localhost:3000}
+      NEXTAUTH_SECRET: $SERVICE_BASE64_AUTHSECRET
+      NEXT_PRIVATE_ENCRYPTION_KEY: $SERVICE_BASE64_ENCRYPTIONKEY
+      NEXT_PRIVATE_ENCRYPTION_SECONDARY_KEY: $SERVICE_BASE64_SECONDARYKEY
+      NEXT_PUBLIC_WEBAPP_URL: ${SERVICE_URL_DOCUMENSO:-http://localhost:3000}
+      NEXT_PRIVATE_DATABASE_URL: postgresql://documenso:$SERVICE_PASSWORD_DB@database:5432/documenso?schema=public
+      NEXT_PRIVATE_DIRECT_DATABASE_URL: postgresql://documenso:$SERVICE_PASSWORD_DB@database:5432/documenso?schema=public
+      NEXT_PRIVATE_SIGNING_TRANSPORT: local
+      NEXT_PRIVATE_SIGNING_LOCAL_FILE_PATH: /app/certs/cert.p12
+      NEXT_PRIVATE_SIGNING_LOCAL_FILE_PASSPHRASE: $SERVICE_PASSWORD_SIGNING
+      CERT_VALID_DAYS: "365"
+    entrypoint:
+      - /bin/sh
+      - -c
+      - |
+        mkdir -p /app/certs
+        openssl req -x509 -newkey rsa:2048 -days 365 -nodes \
+          -keyout /app/certs/private.key -out /app/certs/certificate.crt \
+          -subj "/CN=documenso"
+        openssl pkcs12 -export -out /app/certs/cert.p12 \
+          -inkey /app/certs/private.key -in /app/certs/certificate.crt \
+          -legacy -passout pass:$NEXT_PRIVATE_SIGNING_LOCAL_FILE_PASSPHRASE
+        exec ./start.sh
+    healthcheck:
+      test: ["CMD-SHELL", "wget -q -O- http://127.0.0.1:3000/ || exit 1"]
+      interval: 10s
+      timeout: 10s
+      retries: 20

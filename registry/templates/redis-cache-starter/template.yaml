@@ -1,0 +1,12 @@
+id: redis-cache-starter
+name: Redis Cache Starter
+slogan: A web service backed by a Redis cache, the cache-aside pattern most apps reach for first.
+category: Starter Kits
+documentation_url: https://redis.io/docs/latest/develop/connect/clients/
+recommended_memory_bytes: 201326592
+requires_gpu: false
+platforms:
+    - linux/amd64
+    - linux/arm
+    - linux/arm64
+    - linux/s390x

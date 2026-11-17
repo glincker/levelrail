@@ -1,0 +1,9 @@
+id: metabase
+name: Metabase
+slogan: Ask questions of your data and share dashboards, no SQL required.
+category: Analytics
+documentation_url: https://www.metabase.com/docs/latest/
+recommended_memory_bytes: 1073741824
+requires_gpu: false
+platforms:
+    - linux/amd64

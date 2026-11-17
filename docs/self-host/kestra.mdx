@@ -1,0 +1,71 @@
+---
+title: "Self-host Kestra with Docker"
+sidebarTitle: "Kestra"
+description: "An event driven workflow orchestrator where flows are defined in YAML."
+"og:url": "https://docs.levelrail.com/self-host/kestra"
+---
+
+An event driven workflow orchestrator where flows are defined in YAML.
+
+This page describes the Levelrail template for Kestra (Automation). It deploys the services below as one Docker Compose app on your own server. Project site: https://kestra.io/docs.
+
+Recommended memory: about 1536 MiB.
+
+## Services, ports and volumes
+
+| Service | Image | Container ports | Volumes |
+| --- | --- | --- | --- |
+| `db` | `postgres:16-alpine` | none | `db_data -&#62; /var/lib/postgresql/data` |
+| `kestra` | `kestra/kestra:v2.0.10` | 8080 | `kestra_data -&#62; /app/storage` |
+
+## Environment variables
+
+| Service | Variable | Value |
+| --- | --- | --- |
+| `db` | `POSTGRES_DB` | Preset in the template |
+| `db` | `POSTGRES_PASSWORD` | Generated at deploy |
+| `db` | `POSTGRES_USER` | Preset in the template |
+| `kestra` | `KESTRA_CONFIGURATION` | Generated at deploy |
+
+Passwords and keys marked as generated are created for you when the app is deployed and stored as secrets. Values are not shown here.
+
+## Security and requirements
+
+Level: **Standard**.
+
+What this template needs:
+
+- Passwords and keys are generated at deploy time (`db`, `kestra`): KESTRA_CONFIGURATION, POSTGRES_PASSWORD.
+- Stores data in named volumes (`db`, `kestra`): db_data, kestra_data.
+
+What Levelrail adds around it:
+
+- Automatic HTTPS and an ingress shield in front of every domain.
+- Secrets are generated, stored encrypted and masked in logs and the UI.
+- Named volumes can be backed up and restored.
+- Deploys are gated on the health check before traffic switches.
+- One-step rollback to the previous revision.
+- Exposure report shows what is reachable from outside.
+- Host firewall rules managed for published ports.
+
+## Deploy Kestra with Levelrail
+
+In the dashboard, open **Apps**, choose **New app**, then **Browse templates**, and select Kestra. Review the Compose body and deploy.
+
+With the CLI:
+
+```bash
+levelrail-cli templates deploy kestra --name my-kestra
+```
+
+See the [service template catalog](/templates-and-registry) for how templates work, and [Getting started](/getting-started) if you have not installed Levelrail yet.
+
+## More Automation templates
+
+- [Activepieces](/self-host/activepieces)
+- [autobrr](/self-host/autobrr)
+- [Automatisch](/self-host/automatisch)
+- [Dagu](/self-host/dagu)
+- [n8n](/self-host/n8n)
+
+All templates are listed in the [self-host gallery](/self-host).

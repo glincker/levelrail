@@ -1,0 +1,26 @@
+services:
+  wordpress:
+    image: wordpress:6.6-apache
+    ports: ["8080:80"]
+    environment:
+      WORDPRESS_DB_HOST: db
+      WORDPRESS_DB_USER: wordpress
+      WORDPRESS_DB_PASSWORD: $SERVICE_PASSWORD_DB
+      WORDPRESS_DB_NAME: wordpress
+    volumes:
+      - wordpress_data:/var/www/html
+    healthcheck:
+      test: ["CMD-SHELL", "curl -fsS -o /dev/null http://127.0.0.1:80/"]
+      interval: 10s
+      timeout: 5s
+      retries: 3
+      start_period: 60s
+  db:
+    image: mysql:8.4
+    environment:
+      MYSQL_DATABASE: wordpress
+      MYSQL_USER: wordpress
+      MYSQL_PASSWORD: $SERVICE_PASSWORD_DB
+      MYSQL_ROOT_PASSWORD: $SERVICE_PASSWORD_MYSQLROOT
+    volumes:
+      - wordpress_db_data:/var/lib/mysql

@@ -1,0 +1,47 @@
+id: radicale
+name: Radicale
+slogan: Calendar (CalDAV) and contacts (CardDAV) server. One user is created at first boot with a generated password (visible in the service environment settings, never on a process command line); it is stored as a SHA-512 hash in /var/lib/radicale/users and each user only sees their own collections. Add users by appending htpasswd lines to that file.
+description: Calendar (CalDAV) and contacts (CardDAV) server. One user is created at first boot with a generated password (visible in the service environment settings, never on a process command line); it is stored as a SHA-512 hash in /var/lib/radicale/users and each user only sees their own collections. Add users by appending htpasswd lines to that file.
+category: Productivity
+documentation_url: https://radicale.org/v3.html
+recommended_memory_bytes: 134217728
+requires_gpu: false
+platforms:
+    - linux/amd64
+    - linux/arm
+    - linux/arm64
+manifest:
+    id: radicale
+    name: Radicale
+    description: Calendar (CalDAV) and contacts (CardDAV) server. One user is created at first boot with a generated password (visible in the service environment settings, never on a process command line); it is stored as a SHA-512 hash in /var/lib/radicale/users and each user only sees their own collections. Add users by appending htpasswd lines to that file.
+    icon: calendar
+    category: Productivity
+    documentation_url: https://radicale.org/v3.html
+    source_repo: https://github.com/Kozea/Radicale
+    license: GPL-3.0-or-later
+    license_class: copyleft
+    license_url: https://github.com/Kozea/Radicale/blob/master/COPYING.md
+    hosted_use: ""
+    listing: null
+    status: ""
+    status_reason: ""
+    replaced_by: ""
+    aliases: []
+    first_run: []
+    compose_file: compose.yaml
+    recommended_memory_bytes: 134217728
+    env: []
+    domains:
+        - service: radicale
+          port: 5232
+          description: Public address of the Radicale server and its web interface.
+    healthcheck:
+        service: radicale
+        port: 5232
+        path: /.web/
+        expect: 0
+        kind: ""
+        reason: ""
+    first_boot_seconds: 0
+    console_command: []
+    capabilities: []

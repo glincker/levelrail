@@ -1,0 +1,10 @@
+id: twenty
+name: Twenty CRM
+slogan: An open-source CRM you fully control, built to look and feel like a modern spreadsheet.
+category: Productivity
+documentation_url: https://docs.twenty.com
+recommended_memory_bytes: 1073741824
+requires_gpu: false
+platforms:
+    - linux/amd64
+    - linux/arm64

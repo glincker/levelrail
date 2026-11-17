@@ -1,0 +1,15 @@
+services:
+  forgejo:
+    image: codeberg.org/forgejo/forgejo:9.0.3
+    ports: ["3000:3000"]
+    environment:
+      FORGEJO__server__ROOT_URL: ${SERVICE_URL_FORGEJO:-http://localhost:3000}
+      FORGEJO__security__SECRET_KEY: $SERVICE_HEX_64_SECRETKEY
+    volumes:
+      - forgejo_data:/data
+    healthcheck:
+      test: ["CMD-SHELL", "curl -fsS -o /dev/null http://127.0.0.1:3000/api/healthz"]
+      interval: 10s
+      timeout: 5s
+      retries: 3
+      start_period: 30s

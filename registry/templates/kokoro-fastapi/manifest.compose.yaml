@@ -1,0 +1,12 @@
+services:
+  kokoro:
+    image: ghcr.io/remsky/kokoro-fastapi-cpu:v0.9.2
+    ports: ["8880"]
+    environment:
+      TZ: ${TZ}
+    healthcheck:
+      test: ["CMD-SHELL", "python -c \"import urllib.request;urllib.request.urlopen('http://127.0.0.1:8880/health',timeout=4)\""]
+      interval: 20s
+      timeout: 6s
+      retries: 15
+      start_period: 90s

@@ -1,0 +1,11 @@
+services:
+  traefik:
+    image: traefik:v3.2.1
+    ports: ["8080"]
+    command: ["--api.insecure=true", "--ping", "--log.level=INFO"]
+    healthcheck:
+      test: ["CMD", "traefik", "healthcheck", "--ping"]
+      interval: 10s
+      timeout: 6s
+      retries: 10
+      start_period: 10s

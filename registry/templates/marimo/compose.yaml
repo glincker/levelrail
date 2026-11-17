@@ -1,0 +1,15 @@
+services:
+  marimo:
+    image: ghcr.io/marimo-team/marimo:latest-sql
+    ports: ["8080:8080"]
+    environment:
+      MARIMO_TOKEN_PASSWORD: $SERVICE_PASSWORD_MARIMO
+    command: ["/bin/sh", "-c", "exec marimo edit --token-password \"$MARIMO_TOKEN_PASSWORD\" --port 8080 --host 0.0.0.0"]
+    volumes:
+      - marimo_data:/app
+    healthcheck:
+      test: ["CMD-SHELL", "curl -f http://127.0.0.1:8080/health"]
+      interval: 15s
+      timeout: 10s
+      retries: 5
+      start_period: 20s

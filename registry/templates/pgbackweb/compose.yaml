@@ -1,0 +1,29 @@
+services:
+  pgbackweb:
+    image: eduardolat/pgbackweb:0.5.2
+    ports: ["8085:8085"]
+    environment:
+      PBW_ENCRYPTION_KEY: $SERVICE_PASSWORD_64_PGBACKWEB
+      PBW_POSTGRES_CONN_STRING: postgresql://pgbackweb:$SERVICE_PASSWORD_DB@pgbackweb-db:5432/pgbackweb?sslmode=disable
+    volumes:
+      - pgbackweb_data:/backups
+    depends_on: [pgbackweb-db]
+    healthcheck:
+      test: ["CMD-SHELL", "wget -qO- http://127.0.0.1:8085"]
+      interval: 15s
+      timeout: 10s
+      retries: 5
+      start_period: 15s
+  pgbackweb-db:
+    image: postgres:17-alpine
+    environment:
+      POSTGRES_USER: pgbackweb
+      POSTGRES_PASSWORD: $SERVICE_PASSWORD_DB
+      POSTGRES_DB: pgbackweb
+    volumes:
+      - pgbackweb_postgres_data:/var/lib/postgresql/data
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U pgbackweb -d pgbackweb"]
+      interval: 5s
+      timeout: 5s
+      retries: 5

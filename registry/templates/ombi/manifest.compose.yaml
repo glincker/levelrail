@@ -1,0 +1,16 @@
+services:
+  ombi:
+    image: lscr.io/linuxserver/ombi:4.53.10
+    ports: ["3579"]
+    environment:
+      PUID: "1000"
+      PGID: "1000"
+      TZ: ${TZ}
+    volumes:
+      - config:/config
+    healthcheck:
+      test: ["CMD-SHELL", "curl -fsS -o /dev/null http://127.0.0.1:3579/"]
+      interval: 15s
+      timeout: 5s
+      retries: 10
+      start_period: 60s

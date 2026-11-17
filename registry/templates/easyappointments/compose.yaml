@@ -1,0 +1,29 @@
+services:
+  easyappointments:
+    image: alextselegidis/easyappointments:1.6.0
+    ports: ["8000:80"]
+    environment:
+      BASE_URL: ${SERVICE_URL_EASYAPPOINTMENTS:-http://localhost:8000}
+      DB_HOST: mysql
+      DB_NAME: easyappointments
+      DB_USERNAME: root
+      DB_PASSWORD: $SERVICE_PASSWORD_DB
+    depends_on: [mysql]
+    healthcheck:
+      test: ["CMD", "curl", "-f", "http://127.0.0.1"]
+      interval: 15s
+      timeout: 10s
+      retries: 10
+      start_period: 30s
+  mysql:
+    image: mysql:8.4
+    environment:
+      MYSQL_ROOT_PASSWORD: $SERVICE_PASSWORD_DB
+      MYSQL_DATABASE: easyappointments
+    volumes:
+      - easyappointments_mysql_data:/var/lib/mysql
+    healthcheck:
+      test: ["CMD", "mysqladmin", "ping", "-h", "127.0.0.1"]
+      interval: 10s
+      timeout: 10s
+      retries: 5

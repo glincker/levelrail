@@ -1,0 +1,10 @@
+id: n8n-postgres
+name: n8n (Postgres)
+slogan: n8n backed by Postgres instead of its default SQLite file, for production workflow volumes.
+category: Automation
+documentation_url: https://docs.n8n.io/hosting/installation/server-setups/postgresql/
+recommended_memory_bytes: 1073741824
+requires_gpu: false
+platforms:
+    - linux/amd64
+    - linux/arm64

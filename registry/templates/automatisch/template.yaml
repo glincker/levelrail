@@ -1,0 +1,13 @@
+# Adapted from Dokploy/templates (MIT, Copyright (c) 2024 Dokploy and Carlos Ortiz)
+id: automatisch
+name: Automatisch
+slogan: A workflow automation tool that connects apps with triggers and actions.
+description: AGPL 3.0 licensed, with a separate commercial licence for files under its enterprise folder. The first visit asks you to create the admin account.
+category: Automation
+documentation_url: https://automatisch.io/docs
+recommended_memory_bytes: 1073741824
+requires_gpu: false
+source_repo: https://github.com/automatisch/automatisch
+license: AGPL-3.0
+license_class: network-copyleft
+license_url: https://github.com/automatisch/automatisch/blob/main/LICENSE.agpl

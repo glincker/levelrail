@@ -1,0 +1,71 @@
+id: mariadb
+name: MariaDB
+slogan: The MariaDB database server on the official image, with a persistent volume, generated root and user passwords, and an application database. It is not published on the host, so reach it from other services in this project at mariadb:3306.
+description: The MariaDB database server on the official image, with a persistent volume, generated root and user passwords, and an application database. It is not published on the host, so reach it from other services in this project at mariadb:3306.
+category: Database Tools
+documentation_url: https://mariadb.com/kb/en/documentation/
+recommended_memory_bytes: 536870912
+requires_gpu: false
+manifest:
+    id: mariadb
+    name: MariaDB
+    description: The MariaDB database server on the official image, with a persistent volume, generated root and user passwords, and an application database. It is not published on the host, so reach it from other services in this project at mariadb:3306.
+    icon: database
+    category: Database Tools
+    documentation_url: https://mariadb.com/kb/en/documentation/
+    source_repo: https://github.com/MariaDB/server
+    license: GPL-2.0-only
+    license_class: copyleft
+    license_url: https://github.com/MariaDB/server/blob/main/COPYING
+    hosted_use: allowed
+    listing:
+        by: community
+        vendor_org: ""
+        proof: ""
+    status: active
+    status_reason: ""
+    replaced_by: ""
+    aliases: []
+    first_run:
+        - Read the generated passwords from the app secrets, then connect with the application user or as root from a service in the same project.
+    compose_file: compose.yaml
+    recommended_memory_bytes: 536870912
+    env:
+        - key: MARIADB_DATABASE
+          label: Database name
+          description: Database created on first start.
+          default: app
+          generate: ""
+          length: 0
+          required: false
+          secret: false
+          type: ""
+          service: ""
+          path: ""
+          mode: ""
+        - key: MARIADB_USER
+          label: Database user
+          description: Application user with full rights on that database.
+          default: app
+          generate: ""
+          length: 0
+          required: false
+          secret: false
+          type: ""
+          service: ""
+          path: ""
+          mode: ""
+    domains:
+        - service: mariadb
+          port: 3306
+          description: This is a TCP database with no web page, so leave it empty and connect over the project network.
+    healthcheck:
+        service: mariadb
+        port: 3306
+        path: ""
+        expect: 0
+        kind: tcp
+        reason: ""
+    first_boot_seconds: 0
+    console_command: []
+    capabilities: []

@@ -1,0 +1,13 @@
+services:
+  matterbridge:
+    image: 42wim/matterbridge:1.26.0
+    ports: ["4242"]
+    healthcheck:
+      test: ["NONE"]
+    x-levelrail-healthcheck:
+      kind: tcp
+      port: 4242
+      interval: 15s
+      timeout: 8s
+      retries: 10
+      start_period: 20s

@@ -1,0 +1,10 @@
+id: plex
+name: Plex
+slogan: A media server that organizes your movies, TV, and music and streams them to any device.
+category: Media
+documentation_url: https://docs.linuxserver.io/images/docker-plex/
+recommended_memory_bytes: 2147483648
+requires_gpu: false
+platforms:
+    - linux/amd64
+    - linux/arm64

@@ -1,0 +1,16 @@
+services:
+  babybuddy:
+    image: lscr.io/linuxserver/babybuddy:latest
+    ports: ["8000:8000"]
+    environment:
+      PUID: "1000"
+      PGID: "1000"
+      CSRF_TRUSTED_ORIGINS: ${SERVICE_URL_BABYBUDDY:-http://localhost:8000}
+    volumes:
+      - babybuddy_config:/config
+    healthcheck:
+      test: ["CMD", "curl", "-f", "http://127.0.0.1:8000"]
+      interval: 10s
+      timeout: 5s
+      retries: 15
+      start_period: 20s

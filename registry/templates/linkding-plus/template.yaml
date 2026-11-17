@@ -1,0 +1,11 @@
+id: linkding-plus
+name: Linkding Plus
+slogan: Linkding's extended image with full-page snapshot archiving bundled in, for bookmarks that must survive link rot.
+category: Productivity
+documentation_url: https://linkding.link
+recommended_memory_bytes: 268435456
+requires_gpu: false
+platforms:
+    - linux/amd64
+    - linux/arm
+    - linux/arm64

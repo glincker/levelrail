@@ -1,0 +1,16 @@
+services:
+  vault:
+    image: hashicorp/vault:2.1.2
+    command: ["server"]
+    ports: ["8200"]
+    environment:
+      VAULT_ADDR: http://127.0.0.1:8200
+      VAULT_LOCAL_CONFIG: '{"ui":true,"disable_mlock":true,"api_addr":"http://127.0.0.1:8200","cluster_addr":"http://127.0.0.1:8201","storage":{"raft":{"path":"/vault/file","node_id":"vault-1"}},"listener":{"tcp":{"address":"0.0.0.0:8200","tls_disable":true}}}'
+    volumes:
+      - vault_data:/vault/file
+    healthcheck:
+      test: ["CMD-SHELL", "wget -q -O /dev/null 'http://127.0.0.1:8200/v1/sys/health?standbyok=true&uninitcode=200&sealedcode=200'"]
+      interval: 10s
+      timeout: 5s
+      retries: 12
+      start_period: 15s

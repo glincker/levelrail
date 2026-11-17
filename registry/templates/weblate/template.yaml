@@ -1,0 +1,10 @@
+id: weblate
+name: Weblate
+slogan: A continuous localization system for translating software with a web-based editor and review flow.
+category: Developer Tools
+documentation_url: https://docs.weblate.org
+recommended_memory_bytes: 1073741824
+requires_gpu: false
+platforms:
+    - linux/amd64
+    - linux/arm64

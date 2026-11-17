@@ -1,0 +1,16 @@
+services:
+  minio:
+    image: quay.io/minio/aistor/minio:RELEASE.2026-09-19T17-05-25Z.hotfix.4ef74f03d6f2
+    command: ["server", "/data", "--console-address", ":9001"]
+    ports: ["9000:9000", "9001:9001"]
+    environment:
+      MINIO_ROOT_USER: $SERVICE_USER_ROOT
+      MINIO_ROOT_PASSWORD: $SERVICE_PASSWORD_ROOT
+    volumes:
+      - minio_data:/data
+    healthcheck:
+      # aistor/minio is RHEL UBI-based, no wget: curl -f is what's there.
+      test: ["CMD-SHELL", "curl -sf http://127.0.0.1:9000/minio/health/live || exit 1"]
+      interval: 30s
+      timeout: 5s
+      retries: 3

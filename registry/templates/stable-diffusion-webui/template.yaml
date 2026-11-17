@@ -1,0 +1,9 @@
+id: stable-diffusion-webui
+name: Stable Diffusion WebUI
+slogan: A browser interface for generating and editing images with Stable Diffusion checkpoints.
+category: AI
+documentation_url: https://github.com/AUTOMATIC1111/stable-diffusion-webui/wiki
+recommended_memory_bytes: 8589934592
+requires_gpu: true
+platforms:
+    - linux/amd64

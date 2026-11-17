@@ -1,0 +1,82 @@
+id: onetimesecret
+name: One-Time Secret
+slogan: Share a password or API key through a link that self-destructs after the first view, backed by Redis.
+description: Share a password or API key through a link that self-destructs after the first view, backed by Redis.
+category: Security
+documentation_url: https://docs.onetimesecret.com
+recommended_memory_bytes: 268435456
+requires_gpu: false
+platforms:
+    - linux/amd64
+    - linux/arm64
+manifest:
+    id: onetimesecret
+    name: One-Time Secret
+    description: Share a password or API key through a link that self-destructs after the first view, backed by Redis.
+    icon: lock
+    category: Security
+    documentation_url: https://docs.onetimesecret.com
+    source_repo: https://github.com/onetimesecret/onetimesecret
+    license: MIT
+    license_class: permissive
+    license_url: https://github.com/onetimesecret/onetimesecret/blob/main/LICENSE.txt
+    hosted_use: ""
+    listing: null
+    status: ""
+    status_reason: ""
+    replaced_by: ""
+    aliases: []
+    first_run: []
+    compose_file: compose.yaml
+    recommended_memory_bytes: 268435456
+    env:
+        - key: SECRET
+          label: Encryption secret
+          description: Encrypts stored secrets. Keep it stable, or existing links stop working.
+          default: ""
+          generate: hex
+          length: 64
+          required: false
+          secret: true
+          type: ""
+          service: ""
+          path: ""
+          mode: ""
+        - key: COLONEL_EMAIL
+          label: Admin email
+          description: The account that gets admin rights after it signs up.
+          default: admin@example.com
+          generate: ""
+          length: 0
+          required: false
+          secret: false
+          type: ""
+          service: ""
+          path: ""
+          mode: ""
+        - key: PUBLIC_HOST
+          label: Public host
+          description: Host name used in generated share links, without a scheme.
+          default: localhost:3000
+          generate: ""
+          length: 0
+          required: false
+          secret: false
+          type: ""
+          service: ""
+          path: ""
+          mode: ""
+    domains:
+        - service: app
+          port: 3000
+          description: Public address for share links.
+    healthcheck:
+        service: app
+        port: 3000
+        path: /
+        expect: 0
+        kind: ""
+        reason: ""
+    first_boot_seconds: 0
+    console_command: []
+    capabilities: []

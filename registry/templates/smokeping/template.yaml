@@ -1,0 +1,58 @@
+id: smokeping
+name: SmokePing
+slogan: A latency and packet loss monitor that pings your targets and graphs jitter over time. GPL-2.0 licensed. Targets live in the Targets file under the config volume. There is no login, so keep it private or behind an auth proxy.
+description: A latency and packet loss monitor that pings your targets and graphs jitter over time. GPL-2.0 licensed. Targets live in the Targets file under the config volume. There is no login, so keep it private or behind an auth proxy.
+category: Monitoring
+documentation_url: https://oss.oetiker.ch/smokeping/doc/index.en.html
+recommended_memory_bytes: 201326592
+requires_gpu: false
+platforms:
+    - linux/amd64
+    - linux/arm64
+manifest:
+    id: smokeping
+    name: SmokePing
+    description: A latency and packet loss monitor that pings your targets and graphs jitter over time. GPL-2.0 licensed. Targets live in the Targets file under the config volume. There is no login, so keep it private or behind an auth proxy.
+    icon: chart-line
+    category: Monitoring
+    documentation_url: https://oss.oetiker.ch/smokeping/doc/index.en.html
+    source_repo: ""
+    license: ""
+    license_class: ""
+    license_url: ""
+    hosted_use: ""
+    listing: null
+    status: ""
+    status_reason: ""
+    replaced_by: ""
+    aliases: []
+    first_run: []
+    compose_file: compose.yaml
+    recommended_memory_bytes: 201326592
+    env:
+        - key: TZ
+          label: Time zone
+          description: IANA time zone for graphs and logs.
+          default: Etc/UTC
+          generate: ""
+          length: 0
+          required: false
+          secret: false
+          type: ""
+          service: ""
+          path: ""
+          mode: ""
+    domains:
+        - service: smokeping
+          port: 80
+          description: Public address of SmokePing.
+    healthcheck:
+        service: smokeping
+        port: 80
+        path: /
+        expect: 0
+        kind: ""
+        reason: ""
+    first_boot_seconds: 0
+    console_command: []
+    capabilities: []

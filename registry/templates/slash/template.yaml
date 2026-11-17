@@ -1,0 +1,10 @@
+id: slash
+name: Slash
+slogan: A self-hosted link shortener and bookmark sharing platform with tags and full-text search.
+category: Productivity
+documentation_url: https://github.com/yourselfhosted/slash
+recommended_memory_bytes: 268435456
+requires_gpu: false
+platforms:
+    - linux/amd64
+    - linux/arm64

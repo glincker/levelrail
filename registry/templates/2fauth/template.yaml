@@ -1,0 +1,12 @@
+id: 2fauth
+name: 2FAuth
+slogan: A web app to manage your two-factor authentication accounts and generate one-time codes.
+category: Security
+documentation_url: https://docs.2fauth.app
+recommended_memory_bytes: 134217728
+requires_gpu: false
+platforms:
+    - linux/386
+    - linux/amd64
+    - linux/arm
+    - linux/arm64

@@ -1,0 +1,16 @@
+services:
+  upsnap:
+    image: ghcr.io/seriousm4x/upsnap:5.7.3
+    ports: ["8090"]
+    volumes:
+      - data:/app/pb_data
+    healthcheck:
+      test: ["NONE"]
+    x-levelrail-healthcheck:
+      kind: http
+      path: /
+      port: 8090
+      interval: 15s
+      timeout: 8s
+      retries: 10
+      start_period: 20s

@@ -1,0 +1,9 @@
+services:
+  node-exporter:
+    image: prom/node-exporter:v1.12.1
+    ports: ["9100"]
+    healthcheck:
+      test: ["CMD-SHELL", "wget -q -O /dev/null http://127.0.0.1:9100/metrics"]
+      interval: 10s
+      timeout: 5s
+      retries: 5

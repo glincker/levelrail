@@ -1,0 +1,10 @@
+id: espocrm
+name: EspoCRM
+slogan: An open-source CRM for managing sales, support, and customer relationships end to end.
+category: Applications
+documentation_url: https://docs.espocrm.com
+recommended_memory_bytes: 1073741824
+requires_gpu: false
+platforms:
+    - linux/amd64
+    - linux/arm64

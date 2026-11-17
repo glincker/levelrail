@@ -3339,6 +3339,326 @@
    }
   },
   {
+   "id": "argilla",
+   "aliases": [],
+   "name": "Argilla",
+   "slogan": "A collaboration tool for labelling and curating datasets for language model work.",
+   "description": "Apache 2.0 licensed. Sign in as user argilla with the generated password shown in the deployment variables. Runs Elasticsearch, so the host needs vm.max_map_count of at least 262144.",
+   "first_run": [],
+   "category": "AI",
+   "status": "active",
+   "source_repo": "https://github.com/argilla-io/argilla",
+   "documentation_url": "https://docs.argilla.io/",
+   "license": {
+    "spdx": "Apache-2.0",
+    "class": "permissive",
+    "url": "https://github.com/argilla-io/argilla/blob/develop/LICENSE"
+   },
+   "hosted_use": "unknown",
+   "listing": {
+    "by": "maintainers"
+   },
+   "trust": {
+    "level": "listed"
+   },
+   "arch": {
+    "amd64": "unknown",
+    "arm64": "unknown"
+   },
+   "images": [
+    {
+     "service": "argilla",
+     "image": "argilla/argilla-server",
+     "tag": "v2.8.0",
+     "source_class": "community",
+     "signed": null,
+     "provenance": false,
+     "sbom": false,
+     "non_root": false
+    },
+    {
+     "service": "db",
+     "image": "postgres",
+     "tag": "16-alpine",
+     "source_class": "official",
+     "platforms": [
+      "linux/386",
+      "linux/amd64",
+      "linux/arm",
+      "linux/arm64",
+      "linux/ppc64le",
+      "linux/riscv64",
+      "linux/s390x"
+     ],
+     "signed": null,
+     "provenance": false,
+     "sbom": false,
+     "non_root": false
+    },
+    {
+     "service": "elasticsearch",
+     "image": "docker.elastic.co/elasticsearch/elasticsearch",
+     "tag": "8.12.2",
+     "source_class": "community",
+     "signed": null,
+     "provenance": false,
+     "sbom": false,
+     "non_root": false
+    },
+    {
+     "service": "redis",
+     "image": "redis",
+     "tag": "7-alpine",
+     "source_class": "official",
+     "platforms": [
+      "linux/386",
+      "linux/amd64",
+      "linux/arm",
+      "linux/arm64",
+      "linux/ppc64le",
+      "linux/riscv64",
+      "linux/s390x"
+     ],
+     "signed": null,
+     "provenance": false,
+     "sbom": false,
+     "non_root": false
+    },
+    {
+     "service": "worker",
+     "image": "argilla/argilla-server",
+     "tag": "v2.8.0",
+     "source_class": "community",
+     "signed": null,
+     "provenance": false,
+     "sbom": false,
+     "non_root": false
+    }
+   ],
+   "memory_mib": 2048,
+   "needs_config": false,
+   "install": {
+    "kind": "deploy",
+    "fields": []
+   },
+   "services": [
+    {
+     "name": "argilla",
+     "image": "argilla/argilla-server:v2.8.0",
+     "ports": [
+      6900
+     ],
+     "volumes": [
+      "argilla_data -> /var/lib/argilla"
+     ]
+    },
+    {
+     "name": "db",
+     "image": "postgres:16-alpine",
+     "ports": [],
+     "volumes": [
+      "db_data -> /var/lib/postgresql/data"
+     ]
+    },
+    {
+     "name": "elasticsearch",
+     "image": "docker.elastic.co/elasticsearch/elasticsearch:8.12.2",
+     "ports": [],
+     "volumes": [
+      "elastic_data -> /usr/share/elasticsearch/data"
+     ]
+    },
+    {
+     "name": "redis",
+     "image": "redis:7-alpine",
+     "ports": [],
+     "volumes": [
+      "redis_data -> /data"
+     ]
+    },
+    {
+     "name": "worker",
+     "image": "argilla/argilla-server:v2.8.0",
+     "ports": [],
+     "volumes": [
+      "argilla_data -> /var/lib/argilla"
+     ]
+    }
+   ],
+   "env": [
+    {
+     "service": "argilla",
+     "name": "API_KEY",
+     "kind": "generated"
+    },
+    {
+     "service": "argilla",
+     "name": "ARGILLA_DATABASE_URL",
+     "kind": "generated"
+    },
+    {
+     "service": "argilla",
+     "name": "ARGILLA_ELASTICSEARCH",
+     "kind": "preset"
+    },
+    {
+     "service": "argilla",
+     "name": "ARGILLA_HOME_PATH",
+     "kind": "preset"
+    },
+    {
+     "service": "argilla",
+     "name": "ARGILLA_REDIS_URL",
+     "kind": "generated"
+    },
+    {
+     "service": "argilla",
+     "name": "PASSWORD",
+     "kind": "generated"
+    },
+    {
+     "service": "argilla",
+     "name": "USERNAME",
+     "kind": "preset"
+    },
+    {
+     "service": "argilla",
+     "name": "WORKSPACE",
+     "kind": "preset"
+    },
+    {
+     "service": "db",
+     "name": "POSTGRES_DB",
+     "kind": "preset"
+    },
+    {
+     "service": "db",
+     "name": "POSTGRES_PASSWORD",
+     "kind": "generated"
+    },
+    {
+     "service": "db",
+     "name": "POSTGRES_USER",
+     "kind": "preset"
+    },
+    {
+     "service": "elasticsearch",
+     "name": "ES_JAVA_OPTS",
+     "kind": "preset"
+    },
+    {
+     "service": "elasticsearch",
+     "name": "cluster.name",
+     "kind": "preset"
+    },
+    {
+     "service": "elasticsearch",
+     "name": "cluster.routing.allocation.disk.threshold_enabled",
+     "kind": "preset"
+    },
+    {
+     "service": "elasticsearch",
+     "name": "discovery.type",
+     "kind": "preset"
+    },
+    {
+     "service": "elasticsearch",
+     "name": "node.name",
+     "kind": "preset"
+    },
+    {
+     "service": "elasticsearch",
+     "name": "xpack.security.enabled",
+     "kind": "preset"
+    },
+    {
+     "service": "redis",
+     "name": "REDIS_PASSWORD",
+     "kind": "generated"
+    },
+    {
+     "service": "worker",
+     "name": "ARGILLA_DATABASE_URL",
+     "kind": "generated"
+    },
+    {
+     "service": "worker",
+     "name": "ARGILLA_ELASTICSEARCH",
+     "kind": "preset"
+    },
+    {
+     "service": "worker",
+     "name": "ARGILLA_HOME_PATH",
+     "kind": "preset"
+    },
+    {
+     "service": "worker",
+     "name": "ARGILLA_REDIS_URL",
+     "kind": "generated"
+    }
+   ],
+   "requirements": {
+    "level": "standard",
+    "findings": [
+     {
+      "code": "generated_secrets",
+      "severity": "info",
+      "services": [
+       "argilla",
+       "db",
+       "redis",
+       "worker"
+      ],
+      "detail": "API_KEY, ARGILLA_DATABASE_URL, ARGILLA_REDIS_URL, PASSWORD, ARGILLA_DATABASE_URL, ARGILLA_REDIS_URL, POSTGRES_PASSWORD, REDIS_PASSWORD",
+      "message": "Passwords and keys are generated at deploy time"
+     },
+     {
+      "code": "persistent_data",
+      "severity": "info",
+      "services": [
+       "argilla",
+       "db",
+       "elasticsearch",
+       "redis",
+       "worker"
+      ],
+      "detail": "argilla_data, db_data, elastic_data, redis_data",
+      "message": "Stores data in named volumes"
+     }
+    ],
+    "protections": [
+     {
+      "code": "https_ingress",
+      "label": "Automatic HTTPS and an ingress shield in front of every domain"
+     },
+     {
+      "code": "secret_masking",
+      "label": "Secrets are generated, stored encrypted and masked in logs and the UI"
+     },
+     {
+      "code": "volume_backups",
+      "label": "Named volumes can be backed up and restored"
+     },
+     {
+      "code": "health_gated_deploy",
+      "label": "Deploys are gated on the health check before traffic switches"
+     },
+     {
+      "code": "rollback",
+      "label": "One-step rollback to the previous revision"
+     },
+     {
+      "code": "exposure_report",
+      "label": "Exposure report shows what is reachable from outside"
+     },
+     {
+      "code": "firewall",
+      "label": "Host firewall rules managed for published ports"
+     }
+    ]
+   }
+  },
+  {
    "id": "athens",
    "aliases": [],
    "name": "Athens",
@@ -4149,6 +4469,347 @@
    }
   },
   {
+   "id": "automatisch",
+   "aliases": [],
+   "name": "Automatisch",
+   "slogan": "A workflow automation tool that connects apps with triggers and actions.",
+   "description": "AGPL 3.0 licensed, with a separate commercial licence for files under its enterprise folder. The first visit asks you to create the admin account.",
+   "first_run": [],
+   "category": "Automation",
+   "status": "active",
+   "source_repo": "https://github.com/automatisch/automatisch",
+   "documentation_url": "https://automatisch.io/docs",
+   "license": {
+    "spdx": "AGPL-3.0",
+    "class": "network-copyleft",
+    "url": "https://github.com/automatisch/automatisch/blob/main/LICENSE.agpl"
+   },
+   "hosted_use": "unknown",
+   "listing": {
+    "by": "maintainers"
+   },
+   "trust": {
+    "level": "listed"
+   },
+   "arch": {
+    "amd64": "unknown",
+    "arm64": "unknown"
+   },
+   "images": [
+    {
+     "service": "automatisch",
+     "image": "automatischio/automatisch",
+     "tag": "0.15.0",
+     "source_class": "community",
+     "signed": null,
+     "provenance": false,
+     "sbom": false,
+     "non_root": false
+    },
+    {
+     "service": "db",
+     "image": "postgres",
+     "tag": "16-alpine",
+     "source_class": "official",
+     "platforms": [
+      "linux/386",
+      "linux/amd64",
+      "linux/arm",
+      "linux/arm64",
+      "linux/ppc64le",
+      "linux/riscv64",
+      "linux/s390x"
+     ],
+     "signed": null,
+     "provenance": false,
+     "sbom": false,
+     "non_root": false
+    },
+    {
+     "service": "redis",
+     "image": "redis",
+     "tag": "7-alpine",
+     "source_class": "official",
+     "platforms": [
+      "linux/386",
+      "linux/amd64",
+      "linux/arm",
+      "linux/arm64",
+      "linux/ppc64le",
+      "linux/riscv64",
+      "linux/s390x"
+     ],
+     "signed": null,
+     "provenance": false,
+     "sbom": false,
+     "non_root": false
+    },
+    {
+     "service": "worker",
+     "image": "automatischio/automatisch",
+     "tag": "0.15.0",
+     "source_class": "community",
+     "signed": null,
+     "provenance": false,
+     "sbom": false,
+     "non_root": false
+    }
+   ],
+   "memory_mib": 1024,
+   "needs_config": false,
+   "install": {
+    "kind": "deploy",
+    "fields": []
+   },
+   "services": [
+    {
+     "name": "automatisch",
+     "image": "automatischio/automatisch:0.15.0",
+     "ports": [
+      3000
+     ],
+     "volumes": [
+      "storage -> /automatisch/storage"
+     ]
+    },
+    {
+     "name": "db",
+     "image": "postgres:16-alpine",
+     "ports": [],
+     "volumes": [
+      "postgres_data -> /var/lib/postgresql/data"
+     ]
+    },
+    {
+     "name": "redis",
+     "image": "redis:7-alpine",
+     "ports": [],
+     "volumes": [
+      "redis_data -> /data"
+     ]
+    },
+    {
+     "name": "worker",
+     "image": "automatischio/automatisch:0.15.0",
+     "ports": [],
+     "volumes": [
+      "storage -> /automatisch/storage"
+     ]
+    }
+   ],
+   "env": [
+    {
+     "service": "automatisch",
+     "name": "API_URL",
+     "kind": "preset"
+    },
+    {
+     "service": "automatisch",
+     "name": "APP_ENV",
+     "kind": "preset"
+    },
+    {
+     "service": "automatisch",
+     "name": "APP_SECRET_KEY",
+     "kind": "generated"
+    },
+    {
+     "service": "automatisch",
+     "name": "ENCRYPTION_KEY",
+     "kind": "generated"
+    },
+    {
+     "service": "automatisch",
+     "name": "HOST",
+     "kind": "preset"
+    },
+    {
+     "service": "automatisch",
+     "name": "PORT",
+     "kind": "preset"
+    },
+    {
+     "service": "automatisch",
+     "name": "POSTGRES_DATABASE",
+     "kind": "preset"
+    },
+    {
+     "service": "automatisch",
+     "name": "POSTGRES_HOST",
+     "kind": "preset"
+    },
+    {
+     "service": "automatisch",
+     "name": "POSTGRES_PASSWORD",
+     "kind": "generated"
+    },
+    {
+     "service": "automatisch",
+     "name": "POSTGRES_USERNAME",
+     "kind": "preset"
+    },
+    {
+     "service": "automatisch",
+     "name": "PROTOCOL",
+     "kind": "preset"
+    },
+    {
+     "service": "automatisch",
+     "name": "REDIS_HOST",
+     "kind": "preset"
+    },
+    {
+     "service": "automatisch",
+     "name": "REDIS_PASSWORD",
+     "kind": "generated"
+    },
+    {
+     "service": "automatisch",
+     "name": "WEBHOOK_SECRET_KEY",
+     "kind": "generated"
+    },
+    {
+     "service": "automatisch",
+     "name": "WEB_APP_URL",
+     "kind": "preset"
+    },
+    {
+     "service": "db",
+     "name": "POSTGRES_DB",
+     "kind": "preset"
+    },
+    {
+     "service": "db",
+     "name": "POSTGRES_PASSWORD",
+     "kind": "generated"
+    },
+    {
+     "service": "db",
+     "name": "POSTGRES_USER",
+     "kind": "preset"
+    },
+    {
+     "service": "redis",
+     "name": "REDIS_PASSWORD",
+     "kind": "generated"
+    },
+    {
+     "service": "worker",
+     "name": "APP_ENV",
+     "kind": "preset"
+    },
+    {
+     "service": "worker",
+     "name": "APP_SECRET_KEY",
+     "kind": "generated"
+    },
+    {
+     "service": "worker",
+     "name": "ENCRYPTION_KEY",
+     "kind": "generated"
+    },
+    {
+     "service": "worker",
+     "name": "POSTGRES_DATABASE",
+     "kind": "preset"
+    },
+    {
+     "service": "worker",
+     "name": "POSTGRES_HOST",
+     "kind": "preset"
+    },
+    {
+     "service": "worker",
+     "name": "POSTGRES_PASSWORD",
+     "kind": "generated"
+    },
+    {
+     "service": "worker",
+     "name": "POSTGRES_USERNAME",
+     "kind": "preset"
+    },
+    {
+     "service": "worker",
+     "name": "REDIS_HOST",
+     "kind": "preset"
+    },
+    {
+     "service": "worker",
+     "name": "REDIS_PASSWORD",
+     "kind": "generated"
+    },
+    {
+     "service": "worker",
+     "name": "WEBHOOK_SECRET_KEY",
+     "kind": "generated"
+    },
+    {
+     "service": "worker",
+     "name": "WORKER",
+     "kind": "preset"
+    }
+   ],
+   "requirements": {
+    "level": "standard",
+    "findings": [
+     {
+      "code": "generated_secrets",
+      "severity": "info",
+      "services": [
+       "automatisch",
+       "db",
+       "redis",
+       "worker"
+      ],
+      "detail": "APP_SECRET_KEY, ENCRYPTION_KEY, POSTGRES_PASSWORD, REDIS_PASSWORD, WEBHOOK_SECRET_KEY, POSTGRES_PASSWORD, REDIS_PASSWORD",
+      "message": "Passwords and keys are generated at deploy time"
+     },
+     {
+      "code": "persistent_data",
+      "severity": "info",
+      "services": [
+       "automatisch",
+       "db",
+       "redis",
+       "worker"
+      ],
+      "detail": "postgres_data, redis_data, storage",
+      "message": "Stores data in named volumes"
+     }
+    ],
+    "protections": [
+     {
+      "code": "https_ingress",
+      "label": "Automatic HTTPS and an ingress shield in front of every domain"
+     },
+     {
+      "code": "secret_masking",
+      "label": "Secrets are generated, stored encrypted and masked in logs and the UI"
+     },
+     {
+      "code": "volume_backups",
+      "label": "Named volumes can be backed up and restored"
+     },
+     {
+      "code": "health_gated_deploy",
+      "label": "Deploys are gated on the health check before traffic switches"
+     },
+     {
+      "code": "rollback",
+      "label": "One-step rollback to the previous revision"
+     },
+     {
+      "code": "exposure_report",
+      "label": "Exposure report shows what is reachable from outside"
+     },
+     {
+      "code": "firewall",
+      "label": "Host firewall rules managed for published ports"
+     }
+    ]
+   }
+  },
+  {
    "id": "babybuddy",
    "aliases": [],
    "name": "Baby Buddy",
@@ -4389,6 +5050,112 @@
        "backrest"
       ],
       "detail": "cache, config, data",
+      "message": "Stores data in named volumes"
+     }
+    ],
+    "protections": [
+     {
+      "code": "https_ingress",
+      "label": "Automatic HTTPS and an ingress shield in front of every domain"
+     },
+     {
+      "code": "volume_backups",
+      "label": "Named volumes can be backed up and restored"
+     },
+     {
+      "code": "health_gated_deploy",
+      "label": "Deploys are gated on the health check before traffic switches"
+     },
+     {
+      "code": "rollback",
+      "label": "One-step rollback to the previous revision"
+     },
+     {
+      "code": "exposure_report",
+      "label": "Exposure report shows what is reachable from outside"
+     },
+     {
+      "code": "firewall",
+      "label": "Host firewall rules managed for published ports"
+     }
+    ]
+   }
+  },
+  {
+   "id": "baikal",
+   "aliases": [],
+   "name": "Baikal",
+   "slogan": "A lightweight CalDAV and CardDAV server for calendars and contacts.",
+   "description": "GPL 3.0 licensed. Open the web UI once to run the setup wizard and create the admin account.",
+   "first_run": [],
+   "category": "Productivity",
+   "status": "active",
+   "source_repo": "https://github.com/sabre-io/Baikal",
+   "documentation_url": "https://sabre.io/baikal/",
+   "license": {
+    "spdx": "GPL-3.0",
+    "class": "copyleft",
+    "url": "https://github.com/sabre-io/Baikal/blob/master/LICENSE"
+   },
+   "hosted_use": "unknown",
+   "listing": {
+    "by": "maintainers"
+   },
+   "trust": {
+    "level": "listed"
+   },
+   "arch": {
+    "amd64": "unknown",
+    "arm64": "unknown"
+   },
+   "images": [
+    {
+     "service": "baikal",
+     "image": "ckulka/baikal",
+     "tag": "0.10.1-nginx-php8.2",
+     "source_class": "community",
+     "signed": null,
+     "provenance": false,
+     "sbom": false,
+     "non_root": false
+    }
+   ],
+   "memory_mib": 128,
+   "needs_config": false,
+   "install": {
+    "kind": "deploy",
+    "fields": []
+   },
+   "services": [
+    {
+     "name": "baikal",
+     "image": "ckulka/baikal:0.10.1-nginx-php8.2",
+     "ports": [
+      80
+     ],
+     "volumes": [
+      "baikal_config -> /var/www/baikal/config",
+      "baikal_data -> /var/www/baikal/Specific"
+     ]
+    }
+   ],
+   "env": [
+    {
+     "service": "baikal",
+     "name": "TZ",
+     "kind": "preset"
+    }
+   ],
+   "requirements": {
+    "level": "standard",
+    "findings": [
+     {
+      "code": "persistent_data",
+      "severity": "info",
+      "services": [
+       "baikal"
+      ],
+      "detail": "baikal_config, baikal_data",
       "message": "Stores data in named volumes"
      }
     ],
@@ -11787,6 +12554,144 @@
    }
   },
   {
+   "id": "dagu",
+   "aliases": [],
+   "name": "Dagu",
+   "slogan": "A workflow engine that runs DAGs defined in plain YAML files, with a web UI.",
+   "description": "GPL 3.0 licensed. The web UI uses basic auth with user admin and a generated password shown in the deployment variables.",
+   "first_run": [],
+   "category": "Automation",
+   "status": "active",
+   "source_repo": "https://github.com/dagucloud/dagu",
+   "documentation_url": "https://docs.dagu.sh/",
+   "license": {
+    "spdx": "GPL-3.0",
+    "class": "copyleft",
+    "url": "https://github.com/dagucloud/dagu/blob/main/LICENSE"
+   },
+   "hosted_use": "unknown",
+   "listing": {
+    "by": "maintainers"
+   },
+   "trust": {
+    "level": "listed"
+   },
+   "arch": {
+    "amd64": "unknown",
+    "arm64": "unknown"
+   },
+   "images": [
+    {
+     "service": "dagu",
+     "image": "ghcr.io/dagucloud/dagu",
+     "tag": "2.25.4",
+     "source_class": "upstream",
+     "signed": null,
+     "provenance": false,
+     "sbom": false,
+     "non_root": false
+    }
+   ],
+   "memory_mib": 256,
+   "needs_config": false,
+   "install": {
+    "kind": "deploy",
+    "fields": []
+   },
+   "services": [
+    {
+     "name": "dagu",
+     "image": "ghcr.io/dagucloud/dagu:2.25.4",
+     "ports": [
+      8080
+     ],
+     "volumes": [
+      "dagu_data -> /var/lib/dagu"
+     ]
+    }
+   ],
+   "env": [
+    {
+     "service": "dagu",
+     "name": "DAGU_AUTH_BASIC_PASSWORD",
+     "kind": "generated"
+    },
+    {
+     "service": "dagu",
+     "name": "DAGU_AUTH_BASIC_USERNAME",
+     "kind": "preset"
+    },
+    {
+     "service": "dagu",
+     "name": "DAGU_AUTH_MODE",
+     "kind": "preset"
+    },
+    {
+     "service": "dagu",
+     "name": "DAGU_HOST",
+     "kind": "preset"
+    },
+    {
+     "service": "dagu",
+     "name": "DAGU_PORT",
+     "kind": "preset"
+    }
+   ],
+   "requirements": {
+    "level": "standard",
+    "findings": [
+     {
+      "code": "generated_secrets",
+      "severity": "info",
+      "services": [
+       "dagu"
+      ],
+      "detail": "DAGU_AUTH_BASIC_PASSWORD",
+      "message": "Passwords and keys are generated at deploy time"
+     },
+     {
+      "code": "persistent_data",
+      "severity": "info",
+      "services": [
+       "dagu"
+      ],
+      "detail": "dagu_data",
+      "message": "Stores data in named volumes"
+     }
+    ],
+    "protections": [
+     {
+      "code": "https_ingress",
+      "label": "Automatic HTTPS and an ingress shield in front of every domain"
+     },
+     {
+      "code": "secret_masking",
+      "label": "Secrets are generated, stored encrypted and masked in logs and the UI"
+     },
+     {
+      "code": "volume_backups",
+      "label": "Named volumes can be backed up and restored"
+     },
+     {
+      "code": "health_gated_deploy",
+      "label": "Deploys are gated on the health check before traffic switches"
+     },
+     {
+      "code": "rollback",
+      "label": "One-step rollback to the previous revision"
+     },
+     {
+      "code": "exposure_report",
+      "label": "Exposure report shows what is reachable from outside"
+     },
+     {
+      "code": "firewall",
+      "label": "Host firewall rules managed for published ports"
+     }
+    ]
+   }
+  },
+  {
    "id": "dashdot",
    "aliases": [],
    "name": "Dashdot",
@@ -14870,6 +15775,105 @@
    }
   },
   {
+   "id": "dumbpad",
+   "aliases": [],
+   "name": "DumbPad",
+   "slogan": "A simple notepad with auto-save and optional PIN protection.",
+   "description": "GPL 3.0 licensed. Set the DUMBPAD_PIN environment variable to require a PIN to open the notes.",
+   "first_run": [],
+   "category": "Productivity",
+   "status": "active",
+   "source_repo": "https://github.com/DumbWareio/DumbPad",
+   "documentation_url": "https://github.com/DumbWareio/DumbPad",
+   "license": {
+    "spdx": "GPL-3.0",
+    "class": "copyleft",
+    "url": "https://github.com/DumbWareio/DumbPad/blob/main/LICENSE"
+   },
+   "hosted_use": "unknown",
+   "listing": {
+    "by": "maintainers"
+   },
+   "trust": {
+    "level": "listed"
+   },
+   "arch": {
+    "amd64": "unknown",
+    "arm64": "unknown"
+   },
+   "images": [
+    {
+     "service": "dumbpad",
+     "image": "dumbwareio/dumbpad",
+     "tag": "1.0.5",
+     "source_class": "upstream",
+     "signed": null,
+     "provenance": false,
+     "sbom": false,
+     "non_root": false
+    }
+   ],
+   "memory_mib": 128,
+   "needs_config": false,
+   "install": {
+    "kind": "deploy",
+    "fields": []
+   },
+   "services": [
+    {
+     "name": "dumbpad",
+     "image": "dumbwareio/dumbpad:1.0.5",
+     "ports": [
+      3000
+     ],
+     "volumes": [
+      "dumbpad_data -> /app/data"
+     ]
+    }
+   ],
+   "env": [],
+   "requirements": {
+    "level": "standard",
+    "findings": [
+     {
+      "code": "persistent_data",
+      "severity": "info",
+      "services": [
+       "dumbpad"
+      ],
+      "detail": "dumbpad_data",
+      "message": "Stores data in named volumes"
+     }
+    ],
+    "protections": [
+     {
+      "code": "https_ingress",
+      "label": "Automatic HTTPS and an ingress shield in front of every domain"
+     },
+     {
+      "code": "volume_backups",
+      "label": "Named volumes can be backed up and restored"
+     },
+     {
+      "code": "health_gated_deploy",
+      "label": "Deploys are gated on the health check before traffic switches"
+     },
+     {
+      "code": "rollback",
+      "label": "One-step rollback to the previous revision"
+     },
+     {
+      "code": "exposure_report",
+      "label": "Exposure report shows what is reachable from outside"
+     },
+     {
+      "code": "firewall",
+      "label": "Host firewall rules managed for published ports"
+     }
+    ]
+   }
+  },
+  {
    "id": "duplicati",
    "aliases": [],
    "name": "Duplicati",
@@ -17012,6 +18016,135 @@
    }
   },
   {
+   "id": "ezbookkeeping",
+   "aliases": [],
+   "name": "ezBookkeeping",
+   "slogan": "A personal finance app for tracking income, expenses and accounts.",
+   "description": "MIT licensed. Uses SQLite on a volume. Register the first account from the sign-up page.",
+   "first_run": [],
+   "category": "Finance",
+   "status": "active",
+   "source_repo": "https://github.com/mayswind/ezbookkeeping",
+   "documentation_url": "https://ezbookkeeping.mayswind.net/",
+   "license": {
+    "spdx": "MIT",
+    "class": "permissive",
+    "url": "https://github.com/mayswind/ezbookkeeping/blob/main/LICENSE"
+   },
+   "hosted_use": "unknown",
+   "listing": {
+    "by": "maintainers"
+   },
+   "trust": {
+    "level": "listed"
+   },
+   "arch": {
+    "amd64": "unknown",
+    "arm64": "unknown"
+   },
+   "images": [
+    {
+     "service": "ezbookkeeping",
+     "image": "mayswind/ezbookkeeping",
+     "tag": "2.1.1",
+     "source_class": "upstream",
+     "signed": null,
+     "provenance": false,
+     "sbom": false,
+     "non_root": false
+    }
+   ],
+   "memory_mib": 128,
+   "needs_config": false,
+   "install": {
+    "kind": "deploy",
+    "fields": []
+   },
+   "services": [
+    {
+     "name": "ezbookkeeping",
+     "image": "mayswind/ezbookkeeping:2.1.1",
+     "ports": [
+      8080
+     ],
+     "volumes": [
+      "storage -> /ezbookkeeping/storage",
+      "logs -> /ezbookkeeping/log"
+     ]
+    }
+   ],
+   "env": [
+    {
+     "service": "ezbookkeeping",
+     "name": "EBK_DATABASE_TYPE",
+     "kind": "preset"
+    },
+    {
+     "service": "ezbookkeeping",
+     "name": "EBK_SECURITY_SECRET_KEY",
+     "kind": "generated"
+    },
+    {
+     "service": "ezbookkeeping",
+     "name": "EBK_SERVER_ENABLE_GZIP",
+     "kind": "preset"
+    }
+   ],
+   "requirements": {
+    "level": "standard",
+    "findings": [
+     {
+      "code": "generated_secrets",
+      "severity": "info",
+      "services": [
+       "ezbookkeeping"
+      ],
+      "detail": "EBK_SECURITY_SECRET_KEY",
+      "message": "Passwords and keys are generated at deploy time"
+     },
+     {
+      "code": "persistent_data",
+      "severity": "info",
+      "services": [
+       "ezbookkeeping"
+      ],
+      "detail": "logs, storage",
+      "message": "Stores data in named volumes"
+     }
+    ],
+    "protections": [
+     {
+      "code": "https_ingress",
+      "label": "Automatic HTTPS and an ingress shield in front of every domain"
+     },
+     {
+      "code": "secret_masking",
+      "label": "Secrets are generated, stored encrypted and masked in logs and the UI"
+     },
+     {
+      "code": "volume_backups",
+      "label": "Named volumes can be backed up and restored"
+     },
+     {
+      "code": "health_gated_deploy",
+      "label": "Deploys are gated on the health check before traffic switches"
+     },
+     {
+      "code": "rollback",
+      "label": "One-step rollback to the previous revision"
+     },
+     {
+      "code": "exposure_report",
+      "label": "Exposure report shows what is reachable from outside"
+     },
+     {
+      "code": "firewall",
+      "label": "Host firewall rules managed for published ports"
+     }
+    ]
+   }
+  },
+  {
    "id": "factorio",
    "aliases": [],
    "name": "Factorio Server",
@@ -18868,6 +20001,189 @@
      {
       "code": "https_ingress",
       "label": "Automatic HTTPS and an ingress shield in front of every domain"
+     },
+     {
+      "code": "health_gated_deploy",
+      "label": "Deploys are gated on the health check before traffic switches"
+     },
+     {
+      "code": "rollback",
+      "label": "One-step rollback to the previous revision"
+     },
+     {
+      "code": "exposure_report",
+      "label": "Exposure report shows what is reachable from outside"
+     },
+     {
+      "code": "firewall",
+      "label": "Host firewall rules managed for published ports"
+     }
+    ]
+   }
+  },
+  {
+   "id": "flarum",
+   "aliases": [],
+   "name": "Flarum",
+   "slogan": "A modern forum platform with a clean interface and extensions.",
+   "description": "Uses the community maintained crazymax image because Flarum publishes no official image. The first start installs the database and takes a minute. Sign in as flarum with the generated admin password. MIT licence.",
+   "first_run": [],
+   "category": "Communication",
+   "status": "active",
+   "source_repo": "https://github.com/flarum/flarum",
+   "documentation_url": "https://docs.flarum.org/",
+   "license": {
+    "spdx": "MIT",
+    "class": "permissive",
+    "url": "https://github.com/flarum/flarum/blob/2.x/LICENSE"
+   },
+   "hosted_use": "unknown",
+   "listing": {
+    "by": "maintainers"
+   },
+   "trust": {
+    "level": "listed"
+   },
+   "arch": {
+    "amd64": "unknown",
+    "arm64": "unknown"
+   },
+   "images": [
+    {
+     "service": "db",
+     "image": "mariadb",
+     "tag": "11.4",
+     "source_class": "official",
+     "signed": null,
+     "provenance": false,
+     "sbom": false,
+     "non_root": false
+    },
+    {
+     "service": "flarum",
+     "image": "crazymax/flarum",
+     "tag": "1.8.20",
+     "source_class": "community",
+     "signed": null,
+     "provenance": false,
+     "sbom": false,
+     "non_root": false
+    }
+   ],
+   "memory_mib": 256,
+   "needs_config": false,
+   "install": {
+    "kind": "deploy",
+    "fields": []
+   },
+   "services": [
+    {
+     "name": "db",
+     "image": "mariadb:11.4",
+     "ports": [],
+     "volumes": [
+      "flarum_db_data -> /var/lib/mysql"
+     ]
+    },
+    {
+     "name": "flarum",
+     "image": "crazymax/flarum:1.8.20",
+     "ports": [
+      8000
+     ],
+     "volumes": [
+      "flarum_data -> /data"
+     ]
+    }
+   ],
+   "env": [
+    {
+     "service": "db",
+     "name": "MYSQL_DATABASE",
+     "kind": "preset"
+    },
+    {
+     "service": "db",
+     "name": "MYSQL_PASSWORD",
+     "kind": "generated"
+    },
+    {
+     "service": "db",
+     "name": "MYSQL_ROOT_PASSWORD",
+     "kind": "generated"
+    },
+    {
+     "service": "db",
+     "name": "MYSQL_USER",
+     "kind": "preset"
+    },
+    {
+     "service": "flarum",
+     "name": "DB_HOST",
+     "kind": "preset"
+    },
+    {
+     "service": "flarum",
+     "name": "DB_NAME",
+     "kind": "preset"
+    },
+    {
+     "service": "flarum",
+     "name": "DB_PASSWORD",
+     "kind": "generated"
+    },
+    {
+     "service": "flarum",
+     "name": "DB_USER",
+     "kind": "preset"
+    },
+    {
+     "service": "flarum",
+     "name": "FLARUM_ADMIN_PASS",
+     "kind": "generated"
+    },
+    {
+     "service": "flarum",
+     "name": "FLARUM_BASE_URL",
+     "kind": "preset"
+    }
+   ],
+   "requirements": {
+    "level": "standard",
+    "findings": [
+     {
+      "code": "generated_secrets",
+      "severity": "info",
+      "services": [
+       "db",
+       "flarum"
+      ],
+      "detail": "DB_PASSWORD, FLARUM_ADMIN_PASS, MYSQL_PASSWORD, MYSQL_ROOT_PASSWORD",
+      "message": "Passwords and keys are generated at deploy time"
+     },
+     {
+      "code": "persistent_data",
+      "severity": "info",
+      "services": [
+       "db",
+       "flarum"
+      ],
+      "detail": "flarum_data, flarum_db_data",
+      "message": "Stores data in named volumes"
+     }
+    ],
+    "protections": [
+     {
+      "code": "https_ingress",
+      "label": "Automatic HTTPS and an ingress shield in front of every domain"
+     },
+     {
+      "code": "secret_masking",
+      "label": "Secrets are generated, stored encrypted and masked in logs and the UI"
+     },
+     {
+      "code": "volume_backups",
+      "label": "Named volumes can be backed up and restored"
      },
      {
       "code": "health_gated_deploy",
@@ -27464,6 +28780,214 @@
    }
   },
   {
+   "id": "hortusfox",
+   "aliases": [],
+   "name": "HortusFox",
+   "slogan": "A collaborative plant management app for home gardens and plant collections.",
+   "description": "MIT licensed. Sign in with admin@example.com and the generated admin password shown in the deployment variables, then change the email.",
+   "first_run": [],
+   "category": "Applications",
+   "status": "active",
+   "source_repo": "https://github.com/danielbrendel/hortusfox-web",
+   "documentation_url": "https://github.com/danielbrendel/hortusfox-web",
+   "license": {
+    "spdx": "MIT",
+    "class": "permissive",
+    "url": "https://github.com/danielbrendel/hortusfox-web/blob/main/LICENSE.txt"
+   },
+   "hosted_use": "unknown",
+   "listing": {
+    "by": "maintainers"
+   },
+   "trust": {
+    "level": "listed"
+   },
+   "arch": {
+    "amd64": "unknown",
+    "arm64": "unknown"
+   },
+   "images": [
+    {
+     "service": "app",
+     "image": "ghcr.io/danielbrendel/hortusfox-web",
+     "tag": "v6.4",
+     "source_class": "upstream",
+     "signed": null,
+     "provenance": false,
+     "sbom": false,
+     "non_root": false
+    },
+    {
+     "service": "db",
+     "image": "mariadb",
+     "tag": "11",
+     "source_class": "official",
+     "platforms": [
+      "linux/amd64",
+      "linux/arm64",
+      "linux/ppc64le",
+      "linux/s390x"
+     ],
+     "signed": null,
+     "provenance": false,
+     "sbom": false,
+     "non_root": false
+    }
+   ],
+   "memory_mib": 512,
+   "needs_config": false,
+   "install": {
+    "kind": "deploy",
+    "fields": []
+   },
+   "services": [
+    {
+     "name": "app",
+     "image": "ghcr.io/danielbrendel/hortusfox-web:v6.4",
+     "ports": [
+      80
+     ],
+     "volumes": [
+      "app_images -> /var/www/html/public/img",
+      "app_logs -> /var/www/html/app/logs",
+      "app_backup -> /var/www/html/public/backup",
+      "app_themes -> /var/www/html/public/themes",
+      "app_migrate -> /var/www/html/app/migrations"
+     ]
+    },
+    {
+     "name": "db",
+     "image": "mariadb:11",
+     "ports": [],
+     "volumes": [
+      "db_data -> /var/lib/mysql"
+     ]
+    }
+   ],
+   "env": [
+    {
+     "service": "app",
+     "name": "APP_ADMIN_EMAIL",
+     "kind": "preset"
+    },
+    {
+     "service": "app",
+     "name": "APP_ADMIN_PASSWORD",
+     "kind": "generated"
+    },
+    {
+     "service": "app",
+     "name": "APP_TIMEZONE",
+     "kind": "preset"
+    },
+    {
+     "service": "app",
+     "name": "DB_CHARSET",
+     "kind": "preset"
+    },
+    {
+     "service": "app",
+     "name": "DB_DATABASE",
+     "kind": "preset"
+    },
+    {
+     "service": "app",
+     "name": "DB_HOST",
+     "kind": "preset"
+    },
+    {
+     "service": "app",
+     "name": "DB_PASSWORD",
+     "kind": "generated"
+    },
+    {
+     "service": "app",
+     "name": "DB_PORT",
+     "kind": "preset"
+    },
+    {
+     "service": "app",
+     "name": "DB_USERNAME",
+     "kind": "preset"
+    },
+    {
+     "service": "db",
+     "name": "MARIADB_DATABASE",
+     "kind": "preset"
+    },
+    {
+     "service": "db",
+     "name": "MARIADB_PASSWORD",
+     "kind": "generated"
+    },
+    {
+     "service": "db",
+     "name": "MARIADB_ROOT_PASSWORD",
+     "kind": "generated"
+    },
+    {
+     "service": "db",
+     "name": "MARIADB_USER",
+     "kind": "preset"
+    }
+   ],
+   "requirements": {
+    "level": "standard",
+    "findings": [
+     {
+      "code": "generated_secrets",
+      "severity": "info",
+      "services": [
+       "app",
+       "db"
+      ],
+      "detail": "APP_ADMIN_PASSWORD, DB_PASSWORD, MARIADB_PASSWORD, MARIADB_ROOT_PASSWORD",
+      "message": "Passwords and keys are generated at deploy time"
+     },
+     {
+      "code": "persistent_data",
+      "severity": "info",
+      "services": [
+       "app",
+       "db"
+      ],
+      "detail": "app_backup, app_images, app_logs, app_migrate, app_themes, db_data",
+      "message": "Stores data in named volumes"
+     }
+    ],
+    "protections": [
+     {
+      "code": "https_ingress",
+      "label": "Automatic HTTPS and an ingress shield in front of every domain"
+     },
+     {
+      "code": "secret_masking",
+      "label": "Secrets are generated, stored encrypted and masked in logs and the UI"
+     },
+     {
+      "code": "volume_backups",
+      "label": "Named volumes can be backed up and restored"
+     },
+     {
+      "code": "health_gated_deploy",
+      "label": "Deploys are gated on the health check before traffic switches"
+     },
+     {
+      "code": "rollback",
+      "label": "One-step rollback to the previous revision"
+     },
+     {
+      "code": "exposure_report",
+      "label": "Exposure report shows what is reachable from outside"
+     },
+     {
+      "code": "firewall",
+      "label": "Host firewall rules managed for published ports"
+     }
+    ]
+   }
+  },
+  {
    "id": "huginn",
    "aliases": [],
    "name": "Huginn",
@@ -27682,6 +29206,164 @@
      {
       "code": "https_ingress",
       "label": "Automatic HTTPS and an ingress shield in front of every domain"
+     },
+     {
+      "code": "volume_backups",
+      "label": "Named volumes can be backed up and restored"
+     },
+     {
+      "code": "health_gated_deploy",
+      "label": "Deploys are gated on the health check before traffic switches"
+     },
+     {
+      "code": "rollback",
+      "label": "One-step rollback to the previous revision"
+     },
+     {
+      "code": "exposure_report",
+      "label": "Exposure report shows what is reachable from outside"
+     },
+     {
+      "code": "firewall",
+      "label": "Host firewall rules managed for published ports"
+     }
+    ]
+   }
+  },
+  {
+   "id": "ihatemoney",
+   "aliases": [],
+   "name": "I hate money",
+   "slogan": "A shared expense tracker for groups, with no account needed.",
+   "description": "BSD licensed. Uses SQLite on a volume. Outgoing mail is not configured, so password reset emails are not sent.",
+   "first_run": [],
+   "category": "Finance",
+   "status": "active",
+   "source_repo": "https://github.com/spiral-project/ihatemoney",
+   "documentation_url": "https://ihatemoney.readthedocs.io/",
+   "license": {
+    "spdx": "LicenseRef-ihatemoney-BSD",
+    "class": "permissive",
+    "url": "https://github.com/spiral-project/ihatemoney/blob/main/LICENSE"
+   },
+   "hosted_use": "unknown",
+   "listing": {
+    "by": "maintainers"
+   },
+   "trust": {
+    "level": "listed"
+   },
+   "arch": {
+    "amd64": "unknown",
+    "arm64": "unknown"
+   },
+   "images": [
+    {
+     "service": "ihatemoney",
+     "image": "ihatemoney/ihatemoney",
+     "tag": "7.2.1",
+     "source_class": "community",
+     "signed": null,
+     "provenance": false,
+     "sbom": false,
+     "non_root": false
+    }
+   ],
+   "memory_mib": 128,
+   "needs_config": false,
+   "install": {
+    "kind": "deploy",
+    "fields": []
+   },
+   "services": [
+    {
+     "name": "ihatemoney",
+     "image": "ihatemoney/ihatemoney:7.2.1",
+     "ports": [
+      8000
+     ],
+     "volumes": [
+      "ihatemoney_data -> /database"
+     ]
+    }
+   ],
+   "env": [
+    {
+     "service": "ihatemoney",
+     "name": "ACTIVATE_ADMIN_DASHBOARD",
+     "kind": "preset"
+    },
+    {
+     "service": "ihatemoney",
+     "name": "ACTIVATE_DEMO_PROJECT",
+     "kind": "preset"
+    },
+    {
+     "service": "ihatemoney",
+     "name": "ALLOW_PUBLIC_PROJECT_CREATION",
+     "kind": "preset"
+    },
+    {
+     "service": "ihatemoney",
+     "name": "BABEL_DEFAULT_TIMEZONE",
+     "kind": "preset"
+    },
+    {
+     "service": "ihatemoney",
+     "name": "DEBUG",
+     "kind": "preset"
+    },
+    {
+     "service": "ihatemoney",
+     "name": "SECRET_KEY",
+     "kind": "generated"
+    },
+    {
+     "service": "ihatemoney",
+     "name": "SESSION_COOKIE_SECURE",
+     "kind": "preset"
+    },
+    {
+     "service": "ihatemoney",
+     "name": "SQLALCHEMY_DATABASE_URI",
+     "kind": "preset"
+    },
+    {
+     "service": "ihatemoney",
+     "name": "SQLALCHEMY_TRACK_MODIFICATIONS",
+     "kind": "preset"
+    }
+   ],
+   "requirements": {
+    "level": "standard",
+    "findings": [
+     {
+      "code": "generated_secrets",
+      "severity": "info",
+      "services": [
+       "ihatemoney"
+      ],
+      "detail": "SECRET_KEY",
+      "message": "Passwords and keys are generated at deploy time"
+     },
+     {
+      "code": "persistent_data",
+      "severity": "info",
+      "services": [
+       "ihatemoney"
+      ],
+      "detail": "ihatemoney_data",
+      "message": "Stores data in named volumes"
+     }
+    ],
+    "protections": [
+     {
+      "code": "https_ingress",
+      "label": "Automatic HTTPS and an ingress shield in front of every domain"
+     },
+     {
+      "code": "secret_masking",
+      "label": "Secrets are generated, stored encrypted and masked in logs and the UI"
      },
      {
       "code": "volume_backups",
@@ -32161,6 +33843,335 @@
      {
       "code": "volume_backups",
       "label": "Named volumes can be backed up and restored"
+     },
+     {
+      "code": "rollback",
+      "label": "One-step rollback to the previous revision"
+     },
+     {
+      "code": "exposure_report",
+      "label": "Exposure report shows what is reachable from outside"
+     },
+     {
+      "code": "firewall",
+      "label": "Host firewall rules managed for published ports"
+     }
+    ]
+   }
+  },
+  {
+   "id": "kener",
+   "aliases": [],
+   "name": "Kener",
+   "slogan": "A status page and uptime monitoring tool built with SvelteKit.",
+   "description": "MIT licensed. Uses SQLite on a volume and Redis for queues. After deploy, set the ORIGIN variable to the public URL of the app.",
+   "first_run": [],
+   "category": "Monitoring",
+   "status": "active",
+   "source_repo": "https://github.com/rajnandan1/kener",
+   "documentation_url": "https://kener.ing/docs",
+   "license": {
+    "spdx": "MIT",
+    "class": "permissive",
+    "url": "https://github.com/rajnandan1/kener/blob/main/LICENSE"
+   },
+   "hosted_use": "unknown",
+   "listing": {
+    "by": "maintainers"
+   },
+   "trust": {
+    "level": "listed"
+   },
+   "arch": {
+    "amd64": "unknown",
+    "arm64": "unknown"
+   },
+   "images": [
+    {
+     "service": "kener",
+     "image": "rajnandan1/kener",
+     "tag": "4.2.1-alpine",
+     "source_class": "upstream",
+     "signed": null,
+     "provenance": false,
+     "sbom": false,
+     "non_root": false
+    },
+    {
+     "service": "redis",
+     "image": "redis",
+     "tag": "7-alpine",
+     "source_class": "official",
+     "platforms": [
+      "linux/386",
+      "linux/amd64",
+      "linux/arm",
+      "linux/arm64",
+      "linux/ppc64le",
+      "linux/riscv64",
+      "linux/s390x"
+     ],
+     "signed": null,
+     "provenance": false,
+     "sbom": false,
+     "non_root": false
+    }
+   ],
+   "memory_mib": 256,
+   "needs_config": false,
+   "install": {
+    "kind": "deploy",
+    "fields": []
+   },
+   "services": [
+    {
+     "name": "kener",
+     "image": "rajnandan1/kener:4.2.1-alpine",
+     "ports": [
+      3000
+     ],
+     "volumes": [
+      "kener_data -> /app/database",
+      "kener_uploads -> /app/uploads"
+     ]
+    },
+    {
+     "name": "redis",
+     "image": "redis:7-alpine",
+     "ports": [],
+     "volumes": [
+      "redis_data -> /data"
+     ]
+    }
+   ],
+   "env": [
+    {
+     "service": "kener",
+     "name": "DATABASE_URL",
+     "kind": "preset"
+    },
+    {
+     "service": "kener",
+     "name": "KENER_SECRET_KEY",
+     "kind": "generated"
+    },
+    {
+     "service": "kener",
+     "name": "ORIGIN",
+     "kind": "preset"
+    },
+    {
+     "service": "kener",
+     "name": "REDIS_URL",
+     "kind": "preset"
+    },
+    {
+     "service": "kener",
+     "name": "TZ",
+     "kind": "preset"
+    }
+   ],
+   "requirements": {
+    "level": "standard",
+    "findings": [
+     {
+      "code": "generated_secrets",
+      "severity": "info",
+      "services": [
+       "kener"
+      ],
+      "detail": "KENER_SECRET_KEY",
+      "message": "Passwords and keys are generated at deploy time"
+     },
+     {
+      "code": "persistent_data",
+      "severity": "info",
+      "services": [
+       "kener",
+       "redis"
+      ],
+      "detail": "kener_data, kener_uploads, redis_data",
+      "message": "Stores data in named volumes"
+     }
+    ],
+    "protections": [
+     {
+      "code": "https_ingress",
+      "label": "Automatic HTTPS and an ingress shield in front of every domain"
+     },
+     {
+      "code": "secret_masking",
+      "label": "Secrets are generated, stored encrypted and masked in logs and the UI"
+     },
+     {
+      "code": "volume_backups",
+      "label": "Named volumes can be backed up and restored"
+     },
+     {
+      "code": "health_gated_deploy",
+      "label": "Deploys are gated on the health check before traffic switches"
+     },
+     {
+      "code": "rollback",
+      "label": "One-step rollback to the previous revision"
+     },
+     {
+      "code": "exposure_report",
+      "label": "Exposure report shows what is reachable from outside"
+     },
+     {
+      "code": "firewall",
+      "label": "Host firewall rules managed for published ports"
+     }
+    ]
+   }
+  },
+  {
+   "id": "kestra",
+   "aliases": [],
+   "name": "Kestra",
+   "slogan": "An event driven workflow orchestrator where flows are defined in YAML.",
+   "description": "Apache 2.0 licensed open source edition. Basic auth is off, so put the UI behind your own access control. Tasks that run in Docker containers are not available because the Docker socket is not mounted.",
+   "first_run": [],
+   "category": "Automation",
+   "status": "active",
+   "source_repo": "https://github.com/kestra-io/kestra",
+   "documentation_url": "https://kestra.io/docs",
+   "license": {
+    "spdx": "Apache-2.0",
+    "class": "permissive",
+    "url": "https://github.com/kestra-io/kestra/blob/develop/LICENSE"
+   },
+   "hosted_use": "unknown",
+   "listing": {
+    "by": "maintainers"
+   },
+   "trust": {
+    "level": "listed"
+   },
+   "arch": {
+    "amd64": "unknown",
+    "arm64": "unknown"
+   },
+   "images": [
+    {
+     "service": "db",
+     "image": "postgres",
+     "tag": "16-alpine",
+     "source_class": "official",
+     "platforms": [
+      "linux/386",
+      "linux/amd64",
+      "linux/arm",
+      "linux/arm64",
+      "linux/ppc64le",
+      "linux/riscv64",
+      "linux/s390x"
+     ],
+     "signed": null,
+     "provenance": false,
+     "sbom": false,
+     "non_root": false
+    },
+    {
+     "service": "kestra",
+     "image": "kestra/kestra",
+     "tag": "v2.0.10",
+     "source_class": "community",
+     "signed": null,
+     "provenance": false,
+     "sbom": false,
+     "non_root": false
+    }
+   ],
+   "memory_mib": 1536,
+   "needs_config": false,
+   "install": {
+    "kind": "deploy",
+    "fields": []
+   },
+   "services": [
+    {
+     "name": "db",
+     "image": "postgres:16-alpine",
+     "ports": [],
+     "volumes": [
+      "db_data -> /var/lib/postgresql/data"
+     ]
+    },
+    {
+     "name": "kestra",
+     "image": "kestra/kestra:v2.0.10",
+     "ports": [
+      8080
+     ],
+     "volumes": [
+      "kestra_data -> /app/storage"
+     ]
+    }
+   ],
+   "env": [
+    {
+     "service": "db",
+     "name": "POSTGRES_DB",
+     "kind": "preset"
+    },
+    {
+     "service": "db",
+     "name": "POSTGRES_PASSWORD",
+     "kind": "generated"
+    },
+    {
+     "service": "db",
+     "name": "POSTGRES_USER",
+     "kind": "preset"
+    },
+    {
+     "service": "kestra",
+     "name": "KESTRA_CONFIGURATION",
+     "kind": "generated"
+    }
+   ],
+   "requirements": {
+    "level": "standard",
+    "findings": [
+     {
+      "code": "generated_secrets",
+      "severity": "info",
+      "services": [
+       "db",
+       "kestra"
+      ],
+      "detail": "KESTRA_CONFIGURATION, POSTGRES_PASSWORD",
+      "message": "Passwords and keys are generated at deploy time"
+     },
+     {
+      "code": "persistent_data",
+      "severity": "info",
+      "services": [
+       "db",
+       "kestra"
+      ],
+      "detail": "db_data, kestra_data",
+      "message": "Stores data in named volumes"
+     }
+    ],
+    "protections": [
+     {
+      "code": "https_ingress",
+      "label": "Automatic HTTPS and an ingress shield in front of every domain"
+     },
+     {
+      "code": "secret_masking",
+      "label": "Secrets are generated, stored encrypted and masked in logs and the UI"
+     },
+     {
+      "code": "volume_backups",
+      "label": "Named volumes can be backed up and restored"
+     },
+     {
+      "code": "health_gated_deploy",
+      "label": "Deploys are gated on the health check before traffic switches"
      },
      {
       "code": "rollback",
@@ -50107,6 +52118,568 @@
    }
   },
   {
+   "id": "novu",
+   "aliases": [],
+   "name": "Novu",
+   "slogan": "An open source notification infrastructure for email, SMS, push and in-app messages.",
+   "description": "Give the API and WebSocket services their own domains so the dashboard and Inbox can reach them. Create the first account from the dashboard sign-up page.",
+   "first_run": [],
+   "category": "Developer Tools",
+   "status": "active",
+   "source_repo": "https://github.com/novuhq/novu",
+   "documentation_url": "https://docs.novu.co/community/self-hosting-novu/overview",
+   "license": {
+    "spdx": "MIT",
+    "class": "permissive",
+    "url": "https://github.com/novuhq/novu/blob/next/LICENSE-MIT"
+   },
+   "hosted_use": "unknown",
+   "listing": {
+    "by": "maintainers"
+   },
+   "trust": {
+    "level": "listed"
+   },
+   "arch": {
+    "amd64": "unknown",
+    "arm64": "unknown"
+   },
+   "images": [
+    {
+     "service": "api",
+     "image": "ghcr.io/novuhq/novu/api",
+     "tag": "3.18.0",
+     "source_class": "upstream",
+     "signed": null,
+     "provenance": false,
+     "sbom": false,
+     "non_root": false
+    },
+    {
+     "service": "mongodb",
+     "image": "mongo",
+     "tag": "8.0.17",
+     "source_class": "official",
+     "signed": null,
+     "provenance": false,
+     "sbom": false,
+     "non_root": false
+    },
+    {
+     "service": "novu",
+     "image": "ghcr.io/novuhq/novu/dashboard",
+     "tag": "3.18.0",
+     "source_class": "upstream",
+     "signed": null,
+     "provenance": false,
+     "sbom": false,
+     "non_root": false
+    },
+    {
+     "service": "redis",
+     "image": "redis",
+     "tag": "7-alpine",
+     "source_class": "official",
+     "platforms": [
+      "linux/386",
+      "linux/amd64",
+      "linux/arm",
+      "linux/arm64",
+      "linux/ppc64le",
+      "linux/riscv64",
+      "linux/s390x"
+     ],
+     "signed": null,
+     "provenance": false,
+     "sbom": false,
+     "non_root": false
+    },
+    {
+     "service": "worker",
+     "image": "ghcr.io/novuhq/novu/worker",
+     "tag": "3.18.0",
+     "source_class": "upstream",
+     "signed": null,
+     "provenance": false,
+     "sbom": false,
+     "non_root": false
+    },
+    {
+     "service": "ws",
+     "image": "ghcr.io/novuhq/novu/ws",
+     "tag": "3.18.0",
+     "source_class": "upstream",
+     "signed": null,
+     "provenance": false,
+     "sbom": false,
+     "non_root": false
+    }
+   ],
+   "memory_mib": 3072,
+   "needs_config": false,
+   "install": {
+    "kind": "deploy",
+    "fields": []
+   },
+   "services": [
+    {
+     "name": "api",
+     "image": "ghcr.io/novuhq/novu/api:3.18.0",
+     "ports": [
+      3000
+     ],
+     "volumes": []
+    },
+    {
+     "name": "mongodb",
+     "image": "mongo:8.0.17",
+     "ports": [],
+     "volumes": [
+      "mongo_data -> /data/db"
+     ]
+    },
+    {
+     "name": "novu",
+     "image": "ghcr.io/novuhq/novu/dashboard:3.18.0",
+     "ports": [
+      4000
+     ],
+     "volumes": []
+    },
+    {
+     "name": "redis",
+     "image": "redis:7-alpine",
+     "ports": [],
+     "volumes": [
+      "redis_data -> /data"
+     ]
+    },
+    {
+     "name": "worker",
+     "image": "ghcr.io/novuhq/novu/worker:3.18.0",
+     "ports": [],
+     "volumes": []
+    },
+    {
+     "name": "ws",
+     "image": "ghcr.io/novuhq/novu/ws:3.18.0",
+     "ports": [
+      3002
+     ],
+     "volumes": []
+    }
+   ],
+   "env": [
+    {
+     "service": "api",
+     "name": "API_ROOT_URL",
+     "kind": "preset"
+    },
+    {
+     "service": "api",
+     "name": "AWS_ACCESS_KEY_ID",
+     "kind": "preset"
+    },
+    {
+     "service": "api",
+     "name": "AWS_SECRET_ACCESS_KEY",
+     "kind": "preset"
+    },
+    {
+     "service": "api",
+     "name": "FRONT_BASE_URL",
+     "kind": "preset"
+    },
+    {
+     "service": "api",
+     "name": "IS_API_IDEMPOTENCY_ENABLED",
+     "kind": "preset"
+    },
+    {
+     "service": "api",
+     "name": "IS_API_RATE_LIMITING_ENABLED",
+     "kind": "preset"
+    },
+    {
+     "service": "api",
+     "name": "IS_NEW_MESSAGES_API_RESPONSE_ENABLED",
+     "kind": "preset"
+    },
+    {
+     "service": "api",
+     "name": "IS_SELF_HOSTED",
+     "kind": "preset"
+    },
+    {
+     "service": "api",
+     "name": "IS_V2_ENABLED",
+     "kind": "preset"
+    },
+    {
+     "service": "api",
+     "name": "JWT_SECRET",
+     "kind": "generated"
+    },
+    {
+     "service": "api",
+     "name": "MONGO_AUTO_CREATE_INDEXES",
+     "kind": "preset"
+    },
+    {
+     "service": "api",
+     "name": "MONGO_MAX_POOL_SIZE",
+     "kind": "preset"
+    },
+    {
+     "service": "api",
+     "name": "MONGO_MIN_POOL_SIZE",
+     "kind": "preset"
+    },
+    {
+     "service": "api",
+     "name": "MONGO_URL",
+     "kind": "generated"
+    },
+    {
+     "service": "api",
+     "name": "NEW_RELIC_ENABLED",
+     "kind": "preset"
+    },
+    {
+     "service": "api",
+     "name": "NODE_ENV",
+     "kind": "preset"
+    },
+    {
+     "service": "api",
+     "name": "NOVU_SECRET_KEY",
+     "kind": "generated"
+    },
+    {
+     "service": "api",
+     "name": "PORT",
+     "kind": "preset"
+    },
+    {
+     "service": "api",
+     "name": "REDIS_CACHE_SERVICE_HOST",
+     "kind": "preset"
+    },
+    {
+     "service": "api",
+     "name": "REDIS_CACHE_SERVICE_PORT",
+     "kind": "preset"
+    },
+    {
+     "service": "api",
+     "name": "REDIS_HOST",
+     "kind": "preset"
+    },
+    {
+     "service": "api",
+     "name": "REDIS_PORT",
+     "kind": "preset"
+    },
+    {
+     "service": "api",
+     "name": "S3_BUCKET_NAME",
+     "kind": "preset"
+    },
+    {
+     "service": "api",
+     "name": "S3_REGION",
+     "kind": "preset"
+    },
+    {
+     "service": "api",
+     "name": "STORE_ENCRYPTION_KEY",
+     "kind": "generated"
+    },
+    {
+     "service": "api",
+     "name": "SUBSCRIBER_WIDGET_JWT_EXPIRATION_TIME",
+     "kind": "preset"
+    },
+    {
+     "service": "mongodb",
+     "name": "MONGO_INITDB_ROOT_PASSWORD",
+     "kind": "generated"
+    },
+    {
+     "service": "mongodb",
+     "name": "MONGO_INITDB_ROOT_USERNAME",
+     "kind": "preset"
+    },
+    {
+     "service": "novu",
+     "name": "VITE_API_HOSTNAME",
+     "kind": "preset"
+    },
+    {
+     "service": "novu",
+     "name": "VITE_WEBSOCKET_HOSTNAME",
+     "kind": "preset"
+    },
+    {
+     "service": "worker",
+     "name": "API_ROOT_URL",
+     "kind": "preset"
+    },
+    {
+     "service": "worker",
+     "name": "AWS_ACCESS_KEY_ID",
+     "kind": "preset"
+    },
+    {
+     "service": "worker",
+     "name": "AWS_SECRET_ACCESS_KEY",
+     "kind": "preset"
+    },
+    {
+     "service": "worker",
+     "name": "BROADCAST_QUEUE_CHUNK_SIZE",
+     "kind": "preset"
+    },
+    {
+     "service": "worker",
+     "name": "IS_SELF_HOSTED",
+     "kind": "preset"
+    },
+    {
+     "service": "worker",
+     "name": "MONGO_AUTO_CREATE_INDEXES",
+     "kind": "preset"
+    },
+    {
+     "service": "worker",
+     "name": "MONGO_MAX_POOL_SIZE",
+     "kind": "preset"
+    },
+    {
+     "service": "worker",
+     "name": "MONGO_MIN_POOL_SIZE",
+     "kind": "preset"
+    },
+    {
+     "service": "worker",
+     "name": "MONGO_URL",
+     "kind": "generated"
+    },
+    {
+     "service": "worker",
+     "name": "MULTICAST_QUEUE_CHUNK_SIZE",
+     "kind": "preset"
+    },
+    {
+     "service": "worker",
+     "name": "NEW_RELIC_ENABLED",
+     "kind": "preset"
+    },
+    {
+     "service": "worker",
+     "name": "NODE_ENV",
+     "kind": "preset"
+    },
+    {
+     "service": "worker",
+     "name": "PORT",
+     "kind": "preset"
+    },
+    {
+     "service": "worker",
+     "name": "REDIS_CACHE_SERVICE_HOST",
+     "kind": "preset"
+    },
+    {
+     "service": "worker",
+     "name": "REDIS_CACHE_SERVICE_PORT",
+     "kind": "preset"
+    },
+    {
+     "service": "worker",
+     "name": "REDIS_HOST",
+     "kind": "preset"
+    },
+    {
+     "service": "worker",
+     "name": "REDIS_PORT",
+     "kind": "preset"
+    },
+    {
+     "service": "worker",
+     "name": "S3_BUCKET_NAME",
+     "kind": "preset"
+    },
+    {
+     "service": "worker",
+     "name": "S3_REGION",
+     "kind": "preset"
+    },
+    {
+     "service": "worker",
+     "name": "STORE_ENCRYPTION_KEY",
+     "kind": "generated"
+    },
+    {
+     "service": "worker",
+     "name": "SUBSCRIBER_WIDGET_JWT_EXPIRATION_TIME",
+     "kind": "preset"
+    },
+    {
+     "service": "ws",
+     "name": "AWS_ACCESS_KEY_ID",
+     "kind": "preset"
+    },
+    {
+     "service": "ws",
+     "name": "AWS_SECRET_ACCESS_KEY",
+     "kind": "preset"
+    },
+    {
+     "service": "ws",
+     "name": "IS_SELF_HOSTED",
+     "kind": "preset"
+    },
+    {
+     "service": "ws",
+     "name": "JWT_SECRET",
+     "kind": "generated"
+    },
+    {
+     "service": "ws",
+     "name": "MONGO_AUTO_CREATE_INDEXES",
+     "kind": "preset"
+    },
+    {
+     "service": "ws",
+     "name": "MONGO_MAX_POOL_SIZE",
+     "kind": "preset"
+    },
+    {
+     "service": "ws",
+     "name": "MONGO_MIN_POOL_SIZE",
+     "kind": "preset"
+    },
+    {
+     "service": "ws",
+     "name": "MONGO_URL",
+     "kind": "generated"
+    },
+    {
+     "service": "ws",
+     "name": "NEW_RELIC_ENABLED",
+     "kind": "preset"
+    },
+    {
+     "service": "ws",
+     "name": "NODE_ENV",
+     "kind": "preset"
+    },
+    {
+     "service": "ws",
+     "name": "PORT",
+     "kind": "preset"
+    },
+    {
+     "service": "ws",
+     "name": "REDIS_CACHE_SERVICE_HOST",
+     "kind": "preset"
+    },
+    {
+     "service": "ws",
+     "name": "REDIS_CACHE_SERVICE_PORT",
+     "kind": "preset"
+    },
+    {
+     "service": "ws",
+     "name": "REDIS_HOST",
+     "kind": "preset"
+    },
+    {
+     "service": "ws",
+     "name": "REDIS_PORT",
+     "kind": "preset"
+    },
+    {
+     "service": "ws",
+     "name": "S3_BUCKET_NAME",
+     "kind": "preset"
+    },
+    {
+     "service": "ws",
+     "name": "S3_REGION",
+     "kind": "preset"
+    },
+    {
+     "service": "ws",
+     "name": "STORE_ENCRYPTION_KEY",
+     "kind": "generated"
+    },
+    {
+     "service": "ws",
+     "name": "SUBSCRIBER_WIDGET_JWT_EXPIRATION_TIME",
+     "kind": "preset"
+    }
+   ],
+   "requirements": {
+    "level": "standard",
+    "findings": [
+     {
+      "code": "generated_secrets",
+      "severity": "info",
+      "services": [
+       "api",
+       "mongodb",
+       "worker",
+       "ws"
+      ],
+      "detail": "JWT_SECRET, MONGO_URL, NOVU_SECRET_KEY, STORE_ENCRYPTION_KEY, JWT_SECRET, MONGO_URL, STORE_ENCRYPTION_KEY, MONGO_INITDB_ROOT_PASSWORD, MONGO_URL, STORE_ENCRYPTION_KEY",
+      "message": "Passwords and keys are generated at deploy time"
+     },
+     {
+      "code": "persistent_data",
+      "severity": "info",
+      "services": [
+       "mongodb",
+       "redis"
+      ],
+      "detail": "mongo_data, redis_data",
+      "message": "Stores data in named volumes"
+     }
+    ],
+    "protections": [
+     {
+      "code": "https_ingress",
+      "label": "Automatic HTTPS and an ingress shield in front of every domain"
+     },
+     {
+      "code": "secret_masking",
+      "label": "Secrets are generated, stored encrypted and masked in logs and the UI"
+     },
+     {
+      "code": "volume_backups",
+      "label": "Named volumes can be backed up and restored"
+     },
+     {
+      "code": "health_gated_deploy",
+      "label": "Deploys are gated on the health check before traffic switches"
+     },
+     {
+      "code": "rollback",
+      "label": "One-step rollback to the previous revision"
+     },
+     {
+      "code": "exposure_report",
+      "label": "Exposure report shows what is reachable from outside"
+     },
+     {
+      "code": "firewall",
+      "label": "Host firewall rules managed for published ports"
+     }
+    ]
+   }
+  },
+  {
    "id": "nsq",
    "aliases": [],
    "name": "NSQ",
@@ -52069,6 +54642,89 @@
    }
   },
   {
+   "id": "omni-tools",
+   "aliases": [],
+   "name": "Omni Tools",
+   "slogan": "A collection of self-hosted web tools for files, text, images and data.",
+   "description": "MIT licensed. Stateless, all processing runs in the browser.",
+   "first_run": [],
+   "category": "Developer Tools",
+   "status": "active",
+   "source_repo": "https://github.com/iib0011/omni-tools",
+   "documentation_url": "https://github.com/iib0011/omni-tools",
+   "license": {
+    "spdx": "MIT",
+    "class": "permissive",
+    "url": "https://github.com/iib0011/omni-tools/blob/main/LICENSE"
+   },
+   "hosted_use": "unknown",
+   "listing": {
+    "by": "maintainers"
+   },
+   "trust": {
+    "level": "listed"
+   },
+   "arch": {
+    "amd64": "unknown",
+    "arm64": "unknown"
+   },
+   "images": [
+    {
+     "service": "omni-tools",
+     "image": "iib0011/omni-tools",
+     "tag": "0.7.0",
+     "source_class": "upstream",
+     "signed": null,
+     "provenance": false,
+     "sbom": false,
+     "non_root": false
+    }
+   ],
+   "memory_mib": 64,
+   "needs_config": false,
+   "install": {
+    "kind": "deploy",
+    "fields": []
+   },
+   "services": [
+    {
+     "name": "omni-tools",
+     "image": "iib0011/omni-tools:0.7.0",
+     "ports": [
+      80
+     ],
+     "volumes": []
+    }
+   ],
+   "env": [],
+   "requirements": {
+    "level": "standard",
+    "findings": [],
+    "protections": [
+     {
+      "code": "https_ingress",
+      "label": "Automatic HTTPS and an ingress shield in front of every domain"
+     },
+     {
+      "code": "health_gated_deploy",
+      "label": "Deploys are gated on the health check before traffic switches"
+     },
+     {
+      "code": "rollback",
+      "label": "One-step rollback to the previous revision"
+     },
+     {
+      "code": "exposure_report",
+      "label": "Exposure report shows what is reachable from outside"
+     },
+     {
+      "code": "firewall",
+      "label": "Host firewall rules managed for published ports"
+     }
+    ]
+   }
+  },
+  {
    "id": "once-campfire",
    "aliases": [],
    "name": "Once Campfire",
@@ -53571,6 +56227,396 @@
    }
   },
   {
+   "id": "openproject",
+   "aliases": [],
+   "name": "OpenProject",
+   "slogan": "Project management with work packages, Gantt charts and boards.",
+   "description": "Runs a web server, a background worker, a cron runner and a one time seeder that prepares the database on first start, so the first boot takes a few minutes. Served over HTTPS through the proxy. First login is admin with password admin, change it at once. SMTP and file storage are configured later in the admin settings. GPL v3 licence.",
+   "first_run": [],
+   "category": "Productivity",
+   "status": "active",
+   "source_repo": "https://github.com/opf/openproject",
+   "documentation_url": "https://www.openproject.org/docs/installation-and-operations/",
+   "license": {
+    "spdx": "GPL-3.0",
+    "class": "copyleft",
+    "url": "https://github.com/opf/openproject/blob/dev/LICENSE"
+   },
+   "hosted_use": "unknown",
+   "listing": {
+    "by": "maintainers"
+   },
+   "trust": {
+    "level": "listed"
+   },
+   "arch": {
+    "amd64": "unknown",
+    "arm64": "unknown"
+   },
+   "images": [
+    {
+     "service": "cache",
+     "image": "memcached",
+     "tag": "1.6-alpine",
+     "source_class": "official",
+     "platforms": [
+      "linux/386",
+      "linux/amd64",
+      "linux/arm",
+      "linux/arm64",
+      "linux/ppc64le",
+      "linux/riscv64",
+      "linux/s390x"
+     ],
+     "signed": null,
+     "provenance": false,
+     "sbom": false,
+     "non_root": false
+    },
+    {
+     "service": "cron",
+     "image": "openproject/openproject",
+     "tag": "17.9.7-slim",
+     "source_class": "community",
+     "signed": null,
+     "provenance": false,
+     "sbom": false,
+     "non_root": false
+    },
+    {
+     "service": "db",
+     "image": "postgres",
+     "tag": "17-alpine",
+     "source_class": "official",
+     "platforms": [
+      "linux/386",
+      "linux/amd64",
+      "linux/arm",
+      "linux/arm64",
+      "linux/ppc64le",
+      "linux/riscv64",
+      "linux/s390x"
+     ],
+     "signed": null,
+     "provenance": false,
+     "sbom": false,
+     "non_root": false
+    },
+    {
+     "service": "seeder",
+     "image": "openproject/openproject",
+     "tag": "17.9.7-slim",
+     "source_class": "community",
+     "signed": null,
+     "provenance": false,
+     "sbom": false,
+     "non_root": false
+    },
+    {
+     "service": "web",
+     "image": "openproject/openproject",
+     "tag": "17.9.7-slim",
+     "source_class": "community",
+     "signed": null,
+     "provenance": false,
+     "sbom": false,
+     "non_root": false
+    },
+    {
+     "service": "worker",
+     "image": "openproject/openproject",
+     "tag": "17.9.7-slim",
+     "source_class": "community",
+     "signed": null,
+     "provenance": false,
+     "sbom": false,
+     "non_root": false
+    }
+   ],
+   "memory_mib": 2048,
+   "needs_config": false,
+   "install": {
+    "kind": "deploy",
+    "fields": []
+   },
+   "services": [
+    {
+     "name": "cache",
+     "image": "memcached:1.6-alpine",
+     "ports": [],
+     "volumes": []
+    },
+    {
+     "name": "cron",
+     "image": "openproject/openproject:17.9.7-slim",
+     "ports": [],
+     "volumes": [
+      "opdata -> /var/openproject/assets"
+     ]
+    },
+    {
+     "name": "db",
+     "image": "postgres:17-alpine",
+     "ports": [],
+     "volumes": [
+      "pgdata -> /var/lib/postgresql/data"
+     ]
+    },
+    {
+     "name": "seeder",
+     "image": "openproject/openproject:17.9.7-slim",
+     "ports": [],
+     "volumes": [
+      "opdata -> /var/openproject/assets"
+     ]
+    },
+    {
+     "name": "web",
+     "image": "openproject/openproject:17.9.7-slim",
+     "ports": [
+      8080
+     ],
+     "volumes": [
+      "opdata -> /var/openproject/assets"
+     ]
+    },
+    {
+     "name": "worker",
+     "image": "openproject/openproject:17.9.7-slim",
+     "ports": [],
+     "volumes": [
+      "opdata -> /var/openproject/assets"
+     ]
+    }
+   ],
+   "env": [
+    {
+     "service": "cron",
+     "name": "DATABASE_URL",
+     "kind": "generated"
+    },
+    {
+     "service": "cron",
+     "name": "OPENPROJECT_CACHE__MEMCACHE__SERVER",
+     "kind": "preset"
+    },
+    {
+     "service": "cron",
+     "name": "OPENPROJECT_HOST__NAME",
+     "kind": "preset"
+    },
+    {
+     "service": "cron",
+     "name": "OPENPROJECT_HTTPS",
+     "kind": "preset"
+    },
+    {
+     "service": "cron",
+     "name": "OPENPROJECT_RAILS__CACHE__STORE",
+     "kind": "preset"
+    },
+    {
+     "service": "cron",
+     "name": "OPENPROJECT_RAILS__RELATIVE__URL__ROOT",
+     "kind": "preset"
+    },
+    {
+     "service": "cron",
+     "name": "SECRET_KEY_BASE",
+     "kind": "generated"
+    },
+    {
+     "service": "db",
+     "name": "POSTGRES_DB",
+     "kind": "preset"
+    },
+    {
+     "service": "db",
+     "name": "POSTGRES_PASSWORD",
+     "kind": "generated"
+    },
+    {
+     "service": "db",
+     "name": "POSTGRES_USER",
+     "kind": "preset"
+    },
+    {
+     "service": "seeder",
+     "name": "DATABASE_URL",
+     "kind": "generated"
+    },
+    {
+     "service": "seeder",
+     "name": "OPENPROJECT_CACHE__MEMCACHE__SERVER",
+     "kind": "preset"
+    },
+    {
+     "service": "seeder",
+     "name": "OPENPROJECT_HOST__NAME",
+     "kind": "preset"
+    },
+    {
+     "service": "seeder",
+     "name": "OPENPROJECT_HTTPS",
+     "kind": "preset"
+    },
+    {
+     "service": "seeder",
+     "name": "OPENPROJECT_RAILS__CACHE__STORE",
+     "kind": "preset"
+    },
+    {
+     "service": "seeder",
+     "name": "OPENPROJECT_RAILS__RELATIVE__URL__ROOT",
+     "kind": "preset"
+    },
+    {
+     "service": "seeder",
+     "name": "SECRET_KEY_BASE",
+     "kind": "generated"
+    },
+    {
+     "service": "web",
+     "name": "DATABASE_URL",
+     "kind": "generated"
+    },
+    {
+     "service": "web",
+     "name": "OPENPROJECT_CACHE__MEMCACHE__SERVER",
+     "kind": "preset"
+    },
+    {
+     "service": "web",
+     "name": "OPENPROJECT_HOST__NAME",
+     "kind": "preset"
+    },
+    {
+     "service": "web",
+     "name": "OPENPROJECT_HTTPS",
+     "kind": "preset"
+    },
+    {
+     "service": "web",
+     "name": "OPENPROJECT_RAILS__CACHE__STORE",
+     "kind": "preset"
+    },
+    {
+     "service": "web",
+     "name": "OPENPROJECT_RAILS__RELATIVE__URL__ROOT",
+     "kind": "preset"
+    },
+    {
+     "service": "web",
+     "name": "SECRET_KEY_BASE",
+     "kind": "generated"
+    },
+    {
+     "service": "worker",
+     "name": "DATABASE_URL",
+     "kind": "generated"
+    },
+    {
+     "service": "worker",
+     "name": "OPENPROJECT_CACHE__MEMCACHE__SERVER",
+     "kind": "preset"
+    },
+    {
+     "service": "worker",
+     "name": "OPENPROJECT_HOST__NAME",
+     "kind": "preset"
+    },
+    {
+     "service": "worker",
+     "name": "OPENPROJECT_HTTPS",
+     "kind": "preset"
+    },
+    {
+     "service": "worker",
+     "name": "OPENPROJECT_RAILS__CACHE__STORE",
+     "kind": "preset"
+    },
+    {
+     "service": "worker",
+     "name": "OPENPROJECT_RAILS__RELATIVE__URL__ROOT",
+     "kind": "preset"
+    },
+    {
+     "service": "worker",
+     "name": "SECRET_KEY_BASE",
+     "kind": "generated"
+    }
+   ],
+   "requirements": {
+    "level": "standard",
+    "findings": [
+     {
+      "code": "generated_secrets",
+      "severity": "info",
+      "services": [
+       "cron",
+       "db",
+       "seeder",
+       "web",
+       "worker"
+      ],
+      "detail": "DATABASE_URL, SECRET_KEY_BASE, POSTGRES_PASSWORD",
+      "message": "Passwords and keys are generated at deploy time"
+     },
+     {
+      "code": "no_healthcheck",
+      "severity": "info",
+      "services": [
+       "seeder"
+      ],
+      "message": "No health check, so a deploy is judged by the process starting"
+     },
+     {
+      "code": "persistent_data",
+      "severity": "info",
+      "services": [
+       "cron",
+       "db",
+       "seeder",
+       "web",
+       "worker"
+      ],
+      "detail": "opdata, pgdata",
+      "message": "Stores data in named volumes"
+     }
+    ],
+    "protections": [
+     {
+      "code": "https_ingress",
+      "label": "Automatic HTTPS and an ingress shield in front of every domain"
+     },
+     {
+      "code": "secret_masking",
+      "label": "Secrets are generated, stored encrypted and masked in logs and the UI"
+     },
+     {
+      "code": "volume_backups",
+      "label": "Named volumes can be backed up and restored"
+     },
+     {
+      "code": "health_gated_deploy",
+      "label": "Deploys are gated on the health check before traffic switches"
+     },
+     {
+      "code": "rollback",
+      "label": "One-step rollback to the previous revision"
+     },
+     {
+      "code": "exposure_report",
+      "label": "Exposure report shows what is reachable from outside"
+     },
+     {
+      "code": "firewall",
+      "label": "Host firewall rules managed for published ports"
+     }
+    ]
+   }
+  },
+  {
    "id": "openresty",
    "aliases": [],
    "name": "OpenResty",
@@ -54666,6 +57712,105 @@
      {
       "code": "secret_masking",
       "label": "Secrets are generated, stored encrypted and masked in logs and the UI"
+     },
+     {
+      "code": "volume_backups",
+      "label": "Named volumes can be backed up and restored"
+     },
+     {
+      "code": "health_gated_deploy",
+      "label": "Deploys are gated on the health check before traffic switches"
+     },
+     {
+      "code": "rollback",
+      "label": "One-step rollback to the previous revision"
+     },
+     {
+      "code": "exposure_report",
+      "label": "Exposure report shows what is reachable from outside"
+     },
+     {
+      "code": "firewall",
+      "label": "Host firewall rules managed for published ports"
+     }
+    ]
+   }
+  },
+  {
+   "id": "otterwiki",
+   "aliases": [],
+   "name": "An Otter Wiki",
+   "slogan": "A minimal wiki that stores pages as Markdown in a Git repository.",
+   "description": "MIT licensed. The first account you register becomes the administrator.",
+   "first_run": [],
+   "category": "Productivity",
+   "status": "active",
+   "source_repo": "https://github.com/redimp/otterwiki",
+   "documentation_url": "https://otterwiki.com/Installation",
+   "license": {
+    "spdx": "MIT",
+    "class": "permissive",
+    "url": "https://github.com/redimp/otterwiki/blob/main/LICENSE"
+   },
+   "hosted_use": "unknown",
+   "listing": {
+    "by": "maintainers"
+   },
+   "trust": {
+    "level": "listed"
+   },
+   "arch": {
+    "amd64": "unknown",
+    "arm64": "unknown"
+   },
+   "images": [
+    {
+     "service": "otterwiki",
+     "image": "redimp/otterwiki",
+     "tag": "2.27.0",
+     "source_class": "upstream",
+     "signed": null,
+     "provenance": false,
+     "sbom": false,
+     "non_root": false
+    }
+   ],
+   "memory_mib": 128,
+   "needs_config": false,
+   "install": {
+    "kind": "deploy",
+    "fields": []
+   },
+   "services": [
+    {
+     "name": "otterwiki",
+     "image": "redimp/otterwiki:2.27.0",
+     "ports": [
+      80
+     ],
+     "volumes": [
+      "otterwiki_data -> /app-data"
+     ]
+    }
+   ],
+   "env": [],
+   "requirements": {
+    "level": "standard",
+    "findings": [
+     {
+      "code": "persistent_data",
+      "severity": "info",
+      "services": [
+       "otterwiki"
+      ],
+      "detail": "otterwiki_data",
+      "message": "Stores data in named volumes"
+     }
+    ],
+    "protections": [
+     {
+      "code": "https_ingress",
+      "label": "Automatic HTTPS and an ingress shield in front of every domain"
      },
      {
       "code": "volume_backups",
@@ -58271,6 +61416,195 @@
      {
       "code": "volume_backups",
       "label": "Named volumes can be backed up and restored"
+     },
+     {
+      "code": "rollback",
+      "label": "One-step rollback to the previous revision"
+     },
+     {
+      "code": "exposure_report",
+      "label": "Exposure report shows what is reachable from outside"
+     },
+     {
+      "code": "firewall",
+      "label": "Host firewall rules managed for published ports"
+     }
+    ]
+   }
+  },
+  {
+   "id": "picsur",
+   "aliases": [],
+   "name": "Picsur",
+   "slogan": "A simple image host with on-the-fly format conversion.",
+   "description": "AGPL 3.0 licensed. Sign in as admin with the generated admin password shown in the deployment variables.",
+   "first_run": [],
+   "category": "Media",
+   "status": "active",
+   "source_repo": "https://github.com/CaramelFur/Picsur",
+   "documentation_url": "https://github.com/CaramelFur/Picsur",
+   "license": {
+    "spdx": "AGPL-3.0",
+    "class": "network-copyleft",
+    "url": "https://github.com/CaramelFur/Picsur/blob/master/LICENSE"
+   },
+   "hosted_use": "unknown",
+   "listing": {
+    "by": "maintainers"
+   },
+   "trust": {
+    "level": "listed"
+   },
+   "arch": {
+    "amd64": "unknown",
+    "arm64": "unknown"
+   },
+   "images": [
+    {
+     "service": "db",
+     "image": "postgres",
+     "tag": "17-alpine",
+     "source_class": "official",
+     "platforms": [
+      "linux/386",
+      "linux/amd64",
+      "linux/arm",
+      "linux/arm64",
+      "linux/ppc64le",
+      "linux/riscv64",
+      "linux/s390x"
+     ],
+     "signed": null,
+     "provenance": false,
+     "sbom": false,
+     "non_root": false
+    },
+    {
+     "service": "picsur",
+     "image": "ghcr.io/caramelfur/picsur",
+     "tag": "0.5.6",
+     "source_class": "upstream",
+     "signed": null,
+     "provenance": false,
+     "sbom": false,
+     "non_root": false
+    }
+   ],
+   "memory_mib": 512,
+   "needs_config": false,
+   "install": {
+    "kind": "deploy",
+    "fields": []
+   },
+   "services": [
+    {
+     "name": "db",
+     "image": "postgres:17-alpine",
+     "ports": [],
+     "volumes": [
+      "db_data -> /var/lib/postgresql/data"
+     ]
+    },
+    {
+     "name": "picsur",
+     "image": "ghcr.io/caramelfur/picsur:0.5.6",
+     "ports": [
+      8080
+     ],
+     "volumes": []
+    }
+   ],
+   "env": [
+    {
+     "service": "db",
+     "name": "POSTGRES_DB",
+     "kind": "preset"
+    },
+    {
+     "service": "db",
+     "name": "POSTGRES_PASSWORD",
+     "kind": "generated"
+    },
+    {
+     "service": "db",
+     "name": "POSTGRES_USER",
+     "kind": "preset"
+    },
+    {
+     "service": "picsur",
+     "name": "PICSUR_ADMIN_PASSWORD",
+     "kind": "generated"
+    },
+    {
+     "service": "picsur",
+     "name": "PICSUR_DB_DATABASE",
+     "kind": "preset"
+    },
+    {
+     "service": "picsur",
+     "name": "PICSUR_DB_HOST",
+     "kind": "preset"
+    },
+    {
+     "service": "picsur",
+     "name": "PICSUR_DB_PASSWORD",
+     "kind": "generated"
+    },
+    {
+     "service": "picsur",
+     "name": "PICSUR_DB_PORT",
+     "kind": "preset"
+    },
+    {
+     "service": "picsur",
+     "name": "PICSUR_DB_USERNAME",
+     "kind": "preset"
+    },
+    {
+     "service": "picsur",
+     "name": "PICSUR_JWT_SECRET",
+     "kind": "generated"
+    }
+   ],
+   "requirements": {
+    "level": "standard",
+    "findings": [
+     {
+      "code": "generated_secrets",
+      "severity": "info",
+      "services": [
+       "db",
+       "picsur"
+      ],
+      "detail": "PICSUR_ADMIN_PASSWORD, PICSUR_DB_PASSWORD, PICSUR_JWT_SECRET, POSTGRES_PASSWORD",
+      "message": "Passwords and keys are generated at deploy time"
+     },
+     {
+      "code": "persistent_data",
+      "severity": "info",
+      "services": [
+       "db"
+      ],
+      "detail": "db_data",
+      "message": "Stores data in named volumes"
+     }
+    ],
+    "protections": [
+     {
+      "code": "https_ingress",
+      "label": "Automatic HTTPS and an ingress shield in front of every domain"
+     },
+     {
+      "code": "secret_masking",
+      "label": "Secrets are generated, stored encrypted and masked in logs and the UI"
+     },
+     {
+      "code": "volume_backups",
+      "label": "Named volumes can be backed up and restored"
+     },
+     {
+      "code": "health_gated_deploy",
+      "label": "Deploys are gated on the health check before traffic switches"
      },
      {
       "code": "rollback",
@@ -78704,6 +82038,175 @@
    }
   },
   {
+   "id": "unleash",
+   "aliases": [],
+   "name": "Unleash",
+   "slogan": "A feature flag service with gradual rollouts and targeting rules.",
+   "description": "Apache 2.0 licensed open source edition. Sign in with the default user admin and password unleash4all, then change the password right away.",
+   "first_run": [],
+   "category": "Developer Tools",
+   "status": "active",
+   "source_repo": "https://github.com/Unleash/unleash",
+   "documentation_url": "https://docs.getunleash.io/",
+   "license": {
+    "spdx": "Apache-2.0",
+    "class": "permissive",
+    "url": "https://github.com/Unleash/unleash/blob/v7.4.0/LICENSE"
+   },
+   "hosted_use": "unknown",
+   "listing": {
+    "by": "maintainers"
+   },
+   "trust": {
+    "level": "listed"
+   },
+   "arch": {
+    "amd64": "unknown",
+    "arm64": "unknown"
+   },
+   "images": [
+    {
+     "service": "db",
+     "image": "postgres",
+     "tag": "16-alpine",
+     "source_class": "official",
+     "platforms": [
+      "linux/386",
+      "linux/amd64",
+      "linux/arm",
+      "linux/arm64",
+      "linux/ppc64le",
+      "linux/riscv64",
+      "linux/s390x"
+     ],
+     "signed": null,
+     "provenance": false,
+     "sbom": false,
+     "non_root": false
+    },
+    {
+     "service": "unleash",
+     "image": "unleashorg/unleash-server",
+     "tag": "7.4.0",
+     "source_class": "community",
+     "signed": null,
+     "provenance": false,
+     "sbom": false,
+     "non_root": false
+    }
+   ],
+   "memory_mib": 512,
+   "needs_config": false,
+   "install": {
+    "kind": "deploy",
+    "fields": []
+   },
+   "services": [
+    {
+     "name": "db",
+     "image": "postgres:16-alpine",
+     "ports": [],
+     "volumes": [
+      "db_data -> /var/lib/postgresql/data"
+     ]
+    },
+    {
+     "name": "unleash",
+     "image": "unleashorg/unleash-server:7.4.0",
+     "ports": [
+      4242
+     ],
+     "volumes": []
+    }
+   ],
+   "env": [
+    {
+     "service": "db",
+     "name": "POSTGRES_DB",
+     "kind": "preset"
+    },
+    {
+     "service": "db",
+     "name": "POSTGRES_PASSWORD",
+     "kind": "generated"
+    },
+    {
+     "service": "db",
+     "name": "POSTGRES_USER",
+     "kind": "preset"
+    },
+    {
+     "service": "unleash",
+     "name": "DATABASE_SSL",
+     "kind": "preset"
+    },
+    {
+     "service": "unleash",
+     "name": "DATABASE_URL",
+     "kind": "generated"
+    },
+    {
+     "service": "unleash",
+     "name": "LOG_LEVEL",
+     "kind": "preset"
+    }
+   ],
+   "requirements": {
+    "level": "standard",
+    "findings": [
+     {
+      "code": "generated_secrets",
+      "severity": "info",
+      "services": [
+       "db",
+       "unleash"
+      ],
+      "detail": "DATABASE_URL, POSTGRES_PASSWORD",
+      "message": "Passwords and keys are generated at deploy time"
+     },
+     {
+      "code": "persistent_data",
+      "severity": "info",
+      "services": [
+       "db"
+      ],
+      "detail": "db_data",
+      "message": "Stores data in named volumes"
+     }
+    ],
+    "protections": [
+     {
+      "code": "https_ingress",
+      "label": "Automatic HTTPS and an ingress shield in front of every domain"
+     },
+     {
+      "code": "secret_masking",
+      "label": "Secrets are generated, stored encrypted and masked in logs and the UI"
+     },
+     {
+      "code": "volume_backups",
+      "label": "Named volumes can be backed up and restored"
+     },
+     {
+      "code": "health_gated_deploy",
+      "label": "Deploys are gated on the health check before traffic switches"
+     },
+     {
+      "code": "rollback",
+      "label": "One-step rollback to the previous revision"
+     },
+     {
+      "code": "exposure_report",
+      "label": "Exposure report shows what is reachable from outside"
+     },
+     {
+      "code": "firewall",
+      "label": "Host firewall rules managed for published ports"
+     }
+    ]
+   }
+  },
+  {
    "id": "unleash-postgres",
    "aliases": [],
    "name": "Unleash (Postgres)",
@@ -85271,6 +88774,235 @@
        "zipline"
       ],
       "detail": "zipline_db_data, zipline_uploads",
+      "message": "Stores data in named volumes"
+     }
+    ],
+    "protections": [
+     {
+      "code": "https_ingress",
+      "label": "Automatic HTTPS and an ingress shield in front of every domain"
+     },
+     {
+      "code": "secret_masking",
+      "label": "Secrets are generated, stored encrypted and masked in logs and the UI"
+     },
+     {
+      "code": "volume_backups",
+      "label": "Named volumes can be backed up and restored"
+     },
+     {
+      "code": "health_gated_deploy",
+      "label": "Deploys are gated on the health check before traffic switches"
+     },
+     {
+      "code": "rollback",
+      "label": "One-step rollback to the previous revision"
+     },
+     {
+      "code": "exposure_report",
+      "label": "Exposure report shows what is reachable from outside"
+     },
+     {
+      "code": "firewall",
+      "label": "Host firewall rules managed for published ports"
+     }
+    ]
+   }
+  },
+  {
+   "id": "zitadel",
+   "aliases": [],
+   "name": "ZITADEL",
+   "slogan": "An identity and access management server with single sign on and OIDC.",
+   "description": "The external domain is bound to the instance on first start, so set the domain before the first deploy. Served over HTTPS through the proxy. First login is zitadel-admin@zitadel.localhost with the default password Password1!, change it at once. AGPL v3 licence.",
+   "first_run": [],
+   "category": "Security",
+   "status": "active",
+   "source_repo": "https://github.com/zitadel/zitadel",
+   "documentation_url": "https://zitadel.com/docs",
+   "license": {
+    "spdx": "AGPL-3.0",
+    "class": "network-copyleft",
+    "url": "https://github.com/zitadel/zitadel/blob/main/LICENSE"
+   },
+   "hosted_use": "unknown",
+   "listing": {
+    "by": "maintainers"
+   },
+   "trust": {
+    "level": "listed"
+   },
+   "arch": {
+    "amd64": "unknown",
+    "arm64": "unknown"
+   },
+   "images": [
+    {
+     "service": "db",
+     "image": "postgres",
+     "tag": "17-alpine",
+     "source_class": "official",
+     "platforms": [
+      "linux/386",
+      "linux/amd64",
+      "linux/arm",
+      "linux/arm64",
+      "linux/ppc64le",
+      "linux/riscv64",
+      "linux/s390x"
+     ],
+     "signed": null,
+     "provenance": false,
+     "sbom": false,
+     "non_root": false
+    },
+    {
+     "service": "zitadel",
+     "image": "ghcr.io/zitadel/zitadel",
+     "tag": "v4.16.0",
+     "source_class": "upstream",
+     "signed": null,
+     "provenance": false,
+     "sbom": false,
+     "non_root": false
+    }
+   ],
+   "memory_mib": 512,
+   "needs_config": false,
+   "install": {
+    "kind": "deploy",
+    "fields": []
+   },
+   "services": [
+    {
+     "name": "db",
+     "image": "postgres:17-alpine",
+     "ports": [],
+     "volumes": [
+      "zitadel_db_data -> /var/lib/postgresql/data"
+     ]
+    },
+    {
+     "name": "zitadel",
+     "image": "ghcr.io/zitadel/zitadel:v4.16.0",
+     "ports": [
+      8080
+     ],
+     "volumes": []
+    }
+   ],
+   "env": [
+    {
+     "service": "db",
+     "name": "PGUSER",
+     "kind": "preset"
+    },
+    {
+     "service": "db",
+     "name": "POSTGRES_DB",
+     "kind": "preset"
+    },
+    {
+     "service": "db",
+     "name": "POSTGRES_PASSWORD",
+     "kind": "generated"
+    },
+    {
+     "service": "zitadel",
+     "name": "ZITADEL_DATABASE_POSTGRES_ADMIN_PASSWORD",
+     "kind": "generated"
+    },
+    {
+     "service": "zitadel",
+     "name": "ZITADEL_DATABASE_POSTGRES_ADMIN_SSL_MODE",
+     "kind": "preset"
+    },
+    {
+     "service": "zitadel",
+     "name": "ZITADEL_DATABASE_POSTGRES_ADMIN_USERNAME",
+     "kind": "preset"
+    },
+    {
+     "service": "zitadel",
+     "name": "ZITADEL_DATABASE_POSTGRES_DATABASE",
+     "kind": "preset"
+    },
+    {
+     "service": "zitadel",
+     "name": "ZITADEL_DATABASE_POSTGRES_HOST",
+     "kind": "preset"
+    },
+    {
+     "service": "zitadel",
+     "name": "ZITADEL_DATABASE_POSTGRES_PORT",
+     "kind": "preset"
+    },
+    {
+     "service": "zitadel",
+     "name": "ZITADEL_DATABASE_POSTGRES_USER_PASSWORD",
+     "kind": "generated"
+    },
+    {
+     "service": "zitadel",
+     "name": "ZITADEL_DATABASE_POSTGRES_USER_SSL_MODE",
+     "kind": "preset"
+    },
+    {
+     "service": "zitadel",
+     "name": "ZITADEL_DATABASE_POSTGRES_USER_USERNAME",
+     "kind": "preset"
+    },
+    {
+     "service": "zitadel",
+     "name": "ZITADEL_DEFAULTINSTANCE_FEATURES_LOGINV2_REQUIRED",
+     "kind": "preset"
+    },
+    {
+     "service": "zitadel",
+     "name": "ZITADEL_EXTERNALDOMAIN",
+     "kind": "preset"
+    },
+    {
+     "service": "zitadel",
+     "name": "ZITADEL_EXTERNALPORT",
+     "kind": "preset"
+    },
+    {
+     "service": "zitadel",
+     "name": "ZITADEL_EXTERNALSECURE",
+     "kind": "preset"
+    },
+    {
+     "service": "zitadel",
+     "name": "ZITADEL_MASTERKEY",
+     "kind": "generated"
+    },
+    {
+     "service": "zitadel",
+     "name": "ZITADEL_TLS_ENABLED",
+     "kind": "preset"
+    }
+   ],
+   "requirements": {
+    "level": "standard",
+    "findings": [
+     {
+      "code": "generated_secrets",
+      "severity": "info",
+      "services": [
+       "db",
+       "zitadel"
+      ],
+      "detail": "POSTGRES_PASSWORD, ZITADEL_DATABASE_POSTGRES_ADMIN_PASSWORD, ZITADEL_DATABASE_POSTGRES_USER_PASSWORD, ZITADEL_MASTERKEY",
+      "message": "Passwords and keys are generated at deploy time"
+     },
+     {
+      "code": "persistent_data",
+      "severity": "info",
+      "services": [
+       "db"
+      ],
+      "detail": "zitadel_db_data",
       "message": "Stores data in named volumes"
      }
     ],

@@ -1,0 +1,12 @@
+id: vvveb
+name: Vvveb CMS
+slogan: A CMS for building websites, blogs, and ecommerce stores.
+category: Applications
+documentation_url: https://docs.vvveb.com
+recommended_memory_bytes: 268435456
+requires_gpu: false
+platforms:
+    - linux/386
+    - linux/amd64
+    - linux/arm
+    - linux/arm64

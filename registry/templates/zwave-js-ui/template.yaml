@@ -1,0 +1,71 @@
+id: zwave-js-ui
+name: Z-Wave JS UI
+slogan: A control panel and MQTT gateway for Z-Wave networks that pairs with Home Assistant.
+description: A control panel and MQTT gateway for Z-Wave networks that pairs with Home Assistant.
+category: Applications
+documentation_url: https://zwave-js.github.io/zwave-js-ui/
+recommended_memory_bytes: 268435456
+requires_gpu: false
+manifest:
+    id: zwave-js-ui
+    name: Z-Wave JS UI
+    description: A control panel and MQTT gateway for Z-Wave networks that pairs with Home Assistant.
+    icon: wifi-high
+    category: Applications
+    documentation_url: https://zwave-js.github.io/zwave-js-ui/
+    source_repo: https://github.com/zwave-js/zwave-js-ui
+    license: MIT
+    license_class: permissive
+    license_url: https://github.com/zwave-js/zwave-js-ui/blob/HEAD/LICENSE
+    hosted_use: ""
+    listing:
+        by: community
+        vendor_org: ""
+        proof: ""
+    status: active
+    status_reason: ""
+    replaced_by: ""
+    aliases: []
+    first_run:
+        - Open the address and pick your Z-Wave serial adapter in Settings.
+    compose_file: compose.yaml
+    recommended_memory_bytes: 268435456
+    env:
+        - key: TZ
+          label: Time zone
+          description: IANA time zone for logs and schedules.
+          default: Etc/UTC
+          generate: ""
+          length: 0
+          required: false
+          secret: false
+          type: ""
+          service: ""
+          path: ""
+          mode: ""
+        - key: SESSION_SECRET
+          label: Session secret
+          description: Secret used to sign login sessions.
+          default: ""
+          generate: hex
+          length: 32
+          required: false
+          secret: true
+          type: ""
+          service: ""
+          path: ""
+          mode: ""
+    domains:
+        - service: zwave-js-ui
+          port: 8091
+          description: Public address of Z-Wave JS UI.
+    healthcheck:
+        service: zwave-js-ui
+        port: 8091
+        path: /health
+        expect: 0
+        kind: ""
+        reason: ""
+    first_boot_seconds: 0
+    console_command: []
+    capabilities: []

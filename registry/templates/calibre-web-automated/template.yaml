@@ -1,0 +1,59 @@
+id: calibre-web-automated
+name: Calibre-Web Automated
+slogan: A Calibre-Web fork that auto imports, converts and fixes books dropped into an ingest folder.
+description: A Calibre-Web fork that auto imports, converts and fixes books dropped into an ingest folder.
+category: Media
+documentation_url: https://github.com/crocodilestick/Calibre-Web-Automated
+recommended_memory_bytes: 536870912
+requires_gpu: false
+manifest:
+    id: calibre-web-automated
+    name: Calibre-Web Automated
+    description: A Calibre-Web fork that auto imports, converts and fixes books dropped into an ingest folder.
+    icon: books
+    category: Media
+    documentation_url: https://github.com/crocodilestick/Calibre-Web-Automated
+    source_repo: https://github.com/crocodilestick/Calibre-Web-Automated
+    license: GPL-3.0-only
+    license_class: copyleft
+    license_url: https://github.com/crocodilestick/Calibre-Web-Automated/blob/HEAD/LICENSE
+    hosted_use: ""
+    listing:
+        by: community
+        vendor_org: ""
+        proof: ""
+    status: active
+    status_reason: ""
+    replaced_by: ""
+    aliases: []
+    first_run:
+        - Sign in as admin with password admin123 and change it right away. Drop books into the ingest volume.
+    compose_file: compose.yaml
+    recommended_memory_bytes: 536870912
+    env:
+        - key: TZ
+          label: Time zone
+          description: IANA time zone for logs and schedules.
+          default: Etc/UTC
+          generate: ""
+          length: 0
+          required: false
+          secret: false
+          type: ""
+          service: ""
+          path: ""
+          mode: ""
+    domains:
+        - service: calibre-web-automated
+          port: 8083
+          description: Public address of Calibre-Web Automated.
+    healthcheck:
+        service: calibre-web-automated
+        port: 8083
+        path: /
+        expect: 0
+        kind: ""
+        reason: ""
+    first_boot_seconds: 0
+    console_command: []
+    capabilities: []

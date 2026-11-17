@@ -1,0 +1,14 @@
+id: factorio
+name: Factorio Server
+slogan: A dedicated Factorio multiplayer server with saves kept in a volume.
+description: |-
+    Players connect on UDP 34197: the port binds privately by default, so set a public bind in the app's Network settings and open UDP 34197 in the host and cloud firewall.
+    A new map is generated on first start. Edit server-settings.json under the data volume to set the name, password and visibility.
+    RCON is not published. Image is multi-arch (amd64 and arm64).
+category: Games
+documentation_url: https://github.com/factoriotools/factorio-docker
+recommended_memory_bytes: 2147483648
+requires_gpu: false
+platforms:
+    - linux/amd64
+    - linux/arm64

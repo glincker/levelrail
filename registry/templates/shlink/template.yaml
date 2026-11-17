@@ -1,0 +1,10 @@
+id: shlink
+name: Shlink
+slogan: A self-hosted URL shortener with a full REST API for creating and tracking short links.
+category: Developer Tools
+documentation_url: https://shlink.io/documentation/
+recommended_memory_bytes: 134217728
+requires_gpu: false
+platforms:
+    - linux/amd64
+    - linux/arm64

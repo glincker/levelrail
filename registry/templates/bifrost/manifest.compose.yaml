@@ -1,0 +1,16 @@
+services:
+  bifrost:
+    image: maximhq/bifrost:v2.5.1
+    ports: ["8080"]
+    volumes:
+      - data:/app/data
+    healthcheck:
+      test: ["NONE"]
+    x-levelrail-healthcheck:
+      kind: http
+      path: /health
+      port: 8080
+      interval: 15s
+      timeout: 8s
+      retries: 10
+      start_period: 20s

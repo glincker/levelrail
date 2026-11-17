@@ -1,0 +1,10 @@
+id: stirling-pdf
+name: Stirling PDF
+slogan: A self-hosted, all-in-one toolkit for merging, splitting, converting, and editing PDFs.
+category: Productivity
+documentation_url: https://docs.stirlingpdf.com
+recommended_memory_bytes: 536870912
+requires_gpu: false
+platforms:
+    - linux/amd64
+    - linux/arm64

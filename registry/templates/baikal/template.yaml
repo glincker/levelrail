@@ -1,0 +1,13 @@
+# Adapted from Dokploy/templates (MIT, Copyright (c) 2024 Dokploy and Carlos Ortiz)
+id: baikal
+name: Baikal
+slogan: A lightweight CalDAV and CardDAV server for calendars and contacts.
+description: GPL 3.0 licensed. Open the web UI once to run the setup wizard and create the admin account.
+category: Productivity
+documentation_url: https://sabre.io/baikal/
+recommended_memory_bytes: 134217728
+requires_gpu: false
+source_repo: https://github.com/sabre-io/Baikal
+license: GPL-3.0
+license_class: copyleft
+license_url: https://github.com/sabre-io/Baikal/blob/master/LICENSE

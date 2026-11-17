@@ -1,0 +1,9 @@
+id: text-generation-inference
+name: Text Generation Inference
+slogan: Hugging Face's production inference server for transformer language models, with continuous batching and streaming.
+category: AI
+documentation_url: https://huggingface.co/docs/text-generation-inference
+recommended_memory_bytes: 8589934592
+requires_gpu: true
+platforms:
+    - linux/amd64

@@ -1,0 +1,12 @@
+services:
+  cloudflare-ddns:
+    image: favonia/cloudflare-ddns:1.15.1
+    environment:
+      CLOUDFLARE_API_TOKEN: ${CLOUDFLARE_API_TOKEN:-}
+      DOMAINS: ${DOMAINS:-}
+      PROXIED: "false"
+    healthcheck:
+      test: ["CMD", "/bin/ddns", "--help"]
+      interval: 60s
+      timeout: 10s
+      retries: 3

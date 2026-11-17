@@ -1,0 +1,13 @@
+services:
+  homebox:
+    image: ghcr.io/sysadminsmedia/homebox:0.11.1
+    ports: ["7745:7745"]
+    environment:
+      HBOX_OPTIONS_ALLOW_REGISTRATION: "true"
+    volumes:
+      - homebox_data:/data
+    healthcheck:
+      test: ["CMD-SHELL", "curl -fsS -o /dev/null http://127.0.0.1:7745/api/v1/status"]
+      interval: 10s
+      timeout: 5s
+      retries: 3

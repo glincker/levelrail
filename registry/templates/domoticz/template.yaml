@@ -1,0 +1,59 @@
+id: domoticz
+name: Domoticz
+slogan: A home automation system with a web UI that links sensors, switches and many device protocols.
+description: A home automation system with a web UI that links sensors, switches and many device protocols.
+category: Applications
+documentation_url: https://www.domoticz.com/wiki/
+recommended_memory_bytes: 268435456
+requires_gpu: false
+manifest:
+    id: domoticz
+    name: Domoticz
+    description: A home automation system with a web UI that links sensors, switches and many device protocols.
+    icon: house
+    category: Applications
+    documentation_url: https://www.domoticz.com/wiki/
+    source_repo: https://github.com/domoticz/domoticz
+    license: GPL-3.0-only
+    license_class: copyleft
+    license_url: https://github.com/domoticz/domoticz/blob/HEAD/LICENSE
+    hosted_use: ""
+    listing:
+        by: community
+        vendor_org: ""
+        proof: ""
+    status: active
+    status_reason: ""
+    replaced_by: ""
+    aliases: []
+    first_run:
+        - Open the address, then set a login under Setup and Settings and add your hardware.
+    compose_file: compose.yaml
+    recommended_memory_bytes: 268435456
+    env:
+        - key: TZ
+          label: Time zone
+          description: IANA time zone for logs and schedules.
+          default: Etc/UTC
+          generate: ""
+          length: 0
+          required: false
+          secret: false
+          type: ""
+          service: ""
+          path: ""
+          mode: ""
+    domains:
+        - service: domoticz
+          port: 8080
+          description: Public address of Domoticz.
+    healthcheck:
+        service: domoticz
+        port: 8080
+        path: /
+        expect: 0
+        kind: ""
+        reason: ""
+    first_boot_seconds: 0
+    console_command: []
+    capabilities: []

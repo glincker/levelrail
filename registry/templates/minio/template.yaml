@@ -1,0 +1,10 @@
+id: minio
+name: MinIO
+slogan: S3-compatible object storage you run yourself, with a built-in web console.
+category: Storage
+documentation_url: https://min.io/docs/minio/linux/index.html
+recommended_memory_bytes: 536870912
+requires_gpu: false
+platforms:
+    - linux/amd64
+    - linux/arm64

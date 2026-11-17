@@ -1,0 +1,15 @@
+services:
+  shaarli:
+    image: ghcr.io/shaarli/shaarli:v0.16.10
+    ports: ["80"]
+    environment:
+      TZ: ${TZ}
+    volumes:
+      - data:/var/www/shaarli/data
+      - cache:/var/www/shaarli/cache
+    healthcheck:
+      test: ["CMD-SHELL", "wget -q -O /dev/null http://127.0.0.1:80/tpl/default/img/favicon.png || exit 1"]
+      interval: 15s
+      timeout: 5s
+      retries: 10
+      start_period: 20s

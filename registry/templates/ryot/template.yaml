@@ -1,0 +1,10 @@
+id: ryot
+name: Ryot
+slogan: A self-hosted tracker for media, fitness, and other parts of life.
+category: Productivity
+documentation_url: https://github.com/ignisda/ryot
+recommended_memory_bytes: 536870912
+requires_gpu: false
+platforms:
+    - linux/amd64
+    - linux/arm64

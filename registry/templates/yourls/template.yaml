@@ -1,0 +1,77 @@
+id: yourls
+name: YOURLS
+slogan: A self-hosted URL shortener with custom keywords, click statistics and a plugin system. Runs with a bundled MariaDB database. The admin login is the user and password you set in the install form.
+description: A self-hosted URL shortener with custom keywords, click statistics and a plugin system. Runs with a bundled MariaDB database. The admin login is the user and password you set in the install form.
+category: Applications
+documentation_url: https://yourls.org/docs/
+recommended_memory_bytes: 268435456
+requires_gpu: false
+platforms:
+    - linux/amd64
+    - linux/arm64
+    - linux/ppc64le
+    - linux/s390x
+manifest:
+    id: yourls
+    name: YOURLS
+    description: A self-hosted URL shortener with custom keywords, click statistics and a plugin system. Runs with a bundled MariaDB database. The admin login is the user and password you set in the install form.
+    icon: link
+    category: Applications
+    documentation_url: https://yourls.org/docs/
+    source_repo: https://github.com/YOURLS/YOURLS
+    license: MIT
+    license_class: permissive
+    license_url: https://github.com/YOURLS/YOURLS/blob/master/LICENSE
+    hosted_use: unknown
+    listing:
+        by: community
+        vendor_org: ""
+        proof: ""
+    status: active
+    status_reason: ""
+    replaced_by: ""
+    aliases: []
+    first_run:
+        - Open /admin/install.php on the app address and click Install YOURLS once.
+        - Sign in at /admin/ with the user and password from the install form.
+    compose_file: compose.yaml
+    recommended_memory_bytes: 268435456
+    env:
+        - key: YOURLS_USER
+          label: Admin user
+          description: Username for the YOURLS admin login.
+          default: admin
+          generate: ""
+          length: 0
+          required: true
+          secret: false
+          type: ""
+          service: ""
+          path: ""
+          mode: ""
+        - key: YOURLS_PASS
+          label: Admin password
+          description: Password for the YOURLS admin login.
+          default: ""
+          generate: ""
+          length: 0
+          required: true
+          secret: true
+          type: ""
+          service: ""
+          path: ""
+          mode: ""
+    domains:
+        - service: yourls
+          port: 8080
+          description: Public address of YOURLS.
+    healthcheck:
+        service: yourls
+        port: 8080
+        path: /admin/install.php
+        expect: 0
+        kind: ""
+        reason: ""
+    first_boot_seconds: 0
+    console_command: []
+    capabilities: []

@@ -1,0 +1,17 @@
+services:
+  superset:
+    image: apache/superset:4.1.1
+    ports: ["8088"]
+    environment:
+      SUPERSET_SECRET_KEY: ${SUPERSET_SECRET_KEY}
+      ADMIN_USERNAME: ${ADMIN_USERNAME}
+      ADMIN_PASSWORD: ${ADMIN_PASSWORD}
+    command: ["/bin/sh", "-c", "superset db upgrade && (superset fab create-admin --username \"$ADMIN_USERNAME\" --firstname Admin --lastname User --email admin@example.com --password \"$ADMIN_PASSWORD\" || true) && superset init && exec /usr/bin/run-server.sh"]
+    volumes:
+      - home:/app/superset_home
+    healthcheck:
+      test: ["CMD", "python", "-c", "import urllib.request; urllib.request.urlopen('http://127.0.0.1:8088/health', timeout=4)"]
+      interval: 15s
+      timeout: 10s
+      retries: 10
+      start_period: 120s

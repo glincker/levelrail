@@ -1,0 +1,38 @@
+services:
+  affine:
+    image: ghcr.io/toeverything/affine:stable
+    ports: ["3010:3010"]
+    environment:
+      NODE_ENV: production
+      AFFINE_SERVER_HOST: localhost
+      AFFINE_SERVER_PORT: "3010"
+      AFFINE_SERVER_HTTPS: "false"
+      DATABASE_URL: postgresql://affine:$SERVICE_PASSWORD_DB@db:5432/affine
+      REDIS_SERVER_HOST: redis
+    volumes:
+      - affine_storage:/root/.affine/storage
+      - affine_config:/root/.affine/config
+    depends_on: [db, redis]
+    healthcheck:
+      test: ["CMD-SHELL", "curl -fsS -o /dev/null http://127.0.0.1:3010/ || exit 1"]
+      interval: 30s
+      timeout: 5s
+      retries: 3
+      start_period: 60s
+  db:
+    image: pgvector/pgvector:pg16
+    environment:
+      POSTGRES_USER: affine
+      POSTGRES_PASSWORD: $SERVICE_PASSWORD_DB
+      POSTGRES_DB: affine
+    volumes:
+      - affine_db_data:/var/lib/postgresql/data
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U affine -d affine"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+  redis:
+    image: redis:7-alpine
+    volumes:
+      - affine_redis_data:/data

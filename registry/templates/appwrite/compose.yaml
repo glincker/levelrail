@@ -1,0 +1,55 @@
+services:
+  appwrite:
+    image: appwrite/appwrite:1.7.4
+    ports: ["80:80"]
+    environment:
+      _APP_ENV: production
+      _APP_OPENSSL_KEY_V1: $SERVICE_HEX_64_OPENSSLKEY
+      _APP_DOMAIN: ${SERVICE_FQDN_APPWRITE:-localhost}
+      _APP_CONSOLE_WHITELIST_ROOT: enabled
+      _APP_REDIS_HOST: redis
+      _APP_REDIS_PORT: "6379"
+      _APP_DB_HOST: db
+      _APP_DB_PORT: "3306"
+      _APP_DB_SCHEMA: appwrite
+      _APP_DB_USER: $SERVICE_USER_MARIADB
+      _APP_DB_PASS: $SERVICE_PASSWORD_MARIADB
+    volumes:
+      - appwrite_uploads:/storage/uploads
+      - appwrite_cache:/storage/cache
+      - appwrite_config:/storage/config
+      - appwrite_certificates:/storage/certificates
+    depends_on: [db, redis]
+    healthcheck:
+      test: ["CMD-SHELL", "curl -fsS -o /dev/null http://127.0.0.1:80/v1/health"]
+      interval: 15s
+      timeout: 5s
+      retries: 5
+      start_period: 30s
+  appwrite-console:
+    image: appwrite/console:6.1.28
+    ports: ["8081:80"]
+    healthcheck:
+      test: ["CMD-SHELL", "curl -fsS -o /dev/null http://127.0.0.1:80/"]
+      interval: 15s
+      timeout: 5s
+      retries: 5
+  db:
+    image: mariadb:10.11
+    environment:
+      MYSQL_DATABASE: appwrite
+      MYSQL_USER: $SERVICE_USER_MARIADB
+      MYSQL_PASSWORD: $SERVICE_PASSWORD_MARIADB
+      MYSQL_ROOT_PASSWORD: $SERVICE_PASSWORD_MARIADBROOT
+    volumes:
+      - appwrite_db_data:/var/lib/mysql
+    healthcheck:
+      test: ["CMD", "healthcheck.sh", "--connect", "--innodb_initialized"]
+      interval: 10s
+      timeout: 5s
+      retries: 10
+      start_period: 30s
+  redis:
+    image: redis:7.2.4-alpine
+    volumes:
+      - appwrite_redis_data:/data

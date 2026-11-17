@@ -1,0 +1,64 @@
+services:
+  web:
+    image: ghcr.io/we-promise/sure:0.6.7
+    ports: ["3000:3000"]
+    environment:
+      APP_DOMAIN: ${SERVICE_FQDN_SURE:-localhost:3000}
+      SECRET_KEY_BASE: $SERVICE_BASE64_64_SURE
+      POSTGRES_USER: sure
+      POSTGRES_PASSWORD: $SERVICE_PASSWORD_POSTGRESQL
+      POSTGRES_DB: sure
+      REDIS_URL: redis://valkey:6379
+      DB_HOST: postgresql
+      DB_PORT: "5432"
+      SELF_HOSTED: "true"
+      RAILS_FORCE_SSL: "false"
+      RAILS_ASSUME_SSL: "false"
+      ONBOARDING_STATE: open
+    volumes:
+      - sure_app_storage:/rails/storage
+    depends_on: [postgresql, valkey]
+    healthcheck:
+      test: ["CMD", "curl", "-f", "http://127.0.0.1:3000"]
+      interval: 15s
+      timeout: 20s
+      retries: 5
+      start_period: 20s
+  worker:
+    image: ghcr.io/we-promise/sure:0.6.7
+    command: ["bundle", "exec", "sidekiq"]
+    environment:
+      SECRET_KEY_BASE: $SERVICE_BASE64_64_SURE
+      POSTGRES_USER: sure
+      POSTGRES_PASSWORD: $SERVICE_PASSWORD_POSTGRESQL
+      POSTGRES_DB: sure
+      REDIS_URL: redis://valkey:6379
+      DB_HOST: postgresql
+      DB_PORT: "5432"
+      SELF_HOSTED: "true"
+    volumes:
+      - sure_app_storage:/rails/storage
+    depends_on: [postgresql, valkey]
+  postgresql:
+    image: postgres:16-alpine
+    environment:
+      POSTGRES_USER: sure
+      POSTGRES_PASSWORD: $SERVICE_PASSWORD_POSTGRESQL
+      POSTGRES_DB: sure
+    volumes:
+      - sure_postgresql_data:/var/lib/postgresql/data
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U sure -d sure"]
+      interval: 5s
+      timeout: 20s
+      retries: 10
+  valkey:
+    image: valkey/valkey:8-alpine
+    command: ["valkey-server", "--appendonly", "yes"]
+    volumes:
+      - sure_valkey_data:/data
+    healthcheck:
+      test: ["CMD-SHELL", "valkey-cli ping | grep -q PONG"]
+      interval: 5s
+      timeout: 5s
+      retries: 5

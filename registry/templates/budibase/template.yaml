@@ -1,0 +1,9 @@
+id: budibase
+name: Budibase
+slogan: An open-source low-code platform for building internal tools, forms, and admin panels.
+category: Applications
+documentation_url: https://docs.budibase.com/docs/docker-compose
+recommended_memory_bytes: 2147483648
+requires_gpu: false
+platforms:
+    - linux/arm64

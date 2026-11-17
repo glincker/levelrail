@@ -1,0 +1,12 @@
+services:
+  unstructured:
+    image: downloads.unstructured.io/unstructured-io/unstructured-api:latest
+    ports: ["8000:8000"]
+    environment:
+      UNSTRUCTURED_API_KEY: $SERVICE_PASSWORD_APIKEY
+    healthcheck:
+      test: ["CMD", "wget", "-qO-", "http://127.0.0.1:8000/healthcheck"]
+      interval: 15s
+      timeout: 10s
+      retries: 5
+      start_period: 30s

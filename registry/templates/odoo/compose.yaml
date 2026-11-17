@@ -1,0 +1,30 @@
+services:
+  odoo:
+    image: odoo:18
+    ports: ["8069:8069"]
+    environment:
+      HOST: db
+      USER: odoo
+      PASSWORD: $SERVICE_PASSWORD_DB
+    volumes:
+      - odoo_web_data:/var/lib/odoo
+      - odoo_addons:/mnt/extra-addons
+    healthcheck:
+      test: ["CMD-SHELL", "curl -fsS -o /dev/null http://127.0.0.1:8069/web/health || wget -q -O /dev/null http://127.0.0.1:8069/web/health || exit 1"]
+      interval: 30s
+      timeout: 5s
+      retries: 3
+      start_period: 90s
+  db:
+    image: postgres:16-alpine
+    environment:
+      POSTGRES_USER: odoo
+      POSTGRES_PASSWORD: $SERVICE_PASSWORD_DB
+      POSTGRES_DB: postgres
+    volumes:
+      - odoo_db_data:/var/lib/postgresql/data
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U odoo -d postgres"]
+      interval: 10s
+      timeout: 5s
+      retries: 5

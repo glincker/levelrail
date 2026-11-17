@@ -1,0 +1,13 @@
+id: portainer
+name: Portainer
+slogan: A web UI for managing containers, images, volumes, and networks.
+category: Infrastructure
+documentation_url: https://docs.portainer.io
+recommended_memory_bytes: 268435456
+requires_gpu: false
+platforms:
+    - linux/amd64
+    - linux/arm
+    - linux/arm64
+    - linux/ppc64le
+    - windows/amd64

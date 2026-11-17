@@ -1,0 +1,50 @@
+services:
+  manyfold:
+    image: ghcr.io/manyfold3d/manyfold:0.154.1
+    ports: ["3214"]
+    environment:
+      PUID: "1000"
+      PGID: "1000"
+      SECRET_KEY_BASE: ${SECRET_KEY_BASE}
+      REDIS_URL: redis://redis:6379/1
+      DATABASE_ADAPTER: postgresql
+      DATABASE_HOST: db
+      DATABASE_PORT: "5432"
+      DATABASE_USER: manyfold
+      DATABASE_PASSWORD: ${DB_PASSWORD}
+      DATABASE_NAME: manyfold
+    volumes:
+      - libraries:/libraries
+    depends_on:
+      db:
+        condition: service_healthy
+      redis:
+        condition: service_healthy
+    healthcheck:
+      test: ["CMD-SHELL", "curl -fsS -o /dev/null http://127.0.0.1:3214/ || wget -q -O /dev/null http://127.0.0.1:3214/"]
+      interval: 15s
+      timeout: 10s
+      retries: 12
+      start_period: 60s
+  db:
+    image: postgres:17.11-alpine
+    environment:
+      POSTGRES_USER: manyfold
+      POSTGRES_PASSWORD: ${DB_PASSWORD}
+      POSTGRES_DB: manyfold
+    volumes:
+      - pgdata:/var/lib/postgresql/data
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U manyfold -d manyfold"]
+      interval: 5s
+      timeout: 5s
+      retries: 10
+  redis:
+    image: redis:7.4.7-alpine
+    volumes:
+      - redis_data:/data
+    healthcheck:
+      test: ["CMD", "redis-cli", "ping"]
+      interval: 5s
+      timeout: 5s
+      retries: 10

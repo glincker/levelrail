@@ -1,0 +1,10 @@
+id: flowise-postgres
+name: Flowise (Postgres + Qdrant)
+slogan: Flowise with a Postgres record manager, a Redis cache, and a Qdrant vector store, for production RAG flows.
+category: AI
+documentation_url: https://docs.flowiseai.com
+recommended_memory_bytes: 2147483648
+requires_gpu: false
+platforms:
+    - linux/amd64
+    - linux/arm64

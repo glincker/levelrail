@@ -1,0 +1,10 @@
+id: termix
+name: Termix
+slogan: A web-based SSH, RDP, and VNC terminal manager for organizing and connecting to every server from one dashboard.
+category: Developer Tools
+documentation_url: https://github.com/LukeGus/Termix
+recommended_memory_bytes: 268435456
+requires_gpu: false
+platforms:
+    - linux/amd64
+    - linux/arm64

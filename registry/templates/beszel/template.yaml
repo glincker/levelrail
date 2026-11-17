@@ -1,0 +1,11 @@
+id: beszel
+name: Beszel
+slogan: A lightweight server monitoring hub with historical stats for CPU, memory, disk, and network.
+category: Monitoring
+documentation_url: https://beszel.dev/guide/getting-started
+recommended_memory_bytes: 134217728
+requires_gpu: false
+platforms:
+    - linux/amd64
+    - linux/arm
+    - linux/arm64

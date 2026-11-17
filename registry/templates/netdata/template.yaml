@@ -1,0 +1,11 @@
+id: netdata
+name: Netdata
+slogan: Per-second infrastructure metrics with zero configuration and a live dashboard out of the box.
+category: Monitoring
+documentation_url: https://learn.netdata.cloud
+recommended_memory_bytes: 536870912
+requires_gpu: false
+platforms:
+    - linux/amd64
+    - linux/arm
+    - linux/arm64

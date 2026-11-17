@@ -1,0 +1,10 @@
+id: cloudbeaver
+name: CloudBeaver
+slogan: A web-based database manager for browsing and querying Postgres, MySQL, SQLite and more.
+category: Database Tools
+documentation_url: https://dbeaver.com/docs/cloudbeaver/
+recommended_memory_bytes: 536870912
+requires_gpu: false
+platforms:
+    - linux/amd64
+    - linux/arm64

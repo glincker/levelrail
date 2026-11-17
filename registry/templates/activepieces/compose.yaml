@@ -1,0 +1,31 @@
+services:
+  activepieces:
+    image: ghcr.io/activepieces/activepieces:0.75.0
+    ports: ["8080:80"]
+    environment:
+      AP_ENCRYPTION_KEY: $SERVICE_HEX_32_ENCRYPTIONKEY
+      AP_JWT_SECRET: $SERVICE_HEX_32_JWTSECRET
+      AP_FRONTEND_URL: ${SERVICE_URL_ACTIVEPIECES:-http://localhost:8080}
+      AP_POSTGRES_HOST: db
+      AP_POSTGRES_DATABASE: activepieces
+      AP_POSTGRES_USERNAME: activepieces
+      AP_POSTGRES_PASSWORD: $SERVICE_PASSWORD_DB
+      AP_REDIS_HOST: redis
+    healthcheck:
+      test: ["CMD-SHELL", "curl -fsS -o /dev/null http://127.0.0.1:80/"]
+      interval: 10s
+      timeout: 5s
+      retries: 3
+      start_period: 120s
+  db:
+    image: postgres:16-alpine
+    environment:
+      POSTGRES_USER: activepieces
+      POSTGRES_PASSWORD: $SERVICE_PASSWORD_DB
+      POSTGRES_DB: activepieces
+    volumes:
+      - activepieces_db_data:/var/lib/postgresql/data
+  redis:
+    image: redis:7-alpine
+    volumes:
+      - activepieces_redis_data:/data

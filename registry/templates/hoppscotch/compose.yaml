@@ -1,0 +1,31 @@
+services:
+  hoppscotch:
+    image: hoppscotch/hoppscotch:2026.2.1
+    ports: ["3080:80"]
+    environment:
+      VITE_ALLOWED_AUTH_PROVIDERS: EMAIL
+      DATABASE_URL: postgresql://hoppscotch:$SERVICE_PASSWORD_DB@db:5432/hoppscotch
+      DATA_ENCRYPTION_KEY: $SERVICE_BASE64_32_DATAENCRYPTIONKEY
+      WHITELISTED_ORIGINS: ${SERVICE_URL_HOPPSCOTCH:-http://localhost:3080}
+      VITE_BASE_URL: ${SERVICE_URL_HOPPSCOTCH:-http://localhost:3080}
+      ENABLE_SUBPATH_BASED_ACCESS: "true"
+    depends_on: [db]
+    healthcheck:
+      test: ["CMD-SHELL", "wget -q -O- http://127.0.0.1:80/ || exit 1"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+      start_period: 30s
+  db:
+    image: postgres:15-alpine
+    environment:
+      POSTGRES_USER: hoppscotch
+      POSTGRES_PASSWORD: $SERVICE_PASSWORD_DB
+      POSTGRES_DB: hoppscotch
+    volumes:
+      - hoppscotch_db_data:/var/lib/postgresql/data
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U hoppscotch -d hoppscotch"]
+      interval: 5s
+      timeout: 5s
+      retries: 10

@@ -1,0 +1,47 @@
+id: linkstack
+name: LinkStack
+slogan: A self hosted link in bio page builder with a web setup wizard and a data volume. Finish the setup on first visit, because the first visitor creates the admin account.
+description: A self hosted link in bio page builder with a web setup wizard and a data volume. Finish the setup on first visit, because the first visitor creates the admin account.
+category: Applications
+documentation_url: https://docs.linkstack.org/
+recommended_memory_bytes: 268435456
+requires_gpu: false
+manifest:
+    id: linkstack
+    name: LinkStack
+    description: A self hosted link in bio page builder with a web setup wizard and a data volume. Finish the setup on first visit, because the first visitor creates the admin account.
+    icon: link
+    category: Applications
+    documentation_url: https://docs.linkstack.org/
+    source_repo: https://github.com/LinkStackOrg/LinkStack
+    license: AGPL-3.0
+    license_class: network-copyleft
+    license_url: https://github.com/LinkStackOrg/LinkStack/blob/main/LICENSE
+    hosted_use: allowed
+    listing:
+        by: community
+        vendor_org: ""
+        proof: ""
+    status: active
+    status_reason: ""
+    replaced_by: ""
+    aliases: []
+    first_run:
+        - Open the public address at once and finish the setup wizard to create the admin account.
+    compose_file: compose.yaml
+    recommended_memory_bytes: 268435456
+    env: []
+    domains:
+        - service: linkstack
+          port: 80
+          description: Public address of the web page.
+    healthcheck:
+        service: linkstack
+        port: 80
+        path: /
+        expect: 0
+        kind: ""
+        reason: ""
+    first_boot_seconds: 0
+    console_command: []
+    capabilities: []

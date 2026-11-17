@@ -1,0 +1,16 @@
+services:
+  lowcoder:
+    image: lowcoderorg/lowcoder-ce:2.7.6
+    ports: ["3000:3000"]
+    environment:
+      LOWCODER_EMAIL_SIGNUP_ENABLED: "true"
+      LOWCODER_DB_ENCRYPTION_PASSWORD: $SERVICE_PASSWORD_ENCRYPTION
+      LOWCODER_DB_ENCRYPTION_SALT: $SERVICE_PASSWORD_SALT
+    volumes:
+      - lowcoder_data:/lowcoder-stacks
+    healthcheck:
+      test: ["CMD-SHELL", "curl -fsS -o /dev/null http://127.0.0.1:3000/health || exit 1"]
+      interval: 10s
+      timeout: 10s
+      retries: 5
+      start_period: 30s

@@ -1,0 +1,10 @@
+id: fider
+name: Fider
+slogan: A feedback platform for collecting and prioritizing user feature requests.
+category: Productivity
+documentation_url: https://fider.io
+recommended_memory_bytes: 268435456
+requires_gpu: false
+platforms:
+    - linux/amd64
+    - linux/arm64

@@ -1,0 +1,13 @@
+id: mediawiki
+name: MediaWiki
+slogan: The wiki engine behind Wikipedia, for large collaborative knowledge bases with rich version history.
+category: Applications
+documentation_url: https://www.mediawiki.org/wiki/Manual:Contents
+recommended_memory_bytes: 536870912
+requires_gpu: false
+platforms:
+    - linux/386
+    - linux/amd64
+    - linux/arm
+    - linux/arm64
+    - linux/ppc64le

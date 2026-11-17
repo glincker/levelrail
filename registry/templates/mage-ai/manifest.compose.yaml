@@ -1,0 +1,17 @@
+services:
+  mage:
+    image: mageai/mageai:0.9.78
+    command: ["mage", "start", "default_project"]
+    ports: ["6789"]
+    environment:
+      PROJECT_NAME: default_project
+      USER_CODE_PATH: /home/src/default_project
+      ENV: production
+    volumes:
+      - mage_data:/home/src
+    healthcheck:
+      test: ["CMD-SHELL", "curl -fsS -o /dev/null http://127.0.0.1:6789/ || wget -q -O /dev/null http://127.0.0.1:6789/"]
+      interval: 30s
+      timeout: 10s
+      retries: 5
+      start_period: 60s

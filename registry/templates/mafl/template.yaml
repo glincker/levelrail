@@ -1,0 +1,47 @@
+id: mafl
+name: Mafl
+slogan: A minimal homepage that lists your services as a tidy grid of links. It is configured from a single YAML file, and the starter file is created for you.
+description: A minimal homepage that lists your services as a tidy grid of links. It is configured from a single YAML file, and the starter file is created for you.
+category: Productivity
+documentation_url: https://mafl.hywax.space/
+recommended_memory_bytes: 134217728
+requires_gpu: false
+manifest:
+    id: mafl
+    name: Mafl
+    description: A minimal homepage that lists your services as a tidy grid of links. It is configured from a single YAML file, and the starter file is created for you.
+    icon: home
+    category: Productivity
+    documentation_url: https://mafl.hywax.space/
+    source_repo: https://github.com/hywax/mafl
+    license: MIT
+    license_class: permissive
+    license_url: https://github.com/hywax/mafl/blob/main/LICENSE
+    hosted_use: allowed
+    listing:
+        by: community
+        vendor_org: ""
+        proof: ""
+    status: active
+    status_reason: ""
+    replaced_by: ""
+    aliases: []
+    first_run:
+        - Edit the config file in the deployment configs to list your own services, then redeploy.
+    compose_file: compose.yaml
+    recommended_memory_bytes: 134217728
+    env: []
+    domains:
+        - service: mafl
+          port: 3000
+          description: Public address of Mafl.
+    healthcheck:
+        service: mafl
+        port: 3000
+        path: /
+        expect: 0
+        kind: ""
+        reason: ""
+    first_boot_seconds: 0
+    console_command: []
+    capabilities: []

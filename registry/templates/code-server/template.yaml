@@ -1,0 +1,10 @@
+id: code-server
+name: code-server
+slogan: Run VS Code in the browser, on your own hardware, from any device with a tab open.
+category: Developer Tools
+documentation_url: https://coder.com/docs/code-server
+recommended_memory_bytes: 536870912
+requires_gpu: false
+platforms:
+    - linux/amd64
+    - linux/arm64

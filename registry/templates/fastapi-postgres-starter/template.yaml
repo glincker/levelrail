@@ -1,0 +1,15 @@
+id: fastapi-postgres-starter
+name: FastAPI + PostgreSQL
+slogan: A minimal Python HTTP service wired to a Postgres database, the reference pairing for a FastAPI backend.
+category: Starter Kits
+documentation_url: https://fastapi.tiangolo.com/deployment/docker/
+recommended_memory_bytes: 268435456
+requires_gpu: false
+platforms:
+    - linux/386
+    - linux/amd64
+    - linux/arm
+    - linux/arm64
+    - linux/ppc64le
+    - linux/riscv64
+    - linux/s390x

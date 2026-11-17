@@ -1,0 +1,12 @@
+id: seaweedfs
+name: SeaweedFS
+slogan: A distributed file and object store with an S3 gateway, built for billions of small files.
+category: Storage
+documentation_url: https://github.com/seaweedfs/seaweedfs/wiki
+recommended_memory_bytes: 1073741824
+requires_gpu: false
+platforms:
+    - linux/386
+    - linux/amd64
+    - linux/arm
+    - linux/arm64

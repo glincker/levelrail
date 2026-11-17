@@ -1,0 +1,10 @@
+id: jupyter-notebook-python
+name: Jupyter Notebook
+slogan: A web-based notebook environment for interactive Python, data analysis, and visualization.
+category: Developer Tools
+documentation_url: https://jupyter.org/documentation
+recommended_memory_bytes: 1073741824
+requires_gpu: false
+platforms:
+    - linux/amd64
+    - linux/arm64

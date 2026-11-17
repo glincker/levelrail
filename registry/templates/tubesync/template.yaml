@@ -1,0 +1,71 @@
+id: tubesync
+name: TubeSync
+slogan: Syncs chosen video channels and playlists to local storage on a schedule and keeps media library files tidy.
+description: Syncs chosen video channels and playlists to local storage on a schedule and keeps media library files tidy.
+category: Media
+documentation_url: https://github.com/meeb/tubesync
+recommended_memory_bytes: 536870912
+requires_gpu: false
+manifest:
+    id: tubesync
+    name: TubeSync
+    description: Syncs chosen video channels and playlists to local storage on a schedule and keeps media library files tidy.
+    icon: download-simple
+    category: Media
+    documentation_url: https://github.com/meeb/tubesync
+    source_repo: https://github.com/meeb/tubesync
+    license: AGPL-3.0-only
+    license_class: network-copyleft
+    license_url: https://github.com/meeb/tubesync/blob/HEAD/LICENSE
+    hosted_use: ""
+    listing:
+        by: community
+        vendor_org: ""
+        proof: ""
+    status: active
+    status_reason: ""
+    replaced_by: ""
+    aliases: []
+    first_run:
+        - Sign in as admin with the generated password, then add a source.
+    compose_file: compose.yaml
+    recommended_memory_bytes: 536870912
+    env:
+        - key: TZ
+          label: Time zone
+          description: IANA time zone for logs and schedules.
+          default: Etc/UTC
+          generate: ""
+          length: 0
+          required: false
+          secret: false
+          type: ""
+          service: ""
+          path: ""
+          mode: ""
+        - key: ADMIN_PASSWORD
+          label: Web password
+          description: Password for the admin user of the web interface.
+          default: ""
+          generate: password
+          length: 24
+          required: false
+          secret: true
+          type: ""
+          service: ""
+          path: ""
+          mode: ""
+    domains:
+        - service: tubesync
+          port: 4848
+          description: Public address of TubeSync.
+    healthcheck:
+        service: tubesync
+        port: 4848
+        path: /healthcheck
+        expect: 0
+        kind: ""
+        reason: ""
+    first_boot_seconds: 0
+    console_command: []
+    capabilities: []

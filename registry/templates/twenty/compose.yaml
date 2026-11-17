@@ -1,0 +1,49 @@
+services:
+  postgres:
+    image: postgres:16-alpine
+    environment:
+      POSTGRES_USER: twenty
+      POSTGRES_PASSWORD: $SERVICE_PASSWORD_DB
+      POSTGRES_DB: twenty
+    volumes:
+      - twenty_postgres_data:/var/lib/postgresql/data
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U twenty -d twenty"]
+      interval: 5s
+      timeout: 5s
+      retries: 10
+  redis:
+    image: redis:7-alpine
+    volumes:
+      - twenty_redis_data:/data
+    healthcheck:
+      test: ["CMD-SHELL", "redis-cli ping | grep -q PONG"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+  twenty:
+    image: twentycrm/twenty:v1.15
+    ports: ["3000:3000"]
+    depends_on:
+      postgres:
+        condition: service_healthy
+      redis:
+        condition: service_started
+    environment:
+      SERVER_URL: ${SERVICE_URL_TWENTY:-http://localhost:3000}
+      FRONT_BASE_URL: ${SERVICE_URL_TWENTY:-http://localhost:3000}
+      APP_SECRET: $SERVICE_BASE64_32_SECRET
+      ENABLE_DB_MIGRATIONS: "true"
+      CACHE_STORAGE_TYPE: redis
+      REDIS_URL: redis://redis:6379
+      PG_DATABASE_URL: postgres://twenty:$SERVICE_PASSWORD_DB@postgres:5432/twenty
+      STORAGE_TYPE: local
+      MESSAGE_QUEUE_TYPE: pg-boss
+    volumes:
+      - twenty_storage:/app/packages/twenty-server/.local-storage
+    healthcheck:
+      test: ["CMD-SHELL", "curl -f http://127.0.0.1:3000/healthz"]
+      interval: 10s
+      timeout: 5s
+      retries: 10
+      start_period: 30s

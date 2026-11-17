@@ -1,0 +1,16 @@
+services:
+  opengist:
+    image: ghcr.io/thomiceli/opengist:1.15.3
+    ports: ["6157"]
+    environment:
+      OG_EXTERNAL_URL: ${SERVICE_URL_OPENGIST:-http://localhost:6157}
+      OG_SSH_GIT_ENABLED: "false"
+      OG_LOG_LEVEL: warn
+    volumes:
+      - data:/opengist
+    healthcheck:
+      test: ["CMD-SHELL", "curl -fsS -o /dev/null http://127.0.0.1:6157/ || exit 1"]
+      interval: 15s
+      timeout: 6s
+      retries: 10
+      start_period: 20s

@@ -1,0 +1,26 @@
+services:
+  tdarr:
+    image: ghcr.io/haveagitgat/tdarr:2.86.01
+    ports: ["8265:8265"]
+    environment:
+      serverIP: 0.0.0.0
+      serverPort: "8266"
+      webUIPort: "8265"
+      internalNode: "true"
+      inContainer: "true"
+      ffmpegVersion: "6"
+      PUID: "1000"
+      PGID: "1000"
+      TZ: UTC
+    volumes:
+      - tdarr_server:/app/server
+      - tdarr_configs:/app/configs
+      - tdarr_logs:/app/logs
+      - tdarr_media:/media
+      - tdarr_transcode_cache:/temp
+    healthcheck:
+      test: ["CMD-SHELL", "curl -fsS -o /dev/null http://127.0.0.1:8265/ || exit 1"]
+      interval: 30s
+      timeout: 5s
+      retries: 3
+      start_period: 60s

@@ -1,0 +1,11 @@
+id: wallabag
+name: Wallabag
+slogan: A read-it-later app that saves web articles in a clean, distraction-free format.
+category: Productivity
+documentation_url: https://doc.wallabag.org
+recommended_memory_bytes: 536870912
+requires_gpu: false
+platforms:
+    - linux/amd64
+    - linux/arm
+    - linux/arm64

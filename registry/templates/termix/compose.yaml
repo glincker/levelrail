@@ -1,0 +1,19 @@
+services:
+  termix:
+    image: ghcr.io/lukegus/termix:2.6.1
+    ports: ["8080:8080"]
+    environment:
+      PORT: "8080"
+      GUACD_HOST: guacd
+      GUACD_RECORDING_PATH: /termix-data/session_recordings/guacamole
+    volumes:
+      - termix_data:/app/data
+    depends_on: [guacd]
+    healthcheck:
+      test: ["CMD-SHELL", "wget -qO- http://127.0.0.1:8080/ || exit 1"]
+      interval: 10s
+      timeout: 5s
+      retries: 10
+      start_period: 15s
+  guacd:
+    image: guacamole/guacd:1.6.0

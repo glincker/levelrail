@@ -1,0 +1,10 @@
+id: traccar
+name: Traccar
+slogan: An open-source GPS tracking platform supporting over 170 device protocols.
+category: IoT
+documentation_url: https://www.traccar.org/documentation/
+recommended_memory_bytes: 1073741824
+requires_gpu: false
+platforms:
+    - linux/amd64
+    - linux/arm64

@@ -1,0 +1,16 @@
+services:
+  zot:
+    image: ghcr.io/project-zot/zot:v2.1.23
+    ports: ["5000"]
+    volumes:
+      - data:/var/lib/registry
+    healthcheck:
+      test: ["NONE"]
+    x-levelrail-healthcheck:
+      kind: http
+      path: /v2/
+      port: 5000
+      interval: 15s
+      timeout: 8s
+      retries: 10
+      start_period: 20s

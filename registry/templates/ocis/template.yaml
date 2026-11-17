@@ -1,0 +1,71 @@
+id: ocis
+name: ownCloud Infinite Scale
+slogan: File sync and share platform in one binary with spaces, search and a modern web UI. Initializes its own config and a generated admin password on first start.
+description: File sync and share platform in one binary with spaces, search and a modern web UI. Initializes its own config and a generated admin password on first start.
+category: Storage
+documentation_url: https://doc.owncloud.com/ocis/next/
+recommended_memory_bytes: 536870912
+requires_gpu: false
+manifest:
+    id: ocis
+    name: ownCloud Infinite Scale
+    description: File sync and share platform in one binary with spaces, search and a modern web UI. Initializes its own config and a generated admin password on first start.
+    icon: cloud
+    category: Storage
+    documentation_url: https://doc.owncloud.com/ocis/next/
+    source_repo: https://github.com/owncloud/ocis
+    license: Apache-2.0
+    license_class: permissive
+    license_url: https://github.com/owncloud/ocis/blob/HEAD/LICENSE
+    hosted_use: allowed
+    listing:
+        by: community
+        vendor_org: ""
+        proof: ""
+    status: active
+    status_reason: ""
+    replaced_by: ""
+    aliases: []
+    first_run:
+        - Sign in as admin with the generated password shown in the deployment variables. Set the public URL setting to the address you serve it on before first use.
+    compose_file: compose.yaml
+    recommended_memory_bytes: 536870912
+    env:
+        - key: OCIS_PUBLIC_URL
+          label: Public URL
+          description: The address users open, starting with https. The identity provider refuses plain http addresses.
+          default: https://localhost:9200
+          generate: ""
+          length: 0
+          required: false
+          secret: false
+          type: ""
+          service: ""
+          path: ""
+          mode: ""
+        - key: OCIS_ADMIN_PASSWORD
+          label: Admin password
+          description: Password for the admin user.
+          default: ""
+          generate: password
+          length: 24
+          required: false
+          secret: true
+          type: ""
+          service: ""
+          path: ""
+          mode: ""
+    domains:
+        - service: ocis
+          port: 9200
+          description: Public address of ownCloud.
+    healthcheck:
+        service: ocis
+        port: 9200
+        path: /
+        expect: 0
+        kind: ""
+        reason: ""
+    first_boot_seconds: 0
+    console_command: []
+    capabilities: []

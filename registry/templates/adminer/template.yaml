@@ -1,0 +1,15 @@
+id: adminer
+name: Adminer
+slogan: A single-file database admin tool for MySQL, PostgreSQL, SQLite, and more.
+category: Database Tools
+documentation_url: https://www.adminer.org
+recommended_memory_bytes: 134217728
+requires_gpu: false
+platforms:
+    - linux/386
+    - linux/amd64
+    - linux/arm
+    - linux/arm64
+    - linux/ppc64le
+    - linux/riscv64
+    - linux/s390x

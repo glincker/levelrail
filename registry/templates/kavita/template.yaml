@@ -1,0 +1,11 @@
+id: kavita
+name: Kavita
+slogan: A fast, feature-rich reader server for manga, comics, and ebooks.
+category: Media
+documentation_url: https://wiki.kavitareader.com/installation/docker/
+recommended_memory_bytes: 268435456
+requires_gpu: false
+platforms:
+    - linux/amd64
+    - linux/arm
+    - linux/arm64

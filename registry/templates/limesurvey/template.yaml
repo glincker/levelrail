@@ -1,0 +1,10 @@
+id: limesurvey
+name: LimeSurvey
+slogan: A mature, self-hosted online survey tool for building and analyzing anonymous surveys.
+category: Productivity
+documentation_url: https://www.limesurvey.org/manual/
+recommended_memory_bytes: 536870912
+requires_gpu: false
+platforms:
+    - linux/amd64
+    - linux/arm64

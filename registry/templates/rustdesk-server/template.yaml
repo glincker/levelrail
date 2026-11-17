@@ -1,0 +1,18 @@
+id: rustdesk-server
+name: RustDesk Server
+slogan: Self-hosted RustDesk ID and relay servers (AGPL-3.0).
+description: |-
+    Set RUSTDESK_RELAY to your public host:21117, or the container refuses to start.
+    Published ports bind privately by default: set a public bind for each one in the app's Network settings.
+    Open TCP 21115-21117 and UDP 21116 in the host or cloud firewall.
+    After first start, read id_ed25519.pub in the data volume and give it to every client as the Key.
+    Licence: AGPL-3.0.
+category: Infrastructure
+documentation_url: https://rustdesk.com/docs/en/self-host/rustdesk-server-oss/docker/
+recommended_memory_bytes: 134217728
+requires_gpu: false
+platforms:
+    - linux/386
+    - linux/amd64
+    - linux/arm
+    - linux/arm64

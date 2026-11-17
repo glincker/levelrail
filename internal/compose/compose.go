@@ -43,6 +43,8 @@ import (
 type File struct {
 	Version  string
 	Services map[string]Service
+	// dollarEscaped marks services whose argv held a "$$" escape, for Notices.
+	dollarEscaped map[string]bool
 	// CapGrants lists, per service key, the cap_add values a manifest declared and
 	// the caller approved. Never read from YAML; unset means cap_add is rejected.
 	CapGrants map[string][]string

@@ -1,0 +1,17 @@
+services:
+  pigallery2:
+    image: bpatrik/pigallery2:3.5.2-alpine
+    ports: ["80"]
+    environment:
+      NODE_ENV: production
+    volumes:
+      - config:/app/data/config
+      - db:/app/data/db
+      - images:/app/data/images
+      - tmp:/app/data/tmp
+    healthcheck:
+      test: ["CMD-SHELL", "wget -q -O /dev/null http://127.0.0.1:80/"]
+      interval: 20s
+      timeout: 5s
+      retries: 10
+      start_period: 40s

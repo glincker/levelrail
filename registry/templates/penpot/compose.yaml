@@ -1,0 +1,47 @@
+services:
+  frontend:
+    image: penpotapp/frontend:2.11.1
+    ports: ["8080:8080"]
+    environment:
+      PENPOT_BACKEND_URI: http://backend:6060
+      PENPOT_EXPORTER_URI: http://exporter:6061
+    depends_on:
+      - backend
+      - exporter
+    healthcheck:
+      test: ["CMD-SHELL", "curl -fsS -o /dev/null http://127.0.0.1:8080/ || wget -q -O /dev/null http://127.0.0.1:8080/ || exit 1"]
+      interval: 30s
+      timeout: 5s
+      retries: 3
+  backend:
+    image: penpotapp/backend:2.11.1
+    environment:
+      PENPOT_FLAGS: "enable-login-with-password disable-email-verification"
+      PENPOT_SECRET_KEY: $SERVICE_REALBASE64_64_SECRETKEY
+      PENPOT_PUBLIC_URI: ${SERVICE_URL_FRONTEND:-http://localhost:8080}
+      PENPOT_DATABASE_URI: postgresql://postgres/penpot
+      PENPOT_DATABASE_USERNAME: $SERVICE_USER_POSTGRES
+      PENPOT_DATABASE_PASSWORD: $SERVICE_PASSWORD_POSTGRES
+      PENPOT_REDIS_URI: redis://valkey/0
+      PENPOT_OBJECTS_STORAGE_BACKEND: fs
+      PENPOT_OBJECTS_STORAGE_FS_DIRECTORY: /opt/data/assets
+    volumes:
+      - penpot_assets:/opt/data/assets
+  exporter:
+    image: penpotapp/exporter:2.11.1
+    environment:
+      PENPOT_PUBLIC_URI: ${SERVICE_URL_FRONTEND:-http://localhost:8080}
+      PENPOT_REDIS_URI: redis://valkey/0
+  postgres:
+    image: postgres:15-alpine
+    environment:
+      POSTGRES_INITDB_ARGS: "--data-checksums"
+      POSTGRES_USER: $SERVICE_USER_POSTGRES
+      POSTGRES_PASSWORD: $SERVICE_PASSWORD_POSTGRES
+      POSTGRES_DB: penpot
+    volumes:
+      - penpot_db_data:/var/lib/postgresql/data
+  valkey:
+    image: valkey/valkey:8.1-alpine
+    volumes:
+      - penpot_valkey_data:/data

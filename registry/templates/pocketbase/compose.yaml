@@ -1,0 +1,11 @@
+services:
+  pocketbase:
+    image: ghcr.io/muchobien/pocketbase:0.22.27
+    ports: ["8090:8090"]
+    volumes:
+      - pocketbase_data:/pb_data
+    healthcheck:
+      test: ["CMD-SHELL", "wget -q -O- http://127.0.0.1:8090/api/health || exit 1"]
+      interval: 10s
+      timeout: 5s
+      retries: 3

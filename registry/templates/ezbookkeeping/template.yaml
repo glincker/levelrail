@@ -1,0 +1,13 @@
+# Adapted from Dokploy/templates (MIT, Copyright (c) 2024 Dokploy and Carlos Ortiz)
+id: ezbookkeeping
+name: ezBookkeeping
+slogan: A personal finance app for tracking income, expenses and accounts.
+description: MIT licensed. Uses SQLite on a volume. Register the first account from the sign-up page.
+category: Finance
+documentation_url: https://ezbookkeeping.mayswind.net/
+recommended_memory_bytes: 134217728
+requires_gpu: false
+source_repo: https://github.com/mayswind/ezbookkeeping
+license: MIT
+license_class: permissive
+license_url: https://github.com/mayswind/ezbookkeeping/blob/main/LICENSE

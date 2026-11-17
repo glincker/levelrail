@@ -1,0 +1,23 @@
+services:
+  planka:
+    image: ghcr.io/plankanban/planka:2.2.1
+    ports: ["3000:1337"]
+    environment:
+      BASE_URL: ${SERVICE_URL_PLANKA:-http://localhost:3000}
+      SECRET_KEY: $SERVICE_HEX_64_SECRETKEY
+      DATABASE_URL: postgresql://postgres:$SERVICE_PASSWORD_DB@db/planka
+    volumes:
+      - planka_data:/app/data
+    healthcheck:
+      test: ["CMD-SHELL", "curl -fsS -o /dev/null http://127.0.0.1:1337/"]
+      interval: 10s
+      timeout: 5s
+      retries: 3
+      start_period: 60s
+  db:
+    image: postgres:16-alpine
+    environment:
+      POSTGRES_DB: planka
+      POSTGRES_PASSWORD: $SERVICE_PASSWORD_DB
+    volumes:
+      - planka_db_data:/var/lib/postgresql/data

@@ -1,0 +1,14 @@
+services:
+  flame:
+    image: pawelmalak/flame:2.3.1
+    ports: ["5005:5005"]
+    environment:
+      PASSWORD: $SERVICE_PASSWORD_ADMIN
+    volumes:
+      - flame_data:/app/data
+    healthcheck:
+      test: ["CMD-SHELL", "wget -q -O /dev/null http://127.0.0.1:5005/ || exit 1"]
+      interval: 10s
+      timeout: 5s
+      retries: 3
+      start_period: 15s

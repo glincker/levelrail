@@ -1,0 +1,10 @@
+id: leantime
+name: Leantime
+slogan: A goals-focused project management tool built for people who aren't professional project managers.
+category: Productivity
+documentation_url: https://docs.leantime.io
+recommended_memory_bytes: 536870912
+requires_gpu: false
+platforms:
+    - linux/amd64
+    - linux/arm64

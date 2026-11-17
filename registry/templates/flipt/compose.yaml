@@ -1,0 +1,12 @@
+services:
+  flipt:
+    image: docker.flipt.io/flipt/flipt:v1.60.0
+    ports: ["8080:8080"]
+    volumes:
+      - flipt_data:/var/opt/flipt
+    healthcheck:
+      test: ["CMD", "wget", "--spider", "-q", "http://127.0.0.1:8080/health"]
+      interval: 10s
+      timeout: 10s
+      retries: 5
+      start_period: 10s

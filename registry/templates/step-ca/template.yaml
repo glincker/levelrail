@@ -1,0 +1,47 @@
+id: step-ca
+name: Step CA
+slogan: A private certificate authority that issues and renews TLS and SSH certificates over ACME or a CLI. Apache-2.0 licensed. The CA password is generated for you and shown in the deployment variables.
+description: A private certificate authority that issues and renews TLS and SSH certificates over ACME or a CLI. Apache-2.0 licensed. The CA password is generated for you and shown in the deployment variables.
+category: Security
+documentation_url: https://github.com/smallstep/certificates
+recommended_memory_bytes: 134217728
+requires_gpu: false
+manifest:
+    id: step-ca
+    name: Step CA
+    description: A private certificate authority that issues and renews TLS and SSH certificates over ACME or a CLI. Apache-2.0 licensed. The CA password is generated for you and shown in the deployment variables.
+    icon: shield
+    category: Security
+    documentation_url: https://github.com/smallstep/certificates
+    source_repo: https://github.com/smallstep/certificates
+    license: Apache-2.0
+    license_class: permissive
+    license_url: https://github.com/smallstep/certificates/blob/HEAD/LICENSE
+    hosted_use: ""
+    listing:
+        by: community
+        vendor_org: ""
+        proof: ""
+    status: active
+    status_reason: ""
+    replaced_by: ""
+    aliases: []
+    first_run:
+        - Read the root certificate fingerprint from the deployment logs, then bootstrap clients with step ca bootstrap.
+    compose_file: compose.yaml
+    recommended_memory_bytes: 134217728
+    env: []
+    domains:
+        - service: step-ca
+          port: 9000
+          description: Public address of Step CA.
+    healthcheck:
+        service: step-ca
+        port: 9000
+        path: /
+        expect: 0
+        kind: ""
+        reason: ""
+    first_boot_seconds: 0
+    console_command: []
+    capabilities: []

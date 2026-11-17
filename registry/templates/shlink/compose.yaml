@@ -1,0 +1,14 @@
+services:
+  shlink:
+    image: shlinkio/shlink:stable
+    ports: ["8080:8080"]
+    environment:
+      DEFAULT_DOMAIN: ${SERVICE_FQDN_SHLINK:-localhost}
+      IS_HTTPS_ENABLED: "false"
+    volumes:
+      - shlink_data:/etc/shlink/data
+    healthcheck:
+      test: ["CMD-SHELL", "wget -q -O- http://127.0.0.1:8080/rest/health || exit 1"]
+      interval: 30s
+      timeout: 5s
+      retries: 3

@@ -1,0 +1,30 @@
+services:
+  tandoor:
+    image: vabene1111/recipes:2.6.15
+    ports: ["8080:80"]
+    environment:
+      SECRET_KEY: $SERVICE_HEX_64_SECRETKEY
+      ALLOWED_HOSTS: "*"
+      DB_ENGINE: django.db.backends.postgresql
+      POSTGRES_HOST: db
+      POSTGRES_PORT: "5432"
+      POSTGRES_USER: tandoor
+      POSTGRES_PASSWORD: $SERVICE_PASSWORD_DB
+      POSTGRES_DB: tandoor
+    volumes:
+      - tandoor_data:/opt/recipes/mediafiles
+      - tandoor_static:/opt/recipes/staticfiles
+    healthcheck:
+      test: ["CMD-SHELL", "curl -fsS -o /dev/null http://127.0.0.1:80/"]
+      interval: 10s
+      timeout: 5s
+      retries: 3
+      start_period: 120s
+  db:
+    image: postgres:16-alpine
+    environment:
+      POSTGRES_USER: tandoor
+      POSTGRES_PASSWORD: $SERVICE_PASSWORD_DB
+      POSTGRES_DB: tandoor
+    volumes:
+      - tandoor_db_data:/var/lib/postgresql/data

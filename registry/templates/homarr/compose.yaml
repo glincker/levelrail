@@ -1,0 +1,16 @@
+services:
+  homarr:
+    image: ghcr.io/ajnart/homarr:0.15.10
+    ports: ["7575:7575"]
+    environment:
+      TZ: "Etc/UTC"
+    volumes:
+      - homarr_configs:/app/data/configs
+      - homarr_icons:/app/public/icons
+      - homarr_data:/app/data
+    healthcheck:
+      test: ["CMD-SHELL", "wget -q -O /dev/null http://127.0.0.1:7575/ || exit 1"]
+      interval: 10s
+      timeout: 5s
+      retries: 3
+      start_period: 30s

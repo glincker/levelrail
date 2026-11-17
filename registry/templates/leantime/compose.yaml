@@ -1,0 +1,35 @@
+services:
+  leantime:
+    image: leantime/leantime:3.5.6
+    ports: ["8080:8080"]
+    environment:
+      LEAN_DB_HOST: db
+      LEAN_DB_USER: leantime
+      LEAN_DB_PASSWORD: $SERVICE_PASSWORD_DB
+      LEAN_DB_DATABASE: leantime
+      LEAN_SESSION_PASSWORD: $SERVICE_PASSWORD_64_SESSION
+      LEAN_USE_REDIS: "true"
+      LEAN_REDIS_HOST: redis
+      LEAN_REDIS_PORT: "6379"
+    volumes:
+      - leantime_userfiles:/var/www/html/userfiles
+      - leantime_public_userfiles:/var/www/html/public/userfiles
+    healthcheck:
+      test: ["CMD-SHELL", "curl -fsS -o /dev/null http://127.0.0.1:8080/"]
+      interval: 10s
+      timeout: 5s
+      retries: 3
+      start_period: 60s
+  db:
+    image: mysql:8.4
+    environment:
+      MYSQL_ROOT_PASSWORD: $SERVICE_PASSWORD_MYSQLROOT
+      MYSQL_USER: leantime
+      MYSQL_PASSWORD: $SERVICE_PASSWORD_DB
+      MYSQL_DATABASE: leantime
+    volumes:
+      - leantime_db_data:/var/lib/mysql
+  redis:
+    image: redis:7-alpine
+    volumes:
+      - leantime_redis_data:/data

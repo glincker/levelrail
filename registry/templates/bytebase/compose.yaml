@@ -1,0 +1,13 @@
+services:
+  bytebase:
+    image: bytebase/bytebase:3.9.2
+    command: ["--data", "/var/opt/bytebase", "--port", "8080"]
+    ports: ["8080:8080"]
+    volumes:
+      - bytebase_data:/var/opt/bytebase
+    healthcheck:
+      test: ["CMD-SHELL", "curl -fsS -o /dev/null http://127.0.0.1:8080/healthz"]
+      interval: 10s
+      timeout: 5s
+      retries: 3
+      start_period: 60s

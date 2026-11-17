@@ -1,0 +1,31 @@
+services:
+  gitea:
+    image: gitea/gitea:1.23.1
+    ports: ["3000:3000", "2222:22"]
+    environment:
+      GITEA__database__DB_TYPE: postgres
+      GITEA__database__HOST: db:5432
+      GITEA__database__NAME: gitea
+      GITEA__database__USER: gitea
+      GITEA__database__PASSWD: $SERVICE_PASSWORD_DB
+    volumes:
+      - gitea_postgres_data:/data
+    depends_on: [db]
+    healthcheck:
+      test: ["CMD-SHELL", "wget -q -O- http://127.0.0.1:3000/api/healthz || exit 1"]
+      interval: 30s
+      timeout: 5s
+      retries: 3
+  db:
+    image: postgres:16-alpine
+    environment:
+      POSTGRES_USER: gitea
+      POSTGRES_PASSWORD: $SERVICE_PASSWORD_DB
+      POSTGRES_DB: gitea
+    volumes:
+      - gitea_postgres_db_data:/var/lib/postgresql/data
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U gitea -d gitea"]
+      interval: 5s
+      timeout: 5s
+      retries: 10

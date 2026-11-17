@@ -1,0 +1,10 @@
+id: new-api
+name: New API
+slogan: An LLM gateway and AI asset management system that unifies many model providers.
+category: AI
+documentation_url: https://docs.newapi.pro/en/getting-started/
+recommended_memory_bytes: 536870912
+requires_gpu: false
+platforms:
+    - linux/amd64
+    - linux/arm64

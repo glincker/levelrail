@@ -1,0 +1,26 @@
+services:
+  gatus:
+    image: twinproduction/gatus:v5.12.1
+    ports: ["8080"]
+    configs:
+      - source: gatus_config
+        target: /config/config.yaml
+        mode: 0444
+    healthcheck:
+      test: ["CMD-SHELL", "wget -q -O /dev/null http://127.0.0.1:8080/health"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+
+configs:
+  gatus_config:
+    content: |
+      web:
+        port: 8080
+      endpoints:
+        - name: Example
+          url: https://example.org
+          interval: 60s
+          conditions:
+            - "[STATUS] == 200"
+            - "[RESPONSE_TIME] < 1500"

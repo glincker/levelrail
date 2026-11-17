@@ -1,0 +1,10 @@
+id: ollama-mistral
+name: 'Ollama: Mistral 7B'
+slogan: Mistral's 7B instruct model, served locally through Ollama's HTTP API.
+category: AI
+documentation_url: https://ollama.com/library/mistral
+recommended_memory_bytes: 6442450944
+requires_gpu: false
+platforms:
+    - linux/amd64
+    - linux/arm64

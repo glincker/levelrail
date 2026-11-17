@@ -1,0 +1,15 @@
+services:
+  terraria:
+    image: ryshe/terraria:vanilla-1.4.5.8
+    ports:
+      - "7777:7777"
+    x-levelrail-published-ports: [7777]
+    command: ["-world", "/root/.local/share/Terraria/Worlds/world.wld", "-autocreate", "2", "-worldname", "world", "-maxplayers", "8"]
+    volumes:
+      - terraria_data:/root/.local/share/Terraria/Worlds
+    healthcheck:
+      test: ["CMD-SHELL", "grep -qi ':1E61 ' /proc/net/tcp /proc/net/tcp6"]
+      interval: 30s
+      timeout: 5s
+      retries: 5
+      start_period: 60s

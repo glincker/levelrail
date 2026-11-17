@@ -1,0 +1,14 @@
+id: woodpecker
+name: Woodpecker CI
+slogan: A simple, container-native CI engine with a server and an agent, driven by pipelines in your repo.
+category: Developer Tools
+documentation_url: https://woodpecker-ci.org/docs
+recommended_memory_bytes: 536870912
+requires_gpu: false
+platforms:
+    - freebsd/amd64
+    - linux/amd64
+    - linux/arm
+    - linux/arm64
+    - linux/ppc64le
+    - linux/riscv64

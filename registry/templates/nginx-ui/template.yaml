@@ -1,0 +1,47 @@
+id: nginx-ui
+name: Nginx UI
+slogan: A web interface to edit nginx configuration, certificates and sites. This runs its own nginx inside the container and stores its config in volumes.
+description: A web interface to edit nginx configuration, certificates and sites. This runs its own nginx inside the container and stores its config in volumes.
+category: Developer Tools
+documentation_url: https://nginxui.com/guide/getting-started.html
+recommended_memory_bytes: 134217728
+requires_gpu: false
+manifest:
+    id: nginx-ui
+    name: Nginx UI
+    description: A web interface to edit nginx configuration, certificates and sites. This runs its own nginx inside the container and stores its config in volumes.
+    icon: gear
+    category: Developer Tools
+    documentation_url: https://nginxui.com/guide/getting-started.html
+    source_repo: https://github.com/0xJacky/nginx-ui
+    license: AGPL-3.0-only
+    license_class: network-copyleft
+    license_url: https://github.com/0xJacky/nginx-ui/blob/dev/LICENSE
+    hosted_use: allowed
+    listing:
+        by: community
+        vendor_org: ""
+        proof: ""
+    status: active
+    status_reason: ""
+    replaced_by: ""
+    aliases: []
+    first_run:
+        - Open the address and create the first administrator account in the setup wizard.
+    compose_file: compose.yaml
+    recommended_memory_bytes: 134217728
+    env: []
+    domains:
+        - service: nginx-ui
+          port: 80
+          description: Public address of Nginx UI.
+    healthcheck:
+        service: nginx-ui
+        port: 80
+        path: /
+        expect: 0
+        kind: ""
+        reason: ""
+    first_boot_seconds: 0
+    console_command: []
+    capabilities: []

@@ -1,0 +1,10 @@
+id: uptime-kuma-mariadb
+name: Uptime Kuma (MariaDB)
+slogan: Uptime Kuma with a MariaDB sidecar provisioned, for the setups that opt out of its default SQLite file.
+category: Monitoring
+documentation_url: https://github.com/louislam/uptime-kuma/wiki
+recommended_memory_bytes: 536870912
+requires_gpu: false
+platforms:
+    - linux/amd64
+    - linux/arm64

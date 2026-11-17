@@ -1,0 +1,10 @@
+id: snipe-it
+name: Snipe-IT
+slogan: IT asset management for tracking hardware, licenses, and accessories, and who currently has what.
+category: Infrastructure
+documentation_url: https://snipe-it.readme.io/docs/docker
+recommended_memory_bytes: 536870912
+requires_gpu: false
+platforms:
+    - linux/amd64
+    - linux/arm64

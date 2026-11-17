@@ -1,0 +1,7 @@
+id: osticket
+name: osTicket
+slogan: A widely used open-source support ticket system for teams handling customer requests.
+category: Productivity
+documentation_url: https://docs.osticket.com/en/latest/
+recommended_memory_bytes: 536870912
+requires_gpu: false

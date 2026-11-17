@@ -1,0 +1,49 @@
+services:
+  mariadb:
+    image: mariadb:11
+    environment:
+      MYSQL_USER: limesurvey
+      MYSQL_PASSWORD: $SERVICE_PASSWORD_DB
+      MYSQL_DATABASE: limesurvey
+      MYSQL_ROOT_PASSWORD: $SERVICE_PASSWORD_MYSQLROOT
+    volumes:
+      - limesurvey_mariadb_data:/var/lib/mysql
+    healthcheck:
+      test: ["CMD-SHELL", "mysqladmin ping -h 127.0.0.1 --silent"]
+      interval: 10s
+      timeout: 5s
+      retries: 10
+  redis:
+    image: redis:7-alpine
+    healthcheck:
+      test: ["CMD-SHELL", "redis-cli ping | grep -q PONG"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+  limesurvey:
+    image: adamzammit/limesurvey:latest
+    ports: ["8080:80"]
+    depends_on:
+      mariadb:
+        condition: service_healthy
+      redis:
+        condition: service_healthy
+    environment:
+      LIMESURVEY_DB_HOST: mariadb
+      LIMESURVEY_DB_PASSWORD: $SERVICE_PASSWORD_DB
+      LIMESURVEY_DB_USER: limesurvey
+      LIMESURVEY_DB_NAME: limesurvey
+      LIMESURVEY_ADMIN_USER: admin
+      LIMESURVEY_ADMIN_PASSWORD: $SERVICE_PASSWORD_ADMIN
+      LIMESURVEY_ADMIN_NAME: Admin
+      LIMESURVEY_ADMIN_EMAIL: admin@example.com
+      LIMESURVEY_PHP_SESSION_SAVE_HANDLER: redis
+      LIMESURVEY_PHP_SESSION_SAVE_PATH: tcp://redis:6379
+    volumes:
+      - limesurvey_upload_data:/var/www/html/upload
+      - limesurvey_config_data:/var/www/html/application/config
+    healthcheck:
+      test: ["CMD-SHELL", "curl -f http://127.0.0.1"]
+      interval: 10s
+      timeout: 10s
+      retries: 10

@@ -1,0 +1,14 @@
+services:
+  nextcloud:
+    image: nextcloud:29.0.4-apache
+    ports: ["8080:80"]
+    environment:
+      NEXTCLOUD_ADMIN_USER: $SERVICE_USER_ADMIN
+      NEXTCLOUD_ADMIN_PASSWORD: $SERVICE_PASSWORD_ADMIN
+    volumes:
+      - nextcloud_data:/var/www/html
+    healthcheck:
+      test: ["CMD-SHELL", "curl -fsS -o /dev/null http://127.0.0.1:80/status.php || wget -q -O /dev/null http://127.0.0.1:80/status.php || exit 1"]
+      interval: 30s
+      timeout: 5s
+      retries: 3

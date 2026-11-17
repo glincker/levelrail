@@ -1,0 +1,10 @@
+id: vllm
+name: vLLM
+slogan: A fast, high-throughput inference server that exposes an OpenAI-compatible API for open-weight language models.
+category: AI
+documentation_url: https://docs.vllm.ai
+recommended_memory_bytes: 8589934592
+requires_gpu: true
+platforms:
+    - linux/amd64
+    - linux/arm64

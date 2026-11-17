@@ -1,0 +1,10 @@
+id: firefly-iii
+name: Firefly III
+slogan: A self-hosted personal finance manager for tracking budgets, bills, and spending.
+category: Finance
+documentation_url: https://docs.firefly-iii.org
+recommended_memory_bytes: 536870912
+requires_gpu: false
+platforms:
+    - linux/amd64
+    - linux/arm64

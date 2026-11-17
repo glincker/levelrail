@@ -1,0 +1,10 @@
+id: glpi
+name: GLPI
+slogan: An IT asset and service management platform with helpdesk ticketing built in.
+category: Applications
+documentation_url: https://glpi-project.org/documentation/
+recommended_memory_bytes: 536870912
+requires_gpu: false
+platforms:
+    - linux/amd64
+    - linux/arm64

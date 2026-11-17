@@ -1,0 +1,11 @@
+id: homer
+name: Homer
+slogan: A dead simple static start page for your services, configured with a single YAML file.
+category: Dashboard
+documentation_url: https://github.com/bastienwirtz/homer/blob/main/docs/configuration.md
+recommended_memory_bytes: 134217728
+requires_gpu: false
+platforms:
+    - linux/amd64
+    - linux/arm
+    - linux/arm64

@@ -1,0 +1,70 @@
+id: tianji
+name: Tianji
+slogan: An all-in-one insight hub that combines website analytics, uptime monitoring and server status in one dashboard.
+description: An all-in-one insight hub that combines website analytics, uptime monitoring and server status in one dashboard.
+category: Analytics
+documentation_url: https://tianji.dev/docs/intro
+recommended_memory_bytes: 536870912
+requires_gpu: false
+platforms:
+    - linux/amd64
+    - linux/arm64
+manifest:
+    id: tianji
+    name: Tianji
+    description: An all-in-one insight hub that combines website analytics, uptime monitoring and server status in one dashboard.
+    icon: chart
+    category: Analytics
+    documentation_url: https://tianji.dev/docs/intro
+    source_repo: https://github.com/msgbyte/tianji
+    license: Apache-2.0
+    license_class: permissive
+    license_url: https://github.com/msgbyte/tianji/blob/master/LICENSE
+    hosted_use: ""
+    listing: null
+    status: ""
+    status_reason: ""
+    replaced_by: ""
+    aliases: []
+    first_run: []
+    compose_file: compose.yaml
+    recommended_memory_bytes: 536870912
+    env:
+        - key: DB_PASSWORD
+          label: Database password
+          description: Password for the bundled Postgres database.
+          default: ""
+          generate: password
+          length: 32
+          required: false
+          secret: true
+          type: ""
+          service: ""
+          path: ""
+          mode: ""
+        - key: JWT_SECRET
+          label: JWT secret
+          description: Signs login tokens. Changing it signs every user out.
+          default: ""
+          generate: hex
+          length: 64
+          required: false
+          secret: true
+          type: ""
+          service: ""
+          path: ""
+          mode: ""
+    domains:
+        - service: tianji
+          port: 12345
+          description: Public address of Tianji.
+    healthcheck:
+        service: tianji
+        port: 12345
+        path: /
+        expect: 0
+        kind: ""
+        reason: ""
+    first_boot_seconds: 0
+    console_command: []
+    capabilities: []

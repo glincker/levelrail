@@ -1,0 +1,10 @@
+id: yamtrack
+name: Yamtrack
+slogan: A self-hosted media tracker for movies, TV, anime, manga, games, and books.
+category: Media
+documentation_url: https://github.com/FuzzyGrim/Yamtrack/wiki
+recommended_memory_bytes: 536870912
+requires_gpu: false
+platforms:
+    - linux/amd64
+    - linux/arm64

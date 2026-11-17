@@ -1,0 +1,31 @@
+services:
+  redis-commander:
+    image: ghcr.io/joeferner/redis-commander:0.9.0
+    ports: ["8081"]
+    environment:
+      REDIS_HOSTS: local:redis:6379:0:$SERVICE_PASSWORD_REDISCOMMANDER
+      HTTP_USER: admin
+      HTTP_PASSWORD: $SERVICE_PASSWORD_REDISCOMMANDERUI
+    healthcheck:
+      test:
+        - CMD
+        - node
+        - -e
+        - "require('http').get({host:'127.0.0.1',port:8081,path:'/',auth:'admin:'+process.env.HTTP_PASSWORD},r=>process.exit(r.statusCode<400?0:1)).on('error',()=>process.exit(1))"
+      interval: 15s
+      timeout: 5s
+      retries: 10
+      start_period: 15s
+  redis:
+    image: redis:7.4.7-alpine
+    command: ["sh", "-c", "exec redis-server --requirepass \"$REDISCLI_AUTH\" --appendonly yes"]
+    volumes:
+      - redis_data:/data
+    healthcheck:
+      test: ["CMD-SHELL", "redis-cli -a $REDISCLI_AUTH ping | grep -q PONG"]
+      interval: 10s
+      timeout: 5s
+      retries: 10
+      start_period: 5s
+    environment:
+      REDISCLI_AUTH: $SERVICE_PASSWORD_REDISCOMMANDER

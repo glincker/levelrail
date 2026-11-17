@@ -1,0 +1,10 @@
+id: ollama-phi
+name: 'Ollama: Phi-3 Mini'
+slogan: Microsoft's Phi-3 Mini (3.8B), the smallest model in this catalog, good for constrained nodes.
+category: AI
+documentation_url: https://ollama.com/library/phi3
+recommended_memory_bytes: 4294967296
+requires_gpu: false
+platforms:
+    - linux/amd64
+    - linux/arm64

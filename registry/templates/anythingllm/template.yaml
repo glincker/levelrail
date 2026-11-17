@@ -1,0 +1,10 @@
+id: anythingllm
+name: AnythingLLM
+slogan: A private chat workspace over your documents, with built-in RAG and support for local or hosted models.
+category: AI
+documentation_url: https://docs.anythingllm.com
+recommended_memory_bytes: 2147483648
+requires_gpu: false
+platforms:
+    - linux/amd64
+    - linux/arm64

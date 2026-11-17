@@ -1,0 +1,10 @@
+id: ollama-qwen
+name: 'Ollama: Qwen 2.5 7B'
+slogan: Alibaba's Qwen 2.5 7B model, served locally through Ollama's HTTP API.
+category: AI
+documentation_url: https://ollama.com/library/qwen2.5
+recommended_memory_bytes: 6442450944
+requires_gpu: false
+platforms:
+    - linux/amd64
+    - linux/arm64

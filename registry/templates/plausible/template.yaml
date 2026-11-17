@@ -1,0 +1,10 @@
+id: plausible
+name: Plausible Analytics
+slogan: Lightweight, privacy-friendly, cookie-free web analytics with no consent banner required.
+category: Analytics
+documentation_url: https://plausible.io/docs/self-hosting
+recommended_memory_bytes: 1073741824
+requires_gpu: false
+platforms:
+    - linux/amd64
+    - linux/arm64

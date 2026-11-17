@@ -1,0 +1,12 @@
+services:
+  victoriametrics:
+    image: victoriametrics/victoria-metrics:v1.152.0
+    command: ["-storageDataPath=/storage", "-retentionPeriod=12"]
+    ports: ["8428"]
+    volumes:
+      - victoriametrics_data:/storage
+    healthcheck:
+      test: ["CMD-SHELL", "curl -fsS -o /dev/null http://127.0.0.1:8428/health || wget -q -O /dev/null http://127.0.0.1:8428/health || exit 1"]
+      interval: 30s
+      timeout: 5s
+      retries: 3

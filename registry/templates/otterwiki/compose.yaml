@@ -1,0 +1,14 @@
+services:
+  otterwiki:
+    image: redimp/otterwiki:2.27.0
+    ports: ["80"]
+    volumes:
+      - otterwiki_data:/app-data
+    healthcheck:
+      test: ["CMD-SHELL", "python3 -c \"import urllib.request;urllib.request.urlopen('http://127.0.0.1:80/')\""]
+      interval: 10s
+      timeout: 5s
+      retries: 10
+      start_period: 20s
+volumes:
+  otterwiki_data:

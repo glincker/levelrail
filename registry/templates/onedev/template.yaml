@@ -1,0 +1,46 @@
+id: onedev
+name: OneDev
+slogan: A self-hosted Git server with built-in CI/CD, issue tracking and code search, in one container.
+description: A self-hosted Git server with built-in CI/CD, issue tracking and code search, in one container.
+category: Developer Tools
+documentation_url: https://docs.onedev.io/installation-guide/run-as-docker-container
+recommended_memory_bytes: 1073741824
+requires_gpu: false
+platforms:
+    - linux/amd64
+    - linux/arm64
+manifest:
+    id: onedev
+    name: OneDev
+    description: A self-hosted Git server with built-in CI/CD, issue tracking and code search, in one container.
+    icon: git-branch
+    category: Developer Tools
+    documentation_url: https://docs.onedev.io/installation-guide/run-as-docker-container
+    source_repo: https://github.com/theonedev/onedev
+    license: MIT
+    license_class: permissive
+    license_url: https://github.com/theonedev/onedev/blob/main/license.txt
+    hosted_use: ""
+    listing: null
+    status: ""
+    status_reason: ""
+    replaced_by: ""
+    aliases: []
+    first_run: []
+    compose_file: compose.yaml
+    recommended_memory_bytes: 1073741824
+    env: []
+    domains:
+        - service: onedev
+          port: 6610
+          description: Public address of OneDev.
+    healthcheck:
+        service: onedev
+        port: 6610
+        path: /
+        expect: 0
+        kind: ""
+        reason: ""
+    first_boot_seconds: 0
+    console_command: []
+    capabilities: []

@@ -1,0 +1,16 @@
+id: cloudflare-ddns
+name: Cloudflare DDNS
+slogan: Keeps Cloudflare DNS records pointed at your current public IP address.
+description: 'Required: CLOUDFLARE_API_TOKEN (a token with DNS edit rights for the zone) and DOMAINS (comma separated records to keep updated).'
+category: Infrastructure
+documentation_url: https://github.com/favonia/cloudflare-ddns
+recommended_memory_bytes: 33554432
+requires_gpu: false
+platforms:
+    - linux/386
+    - linux/amd64
+    - linux/arm
+    - linux/arm64
+    - linux/ppc64le
+    - linux/riscv64
+    - linux/s390x

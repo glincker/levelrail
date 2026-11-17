@@ -1,0 +1,18 @@
+services:
+  emby:
+    image: lscr.io/linuxserver/emby:latest
+    ports: ["8096:8096"]
+    environment:
+      PUID: "1000"
+      PGID: "1000"
+      TZ: Etc/UTC
+    volumes:
+      - emby_config:/config
+      - emby_tvshows:/tvshows
+      - emby_movies:/movies
+    healthcheck:
+      test: ["CMD", "curl", "-f", "http://127.0.0.1:8096"]
+      interval: 15s
+      timeout: 10s
+      retries: 5
+      start_period: 30s

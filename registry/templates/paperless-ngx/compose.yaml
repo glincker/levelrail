@@ -1,0 +1,21 @@
+services:
+  paperless:
+    image: paperlessngx/paperless-ngx:2.14.5
+    ports: ["8000:8000"]
+    environment:
+      PAPERLESS_REDIS: redis://redis:6379
+      PAPERLESS_SECRET_KEY: $SERVICE_HEX_64_SECRETKEY
+      PAPERLESS_URL: ${SERVICE_URL_PAPERLESS:-http://localhost:8000}
+    volumes:
+      - paperless_data:/usr/src/paperless/data
+      - paperless_media:/usr/src/paperless/media
+    healthcheck:
+      test: ["CMD-SHELL", "curl -fsS -o /dev/null http://127.0.0.1:8000/"]
+      interval: 10s
+      timeout: 5s
+      retries: 3
+      start_period: 120s
+  redis:
+    image: redis:7.4
+    volumes:
+      - paperless_redis_data:/data

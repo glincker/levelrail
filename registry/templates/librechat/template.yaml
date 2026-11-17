@@ -1,0 +1,10 @@
+id: librechat
+name: LibreChat
+slogan: A self-hosted ChatGPT-style interface for many model providers, with agents, search, and multi-user login.
+category: AI
+documentation_url: https://www.librechat.ai/docs
+recommended_memory_bytes: 2147483648
+requires_gpu: false
+platforms:
+    - linux/amd64
+    - linux/arm64

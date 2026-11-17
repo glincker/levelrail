@@ -1,0 +1,10 @@
+id: ollama-deepseek
+name: 'Ollama: DeepSeek-R1 7B'
+slogan: DeepSeek's R1 distilled 7B reasoning model, served locally through Ollama's HTTP API.
+category: AI
+documentation_url: https://ollama.com/library/deepseek-r1
+recommended_memory_bytes: 6442450944
+requires_gpu: false
+platforms:
+    - linux/amd64
+    - linux/arm64

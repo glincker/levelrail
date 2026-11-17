@@ -1,0 +1,10 @@
+id: cap-captcha
+name: Cap
+slogan: A lightweight, privacy-friendly proof-of-work CAPTCHA, an alternative to reCAPTCHA or hCaptcha.
+category: Security
+documentation_url: https://capjs.js.org/
+recommended_memory_bytes: 268435456
+requires_gpu: false
+platforms:
+    - linux/amd64
+    - linux/arm64

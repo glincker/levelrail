@@ -1,0 +1,10 @@
+id: seafile
+name: Seafile
+slogan: Self-hosted file sync and share with real file-level versioning and client-side encryption options.
+category: Storage
+documentation_url: https://manual.seafile.com
+recommended_memory_bytes: 1073741824
+requires_gpu: false
+platforms:
+    - linux/amd64
+    - linux/arm64

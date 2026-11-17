@@ -1,0 +1,10 @@
+id: readeck
+name: Readeck
+slogan: Save the readable content of web pages you want to keep, free of ads and clutter.
+category: Productivity
+documentation_url: https://readeck.org/en/docs/
+recommended_memory_bytes: 268435456
+requires_gpu: false
+platforms:
+    - linux/amd64
+    - linux/arm64

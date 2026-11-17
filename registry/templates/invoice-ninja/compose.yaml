@@ -1,0 +1,32 @@
+services:
+  invoiceninja:
+    image: invoiceninja/invoiceninja:5
+    ports: ["8080:80"]
+    environment:
+      APP_URL: ${SERVICE_URL_INVOICENINJA:-http://localhost:8080}
+      APP_KEY: $SERVICE_BASE64_32_APPKEY
+      DB_HOST: db
+      DB_DATABASE: invoiceninja
+      DB_USERNAME: invoiceninja
+      DB_PASSWORD: $SERVICE_PASSWORD_DB
+      REDIS_HOST: redis
+    volumes:
+      - invoiceninja_data:/var/www/app/storage
+    healthcheck:
+      test: ["CMD-SHELL", "sh -c ': < /dev/tcp/127.0.0.1/80' || exit 1"]
+      interval: 30s
+      timeout: 5s
+      retries: 3
+  db:
+    image: mariadb:11
+    environment:
+      MYSQL_DATABASE: invoiceninja
+      MYSQL_USER: invoiceninja
+      MYSQL_PASSWORD: $SERVICE_PASSWORD_DB
+      MYSQL_ROOT_PASSWORD: $SERVICE_PASSWORD_MARIADBROOT
+    volumes:
+      - invoiceninja_db_data:/var/lib/mysql
+  redis:
+    image: redis:7.4-alpine
+    volumes:
+      - invoiceninja_redis_data:/data

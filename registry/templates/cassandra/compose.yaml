@@ -1,0 +1,16 @@
+services:
+    cassandra:
+        image: cassandra:5.0.9
+        ports: ["9042"]
+        environment:
+            CASSANDRA_CLUSTER_NAME: levelrail
+            MAX_HEAP_SIZE: 1G
+            HEAP_NEWSIZE: 256M
+        volumes:
+            - cassandra_data:/var/lib/cassandra
+        healthcheck:
+            test: ["CMD-SHELL", "nodetool status 2>/dev/null | grep -q '^UN'"]
+            interval: 30s
+            timeout: 15s
+            retries: 10
+            start_period: 120s

@@ -1,0 +1,16 @@
+services:
+  dokuwiki:
+    image: lscr.io/linuxserver/dokuwiki:2026-07-14c-ls325
+    ports: ["80:80"]
+    environment:
+      PUID: "1000"
+      PGID: "1000"
+      TZ: "Etc/UTC"
+    volumes:
+      - dokuwiki_config:/config
+    healthcheck:
+      test: ["CMD-SHELL", "curl -fsS -o /dev/null http://127.0.0.1:80/"]
+      interval: 10s
+      timeout: 5s
+      retries: 3
+      start_period: 30s

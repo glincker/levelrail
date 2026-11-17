@@ -1,0 +1,14 @@
+services:
+  jupyter:
+    image: quay.io/jupyter/base-notebook:latest
+    ports: ["8888:8888"]
+    environment:
+      JUPYTER_TOKEN: $SERVICE_PASSWORD_TOKEN
+    volumes:
+      - jupyter_work:/home/jovyan/work
+    healthcheck:
+      test: ["CMD-SHELL", "wget -q -O- http://127.0.0.1:8888/ || exit 1"]
+      interval: 15s
+      timeout: 5s
+      retries: 5
+      start_period: 30s

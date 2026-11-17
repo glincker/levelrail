@@ -1,0 +1,10 @@
+id: imgcompress
+name: ImgCompress
+slogan: An offline image compression, format conversion, and background-removal API for self-hosted pipelines.
+category: Developer Tools
+documentation_url: https://imgcompress.karimzouine.com
+recommended_memory_bytes: 268435456
+requires_gpu: false
+platforms:
+    - linux/amd64
+    - linux/arm64

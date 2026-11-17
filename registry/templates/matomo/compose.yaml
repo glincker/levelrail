@@ -1,0 +1,26 @@
+services:
+  matomo:
+    image: matomo:5.13.0-apache
+    ports: ["8080:80"]
+    environment:
+      MATOMO_DATABASE_HOST: db
+      MATOMO_DATABASE_USERNAME: matomo
+      MATOMO_DATABASE_PASSWORD: $SERVICE_PASSWORD_DB
+      MATOMO_DATABASE_DBNAME: matomo
+    volumes:
+      - matomo_data:/var/www/html
+    healthcheck:
+      test: ["CMD-SHELL", "curl -fsS -o /dev/null http://127.0.0.1:80/"]
+      interval: 10s
+      timeout: 5s
+      retries: 3
+      start_period: 60s
+  db:
+    image: mariadb:10.11
+    environment:
+      MYSQL_DATABASE: matomo
+      MYSQL_USER: matomo
+      MYSQL_PASSWORD: $SERVICE_PASSWORD_DB
+      MYSQL_ROOT_PASSWORD: $SERVICE_PASSWORD_MARIADBROOT
+    volumes:
+      - matomo_db_data:/var/lib/mysql

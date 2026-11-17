@@ -1,0 +1,47 @@
+id: thelounge
+name: The Lounge
+slogan: A modern web IRC client that stays connected for you, so you can read what you missed from any device. Users are created from the command line, and chat history is kept on a volume.
+description: A modern web IRC client that stays connected for you, so you can read what you missed from any device. Users are created from the command line, and chat history is kept on a volume.
+category: Communication
+documentation_url: https://thelounge.chat/docs
+recommended_memory_bytes: 268435456
+requires_gpu: false
+manifest:
+    id: thelounge
+    name: The Lounge
+    description: A modern web IRC client that stays connected for you, so you can read what you missed from any device. Users are created from the command line, and chat history is kept on a volume.
+    icon: chat
+    category: Communication
+    documentation_url: https://thelounge.chat/docs
+    source_repo: https://github.com/thelounge/thelounge
+    license: MIT
+    license_class: permissive
+    license_url: https://github.com/thelounge/thelounge/blob/master/LICENSE
+    hosted_use: allowed
+    listing:
+        by: community
+        vendor_org: ""
+        proof: ""
+    status: active
+    status_reason: ""
+    replaced_by: ""
+    aliases: []
+    first_run:
+        - Create your first user from the container terminal with thelounge add followed by a username, then sign in at the address.
+    compose_file: compose.yaml
+    recommended_memory_bytes: 268435456
+    env: []
+    domains:
+        - service: thelounge
+          port: 9000
+          description: Public address of the web client.
+    healthcheck:
+        service: thelounge
+        port: 9000
+        path: /
+        expect: 0
+        kind: ""
+        reason: ""
+    first_boot_seconds: 0
+    console_command: []
+    capabilities: []

@@ -1,0 +1,141 @@
+---
+title: "Self-host Novu with Docker"
+sidebarTitle: "Novu"
+description: "An open source notification infrastructure for email, SMS, push and in-app messages."
+"og:url": "https://docs.levelrail.com/self-host/novu"
+---
+
+An open source notification infrastructure for email, SMS, push and in-app messages.
+
+This page describes the Levelrail template for Novu (Developer Tools). It deploys the services below as one Docker Compose app on your own server. Project site: https://docs.novu.co/community/self-hosting-novu/overview.
+
+Recommended memory: about 3072 MiB.
+
+## Services, ports and volumes
+
+| Service | Image | Container ports | Volumes |
+| --- | --- | --- | --- |
+| `api` | `ghcr.io/novuhq/novu/api:3.18.0` | 3000 | none |
+| `mongodb` | `mongo:8.0.17` | none | `mongo_data -&#62; /data/db` |
+| `novu` | `ghcr.io/novuhq/novu/dashboard:3.18.0` | 4000 | none |
+| `redis` | `redis:7-alpine` | none | `redis_data -&#62; /data` |
+| `worker` | `ghcr.io/novuhq/novu/worker:3.18.0` | none | none |
+| `ws` | `ghcr.io/novuhq/novu/ws:3.18.0` | 3002 | none |
+
+## Environment variables
+
+| Service | Variable | Value |
+| --- | --- | --- |
+| `api` | `API_ROOT_URL` | Preset in the template |
+| `api` | `AWS_ACCESS_KEY_ID` | Preset in the template |
+| `api` | `AWS_SECRET_ACCESS_KEY` | Preset in the template |
+| `api` | `FRONT_BASE_URL` | Preset in the template |
+| `api` | `IS_API_IDEMPOTENCY_ENABLED` | Preset in the template |
+| `api` | `IS_API_RATE_LIMITING_ENABLED` | Preset in the template |
+| `api` | `IS_NEW_MESSAGES_API_RESPONSE_ENABLED` | Preset in the template |
+| `api` | `IS_SELF_HOSTED` | Preset in the template |
+| `api` | `IS_V2_ENABLED` | Preset in the template |
+| `api` | `JWT_SECRET` | Generated at deploy |
+| `api` | `MONGO_AUTO_CREATE_INDEXES` | Preset in the template |
+| `api` | `MONGO_MAX_POOL_SIZE` | Preset in the template |
+| `api` | `MONGO_MIN_POOL_SIZE` | Preset in the template |
+| `api` | `MONGO_URL` | Generated at deploy |
+| `api` | `NEW_RELIC_ENABLED` | Preset in the template |
+| `api` | `NODE_ENV` | Preset in the template |
+| `api` | `NOVU_SECRET_KEY` | Generated at deploy |
+| `api` | `PORT` | Preset in the template |
+| `api` | `REDIS_CACHE_SERVICE_HOST` | Preset in the template |
+| `api` | `REDIS_CACHE_SERVICE_PORT` | Preset in the template |
+| `api` | `REDIS_HOST` | Preset in the template |
+| `api` | `REDIS_PORT` | Preset in the template |
+| `api` | `S3_BUCKET_NAME` | Preset in the template |
+| `api` | `S3_REGION` | Preset in the template |
+| `api` | `STORE_ENCRYPTION_KEY` | Generated at deploy |
+| `api` | `SUBSCRIBER_WIDGET_JWT_EXPIRATION_TIME` | Preset in the template |
+| `mongodb` | `MONGO_INITDB_ROOT_PASSWORD` | Generated at deploy |
+| `mongodb` | `MONGO_INITDB_ROOT_USERNAME` | Preset in the template |
+| `novu` | `VITE_API_HOSTNAME` | Preset in the template |
+| `novu` | `VITE_WEBSOCKET_HOSTNAME` | Preset in the template |
+| `worker` | `API_ROOT_URL` | Preset in the template |
+| `worker` | `AWS_ACCESS_KEY_ID` | Preset in the template |
+| `worker` | `AWS_SECRET_ACCESS_KEY` | Preset in the template |
+| `worker` | `BROADCAST_QUEUE_CHUNK_SIZE` | Preset in the template |
+| `worker` | `IS_SELF_HOSTED` | Preset in the template |
+| `worker` | `MONGO_AUTO_CREATE_INDEXES` | Preset in the template |
+| `worker` | `MONGO_MAX_POOL_SIZE` | Preset in the template |
+| `worker` | `MONGO_MIN_POOL_SIZE` | Preset in the template |
+| `worker` | `MONGO_URL` | Generated at deploy |
+| `worker` | `MULTICAST_QUEUE_CHUNK_SIZE` | Preset in the template |
+| `worker` | `NEW_RELIC_ENABLED` | Preset in the template |
+| `worker` | `NODE_ENV` | Preset in the template |
+| `worker` | `PORT` | Preset in the template |
+| `worker` | `REDIS_CACHE_SERVICE_HOST` | Preset in the template |
+| `worker` | `REDIS_CACHE_SERVICE_PORT` | Preset in the template |
+| `worker` | `REDIS_HOST` | Preset in the template |
+| `worker` | `REDIS_PORT` | Preset in the template |
+| `worker` | `S3_BUCKET_NAME` | Preset in the template |
+| `worker` | `S3_REGION` | Preset in the template |
+| `worker` | `STORE_ENCRYPTION_KEY` | Generated at deploy |
+| `worker` | `SUBSCRIBER_WIDGET_JWT_EXPIRATION_TIME` | Preset in the template |
+| `ws` | `AWS_ACCESS_KEY_ID` | Preset in the template |
+| `ws` | `AWS_SECRET_ACCESS_KEY` | Preset in the template |
+| `ws` | `IS_SELF_HOSTED` | Preset in the template |
+| `ws` | `JWT_SECRET` | Generated at deploy |
+| `ws` | `MONGO_AUTO_CREATE_INDEXES` | Preset in the template |
+| `ws` | `MONGO_MAX_POOL_SIZE` | Preset in the template |
+| `ws` | `MONGO_MIN_POOL_SIZE` | Preset in the template |
+| `ws` | `MONGO_URL` | Generated at deploy |
+| `ws` | `NEW_RELIC_ENABLED` | Preset in the template |
+| `ws` | `NODE_ENV` | Preset in the template |
+| `ws` | `PORT` | Preset in the template |
+| `ws` | `REDIS_CACHE_SERVICE_HOST` | Preset in the template |
+| `ws` | `REDIS_CACHE_SERVICE_PORT` | Preset in the template |
+| `ws` | `REDIS_HOST` | Preset in the template |
+| `ws` | `REDIS_PORT` | Preset in the template |
+| `ws` | `S3_BUCKET_NAME` | Preset in the template |
+| `ws` | `S3_REGION` | Preset in the template |
+| `ws` | `STORE_ENCRYPTION_KEY` | Generated at deploy |
+| `ws` | `SUBSCRIBER_WIDGET_JWT_EXPIRATION_TIME` | Preset in the template |
+
+Passwords and keys marked as generated are created for you when the app is deployed and stored as secrets. Values are not shown here.
+
+## Security and requirements
+
+Level: **Standard**.
+
+What this template needs:
+
+- Passwords and keys are generated at deploy time (`api`, `mongodb`, `worker`, `ws`): JWT_SECRET, MONGO_URL, NOVU_SECRET_KEY, STORE_ENCRYPTION_KEY, JWT_SECRET, MONGO_URL, STORE_ENCRYPTION_KEY, MONGO_INITDB_ROOT_PASSWORD, MONGO_URL, STORE_ENCRYPTION_KEY.
+- Stores data in named volumes (`mongodb`, `redis`): mongo_data, redis_data.
+
+What Levelrail adds around it:
+
+- Automatic HTTPS and an ingress shield in front of every domain.
+- Secrets are generated, stored encrypted and masked in logs and the UI.
+- Named volumes can be backed up and restored.
+- Deploys are gated on the health check before traffic switches.
+- One-step rollback to the previous revision.
+- Exposure report shows what is reachable from outside.
+- Host firewall rules managed for published ports.
+
+## Deploy Novu with Levelrail
+
+In the dashboard, open **Apps**, choose **New app**, then **Browse templates**, and select Novu. Review the Compose body and deploy.
+
+With the CLI:
+
+```bash
+levelrail-cli templates deploy novu --name my-novu
+```
+
+See the [service template catalog](/templates-and-registry) for how templates work, and [Getting started](/getting-started) if you have not installed Levelrail yet.
+
+## More Developer Tools templates
+
+- [Appsmith](/self-host/appsmith)
+- [Appwrite](/self-host/appwrite)
+- [Athens](/self-host/athens)
+- [Browserless](/self-host/browserless)
+- [ByteStash](/self-host/bytestash)
+
+All templates are listed in the [self-host gallery](/self-host).

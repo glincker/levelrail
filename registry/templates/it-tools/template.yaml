@@ -1,0 +1,10 @@
+id: it-tools
+name: IT Tools
+slogan: 'A collection of handy online tools for developers: converters, generators, formatters, and more.'
+category: Developer Tools
+documentation_url: https://it-tools.tech
+recommended_memory_bytes: 134217728
+requires_gpu: false
+platforms:
+    - linux/amd64
+    - linux/arm64

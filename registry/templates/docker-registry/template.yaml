@@ -1,0 +1,14 @@
+id: docker-registry
+name: Docker Registry
+slogan: A private registry for storing and distributing your own container images.
+category: Developer Tools
+documentation_url: https://distribution.github.io/distribution/
+recommended_memory_bytes: 268435456
+requires_gpu: false
+platforms:
+    - linux/amd64
+    - linux/arm
+    - linux/arm64
+    - linux/ppc64le
+    - linux/riscv64
+    - linux/s390x

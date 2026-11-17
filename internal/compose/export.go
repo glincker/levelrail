@@ -64,10 +64,10 @@ func exportServiceBody(appName, serviceKey string, d store.DesiredService) map[s
 		body["labels"] = d.Labels
 	}
 	if len(d.Command) > 0 {
-		body["command"] = []string(d.Command)
+		body["command"] = escapeEntries(d.Command)
 	}
 	if len(d.Entrypoint) > 0 {
-		body["entrypoint"] = []string(d.Entrypoint)
+		body["entrypoint"] = escapeEntries(d.Entrypoint)
 	}
 	if d.User != "" {
 		body["user"] = d.User
@@ -168,4 +168,14 @@ func exportGPUDevice(g store.ServiceGPU) map[string]any {
 		dev["count"] = "all"
 	}
 	return dev
+}
+
+// escapeEntries re-applies Compose's "$$" escape so an exported argv resolves
+// back to the same strings on the next deploy.
+func escapeEntries(in []string) []string {
+	out := make([]string, len(in))
+	for i, e := range in {
+		out[i] = strings.ReplaceAll(e, "$", "$$")
+	}
+	return out
 }

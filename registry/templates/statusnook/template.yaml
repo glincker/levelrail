@@ -1,0 +1,10 @@
+id: statusnook
+name: Statusnook
+slogan: Deploy a status page and start monitoring endpoints in minutes.
+category: Monitoring
+documentation_url: https://statusnook.com
+recommended_memory_bytes: 268435456
+requires_gpu: false
+platforms:
+    - linux/amd64
+    - linux/arm64

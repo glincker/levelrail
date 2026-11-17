@@ -1,0 +1,10 @@
+id: mongo-express
+name: Mongo Express
+slogan: A web admin console for MongoDB, bundled with its own MongoDB 7 instance and basic auth.
+category: Database Tools
+documentation_url: https://github.com/mongo-express/mongo-express
+recommended_memory_bytes: 536870912
+requires_gpu: false
+platforms:
+    - linux/amd64
+    - linux/arm64

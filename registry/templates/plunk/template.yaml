@@ -1,0 +1,118 @@
+id: plunk
+name: Plunk
+slogan: An email platform for transactional mail, marketing campaigns and automations that sends through your own AWS SES account.
+description: An email platform for transactional mail, marketing campaigns and automations that sends through your own AWS SES account.
+category: Communication
+documentation_url: https://docs.useplunk.com/self-hosting/introduction
+recommended_memory_bytes: 536870912
+requires_gpu: false
+platforms:
+    - linux/amd64
+    - linux/arm64
+manifest:
+    id: plunk
+    name: Plunk
+    description: An email platform for transactional mail, marketing campaigns and automations that sends through your own AWS SES account.
+    icon: mail
+    category: Communication
+    documentation_url: https://docs.useplunk.com/self-hosting/introduction
+    source_repo: https://github.com/useplunk/plunk
+    license: AGPL-3.0
+    license_class: network-copyleft
+    license_url: https://github.com/useplunk/plunk/blob/next/LICENSE
+    hosted_use: ""
+    listing: null
+    status: ""
+    status_reason: ""
+    replaced_by: ""
+    aliases: []
+    first_run: []
+    compose_file: compose.yaml
+    recommended_memory_bytes: 536870912
+    env:
+        - key: DB_PASSWORD
+          label: Database password
+          description: Password for the bundled Postgres database.
+          default: ""
+          generate: password
+          length: 32
+          required: false
+          secret: true
+          type: ""
+          service: ""
+          path: ""
+          mode: ""
+        - key: JWT_SECRET
+          label: JWT secret
+          description: Signs login tokens. Changing it signs every user out.
+          default: ""
+          generate: hex
+          length: 64
+          required: false
+          secret: true
+          type: ""
+          service: ""
+          path: ""
+          mode: ""
+        - key: AWS_REGION
+          label: AWS region
+          description: Region of the SES account used for sending, for example us-east-1.
+          default: ""
+          generate: ""
+          length: 0
+          required: true
+          secret: false
+          type: ""
+          service: ""
+          path: ""
+          mode: ""
+        - key: AWS_ACCESS_KEY_ID
+          label: AWS access key ID
+          description: Access key of an IAM user allowed to use SES.
+          default: ""
+          generate: ""
+          length: 0
+          required: true
+          secret: false
+          type: ""
+          service: ""
+          path: ""
+          mode: ""
+        - key: AWS_SECRET_ACCESS_KEY
+          label: AWS secret access key
+          description: Secret for the AWS access key.
+          default: ""
+          generate: ""
+          length: 0
+          required: true
+          secret: true
+          type: ""
+          service: ""
+          path: ""
+          mode: ""
+        - key: AWS_SES_CONFIGURATION_SET
+          label: SES configuration set
+          description: Name of the SES configuration set that reports delivery events.
+          default: ""
+          generate: ""
+          length: 0
+          required: true
+          secret: false
+          type: ""
+          service: ""
+          path: ""
+          mode: ""
+    domains:
+        - service: plunk
+          port: 3000
+          description: Public address of Plunk.
+    healthcheck:
+        service: plunk
+        port: 3000
+        path: /api/health
+        expect: 0
+        kind: ""
+        reason: ""
+    first_boot_seconds: 0
+    console_command: []
+    capabilities: []

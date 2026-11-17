@@ -1,0 +1,10 @@
+id: n8n
+name: n8n
+slogan: Build automations and connect your tools with a visual, node-based workflow editor.
+category: Automation
+documentation_url: https://docs.n8n.io
+recommended_memory_bytes: 536870912
+requires_gpu: false
+platforms:
+    - linux/amd64
+    - linux/arm64

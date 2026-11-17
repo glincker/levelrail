@@ -1,0 +1,12 @@
+# Adapted from Dokploy/templates (MIT, Copyright (c) 2024 Dokploy and Carlos Ortiz)
+id: wg-easy
+name: WireGuard Easy
+slogan: A WireGuard VPN server with a web UI for managing clients.
+description: Needs NET_ADMIN, NET_RAW and SYS_MODULE plus the host WireGuard kernel module. The VPN itself listens on UDP 51820, open that port in the firewall and forward it to the host. The web UI needs HTTPS, so open it through a domain. Create the admin account on first visit. AGPL v3 licence.
+category: Networking
+documentation_url: https://wg-easy.github.io/wg-easy/latest/
+recommended_memory_bytes: 134217728
+requires_gpu: false
+platforms:
+    - linux/amd64
+    - linux/arm64

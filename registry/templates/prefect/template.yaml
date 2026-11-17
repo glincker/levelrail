@@ -1,0 +1,10 @@
+id: prefect
+name: Prefect
+slogan: Python-native workflow orchestration with scheduling, retries, and a dashboard for every flow run.
+category: Automation
+documentation_url: https://docs.prefect.io
+recommended_memory_bytes: 1073741824
+requires_gpu: false
+platforms:
+    - linux/amd64
+    - linux/arm64

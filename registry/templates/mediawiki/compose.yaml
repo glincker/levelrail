@@ -1,0 +1,25 @@
+services:
+  mediawiki:
+    image: mediawiki:1.43
+    ports: ["8080:80"]
+    volumes:
+      - mediawiki_images:/var/www/html/images
+    healthcheck:
+      test: ["CMD-SHELL", "curl -fsS -o /dev/null http://127.0.0.1:80/ || wget -q -O /dev/null http://127.0.0.1:80/ || exit 1"]
+      interval: 30s
+      timeout: 5s
+      retries: 3
+      start_period: 60s
+  db:
+    image: postgres:16-alpine
+    environment:
+      POSTGRES_USER: wikiuser
+      POSTGRES_PASSWORD: $SERVICE_PASSWORD_DB
+      POSTGRES_DB: mediawiki
+    volumes:
+      - mediawiki_db_data:/var/lib/postgresql/data
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U wikiuser -d mediawiki"]
+      interval: 10s
+      timeout: 5s
+      retries: 5

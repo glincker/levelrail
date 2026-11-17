@@ -1,0 +1,10 @@
+id: pocket-id
+name: Pocket ID
+slogan: A simple, secure OIDC provider that authenticates with passkeys instead of passwords.
+category: Security
+documentation_url: https://pocket-id.org/docs/setup/installation
+recommended_memory_bytes: 134217728
+requires_gpu: false
+platforms:
+    - linux/amd64
+    - linux/arm64

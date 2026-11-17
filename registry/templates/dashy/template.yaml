@@ -1,0 +1,10 @@
+id: dashy
+name: Dashy
+slogan: A feature-rich, self-hosted start page with widgets, status checks, and full visual customization.
+category: Dashboard
+documentation_url: https://dashy.to/docs
+recommended_memory_bytes: 134217728
+requires_gpu: false
+platforms:
+    - linux/amd64
+    - linux/arm64

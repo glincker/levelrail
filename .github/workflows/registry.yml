@@ -1,0 +1,162 @@
+name: Registry
+
+# Validates and smoke-tests only the registry template folders a change touches.
+# Folders that predate the rules are reported by the validator but never block.
+on:
+  pull_request:
+    paths:
+      - "registry/**"
+      - "scripts/validate-registry/**"
+      - "scripts/export-registry/**"
+      - "internal/catalog/registry_dir*.go"
+  push:
+    branches: [main, "release/**"]
+    paths:
+      - "registry/**"
+      - "scripts/validate-registry/**"
+      - "scripts/export-registry/**"
+      - "internal/catalog/registry_dir*.go"
+
+permissions:
+  contents: read
+
+concurrency:
+  group: registry-${{ github.event.pull_request.number || github.ref }}
+  cancel-in-progress: true
+
+env:
+  # Most changed folders smoke-tested per run, so one big PR cannot hog runners.
+  REGISTRY_SMOKE_MAX: "8"
+  REGISTRY_SMOKE_WAIT_TIMEOUT: "240"
+
+jobs:
+  validate:
+    name: Validate
+    runs-on: ubuntu-latest
+    timeout-minutes: 15
+    outputs:
+      folders: ${{ steps.changed.outputs.folders }}
+      base: ${{ steps.changed.outputs.base }}
+    steps:
+      - name: Checkout
+        uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+        with:
+          fetch-depth: 0
+          persist-credentials: false
+
+      - name: Setup Go
+        uses: actions/setup-go@b7ad1dad31e06c5925ef5d2fc7ad053ef454303e # v7.0.0
+        with:
+          go-version-file: go.mod
+
+      - name: List changed files
+        env:
+          EVENT: ${{ github.event_name }}
+          BASE_SHA: ${{ github.event.pull_request.base.sha }}
+          BEFORE_SHA: ${{ github.event.before }}
+        run: |
+          if [ "$EVENT" = "pull_request" ]; then
+            base="$BASE_SHA"
+          else
+            base="$BEFORE_SHA"
+            if [ -z "$base" ] || [ "$base" = "0000000000000000000000000000000000000000" ]; then
+              base="HEAD~1"
+            fi
+          fi
+          git diff --name-only "$base" HEAD > "$RUNNER_TEMP/changed.txt"
+          echo "$base" > "$RUNNER_TEMP/base.txt"
+
+      - name: Validate changed templates
+        run: go run ./scripts/validate-registry -changed "$RUNNER_TEMP/changed.txt"
+
+      - name: Legacy summary
+        run: go run ./scripts/validate-registry
+
+      - name: Pick folders to smoke test
+        id: changed
+        run: |
+          folders=$(grep -oE '^registry/templates/[^/]+/' "$RUNNER_TEMP/changed.txt" | cut -d/ -f3 | sort -u \
+            | grep -E '^[a-z0-9]+(-[a-z0-9]+)*$' | while read -r id; do
+              [ -f "registry/templates/$id/compose.yaml" ] && echo "$id"
+            done | head -n "$REGISTRY_SMOKE_MAX" | jq -R . | jq -sc .)
+          echo "folders=${folders:-[]}" >> "$GITHUB_OUTPUT"
+          echo "base=$(cat "$RUNNER_TEMP/base.txt")" >> "$GITHUB_OUTPUT"
+
+  smoke:
+    name: Smoke ${{ matrix.id }}
+    needs: validate
+    if: needs.validate.outputs.folders != '[]'
+    runs-on: ubuntu-latest
+    timeout-minutes: 20
+    strategy:
+      fail-fast: false
+      matrix:
+        id: ${{ fromJSON(needs.validate.outputs.folders) }}
+    steps:
+      - name: Checkout
+        uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+        with:
+          fetch-depth: 0
+          persist-credentials: false
+
+      - name: Setup Go
+        uses: actions/setup-go@b7ad1dad31e06c5925ef5d2fc7ad053ef454303e # v7.0.0
+        with:
+          go-version-file: go.mod
+
+      # Legacy means listed in the frozen registry/baseline-ids.txt or registry/legacy.txt.
+      # Legacy failures warn; every other template must pass.
+      - name: Classify template
+        id: legacy
+        env:
+          ID: ${{ matrix.id }}
+        run: |
+          legacy=false
+          if grep -qxF "$ID" registry/baseline-ids.txt registry/legacy.txt; then legacy=true; fi
+          echo "legacy=$legacy" >> "$GITHUB_OUTPUT"
+          if [ "$legacy" = "true" ]; then
+            echo "::notice title=legacy template::$ID is in the frozen baseline, smoke failures are warnings"
+          fi
+
+      - name: Render through the engine
+        env:
+          ID: ${{ matrix.id }}
+        run: |
+          go run ./scripts/registry-render -dir "registry/templates/$ID" > "$RUNNER_TEMP/compose.rendered.yaml"
+
+      - name: Check arm64 images
+        run: |
+          for image in $(docker compose -f "$RUNNER_TEMP/compose.rendered.yaml" config --images); do
+            if ! docker buildx imagetools inspect "$image" 2>/dev/null | grep -q 'linux/arm64'; then
+              echo "::warning title=no linux/arm64::$image has no linux/arm64 build"
+            fi
+          done
+
+      - name: Compose up
+        id: up
+        continue-on-error: ${{ steps.legacy.outputs.legacy == 'true' }}
+        env:
+          ID: ${{ matrix.id }}
+        run: |
+          docker compose -p "lrtest-$ID" -f "$RUNNER_TEMP/compose.rendered.yaml" up --wait --wait-timeout "$REGISTRY_SMOKE_WAIT_TIMEOUT"
+
+      - name: Warn on legacy failure
+        if: steps.up.outcome == 'failure' && steps.legacy.outputs.legacy == 'true'
+        env:
+          ID: ${{ matrix.id }}
+        run: echo "::warning title=legacy smoke failed::$ID is a legacy template, not blocking"
+
+      - name: Compose logs on failure
+        if: steps.up.outcome == 'failure'
+        env:
+          ID: ${{ matrix.id }}
+        run: docker compose -p "lrtest-$ID" -f "$RUNNER_TEMP/compose.rendered.yaml" logs --tail 80
+
+      - name: Compose down
+        if: always()
+        env:
+          ID: ${{ matrix.id }}
+        run: |
+          if [ -f "$RUNNER_TEMP/compose.rendered.yaml" ]; then
+            docker compose -p "lrtest-$ID" -f "$RUNNER_TEMP/compose.rendered.yaml" down -v
+          fi

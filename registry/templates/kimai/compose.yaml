@@ -1,0 +1,25 @@
+services:
+  kimai:
+    image: kimai/kimai2:apache
+    ports: ["8001:8001"]
+    environment:
+      DATABASE_URL: mysql://kimai:$SERVICE_PASSWORD_DB@db/kimai?serverVersion=8.0
+      ADMINMAIL: admin@example.com
+      ADMINPASS: $SERVICE_PASSWORD_ADMIN
+    volumes:
+      - kimai_data:/opt/kimai/var
+    healthcheck:
+      test: ["CMD-SHELL", "curl -fsS -o /dev/null http://127.0.0.1:8001/"]
+      interval: 10s
+      timeout: 5s
+      retries: 3
+      start_period: 120s
+  db:
+    image: mysql:8
+    environment:
+      MYSQL_DATABASE: kimai
+      MYSQL_USER: kimai
+      MYSQL_PASSWORD: $SERVICE_PASSWORD_DB
+      MYSQL_ROOT_PASSWORD: $SERVICE_PASSWORD_MYSQLROOT
+    volumes:
+      - kimai_db_data:/var/lib/mysql

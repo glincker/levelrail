@@ -1,0 +1,32 @@
+services:
+  yourls:
+    image: yourls:1.10.6
+    ports: ["8080"]
+    environment:
+      YOURLS_SITE: ${SERVICE_URL_YOURLS:-http://localhost:8080}
+      YOURLS_DB_HOST: db
+      YOURLS_DB_USER: yourls
+      YOURLS_DB_PASS: $SERVICE_PASSWORD_DB
+      YOURLS_DB_NAME: yourls
+      YOURLS_USER: ${YOURLS_USER}
+      YOURLS_PASS: ${YOURLS_PASS}
+    healthcheck:
+      test: ["CMD-SHELL", "curl -fsS -o /dev/null http://127.0.0.1:8080/admin/install.php || exit 1"]
+      interval: 15s
+      timeout: 6s
+      retries: 10
+      start_period: 30s
+  db:
+    image: mariadb:11.8.9
+    environment:
+      MARIADB_ROOT_PASSWORD: $SERVICE_PASSWORD_DBROOT
+      MARIADB_DATABASE: yourls
+      MARIADB_USER: yourls
+      MARIADB_PASSWORD: $SERVICE_PASSWORD_DB
+    volumes:
+      - dbdata:/var/lib/mysql
+    healthcheck:
+      test: ["CMD", "healthcheck.sh", "--connect", "--innodb_initialized"]
+      interval: 5s
+      timeout: 20s
+      retries: 10

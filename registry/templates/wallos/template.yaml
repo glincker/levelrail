@@ -1,0 +1,11 @@
+id: wallos
+name: Wallos
+slogan: A personal subscription tracker that shows what you pay each month, with reminders and multi-currency support.
+category: Finance
+documentation_url: https://github.com/ellite/Wallos
+recommended_memory_bytes: 134217728
+requires_gpu: false
+platforms:
+    - linux/amd64
+    - linux/arm
+    - linux/arm64

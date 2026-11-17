@@ -1,0 +1,12 @@
+services:
+  zipkin:
+    image: openzipkin/zipkin:3.6.1
+    ports: ["9411"]
+    environment:
+      JAVA_OPTS: -Xms128m -Xmx384m
+    healthcheck:
+      test: ["CMD-SHELL", "wget -q -O /dev/null http://127.0.0.1:9411/health || curl -fsS -o /dev/null http://127.0.0.1:9411/health"]
+      interval: 15s
+      timeout: 5s
+      retries: 8
+      start_period: 30s

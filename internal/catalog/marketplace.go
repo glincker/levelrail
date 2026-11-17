@@ -139,6 +139,28 @@ func (m Manifest) validateMarketplaceFields() []error {
 	return errs
 }
 
+// ClassUnknown marks a registry template whose licence could not be verified.
+const ClassUnknown = "unknown"
+
+// CheckRegistryLicense validates the licence fields of a registry template.yaml
+// with the same SPDX table as manifests, plus the unknown class and LicenseRef ids.
+func CheckRegistryLicense(license, class string) []error {
+	var errs []error
+	want, known := knownLicenses[license]
+	if !known && !licenseRefPattern.MatchString(license) {
+		errs = append(errs, fmt.Errorf("license %q is not a known SPDX id; use one of the known ids or LicenseRef-<name>", license))
+	}
+	switch class {
+	case ClassPermissive, ClassCopyleft, ClassNetworkCopyleft, ClassSourceAvailable, ClassProprietary, ClassUnknown:
+	default:
+		return append(errs, fmt.Errorf("license_class %q must be permissive, copyleft, network-copyleft, source-available, proprietary or unknown", class))
+	}
+	if known && class != ClassUnknown && want != class {
+		errs = append(errs, fmt.Errorf("license %s is %s, not %s", license, want, class))
+	}
+	return errs
+}
+
 func validateLicense(license, class string) []error {
 	var errs []error
 	parts := licenseExprSplit.Split(strings.TrimSpace(license), -1)

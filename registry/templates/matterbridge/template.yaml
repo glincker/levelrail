@@ -1,0 +1,83 @@
+id: matterbridge
+name: Matterbridge
+slogan: Bridges chat between platforms. The install form carries matterbridge.toml as an editable file with a local API gateway, so you add your own accounts there.
+description: Bridges chat between platforms. The install form carries matterbridge.toml as an editable file with a local API gateway, so you add your own accounts there.
+category: Communication
+documentation_url: https://github.com/42wim/matterbridge/wiki
+recommended_memory_bytes: 67108864
+requires_gpu: false
+manifest:
+    id: matterbridge
+    name: Matterbridge
+    description: Bridges chat between platforms. The install form carries matterbridge.toml as an editable file with a local API gateway, so you add your own accounts there.
+    icon: chat
+    category: Communication
+    documentation_url: https://github.com/42wim/matterbridge/wiki
+    source_repo: https://github.com/42wim/matterbridge
+    license: Apache-2.0
+    license_class: permissive
+    license_url: https://github.com/42wim/matterbridge/blob/HEAD/LICENSE
+    hosted_use: allowed
+    listing:
+        by: community
+        vendor_org: ""
+        proof: ""
+    status: active
+    status_reason: ""
+    replaced_by: ""
+    aliases: []
+    first_run:
+        - Edit the config file setting to add your chat accounts and gateways, then reinstall or update to apply it. The starter exposes only the local API.
+    compose_file: compose.yaml
+    recommended_memory_bytes: 67108864
+    env:
+        - key: MATTERBRIDGE_TOKEN
+          label: API token
+          description: Bearer token for the local API.
+          default: ""
+          generate: password
+          length: 32
+          required: false
+          secret: true
+          type: ""
+          service: ""
+          path: ""
+          mode: ""
+        - key: MATTERBRIDGE_CONFIG
+          label: matterbridge.toml
+          description: The full Matterbridge configuration, mounted read-only. It holds the API token and chat credentials, so treat it as secret.
+          default: |
+            [api.local]
+            BindAddress = "0.0.0.0:4242"
+            Token = "${MATTERBRIDGE_TOKEN}"
+            Buffer = 1000
+
+            [[gateway]]
+            name = "local"
+            enable = true
+
+            [[gateway.inout]]
+            account = "api.local"
+            channel = "api"
+          generate: ""
+          length: 0
+          required: false
+          secret: true
+          type: file
+          service: matterbridge
+          path: /etc/matterbridge/matterbridge.toml
+          mode: "0444"
+    domains:
+        - service: matterbridge
+          port: 4242
+          description: Public address of the local API. Keep it private.
+    healthcheck:
+        service: matterbridge
+        port: 4242
+        path: ""
+        expect: 0
+        kind: tcp
+        reason: the API has no unauthenticated route, a TCP connect proves it is serving
+    first_boot_seconds: 0
+    console_command: []
+    capabilities: []

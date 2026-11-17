@@ -1,0 +1,84 @@
+id: monica
+name: Monica
+slogan: A personal CRM that remembers the people in your life, with notes, reminders, activities and relationships.
+description: A personal CRM that remembers the people in your life, with notes, reminders, activities and relationships.
+category: Productivity
+documentation_url: https://github.com/monicahq/monica/blob/main/docs/installation/docker.md
+recommended_memory_bytes: 536870912
+requires_gpu: false
+platforms:
+    - linux/amd64
+    - linux/arm64
+    - linux/ppc64le
+    - linux/s390x
+manifest:
+    id: monica
+    name: Monica
+    description: A personal CRM that remembers the people in your life, with notes, reminders, activities and relationships.
+    icon: users
+    category: Productivity
+    documentation_url: https://github.com/monicahq/monica/blob/main/docs/installation/docker.md
+    source_repo: https://github.com/monicahq/monica
+    license: AGPL-3.0-or-later
+    license_class: network-copyleft
+    license_url: https://github.com/monicahq/monica/blob/main/LICENSE.md
+    hosted_use: ""
+    listing: null
+    status: ""
+    status_reason: ""
+    replaced_by: ""
+    aliases: []
+    first_run: []
+    compose_file: compose.yaml
+    recommended_memory_bytes: 536870912
+    env:
+        - key: DB_PASSWORD
+          label: Database password
+          description: Password for the bundled MariaDB database.
+          default: ""
+          generate: password
+          length: 32
+          required: false
+          secret: true
+          type: ""
+          service: ""
+          path: ""
+          mode: ""
+        - key: DB_ROOT_PASSWORD
+          label: Database root password
+          description: Root password for the bundled MariaDB server.
+          default: ""
+          generate: password
+          length: 32
+          required: false
+          secret: true
+          type: ""
+          service: ""
+          path: ""
+          mode: ""
+        - key: APP_KEY
+          label: Application key
+          description: Encrypts sessions and stored data. Changing it invalidates both.
+          default: ""
+          generate: password
+          length: 32
+          required: false
+          secret: true
+          type: ""
+          service: ""
+          path: ""
+          mode: ""
+    domains:
+        - service: monica
+          port: 80
+          description: Public address of Monica.
+    healthcheck:
+        service: monica
+        port: 80
+        path: /
+        expect: 0
+        kind: ""
+        reason: ""
+    first_boot_seconds: 0
+    console_command: []
+    capabilities: []

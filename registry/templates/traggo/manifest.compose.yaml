@@ -1,0 +1,19 @@
+services:
+  traggo:
+    image: traggo/server:0.8.3
+    ports: ["3030"]
+    environment:
+      TRAGGO_DEFAULT_USER_NAME: admin
+      TRAGGO_DEFAULT_USER_PASS: ${TRAGGO_PASSWORD}
+    volumes:
+      - data:/opt/traggo/data
+    healthcheck:
+      test: ["NONE"]
+    x-levelrail-healthcheck:
+      kind: http
+      path: /
+      port: 3030
+      interval: 15s
+      timeout: 8s
+      retries: 10
+      start_period: 20s

@@ -1,0 +1,19 @@
+services:
+  influxdb:
+    image: influxdb:2.7-alpine
+    ports: ["8086:8086"]
+    environment:
+      INFLUXDB_INIT_MODE: setup
+      INFLUXDB_INIT_USERNAME: $SERVICE_USER_ADMIN
+      INFLUXDB_INIT_PASSWORD: $SERVICE_PASSWORD_ADMIN
+      INFLUXDB_INIT_ORG: main
+      INFLUXDB_INIT_BUCKET: main
+      INFLUXDB_INIT_ADMIN_TOKEN: $SERVICE_HEX_64_ADMINTOKEN
+    volumes:
+      - influxdb_data:/var/lib/influxdb2
+      - influxdb_config:/etc/influxdb2
+    healthcheck:
+      test: ["CMD-SHELL", "wget -q -O- http://127.0.0.1:8086/health || exit 1"]
+      interval: 30s
+      timeout: 5s
+      retries: 3

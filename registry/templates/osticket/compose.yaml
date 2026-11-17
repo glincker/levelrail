@@ -1,0 +1,30 @@
+services:
+  osticket:
+    image: tiredofit/osticket:1.18.2
+    ports: ["80:80"]
+    environment:
+      DB_HOST: db
+      DB_NAME: osticket
+      DB_USER: osticket
+      DB_PASS: $SERVICE_PASSWORD_DB
+      INSTALL_SECRET: $SERVICE_PASSWORD_INSTALLSECRET
+      ADMIN_EMAIL: admin@example.com
+      ADMIN_USER: $SERVICE_USER_ADMIN
+      ADMIN_PASS: $SERVICE_PASSWORD_ADMIN
+    volumes:
+      - osticket_data:/www/osticket
+    healthcheck:
+      test: ["CMD-SHELL", "curl -fsS -o /dev/null http://127.0.0.1:80/"]
+      interval: 10s
+      timeout: 5s
+      retries: 3
+      start_period: 180s
+  db:
+    image: mariadb:11
+    environment:
+      MARIADB_ROOT_PASSWORD: $SERVICE_PASSWORD_DBROOT
+      MARIADB_DATABASE: osticket
+      MARIADB_USER: osticket
+      MARIADB_PASSWORD: $SERVICE_PASSWORD_DB
+    volumes:
+      - osticket_db_data:/var/lib/mysql

@@ -1,0 +1,11 @@
+id: filebrowser
+name: File Browser
+slogan: A simple web UI for browsing, uploading, and sharing files from your own storage.
+category: Storage
+documentation_url: https://filebrowser.org
+recommended_memory_bytes: 134217728
+requires_gpu: false
+platforms:
+    - linux/amd64
+    - linux/arm
+    - linux/arm64

@@ -1,0 +1,17 @@
+services:
+  netbootxyz:
+    image: netbootxyz/netbootxyz:0.7.6-nbxyz27
+    ports: ["3000", "8080"]
+    volumes:
+      - config:/config
+      - assets:/assets
+    healthcheck:
+      test: ["NONE"]
+    x-levelrail-healthcheck:
+      kind: http
+      path: /
+      port: 3000
+      interval: 15s
+      timeout: 8s
+      retries: 10
+      start_period: 20s

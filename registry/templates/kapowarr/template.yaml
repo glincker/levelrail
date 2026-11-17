@@ -1,0 +1,47 @@
+id: kapowarr
+name: Kapowarr
+slogan: A comic book library manager that tracks volumes, finds issues and organises files.
+description: A comic book library manager that tracks volumes, finds issues and organises files.
+category: Media
+documentation_url: https://casvt.github.io/Kapowarr/
+recommended_memory_bytes: 268435456
+requires_gpu: false
+manifest:
+    id: kapowarr
+    name: Kapowarr
+    description: A comic book library manager that tracks volumes, finds issues and organises files.
+    icon: book-bookmark
+    category: Media
+    documentation_url: https://casvt.github.io/Kapowarr/
+    source_repo: https://github.com/Casvt/Kapowarr
+    license: GPL-3.0-only
+    license_class: copyleft
+    license_url: https://github.com/Casvt/Kapowarr/blob/HEAD/LICENSE
+    hosted_use: ""
+    listing:
+        by: community
+        vendor_org: ""
+        proof: ""
+    status: active
+    status_reason: ""
+    replaced_by: ""
+    aliases: []
+    first_run:
+        - Open the address and set the root folder to /comics-1 in the settings.
+    compose_file: compose.yaml
+    recommended_memory_bytes: 268435456
+    env: []
+    domains:
+        - service: kapowarr
+          port: 5656
+          description: Public address of Kapowarr.
+    healthcheck:
+        service: kapowarr
+        port: 5656
+        path: /
+        expect: 0
+        kind: ""
+        reason: ""
+    first_boot_seconds: 0
+    console_command: []
+    capabilities: []

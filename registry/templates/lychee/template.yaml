@@ -1,0 +1,58 @@
+id: lychee
+name: Lychee
+slogan: A self-hosted photo management and gallery app with albums, sharing and public links. MIT licensed. Runs on SQLite in one container. On first open, the setup page asks you to create the admin login.
+description: A self-hosted photo management and gallery app with albums, sharing and public links. MIT licensed. Runs on SQLite in one container. On first open, the setup page asks you to create the admin login.
+category: Applications
+documentation_url: https://lycheeorg.dev/docs/
+recommended_memory_bytes: 402653184
+requires_gpu: false
+platforms:
+    - linux/amd64
+    - linux/arm64
+manifest:
+    id: lychee
+    name: Lychee
+    description: A self-hosted photo management and gallery app with albums, sharing and public links. MIT licensed. Runs on SQLite in one container. On first open, the setup page asks you to create the admin login.
+    icon: image
+    category: Applications
+    documentation_url: https://lycheeorg.dev/docs/
+    source_repo: https://github.com/LycheeOrg/Lychee
+    license: MIT
+    license_class: permissive
+    license_url: https://github.com/LycheeOrg/Lychee/blob/master/LICENSE
+    hosted_use: ""
+    listing: null
+    status: ""
+    status_reason: ""
+    replaced_by: ""
+    aliases: []
+    first_run: []
+    compose_file: compose.yaml
+    recommended_memory_bytes: 402653184
+    env:
+        - key: TZ
+          label: Time zone
+          description: IANA time zone for upload dates and logs.
+          default: Etc/UTC
+          generate: ""
+          length: 0
+          required: false
+          secret: false
+          type: ""
+          service: ""
+          path: ""
+          mode: ""
+    domains:
+        - service: lychee
+          port: 8000
+          description: Public address of Lychee.
+    healthcheck:
+        service: lychee
+        port: 8000
+        path: /
+        expect: 0
+        kind: ""
+        reason: ""
+    first_boot_seconds: 0
+    console_command: []
+    capabilities: []

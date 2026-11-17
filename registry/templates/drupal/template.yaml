@@ -1,0 +1,15 @@
+id: drupal
+name: Drupal
+slogan: A mature, flexible CMS for structured content, multilingual sites, and large editorial teams.
+category: Applications
+documentation_url: https://www.drupal.org/docs
+recommended_memory_bytes: 1073741824
+requires_gpu: false
+platforms:
+    - linux/386
+    - linux/amd64
+    - linux/arm
+    - linux/arm64
+    - linux/ppc64le
+    - linux/riscv64
+    - linux/s390x

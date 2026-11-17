@@ -1,0 +1,12 @@
+services:
+  answer:
+    image: apache/answer:1.4.2
+    ports: ["9080:80"]
+    volumes:
+      - answer_data:/data
+    healthcheck:
+      test: ["CMD-SHELL", "wget -q -O- http://127.0.0.1:80/ || exit 1"]
+      interval: 10s
+      timeout: 5s
+      retries: 3
+      start_period: 30s

@@ -1,0 +1,9 @@
+id: jupyter-gpu
+name: Jupyter GPU Notebook
+slogan: JupyterLab with a CUDA-ready data science stack for training and experimenting with models.
+category: AI
+documentation_url: https://github.com/iot-salzburg/gpu-jupyter
+recommended_memory_bytes: 4294967296
+requires_gpu: true
+platforms:
+    - linux/amd64

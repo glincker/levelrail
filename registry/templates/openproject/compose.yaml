@@ -1,0 +1,97 @@
+x-openproject-env: &openproject-env
+  OPENPROJECT_HOST__NAME: ${SERVICE_FQDN_WEB:-localhost}
+  OPENPROJECT_HTTPS: "true"
+  SECRET_KEY_BASE: $SERVICE_PASSWORD_SECRET
+  OPENPROJECT_RAILS__CACHE__STORE: memcache
+  OPENPROJECT_CACHE__MEMCACHE__SERVER: cache:11211
+  OPENPROJECT_RAILS__RELATIVE__URL__ROOT: ""
+  DATABASE_URL: postgres://openproject:$SERVICE_PASSWORD_DB@db:5432/openproject?pool=20&encoding=unicode&reconnect=true
+
+services:
+  web:
+    image: openproject/openproject:17.9.7-slim
+    command: ./docker/prod/web
+    ports: ["8080"]
+    environment: *openproject-env
+    volumes:
+      - opdata:/var/openproject/assets
+    depends_on:
+      db:
+        condition: service_healthy
+      cache:
+        condition: service_healthy
+      seeder:
+        condition: service_completed_successfully
+    healthcheck:
+      test: ["CMD", "curl", "-f", "http://localhost:8080/health_checks/default"]
+      interval: 10s
+      timeout: 5s
+      retries: 20
+      start_period: 90s
+  seeder:
+    image: openproject/openproject:17.9.7-slim
+    command: ./docker/prod/seeder
+    restart: on-failure
+    environment: *openproject-env
+    volumes:
+      - opdata:/var/openproject/assets
+    depends_on:
+      db:
+        condition: service_healthy
+      cache:
+        condition: service_healthy
+  worker:
+    image: openproject/openproject:17.9.7-slim
+    command: ./docker/prod/worker
+    environment: *openproject-env
+    volumes:
+      - opdata:/var/openproject/assets
+    depends_on:
+      seeder:
+        condition: service_completed_successfully
+    healthcheck:
+      test: ["CMD-SHELL", "grep -qa '[g]ood_job' /proc/[0-9]*/cmdline 2>/dev/null"]
+      interval: 15s
+      timeout: 5s
+      retries: 5
+      start_period: 60s
+  cron:
+    image: openproject/openproject:17.9.7-slim
+    command: ./docker/prod/cron
+    environment: *openproject-env
+    volumes:
+      - opdata:/var/openproject/assets
+    depends_on:
+      seeder:
+        condition: service_completed_successfully
+    healthcheck:
+      test: ["CMD-SHELL", "grep -qa '[d]ocker/prod/cron' /proc/[0-9]*/cmdline 2>/dev/null"]
+      interval: 15s
+      timeout: 5s
+      retries: 5
+      start_period: 60s
+  db:
+    image: postgres:17-alpine
+    environment:
+      POSTGRES_DB: openproject
+      POSTGRES_USER: openproject
+      POSTGRES_PASSWORD: $SERVICE_PASSWORD_DB
+    volumes:
+      - pgdata:/var/lib/postgresql/data
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U openproject -d openproject"]
+      interval: 5s
+      timeout: 5s
+      retries: 10
+      start_period: 10s
+  cache:
+    image: memcached:1.6-alpine
+    healthcheck:
+      test: ["CMD-SHELL", "nc -z 127.0.0.1 11211"]
+      interval: 10s
+      timeout: 3s
+      retries: 5
+      start_period: 5s
+volumes:
+  pgdata:
+  opdata:

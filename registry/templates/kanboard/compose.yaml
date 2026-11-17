@@ -1,0 +1,12 @@
+services:
+  kanboard:
+    image: kanboard/kanboard:v1.2.54
+    ports: ["80:80"]
+    volumes:
+      - kanboard_data:/var/www/app/data
+      - kanboard_plugins:/var/www/app/plugins
+    healthcheck:
+      test: ["CMD-SHELL", "curl -fsS -o /dev/null http://127.0.0.1:80/"]
+      interval: 10s
+      timeout: 5s
+      retries: 3

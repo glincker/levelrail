@@ -1,0 +1,39 @@
+services:
+  freescout:
+    image: ghcr.io/nfrastack/container-freescout:latest
+    ports: ["8080:80"]
+    environment:
+      DB_HOST: mariadb
+      DB_NAME: freescout
+      DB_USER: freescout
+      DB_PASS: $SERVICE_PASSWORD_DB
+      SITE_URL: ${SERVICE_URL_FREESCOUT:-http://localhost:8080}
+      ADMIN_EMAIL: admin@example.com
+      ADMIN_PASS: $SERVICE_PASSWORD_ADMIN
+      DISPLAY_ERRORS: "FALSE"
+      TIMEZONE: UTC
+    volumes:
+      - freescout_data:/data
+      - freescout_logs:/www/logs
+    depends_on: [mariadb]
+    healthcheck:
+      test: ["CMD", "curl", "-f", "http://127.0.0.1/"]
+      interval: 10s
+      timeout: 10s
+      retries: 15
+      start_period: 15s
+  mariadb:
+    image: mariadb:11
+    environment:
+      MARIADB_ROOT_PASSWORD: $SERVICE_PASSWORD_ROOT
+      MARIADB_DATABASE: freescout
+      MARIADB_USER: freescout
+      MARIADB_PASSWORD: $SERVICE_PASSWORD_DB
+    volumes:
+      - freescout_db_data:/var/lib/mysql
+    healthcheck:
+      test: ["CMD", "healthcheck.sh", "--connect", "--innodb_initialized"]
+      interval: 5s
+      timeout: 10s
+      retries: 15
+      start_period: 15s

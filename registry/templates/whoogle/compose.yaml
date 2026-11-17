@@ -1,0 +1,14 @@
+services:
+  whoogle:
+    image: benbusby/whoogle-search:0.9.3
+    ports: ["5000:5000"]
+    environment:
+      WHOOGLE_CONFIG_COUNTRY: US
+      WHOOGLE_CONFIG_LANGUAGE: lang_en
+    volumes:
+      - whoogle_data:/config
+    healthcheck:
+      test: ["CMD", "curl", "-f", "http://127.0.0.1:5000"]
+      interval: 10s
+      timeout: 10s
+      retries: 5

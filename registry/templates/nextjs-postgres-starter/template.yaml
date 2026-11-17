@@ -1,0 +1,12 @@
+id: nextjs-postgres-starter
+name: Next.js + PostgreSQL
+slogan: The SSR-plus-database pairing behind most Next.js apps, wired with a healthchecked Postgres.
+category: Starter Kits
+documentation_url: https://nextjs.org/docs/app/building-your-application/deploying
+recommended_memory_bytes: 402653184
+requires_gpu: false
+platforms:
+    - linux/amd64
+    - linux/arm
+    - linux/arm64
+    - linux/s390x

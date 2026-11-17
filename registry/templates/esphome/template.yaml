@@ -1,0 +1,71 @@
+id: esphome
+name: ESPHome
+slogan: A dashboard to build, flash and manage firmware for ESP32 and ESP8266 smart home devices.
+description: A dashboard to build, flash and manage firmware for ESP32 and ESP8266 smart home devices.
+category: Applications
+documentation_url: https://esphome.io/
+recommended_memory_bytes: 536870912
+requires_gpu: false
+manifest:
+    id: esphome
+    name: ESPHome
+    description: A dashboard to build, flash and manage firmware for ESP32 and ESP8266 smart home devices.
+    icon: cpu
+    category: Applications
+    documentation_url: https://esphome.io/
+    source_repo: https://github.com/esphome/esphome
+    license: GPL-3.0-only
+    license_class: copyleft
+    license_url: https://github.com/esphome/esphome/blob/HEAD/LICENSE
+    hosted_use: ""
+    listing:
+        by: community
+        vendor_org: ""
+        proof: ""
+    status: active
+    status_reason: ""
+    replaced_by: ""
+    aliases: []
+    first_run:
+        - Sign in as admin with the generated password.
+    compose_file: compose.yaml
+    recommended_memory_bytes: 536870912
+    env:
+        - key: TZ
+          label: Time zone
+          description: IANA time zone for logs and schedules.
+          default: Etc/UTC
+          generate: ""
+          length: 0
+          required: false
+          secret: false
+          type: ""
+          service: ""
+          path: ""
+          mode: ""
+        - key: ADMIN_PASSWORD
+          label: Dashboard password
+          description: Password for the admin user of the dashboard.
+          default: ""
+          generate: password
+          length: 24
+          required: false
+          secret: true
+          type: ""
+          service: ""
+          path: ""
+          mode: ""
+    domains:
+        - service: esphome
+          port: 6052
+          description: Public address of ESPHome.
+    healthcheck:
+        service: esphome
+        port: 6052
+        path: /
+        expect: 401
+        kind: ""
+        reason: ""
+    first_boot_seconds: 0
+    console_command: []
+    capabilities: []

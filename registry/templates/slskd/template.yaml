@@ -1,0 +1,83 @@
+id: slskd
+name: slskd
+slogan: A modern web client and server for the Soulseek peer to peer network, with a REST API.
+description: A modern web client and server for the Soulseek peer to peer network, with a REST API.
+category: Media
+documentation_url: https://github.com/slskd/slskd
+recommended_memory_bytes: 268435456
+requires_gpu: false
+manifest:
+    id: slskd
+    name: slskd
+    description: A modern web client and server for the Soulseek peer to peer network, with a REST API.
+    icon: share-network
+    category: Media
+    documentation_url: https://github.com/slskd/slskd
+    source_repo: https://github.com/slskd/slskd
+    license: AGPL-3.0-only
+    license_class: network-copyleft
+    license_url: https://github.com/slskd/slskd/blob/HEAD/LICENSE
+    hosted_use: ""
+    listing:
+        by: community
+        vendor_org: ""
+        proof: ""
+    status: active
+    status_reason: ""
+    replaced_by: ""
+    aliases: []
+    first_run:
+        - Sign in as admin with the generated web password.
+    compose_file: compose.yaml
+    recommended_memory_bytes: 268435456
+    env:
+        - key: SLSK_USERNAME
+          label: Soulseek username
+          description: Your account name on the Soulseek network.
+          default: ""
+          generate: ""
+          length: 0
+          required: true
+          secret: false
+          type: ""
+          service: ""
+          path: ""
+          mode: ""
+        - key: SLSK_PASSWORD
+          label: Soulseek password
+          description: Your password on the Soulseek network.
+          default: ""
+          generate: ""
+          length: 0
+          required: true
+          secret: true
+          type: ""
+          service: ""
+          path: ""
+          mode: ""
+        - key: ADMIN_PASSWORD
+          label: Web password
+          description: Password for the admin user of the web interface.
+          default: ""
+          generate: password
+          length: 24
+          required: false
+          secret: true
+          type: ""
+          service: ""
+          path: ""
+          mode: ""
+    domains:
+        - service: slskd
+          port: 5030
+          description: Public address of slskd.
+    healthcheck:
+        service: slskd
+        port: 5030
+        path: /health
+        expect: 0
+        kind: ""
+        reason: ""
+    first_boot_seconds: 0
+    console_command: []
+    capabilities: []

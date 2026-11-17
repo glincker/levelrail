@@ -1,0 +1,13 @@
+services:
+  apprise-api:
+    image: caronc/apprise:1.5.4
+    ports: ["8000:8000"]
+    volumes:
+      - apprise_config:/config
+      - apprise_attach:/attachments
+    healthcheck:
+      test: ["CMD-SHELL", "curl -fsS -o /dev/null http://127.0.0.1:8000/status || wget -q -O /dev/null http://127.0.0.1:8000/status || exit 1"]
+      interval: 30s
+      timeout: 5s
+      retries: 3
+      start_period: 30s

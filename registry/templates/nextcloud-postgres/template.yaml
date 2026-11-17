@@ -1,0 +1,71 @@
+id: nextcloud-postgres
+name: Nextcloud with Postgres and Redis
+slogan: Nextcloud file sync, sharing and collaboration on the official image with a bundled Postgres database and a Redis cache for file locking. The admin account is created on first start with the generated password.
+description: Nextcloud file sync, sharing and collaboration on the official image with a bundled Postgres database and a Redis cache for file locking. The admin account is created on first start with the generated password.
+category: Storage
+documentation_url: https://docs.nextcloud.com/server/latest/admin_manual/installation/
+recommended_memory_bytes: 1610612736
+requires_gpu: false
+manifest:
+    id: nextcloud-postgres
+    name: Nextcloud with Postgres and Redis
+    description: Nextcloud file sync, sharing and collaboration on the official image with a bundled Postgres database and a Redis cache for file locking. The admin account is created on first start with the generated password.
+    icon: cloud
+    category: Storage
+    documentation_url: https://docs.nextcloud.com/server/latest/admin_manual/installation/
+    source_repo: https://github.com/nextcloud/server
+    license: AGPL-3.0-or-later
+    license_class: network-copyleft
+    license_url: https://github.com/nextcloud/server/blob/HEAD/LICENSE
+    hosted_use: allowed
+    listing:
+        by: community
+        vendor_org: ""
+        proof: ""
+    status: active
+    status_reason: ""
+    replaced_by: ""
+    aliases: []
+    first_run:
+        - Sign in as admin with the generated admin password from the app secrets. First start takes a minute while the database is prepared.
+    compose_file: compose.yaml
+    recommended_memory_bytes: 1610612736
+    env:
+        - key: DB_PASSWORD
+          label: Database password
+          description: Password for the bundled database. Generated once and reused on every redeploy.
+          default: ""
+          generate: password
+          length: 32
+          required: false
+          secret: true
+          type: ""
+          service: ""
+          path: ""
+          mode: ""
+        - key: ADMIN_PASSWORD
+          label: Admin password
+          description: Password of the admin user created on first start.
+          default: ""
+          generate: password
+          length: 24
+          required: false
+          secret: true
+          type: ""
+          service: ""
+          path: ""
+          mode: ""
+    domains:
+        - service: nextcloud
+          port: 80
+          description: Public address of Nextcloud.
+    healthcheck:
+        service: nextcloud
+        port: 80
+        path: /status.php
+        expect: 0
+        kind: ""
+        reason: ""
+    first_boot_seconds: 0
+    console_command: []
+    capabilities: []

@@ -1,0 +1,10 @@
+services:
+  unpoller:
+    image: ghcr.io/unpoller/unpoller:v5.9.5
+    ports: ["9130"]
+    healthcheck:
+      test: ["CMD", "/usr/bin/unpoller", "--health"]
+      interval: 15s
+      timeout: 8s
+      retries: 10
+      start_period: 30s

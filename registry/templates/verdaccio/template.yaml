@@ -1,0 +1,10 @@
+id: verdaccio
+name: Verdaccio
+slogan: A lightweight private npm proxy registry with caching and local package publishing.
+category: Developer Tools
+documentation_url: https://verdaccio.org/docs/installation
+recommended_memory_bytes: 268435456
+requires_gpu: false
+platforms:
+    - linux/amd64
+    - linux/arm64

@@ -1,0 +1,10 @@
+id: langfuse
+name: Langfuse
+slogan: Trace, evaluate, and debug LLM applications with prompt management and cost analytics.
+category: AI
+documentation_url: https://langfuse.com/self-hosting
+recommended_memory_bytes: 4294967296
+requires_gpu: false
+platforms:
+    - linux/amd64
+    - linux/arm64

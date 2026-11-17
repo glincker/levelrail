@@ -1,0 +1,13 @@
+services:
+  scylladb:
+    image: scylladb/scylla:2026.3.5
+    ports: ["9042"]
+    command: ["--smp", "1", "--memory", "512M", "--developer-mode", "1", "--overprovisioned", "1"]
+    volumes:
+      - scylla_data:/var/lib/scylla
+    healthcheck:
+      test: ["CMD-SHELL", "nodetool status > /dev/null 2>&1 || exit 1"]
+      interval: 15s
+      timeout: 8s
+      retries: 10
+      start_period: 60s

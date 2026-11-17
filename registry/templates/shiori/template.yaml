@@ -1,0 +1,11 @@
+id: shiori
+name: Shiori
+slogan: A simple bookmark manager with offline archiving, built as a single Go binary.
+category: Productivity
+documentation_url: https://github.com/go-shiori/shiori/tree/master/docs
+recommended_memory_bytes: 134217728
+requires_gpu: false
+platforms:
+    - linux/amd64
+    - linux/arm
+    - linux/arm64

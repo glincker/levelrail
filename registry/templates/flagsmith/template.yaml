@@ -1,0 +1,62 @@
+id: flagsmith
+name: Flagsmith
+slogan: A feature flag and remote config service with a dashboard, environments, segments and an SDK API. Runs the API and dashboard in one container with a bundled Postgres database. On first open, the sign-up page creates the first organisation and admin.
+description: A feature flag and remote config service with a dashboard, environments, segments and an SDK API. Runs the API and dashboard in one container with a bundled Postgres database. On first open, the sign-up page creates the first organisation and admin.
+category: Developer Tools
+documentation_url: https://docs.flagsmith.com/
+recommended_memory_bytes: 805306368
+requires_gpu: false
+platforms:
+    - linux/amd64
+    - linux/arm64
+manifest:
+    id: flagsmith
+    name: Flagsmith
+    description: A feature flag and remote config service with a dashboard, environments, segments and an SDK API. Runs the API and dashboard in one container with a bundled Postgres database. On first open, the sign-up page creates the first organisation and admin.
+    icon: flag
+    category: Developer Tools
+    documentation_url: https://docs.flagsmith.com/
+    source_repo: https://github.com/Flagsmith/flagsmith
+    license: BSD-3-Clause
+    license_class: permissive
+    license_url: https://github.com/Flagsmith/flagsmith/blob/main/LICENSE
+    hosted_use: unknown
+    listing:
+        by: community
+        vendor_org: ""
+        proof: ""
+    status: active
+    status_reason: ""
+    replaced_by: ""
+    aliases: []
+    first_run:
+        - Open the app and sign up. The first account becomes the organisation admin.
+    compose_file: compose.yaml
+    recommended_memory_bytes: 805306368
+    env:
+        - key: TZ
+          label: Time zone
+          description: IANA time zone for dates and logs.
+          default: Etc/UTC
+          generate: ""
+          length: 0
+          required: false
+          secret: false
+          type: ""
+          service: ""
+          path: ""
+          mode: ""
+    domains:
+        - service: flagsmith
+          port: 8000
+          description: Public address of the Flagsmith dashboard and API.
+    healthcheck:
+        service: flagsmith
+        port: 8000
+        path: /health
+        expect: 0
+        kind: ""
+        reason: ""
+    first_boot_seconds: 0
+    console_command: []
+    capabilities: []

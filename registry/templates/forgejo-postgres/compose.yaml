@@ -1,0 +1,34 @@
+services:
+  forgejo:
+    image: codeberg.org/forgejo/forgejo:9.0.3
+    ports: ["3000:3000"]
+    environment:
+      FORGEJO__server__ROOT_URL: ${SERVICE_URL_FORGEJO:-http://localhost:3000}
+      FORGEJO__security__SECRET_KEY: $SERVICE_HEX_64_SECRETKEY
+      FORGEJO__database__DB_TYPE: postgres
+      FORGEJO__database__HOST: db:5432
+      FORGEJO__database__NAME: forgejo
+      FORGEJO__database__USER: forgejo
+      FORGEJO__database__PASSWD: $SERVICE_PASSWORD_DB
+    volumes:
+      - forgejo_postgres_data:/data
+    depends_on: [db]
+    healthcheck:
+      test: ["CMD-SHELL", "curl -fsS -o /dev/null http://127.0.0.1:3000/api/healthz"]
+      interval: 10s
+      timeout: 5s
+      retries: 3
+      start_period: 30s
+  db:
+    image: postgres:16-alpine
+    environment:
+      POSTGRES_USER: forgejo
+      POSTGRES_PASSWORD: $SERVICE_PASSWORD_DB
+      POSTGRES_DB: forgejo
+    volumes:
+      - forgejo_postgres_db_data:/var/lib/postgresql/data
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U forgejo -d forgejo"]
+      interval: 5s
+      timeout: 5s
+      retries: 10

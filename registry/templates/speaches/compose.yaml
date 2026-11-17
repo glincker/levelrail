@@ -1,0 +1,14 @@
+services:
+  speaches:
+    image: ghcr.io/speaches-ai/speaches:0.8.3-cpu
+    ports: ["8000:8000"]
+    environment:
+      ENABLE_UI: "true"
+    volumes:
+      - speaches_models:/home/ubuntu/.cache/huggingface/hub
+    healthcheck:
+      test: ["CMD-SHELL", "curl -fsS -o /dev/null http://127.0.0.1:8000/health || wget -q -O /dev/null http://127.0.0.1:8000/health || exit 1"]
+      interval: 30s
+      timeout: 5s
+      retries: 3
+      start_period: 60s

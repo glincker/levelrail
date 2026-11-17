@@ -1,0 +1,10 @@
+id: supertokens
+name: SuperTokens
+slogan: A self-hosted authentication backend with session management, social login, and passwordless, backed by Postgres.
+category: Security
+documentation_url: https://supertokens.com/docs/
+recommended_memory_bytes: 268435456
+requires_gpu: false
+platforms:
+    - linux/amd64
+    - linux/arm64

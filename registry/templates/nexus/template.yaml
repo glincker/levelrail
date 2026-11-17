@@ -1,0 +1,10 @@
+id: nexus
+name: Sonatype Nexus Repository
+slogan: A universal artifact repository for Maven, npm, Docker, PyPI, and more, with proxying and caching.
+category: Developer Tools
+documentation_url: https://help.sonatype.com/en/sonatype-nexus-repository.html
+recommended_memory_bytes: 3221225472
+requires_gpu: false
+platforms:
+    - linux/amd64
+    - linux/arm64

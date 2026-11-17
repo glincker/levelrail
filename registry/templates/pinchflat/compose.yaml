@@ -1,0 +1,13 @@
+services:
+  pinchflat:
+    image: ghcr.io/kieraneglin/pinchflat:latest
+    ports: ["8945:8945"]
+    volumes:
+      - pinchflat_config:/config
+      - pinchflat_downloads:/downloads
+    healthcheck:
+      test: ["CMD-SHELL", "curl -fsS -o /dev/null http://127.0.0.1:8945/healthcheck || wget -q -O /dev/null http://127.0.0.1:8945/healthcheck || exit 1"]
+      interval: 30s
+      timeout: 5s
+      retries: 3
+      start_period: 30s

@@ -1,0 +1,10 @@
+id: speaches
+name: Speaches
+slogan: 'An OpenAI-compatible speech server: Whisper transcription and text-to-speech behind one API.'
+category: AI
+documentation_url: https://speaches.ai
+recommended_memory_bytes: 2147483648
+requires_gpu: false
+platforms:
+    - linux/amd64
+    - linux/arm64

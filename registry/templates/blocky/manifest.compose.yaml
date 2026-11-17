@@ -1,0 +1,14 @@
+services:
+  blocky:
+    image: ghcr.io/0xerr0r/blocky:v0.36.0
+    ports: ["4000", "5353"]
+    command: ["--config", "/app/config.yml"]
+    healthcheck:
+      test: ["NONE"]
+    x-levelrail-healthcheck:
+      kind: tcp
+      port: 4000
+      interval: 15s
+      timeout: 8s
+      retries: 10
+      start_period: 20s

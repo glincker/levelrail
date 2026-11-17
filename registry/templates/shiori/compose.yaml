@@ -1,0 +1,12 @@
+services:
+  shiori:
+    image: ghcr.io/go-shiori/shiori:v1.7.1
+    ports: ["8080:8080"]
+    volumes:
+      - shiori_data:/shiori
+    healthcheck:
+      test: ["CMD-SHELL", "wget -q -O /dev/null http://127.0.0.1:8080/ || exit 1"]
+      interval: 10s
+      timeout: 5s
+      retries: 3
+      start_period: 15s

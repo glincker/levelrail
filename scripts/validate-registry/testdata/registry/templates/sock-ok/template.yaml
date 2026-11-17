@@ -1,0 +1,6 @@
+id: sock-ok
+name: Sock
+slogan: Needs the socket on purpose.
+category: Developer Tools
+documentation_url: https://example.com
+requires_docker_socket: true

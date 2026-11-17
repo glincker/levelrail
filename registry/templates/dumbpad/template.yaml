@@ -1,0 +1,13 @@
+# Adapted from Dokploy/templates (MIT, Copyright (c) 2024 Dokploy and Carlos Ortiz)
+id: dumbpad
+name: DumbPad
+slogan: A simple notepad with auto-save and optional PIN protection.
+description: GPL 3.0 licensed. Set the DUMBPAD_PIN environment variable to require a PIN to open the notes.
+category: Productivity
+documentation_url: https://github.com/DumbWareio/DumbPad
+recommended_memory_bytes: 134217728
+requires_gpu: false
+source_repo: https://github.com/DumbWareio/DumbPad
+license: GPL-3.0
+license_class: copyleft
+license_url: https://github.com/DumbWareio/DumbPad/blob/main/LICENSE

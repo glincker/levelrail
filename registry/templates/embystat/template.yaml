@@ -1,0 +1,10 @@
+id: embystat
+name: EmbyStat
+slogan: Watch statistics and insight dashboards for your Emby or Jellyfin server.
+category: Analytics
+documentation_url: https://github.com/mregni/EmbyStat
+recommended_memory_bytes: 268435456
+requires_gpu: false
+platforms:
+    - linux/amd64
+    - linux/arm64

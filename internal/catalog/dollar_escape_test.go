@@ -5,9 +5,10 @@ import (
 	"testing"
 )
 
-// The platform never unescapes `$$` in template compose text, so `sh -c`
-// expands it to its PID and silently breaks the intended variable.
-var dollarEscapeAllowlist = map[string]string{}
+// `$$` is Compose's escape: the engine hands the container a literal `$`
+// (command, entrypoint, healthcheck, environment). A template that needs a
+// container-side variable in `sh -c` must use it, and it is never resolved
+// as a magic variable.
 
 type dollarHit struct {
 	Service string
@@ -48,13 +49,25 @@ func TestDollarEscape_CheckerCatchesOldMosquittoLine(t *testing.T) {
 	}
 }
 
-func TestDollarEscape_NoTemplateUsesDoubleDollar(t *testing.T) {
+func TestDollarEscape_DoubleDollarIsLegalAndUnescaped(t *testing.T) {
+	for _, id := range []string{"novu", "argilla", "automatisch", "zitadel"} {
+		tpl, ok := TemplateByID(id)
+		if !ok {
+			t.Fatalf("%s not served", id)
+		}
+		if id != "zitadel" && len(findDollarEscapes(tpl.Compose)) == 0 {
+			t.Errorf("%s no longer uses $$; the escape test lost its coverage", id)
+		}
+	}
+	// The compiled catalog predates the escape: none of those may carry one.
 	for _, tpl := range Templates {
-		if _, ok := dollarEscapeAllowlist[tpl.ID]; ok {
+		if len(findDollarEscapes(tpl.Compose)) == 0 {
 			continue
 		}
-		for _, h := range findDollarEscapes(tpl.Compose) {
-			t.Errorf("template %q service %q line %d uses $$ (not unescaped by the platform, use $VAR): %s", tpl.ID, h.Service, h.Line, h.Text)
+		switch tpl.ID {
+		case "novu", "argilla", "automatisch":
+		default:
+			t.Errorf("template %q unexpectedly uses $$", tpl.ID)
 		}
 	}
 }

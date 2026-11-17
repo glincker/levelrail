@@ -1,0 +1,32 @@
+services:
+  glpi:
+    image: glpi/glpi:11.0.11
+    ports: ["8080:80"]
+    environment:
+      GLPI_DB_HOST: glpi-db
+      GLPI_DB_NAME: glpi
+      GLPI_DB_USER: glpi
+      GLPI_DB_PASSWORD: $SERVICE_PASSWORD_DB
+    volumes:
+      - glpi_data:/var/glpi
+    depends_on: [glpi-db]
+    healthcheck:
+      test: ["CMD", "curl", "-f", "http://127.0.0.1"]
+      interval: 15s
+      timeout: 10s
+      retries: 5
+      start_period: 30s
+  glpi-db:
+    image: mysql:8.4
+    environment:
+      MYSQL_DATABASE: glpi
+      MYSQL_USER: glpi
+      MYSQL_PASSWORD: $SERVICE_PASSWORD_DB
+      MYSQL_ROOT_PASSWORD: $SERVICE_PASSWORD_64_DBROOT
+    volumes:
+      - glpi_mysql_data:/var/lib/mysql
+    healthcheck:
+      test: ["CMD", "mysqladmin", "ping", "-h", "127.0.0.1"]
+      interval: 10s
+      timeout: 10s
+      retries: 5
