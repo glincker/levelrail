@@ -285,7 +285,7 @@ func validateFolder(folder, id string, cats map[string]bool) []Problem {
 		add(ruleCategory, "unknown category %q", m.Category)
 	}
 	if m.Icon != "" && !iconRe.MatchString(m.Icon) {
-		add(ruleIcon, "icon %q must match ^[a-z0-9-]+$", m.Icon)
+		add(ruleIcon, "icon %q must be a thesvg slug of lowercase letters, digits and hyphens (^[a-z0-9-]+$)", m.Icon)
 	}
 	if !inCatalog(id) {
 		ps = append(ps, validateMarketplace(id, m)...)

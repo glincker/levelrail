@@ -34,7 +34,8 @@ registry/templates/<id>/compose.yaml
 - No `privileged: true`, no `network_mode: host`, no mount of `/`.
 - The Docker socket is never mounted. Levelrail refuses it at deploy time, so a template that needs it cannot be listed.
 - Published ports are container-only, for example `"3000"`, not `"3000:3000"`.
-- `icon`, when set, is a lowercase slug matching `^[a-z0-9-]+$`. It is not checked against the icon library yet.
+- `icon`, when set, is a thesvg slug: lowercase letters, digits and hyphens (`^[a-z0-9-]+$`). The validator checks the format only, not that the icon exists.
+- If the icon is missing from thesvg, request it there. Until it exists the template shows a letter monogram.
 
 ## Run it locally
 
