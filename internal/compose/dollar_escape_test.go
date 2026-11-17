@@ -50,3 +50,36 @@ func TestResolveMagicVars_UnescapedMagicInCommandStillUnresolved(t *testing.T) {
 		t.Fatalf("err=%v unresolved=%v, want secrets in argv kept unresolved", err, unresolved)
 	}
 }
+
+func resolveBody(t *testing.T, body string) *File {
+	t.Helper()
+	f, err := Parse([]byte(body))
+	if err != nil {
+		t.Fatal(err)
+	}
+	gen := func(string, string, int) (string, error) { return "SECRET", nil }
+	if _, un, err := ResolveMagicVars(f, gen, func(string, string, string) error { return nil }); err != nil || len(un) != 0 {
+		t.Fatalf("err=%v unresolved=%v", err, un)
+	}
+	return f
+}
+
+func TestFromDesiredServices_DollarEscapeRoundTrip(t *testing.T) {
+	body := "services:\n  a:\n    image: x:1\n" +
+		"    entrypoint: [\"sh\", \"-c\", 'echo $$VAR $$$$ $${X}']\n" +
+		"    command: [\"sh\", \"-c\", 'echo $$VAR $$$$ $${X}']\n"
+	f1 := resolveBody(t, body)
+	ds, _, err := ToDesiredServices("app", f1)
+	if err != nil {
+		t.Fatal(err)
+	}
+	out, err := FromDesiredServices("app", ds)
+	if err != nil {
+		t.Fatal(err)
+	}
+	f2 := resolveBody(t, out)
+	a, b := f1.Services["a"], f2.Services["a"]
+	if a.Command[2] != "echo $VAR $$ ${X}" || a.Command[2] != b.Command[2] || a.Entrypoint[2] != b.Entrypoint[2] {
+		t.Fatalf("round trip changed argv: %q vs %q", a.Command, b.Command)
+	}
+}
