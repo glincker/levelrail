@@ -452,6 +452,7 @@
             "pages": [
               "iac/index",
               "iac/templates",
+              "iac/template-app",
               "iac/how-it-works",
               "iac/ci",
               "iac/github-action",
