@@ -14,6 +14,7 @@ Usage:
   levelrail-cli nodes domains                                               capacity per provider, region and zone, and single-domain warnings
   levelrail-cli nodes get <id> [flags]                                      show one node
   levelrail-cli nodes delete <id> [flags]                                    delete a node (fails if it still has placements, drain first)
+  levelrail-cli nodes import --provider NAME --instance-id ID [--name N] [--mesh]   mint a join token for an existing cloud instance, nothing on the instance is changed
   levelrail-cli nodes join-token [flags]                                     mint a one-time enrollment token, shown once
   levelrail-cli nodes join-tokens [flags]                                    list pending (unused, unexpired) join tokens
   levelrail-cli nodes revoke-join-token <id>|--all [flags]                   revoke pending join tokens at once
@@ -25,6 +26,7 @@ Usage:
   levelrail-cli nodes resources <id> [flags]                                 list the apps and databases placed on a node
   levelrail-cli nodes move <app|database> <name> [--to ID] [--wait] [flags]  move one app or database, verified, with rollback
   levelrail-cli nodes moves [--kind K] [--resource N] [flags]                list node moves
+  levelrail-cli nodes groups list | show <key=value[,key=value]> [flags]      device groups (label selectors)
   levelrail-cli nodes labels <id> [key=value ...] [flags]                    show or replace a node's labels
   levelrail-cli nodes taint <id> [key[=value]:Effect ...] [--clear]          show or replace the taints that keep workloads off a node
   levelrail-cli nodes placement <app|database> <name> [key=value ...]        show or set which node labels a resource requires
@@ -127,7 +129,7 @@ Flags:
 
 ## levelrail-cli nodes providers
 
-Subcommands: capabilities, connect, disconnect, list, regions, set-credential, sizes, test
+Subcommands: capabilities, connect, disconnect, list, regions, servers, set-credential, sizes, test
 
 ```
 Usage:
@@ -135,6 +137,7 @@ Usage:
   levelrail-cli nodes providers connect --provider NAME [--method METHOD] [flags]   connect a provider (tests it first unless --verify=false)
   levelrail-cli nodes providers regions --provider NAME [flags]                       list the provider's regions
   levelrail-cli nodes providers sizes --provider NAME [--region ID] [flags]           list the provider's sizes (oracle Flex sizes are ids like VM.Standard.A1.Flex:1:6)
+  levelrail-cli nodes providers servers --provider NAME [--region ID] [--refresh] [flags]   list machines already in the account (for nodes import)
   levelrail-cli nodes providers test --provider NAME [flags]                          run a read-only connection test against the stored credential
   levelrail-cli nodes providers capabilities --provider NAME [--refresh] [flags]      show which permissions the stored token has (granted, missing, unknown)
   levelrail-cli nodes providers disconnect --provider NAME [flags]                    remove the stored credential

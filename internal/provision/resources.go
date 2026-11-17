@@ -43,6 +43,12 @@ type ResourceLister interface {
 	ListResources(ctx context.Context) ([]ProviderResource, error)
 }
 
+// RegionResourceLister is optional: providers whose machine list is scoped
+// to a region can list any one region on request.
+type RegionResourceLister interface {
+	ListServers(ctx context.Context, region string) ([]ProviderResource, error)
+}
+
 // BillingReader is optional on a provisioner: it reads the billed amounts
 // the provider exposes. Each section carries its own state so a missing
 // scope on one does not hide the other.

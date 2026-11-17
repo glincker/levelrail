@@ -194,6 +194,20 @@ never touching a file without it), with these additions:
   `tls_terminated_upstream` are left as they were.
 - Turning the integration off removes the files and reloads nginx.
 
+Day to day, from the CLI:
+
+```bash
+levelrail-cli proxy routes     # one line per managed route: domain, upstream app, file, state, certificate
+levelrail-cli proxy status     # detected nginx, saved settings, routes and setup steps
+levelrail-cli proxy apply      # rewrite the files, run nginx -t, reload only when it passes
+levelrail-cli proxy verify --domain app.example.com   # resolve, request over HTTPS, read the certificate
+levelrail-cli proxy disable    # remove the files and reload nginx
+```
+
+`proxy routes` reads what Levelrail last wrote and checked; it does not parse
+your own nginx files. There is no separate `proxy test` or `proxy reload`:
+`proxy apply` is the single path that runs `nginx -t` and reloads.
+
 ## When the proxy you chose is not running
 
 Pick Traefik or nginx on Network, Proxy while nothing of that kind holds ports 80

@@ -182,3 +182,29 @@ func TestProviderSpend_BillingAndDropletsScopeMissingPerSection(t *testing.T) {
 		t.Fatalf("report = %+v", rep)
 	}
 }
+
+type regionalDiscoveryProvisioner struct {
+	fakeDiscoveryProvisioner
+	regionsAsked []string
+}
+
+func (f *regionalDiscoveryProvisioner) ListServers(_ context.Context, region string) ([]provision.ProviderResource, error) {
+	f.regionsAsked = append(f.regionsAsked, region)
+	return []provision.ProviderResource{{ID: region + "/i-1", Region: region}}, nil
+}
+
+func TestProviderResources_RegionQueryIsValidatedAndPassed(t *testing.T) {
+	f := &regionalDiscoveryProvisioner{}
+	f.regions = []provision.Region{{ID: "eu-west-1", Name: "Ireland"}}
+	rt := newDiscoveryRouter(t, &f.fakeDiscoveryProvisioner)
+	rt.nodeProvisionerFactory = func(string, string) (NodeProvisioner, error) { return f, nil }
+
+	bad := discoveryGet(rt, rt.handleListNodeProviderResources, "resources", "?region=mars-1")
+	if bad.Code != http.StatusBadRequest || len(f.regionsAsked) != 0 {
+		t.Fatalf("unknown region: code %d asked %v", bad.Code, f.regionsAsked)
+	}
+	ok := discoveryGet(rt, rt.handleListNodeProviderResources, "resources", "?region=eu-west-1")
+	if ok.Code != http.StatusOK || len(f.regionsAsked) != 1 || f.regionsAsked[0] != "eu-west-1" || !strings.Contains(ok.Body.String(), "eu-west-1/i-1") {
+		t.Fatalf("code %d asked %v body %s", ok.Code, f.regionsAsked, ok.Body.String())
+	}
+}

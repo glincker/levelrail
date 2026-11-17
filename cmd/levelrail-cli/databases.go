@@ -93,6 +93,8 @@ func runDatabases(prog string, args []string, stdout, stderr io.Writer, lookupEn
 		return runDatabasesRotatePassword(prog, rest, stdout, stderr, lookupEnv)
 	case "credentials":
 		return runDatabasesCredentials(prog, rest, stdout, stderr, lookupEnv)
+	case "connection-string":
+		return runDatabasesConnectionString(prog, rest, stdout, stderr, lookupEnv)
 	case "users":
 		return runDatabasesUsers(prog, rest, stdout, stderr, lookupEnv)
 	case "access":

@@ -343,3 +343,16 @@ Placement, drain, certificates and the mesh.
 
 </Card>
 </CardGroup>
+
+## Import an existing AWS instance
+
+To bring an EC2 instance you already run under Levelrail, connect AWS, list the instances, then mint a join token for one. Nothing is changed on the instance: Levelrail never connects to it, you run the printed command there.
+
+```bash
+levelrail-cli nodes providers connect --provider aws --method assume_role --role-arn arn:aws:iam::123456789012:role/levelrail --use-ambient-credentials
+levelrail-cli nodes providers test --provider aws
+levelrail-cli nodes providers servers --provider aws --region us-east-1
+levelrail-cli nodes import --provider aws --instance-id i-0abc1234def567890 --name web-1
+```
+
+`servers` lists running and stopped instances. On AWS, `--region` queries that region directly (checked against the account's regions); without it the region the provider was connected with is listed. Other providers list their whole account and `--region` filters it. `import` prints a single-use join token and the agent install command. Run the command on the instance (over your own SSH session) and the node appears once its agent sends a heartbeat.

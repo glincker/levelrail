@@ -23,6 +23,8 @@ func runNodes(prog string, args []string, stdout, stderr io.Writer, lookupEnv fu
 		return runNodesGet(prog, rest, stdout, stderr, lookupEnv)
 	case "delete":
 		return runNodesDelete(prog, rest, stdout, stderr, lookupEnv)
+	case "import":
+		return runNodesImport(prog, rest, stdout, stderr, lookupEnv)
 	case "join-token":
 		return runNodesJoinToken(prog, rest, stdout, stderr, lookupEnv)
 	case "join-tokens":
@@ -99,6 +101,8 @@ func runNodes(prog string, args []string, stdout, stderr io.Writer, lookupEnv fu
 		return runNodesDrains(prog, rest, stdout, stderr, lookupEnv)
 	case "taint":
 		return runNodesTaint(prog, rest, stdout, stderr, lookupEnv)
+	case "groups":
+		return runNodesGroups(prog, rest, stdout, stderr, lookupEnv)
 	case "labels":
 		return runNodesLabels(prog, rest, stdout, stderr, lookupEnv)
 	case "zones":
@@ -138,6 +142,7 @@ func nodesUsage(prog string) string {
   %[1]s nodes domains                                               capacity per provider, region and zone, and single-domain warnings
   %[1]s nodes get <id> [flags]                                      show one node
   %[1]s nodes delete <id> [flags]                                    delete a node (fails if it still has placements, drain first)
+  %[1]s nodes import --provider NAME --instance-id ID [--name N] [--mesh]   mint a join token for an existing cloud instance, nothing on the instance is changed
   %[1]s nodes join-token [flags]                                     mint a one-time enrollment token, shown once
   %[1]s nodes join-tokens [flags]                                    list pending (unused, unexpired) join tokens
   %[1]s nodes revoke-join-token <id>|--all [flags]                   revoke pending join tokens at once
@@ -149,6 +154,7 @@ func nodesUsage(prog string) string {
   %[1]s nodes resources <id> [flags]                                 list the apps and databases placed on a node
   %[1]s nodes move <app|database> <name> [--to ID] [--wait] [flags]  move one app or database, verified, with rollback
   %[1]s nodes moves [--kind K] [--resource N] [flags]                list node moves
+  %[1]s nodes groups list | show <key=value[,key=value]> [flags]      device groups (label selectors)
   %[1]s nodes labels <id> [key=value ...] [flags]                    show or replace a node's labels
   %[1]s nodes taint <id> [key[=value]:Effect ...] [--clear]          show or replace the taints that keep workloads off a node
   %[1]s nodes placement <app|database> <name> [key=value ...]        show or set which node labels a resource requires
