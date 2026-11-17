@@ -44,6 +44,8 @@ type Options struct {
 	// ComposeEnvApplied maps a compose App to the env digest its stack last
 	// applied, since a compose revision never stores env values.
 	ComposeEnvApplied map[string]string
+	// NoTemplateEnvVars rejects ${{ env.X }} in TemplateApp env, set on the stack path where rendered documents are stored.
+	NoTemplateEnvVars bool
 	// ConfirmDestroy is set server side when the caller typed the stack name;
 	// a prune never removes a compose App without it.
 	ConfirmDestroy bool
@@ -363,12 +365,18 @@ func crossChecks(rs []*Resource) []Issue {
 		}
 		seen[r.Key()] = r
 		hosts := stringList(r.Fields["domains"])
+		if r.tmpl != nil {
+			hosts = hosts[:0:0]
+			for _, h := range sortedKeys(r.tmpl.domains) {
+				hosts = append(hosts, r.tmpl.domains[h])
+			}
+		}
 		if r.Kind == KindDomain {
 			hosts = []string{r.Name}
 		}
 		for _, h := range hosts {
 			app, _ := r.Fields["app"].(string)
-			if r.Kind == KindApp {
+			if r.Kind == KindApp || r.Kind == KindTemplateApp {
 				app = r.Name
 			}
 			if prev, ok := domainOwner[h]; ok && prev != app {

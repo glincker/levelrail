@@ -37,6 +37,7 @@ Codes are frozen: a released code is never renamed or reused, only added to. Mat
 | `cron_job_invalid` | A CronJob name, command, timezone, retries or limits break a rule. | Read the issue line for the field and fix it. |
 | `cron_http_invalid` | The http request of a CronJob breaks a path, method or header rule, or is set together with a command. | Read the issue line, keep the path on the app, and give each header a value or a secretRef. |
 | `alert_rule_invalid` | A threshold AlertRule lacks its metric, comparator or threshold. | Set all three, with a comparator of `>`, `<`, `>=` or `<=`. |
+| `template_app_inputs_changed` | A TemplateApp declares env or domains that differ from what the app was installed with. They apply at install time only. | Remove the app and apply again to change them, or put the original values back. |
 | `dns_name_invalid` | An App `dns.names` entry is not a lowercase letters, digits and hyphens name, is a wildcard, or exceeds a limit. | Use plain names such as `shop`, within the limits of the `dns.internal_*` settings. |
 | `dns_name_reserved` | An App `dns.names` entry is on the reserved list (setting `dns.internal_names_reserved`). | Pick another name. |
 | `dns_name_conflict` | An App `dns.names` entry is the name or extra name of another app. | Pick a name no other app uses. |

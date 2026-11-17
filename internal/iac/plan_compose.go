@@ -167,6 +167,9 @@ func ComposeEnvDigests(files []Source, project string) map[string]string {
 		if r.compose != nil {
 			out[r.Name] = composeEnvDigest(r.compose.env)
 		}
+		if r.tmpl != nil {
+			out[r.Name] = templateInputsDigest(r.tmpl)
+		}
 	}
 	return out
 }

@@ -37,6 +37,9 @@ func FilterProject(docs []*Document, project string) []*Document {
 			keep = apps[specString(d, "app")]
 		case KindLoadBalancer:
 			keep = apps[d.Name]
+		case KindTemplateApp:
+			// Kept so Build can refuse it with a clear message instead of dropping it silently.
+			keep = true
 		case KindTag:
 			keep = tags[d.Name]
 		case KindCloudAccount, KindCloudNetwork, KindCloudInstance, KindCloudBucket:

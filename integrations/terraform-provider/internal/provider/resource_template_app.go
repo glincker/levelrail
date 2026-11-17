@@ -34,18 +34,23 @@ func (r *templateAppResource) Metadata(_ context.Context, req resource.MetadataR
 func (r *templateAppResource) Schema(_ context.Context, _ resource.SchemaRequest, resp *resource.SchemaResponse) {
 	replace := []planmodifier.String{stringplanmodifier.RequiresReplace()}
 	resp.Schema = schema.Schema{
-		Description: "A catalog template installed by id, the same install the dashboard form and a TemplateApp document run. Every input is fixed at install time, so changing one replaces the app.",
+		Description: "A catalog template installed by id, the same install the dashboard form and a TemplateApp document run. env and domains apply at install time only: changing one destroys the app and installs it again onto the surviving named volumes (regenerated passwords can break stateful apps), and a protected app refuses the delete. Use lifecycle prevent_destroy and ignore_changes for env and domains. Terraform state keeps env in plaintext, Sensitive only masks plan output.",
 		Attributes: map[string]schema.Attribute{
 			"id":       schema.StringAttribute{Description: "Identifier assigned by the provider, the app name.", Computed: true, PlanModifiers: []planmodifier.String{stringplanmodifier.UseStateForUnknown()}},
 			"template": schema.StringAttribute{Description: "Catalog template id.", Required: true, PlanModifiers: replace},
 			"name": schema.StringAttribute{Description: "App name. Defaults to the template id.", Optional: true, Computed: true, PlanModifiers: []planmodifier.String{
 				stringplanmodifier.RequiresReplace(), stringplanmodifier.UseStateForUnknown()}},
 			"env": schema.MapAttribute{Description: "Values for the template install form. Keys must be settings the template declares.", Optional: true, Sensitive: true, ElementType: types.StringType,
-				PlanModifiers: []planmodifier.Map{mapplanmodifier.RequiresReplace()}},
+				PlanModifiers: []planmodifier.Map{mapplanmodifier.RequiresReplaceIf(replaceIfSet, "Replaced when a value that was installed changes.", "Replaced when a value that was installed changes.")}},
 			"domains": schema.MapAttribute{Description: "Host per service the template offers a domain for.", Optional: true, ElementType: types.StringType,
-				PlanModifiers: []planmodifier.Map{mapplanmodifier.RequiresReplace()}},
+				PlanModifiers: []planmodifier.Map{mapplanmodifier.RequiresReplaceIf(replaceIfSet, "Replaced when a value that was installed changes.", "Replaced when a value that was installed changes.")}},
 		},
 	}
+}
+
+// replaceIfSet skips the replace when the prior state holds no value, as after an import, which cannot read install inputs back.
+func replaceIfSet(_ context.Context, req planmodifier.MapRequest, resp *mapplanmodifier.RequiresReplaceIfFuncResponse) {
+	resp.RequiresReplace = !req.StateValue.IsNull() && !req.StateValue.Equal(req.PlanValue)
 }
 
 func stringMap(ctx context.Context, m types.Map) (map[string]string, error) {
@@ -99,7 +104,10 @@ func (r *templateAppResource) Read(ctx context.Context, req resource.ReadRequest
 		return
 	}
 	var list struct {
-		Revisions []struct{ Revision int } `json:"revisions"`
+		Revisions []struct {
+			Source     string `json:"source"`
+			TemplateID string `json:"template_id"`
+		} `json:"revisions"`
 	}
 	err := r.client.do(ctx, http.MethodGet, "/api/v1/apps/"+esc(state.Name.ValueString())+"/compose/revisions", nil, &list)
 	if isNotFound(err) || (err == nil && len(list.Revisions) == 0) {
@@ -109,6 +117,10 @@ func (r *templateAppResource) Read(ctx context.Context, req resource.ReadRequest
 	if err != nil {
 		resp.Diagnostics.AddError("Read template app failed", err.Error())
 		return
+	}
+	// After an import the template is unknown, so read it from the latest revision.
+	if state.Template.IsNull() && list.Revisions[0].Source == "template" {
+		state.Template = types.StringValue(list.Revisions[0].TemplateID)
 	}
 	resp.Diagnostics.Append(resp.State.Set(ctx, state)...)
 }

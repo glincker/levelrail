@@ -481,7 +481,7 @@ func (req stackRequest) iac(stack, project string, prune bool) iacRequest {
 	return iacRequest{
 		Files: req.Files, Source: stack, Project: project, Prune: prune, Vars: req.Vars, Secrets: req.Secrets,
 		NoDeploy: req.NoDeploy, ContinueOnError: req.ContinueOnError,
-		confirmDestroy: req.ConfirmDestroy != "" && req.ConfirmDestroy == stack,
+		confirmDestroy: req.ConfirmDestroy != "" && req.ConfirmDestroy == stack, stackRun: true,
 	}
 }
 

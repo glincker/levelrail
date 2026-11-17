@@ -17,7 +17,7 @@ spec:
   template: archivebox
   name: archive           # optional, defaults to metadata.name
   env:                    # the template's install form
-    ADMIN_USERNAME: ${{ env.ARCHIVE_ADMIN }}
+    ADMIN_USERNAME: admin
   domains:                # service: host, only for services the template offers
     archivebox: archive.example.com
 ```
@@ -48,13 +48,15 @@ metadata: { name: archive }
 spec:
   template: archivebox
   env:
-    ADMIN_USERNAME: ${{ env.ARCHIVE_ADMIN }}
+    ADMIN_USERNAME: admin
   domains:
     archivebox: archive.example.com
 ```
 
+For a secret setting, write `${{ env.NAME }}` as the value and pass the variable on the CLI with `--allow-env NAME`. A literal that looks like a secret is refused.
+
 ```bash
-ARCHIVE_ADMIN=admin levelrail apply -f archive.yaml --allow-env ARCHIVE_ADMIN
+levelrail apply -f archive.yaml
 ```
 
 ## What plan and apply check
@@ -64,8 +66,15 @@ ARCHIVE_ADMIN=admin levelrail apply -f archive.yaml --allow-env ARCHIVE_ADMIN
 - Secret looking values must come from `${{ env.NAME }}`, never a literal in the file. The plan shows only a keyed hash of the env values.
 - Apply uses the same install path as the dashboard, so the same permission (deploy) is needed.
 
-## Re-applying
+## Install time only
 
-A second apply with the same file changes nothing. Once an app exists, its template image tags stay pinned, so a later apply does not change the env, domains or images of an installed app. To change those, use the dashboard or recreate the app. If an app with that name exists but was not installed from the same template, the plan fails with an ownership conflict.
+`env` and `domains` are used once, at install. A later apply never changes an installed app, so editing them does not update it. When the control plane has a record of what was installed, a different `env` or `domains` fails the plan with `template_app_inputs_changed`, so CI can catch it. To change them, remove the app and apply again. Image tags stay pinned.
 
-A stack never owns or prunes a `TemplateApp`, because installed apps hold data. Export does not emit `TemplateApp` yet, since the install form values are not recorded.
+If an app with that name exists but its latest revision was not installed from the same template, the plan fails with an ownership conflict.
+
+## Limits
+
+- A stack never owns or prunes a `TemplateApp`, because installed apps hold data.
+- A `TemplateApp` has no project, so it cannot be applied with `--project` or inside a project scoped stack. The plan says so.
+- A server stack keeps its rendered files in every revision, so `env` there cannot use `${{ env.NAME }}`: the value would be stored and returned by the revisions API. Stack applies refuse it. Apply secrets with the CLI, outside a stack.
+- Export does not emit `TemplateApp` yet, since the install form values are not recorded.

@@ -138,3 +138,49 @@ func TestTemplateAppRefusesForeignApp(t *testing.T) {
 		t.Fatalf("plan = %+v", p.Changes)
 	}
 }
+
+func TestTemplateAppLatestRevisionAndChangedInputs(t *testing.T) {
+	opts := Options{Vars: map[string]string{"PW": "x"}}
+	f := newTplFake()
+	f.installed["blog"] = "ghost"
+	res := mustBuild(t, tplDoc, opts)
+	applied := map[string]string{"blog": templateInputsDigest(res[0].tmpl)}
+	same := opts
+	same.ComposeEnvApplied = applied
+	if p := tplPlan(t, f, tplDoc, same); p.Summary.Noop != 1 {
+		t.Fatalf("same inputs: %+v", p.Changes)
+	}
+	changed := opts
+	changed.ComposeEnvApplied = map[string]string{"blog": "other"}
+	if p := tplPlan(t, f, tplDoc, changed); p.Changes[0].Code != CodeTemplateAppInputsChanged {
+		t.Fatalf("changed inputs: %+v", p.Changes)
+	}
+	f.installed["blog"] = "other"
+	if p := tplPlan(t, f, tplDoc, opts); p.Changes[0].Code != CodeOwnershipConflict {
+		t.Fatalf("latest is another template: %+v", p.Changes)
+	}
+}
+
+func TestTemplateAppProjectScopeAndStackVars(t *testing.T) {
+	docs, _ := ParseDocuments([]Source{{Name: "t.yaml", Data: []byte(tplDoc)}})
+	if got := FilterProject(docs, "demo"); len(got) != 1 {
+		t.Fatalf("filter dropped the document: %d", len(got))
+	}
+	_, issues := Build(docs, Options{Project: "demo", Vars: map[string]string{"PW": "x"}})
+	if len(issues) == 0 || !strings.Contains(issues[0].Message, "no project") {
+		t.Fatalf("project scope issues = %+v", issues)
+	}
+	_, issues = Build(docs, Options{NoTemplateEnvVars: true, Vars: map[string]string{"PW": "x"}})
+	if len(issues) == 0 || !strings.Contains(issues[0].Message, "cannot use") {
+		t.Fatalf("stack vars issues = %+v", issues)
+	}
+}
+
+func TestTemplateAppHostClashIsCaught(t *testing.T) {
+	src := tplDoc + "---\nversion: 1\nkind: Domain\nmetadata: {name: blog.example.com}\nspec: {app: other}\n"
+	docs, _ := ParseDocuments([]Source{{Name: "t.yaml", Data: []byte(src)}})
+	_, issues := Build(docs, Options{Vars: map[string]string{"PW": "x"}})
+	if len(issues) == 0 || !strings.Contains(issues[0].Message, "claimed by both") {
+		t.Fatalf("issues = %+v", issues)
+	}
+}

@@ -7,7 +7,7 @@ description: |-
 
 # levelrail_template_app (Resource)
 
-A catalog template installed by id, the same install the dashboard form and a TemplateApp document run. Every input is fixed at install time, so changing one replaces the app.
+A catalog template installed by id, the same install the dashboard form and a TemplateApp document run. `env` and `domains` apply at install time only, and any change replaces the app.
 
 ## Example Usage
 
@@ -38,9 +38,22 @@ resource "levelrail_template_app" "archive" {
 
 - `id` (String) Identifier assigned by the provider, the app name.
 
+## Changes and destroy
+
+`env` and `domains` apply at install time only. Any change destroys the app and installs it again onto the surviving named volumes: a delete keeps volumes unless asked otherwise, and regenerated passwords can break stateful apps such as Postgres. A protected app refuses the delete. Recommended:
+
+```terraform
+lifecycle {
+  prevent_destroy = true
+  ignore_changes  = [env, domains]
+}
+```
+
+Terraform state stores `env` in plaintext. Sensitive only masks plan output, so protect the state.
+
 ## Import
 
-Import by app name.
+Import by app name. The template is read back from the install record. After an import, set `env` and `domains` as installed, or add `ignore_changes`; they cannot be read back.
 
 ```shell
 terraform import levelrail_template_app.example APP_NAME

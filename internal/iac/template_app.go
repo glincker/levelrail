@@ -39,7 +39,19 @@ type wireTemplate struct {
 }
 
 // liveTemplateApp records which templates a live compose app was installed from.
-type liveTemplateApp struct{ templates map[string]bool }
+type liveTemplateApp struct{ latest string }
+
+// templateInputsDigest keys env and domains together, so a changed value shows without being stored.
+func templateInputsDigest(in *templateAppInputs) string {
+	m := map[string]string{}
+	for k, v := range in.env {
+		m["env."+k] = v
+	}
+	for k, v := range in.domains {
+		m["domains."+k] = v
+	}
+	return composeEnvDigest(m)
+}
 
 func buildTemplateApp(d *Document, opts Options, s *issueSink) *Resource {
 	var sp struct {
@@ -57,6 +69,18 @@ func buildTemplateApp(d *Document, opts Options, s *issueSink) *Resource {
 	}
 	if strings.TrimSpace(sp.Template) == "" {
 		s.atCode(CodeInvalidDocument, "spec.template", "template is required: a catalog template id")
+	}
+	if opts.Project != "" {
+		s.atCode(CodeInvalidDocument, "kind", "TemplateApp has no project and cannot be applied with a project scope")
+	}
+	if opts.NoTemplateEnvVars {
+		if n := mapValue(d.SpecNode, "env"); n != nil {
+			for i := 1; i < len(n.Content); i += 2 {
+				if envPlaceRe.MatchString(n.Content[i].Value) {
+					s.atCode(CodeInvalidDocument, "spec.env."+n.Content[i-1].Value, "a stack keeps its rendered files, so TemplateApp env cannot use ${{ env.NAME }} there; apply it with the CLI instead")
+				}
+			}
+		}
 	}
 	env := specEnv(d, s, opts)
 	in := &templateAppInputs{template: sp.Template, env: env, domains: sp.Domains}
@@ -103,11 +127,10 @@ func (l loader) templateAppOf(ctx context.Context, name string) error {
 	if len(list.Revisions) == 0 {
 		return nil
 	}
-	live := &liveTemplateApp{templates: map[string]bool{}}
-	for _, rv := range list.Revisions {
-		if rv.Source == "template" && rv.TemplateID != "" {
-			live.templates[rv.TemplateID] = true
-		}
+	// The list is newest first, only the latest revision says what runs now.
+	live := &liveTemplateApp{}
+	if rv := list.Revisions[0]; rv.Source == "template" {
+		live.latest = rv.TemplateID
 	}
 	l.st.templateApps[name] = live
 	return nil
@@ -131,13 +154,18 @@ func (p *planner) planTemplateApp(r *Resource) {
 		return
 	}
 	if live := p.st.templateApps[r.Name]; live != nil {
-		if !live.templates[in.template] {
+		if live.latest != in.template {
 			p.failCode(r, CodeOwnershipConflict, "app %s exists and was not installed from template %s; pick another name", r.Name, in.template)
 			return
 		}
 		// An installed app keeps its pinned images, so install time inputs are not reapplied.
+		now := templateInputsDigest(in)
+		if applied, known := p.opts.ComposeEnvApplied[r.Name]; known && now != applied {
+			p.failCode(r, CodeTemplateAppInputsChanged, "app %s was installed with other env or domains; they apply at install only, so remove the app and apply again to change them", r.Name)
+			return
+		}
 		it := p.add(r, ActionNoop, nil, nil, nil)
-		if len(in.env) > 0 || len(in.domains) > 0 {
+		if now != "" {
 			it.Warnings = append(it.Warnings, "already installed: env and domains are install time inputs and are not changed by a later apply")
 		}
 		return

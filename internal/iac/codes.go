@@ -52,6 +52,8 @@ const (
 	CodeCronJobInvalid = "cron_job_invalid"
 	// CodeCronHTTPInvalid means the http request of a CronJob breaks a path, method, header or exclusivity rule.
 	CodeCronHTTPInvalid = "cron_http_invalid"
+	// CodeTemplateAppInputsChanged means a TemplateApp declares env or domains that differ from what was installed; they apply at install only.
+	CodeTemplateAppInputsChanged = "template_app_inputs_changed"
 	// CodeAlertRuleInvalid means an AlertRule lacks the fields its type needs.
 	CodeAlertRuleInvalid = "alert_rule_invalid"
 	// CodeDNSNameInvalid means an App dns name breaks the label, wildcard or limit rules.
@@ -131,7 +133,7 @@ var AllCodes = []string{
 	CodeSchemaUnknownField, CodeSchemaVersionUnsupported, CodeOwnershipConflict,
 	CodePlanStale, CodePlanHashVersion, CodeStackLocked, CodeStackSourceSync, CodePruneGuard, CodeApplyDisabled,
 	CodeInvalidRequest, CodeInvalidDocument, CodeInvalidName,
-	CodeCronScheduleInvalid, CodeCronJobInvalid, CodeCronHTTPInvalid, CodeAlertRuleInvalid,
+	CodeCronScheduleInvalid, CodeCronJobInvalid, CodeCronHTTPInvalid, CodeAlertRuleInvalid, CodeTemplateAppInputsChanged,
 	CodeDNSNameInvalid, CodeDNSNameReserved, CodeDNSNameConflict,
 	CodeApprovalPending, CodePlanSuperseded, CodeInterrupted, CodePlanJobNotFound, CodePlanTimeout,
 	CodeSyncRepoUnreachable, CodeSyncPathInvalid, CodeSyncLimitsExceeded, CodeSyncPlanFailed,

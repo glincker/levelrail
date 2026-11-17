@@ -48,6 +48,8 @@ type iacRequest struct {
 	Attachments      map[string]string `json:"attachments,omitempty"`
 	// confirmDestroy is derived server side from a stack request, never decoded.
 	confirmDestroy bool
+	// stackRun marks a stack request, whose rendered documents are stored.
+	stackRun bool
 }
 
 type iacPlanResponse struct {
@@ -108,7 +110,7 @@ func (req iacRequest) build() ([]*iac.Resource, iac.Options, []iac.Issue) {
 	for i, f := range req.Files {
 		sources[i] = iac.Source{Name: f.Name, Data: []byte(f.Content)}
 	}
-	opts := iac.Options{Vars: req.Vars, Source: req.Source, Project: req.Project, Secrets: req.Secrets, Prune: req.Prune, NoDeploy: req.NoDeploy, ContinueOnError: req.ContinueOnError, ConfirmDestroy: req.confirmDestroy}
+	opts := iac.Options{Vars: req.Vars, Source: req.Source, Project: req.Project, Secrets: req.Secrets, Prune: req.Prune, NoDeploy: req.NoDeploy, ContinueOnError: req.ContinueOnError, ConfirmDestroy: req.confirmDestroy, NoTemplateEnvVars: req.stackRun}
 	// Stack revisions keep referenced compose files among the files, so every replay splits them the same way.
 	sources, split, issues := iac.SplitComposeRefs(sources)
 	if len(issues) > 0 {
