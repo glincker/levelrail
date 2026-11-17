@@ -1,5 +1,30 @@
 # Changelog
 
+## [1.5.0](https://github.com/glincker/levelrail/compare/v1.4.1...v1.5.0) (2026-11-17)
+
+
+### Features
+
+* databases connection-string command ([45bf682](https://github.com/glincker/levelrail/commit/45bf682fd3455f8609e0ee9a440503f03aec9276))
+* device groups and label-based fleet rollout ([f15eb1f](https://github.com/glincker/levelrail/commit/f15eb1f422d5ed1413bf347a1e11903fad169bb8))
+* list and import existing AWS instances as nodes ([50eee46](https://github.com/glincker/levelrail/commit/50eee46f677d754e1a51b2d656f318d0fb54a326))
+* nginx proxy routes and test commands ([b0d0a0a](https://github.com/glincker/levelrail/commit/b0d0a0a8b1f6340b1b8533fba2f20bff980263c7))
+* opt-in container bind for the read-only demo ([bc1a186](https://github.com/glincker/levelrail/commit/bc1a1863deff4fc2aafe846917b8b858c56b8505))
+* opt-in Google Tag Manager for the hosted demo ([04858e7](https://github.com/glincker/levelrail/commit/04858e797e56df88a4ca4ca464064fab13c2ba8f))
+* opt-in privacy-first analytics for the hosted demo ([8d04a3c](https://github.com/glincker/levelrail/commit/8d04a3c69fca086e1613e739bb1b0e23a7dbb327))
+* query a chosen AWS region when listing and importing instances ([15c6c04](https://github.com/glincker/levelrail/commit/15c6c0492256ac9097bcff384bcb0cb85526696d))
+* redesign Settings Updates with automatic patch updates in a night window ([9e2054a](https://github.com/glincker/levelrail/commit/9e2054a0c550c9b6da224382cfef0cc4aac76128))
+* seed the v1.4 fleet, devices and rollout into the demo ([dccd862](https://github.com/glincker/levelrail/commit/dccd8620b5fe3d1605b1dac00f0eacf270feea84))
+* v1.4.2 database connection strings, AWS import, device groups and fleet rollout ([d0e0e18](https://github.com/glincker/levelrail/commit/d0e0e18d50e5d522d2e934c136ff9d754e658ff3))
+* v1.4.3 demo container mode, v1.4 demo fleet and opt-in demo analytics ([ad99ee3](https://github.com/glincker/levelrail/commit/ad99ee3b49c79a2297979716af26fe4915497b6c))
+
+
+### Bug Fixes
+
+* add nodes providers servers to the command tree ([613d2d6](https://github.com/glincker/levelrail/commit/613d2d6340bff954de3a990bd84c997d47b9b1b6))
+* give the release push check web build the same heap as CI ([2ae629a](https://github.com/glincker/levelrail/commit/2ae629a7febd2646f46e1a83c464b53b05281989))
+* harden the demo container opt-in after review ([9dc5934](https://github.com/glincker/levelrail/commit/9dc59343d25951b7f94ec775354f4108c193e076))
+
 ## [1.4.1](https://github.com/glincker/levelrail/compare/v1.4.0...v1.4.1) (2026-11-17)
 
 
