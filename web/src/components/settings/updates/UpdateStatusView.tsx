@@ -16,7 +16,6 @@ import { Card, CardContent } from '@/components/ui/card'
 import { Button, buttonVariants } from '@/components/ui/button'
 import { cn } from '@/lib/utils'
 import type { UpdateState } from './updateState'
-import { UpdateBrandBanner } from './UpdateBrandBanner'
 
 const STATE_TONE: Record<UpdateState, Tone> = {
   upToDate: 'success',
@@ -62,6 +61,8 @@ export interface UpdateStatusViewProps {
   releaseUrl: string | null
   onCheck: () => void
   hideActions?: boolean
+  /** The single primary action, placed beside the status. */
+  actions?: ReactNode
   children?: ReactNode
 }
 
@@ -78,6 +79,7 @@ export function UpdateStatusView({
   releaseUrl,
   onCheck,
   hideActions = false,
+  actions,
   children,
 }: UpdateStatusViewProps) {
   const { t } = useTranslation('updates')
@@ -111,27 +113,38 @@ export function UpdateStatusView({
 
   return (
     <Card>
-      <CardContent className="space-y-5">
-        <div className="flex flex-col gap-4 sm:flex-row sm:items-start sm:justify-between">
-          <div className="min-w-0 flex-1 space-y-2">
-            <UpdateBrandBanner
-              version={currentVersion}
-              stateClassName={cn(tone.soft, tone.text)}
-              stateIcon={<StateIcon state={state} />}
-              statePill={
+      <CardContent className="space-y-3">
+        <div className="flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
+          <div className="flex min-w-0 flex-1 items-start gap-3">
+            <span
+              data-testid="update-state-icon"
+              className={cn(
+                'flex size-9 shrink-0 items-center justify-center rounded-lg',
+                tone.soft,
+                tone.text,
+              )}
+            >
+              <StateIcon state={state} />
+            </span>
+            <div className="min-w-0 space-y-0.5" aria-live="polite">
+              <div className="flex flex-wrap items-center gap-2">
+                <span className="sr-only">{t('status.runningVersion')}</span>
+                <code className="break-all font-mono text-sm font-medium">
+                  {currentVersion}
+                </code>
                 <StatusPill
                   tone={STATE_TONE[state]}
                   size="sm"
                   label={t(`status.state.${state}`)}
                 />
-              }
-            />
-            <div className="min-w-0 space-y-2">
-              <h2 className="text-base font-medium text-pretty">{headline}</h2>
+              </div>
+              <h2 className="text-sm text-pretty text-muted-foreground">
+                {headline}
+              </h2>
               {state === 'checkFailed' ? (
                 <p
                   role="alert"
-                  className="max-w-prose text-sm text-muted-foreground"
+                  className="max-w-prose text-sm text-destructive"
                 >
                   {t('status.checkFailedBody', {
                     message: errorMessage ?? '',
@@ -145,6 +158,7 @@ export function UpdateStatusView({
               </p>
             </div>
           </div>
+          {actions}
           {hideActions ? null : (
             <div className="flex flex-col gap-2 sm:shrink-0 sm:flex-row sm:items-center">
               <Button

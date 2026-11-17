@@ -9,14 +9,13 @@ import {
   ScrollTextGlassIcon,
   SquareGlassIcon,
 } from '@thesvg/ui-react'
-import { Button, buttonVariants } from '@/components/ui/button'
+import { Button } from '@/components/ui/button'
 import {
   DropdownMenu,
   DropdownMenuContent,
   DropdownMenuItem,
   DropdownMenuTrigger,
 } from '@/components/ui/dropdown-menu'
-import { cn } from '@/lib/utils'
 import type { ActionState } from '@/lib/upgradeControl'
 
 export interface UpdateActionBarProps {
@@ -33,7 +32,7 @@ export interface UpdateActionBarProps {
   onViewLogs: () => void
 }
 
-// Sticky so the right action stays reachable while the page scrolls.
+// One primary action at a time; the rest live in the More menu.
 export function UpdateActionBar({
   actions,
   targetVersion,
@@ -52,9 +51,9 @@ export function UpdateActionBar({
     actions.primary === a ? 'default' : 'outline'
   return (
     <div
-      role="toolbar"
+      role="group"
       aria-label={t('control.barLabel')}
-      className="sticky top-0 z-20 -mx-1 flex flex-wrap items-center gap-2 rounded-lg border border-border bg-card/95 px-2 py-2 backdrop-blur"
+      className="flex shrink-0 flex-wrap items-center gap-2"
     >
       {actions.showUpdate ? (
         <Button
@@ -92,7 +91,8 @@ export function UpdateActionBar({
           {actions.cancelling ? t('control.cancelling') : t('control.cancel')}
         </Button>
       ) : null}
-      {actions.showCheck ? (
+      {actions.showCheck &&
+      (actions.primary === 'check' || actions.showRetry) ? (
         <Button
           type="button"
           size="sm"
@@ -107,31 +107,7 @@ export function UpdateActionBar({
           {checking ? t('status.checking') : t('status.checkNow')}
         </Button>
       ) : null}
-      <div className="ml-auto flex items-center gap-2">
-        <Button
-          type="button"
-          size="sm"
-          variant="ghost"
-          className="hidden sm:inline-flex"
-          onClick={onViewLogs}
-        >
-          <ScrollTextGlassIcon size="1.4em" />
-          {t('control.viewLogs')}
-        </Button>
-        {releaseUrl ? (
-          <a
-            href={releaseUrl}
-            target="_blank"
-            rel="noopener noreferrer"
-            className={cn(
-              buttonVariants({ variant: 'ghost', size: 'sm' }),
-              'hidden sm:inline-flex',
-            )}
-          >
-            {t('status.viewNotes')}
-            <ExternalLinkGlassIcon size="1.4em" />
-          </a>
-        ) : null}
+      <div className="flex items-center gap-2">
         <DropdownMenu>
           <DropdownMenuTrigger
             render={
@@ -146,13 +122,12 @@ export function UpdateActionBar({
             <EllipsisGlassIcon size="1.4em" />
           </DropdownMenuTrigger>
           <DropdownMenuContent aria-label={t('control.more')}>
-            <DropdownMenuItem onClick={onViewLogs} className="sm:hidden">
+            <DropdownMenuItem onClick={onViewLogs}>
               <ScrollTextGlassIcon size="1.4em" aria-hidden="true" />
               {t('control.viewLogs')}
             </DropdownMenuItem>
             {releaseUrl ? (
               <DropdownMenuItem
-                className="sm:hidden"
                 onClick={() =>
                   window.open(releaseUrl, '_blank', 'noopener,noreferrer')
                 }
