@@ -1,0 +1,9 @@
+# Adapted from Dokploy/templates (MIT, Copyright (c) 2024 Dokploy and Carlos Ortiz)
+id: dagu
+name: Dagu
+slogan: A workflow engine that runs DAGs defined in plain YAML files, with a web UI.
+description: GPL 3.0 licensed. The web UI uses basic auth with user admin and a generated password shown in the deployment variables.
+category: Automation
+documentation_url: https://docs.dagu.sh/
+recommended_memory_bytes: 268435456
+requires_gpu: false

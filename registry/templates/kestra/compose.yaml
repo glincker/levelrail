@@ -1,0 +1,52 @@
+services:
+  kestra:
+    image: kestra/kestra:v2.0.10
+    user: "0:0"
+    command: server standalone
+    ports: ["8080"]
+    volumes:
+      - kestra_data:/app/storage
+    environment:
+      KESTRA_CONFIGURATION: |
+        datasources:
+          postgres:
+            url: jdbc:postgresql://db:5432/kestra
+            driverClassName: org.postgresql.Driver
+            username: kestra
+            password: $SERVICE_PASSWORD_DB
+        kestra:
+          repository:
+            type: postgres
+          storage:
+            type: local
+            local:
+              basePath: /app/storage
+          queue:
+            type: postgres
+          url: ${SERVICE_URL_KESTRA:-http://localhost:8080}/
+    depends_on:
+      db:
+        condition: service_healthy
+    healthcheck:
+      test: ["CMD-SHELL", "curl -fsS -o /dev/null http://127.0.0.1:8081/health || exit 1"]
+      interval: 15s
+      timeout: 5s
+      retries: 10
+      start_period: 90s
+  db:
+    image: postgres:16-alpine
+    environment:
+      POSTGRES_DB: kestra
+      POSTGRES_USER: kestra
+      POSTGRES_PASSWORD: $SERVICE_PASSWORD_DB
+    volumes:
+      - db_data:/var/lib/postgresql/data
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U kestra -d kestra"]
+      interval: 5s
+      timeout: 5s
+      retries: 10
+      start_period: 10s
+volumes:
+  kestra_data:
+  db_data:
