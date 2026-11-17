@@ -53,6 +53,15 @@ func (f *File) Notices() []Notice {
 			notices = append(notices, n)
 		}
 	}
+	for _, name := range sortedServiceNames(f) {
+		if f.dollarEscaped[name] {
+			notices = append(notices, Notice{
+				Level:   NoticeLevelNote,
+				Message: "$$ is now unescaped to a literal $ like Docker Compose in command, entrypoint and healthcheck.test",
+				Service: name,
+			})
+		}
+	}
 	if f.declaresCustomNetworks() {
 		notices = append(notices, Notice{
 			Level:   NoticeLevelWarning,

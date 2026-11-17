@@ -47,6 +47,9 @@ func (u UnresolvedVar) String() string {
 // (persisted and added to secretEnv), the same as a whole-value
 // generatable token, since it now contains one. A default-less,
 // non-generatable token in that position is unresolved.
+//
+// "$$" in command, entrypoint and healthcheck.test becomes a literal "$"
+// (Compose's escape); those fields never receive magic-var secrets.
 func ResolveMagicVars(
 	f *File,
 	generate func(kind, key string, length int) (string, error),
@@ -69,6 +72,13 @@ func resolveMagicVars(
 	for _, svcKey := range sortedServiceNames(f) {
 		svc := f.Services[svcKey]
 		changed := false
+
+		if hasDollarEscape(svc) {
+			if f.dollarEscaped == nil {
+				f.dollarEscaped = map[string]bool{}
+			}
+			f.dollarEscaped[svcKey] = true
+		}
 
 		if len(svc.Command) > 0 {
 			newCommand := make(Command, len(svc.Command))
@@ -234,7 +244,7 @@ func resolveDomainVar(f *File, svcKey string, v MagicVar) (string, bool) {
 func resolveCommandEntry(f *File, svcKey string, index int, entry string) (string, []UnresolvedVar) {
 	// "$$" is held as a sentinel while tokens resolve, so "$$SERVICE_X" stays
 	// a literal for the container shell and is never read as a magic var.
-	entry = strings.ReplaceAll(entry, "$$", dollarSentinel)
+	entry = strings.ReplaceAll(strings.ReplaceAll(entry, "\x00", ""), "$$", dollarSentinel)
 	vars := FindMagicVars(entry)
 	if len(vars) == 0 {
 		return unescapeDollar(entry), nil
@@ -266,7 +276,7 @@ func resolveCommandEntry(f *File, svcKey string, index int, entry string) (strin
 func unescapeEntries(in []string) []string {
 	out := make([]string, len(in))
 	for i, e := range in {
-		out[i] = strings.ReplaceAll(e, "$$", "$")
+		out[i] = unescapeDollar(strings.ReplaceAll(strings.ReplaceAll(e, "\x00", ""), "$$", dollarSentinel))
 	}
 	return out
 }
@@ -303,5 +313,20 @@ func resolveScalarField(f *File, svcKey, key, value string, interpolate bool) (s
 			value = strings.Replace(value, v.Token, v.Default, 1)
 		}
 	}
-	return value, nil
+	return unescapeDollar(value), nil
+}
+
+func hasDollarEscape(svc Service) bool {
+	lists := [][]string{svc.Command, svc.Entrypoint}
+	if svc.Healthcheck != nil {
+		lists = append(lists, svc.Healthcheck.Test)
+	}
+	for _, l := range lists {
+		for _, e := range l {
+			if strings.Contains(e, "$$") {
+				return true
+			}
+		}
+	}
+	return false
 }
