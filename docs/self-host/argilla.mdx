@@ -42,6 +42,7 @@ Recommended memory: about 2048 MiB.
 | `elasticsearch` | `discovery.type` | Preset in the template |
 | `elasticsearch` | `node.name` | Preset in the template |
 | `elasticsearch` | `xpack.security.enabled` | Preset in the template |
+| `redis` | `REDIS_PASSWORD` | Generated at deploy |
 | `worker` | `ARGILLA_DATABASE_URL` | Generated at deploy |
 | `worker` | `ARGILLA_ELASTICSEARCH` | Preset in the template |
 | `worker` | `ARGILLA_HOME_PATH` | Preset in the template |
@@ -55,8 +56,7 @@ Level: **Standard**.
 
 What this template needs:
 
-- You must provide one or more secrets before it can deploy (`redis`): command[2].
-- Passwords and keys are generated at deploy time (`argilla`, `db`, `worker`): API_KEY, ARGILLA_DATABASE_URL, ARGILLA_REDIS_URL, PASSWORD, ARGILLA_DATABASE_URL, ARGILLA_REDIS_URL, POSTGRES_PASSWORD.
+- Passwords and keys are generated at deploy time (`argilla`, `db`, `redis`, `worker`): API_KEY, ARGILLA_DATABASE_URL, ARGILLA_REDIS_URL, PASSWORD, ARGILLA_DATABASE_URL, ARGILLA_REDIS_URL, POSTGRES_PASSWORD, REDIS_PASSWORD.
 - Stores data in named volumes (`argilla`, `db`, `elasticsearch`, `redis`, `worker`): argilla_data, db_data, elastic_data, redis_data.
 
 What Levelrail adds around it:
@@ -69,8 +69,6 @@ What Levelrail adds around it:
 - Exposure report shows what is reachable from outside.
 - Host firewall rules managed for published ports.
 
-<Warning>This template needs configuration before it can deploy. Open it in the dashboard, set each variable marked "You must provide" in the Compose body, then deploy.</Warning>
-
 ## Deploy Argilla with Levelrail
 
 In the dashboard, open **Apps**, choose **New app**, then **Browse templates**, and select Argilla. Review the Compose body and deploy.
@@ -78,9 +76,7 @@ In the dashboard, open **Apps**, choose **New app**, then **Browse templates**, 
 With the CLI:
 
 ```bash
-levelrail-cli templates get argilla --output json | jq -r .compose > argilla.compose.yaml
-# edit argilla.compose.yaml to set the variables you must provide
-levelrail-cli apps deploy-compose my-argilla --file argilla.compose.yaml
+levelrail-cli templates deploy argilla --name my-argilla
 ```
 
 See the [service template catalog](/templates-and-registry) for how templates work, and [Getting started](/getting-started) if you have not installed Levelrail yet.

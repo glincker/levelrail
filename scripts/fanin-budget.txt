@@ -11,7 +11,7 @@ internal/changes 25
 internal/chaos 171
 internal/cloudflareips 21
 # v1.1.0: stack sync, strict compose validation and the cloud engine packages import this
-internal/compose 63
+internal/compose 73
 internal/configtranslate 29
 internal/costbudget 171
 internal/dbparams 46
@@ -23,7 +23,7 @@ internal/deploytrace 46
 internal/dnszones 25
 internal/docker 191
 # v1.1.0: stack sync, strict compose validation and the cloud engine packages import this
-internal/dockerguard 65
+internal/dockerguard 75
 internal/email 34
 internal/envredact 71
 internal/extdb 36
@@ -73,3 +73,5 @@ kit/timeutil 171
 kit/upgrade 27
 # connhub reads cloud account auth classes from cloudconn, which resolves secrets
 internal/secretsource 21
+# v1.4.1: the template registry is imported by the API, CLI and template install paths
+registry 24

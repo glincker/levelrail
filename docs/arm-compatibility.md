@@ -22,7 +22,7 @@ The smoke column is the result recorded on the Arm test host in [Template status
 
 ## Results by template
 
-394 listed, 15 amd64 only, 165 unknown, of 574 templates.
+397 listed, 15 amd64 only, 180 unknown, of 592 templates.
 
 | Template | arm64 in manifest | Smoke run on Arm host |
 | --- | --- | --- |
@@ -47,13 +47,16 @@ The smoke column is the result recorded on the Arm test host in [Template status
 | `appwrite` | listed | not tested |
 | `arangodb` | unknown | not tested |
 | `archivebox` | listed | pass |
+| `argilla` | unknown | not tested |
 | `athens` | unknown | not tested |
 | `audiobookshelf` | listed | not tested |
 | `authelia` | listed | pass |
 | `authentik` | listed | pass |
 | `autobrr` | listed | not tested |
+| `automatisch` | unknown | not tested |
 | `babybuddy` | listed | not tested |
 | `backrest` | listed | pass |
+| `baikal` | unknown | not tested |
 | `baserow` | listed | not tested |
 | `bazarr` | listed | not tested |
 | `bentopdf` | listed | pass |
@@ -106,6 +109,7 @@ The smoke column is the result recorded on the Arm test host in [Template status
 | `crowdsec` | unknown | not tested |
 | `cryptgeon` | listed | not tested |
 | `cyberchef` | amd64 only | fail |
+| `dagu` | unknown | not tested |
 | `dashdot` | unknown | not tested |
 | `dashy` | listed | pass |
 | `databasus` | listed | not tested |
@@ -127,6 +131,7 @@ The smoke column is the result recorded on the Arm test host in [Template status
 | `drawio` | listed | not tested |
 | `drupal` | listed | not tested |
 | `dufs` | unknown | not tested |
+| `dumbpad` | unknown | not tested |
 | `duplicati` | listed | not tested |
 | `easyappointments` | listed | not tested |
 | `ejabberd` | unknown | not tested |
@@ -143,6 +148,7 @@ The smoke column is the result recorded on the Arm test host in [Template status
 | `etherpad` | listed | not tested |
 | `evcc` | unknown | not tested |
 | `excalidraw` | listed | pass |
+| `ezbookkeeping` | unknown | not tested |
 | `factorio` | listed | not tested |
 | `falkordb` | unknown | not tested |
 | `fastapi-postgres-starter` | listed | not tested |
@@ -156,6 +162,7 @@ The smoke column is the result recorded on the Arm test host in [Template status
 | `flagsmith` | listed | not tested |
 | `flame` | amd64 only | fail |
 | `flaresolverr` | listed | not tested |
+| `flarum` | listed | not tested |
 | `flatnotes` | listed | pass |
 | `flipt` | listed | not tested |
 | `flood` | unknown | not tested |
@@ -212,8 +219,10 @@ The smoke column is the result recorded on the Arm test host in [Template status
 | `homepage` | listed | pass |
 | `homer` | listed | pass |
 | `hoppscotch` | listed | not tested |
+| `hortusfox` | unknown | not tested |
 | `huginn` | unknown | not tested |
 | `hyperdx` | listed | not tested |
+| `ihatemoney` | unknown | not tested |
 | `imgcompress` | listed | not tested |
 | `imgproxy` | listed | not tested |
 | `immich` | listed | pass |
@@ -244,6 +253,8 @@ The smoke column is the result recorded on the Arm test host in [Template status
 | `karma` | unknown | not tested |
 | `kavita` | listed | pass |
 | `kellnr` | unknown | not tested |
+| `kener` | unknown | not tested |
+| `kestra` | unknown | not tested |
 | `keycloak` | listed | pass |
 | `keycloak-postgres` | listed | not tested |
 | `kimai` | listed | not tested |
@@ -361,6 +372,7 @@ The smoke column is the result recorded on the Arm test host in [Template status
 | `node-red` | listed | not tested |
 | `nodebb` | listed | not tested |
 | `notifiarr` | unknown | not tested |
+| `novu` | unknown | not tested |
 | `nsq` | unknown | not tested |
 | `ntfy` | listed | pass |
 | `nzbget` | unknown | not tested |
@@ -376,6 +388,7 @@ The smoke column is the result recorded on the Arm test host in [Template status
 | `ollama-phi` | listed | not tested |
 | `ollama-qwen` | listed | not tested |
 | `ombi` | listed | not tested |
+| `omni-tools` | unknown | not tested |
 | `once-campfire` | listed | not tested |
 | `onedev` | listed | not tested |
 | `onetimesecret` | listed | not tested |
@@ -386,6 +399,7 @@ The smoke column is the result recorded on the Arm test host in [Template status
 | `opengist` | listed | not tested |
 | `openhab` | unknown | not tested |
 | `openobserve` | listed | not tested |
+| `openproject` | listed | not tested |
 | `openresty` | unknown | not tested |
 | `opensearch` | unknown | not tested |
 | `openspeedtest` | unknown | not tested |
@@ -394,6 +408,7 @@ The smoke column is the result recorded on the Arm test host in [Template status
 | `orientdb` | unknown | not tested |
 | `osticket` | unknown | not tested |
 | `otel-lgtm` | unknown | not tested |
+| `otterwiki` | unknown | not tested |
 | `outline` | listed | pass |
 | `overseerr` | listed | not tested |
 | `owncast` | listed | not tested |
@@ -415,6 +430,7 @@ The smoke column is the result recorded on the Arm test host in [Template status
 | `phpmyadmin` | listed | pass |
 | `pi-hole` | listed | not tested |
 | `picoshare` | unknown | not tested |
+| `picsur` | unknown | not tested |
 | `pigallery2` | unknown | not tested |
 | `pinchflat` | amd64 only | not tested |
 | `pingvin-share` | listed | not tested |
@@ -554,6 +570,7 @@ The smoke column is the result recorded on the Arm test host in [Template status
 | `typesense` | listed | pass |
 | `ubooquity` | unknown | not tested |
 | `umami` | listed | pass |
+| `unleash` | unknown | not tested |
 | `unleash-postgres` | listed | not tested |
 | `unpoller` | unknown | not tested |
 | `unstructured` | listed | not tested |
@@ -598,5 +615,6 @@ The smoke column is the result recorded on the Arm test host in [Template status
 | `zabbix` | listed | not tested |
 | `zipkin` | unknown | not tested |
 | `zipline` | listed | not tested |
+| `zitadel` | listed | not tested |
 | `zot` | unknown | not tested |
 | `zwave-js-ui` | unknown | not tested |
