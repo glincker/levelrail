@@ -3436,7 +3436,7 @@
     }
    ],
    "memory_mib": 2048,
-   "needs_config": true,
+   "needs_config": false,
    "install": {
     "kind": "deploy",
     "fields": []
@@ -3572,6 +3572,11 @@
      "kind": "preset"
     },
     {
+     "service": "redis",
+     "name": "REDIS_PASSWORD",
+     "kind": "generated"
+    },
+    {
      "service": "worker",
      "name": "ARGILLA_DATABASE_URL",
      "kind": "generated"
@@ -3596,23 +3601,15 @@
     "level": "standard",
     "findings": [
      {
-      "code": "required_secrets",
-      "severity": "info",
-      "services": [
-       "redis"
-      ],
-      "detail": "command[2]",
-      "message": "You must provide one or more secrets before it can deploy"
-     },
-     {
       "code": "generated_secrets",
       "severity": "info",
       "services": [
        "argilla",
        "db",
+       "redis",
        "worker"
       ],
-      "detail": "API_KEY, ARGILLA_DATABASE_URL, ARGILLA_REDIS_URL, PASSWORD, ARGILLA_DATABASE_URL, ARGILLA_REDIS_URL, POSTGRES_PASSWORD",
+      "detail": "API_KEY, ARGILLA_DATABASE_URL, ARGILLA_REDIS_URL, PASSWORD, ARGILLA_DATABASE_URL, ARGILLA_REDIS_URL, POSTGRES_PASSWORD, REDIS_PASSWORD",
       "message": "Passwords and keys are generated at deploy time"
      },
      {
@@ -4559,7 +4556,7 @@
     }
    ],
    "memory_mib": 1024,
-   "needs_config": true,
+   "needs_config": false,
    "install": {
     "kind": "deploy",
     "fields": []
@@ -4692,6 +4689,11 @@
      "kind": "preset"
     },
     {
+     "service": "redis",
+     "name": "REDIS_PASSWORD",
+     "kind": "generated"
+    },
+    {
      "service": "worker",
      "name": "APP_ENV",
      "kind": "preset"
@@ -4751,23 +4753,15 @@
     "level": "standard",
     "findings": [
      {
-      "code": "required_secrets",
-      "severity": "info",
-      "services": [
-       "redis"
-      ],
-      "detail": "command[2]",
-      "message": "You must provide one or more secrets before it can deploy"
-     },
-     {
       "code": "generated_secrets",
       "severity": "info",
       "services": [
        "automatisch",
        "db",
+       "redis",
        "worker"
       ],
-      "detail": "APP_SECRET_KEY, ENCRYPTION_KEY, POSTGRES_PASSWORD, REDIS_PASSWORD, WEBHOOK_SECRET_KEY, POSTGRES_PASSWORD",
+      "detail": "APP_SECRET_KEY, ENCRYPTION_KEY, POSTGRES_PASSWORD, REDIS_PASSWORD, WEBHOOK_SECRET_KEY, POSTGRES_PASSWORD, REDIS_PASSWORD",
       "message": "Passwords and keys are generated at deploy time"
      },
      {
@@ -88874,7 +88868,7 @@
     }
    ],
    "memory_mib": 512,
-   "needs_config": true,
+   "needs_config": false,
    "install": {
     "kind": "deploy",
     "fields": []
@@ -88980,6 +88974,11 @@
     },
     {
      "service": "zitadel",
+     "name": "ZITADEL_MASTERKEY",
+     "kind": "generated"
+    },
+    {
+     "service": "zitadel",
      "name": "ZITADEL_TLS_ENABLED",
      "kind": "preset"
     }
@@ -88988,22 +88987,13 @@
     "level": "standard",
     "findings": [
      {
-      "code": "required_secrets",
-      "severity": "info",
-      "services": [
-       "zitadel"
-      ],
-      "detail": "command[2]",
-      "message": "You must provide one or more secrets before it can deploy"
-     },
-     {
       "code": "generated_secrets",
       "severity": "info",
       "services": [
        "db",
        "zitadel"
       ],
-      "detail": "POSTGRES_PASSWORD, ZITADEL_DATABASE_POSTGRES_ADMIN_PASSWORD, ZITADEL_DATABASE_POSTGRES_USER_PASSWORD",
+      "detail": "POSTGRES_PASSWORD, ZITADEL_DATABASE_POSTGRES_ADMIN_PASSWORD, ZITADEL_DATABASE_POSTGRES_USER_PASSWORD, ZITADEL_MASTERKEY",
       "message": "Passwords and keys are generated at deploy time"
      },
      {

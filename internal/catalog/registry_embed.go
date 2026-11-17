@@ -12,12 +12,7 @@ var registryOnlyTemplates, registryOnlyMeta = mustLoadRegistryOnly()
 
 // heldBack lists registry-only ids that fail a catalog guard today. They stay
 // unserved until their registry compose is fixed, then the entry is deleted here.
-var heldBack = map[string]string{
-	"novu":        "mongodb healthcheck uses $$ which the platform does not unescape",
-	"argilla":     "redis command and healthcheck use $SERVICE_PASSWORD_REDIS, unresolved there",
-	"automatisch": "redis command and healthcheck use $SERVICE_PASSWORD_REDIS, unresolved there",
-	"zitadel":     "command uses $SERVICE_PASSWORD_MASTERKEY, unresolved in the command",
-}
+var heldBack = map[string]string{}
 
 func mustLoadRegistryOnly() ([]Template, map[string]TemplateMeta) {
 	sub, err := fs.Sub(registry.Templates, "templates")

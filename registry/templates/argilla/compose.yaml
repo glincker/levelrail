@@ -77,11 +77,13 @@ services:
       start_period: 10s
   redis:
     image: redis:7-alpine
-    command: redis-server --requirepass $SERVICE_PASSWORD_REDIS
+    command: ["sh", "-c", "exec redis-server --requirepass \"$$REDIS_PASSWORD\""]
+    environment:
+      REDIS_PASSWORD: $SERVICE_PASSWORD_REDIS
     volumes:
       - redis_data:/data
     healthcheck:
-      test: ["CMD-SHELL", "redis-cli -a $SERVICE_PASSWORD_REDIS ping 2>/dev/null | grep -q PONG"]
+      test: ["CMD-SHELL", "redis-cli -a \"$$REDIS_PASSWORD\" --no-auth-warning ping 2>/dev/null | grep -q PONG"]
       interval: 5s
       timeout: 5s
       retries: 10

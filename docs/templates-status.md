@@ -145,7 +145,7 @@ Fixed in the wave N pass: `valkey` interpolated its password from the host shell
 
 Generated from the registry scan in `internal/catalog/platforms.json` (`scripts/scan-catalog-platforms`), not from the smoke run. A template is `yes` only when every image it uses lists `linux/arm64` in its manifest. `not checked` means unknown, not unsupported: the scan could not read a manifest or the image tag is set at install time.
 
-Last scan: 2026-11-11T22:14:40Z. **394 yes, 15 amd64 only, 165 not checked** of 574 templates.
+Last scan: 2026-11-11T22:14:40Z. **397 yes, 15 amd64 only, 180 not checked** of 592 templates.
 
 | Template | arm64 | Verified platforms |
 | --- | --- | --- |
@@ -170,13 +170,16 @@ Last scan: 2026-11-11T22:14:40Z. **394 yes, 15 amd64 only, 165 not checked** of 
 | `appwrite` | yes | linux/amd64, linux/arm64 |
 | `arangodb` | not checked | - |
 | `archivebox` | yes | linux/amd64, linux/arm64 |
+| `argilla` | not checked | - |
 | `athens` | not checked | - |
 | `audiobookshelf` | yes | linux/amd64, linux/arm64 |
 | `authelia` | yes | linux/amd64, linux/arm, linux/arm64 |
 | `authentik` | yes | linux/amd64, linux/arm64 |
 | `autobrr` | yes | linux/386, linux/amd64, linux/arm, linux/arm64, linux/ppc64le, linux/riscv64, linux/s390x, windows/amd64 |
+| `automatisch` | not checked | - |
 | `babybuddy` | yes | linux/amd64, linux/arm64 |
 | `backrest` | yes | linux/386, linux/amd64, linux/arm, linux/arm64 |
+| `baikal` | not checked | - |
 | `baserow` | yes | linux/amd64, linux/arm64 |
 | `bazarr` | yes | linux/amd64, linux/arm64 |
 | `bentopdf` | yes | linux/amd64, linux/arm64 |
@@ -229,6 +232,7 @@ Last scan: 2026-11-11T22:14:40Z. **394 yes, 15 amd64 only, 165 not checked** of 
 | `crowdsec` | not checked | - |
 | `cryptgeon` | yes | linux/amd64, linux/arm64 |
 | `cyberchef` | amd64 only | linux/amd64 |
+| `dagu` | not checked | - |
 | `dashdot` | not checked | - |
 | `dashy` | yes | linux/amd64, linux/arm64 |
 | `databasus` | yes | linux/amd64, linux/arm64 |
@@ -250,6 +254,7 @@ Last scan: 2026-11-11T22:14:40Z. **394 yes, 15 amd64 only, 165 not checked** of 
 | `drawio` | yes | linux/amd64, linux/arm64 |
 | `drupal` | yes | linux/386, linux/amd64, linux/arm, linux/arm64, linux/ppc64le, linux/riscv64, linux/s390x |
 | `dufs` | not checked | - |
+| `dumbpad` | not checked | - |
 | `duplicati` | yes | linux/amd64, linux/arm64 |
 | `easyappointments` | yes | linux/amd64, linux/arm64 |
 | `ejabberd` | not checked | - |
@@ -266,6 +271,7 @@ Last scan: 2026-11-11T22:14:40Z. **394 yes, 15 amd64 only, 165 not checked** of 
 | `etherpad` | yes | linux/amd64, linux/arm64 |
 | `evcc` | not checked | - |
 | `excalidraw` | yes | linux/amd64, linux/arm, linux/arm64 |
+| `ezbookkeeping` | not checked | - |
 | `factorio` | yes | linux/amd64, linux/arm64 |
 | `falkordb` | not checked | - |
 | `fastapi-postgres-starter` | yes | linux/386, linux/amd64, linux/arm, linux/arm64, linux/ppc64le, linux/riscv64, linux/s390x |
@@ -279,6 +285,7 @@ Last scan: 2026-11-11T22:14:40Z. **394 yes, 15 amd64 only, 165 not checked** of 
 | `flagsmith` | yes | linux/amd64, linux/arm64 |
 | `flame` | amd64 only | linux/amd64 |
 | `flaresolverr` | yes | linux/386, linux/amd64, linux/arm, linux/arm64 |
+| `flarum` | yes | linux/amd64, linux/arm64 |
 | `flatnotes` | yes | linux/amd64, linux/arm64 |
 | `flipt` | yes | linux/amd64, linux/arm64 |
 | `flood` | not checked | - |
@@ -335,8 +342,10 @@ Last scan: 2026-11-11T22:14:40Z. **394 yes, 15 amd64 only, 165 not checked** of 
 | `homepage` | yes | linux/amd64, linux/arm, linux/arm64 |
 | `homer` | yes | linux/amd64, linux/arm, linux/arm64 |
 | `hoppscotch` | yes | linux/amd64, linux/arm64 |
+| `hortusfox` | not checked | - |
 | `huginn` | not checked | - |
 | `hyperdx` | yes | linux/amd64, linux/arm64 |
+| `ihatemoney` | not checked | - |
 | `imgcompress` | yes | linux/amd64, linux/arm64 |
 | `imgproxy` | yes | linux/amd64, linux/arm64 |
 | `immich` | yes | linux/amd64, linux/arm64 |
@@ -367,6 +376,8 @@ Last scan: 2026-11-11T22:14:40Z. **394 yes, 15 amd64 only, 165 not checked** of 
 | `karma` | not checked | - |
 | `kavita` | yes | linux/amd64, linux/arm, linux/arm64 |
 | `kellnr` | not checked | - |
+| `kener` | not checked | - |
+| `kestra` | not checked | - |
 | `keycloak` | yes | linux/amd64, linux/arm64 |
 | `keycloak-postgres` | yes | linux/amd64, linux/arm64 |
 | `kimai` | yes | linux/amd64, linux/arm64 |
@@ -484,6 +495,7 @@ Last scan: 2026-11-11T22:14:40Z. **394 yes, 15 amd64 only, 165 not checked** of 
 | `node-red` | yes | linux/amd64, linux/arm, linux/arm64 |
 | `nodebb` | yes | linux/amd64, linux/arm64 |
 | `notifiarr` | not checked | - |
+| `novu` | not checked | - |
 | `nsq` | not checked | - |
 | `ntfy` | yes | linux/amd64, linux/arm, linux/arm64 |
 | `nzbget` | not checked | - |
@@ -499,6 +511,7 @@ Last scan: 2026-11-11T22:14:40Z. **394 yes, 15 amd64 only, 165 not checked** of 
 | `ollama-phi` | yes | linux/amd64, linux/arm64 |
 | `ollama-qwen` | yes | linux/amd64, linux/arm64 |
 | `ombi` | yes | linux/amd64, linux/arm64 |
+| `omni-tools` | not checked | - |
 | `once-campfire` | yes | linux/amd64, linux/arm64 |
 | `onedev` | yes | linux/amd64, linux/arm64 |
 | `onetimesecret` | yes | linux/amd64, linux/arm64 |
@@ -509,6 +522,7 @@ Last scan: 2026-11-11T22:14:40Z. **394 yes, 15 amd64 only, 165 not checked** of 
 | `opengist` | yes | linux/amd64, linux/arm64 |
 | `openhab` | not checked | - |
 | `openobserve` | yes | linux/amd64, linux/arm64 |
+| `openproject` | yes | linux/amd64, linux/arm64 |
 | `openresty` | not checked | - |
 | `opensearch` | not checked | - |
 | `openspeedtest` | not checked | - |
@@ -517,6 +531,7 @@ Last scan: 2026-11-11T22:14:40Z. **394 yes, 15 amd64 only, 165 not checked** of 
 | `orientdb` | not checked | - |
 | `osticket` | not checked | - |
 | `otel-lgtm` | not checked | - |
+| `otterwiki` | not checked | - |
 | `outline` | yes | linux/amd64, linux/arm, linux/arm64, linux/ppc64le, linux/s390x |
 | `overseerr` | yes | linux/amd64, linux/arm, linux/arm64 |
 | `owncast` | yes | linux/386, linux/amd64, linux/arm, linux/arm64 |
@@ -538,6 +553,7 @@ Last scan: 2026-11-11T22:14:40Z. **394 yes, 15 amd64 only, 165 not checked** of 
 | `phpmyadmin` | yes | linux/386, linux/amd64, linux/arm, linux/arm64, linux/ppc64le, linux/riscv64, linux/s390x |
 | `pi-hole` | yes | linux/386, linux/amd64, linux/arm, linux/arm64 |
 | `picoshare` | not checked | - |
+| `picsur` | not checked | - |
 | `pigallery2` | not checked | - |
 | `pinchflat` | amd64 only | linux/amd64 |
 | `pingvin-share` | yes | linux/amd64, linux/arm64 |
@@ -677,6 +693,7 @@ Last scan: 2026-11-11T22:14:40Z. **394 yes, 15 amd64 only, 165 not checked** of 
 | `typesense` | yes | linux/amd64, linux/arm64 |
 | `ubooquity` | not checked | - |
 | `umami` | yes | linux/amd64, linux/arm64 |
+| `unleash` | not checked | - |
 | `unleash-postgres` | yes | linux/amd64, linux/arm64 |
 | `unpoller` | not checked | - |
 | `unstructured` | yes | linux/amd64, linux/arm64 |
@@ -721,6 +738,7 @@ Last scan: 2026-11-11T22:14:40Z. **394 yes, 15 amd64 only, 165 not checked** of 
 | `zabbix` | yes | linux/amd64, linux/arm64, linux/ppc64le, linux/riscv64, linux/s390x |
 | `zipkin` | not checked | - |
 | `zipline` | yes | linux/amd64, linux/arm64 |
+| `zitadel` | yes | linux/amd64, linux/arm64 |
 | `zot` | not checked | - |
 | `zwave-js-ui` | not checked | - |
 {/* END GENERATED ARM64 TABLE */}

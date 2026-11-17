@@ -1,9 +1,10 @@
 services:
   zitadel:
     image: ghcr.io/zitadel/zitadel:v4.16.0
-    command: start-from-init --masterkey "$SERVICE_PASSWORD_MASTERKEY" --tlsMode external
+    command: start-from-init --masterkeyFromEnv --tlsMode external
     ports: ["8080"]
     environment:
+      ZITADEL_MASTERKEY: $SERVICE_PASSWORD_32_MASTERKEY
       ZITADEL_DATABASE_POSTGRES_HOST: db
       ZITADEL_DATABASE_POSTGRES_PORT: 5432
       ZITADEL_DATABASE_POSTGRES_DATABASE: zitadel
