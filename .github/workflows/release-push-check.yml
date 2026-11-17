@@ -88,6 +88,8 @@ jobs:
       - name: Web build (vite build && tsc -b)
         if: steps.pr.outputs.open != 'true' && steps.detect.outputs.web == 'full'
         working-directory: web
+        env:
+          NODE_OPTIONS: --max-old-space-size=8192
         run: |
           npm ci --ignore-scripts
           npm run build
