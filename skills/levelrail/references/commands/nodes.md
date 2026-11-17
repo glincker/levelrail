@@ -129,7 +129,7 @@ Flags:
 
 ## levelrail-cli nodes providers
 
-Subcommands: capabilities, connect, disconnect, list, regions, set-credential, sizes, test
+Subcommands: capabilities, connect, disconnect, list, regions, servers, set-credential, sizes, test
 
 ```
 Usage:
