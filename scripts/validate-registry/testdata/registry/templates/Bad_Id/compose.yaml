@@ -1,0 +1,5 @@
+services:
+  app:
+    image: example/app
+    healthcheck:
+      test: ["CMD", "true"]

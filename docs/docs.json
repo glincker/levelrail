@@ -1301,6 +1301,7 @@
             "pages": [
               "ci",
               "contributing-guards",
+              "registry-contributing",
               "change-tracking",
               "proof-automation",
               "stress-testing",

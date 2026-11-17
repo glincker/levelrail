@@ -1,0 +1,7 @@
+services:
+  app:
+    image: example/app:1.2.3
+    ports:
+      - "3000"
+    healthcheck:
+      test: ["CMD", "true"]

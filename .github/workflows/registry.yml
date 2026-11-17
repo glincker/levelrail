@@ -1,0 +1,119 @@
+name: Registry
+
+# Validates and smoke-tests only the registry template folders a change touches.
+# Folders that predate the rules are reported by the validator but never block.
+on:
+  pull_request:
+    paths:
+      - "registry/**"
+      - "scripts/validate-registry/**"
+      - "scripts/export-registry/**"
+      - "internal/catalog/registry_dir*.go"
+  push:
+    branches: [main, "release/**"]
+    paths:
+      - "registry/**"
+      - "scripts/validate-registry/**"
+      - "scripts/export-registry/**"
+      - "internal/catalog/registry_dir*.go"
+
+permissions:
+  contents: read
+
+concurrency:
+  group: registry-${{ github.event.pull_request.number || github.ref }}
+  cancel-in-progress: true
+
+env:
+  # Most changed folders smoke-tested per run, so one big PR cannot hog runners.
+  REGISTRY_SMOKE_MAX: "8"
+  REGISTRY_SMOKE_WAIT_TIMEOUT: "240"
+
+jobs:
+  validate:
+    name: Validate
+    runs-on: ubuntu-latest
+    timeout-minutes: 15
+    outputs:
+      folders: ${{ steps.changed.outputs.folders }}
+    steps:
+      - name: Checkout
+        uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+        with:
+          fetch-depth: 0
+          persist-credentials: false
+
+      - name: Setup Go
+        uses: actions/setup-go@b7ad1dad31e06c5925ef5d2fc7ad053ef454303e # v7.0.0
+        with:
+          go-version-file: go.mod
+
+      - name: List changed files
+        env:
+          EVENT: ${{ github.event_name }}
+          BASE_SHA: ${{ github.event.pull_request.base.sha }}
+          BEFORE_SHA: ${{ github.event.before }}
+        run: |
+          if [ "$EVENT" = "pull_request" ]; then
+            base="$BASE_SHA"
+          else
+            base="$BEFORE_SHA"
+            if [ -z "$base" ] || [ "$base" = "0000000000000000000000000000000000000000" ]; then
+              base="HEAD~1"
+            fi
+          fi
+          git diff --name-only "$base" HEAD > "$RUNNER_TEMP/changed.txt"
+
+      - name: Validate changed templates
+        run: go run ./scripts/validate-registry -changed "$RUNNER_TEMP/changed.txt"
+
+      - name: Legacy summary
+        run: go run ./scripts/validate-registry
+
+      - name: Pick folders to smoke test
+        id: changed
+        run: |
+          folders=$(grep -oE '^registry/templates/[^/]+/' "$RUNNER_TEMP/changed.txt" | cut -d/ -f3 | sort -u \
+            | grep -E '^[a-z0-9]+(-[a-z0-9]+)*$' | while read -r id; do
+              [ -f "registry/templates/$id/compose.yaml" ] && echo "$id"
+            done | head -n "$REGISTRY_SMOKE_MAX" | jq -R . | jq -sc .)
+          echo "folders=${folders:-[]}" >> "$GITHUB_OUTPUT"
+
+  smoke:
+    name: Smoke ${{ matrix.id }}
+    needs: validate
+    if: needs.validate.outputs.folders != '[]'
+    runs-on: ubuntu-latest
+    timeout-minutes: 20
+    strategy:
+      fail-fast: false
+      matrix:
+        id: ${{ fromJSON(needs.validate.outputs.folders) }}
+    steps:
+      - name: Checkout
+        uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+        with:
+          persist-credentials: false
+
+      - name: Check arm64 images
+        working-directory: registry/templates/${{ matrix.id }}
+        run: |
+          for image in $(docker compose -f compose.yaml config --images); do
+            if ! docker buildx imagetools inspect "$image" 2>/dev/null | grep -q 'linux/arm64'; then
+              echo "::warning title=no linux/arm64::$image has no linux/arm64 build"
+            fi
+          done
+
+      - name: Compose up
+        working-directory: registry/templates/${{ matrix.id }}
+        run: docker compose -f compose.yaml up --wait --wait-timeout "$REGISTRY_SMOKE_WAIT_TIMEOUT"
+
+      - name: Compose logs on failure
+        if: failure()
+        working-directory: registry/templates/${{ matrix.id }}
+        run: docker compose -f compose.yaml logs --tail 80
+
+      - name: Compose down
+        if: always()
+        working-directory: registry/templates/${{ matrix.id }}
+        run: docker compose -f compose.yaml down -v
