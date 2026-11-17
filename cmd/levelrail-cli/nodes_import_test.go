@@ -29,3 +29,22 @@ func TestRun_NodesImport_MintsTokenForExistingInstance(t *testing.T) {
 		t.Fatalf("stdout %q body %q", stdout, gotBody)
 	}
 }
+
+func TestRun_NodesImport_SendsRegionQuery(t *testing.T) {
+	var gotQuery string
+	srv := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		w.Header().Set("Content-Type", "application/json")
+		if strings.HasSuffix(r.URL.Path, "/resources") {
+			gotQuery = r.URL.RawQuery
+			_, _ = w.Write([]byte(`{"resources":[{"id":"eu-west-1/i-0abc","name":"web","region":"eu-west-1","status":"running"}]}`))
+			return
+		}
+		_, _ = w.Write([]byte(`{"token":"tok-2"}`))
+	}))
+	defer srv.Close()
+
+	runCLIExpectOK(t, []string{"nodes", "import", "--provider", "aws", "--region", "eu-west-1", "--instance-id", "i-0abc", "--api-url", srv.URL})
+	if !strings.Contains(gotQuery, "region=eu-west-1") {
+		t.Fatalf("query %q", gotQuery)
+	}
+}

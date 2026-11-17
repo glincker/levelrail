@@ -17,7 +17,7 @@ func runNodesProvidersServers(prog string, args []string, stdout, stderr io.Writ
 	var provider, region string
 	var refresh bool
 	fs.StringVar(&provider, "provider", "", "provider to list servers for (required)")
-	fs.StringVar(&region, "region", "", "only servers in this region (the provider lists its connected region)")
+	fs.StringVar(&region, "region", "", "only servers in this region (aws lists that region, others filter the connected list)")
 	fs.BoolVar(&refresh, "refresh", false, "bypass the cached list")
 	tokenFlag, apiURLFlag, profileFlag, jsonOut, of, exitCode, ok := parseAPIFlags(fs, args, apiFlagPtrs{tokenFlagP, apiURLFlagP, profileFlagP, jsonOutP, outputFlagP, queryFlagP}, prog, stderr)
 	if !ok {
@@ -27,7 +27,7 @@ func runNodesProvidersServers(prog string, args []string, stdout, stderr io.Writ
 		return reportError(stdout, stderr, jsonOut, newValidationError("--provider is required"))
 	}
 	client := apiClientFromFlags(prog, apiURLFlag, tokenFlag, profileFlag, lookupEnv)
-	list, err := client.ListNodeProviderServers(context.Background(), provider, refresh)
+	list, err := client.ListNodeProviderServers(context.Background(), provider, region, refresh)
 	if err != nil {
 		return reportError(stdout, stderr, jsonOut, fmt.Errorf("list servers for provider %q: %w", provider, err))
 	}
@@ -74,10 +74,11 @@ func printProviderServers(out io.Writer, list []apiclient.NodeProviderServer) {
 // runs the printed command on it.
 func runNodesImport(prog string, args []string, stdout, stderr io.Writer, lookupEnv func(string) (string, bool)) int {
 	fs, tokenFlagP, apiURLFlagP, profileFlagP, jsonOutP, outputFlagP, queryFlagP := apiFlagSet(prog, "nodes import", "print the join token response as JSON to stdout and nothing else", stderr)
-	var provider, instanceID, name string
+	var provider, instanceID, name, region string
 	var mesh bool
 	fs.StringVar(&provider, "provider", "", "provider that owns the instance (required)")
 	fs.StringVar(&instanceID, "instance-id", "", "existing instance id, for example i-0abc (required)")
+	fs.StringVar(&region, "region", "", "region to search (aws queries it directly, default the connected region)")
 	fs.StringVar(&name, "name", "", "node name (default: the instance name tag)")
 	fs.BoolVar(&mesh, "mesh", false, "join the WireGuard mesh")
 	tokenFlag, apiURLFlag, profileFlag, jsonOut, of, exitCode, ok := parseAPIFlags(fs, args, apiFlagPtrs{tokenFlagP, apiURLFlagP, profileFlagP, jsonOutP, outputFlagP, queryFlagP}, prog, stderr)
@@ -88,7 +89,7 @@ func runNodesImport(prog string, args []string, stdout, stderr io.Writer, lookup
 		return reportError(stdout, stderr, jsonOut, newValidationError("--provider and --instance-id are required"))
 	}
 	client := apiClientFromFlags(prog, apiURLFlag, tokenFlag, profileFlag, lookupEnv)
-	list, err := client.ListNodeProviderServers(context.Background(), provider, true)
+	list, err := client.ListNodeProviderServers(context.Background(), provider, region, true)
 	if err != nil {
 		return reportError(stdout, stderr, jsonOut, fmt.Errorf("list servers for provider %q: %w", provider, err))
 	}

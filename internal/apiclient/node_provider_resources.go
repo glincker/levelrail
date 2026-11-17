@@ -3,6 +3,7 @@ package apiclient
 import (
 	"context"
 	"net/http"
+	"net/url"
 )
 
 // NodeProviderServer is one machine in a provider account.
@@ -21,10 +22,18 @@ type NodeProviderServer struct {
 }
 
 // ListNodeProviderServers calls GET /api/v1/node-providers/{provider}/resources.
-func (c *Client) ListNodeProviderServers(ctx context.Context, provider string, refresh bool) ([]NodeProviderServer, error) {
+// A non-empty region asks the provider to list that region (optional).
+func (c *Client) ListNodeProviderServers(ctx context.Context, provider, region string, refresh bool) ([]NodeProviderServer, error) {
 	path := nodeProvidersPath() + "/" + PathEscape(provider) + "/resources"
+	q := url.Values{}
 	if refresh {
-		path += "?refresh=1"
+		q.Set("refresh", "1")
+	}
+	if region != "" {
+		q.Set("region", region)
+	}
+	if len(q) > 0 {
+		path += "?" + q.Encode()
 	}
 	var out struct {
 		Resources []NodeProviderServer `json:"resources"`

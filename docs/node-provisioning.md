@@ -355,4 +355,4 @@ levelrail-cli nodes providers servers --provider aws --region us-east-1
 levelrail-cli nodes import --provider aws --instance-id i-0abc1234def567890 --name web-1
 ```
 
-`servers` lists running and stopped instances in the region the provider was connected with, so `--region` filters that list. `import` prints a single-use join token and the agent install command. Run the command on the instance (over your own SSH session) and the node appears once its agent sends a heartbeat.
+`servers` lists running and stopped instances. On AWS, `--region` queries that region directly (checked against the account's regions); without it the region the provider was connected with is listed. Other providers list their whole account and `--region` filters it. `import` prints a single-use join token and the agent install command. Run the command on the instance (over your own SSH session) and the node appears once its agent sends a heartbeat.

@@ -58,6 +58,11 @@ func (c *providerReadCache[T]) slot(provider string) *cacheSlot[T] {
 func (c *providerReadCache[T]) invalidate(provider string) {
 	c.mu.Lock()
 	delete(c.slots, provider)
+	for k := range c.slots {
+		if strings.HasPrefix(k, provider+"@") {
+			delete(c.slots, k)
+		}
+	}
 	c.mu.Unlock()
 }
 
@@ -112,16 +117,33 @@ type resourceSnapshot struct {
 
 // loadProviderResources serves the cached machine list or fetches it.
 func (rt *Router) loadProviderResources(ctx context.Context, provider string, p NodeProvisioner, refresh bool) (snap resourceSnapshot, cached bool, retry time.Duration, err error) {
+	return rt.loadProviderResourcesIn(ctx, provider, "", p, refresh)
+}
+
+// loadProviderResourcesIn is loadProviderResources for one region, cached in
+// its own slot so regions never serve each other's list.
+func (rt *Router) loadProviderResourcesIn(ctx context.Context, provider, region string, p NodeProvisioner, refresh bool) (snap resourceSnapshot, cached bool, retry time.Duration, err error) {
 	lister, ok := p.(provision.ResourceLister)
 	if !ok {
 		return snap, false, 0, errResourcesUnsupported
 	}
 	ttl := time.Duration(rt.tunableInt(ctx, runtimesettings.KeyProvisionResourcesCacheTTL, "APP_PROVISION_RESOURCES_CACHE_TTL_SECONDS", defaultResourcesCacheTTLSecs)) * time.Second
 	gap := time.Duration(rt.tunableInt(ctx, runtimesettings.KeyProvisionResourcesRefreshGap, "APP_PROVISION_RESOURCES_REFRESH_MIN_INTERVAL_SECONDS", defaultResourcesRefreshGap)) * time.Second
-	return rt.providerCaps.resources.get(provider, ttl, gap, refresh, func() (resourceSnapshot, error) {
+	slot := provider
+	rl, regional := p.(provision.RegionResourceLister)
+	if region != "" && regional {
+		slot = provider + "@" + region
+	}
+	return rt.providerCaps.resources.get(slot, ttl, gap, refresh, func() (resourceSnapshot, error) {
 		rctx, cancel := context.WithTimeout(ctx, providerReadTimeout)
 		defer cancel()
-		list, lerr := lister.ListResources(rctx)
+		var list []provision.ProviderResource
+		var lerr error
+		if region != "" && regional {
+			list, lerr = rl.ListServers(rctx, region)
+		} else {
+			list, lerr = lister.ListResources(rctx)
+		}
 		return resourceSnapshot{resources: list, at: time.Now().UTC()}, lerr
 	})
 }
@@ -181,6 +203,15 @@ func (rt *Router) annotateResources(ctx context.Context, provider string, in []p
 	return out
 }
 
+func regionKnown(regions []provision.Region, id string) bool {
+	for _, r := range regions {
+		if r.ID == id {
+			return true
+		}
+	}
+	return false
+}
+
 func addressHost(addr string) string {
 	if h, _, err := net.SplitHostPort(addr); err == nil {
 		return h
@@ -203,7 +234,7 @@ func (rt *Router) writeProviderReadError(w http.ResponseWriter, provider, capabi
 }
 
 // handleListNodeProviderResources handles GET
-// /api/v1/node-providers/{provider}/resources?refresh=1: the machines in the
+// /api/v1/node-providers/{provider}/resources?refresh=1&region=R: the machines in the
 // provider account, marked managed or discovered. Read-only.
 func (rt *Router) handleListNodeProviderResources(w http.ResponseWriter, r *http.Request) {
 	provider := r.PathValue("provider")
@@ -216,7 +247,19 @@ func (rt *Router) handleListNodeProviderResources(w http.ResponseWriter, r *http
 		writeError(w, status, msg)
 		return
 	}
-	snap, cached, retry, err := rt.loadProviderResources(r.Context(), provider, p, r.URL.Query().Get("refresh") == "1")
+	region := strings.TrimSpace(r.URL.Query().Get("region"))
+	if region != "" {
+		if _, regional := p.(provision.RegionResourceLister); regional {
+			if known, rerr := p.ListRegions(r.Context()); rerr != nil {
+				rt.writeProviderReadError(w, provider, "regions.read", rerr)
+				return
+			} else if !regionKnown(known, region) {
+				writeError(w, http.StatusBadRequest, "unknown region for this provider")
+				return
+			}
+		}
+	}
+	snap, cached, retry, err := rt.loadProviderResourcesIn(r.Context(), provider, region, p, r.URL.Query().Get("refresh") == "1")
 	if retry > 0 {
 		w.Header().Set("Retry-After", strconv.Itoa(int(retry.Seconds())+1))
 		writeError(w, http.StatusTooManyRequests, "the machine list was just refreshed, try again shortly")
