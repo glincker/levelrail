@@ -42,6 +42,7 @@ Recommended memory: about 1024 MiB.
 | `db` | `POSTGRES_DB` | Preset in the template |
 | `db` | `POSTGRES_PASSWORD` | Generated at deploy |
 | `db` | `POSTGRES_USER` | Preset in the template |
+| `redis` | `REDIS_PASSWORD` | Generated at deploy |
 | `worker` | `APP_ENV` | Preset in the template |
 | `worker` | `APP_SECRET_KEY` | Generated at deploy |
 | `worker` | `ENCRYPTION_KEY` | Generated at deploy |
@@ -62,8 +63,7 @@ Level: **Standard**.
 
 What this template needs:
 
-- You must provide one or more secrets before it can deploy (`redis`): command[2].
-- Passwords and keys are generated at deploy time (`automatisch`, `db`, `worker`): APP_SECRET_KEY, ENCRYPTION_KEY, POSTGRES_PASSWORD, REDIS_PASSWORD, WEBHOOK_SECRET_KEY, POSTGRES_PASSWORD.
+- Passwords and keys are generated at deploy time (`automatisch`, `db`, `redis`, `worker`): APP_SECRET_KEY, ENCRYPTION_KEY, POSTGRES_PASSWORD, REDIS_PASSWORD, WEBHOOK_SECRET_KEY, POSTGRES_PASSWORD, REDIS_PASSWORD.
 - Stores data in named volumes (`automatisch`, `db`, `redis`, `worker`): postgres_data, redis_data, storage.
 
 What Levelrail adds around it:
@@ -76,8 +76,6 @@ What Levelrail adds around it:
 - Exposure report shows what is reachable from outside.
 - Host firewall rules managed for published ports.
 
-<Warning>This template needs configuration before it can deploy. Open it in the dashboard, set each variable marked "You must provide" in the Compose body, then deploy.</Warning>
-
 ## Deploy Automatisch with Levelrail
 
 In the dashboard, open **Apps**, choose **New app**, then **Browse templates**, and select Automatisch. Review the Compose body and deploy.
@@ -85,9 +83,7 @@ In the dashboard, open **Apps**, choose **New app**, then **Browse templates**, 
 With the CLI:
 
 ```bash
-levelrail-cli templates get automatisch --output json | jq -r .compose > automatisch.compose.yaml
-# edit automatisch.compose.yaml to set the variables you must provide
-levelrail-cli apps deploy-compose my-automatisch --file automatisch.compose.yaml
+levelrail-cli templates deploy automatisch --name my-automatisch
 ```
 
 See the [service template catalog](/templates-and-registry) for how templates work, and [Getting started](/getting-started) if you have not installed Levelrail yet.

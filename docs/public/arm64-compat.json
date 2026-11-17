@@ -2,14 +2,14 @@
   "generated_at": "2026-11-11T22:14:40Z",
   "note": "yes means every image manifest lists the architecture. It is a manifest fact, not a tested claim. unknown means no readable manifest or an install-time image tag.",
   "counts": {
-    "templates": 574,
-    "images": 617,
+    "templates": 592,
+    "images": 641,
     "arm64_yes": 394,
     "arm64_no": 15,
-    "arm64_unknown": 165,
+    "arm64_unknown": 183,
     "image_arm64_yes": 435,
     "image_arm64_no": 15,
-    "image_arm64_unknown": 167
+    "image_arm64_unknown": 191
   },
   "templates": [
     {
@@ -568,6 +568,59 @@
       ]
     },
     {
+      "id": "argilla",
+      "amd64": "unknown",
+      "arm64": "unknown",
+      "images": [
+        {
+          "ref": "argilla/argilla-server:v2.8.0",
+          "platforms": [],
+          "amd64": "unknown",
+          "arm64": "unknown",
+          "source": "unknown"
+        },
+        {
+          "ref": "docker.elastic.co/elasticsearch/elasticsearch:8.12.2",
+          "platforms": [],
+          "amd64": "unknown",
+          "arm64": "unknown",
+          "source": "unknown"
+        },
+        {
+          "ref": "postgres:16-alpine",
+          "platforms": [
+            "linux/386",
+            "linux/amd64",
+            "linux/arm",
+            "linux/arm64",
+            "linux/ppc64le",
+            "linux/riscv64",
+            "linux/s390x"
+          ],
+          "amd64": "yes",
+          "arm64": "yes",
+          "source": "manifest",
+          "checked_at": "2026-11-02T03:14:45Z"
+        },
+        {
+          "ref": "redis:7-alpine",
+          "platforms": [
+            "linux/386",
+            "linux/amd64",
+            "linux/arm",
+            "linux/arm64",
+            "linux/ppc64le",
+            "linux/riscv64",
+            "linux/s390x"
+          ],
+          "amd64": "yes",
+          "arm64": "yes",
+          "source": "manifest",
+          "checked_at": "2026-10-31T23:54:42Z"
+        }
+      ]
+    },
+    {
       "id": "athens",
       "amd64": "unknown",
       "arm64": "unknown",
@@ -677,6 +730,52 @@
       ]
     },
     {
+      "id": "automatisch",
+      "amd64": "unknown",
+      "arm64": "unknown",
+      "images": [
+        {
+          "ref": "automatischio/automatisch:0.15.0",
+          "platforms": [],
+          "amd64": "unknown",
+          "arm64": "unknown",
+          "source": "unknown"
+        },
+        {
+          "ref": "postgres:16-alpine",
+          "platforms": [
+            "linux/386",
+            "linux/amd64",
+            "linux/arm",
+            "linux/arm64",
+            "linux/ppc64le",
+            "linux/riscv64",
+            "linux/s390x"
+          ],
+          "amd64": "yes",
+          "arm64": "yes",
+          "source": "manifest",
+          "checked_at": "2026-11-02T03:14:45Z"
+        },
+        {
+          "ref": "redis:7-alpine",
+          "platforms": [
+            "linux/386",
+            "linux/amd64",
+            "linux/arm",
+            "linux/arm64",
+            "linux/ppc64le",
+            "linux/riscv64",
+            "linux/s390x"
+          ],
+          "amd64": "yes",
+          "arm64": "yes",
+          "source": "manifest",
+          "checked_at": "2026-10-31T23:54:42Z"
+        }
+      ]
+    },
+    {
       "id": "babybuddy",
       "amd64": "yes",
       "arm64": "yes",
@@ -711,6 +810,20 @@
           "arm64": "yes",
           "source": "manifest",
           "checked_at": "2026-10-31T23:54:42Z"
+        }
+      ]
+    },
+    {
+      "id": "baikal",
+      "amd64": "unknown",
+      "arm64": "unknown",
+      "images": [
+        {
+          "ref": "ckulka/baikal:0.10.1-nginx-php8.2",
+          "platforms": [],
+          "amd64": "unknown",
+          "arm64": "unknown",
+          "source": "unknown"
         }
       ]
     },
@@ -1854,6 +1967,20 @@
       ]
     },
     {
+      "id": "dagu",
+      "amd64": "unknown",
+      "arm64": "unknown",
+      "images": [
+        {
+          "ref": "ghcr.io/dagucloud/dagu:2.25.4",
+          "platforms": [],
+          "amd64": "unknown",
+          "arm64": "unknown",
+          "source": "unknown"
+        }
+      ]
+    },
+    {
       "id": "dashdot",
       "amd64": "unknown",
       "arm64": "unknown",
@@ -2349,6 +2476,20 @@
       ]
     },
     {
+      "id": "dumbpad",
+      "amd64": "unknown",
+      "arm64": "unknown",
+      "images": [
+        {
+          "ref": "dumbwareio/dumbpad:1.0.5",
+          "platforms": [],
+          "amd64": "unknown",
+          "arm64": "unknown",
+          "source": "unknown"
+        }
+      ]
+    },
+    {
       "id": "duplicati",
       "amd64": "yes",
       "arm64": "yes",
@@ -2657,6 +2798,20 @@
       ]
     },
     {
+      "id": "ezbookkeeping",
+      "amd64": "unknown",
+      "arm64": "unknown",
+      "images": [
+        {
+          "ref": "mayswind/ezbookkeeping:2.1.1",
+          "platforms": [],
+          "amd64": "unknown",
+          "arm64": "unknown",
+          "source": "unknown"
+        }
+      ]
+    },
+    {
       "id": "factorio",
       "amd64": "yes",
       "arm64": "yes",
@@ -2952,6 +3107,27 @@
           "arm64": "yes",
           "source": "manifest",
           "checked_at": "2026-10-31T23:54:42Z"
+        }
+      ]
+    },
+    {
+      "id": "flarum",
+      "amd64": "unknown",
+      "arm64": "unknown",
+      "images": [
+        {
+          "ref": "crazymax/flarum:1.8.20",
+          "platforms": [],
+          "amd64": "unknown",
+          "arm64": "unknown",
+          "source": "unknown"
+        },
+        {
+          "ref": "mariadb:11.4",
+          "platforms": [],
+          "amd64": "unknown",
+          "arm64": "unknown",
+          "source": "unknown"
         }
       ]
     },
@@ -4334,6 +4510,33 @@
       ]
     },
     {
+      "id": "hortusfox",
+      "amd64": "unknown",
+      "arm64": "unknown",
+      "images": [
+        {
+          "ref": "ghcr.io/danielbrendel/hortusfox-web:v6.4",
+          "platforms": [],
+          "amd64": "unknown",
+          "arm64": "unknown",
+          "source": "unknown"
+        },
+        {
+          "ref": "mariadb:11",
+          "platforms": [
+            "linux/amd64",
+            "linux/arm64",
+            "linux/ppc64le",
+            "linux/s390x"
+          ],
+          "amd64": "yes",
+          "arm64": "yes",
+          "source": "manifest",
+          "checked_at": "2026-10-31T23:54:42Z"
+        }
+      ]
+    },
+    {
       "id": "huginn",
       "amd64": "unknown",
       "arm64": "unknown",
@@ -4362,6 +4565,20 @@
           "arm64": "yes",
           "source": "manifest",
           "checked_at": "2026-11-02T03:14:45Z"
+        }
+      ]
+    },
+    {
+      "id": "ihatemoney",
+      "amd64": "unknown",
+      "arm64": "unknown",
+      "images": [
+        {
+          "ref": "ihatemoney/ihatemoney:7.2.1",
+          "platforms": [],
+          "amd64": "unknown",
+          "arm64": "unknown",
+          "source": "unknown"
         }
       ]
     },
@@ -5088,6 +5305,66 @@
           "amd64": "unknown",
           "arm64": "unknown",
           "source": "unknown"
+        }
+      ]
+    },
+    {
+      "id": "kener",
+      "amd64": "unknown",
+      "arm64": "unknown",
+      "images": [
+        {
+          "ref": "rajnandan1/kener:4.2.1-alpine",
+          "platforms": [],
+          "amd64": "unknown",
+          "arm64": "unknown",
+          "source": "unknown"
+        },
+        {
+          "ref": "redis:7-alpine",
+          "platforms": [
+            "linux/386",
+            "linux/amd64",
+            "linux/arm",
+            "linux/arm64",
+            "linux/ppc64le",
+            "linux/riscv64",
+            "linux/s390x"
+          ],
+          "amd64": "yes",
+          "arm64": "yes",
+          "source": "manifest",
+          "checked_at": "2026-10-31T23:54:42Z"
+        }
+      ]
+    },
+    {
+      "id": "kestra",
+      "amd64": "unknown",
+      "arm64": "unknown",
+      "images": [
+        {
+          "ref": "kestra/kestra:v2.0.10",
+          "platforms": [],
+          "amd64": "unknown",
+          "arm64": "unknown",
+          "source": "unknown"
+        },
+        {
+          "ref": "postgres:16-alpine",
+          "platforms": [
+            "linux/386",
+            "linux/amd64",
+            "linux/arm",
+            "linux/arm64",
+            "linux/ppc64le",
+            "linux/riscv64",
+            "linux/s390x"
+          ],
+          "amd64": "yes",
+          "arm64": "yes",
+          "source": "manifest",
+          "checked_at": "2026-11-02T03:14:45Z"
         }
       ]
     },
@@ -7799,6 +8076,64 @@
       ]
     },
     {
+      "id": "novu",
+      "amd64": "unknown",
+      "arm64": "unknown",
+      "images": [
+        {
+          "ref": "ghcr.io/novuhq/novu/api:3.18.0",
+          "platforms": [],
+          "amd64": "unknown",
+          "arm64": "unknown",
+          "source": "unknown"
+        },
+        {
+          "ref": "ghcr.io/novuhq/novu/dashboard:3.18.0",
+          "platforms": [],
+          "amd64": "unknown",
+          "arm64": "unknown",
+          "source": "unknown"
+        },
+        {
+          "ref": "ghcr.io/novuhq/novu/worker:3.18.0",
+          "platforms": [],
+          "amd64": "unknown",
+          "arm64": "unknown",
+          "source": "unknown"
+        },
+        {
+          "ref": "ghcr.io/novuhq/novu/ws:3.18.0",
+          "platforms": [],
+          "amd64": "unknown",
+          "arm64": "unknown",
+          "source": "unknown"
+        },
+        {
+          "ref": "mongo:8.0.17",
+          "platforms": [],
+          "amd64": "unknown",
+          "arm64": "unknown",
+          "source": "unknown"
+        },
+        {
+          "ref": "redis:7-alpine",
+          "platforms": [
+            "linux/386",
+            "linux/amd64",
+            "linux/arm",
+            "linux/arm64",
+            "linux/ppc64le",
+            "linux/riscv64",
+            "linux/s390x"
+          ],
+          "amd64": "yes",
+          "arm64": "yes",
+          "source": "manifest",
+          "checked_at": "2026-10-31T23:54:42Z"
+        }
+      ]
+    },
+    {
       "id": "nsq",
       "amd64": "unknown",
       "arm64": "unknown",
@@ -8082,6 +8417,20 @@
       ]
     },
     {
+      "id": "omni-tools",
+      "amd64": "unknown",
+      "arm64": "unknown",
+      "images": [
+        {
+          "ref": "iib0011/omni-tools:0.7.0",
+          "platforms": [],
+          "amd64": "unknown",
+          "arm64": "unknown",
+          "source": "unknown"
+        }
+      ]
+    },
+    {
       "id": "once-campfire",
       "amd64": "yes",
       "arm64": "yes",
@@ -8300,6 +8649,52 @@
       ]
     },
     {
+      "id": "openproject",
+      "amd64": "unknown",
+      "arm64": "unknown",
+      "images": [
+        {
+          "ref": "memcached:1.6-alpine",
+          "platforms": [
+            "linux/386",
+            "linux/amd64",
+            "linux/arm",
+            "linux/arm64",
+            "linux/ppc64le",
+            "linux/riscv64",
+            "linux/s390x"
+          ],
+          "amd64": "yes",
+          "arm64": "yes",
+          "source": "manifest",
+          "checked_at": "2026-10-31T23:54:42Z"
+        },
+        {
+          "ref": "openproject/openproject:17.9.7-slim",
+          "platforms": [],
+          "amd64": "unknown",
+          "arm64": "unknown",
+          "source": "unknown"
+        },
+        {
+          "ref": "postgres:17-alpine",
+          "platforms": [
+            "linux/386",
+            "linux/amd64",
+            "linux/arm",
+            "linux/arm64",
+            "linux/ppc64le",
+            "linux/riscv64",
+            "linux/s390x"
+          ],
+          "amd64": "yes",
+          "arm64": "yes",
+          "source": "manifest",
+          "checked_at": "2026-10-31T23:54:42Z"
+        }
+      ]
+    },
+    {
       "id": "openresty",
       "amd64": "unknown",
       "arm64": "unknown",
@@ -8438,6 +8833,20 @@
       "images": [
         {
           "ref": "grafana/otel-lgtm:0.40.0",
+          "platforms": [],
+          "amd64": "unknown",
+          "arm64": "unknown",
+          "source": "unknown"
+        }
+      ]
+    },
+    {
+      "id": "otterwiki",
+      "amd64": "unknown",
+      "arm64": "unknown",
+      "images": [
+        {
+          "ref": "redimp/otterwiki:2.27.0",
           "platforms": [],
           "amd64": "unknown",
           "arm64": "unknown",
@@ -9020,6 +9429,36 @@
           "amd64": "unknown",
           "arm64": "unknown",
           "source": "unknown"
+        }
+      ]
+    },
+    {
+      "id": "picsur",
+      "amd64": "unknown",
+      "arm64": "unknown",
+      "images": [
+        {
+          "ref": "ghcr.io/caramelfur/picsur:0.5.6",
+          "platforms": [],
+          "amd64": "unknown",
+          "arm64": "unknown",
+          "source": "unknown"
+        },
+        {
+          "ref": "postgres:17-alpine",
+          "platforms": [
+            "linux/386",
+            "linux/amd64",
+            "linux/arm",
+            "linux/arm64",
+            "linux/ppc64le",
+            "linux/riscv64",
+            "linux/s390x"
+          ],
+          "amd64": "yes",
+          "arm64": "yes",
+          "source": "manifest",
+          "checked_at": "2026-10-31T23:54:42Z"
         }
       ]
     },
@@ -12126,6 +12565,36 @@
       ]
     },
     {
+      "id": "unleash",
+      "amd64": "unknown",
+      "arm64": "unknown",
+      "images": [
+        {
+          "ref": "postgres:16-alpine",
+          "platforms": [
+            "linux/386",
+            "linux/amd64",
+            "linux/arm",
+            "linux/arm64",
+            "linux/ppc64le",
+            "linux/riscv64",
+            "linux/s390x"
+          ],
+          "amd64": "yes",
+          "arm64": "yes",
+          "source": "manifest",
+          "checked_at": "2026-11-02T03:14:45Z"
+        },
+        {
+          "ref": "unleashorg/unleash-server:7.4.0",
+          "platforms": [],
+          "amd64": "unknown",
+          "arm64": "unknown",
+          "source": "unknown"
+        }
+      ]
+    },
+    {
       "id": "unleash-postgres",
       "amd64": "yes",
       "arm64": "yes",
@@ -13174,6 +13643,36 @@
           "arm64": "yes",
           "source": "manifest",
           "checked_at": "2026-11-02T03:14:45Z"
+        }
+      ]
+    },
+    {
+      "id": "zitadel",
+      "amd64": "unknown",
+      "arm64": "unknown",
+      "images": [
+        {
+          "ref": "ghcr.io/zitadel/zitadel:v4.16.0",
+          "platforms": [],
+          "amd64": "unknown",
+          "arm64": "unknown",
+          "source": "unknown"
+        },
+        {
+          "ref": "postgres:17-alpine",
+          "platforms": [
+            "linux/386",
+            "linux/amd64",
+            "linux/arm",
+            "linux/arm64",
+            "linux/ppc64le",
+            "linux/riscv64",
+            "linux/s390x"
+          ],
+          "amd64": "yes",
+          "arm64": "yes",
+          "source": "manifest",
+          "checked_at": "2026-10-31T23:54:42Z"
         }
       ]
     },

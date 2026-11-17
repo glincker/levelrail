@@ -38,6 +38,7 @@ Recommended memory: about 512 MiB.
 | `zitadel` | `ZITADEL_EXTERNALDOMAIN` | Preset in the template |
 | `zitadel` | `ZITADEL_EXTERNALPORT` | Preset in the template |
 | `zitadel` | `ZITADEL_EXTERNALSECURE` | Preset in the template |
+| `zitadel` | `ZITADEL_MASTERKEY` | Generated at deploy |
 | `zitadel` | `ZITADEL_TLS_ENABLED` | Preset in the template |
 
 Passwords and keys marked as generated are created for you when the app is deployed and stored as secrets. Values are not shown here.
@@ -48,8 +49,7 @@ Level: **Standard**.
 
 What this template needs:
 
-- You must provide one or more secrets before it can deploy (`zitadel`): command[2].
-- Passwords and keys are generated at deploy time (`db`, `zitadel`): POSTGRES_PASSWORD, ZITADEL_DATABASE_POSTGRES_ADMIN_PASSWORD, ZITADEL_DATABASE_POSTGRES_USER_PASSWORD.
+- Passwords and keys are generated at deploy time (`db`, `zitadel`): POSTGRES_PASSWORD, ZITADEL_DATABASE_POSTGRES_ADMIN_PASSWORD, ZITADEL_DATABASE_POSTGRES_USER_PASSWORD, ZITADEL_MASTERKEY.
 - Stores data in named volumes (`db`): zitadel_db_data.
 
 What Levelrail adds around it:
@@ -62,8 +62,6 @@ What Levelrail adds around it:
 - Exposure report shows what is reachable from outside.
 - Host firewall rules managed for published ports.
 
-<Warning>This template needs configuration before it can deploy. Open it in the dashboard, set each variable marked "You must provide" in the Compose body, then deploy.</Warning>
-
 ## Deploy ZITADEL with Levelrail
 
 In the dashboard, open **Apps**, choose **New app**, then **Browse templates**, and select ZITADEL. Review the Compose body and deploy.
@@ -71,9 +69,7 @@ In the dashboard, open **Apps**, choose **New app**, then **Browse templates**, 
 With the CLI:
 
 ```bash
-levelrail-cli templates get zitadel --output json | jq -r .compose > zitadel.compose.yaml
-# edit zitadel.compose.yaml to set the variables you must provide
-levelrail-cli apps deploy-compose my-zitadel --file zitadel.compose.yaml
+levelrail-cli templates deploy zitadel --name my-zitadel
 ```
 
 See the [service template catalog](/templates-and-registry) for how templates work, and [Getting started](/getting-started) if you have not installed Levelrail yet.
