@@ -28,7 +28,7 @@ registry/templates/<id>/compose.yaml
 - Every image has a version tag or a digest. `latest` and a missing tag are errors.
 - Every service has a `healthcheck`.
 - No `privileged: true`, no `network_mode: host`, no mount of `/`.
-- The Docker socket is never mounted unless `template.yaml` sets `requires_docker_socket: true`.
+- The Docker socket is never mounted. Levelrail refuses it at deploy time, so a template that needs it cannot be listed.
 - Published ports are container-only, for example `"3000"`, not `"3000:3000"`.
 - `icon`, when set, is a lowercase slug matching `^[a-z0-9-]+$`. It is not checked against the icon library yet.
 

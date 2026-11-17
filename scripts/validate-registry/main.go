@@ -51,16 +51,14 @@ var (
 	interpRe = regexp.MustCompile(`\$\{[^}]*\}`)
 )
 
-// meta is read leniently here: validator-only fields such as
-// requires_docker_socket must not depend on the loader schema.
+// meta is read leniently so the validator does not depend on the loader schema.
 type meta struct {
-	ID                   string `yaml:"id"`
-	Name                 string `yaml:"name"`
-	Slogan               string `yaml:"slogan"`
-	Category             string `yaml:"category"`
-	DocumentationURL     string `yaml:"documentation_url"`
-	Icon                 string `yaml:"icon"`
-	RequiresDockerSocket bool   `yaml:"requires_docker_socket"`
+	ID               string `yaml:"id"`
+	Name             string `yaml:"name"`
+	Slogan           string `yaml:"slogan"`
+	Category         string `yaml:"category"`
+	DocumentationURL string `yaml:"documentation_url"`
+	Icon             string `yaml:"icon"`
 }
 
 // knownCategories are the categories the shipped catalog already uses.
@@ -252,17 +250,16 @@ func validateFolder(folder, id string, cats map[string]bool) []Problem {
 		add(ruleFields, "missing required field compose (%s)", catalog.RegistryComposeFile)
 		return ps
 	}
-	return append(ps, validateCompose(id, body, m.RequiresDockerSocket)...)
+	return append(ps, validateCompose(id, body)...)
 }
 
-func validateCompose(id string, body []byte, allowSocket bool) []Problem {
+func validateCompose(id string, body []byte) []Problem {
 	var ps []Problem
 	add := func(rule, format string, args ...any) {
 		ps = append(ps, Problem{Template: id, Rule: rule, Message: fmt.Sprintf(format, args...)})
 	}
 	f, err := compose.Parse(body)
-	// Validate rejects the Docker socket outright; an explicit opt-in skips it.
-	if err == nil && !allowSocket {
+	if err == nil {
 		err = f.Validate()
 	}
 	if err != nil {
@@ -279,6 +276,7 @@ func validateCompose(id string, body []byte, allowSocket bool) []Problem {
 		names = append(names, n)
 	}
 	sort.Strings(names)
+	completesByDesign := completedDeps(doc.Services)
 	for _, n := range names {
 		svc := doc.Services[n]
 		if img, ok := svc["image"].(string); ok {
@@ -286,7 +284,7 @@ func validateCompose(id string, body []byte, allowSocket bool) []Problem {
 				add(ruleImage, "service %s: image %q %s", n, img, msg)
 			}
 		}
-		if !hasHealthcheck(svc) {
+		if !hasHealthcheck(svc) && !completesByDesign[n] {
 			add(ruleHealth, "service %s: no healthcheck", n)
 		}
 		if p, _ := svc["privileged"].(bool); p {
@@ -297,10 +295,7 @@ func validateCompose(id string, body []byte, allowSocket bool) []Problem {
 		}
 		for _, src := range bindSources(svc["volumes"]) {
 			if isHostRoot(src) || isDockerSocket(src) {
-				if isDockerSocket(src) && allowSocket {
-					continue
-				}
-				add(ruleSecurity, "service %s: mounting %s needs requires_docker_socket: true (socket only) or is not allowed", n, src)
+				add(ruleSecurity, "service %s: mounting %s is never allowed", n, src)
 			}
 		}
 		if pub, ok := svc["ports"].([]any); ok {
@@ -312,6 +307,21 @@ func validateCompose(id string, body []byte, allowSocket bool) []Problem {
 		}
 	}
 	return ps
+}
+
+// completedDeps names the one-shot jobs other services wait on until they exit
+// successfully; such a job cannot report healthy, so it needs no healthcheck.
+func completedDeps(services map[string]map[string]any) map[string]bool {
+	out := map[string]bool{}
+	for _, svc := range services {
+		deps, _ := svc["depends_on"].(map[string]any)
+		for name, v := range deps {
+			if c, _ := v.(map[string]any); c["condition"] == "service_completed_successfully" {
+				out[name] = true
+			}
+		}
+	}
+	return out
 }
 
 func hasHealthcheck(svc map[string]any) bool {
