@@ -12,14 +12,14 @@ A `TemplateApp` document installs a catalog template the same way the dashboard 
 ```yaml
 version: 1
 kind: TemplateApp
-metadata: { name: blog }
+metadata: { name: archive }
 spec:
-  template: ghost
-  name: blog              # optional, defaults to metadata.name
+  template: archivebox
+  name: archive           # optional, defaults to metadata.name
   env:                    # the template's install form
-    ADMIN_PASSWORD: ${{ env.GHOST_ADMIN_PASSWORD }}
+    ADMIN_USERNAME: ${{ env.ARCHIVE_ADMIN }}
   domains:                # service: host, only for services the template offers
-    web: blog.example.com
+    archivebox: archive.example.com
 ```
 
 | Field | Meaning |
@@ -44,17 +44,17 @@ spec:
 ```yaml
 version: 1
 kind: TemplateApp
-metadata: { name: blog }
+metadata: { name: archive }
 spec:
-  template: ghost
+  template: archivebox
   env:
-    ADMIN_PASSWORD: ${{ env.GHOST_ADMIN_PASSWORD }}
+    ADMIN_USERNAME: ${{ env.ARCHIVE_ADMIN }}
   domains:
-    web: blog.example.com
+    archivebox: archive.example.com
 ```
 
 ```bash
-GHOST_ADMIN_PASSWORD=change-me levelrail apply -f blog.yaml --allow-env GHOST_ADMIN_PASSWORD
+ARCHIVE_ADMIN=admin levelrail apply -f archive.yaml --allow-env ARCHIVE_ADMIN
 ```
 
 ## What plan and apply check
