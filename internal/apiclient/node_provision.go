@@ -22,6 +22,31 @@ type NodeProviderResource struct {
 	LastTestedAt   *time.Time `json:"last_tested_at,omitempty"`
 	LastTestOK     *bool      `json:"last_test_ok,omitempty"`
 	LastTestDetail string     `json:"last_test_detail,omitempty"`
+
+	Capabilities *ProviderCapabilities `json:"capabilities,omitempty"`
+}
+
+// ProviderCapability mirrors internal/provision's Capability.
+type ProviderCapability struct {
+	ID         string    `json:"id"`
+	Group      string    `json:"group"`
+	State      string    `json:"state"`
+	Evidence   string    `json:"evidence"`
+	Needs      string    `json:"needs"`
+	UsedBy     []string  `json:"used_by"`
+	ObservedAt time.Time `json:"observed_at"`
+}
+
+// ProviderCapabilities mirrors internal/provision's ProviderCapabilities.
+type ProviderCapabilities struct {
+	Provider       string               `json:"provider"`
+	AccountID      string               `json:"account_id"`
+	Method         string               `json:"method"`
+	CheckedAt      time.Time            `json:"checked_at"`
+	Cached         bool                 `json:"cached"`
+	NextCheckAt    *time.Time           `json:"next_check_at,omitempty"`
+	LiveCheckError string               `json:"live_check_error,omitempty"`
+	Capabilities   []ProviderCapability `json:"capabilities"`
 }
 
 // NodeProviderTestResult mirrors internal/api's nodeProviderTestResult.
@@ -29,6 +54,10 @@ type NodeProviderTestResult struct {
 	OK       bool      `json:"ok"`
 	Message  string    `json:"message"`
 	TestedAt time.Time `json:"tested_at"`
+	Code     string    `json:"code,omitempty"`
+	Needs    string    `json:"needs,omitempty"`
+
+	Capabilities *ProviderCapabilities `json:"capabilities,omitempty"`
 }
 
 // NodeProviderRegionResource mirrors internal/api's
@@ -82,6 +111,13 @@ type SetNodeProviderCredentialRequest struct {
 	Label                 string `json:"label,omitempty"`
 	Location              string `json:"location,omitempty"`
 	Notes                 string `json:"notes,omitempty"`
+	// Oracle API key fields. The private key is sent once and never echoed back.
+	TenancyOCID     string `json:"tenancy_ocid,omitempty"`
+	UserOCID        string `json:"user_ocid,omitempty"`
+	Fingerprint     string `json:"fingerprint,omitempty"`
+	PrivateKeyPEM   string `json:"private_key_pem,omitempty"`
+	CompartmentOCID string `json:"compartment_ocid,omitempty"`
+	SubnetOCID      string `json:"subnet_ocid,omitempty"`
 }
 
 // CreateNodeProvisionRequest is POST /api/v1/nodes/provision's body.
@@ -166,5 +202,29 @@ func (c *Client) ListNodeProvisions(ctx context.Context) ([]NodeProvisionResourc
 func (c *Client) GetNodeProvision(ctx context.Context, id string) (NodeProvisionResource, error) {
 	var out NodeProvisionResource
 	err := c.do(ctx, http.MethodGet, nodeProvisionsPath()+"/"+PathEscape(id), nil, &out)
+	return out, err
+}
+
+// DestroyNodeProvision calls DELETE /api/v1/node-provisions/{id}. force
+// adds ?force=true to destroy a server whose node still runs workloads.
+func (c *Client) DestroyNodeProvision(ctx context.Context, id string, force bool) (NodeProvisionResource, error) {
+	path := nodeProvisionsPath() + "/" + PathEscape(id)
+	if force {
+		path += "?force=true"
+	}
+	var out NodeProvisionResource
+	err := c.do(ctx, http.MethodDelete, path, nil, &out)
+	return out, err
+}
+
+// GetNodeProviderCapabilities calls GET /api/v1/node-providers/{provider}/capabilities,
+// with ?refresh=1 to force a new probe.
+func (c *Client) GetNodeProviderCapabilities(ctx context.Context, provider string, refresh bool) (ProviderCapabilities, error) {
+	path := nodeProvidersPath() + "/" + PathEscape(provider) + "/capabilities"
+	if refresh {
+		path += "?refresh=1"
+	}
+	var out ProviderCapabilities
+	err := c.do(ctx, http.MethodGet, path, nil, &out)
 	return out, err
 }

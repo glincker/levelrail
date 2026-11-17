@@ -58,3 +58,21 @@ func TestRun_NodesProvisions_Help(t *testing.T) {
 		t.Errorf("stdout = %q, want usage text", stdout)
 	}
 }
+
+func TestRun_NodesProvisionsDestroy(t *testing.T) {
+	var gotMethod, gotPath, gotQuery string
+	srv := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		gotMethod, gotPath, gotQuery = r.Method, r.URL.Path, r.URL.RawQuery
+		w.Header().Set("Content-Type", "application/json")
+		_ = json.NewEncoder(w).Encode(nodeProvisionResource{ID: "npv_1", Status: "destroyed"})
+	}))
+	defer srv.Close()
+
+	stdout, _ := runCLIExpectOK(t, []string{"nodes", "provisions", "destroy", "npv_1", "--yes", "--force", "--api-url", srv.URL})
+	if gotMethod != http.MethodDelete || gotPath != "/api/v1/node-provisions/npv_1" || gotQuery != "force=true" {
+		t.Errorf("request = %s %s?%s", gotMethod, gotPath, gotQuery)
+	}
+	if !strings.Contains(stdout, "destroyed") {
+		t.Errorf("stdout = %q, want the destroyed status", stdout)
+	}
+}

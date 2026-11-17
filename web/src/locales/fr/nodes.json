@@ -1041,5 +1041,93 @@
     "description_one": "Laissez un champ vide pour suivre la valeur par défaut de la plateforme. Les alertes de CPU et de mémoire se déclenchent après {{count}} évaluation au-dessus de la limite.",
     "description_other": "Laissez un champ vide pour suivre la valeur par défaut de la plateforme. Les alertes de CPU et de mémoire se déclenchent après {{count}} évaluations consécutives au-dessus de la limite.",
     "description_many": "Laissez un champ vide pour suivre la valeur par défaut de la plateforme. Les alertes de CPU et de mémoire se déclenchent après {{count}} évaluations consécutives au-dessus de la limite."
+  },
+  "provisionDestroy": {
+    "trigger": "Détruire le serveur",
+    "title": "Détruire le serveur \"{{name}}\" ?",
+    "description": "Cela supprime définitivement le serveur cloud chez {{provider}} et retire le nœud. Le fournisseur cesse de facturer une fois le serveur supprimé. Action irréversible.",
+    "confirm": "Détruire le serveur",
+    "destroying": "Destruction...",
+    "destroyed": "Serveur \"{{name}}\" détruit.",
+    "workloadsTitle": "Ce nœud exécute encore des charges",
+    "workloadsBody": "Videz-le d'abord, ou détruisez-le quand même. Les apps et bases de données qu'il héberge seront perdues.",
+    "force": "Détruire quand même, j'accepte de perdre les charges de ce nœud",
+    "statusDestroying": "Destruction",
+    "statusDestroyed": "Détruit"
+  },
+  "provisionGuard": {
+    "title": "Limite de serveurs atteinte",
+    "body": "{{reason}}",
+    "hint": "Les limites sont les réglages provision.max_servers et provision.max_monthly_price_usd."
+  },
+  "oracle": {
+    "name": "Oracle Cloud",
+    "hint": "Clé de signature API, région, compartiment et sous-réseau.",
+    "form": {
+      "intro": "Une clé de signature API d'un utilisateur pouvant gérer des instances dans un compartiment. Elle sert uniquement à créer et inspecter des serveurs.",
+      "tenancy": "OCID du tenancy",
+      "user": "OCID de l'utilisateur",
+      "fingerprint": "Empreinte de la clé",
+      "region": "Région",
+      "compartment": "OCID du compartiment",
+      "compartmentHelp": "Par défaut, le tenancy (compartiment racine).",
+      "subnet": "OCID du sous-réseau",
+      "key": "Clé privée (PEM)",
+      "keyFile": "Charger depuis un fichier",
+      "keyHelp": "Non conservée dans le navigateur et jamais réaffichée après l'enregistrement.",
+      "keyStored": "Une clé est enregistrée. Collez-en une nouvelle pour la remplacer.",
+      "keyStoredHelp": "La clé enregistrée n'est jamais affichée. Collez-en une nouvelle pour la remplacer.",
+      "permissionsTitle": "Moindre privilège",
+      "permissions": "Gérer instance-family et utiliser virtual-network-family dans le compartiment, plus lecture des images et compartiments. Utilisez un utilisateur et une clé dédiés.",
+      "testAndConnect": "Tester et connecter",
+      "test": "Tester la connexion",
+      "testing": "Test en cours...",
+      "testStored": "Tester la connexion enregistrée",
+      "saving": "Enregistrement...",
+      "saved": "Identifiants {{provider}} enregistrés.",
+      "disconnect": "Déconnecter",
+      "confirmDisconnect": "Confirmer la déconnexion",
+      "disconnected": "{{provider}} déconnecté."
+    },
+    "wizard": {
+      "title": "Configuration guidee de la cle d'API",
+      "intro": "Oracle ne propose pas de connexion pour l'API Compute, la connexion se fait donc avec une cle d'API restreinte. La paire de cles est creee dans ce navigateur et la cle privee n'est envoyee que lors de l'enregistrement de l'identifiant ci-dessous.",
+      "keyTitle": "1. Creer la paire de cles",
+      "generate": "Generer la paire de cles",
+      "regenerate": "Generer une nouvelle paire",
+      "generating": "Generation...",
+      "use": "Utiliser la cle dans le formulaire",
+      "used": "Cle placee dans le formulaire",
+      "failed": "Ce navigateur n'a pas pu generer la cle. Utilisez un navigateur recent en HTTPS ou localhost.",
+      "consoleSteps": "Dans la console Oracle, ouvrez Mon profil, Cles d'API, Ajouter une cle d'API, choisissez Coller une cle publique et collez celle-ci.",
+      "publicKey": "Cle publique",
+      "fingerprint": "Empreinte",
+      "privateNote": "La cle privee n'est pas affichee. Elle remplit le formulaire ci-dessous et est effacee de cette aide une fois utilisee. Enregistrez l'identifiant pour la conserver.",
+      "policyTitle": "2. Creer la politique restreinte",
+      "policyNote": "Un utilisateur dedie dans son propre groupe, avec uniquement ces instructions sur un compartiment. Rien au niveau de la tenancy.",
+      "cliNote": "La meme configuration avec la CLI OCI :",
+      "copy": "Copier",
+      "copied": "Copie",
+      "checkTitle": "3. Verifier la connexion",
+      "check": "Verifier la connexion",
+      "checking": "Verification...",
+      "checkNeedsSave": "Enregistrez d'abord l'identifiant, puis verifiez.",
+      "checkOk": "Connecte. Regions disponibles : {{total}}."
+    },
+    "sizes": {
+      "flex": "Forme flexible",
+      "preset": "{{ocpus}} OCPU, {{memory}} Go",
+      "ocpus": "OCPU",
+      "memory": "Mémoire (Go)",
+      "priceNote": "Oracle facture les formes Flex par OCPU et mémoire. Cette app ne sait pas si un serveur est couvert par le quota de votre tenancy, vérifiez votre console Oracle."
+    },
+    "guard": {
+      "title": "Oracle a refusé la création",
+      "enabled": "Le provisionnement Oracle est désactivé. Activez d'abord le réglage {{setting}}.",
+      "a1": "Le quota A1 est à 0 ou serait dépassé. Augmentez {{setting}} pour autoriser cette taille.",
+      "micro": "La limite des formes micro serait dépassée. Augmentez {{setting}}.",
+      "paidShape": "Cette forme n'est pas couverte par les limites de quota et peut être facturée. Activez {{setting}} pour l'utiliser.",
+      "unknownPrice": "Oracle n'indique aucun prix pour cette forme, le plafond de prix ne peut pas être vérifié. Activez {{setting}} (ou provision.allow_unknown_price) pour l'autoriser."
+    }
   }
 }

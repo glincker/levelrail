@@ -17,6 +17,7 @@ import { AttentionStrip } from './AttentionStrip'
 import { CatalogSection } from './CatalogSection'
 import { ConnectionCard } from './ConnectionCard'
 import { FilterBar } from './FilterBar'
+import { InfraGroups } from './InfraGroups'
 
 export function IntegrationsPage({
   focusCatalog = false,
@@ -84,15 +85,6 @@ export function IntegrationsPage({
         }
       />
     )
-  } else if (all.length === 0) {
-    connected = (
-      <EmptyState
-        compact
-        icon={<PlugGlassIcon className="size-6" />}
-        title={t('empty.title')}
-        description={t('empty.description')}
-      />
-    )
   } else if (groups.length === 0) {
     connected = (
       <EmptyState
@@ -144,6 +136,16 @@ export function IntegrationsPage({
     )
   }
 
+  const noConnections = !isPending && !isError && all.length === 0
+  const catalog = (
+    <div ref={catalogRef} className="space-y-2">
+      {noConnections ? (
+        <p className="text-sm text-muted-foreground">{t('empty.intro')}</p>
+      ) : null}
+      <CatalogSection />
+    </div>
+  )
+
   return (
     <PageTemplate
       icon={<PlugGlassIcon size="1.4em" />}
@@ -152,22 +154,33 @@ export function IntegrationsPage({
       width="wide"
     >
       <div className="space-y-6">
-        <AttentionStrip items={attentionList(all, now)} now={now} />
-        <section aria-labelledby="integrations-connected" className="space-y-4">
-          <h2
-            id="integrations-connected"
-            className="font-(family-name:--glinr-font-display) text-(length:--glinr-type-size-section) leading-(--glinr-type-leading-section) font-(weight:--glinr-type-heading-weight) text-foreground"
-          >
-            {t('connected.title')}
-          </h2>
-          {all.length > 0 || filtered ? (
-            <FilterBar filters={filters} onChange={setFilters} />
-          ) : null}
-          {connected}
-        </section>
-        <div ref={catalogRef}>
-          <CatalogSection />
-        </div>
+        {noConnections ? (
+          <>
+            {catalog}
+            <InfraGroups />
+          </>
+        ) : (
+          <>
+            <AttentionStrip items={attentionList(all, now)} now={now} />
+            <InfraGroups />
+            <section
+              aria-labelledby="integrations-connected"
+              className="space-y-4"
+            >
+              <h2
+                id="integrations-connected"
+                className="font-(family-name:--glinr-font-display) text-(length:--glinr-type-size-section) leading-(--glinr-type-leading-section) font-(weight:--glinr-type-heading-weight) text-foreground"
+              >
+                {t('connected.title')}
+              </h2>
+              {all.length > 0 || filtered ? (
+                <FilterBar filters={filters} onChange={setFilters} />
+              ) : null}
+              {connected}
+            </section>
+            {catalog}
+          </>
+        )}
       </div>
     </PageTemplate>
   )

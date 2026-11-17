@@ -3,6 +3,7 @@ title: "Server profiles"
 icon: "/assets/icons/gear-six.svg"
 sidebarTitle: "Server profiles"
 description: Choose minimal, standard or suite to decide which optional parts of the control plane start, and switch later without losing data.
+"og:url": "https://docs.levelrail.com/profiles"
 ---
 
 A profile is one setting that decides which optional subsystems start. The default, `standard`, is the install you have always had. `minimal` keeps a one-server install as light as Dokku. `suite` turns on everything for power users.

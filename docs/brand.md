@@ -42,7 +42,7 @@ Pick the line that fits where you are posting.
 | [Push to git. Get a running app.](/assets/brand/social/headline-push-1200x630.jpg) 1200x630 | Link previews, the plain version |
 | [One command. Your own cloud.](/assets/og/install.jpg) 1200x630 | Install guides |
 | [Leaving Coolify? Bring your apps.](/assets/og/migrate.jpg) 1200x630 | Migration posts |
-| [311 templates. One click each.](/assets/og/templates.jpg) 1200x630 | Template posts |
+| [Templates. One click each.](/assets/og/templates.jpg) 1200x630 | Template posts |
 | [Canary deploys, no service mesh.](/assets/og/canary.jpg) 1200x630 | Deploy strategy posts |
 | [Idle apps sleep. Requests wake.](/assets/og/sleep.jpg) 1200x630 | Resource and cost posts |
 | [Ask your server what broke.](/assets/og/mcp.jpg) 1200x630 | AI and MCP posts |

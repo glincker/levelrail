@@ -2366,7 +2366,8 @@
       "aws": "AWS",
       "azure": "Azure",
       "gcp": "Google Cloud",
-      "custom": "自定义数据中心"
+      "custom": "自定义数据中心",
+      "vultr": "Vultr"
     },
     "methods": {
       "api_token": {
@@ -2405,7 +2406,8 @@
       "awsRole": "使用角色时，基础身份只需要对该角色 ARN 拥有 sts:AssumeRole。请把上述操作放在该角色上。",
       "azure": "订阅上的 Reader，以及目标资源组上的 Virtual Machine Contributor 和 Network Contributor。",
       "gcp": "项目上的 compute.regions.list、compute.machineTypes.list、compute.instances.create、compute.instances.get 和 compute.instances.delete。",
-      "custom": "不存储任何凭据。节点使用一次性加入令牌主动连接到此控制平面。"
+      "custom": "不存储任何凭据。节点使用一次性加入令牌主动连接到此控制平面。",
+      "vultr": "Vultr API 密钥。密钥没有权限范围，请使用专用子用户，并把此服务器的地址加入访问控制列表。"
     },
     "permissionsTitle": "最小权限",
     "methodLegend": "连接方式",
@@ -2436,7 +2438,8 @@
       "digitalocean": "具有读写范围的个人访问令牌。",
       "aws": "访问密钥，或此控制平面自身的 AWS 身份。",
       "azure": "服务主体 JSON，或工作负载身份联合。",
-      "gcp": "服务账户密钥 JSON。"
+      "gcp": "服务账户密钥 JSON。",
+      "vultr": "在访问控制列表中包含此服务器地址的 API 密钥。"
     },
     "connected": "已连接",
     "notConnected": "未连接",

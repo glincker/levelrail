@@ -53,10 +53,18 @@ func BuildLimitsSource(s BuildPerformanceStore, env build.Limits) build.LimitsSo
 // BuildLimitsSourceWithMemory is BuildLimitsSource with the base memory cap taken from mem (the
 // builds.memory_limit_mb setting resolved to MiB) instead of the env value; saved overrides still win.
 func BuildLimitsSourceWithMemory(s BuildPerformanceStore, env build.Limits, mem func(context.Context) int) build.LimitsSource {
+	return BuildLimitsSourceWithHost(s, env, mem, nil)
+}
+
+// BuildLimitsSourceWithHost also takes the base CPU cap in millicores from cpu, so a host share applies live.
+func BuildLimitsSourceWithHost(s BuildPerformanceStore, env build.Limits, mem, cpu func(context.Context) int) build.LimitsSource {
 	return func(ctx context.Context, app string) build.Limits {
 		base := env
 		if mem != nil {
 			base.MemoryMB = mem(ctx)
+		}
+		if cpu != nil {
+			base.CPUMillis = cpu(ctx)
 		}
 		eff, _ := resolveBuildLimits(ctx, s, base)
 		eff, _ = resolveAppBuildLimits(ctx, s, eff, app)

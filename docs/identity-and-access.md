@@ -533,7 +533,7 @@ A password alone never signs in a new device while another session of the accoun
 Every trusted browser of an account is revoked when its password is changed or reset, when it signs out its other sessions, when `recover-admin` resets it, and when the user is deleted. The same events, plus turning two-factor authentication off or removing a passkey, also cancel the account's waiting approvals (approved ones not yet collected included) and lock its live sign-in codes. Expired entries are removed by the periodic sweep.
 
 <Warning>
-A sign-in with no other live session is let in by default, because nothing could approve it. A root user can hold those too with `auth.approval_without_session` set to `hold`, which needs a way to approve from outside the browser. See [Security center](/security-center#approval-without-session).
+A sign-in with no other live session is let in by default, because nothing could approve it. A root user can hold those too with `auth.approval_without_session` set to `hold`, which needs a way to approve from outside the browser. See [Security center](/security-center#approval-without-a-session).
 
 Break-glass: if you are stuck waiting for an approval no one can give, sign in with a code sent to your email, approve from the CLI with a `signin:approve` token, sign out the other session, or wait for it to expire. On the server, `levelrail security reset-approval-policy` puts `auth.approval_without_session` back to `allow`. As a last resort set `APP_AUTH_NEW_DEVICE_APPROVAL=false` on the control plane and restart it, which turns the pause off for everyone and for every sign-in method, whatever `auth.approval_scope` and the per-account switches say. `recover-admin` on the server still works.
 </Warning>

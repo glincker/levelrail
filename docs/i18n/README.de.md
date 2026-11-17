@@ -5,7 +5,7 @@
 
 > This translation was generated with AI and may contain mistakes. Corrections are welcome: see [docs/i18n/README.md](README.md).
 
-<p><strong>Selbst gehostetes PaaS: deployen per git push auf eigene Server, mit Logs, Metriken, HTTPS und Rollback.</strong><br>
+<p><strong>Leichtgewichtige, selbst gehostete Deployment-Plattform: git push in die Produktion auf eigenen Servern und Cloud-Konten.</strong><br>
 Ein Go-Binary, Docker-Runtime, kein Kubernetes. Apache 2.0.</p>
 <p>
   <a href="../../LICENSE"><img src="https://img.shields.io/github/license/glincker/levelrail" alt="Lizenz: Apache 2.0"></a>
@@ -37,7 +37,7 @@ Ein Go-Binary, Docker-Runtime, kein Kubernetes. Apache 2.0.</p>
 
 Levelrail ist ein Open-Source-PaaS (Apache 2.0) zum **Selbsthosten** für Entwickler und kleine Teams, die einen Workflow im Stil von Vercel, Heroku oder Railway auf eigenen Servern wollen. Es läuft auf jedem Linux-Server, vom kleinen VPS bis zum Rack (der einzige gemessene Host ist ein Rechner mit 2 vCPU und 8 GB), und macht aus gewöhnlichen Servern eine private Cloud mit Git-Deploys (Forge-Webhooks), HTTPS, Datenbanken mit verifizierten Backups, Metriken, Logs und Alarmen, ohne Kubernetes und ohne den Monitoring-Stack, den man sonst nachrüsten müsste.
 
-**Status:** pre-1.0 (v0.x). Einzelserver-Betrieb ist laut [Feature-Status](../../docs/feature-status.md) produktionsreif; Multi-Node ist Beta.
+**Status:** Einzelserver-Betrieb ist laut [Feature-Status](../../docs/feature-status.md) produktionsreif; Multi-Node ist Beta. Leichtgewichtig: Die Control Plane läuft im Leerlauf mit etwa 200 MB RAM und 1,5 Prozent eines CPU-Kerns auf einem Rechner mit 2 vCPU, als einzelne Go-Binärdatei ([gemessener Leerlauf-Verbrauch](../../docs/performance.md), [Methode](../../docs/benchmarks.md)). Deine Apps nutzen ihre eigenen Ressourcen zusätzlich. 570+ Templates im Katalog (346 auf einer echten Engine geprüft), 259 MCP-Tools.
 
 ## Welche Installation passt zu mir?
 
@@ -198,7 +198,7 @@ Der Installer prüft die Prüfsummen selbst. Container-Images liegen auf GHCR (`
 - **Observability inklusive.** Metriken pro Knoten mit 15 Sekunden Auflösung, durchsuchbare Logs, Deploy-Markierungen, Traces, SLO-Burn, Alarm-Eingang und eine Gesundheitsseite für den Leerlauf-Footprint. Kein Grafana-Stack zu installieren.
 - **Deployments, die schützen.** Rollouts mit Readiness-Gate, fixierte Images für das Rollback, Canary-Releases mit automatischem Rollback bei Fehlern, Deploy-Diffs, Freigaben und Freezes.
 - **Standardmäßig sicher.** Hash-verketteter Audit-Log, der sich verifizieren lässt, SSRF-geschützte ausgehende Aufrufe, Secrets mit Envelope-Verschlüsselung und Schlüsselrotation, Tokens mit begrenztem Geltungsbereich, Passkeys und TOTP-2FA, OAuth- und OIDC-Anmeldung, IAM-Richtlinien, signierte Releases. SAML-Single-Sign-On und SCIM-Provisioning sind als [Beta-Funktion](../../docs/sso-saml.md) verfügbar und standardmäßig deaktiviert.
-- **Für KI-Agenten gebaut.** Ein MCP-Server mit über 240 Tools in bedarfsgesteuerten Toolsets (kleine Standardliste, etwa 2,4k Tokens; siehe [Tool-Oberfläche](../../docs/mcp-tool-surface.md)), ein Berechtigungsmodell mit eingeschränkten Tokens und ein Agent-Skill.
+- **Für KI-Agenten gebaut.** Ein MCP-Server mit 259 Tools in bedarfsgesteuerten Toolsets (kleine Standardliste, etwa 2,4k Tokens; siehe [Tool-Oberfläche](../../docs/mcp-tool-surface.md)), ein Berechtigungsmodell mit eingeschränkten Tokens und ein Agent-Skill.
 
 ## Produktionsreif, mit Belegen
 
@@ -228,7 +228,7 @@ Die meisten selbst gehosteten Plattformen dieser Kategorie verwalten Server, ind
 | Audit-Log | Hash-verkettet, verifizierbar, CSV-Export, Weiterleitung an Syslog, Webhook oder Bucket | Siehe deren Doku | Siehe deren Doku | Siehe deren Doku | Siehe deren Doku |
 | IAM | Allow- und Deny-Richtlinien pro App oder Datenbank, Tokens mit begrenztem Geltungsbereich | Siehe deren Doku | Siehe deren Doku | Siehe deren Doku | Siehe deren Doku |
 
-Das ist eine Positionierung, kein Ranking, und jedes Projekt hier ist einen Einsatz wert. Wo Levelrail zurückliegt: Es ist das jüngste Projekt hier, mit weniger Nutzern und weniger Produktionserfahrung, und sein SAML-Single-Sign-On und SCIM-Provisioning sind Beta ([Details](../../docs/sso-saml.md)). Der Template-Katalog (etwa 360 Einträge) liegt in derselben Größenordnung wie der von Coolify, aber nur eine Stichprobe wird Ende-zu-Ende deployt ([ADR 015](../../adr/015-service-template-catalog-reversal.md)). Der vollständige Vergleich mit Quellen steht unter [Vergleich](../../docs/comparison.md).
+Das ist eine Positionierung, kein Ranking, und jedes Projekt hier ist einen Einsatz wert. Wo Levelrail zurückliegt: Es ist das jüngste Projekt hier, mit weniger Nutzern und weniger Produktionserfahrung, und sein SAML-Single-Sign-On und SCIM-Provisioning sind Beta ([Details](../../docs/sso-saml.md)). Der Template-Katalog (570+ Einträge im Katalog) liegt in derselben Größenordnung wie der von Coolify, aber nur eine Stichprobe wird Ende-zu-Ende deployt ([ADR 015](../../adr/015-service-template-catalog-reversal.md)). Der vollständige Vergleich mit Quellen steht unter [Vergleich](../../docs/comparison.md).
 
 ## Funktionsumfang
 
@@ -237,7 +237,7 @@ Das ist eine Positionierung, kein Ranking, und jedes Projekt hier ist einen Eins
 - **Datenbanken:** Postgres, MySQL, MariaDB, MongoDB, Redis, KeyDB, Dragonfly und ClickHouse mit geplanten Backups, Postgres-Point-in-Time-Recovery, Wiederherstellung und Passwortrotation. [Datenbanken](../../docs/managing-databases.md)
 - **Eine Suche für alles:** Cmd+K über Apps, Datenbanken, Knoten, Templates und Aktionen, gefiltert nach den eigenen Berechtigungen. [Suche](../../docs/search.md)
 - **Server:** Knoten mit einem einmaligen Token hinzufügen, WireGuard-Mesh, Zonen und Verteilung über Fehlerdomänen, Platzierungs-Was-wäre-wenn. [Multi-Node](../../docs/multi-node.md)
-- **Templates:** etwa 360 Ein-Klick-Dienste, mit einem Smoke-Test über den Katalog (101 von 108 getesteten bestanden in den Läufen vom 2026-10-25 und 2026-10-27, [Status](../../docs/templates-status.md)). [Katalog](../../docs/template-catalog.md)
+- **Templates:** 570+ Templates im Katalog: 574 Katalogeinträge (565 aktiv, 9 veraltet), 346 mit aufgezeichnetem Lauf auf einer echten Engine, 228 Vorschauen ([Status](../../docs/templates-status.md)). [Katalog](../../docs/template-catalog.md)
 - **Identität und Zugriff:** Passwort, Passkeys, TOTP, OAuth mit 20 Anbietern plus generisches OIDC, IAM-Richtlinien, Teams, ein hash-verketteter Audit-Log mit CSV-Export. SAML-Single-Sign-On und SCIM-Provisioning sind Beta und standardmäßig aus. [Identität und Zugriff](../../docs/identity-and-access.md), [SAML und SCIM](../../docs/sso-saml.md)
 - **Plugins:** Ein signierter Plugin-Marktplatz mit Ein-Klick-Installation, Dashboard-Panels und Alarmkanälen des Herstellers. [Plugins](../../docs/plugins.md)
 - **Automatisierung:** Eine HTTP-API hinter dem Dashboard, einer CLI und einem MCP-Server. KI sitzt nie im Reconciliation-Pfad. [CLI](../../docs/cli-reference.md), [KI-Steuerung](../../docs/ai-control.md)
@@ -294,7 +294,7 @@ Geplant, nicht versprochen. Termine sind Ziele, und Punkte können sich verschie
 
 ## FAQ
 
-**Ist Levelrail produktionsreif?** Einzelserver-Deployments sind produktionsreif; Multi-Node und einige neuere Funktionen sind Beta. Jede Kennzeichnung steht im [Feature-Status](../../docs/feature-status.md). Das Projekt ist pre-1.0.
+**Ist Levelrail produktionsreif?** Einzelserver-Deployments sind produktionsreif; Multi-Node und einige neuere Funktionen sind Beta. Jede Kennzeichnung steht im [Feature-Status](../../docs/feature-status.md).
 
 **Braucht es Kubernetes?** Nein. Es ist ein Go-Binary mit Docker-Runtime, und eine Kubernetes-Kompatibilitätsschicht ist bewusst kein Ziel ([Vergleich](../../docs/comparison.md)).
 
@@ -322,6 +322,7 @@ Geplant, nicht versprochen. Termine sind Ziele, und Punkte können sich verschie
 - [GLINR Discord](https://discord.gg/Ar5pcaZB99): Live-Chat mit den Maintainern, im Forenkanal `#levelrail`.
 - [support@levelrail.com](mailto:support@levelrail.com) für direkte Hilfe, und die [Sicherheitsrichtlinie](../../.github/SECURITY.md), um eine Schwachstelle vertraulich zu melden.
 - [Mitwirken](../../.github/CONTRIBUTING.md): Entwicklungszyklus, Tests und Commit-Konventionen. Der Build aus dem Quellcode braucht Go 1.27 oder neuer und Docker: siehe [Installation](../../docs/installing.md#option-3-build-from-source).
+- [Support](../../SUPPORT.md), [Barrierefreiheit](../../ACCESSIBILITY.md) und [Versionierung](../../VERSIONING.md).
 
 ## Das Repo mit einem Stern unterstützen
 

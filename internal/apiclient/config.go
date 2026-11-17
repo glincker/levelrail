@@ -3,9 +3,12 @@ package apiclient
 import (
 	"bufio"
 	"fmt"
+	"net"
+	"net/url"
 	"os"
 	"path/filepath"
 	"strings"
+	"sync/atomic"
 )
 
 // DefaultAPIURL is a zero-config local default, so a caller with no
@@ -381,4 +384,44 @@ func WriteCredentialsFile(prog, profile string, creds Credentials) error {
 		return fmt.Errorf("write credentials file %s: %w", path, err)
 	}
 	return nil
+}
+
+// EnvInsecureHTTP lets a caller knowingly send credentials over plain http to a non-loopback host.
+const EnvInsecureHTTP = "APP_INSECURE_HTTP"
+
+var insecureHTTPFlag atomic.Bool
+
+// SetInsecureHTTP records the --insecure-http flag for every client in this process.
+func SetInsecureHTTP(allow bool) { insecureHTTPFlag.Store(allow) }
+
+func envTruthy(v string) bool {
+	switch strings.ToLower(strings.TrimSpace(v)) {
+	case "1", "true", "yes", "on":
+		return true
+	}
+	return false
+}
+
+func loopbackAddr(host string) bool {
+	if isLoopbackHost(host) {
+		return true
+	}
+	ip := net.ParseIP(host)
+	return ip != nil && ip.IsLoopback()
+}
+
+// CheckCleartextHTTP refuses an http:// target on a non-loopback host, so a password or token
+// never crosses the network unencrypted unless the caller opted in by flag or EnvInsecureHTTP.
+func CheckCleartextHTTP(rawURL string, allow bool, lookupEnv func(string) (string, bool)) error {
+	u, err := url.Parse(rawURL)
+	if err != nil || !strings.EqualFold(u.Scheme, "http") || loopbackAddr(u.Hostname()) {
+		return nil
+	}
+	if allow || insecureHTTPFlag.Load() {
+		return nil
+	}
+	if v, ok := lookupEnv(EnvInsecureHTTP); ok && envTruthy(v) {
+		return nil
+	}
+	return fmt.Errorf("refusing to send credentials over plain http to %s: use an https:// URL, or pass --insecure-http (or set %s=1) if you accept that risk", u.Host, EnvInsecureHTTP)
 }

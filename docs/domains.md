@@ -1,6 +1,7 @@
 ---
 title: "Domain setup stepper"
 description: The four-step guide on the app Domains tab that adds a domain, shows the DNS records, watches DNS resolve and reports the certificate.
+"og:url": "https://docs.levelrail.com/domains"
 ---
 
 This page describes the guided setup on an app's Domains tab, the quickest way to attach your own domain to one app. For the whole picture (certificates, wildcard domains, redirects, the dashboard's own domain), read [Domains and ingress](/domains-and-ingress). For a checklist that ends at a live `https://` address, see [Go live on your domain](/go-live).

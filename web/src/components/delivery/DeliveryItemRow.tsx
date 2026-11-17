@@ -84,7 +84,7 @@ function Extras({ item, app }: { item: TimelineItem; app: string }) {
   const links: React.ReactNode[] = []
   if (item.kind === 'connection_bound') {
     links.push(
-      <Link key="int" to="/settings/integrations" className={LINK_CLASS}>
+      <Link key="int" to="/integrations" className={LINK_CLASS}>
         {t('row.openIntegrations')}
       </Link>,
     )

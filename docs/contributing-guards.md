@@ -1,6 +1,7 @@
 ---
 title: "Which guard catches what"
 description: For contributors. The repo-wide guard tests and scripts, what each one fails on, which command runs it, and how to fix the failure.
+"og:url": "https://docs.levelrail.com/contributing-guards"
 ---
 
 Most of these checks scan the whole tree, so a scoped test run does not reach them. If you touch the area in the first column, run the command in the third before you push. CI mechanics are in [CI](/ci), and the system the guards protect is described in [Architecture](/architecture).

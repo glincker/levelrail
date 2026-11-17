@@ -10,6 +10,7 @@ import (
 	"strings"
 	"time"
 
+	"github.com/GLINCKER/levelrail/internal/ocisign"
 	"github.com/GLINCKER/levelrail/kit/httpx"
 )
 
@@ -37,7 +38,10 @@ type httpClient struct {
 	// refreshed, unlike hetzner.go/digitalocean.go's long-lived static
 	// token.
 	tokenFunc func(context.Context) (string, error)
-	http      *http.Client
+	// signer, when set, replaces bearer auth with a per-request OCI
+	// signature, and error bodies are dropped so OCIDs never leak.
+	signer *ocisign.Signer
+	http   *http.Client
 	// sleep is a seam for tests: real callers get contextSleep, tests can
 	// skip the wait entirely. Context-aware so a caller's cancellation
 	// (or its own deadline) ends a retry wait immediately rather than
@@ -64,6 +68,18 @@ func newHTTPClientWithTokenFunc(base string, tokenFunc func(context.Context) (st
 		tokenFunc: tokenFunc,
 		http:      &http.Client{Timeout: requestTimeout},
 		sleep:     contextSleep,
+	}
+}
+
+// newHTTPClientWithSigner returns an httpClient that signs every request
+// (and every retry, so the Date header stays fresh) instead of sending a
+// bearer token.
+func newHTTPClientWithSigner(base string, signer ocisign.Signer) *httpClient {
+	return &httpClient{
+		base:   base,
+		signer: &signer,
+		http:   &http.Client{Timeout: requestTimeout},
+		sleep:  contextSleep,
 	}
 }
 
@@ -95,9 +111,16 @@ func contextSleep(ctx context.Context, d time.Duration) error {
 type ProviderError struct {
 	Status int
 	Body   string
+	// ociCode and ociMsg are kept off Error() so callers can branch on a
+	// capacity error without the text ever reaching a log or API response.
+	ociCode string
+	ociMsg  string
 }
 
 func (e *ProviderError) Error() string {
+	if e.Body == "" {
+		return fmt.Sprintf("provision: provider returned %d", e.Status)
+	}
 	return fmt.Sprintf("provision: provider returned %d: %s", e.Status, e.Body)
 }
 
@@ -106,19 +129,26 @@ func (e *ProviderError) Error() string {
 // 429 up to maxRetries times, honoring a Retry-After header in seconds when
 // the provider sends one.
 func (c *httpClient) do(ctx context.Context, method, path string, body, out any) error {
+	_, err := c.doHeaders(ctx, method, path, nil, body, out)
+	return err
+}
+
+// doHeaders is do with extra request headers and the final response headers
+// returned, so OCI callers can send a retry token and follow opc-next-page.
+func (c *httpClient) doHeaders(ctx context.Context, method, path string, extra map[string]string, body, out any) (http.Header, error) {
 	var payload []byte
 	if body != nil {
 		var err error
 		if payload, err = json.Marshal(body); err != nil {
-			return fmt.Errorf("provision: encode request body: %w", err)
+			return nil, fmt.Errorf("provision: encode request body: %w", err)
 		}
 	}
 
 	bearer := c.token
-	if c.tokenFunc != nil {
+	if c.tokenFunc != nil && c.signer == nil {
 		t, err := c.tokenFunc(ctx)
 		if err != nil {
-			return fmt.Errorf("provision: obtain access token: %w", err)
+			return nil, fmt.Errorf("provision: obtain access token: %w", err)
 		}
 		bearer = t
 	}
@@ -127,42 +157,65 @@ func (c *httpClient) do(ctx context.Context, method, path string, body, out any)
 	for attempt := 0; attempt <= maxRetries; attempt++ {
 		req, err := http.NewRequestWithContext(ctx, method, c.base+path, bytes.NewReader(payload))
 		if err != nil {
-			return fmt.Errorf("provision: build request: %w", err)
+			return nil, fmt.Errorf("provision: build request: %w", err)
 		}
-		req.Header.Set("Authorization", "Bearer "+bearer)
 		if body != nil {
 			req.Header.Set("Content-Type", "application/json")
 		}
 		req.Header.Set("Accept", "application/json")
+		for k, v := range extra {
+			req.Header.Set(k, v)
+		}
+		if c.signer != nil {
+			if err := c.signer.Sign(req, payload); err != nil {
+				return nil, fmt.Errorf("provision: %w", err)
+			}
+		} else {
+			req.Header.Set("Authorization", "Bearer "+bearer)
+		}
 
 		resp, err := c.http.Do(req)
 		if err != nil {
-			return fmt.Errorf("provision: request %s %s: %w", method, path, err)
+			return nil, fmt.Errorf("provision: request %s %s: %w", method, path, err)
 		}
 		respBody, readErr := httpx.ReadBody(resp.Body)
 		_ = resp.Body.Close()
 		if readErr != nil {
-			return fmt.Errorf("provision: read response from %s %s: %w", method, path, readErr)
+			return nil, fmt.Errorf("provision: read response from %s %s: %w", method, path, readErr)
 		}
 
 		if resp.StatusCode == http.StatusTooManyRequests && attempt < maxRetries {
-			lastErr = &ProviderError{Status: resp.StatusCode, Body: string(respBody)}
+			lastErr = c.providerError(resp.StatusCode, respBody)
 			if sleepErr := c.sleep(ctx, retryDelay(resp.Header.Get("Retry-After"), attempt)); sleepErr != nil {
-				return fmt.Errorf("provision: %s %s: %w", method, path, sleepErr)
+				return nil, fmt.Errorf("provision: %s %s: %w", method, path, sleepErr)
 			}
 			continue
 		}
 		if resp.StatusCode < 200 || resp.StatusCode >= 300 {
-			return &ProviderError{Status: resp.StatusCode, Body: string(respBody)}
+			return nil, c.providerError(resp.StatusCode, respBody)
 		}
 		if out != nil && len(respBody) > 0 {
 			if err := json.Unmarshal(respBody, out); err != nil {
-				return fmt.Errorf("provision: decode response from %s %s: %w", method, path, err)
+				return nil, fmt.Errorf("provision: decode response from %s %s: %w", method, path, err)
 			}
 		}
-		return nil
+		return resp.Header, nil
 	}
-	return fmt.Errorf("provision: %s %s: rate limited after %d retries: %w", method, path, maxRetries, lastErr)
+	return nil, fmt.Errorf("provision: %s %s: rate limited after %d retries: %w", method, path, maxRetries, lastErr)
+}
+
+// providerError builds the error for a non-2xx response. In signer mode the
+// body is never kept, only the status plus the parsed code and message.
+func (c *httpClient) providerError(status int, body []byte) *ProviderError {
+	if c.signer == nil {
+		return &ProviderError{Status: status, Body: string(body)}
+	}
+	var e struct {
+		Code    string `json:"code"`
+		Message string `json:"message"`
+	}
+	_ = json.Unmarshal(body, &e)
+	return &ProviderError{Status: status, ociCode: e.Code, ociMsg: e.Message}
 }
 
 // retryDelay honors a numeric Retry-After (seconds) when the provider sends

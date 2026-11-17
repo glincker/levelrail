@@ -1,0 +1,160 @@
+{
+  "title": "集群",
+  "description": "连接 Kubernetes 集群，测试连通性，并查看节点和命名空间。",
+  "loadFailed": "无法加载集群。",
+  "disabled": {
+    "title": "Kubernetes 集群已关闭",
+    "description": "开启运行时设置 k8s.clusters_enabled 后才能连接集群。"
+  },
+  "empty": {
+    "description": "尚未连接任何集群。请在下方添加。"
+  },
+  "privateApiBlocked": "私有和回环 API 地址已被阻止。如果集群位于你自己的网络，请通过运行时设置 k8s.allow_private_api 允许。",
+  "adminWarning": "此凭据是集群管理员。建议改用限定在命名空间内的服务账号。",
+  "connect": {
+    "title": "连接集群",
+    "mode": "连接方式",
+    "modeToken": "服务器和令牌",
+    "modeKubeconfig": "Kubeconfig",
+    "name": "名称",
+    "nameTaken": "已存在同名集群。",
+    "server": "服务器 URL",
+    "token": "服务账号令牌",
+    "ca": "CA 证书（可选）",
+    "caHint": "PEM 格式。如果 API 服务器证书已被公共信任，请留空。",
+    "kubeconfig": "Kubeconfig",
+    "kubeconfigHint": "只粘贴一次，并加密存储。exec 和 auth-provider 条目会被拒绝。",
+    "context": "上下文",
+    "contextPlaceholder": "当前上下文",
+    "submit": "连接",
+    "pending": "连接中",
+    "done": "集群已连接。",
+    "serverPlaceholder": "https://203.0.113.10:6443",
+    "caPlaceholder": "-----BEGIN CERTIFICATE-----",
+    "kubeconfigPlaceholder": "apiVersion: v1",
+    "allowClusterAdmin": "接受集群管理员凭据",
+    "allowClusterAdminWarning": "会削弱安全性：此凭据可在集群中执行任何操作。建议使用 levelrail clusters rbac 生成的命名空间 Role。仅在运行时设置 k8s.allow_cluster_admin 开启时有效。"
+  },
+  "auth": {
+    "token": "令牌",
+    "client_cert": "客户端证书"
+  },
+  "status": {
+    "ok": "可连通",
+    "unauthorized": "未授权",
+    "forbidden": "禁止访问",
+    "error": "API 错误",
+    "unreachable": "无法连通",
+    "untested": "未测试"
+  },
+  "list": {
+    "toggle": "显示 {{name}} 的节点和命名空间"
+  },
+  "actions": {
+    "test": "测试",
+    "testing": "测试中",
+    "disconnect": "断开连接",
+    "disconnectNamed": "断开 {{name}}"
+  },
+  "detail": {
+    "nodes": "节点",
+    "namespaces": "命名空间",
+    "ready": "就绪",
+    "notReady": "未就绪",
+    "noNodes": "未返回节点。",
+    "noNamespaces": "未返回命名空间。",
+    "back": "返回集群列表",
+    "open": "打开",
+    "openNamed": "打开 {{name}}"
+  },
+  "disconnect": {
+    "title": "断开 {{name}}？",
+    "description": "已存储的凭据会被删除，集群上的工作负载不受影响。请输入集群名称以确认。",
+    "confirm": "断开连接",
+    "pending": "断开中",
+    "done": "集群已断开。"
+  },
+  "deploy": {
+    "title": "部署应用",
+    "app": "应用名称",
+    "image": "公开镜像",
+    "imagePlaceholder": "nginx:1.27",
+    "port": "端口",
+    "replicas": "副本数",
+    "namespace": "命名空间",
+    "host": "主机 (可选)",
+    "hostPlaceholder": "app.example.com",
+    "env": "环境变量 (可选)",
+    "envPlaceholder": "KEY=value，每行一个",
+    "envHint": "仅可写入，值不会再次显示。",
+    "envInvalid": "第 {{line}} 行不是 KEY=value。",
+    "allowRoot": "允许以 root 运行",
+    "allowRootWarning": "仅用于需要 root 的镜像，其他镜像以非 root 运行。",
+    "submit": "部署",
+    "pending": "部署中",
+    "done": "已部署 {{app}}",
+    "pageDescription": "将公开镜像部署到此集群并查看状态。",
+    "pullSecret": "拉取密钥(可选)",
+    "pullSecretNone": "无(公开镜像)",
+    "pullSecretMismatch": "镜像位于 {{image}},但 {{name}} 适用于 {{secret}}。",
+    "pullSecretNoneStored": "没有已保存的拉取密钥。请在下方的拉取密钥中添加。",
+    "namespaceCreateHint": "该服务账号无法创建命名空间。请部署到其角色所对应的命名空间 (levelrail clusters rbac --namespace NS)，除非它是默认命名空间或带有 levelrail 标签，否则还需将其加入 k8s.allowed_namespaces。"
+  },
+  "deployments": {
+    "title": "部署列表",
+    "empty": "暂无部署。"
+  },
+  "deployment": {
+    "checking": "检查中",
+    "stale": "状态不可用",
+    "ready": "就绪 {{ready}}/{{total}}",
+    "logs": "日志",
+    "logsNamed": "{{name}} 的日志",
+    "remove": "移除",
+    "removeNamed": "移除 {{name}}",
+    "pullFailed": "使用密钥 {{name}} 拉取失败",
+    "pullSecretsLink": "拉取密钥"
+  },
+  "logs": {
+    "title": "{{name}} 的日志",
+    "description": "此应用某个 Pod 的最近日志行。",
+    "tail": "行数",
+    "pod": "Pod",
+    "anyPod": "任意 Pod",
+    "refresh": "刷新",
+    "copy": "复制",
+    "copied": "已复制",
+    "truncated": "输出已在大小上限处截断。",
+    "output": "日志输出",
+    "empty": "暂无日志输出。"
+  },
+  "remove": {
+    "title": "移除 {{name}}？",
+    "description": "删除 Levelrail 为此应用创建的 Deployment、Service 和 Ingress，不会触碰其创建之外的对象。",
+    "confirm": "移除应用",
+    "pending": "移除中",
+    "done": "已移除 {{name}}"
+  },
+  "pullSecrets": {
+    "title": "拉取密钥",
+    "hint": "私有镜像的镜像仓库凭据。仅可写入,不会再次显示。",
+    "empty": "还没有拉取密钥。",
+    "addTitle": "添加拉取密钥",
+    "name": "名称",
+    "namePlaceholder": "ghcr-main",
+    "registry": "仓库主机",
+    "registryPlaceholder": "ghcr.io",
+    "username": "用户名",
+    "password": "密码或令牌",
+    "add": "添加",
+    "adding": "添加中",
+    "added": "已添加 {{name}}",
+    "delete": "删除",
+    "deleteNamed": "删除 {{name}}",
+    "deleteTitle": "删除 {{name}}?",
+    "deleteDescription": "运行中的应用保留其副本。使用此密钥的新部署将失败。输入名称以确认。",
+    "deleteConfirm": "删除密钥",
+    "deletePending": "删除中",
+    "deleted": "已删除 {{name}}"
+  }
+}

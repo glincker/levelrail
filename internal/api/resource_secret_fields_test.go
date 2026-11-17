@@ -31,6 +31,7 @@ var sensitiveFieldAllowlist = map[string]string{ //nolint:gosec // field names a
 	"mcpTokenResponse.TokenType":                        "constant string Bearer, not a credential",
 	"createMigrationAgentResponse.Token":                "show-once agent token returned at creation, never listed",
 	"databaseRevealResponse.Password":                   "owner-only reveal behind step-up, audited, no-store",
+	"k8sPullSecretListResponse.PullSecrets":             "names and registry hosts only, never credentials",
 	"appResource.SecretEnv":                             "names of secret-backed vars, never values",
 	"appResource.Secrets":                               "write-only on create, toAppResource never sets it",
 	"branchEnvOverrideResource.Secret":                  "bool flag",

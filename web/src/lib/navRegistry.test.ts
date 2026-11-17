@@ -50,6 +50,7 @@ const ALLOWLIST: Record<string, string> = {
   '/dashboards': 'redirect',
   '/images': 'redirect',
   '/databases/new': 'redirect',
+  '/settings/integrations': 'redirect',
   '/settings/janitor': 'redirect',
   '/settings/certificates': 'redirect',
   '/dev/ui': 'test',
@@ -61,6 +62,7 @@ const ALLOWLIST: Record<string, string> = {
   '/sources': 'tab',
   '/security/image-scanning': 'tab',
   '/nodes/bootstrap-scripts': 'tab',
+  '/clusters': 'tab',
   '/deploy-timeline': 'tab',
   '/costs': 'tab',
   '/cdn/caches': 'tab',
@@ -148,5 +150,14 @@ describe('nav registry', () => {
       (e) => e.id,
     )
     expect(extra.sort()).toEqual(['get-started', 'migrate', 'welcome'])
+  })
+
+  it('has one Integrations sidebar row and no second settings entry', () => {
+    const rows = NAV_REGISTRY.filter((e) => e.path === '/integrations')
+    expect(rows.map((e) => e.id)).toEqual(['integrations'])
+    expect(rows[0]?.sidebar).toBe(true)
+    expect(NAV_REGISTRY.some((e) => e.id === 'settings-integrations')).toBe(
+      false,
+    )
   })
 })

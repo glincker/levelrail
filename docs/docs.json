@@ -77,6 +77,8 @@
             "group": "Install and deploy",
             "pages": [
               "index",
+              "features",
+              "faq",
               "first-15-minutes",
               "what-you-need",
               "installing",
@@ -91,8 +93,7 @@
               "zero-to-https",
               "quickstart-one-command",
               "tutorials/deploy-a-docker-app",
-              "profiles",
-              "getting-started"
+              "profiles"
             ],
             "icon": "/assets/icons/download-simple.svg"
           },
@@ -162,11 +163,10 @@
           {
             "group": "Essentials",
             "pages": [
-              "troubleshooting",
-              "doctor",
               "doctor-and-import",
               "email-notifications",
               "email-templates",
+              "alerts",
               "alert-inbox",
               "event-webhooks",
               "heartbeat",
@@ -239,7 +239,6 @@
           {
             "group": "Networking and multi-node",
             "pages": [
-              "domains-and-ingress",
               "standalone-domains",
               "domains",
               "dynamic-dns",
@@ -262,7 +261,6 @@
               "acme-verification-runbook",
               "multi-node",
               "server-patching",
-              "multi-node-quickstart",
               "add-node-anywhere",
               "add-node-over-ssh",
               "home-hardware",
@@ -435,6 +433,7 @@
               "migrate-from-dokku",
               "migrate-from-docker-compose",
               "import-kubernetes",
+              "kubernetes-clusters",
               "migration-reference",
               "migrating-from-coolify-dokploy-and-caprover",
               "migration-agent-threat-model",
@@ -509,7 +508,6 @@
               "cli-tui",
               "environment-variables",
               "runtime-settings",
-              "environment-and-secrets",
               "api-reference",
               "api-v2",
               "api-explorer",

@@ -26,6 +26,7 @@ const (
 )
 
 var (
+	ciNumericID          = regexp.MustCompile(`^[0-9]{1,20}$`)
 	ciRepositoryPattern  = regexp.MustCompile(`^[A-Za-z0-9_.-]+/[A-Za-z0-9_.-]+$`)
 	gitLabProjectPattern = regexp.MustCompile(`^[A-Za-z0-9_.-]+(/[A-Za-z0-9_.-]+)+$`)
 	ciUUIDPattern        = regexp.MustCompile(`^[0-9a-fA-F]{8}-[0-9a-fA-F]{4}-[0-9a-fA-F]{4}-[0-9a-fA-F]{4}-[0-9a-fA-F]{12}$`)
@@ -43,10 +44,13 @@ type CIOIDCTrustStore interface {
 
 // CIClaims are the verified claims of a CI provider identity token.
 type CIClaims struct {
-	Repository  string
-	Ref         string
-	Environment string
-	Subject     string
+	Repository string
+	// RepositoryID and RepositoryOwnerID are the GitHub numeric claims, empty for other providers.
+	RepositoryID      string
+	RepositoryOwnerID string
+	Ref               string
+	Environment       string
+	Subject           string
 	// Provider is empty for GitHub; the fields below are set only by the GitLab and CircleCI verifiers.
 	Provider             string
 	Issuer               string
@@ -64,28 +68,35 @@ type CIIDTokenVerifier interface {
 func (rt *Router) SetCIIDTokenVerifier(v CIIDTokenVerifier) { rt.ciVerifier = v }
 
 type ciTrustResource struct {
-	ID               string    `json:"id"`
-	Provider         string    `json:"provider"`
-	Issuer           string    `json:"issuer,omitempty"`
-	Repository       string    `json:"repository"`
-	RefPattern       string    `json:"ref_pattern"`
-	Environment      string    `json:"environment"`
-	ProtectedRefOnly bool      `json:"protected_ref_only,omitempty"`
-	CreatedAt        time.Time `json:"created_at"`
-	Warning          string    `json:"warning,omitempty"`
+	ID                string    `json:"id"`
+	Provider          string    `json:"provider"`
+	Issuer            string    `json:"issuer,omitempty"`
+	Repository        string    `json:"repository"`
+	RepositoryID      string    `json:"repository_id,omitempty"`
+	RepositoryOwnerID string    `json:"repository_owner_id,omitempty"`
+	RefPattern        string    `json:"ref_pattern"`
+	Environment       string    `json:"environment"`
+	ProtectedRefOnly  bool      `json:"protected_ref_only,omitempty"`
+	CreatedAt         time.Time `json:"created_at"`
+	Warning           string    `json:"warning,omitempty"`
 }
 
 // ciTrustRequest: repository is owner/name on GitHub, the project path on GitLab and the project ID on CircleCI.
 type ciTrustRequest struct {
-	Provider    string `json:"provider,omitempty"`
-	Issuer      string `json:"issuer,omitempty"`
-	OrgID       string `json:"org_id,omitempty"`
-	Repository  string `json:"repository"`
-	RefPattern  string `json:"ref_pattern"`
-	Environment string `json:"environment"`
+	Provider   string `json:"provider,omitempty"`
+	Issuer     string `json:"issuer,omitempty"`
+	OrgID      string `json:"org_id,omitempty"`
+	Repository string `json:"repository"`
+	// RepositoryID and RepositoryOwnerID (GitHub only) bind the trust to immutable IDs, which survive renames and transfers.
+	RepositoryID      string `json:"repository_id,omitempty"`
+	RepositoryOwnerID string `json:"repository_owner_id,omitempty"`
+	RefPattern        string `json:"ref_pattern"`
+	Environment       string `json:"environment"`
 	// ProtectedRefOnly is a pointer so an omitted value takes the provider default (true for GitLab).
 	ProtectedRefOnly *bool `json:"protected_ref_only,omitempty"`
 }
+
+const ciGitHubNoIDsWarning = "this trust matches the repository by name only; adding repository_id and repository_owner_id is recommended so a renamed or re-created repository cannot reuse it"
 
 const ciGitLabUnprotectedWarning = "this trust accepts pipelines on unprotected branches and tags: any developer who can push a matching ref can deploy"
 
@@ -95,6 +106,7 @@ func (req ciTrustRequest) protectedRefOnly() bool {
 
 func toCITrustResource(t store.CIOIDCTrust) ciTrustResource {
 	return ciTrustResource{
+		RepositoryID: t.RepositoryID, RepositoryOwnerID: t.RepositoryOwnerID,
 		ID: t.ID, Provider: ciProviderName(t.Provider), Issuer: t.Issuer, Repository: t.Repository, RefPattern: t.RefPattern,
 		Environment: t.Environment, ProtectedRefOnly: t.ProtectedRefOnly, CreatedAt: t.CreatedAt,
 	}
@@ -124,6 +136,8 @@ func validateCITrust(req *ciTrustRequest) string {
 	req.Issuer = strings.TrimSpace(req.Issuer)
 	req.OrgID = strings.TrimSpace(req.OrgID)
 	req.Repository = strings.TrimSpace(req.Repository)
+	req.RepositoryID = strings.TrimSpace(req.RepositoryID)
+	req.RepositoryOwnerID = strings.TrimSpace(req.RepositoryOwnerID)
 	req.RefPattern = strings.TrimSpace(req.RefPattern)
 	req.Environment = strings.TrimSpace(req.Environment)
 	if msg := validateCIProvider(req); msg != "" {
@@ -146,8 +160,14 @@ func validateCIProvider(req *ciTrustRequest) string {
 	if repo := strings.TrimSpace(req.Repository); strings.EqualFold(repo, "OWNER/REPO") || strings.EqualFold(repo, "owner/name") {
 		return "repository is still the OWNER/REPO placeholder from the example, use your real repository"
 	}
+	if req.Provider != ciProviderGitHub && (req.RepositoryID != "" || req.RepositoryOwnerID != "") {
+		return "repository_id and repository_owner_id apply to github trusts only"
+	}
 	switch req.Provider {
 	case ciProviderGitHub:
+		if (req.RepositoryID != "" && !ciNumericID.MatchString(req.RepositoryID)) || (req.RepositoryOwnerID != "" && !ciNumericID.MatchString(req.RepositoryOwnerID)) {
+			return "repository_id and repository_owner_id must be the numeric GitHub IDs"
+		}
 		if req.Issuer != "" || req.OrgID != "" || req.protectedRefOnly() {
 			return "issuer, org_id and protected_ref_only apply to gitlab and circleci trusts only"
 		}
@@ -260,6 +280,7 @@ func (rt *Router) handleCreateCITrust(w http.ResponseWriter, r *http.Request) {
 		ID: trustID, ServiceName: name, Repository: req.Repository, RefPattern: req.RefPattern,
 		Environment: req.Environment, PolicyID: policyID, CreatedBy: actor, CreatedAt: time.Now().UTC(),
 		Provider: req.Provider, Issuer: req.Issuer, ProtectedRefOnly: req.protectedRefOnly(),
+		RepositoryID: req.RepositoryID, RepositoryOwnerID: req.RepositoryOwnerID,
 	}
 	if err := rt.ciTrusts.SaveCIOIDCTrust(r.Context(), t); err != nil {
 		_ = rt.policies.DeletePolicy(r.Context(), policyID)
@@ -274,6 +295,9 @@ func (rt *Router) handleCreateCITrust(w http.ResponseWriter, r *http.Request) {
 	res := toCITrustResource(t)
 	if t.Provider == ciProviderGitLab && !t.ProtectedRefOnly {
 		res.Warning = ciGitLabUnprotectedWarning
+	}
+	if ciProviderName(t.Provider) == ciProviderGitHub && (t.RepositoryID == "" || t.RepositoryOwnerID == "") {
+		res.Warning = ciGitHubNoIDsWarning
 	}
 	writeJSON(w, http.StatusCreated, res)
 }
@@ -317,11 +341,16 @@ func (rt *Router) saveCIPolicy(ctx context.Context, trustID, app string) (string
 
 // ciTrustMatches is the policy gate: provider, issuer, repository, ref and environment must all match, else deny.
 func ciTrustMatches(t store.CIOIDCTrust, c CIClaims) bool {
-	if !ciIdentityAllowed(t.Provider, t.Issuer, t.Repository, t.Environment, t.ProtectedRefOnly, c) {
+	if !ciIdentityAllowed(t.Provider, t.Issuer, t.Repository, t.Environment, t.ProtectedRefOnly, c) || !ciRepoIDsMatch(t.RepositoryID, t.RepositoryOwnerID, c) {
 		return false
 	}
 	ok, err := path.Match(t.RefPattern, c.Ref)
 	return err == nil && ok
+}
+
+// ciRepoIDsMatch requires the token's numeric IDs to equal the stored ones; an unset stored ID falls back to name matching.
+func ciRepoIDsMatch(repoID, ownerID string, c CIClaims) bool {
+	return (repoID == "" || repoID == c.RepositoryID) && (ownerID == "" || ownerID == c.RepositoryOwnerID)
 }
 
 // ciIdentityAllowed holds every provider rule except the ref glob, shared by app and stack trusts.

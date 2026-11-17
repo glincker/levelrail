@@ -420,6 +420,7 @@
         "iam": "Políticas de IAM",
         "imageScanning": "Varredura de imagens",
         "bootstrapScripts": "Scripts de bootstrap",
+        "clusters": "Clusters",
         "keys": "Chaves e tokens",
         "team": "Equipe",
         "auditLog": "Log de auditoria"
@@ -551,7 +552,8 @@
       "usage": "Uso e custo",
       "resources": "Recursos",
       "security": "Segurança",
-      "console": "Console"
+      "console": "Console",
+      "integrations": "Integrações"
     },
     "quickNav": {
       "label": "Navegação rápida (segure L)"

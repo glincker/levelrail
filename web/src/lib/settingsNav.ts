@@ -388,11 +388,6 @@ export const settingsNavSections: SettingsNavSection[] = [
     id: 'integrations',
     items: [
       {
-        id: 'integrations',
-        to: '/settings/integrations',
-        icon: PlugGlassIcon,
-      },
-      {
         id: 'git-connections',
         to: '/settings/git-connections',
         icon: GitBranchGlassIcon,

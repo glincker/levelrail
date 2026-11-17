@@ -1,9 +1,10 @@
 import { lazy, Suspense, useMemo, useState } from 'react'
-import { getRouteApi } from '@tanstack/react-router'
+import { getRouteApi, Link } from '@tanstack/react-router'
 import { useTranslation } from 'react-i18next'
 import { BroomGlassIcon, HammerGlassIcon } from '@thesvg/ui-react'
 import { Alert, AlertDescription, AlertTitle } from '@/components/ui/alert'
 import { Button } from '@/components/ui/button'
+import { EmptyState } from '@/components/ui/empty-state'
 import { MetricTile, SkeletonList } from '@/components/kit'
 import { PageBanner } from '../PageBanner'
 import { LazyBuildsDiagram } from '../banners/LazyDiagrams'
@@ -13,7 +14,6 @@ import { useIsRoot } from '../../hooks/useIsRoot'
 import { useBuildCenter } from '../../queries/buildCenter'
 import { BuildCachePanel } from './BuildCachePanel'
 import { BuildsTable } from './BuildsTable'
-import { BuildsEmptyState } from '../empty/BuildsEmptyState'
 import { ListKeyboardHint } from '../ListKeyboardHint'
 import { FilterChips } from '../FilterChips'
 import {
@@ -29,6 +29,7 @@ const BuildCacheQuotaCard = lazy(() => import('./BuildCacheQuotaCard'))
 
 export function BuildsPage() {
   const { t } = useTranslation('buildCenter')
+  const { t: td } = useTranslation('deploys')
   const { t: tf } = useTranslation('uiShared')
   const statusFilter = parseBuildStatusFilter(buildsRoute.useSearch().status)
   const navigate = buildsRoute.useNavigate()
@@ -84,7 +85,7 @@ export function BuildsPage() {
             isEmpty ? 'buildCenter:banner.description' : 'buildCenter:subtitle'
           }
           action={
-            isRoot ? (
+            isRoot && !isEmpty ? (
               <Button
                 size="sm"
                 onClick={() => {
@@ -101,7 +102,7 @@ export function BuildsPage() {
         />
       }
     >
-      <DeploymentsSectionTabs />
+      {isEmpty ? null : <DeploymentsSectionTabs />}
       <div className="flex flex-col gap-6">
         {builds.isPending ? <SkeletonList rows={6} /> : null}
 
@@ -140,7 +141,22 @@ export function BuildsPage() {
           </Alert>
         ) : null}
 
-        {data ? (
+        {isEmpty ? (
+          <EmptyState
+            compact
+            icon={<HammerGlassIcon className="size-6" />}
+            title={td('page.buildsEmpty')}
+            action={
+              <Button
+                size="sm"
+                render={<Link to="/apps/new" />}
+                nativeButton={false}
+              >
+                {td('page.emptyAction')}
+              </Button>
+            }
+          />
+        ) : data ? (
           <>
             <div className="grid grid-cols-2 gap-3 lg:grid-cols-4">
               <MetricTile
@@ -194,9 +210,7 @@ export function BuildsPage() {
               </p>
             </div>
 
-            {isEmpty ? (
-              <BuildsEmptyState total={data.rows.length} />
-            ) : (
+            {
               <div ref={setListContainer} className="flex flex-col gap-2">
                 <div className="flex flex-wrap items-center gap-2">
                   <div className="min-w-0 flex-1">
@@ -230,17 +244,21 @@ export function BuildsPage() {
                   />
                 )}
               </div>
-            )}
+            }
           </>
         ) : null}
 
-        <BuildCachePanel
-          pruneOpen={pruneOpen}
-          onPruneOpenChange={setPruneOpen}
-        />
-        <Suspense fallback={null}>
-          <BuildCacheQuotaCard />
-        </Suspense>
+        {isEmpty ? null : (
+          <>
+            <BuildCachePanel
+              pruneOpen={pruneOpen}
+              onPruneOpenChange={setPruneOpen}
+            />
+            <Suspense fallback={null}>
+              <BuildCacheQuotaCard />
+            </Suspense>
+          </>
+        )}
       </div>
     </PageTemplate>
   )

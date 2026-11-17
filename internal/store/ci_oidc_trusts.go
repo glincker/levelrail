@@ -31,6 +31,9 @@ type CIOIDCTrust struct {
 	Provider         string
 	Issuer           string
 	ProtectedRefOnly bool
+	// RepositoryID and RepositoryOwnerID are GitHub's immutable numeric IDs; empty means match by name only.
+	RepositoryID      string
+	RepositoryOwnerID string
 }
 
 // NewCIOIDCTrustID mints a random trust id.
@@ -42,12 +45,12 @@ func NewCIOIDCTrustID() (string, error) {
 	return "cit_" + base64.RawURLEncoding.EncodeToString(buf), nil
 }
 
-const ciOIDCTrustColumns = `id, service_name, repository, ref_pattern, environment, policy_id, created_by, created_at, provider, issuer, protected_ref_only`
+const ciOIDCTrustColumns = `id, service_name, repository, ref_pattern, environment, policy_id, created_by, created_at, provider, issuer, protected_ref_only, repository_id, repository_owner_id`
 
 func scanCIOIDCTrust(scan func(dest ...any) error) (CIOIDCTrust, error) {
 	var t CIOIDCTrust
 	var created string
-	if err := scan(&t.ID, &t.ServiceName, &t.Repository, &t.RefPattern, &t.Environment, &t.PolicyID, &t.CreatedBy, &created, &t.Provider, &t.Issuer, &t.ProtectedRefOnly); err != nil {
+	if err := scan(&t.ID, &t.ServiceName, &t.Repository, &t.RefPattern, &t.Environment, &t.PolicyID, &t.CreatedBy, &created, &t.Provider, &t.Issuer, &t.ProtectedRefOnly, &t.RepositoryID, &t.RepositoryOwnerID); err != nil {
 		return CIOIDCTrust{}, err
 	}
 	t.CreatedAt, _ = time.Parse(time.RFC3339Nano, created)
@@ -57,8 +60,8 @@ func scanCIOIDCTrust(scan func(dest ...any) error) (CIOIDCTrust, error) {
 // SaveCIOIDCTrust inserts a trust.
 func (db *DB) SaveCIOIDCTrust(ctx context.Context, t CIOIDCTrust) error {
 	_, err := db.ExecContext(ctx, `
-		INSERT INTO ci_oidc_trusts (`+ciOIDCTrustColumns+`) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
-	`, t.ID, t.ServiceName, t.Repository, t.RefPattern, t.Environment, t.PolicyID, t.CreatedBy, t.CreatedAt.UTC().Format(time.RFC3339Nano), ciTrustProvider(t.Provider), t.Issuer, t.ProtectedRefOnly)
+		INSERT INTO ci_oidc_trusts (`+ciOIDCTrustColumns+`) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
+	`, t.ID, t.ServiceName, t.Repository, t.RefPattern, t.Environment, t.PolicyID, t.CreatedBy, t.CreatedAt.UTC().Format(time.RFC3339Nano), ciTrustProvider(t.Provider), t.Issuer, t.ProtectedRefOnly, t.RepositoryID, t.RepositoryOwnerID)
 	if err != nil {
 		if strings.Contains(err.Error(), "UNIQUE constraint failed") {
 			return ErrCIOIDCTrustExists

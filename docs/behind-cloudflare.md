@@ -1,6 +1,6 @@
 ---
 title: Run behind Cloudflare
-description: "Put Cloudflare's proxy in front of Levelrail: SSL mode, certificates, websockets, upload limits, real client IPs, cache purge, and an honest list of what the proxy does not hide."
+description: "Run Levelrail behind the Cloudflare proxy: SSL mode, certificates, websockets, upload limits, real client IPs, cache purge, and what the proxy does not hide."
 "og:url": "https://docs.levelrail.com/behind-cloudflare"
 ---
 

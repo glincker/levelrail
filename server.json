@@ -1,0 +1,41 @@
+{
+  "$schema": "https://static.modelcontextprotocol.io/schemas/2025-12-11/server.schema.json",
+  "name": "io.github.glincker/levelrail",
+  "description": "Self-hosted MCP server for your Levelrail deployments, servers, databases and domains.",
+  "repository": {
+    "url": "https://github.com/glincker/levelrail",
+    "source": "github"
+  },
+  "version": "1.4.0",
+  "packages": [
+    {
+      "registryType": "npm",
+      "identifier": "levelrail-mcp",
+      "version": "1.4.0",
+      "transport": {
+        "type": "stdio"
+      },
+      "environmentVariables": [
+        {
+          "name": "APP_API_URL",
+          "description": "Base URL of your Levelrail control plane API, for example https://levelrail.example.com.",
+          "isRequired": true,
+          "format": "string"
+        },
+        {
+          "name": "APP_API_TOKEN",
+          "description": "API token created on your Levelrail instance.",
+          "isRequired": true,
+          "isSecret": true,
+          "format": "string"
+        },
+        {
+          "name": "APP_MCP_MODE",
+          "description": "Tool exposure: read-only, standard (default) or full.",
+          "isRequired": false,
+          "format": "string"
+        }
+      ]
+    }
+  ]
+}

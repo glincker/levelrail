@@ -1,9 +1,12 @@
 package main
 
 import (
+	"bufio"
 	"context"
 	"fmt"
 	"io"
+	"os"
+	"strings"
 	"text/tabwriter"
 	"time"
 )
@@ -25,6 +28,8 @@ func runNodesProvisions(prog string, args []string, stdout, stderr io.Writer, lo
 		return runNodesProvisionsList(prog, args[1:], stdout, stderr, lookupEnv)
 	case "show":
 		return runNodesProvisionsShow(prog, args[1:], stdout, stderr, lookupEnv)
+	case "destroy":
+		return runNodesProvisionsDestroy(prog, args[1:], os.Stdin, stdinIsTerminal(), stdout, stderr, lookupEnv)
 	default:
 		_, _ = fmt.Fprintf(stderr, "%s: unknown nodes provisions subcommand %q\n\n", prog, args[0])
 		_, _ = fmt.Fprint(stderr, nodesProvisionsUsage(prog))
@@ -36,6 +41,7 @@ func nodesProvisionsUsage(prog string) string {
 	return fmt.Sprintf(`Usage:
   %[1]s nodes provisions list [flags]        list every cloud node provision, last known status
   %[1]s nodes provisions show <id> [flags]   show one provision, refreshed live against the provider and the node registry
+  %[1]s nodes provisions destroy <id> [--force] [--yes] [flags]   delete the cloud server this provision created
 
 Run "%[1]s nodes provisions <subcommand> -h" for a subcommand's own flags.
 `, prog)
@@ -160,4 +166,67 @@ func printNodeProvisionHuman(out io.Writer, p nodeProvisionResource) {
 	}
 	_, _ = fmt.Fprintf(out, "created at:      %s\n", p.CreatedAt.Format(time.RFC3339))
 	_, _ = fmt.Fprintf(out, "updated at:      %s\n", p.UpdatedAt.Format(time.RFC3339))
+}
+
+func runNodesProvisionsDestroy(prog string, args []string, in io.Reader, interactive bool, stdout, stderr io.Writer, lookupEnv func(string) (string, bool)) int {
+	fs, tokenFlagP, apiURLFlagP, profileFlagP, jsonOutP, outputFlagP, queryFlagP := apiFlagSet(prog, "nodes provisions destroy", "print the provision as JSON to stdout and nothing else", stderr)
+	fs.Usage = func() { _, _ = fmt.Fprint(stderr, nodesProvisionsDestroyUsage(prog)) }
+	force := fs.Bool("force", false, "destroy even when the node still runs workloads")
+	yes := fs.Bool("yes", false, "skip the confirmation prompt")
+
+	tokenFlag, apiURLFlag, profileFlag, jsonOut, of, exitCode, ok := parseAPIFlags(fs, args, apiFlagPtrs{tokenFlagP, apiURLFlagP, profileFlagP, jsonOutP, outputFlagP, queryFlagP}, prog, stderr)
+	if !ok {
+		return exitCode
+	}
+	id, ok := requireOneArg(fs, stderr, prog, "nodes provisions destroy", "provision id")
+	if !ok {
+		return exitUsage
+	}
+
+	if !*yes {
+		if !interactive {
+			_, _ = fmt.Fprintf(stderr, "%s: destroying a server is irreversible; re-run with --yes to confirm\n", prog)
+			return exitUsage
+		}
+		_, _ = fmt.Fprintf(stderr, "Destroy the cloud server for provision %s? This cannot be undone. [y/N] ", id)
+		line, _ := bufio.NewReader(in).ReadString('\n')
+		if a := strings.ToLower(strings.TrimSpace(line)); a != "y" && a != "yes" {
+			_, _ = fmt.Fprintln(stderr, "aborted")
+			return exitUsage
+		}
+	}
+
+	client := apiClientFromFlags(prog, apiURLFlag, tokenFlag, profileFlag, lookupEnv)
+
+	p, err := client.DestroyNodeProvision(context.Background(), id, *force)
+	if err != nil {
+		return reportError(stdout, stderr, jsonOut, fmt.Errorf("destroy node provision %q: %w", id, err))
+	}
+
+	if err := renderResult(stdout, of.Format, of.Query, p, func() { printNodeProvisionHuman(stdout, p) }); err != nil {
+		_, _ = fmt.Fprintln(stderr, err)
+		return exitCodeForError(err)
+	}
+	return exitOK
+}
+
+func nodesProvisionsDestroyUsage(prog string) string {
+	return fmt.Sprintf(`Usage:
+  %[1]s nodes provisions destroy <id> [--force] [--yes] [flags]
+
+Deletes the cloud server this control plane created for the provision.
+Repeating the call on an already destroyed provision is a no-op. The
+call is refused while the node still runs workloads unless --force.
+
+Flags:
+  --force                   destroy even when the node still runs workloads
+  --yes                     skip the confirmation prompt
+  --token string          API token (default: %[2]s env var, then the credentials file)
+  --api-url string       control plane base URL (default: %[3]s env var, then %[4]s)
+  --profile string       named credentials profile to read (overrides APP_PROFILE, default "default")
+  --json                    print the provision as JSON to stdout, nothing else
+  --output string          output format: json, table, or text (default table; --json is shorthand for --output json)
+  --query string           JMESPath expression to filter the result before printing
+  -h, --help               show this help
+`, prog, apiTokenEnvHelp, apiURLEnvHelp, defaultAPIURL)
 }

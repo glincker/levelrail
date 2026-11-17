@@ -27,6 +27,7 @@ const (
 	methodWorkloadIdentityFederation = "workload_identity_federation"
 	methodServiceAccountJSON         = "service_account_json"
 	methodManual                     = "manual"
+	methodAPIKey                     = "api_key"
 	nodeProviderTestTimeout          = 20 * time.Second
 	nodeProviderStatusConnected      = "connected"
 	nodeProviderStatusNotConnected   = "not_connected"
@@ -40,9 +41,11 @@ const (
 var nodeProviderMethods = map[string][]string{
 	"hetzner":          {methodAPIToken},
 	"digitalocean":     {methodAPIToken},
+	"vultr":            {methodAPIToken},
 	"aws":              {methodAccessKey, methodAssumeRole, methodAmbient},
 	"azure":            {methodServiceAccountJSON, methodWorkloadIdentityFederation},
 	"gcp":              {methodServiceAccountJSON},
+	"oracle":           {methodAPIKey},
 	nodeProviderCustom: {methodManual},
 }
 
@@ -50,10 +53,12 @@ var nodeProviderMethods = map[string][]string{
 // shown when a test is refused by the provider.
 var nodeProviderTestPermissions = map[string]string{
 	"hetzner":      "a Read & Write project API token (Hetzner has no finer scopes)",
-	"digitalocean": "a token with the droplet read and create scopes, plus ssh_key read and create",
+	"digitalocean": "a token with the regions read, sizes read, droplet read, droplet create and droplet delete scopes",
+	"vultr":        "a Vultr API key (keys have no scopes) with this server's address in its access control list, so the regions, plans, instances and account reads and instance create and delete are allowed",
 	"aws":          "ec2:DescribeRegions, ec2:DescribeInstanceTypes, ec2:DescribeInstances, ec2:RunInstances, ec2:TerminateInstances, ec2:CreateTags, ec2:DescribeImages and the security group and VPC actions; for assume_role the base identity needs sts:AssumeRole on the role",
 	"azure":        "Reader on the subscription plus Virtual Machine Contributor and Network Contributor on the resource group",
 	"gcp":          "compute.regions.list, compute.machineTypes.list, compute.instances.create, compute.instances.get, compute.instances.delete",
+	"oracle":       "manage instance-family, use or manage virtual-network-family, read app-catalog-listing and inspect compartments, all in the compartment; read instances in tenancy only if the tenancy-wide allowance count is wanted",
 }
 
 func methodAllowed(provider, method string) bool {
@@ -81,6 +86,9 @@ type nodeProviderResource struct {
 	LastTestedAt   *time.Time `json:"last_tested_at,omitempty"`
 	LastTestOK     *bool      `json:"last_test_ok,omitempty"`
 	LastTestDetail string     `json:"last_test_detail,omitempty"`
+	// Capabilities is set only on the save response, so the panel can render
+	// right after a token is stored.
+	Capabilities *provision.ProviderCapabilities `json:"capabilities,omitempty"`
 }
 
 // NodeProviderConnectionStore is the store surface for connection metadata.
@@ -167,6 +175,13 @@ type setNodeProviderCredentialRequest struct {
 	Label                 string `json:"label,omitempty"`
 	Location              string `json:"location,omitempty"`
 	Notes                 string `json:"notes,omitempty"`
+	// Oracle API key fields. PrivateKeyPEM is sealed with the rest and never returned.
+	TenancyOCID     string `json:"tenancy_ocid,omitempty"`
+	UserOCID        string `json:"user_ocid,omitempty"`
+	Fingerprint     string `json:"fingerprint,omitempty"`
+	PrivateKeyPEM   string `json:"private_key_pem,omitempty"`
+	CompartmentOCID string `json:"compartment_ocid,omitempty"`
+	SubnetOCID      string `json:"subnet_ocid,omitempty"`
 }
 
 // inferNodeProviderMethod keeps older clients that send no method working.
@@ -192,6 +207,8 @@ func inferNodeProviderMethod(req setNodeProviderCredentialRequest) string {
 		return methodServiceAccountJSON
 	case "gcp":
 		return methodServiceAccountJSON
+	case "oracle":
+		return methodAPIKey
 	case nodeProviderCustom:
 		return methodManual
 	default:
@@ -213,6 +230,8 @@ func nodeProviderCredentialValue(req setNodeProviderCredentialRequest) (value, m
 		return awsCredentialValue(req)
 	case methodServiceAccountJSON, methodWorkloadIdentityFederation:
 		return jsonCredentialValue(req)
+	case methodAPIKey:
+		return oracleCredentialValue(req)
 	default:
 		return "", "unsupported method"
 	}
@@ -273,30 +292,45 @@ type nodeProviderTestResult struct {
 	OK       bool      `json:"ok"`
 	Message  string    `json:"message"`
 	TestedAt time.Time `json:"tested_at"`
+	// Code and Needs are set only when the provider refused for a missing scope.
+	Code  string `json:"code,omitempty"`
+	Needs string `json:"needs,omitempty"`
+	// Capabilities is the read-only permission check run with the tested credential.
+	Capabilities *provision.ProviderCapabilities `json:"capabilities,omitempty"`
 }
 
 // testNodeProviderValue runs one read-only call (list regions) against the
 // provider with the candidate credential value and describes the outcome
 // in plain language. The credential is never part of the message.
 func (rt *Router) testNodeProviderValue(ctx context.Context, provider, value string) (ok bool, message string) {
+	ok, message, _ = rt.testNodeProviderScope(ctx, provider, value)
+	return ok, message
+}
+
+// testNodeProviderScope is testNodeProviderValue plus the missing scope when
+// the provider refused for one, so callers can answer with a fixed code.
+func (rt *Router) testNodeProviderScope(ctx context.Context, provider, value string) (ok bool, message string, scope *provision.ScopeMissingError) {
 	factory := rt.nodeProvisionerFactory
 	if factory == nil {
 		factory = rt.defaultNodeProvisionerFactory
 	}
 	p, err := factory(provider, value)
 	if err != nil {
-		return false, "The credential could not be read: " + sanitizeProviderErr(err)
+		return false, "The credential could not be read: " + sanitizeProviderErr(err), nil
 	}
 	ctx, cancel := context.WithTimeout(ctx, nodeProviderTestTimeout)
 	defer cancel()
 	if _, err := p.ListRegions(ctx); err != nil {
 		var pe *provision.ProviderError
 		if errors.As(err, &pe) && (pe.Status == http.StatusUnauthorized || pe.Status == http.StatusForbidden) {
-			return false, "The provider refused the credential (" + http.StatusText(pe.Status) + "). It needs: " + nodeProviderTestPermissions[provider] + "."
+			if se, ok := provision.ScopeFromError(provider, "regions.read", err); ok {
+				return false, "The provider refused the credential (" + http.StatusText(pe.Status) + "). It needs the " + se.Needs + " scope. Full set: " + nodeProviderTestPermissions[provider] + ".", se
+			}
+			return false, "The provider refused the credential (" + http.StatusText(pe.Status) + "). It needs: " + nodeProviderTestPermissions[provider] + ".", nil
 		}
-		return false, "Could not complete a read-only call to the provider: " + sanitizeProviderErr(err)
+		return false, "Could not complete a read-only call to the provider: " + sanitizeProviderErr(err), nil
 	}
-	return true, "Connected: the provider accepted the credential for a read-only call."
+	return true, "Connected: the provider accepted the credential for a read-only call.", nil
 }
 
 // sanitizeProviderErr trims an upstream error to a short single line.
@@ -353,6 +387,10 @@ func (rt *Router) handleSetNodeProviderCredential(w http.ResponseWriter, r *http
 		rt.connectCustomProvider(w, r, req)
 		return
 	}
+	if msg := rt.oracleDisabledMessage(r.Context(), req.Provider); msg != "" {
+		writeError(w, http.StatusConflict, msg)
+		return
+	}
 	if rt.nodeProviderSecrets == nil {
 		writeError(w, http.StatusNotImplemented, "node provisioning is not configured on this control plane (no master key set)")
 		return
@@ -373,8 +411,46 @@ func (rt *Router) handleSetNodeProviderCredential(w http.ResponseWriter, r *http
 		return
 	}
 	rt.nodeProviderCatalog.invalidate(req.Provider)
+	rt.providerCaps.invalidate(req.Provider)
 	rt.saveNodeProviderConnection(r, req)
-	writeJSON(w, http.StatusOK, rt.nodeProviderResourceFor(r.Context(), req.Provider))
+	res := rt.nodeProviderResourceFor(r.Context(), req.Provider)
+	res.Capabilities = rt.storedCredentialCapabilities(r.Context(), req.Provider)
+	writeJSON(w, http.StatusOK, res)
+}
+
+// storedCredentialCapabilities probes with the stored credential right after
+// it changed. It returns nil for providers with no safe probe.
+func (rt *Router) storedCredentialCapabilities(ctx context.Context, provider string) *provision.ProviderCapabilities {
+	p, ok, _, _ := rt.resolveNodeProvisioner(ctx, provider)
+	if !ok {
+		return nil
+	}
+	if _, can := p.(provision.CapabilityProber); !can {
+		return nil
+	}
+	out, _ := rt.providerCapabilities(ctx, provider, p, capForceProbe)
+	return &out
+}
+
+// candidateCapabilities probes a credential that is not stored. It uses a
+// throwaway entry so a test never fills or resets the provider's cache.
+func (rt *Router) candidateCapabilities(ctx context.Context, provider, value string) *provision.ProviderCapabilities {
+	factory := rt.nodeProvisionerFactory
+	if factory == nil {
+		factory = rt.defaultNodeProvisionerFactory
+	}
+	p, err := factory(provider, value)
+	if err != nil {
+		return nil
+	}
+	if _, can := p.(provision.CapabilityProber); !can {
+		return nil
+	}
+	e := &capEntry{learned: map[string]capLearned{}}
+	e.probeMu.Lock()
+	defer e.probeMu.Unlock()
+	out, _ := rt.providerCapabilitiesLocked(ctx, provider, p, e, capForceProbe)
+	return &out
 }
 
 func (rt *Router) connectCustomProvider(w http.ResponseWriter, r *http.Request, req setNodeProviderCredentialRequest) {
@@ -454,14 +530,23 @@ func (rt *Router) handleTestNodeProvider(w http.ResponseWriter, r *http.Request)
 		}
 		value = stored
 	}
-	ok, message := rt.testNodeProviderValue(r.Context(), provider, value)
+	ok, message, scope := rt.testNodeProviderScope(r.Context(), provider, value)
 	now := time.Now().UTC()
 	if !candidate && rt.nodeProviderConns != nil {
 		if err := rt.nodeProviderConns.RecordNodeProviderTest(r.Context(), provider, ok, message, now); err != nil && !errors.Is(err, store.ErrNodeProviderConnectionNotFound) {
 			rt.logger.Warn("api: record node provider test failed", slog.String("provider", provider), slog.String("error", err.Error()))
 		}
 	}
-	writeJSON(w, http.StatusOK, nodeProviderTestResult{OK: ok, Message: message, TestedAt: now})
+	res := nodeProviderTestResult{OK: ok, Message: message, TestedAt: now}
+	if candidate {
+		res.Capabilities = rt.candidateCapabilities(r.Context(), provider, value)
+	} else {
+		res.Capabilities = rt.storedCredentialCapabilities(r.Context(), provider)
+	}
+	if scope != nil {
+		res.Code, res.Needs = errCodeProviderScope, scope.Needs
+	}
+	writeJSON(w, http.StatusOK, res)
 }
 
 // handleDisconnectNodeProvider handles DELETE /api/v1/node-providers/{provider}.
@@ -491,5 +576,6 @@ func (rt *Router) handleDisconnectNodeProvider(w http.ResponseWriter, r *http.Re
 		}
 	}
 	rt.nodeProviderCatalog.invalidate(provider)
+	rt.providerCaps.invalidate(provider)
 	w.WriteHeader(http.StatusNoContent)
 }

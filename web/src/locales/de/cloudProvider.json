@@ -1,0 +1,344 @@
+{
+  "providers": {
+    "digitalocean": {
+      "name": "DigitalOcean",
+      "tagline": "Droplets, VPCs and managed Kubernetes on a simple cloud.",
+      "terms": {
+        "server": "Droplet",
+        "servers": "Droplets",
+        "location": "Region",
+        "locations": "Regions",
+        "size": "Size",
+        "vocab": "Droplets, Projects, VPCs, Managed Kubernetes (DOKS)"
+      },
+      "createLabel": "Create Droplet",
+      "tokenHelp": "Create a personal access token with read and write access. Custom scopes need the exact scopes listed in the Permissions panel."
+    },
+    "vultr": {
+      "name": "Vultr",
+      "tagline": "Cloud-Compute und Bare Metal in vielen Städten weltweit.",
+      "terms": {
+        "server": "Instanz",
+        "servers": "Instanzen",
+        "location": "Region",
+        "locations": "Regionen",
+        "size": "Tarif",
+        "vocab": "Instanzen, Regionen, Tarif"
+      },
+      "createLabel": "Instanz erstellen",
+      "tokenHelp": "Erstelle unter Account, API einen API-Schlüssel und trage die Adresse dieses Servers in seine Zugriffsliste ein."
+    },
+    "hetzner": {
+      "name": "Hetzner Cloud",
+      "tagline": "Fast, low cost servers in European and US locations.",
+      "terms": {
+        "server": "Server",
+        "servers": "Servers",
+        "location": "Location",
+        "locations": "Locations",
+        "size": "Server type",
+        "vocab": "Servers, Projects, Locations"
+      },
+      "createLabel": "Create server",
+      "tokenHelp": "Create an API token inside the Hetzner project with read and write permission. Tokens have no finer scopes."
+    },
+    "aws": {
+      "name": "Amazon Web Services",
+      "tagline": "EC2 instances across AWS Regions, with IAM controlling access.",
+      "terms": {
+        "server": "EC2 instance",
+        "servers": "EC2 instances",
+        "location": "Region",
+        "locations": "Regions",
+        "size": "Instance type",
+        "vocab": "EC2 instances, Regions, VPCs, Security groups, IAM"
+      },
+      "createLabel": "Create instance",
+      "tokenHelp": "Use an IAM user access key, an assumed role or this control plane's own identity, with the EC2 actions Levelrail needs."
+    },
+    "azure": {
+      "name": "Microsoft Azure",
+      "tagline": "Virtual machines organised by subscription and resource group.",
+      "terms": {
+        "server": "Virtual machine",
+        "servers": "Virtual machines",
+        "location": "Region",
+        "locations": "Regions",
+        "size": "VM size",
+        "vocab": "Virtual machines, Resource groups, Subscriptions"
+      },
+      "createLabel": "Create virtual machine",
+      "tokenHelp": "Register a service principal and give it a role on the subscription or resource group you want Levelrail to use."
+    },
+    "gcp": {
+      "name": "Google Cloud",
+      "tagline": "VM instances in Google Cloud projects and zones.",
+      "terms": {
+        "server": "VM instance",
+        "servers": "VM instances",
+        "location": "Zone",
+        "locations": "Zones",
+        "size": "Machine type",
+        "vocab": "VM instances, Projects, Zones"
+      },
+      "createLabel": "Create VM instance",
+      "tokenHelp": "Use a service account key or workload identity with Compute Engine access on the project."
+    },
+    "oracle": {
+      "name": "Oracle Cloud Infrastructure",
+      "tagline": "Compute instances and Flex shapes in compartments.",
+      "terms": {
+        "server": "Compute instance",
+        "servers": "Compute instances",
+        "location": "Availability domain",
+        "locations": "Availability domains",
+        "size": "Shape",
+        "vocab": "Compute instances, Compartments, Availability domains, Shapes (Flex)"
+      },
+      "createLabel": "Create instance",
+      "tokenHelp": "Add an API signing key to your user, then allow it to manage instances in the compartment Levelrail uses."
+    },
+    "custom": {
+      "name": "Custom data center",
+      "tagline": "Hosts you run yourself, enrolled by hand.",
+      "terms": {
+        "server": "Host",
+        "servers": "Hosts",
+        "location": "Location",
+        "locations": "Locations",
+        "size": "Size",
+        "vocab": "Hosts"
+      },
+      "createLabel": "Add host",
+      "tokenHelp": "There is no cloud API here, so no token is needed. Levelrail only records the label and location."
+    }
+  },
+  "page": {
+    "back": "Integrations",
+    "notFound": {
+      "title": "Unknown provider",
+      "body": "This provider is not one Levelrail can connect to."
+    },
+    "quickFacts": {
+      "regions_one": "{{count}} {{label}} available",
+      "regions_other": "{{count}} {{label}} available"
+    },
+    "railLabel": "Verbindung und Berechtigungen für {{name}}"
+  },
+  "links": {
+    "label": "Provider links",
+    "console": "Open {{name}} console",
+    "token": "Get a credential",
+    "docs": "Credential guide",
+    "manage": "Back to integrations"
+  },
+  "connection": {
+    "title": "Connection",
+    "connected": "Connected",
+    "notConnected": "Not connected",
+    "testFailed": "Test failed",
+    "connectedBy": "Connected by {{name}}",
+    "lastTested": "last tested",
+    "connect": "Connect",
+    "update": "Update",
+    "disconnect": "Disconnect",
+    "disconnectTitle": "Disconnect {{name}}?",
+    "disconnectBody": "The stored credential is removed. Servers already created stay where they are.",
+    "disconnectConfirm": "Disconnect",
+    "disconnected": "{{name}} disconnected",
+    "notConnectedHint": "Connect {{name}} to create and manage {{servers}} from Levelrail.",
+    "credential": "Zugangsdaten",
+    "by": "Verbunden von",
+    "tested": "Zuletzt getestet",
+    "manualHint": "Für diesen Anbieter ist kein Zugang gespeichert."
+  },
+  "capabilities": {
+    "title": "Permissions",
+    "description": "What the stored credential can do at {{name}}, from read-only checks.",
+    "recheck": "Re-check",
+    "rechecking": "Checking",
+    "checkedAt": "Checked",
+    "cachedNote": "cached",
+    "nextCheck": "next check",
+    "granted": "Granted",
+    "missing": "Missing",
+    "unknown": "Unknown",
+    "needs": "Needs {{scope}}",
+    "needsNothing": "No scope reported",
+    "usedBy": "Used by {{features}}",
+    "summary": "{{granted}} of {{total}} granted",
+    "rateLimited": "Permissions were just checked. Try again in {{seconds}} seconds.",
+    "rateLimitedNoWait": "Permissions were just checked. Try again shortly.",
+    "error": "Could not read permissions: {{message}}",
+    "liveError": "The provider could not be reached for every check, so some rows are unknown.",
+    "notConnectedTitle": "Not connected",
+    "notConnectedBody": "Connect {{name}} to see which permissions the credential has. Connecting unlocks creating and destroying {{servers}} and the checks on this panel.",
+    "noProbeTitle": "No permission check for {{name}} yet",
+    "noProbeBody": "Levelrail has no read-only check for this provider, so nothing is shown as granted or missing. Creating a server will still report any permission error.",
+    "unknownHint": "No safe read-only check exists. It becomes known after a real action.",
+    "howToFix": "How to get a credential with this",
+    "evidence": {
+      "probe_ok": "proven by a read check",
+      "probe_403": "refused by the provider",
+      "probe_404": "not found",
+      "learned_ok": "worked in a real action",
+      "learned_403": "refused in a real action",
+      "not_probed": "not checked"
+    },
+    "rowSummary": "{{granted}} of {{total}} capabilities granted",
+    "notChecked": "Not checked yet",
+    "details": "Genaue Berechtigungen und Nachweise"
+  },
+  "cap": {
+    "instances.read": "List servers",
+    "instances.create": "Create servers",
+    "instances.delete": "Delete servers",
+    "instances.power": "Power actions",
+    "instances.resize": "Resize servers",
+    "instances.snapshot": "Snapshots",
+    "regions.read": "List locations",
+    "sizes.read": "List sizes",
+    "ssh_keys.read": "Read SSH keys",
+    "ssh_keys.write": "Write SSH keys",
+    "firewalls.read": "Read firewalls",
+    "volumes.read": "Read volumes",
+    "networks.read": "Read networks",
+    "reserved_ips.read": "Read reserved IPs",
+    "projects.read": "Read projects",
+    "tags.write": "Write tags",
+    "dns.read": "Read DNS",
+    "load_balancers.read": "Read load balancers",
+    "kubernetes.read": "Read Kubernetes",
+    "kubernetes.credentials": "Kubernetes credentials",
+    "databases.read": "Read databases",
+    "object_storage_keys.read": "Read object storage keys",
+    "metrics.read": "Read metrics",
+    "alerts.read": "Read alerts",
+    "account.read": "Read account",
+    "billing.balance": "Read balance",
+    "billing.invoices": "Read invoices"
+  },
+  "group": {
+    "compute": "Compute",
+    "network": "Network",
+    "storage": "Storage",
+    "dns": "DNS",
+    "kubernetes": "Kubernetes",
+    "databases": "Databases",
+    "billing": "Billing",
+    "account": "Account",
+    "other": "Other"
+  },
+  "servers": {
+    "title": "{{servers}}",
+    "description": "Created by Levelrail at {{name}}.",
+    "empty": "No {{servers}} created by Levelrail yet.",
+    "emptyHint": "Use {{create}} to add one.",
+    "loadError": "Could not load servers: {{message}}",
+    "name": "Name",
+    "state": "State",
+    "ip": "IP",
+    "node": "Node",
+    "openNode": "Open node {{name}}",
+    "noNode": "Not enrolled",
+    "actions": "Actions",
+    "tableLabel": "{{servers}} created by Levelrail",
+    "status": {
+      "creating": "Creating",
+      "booting": "Booting",
+      "installing": "Installing",
+      "enrolling": "Enrolling",
+      "ready": "Ready",
+      "failed": "Failed",
+      "destroying": "Destroying",
+      "destroyed": "Destroyed"
+    }
+  },
+  "scopeNotice": {
+    "needs": "Needs scope {{scope}}",
+    "needsGeneric": "Needs a provider permission",
+    "link": "Open permissions panel"
+  },
+  "breadcrumb": {
+    "integrations": "Integrations",
+    "cloudProviders": "Cloud providers"
+  },
+  "refresh": {
+    "label": "Aktualisieren",
+    "refreshing": "Wird aktualisiert",
+    "rateLimited": "Gerade erst aktualisiert. Versuche es in {{seconds}} Sekunden erneut.",
+    "rateLimitedNoWait": "Gerade erst aktualisiert. Versuche es gleich erneut.",
+    "error": "Aktualisieren fehlgeschlagen: {{message}}"
+  },
+  "resources": {
+    "title": "{{servers}} im Konto",
+    "asOf": "Stand",
+    "filter": {
+      "label": "Nach Herkunft filtern",
+      "all": "Alle",
+      "managed": "Verwaltet",
+      "discovered": "Entdeckt"
+    },
+    "monthly": "Gesch. pro Monat",
+    "origin": "Herkunft",
+    "managed": "Von Levelrail verwaltet",
+    "discovered": "Entdeckt",
+    "noPrice": "Kein Listenpreis",
+    "total": "{{count}} gesamt, geschätzte Monatskosten nach Listenpreisen",
+    "tableLabel": "{{servers}} im Konto des Anbieters",
+    "empty": "In diesem Konto wurden keine {{servers}} gefunden.",
+    "notConnected": "Verbinde {{name}}, um die Maschinen im Konto aufzulisten.",
+    "scopeMissing": "Der Zugangsschlüssel darf {{servers}} noch nicht auflisten.",
+    "unsupported": "Das Auflisten von Maschinen ist für {{name}} noch nicht verfügbar.",
+    "loadError": "Die Liste konnte nicht geladen werden: {{message}}",
+    "readOnlyNote": "Entdeckte Maschinen sind hier schreibgeschützt. Nur von Levelrail erstellte Maschinen bieten Aktionen.",
+    "status": {
+      "active": "Aktiv",
+      "running": "Läuft",
+      "new": "Neu",
+      "initializing": "Wird initialisiert",
+      "off": "Aus",
+      "stopped": "Gestoppt",
+      "archive": "Archiviert"
+    }
+  },
+  "spend": {
+    "title": "Kosten",
+    "lagNote": "Abrechnungsdaten des Anbieters können einen Tag oder länger hinterherhinken.",
+    "asOf": "Stand",
+    "asOfTitle": "Daten vom {{time}}",
+    "balance": "Guthaben",
+    "monthToDate": "Monat bisher",
+    "lastInvoice": "Letzte Rechnung",
+    "estimate": "Geschätzt pro Monat",
+    "priced": "({{priced}} von {{total}} mit Preis)",
+    "unavailable": "Gerade nicht verfügbar",
+    "scopeMissing": "Benötigt {{scope}}, siehe",
+    "scopeMissingGeneric": "Benötigt Leserecht für Abrechnung, siehe",
+    "seeCapabilities": "Berechtigungen",
+    "notConnected": "Verbinde {{name}}, um Guthaben, Rechnungen und eine Monatsschätzung zu lesen.",
+    "unsupported": "Kosten sind für {{name}} noch nicht verfügbar.",
+    "loadError": "Kosten konnten nicht geladen werden: {{message}}",
+    "source": {
+      "list_prices": "nach Listenpreisen",
+      "digitalocean_balance": "Kontostand",
+      "digitalocean_billing_history": "Abrechnungsverlauf"
+    }
+  },
+  "onboarding": {
+    "title": "{{name}} verbinden",
+    "unlocksTitle": "Verbinden schaltet frei",
+    "stepsTitle": "Drei Schritte",
+    "unlock": {
+      "create": "{{servers}} direkt aus Levelrail erstellen",
+      "manage": "{{servers}} an einem Ort sehen und verwalten",
+      "permissions": "Prüfen, was der Zugang darf, bevor du handelst",
+      "spend": "Guthaben, Rechnungen und eine Monatsschätzung"
+    },
+    "step": {
+      "get": "Token holen",
+      "paste": "In Verbinden einfügen",
+      "verify": "Levelrail prüft ihn mit einem reinen Lesetest"
+    }
+  }
+}

@@ -1,6 +1,7 @@
 ---
 title: "Advisory feed"
 description: Match the images your apps run against a local, optionally signed advisory feed.
+"og:url": "https://docs.levelrail.com/advisory-feed"
 ---
 
 Levelrail can compare the images your apps run against a feed of advisories you provide. It is off by default and does nothing until you point it at a feed. Levelrail never changes an app on its own: a match is a finding with a fix hint, and you redeploy.

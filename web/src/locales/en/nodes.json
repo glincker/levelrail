@@ -1025,5 +1025,93 @@
     "invalid": "Use a whole number from 1 to 100, or leave blank for the default.",
     "description_one": "Leave a field blank to follow the platform default. CPU and memory alerts fire after {{count}} evaluation over the limit.",
     "description_other": "Leave a field blank to follow the platform default. CPU and memory alerts fire after {{count}} evaluations in a row over the limit."
+  },
+  "provisionDestroy": {
+    "trigger": "Destroy server",
+    "title": "Destroy server \"{{name}}\"?",
+    "description": "This permanently deletes the cloud server at {{provider}} and removes the node. The provider stops billing once the server is gone. This cannot be undone.",
+    "confirm": "Destroy server",
+    "destroying": "Destroying...",
+    "destroyed": "Server \"{{name}}\" destroyed.",
+    "workloadsTitle": "This node still runs workloads",
+    "workloadsBody": "Drain it first, or destroy it anyway. Apps and databases on it will be lost.",
+    "force": "Destroy anyway, I accept losing the workloads on this node",
+    "statusDestroying": "Destroying",
+    "statusDestroyed": "Destroyed"
+  },
+  "provisionGuard": {
+    "title": "Server limit reached",
+    "body": "{{reason}}",
+    "hint": "Limits are the settings provision.max_servers and provision.max_monthly_price_usd."
+  },
+  "oracle": {
+    "name": "Oracle Cloud",
+    "hint": "API signing key, region, compartment and subnet.",
+    "form": {
+      "intro": "An API signing key for a user that can manage instances in one compartment. It is used only to create and inspect servers.",
+      "tenancy": "Tenancy OCID",
+      "user": "User OCID",
+      "fingerprint": "Key fingerprint",
+      "region": "Region",
+      "compartment": "Compartment OCID",
+      "compartmentHelp": "Defaults to the tenancy (root compartment).",
+      "subnet": "Subnet OCID",
+      "key": "Private key (PEM)",
+      "keyFile": "Load from file",
+      "keyHelp": "Not stored in the browser and never shown again once saved.",
+      "keyStored": "A key is stored. Paste a new one to replace it.",
+      "keyStoredHelp": "The saved key is never shown. Paste a new one to replace it.",
+      "permissionsTitle": "Least privilege",
+      "permissions": "Manage instance-family and use virtual-network-family in the compartment, plus read access to images and compartments. Use a dedicated user and key.",
+      "testAndConnect": "Test and connect",
+      "test": "Test connection",
+      "testing": "Testing...",
+      "testStored": "Test stored connection",
+      "saving": "Saving...",
+      "saved": "{{provider}} credential saved.",
+      "disconnect": "Disconnect",
+      "confirmDisconnect": "Confirm disconnect",
+      "disconnected": "{{provider}} disconnected."
+    },
+    "wizard": {
+      "title": "Guided API key setup",
+      "intro": "Oracle does not offer sign-in for the Compute API, so connect with a narrow API key. The key pair is created in this browser and the private key is never sent anywhere except the credential save below.",
+      "keyTitle": "1. Create the key pair",
+      "generate": "Generate key pair",
+      "regenerate": "Generate a new pair",
+      "generating": "Generating...",
+      "use": "Use key in the form",
+      "used": "Key placed in the form",
+      "failed": "This browser could not generate the key. Use a current browser over HTTPS or localhost.",
+      "consoleSteps": "In the Oracle console open My profile, API keys, Add API key, choose Paste a public key and paste this.",
+      "publicKey": "Public key",
+      "fingerprint": "Fingerprint",
+      "privateNote": "The private key is not shown. It fills the form below and is cleared from this helper once used. Save the credential to keep it.",
+      "policyTitle": "2. Create the narrow policy",
+      "policyNote": "A dedicated user in its own group, with only these statements on one compartment. Nothing at tenancy level.",
+      "cliNote": "The same setup with the OCI CLI:",
+      "copy": "Copy",
+      "copied": "Copied",
+      "checkTitle": "3. Check the connection",
+      "check": "Check connection",
+      "checking": "Checking...",
+      "checkNeedsSave": "Save the credential first, then check.",
+      "checkOk": "Connected. Regions available: {{total}}."
+    },
+    "sizes": {
+      "flex": "Flexible shape",
+      "preset": "{{ocpus}} OCPU, {{memory}} GB",
+      "ocpus": "OCPUs",
+      "memory": "Memory (GB)",
+      "priceNote": "Oracle bills Flex shapes by OCPU and memory. This app cannot tell whether a server is covered by your tenancy allowance, so check your Oracle console."
+    },
+    "guard": {
+      "title": "Oracle create refused",
+      "enabled": "Oracle provisioning is switched off. Turn on the setting {{setting}} first.",
+      "a1": "The A1 allowance is 0 or would be exceeded. Raise {{setting}} to allow this size.",
+      "micro": "The micro shape limit would be exceeded. Raise {{setting}} to allow another.",
+      "paidShape": "This shape is not covered by the allowance limits and may bill. Turn on {{setting}} to use it.",
+      "unknownPrice": "Oracle lists no price for this shape, so the price cap cannot be checked. Turn on {{setting}} (or provision.allow_unknown_price) to allow it."
+    }
   }
 }

@@ -223,7 +223,7 @@ describe('AddNodeWizard', () => {
     expect(hetzner).toBeEnabled()
     expect(within(hetzner).getByText('Connected')).toBeVisible()
     expect(screen.queryByRole('button', { name: /DigitalOcean/ })).toBeNull()
-    expect(screen.getAllByRole('link', { name: 'Connect' })).toHaveLength(3)
+    expect(screen.getAllByRole('link', { name: 'Connect' })).toHaveLength(5)
     expect(
       screen.getByRole('button', { name: /Enroll with a join token/ }),
     ).toBeEnabled()

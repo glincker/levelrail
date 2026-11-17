@@ -177,6 +177,8 @@ type Router struct {
 	nodeProvisions         NodeProvisionStore          // always set, same "core Store interface" shape as cloudflareDNS above
 	nodeProviderSecrets    NodeProviderSecrets         // nil is valid: POST /api/v1/node-providers and every node-providers/{provider}/... route return 501, same shape as cloudflareDNSSecrets above
 	nodeProviderCatalog    *providerCatalogCache       // always set (NewRouter constructs one unconditionally); purely in-memory, brief cache, see its own doc comment
+	providerCaps           providerCapCache            // zero value usable; in-memory permission probe cache and learned write results
+	oracleTestBase         string                      // plain HTTP fake endpoint for tests, empty in production
 	nodeProvisionerFactory NodeProvisionerFactory      // nil uses defaultNodeProvisionerFactory, overridable in this package's own tests
 	sshProvisions          SSHNodeProvisionStore       // always set, same "core Store interface" shape as nodeProvisions above
 	sshProvisioner         SSHProvisioner              // nil uses sshprovision.New(), overridable in this package's own tests
@@ -756,6 +758,8 @@ type Router struct {
 	registry                     RegistryStore                                              // always set, same shape as cloudflareTunnel above
 	registrySecrets              RegistrySecrets                                            // nil is valid: PUT/DELETE /api/v1/settings/registry return 501, same shape as cloudflareTunnelSecrets above
 	secretConns                  SecretConnectionService                                    // nil until boot wires it: reads return an empty list, writes 501
+	k8sDeploymentRows            K8sDeploymentRows                                          // nil when the store lacks deployment tables: routes return 501
+	k8sClusterRows               K8sClusterRows                                             // nil when the store lacks cluster tables: routes return 501
 	cloudConnRows                cloudconn.Rows                                             // nil when the store lacks cloud connections: routes return 501
 	cloudProviders               cloudconn.Registry                                         // nil means the built-in not-implemented providers
 	vault                        VaultSettingsStore                                         // always set, same shape as cloudflareTunnel above
@@ -765,6 +769,7 @@ type Router struct {
 	registryCatalogSecrets       RegistryCatalogSecrets                                     // nil is valid: GET /api/v1/registry/repositories and /api/v1/registry/tags return 501, same shape as registrySecrets above
 	dockerHubClient              DockerHubClient                                            // always set (NewRouter defaults it to a real *dockerhub.Client, unauthenticated so no secrets wiring needed), overridable in this package's own tests the same way registryCatalog is
 	emailSender                  email.Sender                                               // nil is valid: forgot-password still returns its generic success response
+	dnsAuthority                 dnsAuthorityDeps                                           // zero is valid: the who-answers check uses the system resolver and host addresses
 	mail                         mailState                                                  // zero is valid: the /api/v1/mail routes return 501 and system mail uses built-in templates
 	sessionLinkTokens            SessionLinkTokenStore                                      // always set, same shape as passwordResetTokens above
 	forgotPasswordByIP           *loginLimiter                                              // per-IP forgot-password budget, distinct from logins above
@@ -974,6 +979,8 @@ func NewRouter(logger *slog.Logger, b *brand.Brand, s Store, opts ...Option) *Ro
 	rt := &Router{
 		predeploySnapshots:          predeployStoreOf(s),
 		cloudConnRows:               cloudConnStoreOf(s),
+		k8sClusterRows:              k8sClusterStoreOf(s),
+		k8sDeploymentRows:           k8sDeploymentStoreOf(s),
 		logger:                      logger,
 		cancels:                     deploy.NewCancelRegistry(),
 		startingDeploys:             map[string]int{},

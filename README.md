@@ -1,19 +1,20 @@
 <div align="center">
 <img src="docs/assets/brand/levelrail-default.svg" alt="Levelrail logo" width="56" height="56">
 <h1>Levelrail</h1>
-<p><strong>Your own Vercel, on your own servers.</strong><br>
-Push to deploy with HTTPS, logs, metrics and one-step rollback. One Go binary, no Kubernetes. Apache 2.0.</p>
+<p><strong>Lightweight, self-hosted deployment platform: git push to production on your own servers and cloud accounts.</strong><br>
+Git deploys, 570+ templates in the catalog (346 proven on a real engine), edge and TLS, nodes at six clouds, managed databases with restore-drilled backups, and built-in observability. Lightweight: the control plane idles at about 200 MB of RAM and 1.5 percent of one CPU on a 2 vCPU box, one Go binary ([measured idle footprint](docs/performance.md), [method](docs/benchmarks.md)). Apps you deploy use their own resources on top. Apache 2.0.</p>
 <p>
   <a href="https://github.com/glincker/levelrail/stargazers"><img src="https://img.shields.io/github/stars/glincker/levelrail?style=flat&logo=github" alt="GitHub stars"></a>
   <a href="LICENSE"><img src="https://img.shields.io/github/license/glincker/levelrail" alt="License: Apache 2.0"></a>
   <a href="https://github.com/glincker/levelrail/releases"><img src="https://img.shields.io/github/v/release/glincker/levelrail?include_prereleases&label=release" alt="Latest release"></a>
   <a href="https://github.com/glincker/levelrail/actions/workflows/ci.yml"><img src="https://github.com/glincker/levelrail/actions/workflows/ci.yml/badge.svg" alt="CI status"></a>
-  <a href="https://github.com/glincker/levelrail/commits/main"><img src="https://img.shields.io/github/last-commit/glincker/levelrail?style=flat" alt="Last commit"></a>
   <a href="https://www.npmjs.com/package/levelrail-cli"><img src="https://img.shields.io/npm/v/levelrail-cli?style=flat&logo=npm&label=npm" alt="levelrail-cli on npm"></a>
-  <a href="https://registry.terraform.io/providers/glincker/levelrail/latest"><img src="https://img.shields.io/github/v/release/glincker/terraform-provider-levelrail?style=flat&logo=terraform&label=terraform" alt="Terraform provider on the registry"></a>
   <a href="https://hub.docker.com/r/levelrail/levelrail"><img src="https://img.shields.io/docker/pulls/levelrail/levelrail?style=flat&logo=docker&label=docker%20pulls" alt="Docker pulls"></a>
-  <a href="docs/mcp.md"><img src="https://img.shields.io/badge/MCP-server-8A2BE2?style=flat" alt="MCP server"></a>
+  <a href="https://search.opentofu.org/provider/glincker/levelrail/latest"><img src="https://img.shields.io/github/v/release/glincker/terraform-provider-levelrail?style=flat&logo=terraform&label=terraform%20%2B%20opentofu" alt="Terraform and OpenTofu provider"></a>
   <a href="https://discord.gg/Ar5pcaZB99"><img src="https://img.shields.io/discord/829168897080557579?style=flat&logo=discord&logoColor=white&label=discord&color=5865F2" alt="Discord"></a>
+</p>
+<p>
+  <a href="https://docs.levelrail.com?utm_source=github&amp;utm_medium=readme&amp;utm_campaign=nav">Docs</a> &middot; <a href="docs/features.md">Features</a> &middot; <a href="docs/faq.md">FAQ</a> &middot; <a href="https://github.com/glincker/levelrail/discussions">Discussions</a> &middot; <a href="https://discord.gg/Ar5pcaZB99">Discord</a>
 </p>
 <p>
   <a href="https://levelrail.com?utm_source=github&amp;utm_medium=readme&amp;utm_campaign=nav">Website</a> &middot;
@@ -27,21 +28,162 @@ Push to deploy with HTTPS, logs, metrics and one-step rollback. One Go binary, n
 <!-- i18n-nav:start -->
 <p>English &middot; <a href="docs/i18n/README.zh-Hans.md">简体中文</a> &middot; <a href="docs/i18n/README.es.md">Español</a> &middot; <a href="docs/i18n/README.pt-BR.md">Português (BR)</a> &middot; <a href="docs/i18n/README.de.md">Deutsch</a> &middot; <a href="docs/i18n/README.fr.md">Français</a> &middot; <a href="docs/i18n/README.ja.md">日本語</a></p>
 <!-- i18n-nav:end -->
-<picture><source media="(prefers-color-scheme: dark)" srcset="docs/assets/brand/social/github-social-1280x640.jpg"><img src="docs/assets/brand/social/github-social-1280x640-light.jpg" alt="Levelrail: your own Vercel, on your server. The lightweight, self-hosted alternative to Vercel, Heroku and Coolify." width="880"></picture>
+<picture><source media="(prefers-color-scheme: dark)" srcset="docs/assets/brand/social/github-social-1280x640.jpg"><img src="docs/assets/brand/social/github-social-1280x640-light.jpg" alt="Levelrail: a self-hosted deployment platform with Git deploys, templates, edge, databases and observability." width="880"></picture>
 </div>
 
-Turn any Linux server into a private cloud: Git deploys, HTTPS, databases with verified backups, metrics, logs and alerts, without Kubernetes and without a monitoring stack to bolt on. Pre-1.0: single-server is production ready, multi-node is beta ([Feature status](docs/feature-status.md)).
+<p align="center"><a href="docs/performance.md"><b>~200 MB</b> control plane idle</a> &middot; <a href="docs/architecture.md"><b>1</b> binary</a> &middot; <a href="docs/template-catalog.md"><b>570+</b> templates in the catalog</a> &middot; <a href="docs/node-provisioning.md"><b>6</b> clouds</a> &middot; <a href="docs/managing-databases.md"><b>13</b> database engines</a> &middot; <a href="docs/alerts.md"><b>18</b> alert channels</a></p>
+
+Levelrail turns Linux servers into a private cloud and works with the Kubernetes clusters and cloud accounts you already have. Single-server is production ready, multi-node is beta. Every feature carries a stable, beta or experimental label in [Feature status](docs/feature-status.md), and the labels below follow it.
 
 <p align="center"><img src="docs/assets/demos/product-tour.gif" alt="Levelrail dashboard tour: fleet overview, apps list, deploy history and built-in metrics" width="880"></p>
 
-<table>
-  <tr>
-    <td align="center"><h3>200 MB</h3><sub>idle RAM, 1.5% of one CPU<br><a href="docs/benchmarks.md">measured, method included</a></sub></td>
-    <td align="center"><h3>1 binary</h3><sub>Go control plane, Docker runtime<br>no Kubernetes</sub></td>
-    <td align="center"><h3>360</h3><sub>one-click service templates<br><a href="docs/templates-status.md">smoke-tested</a></sub></td>
-    <td align="center"><h3>240+</h3><sub>MCP tools for coding agents<br><a href="docs/mcp.md">scoped, read-only by default</a></sub></td>
-  </tr>
-</table>
+## What you get
+
+Maturity follows [Feature status](docs/feature-status.md). Open the list under each area for every capability.
+
+**[Ship with git push](docs/deploying-apps.md)**
+- Push to GitHub, GitLab, Bitbucket, Gitea or Forgejo and it deploys
+- Rollouts wait for readiness, rollback is one step
+- [Preview environments](docs/deploy-previews.md) for every pull request
+- [Canaries and split tests](docs/canary-deploys.md) before full traffic
+
+<details>
+<summary>All deploy features</summary>
+
+- Git push or webhook deploys from GitHub, GitLab, Bitbucket, Gitea and Forgejo. See [Git integrations](docs/git-integrations.md) and [Git push deploy](docs/git-push-deploy.md).
+- Dockerfile, Compose and Railpack builds (Railpack is beta) with a build queue. See [Build Center](docs/build-center.md).
+- Readiness-gated rollouts and one-step rollback. See [Zero-downtime deploys](docs/zero-downtime-deploys.md) and [Rollback](docs/rollback.md).
+- Canaries and split tests. See [Canary deploys](docs/canary-deploys.md) and [Split testing](docs/split-testing.md).
+- Preview environments per pull request: stable on GitHub, beta on GitLab and Bitbucket. See [Deploy previews](docs/deploy-previews.md).
+- Deploy approvals and deploy freezes. See [Deploy safety](docs/deploy-safety.md).
+- Functions in Node, Python or Go (beta). See [Functions](docs/functions.md).
+
+</details>
+
+**[One-click templates](docs/template-catalog.md)**
+- 570+ templates in the catalog, 346 with a recorded real-engine pass
+- 22 categories, from databases to AI tools
+- [How templates work](docs/templates-and-registry.md)
+
+<details>
+<summary>All template details</summary>
+
+- 574 catalog entries (565 active, 9 deprecated) in 22 categories.
+- 346 entries have a recorded real-engine pass.
+- 228 entries are marked preview: installable, with no recorded pass yet.
+
+</details>
+
+**[Automatic HTTPS and edge](docs/domains-and-ingress.md)**
+- Certificates issued and renewed for you, wildcards included
+- [Firewall, bot lists and attack mode](docs/firewall.md) built in
+- Headers, redirects, geo rules and caching per domain
+- [Private networks](docs/multi-node.md) between nodes (beta)
+
+<details>
+<summary>All edge features</summary>
+
+- Embedded ingress with automatic TLS through HTTP-01 and DNS-01 wildcards.
+- Per-domain headers, forwarders, geo rules, caching and redirects. See [Domain traffic controls](docs/domain-traffic-controls.md).
+- Firewall rules, IP lists, browser challenge, bot lists and attack mode. See [Firewall](docs/firewall.md).
+- Per-app rate limits and deny lists (beta). See [Abuse defense](docs/abuse-defense.md).
+- Round-robin balancing across replicas. See [Load balancing](docs/load-balancing.md).
+- Private networks and a WireGuard mesh (beta). See [Multi-node](docs/multi-node.md).
+
+</details>
+
+**[Spin up nodes on any cloud](docs/node-provisioning.md)**
+- Provision nodes at 6 clouds (beta)
+- [Join any Linux host](docs/add-node-anywhere.md) with a single-use token
+- DNS and registries at the clouds you already use
+- [Existing Kubernetes clusters](docs/kubernetes-clusters.md) as deploy targets (experimental)
+
+<details>
+<summary>All node and cloud features</summary>
+
+- Provision nodes at Hetzner, DigitalOcean, AWS, Azure, GCP or Oracle Cloud (beta).
+- Join any Linux host with a single-use token over mTLS. See [Add a node anywhere](docs/add-node-anywhere.md).
+- DNS at Cloudflare and Route53, image registries on ECR, Artifact Registry and ACR. See [Cloud integrations](docs/cloud-integrations.md) for per-cloud status.
+- Works with the clusters and cloud accounts you already have (experimental): connect existing Kubernetes clusters and deploy to them, off by default. See [Kubernetes clusters](docs/kubernetes-clusters.md).
+
+</details>
+
+**[Managed databases and backups](docs/managing-databases.md)**
+- 13 database engines from one place
+- [Backups](docs/backups-and-storage.md) to S3-compatible, R2 or local disk
+- [Restore drills](docs/prove-your-backups-work.md) prove a backup works
+- Point-in-time recovery for Postgres
+
+<details>
+<summary>All data and backup features</summary>
+
+- 13 database engines in code. 9 are live-verified. 4 (Meilisearch, Qdrant, Typesense, Memcached) are built but not yet live-verified.
+- Backups to S3-compatible, R2 or local targets. See [Backups and storage](docs/backups-and-storage.md).
+- Restore drills that prove a backup works. See [Prove your backups work](docs/prove-your-backups-work.md).
+- Point-in-time recovery for Postgres.
+
+</details>
+
+**[Built-in metrics, logs and alerts](docs/observability.md)**
+- Alerts to 18 channel kinds, from Slack to PagerDuty
+- Metrics and [log search](docs/log-explorer.md) with no extra stack
+- [OTLP ingest](docs/otlp-ingest.md) for your own telemetry
+- [Public status page](docs/status-page.md) for your users
+
+<details>
+<summary>All observability features</summary>
+
+- Built-in metrics, log search and log archive. See [Log explorer](docs/log-explorer.md) and [Log archive](docs/log-archive.md).
+- OTLP ingest. See [OTLP ingest](docs/otlp-ingest.md).
+- Public status page. See [Status page](docs/status-page.md).
+- Deploy traces and traffic export. See [Deploy trace](docs/deploy-trace.md) and [Traffic export](docs/traffic-export.md).
+- Alerts to 18 notification channel kinds. See [Alerts](docs/alerts.md).
+- HTTP, TCP, heartbeat and TLS uptime monitors (experimental). See [Monitors](docs/monitors.md).
+
+</details>
+
+**[SSO, RBAC and audit log](docs/identity-and-access.md)**
+- Sign in with 20 OAuth providers plus generic [OIDC](docs/sso-oidc.md)
+- Passkeys and TOTP for local accounts
+- [IAM policies and teams](docs/teams-and-roles.md)
+- [Hash-chained audit log](docs/audit-log.md) you can verify
+
+<details>
+<summary>All security and access features</summary>
+
+- Passwords, passkeys and TOTP.
+- OAuth sign-in with 20 providers plus generic OIDC. See [OIDC](docs/sso-oidc.md).
+- SAML and SCIM (beta, off by default). See [SAML and SCIM](docs/sso-saml.md).
+- IAM policies and teams. See [Teams and roles](docs/teams-and-roles.md).
+- Hash-chained audit log. See [Audit log](docs/audit-log.md).
+- Encrypted secrets. See [Environment and secrets](docs/environment-and-secrets.md).
+- Signed releases. See [Verify a release](docs/verify-a-release.md).
+
+</details>
+
+**[CLI, API, Terraform and MCP](docs/cli-reference.md)**
+- 259 [MCP tools](docs/mcp.md) for coding agents
+- [Terraform and OpenTofu provider](docs/terraform-provider.md), on the [Terraform registry](https://registry.terraform.io/providers/glincker/levelrail/latest) and the [OpenTofu registry](https://search.opentofu.org/provider/glincker/levelrail/latest)
+- [HTTP API](docs/api-reference.md) and `levelrail-cli`
+- 11 per-app integrations, from error tracking to analytics
+
+<details>
+<summary>All automation features</summary>
+
+- `levelrail-cli` and an HTTP API. See [API reference](docs/api-reference.md).
+- Terraform and OpenTofu provider. See [Terraform provider](docs/terraform-provider.md), the [Terraform registry](https://registry.terraform.io/providers/glincker/levelrail/latest) and the [OpenTofu registry](https://search.opentofu.org/provider/glincker/levelrail/latest).
+- YAML platform as code (experimental). See [Platform as code](docs/platform-as-code.md).
+- CI pipelines. See [Pipelines](docs/pipelines.md).
+- 11 per-app integrations: Sentry, PostHog, GlitchTip, OneUptime, Plausible, Datadog, Axiom, Better Stack, LogSnag, Bugsnag and New Relic. See [Alerts](docs/alerts.md).
+- Signed plugins for notification channels. See [Plugins](docs/plugins.md).
+- 259 MCP tools for coding agents. See [MCP](docs/mcp.md) and [Tool surface](docs/mcp-tool-surface.md).
+- A mail server template with mailboxes and DNS records (experimental). See [Mail template](docs/mail-template.md).
+
+</details>
+
+[All features, with maturity labels](docs/features.md)
+
+Runs on Linux amd64 and arm64 with systemd and Docker ([benchmarks](docs/benchmarks.md)).
 
 ## Install
 
@@ -86,23 +228,6 @@ Then run `levelrail-cli doctor` and `levelrail-cli status` and report anything t
 Do not write any token or password to a file or into this chat.
 ```
 
-## Why Levelrail
-
-**Deploys that do not surprise you. Servers that explain themselves. Agents that stay in their lane.**
-
-<table>
-  <tr>
-    <td width="33%" valign="top"><b>Safe deploys</b><br><i>Ship on a Friday.</i><br>Readiness-gated rollouts, canaries, approvals, one-step rollback.</td>
-    <td width="33%" valign="top"><b>Observability built in</b><br><i>See everything. Install nothing.</i><br>Metrics, logs, traces and alerts. No Grafana stack.</td>
-    <td width="33%" valign="top"><b>Agents, not SSH</b><br><i>No inbound ports to defend.</i><br>Nodes dial out over mTLS. No shelling out to <code>docker</code>.</td>
-  </tr>
-  <tr>
-    <td width="33%" valign="top"><b>Verified backups</b><br><i>A backup you never restored is a hope.</i><br>Every backup is re-downloaded and checksummed, with restore drills.</td>
-    <td width="33%" valign="top"><b>Secure by default</b><br><i>Secure before you configure.</i><br>Hash-chained audit log, encrypted secrets, passkeys, signed releases.</td>
-    <td width="33%" valign="top"><b>Made for AI agents</b><br><i>Let agents deploy. Keep the keys.</i><br>MCP server plus a skill. AI is never in the reconcile path.</td>
-  </tr>
-</table>
-
 <table>
   <tr>
     <td width="33%" valign="top"><a href="docs/product-tour.mdx"><picture><source media="(prefers-color-scheme: dark)" srcset="docs/assets/screenshots/dashboard-home.png"><img src="docs/assets/screenshots/dashboard-home-light.png" alt="Levelrail dashboard home: fleet health, requests and recent deploys" loading="lazy"></picture></a><br><sub><b>The control plane at a glance</b></sub></td>
@@ -118,13 +243,55 @@ Do not write any token or password to a file or into this chat.
 
 All screenshots are captured from a real running control plane. More in the [Product tour](https://docs.levelrail.com/product-tour?utm_source=github&utm_medium=readme&utm_campaign=tour).
 
+## Get Levelrail everywhere
+
+| Channel | What it is | Install or use |
+| --- | --- | --- |
+| <picture><source media="(prefers-color-scheme: dark)" srcset="https://thesvg.org/icons/github/dark.svg"><img src="https://thesvg.org/icons/github/light.svg" width="18" height="18" alt="GitHub"></picture> [GitHub Releases](https://github.com/glincker/levelrail/releases) | Signed binaries and release notes | `curl -fsSL https://levelrail.com/install.sh \| sudo sh` |
+| <img src="https://thesvg.org/icons/docker/default.svg" width="18" height="18" alt="Docker"> [Docker Hub](https://hub.docker.com/r/levelrail/levelrail) | Control plane image | `docker pull levelrail/levelrail:<tag>` |
+| <picture><source media="(prefers-color-scheme: dark)" srcset="https://thesvg.org/icons/github/dark.svg"><img src="https://thesvg.org/icons/github/light.svg" width="18" height="18" alt="GitHub"></picture> [GitHub Container Registry](https://github.com/glincker/levelrail/pkgs/container/levelrail) | Control plane and node agent images | `docker pull ghcr.io/glincker/levelrail:beta` |
+| <img src="https://thesvg.org/icons/npm/default.svg" width="18" height="18" alt="npm"> [npm](https://www.npmjs.com/package/levelrail-cli) | The CLI, no server | `npx levelrail-cli --help` |
+| <img src="https://thesvg.org/icons/homebrew/default.svg" width="18" height="18" alt="Homebrew"> [Homebrew tap](https://github.com/glincker/homebrew-tap) | The CLI on macOS and Linux | `brew install glincker/tap/levelrail-cli` |
+| <img src="https://thesvg.org/icons/terraform/default.svg" width="18" height="18" alt="Terraform"> [Terraform Registry](https://registry.terraform.io/providers/glincker/levelrail/latest) | Provider `glincker/levelrail` | `source = "glincker/levelrail"` then `terraform init` |
+| <img src="https://thesvg.org/icons/opentofu/default.svg" width="18" height="18" alt="OpenTofu"> [OpenTofu Registry](https://search.opentofu.org/provider/glincker/levelrail/latest) | The same provider | `source = "glincker/levelrail"` then `tofu init` |
+| <picture><source media="(prefers-color-scheme: dark)" srcset="https://thesvg.org/icons/model-context-protocol/dark.svg"><img src="https://thesvg.org/icons/model-context-protocol/light.svg" width="18" height="18" alt="MCP"></picture> [Glama](https://glama.ai/mcp/servers/glincker/levelrail) | MCP server listing | [AI assistant setup](https://docs.levelrail.com/ai-assistant) |
+| <picture><source media="(prefers-color-scheme: dark)" srcset="https://thesvg.org/icons/go/dark.svg"><img src="https://thesvg.org/icons/go/light.svg" height="18" alt="Go"></picture> [pkg.go.dev](https://pkg.go.dev/github.com/GLINCKER/levelrail/kit) | Go kit packages | `go get github.com/GLINCKER/levelrail/kit` |
+
+<details>
+<summary>All packages and registries</summary>
+
+| Package or channel | What it is | Install or use | Status |
+| --- | --- | --- | --- |
+| [levelrail-cli](https://www.npmjs.com/package/levelrail-cli) | The CLI on npm | `npx levelrail-cli --help` | Live |
+| [levelrail-cli-linux-amd64](https://www.npmjs.com/package/levelrail-cli-linux-amd64), [linux-arm64](https://www.npmjs.com/package/levelrail-cli-linux-arm64), [darwin-amd64](https://www.npmjs.com/package/levelrail-cli-darwin-amd64), [darwin-arm64](https://www.npmjs.com/package/levelrail-cli-darwin-arm64), [windows-amd64](https://www.npmjs.com/package/levelrail-cli-windows-amd64), [windows-arm64](https://www.npmjs.com/package/levelrail-cli-windows-arm64) | The six platform binaries that `levelrail-cli` pulls in | Installed for you by `levelrail-cli` | Live |
+| [levelrail-mcp](https://www.npmjs.com/package/levelrail-mcp) | The MCP server on npm | `npx -y levelrail-mcp` (works from the next release) | Name reserved |
+| [levelrail-mcp-linux-amd64](https://www.npmjs.com/package/levelrail-mcp-linux-amd64), [linux-arm64](https://www.npmjs.com/package/levelrail-mcp-linux-arm64), [darwin-amd64](https://www.npmjs.com/package/levelrail-mcp-darwin-amd64), [darwin-arm64](https://www.npmjs.com/package/levelrail-mcp-darwin-arm64), [windows-amd64](https://www.npmjs.com/package/levelrail-mcp-windows-amd64), [windows-arm64](https://www.npmjs.com/package/levelrail-mcp-windows-arm64) | The six platform binaries that `levelrail-mcp` will pull in | Installed for you by `levelrail-mcp` | Name reserved |
+| [ghcr.io/glincker/levelrail](https://github.com/glincker/levelrail/pkgs/container/levelrail) | Control plane image | `docker pull ghcr.io/glincker/levelrail:beta` | Live |
+| [ghcr.io/glincker/levelrail-agent](https://github.com/glincker/levelrail/pkgs/container/levelrail-agent) | Node agent image | `docker pull ghcr.io/glincker/levelrail-agent:beta` | Live |
+| [Docker Hub levelrail/levelrail](https://hub.docker.com/r/levelrail/levelrail) | Mirror of the control plane image, it lags GHCR (latest tag today: `v1.3.0`) | `docker pull levelrail/levelrail:v1.3.0` | Live |
+| [Homebrew tap](https://github.com/glincker/homebrew-tap) | The CLI on macOS and Linux | `brew install glincker/tap/levelrail-cli` | Live |
+| [Scoop bucket](https://github.com/glincker/scoop-bucket) | The CLI on Windows, the manifest arrives with the next release | `scoop bucket add glincker https://github.com/glincker/scoop-bucket` then `scoop install levelrail-cli` | From the next release |
+| winget | The CLI on Windows, not yet submitted to winget-pkgs | `winget install Glincker.LevelrailCli` (does not install today) | Planned |
+| [levelrail-agent .deb and .rpm](https://github.com/glincker/levelrail/releases/tag/v1.3.2) | Node agent packages for Debian, Ubuntu, Fedora and RHEL, amd64 and arm64 | Download `levelrail-agent-linux-<arch>.deb` or `.rpm` from the release page | Live |
+| [levelrail-cli .deb and .rpm](https://github.com/glincker/levelrail/releases) | CLI packages attached to each release | `sudo dpkg -i levelrail-cli-linux-amd64.deb` or `sudo rpm -i levelrail-cli-linux-amd64.rpm` | From the next release |
+| [AUR and Nix files](https://github.com/glincker/levelrail/releases) | `levelrail-cli-bin.PKGBUILD` and `levelrail-cli.flake.nix`, attached to the release | Download from the release page | From the next release |
+| [Terraform Registry](https://registry.terraform.io/providers/glincker/levelrail/latest) | Provider `glincker/levelrail` | `source = "glincker/levelrail"` then `terraform init` | Live |
+| [OpenTofu Registry](https://search.opentofu.org/provider/glincker/levelrail/latest) | The same provider | `source = "glincker/levelrail"` then `tofu init` | Live |
+| [pkg.go.dev](https://pkg.go.dev/github.com/GLINCKER/levelrail/kit) | Go kit packages | `go get github.com/GLINCKER/levelrail/kit` | Live |
+| [Glama](https://glama.ai/mcp/servers/glincker/levelrail) | MCP server listing | [AI assistant setup](docs/ai-assistant.md) | Live |
+| [Official MCP Registry](docs/ai-assistant.md) | Entry `io.github.glincker/levelrail` | [AI assistant setup](docs/ai-assistant.md) | From the next release |
+| [GitHub Releases](https://github.com/glincker/levelrail/releases) | Signed binaries and release notes | `curl -fsSL https://levelrail.com/install.sh \| sudo sh` | Live |
+| [install.sh](https://levelrail.com/install.sh) | Installer script for the control plane | `curl -fsSL https://levelrail.com/install.sh \| sudo sh` | Live |
+
+</details>
+
 ## Who it is for
 
 **Whoever you are, you start with one line.**
 
 | You are | You get | Start |
 | --- | --- | --- |
-| A solo developer with one VPS | Git deploys, HTTPS in one click and about 200 MB idle, no Kubernetes | `curl -fsSL https://levelrail.com/install.sh \| sudo sh` |
+| A solo developer with one VPS | Git deploys, HTTPS in one click and about 200 MB idle | `curl -fsSL https://levelrail.com/install.sh \| sudo sh` |
 | Building with Claude Code, Cursor or another coding agent | An MCP server that deploys, waits, diagnoses and rolls back inside the token's limits | `npx skills add https://github.com/glincker/levelrail --skill levelrail` |
 | An agency or team | Approvals, deploy freezes, IAM policies, a verifiable audit log, OIDC sign-in | [Identity and access](docs/identity-and-access.md) |
 | On Coolify, Dokploy, CapRover or Dokku today | A dry run first, and the old server keeps serving | `levelrail-cli import platform coolify --url https://coolify.example.com --dry-run` |
@@ -140,7 +307,7 @@ Deploy this repo to my Levelrail and tell me when it is live.
 
 - **Inside the token's limits.** The tool list follows the abilities of the token: a read token never sees a deploy tool, and `--readonly` refuses to start with a write token.
 - **Writes need a confirmation.** Mutations are confirm-gated and off until you pass `--allow-write`.
-- **Cheap to load.** About 2.4k tokens of tools by default, 240+ on demand in toolsets ([tool surface](docs/mcp-tool-surface.md)).
+- **Cheap to load.** About 2.4k tokens of tools by default, 259 tools in total, on demand in toolsets ([tool surface](docs/mcp-tool-surface.md)).
 - **Audited.** Every call is recorded with the caller surface (CLI, dashboard, MCP or API).
 - **Not in the control loop.** AI never sits in the reconcile path, so a wrong guess cannot wedge your servers.
 - **A skill, not just tools.** It deploys, waits for the rollout to converge, reads the failure and rolls back ([skill](skills/levelrail/SKILL.md), [MCP](docs/mcp.md), [threat model](docs/mcp.md#threat-model)).
@@ -200,7 +367,7 @@ Maintain an open-source app? Add a one-click button: [Deploy button](docs/deploy
 
 ## FAQ
 
-**Does it need Kubernetes?** No. One Go binary with a Docker runtime.
+**Does it need Kubernetes?** No. The control plane is one Go binary with a Docker runtime. If you already run Kubernetes, you can connect a cluster and deploy to it (experimental, off by default). See [Kubernetes clusters](docs/kubernetes-clusters.md).
 
 **What does it cost?** Nothing. Apache 2.0, one edition, no license key. You pay for your own servers ([Pricing](docs/pricing.md)).
 
@@ -210,7 +377,7 @@ Maintain an open-source app? Add a one-click button: [Deploy button](docs/deploy
 
 ## Community
 
-[Discussions](https://github.com/glincker/levelrail/discussions) &middot; [Issues](https://github.com/glincker/levelrail/issues) &middot; [Discord](https://discord.gg/Ar5pcaZB99) &middot; [support@levelrail.com](mailto:support@levelrail.com) &middot; [Security policy](.github/SECURITY.md) &middot; [Contributing](.github/CONTRIBUTING.md) &middot; [llms.txt](llms.txt) and [AGENTS.md](AGENTS.md) for AI agents
+[Discussions](https://github.com/glincker/levelrail/discussions) &middot; [Issues](https://github.com/glincker/levelrail/issues) &middot; [Discord](https://discord.gg/Ar5pcaZB99) &middot; [support@levelrail.com](mailto:support@levelrail.com) &middot; [Security policy](.github/SECURITY.md) &middot; [Support](SUPPORT.md) &middot; [Accessibility](ACCESSIBILITY.md) &middot; [Versioning and version tracker](VERSIONING.md) &middot; [Contributing](.github/CONTRIBUTING.md) &middot; [llms.txt](llms.txt) and [AGENTS.md](AGENTS.md) for AI agents
 
 ## Star the repo
 

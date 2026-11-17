@@ -1,6 +1,7 @@
 # Max transitive dependents per package (scripts/check-fanin.sh). Raise a number only
 # with a reason in the PR; lowering it after a split is the point.
-internal/abuse 68
+# v1.4.0: internal/k8sconn reads typed runtime settings, which adds one dependent to runtimesettings, registrymirror and abuse.
+internal/abuse 69
 internal/autoscale 180
 internal/bindaddr 180
 internal/bindmount 182
@@ -45,9 +46,9 @@ internal/reconcile 171
 internal/reconcile/database 45
 internal/rolloutpolicy 180
 # v1.1.0: stack sync, strict compose validation and the cloud engine packages import this
-internal/runtimesettings 62
+internal/runtimesettings 63
 # v1.1.0: stack sync, strict compose validation and the cloud engine packages import this
-internal/runtimesettings/registrymirror 66
+internal/runtimesettings/registrymirror 67
 internal/secretmask 177
 # v1.1.0: stack sync, strict compose validation and the cloud engine packages import this
 internal/sourcecache 23

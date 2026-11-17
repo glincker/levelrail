@@ -8,6 +8,7 @@ import (
 	"net/http"
 	"net/http/httptest"
 	"strings"
+	"sync"
 	"testing"
 	"time"
 
@@ -61,6 +62,8 @@ var errNodeProviderSecretNotFound = context.DeadlineExceeded // any distinct sen
 
 // fakeNodeProvisioner is a hand-written fake for NodeProvisioner.
 type fakeNodeProvisioner struct {
+	mu sync.Mutex
+
 	regions []provision.Region
 	sizes   []provision.Size
 
@@ -89,21 +92,31 @@ func (f *fakeNodeProvisioner) ListRegions(context.Context) ([]provision.Region, 
 
 func (f *fakeNodeProvisioner) ListSizes(context.Context, string) ([]provision.Size, error) {
 	f.sizeCalls++
+	if f.sizes == nil {
+		// Cheap listed prices keep the default spend guard out of tests that are not about it.
+		return []provision.Size{{ID: "cx22", PriceMonthly: "4.00", Currency: "USD"}, {ID: "s", PriceMonthly: "4.00", Currency: "USD"}, {ID: "t3.small", PriceMonthly: "4.00", Currency: "USD"}}, nil
+	}
 	return f.sizes, nil
 }
 
 func (f *fakeNodeProvisioner) CreateServer(_ context.Context, opts provision.CreateOpts) (string, string, error) {
+	f.mu.Lock()
+	defer f.mu.Unlock()
 	f.createCalls++
 	f.lastCreateOpts = opts
 	return f.createServerID, f.createIPAddr, f.createErr
 }
 
 func (f *fakeNodeProvisioner) GetServer(context.Context, string) (provision.ServerStatus, string, error) {
+	f.mu.Lock()
+	defer f.mu.Unlock()
 	f.getCalls++
 	return f.getStatus, f.getIPAddr, f.getErr
 }
 
 func (f *fakeNodeProvisioner) DeleteServer(_ context.Context, id string) error {
+	f.mu.Lock()
+	defer f.mu.Unlock()
 	f.deletedIDs = append(f.deletedIDs, id)
 	return f.deleteErr
 }

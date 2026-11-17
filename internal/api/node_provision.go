@@ -15,6 +15,7 @@ import (
 	"time"
 
 	"github.com/GLINCKER/levelrail/internal/provision"
+	"github.com/GLINCKER/levelrail/internal/runtimesettings"
 	"github.com/GLINCKER/levelrail/internal/store"
 	"github.com/GLINCKER/levelrail/internal/version"
 )
@@ -22,7 +23,7 @@ import (
 // nodeProviderNames are the providers this control plane knows how to
 // provision against. Adding a provider is a matter of an
 // internal/provision.Provisioner implementation plus a new entry here.
-var nodeProviderNames = []string{"hetzner", "digitalocean", "aws", "azure", "gcp"}
+var nodeProviderNames = []string{"hetzner", "digitalocean", "vultr", "aws", "azure", "gcp", "oracle"}
 
 // unknownNodeProviderMessage is the shared "which providers exist" text
 // every unknown-provider validation error uses, derived from
@@ -93,12 +94,16 @@ func (rt *Router) defaultNodeProvisionerFactory(provider, token string) (NodePro
 		return provision.NewHetzner(token), nil
 	case "digitalocean":
 		return provision.NewDigitalOcean(token), nil
+	case "vultr":
+		return provision.NewVultr(token), nil
 	case "aws":
 		return provision.NewAWSFromToken(token, rt.brand.ShortName)
 	case "azure":
 		return provision.NewAzure(token)
 	case "gcp":
 		return provision.NewGCP(token)
+	case "oracle":
+		return rt.newOracleProvisioner(token)
 	default:
 		return nil, fmt.Errorf("unknown provider %q", provider)
 	}
@@ -169,6 +174,10 @@ type nodeProviderRegionResource struct {
 // provider's own API, cached for nodeProvisionCatalogTTL.
 func (rt *Router) handleListNodeProviderRegions(w http.ResponseWriter, r *http.Request) {
 	provider := r.PathValue("provider")
+	if msg := rt.oracleDisabledMessage(r.Context(), provider); msg != "" {
+		writeError(w, http.StatusConflict, msg)
+		return
+	}
 	p, ok, status, msg := rt.resolveNodeProvisioner(r.Context(), provider)
 	if !ok {
 		writeError(w, status, msg)
@@ -187,7 +196,10 @@ func (rt *Router) handleListNodeProviderRegions(w http.ResponseWriter, r *http.R
 
 	regions, err := p.ListRegions(r.Context())
 	if err != nil {
-		rt.logger.Error("api: list node provider regions failed", slog.String("provider", provider), slog.String("error", err.Error()))
+		if rt.writeProviderScopeMissing(w, provider, "regions.read", err) {
+			return
+		}
+		rt.logger.Error("api: list node provider regions failed", slog.String("provider", provider), slog.String("reason", providerErrorText(err)))
 		writeError(w, http.StatusBadGateway, "could not reach the provider's API")
 		return
 	}
@@ -228,6 +240,10 @@ type nodeProviderSizeResource struct {
 func (rt *Router) handleListNodeProviderSizes(w http.ResponseWriter, r *http.Request) {
 	provider := r.PathValue("provider")
 	region := r.URL.Query().Get("region")
+	if msg := rt.oracleDisabledMessage(r.Context(), provider); msg != "" {
+		writeError(w, http.StatusConflict, msg)
+		return
+	}
 	p, ok, status, msg := rt.resolveNodeProvisioner(r.Context(), provider)
 	if !ok {
 		writeError(w, status, msg)
@@ -247,7 +263,10 @@ func (rt *Router) handleListNodeProviderSizes(w http.ResponseWriter, r *http.Req
 
 	sizes, err := p.ListSizes(r.Context(), region)
 	if err != nil {
-		rt.logger.Error("api: list node provider sizes failed", slog.String("provider", provider), slog.String("error", err.Error()))
+		if rt.writeProviderScopeMissing(w, provider, "sizes.read", err) {
+			return
+		}
+		rt.logger.Error("api: list node provider sizes failed", slog.String("provider", provider), slog.String("reason", providerErrorText(err)))
 		writeError(w, http.StatusBadGateway, "could not reach the provider's API")
 		return
 	}
@@ -394,6 +413,19 @@ func (rt *Router) handleCreateNodeProvision(w http.ResponseWriter, r *http.Reque
 		return
 	}
 
+	if reason := rt.checkProvisionSizeRegion(r.Context(), provisioner, req.Region, req.Size); reason != "" {
+		writeError(w, http.StatusBadRequest, reason)
+		return
+	}
+
+	if reason, err := rt.checkProvisionPriceCap(r.Context(), provisioner, req.Provider, req.Region, req.Size); err != nil {
+		rt.internalError(w, "api: node provision: price check failed", err)
+		return
+	} else if reason != "" {
+		writeError(w, http.StatusConflict, reason)
+		return
+	}
+
 	var bootstrapBody string
 	if req.BootstrapScriptID != "" {
 		if rt.bootstrapScripts == nil {
@@ -445,45 +477,84 @@ func (rt *Router) handleCreateNodeProvision(w http.ResponseWriter, r *http.Reque
 		rt.internalError(w, "api: node provision: generate id failed", err)
 		return
 	}
+	// Live OCI counts are taken before the lock; only pending rows are rechecked under it.
+	oracleUsage := rt.prefetchOracleUsage(r.Context(), provisioner, req.Provider, req.Region, req.Size)
+	nodeProvisionGuardMu.Lock()
+	reason, err := rt.checkOracleAllowance(r.Context(), provisioner, req.Provider, req.Region, req.Size, oracleUsage)
+	if err == nil && reason == "" {
+		reason, err = rt.checkProvisionServerCap(r.Context())
+	}
+	if err == nil && reason == "" {
+		// Re-checked under the lock: the early check can race a concurrent create.
+		var taken bool
+		if taken, err = rt.nodeNameTaken(r.Context(), req.Name); err == nil && taken {
+			reason = "a node or an in-progress provision already uses this name"
+		}
+	}
+	if err != nil || reason != "" {
+		nodeProvisionGuardMu.Unlock()
+		if err != nil {
+			rt.internalError(w, "api: node provision: server cap check failed", err)
+			return
+		}
+		writeError(w, http.StatusConflict, reason)
+		return
+	}
 	now := time.Now()
 	rec := store.NodeProvision{
 		ID: id, Provider: req.Provider, Region: req.Region, Size: req.Size, Name: req.Name, Role: role,
 		Status: store.NodeProvisionStatusCreating, CreatedAt: now, UpdatedAt: now,
 	}
-	if err := rt.nodeProvisions.SaveNodeProvision(r.Context(), rec); err != nil {
+	saveErr := rt.nodeProvisions.SaveNodeProvision(r.Context(), rec)
+	nodeProvisionGuardMu.Unlock()
+	if err := saveErr; err != nil {
 		rt.internalError(w, "api: node provision: save failed", err)
 		return
 	}
 
-	serverID, ipAddr, err := provisioner.CreateServer(r.Context(), provision.CreateOpts{
-		Region: req.Region, Size: req.Size, Name: req.Name, UserData: userData,
+	// Detached from the caller: a dropped client must never leave a billed
+	// server with no recorded id.
+	cctx, cancel := context.WithTimeout(context.WithoutCancel(r.Context()), envDurationOr(nodeProvisionCreateTimeoutEnv, defaultNodeProvisionCreateTimeout))
+	defer cancel()
+	fromCreating := func(p store.NodeProvision) bool { return p.Status == store.NodeProvisionStatusCreating }
+	serverID, ipAddr, err := provisioner.CreateServer(cctx, provision.CreateOpts{
+		Region: req.Region, Size: req.Size, Name: req.Name, UserData: userData, ProvisionID: id,
 		AllowSSHInbound: req.AllowSSHInbound,
 	})
 	if err != nil {
-		rt.logger.Error("api: node provision: create server failed", slog.String("provision_id", id), slog.String("error", err.Error()))
-		if uerr := rt.nodeProvisions.UpdateNodeProvisionStatus(r.Context(), id, store.NodeProvisionStatusFailed, "", "", "", "could not create the server: "+err.Error(), time.Now()); uerr != nil {
+		rt.logger.Error("api: node provision: create server failed", slog.String("provision_id", id), slog.Int("provider_status", providerErrorStatus(err)))
+		failure := "could not create the server: " + providerErrorText(err)
+		if serverID == "" {
+			serverID, failure = rt.findTaggedServer(cctx, provisioner, req.Region, id, failure)
+		}
+		if serverID != "" {
+			failure = rt.deleteOrphanedServer(cctx, provisioner, id, serverID, failure)
+		}
+		if _, uerr := rt.transitionNodeProvision(cctx, id, fromCreating, store.NodeProvisionStatusFailed, serverID, "", "", failure); uerr != nil {
 			rt.logger.Error("api: node provision: record failure failed", slog.String("provision_id", id), slog.String("error", uerr.Error()))
+		}
+		if rt.writeProviderScopeMissing(w, req.Provider, "instances.create", err) {
+			return
 		}
 		writeError(w, http.StatusBadGateway, "could not create the server at the provider")
 		return
 	}
+	// A created server is the only proof a write scope exists.
+	rt.recordProviderCapabilityLearned(req.Provider, "instances.create", nil)
 	rec.ProviderServerID = serverID
 	rec.IPAddress = ipAddr
 	rec.Status = store.NodeProvisionStatusBooting
-	rec.UpdatedAt = time.Now()
-	if err := rt.nodeProvisions.UpdateNodeProvisionStatus(r.Context(), id, rec.Status, rec.ProviderServerID, rec.IPAddress, "", "", rec.UpdatedAt); err != nil {
-		// The server exists at the provider but its ID never made it into
-		// this row: without it, no later read can query or delete that
-		// server again, an untracked, still-billable VM despite a
-		// successful CreateServer call. Best-effort delete it now, while
-		// this handler still has the ID in memory, rather than leave that
-		// behind a 201 that claims otherwise.
+	if cur, err := rt.transitionNodeProvision(cctx, id, fromCreating, rec.Status, rec.ProviderServerID, rec.IPAddress, "", ""); err != nil {
+		// The id may be missing from the row, so the server is deleted here
+		// while it is still in memory; the id is recorded on the failed row either way.
 		rt.logger.Error("api: node provision: record booting failed, deleting the orphaned server", slog.String("provision_id", id), slog.String("provider_server_id", serverID), slog.String("error", err.Error()))
-		if derr := provisioner.DeleteServer(r.Context(), serverID); derr != nil {
-			rt.logger.Error("api: node provision: delete orphaned server failed, it may still be running and billable", slog.String("provision_id", id), slog.String("provider_server_id", serverID), slog.String("error", derr.Error()))
-		}
-		if uerr := rt.nodeProvisions.UpdateNodeProvisionStatus(r.Context(), id, store.NodeProvisionStatusFailed, "", "", "", "created the server but could not record it, so it was deleted", time.Now()); uerr != nil {
+		failure := rt.deleteOrphanedServer(cctx, provisioner, id, serverID, "created the server but could not record it")
+		if uerr := rt.nodeProvisions.UpdateNodeProvisionStatus(cctx, id, store.NodeProvisionStatusFailed, serverID, "", "", failure, time.Now()); uerr != nil {
 			rt.logger.Error("api: node provision: record failure failed", slog.String("provision_id", id), slog.String("error", uerr.Error()))
+		}
+		if errors.Is(err, errProvisionStatusChanged) && cur.Status == store.NodeProvisionStatusDestroyed {
+			writeError(w, http.StatusConflict, "the provision was destroyed while it was being created")
+			return
 		}
 		writeError(w, http.StatusInternalServerError, "internal error")
 		return
@@ -528,7 +599,7 @@ func (rt *Router) nodeNameTaken(ctx context.Context, name string) (bool, error) 
 		return false, fmt.Errorf("list node provisions: %w", err)
 	}
 	for _, p := range provisions {
-		if p.Name == name && p.Status != store.NodeProvisionStatusFailed {
+		if p.Name == name && p.Status != store.NodeProvisionStatusFailed && p.Status != store.NodeProvisionStatusDestroyed {
 			return true, nil
 		}
 	}
@@ -556,6 +627,10 @@ func (rt *Router) handleListNodeProvisions(w http.ResponseWriter, r *http.Reques
 		rt.internalError(w, "api: list node provisions failed", err)
 		return
 	}
+	rt.reconcileStaleNodeProvisions(r.Context(), provisions)
+	if fresh, err := rt.nodeProvisions.ListNodeProvisions(r.Context()); err == nil {
+		provisions = fresh
+	}
 	out := make([]nodeProvisionResource, 0, len(provisions))
 	for _, p := range provisions {
 		out = append(out, toNodeProvisionResource(p))
@@ -579,7 +654,7 @@ func (rt *Router) handleGetNodeProvision(w http.ResponseWriter, r *http.Request)
 		return
 	}
 
-	if p.Status == store.NodeProvisionStatusReady || p.Status == store.NodeProvisionStatusFailed {
+	if nodeProvisionSettled(p.Status) {
 		writeJSON(w, http.StatusOK, toNodeProvisionResource(p))
 		return
 	}
@@ -613,18 +688,18 @@ func (rt *Router) refreshNodeProvision(ctx context.Context, p store.NodeProvisio
 		rt.logger.Warn("api: node provision: list nodes failed", slog.String("provision_id", p.ID), slog.String("error", err.Error()))
 	}
 
-	if timeout := nodeProvisionTimeout(); time.Since(p.CreatedAt) > timeout {
+	if timeout := rt.nodeProvisionTimeout(ctx); time.Since(p.CreatedAt) > timeout {
 		reason := fmt.Sprintf("timed out after %s waiting for the node to enroll", timeout)
 		if p.ProviderServerID != "" {
 			provisioner, ok, _, _ := rt.resolveNodeProvisioner(ctx, p.Provider)
 			if !ok {
 				return rt.saveNodeProvisionUpdate(ctx, p, p.Status, p.IPAddress, "", reason+"; the provider token is unavailable so the server was not deleted, delete server "+p.ProviderServerID+" in the provider console")
 			}
-			if derr := provisioner.DeleteServer(ctx, p.ProviderServerID); derr != nil {
-				rt.logger.Error("api: node provision: delete timed-out server failed", slog.String("provision_id", p.ID), slog.String("server_id", p.ProviderServerID), slog.String("error", derr.Error()))
-				return rt.saveNodeProvisionUpdate(ctx, p, p.Status, p.IPAddress, "", reason+"; deleting the server failed, retrying: "+derr.Error())
+			if derr := deleteRecordedServer(ctx, provisioner, p.ProviderServerID); derr != nil {
+				rt.logger.Error("api: node provision: delete timed-out server failed", slog.String("provision_id", p.ID), slog.String("server_id", p.ProviderServerID), slog.Int("provider_status", providerErrorStatus(derr)))
+				return rt.saveNodeProvisionUpdate(ctx, p, p.Status, p.IPAddress, "", reason+"; deleting the server failed, retrying: "+providerErrorText(derr))
 			}
-			reason += "; the server was deleted"
+			reason += provisionServerDeletedNote
 		}
 		return rt.saveNodeProvisionUpdate(ctx, p, store.NodeProvisionStatusFailed, p.IPAddress, "", reason)
 	}
@@ -652,27 +727,40 @@ func (rt *Router) refreshNodeProvision(ctx context.Context, p store.NodeProvisio
 		// defines for a future agent-reported signal to use.
 		return rt.saveNodeProvisionUpdate(ctx, p, store.NodeProvisionStatusEnrolling, ipAddr, "", "")
 	case provision.ServerStatusError:
-		return rt.saveNodeProvisionUpdate(ctx, p, store.NodeProvisionStatusFailed, ipAddr, "", "the provider reports this server errored")
+		// Deleted like the timeout path: an errored server still bills.
+		reason := "the provider reports this server errored"
+		if derr := deleteRecordedServer(ctx, provisioner, p.ProviderServerID); derr != nil {
+			rt.logger.Error("api: node provision: delete errored server failed", slog.String("provision_id", p.ID), slog.String("server_id", p.ProviderServerID), slog.Int("provider_status", providerErrorStatus(derr)))
+			return rt.saveNodeProvisionUpdate(ctx, p, store.NodeProvisionStatusFailed, ipAddr, "", reason+"; deleting the server failed, retrying: "+providerErrorText(derr))
+		}
+		return rt.saveNodeProvisionUpdate(ctx, p, store.NodeProvisionStatusFailed, ipAddr, "", reason+provisionServerDeletedNote)
 	default:
 		return rt.saveNodeProvisionUpdate(ctx, p, store.NodeProvisionStatusBooting, ipAddr, "", "")
 	}
 }
 
+// saveNodeProvisionUpdate persists a refresh result only while the row is
+// still unsettled, so a stale poll can never overwrite a destroy or a result.
 func (rt *Router) saveNodeProvisionUpdate(ctx context.Context, p store.NodeProvision, status, ipAddr, nodeID, failureReason string) store.NodeProvision {
 	if status == p.Status && ipAddr == p.IPAddress && nodeID == p.NodeID && failureReason == p.FailureReason {
 		return p
 	}
-	now := time.Now()
-	if err := rt.nodeProvisions.UpdateNodeProvisionStatus(ctx, p.ID, status, p.ProviderServerID, ipAddr, nodeID, failureReason, now); err != nil {
+	cur, err := rt.transitionNodeProvision(ctx, p.ID, provisionNotSettled, status, p.ProviderServerID, ipAddr, nodeID, failureReason)
+	if errors.Is(err, errProvisionStatusChanged) {
+		return cur
+	}
+	if err != nil {
 		rt.logger.Error("api: node provision: update status failed", slog.String("provision_id", p.ID), slog.String("error", err.Error()))
 		return p
 	}
-	p.Status, p.IPAddress, p.NodeID, p.FailureReason, p.UpdatedAt = status, ipAddr, nodeID, failureReason, now
-	return p
+	return cur
 }
 
-func nodeProvisionTimeout() time.Duration {
-	return envDurationOr(nodeProvisionTimeoutEnv, defaultNodeProvisionTimeout)
+func (rt *Router) nodeProvisionTimeout(ctx context.Context) time.Duration {
+	if rt.runtimeSettings == nil {
+		return envDurationOr(nodeProvisionTimeoutEnv, defaultNodeProvisionTimeout)
+	}
+	return rt.tunableDuration(ctx, runtimesettings.KeyProvisionEnrollTimeout, nodeProvisionTimeoutEnv, defaultNodeProvisionTimeout)
 }
 
 // randomNodeProvisionID mirrors randomBackupTargetID/randomNodeJoinTokenID's
@@ -703,4 +791,77 @@ func firstSet(current, fallback string) string {
 		return current
 	}
 	return fallback
+}
+
+// deleteOrphanedServer deletes a server whose row may not hold its id and
+// returns the failure text, noting the delete outcome.
+func (rt *Router) deleteOrphanedServer(ctx context.Context, p NodeProvisioner, provisionID, serverID, failure string) string {
+	if derr := deleteRecordedServer(ctx, p, serverID); derr != nil {
+		rt.logger.Error("api: node provision: delete orphaned server failed, it may still be running and billable", slog.String("provision_id", provisionID), slog.String("provider_server_id", serverID), slog.Int("provider_status", providerErrorStatus(derr)))
+		return failure + "; deleting the server failed, delete server " + serverID + " in the provider console"
+	}
+	return failure + provisionServerDeletedNote
+}
+
+// reconcileBatch bounds how many stale rows one list call may repair.
+const reconcileBatch = 5
+
+// reconcileStaleNodeProvisions runs on list: it fails Creating rows with no
+// recorded server past the enroll timeout, and retries the delete of any
+// recorded server that a failed or timed-out row never lost track of.
+func (rt *Router) reconcileStaleNodeProvisions(ctx context.Context, rows []store.NodeProvision) {
+	timeout := rt.nodeProvisionTimeout(ctx)
+	grace := envDurationOr(nodeProvisionCreateTimeoutEnv, defaultNodeProvisionCreateTimeout)
+	done := 0
+	for _, p := range rows {
+		if done >= reconcileBatch {
+			return
+		}
+		switch {
+		case p.Status == store.NodeProvisionStatusCreating && p.ProviderServerID == "" && time.Since(p.CreatedAt) > timeout+grace:
+			done++
+			reason := "the control plane stopped before the server was recorded, check the provider console for a server named " + p.Name
+			_, _ = rt.transitionNodeProvision(ctx, p.ID, func(c store.NodeProvision) bool {
+				return c.Status == store.NodeProvisionStatusCreating && c.ProviderServerID == ""
+			}, store.NodeProvisionStatusFailed, "", "", "", reason)
+		case provisionServerLeaked(p):
+			done++
+			rt.retryLeakedDelete(ctx, p)
+		case !nodeProvisionSettled(p.Status) && p.ProviderServerID != "" && time.Since(p.CreatedAt) > timeout:
+			done++
+			rt.refreshNodeProvision(ctx, p)
+		}
+	}
+}
+
+func (rt *Router) retryLeakedDelete(ctx context.Context, p store.NodeProvision) {
+	provisioner, ok, _, _ := rt.resolveNodeProvisioner(ctx, p.Provider)
+	if !ok {
+		return
+	}
+	if err := deleteRecordedServer(ctx, provisioner, p.ProviderServerID); err != nil {
+		rt.logger.Error("api: node provision: retry delete failed", slog.String("provision_id", p.ID), slog.Int("provider_status", providerErrorStatus(err)))
+		return
+	}
+	_, _ = rt.transitionNodeProvision(ctx, p.ID, provisionServerLeaked, store.NodeProvisionStatusFailed, "", p.IPAddress, "", p.FailureReason+provisionServerDeletedNote)
+}
+
+// oracleTagLookup is implemented by the Oracle driver only.
+type oracleTagLookup interface {
+	FindServerByTag(ctx context.Context, region, tag string) (string, error)
+}
+
+// findTaggedServer looks for an instance a failed create left behind, found by
+// the provision id tag, so it can be deleted instead of billing unseen.
+func (rt *Router) findTaggedServer(ctx context.Context, p NodeProvisioner, region, provisionID, failure string) (string, string) {
+	l, ok := p.(oracleTagLookup)
+	if !ok {
+		return "", failure
+	}
+	id, err := l.FindServerByTag(ctx, region, provisionID)
+	if err != nil {
+		rt.logger.Error("api: node provision: orphan lookup failed", slog.String("provision_id", provisionID), slog.Int("provider_status", providerErrorStatus(err)))
+		return "", failure + "; could not confirm no server was left, check the provider console for a server tagged " + provisionID
+	}
+	return id, failure
 }

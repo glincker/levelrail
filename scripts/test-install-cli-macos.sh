@@ -59,7 +59,13 @@ for d in good tampered; do cp "$binary" "$work/rel/v9.9.9/$d/$asset"; done
 printf '%064d  %s\n' 0 "$asset" >"$work/rel/v9.9.9/tampered/checksums.txt"
 python3 -m http.server 8099 --bind 127.0.0.1 --directory "$work/rel" >/dev/null 2>&1 &
 server_pid=$!
-sleep 1
+# Wait until the mirror answers; a fixed sleep is too short on a cold runner.
+ready=""
+for _ in $(seq 1 40); do
+	if curl -fsS -o /dev/null "http://127.0.0.1:8099/v9.9.9/good/checksums.txt" 2>/dev/null; then ready=1; break; fi
+	sleep 0.5
+done
+[ -n "$ready" ] || fail "local mirror did not start on 127.0.0.1:8099"
 
 mirror_install() {
 	dir="$1"

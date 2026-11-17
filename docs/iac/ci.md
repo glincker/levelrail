@@ -2,6 +2,7 @@
 title: "IaC in CI"
 tag: "Experimental"
 description: Plan on every pull request and apply on merge, with the CLI or the stack Action. Copy blocks for GitHub Actions and notes for any other CI.
+"og:url": "https://docs.levelrail.com/iac/ci"
 ---
 
 <Warning>

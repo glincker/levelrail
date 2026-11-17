@@ -1,4 +1,4 @@
-@import "./tokens/glinr.material.css";
+@import './tokens/glinr.material.css';
 
 /* Glass material tiers and overlay motion. Solid by default, glass only where
    backdrop-filter exists and the user has not asked for less transparency. */
@@ -12,9 +12,7 @@
   background-color: var(--glass-fill);
   border: 1px solid var(--glinr-glass-edge);
   box-shadow:
-    var(--glinr-specular),
-    var(--glinr-glass-inner),
-    var(--glinr-shadow-float);
+    var(--glinr-specular), var(--glinr-glass-inner), var(--glinr-shadow-float);
 }
 
 .glass-ultrathin {

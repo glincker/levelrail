@@ -20,6 +20,7 @@ func dnsUsage(prog string) string {
   %[1]s dns zones verify <zone>                              check delegation through public resolvers
   %[1]s dns records list|add|update|delete|import|export|template <zone> [flags]
   %[1]s dns check <name> [--type T] [--zone Z]                answers from resolvers and the zone's own servers
+  %[1]s dns who-answers <domain>                             name servers, answers, proxy and the failover risks
   %[1]s dns queries [--app A] [--qname P] [--rcode C] [--since 15m] [--limit N]   mesh DNS queries (beta)
   %[1]s dns stats                                           per-app mesh DNS counters (beta)
   %[1]s dns health-checks list|create|delete [flags]          Route53 health checks for failover records
@@ -48,6 +49,8 @@ func runDNS(prog string, args []string, stdout, stderr io.Writer, lookupEnv func
 		return runDNSRecords(prog, rest, stdout, stderr, lookupEnv)
 	case "check":
 		return runDNSCheck(prog, rest, stdout, stderr, lookupEnv)
+	case "who-answers":
+		return runDNSWhoAnswers(prog, rest, stdout, stderr, lookupEnv)
 	case "queries":
 		return runDNSQueries(prog, rest, stdout, stderr, lookupEnv)
 	case "stats":

@@ -43,5 +43,10 @@
     "saveFailed": "Could not save file.",
     "deleted": "File deleted.",
     "deleteFailed": "Could not delete file."
+  },
+  "volumes": {
+    "emptyTitle": "No volumes",
+    "empty": "Data written inside the container is lost on redeploy.",
+    "add": "Add volume"
   }
 }

@@ -24,6 +24,9 @@ type Size struct {
 	// price for this size.
 	PriceMonthly string
 	Currency     string
+	// Regions lists where the provider offers this size. Empty means the
+	// provider does not say, so no region check is possible.
+	Regions []string
 }
 
 // ServerStatus is a provider-reported server lifecycle state, normalized
@@ -45,6 +48,9 @@ type CreateOpts struct {
 	Name   string
 	// UserData is the cloud-init script run on first boot.
 	UserData string
+	// ProvisionID is the provision row id; drivers that support it use it as
+	// an idempotency token and a tag so a retried create cannot leak a server.
+	ProvisionID string
 	// AllowSSHInbound opts into an inbound rule for TCP 22, off by
 	// default to match this platform's "no inbound ports needed" node
 	// architecture (CLAUDE.md 4.3): the agent always dials out. Only AWS

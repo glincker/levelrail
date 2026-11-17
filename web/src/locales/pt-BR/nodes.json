@@ -1041,5 +1041,93 @@
     "description_one": "Deixe um campo em branco para seguir o padrão da plataforma. Os alertas de CPU e memória disparam após {{count}} avaliação acima do limite.",
     "description_many": "Deixe um campo em branco para seguir o padrão da plataforma. Os alertas de CPU e memória disparam após {{count}} avaliações seguidas acima do limite.",
     "description_other": "Deixe um campo em branco para seguir o padrão da plataforma. Os alertas de CPU e memória disparam após {{count}} avaliações seguidas acima do limite."
+  },
+  "provisionDestroy": {
+    "trigger": "Destruir servidor",
+    "title": "Destruir o servidor \"{{name}}\"?",
+    "description": "Isso exclui permanentemente o servidor na nuvem em {{provider}} e remove o nó. O provedor para de cobrar quando o servidor some. Não dá para desfazer.",
+    "confirm": "Destruir servidor",
+    "destroying": "Destruindo...",
+    "destroyed": "Servidor \"{{name}}\" destruído.",
+    "workloadsTitle": "Este nó ainda executa cargas",
+    "workloadsBody": "Esvazie-o antes ou destrua mesmo assim. Apps e bancos de dados nele serão perdidos.",
+    "force": "Destruir mesmo assim, aceito perder as cargas deste nó",
+    "statusDestroying": "Destruindo",
+    "statusDestroyed": "Destruído"
+  },
+  "provisionGuard": {
+    "title": "Limite de servidores atingido",
+    "body": "{{reason}}",
+    "hint": "Os limites são as configurações provision.max_servers e provision.max_monthly_price_usd."
+  },
+  "oracle": {
+    "name": "Oracle Cloud",
+    "hint": "Chave de assinatura de API, região, compartimento e sub-rede.",
+    "form": {
+      "intro": "Uma chave de assinatura de API de um usuário que pode gerenciar instâncias em um compartimento. Serve apenas para criar e inspecionar servidores.",
+      "tenancy": "OCID do tenancy",
+      "user": "OCID do usuário",
+      "fingerprint": "Impressão digital da chave",
+      "region": "Região",
+      "compartment": "OCID do compartimento",
+      "compartmentHelp": "Por padrão, o tenancy (compartimento raiz).",
+      "subnet": "OCID da sub-rede",
+      "key": "Chave privada (PEM)",
+      "keyFile": "Carregar de arquivo",
+      "keyHelp": "Não fica no navegador e nunca é exibida de novo depois de salva.",
+      "keyStored": "Há uma chave salva. Cole uma nova para substituir.",
+      "keyStoredHelp": "A chave salva nunca é exibida. Cole uma nova para substituir.",
+      "permissionsTitle": "Privilégio mínimo",
+      "permissions": "Gerenciar instance-family e usar virtual-network-family no compartimento, mais leitura de imagens e compartimentos. Use um usuário e uma chave dedicados.",
+      "testAndConnect": "Testar e conectar",
+      "test": "Testar conexão",
+      "testing": "Testando...",
+      "testStored": "Testar conexão salva",
+      "saving": "Salvando...",
+      "saved": "Credencial de {{provider}} salva.",
+      "disconnect": "Desconectar",
+      "confirmDisconnect": "Confirmar desconexão",
+      "disconnected": "{{provider}} desconectado."
+    },
+    "wizard": {
+      "title": "Configuracao guiada da chave de API",
+      "intro": "A Oracle nao oferece login para a API de Compute, entao a conexao usa uma chave de API restrita. O par de chaves e criado neste navegador e a chave privada so e enviada ao salvar a credencial abaixo.",
+      "keyTitle": "1. Criar o par de chaves",
+      "generate": "Gerar par de chaves",
+      "regenerate": "Gerar um novo par",
+      "generating": "Gerando...",
+      "use": "Usar a chave no formulario",
+      "used": "Chave no formulario",
+      "failed": "Este navegador nao conseguiu gerar a chave. Use um navegador atual com HTTPS ou localhost.",
+      "consoleSteps": "No console da Oracle abra Meu perfil, Chaves de API, Adicionar chave de API, escolha Colar uma chave publica e cole esta.",
+      "publicKey": "Chave publica",
+      "fingerprint": "Impressao digital",
+      "privateNote": "A chave privada nao e exibida. Ela preenche o formulario abaixo e e apagada desta ajuda apos o uso. Salve a credencial para mante-la.",
+      "policyTitle": "2. Criar a politica restrita",
+      "policyNote": "Um usuario dedicado em seu proprio grupo, somente com estas instrucoes em um compartimento. Nada no nivel da tenancy.",
+      "cliNote": "A mesma configuracao com a CLI da OCI:",
+      "copy": "Copiar",
+      "copied": "Copiado",
+      "checkTitle": "3. Verificar a conexao",
+      "check": "Verificar conexao",
+      "checking": "Verificando...",
+      "checkNeedsSave": "Salve a credencial primeiro e depois verifique.",
+      "checkOk": "Conectado. Regioes disponiveis: {{total}}."
+    },
+    "sizes": {
+      "flex": "Shape flexível",
+      "preset": "{{ocpus}} OCPU, {{memory}} GB",
+      "ocpus": "OCPUs",
+      "memory": "Memória (GB)",
+      "priceNote": "A Oracle cobra shapes Flex por OCPU e memória. Este app não sabe se um servidor está coberto pela cota do seu tenancy, confira o console da Oracle."
+    },
+    "guard": {
+      "title": "A Oracle recusou a criação",
+      "enabled": "O provisionamento da Oracle está desligado. Ative primeiro a configuração {{setting}}.",
+      "a1": "A cota A1 é 0 ou seria excedida. Aumente {{setting}} para permitir este tamanho.",
+      "micro": "O limite de shapes micro seria excedido. Aumente {{setting}}.",
+      "paidShape": "Este shape não é coberto pelos limites de cota e pode gerar cobrança. Ative {{setting}} para usá-lo.",
+      "unknownPrice": "A Oracle não informa preço para este shape, então o teto de preço não pode ser verificado. Ative {{setting}} (ou provision.allow_unknown_price) para permitir."
+    }
   }
 }

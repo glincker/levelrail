@@ -1,6 +1,7 @@
 ---
 title: "Proof automation"
 description: "scripts/proof posts one sticky comment with script-generated evidence on a PR or ticket."
+"og:url": "https://docs.levelrail.com/proof-automation"
 ---
 
 `scripts/proof` posts one sticky comment on a PR or ticket with evidence that

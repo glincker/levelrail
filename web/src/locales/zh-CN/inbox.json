@@ -161,5 +161,14 @@
       "clearResolved_other": "已清除 {{count}} 项已解决内容。",
       "deleteArchived_other": "已删除 {{count}} 项已归档内容。"
     }
+  },
+  "alertsPage": {
+    "emptyTitle": "暂无告警",
+    "emptyBody": "证书即将过期、节点离线或你设置的规则触发时，告警会出现在这里。请先选择告警的发送位置。",
+    "setup": "设置通知渠道",
+    "more": "更多告警设置",
+    "silences": "静默",
+    "maintenance": "维护",
+    "back": "返回告警"
   }
 }

@@ -47,6 +47,20 @@ vi.mock('../../queries/connections', () => ({
   useConnectionCatalog: () => ({ ...state.catalog, refetch: vi.fn() }),
 }))
 
+vi.mock('../../queries/clusters', () => ({
+  useClusters: () => ({
+    data: [{ name: 'k1' }, { name: 'k2' }],
+    isError: false,
+  }),
+  isClustersOff: () => false,
+}))
+vi.mock('../../queries/nodeProvision', () => ({
+  useNodeProviders: () => ({
+    data: [{ provider: 'oracle', has_token: true, status: 'connected' }],
+    isPending: false,
+  }),
+}))
+
 const i18n = i18next.createInstance()
 void i18n.use(initReactI18next).init({
   lng: 'en',
@@ -123,18 +137,34 @@ describe('ConnectionCard', () => {
 })
 
 describe('IntegrationsPage states', () => {
+  it('groups cloud providers, clusters and the setup pages', () => {
+    state.conns = { data: [], isPending: false, isError: false }
+    state.catalog = { data: [], isPending: false, isError: false }
+    wrap(<IntegrationsPage />)
+    expect(screen.getByText('Oracle Cloud')).toBeTruthy()
+    expect(screen.getByText('2 clusters connected')).toBeTruthy()
+    expect(
+      screen.getByRole('link', { name: 'Manage Kubernetes clusters' }),
+    ).toHaveAttribute('href', '/clusters')
+    expect(
+      screen.getByRole('link', { name: 'Manage Notifications' }),
+    ).toHaveAttribute('href', '/settings/notification-channels')
+  })
   it('treats null lists as empty without crashing', () => {
     state.conns = { data: null, isPending: false, isError: false }
     state.catalog = { data: null, isPending: false, isError: false }
     wrap(<IntegrationsPage />)
-    expect(screen.getByText('Nothing connected yet')).toBeTruthy()
+    expect(screen.queryByRole('heading', { name: 'Connected' })).toBeNull()
+    expect(screen.getByText(/to get started/)).toBeTruthy()
     expect(screen.getByText('No integrations are available.')).toBeTruthy()
   })
   it('treats empty arrays the same', () => {
     state.conns = { data: [], isPending: false, isError: false }
     state.catalog = { data: [], isPending: false, isError: false }
     wrap(<IntegrationsPage />)
-    expect(screen.getByText('Nothing connected yet')).toBeTruthy()
+    expect(screen.queryByRole('heading', { name: 'Connected' })).toBeNull()
+    expect(screen.queryByText(/need.* attention/)).toBeNull()
+    expect(screen.getByText('Add an integration')).toBeTruthy()
   })
   it('shows an honest error with retry', () => {
     state.conns = { data: undefined, isPending: false, isError: true }
@@ -163,6 +193,8 @@ describe('IntegrationsPage states', () => {
       isError: false,
     }
     wrap(<IntegrationsPage />)
+    expect(screen.getByRole('heading', { name: 'Connected' })).toBeTruthy()
+    expect(screen.queryByText(/to get started/)).toBeNull()
     expect(screen.getByText('1 connection needs attention')).toBeTruthy()
     expect(screen.getByRole('link', { name: 'Connect GitHub' })).toBeTruthy()
   })

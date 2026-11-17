@@ -290,7 +290,7 @@ Wants=network-online.target
 EnvironmentFile=%[4]s
 ExecStartPre=-/usr/bin/docker rm -f %[3]s
 ExecStartPre=/usr/bin/docker pull %[1]s
-ExecStart=/usr/bin/docker run --rm --name %[3]s --user 0:0 --network host -v /var/run/docker.sock:/var/run/docker.sock -v %[5]s:%[5]s -e APP_CONTROL_PLANE_ADDR -e APP_JOIN_TOKEN -e APP_CA_FINGERPRINT -e APP_NODE_NAME -e APP_AGENT_IDENTITY_FILE%[2]s %[1]s
+ExecStart=/usr/bin/docker run --rm --name %[3]s --user 0:0 --security-opt no-new-privileges --network host -v /var/run/docker.sock:/var/run/docker.sock -v %[5]s:%[5]s -e APP_CONTROL_PLANE_ADDR -e APP_JOIN_TOKEN -e APP_CA_FINGERPRINT -e APP_NODE_NAME -e APP_AGENT_IDENTITY_FILE%[2]s %[1]s
 Restart=on-failure
 RestartSec=5
 

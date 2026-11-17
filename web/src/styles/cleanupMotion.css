@@ -39,7 +39,8 @@
 
 /* data-motion: 'on' forces reduced motion, 'off' opts out of the system preference. */
 @media (prefers-reduced-motion: reduce) {
-  :root:not([data-motion='off']) :is(.cleanup-grow, .cleanup-sheen, .cleanup-flash) {
+  :root:not([data-motion='off'])
+    :is(.cleanup-grow, .cleanup-sheen, .cleanup-flash) {
     animation: none !important;
   }
 }

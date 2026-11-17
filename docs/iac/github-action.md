@@ -2,6 +2,7 @@
 title: "GitHub Action for IaC"
 tag: "Experimental"
 description: Plan on every pull request with one sticky comment, apply on the protected branch with the reviewed plan hash, and read the exit code as an output.
+"og:url": "https://docs.levelrail.com/iac/github-action"
 ---
 
 <Warning>

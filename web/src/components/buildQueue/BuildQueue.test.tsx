@@ -125,6 +125,43 @@ describe('queue state chip', () => {
   })
 })
 
+describe('idle and active header', () => {
+  it('hides Kill all builds and folds Pause into the menu when idle', async () => {
+    queue = makeQueue({ running: [], queued: [], slots: { used: 0, total: 2 } })
+    render(
+      wrap(
+        <BuildQueueControls
+          idleExtras={{ onQueue: vi.fn(), onShortcuts: vi.fn() }}
+        />,
+      ),
+    )
+    expect(screen.queryByRole('button', { name: 'Kill all builds' })).toBeNull()
+    expect(screen.queryByRole('button', { name: 'Pause builds' })).toBeNull()
+    await userEvent.click(screen.getByRole('button', { name: 'Queue actions' }))
+    expect(
+      await screen.findByRole('menuitem', { name: 'Pause builds' }),
+    ).toBeInTheDocument()
+    expect(screen.getByRole('menuitem', { name: 'Queue' })).toBeInTheDocument()
+    expect(
+      screen.getByRole('menuitem', { name: 'Shortcuts' }),
+    ).toBeInTheDocument()
+    expect(
+      screen.queryByRole('menuitem', { name: 'Kill all builds' }),
+    ).toBeNull()
+  })
+
+  it('keeps Pause and Kill all builds as direct buttons while active', () => {
+    queue = makeQueue()
+    render(wrap(<BuildQueueControls />))
+    expect(
+      screen.getByRole('button', { name: 'Kill all builds' }),
+    ).toBeInTheDocument()
+    expect(
+      screen.getByRole('button', { name: 'Pause builds' }),
+    ).toBeInTheDocument()
+  })
+})
+
 describe('pause popover', () => {
   it('sends the optional reason', async () => {
     queue = makeQueue()

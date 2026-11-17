@@ -51,6 +51,7 @@ export const ITEM_KEYWORDS: Readonly<Record<string, string>> = {
   'nav-tags': 'tag label group filter env organize apps',
   'nav-scanning': 'scan cve gate',
   'nav-bootstrap': 'cloud init',
+  'nav-clusters': 'kubernetes k8s k3s cluster kubeconfig namespace node pods',
   'nav-storage':
     'storage disk space images docker container registry layers prune cache volumes',
   'nav-resources': 'resource cpu memory disk inventory all',
@@ -93,8 +94,8 @@ export const ITEM_KEYWORDS: Readonly<Record<string, string>> = {
   'settings-email': 'smtp mail email notification',
   'settings-notification-channels':
     'alert slack discord webhook notify notification',
-  'settings-integrations':
-    'integration connection connect health expiry token oauth scope catalog',
+  'nav-integrations':
+    'integration cloud provider oracle kubernetes git dns tunnel connection connect health expiry token oauth scope catalog',
   'settings-git-connections': 'git github gitlab repo repository source',
   'settings-github-app': 'github git repo repository app',
   'settings-agents': 'agent node worker connect',

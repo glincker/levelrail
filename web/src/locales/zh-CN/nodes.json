@@ -1009,5 +1009,93 @@
     "loading": "正在加载阈值...",
     "invalid": "请使用 1 到 100 之间的整数，或留空使用默认值。",
     "description_other": "留空的字段沿用平台默认值。CPU 和内存告警会在连续 {{count}} 次评估超过限制后触发。"
+  },
+  "provisionDestroy": {
+    "trigger": "销毁服务器",
+    "title": "销毁服务器“{{name}}”？",
+    "description": "这会永久删除 {{provider}} 上的云服务器并移除该节点。服务器删除后，服务商将停止计费。此操作无法撤销。",
+    "confirm": "销毁服务器",
+    "destroying": "正在销毁...",
+    "destroyed": "服务器“{{name}}”已销毁。",
+    "workloadsTitle": "此节点仍在运行工作负载",
+    "workloadsBody": "请先排空，或直接销毁。其上的应用和数据库将丢失。",
+    "force": "仍然销毁，我接受此节点上的工作负载丢失",
+    "statusDestroying": "销毁中",
+    "statusDestroyed": "已销毁"
+  },
+  "provisionGuard": {
+    "title": "已达到服务器数量上限",
+    "body": "{{reason}}",
+    "hint": "上限由设置 provision.max_servers 和 provision.max_monthly_price_usd 控制。"
+  },
+  "oracle": {
+    "name": "Oracle Cloud",
+    "hint": "API 签名密钥、区域、区间和子网。",
+    "form": {
+      "intro": "某个可管理一个区间内实例的用户的 API 签名密钥,仅用于创建和检查服务器。",
+      "tenancy": "租户 OCID",
+      "user": "用户 OCID",
+      "fingerprint": "密钥指纹",
+      "region": "区域",
+      "compartment": "区间 OCID",
+      "compartmentHelp": "默认为租户(根区间)。",
+      "subnet": "子网 OCID",
+      "key": "私钥 (PEM)",
+      "keyFile": "从文件加载",
+      "keyHelp": "不会保存在浏览器中,保存后不再显示。",
+      "keyStored": "已保存密钥。粘贴新密钥可替换。",
+      "keyStoredHelp": "已保存的密钥不会显示。粘贴新密钥可替换。",
+      "permissionsTitle": "最小权限",
+      "permissions": "在该区间内管理 instance-family、使用 virtual-network-family,并可读取镜像和区间。请使用专用用户和密钥。",
+      "testAndConnect": "测试并连接",
+      "test": "测试连接",
+      "testing": "测试中...",
+      "testStored": "测试已保存的连接",
+      "saving": "保存中...",
+      "saved": "{{provider}} 凭据已保存。",
+      "disconnect": "断开连接",
+      "confirmDisconnect": "确认断开",
+      "disconnected": "{{provider}} 已断开。"
+    },
+    "wizard": {
+      "title": "API密钥引导设置",
+      "intro": "Oracle不提供Compute API的登录方式,因此使用权限受限的API密钥连接。密钥对在此浏览器中生成,私钥只会在下方保存凭据时发送。",
+      "keyTitle": "1. 创建密钥对",
+      "generate": "生成密钥对",
+      "regenerate": "重新生成密钥对",
+      "generating": "生成中...",
+      "use": "在表单中使用密钥",
+      "used": "密钥已填入表单",
+      "failed": "此浏览器无法生成密钥。请使用支持的最新浏览器,并通过HTTPS或localhost访问。",
+      "consoleSteps": "在Oracle控制台打开我的个人资料、API密钥、添加API密钥,选择粘贴公钥并粘贴此内容。",
+      "publicKey": "公钥",
+      "fingerprint": "指纹",
+      "privateNote": "私钥不会显示。它会填入下方表单,使用后从此助手中清除。保存凭据即可保留。",
+      "policyTitle": "2. 创建受限策略",
+      "policyNote": "在独立用户组中创建专用用户,仅授予针对一个区间的这些语句。不授予租户级权限。",
+      "cliNote": "使用OCI CLI完成相同设置:",
+      "copy": "复制",
+      "copied": "已复制",
+      "checkTitle": "3. 检查连接",
+      "check": "检查连接",
+      "checking": "检查中...",
+      "checkNeedsSave": "请先保存凭据,再检查。",
+      "checkOk": "已连接。可用区域:{{total}}"
+    },
+    "sizes": {
+      "flex": "弹性规格",
+      "preset": "{{ocpus}} OCPU,{{memory}} GB",
+      "ocpus": "OCPU",
+      "memory": "内存 (GB)",
+      "priceNote": "Oracle 按 OCPU 和内存对 Flex 规格计费。本应用无法判断服务器是否在你租户的额度内,请在 Oracle 控制台确认。"
+    },
+    "guard": {
+      "title": "Oracle 拒绝了创建",
+      "enabled": "Oracle 配置已关闭。请先开启设置 {{setting}}。",
+      "a1": "A1 额度为 0 或将被超出。请提高 {{setting}} 以允许此规格。",
+      "micro": "将超出 micro 规格上限。请提高 {{setting}}。",
+      "paidShape": "此规格不在额度限制内,可能产生费用。开启 {{setting}} 才能使用。",
+      "unknownPrice": "Oracle 未给出此规格的价格,无法检查价格上限。开启 {{setting}}(或 provision.allow_unknown_price)以允许。"
+    }
   }
 }

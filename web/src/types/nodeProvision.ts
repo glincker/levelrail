@@ -9,6 +9,7 @@ export type NodeProviderMethod =
   | 'ambient'
   | 'workload_identity_federation'
   | 'service_account_json'
+  | 'api_key'
   | 'manual'
 
 export type NodeProviderStatus = 'connected' | 'not_connected' | 'test_failed'
@@ -50,14 +51,21 @@ export interface NodeProviderSizeResource {
   currency?: string
 }
 
-// The six states store.NodeProvision's own status column can hold.
+// The eight states store.NodeProvision's own status column can hold.
 // "installing" is defined server-side for a future agent-reported
 // signal but never actually emitted today: this control plane can't yet
 // tell "still running cloud-init" apart from "waiting to dial in", so a
 // running server is always reported as "enrolling" instead. See
 // docs/node-provisioning.md.
 export type NodeProvisionStatus =
-  'creating' | 'booting' | 'installing' | 'enrolling' | 'ready' | 'failed'
+  | 'creating'
+  | 'booting'
+  | 'installing'
+  | 'enrolling'
+  | 'ready'
+  | 'failed'
+  | 'destroying'
+  | 'destroyed'
 
 export interface NodeProvisionResource {
   id: string
@@ -77,5 +85,10 @@ export interface NodeProvisionResource {
 export function isTerminalProvisionStatus(
   status: NodeProvisionStatus,
 ): boolean {
-  return status === 'ready' || status === 'failed'
+  return (
+    status === 'ready' ||
+    status === 'failed' ||
+    status === 'destroying' ||
+    status === 'destroyed'
+  )
 }

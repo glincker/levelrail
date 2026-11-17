@@ -2394,6 +2394,26 @@ Routes that do not fit an existing group.
 | POST | /api/v1/builds/queue/drain | AbilityWriteSensitive | handleBuildQueueDrain |
 | POST | /api/v1/builds/kill-all | AbilityWriteSensitive | handleKillAllBuilds |
 | GET | /api/v1/builds/runners | AbilityRead | handleListBuildRunners |
+| DELETE | /api/v1/node-provisions/{id} | AbilityRoot | handleDestroyNodeProvision |
+| GET | /api/v1/clusters | AbilityRoot | handleListK8sClusters |
+| POST | /api/v1/clusters | AbilityRoot | handleConnectK8sCluster |
+| GET | /api/v1/clusters/{name} | AbilityRoot | handleGetK8sCluster |
+| DELETE | /api/v1/clusters/{name} | AbilityRoot | handleDisconnectK8sCluster |
+| POST | /api/v1/clusters/{name}/test | AbilityRoot | handleTestK8sCluster |
+| GET | /api/v1/clusters/{name}/nodes | AbilityRoot | handleListK8sNodes |
+| GET | /api/v1/clusters/{name}/namespaces | AbilityRoot | handleListK8sNamespaces |
+| GET | /api/v1/clusters/{name}/deployments | AbilityRoot | handleListK8sDeployments |
+| POST | /api/v1/clusters/{name}/deployments | AbilityRoot | handleDeployK8sApp |
+| GET | /api/v1/clusters/{name}/deployments/{app} | AbilityRoot | handleGetK8sDeploymentStatus |
+| GET | /api/v1/clusters/{name}/deployments/{app}/logs | AbilityRoot | handleGetK8sDeploymentLogs |
+| DELETE | /api/v1/clusters/{name}/deployments/{app} | AbilityRoot | handleRemoveK8sDeployment |
+| GET | /api/v1/node-providers/{provider}/capabilities | AbilityRoot | handleGetNodeProviderCapabilities |
+| GET | /api/v1/clusters/{name}/pull-secrets | AbilityRoot | handleListK8sPullSecrets |
+| POST | /api/v1/clusters/{name}/pull-secrets | AbilityRoot | handleAddK8sPullSecret |
+| DELETE | /api/v1/clusters/{name}/pull-secrets/{secret} | AbilityRoot | handleDeleteK8sPullSecret |
+| GET | /api/v1/node-providers/{provider}/resources | AbilityRoot | handleListNodeProviderResources |
+| GET | /api/v1/node-providers/{provider}/spend | AbilityRoot | handleGetNodeProviderSpend |
+| GET | /api/v1/dns/authority | AbilityRead | handleDNSAuthority |
 | POST | /mcp | Public |  |
 
 ## See also

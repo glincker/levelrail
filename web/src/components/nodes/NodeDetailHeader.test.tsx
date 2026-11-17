@@ -26,6 +26,7 @@ vi.mock('@tanstack/react-router', () => ({
 }))
 vi.mock('../CordonNodeDialog', () => ({ CordonNodeDialog: () => null }))
 vi.mock('../DrainNodeDialog', () => ({ DrainNodeDialog: () => null }))
+vi.mock('./DestroyServerAction', () => ({ DestroyServerAction: () => null }))
 vi.mock('../DeleteNodeDialog', () => ({ DeleteNodeDialog: () => null }))
 vi.mock('../ReenrollNodeDialog', () => ({
   ReenrollNodeDialog: () => <button type="button">Re-enroll agent</button>,

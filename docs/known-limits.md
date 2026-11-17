@@ -1,4 +1,9 @@
-# Known limits
+---
+title: "Known limits"
+sidebarTitle: "Known limits"
+description: "Current Levelrail limits by area: release maturity, multi-node, features not yet verified on real infrastructure, upgrades, templates and beta flags."
+"og:url": "https://docs.levelrail.com/known-limits"
+---
 
 Last updated 2026-11-08 (release/v0.9.5 branch).
 

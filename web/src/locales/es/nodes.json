@@ -1025,5 +1025,93 @@
     "invalid": "Usa un número entero de 1 a 100, o deja el campo vacío para el valor predeterminado.",
     "description_one": "Deja un campo vacío para seguir el valor de la plataforma. Las alertas de CPU y memoria se activan tras {{count}} evaluación por encima del límite.",
     "description_other": "Deja un campo vacío para seguir el valor de la plataforma. Las alertas de CPU y memoria se activan tras {{count}} evaluaciones seguidas por encima del límite."
+  },
+  "provisionDestroy": {
+    "trigger": "Destruir servidor",
+    "title": "¿Destruir el servidor \"{{name}}\"?",
+    "description": "Esto elimina de forma permanente el servidor en la nube en {{provider}} y quita el nodo. El proveedor deja de facturar cuando el servidor desaparece. No se puede deshacer.",
+    "confirm": "Destruir servidor",
+    "destroying": "Destruyendo...",
+    "destroyed": "Servidor \"{{name}}\" destruido.",
+    "workloadsTitle": "Este nodo aún ejecuta cargas",
+    "workloadsBody": "Vacíalo primero o destrúyelo de todos modos. Las apps y bases de datos en él se perderán.",
+    "force": "Destruir de todos modos, acepto perder las cargas de este nodo",
+    "statusDestroying": "Destruyendo",
+    "statusDestroyed": "Destruido"
+  },
+  "provisionGuard": {
+    "title": "Límite de servidores alcanzado",
+    "body": "{{reason}}",
+    "hint": "Los límites son los ajustes provision.max_servers y provision.max_monthly_price_usd."
+  },
+  "oracle": {
+    "name": "Oracle Cloud",
+    "hint": "Clave de firma de API, región, compartimento y subred.",
+    "form": {
+      "intro": "Una clave de firma de API de un usuario que puede gestionar instancias en un compartimento. Solo sirve para crear e inspeccionar servidores.",
+      "tenancy": "OCID del tenancy",
+      "user": "OCID del usuario",
+      "fingerprint": "Huella de la clave",
+      "region": "Región",
+      "compartment": "OCID del compartimento",
+      "compartmentHelp": "Por defecto, el tenancy (compartimento raíz).",
+      "subnet": "OCID de la subred",
+      "key": "Clave privada (PEM)",
+      "keyFile": "Cargar desde archivo",
+      "keyHelp": "No se guarda en el navegador y no se vuelve a mostrar tras guardar.",
+      "keyStored": "Hay una clave guardada. Pega una nueva para reemplazarla.",
+      "keyStoredHelp": "La clave guardada nunca se muestra. Pega una nueva para reemplazarla.",
+      "permissionsTitle": "Mínimo privilegio",
+      "permissions": "Gestionar instance-family y usar virtual-network-family en el compartimento, más lectura de imágenes y compartimentos. Usa un usuario y una clave dedicados.",
+      "testAndConnect": "Probar y conectar",
+      "test": "Probar conexión",
+      "testing": "Probando...",
+      "testStored": "Probar conexión guardada",
+      "saving": "Guardando...",
+      "saved": "Credencial de {{provider}} guardada.",
+      "disconnect": "Desconectar",
+      "confirmDisconnect": "Confirmar desconexión",
+      "disconnected": "{{provider}} desconectado."
+    },
+    "wizard": {
+      "title": "Configuracion guiada de la clave de API",
+      "intro": "Oracle no ofrece inicio de sesion para la API de Compute, asi que se conecta con una clave de API acotada. El par de claves se crea en este navegador y la clave privada solo se envia al guardar la credencial mas abajo.",
+      "keyTitle": "1. Crear el par de claves",
+      "generate": "Generar par de claves",
+      "regenerate": "Generar un par nuevo",
+      "generating": "Generando...",
+      "use": "Usar la clave en el formulario",
+      "used": "Clave en el formulario",
+      "failed": "Este navegador no pudo generar la clave. Usa un navegador actual con HTTPS o localhost.",
+      "consoleSteps": "En la consola de Oracle abre Mi perfil, Claves de API, Agregar clave de API, elige Pegar una clave publica y pega esta.",
+      "publicKey": "Clave publica",
+      "fingerprint": "Huella",
+      "privateNote": "La clave privada no se muestra. Rellena el formulario de abajo y se borra de esta ayuda al usarla. Guarda la credencial para conservarla.",
+      "policyTitle": "2. Crear la politica acotada",
+      "policyNote": "Un usuario dedicado en su propio grupo, solo con estas sentencias sobre un compartimento. Nada a nivel de tenancy.",
+      "cliNote": "La misma configuracion con la CLI de OCI:",
+      "copy": "Copiar",
+      "copied": "Copiado",
+      "checkTitle": "3. Comprobar la conexion",
+      "check": "Comprobar conexion",
+      "checking": "Comprobando...",
+      "checkNeedsSave": "Guarda primero la credencial y luego comprueba.",
+      "checkOk": "Conectado. Regiones disponibles: {{total}}."
+    },
+    "sizes": {
+      "flex": "Forma flexible",
+      "preset": "{{ocpus}} OCPU, {{memory}} GB",
+      "ocpus": "OCPU",
+      "memory": "Memoria (GB)",
+      "priceNote": "Oracle factura las formas Flex por OCPU y memoria. Esta app no sabe si un servidor entra en la asignación de tu tenancy, revisa tu consola de Oracle."
+    },
+    "guard": {
+      "title": "Oracle rechazó la creación",
+      "enabled": "El aprovisionamiento de Oracle está desactivado. Activa primero el ajuste {{setting}}.",
+      "a1": "La asignación A1 es 0 o se superaría. Sube {{setting}} para permitir este tamaño.",
+      "micro": "Se superaría el límite de formas micro. Sube {{setting}} para permitir otra.",
+      "paidShape": "Esta forma no está cubierta por los límites de asignación y puede facturarse. Activa {{setting}} para usarla.",
+      "unknownPrice": "Oracle no indica precio para esta forma, así que no se puede comprobar el tope. Activa {{setting}} (o provision.allow_unknown_price) para permitirla."
+    }
   }
 }

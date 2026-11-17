@@ -1,0 +1,160 @@
+{
+  "title": "Clusters",
+  "description": "Connectez des clusters Kubernetes, testez-les et consultez leurs nœuds et namespaces.",
+  "loadFailed": "Impossible de charger les clusters.",
+  "disabled": {
+    "title": "Les clusters Kubernetes sont désactivés",
+    "description": "Activez le réglage d'exécution k8s.clusters_enabled pour connecter des clusters."
+  },
+  "empty": {
+    "description": "Aucun cluster connecté pour l'instant. Ajoutez-en un ci-dessous."
+  },
+  "privateApiBlocked": "Les adresses d'API privées et loopback sont bloquées. Autorisez-les avec le réglage k8s.allow_private_api si le cluster est sur votre propre réseau.",
+  "adminWarning": "Ces identifiants sont administrateur du cluster. Préférez un compte de service limité à un namespace.",
+  "connect": {
+    "title": "Connecter un cluster",
+    "mode": "Méthode de connexion",
+    "modeToken": "Serveur et jeton",
+    "modeKubeconfig": "Kubeconfig",
+    "name": "Nom",
+    "nameTaken": "Un cluster portant ce nom existe déjà.",
+    "server": "URL du serveur",
+    "token": "Jeton de compte de service",
+    "ca": "Certificat CA (facultatif)",
+    "caHint": "PEM. Laissez vide si le certificat du serveur d'API est publiquement approuvé.",
+    "kubeconfig": "Kubeconfig",
+    "kubeconfigHint": "Collé une seule fois et stocké chiffré. Les entrées exec et auth-provider sont refusées.",
+    "context": "Contexte",
+    "contextPlaceholder": "Contexte actuel",
+    "submit": "Connecter",
+    "pending": "Connexion",
+    "done": "Cluster connecté.",
+    "serverPlaceholder": "https://203.0.113.10:6443",
+    "caPlaceholder": "-----BEGIN CERTIFICATE-----",
+    "kubeconfigPlaceholder": "apiVersion: v1",
+    "allowClusterAdmin": "Accepter un identifiant administrateur du cluster",
+    "allowClusterAdminWarning": "Réduit la sécurité : cet identifiant peut tout faire dans le cluster. Préférez un Role limité à un namespace via levelrail clusters rbac. Ne fonctionne que si le réglage k8s.allow_cluster_admin est activé."
+  },
+  "auth": {
+    "token": "Jeton",
+    "client_cert": "Certificat client"
+  },
+  "status": {
+    "ok": "Joignable",
+    "unauthorized": "Non autorisé",
+    "forbidden": "Interdit",
+    "error": "Erreur d'API",
+    "unreachable": "Injoignable",
+    "untested": "Non testé"
+  },
+  "list": {
+    "toggle": "Afficher les nœuds et namespaces de {{name}}"
+  },
+  "actions": {
+    "test": "Tester",
+    "testing": "Test en cours",
+    "disconnect": "Déconnecter",
+    "disconnectNamed": "Déconnecter {{name}}"
+  },
+  "detail": {
+    "nodes": "Nœuds",
+    "namespaces": "Namespaces",
+    "ready": "Prêt",
+    "notReady": "Pas prêt",
+    "noNodes": "Aucun nœud renvoyé.",
+    "noNamespaces": "Aucun namespace renvoyé.",
+    "back": "Retour aux clusters",
+    "open": "Ouvrir",
+    "openNamed": "Ouvrir {{name}}"
+  },
+  "disconnect": {
+    "title": "Déconnecter {{name}} ?",
+    "description": "Les identifiants stockés sont supprimés. Les charges de travail du cluster ne sont pas touchées. Saisissez le nom du cluster pour confirmer.",
+    "confirm": "Déconnecter",
+    "pending": "Déconnexion",
+    "done": "Cluster déconnecté."
+  },
+  "deploy": {
+    "title": "Déployer une app",
+    "app": "Nom de l'app",
+    "image": "Image publique",
+    "imagePlaceholder": "nginx:1.27",
+    "port": "Port",
+    "replicas": "Réplicas",
+    "namespace": "Namespace",
+    "host": "Hôte (facultatif)",
+    "hostPlaceholder": "app.example.com",
+    "env": "Environnement (facultatif)",
+    "envPlaceholder": "KEY=value, une par ligne",
+    "envHint": "Écriture seule. Les valeurs ne sont plus jamais affichées.",
+    "envInvalid": "La ligne {{line}} n'est pas KEY=value.",
+    "allowRoot": "Autoriser l'exécution en root",
+    "allowRootWarning": "Seulement pour les images qui exigent root. Les autres tournent sans root.",
+    "submit": "Déployer",
+    "pending": "Déploiement",
+    "done": "{{app}} déployée",
+    "pageDescription": "Déployez une image publique sur ce cluster et suivez son état.",
+    "pullSecret": "Secret de pull (facultatif)",
+    "pullSecretNone": "Aucun (image publique)",
+    "pullSecretMismatch": "L'image est sur {{image}} mais {{name}} concerne {{secret}}.",
+    "pullSecretNoneStored": "Aucun secret de pull. Ajoutez-en un dans Secrets de pull ci-dessous.",
+    "namespaceCreateHint": "Le compte de service ne peut pas créer de namespaces. Déployez dans le namespace pour lequel son rôle a été créé (levelrail clusters rbac --namespace NS) et ajoutez-le à k8s.allowed_namespaces, sauf s'il s'agit du namespace par défaut ou s'il porte le label levelrail."
+  },
+  "deployments": {
+    "title": "Déploiements",
+    "empty": "Aucun déploiement pour l'instant."
+  },
+  "deployment": {
+    "checking": "Vérification",
+    "stale": "État indisponible",
+    "ready": "Prêt {{ready}}/{{total}}",
+    "logs": "Journaux",
+    "logsNamed": "Journaux de {{name}}",
+    "remove": "Retirer",
+    "removeNamed": "Retirer {{name}}",
+    "pullFailed": "Échec du pull avec le secret {{name}}",
+    "pullSecretsLink": "Secrets de pull"
+  },
+  "logs": {
+    "title": "Journaux de {{name}}",
+    "description": "Dernières lignes du journal d'un pod de cette app.",
+    "tail": "Lignes",
+    "pod": "Pod",
+    "anyPod": "N'importe quel pod",
+    "refresh": "Actualiser",
+    "copy": "Copier",
+    "copied": "Copié",
+    "truncated": "La sortie a été coupée à la limite de taille.",
+    "output": "Sortie du journal",
+    "empty": "Aucune sortie de journal pour l'instant."
+  },
+  "remove": {
+    "title": "Retirer {{name}} ?",
+    "description": "Supprime le Deployment, le Service et l'Ingress créés par Levelrail pour cette app. Les objets qu'il n'a pas créés ne sont pas touchés.",
+    "confirm": "Retirer l'app",
+    "pending": "Retrait",
+    "done": "{{name}} retirée"
+  },
+  "pullSecrets": {
+    "title": "Secrets de pull",
+    "hint": "Identifiants de registre pour les images privées. Écriture seule, jamais réaffichés.",
+    "empty": "Aucun secret de pull.",
+    "addTitle": "Ajouter un secret de pull",
+    "name": "Nom",
+    "namePlaceholder": "ghcr-main",
+    "registry": "Hôte du registre",
+    "registryPlaceholder": "ghcr.io",
+    "username": "Nom d'utilisateur",
+    "password": "Mot de passe ou jeton",
+    "add": "Ajouter",
+    "adding": "Ajout",
+    "added": "{{name}} ajouté",
+    "delete": "Supprimer",
+    "deleteNamed": "Supprimer {{name}}",
+    "deleteTitle": "Supprimer {{name}} ?",
+    "deleteDescription": "Les apps en cours gardent leur copie. Les nouveaux déploiements avec ce secret échoueront. Saisissez le nom pour confirmer.",
+    "deleteConfirm": "Supprimer le secret",
+    "deletePending": "Suppression",
+    "deleted": "{{name}} supprimé"
+  }
+}

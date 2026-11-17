@@ -1,6 +1,7 @@
 ---
 title: Server patching
 description: Preview and install OS package updates on a server, with holds for kernel and container runtime upgrades.
+"og:url": "https://docs.levelrail.com/server-patching"
 ---
 
 # Server patching

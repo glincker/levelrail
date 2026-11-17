@@ -9,21 +9,24 @@ import (
 	"os"
 	"strings"
 	"time"
+
+	"github.com/GLINCKER/levelrail/internal/apiclient"
 )
 
 // Defaults to root because a session is always root, so a narrower default would silently weaken the token.
 // Use --abilities for a deliberately narrower credential.
 var defaultTokenAbility = []string{"root"}
 
-// The login cookie is Secure, so off-loopback plain http fails at the token mint; loopback http works.
+// Plain http to a non-loopback host is refused before any credential is sent, unless --insecure-http or the env override is set.
 func runAuthLogin(prog string, args []string, stdout, stderr io.Writer, lookupEnv func(string) (string, bool), stdin io.Reader) int {
 	fs, usernameP, passwordP, apiURLFlagP, profileFlagP, jsonOutP, outputFlagP, queryFlagP := sessionFlagSet(prog, "auth login", "print the new token resource as JSON to stdout and nothing else", stderr)
 	var tokenName, abilitiesFlag, clientNameFlag string
 	var expiresInDays int
-	var deviceFlag, reauthFlag, waitFlag, printToken, forceFlag bool
+	var deviceFlag, reauthFlag, waitFlag, printToken, forceFlag, insecureHTTP bool
 	var codeFlag string
 	var openFlag triBool
 	var approvalTimeout time.Duration
+	fs.BoolVar(&insecureHTTP, "insecure-http", false, "allow sending credentials over plain http to a non-loopback host (default: refused; "+apiclient.EnvInsecureHTTP+"=1 does the same)")
 	fs.StringVar(&codeFlag, "code", "", "pairing code from the dashboard's \"Connect your CLI\" card (XXXX-XXXX); signs in with no password and no approval")
 	fs.Var(&openFlag, "open", "open the approval page in a browser when a new device needs approval (default: on at a desktop terminal, off over SSH and in scripts)")
 	fs.BoolVar(&waitFlag, "wait", false, "wait for new-device approval even when not at a terminal (default: fail at once with the fix)")
@@ -51,6 +54,14 @@ func runAuthLogin(prog string, args []string, stdout, stderr io.Writer, lookupEn
 		return exitValidation
 	}
 	of := outputFlags{format, *queryFlagP}
+
+	if insecureHTTP {
+		apiclient.SetInsecureHTTP(true)
+	}
+	loginURL := resolveAPIURL(*apiURLFlagP, lookupEnv, prog, resolveProfile(*profileFlagP, lookupEnv))
+	if err := apiclient.CheckCleartextHTTP(loginURL, insecureHTTP, lookupEnv); err != nil {
+		return reportError(stdout, stderr, jsonOut, newValidationError("%s", err.Error()))
+	}
 
 	// A password, device cookie or minted token only goes to an address the user saved or typed.
 	if m, bad := savedLoginMismatch(*apiURLFlagP, lookupEnv, prog, resolveProfile(*profileFlagP, lookupEnv)); bad {
@@ -193,8 +204,8 @@ credentials file. Every later command's --token/%[2]s/credentials-file
 resolution then finds it automatically.
 
 Plain-http targets work on loopback (127.0.0.1, localhost, ::1). For any
-other host use an https --api-url, or --device or --code, which also work
-over plain http. The new token is saved to the credentials file and is not
+other host use an https --api-url; plain http to another host is refused
+unless --insecure-http (or the APP_INSECURE_HTTP env var) is set. The new token is saved to the credentials file and is not
 printed unless you pass --print-token.
 
 With --code XXXX-XXXX: signs in with a short-lived, single-use pairing code
@@ -225,6 +236,7 @@ Flags:
   --abilities string           comma-separated ability list (default: root)
   --expires-in-days int      token lifetime in days (default: 90)
   --print-token                print the new token value to stdout (default: saved only)
+  --insecure-http            allow plain http to a non-loopback host (default: refused)
   --force                         sign in again even when a valid saved login exists (default: reuse it, no new session)
   --reauth                       replace the server this profile is pinned to (after the server was reinstalled or restored)
   --code string                pairing code from the dashboard's "Connect your CLI" card

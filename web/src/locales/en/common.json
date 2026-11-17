@@ -416,6 +416,7 @@
         "iam": "IAM policies",
         "imageScanning": "Image scanning",
         "bootstrapScripts": "Bootstrap scripts",
+        "clusters": "Clusters",
         "keys": "Keys and tokens",
         "team": "Team",
         "auditLog": "Audit log"
@@ -546,7 +547,8 @@
       "usage": "Usage and cost",
       "resources": "Resources",
       "security": "Security",
-      "console": "Console"
+      "console": "Console",
+      "integrations": "Integrations"
     },
     "quickNav": {
       "label": "Quick navigation (hold L)"

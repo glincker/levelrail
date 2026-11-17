@@ -22,6 +22,7 @@ func (rt *Router) registerDNSZoneRoutes(mux *http.ServeMux) {
 	mux.HandleFunc("POST /api/v1/dns/zones/{zone}/templates/{id}", rt.requireAbility(AbilityRoot, rt.handleApplyDNSTemplate))
 	mux.HandleFunc("GET /api/v1/dns/templates", rt.requireAbility(AbilityRead, rt.handleListDNSTemplates))
 	mux.HandleFunc("GET /api/v1/dns/check", rt.requireAbility(AbilityRead, rt.handleDNSCheck))
+	mux.HandleFunc("GET /api/v1/dns/authority", rt.requireAbility(AbilityRead, rt.handleDNSAuthority))
 	mux.HandleFunc("GET /api/v1/dns/health-checks", rt.requireAbility(AbilityRead, rt.handleListDNSHealthChecks))
 	mux.HandleFunc("POST /api/v1/dns/health-checks", rt.requireAbility(AbilityRoot, rt.handleCreateDNSHealthCheck))
 	mux.HandleFunc("DELETE /api/v1/dns/health-checks/{id}", rt.requireAbility(AbilityRoot, rt.handleDeleteDNSHealthCheck))

@@ -13,7 +13,7 @@ Usage:
   levelrail-cli completion fish    print a fish completion script
 
 Completes command and subcommand names for the CLI's full command tree
-(apps, databases, channels, and so on), plus the global flags (--json --output --query --token --api-url --debug --no-color -h --help).
+(apps, databases, channels, and so on), plus the global flags (--json --output --query --token --api-url --debug --insecure-http --no-color -h --help).
 It does not complete flag values or positional arguments like app names.
 
 Install:

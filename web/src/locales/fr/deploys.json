@@ -560,7 +560,12 @@
     "drawerSearching": "Recherche de ce deploy",
     "drawerNotFoundTitle": "Deploy introuvable",
     "drawerNotFound": "Deploy introuvable. Il a peut-être été élagué par la rétention.",
-    "emptyAction": "Deployer une app"
+    "emptyAction": "Deployer une app",
+    "runnerProblem": "Problème de runner",
+    "emptyBuildsHint": "Les builds s'exécutent sur cette machine.",
+    "emptyBuildsLink": "Ajoutez un nœud de build pour les déplacer.",
+    "timelineEmpty": "Aucun déploiement sur la chronologie. Déployez une app et chaque version apparaîtra ici.",
+    "buildsEmpty": "Aucun build pour l'instant. Déployez une app et ses builds seront listés ici."
   },
   "summary": {
     "label": "Résumé des deploys",
@@ -800,7 +805,9 @@
       "description": "Les builds s’exécutent sur le plan de contrôle. Enrôlez un second nœud avec les builds activés pour les sortir de la machine qui sert vos apps.",
       "action": "Ouvrir Nœuds",
       "docs": "Routage des nœuds de build"
-    }
+    },
+    "addNodeLink": "Ajouter un nœud de build",
+    "dismissHint": "Masquer la suggestion de nœud de build"
   },
   "runnerPref": {
     "title": "Runner de build",

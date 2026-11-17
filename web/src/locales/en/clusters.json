@@ -1,0 +1,160 @@
+{
+  "title": "Clusters",
+  "description": "Connect Kubernetes clusters, check them and see their nodes and namespaces.",
+  "loadFailed": "Could not load clusters.",
+  "disabled": {
+    "title": "Kubernetes clusters are off",
+    "description": "Turn on the runtime setting k8s.clusters_enabled to connect clusters."
+  },
+  "empty": {
+    "description": "No clusters connected yet. Add one below."
+  },
+  "privateApiBlocked": "Private and loopback API addresses are blocked. Allow them with the runtime setting k8s.allow_private_api if this cluster is on your own network.",
+  "adminWarning": "This credential is cluster admin. Prefer a namespace-scoped service account.",
+  "connect": {
+    "title": "Connect a cluster",
+    "mode": "Connection method",
+    "modeToken": "Server and token",
+    "modeKubeconfig": "Kubeconfig",
+    "name": "Name",
+    "nameTaken": "A cluster with this name exists.",
+    "server": "Server URL",
+    "token": "Service account token",
+    "ca": "CA certificate (optional)",
+    "caHint": "PEM. Leave empty when the API server certificate is publicly trusted.",
+    "kubeconfig": "Kubeconfig",
+    "kubeconfigHint": "Pasted once and stored encrypted. Exec and auth-provider entries are refused.",
+    "context": "Context",
+    "contextPlaceholder": "Current context",
+    "submit": "Connect",
+    "pending": "Connecting",
+    "done": "Cluster connected.",
+    "serverPlaceholder": "https://203.0.113.10:6443",
+    "caPlaceholder": "-----BEGIN CERTIFICATE-----",
+    "kubeconfigPlaceholder": "apiVersion: v1",
+    "allowClusterAdmin": "Accept a cluster-admin credential",
+    "allowClusterAdminWarning": "Weakens security: this credential can do anything in the cluster. Prefer a namespaced Role from levelrail clusters rbac. It only works while the runtime setting k8s.allow_cluster_admin is on."
+  },
+  "auth": {
+    "token": "Token",
+    "client_cert": "Client certificate"
+  },
+  "status": {
+    "ok": "Reachable",
+    "unauthorized": "Unauthorized",
+    "forbidden": "Forbidden",
+    "error": "API error",
+    "unreachable": "Unreachable",
+    "untested": "Not tested"
+  },
+  "list": {
+    "toggle": "Show nodes and namespaces for {{name}}"
+  },
+  "actions": {
+    "test": "Test",
+    "testing": "Testing",
+    "disconnect": "Disconnect",
+    "disconnectNamed": "Disconnect {{name}}"
+  },
+  "detail": {
+    "nodes": "Nodes",
+    "namespaces": "Namespaces",
+    "ready": "Ready",
+    "notReady": "Not ready",
+    "noNodes": "No nodes returned.",
+    "noNamespaces": "No namespaces returned.",
+    "back": "Back to clusters",
+    "open": "Open",
+    "openNamed": "Open {{name}}"
+  },
+  "disconnect": {
+    "title": "Disconnect {{name}}?",
+    "description": "The stored credentials are deleted. Workloads on the cluster are not touched. Type the cluster name to confirm.",
+    "confirm": "Disconnect",
+    "pending": "Disconnecting",
+    "done": "Cluster disconnected."
+  },
+  "deploy": {
+    "title": "Deploy an app",
+    "app": "App name",
+    "image": "Image",
+    "imagePlaceholder": "nginx:1.27",
+    "port": "Port",
+    "replicas": "Replicas",
+    "namespace": "Namespace",
+    "host": "Host (optional)",
+    "hostPlaceholder": "app.example.com",
+    "env": "Environment (optional)",
+    "envPlaceholder": "KEY=value, one per line",
+    "envHint": "Write only. Values are never shown again.",
+    "envInvalid": "Line {{line}} is not KEY=value.",
+    "allowRoot": "Allow running as root",
+    "allowRootWarning": "Only for images that need root. Others run as non-root.",
+    "submit": "Deploy",
+    "pending": "Deploying",
+    "done": "Deployed {{app}}",
+    "pageDescription": "Deploy a public image to this cluster and watch its status.",
+    "pullSecret": "Pull secret (optional)",
+    "pullSecretNone": "None (public image)",
+    "pullSecretMismatch": "The image is on {{image}} but {{name}} is for {{secret}}.",
+    "pullSecretNoneStored": "No pull secrets stored. Add one in Pull secrets below.",
+    "namespaceCreateHint": "The service account cannot create namespaces. Deploy into the namespace its role was made for (levelrail clusters rbac --namespace NS), and add it to k8s.allowed_namespaces unless it is the default namespace or carries the levelrail label."
+  },
+  "deployments": {
+    "title": "Deployments",
+    "empty": "No deployments yet."
+  },
+  "deployment": {
+    "checking": "Checking",
+    "stale": "Status unavailable",
+    "ready": "Ready {{ready}}/{{total}}",
+    "logs": "Logs",
+    "logsNamed": "Logs for {{name}}",
+    "remove": "Remove",
+    "removeNamed": "Remove {{name}}",
+    "pullFailed": "Pull failed with secret {{name}}",
+    "pullSecretsLink": "Pull secrets"
+  },
+  "logs": {
+    "title": "Logs for {{name}}",
+    "description": "Recent log lines from a pod of this app.",
+    "tail": "Lines",
+    "pod": "Pod",
+    "anyPod": "Any pod",
+    "refresh": "Refresh",
+    "copy": "Copy",
+    "copied": "Copied",
+    "truncated": "Output was cut at the size limit.",
+    "output": "Log output",
+    "empty": "No log output yet."
+  },
+  "remove": {
+    "title": "Remove {{name}}?",
+    "description": "Deletes the Deployment, Service and Ingress that Levelrail created for this app. Objects it did not create are left alone.",
+    "confirm": "Remove app",
+    "pending": "Removing",
+    "done": "Removed {{name}}"
+  },
+  "pullSecrets": {
+    "title": "Pull secrets",
+    "hint": "Registry credentials for private images. Write only, never shown again.",
+    "empty": "No pull secrets yet.",
+    "addTitle": "Add a pull secret",
+    "name": "Name",
+    "namePlaceholder": "ghcr-main",
+    "registry": "Registry host",
+    "registryPlaceholder": "ghcr.io",
+    "username": "Username",
+    "password": "Password or token",
+    "add": "Add",
+    "adding": "Adding",
+    "added": "Added {{name}}",
+    "delete": "Delete",
+    "deleteNamed": "Delete {{name}}",
+    "deleteTitle": "Delete {{name}}?",
+    "deleteDescription": "Running apps keep their copy. New deploys that use this secret will fail. Type the name to confirm.",
+    "deleteConfirm": "Delete secret",
+    "deletePending": "Deleting",
+    "deleted": "Deleted {{name}}"
+  }
+}

@@ -1,7 +1,7 @@
 ---
 title: "Log archive"
 tag: "Beta"
-description: Ship container logs to storage as compressed NDJSON on a schedule.
+description: "Ship container logs to a storage destination as gzip compressed NDJSON on a schedule, per app or for every app, so logs outlive the node-local store."
 "og:url": "https://docs.levelrail.com/log-archive"
 ---
 

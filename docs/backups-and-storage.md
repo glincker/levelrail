@@ -531,7 +531,7 @@ How to confirm: Check if a schedule is configured: `levelrail-cli backups schedu
 
 Fix: Set a backup schedule if one does not exist: `levelrail-cli backups schedule set <database> --target <target-id> --cron "0 3 * * *" --retain 7`. If the target fails the test, fix the credentials or connectivity to the backup storage and try again. Wait a few minutes for the next reconcile pass to trigger the next backup.
 
-Still stuck: See [Backup targets](/backups-and-storage#backup-targets) for target setup, or check control plane logs for backup errors with `levelrail logs --since 1h | grep backup`.
+Still stuck: See [Backup targets](/backups-and-storage#why-a-backup-target-is-its-own-resource) for target setup, or check control plane logs for backup errors with `levelrail logs --since 1h | grep backup`.
 
 ### Backup target test fails with "connection refused" or "access denied"
 
@@ -541,7 +541,7 @@ How to confirm: From the node running the control plane, test the connection man
 
 Fix: Verify the credentials match your storage provider (check in your provider's console). Verify the bucket name is correct and exists. If using a custom endpoint, ensure the URL is reachable from the control plane network. Update the target if needed: `levelrail-cli backup-targets update <target-id> --access-key-id <id> --secret-access-key <secret>`, then test again.
 
-Still stuck: See [Backup targets](/backups-and-storage#backup-targets) for each provider's setup steps.
+Still stuck: See [Backup targets](/backups-and-storage#quick-start) for each provider's setup steps.
 
 ### Backup is old, "Health: 1 missing backup" warning
 

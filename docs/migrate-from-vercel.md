@@ -1,6 +1,7 @@
 ---
 title: "Migrate a project from Vercel"
 description: "Move one Vercel project with levelrail-cli import vercel in seven printed steps."
+"og:url": "https://docs.levelrail.com/migrate-from-vercel"
 ---
 
 `levelrail-cli import vercel [dir]` moves one project in seven printed steps.

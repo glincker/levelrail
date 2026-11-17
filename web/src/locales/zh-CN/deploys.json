@@ -548,7 +548,12 @@
     "drawerSearching": "正在查找此部署",
     "drawerNotFoundTitle": "未找到部署",
     "drawerNotFound": "未找到部署。它可能已被保留策略清理。",
-    "emptyAction": "部署应用"
+    "emptyAction": "部署应用",
+    "runnerProblem": "Runner 异常",
+    "emptyBuildsHint": "构建在这台机器上运行。",
+    "emptyBuildsLink": "添加构建节点即可迁出。",
+    "timelineEmpty": "时间线上还没有部署。部署一个应用后，每次发布都会显示在这里。",
+    "buildsEmpty": "还没有构建。部署一个应用后，它的构建会列在这里。"
   },
   "summary": {
     "label": "部署摘要",
@@ -785,7 +790,9 @@
       "description": "构建在控制平面上运行。注册第二个已启用构建的节点,可把构建移出承载应用的机器。",
       "action": "打开节点",
       "docs": "构建节点路由"
-    }
+    },
+    "addNodeLink": "添加构建节点",
+    "dismissHint": "关闭构建节点建议"
   },
   "runnerPref": {
     "title": "构建运行器",

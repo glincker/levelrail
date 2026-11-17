@@ -53,6 +53,15 @@ var demoReadDenylist = []string{
 	"/api/v1/system/cli-console/commands",
 	"/api/v1/system/cli-console/session",
 	"/api/v1/firewall/host",
+	// Connected cluster records and live reads.
+	"/api/v1/clusters",
+	"/api/v1/clusters/{name}",
+	"/api/v1/clusters/{name}/nodes",
+	"/api/v1/clusters/{name}/namespaces",
+	"/api/v1/clusters/{name}/deployments",
+	"/api/v1/clusters/{name}/deployments/{app}",
+	"/api/v1/clusters/{name}/deployments/{app}/logs",
+	"/api/v1/clusters/{name}/pull-secrets",
 	// Bulk exports and downloads.
 	"/api/v1/apps/{name}/env/export",
 	"/api/v1/export",
@@ -113,6 +122,7 @@ var demoReadDenylist = []string{
 	"/api/v1/settings/ingress/check",
 	"/api/v1/ingress/connectivity",
 	"/api/v1/dns/check",
+	"/api/v1/dns/authority",
 	"/api/v1/dns/zones/{zone}/discover",
 	"/api/v1/apps/{name}/domains/{domain}/check",
 	"/api/v1/apps/{name}/domains/{domain}/search-visibility",

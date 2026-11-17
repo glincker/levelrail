@@ -43,5 +43,10 @@
     "saveFailed": "Não foi possível salvar o arquivo.",
     "deleted": "Arquivo excluído.",
     "deleteFailed": "Não foi possível excluir o arquivo."
+  },
+  "volumes": {
+    "emptyTitle": "Nenhum volume",
+    "empty": "Os dados gravados dentro do contêiner são perdidos ao reimplantar.",
+    "add": "Adicionar volume"
   }
 }

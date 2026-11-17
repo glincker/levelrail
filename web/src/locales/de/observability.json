@@ -158,7 +158,10 @@
     "lastOutput": "{{count}} Zeilen: die letzte Ausgabe des gestoppten Containers",
     "waiting": "Warten auf Log-Ausgabe...",
     "noContainer": "Es läuft kein Container, der Logs erzeugen könnte: {{reason}}",
-    "viewDeploys": "Letztes Deploy-Log anzeigen"
+    "viewDeploys": "Letztes Deploy-Log anzeigen",
+    "neverDeployedTitle": "Noch keine Logs",
+    "neverDeployedBody": "Logs erscheinen nach dem ersten Deploy.",
+    "neverDeployedAction": "Zu den Deploys"
   },
   "connection": {
     "connecting": "Verbindet...",

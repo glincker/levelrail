@@ -1,12 +1,17 @@
 # Levelrail
 
-> Open source, self-hosted deployment platform and lightweight Coolify alternative. Push to git and get a running app with HTTPS, logs, traces, metrics, previews and one-click rollback on your own Linux servers. Single Go binary, Docker runtime, built-in observability, scale to zero. Apache 2.0.
+> Open source, self-hosted, lightweight deployment platform (the control plane idles at about 200 MB of RAM and 1.5 percent of one CPU on a 2 vCPU box, one Go binary) and a Coolify alternative. Push to git and get a running app with HTTPS, logs, traces, metrics, previews and one-click rollback on your own Linux servers. Single Go binary, Docker runtime, built-in observability, scale to zero. Apache 2.0.
 
 ## Start here
 
 - [Docs](https://docs.levelrail.com): hosted documentation
 - [Getting started](https://docs.levelrail.com/getting-started): install and first deploy
+- [All features](https://docs.levelrail.com/features): every feature by area with a stable, beta or experimental label
+- [FAQ](https://docs.levelrail.com/faq): short answers to common questions
 - [Feature status](https://docs.levelrail.com/feature-status): what is stable and what is beta
+- [Alerts](https://docs.levelrail.com/alerts): notification channels, rules and the alert inbox
+- [Kubernetes clusters](https://docs.levelrail.com/kubernetes-clusters): connect existing clusters as deploy targets (experimental)
+- [Template catalog](https://docs.levelrail.com/template-catalog): 570+ templates in the catalog (574 catalog entries: 565 active, 9 deprecated), 346 with a recorded real-engine pass, 228 previews
 - [Comparison](https://docs.levelrail.com/comparison): Levelrail against Coolify, Dokploy, CapRover, Dokku and Kamal
 
 ## Identity and access
@@ -15,7 +20,6 @@
 - SAML 2.0 single sign-on and SCIM 2.0 provisioning exist but are beta and off by default behind the `saml-scim` feature toggle. [SAML and SCIM](https://docs.levelrail.com/sso-saml)
 - Authorization: IAM Allow and Deny policies, roles, teams, scoped API tokens. Audit log with a verifiable hash chain and CSV export. [Identity and access](https://docs.levelrail.com/identity-and-access)
 - [Security overview](https://docs.levelrail.com/security): secrets, sessions, node trust, deploy safety, audit log, limitations
-- Template catalog: 300+ one-click services. [Catalog](https://docs.levelrail.com/template-catalog)
 
 ## For agents
 

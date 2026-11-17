@@ -39,7 +39,7 @@ func TestGoreleaserConfig(t *testing.T) {
 	for _, want := range []string{
 		"CGO_ENABLED=0", "-trimpath", "-X main.version={{ .Version }}",
 		"{{ .ProjectName }}_{{ .Version }}_SHA256SUMS", "{{ .Env.GPG_FINGERPRINT }}",
-		"draft: true", "disable: true", "project_name: terraform-provider-",
+		"draft: false", "disable: true", "project_name: terraform-provider-",
 		"terraform-registry-manifest.json",
 	} {
 		if !strings.Contains(text, want) {

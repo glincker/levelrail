@@ -9,6 +9,7 @@
   "empty": {
     "title": "Rien de connecté pour le moment",
     "description": "Connectez un hébergeur git, un registre ou un canal de notification depuis le catalogue ci-dessous.",
+    "intro": "Connectez ci-dessous un hôte git, un registre ou un canal de notification pour commencer.",
     "noMatch": "Aucune connexion ne correspond à ces filtres."
   },
   "filters": {
@@ -111,5 +112,49 @@
   "wizard": {
     "title": "Intégration",
     "description": "Connectez un hébergeur git, un registre, un notificateur ou un compte cloud."
+  },
+  "infra": {
+    "title": "Cloud et infrastructure",
+    "cloud": "Fournisseurs cloud",
+    "cloudAll": "Fournisseurs cloud",
+    "manage": "Gérer",
+    "manageNamed": "Gérer {{name}}",
+    "status": {
+      "connected": "Connecté",
+      "not_connected": "Non connecté",
+      "test_failed": "Test échoué"
+    },
+    "providers": {
+      "oracle": "Oracle Cloud",
+      "aws": "AWS",
+      "azure": "Azure",
+      "gcp": "Google Cloud",
+      "hetzner": "Hetzner",
+      "digitalocean": "DigitalOcean"
+    },
+    "clusters": {
+      "title": "Clusters Kubernetes",
+      "off": "Non activé",
+      "connected_one": "{{count}} cluster connecté",
+      "connected_other": "{{count}} clusters connectés"
+    },
+    "links": {
+      "git": {
+        "title": "Git",
+        "hint": "GitHub, GitLab et autres hébergeurs"
+      },
+      "dns": {
+        "title": "DNS",
+        "hint": "Fournisseurs qui gèrent vos zones"
+      },
+      "tunnels": {
+        "title": "Tunnels",
+        "hint": "Joindre des serveurs sans port ouvert"
+      },
+      "notifications": {
+        "title": "Notifications",
+        "hint": "Canaux pour alertes et événements"
+      }
+    }
   }
 }

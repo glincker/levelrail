@@ -2,6 +2,7 @@
 title: "Git sync for stacks"
 tag: "Experimental"
 description: Keep a stack in step with a git branch. Set the sync, rotate a webhook secret, add the GitHub or GitLab webhook, and choose what a push may change.
+"og:url": "https://docs.levelrail.com/iac/git-sync"
 ---
 
 A stack can read its documents from a git branch. Levelrail fetches the branch, plans it against what runs now, and applies only when you turn that on. A push webhook makes this happen within seconds of a commit instead of on the next poll.

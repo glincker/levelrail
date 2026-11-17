@@ -6,6 +6,7 @@ import {
   BinaryTreeGlassIcon,
   BookOpenGlassIcon,
   BotGlassIcon,
+  BoxesGlassIcon,
   BracesGlassIcon,
   BugGlassIcon,
   ContainerGlassIcon,
@@ -109,6 +110,8 @@ export type GlobalTo =
   | '/security'
   | '/security/image-scanning'
   | '/nodes/bootstrap-scripts'
+  | '/clusters'
+  | '/integrations'
   | '/settings/tokens'
   | '/settings/users'
   | '/settings/audit-log'
@@ -189,6 +192,13 @@ export const REGISTRY_GROUP_PATHS = [
   '/images',
   '/settings/registry',
   '/settings/registry-credentials',
+] as const
+
+// Cloud providers move under Integrations; /clusters stays a Servers tab.
+export const INTEGRATIONS_GROUP_PATHS = [
+  '/settings/integrations',
+  '/settings/git-connections',
+  '/settings/node-providers',
 ] as const
 
 export const GLOBAL_NAV_GROUPS: GlobalNavGroup[] = [
@@ -341,7 +351,14 @@ export const GLOBAL_NAV_GROUPS: GlobalNavGroup[] = [
         label: 'Servers',
         to: '/nodes',
         icon: glass(ServerGlassIcon),
-        alsoActive: ['/settings/node-providers'],
+        alsoActive: ['/clusters'],
+      },
+      {
+        id: 'integrations',
+        label: 'Integrations',
+        to: '/integrations',
+        icon: glass(PlugGlassIcon),
+        alsoActive: INTEGRATIONS_GROUP_PATHS,
       },
       {
         id: 'registry',
@@ -444,6 +461,7 @@ export const FOLDED_GLOBAL_PAGES: GlobalNavItem[] = [
     '/security/image-scanning',
     glass(ShieldAlertGlassIcon),
   ),
+  folded('clusters', 'Clusters', '/clusters', glass(BoxesGlassIcon)),
   folded(
     'bootstrap',
     'Bootstrap scripts',

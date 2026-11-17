@@ -1,4 +1,5 @@
-import { useState } from 'react'
+import { useEffect, useState } from 'react'
+import { useTranslation } from 'react-i18next'
 import { zodResolver } from '@hookform/resolvers/zod'
 import { useForm } from 'react-hook-form'
 import { z } from 'zod'
@@ -31,10 +32,12 @@ import {
   FieldGroup,
   FieldLabel,
 } from '@/components/ui/field'
+import { EmptyState } from '@/components/ui/empty-state'
 import { Input } from '@/components/ui/input'
 import { useSetAppVolumes } from '../queries/appVolumes'
 import { useRestartRequiredToast } from '../hooks/useRestartRequiredToast'
 import type { AppVolume } from '../types/appDetail'
+import { showVolumesEditor } from '../lib/appTabState'
 
 // Mirrors internal/api/apps_volumes_attach.go's own volumeNameRe: lowercase
 // alphanumeric and hyphens, starting with a letter, the same convention
@@ -148,15 +151,22 @@ export function AppVolumesEditor({
   appName: string
   volumes: AppVolume[] | undefined
 }) {
+  const { t } = useTranslation('appFiles')
+  const [adding, setAdding] = useState(false)
   const setVolumes = useSetAppVolumes(appName)
   const notifyRestartRequired = useRestartRequiredToast()
-  const { register, handleSubmit, formState, reset, setError } =
+  const { register, handleSubmit, formState, reset, setError, setFocus } =
     useForm<NewVolumeFormValues>({
       resolver: zodResolver(newVolumeSchema),
       defaultValues: { name: '', path: '' },
     })
 
   const current = volumes ?? []
+  const editorShown = showVolumesEditor(current.length, adding)
+
+  useEffect(() => {
+    if (adding) setFocus('name')
+  }, [adding, setFocus])
 
   const onSubmit = handleSubmit((values) => {
     const name = values.name.trim()
@@ -185,6 +195,32 @@ export function AppVolumesEditor({
           notifyRestartRequired(appName, `Volume "${name}" detached.`)
         },
       },
+    )
+  }
+
+  if (!editorShown) {
+    return (
+      <Card>
+        <CardContent>
+          <EmptyState
+            compact
+            icon={<ServerGlassIcon className="size-5" />}
+            title={t('volumes.emptyTitle')}
+            description={t('volumes.empty')}
+            action={
+              <Button
+                type="button"
+                size="sm"
+                onClick={() => {
+                  setAdding(true)
+                }}
+              >
+                {t('volumes.add')}
+              </Button>
+            }
+          />
+        </CardContent>
+      </Card>
     )
   }
 

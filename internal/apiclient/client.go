@@ -19,6 +19,7 @@ import (
 	"io"
 	"net/http"
 	"net/url"
+	"os"
 	"strconv"
 	"strings"
 	"time"
@@ -48,6 +49,7 @@ type Client struct {
 	// rejectedFix is appended to the message of a 401 answered to a request that did carry a token.
 	rejectedFix string
 	retry       RetryPolicy
+	inProcess   bool
 	sleep       func(context.Context, time.Duration) error
 }
 
@@ -68,7 +70,7 @@ func WithUserAgent(userAgent string) Option {
 // WithTransport sends every request through rt instead of the network, for an
 // in-process caller. It skips server pinning and the process-wide scope headers.
 func WithTransport(rt http.RoundTripper) Option {
-	return func(c *Client) { c.hc.Transport = rt }
+	return func(c *Client) { c.hc.Transport = rt; c.inProcess = true }
 }
 
 // WithNoCredentialsFix replaces the message of a 401 answered to a request
@@ -147,6 +149,11 @@ func (c *Client) doOnce(ctx context.Context, method, path string, payload []byte
 		reqBody = bytes.NewReader(payload)
 	}
 
+	if !c.inProcess {
+		if err := CheckCleartextHTTP(c.baseURL, false, os.LookupEnv); err != nil {
+			return nil, err
+		}
+	}
 	req, err := http.NewRequestWithContext(ctx, method, c.baseURL+path, reqBody) //nolint:gosec // c.baseURL is the operator-supplied API target this client exists to call, not attacker-controlled input
 	if err != nil {
 		return nil, fmt.Errorf("build request: %w", err)

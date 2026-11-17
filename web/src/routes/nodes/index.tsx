@@ -9,6 +9,8 @@ import {
 export const Route = createFileRoute('/nodes/')({
   loader: ({ context: { queryClient } }) =>
     queryClient.ensureInfiniteQueryData(nodePagesQueryOptions()),
+  validateSearch: (search: Record<string, unknown>): { builds?: 1 } =>
+    search.builds === 1 || search.builds === '1' ? { builds: 1 } : {},
   component: NodeListPage,
   pendingComponent: NodeListPending,
 })

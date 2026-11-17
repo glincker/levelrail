@@ -2,20 +2,20 @@
 title: "Levelrail documentation"
 icon: "/assets/icons/house.svg"
 sidebarTitle: "What is Levelrail"
-description: Self-hosted deployment platform. Push to git, get a running app with TLS, logs, metrics and rollback. One Go binary, no Kubernetes.
+description: Lightweight, self-hosted deployment platform: the control plane idles at about 200 MB and is one Go binary, with git deploys, one-click templates, edge and TLS, managed databases and built-in observability.
 "og:image": "https://docs.levelrail.com/public/og/index.png"
 "twitter:image": "https://docs.levelrail.com/public/og/index.png"
 "og:url": "https://docs.levelrail.com/index"
 ---
 
-Levelrail turns one or more Linux servers into a private cloud. Push to a git repo and get a running app with TLS, logs, metrics and one-click rollback.
+Levelrail is a lightweight, self-hosted deployment platform: one Go binary whose control plane idles at about 200 MB of RAM and 1.5 percent of one CPU on a 2 vCPU box (see [Performance](/performance) and [Benchmarks](/benchmarks)). Your apps use their own resources on top. It turns one or more Linux servers into a private cloud. Push to a git repo and get a running app with TLS, logs, metrics and one-click rollback.
 
 <CardGroup cols={2}>
   <Card title="Getting started" icon="/assets/icons/rocket-launch.svg" href="/getting-started">
     Install, sign in and deploy your first app in about ten minutes.
   </Card>
   <Card title="Deploying apps" icon="/assets/icons/cloud-arrow-up.svg" href="/deploying-apps">
-    Dockerfile, Compose and Railpack builds with zero-downtime cutover.
+    Dockerfile, Compose and Railpack builds with readiness-gated cutover.
   </Card>
   <Card title="CLI reference" icon="/assets/icons/terminal-window.svg" href="/cli-reference">
     Every command, flag and exit code.
@@ -24,6 +24,21 @@ Levelrail turns one or more Linux servers into a private cloud. Push to a git re
     The reconciler, the node agent and how state flows.
   </Card>
 </CardGroup>
+
+## What is in the product
+
+- **Ship with git push.** Dockerfile, Compose and Railpack builds, previews, rollback. See [Deploying apps](/deploying-apps).
+- **Templates.** 570+ templates in the catalog (574 catalog entries: 565 active, 9 deprecated). See [Template catalog](/template-catalog).
+- **Automatic HTTPS and edge.** Ingress, firewall, rate limits. See [Domains and ingress](/domains-and-ingress) and [Firewall](/firewall).
+- **Spin up nodes on any cloud.** Six providers. See [Node provisioning](/node-provisioning) and [Cloud integrations](/cloud-integrations).
+- **Managed databases and backups.** 13 engines, restore drills. See [Managed databases](/managed-databases).
+- **Built-in metrics, logs and alerts.** See [Monitors](/monitors) and [Status page](/status-page).
+- **SSO, RBAC and audit log.** See [Identity and access](/identity-and-access).
+- **CLI, API, Terraform and MCP.** See [CLI reference](/cli-reference), [API reference](/api-reference) and [Terraform provider](/terraform-provider).
+
+All of it with counts and labels is on [All features](/features).
+
+Every feature is labelled stable, beta or experimental in [Feature status](/feature-status).
 
 ## Identity and access
 

@@ -36,6 +36,9 @@ type CIStackTrust struct {
 	Provider         string
 	Issuer           string
 	ProtectedRefOnly bool
+	// RepositoryID and RepositoryOwnerID are GitHub's immutable numeric IDs; empty means match by name only.
+	RepositoryID      string
+	RepositoryOwnerID string
 }
 
 // NewCIStackTrustID mints a random trust id.
@@ -47,13 +50,13 @@ func NewCIStackTrustID() (string, error) {
 	return "cst_" + base64.RawURLEncoding.EncodeToString(buf), nil
 }
 
-const ciStackTrustColumns = `id, stack_id, repository, ref_pattern, environment, subject_pattern, verbs, created_by, created_at, provider, issuer, protected_ref_only`
+const ciStackTrustColumns = `id, stack_id, repository, ref_pattern, environment, subject_pattern, verbs, created_by, created_at, provider, issuer, protected_ref_only, repository_id, repository_owner_id`
 
 func scanCIStackTrust(scan func(dest ...any) error) (CIStackTrust, error) {
 	var t CIStackTrust
 	var verbs, created string
 	var protected int
-	if err := scan(&t.ID, &t.StackID, &t.Repository, &t.RefPattern, &t.Environment, &t.SubjectPattern, &verbs, &t.CreatedBy, &created, &t.Provider, &t.Issuer, &protected); err != nil {
+	if err := scan(&t.ID, &t.StackID, &t.Repository, &t.RefPattern, &t.Environment, &t.SubjectPattern, &verbs, &t.CreatedBy, &created, &t.Provider, &t.Issuer, &protected, &t.RepositoryID, &t.RepositoryOwnerID); err != nil {
 		return CIStackTrust{}, err
 	}
 	t.ProtectedRefOnly = protected != 0
@@ -72,8 +75,8 @@ func (db *DB) SaveCIStackTrust(ctx context.Context, t CIStackTrust) error {
 		return ErrInvalidCIStackTrust
 	}
 	_, err := db.ExecContext(ctx, `
-		INSERT INTO ci_stack_trusts (`+ciStackTrustColumns+`) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
-	`, t.ID, t.StackID, t.Repository, t.RefPattern, t.Environment, t.SubjectPattern, strings.Join(t.Verbs, ","), t.CreatedBy, t.CreatedAt.UTC().Format(time.RFC3339Nano), providerOrGitHub(t.Provider), t.Issuer, t.ProtectedRefOnly)
+		INSERT INTO ci_stack_trusts (`+ciStackTrustColumns+`) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
+	`, t.ID, t.StackID, t.Repository, t.RefPattern, t.Environment, t.SubjectPattern, strings.Join(t.Verbs, ","), t.CreatedBy, t.CreatedAt.UTC().Format(time.RFC3339Nano), providerOrGitHub(t.Provider), t.Issuer, t.ProtectedRefOnly, t.RepositoryID, t.RepositoryOwnerID)
 	if err != nil {
 		if strings.Contains(err.Error(), "UNIQUE constraint failed") {
 			return ErrCIStackTrustExists

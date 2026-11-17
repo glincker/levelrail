@@ -412,6 +412,7 @@
         "iam": "IAM 策略",
         "imageScanning": "镜像扫描",
         "bootstrapScripts": "引导脚本",
+        "clusters": "集群",
         "keys": "密钥与令牌",
         "team": "团队",
         "auditLog": "审计日志"
@@ -541,7 +542,8 @@
       "usage": "用量与成本",
       "resources": "资源",
       "security": "安全",
-      "console": "控制台"
+      "console": "控制台",
+      "integrations": "集成"
     },
     "quickNav": {
       "label": "快速导航（按住 L）"

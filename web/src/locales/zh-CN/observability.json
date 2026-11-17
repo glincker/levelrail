@@ -158,7 +158,10 @@
     "lastOutput": "{{count}} 行:已停止容器的最后输出",
     "waiting": "正在等待日志输出...",
     "noContainer": "没有运行中的容器可产生日志:{{reason}}",
-    "viewDeploys": "显示最近一次部署日志"
+    "viewDeploys": "显示最近一次部署日志",
+    "neverDeployedTitle": "暂无日志",
+    "neverDeployedBody": "首次部署后将显示日志。",
+    "neverDeployedAction": "前往部署"
   },
   "connection": {
     "connecting": "正在连接...",

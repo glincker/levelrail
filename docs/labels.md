@@ -1,6 +1,7 @@
 ---
 title: Labels and namespaces
 description: Group and filter apps, databases, stacks and nodes with free-form labels.
+"og:url": "https://docs.levelrail.com/labels"
 ---
 
 Labels are key and value pairs you attach to apps, databases, stacks and nodes. They do not change how anything runs. Use them to group and find things.

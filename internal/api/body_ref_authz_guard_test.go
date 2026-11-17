@@ -37,6 +37,7 @@ var bodyRefAuthzAllowlist = map[string]string{ //nolint:gosec // reasons, not cr
 	"handleCreateSavedLogQuery": "validateSavedQueryRequest checks the app against appVisibilityFilter before anything is stored",
 	"handleUpdateSavedLogQuery": "validateSavedQueryRequest checks the app against appVisibilityFilter before anything is stored",
 	"handleListBuilds":          "rows come from buildCenterRows, already limited to visibleAppNames; the app query only narrows them",
+	"handleDeployK8sApp":        "route is AbilityRoot only; app is a workload name on an external cluster, not a Levelrail app, and pull_secret is resolved inside the named cluster",
 	"writeAlertHistory":         "every row is filtered through scopedAppVisibility; the app query only narrows the list",
 }
 

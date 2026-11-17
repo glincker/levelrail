@@ -68,6 +68,13 @@ export interface SetNodeProviderCredentialInput {
   region?: string
   role_arn?: string
   use_ambient_credentials?: boolean
+  // oracle api_key only; the private key is sealed server side, never returned.
+  tenancy_ocid?: string
+  user_ocid?: string
+  fingerprint?: string
+  private_key_pem?: string
+  compartment_ocid?: string
+  subnet_ocid?: string
 }
 
 async function setNodeProviderCredential(
@@ -291,9 +298,77 @@ export function useNodeProvision(id: string | null) {
     enabled: id !== null,
     refetchInterval: (query) => {
       const status = query.state.data?.status
-      return status === 'ready' || status === 'failed'
+      return status === 'ready' ||
+        status === 'failed' ||
+        status === 'destroying' ||
+        status === 'destroyed'
         ? false
         : PROVISION_POLL_INTERVAL_MS
+    },
+  })
+}
+
+async function fetchNodeProvisions(): Promise<NodeProvisionResource[]> {
+  const res = await fetch('/api/v1/node-provisions')
+  if (!res.ok) {
+    throw new ApiError(
+      res.status,
+      await readErrorMessage(
+        res,
+        `fetch node provisions failed: ${res.status}`,
+      ),
+    )
+  }
+  return ((await res.json()) as NodeProvisionResource[] | null) ?? []
+}
+
+// Poll only while a destroy is in flight so the badge settles to destroyed.
+export function useNodeProvisions() {
+  return useQuery({
+    queryKey: nodeProvisionKeys.list(),
+    queryFn: fetchNodeProvisions,
+    refetchInterval: (query) =>
+      query.state.data?.some((p) => p.status === 'destroying')
+        ? PROVISION_POLL_INTERVAL_MS
+        : false,
+  })
+}
+
+export interface DestroyNodeProvisionInput {
+  id: string
+  force?: boolean
+}
+
+// DELETE is idempotent: 200 also for an already destroyed server. 409 means
+// the node still runs workloads and needs an explicit force.
+async function destroyNodeProvision(
+  input: DestroyNodeProvisionInput,
+): Promise<NodeProvisionResource> {
+  const query = input.force ? '?force=true' : ''
+  const res = await fetch(
+    `/api/v1/node-provisions/${encodeURIComponent(input.id)}${query}`,
+    { method: 'DELETE' },
+  )
+  if (!res.ok) {
+    throw new ApiError(
+      res.status,
+      await readErrorMessage(
+        res,
+        `destroy node provision failed: ${res.status}`,
+      ),
+    )
+  }
+  return (await res.json()) as NodeProvisionResource
+}
+
+export function useDestroyNodeProvision() {
+  const queryClient = useQueryClient()
+  return useMutation({
+    meta: { errorToast: false },
+    mutationFn: destroyNodeProvision,
+    onSuccess: () => {
+      void queryClient.invalidateQueries({ queryKey: nodeProvisionKeys.all })
+      void queryClient.invalidateQueries({ queryKey: ['nodes'] })
     },
   })
 }

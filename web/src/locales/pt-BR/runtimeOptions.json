@@ -21,7 +21,10 @@
   },
   "stopTimeout": { "label": "Timeout de parada (s)", "hint": "Até {{max}}." },
   "pids": { "label": "Limite de processos", "hint": "Até {{max}}." },
-  "init": { "label": "Processo init", "hint": "Executa um init mínimo como PID 1." },
+  "init": {
+    "label": "Processo init",
+    "hint": "Executa um init mínimo como PID 1."
+  },
   "badUlimit": "Use nome=soft ou nome=soft:hard em cada linha.",
   "badSysctl": "Use chave=valor em cada linha.",
   "save": "Salvar",

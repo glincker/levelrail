@@ -1,7 +1,7 @@
 ---
 title: "Deploy a Next.js app"
 sidebarTitle: "Next.js"
-description: "How to run a Next.js app on Levelrail today: the standalone output, build time variables, the cache volume, health checks, and what to know before you run more than one replica."
+description: "Run a Next.js app on Levelrail with the standalone output, build time variables, the cache volume and health checks, and know the limits of multiple replicas."
 "og:url": "https://docs.levelrail.com/nextjs"
 ---
 

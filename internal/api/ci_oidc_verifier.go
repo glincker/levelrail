@@ -42,9 +42,11 @@ func (v *githubOIDCVerifier) Verify(ctx context.Context, rawToken, audience stri
 		return CIClaims{}, fmt.Errorf("api: verify github oidc token: %w", err)
 	}
 	var c struct {
-		Repository  string `json:"repository"`
-		Ref         string `json:"ref"`
-		Environment string `json:"environment"`
+		Repository   string `json:"repository"`
+		RepositoryID string `json:"repository_id"`
+		OwnerID      string `json:"repository_owner_id"`
+		Ref          string `json:"ref"`
+		Environment  string `json:"environment"`
 	}
 	if err := tok.Claims(&c); err != nil {
 		return CIClaims{}, fmt.Errorf("api: read github oidc claims: %w", err)
@@ -52,5 +54,5 @@ func (v *githubOIDCVerifier) Verify(ctx context.Context, rawToken, audience stri
 	if c.Repository == "" || c.Ref == "" {
 		return CIClaims{}, fmt.Errorf("api: github oidc token has no repository or ref claim")
 	}
-	return CIClaims{Repository: c.Repository, Ref: c.Ref, Environment: c.Environment, Subject: tok.Subject}, nil
+	return CIClaims{Repository: c.Repository, RepositoryID: c.RepositoryID, RepositoryOwnerID: c.OwnerID, Ref: c.Ref, Environment: c.Environment, Subject: tok.Subject}, nil
 }

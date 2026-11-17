@@ -351,7 +351,7 @@ curl -fsSL https://levelrail.com/install.sh | sudo sh -s -- install-cosign
 <Accordion title="Verify a download by hand">
 
 ```bash
-V=v0.1.0   # the release tag
+V=<version>   # the release tag, for example the newest one on the releases page
 BASE=https://github.com/glincker/levelrail/releases/download/$V
 curl -fsSLO $BASE/checksums.txt -O $BASE/checksums.txt.sigstore.json -O $BASE/levelrail-linux-amd64
 
@@ -524,12 +524,43 @@ See the [CLI reference](/cli-reference) for every command.
 | Method | Command |
 | --- | --- |
 | Homebrew (macOS and Linux) | `brew install glincker/tap/levelrail-cli` |
-| Scoop and winget (Windows) | Planned. Use the PowerShell installer above for now. |
+| Scoop and winget (Windows) | See [Install on Windows and Linux](#install-on-windows-and-linux). Use the PowerShell installer above until then. |
 | npm, yarn or pnpm | `npx levelrail-cli <command>` or `npm install --global levelrail-cli` ([details](#use-the-cli-from-npm)) |
 | Go | `go install github.com/GLINCKER/levelrail/cmd/levelrail-cli@latest` |
 | Direct download | Pick `levelrail-cli-<os>-<arch>` (`linux`, `darwin`, or `windows`; `amd64` or `arm64`) from the [releases page](https://github.com/glincker/levelrail/releases). Windows files end in `.exe`. |
 
 Every release asset is listed in `checksums.txt`, which is signed with cosign and has a build provenance attestation. Windows binaries are published from the release after `v0.2.0-beta.15`; before that, run the install script from WSL.
+
+### Install on Windows and Linux
+
+These package manager installs are available from the first release that runs the package workflow, and not before. Until then, use the install scripts above.
+
+Windows with Scoop:
+
+```powershell
+scoop bucket add glincker https://github.com/glincker/scoop-bucket
+scoop install levelrail-cli
+```
+
+Windows with winget:
+
+```powershell
+winget install Glincker.LevelrailCli
+```
+
+Debian and Ubuntu (replace `amd64` with `arm64` where needed):
+
+```bash
+sudo dpkg -i levelrail-cli-linux-amd64.deb
+```
+
+Fedora and RHEL:
+
+```bash
+sudo rpm -i levelrail-cli-linux-amd64.rpm
+```
+
+The `.deb` and `.rpm` files are attached to the release page next to `package-checksums.txt`, which lists their SHA-256 sums.
 
 ### Use the CLI from npm
 
@@ -644,7 +675,7 @@ To pin a release instead of the latest:
 
 ```bash
 curl -fsSL https://levelrail.com/install.sh \
-  | sudo LEVELRAIL_VERSION=v0.1.0 sh
+  | sudo LEVELRAIL_VERSION=<version> sh
 ```
 
 Re-running the installer without arguments also works: it repairs the installation and rewrites the unit file, still keeping the ports in the drop-in.
@@ -754,7 +785,7 @@ Likely cause: Docker is not running, the socket has wrong permissions, or the so
 
 How to confirm: run `sudo docker ps` to confirm Docker itself works, or check Settings > General > Docker status in the dashboard. Also try `levelrail-cli status --json` to see the full error.
 
-Fix: start Docker with `sudo systemctl start docker`, fix socket permissions with `sudo chmod 666 /var/run/docker.sock`, or set `DOCKER_HOST` if the socket is at a non-standard path and re-run the control plane.
+Fix: start Docker with `sudo systemctl start docker`, check that the socket exists and is owned by root with group `docker` and mode 660 (`ls -l /var/run/docker.sock`), or set `DOCKER_HOST` if the socket is at a non-standard path and re-run the control plane. Do not make the socket world-writable (for example with `chmod 666`): any local user could then control Docker, which is the same as root on the host.
 
 ### The setup link does not work or the token expired
 

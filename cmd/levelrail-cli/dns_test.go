@@ -10,6 +10,9 @@ import (
 	"path/filepath"
 	"strings"
 	"testing"
+	"time"
+
+	"github.com/GLINCKER/levelrail/internal/apiclient"
 )
 
 type dnsCall struct {
@@ -66,6 +69,8 @@ func TestRun_DNSCommands(t *testing.T) {
 		{name: "records export", args: []string{"dns", "records", "export", "example.com", "--format", "json"}, wantExit: exitOK, wantMethod: "GET", wantPath: "/api/v1/dns/zones/example.com/records/export", wantQuery: "format=json"},
 		{name: "records template", args: []string{"dns", "records", "template", "example.com", "google-workspace", "--param", "policy=none", "--apply"}, wantExit: exitOK, wantMethod: "POST", wantPath: "/api/v1/dns/zones/example.com/templates/google-workspace", wantBody: map[string]any{"apply": true}},
 		{name: "check", args: []string{"dns", "check", "www.example.com", "--type", "aaaa"}, wantExit: exitOK, wantMethod: "GET", wantPath: "/api/v1/dns/check", wantQuery: "name=www.example.com&type=AAAA"},
+		{name: "who-answers", args: []string{"dns", "who-answers", "www.example.com"}, wantExit: exitOK, wantMethod: "GET", wantPath: "/api/v1/dns/authority", wantQuery: "domain=www.example.com"},
+		{name: "who-answers needs domain", args: []string{"dns", "who-answers"}, wantExit: exitUsage},
 		{name: "health checks create", args: []string{"dns", "health-checks", "create", "--fqdn", "app.example.com", "--path", "/healthz"}, wantExit: exitOK, wantMethod: "POST", wantPath: "/api/v1/dns/health-checks", wantBody: map[string]any{"type": "HTTPS", "fqdn": "app.example.com"}},
 		{name: "unknown", args: []string{"dns", "nope"}, wantExit: exitUsage},
 	}
@@ -111,5 +116,26 @@ func TestDNSImportFormat(t *testing.T) {
 	}
 	if !strings.Contains(dnsUsage("x"), "dns zones verify") {
 		t.Error("usage must list verify")
+	}
+}
+
+func TestPrintDNSAuthority(t *testing.T) {
+	ttl := 2 * time.Hour
+	var out bytes.Buffer
+	printDNSAuthority(&out, apiclient.DNSAuthority{
+		Domain:      "app.example.com",
+		NameServers: []apiclient.DNSAuthorityNameServer{{Name: "ns1.example.net", Provider: "this_host"}},
+		Answers:     []string{"104.16.0.1"}, Proxied: true, TTL: &ttl,
+		Risks: []string{"Cloudflare proxy shows its own error page if the origin is down"},
+	})
+	for _, want := range []string{"ns1.example.net  this server", "answers: 104.16.0.1", "proxied: yes", "TTL: 2h0m0s", "  - Cloudflare proxy"} {
+		if !strings.Contains(out.String(), want) {
+			t.Errorf("output missing %q:\n%s", want, out.String())
+		}
+	}
+	out.Reset()
+	printDNSAuthority(&out, apiclient.DNSAuthority{Domain: "a.example.com"})
+	if !strings.Contains(out.String(), "risks: none found") {
+		t.Errorf("no-risk output = %s", out.String())
 	}
 }

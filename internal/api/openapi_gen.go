@@ -14,7 +14,7 @@ type openAPIRoute struct {
 	Description string
 }
 
-// openAPIRoutes holds all 2163 routes known to scripts/gen-api-reference at
+// openAPIRoutes holds all 2183 routes known to scripts/gen-api-reference at
 // generation time. Run `go run ./scripts/gen-api-reference` after changing
 // any routes*.go registration and commit the result.
 var openAPIRoutes = []openAPIRoute{
@@ -1203,6 +1203,21 @@ var openAPIRoutes = []openAPIRoute{
 	{Method: "PUT", Path: "/api/v1/cleanup/{id}/mode", Ability: "AbilityRoot", Group: "Other", Handler: "handleSetCleanupMode", Description: ""},
 	{Method: "POST", Path: "/api/v1/cleanup/{id}/preview", Ability: "AbilityRoot", Group: "Other", Handler: "handlePreviewCleanup", Description: "A preview reads row counts only, but it is the same decision surface as a run, so it shares the Root gate."},
 	{Method: "POST", Path: "/api/v1/cleanup/{id}/run", Ability: "AbilityRoot", Group: "Other", Handler: "handleRunCleanup", Description: "A run deletes data permanently."},
+	{Method: "GET", Path: "/api/v1/clusters", Ability: "AbilityRoot", Group: "Other", Handler: "handleListK8sClusters", Description: ""},
+	{Method: "POST", Path: "/api/v1/clusters", Ability: "AbilityRoot", Group: "Other", Handler: "handleConnectK8sCluster", Description: ""},
+	{Method: "DELETE", Path: "/api/v1/clusters/{name}", Ability: "AbilityRoot", Group: "Other", Handler: "handleDisconnectK8sCluster", Description: ""},
+	{Method: "GET", Path: "/api/v1/clusters/{name}", Ability: "AbilityRoot", Group: "Other", Handler: "handleGetK8sCluster", Description: ""},
+	{Method: "GET", Path: "/api/v1/clusters/{name}/deployments", Ability: "AbilityRoot", Group: "Other", Handler: "handleListK8sDeployments", Description: ""},
+	{Method: "POST", Path: "/api/v1/clusters/{name}/deployments", Ability: "AbilityRoot", Group: "Other", Handler: "handleDeployK8sApp", Description: ""},
+	{Method: "DELETE", Path: "/api/v1/clusters/{name}/deployments/{app}", Ability: "AbilityRoot", Group: "Other", Handler: "handleRemoveK8sDeployment", Description: ""},
+	{Method: "GET", Path: "/api/v1/clusters/{name}/deployments/{app}", Ability: "AbilityRoot", Group: "Other", Handler: "handleGetK8sDeploymentStatus", Description: ""},
+	{Method: "GET", Path: "/api/v1/clusters/{name}/deployments/{app}/logs", Ability: "AbilityRoot", Group: "Other", Handler: "handleGetK8sDeploymentLogs", Description: ""},
+	{Method: "GET", Path: "/api/v1/clusters/{name}/namespaces", Ability: "AbilityRoot", Group: "Other", Handler: "handleListK8sNamespaces", Description: ""},
+	{Method: "GET", Path: "/api/v1/clusters/{name}/nodes", Ability: "AbilityRoot", Group: "Other", Handler: "handleListK8sNodes", Description: ""},
+	{Method: "GET", Path: "/api/v1/clusters/{name}/pull-secrets", Ability: "AbilityRoot", Group: "Other", Handler: "handleListK8sPullSecrets", Description: ""},
+	{Method: "POST", Path: "/api/v1/clusters/{name}/pull-secrets", Ability: "AbilityRoot", Group: "Other", Handler: "handleAddK8sPullSecret", Description: ""},
+	{Method: "DELETE", Path: "/api/v1/clusters/{name}/pull-secrets/{secret}", Ability: "AbilityRoot", Group: "Other", Handler: "handleDeleteK8sPullSecret", Description: ""},
+	{Method: "POST", Path: "/api/v1/clusters/{name}/test", Ability: "AbilityRoot", Group: "Other", Handler: "handleTestK8sCluster", Description: ""},
 	{Method: "GET", Path: "/api/v1/compliance/access-reviews", Ability: "AbilityRoot", Group: "Other", Handler: "handleListAccessReviews", Description: ""},
 	{Method: "POST", Path: "/api/v1/compliance/access-reviews", Ability: "AbilityRoot", Group: "Other", Handler: "handleCreateAccessReview", Description: ""},
 	{Method: "GET", Path: "/api/v1/compliance/access-reviews/{id}", Ability: "AbilityRoot", Group: "Other", Handler: "handleGetAccessReview", Description: ""},
@@ -1262,6 +1277,7 @@ var openAPIRoutes = []openAPIRoute{
 	{Method: "GET", Path: "/api/v1/deployments/{id}/timeline/compare", Ability: "AbilityRead", Group: "Other", Handler: "handleCompareDeployTimelines", Description: ""},
 	{Method: "GET", Path: "/api/v1/deployments/{id}/timeline/stream", Ability: "AbilityRead", Group: "Other", Handler: "handleDeployTimelineStream", Description: ""},
 	{Method: "GET", Path: "/api/v1/diagnose/{kind}/{name}", Ability: "AbilityRead", Group: "Other", Handler: "handleDiagnoseStuck", Description: "Deterministic \"why is this not running\" for any reconciled resource."},
+	{Method: "GET", Path: "/api/v1/dns/authority", Ability: "AbilityRead", Group: "Other", Handler: "handleDNSAuthority", Description: ""},
 	{Method: "GET", Path: "/api/v1/dns/check", Ability: "AbilityRead", Group: "Other", Handler: "handleDNSCheck", Description: ""},
 	{Method: "GET", Path: "/api/v1/dns/health-checks", Ability: "AbilityRead", Group: "Other", Handler: "handleListDNSHealthChecks", Description: ""},
 	{Method: "POST", Path: "/api/v1/dns/health-checks", Ability: "AbilityRoot", Group: "Other", Handler: "handleCreateDNSHealthCheck", Description: ""},
@@ -1655,10 +1671,14 @@ var openAPIRoutes = []openAPIRoute{
 	{Method: "GET", Path: "/api/v1/node-providers", Ability: "AbilityRead", Group: "Other", Handler: "handleListNodeProviders", Description: "Provider connections: seeing status and catalogs is a plain read (no credential value is ever returned); connecting, testing and disconnecting is write:sensitive so a team can be granted exactly that. Creating VMs and join tokens stays AbilityRoot below."},
 	{Method: "POST", Path: "/api/v1/node-providers", Ability: "AbilityWriteSensitive", Group: "Other", Handler: "handleSetNodeProviderCredential", Description: ""},
 	{Method: "DELETE", Path: "/api/v1/node-providers/{provider}", Ability: "AbilityWriteSensitive", Group: "Other", Handler: "handleDisconnectNodeProvider", Description: ""},
+	{Method: "GET", Path: "/api/v1/node-providers/{provider}/capabilities", Ability: "AbilityRoot", Group: "Other", Handler: "handleGetNodeProviderCapabilities", Description: ""},
 	{Method: "GET", Path: "/api/v1/node-providers/{provider}/regions", Ability: "AbilityRead", Group: "Other", Handler: "handleListNodeProviderRegions", Description: ""},
+	{Method: "GET", Path: "/api/v1/node-providers/{provider}/resources", Ability: "AbilityRoot", Group: "Other", Handler: "handleListNodeProviderResources", Description: ""},
 	{Method: "GET", Path: "/api/v1/node-providers/{provider}/sizes", Ability: "AbilityRead", Group: "Other", Handler: "handleListNodeProviderSizes", Description: ""},
+	{Method: "GET", Path: "/api/v1/node-providers/{provider}/spend", Ability: "AbilityRoot", Group: "Other", Handler: "handleGetNodeProviderSpend", Description: ""},
 	{Method: "POST", Path: "/api/v1/node-providers/{provider}/test", Ability: "AbilityWriteSensitive", Group: "Other", Handler: "handleTestNodeProvider", Description: ""},
 	{Method: "GET", Path: "/api/v1/node-provisions", Ability: "AbilityRoot", Group: "Other", Handler: "handleListNodeProvisions", Description: ""},
+	{Method: "DELETE", Path: "/api/v1/node-provisions/{id}", Ability: "AbilityRoot", Group: "Other", Handler: "handleDestroyNodeProvision", Description: ""},
 	{Method: "GET", Path: "/api/v1/node-provisions/{id}", Ability: "AbilityRoot", Group: "Other", Handler: "handleGetNodeProvision", Description: ""},
 	{Method: "GET", Path: "/api/v1/openapi.json", Ability: "AbilityRead", Group: "Other", Handler: "handleOpenAPISpec", Description: "Route metadata for the in-app API explorer (web/src/routes/settings/api-explorer.tsx): AbilityRead, same tier as system/status, since this is the API surface's own shape, not resource data."},
 	{Method: "POST", Path: "/api/v1/otlp/v1/logs", Ability: "Public", Group: "Other", Handler: "handleOTLPLogs", Description: ""},

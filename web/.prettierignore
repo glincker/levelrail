@@ -4,3 +4,4 @@ src/routeTree.gen.ts
 
 src/styles/glinr-tokens.css
 src/styles/glinr-theme.css
+src/styles/tokens/glinr.material.css

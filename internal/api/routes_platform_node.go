@@ -57,6 +57,9 @@ func (rt *Router) registerNodeRoutes(mux *http.ServeMux) {
 	mux.HandleFunc("DELETE /api/v1/node-providers/{provider}", rt.requireAbility(AbilityWriteSensitive, rt.handleDisconnectNodeProvider))
 	mux.HandleFunc("GET /api/v1/node-providers/{provider}/regions", rt.requireAbility(AbilityRead, rt.handleListNodeProviderRegions))
 	mux.HandleFunc("GET /api/v1/node-providers/{provider}/sizes", rt.requireAbility(AbilityRead, rt.handleListNodeProviderSizes))
+	mux.HandleFunc("GET /api/v1/node-providers/{provider}/capabilities", rt.requireAbility(AbilityRoot, rt.handleGetNodeProviderCapabilities))
+	mux.HandleFunc("GET /api/v1/node-providers/{provider}/resources", rt.requireAbility(AbilityRoot, rt.handleListNodeProviderResources))
+	mux.HandleFunc("GET /api/v1/node-providers/{provider}/spend", rt.requireAbility(AbilityRoot, rt.handleGetNodeProviderSpend))
 	mux.HandleFunc("POST /api/v1/nodes/provision", rt.requireAbility(AbilityRoot, rt.handleCreateNodeProvision))
 	// A top-level sibling of /api/v1/nodes/{id}/..., not nested under it:
 	// "/api/v1/nodes/provisions/{id}" and "/api/v1/nodes/{id}/health"
@@ -65,6 +68,7 @@ func (rt *Router) registerNodeRoutes(mux *http.ServeMux) {
 	rt.registerBootstrapScriptRoutes(mux)
 	mux.HandleFunc("GET /api/v1/node-provisions", rt.requireAbility(AbilityRoot, rt.handleListNodeProvisions))
 	mux.HandleFunc("GET /api/v1/node-provisions/{id}", rt.requireAbility(AbilityRoot, rt.handleGetNodeProvision))
+	mux.HandleFunc("DELETE /api/v1/node-provisions/{id}", rt.requireAbility(AbilityRoot, rt.handleDestroyNodeProvision))
 	// SSH node provisioning: AbilityRoot like every node route (an SSH credential is as sensitive as a join token).
 	// The show route stays a top-level sibling: nesting {id} under /nodes/ would conflict with /nodes/{id}/health.
 	mux.HandleFunc("POST /api/v1/nodes/ssh-provision", rt.requireAbility(AbilityRoot, rt.handleCreateSSHNodeProvision))

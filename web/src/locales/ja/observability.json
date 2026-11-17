@@ -158,7 +158,10 @@
     "lastOutput": "{{count}} 行: 停止したコンテナの最後の出力",
     "waiting": "ログ出力を待っています...",
     "noContainer": "ログを出力するコンテナが実行されていません: {{reason}}",
-    "viewDeploys": "直近のデプロイログを表示"
+    "viewDeploys": "直近のデプロイログを表示",
+    "neverDeployedTitle": "まだログはありません",
+    "neverDeployedBody": "最初のデプロイ後にログが表示されます。",
+    "neverDeployedAction": "デプロイへ移動"
   },
   "connection": {
     "connecting": "接続中...",

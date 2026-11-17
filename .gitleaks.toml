@@ -20,3 +20,8 @@ targetRules = ["private-key"]
 paths = ['''^web/src/locales/[^/]+/migration\.json$''']
 regexTarget = "match"
 regexes = ['''^-----BEGIN OPENSSH PRIVATE KEY-----",[\s\S]*"keyPlaceholder": "-----BEGIN OPENSSH PRIVATE KEY-----$''']
+
+[[allowlists]]
+description = "Public Discord server id used by the release badge, same as the README badge"
+targetRules = ["discord-client-id"]
+paths = ['''^scripts/release-notes-wrap\.mjs$''']

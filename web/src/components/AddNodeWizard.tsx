@@ -3,6 +3,8 @@ import {
   selectableCardClass,
 } from '@/components/ui/selectable-card'
 import { useState } from 'react'
+import { useTranslation } from 'react-i18next'
+import { ApiError } from '../lib/apiError'
 import { useNavigate } from '@tanstack/react-router'
 import {
   PlusGlassIcon,
@@ -34,6 +36,9 @@ import { SkeletonList } from './kit/Skeleton'
 import { ManualEnrollFields } from './AddNodeDialog'
 import { SSHEnrollFields } from './AddNodeWizardSSH'
 import { AddNodeMethodList } from './addNode/AddNodeMethodList'
+import { OracleFlexSizes } from './addNode/OracleFlexSizes'
+import { OracleGuardNotice } from './addNode/OracleGuardNotice'
+import { splitOracleSizes } from '../lib/oracleProvision'
 import { ProvisionProgress, StepShell } from './AddNodeWizardSteps'
 import {
   useCreateNodeProvision,
@@ -44,7 +49,8 @@ import {
 } from '../queries/nodeProvision'
 import { labelOf } from '@/lib/labelOf'
 
-type ProviderId = 'hetzner' | 'digitalocean' | 'aws' | 'azure' | 'gcp'
+export type ProviderId =
+  'hetzner' | 'vultr' | 'digitalocean' | 'aws' | 'azure' | 'gcp' | 'oracle'
 type Step =
   | 'method'
   | 'region'
@@ -57,10 +63,12 @@ type Step =
 
 const PROVIDER_LABELS: Record<ProviderId, string> = {
   hetzner: 'Hetzner',
+  vultr: 'Vultr',
   digitalocean: 'DigitalOcean',
   aws: 'AWS',
   azure: 'Azure',
   gcp: 'Google Cloud',
+  oracle: 'Oracle Cloud',
 }
 
 // Suggests a node name from the provider and region already picked by
@@ -80,17 +88,32 @@ function nodeNameFrom(provider: ProviderId, region: string): string {
 // AddNodeDialog's own manual join-token flow does. "I already have a
 // server" reuses that exact flow (ManualEnrollFields) as a step here
 // instead of a second implementation of it.
-export function AddNodeWizard() {
+export interface AddNodeWizardProps {
+  /** Skips the method step: a cloud provider goes to its regions, custom to manual enroll. */
+  preselect?: ProviderId | 'custom'
+  /** Starts with the build role chosen. */
+  builds?: boolean
+  /** Trigger text, defaults to "Add node". */
+  triggerLabel?: string
+}
+
+export function AddNodeWizard({
+  preselect,
+  builds = false,
+  triggerLabel = 'Add node',
+}: AddNodeWizardProps = {}) {
   const [open, setOpen] = useState(false)
   return (
     <Dialog open={open} onOpenChange={setOpen}>
       <DialogTrigger render={<Button size="sm" />}>
         <PlusGlassIcon size="1.4em" />
-        Add node
+        {triggerLabel}
       </DialogTrigger>
       <DialogContent className="sm:max-w-lg">
         <WizardBody
           key={open ? 'open' : 'closed'}
+          preselect={preselect}
+          builds={builds}
           onClose={() => setOpen(false)}
         />
       </DialogContent>
@@ -98,14 +121,29 @@ export function AddNodeWizard() {
   )
 }
 
-function WizardBody({ onClose }: { onClose: () => void }) {
+function WizardBody({
+  onClose,
+  preselect,
+  builds,
+}: {
+  onClose: () => void
+  preselect?: ProviderId | 'custom'
+  builds: boolean
+}) {
+  const { t } = useTranslation('nodes')
   const navigate = useNavigate()
-  const [step, setStep] = useState<Step>('method')
-  const [provider, setProvider] = useState<ProviderId | null>(null)
+  const [step, setStep] = useState<Step>(
+    preselect === 'custom' ? 'manual' : preselect ? 'region' : 'method',
+  )
+  const [provider, setProvider] = useState<ProviderId | null>(
+    preselect && preselect !== 'custom' ? preselect : null,
+  )
   const [region, setRegion] = useState('')
   const [size, setSize] = useState('')
   const [name, setName] = useState('')
-  const [role, setRole] = useState<'general' | 'build'>('general')
+  const [role, setRole] = useState<'general' | 'build'>(
+    builds ? 'build' : 'general',
+  )
   const [allowSSHInbound, setAllowSSHInbound] = useState(false)
   const [controlPlaneAddr, setControlPlaneAddr] = useState(
     () => `${window.location.hostname}:9443`,
@@ -116,6 +154,11 @@ function WizardBody({ onClose }: { onClose: () => void }) {
   const regions = useNodeProviderRegions(provider ?? '', step === 'region')
   const sizes = useNodeProviderSizes(provider ?? '', region, step === 'size')
   const createProvision = useCreateNodeProvision()
+  // Only Oracle has Flex ids; every other provider lists as fixed sizes.
+  const oracleSplit =
+    provider === 'oracle'
+      ? splitOracleSizes(sizes.data ?? [])
+      : { fixed: sizes.data ?? [], flex: [] }
   const provision = useNodeProvision(step === 'progress' ? provisionId : null)
 
   if (step === 'manual') {
@@ -228,7 +271,12 @@ function WizardBody({ onClose }: { onClose: () => void }) {
           </Alert>
         ) : (
           <div className="space-y-2">
-            {(sizes.data ?? []).map((s) => (
+            {provider === 'oracle' ? (
+              <p className="text-xs text-muted-foreground">
+                {t('oracle.sizes.priceNote')}
+              </p>
+            ) : null}
+            {oracleSplit.fixed.map((s) => (
               <button
                 key={s.id}
                 type="button"
@@ -259,6 +307,13 @@ function WizardBody({ onClose }: { onClose: () => void }) {
                 )}
               </button>
             ))}
+            {provider === 'oracle' ? (
+              <OracleFlexSizes
+                shapes={oracleSplit.flex}
+                value={size}
+                onChange={setSize}
+              />
+            ) : null}
           </div>
         )}
       </StepShell>
@@ -387,13 +442,37 @@ function WizardBody({ onClose }: { onClose: () => void }) {
             </>
           ) : null}
         </dl>
-        {createProvision.isError ? (
+        {createProvision.isError &&
+        provider === 'oracle' &&
+        createProvision.error instanceof ApiError &&
+        createProvision.error.status === 409 ? (
+          <OracleGuardNotice message={createProvision.error.message} />
+        ) : createProvision.isError ? (
           <Alert variant="destructive">
             <TriangleAlertGlassIcon
               className="text-tone-warning"
               size="1.7em"
             />
-            <AlertDescription>{createProvision.error.message}</AlertDescription>
+            <AlertDescription>
+              {createProvision.error instanceof ApiError &&
+              createProvision.error.status === 409 ? (
+                <>
+                  <span className="block font-medium">
+                    {t('provisionGuard.title')}
+                  </span>
+                  <span className="block">
+                    {t('provisionGuard.body', {
+                      reason: createProvision.error.message,
+                    })}
+                  </span>
+                  <span className="block text-muted-foreground">
+                    {t('provisionGuard.hint')}
+                  </span>
+                </>
+              ) : (
+                createProvision.error.message
+              )}
+            </AlertDescription>
           </Alert>
         ) : null}
       </StepShell>

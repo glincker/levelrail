@@ -236,7 +236,7 @@ export function DeliveryHeader({
           <TriangleAlertGlassIcon aria-hidden="true" className="size-4" />
           <span>{t('header.postFailing')}</span>
           <Link
-            to="/settings/integrations"
+            to="/integrations"
             className="ml-auto font-medium underline underline-offset-2"
           >
             {t('row.openIntegrations')}

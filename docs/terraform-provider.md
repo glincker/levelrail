@@ -6,13 +6,11 @@ description: "Manage projects, environments, apps, domains, databases and shared
 
 The provider drives the same REST API as the dashboard and CLI, with your own token, so every policy and approval rule still applies. It lives in its own Go module, `integrations/terraform-provider/`, and never ships inside the control plane binary.
 
-<Warning>
-**Not published yet.** The provider is built from source for now. Publishing to the Terraform and OpenTofu registries is a later step, so there is no `terraform init` download yet.
-</Warning>
+The provider is listed on the [Terraform registry](https://registry.terraform.io/providers/glincker/levelrail/latest) and the [OpenTofu registry](https://search.opentofu.org/provider/glincker/levelrail/latest) as `glincker/levelrail`. Use the `required_providers` block under Configure below and run `terraform init` or `tofu init`.
 
-## Installing from source today and from the registry later
+## Installing from source
 
-The provider is not on the Terraform or OpenTofu registry yet, so `terraform init` cannot download it. Build it and point the CLI at the binary with `dev_overrides`:
+To run a build from this repository instead of the registry release, build it and point the CLI at the binary with `dev_overrides`:
 
 ```bash
 cd integrations/terraform-provider
@@ -29,7 +27,7 @@ provider_installation {
 }
 ```
 
-With `dev_overrides` skip `terraform init` for this provider and run `plan` and `apply` directly. When the registry release exists, the `source = "registry.terraform.io/glincker/levelrail"` address in the example above will work without the override. The release plan is in `integrations/terraform-provider/release/README.md`.
+With `dev_overrides` skip `terraform init` for this provider and run `plan` and `apply` directly. Without the override, the `source = "registry.terraform.io/glincker/levelrail"` address in the example below downloads the registry release. The release plan is in `integrations/terraform-provider/release/README.md`.
 
 ## Where the name lives
 

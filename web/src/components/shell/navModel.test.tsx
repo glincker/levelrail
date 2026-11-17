@@ -48,6 +48,7 @@ const EXPECTED_GLOBAL = [
   '/mail',
   '/storage',
   '/inbox',
+  '/integrations',
   '/settings/registry',
   '/settings/registry-credentials',
   '/settings/network-shares',
@@ -56,6 +57,7 @@ const EXPECTED_GLOBAL = [
   '/security',
   '/security/image-scanning',
   '/nodes/bootstrap-scripts',
+  '/clusters',
   '/models',
   '/pipelines',
   '/approvals',
@@ -140,7 +142,7 @@ describe('global nav model', () => {
     expect(GLOBAL_NAV_GROUPS.length).toBeLessThanOrEqual(8)
   })
 
-  it('shows the Overview rows ungrouped and twenty or fewer sidebar rows', () => {
+  it('shows the Overview rows ungrouped and twenty-one or fewer sidebar rows', () => {
     const primary = GLOBAL_NAV_GROUPS.filter((g) => g.ungrouped)
     expect(primary).toHaveLength(1)
     expect(primary[0]?.items.map((i) => i.label)).toEqual([
@@ -150,7 +152,7 @@ describe('global nav model', () => {
       'Alerts',
     ])
     const rows = GLOBAL_NAV_GROUPS.flatMap((g) => g.items)
-    expect(rows.length).toBeLessThanOrEqual(20)
+    expect(rows.length).toBeLessThanOrEqual(21)
   })
 
   it('groups Domains, Traffic, Firewall and Mail under Network', () => {
@@ -375,5 +377,20 @@ describe('activeGlobalItemId', () => {
     ['/templates', 'templates'],
   ])('%s activates only %s', (path, id) => {
     expect(activeGlobalItemId(path, items)).toBe(id)
+  })
+})
+
+describe('Integrations row', () => {
+  const rows = GLOBAL_NAV_GROUPS.flatMap((g) => g.items)
+  it.each([
+    ['/integrations', 'integrations'],
+    ['/settings/integrations', 'integrations'],
+    ['/settings/git-connections', 'integrations'],
+    ['/settings/node-providers', 'integrations'],
+    ['/clusters', 'nodes'],
+    ['/nodes', 'nodes'],
+  ])('%s lights only the %s row', (path, id) => {
+    const active = rows.filter((r) => isGlobalItemActive(path, r))
+    expect(active.map((r) => r.id)).toEqual([id])
   })
 })

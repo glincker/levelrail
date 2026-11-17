@@ -1,6 +1,7 @@
 ---
 title: "Next.js skew protection, deploy side"
 description: "What the deploy side does so a browser tab on an old Next.js build keeps working after a cutover."
+"og:url": "https://docs.levelrail.com/nextjs-skew-protection"
 ---
 
 Slices S9 and S10 of ADR 074. A browser tab on an old Next.js build asks for old

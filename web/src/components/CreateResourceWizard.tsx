@@ -442,7 +442,7 @@ export function CreateResourceWizard({
                 onClick={() => {
                   handleOpenChange(false)
                   void navigate({
-                    to: '/settings/integrations',
+                    to: '/integrations',
                     search: { view: 'catalog' },
                   })
                 }}
