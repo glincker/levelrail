@@ -1,0 +1,15 @@
+id: palworld
+name: Palworld Server
+slogan: A dedicated Palworld server with a generated admin password and RCON kept internal.
+description: |-
+    Players connect on UDP 8211: the port binds privately by default, so set a public bind in the app's Network settings and open UDP 8211 in the host and cloud firewall.
+    The admin password is generated; read it in the service environment settings. Set a join password in the data volume's PalWorldSettings.ini.
+    Needs about 16 GB of RAM for a few players, so it does not fit a 12 GB host that also runs other apps. RCON is not published.
+    Image is multi-arch (amd64 and arm64); the game itself is x86 software, so on arm64 it runs under emulation and is slow.
+category: Games
+documentation_url: https://github.com/thijsvl/palworld-server-docker
+recommended_memory_bytes: 17179869184
+requires_gpu: false
+platforms:
+    - linux/amd64
+    - linux/arm64

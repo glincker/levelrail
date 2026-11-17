@@ -1,0 +1,10 @@
+id: openobserve
+name: OpenObserve
+slogan: A lightweight, single-binary observability platform for logs, metrics, and traces with a built-in UI.
+category: Monitoring
+documentation_url: https://openobserve.ai/docs
+recommended_memory_bytes: 536870912
+requires_gpu: false
+platforms:
+    - linux/amd64
+    - linux/arm64

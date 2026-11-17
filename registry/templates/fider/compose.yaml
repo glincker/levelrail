@@ -1,0 +1,30 @@
+services:
+  database:
+    image: postgres:12
+    environment:
+      POSTGRES_USER: fider
+      POSTGRES_PASSWORD: $SERVICE_PASSWORD_DB
+      POSTGRES_DB: fider
+    volumes:
+      - fider_pg_data:/var/lib/postgresql/data
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U fider -d fider"]
+      interval: 5s
+      timeout: 5s
+      retries: 10
+  fider:
+    image: getfider/fider:stable
+    ports: ["3000:3000"]
+    depends_on:
+      database:
+        condition: service_healthy
+    environment:
+      BASE_URL: ${SERVICE_URL_FIDER:-http://localhost:3000}
+      DATABASE_URL: postgres://fider:$SERVICE_PASSWORD_DB@database:5432/fider?sslmode=disable
+      JWT_SECRET: $SERVICE_PASSWORD_64_JWTSECRET
+      EMAIL_NOREPLY: noreply@example.com
+    healthcheck:
+      test: ["CMD", "/app/fider", "ping"]
+      interval: 10s
+      timeout: 5s
+      retries: 10

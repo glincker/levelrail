@@ -1,0 +1,70 @@
+id: lubelogger
+name: LubeLogger
+slogan: A self-hosted vehicle maintenance and fuel mileage tracker with reminders and document storage. MIT licensed. On first open, register the first user, which becomes the root account.
+description: A self-hosted vehicle maintenance and fuel mileage tracker with reminders and document storage. MIT licensed. On first open, register the first user, which becomes the root account.
+category: Applications
+documentation_url: https://docs.lubelogger.com/
+recommended_memory_bytes: 268435456
+requires_gpu: false
+platforms:
+    - linux/amd64
+    - linux/arm64
+manifest:
+    id: lubelogger
+    name: LubeLogger
+    description: A self-hosted vehicle maintenance and fuel mileage tracker with reminders and document storage. MIT licensed. On first open, register the first user, which becomes the root account.
+    icon: calendar
+    category: Applications
+    documentation_url: https://docs.lubelogger.com/
+    source_repo: ""
+    license: ""
+    license_class: ""
+    license_url: ""
+    hosted_use: ""
+    listing: null
+    status: ""
+    status_reason: ""
+    replaced_by: ""
+    aliases: []
+    first_run: []
+    compose_file: compose.yaml
+    recommended_memory_bytes: 268435456
+    env:
+        - key: LC_ALL
+          label: Locale
+          description: Locale for dates, numbers and currency.
+          default: en_US
+          generate: ""
+          length: 0
+          required: false
+          secret: false
+          type: ""
+          service: ""
+          path: ""
+          mode: ""
+        - key: LUBELOGGER_ALLOWED_FILE_EXTENSIONS
+          label: Allowed upload types
+          description: Comma separated file extensions users may attach to records.
+          default: .png,.jpg,.jpeg,.pdf,.xls,.xlsx,.docx
+          generate: ""
+          length: 0
+          required: false
+          secret: false
+          type: ""
+          service: ""
+          path: ""
+          mode: ""
+    domains:
+        - service: lubelogger
+          port: 8080
+          description: Public address of LubeLogger.
+    healthcheck:
+        service: lubelogger
+        port: 8080
+        path: /Login
+        expect: 0
+        kind: ""
+        reason: ""
+    first_boot_seconds: 0
+    console_command: []
+    capabilities: []

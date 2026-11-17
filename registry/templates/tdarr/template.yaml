@@ -1,0 +1,10 @@
+id: tdarr
+name: Tdarr
+slogan: Automated media transcoding, health checks, and library-wide format standardization.
+category: Media
+documentation_url: https://docs.tdarr.io
+recommended_memory_bytes: 1073741824
+requires_gpu: false
+platforms:
+    - linux/amd64
+    - linux/arm64

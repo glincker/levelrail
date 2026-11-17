@@ -1,0 +1,10 @@
+id: photoview
+name: Photoview
+slogan: A fast, simple photo gallery that indexes an existing folder tree without importing or duplicating files.
+category: Media
+documentation_url: https://photoview.github.io/docs/
+recommended_memory_bytes: 268435456
+requires_gpu: false
+platforms:
+    - linux/amd64
+    - linux/arm64

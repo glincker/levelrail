@@ -1,0 +1,30 @@
+services:
+  elasticsearch:
+    image: elasticsearch:9.1.2
+    ports: ["9200"]
+    environment:
+      discovery.type: single-node
+      xpack.security.enabled: "false"
+      ES_JAVA_OPTS: "-Xms512m -Xmx512m"
+    volumes:
+      - es_data:/usr/share/elasticsearch/data
+    healthcheck:
+      test: ["CMD-SHELL", "curl -fsS -o /dev/null http://127.0.0.1:9200/_cluster/health"]
+      interval: 15s
+      timeout: 10s
+      retries: 20
+      start_period: 60s
+  kibana:
+    image: kibana:9.1.2
+    ports: ["5601"]
+    environment:
+      ELASTICSEARCH_HOSTS: http://elasticsearch:9200
+      SERVER_PUBLICBASEURL: ${SERVICE_URL_KIBANA:-http://localhost:5601}
+      XPACK_ENCRYPTEDSAVEDOBJECTS_ENCRYPTIONKEY: $SERVICE_HEX_32_ENCRYPTIONKEY
+    depends_on: [elasticsearch]
+    healthcheck:
+      test: ["CMD-SHELL", "curl -fsS -o /dev/null http://127.0.0.1:5601/api/status"]
+      interval: 15s
+      timeout: 10s
+      retries: 30
+      start_period: 60s

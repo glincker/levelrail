@@ -1,0 +1,82 @@
+id: open-notebook
+name: Open Notebook
+slogan: An open source, self-hosted alternative to NotebookLM for researching with your own sources, with podcasts and chat. Add model provider keys in the app after install.
+description: An open source, self-hosted alternative to NotebookLM for researching with your own sources, with podcasts and chat. Add model provider keys in the app after install.
+category: AI
+documentation_url: https://github.com/lfnovo/open-notebook/blob/main/docs/1-INSTALLATION/docker-compose.md
+recommended_memory_bytes: 1610612736
+requires_gpu: false
+platforms:
+    - linux/amd64
+    - linux/arm64
+manifest:
+    id: open-notebook
+    name: Open Notebook
+    description: An open source, self-hosted alternative to NotebookLM for researching with your own sources, with podcasts and chat. Add model provider keys in the app after install.
+    icon: book
+    category: AI
+    documentation_url: https://github.com/lfnovo/open-notebook/blob/main/docs/1-INSTALLATION/docker-compose.md
+    source_repo: https://github.com/lfnovo/open-notebook
+    license: MIT
+    license_class: permissive
+    license_url: https://github.com/lfnovo/open-notebook/blob/main/LICENSE
+    hosted_use: ""
+    listing: null
+    status: ""
+    status_reason: ""
+    replaced_by: ""
+    aliases: []
+    first_run: []
+    compose_file: compose.yaml
+    recommended_memory_bytes: 1610612736
+    env:
+        - key: ENCRYPTION_KEY
+          label: Encryption key
+          description: Encrypts provider API keys stored in the database. Losing it makes stored keys unreadable.
+          default: ""
+          generate: hex
+          length: 64
+          required: false
+          secret: true
+          type: ""
+          service: ""
+          path: ""
+          mode: ""
+        - key: APP_PASSWORD
+          label: App password
+          description: Password for the web UI and REST API.
+          default: ""
+          generate: password
+          length: 24
+          required: false
+          secret: true
+          type: ""
+          service: ""
+          path: ""
+          mode: ""
+        - key: DB_PASSWORD
+          label: Database password
+          description: Password for the bundled SurrealDB.
+          default: ""
+          generate: password
+          length: 32
+          required: false
+          secret: true
+          type: ""
+          service: ""
+          path: ""
+          mode: ""
+    domains:
+        - service: open_notebook
+          port: 8502
+          description: Public address of the Open Notebook UI.
+    healthcheck:
+        service: open_notebook
+        port: 5055
+        path: /health
+        expect: 0
+        kind: ""
+        reason: ""
+    first_boot_seconds: 0
+    console_command: []
+    capabilities: []

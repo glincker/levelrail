@@ -1,0 +1,11 @@
+id: listmonk
+name: Listmonk
+slogan: A self-hosted newsletter and mailing list manager with a fast, dependency-light core.
+category: Communication
+documentation_url: https://listmonk.app/docs/
+recommended_memory_bytes: 268435456
+requires_gpu: false
+platforms:
+    - linux/amd64
+    - linux/arm
+    - linux/arm64

@@ -1,0 +1,10 @@
+id: nocobase
+name: NocoBase
+slogan: An extensible no-code/low-code platform for building internal tools and databases.
+category: Developer Tools
+documentation_url: https://docs.nocobase.com/
+recommended_memory_bytes: 1073741824
+requires_gpu: false
+platforms:
+    - linux/amd64
+    - linux/arm64

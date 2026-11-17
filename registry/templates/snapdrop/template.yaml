@@ -1,0 +1,7 @@
+id: snapdrop
+name: Snapdrop
+slogan: Local network file sharing in the browser, inspired by AirDrop.
+category: Productivity
+documentation_url: https://github.com/RobinLinus/snapdrop
+recommended_memory_bytes: 134217728
+requires_gpu: false

@@ -1,0 +1,10 @@
+id: bytebase
+name: Bytebase
+slogan: A database schema change and migration tool with review workflows built in.
+category: Database Tools
+documentation_url: https://docs.bytebase.com/get-started/step-by-step/deploy-with-docker
+recommended_memory_bytes: 536870912
+requires_gpu: false
+platforms:
+    - linux/amd64
+    - linux/arm64

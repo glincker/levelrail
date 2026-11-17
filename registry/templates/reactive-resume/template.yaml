@@ -1,0 +1,82 @@
+id: reactive-resume
+name: Reactive Resume
+slogan: A free resume builder with live preview, templates and PDF export, backed by Postgres. MIT licensed. Register an account on first open, uploads are stored on a local volume.
+description: A free resume builder with live preview, templates and PDF export, backed by Postgres. MIT licensed. Register an account on first open, uploads are stored on a local volume.
+category: Productivity
+documentation_url: https://docs.rxresu.me/
+recommended_memory_bytes: 805306368
+requires_gpu: false
+platforms:
+    - linux/amd64
+    - linux/arm64
+manifest:
+    id: reactive-resume
+    name: Reactive Resume
+    description: A free resume builder with live preview, templates and PDF export, backed by Postgres. MIT licensed. Register an account on first open, uploads are stored on a local volume.
+    icon: file-text
+    category: Productivity
+    documentation_url: https://docs.rxresu.me/
+    source_repo: https://github.com/reactive-resume/reactive-resume
+    license: MIT
+    license_class: permissive
+    license_url: https://github.com/reactive-resume/reactive-resume/blob/main/LICENSE
+    hosted_use: ""
+    listing: null
+    status: ""
+    status_reason: ""
+    replaced_by: ""
+    aliases: []
+    first_run: []
+    compose_file: compose.yaml
+    recommended_memory_bytes: 805306368
+    env:
+        - key: DB_PASSWORD
+          label: Database password
+          description: Password for the bundled Postgres database.
+          default: ""
+          generate: password
+          length: 32
+          required: false
+          secret: true
+          type: ""
+          service: ""
+          path: ""
+          mode: ""
+        - key: AUTH_SECRET
+          label: Auth secret
+          description: Signs login sessions. Changing it signs every user out.
+          default: ""
+          generate: hex
+          length: 64
+          required: false
+          secret: true
+          type: ""
+          service: ""
+          path: ""
+          mode: ""
+        - key: APP_URL
+          label: Public URL
+          description: Full URL where Reactive Resume is served, used for sign-in callbacks and links.
+          default: http://localhost:3000
+          generate: ""
+          length: 0
+          required: false
+          secret: false
+          type: ""
+          service: ""
+          path: ""
+          mode: ""
+    domains:
+        - service: reactive-resume
+          port: 3000
+          description: Public address of Reactive Resume.
+    healthcheck:
+        service: reactive-resume
+        port: 3000
+        path: /api/health
+        expect: 0
+        kind: ""
+        reason: ""
+    first_boot_seconds: 0
+    console_command: []
+    capabilities: []

@@ -1,0 +1,32 @@
+services:
+    dex:
+        image: ghcr.io/dexidp/dex:v2.46.1
+        ports: ["5556"]
+        command: ["dex", "serve", "/etc/dex/config.yaml"]
+        volumes:
+            - data:/var/dex
+        healthcheck:
+            test: ["NONE"]
+        x-levelrail-healthcheck:
+            kind: http
+            path: /dex/.well-known/openid-configuration
+            port: 5556
+            interval: 15s
+            timeout: 8s
+            retries: 10
+            start_period: 20s
+        configs:
+            - source: lr_file_dex_config
+              target: /etc/dex/config.yaml
+              mode: "0444"
+configs:
+    lr_file_dex_config:
+        content: |
+            issuer: http://127.0.0.1:5556/dex
+            storage:
+              type: sqlite3
+              config:
+                file: /var/dex/dex.db
+            web:
+              http: 0.0.0.0:5556
+            enablePasswordDB: true

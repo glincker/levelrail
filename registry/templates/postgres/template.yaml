@@ -1,0 +1,71 @@
+id: postgres
+name: PostgreSQL
+slogan: The PostgreSQL relational database server on the official Alpine image, with a persistent volume and a generated password. It is not published on the host, so reach it from other services in this project at postgres:5432.
+description: The PostgreSQL relational database server on the official Alpine image, with a persistent volume and a generated password. It is not published on the host, so reach it from other services in this project at postgres:5432.
+category: Database Tools
+documentation_url: https://www.postgresql.org/docs/17/
+recommended_memory_bytes: 268435456
+requires_gpu: false
+manifest:
+    id: postgres
+    name: PostgreSQL
+    description: The PostgreSQL relational database server on the official Alpine image, with a persistent volume and a generated password. It is not published on the host, so reach it from other services in this project at postgres:5432.
+    icon: database
+    category: Database Tools
+    documentation_url: https://www.postgresql.org/docs/17/
+    source_repo: https://github.com/postgres/postgres
+    license: PostgreSQL
+    license_class: permissive
+    license_url: https://www.postgresql.org/about/licence/
+    hosted_use: allowed
+    listing:
+        by: community
+        vendor_org: ""
+        proof: ""
+    status: active
+    status_reason: ""
+    replaced_by: ""
+    aliases: []
+    first_run:
+        - Read the generated password from the app secrets, then connect with psql or any client from a service in the same project.
+    compose_file: compose.yaml
+    recommended_memory_bytes: 268435456
+    env:
+        - key: POSTGRES_USER
+          label: Database user
+          description: Name of the superuser created on first start.
+          default: postgres
+          generate: ""
+          length: 0
+          required: false
+          secret: false
+          type: ""
+          service: ""
+          path: ""
+          mode: ""
+        - key: POSTGRES_DB
+          label: Database name
+          description: Database created on first start.
+          default: app
+          generate: ""
+          length: 0
+          required: false
+          secret: false
+          type: ""
+          service: ""
+          path: ""
+          mode: ""
+    domains:
+        - service: postgres
+          port: 5432
+          description: This is a TCP database with no web page, so leave it empty and connect over the project network.
+    healthcheck:
+        service: postgres
+        port: 5432
+        path: ""
+        expect: 0
+        kind: tcp
+        reason: ""
+    first_boot_seconds: 0
+    console_command: []
+    capabilities: []

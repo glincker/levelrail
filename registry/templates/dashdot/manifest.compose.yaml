@@ -1,0 +1,10 @@
+services:
+  dashdot:
+    image: mauricenino/dashdot:6.3.4
+    ports: ["3001"]
+    healthcheck:
+      test: ["CMD-SHELL", "wget -q -O /dev/null http://127.0.0.1:3001"]
+      interval: 15s
+      timeout: 10s
+      retries: 10
+      start_period: 30s

@@ -1,0 +1,15 @@
+services:
+  technitium-dns:
+    image: technitium/dns-server:15.5.1
+    ports: ["5380:5380"]
+    environment:
+      DNS_SERVER_ADMIN_PASSWORD: $SERVICE_PASSWORD_ADMIN
+      DNS_SERVER_DOMAIN: dns.localhost
+    volumes:
+      - technitium_config:/etc/dns
+    healthcheck:
+      test: ["CMD-SHELL", "curl -fsS -o /dev/null http://127.0.0.1:5380/ || exit 1"]
+      interval: 30s
+      timeout: 5s
+      retries: 3
+      start_period: 30s

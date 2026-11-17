@@ -1,0 +1,20 @@
+services:
+  tgi:
+    image: ghcr.io/huggingface/text-generation-inference:3.3.6
+    deploy:
+      resources:
+        reservations:
+          devices:
+            - driver: nvidia
+              count: all
+              capabilities: [gpu]
+    command: ["--model-id", "HuggingFaceTB/SmolLM2-360M-Instruct", "--port", "80"]
+    ports: ["8080:80"]
+    volumes:
+      - tgi_data:/data
+    healthcheck:
+      test: ["CMD-SHELL", "curl -fsS -o /dev/null http://127.0.0.1:80/health || wget -q -O /dev/null http://127.0.0.1:80/health || exit 1"]
+      interval: 30s
+      timeout: 5s
+      retries: 3
+      start_period: 300s

@@ -1,0 +1,11 @@
+id: vault
+name: Vault
+slogan: 'HashiCorp Vault for secrets storage, encryption as a service, and dynamic credentials, with integrated Raft storage. Vault is reachable only from services in this project at vault:8200 over plain HTTP and is not published on the host. It starts uninitialized and sealed: run vault operator init and vault operator unseal from the app console, keep the unseal keys and root token offline, and put a domain with HTTPS in front of it before anything outside this project talks to it.'
+category: Security
+documentation_url: https://developer.hashicorp.com/vault/docs/deploy/run-container
+recommended_memory_bytes: 268435456
+requires_gpu: false
+platforms:
+    - linux/386
+    - linux/amd64
+    - linux/arm64

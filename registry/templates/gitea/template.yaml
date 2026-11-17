@@ -1,0 +1,10 @@
+id: gitea
+name: Gitea
+slogan: A lightweight, self-hosted Git service with issues, pull requests, and a package registry.
+category: Developer Tools
+documentation_url: https://docs.gitea.com
+recommended_memory_bytes: 536870912
+requires_gpu: false
+platforms:
+    - linux/amd64
+    - linux/arm64

@@ -1,0 +1,10 @@
+id: semaphore
+name: Semaphore UI
+slogan: A modern web UI for running Ansible, Terraform, and shell tasks with schedules, history, and access control.
+category: Developer Tools
+documentation_url: https://docs.semaphoreui.com
+recommended_memory_bytes: 268435456
+requires_gpu: false
+platforms:
+    - linux/amd64
+    - linux/arm64

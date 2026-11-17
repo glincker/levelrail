@@ -1,0 +1,13 @@
+id: outline
+name: Outline
+slogan: A fast, structured team wiki and knowledge base with real-time collaborative editing.
+category: Productivity
+documentation_url: https://docs.getoutline.com
+recommended_memory_bytes: 536870912
+requires_gpu: false
+platforms:
+    - linux/amd64
+    - linux/arm
+    - linux/arm64
+    - linux/ppc64le
+    - linux/s390x

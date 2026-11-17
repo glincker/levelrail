@@ -1,0 +1,13 @@
+id: gotify
+name: Gotify
+slogan: A simple push notification server with a REST API and web UI, for sending messages to your devices.
+category: Communication
+documentation_url: https://gotify.net/docs/
+recommended_memory_bytes: 134217728
+requires_gpu: false
+platforms:
+    - linux/386
+    - linux/amd64
+    - linux/arm
+    - linux/arm64
+    - linux/riscv64

@@ -1,0 +1,14 @@
+services:
+  netdata:
+    image: netdata/netdata:v2.11.1
+    ports: ["19999:19999"]
+    volumes:
+      - netdata_config:/etc/netdata
+      - netdata_lib:/var/lib/netdata
+      - netdata_cache:/var/cache/netdata
+    healthcheck:
+      test: ["CMD-SHELL", "curl -fsS -o /dev/null http://127.0.0.1:19999/api/v1/info || wget -q -O /dev/null http://127.0.0.1:19999/api/v1/info || exit 1"]
+      interval: 30s
+      timeout: 5s
+      retries: 3
+      start_period: 30s

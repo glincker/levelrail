@@ -1,0 +1,36 @@
+services:
+  librechat:
+    image: ghcr.io/danny-avila/librechat:v0.8.7
+    ports: ["3080:3080"]
+    environment:
+      HOST: 0.0.0.0
+      PORT: "3080"
+      DOMAIN_CLIENT: ${SERVICE_URL_LIBRECHAT:-http://localhost:3080}
+      DOMAIN_SERVER: ${SERVICE_URL_LIBRECHAT:-http://localhost:3080}
+      MONGO_URI: mongodb://mongo:27017/LibreChat
+      MEILI_HOST: http://meilisearch:7700
+      MEILI_MASTER_KEY: $SERVICE_HEX_32_MEILI
+      JWT_SECRET: $SERVICE_HEX_32_JWT
+      JWT_REFRESH_SECRET: $SERVICE_HEX_32_JWTREFRESH
+      CREDS_KEY: $SERVICE_HEX_64_CREDSKEY
+      CREDS_IV: $SERVICE_HEX_32_CREDSIV
+      ALLOW_REGISTRATION: "true"
+    volumes:
+      - librechat_images:/app/client/public/images
+    healthcheck:
+      test: ["CMD-SHELL", "curl -fsS -o /dev/null http://127.0.0.1:3080/health || wget -q -O /dev/null http://127.0.0.1:3080/health || exit 1"]
+      interval: 30s
+      timeout: 5s
+      retries: 3
+      start_period: 60s
+  mongo:
+    image: mongo:7
+    volumes:
+      - librechat_mongo_data:/data/db
+  meilisearch:
+    image: getmeili/meilisearch:v1.54.0
+    environment:
+      MEILI_MASTER_KEY: $SERVICE_HEX_32_MEILI
+      MEILI_NO_ANALYTICS: "true"
+    volumes:
+      - librechat_meili_data:/meili_data

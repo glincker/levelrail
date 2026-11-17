@@ -1,0 +1,16 @@
+services:
+  vernemq:
+    image: vernemq/vernemq:2.2.1-alpine
+    ports: ["8888", "1883"]
+    environment:
+      DOCKER_VERNEMQ_ACCEPT_EULA: yes
+      DOCKER_VERNEMQ_ALLOW_ANONYMOUS: off
+      DOCKER_VERNEMQ_USER_admin: $SERVICE_PASSWORD_VERNEMQ
+    volumes:
+      - vernemq_data:/vernemq/data
+    healthcheck:
+      test: ["CMD", "vernemq", "ping"]
+      interval: 15s
+      timeout: 8s
+      retries: 10
+      start_period: 20s

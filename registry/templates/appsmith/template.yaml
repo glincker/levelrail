@@ -1,0 +1,10 @@
+id: appsmith
+name: Appsmith
+slogan: A low-code platform for building internal tools and admin panels on top of your own data.
+category: Developer Tools
+documentation_url: https://docs.appsmith.com
+recommended_memory_bytes: 2147483648
+requires_gpu: false
+platforms:
+    - linux/amd64
+    - linux/arm64

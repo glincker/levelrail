@@ -1,0 +1,13 @@
+services:
+  proxyscotch:
+    image: hoppscotch/proxyscotch:v0.1.4
+    ports: ["9159:9159"]
+    environment:
+      PROXYSCOTCH_TOKEN: $SERVICE_PASSWORD_TOKEN
+      PROXYSCOTCH_ALLOWED_ORIGINS: "*"
+    healthcheck:
+      test: ["CMD-SHELL", "nc -z 127.0.0.1 9159 || exit 1"]
+      interval: 15s
+      timeout: 10s
+      retries: 5
+      start_period: 5s

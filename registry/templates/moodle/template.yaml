@@ -1,0 +1,10 @@
+id: moodle
+name: Moodle
+slogan: A widely used, highly customizable learning management system for online courses.
+category: Applications
+documentation_url: https://moodle.org
+recommended_memory_bytes: 1073741824
+requires_gpu: false
+platforms:
+    - linux/amd64
+    - linux/arm64

@@ -1,0 +1,11 @@
+services:
+  portainer:
+    image: portainer/portainer-ce:2.21.0
+    ports: ["9443:9443"]
+    volumes:
+      - portainer_data:/data
+    healthcheck:
+      test: ["CMD-SHELL", "curl -fsSk -o /dev/null https://127.0.0.1:9443/api/system/status"]
+      interval: 10s
+      timeout: 5s
+      retries: 3

@@ -1,0 +1,48 @@
+services:
+  seafile:
+    image: seafileltd/seafile-mc:13.0.28
+    ports: ["8080:80"]
+    environment:
+      SEAFILE_SERVER_HOSTNAME: ${SERVICE_FQDN_SEAFILE:-127.0.0.1}
+      SEAFILE_MYSQL_DB_HOST: mariadb
+      SEAFILE_MYSQL_DB_PORT: "3306"
+      INIT_SEAFILE_MYSQL_ROOT_PASSWORD: $SERVICE_PASSWORD_MYSQLROOT
+      SEAFILE_MYSQL_DB_USER: $SERVICE_USER_MYSQL
+      SEAFILE_MYSQL_DB_PASSWORD: $SERVICE_PASSWORD_MYSQL
+      SEAFILE_MYSQL_DB_CCNET_DB_NAME: ccnet_db
+      SEAFILE_MYSQL_DB_SEAFILE_DB_NAME: seafile_db
+      SEAFILE_MYSQL_DB_SEAHUB_DB_NAME: seahub_db
+      CACHE_PROVIDER: memcached
+      MEMCACHED_HOST: memcached
+      MEMCACHED_PORT: "11211"
+      TIME_ZONE: UTC
+      INIT_SEAFILE_ADMIN_EMAIL: admin@example.com
+      INIT_SEAFILE_ADMIN_PASSWORD: $SERVICE_PASSWORD_ADMIN
+      SEAFILE_SERVER_PROTOCOL: https
+      JWT_PRIVATE_KEY: $SERVICE_PASSWORD_64_JWT
+    volumes:
+      - seafile_data:/shared
+    depends_on: [mariadb, memcached]
+    healthcheck:
+      test: ["CMD-SHELL", "curl -fsS -o /dev/null http://127.0.0.1:80/api2/ping/ || exit 1"]
+      interval: 10s
+      timeout: 10s
+      retries: 5
+      start_period: 60s
+  mariadb:
+    image: mariadb:11
+    environment:
+      MYSQL_ROOT_PASSWORD: $SERVICE_PASSWORD_MYSQLROOT
+      MYSQL_USER: $SERVICE_USER_MYSQL
+      MYSQL_PASSWORD: $SERVICE_PASSWORD_MYSQL
+      MYSQL_DATABASE: seafile_db
+    volumes:
+      - seafile_mariadb_data:/var/lib/mysql
+    healthcheck:
+      test: ["CMD", "healthcheck.sh", "--connect", "--innodb_initialized"]
+      interval: 10s
+      timeout: 10s
+      retries: 5
+  memcached:
+    image: memcached:latest
+    entrypoint: ["memcached", "-m", "256"]

@@ -1,0 +1,47 @@
+id: athens
+name: Athens
+slogan: A Go module proxy that caches modules from upstream so builds stay fast and repeatable. Point GOPROXY at it from your CI or developer machines.
+description: A Go module proxy that caches modules from upstream so builds stay fast and repeatable. Point GOPROXY at it from your CI or developer machines.
+category: Developer Tools
+documentation_url: https://docs.gomods.io/
+recommended_memory_bytes: 134217728
+requires_gpu: false
+manifest:
+    id: athens
+    name: Athens
+    description: A Go module proxy that caches modules from upstream so builds stay fast and repeatable. Point GOPROXY at it from your CI or developer machines.
+    icon: package
+    category: Developer Tools
+    documentation_url: https://docs.gomods.io/
+    source_repo: https://github.com/gomods/athens
+    license: MIT
+    license_class: permissive
+    license_url: https://github.com/gomods/athens/blob/main/LICENSE
+    hosted_use: allowed
+    listing:
+        by: community
+        vendor_org: ""
+        proof: ""
+    status: active
+    status_reason: ""
+    replaced_by: ""
+    aliases: []
+    first_run:
+        - Set GOPROXY to the public address of this app, then run go build. Modules are cached on first request.
+    compose_file: compose.yaml
+    recommended_memory_bytes: 134217728
+    env: []
+    domains:
+        - service: athens
+          port: 3000
+          description: Public address of the module proxy.
+    healthcheck:
+        service: athens
+        port: 3000
+        path: /healthz
+        expect: 0
+        kind: ""
+        reason: ""
+    first_boot_seconds: 0
+    console_command: []
+    capabilities: []

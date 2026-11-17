@@ -1,0 +1,11 @@
+id: kanboard
+name: Kanboard
+slogan: A minimalist, keyboard-friendly kanban board for personal and team task tracking.
+category: Productivity
+documentation_url: https://docs.kanboard.org
+recommended_memory_bytes: 268435456
+requires_gpu: false
+platforms:
+    - linux/amd64
+    - linux/arm
+    - linux/arm64

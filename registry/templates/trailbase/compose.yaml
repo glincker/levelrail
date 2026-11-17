@@ -1,0 +1,12 @@
+services:
+  trailbase:
+    image: trailbase/trailbase:0.22.6
+    ports: ["4000:4000"]
+    volumes:
+      - trailbase_data:/app/traildepot
+    healthcheck:
+      test: ["CMD-SHELL", "nc -z 127.0.0.1 4000 || exit 1"]
+      interval: 15s
+      timeout: 10s
+      retries: 5
+      start_period: 20s

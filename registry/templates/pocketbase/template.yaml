@@ -1,0 +1,11 @@
+id: pocketbase
+name: PocketBase
+slogan: 'An open-source backend in one file: embedded database, auth, file storage, and realtime API.'
+category: Developer Tools
+documentation_url: https://pocketbase.io/docs/
+recommended_memory_bytes: 134217728
+requires_gpu: false
+platforms:
+    - linux/amd64
+    - linux/arm
+    - linux/arm64

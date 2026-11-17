@@ -1,0 +1,70 @@
+id: pairdrop
+name: PairDrop
+slogan: An AirDrop-style app for sending files and messages between devices on the same network, from any browser.
+description: An AirDrop-style app for sending files and messages between devices on the same network, from any browser.
+category: Productivity
+documentation_url: https://github.com/schlagmichdoch/PairDrop
+recommended_memory_bytes: 268435456
+requires_gpu: false
+platforms:
+    - linux/amd64
+    - linux/arm64
+manifest:
+    id: pairdrop
+    name: PairDrop
+    description: An AirDrop-style app for sending files and messages between devices on the same network, from any browser.
+    icon: share
+    category: Productivity
+    documentation_url: https://github.com/schlagmichdoch/PairDrop
+    source_repo: https://github.com/schlagmichdoch/PairDrop
+    license: GPL-3.0
+    license_class: copyleft
+    license_url: https://github.com/schlagmichdoch/PairDrop/blob/master/LICENSE
+    hosted_use: ""
+    listing: null
+    status: ""
+    status_reason: ""
+    replaced_by: ""
+    aliases: []
+    first_run: []
+    compose_file: compose.yaml
+    recommended_memory_bytes: 268435456
+    env:
+        - key: TZ
+          label: Time zone
+          description: IANA time zone for the server's logs.
+          default: Etc/UTC
+          generate: ""
+          length: 0
+          required: false
+          secret: false
+          type: ""
+          service: ""
+          path: ""
+          mode: ""
+        - key: RATE_LIMIT
+          label: Rate limit
+          description: Set to true when the app sits behind a proxy that should throttle clients.
+          default: "false"
+          generate: ""
+          length: 0
+          required: false
+          secret: false
+          type: ""
+          service: ""
+          path: ""
+          mode: ""
+    domains:
+        - service: pairdrop
+          port: 3000
+          description: Public address devices open to pair.
+    healthcheck:
+        service: pairdrop
+        port: 3000
+        path: /
+        expect: 0
+        kind: ""
+        reason: ""
+    first_boot_seconds: 0
+    console_command: []
+    capabilities: []

@@ -1,0 +1,42 @@
+services:
+  radicale:
+    image: kozea/radicale:3.9.0
+    ports: ["5232"]
+    environment:
+      RADICALE_USER: ${SERVICE_USER_RADICALE}
+      RADICALE_PASSWORD: ${SERVICE_PASSWORD_RADICALE}
+    entrypoint: ["sh", "-c"]
+    command:
+      - |
+        set -e
+        mkdir -p /var/lib/radicale/collections
+        cat > /var/lib/radicale/config <<'CFG'
+        [server]
+        hosts = 0.0.0.0:5232
+        [auth]
+        type = htpasswd
+        htpasswd_filename = /var/lib/radicale/users
+        htpasswd_encryption = sha512
+        [rights]
+        type = owner_only
+        [storage]
+        filesystem_folder = /var/lib/radicale/collections
+        CFG
+        # the file is rebuilt when it is missing or holds no usable hash, so a blank password never ships
+        if ! grep -Eq ':.{60,}' /var/lib/radicale/users 2>/dev/null; then
+          [ -n "$RADICALE_USER" ] && [ -n "$RADICALE_PASSWORD" ] || exit 1
+          printf '%s:' "$RADICALE_USER" > /var/lib/radicale/users
+          # mkpasswd reads the password from stdin so it never appears in argv
+          printf '%s' "$RADICALE_PASSWORD" | mkpasswd -P 0 -m sha512 >> /var/lib/radicale/users
+          grep -Eq ':.{60,}' /var/lib/radicale/users || { rm -f /var/lib/radicale/users; exit 1; }
+        fi
+        unset RADICALE_PASSWORD
+        exec /app/bin/python /app/bin/radicale --config /var/lib/radicale/config
+    volumes:
+      - data:/var/lib/radicale
+    healthcheck:
+      test: ["CMD-SHELL", "wget -q -O /dev/null http://127.0.0.1:5232/.web/"]
+      interval: 15s
+      timeout: 5s
+      retries: 10
+      start_period: 15s

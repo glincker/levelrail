@@ -1,0 +1,10 @@
+id: emby
+name: Emby
+slogan: A media server that organizes your movies, shows, and music and streams them to any device.
+category: Media
+documentation_url: https://emby.media/support/articles/Home.html
+recommended_memory_bytes: 1073741824
+requires_gpu: false
+platforms:
+    - linux/amd64
+    - linux/arm64

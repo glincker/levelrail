@@ -1,0 +1,10 @@
+id: qbittorrent
+name: qBittorrent
+slogan: A free, self-hosted BitTorrent client with a full web UI for remote download management.
+category: Media
+documentation_url: https://github.com/qbittorrent/qBittorrent/wiki
+recommended_memory_bytes: 268435456
+requires_gpu: false
+platforms:
+    - linux/amd64
+    - linux/arm64

@@ -1,0 +1,10 @@
+id: flowise
+name: Flowise
+slogan: Drag-and-drop builder for LLM chatbots, agents, and RAG flows, with an API for each flow.
+category: AI
+documentation_url: https://docs.flowiseai.com
+recommended_memory_bytes: 1073741824
+requires_gpu: false
+platforms:
+    - linux/amd64
+    - linux/arm64

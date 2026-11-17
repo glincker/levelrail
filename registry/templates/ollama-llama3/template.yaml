@@ -1,0 +1,10 @@
+id: ollama-llama3
+name: 'Ollama: Llama 3 8B'
+slogan: Meta's Llama 3 8B model, served locally through Ollama's HTTP API.
+category: AI
+documentation_url: https://ollama.com/library/llama3
+recommended_memory_bytes: 7516192768
+requires_gpu: false
+platforms:
+    - linux/amd64
+    - linux/arm64

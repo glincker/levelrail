@@ -1,0 +1,10 @@
+id: temporal
+name: Temporal
+slogan: 'Durable workflow execution: write long-running business logic as code and let Temporal survive failures.'
+category: Automation
+documentation_url: https://docs.temporal.io
+recommended_memory_bytes: 1073741824
+requires_gpu: false
+platforms:
+    - linux/amd64
+    - linux/arm64

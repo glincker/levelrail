@@ -1,0 +1,10 @@
+id: localai
+name: LocalAI
+slogan: A drop-in OpenAI-compatible API that runs language, image, and speech models on your own hardware.
+category: AI
+documentation_url: https://localai.io
+recommended_memory_bytes: 4294967296
+requires_gpu: false
+platforms:
+    - linux/amd64
+    - linux/arm64

@@ -1,0 +1,18 @@
+services:
+  rustfs:
+    image: rustfs/rustfs:1.0.4
+    ports: ["9001", "9000"]
+    environment:
+      RUSTFS_ACCESS_KEY: $SERVICE_USER_RUSTFS
+      RUSTFS_SECRET_KEY: $SERVICE_PASSWORD_RUSTFS
+      RUSTFS_ADDRESS: ":9000"
+      RUSTFS_CONSOLE_ADDRESS: ":9001"
+      RUSTFS_CONSOLE_ENABLE: "true"
+    volumes:
+      - data:/data
+    healthcheck:
+      test: ["CMD-SHELL", "curl -fsS -o /dev/null http://127.0.0.1:9000/health || exit 1"]
+      interval: 15s
+      timeout: 5s
+      retries: 10
+      start_period: 20s

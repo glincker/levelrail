@@ -1,0 +1,11 @@
+id: grafana
+name: Grafana
+slogan: Dashboards and exploration for metrics, logs, and traces from any data source.
+category: Monitoring
+documentation_url: https://grafana.com/docs/grafana/latest/
+recommended_memory_bytes: 268435456
+requires_gpu: false
+platforms:
+    - linux/amd64
+    - linux/arm
+    - linux/arm64

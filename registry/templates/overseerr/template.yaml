@@ -1,0 +1,11 @@
+id: overseerr
+name: Overseerr
+slogan: Lets your Plex users request new movies and TV shows straight from a shared web UI.
+category: Media
+documentation_url: https://docs.overseerr.dev
+recommended_memory_bytes: 268435456
+requires_gpu: false
+platforms:
+    - linux/amd64
+    - linux/arm
+    - linux/arm64

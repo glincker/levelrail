@@ -1,0 +1,16 @@
+services:
+  mongodb:
+    image: mongo:8.0.34
+    ports: ["27017"]
+    environment:
+      MONGO_INITDB_ROOT_USERNAME: $SERVICE_USER_MONGOROOT
+      MONGO_INITDB_ROOT_PASSWORD: $SERVICE_PASSWORD_MONGOROOT
+    volumes:
+      - mongodb_data:/data/db
+      - mongodb_config:/data/configdb
+    healthcheck:
+      test: ["CMD-SHELL", "mongosh --quiet --eval \"db.adminCommand('ping').ok\" | grep -q 1"]
+      interval: 10s
+      timeout: 5s
+      retries: 10
+      start_period: 30s

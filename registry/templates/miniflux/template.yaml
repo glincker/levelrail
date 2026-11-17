@@ -1,0 +1,11 @@
+id: miniflux
+name: Miniflux
+slogan: A minimalist, fast RSS/Atom feed reader with no bloat and a keyboard-driven UI.
+category: Productivity
+documentation_url: https://miniflux.app/docs/
+recommended_memory_bytes: 268435456
+requires_gpu: false
+platforms:
+    - linux/amd64
+    - linux/arm
+    - linux/arm64

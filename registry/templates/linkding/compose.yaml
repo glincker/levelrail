@@ -1,0 +1,14 @@
+services:
+  linkding:
+    image: sissbruecker/linkding:1.31.0
+    ports: ["9090:9090"]
+    environment:
+      LD_SUPERUSER_NAME: $SERVICE_USER_ADMIN
+      LD_SUPERUSER_PASSWORD: $SERVICE_PASSWORD_ADMIN
+    volumes:
+      - linkding_data:/etc/linkding/data
+    healthcheck:
+      test: ["CMD-SHELL", "curl -fsS -o /dev/null http://127.0.0.1:9090/health"]
+      interval: 10s
+      timeout: 5s
+      retries: 3

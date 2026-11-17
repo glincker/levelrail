@@ -1,0 +1,18 @@
+services:
+  ollama:
+    image: ollama/ollama:0.33.3
+    volumes:
+      - ollama_data:/root/.ollama
+  open-webui:
+    image: ghcr.io/open-webui/open-webui:0.11.3
+    ports: ["8080:8080"]
+    environment:
+      OLLAMA_BASE_URL: http://ollama:11434
+      WEBUI_SECRET_KEY: $SERVICE_HEX_32_SECRETKEY
+    volumes:
+      - openwebui_data:/app/backend/data
+    healthcheck:
+      test: ["CMD-SHELL", "curl -fsS -o /dev/null http://127.0.0.1:8080/health || wget -q -O /dev/null http://127.0.0.1:8080/health || exit 1"]
+      interval: 30s
+      timeout: 5s
+      retries: 3

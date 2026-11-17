@@ -1,0 +1,15 @@
+services:
+  zwave-js-ui:
+    image: zwavejs/zwave-js-ui:11.26.2
+    ports: ["8091", "3000"]
+    environment:
+      TZ: ${TZ}
+      SESSION_SECRET: ${SESSION_SECRET}
+    volumes:
+      - store:/usr/src/app/store
+    healthcheck:
+      test: ["CMD-SHELL", "wget -q -O /dev/null http://127.0.0.1:8091/health"]
+      interval: 15s
+      timeout: 10s
+      retries: 10
+      start_period: 30s

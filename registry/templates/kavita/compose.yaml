@@ -1,0 +1,13 @@
+services:
+  kavita:
+    image: jvmilazz0/kavita:0.9.1
+    ports: ["5000:5000"]
+    volumes:
+      - kavita_config:/kavita/config
+      - kavita_data:/manga
+    healthcheck:
+      test: ["CMD-SHELL", "curl -fsS -o /dev/null http://127.0.0.1:5000/api/health"]
+      interval: 10s
+      timeout: 5s
+      retries: 3
+      start_period: 60s

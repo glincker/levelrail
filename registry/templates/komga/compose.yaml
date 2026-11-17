@@ -1,0 +1,13 @@
+services:
+  komga:
+    image: gotson/komga:1.26.3
+    ports: ["25600:25600"]
+    volumes:
+      - komga_config:/config
+      - komga_data:/data
+    healthcheck:
+      test: ["CMD-SHELL", "curl -fsS -o /dev/null http://127.0.0.1:25600/actuator/health"]
+      interval: 10s
+      timeout: 5s
+      retries: 3
+      start_period: 120s

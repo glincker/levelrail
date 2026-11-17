@@ -1,0 +1,12 @@
+services:
+  stirling-pdf:
+    image: stirlingtools/stirling-pdf:0.36.2
+    ports: ["8080:8080"]
+    volumes:
+      - stirling_pdf_data:/usr/share/tessdata
+    healthcheck:
+      test: ["CMD-SHELL", "curl -fsS -o /dev/null http://127.0.0.1:8080/"]
+      interval: 10s
+      timeout: 5s
+      retries: 3
+      start_period: 120s

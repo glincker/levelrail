@@ -1,0 +1,94 @@
+id: paymenter
+name: Paymenter
+slogan: Open-source billing and client management for hosting providers, with invoices, subscriptions and provisioning extensions.
+description: Open-source billing and client management for hosting providers, with invoices, subscriptions and provisioning extensions.
+category: Finance
+documentation_url: https://paymenter.org/docs/guides/docker
+recommended_memory_bytes: 805306368
+requires_gpu: false
+platforms:
+    - linux/amd64
+    - linux/arm64
+manifest:
+    id: paymenter
+    name: Paymenter
+    description: Open-source billing and client management for hosting providers, with invoices, subscriptions and provisioning extensions.
+    icon: credit-card
+    category: Finance
+    documentation_url: https://paymenter.org/docs/guides/docker
+    source_repo: https://github.com/Paymenter/Paymenter
+    license: MIT
+    license_class: permissive
+    license_url: https://github.com/Paymenter/Paymenter/blob/master/LICENSE
+    hosted_use: ""
+    listing: null
+    status: ""
+    status_reason: ""
+    replaced_by: ""
+    aliases: []
+    first_run: []
+    compose_file: compose.yaml
+    recommended_memory_bytes: 805306368
+    env:
+        - key: DB_PASSWORD
+          label: Database password
+          description: Password for the bundled MariaDB database.
+          default: ""
+          generate: password
+          length: 32
+          required: false
+          secret: true
+          type: ""
+          service: ""
+          path: ""
+          mode: ""
+        - key: DB_ROOT_PASSWORD
+          label: Database root password
+          description: Root password for the bundled MariaDB server.
+          default: ""
+          generate: password
+          length: 32
+          required: false
+          secret: true
+          type: ""
+          service: ""
+          path: ""
+          mode: ""
+        - key: REDIS_PASSWORD
+          label: Redis password
+          description: Password for the bundled Redis cache.
+          default: ""
+          generate: password
+          length: 32
+          required: false
+          secret: true
+          type: ""
+          service: ""
+          path: ""
+          mode: ""
+        - key: APP_KEY
+          label: Application key
+          description: Encrypts sessions and stored secrets. Changing it invalidates both.
+          default: ""
+          generate: password
+          length: 32
+          required: false
+          secret: true
+          type: ""
+          service: ""
+          path: ""
+          mode: ""
+    domains:
+        - service: paymenter
+          port: 80
+          description: Public address of Paymenter.
+    healthcheck:
+        service: paymenter
+        port: 80
+        path: /
+        expect: 0
+        kind: ""
+        reason: ""
+    first_boot_seconds: 0
+    console_command: []
+    capabilities: []

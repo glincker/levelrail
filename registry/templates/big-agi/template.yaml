@@ -1,0 +1,47 @@
+id: big-agi
+name: Big-AGI
+slogan: A multi-model chat workspace with personas, side by side answers and voice, using your own API keys. MIT licensed. Keys stay in your browser unless you set them on the server.
+description: A multi-model chat workspace with personas, side by side answers and voice, using your own API keys. MIT licensed. Keys stay in your browser unless you set them on the server.
+category: AI
+documentation_url: https://github.com/enricoros/big-AGI
+recommended_memory_bytes: 268435456
+requires_gpu: false
+manifest:
+    id: big-agi
+    name: Big-AGI
+    description: A multi-model chat workspace with personas, side by side answers and voice, using your own API keys. MIT licensed. Keys stay in your browser unless you set them on the server.
+    icon: chat
+    category: AI
+    documentation_url: https://github.com/enricoros/big-AGI
+    source_repo: https://github.com/enricoros/big-AGI
+    license: MIT
+    license_class: permissive
+    license_url: https://github.com/enricoros/big-AGI/blob/HEAD/LICENSE
+    hosted_use: ""
+    listing:
+        by: community
+        vendor_org: ""
+        proof: ""
+    status: active
+    status_reason: ""
+    replaced_by: ""
+    aliases: []
+    first_run:
+        - Open the app and add your model API keys under Models.
+    compose_file: compose.yaml
+    recommended_memory_bytes: 268435456
+    env: []
+    domains:
+        - service: big-agi
+          port: 3000
+          description: Public address of Big-AGI.
+    healthcheck:
+        service: big-agi
+        port: 3000
+        path: /
+        expect: 0
+        kind: ""
+        reason: ""
+    first_boot_seconds: 0
+    console_command: []
+    capabilities: []

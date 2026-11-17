@@ -1,0 +1,10 @@
+id: tolgee
+name: Tolgee
+slogan: A localization management platform where developers and translators work in one shared UI.
+category: Developer Tools
+documentation_url: https://tolgee.io/platform
+recommended_memory_bytes: 1073741824
+requires_gpu: false
+platforms:
+    - linux/amd64
+    - linux/arm64

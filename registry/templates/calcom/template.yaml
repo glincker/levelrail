@@ -1,0 +1,9 @@
+id: calcom
+name: Cal.com
+slogan: Open-source scheduling infrastructure for booking meetings without the back-and-forth.
+category: Productivity
+documentation_url: https://cal.com/docs/self-hosting/installation
+recommended_memory_bytes: 1073741824
+requires_gpu: false
+platforms:
+    - linux/amd64

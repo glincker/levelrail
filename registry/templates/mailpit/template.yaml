@@ -1,0 +1,11 @@
+id: mailpit
+name: Mailpit
+slogan: A local SMTP server and web inbox for catching and inspecting outgoing email during development.
+category: Developer Tools
+documentation_url: https://mailpit.axllent.org/docs/
+recommended_memory_bytes: 134217728
+requires_gpu: false
+platforms:
+    - linux/386
+    - linux/amd64
+    - linux/arm64

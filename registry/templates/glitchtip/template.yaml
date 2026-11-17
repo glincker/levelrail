@@ -1,0 +1,10 @@
+id: glitchtip
+name: GlitchTip
+slogan: A lightweight, self-hosted error tracking service compatible with the Sentry SDK.
+category: Monitoring
+documentation_url: https://glitchtip.com/documentation
+recommended_memory_bytes: 536870912
+requires_gpu: false
+platforms:
+    - linux/amd64
+    - linux/arm64

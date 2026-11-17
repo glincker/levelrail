@@ -1,0 +1,19 @@
+services:
+  palworld:
+    image: thijsvanloef/palworld-server-docker:v2.8.1
+    ports:
+      - "8211:8211/udp"
+    environment:
+      PLAYERS: "8"
+      PORT: "8211"
+      MULTITHREADING: "true"
+      RCON_ENABLED: "true"
+      ADMIN_PASSWORD: $SERVICE_PASSWORD_PALADMIN
+    volumes:
+      - palworld_data:/palworld
+    healthcheck:
+      test: ["CMD-SHELL", "grep -qi ':2013 ' /proc/net/udp /proc/net/udp6"]
+      interval: 30s
+      timeout: 5s
+      retries: 5
+      start_period: 300s

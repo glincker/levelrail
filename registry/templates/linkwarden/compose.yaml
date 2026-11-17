@@ -1,0 +1,32 @@
+services:
+  linkwarden:
+    image: ghcr.io/linkwarden/linkwarden:v2.9.3
+    ports: ["3000:3000"]
+    environment:
+      NEXTAUTH_URL: ${SERVICE_URL_LINKWARDEN:-http://localhost:3000}/api/v1/auth
+      NEXTAUTH_SECRET: $SERVICE_HEX_32_NEXTAUTHSECRET
+      DATABASE_URL: postgresql://postgres:$SERVICE_PASSWORD_DB@db:5432/linkwarden
+      MEILI_MASTER_KEY: $SERVICE_HEX_32_MEILIKEY
+      MEILI_HOST: http://meilisearch:7700
+    volumes:
+      - linkwarden_data:/data/data
+    healthcheck:
+      test: ["CMD-SHELL", "curl -fsS -o /dev/null http://127.0.0.1:3000/"]
+      interval: 10s
+      timeout: 5s
+      retries: 3
+      start_period: 120s
+  db:
+    image: postgres:16-alpine
+    environment:
+      POSTGRES_DB: linkwarden
+      POSTGRES_PASSWORD: $SERVICE_PASSWORD_DB
+    volumes:
+      - linkwarden_db_data:/var/lib/postgresql/data
+  meilisearch:
+    image: getmeili/meilisearch:v1.11.1
+    environment:
+      MEILI_MASTER_KEY: $SERVICE_HEX_32_MEILIKEY
+      MEILI_NO_ANALYTICS: "true"
+    volumes:
+      - linkwarden_meili_data:/meili_data

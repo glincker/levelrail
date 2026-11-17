@@ -1,0 +1,14 @@
+services:
+  meilisearch:
+    image: getmeili/meilisearch:v1.11.1
+    ports: ["7700:7700"]
+    environment:
+      MEILI_MASTER_KEY: $SERVICE_HEX_32_MASTERKEY
+      MEILI_NO_ANALYTICS: "true"
+    volumes:
+      - meilisearch_data:/meili_data
+    healthcheck:
+      test: ["CMD-SHELL", "wget -q -O- http://127.0.0.1:7700/health || exit 1"]
+      interval: 30s
+      timeout: 5s
+      retries: 3

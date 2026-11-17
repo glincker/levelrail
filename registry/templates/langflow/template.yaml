@@ -1,0 +1,10 @@
+id: langflow
+name: Langflow
+slogan: A visual low-code tool for building and deploying multi-agent and RAG workflows in Python.
+category: AI
+documentation_url: https://docs.langflow.org
+recommended_memory_bytes: 2147483648
+requires_gpu: false
+platforms:
+    - linux/amd64
+    - linux/arm64

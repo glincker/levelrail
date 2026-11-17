@@ -1,0 +1,58 @@
+id: sabnzbd
+name: SABnzbd
+slogan: A Usenet binary downloader with a web interface, RSS and post-processing. GPL-2.0 licensed. On first open, run the setup wizard to add your Usenet provider; if you serve it on a domain, add that host name under Config, Special, host_whitelist.
+description: A Usenet binary downloader with a web interface, RSS and post-processing. GPL-2.0 licensed. On first open, run the setup wizard to add your Usenet provider; if you serve it on a domain, add that host name under Config, Special, host_whitelist.
+category: Applications
+documentation_url: https://sabnzbd.org/wiki/
+recommended_memory_bytes: 402653184
+requires_gpu: false
+platforms:
+    - linux/amd64
+    - linux/arm64
+manifest:
+    id: sabnzbd
+    name: SABnzbd
+    description: A Usenet binary downloader with a web interface, RSS and post-processing. GPL-2.0 licensed. On first open, run the setup wizard to add your Usenet provider; if you serve it on a domain, add that host name under Config, Special, host_whitelist.
+    icon: cloud
+    category: Applications
+    documentation_url: https://sabnzbd.org/wiki/
+    source_repo: https://github.com/sabnzbd/sabnzbd
+    license: GPL-2.0-or-later
+    license_class: copyleft
+    license_url: https://github.com/sabnzbd/sabnzbd/blob/develop/LICENSE.txt
+    hosted_use: ""
+    listing: null
+    status: ""
+    status_reason: ""
+    replaced_by: ""
+    aliases: []
+    first_run: []
+    compose_file: compose.yaml
+    recommended_memory_bytes: 402653184
+    env:
+        - key: TZ
+          label: Time zone
+          description: IANA time zone for logs and the scheduler.
+          default: Etc/UTC
+          generate: ""
+          length: 0
+          required: false
+          secret: false
+          type: ""
+          service: ""
+          path: ""
+          mode: ""
+    domains:
+        - service: sabnzbd
+          port: 8080
+          description: Public address of SABnzbd.
+    healthcheck:
+        service: sabnzbd
+        port: 8080
+        path: /
+        expect: 0
+        kind: ""
+        reason: ""
+    first_boot_seconds: 0
+    console_command: []
+    capabilities: []

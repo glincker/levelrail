@@ -1,0 +1,14 @@
+services:
+  silverbullet:
+    image: ghcr.io/silverbulletmd/silverbullet:2.11.1
+    ports: ["3000:3000"]
+    environment:
+      SB_USER: admin:$SERVICE_PASSWORD_ADMIN
+    volumes:
+      - silverbullet_space:/space
+    healthcheck:
+      test: ["CMD-SHELL", "curl -fsS -o /dev/null http://127.0.0.1:3000/.ping || wget -q -O /dev/null http://127.0.0.1:3000/.ping || exit 1"]
+      interval: 30s
+      timeout: 5s
+      retries: 3
+      start_period: 30s

@@ -1,0 +1,26 @@
+services:
+  joomla:
+    image: joomla:5-apache
+    ports: ["8080:80"]
+    environment:
+      JOOMLA_DB_HOST: db
+      JOOMLA_DB_USER: joomla
+      JOOMLA_DB_PASSWORD: $SERVICE_PASSWORD_DB
+      JOOMLA_DB_NAME: joomla
+    volumes:
+      - joomla_data:/var/www/html
+    healthcheck:
+      test: ["CMD-SHELL", "curl -fsS -o /dev/null http://127.0.0.1:80/ || wget -q -O /dev/null http://127.0.0.1:80/ || exit 1"]
+      interval: 30s
+      timeout: 5s
+      retries: 3
+      start_period: 60s
+  db:
+    image: mariadb:11
+    environment:
+      MARIADB_ROOT_PASSWORD: $SERVICE_PASSWORD_ROOT
+      MARIADB_USER: joomla
+      MARIADB_PASSWORD: $SERVICE_PASSWORD_DB
+      MARIADB_DATABASE: joomla
+    volumes:
+      - joomla_db_data:/var/lib/mysql

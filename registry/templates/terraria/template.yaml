@@ -1,0 +1,17 @@
+id: terraria
+name: Terraria Server
+slogan: A vanilla Terraria dedicated server that creates a world on first start.
+description: |-
+    Players connect on TCP 7777 (no web address is created for it): the port binds privately by default, so set a public bind in the app's Network settings and open TCP 7777 in the host and cloud firewall.
+    The world is created on first start and kept in the data volume. The image has no password by default: add one by overriding the start command with -password.
+    Image is multi-arch (amd64 and arm64).
+category: Games
+documentation_url: https://github.com/Ryshe/terraria-docker
+recommended_memory_bytes: 1073741824
+requires_gpu: false
+platforms:
+    - linux/386
+    - linux/amd64
+    - linux/arm
+    - linux/arm64
+    - linux/ppc64le

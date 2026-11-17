@@ -1,0 +1,39 @@
+services:
+  wallabag:
+    image: wallabag/wallabag:2.6.15
+    ports: ["80"]
+    environment:
+      SYMFONY__ENV__DATABASE_DRIVER: pdo_pgsql
+      SYMFONY__ENV__DATABASE_HOST: db
+      SYMFONY__ENV__DATABASE_PORT: "5432"
+      SYMFONY__ENV__DATABASE_NAME: wallabag
+      SYMFONY__ENV__DATABASE_USER: wallabag
+      SYMFONY__ENV__DATABASE_PASSWORD: ${DB_PASSWORD}
+      SYMFONY__ENV__DATABASE_CHARSET: utf8
+      SYMFONY__ENV__DOMAIN_NAME: ${SERVICE_URL_WALLABAG:-http://localhost}
+      SYMFONY__ENV__SECRET: ${SECRET}
+      SYMFONY__ENV__FOSUSER_REGISTRATION: "false"
+    volumes:
+      - wallabag_images:/var/www/wallabag/web/assets/images
+    depends_on:
+      db:
+        condition: service_healthy
+    healthcheck:
+      test: ["CMD-SHELL", "curl -fsS -o /dev/null http://127.0.0.1:80/"]
+      interval: 15s
+      timeout: 10s
+      retries: 10
+      start_period: 90s
+  db:
+    image: postgres:17.11-alpine
+    environment:
+      POSTGRES_USER: wallabag
+      POSTGRES_PASSWORD: ${DB_PASSWORD}
+      POSTGRES_DB: wallabag
+    volumes:
+      - pgdata:/var/lib/postgresql/data
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U wallabag -d wallabag"]
+      interval: 5s
+      timeout: 5s
+      retries: 10

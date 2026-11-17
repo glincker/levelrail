@@ -1,0 +1,10 @@
+id: appflowy
+name: AppFlowy
+slogan: A self-hosted, open-source workspace for notes and collaborative knowledge, an alternative to Notion.
+category: Productivity
+documentation_url: https://docs.appflowy.io/docs/documentation/appflowy-cloud
+recommended_memory_bytes: 1610612736
+requires_gpu: false
+platforms:
+    - linux/amd64
+    - linux/arm64

@@ -1,0 +1,10 @@
+id: zipline
+name: Zipline
+slogan: A self-hosted file and screenshot host with a share-first upload flow and its own URL shortener.
+category: Storage
+documentation_url: https://zipline.diced.sh/docs
+recommended_memory_bytes: 268435456
+requires_gpu: false
+platforms:
+    - linux/amd64
+    - linux/arm64

@@ -1,0 +1,12 @@
+id: pi-hole
+name: Pi-hole
+slogan: Network-wide ad blocking that works as a DNS sinkhole for your whole network.
+category: Infrastructure
+documentation_url: https://docs.pi-hole.net
+recommended_memory_bytes: 268435456
+requires_gpu: false
+platforms:
+    - linux/386
+    - linux/amd64
+    - linux/arm
+    - linux/arm64

@@ -1,0 +1,16 @@
+services:
+  anythingllm:
+    image: mintplexlabs/anythingllm:1.16.2
+    ports: ["3001:3001"]
+    environment:
+      SERVER_PORT: "3001"
+      STORAGE_DIR: /app/server/storage
+      JWT_SECRET: $SERVICE_HEX_32_JWT
+    volumes:
+      - anythingllm_storage:/app/server/storage
+    healthcheck:
+      test: ["CMD-SHELL", "curl -fsS -o /dev/null http://127.0.0.1:3001/api/ping || wget -q -O /dev/null http://127.0.0.1:3001/api/ping || exit 1"]
+      interval: 30s
+      timeout: 5s
+      retries: 3
+      start_period: 60s

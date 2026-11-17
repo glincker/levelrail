@@ -1,0 +1,82 @@
+id: kutt
+name: Kutt
+slogan: A modern URL shortener with custom domains, link analytics and an API, backed by Postgres and Redis.
+description: A modern URL shortener with custom domains, link analytics and an API, backed by Postgres and Redis.
+category: Applications
+documentation_url: https://docs.kutt.it/
+recommended_memory_bytes: 402653184
+requires_gpu: false
+platforms:
+    - linux/amd64
+    - linux/arm64
+manifest:
+    id: kutt
+    name: Kutt
+    description: A modern URL shortener with custom domains, link analytics and an API, backed by Postgres and Redis.
+    icon: link
+    category: Applications
+    documentation_url: https://docs.kutt.it/
+    source_repo: https://github.com/thedevs-network/kutt
+    license: MIT
+    license_class: permissive
+    license_url: https://github.com/thedevs-network/kutt/blob/main/LICENSE
+    hosted_use: ""
+    listing: null
+    status: ""
+    status_reason: ""
+    replaced_by: ""
+    aliases: []
+    first_run: []
+    compose_file: compose.yaml
+    recommended_memory_bytes: 402653184
+    env:
+        - key: DB_PASSWORD
+          label: Database password
+          description: Password for the bundled Postgres database.
+          default: ""
+          generate: password
+          length: 32
+          required: false
+          secret: true
+          type: ""
+          service: ""
+          path: ""
+          mode: ""
+        - key: JWT_SECRET
+          label: JWT secret
+          description: Signs login tokens. Changing it signs every user out.
+          default: ""
+          generate: hex
+          length: 64
+          required: false
+          secret: true
+          type: ""
+          service: ""
+          path: ""
+          mode: ""
+        - key: DEFAULT_DOMAIN
+          label: Default domain
+          description: Host name used in short links, without a scheme.
+          default: localhost:3000
+          generate: ""
+          length: 0
+          required: false
+          secret: false
+          type: ""
+          service: ""
+          path: ""
+          mode: ""
+    domains:
+        - service: kutt
+          port: 3000
+          description: Public address of Kutt.
+    healthcheck:
+        service: kutt
+        port: 3000
+        path: /api/v2/health
+        expect: 0
+        kind: ""
+        reason: ""
+    first_boot_seconds: 0
+    console_command: []
+    capabilities: []

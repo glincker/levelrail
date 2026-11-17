@@ -1,0 +1,17 @@
+services:
+  multi-scrobbler:
+    image: ghcr.io/foxxmd/multi-scrobbler:0.20.3
+    ports: ["9078"]
+    environment:
+      TZ: ${TZ}
+      PUID: "1000"
+      PGID: "1000"
+      BASE_URL: ${BASE_URL}
+    volumes:
+      - config:/config
+    healthcheck:
+      test: ["CMD-SHELL", "curl -fsS -o /dev/null http://127.0.0.1:9078/"]
+      interval: 15s
+      timeout: 5s
+      retries: 10
+      start_period: 40s

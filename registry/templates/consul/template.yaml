@@ -1,0 +1,48 @@
+id: consul
+name: Consul
+slogan: 'HashiCorp Consul in single-server mode with the web UI: service discovery, health checks and a key-value store.'
+description: 'HashiCorp Consul in single-server mode with the web UI: service discovery, health checks and a key-value store.'
+category: Infrastructure
+documentation_url: https://developer.hashicorp.com/consul/docs
+recommended_memory_bytes: 268435456
+requires_gpu: false
+platforms:
+    - linux/386
+    - linux/amd64
+    - linux/arm
+    - linux/arm64
+manifest:
+    id: consul
+    name: Consul
+    description: 'HashiCorp Consul in single-server mode with the web UI: service discovery, health checks and a key-value store.'
+    icon: hard-drives
+    category: Infrastructure
+    documentation_url: https://developer.hashicorp.com/consul/docs
+    source_repo: https://github.com/hashicorp/consul
+    license: BUSL-1.1
+    license_class: source-available
+    license_url: https://github.com/hashicorp/consul/blob/main/LICENSE
+    hosted_use: ""
+    listing: null
+    status: ""
+    status_reason: ""
+    replaced_by: ""
+    aliases: []
+    first_run: []
+    compose_file: compose.yaml
+    recommended_memory_bytes: 268435456
+    env: []
+    domains:
+        - service: consul
+          port: 8500
+          description: Public address of the Consul UI and HTTP API. It has no ACLs, so restrict access.
+    healthcheck:
+        service: consul
+        port: 8500
+        path: /v1/status/leader
+        expect: 0
+        kind: ""
+        reason: ""
+    first_boot_seconds: 0
+    console_command: []
+    capabilities: []

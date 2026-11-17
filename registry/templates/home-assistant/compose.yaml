@@ -1,0 +1,11 @@
+services:
+  home-assistant:
+    image: ghcr.io/home-assistant/home-assistant:2025.10.2
+    ports: ["8123:8123"]
+    volumes:
+      - home_assistant_config:/config
+    healthcheck:
+      test: ["CMD-SHELL", "wget -q -O- http://127.0.0.1:8123/ || exit 1"]
+      interval: 30s
+      timeout: 5s
+      retries: 3

@@ -1,0 +1,9 @@
+id: mattermost
+name: Mattermost
+slogan: An open-source, self-hosted alternative to Slack for team messaging and collaboration.
+category: Communication
+documentation_url: https://docs.mattermost.com
+recommended_memory_bytes: 1073741824
+requires_gpu: false
+platforms:
+    - linux/amd64

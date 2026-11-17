@@ -1,0 +1,10 @@
+id: calibre-web
+name: Calibre-Web
+slogan: A clean web interface for browsing, reading, and downloading your existing Calibre ebook library.
+category: Media
+documentation_url: https://github.com/janeczku/calibre-web/wiki
+recommended_memory_bytes: 268435456
+requires_gpu: false
+platforms:
+    - linux/amd64
+    - linux/arm64

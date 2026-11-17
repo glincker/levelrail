@@ -1,0 +1,12 @@
+services:
+  gocd:
+    image: gocd/gocd-server:v26.1.0
+    ports: ["8153"]
+    volumes:
+      - gocd_data:/godata
+    healthcheck:
+      test: ["CMD-SHELL", "curl -sf http://127.0.0.1:8153/go/api/v1/health > /dev/null || exit 1"]
+      interval: 15s
+      timeout: 8s
+      retries: 10
+      start_period: 90s

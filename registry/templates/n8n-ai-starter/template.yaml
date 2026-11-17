@@ -1,0 +1,10 @@
+id: n8n-ai-starter
+name: n8n AI Starter Kit
+slogan: n8n wired to a local Ollama model and a Qdrant vector store, ready for private AI workflows.
+category: AI
+documentation_url: https://docs.n8n.io/advanced-ai
+recommended_memory_bytes: 4294967296
+requires_gpu: false
+platforms:
+    - linux/amd64
+    - linux/arm64

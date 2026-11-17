@@ -1,0 +1,10 @@
+id: formbricks
+name: Formbricks
+slogan: An open-source survey and experience-management platform you run on your own infrastructure.
+category: Productivity
+documentation_url: https://formbricks.com/docs/self-hosting/setup/docker
+recommended_memory_bytes: 536870912
+requires_gpu: false
+platforms:
+    - linux/amd64
+    - linux/arm64

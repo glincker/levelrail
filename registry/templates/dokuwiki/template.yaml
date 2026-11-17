@@ -1,0 +1,10 @@
+id: dokuwiki
+name: DokuWiki
+slogan: A simple, database-free wiki that stores pages as plain text files, easy to back up.
+category: Productivity
+documentation_url: https://www.dokuwiki.org/manual
+recommended_memory_bytes: 134217728
+requires_gpu: false
+platforms:
+    - linux/amd64
+    - linux/arm64

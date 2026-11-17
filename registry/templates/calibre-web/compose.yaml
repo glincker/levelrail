@@ -1,0 +1,16 @@
+services:
+  calibre-web:
+    image: lscr.io/linuxserver/calibre-web:0.6.24
+    ports: ["8083:8083"]
+    environment:
+      PUID: "1000"
+      PGID: "1000"
+      TZ: "Etc/UTC"
+    volumes:
+      - calibreweb_config:/config
+      - calibreweb_books:/books
+    healthcheck:
+      test: ["CMD-SHELL", "curl -fsS -o /dev/null http://127.0.0.1:8083/"]
+      interval: 10s
+      timeout: 5s
+      retries: 3

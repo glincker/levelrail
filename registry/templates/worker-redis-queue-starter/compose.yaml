@@ -1,0 +1,18 @@
+services:
+  worker:
+    image: node:22-alpine
+    command: ["node", "-e", "console.log('worker started, queue url configured:', !!process.env.QUEUE_URL); setInterval(()=>console.log('polling queue...'), 15000);"]
+    environment:
+      QUEUE_URL: redis://queue:6379
+      NODE_ENV: production
+    depends_on: [queue]
+  queue:
+    image: redis:7-alpine
+    volumes:
+      - worker_redis_queue_data:/data
+    healthcheck:
+      test: ["CMD-SHELL", "redis-cli ping | grep -q PONG"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+      start_period: 10s

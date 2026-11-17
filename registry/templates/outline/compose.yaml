@@ -1,0 +1,39 @@
+services:
+  outline:
+    image: outlinewiki/outline:0.79.0
+    ports: ["3000:3000"]
+    environment:
+      SECRET_KEY: $SERVICE_HEX_64_SECRETKEY
+      UTILS_SECRET: $SERVICE_HEX_64_UTILSSECRET
+      DATABASE_URL: postgres://outline:$SERVICE_PASSWORD_DB@db:5432/outline
+      REDIS_URL: redis://redis:6379
+      URL: ${SERVICE_URL_OUTLINE:-http://localhost:3000}
+      FORCE_HTTPS: "false"
+      PGSSLMODE: disable
+    volumes:
+      - outline_data:/var/lib/outline/data
+    depends_on:
+      db:
+        condition: service_healthy
+    healthcheck:
+      test: ["CMD-SHELL", "wget -q -O- http://127.0.0.1:3000/_health || exit 1"]
+      interval: 30s
+      timeout: 5s
+      retries: 3
+  db:
+    image: postgres:16-alpine
+    environment:
+      POSTGRES_USER: outline
+      POSTGRES_PASSWORD: $SERVICE_PASSWORD_DB
+      POSTGRES_DB: outline
+    volumes:
+      - outline_db_data:/var/lib/postgresql/data
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U outline -d outline"]
+      interval: 5s
+      timeout: 5s
+      retries: 10
+  redis:
+    image: redis:7-alpine
+    volumes:
+      - outline_redis_data:/data

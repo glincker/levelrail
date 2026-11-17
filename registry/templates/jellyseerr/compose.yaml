@@ -1,0 +1,12 @@
+services:
+  jellyseerr:
+    image: fallenbagel/jellyseerr:2.7.3
+    ports: ["5055:5055"]
+    volumes:
+      - jellyseerr_config:/app/config
+    healthcheck:
+      test: ["CMD-SHELL", "curl -fsS -o /dev/null http://127.0.0.1:5055/api/v1/status || wget -q -O /dev/null http://127.0.0.1:5055/api/v1/status || exit 1"]
+      interval: 30s
+      timeout: 5s
+      retries: 3
+      start_period: 30s

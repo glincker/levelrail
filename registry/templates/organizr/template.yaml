@@ -1,0 +1,11 @@
+id: organizr
+name: Organizr
+slogan: A unified homepage and tabbed dashboard for linking every self-hosted app behind one interface.
+category: Dashboard
+documentation_url: https://docs.organizr.app/
+recommended_memory_bytes: 134217728
+requires_gpu: false
+platforms:
+    - linux/amd64
+    - linux/arm
+    - linux/arm64

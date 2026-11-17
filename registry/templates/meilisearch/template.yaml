@@ -1,0 +1,10 @@
+id: meilisearch
+name: Meilisearch
+slogan: A fast, typo-tolerant search engine API you can drop into any app's search bar.
+category: Developer Tools
+documentation_url: https://www.meilisearch.com/docs
+recommended_memory_bytes: 536870912
+requires_gpu: false
+platforms:
+    - linux/amd64
+    - linux/arm64

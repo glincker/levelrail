@@ -1,0 +1,10 @@
+id: prowlarr
+name: Prowlarr
+slogan: An indexer manager that syncs your torrent and Usenet indexers across the whole Arr stack.
+category: Media
+documentation_url: https://wiki.servarr.com/prowlarr
+recommended_memory_bytes: 268435456
+requires_gpu: false
+platforms:
+    - linux/amd64
+    - linux/arm64

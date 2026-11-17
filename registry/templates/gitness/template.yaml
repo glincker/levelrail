@@ -1,0 +1,58 @@
+id: gitness
+name: Gitness
+slogan: Harness Open Source, a Git host with code review, pipelines and an artifact registry in one binary. Apache-2.0 licensed. Uses an embedded SQLite database on the data volume. The first user to register becomes the admin, then turn off sign-ups. Pipelines that run containers need Docker access, which this template does not grant.
+description: Harness Open Source, a Git host with code review, pipelines and an artifact registry in one binary. Apache-2.0 licensed. Uses an embedded SQLite database on the data volume. The first user to register becomes the admin, then turn off sign-ups. Pipelines that run containers need Docker access, which this template does not grant.
+category: Developer Tools
+documentation_url: https://docs.harness.io/open-source
+recommended_memory_bytes: 402653184
+requires_gpu: false
+platforms:
+    - linux/amd64
+    - linux/arm64
+manifest:
+    id: gitness
+    name: Gitness
+    description: Harness Open Source, a Git host with code review, pipelines and an artifact registry in one binary. Apache-2.0 licensed. Uses an embedded SQLite database on the data volume. The first user to register becomes the admin, then turn off sign-ups. Pipelines that run containers need Docker access, which this template does not grant.
+    icon: git-branch
+    category: Developer Tools
+    documentation_url: https://docs.harness.io/open-source
+    source_repo: https://github.com/harness/harness
+    license: Apache-2.0
+    license_class: permissive
+    license_url: https://github.com/harness/harness/blob/main/LICENSE
+    hosted_use: ""
+    listing: null
+    status: ""
+    status_reason: ""
+    replaced_by: ""
+    aliases: []
+    first_run: []
+    compose_file: compose.yaml
+    recommended_memory_bytes: 402653184
+    env:
+        - key: URL_BASE
+          label: Public URL
+          description: Full URL where Gitness is served, used for clone links and callbacks.
+          default: http://localhost:3000
+          generate: ""
+          length: 0
+          required: false
+          secret: false
+          type: ""
+          service: ""
+          path: ""
+          mode: ""
+    domains:
+        - service: gitness
+          port: 3000
+          description: Public address of Gitness.
+    healthcheck:
+        service: gitness
+        port: 3000
+        path: /healthz
+        expect: 0
+        kind: ""
+        reason: ""
+    first_boot_seconds: 0
+    console_command: []
+    capabilities: []

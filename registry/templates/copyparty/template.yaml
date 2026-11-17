@@ -1,0 +1,14 @@
+id: copyparty
+name: copyparty
+slogan: A portable file server with resumable uploads, a media player, and search, in a single small image.
+category: Storage
+documentation_url: https://github.com/9001/copyparty
+recommended_memory_bytes: 268435456
+requires_gpu: false
+platforms:
+    - linux/386
+    - linux/amd64
+    - linux/arm
+    - linux/arm64
+    - linux/ppc64le
+    - linux/s390x

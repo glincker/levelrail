@@ -1,0 +1,82 @@
+id: heyform
+name: HeyForm
+slogan: A form builder for surveys, quizzes and lead capture, with conversational forms and a MongoDB backend.
+description: A form builder for surveys, quizzes and lead capture, with conversational forms and a MongoDB backend.
+category: Productivity
+documentation_url: https://docs.heyform.net/open-source/installation
+recommended_memory_bytes: 805306368
+requires_gpu: false
+platforms:
+    - linux/amd64
+    - linux/arm64
+manifest:
+    id: heyform
+    name: HeyForm
+    description: A form builder for surveys, quizzes and lead capture, with conversational forms and a MongoDB backend.
+    icon: clipboard
+    category: Productivity
+    documentation_url: https://docs.heyform.net/open-source/installation
+    source_repo: https://github.com/heyform/heyform
+    license: AGPL-3.0
+    license_class: network-copyleft
+    license_url: https://github.com/heyform/heyform/blob/next/LICENSE
+    hosted_use: ""
+    listing: null
+    status: ""
+    status_reason: ""
+    replaced_by: ""
+    aliases: []
+    first_run: []
+    compose_file: compose.yaml
+    recommended_memory_bytes: 805306368
+    env:
+        - key: SESSION_KEY
+          label: Session key
+          description: Signs login sessions. Changing it signs every user out.
+          default: ""
+          generate: hex
+          length: 64
+          required: false
+          secret: true
+          type: ""
+          service: ""
+          path: ""
+          mode: ""
+        - key: FORM_ENCRYPTION_KEY
+          label: Form encryption key
+          description: Encrypts stored form data. Keep it stable or existing submissions become unreadable.
+          default: ""
+          generate: hex
+          length: 64
+          required: false
+          secret: true
+          type: ""
+          service: ""
+          path: ""
+          mode: ""
+        - key: REDIS_PASSWORD
+          label: Redis password
+          description: Password for the bundled Redis cache.
+          default: ""
+          generate: password
+          length: 32
+          required: false
+          secret: true
+          type: ""
+          service: ""
+          path: ""
+          mode: ""
+    domains:
+        - service: heyform
+          port: 9157
+          description: Public address of HeyForm.
+    healthcheck:
+        service: heyform
+        port: 9157
+        path: /
+        expect: 0
+        kind: ""
+        reason: ""
+    first_boot_seconds: 0
+    console_command: []
+    capabilities: []

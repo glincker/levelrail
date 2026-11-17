@@ -1,0 +1,10 @@
+id: lowcoder
+name: Lowcoder
+slogan: An open-source low-code platform for building internal apps, dashboards, and workflows with drag-and-drop.
+category: Applications
+documentation_url: https://docs.lowcoder.cloud
+recommended_memory_bytes: 536870912
+requires_gpu: false
+platforms:
+    - linux/amd64
+    - linux/arm64

@@ -1,0 +1,12 @@
+services:
+  cyberchef:
+    image: ghcr.io/gchq/cyberchef:10.19.4
+    ports: ["8000:80"]
+    volumes:
+      - cyberchef_cache:/var/cache/nginx
+    healthcheck:
+      test: ["CMD-SHELL", "wget -q -O /dev/null http://127.0.0.1:80/ || exit 1"]
+      interval: 10s
+      timeout: 5s
+      retries: 3
+      start_period: 15s

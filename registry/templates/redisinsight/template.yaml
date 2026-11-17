@@ -1,0 +1,10 @@
+id: redisinsight
+name: RedisInsight
+slogan: A GUI for browsing keys, running commands, and profiling performance on any Redis instance.
+category: Database Tools
+documentation_url: https://redis.io/docs/latest/operate/redisinsight/
+recommended_memory_bytes: 268435456
+requires_gpu: false
+platforms:
+    - linux/amd64
+    - linux/arm64

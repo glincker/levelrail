@@ -1,0 +1,26 @@
+services:
+  chibisafe:
+    image: chibisafe/chibisafe:v6.5.5
+    ports: ["8001:8001"]
+    environment:
+      BASE_API_URL: http://chibisafe-server:8000
+    depends_on:
+      - chibisafe-server
+    healthcheck:
+      test: ["CMD", "wget", "--spider", "--quiet", "http://127.0.0.1:8001"]
+      interval: 30s
+      timeout: 10s
+      retries: 3
+      start_period: 10s
+  chibisafe-server:
+    image: chibisafe/chibisafe-server:v6.5.5
+    volumes:
+      - chibisafe_database:/app/database
+      - chibisafe_uploads:/app/uploads
+      - chibisafe_logs:/app/logs
+    healthcheck:
+      test: ["CMD", "wget", "--spider", "--quiet", "http://127.0.0.1:8000/api/health"]
+      interval: 30s
+      timeout: 10s
+      retries: 3
+      start_period: 10s

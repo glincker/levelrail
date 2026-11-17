@@ -1,0 +1,29 @@
+services:
+    coredns:
+        image: coredns/coredns:1.15.0
+        ports: ["8080", "1053"]
+        command: ["-conf", "/etc/coredns/Corefile"]
+        healthcheck:
+            test: ["NONE"]
+        x-levelrail-healthcheck:
+            kind: http
+            path: /health
+            port: 8080
+            interval: 15s
+            timeout: 8s
+            retries: 10
+            start_period: 20s
+        configs:
+            - source: lr_file_coredns_corefile
+              target: /etc/coredns/Corefile
+              mode: "0444"
+configs:
+    lr_file_coredns_corefile:
+        content: |
+            .:1053 {
+                errors
+                health :8080
+                ready :8181
+                cache 30
+                forward . 1.1.1.1 9.9.9.9
+            }

@@ -1,0 +1,59 @@
+id: linkace
+name: LinkAce
+slogan: A self-hosted bookmark archive with tags, lists, link checks and a REST API. GPL-3.0 licensed. Runs on SQLite in one container. On first open, register the admin account; the public address you assign is used as the app URL, so assign the domain before the first visit.
+description: A self-hosted bookmark archive with tags, lists, link checks and a REST API. GPL-3.0 licensed. Runs on SQLite in one container. On first open, register the admin account; the public address you assign is used as the app URL, so assign the domain before the first visit.
+category: Productivity
+documentation_url: https://www.linkace.org/docs/
+recommended_memory_bytes: 268435456
+requires_gpu: false
+platforms:
+    - linux/amd64
+    - linux/arm
+    - linux/arm64
+manifest:
+    id: linkace
+    name: LinkAce
+    description: A self-hosted bookmark archive with tags, lists, link checks and a REST API. GPL-3.0 licensed. Runs on SQLite in one container. On first open, register the admin account; the public address you assign is used as the app URL, so assign the domain before the first visit.
+    icon: link
+    category: Productivity
+    documentation_url: https://www.linkace.org/docs/
+    source_repo: https://github.com/Kovah/LinkAce
+    license: GPL-3.0-or-later
+    license_class: copyleft
+    license_url: https://github.com/Kovah/LinkAce/blob/2.x/LICENSE.md
+    hosted_use: ""
+    listing: null
+    status: ""
+    status_reason: ""
+    replaced_by: ""
+    aliases: []
+    first_run: []
+    compose_file: compose.yaml
+    recommended_memory_bytes: 268435456
+    env:
+        - key: TZ
+          label: Time zone
+          description: IANA time zone for timestamps and scheduled link checks.
+          default: Etc/UTC
+          generate: ""
+          length: 0
+          required: false
+          secret: false
+          type: ""
+          service: ""
+          path: ""
+          mode: ""
+    domains:
+        - service: linkace
+          port: 80
+          description: Public address of LinkAce.
+    healthcheck:
+        service: linkace
+        port: 80
+        path: /
+        expect: 0
+        kind: ""
+        reason: ""
+    first_boot_seconds: 0
+    console_command: []
+    capabilities: []

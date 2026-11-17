@@ -1,0 +1,11 @@
+id: kopia
+name: Kopia
+slogan: Fast, incremental, encrypted backups to a repository, driven from a web UI instead of a cron script.
+category: Storage
+documentation_url: https://kopia.io/docs/installation/#quick-setup-using-docker
+recommended_memory_bytes: 536870912
+requires_gpu: false
+platforms:
+    - linux/amd64
+    - linux/arm
+    - linux/arm64

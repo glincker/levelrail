@@ -1,0 +1,59 @@
+id: karma
+name: Karma
+slogan: Alert dashboard that merges and filters alerts from one or more Alertmanager instances into a single view.
+description: Alert dashboard that merges and filters alerts from one or more Alertmanager instances into a single view.
+category: Monitoring
+documentation_url: https://github.com/prymitive/karma#readme
+recommended_memory_bytes: 67108864
+requires_gpu: false
+manifest:
+    id: karma
+    name: Karma
+    description: Alert dashboard that merges and filters alerts from one or more Alertmanager instances into a single view.
+    icon: bell
+    category: Monitoring
+    documentation_url: https://github.com/prymitive/karma#readme
+    source_repo: https://github.com/prymitive/karma
+    license: Apache-2.0
+    license_class: permissive
+    license_url: https://github.com/prymitive/karma/blob/HEAD/LICENSE
+    hosted_use: allowed
+    listing:
+        by: community
+        vendor_org: ""
+        proof: ""
+    status: active
+    status_reason: ""
+    replaced_by: ""
+    aliases: []
+    first_run:
+        - Set the Alertmanager address in the install form to an instance this host can reach, then open the address.
+    compose_file: compose.yaml
+    recommended_memory_bytes: 67108864
+    env:
+        - key: KARMA_ALERTMANAGER
+          label: Alertmanager address
+          description: Address of the Alertmanager to read alerts from.
+          default: http://alertmanager:9093
+          generate: ""
+          length: 0
+          required: false
+          secret: false
+          type: ""
+          service: ""
+          path: ""
+          mode: ""
+    domains:
+        - service: karma
+          port: 8080
+          description: Public address of the alert dashboard.
+    healthcheck:
+        service: karma
+        port: 8080
+        path: /health
+        expect: 0
+        kind: ""
+        reason: ""
+    first_boot_seconds: 0
+    console_command: []
+    capabilities: []

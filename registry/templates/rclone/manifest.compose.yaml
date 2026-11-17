@@ -1,0 +1,17 @@
+services:
+  rclone:
+    image: rclone/rclone:1.76.0
+    ports: ["5572"]
+    command: ["rcd", "--rc-addr=:5572"]
+    environment:
+      RCLONE_RC_USER: "admin"
+      RCLONE_RC_PASS: ${ADMIN_PASSWORD}
+    volumes:
+      - config:/config/rclone
+      - data:/data
+    healthcheck:
+      test: ["CMD-SHELL", "nc -z 127.0.0.1 5572"]
+      interval: 15s
+      timeout: 10s
+      retries: 10
+      start_period: 30s

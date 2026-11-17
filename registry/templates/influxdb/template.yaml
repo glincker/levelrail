@@ -1,0 +1,10 @@
+id: influxdb
+name: InfluxDB
+slogan: An open-source time-series database for metrics, events, and IoT analytics.
+category: Database Tools
+documentation_url: https://docs.influxdata.com/influxdb/
+recommended_memory_bytes: 536870912
+requires_gpu: false
+platforms:
+    - linux/amd64
+    - linux/arm64

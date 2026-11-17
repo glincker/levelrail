@@ -1,0 +1,29 @@
+services:
+  docmost:
+    image: docmost/docmost:0.96.0
+    ports: ["3000:3000"]
+    environment:
+      APP_URL: ${SERVICE_URL_DOCMOST:-http://localhost:3000}
+      APP_SECRET: $SERVICE_HEX_64_APPSECRET
+      DATABASE_URL: postgresql://docmost:$SERVICE_PASSWORD_DB@db:5432/docmost
+      REDIS_URL: redis://redis:6379
+    volumes:
+      - docmost_data:/app/data/storage
+    healthcheck:
+      test: ["CMD-SHELL", "curl -fsS -o /dev/null http://127.0.0.1:3000/"]
+      interval: 10s
+      timeout: 5s
+      retries: 3
+      start_period: 60s
+  db:
+    image: postgres:16-alpine
+    environment:
+      POSTGRES_USER: docmost
+      POSTGRES_PASSWORD: $SERVICE_PASSWORD_DB
+      POSTGRES_DB: docmost
+    volumes:
+      - docmost_db_data:/var/lib/postgresql/data
+  redis:
+    image: redis:7.2-alpine
+    volumes:
+      - docmost_redis_data:/data

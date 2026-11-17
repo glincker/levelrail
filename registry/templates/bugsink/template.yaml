@@ -1,0 +1,10 @@
+id: bugsink
+name: Bugsink
+slogan: A self-hosted, lightweight error tracking server with a Sentry-compatible SDK ingestion API.
+category: Monitoring
+documentation_url: https://www.bugsink.com/docs/
+recommended_memory_bytes: 536870912
+requires_gpu: false
+platforms:
+    - linux/amd64
+    - linux/arm64

@@ -1,0 +1,58 @@
+id: wikijs
+name: Wiki.js
+slogan: A modern wiki with Markdown and visual editing, page permissions and full-text search, backed by Postgres.
+description: A modern wiki with Markdown and visual editing, page permissions and full-text search, backed by Postgres.
+category: Productivity
+documentation_url: https://docs.requarks.io
+recommended_memory_bytes: 536870912
+requires_gpu: false
+platforms:
+    - linux/amd64
+    - linux/arm64
+manifest:
+    id: wikijs
+    name: Wiki.js
+    description: A modern wiki with Markdown and visual editing, page permissions and full-text search, backed by Postgres.
+    icon: book
+    category: Productivity
+    documentation_url: https://docs.requarks.io
+    source_repo: https://github.com/requarks/wiki
+    license: AGPL-3.0
+    license_class: network-copyleft
+    license_url: https://github.com/requarks/wiki/blob/scarlett/LICENSE
+    hosted_use: ""
+    listing: null
+    status: ""
+    status_reason: ""
+    replaced_by: ""
+    aliases: []
+    first_run: []
+    compose_file: compose.yaml
+    recommended_memory_bytes: 536870912
+    env:
+        - key: DB_PASSWORD
+          label: Database password
+          description: Password for the bundled Postgres database. Generated once and reused on every redeploy.
+          default: ""
+          generate: password
+          length: 32
+          required: false
+          secret: true
+          type: ""
+          service: ""
+          path: ""
+          mode: ""
+    domains:
+        - service: wiki
+          port: 3000
+          description: Public address of the wiki.
+    healthcheck:
+        service: wiki
+        port: 3000
+        path: /healthz
+        expect: 0
+        kind: ""
+        reason: ""
+    first_boot_seconds: 0
+    console_command: []
+    capabilities: []

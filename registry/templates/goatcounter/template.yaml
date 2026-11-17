@@ -1,0 +1,10 @@
+id: goatcounter
+name: GoatCounter
+slogan: A privacy-friendly, open-source web analytics platform that never tracks individual visitors.
+category: Analytics
+documentation_url: https://www.goatcounter.com/help
+recommended_memory_bytes: 134217728
+requires_gpu: false
+platforms:
+    - linux/amd64
+    - linux/arm64

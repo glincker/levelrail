@@ -1,0 +1,10 @@
+id: budge
+name: Budge
+slogan: A self-hosted envelope budgeting app for personal finance.
+category: Finance
+documentation_url: https://github.com/linuxserver/budge
+recommended_memory_bytes: 268435456
+requires_gpu: false
+platforms:
+    - linux/amd64
+    - linux/arm64

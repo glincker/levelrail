@@ -1,0 +1,10 @@
+id: libreoffice
+name: LibreOffice (Remote Desktop)
+slogan: A full LibreOffice desktop running in a container, reachable from any browser, for editing office documents.
+category: Productivity
+documentation_url: https://www.libreoffice.org/discover/libreoffice/
+recommended_memory_bytes: 1073741824
+requires_gpu: false
+platforms:
+    - linux/amd64
+    - linux/arm64

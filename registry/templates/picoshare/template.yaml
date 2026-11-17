@@ -1,0 +1,59 @@
+id: picoshare
+name: PicoShare
+slogan: Minimalist file sharing service for sending large files by link with an optional expiry. A generated shared secret protects the upload page.
+description: Minimalist file sharing service for sending large files by link with an optional expiry. A generated shared secret protects the upload page.
+category: Storage
+documentation_url: https://github.com/mtlynch/picoshare#readme
+recommended_memory_bytes: 67108864
+requires_gpu: false
+manifest:
+    id: picoshare
+    name: PicoShare
+    description: Minimalist file sharing service for sending large files by link with an optional expiry. A generated shared secret protects the upload page.
+    icon: share
+    category: Storage
+    documentation_url: https://github.com/mtlynch/picoshare#readme
+    source_repo: https://github.com/mtlynch/picoshare
+    license: AGPL-3.0-only
+    license_class: network-copyleft
+    license_url: https://github.com/mtlynch/picoshare/blob/master/LICENSE
+    hosted_use: allowed
+    listing:
+        by: community
+        vendor_org: ""
+        proof: ""
+    status: active
+    status_reason: ""
+    replaced_by: ""
+    aliases: []
+    first_run:
+        - Sign in with the generated shared secret shown in the deployment variables, then upload a file to get a link.
+    compose_file: compose.yaml
+    recommended_memory_bytes: 67108864
+    env:
+        - key: PICOSHARE_SECRET
+          label: Shared secret
+          description: Secret you type on the upload page to sign in.
+          default: ""
+          generate: password
+          length: 24
+          required: false
+          secret: true
+          type: ""
+          service: ""
+          path: ""
+          mode: ""
+    domains:
+        - service: picoshare
+          port: 4001
+          description: Public address of the upload page and shared links.
+    healthcheck:
+        service: picoshare
+        port: 4001
+        path: /
+        expect: 0
+        kind: ""
+        reason: ""
+    first_boot_seconds: 0
+    console_command: []
+    capabilities: []

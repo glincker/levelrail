@@ -1,0 +1,11 @@
+services:
+  changedetection:
+    image: ghcr.io/dgtlmoon/changedetection.io:0.49.12
+    ports: ["5000:5000"]
+    volumes:
+      - changedetection_data:/datastore
+    healthcheck:
+      test: ["CMD", "python3", "-c", "import urllib.request; urllib.request.urlopen('http://127.0.0.1:5000/')"]
+      interval: 10s
+      timeout: 5s
+      retries: 3

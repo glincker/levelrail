@@ -1,0 +1,47 @@
+id: victorialogs
+name: VictoriaLogs
+slogan: A log database with a built in web UI and low memory use, with a data volume. Send logs to port 9428 from this project. The API has no login, so restrict access before exposing it.
+description: A log database with a built in web UI and low memory use, with a data volume. Send logs to port 9428 from this project. The API has no login, so restrict access before exposing it.
+category: Monitoring
+documentation_url: https://docs.victoriametrics.com/victorialogs/
+recommended_memory_bytes: 268435456
+requires_gpu: false
+manifest:
+    id: victorialogs
+    name: VictoriaLogs
+    description: A log database with a built in web UI and low memory use, with a data volume. Send logs to port 9428 from this project. The API has no login, so restrict access before exposing it.
+    icon: file-text
+    category: Monitoring
+    documentation_url: https://docs.victoriametrics.com/victorialogs/
+    source_repo: https://github.com/VictoriaMetrics/VictoriaLogs
+    license: Apache-2.0
+    license_class: permissive
+    license_url: https://github.com/VictoriaMetrics/VictoriaLogs/blob/main/LICENSE
+    hosted_use: allowed
+    listing:
+        by: community
+        vendor_org: ""
+        proof: ""
+    status: active
+    status_reason: ""
+    replaced_by: ""
+    aliases: []
+    first_run:
+        - Ship logs to http://victorialogs:9428 from this project, then open the web UI to search them.
+    compose_file: compose.yaml
+    recommended_memory_bytes: 268435456
+    env: []
+    domains:
+        - service: victorialogs
+          port: 9428
+          description: Public address of the web page.
+    healthcheck:
+        service: victorialogs
+        port: 9428
+        path: /health
+        expect: 0
+        kind: ""
+        reason: ""
+    first_boot_seconds: 0
+    console_command: []
+    capabilities: []

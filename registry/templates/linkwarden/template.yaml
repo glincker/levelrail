@@ -1,0 +1,10 @@
+id: linkwarden
+name: Linkwarden
+slogan: A bookmark manager that archives full page snapshots, not just links, so pages stay readable.
+category: Productivity
+documentation_url: https://docs.linkwarden.app/self-hosting/setup
+recommended_memory_bytes: 1073741824
+requires_gpu: false
+platforms:
+    - linux/amd64
+    - linux/arm64

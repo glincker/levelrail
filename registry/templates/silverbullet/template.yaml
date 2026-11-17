@@ -1,0 +1,11 @@
+id: silverbullet
+name: SilverBullet
+slogan: A programmable, Markdown-based notes app you can extend with your own scripts and queries.
+category: Productivity
+documentation_url: https://silverbullet.md
+recommended_memory_bytes: 268435456
+requires_gpu: false
+platforms:
+    - linux/amd64
+    - linux/arm
+    - linux/arm64

@@ -1,0 +1,10 @@
+id: litellm
+name: LiteLLM Proxy
+slogan: One OpenAI-format gateway in front of 100+ model providers, with keys, budgets, and spend tracking.
+category: AI
+documentation_url: https://docs.litellm.ai/docs/simple_proxy
+recommended_memory_bytes: 1073741824
+requires_gpu: false
+platforms:
+    - linux/amd64
+    - linux/arm64

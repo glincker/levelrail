@@ -1,0 +1,21 @@
+# Ports serve RustDesk clients directly, not the HTTP proxy. Setup notes are in the description.
+services:
+  rustdesk:
+    image: rustdesk/rustdesk-server-s6:1.1.16
+    ports:
+      - "21115:21115"
+      - "21116:21116"
+      - "21116:21116/udp"
+      - "21117:21117"
+    environment:
+      RELAY: ${RUSTDESK_RELAY:-}
+      ENCRYPTED_ONLY: "1"
+    command: ["/command/with-contenv", "sh", "-c", "[ -n \"$RELAY\" ] || { echo 'RUSTDESK_RELAY is empty: set it to your public host:21117' >&2; exit 1; }; exec sleep infinity"]
+    volumes:
+      - rustdesk_data:/data
+    healthcheck:
+      test: ["CMD-SHELL", "nc -z 127.0.0.1 21116 && nc -z 127.0.0.1 21117 && test -s /data/id_ed25519.pub"]
+      interval: 15s
+      timeout: 5s
+      retries: 5
+      start_period: 20s

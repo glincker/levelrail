@@ -1,0 +1,28 @@
+services:
+    element:
+        image: vectorim/element-web:v1.12.33
+        ports: ["80"]
+        configs:
+            - source: element_config
+              target: /app/config.json
+              mode: 0444
+        healthcheck:
+            test: ["CMD-SHELL", "wget -q -O /dev/null http://127.0.0.1:80/ || exit 1"]
+            interval: 15s
+            timeout: 5s
+            retries: 10
+            start_period: 10s
+configs:
+    element_config:
+        content: |
+            {
+              "default_server_config": {
+                "m.homeserver": {
+                  "base_url": "https://matrix-client.matrix.org",
+                  "server_name": "matrix.org"
+                }
+              },
+              "brand": "Element",
+              "disable_guests": true,
+              "show_labs_settings": false
+            }

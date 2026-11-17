@@ -1,0 +1,13 @@
+services:
+  adguard:
+    image: adguard/adguardhome:v0.107.55
+    ports: ["3000:3000"]
+    volumes:
+      - adguard_work:/opt/adguardhome/work
+      - adguard_conf:/opt/adguardhome/conf
+    healthcheck:
+      test: ["CMD-SHELL", "wget -q -O- http://127.0.0.1:3000/ || exit 1"]
+      interval: 10s
+      timeout: 5s
+      retries: 3
+      start_period: 15s

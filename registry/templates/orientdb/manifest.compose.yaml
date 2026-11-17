@@ -1,0 +1,15 @@
+services:
+  orientdb:
+    image: orientdb:3.2.58
+    ports: ["2480", "2424"]
+    environment:
+      ORIENTDB_ROOT_PASSWORD: $SERVICE_PASSWORD_ORIENTDB
+    volumes:
+      - orientdb_databases:/orientdb/databases
+      - orientdb_backup:/orientdb/backup
+    healthcheck:
+      test: ["CMD-SHELL", "curl -sf http://127.0.0.1:2480/ > /dev/null || exit 1"]
+      interval: 15s
+      timeout: 8s
+      retries: 10
+      start_period: 40s

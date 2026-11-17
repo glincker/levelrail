@@ -1,0 +1,14 @@
+services:
+  soketi:
+    image: quay.io/soketi/soketi:1.6-16-debian
+    ports: ["6001:6001"]
+    environment:
+      SOKETI_DEFAULT_APP_ID: $SERVICE_USER_SOKETI
+      SOKETI_DEFAULT_APP_KEY: $SERVICE_REALBASE64_64_APPKEY
+      SOKETI_DEFAULT_APP_SECRET: $SERVICE_REALBASE64_64_APPSECRET
+      SOKETI_PUSHER_SCHEME: https
+    healthcheck:
+      test: ["CMD-SHELL", "curl -fsS -o /dev/null http://127.0.0.1:6001/"]
+      interval: 10s
+      timeout: 5s
+      retries: 3

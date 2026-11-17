@@ -1,0 +1,10 @@
+id: jellyseerr
+name: Jellyseerr
+slogan: A request manager for Jellyfin, Plex, and Emby libraries, wired to Sonarr and Radarr.
+category: Media
+documentation_url: https://docs.jellyseerr.dev
+recommended_memory_bytes: 536870912
+requires_gpu: false
+platforms:
+    - linux/amd64
+    - linux/arm64

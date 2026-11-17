@@ -1,0 +1,14 @@
+services:
+  chronograf:
+    image: chronograf:1.11.6
+    ports: ["8888"]
+    environment:
+      BOLT_PATH: /var/lib/chronograf/chronograf-v1.db
+    volumes:
+      - data:/var/lib/chronograf
+    healthcheck:
+      test: ["CMD-SHELL", "curl -sf -o /dev/null http://127.0.0.1:8888/ping"]
+      interval: 15s
+      timeout: 5s
+      retries: 10
+      start_period: 15s

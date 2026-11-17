@@ -1,0 +1,10 @@
+id: browserless
+name: Browserless
+slogan: A headless Chrome browser exposed as an HTTP/WebSocket API for scraping and PDF rendering.
+category: Developer Tools
+documentation_url: https://docs.browserless.io
+recommended_memory_bytes: 1073741824
+requires_gpu: false
+platforms:
+    - linux/amd64
+    - linux/arm64

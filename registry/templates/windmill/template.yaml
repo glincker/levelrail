@@ -1,0 +1,10 @@
+id: windmill
+name: Windmill
+slogan: Turn scripts in Python, TypeScript, Go, and SQL into webhooks, workflows, and internal UIs.
+category: Automation
+documentation_url: https://www.windmill.dev/docs
+recommended_memory_bytes: 2147483648
+requires_gpu: false
+platforms:
+    - linux/amd64
+    - linux/arm64

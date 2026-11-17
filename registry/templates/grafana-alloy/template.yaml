@@ -1,0 +1,47 @@
+id: grafana-alloy
+name: Grafana Alloy
+slogan: A telemetry collector that scrapes metrics and ships them to Prometheus-compatible, Loki or Tempo backends. This starts with a small pipeline that scrapes its own metrics and logs them; edit the config to forward data elsewhere.
+description: A telemetry collector that scrapes metrics and ships them to Prometheus-compatible, Loki or Tempo backends. This starts with a small pipeline that scrapes its own metrics and logs them; edit the config to forward data elsewhere.
+category: Monitoring
+documentation_url: https://grafana.com/docs/alloy/latest/
+recommended_memory_bytes: 268435456
+requires_gpu: false
+manifest:
+    id: grafana-alloy
+    name: Grafana Alloy
+    description: A telemetry collector that scrapes metrics and ships them to Prometheus-compatible, Loki or Tempo backends. This starts with a small pipeline that scrapes its own metrics and logs them; edit the config to forward data elsewhere.
+    icon: activity
+    category: Monitoring
+    documentation_url: https://grafana.com/docs/alloy/latest/
+    source_repo: https://github.com/grafana/alloy
+    license: Apache-2.0
+    license_class: permissive
+    license_url: https://github.com/grafana/alloy/blob/main/LICENSE
+    hosted_use: allowed
+    listing:
+        by: community
+        vendor_org: ""
+        proof: ""
+    status: active
+    status_reason: ""
+    replaced_by: ""
+    aliases: []
+    first_run:
+        - Open the page to see the component graph, then replace the config with your own pipeline and redeploy.
+    compose_file: compose.yaml
+    recommended_memory_bytes: 268435456
+    env: []
+    domains:
+        - service: alloy
+          port: 12345
+          description: Public address of the Grafana Alloy web interface.
+    healthcheck:
+        service: alloy
+        port: 12345
+        path: /-/ready
+        expect: 0
+        kind: ""
+        reason: ""
+    first_boot_seconds: 0
+    console_command: []
+    capabilities: []

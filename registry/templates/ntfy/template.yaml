@@ -1,0 +1,11 @@
+id: ntfy
+name: ntfy
+slogan: A simple pub-sub push notification service you can send alerts to from any script or app.
+category: Communication
+documentation_url: https://docs.ntfy.sh
+recommended_memory_bytes: 134217728
+requires_gpu: false
+platforms:
+    - linux/amd64
+    - linux/arm
+    - linux/arm64

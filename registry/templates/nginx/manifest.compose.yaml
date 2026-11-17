@@ -1,0 +1,14 @@
+services:
+  nginx:
+    image: nginx:1.27.2-alpine
+    ports: ["80"]
+    environment:
+      TZ: ${TZ}
+    volumes:
+      - nginx_html:/usr/share/nginx/html
+    healthcheck:
+      test: ["CMD-SHELL", "wget -q -O /dev/null http://127.0.0.1:80/ || exit 1"]
+      interval: 15s
+      timeout: 5s
+      retries: 10
+      start_period: 10s

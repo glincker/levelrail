@@ -1,0 +1,11 @@
+id: siyuan
+name: SiYuan
+slogan: A privacy-first, self-hosted personal knowledge management app with block-based markdown notes.
+category: Productivity
+documentation_url: https://github.com/siyuan-note/siyuan
+recommended_memory_bytes: 536870912
+requires_gpu: false
+platforms:
+    - linux/amd64
+    - linux/arm
+    - linux/arm64

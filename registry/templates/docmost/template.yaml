@@ -1,0 +1,10 @@
+id: docmost
+name: Docmost
+slogan: An open-source, Notion-style collaborative wiki and documentation workspace.
+category: Productivity
+documentation_url: https://docmost.com/docs
+recommended_memory_bytes: 536870912
+requires_gpu: false
+platforms:
+    - linux/amd64
+    - linux/arm64

@@ -1,0 +1,15 @@
+services:
+  pingvin-share:
+    image: stonith404/pingvin-share:v1.13.0
+    ports: ["3000:3000"]
+    environment:
+      JWT_SECRET: $SERVICE_HEX_32_JWT
+      CORS_ALLOW_ORIGIN: http://localhost:3000
+    volumes:
+      - pingvin_data:/opt/app/backend/data
+    healthcheck:
+      test: ["CMD-SHELL", "curl -fsS -o /dev/null http://127.0.0.1:3000/ || exit 1"]
+      interval: 30s
+      timeout: 5s
+      retries: 3
+      start_period: 30s

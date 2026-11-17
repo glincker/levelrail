@@ -1,0 +1,14 @@
+services:
+  valkey:
+    image: valkey/valkey:8.0-alpine
+    ports: ["6379"]
+    environment:
+      VALKEY_PASSWORD: $SERVICE_PASSWORD_VALKEY
+    command: ["/bin/sh", "-c", "exec valkey-server --requirepass \"$VALKEY_PASSWORD\" --appendonly yes"]
+    volumes:
+      - valkey_data:/data
+    healthcheck:
+      test: ["CMD-SHELL", "valkey-cli -a \"$VALKEY_PASSWORD\" ping | grep -q PONG || exit 1"]
+      interval: 5s
+      timeout: 5s
+      retries: 10

@@ -1,0 +1,48 @@
+services:
+  netbox:
+    image: netboxcommunity/netbox:v4.6-5.0.2
+    ports: ["8080:8080"]
+    environment:
+      SECRET_KEY: $SERVICE_HEX_64_SECRETKEY
+      DB_HOST: db
+      DB_NAME: netbox
+      DB_USER: netbox
+      DB_PASSWORD: $SERVICE_PASSWORD_DB
+      REDIS_HOST: redis
+      REDIS_PORT: "6379"
+      REDIS_DATABASE: "0"
+      REDIS_CACHE_HOST: redis
+      REDIS_CACHE_PORT: "6379"
+      REDIS_CACHE_DATABASE: "1"
+      SUPERUSER_NAME: admin
+      SUPERUSER_EMAIL: admin@example.com
+      SUPERUSER_PASSWORD: $SERVICE_PASSWORD_ADMIN
+      ALLOWED_HOSTS: "*"
+    volumes:
+      - netbox_media:/opt/netbox/netbox/media
+      - netbox_reports:/opt/netbox/netbox/reports
+      - netbox_scripts:/opt/netbox/netbox/scripts
+    depends_on: [db, redis]
+    healthcheck:
+      test: ["CMD-SHELL", "curl -fsS -o /dev/null http://127.0.0.1:8080/login/ || exit 1"]
+      interval: 30s
+      timeout: 5s
+      retries: 5
+      start_period: 90s
+  db:
+    image: postgres:17-alpine
+    environment:
+      POSTGRES_USER: netbox
+      POSTGRES_PASSWORD: $SERVICE_PASSWORD_DB
+      POSTGRES_DB: netbox
+    volumes:
+      - netbox_db_data:/var/lib/postgresql/data
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U netbox -d netbox"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+  redis:
+    image: redis:7-alpine
+    volumes:
+      - netbox_redis_data:/data

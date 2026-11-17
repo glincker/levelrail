@@ -1,0 +1,15 @@
+services:
+  etherpad:
+    image: etherpad/etherpad:2.2.4
+    ports: ["9001:9001"]
+    environment:
+      ADMIN_PASSWORD: $SERVICE_PASSWORD_ADMIN
+      DEFAULT_PAD_TEXT: "Welcome to Etherpad."
+    volumes:
+      - etherpad_data:/opt/etherpad-lite/var
+    healthcheck:
+      test: ["CMD", "node", "-e", "require('http').get('http://127.0.0.1:9001/',r=>process.exit(r.statusCode<500?0:1)).on('error',()=>process.exit(1))"]
+      interval: 10s
+      timeout: 5s
+      retries: 3
+      start_period: 30s

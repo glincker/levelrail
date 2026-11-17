@@ -1,0 +1,11 @@
+services:
+  goatcounter:
+    image: arp242/goatcounter:2.7
+    ports: ["8080:8080"]
+    volumes:
+      - goatcounter_data:/home/goatcounter/goatcounter-data
+    healthcheck:
+      test: ["CMD-SHELL", "wget -qO- http://127.0.0.1:8080/status >/dev/null 2>&1 || exit 1"]
+      interval: 10s
+      timeout: 5s
+      retries: 10

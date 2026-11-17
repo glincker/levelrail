@@ -1,0 +1,16 @@
+services:
+  roundcube:
+    image: roundcube/roundcubemail:1.7.4-apache
+    ports: ["8080:80"]
+    environment:
+      ROUNDCUBEMAIL_DB_TYPE: sqlite
+      ROUNDCUBEMAIL_DEFAULT_HOST: ssl://mail.example.com
+      ROUNDCUBEMAIL_SMTP_SERVER: tls://mail.example.com
+    volumes:
+      - roundcube_db:/var/roundcube/db
+    healthcheck:
+      test: ["CMD-SHELL", "curl -fsS -o /dev/null http://127.0.0.1:80/ || wget -q -O /dev/null http://127.0.0.1:80/ || exit 1"]
+      interval: 30s
+      timeout: 5s
+      retries: 3
+      start_period: 30s

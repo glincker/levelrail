@@ -1,0 +1,10 @@
+id: forgejo
+name: Forgejo
+slogan: A lightweight, community-governed Git forge with issues, pull requests, and CI runners.
+category: Developer Tools
+documentation_url: https://forgejo.org/docs/latest/admin/installation-docker/
+recommended_memory_bytes: 536870912
+requires_gpu: false
+platforms:
+    - linux/amd64
+    - linux/arm64

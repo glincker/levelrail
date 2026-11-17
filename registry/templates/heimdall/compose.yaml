@@ -1,0 +1,16 @@
+services:
+  heimdall:
+    image: lscr.io/linuxserver/heimdall:2.6.3
+    ports: ["80:80"]
+    environment:
+      PUID: "1000"
+      PGID: "1000"
+      TZ: "Etc/UTC"
+    volumes:
+      - heimdall_config:/config
+    healthcheck:
+      test: ["CMD-SHELL", "curl -fsS -o /dev/null http://127.0.0.1:80/"]
+      interval: 10s
+      timeout: 5s
+      retries: 3
+      start_period: 30s

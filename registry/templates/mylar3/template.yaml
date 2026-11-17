@@ -1,0 +1,58 @@
+id: mylar3
+name: Mylar3
+slogan: An automated comic book downloader that watches your series, finds new issues through your indexers and download client, and renames them into a library. GPL-3.0 licensed. Open the web UI, then add your indexers and download client under Configuration.
+description: An automated comic book downloader that watches your series, finds new issues through your indexers and download client, and renames them into a library. GPL-3.0 licensed. Open the web UI, then add your indexers and download client under Configuration.
+category: Applications
+documentation_url: https://github.com/mylar3/mylar3/wiki
+recommended_memory_bytes: 268435456
+requires_gpu: false
+platforms:
+    - linux/amd64
+    - linux/arm64
+manifest:
+    id: mylar3
+    name: Mylar3
+    description: An automated comic book downloader that watches your series, finds new issues through your indexers and download client, and renames them into a library. GPL-3.0 licensed. Open the web UI, then add your indexers and download client under Configuration.
+    icon: books
+    category: Applications
+    documentation_url: https://github.com/mylar3/mylar3/wiki
+    source_repo: https://github.com/mylar3/mylar3
+    license: GPL-3.0
+    license_class: copyleft
+    license_url: https://github.com/mylar3/mylar3/blob/master/LICENSE
+    hosted_use: ""
+    listing: null
+    status: ""
+    status_reason: ""
+    replaced_by: ""
+    aliases: []
+    first_run: []
+    compose_file: compose.yaml
+    recommended_memory_bytes: 268435456
+    env:
+        - key: TZ
+          label: Time zone
+          description: IANA time zone for logs and the scheduler.
+          default: Etc/UTC
+          generate: ""
+          length: 0
+          required: false
+          secret: false
+          type: ""
+          service: ""
+          path: ""
+          mode: ""
+    domains:
+        - service: mylar3
+          port: 8090
+          description: Public address of Mylar3.
+    healthcheck:
+        service: mylar3
+        port: 8090
+        path: /
+        expect: 0
+        kind: ""
+        reason: ""
+    first_boot_seconds: 0
+    console_command: []
+    capabilities: []

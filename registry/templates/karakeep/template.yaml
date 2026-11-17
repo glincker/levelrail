@@ -1,0 +1,10 @@
+id: karakeep
+name: Karakeep
+slogan: A self-hosted bookmark, note, and read-it-later manager with full-text search and tagging.
+category: Productivity
+documentation_url: https://docs.karakeep.app
+recommended_memory_bytes: 536870912
+requires_gpu: false
+platforms:
+    - linux/amd64
+    - linux/arm64

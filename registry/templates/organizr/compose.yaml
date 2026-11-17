@@ -1,0 +1,13 @@
+services:
+  organizr:
+    image: organizr/organizr:latest
+    ports: ["80:80"]
+    environment:
+      branch: v2-master
+    volumes:
+      - organizr_data:/config
+    healthcheck:
+      test: ["CMD-SHELL", "curl -sf http://127.0.0.1:80 || exit 1"]
+      interval: 10s
+      timeout: 5s
+      retries: 10

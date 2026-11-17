@@ -1,0 +1,10 @@
+id: dolibarr
+name: Dolibarr
+slogan: 'An open-source ERP and CRM for small businesses: invoicing, contacts, stock, and accounting in one app.'
+category: Finance
+documentation_url: https://wiki.dolibarr.org
+recommended_memory_bytes: 805306368
+requires_gpu: false
+platforms:
+    - linux/amd64
+    - linux/arm64

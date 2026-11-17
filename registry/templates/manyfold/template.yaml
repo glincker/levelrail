@@ -1,0 +1,71 @@
+id: manyfold
+name: Manyfold
+slogan: A self-hosted manager for 3D printing model libraries with tags, previews and sharing, backed by Postgres and Redis. Create the first admin on first open.
+description: A self-hosted manager for 3D printing model libraries with tags, previews and sharing, backed by Postgres and Redis. Create the first admin on first open.
+category: Media
+documentation_url: https://manyfold.app/get-started/docker
+recommended_memory_bytes: 805306368
+requires_gpu: false
+manifest:
+    id: manyfold
+    name: Manyfold
+    description: A self-hosted manager for 3D printing model libraries with tags, previews and sharing, backed by Postgres and Redis. Create the first admin on first open.
+    icon: cube
+    category: Media
+    documentation_url: https://manyfold.app/get-started/docker
+    source_repo: https://github.com/manyfold3d/manyfold
+    license: MIT
+    license_class: permissive
+    license_url: https://github.com/manyfold3d/manyfold/blob/HEAD/LICENSE
+    hosted_use: allowed
+    listing:
+        by: community
+        vendor_org: ""
+        proof: ""
+    status: active
+    status_reason: ""
+    replaced_by: ""
+    aliases: []
+    first_run:
+        - Open the page and create the first admin account, then add a library path.
+    compose_file: compose.yaml
+    recommended_memory_bytes: 805306368
+    env:
+        - key: DB_PASSWORD
+          label: Database password
+          description: Password for the bundled database. Generated once and reused on every redeploy.
+          default: ""
+          generate: password
+          length: 32
+          required: false
+          secret: true
+          type: ""
+          service: ""
+          path: ""
+          mode: ""
+        - key: SECRET_KEY_BASE
+          label: Secret key base
+          description: Signs sessions. Changing it signs every user out.
+          default: ""
+          generate: hex
+          length: 64
+          required: false
+          secret: true
+          type: ""
+          service: ""
+          path: ""
+          mode: ""
+    domains:
+        - service: manyfold
+          port: 3214
+          description: Public address of Manyfold.
+    healthcheck:
+        service: manyfold
+        port: 3214
+        path: /
+        expect: 0
+        kind: ""
+        reason: ""
+    first_boot_seconds: 0
+    console_command: []
+    capabilities: []

@@ -1,0 +1,17 @@
+services:
+  lldap:
+    image: lldap/lldap:v0.6.3
+    ports: ["17170:17170", "3890:3890"]
+    environment:
+      LLDAP_JWT_SECRET: $SERVICE_HEX_64_JWTSECRET
+      LLDAP_KEY_SEED: $SERVICE_HEX_64_KEYSEED
+      LLDAP_LDAP_USER_PASS: $SERVICE_PASSWORD_ADMIN
+      LLDAP_LDAP_BASE_DN: dc=example,dc=com
+    volumes:
+      - lldap_data:/data
+    healthcheck:
+      test: ["CMD", "/app/lldap", "healthcheck", "--config-file", "/data/lldap_config.toml"]
+      interval: 30s
+      timeout: 5s
+      retries: 3
+      start_period: 15s

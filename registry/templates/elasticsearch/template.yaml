@@ -1,0 +1,10 @@
+id: elasticsearch
+name: Elasticsearch
+slogan: A distributed, RESTful search and analytics engine for full-text search and log analytics. Security is off, so reach it from other services in this project at elasticsearch:9200, or attach a domain only behind Basic Auth. Not published on the host.
+category: Infrastructure
+documentation_url: https://www.elastic.co/guide/en/elasticsearch/reference/current/index.html
+recommended_memory_bytes: 1073741824
+requires_gpu: false
+platforms:
+    - linux/amd64
+    - linux/arm64

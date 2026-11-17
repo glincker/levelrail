@@ -1,0 +1,14 @@
+services:
+  pihole:
+    image: pihole/pihole:2024.07.0
+    ports: ["80:80"]
+    environment:
+      FTLCONF_webserver_api_password: $SERVICE_PASSWORD_ADMIN
+    volumes:
+      - pihole_data:/etc/pihole
+    healthcheck:
+      test: ["CMD-SHELL", "curl -fsS -o /dev/null http://127.0.0.1:80/admin/"]
+      interval: 10s
+      timeout: 5s
+      retries: 3
+      start_period: 60s

@@ -1,0 +1,10 @@
+id: photoprism
+name: PhotoPrism
+slogan: An AI-powered photo management app that indexes and organizes your library as you own it.
+category: Media
+documentation_url: https://docs.photoprism.app/getting-started/docker-compose/
+recommended_memory_bytes: 1073741824
+requires_gpu: false
+platforms:
+    - linux/amd64
+    - linux/arm64

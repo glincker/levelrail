@@ -1,0 +1,17 @@
+services:
+  convertx:
+    image: ghcr.io/c4illin/convertx:latest
+    ports: ["3000:3000"]
+    environment:
+      ACCOUNT_REGISTRATION: "false"
+      HTTP_ALLOWED: "true"
+      AUTO_DELETE_EVERY_N_HOURS: "24"
+      JWT_SECRET: $SERVICE_PASSWORD_64_JWT
+    volumes:
+      - convertx_data:/app/data
+    healthcheck:
+      test: ["CMD-SHELL", "wget -q --spider http://127.0.0.1:3000/ || exit 1"]
+      interval: 15s
+      timeout: 10s
+      retries: 5
+      start_period: 20s

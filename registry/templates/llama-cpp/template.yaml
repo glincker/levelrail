@@ -1,0 +1,11 @@
+id: llama-cpp
+name: llama.cpp Server
+slogan: 'The llama.cpp HTTP server: run quantized GGUF models on plain CPUs with an OpenAI-compatible API.'
+category: AI
+documentation_url: https://github.com/ggml-org/llama.cpp/tree/master/tools/server
+recommended_memory_bytes: 4294967296
+requires_gpu: false
+platforms:
+    - linux/amd64
+    - linux/arm64
+    - linux/s390x

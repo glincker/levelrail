@@ -1,0 +1,14 @@
+services:
+  n8n-mcp:
+    image: ghcr.io/czlonkowski/n8n-mcp:2.102.0
+    ports: ["3000"]
+    environment:
+      MCP_MODE: http
+      PORT: "3000"
+      AUTH_TOKEN: $SERVICE_PASSWORD_N8NMCP
+    healthcheck:
+      test: ["CMD-SHELL", "wget -q -O /dev/null http://127.0.0.1:3000/health"]
+      interval: 15s
+      timeout: 8s
+      retries: 10
+      start_period: 20s

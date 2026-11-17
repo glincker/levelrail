@@ -1,0 +1,14 @@
+services:
+  actual:
+    image: actualbudget/actual-server:edge
+    ports: ["5006:5006"]
+    environment:
+      ACTUAL_LOGIN_METHOD: password
+    volumes:
+      - actualbudget_data:/data
+    healthcheck:
+      test: ["CMD-SHELL", "node -e \"require('http').get('http://127.0.0.1:5006/',r=>process.exit(r.statusCode<500?0:1)).on('error',()=>process.exit(1))\""]
+      interval: 10s
+      timeout: 10s
+      retries: 5
+      start_period: 30s

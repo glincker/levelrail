@@ -1,0 +1,29 @@
+services:
+  snipeit:
+    image: snipe/snipe-it:v7.1.16
+    ports: ["8080:80"]
+    environment:
+      APP_KEY: $SERVICE_PASSWORD_32_APPKEY
+      APP_URL: http://localhost:8080
+      MYSQL_DATABASE: snipeit
+      MYSQL_USER: snipeit
+      MYSQL_PASSWORD: $SERVICE_PASSWORD_DB
+      MYSQL_PORT_3306_TCP_ADDR: db
+      MYSQL_PORT_3306_TCP_PORT: "3306"
+    volumes:
+      - snipeit_data:/var/lib/snipeit
+    healthcheck:
+      test: ["CMD-SHELL", "curl -fsS -o /dev/null http://127.0.0.1:80/ || exit 1"]
+      interval: 30s
+      timeout: 5s
+      retries: 3
+      start_period: 60s
+  db:
+    image: mariadb:11
+    environment:
+      MYSQL_DATABASE: snipeit
+      MYSQL_USER: snipeit
+      MYSQL_PASSWORD: $SERVICE_PASSWORD_DB
+      MYSQL_RANDOM_ROOT_PASSWORD: "true"
+    volumes:
+      - snipeit_db_data:/var/lib/mysql

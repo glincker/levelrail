@@ -1,0 +1,12 @@
+services:
+  firefox:
+    image: jlesage/firefox:latest
+    ports: ["5800:5800"]
+    volumes:
+      - firefox_config:/config
+    healthcheck:
+      test: ["CMD-SHELL", "wget -q --spider http://127.0.0.1:5800/ || exit 1"]
+      interval: 15s
+      timeout: 10s
+      retries: 5
+      start_period: 20s

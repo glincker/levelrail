@@ -1,0 +1,12 @@
+id: home-assistant
+name: Home Assistant
+slogan: Open-source home automation that puts local control and privacy first.
+category: IoT
+documentation_url: https://www.home-assistant.io/docs/
+recommended_memory_bytes: 536870912
+requires_gpu: false
+platforms:
+    - linux/386
+    - linux/amd64
+    - linux/arm
+    - linux/arm64

@@ -1,0 +1,10 @@
+id: answer
+name: Apache Answer
+slogan: A Q&A platform for building a community knowledge base, in the style of a self-hosted Stack Overflow.
+category: Communication
+documentation_url: https://answer.apache.org/docs/
+recommended_memory_bytes: 268435456
+requires_gpu: false
+platforms:
+    - linux/amd64
+    - linux/arm64

@@ -1,0 +1,17 @@
+services:
+  tinyauth:
+    image: ghcr.io/tinyauthapp/tinyauth:v5.2.0
+    ports: ["3000"]
+    environment:
+      TINYAUTH_APPURL: ${SERVICE_URL_TINYAUTH:-https://tinyauth.example.com}
+      TINYAUTH_AUTH_USERS: ${TINYAUTH_USERS}
+      TINYAUTH_AUTH_SECURECOOKIE: "true"
+      TINYAUTH_ANALYTICS_ENABLED: "false"
+    volumes:
+      - data:/data
+    healthcheck:
+      test: ["CMD", "tinyauth", "healthcheck"]
+      interval: 15s
+      timeout: 5s
+      retries: 10
+      start_period: 10s

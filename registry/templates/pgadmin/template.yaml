@@ -1,0 +1,10 @@
+id: pgadmin
+name: pgAdmin
+slogan: A full-featured web GUI for administering and querying PostgreSQL databases.
+category: Database Tools
+documentation_url: https://www.pgadmin.org/docs/
+recommended_memory_bytes: 268435456
+requires_gpu: false
+platforms:
+    - linux/amd64
+    - linux/arm64

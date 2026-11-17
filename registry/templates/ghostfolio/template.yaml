@@ -1,0 +1,11 @@
+id: ghostfolio
+name: Ghostfolio
+slogan: A privacy-first wealth tracker for stocks, ETFs, and crypto, with portfolio analytics and no ads.
+category: Finance
+documentation_url: https://github.com/ghostfolio/ghostfolio
+recommended_memory_bytes: 1073741824
+requires_gpu: false
+platforms:
+    - linux/amd64
+    - linux/arm
+    - linux/arm64

@@ -1,0 +1,31 @@
+services:
+    jupyterhub:
+        image: quay.io/jupyterhub/jupyterhub:5.4.0
+        ports: ["8000"]
+        volumes:
+            - data:/srv/jupyterhub/state
+        healthcheck:
+            test: ["NONE"]
+        x-levelrail-healthcheck:
+            kind: http
+            path: /hub/health
+            port: 8000
+            interval: 15s
+            timeout: 8s
+            retries: 10
+            start_period: 20s
+        secrets:
+            - source: lr_file_jupyterhub_config
+              target: /srv/jupyterhub/jupyterhub_config.py
+              mode: "0444"
+secrets:
+    lr_file_jupyterhub_config:
+        content: |
+            c = get_config()
+            c.JupyterHub.bind_url = "http://0.0.0.0:8000"
+            c.JupyterHub.cookie_secret_file = "/srv/jupyterhub/state/cookie_secret"
+            c.JupyterHub.db_url = "sqlite:////srv/jupyterhub/state/jupyterhub.sqlite"
+            c.JupyterHub.authenticator_class = "dummy"
+            c.DummyAuthenticator.password = "${SERVICE_PASSWORD_24_JUPYTERHUB_PASSWORD}"
+            c.Authenticator.admin_users = {"admin"}
+            c.JupyterHub.spawner_class = "simple"

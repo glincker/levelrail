@@ -1,0 +1,11 @@
+id: lobe-chat
+name: Lobe Chat
+slogan: A modern, open-source AI chat framework supporting many model providers.
+description: 'Optional: set OPENAI_API_KEY (and OPENAI_BASE_URL for a compatible endpoint) to preconfigure a provider. Users can also add keys in the app''s settings.'
+category: AI
+documentation_url: https://lobehub.com/docs/self-hosting/start
+recommended_memory_bytes: 536870912
+requires_gpu: false
+platforms:
+    - linux/amd64
+    - linux/arm64

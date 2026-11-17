@@ -1,0 +1,82 @@
+id: jellystat
+name: Jellystat
+slogan: A statistics and history dashboard for Jellyfin with watch time, library and user insights, backed by Postgres. MIT licensed. Create the admin user on first open, then add your Jellyfin URL and an API key.
+description: A statistics and history dashboard for Jellyfin with watch time, library and user insights, backed by Postgres. MIT licensed. Create the admin user on first open, then add your Jellyfin URL and an API key.
+category: Monitoring
+documentation_url: https://github.com/CyferShepard/Jellystat
+recommended_memory_bytes: 402653184
+requires_gpu: false
+platforms:
+    - linux/amd64
+    - linux/arm64
+manifest:
+    id: jellystat
+    name: Jellystat
+    description: A statistics and history dashboard for Jellyfin with watch time, library and user insights, backed by Postgres. MIT licensed. Create the admin user on first open, then add your Jellyfin URL and an API key.
+    icon: chart-bar
+    category: Monitoring
+    documentation_url: https://github.com/CyferShepard/Jellystat
+    source_repo: https://github.com/CyferShepard/Jellystat
+    license: MIT
+    license_class: permissive
+    license_url: https://github.com/CyferShepard/Jellystat/blob/main/LICENSE
+    hosted_use: ""
+    listing: null
+    status: ""
+    status_reason: ""
+    replaced_by: ""
+    aliases: []
+    first_run: []
+    compose_file: compose.yaml
+    recommended_memory_bytes: 402653184
+    env:
+        - key: DB_PASSWORD
+          label: Database password
+          description: Password for the bundled Postgres database.
+          default: ""
+          generate: password
+          length: 32
+          required: false
+          secret: true
+          type: ""
+          service: ""
+          path: ""
+          mode: ""
+        - key: JWT_SECRET
+          label: JWT secret
+          description: Signs login tokens. Changing it signs every user out.
+          default: ""
+          generate: hex
+          length: 64
+          required: false
+          secret: true
+          type: ""
+          service: ""
+          path: ""
+          mode: ""
+        - key: TZ
+          label: Time zone
+          description: IANA time zone for statistics and schedules.
+          default: Etc/UTC
+          generate: ""
+          length: 0
+          required: false
+          secret: false
+          type: ""
+          service: ""
+          path: ""
+          mode: ""
+    domains:
+        - service: jellystat
+          port: 3000
+          description: Public address of Jellystat.
+    healthcheck:
+        service: jellystat
+        port: 3000
+        path: /auth/isConfigured
+        expect: 0
+        kind: ""
+        reason: ""
+    first_boot_seconds: 0
+    console_command: []
+    capabilities: []

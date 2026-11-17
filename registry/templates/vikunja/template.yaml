@@ -1,0 +1,12 @@
+id: vikunja
+name: Vikunja
+slogan: An open-source task and project manager for teams that outgrew sticky notes.
+category: Productivity
+documentation_url: https://vikunja.io/docs/
+recommended_memory_bytes: 268435456
+requires_gpu: false
+platforms:
+    - linux/386
+    - linux/amd64
+    - linux/arm
+    - linux/arm64

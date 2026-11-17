@@ -1,0 +1,13 @@
+services:
+  tempo:
+    image: grafana/tempo:2.8.2
+    ports: ["3200", "4317", "4318"]
+    command: ["-config.file=/etc/tempo.yaml"]
+    volumes:
+      - data:/var/tempo
+    healthcheck:
+      test: ["CMD", "/busybox/wget", "-q", "-O", "/dev/null", "http://127.0.0.1:3200/ready"]
+      interval: 15s
+      timeout: 8s
+      retries: 10
+      start_period: 20s

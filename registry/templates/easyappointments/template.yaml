@@ -1,0 +1,10 @@
+id: easyappointments
+name: Easy!Appointments
+slogan: An open-source appointment scheduler for managing bookings, staff, and services.
+category: Productivity
+documentation_url: https://easyappointments.org/docs.html
+recommended_memory_bytes: 536870912
+requires_gpu: false
+platforms:
+    - linux/amd64
+    - linux/arm64

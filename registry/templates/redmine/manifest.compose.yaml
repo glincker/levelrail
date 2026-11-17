@@ -1,0 +1,35 @@
+services:
+  redmine:
+    image: redmine:6-alpine
+    ports: ["3000"]
+    environment:
+      SECRET_KEY_BASE: ${SECRET_KEY_BASE}
+      REDMINE_DB_POSTGRES: db
+      REDMINE_DB_PORT: "5432"
+      REDMINE_DB_USERNAME: redmine
+      REDMINE_DB_PASSWORD: ${DB_PASSWORD}
+      REDMINE_DB_DATABASE: redmine
+    volumes:
+      - files:/usr/src/redmine/files
+    depends_on:
+      db:
+        condition: service_healthy
+    healthcheck:
+      test: ["CMD-SHELL", "wget -q -O /dev/null http://127.0.0.1:3000/"]
+      interval: 10s
+      timeout: 5s
+      retries: 10
+      start_period: 60s
+  db:
+    image: postgres:16-alpine
+    environment:
+      POSTGRES_USER: redmine
+      POSTGRES_PASSWORD: ${DB_PASSWORD}
+      POSTGRES_DB: redmine
+    volumes:
+      - pgdata:/var/lib/postgresql/data
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U redmine -d redmine"]
+      interval: 5s
+      timeout: 5s
+      retries: 10

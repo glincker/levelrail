@@ -1,0 +1,50 @@
+id: hyperdx
+name: HyperDX
+slogan: An observability platform that brings logs, traces, metrics and session replays together in one search UI. MIT licensed. Runs the all-in-one image with its bundled ClickHouse, MongoDB and OpenTelemetry collector, so it needs about 2 GB of memory. On first open, the setup page asks you to create the admin login.
+description: An observability platform that brings logs, traces, metrics and session replays together in one search UI. MIT licensed. Runs the all-in-one image with its bundled ClickHouse, MongoDB and OpenTelemetry collector, so it needs about 2 GB of memory. On first open, the setup page asks you to create the admin login.
+category: Monitoring
+documentation_url: https://clickhouse.com/docs/use-cases/observability/clickstack
+recommended_memory_bytes: 2147483648
+requires_gpu: false
+platforms:
+    - linux/amd64
+    - linux/arm64
+manifest:
+    id: hyperdx
+    name: HyperDX
+    description: An observability platform that brings logs, traces, metrics and session replays together in one search UI. MIT licensed. Runs the all-in-one image with its bundled ClickHouse, MongoDB and OpenTelemetry collector, so it needs about 2 GB of memory. On first open, the setup page asks you to create the admin login.
+    icon: chart-line
+    category: Monitoring
+    documentation_url: https://clickhouse.com/docs/use-cases/observability/clickstack
+    source_repo: https://github.com/hyperdxio/hyperdx
+    license: MIT
+    license_class: permissive
+    license_url: https://github.com/hyperdxio/hyperdx/blob/main/LICENSE
+    hosted_use: ""
+    listing:
+        by: community
+        vendor_org: ""
+        proof: ""
+    status: active
+    status_reason: ""
+    replaced_by: ""
+    aliases: []
+    first_run:
+        - Open the app and register the first user on the sign-up page.
+    compose_file: compose.yaml
+    recommended_memory_bytes: 2147483648
+    env: []
+    domains:
+        - service: hyperdx
+          port: 8080
+          description: Public address of HyperDX.
+    healthcheck:
+        service: hyperdx
+        port: 8080
+        path: /
+        expect: 0
+        kind: ""
+        reason: ""
+    first_boot_seconds: 0
+    console_command: []
+    capabilities: []

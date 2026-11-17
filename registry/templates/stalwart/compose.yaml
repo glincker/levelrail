@@ -1,0 +1,13 @@
+services:
+  stalwart:
+    image: stalwartlabs/stalwart:v0.16.23
+    ports: ["8080:8080"]
+    volumes:
+      - stalwart_config:/opt/stalwart/etc
+      - stalwart_data:/opt/stalwart/data
+    healthcheck:
+      test: ["CMD-SHELL", "curl -fsS -o /dev/null http://127.0.0.1:8080/healthz/live || exit 1"]
+      interval: 30s
+      timeout: 5s
+      retries: 3
+      start_period: 30s

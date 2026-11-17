@@ -1,0 +1,15 @@
+services:
+  rabbitmq:
+    image: rabbitmq:3.13-management-alpine
+    ports: ["15672:15672"]
+    environment:
+      RABBITMQ_DEFAULT_USER: $SERVICE_USER_ADMIN
+      RABBITMQ_DEFAULT_PASS: $SERVICE_PASSWORD_ADMIN
+    volumes:
+      - rabbitmq_data:/var/lib/rabbitmq
+    healthcheck:
+      test: ["CMD-SHELL", "curl -fsS -o /dev/null http://127.0.0.1:15672/ || wget -q -O /dev/null http://127.0.0.1:15672/ || exit 1"]
+      interval: 10s
+      timeout: 5s
+      retries: 3
+      start_period: 60s

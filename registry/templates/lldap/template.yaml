@@ -1,0 +1,11 @@
+id: lldap
+name: lldap
+slogan: A lightweight LDAP server with a friendly web UI, built for homelab and small-team authentication.
+category: Security
+documentation_url: https://github.com/lldap/lldap
+recommended_memory_bytes: 134217728
+requires_gpu: false
+platforms:
+    - linux/amd64
+    - linux/arm
+    - linux/arm64

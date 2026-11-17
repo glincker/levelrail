@@ -1,0 +1,10 @@
+id: trailbase
+name: TrailBase
+slogan: A fast Rust and SQLite application server with type-safe APIs and auth.
+category: Developer Tools
+documentation_url: https://trailbase.io/
+recommended_memory_bytes: 134217728
+requires_gpu: false
+platforms:
+    - linux/amd64
+    - linux/arm64

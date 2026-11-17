@@ -1,0 +1,25 @@
+services:
+  hedgedoc:
+    image: quay.io/hedgedoc/hedgedoc:1.9.9
+    ports: ["3000:3000"]
+    environment:
+      CMD_DOMAIN: ${SERVICE_FQDN_HEDGEDOC:-localhost}
+      CMD_URL_ADDPORT: "false"
+      CMD_DB_URL: postgres://$SERVICE_USER_DB:$SERVICE_PASSWORD_DB@db:5432/hedgedoc
+      CMD_SESSION_SECRET: $SERVICE_HEX_64_SESSIONSECRET
+    volumes:
+      - hedgedoc_uploads:/hedgedoc/public/uploads
+    healthcheck:
+      test: ["CMD-SHELL", "curl -fsS -o /dev/null http://127.0.0.1:3000/status"]
+      interval: 10s
+      timeout: 5s
+      retries: 3
+      start_period: 60s
+  db:
+    image: postgres:16-alpine
+    environment:
+      POSTGRES_USER: $SERVICE_USER_DB
+      POSTGRES_PASSWORD: $SERVICE_PASSWORD_DB
+      POSTGRES_DB: hedgedoc
+    volumes:
+      - hedgedoc_db_data:/var/lib/postgresql/data

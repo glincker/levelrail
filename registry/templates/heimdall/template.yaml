@@ -1,0 +1,10 @@
+id: heimdall
+name: Heimdall
+slogan: An application dashboard that gathers links to all your self-hosted services on one start page.
+category: Dashboard
+documentation_url: https://github.com/linuxserver/Heimdall
+recommended_memory_bytes: 134217728
+requires_gpu: false
+platforms:
+    - linux/amd64
+    - linux/arm64

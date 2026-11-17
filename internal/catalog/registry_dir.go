@@ -1,0 +1,136 @@
+package catalog
+
+import (
+	"bytes"
+	"fmt"
+	"os"
+	"path/filepath"
+	"reflect"
+	"sort"
+
+	"gopkg.in/yaml.v3"
+)
+
+// Registry file names inside one registry/templates/<id>/ folder.
+const (
+	RegistryMetaFile    = "template.yaml"
+	RegistryComposeFile = "compose.yaml"
+	// RegistryManifestComposeFile holds the manifest's raw compose (with its
+	// ${KEY} prompts) when that differs from the rendered default in compose.yaml.
+	RegistryManifestComposeFile = "manifest.compose.yaml"
+)
+
+// RegistryMeta is the on-disk template.yaml. The compose body lives beside
+// it in compose.yaml so it stays byte-for-byte.
+type RegistryMeta struct {
+	ID                     string    `yaml:"id"`
+	Name                   string    `yaml:"name"`
+	Slogan                 string    `yaml:"slogan"`
+	Description            string    `yaml:"description,omitempty"`
+	Category               string    `yaml:"category"`
+	DocumentationURL       string    `yaml:"documentation_url"`
+	RecommendedMemoryBytes int64     `yaml:"recommended_memory_bytes"`
+	RequiresGPU            bool      `yaml:"requires_gpu"`
+	Platforms              []string  `yaml:"platforms,omitempty"`
+	Icon                   string    `yaml:"icon,omitempty"`
+	Manifest               *Manifest `yaml:"manifest,omitempty"`
+}
+
+// EncodeRegistryTemplate returns the template.yaml and compose.yaml bytes for t,
+// plus the manifest's own compose when it differs (nil otherwise).
+func EncodeRegistryTemplate(t Template) (meta, compose, manifestCompose []byte, err error) {
+	m := RegistryMeta{
+		ID: t.ID, Name: t.Name, Slogan: t.Slogan, Description: t.Description,
+		Category: t.Category, DocumentationURL: t.DocumentationURL,
+		RecommendedMemoryBytes: t.RecommendedMemoryBytes, RequiresGPU: t.RequiresGPU,
+		Platforms: t.Platforms, Manifest: t.Manifest,
+	}
+	meta, err = yaml.Marshal(m)
+	if err != nil {
+		return nil, nil, nil, fmt.Errorf("encode template %s: %w", t.ID, err)
+	}
+	if t.Manifest != nil && t.Manifest.Compose != t.Compose {
+		manifestCompose = []byte(t.Manifest.Compose)
+	}
+	return meta, []byte(t.Compose), manifestCompose, nil
+}
+
+// LoadRegistryDir reads every <dir>/<id>/ folder into templates sorted by
+// ID. It is not wired into Templates; the registry becomes the source later.
+func LoadRegistryDir(dir string) ([]Template, error) {
+	entries, err := os.ReadDir(dir)
+	if err != nil {
+		return nil, fmt.Errorf("read registry %s: %w", dir, err)
+	}
+	var out []Template
+	for _, e := range entries {
+		if !e.IsDir() {
+			continue
+		}
+		t, err := loadRegistryTemplate(filepath.Join(dir, e.Name()))
+		if err != nil {
+			return nil, err
+		}
+		if t.ID != e.Name() {
+			return nil, fmt.Errorf("registry folder %s holds template id %q", e.Name(), t.ID)
+		}
+		out = append(out, t)
+	}
+	sort.Slice(out, func(i, j int) bool { return out[i].ID < out[j].ID })
+	return out, nil
+}
+
+func loadRegistryTemplate(folder string) (Template, error) {
+	metaBytes, err := os.ReadFile(filepath.Join(folder, RegistryMetaFile)) //nolint:gosec // registry folder chosen by the caller
+	if err != nil {
+		return Template{}, fmt.Errorf("read %s: %w", folder, err)
+	}
+	compose, err := os.ReadFile(filepath.Join(folder, RegistryComposeFile)) //nolint:gosec // registry folder chosen by the caller
+	if err != nil {
+		return Template{}, fmt.Errorf("read %s: %w", folder, err)
+	}
+	var m RegistryMeta
+	dec := yaml.NewDecoder(bytes.NewReader(metaBytes))
+	dec.KnownFields(true)
+	if err := dec.Decode(&m); err != nil {
+		return Template{}, fmt.Errorf("parse %s: %w", folder, err)
+	}
+	if m.Manifest != nil {
+		m.Manifest.Compose = string(compose)
+		if raw, err := os.ReadFile(filepath.Join(folder, RegistryManifestComposeFile)); err == nil { //nolint:gosec // registry folder chosen by the caller
+			m.Manifest.Compose = string(raw)
+		}
+		normalizeEmpty(reflect.ValueOf(m.Manifest).Elem())
+	}
+	return Template{
+		ID: m.ID, Name: m.Name, Slogan: m.Slogan, Description: m.Description,
+		Category: m.Category, DocumentationURL: m.DocumentationURL, Compose: string(compose),
+		RecommendedMemoryBytes: m.RecommendedMemoryBytes, RequiresGPU: m.RequiresGPU,
+		Platforms: m.Platforms, Manifest: m.Manifest,
+	}, nil
+}
+
+// normalizeEmpty turns empty slices into nil, since yaml writes a nil slice
+// as [] and the catalog never distinguishes the two.
+func normalizeEmpty(v reflect.Value) {
+	switch v.Kind() {
+	case reflect.Struct:
+		for i := 0; i < v.NumField(); i++ {
+			if v.Field(i).CanSet() {
+				normalizeEmpty(v.Field(i))
+			}
+		}
+	case reflect.Pointer:
+		if !v.IsNil() {
+			normalizeEmpty(v.Elem())
+		}
+	case reflect.Slice:
+		if v.Len() == 0 {
+			v.Set(reflect.Zero(v.Type()))
+			return
+		}
+		for i := 0; i < v.Len(); i++ {
+			normalizeEmpty(v.Index(i))
+		}
+	}
+}

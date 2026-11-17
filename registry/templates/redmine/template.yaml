@@ -1,0 +1,75 @@
+id: redmine
+name: Redmine
+slogan: A mature project management and issue tracker with Gantt charts, wikis and time tracking, backed by Postgres.
+description: A mature project management and issue tracker with Gantt charts, wikis and time tracking, backed by Postgres.
+category: Productivity
+documentation_url: https://www.redmine.org/projects/redmine/wiki/Guide
+recommended_memory_bytes: 536870912
+requires_gpu: false
+platforms:
+    - linux/386
+    - linux/amd64
+    - linux/arm
+    - linux/arm64
+    - linux/ppc64le
+    - linux/riscv64
+    - linux/s390x
+manifest:
+    id: redmine
+    name: Redmine
+    description: A mature project management and issue tracker with Gantt charts, wikis and time tracking, backed by Postgres.
+    icon: ticket
+    category: Productivity
+    documentation_url: https://www.redmine.org/projects/redmine/wiki/Guide
+    source_repo: https://github.com/redmine/redmine
+    license: GPL-2.0-or-later
+    license_class: copyleft
+    license_url: https://github.com/redmine/redmine/blob/master/LICENSE.txt
+    hosted_use: ""
+    listing: null
+    status: ""
+    status_reason: ""
+    replaced_by: ""
+    aliases: []
+    first_run: []
+    compose_file: compose.yaml
+    recommended_memory_bytes: 536870912
+    env:
+        - key: DB_PASSWORD
+          label: Database password
+          description: Password for the bundled Postgres database.
+          default: ""
+          generate: password
+          length: 32
+          required: false
+          secret: true
+          type: ""
+          service: ""
+          path: ""
+          mode: ""
+        - key: SECRET_KEY_BASE
+          label: Session signing key
+          description: Signs Redmine's session cookies. Changing it signs every user out.
+          default: ""
+          generate: hex
+          length: 64
+          required: false
+          secret: true
+          type: ""
+          service: ""
+          path: ""
+          mode: ""
+    domains:
+        - service: redmine
+          port: 3000
+          description: Public address of Redmine.
+    healthcheck:
+        service: redmine
+        port: 3000
+        path: /
+        expect: 0
+        kind: ""
+        reason: ""
+    first_boot_seconds: 0
+    console_command: []
+    capabilities: []

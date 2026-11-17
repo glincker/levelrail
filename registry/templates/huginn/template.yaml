@@ -1,0 +1,47 @@
+id: huginn
+name: Huginn
+slogan: A tool that builds agents which watch the web and act for you, such as tracking a page, filtering a feed or sending an email when something changes. This image bundles its own MySQL, so it is one container.
+description: A tool that builds agents which watch the web and act for you, such as tracking a page, filtering a feed or sending an email when something changes. This image bundles its own MySQL, so it is one container.
+category: Applications
+documentation_url: https://github.com/huginn/huginn/wiki
+recommended_memory_bytes: 1073741824
+requires_gpu: false
+manifest:
+    id: huginn
+    name: Huginn
+    description: A tool that builds agents which watch the web and act for you, such as tracking a page, filtering a feed or sending an email when something changes. This image bundles its own MySQL, so it is one container.
+    icon: robot
+    category: Applications
+    documentation_url: https://github.com/huginn/huginn/wiki
+    source_repo: https://github.com/huginn/huginn
+    license: MIT
+    license_class: permissive
+    license_url: https://github.com/huginn/huginn/blob/master/LICENSE
+    hosted_use: allowed
+    listing:
+        by: community
+        vendor_org: ""
+        proof: ""
+    status: active
+    status_reason: ""
+    replaced_by: ""
+    aliases: []
+    first_run:
+        - Sign in with the default admin account and change its password right away (see the Huginn docs for the default user).
+    compose_file: compose.yaml
+    recommended_memory_bytes: 1073741824
+    env: []
+    domains:
+        - service: huginn
+          port: 3000
+          description: Public address of Huginn.
+    healthcheck:
+        service: huginn
+        port: 3000
+        path: /users/sign_in
+        expect: 0
+        kind: ""
+        reason: ""
+    first_boot_seconds: 0
+    console_command: []
+    capabilities: []

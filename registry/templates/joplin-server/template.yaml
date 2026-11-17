@@ -1,0 +1,10 @@
+id: joplin-server
+name: Joplin Server
+slogan: A self-hosted sync target for the Joplin note-taking app, replacing Dropbox or OneDrive sync.
+category: Productivity
+documentation_url: https://joplinapp.org/help/api/server_config/
+recommended_memory_bytes: 268435456
+requires_gpu: false
+platforms:
+    - linux/amd64
+    - linux/arm64

@@ -1,0 +1,10 @@
+id: authentik
+name: authentik
+slogan: An identity provider and SSO platform with flows, policies, and support for OIDC, SAML, LDAP, and proxy auth.
+category: Security
+documentation_url: https://docs.goauthentik.io
+recommended_memory_bytes: 2147483648
+requires_gpu: false
+platforms:
+    - linux/amd64
+    - linux/arm64

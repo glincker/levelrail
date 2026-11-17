@@ -1,0 +1,13 @@
+id: zabbix
+name: Zabbix
+slogan: Enterprise-grade network, server, and application monitoring with alerting and trend graphs.
+category: Monitoring
+documentation_url: https://www.zabbix.com/documentation/current/en/manual/installation/containers
+recommended_memory_bytes: 1073741824
+requires_gpu: false
+platforms:
+    - linux/amd64
+    - linux/arm64
+    - linux/ppc64le
+    - linux/riscv64
+    - linux/s390x

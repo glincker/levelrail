@@ -1,0 +1,12 @@
+services:
+  browserless:
+    image: ghcr.io/browserless/chromium:v2.8.0
+    ports: ["3000:3000"]
+    environment:
+      TOKEN: $SERVICE_PASSWORD_BROWSERLESS
+    healthcheck:
+      test: ["CMD", "curl", "-f", "http://127.0.0.1:3000/docs"]
+      interval: 10s
+      timeout: 10s
+      retries: 5
+      start_period: 15s

@@ -1,0 +1,10 @@
+id: duplicati
+name: Duplicati
+slogan: Scheduled, encrypted backups of your files to local storage, network shares, or cloud storage.
+category: Storage
+documentation_url: https://duplicati.readthedocs.io
+recommended_memory_bytes: 536870912
+requires_gpu: false
+platforms:
+    - linux/amd64
+    - linux/arm64

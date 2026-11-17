@@ -1,0 +1,10 @@
+id: plane
+name: Plane
+slogan: An open-source project management tool for tracking issues and cycles, an alternative to Linear and Jira.
+category: Productivity
+documentation_url: https://docs.plane.so/self-hosting/methods/docker-compose
+recommended_memory_bytes: 2147483648
+requires_gpu: false
+platforms:
+    - linux/amd64
+    - linux/arm64

@@ -1,0 +1,10 @@
+id: docuseal
+name: DocuSeal
+slogan: A free, open-source document signing tool, a lighter alternative to DocuSign.
+category: Productivity
+documentation_url: https://www.docuseal.co/
+recommended_memory_bytes: 536870912
+requires_gpu: false
+platforms:
+    - linux/amd64
+    - linux/arm64

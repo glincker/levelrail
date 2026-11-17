@@ -1,0 +1,14 @@
+services:
+  baserow:
+    image: baserow/baserow:2.3.3
+    ports: ["80:80"]
+    environment:
+      BASEROW_PUBLIC_URL: ${SERVICE_URL_BASEROW:-http://localhost}
+    volumes:
+      - baserow_data:/baserow/data
+    healthcheck:
+      test: ["CMD-SHELL", "curl -fsS -o /dev/null http://127.0.0.1:80/api/_health/"]
+      interval: 10s
+      timeout: 5s
+      retries: 3
+      start_period: 240s

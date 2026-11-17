@@ -1,0 +1,12 @@
+id: node-postgres-starter
+name: Node.js API + PostgreSQL
+slogan: A minimal Node HTTP service wired to a Postgres database, the most common backend pairing.
+category: Starter Kits
+documentation_url: https://node-postgres.com/
+recommended_memory_bytes: 268435456
+requires_gpu: false
+platforms:
+    - linux/amd64
+    - linux/arm
+    - linux/arm64
+    - linux/s390x

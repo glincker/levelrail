@@ -1,0 +1,39 @@
+services:
+  nsqlookupd:
+    image: nsqio/nsq:v1.3.0
+    ports: ["4161"]
+    command: ["/nsqlookupd"]
+    healthcheck:
+      test: ["CMD-SHELL", "wget -q -O /dev/null http://127.0.0.1:4161/ping || exit 1"]
+      interval: 10s
+      timeout: 6s
+      retries: 10
+      start_period: 5s
+  nsqd:
+    image: nsqio/nsq:v1.3.0
+    ports: ["4150", "4151"]
+    command: ["/nsqd", "--lookupd-tcp-address=nsqlookupd:4160", "--broadcast-address=nsqd", "--data-path=/data"]
+    volumes:
+      - nsqd_data:/data
+    depends_on:
+      nsqlookupd:
+        condition: service_healthy
+    healthcheck:
+      test: ["CMD-SHELL", "wget -q -O /dev/null http://127.0.0.1:4151/ping || exit 1"]
+      interval: 10s
+      timeout: 6s
+      retries: 10
+      start_period: 5s
+  nsqadmin:
+    image: nsqio/nsq:v1.3.0
+    ports: ["4171"]
+    command: ["/nsqadmin", "--lookupd-http-address=nsqlookupd:4161"]
+    depends_on:
+      nsqlookupd:
+        condition: service_healthy
+    healthcheck:
+      test: ["CMD-SHELL", "wget -q -O /dev/null http://127.0.0.1:4171/ping || exit 1"]
+      interval: 10s
+      timeout: 6s
+      retries: 10
+      start_period: 5s

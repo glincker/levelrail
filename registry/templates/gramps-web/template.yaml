@@ -1,0 +1,11 @@
+id: gramps-web
+name: Gramps Web
+slogan: An online genealogy system for researching and sharing family trees.
+category: Productivity
+documentation_url: https://www.grampsweb.org/install_setup/setup/
+recommended_memory_bytes: 1073741824
+requires_gpu: false
+platforms:
+    - linux/amd64
+    - linux/arm
+    - linux/arm64

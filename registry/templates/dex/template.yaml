@@ -1,0 +1,79 @@
+id: dex
+name: Dex
+slogan: OpenID Connect identity provider that fronts other identity sources. The install form carries config.yaml as an editable file, so it starts with a local database and the issuer address you choose.
+description: OpenID Connect identity provider that fronts other identity sources. The install form carries config.yaml as an editable file, so it starts with a local database and the issuer address you choose.
+category: Security
+documentation_url: https://dexidp.io/docs/
+recommended_memory_bytes: 134217728
+requires_gpu: false
+manifest:
+    id: dex
+    name: Dex
+    description: OpenID Connect identity provider that fronts other identity sources. The install form carries config.yaml as an editable file, so it starts with a local database and the issuer address you choose.
+    icon: key
+    category: Security
+    documentation_url: https://dexidp.io/docs/
+    source_repo: https://github.com/dexidp/dex
+    license: Apache-2.0
+    license_class: permissive
+    license_url: https://github.com/dexidp/dex/blob/HEAD/LICENSE
+    hosted_use: allowed
+    listing:
+        by: community
+        vendor_org: ""
+        proof: ""
+    status: active
+    status_reason: ""
+    replaced_by: ""
+    aliases: []
+    first_run:
+        - Open the address followed by /dex/.well-known/openid-configuration to see the discovery document, then edit the config file setting to add connectors and static clients.
+    compose_file: compose.yaml
+    recommended_memory_bytes: 134217728
+    env:
+        - key: DEX_ISSUER
+          label: Issuer URL
+          description: The public address clients use to reach Dex, ending in /dex.
+          default: http://127.0.0.1:5556/dex
+          generate: ""
+          length: 0
+          required: false
+          secret: false
+          type: ""
+          service: ""
+          path: ""
+          mode: ""
+        - key: DEX_CONFIG
+          label: config.yaml
+          description: The full Dex configuration, mounted read-only.
+          default: |
+            issuer: ${DEX_ISSUER}
+            storage:
+              type: sqlite3
+              config:
+                file: /var/dex/dex.db
+            web:
+              http: 0.0.0.0:5556
+            enablePasswordDB: true
+          generate: ""
+          length: 0
+          required: false
+          secret: false
+          type: file
+          service: dex
+          path: /etc/dex/config.yaml
+          mode: "0444"
+    domains:
+        - service: dex
+          port: 5556
+          description: Public address of the identity provider.
+    healthcheck:
+        service: dex
+        port: 5556
+        path: /dex/.well-known/openid-configuration
+        expect: 0
+        kind: ""
+        reason: ""
+    first_boot_seconds: 0
+    console_command: []
+    capabilities: []

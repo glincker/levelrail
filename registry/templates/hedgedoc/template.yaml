@@ -1,0 +1,10 @@
+id: hedgedoc
+name: HedgeDoc
+slogan: Real-time collaborative markdown notes you can host yourself.
+category: Productivity
+documentation_url: https://docs.hedgedoc.org
+recommended_memory_bytes: 536870912
+requires_gpu: false
+platforms:
+    - linux/amd64
+    - linux/arm64

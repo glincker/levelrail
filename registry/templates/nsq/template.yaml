@@ -1,0 +1,47 @@
+id: nsq
+name: NSQ
+slogan: A realtime distributed message queue with a lookup daemon, a queue daemon and the nsqadmin web page, run together. Producers and consumers in this project connect to nsqd:4150 and nsqd:4151.
+description: A realtime distributed message queue with a lookup daemon, a queue daemon and the nsqadmin web page, run together. Producers and consumers in this project connect to nsqd:4150 and nsqd:4151.
+category: Infrastructure
+documentation_url: https://nsq.io/overview/design.html
+recommended_memory_bytes: 268435456
+requires_gpu: false
+manifest:
+    id: nsq
+    name: NSQ
+    description: A realtime distributed message queue with a lookup daemon, a queue daemon and the nsqadmin web page, run together. Producers and consumers in this project connect to nsqd:4150 and nsqd:4151.
+    icon: server
+    category: Infrastructure
+    documentation_url: https://nsq.io/overview/design.html
+    source_repo: https://github.com/nsqio/nsq
+    license: MIT
+    license_class: permissive
+    license_url: https://github.com/nsqio/nsq/blob/main/LICENSE
+    hosted_use: allowed
+    listing:
+        by: community
+        vendor_org: ""
+        proof: ""
+    status: active
+    status_reason: ""
+    replaced_by: ""
+    aliases: []
+    first_run:
+        - Open nsqadmin to watch topics and channels, then publish to nsqd:4151 from a service in this project.
+    compose_file: compose.yaml
+    recommended_memory_bytes: 268435456
+    env: []
+    domains:
+        - service: nsqadmin
+          port: 4171
+          description: Public address of the web page.
+    healthcheck:
+        service: nsqadmin
+        port: 4171
+        path: /
+        expect: 0
+        kind: ""
+        reason: ""
+    first_boot_seconds: 0
+    console_command: []
+    capabilities: []

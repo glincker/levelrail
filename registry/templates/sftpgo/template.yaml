@@ -1,0 +1,12 @@
+id: sftpgo
+name: SFTPGo
+slogan: An SFTP, FTP/S, and WebDAV server with a web admin UI and per-user storage backends.
+category: Storage
+documentation_url: https://docs.sftpgo.com/latest/
+recommended_memory_bytes: 134217728
+requires_gpu: false
+platforms:
+    - linux/amd64
+    - linux/arm
+    - linux/arm64
+    - linux/ppc64le

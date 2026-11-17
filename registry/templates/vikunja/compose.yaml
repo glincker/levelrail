@@ -1,0 +1,41 @@
+services:
+  vikunja:
+    image: vikunja/vikunja:0.24.1
+    ports: ["3456:3456"]
+    environment:
+      VIKUNJA_SERVICE_JWTSECRET: $SERVICE_HEX_64_JWTSECRET
+      VIKUNJA_SERVICE_PUBLICURL: ${SERVICE_URL_VIKUNJA:-http://localhost:3456}
+      # Vikunja's image runs as a fixed non-root uid with no chown step
+      # of its own, so sqlite's default db path on a fresh named volume
+      # is never writable; postgres avoids that entirely.
+      VIKUNJA_DATABASE_TYPE: postgres
+      VIKUNJA_DATABASE_HOST: db
+      VIKUNJA_DATABASE_USER: vikunja
+      VIKUNJA_DATABASE_PASSWORD: $SERVICE_PASSWORD_DB
+      VIKUNJA_DATABASE_DATABASE: vikunja
+    volumes:
+      # Persists across restarts, but attachment uploads still fail with
+      # "permission denied" (verified live): same fixed-uid problem as
+      # above, and this platform has no per-service user override yet.
+      - vikunja_data:/app/vikunja/files
+    depends_on:
+      db:
+        condition: service_healthy
+    healthcheck:
+      test: ["CMD-SHELL", "wget -q -O- http://127.0.0.1:3456/api/v1/info || exit 1"]
+      interval: 30s
+      timeout: 5s
+      retries: 3
+  db:
+    image: postgres:16-alpine
+    environment:
+      POSTGRES_USER: vikunja
+      POSTGRES_PASSWORD: $SERVICE_PASSWORD_DB
+      POSTGRES_DB: vikunja
+    volumes:
+      - vikunja_db_data:/var/lib/postgresql/data
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U vikunja -d vikunja"]
+      interval: 5s
+      timeout: 5s
+      retries: 10

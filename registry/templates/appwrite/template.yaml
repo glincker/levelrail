@@ -1,0 +1,10 @@
+id: appwrite
+name: Appwrite
+slogan: An open-source backend-as-a-service with auth, databases, storage, and functions behind one API.
+category: Developer Tools
+documentation_url: https://appwrite.io/docs
+recommended_memory_bytes: 2147483648
+requires_gpu: false
+platforms:
+    - linux/amd64
+    - linux/arm64

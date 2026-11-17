@@ -1,0 +1,10 @@
+id: obsidian-livesync
+name: Obsidian LiveSync (CouchDB)
+slogan: A self-hosted CouchDB backend for the Obsidian LiveSync plugin, syncing your notes across devices.
+category: Productivity
+documentation_url: https://github.com/vrtmrz/obsidian-livesync/blob/main/docs/setup_own_server.md
+recommended_memory_bytes: 268435456
+requires_gpu: false
+platforms:
+    - linux/amd64
+    - linux/arm64

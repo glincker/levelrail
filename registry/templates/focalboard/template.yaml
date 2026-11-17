@@ -1,0 +1,45 @@
+id: focalboard
+name: Focalboard
+slogan: An open-source project board for tasks and sprints with Kanban, table and calendar views, stored in a single SQLite file.
+description: An open-source project board for tasks and sprints with Kanban, table and calendar views, stored in a single SQLite file.
+category: Productivity
+documentation_url: https://www.focalboard.com/docs/personal-server/
+recommended_memory_bytes: 268435456
+requires_gpu: false
+platforms:
+    - linux/amd64
+manifest:
+    id: focalboard
+    name: Focalboard
+    description: An open-source project board for tasks and sprints with Kanban, table and calendar views, stored in a single SQLite file.
+    icon: kanban
+    category: Productivity
+    documentation_url: https://www.focalboard.com/docs/personal-server/
+    source_repo: ""
+    license: ""
+    license_class: ""
+    license_url: ""
+    hosted_use: ""
+    listing: null
+    status: ""
+    status_reason: ""
+    replaced_by: ""
+    aliases: []
+    first_run: []
+    compose_file: compose.yaml
+    recommended_memory_bytes: 268435456
+    env: []
+    domains:
+        - service: focalboard
+          port: 8000
+          description: Public address of Focalboard.
+    healthcheck:
+        service: focalboard
+        port: 8000
+        path: /
+        expect: 0
+        kind: ""
+        reason: ""
+    first_boot_seconds: 0
+    console_command: []
+    capabilities: []

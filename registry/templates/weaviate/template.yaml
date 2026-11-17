@@ -1,0 +1,10 @@
+id: weaviate
+name: Weaviate
+slogan: An open-source vector database with hybrid search, built-in modules, and a GraphQL and REST API.
+category: Database Tools
+documentation_url: https://weaviate.io/developers/weaviate
+recommended_memory_bytes: 1073741824
+requires_gpu: false
+platforms:
+    - linux/amd64
+    - linux/arm64

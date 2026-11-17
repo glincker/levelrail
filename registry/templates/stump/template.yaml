@@ -1,0 +1,47 @@
+id: stump
+name: Stump
+slogan: A comics, manga and digital book server with a web reader and OPDS support.
+description: A comics, manga and digital book server with a web reader and OPDS support.
+category: Media
+documentation_url: https://www.stumpapp.dev/
+recommended_memory_bytes: 268435456
+requires_gpu: false
+manifest:
+    id: stump
+    name: Stump
+    description: A comics, manga and digital book server with a web reader and OPDS support.
+    icon: book-open
+    category: Media
+    documentation_url: https://www.stumpapp.dev/
+    source_repo: https://github.com/stumpapp/stump
+    license: MIT
+    license_class: permissive
+    license_url: https://github.com/stumpapp/stump/blob/HEAD/LICENSE
+    hosted_use: ""
+    listing:
+        by: community
+        vendor_org: ""
+        proof: ""
+    status: active
+    status_reason: ""
+    replaced_by: ""
+    aliases: []
+    first_run:
+        - Create the owner account on first visit, then add a library that points at the data volume.
+    compose_file: compose.yaml
+    recommended_memory_bytes: 268435456
+    env: []
+    domains:
+        - service: stump
+          port: 10801
+          description: Public address of Stump.
+    healthcheck:
+        service: stump
+        port: 10801
+        path: /
+        expect: 0
+        kind: ""
+        reason: ""
+    first_boot_seconds: 0
+    console_command: []
+    capabilities: []

@@ -1,0 +1,10 @@
+id: rocketchat
+name: Rocket.Chat
+slogan: A full-featured, self-hosted team chat platform with video calls and app integrations.
+category: Communication
+documentation_url: https://docs.rocket.chat
+recommended_memory_bytes: 1073741824
+requires_gpu: false
+platforms:
+    - linux/amd64
+    - linux/arm64

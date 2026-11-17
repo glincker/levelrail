@@ -1,0 +1,10 @@
+id: mlflow
+name: MLflow
+slogan: Track experiments, compare runs, and manage models with a self-hosted MLflow tracking server.
+category: AI
+documentation_url: https://mlflow.org/docs/latest
+recommended_memory_bytes: 1073741824
+requires_gpu: false
+platforms:
+    - linux/amd64
+    - linux/arm64

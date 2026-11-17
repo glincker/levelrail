@@ -1,0 +1,12 @@
+services:
+  filebrowser:
+    image: filebrowser/filebrowser:v2.31.2
+    ports: ["8080:80"]
+    volumes:
+      - filebrowser_data:/srv
+      - filebrowser_db:/database
+    healthcheck:
+      test: ["CMD-SHELL", "wget -q -O- http://127.0.0.1:80/ || exit 1"]
+      interval: 30s
+      timeout: 5s
+      retries: 3

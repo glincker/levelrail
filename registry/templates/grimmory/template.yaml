@@ -1,0 +1,10 @@
+id: grimmory
+name: Grimmory
+slogan: Organize, read, annotate, and sync your entire book collection from one place.
+category: Media
+documentation_url: https://github.com/grimmory-tools/grimmory
+recommended_memory_bytes: 536870912
+requires_gpu: false
+platforms:
+    - linux/amd64
+    - linux/arm64

@@ -1,0 +1,10 @@
+id: cloudreve
+name: Cloudreve
+slogan: A self-hosted file management and sharing system with multiple storage backends.
+category: Storage
+documentation_url: https://docs.cloudreve.org/
+recommended_memory_bytes: 536870912
+requires_gpu: false
+platforms:
+    - linux/amd64
+    - linux/arm64

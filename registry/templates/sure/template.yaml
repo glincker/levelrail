@@ -1,0 +1,10 @@
+id: sure
+name: Sure
+slogan: A privacy-first personal finance app for tracking net worth, budgets, and investments across every account.
+category: Finance
+documentation_url: https://github.com/we-promise/sure
+recommended_memory_bytes: 1073741824
+requires_gpu: false
+platforms:
+    - linux/amd64
+    - linux/arm64

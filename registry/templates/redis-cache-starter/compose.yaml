@@ -1,0 +1,25 @@
+services:
+  web:
+    image: node:22-alpine
+    command: ["node", "-e", "require('http').createServer((req,res)=>{res.writeHead(200,{'Content-Type':'application/json'});res.end(JSON.stringify({status:'ok',redis_url:process.env.REDIS_URL?'configured':'missing'}));}).listen(3000);"]
+    ports: ["3000:3000"]
+    environment:
+      REDIS_URL: redis://cache:6379
+      NODE_ENV: production
+    depends_on: [cache]
+    healthcheck:
+      test: ["CMD-SHELL", "node -e \"require('http').get('http://127.0.0.1:3000/',r=>process.exit(r.statusCode===200?0:1)).on('error',()=>process.exit(1))\""]
+      interval: 10s
+      timeout: 5s
+      retries: 3
+      start_period: 20s
+  cache:
+    image: redis:7-alpine
+    volumes:
+      - redis_cache_data:/data
+    healthcheck:
+      test: ["CMD-SHELL", "redis-cli ping | grep -q PONG"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+      start_period: 10s

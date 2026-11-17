@@ -1,0 +1,10 @@
+id: cryptgeon
+name: Cryptgeon
+slogan: A self-destructing note and file sharing service inspired by PrivNote, with end-to-end encryption.
+category: Security
+documentation_url: https://github.com/cupcakearmy/cryptgeon
+recommended_memory_bytes: 268435456
+requires_gpu: false
+platforms:
+    - linux/amd64
+    - linux/arm64

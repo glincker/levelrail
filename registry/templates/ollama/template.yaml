@@ -1,0 +1,10 @@
+id: ollama
+name: Ollama
+slogan: A local LLM runtime with an HTTP API. Pull any model yourself once it's running.
+category: AI
+documentation_url: https://github.com/ollama/ollama
+recommended_memory_bytes: 1073741824
+requires_gpu: false
+platforms:
+    - linux/amd64
+    - linux/arm64

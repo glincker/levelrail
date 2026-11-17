@@ -1,0 +1,10 @@
+id: etherpad
+name: Etherpad
+slogan: A real-time collaborative editor for documents, with plugins and a clean export story.
+category: Productivity
+documentation_url: https://docs.etherpad.org
+recommended_memory_bytes: 268435456
+requires_gpu: false
+platforms:
+    - linux/amd64
+    - linux/arm64

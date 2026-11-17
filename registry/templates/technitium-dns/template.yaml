@@ -1,0 +1,11 @@
+id: technitium-dns
+name: Technitium DNS Server
+slogan: A full-featured authoritative and recursive DNS server with DNS-over-HTTPS/TLS and a web console.
+category: Infrastructure
+documentation_url: https://technitium.com/dns/
+recommended_memory_bytes: 268435456
+requires_gpu: false
+platforms:
+    - linux/amd64
+    - linux/arm
+    - linux/arm64

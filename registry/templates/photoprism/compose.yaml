@@ -1,0 +1,17 @@
+services:
+  photoprism:
+    image: photoprism/photoprism:260728
+    ports: ["2342:2342"]
+    environment:
+      PHOTOPRISM_ADMIN_PASSWORD: $SERVICE_PASSWORD_ADMIN
+      PHOTOPRISM_SITE_URL: ${SERVICE_URL_PHOTOPRISM:-http://localhost:2342}
+      PHOTOPRISM_DISABLE_TLS: "true"
+    volumes:
+      - photoprism_originals:/photoprism/originals
+      - photoprism_storage:/photoprism/storage
+    healthcheck:
+      test: ["CMD-SHELL", "curl -fsS -o /dev/null http://127.0.0.1:2342/api/v1/status"]
+      interval: 10s
+      timeout: 5s
+      retries: 3
+      start_period: 120s

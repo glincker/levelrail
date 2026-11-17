@@ -1,0 +1,25 @@
+services:
+  grimmory:
+    image: grimmory/grimmory:nightly-20260403-3a371f7
+    ports: ["80:80"]
+    environment:
+      DATABASE_URL: jdbc:mariadb://db:3306/grimmory
+      DATABASE_USERNAME: $SERVICE_USER_DB
+      DATABASE_PASSWORD: $SERVICE_PASSWORD_DB
+    volumes:
+      - grimmory_data:/app/data
+      - grimmory_books:/books
+    healthcheck:
+      test: ["CMD-SHELL", "sh -c ': < /dev/tcp/127.0.0.1/80' || exit 1"]
+      interval: 30s
+      timeout: 5s
+      retries: 3
+  db:
+    image: mariadb:11
+    environment:
+      MARIADB_USER: $SERVICE_USER_DB
+      MARIADB_PASSWORD: $SERVICE_PASSWORD_DB
+      MARIADB_ROOT_PASSWORD: $SERVICE_PASSWORD_DBROOT
+      MARIADB_DATABASE: grimmory
+    volumes:
+      - grimmory_db_data:/var/lib/mysql

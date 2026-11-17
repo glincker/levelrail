@@ -1,0 +1,14 @@
+services:
+  pocket-id:
+    image: ghcr.io/pocket-id/pocket-id:v1.13
+    ports: ["1411:1411"]
+    environment:
+      APP_URL: ${SERVICE_URL_POCKETID:-http://localhost:1411}
+      TRUST_PROXY: "true"
+    volumes:
+      - pocket_id_data:/app/data
+    healthcheck:
+      test: ["CMD-SHELL", "curl -fsS -o /dev/null http://127.0.0.1:1411/healthz"]
+      interval: 10s
+      timeout: 5s
+      retries: 3

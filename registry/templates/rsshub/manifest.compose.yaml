@@ -1,0 +1,13 @@
+services:
+  rsshub:
+    image: diygod/rsshub:2026-10-26
+    ports: ["1200"]
+    environment:
+      NODE_ENV: production
+      CACHE_TYPE: memory
+    healthcheck:
+      test: ["CMD-SHELL", "curl -fsS -o /dev/null http://127.0.0.1:1200/healthz"]
+      interval: 15s
+      timeout: 5s
+      retries: 6
+      start_period: 20s

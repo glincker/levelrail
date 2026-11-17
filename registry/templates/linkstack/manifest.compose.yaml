@@ -1,0 +1,12 @@
+services:
+  linkstack:
+    image: linkstackorg/linkstack:v4.8.8
+    ports: ["80"]
+    volumes:
+      - linkstack_data:/htdocs
+    healthcheck:
+      test: ["CMD-SHELL", "wget -q --spider http://127.0.0.1:80/ || exit 1"]
+      interval: 15s
+      timeout: 8s
+      retries: 10
+      start_period: 30s

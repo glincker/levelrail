@@ -1,0 +1,14 @@
+services:
+  wizarr:
+    image: ghcr.io/wizarrrr/wizarr:v2026.10.1
+    ports: ["5690"]
+    environment:
+      TZ: ${TZ}
+    volumes:
+      - database:/data/database
+    healthcheck:
+      test: ["CMD-SHELL", "curl -fsS -o /dev/null http://127.0.0.1:5690/ || wget -q -O /dev/null http://127.0.0.1:5690/"]
+      interval: 15s
+      timeout: 5s
+      retries: 10
+      start_period: 30s

@@ -1,0 +1,16 @@
+services:
+    anubis:
+        image: ghcr.io/techarohq/anubis:v1.28.2
+        ports: ["8923"]
+        environment:
+            BIND: ":8923"
+            TARGET: ${SERVICE_PROMPT_ANUBIS_TARGET}
+            DIFFICULTY: "4"
+            ED25519_PRIVATE_KEY_HEX: ${SERVICE_HEX_64_ANUBIS_KEY}
+            METRICS_BIND: ":9090"
+        healthcheck:
+            test: ["CMD", "/ko-app/anubis", "--healthcheck"]
+            interval: 15s
+            timeout: 8s
+            retries: 10
+            start_period: 10s

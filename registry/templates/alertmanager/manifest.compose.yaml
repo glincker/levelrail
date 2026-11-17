@@ -1,0 +1,11 @@
+services:
+  alertmanager:
+    image: prom/alertmanager:v0.27.0
+    ports: ["9093"]
+    volumes:
+      - data:/alertmanager
+    healthcheck:
+      test: ["CMD-SHELL", "wget -q -O /dev/null http://127.0.0.1:9093/-/healthy"]
+      interval: 10s
+      timeout: 5s
+      retries: 5

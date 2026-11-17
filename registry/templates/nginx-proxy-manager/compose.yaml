@@ -1,0 +1,15 @@
+services:
+  npm:
+    image: jc21/nginx-proxy-manager:2.12.3
+    ports: ["81:81"]
+    environment:
+      DB_SQLITE_FILE: /data/database.sqlite
+    volumes:
+      - npm_data:/data
+      - npm_letsencrypt:/etc/letsencrypt
+    healthcheck:
+      test: ["CMD-SHELL", "curl -fsS -o /dev/null http://127.0.0.1:81/api/"]
+      interval: 15s
+      timeout: 5s
+      retries: 3
+      start_period: 60s

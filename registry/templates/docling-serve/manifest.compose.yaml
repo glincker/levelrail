@@ -1,0 +1,13 @@
+services:
+  docling:
+    image: ghcr.io/docling-project/docling-serve-cpu:v1.38.2
+    ports: ["5001"]
+    environment:
+      DOCLING_SERVE_ENABLE_UI: "true"
+      TZ: ${TZ}
+    healthcheck:
+      test: ["CMD-SHELL", "curl -fsS -o /dev/null http://127.0.0.1:5001/health"]
+      interval: 20s
+      timeout: 6s
+      retries: 15
+      start_period: 60s

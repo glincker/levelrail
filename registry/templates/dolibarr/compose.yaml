@@ -1,0 +1,30 @@
+services:
+  dolibarr:
+    image: dolibarr/dolibarr:23.0.4
+    ports: ["8080:80"]
+    environment:
+      DOLI_DB_HOST: db
+      DOLI_DB_NAME: dolibarr
+      DOLI_DB_USER: dolibarr
+      DOLI_DB_PASSWORD: $SERVICE_PASSWORD_DB
+      DOLI_ADMIN_LOGIN: admin
+      DOLI_ADMIN_PASSWORD: $SERVICE_PASSWORD_ADMIN
+      DOLI_URL_ROOT: ${SERVICE_URL_DOLIBARR:-http://localhost:8080}
+    volumes:
+      - dolibarr_documents:/var/www/documents
+      - dolibarr_custom:/var/www/html/custom
+    healthcheck:
+      test: ["CMD-SHELL", "curl -fsS -o /dev/null http://127.0.0.1:80/ || wget -q -O /dev/null http://127.0.0.1:80/ || exit 1"]
+      interval: 30s
+      timeout: 5s
+      retries: 3
+      start_period: 90s
+  db:
+    image: mariadb:11
+    environment:
+      MARIADB_ROOT_PASSWORD: $SERVICE_PASSWORD_ROOT
+      MARIADB_USER: dolibarr
+      MARIADB_PASSWORD: $SERVICE_PASSWORD_DB
+      MARIADB_DATABASE: dolibarr
+    volumes:
+      - dolibarr_db_data:/var/lib/mysql

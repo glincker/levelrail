@@ -1,0 +1,10 @@
+id: wordpress
+name: WordPress
+slogan: The world's most widely used content management system, self-hosted with its own database.
+category: Applications
+documentation_url: https://wordpress.org/documentation/
+recommended_memory_bytes: 536870912
+requires_gpu: false
+platforms:
+    - linux/amd64
+    - linux/arm64

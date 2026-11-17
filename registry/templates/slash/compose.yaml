@@ -1,0 +1,11 @@
+services:
+  slash:
+    image: yourselfhosted/slash:0.5.3
+    ports: ["5231:5231"]
+    volumes:
+      - slash_data:/var/opt/slash
+    healthcheck:
+      test: ["CMD", "wget", "-q", "--spider", "http://127.0.0.1:5231"]
+      interval: 10s
+      timeout: 10s
+      retries: 5

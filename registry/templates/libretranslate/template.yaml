@@ -1,0 +1,10 @@
+id: libretranslate
+name: LibreTranslate
+slogan: A free and open machine translation API that runs entirely on your own hardware.
+category: Developer Tools
+documentation_url: https://github.com/LibreTranslate/LibreTranslate
+recommended_memory_bytes: 536870912
+requires_gpu: false
+platforms:
+    - linux/amd64
+    - linux/arm64

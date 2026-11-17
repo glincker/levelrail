@@ -1,0 +1,10 @@
+id: label-studio
+name: Label Studio
+slogan: A flexible data labeling tool for text, images, audio, and video, with export to common ML formats.
+category: AI
+documentation_url: https://labelstud.io/guide
+recommended_memory_bytes: 1073741824
+requires_gpu: false
+platforms:
+    - linux/amd64
+    - linux/arm64

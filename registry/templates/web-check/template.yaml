@@ -1,0 +1,10 @@
+id: web-check
+name: Web Check
+slogan: An all-in-one OSINT tool for inspecting a website's DNS, headers, certs, and security posture.
+category: Developer Tools
+documentation_url: https://github.com/lissy93/web-check
+recommended_memory_bytes: 268435456
+requires_gpu: false
+platforms:
+    - linux/amd64
+    - linux/arm64

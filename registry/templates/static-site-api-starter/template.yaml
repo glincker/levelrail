@@ -1,0 +1,12 @@
+id: static-site-api-starter
+name: Static Site + API Backend
+slogan: A static frontend and a separate API service deployed together, the split most SPAs actually run.
+category: Starter Kits
+documentation_url: https://nginx.org/en/docs/
+recommended_memory_bytes: 134217728
+requires_gpu: false
+platforms:
+    - linux/amd64
+    - linux/arm
+    - linux/arm64
+    - linux/s390x

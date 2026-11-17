@@ -1,0 +1,12 @@
+id: etcd
+name: etcd
+slogan: A distributed key-value store for configuration and coordination, running as a single member.
+category: Infrastructure
+documentation_url: https://etcd.io/docs/
+recommended_memory_bytes: 268435456
+requires_gpu: false
+platforms:
+    - linux/amd64
+    - linux/arm64
+    - linux/ppc64le
+    - linux/s390x

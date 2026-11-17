@@ -1,0 +1,16 @@
+services:
+  autobrr:
+    image: ghcr.io/autobrr/autobrr:v1.87.0
+    ports: ["7474:7474"]
+    environment:
+      AUTOBRR__HOST: 0.0.0.0
+      AUTOBRR__PORT: "7474"
+      AUTOBRR__SESSION_SECRET: $SERVICE_HEX_32_SESSION
+    volumes:
+      - autobrr_config:/config
+    healthcheck:
+      test: ["CMD-SHELL", "curl -fsS -o /dev/null http://127.0.0.1:7474/api/healthz/liveness || exit 1"]
+      interval: 30s
+      timeout: 5s
+      retries: 3
+      start_period: 30s

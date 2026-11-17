@@ -1,0 +1,10 @@
+id: unstructured
+name: Unstructured
+slogan: An API that turns PDFs, Word files, and other documents into clean data for RAG pipelines.
+category: AI
+documentation_url: https://github.com/Unstructured-IO/unstructured-api
+recommended_memory_bytes: 2147483648
+requires_gpu: false
+platforms:
+    - linux/amd64
+    - linux/arm64

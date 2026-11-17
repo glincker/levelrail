@@ -1,0 +1,51 @@
+services:
+  cloudreve:
+    image: cloudreve/cloudreve:4.10.1
+    ports: ["5212:5212"]
+    environment:
+      CR_CONF_Database.Type: postgres
+      CR_CONF_Database.Host: postgres
+      CR_CONF_Database.User: cloudreve
+      CR_CONF_Database.Password: $SERVICE_PASSWORD_POSTGRES
+      CR_CONF_Database.Name: cloudreve
+      CR_CONF_Database.Port: "5432"
+      CR_CONF_Redis.Server: redis:6379
+      CR_CONF_Redis.Password: $SERVICE_PASSWORD_REDIS
+    volumes:
+      - cloudreve_data:/cloudreve/data
+    depends_on:
+      postgres:
+        condition: service_healthy
+      redis:
+        condition: service_healthy
+    healthcheck:
+      test: ["CMD", "nc", "-z", "127.0.0.1", "5212"]
+      interval: 20s
+      timeout: 10s
+      retries: 3
+      start_period: 20s
+  postgres:
+    image: postgres:16-alpine
+    environment:
+      POSTGRES_USER: cloudreve
+      POSTGRES_PASSWORD: $SERVICE_PASSWORD_POSTGRES
+      POSTGRES_DB: cloudreve
+    volumes:
+      - postgres_data:/var/lib/postgresql/data
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U cloudreve -d cloudreve"]
+      interval: 5s
+      timeout: 5s
+      retries: 10
+  redis:
+    image: redis:7-alpine
+    environment:
+      REDIS_PASSWORD: $SERVICE_PASSWORD_REDIS
+    command: ["/bin/sh", "-c", "exec redis-server --requirepass \"$REDIS_PASSWORD\""]
+    volumes:
+      - redis_data:/data
+    healthcheck:
+      test: ["CMD-SHELL", "redis-cli -a \"$REDIS_PASSWORD\" ping | grep -q PONG || exit 1"]
+      interval: 10s
+      timeout: 5s
+      retries: 5

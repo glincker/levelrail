@@ -1,0 +1,29 @@
+services:
+  web:
+    image: node:22-alpine
+    command: ["node", "-e", "require('http').createServer((req,res)=>{res.writeHead(200,{'Content-Type':'application/json'});res.end(JSON.stringify({status:'ok',database_url:process.env.DATABASE_URL?'configured':'missing'}));}).listen(3000);"]
+    ports: ["3000:3000"]
+    environment:
+      DATABASE_URL: postgres://app:$SERVICE_PASSWORD_DB@db:5432/app
+      NODE_ENV: production
+    depends_on: [db]
+    healthcheck:
+      test: ["CMD-SHELL", "node -e \"require('http').get('http://127.0.0.1:3000/',r=>process.exit(r.statusCode===200?0:1)).on('error',()=>process.exit(1))\""]
+      interval: 10s
+      timeout: 5s
+      retries: 3
+      start_period: 20s
+  db:
+    image: postgres:16-alpine
+    environment:
+      POSTGRES_DB: app
+      POSTGRES_USER: app
+      POSTGRES_PASSWORD: $SERVICE_PASSWORD_DB
+    volumes:
+      - node_postgres_db_data:/var/lib/postgresql/data
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U app -d app"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+      start_period: 15s

@@ -1,0 +1,10 @@
+id: planka
+name: Planka
+slogan: A Trello-style kanban board for visualizing and tracking work across a team.
+category: Productivity
+documentation_url: https://docs.planka.cloud/docs/installation/docker/
+recommended_memory_bytes: 536870912
+requires_gpu: false
+platforms:
+    - linux/amd64
+    - linux/arm64

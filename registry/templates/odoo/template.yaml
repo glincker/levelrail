@@ -1,0 +1,11 @@
+id: odoo
+name: Odoo
+slogan: An all-in-one business suite covering CRM, sales, inventory, accounting, and a website builder.
+category: Applications
+documentation_url: https://www.odoo.com/documentation
+recommended_memory_bytes: 2147483648
+requires_gpu: false
+platforms:
+    - linux/amd64
+    - linux/arm64
+    - linux/ppc64le

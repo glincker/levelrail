@@ -1,0 +1,59 @@
+id: lyrion
+name: Lyrion Music Server
+slogan: The successor to Logitech Media Server, streaming your music to Squeezebox players and apps.
+description: The successor to Logitech Media Server, streaming your music to Squeezebox players and apps.
+category: Media
+documentation_url: https://lyrion.org/
+recommended_memory_bytes: 536870912
+requires_gpu: false
+manifest:
+    id: lyrion
+    name: Lyrion Music Server
+    description: The successor to Logitech Media Server, streaming your music to Squeezebox players and apps.
+    icon: music-notes
+    category: Media
+    documentation_url: https://lyrion.org/
+    source_repo: https://github.com/LMS-Community/slimserver
+    license: GPL-2.0-only
+    license_class: copyleft
+    license_url: https://github.com/LMS-Community/slimserver/blob/HEAD/LICENSE
+    hosted_use: ""
+    listing:
+        by: community
+        vendor_org: ""
+        proof: ""
+    status: active
+    status_reason: ""
+    replaced_by: ""
+    aliases: []
+    first_run:
+        - Open the address, set the music folder to /music in the first run wizard.
+    compose_file: compose.yaml
+    recommended_memory_bytes: 536870912
+    env:
+        - key: TZ
+          label: Time zone
+          description: IANA time zone for logs and schedules.
+          default: Etc/UTC
+          generate: ""
+          length: 0
+          required: false
+          secret: false
+          type: ""
+          service: ""
+          path: ""
+          mode: ""
+    domains:
+        - service: lyrion
+          port: 9000
+          description: Public address of Lyrion Music Server.
+    healthcheck:
+        service: lyrion
+        port: 9000
+        path: /
+        expect: 0
+        kind: ""
+        reason: ""
+    first_boot_seconds: 0
+    console_command: []
+    capabilities: []

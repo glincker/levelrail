@@ -1,0 +1,10 @@
+id: rallly
+name: Rallly
+slogan: Find a time that works for everyone with polls for scheduling meetings and events.
+category: Productivity
+documentation_url: https://support.rallly.co/self-hosting/introduction
+recommended_memory_bytes: 268435456
+requires_gpu: false
+platforms:
+    - linux/amd64
+    - linux/arm64

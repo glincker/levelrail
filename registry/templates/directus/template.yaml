@@ -1,0 +1,10 @@
+id: directus
+name: Directus
+slogan: An open-source headless CMS and instant REST/GraphQL API layer over your own database.
+category: Developer Tools
+documentation_url: https://docs.directus.io
+recommended_memory_bytes: 536870912
+requires_gpu: false
+platforms:
+    - linux/amd64
+    - linux/arm64

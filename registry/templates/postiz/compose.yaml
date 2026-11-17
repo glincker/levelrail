@@ -1,0 +1,38 @@
+services:
+  postiz:
+    image: ghcr.io/gitroomhq/postiz-app:v2.23.0
+    ports: ["5000:5000"]
+    environment:
+      MAIN_URL: http://localhost:5000
+      FRONTEND_URL: http://localhost:5000
+      NEXT_PUBLIC_BACKEND_URL: http://localhost:5000/api
+      JWT_SECRET: $SERVICE_HEX_32_JWT
+      DATABASE_URL: postgresql://postiz:$SERVICE_PASSWORD_DB@db:5432/postiz
+      REDIS_URL: redis://redis:6379
+      IS_GENERAL: "true"
+    volumes:
+      - postiz_uploads:/config/uploads
+    depends_on: [db, redis]
+    healthcheck:
+      test: ["CMD-SHELL", "curl -fsS -o /dev/null http://127.0.0.1:5000/ || exit 1"]
+      interval: 30s
+      timeout: 5s
+      retries: 3
+      start_period: 60s
+  db:
+    image: postgres:17-alpine
+    environment:
+      POSTGRES_USER: postiz
+      POSTGRES_PASSWORD: $SERVICE_PASSWORD_DB
+      POSTGRES_DB: postiz
+    volumes:
+      - postiz_db_data:/var/lib/postgresql/data
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U postiz -d postiz"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+  redis:
+    image: redis:7-alpine
+    volumes:
+      - postiz_redis_data:/data

@@ -1,0 +1,12 @@
+id: joomla
+name: Joomla
+slogan: A long-established CMS with a large extension ecosystem for business sites, portals, and communities.
+category: Applications
+documentation_url: https://docs.joomla.org
+recommended_memory_bytes: 805306368
+requires_gpu: false
+platforms:
+    - linux/amd64
+    - linux/arm64
+    - linux/ppc64le
+    - linux/s390x

@@ -1,0 +1,10 @@
+id: hoppscotch
+name: Hoppscotch
+slogan: An open-source API development platform, a self-hosted alternative to Postman, backed by Postgres.
+category: Developer Tools
+documentation_url: https://docs.hoppscotch.io
+recommended_memory_bytes: 536870912
+requires_gpu: false
+platforms:
+    - linux/amd64
+    - linux/arm64

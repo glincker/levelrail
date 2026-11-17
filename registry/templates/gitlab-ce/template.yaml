@@ -1,0 +1,10 @@
+id: gitlab-ce
+name: GitLab CE
+slogan: A complete DevOps platform for source control, code review, issues, and CI/CD in one place.
+category: Developer Tools
+documentation_url: https://docs.gitlab.com/install/docker/installation/
+recommended_memory_bytes: 4294967296
+requires_gpu: false
+platforms:
+    - linux/amd64
+    - linux/arm64

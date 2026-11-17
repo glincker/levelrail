@@ -1,0 +1,26 @@
+services:
+  karakeep:
+    image: ghcr.io/karakeep-app/karakeep:0.33.2
+    ports: ["3000:3000"]
+    environment:
+      MEILI_ADDR: http://meilisearch:7700
+      MEILI_MASTER_KEY: $SERVICE_HEX_32_MEILI
+      NEXTAUTH_SECRET: $SERVICE_HEX_32_NEXTAUTH
+      NEXTAUTH_URL: http://localhost:3000
+      DATA_DIR: /data
+    volumes:
+      - karakeep_data:/data
+    depends_on: [meilisearch]
+    healthcheck:
+      test: ["CMD-SHELL", "curl -fsS -o /dev/null http://127.0.0.1:3000/api/health || exit 1"]
+      interval: 30s
+      timeout: 5s
+      retries: 3
+      start_period: 30s
+  meilisearch:
+    image: getmeili/meilisearch:v1.15.0
+    environment:
+      MEILI_MASTER_KEY: $SERVICE_HEX_32_MEILI
+      MEILI_NO_ANALYTICS: "true"
+    volumes:
+      - karakeep_meili_data:/meili_data

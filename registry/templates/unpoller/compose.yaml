@@ -1,0 +1,28 @@
+services:
+    unpoller:
+        image: ghcr.io/unpoller/unpoller:v5.9.5
+        ports: ["9130"]
+        healthcheck:
+            test: ["CMD", "/usr/bin/unpoller", "--health"]
+            interval: 15s
+            timeout: 8s
+            retries: 10
+            start_period: 30s
+        secrets:
+            - source: lr_file_unpoller_config
+              target: /etc/unpoller/up.conf
+              mode: "0400"
+secrets:
+    lr_file_unpoller_config:
+        content: |
+            [poller]
+              debug = false
+            [prometheus]
+              http_listen = "0.0.0.0:9130"
+            [influxdb]
+              disable = true
+            [unifi.defaults]
+              url = "${SERVICE_PROMPT_UNIFI_URL}"
+              user = "${SERVICE_PROMPT_UNIFI_USER}"
+              pass = "${SERVICE_PROMPT_UNIFI_PASSWORD}"
+              verify_ssl = false

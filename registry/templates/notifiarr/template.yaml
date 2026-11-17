@@ -1,0 +1,87 @@
+id: notifiarr
+name: Notifiarr
+slogan: Client for the Notifiarr service that relays notifications and syncs profiles for your media apps. The install form carries notifiarr.conf as an editable file and asks for your API key.
+description: Client for the Notifiarr service that relays notifications and syncs profiles for your media apps. The install form carries notifiarr.conf as an editable file and asks for your API key.
+category: Media
+documentation_url: https://notifiarr.wiki/
+recommended_memory_bytes: 134217728
+requires_gpu: false
+manifest:
+    id: notifiarr
+    name: Notifiarr
+    description: Client for the Notifiarr service that relays notifications and syncs profiles for your media apps. The install form carries notifiarr.conf as an editable file and asks for your API key.
+    icon: bell
+    category: Media
+    documentation_url: https://notifiarr.wiki/
+    source_repo: https://github.com/Notifiarr/notifiarr
+    license: MIT
+    license_class: permissive
+    license_url: https://github.com/Notifiarr/notifiarr/blob/main/LICENSE
+    hosted_use: allowed
+    listing:
+        by: community
+        vendor_org: ""
+        proof: ""
+    status: active
+    status_reason: ""
+    replaced_by: ""
+    aliases: []
+    first_run:
+        - Create an account on notifiarr.com, copy your API key into the install form, then open the address to add your apps.
+    compose_file: compose.yaml
+    recommended_memory_bytes: 134217728
+    env:
+        - key: NOTIFIARR_API_KEY
+          label: Notifiarr API key
+          description: The key from your notifiarr.com profile.
+          default: ""
+          generate: ""
+          length: 0
+          required: true
+          secret: true
+          type: ""
+          service: ""
+          path: ""
+          mode: ""
+        - key: NOTIFIARR_UI_PASSWORD
+          label: Web UI password
+          description: Password for the local web UI, user admin.
+          default: ""
+          generate: password
+          length: 24
+          required: false
+          secret: true
+          type: ""
+          service: ""
+          path: ""
+          mode: ""
+        - key: NOTIFIARR_CONFIG
+          label: notifiarr.conf
+          description: The Notifiarr configuration, mounted read-only.
+          default: |
+            api_key = "${NOTIFIARR_API_KEY}"
+            ui_password = "admin:${NOTIFIARR_UI_PASSWORD}"
+            bind_addr = "0.0.0.0:5454"
+            quiet = true
+          generate: ""
+          length: 0
+          required: false
+          secret: true
+          type: file
+          service: notifiarr
+          path: /etc/notifiarr/notifiarr.conf
+          mode: "0400"
+    domains:
+        - service: notifiarr
+          port: 5454
+          description: Public address of the Notifiarr web UI.
+    healthcheck:
+        service: notifiarr
+        port: 5454
+        path: /
+        expect: 0
+        kind: ""
+        reason: ""
+    first_boot_seconds: 0
+    console_command: []
+    capabilities: []

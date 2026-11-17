@@ -1,0 +1,17 @@
+services:
+  gitlab:
+    image: gitlab/gitlab-ce:17.5.2-ce.0
+    ports: ["8080:80", "2224:22"]
+    environment:
+      GITLAB_OMNIBUS_CONFIG: "external_url 'http://localhost:8080'; nginx['listen_port'] = 80; nginx['listen_https'] = false; gitlab_rails['gitlab_shell_ssh_port'] = 2224;"
+      GITLAB_ROOT_PASSWORD: $SERVICE_PASSWORD_ROOT
+    volumes:
+      - gitlab_config:/etc/gitlab
+      - gitlab_logs:/var/log/gitlab
+      - gitlab_data:/var/opt/gitlab
+    healthcheck:
+      test: ["CMD-SHELL", "curl -fsS -o /dev/null http://127.0.0.1:80/-/health"]
+      interval: 30s
+      timeout: 10s
+      retries: 10
+      start_period: 300s

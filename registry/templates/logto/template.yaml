@@ -1,0 +1,10 @@
+id: logto
+name: Logto
+slogan: 'Modern, developer-first customer identity: sign-in experiences, social login, and OIDC without the plumbing.'
+category: Security
+documentation_url: https://docs.logto.io
+recommended_memory_bytes: 1073741824
+requires_gpu: false
+platforms:
+    - linux/amd64
+    - linux/arm64

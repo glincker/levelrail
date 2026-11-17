@@ -1,0 +1,19 @@
+services:
+  lubelogger:
+    image: ghcr.io/hargata/lubelogger:v1.7.4
+    ports: ["8080"]
+    environment:
+      LC_ALL: ${LC_ALL}
+      LANG: ${LC_ALL}
+      LUBELOGGER_ALLOWED_FILE_EXTENSIONS: ${LUBELOGGER_ALLOWED_FILE_EXTENSIONS}
+    volumes:
+      - data:/App/data
+      - config:/App/config
+      - keys:/root/.aspnet/DataProtection-Keys
+    healthcheck:
+      # No curl or wget in this image, so bash does the GET itself.
+      test: ["CMD", "bash", "-c", "exec 3<>/dev''/tcp/127.0.0.1/8080 && printf 'GET /Login HTTP/1.0\\r\\nHost: localhost\\r\\n\\r\\n' >&3 && head -1 <&3 | grep -q ' 200 '"]
+      interval: 15s
+      timeout: 5s
+      retries: 10
+      start_period: 30s

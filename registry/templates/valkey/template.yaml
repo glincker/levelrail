@@ -1,0 +1,12 @@
+id: valkey
+name: Valkey
+slogan: A Redis-compatible in-memory key-value store under the Linux Foundation, with password auth and append-only persistence.
+category: Database Tools
+documentation_url: https://valkey.io/docs/
+recommended_memory_bytes: 268435456
+requires_gpu: false
+platforms:
+    - linux/amd64
+    - linux/arm
+    - linux/arm64
+    - linux/ppc64le

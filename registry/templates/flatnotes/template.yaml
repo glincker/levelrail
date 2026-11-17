@@ -1,0 +1,10 @@
+id: flatnotes
+name: flatnotes
+slogan: A database-less note-taking app that keeps notes as plain Markdown files.
+category: Productivity
+documentation_url: https://github.com/dullage/flatnotes/wiki
+recommended_memory_bytes: 134217728
+requires_gpu: false
+platforms:
+    - linux/amd64
+    - linux/arm64

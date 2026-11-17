@@ -1,0 +1,71 @@
+services:
+  flowise:
+    image: flowiseai/flowise:3.1.4
+    ports: ["3000:3000"]
+    environment:
+      PORT: "3000"
+      FLOWISE_USERNAME: $SERVICE_USER_FLOWISE
+      FLOWISE_PASSWORD: $SERVICE_PASSWORD_FLOWISE
+      DATABASE_PATH: /home/node/.flowise
+      APIKEY_PATH: /home/node/.flowise
+      SECRETKEY_PATH: /home/node/.flowise
+      LOG_PATH: /home/node/.flowise/logs
+      BLOB_STORAGE_PATH: /home/node/.flowise/storage
+      DATABASE_TYPE: postgres
+      DATABASE_HOST: recordmanager
+      DATABASE_PORT: "5432"
+      DATABASE_NAME: flowise_records
+      DATABASE_USER: flowise
+      DATABASE_PASSWORD: $SERVICE_PASSWORD_RECORDMANAGER
+      JWT_AUTH_TOKEN_SECRET: $SERVICE_HEX_32_JWTAUTH
+      JWT_REFRESH_TOKEN_SECRET: $SERVICE_HEX_32_JWTREFRESH
+      EXPRESS_SESSION_SECRET: $SERVICE_HEX_32_SESSION
+      TOKEN_HASH_SECRET: $SERVICE_HEX_32_TOKENHASH
+    volumes:
+      - flowise_pg_data:/home/node/.flowise
+    depends_on:
+      recordmanager:
+        condition: service_healthy
+      cache:
+        condition: service_started
+      qdrant:
+        condition: service_started
+    healthcheck:
+      test: ["CMD-SHELL", "wget -q -O- http://127.0.0.1:3000/api/v1/ping || exit 1"]
+      interval: 10s
+      timeout: 5s
+      retries: 3
+      start_period: 60s
+  recordmanager:
+    image: postgres:16-alpine
+    environment:
+      POSTGRES_USER: flowise
+      POSTGRES_PASSWORD: $SERVICE_PASSWORD_RECORDMANAGER
+      POSTGRES_DB: flowise_records
+    volumes:
+      - flowise_pg_recordmanager_data:/var/lib/postgresql/data
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U flowise -d flowise_records"]
+      interval: 5s
+      timeout: 5s
+      retries: 5
+  cache:
+    image: redis:7-alpine
+    volumes:
+      - flowise_pg_redis_data:/data
+    healthcheck:
+      test: ["CMD", "redis-cli", "ping"]
+      interval: 5s
+      timeout: 5s
+      retries: 5
+  qdrant:
+    image: qdrant/qdrant:v1.19.1
+    environment:
+      QDRANT__SERVICE__API_KEY: $SERVICE_PASSWORD_QDRANT
+    volumes:
+      - flowise_pg_qdrant_data:/qdrant/storage
+    healthcheck:
+      test: ["CMD-SHELL", "curl -fsS -o /dev/null http://127.0.0.1:6333/healthz || exit 1"]
+      interval: 10s
+      timeout: 5s
+      retries: 3

@@ -1,0 +1,47 @@
+id: openspeedtest
+name: OpenSpeedTest
+slogan: A browser speed test you host yourself. It measures download and upload speed between a visitor and this server, with no account and no stored results.
+description: A browser speed test you host yourself. It measures download and upload speed between a visitor and this server, with no account and no stored results.
+category: Monitoring
+documentation_url: https://openspeedtest.com/
+recommended_memory_bytes: 67108864
+requires_gpu: false
+manifest:
+    id: openspeedtest
+    name: OpenSpeedTest
+    description: A browser speed test you host yourself. It measures download and upload speed between a visitor and this server, with no account and no stored results.
+    icon: gauge
+    category: Monitoring
+    documentation_url: https://openspeedtest.com/
+    source_repo: https://github.com/openspeedtest/Speed-Test
+    license: MIT
+    license_class: permissive
+    license_url: https://github.com/openspeedtest/Speed-Test/blob/main/LICENSE
+    hosted_use: allowed
+    listing:
+        by: community
+        vendor_org: ""
+        proof: ""
+    status: active
+    status_reason: ""
+    replaced_by: ""
+    aliases: []
+    first_run:
+        - Open the address and press Start. Results reflect the path between your browser and this server.
+    compose_file: compose.yaml
+    recommended_memory_bytes: 67108864
+    env: []
+    domains:
+        - service: openspeedtest
+          port: 3000
+          description: Public address of the speed test page.
+    healthcheck:
+        service: openspeedtest
+        port: 3000
+        path: /
+        expect: 0
+        kind: ""
+        reason: ""
+    first_boot_seconds: 0
+    console_command: []
+    capabilities: []

@@ -1,0 +1,16 @@
+services:
+  flood:
+    image: jesec/flood:4.16.4
+    ports: ["3000"]
+    command: ["--port", "3000", "--rundir", "/config", "--allowedpath", "/data"]
+    environment:
+      HOME: "/config"
+    volumes:
+      - config:/config
+      - data:/data
+    healthcheck:
+      test: ["CMD-SHELL", "curl -fsS -o /dev/null http://127.0.0.1:3000 || wget -q -O /dev/null http://127.0.0.1:3000"]
+      interval: 15s
+      timeout: 10s
+      retries: 10
+      start_period: 30s

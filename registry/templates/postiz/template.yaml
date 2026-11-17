@@ -1,0 +1,10 @@
+id: postiz
+name: Postiz
+slogan: Schedules and publishes posts across social platforms from one calendar, with basic analytics.
+category: Communication
+documentation_url: https://docs.postiz.com/installation/docker
+recommended_memory_bytes: 1073741824
+requires_gpu: false
+platforms:
+    - linux/amd64
+    - linux/arm64

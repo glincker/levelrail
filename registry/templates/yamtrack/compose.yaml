@@ -1,0 +1,24 @@
+services:
+  yamtrack:
+    image: ghcr.io/fuzzygrim/yamtrack:0.26.3
+    ports: ["8000:8000"]
+    environment:
+      URLS: ${SERVICE_URL_YAMTRACK:-http://localhost:8000}
+      SECRET: $SERVICE_PASSWORD_64_SECRET
+      REDIS_URL: redis://redis:6379
+    depends_on: [redis]
+    volumes:
+      - yamtrack_data:/yamtrack/db
+    healthcheck:
+      test: ["CMD-SHELL", "wget --quiet --tries=1 --spider http://127.0.0.1:8000/health/"]
+      interval: 10s
+      timeout: 10s
+      retries: 5
+      start_period: 15s
+  redis:
+    image: redis:7-alpine
+    healthcheck:
+      test: ["CMD", "redis-cli", "ping"]
+      interval: 10s
+      timeout: 10s
+      retries: 5

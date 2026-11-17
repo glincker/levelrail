@@ -1,0 +1,11 @@
+id: linkding
+name: Linkding
+slogan: A minimal, fast bookmark manager built for keeping a personal link archive.
+category: Productivity
+documentation_url: https://linkding.link
+recommended_memory_bytes: 134217728
+requires_gpu: false
+platforms:
+    - linux/amd64
+    - linux/arm
+    - linux/arm64

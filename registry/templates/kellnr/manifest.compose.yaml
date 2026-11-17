@@ -1,0 +1,19 @@
+services:
+  kellnr:
+    image: ghcr.io/kellnr/kellnr:7.1.0
+    ports: ["8000"]
+    environment:
+      KELLNR_ORIGIN__HOSTNAME: ${KELLNR_HOSTNAME}
+      KELLNR_REGISTRY__DATA_DIR: /opt/kdata
+    volumes:
+      - kdata:/opt/kdata
+    healthcheck:
+      test: ["NONE"]
+    x-levelrail-healthcheck:
+      kind: http
+      path: /
+      port: 8000
+      interval: 15s
+      timeout: 8s
+      retries: 10
+      start_period: 20s

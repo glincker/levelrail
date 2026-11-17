@@ -1,0 +1,13 @@
+id: adguard-home
+name: AdGuard Home
+slogan: Network-wide ad and tracker blocking with a DNS server and a friendly admin dashboard.
+category: Infrastructure
+documentation_url: https://github.com/AdguardTeam/AdGuardHome/wiki/Docker
+recommended_memory_bytes: 134217728
+requires_gpu: false
+platforms:
+    - linux/386
+    - linux/amd64
+    - linux/arm
+    - linux/arm64
+    - linux/ppc64le

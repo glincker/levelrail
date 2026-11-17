@@ -1,0 +1,16 @@
+id: autobrr
+name: autobrr
+slogan: Matches torrent releases from your indexers against filters and pushes hits straight to your download client.
+category: Automation
+documentation_url: https://autobrr.com/installation/docker
+recommended_memory_bytes: 268435456
+requires_gpu: false
+platforms:
+    - linux/386
+    - linux/amd64
+    - linux/arm
+    - linux/arm64
+    - linux/ppc64le
+    - linux/riscv64
+    - linux/s390x
+    - windows/amd64

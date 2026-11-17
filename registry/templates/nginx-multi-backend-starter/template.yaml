@@ -1,0 +1,12 @@
+id: nginx-multi-backend-starter
+name: Nginx Reverse Proxy (Multi-Backend)
+slogan: One Nginx entrypoint routing to two independent backend services, demonstrating depends_on across three services.
+category: Starter Kits
+documentation_url: https://nginx.org/en/docs/http/ngx_http_proxy_module.html
+recommended_memory_bytes: 201326592
+requires_gpu: false
+platforms:
+    - linux/amd64
+    - linux/arm
+    - linux/arm64
+    - linux/s390x

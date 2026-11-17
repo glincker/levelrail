@@ -1,0 +1,14 @@
+services:
+  cockpit-cms:
+    image: cockpithq/cockpit:core-latest
+    ports: ["80:80"]
+    volumes:
+      - cockpitcms_config:/var/www/html/config
+      - cockpitcms_storage:/var/www/html/storage
+      - cockpitcms_spaces:/var/www/html/.spaces
+    healthcheck:
+      test: ["CMD", "wget", "-q", "-O-", "http://127.0.0.1/api/system/healthcheck"]
+      interval: 10s
+      timeout: 10s
+      retries: 5
+      start_period: 15s

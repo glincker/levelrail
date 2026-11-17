@@ -1,0 +1,9 @@
+id: flame
+name: Flame
+slogan: A self-hosted start page with an app launcher, bookmarks, and Docker label integration.
+category: Dashboard
+documentation_url: https://github.com/pawelmalak/flame#readme
+recommended_memory_bytes: 134217728
+requires_gpu: false
+platforms:
+    - linux/amd64

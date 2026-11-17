@@ -1,0 +1,47 @@
+id: netbootxyz
+name: netboot.xyz
+slogan: Network boot menu for installers and rescue tools, served by the official container with its web configuration page and asset mirror.
+description: Network boot menu for installers and rescue tools, served by the official container with its web configuration page and asset mirror.
+category: Infrastructure
+documentation_url: https://netboot.xyz/docs/
+recommended_memory_bytes: 268435456
+requires_gpu: false
+manifest:
+    id: netbootxyz
+    name: netboot.xyz
+    description: Network boot menu for installers and rescue tools, served by the official container with its web configuration page and asset mirror.
+    icon: hard-drives
+    category: Infrastructure
+    documentation_url: https://netboot.xyz/docs/
+    source_repo: https://github.com/netbootxyz/netboot.xyz
+    license: Apache-2.0
+    license_class: permissive
+    license_url: https://github.com/netbootxyz/netboot.xyz/blob/HEAD/LICENSE
+    hosted_use: allowed
+    listing:
+        by: community
+        vendor_org: ""
+        proof: ""
+    status: active
+    status_reason: ""
+    replaced_by: ""
+    aliases: []
+    first_run:
+        - Open the address to manage menus and download boot assets. Boot clients still need DHCP options pointing at this host's TFTP port.
+    compose_file: compose.yaml
+    recommended_memory_bytes: 268435456
+    env: []
+    domains:
+        - service: netbootxyz
+          port: 3000
+          description: Public address of the web configuration page.
+    healthcheck:
+        service: netbootxyz
+        port: 3000
+        path: /
+        expect: 0
+        kind: ""
+        reason: ""
+    first_boot_seconds: 0
+    console_command: []
+    capabilities: []

@@ -1,0 +1,11 @@
+services:
+  actual:
+    image: actualbudget/actual-server:26.9.0
+    ports: ["5006:5006"]
+    volumes:
+      - actual_data:/data
+    healthcheck:
+      test: ["CMD-SHELL", "node /app/src/scripts/health-check.js"]
+      interval: 10s
+      timeout: 5s
+      retries: 3

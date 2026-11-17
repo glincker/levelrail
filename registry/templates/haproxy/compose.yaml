@@ -1,0 +1,27 @@
+services:
+    haproxy:
+        image: haproxy:3.0.5-alpine
+        ports: ["8080"]
+        healthcheck:
+            test: ["CMD-SHELL", "wget -q -O /dev/null http://127.0.0.1:8080/ || exit 1"]
+            interval: 10s
+            timeout: 6s
+            retries: 10
+            start_period: 5s
+        configs:
+            - source: lr_file_haproxy_config
+              target: /usr/local/etc/haproxy/haproxy.cfg
+              mode: "0444"
+configs:
+    lr_file_haproxy_config:
+        content: |
+            global
+              maxconn 256
+            defaults
+              mode http
+              timeout connect 5s
+              timeout client 30s
+              timeout server 30s
+            frontend web
+              bind :8080
+              http-request return status 200 content-type text/plain string "haproxy is up"

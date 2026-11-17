@@ -1,0 +1,23 @@
+services:
+  mattermost:
+    image: mattermost/mattermost-team-edition:release-10
+    ports: ["8065:8065"]
+    environment:
+      MM_SQLSETTINGS_DRIVERNAME: postgres
+      MM_SQLSETTINGS_DATASOURCE: postgres://mattermost:$SERVICE_PASSWORD_DB@db:5432/mattermost?sslmode=disable
+      MM_SERVICESETTINGS_SITEURL: ${SERVICE_URL_MATTERMOST:-http://localhost:8065}
+    volumes:
+      - mattermost_data:/mattermost/data
+    healthcheck:
+      test: ["CMD-SHELL", "wget -q -O- http://127.0.0.1:8065/api/v4/system/ping || exit 1"]
+      interval: 30s
+      timeout: 5s
+      retries: 3
+  db:
+    image: postgres:16-alpine
+    environment:
+      POSTGRES_USER: mattermost
+      POSTGRES_PASSWORD: $SERVICE_PASSWORD_DB
+      POSTGRES_DB: mattermost
+    volumes:
+      - mattermost_db_data:/var/lib/postgresql/data

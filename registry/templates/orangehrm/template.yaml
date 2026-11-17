@@ -1,0 +1,9 @@
+id: orangehrm
+name: OrangeHRM
+slogan: 'An open-source human resources management suite: PTO, recruitment, performance, and an employee directory.'
+category: Applications
+documentation_url: https://docs.orangehrm.com/
+recommended_memory_bytes: 1073741824
+requires_gpu: false
+platforms:
+    - linux/amd64

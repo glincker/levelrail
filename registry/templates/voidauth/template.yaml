@@ -1,0 +1,71 @@
+id: voidauth
+name: VoidAuth
+slogan: A self-hosted single sign-on and identity provider with OIDC, passkeys, user invitations and self-service profiles, backed by Postgres. Create the first admin from the invitation link printed in the container log.
+description: A self-hosted single sign-on and identity provider with OIDC, passkeys, user invitations and self-service profiles, backed by Postgres. Create the first admin from the invitation link printed in the container log.
+category: Security
+documentation_url: https://voidauth.app/
+recommended_memory_bytes: 402653184
+requires_gpu: false
+manifest:
+    id: voidauth
+    name: VoidAuth
+    description: A self-hosted single sign-on and identity provider with OIDC, passkeys, user invitations and self-service profiles, backed by Postgres. Create the first admin from the invitation link printed in the container log.
+    icon: shield
+    category: Security
+    documentation_url: https://voidauth.app/
+    source_repo: https://github.com/voidauth/voidauth
+    license: AGPL-3.0-or-later
+    license_class: network-copyleft
+    license_url: https://github.com/voidauth/voidauth/blob/HEAD/LICENSE
+    hosted_use: allowed
+    listing:
+        by: community
+        vendor_org: ""
+        proof: ""
+    status: active
+    status_reason: ""
+    replaced_by: ""
+    aliases: []
+    first_run:
+        - Read the first admin invitation link from the voidauth container log, open it and set the admin password.
+    compose_file: compose.yaml
+    recommended_memory_bytes: 402653184
+    env:
+        - key: DB_PASSWORD
+          label: Database password
+          description: Password for the bundled Postgres database. Generated once and reused on every redeploy.
+          default: ""
+          generate: password
+          length: 32
+          required: false
+          secret: true
+          type: ""
+          service: ""
+          path: ""
+          mode: ""
+        - key: STORAGE_KEY
+          label: Storage key
+          description: Encrypts secrets stored in the database. Changing it makes stored secrets unreadable.
+          default: ""
+          generate: password
+          length: 48
+          required: false
+          secret: true
+          type: ""
+          service: ""
+          path: ""
+          mode: ""
+    domains:
+        - service: voidauth
+          port: 3000
+          description: Public address of VoidAuth, also its OIDC issuer URL. It must be served over HTTPS for sign-in to work.
+    healthcheck:
+        service: voidauth
+        port: 3000
+        path: /
+        expect: 0
+        kind: ""
+        reason: ""
+    first_boot_seconds: 0
+    console_command: []
+    capabilities: []

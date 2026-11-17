@@ -1,0 +1,15 @@
+services:
+  vert:
+    image: ghcr.io/vert-sh/vert:latest
+    ports: ["80:80"]
+    environment:
+      PUB_VERT_URL: ${SERVICE_URL_VERT:-http://localhost:80}
+      PUB_HOSTNAME: ${SERVICE_FQDN_VERT:-localhost}
+      PUB_PORT: "80"
+      PUB_ENV: production
+    healthcheck:
+      test: ["CMD-SHELL", "wget -qO- http://127.0.0.1:80/ || exit 1"]
+      interval: 10s
+      timeout: 5s
+      retries: 10
+      start_period: 10s

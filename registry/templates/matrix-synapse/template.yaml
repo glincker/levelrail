@@ -1,0 +1,10 @@
+id: matrix-synapse
+name: Matrix Synapse
+slogan: A federated, end-to-end encrypted chat server implementing the Matrix protocol.
+category: Communication
+documentation_url: https://element-hq.github.io/synapse/latest/setup/installation.html
+recommended_memory_bytes: 1073741824
+requires_gpu: false
+platforms:
+    - linux/amd64
+    - linux/arm64

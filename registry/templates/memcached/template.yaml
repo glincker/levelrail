@@ -1,0 +1,15 @@
+id: memcached
+name: Memcached
+slogan: A fast in-memory cache for query results, sessions and rendered pages, reachable by other apps on host memcached.
+category: Database Tools
+documentation_url: https://memcached.org/
+recommended_memory_bytes: 134217728
+requires_gpu: false
+platforms:
+    - linux/386
+    - linux/amd64
+    - linux/arm
+    - linux/arm64
+    - linux/ppc64le
+    - linux/riscv64
+    - linux/s390x

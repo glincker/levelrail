@@ -1,0 +1,10 @@
+id: jackett
+name: Jackett
+slogan: A proxy that translates queries from your media apps into torrent tracker searches.
+category: Media
+documentation_url: https://github.com/Jackett/Jackett#readme
+recommended_memory_bytes: 268435456
+requires_gpu: false
+platforms:
+    - linux/amd64
+    - linux/arm64

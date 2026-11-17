@@ -1,0 +1,13 @@
+id: nats
+name: NATS
+slogan: A lightweight messaging server for pub/sub, request/reply and durable streams, with JetStream persistence enabled.
+category: Infrastructure
+documentation_url: https://docs.nats.io/
+recommended_memory_bytes: 134217728
+requires_gpu: false
+platforms:
+    - linux/amd64
+    - linux/arm
+    - linux/arm64
+    - linux/ppc64le
+    - linux/s390x

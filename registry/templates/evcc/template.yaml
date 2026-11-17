@@ -1,0 +1,59 @@
+id: evcc
+name: evcc
+slogan: A smart charging controller that charges your electric car from solar surplus and cheap tariffs.
+description: A smart charging controller that charges your electric car from solar surplus and cheap tariffs.
+category: Applications
+documentation_url: https://docs.evcc.io/
+recommended_memory_bytes: 134217728
+requires_gpu: false
+manifest:
+    id: evcc
+    name: evcc
+    description: A smart charging controller that charges your electric car from solar surplus and cheap tariffs.
+    icon: lightning
+    category: Applications
+    documentation_url: https://docs.evcc.io/
+    source_repo: https://github.com/evcc-io/evcc
+    license: MIT
+    license_class: permissive
+    license_url: https://github.com/evcc-io/evcc/blob/HEAD/LICENSE
+    hosted_use: ""
+    listing:
+        by: community
+        vendor_org: ""
+        proof: ""
+    status: active
+    status_reason: ""
+    replaced_by: ""
+    aliases: []
+    first_run:
+        - Open the address and finish the setup wizard to add your charger, meter and vehicle.
+    compose_file: compose.yaml
+    recommended_memory_bytes: 134217728
+    env:
+        - key: TZ
+          label: Time zone
+          description: IANA time zone for logs and schedules.
+          default: Etc/UTC
+          generate: ""
+          length: 0
+          required: false
+          secret: false
+          type: ""
+          service: ""
+          path: ""
+          mode: ""
+    domains:
+        - service: evcc
+          port: 7070
+          description: Public address of evcc.
+    healthcheck:
+        service: evcc
+        port: 7070
+        path: /
+        expect: 0
+        kind: ""
+        reason: ""
+    first_boot_seconds: 0
+    console_command: []
+    capabilities: []

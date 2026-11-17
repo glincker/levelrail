@@ -1,0 +1,10 @@
+id: baserow
+name: Baserow
+slogan: A no-code database and spreadsheet hybrid you can build internal tools and apps on top of.
+category: Database Tools
+documentation_url: https://baserow.io/docs/installation%2Finstall-with-docker
+recommended_memory_bytes: 1073741824
+requires_gpu: false
+platforms:
+    - linux/amd64
+    - linux/arm64

@@ -1,0 +1,58 @@
+id: cleanuparr
+name: Cleanuparr
+slogan: A companion for Sonarr, Radarr and your download client that removes stalled, failed and malicious downloads and cleans up leftovers. GPL-3.0 licensed. Open the web UI and add your arr apps and download client under Settings.
+description: A companion for Sonarr, Radarr and your download client that removes stalled, failed and malicious downloads and cleans up leftovers. GPL-3.0 licensed. Open the web UI and add your arr apps and download client under Settings.
+category: Applications
+documentation_url: https://cleanuparr.github.io/Cleanuparr/
+recommended_memory_bytes: 268435456
+requires_gpu: false
+platforms:
+    - linux/amd64
+    - linux/arm64
+manifest:
+    id: cleanuparr
+    name: Cleanuparr
+    description: A companion for Sonarr, Radarr and your download client that removes stalled, failed and malicious downloads and cleans up leftovers. GPL-3.0 licensed. Open the web UI and add your arr apps and download client under Settings.
+    icon: broom
+    category: Applications
+    documentation_url: https://cleanuparr.github.io/Cleanuparr/
+    source_repo: https://github.com/Cleanuparr/Cleanuparr
+    license: GPL-3.0
+    license_class: copyleft
+    license_url: https://github.com/Cleanuparr/Cleanuparr/blob/main/LICENSE
+    hosted_use: ""
+    listing: null
+    status: ""
+    status_reason: ""
+    replaced_by: ""
+    aliases: []
+    first_run: []
+    compose_file: compose.yaml
+    recommended_memory_bytes: 268435456
+    env:
+        - key: TZ
+          label: Time zone
+          description: IANA time zone for logs and schedules.
+          default: Etc/UTC
+          generate: ""
+          length: 0
+          required: false
+          secret: false
+          type: ""
+          service: ""
+          path: ""
+          mode: ""
+    domains:
+        - service: cleanuparr
+          port: 11011
+          description: Public address of Cleanuparr.
+    healthcheck:
+        service: cleanuparr
+        port: 11011
+        path: /health
+        expect: 0
+        kind: ""
+        reason: ""
+    first_boot_seconds: 0
+    console_command: []
+    capabilities: []

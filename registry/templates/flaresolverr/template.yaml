@@ -1,0 +1,12 @@
+id: flaresolverr
+name: FlareSolverr
+slogan: A headless-browser proxy that solves Cloudflare and DDoS-Guard challenges for other self-hosted tools.
+category: Developer Tools
+documentation_url: https://github.com/FlareSolverr/FlareSolverr
+recommended_memory_bytes: 536870912
+requires_gpu: false
+platforms:
+    - linux/386
+    - linux/amd64
+    - linux/arm
+    - linux/arm64

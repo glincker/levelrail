@@ -1,0 +1,10 @@
+id: typesense
+name: Typesense
+slogan: A fast, typo-tolerant search engine API built as a lighter alternative to Elasticsearch.
+category: Developer Tools
+documentation_url: https://typesense.org/docs/guide/install-typesense.html
+recommended_memory_bytes: 536870912
+requires_gpu: false
+platforms:
+    - linux/amd64
+    - linux/arm64

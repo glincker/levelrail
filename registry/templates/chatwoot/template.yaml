@@ -1,0 +1,10 @@
+id: chatwoot
+name: Chatwoot
+slogan: An open-source customer support platform for live chat, email, and social messaging.
+category: Communication
+documentation_url: https://www.chatwoot.com/docs/self-hosted/
+recommended_memory_bytes: 1610612736
+requires_gpu: false
+platforms:
+    - linux/amd64
+    - linux/arm64

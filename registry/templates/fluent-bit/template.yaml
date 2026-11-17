@@ -1,0 +1,75 @@
+id: fluent-bit
+name: Fluent Bit
+slogan: Lightweight log and metrics processor and forwarder. The install form carries fluent-bit.conf as an editable file, so it starts listening for forwarded records with a health endpoint.
+description: Lightweight log and metrics processor and forwarder. The install form carries fluent-bit.conf as an editable file, so it starts listening for forwarded records with a health endpoint.
+category: Monitoring
+documentation_url: https://docs.fluentbit.io/manual/
+recommended_memory_bytes: 67108864
+requires_gpu: false
+manifest:
+    id: fluent-bit
+    name: Fluent Bit
+    description: Lightweight log and metrics processor and forwarder. The install form carries fluent-bit.conf as an editable file, so it starts listening for forwarded records with a health endpoint.
+    icon: funnel
+    category: Monitoring
+    documentation_url: https://docs.fluentbit.io/manual/
+    source_repo: https://github.com/fluent/fluent-bit
+    license: Apache-2.0
+    license_class: permissive
+    license_url: https://github.com/fluent/fluent-bit/blob/HEAD/LICENSE
+    hosted_use: allowed
+    listing:
+        by: community
+        vendor_org: ""
+        proof: ""
+    status: active
+    status_reason: ""
+    replaced_by: ""
+    aliases: []
+    first_run:
+        - Send records to port 24224 with the forward protocol, then edit the config file setting to add parsers, filters and real outputs. The starter prints records to the container log.
+    compose_file: compose.yaml
+    recommended_memory_bytes: 67108864
+    env:
+        - key: FLUENTBIT_CONFIG
+          label: fluent-bit.conf
+          description: The full Fluent Bit configuration, mounted read-only.
+          default: |
+            [SERVICE]
+                Flush        1
+                Log_Level    info
+                HTTP_Server  On
+                HTTP_Listen  0.0.0.0
+                HTTP_Port    2020
+                Health_Check On
+
+            [INPUT]
+                Name   forward
+                Listen 0.0.0.0
+                Port   24224
+
+            [OUTPUT]
+                Name  stdout
+                Match *
+          generate: ""
+          length: 0
+          required: false
+          secret: false
+          type: file
+          service: fluent-bit
+          path: /fluent-bit/etc/fluent-bit.conf
+          mode: "0444"
+    domains:
+        - service: fluent-bit
+          port: 2020
+          description: Public address of the monitoring API. Keep it private.
+    healthcheck:
+        service: fluent-bit
+        port: 2020
+        path: /api/v1/health
+        expect: 0
+        kind: ""
+        reason: ""
+    first_boot_seconds: 0
+    console_command: []
+    capabilities: []

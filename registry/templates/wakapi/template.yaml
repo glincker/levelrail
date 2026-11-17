@@ -1,0 +1,11 @@
+id: wakapi
+name: Wakapi
+slogan: A self-hosted, WakaTime-compatible backend for tracking coding time and stats.
+category: Developer Tools
+documentation_url: https://wakapi.dev
+recommended_memory_bytes: 268435456
+requires_gpu: false
+platforms:
+    - linux/amd64
+    - linux/arm
+    - linux/arm64

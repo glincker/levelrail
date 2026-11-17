@@ -1,0 +1,12 @@
+services:
+  nocodb:
+    image: nocodb/nocodb:2026.09.0
+    ports: ["8080:8080"]
+    volumes:
+      - nocodb_data:/usr/app/data
+    healthcheck:
+      test: ["CMD-SHELL", "curl -fsS -o /dev/null http://127.0.0.1:8080/"]
+      interval: 10s
+      timeout: 5s
+      retries: 3
+      start_period: 60s

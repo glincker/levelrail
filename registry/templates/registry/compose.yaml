@@ -1,0 +1,12 @@
+services:
+  registry:
+    image: registry:2.8.3
+    ports: ["5000:5000"]
+    volumes:
+      - registry_data:/var/lib/registry
+    healthcheck:
+      test: ["CMD-SHELL", "wget -q -O /dev/null http://127.0.0.1:5000/v2/ || exit 1"]
+      interval: 10s
+      timeout: 5s
+      retries: 3
+      start_period: 10s

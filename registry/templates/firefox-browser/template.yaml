@@ -1,0 +1,12 @@
+id: firefox-browser
+name: Firefox
+slogan: A private Firefox browser running on your server and streamed to a web page.
+category: Productivity
+documentation_url: https://github.com/jlesage/docker-firefox
+recommended_memory_bytes: 1073741824
+requires_gpu: false
+platforms:
+    - linux/386
+    - linux/amd64
+    - linux/arm
+    - linux/arm64

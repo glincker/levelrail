@@ -1,0 +1,14 @@
+services:
+  localai:
+    image: localai/localai:v3.7.0
+    ports: ["8080:8080"]
+    environment:
+      MODELS_PATH: /models
+    volumes:
+      - localai_models:/models
+    healthcheck:
+      test: ["CMD-SHELL", "curl -fsS -o /dev/null http://127.0.0.1:8080/readyz || wget -q -O /dev/null http://127.0.0.1:8080/readyz || exit 1"]
+      interval: 30s
+      timeout: 5s
+      retries: 3
+      start_period: 60s

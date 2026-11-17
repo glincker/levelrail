@@ -1,0 +1,98 @@
+services:
+  synapse:
+    image: matrixdotorg/synapse:latest
+    ports: ["8008:8008"]
+    environment:
+      SYNAPSE_SERVER_NAME: localhost
+      SYNAPSE_REPORT_STATS: "no"
+      SYNAPSE_PUBLIC_BASEURL: ${SERVICE_URL_SYNAPSE:-http://localhost:8008}
+      ENABLE_REGISTRATION: "false"
+      ADMIN_USERNAME: $SERVICE_USER_ADMIN
+      ADMIN_PASSWORD: $SERVICE_PASSWORD_ADMIN
+      DB_PASSWORD: $SERVICE_PASSWORD_DB
+    volumes:
+      - synapse_data:/data
+    depends_on: [postgres]
+    # The image's own ENTRYPOINT is /start.py, which treats its first
+    # argument as a fixed execution mode ("generate", "migrate_config",
+    # ...) and rejects anything else; entrypoint: (not command:) is the
+    # only way to replace it with a real shell. /start.py generate
+    # itself writes homeserver.yaml and a signing key named after
+    # SYNAPSE_SERVER_NAME; this overwrites that config with a
+    # Postgres-pointed one but keeps the generated signing key path, and
+    # reuses DB_PASSWORD for Synapse's own internal secrets rather than
+    # scraping them back out of the first-generated file.
+    entrypoint:
+      - /bin/sh
+      - -c
+      - |
+        set -e
+        if [ ! -f /data/homeserver.yaml ]; then
+          /start.py generate
+        fi
+        cat > /data/homeserver.yaml <<CONF
+        server_name: "$SYNAPSE_SERVER_NAME"
+        pid_file: /data/homeserver.pid
+        public_baseurl: "$SYNAPSE_PUBLIC_BASEURL/"
+        listeners:
+          - port: 8008
+            tls: false
+            type: http
+            x_forwarded: true
+            bind_addresses: ['0.0.0.0']
+            resources:
+              - names: [client, federation]
+                compress: false
+        database:
+          name: psycopg2
+          args:
+            user: synapse
+            password: $DB_PASSWORD
+            database: synapse
+            host: postgres
+            port: 5432
+            cp_min: 5
+            cp_max: 10
+        log_config: "/data/$SYNAPSE_SERVER_NAME.log.config"
+        media_store_path: /data/media_store
+        report_stats: $SYNAPSE_REPORT_STATS
+        registration_shared_secret: $DB_PASSWORD
+        macaroon_secret_key: $DB_PASSWORD
+        form_secret: $DB_PASSWORD
+        signing_key_path: "/data/$SYNAPSE_SERVER_NAME.signing.key"
+        trusted_key_servers:
+          - server_name: "matrix.org"
+        CONF
+        if [ "$ENABLE_REGISTRATION" = "true" ]; then
+          echo "enable_registration: true" >> /data/homeserver.yaml
+        fi
+        if [ -n "$ADMIN_USERNAME" ]; then
+          (
+            for i in $(seq 1 60); do
+              curl -sf http://localhost:8008/health >/dev/null 2>&1 && break
+              sleep 2
+            done
+            register_new_matrix_user -a -u "$ADMIN_USERNAME" -p "$ADMIN_PASSWORD" -c /data/homeserver.yaml http://localhost:8008 >/dev/null 2>&1
+          ) &
+        fi
+        exec /start.py
+    healthcheck:
+      test: ["CMD", "curl", "-f", "http://127.0.0.1:8008/health"]
+      interval: 10s
+      timeout: 5s
+      retries: 15
+      start_period: 30s
+  postgres:
+    image: postgres:16-alpine
+    environment:
+      POSTGRES_USER: synapse
+      POSTGRES_PASSWORD: $SERVICE_PASSWORD_DB
+      POSTGRES_DB: synapse
+      POSTGRES_INITDB_ARGS: --encoding=UTF8 --lc-collate=C --lc-ctype=C
+    volumes:
+      - synapse_postgres_data:/var/lib/postgresql/data
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U synapse -d synapse"]
+      interval: 5s
+      timeout: 5s
+      retries: 10

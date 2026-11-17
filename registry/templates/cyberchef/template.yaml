@@ -1,0 +1,9 @@
+id: cyberchef
+name: CyberChef
+slogan: 'The cyber swiss army knife: encode, decode, hash, and analyse data in the browser.'
+category: Developer Tools
+documentation_url: https://github.com/gchq/CyberChef/wiki
+recommended_memory_bytes: 134217728
+requires_gpu: false
+platforms:
+    - linux/amd64

@@ -1,0 +1,25 @@
+services:
+  joplin:
+    image: joplin/server:3.7.2
+    ports: ["22300:22300"]
+    environment:
+      APP_BASE_URL: ${SERVICE_URL_JOPLIN:-http://localhost:22300}
+      DB_CLIENT: pg
+      POSTGRES_HOST: db
+      POSTGRES_DATABASE: joplin
+      POSTGRES_USER: joplin
+      POSTGRES_PASSWORD: $SERVICE_PASSWORD_DB
+    healthcheck:
+      test: ["CMD-SHELL", "curl -fsS -o /dev/null http://127.0.0.1:22300/api/ping"]
+      interval: 10s
+      timeout: 5s
+      retries: 3
+      start_period: 60s
+  db:
+    image: postgres:16
+    environment:
+      POSTGRES_USER: joplin
+      POSTGRES_PASSWORD: $SERVICE_PASSWORD_DB
+      POSTGRES_DB: joplin
+    volumes:
+      - joplin_db_data:/var/lib/postgresql/data

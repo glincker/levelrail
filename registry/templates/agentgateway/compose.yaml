@@ -1,0 +1,30 @@
+services:
+    agentgateway:
+        image: ghcr.io/agentgateway/agentgateway:v1.7.0
+        ports: ["3000"]
+        command: ["-f", "/etc/agentgateway/config.yaml"]
+        healthcheck:
+            test: ["NONE"]
+        x-levelrail-healthcheck:
+            kind: http
+            path: /
+            port: 3000
+            interval: 15s
+            timeout: 8s
+            retries: 10
+            start_period: 20s
+        configs:
+            - source: lr_file_agentgateway_config
+              target: /etc/agentgateway/config.yaml
+              mode: "0444"
+configs:
+    lr_file_agentgateway_config:
+        content: |
+            binds:
+              - port: 3000
+                listeners:
+                  - routes:
+                      - policies:
+                          directResponse:
+                            status: 200
+                            body: agentgateway is up

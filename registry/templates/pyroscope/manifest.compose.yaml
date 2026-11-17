@@ -1,0 +1,12 @@
+services:
+  pyroscope:
+    image: grafana/pyroscope:1.10.0
+    ports: ["4040"]
+    volumes:
+      - pyroscope_data:/data
+    healthcheck:
+      test: ["CMD-SHELL", "wget -q --spider http://127.0.0.1:4040/ready || exit 1"]
+      interval: 15s
+      timeout: 8s
+      retries: 10
+      start_period: 20s

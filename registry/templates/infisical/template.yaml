@@ -1,0 +1,10 @@
+id: infisical
+name: Infisical
+slogan: An open-source secrets manager to centralize API keys, database credentials, and app config.
+category: Security
+documentation_url: https://infisical.com/docs/self-hosting/overview
+recommended_memory_bytes: 536870912
+requires_gpu: false
+platforms:
+    - linux/amd64
+    - linux/arm64

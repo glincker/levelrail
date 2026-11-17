@@ -1,0 +1,10 @@
+id: metube
+name: MeTube
+slogan: 'A tidy web front end for yt-dlp: paste a link, pick a format, and download video or audio.'
+category: Media
+documentation_url: https://github.com/alexta69/metube
+recommended_memory_bytes: 268435456
+requires_gpu: false
+platforms:
+    - linux/amd64
+    - linux/arm64

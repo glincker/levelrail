@@ -1,0 +1,24 @@
+services:
+    livekit:
+        image: livekit/livekit-server:v1.13.11
+        ports: ["7880", "7881"]
+        command: ["--config", "/etc/livekit.yaml"]
+        healthcheck:
+            test: ["CMD-SHELL", "wget -q -O /dev/null http://127.0.0.1:7880/ || exit 1"]
+            interval: 15s
+            timeout: 8s
+            retries: 10
+            start_period: 10s
+        secrets:
+            - source: lr_file_livekit_config
+              target: /etc/livekit.yaml
+              mode: "0400"
+secrets:
+    lr_file_livekit_config:
+        content: |
+            port: 7880
+            rtc:
+              tcp_port: 7881
+              use_external_ip: false
+            keys:
+              ${SERVICE_PASSWORD_16_LIVEKIT_API_KEY}: ${SERVICE_PASSWORD_40_LIVEKIT_API_SECRET}

@@ -1,0 +1,47 @@
+id: ejabberd
+name: ejabberd
+slogan: Robust, scalable XMPP chat and messaging server from ProcessOne. Runs with the default configuration and stores its database on a volume.
+description: Robust, scalable XMPP chat and messaging server from ProcessOne. Runs with the default configuration and stores its database on a volume.
+category: Communication
+documentation_url: https://docs.ejabberd.im/
+recommended_memory_bytes: 268435456
+requires_gpu: false
+manifest:
+    id: ejabberd
+    name: ejabberd
+    description: Robust, scalable XMPP chat and messaging server from ProcessOne. Runs with the default configuration and stores its database on a volume.
+    icon: chat
+    category: Communication
+    documentation_url: https://docs.ejabberd.im/
+    source_repo: https://github.com/processone/ejabberd
+    license: GPL-2.0-only
+    license_class: copyleft
+    license_url: https://github.com/processone/ejabberd/blob/master/COPYING
+    hosted_use: allowed
+    listing:
+        by: community
+        vendor_org: ""
+        proof: ""
+    status: active
+    status_reason: ""
+    replaced_by: ""
+    aliases: []
+    first_run:
+        - Register users with the container command ejabberdctl register, then connect an XMPP client to port 5222. The web admin is on port 5280.
+    compose_file: compose.yaml
+    recommended_memory_bytes: 268435456
+    env: []
+    domains:
+        - service: ejabberd
+          port: 5280
+          description: Public address of the ejabberd web listener.
+    healthcheck:
+        service: ejabberd
+        port: 5280
+        path: ""
+        expect: 0
+        kind: tcp
+        reason: the HTTP listener answers only on configured routes
+    first_boot_seconds: 0
+    console_command: []
+    capabilities: []

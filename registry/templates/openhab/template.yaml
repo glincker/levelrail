@@ -1,0 +1,47 @@
+id: openhab
+name: openHAB
+slogan: A vendor neutral home automation hub that connects thousands of smart devices and services.
+description: A vendor neutral home automation hub that connects thousands of smart devices and services.
+category: Applications
+documentation_url: https://www.openhab.org/docs/
+recommended_memory_bytes: 1073741824
+requires_gpu: false
+manifest:
+    id: openhab
+    name: openHAB
+    description: A vendor neutral home automation hub that connects thousands of smart devices and services.
+    icon: house
+    category: Applications
+    documentation_url: https://www.openhab.org/docs/
+    source_repo: https://github.com/openhab/openhab-core
+    license: EPL-2.0
+    license_class: copyleft
+    license_url: https://github.com/openhab/openhab-core/blob/HEAD/LICENSE
+    hosted_use: ""
+    listing:
+        by: community
+        vendor_org: ""
+        proof: ""
+    status: active
+    status_reason: ""
+    replaced_by: ""
+    aliases: []
+    first_run:
+        - Create the admin account on first visit, then install bindings from the add-on store.
+    compose_file: compose.yaml
+    recommended_memory_bytes: 1073741824
+    env: []
+    domains:
+        - service: openhab
+          port: 8080
+          description: Public address of openHAB.
+    healthcheck:
+        service: openhab
+        port: 8080
+        path: /
+        expect: 0
+        kind: ""
+        reason: ""
+    first_boot_seconds: 0
+    console_command: []
+    capabilities: []

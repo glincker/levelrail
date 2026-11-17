@@ -1,0 +1,23 @@
+services:
+  sd-webui:
+    image: ghcr.io/ai-dock/stable-diffusion-webui:latest-cuda
+    deploy:
+      resources:
+        reservations:
+          devices:
+            - driver: nvidia
+              count: all
+              capabilities: [gpu]
+    ports: ["7860:7860"]
+    environment:
+      WEB_ENABLE_AUTH: "true"
+      WEB_USER: admin
+      WEB_PASSWORD: $SERVICE_PASSWORD_ADMIN
+    volumes:
+      - sd_webui_workspace:/workspace
+    healthcheck:
+      test: ["CMD-SHELL", "curl -s -o /dev/null http://127.0.0.1:7860/ || exit 1"]
+      interval: 30s
+      timeout: 5s
+      retries: 5
+      start_period: 180s

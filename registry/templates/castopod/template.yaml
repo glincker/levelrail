@@ -1,0 +1,10 @@
+id: castopod
+name: Castopod
+slogan: An open-source podcast hosting platform with built-in analytics, a web player, and ActivityPub federation.
+category: Media
+documentation_url: https://docs.castopod.org/
+recommended_memory_bytes: 1073741824
+requires_gpu: false
+platforms:
+    - linux/amd64
+    - linux/arm64

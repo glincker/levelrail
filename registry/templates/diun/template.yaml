@@ -1,0 +1,13 @@
+id: diun
+name: Diun
+slogan: Watches your running containers and notifies you the moment a new image tag is published.
+category: Monitoring
+documentation_url: https://crazymax.dev/diun/
+recommended_memory_bytes: 134217728
+requires_gpu: false
+platforms:
+    - linux/386
+    - linux/amd64
+    - linux/arm
+    - linux/arm64
+    - linux/ppc64le

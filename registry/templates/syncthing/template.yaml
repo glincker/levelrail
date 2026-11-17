@@ -1,0 +1,10 @@
+id: syncthing
+name: Syncthing
+slogan: Continuous, peer-to-peer file synchronization between your own devices, no cloud in between.
+category: Storage
+documentation_url: https://docs.syncthing.net
+recommended_memory_bytes: 268435456
+requires_gpu: false
+platforms:
+    - linux/amd64
+    - linux/arm64

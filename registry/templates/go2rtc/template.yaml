@@ -1,0 +1,47 @@
+id: go2rtc
+name: go2rtc
+slogan: A camera streaming hub that turns RTSP, HomeKit and other sources into WebRTC, HLS and MJPEG.
+description: A camera streaming hub that turns RTSP, HomeKit and other sources into WebRTC, HLS and MJPEG.
+category: Applications
+documentation_url: https://github.com/AlexxIT/go2rtc
+recommended_memory_bytes: 134217728
+requires_gpu: false
+manifest:
+    id: go2rtc
+    name: go2rtc
+    description: A camera streaming hub that turns RTSP, HomeKit and other sources into WebRTC, HLS and MJPEG.
+    icon: video-camera
+    category: Applications
+    documentation_url: https://github.com/AlexxIT/go2rtc
+    source_repo: https://github.com/AlexxIT/go2rtc
+    license: MIT
+    license_class: permissive
+    license_url: https://github.com/AlexxIT/go2rtc/blob/HEAD/LICENSE
+    hosted_use: ""
+    listing:
+        by: community
+        vendor_org: ""
+        proof: ""
+    status: active
+    status_reason: ""
+    replaced_by: ""
+    aliases: []
+    first_run:
+        - Open the web UI and add stream sources, or edit the config file in the config volume.
+    compose_file: compose.yaml
+    recommended_memory_bytes: 134217728
+    env: []
+    domains:
+        - service: go2rtc
+          port: 1984
+          description: Public address of go2rtc.
+    healthcheck:
+        service: go2rtc
+        port: 1984
+        path: /api
+        expect: 0
+        kind: ""
+        reason: ""
+    first_boot_seconds: 0
+    console_command: []
+    capabilities: []

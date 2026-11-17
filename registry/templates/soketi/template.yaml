@@ -1,0 +1,11 @@
+id: soketi
+name: Soketi
+slogan: A simple, fast, Pusher-protocol-compatible WebSockets server for real-time app features.
+category: Developer Tools
+documentation_url: https://docs.soketi.app
+recommended_memory_bytes: 268435456
+requires_gpu: false
+platforms:
+    - linux/amd64
+    - linux/arm
+    - linux/arm64

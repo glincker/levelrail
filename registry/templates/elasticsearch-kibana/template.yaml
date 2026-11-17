@@ -1,0 +1,10 @@
+id: elasticsearch-kibana
+name: Elasticsearch + Kibana
+slogan: 'Elasticsearch paired with Kibana for log and document search with a visual dashboard. Kibana has no login, so anyone who can open it controls the data: before attaching a domain, enable Basic Auth or the auth gate on it. Elasticsearch is reachable only from services in this project at elasticsearch:9200 and is not published on the host.'
+category: Database Tools
+documentation_url: https://www.elastic.co/docs/deploy-manage/deploy/self-managed/install-kibana-with-docker
+recommended_memory_bytes: 2147483648
+requires_gpu: false
+platforms:
+    - linux/amd64
+    - linux/arm64

@@ -1,0 +1,32 @@
+services:
+  orangehrm:
+    image: orangehrm/orangehrm:latest
+    ports: ["8080:80"]
+    environment:
+      ORANGEHRM_DATABASE_HOST: mariadb
+      ORANGEHRM_DATABASE_USER: orangehrm
+      ORANGEHRM_DATABASE_PASSWORD: $SERVICE_PASSWORD_DB
+      ORANGEHRM_DATABASE_NAME: orangehrm
+    volumes:
+      - orangehrm_data:/orangehrm
+    depends_on: [mariadb]
+    healthcheck:
+      test: ["CMD", "curl", "-f", "http://127.0.0.1/"]
+      interval: 10s
+      timeout: 10s
+      retries: 10
+      start_period: 30s
+  mariadb:
+    image: mariadb:11
+    environment:
+      MYSQL_ROOT_PASSWORD: $SERVICE_PASSWORD_ROOT
+      MYSQL_DATABASE: orangehrm
+      MYSQL_USER: orangehrm
+      MYSQL_PASSWORD: $SERVICE_PASSWORD_DB
+    volumes:
+      - orangehrm_mariadb_data:/var/lib/mysql
+    healthcheck:
+      test: ["CMD", "healthcheck.sh", "--connect", "--innodb_initialized"]
+      interval: 5s
+      timeout: 10s
+      retries: 10

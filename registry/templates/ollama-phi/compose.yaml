@@ -1,0 +1,12 @@
+services:
+  ollama:
+    image: ollama/ollama:0.33.3
+    ports: ["11434:11434"]
+    volumes:
+      - ollama_data:/root/.ollama
+    command: "ollama serve & until ollama list >/dev/null 2>&1; do sleep 1; done; ollama pull phi3:3.8b; wait"
+    healthcheck:
+      test: ["CMD-SHELL", "wget -q -O- http://127.0.0.1:11434/ || exit 1"]
+      interval: 30s
+      timeout: 5s
+      retries: 3

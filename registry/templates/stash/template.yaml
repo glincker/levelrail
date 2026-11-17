@@ -1,0 +1,47 @@
+id: stash
+name: Stash
+slogan: A self hosted organiser and player for your personal video library, with tags and scraping.
+description: A self hosted organiser and player for your personal video library, with tags and scraping.
+category: Media
+documentation_url: https://docs.stashapp.cc/
+recommended_memory_bytes: 1073741824
+requires_gpu: false
+manifest:
+    id: stash
+    name: Stash
+    description: A self hosted organiser and player for your personal video library, with tags and scraping.
+    icon: film-strip
+    category: Media
+    documentation_url: https://docs.stashapp.cc/
+    source_repo: https://github.com/stashapp/stash
+    license: AGPL-3.0-only
+    license_class: network-copyleft
+    license_url: https://github.com/stashapp/stash/blob/HEAD/LICENSE
+    hosted_use: ""
+    listing:
+        by: community
+        vendor_org: ""
+        proof: ""
+    status: active
+    status_reason: ""
+    replaced_by: ""
+    aliases: []
+    first_run:
+        - Run the setup wizard on first visit and set a username and password.
+    compose_file: compose.yaml
+    recommended_memory_bytes: 1073741824
+    env: []
+    domains:
+        - service: stash
+          port: 9999
+          description: Public address of Stash.
+    healthcheck:
+        service: stash
+        port: 9999
+        path: /healthz
+        expect: 0
+        kind: ""
+        reason: ""
+    first_boot_seconds: 0
+    console_command: []
+    capabilities: []

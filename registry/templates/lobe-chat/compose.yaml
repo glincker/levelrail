@@ -1,0 +1,14 @@
+services:
+  lobe-chat:
+    image: lobehub/lobe-chat:1.135.5
+    ports: ["3210:3210"]
+    environment:
+      OPENAI_API_KEY: ${OPENAI_API_KEY:-}
+      OPENAI_PROXY_URL: ${OPENAI_BASE_URL:-https://api.openai.com/v1}
+      ACCESS_CODE: $SERVICE_PASSWORD_ACCESSCODE
+    healthcheck:
+      test: ["CMD-SHELL", "wget -q --spider http://127.0.0.1:3210/ || exit 1"]
+      interval: 15s
+      timeout: 10s
+      retries: 5
+      start_period: 20s

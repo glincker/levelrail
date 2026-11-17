@@ -1,0 +1,10 @@
+id: jupyter-notebook
+name: Jupyter Notebook
+slogan: A Jupyter Notebook server for interactive Python data work, protected by a generated access token.
+category: Developer Tools
+documentation_url: https://jupyter.org/
+recommended_memory_bytes: 536870912
+requires_gpu: false
+platforms:
+    - linux/amd64
+    - linux/arm64

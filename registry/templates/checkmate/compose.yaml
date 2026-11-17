@@ -1,0 +1,20 @@
+services:
+  checkmate:
+    image: ghcr.io/bluewave-labs/checkmate-backend-mono-multiarch:v3.2.0
+    ports: ["52345:52345"]
+    environment:
+      UPTIME_APP_API_BASE_URL: ${SERVICE_URL_CHECKMATE:-http://localhost:52345}/api/v1
+      UPTIME_APP_CLIENT_HOST: ${SERVICE_URL_CHECKMATE:-http://localhost:52345}
+      DB_CONNECTION_STRING: mongodb://mongo:27017/checkmate
+      JWT_SECRET: $SERVICE_PASSWORD_64_JWT
+    depends_on: [mongo]
+    healthcheck:
+      test: ["CMD-SHELL", "wget -q -O- http://127.0.0.1:52345/ || exit 1"]
+      interval: 15s
+      timeout: 10s
+      retries: 5
+      start_period: 30s
+  mongo:
+    image: mongo:7
+    volumes:
+      - checkmate_mongo_data:/data/db

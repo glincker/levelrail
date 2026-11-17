@@ -1,0 +1,32 @@
+services:
+  formbricks:
+    image: ghcr.io/formbricks/formbricks:4.5.0
+    ports: ["3000:3000"]
+    environment:
+      WEBAPP_URL: ${SERVICE_URL_FORMBRICKS:-http://localhost:3000}
+      NEXTAUTH_URL: ${SERVICE_URL_FORMBRICKS:-http://localhost:3000}
+      NEXTAUTH_SECRET: $SERVICE_BASE64_NEXTAUTHSECRET
+      ENCRYPTION_KEY: $SERVICE_BASE64_ENCRYPTIONKEY
+      CRON_SECRET: $SERVICE_BASE64_CRONSECRET
+      DATABASE_URL: postgresql://formbricks:$SERVICE_PASSWORD_DB@db:5432/formbricks
+      REDIS_URL: redis://redis:6379
+    volumes:
+      - formbricks_uploads:/apps/web/uploads
+    healthcheck:
+      test: ["CMD-SHELL", "curl -fsS -o /dev/null http://127.0.0.1:3000/"]
+      interval: 10s
+      timeout: 5s
+      retries: 3
+      start_period: 120s
+  db:
+    image: pgvector/pgvector:pg16
+    environment:
+      POSTGRES_USER: formbricks
+      POSTGRES_PASSWORD: $SERVICE_PASSWORD_DB
+      POSTGRES_DB: formbricks
+    volumes:
+      - formbricks_db_data:/var/lib/postgresql/data
+  redis:
+    image: redis:7-alpine
+    volumes:
+      - formbricks_redis_data:/data

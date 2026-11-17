@@ -1,0 +1,31 @@
+services:
+  immich-server:
+    image: ghcr.io/immich-app/immich-server:v1.126.1
+    ports: ["2283:2283"]
+    environment:
+      DB_HOSTNAME: db
+      DB_USERNAME: immich
+      DB_PASSWORD: $SERVICE_PASSWORD_DB
+      DB_DATABASE_NAME: immich
+      REDIS_HOSTNAME: redis
+    volumes:
+      - immich_upload_data:/usr/src/app/upload
+    healthcheck:
+      test: ["CMD-SHELL", "curl -fsS -o /dev/null http://127.0.0.1:2283/api/server/ping || wget -q -O /dev/null http://127.0.0.1:2283/api/server/ping || exit 1"]
+      interval: 30s
+      timeout: 5s
+      retries: 3
+  immich-machine-learning:
+    image: ghcr.io/immich-app/immich-machine-learning:v1.126.1
+    volumes:
+      - immich_ml_cache:/cache
+  redis:
+    image: redis:7.4-alpine
+  db:
+    image: ghcr.io/immich-app/postgres:14-vectorchord0.3.0-pgvectors0.2.0
+    environment:
+      POSTGRES_USER: immich
+      POSTGRES_PASSWORD: $SERVICE_PASSWORD_DB
+      POSTGRES_DB: immich
+    volumes:
+      - immich_db_data:/var/lib/postgresql/data

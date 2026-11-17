@@ -1,0 +1,12 @@
+id: glances
+name: Glances
+slogan: A cross-platform system monitor showing CPU, memory, disk, and network at a glance.
+category: Monitoring
+documentation_url: https://nicolargo.github.io/glances/
+recommended_memory_bytes: 134217728
+requires_gpu: false
+platforms:
+    - linux/386
+    - linux/amd64
+    - linux/arm
+    - linux/arm64

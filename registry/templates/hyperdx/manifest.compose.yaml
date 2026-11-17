@@ -1,0 +1,16 @@
+services:
+  hyperdx:
+    image: hyperdx/hyperdx-all-in-one:2.43.1
+    ports: ["8080"]
+    environment:
+      FRONTEND_URL: ${SERVICE_URL_HYPERDX:-http://localhost:8080}
+    volumes:
+      - mongo:/data/db
+      - ch_data:/var/lib/clickhouse
+      - ch_logs:/var/log/clickhouse-server
+    healthcheck:
+      test: ["CMD-SHELL", "curl -fsS -o /dev/null http://127.0.0.1:8080/ || wget -q -O /dev/null http://127.0.0.1:8080/ || exit 1"]
+      interval: 20s
+      timeout: 8s
+      retries: 12
+      start_period: 90s

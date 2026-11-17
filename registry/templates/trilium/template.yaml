@@ -1,0 +1,11 @@
+id: trilium
+name: TriliumNext Notes
+slogan: A hierarchical, self-hosted note-taking application built for large personal knowledge bases.
+category: Productivity
+documentation_url: https://triliumnext.github.io/Docs/
+recommended_memory_bytes: 268435456
+requires_gpu: false
+platforms:
+    - linux/amd64
+    - linux/arm
+    - linux/arm64

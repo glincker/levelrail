@@ -1,0 +1,15 @@
+services:
+  languagetool:
+    image: erikvl87/languagetool:6.8
+    ports: ["8010"]
+    environment:
+      Java_Xms: 256m
+      Java_Xmx: 1g
+    volumes:
+      - ngrams:/ngrams
+    healthcheck:
+      test: ["CMD-SHELL", "curl -fsS -o /dev/null http://127.0.0.1:8010/v2/languages || exit 1"]
+      interval: 15s
+      timeout: 6s
+      retries: 10
+      start_period: 60s

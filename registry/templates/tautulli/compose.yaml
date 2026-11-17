@@ -1,0 +1,16 @@
+services:
+  tautulli:
+    image: lscr.io/linuxserver/tautulli:2.15.0
+    ports: ["8181:8181"]
+    environment:
+      PUID: "1000"
+      PGID: "1000"
+      TZ: "Etc/UTC"
+    volumes:
+      - tautulli_config:/config
+    healthcheck:
+      test: ["CMD-SHELL", "curl -fsS -o /dev/null http://127.0.0.1:8181/status"]
+      interval: 10s
+      timeout: 5s
+      retries: 3
+      start_period: 30s

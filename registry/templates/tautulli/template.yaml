@@ -1,0 +1,10 @@
+id: tautulli
+name: Tautulli
+slogan: Monitors your Plex server and shows who watched what, with history, stats, and notifications.
+category: Monitoring
+documentation_url: https://docs.tautulli.com
+recommended_memory_bytes: 268435456
+requires_gpu: false
+platforms:
+    - linux/amd64
+    - linux/arm64

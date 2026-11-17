@@ -1,0 +1,10 @@
+id: unleash-postgres
+name: Unleash (Postgres)
+slogan: An open-source feature flag platform with gradual rollouts, A/B testing, and a permission model.
+category: Developer Tools
+documentation_url: https://docs.getunleash.io/
+recommended_memory_bytes: 536870912
+requires_gpu: false
+platforms:
+    - linux/amd64
+    - linux/arm64

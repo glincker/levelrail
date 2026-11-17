@@ -1,0 +1,10 @@
+id: bazarr
+name: Bazarr
+slogan: Companion to Sonarr and Radarr that finds and downloads subtitles for your media library.
+category: Media
+documentation_url: https://wiki.bazarr.media
+recommended_memory_bytes: 268435456
+requires_gpu: false
+platforms:
+    - linux/amd64
+    - linux/arm64
