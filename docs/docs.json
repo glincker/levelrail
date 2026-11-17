@@ -264,6 +264,7 @@
               "add-node-anywhere",
               "add-node-over-ssh",
               "home-hardware",
+              "iot-fleet",
               "resource-aware-placement",
               "node-scheduling",
               "autoscaling",

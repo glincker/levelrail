@@ -25,6 +25,7 @@ Usage:
   levelrail-cli nodes resources <id> [flags]                                 list the apps and databases placed on a node
   levelrail-cli nodes move <app|database> <name> [--to ID] [--wait] [flags]  move one app or database, verified, with rollback
   levelrail-cli nodes moves [--kind K] [--resource N] [flags]                list node moves
+  levelrail-cli nodes groups list | show <key=value[,key=value]> [flags]      device groups (label selectors)
   levelrail-cli nodes labels <id> [key=value ...] [flags]                    show or replace a node's labels
   levelrail-cli nodes taint <id> [key[=value]:Effect ...] [--clear]          show or replace the taints that keep workloads off a node
   levelrail-cli nodes placement <app|database> <name> [key=value ...]        show or set which node labels a resource requires
