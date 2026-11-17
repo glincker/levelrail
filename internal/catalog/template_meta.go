@@ -32,6 +32,9 @@ var templateMeta = func() map[string]TemplateMeta {
 
 // MetaFor returns the marketplace metadata recorded for a template id.
 func MetaFor(id string) (TemplateMeta, bool) {
-	m, ok := templateMeta[id]
+	if m, ok := templateMeta[id]; ok {
+		return m, true
+	}
+	m, ok := registryOnlyMeta[id]
 	return m, ok
 }

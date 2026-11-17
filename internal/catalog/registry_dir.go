@@ -3,8 +3,8 @@ package catalog
 import (
 	"bytes"
 	"fmt"
+	"io/fs"
 	"os"
-	"path/filepath"
 	"reflect"
 	"sort"
 
@@ -63,7 +63,7 @@ func EncodeRegistryTemplate(t Template) (meta, compose, manifestCompose []byte, 
 }
 
 // LoadRegistryDir reads every <dir>/<id>/ folder into templates sorted by
-// ID. It is not wired into Templates; the registry becomes the source later.
+// ID. Registry-only ids reach Templates through registry_embed.go.
 func LoadRegistryDir(dir string) ([]Template, error) {
 	es, err := LoadRegistryEntries(dir)
 	if err != nil {
@@ -85,16 +85,26 @@ type RegistryEntry struct {
 
 // LoadRegistryEntries is LoadRegistryDir plus each folder's template.yaml meta.
 func LoadRegistryEntries(dir string) ([]RegistryEntry, error) {
-	entries, err := os.ReadDir(dir)
+	return LoadRegistryEntriesFS(os.DirFS(dir)) //nolint:gosec // registry folder chosen by the caller
+}
+
+// LoadRegistryEntriesFS reads every top-level folder of fsys, so the embedded
+// registry and an on-disk one load through the same code.
+func LoadRegistryEntriesFS(fsys fs.FS) ([]RegistryEntry, error) {
+	entries, err := fs.ReadDir(fsys, ".")
 	if err != nil {
-		return nil, fmt.Errorf("read registry %s: %w", dir, err)
+		return nil, fmt.Errorf("read registry: %w", err)
 	}
 	var out []RegistryEntry
 	for _, e := range entries {
 		if !e.IsDir() {
 			continue
 		}
-		t, m, err := loadRegistryTemplate(filepath.Join(dir, e.Name()))
+		sub, err := fs.Sub(fsys, e.Name())
+		if err != nil {
+			return nil, fmt.Errorf("read %s: %w", e.Name(), err)
+		}
+		t, m, err := loadRegistryTemplate(sub, e.Name())
 		if err != nil {
 			return nil, err
 		}
@@ -107,24 +117,24 @@ func LoadRegistryEntries(dir string) ([]RegistryEntry, error) {
 	return out, nil
 }
 
-func loadRegistryTemplate(folder string) (Template, RegistryMeta, error) {
-	metaBytes, err := os.ReadFile(filepath.Join(folder, RegistryMetaFile)) //nolint:gosec // registry folder chosen by the caller
+func loadRegistryTemplate(folder fs.FS, name string) (Template, RegistryMeta, error) {
+	metaBytes, err := fs.ReadFile(folder, RegistryMetaFile)
 	if err != nil {
-		return Template{}, RegistryMeta{}, fmt.Errorf("read %s: %w", folder, err)
+		return Template{}, RegistryMeta{}, fmt.Errorf("read %s: %w", name, err)
 	}
-	compose, err := os.ReadFile(filepath.Join(folder, RegistryComposeFile)) //nolint:gosec // registry folder chosen by the caller
+	compose, err := fs.ReadFile(folder, RegistryComposeFile)
 	if err != nil {
-		return Template{}, RegistryMeta{}, fmt.Errorf("read %s: %w", folder, err)
+		return Template{}, RegistryMeta{}, fmt.Errorf("read %s: %w", name, err)
 	}
 	var m RegistryMeta
 	dec := yaml.NewDecoder(bytes.NewReader(metaBytes))
 	dec.KnownFields(true)
 	if err := dec.Decode(&m); err != nil {
-		return Template{}, RegistryMeta{}, fmt.Errorf("parse %s: %w", folder, err)
+		return Template{}, RegistryMeta{}, fmt.Errorf("parse %s: %w", name, err)
 	}
 	if m.Manifest != nil {
 		m.Manifest.Compose = string(compose)
-		if raw, err := os.ReadFile(filepath.Join(folder, RegistryManifestComposeFile)); err == nil { //nolint:gosec // registry folder chosen by the caller
+		if raw, err := fs.ReadFile(folder, RegistryManifestComposeFile); err == nil {
 			m.Manifest.Compose = string(raw)
 		}
 		normalizeEmpty(reflect.ValueOf(m.Manifest).Elem())
