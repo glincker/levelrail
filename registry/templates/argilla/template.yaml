@@ -1,0 +1,9 @@
+# Adapted from Dokploy/templates (MIT, Copyright (c) 2024 Dokploy and Carlos Ortiz)
+id: argilla
+name: Argilla
+slogan: A collaboration tool for labelling and curating datasets for language model work.
+description: Apache 2.0 licensed. Sign in as user argilla with the generated password shown in the deployment variables. Runs Elasticsearch, so the host needs vm.max_map_count of at least 262144.
+category: AI
+documentation_url: https://docs.argilla.io/
+recommended_memory_bytes: 2147483648
+requires_gpu: false

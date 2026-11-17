@@ -1,0 +1,33 @@
+services:
+  unleash:
+    image: unleashorg/unleash-server:7.4.0
+    ports: ["4242"]
+    environment:
+      DATABASE_URL: postgres://unleash:$SERVICE_PASSWORD_DB@db/unleash
+      DATABASE_SSL: "false"
+      LOG_LEVEL: warn
+    depends_on:
+      db:
+        condition: service_healthy
+    healthcheck:
+      test: ["CMD-SHELL", "wget --no-verbose --tries=1 --spider http://127.0.0.1:4242/health || exit 1"]
+      interval: 10s
+      timeout: 5s
+      retries: 10
+      start_period: 40s
+  db:
+    image: postgres:16-alpine
+    environment:
+      POSTGRES_DB: unleash
+      POSTGRES_USER: unleash
+      POSTGRES_PASSWORD: $SERVICE_PASSWORD_DB
+    volumes:
+      - db_data:/var/lib/postgresql/data
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U unleash -d unleash"]
+      interval: 5s
+      timeout: 5s
+      retries: 10
+      start_period: 10s
+volumes:
+  db_data:

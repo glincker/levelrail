@@ -1,0 +1,9 @@
+# Adapted from Dokploy/templates (MIT, Copyright (c) 2024 Dokploy and Carlos Ortiz)
+id: unleash
+name: Unleash
+slogan: A feature flag service with gradual rollouts and targeting rules.
+description: Apache 2.0 licensed open source edition. Sign in with the default user admin and password unleash4all, then change the password right away.
+category: Developer Tools
+documentation_url: https://docs.getunleash.io/
+recommended_memory_bytes: 536870912
+requires_gpu: false

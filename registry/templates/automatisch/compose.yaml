@@ -1,0 +1,80 @@
+x-app-env: &app-env
+  APP_ENV: production
+  REDIS_HOST: redis
+  REDIS_PASSWORD: $SERVICE_PASSWORD_REDIS
+  POSTGRES_HOST: db
+  POSTGRES_DATABASE: automatisch
+  POSTGRES_USERNAME: automatisch
+  POSTGRES_PASSWORD: $SERVICE_PASSWORD_DB
+  ENCRYPTION_KEY: $SERVICE_PASSWORD_ENCRYPTION
+  WEBHOOK_SECRET_KEY: $SERVICE_PASSWORD_WEBHOOK
+  APP_SECRET_KEY: $SERVICE_PASSWORD_APPSECRET
+services:
+  automatisch:
+    image: automatischio/automatisch:0.15.0
+    ports: ["3000"]
+    environment:
+      <<: *app-env
+      HOST: ${SERVICE_FQDN_AUTOMATISCH:-localhost}
+      PROTOCOL: http
+      PORT: "3000"
+      API_URL: ${SERVICE_URL_AUTOMATISCH:-http://localhost:3000}
+      WEB_APP_URL: ${SERVICE_URL_AUTOMATISCH:-http://localhost:3000}
+    volumes:
+      - storage:/automatisch/storage
+    depends_on:
+      db:
+        condition: service_healthy
+      redis:
+        condition: service_healthy
+    healthcheck:
+      test: ["CMD-SHELL", "wget -q -O /dev/null http://127.0.0.1:3000/ || exit 1"]
+      interval: 15s
+      timeout: 5s
+      retries: 10
+      start_period: 60s
+  worker:
+    image: automatischio/automatisch:0.15.0
+    environment:
+      <<: *app-env
+      WORKER: "true"
+    volumes:
+      - storage:/automatisch/storage
+    depends_on:
+      automatisch:
+        condition: service_healthy
+    healthcheck:
+      test: ["CMD-SHELL", "pgrep -f node >/dev/null || exit 1"]
+      interval: 15s
+      timeout: 5s
+      retries: 5
+      start_period: 30s
+  db:
+    image: postgres:16-alpine
+    environment:
+      POSTGRES_USER: automatisch
+      POSTGRES_PASSWORD: $SERVICE_PASSWORD_DB
+      POSTGRES_DB: automatisch
+    volumes:
+      - postgres_data:/var/lib/postgresql/data
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U automatisch -d automatisch"]
+      interval: 5s
+      timeout: 5s
+      retries: 10
+      start_period: 10s
+  redis:
+    image: redis:7-alpine
+    command: redis-server --requirepass $SERVICE_PASSWORD_REDIS
+    volumes:
+      - redis_data:/data
+    healthcheck:
+      test: ["CMD-SHELL", "redis-cli -a $SERVICE_PASSWORD_REDIS ping 2>/dev/null | grep -q PONG"]
+      interval: 5s
+      timeout: 5s
+      retries: 10
+      start_period: 5s
+volumes:
+  storage:
+  postgres_data:
+  redis_data:
