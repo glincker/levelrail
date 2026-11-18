@@ -232,7 +232,7 @@ export function selfUpgradeAttemptsQueryOptions(refetchMs: number | false) {
     },
     staleTime: 5_000,
     refetchInterval: refetchMs,
-    retry: (_n: number, e: unknown) => !isDemoFinalError(e),
+    retry: (_n: number, e: Error) => !isDemoFinalError(e),
   })
 }
 
@@ -247,7 +247,7 @@ export function selfUpgradeStatusQueryOptions(enabledPoll = true) {
     staleTime: 5_000,
     refetchInterval: (q) =>
       enabledPoll && q.state.data?.running ? UPGRADE_POLL_MS : false,
-    retry: (_n: number, e: unknown) => !isDemoFinalError(e),
+    retry: (_n: number, e: Error) => !isDemoFinalError(e),
   })
 }
 
