@@ -1,5 +1,18 @@
 # Changelog
 
+## [1.5.4](https://github.com/glincker/levelrail/compare/v1.5.3...v1.5.4) (2026-11-18)
+
+
+### Bug Fixes
+
+* send the widened demo CSP on the dashboard HTML and static files ([#1607](https://github.com/glincker/levelrail/issues/1607)) ([72a1019](https://github.com/glincker/levelrail/commit/72a1019ca32c45547c1558ec1a463b4af5992489))
+
+
+### Documentation
+
+* sanitized v1.5.3 evidence run on a 1 vCPU ARM VM ([#1606](https://github.com/glincker/levelrail/issues/1606)) ([499e3f5](https://github.com/glincker/levelrail/commit/499e3f5d0d1257e9958fa31cb8f4d04562a1c252))
+* v1.x positioning, honest comparison table and stale-wording cleanup ([#1605](https://github.com/glincker/levelrail/issues/1605)) ([812c00f](https://github.com/glincker/levelrail/commit/812c00f14cc5cc104f4403aacac2a1e7abb94438))
+
 ## [1.5.3](https://github.com/glincker/levelrail/compare/v1.5.2...v1.5.3) (2026-11-18)
 
 
