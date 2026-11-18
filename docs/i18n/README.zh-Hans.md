@@ -3,7 +3,7 @@
 <img src="../../docs/assets/brand/levelrail-default.svg" alt="Levelrail 标志" width="56" height="56">
 <h1>Levelrail</h1>
 <p><strong>在你自己的服务器上，通过 git push 直达生产环境。</strong><br>
-单个 Go 二进制文件的自托管部署平台。控制平面空闲时约占用 200 MB 内存（<a href="../../docs/performance.md">实测</a>），内置 570+ 个一键应用、回滚、预览、HTTPS 和数据库。</p>
+单个 Go 二进制文件的自托管部署平台。控制平面空闲时约占用 200 至 220 MB 内存（<a href="../../docs/benchmarks.md">实测</a>），内置 570+ 个一键应用、回滚、预览、HTTPS 和数据库。</p>
 <p><code>curl -fsSL https://levelrail.com/install.sh | sudo sh</code> &middot; <a href="https://demo.levelrail.com"><b>试用在线演示</b></a></p>
 <p>
   <a href="https://github.com/glincker/levelrail/stargazers"><img src="https://img.shields.io/github/stars/glincker/levelrail?style=flat&logo=github" alt="GitHub 星标"></a>
@@ -186,7 +186,7 @@ Do not write any token or password to a file or into this chat.
 
 | 你能得到什么 | 状态 | 依据 |
 | --- | --- | --- |
-| 单个 Go 二进制文件的控制平面，空闲时约占用 200 MB 内存 | 已实测 | [性能](../../docs/performance.md)、[基准测试](../../docs/benchmarks.md) |
+| 单个 Go 二进制文件的控制平面，空闲时约占用 200 至 220 MB 内存 | 已实测 | [基准测试](../../docs/benchmarks.md) |
 | 通过 HTTPS 向你自己的服务器 `git push`，无需提供商、webhook 或 SSH 密钥（GitHub webhook 部署为 stable） | beta | [用 git push 部署](../../docs/git-push-deploy.md) |
 | 固定镜像回滚、以就绪检查为门控的发布，以及部署后观察触发的自动回滚 | stable（延迟信号为 beta） | [部署安全](../../docs/deploy-safety.md) |
 | 经过验证的备份，并可在临时资源中做恢复演练 | Postgres 为 stable，其他引擎为 beta | [证明你的备份可用](../../docs/prove-your-backups-work.md)、[备份与存储](../../docs/backups-and-storage.md) |

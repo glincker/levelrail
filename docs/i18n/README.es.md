@@ -8,7 +8,7 @@
 > Esta traducción fue generada con IA y puede contener errores. Las correcciones son bienvenidas: consulta [docs/i18n/README.md](README.md).
 
 <p><strong>Git push a producción en tus propios servidores.</strong><br>
-Una plataforma de despliegue autoalojada en un solo binario de Go. El plano de control consume en reposo unos 200 MB de RAM (<a href="../../docs/performance.md">medido</a>), con más de 570 apps de un clic, rollbacks, vistas previas, HTTPS y bases de datos integrados.</p>
+Una plataforma de despliegue autoalojada en un solo binario de Go. El plano de control consume en reposo unos 200 a 220 MB de RAM (<a href="../../docs/benchmarks.md">medido</a>), con más de 570 apps de un clic, rollbacks, vistas previas, HTTPS y bases de datos integrados.</p>
 <p><code>curl -fsSL https://levelrail.com/install.sh | sudo sh</code> &middot; <a href="https://demo.levelrail.com"><b>Prueba la demo en vivo</b></a></p>
 <p>
   <a href="https://github.com/glincker/levelrail/stargazers"><img src="https://img.shields.io/github/stars/glincker/levelrail?style=flat&logo=github" alt="Estrellas en GitHub"></a>
@@ -189,7 +189,7 @@ Cada afirmación enlaza a la página que la respalda. La columna de estado sigue
 
 | Lo que obtienes | Estado | Evidencia |
 | --- | --- | --- |
-| Un plano de control que en reposo usa unos 200 MB de RAM, en un solo binario de Go | medido | [Rendimiento](../../docs/performance.md), [Benchmarks](../../docs/benchmarks.md) |
+| Un plano de control que en reposo usa unos 200 a 220 MB de RAM, en un solo binario de Go | medido | [Benchmarks](../../docs/benchmarks.md) |
 | `git push` a tu propio servidor por HTTPS, sin proveedor, webhook ni clave SSH (los despliegues por webhook de GitHub son estables) | beta | [Despliegue con git push](../../docs/git-push-deploy.md) |
 | Rollback con imágenes fijadas, despliegues con comprobación de disponibilidad y rollback automático tras una vigilancia posterior al despliegue | estable (señal de latencia beta) | [Seguridad de despliegue](../../docs/deploy-safety.md) |
 | Copias de seguridad verificadas, con simulacros de restauración en un recurso temporal | Postgres estable, otros motores beta | [Demuestra que tus copias funcionan](../../docs/prove-your-backups-work.md), [Copias y almacenamiento](../../docs/backups-and-storage.md) |

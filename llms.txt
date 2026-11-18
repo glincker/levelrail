@@ -1,6 +1,6 @@
 # Levelrail
 
-> Open source, self-hosted, lightweight deployment platform (the control plane idles at about 200 MB of RAM and 1.5 percent of one CPU on a 2 vCPU box, one Go binary) and a Coolify alternative. Push to git and get a running app with HTTPS, logs, traces, metrics, previews and one-click rollback on your own Linux servers. Single Go binary, Docker runtime, built-in observability, scale to zero. Apache 2.0.
+> Open source, self-hosted, lightweight deployment platform (the control plane idles at about 200 to 220 MB of RAM and 1.5 percent of one CPU on a 2 vCPU box, one Go binary) and a Coolify alternative. Push to git and get a running app with HTTPS, logs, traces, metrics, previews and one-click rollback on your own Linux servers. Single Go binary, Docker runtime, built-in observability, scale to zero. Apache 2.0.
 
 ## Start here
 

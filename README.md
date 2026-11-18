@@ -2,7 +2,7 @@
 <img src="docs/assets/brand/levelrail-default.svg" alt="Levelrail logo" width="56" height="56">
 <h1>Levelrail</h1>
 <p><strong>Git push to production on your own servers.</strong><br>
-A self-hosted deployment platform in one Go binary. The control plane idles at about 200 MB of RAM (<a href="docs/performance.md">measured</a>), with 570+ one-click apps, rollbacks, previews, HTTPS and databases built in.</p>
+A self-hosted deployment platform in one Go binary. The control plane idles at about 200 to 220 MB of RAM (<a href="docs/benchmarks.md">measured</a>), with 570+ one-click apps, rollbacks, previews, HTTPS and databases built in.</p>
 <p><code>curl -fsSL https://levelrail.com/install.sh | sudo sh</code> &middot; <a href="https://demo.levelrail.com"><b>Try the live demo</b></a></p>
 <p>
   <a href="https://github.com/glincker/levelrail/stargazers"><img src="https://img.shields.io/github/stars/glincker/levelrail?style=flat&logo=github" alt="GitHub stars"></a>
@@ -180,7 +180,7 @@ Each claim links to the page that backs it. The status column follows [Feature s
 
 | What you get | Status | Evidence |
 | --- | --- | --- |
-| A control plane that idles at about 200 MB of RAM, in one Go binary | measured | [Performance](docs/performance.md), [Benchmarks](docs/benchmarks.md) |
+| A control plane that idles at about 200 to 220 MB of RAM, in one Go binary | measured | [Benchmarks](docs/benchmarks.md) |
 | `git push` to your own server over HTTPS, no provider, webhook or SSH key (GitHub webhook deploys are stable) | beta | [Deploy with git push](docs/git-push-deploy.md) |
 | Pinned-image rollback, readiness-gated rollouts and automatic rollback on a post-deploy watch | stable (latency signal beta) | [Deploy safety](docs/deploy-safety.md) |
 | Backups that are verified, with restore drills into a scratch resource | Postgres stable, other engines beta | [Prove your backups work](docs/prove-your-backups-work.md), [Backups and storage](docs/backups-and-storage.md) |
