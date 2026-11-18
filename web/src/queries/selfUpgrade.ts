@@ -6,7 +6,7 @@ import {
   useMutation,
   useQueryClient,
 } from '@tanstack/react-query'
-import { ApiError, readErrorMessage } from '../lib/apiError'
+import { ApiError, isDemoFinalError, readErrorMessage } from '../lib/apiError'
 import { updatesKeys, type EdgeGuidance } from './updates'
 
 export interface SelfUpgradeBreaking {
@@ -232,7 +232,7 @@ export function selfUpgradeAttemptsQueryOptions(refetchMs: number | false) {
     },
     staleTime: 5_000,
     refetchInterval: refetchMs,
-    retry: true,
+    retry: (_n: number, e: Error) => !isDemoFinalError(e),
   })
 }
 
@@ -247,7 +247,7 @@ export function selfUpgradeStatusQueryOptions(enabledPoll = true) {
     staleTime: 5_000,
     refetchInterval: (q) =>
       enabledPoll && q.state.data?.running ? UPGRADE_POLL_MS : false,
-    retry: true,
+    retry: (_n: number, e: Error) => !isDemoFinalError(e),
   })
 }
 

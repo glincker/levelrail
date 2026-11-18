@@ -729,5 +729,58 @@
       "dismiss": "Ignorer",
       "manage": "Gérer"
     }
+  },
+  "quick": {
+    "channel": "Release channel",
+    "dayOption": {
+      "custom": "Custom (keep current)",
+      "daily": "Every day",
+      "weekdays": "Weekdays",
+      "weekends": "Weekends"
+    },
+    "days": {
+      "custom": "on your custom schedule",
+      "daily": "every night",
+      "weekdays": "on weekdays",
+      "weekends": "on weekends"
+    },
+    "daysLabel": "Days",
+    "error": "Could not save: {{message}}",
+    "hours": "{{hours}} h",
+    "length": "Length",
+    "level": {
+      "any": "Minor and patch",
+      "label": "What to install",
+      "patch": "Patch releases"
+    },
+    "loadError": "Could not load automatic update settings.",
+    "more": {
+      "checks": "Safety checks",
+      "history": "Update history",
+      "restore": "Restore points"
+    },
+    "next": "Next window starts {{time}}.",
+    "off": "Updates are never installed on their own. You choose when to update.",
+    "onAny": "New releases, including minor ones, install automatically between {{start}} and {{end}}, {{days}}.",
+    "onPatch": "Patch releases install automatically between {{start}} and {{end}}, {{days}}.",
+    "paused": "Automatic updates are paused until {{date}}.",
+    "released": "Released {{date}}",
+    "rows": {
+      "migrations": "Database changes",
+      "notes": "Release notes",
+      "plan": "Backup and scheduling"
+    },
+    "save": "Save schedule",
+    "savedOff": "Automatic updates turned off.",
+    "savedOn": "Automatic updates turned on.",
+    "scheduleSaved": "Schedule saved.",
+    "scheduleSummary": "{{start}} to {{end}}, {{days}}",
+    "scheduleToggle": "Schedule",
+    "start": "Start",
+    "title": "Automatic updates",
+    "undo": "Undo",
+    "zone": "Time zone",
+    "zoneHelp": "Server time zone is {{zone}}. Backups and safety checks still run first.",
+    "zoneInvalid": "Enter a valid time zone, for example Europe/Berlin."
   }
 }

@@ -1,4 +1,6 @@
 import { useState } from 'react'
+import { DemoInstallState } from '@/components/demo/DemoInstallState'
+import { isDemoFinalError } from '@/lib/apiError'
 import { createFileRoute } from '@tanstack/react-router'
 import { BinaryTreeGlassIcon } from '@thesvg/ui-react'
 import { Alert, AlertDescription } from '@/components/ui/alert'
@@ -48,6 +50,8 @@ function PipelinesPage() {
           <PipelineOverviewFilters filters={filters} onChange={setFilters} />
           {query.isLoading ? (
             <TableSkeleton columnCount={6} rowCount={6} />
+          ) : isDemoFinalError(query.error) ? (
+            <DemoInstallState />
           ) : query.error ? (
             <Alert variant="destructive">
               <AlertDescription>{query.error.message}</AlertDescription>

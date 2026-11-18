@@ -25,7 +25,17 @@ func Handler(b *brand.Brand) http.Handler {
 	return handlerFromFS(DistFS, b)
 }
 
-func handlerFromFS(embedded fs.FS, b *brand.Brand) http.Handler {
+// HandlerWithHead is Handler plus share-tag overrides for the shell; a zero
+// HeadOptions behaves exactly like Handler.
+func HandlerWithHead(b *brand.Brand, head HeadOptions) http.Handler {
+	return handlerFromFS(DistFS, b, head)
+}
+
+func handlerFromFS(embedded fs.FS, b *brand.Brand, head ...HeadOptions) http.Handler {
+	var opts HeadOptions
+	if len(head) > 0 {
+		opts = head[0]
+	}
 	// fs.Sub doesn't fail just because "dist" is missing or empty: for
 	// the generic (non-SubFS) case it builds a lazy view and only
 	// errors on the first actual file access, which would otherwise
@@ -34,7 +44,7 @@ func handlerFromFS(embedded fs.FS, b *brand.Brand) http.Handler {
 	// at handler construction time, tells the two cases apart up front.
 	if dist, err := fs.Sub(embedded, "dist"); err == nil {
 		if _, err := fs.Stat(dist, "index.html"); err == nil {
-			return spaHandler{dist: dist, static: &staticFiles{dist: dist}, brand: b}
+			return spaHandler{dist: dist, static: &staticFiles{dist: dist}, brand: b, head: opts}
 		}
 	}
 	return http.HandlerFunc(func(w http.ResponseWriter, _ *http.Request) {
@@ -48,6 +58,7 @@ type spaHandler struct {
 	dist   fs.FS
 	static *staticFiles
 	brand  *brand.Brand
+	head   HeadOptions
 }
 
 // ServeHTTP serves a real static asset when the request path matches
@@ -82,7 +93,7 @@ func (h spaHandler) serveIndex(w http.ResponseWriter, r *http.Request) {
 		http.Error(w, "index.html unavailable", http.StatusInternalServerError)
 		return
 	}
-	body := injectBrandHead(page, h.brand, r)
+	body := injectBrandHead(page, h.brand, r, h.head)
 	w.Header().Set("Content-Type", "text/html; charset=utf-8")
 	w.Header().Set("Cache-Control", cacheRevalidate)
 	w.Header().Set("ETag", bodyETag(body))

@@ -1,17 +1,16 @@
 import { useTranslation } from 'react-i18next'
 import {
-  BookOpenGlassIcon,
-  CheckGlassIcon,
-  CopyGlassIcon,
-  FlaskConicalGlassIcon,
-  MapGlassIcon,
   SocialGithubGlassIcon,
+  StarGlassIcon,
+  TerminalGlassIcon,
 } from '@thesvg/ui-react'
 import { Button } from '@/components/ui/button'
-import { useCopyToClipboard } from '@/hooks/useCopyToClipboard'
-import { captureDemoEvent } from '@/lib/demoAnalytics'
 import { useDemoInfo } from '@/hooks/useDemo'
+import { captureDemoEvent } from '@/lib/demoAnalytics'
+import { formatStars } from '@/lib/demoStars'
 import { sendDemoCta } from '@/queries/demo'
+
+export const DEFAULT_REPO_URL = 'https://github.com/glincker/levelrail'
 
 function resetsLabel(iso: string | undefined): string | null {
   if (!iso) return null
@@ -23,97 +22,70 @@ function resetsLabel(iso: string | undefined): string | null {
   }).format(d)
 }
 
-/** DemoBanner is the compact, always-visible strip shown only on a demo instance. */
-export function DemoBanner({ onTour }: { onTour: () => void }) {
+/** DemoStarButton is the high-contrast GitHub call to action; the count is omitted when the API has none. */
+export function DemoStarButton() {
   const { t } = useTranslation('demo')
   const info = useDemoInfo()
-  const { copied, copy } = useCopyToClipboard()
+  const count = formatStars(info.stars)
+  return (
+    <Button
+      size="xs"
+      className="bg-foreground text-background hover:bg-foreground/85 focus-visible:ring-ring"
+      nativeButton={false}
+      render={
+        <a
+          href={info.repoUrl || DEFAULT_REPO_URL}
+          target="_blank"
+          rel="noopener"
+          aria-label={
+            count ? t('banner.starCount', { count }) : t('banner.starLabel')
+          }
+          onClick={() => {
+            sendDemoCta('github')
+            captureDemoEvent('demo_github_click')
+          }}
+        />
+      }
+    >
+      <SocialGithubGlassIcon size="1.4em" data-icon="inline-start" />
+      <StarGlassIcon size="1.2em" data-icon="inline-start" />
+      <span className="hidden sm:inline">{t('banner.star')}</span>
+      {count ? (
+        <span className="border-l border-background/30 pl-1.5 tabular-nums">
+          {count}
+        </span>
+      ) : null}
+    </Button>
+  )
+}
+
+/** DemoBanner is one slim line plus the Star and Install calls to action; shown only on a demo instance. */
+export function DemoBanner({ onInstall }: { onInstall: () => void }) {
+  const { t } = useTranslation('demo')
+  const info = useDemoInfo()
   const resets = resetsLabel(info.resetsAt)
 
   return (
     <div
       role="status"
-      className="flex shrink-0 flex-wrap items-center gap-x-3 gap-y-1 border-b border-border bg-muted px-4 py-1.5 text-xs text-foreground"
+      className="flex shrink-0 items-center gap-2 border-b border-border bg-muted/60 px-3 py-1 text-xs text-muted-foreground"
     >
-      <span className="flex items-center gap-1.5 font-medium">
-        <FlaskConicalGlassIcon className="size-5" aria-hidden="true" />
-        {t('banner.label')}
+      <span className="min-w-0 flex-1 truncate">
+        {resets
+          ? t('banner.message', { time: resets })
+          : t('banner.messageNoReset')}
       </span>
-      {resets ? (
-        <span className="text-muted-foreground">
-          {t('banner.resets', { time: resets })}
-        </span>
-      ) : null}
-      <span className="ml-auto flex flex-wrap items-center gap-1.5">
-        {info.installCommand ? (
-          <Button
-            type="button"
-            variant="outline"
-            size="xs"
-            className="max-w-full font-mono"
-            aria-label={t('banner.copyInstall')}
-            title={t('banner.copyInstall')}
-            onClick={() => {
-              copy(info.installCommand ?? '')
-              sendDemoCta('install')
-              captureDemoEvent('demo_install_command_copied')
-            }}
-          >
-            <span className="truncate">{info.installCommand}</span>
-            {copied ? (
-              <CheckGlassIcon size="1.4em" data-icon="inline-end" />
-            ) : (
-              <CopyGlassIcon size="1.4em" data-icon="inline-end" />
-            )}
-            <span className="sr-only">
-              {copied ? t('banner.copied') : t('banner.copyInstall')}
-            </span>
-          </Button>
-        ) : null}
-        {info.repoUrl ? (
-          <Button
-            variant="ghost"
-            size="xs"
-            nativeButton={false}
-            render={
-              <a
-                href={info.repoUrl}
-                target="_blank"
-                rel="noreferrer"
-                onClick={() => {
-                  sendDemoCta('github')
-                  captureDemoEvent('demo_github_click')
-                }}
-              />
-            }
-          >
-            <SocialGithubGlassIcon size="1.4em" data-icon="inline-start" />
-            {t('banner.github')}
-          </Button>
-        ) : null}
-        {info.docsUrl ? (
-          <Button
-            variant="ghost"
-            size="xs"
-            nativeButton={false}
-            render={
-              <a
-                href={info.docsUrl}
-                target="_blank"
-                rel="noreferrer"
-                onClick={() => {
-                  sendDemoCta('docs')
-                }}
-              />
-            }
-          >
-            <BookOpenGlassIcon size="1.4em" data-icon="inline-start" />
-            {t('banner.docs')}
-          </Button>
-        ) : null}
-        <Button type="button" variant="ghost" size="xs" onClick={onTour}>
-          <MapGlassIcon size="1.4em" data-icon="inline-start" />
-          {t('banner.tour')}
+      <span className="flex shrink-0 items-center gap-1.5">
+        <DemoStarButton />
+        <Button
+          type="button"
+          size="xs"
+          variant="outline"
+          aria-label={t('banner.install')}
+          onClick={onInstall}
+        >
+          <TerminalGlassIcon size="1.4em" data-icon="inline-start" />
+          <span className="hidden sm:inline">{t('banner.install')}</span>
         </Button>
       </span>
     </div>

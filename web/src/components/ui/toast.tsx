@@ -5,6 +5,7 @@ import { Toast as ToastPrimitive } from '@base-ui/react/toast'
 
 import { cn } from '@/lib/utils'
 import { Button } from '@/components/ui/button'
+import { useIsDemo } from '@/hooks/useDemo'
 import {
   CircleCheckGlassIcon,
   InfoGlassIcon,
@@ -227,11 +228,19 @@ function Toaster({
   toastManager = toast,
   ...props
 }: ToastPrimitive.Provider.Props) {
+  // The demo centers toasts so they clear the bottom-right tour chip and the sidebar footer.
+  const isDemo = useIsDemo()
   return (
     <ToastProvider toastManager={toastManager} {...props}>
       {children}
       <ToastPortal>
-        <ToastViewport>
+        <ToastViewport
+          className={
+            isDemo
+              ? 'sm:right-auto sm:left-1/2 sm:mx-0 sm:-translate-x-1/2'
+              : undefined
+          }
+        >
           <ToastList />
         </ToastViewport>
       </ToastPortal>

@@ -23,6 +23,13 @@ interface ThemeContextValue {
 
 const ThemeContext = createContext<ThemeContextValue | null>(null)
 
+// The hosted demo's theme-init sets this marker so an unset choice is light.
+function unsetDefault(): Theme {
+  return document.documentElement.dataset.themeDefault === 'light'
+    ? 'light'
+    : 'dark'
+}
+
 function getStoredTheme(): Theme {
   try {
     const stored = window.localStorage.getItem(STORAGE_KEY)
@@ -31,11 +38,11 @@ function getStoredTheme(): Theme {
       stored === 'oled' ||
       stored === 'system'
       ? stored
-      : 'dark'
+      : unsetDefault()
   } catch {
     // localStorage can throw in private-browsing/storage-restricted
     // contexts (same defensive pattern as lib/authStore.ts).
-    return 'dark'
+    return unsetDefault()
   }
 }
 

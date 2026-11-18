@@ -8,7 +8,7 @@ import { queryOptions, useQuery } from '@tanstack/react-query'
 import type { NodeMetricName, NodeMetricSeries } from '../types/nodeMetrics'
 import type { MetricRangeParams } from './metrics'
 import { nodeKeys } from './nodes'
-import { ApiError, readErrorMessage } from '../lib/apiError'
+import { ApiError, isDemoFinalError, readErrorMessage } from '../lib/apiError'
 
 export const nodeMetricKeys = {
   all: (nodeId: string) => [...nodeKeys.detail(nodeId), 'metrics'] as const,
@@ -82,6 +82,9 @@ export function useNodeMetricSeries(
   return useQuery({
     ...nodeMetricSeriesQueryOptions(nodeId, metric, range),
     enabled: options?.enabled ?? true,
-    retry: options?.retry ?? true,
+    retry:
+      options?.retry === false
+        ? false
+        : (_n: number, e: unknown) => !isDemoFinalError(e),
   })
 }

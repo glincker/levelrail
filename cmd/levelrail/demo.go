@@ -8,8 +8,10 @@ import (
 	"io"
 	"log/slog"
 	"net/http"
+	"net/url"
 	"os"
 	"os/signal"
+	"strings"
 	"syscall"
 	"time"
 
@@ -30,6 +32,15 @@ const (
 	// demoEnvResetInterval overrides the daily reset time with a fixed cadence,
 	// so the banner matches a host that re-seeds more often.
 	demoEnvResetInterval = "APP_DEMO_RESET_INTERVAL"
+	// demoEnvPublicURL is the public https origin used in share tags.
+	demoEnvPublicURL     = "APP_DEMO_PUBLIC_URL"
+	demoDefaultPublicURL = "https://demo.levelrail.com"
+
+	demoShareTitle       = "Levelrail live demo"
+	demoShareDescription = "Try the Levelrail dashboard with fictional data: deploy, roll back, databases, domains. Read only."
+	demoShareImageAlt    = "Levelrail live demo: try the dashboard with fictional data"
+	demoShareImageWidth  = 1200
+	demoShareImageHeight = 630
 	demoMinResetInterval = time.Minute
 	demoRobotsTxt        = "User-agent: *\nDisallow: /\n"
 )
@@ -209,7 +220,80 @@ func buildDemoHandler(ctx context.Context, logger *slog.Logger, b *brand.Brand, 
 	rt := api.NewRouter(logger, b, db, opts...)
 	// Without a sampler the public status page reads Unknown for every component.
 	go func() { _ = rt.RunStatusPageSampler(ctx) }()
-	return demoStaticHeaders(composeMux(rt.Handler(), nil, web.Handler(b))), nil
+	mux := composeMux(rt.Handler(), nil, web.HandlerWithHead(b, demoHeadOptions(logger, os.Getenv(demoEnvPublicURL))))
+	// Registered on the mux so it wins over the static handler's catch-all.
+	mux.HandleFunc("/theme-init.js", serveDemoThemeInit)
+	return demoStaticHeaders(mux), nil
+}
+
+// demoHeadOptions builds the demo's share tags. An unset or invalid public
+// URL falls back to the default; an invalid one logs a warning.
+func demoHeadOptions(logger *slog.Logger, raw string) web.HeadOptions {
+	origin := demoDefaultPublicURL
+	if raw != "" {
+		if o, ok := absoluteHTTPSOrigin(raw); ok {
+			origin = o
+		} else {
+			logger.Warn("ignoring invalid "+demoEnvPublicURL+": must be an absolute https URL", slog.String("env", demoEnvPublicURL))
+		}
+	}
+	return web.HeadOptions{
+		Title:       demoShareTitle,
+		Description: demoShareDescription,
+		URL:         origin + "/",
+		ImageURL:    origin + "/demo-og.png",
+		ImageAlt:    demoShareImageAlt,
+		ImageWidth:  demoShareImageWidth,
+		ImageHeight: demoShareImageHeight,
+	}
+}
+
+// absoluteHTTPSOrigin returns scheme://host for an absolute https URL.
+func absoluteHTTPSOrigin(raw string) (string, bool) {
+	u, err := url.Parse(strings.TrimSpace(raw))
+	if err != nil || u.Scheme != "https" || u.Host == "" || u.User != nil {
+		return "", false
+	}
+	return "https://" + u.Host, true
+}
+
+// demoThemeInit mirrors web/public/theme-init.js except an unset choice is
+// light; the data-theme-default marker makes ThemeProvider agree.
+const demoThemeInit = `;(function () {
+  document.documentElement.setAttribute('data-theme-default', 'light')
+  try {
+    var stored = localStorage.getItem('levelrail-theme')
+    var isDark =
+      stored === 'system'
+        ? window.matchMedia('(prefers-color-scheme: dark)').matches
+        : stored === 'dark'
+    document.documentElement.classList.toggle(
+      'dark',
+      isDark || stored === 'oled',
+    )
+    document.documentElement.classList.toggle('oled', stored === 'oled')
+    try {
+      var saved = JSON.parse(localStorage.getItem('levelrail-appearance-v1'))
+      if (saved && saved.look === 'restrained') {
+        document.documentElement.setAttribute('data-look', 'restrained')
+      }
+      if (saved && saved.backdrop === 'plain') {
+        document.documentElement.setAttribute('data-backdrop', 'plain')
+      }
+    } catch (e) {}
+    if (stored === 'oled') {
+      document.write(
+        '<link rel="stylesheet" id="levelrail-oled-css" href="/glinr.oled.css">',
+      )
+    }
+  } catch (e) {}
+})()
+`
+
+func serveDemoThemeInit(w http.ResponseWriter, _ *http.Request) {
+	w.Header().Set("Content-Type", "text/javascript; charset=utf-8")
+	w.Header().Set("Cache-Control", "no-cache")
+	_, _ = io.WriteString(w, demoThemeInit)
 }
 
 // demoStaticHeaders marks every response noindex and serves a disallow-all

@@ -17,13 +17,14 @@ export function dismissTour(): void {
 }
 
 export interface TourStep {
-  id: 'apps' | 'deploys' | 'metrics' | 'nodes'
-  to: '/apps' | '/deployments' | '/nodes'
+  id: 'apps' | 'databases' | 'domains' | 'nodes' | 'finish'
+  to?: '/apps' | '/databases' | '/domains' | '/nodes'
 }
 
 export const TOUR_STEPS: readonly [TourStep, ...TourStep[]] = [
   { id: 'apps', to: '/apps' },
-  { id: 'deploys', to: '/deployments' },
-  { id: 'metrics', to: '/apps' },
+  { id: 'databases', to: '/databases' },
+  { id: 'domains', to: '/domains' },
   { id: 'nodes', to: '/nodes' },
+  { id: 'finish' },
 ]

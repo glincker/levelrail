@@ -1,18 +1,19 @@
 {
   "banner": {
-    "label": "サンプルデータを使った読み取り専用のデモ",
-    "resets": "{{time}} にリセット",
+    "message": "Live demo, fictional data, resets at {{time}}",
+    "messageNoReset": "Live demo, fictional data",
+    "star": "Star",
+    "starLabel": "Star Levelrail on GitHub",
+    "starCount": "Star Levelrail on GitHub, {{count}} stars",
     "install": "インストール",
-    "copyInstall": "インストールコマンドをコピー",
     "copied": "コピーしました",
     "github": "GitHub",
-    "docs": "ドキュメント",
-    "tour": "ツアーを見る"
+    "docs": "ドキュメント"
   },
   "readOnly": {
     "tooltip": "デモでは読み取り専用です。実際に試すには、{{brand}} をインストールしてください。",
-    "toastTitle": "読み取り専用のデモ",
-    "toastBody": "この操作はデモでは利用できません。実際に試すには、{{brand}} をインストールしてください。"
+    "toast": "Read-only demo: this action is not available here",
+    "installAction": "Install it"
   },
   "login": {
     "title": "デモを体験",
@@ -37,27 +38,46 @@
     "description": "この領域は、デモデータでは意図的に空になっています。実際のインスタンスでは、{{brand}} を使用するにつれて内容が増えていきます。"
   },
   "tour": {
+    "launcher": "Take the 2 minute tour",
     "step": "ステップ {{current}} / {{total}}",
     "next": "次へ",
     "back": "戻る",
     "done": "完了",
     "skip": "ツアーをスキップ",
-    "open": "このページを開く",
     "apps": {
-      "title": "アプリ",
-      "body": "すべてのアプリ、そのステータス、最新のデプロイを1つの一覧で確認できます。1つ開くと、ログ、ドメイン、設定を確認できます。"
+      "title": "Apps",
+      "body": "See every app, its deploys and one-click rollbacks."
     },
-    "deploys": {
-      "title": "デプロイ履歴とロールバック",
-      "body": "各デプロイは、ソースと結果とともに記録されます。以前のどのバージョンにも、ワンクリックでロールバックできます。"
+    "databases": {
+      "title": "Databases",
+      "body": "Find the connection string and the backups for each database."
     },
-    "metrics": {
-      "title": "デプロイマーカー付きのメトリクス",
-      "body": "アプリを開いて、メトリクスを選択します。デプロイがチャートに描画されるため、どのリリースで数値が変わったかを確認できます。"
+    "domains": {
+      "title": "Domains",
+      "body": "Add a domain and get HTTPS certificates automatically."
     },
     "nodes": {
-      "title": "ノード",
-      "body": "フリート内のすべてのサーバー、その容量、そこで実行されているものを確認できます。"
+      "title": "Nodes",
+      "body": "Servers, devices and AWS machines in one fleet view."
+    },
+    "finish": {
+      "title": "Like what you see?",
+      "body": "Star the project on GitHub or install it in one line."
     }
+  },
+  "install": {
+    "title": "Install in one line",
+    "description": "Run it on your own server. Nothing from this demo carries over.",
+    "copy": "Copy",
+    "steps": {
+      "run": "Run the command on a Linux server or your laptop.",
+      "open": "Open the URL it prints and create your admin account.",
+      "deploy": "Deploy your first app from a Git repo or an image."
+    }
+  },
+  "installState": {
+    "description": "This feature needs a real server, so the demo shows it as a preview only. Install {{brand}} on your own host to use it with your apps.",
+    "install": "Install {{brand}}",
+    "title": "Available when you install"
   }
 }

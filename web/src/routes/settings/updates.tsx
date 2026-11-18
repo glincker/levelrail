@@ -2,6 +2,8 @@ import {
   createFileRoute,
   type ErrorComponentProps,
 } from '@tanstack/react-router'
+import { DemoInstallState } from '@/components/demo/DemoInstallState'
+import { isDemoFinalError } from '@/lib/apiError'
 import { useTranslation } from 'react-i18next'
 import { useSuspenseQuery } from '@tanstack/react-query'
 import { ArrowUpGlassIcon } from '@thesvg/ui-react'
@@ -58,6 +60,7 @@ function UpdatesSettingsSkeleton() {
 
 function UpdatesSettingsError({ error, reset }: ErrorComponentProps) {
   const { t } = useTranslation('updates')
+  if (isDemoFinalError(error)) return <DemoInstallState />
   return (
     <PageTemplate
       icon={<ArrowUpGlassIcon size="1.4em" />}

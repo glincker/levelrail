@@ -1,5 +1,7 @@
 # levelrail
 
+<p align="center"><img src="https://raw.githubusercontent.com/glincker/levelrail/main/docs/assets/brand/social/github-social-1280x640-light.jpg" alt="Levelrail: a lightweight, self-hosted deployment platform" width="720"></p>
+
 Command line client for [Levelrail](https://levelrail.com), a self-hosted deployment platform.
 
 ```

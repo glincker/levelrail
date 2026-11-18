@@ -1,4 +1,6 @@
 import { lazy, Suspense, useMemo, useState } from 'react'
+import { DemoInstallState } from '@/components/demo/DemoInstallState'
+import { isDemoFinalError } from '@/lib/apiError'
 import { getRouteApi, Link } from '@tanstack/react-router'
 import { useTranslation } from 'react-i18next'
 import { BroomGlassIcon, HammerGlassIcon } from '@thesvg/ui-react'
@@ -106,7 +108,9 @@ export function BuildsPage() {
       <div className="flex flex-col gap-6">
         {builds.isPending ? <SkeletonList rows={6} /> : null}
 
-        {builds.isError ? (
+        {builds.isError && isDemoFinalError(builds.error) ? (
+          <DemoInstallState />
+        ) : builds.isError ? (
           <Alert variant="destructive">
             <AlertTitle>{t('error.title')}</AlertTitle>
             <AlertDescription className="flex flex-wrap items-center gap-3">

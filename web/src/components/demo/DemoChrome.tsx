@@ -1,7 +1,7 @@
-import { useContext, useEffect, useState } from 'react'
+import { useContext, useEffect, useRef, useState } from 'react'
 import { useTranslation } from 'react-i18next'
 import { useRouterState } from '@tanstack/react-router'
-import { toast } from '@/components/ui/toast'
+import { toast, toastAction } from '@/components/ui/toast'
 import { useDemoInfo } from '@/hooks/useDemo'
 import { BrandContext } from '@/lib/brandContext'
 import {
@@ -9,14 +9,19 @@ import {
   captureDemoEvent,
   initDemoAnalytics,
 } from '@/lib/demoAnalytics'
-import { installDemoFetchGuard } from '@/lib/demoFetchGuard'
+import { installDemoFetchGuard, type DemoBlock } from '@/lib/demoFetchGuard'
+import {
+  createDemoToastGate,
+  installUserActionTracking,
+  showDemoToast,
+} from '@/lib/demoToast'
+import { DEMO_INSTALL_EVENT } from '@/lib/installPrompt'
 import { isTourDismissed } from '@/lib/demoTour'
 import { DemoBanner } from './DemoBanner'
+import { DemoInstallDialog } from './DemoInstallDialog'
 import { DemoTour } from './DemoTour'
 
-const TOAST_COOLDOWN_MS = 3000
-
-/** DemoChrome mounts the demo banner, tour and blocked-write toast; it renders nothing outside demo mode. */
+/** DemoChrome mounts the demo bar, install dialog, tour and the single read-only notice; it renders nothing outside demo mode. */
 export function DemoChrome() {
   const info = useDemoInfo()
   const isDemo = info.enabled
@@ -24,7 +29,9 @@ export function DemoChrome() {
   const { t } = useTranslation('demo')
   const brand = useContext(BrandContext)
   const brandName = brand?.ShortName || brand?.Name || ''
-  const [tourOpen, setTourOpen] = useState(() => !isTourDismissed())
+  const [tourDismissed, setTourDismissed] = useState(() => isTourDismissed())
+  const [installOpen, setInstallOpen] = useState(false)
+  const onBlocked = useRef<(b: DemoBlock) => void>(() => undefined)
 
   useEffect(() => {
     if (isDemo) void initDemoAnalytics(info)
@@ -37,40 +44,62 @@ export function DemoChrome() {
 
   useEffect(() => {
     if (!isDemo) return
-    let last = 0
-    installDemoFetchGuard((b) => {
+    const gate = createDemoToastGate()
+    onBlocked.current = (b) => {
       if (b.code === 'demo_readonly') {
         captureDemoEvent('demo_readonly_blocked', {
           method: b.method,
           route: apiRoutePattern(b.path),
         })
       }
-      const now = Date.now()
-      if (now - last < TOAST_COOLDOWN_MS) return
-      last = now
-      toast.add({
-        title: t('readOnly.toastTitle'),
-        description: t('readOnly.toastBody', { brand: brandName }),
+      if (b.code !== 'demo_readonly' || !gate.accept(b.method)) return
+      showDemoToast(toast, {
+        title: t('readOnly.toast', { brand: brandName }),
         type: 'info',
+        actionProps: toastAction(t('readOnly.installAction'), () => {
+          setInstallOpen(true)
+        }),
       })
+    }
+    const stop = installUserActionTracking(gate)
+    installDemoFetchGuard((b) => {
+      onBlocked.current(b)
     })
+    return stop
   }, [isDemo, t, brandName])
+
+  // Claims the event so openDemoInstall() callers do not fall back to the docs tab.
+  useEffect(() => {
+    if (!isDemo) return
+    const onInstall = (e: Event) => {
+      e.preventDefault()
+      setInstallOpen(true)
+    }
+    window.addEventListener(DEMO_INSTALL_EVENT, onInstall)
+    return () => {
+      window.removeEventListener(DEMO_INSTALL_EVENT, onInstall)
+    }
+  }, [isDemo])
 
   if (!isDemo) return null
   return (
     <>
       <DemoBanner
-        onTour={() => {
-          setTourOpen(true)
+        onInstall={() => {
+          setInstallOpen(true)
         }}
       />
-      {tourOpen ? (
+      <DemoInstallDialog open={installOpen} onOpenChange={setInstallOpen} />
+      {tourDismissed ? null : (
         <DemoTour
-          onClose={() => {
-            setTourOpen(false)
+          onDismiss={() => {
+            setTourDismissed(true)
+          }}
+          onInstall={() => {
+            setInstallOpen(true)
           }}
         />
-      ) : null}
+      )}
     </>
   )
 }

@@ -700,31 +700,41 @@ jobs:
             sleep "$delay"
             delay=$((delay * 2))
           done
-          work=$(mktemp -d)
-          cd "$work"
-          npm init -y >/dev/null
-          npm install "levelrail-cli@${version}"
-          out=$(npx --no-install levelrail-cli version)
-          echo "$out"
-          printf '%s\n' "$out" | grep -F -- "$version" >/dev/null || {
-            echo "printed version does not contain ${version}" >&2
-            exit 1
+          # npm replicas lag: the wrapper package can appear before its platform
+          # packages, so retry the whole install, not just the first lookup.
+          retry() {
+            local n=0
+            until "$@"; do
+              n=$((n + 1))
+              if [ "$n" -ge 8 ]; then return 1; fi
+              echo "Retrying in 20s (attempt ${n} failed)" >&2
+              sleep 20
+            done
           }
+          check_cli() {
+            local work
+            work=$(mktemp -d) &&
+              cd "$work" &&
+              npm init -y >/dev/null &&
+              npm install --prefer-online "levelrail-cli@${version}" &&
+              out=$(npx --no-install levelrail-cli version) &&
+              echo "$out" &&
+              printf '%s\n' "$out" | grep -F -- "$version" >/dev/null
+          }
+          check_forwarders() {
+            local fwd
+            fwd=$(mktemp -d) &&
+              cd "$fwd" &&
+              npm init -y >/dev/null &&
+              npm install --prefer-online "levelrail@${version}" "@levelrail/cli@${version}" &&
+              out=$(npx --no-install levelrail version) &&
+              printf '%s\n' "$out" | grep -F -- "$version" >/dev/null &&
+              out=$(npx --no-install levelrail-scoped version) &&
+              printf '%s\n' "$out" | grep -F -- "$version" >/dev/null
+          }
+          retry check_cli || { echo "levelrail-cli@${version} did not install and print its version" >&2; exit 1; }
           npm audit signatures
-          fwd=$(mktemp -d)
-          cd "$fwd"
-          npm init -y >/dev/null
-          npm install "levelrail@${version}" "@levelrail/cli@${version}"
-          out=$(npx --no-install levelrail version)
-          printf '%s\n' "$out" | grep -F -- "$version" >/dev/null || {
-            echo "levelrail forwarder printed no ${version}" >&2
-            exit 1
-          }
-          out=$(npx --no-install levelrail-scoped version)
-          printf '%s\n' "$out" | grep -F -- "$version" >/dev/null || {
-            echo "@levelrail/cli forwarder printed no ${version}" >&2
-            exit 1
-          }
+          retry check_forwarders || { echo "the levelrail and @levelrail/cli forwarders did not print ${version}" >&2; exit 1; }
           {
             echo "### npm install verified on ${{ matrix.os }}"
             echo "https://www.npmjs.com/package/levelrail-cli/v/${version}"
@@ -1361,4 +1371,18 @@ jobs:
         run: ./mcp-publisher login github-oidc
 
       - name: Publish
-        run: ./mcp-publisher publish
+        run: |
+          set -uo pipefail
+          version="${RELEASE_TAG#v}"
+          pkg=$(node -p "require('./server.json').packages[0].identifier")
+          # The registry validates against npm, which can lag the publish by minutes.
+          for _ in $(seq 1 18); do
+            if npm view "${pkg}@${version}" version >/dev/null 2>&1; then break; fi
+            sleep 10
+          done
+          for attempt in 1 2 3 4 5; do
+            if ./mcp-publisher publish; then exit 0; fi
+            echo "Publish attempt ${attempt} failed, retrying in 30s" >&2
+            sleep 30
+          done
+          exit 1

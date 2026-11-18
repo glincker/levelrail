@@ -1,5 +1,7 @@
 # levelrail-mcp
 
+<p align="center"><img src="https://raw.githubusercontent.com/glincker/levelrail/main/docs/assets/brand/social/github-social-1280x640-light.jpg" alt="Levelrail: a lightweight, self-hosted deployment platform" width="720"></p>
+
 The MCP server for [Levelrail](https://levelrail.com), a self-hosted deployment platform. It wraps the REST API of your own Levelrail instance so an MCP client can list, inspect and manage your deployments. There is no hosted endpoint: you run it yourself with an API token from your instance.
 
 ```

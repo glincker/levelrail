@@ -42,6 +42,10 @@ This is the reverse proxy variant of [Run a read-only demo](/run-a-read-only-dem
 - The demo process logs to the journal. Set `SystemMaxUse` and `MaxRetentionSec=3day` in `journald.conf` so the journal follows the same window.
 - Analytics are off by default, and a self-hosted instance never has them. The demo keeps aggregate counters that carry no personal data. See Analytics below for the opt-in.
 
+## Share tags and theme
+
+The demo page carries link-preview tags (title, description, `og:image` of `/demo-og.png`, a large Twitter card and a canonical link). Set `APP_DEMO_PUBLIC_URL` to the public https origin to change the URL used in them; it defaults to `https://demo.levelrail.com`, and a value that is not an absolute https URL is ignored with a log warning. The demo stays noindex. First-time visitors see the light theme; a stored choice of dark, OLED or system still wins.
+
 ## Analytics (opt-in)
 
 The demo can send a few named events to a PostHog project. It stays off unless both variables are set on the demo process:
@@ -62,6 +66,13 @@ IP addresses are seen by PostHog on receipt. Turn off IP capture in the PostHog 
 Google Tag Manager is a second, independent provider. It works alone or next to PostHog. Set one variable on the demo process:
 
 - `APP_DEMO_GTM_ID`: the container id, for example `GTM-XXXXXXX`. It must match `^GTM-[A-Z0-9]{4,12}$`; anything else is ignored with a log warning. The id is supplied at deploy time and is never committed.
+
+### Star count
+
+The top bar Star button shows the live GitHub star count. The demo process fetches it in the background once at start and at most every 6 hours, with a 5 second timeout. It never blocks a request and never fails the demo: on error the last good value is kept, or the count is omitted from `GET /api/v1/demo` and the button shows no number.
+
+- `APP_DEMO_STARS_REPO`: the `owner/name` repository to read. Defaults to `glincker/levelrail`. Set it empty to disable the fetch.
+- `APP_DEMO_STARS_DISABLE`: set to `true` to make no outbound request at all, for example on a host hardened to block egress.
 
 Nothing loads unless the variable is set, and a real instance never returns it. With it set, `GET /api/v1/demo` returns `gtm: {"id": "..."}` and the demo CSP additionally allows `www.googletagmanager.com` (script, connect, image) plus `*.google-analytics.com`, `*.analytics.google.com` and `*.googletagmanager.com` (connect, image). The CSP still has no `unsafe-inline` or `unsafe-eval` for scripts.
 

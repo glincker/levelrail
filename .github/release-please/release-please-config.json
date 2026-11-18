@@ -5,7 +5,7 @@
   "bump-minor-pre-major": false,
   "bump-patch-for-minor-pre-major": true,
   "include-component-in-tag": false,
-  "versioning": "default",
+  "versioning": "always-bump-patch",
   "prerelease": false,
   "changelog-sections": [
     {
@@ -61,7 +61,7 @@
       "component": "kit",
       "include-component-in-tag": true,
       "tag-separator": "/",
-      "versioning": "default"
+      "versioning": "always-bump-patch"
     }
   }
 }

@@ -1,4 +1,5 @@
 import { Link, useRouterState } from '@tanstack/react-router'
+import { useIsDemo } from '@/hooks/useDemo'
 import { useTranslation } from 'react-i18next'
 import { RocketGlassIcon } from '@thesvg/ui-react'
 import {
@@ -18,9 +19,10 @@ const FILL = ['w-0', 'w-1/4', 'w-1/2', 'w-3/4', 'w-full'] as const
 export function GetStartedNavItem() {
   const { t } = useTranslation('getStarted')
   const isRoot = useIsRoot()
+  const isDemo = useIsDemo()
   const { data: guide } = useSetupGuide()
   const pathname = useRouterState({ select: (s) => s.location.pathname })
-  if (!isRoot || !showGuideEntryPoints(guide)) return null
+  if (isDemo || !isRoot || !showGuideEntryPoints(guide)) return null
   const progress = firstAppProgress(guide)
   const label = progress
     ? t('chip.firstApp', progress)

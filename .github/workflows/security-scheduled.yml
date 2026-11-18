@@ -39,18 +39,21 @@ jobs:
       - name: Install govulncheck
         run: go install golang.org/x/vuln/cmd/govulncheck@v1.9.0
 
-      # Text mode lists only vulnerabilities whose code is reachable.
-      - name: Scan (reachable only)
+      # One scan: two whole-repo passes were killed on the runner (exit 143) after the repo grew.
+      - name: Scan (SARIF)
+        env:
+          GOMEMLIMIT: 6GiB
         run: |
+          govulncheck -format sarif ./... > govulncheck.sarif || true
           {
             echo '## govulncheck'
-            echo '```'
-            govulncheck ./... || true
-            echo '```'
+            echo
+            n=$(jq '[.runs[].results[]?] | length' govulncheck.sarif)
+            echo "Findings: ${n}"
+            if [ "${n}" -gt 0 ]; then
+              jq -r '.runs[].results[]? | "- \(.ruleId): \(.message.text)"' govulncheck.sarif | sort -u | head -50
+            fi
           } >> "$GITHUB_STEP_SUMMARY"
-
-      - name: Scan (SARIF)
-        run: govulncheck -format sarif ./... > govulncheck.sarif || true
 
       - name: Upload SARIF
         continue-on-error: true

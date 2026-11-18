@@ -11,7 +11,7 @@ import './index.css'
 import './lib/appearanceBoot'
 import './lib/density'
 import './lib/pageWidth'
-import { isUnauthorized } from './lib/apiError'
+import { isUnauthorized, shouldRetryQuery } from './lib/apiError'
 import { toastMutationError } from './lib/mutationErrorToast'
 import { clearStoredUsername, getStoredUsername } from './lib/authStore'
 import {
@@ -73,7 +73,13 @@ const queryClient = new QueryClient({
     },
   }),
   // staleTime dedupes mounts of the same key; polling hooks keep their own intervals (paused when hidden).
-  defaultOptions: { queries: { staleTime: 10_000, gcTime: 5 * 60_000 } },
+  defaultOptions: {
+    queries: {
+      staleTime: 10_000,
+      gcTime: 5 * 60_000,
+      retry: shouldRetryQuery,
+    },
+  },
 })
 attachConnectionClient(queryClient)
 // Signed in: one aggregate request seeds the shell's first-paint queries.

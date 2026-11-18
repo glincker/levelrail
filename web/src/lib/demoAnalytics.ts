@@ -6,6 +6,7 @@ export type DemoEventName =
   | 'demo_readonly_blocked'
   | 'demo_install_command_copied'
   | 'demo_github_click'
+  | 'demo_tour_step'
 
 type Props = Record<string, string>
 

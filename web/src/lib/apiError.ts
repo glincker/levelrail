@@ -6,6 +6,8 @@
 // to it uniformly: redirect to /login, distinct from how a 404/500 still
 // renders in each route's own error boundary.
 
+import { getDemoInfo } from './demoStore'
+
 export interface ApiErrorFix {
   id: string
   label: string
@@ -51,6 +53,24 @@ export function isUnauthorized(error: unknown): boolean {
   return error instanceof ApiError && error.status === 401
 }
 
+// The demo gate's refusals never change on retry, so callers treat them as final.
+export function isDemoFinalError(error: unknown): boolean {
+  if (!(error instanceof ApiError)) return false
+  if (error.status === 403) {
+    return error.code === 'demo_readonly' || error.code === 'demo_disabled'
+  }
+  // The demo build leaves some subsystems unconfigured and answers 501; that never changes on retry.
+  return error.status === 501 && getDemoInfo().enabled
+}
+
+// shouldRetryQuery keeps TanStack's default of 3 attempts except for demo refusals.
+export function shouldRetryQuery(
+  failureCount: number,
+  error: unknown,
+): boolean {
+  return !isDemoFinalError(error) && failureCount < 3
+}
+
 // TanStack Router's own errorComponent props type error as unknown, not
 // Error, since a thrown value is never actually guaranteed to be one.
 export function routeErrorMessage(error: unknown): string {
@@ -89,6 +109,8 @@ export async function readErrorMessage(
   }
   // Demo gate bodies carry a machine code in `error` and the human text in `message`.
   if (body?.error?.startsWith('demo_') && body.message) {
+    // Keep the code on the ApiError so the query client can treat it as final.
+    typedDetails.set(body.message, { code: body.error })
     return body.message
   }
   return body?.error ?? fallback

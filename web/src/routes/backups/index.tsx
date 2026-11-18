@@ -1,4 +1,6 @@
 import { useState } from 'react'
+import { DemoInstallState } from '@/components/demo/DemoInstallState'
+import { isDemoFinalError } from '@/lib/apiError'
 import { createFileRoute } from '@tanstack/react-router'
 import { useTranslation } from 'react-i18next'
 import { ShieldCheckGlassIcon, UploadGlassIcon } from '@thesvg/ui-react'
@@ -78,7 +80,9 @@ function BackupsPage() {
         />
       }
     >
-      {coverage.isError ? (
+      {coverage.isError && isDemoFinalError(coverage.error) ? (
+        <DemoInstallState />
+      ) : coverage.isError ? (
         <Alert variant="destructive">
           <AlertDescription className="space-y-2">
             <p>{t('page.loadFailed', { error: coverage.error.message })}</p>
