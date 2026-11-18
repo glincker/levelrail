@@ -1,8 +1,9 @@
 <div align="center">
 <img src="docs/assets/brand/levelrail-default.svg" alt="Levelrail logo" width="56" height="56">
 <h1>Levelrail</h1>
-<p><strong>Lightweight, self-hosted deployment platform: git push to production on your own servers and cloud accounts.</strong><br>
-The control plane is one Go binary that idles at about 200 MB of RAM ([measured idle footprint](docs/performance.md)). Apps you deploy use their own resources on top. Apache 2.0.</p>
+<p><strong>Git push to production on your own servers.</strong><br>
+A self-hosted deployment platform in one Go binary. The control plane idles at about 200 MB of RAM (<a href="docs/performance.md">measured</a>), with 570+ one-click apps, rollbacks, previews, HTTPS and databases built in.</p>
+<p><code>curl -fsSL https://levelrail.com/install.sh | sudo sh</code> &middot; <a href="https://demo.levelrail.com"><b>Try the live demo</b></a></p>
 <p>
   <a href="https://github.com/glincker/levelrail/stargazers"><img src="https://img.shields.io/github/stars/glincker/levelrail?style=flat&logo=github" alt="GitHub stars"></a>
   <a href="LICENSE"><img src="https://img.shields.io/github/license/glincker/levelrail" alt="License: Apache 2.0"></a>
