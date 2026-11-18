@@ -337,17 +337,17 @@ Apache 2.0。[LICENSE](../../LICENSE) を参照してください。
 
 ## 作者
 
-Levelrail は、[GLINR STUDIOS](https://glinr.com) と [theSVG](https://thesvg.org) の創業者である Gagan Deep Singh が作っています。姉妹プロジェクト：[theSVG](https://thesvg.org)（ブランドアイコンライブラリ）、[theauth](https://github.com/glincker/theauth)（AI エージェントと人間のためのオープンソースの認証）、[AskVerdict AI](https://askverdict.ai)。ご挨拶は [thegdsks.com](https://thegdsks.com) でどうぞ。
+Levelrail は、[GLINR Studios](https://glinr.com) と [theSVG](https://thesvg.org) の創業者である Gagan Deep Singh が作っています。姉妹プロジェクト：[theSVG](https://thesvg.org)（ブランドアイコンライブラリ）、[theauth](https://github.com/glincker/theauth)（AI エージェントと人間のためのオープンソースの認証）、[AskVerdict AI](https://askverdict.ai)。ご挨拶は [thegdsks.com](https://thegdsks.com) でどうぞ。
 
 <div align="center">
 
 <a href="https://glinr.com">
   <picture>
     <source media="(prefers-color-scheme: dark)" srcset="../../docs/assets/brand/glincker-light.svg">
-    <img src="../../docs/assets/brand/glincker-dark.svg" alt="GLINR STUDIOS" width="56">
+    <img src="../../docs/assets/brand/glincker-dark.svg" alt="GLINR Studios" width="56">
   </picture>
 </a>
 
-<sub>提供：<a href="https://glinr.com"><b>GLINR STUDIOS</b></a> &middot; アイコンは <a href="https://thesvg.org/icon/glincker">theSVG</a> より</sub>
+<sub>提供：<a href="https://glinr.com"><b>GLINR Studios</b></a> &middot; アイコンは <a href="https://thesvg.org/icon/glincker">theSVG</a> より</sub>
 
 </div>

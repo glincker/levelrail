@@ -19,5 +19,5 @@ org.opencontainers.image.title=${title}
 org.opencontainers.image.description=${description}
 org.opencontainers.image.url=https://levelrail.com
 org.opencontainers.image.licenses=Apache-2.0
-org.opencontainers.image.vendor=GLINR STUDIOS
+org.opencontainers.image.vendor=GLINR Studios
 LABELS

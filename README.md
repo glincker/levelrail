@@ -387,17 +387,17 @@ If Levelrail saves you a weekend, a [star](https://github.com/glincker/levelrail
 
 [![Star History Chart](https://api.star-history.com/svg?repos=glincker/levelrail&type=Date)](https://star-history.com/#glincker/levelrail&Date)
 
-Apache 2.0, see [LICENSE](LICENSE). Built by Gagan Deep Singh of [GLINR STUDIOS](https://glinr.com) and [theSVG](https://thesvg.org).
+Apache 2.0, see [LICENSE](LICENSE). Built by Gagan Deep Singh of [GLINR Studios](https://glinr.com) and [theSVG](https://thesvg.org).
 
 <div align="center">
 
 <a href="https://glinr.com">
   <picture>
     <source media="(prefers-color-scheme: dark)" srcset="docs/assets/brand/glincker-light.svg">
-    <img src="docs/assets/brand/glincker-dark.svg" alt="GLINR STUDIOS" width="56">
+    <img src="docs/assets/brand/glincker-dark.svg" alt="GLINR Studios" width="56">
   </picture>
 </a>
 
-<sub>Powered by <a href="https://glinr.com"><b>GLINR STUDIOS</b></a> &middot; icon from <a href="https://thesvg.org/icon/glincker">theSVG</a></sub>
+<sub>Powered by <a href="https://glinr.com"><b>GLINR Studios</b></a> &middot; icon from <a href="https://thesvg.org/icon/glincker">theSVG</a></sub>
 
 </div>

@@ -338,17 +338,17 @@ Apache 2.0, siehe [LICENSE](../../LICENSE).
 
 ## Entwickelt von
 
-Levelrail wird von Gagan Deep Singh entwickelt, Gründer von [GLINR STUDIOS](https://glinr.com) und [theSVG](https://thesvg.org). Schwesterprojekte: [theSVG](https://thesvg.org) (Bibliothek für Markensymbole), [theauth](https://github.com/glincker/theauth) (Open-Source-Authentifizierung für KI-Agenten und Menschen) und [AskVerdict AI](https://askverdict.ai). Einfach Hallo sagen unter [thegdsks.com](https://thegdsks.com).
+Levelrail wird von Gagan Deep Singh entwickelt, Gründer von [GLINR Studios](https://glinr.com) und [theSVG](https://thesvg.org). Schwesterprojekte: [theSVG](https://thesvg.org) (Bibliothek für Markensymbole), [theauth](https://github.com/glincker/theauth) (Open-Source-Authentifizierung für KI-Agenten und Menschen) und [AskVerdict AI](https://askverdict.ai). Einfach Hallo sagen unter [thegdsks.com](https://thegdsks.com).
 
 <div align="center">
 
 <a href="https://glinr.com">
   <picture>
     <source media="(prefers-color-scheme: dark)" srcset="../../docs/assets/brand/glincker-light.svg">
-    <img src="../../docs/assets/brand/glincker-dark.svg" alt="GLINR STUDIOS" width="56">
+    <img src="../../docs/assets/brand/glincker-dark.svg" alt="GLINR Studios" width="56">
   </picture>
 </a>
 
-<sub>Powered by <a href="https://glinr.com"><b>GLINR STUDIOS</b></a> &middot; Icon von <a href="https://thesvg.org/icon/glincker">theSVG</a></sub>
+<sub>Powered by <a href="https://glinr.com"><b>GLINR Studios</b></a> &middot; Icon von <a href="https://thesvg.org/icon/glincker">theSVG</a></sub>
 
 </div>

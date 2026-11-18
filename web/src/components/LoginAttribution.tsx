@@ -84,7 +84,7 @@ export function LoginAttribution() {
         className={linkClass}
       >
         <StudioMark className="size-3.5" />
-        <span className="font-medium tracking-wide">GLINR STUDIOS</span>
+        <span className="font-medium tracking-wide">GLINR Studios</span>
       </a>
     </div>
   )

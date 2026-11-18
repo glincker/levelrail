@@ -337,17 +337,17 @@ Apache 2.0，参见 [LICENSE](../../LICENSE)。
 
 ## 作者
 
-Levelrail 由 Gagan Deep Singh 打造，他是 [GLINR STUDIOS](https://glinr.com) 和 [theSVG](https://thesvg.org) 的创始人。姊妹项目：[theSVG](https://thesvg.org)（品牌图标库）、[theauth](https://github.com/glincker/theauth)（面向 AI agent 和人类的开源身份认证）和 [AskVerdict AI](https://askverdict.ai)。欢迎到 [thegdsks.com](https://thegdsks.com) 打个招呼。
+Levelrail 由 Gagan Deep Singh 打造，他是 [GLINR Studios](https://glinr.com) 和 [theSVG](https://thesvg.org) 的创始人。姊妹项目：[theSVG](https://thesvg.org)（品牌图标库）、[theauth](https://github.com/glincker/theauth)（面向 AI agent 和人类的开源身份认证）和 [AskVerdict AI](https://askverdict.ai)。欢迎到 [thegdsks.com](https://thegdsks.com) 打个招呼。
 
 <div align="center">
 
 <a href="https://glinr.com">
   <picture>
     <source media="(prefers-color-scheme: dark)" srcset="../../docs/assets/brand/glincker-light.svg">
-    <img src="../../docs/assets/brand/glincker-dark.svg" alt="GLINR STUDIOS" width="56">
+    <img src="../../docs/assets/brand/glincker-dark.svg" alt="GLINR Studios" width="56">
   </picture>
 </a>
 
-<sub>由 <a href="https://glinr.com"><b>GLINR STUDIOS</b></a> 提供支持 &middot; 图标来自 <a href="https://thesvg.org/icon/glincker">theSVG</a></sub>
+<sub>由 <a href="https://glinr.com"><b>GLINR Studios</b></a> 提供支持 &middot; 图标来自 <a href="https://thesvg.org/icon/glincker">theSVG</a></sub>
 
 </div>
