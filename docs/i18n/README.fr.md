@@ -19,7 +19,7 @@ Une plateforme de déploiement auto-hébergée dans un seul binaire Go. Le plan 
   <a href="https://levelrail.com?utm_source=github&amp;utm_medium=readme&amp;utm_campaign=nav">Site web</a> &middot;
   <a href="https://docs.levelrail.com?utm_source=github&amp;utm_medium=readme&amp;utm_campaign=nav">Docs</a> &middot;
   <a href="#démarrage-rapide">Démarrage rapide</a> &middot;
-  <a href="#face-à-coolify-dokploy-caprover-et-dokku">Comparaison</a> &middot;
+  <a href="#ce-qui-distingue-levelrail">Comparaison</a> &middot;
   <a href="../../docs/faq.md">FAQ</a> &middot;
   <a href="../../docs/roadmap.md">Roadmap</a> &middot;
   <a href="https://github.com/glincker/levelrail/discussions">Discussions</a>
@@ -30,7 +30,7 @@ Une plateforme de déploiement auto-hébergée dans un seul binaire Go. Le plan 
 <img src="../../docs/assets/demos/product-tour.gif" alt="Visite du dashboard Levelrail : vue d'ensemble du parc, liste des apps, historique des déploiements et métriques intégrées" width="880">
 </div>
 
-Levelrail transforme des serveurs Linux en cloud privé et fonctionne avec les clusters Kubernetes et les comptes cloud que vous avez déjà. Le mode mono-serveur est prêt pour la production, le multi-nœud est en beta. Chaque fonctionnalité porte une étiquette stable, beta ou expérimentale dans [Feature status](../../docs/feature-status.md).
+v1.x. Le mode mono-serveur est prêt pour la production, le multi-nœud est en beta. Levelrail transforme des serveurs Linux en cloud privé et fonctionne avec les clusters Kubernetes et les comptes cloud que vous avez déjà. Chaque fonctionnalité porte une étiquette stable, beta ou expérimentale dans [Feature status](../../docs/feature-status.md).
 
 ## Démarrage rapide
 
@@ -181,19 +181,21 @@ Do not write any token or password to a file or into this chat.
 | Releases signées | [Les vérifier](../../docs/installing.md#verifying-release-binaries) |
 | Honnête sur les lacunes | [Limites connues](../../docs/known-limits.md) |
 
-## Face à Coolify, Dokploy, CapRover et Dokku
+## Ce qui distingue Levelrail
 
-| | Levelrail | Coolify | Dokploy | CapRover | Dokku |
-| --- | --- | --- | --- | --- | --- |
-| **Accès des agents (MCP)** | Lecture et écriture, limité aux capacités, confirmation obligatoire, audité | Serveur officiel, lecture seule | Dépôt de serveur MCP existant | Non documenté | Non documenté |
-| **Migration vers Levelrail** | Importeurs en essai à blanc pour les quatre, l'ancien serveur continue de servir | n/a | n/a | n/a | n/a |
-| Contrôle des nœuds | Agent à connexion inversée | SSH + CLI | SSH + Engine API | Swarm API | Bash local |
-| Métriques et logs intégrés | Oui | Module optionnel | Binaire séparé | Non | Non |
-| Rollback | Images figées, conditionné à la disponibilité | Images conservées | Rollback Swarm | Manuel | Ordonnanceur par défaut : aucun |
-| Vérification des sauvegardes | Automatique | Contrôle de non-vacuité | Aucune | Aucune | Pas de sauvegardes |
-| Journal d'audit | Chaîné par hachage, vérifiable | Non documenté | Non documenté | Non documenté | Non documenté |
+Chaque affirmation renvoie à la page qui la prouve. La colonne de statut suit [Feature status](../../docs/feature-status.md).
 
-Les cellules n'indiquent que ce que dit la documentation publique de chaque projet (dernière vérification le 2026-11-07), et « Non documenté » signifie que nous n'avons rien trouvé, pas que la fonctionnalité est absente. Il s'agit d'un positionnement, pas d'un classement. Levelrail est le plus jeune des projets cités, avec moins d'utilisateurs et moins de vécu en production. Détails sourcés : [Comparison](../../docs/comparison.md).
+| Ce que vous obtenez | Statut | Preuve |
+| --- | --- | --- |
+| Un plan de contrôle qui consomme environ 200 Mo de RAM au repos, dans un seul binaire Go | mesuré | [Performance](../../docs/performance.md), [Benchmarks](../../docs/benchmarks.md) |
+| `git push` vers votre propre serveur en HTTPS, sans fournisseur, webhook ni clé SSH (les déploiements par webhook GitHub sont stables) | beta | [Déployer avec git push](../../docs/git-push-deploy.md) |
+| Rollback sur images épinglées, déploiements conditionnés à la disponibilité et rollback automatique après une surveillance post-déploiement | stable (signal de latence beta) | [Sûreté des déploiements](../../docs/deploy-safety.md) |
+| Sauvegardes vérifiées, avec des exercices de restauration dans une ressource temporaire | Postgres stable, autres moteurs beta | [Prouver que vos sauvegardes fonctionnent](../../docs/prove-your-backups-work.md), [Sauvegardes et stockage](../../docs/backups-and-storage.md) |
+| Un journal d'audit chaîné par hachage que vous pouvez vérifier, filtrer et exporter | activé par défaut | [Journal d'audit](../../docs/audit-log.md) |
+| Un agent de nœud qui se connecte au plan de contrôle en mTLS, donc les nœuds gérés n'ont besoin d'aucun port entrant | multi-nœud beta | [Architecture](../../docs/architecture.md), [Multi-nœud](../../docs/multi-node.md) |
+| Un serveur MCP aux outils limités par capacités et aux écritures soumises à confirmation, jamais dans le chemin de réconciliation | beta | [MCP](../../docs/mcp.md), [Surface d'outils](../../docs/mcp-tool-surface.md) |
+
+Venir d'une autre plateforme : [Migrer vers Levelrail](../../docs/migrate-to-levelrail.md). Notes d'architecture : [Comparaison](../../docs/comparison.md).
 
 ## Communauté
 

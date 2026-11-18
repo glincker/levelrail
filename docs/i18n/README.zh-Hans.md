@@ -16,7 +16,7 @@
   <a href="https://levelrail.com?utm_source=github&amp;utm_medium=readme&amp;utm_campaign=nav">官网</a> &middot;
   <a href="https://docs.levelrail.com?utm_source=github&amp;utm_medium=readme&amp;utm_campaign=nav">文档</a> &middot;
   <a href="#快速开始">快速开始</a> &middot;
-  <a href="#vs-coolify-dokploy-caprover-和-dokku">对比</a> &middot;
+  <a href="#levelrail-的特点">对比</a> &middot;
   <a href="../../docs/faq.md">FAQ</a> &middot;
   <a href="../../docs/roadmap.md">路线图</a> &middot;
   <a href="https://github.com/glincker/levelrail/discussions">讨论区</a>
@@ -29,7 +29,7 @@
 
 > 本译文由 AI 生成，可能存在错误，欢迎指正：请参阅 [docs/i18n/README.md](README.md)。
 
-Levelrail 把 Linux 服务器变成私有云，并可与你已有的 Kubernetes 集群和云账户配合使用。单服务器已可用于生产，多节点为 beta。每个功能在[功能状态](../../docs/feature-status.md)中都标有 stable、beta 或 experimental 标签。
+v1.x。单服务器已可用于生产，多节点为 beta。Levelrail 把 Linux 服务器变成私有云，并可与你已有的 Kubernetes 集群和云账户配合使用。每个功能在[功能状态](../../docs/feature-status.md)中都标有 stable、beta 或 experimental 标签。
 
 ## 快速开始
 
@@ -180,19 +180,21 @@ Do not write any token or password to a file or into this chat.
 | 签名发布 | [验证方法](../../docs/installing.md#verifying-release-binaries) |
 | 坦诚面对不足 | [已知限制](../../docs/known-limits.md) |
 
-## vs Coolify, Dokploy, CapRover 和 Dokku
+## Levelrail 的特点
 
-| | Levelrail | Coolify | Dokploy | CapRover | Dokku |
-| --- | --- | --- | --- | --- | --- |
-| **Agent 访问（MCP）** | 可读写，按能力限定范围，写入需确认，有审计 | 官方服务器，只读 | 存在 MCP 服务器仓库 | 未记载 | 未记载 |
-| **迁移进来** | 四者都有试运行导入器，旧服务器继续提供服务 | 不适用 | 不适用 | 不适用 | 不适用 |
-| 节点控制 | 反向连接的 agent | SSH + CLI | SSH + Engine API | Swarm API | 本地 bash |
-| 内置指标和日志 | 是 | 可选附加组件 | 独立二进制文件 | 否 | 否 |
-| 回滚 | 固定镜像，以就绪检查为门控 | 保留的镜像 | Swarm 回滚 | 手动 | 默认调度器：无 |
-| 备份验证 | 自动 | 非空检查 | 无 | 无 | 无备份 |
-| 审计日志 | 哈希链，可验证 | 未记载 | 未记载 | 未记载 | 未记载 |
+每一项都链接到支撑它的页面。状态列以[功能状态](../../docs/feature-status.md)为准。
 
-表格单元格只陈述各项目公开文档所写的内容（最后核对于 2026-11-07），“未记载”表示我们没有找到相关说明，并不意味着它不存在。这是定位说明，不是排名。Levelrail 是这里最年轻的项目，用户更少，生产环境的运行经验也更少。附来源的详细对比：[对比](../../docs/comparison.md)。
+| 你能得到什么 | 状态 | 依据 |
+| --- | --- | --- |
+| 单个 Go 二进制文件的控制平面，空闲时约占用 200 MB 内存 | 已实测 | [性能](../../docs/performance.md)、[基准测试](../../docs/benchmarks.md) |
+| 通过 HTTPS 向你自己的服务器 `git push`，无需提供商、webhook 或 SSH 密钥（GitHub webhook 部署为 stable） | beta | [用 git push 部署](../../docs/git-push-deploy.md) |
+| 固定镜像回滚、以就绪检查为门控的发布，以及部署后观察触发的自动回滚 | stable（延迟信号为 beta） | [部署安全](../../docs/deploy-safety.md) |
+| 经过验证的备份，并可在临时资源中做恢复演练 | Postgres 为 stable，其他引擎为 beta | [证明你的备份可用](../../docs/prove-your-backups-work.md)、[备份与存储](../../docs/backups-and-storage.md) |
+| 可验证、可筛选、可导出的哈希链审计日志 | 默认开启 | [审计日志](../../docs/audit-log.md) |
+| 通过 mTLS 主动连接控制平面的节点 agent，受管节点无需开放入站端口 | 多节点为 beta | [架构](../../docs/architecture.md)、[多节点](../../docs/multi-node.md) |
+| 带能力范围限定的工具、写入需确认的 MCP 服务器，且不在调和路径中 | beta | [MCP](../../docs/mcp.md)、[工具清单](../../docs/mcp-tool-surface.md) |
+
+从其他平台迁移：[迁移到 Levelrail](../../docs/migrate-to-levelrail.md)。架构说明：[对比](../../docs/comparison.md)。
 
 ## 社区
 
