@@ -77,7 +77,7 @@ func injectBrandHead(page []byte, b *brand.Brand, r *http.Request, opts HeadOpti
 		return page
 	}
 	if !opts.isZero() {
-		return injectShareHead(page, b, opts)
+		return injectShareHead(page, b, opts, !optedOutOfTracking(r))
 	}
 	name := html.EscapeString(b.Name)
 	img := html.EscapeString(requestOrigin(r) + iconPath)

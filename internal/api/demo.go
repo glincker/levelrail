@@ -167,6 +167,14 @@ func demoGTMCSP(csp string) string {
 	return widenCSP(csp, gtm, gtm+beacons, gtm+beacons)
 }
 
+// DemoGTMID returns the validated Google Tag Manager container id in demo mode, or "".
+func (rt *Router) DemoGTMID() string {
+	if rt.demo == nil || rt.demo.gtm == nil {
+		return ""
+	}
+	return rt.demo.gtm.ID
+}
+
 // demoAnalyticsCSP widens the CSP to the analytics hosts in demo mode only.
 func (rt *Router) demoAnalyticsCSP(next http.Handler) http.Handler {
 	if rt.demo == nil {
