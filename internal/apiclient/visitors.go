@@ -27,6 +27,16 @@ type VisitorDomain struct {
 	Visitors int    `json:"visitors"`
 }
 
+// VisitorClasses is requests per traffic class.
+type VisitorClasses struct {
+	Page     int `json:"page"`
+	API      int `json:"api"`
+	Asset    int `json:"asset"`
+	Bot      int `json:"bot"`
+	Prefetch int `json:"prefetch"`
+	Other    int `json:"other"`
+}
+
 // Visitors mirrors the body of GET /api/v1/apps/{name}/visitors.
 type Visitors struct {
 	App         string          `json:"app"`
@@ -39,6 +49,9 @@ type Visitors struct {
 	Status      map[string]int  `json:"status"`
 	TopPaths    []VisitorItem   `json:"top_paths"`
 	TopRefs     []VisitorItem   `json:"top_referrers"`
+	Classes     VisitorClasses  `json:"classes"`
+	TopPages    []VisitorItem   `json:"top_pages"`
+	PagesOnly   bool            `json:"pages_only"`
 	Series      []VisitorBucket `json:"series"`
 	Domains     []VisitorDomain `json:"domains"`
 	OldestKept  time.Time       `json:"oldest_record"`

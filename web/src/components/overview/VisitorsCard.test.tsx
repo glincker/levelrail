@@ -48,6 +48,30 @@ describe('VisitorsBody', () => {
     expect(screen.getByText('a.io')).toBeTruthy()
   })
 
+  it('lists page views only when pages_only is set', () => {
+    render(
+      <VisitorsBody
+        data={{
+          ...base,
+          pages_only: true,
+          classes: {
+            page: 3,
+            api: 80,
+            asset: 15,
+            bot: 2,
+            prefetch: 0,
+            other: 0,
+          },
+          top_pages: [{ label: '/pricing', count: 3 }],
+          top_paths: [{ label: '/api/v1/stats', count: 80 }],
+        }}
+      />,
+    )
+    expect(screen.getByText('/pricing')).toBeTruthy()
+    expect(screen.queryByText('/api/v1/stats')).toBeNull()
+    expect(screen.getByText('visitors.classes.api 80')).toBeTruthy()
+  })
+
   it('notes partial data when the ring starts after the window', () => {
     render(
       <VisitorsBody

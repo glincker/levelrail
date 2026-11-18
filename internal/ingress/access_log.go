@@ -11,6 +11,7 @@ import (
 	"sync/atomic"
 	"time"
 
+	"github.com/GLINCKER/levelrail/internal/trafficclass"
 	"github.com/GLINCKER/levelrail/kit/ids"
 )
 
@@ -54,6 +55,8 @@ type AccessRecord struct {
 	UserAgent string     `json:"-"`
 	// Referrer is the Referer host only, kept in memory for the visitor summary and never serialized.
 	Referrer string `json:"-"`
+	// Class is what the edge decided this request was; it feeds the visitor summary only.
+	Class trafficclass.Class `json:"-"`
 }
 
 // maxRecordedAgent bounds the User-Agent kept per record.

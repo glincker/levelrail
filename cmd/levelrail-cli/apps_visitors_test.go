@@ -48,6 +48,47 @@ func TestAppsVisitorsSendsWindowAndPrintsHistory(t *testing.T) {
 	}
 }
 
+func TestAppsVisitorsPagesOnlyPrintsClassSplit(t *testing.T) {
+	srv := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, _ *http.Request) {
+		w.Header().Set("Content-Type", "application/json")
+		_ = json.NewEncoder(w).Encode(apiclient.Visitors{
+			App: "web", Window: "24h", Requests: 40, Visitors: 3, PagesOnly: true,
+			Status:   map[string]int{"2xx": 40},
+			TopPaths: []apiclient.VisitorItem{{Label: "/api/v1/stats", Count: 30}},
+			TopPages: []apiclient.VisitorItem{{Label: "/pricing", Count: 4}},
+			Classes:  apiclient.VisitorClasses{Page: 4, API: 30, Asset: 5, Bot: 1},
+		})
+	}))
+	t.Cleanup(srv.Close)
+	code, out, errOut := runVisitors(t, "web", "--api-url", srv.URL)
+	if code != exitOK {
+		t.Fatalf("exit = %d, stderr = %q", code, errOut)
+	}
+	for _, want := range []string{"classes  page 4, api 30, asset 5, bot 1, prefetch 0, other 0", "PAGE", "VIEWS", "/pricing"} {
+		if !strings.Contains(out, want) {
+			t.Errorf("output missing %q:\n%s", want, out)
+		}
+	}
+	if strings.Contains(out, "/api/v1/stats") {
+		t.Errorf("top pages must not list API paths:\n%s", out)
+	}
+}
+
+func TestAppsVisitorsPagesOnlyWithoutPageViews(t *testing.T) {
+	srv := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, _ *http.Request) {
+		w.Header().Set("Content-Type", "application/json")
+		_ = json.NewEncoder(w).Encode(apiclient.Visitors{
+			App: "web", Window: "24h", Requests: 36, PagesOnly: true, Status: map[string]int{"2xx": 36},
+			Classes: apiclient.VisitorClasses{API: 30, Asset: 5, Bot: 1},
+		})
+	}))
+	t.Cleanup(srv.Close)
+	_, out, _ := runVisitors(t, "web", "--api-url", srv.URL)
+	if !strings.Contains(out, "No page views yet. 36 API, asset and bot requests were seen.") {
+		t.Errorf("output:\n%s", out)
+	}
+}
+
 func TestAppsVisitorsNeedsAnApp(t *testing.T) {
 	if code, _, _ := runVisitors(t); code != exitUsage {
 		t.Fatalf("exit = %d, want usage", code)

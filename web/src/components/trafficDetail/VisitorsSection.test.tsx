@@ -50,6 +50,68 @@ describe('VisitorsDetail', () => {
   })
 })
 
+describe('VisitorsDetail with page classes', () => {
+  const classed: AppVisitors = {
+    ...data,
+    requests: 120,
+    pages_only: true,
+    classes: { page: 4, api: 100, asset: 12, bot: 3, prefetch: 1, other: 0 },
+    top_pages: [{ label: '/pricing', count: 4 }],
+    top_paths: [{ label: '/api/v1/stats', count: 100 }],
+  }
+
+  it('lists page views only and shows the class split', () => {
+    render(<VisitorsDetail data={classed} />)
+    expect(screen.getByText('/pricing')).toBeTruthy()
+    expect(screen.queryByText('/api/v1/stats')).toBeNull()
+    expect(screen.getByText('visitors.topPagesCaption')).toBeTruthy()
+    expect(screen.getByText('visitors.classes.api 100')).toBeTruthy()
+    expect(screen.getByText('visitors.classes.asset 12')).toBeTruthy()
+    expect(screen.getByText('visitors.classes.bot 3')).toBeTruthy()
+  })
+
+  it('explains an API-only window instead of an empty list', () => {
+    render(
+      <VisitorsDetail
+        data={{
+          ...classed,
+          top_pages: [],
+          classes: {
+            page: 0,
+            api: 100,
+            asset: 12,
+            bot: 3,
+            prefetch: 0,
+            other: 0,
+          },
+        }}
+      />,
+    )
+    expect(screen.getByText('visitors.noPageViews')).toBeTruthy()
+  })
+
+  it('keeps every path while the feature is off', () => {
+    render(<VisitorsDetail data={{ ...classed, pages_only: false }} />)
+    expect(screen.getByText('/api/v1/stats')).toBeTruthy()
+    expect(screen.queryByText('visitors.classSplit')).toBeNull()
+    expect(screen.getByText('visitors.topPathsCaption')).toBeTruthy()
+  })
+
+  it('falls back to all paths when an older server sends no classes', () => {
+    render(
+      <VisitorsDetail
+        data={{
+          ...classed,
+          classes: undefined,
+          top_pages: undefined,
+          pages_only: true,
+        }}
+      />,
+    )
+    expect(screen.getByText('/api/v1/stats')).toBeTruthy()
+  })
+})
+
 describe('VisitorsExportButton', () => {
   beforeEach(() => {
     vi.clearAllMocks()

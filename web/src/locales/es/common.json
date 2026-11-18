@@ -1401,7 +1401,20 @@
     "unavailable": "Las cifras de visitantes necesitan el registro de acceso del borde, que no está activado en esta instalación.",
     "chartHeading": "Solicitudes en el tiempo",
     "exportCsv": "Descargar CSV",
-    "exportEmpty": "No hay nada que exportar en esta ventana."
+    "exportEmpty": "No hay nada que exportar en esta ventana.",
+    "topPagesCaption": "Las 10 páginas con más vistas en este periodo",
+    "viewsHeader": "Vistas de página",
+    "classSplit": "Solicitudes por tipo",
+    "classLabel": "Solicitudes por clase de tráfico",
+    "classes": {
+      "page": "Páginas",
+      "api": "API",
+      "asset": "Recursos",
+      "bot": "Bots",
+      "prefetch": "Precarga",
+      "other": "Otras"
+    },
+    "noPageViews": "Aún no hay vistas de página. Se vieron {{total}} solicitudes de API, recursos y bots."
   },
   "overviewHero": {
     "addressInfo": "Sobre esta dirección",

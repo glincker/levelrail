@@ -107,6 +107,18 @@ export function VisitorsBody({ data }: { data: AppVisitors }) {
           })}
         </p>
       ) : null}
+      {data.pages_only === true && data.classes ? (
+        <ul
+          aria-label={t('visitors.classLabel')}
+          className="flex flex-wrap gap-x-3 gap-y-0.5 text-xs tabular-nums text-muted-foreground"
+        >
+          {(['page', 'api', 'asset', 'bot'] as const).map((c) => (
+            <li key={c}>
+              {t(`visitors.classes.${c}`)} {data.classes?.[c] ?? 0}
+            </li>
+          ))}
+        </ul>
+      ) : null}
       {data.domains.length > 1 ? (
         <div>
           <h4 className="mb-1 text-xs font-medium text-muted-foreground">
@@ -140,7 +152,12 @@ export function VisitorsBody({ data }: { data: AppVisitors }) {
           {t('visitors.details')}
         </summary>
         <div className="mt-2 grid gap-4 sm:grid-cols-2">
-          <TopList title={t('visitors.topPaths')} rows={data.top_paths} />
+          <TopList
+            title={t('visitors.topPaths')}
+            rows={
+              data.pages_only === true ? (data.top_pages ?? []) : data.top_paths
+            }
+          />
           <TopList
             title={t('visitors.topReferrers')}
             rows={data.top_referrers}

@@ -84,7 +84,7 @@ func (m requestStatsModule) ServeHTTP(w http.ResponseWriter, r *http.Request, ne
 		Millis: float64(elapsed) / float64(time.Millisecond), BytesIn: in, BytesOut: rec.bytes,
 		RequestID: requestID, TraceID: traceID, Upstream: upstreamErr, Cold: rec.cold,
 		Client: requestClientAddr(r), UserAgent: truncate(r.UserAgent(), maxRecordedAgent),
-		Referrer: requestReferrerHost(r),
+		Referrer: requestReferrerHost(r), Class: requestClass(m.Key, r, rec.contentType, status),
 	}
 	if DefaultAccessLog().IdentityWanted() {
 		ip := ""
@@ -109,6 +109,8 @@ type statusRecorder struct {
 	status int
 	bytes  int64
 	cold   bool
+	// contentType is the response Content-Type at the final header write, for the classifier.
+	contentType string
 }
 
 func (s *statusRecorder) WriteHeader(code int) {
@@ -118,6 +120,7 @@ func (s *statusRecorder) WriteHeader(code int) {
 	}
 	if s.status == 0 && (code >= 200 || code == http.StatusSwitchingProtocols) {
 		s.status = code
+		s.contentType = s.Header().Get("Content-Type")
 	}
 	s.ResponseWriterWrapper.WriteHeader(code)
 }
@@ -125,6 +128,7 @@ func (s *statusRecorder) WriteHeader(code int) {
 func (s *statusRecorder) Write(p []byte) (int, error) {
 	if s.status == 0 {
 		s.status = http.StatusOK
+		s.contentType = s.Header().Get("Content-Type")
 	}
 	n, err := s.ResponseWriterWrapper.Write(p)
 	s.bytes += int64(n)

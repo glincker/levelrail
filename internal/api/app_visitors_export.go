@@ -44,11 +44,21 @@ func writeVisitorsCSV(w io.Writer, res AppVisitorsResponse) error {
 	for _, k := range classes {
 		row("status", k, res.Status[k], 0, "")
 	}
+	c := res.Classes
+	for _, kv := range []struct {
+		name string
+		n    int
+	}{{"page", c.Page}, {"api", c.API}, {"asset", c.Asset}, {"bot", c.Bot}, {"prefetch", c.Prefetch}, {"other", c.Other}} {
+		row("class", kv.name, kv.n, 0, "")
+	}
 	for _, b := range res.Series {
 		row("series", b.Start.UTC().Format(time.RFC3339), b.Requests, b.Visitors, "")
 	}
 	for _, p := range res.TopPaths {
 		row("path", p.Label, p.Count, 0, "")
+	}
+	for _, p := range res.TopPages {
+		row("page", p.Label, p.Count, 0, "")
 	}
 	for _, p := range res.TopRefs {
 		row("referrer", p.Label, p.Count, 0, "")

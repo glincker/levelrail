@@ -1392,7 +1392,20 @@
     "unavailable": "訪問者数にはエッジのアクセスログが必要ですが、このインストールでは有効になっていません。",
     "chartHeading": "リクエスト数の推移",
     "exportCsv": "CSVをダウンロード",
-    "exportEmpty": "この期間にエクスポートできるものはありません。"
+    "exportEmpty": "この期間にエクスポートできるものはありません。",
+    "topPagesCaption": "この期間のページビュー上位10ページ",
+    "viewsHeader": "ページビュー",
+    "classSplit": "種類別のリクエスト",
+    "classLabel": "トラフィック種別ごとのリクエスト",
+    "classes": {
+      "page": "ページ",
+      "api": "API",
+      "asset": "アセット",
+      "bot": "ボット",
+      "prefetch": "プリフェッチ",
+      "other": "その他"
+    },
+    "noPageViews": "ページビューはまだありません。API、アセット、ボットのリクエストが{{total}}件ありました。"
   },
   "overviewHero": {
     "addressInfo": "このアドレスについて",

@@ -25,6 +25,16 @@ export interface VisitorDomain {
   visitors: number
 }
 
+/** Requests per traffic class; additive, absent on servers that predate the classifier. */
+export interface VisitorClasses {
+  page: number
+  api: number
+  asset: number
+  bot: number
+  prefetch: number
+  other: number
+}
+
 export interface AppVisitors {
   app: string
   domain?: string
@@ -35,6 +45,11 @@ export interface AppVisitors {
   visitors: number
   status: Record<'2xx' | '3xx' | '4xx' | '5xx', number>
   top_paths: VisitorCount[]
+  classes?: VisitorClasses
+  /** Page-view paths only. */
+  top_pages?: VisitorCount[]
+  /** True when the traffic-analytics beta is on: show top_pages, not top_paths. */
+  pages_only?: boolean
   top_referrers: VisitorCount[]
   series: VisitorBucket[]
   domains: VisitorDomain[]
