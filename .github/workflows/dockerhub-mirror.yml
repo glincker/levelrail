@@ -1,0 +1,79 @@
+name: dockerhub-mirror
+
+# Backfills one existing GHCR tag to Docker Hub when the release run skipped
+# or failed the mirror. It never builds anything.
+
+on:
+  workflow_dispatch:
+    inputs:
+      tag:
+        description: Existing GHCR tag of ghcr.io/glincker/levelrail to mirror (for example v1.4.0)
+        required: true
+        type: string
+
+permissions:
+  contents: read
+  packages: read
+
+concurrency:
+  group: dockerhub-mirror-${{ inputs.tag }}
+  cancel-in-progress: false
+
+jobs:
+  mirror:
+    name: Mirror ${{ inputs.tag }} to Docker Hub
+    runs-on: ubuntu-latest
+    timeout-minutes: 10
+    permissions:
+      contents: read
+      packages: read
+      id-token: write
+    env:
+      TAG: ${{ inputs.tag }}
+      NAMESPACE: ${{ vars.DOCKERHUB_NAMESPACE || 'levelrail' }}
+      HAS_DOCKERHUB: ${{ secrets.DOCKERHUB_TOKEN != '' && secrets.DOCKERHUB_USERNAME != '' }}
+    steps:
+      - name: Validate inputs
+        run: |
+          set -euo pipefail
+          if ! printf '%s' "$TAG" | grep -Eq '^[A-Za-z0-9_][A-Za-z0-9_.-]{0,127}$'; then
+            echo "::error::tag '$TAG' is not a valid image tag"
+            exit 1
+          fi
+          if [ "$HAS_DOCKERHUB" != "true" ]; then
+            echo "::error::DOCKERHUB_USERNAME and DOCKERHUB_TOKEN must both be set as repository secrets"
+            exit 1
+          fi
+
+      - name: Set up Buildx
+        uses: docker/setup-buildx-action@594f3bf4285d9ea8dc53c9a0c9c4092420091003 # v4
+
+      - name: Log in to GHCR
+        uses: docker/login-action@8aa5831fb8d48d8f76594c7ddde61ae58019f550 # v4
+        with:
+          registry: ghcr.io
+          username: ${{ github.actor }}
+          password: ${{ secrets.GITHUB_TOKEN }}
+
+      - name: Confirm the GHCR tag exists
+        run: docker buildx imagetools inspect "ghcr.io/glincker/levelrail:$TAG"
+
+      - name: Install cosign
+        uses: sigstore/cosign-installer@756fe2d284c7292c4e9b62c8a28f1e5629c59532 # v4.1.3
+
+      - name: Log in to Docker Hub
+        uses: docker/login-action@8aa5831fb8d48d8f76594c7ddde61ae58019f550 # v4
+        with:
+          username: ${{ secrets.DOCKERHUB_USERNAME }}
+          password: ${{ secrets.DOCKERHUB_TOKEN }}
+
+      # Copies the already pushed multi-arch index, so Docker Hub gets the
+      # same digest and the cosign signature below covers both registries.
+      - name: Mirror image to Docker Hub
+        run: |
+          set -euo pipefail
+          src="ghcr.io/glincker/levelrail:$TAG"
+          docker buildx imagetools create -t "docker.io/$NAMESPACE/levelrail:$TAG" "$src"
+          digest="sha256:$(docker buildx imagetools inspect "$src" --raw | sha256sum | cut -d' ' -f1)"
+          cosign sign --yes "docker.io/$NAMESPACE/levelrail@${digest}"
+          docker buildx imagetools inspect "docker.io/$NAMESPACE/levelrail:$TAG"

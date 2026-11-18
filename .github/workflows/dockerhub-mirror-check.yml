@@ -1,0 +1,118 @@
+name: dockerhub-mirror-check
+
+# Release mirroring to Docker Hub skips silently when the secrets or the
+# DOCKERHUB_PUBLISH_ENABLED variable are missing. This check makes that loud.
+# Optional repo variables:
+#   DOCKERHUB_NAMESPACE             Docker Hub namespace (default: levelrail)
+#   DOCKERHUB_MIRROR_GRACE_MINUTES  minutes after the release before a missing
+#                                   tag counts as a failure (default: 90)
+
+on:
+  schedule:
+    - cron: "17 */6 * * *"
+  workflow_dispatch:
+
+permissions:
+  contents: read
+  issues: write
+
+concurrency:
+  group: dockerhub-mirror-check
+  cancel-in-progress: false
+
+jobs:
+  check:
+    runs-on: ubuntu-latest
+    timeout-minutes: 5
+    env:
+      GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+      REPO: ${{ github.repository }}
+      NAMESPACE: ${{ vars.DOCKERHUB_NAMESPACE || 'levelrail' }}
+      GRACE_MINUTES: ${{ vars.DOCKERHUB_MIRROR_GRACE_MINUTES || '90' }}
+      PUBLISH_ENABLED: ${{ vars.DOCKERHUB_PUBLISH_ENABLED }}
+      LABEL: release-mirror
+    steps:
+      - name: Check Docker Hub for the latest release tag
+        run: |
+          set -euo pipefail
+
+          case "$GRACE_MINUTES" in
+            ''|*[!0-9]*) echo "::error::DOCKERHUB_MIRROR_GRACE_MINUTES must be a whole number, got '$GRACE_MINUTES'"; exit 1 ;;
+          esac
+
+          # Newest published release, prereleases included (they are mirrored too).
+          read -r tag published < <(gh api "repos/$REPO/releases?per_page=10" \
+            --jq '[.[] | select(.draft | not)][0] | "\(.tag_name) \(.published_at)"')
+          if [ -z "${tag:-}" ] || [ "$tag" = "null" ]; then
+            echo "::notice::No published release found, nothing to check"
+            exit 0
+          fi
+
+          age_min=$(( ( $(date -u +%s) - $(date -u -d "$published" +%s) ) / 60 ))
+          title="Docker Hub is missing $tag"
+
+          existing=$(gh issue list --repo "$REPO" --label "$LABEL" --state open \
+            --search "\"$title\" in:title" --json number,title \
+            --jq "[.[] | select(.title == \"$title\")][0].number // empty")
+
+          # Any other open release-mirror issue is for an older tag. Close it
+          # when its tag has landed (or been superseded by a newer release).
+          close_issue() {
+            gh issue close "$1" --repo "$REPO" --comment "$2"
+          }
+
+          code=$(curl -sS -o /dev/null -w '%{http_code}' \
+            "https://hub.docker.com/v2/repositories/$NAMESPACE/levelrail/tags/$tag" || echo 000)
+          echo "Docker Hub tag lookup for $NAMESPACE/levelrail:$tag returned HTTP $code (release age ${age_min}m, grace ${GRACE_MINUTES}m)"
+
+          if [ "$code" = "200" ]; then
+            gh issue list --repo "$REPO" --label "$LABEL" --state open --json number --jq '.[].number' |
+              while read -r n; do
+                close_issue "$n" "Docker Hub now has $tag (or a newer release replaced it). Closing automatically."
+              done
+            exit 0
+          fi
+
+          if [ "$code" != "404" ]; then
+            echo "::warning::Docker Hub API returned HTTP $code, not treating it as a missing tag"
+            exit 0
+          fi
+
+          if [ "$age_min" -le "$GRACE_MINUTES" ]; then
+            echo "::notice::$tag is ${age_min}m old, inside the ${GRACE_MINUTES}m grace window"
+            exit 0
+          fi
+
+          # Older issues for previous tags are stale now: a newer release exists.
+          gh issue list --repo "$REPO" --label "$LABEL" --state open --json number,title \
+            --jq ".[] | select(.title != \"$title\") | .number" |
+            while read -r n; do
+              close_issue "$n" "Superseded by a newer release ($tag)."
+            done
+
+          body_file="$RUNNER_TEMP/body.md"
+          {
+            echo "The latest release \`$tag\` was published ${age_min} minutes ago, but \`docker.io/$NAMESPACE/levelrail:$tag\` is not on Docker Hub (grace window: ${GRACE_MINUTES} minutes)."
+            echo
+            echo "The release workflow skips the Docker Hub mirror without failing when its preconditions are not met. Likely causes:"
+            echo
+            echo "- Repository secret \`DOCKERHUB_USERNAME\` or \`DOCKERHUB_TOKEN\` is missing or empty."
+            echo "- The access token expired or was revoked (the login step would then fail, check the release run)."
+            echo "- Repository variable \`DOCKERHUB_PUBLISH_ENABLED\` is not set to \`true\` (currently: \`${PUBLISH_ENABLED:-unset}\`)."
+            echo "- Repository variable \`DOCKERHUB_NAMESPACE\` points at the wrong namespace (currently: \`$NAMESPACE\`)."
+            echo
+            echo "To backfill after fixing the cause, run the \`dockerhub-mirror\` workflow with \`tag\` set to \`$tag\`."
+            echo "This issue closes itself once the tag appears on Docker Hub."
+            echo
+            echo "Last checked: $(date -u +%Y-%m-%dT%H:%M:%SZ), [run]($GITHUB_SERVER_URL/$REPO/actions/runs/$GITHUB_RUN_ID)"
+          } > "$body_file"
+
+          gh label create "$LABEL" --repo "$REPO" --color d93f0b \
+            --description "Release artifact failed to reach a mirror registry" --force >/dev/null
+
+          if [ -n "$existing" ]; then
+            gh issue edit "$existing" --repo "$REPO" --body-file "$body_file"
+            echo "Updated issue #$existing"
+          else
+            gh issue create --repo "$REPO" --title "$title" --label "$LABEL" --body-file "$body_file"
+          fi
