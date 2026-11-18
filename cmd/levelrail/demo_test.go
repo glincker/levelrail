@@ -101,6 +101,7 @@ func TestRunDemoServeFailsClosed(t *testing.T) {
 	if err := os.WriteFile(brandFile, []byte("name: Test\nshort_name: tp\nbinary_name: tp\ndomain: example.test\n"), 0o600); err != nil {
 		t.Fatalf("write brand: %v", err)
 	}
+	errDockerSocket := errors.New("a Docker socket is present")
 	tests := []struct {
 		name string
 		env  map[string]string
@@ -109,6 +110,7 @@ func TestRunDemoServeFailsClosed(t *testing.T) {
 		{"no opt in", nil, nil},
 		{"real docker host", map[string]string{"APP_DEMO_MODE": "1", "DOCKER_HOST": "unix:///var/run/docker.sock"}, nil},
 		{"real data dir", map[string]string{"APP_DEMO_MODE": "1"}, demo.ErrNotDemoInstance},
+		{"docker socket present", map[string]string{"APP_DEMO_MODE": "1"}, errDockerSocket},
 	}
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
@@ -119,11 +121,23 @@ func TestRunDemoServeFailsClosed(t *testing.T) {
 			for k, v := range tt.env {
 				t.Setenv(k, v)
 			}
+			// Hosts with a real Docker socket must not mask the case under test.
+			present := errors.Is(tt.want, errDockerSocket)
+			t.Cleanup(demo.SetSocketStatForTest(func(string) (os.FileInfo, error) {
+				if present {
+					return os.Stat(os.DevNull)
+				}
+				return nil, os.ErrNotExist
+			}))
 			err := runDemoServe(context.Background(), demoTestLogger())
 			if err == nil {
 				t.Fatal("runDemoServe() = nil, want a refusal")
 			}
-			if tt.want != nil && !errors.Is(err, tt.want) {
+			if errors.Is(tt.want, errDockerSocket) {
+				if !strings.Contains(err.Error(), errDockerSocket.Error()) {
+					t.Errorf("error = %v, want a Docker socket refusal", err)
+				}
+			} else if tt.want != nil && !errors.Is(err, tt.want) {
 				t.Errorf("error = %v, want %v", err, tt.want)
 			}
 		})

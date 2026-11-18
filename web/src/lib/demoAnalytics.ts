@@ -22,9 +22,6 @@ declare global {
   }
 }
 
-// Not on DemoInfo so the GTM provider stays independent of the PostHog one.
-type GtmPayload = { gtm?: { id: string } }
-
 const GTM_ID = /^GTM-[A-Z0-9]{4,12}$/
 let gtmActive = false
 
@@ -88,7 +85,7 @@ function initGtm(id: string): void {
 /** initDemoAnalytics loads each opted-in provider lazily, unless the visitor sends Do Not Track. */
 export function initDemoAnalytics(info: DemoInfo): Promise<void> {
   if (info.enabled && typeof document !== 'undefined') {
-    const g = (info as DemoInfo & GtmPayload).gtm
+    const g = info.gtm
     if (g && !doNotTrackEnabled(navigator) && !gtmActive) {
       utm = readUtm(window.location.search)
       initGtm(g.id)
