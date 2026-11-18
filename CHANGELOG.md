@@ -1,5 +1,20 @@
 # Changelog
 
+## [1.5.3](https://github.com/glincker/levelrail/compare/v1.5.2...v1.5.3) (2026-11-18)
+
+
+### Bug Fixes
+
+* let link preview bots read the live demo page ([#1602](https://github.com/glincker/levelrail/issues/1602)) ([fe992bb](https://github.com/glincker/levelrail/commit/fe992bb4f7f006160b6e7868ebb66f7d28afa69f))
+
+
+### Documentation
+
+* retranslate the README and fix the translation sync script ([#1601](https://github.com/glincker/levelrail/issues/1601)) ([9945c59](https://github.com/glincker/levelrail/commit/9945c5983da3c0bd102948ece5a009d1c838f80d))
+* shorten the README to the essentials ([#1600](https://github.com/glincker/levelrail/issues/1600)) ([9e2e9e0](https://github.com/glincker/levelrail/commit/9e2e9e0922676ada79d408aba459b1f0d48b3a88))
+* spell GLINR Studios consistently ([9bdd052](https://github.com/glincker/levelrail/commit/9bdd0523ef3131253c809624d14fb1b38e584ee3))
+* spell GLINR Studios consistently ([61ea157](https://github.com/glincker/levelrail/commit/61ea15720657846a0b197cbae7680248cb0db1b9))
+
 ## [1.5.2](https://github.com/glincker/levelrail/compare/v1.5.1...v1.5.2) (2026-11-18)
 
 
