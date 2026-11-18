@@ -1,4 +1,6 @@
 import { useTranslation } from 'react-i18next'
+import { DemoInstallState } from '@/components/demo/DemoInstallState'
+import { isDemoFinalError } from '@/lib/apiError'
 import { Alert, AlertDescription, AlertTitle } from '@/components/ui/alert'
 import { MetricTile, SkeletonList } from '@/components/kit'
 import { useBuildCacheQuota } from '../../queries/buildCenter'
@@ -28,7 +30,9 @@ export default function BuildCacheQuotaCard() {
         {t('quota.title')}
       </h2>
       {quota.isPending ? <SkeletonList rows={1} /> : null}
-      {quota.isError ? (
+      {quota.isError && isDemoFinalError(quota.error) ? (
+        <DemoInstallState />
+      ) : quota.isError ? (
         <Alert variant="destructive">
           <AlertTitle>{t('quota.errorTitle')}</AlertTitle>
           <AlertDescription>{quota.error.message}</AlertDescription>

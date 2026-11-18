@@ -15,6 +15,7 @@ import {
   installUserActionTracking,
   showDemoToast,
 } from '@/lib/demoToast'
+import { DEMO_INSTALL_EVENT } from '@/lib/installPrompt'
 import { isTourDismissed } from '@/lib/demoTour'
 import { DemoBanner } from './DemoBanner'
 import { DemoInstallDialog } from './DemoInstallDialog'
@@ -66,6 +67,19 @@ export function DemoChrome() {
     })
     return stop
   }, [isDemo, t, brandName])
+
+  // Claims the event so openDemoInstall() callers do not fall back to the docs tab.
+  useEffect(() => {
+    if (!isDemo) return
+    const onInstall = (e: Event) => {
+      e.preventDefault()
+      setInstallOpen(true)
+    }
+    window.addEventListener(DEMO_INSTALL_EVENT, onInstall)
+    return () => {
+      window.removeEventListener(DEMO_INSTALL_EVENT, onInstall)
+    }
+  }, [isDemo])
 
   if (!isDemo) return null
   return (

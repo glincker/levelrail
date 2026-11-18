@@ -18,6 +18,7 @@ import {
   PopoverTrigger,
 } from '@/components/ui/popover'
 import { toast, toastAction } from '@/components/ui/toast'
+import { getDemoInfo } from '@/lib/demoStore'
 import { cn } from '@/lib/utils'
 import { useIsRoot } from '../../hooks/useIsRoot'
 import { changelogQueryOptions } from '../../queries/changelog'
@@ -80,6 +81,8 @@ export function WhatsNewPanel() {
 
   const latestVersion = latest?.version ?? ''
   React.useEffect(() => {
+    // The demo never shows unprompted toasts.
+    if (getDemoInfo().enabled) return
     if (!shouldToastUpgrade(latestVersion, lastSeen)) return
     markUpgradeToasted(latestVersion)
     toast.add({

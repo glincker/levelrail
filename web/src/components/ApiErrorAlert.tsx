@@ -1,10 +1,11 @@
 import { useState } from 'react'
+import { DemoInstallState } from '@/components/demo/DemoInstallState'
 import { useTranslation } from 'react-i18next'
 import { useQueryClient } from '@tanstack/react-query'
 import { CopyGlassIcon, TriangleAlertGlassIcon } from '@thesvg/ui-react'
 import { Alert, AlertDescription } from '@/components/ui/alert'
 import { Button } from '@/components/ui/button'
-import { ApiError } from '../lib/apiError'
+import { ApiError, isDemoFinalError } from '../lib/apiError'
 import { useErrorText } from '../lib/errorText'
 import { useApplyFix } from '../queries/fixit'
 import { dockerIntegrationKeys } from '../queries/dockerIntegration'
@@ -46,6 +47,8 @@ export function ApiErrorAlert({
       })
       .catch(() => undefined)
   }
+
+  if (isDemoFinalError(error)) return <DemoInstallState />
 
   return (
     <Alert variant="danger" data-testid="api-error-alert">
