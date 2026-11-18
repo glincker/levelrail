@@ -42,6 +42,10 @@ This is the reverse proxy variant of [Run a read-only demo](/run-a-read-only-dem
 - The demo process logs to the journal. Set `SystemMaxUse` and `MaxRetentionSec=3day` in `journald.conf` so the journal follows the same window.
 - Analytics are off by default, and a self-hosted instance never has them. The demo keeps aggregate counters that carry no personal data. See Analytics below for the opt-in.
 
+## Share tags and theme
+
+The demo page carries link-preview tags (title, description, `og:image` of `/demo-og.png`, a large Twitter card and a canonical link). Set `APP_DEMO_PUBLIC_URL` to the public https origin to change the URL used in them; it defaults to `https://demo.levelrail.com`, and a value that is not an absolute https URL is ignored with a log warning. The demo stays noindex. First-time visitors see the light theme; a stored choice of dark, OLED or system still wins.
+
 ## Analytics (opt-in)
 
 The demo can send a few named events to a PostHog project. It stays off unless both variables are set on the demo process:

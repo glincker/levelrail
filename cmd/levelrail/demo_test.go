@@ -148,3 +148,40 @@ func TestNextDemoResetAt(t *testing.T) {
 		}
 	}
 }
+
+func TestDemoThemeInit_DefaultsLight(t *testing.T) {
+	rec := httptest.NewRecorder()
+	serveDemoThemeInit(rec, httptest.NewRequest(http.MethodGet, "/theme-init.js", nil))
+	body := rec.Body.String()
+	for _, want := range []string{"data-theme-default", "stored === 'dark'", "stored === 'oled'", "stored === 'system'"} {
+		if !strings.Contains(body, want) {
+			t.Errorf("variant missing %q", want)
+		}
+	}
+	if strings.Contains(body, "stored !== 'light'") {
+		t.Error("variant still defaults to dark")
+	}
+	shared, err := os.ReadFile("../../web/public/theme-init.js")
+	if err != nil {
+		t.Fatal(err)
+	}
+	if !strings.Contains(string(shared), "stored !== 'light'") {
+		t.Error("shared theme-init.js must keep its dark default")
+	}
+}
+
+func TestDemoHeadOptions_PublicURL(t *testing.T) {
+	logger := slog.New(slog.NewTextHandler(io.Discard, nil))
+	if got := demoHeadOptions(logger, "").URL; got != "https://demo.levelrail.com/" {
+		t.Errorf("default URL = %q", got)
+	}
+	o := demoHeadOptions(logger, "https://demo.example.org/some/path")
+	if o.URL != "https://demo.example.org/" || o.ImageURL != "https://demo.example.org/demo-og.png" {
+		t.Errorf("custom = %+v", o)
+	}
+	for _, bad := range []string{"http://demo.example.org", "/relative", "https://u:p@x.org"} {
+		if got := demoHeadOptions(logger, bad).URL; got != "https://demo.levelrail.com/" {
+			t.Errorf("%q not ignored: %q", bad, got)
+		}
+	}
+}

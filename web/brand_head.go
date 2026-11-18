@@ -72,9 +72,12 @@ func serveManifest(w http.ResponseWriter, b *brand.Brand) {
 
 // injectBrandHead rewrites the static shell's title and appends brand meta
 // tags so crawlers and link previews, which never run the SPA, see them.
-func injectBrandHead(page []byte, b *brand.Brand, r *http.Request) []byte {
+func injectBrandHead(page []byte, b *brand.Brand, r *http.Request, opts HeadOptions) []byte {
 	if b == nil || b.Name == "" {
 		return page
+	}
+	if !opts.isZero() {
+		return injectShareHead(page, b, opts)
 	}
 	name := html.EscapeString(b.Name)
 	img := html.EscapeString(requestOrigin(r) + iconPath)
