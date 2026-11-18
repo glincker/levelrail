@@ -8,7 +8,7 @@ description: "Honest comparison of Levelrail with Coolify, Dokploy, CapRover, Do
 
 <div className="flex flex-wrap items-center gap-2 not-prose"><span className="inline-flex h-9 w-9 items-center justify-center rounded-lg bg-white p-1.5 ring-1 ring-black/10"><img src="https://cdn.jsdelivr.net/gh/glincker/thesvg@a7c5ddd3f529accdf86519cc8fb96cb76cef4efd/public/icons/coolify/default.svg" alt="Coolify" title="Coolify" width="24" height="24" /></span><span className="inline-flex h-9 w-9 items-center justify-center rounded-lg bg-white p-1.5 ring-1 ring-black/10"><img src="https://cdn.jsdelivr.net/gh/glincker/thesvg@a7c5ddd3f529accdf86519cc8fb96cb76cef4efd/public/icons/dokploy/default.svg" alt="Dokploy" title="Dokploy" width="24" height="24" /></span><span className="inline-flex h-9 w-9 items-center justify-center rounded-lg bg-white p-1.5 ring-1 ring-black/10"><img src="https://cdn.jsdelivr.net/gh/glincker/thesvg@a7c5ddd3f529accdf86519cc8fb96cb76cef4efd/public/icons/caprover/default.svg" alt="CapRover" title="CapRover" width="24" height="24" /></span><span className="inline-flex h-9 w-9 items-center justify-center rounded-lg bg-white p-1.5 ring-1 ring-black/10"><img src="https://cdn.jsdelivr.net/gh/glincker/thesvg@a7c5ddd3f529accdf86519cc8fb96cb76cef4efd/public/icons/dokku/default.svg" alt="Dokku" title="Dokku" width="24" height="24" /></span><span className="inline-flex h-9 w-9 items-center justify-center rounded-lg bg-white p-1.5 ring-1 ring-black/10"><img src="https://cdn.jsdelivr.net/gh/glincker/thesvg@a7c5ddd3f529accdf86519cc8fb96cb76cef4efd/public/icons/kamal/default.svg" alt="Kamal" title="Kamal" width="24" height="24" /></span></div>
 
-This page compares architecture and feature breadth, not maturity. Many Levelrail feature areas are still labeled beta in [feature status](/feature-status).
+This page compares architecture and feature breadth. Per-feature maturity labels are in [feature status](/feature-status).
 
 This is positioning, not a ranking. Coolify, Dokploy, CapRover, Dokku and Kamal are all real projects with active users, and any of them may be the right choice for you. This page shows where Levelrail makes different design choices so you can decide.
 
@@ -16,7 +16,7 @@ This is positioning, not a ranking. Coolify, Dokploy, CapRover, Dokku and Kamal 
 
 - Statements about other projects are limited to what their public documentation and repositories state. They can be out of date: these projects ship quickly. Check their own docs before deciding.
 - Where something is uncertain, we say so.
-- Levelrail is the youngest project on this list. It has fewer users, fewer integrations and less production mileage than the others. See [What Levelrail does not do yet](#what-levelrail-does-not-do-yet).
+- For Levelrail's own scope limits, see [What Levelrail does not do yet](#what-levelrail-does-not-do-yet).
 
 ## At a glance
 
@@ -73,7 +73,6 @@ If SSO, audit logging or fine-grained roles matter to you, check each project's 
 
 - LDAP: OAuth and OIDC sign-in are supported, and SAML single sign-on and SCIM provisioning are beta (off by default, run against Keycloak and SimpleSAMLphp in a local lab, not tested against Okta or Entra ID); LDAP directory sync is not supported.
 - The largest template catalog: Levelrail ships one-click templates, each a Compose file the platform deploys and manages. Coolify's catalog is in the same range and other projects may list more, and the end-to-end suite live-deploys a sample of Levelrail's templates, not all of them. See [Templates and registry](/templates-and-registry).
-- Track record: fewer real-world deployments and less community knowledge than projects that have existed for years.
 - Public ACME has had one live run: TLS defaults to an internal issuer. The public ACME issuer was verified once against Let's Encrypt on a public VPS. Renewal and DNS-01 wildcards are not yet exercised live. See the [roadmap](/roadmap).
 - No Windows or non-Linux nodes, and no Kubernetes compatibility layer: these are deliberate non-goals.
 

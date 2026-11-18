@@ -14,7 +14,7 @@ Levelrail is open source under the [Apache License 2.0](https://github.com/glinc
 
 ## No warranty
 
-Levelrail is pre-release software. As the Apache License states, it is provided "as is", without warranties or conditions of any kind. You run it on your own servers and you are responsible for your infrastructure, your data and your backups.
+As the Apache License states, Levelrail is provided "as is", without warranties or conditions of any kind. You run it on your own servers and you are responsible for your infrastructure, your data and your backups.
 
 ## Limitation of liability
 
@@ -26,7 +26,7 @@ The Levelrail name and logo are used to identify the project. The Apache License
 
 ## This website
 
-The documentation and website content live in the project repository and are covered by the same license unless a page says otherwise. We try to keep the content accurate, but features change quickly in a pre-release project, so check the [feature status](/feature-status) and [roadmap](/roadmap) pages for what is currently supported.
+The documentation and website content live in the project repository and are covered by the same license unless a page says otherwise. We try to keep the content accurate, but features change with each release, so check the [feature status](/feature-status) and [roadmap](/roadmap) pages for what is currently supported.
 
 ## Third-party links and services
 
