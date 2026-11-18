@@ -195,7 +195,7 @@ If Levelrail saves you a weekend, a [star](https://github.com/glincker/levelrail
 
 ## License
 
-Apache 2.0, see [LICENSE](LICENSE). Built by Gagan Deep Singh of [GLINR Studios](https://glinr.com) and [theSVG](https://thesvg.org).
+Apache 2.0, see [LICENSE](LICENSE). Built by Gagan Singh aka GDS K S of [GLINR Studios](https://glinr.com) and [theSVG](https://thesvg.org).
 
 <div align="center">
 
