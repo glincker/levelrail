@@ -24,7 +24,7 @@ func deviceVerificationBase(r *http.Request) string {
 	if r.TLS != nil {
 		scheme = "https"
 	}
-	if proto := strings.ToLower(strings.TrimSpace(r.Header.Get("X-Forwarded-Proto"))); proto == "http" || proto == "https" {
+	if proto := strings.ToLower(strings.TrimSpace(r.Header.Get("X-Forwarded-Proto"))); (proto == "http" || proto == "https") && peerIsTrustedProxy(r) {
 		scheme = proto
 	}
 	host := r.Host
@@ -55,8 +55,12 @@ func validHostPort(h string) bool {
 // PeerIsTrustedProxy is peerIsTrustedProxy for wiring outside this package.
 func PeerIsTrustedProxy(r *http.Request) bool { return peerIsTrustedProxy(r) }
 
-// peerIsTrustedProxy reports whether the TCP peer may set forwarding headers.
+// peerIsTrustedProxy reports whether the request may carry forwarding headers: it came
+// through this process's ingress, or its TCP peer is loopback or a listed proxy.
 func peerIsTrustedProxy(r *http.Request) bool {
+	if requestFromIngress(r) {
+		return true
+	}
 	host, _, err := net.SplitHostPort(r.RemoteAddr)
 	if err != nil {
 		host = r.RemoteAddr

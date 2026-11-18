@@ -6,8 +6,11 @@ import (
 	"errors"
 	"os"
 	"path/filepath"
+	"strings"
 	"testing"
 	"time"
+
+	"github.com/GLINCKER/levelrail/internal/ingresstrust"
 )
 
 func testKey(b byte) []byte { return bytes.Repeat([]byte{b}, 32) }
@@ -187,5 +190,20 @@ func mustWrite(t *testing.T, path string, b []byte) {
 	t.Helper()
 	if err := os.WriteFile(path, b, 0o600); err != nil { //nolint:gosec // test path from t.TempDir
 		t.Fatal(err)
+	}
+}
+
+func TestRefreshHopMarkerReplacesStaleValue(t *testing.T) {
+	cfg := []byte(`{"set":{"` + ingresstrust.HeaderName + `":["deadbeef"],"X-Other":["keep"]}}`)
+	got := string(refreshHopMarker(cfg))
+	if !strings.Contains(got, `["`+ingresstrust.Secret()+`"]`) || strings.Contains(got, "deadbeef") {
+		t.Errorf("stale marker not replaced: %s", got)
+	}
+	if !strings.Contains(got, `"X-Other":["keep"]`) {
+		t.Errorf("other headers changed: %s", got)
+	}
+	plain := []byte(`{"a":1}`)
+	if string(refreshHopMarker(plain)) != string(plain) {
+		t.Error("config without a marker must be unchanged")
 	}
 }

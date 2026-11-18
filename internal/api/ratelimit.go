@@ -152,7 +152,7 @@ func clientIP(r *http.Request) string {
 		host = r.RemoteAddr
 	}
 	trusted := trustedProxyPrefixes()
-	if !isTrustedPeer(host, trusted) {
+	if !requestFromIngress(r) && !isTrustedPeer(host, trusted) {
 		return host
 	}
 	hops := strings.Split(strings.Join(r.Header.Values("X-Forwarded-For"), ","), ",")

@@ -999,6 +999,8 @@ The installer writes `levelrail-http.socket` and `levelrail-https.socket`. The c
 
 The control plane also saves its last applied route table, sealed with a key derived from the master key, and serves it as soon as it starts, before its first reconcile pass. `levelrail-cli doctor` reports `ingress_survives_control_plane` with the next step when this is not true on your install. Details and limits: [resilience](/resilience#what-happens-to-traffic-when-the-control-plane-restarts).
 
+The in-process hop marker changes on every start. A restored snapshot has the new marker swapped in before it loads, so HTTPS sign-in through the dashboard host works before the first reconcile.
+
 <Accordion title="Socket activation trade-offs">
 
 - HTTP/3 and ACME HTTP-01 are not available in this mode (TLS-ALPN-01 on 443 and DNS-01 still issue certificates).
@@ -1150,7 +1152,7 @@ For a domain that does not load, start with [Diagnose a domain](/domain-diagnosi
 | --- | --- | --- |
 | `store: domain "shop.example.com" is already in use by service "api"` (409) | `apps domains add`, the Domains tab | A hostname belongs to one app. Remove it from the other app first, or use another hostname. |
 | `this server's public address is unknown; set APP_PUBLIC_HOST` | Domain doctor, go-live | Set `APP_PUBLIC_HOST` to the address that reaches ports 80 and 443, then restart. |
-| `sign-in over plain HTTP is disabled on this instance; sign in at https://...` | Sign-in page | Open the `https://` dashboard URL in the message. |
+| `sign-in over plain HTTP is disabled on this instance; sign in at https://...` | Sign-in page | Open the `https://` dashboard URL in the message. If you already are on it, check the warn log line `refused sign-in over plain HTTP` (peer, forwarded proto, reason) and the Doctor row "Ingress peer address". |
 | Hint `unreachable` | Enable HTTPS card | Let's Encrypt could not reach port 80. Open ports 80 and 443 in the host firewall and the cloud security group. |
 | Hint `rate_limited` | Enable HTTPS card | Let's Encrypt is throttling the name. Wait, and test with staging. |
 | Hint `dns` | Enable HTTPS card | The name does not resolve to this server. Check the public address the card shows. |

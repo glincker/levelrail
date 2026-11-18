@@ -4,8 +4,11 @@ import (
 	"context"
 	"errors"
 	"fmt"
+	"regexp"
 	"sort"
 	"time"
+
+	"github.com/GLINCKER/levelrail/internal/ingresstrust"
 )
 
 // SnapshotStatus is what the driver knows about its route snapshot.
@@ -58,6 +61,7 @@ func (d *Driver) RestoreSnapshot(ctx context.Context) (bool, error) {
 		d.noteRestoreFailure(err)
 		return false, err
 	}
+	data.Config = refreshHopMarker(data.Config)
 	if err := loadConfig(data.Config, true); err != nil {
 		err = fmt.Errorf("ingress: restore snapshot: load config: %w", err)
 		d.noteRestoreFailure(err)
@@ -77,6 +81,14 @@ func (d *Driver) RestoreSnapshot(ctx context.Context) (bool, error) {
 	d.logger.InfoContext(ctx, "ingress serving from route snapshot before the first reconcile",
 		"config_bytes", len(data.Config), "saved_at", data.SavedAt)
 	return true, nil
+}
+
+var hopMarkerRE = regexp.MustCompile(`("` + ingresstrust.HeaderName + `"\s*:\s*\[\s*")[^"]*(")`)
+
+// refreshHopMarker swaps the control plane hop marker saved by a previous
+// process for this one's, so restored routes are not refused until the first reconcile.
+func refreshHopMarker(cfg []byte) []byte {
+	return hopMarkerRE.ReplaceAll(cfg, []byte("${1}"+ingresstrust.Secret()+"${2}"))
 }
 
 func (d *Driver) noteRestoreFailure(err error) {

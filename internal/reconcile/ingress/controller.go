@@ -1155,8 +1155,9 @@ func (c *Controller) Reconcile(ctx context.Context) (reconcile.Result, error) {
 		} else {
 			claimedHosts[settings.PrimaryDomain] = dashboardRouteOwner
 			routes = append(routes, ingress.ProxyRoute{
-				Hosts:       []string{settings.PrimaryDomain},
-				BackendDial: c.dashboardDial,
+				Hosts:          []string{settings.PrimaryDomain},
+				BackendDial:    c.dashboardDial,
+				RequestHeaders: controlPlaneHopHeaders(),
 			})
 		}
 	}
@@ -1194,8 +1195,9 @@ func (c *Controller) Reconcile(ctx context.Context) (reconcile.Result, error) {
 		} else {
 			claimedHosts[statusPageSettings.CustomDomain] = statusPageRouteOwner
 			routes = append(routes, ingress.ProxyRoute{
-				Hosts:       []string{statusPageSettings.CustomDomain},
-				BackendDial: c.dashboardDial,
+				Hosts:          []string{statusPageSettings.CustomDomain},
+				BackendDial:    c.dashboardDial,
+				RequestHeaders: controlPlaneHopHeaders(),
 			})
 		}
 	}

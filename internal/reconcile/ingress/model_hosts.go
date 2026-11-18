@@ -5,6 +5,7 @@ import (
 	"log/slog"
 
 	"github.com/GLINCKER/levelrail/internal/ingress"
+	"github.com/GLINCKER/levelrail/internal/ingresstrust"
 )
 
 const modelRouteOwner = "ai model"
@@ -43,5 +44,11 @@ func (c *Controller) modelRoutes(ctx context.Context, claimedHosts map[string]st
 	if len(free) == 0 {
 		return nil, nil
 	}
-	return []ingress.ProxyRoute{{Hosts: free, BackendDial: c.dashboardDial}}, nil
+	return []ingress.ProxyRoute{{Hosts: free, BackendDial: c.dashboardDial, RequestHeaders: controlPlaneHopHeaders()}}, nil
+}
+
+// controlPlaneHopHeaders marks a request as forwarded by this process's
+// ingress, which the API checks before trusting X-Forwarded-*.
+func controlPlaneHopHeaders() map[string][]string {
+	return map[string][]string{ingresstrust.HeaderName: {ingresstrust.Secret()}}
 }

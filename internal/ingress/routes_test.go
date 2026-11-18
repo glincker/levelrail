@@ -986,3 +986,20 @@ func TestBuildRoutesConfig_SelfBoundRedirectOnlyCertifiedHosts(t *testing.T) {
 		t.Error("redirect off must not add a port 80 server")
 	}
 }
+
+func TestBuildRoutesConfig_RequestHeadersSetOnUpstream(t *testing.T) {
+	cfg, err := BuildRoutesConfig(RoutesOptions{
+		ServerName: "ingress", ListenAddr: ":443",
+		Routes: []ProxyRoute{{
+			Hosts: []string{"dash.example.com"}, BackendDial: "10.0.0.1:18080",
+			RequestHeaders: map[string][]string{"X-Test-Marker": {"abc"}},
+		}},
+	})
+	if err != nil {
+		t.Fatalf("BuildRoutesConfig() error: %v", err)
+	}
+	raw, _ := json.Marshal(cfg)
+	if !strings.Contains(string(raw), `"X-Test-Marker":["abc"]`) {
+		t.Errorf("config lacks the request header: %s", raw)
+	}
+}

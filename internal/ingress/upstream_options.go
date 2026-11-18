@@ -99,3 +99,20 @@ func (u *UpstreamOptions) applyHeaders(rp *ReverseProxyHandler) {
 	}
 	rp.Headers = &ProxyHeaders{Request: &ops}
 }
+
+func (rp *ReverseProxyHandler) setRequestHeaders(set map[string][]string) {
+	if rp.Headers == nil {
+		rp.Headers = &ProxyHeaders{}
+	}
+	if rp.Headers.Request == nil {
+		rp.Headers.Request = &HeaderOps{}
+	}
+	merged := make(map[string][]string, len(rp.Headers.Request.Set)+len(set))
+	for k, v := range rp.Headers.Request.Set {
+		merged[k] = v
+	}
+	for k, v := range set {
+		merged[k] = v
+	}
+	rp.Headers.Request.Set = merged
+}
