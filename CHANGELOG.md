@@ -1,5 +1,19 @@
 # Changelog
 
+## [1.5.5](https://github.com/glincker/levelrail/compare/v1.5.4...v1.5.5) (2026-11-18)
+
+
+### Features
+
+* classify traffic requests so top pages exclude API and asset calls ([#1612](https://github.com/glincker/levelrail/issues/1612)) ([f239537](https://github.com/glincker/levelrail/commit/f239537c8b8361ed2a3dba9b9b427ce45a0bef9c))
+
+
+### Bug Fixes
+
+* autofill attributes and IME-safe Enter on sign-in and sign-up forms ([#1615](https://github.com/glincker/levelrail/issues/1615)) ([b0b531d](https://github.com/glincker/levelrail/commit/b0b531d1a77f134dbf8d082373f87e5a981b84d2))
+* start demo analytics on the login page, not only after Explore the demo ([#1611](https://github.com/glincker/levelrail/issues/1611)) ([f6adcba](https://github.com/glincker/levelrail/commit/f6adcbaad7d27f8e459c8eaa5f2db8e2ca2d84fd))
+* trust the embedded ingress hop by an in-process marker, not by peer address ([#1609](https://github.com/glincker/levelrail/issues/1609)) ([66f3e73](https://github.com/glincker/levelrail/commit/66f3e73bfbd0c6aba05f153916f87431596382a3))
+
 ## [1.5.4](https://github.com/glincker/levelrail/compare/v1.5.3...v1.5.4) (2026-11-18)
 
 
