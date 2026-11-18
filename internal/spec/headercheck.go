@@ -18,7 +18,7 @@ var (
 		"Trailer": true, "Transfer-Encoding": true, "Upgrade": true, "Content-Length": true,
 		"Host": true,
 	}
-	requestForbiddenHeaders  = map[string]bool{"Forwarded": true, "X-Real-Ip": true, "Proxy-Authorization": true}
+	requestForbiddenHeaders  = map[string]bool{"Forwarded": true, "X-Real-Ip": true, "Proxy-Authorization": true, "X-Ingress-Hop-Token": true}
 	responseForbiddenHeaders = map[string]bool{"X-Cache": true, "Cache-Status": true}
 )
 
