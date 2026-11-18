@@ -1,5 +1,7 @@
 # levelrail-cli
 
+<p align="center"><img src="https://raw.githubusercontent.com/glincker/levelrail/main/docs/assets/brand/social/github-social-1280x640-light.jpg" alt="Levelrail: a lightweight, self-hosted deployment platform" width="720"></p>
+
 [![npm](https://img.shields.io/npm/v/levelrail-cli?label=npm)](https://www.npmjs.com/package/levelrail-cli)
 [![npm downloads](https://img.shields.io/npm/dm/levelrail-cli)](https://www.npmjs.com/package/levelrail-cli)
 [![License](https://img.shields.io/npm/l/levelrail-cli)](https://github.com/glincker/levelrail/blob/main/LICENSE)
