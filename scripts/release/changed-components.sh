@@ -47,7 +47,8 @@ esac
 # A change to the detector itself republishes everything once.
 extra+=(scripts/release/changed-components.sh)
 
-diff_files="$(git diff --name-only "$base" "$head")" || changed_true "git diff failed, publishing"
+# Unquoted paths, so a non-ASCII file name still matches the input list.
+diff_files="$(git -c core.quotepath=false diff --name-only "$base" "$head")" || changed_true "git diff failed, publishing"
 [ -n "$diff_files" ] || {
 	echo false
 	exit 0
@@ -65,10 +66,25 @@ if [ -n "$cmd" ]; then
 {{end}}{{range .EmbedFiles}}{{$d}}/{{.}}
 {{end}}{{end}}'
 	go_files=""
+	pkg_dirs=""
 	for goos in linux darwin windows; do
 		out="$(GOOS="$goos" go list -deps -f "$tmpl" "$cmd")" || changed_true "go list failed for ${goos}, publishing"
 		go_files+="${out}"$'\n'
+		out="$(GOOS="$goos" go list -deps -f '{{if not .Standard}}{{.Dir}}{{end}}' "$cmd")" || changed_true "go list failed for ${goos}, publishing"
+		pkg_dirs+="${out}"$'\n'
 	done
+	# go list at head cannot name a deleted file (an init or go:embed holder), so a
+	# deletion or rename source under any imported package directory counts as a change.
+	pkg_dirs="$(printf '%s\n' "$pkg_dirs" | sed -n "s#^${root}/##p" | sort -u)"
+	[ -n "$pkg_dirs" ] || changed_true "no Go package directories resolved, publishing"
+	deleted="$(git -c core.quotepath=false diff --name-only --no-renames --diff-filter=D "$base" "$head")" || changed_true "git diff failed, publishing"
+	if [ -n "$deleted" ]; then
+		hit="$(printf '%s\n' "$deleted" | awk 'NR == FNR { if ($0 != "") dirs[$0] = 1; next } {
+			d = $0
+			while (sub(/\/[^\/]*$/, "", d)) if (d in dirs) { print $0; exit }
+		}' <(printf '%s\n' "$pkg_dirs") - || true)"
+		[ -z "$hit" ] || changed_true "deleted ${hit}"
+	fi
 	# Module files outside this repo (dependencies) are covered by go.mod and go.sum.
 	go_files="$(printf '%s\n' "$go_files" | sed -n "s#^${root}/##p" | sort -u)"
 	[ -n "$go_files" ] || changed_true "no Go inputs resolved, publishing"

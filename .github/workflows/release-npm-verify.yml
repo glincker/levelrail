@@ -55,12 +55,16 @@ jobs:
               echo "dry run, nothing was published"
               ;;
             *)
-              case "$RUN_BRANCH" in
-              v[0-9]*) tag="$RUN_BRANCH" ;;
-              *) tag="$(sed -nE 's/^Release (v[0-9][^ ]*)$/\1/p' <<<"$RUN_TITLE")" ;;
-              esac
-              published="$(gh api "repos/${REPO}/actions/runs/${RUN_ID}/jobs?per_page=100" --paginate \
-                --jq '.jobs[] | select(.name == "Publish CLI to npm") | .conclusion' | head -1)"
+              # The run title names the tag for tag pushes and dispatches alike;
+              # head_branch is the tag only on a tag push.
+              tag="$(sed -nE 's/^Release (v[0-9][^ ]*)$/\1/p' <<<"$RUN_TITLE")"
+              if [ -z "$tag" ]; then
+                case "$RUN_BRANCH" in
+                v[0-9]*) tag="$RUN_BRANCH" ;;
+                esac
+              fi
+              published="$(gh api "repos/${REPO}/actions/runs/${RUN_ID}/jobs?per_page=100" \
+                --jq '[.jobs[] | select(.name == "Publish CLI to npm")][0].conclusion // empty')"
               echo "Publish CLI to npm: ${published:-not run}"
               [ "$published" = "success" ] && verify=true
               ;;
@@ -78,7 +82,8 @@ jobs:
     needs: resolve
     if: needs.resolve.outputs.verify == 'true'
     runs-on: ${{ matrix.os }}
-    timeout-minutes: 25
+    # Above the worst case of three retry loops at the default knobs (about 23 min).
+    timeout-minutes: 35
     strategy:
       fail-fast: false
       matrix:

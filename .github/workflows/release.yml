@@ -674,7 +674,7 @@ jobs:
     name: Publish CLI to npm
     needs: release
     # Off until trusted publishing is set up for each package on npmjs.com
-    # and the NPM_PUBLISH_ENABLED repo variable is "true" (see docs/ci.md).
+    # and the NPM_PUBLISH_ENABLED repo variable is "true" (see docs/release-process.md).
     if: (github.event_name == 'workflow_dispatch' || github.ref_type == 'tag') && vars.NPM_PUBLISH_ENABLED == 'true'
     runs-on: ubuntu-latest
     timeout-minutes: 10
@@ -733,7 +733,7 @@ jobs:
             case "$name" in
               levelrail-cli|levelrail-cli-*) (cd "$dir" && npm publish --provenance --access public --tag "$dist_tag") ;;
               *) (cd "$dir" && npm publish --provenance --access public --tag "$dist_tag") \
-                   || echo "::warning::${name}@${version} was not published; see docs/ci.md" ;;
+                   || echo "::warning::${name}@${version} was not published; see docs/release-process.md" ;;
             esac
           done
 
