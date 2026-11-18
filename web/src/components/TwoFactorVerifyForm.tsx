@@ -100,6 +100,10 @@ export function TwoFactorVerifyForm({
           <Input
             id="mfa-code"
             autoComplete="one-time-code"
+            inputMode={useRecoveryCode ? 'text' : 'numeric'}
+            autoCapitalize="none"
+            autoCorrect="off"
+            spellCheck={false}
             autoFocus
             placeholder={
               useRecoveryCode

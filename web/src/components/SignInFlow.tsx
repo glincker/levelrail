@@ -194,29 +194,33 @@ export function SignInFlow({
 
   if (step.kind === 'username') {
     return (
-      <div className="space-y-4">
+      <form
+        className="space-y-4"
+        onSubmit={(e) => {
+          // Native submit: browsers skip it while an IME composition is active.
+          e.preventDefault()
+          handleContinue()
+        }}
+      >
         <Field>
           <FieldLabel htmlFor="login-username">Username</FieldLabel>
           <Input
             id="login-username"
+            name="username"
             autoComplete="username webauthn"
+            autoCapitalize="none"
+            autoCorrect="off"
+            spellCheck={false}
             value={username}
             onChange={(e) => {
               onUsernameChange(e.target.value)
             }}
-            onKeyDown={(e) => {
-              if (e.key === 'Enter') {
-                e.preventDefault()
-                handleContinue()
-              }
-            }}
           />
         </Field>
         <Button
-          type="button"
+          type="submit"
           className="w-full disabled:bg-muted disabled:text-muted-foreground disabled:opacity-100"
           disabled={begin.isPending || username.trim() === ''}
-          onClick={handleContinue}
         >
           {begin.isPending ? 'Checking...' : 'Continue'}
         </Button>
@@ -246,7 +250,7 @@ export function SignInFlow({
           </Alert>
         ) : null}
         {codeLink}
-      </div>
+      </form>
     )
   }
 

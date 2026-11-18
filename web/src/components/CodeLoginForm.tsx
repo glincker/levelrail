@@ -117,7 +117,11 @@ export function CodeLoginForm({
           </FieldLabel>
           <Input
             id="code-login-username"
+            name="username"
             autoComplete="username"
+            autoCapitalize="none"
+            autoCorrect="off"
+            spellCheck={false}
             value={username}
             onChange={(e) => onUsernameChange(e.target.value)}
           />
@@ -181,6 +185,7 @@ export function CodeLoginForm({
         <FieldLabel htmlFor="code-login-code">{t('code.codeLabel')}</FieldLabel>
         <Input
           id="code-login-code"
+          name="code"
           autoComplete="one-time-code"
           inputMode="text"
           autoCapitalize="characters"

@@ -146,6 +146,7 @@ export function CreateUserDialog() {
             <Input
               id="new-user-password"
               type="password"
+              autoComplete="new-password"
               {...register('password')}
             />
             <FieldError errors={[formState.errors.password]} />
