@@ -40,10 +40,13 @@ export function doNotTrackEnabled(
   return v === '1' || v === 'yes'
 }
 
-export function globalPrivacyControlEnabled(
-  nav: { globalPrivacyControl?: boolean } | undefined,
-): boolean {
-  return nav?.globalPrivacyControl === true
+// Not yet in lib.dom, so read it through an `in` check.
+export function globalPrivacyControlEnabled(nav: object | undefined): boolean {
+  return (
+    nav !== undefined &&
+    'globalPrivacyControl' in nav &&
+    nav.globalPrivacyControl === true
+  )
 }
 
 function optedOut(): boolean {
