@@ -66,7 +66,7 @@ func TestHandlerFromFS_SetsSecurityHeaders(t *testing.T) {
 		"X-Content-Type-Options":     "nosniff",
 		"X-Frame-Options":            "DENY",
 		"Referrer-Policy":            "strict-origin-when-cross-origin",
-		"Content-Security-Policy":    dashboardCSP,
+		"Content-Security-Policy":    DashboardCSP,
 		"Permissions-Policy":         dashboardPermissionsPolicy,
 		"Cross-Origin-Opener-Policy": "same-origin",
 	}

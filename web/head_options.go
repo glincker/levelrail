@@ -18,9 +18,14 @@ type HeadOptions struct {
 	ImageAlt    string
 	ImageWidth  int
 	ImageHeight int
+	// CSP replaces DashboardCSP on every response when set (demo analytics).
+	CSP string
 }
 
-func (o HeadOptions) isZero() bool { return o == HeadOptions{} }
+func (o HeadOptions) isZero() bool {
+	o.CSP = ""
+	return o == HeadOptions{}
+}
 
 // injectShareHead is the HeadOptions variant of the brand head: same tag
 // set plus canonical, og:url and a large twitter card.

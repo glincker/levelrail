@@ -115,8 +115,8 @@ type demoAnalyticsInfo struct {
 // demoAnalytics is the opt-in, hosted-demo-only analytics target.
 type demoAnalytics struct {
 	info demoAnalyticsInfo
-	// csp is the Content-Security-Policy served in demo mode with the host allowed.
-	csp string
+	// allowed is the space-separated origin list added to script-src and connect-src.
+	allowed string
 }
 
 // demoAnalyticsFromEnv returns nil unless APP_DEMO_ANALYTICS_HOST (an https
@@ -137,9 +137,7 @@ func demoAnalyticsFromEnv(getenv func(string) string) *demoAnalytics {
 	if h := u.Hostname(); strings.HasSuffix(h, ".i.posthog.com") && !strings.Contains(h, "-assets.") {
 		allowed += " https://" + strings.Replace(h, ".i.posthog.com", "-assets.i.posthog.com", 1)
 	}
-	csp := strings.Replace(contentSecurityPolicy, "script-src 'self'", "script-src 'self' "+allowed, 1)
-	csp = strings.Replace(csp, "connect-src 'self'", "connect-src 'self' "+allowed, 1)
-	return &demoAnalytics{info: demoAnalyticsInfo{Provider: "posthog", Host: origin, Token: token}, csp: csp}
+	return &demoAnalytics{info: demoAnalyticsInfo{Provider: "posthog", Host: origin, Token: token}, allowed: allowed}
 }
 
 type demoGTMInfo struct {
@@ -166,30 +164,55 @@ func demoGTMFromEnv(getenv func(string) string) *demoGTMInfo {
 func demoGTMCSP(csp string) string {
 	const gtm = "https://www.googletagmanager.com"
 	const beacons = " https://*.google-analytics.com https://*.analytics.google.com https://*.googletagmanager.com"
-	csp = strings.Replace(csp, "script-src 'self'", "script-src 'self' "+gtm, 1)
-	csp = strings.Replace(csp, "connect-src 'self'", "connect-src 'self' "+gtm+beacons, 1)
-	return strings.Replace(csp, "img-src 'self'", "img-src 'self' "+gtm+beacons, 1)
+	return widenCSP(csp, gtm, gtm+beacons, gtm+beacons)
 }
 
-// demoAnalyticsCSP widens the CSP to the analytics host in demo mode only.
+// demoAnalyticsCSP widens the CSP to the analytics hosts in demo mode only.
 func (rt *Router) demoAnalyticsCSP(next http.Handler) http.Handler {
 	if rt.demo == nil {
 		return next
 	}
+	csp := rt.DemoCSP(contentSecurityPolicy)
+	if csp == contentSecurityPolicy {
+		return next
+	}
 	return http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
 		// Runs inside securityHeadersMiddleware, so this overrides its default.
-		csp := contentSecurityPolicy
-		if a := rt.demo.analytics; a != nil {
-			csp = a.csp
-		}
-		if rt.demo.gtm != nil {
-			csp = demoGTMCSP(csp)
-		}
-		if csp != contentSecurityPolicy {
-			w.Header().Set("Content-Security-Policy", csp)
-		}
+		w.Header().Set("Content-Security-Policy", csp)
 		next.ServeHTTP(w, r)
 	})
+}
+
+// DemoCSP returns base widened with the demo analytics origins, or base
+// unchanged outside demo mode. The embedded dashboard handler sits outside the
+// API middleware chain and sets its own policy, so the demo entrypoint feeds
+// it this value too.
+func (rt *Router) DemoCSP(base string) string {
+	if rt.demo == nil {
+		return base
+	}
+	csp := base
+	if a := rt.demo.analytics; a != nil {
+		csp = widenCSP(csp, a.allowed, a.allowed, "")
+	}
+	if rt.demo.gtm != nil {
+		csp = demoGTMCSP(csp)
+	}
+	return csp
+}
+
+// widenCSP appends origins to script-src, connect-src and img-src when each
+// directive is present in the base policy.
+func widenCSP(csp, script, connect, img string) string {
+	add := func(csp, directive, origins string) string {
+		if origins == "" {
+			return csp
+		}
+		return strings.Replace(csp, directive+" 'self'", directive+" 'self' "+origins, 1)
+	}
+	csp = add(csp, "script-src", script)
+	csp = add(csp, "connect-src", connect)
+	return add(csp, "img-src", img)
 }
 
 // handleDemoInfo serves GET /api/v1/demo: public, and {"enabled":false} on a real instance.

@@ -27,8 +27,9 @@ func TestDemoAnalyticsFromEnvNeedsBoth(t *testing.T) {
 	if a == nil || a.info.Host != "https://us.i.posthog.com" || a.info.Provider != "posthog" || a.info.Token != "phc_x" {
 		t.Fatalf("unexpected analytics %+v", a)
 	}
-	if !strings.Contains(a.csp, "connect-src 'self' https://us.i.posthog.com") || !strings.Contains(a.csp, "https://us-assets.i.posthog.com") {
-		t.Errorf("csp missing analytics hosts: %s", a.csp)
+	csp := widenCSP(contentSecurityPolicy, a.allowed, a.allowed, "")
+	if !strings.Contains(csp, "connect-src 'self' https://us.i.posthog.com") || !strings.Contains(csp, "https://us-assets.i.posthog.com") {
+		t.Errorf("csp missing analytics hosts: %s", csp)
 	}
 }
 
