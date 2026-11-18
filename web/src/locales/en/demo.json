@@ -59,5 +59,10 @@
       "title": "Nodes",
       "body": "See every server in your fleet, its capacity and what runs on it."
     }
+  },
+  "installState": {
+    "title": "Available when you install",
+    "description": "This feature needs a real server, so the demo shows it as a preview only. Install {{brand}} on your own host to use it with your apps.",
+    "install": "Install {{brand}}"
   }
 }

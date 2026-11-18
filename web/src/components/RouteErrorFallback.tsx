@@ -12,7 +12,8 @@ import {
   RotateCwGlassIcon,
   SocialGithubGlassIcon,
 } from '@thesvg/ui-react'
-import { ApiError, routeErrorMessage } from '@/lib/apiError'
+import { ApiError, isDemoFinalError, routeErrorMessage } from '@/lib/apiError'
+import { DemoInstallState } from '@/components/demo/DemoInstallState'
 import { isConnectivityError } from '@/lib/connectionState'
 import { BrandContext } from '@/lib/brandContext'
 import { appListQueryOptions } from '@/queries/apps'
@@ -217,6 +218,7 @@ export function RouteErrorFallback({
   resource = 'generic',
 }: ErrorComponentProps & { resource?: NotFoundResource }) {
   const { t } = useTranslation('common')
+  if (isDemoFinalError(error)) return <DemoInstallState />
   if (error instanceof ApiError && error.status === 403) {
     return <ForbiddenState message={error.message} />
   }

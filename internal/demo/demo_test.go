@@ -37,6 +37,9 @@ func TestSeedCoreEntities(t *testing.T) {
 	if err != nil || len(dbs) != len(databaseSpecs) {
 		t.Fatalf("databases = %d, err = %v, want %d", len(dbs), err, len(databaseSpecs))
 	}
+	if org, err := db.GetOrganization(ctx, store.DefaultTeamID); err != nil || org.Name != "Acme Cloud" {
+		t.Fatalf("default org = %+v, err = %v, want the renamed seeded org", org, err)
+	}
 	nodes, err := db.ListNodes(ctx)
 	if err != nil || len(nodes) != len(nodeSpecs) {
 		t.Fatalf("nodes = %d, err = %v, want %d", len(nodes), err, len(nodeSpecs))

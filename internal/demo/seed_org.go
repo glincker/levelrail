@@ -64,13 +64,14 @@ var projectSpecs = []projectSpec{
 	{"proj_internal_tools", "internal-tools"},
 }
 
-const orgID = "org_acme_cloud"
+// Projects live in the default organization because every seeded user, the visitor included, belongs to its team; a second org would hide them.
+const orgID = store.DefaultTeamID
 
 func envID(projectID, kind string) string { return "env_" + projectID[len("proj_"):] + "_" + kind }
 
 func (s *seeder) organization() error {
 	created := s.stamp(s.at(historyDays, 0))
-	if err := s.db.SaveOrganization(s.ctx, store.Organization{ID: orgID, Name: "Acme Cloud", CreatedAt: created}); err != nil {
+	if err := s.db.RenameOrganization(s.ctx, orgID, "Acme Cloud"); err != nil {
 		return err
 	}
 	for _, p := range projectSpecs {
