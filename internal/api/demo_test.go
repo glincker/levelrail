@@ -154,3 +154,61 @@ func TestDemoInfoEnabled(t *testing.T) {
 		}
 	}
 }
+
+func TestDemoCSPWidenedOnEveryRouterResponse(t *testing.T) {
+	t.Setenv("APP_DEMO_GTM_ID", "GTM-ABC123")
+	t.Setenv("APP_DEMO_ANALYTICS_HOST", "https://eu.i.posthog.com")
+	t.Setenv("APP_DEMO_ANALYTICS_TOKEN", "phc_testtoken")
+	rt := demoRouter(t, DemoConfig{})
+	for _, target := range []string{"/api/v1/demo", "/", "/login", "/assets/app.js"} {
+		rec := httptest.NewRecorder()
+		rt.Handler().ServeHTTP(rec, httptest.NewRequest(http.MethodGet, target, nil))
+		csp := rec.Header().Get("Content-Security-Policy")
+		for _, want := range []string{
+			"script-src 'self' https://www.googletagmanager.com https://eu.i.posthog.com https://eu-assets.i.posthog.com;",
+			"https://eu-assets.i.posthog.com; object-src",
+		} {
+			if !strings.Contains(csp, want) {
+				t.Errorf("GET %s CSP %q missing %q", target, csp, want)
+			}
+		}
+		if strings.Contains(csp, "unsafe-eval") || strings.Contains(csp, "script-src 'self' 'unsafe-inline'") {
+			t.Errorf("GET %s CSP allows unsafe script: %q", target, csp)
+		}
+	}
+}
+
+func TestDemoAnalyticsAssetsOrigin(t *testing.T) {
+	t.Parallel()
+	get := func(host string) *demoAnalytics {
+		return demoAnalyticsFromEnv(func(k string) string {
+			if k == "APP_DEMO_ANALYTICS_HOST" {
+				return host
+			}
+			return "phc_testtoken"
+		})
+	}
+	if got := get("https://us.i.posthog.com").allowed; got != "https://us.i.posthog.com https://us-assets.i.posthog.com" {
+		t.Errorf("us allowed = %q", got)
+	}
+	if got := get("https://ph.example.com").allowed; got != "https://ph.example.com" {
+		t.Errorf("self-hosted allowed = %q", got)
+	}
+}
+
+func TestDemoCSPUnchangedOutsideDemo(t *testing.T) {
+	t.Setenv("APP_DEMO_GTM_ID", "GTM-ABC123")
+	t.Setenv("APP_DEMO_ANALYTICS_HOST", "https://us.i.posthog.com")
+	t.Setenv("APP_DEMO_ANALYTICS_TOKEN", "phc_testtoken")
+	rt := NewRouter(discardLogger(), testBrand(), openTestDB(t))
+	if got := rt.DemoCSP(contentSecurityPolicy); got != contentSecurityPolicy {
+		t.Errorf("DemoCSP outside demo = %q", got)
+	}
+	for _, target := range []string{"/api/v1/demo", "/login"} {
+		rec := httptest.NewRecorder()
+		rt.Handler().ServeHTTP(rec, httptest.NewRequest(http.MethodGet, target, nil))
+		if got := rec.Header().Get("Content-Security-Policy"); got != contentSecurityPolicy {
+			t.Errorf("GET %s CSP = %q, want default", target, got)
+		}
+	}
+}

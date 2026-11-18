@@ -31,6 +31,12 @@ func HandlerWithHead(b *brand.Brand, head HeadOptions) http.Handler {
 	return handlerFromFS(DistFS, b, head)
 }
 
+// HandlerFromFS is HandlerWithHead over a caller-supplied filesystem holding a
+// "dist" directory, so a test can serve a fixture shell without embedweb.
+func HandlerFromFS(embedded fs.FS, b *brand.Brand, head HeadOptions) http.Handler {
+	return handlerFromFS(embedded, b, head)
+}
+
 func handlerFromFS(embedded fs.FS, b *brand.Brand, head ...HeadOptions) http.Handler {
 	var opts HeadOptions
 	if len(head) > 0 {
@@ -67,7 +73,7 @@ type spaHandler struct {
 // (/apps, /apps/foo, /apps/foo/env, ...) has no matching file on disk,
 // only the app shell that renders them.
 func (h spaHandler) ServeHTTP(w http.ResponseWriter, r *http.Request) {
-	setDashboardSecurityHeaders(w.Header())
+	setDashboardSecurityHeaders(w.Header(), h.head.CSP)
 	if r.URL.Path == manifestPath {
 		serveManifest(w, h.brand)
 		return
@@ -100,9 +106,9 @@ func (h spaHandler) serveIndex(w http.ResponseWriter, r *http.Request) {
 	http.ServeContent(w, r, "index.html", time.Time{}, bytes.NewReader(body))
 }
 
-// dashboardCSP mirrors internal/api's contentSecurityPolicy; img-src also
+// DashboardCSP mirrors internal/api's contentSecurityPolicy; img-src also
 // allows https: because bundled docs pages embed remote badge images.
-const dashboardCSP = "default-src 'self'; " +
+const DashboardCSP = "default-src 'self'; " +
 	"script-src 'self'; " +
 	"style-src 'self' 'unsafe-inline'; " +
 	"img-src 'self' data: https:; " +
@@ -116,11 +122,14 @@ const dashboardCSP = "default-src 'self'; " +
 // setDashboardSecurityHeaders guards the HTML document itself: the API's
 // header middleware never wraps this handler, so without it the dashboard
 // could be framed (clickjacking) and ran with no CSP at all.
-func setDashboardSecurityHeaders(h http.Header) {
+func setDashboardSecurityHeaders(h http.Header, csp string) {
+	if csp == "" {
+		csp = DashboardCSP
+	}
 	h.Set("X-Content-Type-Options", "nosniff")
 	h.Set("X-Frame-Options", "DENY")
 	h.Set("Referrer-Policy", "strict-origin-when-cross-origin")
-	h.Set("Content-Security-Policy", dashboardCSP)
+	h.Set("Content-Security-Policy", csp)
 	h.Set("Permissions-Policy", dashboardPermissionsPolicy)
 	h.Set("Cross-Origin-Opener-Policy", "same-origin")
 }

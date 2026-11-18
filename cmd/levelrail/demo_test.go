@@ -11,11 +11,13 @@ import (
 	"path/filepath"
 	"strings"
 	"testing"
+	"testing/fstest"
 	"time"
 
 	"github.com/GLINCKER/levelrail/internal/brand"
 	"github.com/GLINCKER/levelrail/internal/demo"
 	"github.com/GLINCKER/levelrail/internal/telemetry"
+	"github.com/GLINCKER/levelrail/web"
 )
 
 func demoTestLogger() *slog.Logger { return slog.New(slog.NewTextHandler(io.Discard, nil)) }
@@ -205,6 +207,62 @@ func TestDemoHeadOptions_PublicURL(t *testing.T) {
 	for _, bad := range []string{"http://demo.example.org", "/relative", "https://u:p@x.org"} {
 		if got := demoHeadOptions(logger, bad).URL; got != "https://demo.levelrail.com/" {
 			t.Errorf("%q not ignored: %q", bad, got)
+		}
+	}
+}
+
+func TestDemoHandlerWidenedCSPOnEveryResponse(t *testing.T) {
+	ctx := context.Background()
+	t.Setenv("APP_DATA_DIR", t.TempDir())
+	t.Setenv("APP_DEMO_GTM_ID", "GTM-ABC123")
+	t.Setenv("APP_DEMO_ANALYTICS_HOST", "https://us.i.posthog.com")
+	t.Setenv("APP_DEMO_ANALYTICS_TOKEN", "phc_testtoken")
+	orig := demoWebHandler
+	demoWebHandler = func(b *brand.Brand, head web.HeadOptions) http.Handler {
+		return web.HandlerFromFS(fstest.MapFS{
+			"dist/index.html":        &fstest.MapFile{Data: []byte("<html><head></head>shell</html>")},
+			"dist/assets/app-123.js": &fstest.MapFile{Data: []byte("x")},
+		}, b, head)
+	}
+	t.Cleanup(func() { demoWebHandler = orig })
+
+	db, err := openStore(ctx)
+	if err != nil {
+		t.Fatalf("openStore() error = %v", err)
+	}
+	t.Cleanup(func() { _ = db.Close() })
+	if _, err := demo.Seed(ctx, db, demo.Options{Seed: 1, Anchor: time.Date(2026, 10, 14, 0, 0, 0, 0, time.UTC)}); err != nil {
+		t.Fatalf("Seed() error = %v", err)
+	}
+	tdb, err := openTelemetryStore(ctx)
+	if err != nil {
+		t.Fatalf("openTelemetryStore() error = %v", err)
+	}
+	t.Cleanup(func() { _ = tdb.Close() })
+	adb, err := openAlertingStore(ctx)
+	if err != nil {
+		t.Fatalf("openAlertingStore() error = %v", err)
+	}
+	t.Cleanup(func() { _ = adb.Close() })
+	h, err := buildDemoHandler(ctx, demoTestLogger(), demoTestBrand(), db, tdb, adb, telemetry.NewLogBroadcaster())
+	if err != nil {
+		t.Fatalf("buildDemoHandler() error = %v", err)
+	}
+
+	for _, target := range []string{"/", "/login", "/assets/app-123.js", "/api/v1/demo", "/assets/missing.js"} {
+		rec := httptest.NewRecorder()
+		h.ServeHTTP(rec, httptest.NewRequest(http.MethodGet, target, nil))
+		csp := rec.Header().Get("Content-Security-Policy")
+		for _, want := range []string{
+			"script-src 'self' https://www.googletagmanager.com https://us.i.posthog.com https://us-assets.i.posthog.com;",
+			"https://us-assets.i.posthog.com; object-src",
+		} {
+			if !strings.Contains(csp, want) {
+				t.Errorf("GET %s (status %d) CSP %q missing %q", target, rec.Code, csp, want)
+			}
+		}
+		if strings.Contains(csp, "unsafe-eval") || strings.Contains(csp, "script-src 'self' 'unsafe-inline'") {
+			t.Errorf("GET %s CSP must not allow unsafe script: %q", target, csp)
 		}
 	}
 }

@@ -224,11 +224,17 @@ func buildDemoHandler(ctx context.Context, logger *slog.Logger, b *brand.Brand, 
 	rt := api.NewRouter(logger, b, db, opts...)
 	// Without a sampler the public status page reads Unknown for every component.
 	go func() { _ = rt.RunStatusPageSampler(ctx) }()
-	mux := composeMux(rt.Handler(), nil, web.HandlerWithHead(b, demoHeadOptions(logger, os.Getenv(demoEnvPublicURL))))
+	head := demoHeadOptions(logger, os.Getenv(demoEnvPublicURL))
+	// The embedded dashboard sits outside the API chain, so it needs the widened policy too.
+	head.CSP = rt.DemoCSP(web.DashboardCSP)
+	mux := composeMux(rt.Handler(), nil, demoWebHandler(b, head))
 	// Registered on the mux so it wins over the static handler's catch-all.
 	mux.HandleFunc("/theme-init.js", serveDemoThemeInit)
 	return demoStaticHeaders(mux), nil
 }
+
+// demoWebHandler is a seam so tests can serve a fixture shell without embedweb.
+var demoWebHandler = web.HandlerWithHead
 
 // demoHeadOptions builds the demo's share tags. An unset or invalid public
 // URL falls back to the default; an invalid one logs a warning.

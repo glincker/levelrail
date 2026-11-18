@@ -53,7 +53,7 @@ The demo can send a few named events to a PostHog project. It stays off unless b
 - `APP_DEMO_ANALYTICS_HOST`: the https ingest origin, for example `https://us.i.posthog.com`.
 - `APP_DEMO_ANALYTICS_TOKEN`: the project token.
 
-With both set, `GET /api/v1/demo` returns an `analytics` object and the demo CSP allows that host. A real instance never returns it.
+With both set, `GET /api/v1/demo` returns an `analytics` object and the demo CSP allows that host in `script-src` and `connect-src`. For a PostHog cloud host (`*.i.posthog.com`) the matching assets host (for example `us-assets.i.posthog.com`) is allowed too. The widened CSP is sent on every demo response, including the dashboard HTML and static assets. A real instance never returns it.
 
 What is collected: the events `demo_session_started`, `demo_route_viewed` (route pattern only), `demo_readonly_blocked` (HTTP method and route pattern only), `demo_install_command_copied` and `demo_github_click`, all tagged `surface=demo`, plus `utm_source`, `utm_medium` and `utm_campaign` when the landing URL has them.
 
