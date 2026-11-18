@@ -1,5 +1,13 @@
 # Changelog
 
+## [1.5.1](https://github.com/glincker/levelrail/compare/v1.5.0...v1.5.1) (2026-11-18)
+
+
+### Bug Fixes
+
+* repair the demo test and type errors that failed the release build ([3715a94](https://github.com/glincker/levelrail/commit/3715a94c934dcdca1227cf96cfabee4859f078de))
+* repair the demo test and type errors that failed the release build ([006b629](https://github.com/glincker/levelrail/commit/006b6296e0b1d72ce93d58dbe80de8dbb7fddb4d))
+
 ## [1.5.0](https://github.com/glincker/levelrail/compare/v1.4.1...v1.5.0) (2026-11-17)
 
 
