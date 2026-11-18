@@ -35,7 +35,7 @@
     "@tanstack/react-router": "^1.170.46",
     "@tanstack/react-virtual": "3.14.26",
     "@thesvg/flags": "0.1.0",
-    "@thesvg/react": "^4.0.4",
+    "@thesvg/react": "^4.0.12",
     "@thesvg/ui-react": "^4.4.0",
     "@xterm/addon-fit": "^0.11.0",
     "@xterm/xterm": "^6.0.0",
