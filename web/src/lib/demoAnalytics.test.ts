@@ -54,6 +54,8 @@ describe('demoAnalytics', () => {
       capture_pageview: false,
     })
     captureDemoEvent('demo_github_click')
+    captureDemoEvent('demo_tour_step', { step: 'apps' })
+    expect(capture).toHaveBeenCalledWith('demo_tour_step', { step: 'apps' })
     expect(capture).toHaveBeenCalledWith('demo_session_started', {})
     expect(capture).toHaveBeenCalledWith('demo_github_click', {})
   })

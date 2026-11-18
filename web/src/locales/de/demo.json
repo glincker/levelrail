@@ -1,18 +1,19 @@
 {
   "banner": {
-    "label": "Schreibgeschützte Demo mit Beispieldaten",
-    "resets": "Wird zurückgesetzt {{time}}",
+    "message": "Live demo, fictional data, resets at {{time}}",
+    "messageNoReset": "Live demo, fictional data",
+    "star": "Star",
+    "starLabel": "Star Levelrail on GitHub",
+    "starCount": "Star Levelrail on GitHub, {{count}} stars",
     "install": "Installieren",
-    "copyInstall": "Installationsbefehl kopieren",
     "copied": "Kopiert",
     "github": "GitHub",
-    "docs": "Doku",
-    "tour": "Tour starten"
+    "docs": "Doku"
   },
   "readOnly": {
     "tooltip": "In der Demo schreibgeschützt. Installieren Sie {{brand}}, um dies echt auszuprobieren.",
-    "toastTitle": "Schreibgeschützte Demo",
-    "toastBody": "Diese Aktion ist in der Demo nicht verfügbar. Installieren Sie {{brand}}, um sie echt auszuprobieren."
+    "toast": "Read-only demo: this action is not available here",
+    "installAction": "Install it"
   },
   "login": {
     "title": "Demo erkunden",
@@ -37,27 +38,41 @@
     "description": "Dieser Bereich ist in den Demodaten absichtlich leer. Auf einer echten Instanz füllt er sich, während Sie {{brand}} nutzen."
   },
   "tour": {
+    "launcher": "Take the 2 minute tour",
     "step": "Schritt {{current}} von {{total}}",
     "next": "Weiter",
     "back": "Zurück",
     "done": "Fertig",
     "skip": "Tour überspringen",
-    "open": "Diese Seite öffnen",
     "apps": {
-      "title": "Ihre Apps",
-      "body": "Jede App, ihr Status und ihr letzter Deploy in einer Liste. Öffnen Sie eine, um ihre Logs, Domains und Einstellungen zu sehen."
+      "title": "Apps",
+      "body": "See every app, its deploys and one-click rollbacks."
     },
-    "deploys": {
-      "title": "Deploy-Verlauf und Rollback",
-      "body": "Jeder Deploy wird mit seiner Quelle und seinem Ergebnis aufgezeichnet. Jede frühere Version lässt sich mit einem Klick per Rollback wiederherstellen."
+    "databases": {
+      "title": "Databases",
+      "body": "Find the connection string and the backups for each database."
     },
-    "metrics": {
-      "title": "Metriken mit Deploy-Markierungen",
-      "body": "Öffnen Sie eine App und wählen Sie Metriken. Deploys werden in die Diagramme eingezeichnet, sodass Sie sehen, welches Release die Werte verändert hat."
+    "domains": {
+      "title": "Domains",
+      "body": "Add a domain and get HTTPS certificates automatically."
     },
     "nodes": {
       "title": "Nodes",
-      "body": "Sehen Sie jeden Server Ihrer Flotte, seine Kapazität und was auf ihm läuft."
+      "body": "Servers, devices and AWS machines in one fleet view."
+    },
+    "finish": {
+      "title": "Like what you see?",
+      "body": "Star the project on GitHub or install it in one line."
+    }
+  },
+  "install": {
+    "title": "Install in one line",
+    "description": "Run it on your own server. Nothing from this demo carries over.",
+    "copy": "Copy",
+    "steps": {
+      "run": "Run the command on a Linux server or your laptop.",
+      "open": "Open the URL it prints and create your admin account.",
+      "deploy": "Deploy your first app from a Git repo or an image."
     }
   }
 }

@@ -52,7 +52,7 @@ func WithDemoMode(cfg DemoConfig) Option {
 		if cfg.SessionsPerMinute <= 0 {
 			cfg.SessionsPerMinute = demoSessionPerMinute
 		}
-		rt.demo = &demoState{cfg: cfg, ctaCounts: map[string]int{}, mints: map[string][]time.Time{}, analytics: demoAnalyticsFromEnv(os.Getenv), gtm: demoGTMFromEnv(os.Getenv)}
+		rt.demo = &demoState{cfg: cfg, ctaCounts: map[string]int{}, mints: map[string][]time.Time{}, analytics: demoAnalyticsFromEnv(os.Getenv), gtm: demoGTMFromEnv(os.Getenv), stars: demoStarsFromProcessEnv()}
 	}
 }
 
@@ -62,6 +62,8 @@ type demoState struct {
 	analytics *demoAnalytics
 	// gtm is nil unless APP_DEMO_GTM_ID holds a valid container id.
 	gtm *demoGTMInfo
+	// stars is nil when the star count fetch is disabled.
+	stars *demoStars
 
 	mu        sync.Mutex
 	ctaCounts map[string]int
@@ -101,6 +103,7 @@ type demoInfoResponse struct {
 	HumanCheck     bool               `json:"humanCheck"`
 	Analytics      *demoAnalyticsInfo `json:"analytics,omitempty"`
 	GTM            *demoGTMInfo       `json:"gtm,omitempty"`
+	Stars          *int               `json:"stars,omitempty"`
 }
 
 type demoAnalyticsInfo struct {
@@ -207,6 +210,9 @@ func (rt *Router) handleDemoInfo(w http.ResponseWriter, _ *http.Request) {
 	if g := rt.demo.gtm; g != nil {
 		info := *g
 		resp.GTM = &info
+	}
+	if n, ok := rt.demo.stars.Get(); ok {
+		resp.Stars = &n
 	}
 	if c.ResetsAt != nil {
 		t := c.ResetsAt()

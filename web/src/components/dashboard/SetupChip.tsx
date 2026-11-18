@@ -1,3 +1,4 @@
+import { useIsDemo } from '@/hooks/useDemo'
 import { Link } from '@tanstack/react-router'
 import { useTranslation } from 'react-i18next'
 import { ArrowRightGlassIcon, XGlassIcon } from '@thesvg/ui-react'
@@ -39,9 +40,11 @@ export function SetupChipView({
 }
 
 export function SetupChip() {
+  const isDemo = useIsDemo()
   const { data: guide } = useSetupGuide()
   const hide = useSetGuideHidden()
-  if (!guide || !showGuideEntryPoints(guide)) return null
+  // The demo has its own guided tour instead of the setup checklist.
+  if (isDemo || !guide || !showGuideEntryPoints(guide)) return null
   return (
     <SetupChipView
       percent={guide.ready_percent}

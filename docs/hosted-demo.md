@@ -67,6 +67,13 @@ Google Tag Manager is a second, independent provider. It works alone or next to 
 
 - `APP_DEMO_GTM_ID`: the container id, for example `GTM-XXXXXXX`. It must match `^GTM-[A-Z0-9]{4,12}$`; anything else is ignored with a log warning. The id is supplied at deploy time and is never committed.
 
+### Star count
+
+The top bar Star button shows the live GitHub star count. The demo process fetches it in the background once at start and at most every 6 hours, with a 5 second timeout. It never blocks a request and never fails the demo: on error the last good value is kept, or the count is omitted from `GET /api/v1/demo` and the button shows no number.
+
+- `APP_DEMO_STARS_REPO`: the `owner/name` repository to read. Defaults to `glincker/levelrail`. Set it empty to disable the fetch.
+- `APP_DEMO_STARS_DISABLE`: set to `true` to make no outbound request at all, for example on a host hardened to block egress.
+
 Nothing loads unless the variable is set, and a real instance never returns it. With it set, `GET /api/v1/demo` returns `gtm: {"id": "..."}` and the demo CSP additionally allows `www.googletagmanager.com` (script, connect, image) plus `*.google-analytics.com`, `*.analytics.google.com` and `*.googletagmanager.com` (connect, image). The CSP still has no `unsafe-inline` or `unsafe-eval` for scripts.
 
 The page loads the standard `gtm.js` from Google and pushes the same five events as `{event, surface: "demo", ...}` into `window.dataLayer`, with the route pattern only and no ids or query strings. Build tags and triggers on those event names in the GTM account that owns the container. Levelrail does not configure the container.

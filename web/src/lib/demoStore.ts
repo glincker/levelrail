@@ -10,6 +10,7 @@ export interface DemoInfo {
   humanCheck?: boolean
   analytics?: { provider: string; host: string; token: string }
   gtm?: { id: string }
+  stars?: number
 }
 
 type Listener = () => void

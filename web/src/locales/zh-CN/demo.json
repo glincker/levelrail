@@ -1,18 +1,19 @@
 {
   "banner": {
-    "label": "带示例数据的只读演示",
-    "resets": "将在 {{time}} 重置",
+    "message": "Live demo, fictional data, resets at {{time}}",
+    "messageNoReset": "Live demo, fictional data",
+    "star": "Star",
+    "starLabel": "Star Levelrail on GitHub",
+    "starCount": "Star Levelrail on GitHub, {{count}} stars",
     "install": "安装",
-    "copyInstall": "复制安装命令",
     "copied": "已复制",
     "github": "GitHub",
-    "docs": "文档",
-    "tour": "开始导览"
+    "docs": "文档"
   },
   "readOnly": {
     "tooltip": "演示中为只读。安装 {{brand}} 即可真实体验。",
-    "toastTitle": "只读演示",
-    "toastBody": "演示中无法执行此操作。安装 {{brand}} 即可真实体验。"
+    "toast": "Read-only demo: this action is not available here",
+    "installAction": "Install it"
   },
   "login": {
     "title": "探索演示",
@@ -37,27 +38,41 @@
     "description": "此区域在演示数据中特意留空。在真实实例上,随着你使用 {{brand}},它会逐渐填充。"
   },
   "tour": {
+    "launcher": "Take the 2 minute tour",
     "step": "第 {{current}} 步,共 {{total}} 步",
     "next": "下一步",
     "back": "上一步",
     "done": "完成",
     "skip": "跳过导览",
-    "open": "打开此页面",
     "apps": {
-      "title": "你的应用",
-      "body": "所有应用、其状态和最新部署集中在一个列表中。打开任一应用即可查看其日志、域名和设置。"
+      "title": "Apps",
+      "body": "See every app, its deploys and one-click rollbacks."
     },
-    "deploys": {
-      "title": "部署历史与回滚",
-      "body": "每次部署都会记录其来源和结果。可一键回滚到任何更早的版本。"
+    "databases": {
+      "title": "Databases",
+      "body": "Find the connection string and the backups for each database."
     },
-    "metrics": {
-      "title": "带部署标记的指标",
-      "body": "打开应用并选择指标。部署会绘制在图表上,方便你看出是哪次发布改变了数据。"
+    "domains": {
+      "title": "Domains",
+      "body": "Add a domain and get HTTPS certificates automatically."
     },
     "nodes": {
-      "title": "节点",
-      "body": "查看集群中的每台服务器、其容量以及运行的内容。"
+      "title": "Nodes",
+      "body": "Servers, devices and AWS machines in one fleet view."
+    },
+    "finish": {
+      "title": "Like what you see?",
+      "body": "Star the project on GitHub or install it in one line."
+    }
+  },
+  "install": {
+    "title": "Install in one line",
+    "description": "Run it on your own server. Nothing from this demo carries over.",
+    "copy": "Copy",
+    "steps": {
+      "run": "Run the command on a Linux server or your laptop.",
+      "open": "Open the URL it prints and create your admin account.",
+      "deploy": "Deploy your first app from a Git repo or an image."
     }
   }
 }

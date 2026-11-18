@@ -1,18 +1,19 @@
 {
   "banner": {
-    "label": "Read-only demo with sample data",
-    "resets": "Resets {{time}}",
+    "message": "Live demo, fictional data, resets at {{time}}",
+    "messageNoReset": "Live demo, fictional data",
+    "star": "Star",
+    "starLabel": "Star Levelrail on GitHub",
+    "starCount": "Star Levelrail on GitHub, {{count}} stars",
     "install": "Install",
-    "copyInstall": "Copy install command",
     "copied": "Copied",
     "github": "GitHub",
-    "docs": "Docs",
-    "tour": "Take the tour"
+    "docs": "Docs"
   },
   "readOnly": {
     "tooltip": "Read-only in the demo. Install {{brand}} to try this for real.",
-    "toastTitle": "Read-only demo",
-    "toastBody": "This action is not available in the demo. Install {{brand}} to try it for real."
+    "toast": "Read-only demo: this action is not available here",
+    "installAction": "Install it"
   },
   "login": {
     "title": "Explore the demo",
@@ -37,27 +38,41 @@
     "description": "This area is intentionally empty in the demo data. On a real instance it fills in as you use {{brand}}."
   },
   "tour": {
+    "launcher": "Take the 2 minute tour",
     "step": "Step {{current}} of {{total}}",
     "next": "Next",
     "back": "Back",
     "done": "Done",
     "skip": "Skip tour",
-    "open": "Open this page",
     "apps": {
-      "title": "Your apps",
-      "body": "Every app, its status and its latest deploy in one list. Open one to see its logs, domains and settings."
+      "title": "Apps",
+      "body": "See every app, its deploys and one-click rollbacks."
     },
-    "deploys": {
-      "title": "Deploy history and rollback",
-      "body": "Each deploy is recorded with its source and result. Any earlier version can be rolled back to in one click."
+    "databases": {
+      "title": "Databases",
+      "body": "Find the connection string and the backups for each database."
     },
-    "metrics": {
-      "title": "Metrics with deploy markers",
-      "body": "Open an app and choose Metrics. Deploys are drawn on the charts, so you can see which release changed the numbers."
+    "domains": {
+      "title": "Domains",
+      "body": "Add a domain and get HTTPS certificates automatically."
     },
     "nodes": {
       "title": "Nodes",
-      "body": "See every server in your fleet, its capacity and what runs on it."
+      "body": "Servers, devices and AWS machines in one fleet view."
+    },
+    "finish": {
+      "title": "Like what you see?",
+      "body": "Star the project on GitHub or install it in one line."
+    }
+  },
+  "install": {
+    "title": "Install in one line",
+    "description": "Run it on your own server. Nothing from this demo carries over.",
+    "copy": "Copy",
+    "steps": {
+      "run": "Run the command on a Linux server or your laptop.",
+      "open": "Open the URL it prints and create your admin account.",
+      "deploy": "Deploy your first app from a Git repo or an image."
     }
   },
   "installState": {
