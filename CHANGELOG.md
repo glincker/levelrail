@@ -1,5 +1,12 @@
 # Changelog
 
+## [1.5.6](https://github.com/glincker/levelrail/compare/v1.5.5...v1.5.6) (2026-11-18)
+
+
+### Bug Fixes
+
+* render the demo GTM loader in the HTML head and run the demo on v1.5.5 ([#1616](https://github.com/glincker/levelrail/issues/1616)) ([a77fe0e](https://github.com/glincker/levelrail/commit/a77fe0eaea330438f78b9eb2987512c9553b4003))
+
 ## [1.5.5](https://github.com/glincker/levelrail/compare/v1.5.4...v1.5.5) (2026-11-18)
 
 
