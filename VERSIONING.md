@@ -2,6 +2,10 @@
 
 Levelrail uses semantic versioning, computed from commit types by release-please. Nobody picks a number by hand. The full rules for contributors are in [RELEASING.md](RELEASING.md).
 
+## Patch-only releases (current setting)
+
+Release-please runs with `versioning: always-bump-patch`, so every release is the next patch number whatever the commit types, until the owner changes the setting in `.github/release-please/release-please-config.json`. The table below describes the intended policy for when that setting is lifted. A minor or major number still needs a deliberate change by the owner.
+
 ## How a version is chosen
 
 | Change | Bump |
