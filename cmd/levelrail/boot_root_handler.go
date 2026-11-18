@@ -444,7 +444,7 @@ func rootHandler(d rootDeps) (http.Handler, *api.Router) {
 	if wh, ok := webhookHandler.(interface{ SetAfterBuildFinish(func(string)) }); ok {
 		wh.SetAfterBuildFinish(rt.AfterBuildFinish)
 	}
-	return rt.StatusHostHandler(modelGateway.Middleware(composeMux(rt.Handler(), webhookHandler, rt.WithHSTS(web.Handler(b))))), rt
+	return api.IngressHopMiddleware(rt.StatusHostHandler(modelGateway.Middleware(composeMux(rt.Handler(), webhookHandler, rt.WithHSTS(web.Handler(b)))))), rt
 }
 
 // Registers /healthz explicitly: otherwise it falls through to the SPA and probers get HTML instead of JSON.

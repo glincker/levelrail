@@ -1150,7 +1150,7 @@ For a domain that does not load, start with [Diagnose a domain](/domain-diagnosi
 | --- | --- | --- |
 | `store: domain "shop.example.com" is already in use by service "api"` (409) | `apps domains add`, the Domains tab | A hostname belongs to one app. Remove it from the other app first, or use another hostname. |
 | `this server's public address is unknown; set APP_PUBLIC_HOST` | Domain doctor, go-live | Set `APP_PUBLIC_HOST` to the address that reaches ports 80 and 443, then restart. |
-| `sign-in over plain HTTP is disabled on this instance; sign in at https://...` | Sign-in page | Open the `https://` dashboard URL in the message. |
+| `sign-in over plain HTTP is disabled on this instance; sign in at https://...` | Sign-in page | Open the `https://` dashboard URL in the message. If you already are on it, check the warn log line `refused sign-in over plain HTTP` (peer, forwarded proto, reason) and the Doctor row "Ingress peer address". |
 | Hint `unreachable` | Enable HTTPS card | Let's Encrypt could not reach port 80. Open ports 80 and 443 in the host firewall and the cloud security group. |
 | Hint `rate_limited` | Enable HTTPS card | Let's Encrypt is throttling the name. Wait, and test with staging. |
 | Hint `dns` | Enable HTTPS card | The name does not resolve to this server. Check the public address the card shows. |

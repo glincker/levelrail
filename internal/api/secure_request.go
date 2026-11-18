@@ -9,7 +9,8 @@ import (
 
 // requestIsHTTPS reports whether the client reached us over TLS, either
 // directly or through the embedded Caddy ingress. X-Forwarded-Proto is
-// only trusted from a loopback peer, since any remote client can set it.
+// trusted only on a request carrying the in-process ingress marker or from a
+// loopback or listed proxy peer, since any remote client can set it.
 func requestIsHTTPS(r *http.Request) bool {
 	if r.TLS != nil {
 		return true

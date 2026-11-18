@@ -116,6 +116,8 @@ func buildExplainTable() map[string]Explanation {
 			"Open Settings, then Domain, and add a domain for the dashboard, then press Re-check.", "", KindGuided),
 		ex("dashboard_url_https", "The saved dashboard address does not use https.", "Links in emails and logins point at an insecure address.",
 			nextFixButton+"It switches the saved address to https once a certificate works.", "settings.dashboard_url.https", KindAuto),
+		ex("ingress_peer", "The dashboard listens on a non-loopback address and the proxy reaches it from an address the app does not trust.", "Sign-in still works through the built-in proxy marker, but logs and IP based rules see a rewritten address.",
+			"Bind the dashboard to 127.0.0.1 with APP_HTTP_ADDR, or add the shown address to APP_INGRESS_TRUSTED_PROXIES, then restart and press Re-check.", "", KindGuided),
 		ex("registry", "An image registry cannot be reached from this host.", "Builds and deploys that pull from it fail.",
 			"Check the registry address under Settings, then Registries, and the host's outbound network. Press Re-check afterwards.", "", KindGuided),
 		ex("registry_mirror", "GitHub, ghcr.io or Docker Hub cannot be reached from this host.", "Installs, upgrades, builds and node setup that download from them fail or stall.",

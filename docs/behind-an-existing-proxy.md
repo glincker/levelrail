@@ -369,6 +369,10 @@ kept but skipped), builds `https` links with the public port (443 when unset),
 and does not redirect HTTP itself because the proxy does. Set
 `APP_INGRESS_TRUSTED_PROXIES` to the proxy's address range so `X-Forwarded-Proto`
 and `X-Forwarded-Host` are honoured only from it, never from the open internet.
+The embedded ingress needs no entry: its own hop to the dashboard carries a per-process
+marker header that the API verifies and strips, so sign-in over HTTPS keeps working
+even if Docker NAT rewrites the source address. Forwarded headers from any other
+untrusted peer are dropped.
 The dashboard shows "HTTPS is handled by your proxy" instead of a certificate
 error. DNS for each domain still points at the proxy host.
 

@@ -84,7 +84,7 @@ One or more checks failed. See above.
 | | `dns_domains` | Whether each configured domain resolves (summary only; use `domains doctor DOMAIN` for the full diagnosis) |
 | | `certificates` | Expired or stalled certificates that need an operator |
 | | `dashboard_url_https` | Dashboard URL still on plain http with certificates available, with an auto fix |
-| | `registry_reachability_*`, `cross_node_ingress`, `ingress_edge`, `ingress_survives`, `exposure` | Registries, cross-node routing, edge policy, data plane resilience, exposed services |
+| | `registry_reachability_*`, `cross_node_ingress`, `ingress_edge`, `ingress_peer`, `ingress_survives`, `exposure` | Registries, cross-node routing, edge policy, whether the proxy hop reaches a non-loopback dashboard from a trusted address (warns on a NAT source rewrite), data plane resilience, exposed services |
 | Security | `approval_without_session` | Whether sign-ins with no other live session are allowed or held, and which approval paths exist (mail, token, host command) |
 | | `master_key_rotation`, `stale_secrets`, `notification_channel_secrets`, `notify_reachable`, `secret_reveal_policy`, `legacy_tokens`, `git_connections`, `signature_pin` | Key and secret age, channel secrets, a warning when no channel or email provider can notify anyone, tokens, git provider connections, release signatures |
 | Backups | `control_plane_backup`, `control_plane_dr` | Newest control plane snapshot and recovery readiness, with an auto snapshot fix |

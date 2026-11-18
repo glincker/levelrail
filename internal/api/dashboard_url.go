@@ -85,6 +85,7 @@ func (rt *Router) refuseInsecureLogin(w http.ResponseWriter, r *http.Request) bo
 	if !strings.HasPrefix(u, "https://") {
 		return false
 	}
+	rt.logInsecureLoginRefusal(r)
 	writeJSON(w, http.StatusForbidden, insecureLoginResponse{
 		Error:     "sign-in over plain HTTP is disabled on this instance; sign in at " + u,
 		SecureURL: u,

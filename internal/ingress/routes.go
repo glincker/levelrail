@@ -56,6 +56,9 @@ type ProxyRoute struct {
 	Hosts []string
 	// BackendDial is the reverse-proxy target, e.g. "127.0.0.1:9090".
 	BackendDial string
+	// RequestHeaders are set on the upstream request, replacing any the
+	// client sent. Used to mark hops to the control plane.
+	RequestHeaders map[string][]string
 	// BasicAuth, if non-nil, adds a BasicAuthHandler ahead of the
 	// reverse-proxy handler so every host in this route requires HTTP
 	// Basic Auth. Nil (the default) reproduces this package's prior
@@ -580,6 +583,12 @@ func BuildRoutesConfig(opts RoutesOptions) (*Config, error) {
 		if opts.Hardening != nil {
 			if rp, ok := handle[len(handle)-1].(ReverseProxyHandler); ok {
 				opts.Hardening.applyProxy(&rp)
+				handle[len(handle)-1] = rp
+			}
+		}
+		if len(r.RequestHeaders) > 0 {
+			if rp, ok := handle[len(handle)-1].(ReverseProxyHandler); ok {
+				rp.setRequestHeaders(r.RequestHeaders)
 				handle[len(handle)-1] = rp
 			}
 		}
