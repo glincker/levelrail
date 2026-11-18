@@ -1,4 +1,4 @@
-<!-- translated-from: README.md blob:ce94937d3ed19f5133e5579976d74dcdff199567 lang:es -->
+<!-- translated-from: README.md blob:b3c2e12bc506fb9fd5a89df18863898321998952 lang:es -->
 <div align="center">
 <img src="../../docs/assets/brand/levelrail-default.svg" alt="Logo de Levelrail" width="56" height="56">
 <h1>Levelrail</h1>
@@ -7,350 +7,207 @@
 >
 > Esta traducción fue generada con IA y puede contener errores. Las correcciones son bienvenidas: consulta [docs/i18n/README.md](README.md).
 
-<p><strong>Plataforma de despliegue ligera y autoalojada: git push a producción en tus propios servidores y cuentas de nube.</strong><br>
-Un solo binario de Go, runtime de Docker, sin Kubernetes. Apache 2.0.</p>
+<p><strong>Git push a producción en tus propios servidores.</strong><br>
+Una plataforma de despliegue autoalojada en un solo binario de Go. El plano de control consume en reposo unos 200 MB de RAM (<a href="../../docs/performance.md">medido</a>), con más de 570 apps de un clic, rollbacks, vistas previas, HTTPS y bases de datos integrados.</p>
+<p><code>curl -fsSL https://levelrail.com/install.sh | sudo sh</code> &middot; <a href="https://demo.levelrail.com"><b>Prueba la demo en vivo</b></a></p>
 <p>
+  <a href="https://github.com/glincker/levelrail/stargazers"><img src="https://img.shields.io/github/stars/glincker/levelrail?style=flat&logo=github" alt="Estrellas en GitHub"></a>
   <a href="../../LICENSE"><img src="https://img.shields.io/github/license/glincker/levelrail" alt="Licencia: Apache 2.0"></a>
   <a href="https://github.com/glincker/levelrail/releases"><img src="https://img.shields.io/github/v/release/glincker/levelrail?include_prereleases&label=release" alt="Última versión"></a>
   <a href="https://github.com/glincker/levelrail/actions/workflows/ci.yml"><img src="https://github.com/glincker/levelrail/actions/workflows/ci.yml/badge.svg" alt="Estado de CI"></a>
-  <a href="../../go.mod"><img src="https://img.shields.io/github/go-mod/go-version/glincker/levelrail?style=flat" alt="Versión de Go"></a>
-<br>
-  <a href="../../docs/mcp.md"><img src="https://img.shields.io/badge/MCP-server-8A2BE2?style=flat" alt="Servidor MCP"></a>
-  <a href="https://docs.levelrail.com"><img src="https://img.shields.io/badge/docs-docs.levelrail.com-blue?style=flat" alt="Documentación"></a>
-  <a href="https://discord.gg/Ar5pcaZB99"><img src="https://img.shields.io/discord/829168897080557579?style=flat&logo=discord&logoColor=white&label=discord&color=5865F2" alt="Discord"></a>
-  <a href="https://codespaces.new/glincker/levelrail"><img src="https://img.shields.io/badge/Codespaces-open%20dev%20container-181717?style=flat&logo=github" alt="Abrir en GitHub Codespaces"></a>
+  <a href="https://demo.levelrail.com"><img src="https://img.shields.io/badge/demo-demo.levelrail.com-2f6feb" alt="Demo en vivo"></a>
 </p>
 <p>
-  <a href="https://levelrail.com">Sitio web</a> &middot;
-  <a href="https://docs.levelrail.com">Docs</a> &middot;
-  <a href="#inicio-rápido-instala-una-alternativa-autoalojada-a-vercel">Instalar</a> &middot;
-  <a href="#listo-para-producción-con-pruebas">Listo para producción</a> &middot;
-  <a href="#levelrail-vs-coolify-dokploy-caprover-y-dokku-alternativa-a-coolify">Comparar</a> &middot;
-  <a href="#preguntas-frecuentes-faq">FAQ</a> &middot;
+  <a href="https://levelrail.com?utm_source=github&amp;utm_medium=readme&amp;utm_campaign=nav">Sitio web</a> &middot;
+  <a href="https://docs.levelrail.com?utm_source=github&amp;utm_medium=readme&amp;utm_campaign=nav">Docs</a> &middot;
+  <a href="#inicio-rápido">Inicio rápido</a> &middot;
+  <a href="#vs-coolify-dokploy-caprover-y-dokku">Comparar</a> &middot;
+  <a href="../../docs/faq.md">FAQ</a> &middot;
   <a href="../../docs/roadmap.md">Hoja de ruta</a> &middot;
-  <a href="../../CHANGELOG.md">Registro de cambios</a> &middot;
   <a href="https://github.com/glincker/levelrail/discussions">Discusiones</a>
 </p>
 <!-- i18n-nav:start -->
 <p><a href="../../README.md">English</a> &middot; <a href="README.zh-Hans.md">简体中文</a> &middot; Español &middot; <a href="README.pt-BR.md">Português (BR)</a> &middot; <a href="README.de.md">Deutsch</a> &middot; <a href="README.fr.md">Français</a> &middot; <a href="README.ja.md">日本語</a></p>
 <!-- i18n-nav:end -->
-<picture><source media="(prefers-color-scheme: dark)" srcset="../../docs/assets/brand/social/github-social-1280x640.jpg"><img src="../../docs/assets/brand/social/github-social-1280x640-light.jpg" alt="Levelrail: tu propio Vercel, en tu servidor. La alternativa ligera y autoalojada a Vercel, Heroku y Coolify." width="880"></picture>
+<img src="../../docs/assets/demos/product-tour.gif" alt="Recorrido por el panel de Levelrail: resumen de la flota, lista de apps, historial de despliegues y métricas integradas" width="880">
 </div>
 
-Levelrail es un **PaaS autoalojado** de código abierto (Apache 2.0) para desarrolladores y equipos pequeños que quieren un flujo de trabajo al estilo Vercel, Heroku o Railway en servidores propios. Funciona en cualquier servidor Linux, desde un VPS pequeño hasta un rack (el único host medido es una máquina de 2 vCPU y 8 GB), y convierte servidores comunes en una nube privada con despliegues por Git (webhooks del forge), HTTPS, bases de datos con backups verificados, métricas, logs y alertas, sin Kubernetes y sin el stack de monitoreo que de otro modo tendrías que añadir.
+Levelrail convierte servidores Linux en una nube privada y funciona con los clústeres de Kubernetes y las cuentas de nube que ya tienes. Un solo servidor está listo para producción, multinodo es beta. Cada función lleva una etiqueta estable, beta o experimental en [Estado de las funciones](../../docs/feature-status.md).
 
-**Estado:** Un solo servidor está listo para producción según el [estado de las funciones](../../docs/feature-status.md); multinodo es beta. Ligera: el plano de control consume en reposo unos 200 MB de RAM y el 1,5 por ciento de una CPU en una máquina de 2 vCPU, en un único binario de Go ([consumo en reposo medido](../../docs/performance.md), [método](../../docs/benchmarks.md)). Tus apps usan sus propios recursos además. 570+ plantillas en el catálogo (346 probadas en un motor real), 259 herramientas MCP.
+## Inicio rápido
 
-## ¿Qué instalación es para mí?
-
-| Soy... | Ejecuta | Doc |
-| --- | --- | --- |
-| Tengo un servidor Linux (VPS o bare metal) y quiero desplegar apps | `curl -fsSL https://levelrail.com/install.sh \| sudo sh` | [Instalación](../../docs/installing.md) |
-| Quiero probarlo primero en local | Abre el dev container en [Codespaces](https://codespaces.new/glincker/levelrail) | [Instalación](../../docs/installing.md#option-3-build-from-source) |
-| Solo necesito la CLI en mi laptop | `brew install glincker/tap/levelrail-cli` o `npm install -g levelrail-cli` | [Instalar solo la CLI](../../docs/installing.md#installing-just-the-cli) |
-| Uso Docker y quiero un contenedor | `docker pull ghcr.io/glincker/levelrail` | [Docker](../../docs/installing.md#option-2-docker) |
-| Uso un agente de código | `npx skills add https://github.com/glincker/levelrail --skill levelrail` | [Servidor MCP](../../docs/mcp.md) |
-
-El servidor solo se instala en Linux. macOS y Windows son destinos solo para la CLI.
-
-## Tabla de contenidos
-
-[Inicio rápido](#inicio-rápido-instala-una-alternativa-autoalojada-a-vercel) &middot; [Cómo funciona](#cómo-funciona) &middot; [Verifica lo que instalas](#verifica-lo-que-instalas) &middot; [Por qué Levelrail](#por-qué-elegir-levelrail) &middot; [Listo para producción](#listo-para-producción-con-pruebas) &middot; [Alternativa a Coolify](#levelrail-vs-coolify-dokploy-caprover-y-dokku-alternativa-a-coolify) &middot; [Funciones](#qué-obtienes) &middot; [Guías](#guías) &middot; [FAQ](#preguntas-frecuentes-faq) &middot; [Para agentes de IA](#para-agentes-de-ia-y-crawlers)
-
-## Inicio rápido (instala una alternativa autoalojada a Vercel)
-
-Necesitas un servidor Linux (`amd64` o `arm64`) con systemd y acceso root. El instalador añade Docker si no lo encuentra.
-
-### 1. Instala el servidor
+Necesitas un servidor Linux (amd64 o arm64) con systemd y root. El instalador añade Docker. Abre los puertos 80 y 443.
 
 ```bash
 curl -fsSL https://levelrail.com/install.sh | sudo sh
 ```
 
-> **Nota:** HTTPS usa un certificado autofirmado hasta que actives Let's Encrypt. El primer inicio de sesión ofrece un certificado gratuito con un clic para `<dashed-ip>.sslip.io`, o puedes añadir tu propio dominio.
-
-Las últimas líneas de la salida incluyen la dirección del panel y un enlace de configuración de un solo uso:
-
-```text
-Levelrail vX.Y.Z installed and running.
-
-Open the dashboard:
-  http://203.0.113.10:8080/login#setup=<token>
-```
-
-### 2. Crea la cuenta de administrador
-
-Abre el enlace de configuración y elige una contraseña. El token va en el fragmento `#`, así que nunca llega al servidor ni a sus logs; ¿lo perdiste? `sudo APP_DATA_DIR=/var/lib/levelrail-data levelrail setup-token` lo imprime de nuevo. El primer inicio de sesión abre una pantalla que activa un certificado gratuito para `<dashed-ip>.sslip.io` con un clic (sin necesidad de DNS) y despliega tu primera app.
-
-### 3. Despliega una app
-
-En el servidor, el instalador ya dejó `levelrail-cli` en `/usr/local/bin`. Inicia sesión una vez y luego importa un repositorio (`levelrail-cli apps create --interactive` te pregunta todo paso a paso):
+1. Abre el enlace de configuración que imprime el instalador y elige una contraseña. Eso crea la cuenta de administrador.
+2. En el panel, copia la línea de inicio de sesión de la tarjeta **Connect your CLI** y ejecútala (se ve así: `levelrail-cli login --api-url http://127.0.0.1:8080 --code ABCD-EF23`).
+3. Despliega tu primera app:
 
 ```bash
-levelrail-cli login --api-url http://<server-ip>:8080 --code ABCD-EF23
 levelrail-cli import https://github.com/your-org/your-app --deploy
 ```
 
-¿Prefieres contenedores, una versión fija o compilar desde el código fuente? Consulta [Instalación](../../docs/installing.md). ¿Lo quieres tan ligero como Dokku, o con todo activado? `install.sh --profile minimal|standard|suite`, consulta [Perfiles de servidor](../../docs/profiles.md). ¿Vienes de otra plataforma? Consulta [Migrar a Levelrail](../../docs/migrate-to-levelrail.md): Coolify, Dokploy, CapRover, Dokku y los archivos compose pasan primero por una simulación (dry run), y el servidor anterior sigue atendiendo.
+Si algo falla, ejecuta `levelrail-cli doctor` y consulta [Instalación](../../docs/installing.md#troubleshooting). Siguiente: [Primeros 15 minutos](../../docs/first-15-minutes.md). Solo la CLI: `brew install glincker/tap/levelrail-cli` o `npx levelrail-cli --help`.
 
-Después de la configuración, la página de inicio del panel muestra una tarjeta **Connect your CLI**. Pulsa **Show my command**, pega la línea en tu terminal y la CLI inicia sesión con un código de un solo uso que caduca en minutos (sin contraseña, sin paso de aprobación):
+¿Quieres verlo primero? [Prueba la demo en vivo](https://demo.levelrail.com), una demo alojada de solo lectura del panel con datos ficticios ([cómo funciona](../../docs/run-a-read-only-demo.md)).
 
-```text
-logged in as "you@example.com"
-token tk_9fQ2x saved to ~/.config/levelrail-cli/credentials under profile "default", expires 2027-01-18
-```
+## Dónde puedes usarlo
 
-Iniciar sesión con tu contraseña desde un dispositivo nuevo requiere aprobación: la CLI imprime la página del panel donde aprobarlo y el número que debes escribir. `login --device` también sigue funcionando.
-
-Sin `--deploy`, `import` solo imprime el plan de despliegue. Para ver la dirección de la app, ejecuta `levelrail-cli open your-app`. Primero imprime el dominio personalizado y después la URL automática.
-
-### O deja que tu agente de código lo haga
-
-Instala la skill una vez y luego pídele a tu agente lo que quieras con palabras normales. Despliega, espera a que el rollout realmente converja, lee el fallo si lo hay y hace rollback de forma segura:
-
-```bash
-npx skills add https://github.com/glincker/levelrail --skill levelrail
-```
-
-> Deploy this repo to my Levelrail and tell me when it is live.
-
-La skill también aparece en [skills.sh](https://www.skills.sh/glincker/levelrail/levelrail). Detalles: [Agentes](../../docs/agents.md).
-
-### Si algo falla
-
-| Paso | Error que ves | Solución |
+| Superficie | Inicio | Docs |
 | --- | --- | --- |
-| Instalación | `control plane did not become healthy within 60s` | `systemctl status levelrail` y `journalctl -u levelrail -n 100 --no-pager`. Una causa común es un puerto que ya está en uso. |
-| Instalación | `could not list releases from GitHub. Set LEVELRAIL_VERSION=vX.Y.Z to pin one.` | El servidor no puede llegar a GitHub. Revisa el HTTPS saliente o fija una versión. |
-| Instalación | `checksum mismatch for ...` | No continúes. Ejecuta el instalador de nuevo. No definas `LEVELRAIL_SKIP_CHECKSUM=1` para saltarte el error. |
-| Inicio de sesión | `start device login: ... connection refused` | La CLI apunta a una dirección equivocada. Ejecuta `export APP_API_URL=http://127.0.0.1:<dashboard port>` e inténtalo de nuevo. |
-| Importación | `plan import: ... connection refused` | El plano de control no está en ejecución. Inícialo con `systemctl start levelrail`. |
-
-Más soluciones: [Solución de problemas](../../docs/troubleshooting.md). Todas las opciones de instalación (imagen de Docker, versión fija, compilación desde el código fuente): [Instalación](../../docs/installing.md). Despliega desde un proyecto local con `levelrail-cli up`: [Inicio rápido con un comando](../../docs/quickstart-one-command.md). Perfiles de servidor (`install.sh --profile minimal|standard|suite`): [Perfiles de servidor](../../docs/profiles.md). ¿Migras desde otra plataforma? `levelrail-cli import platform coolify|dokploy|caprover --dry-run` muestra primero qué se crearía, y el servidor anterior sigue atendiendo. Guía completa: [Migrar a Levelrail](../../docs/migrate-to-levelrail.md). ¿Publicas un proyecto de código abierto? Añade un botón de un clic a su README: [Botón Deploy to Levelrail](../../docs/deploy-button.md).
-
-<table>
-  <tr>
-    <td width="50%" valign="top" align="center">
-      <img src="../../docs/assets/demos/install-deploy.gif" alt="Grabación de terminal: instalar Levelrail y luego desplegar una app que queda en línea con HTTPS" width="440"><br>
-      <sub><b>Instalar y luego desplegar</b></sub>
-    </td>
-    <td width="50%" valign="top" align="center">
-      <img src="../../docs/assets/demos/deploy-rollback.gif" alt="Grabación de terminal: desplegar con una compuerta de readiness y luego hacer rollback a la imagen anterior" width="440"><br>
-      <sub><b>Despliegue con compuerta, rollback en un paso</b></sub>
-    </td>
-  </tr>
-</table>
-
-### Instalar solo la CLI
-
-Para tu laptop o un runner de CI, para controlar un servidor que ya ejecuta Levelrail:
-
-```bash
-brew install glincker/tap/levelrail-cli
-npm install -g levelrail-cli
-curl -fsSL https://levelrail.com/install-cli.sh | sh
-irm https://levelrail.com/install-cli.ps1 | iex
-```
-
-Los dos primeros funcionan en cualquier plataforma compatible, el tercero es para macOS y Linux, y el último para Windows PowerShell.
-
-### Ejecútalo en una VM Arm gratuita
-
-Los binarios y las imágenes de Levelrail están compilados para `arm64`, así que funciona en una VM Arm Always Free de Oracle Cloud. Abres dos firewalls (las reglas de red de la nube y el firewall del host) y luego ejecutas el mismo instalador. Oracle fija los límites gratuitos y su regla de instancias inactivas, y ambos pueden cambiar. Lee antes la [guía de Oracle Cloud](../../docs/install-on-oracle-cloud.md) y la [página Always Free](https://docs.oracle.com/en-us/iaas/Content/FreeTier/resourceref.htm) de Oracle. Las imágenes de apps varían en Arm, así que revisa las plataformas de una imagen antes de instalar una plantilla.
-
-## Cómo funciona
-
-```mermaid
-flowchart LR
-  C["Dashboard, CLI, MCP server"] --> API
-  subgraph CP["Control plane (one Go binary)"]
-    API["HTTP API"] --> R["Level-triggered reconciler"]
-    R --> S[("SQLite state")]
-    O["Built-in metrics and logs"]
-    I["Embedded Caddy ingress and TLS"]
-  end
-  R -->|"gRPC, mTLS"| A["Node agents (dial out)"]
-  A --> D["Docker Engine API"]
-  I --> D
-```
-
-El plano de control guarda el estado deseado en SQLite embebido y un reconciliador hace que Docker coincida con él, reintentando de forma segura porque cada vez parte del estado observado. Cada nodo ejecuta un agente que se conecta hacia afuera al plano de control mediante mTLS y habla directamente con la API de Docker Engine, así que los nodos no necesitan ningún puerto de entrada. Las métricas y los logs se almacenan por nodo y se consultan en conjunto. Caddy está embebido para el ingress y los certificados. Detalles: [Arquitectura](../../docs/architecture.md).
-
-## Verifica lo que instalas
-
-Las versiones publican una firma de Sigstore para `checksums.txt` y una attestation de procedencia del build. La primera línea de abajo obtiene la etiqueta de la última versión; define `V` con una etiqueta para verificar una versión anterior.
-
-```bash
-V=$(gh release view --repo glincker/levelrail --json tagName -q .tagName)
-BASE=https://github.com/glincker/levelrail/releases/download/$V
-curl -fsSLO $BASE/checksums.txt -O $BASE/checksums.txt.sigstore.json -O $BASE/levelrail-linux-amd64
-cosign verify-blob --bundle checksums.txt.sigstore.json \
-  --certificate-identity-regexp 'https://github.com/glincker/levelrail/\.github/workflows/release\.yml@.*' \
-  --certificate-oidc-issuer https://token.actions.githubusercontent.com checksums.txt
-sha256sum --check --ignore-missing checksums.txt
-gh attestation verify levelrail-linux-amd64 --repo glincker/levelrail
-```
-
-El instalador verifica los checksums por sí mismo. Las imágenes de contenedor están en GHCR (`ghcr.io/glincker/levelrail`, multiarquitectura). Más información: [Instalación](../../docs/installing.md).
-
-## Por qué elegir Levelrail
-
-- **Ligero.** Unos 200 MB de RAM y aproximadamente 1,5 % de una CPU en reposo, medido en una máquina de pruebas Linux de 2 vCPU y 8 GB, sin apps bajo carga y con el conjunto de funciones por defecto (una ejecución, 2026-10-19). [Cifras y método](../../docs/benchmarks.md).
-- **Agentes, no SSH.** Cada nodo ejecuta un agente pequeño que se conecta hacia afuera mediante mTLS y habla directamente con la API de Docker Engine. Sin puertos de entrada, sin invocar la CLI `docker` desde un shell, sin bucles de polling.
-- **Observabilidad incluida.** Métricas por nodo con resolución de 15 segundos, logs con búsqueda, marcadores de despliegue, trazas, consumo del presupuesto de errores (SLO burn), bandeja de alertas y una página de estado del consumo en reposo. Sin instalar un stack de Grafana.
-- **Despliegues que te protegen.** Rollouts con compuerta de readiness, imágenes fijadas para el rollback, lanzamientos canary que hacen rollback ante errores, diffs de despliegue, aprobaciones y congelamientos.
-- **Seguro por defecto.** Log de auditoría encadenado por hash que puedes verificar, llamadas salientes protegidas contra SSRF, secretos cifrados con cifrado de sobre y rotación de claves, tokens con alcance limitado, passkeys y 2FA con TOTP, inicio de sesión con OAuth y OIDC, políticas IAM, versiones firmadas. El inicio de sesión único con SAML y el aprovisionamiento con SCIM están disponibles como [función beta](../../docs/sso-saml.md), desactivados por defecto.
-- **Pensado para agentes de IA.** Un servidor MCP con 259 herramientas en conjuntos que se cargan bajo demanda (lista por defecto pequeña, unos 2,4k tokens; consulta la [superficie de herramientas](../../docs/mcp-tool-surface.md)), un modelo de permisos con tokens de alcance limitado y una skill para agentes.
-
-## Listo para producción, con pruebas
-
-Los despliegues en un solo servidor están listos para producción hoy. Multinodo y un puñado de funciones más recientes están etiquetados como beta, y cada etiqueta enlaza a su evidencia.
-
-| Afirmación | Evidencia |
-| --- | --- |
-| Cada función está etiquetada como estable o beta | [Estado de las funciones](../../docs/feature-status.md): las pruebas, las ejecuciones e2e en vivo y la documentación detrás de cada etiqueta |
-| Sobrevive a los fallos | [Resiliencia](../../docs/resilience.md): disco lleno, pérdida del enlace con el agente, daño en la base de datos con restauración guiada, arranque en modo seguro, protección contra tormentas de reconciliación |
-| Actualizaciones seguras y rollback | Matriz de actualización probada, rechazo de downgrade, [rollback](../../docs/rollback.md) con un clic y apagado limpio |
-| Medido, no prometido | [Benchmarks](../../docs/benchmarks.md): consumo en reposo, throughput del ingress, límites, con el método junto a cada cifra |
-| Backups verificados | Cada backup se vuelve a descargar y se comprueba con checksum, con simulacros de restauración programados |
-| Seguridad con evidencia de manipulación | Cadena de auditoría verificable, [política de seguridad](../../.github/SECURITY.md), versiones firmadas y escaneo de SBOM |
-
-## Levelrail vs Coolify, Dokploy, CapRover y Dokku (alternativa a Coolify)
-
-La mayoría de las plataformas autoalojadas de esta categoría gestionan los servidores entrando por SSH e invocando la CLI `docker` desde un shell, y luego analizan texto, lo que tiende a obligar a usar bucles de polling. Levelrail usa en su lugar un agente de conexión inversa y un reconciliador activado por nivel (level-triggered).
-
-| | Levelrail | Coolify | Dokploy | CapRover | Dokku |
-| --- | --- | --- | --- | --- | --- |
-| Control de nodos | Agente de conexión inversa | SSH + CLI | SSH + Engine API | Swarm API | Bash local |
-| Orquestación | Reconciliador level-triggered | Compose | Swarm | Swarm | Scheduler en Bash |
-| Métricas y logs integrados | Sí | Complemento opcional | Binario aparte | No | No |
-| Rollback | Imágenes fijadas, con compuerta de readiness | Health check desactivado por defecto | Rollback de Swarm | Manual | Scheduler por defecto: ninguno |
-| Verificación de backups | Automática; Postgres estable, MySQL y MongoDB en beta ([estado](../../docs/feature-status.md)) | Comprobación de no vacío | Ninguna | Ninguna | Sin backups |
-| SSO y aprovisionamiento | OAuth (20 proveedores) y OIDC genérico; SAML y SCIM (beta, desactivados por defecto) | Consulta su documentación | Consulta su documentación | Consulta su documentación | Consulta su documentación |
-| Log de auditoría | Encadenado por hash, verificable, exportación a CSV, reenvío a syslog, webhook o bucket | Consulta su documentación | Consulta su documentación | Consulta su documentación | Consulta su documentación |
-| IAM | Políticas Allow y Deny por app o base de datos, tokens con alcance limitado | Consulta su documentación | Consulta su documentación | Consulta su documentación | Consulta su documentación |
-
-Esto es posicionamiento, no un ranking, y todos los proyectos aquí valen la pena. Donde Levelrail va por detrás: es el proyecto más joven de los mencionados, con menos usuarios y menos recorrido en producción, y su inicio de sesión único con SAML y su aprovisionamiento con SCIM están en beta ([detalles](../../docs/sso-saml.md)). Su catálogo de plantillas (570+ entradas en el catálogo) está en el mismo rango que el de Coolify, pero solo una muestra se despliega de extremo a extremo ([ADR 015](../../adr/015-service-template-catalog-reversal.md)). La comparación completa y con fuentes está en [Comparación](../../docs/comparison.md).
+| Panel web | Abre el enlace de configuración que imprime el instalador | [Primeros 15 minutos](../../docs/first-15-minutes.md) |
+| CLI | <img src="https://cdn.jsdelivr.net/gh/glincker/thesvg@a7c5ddd3f529accdf86519cc8fb96cb76cef4efd/public/icons/apple/default.svg" alt="Apple" title="Apple" width="20" height="20"> `brew install glincker/tap/levelrail-cli`, `npx levelrail-cli --help` o `npm install --global levelrail-cli` | [Instalación](../../docs/installing.md) |
+| API HTTP | Token Bearer, `/api/v1` | [Referencia de la API](../../docs/api-reference.md) |
+| Terraform y OpenTofu | <img src="https://cdn.jsdelivr.net/gh/glincker/thesvg@a7c5ddd3f529accdf86519cc8fb96cb76cef4efd/public/icons/terraform/default.svg" alt="Terraform" title="Terraform" width="20" height="20"> <img src="https://cdn.jsdelivr.net/gh/glincker/thesvg@a7c5ddd3f529accdf86519cc8fb96cb76cef4efd/public/icons/opentofu/default.svg" alt="OpenTofu" title="OpenTofu" width="20" height="20"> `source = "glincker/levelrail"` | [Proveedor de Terraform](../../docs/terraform-provider.md) |
+| MCP y agentes de código | <img src="https://cdn.jsdelivr.net/gh/glincker/thesvg@a7c5ddd3f529accdf86519cc8fb96cb76cef4efd/public/icons/model-context-protocol/default.svg" alt="MCP" title="MCP" width="20" height="20"> 259 herramientas | [MCP](../../docs/mcp.md) |
+| API móvil (beta, desactivada por defecto) | Actívala en Settings, Beta features | [API móvil](../../docs/mobile-api.md) |
+| Runtime de escritorio en Mac (experimental) | Máquina virtual Linux privada en tu Mac | [Runtime de escritorio](../../docs/desktop-runtime.md) |
 
 ## Qué obtienes
 
-- **Despliegues:** Haz push a tu host de git (webhooks de GitHub, GitLab, Bitbucket, Gitea), los despliegues se inician desde un webhook del forge (un remoto nativo de `git push` es beta y está desactivado por defecto), entornos de vista previa por pull request (estable en GitHub, beta en GitLab y Bitbucket), presets de frameworks (Next.js, Go, React, Spring Boot y más), despliegues con Dockerfile, Compose o imagen, rollouts canary y blue-green. El corte con compuerta de readiness está probado en vivo con cero solicitudes fallidas en un solo nodo; multinodo es beta. [Desplegar apps](../../docs/deploying-apps.md)
-- **Dominios y TLS:** Ingress con Caddy embebido. El certificado por defecto es interno (autofirmado). Let's Encrypt público se activa con un solo interruptor y se verificó en una ejecución en vivo; la renovación y los wildcards con DNS-01 no están verificados. Se pueden subir certificados personalizados. Protección contra abuso por app. [Dominios](../../docs/domains-and-ingress.md)
-- **Bases de datos:** Postgres, MySQL, MariaDB, MongoDB, Redis, KeyDB, Dragonfly y ClickHouse con backups programados, recuperación a un punto en el tiempo para Postgres, restauración y rotación de contraseñas. [Bases de datos](../../docs/managing-databases.md)
-- **Una sola búsqueda para todo:** Cmd+K en apps, bases de datos, nodos, plantillas y acciones, filtrado según lo que tengas permitido hacer. [Búsqueda](../../docs/search.md)
-- **Servidores:** Añade nodos con un token de un solo uso, malla WireGuard, zonas y distribución por dominios de falla, simulación (what-if) de ubicación. [Multinodo](../../docs/multi-node.md)
-- **Plantillas:** 570+ plantillas en el catálogo: 574 entradas de catálogo (565 activas, 9 obsoletas), 346 con una ejecución registrada en un motor real, 228 vistas previas ([estado](../../docs/templates-status.md)). [Catálogo](../../docs/template-catalog.md)
-- **Identidad y acceso:** Contraseña, passkeys, TOTP, OAuth con 20 proveedores más OIDC genérico, políticas IAM, equipos, un log de auditoría encadenado por hash con exportación a CSV. El inicio de sesión único con SAML y el aprovisionamiento con SCIM están en beta y desactivados por defecto. [Identidad y acceso](../../docs/identity-and-access.md), [SAML y SCIM](../../docs/sso-saml.md)
-- **Plugins:** Un marketplace de plugins firmados con instalación en un clic, paneles en el dashboard y canales de alerta propios. [Plugins](../../docs/plugins.md)
-- **Automatización:** Una sola API HTTP detrás del dashboard, una CLI y un servidor MCP. La IA nunca forma parte de la ruta de reconciliación. [CLI](../../docs/cli-reference.md), [Control con IA](../../docs/ai-control.md)
-- **Pipelines, vistas previas, presupuestos de costos, suspensión por inactividad, páginas de estado** y más. Consulta el [Recorrido del producto](https://docs.levelrail.com/product-tour).
+La madurez sigue el [Estado de las funciones](../../docs/feature-status.md).
 
-<table>
-  <tr>
-    <td width="33%" valign="top"><a href="../../docs/product-tour.mdx"><picture><source media="(prefers-color-scheme: dark)" srcset="../../docs/assets/screenshots/dashboard-home.png"><img src="../../docs/assets/screenshots/dashboard-home-light.png" alt="Inicio del dashboard de Levelrail: salud de la flota, solicitudes y despliegues recientes" loading="lazy"></picture></a><br><sub><b>El plano de control de un vistazo</b></sub></td>
-    <td width="33%" valign="top"><a href="../../docs/frameworks.md"><picture><source media="(prefers-color-scheme: dark)" srcset="../../docs/assets/screenshots/framework-preset-picker.png"><img src="../../docs/assets/screenshots/framework-preset-picker-light.png" alt="Página de nueva app de Levelrail con el selector de presets de framework" loading="lazy"></picture></a><br><sub><b>Elige un preset de framework y los ajustes de build se completan solos</b></sub></td>
-    <td width="33%" valign="top"><a href="../../docs/template-catalog.md"><picture><source media="(prefers-color-scheme: dark)" srcset="../../docs/assets/screenshots/templates-catalog.png"><img src="../../docs/assets/screenshots/templates-catalog-light.png" alt="Catálogo de plantillas de servicios de Levelrail" loading="lazy"></picture></a><br><sub><b>Instala un servicio conocido desde el catálogo de plantillas</b></sub></td>
-  </tr>
-  <tr>
-    <td width="33%" valign="top"><a href="../../docs/deploying-apps.md"><picture><source media="(prefers-color-scheme: dark)" srcset="../../docs/assets/screenshots/deploy-live-log.png"><img src="../../docs/assets/screenshots/deploy-live-log-light.png" alt="Log de despliegue en vivo de Levelrail" loading="lazy"></picture></a><br><sub><b>Despliegues en vivo</b></sub></td>
-    <td width="33%" valign="top"><a href="../../docs/load-balancing.md"><picture><source media="(prefers-color-scheme: dark)" srcset="../../docs/assets/screenshots/load-balancer.png"><img src="../../docs/assets/screenshots/load-balancer-light.png" alt="Upstreams y health checks del balanceador de carga de Levelrail" loading="lazy"></picture></a><br><sub><b>Balancea la carga entre réplicas con health checks</b></sub></td>
-    <td width="33%" valign="top"><a href="../../docs/deploying-apps.md"><picture><source media="(prefers-color-scheme: dark)" srcset="../../docs/assets/screenshots/apps-list.png"><img src="../../docs/assets/screenshots/apps-list-light.png" alt="Lista de apps de Levelrail con estado y último despliegue" loading="lazy"></picture></a><br><sub><b>Cada app, su salud y su último despliegue</b></sub></td>
-  </tr>
-</table>
+| Área | En una línea | Funciona con |
+| --- | --- | --- |
+| [Despliegues](../../docs/deploying-apps.md) | Git push desde GitHub, GitLab, Bitbucket, Gitea o Forgejo, rollouts con compuerta de readiness, rollback en un paso, vistas previas y canarios | <img src="https://cdn.jsdelivr.net/gh/glincker/thesvg@a7c5ddd3f529accdf86519cc8fb96cb76cef4efd/public/icons/github/default.svg" alt="GitHub" title="GitHub" width="20" height="20"> <img src="https://cdn.jsdelivr.net/gh/glincker/thesvg@a7c5ddd3f529accdf86519cc8fb96cb76cef4efd/public/icons/gitlab/default.svg" alt="GitLab" title="GitLab" width="20" height="20"> <img src="https://cdn.jsdelivr.net/gh/glincker/thesvg@a7c5ddd3f529accdf86519cc8fb96cb76cef4efd/public/icons/bitbucket/default.svg" alt="Bitbucket" title="Bitbucket" width="20" height="20"> <img src="https://cdn.jsdelivr.net/gh/glincker/thesvg@a7c5ddd3f529accdf86519cc8fb96cb76cef4efd/public/icons/gitea/default.svg" alt="Gitea" title="Gitea" width="20" height="20"> <img src="https://cdn.jsdelivr.net/gh/glincker/thesvg@a7c5ddd3f529accdf86519cc8fb96cb76cef4efd/public/icons/docker/default.svg" alt="Docker" title="Docker" width="20" height="20"> |
+| [Plantillas](../../docs/template-catalog.md) | 570+ plantillas en el catálogo, 346 con una ejecución registrada en un motor real | <img src="https://cdn.jsdelivr.net/gh/glincker/thesvg@a7c5ddd3f529accdf86519cc8fb96cb76cef4efd/public/icons/postgresql/default.svg" alt="PostgreSQL" title="PostgreSQL" width="20" height="20"> <img src="https://cdn.jsdelivr.net/gh/glincker/thesvg@a7c5ddd3f529accdf86519cc8fb96cb76cef4efd/public/icons/redis/default.svg" alt="Redis" title="Redis" width="20" height="20"> <img src="https://cdn.jsdelivr.net/gh/glincker/thesvg@a7c5ddd3f529accdf86519cc8fb96cb76cef4efd/public/icons/grafana/default.svg" alt="Grafana" title="Grafana" width="20" height="20"> |
+| [Edge y HTTPS](../../docs/domains-and-ingress.md) | Certificados automáticos, incluidos wildcards, firewall, listas de bots, encabezados y redirecciones por dominio | <img src="https://cdn.jsdelivr.net/gh/glincker/thesvg@a7c5ddd3f529accdf86519cc8fb96cb76cef4efd/public/icons/letsencrypt/default.svg" alt="Let's Encrypt" title="Let's Encrypt" width="20" height="20"> <img src="https://cdn.jsdelivr.net/gh/glincker/thesvg@a7c5ddd3f529accdf86519cc8fb96cb76cef4efd/public/icons/cloudflare/default.svg" alt="Cloudflare" title="Cloudflare" width="20" height="20"> |
+| [Nodos y nubes](../../docs/node-provisioning.md) | Une cualquier host Linux con un token, aprovisiona nodos en 6 nubes (beta), clústeres de Kubernetes existentes como destinos (experimental) | <img src="https://cdn.jsdelivr.net/gh/glincker/thesvg@a7c5ddd3f529accdf86519cc8fb96cb76cef4efd/public/icons/hetzner/default.svg" alt="Hetzner" title="Hetzner" width="20" height="20"> <img src="https://cdn.jsdelivr.net/gh/glincker/thesvg@a7c5ddd3f529accdf86519cc8fb96cb76cef4efd/public/icons/digitalocean/default.svg" alt="DigitalOcean" title="DigitalOcean" width="20" height="20"> <img src="https://cdn.jsdelivr.net/gh/glincker/thesvg@a7c5ddd3f529accdf86519cc8fb96cb76cef4efd/public/icons/aws/default.svg" alt="AWS" title="AWS" width="20" height="20"> |
+| [Bases de datos y copias de seguridad](../../docs/managing-databases.md) | 13 motores, copias de seguridad a destinos compatibles con S3, R2 o disco local, [simulacros de restauración](../../docs/prove-your-backups-work.md) | <img src="https://cdn.jsdelivr.net/gh/glincker/thesvg@a7c5ddd3f529accdf86519cc8fb96cb76cef4efd/public/icons/postgresql/default.svg" alt="PostgreSQL" title="PostgreSQL" width="20" height="20"> <img src="https://cdn.jsdelivr.net/gh/glincker/thesvg@a7c5ddd3f529accdf86519cc8fb96cb76cef4efd/public/icons/mysql/default.svg" alt="MySQL" title="MySQL" width="20" height="20"> <img src="https://cdn.jsdelivr.net/gh/glincker/thesvg@a7c5ddd3f529accdf86519cc8fb96cb76cef4efd/public/icons/mariadb/default.svg" alt="MariaDB" title="MariaDB" width="20" height="20"> <img src="https://cdn.jsdelivr.net/gh/glincker/thesvg@a7c5ddd3f529accdf86519cc8fb96cb76cef4efd/public/icons/mongodb/default.svg" alt="MongoDB" title="MongoDB" width="20" height="20"> <img src="https://cdn.jsdelivr.net/gh/glincker/thesvg@a7c5ddd3f529accdf86519cc8fb96cb76cef4efd/public/icons/redis/default.svg" alt="Redis" title="Redis" width="20" height="20"> <img src="https://cdn.jsdelivr.net/gh/glincker/thesvg@a7c5ddd3f529accdf86519cc8fb96cb76cef4efd/public/icons/aws-amazon-simple-storage-service/default.svg" alt="Amazon S3" title="Amazon S3" width="20" height="20"> <img src="https://cdn.jsdelivr.net/gh/glincker/thesvg@a7c5ddd3f529accdf86519cc8fb96cb76cef4efd/public/icons/minio/default.svg" alt="MinIO" title="MinIO" width="20" height="20"> |
+| [Observabilidad](../../docs/observability.md) | Métricas integradas, búsqueda de registros, alertas a 18 tipos de canal, ingesta OTLP, página de estado. Grafana lee los registros mediante una [API compatible con Loki](../../docs/loki-api.md) | <img src="https://cdn.jsdelivr.net/gh/glincker/thesvg@a7c5ddd3f529accdf86519cc8fb96cb76cef4efd/public/icons/grafana/default.svg" alt="Grafana" title="Grafana" width="20" height="20"> <img src="https://cdn.jsdelivr.net/gh/glincker/thesvg@a7c5ddd3f529accdf86519cc8fb96cb76cef4efd/public/icons/prometheus/default.svg" alt="Prometheus" title="Prometheus" width="20" height="20"> <img src="https://cdn.jsdelivr.net/gh/glincker/thesvg@a7c5ddd3f529accdf86519cc8fb96cb76cef4efd/public/icons/slack/default.svg" alt="Slack" title="Slack" width="20" height="20"> <img src="https://cdn.jsdelivr.net/gh/glincker/thesvg@a7c5ddd3f529accdf86519cc8fb96cb76cef4efd/public/icons/discord/default.svg" alt="Discord" title="Discord" width="20" height="20"> |
+| [Seguridad y acceso](../../docs/identity-and-access.md) | Inicio de sesión con OAuth y OIDC, passkeys, TOTP, políticas IAM, registro de auditoría encadenado por hash | <img src="https://cdn.jsdelivr.net/gh/glincker/thesvg@a7c5ddd3f529accdf86519cc8fb96cb76cef4efd/public/icons/github/default.svg" alt="GitHub" title="GitHub" width="20" height="20"> <img src="https://cdn.jsdelivr.net/gh/glincker/thesvg@a7c5ddd3f529accdf86519cc8fb96cb76cef4efd/public/icons/gitlab/default.svg" alt="GitLab" title="GitLab" width="20" height="20"> |
+| [Automatización](../../docs/cli-reference.md) | CLI, API HTTP, [proveedor de Terraform y OpenTofu](../../docs/terraform-provider.md), 259 [herramientas MCP](../../docs/mcp.md) para agentes de código | <img src="https://cdn.jsdelivr.net/gh/glincker/thesvg@a7c5ddd3f529accdf86519cc8fb96cb76cef4efd/public/icons/terraform/default.svg" alt="Terraform" title="Terraform" width="20" height="20"> <img src="https://cdn.jsdelivr.net/gh/glincker/thesvg@a7c5ddd3f529accdf86519cc8fb96cb76cef4efd/public/icons/opentofu/default.svg" alt="OpenTofu" title="OpenTofu" width="20" height="20"> <img src="https://cdn.jsdelivr.net/gh/glincker/thesvg@a7c5ddd3f529accdf86519cc8fb96cb76cef4efd/public/icons/model-context-protocol/default.svg" alt="MCP" title="MCP" width="20" height="20"> |
 
-Más pantallas (métricas, logs, backups, dominios, seguridad, plugins) están en el [Recorrido del producto](https://docs.levelrail.com/product-tour).
+<details>
+<summary>Todas las funciones de despliegue</summary>
 
-Todas las capturas de pantalla provienen de un plano de control real en ejecución.
+- Despliegues por Git push o webhook desde GitHub, GitLab, Bitbucket, Gitea y Forgejo. Consulta [Integraciones de Git](../../docs/git-integrations.md) y [Despliegue con Git push](../../docs/git-push-deploy.md).
+- Compilaciones con Dockerfile, Compose y Railpack (Railpack es beta) con una cola de compilación. Consulta [Build Center](../../docs/build-center.md).
+- Rollouts con compuerta de readiness y rollback en un paso. Consulta [Despliegues sin downtime](../../docs/zero-downtime-deploys.md) y [Rollback](../../docs/rollback.md).
+- Canarios y pruebas divididas. Consulta [Despliegues canary](../../docs/canary-deploys.md) y [Pruebas divididas](../../docs/split-testing.md).
+- Entornos de vista previa por pull request: estable en GitHub, beta en GitLab y Bitbucket. Consulta [Vistas previas de despliegue](../../docs/deploy-previews.md).
+- Aprobaciones y congelamientos de despliegue. Consulta [Seguridad de los despliegues](../../docs/deploy-safety.md).
+- Funciones en Node, Python o Go (beta). Consulta [Funciones](../../docs/functions.md).
+</details>
+<details>
+<summary>Todos los detalles de las plantillas</summary>
 
-## Guías
+- 574 entradas de catálogo (565 activas, 9 obsoletas) en 22 categorías.
+- 346 entradas tienen una ejecución registrada en un motor real.
+- 228 entradas están marcadas como vista previa: instalables, sin ejecución registrada todavía.
+</details>
+<details>
+<summary>Todas las funciones de edge</summary>
 
-Tutoriales paso a paso, cada uno probado en una instalación real:
+- Ingress embebido con TLS automático mediante HTTP-01 y wildcards con DNS-01.
+- Encabezados, reenvíos, reglas geográficas, caché y redirecciones por dominio. Consulta [Controles de tráfico por dominio](../../docs/domain-traffic-controls.md).
+- Reglas de firewall, listas de IP, desafío del navegador, listas de bots y modo ataque. Consulta [Firewall](../../docs/firewall.md).
+- Límites de tasa y listas de denegación por app (beta). Consulta [Defensa contra abuso](../../docs/abuse-defense.md).
+- Balanceo round-robin entre réplicas. Consulta [Balanceo de carga](../../docs/load-balancing.md).
+- Redes privadas y una malla WireGuard (beta). Consulta [Multinodo](../../docs/multi-node.md).
+</details>
+<details>
+<summary>Todas las funciones de nodos y nubes</summary>
 
-| Guía | Qué aprendes |
+- Aprovisiona nodos en Hetzner, DigitalOcean, AWS, Azure, GCP u Oracle Cloud (beta).
+- Une cualquier host Linux con un token de un solo uso mediante mTLS. Consulta [Añade un nodo en cualquier lugar](../../docs/add-node-anywhere.md).
+- DNS en Cloudflare y Route53, registros de imágenes en ECR, Artifact Registry y ACR. Consulta [Integraciones de nube](../../docs/cloud-integrations.md) para el estado de cada nube.
+- Funciona con los clústeres y las cuentas de nube que ya tienes (experimental): conecta clústeres de Kubernetes existentes y despliega en ellos, desactivado por defecto. Consulta [Clústeres de Kubernetes](../../docs/kubernetes-clusters.md).
+</details>
+<details>
+<summary>Todas las funciones de datos y copias de seguridad</summary>
+
+- 13 motores de base de datos en el código. 9 verificados en vivo. 4 (Meilisearch, Qdrant, Typesense, Memcached) están construidos pero aún no verificados en vivo.
+- Copias de seguridad a destinos compatibles con S3, R2 o locales. Consulta [Copias de seguridad y almacenamiento](../../docs/backups-and-storage.md).
+- Simulacros de restauración que demuestran que una copia de seguridad funciona. Consulta [Demuestra que tus copias de seguridad funcionan](../../docs/prove-your-backups-work.md).
+- Recuperación a un punto en el tiempo para Postgres.
+</details>
+<details>
+<summary>Todas las funciones de observabilidad</summary>
+
+- Métricas integradas, búsqueda de registros y archivo de registros. Consulta [Explorador de registros](../../docs/log-explorer.md) y [Archivo de registros](../../docs/log-archive.md).
+- Ingesta OTLP. Consulta [Ingesta OTLP](../../docs/otlp-ingest.md).
+- Página de estado pública. Consulta [Página de estado](../../docs/status-page.md).
+- Trazas de despliegue y exportación de tráfico. Consulta [Traza de despliegue](../../docs/deploy-trace.md) y [Exportación de tráfico](../../docs/traffic-export.md).
+- Alertas a 18 tipos de canal de notificación. Consulta [Alertas](../../docs/alerts.md).
+- Monitores de uptime HTTP, TCP, heartbeat y TLS (experimental). Consulta [Monitores](../../docs/monitors.md).
+</details>
+<details>
+<summary>Todas las funciones de seguridad y acceso</summary>
+
+- Contraseñas, passkeys y TOTP.
+- Inicio de sesión con OAuth con 20 proveedores más OIDC genérico. Consulta [OIDC](../../docs/sso-oidc.md).
+- SAML y SCIM (beta, desactivados por defecto). Consulta [SAML y SCIM](../../docs/sso-saml.md).
+- Políticas IAM y equipos. Consulta [Equipos y roles](../../docs/teams-and-roles.md).
+- Registro de auditoría encadenado por hash. Consulta [Registro de auditoría](../../docs/audit-log.md).
+- Secretos cifrados. Consulta [Entorno y secretos](../../docs/environment-and-secrets.md).
+- Versiones firmadas. Consulta [Verifica una versión](../../docs/verify-a-release.md).
+</details>
+<details>
+<summary>Todas las funciones de automatización</summary>
+
+- `levelrail-cli` y una API HTTP. Consulta [Referencia de la API](../../docs/api-reference.md).
+- Proveedor de Terraform y OpenTofu. Consulta [Proveedor de Terraform](../../docs/terraform-provider.md), el [registro de Terraform](https://registry.terraform.io/providers/glincker/levelrail/latest) y el [registro de OpenTofu](https://search.opentofu.org/provider/glincker/levelrail/latest).
+- Plataforma como código en YAML (experimental). Consulta [Plataforma como código](../../docs/platform-as-code.md).
+- Pipelines de CI. Consulta [Pipelines](../../docs/pipelines.md).
+- 11 integraciones por app: Sentry, PostHog, GlitchTip, OneUptime, Plausible, Datadog, Axiom, Better Stack, LogSnag, Bugsnag y New Relic. Consulta [Alertas](../../docs/alerts.md).
+- Plugins firmados para canales de notificación. Consulta [Plugins](../../docs/plugins.md).
+- 259 herramientas MCP para agentes de código. Consulta [MCP](../../docs/mcp.md) y [Superficie de herramientas](../../docs/mcp-tool-surface.md).
+- Una plantilla de servidor de correo con buzones y registros DNS (experimental). Consulta [Plantilla de correo](../../docs/mail-template.md).
+</details>
+
+Todas las funciones, con etiquetas de madurez: [docs/features.md](../../docs/features.md).
+
+## Pensado para agentes de código
+
+259 [herramientas MCP](../../docs/mcp.md), con alcance limitado a las capacidades del token, con confirmación para las escrituras y auditadas. Añade la skill con `npx skills add https://github.com/glincker/levelrail --skill levelrail` y luego pide a tu agente que despliegue tu repositorio. Para instalar con un agente, pega esto en Claude Code, Cursor o cualquier agente que pueda ejecutar comandos de shell en tu servidor:
+
+```text
+Install Levelrail on this server: run `curl -fsSL https://levelrail.com/install.sh | sudo sh`.
+Open the setup link it prints and tell me, because I choose the password myself.
+Then run `levelrail-cli doctor` and `levelrail-cli status` and report anything that fails.
+Do not write any token or password to a file or into this chat.
+```
+
+## Listo para producción, con pruebas
+
+| Afirmación | Evidencia |
 | --- | --- |
-| [Despliega una app de Next.js con Postgres](https://github.com/glincker/levelrail/discussions/1239) | Del repositorio a HTTPS en unos diez minutos |
-| [Despliega una app de Django con Postgres](https://github.com/glincker/levelrail/discussions/1243) | Más los cuatro errores con los que todos se topan |
-| [Push to deploy con GitHub](https://github.com/glincker/levelrail/discussions/1244) | Webhooks, vistas previas y el log de entregas |
-| [Cómo se mantienen seguros los despliegues](https://github.com/glincker/levelrail/discussions/1246) | Compuertas de salud, corte blue-green, rollback |
-| [Logs, trazas y errores sin un stack aparte](https://github.com/glincker/levelrail/discussions/1240) | Observabilidad y Grafana |
-| [Escala a cero en un VPS pequeño](https://github.com/glincker/levelrail/discussions/1242) | Ejecuta muchos proyectos en una sola máquina |
-| [Levelrail vs Coolify, Dokploy, CapRover, Dokku y Kamal](https://github.com/glincker/levelrail/discussions/1235) | Dónde encaja cada uno |
+| Cada función con etiqueta estable o beta | [Estado de las funciones](../../docs/feature-status.md) |
+| Sobrevive a los fallos | [Resiliencia](../../docs/resilience.md) |
+| Medido, no prometido | [Benchmarks](../../docs/benchmarks.md) |
+| Probado con contenedores reales | [CI](../../.github/workflows/ci.yml) y [`test/e2e`](../../test/e2e) |
+| Versiones firmadas | [Verifícalas](../../docs/installing.md#verifying-release-binaries) |
+| Honesto sobre las carencias | [Límites conocidos](../../docs/known-limits.md) |
 
-## Añade un botón Deploy a tu proyecto
+## vs Coolify, Dokploy, CapRover y Dokku
 
-¿Mantienes una app de código abierto? Deja que la gente la ejecute en su propio servidor con unos pocos clics.
+| | Levelrail | Coolify | Dokploy | CapRover | Dokku |
+| --- | --- | --- | --- | --- | --- |
+| **Acceso de agentes (MCP)** | Lectura y escritura, con alcance por capacidades, con confirmación, auditado | Servidor oficial, solo lectura | Existe un repositorio de servidor MCP | No documentado | No documentado |
+| **Cambiarte a Levelrail** | Importadores con simulación (dry run) para los cuatro, el servidor anterior sigue atendiendo | n/d | n/d | n/d | n/d |
+| Control de nodos | Agente de conexión inversa | SSH + CLI | SSH + Engine API | Swarm API | Bash local |
+| Métricas y registros integrados | Sí | Complemento opcional | Binario aparte | No | No |
+| Rollback | Imágenes fijadas, con compuerta de readiness | Imágenes retenidas | Rollback de Swarm | Manual | Scheduler por defecto: ninguno |
+| Verificación de copias de seguridad | Automática | Comprobación de no vacío | Ninguna | Ninguna | Sin copias de seguridad |
+| Registro de auditoría | Encadenado por hash, verificable | No documentado | No documentado | No documentado | No documentado |
 
-[![Deploy to Levelrail](../../docs/assets/brand/deploy-button-split.svg)](../../docs/deploy-button.md)
+Las celdas indican solo lo que dicen los documentos públicos de cada proyecto (última revisión 2026-11-07), y "No documentado" significa que no encontramos nada, no que falte. Esto es posicionamiento, no un ranking. Levelrail es el proyecto más joven de los mencionados, con menos usuarios y menos recorrido en producción. Detalles con fuentes: [Comparación](../../docs/comparison.md).
 
-Fragmentos para copiar y pegar y los cuatro estilos de badge: [Botón Deploy](../../docs/deploy-button.md) y el [Kit de marca](../../docs/brand.md).
+## Comunidad
 
-## Qué sigue
+[Discussions](https://github.com/glincker/levelrail/discussions) &middot; [Issues](https://github.com/glincker/levelrail/issues) &middot; [Discord](https://discord.gg/Ar5pcaZB99) &middot; [support@levelrail.com](mailto:support@levelrail.com) &middot; [Política de seguridad](../../.github/SECURITY.md)
 
-Planeado, no prometido. Las fechas son metas y los elementos pueden moverse o descartarse. Lista completa en la [hoja de ruta](../../docs/roadmap.md).
-
-- Ejecuciones en hosts reales para la malla multinodo y una cifra de consumo en reposo.
-- Verificaciones públicas de ACME: renovación cerca del vencimiento y wildcards con DNS-01.
-- Más pruebas de actualización y downgrade entre versiones.
-- Snapshots de versiones y vínculos de entorno.
-- Una primera versión estable, solo cuando esté la evidencia de hardening. No hay fecha definida.
-
-## Preguntas frecuentes (FAQ)
-
-**¿Levelrail está listo para producción?** Los despliegues en un solo servidor están listos para producción; multinodo y algunas funciones más recientes son beta. Cada etiqueta está en [Estado de las funciones](../../docs/feature-status.md).
-
-**¿Necesita Kubernetes?** No. Es un solo binario de Go con un runtime de Docker, y una capa de compatibilidad con Kubernetes es un no-objetivo deliberado ([Comparación](../../docs/comparison.md)).
-
-**¿Cuánto cuesta?** Nada. Es Apache 2.0, una sola edición, sin clave de licencia y sin plan de pago. Tú pagas por tus propios servidores ([Precios](../../docs/pricing.md)).
-
-**¿En qué se diferencia de Coolify o Dokploy?** Los nodos se gestionan con un agente de conexión inversa y un reconciliador level-triggered en lugar de SSH y la CLI `docker`, y las métricas y los logs vienen integrados. Consulta la [tabla comparativa](#levelrail-vs-coolify-dokploy-caprover-y-dokku-alternativa-a-coolify), que incluye dónde Levelrail va por detrás.
-
-**¿Puedo migrar desde Coolify?** Sí. `levelrail-cli import platform coolify --dry-run` muestra primero qué se crearía, y el servidor anterior sigue atendiendo. Dokploy, CapRover, Dokku y los archivos compose también funcionan: [Migrar a Levelrail](../../docs/migrate-to-levelrail.md).
-
-**¿Es compatible con agentes de IA y MCP?** Sí. `levelrail-mcp` expone la misma API y el mismo modelo de permisos, y se incluye una skill para agentes. La IA nunca forma parte de la ruta de reconciliación: [MCP](../../docs/mcp.md), [Control con IA](../../docs/ai-control.md).
-
-**¿Cómo actualizo?** Usa Settings > Updates o `levelrail-cli upgrade --plan`. La actualización verifica la versión, hace un snapshot de tus datos y hace rollback por sí sola si la nueva versión no está sana: [Actualiza con seguridad](../../docs/upgrade-safely.md).
-
-**¿Dónde se almacenan mis datos?** En tus servidores. Por defecto, el plano de control guarda SQLite, la clave maestra y el token de configuración en `/var/lib/levelrail-data`; las métricas y los logs se quedan en cada nodo ([Instalación](../../docs/installing.md), [Arquitectura](../../docs/architecture.md)).
-
-## Para agentes de IA y crawlers
-
-- **Skill para agentes:** [`skills/levelrail/SKILL.md`](../../skills/levelrail/SKILL.md) enseña a un agente de código a desplegar, esperar, diagnosticar y hacer rollback de forma segura.
-- **Servidor MCP:** `levelrail-mcp` expone la misma API y el mismo modelo de permisos. Empieza en modo `read-only`. Consulta [MCP](../../docs/mcp.md) y [Control con IA](../../docs/ai-control.md).
-- **Guía del repositorio:** [`AGENTS.md`](../../AGENTS.md) para trabajar en este código, y [`llms.txt`](../../llms.txt) como índice. Documentación para LLM: [llms.txt](https://docs.levelrail.com/llms.txt) y [llms-full.txt](https://docs.levelrail.com/llms-full.txt).
-
-## Comunidad y soporte
-
-- [GitHub Discussions](https://github.com/glincker/levelrail/discussions) para preguntas, ideas y para mostrar tus proyectos, e [Issues](https://github.com/glincker/levelrail/issues) para errores.
-- [GLINR Discord](https://discord.gg/Ar5pcaZB99): chat en vivo con los mantenedores, en el canal de foro `#levelrail`.
-- [support@levelrail.com](mailto:support@levelrail.com) para ayuda directa, y la [Política de seguridad](../../.github/SECURITY.md) para reportar una vulnerabilidad de forma privada.
-- [Contribuir](../../.github/CONTRIBUTING.md): ciclo de desarrollo, pruebas y convenciones de commits. Compilar desde el código fuente requiere Go 1.27 o superior y Docker: consulta [Instalación](../../docs/installing.md#option-3-build-from-source).
-- [Soporte](../../SUPPORT.md), [Accesibilidad](../../ACCESSIBILITY.md) y [Versionado](../../VERSIONING.md).
-
-## Dale una estrella al repositorio
-
-Si Levelrail te ahorra un fin de semana, una [estrella en GitHub](https://github.com/glincker/levelrail) ayuda a que otras personas que alojan sus propios servicios lo encuentren. Los reportes de errores y los comentarios honestos ayudan aún más.
-
-[![Star History Chart](https://api.star-history.com/svg?repos=glincker/levelrail&type=Date)](https://star-history.com/#glincker/levelrail&Date)
-
-<a href="https://github.com/glincker/levelrail/graphs/contributors"><img src="https://contrib.rocks/image?repo=glincker/levelrail" alt="Contribuidores de Levelrail"></a>
+Si Levelrail te ahorra un fin de semana, una [estrella](https://github.com/glincker/levelrail) ayuda a que otras personas que alojan sus propios servicios lo encuentren.
 
 ## Licencia
 
-Apache 2.0, consulta [LICENSE](../../LICENSE).
-
-## Creado por
-
-Levelrail es creado por Gagan Deep Singh, fundador de [GLINR Studios](https://glinr.com) y [theSVG](https://thesvg.org). Proyectos hermanos: [theSVG](https://thesvg.org) (biblioteca de íconos de marcas), [theauth](https://github.com/glincker/theauth) (autenticación de código abierto para agentes de IA y personas) y [AskVerdict AI](https://askverdict.ai). Saluda en [thegdsks.com](https://thegdsks.com).
+Apache 2.0, consulta [LICENSE](../../LICENSE). Creado por Gagan Singh, también conocido como GDS K S, de [GLINR Studios](https://glinr.com) y [theSVG](https://thesvg.org).
 
 <div align="center">
 
-<a href="https://glinr.com">
-  <picture>
-    <source media="(prefers-color-scheme: dark)" srcset="../../docs/assets/brand/glincker-light.svg">
-    <img src="../../docs/assets/brand/glincker-dark.svg" alt="GLINR Studios" width="56">
-  </picture>
-</a>
-
-<sub>Con tecnología de <a href="https://glinr.com"><b>GLINR Studios</b></a> &middot; ícono de <a href="https://thesvg.org/icon/glincker">theSVG</a></sub>
 
 </div>

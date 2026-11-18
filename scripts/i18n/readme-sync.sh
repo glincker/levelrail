@@ -106,6 +106,8 @@ ex_imgs() {
 }
 
 cmd_validate() {
+	# Local, or it clobbers cmd_update's f, lang and w and deletes its temp dir.
+	local lang f w
 	lang="${1:-}"
 	[ -n "$lang" ] || { echo "usage: validate <lang> [file]" >&2; return 2; }
 	f="${2:-$(tr_file "$lang")}"
@@ -187,8 +189,13 @@ cmd_update() {
 			cp "$w/raw.md" "$w/new.md"
 		fi
 		if cmd_validate "$lang" "$w/new.md" >"$w/val.txt" 2>&1; then
-			cat "$w/new.md" >"$f"
-			cmd_stamp "$lang"
+			# Stamp only after the copy worked, or a stale file reads as fresh.
+			if cp "$w/new.md" "$f"; then
+				cmd_stamp "$lang"
+			else
+				echo "$lang: could not write the translation, kept old file" >&2
+				fails=1
+			fi
 		else
 			echo "$lang: validation failed, kept old file" >&2
 			cat "$w/val.txt" >&2
