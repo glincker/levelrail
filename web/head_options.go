@@ -2,6 +2,8 @@ package web
 
 import (
 	"html"
+	"net/http"
+	"net/url"
 	"strconv"
 	"strings"
 
@@ -20,6 +22,9 @@ type HeadOptions struct {
 	ImageHeight int
 	// CSP replaces DashboardCSP on every response when set (demo analytics).
 	CSP string
+	// GTMID, when set, adds the server-rendered Google Tag Manager loader to
+	// the head for requests that do not send Do Not Track or Sec-GPC.
+	GTMID string
 }
 
 func (o HeadOptions) isZero() bool {
@@ -29,7 +34,7 @@ func (o HeadOptions) isZero() bool {
 
 // injectShareHead is the HeadOptions variant of the brand head: same tag
 // set plus canonical, og:url and a large twitter card.
-func injectShareHead(page []byte, b *brand.Brand, o HeadOptions) []byte {
+func injectShareHead(page []byte, b *brand.Brand, o HeadOptions, withGTM bool) []byte {
 	e := html.EscapeString
 	title := o.Title
 	if title == "" {
@@ -67,6 +72,9 @@ func injectShareHead(page []byte, b *brand.Brand, o HeadOptions) []byte {
 			tags = append(tags, `<meta property="og:image:alt" content="`+e(o.ImageAlt)+`" />`)
 		}
 	}
+	if withGTM && o.GTMID != "" {
+		tags = append(tags, gtmHeadTags(o.GTMID)...)
+	}
 	out := titleTag.ReplaceAllLiteral(page, []byte("<title>"+e(title)+"</title>"))
 	out = metaTags.ReplaceAll(out, nil)
 	meta := strings.Join(tags, "\n    ")
@@ -78,4 +86,25 @@ func twitterCard(o HeadOptions) string {
 		return "summary_large_image"
 	}
 	return "summary"
+}
+
+// GTMInitPath is the same-origin script that seeds dataLayer before gtm.js runs.
+const GTMInitPath = "/gtm-init.js"
+
+// gtmHeadTags returns the external-only GTM loader: no inline script, so the CSP
+// keeps script-src without unsafe-inline. The init script is a plain blocking
+// script so gtm.start is queued before the async gtm.js executes.
+func gtmHeadTags(id string) []string {
+	return []string{
+		`<script src="` + GTMInitPath + `"></script>`,
+		`<script async src="https://www.googletagmanager.com/gtm.js?id=` + url.QueryEscape(id) + `"></script>`,
+	}
+}
+
+// GTMInitScript is the body served at GTMInitPath.
+const GTMInitScript = "window.dataLayer = window.dataLayer || [];\nwindow.dataLayer.push({ 'gtm.start': Date.now(), event: 'gtm.js' });\n"
+
+// optedOutOfTracking reports Do Not Track or Global Privacy Control request headers.
+func optedOutOfTracking(r *http.Request) bool {
+	return r.Header.Get("DNT") == "1" || r.Header.Get("Sec-GPC") == "1"
 }

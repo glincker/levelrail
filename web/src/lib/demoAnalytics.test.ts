@@ -104,6 +104,31 @@ describe('demoAnalytics GTM', () => {
     expect(window.dataLayer).toBeUndefined()
   })
 
+  it('reuses a server-rendered tag without injecting a second copy', async () => {
+    vi.stubGlobal('navigator', { doNotTrack: null })
+    window.dataLayer = [{ 'gtm.start': 1, event: 'gtm.js' }]
+    const tag = document.createElement('script')
+    tag.async = true
+    tag.src = 'https://www.googletagmanager.com/gtm.js?id=GTM-ABC123'
+    document.head.appendChild(tag)
+    await initDemoAnalytics(gtmInfo)
+    expect(document.head.querySelectorAll('script')).toHaveLength(1)
+    const starts = (window.dataLayer ?? []).filter((e) => 'gtm.start' in e)
+    expect(starts).toHaveLength(1)
+    captureDemoEvent('demo_github_click')
+    expect(window.dataLayer?.at(-1)?.event).toBe('demo_github_click')
+  })
+
+  it('pushes gtm.start itself when the tag exists but dataLayer is empty', async () => {
+    vi.stubGlobal('navigator', { doNotTrack: null })
+    const tag = document.createElement('script')
+    tag.src = 'https://www.googletagmanager.com/gtm.js?id=GTM-ABC123'
+    document.head.appendChild(tag)
+    await initDemoAnalytics(gtmInfo)
+    expect(document.head.querySelectorAll('script')).toHaveLength(1)
+    expect(window.dataLayer?.[0]).toMatchObject({ event: 'gtm.js' })
+  })
+
   it('loads once and mirrors events without ids', async () => {
     vi.stubGlobal('navigator', { doNotTrack: null })
     await initDemoAnalytics(gtmInfo)

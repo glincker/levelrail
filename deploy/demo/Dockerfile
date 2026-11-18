@@ -1,6 +1,6 @@
 # Read-only hosted demo as a container: the released binary plus a shell for the reseed entrypoint.
 # Build context is deploy/demo. Bump LEVELRAIL_VERSION to roll the demo to a new release.
-ARG LEVELRAIL_VERSION=v1.5.2
+ARG LEVELRAIL_VERSION=v1.5.5
 FROM ghcr.io/glincker/levelrail:${LEVELRAIL_VERSION} AS bin
 
 FROM alpine:3.20

@@ -227,9 +227,11 @@ func buildDemoHandler(ctx context.Context, logger *slog.Logger, b *brand.Brand, 
 	head := demoHeadOptions(logger, os.Getenv(demoEnvPublicURL))
 	// The embedded dashboard sits outside the API chain, so it needs the widened policy too.
 	head.CSP = rt.DemoCSP(web.DashboardCSP)
+	head.GTMID = rt.DemoGTMID()
 	mux := composeMux(rt.Handler(), nil, demoWebHandler(b, head))
 	// Registered on the mux so it wins over the static handler's catch-all.
 	mux.HandleFunc("/theme-init.js", serveDemoThemeInit)
+	mux.HandleFunc(web.GTMInitPath, serveGTMInit)
 	return demoStaticHeaders(mux), nil
 }
 
@@ -304,6 +306,12 @@ func serveDemoThemeInit(w http.ResponseWriter, _ *http.Request) {
 	w.Header().Set("Content-Type", "text/javascript; charset=utf-8")
 	w.Header().Set("Cache-Control", "no-cache")
 	_, _ = io.WriteString(w, demoThemeInit)
+}
+
+func serveGTMInit(w http.ResponseWriter, _ *http.Request) {
+	w.Header().Set("Content-Type", "text/javascript; charset=utf-8")
+	w.Header().Set("Cache-Control", "no-cache")
+	_, _ = io.WriteString(w, web.GTMInitScript)
 }
 
 // demoStaticHeaders marks every response noindex and serves a disallow-all

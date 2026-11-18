@@ -100,6 +100,10 @@ func (h spaHandler) serveIndex(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 	body := injectBrandHead(page, h.brand, r, h.head)
+	if h.head.GTMID != "" {
+		// The tag depends on the privacy headers, so shared caches must key on them.
+		w.Header().Add("Vary", "DNT, Sec-GPC")
+	}
 	w.Header().Set("Content-Type", "text/html; charset=utf-8")
 	w.Header().Set("Cache-Control", cacheRevalidate)
 	w.Header().Set("ETag", bodyETag(body))

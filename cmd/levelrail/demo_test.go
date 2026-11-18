@@ -265,4 +265,21 @@ func TestDemoHandlerWidenedCSPOnEveryResponse(t *testing.T) {
 			t.Errorf("GET %s CSP must not allow unsafe script: %q", target, csp)
 		}
 	}
+
+	rec := httptest.NewRecorder()
+	h.ServeHTTP(rec, httptest.NewRequest(http.MethodGet, "/login", nil))
+	if !strings.Contains(rec.Body.String(), `gtm.js?id=GTM-ABC123`) {
+		t.Errorf("/login HTML must carry the server-rendered GTM tag: %q", rec.Body.String())
+	}
+}
+
+func TestServeGTMInit(t *testing.T) {
+	rec := httptest.NewRecorder()
+	serveGTMInit(rec, httptest.NewRequest(http.MethodGet, web.GTMInitPath, nil))
+	if ct := rec.Header().Get("Content-Type"); !strings.HasPrefix(ct, "text/javascript") {
+		t.Errorf("Content-Type = %q", ct)
+	}
+	if !strings.Contains(rec.Body.String(), "gtm.start") {
+		t.Errorf("body = %q", rec.Body.String())
+	}
 }

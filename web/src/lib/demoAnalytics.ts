@@ -87,15 +87,22 @@ function loadScript(host: string): Promise<void> {
   })
 }
 
-// Standard external loader: no inline script, so the CSP needs no unsafe-inline.
+// External loader only: no inline script, so the CSP needs no unsafe-inline.
+// The server may already render the gtm.js tag plus /gtm-init.js (for crawlers
+// that read raw HTML); then reuse it so GTM never loads or fires twice.
 function initGtm(id: string): void {
   if (gtmActive || !GTM_ID.test(id)) return
   gtmActive = true
-  window.dataLayer = window.dataLayer || []
-  window.dataLayer.push({ 'gtm.start': Date.now(), event: 'gtm.js' })
+  const dl = (window.dataLayer = window.dataLayer || [])
+  const src = `https://www.googletagmanager.com/gtm.js?id=${encodeURIComponent(id)}`
+  const present = [...document.scripts].some((s) => s.src === src)
+  if (!dl.some((e) => 'gtm.start' in e)) {
+    dl.push({ 'gtm.start': Date.now(), event: 'gtm.js' })
+  }
+  if (present) return
   const el = document.createElement('script')
   el.async = true
-  el.src = `https://www.googletagmanager.com/gtm.js?id=${encodeURIComponent(id)}`
+  el.src = src
   document.head.appendChild(el)
 }
 
