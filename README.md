@@ -58,6 +58,28 @@ Maturity follows [Feature status](docs/feature-status.md).
 
 All features, with maturity labels: [docs/features.md](docs/features.md).
 
+## Built for coding agents
+
+259 [MCP tools](docs/mcp.md), scoped to the token's abilities, confirm-gated for writes and audited. Add the skill with `npx skills add https://github.com/glincker/levelrail --skill levelrail`, then ask your agent to deploy your repo. To install with an agent, paste this into Claude Code, Cursor or any agent that can run shell commands on your server:
+
+```text
+Install Levelrail on this server: run `curl -fsSL https://levelrail.com/install.sh | sudo sh`.
+Open the setup link it prints and tell me, because I choose the password myself.
+Then run `levelrail-cli doctor` and `levelrail-cli status` and report anything that fails.
+Do not write any token or password to a file or into this chat.
+```
+
+## Production ready, with receipts
+
+| Claim | Evidence |
+| --- | --- |
+| Every feature labelled stable or beta | [Feature status](docs/feature-status.md) |
+| Survives failures | [Resilience](docs/resilience.md) |
+| Measured, not promised | [Benchmarks](docs/benchmarks.md) |
+| Tested against real containers | [CI](.github/workflows/ci.yml) and [`test/e2e`](test/e2e) |
+| Signed releases | [Verify them](docs/installing.md#verifying-release-binaries) |
+| Honest about gaps | [Known limits](docs/known-limits.md) |
+
 ## vs Coolify, Dokploy, CapRover and Dokku
 
 | | Levelrail | Coolify | Dokploy | CapRover | Dokku |
