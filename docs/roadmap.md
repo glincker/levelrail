@@ -12,11 +12,11 @@ The build did not follow the original phase plan in order. Parts of multi-node s
 
 ## Now, next, later
 
-Last updated 2026-11-09 (release/v0.9.6 branch). There is no stable release yet. Every release so far is a beta. Everything below is planned, not promised: quarters are targets, items can move or drop, and nothing here is a commitment to a date. Items marked planned have no shipped code unless the line says so.
+Last updated 2026-11-09 (release/v0.9.6 branch). Levelrail is v1.x and single node is production ready. Everything below is planned, not promised: quarters are targets, items can move or drop, and nothing here is a commitment to a date. Items marked planned have no shipped code unless the line says so.
 
 ### Now (Q4 2026)
 
-Goal: make the beta claim publishable. Reliability and evidence first.
+Goal: move beta features to stable. Reliability and evidence first.
 
 - Real hosts: record real-host runs for the multi-node WireGuard mesh and cross-host transport, and a bare metal or VPS idle-footprint number. Status: open, see [Open work](#open-work).
 - Public ACME: renewal close to expiry, DNS-01 wildcards and a deliberate failure against the production CA. Status: open, one live run is recorded in the [runbook](/acme-verification-runbook).
@@ -41,7 +41,7 @@ Goal: widen what is proven, only after the earlier goals are met.
 - Database coverage: point-in-time restore and TLS for more engines than today. Status: open, depends on what each engine supports.
 - Real pause or scale-to-zero for spend caps: needs an accepted ADR first, see [ADR 041](https://github.com/glincker/levelrail/blob/main/adr/041-spend-pause-scale-to-zero.md). Status: design.
 - Control-plane high availability: see [ADR 037](https://github.com/glincker/levelrail/blob/main/adr/037-control-plane-ha-replication.md), [ADR 039](https://github.com/glincker/levelrail/blob/main/adr/039-control-plane-ha-wal-shipping-vs-postgres.md) and [ADR 047](https://github.com/glincker/levelrail/blob/main/adr/047-warm-standby-control-plane-promote-drill.md). Status: design and drill, not a release goal yet.
-- A first stable release: only when Phase 5 evidence (upgrade testing, real-host runs, a published footprint number) is in. No date is set.
+- Promoting multi-node and the other beta features to stable: only when Phase 5 evidence (upgrade testing, real-host runs, a published footprint number) is in. No date is set.
 
 ## Phase status
 
@@ -149,7 +149,7 @@ These exist and are tested, but are gated or carry a beta label. See [feature st
 - Load and failover numbers: the harness exists (`levelrail-cli bench run`), no published results yet. See [benchmarks](/benchmarks).
 - Template coverage: a sample of the templates is deployed by e2e tests, not the whole catalog.
 - Other database engines: PITR covers Postgres, MySQL and MariaDB only (MongoDB has no oplog here), and the remaining engines have no TLS by default.
-- Stable release: none yet. Upgrade and downgrade testing across versions with real data is part of Phase 5.
+- Upgrade and downgrade testing across versions with real data is part of Phase 5.
 - Real pause or scale-to-zero for spend caps: `pause` serves a maintenance response and does not stop containers. A real pause needs an ADR first.
 - Remote Go build cache for CI: needs a storage bucket before it can be enabled.
 

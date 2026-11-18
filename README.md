@@ -2,7 +2,7 @@
 <img src="docs/assets/brand/levelrail-default.svg" alt="Levelrail logo" width="56" height="56">
 <h1>Levelrail</h1>
 <p><strong>Git push to production on your own servers.</strong><br>
-A self-hosted deployment platform in one Go binary. The control plane idles at about 200 MB of RAM (<a href="docs/performance.md">measured</a>), with 570+ one-click apps, rollbacks, previews, HTTPS and databases built in.</p>
+A self-hosted deployment platform in one Go binary. The control plane idles at about 200 to 220 MB of RAM (<a href="docs/benchmarks.md">measured</a>), with 570+ one-click apps, rollbacks, previews, HTTPS and databases built in.</p>
 <p><code>curl -fsSL https://levelrail.com/install.sh | sudo sh</code> &middot; <a href="https://demo.levelrail.com"><b>Try the live demo</b></a></p>
 <p>
   <a href="https://github.com/glincker/levelrail/stargazers"><img src="https://img.shields.io/github/stars/glincker/levelrail?style=flat&logo=github" alt="GitHub stars"></a>
@@ -15,7 +15,7 @@ A self-hosted deployment platform in one Go binary. The control plane idles at a
   <a href="https://levelrail.com?utm_source=github&amp;utm_medium=readme&amp;utm_campaign=nav">Website</a> &middot;
   <a href="https://docs.levelrail.com?utm_source=github&amp;utm_medium=readme&amp;utm_campaign=nav">Docs</a> &middot;
   <a href="#quickstart">Quickstart</a> &middot;
-  <a href="#vs-coolify-dokploy-caprover-and-dokku">Compare</a> &middot;
+  <a href="#what-sets-levelrail-apart">Why Levelrail</a> &middot;
   <a href="docs/faq.md">FAQ</a> &middot;
   <a href="docs/roadmap.md">Roadmap</a> &middot;
   <a href="https://github.com/glincker/levelrail/discussions">Discussions</a>
@@ -23,7 +23,7 @@ A self-hosted deployment platform in one Go binary. The control plane idles at a
 <img src="docs/assets/demos/product-tour.gif" alt="Levelrail dashboard tour: fleet overview, apps list, deploy history and built-in metrics" width="880">
 </div>
 
-Levelrail turns Linux servers into a private cloud and works with the Kubernetes clusters and cloud accounts you already have. Single-server is production ready, multi-node is beta. Every feature carries a stable, beta or experimental label in [Feature status](docs/feature-status.md).
+v1.x. Single-server is production ready, multi-node is beta. Levelrail turns Linux servers into a private cloud and works with the Kubernetes clusters and cloud accounts you already have. Every feature carries a stable, beta or experimental label in [Feature status](docs/feature-status.md).
 
 ## Quickstart
 
@@ -174,19 +174,21 @@ Do not write any token or password to a file or into this chat.
 | Signed releases | [Verify them](docs/installing.md#verifying-release-binaries) |
 | Honest about gaps | [Known limits](docs/known-limits.md) |
 
-## vs Coolify, Dokploy, CapRover and Dokku
+## What sets Levelrail apart
 
-| | Levelrail | Coolify | Dokploy | CapRover | Dokku |
-| --- | --- | --- | --- | --- | --- |
-| **Agent access (MCP)** | Read and write, ability-scoped, confirm-gated, audited | Official server, read-only | MCP server repo exists | Not documented | Not documented |
-| **Switching in** | Dry-run importers for all four, old server keeps serving | n/a | n/a | n/a | n/a |
-| Node control | Reverse-dialed agent | SSH + CLI | SSH + Engine API | Swarm API | Local bash |
-| Built-in metrics and logs | Yes | Opt-in add-on | Separate binary | No | No |
-| Rollback | Pinned images, readiness-gated | Retained images | Swarm rollback | Manual | Default scheduler: none |
-| Backup verification | Automatic | Non-empty check | None | None | No backups |
-| Audit log | Hash-chained, verifiable | Not documented | Not documented | Not documented | Not documented |
+Each claim links to the page that backs it. The status column follows [Feature status](docs/feature-status.md).
 
-Cells state only what each project's public docs say (last checked 2026-11-07), and "Not documented" means we found nothing, not that it is missing. This is positioning, not a ranking. Levelrail is the youngest project here, with fewer users and less production mileage. Sourced details: [Comparison](docs/comparison.md).
+| What you get | Status | Evidence |
+| --- | --- | --- |
+| A control plane that idles at about 200 to 220 MB of RAM, in one Go binary | measured | [Benchmarks](docs/benchmarks.md) |
+| `git push` to your own server over HTTPS, no provider, webhook or SSH key (GitHub webhook deploys are stable) | beta | [Deploy with git push](docs/git-push-deploy.md) |
+| Pinned-image rollback, readiness-gated rollouts and automatic rollback on a post-deploy watch | stable (latency signal beta) | [Deploy safety](docs/deploy-safety.md) |
+| Backups that are verified, with restore drills into a scratch resource | Postgres stable, other engines beta | [Prove your backups work](docs/prove-your-backups-work.md), [Backups and storage](docs/backups-and-storage.md) |
+| A hash-chained audit log you can verify, filter and export | on by default | [Audit log](docs/audit-log.md) |
+| A node agent that dials out to the control plane over mTLS, so managed nodes need no inbound ports | multi-node beta | [Architecture](docs/architecture.md), [Multi-node](docs/multi-node.md) |
+| An MCP server with ability-scoped tools and confirm-gated writes, never in the reconcile path | beta | [MCP](docs/mcp.md), [Tool surface](docs/mcp-tool-surface.md) |
+
+Moving from another platform: [Migrate to Levelrail](docs/migrate-to-levelrail.md). Architecture notes: [Comparison](docs/comparison.md).
 
 ## Community
 

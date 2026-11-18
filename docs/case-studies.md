@@ -6,7 +6,7 @@ description: "Real Levelrail measurements: a 500-app idle benchmark and multi-no
 
 **Measured results, stated honestly**
 
-Levelrail is pre-release and has no customer logos yet, so instead of testimonials this page shows what has actually been measured and verified, and what has not.
+This page shows what has been measured and verified, with the method for each result, instead of customer testimonials.
 
 [Run your own test](/getting-started) | [View on GitHub](https://github.com/glincker/levelrail)
 
@@ -42,7 +42,7 @@ If you run Levelrail on a real workload, we would like to hear what broke and wh
 
 <AccordionGroup>
   <Accordion title="Why are there no customer testimonials?">
-    Because the project is pre-release and has no public production customers yet. This page only shows measurements and verifications that exist.
+    This page lists measurements and verifications you can reproduce, not customer quotes.
   </Accordion>
   <Accordion title="Where do the idle numbers come from?">
     From a documented benchmark script (`scripts/bench-idle.sh`) you can run yourself. The [performance page](/performance) lists the method, the machine and the caveats.

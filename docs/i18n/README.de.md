@@ -6,7 +6,7 @@
 > This translation was generated with AI and may contain mistakes. Corrections are welcome: see [docs/i18n/README.md](README.md).
 
 <p><strong>Git push in die Produktion auf eigenen Servern.</strong><br>
-Eine selbst gehostete Deployment-Plattform in einem Go-Binary. Die Control Plane läuft im Leerlauf mit etwa 200 MB RAM (<a href="../../docs/performance.md">gemessen</a>), mit 570+ Ein-Klick-Apps, Rollbacks, Vorschauen, HTTPS und Datenbanken von Haus aus.</p>
+Eine selbst gehostete Deployment-Plattform in einem Go-Binary. Die Control Plane läuft im Leerlauf mit etwa 200 bis 220 MB RAM (<a href="../../docs/benchmarks.md">gemessen</a>), mit 570+ Ein-Klick-Apps, Rollbacks, Vorschauen, HTTPS und Datenbanken von Haus aus.</p>
 <p><code>curl -fsSL https://levelrail.com/install.sh | sudo sh</code> &middot; <a href="https://demo.levelrail.com"><b>Live-Demo ausprobieren</b></a></p>
 <p>
   <a href="https://github.com/glincker/levelrail/stargazers"><img src="https://img.shields.io/github/stars/glincker/levelrail?style=flat&logo=github" alt="GitHub-Sterne"></a>
@@ -19,7 +19,7 @@ Eine selbst gehostete Deployment-Plattform in einem Go-Binary. Die Control Plane
   <a href="https://levelrail.com?utm_source=github&amp;utm_medium=readme&amp;utm_campaign=nav">Website</a> &middot;
   <a href="https://docs.levelrail.com?utm_source=github&amp;utm_medium=readme&amp;utm_campaign=nav">Doku</a> &middot;
   <a href="#schnellstart">Schnellstart</a> &middot;
-  <a href="#vs-coolify-dokploy-caprover-und-dokku">Vergleich</a> &middot;
+  <a href="#was-levelrail-ausmacht">Vergleich</a> &middot;
   <a href="../../docs/faq.md">FAQ</a> &middot;
   <a href="../../docs/roadmap.md">Roadmap</a> &middot;
   <a href="https://github.com/glincker/levelrail/discussions">Discussions</a>
@@ -30,7 +30,7 @@ Eine selbst gehostete Deployment-Plattform in einem Go-Binary. Die Control Plane
 <img src="../../docs/assets/demos/product-tour.gif" alt="Levelrail-Dashboard-Tour: Flottenübersicht, App-Liste, Deployment-Verlauf und eingebaute Metriken" width="880">
 </div>
 
-Levelrail macht aus Linux-Servern eine private Cloud und arbeitet mit den Kubernetes-Clustern und Cloud-Konten, die du bereits hast. Einzelserver-Betrieb ist produktionsreif, Multi-Node ist Beta. Jede Funktion trägt im [Feature-Status](../../docs/feature-status.md) eine Kennzeichnung als stabil, Beta oder experimentell.
+v1.x. Einzelserver-Betrieb ist produktionsreif, Multi-Node ist Beta. Levelrail macht aus Linux-Servern eine private Cloud und arbeitet mit den Kubernetes-Clustern und Cloud-Konten, die du bereits hast. Jede Funktion trägt im [Feature-Status](../../docs/feature-status.md) eine Kennzeichnung als stabil, Beta oder experimentell.
 
 ## Schnellstart
 
@@ -181,19 +181,21 @@ Do not write any token or password to a file or into this chat.
 | Signierte Releases | [Verifizieren](../../docs/installing.md#verifying-release-binaries) |
 | Ehrlich bei Lücken | [Bekannte Grenzen](../../docs/known-limits.md) |
 
-## vs Coolify, Dokploy, CapRover und Dokku
+## Was Levelrail ausmacht
 
-| | Levelrail | Coolify | Dokploy | CapRover | Dokku |
-| --- | --- | --- | --- | --- | --- |
-| **Agent-Zugriff (MCP)** | Lesen und Schreiben, auf Fähigkeiten begrenzt, mit Bestätigung, auditiert | Offizieller Server, nur lesend | MCP-Server-Repo vorhanden | Nicht dokumentiert | Nicht dokumentiert |
-| **Umstieg** | Importer mit Probelauf für alle vier, der alte Server liefert weiter aus | n/a | n/a | n/a | n/a |
-| Knotensteuerung | Rückwärts verbindender Agent | SSH + CLI | SSH + Engine API | Swarm API | Lokales Bash |
-| Eingebaute Metriken und Logs | Ja | Optionales Add-on | Separates Binary | Nein | Nein |
-| Rollback | Fixierte Images, mit Readiness-Gate | Aufbewahrte Images | Swarm-Rollback | Manuell | Standard-Scheduler: keins |
-| Backup-Verifizierung | Automatisch | Prüfung auf nicht leer | Keine | Keine | Keine Backups |
-| Audit-Log | Hash-verkettet, verifizierbar | Nicht dokumentiert | Nicht dokumentiert | Nicht dokumentiert | Nicht dokumentiert |
+Jede Aussage verlinkt auf die Seite, die sie belegt. Die Statusspalte folgt dem [Feature-Status](../../docs/feature-status.md).
 
-Die Zellen geben nur wieder, was die öffentliche Doku des jeweiligen Projekts sagt (zuletzt geprüft am 2026-11-07), und "Nicht dokumentiert" heißt, dass wir nichts gefunden haben, nicht dass es fehlt. Das ist eine Positionierung, kein Ranking. Levelrail ist das jüngste Projekt hier, mit weniger Nutzern und weniger Produktionserfahrung. Details mit Quellen: [Vergleich](../../docs/comparison.md).
+| Was du bekommst | Status | Beleg |
+| --- | --- | --- |
+| Eine Control Plane, die im Leerlauf etwa 200 bis 220 MB RAM braucht, in einem einzigen Go-Binary | gemessen | [Benchmarks](../../docs/benchmarks.md) |
+| `git push` zu deinem eigenen Server über HTTPS, ohne Anbieter, Webhook oder SSH-Schlüssel (GitHub-Webhook-Deploys sind stabil) | Beta | [Deploy mit git push](../../docs/git-push-deploy.md) |
+| Rollback auf fixierte Images, Rollouts mit Readiness-Gate und automatischer Rollback durch eine Post-Deploy-Überwachung | stabil (Latenzsignal Beta) | [Deploy-Sicherheit](../../docs/deploy-safety.md) |
+| Verifizierte Backups mit Restore-Drills in eine Scratch-Ressource | Postgres stabil, andere Engines Beta | [Backups beweisen](../../docs/prove-your-backups-work.md), [Backups und Speicher](../../docs/backups-and-storage.md) |
+| Ein hash-verkettetes Audit-Log, das du verifizieren, filtern und exportieren kannst | standardmäßig an | [Audit-Log](../../docs/audit-log.md) |
+| Ein Node-Agent, der per mTLS zur Control Plane verbindet, sodass verwaltete Knoten keine eingehenden Ports brauchen | Multi-Node Beta | [Architektur](../../docs/architecture.md), [Multi-Node](../../docs/multi-node.md) |
+| Ein MCP-Server mit auf Fähigkeiten begrenzten Tools und Schreibzugriff nur nach Bestätigung, nie im Reconcile-Pfad | Beta | [MCP](../../docs/mcp.md), [Tool-Oberfläche](../../docs/mcp-tool-surface.md) |
+
+Umstieg von einer anderen Plattform: [Zu Levelrail migrieren](../../docs/migrate-to-levelrail.md). Architekturnotizen: [Vergleich](../../docs/comparison.md).
 
 ## Community
 

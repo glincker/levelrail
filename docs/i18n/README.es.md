@@ -8,7 +8,7 @@
 > Esta traducción fue generada con IA y puede contener errores. Las correcciones son bienvenidas: consulta [docs/i18n/README.md](README.md).
 
 <p><strong>Git push a producción en tus propios servidores.</strong><br>
-Una plataforma de despliegue autoalojada en un solo binario de Go. El plano de control consume en reposo unos 200 MB de RAM (<a href="../../docs/performance.md">medido</a>), con más de 570 apps de un clic, rollbacks, vistas previas, HTTPS y bases de datos integrados.</p>
+Una plataforma de despliegue autoalojada en un solo binario de Go. El plano de control consume en reposo unos 200 a 220 MB de RAM (<a href="../../docs/benchmarks.md">medido</a>), con más de 570 apps de un clic, rollbacks, vistas previas, HTTPS y bases de datos integrados.</p>
 <p><code>curl -fsSL https://levelrail.com/install.sh | sudo sh</code> &middot; <a href="https://demo.levelrail.com"><b>Prueba la demo en vivo</b></a></p>
 <p>
   <a href="https://github.com/glincker/levelrail/stargazers"><img src="https://img.shields.io/github/stars/glincker/levelrail?style=flat&logo=github" alt="Estrellas en GitHub"></a>
@@ -21,7 +21,7 @@ Una plataforma de despliegue autoalojada en un solo binario de Go. El plano de c
   <a href="https://levelrail.com?utm_source=github&amp;utm_medium=readme&amp;utm_campaign=nav">Sitio web</a> &middot;
   <a href="https://docs.levelrail.com?utm_source=github&amp;utm_medium=readme&amp;utm_campaign=nav">Docs</a> &middot;
   <a href="#inicio-rápido">Inicio rápido</a> &middot;
-  <a href="#vs-coolify-dokploy-caprover-y-dokku">Comparar</a> &middot;
+  <a href="#qué-distingue-a-levelrail">Comparar</a> &middot;
   <a href="../../docs/faq.md">FAQ</a> &middot;
   <a href="../../docs/roadmap.md">Hoja de ruta</a> &middot;
   <a href="https://github.com/glincker/levelrail/discussions">Discusiones</a>
@@ -32,7 +32,7 @@ Una plataforma de despliegue autoalojada en un solo binario de Go. El plano de c
 <img src="../../docs/assets/demos/product-tour.gif" alt="Recorrido por el panel de Levelrail: resumen de la flota, lista de apps, historial de despliegues y métricas integradas" width="880">
 </div>
 
-Levelrail convierte servidores Linux en una nube privada y funciona con los clústeres de Kubernetes y las cuentas de nube que ya tienes. Un solo servidor está listo para producción, multinodo es beta. Cada función lleva una etiqueta estable, beta o experimental en [Estado de las funciones](../../docs/feature-status.md).
+v1.x. Un solo servidor está listo para producción, multinodo es beta. Levelrail convierte servidores Linux en una nube privada y funciona con los clústeres de Kubernetes y las cuentas de nube que ya tienes. Cada función lleva una etiqueta estable, beta o experimental en [Estado de las funciones](../../docs/feature-status.md).
 
 ## Inicio rápido
 
@@ -183,19 +183,21 @@ Do not write any token or password to a file or into this chat.
 | Versiones firmadas | [Verifícalas](../../docs/installing.md#verifying-release-binaries) |
 | Honesto sobre las carencias | [Límites conocidos](../../docs/known-limits.md) |
 
-## vs Coolify, Dokploy, CapRover y Dokku
+## Qué distingue a Levelrail
 
-| | Levelrail | Coolify | Dokploy | CapRover | Dokku |
-| --- | --- | --- | --- | --- | --- |
-| **Acceso de agentes (MCP)** | Lectura y escritura, con alcance por capacidades, con confirmación, auditado | Servidor oficial, solo lectura | Existe un repositorio de servidor MCP | No documentado | No documentado |
-| **Cambiarte a Levelrail** | Importadores con simulación (dry run) para los cuatro, el servidor anterior sigue atendiendo | n/d | n/d | n/d | n/d |
-| Control de nodos | Agente de conexión inversa | SSH + CLI | SSH + Engine API | Swarm API | Bash local |
-| Métricas y registros integrados | Sí | Complemento opcional | Binario aparte | No | No |
-| Rollback | Imágenes fijadas, con compuerta de readiness | Imágenes retenidas | Rollback de Swarm | Manual | Scheduler por defecto: ninguno |
-| Verificación de copias de seguridad | Automática | Comprobación de no vacío | Ninguna | Ninguna | Sin copias de seguridad |
-| Registro de auditoría | Encadenado por hash, verificable | No documentado | No documentado | No documentado | No documentado |
+Cada afirmación enlaza a la página que la respalda. La columna de estado sigue el [Estado de las funciones](../../docs/feature-status.md).
 
-Las celdas indican solo lo que dicen los documentos públicos de cada proyecto (última revisión 2026-11-07), y "No documentado" significa que no encontramos nada, no que falte. Esto es posicionamiento, no un ranking. Levelrail es el proyecto más joven de los mencionados, con menos usuarios y menos recorrido en producción. Detalles con fuentes: [Comparación](../../docs/comparison.md).
+| Lo que obtienes | Estado | Evidencia |
+| --- | --- | --- |
+| Un plano de control que en reposo usa unos 200 a 220 MB de RAM, en un solo binario de Go | medido | [Benchmarks](../../docs/benchmarks.md) |
+| `git push` a tu propio servidor por HTTPS, sin proveedor, webhook ni clave SSH (los despliegues por webhook de GitHub son estables) | beta | [Despliegue con git push](../../docs/git-push-deploy.md) |
+| Rollback con imágenes fijadas, despliegues con comprobación de disponibilidad y rollback automático tras una vigilancia posterior al despliegue | estable (señal de latencia beta) | [Seguridad de despliegue](../../docs/deploy-safety.md) |
+| Copias de seguridad verificadas, con simulacros de restauración en un recurso temporal | Postgres estable, otros motores beta | [Demuestra que tus copias funcionan](../../docs/prove-your-backups-work.md), [Copias y almacenamiento](../../docs/backups-and-storage.md) |
+| Un registro de auditoría encadenado por hash que puedes verificar, filtrar y exportar | activado por defecto | [Registro de auditoría](../../docs/audit-log.md) |
+| Un agente de nodo que se conecta al plano de control con mTLS, de modo que los nodos gestionados no necesitan puertos de entrada | multinodo beta | [Arquitectura](../../docs/architecture.md), [Multinodo](../../docs/multi-node.md) |
+| Un servidor MCP con herramientas limitadas por habilidades y escrituras que requieren confirmación, nunca en la ruta de reconciliación | beta | [MCP](../../docs/mcp.md), [Superficie de herramientas](../../docs/mcp-tool-surface.md) |
+
+Si vienes de otra plataforma: [Migrar a Levelrail](../../docs/migrate-to-levelrail.md). Notas de arquitectura: [Comparación](../../docs/comparison.md).
 
 ## Comunidad
 

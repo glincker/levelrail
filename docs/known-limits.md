@@ -11,7 +11,7 @@ Current limits, each with the page it comes from. Labels and evidence change wit
 
 ## Release maturity
 
-- There is no stable release yet. Every release so far is a beta. Source: [roadmap](roadmap.md).
+- Levelrail is v1.x. Single node is production ready; the per-feature labels below and in [feature status](feature-status.md) say what is still beta. Source: [roadmap](roadmap.md).
 - Single node is the stable scope. Multi-node, stacks and flagged features are beta or experimental. Source: [feature status](feature-status.md).
 
 ## Multi-node

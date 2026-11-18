@@ -101,7 +101,7 @@ Use Levelrail if you want an agent that dials out over mTLS instead of SSH, metr
     Nothing. Levelrail is Apache 2.0 with one edition: OAuth and OIDC sign-in, audit logging, IAM and scheduled backups all ship in the same free binary. SAML SSO and SCIM provisioning are beta and off until you turn them on.
   </Accordion>
   <Accordion title="Is it production ready?">
-    Levelrail is in active pre-release development, and single node is the path with the most testing. Run it next to your current setup first, which the importer's read-only design makes safe.
+    Yes for a single server: single-server is stable in [feature status](/feature-status), and multi-node is beta. You can run it next to your current setup first, which the importer's read-only design makes safe.
   </Accordion>
   <Accordion title="Does Levelrail support SSO, SAML and SCIM?">
     Levelrail has password, passkey and TOTP sign-in, OAuth sign-in with 20 providers and generic OpenID Connect, IAM policies, teams and a hash-chained audit log, all in the one free edition. SAML single sign-on and SCIM provisioning exist but are beta: they sit behind the `saml-scim` feature toggle, are off by default, and are tested against a test identity provider rather than a live Okta or Entra ID tenant. See [SAML and SCIM](/sso-saml). For what Coolify supports, see its own documentation.

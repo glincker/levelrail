@@ -3,7 +3,7 @@
 <img src="../../docs/assets/brand/levelrail-default.svg" alt="Levelrail ロゴ" width="56" height="56">
 <h1>Levelrail</h1>
 <p><strong>自分のサーバーへ、git push で本番デプロイ。</strong><br>
-Go 製の単一バイナリで動くセルフホスト型デプロイプラットフォームです。コントロールプレーンはアイドル時に約 200 MB の RAM を使い（<a href="../../docs/performance.md">計測値</a>）、570+ のワンクリックアプリ、ロールバック、プレビュー、HTTPS、データベースを標準で備えています。</p>
+Go 製の単一バイナリで動くセルフホスト型デプロイプラットフォームです。コントロールプレーンはアイドル時に約 200〜220 MB の RAM を使い（<a href="../../docs/benchmarks.md">計測値</a>）、570+ のワンクリックアプリ、ロールバック、プレビュー、HTTPS、データベースを標準で備えています。</p>
 <p><code>curl -fsSL https://levelrail.com/install.sh | sudo sh</code> &middot; <a href="https://demo.levelrail.com"><b>ライブデモを試す</b></a></p>
 <p>
   <a href="https://github.com/glincker/levelrail/stargazers"><img src="https://img.shields.io/github/stars/glincker/levelrail?style=flat&logo=github" alt="GitHub スター数"></a>
@@ -16,7 +16,7 @@ Go 製の単一バイナリで動くセルフホスト型デプロイプラッ�
   <a href="https://levelrail.com?utm_source=github&amp;utm_medium=readme&amp;utm_campaign=nav">Web サイト</a> &middot;
   <a href="https://docs.levelrail.com?utm_source=github&amp;utm_medium=readme&amp;utm_campaign=nav">ドキュメント</a> &middot;
   <a href="#クイックスタート">クイックスタート</a> &middot;
-  <a href="#vs-coolify-dokploy-caprover-dokku">比較</a> &middot;
+  <a href="#levelrail-の特長">比較</a> &middot;
   <a href="../../docs/faq.md">FAQ</a> &middot;
   <a href="../../docs/roadmap.md">ロードマップ</a> &middot;
   <a href="https://github.com/glincker/levelrail/discussions">ディスカッション</a>
@@ -29,7 +29,7 @@ Go 製の単一バイナリで動くセルフホスト型デプロイプラッ�
 
 > この翻訳は AI によって生成されており、誤りが含まれている可能性があります。修正を歓迎します：[docs/i18n/README.md](README.md) を参照してください。
 
-Levelrail は Linux サーバーをプライベートクラウドに変え、すでにお持ちの Kubernetes クラスターやクラウドアカウントとも連携します。単一サーバーは本番運用可能で、マルチノードはベータです。すべての機能には、[機能ステータス](../../docs/feature-status.md)で stable、beta、experimental のいずれかのラベルが付いています。
+v1.x。単一サーバーは本番運用可能で、マルチノードはベータです。Levelrail は Linux サーバーをプライベートクラウドに変え、すでにお持ちの Kubernetes クラスターやクラウドアカウントとも連携します。すべての機能には、[機能ステータス](../../docs/feature-status.md)で stable、beta、experimental のいずれかのラベルが付いています。
 
 ## クイックスタート
 
@@ -180,19 +180,21 @@ Do not write any token or password to a file or into this chat.
 | 署名付きリリース | [検証する](../../docs/installing.md#verifying-release-binaries) |
 | 不足点も正直に | [既知の制限](../../docs/known-limits.md) |
 
-## vs Coolify, Dokploy, CapRover, Dokku
+## Levelrail の特長
 
-| | Levelrail | Coolify | Dokploy | CapRover | Dokku |
-| --- | --- | --- | --- | --- | --- |
-| **エージェントからのアクセス（MCP）** | 読み取りと書き込み、権限スコープ付き、確認必須、監査あり | 公式サーバー、読み取り専用 | MCP サーバーのリポジトリあり | ドキュメントなし | ドキュメントなし |
-| **乗り換え** | 4 つすべてに対応するドライランのインポーター、古いサーバーは稼働し続ける | 該当なし | 該当なし | 該当なし | 該当なし |
-| ノードの制御 | 逆方向に接続するエージェント | SSH + CLI | SSH + Engine API | Swarm API | ローカルの bash |
-| メトリクスとログの内蔵 | あり | オプトインのアドオン | 別バイナリ | なし | なし |
-| ロールバック | 固定イメージ、準備完了ゲート付き | 保持されたイメージ | Swarm のロールバック | 手動 | デフォルトのスケジューラー：なし |
-| バックアップの検証 | 自動 | 空でないことの確認 | なし | なし | バックアップなし |
-| 監査ログ | ハッシュチェーン式、検証可能 | ドキュメントなし | ドキュメントなし | ドキュメントなし | ドキュメントなし |
+各項目は、それを裏付けるページにリンクしています。ステータス列は[機能ステータス](../../docs/feature-status.md)に従います。
 
-各セルには、各プロジェクトの公開ドキュメントに書かれていることだけを記載しています（最終確認日 2026-11-07）。「ドキュメントなし」は、見つからなかったという意味であり、存在しないという意味ではありません。これはポジショニングであってランキングではありません。Levelrail はここで最も新しいプロジェクトであり、ユーザーは少なく、本番での実績も少ないです。出典付きの詳細：[比較](../../docs/comparison.md)。
+| 得られるもの | ステータス | 根拠 |
+| --- | --- | --- |
+| 単一の Go バイナリで、アイドル時に約 200〜220 MB の RAM で動くコントロールプレーン | 計測済み | [ベンチマーク](../../docs/benchmarks.md) |
+| プロバイダー、Webhook、SSH キーなしで、自分のサーバーへ HTTPS で `git push`（GitHub Webhook デプロイは stable） | beta | [git push でデプロイ](../../docs/git-push-deploy.md) |
+| ピン留めイメージへのロールバック、準備完了ゲート付きのロールアウト、デプロイ後ウォッチによる自動ロールバック | stable（レイテンシ信号は beta） | [デプロイの安全性](../../docs/deploy-safety.md) |
+| 検証済みバックアップと、スクラッチリソースへのリストアドリル | Postgres は stable、その他のエンジンは beta | [バックアップの検証](../../docs/prove-your-backups-work.md)、[バックアップとストレージ](../../docs/backups-and-storage.md) |
+| 検証、絞り込み、エクスポートができるハッシュチェーン付き監査ログ | デフォルトで有効 | [監査ログ](../../docs/audit-log.md) |
+| mTLS でコントロールプレーンへ接続するノードエージェント。管理対象ノードに受信ポートは不要 | マルチノードは beta | [アーキテクチャ](../../docs/architecture.md)、[マルチノード](../../docs/multi-node.md) |
+| 権限でスコープされたツールと、確認が必要な書き込みを備えた MCP サーバー。リコンサイルの経路には入りません | beta | [MCP](../../docs/mcp.md)、[ツール一覧](../../docs/mcp-tool-surface.md) |
+
+他のプラットフォームからの移行は[Levelrail への移行](../../docs/migrate-to-levelrail.md)を参照してください。アーキテクチャの補足は[比較](../../docs/comparison.md)にあります。
 
 ## コミュニティ
 

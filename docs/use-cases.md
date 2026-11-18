@@ -19,11 +19,9 @@ The three groups below are the ones that framing describes.
   Some areas are stable (backed by a live end-to-end test) and others are
   beta or behind a flag. "It fits" means the feature exists and is
   tested, not that it has survived production load.
-- Levelrail is young. APIs, the app spec format, and the on-disk layout can still
-  change without notice. None of the three audiences below should put a
-  revenue-critical workload on it without a shadow run alongside whatever
-  they use today, the same caution [migrating-from-vercel.md](/migrating-from-vercel)
-  gives explicitly.
+- Single-server is stable. For a revenue-critical workload, run a shadow
+  alongside whatever you use today first, the same step
+  [migrating-from-vercel.md](/migrating-from-vercel) describes.
 - Where a claim is uncertain, this page says so, the same convention
   [comparison.md](/comparison) uses.
 
