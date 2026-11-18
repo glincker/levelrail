@@ -123,7 +123,9 @@ func policyClientAddr(r *http.Request) netip.Addr {
 	}
 	trusted := peerTrusted
 	if requestFromIngress(r) {
-		trusted = func(netip.Addr) bool { return true }
+		// Only the marked hop itself is trusted; earlier hops still need peerTrusted.
+		marked := peer.Unmap()
+		trusted = func(a netip.Addr) bool { return a == marked || peerTrusted(a) }
 	}
 	return accesspolicy.ClientAddr(peer, strings.Join(r.Header.Values("X-Forwarded-For"), ","), trusted)
 }

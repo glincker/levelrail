@@ -146,3 +146,66 @@ func TestIngressPeerCheck(t *testing.T) {
 		})
 	}
 }
+
+func policyAddrThroughHop(r *http.Request) (addr, clientIPv string) {
+	IngressHopMiddleware(http.HandlerFunc(func(_ http.ResponseWriter, r *http.Request) {
+		addr, clientIPv = policyClientAddr(r).String(), clientIP(r)
+	})).ServeHTTP(httptest.NewRecorder(), r)
+	return
+}
+
+func TestIngressHop_ExternalTrustedProxyDoesNotLetLeftmostForwardedForWin(t *testing.T) {
+	// 203.0.113.9 is an external proxy (Cloudflare style), 198.51.100.7 the real client,
+	// 192.0.2.99 an address the caller invented to hit an allowlist.
+	t.Setenv(envTrustedProxies, "203.0.113.9")
+	r := hopRequest("172.18.0.1:4000", ingresstrust.Secret())
+	r.Header.Set("X-Forwarded-For", "192.0.2.99, 198.51.100.7, 203.0.113.9")
+	addr, ip := policyAddrThroughHop(r)
+	if addr != "198.51.100.7" || ip != "198.51.100.7" {
+		t.Errorf("policyClientAddr=%s clientIP=%s, want the real client, never the spoofed leftmost", addr, ip)
+	}
+}
+
+func TestIngressHop_SpoofedEntryBehindMarkedHopIsNotReturned(t *testing.T) {
+	t.Setenv(envTrustedProxies, "")
+	r := hopRequest("172.18.0.1:4000", ingresstrust.Secret())
+	r.Header.Set("X-Forwarded-For", "192.0.2.99, 198.51.100.7")
+	addr, ip := policyAddrThroughHop(r)
+	if addr != "198.51.100.7" || ip != "198.51.100.7" {
+		t.Errorf("policyClientAddr=%s clientIP=%s, want the entry the ingress appended", addr, ip)
+	}
+}
+
+func TestIngressHop_SingleHopReturnsRealClient(t *testing.T) {
+	t.Setenv(envTrustedProxies, "")
+	r := hopRequest("172.18.0.1:4000", ingresstrust.Secret())
+	r.Header.Set("X-Forwarded-For", "198.51.100.7")
+	addr, ip := policyAddrThroughHop(r)
+	if addr != "198.51.100.7" || ip != "198.51.100.7" {
+		t.Errorf("policyClientAddr=%s clientIP=%s, want 198.51.100.7", addr, ip)
+	}
+}
+
+func TestIngressHop_ForgedMarkerIgnoredForClientAddr(t *testing.T) {
+	t.Setenv(envTrustedProxies, "")
+	r := hopRequest("172.18.0.1:4000", "forged")
+	r.Header.Set("X-Forwarded-For", "192.0.2.99")
+	addr, ip := policyAddrThroughHop(r)
+	if addr != "172.18.0.1" || ip != "172.18.0.1" {
+		t.Errorf("policyClientAddr=%s clientIP=%s, want the TCP peer", addr, ip)
+	}
+}
+
+func TestIngressHop_TrustedProxyListAndLoopbackClientAddrUnchanged(t *testing.T) {
+	t.Setenv(envTrustedProxies, "203.0.113.9")
+	r := hopRequest("203.0.113.9:4000", "")
+	r.Header.Set("X-Forwarded-For", "192.0.2.99, 198.51.100.7")
+	if addr, ip := policyAddrThroughHop(r); addr != "198.51.100.7" || ip != "198.51.100.7" {
+		t.Errorf("listed proxy: policyClientAddr=%s clientIP=%s", addr, ip)
+	}
+	r = hopRequest("127.0.0.1:4000", "")
+	r.Header.Set("X-Forwarded-For", "198.51.100.7")
+	if addr, ip := policyAddrThroughHop(r); addr != "198.51.100.7" || ip != "198.51.100.7" {
+		t.Errorf("loopback: policyClientAddr=%s clientIP=%s", addr, ip)
+	}
+}

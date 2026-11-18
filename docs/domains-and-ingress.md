@@ -999,6 +999,8 @@ The installer writes `levelrail-http.socket` and `levelrail-https.socket`. The c
 
 The control plane also saves its last applied route table, sealed with a key derived from the master key, and serves it as soon as it starts, before its first reconcile pass. `levelrail-cli doctor` reports `ingress_survives_control_plane` with the next step when this is not true on your install. Details and limits: [resilience](/resilience#what-happens-to-traffic-when-the-control-plane-restarts).
 
+The in-process hop marker changes on every start. A restored snapshot has the new marker swapped in before it loads, so HTTPS sign-in through the dashboard host works before the first reconcile.
+
 <Accordion title="Socket activation trade-offs">
 
 - HTTP/3 and ACME HTTP-01 are not available in this mode (TLS-ALPN-01 on 443 and DNS-01 still issue certificates).
