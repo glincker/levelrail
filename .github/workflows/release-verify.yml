@@ -17,6 +17,8 @@ permissions:
 jobs:
   verify:
     name: Verify release assets
+    # A dry run publishes nothing, so there is nothing to verify or report.
+    if: github.event_name != 'workflow_run' || !startsWith(github.event.workflow_run.display_title, 'Dry run')
     runs-on: ubuntu-latest
     timeout-minutes: 10
     env:

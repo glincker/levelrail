@@ -35,3 +35,6 @@ jobs:
 
       - name: Release asset verifier self test
         run: scripts/test-release-verify.sh
+
+      - name: Release change detector self test
+        run: scripts/test-changed-components.sh

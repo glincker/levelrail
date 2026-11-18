@@ -1,0 +1,146 @@
+name: Release npm verify
+
+# Installs the CLI that a Release run published, from the registry, on the OS
+# and CPU families users run. It runs after the Release run ends, so registry
+# lag never holds the release open, and it never changes release state.
+on:
+  workflow_run:
+    workflows: [Release]
+    types: [completed]
+  workflow_dispatch:
+    inputs:
+      tag:
+        description: 'Published release tag to verify (e.g. v1.5.7).'
+        required: true
+        type: string
+
+permissions:
+  contents: read
+
+concurrency:
+  group: release-npm-verify-${{ github.event.workflow_run.id || inputs.tag }}
+  cancel-in-progress: false
+
+jobs:
+  resolve:
+    name: Resolve the published version
+    runs-on: ubuntu-latest
+    timeout-minutes: 5
+    permissions:
+      actions: read
+    outputs:
+      tag: ${{ steps.resolve.outputs.tag }}
+      verify: ${{ steps.resolve.outputs.verify }}
+    steps:
+      # Only a run whose "Publish CLI to npm" job succeeded has a version to
+      # install; dry runs and runs that skipped npm verify nothing.
+      - name: Resolve
+        id: resolve
+        env:
+          GH_TOKEN: ${{ github.token }}
+          REPO: ${{ github.repository }}
+          INPUT_TAG: ${{ inputs.tag }}
+          RUN_ID: ${{ github.event.workflow_run.id }}
+          RUN_TITLE: ${{ github.event.workflow_run.display_title }}
+          RUN_BRANCH: ${{ github.event.workflow_run.head_branch }}
+        run: |
+          set -euo pipefail
+          verify=false
+          tag="$INPUT_TAG"
+          if [ -n "$tag" ]; then
+            verify=true
+          else
+            case "$RUN_TITLE" in
+            "Dry run"*)
+              echo "dry run, nothing was published"
+              ;;
+            *)
+              case "$RUN_BRANCH" in
+              v[0-9]*) tag="$RUN_BRANCH" ;;
+              *) tag="$(sed -nE 's/^Release (v[0-9][^ ]*)$/\1/p' <<<"$RUN_TITLE")" ;;
+              esac
+              published="$(gh api "repos/${REPO}/actions/runs/${RUN_ID}/jobs?per_page=100" --paginate \
+                --jq '.jobs[] | select(.name == "Publish CLI to npm") | .conclusion' | head -1)"
+              echo "Publish CLI to npm: ${published:-not run}"
+              [ "$published" = "success" ] && verify=true
+              ;;
+            esac
+          fi
+          if [ "$verify" = "true" ] && ! printf '%s' "$tag" | grep -Eq '^v[0-9]+\.[0-9]+\.[0-9]+([-+][0-9A-Za-z.-]+)?$'; then
+            echo "::error::not a release tag: '${tag}'"
+            exit 1
+          fi
+          echo "tag=${tag}" >> "$GITHUB_OUTPUT"
+          echo "verify=${verify}" >> "$GITHUB_OUTPUT"
+
+  verify:
+    name: Verify npm install (${{ matrix.os }})
+    needs: resolve
+    if: needs.resolve.outputs.verify == 'true'
+    runs-on: ${{ matrix.os }}
+    timeout-minutes: 25
+    strategy:
+      fail-fast: false
+      matrix:
+        os: [ubuntu-latest, ubuntu-24.04-arm, macos-latest, windows-latest]
+    defaults:
+      run:
+        shell: bash
+    env:
+      RELEASE_TAG: ${{ needs.resolve.outputs.tag }}
+      # Registry replicas lag a publish by minutes; both knobs are repo variables.
+      NPM_VERIFY_RETRIES: ${{ vars.NPM_VERIFY_RETRIES || '15' }}
+      NPM_VERIFY_RETRY_SECONDS: ${{ vars.NPM_VERIFY_RETRY_SECONDS || '30' }}
+    steps:
+      - name: Set up Node
+        uses: actions/setup-node@949feb2413d6458794dcd2491c4babbbce0c15c1 # v7
+        with:
+          node-version: 22
+
+      - name: Install from the registry and check the version
+        run: |
+          set -euo pipefail
+          version="${RELEASE_TAG#v}"
+          retry() {
+            local n=0
+            until "$@"; do
+              n=$((n + 1))
+              if [ "$n" -ge "$NPM_VERIFY_RETRIES" ]; then return 1; fi
+              echo "Retrying in ${NPM_VERIFY_RETRY_SECONDS}s (attempt ${n} failed)" >&2
+              sleep "$NPM_VERIFY_RETRY_SECONDS"
+            done
+          }
+          visible() {
+            npm view "levelrail-cli@${version}" version >/dev/null 2>&1
+          }
+          retry visible || { echo "levelrail-cli@${version} never became visible on the registry" >&2; exit 1; }
+          # The wrapper package can appear before its platform packages, so
+          # retry the whole install, not just the first lookup.
+          check_cli() {
+            local work
+            work=$(mktemp -d) &&
+              cd "$work" &&
+              npm init -y >/dev/null &&
+              npm install --prefer-online "levelrail-cli@${version}" &&
+              out=$(npx --no-install levelrail-cli version) &&
+              echo "$out" &&
+              printf '%s\n' "$out" | grep -F -- "$version" >/dev/null
+          }
+          check_forwarders() {
+            local fwd
+            fwd=$(mktemp -d) &&
+              cd "$fwd" &&
+              npm init -y >/dev/null &&
+              npm install --prefer-online "levelrail@${version}" "@levelrail/cli@${version}" &&
+              out=$(npx --no-install levelrail version) &&
+              printf '%s\n' "$out" | grep -F -- "$version" >/dev/null &&
+              out=$(npx --no-install levelrail-scoped version) &&
+              printf '%s\n' "$out" | grep -F -- "$version" >/dev/null
+          }
+          retry check_cli || { echo "levelrail-cli@${version} did not install and print its version" >&2; exit 1; }
+          npm audit signatures
+          retry check_forwarders || { echo "the levelrail and @levelrail/cli forwarders did not print ${version}" >&2; exit 1; }
+          {
+            echo "### npm install verified on ${{ matrix.os }}"
+            echo "https://www.npmjs.com/package/levelrail-cli/v/${version}"
+          } >> "$GITHUB_STEP_SUMMARY"
