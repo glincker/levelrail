@@ -1,0 +1,126 @@
+{
+  "schema_version": 1,
+  "date": "2026-11-18",
+  "sanitized": true,
+  "sanitization_note": "Addresses, hostnames, user names, tokens, keys, restore point ids, bucket names and local paths were removed. Figures are unchanged.",
+  "hardware": {
+    "provider": "Oracle Cloud Ampere A1",
+    "arch": "aarch64",
+    "vcpu": 1,
+    "ram_gb": 5.8,
+    "disk_gb": 48,
+    "os": "Ubuntu 24.04",
+    "hosts": 2,
+    "network": "same private network, load generator on the second VM"
+  },
+  "versions": {
+    "before": "v0.9.5",
+    "after": "v1.5.3",
+    "generator_cli": "v1.5.3"
+  },
+  "release_asset_check": {
+    "server_and_cli_arm64_match_checksums": true
+  },
+  "metrics": {
+    "upgrade_cli_apply": {
+      "command": "levelrail-cli upgrade --apply --version v1.5.3",
+      "result": "fail",
+      "error": "no release repository configured (pass --repo owner/name)",
+      "detail": "Refused at the guard step. The install had no release repository in its brand config and this path has no --repo flag."
+    },
+    "upgrade_host_self_upgrade": {
+      "command": "levelrail self-upgrade --to v1.5.3 --repo glincker/levelrail --yes",
+      "result": "pass",
+      "from": "v0.9.5",
+      "to": "v1.5.3",
+      "duration_s": 50,
+      "steps_ok": "10 of 10",
+      "signature_verified": true,
+      "agents_reconnected": "1 of 1",
+      "data_intact": true,
+      "table_md5_match": true,
+      "systemd_restarts": 0,
+      "ingress_and_readyz_gap_s": 8,
+      "status": "slower than hoped",
+      "detail": "Ingress is inside the control plane, so the app route was down for about 8 s while the container kept running. One early failed boot attempt and a deferred upgrade history warning were logged and recovered on their own."
+    },
+    "idle_v1_5_3": {
+      "samples": 6,
+      "sample_interval_s": 30,
+      "measured_after_min": 10,
+      "rss_mb_range": [212.6, 222.8],
+      "cpu_percent_of_1vcpu": 0.4,
+      "threads": 10
+    },
+    "idle_v0_9_5": {
+      "rss_mb": 218,
+      "cpu_percent_of_1vcpu": 0.7,
+      "threads": 12
+    },
+    "deploy_to_healthy_s": {
+      "cached_image": 12.5,
+      "cold_pull": 15.4,
+      "note": "create to first HTTP 200 through the ingress, includes a fresh internal certificate on first request"
+    },
+    "bench_baseline_200rps_30s": {"sent": 6000, "ok": 6000, "failed": 0, "client_saturated": 0, "p50_ms": 1.99, "p95_ms": 2.58, "p99_ms": 5.57, "max_ms": 64.7},
+    "redeploy_under_load_200rps_90s": {
+      "load": "open loop, generator on a second VM over the private network",
+      "sent": 18000,
+      "ok": 18000,
+      "failed": 0,
+      "client_saturated": 0,
+      "p50_ms": 2.04,
+      "p95_ms": 3.01,
+      "p99_ms": 7.94,
+      "max_ms": 67.7,
+      "deploy_cmd_to_new_container_s": 4.6,
+      "error_window_s": 0
+    },
+    "bad_deploy": {
+      "old_release_kept_serving": true,
+      "probes_200": 654,
+      "probes_total": 654,
+      "status_shown_ready_live_s": 60,
+      "marked_failed_after_s": 62,
+      "result": "contained, but the status read ready (live) for about 60 s before flipping to failed"
+    },
+    "rollback": {
+      "command_return_s": 0.29,
+      "previous_release_serving_after_s": 11.8
+    },
+    "postgres_backup_restore_local_s3": {
+      "database": "managed Postgres 16",
+      "backup_s": 3,
+      "backup_bytes": 38276,
+      "backup_sealed": true,
+      "restore_s": 2.6,
+      "rows_before": 1000,
+      "rows_after_restore": 1000,
+      "md5_match": true
+    },
+    "reboot": {
+      "local_recovery_from_command_s": 56,
+      "local_recovery_from_kernel_boot_s": 30,
+      "data_intact": true,
+      "external_reachability": "fail",
+      "cause": "host firewall reverted to the provider default after reboot; an earlier runtime accept rule had not been saved. Host configuration, not a product defect."
+    }
+  },
+  "failures": [
+    "Documented upgrade path (levelrail-cli upgrade --apply) refused: no release repository configured and no --repo flag on that path.",
+    "Bad deploy showed ready (live) for about 60 s before flipping to failed.",
+    "v1.5.3 release-manifest.json lists amd64 only for a multi-arch release. The arm64 upgrade still passed.",
+    "External reachability after reboot failed on the host firewall (host configuration, not a product defect).",
+    "Upgrade plan text said 0 migrations would run for a schema move that then ran one."
+  ],
+  "not_run": [
+    "Upgrade from older than v0.9.5",
+    "Compose database backups and MySQL or MariaDB",
+    "Point in time recovery",
+    "Rates above 200 rps, replica kill, node drain, control plane restart under load",
+    "Public ACME with a real domain (internal certificate used)",
+    "Hard power off (clean reboot only)",
+    "Automatic rollback after a failed post-upgrade verification",
+    "Restore of the pre-upgrade restore point"
+  ]
+}

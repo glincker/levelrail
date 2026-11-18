@@ -1,6 +1,6 @@
 # Levelrail
 
-> Levelrail is an open-source, self-hosted, lightweight deployment platform (the control plane idles at about 200 to 220 MB of RAM and 1.5 percent of one CPU on a 2 vCPU box, one Go control plane binary): an
+> Levelrail is an open-source, self-hosted, lightweight deployment platform (the control plane idles at about 200 MB of RAM and 1.5 percent of one CPU on a 2 vCPU box, one Go control plane binary): an
 > alternative to Heroku, Vercel, and Railway for teams who run their own
 > Linux servers instead of renting one. A single Go control plane binary
 > and a single Go node agent binary drive Docker's own Engine API

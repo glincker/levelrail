@@ -8,7 +8,7 @@
 > Esta tradução foi gerada com IA e pode conter erros. Correções são bem-vindas: veja [docs/i18n/README.md](README.md).
 
 <p><strong>Git push para produção nos seus próprios servidores.</strong><br>
-Uma plataforma de deploy auto-hospedada em um único binário Go. O plano de controle consome cerca de 200 a 220 MB de RAM em repouso (<a href="../../docs/benchmarks.md">medido</a>), com 570+ apps de um clique, rollbacks, pré-visualizações, HTTPS e bancos de dados integrados.</p>
+Uma plataforma de deploy auto-hospedada em um único binário Go. O plano de controle consome cerca de 200 MB de RAM em repouso (<a href="../../docs/performance.md">medido</a>), com 570+ apps de um clique, rollbacks, pré-visualizações, HTTPS e bancos de dados integrados.</p>
 <p><code>curl -fsSL https://levelrail.com/install.sh | sudo sh</code> &middot; <a href="https://demo.levelrail.com"><b>Experimente a demo ao vivo</b></a></p>
 <p>
   <a href="https://github.com/glincker/levelrail/stargazers"><img src="https://img.shields.io/github/stars/glincker/levelrail?style=flat&logo=github" alt="Estrelas no GitHub"></a>
@@ -189,7 +189,7 @@ Cada afirmação leva à página que a comprova. A coluna de status segue o [Sta
 
 | O que você recebe | Status | Evidência |
 | --- | --- | --- |
-| Um plano de controle que, ocioso, usa cerca de 200 a 220 MB de RAM, em um único binário Go | medido | [Benchmarks](../../docs/benchmarks.md) |
+| Um plano de controle que, ocioso, usa cerca de 200 MB de RAM, em um único binário Go | medido | [Desempenho](../../docs/performance.md), [Benchmarks](../../docs/benchmarks.md) |
 | `git push` para o seu próprio servidor por HTTPS, sem provedor, webhook nem chave SSH (os deploys por webhook do GitHub são estáveis) | beta | [Deploy com git push](../../docs/git-push-deploy.md) |
 | Rollback para imagens fixadas, rollouts com verificação de prontidão e rollback automático após a vigilância pós-deploy | estável (sinal de latência beta) | [Segurança de deploy](../../docs/deploy-safety.md) |
 | Backups verificados, com simulações de restauração em um recurso temporário | Postgres estável, outros engines beta | [Prove que seus backups funcionam](../../docs/prove-your-backups-work.md), [Backups e armazenamento](../../docs/backups-and-storage.md) |

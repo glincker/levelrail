@@ -4,7 +4,7 @@ description: The rules every new control plane feature follows so idle cost stay
 "og:url": "https://docs.levelrail.com/performance-budget"
 ---
 
-The control plane is meant to stay small on a 2 vCPU, 8 GB box. Measured idle on such a box: about 200 to 220 MB RSS (peak 253 MB), 273 goroutines, 11 threads, 1.5 percent CPU. These rules keep that number from creeping up. Read them before adding a subsystem.
+The control plane is meant to stay small on a 2 vCPU, 8 GB box. Measured idle on such a box: about 200 MB RSS (peak 253 MB), 273 goroutines, 11 threads, 1.5 percent CPU. These rules keep that number from creeping up. Read them before adding a subsystem.
 
 ## Rules
 

@@ -4,7 +4,7 @@ description: Every Levelrail feature by area, with a docs link and a stable, bet
 "og:url": "https://docs.levelrail.com/features"
 ---
 
-Levelrail is a lightweight, self-hosted deployment platform: one Go binary whose control plane idles at about 200 to 220 MB of RAM and 1.5 percent of one CPU on a 2 vCPU box ([Performance](/performance), [Benchmarks](/benchmarks)). This page lists what the 1.4.0 tree contains, grouped into eight areas. Labels follow [Feature status](/feature-status): a feature with no label there is core and on by default. For a shorter view, see the [README](https://github.com/glincker/levelrail#what-you-get).
+Levelrail is a lightweight, self-hosted deployment platform: one Go binary whose control plane idles at about 200 MB of RAM and 1.5 percent of one CPU on a 2 vCPU box ([Performance](/performance), [Benchmarks](/benchmarks)). This page lists what the 1.4.0 tree contains, grouped into eight areas. Labels follow [Feature status](/feature-status): a feature with no label there is core and on by default. For a shorter view, see the [README](https://github.com/glincker/levelrail#what-you-get).
 
 ## Ship with git push (deploy)
 

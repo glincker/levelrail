@@ -9,7 +9,7 @@ Levelrail, a self-hosted deployment platform, runs on your own Linux servers. Th
 
 ## What is Levelrail?
 
-Levelrail is a lightweight, self-hosted deployment platform. The control plane is one Go binary that idles at about 200 to 220 MB of RAM and 1.5 percent of one CPU on a 2 vCPU box; your apps use their own resources on top. For the full list by area, see [All features](/features).
+Levelrail is a lightweight, self-hosted deployment platform. The control plane is one Go binary that idles at about 200 MB of RAM and 1.5 percent of one CPU on a 2 vCPU box; your apps use their own resources on top. For the full list by area, see [All features](/features).
 
 ## Does Levelrail need Kubernetes?
 

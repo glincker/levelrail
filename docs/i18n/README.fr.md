@@ -6,7 +6,7 @@
 > This translation was generated with AI and may contain mistakes. Corrections are welcome: see [docs/i18n/README.md](README.md).
 
 <p><strong>Git push vers la production sur vos propres serveurs.</strong><br>
-Une plateforme de déploiement auto-hébergée dans un seul binaire Go. Le plan de contrôle consomme au repos environ 200 à 220 Mo de RAM (<a href="../../docs/benchmarks.md">mesuré</a>), avec 570+ apps en un clic, rollbacks, prévisualisations, HTTPS et bases de données intégrés.</p>
+Une plateforme de déploiement auto-hébergée dans un seul binaire Go. Le plan de contrôle consomme au repos environ 200 Mo de RAM (<a href="../../docs/performance.md">mesuré</a>), avec 570+ apps en un clic, rollbacks, prévisualisations, HTTPS et bases de données intégrés.</p>
 <p><code>curl -fsSL https://levelrail.com/install.sh | sudo sh</code> &middot; <a href="https://demo.levelrail.com"><b>Essayer la démo en ligne</b></a></p>
 <p>
   <a href="https://github.com/glincker/levelrail/stargazers"><img src="https://img.shields.io/github/stars/glincker/levelrail?style=flat&logo=github" alt="Étoiles GitHub"></a>
@@ -187,7 +187,7 @@ Chaque affirmation renvoie à la page qui la prouve. La colonne de statut suit [
 
 | Ce que vous obtenez | Statut | Preuve |
 | --- | --- | --- |
-| Un plan de contrôle qui consomme environ 200 à 220 Mo de RAM au repos, dans un seul binaire Go | mesuré | [Benchmarks](../../docs/benchmarks.md) |
+| Un plan de contrôle qui consomme environ 200 Mo de RAM au repos, dans un seul binaire Go | mesuré | [Performance](../../docs/performance.md), [Benchmarks](../../docs/benchmarks.md) |
 | `git push` vers votre propre serveur en HTTPS, sans fournisseur, webhook ni clé SSH (les déploiements par webhook GitHub sont stables) | beta | [Déployer avec git push](../../docs/git-push-deploy.md) |
 | Rollback sur images épinglées, déploiements conditionnés à la disponibilité et rollback automatique après une surveillance post-déploiement | stable (signal de latence beta) | [Sûreté des déploiements](../../docs/deploy-safety.md) |
 | Sauvegardes vérifiées, avec des exercices de restauration dans une ressource temporaire | Postgres stable, autres moteurs beta | [Prouver que vos sauvegardes fonctionnent](../../docs/prove-your-backups-work.md), [Sauvegardes et stockage](../../docs/backups-and-storage.md) |

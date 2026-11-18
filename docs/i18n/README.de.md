@@ -6,7 +6,7 @@
 > This translation was generated with AI and may contain mistakes. Corrections are welcome: see [docs/i18n/README.md](README.md).
 
 <p><strong>Git push in die Produktion auf eigenen Servern.</strong><br>
-Eine selbst gehostete Deployment-Plattform in einem Go-Binary. Die Control Plane läuft im Leerlauf mit etwa 200 bis 220 MB RAM (<a href="../../docs/benchmarks.md">gemessen</a>), mit 570+ Ein-Klick-Apps, Rollbacks, Vorschauen, HTTPS und Datenbanken von Haus aus.</p>
+Eine selbst gehostete Deployment-Plattform in einem Go-Binary. Die Control Plane läuft im Leerlauf mit etwa 200 MB RAM (<a href="../../docs/performance.md">gemessen</a>), mit 570+ Ein-Klick-Apps, Rollbacks, Vorschauen, HTTPS und Datenbanken von Haus aus.</p>
 <p><code>curl -fsSL https://levelrail.com/install.sh | sudo sh</code> &middot; <a href="https://demo.levelrail.com"><b>Live-Demo ausprobieren</b></a></p>
 <p>
   <a href="https://github.com/glincker/levelrail/stargazers"><img src="https://img.shields.io/github/stars/glincker/levelrail?style=flat&logo=github" alt="GitHub-Sterne"></a>
@@ -187,7 +187,7 @@ Jede Aussage verlinkt auf die Seite, die sie belegt. Die Statusspalte folgt dem 
 
 | Was du bekommst | Status | Beleg |
 | --- | --- | --- |
-| Eine Control Plane, die im Leerlauf etwa 200 bis 220 MB RAM braucht, in einem einzigen Go-Binary | gemessen | [Benchmarks](../../docs/benchmarks.md) |
+| Eine Control Plane, die im Leerlauf etwa 200 MB RAM braucht, in einem einzigen Go-Binary | gemessen | [Performance](../../docs/performance.md), [Benchmarks](../../docs/benchmarks.md) |
 | `git push` zu deinem eigenen Server über HTTPS, ohne Anbieter, Webhook oder SSH-Schlüssel (GitHub-Webhook-Deploys sind stabil) | Beta | [Deploy mit git push](../../docs/git-push-deploy.md) |
 | Rollback auf fixierte Images, Rollouts mit Readiness-Gate und automatischer Rollback durch eine Post-Deploy-Überwachung | stabil (Latenzsignal Beta) | [Deploy-Sicherheit](../../docs/deploy-safety.md) |
 | Verifizierte Backups mit Restore-Drills in eine Scratch-Ressource | Postgres stabil, andere Engines Beta | [Backups beweisen](../../docs/prove-your-backups-work.md), [Backups und Speicher](../../docs/backups-and-storage.md) |

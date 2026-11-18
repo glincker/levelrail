@@ -2,13 +2,13 @@
 title: "Levelrail documentation"
 icon: "/assets/icons/house.svg"
 sidebarTitle: "What is Levelrail"
-description: Lightweight, self-hosted deployment platform: the control plane idles at about 200 to 220 MB and is one Go binary, with git deploys, one-click templates, edge and TLS, managed databases and built-in observability.
+description: Lightweight, self-hosted deployment platform: the control plane idles at about 200 MB and is one Go binary, with git deploys, one-click templates, edge and TLS, managed databases and built-in observability.
 "og:image": "https://docs.levelrail.com/public/og/index.png"
 "twitter:image": "https://docs.levelrail.com/public/og/index.png"
 "og:url": "https://docs.levelrail.com/index"
 ---
 
-Levelrail is a lightweight, self-hosted deployment platform: one Go binary whose control plane idles at about 200 to 220 MB of RAM and 1.5 percent of one CPU on a 2 vCPU box (see [Performance](/performance) and [Benchmarks](/benchmarks)). Your apps use their own resources on top. It turns one or more Linux servers into a private cloud. Push to a git repo and get a running app with TLS, logs, metrics and one-click rollback.
+Levelrail is a lightweight, self-hosted deployment platform: one Go binary whose control plane idles at about 200 MB of RAM and 1.5 percent of one CPU on a 2 vCPU box (see [Performance](/performance) and [Benchmarks](/benchmarks)). Your apps use their own resources on top. It turns one or more Linux servers into a private cloud. Push to a git repo and get a running app with TLS, logs, metrics and one-click rollback.
 
 <CardGroup cols={2}>
   <Card title="Getting started" icon="/assets/icons/rocket-launch.svg" href="/getting-started">

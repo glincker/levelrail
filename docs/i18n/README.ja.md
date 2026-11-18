@@ -3,7 +3,7 @@
 <img src="../../docs/assets/brand/levelrail-default.svg" alt="Levelrail ロゴ" width="56" height="56">
 <h1>Levelrail</h1>
 <p><strong>自分のサーバーへ、git push で本番デプロイ。</strong><br>
-Go 製の単一バイナリで動くセルフホスト型デプロイプラットフォームです。コントロールプレーンはアイドル時に約 200〜220 MB の RAM を使い（<a href="../../docs/benchmarks.md">計測値</a>）、570+ のワンクリックアプリ、ロールバック、プレビュー、HTTPS、データベースを標準で備えています。</p>
+Go 製の単一バイナリで動くセルフホスト型デプロイプラットフォームです。コントロールプレーンはアイドル時に約 200 MB の RAM を使い（<a href="../../docs/performance.md">計測値</a>）、570+ のワンクリックアプリ、ロールバック、プレビュー、HTTPS、データベースを標準で備えています。</p>
 <p><code>curl -fsSL https://levelrail.com/install.sh | sudo sh</code> &middot; <a href="https://demo.levelrail.com"><b>ライブデモを試す</b></a></p>
 <p>
   <a href="https://github.com/glincker/levelrail/stargazers"><img src="https://img.shields.io/github/stars/glincker/levelrail?style=flat&logo=github" alt="GitHub スター数"></a>
@@ -186,7 +186,7 @@ Do not write any token or password to a file or into this chat.
 
 | 得られるもの | ステータス | 根拠 |
 | --- | --- | --- |
-| 単一の Go バイナリで、アイドル時に約 200〜220 MB の RAM で動くコントロールプレーン | 計測済み | [ベンチマーク](../../docs/benchmarks.md) |
+| 単一の Go バイナリで、アイドル時に約 200 MB の RAM で動くコントロールプレーン | 計測済み | [パフォーマンス](../../docs/performance.md)、[ベンチマーク](../../docs/benchmarks.md) |
 | プロバイダー、Webhook、SSH キーなしで、自分のサーバーへ HTTPS で `git push`（GitHub Webhook デプロイは stable） | beta | [git push でデプロイ](../../docs/git-push-deploy.md) |
 | ピン留めイメージへのロールバック、準備完了ゲート付きのロールアウト、デプロイ後ウォッチによる自動ロールバック | stable（レイテンシ信号は beta） | [デプロイの安全性](../../docs/deploy-safety.md) |
 | 検証済みバックアップと、スクラッチリソースへのリストアドリル | Postgres は stable、その他のエンジンは beta | [バックアップの検証](../../docs/prove-your-backups-work.md)、[バックアップとストレージ](../../docs/backups-and-storage.md) |
