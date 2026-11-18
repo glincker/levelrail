@@ -89,7 +89,7 @@ describe('demoAnalytics GTM', () => {
     await initDemoAnalytics(gtmInfo)
     const scripts = document.head.querySelectorAll('script')
     expect(scripts).toHaveLength(1)
-    expect(scripts[0].src).toBe(
+    expect(scripts.item(0)?.src).toBe(
       'https://www.googletagmanager.com/gtm.js?id=GTM-ABC123',
     )
     captureDemoEvent('demo_route_viewed', {

@@ -48,7 +48,7 @@ func Enabled(getenv func(string) string) bool {
 // CheckEnvironment fails closed unless demo mode is explicitly enabled and
 // nothing that reaches a real host (Docker, ingress, agents, a public bind) is configured.
 func CheckEnvironment(getenv func(string) string) error {
-	return CheckEnvironmentIn(getenv, InContainer, os.Stat)
+	return CheckEnvironmentIn(getenv, InContainer, socketStat)
 }
 
 // InContainer reports a container signal: a runtime marker file or a
@@ -95,6 +95,17 @@ func ResolveAddr(getenv func(string) string, inContainer func() bool, loopbackDe
 // dockerSockets are the socket paths whose presence means the process could
 // reach a real Docker daemon.
 var dockerSockets = []string{"/var/run/docker.sock", "/run/docker.sock"}
+
+// socketStat is the production socket probe; tests swap it through SetSocketStatForTest.
+var socketStat = os.Stat
+
+// SetSocketStatForTest replaces the Docker socket probe used by CheckEnvironment
+// and returns a func that restores it. Not safe for parallel tests.
+func SetSocketStatForTest(fn func(string) (os.FileInfo, error)) (restore func()) {
+	prev := socketStat
+	socketStat = fn
+	return func() { socketStat = prev }
+}
 
 // CheckEnvironmentIn is CheckEnvironment with injectable container and stat probes.
 func CheckEnvironmentIn(getenv func(string) string, inContainer func() bool, stat func(string) (os.FileInfo, error)) error {
