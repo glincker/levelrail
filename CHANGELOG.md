@@ -1,5 +1,34 @@
 # Changelog
 
+## [1.5.2](https://github.com/glincker/levelrail/compare/v1.5.1...v1.5.2) (2026-11-18)
+
+
+### Features
+
+* container image build for the hosted demo ([90735f3](https://github.com/glincker/levelrail/commit/90735f3bff75e0e2390f1fb4df19bda044c0b724))
+* container image build for the hosted demo ([b65473f](https://github.com/glincker/levelrail/commit/b65473f49349cac66b82fde1725adffad301bcf2))
+* demo share tags, install and star calls, tour and page fixes, release check fixes and patch-only versioning ([#1592](https://github.com/glincker/levelrail/issues/1592)) ([90735f3](https://github.com/glincker/levelrail/commit/90735f3bff75e0e2390f1fb4df19bda044c0b724))
+* demo top bar star and install calls, single read-only notice, guided tour ([90735f3](https://github.com/glincker/levelrail/commit/90735f3bff75e0e2390f1fb4df19bda044c0b724))
+* demo top bar star and install calls, single read-only notice, guided tour ([821a370](https://github.com/glincker/levelrail/commit/821a370acf73c013a2625106f3d575d80aa569f7))
+* share tags and a light default for the hosted demo ([90735f3](https://github.com/glincker/levelrail/commit/90735f3bff75e0e2390f1fb4df19bda044c0b724))
+
+
+### Bug Fixes
+
+* add the missing locale keys and raise the ui-kit chunk budget ([9159f36](https://github.com/glincker/levelrail/commit/9159f3696b19f7717b3ae86536868379d7215526))
+* demo install state for unconfigured subsystems, install event listener, no upgrade toast ([90735f3](https://github.com/glincker/levelrail/commit/90735f3bff75e0e2390f1fb4df19bda044c0b724))
+* demo install state for unconfigured subsystems, install event listener, no upgrade toast ([8c1a348](https://github.com/glincker/levelrail/commit/8c1a34813ba408fa1b8be9c0657856e2749b6b67))
+* demo pages stop retrying refused calls, show an install prompt, and see seeded projects ([90735f3](https://github.com/glincker/levelrail/commit/90735f3bff75e0e2390f1fb4df19bda044c0b724))
+* demo pages stop retrying refused calls, show an install prompt, and see seeded projects ([199e066](https://github.com/glincker/levelrail/commit/199e066b9954d7a1f05b33445a2bb4a730b7e45a))
+* type the demo retry guard in self-upgrade queries ([c41f512](https://github.com/glincker/levelrail/commit/c41f5129eb7fbb8270f7c24b20927d39d71bfee9))
+* wait out npm lag in release checks, scan once for vulnerabilities and bump patch only ([90735f3](https://github.com/glincker/levelrail/commit/90735f3bff75e0e2390f1fb4df19bda044c0b724))
+* wait out npm lag in release checks, scan once for vulnerabilities and bump patch only ([21b7a8d](https://github.com/glincker/levelrail/commit/21b7a8dd585bc4e700135ef9253c5f0158cb8790))
+
+
+### Documentation
+
+* new share card for the README, npm pages and the demo ([2afe023](https://github.com/glincker/levelrail/commit/2afe0232c89b2b815a23f4794272c006271407a2))
+
 ## [1.5.1](https://github.com/glincker/levelrail/compare/v1.5.0...v1.5.1) (2026-11-18)
 
 
