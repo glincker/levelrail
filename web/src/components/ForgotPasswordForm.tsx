@@ -30,6 +30,7 @@ export function ForgotPasswordForm() {
         <FieldLabel htmlFor="forgot-password-email">Email</FieldLabel>
         <Input
           id="forgot-password-email"
+          name="email"
           type="email"
           required
           autoComplete="email"

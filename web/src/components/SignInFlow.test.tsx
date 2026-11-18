@@ -1,5 +1,5 @@
 import { QueryClientProvider } from '@tanstack/react-query'
-import { render, screen, waitFor } from '@testing-library/react'
+import { fireEvent, render, screen, waitFor } from '@testing-library/react'
 import userEvent from '@testing-library/user-event'
 import { afterEach, describe, expect, it, vi } from 'vitest'
 
@@ -163,5 +163,38 @@ describe('SignInFlow', () => {
       expect(screen.getByLabelText('Password')).toBeInTheDocument()
     })
     expect(urls.filter((u) => u.includes('passkey'))).toHaveLength(0)
+  })
+
+  it('marks the username input for password managers and passkey autofill', () => {
+    renderFlow('')
+    const input = screen.getByLabelText('Username')
+    expect(input).toHaveAttribute('name', 'username')
+    expect(input).toHaveAttribute('autocomplete', 'username webauthn')
+    expect(input).toHaveAttribute('spellcheck', 'false')
+    expect(input).toHaveAttribute('autocapitalize', 'none')
+    expect(screen.getByRole('button', { name: 'Continue' })).toHaveAttribute(
+      'type',
+      'submit',
+    )
+  })
+
+  it('continues on Enter through native form submit', async () => {
+    delete (window as { PublicKeyCredential?: unknown }).PublicKeyCredential
+    const user = userEvent.setup()
+    renderFlow('dave')
+    await user.type(screen.getByLabelText('Username'), '{Enter}')
+    await waitFor(() => {
+      expect(screen.getByLabelText('Password')).toBeInTheDocument()
+    })
+  })
+
+  it('does not continue on the Enter keydown that confirms an IME composition', () => {
+    delete (window as { PublicKeyCredential?: unknown }).PublicKeyCredential
+    renderFlow('erin')
+    const input = screen.getByLabelText('Username')
+    fireEvent.keyDown(input, { key: 'Enter', isComposing: true })
+    fireEvent.keyDown(input, { key: 'Enter', keyCode: 229 })
+    expect(screen.queryByLabelText('Password')).not.toBeInTheDocument()
+    expect(screen.getByLabelText('Username')).toBeInTheDocument()
   })
 })

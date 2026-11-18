@@ -87,3 +87,16 @@ describe('TwoFactorVerifyForm remember this browser', () => {
     })
   }
 })
+
+describe('TwoFactorVerifyForm input attributes', () => {
+  it('asks for a one-time code with a numeric keyboard, text for recovery', async () => {
+    stubFetch()
+    const user = userEvent.setup()
+    renderForm()
+    const input = await screen.findByLabelText('Authenticator code')
+    expect(input).toHaveAttribute('autocomplete', 'one-time-code')
+    expect(input).toHaveAttribute('inputmode', 'numeric')
+    await user.click(screen.getByRole('button', { name: /recovery/i }))
+    expect(screen.getByRole('textbox')).toHaveAttribute('inputmode', 'text')
+  })
+})

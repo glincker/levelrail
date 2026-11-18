@@ -97,6 +97,9 @@ export function RegisterForm({
           <Input
             id="register-username"
             autoComplete="username"
+            autoCapitalize="none"
+            autoCorrect="off"
+            spellCheck={false}
             aria-invalid={!!formState.errors.username}
             {...register('username')}
           />

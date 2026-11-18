@@ -149,3 +149,18 @@ describe('CodeLoginForm', () => {
     expect(navigate).not.toHaveBeenCalled()
   })
 })
+
+describe('CodeLoginForm autofill attributes', () => {
+  it('labels the username and code fields for password managers', async () => {
+    stubFetch({ status: 200, body: {} })
+    renderForm()
+    const username = screen.getByLabelText('Username or email')
+    expect(username).toHaveAttribute('name', 'username')
+    expect(username).toHaveAttribute('autocomplete', 'username')
+    expect(username).toHaveAttribute('spellcheck', 'false')
+    await sendAndEnter('ABCDE-FGHJK')
+    const code = screen.getByLabelText('Code')
+    expect(code).toHaveAttribute('name', 'code')
+    expect(code).toHaveAttribute('autocomplete', 'one-time-code')
+  })
+})

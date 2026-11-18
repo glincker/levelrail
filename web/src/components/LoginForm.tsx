@@ -159,7 +159,11 @@ export function LoginForm({
             <FieldLabel htmlFor="login-username">Username</FieldLabel>
             <Input
               id="login-username"
+              name="username"
               autoComplete="username webauthn"
+              autoCapitalize="none"
+              autoCorrect="off"
+              spellCheck={false}
               aria-invalid={usernameMissing}
               value={username}
               onChange={(e) => {
