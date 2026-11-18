@@ -74,5 +74,10 @@
       "open": "Open the URL it prints and create your admin account.",
       "deploy": "Deploy your first app from a Git repo or an image."
     }
+  },
+  "installState": {
+    "description": "This feature needs a real server, so the demo shows it as a preview only. Install {{brand}} on your own host to use it with your apps.",
+    "install": "Install {{brand}}",
+    "title": "Available when you install"
   }
 }
