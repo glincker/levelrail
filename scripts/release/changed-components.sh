@@ -47,8 +47,9 @@ esac
 # A change to the detector itself republishes everything once.
 extra+=(scripts/release/changed-components.sh)
 
-# Unquoted paths, so a non-ASCII file name still matches the input list.
-diff_files="$(git -c core.quotepath=false diff --name-only "$base" "$head")" || changed_true "git diff failed, publishing"
+# Unquoted paths, so a non-ASCII file name still matches the input list; no rename
+# detection, so a file moved out of an input still lists its old path.
+diff_files="$(git -c core.quotepath=false diff --name-only --no-renames "$base" "$head")" || changed_true "git diff failed, publishing"
 [ -n "$diff_files" ] || {
 	echo false
 	exit 0

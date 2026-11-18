@@ -86,6 +86,27 @@ git commit -qm "drop a control plane file"
 expect false mcp v1.0.6
 echo "ok: a deletion outside the imported packages is ignored"
 
+git tag v1.0.7
+git mv integrations/terraform-provider/VERSION moved-version.txt
+git commit -qm "move a provider file out"
+expect true terraform v1.0.7
+echo "ok: a file renamed out of an input marks the component changed"
+
+git tag v1.0.8
+git mv internal/shared/assets/hello.txt internal/hello.txt
+git commit -qm "move an embedded file out"
+expect true mcp v1.0.8
+echo "ok: a file renamed out of an imported package marks the binary changed"
+
+git tag v1.0.9
+accented=integrations/terraform-provider/$'caf\303\251'
+mkdir -p "$accented"
+echo x >"$accented/notes.txt"
+git add -A
+git commit -qm "non-ASCII path"
+expect true terraform v1.0.9
+echo "ok: a non-ASCII path matches"
+
 if "$script" nope v1.0.1 >/dev/null 2>&1; then
 	echo "FAIL: unknown component accepted" >&2
 	exit 1
