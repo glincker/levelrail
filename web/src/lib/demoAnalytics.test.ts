@@ -3,6 +3,7 @@ import {
   apiRoutePattern,
   captureDemoEvent,
   doNotTrackEnabled,
+  globalPrivacyControlEnabled,
   initDemoAnalytics,
   readUtm,
   resetDemoAnalyticsForTest,
@@ -28,6 +29,23 @@ describe('demoAnalytics', () => {
   it('detects Do Not Track', () => {
     expect(doNotTrackEnabled({ doNotTrack: '1' })).toBe(true)
     expect(doNotTrackEnabled({ doNotTrack: '0' })).toBe(false)
+  })
+
+  it('detects Global Privacy Control', () => {
+    expect(globalPrivacyControlEnabled({ globalPrivacyControl: true })).toBe(
+      true,
+    )
+    expect(globalPrivacyControlEnabled({ globalPrivacyControl: false })).toBe(
+      false,
+    )
+    expect(globalPrivacyControlEnabled({})).toBe(false)
+  })
+
+  it('never loads anything with Global Privacy Control', async () => {
+    vi.stubGlobal('navigator', { doNotTrack: null, globalPrivacyControl: true })
+    await initDemoAnalytics({ ...info, gtm: { id: 'GTM-ABC123' } })
+    expect(document.head.querySelector('script')).toBeNull()
+    expect(window.dataLayer).toBeUndefined()
   })
 
   it('never loads the script without a payload or with DNT', async () => {
@@ -56,7 +74,8 @@ describe('demoAnalytics', () => {
     captureDemoEvent('demo_github_click')
     captureDemoEvent('demo_tour_step', { step: 'apps' })
     expect(capture).toHaveBeenCalledWith('demo_tour_step', { step: 'apps' })
-    expect(capture).toHaveBeenCalledWith('demo_session_started', {})
+    expect(capture).toHaveBeenCalledWith('demo_landing_viewed', {})
+    expect(capture).not.toHaveBeenCalledWith('demo_session_started', {})
     expect(capture).toHaveBeenCalledWith('demo_github_click', {})
   })
 
@@ -104,7 +123,7 @@ describe('demoAnalytics GTM', () => {
       (e) => typeof e.event === 'string' && e.event.startsWith('demo_'),
     )
     expect(events.map((e) => e.event)).toEqual([
-      'demo_session_started',
+      'demo_landing_viewed',
       'demo_route_viewed',
       'demo_readonly_blocked',
       'demo_install_command_copied',
@@ -112,5 +131,50 @@ describe('demoAnalytics GTM', () => {
     ])
     expect(events.every((e) => e.surface === 'demo')).toBe(true)
     expect(JSON.stringify(events)).not.toMatch(/1234567890|\?x=1/)
+  })
+})
+
+describe('demoAnalytics landing', () => {
+  afterEach(() => {
+    resetDemoAnalyticsForTest()
+    vi.unstubAllGlobals()
+    document.head.innerHTML = ''
+    delete window.posthog
+  })
+
+  it('sends demo_landing_viewed once to each provider across repeated inits', async () => {
+    const capture = vi.fn()
+    window.posthog = { init: vi.fn(), register: vi.fn(), capture }
+    vi.stubGlobal('navigator', { doNotTrack: null })
+    const both = {
+      ...info,
+      gtm: { id: 'GTM-ABC123' },
+    }
+    const p = initDemoAnalytics(both)
+    void initDemoAnalytics(both)
+    document.head
+      .querySelector<HTMLScriptElement>('script[src$="array.js"]')
+      ?.onload?.(new Event('load'))
+    await p
+    await initDemoAnalytics(both)
+    expect(document.head.querySelectorAll('script')).toHaveLength(2)
+    expect(
+      capture.mock.calls.filter((c) => c[0] === 'demo_landing_viewed'),
+    ).toHaveLength(1)
+    const landing = (window.dataLayer ?? []).filter(
+      (e) => e.event === 'demo_landing_viewed',
+    )
+    expect(landing).toHaveLength(1)
+  })
+
+  it('loads nothing for a non-demo instance', async () => {
+    vi.stubGlobal('navigator', { doNotTrack: null })
+    await initDemoAnalytics({
+      enabled: false,
+      gtm: { id: 'GTM-ABC123' },
+      analytics: { provider: 'posthog', host: 'https://x.test', token: 't' },
+    })
+    expect(document.head.querySelector('script')).toBeNull()
+    expect(window.dataLayer).toBeUndefined()
   })
 })

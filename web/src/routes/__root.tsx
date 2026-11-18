@@ -12,6 +12,7 @@ import { brandQueryOptions } from '../queries/brand'
 import { demoQueryOptions } from '../queries/demo'
 import { shellCacheReady } from '../queries/shell'
 import { DemoChrome } from '../components/demo/DemoChrome'
+import { DemoAnalytics } from '../components/demo/DemoAnalytics'
 import { BrandProvider } from '../components/BrandProvider'
 import { AppSidebar } from '../components/AppSidebar'
 import { useShortcuts } from '../hooks/useShortcuts'
@@ -138,6 +139,7 @@ function RootLayout() {
   return (
     <ThemeProvider>
       <BrandProvider>
+        <DemoAnalytics />
         <AppShell />
         <Toaster />
       </BrandProvider>

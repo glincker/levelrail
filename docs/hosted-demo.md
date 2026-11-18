@@ -55,9 +55,11 @@ The demo can send a few named events to a PostHog project. It stays off unless b
 
 With both set, `GET /api/v1/demo` returns an `analytics` object and the demo CSP allows that host in `script-src` and `connect-src`. For a PostHog cloud host (`*.i.posthog.com`) the matching assets host (for example `us-assets.i.posthog.com`) is allowed too. The widened CSP is sent on every demo response, including the dashboard HTML and static assets. A real instance never returns it.
 
-What is collected: the events `demo_session_started`, `demo_route_viewed` (route pattern only), `demo_readonly_blocked` (HTTP method and route pattern only), `demo_install_command_copied` and `demo_github_click`, all tagged `surface=demo`, plus `utm_source`, `utm_medium` and `utm_campaign` when the landing URL has them.
+Analytics start as soon as the SPA loads on any route, including the signed-out `/login` page, so a visitor who never clicks "Explore the demo" is still counted. The page reuses the public `GET /api/v1/demo` call the shell already makes; a real instance (`enabled: false`) loads nothing and makes no extra request. Each provider is loaded once per page load, so the later sign-in does not load it again.
 
-What is not collected: no cookies or local storage (memory persistence), no session recording, no autocapture, no record ids or query strings. Visitors with Do Not Track enabled load nothing and send nothing.
+What is collected: the events `demo_landing_viewed` (once per page load, on the first route), `demo_session_started` (the Explore the demo click), `demo_route_viewed` (route pattern only), `demo_readonly_blocked` (HTTP method and route pattern only), `demo_install_command_copied` and `demo_github_click`, all tagged `surface=demo`, plus `utm_source`, `utm_medium` and `utm_campaign` when the landing URL has them.
+
+What is not collected: no cookies or local storage (memory persistence), no session recording, no autocapture, no record ids or query strings. Visitors with Do Not Track or Global Privacy Control (`navigator.globalPrivacyControl`) enabled load nothing and send nothing.
 
 IP addresses are seen by PostHog on receipt. Turn off IP capture in the PostHog project settings if you want to promise they are not stored.
 
@@ -76,9 +78,9 @@ The top bar Star button shows the live GitHub star count. The demo process fetch
 
 Nothing loads unless the variable is set, and a real instance never returns it. With it set, `GET /api/v1/demo` returns `gtm: {"id": "..."}` and the demo CSP additionally allows `www.googletagmanager.com` (script, connect, image) plus `*.google-analytics.com`, `*.analytics.google.com` and `*.googletagmanager.com` (connect, image). The CSP still has no `unsafe-inline` or `unsafe-eval` for scripts.
 
-The page loads the standard `gtm.js` from Google and pushes the same five events as `{event, surface: "demo", ...}` into `window.dataLayer`, with the route pattern only and no ids or query strings. Build tags and triggers on those event names in the GTM account that owns the container. Levelrail does not configure the container.
+The page loads the standard `gtm.js` from Google and pushes the same six events as `{event, surface: "demo", ...}` into `window.dataLayer`, with the route pattern only and no ids or query strings. Build tags and triggers on those event names in the GTM account that owns the container. Levelrail does not configure the container.
 
-Google tags can set cookies and send visitor data to Google, so EU visitors may need consent. In GTM, enable Consent Mode with `analytics_storage` denied by default, and turn on IP anonymisation in GA4. Visitors with Do Not Track enabled load nothing and send nothing. The demo banner has no place for a privacy note today, so state the use of Google tags in your own privacy notice for the demo site.
+Google tags can set cookies and send visitor data to Google, so EU visitors may need consent. In GTM, enable Consent Mode with `analytics_storage` denied by default, and turn on IP anonymisation in GA4. Visitors with Do Not Track or Global Privacy Control enabled load nothing and send nothing. The demo banner has no place for a privacy note today, so state the use of Google tags in your own privacy notice for the demo site.
 
 ## Check it
 

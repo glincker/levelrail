@@ -3,6 +3,7 @@ import { useTranslation } from 'react-i18next'
 import { FlaskConicalGlassIcon } from '@thesvg/ui-react'
 import { Button } from '@/components/ui/button'
 import { Alert, AlertDescription } from '@/components/ui/alert'
+import { captureDemoEvent } from '@/lib/demoAnalytics'
 import { demoQueryOptions, useDemoSession } from '@/queries/demo'
 import { useFinishSignIn } from '@/queries/auth'
 
@@ -49,6 +50,7 @@ export function DemoLoginEntry() {
         onClick={() => {
           session.mutate(readHumanToken(), {
             onSuccess: () => {
+              captureDemoEvent('demo_session_started')
               finish(info.username ?? DEFAULT_VISITOR)
             },
           })
