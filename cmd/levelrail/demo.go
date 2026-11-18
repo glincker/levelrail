@@ -36,13 +36,17 @@ const (
 	demoEnvPublicURL     = "APP_DEMO_PUBLIC_URL"
 	demoDefaultPublicURL = "https://demo.levelrail.com"
 
-	demoShareTitle       = "Levelrail live demo"
-	demoShareDescription = "Try the Levelrail dashboard with fictional data: deploy, roll back, databases, domains. Read only."
+	demoShareTitle       = "Levelrail live demo: self-hosted deploys, no signup"
+	demoShareDescription = "Click through a self-hosted deploy platform: deploys, rollbacks, databases and domains. Read only, fictional data, nothing to install."
 	demoShareImageAlt    = "Levelrail live demo: try the dashboard with fictional data"
 	demoShareImageWidth  = 1200
 	demoShareImageHeight = 630
 	demoMinResetInterval = time.Minute
-	demoRobotsTxt        = "User-agent: *\nDisallow: /\n"
+	// Link preview bots may read the page so shared links show a card. Search
+	// engines stay out: the catch-all rule and the noindex header still apply.
+	demoRobotsTxt = "User-agent: Redditbot\nUser-agent: Twitterbot\nUser-agent: facebookexternalhit\n" +
+		"User-agent: Slackbot\nUser-agent: LinkedInBot\nUser-agent: Discordbot\nAllow: /\n\n" +
+		"User-agent: *\nDisallow: /\n"
 )
 
 // runDemo dispatches `demo seed` and `demo serve`. The demo is a separate

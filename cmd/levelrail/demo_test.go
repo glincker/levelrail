@@ -66,6 +66,15 @@ func TestDemoHandlerEndToEnd(t *testing.T) {
 	if rec := do(http.MethodGet, "/robots.txt", nil); rec.Body.String() != demoRobotsTxt || rec.Header().Get("X-Robots-Tag") == "" {
 		t.Errorf("robots.txt = %q, header = %q", rec.Body.String(), rec.Header().Get("X-Robots-Tag"))
 	}
+	// Preview bots are allowed, every other crawler stays blocked and noindex.
+	for _, want := range []string{"User-agent: Redditbot\n", "Allow: /\n", "User-agent: *\nDisallow: /\n"} {
+		if !strings.Contains(demoRobotsTxt, want) {
+			t.Errorf("robots.txt missing %q", want)
+		}
+	}
+	if rec := do(http.MethodGet, "/", nil); !strings.Contains(rec.Header().Get("X-Robots-Tag"), "noindex") {
+		t.Errorf("static shell must stay noindex, got %q", rec.Header().Get("X-Robots-Tag"))
+	}
 
 	rec := do(http.MethodPost, "/api/v1/demo/session", nil)
 	var cookie *http.Cookie
