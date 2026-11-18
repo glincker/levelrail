@@ -1401,7 +1401,20 @@
     "unavailable": "Visitor numbers need the edge access log, which is not enabled on this install.",
     "chartHeading": "Requests over time",
     "exportCsv": "Download CSV",
-    "exportEmpty": "Nothing to export in this window."
+    "exportEmpty": "Nothing to export in this window.",
+    "topPagesCaption": "Top 10 pages by page views in this window",
+    "viewsHeader": "Page views",
+    "classSplit": "Requests by type",
+    "classLabel": "Requests by traffic class",
+    "classes": {
+      "page": "Pages",
+      "api": "API",
+      "asset": "Assets",
+      "bot": "Bots",
+      "prefetch": "Prefetch",
+      "other": "Other"
+    },
+    "noPageViews": "No page views yet. {{total}} API, asset and bot requests were seen."
   },
   "overviewHero": {
     "addressInfo": "About this address",

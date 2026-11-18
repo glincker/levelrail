@@ -6,6 +6,7 @@ import (
 	"strings"
 	"time"
 
+	"github.com/GLINCKER/levelrail/internal/experimental"
 	"github.com/GLINCKER/levelrail/internal/ingress"
 )
 
@@ -64,6 +65,7 @@ func (rt *Router) visitorSummary(w http.ResponseWriter, r *http.Request) (AppVis
 	now := time.Now().UTC()
 	domain := strings.TrimSpace(q.Get("domain"))
 	sum := src.AppVisitors(r.Context(), r.PathValue("name"), ingress.VisitorSummaryOptions{Domain: domain, Since: now.Add(-span), Until: now})
+	sum.PagesOnly = experimental.Enabled(experimental.TrafficAnalytics)
 	return AppVisitorsResponse{
 		App: r.PathValue("name"), Domain: domain, Window: window, Since: now.Add(-span), GeneratedAt: now, VisitorSummary: sum,
 	}, true

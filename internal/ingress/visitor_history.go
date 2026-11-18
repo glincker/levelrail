@@ -12,6 +12,7 @@ import (
 	"time"
 
 	"github.com/GLINCKER/levelrail/internal/store"
+	"github.com/GLINCKER/levelrail/internal/trafficclass"
 )
 
 const (
@@ -19,6 +20,7 @@ const (
 	defaultRollupTrackMul = 20
 	defaultFlushEvery     = time.Minute
 	flushFinalTimeout     = 5 * time.Second
+	defaultPageLabels     = 500
 )
 
 // VisitorHistoryStore is the persistence the rollups need.
@@ -40,6 +42,8 @@ type rollupAcc struct {
 	visitors int
 	paths    map[string]int
 	refs     map[string]int
+	pages    map[string]int
+	classes  [trafficclass.Count]int
 }
 
 type seenKey struct {
@@ -104,6 +108,10 @@ func (l *AccessLog) trackRollup(key string, rec AccessRecord) {
 		hash = l.visitorHash(rec.Client.String(), rec.Time, period)
 	}
 	limit := rollupTopN() * defaultRollupTrackMul
+	var page string
+	if rec.Class == trafficclass.Page && trafficclass.IsPageView(rec.Method, rec.Status) {
+		page = pageLabel(rec.Path)
+	}
 	h.mu.Lock()
 	defer h.mu.Unlock()
 	if h.acc == nil {
@@ -111,7 +119,7 @@ func (l *AccessLog) trackRollup(key string, rec AccessRecord) {
 	}
 	a := h.acc[rk]
 	if a == nil {
-		a = &rollupAcc{paths: map[string]int{}, refs: map[string]int{}}
+		a = &rollupAcc{paths: map[string]int{}, refs: map[string]int{}, pages: map[string]int{}}
 		h.acc[rk] = a
 	}
 	a.requests++
@@ -119,6 +127,12 @@ func (l *AccessLog) trackRollup(key string, rec AccessRecord) {
 		a.status[c-2]++
 	}
 	bump(a.paths, rec.Path, limit)
+	if int(rec.Class) < trafficclass.Count {
+		a.classes[rec.Class]++
+	}
+	if page != "" {
+		bumpOrOther(a.pages, page, pageLabelsMax())
+	}
 	if rec.Referrer != "" {
 		bump(a.refs, rec.Referrer, limit)
 	}
@@ -141,6 +155,24 @@ func bump(m map[string]int, label string, limit int) {
 	if _, ok := m[label]; ok || len(m) < limit {
 		m[label]++
 	}
+}
+
+// otherLabel collects labels past a cap, so the total still adds up.
+const otherLabel = "(other)"
+
+func bumpOrOther(m map[string]int, label string, limit int) {
+	if _, ok := m[label]; !ok && len(m) >= limit {
+		label = otherLabel
+	}
+	m[label]++
+}
+
+// pageLabelsMax reads APP_TRAFFIC_PAGE_LABELS: distinct page paths kept per app-hour.
+func pageLabelsMax() int {
+	if v, err := strconv.Atoi(strings.TrimSpace(os.Getenv("APP_TRAFFIC_PAGE_LABELS"))); err == nil && v > 0 {
+		return v
+	}
+	return defaultPageLabels
 }
 
 // FlushVisitorHistory writes the hour accumulators, drops closed hours and prunes old rows.
@@ -170,6 +202,7 @@ func (l *AccessLog) FlushVisitorHistory(ctx context.Context) error {
 				App: app, Domain: rk.domain, HourStart: time.Unix(rk.hour*3600, 0).UTC(), Epoch: h.epoch,
 				Requests: a.requests, Status: a.status, Visitors: a.visitors,
 				TopPaths: toRollupCounts(topCounts(a.paths, n)), TopRefs: toRollupCounts(topCounts(a.refs, n)),
+				TopPages: toRollupCounts(topCounts(a.pages, n)), Classes: a.classes,
 			})
 		}
 	}
@@ -217,6 +250,10 @@ func mergeSameApp(rows []store.VisitorRollup) []store.VisitorRollup {
 		for j := range o.Status {
 			o.Status[j] += r.Status[j]
 		}
+		for j := range o.Classes {
+			o.Classes[j] += r.Classes[j]
+		}
+		o.TopPages = mergeCounts(o.TopPages, r.TopPages)
 		o.TopPaths = mergeCounts(o.TopPaths, r.TopPaths)
 		o.TopRefs = mergeCounts(o.TopRefs, r.TopRefs)
 	}
@@ -333,7 +370,10 @@ func mergeRollups(live VisitorSummary, rows []store.VisitorRollup, epoch int64, 
 	if step <= 0 {
 		return live
 	}
-	paths, refs := map[string]int{}, map[string]int{}
+	paths, refs, pages := map[string]int{}, map[string]int{}, map[string]int{}
+	for _, c := range live.TopPages {
+		pages[c.Label] += c.Count
+	}
 	for _, c := range live.TopPaths {
 		paths[c.Label] += c.Count
 	}
@@ -354,6 +394,12 @@ func mergeRollups(live VisitorSummary, rows []store.VisitorRollup, epoch int64, 
 		live.Visitors += r.Visitors
 		for i, k := range [4]string{"2xx", "3xx", "4xx", "5xx"} {
 			live.Status[k] += r.Status[i]
+		}
+		for i, n := range r.Classes {
+			live.Classes.add(trafficclass.Class(i), n)
+		}
+		for _, c := range r.TopPages {
+			pages[c.Label] += c.Count
 		}
 		for _, c := range r.TopPaths {
 			paths[c.Label] += c.Count
@@ -377,7 +423,7 @@ func mergeRollups(live VisitorSummary, rows []store.VisitorRollup, epoch int64, 
 			live.OldestKept = r.HourStart
 		}
 	}
-	live.TopPaths, live.TopRefs = topCounts(paths, topN), topCounts(refs, topN)
+	live.TopPaths, live.TopRefs, live.TopPages = topCounts(paths, topN), topCounts(refs, topN), topCounts(pages, topN)
 	live.Domains = live.Domains[:0]
 	for _, d := range doms {
 		live.Domains = append(live.Domains, *d)

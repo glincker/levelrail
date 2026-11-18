@@ -12,7 +12,7 @@ import (
 func runAppsVisitors(prog string, args []string, stdout, stderr io.Writer, lookupEnv func(string) (string, bool)) int {
 	var domain, window, export, out string
 	label := "apps visitors"
-	usage := fmt.Sprintf("Usage:\n  %s %s <app> [flags]\n\nPrivacy-safe visitor summary from the edge access log: unique visitors (client addresses hashed with a rotating salt, never stored), requests, status classes, top pages and referrers.\n\nFlags:\n  --domain string   only this domain\n  --window string   1h, 24h, 7d or 30d (default 24h); 7d and 30d include stored hourly history\n  --export string   export instead of the summary; only csv is supported\n  --out string      write the export to this file (default stdout)\n%s", prog, label, commonFlagsHelp)
+	usage := fmt.Sprintf("Usage:\n  %s %s <app> [flags]\n\nPrivacy-safe visitor summary from the edge access log: unique visitors (client addresses hashed with a rotating salt, never stored), requests, status classes, top pages and referrers. With the traffic-analytics beta feature on, top pages list page views only and a class split (page, api, asset, bot, prefetch, other) is printed.\n\nFlags:\n  --domain string   only this domain\n  --window string   1h, 24h, 7d or 30d (default 24h); 7d and 30d include stored hourly history\n  --export string   export instead of the summary; only csv is supported\n  --out string      write the export to this file (default stdout)\n%s", prog, label, commonFlagsHelp)
 	c, code, ok := parseCLICall(prog, label, usage, args, stdout, stderr, lookupEnv, func(fs *flag.FlagSet) {
 		fs.StringVar(&domain, "domain", "", "only this domain")
 		fs.StringVar(&window, "window", "24h", "1h, 24h, 7d or 30d")
@@ -55,9 +55,18 @@ func runAppsVisitors(prog string, args []string, stdout, stderr io.Writer, looku
 			_, _ = fmt.Fprintf(stdout, "data since %s\n", v.OldestKept.UTC().Format("2006-01-02 15:04 UTC"))
 		}
 		tw := tabwriter.NewWriter(stdout, 0, 2, 2, ' ', 0)
-		if len(v.TopPaths) > 0 {
-			_, _ = fmt.Fprintln(tw, "\nPAGE\tREQUESTS")
-			for _, p := range v.TopPaths {
+		pages, head := v.TopPaths, "REQUESTS"
+		if v.PagesOnly {
+			c := v.Classes
+			_, _ = fmt.Fprintf(stdout, "classes  page %d, api %d, asset %d, bot %d, prefetch %d, other %d\n", c.Page, c.API, c.Asset, c.Bot, c.Prefetch, c.Other)
+			pages, head = v.TopPages, "VIEWS"
+			if len(pages) == 0 && v.Requests > 0 {
+				_, _ = fmt.Fprintf(stdout, "No page views yet. %d API, asset and bot requests were seen.\n", c.API+c.Asset+c.Bot)
+			}
+		}
+		if len(pages) > 0 {
+			_, _ = fmt.Fprintf(tw, "\nPAGE\t%s\n", head)
+			for _, p := range pages {
 				_, _ = fmt.Fprintf(tw, "%s\t%d\n", p.Label, p.Count)
 			}
 		}

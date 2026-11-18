@@ -1410,7 +1410,20 @@
     "unavailable": "Os números de visitantes precisam do log de acesso do edge, que não está ativado nesta instalação.",
     "chartHeading": "Requisições ao longo do tempo",
     "exportCsv": "Baixar CSV",
-    "exportEmpty": "Nada para exportar nesta janela."
+    "exportEmpty": "Nada para exportar nesta janela.",
+    "topPagesCaption": "As 10 páginas mais vistas neste período",
+    "viewsHeader": "Visualizações de página",
+    "classSplit": "Requisições por tipo",
+    "classLabel": "Requisições por classe de tráfego",
+    "classes": {
+      "page": "Páginas",
+      "api": "API",
+      "asset": "Recursos",
+      "bot": "Bots",
+      "prefetch": "Pré-carregamento",
+      "other": "Outras"
+    },
+    "noPageViews": "Ainda não há visualizações de página. Foram vistas {{total}} requisições de API, recursos e bots."
   },
   "overviewHero": {
     "addressInfo": "Sobre este endereço",

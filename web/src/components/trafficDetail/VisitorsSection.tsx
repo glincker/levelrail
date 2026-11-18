@@ -20,6 +20,7 @@ import {
   isVisitorsUnavailable,
   useAppVisitors,
   type AppVisitors,
+  type VisitorClasses,
   type VisitorCount,
   type VisitorDomain,
   type VisitorsWindow,
@@ -84,11 +85,50 @@ function StatusBar({ status }: Readonly<{ status: AppVisitors['status'] }>) {
   )
 }
 
+const CLASS_ORDER = [
+  'page',
+  'api',
+  'asset',
+  'bot',
+  'prefetch',
+  'other',
+] as const
+
+// Small request split under the totals: page views next to the calls Top pages leaves out.
+function ClassSplit({ classes }: Readonly<{ classes: VisitorClasses }>) {
+  const { t } = useTranslation('common')
+  return (
+    <div className="space-y-1">
+      <p className="text-xs text-muted-foreground">
+        {t('visitors.classSplit')}
+      </p>
+      <ul
+        aria-label={t('visitors.classLabel')}
+        className="flex flex-wrap gap-x-3 gap-y-0.5 text-xs tabular-nums text-muted-foreground"
+      >
+        {CLASS_ORDER.map((c) => (
+          <li key={c}>
+            {t(`visitors.classes.${c}`)} {classes[c]}
+          </li>
+        ))}
+      </ul>
+    </div>
+  )
+}
+
 function TopTable({
   caption,
   head,
+  countHead,
+  emptyText,
   rows,
-}: Readonly<{ caption: string; head: string; rows: VisitorCount[] }>) {
+}: Readonly<{
+  caption: string
+  head: string
+  countHead?: string
+  emptyText?: string
+  rows: VisitorCount[]
+}>) {
   const { t } = useTranslation('common')
   return (
     <table className="w-full text-xs">
@@ -101,7 +141,7 @@ function TopTable({
             {head}
           </th>
           <th scope="col" className="pb-1 text-right font-medium">
-            {t('visitors.countHeader')}
+            {countHead ?? t('visitors.countHeader')}
           </th>
         </tr>
       </thead>
@@ -109,7 +149,7 @@ function TopTable({
         {rows.length === 0 ? (
           <tr>
             <td colSpan={2} className="py-1 text-muted-foreground">
-              {t('visitors.none')}
+              {emptyText ?? t('visitors.none')}
             </td>
           </tr>
         ) : (
@@ -131,6 +171,8 @@ function TopTable({
 
 export function VisitorsDetail({ data }: Readonly<{ data: AppVisitors }>) {
   const { t } = useTranslation('common')
+  const pagesOnly = data.pages_only === true && data.classes !== undefined
+  const classes = data.classes
   if (data.requests === 0) {
     return (
       <p className="text-sm text-muted-foreground">{t('visitors.empty')}</p>
@@ -174,12 +216,25 @@ export function VisitorsDetail({ data }: Readonly<{ data: AppVisitors }>) {
         </p>
       ) : null}
       <StatusBar status={data.status} />
+      {pagesOnly && classes ? <ClassSplit classes={classes} /> : null}
       <div className="grid gap-6 md:grid-cols-2">
-        <TopTable
-          caption={t('visitors.topPathsCaption')}
-          head={t('visitors.pathHeader')}
-          rows={data.top_paths}
-        />
+        {pagesOnly && classes ? (
+          <TopTable
+            caption={t('visitors.topPagesCaption')}
+            head={t('visitors.pathHeader')}
+            countHead={t('visitors.viewsHeader')}
+            emptyText={t('visitors.noPageViews', {
+              total: classes.api + classes.asset + classes.bot,
+            })}
+            rows={data.top_pages ?? []}
+          />
+        ) : (
+          <TopTable
+            caption={t('visitors.topPathsCaption')}
+            head={t('visitors.pathHeader')}
+            rows={data.top_paths}
+          />
+        )}
         <TopTable
           caption={t('visitors.topReferrersCaption')}
           head={t('visitors.referrerHeader')}

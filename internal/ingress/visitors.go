@@ -11,6 +11,9 @@ import (
 	"strconv"
 	"strings"
 	"time"
+
+	"github.com/GLINCKER/levelrail/internal/telemetry"
+	"github.com/GLINCKER/levelrail/internal/trafficclass"
 )
 
 const (
@@ -48,12 +51,63 @@ type DomainVisitors struct {
 	Visitors int    `json:"visitors"`
 }
 
+// ClassCounts is requests per traffic class; a class a path rule ignores is in none of them.
+type ClassCounts struct {
+	Page     int `json:"page"`
+	API      int `json:"api"`
+	Asset    int `json:"asset"`
+	Bot      int `json:"bot"`
+	Prefetch int `json:"prefetch"`
+	Other    int `json:"other"`
+}
+
+func (c *ClassCounts) add(class trafficclass.Class, n int) {
+	switch class {
+	case trafficclass.Page:
+		c.Page += n
+	case trafficclass.API:
+		c.API += n
+	case trafficclass.Asset:
+		c.Asset += n
+	case trafficclass.Bot:
+		c.Bot += n
+	case trafficclass.Prefetch:
+		c.Prefetch += n
+	case trafficclass.Other:
+		c.Other += n
+	}
+}
+
+func (c *ClassCounts) merge(o ClassCounts) {
+	c.Page += o.Page
+	c.API += o.API
+	c.Asset += o.Asset
+	c.Bot += o.Bot
+	c.Prefetch += o.Prefetch
+	c.Other += o.Other
+}
+
+// pageLabel is the page path as stored: ids collapsed, trailing slash folded, clipped.
+func pageLabel(path string) string {
+	return truncate(telemetry.NormalizeRoute(path, maxPageDepth), maxPageLabel)
+}
+
+const (
+	maxPageDepth = 32
+	maxPageLabel = 128
+)
+
 // VisitorSummary is aggregate only: no address, hash or user agent leaves the process.
 type VisitorSummary struct {
-	Requests   int              `json:"requests"`
-	Visitors   int              `json:"visitors"`
-	Status     map[string]int   `json:"status"`
-	TopPaths   []CountedItem    `json:"top_paths"`
+	Requests int            `json:"requests"`
+	Visitors int            `json:"visitors"`
+	Status   map[string]int `json:"status"`
+	TopPaths []CountedItem  `json:"top_paths"`
+	// Classes splits Requests by traffic class; TopPages ranks successful page-class GETs only.
+	Classes  ClassCounts   `json:"classes"`
+	TopPages []CountedItem `json:"top_pages"`
+	// PagesOnly is set by the API when the traffic-analytics feature is on, so clients show TopPages as "Top pages".
+	PagesOnly  bool             `json:"pages_only"`
 	TopRefs    []CountedItem    `json:"top_referrers"`
 	Series     []VisitorBucket  `json:"series"`
 	Domains    []DomainVisitors `json:"domains"`
@@ -143,7 +197,7 @@ func (l *AccessLog) Summarize(keys []string, o VisitorSummaryOptions) VisitorSum
 	}
 	period := l.saltPeriod()
 	sum := VisitorSummary{Status: map[string]int{"2xx": 0, "3xx": 0, "4xx": 0, "5xx": 0}, SaltPeriod: period.String(),
-		TopPaths: []CountedItem{}, TopRefs: []CountedItem{}, Domains: []DomainVisitors{}}
+		TopPaths: []CountedItem{}, TopPages: []CountedItem{}, TopRefs: []CountedItem{}, Domains: []DomainVisitors{}}
 	if o.Until.IsZero() {
 		o.Until = time.Now()
 	}
@@ -163,7 +217,8 @@ func (l *AccessLog) Summarize(keys []string, o VisitorSummaryOptions) VisitorSum
 	}
 	domain := hostOnly(o.Domain)
 	seen := map[string]struct{}{}
-	paths, refs := map[string]int{}, map[string]int{}
+	paths, refs, pages := map[string]int{}, map[string]int{}, map[string]int{}
+	labels := map[string]string{}
 	type dom struct {
 		req  int
 		seen map[string]struct{}
@@ -185,6 +240,15 @@ func (l *AccessLog) Summarize(keys []string, o VisitorSummaryOptions) VisitorSum
 			sum.Status[strconv.Itoa(c)+"xx"]++
 		}
 		paths[rec.Path]++
+		sum.Classes.add(rec.Class, 1)
+		if rec.Class == trafficclass.Page && trafficclass.IsPageView(rec.Method, rec.Status) {
+			lbl, ok := labels[rec.Path]
+			if !ok {
+				lbl = pageLabel(rec.Path)
+				labels[rec.Path] = lbl
+			}
+			pages[lbl]++
+		}
 		if rec.Referrer != "" {
 			refs[rec.Referrer]++
 		}
@@ -212,7 +276,7 @@ func (l *AccessLog) Summarize(keys []string, o VisitorSummaryOptions) VisitorSum
 	sum.Visitors = len(seen)
 	sum.Series = series
 	n := visitorTopN(o.TopN)
-	sum.TopPaths, sum.TopRefs = topCounts(paths, n), topCounts(refs, n)
+	sum.TopPaths, sum.TopRefs, sum.TopPages = topCounts(paths, n), topCounts(refs, n), topCounts(pages, n)
 	for h, d := range doms {
 		sum.Domains = append(sum.Domains, DomainVisitors{Domain: h, Requests: d.req, Visitors: len(d.seen)})
 	}

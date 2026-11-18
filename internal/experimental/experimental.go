@@ -47,6 +47,8 @@ const (
 	Mail Feature = "mail"
 	// MCPHTTP is the read-only remote MCP endpoint (POST /mcp) authenticated with a normal API token.
 	MCPHTTP Feature = "mcp-http"
+	// TrafficAnalytics is the beta request classifier: top pages count page views only, with API, asset and bot requests split out.
+	TrafficAnalytics Feature = "traffic-analytics"
 	// Cloud is cloud infrastructure as code (phase 1, default off).
 	Cloud Feature = "cloud"
 )
@@ -56,7 +58,7 @@ const EnvVar = "APP_EXPERIMENTAL"
 
 // All returns every gated feature, sorted.
 func All() []Feature {
-	fs := []Feature{AIChat, AIModels, LoadBalancer, IaC, CloudflareTunnel, AccessRoles, GlobalEnvironments, AIControl, ResourceAdvisor, CLIConsole, MobileAPI, SAMLSCIM, Plugins, GitPush, Canvas, Mail, MCPHTTP, Cloud}
+	fs := []Feature{AIChat, AIModels, LoadBalancer, IaC, CloudflareTunnel, AccessRoles, GlobalEnvironments, AIControl, ResourceAdvisor, CLIConsole, MobileAPI, SAMLSCIM, Plugins, GitPush, Canvas, Mail, MCPHTTP, Cloud, TrafficAnalytics}
 	sort.Slice(fs, func(i, j int) bool { return fs[i] < fs[j] })
 	return fs
 }

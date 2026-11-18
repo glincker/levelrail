@@ -10,8 +10,10 @@ import (
 	"testing"
 	"time"
 
+	"github.com/GLINCKER/levelrail/internal/experimental"
 	"github.com/GLINCKER/levelrail/internal/ingress"
 	"github.com/GLINCKER/levelrail/internal/store"
+	"github.com/GLINCKER/levelrail/internal/trafficclass"
 )
 
 func visitorsRouter(t *testing.T, log *ingress.AccessLog) (*Router, *http.Cookie) {
@@ -50,6 +52,47 @@ func TestAppVisitors_LiveRingWindows(t *testing.T) {
 	}
 	if res = getVisitors(t, rt, cookie, "?domain=other.example.com"); res.Requests != 0 {
 		t.Fatalf("other domain = %+v", res)
+	}
+}
+
+// Not parallel: it flips the process-wide feature switch.
+func TestAppVisitors_ClassSplitAndPagesOnlyFlag(t *testing.T) {
+	log := ingress.NewAccessLog(100)
+	now := time.Now()
+	rec := func(class trafficclass.Class, path string) {
+		log.Record("web.example.com", ingress.AccessRecord{Time: now.Add(-time.Minute), Host: "web.example.com", Method: "GET", Path: path, Status: 200, Class: class, Client: netip.MustParseAddr("192.0.2.1")})
+	}
+	for i := 0; i < 5; i++ {
+		rec(trafficclass.API, "/api/v1/stats")
+	}
+	rec(trafficclass.Asset, "/assets/a.js")
+	rec(trafficclass.Page, "/pricing")
+	rt, cookie := visitorsRouter(t, log)
+
+	experimental.Set()
+	t.Cleanup(func() { experimental.Set(experimental.All()...) })
+	res := getVisitors(t, rt, cookie, "")
+	if res.PagesOnly {
+		t.Fatal("pages_only must be false while traffic-analytics is off")
+	}
+	if res.TopPaths[0].Label != "/api/v1/stats" || res.Classes.API != 5 || res.Classes.Page != 1 || res.Classes.Asset != 1 {
+		t.Fatalf("off: %+v", res)
+	}
+
+	experimental.Set(experimental.TrafficAnalytics)
+	res = getVisitors(t, rt, cookie, "")
+	if !res.PagesOnly || len(res.TopPages) != 1 || res.TopPages[0].Label != "/pricing" {
+		t.Fatalf("on: %+v", res)
+	}
+	body := doPolicy(t, rt, cookie, http.MethodGet, "/api/v1/apps/web/visitors", "").Body.String()
+	for _, want := range []string{`"classes":{"page":1,"api":5,"asset":1,"bot":0,"prefetch":0,"other":0}`, `"pages_only":true`, `"top_pages":[`} {
+		if !strings.Contains(body, want) {
+			t.Errorf("body missing %s: %s", want, body)
+		}
+	}
+	csv := doPolicy(t, rt, cookie, http.MethodGet, "/api/v1/apps/web/visitors/export", "").Body.String()
+	if !strings.Contains(csv, "class,api,5,0,\n") || !strings.Contains(csv, "page,/pricing,1,0,\n") {
+		t.Errorf("csv = %q", csv)
 	}
 }
 

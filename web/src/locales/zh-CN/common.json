@@ -1392,7 +1392,20 @@
     "unavailable": "访客数据需要边缘访问日志，而此安装未启用该功能。",
     "chartHeading": "请求量随时间变化",
     "exportCsv": "下载 CSV",
-    "exportEmpty": "此窗口内没有可导出的内容。"
+    "exportEmpty": "此窗口内没有可导出的内容。",
+    "topPagesCaption": "此时段浏览量最高的 10 个页面",
+    "viewsHeader": "页面浏览量",
+    "classSplit": "按类型统计的请求",
+    "classLabel": "按流量类别统计的请求",
+    "classes": {
+      "page": "页面",
+      "api": "API",
+      "asset": "静态资源",
+      "bot": "机器人",
+      "prefetch": "预取",
+      "other": "其他"
+    },
+    "noPageViews": "暂无页面浏览。已记录 {{total}} 个 API、静态资源和机器人请求。"
   },
   "overviewHero": {
     "addressInfo": "关于此地址",

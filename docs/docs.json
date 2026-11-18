@@ -386,6 +386,7 @@
               "chaos-coverage",
               "observability",
               "traffic-observability",
+              "traffic-analytics",
               "prometheus-scrape",
               "web-vitals",
               "status-page",

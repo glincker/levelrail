@@ -41,6 +41,7 @@ var catalog = map[Feature]Info{
 	Canvas:             {Name: "Canvas", Summary: "Compose a project's apps, databases and connections on a canvas, review every change as a plan, then apply it. Needs Platform as code switched on.", DocsPath: "/canvas", Maturity: MaturityBeta},
 	SAMLSCIM:           {Name: "SAML and SCIM", Summary: "SAML 2.0 single sign-on and SCIM 2.0 provisioning, built on the sign-in library. Beta: not yet verified against every identity provider.", DocsPath: "/sso-saml", Maturity: MaturityBeta},
 	Mail:               {Name: "Mail DNS", Summary: "Plan, apply and check the SPF, DKIM, DMARC, MX and related DNS records a domain needs for email, add-only by default.", DocsPath: "/mail-dns", Maturity: MaturityExperimental},
+	TrafficAnalytics:   {Name: "Traffic analytics", Summary: "Classify each edge request as page, API, asset, bot or prefetch so Top pages lists page views only. Beta: counted at the edge, no end-to-end test yet.", DocsPath: "/traffic-analytics", Maturity: MaturityBeta},
 	MCPHTTP:            {Name: "Remote MCP", Summary: "A read-only MCP endpoint at POST /mcp for agent clients that send an API token as a bearer credential. No OAuth yet.", DocsPath: "/mcp", Maturity: MaturityExperimental},
 }
 

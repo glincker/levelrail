@@ -98,6 +98,7 @@ Four main types, plus two Levelrail-specific categories:
 | [cost-estimate.md](/cost-estimate) | The per-app "what this would cost elsewhere" estimate: the formula, reference providers, and how to correct the rates for your own region |
 | [cost-explorer.md](/cost-explorer) | Cost trend by app, project, tag, node or kind, forecast range, top movers, named budgets with thresholds and a 100 percent action |
 | [usage-and-cost.md](/usage-and-cost) | Cost showback per app, project, environment and team from your own prices, allocation rules, budgets and alerts, export and limits |
+| [traffic-analytics.md](/traffic-analytics) | The beta request classifier: page, API, asset, bot and prefetch classes, how Top pages counts page views only, and its limits |
 | [resource-advisor.md](/resource-advisor) | The beta resource advisor: limit, idle, growth, disk and database tuning suggestions, how each rule works, thresholds and limits |
 
 #### Multi-Node Setup

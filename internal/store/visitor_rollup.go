@@ -26,6 +26,10 @@ type VisitorRollup struct {
 	Visitors  int
 	TopPaths  []RollupCount
 	TopRefs   []RollupCount
+	// Classes is requests per traffic class in the order other, page, api, asset, bot, prefetch.
+	Classes [6]int
+	// TopPages ranks successful page-class GETs only.
+	TopPages []RollupCount
 }
 
 // UpsertVisitorRollups writes rows in one transaction, replacing a row with the same key.
@@ -41,14 +45,19 @@ func (db *DB) UpsertVisitorRollups(ctx context.Context, rows []VisitorRollup) er
 	for _, r := range rows {
 		paths, _ := json.Marshal(nonNilCounts(r.TopPaths))
 		refs, _ := json.Marshal(nonNilCounts(r.TopRefs))
+		pages, _ := json.Marshal(nonNilCounts(r.TopPages))
 		if _, err := tx.ExecContext(ctx, `INSERT INTO visitor_rollups
-			(app, domain, hour_start, epoch, requests, s2xx, s3xx, s4xx, s5xx, visitors, top_paths, top_refs)
-			VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
+			(app, domain, hour_start, epoch, requests, s2xx, s3xx, s4xx, s5xx, visitors, top_paths, top_refs,
+			 n_other, n_page, n_api, n_asset, n_bot, n_prefetch, top_pages)
+			VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
 			ON CONFLICT (app, domain, hour_start, epoch) DO UPDATE SET
 			requests = excluded.requests, s2xx = excluded.s2xx, s3xx = excluded.s3xx, s4xx = excluded.s4xx,
-			s5xx = excluded.s5xx, visitors = excluded.visitors, top_paths = excluded.top_paths, top_refs = excluded.top_refs`,
+			s5xx = excluded.s5xx, visitors = excluded.visitors, top_paths = excluded.top_paths, top_refs = excluded.top_refs,
+			n_other = excluded.n_other, n_page = excluded.n_page, n_api = excluded.n_api, n_asset = excluded.n_asset,
+			n_bot = excluded.n_bot, n_prefetch = excluded.n_prefetch, top_pages = excluded.top_pages`,
 			r.App, r.Domain, r.HourStart.Unix(), r.Epoch, r.Requests, r.Status[0], r.Status[1], r.Status[2], r.Status[3],
-			r.Visitors, string(paths), string(refs)); err != nil {
+			r.Visitors, string(paths), string(refs),
+			r.Classes[0], r.Classes[1], r.Classes[2], r.Classes[3], r.Classes[4], r.Classes[5], string(pages)); err != nil {
 			return fmt.Errorf("store: upsert visitor rollup for %q: %w", r.App, err)
 		}
 	}
@@ -61,7 +70,8 @@ func (db *DB) UpsertVisitorRollups(ctx context.Context, rows []VisitorRollup) er
 // ListVisitorRollups returns rows for app with hour_start in [since, until), oldest first.
 // An empty domain returns every domain.
 func (db *DB) ListVisitorRollups(ctx context.Context, app, domain string, since, until time.Time) ([]VisitorRollup, error) {
-	q := `SELECT app, domain, hour_start, epoch, requests, s2xx, s3xx, s4xx, s5xx, visitors, top_paths, top_refs
+	q := `SELECT app, domain, hour_start, epoch, requests, s2xx, s3xx, s4xx, s5xx, visitors, top_paths, top_refs,
+		n_other, n_page, n_api, n_asset, n_bot, n_prefetch, top_pages
 		FROM visitor_rollups WHERE app = ? AND hour_start >= ? AND hour_start < ?`
 	args := []any{app, since.Unix(), until.Unix()}
 	if domain != "" {
@@ -77,13 +87,15 @@ func (db *DB) ListVisitorRollups(ctx context.Context, app, domain string, since,
 	for rows.Next() {
 		var r VisitorRollup
 		var hour int64
-		var paths, refs string
-		if err := rows.Scan(&r.App, &r.Domain, &hour, &r.Epoch, &r.Requests, &r.Status[0], &r.Status[1], &r.Status[2], &r.Status[3], &r.Visitors, &paths, &refs); err != nil {
+		var paths, refs, pages string
+		if err := rows.Scan(&r.App, &r.Domain, &hour, &r.Epoch, &r.Requests, &r.Status[0], &r.Status[1], &r.Status[2], &r.Status[3], &r.Visitors, &paths, &refs,
+			&r.Classes[0], &r.Classes[1], &r.Classes[2], &r.Classes[3], &r.Classes[4], &r.Classes[5], &pages); err != nil {
 			return nil, fmt.Errorf("store: scan visitor rollup: %w", err)
 		}
 		r.HourStart = time.Unix(hour, 0).UTC()
 		_ = json.Unmarshal([]byte(paths), &r.TopPaths)
 		_ = json.Unmarshal([]byte(refs), &r.TopRefs)
+		_ = json.Unmarshal([]byte(pages), &r.TopPages)
 		out = append(out, r)
 	}
 	if err := rows.Err(); err != nil {
