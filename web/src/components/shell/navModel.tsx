@@ -177,12 +177,7 @@ export const COST_GROUP_PATHS = [
   '/resources',
 ] as const
 
-export const APPS_GROUP_PATHS = [
-  '/tags',
-  '/variables',
-  '/sources',
-  '/pages',
-] as const
+export const APPS_GROUP_PATHS = ['/tags', '/variables', '/sources'] as const
 export const PIPELINE_GROUP_PATHS = ['/pipelines', '/approvals'] as const
 export const DOMAIN_GROUP_PATHS = [
   '/domains',
@@ -261,6 +256,12 @@ export const GLOBAL_NAV_GROUPS: GlobalNavGroup[] = [
         label: 'Templates',
         to: '/templates',
         icon: glass(LayoutGridGlassIcon),
+      },
+      {
+        id: 'pages',
+        label: 'Pages',
+        to: '/pages',
+        icon: glass(LayoutTemplateGlassIcon),
       },
       {
         id: 'deployments',
@@ -413,7 +414,6 @@ export const FOLDED_GLOBAL_PAGES: GlobalNavItem[] = [
   folded('status', 'Status', '/status', glass(ActivityGlassIcon)),
   folded('tags', 'Tags', '/tags', glass(ListGlassIcon)),
   folded('variables', 'Variables', '/variables', glass(BracesGlassIcon)),
-  folded('pages', 'Pages', '/pages', glass(LayoutTemplateGlassIcon)),
   folded('sources', 'Sources', '/sources', glass(GitBranchGlassIcon)),
   folded('approvals', 'Deploy approvals', '/approvals', glass(GavelGlassIcon)),
   folded(

@@ -63,7 +63,7 @@ export const NAV_REGISTRY: readonly NavRegistryEntry[] = [
     helpPath: null,
     gated: null,
     palette: true,
-    sidebar: false,
+    sidebar: true,
   },
   {
     id: 'deployments',
