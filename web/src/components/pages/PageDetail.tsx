@@ -17,11 +17,11 @@ import { PageDropTarget } from './PageDropTarget'
 import { RollbackCard } from './RollbackCard'
 import { SiteHero } from './SiteHero'
 import { PageDomains } from './PageDomains'
-import { RedirectHint } from './RedirectHint'
 import { SitePublisher } from '../dropdeploy/SitePublisher'
-import { StaticRoutesPanel } from '../static/StaticRoutesPanel'
+import { PageRoutes } from './PageRoutes'
 import { useDeployProgress } from '../../hooks/useDeployProgress'
 import { PAGE_TABS, type PageTab } from './pageHelpers'
+import { usePageTabBadges } from './usePageTabBadges'
 import { useApp, useDeleteApp } from '../../queries/apps'
 
 // Cards load on demand so the detail route keeps its first-load budget.
@@ -106,6 +106,7 @@ export function PageDetail({
   const del = useDeleteApp()
   const [confirming, setConfirming] = useState(false)
   const [uploading, setUploading] = useState(false)
+  const badges = usePageTabBadges(name)
   const fallback = <Skeleton className="h-24 w-full" />
   return (
     <PageTemplate
@@ -137,16 +138,41 @@ export function PageDetail({
             if (next) onTabChange(next)
           }}
         >
-          <TabsList aria-label={t('detail.tabs.label')}>
-            {PAGE_TABS.map((id) => (
-              <TabsTrigger key={id} value={id}>
-                {t(`detail.tabs.${id}`)}
-              </TabsTrigger>
-            ))}
-          </TabsList>
+          <div className="sticky top-0 z-10 bg-background py-1">
+            <TabsList aria-label={t('detail.tabs.label')}>
+              {PAGE_TABS.map((id) => {
+                const b = badges[id]
+                return (
+                  <TabsTrigger key={id} value={id}>
+                    {t(`detail.tabs.${id}`)}
+                    {b?.count ? (
+                      <span className="text-xs text-muted-foreground tabular-nums">
+                        {b.count}
+                      </span>
+                    ) : null}
+                    {b?.alert ? (
+                      <>
+                        <span
+                          aria-hidden="true"
+                          className="size-1.5 rounded-full bg-destructive"
+                        />
+                        <span className="sr-only">
+                          {t('detail.tabs.failing')}
+                        </span>
+                      </>
+                    ) : null}
+                  </TabsTrigger>
+                )
+              })}
+            </TabsList>
+          </div>
           <TabsContent value="overview">
             <Suspense fallback={fallback}>
-              <PageOverview name={name} onAddRedirect={onAddRedirect} />
+              <PageOverview
+                name={name}
+                onAddRedirect={onAddRedirect}
+                onViewDeploys={() => onTabChange('deployments')}
+              />
             </Suspense>
           </TabsContent>
           <TabsContent value="deployments">
@@ -161,8 +187,7 @@ export function PageDetail({
           </TabsContent>
           <TabsContent value="routes">
             <Suspense fallback={fallback}>
-              {redirectFrom ? <RedirectHint from={redirectFrom} /> : null}
-              <StaticRoutesPanel app={name} />
+              <PageRoutes app={name} redirectFrom={redirectFrom} />
             </Suspense>
           </TabsContent>
           <TabsContent value="settings">

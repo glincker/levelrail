@@ -96,3 +96,23 @@ export function siteState(
   }
   return detail.published ? 'live' : 'notPublished'
 }
+
+export type StepState = 'done' | 'pending'
+export const DOMAIN_STEPS = ['dns', 'cert', 'live'] as const
+
+/** Live is done only when DNS and the certificate both are. */
+export function domainSteps(
+  dnsOk: boolean,
+  certOk: boolean,
+): Record<(typeof DOMAIN_STEPS)[number], StepState> {
+  return {
+    dns: dnsOk ? 'done' : 'pending',
+    cert: certOk ? 'done' : 'pending',
+    live: dnsOk && certOk ? 'done' : 'pending',
+  }
+}
+
+/** The _redirects line for a new rule; rules live in the published files, so this is copied, not saved. */
+export function redirectLine(from: string, to: string, status: string): string {
+  return `${from.trim()} ${to.trim()} ${status}`
+}

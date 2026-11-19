@@ -4,14 +4,17 @@ import { useTranslation } from 'react-i18next'
 import {
   CircleCheckGlassIcon,
   CopyGlassIcon,
+  GlobeGlassIcon,
   XGlassIcon,
 } from '@thesvg/ui-react'
 import { Alert, AlertDescription } from '@/components/ui/alert'
 import { Badge } from '@/components/ui/badge'
 import { Button } from '@/components/ui/button'
+import { EmptyState } from '@/components/ui/empty-state'
 import { Input } from '@/components/ui/input'
 import { Label } from '@/components/ui/label'
 import { useCopyToClipboard } from '../../hooks/useCopyToClipboard'
+import { DomainStepper } from './DomainStepper'
 import { CertTruthBadge } from '../CertTruthBadge'
 import { ProxyHandledTlsBadge } from '../ProxyDomainStatus'
 import { appKeys, useUpdateApp } from '../../queries/apps'
@@ -75,14 +78,10 @@ function SetupCard({
       <div className="flex flex-wrap items-center gap-2">
         <span className="font-mono text-sm font-medium">{setup.domain}</span>
         <Badge variant="outline">{t(`domains.mode.${setup.mode}`)}</Badge>
-        <Badge variant={current.verified ? 'success' : 'warning'}>
-          {current.verified ? t('domains.dnsOk') : t('domains.dnsWaiting')}
-        </Badge>
-        <Badge variant={current.cert === 'issued' ? 'success' : 'warning'}>
-          {current.cert === 'issued'
-            ? t('domains.certIssued')
-            : t('domains.certPending')}
-        </Badge>
+        <DomainStepper
+          dnsOk={current.verified}
+          certOk={current.cert === 'issued'}
+        />
         <Button
           type="button"
           size="sm"
@@ -94,11 +93,6 @@ function SetupCard({
           {polling && !done ? t('domains.checking') : t('domains.verify')}
         </Button>
       </div>
-      {setup.mode === 'auto' ? (
-        <p className="text-xs text-muted-foreground">
-          {t('domains.createdForYou')}
-        </p>
-      ) : null}
       {setup.mode === 'manual' && setup.records.length > 0 ? (
         <table className="w-full table-fixed text-left text-sm">
           <caption className="sr-only">{t('domains.recordsLabel')}</caption>
@@ -144,14 +138,32 @@ function DomainList({ app }: Readonly<{ app: AppDetail }>) {
   const update = useUpdateApp(app.name, { inlineError: true })
   const domains = app.domains ?? []
   if (domains.length === 0) {
-    return <p className="text-sm text-muted-foreground">{t('domains.none')}</p>
+    return (
+      <EmptyState
+        compact
+        icon={<GlobeGlassIcon className="size-6" />}
+        title={t('domains.none')}
+        action={
+          <Button
+            type="button"
+            size="sm"
+            onClick={() => document.getElementById('pages-domain')?.focus()}
+          >
+            {t('domains.add')}
+          </Button>
+        }
+      />
+    )
   }
   return (
     <ul className="divide-y divide-border rounded-md border border-border">
       {domains.map((d) => {
         const cert = certificates.find((c) => c.domain === d)
         return (
-          <li key={d} className="flex flex-wrap items-center gap-2 px-3 py-1.5">
+          <li
+            key={d}
+            className="flex flex-wrap items-center gap-x-4 gap-y-1 px-3 py-2"
+          >
             <a
               href={`https://${d}`}
               target="_blank"
@@ -160,19 +172,17 @@ function DomainList({ app }: Readonly<{ app: AppDetail }>) {
             >
               {d}
             </a>
-            <span className="flex items-center gap-1.5 text-xs text-muted-foreground">
-              {t('domains.tls')}
-              {cert ? (
-                <CertTruthBadge cert={cert} />
-              ) : (
-                <ProxyHandledTlsBadge
-                  domain={d}
-                  fallback={
-                    <Badge variant="muted">{t('domains.provisioning')}</Badge>
-                  }
-                />
-              )}
-            </span>
+            <DomainStepper dnsOk={Boolean(cert)} certOk={Boolean(cert)} />
+            {cert ? (
+              <CertTruthBadge cert={cert} />
+            ) : (
+              <ProxyHandledTlsBadge
+                domain={d}
+                fallback={
+                  <Badge variant="muted">{t('domains.provisioning')}</Badge>
+                }
+              />
+            )}
             <Button
               type="button"
               size="icon-sm"
@@ -231,24 +241,8 @@ export function PageDomains({ app }: Readonly<{ app: AppDetail }>) {
   }
 
   const latest = setups[0]
-  const step = latest ? 2 : 1
   return (
     <div className="space-y-3 rounded-lg border border-border bg-card p-3">
-      <ol className="flex flex-wrap items-center gap-x-4 gap-y-1 text-xs">
-        {(['step1', 'step2', 'step3'] as const).map((k, i) => (
-          <li
-            key={k}
-            aria-current={i + 1 === step ? 'step' : undefined}
-            className={
-              i + 1 <= step
-                ? 'font-medium text-foreground'
-                : 'text-muted-foreground'
-            }
-          >
-            {i + 1}. {t(`domains.${k}`)}
-          </li>
-        ))}
-      </ol>
       <DomainList app={app} />
       <form
         onSubmit={(e) => void submit(e)}

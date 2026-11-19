@@ -54,7 +54,8 @@
       "deployments": "Deployments",
       "domains": "Domains",
       "routes": "Routes",
-      "settings": "Settings"
+      "settings": "Settings",
+      "failing": "Failing checks"
     },
     "publish": "Publish new version",
     "hidePublish": "Hide upload",
@@ -104,10 +105,18 @@
     "step2": "DNS records",
     "step3": "Verify",
     "createdForYou": "DNS records were created for you.",
-    "none": "No domains yet. The site is reachable on its default address.",
+    "none": "No custom domain yet",
     "tls": "TLS",
     "provisioning": "Provisioning",
-    "remove": "Remove {{domain}}"
+    "remove": "Remove {{domain}}",
+    "progress": "Domain progress",
+    "step": {
+      "dns": "DNS",
+      "cert": "Certificate",
+      "live": "Live"
+    },
+    "done": "done",
+    "waiting": "waiting"
   },
   "summary": {
     "files_one": "{{count}} file",
@@ -212,10 +221,6 @@
     "show": "Show",
     "hide": "Hide"
   },
-  "redirect": {
-    "hint": "Add this line to your _redirects file and publish:",
-    "copy": "Copy line"
-  },
   "hero": {
     "more": "More actions",
     "status": {
@@ -231,5 +236,27 @@
     "mobile": "Mobile",
     "unavailable": "Preview unavailable",
     "frame": "Live preview of {{name}}"
+  },
+  "recent": {
+    "title": "Recent deployments",
+    "viewAll": "View all",
+    "none": "No deployments yet.",
+    "live": "Live"
+  },
+  "routes": {
+    "testTitle": "Test a URL",
+    "testLabel": "Path to test",
+    "testPlaceholder": "/about",
+    "test": "Test",
+    "rules": "Rules",
+    "none": "No redirect or rewrite rules",
+    "from": "From",
+    "to": "To",
+    "status": "Status code",
+    "copyLine": "Copy _redirects line",
+    "advanced": "More tools",
+    "notStatic": "Routing applies to published static sites",
+    "loadFailed": "Could not load the rules",
+    "retry": "Retry"
   }
 }
