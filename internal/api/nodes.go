@@ -763,7 +763,12 @@ func (rt *Router) handleCreateNodeJoinToken(w http.ResponseWriter, r *http.Reque
 			return
 		}
 	}
-	rec, err := rt.mintNodeJoinToken(r.Context(), rt.effectiveJoinTokenTTL())
+	tier, err := joinBuildTrust(req)
+	if err != nil {
+		writeError(w, http.StatusBadRequest, err.Error())
+		return
+	}
+	rec, err := rt.mintNodeJoinTokenTier(r.Context(), rt.effectiveJoinTokenTTL(), tier)
 	if err != nil {
 		rt.internalError(w, "api: create node join token failed", err)
 		return
@@ -790,6 +795,28 @@ type mintedJoinToken struct {
 // its own longer TTL (nodeProvisionJoinTokenTTL) rather than
 // nodeJoinTokenTTL.
 func (rt *Router) mintNodeJoinToken(ctx context.Context, ttl time.Duration) (mintedJoinToken, error) {
+	return rt.mintNodeJoinTokenTier(ctx, ttl, store.BuildTrustServer)
+}
+
+// joinBuildTrust resolves the tier a new join token carries; personal needs an explicit builder intent.
+func joinBuildTrust(req createNodeJoinTokenRequest) (string, error) {
+	tier := req.BuildTrust
+	if tier == "" {
+		tier = store.BuildTrustServer
+		if req.Builder {
+			tier = store.BuildTrustPersonal
+		}
+	}
+	if !store.ValidBuildTrust(tier) {
+		return "", errors.New("build_trust must be server, managed or personal")
+	}
+	if tier == store.BuildTrustPersonal && !req.Builder {
+		return "", errors.New("build_trust personal requires builder: true")
+	}
+	return tier, nil
+}
+
+func (rt *Router) mintNodeJoinTokenTier(ctx context.Context, ttl time.Duration, tier string) (mintedJoinToken, error) {
 	plaintext, err := randomToken()
 	if err != nil {
 		return mintedJoinToken{}, fmt.Errorf("generate token: %w", err)
@@ -801,10 +828,11 @@ func (rt *Router) mintNodeJoinToken(ctx context.Context, ttl time.Duration) (min
 
 	now := time.Now()
 	rec := store.NodeJoinToken{
-		ID:        id,
-		TokenHash: hashToken(plaintext),
-		CreatedAt: now,
-		ExpiresAt: now.Add(ttl),
+		ID:         id,
+		TokenHash:  hashToken(plaintext),
+		CreatedAt:  now,
+		ExpiresAt:  now.Add(ttl),
+		BuildTrust: tier,
 	}
 	if err := rt.nodes.SaveNodeJoinToken(ctx, rec); err != nil {
 		return mintedJoinToken{}, fmt.Errorf("save: %w", err)

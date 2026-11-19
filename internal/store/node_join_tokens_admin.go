@@ -9,7 +9,7 @@ import (
 // ListPendingNodeJoinTokens returns tokens that are unused and unexpired at now, newest first.
 func (db *DB) ListPendingNodeJoinTokens(ctx context.Context, now time.Time) ([]NodeJoinToken, error) {
 	rows, err := db.QueryContext(ctx, `
-		SELECT id, token_hash, created_at, expires_at, used_at, purpose, COALESCE(node_id, '')
+		SELECT id, token_hash, created_at, expires_at, used_at, purpose, COALESCE(node_id, ''), build_trust
 		FROM node_join_tokens WHERE used_at IS NULL AND expires_at > ?
 		ORDER BY created_at DESC
 	`, formatTime(now))
