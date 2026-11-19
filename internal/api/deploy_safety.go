@@ -108,7 +108,7 @@ func (rt *Router) imageTrigger(ctx context.Context, existing store.DesiredServic
 		t.Ordered, t.Sequencer = rt.deploySafety, rt.deploySafety
 	}
 	if existing.RegistryCredentialID != "" && rt.imageResolver != nil {
-		if auth, err := rt.registryAuthFor(ctx, existing.RegistryCredentialID); err == nil {
+		if auth, err := rt.registryAuthFor(ctx, existing.RegistryCredentialID, existing.Image); err == nil {
 			t.Auth = auth
 		} else {
 			rt.logger.Warn("api: resolve registry auth for digest lookup failed", slog.String("error", err.Error()), slog.String("name", existing.Name))
@@ -117,7 +117,17 @@ func (rt *Router) imageTrigger(ctx context.Context, existing store.DesiredServic
 	return t
 }
 
-func (rt *Router) registryAuthFor(ctx context.Context, credentialID string) (*docker.RegistryAuth, error) {
+func (rt *Router) registryAuthFor(ctx context.Context, credentialID, image string) (*docker.RegistryAuth, error) {
+	if rt.registryToken != nil && rt.registryTokenActive != nil && rt.registryTokenActive() {
+		// Token mode rejects the stored htpasswd login, so the built-in host gets a pull-only bearer.
+		tok, ok, err := rt.registryToken.MintPullForImage(image)
+		if err != nil {
+			return nil, fmt.Errorf("mint registry pull token: %w", err)
+		}
+		if ok {
+			return &docker.RegistryAuth{Bearer: tok}, nil
+		}
+	}
 	if rt.registryCredentialSecrets == nil {
 		return nil, errors.New("registry credential secrets are not configured")
 	}

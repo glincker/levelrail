@@ -16,10 +16,10 @@ import (
 var consumerTokenModeNotes = map[string]string{
 	"cmd/levelrail-cli/registry.go":             "ok: reads settings through the API, no credential",
 	"cmd/levelrail/boot_loaders.go":             "ok: cache ref only, the builder or Router attaches a cache scoped token",
-	"cmd/levelrail/deploy_safety.go":            "gap: digest lookup uses the stored htpasswd login, needs a minted pull token on docker.RegistryAuth",
+	"cmd/levelrail/deploy_safety.go":            "ok: digest lookup mints a pull-only bearer for the built-in host in token mode",
 	"cmd/levelrail/registry_transfer.go":        "ok: token exchange, pull and manifest check use minted bearers",
-	"internal/api/apps_create.go":               "gap: pulls with the stored htpasswd login, same docker.RegistryAuth follow-up",
-	"internal/api/deploy_safety.go":             "gap: pulls with the stored htpasswd login, same docker.RegistryAuth follow-up",
+	"internal/api/apps_create.go":               "ok: create-time digest lookup uses registryAuthFor, bearer in token mode",
+	"internal/api/deploy_safety.go":             "ok: registryAuthFor mints a pull-only bearer for the built-in host in token mode",
 	"internal/api/doctor_registry.go":           "ok: settings only, no credential",
 	"internal/api/registry_catalog.go":          "ok: catalog and tag browse mint a bearer in token mode",
 	"internal/api/registry_credentials.go":      "ok: host exemption check only, no credential use",

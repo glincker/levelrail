@@ -466,6 +466,9 @@ message ContainerSpec {
   map<string, string> sysctls = 29;
   repeated string cap_drop = 30;
   int64 pids_limit = 31;
+  // registry_bearer is a short-lived pull token for the built-in registry in token mode. An agent
+  // that predates it ignores the field, and its pulls keep using the htpasswd login.
+  string registry_bearer = 32;
 }
 
 message Ulimit {

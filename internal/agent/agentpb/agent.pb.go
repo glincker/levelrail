@@ -3006,8 +3006,11 @@ type ContainerSpec struct {
 	Sysctls            map[string]string `protobuf:"bytes,29,rep,name=sysctls,proto3" json:"sysctls,omitempty" protobuf_key:"bytes,1,opt,name=key" protobuf_val:"bytes,2,opt,name=value"`
 	CapDrop            []string          `protobuf:"bytes,30,rep,name=cap_drop,json=capDrop,proto3" json:"cap_drop,omitempty"`
 	PidsLimit          int64             `protobuf:"varint,31,opt,name=pids_limit,json=pidsLimit,proto3" json:"pids_limit,omitempty"`
-	unknownFields      protoimpl.UnknownFields
-	sizeCache          protoimpl.SizeCache
+	// registry_bearer is a short-lived pull token for the built-in registry in token mode. An agent
+	// that predates it ignores the field, and its pulls keep using the htpasswd login.
+	RegistryBearer string `protobuf:"bytes,32,opt,name=registry_bearer,json=registryBearer,proto3" json:"registry_bearer,omitempty"`
+	unknownFields  protoimpl.UnknownFields
+	sizeCache      protoimpl.SizeCache
 }
 
 func (x *ContainerSpec) Reset() {
@@ -3255,6 +3258,13 @@ func (x *ContainerSpec) GetPidsLimit() int64 {
 		return x.PidsLimit
 	}
 	return 0
+}
+
+func (x *ContainerSpec) GetRegistryBearer() string {
+	if x != nil {
+		return x.RegistryBearer
+	}
+	return ""
 }
 
 type Ulimit struct {
@@ -8496,7 +8506,7 @@ const file_proto_agent_v1_agent_proto_rawDesc = "" +
 	"cpusetCpus\"H\n" +
 	"\vVolumeMount\x12\x12\n" +
 	"\x04name\x18\x01 \x01(\tR\x04name\x12%\n" +
-	"\x0econtainer_path\x18\x02 \x01(\tR\rcontainerPath\"\xa1\v\n" +
+	"\x0econtainer_path\x18\x02 \x01(\tR\rcontainerPath\"\xca\v\n" +
 	"\rContainerSpec\x12\x12\n" +
 	"\x04name\x18\x01 \x01(\tR\x04name\x12\x14\n" +
 	"\x05image\x18\x02 \x01(\tR\x05image\x125\n" +
@@ -8536,7 +8546,8 @@ const file_proto_agent_v1_agent_proto_rawDesc = "" +
 	"\asysctls\x18\x1d \x03(\v2..levelrail.agent.v1.ContainerSpec.SysctlsEntryR\asysctls\x12\x19\n" +
 	"\bcap_drop\x18\x1e \x03(\tR\acapDrop\x12\x1d\n" +
 	"\n" +
-	"pids_limit\x18\x1f \x01(\x03R\tpidsLimit\x1a6\n" +
+	"pids_limit\x18\x1f \x01(\x03R\tpidsLimit\x12'\n" +
+	"\x0fregistry_bearer\x18  \x01(\tR\x0eregistryBearer\x1a6\n" +
 	"\bEnvEntry\x12\x10\n" +
 	"\x03key\x18\x01 \x01(\tR\x03key\x12\x14\n" +
 	"\x05value\x18\x02 \x01(\tR\x05value:\x028\x01\x1a9\n" +

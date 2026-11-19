@@ -60,8 +60,19 @@ func TestCreateRefusedForAgentWithoutCapability(t *testing.T) {
 
 func TestLocalAgentInfoAdvertisesSecurityCapability(t *testing.T) {
 	caps := LocalAgentInfo().GetCapabilities()
-	want := []string{CapContainerSpecSecurity, CapExitTimes, CapContainerSpecFiles, CapBuildNetwork, CapContainerSpecWorkdir, CapContainerInspect, CapContainerSpecRuntime, CapBuildPush}
+	want := []string{CapContainerSpecSecurity, CapExitTimes, CapContainerSpecFiles, CapBuildNetwork, CapContainerSpecWorkdir, CapContainerInspect, CapContainerSpecRuntime, CapBuildPush, CapRegistryBearer}
 	if !slices.Equal(caps, want) {
 		t.Fatalf("caps %v, want exactly %v", caps, want)
+	}
+}
+
+func TestRegistryBearerRoundTripAndOlderAgent(t *testing.T) {
+	in := docker.ContainerSpec{Name: "b", Image: "i", RegistryAuth: &docker.RegistryAuth{Bearer: "tok"}}
+	got := containerSpecFromPB(containerSpecToPB(in))
+	if got.RegistryAuth == nil || got.RegistryAuth.Bearer != "tok" {
+		t.Fatalf("bearer lost on the wire: %+v", got.RegistryAuth)
+	}
+	if containerSpecFromPB(containerSpecToPB(docker.ContainerSpec{Name: "b"})).RegistryAuth != nil {
+		t.Fatal("no bearer must stay no auth")
 	}
 }

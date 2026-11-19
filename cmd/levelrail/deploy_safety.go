@@ -9,11 +9,13 @@ import (
 	"time"
 
 	"github.com/GLINCKER/levelrail/internal/api"
+	"github.com/GLINCKER/levelrail/internal/build"
 	"github.com/GLINCKER/levelrail/internal/deploy"
 	"github.com/GLINCKER/levelrail/internal/docker"
 	"github.com/GLINCKER/levelrail/internal/dockerguard"
 	"github.com/GLINCKER/levelrail/internal/footprint"
 	"github.com/GLINCKER/levelrail/internal/reconcile/application"
+	registryreconcile "github.com/GLINCKER/levelrail/internal/reconcile/registry"
 	"github.com/GLINCKER/levelrail/internal/runtimesettings"
 	"github.com/GLINCKER/levelrail/internal/secrets"
 	"github.com/GLINCKER/levelrail/internal/store"
@@ -159,7 +161,7 @@ func digestResolverOptions(logger *slog.Logger, db *store.DB, secretsManager *se
 	}
 	opts := []deploy.Option{deploy.WithImageResolver(client), deploy.WithImageInspector(client)}
 	if secretsManager != nil {
-		opts = append(opts, deploy.WithRegistryAuthSource(registryAuthSource{db: db, secrets: secretsManager}))
+		opts = append(opts, deploy.WithRegistryAuthSource(registryAuthSource{db: db, secrets: secretsManager, tokens: builtinRegistryTokens, active: registryreconcile.TokenAuthActive}))
 	}
 	return opts
 }
@@ -167,9 +169,30 @@ func digestResolverOptions(logger *slog.Logger, db *store.DB, secretsManager *se
 type registryAuthSource struct {
 	db      *store.DB
 	secrets *secrets.Manager
+	// tokens and active are read per call because the registry mode can change while running.
+	tokens func() *build.RegistryTokenService
+	active func() bool
 }
 
-func (s registryAuthSource) RegistryAuth(ctx context.Context, credentialID string) (*docker.RegistryAuth, error) {
+// builtinRegistryTokens returns the shared bearer minting service, nil when registry transfer is off.
+func builtinRegistryTokens() *build.RegistryTokenService {
+	if rtx := sharedRegistryTransfer(); rtx != nil {
+		return rtx.tokens
+	}
+	return nil
+}
+
+func (s registryAuthSource) RegistryAuth(ctx context.Context, credentialID, image string) (*docker.RegistryAuth, error) {
+	if s.tokens != nil && s.active != nil && s.active() {
+		// The htpasswd login is rejected in token mode, so the built-in host gets a pull-only bearer.
+		tok, ok, err := s.tokens().MintPullForImage(image)
+		if err != nil {
+			return nil, fmt.Errorf("mint registry pull token: %w", err)
+		}
+		if ok {
+			return &docker.RegistryAuth{Bearer: tok}, nil
+		}
+	}
 	cred, err := s.db.GetRegistryCredential(ctx, credentialID)
 	if err != nil {
 		return nil, fmt.Errorf("get registry credential: %w", err)

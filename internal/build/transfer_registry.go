@@ -198,6 +198,26 @@ func (s *RegistryTokenService) MintPull(name string) (string, error) {
 	return tok, err
 }
 
+// MintPullForImage mints a pull token for image when it lives on the built-in registry host.
+// It returns ok false for any other host, so callers keep their stored login there.
+func (s *RegistryTokenService) MintPullForImage(image string) (tok string, ok bool, err error) {
+	if s == nil || s.Host == nil {
+		return "", false, nil
+	}
+	host, name, found := strings.Cut(image, "/")
+	if !found || name == "" || !strings.EqualFold(host, s.Host()) {
+		return "", false, nil
+	}
+	if i := strings.Index(name, "@"); i >= 0 {
+		name = name[:i]
+	}
+	if i := strings.LastIndex(name, ":"); i > strings.LastIndex(name, "/") {
+		name = name[:i]
+	}
+	tok, err = s.MintPull(name)
+	return tok, err == nil, err
+}
+
 // MintCatalog gives the control plane a short token to list the registry's repositories.
 func (s *RegistryTokenService) MintCatalog() (string, error) {
 	if s.Key == nil || s.ttl() <= 0 {

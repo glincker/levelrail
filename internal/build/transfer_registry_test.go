@@ -182,3 +182,25 @@ func TestCacheAuthProviderMatchesOnlyCacheRepo(t *testing.T) {
 		t.Fatal("other hosts must not get the token")
 	}
 }
+
+func TestMintPullForImageScopesToBuiltinHost(t *testing.T) {
+	now := time.Unix(1_000_000, 0)
+	key, _ := ecdsa.GenerateKey(elliptic.P256(), rand.Reader)
+	svc := &RegistryTokenService{Issuer: testIssuer(t, &now), Key: key, Service: "svc", TokenIssuer: "lr",
+		BearerTTL: func() time.Duration { return time.Minute }, Host: func() string { return "reg.example" }, now: func() time.Time { return now }}
+	for _, ref := range []string{"reg.example/levelrail/app:v1", "reg.example/levelrail/app", "reg.example/levelrail/app@sha256:abc"} {
+		tok, ok, err := svc.MintPullForImage(ref)
+		if err != nil || !ok {
+			t.Fatalf("%s: ok=%v err=%v", ref, ok, err)
+		}
+		acc := accessOf(decodeJWT(t, tok, &key.PublicKey))[0].(map[string]any)
+		if acc["name"] != "levelrail/app" {
+			t.Errorf("%s scoped to %v", ref, acc["name"])
+		}
+	}
+	for _, ref := range []string{"other.example/levelrail/app:v1", "nginx", "reg.example/"} {
+		if tok, ok, err := svc.MintPullForImage(ref); ok || tok != "" || err != nil {
+			t.Errorf("%s must not mint: ok=%v err=%v", ref, ok, err)
+		}
+	}
+}

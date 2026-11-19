@@ -83,5 +83,8 @@ func pullKey(ref string, auth *RegistryAuth) string {
 	if auth == nil {
 		return ref + "\x00"
 	}
+	if auth.Bearer != "" {
+		return ref + "\x00bearer\x00" + auth.Bearer
+	}
 	return ref + "\x00" + auth.Username + "\x00" + auth.Password
 }

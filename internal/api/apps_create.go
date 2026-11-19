@@ -290,7 +290,7 @@ func (rt *Router) resolveCreateImage(ctx context.Context, desired *store.Desired
 	tr := deploytrace.NewBuffered()
 	var auth *docker.RegistryAuth
 	if desired.RegistryCredentialID != "" {
-		if a, aerr := rt.registryAuthFor(ctx, desired.RegistryCredentialID); aerr == nil {
+		if a, aerr := rt.registryAuthFor(ctx, desired.RegistryCredentialID, desired.Image); aerr == nil {
 			auth = a
 		}
 	}
