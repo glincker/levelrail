@@ -132,6 +132,8 @@ func (rt *Router) registerSettingsRoutes(mux *http.ServeMux) {
 	mux.HandleFunc("DELETE /api/v1/static-sites/{name}", rt.requireAbilityForResource(AbilityWriteSensitive, appResourceFromPath, rt.handleDeleteStaticSite))
 	mux.HandleFunc("POST /api/v1/static-sites/{name}/domains", rt.requireAbilityForResource(AbilityWrite, appResourceFromPath, rt.handleAddStaticSiteDomain))
 	mux.HandleFunc("GET /api/v1/static-sites/{name}/domains/{domain}/status", rt.requireAbilityForResource(AbilityRead, appResourceFromPath, rt.handleStaticSiteDomainStatus))
+	mux.HandleFunc("GET /api/v1/static-sites/{name}/checks", rt.requireAbilityForResource(AbilityRead, appResourceFromPath, rt.handleStaticSiteChecks))
+	mux.HandleFunc("GET /api/v1/static-sites/{name}/traffic", rt.requireAbilityForResource(AbilityRead, appResourceFromPath, rt.handleStaticSiteTraffic))
 	mux.HandleFunc("GET /api/v1/apps/{name}/static-routes", rt.requireAbilityForResource(AbilityRead, appResourceFromPath, rt.handleGetStaticRoutes))
 	mux.HandleFunc("POST /api/v1/apps/{name}/static-routes/test", rt.requireAbilityForResource(AbilityRead, appResourceFromPath, rt.handleTestStaticRoutes))
 	mux.HandleFunc("POST /api/v1/apps/{name}/static-routes/lint", rt.requireAbilityForResource(AbilityRead, appResourceFromPath, rt.handleLintStaticRoutes))
