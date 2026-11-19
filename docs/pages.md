@@ -96,7 +96,7 @@ If the deploy fails (e.g., the path does not exist in the repository), the previ
 
 ## Call another app from your site
 
-A rule such as `/api/* app://my-api/:splat 200` in `_redirects`, `app.yaml` or the dashboard forwards `/api/*` to the app `my-api` on this Levelrail, so the browser talks to one origin and needs no CORS. Only an app name is accepted, the site password gate stays in front, and a missing target answers 502. Details and limits are in [Static site routing rules](/static-routing#proxy-a-path-to-another-app).
+A rule such as `/api/* app://my-api/:splat 200` in `_redirects`, `app.yaml` or the dashboard forwards `/api/*` to the app `my-api` on this Levelrail, so the browser talks to one origin and needs no CORS. Only an app name is accepted, the site password gate stays in front, and a missing target answers 502. Proxied responses carry no cookies, the request body is capped, and a slow target answers 502. Details and limits are in [Static site routing rules](/static-routing#proxy-a-path-to-another-app).
 
 ## Domains and TLS
 

@@ -138,7 +138,8 @@ How it behaves:
 - Writing a dashboard rule needs read access to the target app. A rule for an app you cannot read, or one that does not exist, is refused with the same message. A rule that is the site itself is refused.
 - Who may name a target: a deploy that carries proxy rules is checked against the target app the same way as the dashboard rules, so the acting principal needs deploy access to it. A target behind an access gate (auth gate or basic auth on any of its domains), with a geo, shield (rate limit) or forwarder policy on any domain, or in a protected environment is refused with the same message as a missing one. The controller applies the same check on every pass, so a target that gains one of these later answers 502, and so does a rollback to an older tree. A target that does not exist and one you cannot read fail with the same message, which names the target. A manual or upload deploy, including `source_url`, acts as the caller. A git push, hook, replay or queued deploy has no interactive caller, so the target must be in the site's own team and project, pass the same checks, and already be served by the site's live rules. A new target is refused with the same message plus a hint to deploy from the dashboard or CLI, where you approve it. An app with no domain is internal only: you need deploy access to it, and only an interactive deploy can add it. Pull request previews drop proxy rules and say so in the deploy log.
 - The target's team and project are recorded at deploy. If the app is later moved elsewhere the path answers 502 until the site is redeployed. A site deployed before this record keeps serving until its next deploy.
-- At most `APP_PAGES_PROXY_MAX_RULES` proxy rules per site. Proxy routes have no per-route rate or size limits yet.
+- Proxy responses never set cookies on the site origin: `Set-Cookie` from the target is removed, and `X-Content-Type-Options: nosniff` is added. A `Location` header that names the target's internal address is made relative.
+- At most `APP_PAGES_PROXY_MAX_RULES` proxy rules per site. A proxy route caps the request body at the `pages.proxy_max_body_mb` runtime setting (default 10 MiB, seeded by `APP_PAGES_PROXY_MAX_BODY_MB`) and waits at most the `pages.proxy_response_timeout` runtime setting (default 30s, seeded by `APP_PAGES_PROXY_RESPONSE_TIMEOUT`) for the target to start answering, then returns 502. WebSocket upgrades stay allowed. Both apply at the next ingress refresh.
 - Rule paths and targets must not contain `{` or `}`. The `Cookie` header is never forwarded, and when the site has a password gate the `Authorization` header is dropped too.
 - The controller re-checks each target's team and project on every pass. A proxy with no recorded scope (rules written before scopes existed) answers 502 until the site is redeployed. Saving settings or rules never widens a recorded scope: a target that moved teams loses its scope and answers 502 until a real deploy, and a scope is only added for a target the saving request was just authorized for.
 
@@ -158,6 +159,8 @@ How it behaves:
 | `APP_STATIC_ROUTES_MAX_FILE_BYTES` | `262144` | Size of each of `_redirects` and `_headers` |
 | `APP_STATIC_ROUTES_MAX_VALUE_LEN` | `2048` | Length of one path, destination or header value |
 | `APP_PAGES_PROXY_MAX_RULES` | `20` | Proxy rules per site |
+| `APP_PAGES_PROXY_MAX_BODY_MB` | `10` | Request body cap on proxy routes, in MiB (runtime setting `pages.proxy_max_body_mb`) |
+| `APP_PAGES_PROXY_RESPONSE_TIMEOUT` | `30s` | Wait for a proxy target's response headers (runtime setting `pages.proxy_response_timeout`) |
 
 Going over a cap fails the deploy with the variable's name in the message.
 

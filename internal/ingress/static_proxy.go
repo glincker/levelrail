@@ -1,10 +1,49 @@
 package ingress
 
 import (
+	"os"
 	"regexp"
 	"strconv"
 	"strings"
+	"sync/atomic"
+	"time"
 )
+
+// Env seeds for the limits on proxy routes; the saved runtime settings win.
+const (
+	EnvPagesProxyMaxBodyMB       = "APP_PAGES_PROXY_MAX_BODY_MB"
+	EnvPagesProxyResponseTimeout = "APP_PAGES_PROXY_RESPONSE_TIMEOUT"
+
+	defaultProxyMaxBodyMB = 10
+	defaultProxyTimeout   = 30 * time.Second
+)
+
+var liveProxyLimits atomic.Pointer[func() (int64, time.Duration)]
+
+// SetLiveProxyLimits installs the saved-setting source, so this package does
+// not import the settings layer. Nil restores env reads.
+func SetLiveProxyLimits(f func() (int64, time.Duration)) {
+	if f == nil {
+		liveProxyLimits.Store(nil)
+		return
+	}
+	liveProxyLimits.Store(&f)
+}
+
+// proxyLimits is the request body cap in bytes and the response header wait.
+func proxyLimits() (int64, time.Duration) {
+	if f := liveProxyLimits.Load(); f != nil {
+		return (*f)()
+	}
+	mb, timeout := int64(defaultProxyMaxBodyMB), defaultProxyTimeout
+	if n, err := strconv.Atoi(strings.TrimSpace(os.Getenv(EnvPagesProxyMaxBodyMB))); err == nil && n > 0 {
+		mb = int64(n)
+	}
+	if d, err := time.ParseDuration(strings.TrimSpace(os.Getenv(EnvPagesProxyResponseTimeout))); err == nil && d > 0 {
+		timeout = d
+	}
+	return mb << 20, timeout
+}
 
 // StaticProxy forwards one path of a static site to an app on this server.
 // An empty Dial means the target is missing or down, so the path answers 502.
@@ -74,7 +113,16 @@ func (r StaticRoute) proxyRoutes() []Route {
 				del = append(del, "Authorization")
 			}
 			rp.Headers.Request.Delete = del
-			handle = []any{rp}
+			// A proxied app must not set cookies on the site origin, and its
+			// redirects must not expose the internal dial address.
+			rp.Headers.Response = &HeaderOps{
+				Delete:  []string{"Set-Cookie"},
+				Set:     map[string][]string{"X-Content-Type-Options": {"nosniff"}},
+				Replace: map[string][]HeaderReplace{"Location": {{SearchRegexp: `^https?://` + regexp.QuoteMeta(p.Dial), Replace: ""}}},
+			}
+			maxBody, timeout := proxyLimits()
+			rp.Transport = &HTTPTransport{Protocol: "http", ResponseHeaderTimeout: timeout.String()}
+			handle = []any{RequestBodyHandler{Handler: "request_body", MaxSize: maxBody}, rp}
 		}
 		if r.BasicAuth != nil {
 			handle = append([]any{NewBasicAuthHandler(r.BasicAuth.Username, r.BasicAuth.Password)}, handle...)

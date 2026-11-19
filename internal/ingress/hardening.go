@@ -212,13 +212,21 @@ type RequestBodyHandler struct {
 
 // HeaderOps is Caddy's headers.HeaderOps.
 type HeaderOps struct {
-	Set    map[string][]string `json:"set,omitempty"`
-	Delete []string            `json:"delete,omitempty"`
+	Set     map[string][]string        `json:"set,omitempty"`
+	Delete  []string                   `json:"delete,omitempty"`
+	Replace map[string][]HeaderReplace `json:"replace,omitempty"`
+}
+
+// HeaderReplace is one regexp substitution in a header value.
+type HeaderReplace struct {
+	SearchRegexp string `json:"search_regexp"`
+	Replace      string `json:"replace"`
 }
 
 // ProxyHeaders is reverse_proxy's headers block.
 type ProxyHeaders struct {
-	Request *HeaderOps `json:"request,omitempty"`
+	Request  *HeaderOps `json:"request,omitempty"`
+	Response *HeaderOps `json:"response,omitempty"`
 }
 
 func (h Hardening) durationOrNil(d time.Duration) string {

@@ -306,7 +306,7 @@ func NewBasicAuthHandler(username, bcryptHash string) BasicAuthHandler {
 		Handler: "authentication",
 		Providers: BasicAuthProviders{
 			HTTPBasic: &HTTPBasicAuthProvider{
-				Accounts: []BasicAuthAccount{{Username: username, Password: bcryptHash}},
+				Accounts: []BasicAuthAccount{{Username: escapePlaceholders(username), Password: bcryptHash}},
 				Hash:     BasicAuthHash{Algorithm: "bcrypt"},
 			},
 		},

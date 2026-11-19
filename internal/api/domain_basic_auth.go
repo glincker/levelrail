@@ -8,6 +8,7 @@ import (
 	"log/slog"
 	"net/http"
 	"strings"
+	"unicode"
 
 	"github.com/GLINCKER/levelrail/internal/standalone"
 	"github.com/GLINCKER/levelrail/internal/store"
@@ -164,6 +165,10 @@ func (rt *Router) handleSetDomainBasicAuth(w http.ResponseWriter, r *http.Reques
 	req.Username = strings.TrimSpace(req.Username)
 	if req.Username == "" {
 		writeError(w, http.StatusBadRequest, "username is required")
+		return
+	}
+	if strings.ContainsAny(req.Username, "{}") || strings.IndexFunc(req.Username, unicode.IsControl) >= 0 {
+		writeError(w, http.StatusBadRequest, "username must not contain braces or control characters")
 		return
 	}
 

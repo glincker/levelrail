@@ -53,6 +53,7 @@ func (rt *Router) attachRuntimeSettings(s Store) {
 	wireDiagnosticSettings(svc)
 	abuse.SetLiveLimits(svc.AbuseLimits)
 	ingress.SetLiveAuthGateTimeout(svc.AuthGateTimeout)
+	ingress.SetLiveProxyLimits(func() (int64, time.Duration) { return svc.PagesProxyLimits(context.Background()) })
 	loopbackDistrusted.Store(!svc.Bool(context.Background(), runtimesettings.KeyTrustLoopbackForwarded))
 }
 

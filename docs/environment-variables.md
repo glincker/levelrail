@@ -203,6 +203,8 @@ These variables only seed the default of a [runtime setting](/runtime-settings).
 | `APP_HF_TIMEOUT_SECONDS` | [`models.hf_timeout_seconds`](/runtime-settings#networking) | `10` |
 | `APP_NET_OUTBOUND_TIMEOUT` | [`net.outbound_timeout`](/runtime-settings#networking) | `30s` |
 | `APP_NETWORK_GC_MAX_REMOVALS` | [`network.gc_max_removals`](/runtime-settings#networking) | `20` |
+| `APP_PAGES_PROXY_MAX_BODY_MB` | [`pages.proxy_max_body_mb`](/runtime-settings#networking) | `10` |
+| `APP_PAGES_PROXY_RESPONSE_TIMEOUT` | [`pages.proxy_response_timeout`](/runtime-settings#networking) | `30s` |
 | `APP_OIDC_LISTEN_PORT` | [`pipelines.oidc_listen_port`](/runtime-settings#networking) | `9095` |
 | `LEVELRAIL_PROXY_UNROUTED_TO_LEVELRAIL` | [`proxy.unrouted_to_levelrail`](/runtime-settings#networking) | `false` |
 | `APP_TRUST_LOOPBACK_FORWARDED` | [`security.trust_loopback_forwarded_headers`](/runtime-settings#networking) | `true` |

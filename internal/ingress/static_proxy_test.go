@@ -146,3 +146,17 @@ func TestStaticSiteConfigHasNoInjectedPlaceholders(t *testing.T) {
 		}
 	}
 }
+
+func TestStaticRouteProxyHardening(t *testing.T) {
+	t.Setenv(EnvPagesProxyMaxBodyMB, "2")
+	t.Setenv(EnvPagesProxyResponseTimeout, "7s")
+	s := proxyConfig(t, StaticRoute{
+		Proxies:   []StaticProxy{{From: "/api/*", Path: "/:splat", Dial: "10.0.0.5:3000"}},
+		BasicAuth: &BasicAuthAccount{Username: "{env.X}", Password: "hash"},
+	})
+	for _, want := range []string{`"delete":["Set-Cookie"]`, `"X-Content-Type-Options":["nosniff"]`, `"search_regexp":"^https?://10\\.0\\.0\\.5:3000"`, `"max_size":2097152`, `"response_header_timeout":"7s"`, `"username":"\\{env.X\\}"`} {
+		if !strings.Contains(s, want) {
+			t.Fatalf("missing %q in %s", want, s)
+		}
+	}
+}

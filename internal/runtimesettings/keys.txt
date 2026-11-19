@@ -370,6 +370,8 @@ otlp.ingest_enabled
 otlp.ingest_max_body_bytes
 otlp.ingest_max_line_bytes
 otlp.ingest_max_records
+pages.proxy_max_body_mb
+pages.proxy_response_timeout
 perf.slow_statement_ms
 perf.slow_statement_ring
 perf.statement_timing
