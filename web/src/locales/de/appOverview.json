@@ -38,6 +38,7 @@
     "frameBlocked": "Die Live-Seite lässt sich hier nicht laden. In neuem Tab öffnen.",
     "desktop": "Desktop",
     "mobile": "Mobil",
-    "viewport": "Ansichtsbreite"
+    "viewport": "Ansichtsbreite",
+    "recapture": "Neu erfassen"
   }
 }

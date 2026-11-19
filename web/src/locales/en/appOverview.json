@@ -38,6 +38,7 @@
     "frameBlocked": "Could not load the live site here. Open it in a new tab.",
     "desktop": "Desktop",
     "mobile": "Mobile",
-    "viewport": "Viewport"
+    "viewport": "Viewport",
+    "recapture": "Recapture"
   }
 }

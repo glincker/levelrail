@@ -38,6 +38,7 @@
     "frameBlocked": "Impossible de charger le site en direct ici. Ouvrez-le dans un nouvel onglet.",
     "desktop": "Bureau",
     "mobile": "Mobile",
-    "viewport": "Largeur de vue"
+    "viewport": "Largeur de vue",
+    "recapture": "Recapturer"
   }
 }

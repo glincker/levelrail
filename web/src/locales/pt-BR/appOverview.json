@@ -38,6 +38,7 @@
     "frameBlocked": "Não foi possível carregar o site ao vivo aqui. Abra em outra aba.",
     "desktop": "Desktop",
     "mobile": "Celular",
-    "viewport": "Largura da visualização"
+    "viewport": "Largura da visualização",
+    "recapture": "Capturar de novo"
   }
 }

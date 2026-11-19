@@ -38,6 +38,7 @@
     "frameBlocked": "ここではライブサイトを読み込めません。新しいタブで開いてください。",
     "desktop": "デスクトップ",
     "mobile": "モバイル",
-    "viewport": "表示幅"
+    "viewport": "表示幅",
+    "recapture": "再取得"
   }
 }

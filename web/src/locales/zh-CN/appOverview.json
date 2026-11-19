@@ -38,6 +38,7 @@
     "frameBlocked": "无法在此加载在线站点。请在新标签页中打开。",
     "desktop": "桌面",
     "mobile": "手机",
-    "viewport": "视口宽度"
+    "viewport": "视口宽度",
+    "recapture": "重新截取"
   }
 }

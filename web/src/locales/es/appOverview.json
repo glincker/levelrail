@@ -38,6 +38,7 @@
     "frameBlocked": "No se pudo cargar el sitio en vivo aquí. Ábrelo en otra pestaña.",
     "desktop": "Escritorio",
     "mobile": "Móvil",
-    "viewport": "Ancho de vista"
+    "viewport": "Ancho de vista",
+    "recapture": "Recapturar"
   }
 }

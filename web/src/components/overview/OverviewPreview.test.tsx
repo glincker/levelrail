@@ -1,4 +1,4 @@
-import { render, screen } from '@testing-library/react'
+import { render, screen, waitFor } from '@testing-library/react'
 import { beforeEach, describe, expect, it, vi } from 'vitest'
 import type { DeployAttempt } from '../../types/deployAttempt'
 import OverviewPreview from './OverviewPreview'
@@ -9,6 +9,7 @@ const usePreviewHistory = vi.hoisted(() => vi.fn())
 vi.mock('../../queries/preview', () => ({
   usePreviewStatus,
   usePreviewHistory,
+  useCapturePreview: () => ({ mutate: vi.fn(), isPending: false }),
 }))
 vi.mock('../DeployPreviewThumb', () => ({
   DeployPreviewThumb: ({ deploymentId }: { deploymentId: string }) => (
@@ -108,5 +109,50 @@ describe('pickPreviewAttempt', () => {
         attempt({ id: 'b' }),
       ])?.id,
     ).toBe('b')
+  })
+})
+
+describe('OverviewPreview static site', () => {
+  beforeEach(() => {
+    usePreviewStatus.mockReturnValue(status({}))
+    usePreviewHistory.mockReturnValue({ data: [] })
+  })
+
+  it('shows a sandboxed script-less frame and a viewport toggle', async () => {
+    vi.stubGlobal('fetch', vi.fn().mockResolvedValue({}))
+    const { container } = render(
+      <OverviewPreview
+        appName="site"
+        attempts={[attempt({})]}
+        url="https://site.test"
+        isStatic
+        onDeploy={vi.fn()}
+      />,
+    )
+    const frame = await waitFor(() => {
+      const f = container.querySelector('iframe')
+      expect(f).toBeTruthy()
+      return f as HTMLIFrameElement
+    })
+    expect(frame.getAttribute('sandbox')).toBe('')
+    expect(screen.getByText('preview.mobile')).toBeTruthy()
+    expect(screen.queryByTestId('thumb')).toBeNull()
+    vi.unstubAllGlobals()
+  })
+
+  it('falls back to a placeholder when the site cannot be reached', async () => {
+    vi.stubGlobal('fetch', vi.fn().mockRejectedValue(new TypeError('cert')))
+    const { container } = render(
+      <OverviewPreview
+        appName="site"
+        attempts={[attempt({})]}
+        url="https://site.localhost:8443"
+        isStatic
+        onDeploy={vi.fn()}
+      />,
+    )
+    await screen.findByText('preview.frameBlocked')
+    expect(container.querySelector('iframe')).toBeNull()
+    vi.unstubAllGlobals()
   })
 })

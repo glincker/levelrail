@@ -253,6 +253,7 @@ export function OverviewPage({
           appName={app.name}
           attempts={attempts}
           url={openUrl}
+          isStatic={isStatic}
           onDeploy={setDeployTab}
         />
       </Suspense>
