@@ -44,16 +44,24 @@ export function useSiteHook(name: string) {
   return useQuery(siteHookQueryOptions(name))
 }
 
-/** Create or rotate: the same call, the response carries the one-time URL. */
+/** Create, or rotate when the variable is true; the server answers 409 if the intent no longer matches. */
 export function useMintSiteHook(name: string) {
   const qc = useQueryClient()
-  return useMutation<SiteHook, ApiError, void>({
-    mutationFn: async () => {
-      const res = await fetch(root(name), { method: 'POST' })
+  return useMutation<SiteHook, ApiError, boolean>({
+    mutationFn: async (rotate) => {
+      const res = await fetch(root(name), {
+        method: 'POST',
+        ...(rotate
+          ? {
+              headers: { 'Content-Type': 'application/json' },
+              body: JSON.stringify({ rotate: true }),
+            }
+          : {}),
+      })
       if (!res.ok) return fail(res, 'hook')
       return (await res.json()) as SiteHook
     },
-    onSuccess: () => qc.invalidateQueries({ queryKey: hookKey(name) }),
+    onSettled: () => qc.invalidateQueries({ queryKey: hookKey(name) }),
   })
 }
 

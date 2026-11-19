@@ -871,6 +871,7 @@ func (rt *Router) handleDeleteGitSource(w http.ResponseWriter, r *http.Request) 
 		return
 	}
 	rt.eraseGitSourceSecrets(r.Context(), name)
+	rt.revokePagesHookOnDisconnect(r, name)
 
 	w.WriteHeader(http.StatusNoContent)
 }

@@ -20,10 +20,15 @@ func (c *Client) GetStaticSiteHook(ctx context.Context, site string) (StaticSite
 	return out, err
 }
 
-// PutStaticSiteHook creates the hook or rotates its secret and returns the one-time URL.
-func (c *Client) PutStaticSiteHook(ctx context.Context, site string) (StaticSiteHook, error) {
+// PutStaticSiteHook creates the hook, or rotates its secret when rotate is set, and returns the one-time URL.
+// The server answers 409 when the intent does not match the current state.
+func (c *Client) PutStaticSiteHook(ctx context.Context, site string, rotate bool) (StaticSiteHook, error) {
 	var out StaticSiteHook
-	err := c.do(ctx, http.MethodPost, "/api/v1/static-sites/"+PathEscape(site)+"/hook", nil, &out)
+	var body any
+	if rotate {
+		body = map[string]bool{"rotate": true}
+	}
+	err := c.do(ctx, http.MethodPost, "/api/v1/static-sites/"+PathEscape(site)+"/hook", body, &out)
 	return out, err
 }
 

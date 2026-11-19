@@ -29,7 +29,11 @@ func hookTestSite(t *testing.T, withGit bool) (*Router, *store.DB, *http.Cookie)
 
 func mintSiteHook(t *testing.T, rt *Router, cookie *http.Cookie) (staticSiteHookResource, string) {
 	t.Helper()
-	rec := serve(rt, authedRequest(t, cookie, http.MethodPost, "/api/v1/static-sites/docs/hook", ""))
+	body := ""
+	if hash, _, _ := rt.staticSites.(staticSiteHookStore).GetStaticSiteDeployHook(context.Background(), "docs"); hash != "" {
+		body = `{"rotate":true}`
+	}
+	rec := serve(rt, authedRequest(t, cookie, http.MethodPost, "/api/v1/static-sites/docs/hook", body))
 	var res staticSiteHookResource
 	if rec.Code != http.StatusCreated && rec.Code != http.StatusOK {
 		t.Fatalf("mint = %d: %s", rec.Code, rec.Body.String())
@@ -122,5 +126,68 @@ func TestPagesHookRateLimited(t *testing.T) {
 	}
 	if codes[len(codes)-1] != http.StatusTooManyRequests {
 		t.Fatalf("codes = %v, want the last to be 429", codes)
+	}
+}
+
+func TestPagesHookCreateAnswers409WhenOneExistsAndRotateIsExplicit(t *testing.T) {
+	rt, _, cookie := hookTestSite(t, true)
+	mintSiteHook(t, rt, cookie)
+	if rec := serve(rt, authedRequest(t, cookie, http.MethodPost, "/api/v1/static-sites/docs/hook", "")); rec.Code != http.StatusConflict {
+		t.Fatalf("second create = %d, want 409", rec.Code)
+	}
+	if rec := serve(rt, authedRequest(t, cookie, http.MethodDelete, "/api/v1/static-sites/docs/hook", "")); rec.Code != http.StatusNoContent {
+		t.Fatalf("revoke = %d", rec.Code)
+	}
+	if rec := serve(rt, authedRequest(t, cookie, http.MethodPost, "/api/v1/static-sites/docs/hook", `{"rotate":true}`)); rec.Code != http.StatusConflict {
+		t.Fatalf("rotate without hook = %d, want 409", rec.Code)
+	}
+}
+
+func TestPagesHookClearedWhenGitSourceDisconnected(t *testing.T) {
+	rt, db, cookie := hookTestSite(t, true)
+	_, path := mintSiteHook(t, rt, cookie)
+	if rec := serve(rt, authedRequest(t, cookie, http.MethodDelete, "/api/v1/apps/docs/git-source", "")); rec.Code != http.StatusNoContent {
+		t.Fatalf("disconnect = %d: %s", rec.Code, rec.Body.String())
+	}
+	if hash, _, _ := db.GetStaticSiteDeployHook(context.Background(), "docs"); hash != "" {
+		t.Fatal("hook hash survived the git source")
+	}
+	gs := store.GitSource{ServiceName: "docs", RepoURL: "https://git.invalid/acme/docs.git", Branch: "main", BuildType: "static"}
+	if err := db.SaveGitSource(context.Background(), gs); err != nil {
+		t.Fatal(err)
+	}
+	if got := postHook(rt, path, "").Code; got != http.StatusNotFound {
+		t.Fatalf("old hook after reconnect = %d, want 404", got)
+	}
+}
+
+func TestPagesHookRefusedWhenMintedBeforeCurrentGitSource(t *testing.T) {
+	rt, db, cookie := hookTestSite(t, true)
+	_, path := mintSiteHook(t, rt, cookie)
+	later := store.GitSource{ServiceName: "docs", RepoURL: "https://git.invalid/acme/docs.git", Branch: "main", BuildType: "static"}
+	if err := db.DeleteGitSource(context.Background(), "docs"); err != nil {
+		t.Fatal(err)
+	}
+	time.Sleep(5 * time.Millisecond)
+	if err := db.SaveGitSource(context.Background(), later); err != nil {
+		t.Fatal(err)
+	}
+	if got := postHook(rt, path, "").Code; got != http.StatusNotFound {
+		t.Fatalf("hook of an earlier connection = %d, want 404", got)
+	}
+}
+
+func TestPagesHookTriggerAuditCarriesHookCreatedAt(t *testing.T) {
+	rt, db, cookie := hookTestSite(t, true)
+	res, path := mintSiteHook(t, rt, cookie)
+	if got := postHook(rt, path, "").Code; got != http.StatusAccepted {
+		t.Fatalf("trigger = %d", got)
+	}
+	entries, err := db.ListAuditEntries(context.Background(), 20, nil, store.AuditEntryFilter{Action: AuditActionStaticSiteHookTriggered})
+	if err != nil || len(entries) == 0 {
+		t.Fatalf("audit = %v, %v", entries, err)
+	}
+	if !strings.Contains(entries[0].Detail, res.CreatedAt.UTC().Format(time.RFC3339Nano)) || strings.Contains(entries[0].Path, path[strings.LastIndex(path, "/")+1:]) {
+		t.Fatalf("detail %q path %q", entries[0].Detail, entries[0].Path)
 	}
 }

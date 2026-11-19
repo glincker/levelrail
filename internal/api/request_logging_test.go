@@ -5,6 +5,7 @@ import (
 	"log/slog"
 	"net/http"
 	"net/http/httptest"
+	"strings"
 	"sync"
 	"testing"
 	"time"
@@ -234,5 +235,26 @@ func TestIsStreamingResponse(t *testing.T) {
 	hijacked := &statusRecorder{ResponseWriter: httptest.NewRecorder(), hijacked: true}
 	if !isStreamingResponse(hijacked) {
 		t.Error("hijacked connection not reported as streaming")
+	}
+}
+
+func TestLoggablePathRedactsNonCanonicalHookPaths(t *testing.T) {
+	for _, in := range []string{
+		"/api/v1/hooks/./pages/docs/s3cret",
+		"/api/v1/hooks//pages/docs/s3cret",
+		"/api/v1/hooks/x/../pages/docs/s3cret/",
+		"/api/v1/hooks/deploy/./docs/s3cret",
+		"/api/v1/hooks/pipeline//docs/s3cret",
+		"/api/v1/hooks/image-update/./docs/s3cret",
+	} {
+		if got := loggablePath(in); strings.Contains(got, "s3cret") {
+			t.Errorf("loggablePath(%q) = %q leaks the secret", in, got)
+		}
+	}
+	if got := loggablePath("/api/v1/hooks/pages/docs/s3cret"); got != "/api/v1/hooks/pages/docs/redacted" {
+		t.Errorf("canonical = %q", got)
+	}
+	if got := loggablePath("/api/v1/apps/"); got != "/api/v1/apps/" {
+		t.Errorf("non-hook path changed: %q", got)
 	}
 }

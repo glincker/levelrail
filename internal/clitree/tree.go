@@ -509,6 +509,7 @@ var Tree = map[string]*Node{
 	"pages": {Subs: map[string]*Node{"init": nil, "deploy": nil, "list": nil, "show": nil, "delete": nil, "rollback": nil, "deploys": nil, "promote": nil,
 		"domains":  {Subs: map[string]*Node{"add": nil, "status": nil}},
 		"settings": {Subs: map[string]*Node{"show": nil, "set": nil}},
+		"hook":     {Subs: map[string]*Node{"create": nil, "rotate": nil, "rm": nil, "show": nil}},
 		"routes":   {Subs: map[string]*Node{"show": nil, "test": nil, "lint": nil, "list": nil, "add": nil, "rm": nil}}}},
 	"static-sites":     {Subs: map[string]*Node{"list": nil, "delete": nil, "routes": {Subs: map[string]*Node{"show": nil, "test": nil, "lint": nil}}}},
 	"deploy-approvals": {Subs: map[string]*Node{"list": nil, "get": nil, "approve": nil, "reject": nil}},

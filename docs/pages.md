@@ -241,13 +241,13 @@ Browser posts redirect to the form's redirect URL or show a built-in thank-you p
 
 ## Deploy hook
 
-A git-connected site can have a secret URL that redeploys its branch when anything POSTs to it, such as a CMS publish, a CI job or a cron. Create it in the site's settings or with `levelrail-cli pages hook create <site>`; the URL is shown once and only its hash is stored. `pages hook rotate` replaces it and the old URL stops at once, `pages hook rm` revokes it.
+A git-connected site can have a secret URL that redeploys its branch when anything POSTs to it, such as a CMS publish, a CI job or a cron. Create it in the site's settings or with `levelrail-cli pages hook create <site>`; the URL is shown once and only its hash is stored. `pages hook rotate` replaces it and the old URL stops at once, `pages hook rm` revokes it. The API takes `POST /api/v1/static-sites/{name}/hook` to create (`409` when one exists) and the same call with `{"rotate": true}` to rotate (`409` when none exists), so a stale view cannot replace a hook by accident. Disconnecting the git source or deleting the app removes the hook, and a hook made before the current git source was connected stops working.
 
 ```bash
 curl -X POST https://levelrail.example.com/api/v1/hooks/pages/docs/<secret>
 ```
 
-The call answers `202` with the deploy id when the deploy started, `409` while a deploy is already running or deploys are frozen, `429` when called too often (limits shared with build hooks) and `404` for an unknown site or a wrong secret. Each call is audited without the secret. Sites without a git source cannot have a hook. `GET /api/v1/static-sites/{name}/hook` returns only `{enabled, created_at}`.
+The call answers `202` with the deploy id when the deploy started, `409` while a deploy is already running, a deploy of a protected environment awaits approval, or deploys are frozen, `429` when called too often (limits shared with build hooks) and `404` for an unknown site or a wrong secret. Calls are audited without the secret and with the hook's creation time, so rotations are told apart; the first call refused for rate in a window is audited, wrong secrets are not. Sites without a git source cannot have a hook. `GET /api/v1/static-sites/{name}/hook` returns only `{enabled, created_at}`.
 
 ## Traffic over time
 

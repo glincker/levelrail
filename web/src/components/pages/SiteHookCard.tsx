@@ -22,7 +22,7 @@ export default function SiteHookCard({ name }: Readonly<{ name: string }>) {
 
   function onMint() {
     if (enabled && !window.confirm(t('hook.confirmRotate'))) return
-    mint.mutate(undefined, {
+    mint.mutate(enabled, {
       onSuccess: (h) => {
         setShown(h.url ?? '')
         setCopied(false)

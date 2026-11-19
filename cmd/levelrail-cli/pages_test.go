@@ -165,3 +165,34 @@ func TestRun_Pages_SettingsPasswordFlag(t *testing.T) {
 	}
 	runCLIExpectValidationError(t, []string{"pages", "settings", "set", "docs", "--password", "x", "--clear-password", "--api-url", srv.URL})
 }
+
+func TestRun_Pages_HookCreateRotateIntent(t *testing.T) {
+	var bodies []string
+	srv := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		if r.Method == http.MethodPost {
+			var b map[string]any
+			_ = json.NewDecoder(r.Body).Decode(&b)
+			if b["rotate"] == true {
+				bodies = append(bodies, "rotate")
+			} else {
+				bodies = append(bodies, "create")
+			}
+			_, _ = w.Write([]byte(`{"enabled":true,"url":"https://lr.example.com/api/v1/hooks/pages/docs/abc"}`))
+			return
+		}
+		_, _ = w.Write([]byte(`{"enabled":false}`))
+	}))
+	defer srv.Close()
+	out, _ := runCLIExpectOK(t, []string{"pages", "hook", "create", "docs", "--api-url", srv.URL})
+	if !strings.Contains(out, "/hooks/pages/docs/abc") {
+		t.Errorf("create stdout = %q", out)
+	}
+	runCLIExpectOK(t, []string{"pages", "hook", "rotate", "docs", "--api-url", srv.URL})
+	if len(bodies) != 2 || bodies[0] != "create" || bodies[1] != "rotate" {
+		t.Fatalf("intents = %v, want [create rotate]", bodies)
+	}
+	out, _ = runCLIExpectOK(t, []string{"pages", "hook", "show", "docs", "--api-url", srv.URL})
+	if !strings.Contains(out, "no deploy hook") {
+		t.Errorf("show stdout = %q", out)
+	}
+}

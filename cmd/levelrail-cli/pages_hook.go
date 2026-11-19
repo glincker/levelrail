@@ -52,16 +52,8 @@ func runPagesHook(prog string, args []string, stdout, stderr io.Writer, lookupEn
 			_, _ = fmt.Fprintf(stdout, "deploy hook enabled, created %s\n", h.CreatedAt.Format("2006-01-02 15:04"))
 		})
 	}
-	if verb == "create" {
-		cur, err := client.GetStaticSiteHook(ctx, site)
-		if err != nil {
-			return reportError(stdout, stderr, jsonOut, fmt.Errorf("read hook of %q: %w", site, err))
-		}
-		if cur.Enabled {
-			return reportError(stdout, stderr, jsonOut, fmt.Errorf("%q already has a deploy hook, use pages hook rotate to replace it", site))
-		}
-	}
-	h, err := client.PutStaticSiteHook(ctx, site)
+	// The server refuses a create over an existing hook and a rotate without one.
+	h, err := client.PutStaticSiteHook(ctx, site, verb == "rotate")
 	if err != nil {
 		return reportError(stdout, stderr, jsonOut, fmt.Errorf("%s hook of %q: %w", verb, site, err))
 	}

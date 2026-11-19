@@ -3,6 +3,7 @@ package api
 import (
 	"context"
 	"crypto/subtle"
+	"encoding/json"
 	"errors"
 	"log/slog"
 	"net/http"
@@ -49,6 +50,13 @@ func (rt *Router) staticHookDeps(w http.ResponseWriter, r *http.Request) (string
 	if !ok {
 		return "", nil, false
 	}
+	ability := AbilityWriteSensitive
+	if r.Method == http.MethodGet {
+		ability = AbilityRead
+	}
+	if !rt.authorizeRefs(w, r, ability, notFoundAs(http.StatusNotFound, "static site not found"), staticSiteRef(site.Name), appRef(site.Name)) {
+		return "", nil, false
+	}
 	return site.Name, hs, true
 }
 
@@ -70,7 +78,12 @@ func (rt *Router) handleGetStaticSiteHook(w http.ResponseWriter, r *http.Request
 	writeJSON(w, http.StatusOK, out)
 }
 
-// handlePutStaticSiteHook handles POST /api/v1/static-sites/{name}/hook: create, or rotate when one exists.
+// staticSiteHookRequest states the intent so a stale view cannot rotate a hook by accident.
+type staticSiteHookRequest struct {
+	Rotate bool `json:"rotate"`
+}
+
+// handlePutStaticSiteHook handles POST /api/v1/static-sites/{name}/hook: create, or rotate with {"rotate": true}.
 func (rt *Router) handlePutStaticSiteHook(w http.ResponseWriter, r *http.Request) {
 	name, hs, ok := rt.staticHookDeps(w, r)
 	if !ok {
@@ -83,9 +96,22 @@ func (rt *Router) handlePutStaticSiteHook(w http.ResponseWriter, r *http.Request
 		rt.internalError(w, "api: static site hook: git source", err, slog.String("name", name))
 		return
 	}
+	var req staticSiteHookRequest
+	if err := decodeJSONBodyLimit(r, &req, 1024); err != nil {
+		writeError(w, http.StatusBadRequest, "invalid request body")
+		return
+	}
 	prev, _, err := hs.GetStaticSiteDeployHook(r.Context(), name)
 	if err != nil {
 		rt.internalError(w, "api: static site hook: read", err, slog.String("name", name))
+		return
+	}
+	if prev != "" && !req.Rotate {
+		writeError(w, http.StatusConflict, "a deploy hook already exists, rotate it to replace it")
+		return
+	}
+	if prev == "" && req.Rotate {
+		writeError(w, http.StatusConflict, "there is no deploy hook to rotate, create one first")
 		return
 	}
 	secret, err := randomToken()
@@ -132,7 +158,8 @@ func (rt *Router) siteDeployActive(ctx context.Context, name string) bool {
 	}
 	attempts, err := rt.deployAttempts.ListDeployAttempts(ctx, name)
 	if err != nil {
-		return false
+		// Unknown state counts as busy, so a store error never starts an overlapping deploy.
+		return true
 	}
 	for _, a := range attempts {
 		if a.Status == store.DeployAttemptStatusRunning || a.Status == store.DeployAttemptStatusQueued {
@@ -152,9 +179,10 @@ func (rt *Router) handleStaticSiteHookTrigger(w http.ResponseWriter, r *http.Req
 	}
 	hs, ok := rt.staticSites.(staticSiteHookStore)
 	want := ""
+	var hookCreated time.Time
 	if ok {
-		if h, _, err := hs.GetStaticSiteDeployHook(r.Context(), site); err == nil {
-			want = h
+		if h, c, err := hs.GetStaticSiteDeployHook(r.Context(), site); err == nil {
+			want, hookCreated = h, c
 		}
 	}
 	if subtle.ConstantTimeCompare([]byte(hashToken(secret)), []byte(want)) != 1 || want == "" {
@@ -162,16 +190,20 @@ func (rt *Router) handleStaticSiteHookTrigger(w http.ResponseWriter, r *http.Req
 		return
 	}
 	gs, err := rt.gitSources.GetGitSource(r.Context(), site)
-	if err != nil || gs == nil {
+	// A hook minted before the current git source was connected belongs to an earlier connection.
+	if err != nil || gs == nil || hookCreated.Before(gs.CreatedAt) {
 		writeError(w, http.StatusNotFound, "not found")
 		return
 	}
 	if ok, retry := lim.perHook.allow("pages:" + site); !ok {
+		if first, _ := lim.refusalLog.allow("pages:" + site); first {
+			rt.auditStaticSiteHookTrigger(r, site, hookCreated, http.StatusTooManyRequests)
+		}
 		tooManyBuildHookRequests(w, retry)
 		return
 	}
 	if frozen, reason := rt.freezeStatus(r.Context(), site); frozen {
-		rt.auditStaticSiteHookTrigger(r, site, http.StatusConflict)
+		rt.auditStaticSiteHookTrigger(r, site, hookCreated, http.StatusConflict)
 		writeError(w, http.StatusConflict, "deploys are frozen: "+reason)
 		return
 	}
@@ -179,8 +211,14 @@ func (rt *Router) handleStaticSiteHookTrigger(w http.ResponseWriter, r *http.Req
 		if !busy {
 			lim.pagesInflight.Delete(site)
 		}
-		rt.auditStaticSiteHookTrigger(r, site, http.StatusConflict)
+		rt.auditStaticSiteHookTrigger(r, site, hookCreated, http.StatusConflict)
 		writeError(w, http.StatusConflict, "a deploy is already running")
+		return
+	}
+	if rt.siteApprovalPending(r.Context(), site) {
+		lim.pagesInflight.Delete(site)
+		rt.auditStaticSiteHookTrigger(r, site, hookCreated, http.StatusConflict)
+		writeError(w, http.StatusConflict, "a deploy is already awaiting approval")
 		return
 	}
 	known := map[string]bool{}
@@ -202,7 +240,7 @@ func (rt *Router) handleStaticSiteHookTrigger(w http.ResponseWriter, r *http.Req
 			rt.logger.Warn("api: pages hook: deploy failed", slog.String("name", site), slog.String("result", res))
 		}
 	}(context.WithoutCancel(r.Context()))
-	rt.auditStaticSiteHookTrigger(r, site, http.StatusAccepted)
+	rt.auditStaticSiteHookTrigger(r, site, hookCreated, http.StatusAccepted)
 	out := map[string]string{"status": "deploy triggered"}
 	if id := rt.awaitNewDeployID(r.Context(), site, known, done); id != "" {
 		out["deploy_id"] = id
@@ -241,11 +279,63 @@ func (rt *Router) awaitNewDeployID(ctx context.Context, site string, known map[s
 	}
 }
 
-// auditStaticSiteHookTrigger logs the call with the secret redacted from the path.
-func (rt *Router) auditStaticSiteHookTrigger(r *http.Request, site string, status int) {
-	clone := r.Clone(r.Context())
-	u := *r.URL
-	u.Path = loggablePath(u.Path)
-	clone.URL = &u
-	rt.recordAudit(r.Context(), clone, AbilityDeploy, "webhook", site, site+"/"+pagesHookName, status)
+// siteApprovalPending reports a held deploy of site on a protected environment; a hook must not expire it.
+func (rt *Router) siteApprovalPending(ctx context.Context, site string) bool {
+	if rt.deployApprovals == nil {
+		return false
+	}
+	if _, protected, err := rt.protectedEnvironmentOf(ctx, site); err == nil && !protected {
+		return false
+	}
+	pending, err := rt.deployApprovals.ListDeployApprovals(ctx, store.DeployApprovalStatusPending, site)
+	if err != nil {
+		return true
+	}
+	for _, a := range pending {
+		if a.Action == store.DeployApprovalActionReplay && a.HeldAttemptID != "" {
+			return true
+		}
+	}
+	return false
+}
+
+// auditStaticSiteHookTrigger records the call; hook_created_at tells rotations apart and the secret never appears.
+func (rt *Router) auditStaticSiteHookTrigger(r *http.Request, site string, hookCreated time.Time, status int) {
+	if rt.auditLog == nil {
+		return
+	}
+	id, err := store.NewAuditEntryID()
+	if err != nil {
+		return
+	}
+	detail, _ := json.Marshal(map[string]any{"site": site, "hook_created_at": hookCreated.UTC().Format(time.RFC3339Nano)})
+	entry := store.AuditEntry{
+		ID: id, ActorType: "webhook", ActorID: site, ActorName: site + "/" + pagesHookName,
+		Ability: AbilityDeploy, Method: r.Method, Path: loggablePath(r.URL.Path), StatusCode: status,
+		RemoteAddr: clientIP(r), CreatedAt: store.FormatAuditTime(time.Now()),
+		ClientKind: clientKindFromUserAgent(r.Header.Get("User-Agent")),
+		Action:     AuditActionStaticSiteHookTriggered, Detail: string(detail),
+	}
+	if err := rt.auditLog.SaveAuditEntry(context.WithoutCancel(r.Context()), entry); err != nil {
+		rt.logger.Warn("api: pages hook: audit save failed", slog.String("name", site), slog.String("error", err.Error()))
+		return
+	}
+	rt.emitAuditEvent(entry)
+}
+
+// revokePagesHookOnDisconnect clears the site's hook when its git source goes, so a later connect starts without one.
+func (rt *Router) revokePagesHookOnDisconnect(r *http.Request, name string) {
+	hs, ok := rt.staticSites.(staticSiteHookStore)
+	if !ok {
+		return
+	}
+	hash, _, err := hs.GetStaticSiteDeployHook(r.Context(), name)
+	if err != nil || hash == "" {
+		return
+	}
+	if err := hs.SetStaticSiteDeployHook(r.Context(), name, "", time.Time{}); err != nil {
+		rt.logger.Warn("api: pages hook: revoke on disconnect failed", slog.String("name", name), slog.String("error", err.Error()))
+		return
+	}
+	rt.auditGitSetting(r, name, AuditActionStaticSiteHookRevoked, map[string]any{"site": name, "reason": "git source removed"})
 }

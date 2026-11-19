@@ -5,6 +5,7 @@ import (
 	"fmt"
 	"log/slog"
 	"net/http"
+	pathpkg "path"
 	"sort"
 	"strings"
 	"sync"
@@ -115,14 +116,19 @@ func isStreamingResponse(rec *statusRecorder) bool {
 const imageUpdateHookPrefix = "/api/v1/hooks/image-update/"
 
 // loggablePath hides the secret in a webhook URL (/hooks/image-update/{name}/{token}) before it reaches a log line.
-func loggablePath(path string) string {
+func loggablePath(raw string) string {
+	// Clean first so /hooks/./pages/x/secret and doubled slashes cannot dodge the prefix match.
+	path := raw
+	if raw != "" {
+		path = pathpkg.Clean(raw)
+	}
 	for _, prefix := range []string{imageUpdateHookPrefix, pipelineHookPrefix, buildHookURLPrefix, pagesHookURLPrefix} {
 		if rest, ok := strings.CutPrefix(path, prefix); ok {
 			name, _, _ := strings.Cut(rest, "/")
 			return prefix + name + "/redacted"
 		}
 	}
-	return path
+	return raw
 }
 
 type requestTimingsKey struct{}

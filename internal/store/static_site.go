@@ -209,11 +209,12 @@ func (db *DB) DeleteStaticSite(ctx context.Context, name string) error {
 	if err != nil {
 		return fmt.Errorf("store: delete static site %q: rows affected: %w", name, err)
 	}
-	if n == 0 {
-		return ErrServiceNotFound
-	}
+	// Commit the settings delete even for an unpublished app, so a new app of the same name starts clean.
 	if err := tx.Commit(); err != nil {
 		return fmt.Errorf("store: delete static site %q: commit: %w", name, err)
+	}
+	if n == 0 {
+		return ErrServiceNotFound
 	}
 	return nil
 }
