@@ -648,7 +648,6 @@
       "jenkins": "Jenkins",
       "buildkite": "Buildkite"
     },
-    "saveAs": "これをリポジトリの {{target}} として保存してください。",
     "needsDomain": "ダッシュボードのURLがまだ設定されていません。CIがこのコントロールプレーンに到達できるよう、設定で指定してください。",
     "oidcNote": "先にCIからデプロイで信頼するパイプラインを追加してください。そうすれば、CIにトークンを保存する必要はありません。",
     "token": {
@@ -662,7 +661,9 @@
       "createInstallWide": "インストール全体のトークンを作成",
       "helpProjectMissing": "このファイルは保存されたトークンを読み取ります。アプリが指定しているプロジェクトはすでに存在しないため、トークンをプロジェクトに限定できず、このサーバー上のすべてのアプリをデプロイできます。実行できる操作は次のみです: {{abilities}}。先にアプリのプロジェクトを修正するか、OIDCパイプラインの使用をおすすめします。"
     },
-    "apiUrl": "CIで LEVELRAIL_API_URL を {{url}} に設定してください。"
+    "apiUrl": "CIで LEVELRAIL_API_URL を {{url}} に設定してください。",
+    "download": "ファイルをダウンロード",
+    "staticHint": "これは静的サイトです。パイプラインはビルド済みフォルダを Levelrail CLI で公開します。イメージはビルドしません。"
   },
   "approvalBanner": {
     "approved": "承認しました: {{app}} は {{image}} を対象にするようになりました。",

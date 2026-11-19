@@ -660,7 +660,6 @@
       "jenkins": "Jenkins",
       "buildkite": "Buildkite"
     },
-    "saveAs": "Salve isto como {{target}} no seu repositório.",
     "needsDomain": "Nenhuma URL do painel está definida ainda. Defina uma em Configurações para que o seu CI alcance este control plane.",
     "oidcNote": "Adicione primeiro um pipeline confiável em Deploy pelo CI, e então nenhum token é armazenado no seu CI.",
     "token": {
@@ -674,7 +673,9 @@
       "createInstallWide": "Criar token para toda a instalação",
       "helpProjectMissing": "Este arquivo lê um token armazenado. O app cita um projeto que não existe mais, então o token não pode ser limitado a um projeto e pode fazer deploy de qualquer app neste servidor. Ele só pode: {{abilities}}. Corrija primeiro o projeto do app, ou prefira um pipeline OIDC."
     },
-    "apiUrl": "Defina LEVELRAIL_API_URL como {{url}} no seu CI."
+    "apiUrl": "Defina LEVELRAIL_API_URL como {{url}} no seu CI.",
+    "download": "Baixar arquivo",
+    "staticHint": "Este é um site estático, então o pipeline publica sua pasta compilada com a CLI da Levelrail. Nenhuma imagem é criada."
   },
   "approvalBanner": {
     "approved": "Aprovado: {{app}} agora aponta para {{image}}.",

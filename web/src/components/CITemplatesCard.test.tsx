@@ -19,6 +19,11 @@ void testI18n.use(initReactI18next).init({
   interpolation: { escapeValue: false },
 })
 
+function urlOf(input: RequestInfo | URL): string {
+  if (typeof input === 'string') return input
+  return input instanceof URL ? input.href : input.url
+}
+
 function jsonResponse(body: unknown): Response {
   return {
     ok: true,
@@ -59,11 +64,13 @@ describe('CITemplatesCard', () => {
     payload = templates
     vi.stubGlobal('fetch', fetchMock)
     fetchMock.mockImplementation(
-      (_input: RequestInfo | URL, init?: RequestInit) =>
+      (input: RequestInfo | URL, init?: RequestInit) =>
         Promise.resolve(
-          init?.method === 'POST'
-            ? jsonResponse({ token: 'tok_once' })
-            : jsonResponse(payload),
+          urlOf(input).includes('static-sites')
+            ? jsonResponse([])
+            : init?.method === 'POST'
+              ? jsonResponse({ token: 'tok_once' })
+              : jsonResponse(payload),
         ),
     )
   })
@@ -88,7 +95,7 @@ describe('CITemplatesCard', () => {
       screen.queryByRole('button', { name: 'Create deployer token' }),
     ).toBeNull()
 
-    await user.click(screen.getByRole('button', { name: 'Jenkins' }))
+    await user.click(screen.getByRole('radio', { name: 'Jenkins' }))
     await user.click(
       await screen.findByRole('button', { name: 'Create deployer token' }),
     )
@@ -126,7 +133,7 @@ describe('CITemplatesCard', () => {
         </QueryClientProvider>
       </I18nextProvider>,
     )
-    await user.click(await screen.findByRole('button', { name: 'Jenkins' }))
+    await user.click(await screen.findByRole('radio', { name: 'Jenkins' }))
     expect(
       screen.getByText(/in no project, so the token can deploy any app/),
     ).toBeVisible()
@@ -169,7 +176,7 @@ describe('CITemplatesCard', () => {
           </QueryClientProvider>
         </I18nextProvider>,
       )
-      await user.click(await screen.findByRole('button', { name: 'Jenkins' }))
+      await user.click(await screen.findByRole('radio', { name: 'Jenkins' }))
       expect(screen.getByText(copy)).toBeVisible()
       expect(
         screen.getByRole('button', { name: 'Create install-wide token' }),
@@ -179,4 +186,30 @@ describe('CITemplatesCard', () => {
       ).toBeNull()
     },
   )
+
+  it('swaps in folder-publish files for a static site', async () => {
+    fetchMock.mockImplementation((input: RequestInfo | URL) =>
+      Promise.resolve(
+        urlOf(input).includes('static-sites')
+          ? jsonResponse([{ name: 'web' }])
+          : jsonResponse(payload),
+      ),
+    )
+    render(
+      <I18nextProvider i18n={testI18n}>
+        <QueryClientProvider client={createTestQueryClient()}>
+          <Suspense fallback={null}>
+            <CITemplatesCard appName="web" />
+          </Suspense>
+        </QueryClientProvider>
+      </I18nextProvider>,
+    )
+    const region = await screen.findByRole('group', {
+      name: '.github/workflows/deploy.yml',
+    })
+    await waitFor(() => {
+      expect(region).toHaveTextContent('pages deploy ./dist --name web')
+    })
+    expect(region).not.toHaveTextContent('deploy-web')
+  })
 })
