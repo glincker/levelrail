@@ -37,6 +37,7 @@ import type stackSync from '../locales/en/stackSync.json'
 import type statusPage from '../locales/en/statusPage.json'
 import type assets from '../locales/en/assets.json'
 import type pagesSites from '../locales/en/pagesSites.json'
+import type appPages from '../locales/en/appPages.json'
 import type integrations from '../locales/en/integrations.json'
 import type clusters from '../locales/en/clusters.json'
 import type cloudProvider from '../locales/en/cloudProvider.json'
@@ -196,6 +197,7 @@ declare module 'i18next' {
       statusPage: typeof statusPage
       assets: typeof assets
       pagesSites: typeof pagesSites
+      appPages: typeof appPages
       integrations: typeof integrations
       clusters: typeof clusters
       cloudProvider: typeof cloudProvider

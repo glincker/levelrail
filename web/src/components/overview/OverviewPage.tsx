@@ -25,6 +25,7 @@ import { UploadSourceCard } from './UploadSourceCard'
 import { latestUpload } from './uploadSource'
 import { LogsTail } from './LogsTail'
 import { OverviewHero } from './OverviewHero'
+import { OverviewQuickLinks } from './OverviewQuickLinks'
 import { OverviewSuggestions } from './OverviewSuggestions'
 import { useOverviewSuggestions } from './useOverviewSuggestions'
 import { RecommendedSetup } from './RecommendedSetup'
@@ -233,6 +234,12 @@ export function OverviewPage({
         }
         onDeploy={setDeployTab}
         gitMissing={git.error instanceof ApiError && git.error.status === 404}
+        isStatic={isStatic}
+      />
+      <OverviewQuickLinks
+        app={app}
+        reading={reading}
+        latest={latest}
         isStatic={isStatic}
       />
       <RecommendedNextCard

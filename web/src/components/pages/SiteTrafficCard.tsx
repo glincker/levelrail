@@ -110,7 +110,7 @@ function TopList({
 export function SiteTrafficCard({
   name,
   onAddRedirect,
-}: Readonly<{ name: string; onAddRedirect: (path: string) => void }>) {
+}: Readonly<{ name: string; onAddRedirect?: (path: string) => void }>) {
   const { t } = useTranslation('pagesSites')
   const [win, setWin] = useState<TrafficWindow>('24h')
   const q = useQuery(siteTrafficQueryOptions(name, win))

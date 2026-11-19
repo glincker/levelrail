@@ -162,6 +162,7 @@ export const NAMESPACES = [
   'scheduledDeploy',
   'assets',
   'pagesSites',
+  'appPages',
   'uiShared',
   'relatedLinks',
   'gitSource',
