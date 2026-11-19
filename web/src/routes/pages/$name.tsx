@@ -1,6 +1,6 @@
 import { createFileRoute } from '@tanstack/react-router'
 import { PageDetail } from '../../components/pages/PageDetail'
-import { PAGE_TABS, type PageTab } from '../../components/pages/pageHelpers'
+import { PAGE_TABS, type PageTab } from '../../components/pages/pageTabs'
 import { appDetailQueryOptions } from '../../queries/apps'
 import { certificatesQueryOptions } from '../../queries/certificates'
 

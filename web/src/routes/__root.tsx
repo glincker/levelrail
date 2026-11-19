@@ -11,7 +11,7 @@ import { useAuthUsername } from '../hooks/useAuthUsername'
 import { brandQueryOptions } from '../queries/brand'
 import { demoQueryOptions } from '../queries/demo'
 import { shellCacheReady } from '../queries/shell'
-import { DemoChrome } from '../components/demo/DemoChrome'
+import { useIsDemo } from '../hooks/useDemo'
 import { DemoAnalytics } from '../components/demo/DemoAnalytics'
 import { BrandProvider } from '../components/BrandProvider'
 import { AppSidebar } from '../components/AppSidebar'
@@ -48,6 +48,21 @@ const NavTabStrip = React.lazy(() =>
 )
 const DockPanel = React.lazy(() => import('../components/dock/DockPanel'))
 // The not-found page pulls in the full nav registry, so it loads only when needed.
+// Demo bar, tour and install dialog only matter in demo mode, so keep them out of first load.
+const DemoChrome = React.lazy(() =>
+  import('../components/demo/DemoChrome').then((m) => ({
+    default: m.DemoChrome,
+  })),
+)
+
+function LazyDemoChrome() {
+  if (!useIsDemo()) return null
+  return (
+    <React.Suspense fallback={null}>
+      <DemoChrome />
+    </React.Suspense>
+  )
+}
 const RouteNotFound = React.lazy(() => import('../components/RouteNotFound'))
 
 function RootNotFound() {
@@ -211,7 +226,7 @@ function AppShell() {
         </React.Suspense>
       )}
       <SidebarInset>
-        <DemoChrome />
+        <LazyDemoChrome />
         <AppHeader onSearch={openPalette} />
         <ShellBanner />
         <RestartBanner />

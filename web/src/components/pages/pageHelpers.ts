@@ -5,14 +5,7 @@ import {
   type DropSelection,
 } from '../../lib/zipSite'
 
-export const PAGE_TABS = [
-  'overview',
-  'deployments',
-  'domains',
-  'routes',
-  'settings',
-] as const
-export type PageTab = (typeof PAGE_TABS)[number]
+export { PAGE_TABS, type PageTab } from './pageTabs'
 
 export function suggestSiteName(taken: readonly string[]): string {
   if (!taken.includes('my-site')) return 'my-site'

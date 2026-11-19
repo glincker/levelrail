@@ -1,4 +1,4 @@
-import { useState } from 'react'
+import { Suspense, lazy, useState } from 'react'
 import { Link } from '@tanstack/react-router'
 import { useTranslation } from 'react-i18next'
 import { TerminalGlassIcon, TriangleAlertGlassIcon } from '@thesvg/ui-react'
@@ -15,9 +15,15 @@ import {
   useLiveDeviceAuthRequests,
   type DeviceAuthRequest,
 } from '../../queries/deviceAuth'
-import { DeviceLoginConfirmDialog } from './DeviceLoginConfirmDialog'
 import { ResolvedLoginStrips } from './ResolvedLoginStrips'
 import { useNow } from '../../hooks/useNow'
+
+// Deferred until the first Confirm click; kept mounted afterwards so closing animates.
+const DeviceLoginConfirmDialog = lazy(() =>
+  import('./DeviceLoginConfirmDialog').then((m) => ({
+    default: m.DeviceLoginConfirmDialog,
+  })),
+)
 
 // Shown on every page while a CLI login waits. There is deliberately no
 // dismiss button: it disappears only when the request is approved, denied
@@ -49,6 +55,7 @@ function BannerBody({
 }) {
   const { t } = useTranslation('attention', { useSuspense: false })
   const [confirming, setConfirming] = useState(false)
+  const [confirmMounted, setConfirmMounted] = useState(false)
   const deny = useDenyDeviceAuthRequest()
   const name = requesterLabel(request) || t('deviceLogin.unknownDevice')
 
@@ -115,6 +122,7 @@ function BannerBody({
           type="button"
           size="sm"
           onClick={() => {
+            setConfirmMounted(true)
             setConfirming(true)
           }}
         >
@@ -128,11 +136,15 @@ function BannerBody({
           {t('items.openCliAccess')}
         </Button>
       </div>
-      <DeviceLoginConfirmDialog
-        request={request}
-        open={confirming}
-        onOpenChange={setConfirming}
-      />
+      {confirmMounted ? (
+        <Suspense fallback={null}>
+          <DeviceLoginConfirmDialog
+            request={request}
+            open={confirming}
+            onOpenChange={setConfirming}
+          />
+        </Suspense>
+      ) : null}
     </div>
   )
 }

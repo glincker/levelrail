@@ -120,12 +120,12 @@ describe('DeviceLoginBanner', () => {
     expect(screen.queryByRole('button', { name: /dismiss|close/i })).toBeNull()
   })
 
-  it('requires a confirm click and never approves on the first click', () => {
+  it('requires a confirm click and never approves on the first click', async () => {
     requests = [request({})]
     renderBanner()
     fireEvent.click(screen.getByRole('button', { name: 'Review and approve' }))
     expect(approveMutate).not.toHaveBeenCalled()
-    expect(screen.getByTestId('device-confirm-code')).toHaveTextContent(
+    expect(await screen.findByTestId('device-confirm-code')).toHaveTextContent(
       'ABCD-1234',
     )
     fireEvent.click(
