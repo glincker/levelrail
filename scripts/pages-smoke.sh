@@ -161,7 +161,11 @@ fi
 
 # ---- 5. promote and rollback round trip
 write_site smoke-v2
-deploy_site >/dev/null || true
+# The printed live URL is the source of truth; a dev ingress can change port.
+NEW_BASE="$(deploy_site || true)"
+case "$NEW_BASE" in
+  http://* | https://*) BASE="${NEW_BASE%/}" ;;
+esac
 wait_code "$BASE/" 200 >/dev/null
 if site_curl "$BASE/" | grep -q smoke-v2; then pass "second deploy is live"; else fail "second deploy is live"; fi
 if [ -n "$LIVE_ID" ] && "$CLI" pages promote "$SITE" "$LIVE_ID" >/dev/null 2>&1; then
