@@ -33,7 +33,7 @@ func registerNodeTools(server *mcp.Server, client *apiclient.Client) {
 
 	addTool(server, &mcp.Tool{
 		Name:        "get_node_health",
-		Description: "Get one node's current stored reconcile conditions (type, status, reason, message) from the node health controller. This is current status, not a historical log.",
+		Description: "Get one node's current reconcile conditions (type, status, reason, message) from the node health controller; not a history.",
 	}, func(ctx context.Context, _ *mcp.CallToolRequest, in nodeIDInput) (*mcp.CallToolResult, []apiclient.ConditionResource, error) {
 		conditions, err := client.GetNodeHealth(ctx, in.ID)
 		if err != nil {

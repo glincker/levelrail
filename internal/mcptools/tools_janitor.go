@@ -42,7 +42,7 @@ func janitorMode(p apiclient.JanitorPolicy) string {
 func registerJanitorTools(server *mcp.Server, client *apiclient.Client) {
 	addTool(server, &mcp.Tool{
 		Name:        "get_janitor",
-		Description: "Automatic cleanup state: mode, free disk, bytes reclaimed, quarantined volumes. preview dry-runs a pass. Rollback targets and live volumes are never touched.",
+		Description: "Automatic cleanup state: mode, free disk, bytes reclaimed, quarantined volumes. preview dry-runs a pass. Rollback targets and live volumes stay.",
 	}, func(ctx context.Context, _ *mcp.CallToolRequest, in getJanitorInput) (*mcp.CallToolResult, getJanitorOutput, error) {
 		st, err := client.GetJanitor(ctx)
 		if err != nil {

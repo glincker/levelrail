@@ -233,7 +233,7 @@ func registerExpansionReadTools(server *mcp.Server, client *apiclient.Client) {
 
 	addTool(server, &mcp.Tool{
 		Name:        "backups_health",
-		Description: "Backup protection per database and volume: state, last backup, last verified restore, encryption and target warnings. Unhealthy resources first.",
+		Description: "Backup protection per database and volume: state, last backup, last verified restore, encryption and target warnings. Unhealthy first.",
 	}, func(ctx context.Context, _ *mcp.CallToolRequest, _ struct{}) (*mcp.CallToolResult, backupsHealthOutput, error) {
 		r, err := client.BackupHealth(ctx)
 		if err != nil {
@@ -244,7 +244,7 @@ func registerExpansionReadTools(server *mcp.Server, client *apiclient.Client) {
 
 	addTool(server, &mcp.Tool{
 		Name:        "get_upgrade_readiness",
-		Description: "Plan a control plane upgrade: current and target version, breaking changes needing acknowledgement and whether it can be applied. Does not upgrade.",
+		Description: "Plan a control plane upgrade: current and target version, breaking changes to acknowledge, whether it can apply. Does not upgrade.",
 	}, func(ctx context.Context, _ *mcp.CallToolRequest, in upgradeReadinessInput) (*mcp.CallToolResult, apiclient.SelfUpgradePlan, error) {
 		r, err := client.GetSelfUpgradePlan(ctx, in.Target)
 		if err != nil {

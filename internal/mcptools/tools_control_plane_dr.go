@@ -45,7 +45,7 @@ func registerControlPlaneDRTools(server *mcp.Server, client *apiclient.Client) {
 
 	addTool(server, &mcp.Tool{
 		Name:        "get_control_plane_drill_status",
-		Description: "Last automated restore drill of the control plane backups: when it ran, whether it passed or was partial (checksum only), how long it took, and when the next one is due.",
+		Description: "Last automated restore drill of control plane backups: when it ran, passed or partial (checksum only), duration, next due.",
 	}, func(ctx context.Context, _ *mcp.CallToolRequest, _ struct{}) (*mcp.CallToolResult, controlPlaneDrillOutput, error) {
 		st, err := client.GetControlPlaneDR(ctx)
 		if err != nil {

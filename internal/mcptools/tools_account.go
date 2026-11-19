@@ -24,7 +24,7 @@ func registerAccountTools(server *mcp.Server, client *apiclient.Client) {
 
 	addTool(server, &mcp.Tool{
 		Name:        "get_my_access",
-		Description: "Show what this account can and cannot manage: tier, teams, attached IAM policies, linked sign-in providers and a per-area capability list with the missing ability.",
+		Description: "Show what this account can manage: tier, teams, IAM policies, sign-in providers and per-area capabilities with the missing ability.",
 	}, func(ctx context.Context, _ *mcp.CallToolRequest, _ struct{}) (*mcp.CallToolResult, apiclient.MyAccessResource, error) {
 		access, err := client.MyAccess(ctx)
 		if err != nil {

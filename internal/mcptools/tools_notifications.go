@@ -22,7 +22,7 @@ func registerNotificationTools(server *mcp.Server, client *apiclient.Client) {
 
 	addTool(server, &mcp.Tool{
 		Name:        "list_notification_deliveries",
-		Description: "List a notification channel's recorded send history, newest first: deploy outcomes, alert rule firings, and test sends alike, with success/failure and error for each.",
+		Description: "List a notification channel's send history, newest first (deploy outcomes, alert firings, test sends) with success and error.",
 	}, func(ctx context.Context, _ *mcp.CallToolRequest, in notificationDeliveriesInput) (*mcp.CallToolResult, []apiclient.NotificationDeliveryResource, error) {
 		deliveries, err := client.ListNotificationDeliveries(ctx, in.ID, in.Limit)
 		if err != nil {

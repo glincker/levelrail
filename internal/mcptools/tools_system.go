@@ -55,7 +55,7 @@ func registerSystemTools(server *mcp.Server, client *apiclient.Client) {
 
 	addTool(server, &mcp.Tool{
 		Name:        "prune_system",
-		Description: "Remove stopped containers, dangling images and unused volumes and build cache fleet-wide. Never touches anything an app or database still desires.",
+		Description: "Remove stopped containers, dangling images, unused volumes and build cache fleet-wide. Never touches anything an app or database still desires.",
 	}, func(ctx context.Context, _ *mcp.CallToolRequest, _ struct{}) (*mcp.CallToolResult, apiclient.SystemPruneResult, error) {
 		result, err := client.PruneSystem(ctx)
 		if err != nil {

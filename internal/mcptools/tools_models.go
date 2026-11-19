@@ -38,7 +38,7 @@ type deployModelInput struct {
 	HFToken       string   `json:"hf_token,omitempty" jsonschema:"HuggingFace access token for gated models, stored encrypted and never returned"`
 	Residency     string   `json:"residency,omitempty" jsonschema:"always (default) or on_demand: stop the engine when idle, start it on the first request"`
 	IdleTTLSecs   int      `json:"idle_ttl_seconds,omitempty" jsonschema:"with on_demand: idle seconds before the engine stops; 0 uses the platform default"`
-	SwapGroup     string   `json:"swap_group,omitempty" jsonschema:"models sharing this name on the same node/GPU cannot both be resident; waking one stops the group's current resident model"`
+	SwapGroup     string   `json:"swap_group,omitempty" jsonschema:"models sharing this name on a node/GPU cannot both be resident; waking one stops the other"`
 }
 
 type modelUsageInput struct {
@@ -62,7 +62,7 @@ type modelActionResult struct {
 func registerModelTools(server *mcp.Server, client *apiclient.Client) {
 	addTool(server, &mcp.Tool{
 		Name:        "list_models",
-		Description: "List AI models deployed on GPU nodes: engine, model, node, and reconcile status (Downloading, Loading, ModelLoaded, NoGPUOnNode, and so on) with progress detail.",
+		Description: "List AI models on GPU nodes: engine, model, node, and reconcile status (Downloading, Loading, ModelLoaded, NoGPUOnNode) with progress.",
 	}, func(ctx context.Context, _ *mcp.CallToolRequest, _ struct{}) (*mcp.CallToolResult, []apiclient.ModelResource, error) {
 		out, err := client.ListModels(ctx)
 		if err != nil {
@@ -73,7 +73,7 @@ func registerModelTools(server *mcp.Server, client *apiclient.Client) {
 
 	addTool(server, &mcp.Tool{
 		Name:        "get_model",
-		Description: "Get one AI model: status with reason and progress message, OpenAI-compatible base URL, and API key prefix. The API key itself is never returned here.",
+		Description: "Get one AI model: status, reason, progress, OpenAI-compatible base URL and API key prefix (never the key).",
 	}, func(ctx context.Context, _ *mcp.CallToolRequest, in modelNameInput) (*mcp.CallToolResult, apiclient.ModelResource, error) {
 		m, err := client.GetModel(ctx, in.Name)
 		if err != nil {
@@ -84,7 +84,7 @@ func registerModelTools(server *mcp.Server, client *apiclient.Client) {
 
 	addTool(server, &mcp.Tool{
 		Name:        "list_gpu_nodes",
-		Description: "List nodes reporting NVIDIA GPUs: driver, per-GPU VRAM and utilization, nvidia runtime state and fix, models running, and reserved and free GPU counts with holders.",
+		Description: "List nodes reporting NVIDIA GPUs: driver, per-GPU VRAM and utilization, runtime state and fix, running models, reserved and free GPUs.",
 	}, func(ctx context.Context, _ *mcp.CallToolRequest, _ struct{}) (*mcp.CallToolResult, []apiclient.GPUNodeResource, error) {
 		out, err := client.ListGPUNodes(ctx)
 		if err != nil {
@@ -115,7 +115,7 @@ func registerModelTools(server *mcp.Server, client *apiclient.Client) {
 
 	addTool(server, &mcp.Tool{
 		Name:        "deploy_model",
-		Description: "Deploy a model container on a GPU node. Asynchronous: watch get_model until ModelLoaded. Returns the OpenAI compatible base URL and a one time API key.",
+		Description: "Deploy a model container on a GPU node. Async: watch get_model until ModelLoaded. Returns the OpenAI compatible base URL and a one time API key.",
 	}, func(ctx context.Context, _ *mcp.CallToolRequest, in deployModelInput) (*mcp.CallToolResult, apiclient.CreateModelResponse, error) {
 		out, err := client.CreateModel(ctx, apiclient.CreateModelRequest{
 			Name: in.Name, Engine: in.Engine, Model: in.Model, NodeID: in.NodeID, GPUCount: in.GPUCount,

@@ -22,7 +22,7 @@ func registerEnvironmentTools(server *mcp.Server, client *apiclient.Client) {
 
 	addTool(server, &mcp.Tool{
 		Name:        "preview_clone_environment",
-		Description: "What clone_environment would create: per app new name, image, uncopied domains, secret env names, task count, plus shared env keys. Creates nothing.",
+		Description: "What clone_environment would create: per app name, image, uncopied domains, secret env names, task count, shared env keys. Creates nothing.",
 	}, func(ctx context.Context, _ *mcp.CallToolRequest, in cloneEnvironmentPreviewInput) (*mcp.CallToolResult, apiclient.EnvironmentClonePreviewResource, error) {
 		preview, err := client.PreviewEnvironmentClone(ctx, in.EnvironmentID, in.NewEnvironmentName)
 		if err != nil {
@@ -33,7 +33,7 @@ func registerEnvironmentTools(server *mcp.Server, client *apiclient.Client) {
 
 	addTool(server, &mcp.Tool{
 		Name:        "clone_environment",
-		Description: "Clone an environment into the same project with a deployed copy of every app. Domains and host ports are not copied; secrets stay empty unless copy_secret_values is true. Asynchronous.",
+		Description: "Clone an environment into the same project with a copy of every app. Domains and host ports are not copied; secrets stay empty unless copy_secret_values. Async.",
 	}, func(ctx context.Context, _ *mcp.CallToolRequest, in cloneEnvironmentInput) (*mcp.CallToolResult, apiclient.EnvironmentCloneResultResource, error) {
 		result, err := client.CloneEnvironment(ctx, in.EnvironmentID, apiclient.EnvironmentCloneRequest{
 			NewEnvironmentName: in.NewEnvironmentName,
@@ -58,5 +58,5 @@ type cloneEnvironmentPreviewInput struct {
 type cloneEnvironmentInput struct {
 	EnvironmentID      string `json:"environment_id" jsonschema:"the source environment's id, from list_environments"`
 	NewEnvironmentName string `json:"new_environment_name" jsonschema:"name for the new environment"`
-	CopySecretValues   bool   `json:"copy_secret_values,omitempty" jsonschema:"true to also copy real secret values (per-app and shared) onto the clone; omit or false leaves every secret declared but unset, the safe default"`
+	CopySecretValues   bool   `json:"copy_secret_values,omitempty" jsonschema:"true copies real secret values (per-app and shared); default leaves secrets declared but unset"`
 }

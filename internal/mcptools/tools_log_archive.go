@@ -40,7 +40,7 @@ type archivedLogsInput struct {
 func registerLogArchiveTools(server *mcp.Server, client *apiclient.Client) {
 	addTool(server, &mcp.Tool{
 		Name:        "list_storage_destinations",
-		Description: "List connected storage destinations (S3 compatible or a node directory): name, kind, bucket, region, used bytes, quota, estimated cost and policy count. No credentials.",
+		Description: "List storage destinations (S3 compatible or node directory): name, kind, bucket, region, used bytes, quota, cost, policy count. No credentials.",
 	}, func(ctx context.Context, _ *mcp.CallToolRequest, _ struct{}) (*mcp.CallToolResult, []apiclient.StorageDestination, error) {
 		out, err := client.ListStorageDestinations(ctx)
 		if err != nil {
@@ -73,7 +73,7 @@ func registerLogArchiveTools(server *mcp.Server, client *apiclient.Client) {
 
 	addTool(server, &mcp.Tool{
 		Name:        "set_log_archive_policy",
-		Description: "Create or replace the log archive policy for one app (or all when app_name is omitted): ship node logs to storage on a schedule. Only new logs; use start_log_archive_dump for history.",
+		Description: "Create or replace the log archive policy for one app (all when app_name is omitted): ships new node logs to storage on a schedule. Use start_log_archive_dump for history.",
 	}, func(ctx context.Context, _ *mcp.CallToolRequest, in logArchivePolicyInput) (*mcp.CallToolResult, apiclient.LogArchivePolicy, error) {
 		out, err := client.SetLogArchivePolicy(ctx, apiclient.LogArchivePolicyRequest{
 			AppName: in.AppName, TargetID: in.TargetID, Interval: in.Interval, RetentionDays: in.RetentionDays, Enabled: in.Enabled,

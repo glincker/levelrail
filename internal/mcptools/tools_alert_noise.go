@@ -42,13 +42,13 @@ type alertHistoryInput struct {
 	Since   string `json:"since,omitempty" jsonschema:"RFC 3339 lower bound"`
 	Limit   int    `json:"limit,omitempty" jsonschema:"maximum entries, newest first (default 50)"`
 
-	IncludeChanges bool `json:"include_changes,omitempty" jsonschema:"attach what changed on the app before each firing (deploys, config, env key names, scaling), with the likely cause flagged"`
+	IncludeChanges bool `json:"include_changes,omitempty" jsonschema:"attach app changes before each firing (deploys, config, env keys, scaling) with the likely cause"`
 }
 
 func registerAlertNoiseTools(server *mcp.Server, client *apiclient.Client) {
 	addTool(server, &mcp.Tool{
 		Name:        "list_alert_silences",
-		Description: "List alert silences (active and pending; expired ones with include_expired). A silence keeps matching alerts evaluating and recorded in history but stops them notifying.",
+		Description: "List alert silences (active and pending; expired with include_expired). A silence still evaluates and records alerts but stops notifications.",
 	}, func(ctx context.Context, _ *mcp.CallToolRequest, in listSilencesInput) (*mcp.CallToolResult, []apiclient.SilenceResource, error) {
 		out, err := client.ListAlertSilences(ctx, in.IncludeExpired)
 		if err != nil {

@@ -34,18 +34,18 @@ const (
 type pagesInput struct {
 	Action  string            `json:"action" jsonschema:"create, deploy, domain_add, rollback, delete"`
 	Name    string            `json:"name,omitempty" jsonschema:"site name"`
-	Dir     string            `json:"dir,omitempty" jsonschema:"deploy: folder to publish"`
-	Files   map[string]string `json:"files,omitempty" jsonschema:"deploy: inline site, path to text"`
+	Dir     string            `json:"dir,omitempty" jsonschema:"deploy: folder"`
+	Files   map[string]string `json:"files,omitempty" jsonschema:"deploy: path to text"`
 	Domain  string            `json:"domain,omitempty"`
-	Deploy  string            `json:"deploy_id,omitempty" jsonschema:"rollback target, default previous"`
-	Confirm string            `json:"confirm,omitempty" jsonschema:"rollback and delete: equal to name"`
+	Deploy  string            `json:"deploy_id,omitempty" jsonschema:"rollback target"`
+	Confirm string            `json:"confirm,omitempty" jsonschema:"must equal name"`
 }
 
 type pagesReadInput struct {
 	Action string `json:"action" jsonschema:"list, show, checks, traffic, domain_status"`
 	Name   string `json:"name,omitempty"`
 	Domain string `json:"domain,omitempty"`
-	Window string `json:"window,omitempty" jsonschema:"24h or 7d"`
+	Window string `json:"window,omitempty"`
 }
 
 type pagesOutput struct {
@@ -68,14 +68,14 @@ func pagesEnvInt(key string, def int64) int64 {
 func registerPagesTools(server *mcp.Server, client *apiclient.Client) {
 	addTool(server, &mcp.Tool{
 		Name:        "pages",
-		Description: "Read Levelrail Pages static sites: list, show, checks, traffic, domain_status.",
+		Description: "Read Pages static sites.",
 	}, func(ctx context.Context, _ *mcp.CallToolRequest, in pagesReadInput) (*mcp.CallToolResult, pagesOutput, error) {
 		out, err := pagesRead(ctx, client, in)
 		return nil, out, err
 	})
 	addTool(server, &mcp.Tool{
 		Name:        "pages_manage",
-		Description: "Change Pages. deploy uploads dir or files (creates the site), waits, returns url.",
+		Description: "Change Pages; deploy publishes dir or files and returns the url.",
 	}, func(ctx context.Context, _ *mcp.CallToolRequest, in pagesInput) (*mcp.CallToolResult, pagesOutput, error) {
 		out, err := pagesWrite(ctx, client, in)
 		return nil, out, err

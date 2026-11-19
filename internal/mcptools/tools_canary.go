@@ -12,7 +12,7 @@ type canaryStartInput struct {
 	Name         string  `json:"name" jsonschema:"the app's name"`
 	Image        string  `json:"image" jsonschema:"image reference to run as the canary"`
 	Weight       int     `json:"weight,omitempty" jsonschema:"manual canary only: percent of traffic, 1-99. Omit when using stages"`
-	Stages       []int   `json:"stages,omitempty" jsonschema:"staged canary: ascending traffic percents such as [10,25,50,100]; the control plane advances them and rolls back on a breach"`
+	Stages       []int   `json:"stages,omitempty" jsonschema:"ascending traffic percents, e.g. [10,25,50,100]; advances and rolls back on a breach"`
 	Interval     string  `json:"interval,omitempty" jsonschema:"staged canary: how long each stage observes traffic, such as 5m"`
 	MaxErrorRate float64 `json:"max_error_rate,omitempty" jsonschema:"staged canary: roll back when the canary 5xx rate exceeds the stable release's by this fraction, 0.02 is two points"`
 	MaxP95Ratio  float64 `json:"max_p95_ratio,omitempty" jsonschema:"staged canary: roll back when the canary p95 latency exceeds this multiple of the stable release's"`
@@ -32,7 +32,7 @@ func registerCanaryTools(server *mcp.Server, client *apiclient.Client) {
 
 	addTool(server, &mcp.Tool{
 		Name:        "start_canary",
-		Description: "Run a new image beside an app with a share of traffic. With stages it steps up and rolls back on an error rate or p95 breach. One per app, single-replica image apps only.",
+		Description: "Run a new image beside an app with a share of traffic. With stages it steps up and rolls back on an error rate or p95 breach. One per app, single-replica image apps.",
 	}, func(ctx context.Context, _ *mcp.CallToolRequest, in canaryStartInput) (*mcp.CallToolResult, apiclient.CanaryResource, error) {
 		out, err := client.StartCanaryWith(ctx, in.Name, apiclient.CanaryStartRequest{
 			Image: in.Image, Weight: in.Weight, Stages: in.Stages, Interval: in.Interval,

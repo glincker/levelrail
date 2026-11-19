@@ -48,7 +48,7 @@ func registerAppMetricsTools(server *mcp.Server, client *apiclient.Client) {
 
 type appMetricsInput struct {
 	Name   string `json:"name" jsonschema:"the app's name"`
-	Metric string `json:"metric" jsonschema:"metric key to query, e.g. cpu_percent, memory_usage_bytes, memory_limit_bytes, network_rx_bytes, network_tx_bytes, disk_read_bytes, disk_write_bytes"`
+	Metric string `json:"metric" jsonschema:"metric key, e.g. cpu_percent, memory_usage_bytes, memory_limit_bytes, network_rx_bytes, disk_read_bytes"`
 	Since  string `json:"since,omitempty" jsonschema:"how far back to query, e.g. '1h', '30m'; default 1h"`
 	Step   string `json:"step,omitempty" jsonschema:"aggregation bucket width, e.g. '60s'; omitted returns raw unaggregated samples"`
 }

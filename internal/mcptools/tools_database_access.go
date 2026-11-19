@@ -86,7 +86,7 @@ func registerDatabaseAccessTools(server *mcp.Server, client *apiclient.Client) {
 
 	addTool(server, &mcp.Tool{
 		Name:        "get_database_reachability",
-		Description: "Explain how a managed database can be reached: verdict, networks, connecting apps, published port and exposure, allowed sources with drift, network scope, TLS.",
+		Description: "Explain how a managed database can be reached: verdict, networks, apps, published port, exposure, allowed sources with drift, scope, TLS.",
 	}, func(ctx context.Context, _ *mcp.CallToolRequest, in databaseNameInput) (*mcp.CallToolResult, reachabilityOutput, error) {
 		n, err := client.GetDatabaseNetwork(ctx, in.Name)
 		if err != nil {
@@ -97,7 +97,7 @@ func registerDatabaseAccessTools(server *mcp.Server, client *apiclient.Client) {
 
 	addTool(server, &mcp.Tool{
 		Name:        "get_database_password_rotation",
-		Description: "When a managed database's owner password was last changed, its age, rotation state, automatic schedule and the apps a rotation would restart (never the password).",
+		Description: "A managed database's owner password age, rotation state, schedule and the apps a rotation would restart (never the password).",
 	}, func(ctx context.Context, _ *mcp.CallToolRequest, in databaseNameInput) (*mcp.CallToolResult, passwordRotationOutput, error) {
 		r, err := client.GetDatabasePasswordRotation(ctx, in.Name)
 		if err != nil {

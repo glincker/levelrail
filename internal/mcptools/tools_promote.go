@@ -22,7 +22,7 @@ func registerPromoteTools(server *mcp.Server, client *apiclient.Client) {
 
 	addTool(server, &mcp.Tool{
 		Name:        "promote_app",
-		Description: "Point a sibling app (target, or the sole app in the destination environment) at this app's image and redeploy. Asynchronous: watch get_app_status. A protected destination needs confirm and waits for approve_deploy_approval.",
+		Description: "Point a sibling app (target, or the sole app in the destination environment) at this app's image and redeploy. Async. A protected destination needs confirm and waits for approve_deploy_approval.",
 	}, func(ctx context.Context, _ *mcp.CallToolRequest, in promoteAppInput) (*mcp.CallToolResult, apiclient.DeployTriggerResult, error) {
 		result, err := client.PromoteApp(ctx, in.Name, apiclient.PromoteAppRequest{To: in.To, Target: in.Target, Confirm: in.Confirm, IncludeEnv: in.IncludeEnv, Force: in.Force})
 		if err != nil {

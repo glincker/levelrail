@@ -62,7 +62,7 @@ func registerReleaseTools(server *mcp.Server, client *apiclient.Client) {
 
 	addTool(server, &mcp.Tool{
 		Name:        "list_upgrade_history",
-		Description: "Recorded control plane upgrades, rollbacks and installs with initiator, schema change and acknowledgement. Read-only: acknowledging is a dashboard or CLI action.",
+		Description: "Recorded control plane upgrades, rollbacks and installs with initiator, schema change and acknowledgement. Acknowledging is a dashboard or CLI action.",
 	}, func(ctx context.Context, _ *mcp.CallToolRequest, _ struct{}) (*mcp.CallToolResult, map[string]any, error) {
 		res, err := client.GetUpgradeHistory(ctx)
 		if err != nil {

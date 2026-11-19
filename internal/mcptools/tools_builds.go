@@ -36,7 +36,7 @@ type pruneBuildCacheInput struct {
 func registerBuildTools(server *mcp.Server, client *apiclient.Client) {
 	addTool(server, &mcp.Tool{
 		Name:        "list_builds",
-		Description: "List the build queue and history across apps with duration, cache hit ratio, image size change, node and platform, or with id one build and its failure hint.",
+		Description: "List the build queue and history across apps (duration, cache hit ratio, image size change, node, platform), or one build by id with its failure hint.",
 	}, func(ctx context.Context, _ *mcp.CallToolRequest, in listBuildsInput) (*mcp.CallToolResult, listBuildsOutput, error) {
 		if in.ID != "" {
 			b, err := client.GetBuild(ctx, in.ID)

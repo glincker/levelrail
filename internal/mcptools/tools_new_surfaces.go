@@ -128,7 +128,7 @@ func registerNewSurfaceTools(server *mcp.Server, client *apiclient.Client) {
 
 	addTool(server, &mcp.Tool{
 		Name:        "apply_image_gc",
-		Description: "Remove images that image retention marks as candidates (run preview_image_gc first). Needs a root token, like the REST API; rollback targets stay protected.",
+		Description: "Remove images retention marks as candidates (run preview_image_gc first). Needs a root token; rollback targets stay protected.",
 	}, func(ctx context.Context, _ *mcp.CallToolRequest, in imageGCInput) (*mcp.CallToolResult, apiclient.ImageGCResource, error) {
 		out, err := client.RunImageGC(ctx, apiclient.ImageGCRequest{Node: in.Node, KeepPerApp: in.KeepPerApp, MinAgeHrs: in.MinAgeHrs})
 		if err != nil {
@@ -206,7 +206,7 @@ func registerNewSurfaceTools(server *mcp.Server, client *apiclient.Client) {
 
 	addTool(server, &mcp.Tool{
 		Name:        "create_storage_bucket",
-		Description: "Create a bucket on a storage destination, optionally binding it to an app (injects S3 env vars on the next deploy). Returns env key names, never values.",
+		Description: "Create a bucket on a storage destination, optionally bound to an app (S3 env vars on next deploy). Returns env key names, never values.",
 	}, func(ctx context.Context, _ *mcp.CallToolRequest, in createBucketInput) (*mcp.CallToolResult, apiclient.StorageBucket, error) {
 		b, err := client.CreateStorageBucket(ctx, apiclient.CreateStorageBucketRequest{Name: in.Name, TargetID: in.TargetID, AppName: in.AppName, EnvPrefix: in.EnvPrefix, Public: in.Public, QuotaBytes: in.QuotaBytes, LifecycleDays: in.LifecycleDays})
 		if err != nil {

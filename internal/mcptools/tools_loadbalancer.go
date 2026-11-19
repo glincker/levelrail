@@ -10,7 +10,7 @@ import (
 
 type setLoadBalancerInput struct {
 	Name   string                       `json:"name" jsonschema:"the app's name"`
-	Config apiclient.LoadBalancerConfig `json:"config" jsonschema:"the complete load balancer config, replacing any existing one. algorithm is one of round_robin, least_conn, ip_hash, client_ip_hash, uri_hash, cookie, weighted; durations like 5s"`
+	Config apiclient.LoadBalancerConfig `json:"config" jsonschema:"complete config, replacing any existing one. algorithm: round_robin, least_conn, ip_hash, client_ip_hash, uri_hash, cookie, weighted; durations like 5s"`
 }
 
 type exportLoadBalancerInput struct {
@@ -48,7 +48,7 @@ func registerLoadBalancerTools(server *mcp.Server, client *apiclient.Client) {
 
 	addTool(server, &mcp.Tool{
 		Name:        "get_app_load_balancer",
-		Description: "Get an app's load balancer config: algorithm, weights, health checks, retries, drain and slow start, rate limit, upstream TLS. Unconfigured means a single upstream.",
+		Description: "Get an app's load balancer config: algorithm, weights, health checks, retries, drain, slow start, rate limit, upstream TLS. Unconfigured means one upstream.",
 	}, func(ctx context.Context, _ *mcp.CallToolRequest, in appNameInput) (*mcp.CallToolResult, apiclient.LoadBalancerResource, error) {
 		res, err := client.GetLoadBalancer(ctx, in.Name)
 		if err != nil {

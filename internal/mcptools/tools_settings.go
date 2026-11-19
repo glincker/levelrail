@@ -29,7 +29,7 @@ func registerSettingsTools(server *mcp.Server, client *apiclient.Client) {
 
 	addTool(server, &mcp.Tool{
 		Name:        "get_email_settings",
-		Description: "Outbound email settings: backend, non-secret fields and configured providers (one primary, at most one backup). Secrets return only as *_set booleans.",
+		Description: "Outbound email settings: backend, non-secret fields, providers (one primary, at most one backup). Secrets return only as *_set booleans.",
 	}, func(ctx context.Context, _ *mcp.CallToolRequest, _ struct{}) (*mcp.CallToolResult, emailSettingsWithProviders, error) {
 		settings, err := client.GetEmailSettings(ctx)
 		if err != nil {

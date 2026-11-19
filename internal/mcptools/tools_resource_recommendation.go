@@ -11,7 +11,7 @@ import (
 func registerResourceRecommendationTools(server *mcp.Server, client *apiclient.Client) {
 	addTool(server, &mcp.Tool{
 		Name:        "get_resource_recommendation",
-		Description: "Suggest memory and CPU limits for an app from its own p95/p99 usage and current limits, weighing OOM kills heavily. Deterministic, no external model. Read only.",
+		Description: "Suggest memory and CPU limits from an app's p95/p99 usage and current limits, weighing OOM kills heavily. Deterministic.",
 	}, func(ctx context.Context, _ *mcp.CallToolRequest, in resourceRecommendationInput) (*mcp.CallToolResult, apiclient.ResourceRecommendationResource, error) {
 		result, err := client.GetAppResourceRecommendation(ctx, in.Name)
 		if err != nil {
