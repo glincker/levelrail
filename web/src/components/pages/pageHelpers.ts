@@ -1,3 +1,4 @@
+import type { PagesSiteDetail } from '../../queries/pagesSites'
 import {
   ZIP_MAX_BYTES,
   ZIP_MAX_ENTRIES,
@@ -79,4 +80,19 @@ export function splitCells(counts: readonly number[], cells: number): number[] {
     left--
   }
   return out
+}
+
+export type SiteState = 'live' | 'publishing' | 'notPublished'
+
+const BUILDING = new Set(['running', 'queued', 'pending', 'building'])
+
+/** Derived only from the site detail so the dot never claims more than the API said. */
+export function siteState(
+  detail: PagesSiteDetail | undefined,
+): SiteState | null {
+  if (!detail) return null
+  if (detail.latest_deploy && BUILDING.has(detail.latest_deploy.status)) {
+    return 'publishing'
+  }
+  return detail.published ? 'live' : 'notPublished'
 }

@@ -4,13 +4,18 @@ import { useTranslation } from 'react-i18next'
 import { LayoutTemplateGlassIcon } from '@thesvg/ui-react'
 import { PageTemplate } from '@/components/shell/PageTemplate'
 import { Button } from '@/components/ui/button'
+import {
+  Collapsible,
+  CollapsiblePanel,
+  CollapsibleTrigger,
+} from '@/components/ui/collapsible'
 import { ConfirmDialog } from '@/components/ui/confirm-dialog'
 import { Skeleton } from '@/components/ui/skeleton'
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs'
 import { DeployAttemptsList } from '../DeployAttemptsList'
 import { PageDropTarget } from './PageDropTarget'
 import { RollbackCard } from './RollbackCard'
-import { SiteHeaderMeta } from './SiteHeaderMeta'
+import { SiteHero } from './SiteHero'
 import { PageDomains } from './PageDomains'
 import { RedirectHint } from './RedirectHint'
 import { SitePublisher } from '../dropdeploy/SitePublisher'
@@ -22,22 +27,13 @@ import { useApp, useDeleteApp } from '../../queries/apps'
 // Cards load on demand so the detail route keeps its first-load budget.
 const PageOverview = lazy(() => import('./PageOverview'))
 
-function Deployments({ name }: Readonly<{ name: string }>) {
-  const { t } = useTranslation('pagesSites')
+function Deployments({
+  name,
+  uploading,
+}: Readonly<{ name: string; uploading: boolean }>) {
   const { attempts, conditions } = useDeployProgress(name)
-  const [uploading, setUploading] = useState(false)
   return (
     <div className="space-y-3">
-      <div className="flex flex-wrap items-center justify-between gap-2">
-        <Button
-          size="sm"
-          variant="outline"
-          aria-expanded={uploading}
-          onClick={() => setUploading((v) => !v)}
-        >
-          {uploading ? t('detail.hidePublish') : t('detail.publish')}
-        </Button>
-      </div>
       {uploading ? (
         <div className="rounded-lg border border-border bg-card p-3">
           <SitePublisher appName={name} />
@@ -58,20 +54,15 @@ function Domains({ name }: Readonly<{ name: string }>) {
   return <PageDomains app={app} />
 }
 
-function Settings({ name }: Readonly<{ name: string }>) {
+function Settings({
+  name,
+  onDelete,
+}: Readonly<{ name: string; onDelete: () => void }>) {
   const { t } = useTranslation('pagesSites')
-  const navigate = useNavigate()
-  const del = useDeleteApp()
-  const [confirming, setConfirming] = useState(false)
   return (
     <div className="space-y-2">
-      <div className="flex flex-wrap items-center justify-between gap-3 rounded-lg border border-border bg-card px-4 py-3">
-        <div>
-          <p className="text-sm font-medium">{t('settings.app')}</p>
-          <p className="text-xs text-muted-foreground">
-            {t('settings.appHint')}
-          </p>
-        </div>
+      <div className="flex flex-wrap items-center justify-between gap-3 rounded-lg border border-border bg-card px-4 py-2.5">
+        <p className="text-sm font-medium">{t('settings.app')}</p>
         <Button
           size="sm"
           variant="outline"
@@ -80,38 +71,19 @@ function Settings({ name }: Readonly<{ name: string }>) {
           {t('settings.openApp')}
         </Button>
       </div>
-      <div className="flex flex-wrap items-center justify-between gap-3 rounded-lg border border-border bg-card px-4 py-3">
-        <div>
-          <p className="text-sm font-medium">{t('settings.danger')}</p>
-          <p className="text-xs text-muted-foreground">
-            {t('settings.dangerHint')}
-          </p>
-        </div>
-        <Button
-          size="sm"
-          variant="destructive"
-          onClick={() => setConfirming(true)}
-        >
-          {t('settings.delete')}
-        </Button>
-      </div>
-      <ConfirmDialog
-        open={confirming}
-        onOpenChange={setConfirming}
-        title={t('settings.confirmTitle', { name })}
-        description={t('settings.confirmBody')}
-        confirmLabel={t('settings.delete')}
-        pendingLabel={t('settings.deleting')}
-        tone="destructive"
-        requireTyped={name}
-        pending={del.isPending}
-        error={del.error?.message ?? null}
-        onConfirm={() =>
-          del.mutate(name, {
-            onSuccess: () => void navigate({ to: '/pages' }),
-          })
-        }
-      />
+      <Collapsible className="rounded-lg border border-tone-danger/30">
+        <CollapsibleTrigger className="px-4 py-2.5 text-sm font-medium text-tone-danger">
+          {t('settings.dangerZone')}
+        </CollapsibleTrigger>
+        <CollapsiblePanel>
+          <div className="flex flex-wrap items-center justify-between gap-3 border-t border-tone-danger/30 px-4 py-2.5">
+            <p className="text-sm">{t('settings.dangerHint')}</p>
+            <Button size="sm" variant="destructive" onClick={onDelete}>
+              {t('settings.delete')}
+            </Button>
+          </div>
+        </CollapsiblePanel>
+      </Collapsible>
     </div>
   )
 }
@@ -130,8 +102,10 @@ export function PageDetail({
   onAddRedirect: (path: string) => void
 }>) {
   const { t } = useTranslation('pagesSites')
-  const { data: app } = useApp(name)
-  const domain = app.domains?.[0]
+  const navigate = useNavigate()
+  const del = useDeleteApp()
+  const [confirming, setConfirming] = useState(false)
+  const [uploading, setUploading] = useState(false)
   const fallback = <Skeleton className="h-24 w-full" />
   return (
     <PageTemplate
@@ -146,22 +120,16 @@ export function PageDetail({
         </Link>
       }
       width="wide"
-      actions={
-        domain ? (
-          <Button
-            size="sm"
-            variant="outline"
-            render={
-              <a href={`https://${domain}`} target="_blank" rel="noreferrer" />
-            }
-          >
-            {t('detail.visit')}
-          </Button>
-        ) : null
-      }
     >
       <PageDropTarget name={name}>
-        <SiteHeaderMeta name={name} />
+        <SiteHero
+          name={name}
+          onPublish={() => {
+            setUploading(true)
+            onTabChange('deployments')
+          }}
+          onDelete={() => setConfirming(true)}
+        />
         <Tabs
           value={tab}
           onValueChange={(v) => {
@@ -183,7 +151,7 @@ export function PageDetail({
           </TabsContent>
           <TabsContent value="deployments">
             <Suspense fallback={fallback}>
-              <Deployments name={name} />
+              <Deployments name={name} uploading={uploading} />
             </Suspense>
           </TabsContent>
           <TabsContent value="domains">
@@ -198,10 +166,27 @@ export function PageDetail({
             </Suspense>
           </TabsContent>
           <TabsContent value="settings">
-            <Settings name={name} />
+            <Settings name={name} onDelete={() => setConfirming(true)} />
           </TabsContent>
         </Tabs>
       </PageDropTarget>
+      <ConfirmDialog
+        open={confirming}
+        onOpenChange={setConfirming}
+        title={t('settings.confirmTitle', { name })}
+        description={t('settings.confirmBody')}
+        confirmLabel={t('settings.delete')}
+        pendingLabel={t('settings.deleting')}
+        tone="destructive"
+        requireTyped={name}
+        pending={del.isPending}
+        error={del.error?.message ?? null}
+        onConfirm={() =>
+          del.mutate(name, {
+            onSuccess: () => void navigate({ to: '/pages' }),
+          })
+        }
+      />
     </PageTemplate>
   )
 }

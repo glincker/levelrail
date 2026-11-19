@@ -1,6 +1,6 @@
 {
   "title": "Pages",
-  "description": "Static sites served straight from the control plane, no container.",
+  "description": "Static sites served straight from the control plane.",
   "newSite": "New site",
   "empty": {
     "title": "No sites yet",
@@ -74,7 +74,8 @@
     "delete": "Delete",
     "deleting": "Deleting...",
     "confirmTitle": "Delete {{name}}?",
-    "confirmBody": "The site stops serving and cannot be restored."
+    "confirmBody": "The site stops serving and cannot be restored.",
+    "dangerZone": "Danger zone"
   },
   "domains": {
     "label": "Connect a domain",
@@ -197,16 +198,38 @@
     "visitors": "Visitors",
     "bandwidth": "Bandwidth",
     "statusLine": "2xx {{ok}}, 3xx {{redirects}}, 4xx {{clientErrors}}, 5xx {{serverErrors}}",
-    "topPaths": "Top paths",
-    "top404": "Top missing paths",
     "none": "Nothing yet.",
     "addRedirect": "Add a redirect",
     "unavailable": "Traffic is not available: this server has no access log source for sites.",
     "failed": "Could not load traffic.",
-    "partial": "Partial data."
+    "partial": "Partial data.",
+    "topPages": "Top pages",
+    "brokenLinks": "Broken links",
+    "assets": "Assets: {{count}} requests, {{size}}",
+    "assetsNote": "Scripts, styles, images and fonts are counted here, not listed.",
+    "probes": "Probes and scans: {{count}}",
+    "probesList": "Scan-like requests that found nothing",
+    "show": "Show",
+    "hide": "Hide"
   },
   "redirect": {
     "hint": "Add this line to your _redirects file and publish:",
     "copy": "Copy line"
+  },
+  "hero": {
+    "more": "More actions",
+    "status": {
+      "live": "Live",
+      "publishing": "Publishing",
+      "notPublished": "Not published"
+    }
+  },
+  "preview": {
+    "title": "Preview",
+    "device": "Device",
+    "desktop": "Desktop",
+    "mobile": "Mobile",
+    "unavailable": "Preview unavailable",
+    "frame": "Live preview of {{name}}"
   }
 }

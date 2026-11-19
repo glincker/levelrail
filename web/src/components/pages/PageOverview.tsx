@@ -1,4 +1,5 @@
 import { SiteChecksCard } from './SiteChecksCard'
+import { SitePreview } from './SitePreview'
 import { SiteTrafficCard } from './SiteTrafficCard'
 
 export default function PageOverview({
@@ -6,9 +7,12 @@ export default function PageOverview({
   onAddRedirect,
 }: Readonly<{ name: string; onAddRedirect: (path: string) => void }>) {
   return (
-    <div className="grid gap-3 lg:grid-cols-2">
+    <div className="grid gap-3 lg:grid-cols-[22rem_1fr]">
+      <SitePreview name={name} />
       <SiteChecksCard name={name} />
-      <SiteTrafficCard name={name} onAddRedirect={onAddRedirect} />
+      <div className="lg:col-span-2">
+        <SiteTrafficCard name={name} onAddRedirect={onAddRedirect} />
+      </div>
     </div>
   )
 }

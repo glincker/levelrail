@@ -1,8 +1,13 @@
-import { useState } from 'react'
+import { useState, type ReactNode } from 'react'
 import { useQuery } from '@tanstack/react-query'
 import { useTranslation } from 'react-i18next'
 import { Alert, AlertDescription } from '@/components/ui/alert'
 import { Button } from '@/components/ui/button'
+import {
+  Collapsible,
+  CollapsiblePanel,
+  CollapsibleTrigger,
+} from '@/components/ui/collapsible'
 import { ProgressBar } from '@/components/ui/progress-ring'
 import { SegmentedControl } from '@/components/ui/segmented-control'
 import { Skeleton } from '@/components/ui/skeleton'
@@ -20,9 +25,9 @@ const nf = new Intl.NumberFormat()
 
 function Stat({ label, value }: Readonly<{ label: string; value: string }>) {
   return (
-    <div>
+    <div className="rounded-md bg-muted/40 px-3 py-2">
       <dt className="text-xs text-muted-foreground">{label}</dt>
-      <dd className="text-base font-semibold tabular-nums">{value}</dd>
+      <dd className="text-lg font-semibold tabular-nums">{value}</dd>
     </div>
   )
 }
@@ -107,6 +112,29 @@ function TopList({
   )
 }
 
+/** Quiet one-line summary that expands on demand; collapsed by default so noise stays out of view. */
+function Fold({
+  summary,
+  children,
+}: Readonly<{ summary: string; children: ReactNode }>) {
+  const { t } = useTranslation('pagesSites')
+  const [open, setOpen] = useState(false)
+  return (
+    <Collapsible open={open} onOpenChange={setOpen}>
+      <div className="flex items-center justify-between gap-2 text-xs text-muted-foreground">
+        <span className="tabular-nums">{summary}</span>
+        <CollapsibleTrigger
+          render={<Button size="xs" variant="ghost" />}
+          className="w-auto"
+        >
+          {open ? t('traffic.hide') : t('traffic.show')}
+        </CollapsibleTrigger>
+      </div>
+      <CollapsiblePanel className="pt-1.5">{children}</CollapsiblePanel>
+    </Collapsible>
+  )
+}
+
 export function SiteTrafficCard({
   name,
   onAddRedirect,
@@ -157,13 +185,40 @@ export function SiteTrafficCard({
           </dl>
           <StatusSplit status={d.status} />
           <div className="grid gap-4 sm:grid-cols-2">
-            <TopList title={t('traffic.topPaths')} rows={d.top_paths} />
             <TopList
-              title={t('traffic.top404')}
-              rows={d.top_404_paths}
+              title={t('traffic.topPages')}
+              rows={d.top_pages ?? d.top_paths}
+            />
+            <TopList
+              title={t('traffic.brokenLinks')}
+              rows={d.broken_links ?? d.top_404_paths}
               action={onAddRedirect}
             />
           </div>
+          {d.assets ? (
+            <Fold
+              summary={t('traffic.assets', {
+                count: d.assets.requests,
+                size: formatSize(d.assets.bytes),
+              })}
+            >
+              <p className="text-xs text-muted-foreground">
+                {t('traffic.assetsNote')}
+              </p>
+            </Fold>
+          ) : null}
+          {d.probe_requests && d.probe_requests.length > 0 ? (
+            <Fold
+              summary={t('traffic.probes', {
+                count: d.probe_requests.reduce((n, r) => n + r.count, 0),
+              })}
+            >
+              <TopList
+                title={t('traffic.probesList')}
+                rows={d.probe_requests}
+              />
+            </Fold>
+          ) : null}
           {d.partial ? (
             <p className="text-xs text-muted-foreground">
               {t('traffic.partial')}

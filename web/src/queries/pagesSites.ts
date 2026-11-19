@@ -213,6 +213,11 @@ export interface SiteTraffic {
   status: { '2xx': number; '3xx': number; '4xx': number; '5xx': number }
   top_paths: TrafficCount[]
   top_404_paths: TrafficCount[]
+  /** Documents only, normalised; older servers omit these four. */
+  top_pages?: TrafficCount[]
+  assets?: { requests: number; bytes: number }
+  broken_links?: TrafficCount[]
+  probe_requests?: TrafficCount[]
   partial: boolean
   partial_notes?: string[]
 }
