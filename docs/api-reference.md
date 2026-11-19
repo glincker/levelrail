@@ -1399,6 +1399,7 @@ Endpoints for:
 | GET | /api/v1/registry/tags | AbilityRead | handleListRegistryTags |
 | GET | /api/v1/dockerhub/search | AbilityRead | handleDockerHubSearch |
 | GET | /api/v1/dockerhub/repositories/{namespace}/{repo}/tags | AbilityRead | handleDockerHubTags |
+| GET | /api/v1/registry/token | Public | handleRegistryToken |
 
 ## Git Provider Apps
 

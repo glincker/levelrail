@@ -109,6 +109,7 @@ var publicRoutes = map[string]string{ //nolint:gosec // route paths, not credent
 	"GET /api/v1/vitals/snippet.js":                  "static browser script for web vitals collection, no data, cacheable",
 	"POST /api/v1/vitals/{app}":                      "web vitals beacon authenticated by the per-app public key in the body, rate limited per client address and, after the key check, per app, size capped, uniform 404 on any mismatch, stores only histogram counters",
 	"OPTIONS /api/v1/vitals/{app}":                   "CORS preflight for browser vitals beacons, answers headers only",
+	"GET /api/v1/registry/token":                     "registry token realm, the job-scoped push token in the basic-auth password is the credential, rate limited per IP, bare 401 on any failure, grants one repository only",
 	"GET /api/v1/hooks/wake":                         "called by the ingress wake route with a per-process secret header; any mismatch answers 404",
 	"POST /api/v1/webhooks/slack/interactions":       "authenticated by the X-Slack-Signature HMAC of the channel's own interactive secret",
 	"POST /api/v1/webhooks/discord/interactions":     "authenticated by the Ed25519 signature of the channel's own Discord application public key",

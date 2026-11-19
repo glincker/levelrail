@@ -275,6 +275,9 @@ func rootHandler(d rootDeps) (http.Handler, *api.Router) {
 		// The built-in registry's generated password goes through the
 		// same secretsManager, same nil-interface hazard.
 		opts = append(opts, api.WithRegistrySecrets(secretsManager))
+		if rtx := sharedRegistryTransfer(); rtx != nil {
+			opts = append(opts, api.WithRegistryTokenService(rtx.tokens))
+		}
 		// The built-in registry catalog picker resolves the same
 		// generated password server-side to authenticate its own upstream
 		// query, same nil-interface hazard.

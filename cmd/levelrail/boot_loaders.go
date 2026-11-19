@@ -27,6 +27,7 @@ import (
 	"github.com/GLINCKER/levelrail/internal/pkgregistry"
 	"github.com/GLINCKER/levelrail/internal/reconcile"
 	registryreconcile "github.com/GLINCKER/levelrail/internal/reconcile/registry"
+	"github.com/GLINCKER/levelrail/internal/runtimesettings"
 	"github.com/GLINCKER/levelrail/internal/secrets"
 	"github.com/GLINCKER/levelrail/internal/spec"
 	"github.com/GLINCKER/levelrail/internal/staticroutes"
@@ -249,6 +250,7 @@ func loadBuilder(ctx context.Context, logger *slog.Logger, db *store.DB, telemet
 	var limiter *build.Limiter
 	router := build.NewRouter(buildClient, buildRunnerNodeSource(db, agentRegistry, hostReports), agent.NewBuildDispatcher(agentRegistry), build.WithRouterLogger(logger),
 		build.WithRouterQuery(buildRunnerQuery(db)),
+		build.WithRouterTransfer(newRegistryTransfer(logger).config(db, runtimesettings.New(db, os.LookupEnv), rawDockerCli, logger)),
 		build.WithRouterLoad(func() []build.NodeLoad {
 			if limiter == nil {
 				return nil

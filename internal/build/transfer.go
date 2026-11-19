@@ -1,6 +1,7 @@
 package build
 
 import (
+	"bytes"
 	"context"
 	"crypto/hmac"
 	"crypto/rand"
@@ -14,6 +15,7 @@ import (
 	"log/slog"
 	"regexp"
 	"strings"
+	"sync"
 	"time"
 
 	"github.com/docker/cli/cli/config/types"
@@ -61,7 +63,15 @@ const pushActionPush = "push"
 // pushUser is the fixed basic-auth user; the token is the password.
 const pushUser = "levelrail-job"
 
+// pushTokenTyp keeps these MACs from being confused with any other token on the same key.
+const pushTokenTyp = "levelrail-push"
+
+// ErrPushTokenRevoked means the job finished and the token no longer works.
+var ErrPushTokenRevoked = errors.New("build: push token was revoked")
+
 type pushClaims struct {
+	Typ   string `json:"typ"`
+	Aud   string `json:"aud"`
 	Repo  string `json:"r"`
 	Tag   string `json:"t"`
 	Act   string `json:"a"`
@@ -74,6 +84,9 @@ type pushClaims struct {
 type PushTokenIssuer struct {
 	key []byte
 	now func() time.Time
+	mu  sync.Mutex
+	// revoked maps a nonce to its expiry so the set stays small.
+	revoked map[string]int64
 }
 
 // NewPushTokenIssuer requires a key of at least 32 bytes.
@@ -81,7 +94,7 @@ func NewPushTokenIssuer(key []byte) (*PushTokenIssuer, error) {
 	if len(key) < 32 {
 		return nil, errors.New("build: push token key must be at least 32 bytes")
 	}
-	return &PushTokenIssuer{key: append([]byte(nil), key...), now: time.Now}, nil
+	return &PushTokenIssuer{key: append([]byte(nil), key...), now: time.Now, revoked: map[string]int64{}}, nil
 }
 
 func (i *PushTokenIssuer) mac(payload string) []byte {
@@ -99,7 +112,7 @@ func (i *PushTokenIssuer) Issue(repo, tag string, ttl time.Duration) (string, er
 	if _, err := rand.Read(nonce); err != nil {
 		return "", fmt.Errorf("build: push token nonce: %w", err)
 	}
-	raw, err := json.Marshal(pushClaims{Repo: repo, Tag: tag, Act: pushActionPush, Exp: i.now().Add(ttl).Unix(), Nonce: hex.EncodeToString(nonce)})
+	raw, err := json.Marshal(pushClaims{Typ: pushTokenTyp, Aud: pushTokenTyp, Repo: repo, Tag: tag, Act: pushActionPush, Exp: i.now().Add(ttl).Unix(), Nonce: hex.EncodeToString(nonce)})
 	if err != nil {
 		return "", err
 	}
@@ -107,31 +120,77 @@ func (i *PushTokenIssuer) Issue(repo, tag string, ttl time.Duration) (string, er
 	return payload + "." + base64.RawURLEncoding.EncodeToString(i.mac(payload)), nil
 }
 
-// Verify accepts the token only for push on exactly repo and tag, before expiry.
-func (i *PushTokenIssuer) Verify(token, repo, tag, action string) error {
+// parse checks signature, type, expiry and revocation, in that order.
+func (i *PushTokenIssuer) parse(token string) (pushClaims, error) {
+	var c pushClaims
 	payload, sig, ok := strings.Cut(token, ".")
 	if !ok {
-		return ErrPushTokenInvalid
+		return c, ErrPushTokenInvalid
 	}
-	want, err := base64.RawURLEncoding.DecodeString(sig)
+	want, err := base64.RawURLEncoding.Strict().DecodeString(sig)
 	if err != nil || subtle.ConstantTimeCompare(want, i.mac(payload)) != 1 {
-		return ErrPushTokenInvalid
+		return c, ErrPushTokenInvalid
 	}
-	raw, err := base64.RawURLEncoding.DecodeString(payload)
+	raw, err := base64.RawURLEncoding.Strict().DecodeString(payload)
 	if err != nil {
-		return ErrPushTokenInvalid
+		return c, ErrPushTokenInvalid
 	}
-	var c pushClaims
-	if err := json.Unmarshal(raw, &c); err != nil {
-		return ErrPushTokenInvalid
+	dec := json.NewDecoder(bytes.NewReader(raw))
+	dec.DisallowUnknownFields()
+	if err := dec.Decode(&c); err != nil || c.Typ != pushTokenTyp || c.Aud != pushTokenTyp {
+		return pushClaims{}, ErrPushTokenInvalid
 	}
 	if i.now().Unix() >= c.Exp {
-		return ErrPushTokenExpired
+		return pushClaims{}, ErrPushTokenExpired
+	}
+	i.mu.Lock()
+	_, gone := i.revoked[c.Nonce]
+	i.mu.Unlock()
+	if gone {
+		return pushClaims{}, ErrPushTokenRevoked
+	}
+	return c, nil
+}
+
+// Verify accepts the token only for push on exactly repo and tag, before expiry.
+func (i *PushTokenIssuer) Verify(token, repo, tag, action string) error {
+	c, err := i.parse(token)
+	if err != nil {
+		return err
 	}
 	if action != pushActionPush || c.Act != pushActionPush || c.Repo != repo || c.Tag != tag {
 		return ErrPushTokenScope
 	}
 	return nil
+}
+
+// VerifyRepo is Verify for registry scopes, which name a repository but never a tag.
+func (i *PushTokenIssuer) VerifyRepo(token, repo string) (time.Time, error) {
+	c, err := i.parse(token)
+	if err != nil {
+		return time.Time{}, err
+	}
+	if c.Act != pushActionPush || c.Repo != repo {
+		return time.Time{}, ErrPushTokenScope
+	}
+	return time.Unix(c.Exp, 0), nil
+}
+
+// Revoke ends a token's life when its job finishes; unknown tokens are ignored.
+func (i *PushTokenIssuer) Revoke(token string) {
+	c, err := i.parse(token)
+	if err != nil {
+		return
+	}
+	i.mu.Lock()
+	defer i.mu.Unlock()
+	now := i.now().Unix()
+	for n, exp := range i.revoked {
+		if exp <= now {
+			delete(i.revoked, n)
+		}
+	}
+	i.revoked[c.Nonce] = c.Exp
 }
 
 // PushGrant tells a builder where to push and with what credential.
@@ -165,29 +224,34 @@ func SplitRef(ref string) (repo, tag string, err error) {
 
 var digestPattern = regexp.MustCompile(`^sha256:[a-f0-9]{64}$`)
 
-// DigestVerifier asks the control plane's registry whether a manifest exists.
+// DigestVerifier asks the control plane's registry which digest a tag points at.
 type DigestVerifier interface {
-	ManifestExists(ctx context.Context, repo, digest string) (bool, error)
+	// ManifestDigest returns the registry's Docker-Content-Digest, or "" when the manifest is absent.
+	ManifestDigest(ctx context.Context, repo, reference string) (string, error)
 }
 
 // ErrDigestMissing means the builder reported a digest the registry does not hold.
 var ErrDigestMissing = errors.New("build: reported image digest is not in the registry")
 
-// VerifyPushedDigest fails closed: a malformed digest or a registry error is a failed build.
+// VerifyPushedDigest fails closed: the registry's answer for the tag must equal
+// the builder's digest, so a builder cannot name a digest it did not push.
 func VerifyPushedDigest(ctx context.Context, v DigestVerifier, ref, digest string) error {
 	if !digestPattern.MatchString(digest) {
 		return fmt.Errorf("build: builder reported a malformed digest %q", digest)
 	}
-	repo, _, err := SplitRef(ref)
+	repo, tag, err := SplitRef(ref)
 	if err != nil {
 		return err
 	}
-	ok, err := v.ManifestExists(ctx, repo, digest)
+	got, err := v.ManifestDigest(ctx, repo, tag)
 	if err != nil {
 		return fmt.Errorf("build: verify pushed digest: %w", err)
 	}
-	if !ok {
+	if got == "" {
 		return ErrDigestMissing
+	}
+	if got != digest {
+		return fmt.Errorf("build: registry digest does not match the builder's report: %w", ErrDigestMissing)
 	}
 	return nil
 }

@@ -16,6 +16,8 @@ func (rt *Router) registerPlatformRoutes(mux *http.ServeMux) {
 	rt.registerServiceRuntimeRoutes(mux)
 	rt.registerSettingsRoutes(mux)
 	rt.registerMailRoutes(mux)
+	// Registry token realm for build image transfer, authenticated only by a job-scoped push token. Answers a bare 401 on any failure.
+	mux.HandleFunc("GET /api/v1/registry/token", rt.handleRegistryToken)
 	rt.registerGitProviderRoutes(mux)
 	rt.registerBackupRoutes(mux)
 	rt.registerAuditRoutes(mux)

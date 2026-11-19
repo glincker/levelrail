@@ -759,6 +759,7 @@ type Router struct {
 	dnsQuerier                   dnszones.Querier                                           // nil uses a real miekg/dns querier; tests swap in a fake
 	dnsNS                        dnsNameserverState                                         // lazy delegation checker, registrar lookup and demo zones (dns_zones_delegation.go)
 	registry                     RegistryStore                                              // always set, same shape as cloudflareTunnel above
+	registryToken                *build.RegistryTokenService                                // nil answers 501 on the registry token route
 	registrySecrets              RegistrySecrets                                            // nil is valid: PUT/DELETE /api/v1/settings/registry return 501, same shape as cloudflareTunnelSecrets above
 	secretConns                  SecretConnectionService                                    // nil until boot wires it: reads return an empty list, writes 501
 	k8sDeploymentRows            K8sDeploymentRows                                          // nil when the store lacks deployment tables: routes return 501

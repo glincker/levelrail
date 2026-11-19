@@ -14,7 +14,7 @@ type openAPIRoute struct {
 	Description string
 }
 
-// openAPIRoutes holds all 2207 routes known to scripts/gen-api-reference at
+// openAPIRoutes holds all 2208 routes known to scripts/gen-api-reference at
 // generation time. Run `go run ./scripts/gen-api-reference` after changing
 // any routes*.go registration and commit the result.
 var openAPIRoutes = []openAPIRoute{
@@ -751,6 +751,7 @@ var openAPIRoutes = []openAPIRoute{
 	{Method: "GET", Path: "/api/v1/dockerhub/search", Ability: "AbilityRead", Group: "Built-in Container Registry", Handler: "handleDockerHubSearch", Description: ""},
 	{Method: "GET", Path: "/api/v1/registry/repositories", Ability: "AbilityRead", Group: "Built-in Container Registry", Handler: "handleListRegistryRepositories", Description: "Built-in registry catalog (registry_catalog.go): read-only browsing for the app-creation \"existing image\" step's repository/tag picker. AbilityRead, same tier as the settings GET just above: no secret is ever returned, the resolved password is only used server-side to authenticate the upstream catalog query."},
 	{Method: "GET", Path: "/api/v1/registry/tags", Ability: "AbilityRead", Group: "Built-in Container Registry", Handler: "handleListRegistryTags", Description: ""},
+	{Method: "GET", Path: "/api/v1/registry/token", Ability: "Public", Group: "Built-in Container Registry", Handler: "handleRegistryToken", Description: "Registry token realm for build image transfer, authenticated only by a job-scoped push token. Answers a bare 401 on any failure."},
 	{Method: "DELETE", Path: "/api/v1/settings/registry", Ability: "AbilityRoot", Group: "Built-in Container Registry", Handler: "handleDisableRegistry", Description: ""},
 	{Method: "GET", Path: "/api/v1/settings/registry", Ability: "AbilityRead", Group: "Built-in Container Registry", Handler: "handleGetRegistrySettings", Description: "Built-in container registry (instance-level, one registry per control plane): GET is AbilityRead; PUT/DELETE are AbilityRoot, matching PUT /api/v1/settings/cloudflare-tunnel's own tier for infrastructure config that runs a system container and generates credentials."},
 	{Method: "PUT", Path: "/api/v1/settings/registry", Ability: "AbilityRoot", Group: "Built-in Container Registry", Handler: "handleUpdateRegistrySettings", Description: ""},

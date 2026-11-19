@@ -51,18 +51,18 @@ func TestPushTokenScopeAndExpiry(t *testing.T) {
 }
 
 type fakeVerifier struct {
-	have map[string]bool
+	have map[string]string
 	err  error
 }
 
-func (f fakeVerifier) ManifestExists(_ context.Context, repo, digest string) (bool, error) {
-	return f.have[repo+"@"+digest], f.err
+func (f fakeVerifier) ManifestDigest(_ context.Context, repo, ref string) (string, error) {
+	return f.have[repo+":"+ref], f.err
 }
 
 func TestVerifyPushedDigest(t *testing.T) {
 	d := "sha256:" + strings.Repeat("a", 64)
 	ref := "reg.example/levelrail/app:b1"
-	v := fakeVerifier{have: map[string]bool{"reg.example/levelrail/app@" + d: true}}
+	v := fakeVerifier{have: map[string]string{"reg.example/levelrail/app:b1": d}}
 	if err := VerifyPushedDigest(context.Background(), v, ref, d); err != nil {
 		t.Fatalf("existing digest rejected: %v", err)
 	}

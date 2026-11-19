@@ -135199,6 +135199,47 @@
         "x-required-ability": "read"
       }
     },
+    "/api/v1/registry/token": {
+      "get": {
+        "description": "Registry token realm for build image transfer, authenticated only by a job-scoped push token. Answers a bare 401 on any failure.\n\nNo authentication required.",
+        "operationId": "handleRegistryToken",
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": {}
+              }
+            },
+            "description": "Successful response. The body shape is not described in this document."
+          },
+          "4XX": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            },
+            "description": "Client error."
+          },
+          "default": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            },
+            "description": "Error response."
+          }
+        },
+        "security": [],
+        "summary": "Registry token realm for build image transfer, authenticated only by a job-scoped push token.",
+        "tags": [
+          "Built-in Container Registry"
+        ]
+      }
+    },
     "/api/v1/resilience": {
       "get": {
         "description": "Requires the `read` ability.",

@@ -108,6 +108,9 @@ const CapBuildNetwork = "build_network"
 // ErrAgentLacksBuildNetwork refuses a restricted-network build on an agent that cannot enforce it.
 var ErrAgentLacksBuildNetwork = errors.New("agent: build node agent too old to enforce security.build_network, upgrade the agent or set the build network to open")
 
+// CapBuildPush means the agent can push a build's image to a registry by digest with a job token.
+const CapBuildPush = "build_push"
+
 // CapExitTimes means the agent sends exit state start and finish times, so zero means never started.
 const CapExitTimes = "exit_times"
 
