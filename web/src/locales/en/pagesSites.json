@@ -420,6 +420,7 @@
     "failed": "Could not load submissions.",
     "remove": "Delete",
     "delete": "Delete submission {{id}} of {{form}}",
-    "deleteTip": "Delete this submission for good"
+    "deleteTip": "Delete this submission for good",
+    "confirmDelete": "Delete this submission?"
   }
 }

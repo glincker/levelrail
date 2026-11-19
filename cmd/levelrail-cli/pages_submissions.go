@@ -8,6 +8,7 @@ import (
 	"strconv"
 	"strings"
 	"text/tabwriter"
+	"unicode"
 
 	"github.com/GLINCKER/levelrail/internal/apiclient"
 )
@@ -74,12 +75,24 @@ func printSiteSubmissions(out io.Writer, rows []apiclient.SiteSubmission) {
 		parts := make([]string, 0, len(keys))
 		for _, k := range keys {
 			v := r.Fields[k]
-			if len(v) > 40 {
-				v = v[:40] + "..."
-			}
-			parts = append(parts, k+"="+strings.ReplaceAll(v, "\n", " "))
+			parts = append(parts, cleanCell(k)+"="+cleanCell(v))
 		}
 		_, _ = fmt.Fprintf(tw, "%d\t%s\t%s\t%t\t%s\n", r.ID, r.Form, r.CreatedAt.Format("2006-01-02 15:04"), r.Spam, strings.Join(parts, " "))
 	}
 	_ = tw.Flush()
+}
+
+// cleanCell drops control characters (terminal escapes) from visitor input and
+// truncates by rune so multi-byte text is never cut mid-character.
+func cleanCell(v string) string {
+	v = strings.Map(func(r rune) rune {
+		if unicode.IsControl(r) {
+			return ' '
+		}
+		return r
+	}, v)
+	if rs := []rune(v); len(rs) > 40 {
+		v = string(rs[:40]) + "..."
+	}
+	return v
 }

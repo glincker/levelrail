@@ -73,7 +73,11 @@ export default function SiteFormsCard({ name }: Readonly<{ name: string }>) {
                 disabled={del.isPending}
                 aria-label={t('forms.delete', { form: s.form, id: s.id })}
                 title={t('forms.deleteTip')}
-                onClick={() => del.mutate({ form: s.form, id: s.id })}
+                onClick={() => {
+                  if (window.confirm(t('forms.confirmDelete'))) {
+                    del.mutate({ form: s.form, id: s.id })
+                  }
+                }}
               >
                 {t('forms.remove')}
               </Button>

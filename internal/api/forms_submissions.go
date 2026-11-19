@@ -1,6 +1,8 @@
 package api
 
 import (
+	"context"
+	"encoding/json"
 	"errors"
 	"log/slog"
 	"net/http"
@@ -129,7 +131,35 @@ func (rt *Router) handleDeleteFormSubmission(w http.ResponseWriter, r *http.Requ
 		writeError(w, http.StatusBadRequest, "invalid submission id")
 		return
 	}
-	rt.finishSubmissionWrite(w, f, rt.forms.DeleteFormSubmission(r.Context(), f.ID, id))
+	err = rt.forms.DeleteFormSubmission(r.Context(), f.ID, id)
+	if err == nil {
+		rt.auditSubmissionDelete(r, f, id)
+	}
+	rt.finishSubmissionWrite(w, f, err)
+}
+
+// auditSubmissionDelete records who removed a submission; ids only, never the content.
+func (rt *Router) auditSubmissionDelete(r *http.Request, f store.Form, id int64) {
+	if rt.auditLog == nil {
+		return
+	}
+	a := rt.accessActor(r)
+	eid, err := store.NewAuditEntryID()
+	if err != nil {
+		rt.logger.Warn("api: submission delete audit id failed", slog.String("error", err.Error()))
+		return
+	}
+	detail, _ := json.Marshal(map[string]any{"site": f.AppName, "form": f.Name, "id": id})
+	entry := store.AuditEntry{
+		ID: eid, ActorType: a.kind, ActorID: a.id, ActorName: a.name,
+		Ability: AbilityDeploy, Method: r.Method, Path: r.URL.Path, StatusCode: http.StatusNoContent,
+		RemoteAddr: clientIP(r), CreatedAt: store.FormatAuditTime(time.Now()),
+		ClientKind: clientKindFromUserAgent(r.UserAgent()),
+		Action:     "form.submission_delete", Detail: string(detail),
+	}
+	if err := rt.auditLog.SaveAuditEntry(context.WithoutCancel(r.Context()), entry); err != nil {
+		rt.logger.Warn("api: submission delete audit save failed", slog.String("error", err.Error()))
+	}
 }
 
 func (rt *Router) finishSubmissionWrite(w http.ResponseWriter, f store.Form, err error) {

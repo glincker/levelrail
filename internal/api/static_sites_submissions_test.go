@@ -39,3 +39,11 @@ func jsonInt(n int64) string {
 	b, _ := json.Marshal(n)
 	return string(b)
 }
+
+func TestStaticSiteSubmissionsUnknownSiteIs404(t *testing.T) {
+	rt, _, cookie := formsTestRouter(t)
+	rec := serve(rt, authedRequest(t, cookie, http.MethodGet, "/api/v1/static-sites/nosuch/submissions", ""))
+	if rec.Code != http.StatusNotFound {
+		t.Fatalf("list = %d", rec.Code)
+	}
+}

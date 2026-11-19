@@ -24,7 +24,7 @@ type siteSubmissionsResponse struct {
 // The caller needs read-sensitive access because fields hold visitor input.
 func (rt *Router) handleListStaticSiteSubmissions(w http.ResponseWriter, r *http.Request) {
 	site := r.PathValue("name")
-	if !rt.formsAvailable(w) || !rt.appExists(w, r, site) {
+	if !rt.formsAvailable(w) || !rt.siteOrAppExists(w, r, site) {
 		return
 	}
 	limit := formSubmissionsDefaultLimit
@@ -71,7 +71,11 @@ func (rt *Router) handleDeleteStaticSiteSubmission(w http.ResponseWriter, r *htt
 		writeError(w, http.StatusBadRequest, "invalid submission id")
 		return
 	}
-	rt.finishSubmissionWrite(w, f, rt.forms.DeleteFormSubmission(r.Context(), f.ID, id))
+	err = rt.forms.DeleteFormSubmission(r.Context(), f.ID, id)
+	if err == nil {
+		rt.auditSubmissionDelete(r, f, id)
+	}
+	rt.finishSubmissionWrite(w, f, err)
 }
 
 func (rt *Router) finishFormLookup(w http.ResponseWriter, err error) {
@@ -80,4 +84,25 @@ func (rt *Router) finishFormLookup(w http.ResponseWriter, err error) {
 		return
 	}
 	rt.internalError(w, "api: site submission: load form", err)
+}
+
+// siteOrAppExists accepts a static site that has no desired_services row, so
+// existing sites list an empty set instead of an error.
+func (rt *Router) siteOrAppExists(w http.ResponseWriter, r *http.Request, name string) bool {
+	if _, err := rt.apps.GetDesiredService(r.Context(), name); err == nil {
+		return true
+	} else if !errors.Is(err, store.ErrServiceNotFound) {
+		rt.internalError(w, "api: site submissions: load app", err, slog.String("name", name))
+		return false
+	}
+	if g, ok := rt.staticSites.(staticSiteGetter); ok {
+		if _, err := g.GetStaticSite(r.Context(), name); err == nil {
+			return true
+		} else if !errors.Is(err, store.ErrServiceNotFound) {
+			rt.internalError(w, "api: site submissions: load site", err, slog.String("name", name))
+			return false
+		}
+	}
+	writeError(w, http.StatusNotFound, "site not found")
+	return false
 }
