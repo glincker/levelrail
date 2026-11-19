@@ -102,6 +102,7 @@ These variables only seed the default of a [runtime setting](/runtime-settings).
 | `APP_ORGS_AVATAR_MAX_BYTES` | [`orgs.avatar_max_bytes`](/runtime-settings#security) | `262144` |
 | `APP_ORGS_AVATAR_MAX_DIMENSION` | [`orgs.avatar_max_dimension`](/runtime-settings#security) | `1024` |
 | `APP_ORGS_STRICT_ISOLATION` | [`orgs.strict_isolation`](/runtime-settings#security) | `false` |
+| `APP_REGISTRY_TOKEN_RATE_LIMIT_RPM` | [`registry.token_rate_limit_rpm`](/runtime-settings#security) | `120` |
 | `APP_SECRET_PROVIDER_CACHE_TTL_SECONDS` | [`secrets.provider_cache_ttl_seconds`](/runtime-settings#security) | `60` |
 | `APP_SECRET_PROVIDER_MAX_RESPONSE_KIB` | [`secrets.provider_max_response_kib`](/runtime-settings#security) | `1024` |
 | `APP_SECRET_PROVIDER_MAX_RPS` | [`secrets.provider_max_rps`](/runtime-settings#security) | `20` |
@@ -238,12 +239,16 @@ These variables only seed the default of a [runtime setting](/runtime-settings).
 | `APP_BUILD_CPU_PERCENT` | [`build.cpu_percent`](/runtime-settings#deploys) | `75` |
 | `APP_BUILD_MEMORY_PERCENT` | [`build.memory_percent`](/runtime-settings#deploys) | `60` |
 | `APP_BUILD_NEXT_MIN_FREE_MEMORY_MIB` | [`build.next_min_free_memory_mib`](/runtime-settings#deploys) | `2048` |
+| `APP_BUILD_PERSONAL_IN_PRODUCTION` | [`build.personal_builders_in_production`](/runtime-settings#deploys) | `false` |
 | `APP_BUILD_QUEUE_AUTO_RESUME_AFTER` | [`build.queue_auto_resume_after`](/runtime-settings#deploys) | `0s` |
 | `APP_BUILD_QUEUE_PAUSED_WARN_AFTER` | [`build.queue_paused_warn_after`](/runtime-settings#deploys) | `1h` |
 | `APP_BUILD_REMOTE_PRESSURE_HOLD` | [`build.remote_pressure_hold`](/runtime-settings#deploys) | `true` |
 | `APP_BUILD_RUNNER_STALE_AFTER` | [`build.runner_stale_after`](/runtime-settings#deploys) | `2m` |
 | `APP_BUILD_RUNNER_STRATEGY` | [`build.runner_strategy`](/runtime-settings#deploys) | `first` |
 | `APP_BUILD_STAGE_LOG_TAIL_LINES` | [`build.stage_log_tail_lines`](/runtime-settings#deploys) | `200` |
+| `APP_BUILD_TRANSFER_BEARER_TTL` | [`build.transfer_bearer_ttl`](/runtime-settings#deploys) | `90s` |
+| `APP_BUILD_TRANSFER_MODE` | [`build.transfer_mode`](/runtime-settings#deploys) | `tar` |
+| `APP_BUILD_TRANSFER_PUSH_TTL` | [`build.transfer_push_ttl`](/runtime-settings#deploys) | `45m` |
 | `APP_BUILD_MEMORY_MB` | [`builds.memory_limit_mb`](/runtime-settings#deploys) | `0` |
 | `APP_BUILD_SETTING_VALUE_MAX_BYTES` | [`builds.setting_value_max_bytes`](/runtime-settings#deploys) | `128` |
 | `APP_CLOUD_DEFAULT_MONTHLY_COST_LIMIT` | [`cloud.default_monthly_cost_limit`](/runtime-settings#deploys) | `0` |
