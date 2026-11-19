@@ -22,6 +22,7 @@ func buildsUsage(prog string) string {
   %[1]s builds prune [--node N] [--older-than-hours H] [--apply]
   %[1]s builds queue [--json]
   %[1]s builds runners [--json]
+  %[1]s builds runner <app> [--mode auto|control_plane|node] [--node N] [--pin] [--label K=V]
   %[1]s builds pause [--reason TEXT]
   %[1]s builds drain [--reason TEXT]
   %[1]s builds resume
@@ -35,7 +36,7 @@ an in-flight build holds is never removed. cache quota shows the per app quota
 (0 is off) and the recent reclaims; --app-quota-gb changes the live setting
 (root or admin), --reclaim trims one app now. pause and drain hold new builds
 in the queue (running builds finish), resume starts them again, and kill-all
-cancels every queued and running build after a password step-up.
+cancels every queued and running build after a password step-up. runner shows\nor sets where an app builds: control_plane never sends its builds to a node,\nnode needs --node (--pin refuses any other runner), auto lets the router choose.
 `, prog)
 }
 
@@ -65,6 +66,8 @@ func runBuilds(prog string, args []string, stdout, stderr io.Writer, lookupEnv f
 		return runBuildsQueue(prog, args[1:], stdout, stderr, lookupEnv)
 	case "runners":
 		return runBuildsRunners(prog, args[1:], stdout, stderr, lookupEnv)
+	case "runner":
+		return runBuildsRunner(prog, args[1:], stdout, stderr, lookupEnv)
 	case "pause", "resume", "drain":
 		return runBuildsQueueChange(prog, args[0], args[1:], stdout, stderr, lookupEnv)
 	case "kill-all":

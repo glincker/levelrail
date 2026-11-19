@@ -87,6 +87,7 @@ func buildRunnerQuery(db *store.DB) func(ctx context.Context, app string) build.
 			return q
 		}
 		if p, ok, err := db.GetBuildRunnerPref(ctx, app); err == nil && ok {
+			q.Mode = p.Mode
 			if p.Pinned {
 				q.Pinned = p.NodeID
 			} else {

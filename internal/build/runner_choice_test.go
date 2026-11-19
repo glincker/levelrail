@@ -77,3 +77,17 @@ func TestRunnerChooseFirstKeepsOrderAndStale(t *testing.T) {
 		t.Fatalf("stale node chosen: %+v", d)
 	}
 }
+
+func TestRunnerChooseModes(t *testing.T) {
+	nodes := []NodeInfo{runnerNode("a", 0), runnerNode("b", 1)}
+	p := Policy{Strategy: StrategyLeastLoaded}
+	if d := ChooseBuildNode(nodes, Query{Mode: ModeControlPlane, Preferred: "a", Pinned: "b"}, p); d.Node != "" || !strings.HasPrefix(d.Reason, "control plane") {
+		t.Fatalf("control_plane must stay local, got %+v", d)
+	}
+	if d := ChooseBuildNode(nodes, Query{Mode: ModeAuto}, p); d.Node != "a" {
+		t.Fatalf("auto should pick the freest runner, got %+v", d)
+	}
+	if d := ChooseBuildNode(nodes, Query{Mode: ModeNode, Pinned: "b"}, p); d.Node != "b" {
+		t.Fatalf("pinned node mode should pick b, got %+v", d)
+	}
+}

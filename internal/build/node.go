@@ -89,9 +89,18 @@ type Policy struct {
 	PersonalInProduction bool
 }
 
+// Build placement modes an app can choose.
+const (
+	ModeAuto         = "auto"
+	ModeControlPlane = "control_plane"
+	ModeNode         = "node"
+)
+
 // Query describes the build being placed.
 type Query struct {
 	App string
+	// Mode control_plane keeps the build on the control plane, whatever runners exist.
+	Mode string
 	// TargetArch is the "os/arch" the image will run on, empty when unknown.
 	TargetArch string
 	// Labels every chosen runner must carry; an empty value only requires the key.
@@ -229,6 +238,9 @@ func (n NodeInfo) label() string {
 // answer is the control plane, with the reason, so a build never fails for
 // want of a runner.
 func ChooseBuildNode(nodes []NodeInfo, q Query, p Policy) Decision {
+	if q.Mode == ModeControlPlane {
+		return Decision{Reason: "control plane: chosen for this app"}
+	}
 	var all []NodeInfo
 	for _, n := range nodes {
 		if n.AcceptsBuildWorkloads && !n.Local && n.ID != "" {

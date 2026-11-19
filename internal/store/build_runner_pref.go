@@ -14,6 +14,8 @@ type BuildRunnerPref struct {
 	App    string
 	NodeID string
 	Pinned bool
+	// Mode is auto, control_plane or node; empty reads as auto.
+	Mode string
 	// Labels are "key" or "key=value" requirements every runner for this app must carry.
 	Labels []string
 }
@@ -23,7 +25,7 @@ func (db *DB) GetBuildRunnerPref(ctx context.Context, app string) (BuildRunnerPr
 	p := BuildRunnerPref{App: app}
 	var pinned int
 	var labels string
-	err := db.QueryRowContext(ctx, `SELECT node_id, pinned, labels FROM app_build_runner WHERE app_name = ?`, app).Scan(&p.NodeID, &pinned, &labels)
+	err := db.QueryRowContext(ctx, `SELECT node_id, pinned, labels, mode FROM app_build_runner WHERE app_name = ?`, app).Scan(&p.NodeID, &pinned, &labels, &p.Mode)
 	if errors.Is(err, sql.ErrNoRows) {
 		return BuildRunnerPref{}, false, nil
 	}
@@ -43,9 +45,9 @@ func (db *DB) SetBuildRunnerPref(ctx context.Context, p BuildRunnerPref, now tim
 	if p.Pinned {
 		pinned = 1
 	}
-	_, err := db.ExecContext(ctx, `INSERT INTO app_build_runner (app_name, node_id, pinned, labels, updated_at) VALUES (?, ?, ?, ?, ?)
-		ON CONFLICT(app_name) DO UPDATE SET node_id = excluded.node_id, pinned = excluded.pinned, labels = excluded.labels, updated_at = excluded.updated_at`,
-		p.App, p.NodeID, pinned, strings.Join(p.Labels, ","), now.UTC().Format(time.RFC3339Nano))
+	_, err := db.ExecContext(ctx, `INSERT INTO app_build_runner (app_name, node_id, pinned, labels, mode, updated_at) VALUES (?, ?, ?, ?, ?, ?)
+		ON CONFLICT(app_name) DO UPDATE SET node_id = excluded.node_id, pinned = excluded.pinned, labels = excluded.labels, mode = excluded.mode, updated_at = excluded.updated_at`,
+		p.App, p.NodeID, pinned, strings.Join(p.Labels, ","), p.Mode, now.UTC().Format(time.RFC3339Nano))
 	if err != nil {
 		return fmt.Errorf("store: set build runner pref: %w", err)
 	}
