@@ -1,5 +1,9 @@
 name: Release
 
+# release-verify, package-managers and release-npm-verify read this title to
+# skip dry runs and to find the tag of a run dispatched against main.
+run-name: ${{ inputs.dry_run && format('Dry run {0}', inputs.tag) || format('Release {0}', inputs.tag || github.ref_name) }}
+
 on:
   # Tag push only: fires once per real release, not once per PR merge.
   # Dispatch manually against main for an ad hoc :edge build.
@@ -12,6 +16,16 @@ on:
         description: 'Tag to build and release (e.g. v0.1.0). Only needed when dispatching manually against a ref that is not the tag itself, such as main.'
         required: true
         type: string
+      dry_run:
+        description: 'Build, gate and build images without pushing them, then stop before anything is published.'
+        required: false
+        type: boolean
+        default: false
+      publish_all:
+        description: 'Publish every optional channel even when its inputs did not change (repair or backfill).'
+        required: false
+        type: boolean
+        default: false
 
 env:
   RELEASE_TAG: ${{ inputs.tag || github.ref_name }}
@@ -21,6 +35,69 @@ env:
   IMAGE_VERSION: ${{ inputs.tag || (github.ref_type == 'tag' && github.ref_name) || format('main-{0}', github.sha) }}
 
 jobs:
+  # Decides which optional channels have anything new to ship. It fails open:
+  # a missing script, a lookup error or a failed job all mean publish.
+  changes:
+    name: Detect changed components
+    if: github.event_name == 'workflow_dispatch' || github.ref_type == 'tag'
+    runs-on: ubuntu-latest
+    continue-on-error: true
+    timeout-minutes: 10
+    permissions:
+      contents: read
+    outputs:
+      mcp: ${{ steps.detect.outputs.mcp }}
+      terraform: ${{ steps.detect.outputs.terraform }}
+    steps:
+      - name: Checkout
+        uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7
+        continue-on-error: true
+        with:
+          ref: ${{ env.RELEASE_TAG }}
+          fetch-depth: 0
+          persist-credentials: false
+
+      - name: Set up Go
+        uses: actions/setup-go@b7ad1dad31e06c5925ef5d2fc7ad053ef454303e # v7
+        continue-on-error: true
+        with:
+          go-version-file: go.mod
+
+      # The MCP baseline is the version npm serves, so a publish that failed
+      # on an earlier release is retried; the CLI and agent rows are report only.
+      - name: Detect
+        id: detect
+        env:
+          PUBLISH_ALL: ${{ inputs.publish_all && 'true' || 'false' }}
+          DRY_RUN: ${{ inputs.dry_run && 'true' || 'false' }}
+        run: |
+          set -uo pipefail
+          prev="$(git describe --tags --abbrev=0 --match 'v[0-9]*' "${RELEASE_TAG}^" 2>/dev/null || true)"
+          mcp_base=""
+          if v="$(npm view levelrail-mcp version 2>/dev/null)" && [ -n "$v" ]; then
+            mcp_base="v${v}"
+          fi
+          detect() {
+            if [ "$PUBLISH_ALL" = "true" ] || [ ! -x scripts/release/changed-components.sh ]; then
+              echo true
+              return
+            fi
+            scripts/release/changed-components.sh "$1" "$2" "$RELEASE_TAG" || echo true
+          }
+          {
+            echo "### Changed components for ${RELEASE_TAG}"
+            echo
+            [ "$DRY_RUN" = "true" ] && echo "Dry run: nothing is published." && echo
+            echo "| Component | Baseline | Changed | Gates |"
+            echo "| --- | --- | --- | --- |"
+          } >> "$GITHUB_STEP_SUMMARY"
+          for row in "mcp:${mcp_base}:npm MCP server and MCP Registry" "terraform:${prev}:Terraform mirror sync" "cli:${prev}:report only" "agent:${prev}:report only"; do
+            IFS=: read -r name base gates <<<"$row"
+            changed="$(detect "$name" "$base" | tail -1)"
+            echo "${name}=${changed}" >> "$GITHUB_OUTPUT"
+            echo "| ${name} | ${base:-none} | ${changed} | ${gates} |" >> "$GITHUB_STEP_SUMMARY"
+          done
+
   build-web:
     name: Build frontend
     if: github.event_name == 'workflow_dispatch' || github.ref_type == 'tag'
@@ -313,7 +390,8 @@ jobs:
 
   release:
     name: Publish release
-    if: github.event_name == 'workflow_dispatch' || github.ref_type == 'tag'
+    # Every later publish job needs this one, so a dry run stops here.
+    if: (github.event_name == 'workflow_dispatch' || github.ref_type == 'tag') && !inputs.dry_run
     runs-on: ubuntu-latest
     needs: [release-gate, build-binaries, build-cli-binaries, build-agent-binaries, build-agent-packages]
     timeout-minutes: 10
@@ -553,8 +631,9 @@ jobs:
 
   publish-terraform-mirror:
     name: Sync Terraform provider mirror
-    needs: release
-    if: github.event_name == 'workflow_dispatch' || github.ref_type == 'tag'
+    needs: [release, changes]
+    # !cancelled() keeps a failed change detection from skipping the sync; it then publishes.
+    if: (github.event_name == 'workflow_dispatch' || github.ref_type == 'tag') && !cancelled() && needs.release.result == 'success' && needs.changes.outputs.terraform != 'false'
     runs-on: ubuntu-latest
     timeout-minutes: 10
     permissions:
@@ -569,15 +648,17 @@ jobs:
           fetch-depth: 0
 
       # Skipped, not failed, until the owner adds the deploy key. The mirror
-      # only gets a new version when the provider changed since the last tag.
+      # only gets a new version when the provider changed since the last tag,
+      # unless publish_all asks for a repair sync.
       - name: Sync the provider into the mirror and tag it
         if: env.HAS_MIRROR_KEY == 'true'
         env:
           MIRROR_DEPLOY_KEY: ${{ secrets.TF_MIRROR_DEPLOY_KEY }}
+          PUBLISH_ALL: ${{ inputs.publish_all && 'true' || 'false' }}
         run: |
           set -euo pipefail
           prev="$(git describe --tags --abbrev=0 --match 'v*' "${{ env.RELEASE_TAG }}^" 2>/dev/null || true)"
-          if [ -n "$prev" ] && git diff --quiet "$prev" "${{ env.RELEASE_TAG }}" -- integrations/terraform-provider; then
+          if [ "$PUBLISH_ALL" != "true" ] && [ -n "$prev" ] && git diff --quiet "$prev" "${{ env.RELEASE_TAG }}" -- integrations/terraform-provider; then
             echo "provider unchanged since $prev, nothing to sync"
             exit 0
           fi
@@ -595,7 +676,7 @@ jobs:
     name: Publish CLI to npm
     needs: release
     # Off until trusted publishing is set up for each package on npmjs.com
-    # and the NPM_PUBLISH_ENABLED repo variable is "true" (see docs/ci.md).
+    # and the NPM_PUBLISH_ENABLED repo variable is "true" (see docs/release-process.md).
     if: (github.event_name == 'workflow_dispatch' || github.ref_type == 'tag') && vars.NPM_PUBLISH_ENABLED == 'true'
     runs-on: ubuntu-latest
     timeout-minutes: 10
@@ -654,91 +735,9 @@ jobs:
             case "$name" in
               levelrail-cli|levelrail-cli-*) (cd "$dir" && npm publish --provenance --access public --tag "$dist_tag") ;;
               *) (cd "$dir" && npm publish --provenance --access public --tag "$dist_tag") \
-                   || echo "::warning::${name}@${version} was not published; see docs/ci.md" ;;
+                   || echo "::warning::${name}@${version} was not published; see docs/release-process.md" ;;
             esac
           done
-
-  # Dogfood: install what publish-npm just shipped, from the registry, on
-  # the OS and CPU families users run. Never blocks the release because the
-  # registry can lag behind a publish.
-  verify-npm:
-    name: Verify npm install (${{ matrix.os }})
-    needs: publish-npm
-    if: (github.event_name == 'workflow_dispatch' || github.ref_type == 'tag') && vars.NPM_PUBLISH_ENABLED == 'true'
-    runs-on: ${{ matrix.os }}
-    continue-on-error: true
-    timeout-minutes: 15
-    permissions:
-      contents: read
-    strategy:
-      fail-fast: false
-      matrix:
-        os: [ubuntu-latest, ubuntu-24.04-arm, macos-latest, windows-latest]
-    defaults:
-      run:
-        shell: bash
-    steps:
-      - name: Set up Node
-        uses: actions/setup-node@949feb2413d6458794dcd2491c4babbbce0c15c1 # v7
-        with:
-          node-version: 22
-
-      - name: Install from the registry and check the version
-        run: |
-          set -euo pipefail
-          version="${RELEASE_TAG#v}"
-          delay=5
-          for attempt in 1 2 3 4 5 6 7; do
-            if npm view "levelrail-cli@${version}" version >/dev/null 2>&1; then
-              break
-            fi
-            if [ "$attempt" = 7 ]; then
-              echo "levelrail-cli@${version} never became visible on the registry" >&2
-              exit 1
-            fi
-            echo "Waiting ${delay}s for registry propagation (attempt ${attempt})"
-            sleep "$delay"
-            delay=$((delay * 2))
-          done
-          # npm replicas lag: the wrapper package can appear before its platform
-          # packages, so retry the whole install, not just the first lookup.
-          retry() {
-            local n=0
-            until "$@"; do
-              n=$((n + 1))
-              if [ "$n" -ge 8 ]; then return 1; fi
-              echo "Retrying in 20s (attempt ${n} failed)" >&2
-              sleep 20
-            done
-          }
-          check_cli() {
-            local work
-            work=$(mktemp -d) &&
-              cd "$work" &&
-              npm init -y >/dev/null &&
-              npm install --prefer-online "levelrail-cli@${version}" &&
-              out=$(npx --no-install levelrail-cli version) &&
-              echo "$out" &&
-              printf '%s\n' "$out" | grep -F -- "$version" >/dev/null
-          }
-          check_forwarders() {
-            local fwd
-            fwd=$(mktemp -d) &&
-              cd "$fwd" &&
-              npm init -y >/dev/null &&
-              npm install --prefer-online "levelrail@${version}" "@levelrail/cli@${version}" &&
-              out=$(npx --no-install levelrail version) &&
-              printf '%s\n' "$out" | grep -F -- "$version" >/dev/null &&
-              out=$(npx --no-install levelrail-scoped version) &&
-              printf '%s\n' "$out" | grep -F -- "$version" >/dev/null
-          }
-          retry check_cli || { echo "levelrail-cli@${version} did not install and print its version" >&2; exit 1; }
-          npm audit signatures
-          retry check_forwarders || { echo "the levelrail and @levelrail/cli forwarders did not print ${version}" >&2; exit 1; }
-          {
-            echo "### npm install verified on ${{ matrix.os }}"
-            echo "https://www.npmjs.com/package/levelrail-cli/v/${version}"
-          } >> "$GITHUB_STEP_SUMMARY"
 
   image-channel:
     name: Resolve image tags
@@ -847,7 +846,7 @@ jobs:
           file: deploy/docker/Dockerfile.levelrail
           labels: ${{ steps.labels.outputs.labels }}
           platforms: ${{ matrix.platform }}
-          outputs: type=image,name=ghcr.io/glincker/levelrail,push-by-digest=true,name-canonical=true,push=true
+          outputs: type=image,name=ghcr.io/glincker/levelrail,push-by-digest=true,name-canonical=true,push=${{ !inputs.dry_run }}
           build-args: VERSION=${{ env.IMAGE_VERSION }}
           provenance: mode=max
           sbom: true
@@ -855,12 +854,14 @@ jobs:
           cache-to: type=gha,mode=max,scope=levelrail-${{ matrix.artifact }}
 
       - name: Export digest
+        if: ${{ !inputs.dry_run }}
         run: |
           mkdir -p "${{ runner.temp }}/digests"
           digest="${{ steps.build.outputs.digest }}"
           touch "${{ runner.temp }}/digests/${digest#sha256:}"
 
       - name: Upload digest
+        if: ${{ !inputs.dry_run }}
         uses: actions/upload-artifact@cf430e030ddbb5b0abf93d22962f4752f3646cd9 # v7
         with:
           name: digests-cp-${{ matrix.artifact }}
@@ -871,7 +872,7 @@ jobs:
     name: Merge and tag levelrail image
     runs-on: ubuntu-latest
     needs: [build-image-levelrail, image-channel]
-    if: needs.build-image-levelrail.result == 'success'
+    if: needs.build-image-levelrail.result == 'success' && !inputs.dry_run
     timeout-minutes: 10
     outputs:
       digest: ${{ steps.report.outputs.digest }}
@@ -935,7 +936,9 @@ jobs:
       # Off until the owner sets DOCKERHUB_PUBLISH_ENABLED and both secrets;
       # a missing secret skips the mirror and never fails the release.
       - name: Log in to Docker Hub
+        id: dockerhub-login
         if: vars.DOCKERHUB_PUBLISH_ENABLED == 'true' && env.HAS_DOCKERHUB == 'true'
+        continue-on-error: true
         uses: docker/login-action@8aa5831fb8d48d8f76594c7ddde61ae58019f550 # v4
         with:
           username: ${{ secrets.DOCKERHUB_USERNAME }}
@@ -945,7 +948,8 @@ jobs:
       # same digest and the cosign signature below covers both registries.
       - name: Mirror image to Docker Hub
         id: mirror
-        if: vars.DOCKERHUB_PUBLISH_ENABLED == 'true' && env.HAS_DOCKERHUB == 'true'
+        if: vars.DOCKERHUB_PUBLISH_ENABLED == 'true' && env.HAS_DOCKERHUB == 'true' && steps.dockerhub-login.outcome == 'success'
+        continue-on-error: true
         run: |
           src="ghcr.io/glincker/levelrail:${{ needs.image-channel.outputs.primary_tag }}"
           tag_args=()
@@ -970,6 +974,11 @@ jobs:
             exit 0
           fi
           scripts/release/dockerhub-describe.sh levelrail "$RELEASE_TAG"
+
+      # GHCR is the source of truth, so a Docker Hub failure must not skip the release notes.
+      - name: Warn when the Docker Hub mirror failed
+        if: steps.dockerhub-login.outcome == 'failure' || steps.mirror.outcome == 'failure'
+        run: echo "::warning::Docker Hub mirror of levelrail failed; run dockerhub-mirror.yml with tag $RELEASE_TAG once the credentials work"
 
       # Feeds the release notes block; mirrored is true only when the mirror step ran.
       - name: Report digest
@@ -1040,7 +1049,7 @@ jobs:
           file: deploy/docker/Dockerfile.levelrail-agent
           labels: ${{ steps.labels.outputs.labels }}
           platforms: ${{ matrix.platform }}
-          outputs: type=image,name=ghcr.io/glincker/levelrail-agent,push-by-digest=true,name-canonical=true,push=true
+          outputs: type=image,name=ghcr.io/glincker/levelrail-agent,push-by-digest=true,name-canonical=true,push=${{ !inputs.dry_run }}
           build-args: VERSION=${{ env.IMAGE_VERSION }}
           provenance: mode=max
           sbom: true
@@ -1048,12 +1057,14 @@ jobs:
           cache-to: type=gha,mode=max,scope=levelrail-agent-${{ matrix.artifact }}
 
       - name: Export digest
+        if: ${{ !inputs.dry_run }}
         run: |
           mkdir -p "${{ runner.temp }}/digests"
           digest="${{ steps.build.outputs.digest }}"
           touch "${{ runner.temp }}/digests/${digest#sha256:}"
 
       - name: Upload digest
+        if: ${{ !inputs.dry_run }}
         uses: actions/upload-artifact@cf430e030ddbb5b0abf93d22962f4752f3646cd9 # v7
         with:
           name: digests-agent-${{ matrix.artifact }}
@@ -1064,7 +1075,7 @@ jobs:
     name: Merge and tag levelrail-agent image
     runs-on: ubuntu-latest
     needs: [build-image-levelrail-agent, image-channel]
-    if: needs.build-image-levelrail-agent.result == 'success'
+    if: needs.build-image-levelrail-agent.result == 'success' && !inputs.dry_run
     timeout-minutes: 10
     outputs:
       digest: ${{ steps.report.outputs.digest }}
@@ -1124,7 +1135,9 @@ jobs:
       # Off until the owner sets DOCKERHUB_PUBLISH_ENABLED and both secrets;
       # a missing secret skips the mirror and never fails the release.
       - name: Log in to Docker Hub
+        id: dockerhub-login
         if: vars.DOCKERHUB_PUBLISH_ENABLED == 'true' && env.HAS_DOCKERHUB == 'true'
+        continue-on-error: true
         uses: docker/login-action@8aa5831fb8d48d8f76594c7ddde61ae58019f550 # v4
         with:
           username: ${{ secrets.DOCKERHUB_USERNAME }}
@@ -1134,7 +1147,8 @@ jobs:
       # same digest and the cosign signature below covers both registries.
       - name: Mirror image to Docker Hub
         id: mirror
-        if: vars.DOCKERHUB_PUBLISH_ENABLED == 'true' && env.HAS_DOCKERHUB == 'true'
+        if: vars.DOCKERHUB_PUBLISH_ENABLED == 'true' && env.HAS_DOCKERHUB == 'true' && steps.dockerhub-login.outcome == 'success'
+        continue-on-error: true
         run: |
           src="ghcr.io/glincker/levelrail-agent:${{ needs.image-channel.outputs.primary_tag }}"
           tag_args=()
@@ -1159,6 +1173,11 @@ jobs:
             exit 0
           fi
           scripts/release/dockerhub-describe.sh levelrail-agent "$RELEASE_TAG"
+
+      # GHCR is the source of truth, so a Docker Hub failure must not skip the release notes.
+      - name: Warn when the Docker Hub mirror failed
+        if: steps.dockerhub-login.outcome == 'failure' || steps.mirror.outcome == 'failure'
+        run: echo "::warning::Docker Hub mirror of levelrail-agent failed; the GHCR image is published, mirror it by hand once the Docker Hub credentials work"
 
       # Feeds the release notes block; mirrored is true only when the mirror step ran.
       - name: Report digest
@@ -1228,11 +1247,13 @@ jobs:
           scripts/release/image-notes.sh "$RELEASE_TAG"
 
   # The three MCP jobs below are optional extras: no other job needs them, so a
-  # failure here can never block or delay the release.
+  # failure here can never block or delay the release. The MCP Registry entry
+  # follows the npm publish, so it skips with it.
   build-mcp-binaries:
     name: Build MCP server (${{ matrix.goos }}/${{ matrix.goarch }})
-    if: (github.event_name == 'workflow_dispatch' || github.ref_type == 'tag') && vars.NPM_PUBLISH_ENABLED == 'true'
-    needs: release-gate
+    # Skipped when no MCP input changed since the version npm serves; a dry run still builds.
+    if: (github.event_name == 'workflow_dispatch' || github.ref_type == 'tag') && vars.NPM_PUBLISH_ENABLED == 'true' && !cancelled() && needs.release-gate.result == 'success' && (needs.changes.outputs.mcp != 'false' || inputs.dry_run)
+    needs: [release-gate, changes]
     runs-on: ubuntu-latest
     continue-on-error: true
     timeout-minutes: 20
@@ -1276,7 +1297,7 @@ jobs:
   publish-npm-mcp:
     name: Publish MCP server to npm
     needs: [release, build-mcp-binaries]
-    if: (github.event_name == 'workflow_dispatch' || github.ref_type == 'tag') && vars.NPM_PUBLISH_ENABLED == 'true' && needs.build-mcp-binaries.result == 'success'
+    if: (github.event_name == 'workflow_dispatch' || github.ref_type == 'tag') && vars.NPM_PUBLISH_ENABLED == 'true' && needs.build-mcp-binaries.result == 'success' && !inputs.dry_run
     runs-on: ubuntu-latest
     continue-on-error: true
     timeout-minutes: 10
@@ -1386,3 +1407,65 @@ jobs:
             sleep 30
           done
           exit 1
+
+  # The publish jobs assemble their npm packages only after the release job,
+  # which a dry run never reaches, so a dry run assembles them here instead.
+  dry-run-npm-packages:
+    name: Assemble npm packages (dry run)
+    needs: [build-cli-binaries, build-mcp-binaries]
+    if: inputs.dry_run && !cancelled() && needs.build-cli-binaries.result == 'success'
+    runs-on: ubuntu-latest
+    timeout-minutes: 10
+    permissions:
+      contents: read
+    steps:
+      - name: Checkout
+        uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7
+        with:
+          ref: ${{ env.RELEASE_TAG }}
+          persist-credentials: false
+
+      - name: Download CLI binaries
+        uses: actions/download-artifact@9000827ccba6bdab643e8b6fd33ac0654aef8333 # v8
+        with:
+          pattern: cli-binary-*
+          path: dist
+          merge-multiple: true
+
+      - name: Download MCP binaries
+        if: needs.build-mcp-binaries.result == 'success'
+        uses: actions/download-artifact@9000827ccba6bdab643e8b6fd33ac0654aef8333 # v8
+        with:
+          pattern: mcp-binary-*
+          path: dist
+          merge-multiple: true
+
+      - name: Set up Node
+        uses: actions/setup-node@949feb2413d6458794dcd2491c4babbbce0c15c1 # v7
+        with:
+          node-version: 22
+
+      # npm pack --dry-run validates each package.json and lists the files a
+      # publish would upload, without contacting the registry.
+      - name: Build and pack the packages without publishing
+        env:
+          HAS_MCP: ${{ needs.build-mcp-binaries.result == 'success' }}
+        run: |
+          set -euo pipefail
+          scripts/build-npm-packages.sh "$RELEASE_TAG" dist npm-out/cli
+          if [ "$HAS_MCP" = "true" ]; then
+            scripts/build-mcp-npm-packages.sh "$RELEASE_TAG" dist npm-out/mcp
+          else
+            echo "::notice::MCP binaries were not built (NPM_PUBLISH_ENABLED off), MCP packages not assembled"
+          fi
+          {
+            echo "### npm packages a publish would upload (dry run)"
+            echo
+          } >> "$GITHUB_STEP_SUMMARY"
+          # Each builder resets its own output directory, so they get one each.
+          for dir in npm-out/*/*/; do
+            name=$(node -p "require('./${dir}package.json').name")
+            version=$(node -p "require('./${dir}package.json').version")
+            (cd "$dir" && npm pack --dry-run >/dev/null)
+            echo "- ${name}@${version}" >> "$GITHUB_STEP_SUMMARY"
+          done

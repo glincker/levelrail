@@ -1320,6 +1320,7 @@
             "group": "Engineering notes",
             "pages": [
               "ci",
+              "release-process",
               "contributing-guards",
               "registry-contributing",
               "change-tracking",
