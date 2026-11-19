@@ -127,5 +127,18 @@
       "upstream_failing": "代理已连到服务器,但其后的应用没有响应。",
       "app_error": "应用返回了错误。"
     }
+  },
+  "static": {
+    "badge": "静态站点",
+    "manage": "在 Pages 中管理",
+    "primary": "在线地址",
+    "published": "已发布",
+    "notPublished": "尚未发布",
+    "notPublishedHint": "发布文件后即可获得在线地址。",
+    "publish": "在 Pages 中发布",
+    "openSite": "打开站点",
+    "updated": "更新于 {{when}}",
+    "domains": "自定义域名",
+    "addDomain": "添加域名"
   }
 }

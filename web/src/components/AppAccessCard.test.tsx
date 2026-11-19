@@ -98,7 +98,9 @@ function mockApi(addresses: AppUrlAddress[], failing = false) {
     vi.fn((input: string) => {
       const body = input.endsWith('/check')
         ? { app: 'a', scope: 'x', targets }
-        : urls
+        : input.endsWith('/static-sites')
+          ? []
+          : urls
       return Promise.resolve(
         new Response(JSON.stringify(body), {
           status: 200,
@@ -176,5 +178,51 @@ describe('AppAccessCard', () => {
     expect(screen.queryByText(RAW)).toBeNull()
     await userEvent.click(toggle)
     expect(screen.getByText(RAW)).toBeTruthy()
+  })
+
+  it('renders the static variant without container details', async () => {
+    const json = (body: unknown) =>
+      Promise.resolve(
+        new Response(JSON.stringify(body), {
+          status: 200,
+          headers: { 'Content-Type': 'application/json' },
+        }),
+      )
+    vi.stubGlobal(
+      'fetch',
+      vi.fn((input: string) => {
+        if (input.endsWith('/static-sites')) {
+          return json([{ name: 'a', domains: ['app.example.com'] }])
+        }
+        if (input.endsWith('/static-sites/a')) {
+          return json({
+            name: 'a',
+            domains: ['app.example.com'],
+            published: true,
+            file_count: 1,
+            size_bytes: 10,
+            updated_at: '2026-01-02T03:04:05Z',
+          })
+        }
+        if (input.endsWith('/certificates')) return json([])
+        return json({
+          app: 'a',
+          container_port: 80,
+          bind_address: 'public',
+          running: false,
+          local_node: true,
+          addresses: [loop, pub, auto],
+        })
+      }),
+    )
+    renderCard()
+    const hero = await screen.findByRole('region', { name: 'Live address' })
+    expect(hero.textContent).toContain('https://a.sslip.io')
+    expect(hero.textContent).toContain('Published')
+    expect(screen.getByRole('link', { name: 'Open site' })).toBeTruthy()
+    expect(screen.getByText('app.example.com')).toBeTruthy()
+    expect(screen.queryByText('Not running')).toBeNull()
+    expect(screen.queryByText('Container port')).toBeNull()
+    expect(screen.queryByRole('button', { name: /Advanced/ })).toBeNull()
   })
 })

@@ -15,6 +15,8 @@ import {
   type ProbeTarget,
 } from '../queries/appExposure'
 import { useAppUrls } from '../queries/appUrls'
+import { useIsStaticSite } from '../queries/staticSites'
+import { StaticReach } from './appAccess/StaticReach'
 import { ReachAdvanced } from './appAccess/ReachAdvanced'
 import { ReachHero } from './appAccess/ReachHero'
 import { ReachRow } from './appAccess/ReachRow'
@@ -107,12 +109,13 @@ function AllowDialog({
 export function AppAccessCard({ appName }: { appName: string }) {
   const { t } = useTranslation('appAccess')
   const { data, isError, isPending, refetch } = useAppUrls(appName)
+  const isStatic = useIsStaticSite(appName)
   const check = useCheckExposure(appName)
   const preview = usePreviewExposure(appName)
   const [plan, setPlan] = useState<ExposurePlan | null>(null)
   const autoChecked = useRef(false)
   const { mutate: runCheck } = check
-  const canCheck = Boolean(data?.running && data.local_node)
+  const canCheck = Boolean(!isStatic && data?.running && data.local_node)
 
   useEffect(() => {
     if (!canCheck || autoChecked.current) return
@@ -154,6 +157,8 @@ export function AppAccessCard({ appName }: { appName: string }) {
               <Skeleton key={i} className="h-10 w-full" />
             ))}
           </div>
+        ) : isStatic && data && !isError ? (
+          <StaticReach appName={appName} urls={data} />
         ) : isError || !model ? (
           <Alert variant="destructive">
             <AlertDescription className="flex flex-wrap items-center gap-2">

@@ -127,5 +127,18 @@
       "upstream_failing": "プロキシはサーバーに到達しましたが、その背後のアプリが応答していません。",
       "app_error": "アプリがエラーで応答しました。"
     }
+  },
+  "static": {
+    "badge": "静的サイト",
+    "manage": "Pagesで管理",
+    "primary": "公開アドレス",
+    "published": "公開済み",
+    "notPublished": "未公開",
+    "notPublishedHint": "ファイルを公開すると公開アドレスが発行されます。",
+    "publish": "Pagesで公開",
+    "openSite": "サイトを開く",
+    "updated": "更新 {{when}}",
+    "domains": "カスタムドメイン",
+    "addDomain": "ドメインを追加"
   }
 }

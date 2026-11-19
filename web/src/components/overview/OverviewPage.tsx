@@ -94,7 +94,7 @@ export function OverviewPage({
     hasTraffic: Boolean(traffic?.hasTraffic),
     trafficKnown: traffic !== undefined,
     suspended: app.suspended,
-    isStatic: false,
+    isStatic,
     setupRemaining:
       setupState.items.length - setupState.done + suggestions.setup.length,
     setupDismissed: setup.dismissed,
@@ -212,7 +212,9 @@ export function OverviewPage({
         onHide={setup.dismiss}
       />
     ),
-    details: <DetailsSection app={app} conditions={conditions} />,
+    details: (
+      <DetailsSection app={app} conditions={conditions} isStatic={isStatic} />
+    ),
   }
   return (
     <div className="space-y-4">
@@ -231,6 +233,7 @@ export function OverviewPage({
         }
         onDeploy={setDeployTab}
         gitMissing={git.error instanceof ApiError && git.error.status === 404}
+        isStatic={isStatic}
       />
       <RecommendedNextCard
         app={app}

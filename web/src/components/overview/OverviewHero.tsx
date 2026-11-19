@@ -2,6 +2,7 @@ import { Display } from '@/components/ui/typography'
 import { Link } from '@tanstack/react-router'
 import { useTranslation } from 'react-i18next'
 import { StatusPill } from '@/components/kit'
+import { Badge } from '@/components/ui/badge'
 import type { AppDetail } from '../../types/appDetail'
 import type { ReconcileCondition } from '../../types/deploy'
 import type { DeployAttempt } from '../../types/deployAttempt'
@@ -27,6 +28,7 @@ export function OverviewHero({
   serverOutcome,
   onDeploy,
   gitMissing = false,
+  isStatic = false,
 }: {
   app: AppDetail
   conditions: ReconcileCondition[]
@@ -38,8 +40,11 @@ export function OverviewHero({
   onDeploy: (tab: DeployTab) => void
   /** The git source query answered 404: offer the connect flow. */
   gitMissing?: boolean
+  /** Static site: show the kind and a link to its Pages manager. */
+  isStatic?: boolean
 }) {
   const { t } = useTranslation('common')
+  const { t: tAccess } = useTranslation('appAccess')
   const runningStage = latestAttempt
     ? computeDeployStages(latestAttempt, conditions, true).find(
         (s) => s.status === 'running',
@@ -110,6 +115,18 @@ export function OverviewHero({
           <UrlLine appName={app.name} url={url} />
           <AutoUrlInfo appName={app.name} />
         </div>
+        {isStatic ? (
+          <span className="flex items-center gap-2 text-xs">
+            <Badge variant="muted">{tAccess('static.badge')}</Badge>
+            <Link
+              to="/pages/$name"
+              params={{ name: app.name }}
+              className="text-primary underline underline-offset-2"
+            >
+              {tAccess('static.manage')}
+            </Link>
+          </span>
+        ) : null}
         <ReleaseLine app={app} latest={released ?? latestAttempt} />
         <TagChips appName={app.name} tags={app.tags} />
         <AppHeaderBadges app={app} attentionCount={attentionCount} />
