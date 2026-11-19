@@ -475,5 +475,22 @@
     "shownOnce": "Copy it now, it is not shown again.",
     "since": "Enabled since {{date}}",
     "failed": "Could not load the deploy hook."
+  },
+  "logs": {
+    "action": "Logs",
+    "title": "Build log",
+    "copy": "Copy log",
+    "copied": "Copied",
+    "download": "Download log",
+    "loading": "Loading log",
+    "empty": "No log output.",
+    "error": "Could not load the log.",
+    "failedAt": "Failed during {{step}}",
+    "step": {
+      "cloning": "Cloning",
+      "building": "Building",
+      "publishing": "Publishing",
+      "live": "Live"
+    }
   }
 }
