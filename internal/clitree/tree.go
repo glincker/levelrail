@@ -506,7 +506,7 @@ var Tree = map[string]*Node{
 	}}}},
 	"templates": {Subs: map[string]*Node{"list": nil, "get": nil, "show": nil, "deploy": nil, "install": nil, "delete": nil, "service": {Subs: map[string]*Node{"list": nil, "show": nil, "validate": nil, "install": nil, "deploy": nil}}}},
 	"compose":   {Subs: map[string]*Node{"deploy": nil, "preview": nil, "status": nil, "revisions": nil, "logs": nil, "redeploy": nil, "rollback": nil, "down": nil, "schedules": {Subs: map[string]*Node{"list": nil, "add": nil, "run": nil, "runs": nil, "pause": nil, "resume": nil, "rm": nil}}}},
-	"pages": {Subs: map[string]*Node{"deploy": nil, "list": nil, "show": nil, "delete": nil, "rollback": nil, "deploys": nil, "promote": nil,
+	"pages": {Subs: map[string]*Node{"init": nil, "deploy": nil, "list": nil, "show": nil, "delete": nil, "rollback": nil, "deploys": nil, "promote": nil,
 		"domains":  {Subs: map[string]*Node{"add": nil, "status": nil}},
 		"settings": {Subs: map[string]*Node{"show": nil, "set": nil}},
 		"routes":   {Subs: map[string]*Node{"show": nil, "test": nil, "lint": nil, "list": nil, "add": nil, "rm": nil}}}},

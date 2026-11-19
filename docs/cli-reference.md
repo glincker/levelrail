@@ -2264,7 +2264,9 @@ See [Compose apps](/compose-apps).
 ## Pages
 
 ```
+levelrail-cli pages init [dir] [--starter blank|landing|docs|portfolio]
 levelrail-cli pages deploy <dir|zip> [--name N] [--domain D] [flags]
+levelrail-cli pages deploy --url <https://host/site.zip|.tar.gz> [--name N] [--domain D]
 levelrail-cli pages list|show <name>|delete <name> [flags]
 levelrail-cli pages rollback <name> [deploy-id] [flags]
 levelrail-cli pages deploys <name> [flags]
@@ -2281,7 +2283,7 @@ levelrail-cli pages settings show <name> [flags]
 levelrail-cli pages settings set <name> [--spa auto|on|off] [--clean-urls auto|on|off] [--trailing-slash add|remove|auto] [--404 path|auto] [--build-command CMD|auto] [--output-dir DIR|auto] [--password P | --password-stdin | --password-env VAR | --clear-password] [flags]
 ```
 
-`pages deploy` publishes a folder or `.zip` as a static site with no build, creates the site on the first run and prints the live URL. It takes every flag of `deploy`. The upload size limit is read from `APP_UPLOAD_MAX_BYTES`. `rollback` without a deploy id goes back to the previous successful deploy. `deploys` lists a site's retained deploys with the URL each one is reachable at, and `promote` makes one of them the live deploy. `domains add` prints the DNS records, created automatically when a DNS integration covers the zone, otherwise listed for you to create. `domains status` also prints a checklist of `[ok]` and `[fail]` rows with a short reason for each failing DNS, port, certificate or address check. `pages settings` shows or changes a site's overrides (`auto` clears one, live at once). `--password-stdin` or `--password-env VAR` gate the site with a shared password without leaving it in shell history (`--password` works but is recorded by the shell), `--clear-password` removes the gate. `pages submissions` lists the form posts a site collected (see Contact forms in Pages) and `rm` deletes one. `pages routes list|add|rm` edits the dashboard redirects by index or from path. See [Levelrail Pages](/pages).
+`pages init` scaffolds a deployable site from a starter without overwriting files. `pages deploy --url` has the control plane download an https `.zip` or `.tar.gz` (limits: `APP_PAGES_URL_MAX_MB`, `APP_PAGES_URL_TIMEOUT`). `pages deploy` publishes a folder or `.zip` as a static site with no build, creates the site on the first run and prints the live URL. It takes every flag of `deploy`. The upload size limit is read from `APP_UPLOAD_MAX_BYTES`. `rollback` without a deploy id goes back to the previous successful deploy. `deploys` lists a site's retained deploys with the URL each one is reachable at, and `promote` makes one of them the live deploy. `domains add` prints the DNS records, created automatically when a DNS integration covers the zone, otherwise listed for you to create. `domains status` also prints a checklist of `[ok]` and `[fail]` rows with a short reason for each failing DNS, port, certificate or address check. `pages settings` shows or changes a site's overrides (`auto` clears one, live at once). `--password-stdin` or `--password-env VAR` gate the site with a shared password without leaving it in shell history (`--password` works but is recorded by the shell), `--clear-password` removes the gate. `pages submissions` lists the form posts a site collected (see Contact forms in Pages) and `rm` deletes one. `pages routes list|add|rm` edits the dashboard redirects by index or from path. See [Levelrail Pages](/pages).
 
 ## Static sites
 

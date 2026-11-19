@@ -200,6 +200,19 @@ levelrail pages domains status docs docs.example.com
 
 `pages deploy` zips the folder (skipping `.git`, `node_modules` and dotfiles other than `_redirects`, `_headers` and `.well-known`), creates the site if it is missing, uploads, publishes and prints the live URL. A `.zip` works too. `levelrail deploy ./dist` prints a hint toward `pages deploy` when the folder has an `index.html` and no Dockerfile or compose file.
 
+### Start from a template
+
+`levelrail pages init [dir] [--starter blank|landing|docs|portfolio]` writes `index.html`, `404.html`, `_redirects`, `_headers` and an `app.yaml` with `build.type: static` into the folder (default: the current one). Existing files are never overwritten. The starters match the dashboard gallery. Then run `levelrail pages deploy <dir>`.
+
+### Deploy from a URL
+
+`levelrail pages deploy --url https://example.com/site.zip --name docs` makes the control plane download a `.zip` or `.tar.gz`, check it and publish it, creating the site on the first run. The same works over the API: `POST /api/v1/static-sites` accepts `source_url`, and `POST /api/v1/apps/{name}/builds` accepts `source_url` with `build.type: static` to redeploy an existing site. It needs the same permission as a normal static deploy.
+
+- Only `https` URLs without credentials are accepted. Private, loopback and link-local addresses are refused, including after redirects (at most 3, https only).
+- The download is capped by `APP_PAGES_URL_MAX_MB` (default 100) and `APP_PAGES_URL_TIMEOUT` (default 60s).
+- Archives with absolute paths, `..` segments, symlinks or special files are rejected. The file count and unpacked size limits are the upload limits (`APP_UPLOAD_MAX_FILES`, `APP_UPLOAD_MAX_EXTRACTED_BYTES`).
+- A zip with a single wrapper folder is served from inside that folder. A `.tar.gz` is served as packed.
+
 ## Domain checklist
 
 `GET /api/v1/static-sites/{name}/domains/{domain}/status` also returns a `diagnosis` list of `{code, ok, hint}` rows: DNS pointing at this host (A, AAAA, CNAME, CDN proxy), propagation, ports 80 and 443, certificate and CA failure reason, a private or CGNAT host address, and whether `www` and the apex agree. It reuses the [domain doctor](/domain-diagnosis), so the same time limits apply (`APP_DOMAIN_DOCTOR_TIMEOUT`, `APP_DOMAIN_DOCTOR_PROBE_TIMEOUT`). Port checks only run when the domain resolves to this server. The dashboard shows the rows as a compact checklist on the domain card and `pages domains status` prints them.

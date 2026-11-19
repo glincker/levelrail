@@ -24,6 +24,8 @@ func runPages(prog string, args []string, stdout, stderr io.Writer, lookupEnv fu
 	case "-h", "--help", "help":
 		_, _ = fmt.Fprint(stdout, pagesUsage(prog))
 		return exitOK
+	case "init":
+		return runPagesInit(prog, rest, stdout, stderr)
 	case "deploy":
 		return runPagesDeploy(prog, rest, stdout, stderr, lookupEnv, stdin)
 	case "list":
@@ -55,7 +57,9 @@ func runPages(prog string, args []string, stdout, stderr io.Writer, lookupEnv fu
 
 func pagesUsage(prog string) string {
 	return fmt.Sprintf(`Usage:
+  %[1]s pages init [dir] [--starter blank|landing|docs|portfolio]
   %[1]s pages deploy <dir|zip> [--name N] [--domain D] [flags]
+  %[1]s pages deploy --url <https://host/site.zip|.tar.gz> [--name N] [--domain D]
   %[1]s pages deploy --git <url> [--branch b] [--build-command c] [--output-dir d] [--name N]
   %[1]s pages list [flags]
   %[1]s pages show <name> [flags]
@@ -80,7 +84,7 @@ var pagesValueFlags = map[string]bool{
 	"app": true, "name": true, "port": true, "env": true, "build-env": true, "include": true,
 	"upload-hash": true, "timeout": true, "token": true, "api-url": true, "profile": true,
 	"output": true, "query": true, "domain": true,
-	"git": true, "branch": true, "build-command": true, "output-dir": true,
+	"git": true, "url": true, "starter": true, "branch": true, "build-command": true, "output-dir": true,
 }
 
 // pagesArgs splits deploy args into the --domain value, the rest, and the positional path.
@@ -135,6 +139,9 @@ func runPagesDeploy(prog string, args []string, stdout, stderr io.Writer, lookup
 	}
 	if repo := pagesFlagValue(args, "git"); repo != "" {
 		return runPagesDeployGit(prog, repo, args, stdout, stderr, lookupEnv)
+	}
+	if src := pagesFlagValue(args, "url"); src != "" {
+		return runPagesDeployURL(prog, src, args, stdout, stderr, lookupEnv)
 	}
 	domain, rest, dir := pagesArgs(args)
 	if dir == "" {
