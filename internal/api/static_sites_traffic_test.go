@@ -8,6 +8,7 @@ import (
 	"time"
 
 	"github.com/GLINCKER/levelrail/internal/ingress"
+	"github.com/GLINCKER/levelrail/internal/trafficclass"
 )
 
 func TestStaticSiteTraffic(t *testing.T) {
@@ -58,5 +59,33 @@ func TestStaticSiteTraffic(t *testing.T) {
 	}
 	if code, _ = get("?window=1h"); code != http.StatusBadRequest {
 		t.Fatalf("bad window = %d", code)
+	}
+}
+
+func TestStaticSiteTrafficSeries(t *testing.T) {
+	t.Setenv("APP_PAGES_TRAFFIC_BUCKETS", "6")
+	log := ingress.NewAccessLog(100)
+	now := time.Now()
+	add := func(path string, status int, class trafficclass.Class, ago time.Duration) {
+		log.Record("web.example.com", ingress.AccessRecord{Time: now.Add(-ago), Host: "web.example.com", Path: path, Status: status, Class: class, Client: netip.MustParseAddr("192.0.2.1")})
+	}
+	add("/", 200, trafficclass.Page, time.Minute)
+	add("/a.js", 200, trafficclass.Asset, time.Minute)
+	add("/gone", 404, trafficclass.Page, 20*time.Hour)
+	rt, cookie := visitorsRouter(t, log)
+	r := doPolicy(t, rt, cookie, http.MethodGet, "/api/v1/static-sites/web/traffic?range=24h", "")
+	var res staticSiteTrafficResponse
+	if err := json.Unmarshal(r.Body.Bytes(), &res); err != nil || len(res.Series) != 6 {
+		t.Fatalf("series = %d %s", r.Code, r.Body.String())
+	}
+	var req, pages, assets, errs int
+	for _, p := range res.Series {
+		req, pages, assets, errs = req+p.Requests, pages+p.Pages, assets+p.Assets, errs+p.Errors
+	}
+	if req != 3 || pages != 2 || assets != 1 || errs != 1 || res.Series[5].Requests != 2 {
+		t.Fatalf("totals = %d %d %d %d %+v", req, pages, assets, errs, res.Series)
+	}
+	if r = doPolicy(t, rt, cookie, http.MethodGet, "/api/v1/static-sites/web/traffic?range=30d", ""); r.Code != http.StatusOK {
+		t.Fatalf("30d = %d", r.Code)
 	}
 }

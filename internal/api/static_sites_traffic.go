@@ -1,6 +1,7 @@
 package api
 
 import (
+	"context"
 	"net/http"
 	"sort"
 	"time"
@@ -11,7 +12,27 @@ import (
 const maxTrafficTopPaths = 10
 
 // pagesTrafficWindows are the windows the Pages traffic endpoint accepts.
-var pagesTrafficWindows = map[string]time.Duration{"24h": 24 * time.Hour, "7d": 7 * 24 * time.Hour}
+var pagesTrafficWindows = map[string]time.Duration{"24h": 24 * time.Hour, "7d": 7 * 24 * time.Hour, "30d": 30 * 24 * time.Hour}
+
+// TrafficSeriesSource buckets edge traffic for an app over time.
+type TrafficSeriesSource interface {
+	AppTrafficSeries(ctx context.Context, app string, since, until time.Time, buckets int) []ingress.TrafficPoint
+}
+
+// AppTrafficSeries implements TrafficSeriesSource.
+func (e EdgeAccess) AppTrafficSeries(ctx context.Context, app string, since, until time.Time, buckets int) []ingress.TrafficPoint {
+	return e.Log.TrafficSeries(ctx, app, e.Stats.KeysForApp(app), since, until, buckets)
+}
+
+// pagesTrafficBuckets is the series length, clamped so a bad env value cannot blow up the response.
+func pagesTrafficBuckets() int {
+	return min(max(envInt("APP_PAGES_TRAFFIC_BUCKETS", 24), 2), 120)
+}
+
+// pagesTrafficRetention caps the longest range the series endpoint serves.
+func pagesTrafficRetention() time.Duration {
+	return time.Duration(envInt("APP_PAGES_TRAFFIC_RETENTION_DAYS", 30)) * 24 * time.Hour
+}
 
 type trafficAssets struct {
 	Requests int   `json:"requests"`
@@ -22,22 +43,23 @@ type trafficAssets struct {
 // Partial is true when bandwidth or the 404 list covers fewer requests than the
 // request total, because those come from the in-memory access ring.
 type staticSiteTrafficResponse struct {
-	Name         string                `json:"name"`
-	Window       string                `json:"window"`
-	Since        time.Time             `json:"since"`
-	GeneratedAt  time.Time             `json:"generated_at"`
-	Requests     int                   `json:"requests"`
-	Visitors     int                   `json:"visitors"`
-	BytesOut     int64                 `json:"bytes_out"`
-	Status       map[string]int        `json:"status"`
-	TopPaths     []ingress.CountedItem `json:"top_paths"`
-	Top404Paths  []ingress.CountedItem `json:"top_404_paths"`
-	TopPages     []ingress.CountedItem `json:"top_pages"`
-	Assets       trafficAssets         `json:"assets"`
-	BrokenLinks  []ingress.CountedItem `json:"broken_links"`
-	Probes       []ingress.CountedItem `json:"probe_requests"`
-	Partial      bool                  `json:"partial"`
-	PartialNotes []string              `json:"partial_notes,omitempty"`
+	Name         string                 `json:"name"`
+	Window       string                 `json:"window"`
+	Since        time.Time              `json:"since"`
+	GeneratedAt  time.Time              `json:"generated_at"`
+	Requests     int                    `json:"requests"`
+	Visitors     int                    `json:"visitors"`
+	BytesOut     int64                  `json:"bytes_out"`
+	Status       map[string]int         `json:"status"`
+	TopPaths     []ingress.CountedItem  `json:"top_paths"`
+	Top404Paths  []ingress.CountedItem  `json:"top_404_paths"`
+	TopPages     []ingress.CountedItem  `json:"top_pages"`
+	Assets       trafficAssets          `json:"assets"`
+	BrokenLinks  []ingress.CountedItem  `json:"broken_links"`
+	Probes       []ingress.CountedItem  `json:"probe_requests"`
+	Series       []ingress.TrafficPoint `json:"series"`
+	Partial      bool                   `json:"partial"`
+	PartialNotes []string               `json:"partial_notes,omitempty"`
 }
 
 // handleStaticSiteTraffic handles GET /api/v1/static-sites/{name}/traffic. It
@@ -49,16 +71,23 @@ func (rt *Router) handleStaticSiteTraffic(w http.ResponseWriter, r *http.Request
 	}
 	window := r.URL.Query().Get("window")
 	if window == "" {
+		window = r.URL.Query().Get("range")
+	}
+	if window == "" {
 		window = "24h"
 	}
 	span, ok := pagesTrafficWindows[window]
 	if !ok {
-		writeError(w, http.StatusBadRequest, "window must be 24h or 7d")
+		writeError(w, http.StatusBadRequest, "window must be 24h, 7d or 30d")
 		return
 	}
 	src, ok := rt.access.(VisitorSource)
 	if !ok {
 		writeError(w, http.StatusNotImplemented, "edge access log is not configured on this control plane")
+		return
+	}
+	if span > pagesTrafficRetention() {
+		writeError(w, http.StatusBadRequest, "window exceeds the configured traffic retention")
 		return
 	}
 	now := time.Now().UTC()
@@ -70,6 +99,10 @@ func (rt *Router) handleStaticSiteTraffic(w http.ResponseWriter, r *http.Request
 		TopPaths: capItems(sum.TopPaths, maxTrafficTopPaths), Top404Paths: []ingress.CountedItem{},
 		TopPages:    topPages(sum.TopPaths, envInt("APP_PAGES_TRAFFIC_TOP_N", maxTrafficTopPaths)),
 		BrokenLinks: []ingress.CountedItem{}, Probes: []ingress.CountedItem{},
+	}
+	out.Series = []ingress.TrafficPoint{}
+	if ss, ok := rt.access.(TrafficSeriesSource); ok {
+		out.Series = ss.AppTrafficSeries(r.Context(), name, since, now, pagesTrafficBuckets())
 	}
 	if out.Status == nil {
 		out.Status = map[string]int{}

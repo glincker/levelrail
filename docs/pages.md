@@ -181,6 +181,15 @@ levelrail pages domains status docs docs.example.com
 
 `pages deploy` zips the folder (skipping `.git`, `node_modules` and dotfiles other than `_redirects`, `_headers` and `.well-known`), creates the site if it is missing, uploads, publishes and prints the live URL. A `.zip` works too. `levelrail deploy ./dist` prints a hint toward `pages deploy` when the folder has an `index.html` and no Dockerfile or compose file.
 
+## Traffic over time
+
+The site page shows a small requests chart with a 24 hour, 7 day and 30 day toggle. `GET /api/v1/static-sites/{name}/traffic?range=24h|7d|30d` returns a `series` array of buckets, each with `start`, `requests`, `pages`, `assets` and `errors` (4xx and 5xx). Recent buckets come from the edge access log and older hours from the stored hourly rollups, so history survives a restart.
+
+| Variable | Default | Effect |
+| --- | --- | --- |
+| `APP_PAGES_TRAFFIC_BUCKETS` | 24 | Buckets per series, clamped to 2 to 120 |
+| `APP_PAGES_TRAFFIC_RETENTION_DAYS` | 30 | Longest range the endpoint serves |
+
 ## Limitations
 
 - **Build toolchain**: the build container is Node based. For other generators (Hugo, Jekyll), set `APP_STATIC_BUILD_IMAGE` to an image that has the tool and a shell, or build in CI and serve the committed output with `build.path`.
