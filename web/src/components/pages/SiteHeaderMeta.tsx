@@ -3,23 +3,19 @@ import { useTranslation } from 'react-i18next'
 import { StatusBadge } from '@/components/ui/status-badge'
 import { formatAge, formatSize } from '../../lib/format'
 import { appListQueryOptions } from '../../queries/apps'
-import { deployAttemptsQueryOptions } from '../../queries/deployAttempts'
-import { usePagesSites } from '../../queries/pagesSites'
+import { usePagesSiteDetail } from '../../queries/pagesSites'
 import { SiteUrlChip } from './SiteSuccess'
 
 /** One horizontal row under the title: URL chip, status, last deploy, size. Unknown values are left out, never guessed. */
 export function SiteHeaderMeta({ name }: Readonly<{ name: string }>) {
   const { t } = useTranslation('pagesSites')
   const apps = useQuery({ ...appListQueryOptions(), retry: false })
-  const attempts = useQuery({
-    ...deployAttemptsQueryOptions(name),
-    retry: false,
-  })
-  const sites = usePagesSites()
+  const detail = usePagesSiteDetail(name).data
   const status = apps.data?.find((a) => a.name === name)?.status
-  const site = sites.data?.find((s) => s.name === name)
-  const last = attempts.data?.[0]
-  const lastAt = site?.last_deploy_at ?? last?.finished_at ?? last?.started_at
+  const lastAt =
+    detail?.latest_deploy?.finished_at ??
+    detail?.latest_deploy?.started_at ??
+    detail?.updated_at
   return (
     <div className="flex flex-wrap items-center gap-x-4 gap-y-1.5 text-sm">
       <SiteUrlChip name={name} />
@@ -31,9 +27,12 @@ export function SiteHeaderMeta({ name }: Readonly<{ name: string }>) {
           {t('detail.lastDeploy', { when: formatAge(lastAt) })}
         </span>
       ) : null}
-      {site?.size_bytes !== undefined ? (
+      {detail ? (
         <span className="text-muted-foreground tabular-nums">
-          {formatSize(site.size_bytes)}
+          {formatSize(detail.size_bytes)}
+          {detail.file_count > 0
+            ? ` \u00b7 ${t('detail.files', { count: detail.file_count })}`
+            : ''}
         </span>
       ) : null}
     </div>

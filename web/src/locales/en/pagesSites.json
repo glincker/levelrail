@@ -28,7 +28,7 @@
     "name": "Name",
     "nameHint": "Lowercase letters, digits and hyphens.",
     "drop": "Upload",
-    "blank": "Blank page",
+    "blank": "Starter",
     "blankHint": "Starts with a single index page you can replace later.",
     "git": "Deploy from a git repository instead",
     "create": "Create and publish",
@@ -50,6 +50,7 @@
     "visit": "Visit",
     "tabs": {
       "label": "Site sections",
+      "overview": "Overview",
       "deployments": "Deployments",
       "domains": "Domains",
       "routes": "Routes",
@@ -60,7 +61,9 @@
     "loading": "Loading...",
     "dropOverlay": "Drop to publish a new version",
     "redeployed": "New version published.",
-    "lastDeploy": "Last deploy {{when}}"
+    "lastDeploy": "Last deploy {{when}}",
+    "files_one": "{{count}} file",
+    "files_other": "{{count}} files"
   },
   "settings": {
     "app": "Full app settings",
@@ -99,7 +102,11 @@
     "step1": "Domain",
     "step2": "DNS records",
     "step3": "Verify",
-    "createdForYou": "DNS records were created for you."
+    "createdForYou": "DNS records were created for you.",
+    "none": "No domains yet. The site is reachable on its default address.",
+    "tls": "TLS",
+    "provisioning": "Provisioning",
+    "remove": "Remove {{domain}}"
   },
   "summary": {
     "files_one": "{{count}} file",
@@ -140,5 +147,66 @@
     "confirmTitle": "Roll back {{name}}?",
     "confirmBody": "The site serves the previous version again.",
     "none": "No earlier version to roll back to."
+  },
+  "starters": {
+    "label": "Starter template",
+    "preview": "Preview of the {{name}} starter",
+    "blank": {
+      "title": "Blank",
+      "hint": "A single empty index page you can replace later."
+    },
+    "landing": {
+      "title": "Landing page",
+      "hint": "Hero, three feature cards and a footer."
+    },
+    "docs": {
+      "title": "Docs",
+      "hint": "Side navigation, headings and a code block."
+    },
+    "portfolio": {
+      "title": "Portfolio",
+      "hint": "Intro and a grid of selected work."
+    }
+  },
+  "checks": {
+    "title": "Site check",
+    "score": "Site check score",
+    "rerun": "Re-run",
+    "running": "Checking...",
+    "failed": "Could not run the site check.",
+    "allGood": "No problems found.",
+    "scanned_one": "{{count}} file scanned, {{size}}.",
+    "scanned_other": "{{count}} files scanned, {{size}}.",
+    "truncated": "Large site: only part of it was scanned.",
+    "passing_one": "{{count}} passing check",
+    "passing_other": "{{count}} passing checks",
+    "status": {
+      "ok": "passing",
+      "warn": "warning",
+      "fail": "failing"
+    }
+  },
+  "traffic": {
+    "title": "Traffic",
+    "window": "Time window",
+    "windows": {
+      "24h": "24 hours",
+      "7d": "7 days"
+    },
+    "requests": "Requests",
+    "visitors": "Visitors",
+    "bandwidth": "Bandwidth",
+    "statusLine": "2xx {{ok}}, 3xx {{redirects}}, 4xx {{clientErrors}}, 5xx {{serverErrors}}",
+    "topPaths": "Top paths",
+    "top404": "Top missing paths",
+    "none": "Nothing yet.",
+    "addRedirect": "Add a redirect",
+    "unavailable": "Traffic is not available: this server has no access log source for sites.",
+    "failed": "Could not load traffic.",
+    "partial": "Partial data."
+  },
+  "redirect": {
+    "hint": "Add this line to your _redirects file and publish:",
+    "copy": "Copy line"
   }
 }

@@ -19,8 +19,11 @@ import {
 import { formatAge, formatSize } from '../../lib/format'
 import type { AppListEntry } from '../../types/appDetail'
 import { appListQueryOptions } from '../../queries/apps'
-import { deployAttemptsQueryOptions } from '../../queries/deployAttempts'
-import { usePagesSites, type PagesSite } from '../../queries/pagesSites'
+import {
+  usePagesSiteDetail,
+  usePagesSites,
+  type PagesSite,
+} from '../../queries/pagesSites'
 import { EntryCards } from './EntryCards'
 import { NewSiteDialog } from './NewSiteDialog'
 
@@ -29,15 +32,14 @@ function SiteRow({
   app,
 }: Readonly<{ site: PagesSite; app: AppListEntry | undefined }>) {
   const { t } = useTranslation('pagesSites')
-  // One cheap read per row; the newest attempt is the last deploy.
-  const attempts = useQuery({
-    ...deployAttemptsQueryOptions(site.name),
-    retry: false,
-  })
+  // The list omits size and deploy time, so each rendered row reads its own detail once.
+  const detail = usePagesSiteDetail(site.name, site.size_bytes === undefined)
   const lastAt =
     site.last_deploy_at ??
-    attempts.data?.[0]?.finished_at ??
-    attempts.data?.[0]?.started_at
+    detail.data?.latest_deploy?.finished_at ??
+    detail.data?.latest_deploy?.started_at ??
+    detail.data?.updated_at
+  const sizeBytes = site.size_bytes ?? detail.data?.size_bytes
   const domain = site.domains[0]
   const variant = app?.status.variant
   return (
@@ -79,9 +81,7 @@ function SiteRow({
         )}
       </TableCell>
       <TableCell className="text-right text-muted-foreground tabular-nums">
-        {site.size_bytes === undefined
-          ? t('list.unknown')
-          : formatSize(site.size_bytes)}
+        {sizeBytes === undefined ? t('list.unknown') : formatSize(sizeBytes)}
       </TableCell>
     </TableRow>
   )

@@ -1,14 +1,22 @@
 import { useState, type FormEvent } from 'react'
 import { useQuery, useQueryClient } from '@tanstack/react-query'
 import { useTranslation } from 'react-i18next'
-import { CircleCheckGlassIcon, CopyGlassIcon } from '@thesvg/ui-react'
+import {
+  CircleCheckGlassIcon,
+  CopyGlassIcon,
+  XGlassIcon,
+} from '@thesvg/ui-react'
 import { Alert, AlertDescription } from '@/components/ui/alert'
 import { Badge } from '@/components/ui/badge'
 import { Button } from '@/components/ui/button'
 import { Input } from '@/components/ui/input'
 import { Label } from '@/components/ui/label'
 import { useCopyToClipboard } from '../../hooks/useCopyToClipboard'
-import { appKeys } from '../../queries/apps'
+import { CertTruthBadge } from '../CertTruthBadge'
+import { ProxyHandledTlsBadge } from '../ProxyDomainStatus'
+import { appKeys, useUpdateApp } from '../../queries/apps'
+import { useCertificates } from '../../queries/certificates'
+import type { AppDetail } from '../../types/appDetail'
 import {
   addSiteDomain,
   fetchSiteDomainStatus,
@@ -130,8 +138,72 @@ function SetupCard({
   )
 }
 
-/** Compact "connect a domain" row plus the DNS setup of each domain added in this view. */
-export function PageDomains({ name }: Readonly<{ name: string }>) {
+function DomainList({ app }: Readonly<{ app: AppDetail }>) {
+  const { t } = useTranslation('pagesSites')
+  const { data: certificates } = useCertificates()
+  const update = useUpdateApp(app.name, { inlineError: true })
+  const domains = app.domains ?? []
+  if (domains.length === 0) {
+    return <p className="text-sm text-muted-foreground">{t('domains.none')}</p>
+  }
+  return (
+    <ul className="divide-y divide-border rounded-md border border-border">
+      {domains.map((d) => {
+        const cert = certificates.find((c) => c.domain === d)
+        return (
+          <li key={d} className="flex flex-wrap items-center gap-2 px-3 py-1.5">
+            <a
+              href={`https://${d}`}
+              target="_blank"
+              rel="noreferrer"
+              className="font-mono text-sm underline-offset-2 hover:underline focus-visible:underline"
+            >
+              {d}
+            </a>
+            <span className="flex items-center gap-1.5 text-xs text-muted-foreground">
+              {t('domains.tls')}
+              {cert ? (
+                <CertTruthBadge cert={cert} />
+              ) : (
+                <ProxyHandledTlsBadge
+                  domain={d}
+                  fallback={
+                    <Badge variant="muted">{t('domains.provisioning')}</Badge>
+                  }
+                />
+              )}
+            </span>
+            <Button
+              type="button"
+              size="icon-sm"
+              variant="ghost"
+              className="ml-auto"
+              disabled={update.isPending}
+              aria-label={t('domains.remove', { domain: d })}
+              onClick={() =>
+                update.mutate({
+                  ...app,
+                  domains: domains.filter((x) => x !== d),
+                })
+              }
+            >
+              <XGlassIcon className="size-4" aria-hidden="true" />
+            </Button>
+          </li>
+        )
+      })}
+      {update.isError ? (
+        <li className="px-3 py-1.5 text-xs text-destructive" role="alert">
+          {update.error.message}
+        </li>
+      ) : null}
+    </ul>
+  )
+}
+
+/** One card for a site's domains: current list with TLS and remove, then the three-step add flow. */
+export function PageDomains({ app }: Readonly<{ app: AppDetail }>) {
+  const name = app.name
   const { t } = useTranslation('pagesSites')
   const queryClient = useQueryClient()
   const [domain, setDomain] = useState('')
@@ -177,6 +249,7 @@ export function PageDomains({ name }: Readonly<{ name: string }>) {
           </li>
         ))}
       </ol>
+      <DomainList app={app} />
       <form
         onSubmit={(e) => void submit(e)}
         className="flex flex-wrap items-end gap-2"

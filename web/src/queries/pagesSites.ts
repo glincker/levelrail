@@ -111,3 +111,122 @@ export async function fetchSiteDomainStatus(
     'domain status',
   )
 }
+
+export interface PagesSiteDeploy {
+  id: string
+  status: string
+  source: string
+  commit_sha?: string
+  started_at: string
+  finished_at?: string
+  error?: string
+}
+
+export interface PagesSiteDetail {
+  name: string
+  domains: string[]
+  published: boolean
+  file_count: number
+  size_bytes: number
+  updated_at?: string
+  latest_deploy?: PagesSiteDeploy
+}
+
+const siteRoot = (name: string) =>
+  `/api/v1/static-sites/${encodeURIComponent(name)}`
+
+async function readJson<T>(res: Response, what: string): Promise<T> {
+  if (!res.ok) {
+    throw new ApiError(
+      res.status,
+      await readErrorMessage(res, `${what} failed: ${res.status}`),
+    )
+  }
+  return (await res.json()) as T
+}
+
+export function pagesSiteDetailQueryOptions(name: string) {
+  return queryOptions({
+    queryKey: [...staticSitesKeys.all, 'pages-detail', name] as const,
+    queryFn: async () =>
+      readJson<PagesSiteDetail>(await fetch(siteRoot(name)), 'site detail'),
+    staleTime: 30_000,
+    retry: false,
+  })
+}
+
+/** Published size and latest deploy; `enabled` lets a list row skip it when the list already carried the values. */
+export function usePagesSiteDetail(name: string, enabled = true) {
+  return useQuery({ ...pagesSiteDetailQueryOptions(name), enabled })
+}
+
+export type CheckStatus = 'ok' | 'warn' | 'fail'
+
+export interface SiteCheck {
+  id: string
+  status: CheckStatus
+  title: string
+  detail: string
+  path?: string
+}
+
+export interface SiteChecksReport {
+  name: string
+  score: number
+  files_scanned: number
+  truncated: boolean
+  total_bytes: number
+  checks: SiteCheck[]
+}
+
+export const siteChecksKey = (name: string) =>
+  [...staticSitesKeys.all, 'checks', name] as const
+
+export function siteChecksQueryOptions(name: string) {
+  return queryOptions({
+    queryKey: siteChecksKey(name),
+    queryFn: async () =>
+      readJson<SiteChecksReport>(
+        await fetch(`${siteRoot(name)}/checks`),
+        'site checks',
+      ),
+    staleTime: 60_000,
+    retry: false,
+  })
+}
+
+export type TrafficWindow = '24h' | '7d'
+
+export interface TrafficCount {
+  label: string
+  count: number
+}
+
+export interface SiteTraffic {
+  name: string
+  window: TrafficWindow
+  since: string
+  generated_at: string
+  requests: number
+  visitors: number
+  bytes_out: number
+  status: { '2xx': number; '3xx': number; '4xx': number; '5xx': number }
+  top_paths: TrafficCount[]
+  top_404_paths: TrafficCount[]
+  partial: boolean
+  partial_notes?: string[]
+}
+
+/** null means the server has no edge access source (501), shown as an unavailable note rather than an error. */
+export function siteTrafficQueryOptions(name: string, window: TrafficWindow) {
+  return queryOptions({
+    queryKey: [...staticSitesKeys.all, 'traffic', name, window] as const,
+    queryFn: async (): Promise<SiteTraffic | null> => {
+      const res = await fetch(`${siteRoot(name)}/traffic?window=${window}`)
+      if (res.status === 501) return null
+      return readJson<SiteTraffic>(res, 'site traffic')
+    },
+    staleTime: 60_000,
+    retry: false,
+  })
+}

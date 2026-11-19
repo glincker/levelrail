@@ -22,20 +22,10 @@ import { APP_NAME_PATTERN } from '../../lib/newApp'
 import { siteNameFrom, type DropSelection } from '../../lib/zipSite'
 import { createPagesSite } from '../../queries/pagesSites'
 import { suggestSiteName } from './pageHelpers'
+import { starterSelection, type StarterId } from './starters'
+import { StarterGallery } from './starters/StarterGallery'
 
 type Mode = 'drop' | 'blank'
-
-function blankSelection(name: string): DropSelection {
-  const html = `<!doctype html>\n<html lang="en">\n<head><meta charset="utf-8"><title>${name}</title></head>\n<body><h1>${name}</h1></body>\n</html>\n`
-  const file = new File([html], 'index.html', { type: 'text/html' })
-  return {
-    kind: 'folder',
-    files: [{ path: 'index.html', file }],
-    label: 'index.html',
-    bytes: file.size,
-    hasIndex: true,
-  }
-}
 
 /** Compact create flow: name prefilled, then a drop (folder or zip) or a blank starter page. */
 export function NewSiteDialog({
@@ -53,6 +43,7 @@ export function NewSiteDialog({
   const { phase, run, reset } = useDropPublish()
   const [mode, setMode] = useState<Mode>(initialMode)
   const [selection, setSelection] = useState<DropSelection | null>(null)
+  const [starter, setStarter] = useState<StarterId>('blank')
   const [typedName, setTypedName] = useState<string | null>(null)
   const [createError, setCreateError] = useState<string | null>(null)
   const [creating, setCreating] = useState(false)
@@ -80,7 +71,8 @@ export function NewSiteDialog({
     setCreating(true)
     try {
       const route = await createPagesSite(name)
-      const chosen = mode === 'blank' ? blankSelection(name) : selection
+      const chosen =
+        mode === 'blank' ? starterSelection(starter, name) : selection
       if (chosen) await run(chosen, name, route === 'fallback')
     } catch (err) {
       setCreateError(
@@ -167,9 +159,12 @@ export function NewSiteDialog({
                 <SiteDropZone onSelect={setSelection} disabled={busy} />
               )
             ) : (
-              <p className="text-sm text-muted-foreground">
-                {t('new.blankHint')}
-              </p>
+              <StarterGallery
+                value={starter}
+                onChange={setStarter}
+                name={name}
+                disabled={busy}
+              />
             )}
             {phase.state === 'busy' ? (
               <Progress

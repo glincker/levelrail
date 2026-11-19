@@ -1,4 +1,4 @@
-import { Suspense, useState } from 'react'
+import { lazy, Suspense, useState } from 'react'
 import { Link, useNavigate } from '@tanstack/react-router'
 import { useTranslation } from 'react-i18next'
 import { LayoutTemplateGlassIcon } from '@thesvg/ui-react'
@@ -8,16 +8,19 @@ import { ConfirmDialog } from '@/components/ui/confirm-dialog'
 import { Skeleton } from '@/components/ui/skeleton'
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs'
 import { DeployAttemptsList } from '../DeployAttemptsList'
-import { DomainEditor } from '../DomainEditor'
 import { PageDropTarget } from './PageDropTarget'
 import { RollbackCard } from './RollbackCard'
 import { SiteHeaderMeta } from './SiteHeaderMeta'
 import { PageDomains } from './PageDomains'
+import { RedirectHint } from './RedirectHint'
 import { SitePublisher } from '../dropdeploy/SitePublisher'
 import { StaticRoutesPanel } from '../static/StaticRoutesPanel'
 import { useDeployProgress } from '../../hooks/useDeployProgress'
 import { PAGE_TABS, type PageTab } from './pageHelpers'
 import { useApp, useDeleteApp } from '../../queries/apps'
+
+// Cards load on demand so the detail route keeps its first-load budget.
+const PageOverview = lazy(() => import('./PageOverview'))
 
 function Deployments({ name }: Readonly<{ name: string }>) {
   const { t } = useTranslation('pagesSites')
@@ -52,12 +55,7 @@ function Deployments({ name }: Readonly<{ name: string }>) {
 
 function Domains({ name }: Readonly<{ name: string }>) {
   const { data: app } = useApp(name)
-  return (
-    <div className="space-y-4">
-      <PageDomains name={name} />
-      <DomainEditor app={app} />
-    </div>
-  )
+  return <PageDomains app={app} />
 }
 
 function Settings({ name }: Readonly<{ name: string }>) {
@@ -122,10 +120,14 @@ export function PageDetail({
   name,
   tab,
   onTabChange,
+  redirectFrom,
+  onAddRedirect,
 }: Readonly<{
   name: string
   tab: PageTab
   onTabChange: (tab: PageTab) => void
+  redirectFrom?: string
+  onAddRedirect: (path: string) => void
 }>) {
   const { t } = useTranslation('pagesSites')
   const { data: app } = useApp(name)
@@ -174,6 +176,11 @@ export function PageDetail({
               </TabsTrigger>
             ))}
           </TabsList>
+          <TabsContent value="overview">
+            <Suspense fallback={fallback}>
+              <PageOverview name={name} onAddRedirect={onAddRedirect} />
+            </Suspense>
+          </TabsContent>
           <TabsContent value="deployments">
             <Suspense fallback={fallback}>
               <Deployments name={name} />
@@ -186,6 +193,7 @@ export function PageDetail({
           </TabsContent>
           <TabsContent value="routes">
             <Suspense fallback={fallback}>
+              {redirectFrom ? <RedirectHint from={redirectFrom} /> : null}
               <StaticRoutesPanel app={name} />
             </Suspense>
           </TabsContent>

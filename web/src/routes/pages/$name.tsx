@@ -6,12 +6,20 @@ import { certificatesQueryOptions } from '../../queries/certificates'
 
 interface PageSearch {
   tab?: PageTab
+  from?: string
 }
 
 export const Route = createFileRoute('/pages/$name')({
   validateSearch: (search: Record<string, unknown>): PageSearch => {
     const tab = PAGE_TABS.find((t) => t === search.tab)
-    return tab && tab !== 'deployments' ? { tab } : {}
+    const from =
+      typeof search.from === 'string' && search.from.startsWith('/')
+        ? search.from.slice(0, 512)
+        : undefined
+    return {
+      ...(tab && tab !== 'overview' ? { tab } : {}),
+      ...(from ? { from } : {}),
+    }
   },
   loader: ({ context: { queryClient }, params: { name } }) =>
     Promise.all([
@@ -23,15 +31,19 @@ export const Route = createFileRoute('/pages/$name')({
 
 function PageRoute() {
   const { name } = Route.useParams()
-  const { tab } = Route.useSearch()
+  const { tab, from } = Route.useSearch()
   const navigate = Route.useNavigate()
   return (
     <PageDetail
       name={name}
-      tab={tab ?? 'deployments'}
+      tab={tab ?? 'overview'}
+      redirectFrom={from}
+      onAddRedirect={(path) =>
+        void navigate({ search: { tab: 'routes', from: path } })
+      }
       onTabChange={(next) =>
         void navigate({
-          search: next === 'deployments' ? {} : { tab: next },
+          search: next === 'overview' ? {} : { tab: next },
           replace: true,
         })
       }
