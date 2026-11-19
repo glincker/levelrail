@@ -3,6 +3,8 @@ package build
 import (
 	"context"
 	"errors"
+	"io"
+	"log/slog"
 	"strings"
 	"testing"
 	"time"
@@ -74,5 +76,67 @@ func TestVerifyPushedDigest(t *testing.T) {
 	}
 	if err := VerifyPushedDigest(context.Background(), fakeVerifier{err: errors.New("down")}, ref, d); err == nil {
 		t.Error("registry error must fail closed")
+	}
+}
+
+func TestPushAuthConfigScopes(t *testing.T) {
+	f := pushAuthConfig("reg.example", "levelrail/app", "tok")
+	if got := f("reg.example", []string{"repository:levelrail/app:push,pull"}); got.Password != "tok" {
+		t.Fatalf("job scope must get the token")
+	}
+	for name, c := range map[string]struct {
+		host   string
+		scopes []string
+	}{
+		"cache pull":  {"reg.example", []string{"repository:levelrail/app-cache:pull"}},
+		"other repo":  {"reg.example", []string{"repository:library/alpine:pull"}},
+		"pull only":   {"reg.example", []string{"repository:levelrail/app:pull"}},
+		"extra scope": {"reg.example", []string{"repository:levelrail/app:push,pull", "repository:x/y:pull"}},
+		"no scopes":   {"reg.example", nil},
+		"other host":  {"other.example", []string{"repository:levelrail/app:push,pull"}},
+	} {
+		if got := f(c.host, c.scopes); got.Password != "" || got.Username != "" {
+			t.Errorf("%s: credential leaked", name)
+		}
+	}
+}
+
+type capNodes struct {
+	capable map[string]bool
+	pushed  []bool
+}
+
+func (c *capNodes) NodeSupportsBuildPush(id string) bool { return c.capable[id] }
+func (c *capNodes) BuildOnNode(_ context.Context, _ string, req RemoteRequest, _ io.Writer, _ func(ProgressEvent)) (*Result, error) {
+	c.pushed = append(c.pushed, req.Push != nil)
+	return &Result{Digest: "sha256:" + strings.Repeat("a", 64)}, nil
+}
+
+type okVerifier struct{}
+
+func (okVerifier) ManifestDigest(context.Context, string, string) (string, error) {
+	return "sha256:" + strings.Repeat("a", 64), nil
+}
+
+func TestDispatchFollowsNodeCapability(t *testing.T) {
+	now := time.Unix(1_000_000, 0)
+	nodes := &capNodes{capable: map[string]bool{"new": true}}
+	r := &Router{remote: nodes, logger: slog.New(slog.DiscardHandler),
+		load: func(_ context.Context, rd io.Reader, _ string, _ func(ProgressEvent)) error {
+			_, err := io.Copy(io.Discard, rd)
+			return err
+		},
+		transfer: func(context.Context) TransferConfig {
+			return TransferConfig{Mode: TransferRegistry, RegistryHost: "reg.example", TokenTTL: time.Minute,
+				Issuer: testIssuer(t, &now), Verifier: okVerifier{},
+				Pull: func(context.Context, string, string, string) error { return nil }}
+		}}
+	for _, id := range []string{"new", "old"} {
+		if _, err := r.dispatchWith(context.Background(), id, RemoteRequest{Tag: "levelrail/app:b1"}, nil); err != nil {
+			t.Fatalf("%s: %v", id, err)
+		}
+	}
+	if len(nodes.pushed) != 2 || !nodes.pushed[0] || nodes.pushed[1] {
+		t.Fatalf("capable node must use registry and old node tar, got %v", nodes.pushed)
 	}
 }

@@ -277,14 +277,23 @@ func applyPush(opt *bkclient.SolveOpt, g *PushGrant) error {
 	}
 	opt.Exports[0] = bkclient.ExportEntry{Type: bkclient.ExporterImage, Attrs: attrs}
 	host := repo[:strings.Index(repo, "/")]
-	token := g.Token
+	provider := pushAuthConfig(host, repo[len(host)+1:], g.Token)
 	opt.Session = append(opt.Session, authprovider.NewDockerAuthProvider(authprovider.DockerAuthProviderConfig{
-		AuthConfigProvider: func(_ context.Context, h string, _ []string, _ authprovider.ExpireCachedAuthCheck) (types.AuthConfig, error) {
-			if h != host {
-				return types.AuthConfig{}, nil
-			}
-			return types.AuthConfig{Username: pushUser, Password: token}, nil
+		AuthConfigProvider: func(_ context.Context, h string, scopes []string, _ authprovider.ExpireCachedAuthCheck) (types.AuthConfig, error) {
+			return provider(h, scopes), nil
 		},
 	}))
 	return nil
+}
+
+// pushAuthConfig releases the job token only for the exact push,pull scope on the job repo,
+// so cache and base image pulls (even on the same host) get no credential.
+func pushAuthConfig(host, jobRepo, token string) func(h string, scopes []string) types.AuthConfig {
+	want := "repository:" + jobRepo + ":push,pull"
+	return func(h string, scopes []string) types.AuthConfig {
+		if h != host || len(scopes) != 1 || scopes[0] != want {
+			return types.AuthConfig{}
+		}
+		return types.AuthConfig{Username: pushUser, Password: token}
+	}
 }

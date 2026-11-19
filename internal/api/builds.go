@@ -350,6 +350,10 @@ func (rt *Router) handleTriggerBuild(w http.ResponseWriter, r *http.Request) {
 		writeError(w, http.StatusBadRequest, "invalid request body")
 		return
 	}
+	if status, msg := rt.checkImageRepoUnshared(r.Context(), name, req.ImageRepo); status != 0 {
+		writeError(w, status, msg)
+		return
+	}
 	if status, msg := rt.validateRerunOf(r.Context(), name, req.RerunOf); status != 0 {
 		writeError(w, status, msg)
 		return
