@@ -27,6 +27,7 @@ import { useApp, useDeleteApp } from '../../queries/apps'
 const PageOverview = lazy(() => import('./PageOverview'))
 const PageRoutes = lazy(() => import('./PageRoutes'))
 const SiteSettingsForm = lazy(() => import('./SiteSettingsForm'))
+const SiteGitCard = lazy(() => import('./SiteGitCard'))
 
 function Deployments({
   name,
@@ -40,6 +41,9 @@ function Deployments({
           <SitePublisher appName={name} />
         </div>
       ) : null}
+      <Suspense fallback={null}>
+        <SiteGitCard name={name} />
+      </Suspense>
       <RollbackCard name={name} attempts={attempts} />
       <DeployAttemptsList
         appName={name}
