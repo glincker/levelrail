@@ -172,3 +172,28 @@ func (c *Client) SendFormTest(ctx context.Context, app, form string) (FormTestRe
 	err := c.do(ctx, http.MethodPost, formPath(app, form)+"/test", nil, &out)
 	return out, err
 }
+
+// SiteSubmission is one stored post of a Pages site tagged with its form.
+type SiteSubmission struct {
+	Form string `json:"form"`
+	FormSubmission
+}
+
+// ListStaticSiteSubmissions returns the newest submissions across a site's forms.
+func (c *Client) ListStaticSiteSubmissions(ctx context.Context, site string, limit int) ([]SiteSubmission, error) {
+	var out struct {
+		Submissions []SiteSubmission `json:"submissions"`
+	}
+	p := "/api/v1/static-sites/" + PathEscape(site) + "/submissions"
+	if limit > 0 {
+		p += "?limit=" + strconv.Itoa(limit)
+	}
+	err := c.do(ctx, http.MethodGet, p, nil, &out)
+	return out.Submissions, err
+}
+
+// DeleteStaticSiteSubmission removes one submission of a form on a site.
+func (c *Client) DeleteStaticSiteSubmission(ctx context.Context, site, form string, id int64) error {
+	p := "/api/v1/static-sites/" + PathEscape(site) + "/submissions/" + PathEscape(form) + "/" + strconv.FormatInt(id, 10)
+	return c.do(ctx, http.MethodDelete, p, nil, nil)
+}

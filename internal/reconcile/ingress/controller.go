@@ -2108,6 +2108,11 @@ func (c *Controller) staticRoutesFor(ctx context.Context, site store.StaticSite,
 	if len(open) > 0 {
 		routes = append([]ingress.StaticRoute{{Hosts: open, RootDir: site.RootDir, Rules: rules, BasicAuth: siteGate}}, routes...)
 	}
+	if c.dashboardDial != "" {
+		for i := range routes {
+			routes[i].FormsDial, routes[i].FormsApp, routes[i].FormsHeaders = c.dashboardDial, site.Name, controlPlaneHopHeaders()
+		}
+	}
 	return routes
 }
 

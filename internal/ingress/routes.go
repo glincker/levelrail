@@ -279,6 +279,11 @@ type StaticRoute struct {
 	// BasicAuth, if non-nil, puts the same basic auth handler a ProxyRoute
 	// gets ahead of the file server, so a gated static site is not public.
 	BasicAuth *BasicAuthAccount
+	// FormsDial and FormsApp, when both set, send /_forms/<name> on these
+	// hosts to the control plane's form endpoint for that app, same-origin.
+	FormsDial    string
+	FormsApp     string
+	FormsHeaders map[string][]string
 }
 
 // MaintenanceRoute is one domain currently in maintenance mode: every
@@ -703,6 +708,9 @@ func BuildRoutesConfig(opts RoutesOptions) (*Config, error) {
 		}
 		if r.BasicAuth != nil {
 			staticHandle = append([]any{NewBasicAuthHandler(r.BasicAuth.Username, r.BasicAuth.Password)}, staticHandle...)
+		}
+		if fr, ok := r.formsRoute(); ok {
+			routes = append(routes, fr)
 		}
 		routes = append(routes, Route{
 			Match:  []Matcher{{Host: r.Hosts}},

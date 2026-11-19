@@ -204,6 +204,20 @@ levelrail pages domains status docs docs.example.com
 
 `GET /api/v1/static-sites/{name}/domains/{domain}/status` also returns a `diagnosis` list of `{code, ok, hint}` rows: DNS pointing at this host (A, AAAA, CNAME, CDN proxy), propagation, ports 80 and 443, certificate and CA failure reason, a private or CGNAT host address, and whether `www` and the apex agree. It reuses the [domain doctor](/domain-diagnosis), so the same time limits apply (`APP_DOMAIN_DOCTOR_TIMEOUT`, `APP_DOMAIN_DOCTOR_PROBE_TIMEOUT`). Port checks only run when the domain resolves to this server. The dashboard shows the rows as a compact checklist on the domain card and `pages domains status` prints them.
 
+## Contact forms
+
+A plain HTML form on a site can post to `/_forms/<form-name>` on the site's own host, so no CORS setup is needed. Create the form first with `levelrail-cli forms create <site> <form-name>` (redirect, honeypot field and notification channels are set there), then point the form at it:
+
+```html
+<form method="post" action="/_forms/contact">
+  <input name="email" type="email" required>
+  <input name="bot-field" hidden tabindex="-1" autocomplete="off">
+  <button>Send</button>
+</form>
+```
+
+Browser posts redirect to the form's redirect URL or show a built-in thank-you page; `fetch()` with `Accept: application/json` gets `{"ok":true}`. Spam is dropped quietly (honeypot, link count), and posts are limited per IP and by body size. The limits and retention come from `FORMS_RATE_PER_IP_PER_MINUTE`, `FORMS_MAX_BODY_BYTES` and `FORMS_RETENTION_DAYS`. Submissions keep a salted hash of the sender address, never the address. Read them in the site's Forms tab or with `levelrail-cli pages submissions <site>`; `GET /api/v1/static-sites/{name}/submissions` returns them across forms. A password-protected site keeps the gate in front of the form route.
+
 ## Traffic over time
 
 The site page shows a small requests chart with a 24 hour, 7 day and 30 day toggle. `GET /api/v1/static-sites/{name}/traffic?range=24h|7d|30d` returns a `series` array of buckets, each with `start`, `requests`, `pages`, `assets` and `errors` (4xx and 5xx). Recent buckets come from the edge access log and older hours from the stored hourly rollups, so history survives a restart.
