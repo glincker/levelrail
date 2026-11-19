@@ -44,6 +44,8 @@ func TestApplyStaticSiteSettings(t *testing.T) {
 		{"output dir replaces the detected publish", store.StaticSiteSettings{OutputDir: "out"}, spec.Build{Type: spec.BuildStatic, Command: "npm run build", Publish: "dist"}, spec.Build{Type: spec.BuildStatic, Command: "npm run build", Publish: "out"}, false},
 		{"command replaces the detected one", store.StaticSiteSettings{BuildCommand: "pnpm build"}, spec.Build{Type: spec.BuildStatic, Command: "npm run build", Publish: "dist"}, spec.Build{Type: spec.BuildStatic, Command: "pnpm build", Publish: "dist"}, false},
 		{"command reuses the served path as publish", store.StaticSiteSettings{BuildCommand: "make"}, spec.Build{Type: spec.BuildStatic, Path: "dist"}, spec.Build{Type: spec.BuildStatic, Command: "make", Publish: "dist"}, false},
+		{"no site setting keeps the git source build config", store.StaticSiteSettings{}, spec.Build{Type: spec.BuildStatic, Command: "npm run build", Publish: "build"}, spec.Build{Type: spec.BuildStatic, Command: "npm run build", Publish: "build"}, false},
+		{"site setting wins over the git source build config", store.StaticSiteSettings{BuildCommand: "make", OutputDir: "out"}, spec.Build{Type: spec.BuildStatic, Command: "npm run build", Publish: "build"}, spec.Build{Type: spec.BuildStatic, Command: "make", Publish: "out"}, false},
 		{"command without any output dir fails", store.StaticSiteSettings{BuildCommand: "make"}, spec.Build{Type: spec.BuildStatic}, spec.Build{}, true},
 		{"escaping output dir fails", store.StaticSiteSettings{OutputDir: "../x"}, spec.Build{Type: spec.BuildStatic}, spec.Build{}, true},
 	}

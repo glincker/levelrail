@@ -196,6 +196,7 @@ func (r *Recorder) Progress(attemptID string) func(build.ProgressEvent) {
 		stage := tracker.Observe(context.Background(), deploytrace.StageObs{
 			Step: ev.Step, Cached: ev.Cached, Completed: ev.Completed, Error: ev.Error, Log: ev.Log,
 		})
+		r.noteStaticPhase(attemptID, ev)
 		if ev.Log == "" {
 			return // step-lifecycle event, not output: nothing more to record
 		}

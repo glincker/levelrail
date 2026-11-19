@@ -95,6 +95,10 @@ func (rt *Router) staticSettingsDeps(w http.ResponseWriter, r *http.Request) (*s
 	name := r.PathValue("name")
 	site, err := getter.GetStaticSite(r.Context(), name)
 	if errors.Is(err, store.ErrServiceNotFound) {
+		// Settings are keyed by name, so a Pages app that has not published yet can store them.
+		if rt.isUnpublishedStaticApp(r, name) {
+			return &store.StaticSite{Name: name}, st, true
+		}
 		writeError(w, http.StatusNotFound, "static site not found")
 		return nil, nil, false
 	}
@@ -105,9 +109,29 @@ func (rt *Router) staticSettingsDeps(w http.ResponseWriter, r *http.Request) (*s
 	return site, st, true
 }
 
+// isUnpublishedStaticApp is true for an app created as a Pages site or
+// connected to a git source with the static build type.
+func (rt *Router) isUnpublishedStaticApp(r *http.Request, name string) bool {
+	svc, err := rt.apps.GetDesiredService(r.Context(), name)
+	if err != nil || svc == nil {
+		return false
+	}
+	if strings.HasSuffix(svc.Image, staticSitePendingTag) {
+		return true
+	}
+	if rt.gitSources == nil {
+		return false
+	}
+	gs, err := rt.gitSources.GetGitSource(r.Context(), name)
+	return err == nil && gs != nil && gs.BuildType == spec.BuildStatic
+}
+
 func (rt *Router) staticSettingsResource(site *store.StaticSite, s store.StaticSiteSettings) (staticSettingsResource, error) {
 	out := staticSettingsResource{Name: site.Name, BuildCommand: s.BuildCommand, OutputDir: s.OutputDir, SPAFallback: s.SPAFallback,
 		CleanURLs: s.CleanURLs, TrailingSlash: s.TrailingSlash, NotFoundPage: s.NotFoundPage}
+	if site.RootDir == "" {
+		return out, nil
+	}
 	rs, err := staticroutes.LoadSidecar(site.RootDir)
 	if err != nil {
 		return out, err
@@ -239,6 +263,9 @@ func uiToCompile(ui store.StaticUIRules) ([]staticroutes.UIRedirect, []staticrou
 // wakes the ingress controller, so the edit serves without a redeploy. A site
 // not yet published has no sidecar to update; the next deploy picks them up.
 func (rt *Router) publishStaticUI(site *store.StaticSite, s store.StaticSiteSettings, ui store.StaticUIRules) error {
+	if site.RootDir == "" {
+		return nil
+	}
 	rs, err := staticroutes.LoadSidecar(site.RootDir)
 	if err != nil || rs == nil {
 		return err

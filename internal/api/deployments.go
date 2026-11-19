@@ -27,6 +27,9 @@ type deploymentSteps struct {
 	Running     int    `json:"running"`
 	Failed      int    `json:"failed"`
 	FailingStep string `json:"failing_step,omitempty"`
+	// Items and Total name the phases of a static build; absent for other deploys.
+	Items []staticPhase `json:"items,omitempty"`
+	Total int           `json:"total,omitempty"`
 }
 
 // deploymentResource is the wire shape for one row of GET /api/v1/deployments.
@@ -161,6 +164,12 @@ func (rt *Router) toDeploymentResource(d store.Deployment) deploymentResource {
 			res.Steps = &deploymentSteps{Done: sum.Done, Running: sum.Running, Failed: sum.Failed, FailingStep: sum.FailingStep}
 			failingStep = sum.FailingStep
 		}
+	}
+	if phases := rt.staticDeployPhases(a, false); phases != nil {
+		if res.Steps == nil {
+			res.Steps = &deploymentSteps{}
+		}
+		res.Steps.Items, res.Steps.Total = phases, len(phases)
 	}
 	if a.Error != "" {
 		msg := firstLine(a.Error, 300)

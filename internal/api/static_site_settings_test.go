@@ -81,3 +81,30 @@ func TestStaticSiteSettingsAndRules(t *testing.T) {
 		t.Fatalf("unknown site = %d, want 404", code)
 	}
 }
+
+// Settings must be storable before the first publish: the site row only exists after a build.
+func TestStaticSiteSettingsBeforeFirstPublish(t *testing.T) {
+	rt, db := newTestRouter(t)
+	cookie := loginTestSession(t, rt, db)
+	do := func(method, path, body string) (int, []byte) {
+		rec := httptest.NewRecorder()
+		rt.Handler().ServeHTTP(rec, authedRequest(t, cookie, method, path, body))
+		return rec.Code, rec.Body.Bytes()
+	}
+	if code, raw := do(http.MethodPost, "/api/v1/static-sites", `{"name":"fresh"}`); code != http.StatusCreated {
+		t.Fatalf("create: %d %s", code, raw)
+	}
+	code, raw := do(http.MethodPatch, "/api/v1/static-sites/fresh/settings", `{"build_command":"npm run build","output_dir":"dist"}`)
+	var set staticSettingsResource
+	if code != http.StatusOK || json.Unmarshal(raw, &set) != nil || set.BuildCommand != "npm run build" || set.OutputDir != "dist" {
+		t.Fatalf("patch before publish: %d %s", code, raw)
+	}
+	code, raw = do(http.MethodGet, "/api/v1/static-sites/fresh/settings", "")
+	if code != http.StatusOK || json.Unmarshal(raw, &set) != nil || set.OutputDir != "dist" {
+		t.Fatalf("get before publish: %d %s", code, raw)
+	}
+	seedApp(t, db, "plain")
+	if code, _ = do(http.MethodPatch, "/api/v1/static-sites/plain/settings", `{"output_dir":"dist"}`); code != http.StatusNotFound {
+		t.Fatalf("non-static app = %d, want 404", code)
+	}
+}

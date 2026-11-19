@@ -19,6 +19,8 @@ type staticSiteDeploy struct {
 	StartedAt  string `json:"started_at"`
 	FinishedAt string `json:"finished_at,omitempty"`
 	Error      string `json:"error,omitempty"`
+	// Steps are the cloning, building, publishing and live phases with a state each.
+	Steps []staticPhase `json:"steps,omitempty"`
 }
 
 // staticSiteDetail is one Pages site: its domains, published size and latest deploy.
@@ -87,6 +89,7 @@ func (rt *Router) handleGetStaticSite(w http.ResponseWriter, r *http.Request) {
 		}
 		if len(attempts) > 0 {
 			out.LatestDeploy = toStaticSiteDeploy(attempts[0])
+			out.LatestDeploy.Steps = rt.staticDeployPhases(attempts[0], true)
 		}
 	}
 	writeJSON(w, http.StatusOK, out)
