@@ -8,7 +8,7 @@ import {
 } from '@thesvg/ui-react'
 
 const CARD =
-  'flex flex-1 basis-56 items-center gap-3 rounded-lg border border-border bg-card px-4 py-3 text-left transition-colors hover:bg-muted focus-visible:outline-2 focus-visible:outline-ring'
+  'flex flex-1 basis-60 items-center gap-3 rounded-xl border border-dashed border-border bg-card px-4 py-4 text-left shadow-xs transition-colors hover:border-solid hover:bg-muted motion-reduce:transition-none focus-visible:outline-2 focus-visible:outline-ring'
 
 function Body({
   icon,
@@ -17,7 +17,9 @@ function Body({
 }: Readonly<{ icon: ReactNode; title: string; body: string }>) {
   return (
     <>
-      <span className="text-muted-foreground">{icon}</span>
+      <span className="flex size-10 shrink-0 items-center justify-center rounded-lg bg-muted text-foreground">
+        {icon}
+      </span>
       <span className="min-w-0">
         <span className="block text-sm font-medium">{title}</span>
         <span className="block text-xs text-muted-foreground">{body}</span>

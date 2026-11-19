@@ -40,15 +40,13 @@ export default function DeployRowActions({
           >
             <CopyGlassIcon aria-hidden="true" />
           </Button>
-          <Button size="xs" variant="ghost" asChild>
-            <a
-              href={url}
-              target="_blank"
-              rel="noopener noreferrer"
-              aria-label={t('deployUrl.open')}
-            >
-              <ExternalLinkGlassIcon aria-hidden="true" />
-            </a>
+          <Button
+            size="xs"
+            variant="ghost"
+            aria-label={t('deployUrl.open')}
+            render={<a href={url} target="_blank" rel="noopener noreferrer" />}
+          >
+            <ExternalLinkGlassIcon aria-hidden="true" />
           </Button>
         </>
       ) : null}
