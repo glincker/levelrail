@@ -25,5 +25,19 @@
     "recreate": "Recreate",
     "blueGreen": "Blue-green",
     "rolling": "Rolling"
+  },
+  "preview": {
+    "label": "Preview",
+    "empty": "Nothing to preview until the first deploy finishes.",
+    "deploy": "Deploy",
+    "captured": "Captured {{when}}",
+    "open": "Open app",
+    "turnOn": "Turn on screenshots",
+    "off": "Previews are off for this app.",
+    "serverOff": "Previews are switched off on this server.",
+    "frameBlocked": "Could not load the live site here. Open it in a new tab.",
+    "desktop": "Desktop",
+    "mobile": "Mobile",
+    "viewport": "Viewport"
   }
 }

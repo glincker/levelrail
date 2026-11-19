@@ -25,5 +25,19 @@
     "recreate": "重建",
     "blueGreen": "蓝绿",
     "rolling": "滚动"
+  },
+  "preview": {
+    "label": "预览",
+    "empty": "首次部署完成前没有预览。",
+    "deploy": "部署",
+    "captured": "{{when}}截取",
+    "open": "打开应用",
+    "turnOn": "开启截图",
+    "off": "此应用的预览已关闭。",
+    "serverOff": "此服务器已关闭预览。",
+    "frameBlocked": "无法在此加载在线站点。请在新标签页中打开。",
+    "desktop": "桌面",
+    "mobile": "手机",
+    "viewport": "视口宽度"
   }
 }

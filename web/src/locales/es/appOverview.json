@@ -25,5 +25,19 @@
     "recreate": "Recrear",
     "blueGreen": "Blue-green",
     "rolling": "Rolling"
+  },
+  "preview": {
+    "label": "Vista previa",
+    "empty": "No hay vista previa hasta que termine el primer despliegue.",
+    "deploy": "Desplegar",
+    "captured": "Capturada {{when}}",
+    "open": "Abrir app",
+    "turnOn": "Activar capturas",
+    "off": "Las vistas previas están desactivadas para esta app.",
+    "serverOff": "Las vistas previas están desactivadas en este servidor.",
+    "frameBlocked": "No se pudo cargar el sitio en vivo aquí. Ábrelo en otra pestaña.",
+    "desktop": "Escritorio",
+    "mobile": "Móvil",
+    "viewport": "Ancho de vista"
   }
 }

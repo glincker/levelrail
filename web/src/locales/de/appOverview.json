@@ -25,5 +25,19 @@
     "recreate": "Neu erstellen",
     "blueGreen": "Blue-Green",
     "rolling": "Rolling"
+  },
+  "preview": {
+    "label": "Vorschau",
+    "empty": "Keine Vorschau, bis der erste Deploy abgeschlossen ist.",
+    "deploy": "Deployen",
+    "captured": "Erfasst {{when}}",
+    "open": "App öffnen",
+    "turnOn": "Screenshots aktivieren",
+    "off": "Vorschauen sind für diese App ausgeschaltet.",
+    "serverOff": "Vorschauen sind auf diesem Server ausgeschaltet.",
+    "frameBlocked": "Die Live-Seite lässt sich hier nicht laden. In neuem Tab öffnen.",
+    "desktop": "Desktop",
+    "mobile": "Mobil",
+    "viewport": "Ansichtsbreite"
   }
 }

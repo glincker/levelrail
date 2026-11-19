@@ -1,4 +1,11 @@
-import { Fragment, useEffect, useState, type ReactNode } from 'react'
+import {
+  Fragment,
+  Suspense,
+  lazy,
+  useEffect,
+  useState,
+  type ReactNode,
+} from 'react'
 import {
   CopyGlassIcon,
   ExternalLinkGlassIcon,
@@ -45,6 +52,9 @@ import { VisitorsCard } from './VisitorsCard'
 import { useAppUrl } from './useAppUrl'
 import { useOverviewActions } from './useOverviewActions'
 import { useOverviewHotkeys } from './useOverviewHotkeys'
+
+// Lazy so the preview (and its iframe code) stays out of the route chunk.
+const OverviewPreview = lazy(() => import('./OverviewPreview'))
 
 export function OverviewPage({
   app,
@@ -236,6 +246,16 @@ export function OverviewPage({
         gitMissing={git.error instanceof ApiError && git.error.status === 404}
         isStatic={isStatic}
       />
+      <Suspense
+        fallback={<div className="aspect-[8/5] max-w-xl rounded-md bg-muted" />}
+      >
+        <OverviewPreview
+          appName={app.name}
+          attempts={attempts}
+          url={openUrl}
+          onDeploy={setDeployTab}
+        />
+      </Suspense>
       <OverviewQuickLinks
         app={app}
         reading={reading}

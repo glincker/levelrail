@@ -25,5 +25,19 @@
     "recreate": "Recriar",
     "blueGreen": "Blue-green",
     "rolling": "Rolling"
+  },
+  "preview": {
+    "label": "Prévia",
+    "empty": "Sem prévia até o primeiro deploy terminar.",
+    "deploy": "Fazer deploy",
+    "captured": "Capturada {{when}}",
+    "open": "Abrir app",
+    "turnOn": "Ativar capturas de tela",
+    "off": "As prévias estão desativadas para este app.",
+    "serverOff": "As prévias estão desativadas neste servidor.",
+    "frameBlocked": "Não foi possível carregar o site ao vivo aqui. Abra em outra aba.",
+    "desktop": "Desktop",
+    "mobile": "Celular",
+    "viewport": "Largura da visualização"
   }
 }
