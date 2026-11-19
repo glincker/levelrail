@@ -167,6 +167,11 @@ func (m *staticSiteModule) ServeHTTP(w http.ResponseWriter, r *http.Request, _ c
 			userCache = true
 		}
 	}
+	if d.Kind == staticroutes.KindProxy {
+		// The proxy route runs ahead of this handler; reaching here means it was not built.
+		http.Error(w, proxyUnavailableBody, http.StatusBadGateway)
+		return nil
+	}
 	if d.Kind == staticroutes.KindRedirect {
 		h.Set("Location", d.Location)
 		w.WriteHeader(d.Status)

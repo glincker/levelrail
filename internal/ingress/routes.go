@@ -284,6 +284,9 @@ type StaticRoute struct {
 	FormsDial    string
 	FormsApp     string
 	FormsHeaders map[string][]string
+	// Proxies forward paths of this site to apps on this server; they rank
+	// before the forms route and the files, and sit behind BasicAuth.
+	Proxies []StaticProxy
 }
 
 // MaintenanceRoute is one domain currently in maintenance mode: every
@@ -709,6 +712,7 @@ func BuildRoutesConfig(opts RoutesOptions) (*Config, error) {
 		if r.BasicAuth != nil {
 			staticHandle = append([]any{NewBasicAuthHandler(r.BasicAuth.Username, r.BasicAuth.Password)}, staticHandle...)
 		}
+		routes = append(routes, r.proxyRoutes()...)
 		if fr, ok := r.formsRoute(); ok {
 			routes = append(routes, fr)
 		}

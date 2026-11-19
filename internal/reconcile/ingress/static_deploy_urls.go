@@ -35,7 +35,7 @@ func (c *Controller) staticDeployRoutes(ctx context.Context, site store.StaticSi
 		}
 		claimed[host] = site.Name
 		rules, _ := staticroutes.LoadSidecar(d.Dir)
-		routes = append(routes, ingress.StaticRoute{Hosts: []string{host}, RootDir: d.Dir, Rules: rules, BasicAuth: auth})
+		routes = append(routes, ingress.StaticRoute{Hosts: []string{host}, RootDir: d.Dir, Rules: rules.WithoutProxy(), BasicAuth: auth})
 	}
 	return routes
 }

@@ -1152,7 +1152,8 @@ func (c *Controller) Reconcile(ctx context.Context) (reconcile.Result, error) {
 				slog.String("static_site", site.Name), slog.String("error", rulesErr.Error()))
 		}
 		siteGate := siteGates[site.Name]
-		staticRoutes = append(staticRoutes, c.staticRoutesFor(ctx, site, rules, authByDomain, siteGate)...)
+		proxies := c.staticProxies(ctx, site.Name, rules, services, readyByService, readyAt)
+		staticRoutes = append(staticRoutes, c.staticRoutesFor(ctx, site, rules, authByDomain, siteGate, proxies)...)
 		deployAuth, deployOK := c.deployGate(ctx, site, authByDomain, siteGate)
 		if deployOK {
 			staticRoutes = append(staticRoutes, c.staticDeployRoutes(ctx, site, deployHost, deployAuth, claimedHosts)...)
@@ -2090,7 +2091,7 @@ func withoutHosts(hosts []string, drop map[string]bool) []string {
 // staticRoutesFor splits a site's hosts so each gated host gets its own
 // route with basic auth; a gated host whose account cannot be resolved is
 // dropped (fail closed) rather than served publicly.
-func (c *Controller) staticRoutesFor(ctx context.Context, site store.StaticSite, rules *staticroutes.Ruleset, authByDomain map[string]store.DomainBasicAuth, siteGate *ingress.BasicAuthAccount) []ingress.StaticRoute {
+func (c *Controller) staticRoutesFor(ctx context.Context, site store.StaticSite, rules *staticroutes.Ruleset, authByDomain map[string]store.DomainBasicAuth, siteGate *ingress.BasicAuthAccount, proxies []ingress.StaticProxy) []ingress.StaticRoute {
 	var open []string
 	var routes []ingress.StaticRoute
 	for _, host := range site.Domains {
@@ -2107,6 +2108,9 @@ func (c *Controller) staticRoutesFor(ctx context.Context, site store.StaticSite,
 	}
 	if len(open) > 0 {
 		routes = append([]ingress.StaticRoute{{Hosts: open, RootDir: site.RootDir, Rules: rules, BasicAuth: siteGate}}, routes...)
+	}
+	for i := range routes {
+		routes[i].Proxies = proxies
 	}
 	if c.dashboardDial != "" {
 		for i := range routes {
