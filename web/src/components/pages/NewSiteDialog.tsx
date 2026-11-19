@@ -1,5 +1,5 @@
 import { useState, type FormEvent } from 'react'
-import { Link, useNavigate } from '@tanstack/react-router'
+import { Link } from '@tanstack/react-router'
 import { useTranslation } from 'react-i18next'
 import { Alert, AlertDescription } from '@/components/ui/alert'
 import { Button } from '@/components/ui/button'
@@ -16,7 +16,8 @@ import { SegmentedControl } from '@/components/ui/segmented-control'
 import { SiteDropZone } from '../dropdeploy/SiteDropZone'
 import { useDropPublish } from '../../hooks/useDropPublish'
 import { ApiError } from '../../lib/apiError'
-import { formatSize } from '../../lib/format'
+import { SelectionSummary } from './SelectionSummary'
+import { SiteSuccess } from './SiteSuccess'
 import { APP_NAME_PATTERN } from '../../lib/newApp'
 import { siteNameFrom, type DropSelection } from '../../lib/zipSite'
 import { createPagesSite } from '../../queries/pagesSites'
@@ -41,18 +42,16 @@ export function NewSiteDialog({
   open,
   onOpenChange,
   existingNames,
+  initialMode = 'drop',
 }: Readonly<{
+  initialMode?: Mode
   open: boolean
   onOpenChange: (open: boolean) => void
   existingNames: readonly string[]
 }>) {
   const { t } = useTranslation('pagesSites')
-  const navigate = useNavigate()
-  const { phase, run, reset } = useDropPublish((appName) => {
-    onOpenChange(false)
-    void navigate({ to: '/pages/$name', params: { name: appName } })
-  })
-  const [mode, setMode] = useState<Mode>('drop')
+  const { phase, run, reset } = useDropPublish()
+  const [mode, setMode] = useState<Mode>(initialMode)
   const [selection, setSelection] = useState<DropSelection | null>(null)
   const [typedName, setTypedName] = useState<string | null>(null)
   const [createError, setCreateError] = useState<string | null>(null)
@@ -115,96 +114,99 @@ export function NewSiteDialog({
         <DialogHeader>
           <DialogTitle>{t('new.title')}</DialogTitle>
         </DialogHeader>
-        <form onSubmit={(e) => void submit(e)} className="space-y-3">
-          <div className="flex flex-wrap items-end gap-3">
-            <div className="min-w-40 flex-1 space-y-1.5">
-              <Label htmlFor="pages-site-name">{t('new.name')}</Label>
-              <Input
-                id="pages-site-name"
-                value={name}
+        {phase.state === 'done' ? (
+          <SiteSuccess name={name} onNavigate={() => handleOpenChange(false)} />
+        ) : (
+          <form onSubmit={(e) => void submit(e)} className="space-y-3">
+            <div className="flex flex-wrap items-end gap-3">
+              <div className="min-w-40 flex-1 space-y-1.5">
+                <Label htmlFor="pages-site-name">{t('new.name')}</Label>
+                <Input
+                  id="pages-site-name"
+                  value={name}
+                  disabled={busy}
+                  aria-invalid={nameInvalid}
+                  aria-describedby="pages-site-name-hint"
+                  onChange={(e) => setTypedName(e.target.value.toLowerCase())}
+                />
+              </div>
+              <SegmentedControl
+                aria-label={t('new.mode')}
+                value={mode}
                 disabled={busy}
-                aria-invalid={nameInvalid}
-                aria-describedby="pages-site-name-hint"
-                onChange={(e) => setTypedName(e.target.value.toLowerCase())}
+                onValueChange={(v) => setMode(v === 'blank' ? 'blank' : 'drop')}
+                options={[
+                  { value: 'drop', label: t('new.drop') },
+                  { value: 'blank', label: t('new.blank') },
+                ]}
               />
             </div>
-            <SegmentedControl
-              aria-label={t('new.mode')}
-              value={mode}
-              disabled={busy}
-              onValueChange={(v) => setMode(v === 'blank' ? 'blank' : 'drop')}
-              options={[
-                { value: 'drop', label: t('new.drop') },
-                { value: 'blank', label: t('new.blank') },
-              ]}
-            />
-          </div>
-          <p
-            id="pages-site-name-hint"
-            className="text-xs text-muted-foreground"
-          >
-            {taken ? t('new.nameTaken') : t('new.nameHint')}
-          </p>
-          {mode === 'drop' ? (
-            selection ? (
-              <div className="flex items-center justify-between gap-2 rounded-md border border-border px-3 py-2 text-sm">
-                <span className="truncate font-mono">{selection.label}</span>
-                <span className="flex items-center gap-2 text-muted-foreground">
-                  {formatSize(selection.bytes)}
-                  <Button
-                    type="button"
-                    variant="ghost"
-                    size="sm"
-                    disabled={busy}
-                    onClick={() => setSelection(null)}
-                  >
-                    {t('new.change')}
-                  </Button>
-                </span>
-              </div>
-            ) : (
-              <SiteDropZone onSelect={setSelection} disabled={busy} />
-            )
-          ) : (
-            <p className="text-sm text-muted-foreground">
-              {t('new.blankHint')}
+            <p
+              id="pages-site-name-hint"
+              className="text-xs text-muted-foreground"
+            >
+              {taken ? t('new.nameTaken') : t('new.nameHint')}
             </p>
-          )}
-          {phase.state === 'busy' ? (
-            <Progress
-              value={
-                phase.stage === 'uploading'
-                  ? Math.round(phase.progress * 100)
-                  : null
-              }
-              aria-label={stageLabel}
-            >
-              <span className="text-xs text-muted-foreground">
-                {stageLabel}
-              </span>
-            </Progress>
-          ) : null}
-          {failure ? (
-            <Alert variant="destructive" role="alert">
-              <AlertDescription>{failure}</AlertDescription>
-            </Alert>
-          ) : null}
-          <div className="flex flex-wrap items-center justify-between gap-2">
-            <Link
-              to="/apps/new"
-              className="text-xs text-muted-foreground underline-offset-2 hover:underline focus-visible:underline"
-            >
-              {t('new.git')}
-            </Link>
-            <Button
-              type="submit"
-              size="sm"
-              disabled={busy || nameInvalid || !ready}
-            >
-              {busy ? t('new.creating') : t('new.create')}
-            </Button>
-          </div>
-        </form>
+            {mode === 'drop' ? (
+              selection ? (
+                <div className="flex items-start justify-between gap-2 rounded-md border border-border px-3 py-2">
+                  <SelectionSummary selection={selection} />
+                  <span className="flex shrink-0 items-center gap-2">
+                    <Button
+                      type="button"
+                      variant="ghost"
+                      size="sm"
+                      disabled={busy}
+                      onClick={() => setSelection(null)}
+                    >
+                      {t('new.change')}
+                    </Button>
+                  </span>
+                </div>
+              ) : (
+                <SiteDropZone onSelect={setSelection} disabled={busy} />
+              )
+            ) : (
+              <p className="text-sm text-muted-foreground">
+                {t('new.blankHint')}
+              </p>
+            )}
+            {phase.state === 'busy' ? (
+              <Progress
+                value={
+                  phase.stage === 'uploading'
+                    ? Math.round(phase.progress * 100)
+                    : null
+                }
+                aria-label={stageLabel}
+              >
+                <span className="text-xs text-muted-foreground">
+                  {stageLabel}
+                </span>
+              </Progress>
+            ) : null}
+            {failure ? (
+              <Alert variant="destructive" role="alert">
+                <AlertDescription>{failure}</AlertDescription>
+              </Alert>
+            ) : null}
+            <div className="flex flex-wrap items-center justify-between gap-2">
+              <Link
+                to="/apps/new"
+                className="text-xs text-muted-foreground underline-offset-2 hover:underline focus-visible:underline"
+              >
+                {t('new.git')}
+              </Link>
+              <Button
+                type="submit"
+                size="sm"
+                disabled={busy || nameInvalid || !ready}
+              >
+                {busy ? t('new.creating') : t('new.create')}
+              </Button>
+            </div>
+          </form>
+        )}
       </DialogContent>
     </Dialog>
   )

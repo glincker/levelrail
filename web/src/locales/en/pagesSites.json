@@ -57,7 +57,10 @@
     },
     "publish": "Publish new version",
     "hidePublish": "Hide upload",
-    "loading": "Loading..."
+    "loading": "Loading...",
+    "dropOverlay": "Drop to publish a new version",
+    "redeployed": "New version published.",
+    "lastDeploy": "Last deploy {{when}}"
   },
   "settings": {
     "app": "Full app settings",
@@ -92,6 +95,50 @@
     "copyHost": "Copy host",
     "copyValue": "Copy value",
     "statusFailed": "Could not check the domain status.",
-    "placeholder": "www.example.com"
+    "placeholder": "www.example.com",
+    "step1": "Domain",
+    "step2": "DNS records",
+    "step3": "Verify",
+    "createdForYou": "DNS records were created for you."
+  },
+  "summary": {
+    "files_one": "{{count}} file",
+    "files_other": "{{count}} files",
+    "index": "index.html found",
+    "redirects": "_redirects found",
+    "headers": "_headers found",
+    "noIndex": "No index.html at the top level. The site root will show a 404.",
+    "overLimit": "This is over the upload size limit and will be rejected.",
+    "skipped": "Hidden system files, .git and node_modules are skipped."
+  },
+  "success": {
+    "title": "{{name}} is published",
+    "open": "Open",
+    "copy": "Copy URL",
+    "next": "Next",
+    "addDomain": "Add domain",
+    "editRoutes": "Edit routes",
+    "viewDeploys": "View deploys"
+  },
+  "entry": {
+    "drop": {
+      "title": "Drop a folder or zip",
+      "body": "Publish a built site in seconds."
+    },
+    "git": {
+      "title": "Connect git",
+      "body": "Build and publish on every push."
+    },
+    "blank": {
+      "title": "Start from a blank page",
+      "body": "Create a starter page and edit later."
+    }
+  },
+  "rollback": {
+    "title": "Previous version",
+    "action": "Roll back",
+    "confirmTitle": "Roll back {{name}}?",
+    "confirmBody": "The site serves the previous version again.",
+    "none": "No earlier version to roll back to."
   }
 }

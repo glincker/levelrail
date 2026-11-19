@@ -9,6 +9,9 @@ import { Skeleton } from '@/components/ui/skeleton'
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs'
 import { DeployAttemptsList } from '../DeployAttemptsList'
 import { DomainEditor } from '../DomainEditor'
+import { PageDropTarget } from './PageDropTarget'
+import { RollbackCard } from './RollbackCard'
+import { SiteHeaderMeta } from './SiteHeaderMeta'
 import { PageDomains } from './PageDomains'
 import { SitePublisher } from '../dropdeploy/SitePublisher'
 import { StaticRoutesPanel } from '../static/StaticRoutesPanel'
@@ -37,6 +40,7 @@ function Deployments({ name }: Readonly<{ name: string }>) {
           <SitePublisher appName={name} />
         </div>
       ) : null}
+      <RollbackCard name={name} attempts={attempts} />
       <DeployAttemptsList
         appName={name}
         attempts={attempts}
@@ -154,39 +158,42 @@ export function PageDetail({
         ) : null
       }
     >
-      <Tabs
-        value={tab}
-        onValueChange={(v) => {
-          const next = PAGE_TABS.find((x) => x === v)
-          if (next) onTabChange(next)
-        }}
-      >
-        <TabsList aria-label={t('detail.tabs.label')}>
-          {PAGE_TABS.map((id) => (
-            <TabsTrigger key={id} value={id}>
-              {t(`detail.tabs.${id}`)}
-            </TabsTrigger>
-          ))}
-        </TabsList>
-        <TabsContent value="deployments">
-          <Suspense fallback={fallback}>
-            <Deployments name={name} />
-          </Suspense>
-        </TabsContent>
-        <TabsContent value="domains">
-          <Suspense fallback={fallback}>
-            <Domains name={name} />
-          </Suspense>
-        </TabsContent>
-        <TabsContent value="routes">
-          <Suspense fallback={fallback}>
-            <StaticRoutesPanel app={name} />
-          </Suspense>
-        </TabsContent>
-        <TabsContent value="settings">
-          <Settings name={name} />
-        </TabsContent>
-      </Tabs>
+      <PageDropTarget name={name}>
+        <SiteHeaderMeta name={name} />
+        <Tabs
+          value={tab}
+          onValueChange={(v) => {
+            const next = PAGE_TABS.find((x) => x === v)
+            if (next) onTabChange(next)
+          }}
+        >
+          <TabsList aria-label={t('detail.tabs.label')}>
+            {PAGE_TABS.map((id) => (
+              <TabsTrigger key={id} value={id}>
+                {t(`detail.tabs.${id}`)}
+              </TabsTrigger>
+            ))}
+          </TabsList>
+          <TabsContent value="deployments">
+            <Suspense fallback={fallback}>
+              <Deployments name={name} />
+            </Suspense>
+          </TabsContent>
+          <TabsContent value="domains">
+            <Suspense fallback={fallback}>
+              <Domains name={name} />
+            </Suspense>
+          </TabsContent>
+          <TabsContent value="routes">
+            <Suspense fallback={fallback}>
+              <StaticRoutesPanel app={name} />
+            </Suspense>
+          </TabsContent>
+          <TabsContent value="settings">
+            <Settings name={name} />
+          </TabsContent>
+        </Tabs>
+      </PageDropTarget>
     </PageTemplate>
   )
 }

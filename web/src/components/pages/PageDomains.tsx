@@ -63,7 +63,7 @@ function SetupCard({
   const done = current.verified && current.cert === 'issued'
 
   return (
-    <div className="space-y-2 rounded-lg border border-border bg-card p-3">
+    <div className="space-y-2 border-t border-border pt-3">
       <div className="flex flex-wrap items-center gap-2">
         <span className="font-mono text-sm font-medium">{setup.domain}</span>
         <Badge variant="outline">{t(`domains.mode.${setup.mode}`)}</Badge>
@@ -86,6 +86,11 @@ function SetupCard({
           {polling && !done ? t('domains.checking') : t('domains.verify')}
         </Button>
       </div>
+      {setup.mode === 'auto' ? (
+        <p className="text-xs text-muted-foreground">
+          {t('domains.createdForYou')}
+        </p>
+      ) : null}
       {setup.mode === 'manual' && setup.records.length > 0 ? (
         <table className="w-full text-left text-sm">
           <caption className="sr-only">{t('domains.recordsLabel')}</caption>
@@ -153,8 +158,25 @@ export function PageDomains({ name }: Readonly<{ name: string }>) {
     }
   }
 
+  const latest = setups[0]
+  const step = latest ? 2 : 1
   return (
-    <div className="space-y-3">
+    <div className="space-y-3 rounded-lg border border-border bg-card p-3">
+      <ol className="flex flex-wrap items-center gap-x-4 gap-y-1 text-xs">
+        {(['step1', 'step2', 'step3'] as const).map((k, i) => (
+          <li
+            key={k}
+            aria-current={i + 1 === step ? 'step' : undefined}
+            className={
+              i + 1 <= step
+                ? 'font-medium text-foreground'
+                : 'text-muted-foreground'
+            }
+          >
+            {i + 1}. {t(`domains.${k}`)}
+          </li>
+        ))}
+      </ol>
       <form
         onSubmit={(e) => void submit(e)}
         className="flex flex-wrap items-end gap-2"
@@ -178,9 +200,9 @@ export function PageDomains({ name }: Readonly<{ name: string }>) {
           <AlertDescription>{error}</AlertDescription>
         </Alert>
       ) : null}
-      {setups.map((s) => (
-        <SetupCard key={s.domain} name={name} setup={s} />
-      ))}
+      {latest ? (
+        <SetupCard key={latest.domain} name={name} setup={latest} />
+      ) : null}
     </div>
   )
 }

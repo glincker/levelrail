@@ -6,7 +6,6 @@ import { LayoutTemplateGlassIcon, PlusGlassIcon } from '@thesvg/ui-react'
 import { PageTemplate } from '@/components/shell/PageTemplate'
 import { Alert, AlertDescription } from '@/components/ui/alert'
 import { Button } from '@/components/ui/button'
-import { EmptyState } from '@/components/ui/empty-state'
 import { StatusBadge } from '@/components/ui/status-badge'
 import { TableSkeleton } from '@/components/ui/table-skeleton'
 import {
@@ -22,6 +21,7 @@ import type { AppListEntry } from '../../types/appDetail'
 import { appListQueryOptions } from '../../queries/apps'
 import { deployAttemptsQueryOptions } from '../../queries/deployAttempts'
 import { usePagesSites, type PagesSite } from '../../queries/pagesSites'
+import { EntryCards } from './EntryCards'
 import { NewSiteDialog } from './NewSiteDialog'
 
 function SiteRow({
@@ -87,9 +87,17 @@ function SiteRow({
   )
 }
 
-export function PagesList() {
+export function PagesList({
+  initialOpen = false,
+  onClosed,
+}: Readonly<{ initialOpen?: boolean; onClosed?: () => void }>) {
   const { t } = useTranslation('pagesSites')
-  const [creating, setCreating] = useState(false)
+  const [creating, setCreating] = useState(initialOpen)
+  const [startMode, setStartMode] = useState<'drop' | 'blank'>('drop')
+  const openNew = (m: 'drop' | 'blank') => {
+    setStartMode(m)
+    setCreating(true)
+  }
   const sites = usePagesSites()
   const apps = useQuery({ ...appListQueryOptions(), retry: false })
   const names = sites.data?.map((s) => s.name) ?? []
@@ -101,7 +109,7 @@ export function PagesList() {
       description={t('description')}
       width="wide"
       actions={
-        <Button size="sm" onClick={() => setCreating(true)}>
+        <Button size="sm" onClick={() => openNew('drop')}>
           <PlusGlassIcon className="size-4" aria-hidden="true" />
           {t('newSite')}
         </Button>
@@ -114,15 +122,9 @@ export function PagesList() {
           <AlertDescription>{t('list.loadFailed')}</AlertDescription>
         </Alert>
       ) : sites.data.length === 0 ? (
-        <EmptyState
-          icon={<LayoutTemplateGlassIcon size="1.4em" />}
-          title={t('empty.title')}
-          description={t('empty.body')}
-          action={
-            <Button size="sm" onClick={() => setCreating(true)}>
-              {t('newSite')}
-            </Button>
-          }
+        <EntryCards
+          onDrop={() => openNew('drop')}
+          onBlank={() => openNew('blank')}
         />
       ) : (
         <div className="rounded-lg border border-border bg-card">
@@ -149,8 +151,13 @@ export function PagesList() {
         </div>
       )}
       <NewSiteDialog
+        key={startMode}
+        initialMode={startMode}
         open={creating}
-        onOpenChange={setCreating}
+        onOpenChange={(o) => {
+          setCreating(o)
+          if (!o) onClosed?.()
+        }}
         existingNames={names}
       />
     </PageTemplate>
