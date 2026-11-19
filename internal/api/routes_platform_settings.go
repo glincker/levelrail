@@ -143,6 +143,8 @@ func (rt *Router) registerSettingsRoutes(mux *http.ServeMux) {
 	mux.HandleFunc("GET /api/v1/static-sites/{name}/rules", rt.requireAbilityForResource(AbilityRead, appResourceFromPath, rt.handleGetStaticSiteRules))
 	mux.HandleFunc("PUT /api/v1/static-sites/{name}/rules", rt.requireAbilityForResource(AbilityWrite, appResourceFromPath, rt.handlePutStaticSiteRules))
 	mux.HandleFunc("GET /api/v1/static-sites/{name}/deploys", rt.requireAbilityForResource(AbilityRead, appResourceFromPath, rt.handleListStaticSiteDeploys))
+	mux.HandleFunc("GET /api/v1/static-sites/{name}/deploys/{deployId}/log", rt.requireAbilityForResource(AbilityRead, appResourceFromPath, rt.handleStaticSiteDeployLog))
+	mux.HandleFunc("GET /api/v1/static-sites/{name}/deploys/{deployId}/log/stream", rt.requireAbilityForResource(AbilityRead, appResourceFromPath, rt.withStreamReauth(appResourceFromPath, rt.handleStaticSiteDeployLogStream)))
 	mux.HandleFunc("POST /api/v1/static-sites/{name}/deploys/{deployId}/promote", rt.requireAbilityForResource(AbilityDeploy, appResourceFromPath, rt.idempotent(rt.handlePromoteStaticSiteDeploy)))
 	mux.HandleFunc("GET /api/v1/static-sites/{name}/submissions", rt.requireAbilityForResource(AbilityReadSensitive, appResourceFromPath, rt.handleListStaticSiteSubmissions))
 	mux.HandleFunc("DELETE /api/v1/static-sites/{name}/submissions/{form}/{id}", rt.requireAbilityForResource(AbilityDeploy, appResourceFromPath, rt.handleDeleteStaticSiteSubmission))

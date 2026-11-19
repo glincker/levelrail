@@ -1378,6 +1378,8 @@ Endpoints for:
 | GET | /api/v1/static-sites/{name}/hook | AbilityRead | handleGetStaticSiteHook |
 | POST | /api/v1/static-sites/{name}/hook | AbilityWriteSensitive | handlePutStaticSiteHook |
 | DELETE | /api/v1/static-sites/{name}/hook | AbilityWriteSensitive | handleDeleteStaticSiteHook |
+| GET | /api/v1/static-sites/{name}/deploys/{deployId}/log | AbilityRead | handleStaticSiteDeployLog |
+| GET | /api/v1/static-sites/{name}/deploys/{deployId}/log/stream | AbilityRead | handleStaticSiteDeployLogStream |
 
 ## Built-in Container Registry
 
