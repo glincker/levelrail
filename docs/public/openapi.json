@@ -154746,7 +154746,7 @@
     },
     "/api/v1/static-sites/{name}/submissions/{form}/{id}": {
       "delete": {
-        "description": "Requires the `write` ability.",
+        "description": "Requires the `deploy` ability.",
         "operationId": "handleDeleteStaticSiteSubmission",
         "parameters": [
           {
@@ -154827,7 +154827,7 @@
         "security": [
           {
             "bearerAuth": [
-              "write"
+              "deploy"
             ]
           }
         ],
@@ -154835,7 +154835,7 @@
         "tags": [
           "Static Sites / Backup Targets / Registry Credentials"
         ],
-        "x-required-ability": "write"
+        "x-required-ability": "deploy"
       }
     },
     "/api/v1/static-sites/{name}/traffic": {

@@ -1374,7 +1374,7 @@ Endpoints for:
 | GET | /api/v1/static-sites/{name}/deploys | AbilityRead | handleListStaticSiteDeploys |
 | POST | /api/v1/static-sites/{name}/deploys/{deployId}/promote | AbilityDeploy | handlePromoteStaticSiteDeploy |
 | GET | /api/v1/static-sites/{name}/submissions | AbilityReadSensitive | handleListStaticSiteSubmissions |
-| DELETE | /api/v1/static-sites/{name}/submissions/{form}/{id} | AbilityWrite | handleDeleteStaticSiteSubmission |
+| DELETE | /api/v1/static-sites/{name}/submissions/{form}/{id} | AbilityDeploy | handleDeleteStaticSiteSubmission |
 
 ## Built-in Container Registry
 
