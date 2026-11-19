@@ -100,7 +100,7 @@ function SetupCard({
         </p>
       ) : null}
       {setup.mode === 'manual' && setup.records.length > 0 ? (
-        <table className="w-full text-left text-sm">
+        <table className="w-full table-fixed text-left text-sm">
           <caption className="sr-only">{t('domains.recordsLabel')}</caption>
           <thead className="text-xs text-muted-foreground">
             <tr>
@@ -113,10 +113,10 @@ function SetupCard({
             {setup.records.map((r) => (
               <tr key={`${r.type}-${r.name}-${r.value}`}>
                 <td className="pr-3 font-mono text-xs">{r.type}</td>
-                <td className="max-w-40 pr-3">
+                <td className="pr-3">
                   <CopyCell value={r.name} label={t('domains.copyHost')} />
                 </td>
-                <td className="max-w-64">
+                <td>
                   <CopyCell value={r.value} label={t('domains.copyValue')} />
                 </td>
               </tr>

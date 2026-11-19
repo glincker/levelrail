@@ -53,7 +53,7 @@ function SiteRow({
           {site.name}
         </Link>
       </TableCell>
-      <TableCell className="max-w-64 truncate font-mono text-xs">
+      <TableCell className="max-w-40 truncate sm:max-w-64 font-mono text-xs">
         {domain ? (
           <a
             href={`https://${domain}`}
@@ -67,7 +67,7 @@ function SiteRow({
           <span className="text-muted-foreground">{t('list.noUrl')}</span>
         )}
       </TableCell>
-      <TableCell className="text-muted-foreground">
+      <TableCell className="hidden text-muted-foreground sm:table-cell">
         {lastAt ? formatAge(lastAt) : t('list.none')}
       </TableCell>
       <TableCell>
@@ -80,7 +80,7 @@ function SiteRow({
           <span className="text-muted-foreground">{t('list.unknown')}</span>
         )}
       </TableCell>
-      <TableCell className="text-right text-muted-foreground tabular-nums">
+      <TableCell className="hidden text-right text-muted-foreground tabular-nums md:table-cell">
         {sizeBytes === undefined ? t('list.unknown') : formatSize(sizeBytes)}
       </TableCell>
     </TableRow>
@@ -133,9 +133,13 @@ export function PagesList({
               <TableRow>
                 <TableHead>{t('list.name')}</TableHead>
                 <TableHead>{t('list.url')}</TableHead>
-                <TableHead>{t('list.lastDeploy')}</TableHead>
+                <TableHead className="hidden sm:table-cell">
+                  {t('list.lastDeploy')}
+                </TableHead>
                 <TableHead>{t('list.status')}</TableHead>
-                <TableHead className="text-right">{t('list.size')}</TableHead>
+                <TableHead className="hidden text-right md:table-cell">
+                  {t('list.size')}
+                </TableHead>
               </TableRow>
             </TableHeader>
             <TableBody>
