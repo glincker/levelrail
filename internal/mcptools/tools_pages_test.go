@@ -124,3 +124,29 @@ func TestPagesListAndShow(t *testing.T) {
 		t.Fatalf("got %+v", got)
 	}
 }
+
+func TestPagesManageDeleteRemovesBackingApp(t *testing.T) {
+	var mu sync.Mutex
+	var calls []string
+	session := newTestSession(t, func(w http.ResponseWriter, r *http.Request) {
+		mu.Lock()
+		calls = append(calls, r.Method+" "+r.URL.Path)
+		mu.Unlock()
+		w.Header().Set("Content-Type", "application/json")
+		if r.URL.Path == "/api/v1/static-sites/demo" {
+			w.WriteHeader(http.StatusConflict)
+			_, _ = w.Write([]byte(`{"error":"an app with this name still exists; delete the app instead"}`))
+			return
+		}
+		w.WriteHeader(http.StatusNoContent)
+	})
+	res, err := session.CallTool(context.Background(), &mcp.CallToolParams{Name: "pages_manage", Arguments: map[string]any{"action": "delete", "name": "demo", "confirm": "demo"}})
+	if err != nil || res.IsError {
+		t.Fatalf("delete failed: %v %+v", err, res)
+	}
+	mu.Lock()
+	defer mu.Unlock()
+	if len(calls) != 2 || calls[1] != "DELETE /api/v1/apps/demo" {
+		t.Fatalf("calls = %v", calls)
+	}
+}

@@ -169,7 +169,7 @@ func pagesWrite(ctx context.Context, c *apiclient.Client, in pagesInput) (pagesO
 		if err := requireConfirm("pages delete", "name", in.Name, in.Confirm); err != nil {
 			return out, err
 		}
-		if err := c.DeleteStaticSite(ctx, in.Name); err != nil {
+		if err := c.DeleteStaticSiteAndApp(ctx, in.Name); err != nil {
 			return out, fmt.Errorf("pages delete: %w", err)
 		}
 		out.Status = "deleted"

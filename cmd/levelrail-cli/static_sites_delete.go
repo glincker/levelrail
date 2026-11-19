@@ -10,7 +10,17 @@ import (
 // /api/v1/static-sites/{name}. The server refuses (409) while the app still
 // exists; deleting the app removes its site too.
 func runStaticSitesDelete(prog string, args []string, stdout, stderr io.Writer, lookupEnv func(string) (string, bool)) int {
-	fs, tokenFlagP, apiURLFlagP, profileFlagP, jsonOutP, outputFlagP, queryFlagP := apiFlagSet(prog, "static-sites delete", "print {\"deleted\": true} as JSON to stdout on success and nothing else", stderr)
+	return runSiteDelete(prog, "static-sites delete", false, args, stdout, stderr, lookupEnv)
+}
+
+// runPagesDelete is "pages delete": it also removes the backing app, since
+// every site made by pages deploy has one.
+func runPagesDelete(prog string, args []string, stdout, stderr io.Writer, lookupEnv func(string) (string, bool)) int {
+	return runSiteDelete(prog, "pages delete", true, args, stdout, stderr, lookupEnv)
+}
+
+func runSiteDelete(prog, cmd string, withApp bool, args []string, stdout, stderr io.Writer, lookupEnv func(string) (string, bool)) int {
+	fs, tokenFlagP, apiURLFlagP, profileFlagP, jsonOutP, outputFlagP, queryFlagP := apiFlagSet(prog, cmd, "print {\"deleted\": true} as JSON to stdout on success and nothing else", stderr)
 	fs.Usage = func() { _, _ = fmt.Fprint(stderr, staticSitesDeleteUsage(prog)) }
 
 	tokenFlag, apiURLFlag, profileFlag, jsonOut, of, exitCode, ok := parseAPIFlags(fs, args, apiFlagPtrs{tokenFlagP, apiURLFlagP, profileFlagP, jsonOutP, outputFlagP, queryFlagP}, prog, stderr)
@@ -18,13 +28,17 @@ func runStaticSitesDelete(prog string, args []string, stdout, stderr io.Writer, 
 		return exitCode
 	}
 
-	name, ok := requireOneArg(fs, stderr, prog, "static-sites delete", "static site name")
+	name, ok := requireOneArg(fs, stderr, prog, cmd, "static site name")
 	if !ok {
 		return exitUsage
 	}
 
 	client := apiClientFromFlags(prog, apiURLFlag, tokenFlag, profileFlag, lookupEnv)
-	if err := client.DeleteStaticSite(context.Background(), name); err != nil {
+	del := client.DeleteStaticSite
+	if withApp {
+		del = client.DeleteStaticSiteAndApp
+	}
+	if err := del(context.Background(), name); err != nil {
 		return reportError(stdout, stderr, jsonOut, fmt.Errorf("delete static site %q: %w", name, err))
 	}
 

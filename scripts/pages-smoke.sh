@@ -32,10 +32,10 @@ pages-smoke plan:
   5 second deploy, promote old deploy, rollback round trip
   6 password: 401 without credentials, 200 as user site, 401 on deploy host, clear, open
   7 checks endpoint score, traffic endpoint series
-  8 forms probe (SKIP when missing), pages init probe (SKIP when missing)
+  8 forms: create, POST /_forms/contact, list and delete the submission; pages init probe
   9 git deploy steps reach live (only with SMOKE_GIT_URL)
  10 domain status diagnosis (only with SMOKE_DOMAIN)
- 11 cleanup: delete the temp site, always
+ 11 cleanup: delete the temp sites and their backing apps, always
 PLAN
 }
 
@@ -56,8 +56,11 @@ export APP_API_URL="$LEVELRAIL_API_URL" APP_API_TOKEN="$LEVELRAIL_TOKEN"
 cleanup() {
   local rc=$?
   if [ -n "$CLI" ] && [ -x "$CLI" ]; then
-    "$CLI" pages delete "$SITE" >/dev/null 2>&1 || true
-    "$CLI" pages delete "$SITE-git" >/dev/null 2>&1 || true
+    # pages delete removes the app too; apps delete covers servers without that fix.
+    for s in "$SITE" "$SITE-git"; do
+      "$CLI" pages delete "$s" >/dev/null 2>&1 || true
+      "$CLI" apps delete "$s" >/dev/null 2>&1 || true
+    done
   fi
   if [ -n "$WORK" ]; then rm -rf "$WORK"; fi
   printf '\n%d passed, %d failed, %d skipped\n' "$PASS" "$FAIL" "$SKIP"
@@ -218,12 +221,27 @@ case "$(echo "$out" | api_code)" in
 esac
 
 # ---- 8. probes for features other builders ship
-out="$(api GET "/api/v1/static-sites/$SITE/forms")"
-case "$(echo "$out" | api_code)" in
-  200) pass "forms endpoint answers" ;;
-  404 | 405) skip "forms endpoint not available" ;;
-  *) fail "forms endpoint status $(echo "$out" | api_code)" ;;
-esac
+# Forms: create through the forms API, post to the site, read back, delete.
+if "$CLI" forms create "$SITE" contact --json >"$WORK/form.json" 2>"$WORK/form.err"; then
+  pass "forms create on the site"
+  post_code="$(site_curl "$BASE/_forms/contact" -o /dev/null -w '%{http_code}' -X POST \
+    -H 'Accept: application/json' -H 'Content-Type: application/json' \
+    -d '{"name":"Smoke","email":"smoke@example.com","message":"hello"}' || echo 000)"
+  case "$post_code" in 2??) pass "POST /_forms/contact is $post_code" ;; *) fail "POST /_forms/contact (got $post_code)" ;; esac
+  rows="$("$CLI" pages submissions "$SITE" --json 2>/dev/null || echo '[]')"
+  check "pages submissions lists one entry" 1 "$(echo "$rows" | jq 'length' 2>/dev/null || echo err)"
+  check "GET /_forms/contact serves the site 404" 404 "$(code_of "$BASE/_forms/contact")"
+  sid="$(echo "$rows" | jq -r '.[0].id // empty' 2>/dev/null)"
+  if [ -n "$sid" ] && "$CLI" pages submissions rm "$SITE" contact "$sid" >/dev/null 2>&1; then
+    check "submission deleted" 0 "$("$CLI" pages submissions "$SITE" --json 2>/dev/null | jq 'length' 2>/dev/null || echo err)"
+  else
+    fail "delete submission"
+  fi
+elif grep -qiE 'unknown|404|not found' "$WORK/form.err"; then
+  skip "forms endpoint not available ($(tr '\n' ' ' <"$WORK/form.err" | cut -c1-100))"
+else
+  fail "forms create ($(tr '\n' ' ' <"$WORK/form.err" | cut -c1-160))"
+fi
 if "$CLI" pages init --help >/dev/null 2>&1; then pass "pages init command exists"; else skip "pages init command not available"; fi
 
 # ---- 9. git deploy

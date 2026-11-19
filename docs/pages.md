@@ -122,11 +122,13 @@ Rollback works by content digest: each deploy records a hash of the published tr
 
 ## Delete a static site
 
-Deleting the app removes the site, its files and its route right away:
+`pages delete` removes the site together with its backing app, its files and its route right away:
 
 ```bash
-levelrail-cli apps delete my-site
+levelrail-cli pages delete my-site
 ```
+
+`apps delete my-site` does the same. It needs the ability to delete the app.
 
 To remove only the published site and keep the app record, use `levelrail-cli static-sites delete my-site`. It returns 404 if the site does not exist and 409 if the app still needs it.
 

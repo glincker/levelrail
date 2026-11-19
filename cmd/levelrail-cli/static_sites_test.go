@@ -86,3 +86,25 @@ func TestRun_StaticSites_Delete(t *testing.T) {
 		t.Errorf("stdout = %q", stdout)
 	}
 }
+
+func TestRun_PagesDelete_RemovesBackingApp(t *testing.T) {
+	var calls []string
+	srv := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		calls = append(calls, r.Method+" "+r.URL.Path)
+		if r.URL.Path == "/api/v1/static-sites/marketing" {
+			w.WriteHeader(http.StatusConflict)
+			_, _ = w.Write([]byte(`{"error":"an app with this name still exists; delete the app instead"}`))
+			return
+		}
+		w.WriteHeader(http.StatusNoContent)
+	}))
+	defer srv.Close()
+
+	stdout, _ := runCLIExpectOK(t, []string{"pages", "delete", "marketing", "--api-url", srv.URL})
+	if len(calls) != 2 || calls[1] != "DELETE /api/v1/apps/marketing" {
+		t.Errorf("calls = %v", calls)
+	}
+	if !strings.Contains(stdout, "marketing") {
+		t.Errorf("stdout = %q", stdout)
+	}
+}

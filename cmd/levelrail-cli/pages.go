@@ -33,7 +33,7 @@ func runPages(prog string, args []string, stdout, stderr io.Writer, lookupEnv fu
 	case "show":
 		return runPagesShow(prog, rest, stdout, stderr, lookupEnv)
 	case "delete":
-		return runStaticSitesDelete(prog, rest, stdout, stderr, lookupEnv)
+		return runPagesDelete(prog, rest, stdout, stderr, lookupEnv)
 	case "rollback":
 		return runPagesRollback(prog, rest, stdout, stderr, lookupEnv)
 	case "deploys":
