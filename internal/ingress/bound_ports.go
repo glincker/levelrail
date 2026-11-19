@@ -3,6 +3,7 @@ package ingress
 import (
 	"net"
 	"strconv"
+	"strings"
 
 	"github.com/caddyserver/caddy/v2"
 	"github.com/caddyserver/caddy/v2/modules/caddyhttp"
@@ -30,7 +31,7 @@ func (d *Driver) BoundPorts() (httpPort, httpsPort int) {
 			if port == 0 {
 				continue
 			}
-			if name == autoRedirectServer {
+			if isPlainHTTPServer(name) {
 				httpPort = port
 			} else if httpsPort == 0 {
 				httpsPort = port
@@ -38,6 +39,12 @@ func (d *Driver) BoundPorts() (httpPort, httpsPort int) {
 		}
 	}
 	return httpPort, httpsPort
+}
+
+// isPlainHTTPServer is true for the redirect and plain-http servers, so map
+// order never lets one of them pass for the HTTPS listener.
+func isPlainHTTPServer(name string) bool {
+	return name == autoRedirectServer || strings.HasSuffix(name, "-http") || strings.HasSuffix(name, "-plain")
 }
 
 func portOfAddr(a net.Addr) int {

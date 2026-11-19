@@ -168,13 +168,14 @@ case "$NEW_BASE" in
 esac
 wait_code "$BASE/" 200 >/dev/null
 if site_curl "$BASE/" | grep -q smoke-v2; then pass "second deploy is live"; else fail "second deploy is live"; fi
+V2_ID="$(live_deploy_id || true)"
 if [ -n "$LIVE_ID" ] && "$CLI" pages promote "$SITE" "$LIVE_ID" >/dev/null 2>&1; then
   sleep 1
   if site_curl "$BASE/" | grep -q smoke-v1; then pass "promote old deploy serves v1"; else fail "promote old deploy serves v1"; fi
 else
   fail "promote old deploy"
 fi
-if "$CLI" pages rollback "$SITE" >/dev/null 2>&1; then
+if [ -n "$V2_ID" ] && "$CLI" pages rollback "$SITE" "$V2_ID" >/dev/null 2>&1; then
   sleep 1
   if site_curl "$BASE/" | grep -q smoke-v2; then pass "rollback returns to v2"; else fail "rollback returns to v2"; fi
 else
