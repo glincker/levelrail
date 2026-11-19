@@ -9,6 +9,7 @@ import { Skeleton } from '@/components/ui/skeleton'
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs'
 import { DeployAttemptsList } from '../DeployAttemptsList'
 import { DomainEditor } from '../DomainEditor'
+import { PageDomains } from './PageDomains'
 import { SitePublisher } from '../dropdeploy/SitePublisher'
 import { StaticRoutesPanel } from '../static/StaticRoutesPanel'
 import { useDeployProgress } from '../../hooks/useDeployProgress'
@@ -47,7 +48,12 @@ function Deployments({ name }: Readonly<{ name: string }>) {
 
 function Domains({ name }: Readonly<{ name: string }>) {
   const { data: app } = useApp(name)
-  return <DomainEditor app={app} />
+  return (
+    <div className="space-y-4">
+      <PageDomains name={name} />
+      <DomainEditor app={app} />
+    </div>
+  )
 }
 
 function Settings({ name }: Readonly<{ name: string }>) {

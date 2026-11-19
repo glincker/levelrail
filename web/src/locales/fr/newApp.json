@@ -82,11 +82,15 @@
       },
       "image": {
         "title": "Image de conteneur",
-        "hint": "Aussi Compose, docker run, site"
+        "hint": "Compose ou docker run"
       },
       "sample": {
         "title": "App d'exemple",
         "hint": "Essayez-la en un clic"
+      },
+      "static": {
+        "title": "Site statique",
+        "hint": "Deposez un dossier ou un zip, sans conteneur"
       }
     },
     "sample": {

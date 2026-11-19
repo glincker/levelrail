@@ -58,3 +58,56 @@ export async function createPagesSite(
   }
   return 'created'
 }
+
+export interface SiteDomainRecord {
+  type: string
+  name: string
+  value: string
+}
+
+export interface SiteDomainSetup {
+  domain: string
+  mode: 'auto' | 'manual'
+  records: SiteDomainRecord[]
+  verified: boolean
+  cert: string
+  detail?: string
+}
+
+const siteBase = (name: string) =>
+  `/api/v1/static-sites/${encodeURIComponent(name)}/domains`
+
+async function readSetup(
+  res: Response,
+  what: string,
+): Promise<SiteDomainSetup> {
+  if (!res.ok) {
+    throw new ApiError(
+      res.status,
+      await readErrorMessage(res, `${what} failed: ${res.status}`),
+    )
+  }
+  return (await res.json()) as SiteDomainSetup
+}
+
+export async function addSiteDomain(
+  name: string,
+  domain: string,
+): Promise<SiteDomainSetup> {
+  const res = await fetch(siteBase(name), {
+    method: 'POST',
+    headers: { 'Content-Type': 'application/json' },
+    body: JSON.stringify({ domain }),
+  })
+  return readSetup(res, 'add domain')
+}
+
+export async function fetchSiteDomainStatus(
+  name: string,
+  domain: string,
+): Promise<SiteDomainSetup> {
+  return readSetup(
+    await fetch(`${siteBase(name)}/${encodeURIComponent(domain)}/status`),
+    'domain status',
+  )
+}

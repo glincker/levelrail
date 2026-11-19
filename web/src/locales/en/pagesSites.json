@@ -69,5 +69,29 @@
     "deleting": "Deleting...",
     "confirmTitle": "Delete {{name}}?",
     "confirmBody": "The site stops serving and cannot be restored."
+  },
+  "domains": {
+    "label": "Connect a domain",
+    "add": "Add domain",
+    "adding": "Adding...",
+    "addFailed": "Could not add the domain.",
+    "verify": "Verify",
+    "checking": "Checking...",
+    "dnsOk": "DNS ready",
+    "dnsWaiting": "Waiting for DNS",
+    "certIssued": "Certificate issued",
+    "certPending": "Certificate pending",
+    "mode": {
+      "auto": "DNS set up for you",
+      "manual": "Add these records"
+    },
+    "recordsLabel": "DNS records to add",
+    "type": "Type",
+    "host": "Host",
+    "value": "Value",
+    "copyHost": "Copy host",
+    "copyValue": "Copy value",
+    "statusFailed": "Could not check the domain status.",
+    "placeholder": "www.example.com"
   }
 }

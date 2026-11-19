@@ -82,11 +82,15 @@
       },
       "image": {
         "title": "コンテナイメージ",
-        "hint": "Compose、docker run、サイトも"
+        "hint": "Compose または docker run"
       },
       "sample": {
         "title": "サンプルアプリ",
         "hint": "ワンクリックで試す"
+      },
+      "static": {
+        "title": "静的サイト",
+        "hint": "フォルダまたは zip をドロップ、コンテナ不要"
       }
     },
     "sample": {

@@ -82,11 +82,15 @@
       },
       "image": {
         "title": "容器镜像",
-        "hint": "也支持 Compose、docker run、站点"
+        "hint": "Compose 或 docker run"
       },
       "sample": {
         "title": "示例应用",
         "hint": "一键试用"
+      },
+      "static": {
+        "title": "静态站点",
+        "hint": "拖入文件夹或 zip，无需容器"
       }
     },
     "sample": {
