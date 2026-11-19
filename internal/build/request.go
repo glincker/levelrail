@@ -16,6 +16,9 @@ type Request struct {
 	// Push, when set, exports the image to a registry by digest instead of a tar.
 	Push *PushGrant
 
+	// CacheAuth is the cache-only registry token for a control plane build while the registry runs token auth.
+	CacheAuth *CacheAuth
+
 	// ContextDir is the build context root, matching `docker build <dir>`.
 	// Required.
 	ContextDir string

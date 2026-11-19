@@ -99,8 +99,11 @@ func newSolveOpt(req Request, cache CacheConfig, out io.WriteCloser) (*bkclient.
 		},
 	}
 
-	if err := applyPush(opt, req.Push); err != nil {
+	if err := applyPush(opt, req.Push, cache); err != nil {
 		return nil, err
+	}
+	if req.Push == nil {
+		applyCacheAuth(opt, req.CacheAuth, cache)
 	}
 	if len(req.Secrets) > 0 {
 		opt.Session = append(opt.Session, secretsprovider.FromMap(req.Secrets))

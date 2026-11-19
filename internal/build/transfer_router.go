@@ -86,7 +86,7 @@ func (r *Router) dispatchRegistry(ctx context.Context, nodeID string, req Remote
 	if err != nil {
 		return nil, err
 	}
-	token, err := cfg.Issuer.Issue(repo, tag, cfg.TokenTTL)
+	token, err := cfg.Issuer.IssueWithCache(repo, tag, cacheRepoFull(req.Cache, cfg.RegistryHost), cfg.TokenTTL)
 	if err != nil {
 		return nil, err
 	}
@@ -113,6 +113,35 @@ func (r *Router) dispatchRegistry(ctx context.Context, nodeID string, req Remote
 		return nil, fmt.Errorf("build: pull pushed image: %w", err)
 	}
 	return res, nil
+}
+
+// cacheRepoFull is the host-qualified cache repository when the cache lives on the control plane registry.
+func cacheRepoFull(cache CacheConfig, host string) string {
+	p := cacheRepoPath(cache, host)
+	if p == "" {
+		return ""
+	}
+	return host + "/" + p
+}
+
+// localCacheAuth mints a cache-only token for a control plane build, or nil when the cache is not on the token registry.
+func (r *Router) localCacheAuth(ctx context.Context, req Request) (*CacheAuth, func()) {
+	if r.transfer == nil {
+		return nil, func() {}
+	}
+	cfg := r.transfer(ctx)
+	if cfg.Mode != TransferRegistry || !cfg.TokenAuth || cfg.Issuer == nil || cfg.TokenTTL <= 0 || cfg.RegistryHost == "" {
+		return nil, func() {}
+	}
+	repo := cacheRepoFull(r.local.cache.ForApp(req.cacheID()), cfg.RegistryHost)
+	if repo == "" {
+		return nil, func() {}
+	}
+	tok, err := cfg.Issuer.Issue(repo, "cache", cfg.TokenTTL)
+	if err != nil {
+		return nil, func() {}
+	}
+	return &CacheAuth{Token: tok}, func() { cfg.Issuer.Revoke(tok) }
 }
 
 type discardWriter struct{}

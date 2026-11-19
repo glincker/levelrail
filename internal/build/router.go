@@ -107,6 +107,10 @@ func (r *Router) Build(ctx context.Context, req Request, progress func(ProgressE
 		return nil, err
 	}
 	if nodeID == "" {
+		if auth, done := r.localCacheAuth(ctx, req); auth != nil {
+			defer done()
+			req.CacheAuth = auth
+		}
 		return r.local.Build(ctx, req, progress)
 	}
 

@@ -137,3 +137,48 @@ func TestCertBundlePEMMatchesKeyID(t *testing.T) {
 		t.Fatalf("bundle: %v", err)
 	}
 }
+
+func TestCacheRepoGetsTokenScopeForRemoteBuilds(t *testing.T) {
+	now := time.Unix(1_000_000, 0)
+	iss := testIssuer(t, &now)
+	key, err := ecdsa.GenerateKey(elliptic.P256(), rand.Reader)
+	if err != nil {
+		t.Fatal(err)
+	}
+	svc := &RegistryTokenService{Issuer: iss, Key: key, Service: "svc", TokenIssuer: "lr", BearerTTL: func() time.Duration { return 90 * time.Second },
+		Host: func() string { return "reg.example" }, now: func() time.Time { return now }}
+	tok, err := iss.IssueWithCache("reg.example/levelrail/app", "b1", "reg.example/buildcache/app", time.Hour)
+	if err != nil {
+		t.Fatal(err)
+	}
+	for _, scope := range []string{"repository:buildcache/app:pull", "repository:buildcache/app:push,pull"} {
+		jwt, _, err := svc.Exchange(tok, []string{scope})
+		if err != nil {
+			t.Fatal(err)
+		}
+		if len(accessOf(decodeJWT(t, jwt, &key.PublicKey))) != 1 {
+			t.Fatalf("%s: cache scope was not granted", scope)
+		}
+	}
+	jwt, _, err := svc.Exchange(tok, []string{"repository:buildcache/other:push,pull", "repository:levelrail/app:pull"})
+	if err != nil || len(accessOf(decodeJWT(t, jwt, &key.PublicKey))) != 0 {
+		t.Fatal("cache scope leaked to another repository or pull-only job repo was granted")
+	}
+	cat, err := svc.MintCatalog()
+	if err != nil || len(accessOf(decodeJWT(t, cat, &key.PublicKey))) != 1 {
+		t.Fatal("catalog token should carry one access entry")
+	}
+}
+
+func TestCacheAuthProviderMatchesOnlyCacheRepo(t *testing.T) {
+	f := pushAuthConfigWithCache("reg.example", "", "buildcache/app", "tok")
+	if f("reg.example", []string{"repository:buildcache/app:pull"}).Password != "tok" {
+		t.Fatal("cache pull should get the token")
+	}
+	if f("reg.example", []string{"repository:library/alpine:pull"}).Password != "" {
+		t.Fatal("other repositories must not get the token")
+	}
+	if f("other.example", []string{"repository:buildcache/app:pull"}).Password != "" {
+		t.Fatal("other hosts must not get the token")
+	}
+}

@@ -27,6 +27,7 @@ import (
 	ingressdriver "github.com/GLINCKER/levelrail/internal/ingress"
 	"github.com/GLINCKER/levelrail/internal/nodefailure"
 	"github.com/GLINCKER/levelrail/internal/reconcile"
+	registryreconcile "github.com/GLINCKER/levelrail/internal/reconcile/registry"
 	"github.com/GLINCKER/levelrail/internal/runtimesettings"
 	"github.com/GLINCKER/levelrail/internal/scheduledtask"
 	"github.com/GLINCKER/levelrail/internal/secrets"
@@ -276,7 +277,7 @@ func rootHandler(d rootDeps) (http.Handler, *api.Router) {
 		// same secretsManager, same nil-interface hazard.
 		opts = append(opts, api.WithRegistrySecrets(secretsManager))
 		if rtx := sharedRegistryTransfer(); rtx != nil {
-			opts = append(opts, api.WithRegistryTokenService(rtx.tokens))
+			opts = append(opts, api.WithRegistryTokenService(rtx.tokens), api.WithRegistryTokenActive(registryreconcile.TokenAuthActive))
 		}
 		// The built-in registry catalog picker resolves the same
 		// generated password server-side to authenticate its own upstream

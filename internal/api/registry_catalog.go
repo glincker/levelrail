@@ -65,6 +65,22 @@ func (rt *Router) registryCatalogPassword(ctx context.Context) (string, error) {
 	return rt.registryCatalogSecrets.Resolve(ctx, store.RegistrySettingsSecretsKey(), store.RegistryPasswordEnvKey)
 }
 
+// registryCatalogAuth returns the login for the built-in registry's own catalog: the generated
+// password in htpasswd mode, or an empty user and a control plane minted bearer in token mode.
+func (rt *Router) registryCatalogAuth(ctx context.Context, username, repository string) (user, secret string, err error) {
+	if rt.registryToken != nil && rt.registryTokenActive != nil && rt.registryTokenActive() {
+		var tok string
+		if repository == "" {
+			tok, err = rt.registryToken.MintCatalog()
+		} else {
+			tok, err = rt.registryToken.MintPull(repository)
+		}
+		return "", tok, err
+	}
+	secret, err = rt.registryCatalogPassword(ctx)
+	return username, secret, err
+}
+
 // handleListRegistryRepositories handles GET
 // /api/v1/registry/repositories: every repository name pushed to the
 // built-in registry, for the "existing image" app-creation step's
@@ -77,7 +93,7 @@ func (rt *Router) handleListRegistryRepositories(w http.ResponseWriter, r *http.
 		return
 	}
 
-	password, err := rt.registryCatalogPassword(r.Context())
+	user, password, err := rt.registryCatalogAuth(r.Context(), settings.Username, "")
 	if errors.Is(err, secrets.ErrValueNotFound) {
 		writeError(w, http.StatusConflict, "the built-in registry has no credentials generated yet")
 		return
@@ -87,7 +103,7 @@ func (rt *Router) handleListRegistryRepositories(w http.ResponseWriter, r *http.
 		return
 	}
 
-	repos, err := rt.registryCatalog.ListRepositories(r.Context(), registryCatalogBaseURL(), settings.Username, password)
+	repos, err := rt.registryCatalog.ListRepositories(r.Context(), registryCatalogBaseURL(), user, password)
 	if err != nil {
 		rt.logger.Error("api: list registry repositories failed", slog.String("error", err.Error()))
 		writeError(w, http.StatusBadGateway, "could not reach the built-in registry")
@@ -116,7 +132,7 @@ func (rt *Router) handleListRegistryTags(w http.ResponseWriter, r *http.Request)
 		return
 	}
 
-	password, err := rt.registryCatalogPassword(r.Context())
+	user, password, err := rt.registryCatalogAuth(r.Context(), settings.Username, repository)
 	if errors.Is(err, secrets.ErrValueNotFound) {
 		writeError(w, http.StatusConflict, "the built-in registry has no credentials generated yet")
 		return
@@ -126,7 +142,7 @@ func (rt *Router) handleListRegistryTags(w http.ResponseWriter, r *http.Request)
 		return
 	}
 
-	tags, err := rt.registryCatalog.ListTags(r.Context(), registryCatalogBaseURL(), settings.Username, password, repository)
+	tags, err := rt.registryCatalog.ListTags(r.Context(), registryCatalogBaseURL(), user, password, repository)
 	if errors.Is(err, registrycatalog.ErrNotFound) {
 		writeError(w, http.StatusNotFound, "repository not found in the built-in registry")
 		return
@@ -181,7 +197,8 @@ func (rt *Router) handleListRegistryCredentialRepositories(w http.ResponseWriter
 	}
 
 	client, baseURL := rt.credentialCatalog(r.Context(), cred.RegistryHost)
-	repos, err := client.ListRepositories(r.Context(), baseURL, cred.Username, password)
+	user, secret := rt.credentialBrowseAuth(r.Context(), baseURL, cred.Username, password, "")
+	repos, err := client.ListRepositories(r.Context(), baseURL, user, secret)
 	if err != nil {
 		rt.logger.Error("api: list registry credential repositories failed", slog.String("error", err.Error()), slog.String("id", id))
 		writeError(w, http.StatusBadGateway, "could not reach the registry")
@@ -208,7 +225,8 @@ func (rt *Router) handleListRegistryCredentialTags(w http.ResponseWriter, r *htt
 	}
 
 	client, baseURL := rt.credentialCatalog(r.Context(), cred.RegistryHost)
-	tags, err := client.ListTags(r.Context(), baseURL, cred.Username, password, repository)
+	user, secret := rt.credentialBrowseAuth(r.Context(), baseURL, cred.Username, password, repository)
+	tags, err := client.ListTags(r.Context(), baseURL, user, secret, repository)
 	if errors.Is(err, registrycatalog.ErrNotFound) {
 		writeError(w, http.StatusNotFound, "repository not found in this registry")
 		return
@@ -249,6 +267,18 @@ func (rt *Router) loadRegistryCredentialForBrowse(w http.ResponseWriter, r *http
 	}
 
 	return cred, password, true
+}
+
+// credentialBrowseAuth swaps a stored login for a minted bearer when it targets the built-in
+// registry (the loopback base URL) while that registry runs token auth; the stored htpasswd login is rejected there.
+func (rt *Router) credentialBrowseAuth(ctx context.Context, baseURL, username, password, repository string) (string, string) {
+	if baseURL != registryCatalogBaseURL() {
+		return username, password
+	}
+	if u, p, err := rt.registryCatalogAuth(ctx, username, repository); err == nil && u == "" && p != "" {
+		return u, p
+	}
+	return username, password
 }
 
 // credentialCatalog picks the client and base URL for a stored credential:

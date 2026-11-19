@@ -157,18 +157,23 @@ func (s *RegistryTokenService) Exchange(pushToken string, scopes []string) (stri
 		if len(parts) != 3 || parts[0] != "repository" || parts[1] == "" {
 			continue
 		}
-		exp, err := s.Issuer.VerifyRepo(pushToken, s.Host()+"/"+parts[1])
+		exp, isCache, err := s.Issuer.verifyScope(pushToken, s.Host()+"/"+parts[1])
 		if err != nil {
 			if errors.Is(err, ErrPushTokenScope) {
 				continue
 			}
 			return "", time.Time{}, err
 		}
+		actions := []string{"push", "pull"}
 		if !hasAction(parts[2], pushActionPush) {
-			continue
+			// Cache import only pulls; the job repository stays push-only.
+			if !isCache || !hasAction(parts[2], "pull") {
+				continue
+			}
+			actions = []string{"pull"}
 		}
 		tokExp = exp
-		access = append(access, RegistryAccess{Type: "repository", Name: parts[1], Actions: []string{"push", "pull"}})
+		access = append(access, RegistryAccess{Type: "repository", Name: parts[1], Actions: actions})
 	}
 	if len(access) == 0 {
 		// A valid token that asks for nothing grantable still has to prove itself.
@@ -190,6 +195,15 @@ func (s *RegistryTokenService) MintPull(name string) (string, error) {
 		return "", errors.New("build: registry token service is not configured")
 	}
 	tok, _, err := s.sign([]RegistryAccess{{Type: "repository", Name: name, Actions: []string{"pull"}}}, s.nowT().Add(s.ttl()))
+	return tok, err
+}
+
+// MintCatalog gives the control plane a short token to list the registry's repositories.
+func (s *RegistryTokenService) MintCatalog() (string, error) {
+	if s.Key == nil || s.ttl() <= 0 {
+		return "", errors.New("build: registry token service is not configured")
+	}
+	tok, _, err := s.sign([]RegistryAccess{{Type: "registry", Name: "catalog", Actions: []string{"*"}}}, s.nowT().Add(s.ttl()))
 	return tok, err
 }
 

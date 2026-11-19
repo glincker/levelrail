@@ -33,6 +33,11 @@ func WithRegistryTokenService(s *build.RegistryTokenService) Option {
 	return func(rt *Router) { rt.registryToken = s }
 }
 
+// WithRegistryTokenActive reports whether the built-in registry currently runs token auth.
+func WithRegistryTokenActive(f func() bool) Option {
+	return func(rt *Router) { rt.registryTokenActive = f }
+}
+
 // handleRegistryToken is the registry's token realm: the job push token arrives
 // as the basic-auth password and leaves as a scoped bearer. Every failure is a bare 401.
 func (rt *Router) handleRegistryToken(w http.ResponseWriter, r *http.Request) {

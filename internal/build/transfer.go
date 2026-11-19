@@ -77,6 +77,8 @@ type pushClaims struct {
 	Act   string `json:"a"`
 	Exp   int64  `json:"e"`
 	Nonce string `json:"n"`
+	// Cache is an optional second repository (the build cache) the same token may push and pull.
+	Cache string `json:"c,omitempty"`
 }
 
 // PushTokenIssuer mints and checks job-scoped push tokens. They are
@@ -105,6 +107,11 @@ func (i *PushTokenIssuer) mac(payload string) []byte {
 
 // Issue grants push on exactly one repo and tag until now+ttl.
 func (i *PushTokenIssuer) Issue(repo, tag string, ttl time.Duration) (string, error) {
+	return i.IssueWithCache(repo, tag, "", ttl)
+}
+
+// IssueWithCache is Issue plus access to one cache repository, so a builder needs no second credential.
+func (i *PushTokenIssuer) IssueWithCache(repo, tag, cacheRepo string, ttl time.Duration) (string, error) {
 	if repo == "" || tag == "" || ttl <= 0 {
 		return "", errors.New("build: push token needs a repo, a tag and a positive ttl")
 	}
@@ -112,7 +119,7 @@ func (i *PushTokenIssuer) Issue(repo, tag string, ttl time.Duration) (string, er
 	if _, err := rand.Read(nonce); err != nil {
 		return "", fmt.Errorf("build: push token nonce: %w", err)
 	}
-	raw, err := json.Marshal(pushClaims{Typ: pushTokenTyp, Aud: pushTokenTyp, Repo: repo, Tag: tag, Act: pushActionPush, Exp: i.now().Add(ttl).Unix(), Nonce: hex.EncodeToString(nonce)})
+	raw, err := json.Marshal(pushClaims{Typ: pushTokenTyp, Aud: pushTokenTyp, Repo: repo, Tag: tag, Act: pushActionPush, Exp: i.now().Add(ttl).Unix(), Nonce: hex.EncodeToString(nonce), Cache: cacheRepo})
 	if err != nil {
 		return "", err
 	}
@@ -166,14 +173,26 @@ func (i *PushTokenIssuer) Verify(token, repo, tag, action string) error {
 
 // VerifyRepo is Verify for registry scopes, which name a repository but never a tag.
 func (i *PushTokenIssuer) VerifyRepo(token, repo string) (time.Time, error) {
+	exp, _, err := i.verifyScope(token, repo)
+	return exp, err
+}
+
+// verifyScope also reports whether repo matched the cache repository rather than the job repository.
+func (i *PushTokenIssuer) verifyScope(token, repo string) (time.Time, bool, error) {
 	c, err := i.parse(token)
 	if err != nil {
-		return time.Time{}, err
+		return time.Time{}, false, err
 	}
-	if c.Act != pushActionPush || c.Repo != repo {
-		return time.Time{}, ErrPushTokenScope
+	if c.Act != pushActionPush {
+		return time.Time{}, false, ErrPushTokenScope
 	}
-	return time.Unix(c.Exp, 0), nil
+	switch {
+	case c.Repo == repo:
+		return time.Unix(c.Exp, 0), false, nil
+	case c.Cache != "" && c.Cache == repo:
+		return time.Unix(c.Exp, 0), true, nil
+	}
+	return time.Time{}, false, ErrPushTokenScope
 }
 
 // Nonce is the token's per-job id for rate limiting, or "" when the token does not verify.
@@ -267,7 +286,7 @@ func VerifyPushedDigest(ctx context.Context, v DigestVerifier, ref, digest strin
 
 // applyPush turns a solve's docker-tar export into a registry push by digest
 // and attaches the job token as the only registry credential.
-func applyPush(opt *bkclient.SolveOpt, g *PushGrant) error {
+func applyPush(opt *bkclient.SolveOpt, g *PushGrant, cache CacheConfig) error {
 	if g == nil {
 		return nil
 	}
@@ -286,7 +305,7 @@ func applyPush(opt *bkclient.SolveOpt, g *PushGrant) error {
 	}
 	opt.Exports[0] = bkclient.ExportEntry{Type: bkclient.ExporterImage, Attrs: attrs}
 	host := repo[:strings.Index(repo, "/")]
-	provider := pushAuthConfig(host, repo[len(host)+1:], g.Token)
+	provider := pushAuthConfigWithCache(host, repo[len(host)+1:], cacheRepoPath(cache, host), g.Token)
 	opt.Session = append(opt.Session, authprovider.NewDockerAuthProvider(authprovider.DockerAuthProviderConfig{
 		AuthConfigProvider: func(_ context.Context, h string, scopes []string, _ authprovider.ExpireCachedAuthCheck) (types.AuthConfig, error) {
 			return provider(h, scopes), nil
@@ -299,6 +318,52 @@ func applyPush(opt *bkclient.SolveOpt, g *PushGrant) error {
 // set of actions since clients differ in order. Nil scopes (the basic-credential lookup for the
 // token realm) get it for the registry host only; the realm still checks scope itself.
 func pushAuthConfig(host, jobRepo, token string) func(h string, scopes []string) types.AuthConfig {
+	return pushAuthConfigWithCache(host, jobRepo, "", token)
+}
+
+// CacheAuth lets a build on the control plane use the registry cache while the registry runs token auth.
+type CacheAuth struct {
+	Token string
+}
+
+// String keeps the token out of logs.
+func (a CacheAuth) String() string { return "CacheAuth{token redacted}" }
+
+// GoString keeps the token out of %#v output.
+func (a CacheAuth) GoString() string { return a.String() }
+
+// cacheRepoPath is the cache repository path on host, or "" when the cache lives elsewhere.
+func cacheRepoPath(cache CacheConfig, host string) string {
+	if cache.RegistryRef == "" {
+		return ""
+	}
+	repo, _, err := SplitRef(cache.RegistryRef)
+	if err != nil || !strings.HasPrefix(repo, host+"/") {
+		return ""
+	}
+	return repo[len(host)+1:]
+}
+
+// applyCacheAuth attaches the cache-only token for builds that export a tar and push nothing.
+func applyCacheAuth(opt *bkclient.SolveOpt, a *CacheAuth, cache CacheConfig) {
+	if a == nil || a.Token == "" || cache.RegistryRef == "" {
+		return
+	}
+	repo, _, err := SplitRef(cache.RegistryRef)
+	if err != nil {
+		return
+	}
+	host := repo[:strings.Index(repo, "/")]
+	provider := pushAuthConfigWithCache(host, "", repo[len(host)+1:], a.Token)
+	opt.Session = append(opt.Session, authprovider.NewDockerAuthProvider(authprovider.DockerAuthProviderConfig{
+		AuthConfigProvider: func(_ context.Context, h string, scopes []string, _ authprovider.ExpireCachedAuthCheck) (types.AuthConfig, error) {
+			return provider(h, scopes), nil
+		},
+	}))
+}
+
+// pushAuthConfigWithCache also releases the token for the cache repository, pull alone or push and pull.
+func pushAuthConfigWithCache(host, jobRepo, cacheRepo, token string) func(h string, scopes []string) types.AuthConfig {
 	grant := types.AuthConfig{Username: pushUser, Password: token}
 	return func(h string, scopes []string) types.AuthConfig {
 		if h != host {
@@ -307,7 +372,10 @@ func pushAuthConfig(host, jobRepo, token string) func(h string, scopes []string)
 		if len(scopes) == 0 {
 			return grant
 		}
-		if len(scopes) == 1 && scopeIsJobPushPull(scopes[0], jobRepo) {
+		if len(scopes) == 1 && jobRepo != "" && scopeIsJobPushPull(scopes[0], jobRepo) {
+			return grant
+		}
+		if len(scopes) == 1 && cacheRepo != "" && scopeIsCacheAccess(scopes[0], cacheRepo) {
 			return grant
 		}
 		return types.AuthConfig{}
@@ -325,4 +393,19 @@ func scopeIsJobPushPull(scope, jobRepo string) bool {
 		set[a] = true
 	}
 	return len(set) == 2 && set[pushActionPush] && set["pull"]
+}
+
+// scopeIsCacheAccess accepts pull, or push with pull, on exactly the cache repository.
+func scopeIsCacheAccess(scope, cacheRepo string) bool {
+	scope = strings.TrimPrefix(scope, "repository:")
+	name, actions, ok := strings.Cut(scope, ":")
+	if !ok || name != cacheRepo {
+		return false
+	}
+	for _, a := range strings.Split(actions, ",") {
+		if a != "pull" && a != pushActionPush {
+			return false
+		}
+	}
+	return actions != ""
 }

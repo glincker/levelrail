@@ -119,7 +119,12 @@ func (c *Client) get(ctx context.Context, target, username, password string, out
 	if err != nil {
 		return fmt.Errorf("build request: %w", err)
 	}
-	req.SetBasicAuth(username, password)
+	if username == "" && password != "" {
+		// An empty user means the secret is a bearer token (a registry running token auth).
+		req.Header.Set("Authorization", "Bearer "+password)
+	} else {
+		req.SetBasicAuth(username, password)
+	}
 	req.Header.Set("Accept", "application/json")
 
 	resp, err := c.HTTP.Do(req)

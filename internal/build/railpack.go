@@ -299,7 +299,7 @@ func newRailpackSolveOpt(ctx context.Context, plan *rpplan.BuildPlan, req Railpa
 			},
 		},
 	}
-	if err := applyPush(opt, req.Push); err != nil {
+	if err := applyPush(opt, req.Push, CacheConfig{}); err != nil {
 		return nil, nil, err
 	}
 	return def, opt, nil
