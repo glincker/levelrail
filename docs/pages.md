@@ -153,6 +153,14 @@ levelrail pages promote docs DEPLOY_ID
 
 `GET /api/v1/static-sites/{name}/deploys` lists the deploys with `url`, `live` and `promotable`. `POST /api/v1/static-sites/{name}/deploys/{deployId}/promote` makes one live: it needs the same permission as a rollback, checks that the files still match the recorded content digest, and answers 410 when they were pruned.
 
+## Build logs and dependency cache
+
+Each deploy keeps its build log, with secrets masked the same way as app deploy logs. Read it with `levelrail pages logs docs [DEPLOY_ID]` (latest deploy when omitted) and add `--follow` to stream a running build.
+
+`GET /api/v1/static-sites/{name}/deploys/{deployId}/log` returns JSON lines with the phase each ran in (`?tail=N` keeps the last N). `GET .../log/stream` is the live SSE stream, the same one app deploys use. Both need read access to the site.
+
+Static builds keep the npm, pnpm or yarn download cache per site in a BuildKit cache mount, so a rebuild skips re-downloading dependencies. It follows the existing build cache settings: the per-app cache switch (`build.cache_per_app`), the cache budget and the per-app cache clear all cover it.
+
 ## List your static sites
 
 From the CLI:

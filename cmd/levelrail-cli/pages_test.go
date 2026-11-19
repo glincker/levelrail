@@ -196,3 +196,21 @@ func TestRun_Pages_HookCreateRotateIntent(t *testing.T) {
 		t.Errorf("show stdout = %q", out)
 	}
 }
+
+func TestPagesLogs_LatestDeployAndSteps(t *testing.T) {
+	srv := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		switch r.URL.Path {
+		case "/api/v1/static-sites/blog/deploys":
+			_, _ = w.Write([]byte(`{"deploys":[{"id":"old","started_at":"2026-01-01T00:00:00Z"},{"id":"new","started_at":"2026-02-01T00:00:00Z"}]}`))
+		case "/api/v1/static-sites/blog/deploys/new/log":
+			_, _ = w.Write([]byte(`{"deploy_id":"new","lines":[{"step":"building","stream":"stdout","line":"npm ci"}]}`))
+		default:
+			http.NotFound(w, r)
+		}
+	}))
+	defer srv.Close()
+	out, _ := runCLIExpectOK(t, []string{"pages", "logs", "blog", "--api-url", srv.URL})
+	if !strings.Contains(out, "== building") || !strings.Contains(out, "stdout npm ci") {
+		t.Fatalf("out = %q", out)
+	}
+}
