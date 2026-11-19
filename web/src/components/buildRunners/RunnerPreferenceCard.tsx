@@ -9,6 +9,7 @@ import { NativeSelect } from '@/components/ui/native-select'
 import { Skeleton } from '@/components/ui/skeleton'
 import { Switch } from '@/components/ui/switch'
 import { toast } from '@/components/ui/toast'
+import { InfoTip } from '../kit/InfoTip'
 import { useCanDeploy } from '../../hooks/useCanDeploy'
 import { parseLabels } from '../../lib/buildRunnerFormat'
 import {
@@ -157,6 +158,9 @@ export function RunnerPreferenceCard({
         <CardTitle className="flex items-center gap-2">
           <ServerGlassIcon className="size-5" aria-hidden="true" />
           {t('runnerPref.title')}
+          <InfoTip label={t('runnerPref.prodTipLabel')}>
+            {t('runnerPref.prodTip')}
+          </InfoTip>
         </CardTitle>
         <p className="text-sm text-muted-foreground">
           {t('runnerPref.description')}

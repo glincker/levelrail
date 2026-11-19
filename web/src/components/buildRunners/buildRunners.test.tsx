@@ -219,7 +219,7 @@ describe('RunnerPreferenceCard', () => {
     await screen.findByRole('option', { name: 'builder-1' })
     await userEvent.selectOptions(screen.getByLabelText('Build node'), 'n1')
     await userEvent.click(
-      screen.getByRole('switch', { name: 'Pin to this node' }),
+      screen.getByRole('switch', { name: 'Only this builder' }),
     )
     await userEvent.click(screen.getByRole('button', { name: 'Save' }))
     expect(await screen.findByRole('alert')).toHaveTextContent(

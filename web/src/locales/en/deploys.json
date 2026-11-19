@@ -805,20 +805,22 @@
     "dismissHint": "Dismiss the build node suggestion"
   },
   "runnerPref": {
-    "title": "Build runner",
-    "description": "Choose where this app builds. Leave empty to follow the global strategy.",
+    "title": "Run builds on",
+    "description": "Automatic follows the global strategy.",
     "node": "Build node",
-    "anyNode": "Any build node",
+    "anyNode": "Automatic",
     "labels": "Labels",
     "labelsPlaceholder": "gpu, arch=arm64",
-    "pin": "Pin to this node",
-    "pinHint": "If this node cannot build, use the control plane, never another node.",
-    "pinNeedsNode": "Pick a node to pin it.",
+    "pin": "Only this builder",
+    "pinHint": "If it cannot build, use the control plane, never another node.",
+    "pinNeedsNode": "Pick a builder first.",
     "noAbility": "You need deploy access to change this.",
     "clear": "Clear",
     "save": "Save",
     "saved": "Build runner saved",
     "cleared": "Build runner cleared",
-    "retry": "Retry"
+    "retry": "Retry",
+    "prodTipLabel": "About production builds",
+    "prodTip": "Production environments never build on a personal builder unless that environment allows it. The build then falls back to another builder or the control plane."
   }
 }

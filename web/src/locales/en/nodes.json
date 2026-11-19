@@ -1145,5 +1145,42 @@
     "save": "Save",
     "reset": "Reset to default",
     "saved": "Allowed builders saved"
+  },
+  "builders": {
+    "title": "Builders",
+    "tipLabel": "About builders",
+    "tip": "A builder runs image builds for this server so deploys stay light. Pick which builder each app uses in its build settings.",
+    "addButton": "Add builder",
+    "empty": "No builders yet. Add a laptop or spare machine to build off this server.",
+    "col": {
+      "name": "Builder",
+      "status": "Status",
+      "tier": "Tier",
+      "arch": "Arch",
+      "lastSeen": "Last seen",
+      "builds": "Builds"
+    },
+    "buildsNow": "{{used}} of {{total}}",
+    "never": "Never",
+    "add": {
+      "title": "Add a builder",
+      "tipLabel": "About the builder token",
+      "tip": "The token is single use and is shown only once. The builder joins as a personal builder: it is kept off production unless an environment allows it.",
+      "description": "Run this on the machine that should build.",
+      "macos": "macOS",
+      "linux": "Linux",
+      "windows": "Windows (soon)",
+      "macosHint": "Needs the levelrail CLI and Docker or Lima.",
+      "linuxHint": "Needs the levelrail CLI and Docker.",
+      "commandLabel": "Builder join command",
+      "copy": "Copy",
+      "copied": "Copied",
+      "creating": "Creating token...",
+      "notCreated": "Create a token to get the command.",
+      "create": "Create token",
+      "once": "Shown once. Copy it now.",
+      "done": "Done"
+    },
+    "tierFor": "Tier of {{name}}"
   }
 }
