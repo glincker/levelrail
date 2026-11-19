@@ -10,4 +10,7 @@ const (
 	// TriggerModeRelease deploys only on a tag ref push, or (GitHub
 	// only) a "release" webhook event with action "published".
 	TriggerModeRelease = "release"
+	// TriggerModeManual never deploys from a push or poll, only from a
+	// deploy request.
+	TriggerModeManual = "manual"
 )

@@ -92,7 +92,7 @@ func (rt *Router) handleBranchDeployPush(ctx context.Context, appName string, gs
 		status, message = rt.teardownBranchDeployForDelete(ctx, appName, gs, branch)
 		return status, message, true
 	}
-	if effectiveGitSourceTriggerMode(gs.TriggerMode) == spec.TriggerModeRelease {
+	if effectiveGitSourceTriggerMode(gs.TriggerMode) != spec.TriggerModePush {
 		return 0, "", false
 	}
 	cfg, err := rt.branchDeploys.GetBranchDeploySettings(ctx, appName)

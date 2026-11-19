@@ -269,6 +269,9 @@ func gitSourceTriggerMatchesPush(gs store.GitSource, ref string) (bool, string) 
 // A branch pattern replaces the single branch match but only ever admits
 // refs/heads/ refs of the source's own repository, never pull or note refs.
 func gitSourceTriggerMatchesPushMax(gs store.GitSource, ref string, maxRefBytes int) (bool, string) {
+	if effectiveGitSourceTriggerMode(gs.TriggerMode) == spec.TriggerModeManual {
+		return false, fmt.Sprintf("ignored: push to %q, trigger mode is %q which only deploys on request\n", truncatedRef(ref), spec.TriggerModeManual)
+	}
 	if effectiveGitSourceTriggerMode(gs.TriggerMode) == spec.TriggerModeRelease {
 		if !strings.HasPrefix(ref, "refs/tags/") {
 			return false, fmt.Sprintf("ignored: push to %q, trigger mode is %q which only deploys on a tag push or a published github release\n", truncatedRef(ref), spec.TriggerModeRelease)
