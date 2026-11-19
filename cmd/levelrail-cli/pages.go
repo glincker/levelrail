@@ -36,6 +36,8 @@ func runPages(prog string, args []string, stdout, stderr io.Writer, lookupEnv fu
 		return runPagesRollback(prog, rest, stdout, stderr, lookupEnv)
 	case "domains":
 		return runPagesDomains(prog, rest, stdout, stderr, lookupEnv)
+	case "settings":
+		return runPagesSettings(prog, rest, stdout, stderr, lookupEnv)
 	case "routes":
 		return runStaticRoutes(prog, rest, stdout, stderr, lookupEnv)
 	default:
@@ -55,6 +57,8 @@ func pagesUsage(prog string) string {
   %[1]s pages domains add <name> <domain> [flags]
   %[1]s pages domains status <name> <domain> [flags]
   %[1]s pages routes show|test|lint <name> [flags]
+  %[1]s pages routes list|add|rm <name> ...
+  %[1]s pages settings show|set <name> [flags]
 
 Publishes a folder or .zip as a static site: no build, no source control.
 The upload limit comes from %[2]s. "deploy" accepts every flag of "%[1]s deploy".

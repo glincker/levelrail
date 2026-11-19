@@ -2270,9 +2270,14 @@ levelrail-cli pages rollback <name> [deploy-id] [flags]
 levelrail-cli pages domains add <name> <domain> [flags]
 levelrail-cli pages domains status <name> <domain> [flags]
 levelrail-cli pages routes show|test|lint <name> [flags]
+levelrail-cli pages routes list <name> [flags]
+levelrail-cli pages routes add <name> <from> <to> [--status N] [--force] [flags]
+levelrail-cli pages routes rm <name> <index|from> [flags]
+levelrail-cli pages settings show <name> [flags]
+levelrail-cli pages settings set <name> [--spa auto|on|off] [--clean-urls auto|on|off] [--trailing-slash add|remove|auto] [--404 path|auto] [--build-command CMD|auto] [--output-dir DIR|auto] [flags]
 ```
 
-`pages deploy` publishes a folder or `.zip` as a static site with no build, creates the site on the first run and prints the live URL. It takes every flag of `deploy`. The upload size limit is read from `APP_UPLOAD_MAX_BYTES`. `rollback` without a deploy id goes back to the previous successful deploy. `domains add` prints the DNS records, created automatically when a DNS integration covers the zone, otherwise listed for you to create. See [Levelrail Pages](/pages).
+`pages deploy` publishes a folder or `.zip` as a static site with no build, creates the site on the first run and prints the live URL. It takes every flag of `deploy`. The upload size limit is read from `APP_UPLOAD_MAX_BYTES`. `rollback` without a deploy id goes back to the previous successful deploy. `domains add` prints the DNS records, created automatically when a DNS integration covers the zone, otherwise listed for you to create. `pages settings` shows or changes a site's overrides (`auto` clears one, live at once). `pages routes list|add|rm` edits the dashboard redirects by index or from path. See [Levelrail Pages](/pages).
 
 ## Static sites
 

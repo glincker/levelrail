@@ -75,3 +75,31 @@ func TestRun_Pages_DomainsAddAndShow(t *testing.T) {
 		t.Errorf("paths = %v, want %v", paths, want)
 	}
 }
+
+func TestRun_Pages_SettingsSetAndRoutesAdd(t *testing.T) {
+	var calls []string
+	var patch map[string]any
+	var put map[string]any
+	srv := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		calls = append(calls, r.Method+" "+r.URL.Path)
+		switch r.Method {
+		case http.MethodPatch:
+			_ = json.NewDecoder(r.Body).Decode(&patch)
+			_, _ = w.Write([]byte(`{"name":"docs","spa_fallback":true,"effective":{"spa":true}}`))
+		case http.MethodPut:
+			_ = json.NewDecoder(r.Body).Decode(&put)
+			_, _ = w.Write([]byte(`{"ui":{"redirects":[{"from":"/old","to":"/new","status":302}],"headers":[]}}`))
+		default:
+			_, _ = w.Write([]byte(`{"ui":{"redirects":[],"headers":[]}}`))
+		}
+	}))
+	defer srv.Close()
+	runCLIExpectOK(t, []string{"pages", "settings", "set", "docs", "--spa", "on", "--404", "auto", "--api-url", srv.URL})
+	if patch["spa_fallback"] != true || patch["reset"].([]any)[0] != "not_found_page" {
+		t.Fatalf("patch = %v", patch)
+	}
+	runCLIExpectOK(t, []string{"pages", "routes", "add", "docs", "/old", "/new", "--status", "302", "--api-url", srv.URL})
+	if r := put["redirects"].([]any); len(r) != 1 || r[0].(map[string]any)["to"] != "/new" {
+		t.Fatalf("put = %v (calls %v)", put, calls)
+	}
+}
