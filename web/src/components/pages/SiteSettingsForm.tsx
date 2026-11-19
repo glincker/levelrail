@@ -9,6 +9,7 @@ import { Input } from '@/components/ui/input'
 import { NativeSelect } from '@/components/ui/native-select'
 import { SegmentedControl } from '@/components/ui/segmented-control'
 import { Skeleton } from '@/components/ui/skeleton'
+import { Switch } from '@/components/ui/switch'
 import { toast } from '@/components/ui/toast'
 import { useGitSource } from '../../queries/gitSources'
 import {
@@ -113,6 +114,60 @@ function SettingRow({
         ) : null}
       </div>
     </div>
+  )
+}
+
+function PasswordRow({
+  name,
+  protectedNow,
+}: Readonly<{ name: string; protectedNow: boolean }>) {
+  const { t } = useTranslation('pagesSites')
+  const update = useUpdateSiteSettings(name)
+  const [enabled, setEnabled] = useState(protectedNow)
+  const [pw, setPw] = useState('')
+  const fail = (e: Error) => toast.add({ title: e.message, type: 'error' })
+  const done = () => {
+    setPw('')
+    toast.add({ title: t('settings.saved'), type: 'success' })
+  }
+  const toggle = (on: boolean) => {
+    setEnabled(on)
+    if (!on && protectedNow)
+      update.mutate({ password: '' }, { onSuccess: done, onError: fail })
+  }
+  return (
+    <SettingRow
+      field="spa_fallback"
+      label={t('settings.password')}
+      hint={t('settings.passwordHint')}
+      dirty={enabled && pw !== ''}
+      canReset={false}
+      busy={update.isPending}
+      onSave={() =>
+        update.mutate({ password: pw }, { onSuccess: done, onError: fail })
+      }
+      onReset={() => undefined}
+    >
+      <div className="flex items-center gap-3">
+        <Switch
+          size="sm"
+          aria-label={t('settings.password')}
+          checked={enabled}
+          disabled={update.isPending}
+          onCheckedChange={toggle}
+        />
+        {enabled ? (
+          <Input
+            type="password"
+            autoComplete="new-password"
+            aria-label={t('settings.passwordPlaceholder')}
+            placeholder={t('settings.passwordPlaceholder')}
+            value={pw}
+            onChange={(ev) => setPw(ev.target.value)}
+          />
+        ) : null}
+      </div>
+    </SettingRow>
   )
 }
 
@@ -273,6 +328,7 @@ function SettingsFields({
           onChange={(ev) => set('output_dir', ev.target.value)}
         />
       </SettingRow>
+      <PasswordRow name={name} protectedNow={data.protected} />
       {update.isError ? (
         <Alert variant="destructive" role="alert" className="rounded-none">
           <AlertDescription>{update.error.message}</AlertDescription>

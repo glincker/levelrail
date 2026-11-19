@@ -7,6 +7,8 @@ const detail: { current: unknown } = vi.hoisted(() => ({
   current: undefined,
 }))
 
+const locked = vi.hoisted(() => ({ current: false }))
+
 vi.mock('react-i18next', () => ({
   useTranslation: () => ({ t: (k: string) => k }),
 }))
@@ -16,6 +18,7 @@ vi.mock('@tanstack/react-router', () => ({
 vi.mock('./SiteSuccess', () => ({ SiteUrlChip: () => <span>chip</span> }))
 vi.mock('../../queries/pagesSites', () => ({
   usePagesSiteDetail: () => ({ data: detail.current }),
+  useSiteSettings: () => ({ data: { protected: locked.current } }),
 }))
 
 const base = {
@@ -27,6 +30,18 @@ const base = {
 }
 
 describe('SiteHero', () => {
+  it('shows a lock only when the site is password protected', () => {
+    detail.current = base
+    locked.current = false
+    const { rerender } = render(
+      <SiteHero name="docs" onPublish={vi.fn()} onDelete={vi.fn()} />,
+    )
+    expect(screen.queryByLabelText('settings.locked')).toBeNull()
+    locked.current = true
+    rerender(<SiteHero name="docs" onPublish={vi.fn()} onDelete={vi.fn()} />)
+    expect(screen.getByLabelText('settings.locked')).toBeTruthy()
+  })
+
   it('shows the live state, size and the publish action', () => {
     detail.current = base
     const onPublish = vi.fn()

@@ -42,6 +42,7 @@ const settings: SiteSettings = {
   clean_urls: true,
   trailing_slash: '',
   not_found_page: '',
+  protected: false,
   effective: { spa: false, clean_urls: true },
 }
 
@@ -86,5 +87,25 @@ describe('SiteSettingsForm', () => {
     expect(screen.getByText('settings.resetGit')).toBeTruthy()
     fireEvent.click(resets[0] as HTMLElement)
     expect(h.mutate.mock.calls[0]?.[0]).toEqual({ reset: ['clean_urls'] })
+  })
+
+  it('saves a new password and clears it from the field', () => {
+    render(<SiteSettingsForm name="s" />)
+    fireEvent.click(screen.getByRole('switch', { name: 'settings.password' }))
+    fireEvent.change(screen.getByLabelText('settings.passwordPlaceholder'), {
+      target: { value: 'correct horse' },
+    })
+    fireEvent.click(screen.getByRole('button', { name: 'settings.save' }))
+    expect(h.mutate).toHaveBeenCalledWith(
+      { password: 'correct horse' },
+      expect.anything(),
+    )
+  })
+
+  it('clears the password when a protected site is switched off', () => {
+    h.data = { ...settings, protected: true }
+    render(<SiteSettingsForm name="s" />)
+    fireEvent.click(screen.getByRole('switch', { name: 'settings.password' }))
+    expect(h.mutate).toHaveBeenCalledWith({ password: '' }, expect.anything())
   })
 })

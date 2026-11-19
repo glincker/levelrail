@@ -1,6 +1,10 @@
 import { Link } from '@tanstack/react-router'
 import { useTranslation } from 'react-i18next'
-import { EllipsisGlassIcon, UploadGlassIcon } from '@thesvg/ui-react'
+import {
+  EllipsisGlassIcon,
+  LockGlassIcon,
+  UploadGlassIcon,
+} from '@thesvg/ui-react'
 import { Button } from '@/components/ui/button'
 import {
   DropdownMenu,
@@ -11,7 +15,7 @@ import {
   DropdownMenuTrigger,
 } from '@/components/ui/dropdown-menu'
 import { formatAge, formatSize } from '../../lib/format'
-import { usePagesSiteDetail } from '../../queries/pagesSites'
+import { usePagesSiteDetail, useSiteSettings } from '../../queries/pagesSites'
 import { SiteUrlChip } from './SiteSuccess'
 import { siteState, type SiteState } from './pageHelpers'
 
@@ -42,6 +46,7 @@ export function SiteHero({
 }: Readonly<{ name: string; onPublish: () => void; onDelete: () => void }>) {
   const { t } = useTranslation('pagesSites')
   const detail = usePagesSiteDetail(name).data
+  const locked = useSiteSettings(name).data?.protected === true
   const state = siteState(detail)
   const lastAt =
     detail?.latest_deploy?.finished_at ??
@@ -50,6 +55,16 @@ export function SiteHero({
   return (
     <div className="flex flex-wrap items-center gap-x-4 gap-y-2">
       {state ? <StatusDot state={state} /> : null}
+      {locked ? (
+        <span
+          role="img"
+          title={t('settings.locked')}
+          aria-label={t('settings.locked')}
+          className="inline-flex items-center text-muted-foreground"
+        >
+          <LockGlassIcon className="size-4" aria-hidden="true" />
+        </span>
+      ) : null}
       <SiteUrlChip name={name} />
       <p className="flex items-center gap-x-3 text-xs text-muted-foreground tabular-nums">
         {detail ? (

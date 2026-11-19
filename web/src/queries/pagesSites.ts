@@ -261,6 +261,7 @@ export interface SiteSettings {
   clean_urls: boolean | null
   trailing_slash: TrailingSlash
   not_found_page: string
+  protected: boolean
   effective: {
     spa?: boolean
     clean_urls?: boolean
@@ -284,6 +285,7 @@ export interface SiteSettingsPatch {
   clean_urls?: boolean
   trailing_slash?: TrailingSlash
   not_found_page?: string
+  password?: string
   reset?: SiteSettingKey[]
 }
 
