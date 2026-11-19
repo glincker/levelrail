@@ -489,6 +489,7 @@ func (rt *Router) cloneOneApp(ctx context.Context, source store.DesiredService, 
 		return store.DesiredService{}, errors.New(msg)
 	}
 	if err := rt.apps.SaveDesiredService(ctx, desired); err != nil {
+		rt.releaseImageRepoClaim(ctx, newName)
 		return store.DesiredService{}, fmt.Errorf("save desired service: %w", err)
 	}
 	if err := rt.apps.UpdateServiceProject(ctx, newName, source.ProjectID); err != nil {

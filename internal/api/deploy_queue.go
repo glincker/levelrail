@@ -384,7 +384,7 @@ func (rt *Router) replayManualBuild(ctx context.Context, name string, hr deploy.
 		buildType = spec.BuildDockerfile
 	}
 	ctx = withRerunOf(ctx, req.RerunOf)
-	buildReq := manualBuildRequest(name, *existing, req, buildType)
+	buildReq := rt.manualBuildRequestFor(ctx, name, *existing, req, buildType)
 	rt.applyAppBuildSettings(ctx, name, &buildReq)
 	buildReq.ProxyAuthorizer = rt.proxyScopeAuthorizer(name)
 	source := store.DeployAttemptSourceManual

@@ -352,7 +352,7 @@ func (rt *Router) handleTriggerBuild(w http.ResponseWriter, r *http.Request) {
 	}
 	finalRepo := req.ImageRepo
 	if finalRepo == "" {
-		finalRepo = defaultImageRepo(name, existing.Image)
+		finalRepo = rt.ownImageRepo(r.Context(), name, existing.Image)
 	}
 	if status, msg := rt.checkFinalImageRepo(r.Context(), name, finalRepo, true); status != 0 {
 		writeError(w, status, msg)
@@ -508,7 +508,7 @@ func (rt *Router) handleTriggerBuild(w http.ResponseWriter, r *http.Request) {
 			req.Build.StaticSPA = gs.StaticSPA
 		}
 	}
-	buildReq := manualBuildRequest(name, *existing, req, buildType)
+	buildReq := rt.manualBuildRequestFor(r.Context(), name, *existing, req, buildType)
 	rt.applyAppBuildSettings(r.Context(), name, &buildReq)
 	buildReq.ProxyAuthorizer = rt.proxyAuthorizerFor(r, name)
 	source := store.DeployAttemptSourceManual

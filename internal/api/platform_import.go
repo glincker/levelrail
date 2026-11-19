@@ -483,6 +483,7 @@ func (a *importApplier) CreateApp(ctx context.Context, p platformimport.AppPlan)
 		err = rt.apps.SaveDesiredService(ctx, desired)
 	}
 	if err != nil {
+		rt.releaseImageRepoClaim(ctx, p.Name)
 		return warnings, fmt.Errorf("save app: %w", err)
 	}
 	if projectID != "" {

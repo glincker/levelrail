@@ -216,7 +216,12 @@ func (rt *Router) handleStartCanary(w http.ResponseWriter, r *http.Request) {
 	if !docker.ImageIdentityMatches(source.Image, req.Image) {
 		clone.GrantedCaps = nil
 	}
+	if st, msg := rt.checkServiceImageRepo(r.Context(), clone); st != 0 {
+		writeError(w, st, msg)
+		return
+	}
 	if err := rt.apps.SaveDesiredService(r.Context(), clone); err != nil {
+		rt.releaseImageRepoClaim(r.Context(), canaryName)
 		rt.internalError(w, "api: start canary: save clone", err, slog.String("name", name))
 		return
 	}

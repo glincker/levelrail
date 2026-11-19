@@ -250,6 +250,9 @@ func (rt *Router) deployComposeBody(w http.ResponseWriter, r *http.Request, name
 			save = rt.appCompose.SaveSuspendedDesiredService
 		}
 		if err := save(r.Context(), svc); err != nil {
+			if !composeHadService(previousServices, svc.Name) {
+				rt.releaseImageRepoClaim(r.Context(), svc.Name)
+			}
 			rt.internalError(w, "api: deploy compose: save service failed", err, slog.String("service", svc.Name))
 			return composeDeployResponse{}, false
 		}
@@ -609,4 +612,14 @@ func (rt *Router) pruneStaleComposeSecretFiles(ctx context.Context, previous, ne
 			}
 		}
 	}
+}
+
+// composeHadService tells a redeploy from a first deploy, so a failed save only frees claims it created.
+func composeHadService(previous []store.DesiredService, name string) bool {
+	for _, p := range previous {
+		if p.Name == name {
+			return true
+		}
+	}
+	return false
 }

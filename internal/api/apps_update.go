@@ -96,7 +96,7 @@ func (rt *Router) handleUpdateApp(w http.ResponseWriter, r *http.Request) {
 		appID = name
 	}
 	if imageChanged {
-		if st, msg := rt.checkFinalImageRepo(r.Context(), name, defaultImageRepo(name, desired.Image), false); st != 0 {
+		if st, msg := rt.checkFinalImageRepo(r.Context(), name, rt.ownImageRepo(r.Context(), name, desired.Image), false); st != 0 {
 			writeError(w, st, msg)
 			return
 		}

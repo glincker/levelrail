@@ -112,6 +112,7 @@ func (rt *Router) handleCloneApp(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 	if err := rt.apps.SaveDesiredService(r.Context(), clone); err != nil {
+		rt.releaseImageRepoClaim(r.Context(), req.NewName)
 		var domainTaken *store.ErrDomainTaken
 		if errors.As(err, &domainTaken) {
 			writeError(w, http.StatusConflict, domainTaken.Error())

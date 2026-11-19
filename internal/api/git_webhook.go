@@ -483,7 +483,7 @@ func (rt *Router) deployFromGitSourceInner(ctx context.Context, name string, gs 
 		_, _, finishFetchAttempt, _ := rt.beginBuildDeployAttempt(ctx, deploy.Request{
 			ServiceName: name,
 			CommitSHA:   commitLabel,
-			ImageRepo:   defaultImageRepo(name, existing.Image),
+			ImageRepo:   rt.ownImageRepo(ctx, name, existing.Image),
 		}, *existing, source, "")
 		finishFetchAttempt(fmt.Errorf("fetch source: %w", err))
 		if errors.Is(err, errGitCommitNotFound) {
@@ -525,7 +525,7 @@ func (rt *Router) deployFromGitSourceInner(ctx context.Context, name string, gs 
 	svcSpec.Static = gs.StaticOptions()
 	svcSpec.Build.Args = mergeBuildArgs(svcSpec.Build.Args, extraBuildArgsFrom(ctx))
 
-	if st, msg := rt.checkFinalImageRepo(ctx, name, defaultImageRepo(name, existing.Image), true); st != 0 {
+	if st, msg := rt.checkFinalImageRepo(ctx, name, rt.ownImageRepo(ctx, name, existing.Image), true); st != 0 {
 		return st, msg
 	}
 	buildReq := deploy.Request{
@@ -533,7 +533,7 @@ func (rt *Router) deployFromGitSourceInner(ctx context.Context, name string, gs 
 		Service:     svcSpec,
 		SourceDir:   sourceDir,
 		CommitSHA:   commitLabel,
-		ImageRepo:   defaultImageRepo(name, existing.Image),
+		ImageRepo:   rt.ownImageRepo(ctx, name, existing.Image),
 		Order:       order,
 	}
 	rt.applyAppBuildSettings(ctx, name, &buildReq)

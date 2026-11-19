@@ -195,6 +195,7 @@ func (rt *Router) handleCreateApp(w http.ResponseWriter, r *http.Request) {
 	}
 
 	if err := rt.apps.SaveDesiredService(r.Context(), desired); err != nil {
+		rt.releaseImageRepoClaim(r.Context(), req.Name)
 		var domainTaken *store.ErrDomainTaken
 		if errors.As(err, &domainTaken) {
 			writeError(w, http.StatusConflict, domainTaken.Error())

@@ -191,6 +191,14 @@ func (rt *Router) saveClonedService(ctx context.Context, svc store.DesiredServic
 	if st, msg := rt.checkServiceImageRepo(ctx, svc); st != 0 {
 		return errors.New(msg)
 	}
+	err := rt.saveClonedServiceRow(ctx, svc)
+	if err != nil {
+		rt.releaseImageRepoClaim(ctx, svc.Name)
+	}
+	return err
+}
+
+func (rt *Router) saveClonedServiceRow(ctx context.Context, svc store.DesiredService) error {
 	if s, ok := rt.apps.(suspendedServiceSaver); ok {
 		return s.SaveSuspendedDesiredService(ctx, svc)
 	}

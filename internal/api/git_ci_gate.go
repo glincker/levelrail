@@ -183,7 +183,7 @@ func (rt *Router) recordCIGateSkip(ctx context.Context, name, sha, reason, sourc
 		rt.logger.Warn("api: ci gate: record skip failed", slog.String("name", name), slog.String("error", err.Error()))
 		return
 	}
-	if st, _ := rt.checkFinalImageRepo(ctx, name, defaultImageRepo(name, existing.Image), false); st != 0 {
+	if st, _ := rt.checkFinalImageRepo(ctx, name, rt.ownImageRepo(ctx, name, existing.Image), false); st != 0 {
 		// Recorded without the repo so the history still shows the skip and its reason.
 		rt.logger.Warn("api: ci gate: image repo check failed, skip recorded without repo", slog.String("name", name), slog.Int("status", st))
 		_, _, finish, _ := rt.beginBuildDeployAttempt(ctx, deploy.Request{ServiceName: name, CommitSHA: sha}, *existing, source, "")
@@ -193,7 +193,7 @@ func (rt *Router) recordCIGateSkip(ctx context.Context, name, sha, reason, sourc
 	_, _, finish, _ := rt.beginBuildDeployAttempt(ctx, deploy.Request{
 		ServiceName: name,
 		CommitSHA:   sha,
-		ImageRepo:   defaultImageRepo(name, existing.Image),
+		ImageRepo:   rt.ownImageRepo(ctx, name, existing.Image),
 	}, *existing, source, "")
 	finish(errors.New("skipped by CI gate: " + reason))
 }
@@ -212,7 +212,7 @@ func (rt *Router) recordCIGateSuperseded(ctx context.Context, name, sha, reason,
 	}
 	now := time.Now()
 	if err := rt.deployAttempts.SaveDeployAttempt(ctx, store.DeployAttempt{
-		ID: id, ServiceName: name, Image: defaultImageRepo(name, existing.Image) + ":" + sha,
+		ID: id, ServiceName: name, Image: rt.ownImageRepo(ctx, name, existing.Image) + ":" + sha,
 		CommitSHA: sha, Source: source, Status: store.DeployAttemptStatusRunning, StartedAt: now,
 		Snapshot: store.NewDeployAttemptSnapshot(*existing),
 	}); err != nil {

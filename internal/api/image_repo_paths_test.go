@@ -72,3 +72,60 @@ func TestImageRepoImportAndSetImageRejectOwnedRepo(t *testing.T) {
 		t.Fatal("setDesiredImage accepted an owned repo")
 	}
 }
+
+const builtTag = "0123456789abcdef0123456789abcdef01234567"
+
+func seedBuiltApp(t *testing.T, db *store.DB, name string) {
+	t.Helper()
+	ctx := context.Background()
+	if err := db.SaveDesiredService(ctx, store.DesiredService{Name: name, Image: name + ":" + builtTag, Port: 80}); err != nil {
+		t.Fatal(err)
+	}
+	if _, err := db.ClaimImageRepo(ctx, normalizeImageRepo(name), name); err != nil {
+		t.Fatal(err)
+	}
+}
+
+func TestImageRepoCloneOfBuiltAppKeepsSourceClaim(t *testing.T) {
+	rt, db := newTestRouter(t)
+	cookie := loginTestSession(t, rt, db)
+	seedBuiltApp(t, db, "built")
+	rec := httptest.NewRecorder()
+	rt.Handler().ServeHTTP(rec, authedRequest(t, cookie, http.MethodPost, "/api/v1/apps/built/clone", `{"new_name":"built-copy"}`))
+	if rec.Code >= 300 {
+		t.Fatalf("clone status = %d; body = %s", rec.Code, rec.Body.String())
+	}
+	ctx := context.Background()
+	if owner, _ := db.ImageRepoOwner(ctx, normalizeImageRepo("built")); owner != "built" {
+		t.Fatalf("source repo owner = %q, want built", owner)
+	}
+	if got := rt.ownImageRepo(ctx, "built-copy", "built:"+builtTag); got != "built-copy" {
+		t.Fatalf("clone repo = %q, want built-copy", got)
+	}
+	// The source can still gate its own build after the clone exists.
+	if st, msg := rt.checkFinalImageRepo(ctx, "built", "built", true); st != 0 {
+		t.Fatalf("source gate = %d %s", st, msg)
+	}
+	// First build of the clone claims its own repo.
+	if st, msg := rt.checkFinalImageRepo(ctx, "built-copy", rt.ownImageRepo(ctx, "built-copy", "built:"+builtTag), true); st != 0 {
+		t.Fatalf("clone build gate = %d %s", st, msg)
+	}
+	if owner, _ := db.ImageRepoOwner(ctx, normalizeImageRepo("built-copy")); owner != "built-copy" {
+		t.Fatalf("clone repo owner = %q, want built-copy", owner)
+	}
+}
+
+func TestImageRepoFailedSaveReleasesClaim(t *testing.T) {
+	rt, db := newTestRouter(t)
+	ctx := context.Background()
+	if st, msg := rt.checkServiceImageRepo(ctx, store.DesiredService{Name: "gone", Image: "nginx:1"}); st != 0 {
+		t.Fatalf("gate = %d %s", st, msg)
+	}
+	if owner, _ := db.ImageRepoOwner(ctx, normalizeImageRepo("gone")); owner != "gone" {
+		t.Fatalf("claim owner = %q", owner)
+	}
+	rt.releaseImageRepoClaim(ctx, "gone")
+	if owner, _ := db.ImageRepoOwner(ctx, normalizeImageRepo("gone")); owner != "" {
+		t.Fatalf("claim not released, owner = %q", owner)
+	}
+}
