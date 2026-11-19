@@ -1,4 +1,4 @@
-import { useState, type ReactNode } from 'react'
+import { lazy, Suspense, useState, type ReactNode } from 'react'
 import { useQuery } from '@tanstack/react-query'
 import { useTranslation } from 'react-i18next'
 import { Alert, AlertDescription } from '@/components/ui/alert'
@@ -20,7 +20,8 @@ import {
 } from '../../queries/pagesSites'
 import { splitCells, STATUS_CELLS, STATUS_CLASSES } from './pageHelpers'
 
-const WINDOWS: readonly TrafficWindow[] = ['24h', '7d']
+const TrafficSeriesChart = lazy(() => import('./TrafficSeriesChart'))
+const WINDOWS: readonly TrafficWindow[] = ['24h', '7d', '30d']
 const nf = new Intl.NumberFormat()
 
 function Stat({ label, value }: Readonly<{ label: string; value: string }>) {
@@ -183,6 +184,11 @@ export function SiteTrafficCard({
               value={formatSize(d.bytes_out)}
             />
           </dl>
+          {d.series ? (
+            <Suspense fallback={<Skeleton className="h-16 w-full" />}>
+              <TrafficSeriesChart series={d.series} />
+            </Suspense>
+          ) : null}
           <StatusSplit status={d.status} />
           <div className="grid gap-4 sm:grid-cols-2">
             <TopList

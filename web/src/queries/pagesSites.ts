@@ -200,7 +200,15 @@ export function siteChecksQueryOptions(name: string) {
   })
 }
 
-export type TrafficWindow = '24h' | '7d'
+export type TrafficWindow = '24h' | '7d' | '30d'
+
+export interface TrafficPoint {
+  start: string
+  requests: number
+  pages: number
+  assets: number
+  errors: number
+}
 
 export interface TrafficCount {
   label: string
@@ -223,6 +231,8 @@ export interface SiteTraffic {
   assets?: { requests: number; bytes: number }
   broken_links?: TrafficCount[]
   probe_requests?: TrafficCount[]
+  /** Older servers omit the series. */
+  series?: TrafficPoint[]
   partial: boolean
   partial_notes?: string[]
 }
