@@ -15,7 +15,7 @@ Usage:
   levelrail-cli nodes get <id> [flags]                                      show one node
   levelrail-cli nodes delete <id> [flags]                                    delete a node (fails if it still has placements, drain first)
   levelrail-cli nodes import --provider NAME --instance-id ID [--name N] [--mesh]   mint a join token for an existing cloud instance, nothing on the instance is changed
-  levelrail-cli nodes join-token [flags]                                     mint a one-time enrollment token, shown once
+  levelrail-cli nodes join-token [create] [--builder] [flags]                 mint a one-time enrollment token, shown once
   levelrail-cli nodes join-tokens [flags]                                    list pending (unused, unexpired) join tokens
   levelrail-cli nodes revoke-join-token <id>|--all [flags]                   revoke pending join tokens at once
   levelrail-cli nodes cordon <id> [flags]                                    mark a node unschedulable, without evacuating it
