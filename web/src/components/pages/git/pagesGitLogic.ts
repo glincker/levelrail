@@ -1,5 +1,6 @@
 import { isBrandIconName, type BrandIconName } from '../../BrandIcon'
 import { logoIdForFramework } from '../../../lib/brandLogos'
+import type { DeploymentStep } from '../../../types/deployment'
 import type { ImportAnalysis } from '../../../queries/importAnalyze'
 
 export interface StaticDetection {
@@ -41,7 +42,45 @@ export function staticDetection(a: ImportAnalysis): StaticDetection {
 
 export type GitStage = 'cloning' | 'building' | 'ready' | 'failed'
 
-/** The wire has step counts but no step names, so cloning means nothing has finished yet. */
+export const GIT_STEP_NAMES = [
+  'cloning',
+  'building',
+  'publishing',
+  'live',
+] as const
+export type GitStepName = (typeof GIT_STEP_NAMES)[number]
+export type GitStepState = DeploymentStep['state']
+export interface GitStep {
+  name: GitStepName
+  state: GitStepState
+}
+
+const KNOWN_STATES: readonly string[] = [
+  'pending',
+  'running',
+  'done',
+  'failed',
+  'unknown',
+]
+
+/** Always four rows in order; a step the server did not name stays pending, and an unrecognised state is neutral. */
+export function gitSteps(
+  items: readonly { name: string; state: string }[] | undefined,
+  status: string | null,
+): GitStep[] {
+  return GIT_STEP_NAMES.map((name) => {
+    const hit = items?.find((i) => i.name === name)
+    if (!hit) {
+      return { name, state: status === 'ready' ? 'done' : 'pending' }
+    }
+    const state = KNOWN_STATES.includes(hit.state)
+      ? (hit.state as GitStepState)
+      : 'unknown'
+    return { name, state }
+  })
+}
+
+/** Coarse stage from the deployment status, used for success and failure; the step rows carry the detail. */
 export function stageFromDeployment(
   status: string | null,
   doneSteps: number,

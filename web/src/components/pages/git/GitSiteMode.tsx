@@ -8,7 +8,7 @@ import { Button } from '@/components/ui/button'
 import { Input } from '@/components/ui/input'
 import { Label } from '@/components/ui/label'
 import { NativeSelect } from '@/components/ui/native-select'
-import { Progress } from '@/components/ui/progress'
+import { Switch } from '@/components/ui/switch'
 import { BrandIcon } from '../../BrandIcon'
 import type { GitRepoSourceValue } from '../../GitRepoSourcePicker'
 import { RepoList } from '../../newapp/RepoList'
@@ -18,9 +18,12 @@ import { looksLikeRepoUrl, repoNameFromUrl } from '../../../lib/repoImport'
 import { sourceFromRepo } from '../../../lib/newApp'
 import { useRefreshGitRepos } from '../../../queries/gitRepos'
 import { useFirstDeployResult } from '../../../queries/gitSourceFirstDeploy'
-import { createGitSite, GitSiteError } from '../../../queries/pagesGit'
+import { createGitSite, type GitSiteResult } from '../../../queries/pagesGit'
+import { ApiError } from '../../../lib/apiError'
+import { GitSteps } from './GitSteps'
 import { previewRepo, repoPreviewKeys } from '../../../queries/repoPreview'
 import {
+  gitSteps,
   siteNameFromRepo,
   stageFromDeployment,
   staticDetection,
@@ -65,11 +68,13 @@ export default function GitSiteMode({
   const [outputDir, setOutputDir] = useState<string | null>(null)
   const [forceStatic, setForceStatic] = useState(false)
   const [since, setSince] = useState<string | null>(null)
-  const [siteCreated, setSiteCreated] = useState(false)
+  const [deployOnPush, setDeployOnPush] = useState(true)
+  const [created, setCreated] = useState<GitSiteResult | null>(null)
   const [starting, setStarting] = useState(false)
-  const [error, setError] = useState<{ step: string; message: string } | null>(
-    null,
-  )
+  const [error, setError] = useState<{
+    field: 'repo' | 'output' | null
+    message: string
+  } | null>(null)
 
   const typed = useDebounced(input.trim())
   const url = picked ? picked.repoUrl : typed
@@ -119,20 +124,17 @@ export default function GitSiteMode({
     : since
       ? 'cloning'
       : null
+  // The stream wins once it speaks; until then the create response seeds the rows.
+  const steps = gitSteps(
+    deploy ? deploy.steps?.items : created?.steps?.items,
+    deploy ? deploy.status : (created?.status ?? null),
+  )
+  const failedStep = steps.find((s) => s.state === 'failed')
   const running =
     starting || (stage !== null && stage !== 'failed' && stage !== 'ready')
   useEffect(() => {
     onBusyChange(running)
   }, [running, onBusyChange])
-
-  const stepLabel = (step: string) =>
-    step === 'site'
-      ? t('git.step.site')
-      : step === 'source'
-        ? t('git.step.source')
-        : step === 'deploy'
-          ? t('git.step.deploy')
-          : t('git.step.build')
 
   const buildCommand = command ?? detected?.buildCommand ?? ''
   const publishDir = outputDir ?? detected?.outputDir ?? ''
@@ -154,34 +156,29 @@ export default function GitSiteMode({
   }
 
   const create = async () => {
-    if (!data || !analysis) return
+    if (!data) return
     setError(null)
     setStarting(true)
-    const source: GitRepoSourceValue = {
-      provider: picked?.provider ?? 'manual',
-      repoUrl: data.repo_url ?? url,
-      branch: effectiveBranch,
-      providerRef: picked?.providerRef,
-    }
+    const ref = picked?.providerRef
     try {
-      await createGitSite({
+      const result = await createGitSite({
         name,
-        source,
-        analysis,
+        repoUrl: data.repo_url ?? url,
+        branch: effectiveBranch,
+        accountId: ref && 'connectionId' in ref ? ref.connectionId : undefined,
         buildCommand,
         outputDir: publishDir,
-        spa: detected?.spa ?? false,
-        resume: siteCreated,
+        deployOnPush,
       })
-      setSiteCreated(true)
+      setCreated(result)
       setSince(new Date().toISOString())
     } catch (err) {
-      if (err instanceof GitSiteError && err.step !== 'site') {
-        setSiteCreated(true)
-      }
+      const message = err instanceof Error ? err.message : ''
+      // The server undoes a failed create, so the form stays editable for a clean retry.
+      const bad = err instanceof ApiError && err.status === 400
       setError({
-        step: err instanceof GitSiteError ? err.step : 'site',
-        message: err instanceof Error ? err.message : '',
+        field: bad ? (/output/i.test(message) ? 'output' : 'repo') : null,
+        message,
       })
     } finally {
       setStarting(false)
@@ -219,9 +216,22 @@ export default function GitSiteMode({
             autoComplete="off"
             spellCheck={false}
             placeholder={t('git.repoPlaceholder')}
+            aria-invalid={error?.field === 'repo' || undefined}
+            aria-describedby={
+              error?.field === 'repo' ? 'pages-git-repo-err' : undefined
+            }
             onChange={(e) => reset(e.target.value, null)}
           />
         </div>
+        {error?.field === 'repo' ? (
+          <p
+            id="pages-git-repo-err"
+            role="alert"
+            className="text-xs text-destructive"
+          >
+            {error.message}
+          </p>
+        ) : null}
       </div>
       {picked ? null : (
         <RepoList
@@ -347,26 +357,42 @@ export default function GitSiteMode({
                 value={publishDir}
                 disabled={running}
                 placeholder={t('git.outputPlaceholder')}
+                aria-invalid={error?.field === 'output' || undefined}
+                aria-describedby={
+                  error?.field === 'output' ? 'pages-git-output-err' : undefined
+                }
                 onChange={(e) => setOutputDir(e.target.value)}
               />
+              {error?.field === 'output' ? (
+                <p
+                  id="pages-git-output-err"
+                  role="alert"
+                  className="text-xs text-destructive"
+                >
+                  {error.message}
+                </p>
+              ) : null}
             </div>
+          </div>
+          <div className="flex items-center gap-2">
+            <Switch
+              id="pages-git-push"
+              size="sm"
+              checked={deployOnPush}
+              disabled={running}
+              onCheckedChange={setDeployOnPush}
+            />
+            <Label htmlFor="pages-git-push" className="text-sm font-normal">
+              {t('git.deployOnPush')}
+            </Label>
           </div>
         </section>
       ) : null}
-      {stage !== null && stage !== 'failed' ? (
-        <Progress value={null} aria-label={t(`git.stage.${stage}`)}>
-          <span className="text-xs text-muted-foreground">
-            {t(`git.stage.${stage}`)}
-          </span>
-        </Progress>
-      ) : null}
-      {error ? (
+      {stage !== null ? <GitSteps steps={steps} /> : null}
+      {error && error.field === null ? (
         <Alert variant="destructive" role="alert">
           <AlertDescription>
-            {t('git.failedStep', {
-              step: stepLabel(error.step),
-              message: error.message,
-            })}
+            {t('git.createFailed', { message: error.message })}
           </AlertDescription>
         </Alert>
       ) : null}
@@ -375,7 +401,12 @@ export default function GitSiteMode({
           <AlertDescription className="flex flex-wrap items-center justify-between gap-2">
             <span>
               {t('git.failedStep', {
-                step: deploy?.steps?.failing_step ?? t('git.step.build'),
+                step: t(
+                  `git.steps.${failedStep?.name ?? deploy?.steps?.failing_step ?? 'building'}`,
+                  {
+                    defaultValue: deploy?.steps?.failing_step ?? '',
+                  },
+                ),
                 message: deploy?.error_summary ?? '',
               })}
             </span>
@@ -402,10 +433,10 @@ export default function GitSiteMode({
           </AlertDescription>
         </Alert>
       ) : null}
-      {stage !== null && stage !== 'failed' && deploy ? (
+      {stage !== null && stage !== 'failed' && (deploy ?? created?.deployId) ? (
         <Link
           to="/apps/$name/deploys/$deployId/logs"
-          params={{ name, deployId: deploy.id }}
+          params={{ name, deployId: deploy?.id ?? created?.deployId ?? '' }}
           onClick={onClose}
           className="text-xs text-muted-foreground underline-offset-2 hover:underline focus-visible:underline"
         >

@@ -1,5 +1,6 @@
 import { fireEvent, render, screen, waitFor } from '@testing-library/react'
 import { beforeEach, describe, expect, it, vi } from 'vitest'
+import { ApiError } from '../../../lib/apiError'
 import GitSiteMode from './GitSiteMode'
 import type { RepoPreview } from '../../../queries/repoPreview'
 
@@ -85,7 +86,9 @@ function mount() {
 
 describe('GitSiteMode', () => {
   beforeEach(() => {
-    h.create.mockReset().mockResolvedValue('d1')
+    h.create
+      .mockReset()
+      .mockResolvedValue({ deployId: 'd1', steps: null, status: null })
   })
 
   it('prefills the detected build settings and creates with them', async () => {
@@ -104,9 +107,11 @@ describe('GitSiteMode', () => {
     await waitFor(() => expect(h.create).toHaveBeenCalled())
     expect(h.create.mock.calls[0]?.[0]).toMatchObject({
       name: 'site',
+      repoUrl: 'https://github.com/a/site',
+      branch: 'main',
       buildCommand: 'npm run build',
       outputDir: 'public',
-      resume: false,
+      deployOnPush: true,
     })
   })
 
@@ -118,5 +123,24 @@ describe('GitSiteMode', () => {
     expect(create).toHaveProperty('disabled', true)
     fireEvent.click(screen.getByRole('button', { name: 'git.forceStatic' }))
     expect(create).toHaveProperty('disabled', false)
+  })
+
+  it('shows a 400 on the output field and allows a retry', async () => {
+    h.preview = preview('static')
+    h.create.mockRejectedValueOnce(
+      new ApiError(400, 'output directory dist was not produced'),
+    )
+    mount()
+    await screen.findByTestId('logo')
+    fireEvent.click(screen.getByRole('button', { name: 'git.create' }))
+    const msg = await screen.findByText(/output directory dist/)
+    expect(
+      screen.getByLabelText('git.output').getAttribute('aria-invalid'),
+    ).toBe('true')
+    expect(msg.getAttribute('role')).toBe('alert')
+    expect(screen.getByRole('button', { name: 'git.create' })).toHaveProperty(
+      'disabled',
+      false,
+    )
   })
 })

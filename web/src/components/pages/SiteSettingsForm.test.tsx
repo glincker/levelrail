@@ -27,6 +27,11 @@ vi.mock('../../queries/pagesSites', async (orig) => ({
     isError: false,
   }),
 }))
+vi.mock('../../queries/gitSources', () => ({
+  useGitSource: () => ({
+    data: { build_command: 'npm run build', publish_dir: 'out' },
+  }),
+}))
 vi.mock('@/components/ui/toast', () => ({ toast: { add: vi.fn() } }))
 
 const settings: SiteSettings = {
@@ -46,6 +51,12 @@ beforeEach(() => {
 })
 
 describe('SiteSettingsForm', () => {
+  it('captions build fields that come from git settings', () => {
+    render(<SiteSettingsForm name="s" />)
+    expect(screen.getByText('settings.fromGit:npm run build')).toBeTruthy()
+    expect(screen.queryByText('settings.fromGit:out')).toBeNull()
+  })
+
   it('shows null as Auto with the effective caption', () => {
     render(<SiteSettingsForm name="s" />)
     const spa = screen.getByRole('radiogroup', { name: 'settings.spa' })
@@ -71,7 +82,8 @@ describe('SiteSettingsForm', () => {
     render(<SiteSettingsForm name="s" />)
     // clean_urls and output_dir are overridden, so two reset buttons show
     const resets = screen.getAllByText('settings.reset')
-    expect(resets).toHaveLength(2)
+    expect(resets).toHaveLength(1)
+    expect(screen.getByText('settings.resetGit')).toBeTruthy()
     fireEvent.click(resets[0] as HTMLElement)
     expect(h.mutate.mock.calls[0]?.[0]).toEqual({ reset: ['clean_urls'] })
   })

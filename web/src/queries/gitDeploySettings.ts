@@ -36,10 +36,17 @@ export function useSetGitDeploySettings(name: string) {
   const queryClient = useQueryClient()
   return useMutation<GitDeploySettings, ApiError, SetGitDeploySettingsRequest>({
     mutationFn: (req) => setGitDeploySettings(name, req),
-    onSuccess: (settings) => {
+    onSuccess: (settings, req) => {
       queryClient.setQueryData<GitSourceResource>(
         gitSourceKeys.detail(name),
-        (prev) => (prev ? { ...prev, ...settings } : prev),
+        (prev) =>
+          prev
+            ? {
+                ...prev,
+                ...settings,
+                ...(req.trigger_mode ? { trigger_mode: req.trigger_mode } : {}),
+              }
+            : prev,
       )
     },
   })

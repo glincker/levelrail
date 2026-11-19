@@ -2,6 +2,7 @@ import { describe, expect, it } from 'vitest'
 import type { ImportAnalysis } from '../../../queries/importAnalyze'
 import {
   siteNameFromRepo,
+  gitSteps,
   stageFromDeployment,
   staticDetection,
 } from './pagesGitLogic'
@@ -59,5 +60,33 @@ describe('stageFromDeployment', () => {
 describe('siteNameFromRepo', () => {
   it('keeps the allowed pattern', () => {
     expect(siteNameFromRepo('My_Site.git')).toBe('my-site')
+  })
+})
+
+describe('gitSteps', () => {
+  it('keeps four ordered rows and maps each state', () => {
+    const rows = gitSteps(
+      [
+        { name: 'cloning', state: 'done' },
+        { name: 'building', state: 'failed' },
+        { name: 'publishing', state: 'unknown' },
+      ],
+      'failed',
+    )
+    expect(rows.map((r) => `${r.name}:${r.state}`)).toEqual([
+      'cloning:done',
+      'building:failed',
+      'publishing:unknown',
+      'live:pending',
+    ])
+  })
+
+  it('treats an unrecognised state as unknown and a ready build as done', () => {
+    expect(
+      gitSteps([{ name: 'cloning', state: 'weird' }], null)[0]?.state,
+    ).toBe('unknown')
+    expect(gitSteps(undefined, 'ready').every((r) => r.state === 'done')).toBe(
+      true,
+    )
   })
 })

@@ -2,8 +2,10 @@ import { Link } from '@tanstack/react-router'
 import { useTranslation } from 'react-i18next'
 import { GitBranchGlassIcon } from '@thesvg/ui-react'
 import { Button } from '@/components/ui/button'
+import { SegmentedControl } from '@/components/ui/segmented-control'
 import { toast } from '@/components/ui/toast'
 import { useGitSource } from '../../queries/gitSources'
+import { useSetGitDeploySettings } from '../../queries/gitDeploySettings'
 import { useDeployGitSource } from '../../queries/gitSourceConnect'
 import { usePagesSiteDetail } from '../../queries/pagesSites'
 import { usePreviewEnvironments } from '../../queries/previewEnvironments'
@@ -27,6 +29,7 @@ export default function SiteGitCard({ name }: Readonly<{ name: string }>) {
   const detail = usePagesSiteDetail(name)
   const previews = usePreviewEnvironments(name)
   const redeploy = useDeployGitSource(name)
+  const saveTrigger = useSetGitDeploySettings(name)
   const gs = source.data
   if (!gs) return null
   const sha = detail.data?.latest_deploy?.commit_sha
@@ -90,11 +93,38 @@ export default function SiteGitCard({ name }: Readonly<{ name: string }>) {
             t('git.card.none')
           )}
         </Row>
-        <Row label={t('git.card.onPush')}>
-          {gs.trigger_mode === 'release'
-            ? t('git.card.onPushRelease')
-            : t('git.card.onPushOn', { branch: gs.branch })}
-        </Row>
+        <div className="flex min-w-0 flex-col gap-1">
+          <dt className="text-xs text-muted-foreground">
+            {t('git.card.onPush')}
+          </dt>
+          <dd>
+            <SegmentedControl
+              aria-label={t('git.card.onPush')}
+              value={gs.trigger_mode}
+              disabled={saveTrigger.isPending}
+              options={[
+                { value: 'push', label: t('git.card.triggerPush') },
+                { value: 'release', label: t('git.card.triggerRelease') },
+                { value: 'manual', label: t('git.card.triggerManual') },
+              ]}
+              onValueChange={(mode) =>
+                saveTrigger.mutate(
+                  { trigger_mode: mode },
+                  {
+                    onSuccess: () =>
+                      toast.add({ title: t('git.card.triggerSaved') }),
+                    onError: (err) =>
+                      toast.add({
+                        title: t('git.card.triggerFailed', {
+                          message: err.message,
+                        }),
+                      }),
+                  },
+                )
+              }
+            />
+          </dd>
+        </div>
       </dl>
       <p className="text-xs text-muted-foreground">
         {t('git.card.onPushHint')}

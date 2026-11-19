@@ -95,6 +95,8 @@
     "current": "Currently {{value}}",
     "save": "Save",
     "reset": "Use app.yaml",
+    "resetGit": "Use git settings",
+    "fromGit": "From git settings: {{value}}",
     "saved": "Setting saved",
     "loadFailed": "Could not load the settings",
     "buildPlaceholder": "npm run build",
@@ -325,16 +327,21 @@
     "useAppFlow": "Use the app flow",
     "forceStatic": "Deploy as static anyway",
     "create": "Create and deploy",
-    "stage": {
-      "cloning": "Cloning the repository...",
-      "building": "Building and publishing...",
-      "ready": "Published"
-    },
-    "step": {
-      "site": "creating the site",
-      "source": "connecting the repository",
-      "build": "saving build settings",
-      "deploy": "starting the build"
+    "deployOnPush": "Deploy on every push",
+    "createFailed": "Could not create the site: {{message}}",
+    "steps": {
+      "label": "Deploy progress",
+      "cloning": "Cloning",
+      "building": "Building",
+      "publishing": "Publishing",
+      "live": "Live",
+      "state": {
+        "pending": "waiting",
+        "running": "in progress",
+        "done": "done",
+        "failed": "failed",
+        "unknown": "status unknown"
+      }
     },
     "failedStep": "Failed while {{step}}: {{message}}",
     "viewLog": "Open build log",
@@ -346,9 +353,12 @@
       "commit": "Last commit",
       "none": "none yet",
       "onPush": "Deploy on push",
-      "onPushOn": "On, every push to {{branch}} deploys.",
-      "onPushRelease": "Tags only, a pushed tag deploys.",
-      "onPushHint": "Change the trigger in the app's Git settings.",
+      "onPushHint": "Applies right away. Path filters and more live in the app's Git settings.",
+      "triggerPush": "On push",
+      "triggerRelease": "On release",
+      "triggerManual": "Manual",
+      "triggerSaved": "Deploy trigger saved.",
+      "triggerFailed": "Could not save the trigger: {{message}}",
       "openApp": "Git settings",
       "redeploy": "Redeploy",
       "redeploying": "Redeploying...",

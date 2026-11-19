@@ -10,6 +10,7 @@ import { NativeSelect } from '@/components/ui/native-select'
 import { SegmentedControl } from '@/components/ui/segmented-control'
 import { Skeleton } from '@/components/ui/skeleton'
 import { toast } from '@/components/ui/toast'
+import { useGitSource } from '../../queries/gitSources'
 import {
   siteChecksQueryOptions,
   useSiteSettings,
@@ -55,6 +56,7 @@ interface RowProps {
   label: string
   hint?: string
   caption?: string
+  resetLabel?: string
   dirty: boolean
   canReset: boolean
   busy: boolean
@@ -67,6 +69,7 @@ function SettingRow({
   label,
   hint,
   caption,
+  resetLabel,
   dirty,
   canReset,
   busy,
@@ -105,7 +108,7 @@ function SettingRow({
         ) : null}
         {canReset ? (
           <Button size="sm" variant="ghost" disabled={busy} onClick={onReset}>
-            {t('settings.reset')}
+            {resetLabel ?? t('settings.reset')}
           </Button>
         ) : null}
       </div>
@@ -120,6 +123,7 @@ function SettingsFields({
   const { t } = useTranslation('pagesSites')
   const update = useUpdateSiteSettings(name)
   const checks = useQuery(siteChecksQueryOptions(name)).data
+  const git = useGitSource(name).data
   const saved = serverForm(data)
   const [local, setLocal] = useState<Partial<Form>>({})
   const form: Form = { ...saved, ...local }
@@ -164,6 +168,11 @@ function SettingsFields({
     { value: 'on' as const, label: t('settings.on') },
     { value: 'off' as const, label: t('settings.off') },
   ]
+  // Only when no per-site override exists does the git source value apply.
+  const fromGit = (override: string, gitValue?: string) =>
+    !override && gitValue
+      ? t('settings.fromGit', { value: gitValue })
+      : undefined
   const e = data.effective
   const notFoundCheck = checks?.checks.find((c) => c.id === 'custom_404')
   return (
@@ -238,6 +247,8 @@ function SettingsFields({
         {...row('build_command')}
         label={t('settings.build')}
         hint={t('settings.gitOnlyHint')}
+        resetLabel={git ? t('settings.resetGit') : undefined}
+        caption={fromGit(saved.build_command, git?.build_command)}
       >
         <Input
           aria-label={t('settings.build')}
@@ -251,6 +262,8 @@ function SettingsFields({
         {...row('output_dir')}
         label={t('settings.output')}
         hint={t('settings.gitOnlyHint')}
+        resetLabel={git ? t('settings.resetGit') : undefined}
+        caption={fromGit(saved.output_dir, git?.publish_dir)}
       >
         <Input
           aria-label={t('settings.output')}

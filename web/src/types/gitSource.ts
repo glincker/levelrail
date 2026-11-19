@@ -17,7 +17,7 @@ export type GitSourceBuildType = 'dockerfile' | 'railpack' | 'static'
 // TriggerModeRelease: 'push' (default) deploys on every push to branch,
 // 'release' deploys only on a tag ref push, or (GitHub only) a
 // "release" webhook event with action "published".
-export type GitSourceTriggerMode = 'push' | 'release'
+export type GitSourceTriggerMode = 'push' | 'release' | 'manual'
 
 export interface GitSourceResolvedBuild {
   context_dir: string
@@ -220,7 +220,9 @@ export interface GitDeploySettings {
   fetch_lfs?: boolean
 }
 
-export type SetGitDeploySettingsRequest = Partial<GitDeploySettings>
+export type SetGitDeploySettingsRequest = Partial<GitDeploySettings> & {
+  trigger_mode?: GitSourceTriggerMode
+}
 
 // SetGitSourceRequest is PUT /api/v1/apps/{name}/git-source's body.
 // token is write-only, and only sent at all when the operator actually

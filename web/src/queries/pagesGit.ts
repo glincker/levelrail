@@ -1,71 +1,65 @@
-import { editsFromAnalysis, connectSource } from '../lib/newApp'
-import { triggerBuild } from './builds'
-import { setGitBuild } from './gitBuildSettings'
-import { createPagesSite } from './pagesSites'
-import type { GitRepoSourceValue } from '../components/GitRepoSourcePicker'
-import type { ImportAnalysis } from './importAnalyze'
+import { ApiError, readErrorMessage } from '../lib/apiError'
+import type { DeploymentSteps } from '../types/deployment'
 
 export interface GitSiteInput {
   name: string
-  source: GitRepoSourceValue
-  analysis: ImportAnalysis
+  repoUrl: string
+  branch: string
+  /** Provider connection id the repository was picked from. */
+  accountId?: string
   buildCommand: string
   outputDir: string
-  spa: boolean
-  /** True when the site record already exists from an earlier attempt. */
-  resume: boolean
+  deployOnPush: boolean
 }
 
-export type GitSiteStep = 'site' | 'source' | 'build' | 'deploy'
+export interface GitSiteResult {
+  /** Omitted by the server when the clone is slow: follow latest_deploy then. */
+  deployId?: string
+  steps: DeploymentSteps | null
+  status: string | null
+}
 
-export class GitSiteError extends Error {
-  readonly step: GitSiteStep
-  constructor(step: GitSiteStep, cause: unknown) {
-    super(cause instanceof Error ? cause.message : 'Unknown error')
-    this.name = 'GitSiteError'
-    this.step = step
+interface CreateResponse {
+  deploy_id?: string
+  latest_deploy?: { id?: string; status?: string; steps?: DeploymentSteps }
+}
+
+/** One call creates the site, connects the repo and starts the first deploy. The server removes the site it made when the call fails, so a retry starts clean. */
+export async function createGitSite(
+  input: GitSiteInput,
+): Promise<GitSiteResult> {
+  const res = await fetch('/api/v1/static-sites', {
+    method: 'POST',
+    headers: { 'Content-Type': 'application/json' },
+    body: JSON.stringify({
+      name: input.name,
+      git: {
+        repo_url: input.repoUrl,
+        ...(input.branch ? { branch: input.branch } : {}),
+        ...(input.accountId ? { account_id: input.accountId } : {}),
+        build_command: input.buildCommand,
+        output_dir: input.outputDir,
+        deploy_on_push: input.deployOnPush,
+      },
+      deploy: true,
+    }),
+  })
+  if (res.status === 404 || res.status === 405) {
+    throw new ApiError(
+      res.status,
+      'this control plane cannot create static sites from git',
+    )
   }
-}
-
-/** Static site from git in four calls: site record, git source, build settings, first build. Returns the deploy id. */
-export async function createGitSite(input: GitSiteInput): Promise<string> {
-  const { name, source, analysis } = input
-  let step: GitSiteStep = 'site'
-  try {
-    if (!input.resume) {
-      const route = await createPagesSite(name)
-      if (route === 'fallback') {
-        throw new Error('this control plane cannot create static sites')
-      }
-    }
-    step = 'source'
-    const edits = {
-      ...editsFromAnalysis(analysis),
-      name,
-      buildType: 'static' as const,
-      spa: input.spa,
-    }
-    await connectSource(name, source, edits)
-    step = 'build'
-    await setGitBuild(name, {
-      build_type: 'static',
-      build_path: '',
-      base_directory: edits.baseDirectory,
-      build_command: input.buildCommand,
-      publish_dir: input.outputDir,
-      ...(input.spa ? { static_spa: true } : {}),
-    })
-    step = 'deploy'
-    const built = await triggerBuild(name, {
-      repoUrl: source.repoUrl,
-      ref: source.branch || analysis.branch,
-      buildType: 'static',
-      baseDirectory: edits.baseDirectory || undefined,
-      detectedFramework: analysis.stack.framework,
-    })
-    if (!built.id) throw new Error('the build did not return a deploy id')
-    return built.id
-  } catch (err) {
-    throw new GitSiteError(step, err)
+  if (!res.ok) {
+    throw new ApiError(
+      res.status,
+      await readErrorMessage(res, `create site failed: ${res.status}`),
+    )
+  }
+  const body = (await res.json().catch(() => ({}))) as CreateResponse
+  return {
+    deployId: body.deploy_id ?? body.latest_deploy?.id,
+    steps: body.latest_deploy?.steps ?? null,
+    status: body.latest_deploy?.status ?? null,
   }
 }
