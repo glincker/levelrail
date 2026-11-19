@@ -68,3 +68,23 @@ func TestProxyMatchPatterns(t *testing.T) {
 		t.Fatal("guard must not catch dotted names")
 	}
 }
+
+func TestProxySplatRejectsPathTricks(t *testing.T) {
+	pat, _ := proxyMatchPattern("/api/*")
+	re := regexp.MustCompile(pat)
+	for _, bad := range []string{"/api/..;/admin", "/api/..%252fadmin", "/api/%2e%2e/x", "/api/a;b", "/api/a%2fb"} {
+		if re.MatchString(bad) {
+			t.Fatalf("%q must not match the proxy", bad)
+		}
+	}
+}
+
+func TestProxyConfigEscapesBraces(t *testing.T) {
+	s := proxyConfig(t, StaticRoute{Proxies: []StaticProxy{{From: "/x", Path: "/{env.FOO}/{file./etc/hostname}", Dial: "10.0.0.5:3000"}}})
+	if strings.Contains(s, "{env.FOO}") && !strings.Contains(s, `\\{env.FOO\\}`) {
+		t.Fatalf("unescaped placeholder in %s", s)
+	}
+	if strings.Contains(strings.ReplaceAll(s, `\\{`, ""), "{env.") || strings.Contains(strings.ReplaceAll(s, `\\{`, ""), "{file.") {
+		t.Fatalf("unescaped placeholder in %s", s)
+	}
+}

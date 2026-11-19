@@ -72,3 +72,19 @@ func TestStaticRoutingInputCleanURLsDefaultsOn(t *testing.T) {
 		}
 	}
 }
+
+func TestStaticRuleRejectsBraces(t *testing.T) {
+	l := StaticLimits{MaxValueLen: 512}
+	for _, r := range []StaticRule{
+		{From: "/x", To: "app://some-app/{env.FOO}/{file./etc/hostname}", Status: 200},
+		{From: "/x", To: "app://some-app/{http.request.header.Authorization}", Status: 200},
+		{From: "/x", To: "/y/{env.X}", Status: 301},
+		{From: "/{env.X}", To: "/y", Status: 301},
+		{From: "/x", To: "https://e.com/{file./etc/hostname}", Status: 302},
+	} {
+		r := r
+		if err := ValidateStaticRule(&r, l); err == nil {
+			t.Fatalf("expected rejection for %+v", r)
+		}
+	}
+}

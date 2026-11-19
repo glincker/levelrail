@@ -20,9 +20,9 @@ type StaticProxy struct {
 const proxyUnavailableBody = "Bad gateway"
 
 // proxySafeChars is what a captured splat may hold. Anything else (spaces, ?,
-// #, non ASCII) falls through to the files, so the upstream URI cannot be
+// #, ; and %, non ASCII) falls through to the files, so the upstream URI cannot be
 // split into a different path or query.
-const proxySafeChars = `[A-Za-z0-9._~!$&'()*+,;=:@%/-]`
+const proxySafeChars = `[A-Za-z0-9._~!$&'()*+,=:@/-]`
 
 const proxySplatToken = ":splat"
 
@@ -62,7 +62,7 @@ func (r StaticRoute) proxyRoutes() []Route {
 			handle = []any{NewErrorPageResponse(502, proxyUnavailableBody)}
 		} else {
 			rp := NewReverseProxyHandler(p.Dial)
-			uri := strings.ReplaceAll(p.Path, proxySplatToken, "{http.regexp."+name+".1}") + "?{http.request.uri.query}"
+			uri := strings.ReplaceAll(escapePlaceholders(p.Path), proxySplatToken, "{http.regexp."+name+".1}") + "?{http.request.uri.query}"
 			rp.Rewrite = &ProxyRewrite{URI: uri}
 			rp.setRequestHeaders(map[string][]string{
 				"X-Forwarded-Host":  {"{http.request.host}"},

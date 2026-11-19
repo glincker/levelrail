@@ -220,6 +220,10 @@ func ValidateStaticRule(r *StaticRule, l StaticLimits) error {
 		return fmt.Errorf("from and to must be at most %d bytes", l.MaxValueLen)
 	}
 	for _, v := range []string{r.From, r.To} {
+		// Braces reach Caddy's placeholder expansion, so no rule string may hold them.
+		if strings.ContainsAny(v, "{}") {
+			return fmt.Errorf("%q must not contain { or }", v)
+		}
 		if !SafeHeaderValue(v) || strings.ContainsAny(v, " \t\\") {
 			return fmt.Errorf("%q must not contain spaces, backslashes or control characters", v)
 		}
