@@ -142,6 +142,14 @@ func (rt *Router) startFirstStaticBuild(ctx context.Context, name, branch string
 	return ""
 }
 
+// rollbackStaticSite deletes the app a failed create just made so a retry with
+// the same name does not hit a 409 on a half-configured site.
+func (rt *Router) rollbackStaticSite(ctx context.Context, name string) {
+	if _, err := rt.deleteApp(context.WithoutCancel(ctx), name); err != nil {
+		rt.logger.Warn("api: static site rollback failed", slog.String("name", name), slog.String("error", err.Error()))
+	}
+}
+
 // handleCreateStaticSite handles POST /api/v1/static-sites. It creates the
 // backing app through handleCreateApp so every create rule (names, quotas,
 // domains, projects, team scoping) applies unchanged.
@@ -211,6 +219,10 @@ func (rt *Router) handleCreateStaticSite(w http.ResponseWriter, r *http.Request)
 		err = rt.gitConns.SetGitSourceConnection(ctx, req.Name, plan.conn)
 	}
 	if err != nil {
+		// Only an app this request created is removed; a 409 never reaches here.
+		if rec.Code == http.StatusCreated {
+			rt.rollbackStaticSite(ctx, req.Name)
+		}
 		if errors.Is(err, errGitSourceKindConflict) {
 			writeError(w, http.StatusConflict, err.Error())
 			return
