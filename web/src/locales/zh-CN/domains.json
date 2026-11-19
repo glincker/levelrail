@@ -1173,7 +1173,10 @@
     "addressLabel": "服务器地址",
     "httpsLabel": "HTTPS",
     "portsLabel": "端口检查",
-    "unknown": "尚未检查"
+    "unknown": "尚未检查",
+    "addressTip": "域名需要指向的公网 IP。",
+    "httpsTip": "启用 HTTPS 后会自动签发证书。",
+    "portsTip": "检查 80 和 443 端口能否从互联网访问此服务器。"
   },
   "cutover": {
     "title": "切换清单",

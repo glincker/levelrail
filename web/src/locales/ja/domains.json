@@ -1173,7 +1173,10 @@
     "addressLabel": "サーバーのアドレス",
     "httpsLabel": "HTTPS",
     "portsLabel": "ポートの確認",
-    "unknown": "未確認"
+    "unknown": "未確認",
+    "addressTip": "ドメインの向け先となる公開 IP です。",
+    "httpsTip": "HTTPS を有効にすると証明書が自動で発行されます。",
+    "portsTip": "ポート 80 と 443 がインターネットからこのサーバーに届くか確認します。"
   },
   "cutover": {
     "title": "切り替えチェックリスト",

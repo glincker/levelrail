@@ -1183,7 +1183,10 @@
     "addressLabel": "Dirección del servidor",
     "httpsLabel": "HTTPS",
     "portsLabel": "Revisión de puertos",
-    "unknown": "Aún sin revisar"
+    "unknown": "Aún sin revisar",
+    "addressTip": "La IP pública a la que deben apuntar tus dominios.",
+    "httpsTip": "Los certificados se emiten automáticamente cuando HTTPS está activo.",
+    "portsTip": "Comprueba que los puertos 80 y 443 llegan a este servidor desde internet."
   },
   "cutover": {
     "title": "Lista de migración",

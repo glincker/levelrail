@@ -1183,7 +1183,10 @@
     "addressLabel": "Server address",
     "httpsLabel": "HTTPS",
     "portsLabel": "Ports check",
-    "unknown": "Not checked yet"
+    "unknown": "Not checked yet",
+    "addressTip": "The public IP your domains must point to.",
+    "httpsTip": "Certificates are issued automatically once HTTPS is on.",
+    "portsTip": "Checks that ports 80 and 443 reach this server from the internet."
   },
   "cutover": {
     "title": "Cutover checklist",

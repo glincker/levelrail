@@ -8,6 +8,7 @@ import {
   PlusGlassIcon,
 } from '@thesvg/ui-react'
 import { Badge } from '@/components/ui/badge'
+import { InfoTip } from '@/components/kit/InfoTip'
 import { Button, buttonVariants } from '@/components/ui/button'
 import {
   Collapsible,
@@ -27,14 +28,19 @@ import { ServerAddressCard } from './ServerAddressCard'
 
 function StatusItem({
   label,
+  tip,
   children,
 }: {
   label: string
+  tip: string
   children: ReactNode
 }) {
   return (
     <div className="flex min-w-0 flex-col gap-0.5 max-sm:basis-full">
-      <span className="text-xs text-muted-foreground">{label}</span>
+      <span className="flex items-center gap-0.5 text-xs text-muted-foreground">
+        {label}
+        <InfoTip label={label}>{tip}</InfoTip>
+      </span>
       <div className="flex min-h-7 min-w-0 items-center">{children}</div>
     </div>
   )
@@ -65,7 +71,10 @@ export function DomainsStatusBar({ onAdd }: { onAdd: () => void }) {
           aria-label={t('statusBar.label')}
           className="flex flex-wrap items-center gap-x-6 gap-y-3 rounded-lg border border-border bg-card px-4 py-3 text-sm"
         >
-          <StatusItem label={t('statusBar.addressLabel')}>
+          <StatusItem
+            label={t('statusBar.addressLabel')}
+            tip={t('statusBar.addressTip')}
+          >
             {ip ? (
               <span className="flex min-w-0 flex-wrap items-center gap-1">
                 <span className="min-w-0 break-all font-mono text-foreground">
@@ -110,7 +119,10 @@ export function DomainsStatusBar({ onAdd }: { onAdd: () => void }) {
               </span>
             )}
           </StatusItem>
-          <StatusItem label={t('statusBar.httpsLabel')}>
+          <StatusItem
+            label={t('statusBar.httpsLabel')}
+            tip={t('statusBar.httpsTip')}
+          >
             {httpsOff === undefined ? (
               <span className="text-muted-foreground">
                 {t('statusBar.unknown')}
@@ -121,7 +133,10 @@ export function DomainsStatusBar({ onAdd }: { onAdd: () => void }) {
               </Badge>
             )}
           </StatusItem>
-          <StatusItem label={t('statusBar.portsLabel')}>
+          <StatusItem
+            label={t('statusBar.portsLabel')}
+            tip={t('statusBar.portsTip')}
+          >
             <ReachabilityPill
               fallback={
                 <span className="text-muted-foreground">
