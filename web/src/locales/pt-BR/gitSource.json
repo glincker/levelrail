@@ -74,6 +74,10 @@
     "release": {
       "label": "Tags e releases",
       "description": "Faz deploy somente em um push de tag ou (somente GitHub) em um release publicado. Pushes de branch nunca fazem deploy."
+    },
+    "manual": {
+      "label": "Somente manual",
+      "description": "Nunca faz deploy em um push. Faça deploy sob demanda pelo painel, CLI ou API."
     }
   },
   "buildPacks": {

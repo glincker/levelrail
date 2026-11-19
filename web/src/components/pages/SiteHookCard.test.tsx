@@ -28,13 +28,13 @@ describe('SiteHookCard', () => {
     h.enabled = false
     render(<SiteHookCard name="docs" />)
     fireEvent.click(screen.getByText('hook.create'))
-    expect(h.mint.mock.calls[0][0]).toBe(false)
+    expect(h.mint.mock.calls[0]?.[0]).toBe(false)
   })
 
   it('sends the rotate intent only when a hook exists', () => {
     h.enabled = true
     render(<SiteHookCard name="docs" />)
     fireEvent.click(screen.getByText('hook.rotate'))
-    expect(h.mint.mock.calls[0][0]).toBe(true)
+    expect(h.mint.mock.calls[0]?.[0]).toBe(true)
   })
 })

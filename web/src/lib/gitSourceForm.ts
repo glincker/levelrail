@@ -15,7 +15,11 @@ export const BUILD_PACKS: GitSourceBuildType[] = [
 ]
 
 // Labels live in the gitSource namespace under triggers.<value>.
-export const TRIGGER_MODES: GitSourceTriggerMode[] = ['push', 'release']
+export const TRIGGER_MODES: GitSourceTriggerMode[] = [
+  'push',
+  'release',
+  'manual',
+]
 
 // Rows are an array, not a Record, so a name can be edited mid-typing without key collisions.
 export interface AdditionalServiceRow {

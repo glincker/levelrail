@@ -4,12 +4,12 @@ import type { AppStatusSummary } from '../../types/appDetail'
 import { failureReason } from '../../lib/failureReason'
 import { fixTarget, type FixTarget } from '../../lib/appFailureFix'
 
-const LABEL_KEY: Record<FixTarget, string> = {
+const LABEL_KEY = {
   deploys: 'failing.fixLabel',
   health: 'failing.fixLabelHealth',
   domains: 'failing.fixLabelDomains',
   pages: 'failing.fixLabelPages',
-}
+} as const satisfies Record<FixTarget, string>
 
 const FIX_CLASS =
   'relative z-10 text-xs font-medium text-primary underline underline-offset-2 hover:no-underline focus-visible:rounded-sm focus-visible:ring-2 focus-visible:ring-ring focus-visible:outline-none'

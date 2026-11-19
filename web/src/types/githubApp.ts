@@ -2,7 +2,7 @@
 // (internal/api/github_app.go, github_app_repos.go), matching their
 // resource structs field for field.
 
-import type { GitSourceResource } from './gitSource'
+import type { GitSourceResource, GitSourceTriggerMode } from './gitSource'
 
 // GitHubAppStatus mirrors gitHubAppStatusResource
 // (internal/api/github_app.go). Deliberately no secret fields: the
@@ -125,7 +125,7 @@ export interface GitHubAppUseRepoAsSourceRequest {
   build_type?: 'dockerfile' | 'railpack' | 'static'
   build_path?: string
   base_directory?: string
-  trigger_mode?: 'push' | 'release'
+  trigger_mode?: GitSourceTriggerMode
 }
 
 // GitHubAppUseRepoAsSourceResponse mirrors
