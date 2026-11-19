@@ -53,3 +53,22 @@ func TestStaticRoutingInputIsDeterministic(t *testing.T) {
 		t.Fatalf("input = %+v", in)
 	}
 }
+
+func TestStaticRoutingInputCleanURLsDefaultsOn(t *testing.T) {
+	off, on := false, true
+	cases := []struct {
+		name string
+		s    Service
+		want bool
+	}{
+		{"no static block", Service{}, true},
+		{"static block without cleanUrls", Service{Static: &StaticOptions{SPA: true}}, true},
+		{"explicit off", Service{Static: &StaticOptions{CleanURLs: &off}}, false},
+		{"explicit on", Service{Static: &StaticOptions{CleanURLs: &on}}, true},
+	}
+	for _, c := range cases {
+		if got := c.s.StaticRoutingInput().Options.CleanURLs; got != c.want {
+			t.Errorf("%s: CleanURLs = %v, want %v", c.name, got, c.want)
+		}
+	}
+}

@@ -256,7 +256,7 @@ Optional: `SMOKE_HOST` (address to connect to for a real host), `SMOKE_GIT_URL` 
 ## Limitations
 
 - **Build toolchain**: the build container is Node based. For other generators (Hugo, Jekyll), set `APP_STATIC_BUILD_IMAGE` to an image that has the tool and a shell, or build in CI and serve the committed output with `build.path`.
-- **Routing**: redirects, rewrites, headers, single page app fallback, a custom 404 page and clean URLs come from `_redirects`, `_headers` and `app.yaml` and are published with each deploy. See [Static site routing rules](/static-routing). Proxying a path to another origin and edge conditions (country, language) are not supported; use a path forwarder on the domain for proxying.
+- **Routing**: redirects, rewrites, headers, single page app fallback, a custom 404 page and clean URLs (on by default, so `about.html` serves at `/about`) come from `_redirects`, `_headers` and `app.yaml` and are published with each deploy. See [Static site routing rules](/static-routing). Proxying a path to another origin and edge conditions (country, language) are not supported; use a path forwarder on the domain for proxying.
 - **Large file limits**: There are no hard limits, but very large directories (> 1GB) may see slower deploy and rollback times. Monitor the data directory disk usage with `df -h /var/lib/levelrail-data`.
 
 ## For contributors

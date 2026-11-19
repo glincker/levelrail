@@ -63,3 +63,20 @@ func TestApplyUIOrdering(t *testing.T) {
 		t.Errorf("clearing UI rules left %d rules, want 2", len(rs.Rules))
 	}
 }
+
+func TestApplyUICleanURLsOverridesBase(t *testing.T) {
+	rs, err := Compile(Input{Options: Options{CleanURLs: true}}, DefaultLimits())
+	if err != nil {
+		t.Fatal(err)
+	}
+	off, on := false, true
+	if err := rs.ApplyUI(nil, nil, OptionOverrides{CleanURLs: &off}); err != nil || rs.Options.CleanURLs {
+		t.Fatalf("explicit off must win: %v %+v", err, rs.Options)
+	}
+	if err := rs.ApplyUI(nil, nil, OptionOverrides{}); err != nil || !rs.Options.CleanURLs {
+		t.Fatalf("auto must fall back to the base: %v %+v", err, rs.Options)
+	}
+	if err := rs.ApplyUI(nil, nil, OptionOverrides{CleanURLs: &on}); err != nil || !rs.Options.CleanURLs {
+		t.Fatalf("explicit on: %v", err)
+	}
+}

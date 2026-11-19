@@ -91,7 +91,7 @@ services:
 | `routes[].from`, `to`, `status`, `force`, `query` | One rule, same meaning as a `_redirects` line. `query` maps a parameter name to a literal or `:name`. |
 | `headers[].path`, `values`, `remove` | One header block. |
 | `static.spa` | Serve `index.html` with status 200 for unknown paths that have no file extension. |
-| `static.cleanUrls` | `/about` serves `about.html` or `about/index.html`, and `/about.html` redirects to `/about`. |
+| `static.cleanUrls` | On by default for static sites: `/about` serves `about.html` or `about/index.html`, `/about.html` redirects to `/about` and `/docs` serves `docs/index.html`. Set `cleanUrls: false` (or the dashboard and CLI `clean-urls off`) to serve files only at their exact path. Dashboard settings win over `app.yaml`, which wins over `_redirects`. |
 | `static.trailingSlash` | `add` or `remove` redirects to the chosen form; `off` (default) leaves paths as requested. |
 | `static.notFound` | The page served with status 404. Defaults to `404.html` when it exists. |
 

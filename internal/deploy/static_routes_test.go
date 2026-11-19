@@ -141,3 +141,30 @@ func TestPipeline_DeployStatic_OversizedRulesFileRejected(t *testing.T) {
 		t.Fatalf("err = %v", err)
 	}
 }
+
+func TestPipeline_DeployStatic_CleanURLsDefaultOnAndOptOut(t *testing.T) {
+	off := false
+	for _, tc := range []struct {
+		name string
+		opts *spec.StaticOptions
+		want bool
+	}{
+		{"default", nil, true},
+		{"explicit off", &spec.StaticOptions{CleanURLs: &off}, false},
+	} {
+		p := New(&fakeBuilder{}, &fakeServiceStore{}, WithStaticSiteStore(&fakeStaticSiteStore{}), WithStaticRootDir(t.TempDir()))
+		svc := routedService()
+		svc.Static = tc.opts
+		dir, _, err := deployRouted(t, p, svc, map[string]string{"index.html": "x", "about.html": "y"}, "c1")
+		if err != nil {
+			t.Fatal(err)
+		}
+		rs, err := staticroutes.LoadSidecar(dir)
+		if err != nil || rs == nil {
+			t.Fatalf("%s: sidecar: %v %v", tc.name, rs, err)
+		}
+		if rs.Options.CleanURLs != tc.want {
+			t.Errorf("%s: CleanURLs = %v, want %v", tc.name, rs.Options.CleanURLs, tc.want)
+		}
+	}
+}
