@@ -63,3 +63,30 @@ func TestStaticDeployPhasesFinished(t *testing.T) {
 		t.Fatalf("no rows states = %s", got)
 	}
 }
+
+func TestStaticPhaseRowsStayOutOfTraceViewsAndSignalStatic(t *testing.T) {
+	rt, db := newTestRouter(t)
+	now := time.Now()
+	row := store.DeployTraceStep{AttemptID: "dep_e", Key: "static_phase.cloning", Step: "static_phase", Status: "failed", Detail: "cloning", StartedAt: now}
+	if err := db.SaveDeployTraceStep(t.Context(), row); err != nil {
+		t.Fatal(err)
+	}
+	if got := rt.traceRows(t.Context(), "dep_e"); len(got) != 0 {
+		t.Fatalf("trace rows = %d, want phase rows hidden", len(got))
+	}
+	if got := traceLogEntries("dep_e", []store.DeployTraceStep{row}); len(got) != 0 {
+		t.Fatalf("log lines = %d, want none", len(got))
+	}
+	failed := store.DeployAttempt{ID: "dep_e", Status: store.DeployAttemptStatusFailed, FinishedAt: &now}
+	got := rt.staticDeployPhases(failed, false)
+	if len(got) != 4 || got[0].State != "failed" {
+		t.Fatalf("early failure phases = %+v", got)
+	}
+	batch := rt.preloadStaticPhaseRows(t.Context(), []store.Deployment{{Attempt: failed}})
+	if len(batch["dep_e"]) != 1 {
+		t.Fatalf("batch rows = %v", batch)
+	}
+	if got := rt.staticPhasesFrom(failed, false, batch); len(got) != 4 || got[0].State != "failed" {
+		t.Fatalf("preloaded phases = %+v", got)
+	}
+}

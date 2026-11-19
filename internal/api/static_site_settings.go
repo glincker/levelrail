@@ -116,7 +116,7 @@ func (rt *Router) isUnpublishedStaticApp(r *http.Request, name string) bool {
 	if err != nil || svc == nil {
 		return false
 	}
-	if strings.HasSuffix(svc.Image, staticSitePendingTag) {
+	if svc.Image == staticSitePlaceholderImage(name) {
 		return true
 	}
 	if rt.gitSources == nil {
@@ -190,6 +190,10 @@ func applyStaticSettingsPatch(s *store.StaticSiteSettings, p staticSettingsPatch
 	}
 	if err := spec.ValidateStaticOverrides(bc, od, spec.StaticBuildCommandMaxFromEnv(os.LookupEnv)); err != nil {
 		return err.Error()
+	}
+	od, nerr := spec.NormalizeRepoPath("output_dir", od)
+	if nerr != nil {
+		return nerr.Error()
 	}
 	s.BuildCommand, s.OutputDir = bc, od
 	if p.SPAFallback != nil {

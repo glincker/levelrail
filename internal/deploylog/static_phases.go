@@ -45,7 +45,16 @@ func IsStaticStep(step string) bool {
 	return ok
 }
 
-// noteStaticPhase records a phase transition from a static pipeline progress event.
+// phaseRec is one static phase's state, kept apart from the step history so
+// step summaries, failing_step and live step subscribers never see it.
+type phaseRec struct {
+	status  string
+	started time.Time
+	ended   time.Time
+}
+
+// noteStaticPhase records a phase transition from a static pipeline progress
+// event. Only a status change is stored, not each progress line.
 func (r *Recorder) noteStaticPhase(attemptID string, ev build.ProgressEvent) {
 	phase, ok := staticStepPhase[ev.Step]
 	if !ok {
@@ -58,24 +67,62 @@ func (r *Recorder) noteStaticPhase(attemptID string, ev build.ProgressEvent) {
 	case ev.Completed && ev.Step == staticPhaseFinal[phase]:
 		status = "done"
 	}
-	r.Step(attemptID, "static:"+phase, status)
-	r.persistStaticPhase(attemptID, phase, status)
+	now := time.Now()
+	r.mu.Lock()
+	st, live := r.active[attemptID]
+	if !live {
+		r.mu.Unlock()
+		return
+	}
+	if st.phases == nil {
+		st.phases = map[string]*phaseRec{}
+	}
+	rec := st.phases[phase]
+	if rec != nil && rec.status == status {
+		r.mu.Unlock()
+		return
+	}
+	if rec == nil {
+		rec = &phaseRec{started: now}
+		if status != "running" {
+			rec.started = previousPhaseEnd(st.phases, phase, now)
+		}
+		st.phases[phase] = rec
+	}
+	rec.status = status
+	if status != "running" {
+		rec.ended = now
+	}
+	row := *rec
+	r.mu.Unlock()
+	r.persistStaticPhase(attemptID, phase, row)
+}
+
+// previousPhaseEnd is when the phase before phase ended, or fallback when none did.
+func previousPhaseEnd(phases map[string]*phaseRec, phase string, fallback time.Time) time.Time {
+	for i, name := range StaticPhases {
+		if name != phase {
+			continue
+		}
+		for j := i - 1; j >= 0; j-- {
+			if p := phases[StaticPhases[j]]; p != nil && !p.ended.IsZero() {
+				return p.ended
+			}
+		}
+	}
+	return fallback
 }
 
 // persistStaticPhase keeps the phase state past the attempt so a finished
 // attempt can report real states; a missing sink or a write error is ignored.
-func (r *Recorder) persistStaticPhase(attemptID, phase, status string) {
+func (r *Recorder) persistStaticPhase(attemptID, phase string, rec phaseRec) {
 	r.mu.Lock()
 	sink := r.stageSink
 	r.mu.Unlock()
 	if sink == nil {
 		return
 	}
-	now := time.Now()
-	row := store.DeployTraceStep{AttemptID: attemptID, Key: StepStaticPhase + "." + phase, Step: StepStaticPhase, Status: status, Detail: phase, StartedAt: now}
-	if status != "running" {
-		row.EndedAt = now
-	}
+	row := store.DeployTraceStep{AttemptID: attemptID, Key: StepStaticPhase + "." + phase, Step: StepStaticPhase, Status: rec.status, Detail: phase, StartedAt: rec.started, EndedAt: rec.ended}
 	if err := sink.SaveDeployTraceStep(context.Background(), row); err != nil {
 		r.logger.Warn("deploylog: persist static phase failed", "attempt", attemptID, "phase", phase, "error", err.Error())
 	}
@@ -91,11 +138,9 @@ func (r *Recorder) StaticPhaseStates(attemptID string) (map[string]string, bool)
 	if !ok {
 		return nil, false
 	}
-	out := map[string]string{}
-	for _, ev := range st.steps {
-		if len(ev.Step) > 7 && ev.Step[:7] == "static:" {
-			out[ev.Step[7:]] = ev.Status
-		}
+	out := make(map[string]string, len(st.phases))
+	for name, rec := range st.phases {
+		out[name] = rec.status
 	}
 	return out, len(out) > 0
 }

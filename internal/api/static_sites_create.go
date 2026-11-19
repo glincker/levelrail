@@ -24,6 +24,9 @@ const EnvPagesDeployIDWait = "APP_PAGES_DEPLOY_ID_WAIT"
 
 const defaultPagesDeployIDWait = 3 * time.Second
 
+// staticSitePlaceholderImage is the image a Pages app holds until its first publish.
+func staticSitePlaceholderImage(name string) string { return name + staticSitePendingTag }
+
 // staticSitePort and staticSitePendingTag match what the dashboard's drop
 // publish creates: a static site has no container, so the app is a placeholder.
 const (
@@ -87,6 +90,10 @@ func (rt *Router) planStaticGit(w http.ResponseWriter, r *http.Request, name str
 	if err := spec.ValidateStaticOverrides(cmd, out, spec.StaticBuildCommandMaxFromEnv(os.LookupEnv)); err != nil {
 		return bad(err.Error())
 	}
+	out, nerr := spec.NormalizeRepoPath("output_dir", out)
+	if nerr != nil {
+		return bad(nerr.Error())
+	}
 	p := connectGitSourceParams{RepoURL: repo, Branch: strings.TrimSpace(g.Branch), BuildType: spec.BuildStatic, BuildCommand: cmd, TriggerMode: spec.TriggerModePush}
 	if p.Branch == "" {
 		p.Branch = webhook.DefaultBranch
@@ -104,8 +111,12 @@ func (rt *Router) planStaticGit(w http.ResponseWriter, r *http.Request, name str
 		return bad(err.Error())
 	}
 	if g.AccountID != "" {
-		if _, err := rt.gitConns.GetGitConnection(r.Context(), g.AccountID); err != nil {
+		conn, err := rt.gitConns.GetGitConnection(r.Context(), g.AccountID)
+		if err != nil {
 			return bad("git.account_id does not match a connected account")
+		}
+		if !repoOnConnectionInstance(repo, conn.InstanceURL) {
+			return bad("git.repo_url must be on the connected account's host")
 		}
 	}
 	return &staticGitPlan{params: p, conn: g.AccountID}, true
@@ -181,7 +192,7 @@ func (rt *Router) handleCreateStaticSite(w http.ResponseWriter, r *http.Request)
 	}
 	body, err := json.Marshal(appResource{
 		Name:    req.Name,
-		Image:   req.Name + staticSitePendingTag,
+		Image:   staticSitePlaceholderImage(req.Name),
 		Port:    staticSitePort,
 		Domains: req.Domains,
 	})

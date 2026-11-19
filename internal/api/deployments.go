@@ -140,6 +140,11 @@ func firstLine(s string, limit int) string {
 }
 
 func (rt *Router) toDeploymentResource(d store.Deployment) deploymentResource {
+	return rt.toDeploymentResourceWith(d, nil)
+}
+
+// toDeploymentResourceWith is toDeploymentResource with phase rows preloaded for a list.
+func (rt *Router) toDeploymentResourceWith(d store.Deployment, phaseRows map[string][]store.DeployTraceStep) deploymentResource {
 	a := d.Attempt
 	res := deploymentResource{
 		ID: a.ID, App: a.ServiceName, Status: d.Status, Trigger: d.Trigger, Environment: d.Environment,
@@ -165,7 +170,7 @@ func (rt *Router) toDeploymentResource(d store.Deployment) deploymentResource {
 			failingStep = sum.FailingStep
 		}
 	}
-	if phases := rt.staticDeployPhases(a, false); phases != nil {
+	if phases := rt.staticPhasesFrom(a, false, phaseRows); phases != nil {
 		if res.Steps == nil {
 			res.Steps = &deploymentSteps{}
 		}
@@ -280,8 +285,9 @@ func (rt *Router) handleListDeployments(w http.ResponseWriter, r *http.Request) 
 	}
 	out := deploymentListResponse{Items: make([]deploymentResource, 0, len(rows)), NextCursor: next}
 	waits := rt.deploymentWaits(r.Context(), rows)
+	phaseRows := rt.preloadStaticPhaseRows(r.Context(), rows)
 	for _, d := range rows {
-		res := rt.toDeploymentResource(d)
+		res := rt.toDeploymentResourceWith(d, phaseRows)
 		applyDeploymentWait(&res, waits[d.Attempt.ID])
 		out.Items = append(out.Items, res)
 	}

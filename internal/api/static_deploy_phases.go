@@ -14,41 +14,85 @@ type staticPhase struct {
 	State string `json:"state"`
 }
 
+// phaseRowLister loads the static phase rows of many attempts in one query.
+type phaseRowLister interface {
+	ListDeployTraceStepsByStep(ctx context.Context, step string, attemptIDs []string) (map[string][]store.DeployTraceStep, error)
+}
+
 // staticDeployPhases returns the cloning, building, publishing and live steps
-// of a static deploy attempt, or nil when the attempt shows no static signal and
-// static is false.
+// of a static deploy attempt, or nil when the attempt shows no static signal:
+// stored phase rows, the static-tree digest marker or static being true.
 func (rt *Router) staticDeployPhases(a store.DeployAttempt, static bool) []staticPhase {
+	return rt.staticPhasesFrom(a, static, nil)
+}
+
+// staticPhasesFrom is staticDeployPhases with optional preloaded phase rows
+// (keyed by attempt id) so a list does not query once per attempt.
+func (rt *Router) staticPhasesFrom(a store.DeployAttempt, static bool, preloaded map[string][]store.DeployTraceStep) []staticPhase {
 	var live map[string]string
 	if a.FinishedAt == nil && rt.deployRecorder != nil {
 		live, _ = rt.deployRecorder.StaticPhaseStates(a.ID)
 	}
-	if live == nil && !static && a.DigestReason != store.DigestReasonStaticTree {
-		return nil
-	}
 	var saved map[string]string
-	if a.FinishedAt != nil && a.Status != store.DeployAttemptStatusSucceeded {
-		saved = rt.savedStaticPhases(a.ID)
+	if a.FinishedAt != nil {
+		rows, ok := preloaded[a.ID]
+		if !ok && preloaded == nil {
+			rows = rt.staticPhaseRows(a.ID)
+		}
+		saved = phaseStatuses(rows)
+	}
+	if live == nil && saved == nil && !static && a.DigestReason != store.DigestReasonStaticTree {
+		return nil
 	}
 	out := make([]staticPhase, 0, len(deploylog.StaticPhases))
 	for _, name := range deploylog.StaticPhases {
-		out = append(out, staticPhase{Name: name, State: staticPhaseState(a, live, name)})
+		out = append(out, staticPhaseState(a, live, name))
 	}
-	if saved != nil {
+	if saved != nil && a.Status != store.DeployAttemptStatusSucceeded {
 		finishedPhaseStates(out, saved, a.Status == store.DeployAttemptStatusFailed)
 	}
 	return out
 }
 
-// savedStaticPhases reads the phase rows a finished attempt left behind.
-func (rt *Router) savedStaticPhases(id string) map[string]string {
-	out := map[string]string{}
-	for _, row := range rt.traceRows(context.Background(), id) {
+// staticPhaseRows reads the phase rows one finished attempt left behind.
+func (rt *Router) staticPhaseRows(id string) []store.DeployTraceStep {
+	var out []store.DeployTraceStep
+	for _, row := range rt.allTraceRows(context.Background(), id) {
 		if row.Step == deploylog.StepStaticPhase {
-			out[row.Detail] = row.Status
+			out = append(out, row)
 		}
 	}
-	if len(out) == 0 {
+	return out
+}
+
+// preloadStaticPhaseRows fetches phase rows for every finished attempt in
+// one query; nil means the store cannot batch and callers load per attempt.
+func (rt *Router) preloadStaticPhaseRows(ctx context.Context, rows []store.Deployment) map[string][]store.DeployTraceStep {
+	l, ok := rt.deployAttempts.(phaseRowLister)
+	if !ok {
 		return nil
+	}
+	var ids []string
+	for _, d := range rows {
+		if d.Attempt.FinishedAt != nil {
+			ids = append(ids, d.Attempt.ID)
+		}
+	}
+	out, err := l.ListDeployTraceStepsByStep(ctx, deploylog.StepStaticPhase, ids)
+	if err != nil {
+		rt.logger.Warn("api: list static phase rows failed", "error", err.Error())
+		return nil
+	}
+	return out
+}
+
+func phaseStatuses(rows []store.DeployTraceStep) map[string]string {
+	if len(rows) == 0 {
+		return nil
+	}
+	out := make(map[string]string, len(rows))
+	for _, row := range rows {
+		out[row.Detail] = row.Status
 	}
 	return out
 }
@@ -74,7 +118,11 @@ func finishedPhaseStates(phases []staticPhase, saved map[string]string, failed b
 	}
 }
 
-func staticPhaseState(a store.DeployAttempt, live map[string]string, name string) string {
+func staticPhaseState(a store.DeployAttempt, live map[string]string, name string) staticPhase {
+	return staticPhase{Name: name, State: staticPhaseStateName(a, live, name)}
+}
+
+func staticPhaseStateName(a store.DeployAttempt, live map[string]string, name string) string {
 	switch {
 	case a.Status == store.DeployAttemptStatusSucceeded:
 		return "done"

@@ -333,3 +333,13 @@ func TestRolledBackOutcomeLandsAfterTheRollback(t *testing.T) {
 		t.Fatalf("last = %s at %v", last.Code, last.At)
 	}
 }
+
+func TestAssembleSkipsStaticPhaseRows(t *testing.T) {
+	in := baseInputs()
+	in.Trace = append(in.Trace, store.DeployTraceStep{Key: "static_phase.cloning", Step: "static_phase", Status: "done", Detail: "cloning", StartedAt: at(5)})
+	for _, c := range codes(Assemble(in)) {
+		if c == "step.static_phase" {
+			t.Fatal("static phase row leaked into the timeline")
+		}
+	}
+}

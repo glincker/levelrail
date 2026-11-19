@@ -111,6 +111,8 @@ type attemptState struct {
 	stepSubs []chan StepEvent
 
 	stages *deploytrace.StageTracker
+
+	phases map[string]*phaseRec // static phases, apart from steps
 }
 
 // Recorder turns one attempt's build.ProgressEvent stream into both a

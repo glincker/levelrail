@@ -8,6 +8,7 @@ import (
 	"testing"
 
 	"github.com/GLINCKER/levelrail/internal/staticroutes"
+	"github.com/GLINCKER/levelrail/internal/store"
 )
 
 func TestStaticSiteSettingsAndRules(t *testing.T) {
@@ -106,5 +107,29 @@ func TestStaticSiteSettingsBeforeFirstPublish(t *testing.T) {
 	seedApp(t, db, "plain")
 	if code, _ = do(http.MethodPatch, "/api/v1/static-sites/plain/settings", `{"output_dir":"dist"}`); code != http.StatusNotFound {
 		t.Fatalf("non-static app = %d, want 404", code)
+	}
+}
+
+func TestStaticSettingsNormaliseOutputAndPlaceholderImage(t *testing.T) {
+	rt, db := newTestRouter(t)
+	cookie := loginTestSession(t, rt, db)
+	do := func(method, path, body string) (int, []byte) {
+		rec := httptest.NewRecorder()
+		rt.Handler().ServeHTTP(rec, authedRequest(t, cookie, method, path, body))
+		return rec.Code, rec.Body.Bytes()
+	}
+	if code, raw := do(http.MethodPost, "/api/v1/static-sites", `{"name":"fresh2"}`); code != http.StatusCreated {
+		t.Fatalf("create: %d %s", code, raw)
+	}
+	code, raw := do(http.MethodPatch, "/api/v1/static-sites/fresh2/settings", `{"output_dir":"./dist/"}`)
+	var set staticSettingsResource
+	if code != http.StatusOK || json.Unmarshal(raw, &set) != nil || set.OutputDir != "dist" {
+		t.Fatalf("patch: %d %s", code, raw)
+	}
+	if err := db.SaveDesiredService(t.Context(), store.DesiredService{Name: "other", Image: "nginx:pending", Port: 80}); err != nil {
+		t.Fatal(err)
+	}
+	if code, _ = do(http.MethodPatch, "/api/v1/static-sites/other/settings", `{"output_dir":"dist"}`); code != http.StatusNotFound {
+		t.Fatalf("foreign :pending image = %d, want 404", code)
 	}
 }

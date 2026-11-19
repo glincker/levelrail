@@ -72,7 +72,7 @@ func TestHandleCreateStaticSiteWithGit(t *testing.T) {
 type failingSetConn struct{ GitConnectionsStore }
 
 func (failingSetConn) GetGitConnection(context.Context, string) (store.GitConnection, error) {
-	return store.GitConnection{ID: "c1"}, nil
+	return store.GitConnection{ID: "c1", InstanceURL: "https://github.com"}, nil
 }
 
 func (failingSetConn) SetGitSourceConnection(context.Context, string, string) error {
@@ -173,4 +173,30 @@ func TestHandleCreateStaticSiteDeployID(t *testing.T) {
 			t.Fatalf("create = %d %s", rec.Code, rec.Body.String())
 		}
 	})
+}
+
+// hostConn is a connection on a fixed instance, to check the repo host match.
+type hostConn struct{ GitConnectionsStore }
+
+func (hostConn) GetGitConnection(context.Context, string) (store.GitConnection, error) {
+	return store.GitConnection{ID: "c1", InstanceURL: "https://gitlab.example.com"}, nil
+}
+
+func TestCreateStaticSiteMatchesAccountHostAndNormalisesOutput(t *testing.T) {
+	rt, db := newTestRouterWithGitSourceSecrets(t, newFakeGitSourceSecrets())
+	cookie := loginTestSession(t, rt, db)
+	rt.gitConns = hostConn{rt.gitConns}
+	do := func(method, path, body string) *httptest.ResponseRecorder {
+		rec := httptest.NewRecorder()
+		rt.Handler().ServeHTTP(rec, authedRequest(t, cookie, method, path, body))
+		return rec
+	}
+	if rec := do(http.MethodPost, "/api/v1/static-sites", `{"name":"hostx","git":{"repo_url":"https://github.com/org/site.git","account_id":"c1"}}`); rec.Code != http.StatusBadRequest {
+		t.Fatalf("repo on another host = %d %s, want 400", rec.Code, rec.Body.String())
+	}
+	rec := do(http.MethodPost, "/api/v1/static-sites", `{"name":"normo","git":{"repo_url":"https://github.com/org/site.git","build_command":"make","output_dir":"./dist/"}}`)
+	var got createStaticSiteResponse
+	if rec.Code != http.StatusCreated || json.Unmarshal(rec.Body.Bytes(), &got) != nil || got.GitSource == nil || got.GitSource.PublishDir != "dist" {
+		t.Fatalf("normalised create: %d %s", rec.Code, rec.Body.String())
+	}
 }
