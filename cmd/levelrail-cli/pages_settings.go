@@ -206,21 +206,30 @@ func runStaticRoutesList(prog string, args []string, stdout, stderr io.Writer, l
 	if err != nil {
 		return reportError(stdout, stderr, jsonOut, fmt.Errorf("list redirects of %q: %w", name, err))
 	}
-	return renderOrFail(stdout, stderr, of, res.UI.Redirects, func() { printUIRedirects(stdout, res.UI.Redirects) })
+	return renderOrFail(stdout, stderr, of, res.UI.Redirects, func() { printUIRedirects(stdout, res.UI.Redirects, res.Redirects) })
 }
 
-func printUIRedirects(out io.Writer, rules []staticroutes.UIRedirect) {
+// printUIRedirects lists the dashboard rules; effective holds the rows the server
+// resolved, whose dashboard entries come first and in the same order.
+func printUIRedirects(out io.Writer, rules []staticroutes.UIRedirect, effective []apiclient.StaticSiteRuleRow) {
 	tw := tabwriter.NewWriter(out, 0, 2, 2, ' ', 0)
-	_, _ = fmt.Fprintln(tw, "INDEX\tFROM\tTO\tSTATUS\tFORCE")
+	_, _ = fmt.Fprintln(tw, "INDEX\tFROM\tTO\tSTATUS\tFORCE\tKIND")
 	for i, r := range rules {
-		_, _ = fmt.Fprintf(tw, "%d\t%s\t%s\t%d\t%t\n", i, r.From, r.To, r.Status, r.Force)
+		kind := "route"
+		if strings.HasPrefix(r.To, staticroutes.ProxyPrefix) {
+			kind = "proxy"
+			if i < len(effective) && effective[i].TargetState != "" && effective[i].TargetState != "ok" {
+				kind += " (target " + effective[i].TargetState + ")"
+			}
+		}
+		_, _ = fmt.Fprintf(tw, "%d\t%s\t%s\t%d\t%t\t%s\n", i, r.From, r.To, r.Status, r.Force, kind)
 	}
 	_ = tw.Flush()
 }
 
 func runStaticRoutesAdd(prog string, args []string, stdout, stderr io.Writer, lookupEnv func(string) (string, bool)) int {
 	fs, tokenP, apiURLP, profileP, jsonP, outputP, queryP := apiFlagSet(prog, "pages routes add", "print the rules as JSON to stdout and nothing else", stderr)
-	status := fs.Int("status", 0, "HTTP status, 301 when omitted")
+	status := fs.Int("status", 0, "HTTP status, 301 when omitted (200 for an app:// proxy target)")
 	force := fs.Bool("force", false, "apply the rule even when a file exists at the path")
 	tokenFlag, apiURLFlag, profileFlag, jsonOut, of, exitCode, ok := parseAPIFlags(fs, args, apiFlagPtrs{tokenP, apiURLP, profileP, jsonP, outputP, queryP}, prog, stderr)
 	if !ok {
@@ -235,6 +244,9 @@ func runStaticRoutesAdd(prog string, args []string, stdout, stderr io.Writer, lo
 	cur, err := client.GetStaticSiteRules(ctx, rest[0])
 	if err != nil {
 		return reportError(stdout, stderr, jsonOut, fmt.Errorf("read redirects of %q: %w", rest[0], err))
+	}
+	if *status == 0 && strings.HasPrefix(rest[2], staticroutes.ProxyPrefix) {
+		*status = 200
 	}
 	body := apiclient.StaticSiteRulesBody{Redirects: append(cur.UI.Redirects, staticroutes.UIRedirect{From: rest[1], To: rest[2], Status: *status, Force: *force}), Headers: cur.UI.Headers}
 	return putPagesRules(ctx, client, rest[0], body, stdout, stderr, of, jsonOut)
@@ -279,7 +291,7 @@ func putPagesRules(ctx context.Context, client *Client, name string, body apicli
 	if err != nil {
 		return reportError(stdout, stderr, jsonOut, fmt.Errorf("save redirects of %q: %w", name, err))
 	}
-	return renderOrFail(stdout, stderr, of, res.UI.Redirects, func() { printUIRedirects(stdout, res.UI.Redirects) })
+	return renderOrFail(stdout, stderr, of, res.UI.Redirects, func() { printUIRedirects(stdout, res.UI.Redirects, res.Redirects) })
 }
 
 func ptrString(v string) *string { return &v }

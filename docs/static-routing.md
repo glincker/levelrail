@@ -106,6 +106,38 @@ These fields are only valid with `build.type: static`. A mistake in them fails t
 
 A redirect that would send a request to the path it came from is skipped rather than looping.
 
+## Proxy a path to another app
+
+A rule whose target is `app://<name>/<path>` with status `200` forwards matching requests to another app on the same Levelrail. The browser sees one origin, so the page needs no CORS setup.
+
+```
+# _redirects
+/api/*  app://my-api/:splat  200
+/health app://my-api/healthz 200
+```
+
+```yaml
+# app.yaml
+routes:
+  - from: /api/*
+    to: app://my-api/v1/:splat
+    status: 200
+```
+
+The same rule can be added in the dashboard rules or with `pages routes add my-site '/api/*' 'app://my-api/:splat'` (status defaults to 200 for an `app://` target).
+
+How it behaves:
+
+- The target is an app name on this Levelrail, never a URL. The control plane resolves it to the app's internal address, so a rule cannot reach an arbitrary host.
+- `from` takes literal segments and an optional trailing `*`. `:splat` in the target is replaced by what `*` matched. `/api/*` with `app://my-api/v1/:splat` sends `/api/users/7` to `/v1/users/7`. The query string is carried over.
+- All methods are forwarded and request and response bodies stream. Hop by hop headers are dropped, and `X-Forwarded-*` headers are set by the proxy, never taken from the client.
+- A proxy rule applies even when a file exists at the path, so keep it to paths that are not files. The site password gate, when set, is checked first.
+- Request paths with `.` or `..` segments get a 400. A captured path holding a space, `?`, `#` or a non ASCII character does not match the rule and falls through to the files.
+- Proxy rules are served on the live site only. Per-deploy hosts and pull request previews serve files only.
+- When the target app does not exist, is not running, or is the site itself, the path answers 502 with a fixed message. The routing rules API marks the rule with `kind: proxy` and `target_state` (`ok`, `missing` or `self`), and the site checks card lists a proxy target that is not reachable.
+- Writing a dashboard rule needs read access to the target app. A rule for an app you cannot read, or one that does not exist, is refused with the same message. A rule that is the site itself is refused.
+- At most `APP_PAGES_PROXY_MAX_RULES` proxy rules per site.
+
 ## Safety
 
 - Redirect destinations are either a path on this site or an absolute `http` or `https` URL. A destination that starts with `//`, contains backslashes or whitespace, carries credentials, or uses a placeholder in its host is rejected, so a rule cannot become an open redirect.
@@ -121,6 +153,7 @@ A redirect that would send a request to the path it came from is skipped rather 
 | `APP_STATIC_ROUTES_MAX_HEADER_BLOCKS` | `100` | Header blocks per site |
 | `APP_STATIC_ROUTES_MAX_FILE_BYTES` | `262144` | Size of each of `_redirects` and `_headers` |
 | `APP_STATIC_ROUTES_MAX_VALUE_LEN` | `2048` | Length of one path, destination or header value |
+| `APP_PAGES_PROXY_MAX_RULES` | `20` | Proxy rules per site |
 
 Going over a cap fails the deploy with the variable's name in the message.
 

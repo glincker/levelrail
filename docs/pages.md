@@ -94,6 +94,10 @@ Without `build.command`, there is no build step and your committed files are ser
 
 If the deploy fails (e.g., the path does not exist in the repository), the previous version stays live until you fix and push again.
 
+## Call another app from your site
+
+A rule such as `/api/* app://my-api/:splat 200` in `_redirects`, `app.yaml` or the dashboard forwards `/api/*` to the app `my-api` on this Levelrail, so the browser talks to one origin and needs no CORS. Only an app name is accepted, the site password gate stays in front, and a missing target answers 502. Details and limits are in [Static site routing rules](/static-routing#proxy-a-path-to-another-app).
+
 ## Domains and TLS
 
 Static sites declare domains the same way container apps do, in the `domains` list or from the **Domains** tab:

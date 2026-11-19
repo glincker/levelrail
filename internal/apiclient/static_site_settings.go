@@ -47,6 +47,10 @@ type StaticSiteRuleRow struct {
 	Force  bool   `json:"force"`
 	Source string `json:"source"`
 	Origin string `json:"origin"`
+	// Kind is "proxy" for a rule forwarding to an app; TargetState is ok, missing or self.
+	Kind        string `json:"kind"`
+	TargetApp   string `json:"target_app,omitempty"`
+	TargetState string `json:"target_state,omitempty"`
 }
 
 // StaticSiteHeaderRow is one effective header block with its source.
