@@ -3,6 +3,7 @@
 # Env: LEVELRAIL_URL, LEVELRAIL_TOKEN (required), SMOKE_HOST (connect address for real
 # hosts), SMOKE_GIT_URL (public repo), SMOKE_DOMAIN, SMOKE_DRY_RUN=1, LEVELRAIL_CLI,
 # SMOKE_GIT_TIMEOUT (seconds, default 300), SMOKE_STRICT_TLS=1 (verify certificates).
+# The token needs the read, write, deploy, write:sensitive and read:sensitive abilities.
 set -euo pipefail
 
 PASS=0
@@ -228,8 +229,12 @@ if "$CLI" forms create "$SITE" contact --json >"$WORK/form.json" 2>"$WORK/form.e
     -H 'Accept: application/json' -H 'Content-Type: application/json' \
     -d '{"name":"Smoke","email":"smoke@example.com","message":"hello"}' || echo 000)"
   case "$post_code" in 2??) pass "POST /_forms/contact is $post_code" ;; *) fail "POST /_forms/contact (got $post_code)" ;; esac
-  rows="$("$CLI" pages submissions "$SITE" --json 2>/dev/null || echo '[]')"
-  check "pages submissions lists one entry" 1 "$(echo "$rows" | jq 'length' 2>/dev/null || echo err)"
+  if rows="$("$CLI" pages submissions "$SITE" --json 2>"$WORK/sub.err")"; then
+    check "pages submissions lists one entry" 1 "$(echo "$rows" | jq 'length' 2>/dev/null || echo err)"
+  else
+    rows='[]'
+    fail "pages submissions ($(tr '\n' ' ' <"$WORK/sub.err" | cut -c1-140)); the token needs read:sensitive"
+  fi
   check "GET /_forms/contact serves the site 404" 404 "$(code_of "$BASE/_forms/contact")"
   sid="$(echo "$rows" | jq -r '.[0].id // empty' 2>/dev/null)"
   if [ -n "$sid" ] && "$CLI" pages submissions rm "$SITE" contact "$sid" >/dev/null 2>&1; then
