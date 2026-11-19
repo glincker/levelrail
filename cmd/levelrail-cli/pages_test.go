@@ -1,6 +1,7 @@
 package main
 
 import (
+	"bytes"
 	"encoding/json"
 	"net/http"
 	"net/http/httptest"
@@ -124,5 +125,28 @@ func TestRun_Pages_DeployGitFlags(t *testing.T) {
 	runCLIExpectOK(t, []string{"pages", "deploy", "--git", "https://example.com/org/site.git", "--name", "custom", "--api-url", srv.URL})
 	if got["name"] != "custom" {
 		t.Errorf("--name ignored: %v", got["name"])
+	}
+}
+
+func TestRun_Pages_SettingsPasswordGate(t *testing.T) {
+	var patch map[string]any
+	srv := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		patch = nil
+		_ = json.NewDecoder(r.Body).Decode(&patch)
+		_, _ = w.Write([]byte(`{"name":"docs","protected":true,"effective":{}}`))
+	}))
+	defer srv.Close()
+	var outBuf, errBuf bytes.Buffer
+	env := map[string]string{"PAGES_GATE_PW": "correct horse battery"}
+	lookup := func(k string) (string, bool) { v, ok := env[k]; return v, ok }
+	if got := run("levelrail-cli-test", []string{"pages", "settings", "set", "docs", "--password-env", "PAGES_GATE_PW", "--api-url", srv.URL}, &outBuf, &errBuf, lookup); got != exitOK {
+		t.Fatalf("exit = %d stderr=%q", got, errBuf.String())
+	}
+	if patch["password"] != "correct horse battery" {
+		t.Fatalf("patch = %v", patch)
+	}
+	runCLIExpectOK(t, []string{"pages", "settings", "set", "docs", "--clear-password", "--api-url", srv.URL})
+	if v, ok := patch["password"]; !ok || v != "" {
+		t.Fatalf("clear patch = %v", patch)
 	}
 }

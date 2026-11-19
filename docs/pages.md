@@ -138,7 +138,7 @@ Every deploy writes a release directory. After a successful publish, Levelrail k
 
 Every retained deploy is served at its own URL, `<deployId8>--<site hostname>`: the first 8 letters or digits of the deploy id, two hyphens, then the site's automatic hostname (for example `ab12cd34--docs.203-0-113-9.sslip.io`; in local development `ab12cd34--docs.localhost` on the bound port). The files behind it never change, so you can review a deploy before it goes live. The site's own domains keep serving the promoted deploy.
 
-Deploy URLs follow the retention count above and disappear when a deploy's files are pruned. They need automatic hostnames, so none are served when those are off, and a site with a password gate on any domain gets none, because the deploy host would skip the gate.
+Deploy URLs follow the retention count above and disappear when a deploy's files are pruned. They need automatic hostnames, so none are served when those are off. A password-protected site gates its deploy URLs with the same password.
 
 ```bash
 levelrail pages deploys docs
@@ -181,6 +181,12 @@ Anything a build puts in the published directory is public. Do not give a `PUBLI
 ## Front a static site with Cloudflare
 
 With a Cloudflare DNS integration connected, Levelrail creates a domain's record as proxied when the server-wide proxy setting is on. The Cache tab of an app has a Cloudflare proxy switch that overrides it for that app alone (`GET` and `PUT /api/v1/apps/{name}/cdn`, body `{"proxied": true | false | null}`, where `null` goes back to the server setting). The change applies to records written afterwards; run the domain's DNS fix to update an existing record. Keep the Cloudflare SSL/TLS mode on Full (strict).
+
+## Password protection
+
+A site can be gated with one shared password. Visitors get the browser's sign-in prompt (user name `site`). Set it in the site's settings in the dashboard, with `levelrail pages settings set docs --password-stdin`, or by sending `password` to `PATCH /api/v1/static-sites/{name}/settings`; an empty string clears it. The password is stored only as a bcrypt hash and no API returns it, only `protected: true`. It covers the site's domains and its deploy URLs, and changing it needs the `write:sensitive` ability.
+
+Length bounds come from `APP_PAGES_PASSWORD_MIN` (default 8) and `APP_PAGES_PASSWORD_MAX` (default 72, the bcrypt limit). A domain that has its own basic auth keeps that credential.
 
 ## From the CLI
 

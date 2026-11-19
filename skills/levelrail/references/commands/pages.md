@@ -77,5 +77,6 @@ Usage:
   levelrail-cli pages settings show <name> [flags]
   levelrail-cli pages settings set <name> [--spa auto|on|off] [--clean-urls auto|on|off]
       [--trailing-slash add|remove|auto] [--404 path|auto] [--build-command CMD|auto] [--output-dir DIR|auto]
+      [--password P | --password-stdin | --password-env VAR | --clear-password]
 ```
 

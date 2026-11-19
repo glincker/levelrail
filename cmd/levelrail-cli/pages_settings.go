@@ -1,11 +1,14 @@
 package main
 
 import (
+	"bufio"
 	"context"
 	"flag"
 	"fmt"
 	"io"
+	"os"
 	"strconv"
+	"strings"
 	"text/tabwriter"
 
 	"github.com/GLINCKER/levelrail/internal/apiclient"
@@ -14,7 +17,7 @@ import (
 
 func runPagesSettings(prog string, args []string, stdout, stderr io.Writer, lookupEnv func(string) (string, bool)) int {
 	if len(args) == 0 || (args[0] != "show" && args[0] != "set") {
-		_, _ = fmt.Fprintf(stderr, "Usage:\n  %[1]s pages settings show <name> [flags]\n  %[1]s pages settings set <name> [--spa auto|on|off] [--clean-urls auto|on|off]\n      [--trailing-slash add|remove|auto] [--404 path|auto] [--build-command CMD|auto] [--output-dir DIR|auto]\n", prog)
+		_, _ = fmt.Fprintf(stderr, "Usage:\n  %[1]s pages settings show <name> [flags]\n  %[1]s pages settings set <name> [--spa auto|on|off] [--clean-urls auto|on|off]\n      [--trailing-slash add|remove|auto] [--404 path|auto] [--build-command CMD|auto] [--output-dir DIR|auto]\n      [--password P | --password-stdin | --password-env VAR | --clear-password]\n", prog)
 		return exitUsage
 	}
 	if args[0] == "show" {
@@ -62,12 +65,13 @@ func printPagesSettings(out io.Writer, s apiclient.StaticSiteSettings) {
 	_, _ = fmt.Fprintf(tw, "404\t%s\t%s\n", or(s.NotFoundPage), or(s.Effective.NotFound))
 	_, _ = fmt.Fprintf(tw, "build-command\t%s\t\n", or(s.BuildCommand))
 	_, _ = fmt.Fprintf(tw, "output-dir\t%s\t\n", or(s.OutputDir))
+	_, _ = fmt.Fprintf(tw, "password\t%s\t\n", map[bool]string{true: "set", false: "none"}[s.Protected])
 	_ = tw.Flush()
 }
 
 // pagesSettingsPatch maps the flag values given on the command line to a patch;
 // "auto" clears an override. given lists the flags the user actually set.
-func pagesSettingsPatch(vals map[string]string, given map[string]bool) (apiclient.StaticSiteSettingsPatch, error) {
+func pagesSettingsPatch(vals map[string]string, given map[string]bool, pwGiven bool) (apiclient.StaticSiteSettingsPatch, error) {
 	var p apiclient.StaticSiteSettingsPatch
 	str := func(flagName, field string, dst **string) {
 		if !given[flagName] {
@@ -107,7 +111,7 @@ func pagesSettingsPatch(vals map[string]string, given map[string]bool) (apiclien
 	str("404", "not_found_page", &p.NotFoundPage)
 	str("build-command", "build_command", &p.BuildCommand)
 	str("output-dir", "output_dir", &p.OutputDir)
-	if len(given) == 0 {
+	if len(given) == 0 && !pwGiven {
 		return p, newValidationError("pages settings set needs at least one setting flag")
 	}
 	return p, nil
@@ -120,6 +124,10 @@ func runPagesSettingsSet(prog string, args []string, stdout, stderr io.Writer, l
 	for _, n := range names {
 		ptrs[n] = fs.String(n, "", "new value, or auto to clear the override")
 	}
+	pw := fs.String("password", "", "gate the site with this shared password (stays in shell history, prefer --password-stdin)")
+	pwStdin := fs.Bool("password-stdin", false, "read the gate password from the first line of stdin")
+	pwEnv := fs.String("password-env", "", "read the gate password from this environment variable")
+	clearPW := fs.Bool("clear-password", false, "remove the password gate")
 	tokenFlag, apiURLFlag, profileFlag, jsonOut, of, exitCode, ok := parseAPIFlags(fs, args, apiFlagPtrs{tokenP, apiURLP, profileP, jsonP, outputP, queryP}, prog, stderr)
 	if !ok {
 		return exitCode
@@ -134,9 +142,35 @@ func runPagesSettingsSet(prog string, args []string, stdout, stderr io.Writer, l
 			vals[f.Name], given[f.Name] = *p, true
 		}
 	})
-	patch, err := pagesSettingsPatch(vals, given)
+	pwGiven := given["password"] || *pwStdin || *pwEnv != "" || *clearPW
+	switch {
+	case given["password"]:
+		if *pw == "" {
+			return reportError(stdout, stderr, jsonOut, newValidationError("--password is empty, use --clear-password to remove the gate"))
+		}
+		vals["password"] = *pw
+	case *pwStdin:
+		line, rerr := bufio.NewReader(os.Stdin).ReadString('\n')
+		if rerr != nil && line == "" {
+			return reportError(stdout, stderr, jsonOut, newValidationError("--password-stdin found no password on stdin"))
+		}
+		vals["password"] = strings.TrimRight(line, "\r\n")
+	case *pwEnv != "":
+		v, found := lookupEnv(*pwEnv)
+		if !found || v == "" {
+			return reportError(stdout, stderr, jsonOut, newValidationError("--password-env: %s is not set", *pwEnv))
+		}
+		vals["password"] = v
+	}
+	if pwGiven && *clearPW && len(vals["password"]) > 0 {
+		return reportError(stdout, stderr, jsonOut, newValidationError("--clear-password cannot be combined with a password"))
+	}
+	patch, err := pagesSettingsPatch(vals, given, pwGiven)
 	if err != nil {
 		return reportError(stdout, stderr, jsonOut, err)
+	}
+	if pwGiven {
+		patch.Password = ptrString(vals["password"])
 	}
 	client := apiClientFromFlags(prog, apiURLFlag, tokenFlag, profileFlag, lookupEnv)
 	res, err := client.PatchStaticSiteSettings(context.Background(), name, patch)
@@ -236,3 +270,5 @@ func putPagesRules(ctx context.Context, client *Client, name string, body apicli
 	}
 	return renderOrFail(stdout, stderr, of, res.UI.Redirects, func() { printUIRedirects(stdout, res.UI.Redirects) })
 }
+
+func ptrString(v string) *string { return &v }

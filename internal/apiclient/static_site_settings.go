@@ -16,6 +16,7 @@ type StaticSiteSettings struct {
 	CleanURLs     *bool                `json:"clean_urls"`
 	TrailingSlash string               `json:"trailing_slash"`
 	NotFoundPage  string               `json:"not_found_page"`
+	Protected     bool                 `json:"protected"`
 	Effective     staticroutes.Options `json:"effective"`
 }
 
@@ -28,6 +29,8 @@ type StaticSiteSettingsPatch struct {
 	TrailingSlash *string  `json:"trailing_slash,omitempty"`
 	NotFoundPage  *string  `json:"not_found_page,omitempty"`
 	Reset         []string `json:"reset,omitempty"`
+	// Password sets the gate password; a pointer to "" clears it.
+	Password *string `json:"password,omitempty"`
 }
 
 // StaticSiteRulesBody is the editable rule set PUT accepts.
