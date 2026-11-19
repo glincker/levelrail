@@ -85086,7 +85086,7 @@
         "x-required-ability": "read"
       },
       "put": {
-        "description": "Requires the `write:sensitive` ability.",
+        "description": "Requires a signed-in dashboard session.",
         "operationId": "handleSetEnvironmentBuilders",
         "parameters": [
           {
@@ -85126,17 +85126,7 @@
                 }
               }
             },
-            "description": "Missing or invalid credentials."
-          },
-          "403": {
-            "content": {
-              "application/json": {
-                "schema": {
-                  "$ref": "#/components/schemas/ErrorResponse"
-                }
-              }
-            },
-            "description": "The token lacks the required ability."
+            "description": "Not signed in."
           },
           "4XX": {
             "content": {
@@ -85161,16 +85151,14 @@
         },
         "security": [
           {
-            "bearerAuth": [
-              "write:sensitive"
-            ]
+            "sessionAuth": []
           }
         ],
         "summary": "Set Environment Builders",
         "tags": [
           "Projects / Organizations / Environments"
         ],
-        "x-required-ability": "write:sensitive"
+        "x-required-ability": "session"
       }
     },
     "/api/v1/environments/{id}/clone": {

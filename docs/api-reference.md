@@ -1080,7 +1080,7 @@ Endpoints for:
 | POST | /api/v1/organizations/{id}/bindings | AbilityWriteSensitive | handleCreateOrgBinding |
 | DELETE | /api/v1/organizations/{id}/bindings/{bid} | AbilityWriteSensitive | handleDeleteOrgBinding |
 | GET | /api/v1/environments/{id}/builders | AbilityRead | handleGetEnvironmentBuilders |
-| PUT | /api/v1/environments/{id}/builders | AbilityWriteSensitive | handleSetEnvironmentBuilders |
+| PUT | /api/v1/environments/{id}/builders | Session | handleSetEnvironmentBuilders |
 
 ## Nodes
 

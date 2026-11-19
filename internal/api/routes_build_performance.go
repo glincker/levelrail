@@ -18,7 +18,7 @@ func (rt *Router) registerBuildPerformanceRoutes(mux *http.ServeMux) {
 	// A node's tier and an environment's allow-list decide whose builds may reach production, so sensitive writes.
 	mux.HandleFunc("PUT /api/v1/nodes/{id}/build-trust", rt.requireAbility(AbilityRoot, rt.handleSetNodeBuildTrust))
 	mux.HandleFunc("GET /api/v1/environments/{id}/builders", rt.requireAbility(AbilityRead, rt.requireEnvironmentGrant(AbilityRead, rt.handleGetEnvironmentBuilders)))
-	mux.HandleFunc("PUT /api/v1/environments/{id}/builders", rt.requireAbility(AbilityWriteSensitive, rt.requireEnvironmentGrant(AbilityWriteSensitive, rt.handleSetEnvironmentBuilders)))
+	mux.HandleFunc("PUT /api/v1/environments/{id}/builders", rt.requireAuth(rt.requireEnvironmentGrant(AbilityRead, rt.requireAbility(AbilityWriteSensitive, rt.handleSetEnvironmentBuilders))))
 	mux.HandleFunc("GET /api/v1/builds/queue", rt.requireAbility(AbilityRead, rt.handleGetBuildQueue))
 	// Holding or killing builds stops every app's deploys, so write-sensitive; kill-all also needs step-up.
 	mux.HandleFunc("POST /api/v1/builds/queue/pause", rt.requireAbility(AbilityWriteSensitive, rt.handleBuildQueuePause))
