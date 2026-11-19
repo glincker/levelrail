@@ -1113,5 +1113,37 @@
       "paidShape": "This shape is not covered by the allowance limits and may bill. Turn on {{setting}} to use it.",
       "unknownPrice": "Oracle lists no price for this shape, so the price cap cannot be checked. Turn on {{setting}} (or provision.allow_unknown_price) to allow it."
     }
+  },
+  "builderTrust": {
+    "title": "Build trust",
+    "tipLabel": "About build trust",
+    "tip": "Server and managed builders may build any environment. A personal builder (a laptop or home machine) is kept off production unless that environment allows it.",
+    "tierLabel": "Tier",
+    "unknown": "Not reported",
+    "saved": "Build trust set to {{tier}}",
+    "tier": {
+      "server": "Server",
+      "managed": "Managed",
+      "personal": "Personal"
+    },
+    "hint": {
+      "server": "Owned server, may build anything.",
+      "managed": "Created by this control plane, may build anything.",
+      "personal": "Laptop or home machine, kept off production."
+    }
+  },
+  "allowedBuilders": {
+    "title": "Allowed builders",
+    "tiers": "Builder tiers",
+    "addNode": "Add a builder node",
+    "defaultPolicy": "Default policy",
+    "customPolicy": "Custom list",
+    "personalOff": "Personal builders off",
+    "personalOn": "Personal builders on",
+    "productionTipLabel": "About production builders",
+    "productionTip": "Production never builds on a personal builder unless you list that node or tier here, or turn on the build.personal_builders_in_production setting.",
+    "save": "Save",
+    "reset": "Reset to default",
+    "saved": "Allowed builders saved"
   }
 }

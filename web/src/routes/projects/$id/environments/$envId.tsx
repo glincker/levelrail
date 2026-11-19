@@ -22,6 +22,7 @@ import { DeleteEnvironmentDialog } from '../../../../components/DeleteEnvironmen
 import { CloneEnvironmentDialog } from '../../../../components/CloneEnvironmentDialog'
 import { ProtectedEnvironmentToggle } from '../../../../components/ProtectedEnvironmentToggle'
 import { EnvironmentEnvEditor } from '../../../../components/EnvironmentEnvEditor'
+import { AllowedBuildersCard } from '../../../../components/environments/AllowedBuildersCard'
 import { SharedEnvSecretsCard } from '../../../../components/SharedEnvSecretsCard'
 import { AppRow, RowSkeleton } from '../../../../components/AppRow'
 import { routeErrorMessage } from '../../../../lib/apiError'
@@ -152,6 +153,7 @@ function EnvironmentDetailPage() {
       <ManagedByStackBanner stack={environment.managed_by_stack} />
       <EnvironmentEnvEditor environmentId={envId} />
       <SharedEnvSecretsCard scope="environment" id={envId} />
+      <AllowedBuildersCard environmentId={envId} />
 
       {siblingEnvironments.length > 0 ? (
         <div className="flex flex-wrap items-center gap-2">

@@ -33,6 +33,7 @@ export interface BuildRunner {
   last_build_app?: string
   last_build_status?: string
   cache_bytes?: number
+  trust?: string
 }
 
 export interface BuildRunnersView {
