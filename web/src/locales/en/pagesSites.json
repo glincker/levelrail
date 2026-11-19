@@ -414,5 +414,12 @@
       "previewOpen": "Open preview",
       "pr": "PR #{{number}}"
     }
+  },
+  "forms": {
+    "title": "Form submissions",
+    "failed": "Could not load submissions.",
+    "remove": "Delete",
+    "delete": "Delete submission {{id}} of {{form}}",
+    "deleteTip": "Delete this submission for good"
   }
 }
