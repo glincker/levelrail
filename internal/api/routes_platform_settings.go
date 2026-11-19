@@ -127,6 +127,8 @@ func (rt *Router) registerSettingsRoutes(mux *http.ServeMux) {
 	// mutation path for a static site beyond internal/deploy.Pipeline's
 	// own git-push-triggered write.
 	mux.HandleFunc("GET /api/v1/static-sites", rt.requireAbility(AbilityRead, rt.handleListStaticSites))
+	mux.HandleFunc("POST /api/v1/static-sites", rt.requireAbility(AbilityWrite, rt.idempotent(rt.handleCreateStaticSite)))
+	mux.HandleFunc("GET /api/v1/static-sites/{name}", rt.requireAbilityForResource(AbilityRead, appResourceFromPath, rt.handleGetStaticSite))
 	mux.HandleFunc("DELETE /api/v1/static-sites/{name}", rt.requireAbilityForResource(AbilityWriteSensitive, appResourceFromPath, rt.handleDeleteStaticSite))
 	mux.HandleFunc("GET /api/v1/apps/{name}/static-routes", rt.requireAbilityForResource(AbilityRead, appResourceFromPath, rt.handleGetStaticRoutes))
 	mux.HandleFunc("POST /api/v1/apps/{name}/static-routes/test", rt.requireAbilityForResource(AbilityRead, appResourceFromPath, rt.handleTestStaticRoutes))
