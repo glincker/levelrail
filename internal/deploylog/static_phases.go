@@ -1,6 +1,15 @@
 package deploylog
 
-import "github.com/GLINCKER/levelrail/internal/build"
+import (
+	"context"
+	"time"
+
+	"github.com/GLINCKER/levelrail/internal/build"
+	"github.com/GLINCKER/levelrail/internal/store"
+)
+
+// StepStaticPhase is the persisted trace step of a static phase; its key is "static_phase.<phase>".
+const StepStaticPhase = "static_phase"
 
 // Static build phases shown to the Pages UI: coarse names over the pipeline's own step labels.
 const (
@@ -22,6 +31,14 @@ var staticStepPhase = map[string]string{
 	"Publish to file server": PhasePublishing,
 }
 
+// staticPhaseFinal is the label whose completion finishes a phase, so a phase
+// with two labels is not done after the first.
+var staticPhaseFinal = map[string]string{
+	PhaseCloning:    "Fetch source",
+	PhaseBuilding:   "Collect build output",
+	PhasePublishing: "Publish to file server",
+}
+
 // IsStaticStep reports whether step is one of the static pipeline's labels.
 func IsStaticStep(step string) bool {
 	_, ok := staticStepPhase[step]
@@ -38,10 +55,30 @@ func (r *Recorder) noteStaticPhase(attemptID string, ev build.ProgressEvent) {
 	switch {
 	case ev.Error != "":
 		status = "failed"
-	case ev.Completed:
+	case ev.Completed && ev.Step == staticPhaseFinal[phase]:
 		status = "done"
 	}
 	r.Step(attemptID, "static:"+phase, status)
+	r.persistStaticPhase(attemptID, phase, status)
+}
+
+// persistStaticPhase keeps the phase state past the attempt so a finished
+// attempt can report real states; a missing sink or a write error is ignored.
+func (r *Recorder) persistStaticPhase(attemptID, phase, status string) {
+	r.mu.Lock()
+	sink := r.stageSink
+	r.mu.Unlock()
+	if sink == nil {
+		return
+	}
+	now := time.Now()
+	row := store.DeployTraceStep{AttemptID: attemptID, Key: StepStaticPhase + "." + phase, Step: StepStaticPhase, Status: status, Detail: phase, StartedAt: now}
+	if status != "running" {
+		row.EndedAt = now
+	}
+	if err := sink.SaveDeployTraceStep(context.Background(), row); err != nil {
+		r.logger.Warn("deploylog: persist static phase failed", "attempt", attemptID, "phase", phase, "error", err.Error())
+	}
 }
 
 // StaticPhaseStates returns the latest state of each static phase of a live
@@ -57,12 +94,7 @@ func (r *Recorder) StaticPhaseStates(attemptID string) (map[string]string, bool)
 	out := map[string]string{}
 	for _, ev := range st.steps {
 		if len(ev.Step) > 7 && ev.Step[:7] == "static:" {
-			// A later "running" for the same phase must not undo a "done" from its sibling label.
-			phase := ev.Step[7:]
-			if out[phase] == "done" && ev.Status == "running" {
-				continue
-			}
-			out[phase] = ev.Status
+			out[ev.Step[7:]] = ev.Status
 		}
 	}
 	return out, len(out) > 0
