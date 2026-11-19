@@ -422,5 +422,23 @@
     "delete": "Delete submission {{id}} of {{form}}",
     "deleteTip": "Delete this submission for good",
     "confirmDelete": "Delete this submission?"
+  },
+  "hook": {
+    "title": "Deploy hook",
+    "tip": "A secret URL that redeploys this site's branch when you POST to it",
+    "create": "Create",
+    "createTip": "Create a secret URL for a CMS, CI job or cron",
+    "rotate": "Rotate",
+    "rotateTip": "Issue a new URL, the old one stops working",
+    "revoke": "Revoke",
+    "revokeTip": "Turn the hook off",
+    "confirmRotate": "Rotate the URL? The current one stops working.",
+    "confirmRevoke": "Revoke the deploy hook?",
+    "copy": "Copy",
+    "copied": "Copied",
+    "copyTip": "Copy the URL",
+    "shownOnce": "Copy it now, it is not shown again.",
+    "since": "Enabled since {{date}}",
+    "failed": "Could not load the deploy hook."
   }
 }

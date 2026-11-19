@@ -29,6 +29,7 @@ const PageRoutes = lazy(() => import('./PageRoutes'))
 const SiteSettingsForm = lazy(() => import('./SiteSettingsForm'))
 const SiteGitCard = lazy(() => import('./SiteGitCard'))
 const SiteFormsCard = lazy(() => import('./SiteFormsCard'))
+const SiteHookCard = lazy(() => import('./SiteHookCard'))
 
 function Deployments({
   name,
@@ -69,6 +70,9 @@ function Settings({
     <div className="space-y-2">
       <Suspense fallback={<Skeleton className="h-48 w-full" />}>
         <SiteSettingsForm name={name} />
+      </Suspense>
+      <Suspense fallback={<Skeleton className="h-12 w-full" />}>
+        <SiteHookCard name={name} />
       </Suspense>
       <Suspense fallback={<Skeleton className="h-16 w-full" />}>
         <SiteFormsCard name={name} />
