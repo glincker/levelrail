@@ -24,6 +24,7 @@ vi.mock('../overview/useOverviewActions', () => ({
 }))
 const wakeMutate = vi.fn()
 const sleepState = { asleep: false }
+vi.mock('../../queries/staticSites', () => ({ useIsStaticSite: () => false }))
 vi.mock('../../queries/appSleep', () => ({
   useAppAsleep: () => sleepState.asleep,
   useAppSleepActions: () => ({

@@ -33,6 +33,7 @@ vi.mock('./useOverviewActions', () => ({
     goToDeploys: vi.fn(),
   }),
 }))
+vi.mock('../../queries/staticSites', () => ({ useIsStaticSite: () => false }))
 vi.mock('../PromoteAppDialog', () => ({ PromoteAppDialog: () => null }))
 vi.mock('../CloneAppDialog', () => ({ CloneAppDialog: () => null }))
 vi.mock('../DeleteAppDialog', () => ({ DeleteAppDialog: () => null }))
