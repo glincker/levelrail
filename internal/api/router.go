@@ -800,31 +800,32 @@ type Router struct {
 	benchmarks                   BenchmarkStore                                             // nil when the backing store lacks benchmark runs
 	chaosResults                 ChaosStore                                                 // nil when the backing store lacks chaos results
 	searchOnce                   sync.Once
-	searchSvc                    *search.Service          // built lazily by searchService, see search.go
-	tags                         TagStore                 // always set, same "core Store interface" shape as scheduledTasks above: tags/app_tags always exist, empty is a valid, non-error result
-	appIntegrations              AppIntegrationStore      // always set, same "core Store interface" shape as scheduledTasks above: attaching/listing needs no secrets configuration, only storing a field value does (rt.secrets, checked in handleAttachAppIntegration)
-	bitbucketAppClient           BitbucketAppClient       // always set (NewRouter defaults it to a real *bitbucketapp.Client), overridable in this package's own tests
-	giteaAppClient               GiteaAppClient           // always set (NewRouter defaults it to a real *giteaapp.Client), overridable in this package's own tests
-	bitbucketServerClient        BitbucketServerClient    // always set, overridable in this package's own tests
-	azureDevOpsClient            AzureDevOpsClient        // always set, overridable in this package's own tests
-	setupGuide                   SetupGuideStore          // nil unless the store implements it: /api/v1/setup/guide routes return 501
-	onboarding                   OnboardingStore          // always set, same "core Store interface, not an optional plug-in" shape as ingressSettings above: the row always exists (migrations/0067's own seeded row)
-	dbPinger                     DBPinger                 // nil is valid: GET /system/doctor reports its database check as unknown, same shape as dockerPinger above
-	doctorDiskWarningBytes       int64                    // 0 means "use defaultDoctorDiskWarningBytes", set via WithDoctorDiskWarningBytes
-	ingressPortOwner             IngressPortOwner         // nil is valid: GET /system/doctor's port checks can't tell this control plane's own ingress apart from another process, same "can't check further, don't guess" shape as dbPinger above
-	doctorHTTPPort               int                      // 0 means "use defaultDoctorHTTPPort (80)", set via WithDoctorIngressPorts
-	doctorHTTPSPort              int                      // 0 means "use defaultDoctorHTTPSPort (443)", set via WithDoctorIngressPorts
-	webhookBodies                webhookBodySeen          // recent signed webhook bodies, replay guard
-	ddnsMgr                      *ddns.Manager            // nil serves 501 on /settings/ddns
-	heartbeatSvc                 *heartbeat.Service       // nil serves 501 on /settings/heartbeat
-	jobPings                     *heartbeat.JobPinger     // nil rejects per-job heartbeat URLs
-	monitors                     MonitorService           // nil is valid: monitor routes return 404 (APP_MONITORS_ENABLED off)
-	parkedRetention              parkedRetentionState     // last retention run, for the dry run's next_run
-	runtimeSettings              *runtimesettings.Service // nil only in unit tests of other packages; nil serves env then default
-	changes                      changeBus                // topic nudges for GET /api/v1/events/changes; the zero value is ready
-	webhookDeliveries            WebhookDeliveryStore     // always set, same "core Store interface" shape as deployAttempts above
-	policies                     PolicyStore              // always set, same "core Store interface" shape as certs above: iam_policies/iam_policy_attachments always exist, empty is a valid, non-error result
-	deviceFlow                   *apiRateLimiter          // per-IP device-login-start token bucket
+	searchSvc                    *search.Service                  // built lazily by searchService, see search.go
+	tags                         TagStore                         // always set, same "core Store interface" shape as scheduledTasks above: tags/app_tags always exist, empty is a valid, non-error result
+	appIntegrations              AppIntegrationStore              // always set, same "core Store interface" shape as scheduledTasks above: attaching/listing needs no secrets configuration, only storing a field value does (rt.secrets, checked in handleAttachAppIntegration)
+	bitbucketAppClient           BitbucketAppClient               // always set (NewRouter defaults it to a real *bitbucketapp.Client), overridable in this package's own tests
+	giteaAppClient               GiteaAppClient                   // always set (NewRouter defaults it to a real *giteaapp.Client), overridable in this package's own tests
+	bitbucketServerClient        BitbucketServerClient            // always set, overridable in this package's own tests
+	azureDevOpsClient            AzureDevOpsClient                // always set, overridable in this package's own tests
+	setupGuide                   SetupGuideStore                  // nil unless the store implements it: /api/v1/setup/guide routes return 501
+	onboarding                   OnboardingStore                  // always set, same "core Store interface, not an optional plug-in" shape as ingressSettings above: the row always exists (migrations/0067's own seeded row)
+	dbPinger                     DBPinger                         // nil is valid: GET /system/doctor reports its database check as unknown, same shape as dockerPinger above
+	doctorDiskWarningBytes       int64                            // 0 means "use defaultDoctorDiskWarningBytes", set via WithDoctorDiskWarningBytes
+	ingressPortOwner             IngressPortOwner                 // nil is valid: GET /system/doctor's port checks can't tell this control plane's own ingress apart from another process, same "can't check further, don't guess" shape as dbPinger above
+	doctorHTTPPort               int                              // 0 means "use defaultDoctorHTTPPort (80)", set via WithDoctorIngressPorts
+	ingressBoundPorts            func() (httpPort, httpsPort int) // live bound ports, set via WithIngressBoundPorts
+	doctorHTTPSPort              int                              // 0 means "use defaultDoctorHTTPSPort (443)", set via WithDoctorIngressPorts
+	webhookBodies                webhookBodySeen                  // recent signed webhook bodies, replay guard
+	ddnsMgr                      *ddns.Manager                    // nil serves 501 on /settings/ddns
+	heartbeatSvc                 *heartbeat.Service               // nil serves 501 on /settings/heartbeat
+	jobPings                     *heartbeat.JobPinger             // nil rejects per-job heartbeat URLs
+	monitors                     MonitorService                   // nil is valid: monitor routes return 404 (APP_MONITORS_ENABLED off)
+	parkedRetention              parkedRetentionState             // last retention run, for the dry run's next_run
+	runtimeSettings              *runtimesettings.Service         // nil only in unit tests of other packages; nil serves env then default
+	changes                      changeBus                        // topic nudges for GET /api/v1/events/changes; the zero value is ready
+	webhookDeliveries            WebhookDeliveryStore             // always set, same "core Store interface" shape as deployAttempts above
+	policies                     PolicyStore                      // always set, same "core Store interface" shape as certs above: iam_policies/iam_policy_attachments always exist, empty is a valid, non-error result
+	deviceFlow                   *apiRateLimiter                  // per-IP device-login-start token bucket
 	instance                     InstanceStore
 	instanceLimit                *apiRateLimiter // per-IP budget for the public identity endpoint
 	instanceMemo                 *instanceCache
