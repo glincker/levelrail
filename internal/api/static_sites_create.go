@@ -41,6 +41,8 @@ type createStaticSiteRequest struct {
 	Git *createStaticSiteGit `json:"git,omitempty"`
 	// Deploy starts the first build right after connecting; needs Git.
 	Deploy bool `json:"deploy,omitempty"`
+	// SourceURL is an https .zip or .tar.gz published as the first deploy.
+	SourceURL string `json:"source_url,omitempty"`
 }
 
 type createStaticSiteGit struct {
@@ -180,6 +182,25 @@ func (rt *Router) handleCreateStaticSite(w http.ResponseWriter, r *http.Request)
 		writeError(w, http.StatusBadRequest, "name is required")
 		return
 	}
+	var sourceHash string
+	if req.SourceURL != "" {
+		if req.Git != nil || req.Deploy {
+			writeError(w, http.StatusBadRequest, "source_url cannot be combined with git or deploy")
+			return
+		}
+		if rt.builder == nil {
+			writeError(w, http.StatusNotImplemented, "manual build trigger is not configured on this control plane")
+			return
+		}
+		if !rt.authorizeRefs(w, r, AbilityDeploy, notFoundAs(http.StatusNotFound, "app not found"), appRef(req.Name)) {
+			return
+		}
+		var serr *sourceURLError
+		if sourceHash, serr = rt.stagePagesSourceURL(r.Context(), req.Name, req.SourceURL); serr != nil {
+			writeError(w, serr.status, serr.msg)
+			return
+		}
+	}
 	var plan *staticGitPlan
 	if req.Git != nil {
 		var ok bool
@@ -220,6 +241,22 @@ func (rt *Router) handleCreateStaticSite(w http.ResponseWriter, r *http.Request)
 		domains = created.Domains
 	}
 	detail := staticSiteDetail{Name: req.Name, BuildType: "static", Domains: nonNilStrings(domains)}
+	if sourceHash != "" {
+		id, brec := rt.deployStaticFromURL(r, req.Name, sourceHash)
+		if brec.Code >= 300 {
+			if rec.Code == http.StatusCreated {
+				rt.rollbackStaticSite(r.Context(), req.Name)
+			}
+			for k, v := range brec.Header() {
+				w.Header()[k] = v
+			}
+			w.WriteHeader(brec.Code)
+			_, _ = w.Write(brec.Body.Bytes())
+			return
+		}
+		writeJSON(w, http.StatusCreated, createStaticSiteResponse{staticSiteDetail: detail, DeployID: id})
+		return
+	}
 	if plan == nil {
 		writeJSON(w, http.StatusCreated, detail)
 		return

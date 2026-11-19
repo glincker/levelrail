@@ -129,6 +129,8 @@ type triggerBuildRequest struct {
 	FromCache bool `json:"from_cache,omitempty"`
 	// UploadHash builds a directory previously sent to POST /api/v1/apps/{name}/uploads instead of a git checkout.
 	UploadHash string `json:"upload_hash,omitempty"`
+	// SourceURL is an https .zip or .tar.gz to download and publish; build.type static only.
+	SourceURL string `json:"source_url,omitempty"`
 	// InlineSource builds a pasted Dockerfile plus optional files, no git host or repository needed.
 	InlineSource *inlineSourceInput `json:"inline_source,omitempty"`
 	// NoCache disables the BuildKit layer cache; only build.type "dockerfile" supports it.
@@ -365,6 +367,18 @@ func (rt *Router) handleTriggerBuild(w http.ResponseWriter, r *http.Request) {
 	buildType := req.Build.Type
 	if buildType == "" {
 		buildType = spec.BuildDockerfile
+	}
+	if req.SourceURL != "" {
+		if buildType != spec.BuildStatic || req.UploadHash != "" {
+			writeError(w, http.StatusBadRequest, "source_url needs build.type \"static\" and cannot be combined with upload_hash")
+			return
+		}
+		hash, serr := rt.stagePagesSourceURL(r.Context(), name, req.SourceURL)
+		if serr != nil {
+			writeError(w, serr.status, serr.msg)
+			return
+		}
+		req.UploadHash = hash
 	}
 	switch buildType {
 	case spec.BuildDockerfile, spec.BuildRailpack, spec.BuildStatic, spec.BuildImage:
