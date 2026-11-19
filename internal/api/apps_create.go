@@ -179,6 +179,10 @@ func (rt *Router) handleCreateApp(w http.ResponseWriter, r *http.Request) {
 		rt.internalError(w, "api: create app: recheck name failed", ferr, slog.String("name", req.Name))
 		return
 	}
+	if st, msg := rt.checkServiceImageRepo(r.Context(), desired); st != 0 {
+		writeError(w, st, msg)
+		return
+	}
 	for key, value := range req.Secrets {
 		if err := rt.secrets.SetValueGuarded(r.Context(), req.Name, key, value, false); err != nil {
 			if errors.Is(err, secrets.ErrSecretLocked) {

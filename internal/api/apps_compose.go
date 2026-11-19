@@ -224,6 +224,12 @@ func (rt *Router) deployComposeBody(w http.ResponseWriter, r *http.Request, name
 	}
 	defer quotaRelease()
 
+	for _, svc := range services {
+		if st, msg := rt.checkServiceImageRepo(r.Context(), svc); st != 0 {
+			writeError(w, st, msg)
+			return composeDeployResponse{}, false
+		}
+	}
 	if !rt.storeComposeSecretFiles(w, r, services) {
 		return composeDeployResponse{}, false
 	}

@@ -107,6 +107,10 @@ func (rt *Router) handleCloneApp(w http.ResponseWriter, r *http.Request) {
 		writeError(w, http.StatusConflict, fmt.Sprintf("a volume of the clone is also held by app %q: pick another name", other))
 		return
 	}
+	if st, msg := rt.checkServiceImageRepo(r.Context(), clone); st != 0 {
+		writeError(w, st, msg)
+		return
+	}
 	if err := rt.apps.SaveDesiredService(r.Context(), clone); err != nil {
 		var domainTaken *store.ErrDomainTaken
 		if errors.As(err, &domainTaken) {

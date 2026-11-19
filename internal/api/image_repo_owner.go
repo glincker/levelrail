@@ -10,12 +10,6 @@ import (
 	"github.com/GLINCKER/levelrail/internal/store"
 )
 
-// imageRepoClaimer is the atomic ownership table; stores without it fall back to the list scan.
-type imageRepoClaimer interface {
-	ClaimImageRepo(ctx context.Context, repo, app string) (string, error)
-	ImageRepoOwner(ctx context.Context, repo string) (string, error)
-}
-
 // normalizeImageRepo folds docker.io/library prefixes and case so spellings of one repo compare equal.
 func normalizeImageRepo(repo string) string {
 	repo = strings.ToLower(strings.TrimSpace(repo))
@@ -40,15 +34,11 @@ func (rt *Router) checkFinalImageRepo(ctx context.Context, name, repo string, cl
 	if other := imageRepoOwner(all, name, norm); other != "" {
 		return http.StatusConflict, imageRepoTakenMsg(repo, other)
 	}
-	c, ok := rt.apps.(imageRepoClaimer)
-	if !ok {
-		return 0, ""
-	}
 	var owner string
 	if claim {
-		owner, err = c.ClaimImageRepo(ctx, norm, name)
+		owner, err = rt.apps.ClaimImageRepo(ctx, norm, name)
 	} else {
-		owner, err = c.ImageRepoOwner(ctx, norm)
+		owner, err = rt.apps.ImageRepoOwner(ctx, norm)
 	}
 	if err != nil {
 		return http.StatusInternalServerError, "could not verify the image repo is unused"
@@ -57,6 +47,11 @@ func (rt *Router) checkFinalImageRepo(ctx context.Context, name, repo string, cl
 		return http.StatusConflict, imageRepoTakenMsg(repo, owner)
 	}
 	return 0, ""
+}
+
+// checkServiceImageRepo gates and claims the repo a service's image derives for builds.
+func (rt *Router) checkServiceImageRepo(ctx context.Context, svc store.DesiredService) (int, string) {
+	return rt.checkFinalImageRepo(ctx, svc.Name, defaultImageRepo(svc.Name, svc.Image), true)
 }
 
 func imageRepoTakenMsg(repo, other string) string {

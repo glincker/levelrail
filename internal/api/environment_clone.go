@@ -485,6 +485,9 @@ func (rt *Router) cloneOneApp(ctx context.Context, source store.DesiredService, 
 		return store.DesiredService{}, fmt.Errorf("a volume of %q is also held by app %q", newName, other)
 	}
 
+	if st, msg := rt.checkServiceImageRepo(ctx, desired); st != 0 {
+		return store.DesiredService{}, errors.New(msg)
+	}
 	if err := rt.apps.SaveDesiredService(ctx, desired); err != nil {
 		return store.DesiredService{}, fmt.Errorf("save desired service: %w", err)
 	}

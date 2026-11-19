@@ -538,6 +538,9 @@ func (rt *Router) setDesiredImage(ctx context.Context, existing store.DesiredSer
 	if !docker.ImageIdentityMatches(existing.Image, image) {
 		updated.GrantedCaps = nil
 	}
+	if st, msg := rt.checkServiceImageRepo(ctx, updated); st != 0 {
+		return store.DesiredService{}, errors.New(msg)
+	}
 	if err := rt.apps.SaveDesiredService(ctx, updated); err != nil {
 		return store.DesiredService{}, err
 	}

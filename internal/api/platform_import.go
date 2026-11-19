@@ -472,6 +472,9 @@ func (a *importApplier) CreateApp(ctx context.Context, p platformimport.AppPlan)
 		desired.Volumes = append(desired.Volumes, store.ServiceVolume{Name: "app-" + p.Name + "-" + v.Name, ContainerPath: v.ContainerPath})
 	}
 	var warnings []string
+	if st, msg := rt.checkServiceImageRepo(ctx, desired); st != 0 {
+		return warnings, errors.New(msg)
+	}
 	err = rt.apps.SaveDesiredService(ctx, desired)
 	var taken *store.ErrDomainTaken
 	if errors.As(err, &taken) {

@@ -184,6 +184,10 @@ func (rt *Router) recordCIGateSkip(ctx context.Context, name, sha, reason, sourc
 		return
 	}
 	if st, _ := rt.checkFinalImageRepo(ctx, name, defaultImageRepo(name, existing.Image), false); st != 0 {
+		// Recorded without the repo so the history still shows the skip and its reason.
+		rt.logger.Warn("api: ci gate: image repo check failed, skip recorded without repo", slog.String("name", name), slog.Int("status", st))
+		_, _, finish, _ := rt.beginBuildDeployAttempt(ctx, deploy.Request{ServiceName: name, CommitSHA: sha}, *existing, source, "")
+		finish(errors.New("skipped by CI gate: " + reason + " (image repo unavailable)"))
 		return
 	}
 	_, _, finish, _ := rt.beginBuildDeployAttempt(ctx, deploy.Request{

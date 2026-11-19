@@ -2,6 +2,7 @@ package api
 
 import (
 	"context"
+	"errors"
 	"fmt"
 	"log/slog"
 	"net/http"
@@ -186,6 +187,9 @@ func (rt *Router) saveClonedService(ctx context.Context, svc store.DesiredServic
 	defer lockAppName(svc.Name)()
 	if err := rt.appNameFree(ctx, svc.Name); err != nil {
 		return err
+	}
+	if st, msg := rt.checkServiceImageRepo(ctx, svc); st != 0 {
+		return errors.New(msg)
 	}
 	if s, ok := rt.apps.(suspendedServiceSaver); ok {
 		return s.SaveSuspendedDesiredService(ctx, svc)
