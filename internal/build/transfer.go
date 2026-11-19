@@ -176,6 +176,15 @@ func (i *PushTokenIssuer) VerifyRepo(token, repo string) (time.Time, error) {
 	return time.Unix(c.Exp, 0), nil
 }
 
+// Nonce is the token's per-job id for rate limiting, or "" when the token does not verify.
+func (i *PushTokenIssuer) Nonce(token string) string {
+	c, err := i.parse(token)
+	if err != nil {
+		return ""
+	}
+	return c.Nonce
+}
+
 // Revoke ends a token's life when its job finishes; unknown tokens are ignored.
 func (i *PushTokenIssuer) Revoke(token string) {
 	c, err := i.parse(token)
@@ -286,14 +295,34 @@ func applyPush(opt *bkclient.SolveOpt, g *PushGrant) error {
 	return nil
 }
 
-// pushAuthConfig releases the job token only for the exact push,pull scope on the job repo,
-// so cache and base image pulls (even on the same host) get no credential.
+// pushAuthConfig releases the job token only for push+pull on exactly the job repo, compared as a
+// set of actions since clients differ in order. Nil scopes (the basic-credential lookup for the
+// token realm) get it for the registry host only; the realm still checks scope itself.
 func pushAuthConfig(host, jobRepo, token string) func(h string, scopes []string) types.AuthConfig {
-	want := "repository:" + jobRepo + ":push,pull"
+	grant := types.AuthConfig{Username: pushUser, Password: token}
 	return func(h string, scopes []string) types.AuthConfig {
-		if h != host || len(scopes) != 1 || scopes[0] != want {
+		if h != host {
 			return types.AuthConfig{}
 		}
-		return types.AuthConfig{Username: pushUser, Password: token}
+		if len(scopes) == 0 {
+			return grant
+		}
+		if len(scopes) == 1 && scopeIsJobPushPull(scopes[0], jobRepo) {
+			return grant
+		}
+		return types.AuthConfig{}
 	}
+}
+
+func scopeIsJobPushPull(scope, jobRepo string) bool {
+	scope = strings.TrimPrefix(scope, "repository:")
+	name, actions, ok := strings.Cut(scope, ":")
+	if !ok || name != jobRepo {
+		return false
+	}
+	set := map[string]bool{}
+	for _, a := range strings.Split(actions, ",") {
+		set[a] = true
+	}
+	return len(set) == 2 && set[pushActionPush] && set["pull"]
 }

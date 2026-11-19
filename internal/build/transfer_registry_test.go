@@ -46,7 +46,7 @@ func TestRegistryTokenExchangeScope(t *testing.T) {
 	if err != nil {
 		t.Fatal(err)
 	}
-	svc := &RegistryTokenService{Issuer: iss, Key: key, Service: "svc", TokenIssuer: "lr", MaxTTL: 10 * time.Minute,
+	svc := &RegistryTokenService{Issuer: iss, Key: key, Service: "svc", TokenIssuer: "lr", BearerTTL: func() time.Duration { return 90 * time.Second },
 		Host: func() string { return "reg.example" }, now: func() time.Time { return now }}
 	tok, err := iss.Issue("reg.example/levelrail/app", "b1", time.Hour)
 	if err != nil {
@@ -58,7 +58,7 @@ func TestRegistryTokenExchangeScope(t *testing.T) {
 		t.Fatal(err)
 	}
 	c := decodeJWT(t, jwt, &key.PublicKey)
-	if len(accessOf(c)) != 1 || c["aud"] != "svc" || exp.Sub(now) != 10*time.Minute {
+	if len(accessOf(c)) != 1 || c["aud"] != "svc" || exp.Sub(now) != 90*time.Second {
 		t.Fatalf("own repo grant wrong: %v exp %v", c, exp)
 	}
 	for name, scopes := range map[string][]string{
@@ -83,10 +83,57 @@ func TestRegistryTokenExchangeScope(t *testing.T) {
 	if _, _, err := svc.Exchange(tok, []string{"repository:levelrail/app:push,pull"}); !errors.Is(err, ErrPushTokenRevoked) {
 		t.Errorf("revoked: %v", err)
 	}
-	if err := ValidateInsecureHost("203.0.113.9:5000"); err == nil {
-		t.Error("public insecure host accepted")
+}
+
+func TestMintPullAndTTL(t *testing.T) {
+	now := time.Unix(1_000_000, 0)
+	key, _ := ecdsa.GenerateKey(elliptic.P256(), rand.Reader)
+	svc := &RegistryTokenService{Issuer: testIssuer(t, &now), Key: key, Service: "svc", TokenIssuer: "lr",
+		BearerTTL: func() time.Duration { return 90 * time.Second }, Host: func() string { return "reg.example" }, now: func() time.Time { return now }}
+	jwt, err := svc.MintPull("levelrail/app")
+	if err != nil {
+		t.Fatal(err)
 	}
-	if err := ValidateInsecureHost("10.0.0.4:5000"); err != nil {
-		t.Errorf("private host rejected: %v", err)
+	c := decodeJWT(t, jwt, &key.PublicKey)
+	acc := accessOf(c)
+	if len(acc) != 1 || c["aud"] != "svc" || c["iss"] != "lr" || int64(c["exp"].(float64)) != now.Add(90*time.Second).Unix() {
+		t.Fatalf("pull bearer wrong: %v", c)
+	}
+	if a := acc[0].(map[string]any); a["name"] != "levelrail/app" || len(a["actions"].([]any)) != 1 || a["actions"].([]any)[0] != "pull" {
+		t.Fatalf("pull bearer must be pull only: %v", a)
+	}
+	svc.BearerTTL = nil
+	if _, err := svc.MintPull("x"); err == nil {
+		t.Error("no ttl source must fail closed")
+	}
+	tok, _ := svc.Issuer.Issue("reg.example/levelrail/app", "b1", time.Hour)
+	if _, _, err := svc.Exchange(tok, []string{"repository:levelrail/app:pull,push"}); err == nil {
+		t.Error("no ttl source must fail closed on exchange")
+	}
+	svc.BearerTTL = func() time.Duration { return 90 * time.Second }
+	j, _, err := svc.Exchange(tok, []string{"repository:levelrail/app:pull,push"})
+	if err != nil || len(accessOf(decodeJWT(t, j, &key.PublicKey))) != 1 {
+		t.Errorf("pull,push order must be granted: %v", err)
+	}
+}
+
+func TestValidateInsecureHost(t *testing.T) {
+	for host, allowCGNAT := range map[string]bool{"10.0.0.4:5000": false, "192.168.1.2": false, "127.0.0.1:5000": false, "localhost:5000": false, "100.64.1.2:5000": true} {
+		if err := ValidateInsecureHost(host, allowCGNAT); err != nil {
+			t.Errorf("%s rejected: %v", host, err)
+		}
+	}
+	for host, allowCGNAT := range map[string]bool{"203.0.113.9:5000": true, "100.64.1.2:5000": false, "reg.example": false} {
+		if err := ValidateInsecureHost(host, allowCGNAT); err == nil {
+			t.Errorf("%s accepted", host)
+		}
+	}
+}
+
+func TestCertBundlePEMMatchesKeyID(t *testing.T) {
+	key, _ := ecdsa.GenerateKey(elliptic.P256(), rand.Reader)
+	b, err := CertBundlePEM(key, time.Now(), time.Hour)
+	if err != nil || !strings.Contains(string(b), "BEGIN CERTIFICATE") {
+		t.Fatalf("bundle: %v", err)
 	}
 }

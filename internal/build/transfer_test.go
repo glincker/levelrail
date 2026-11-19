@@ -88,15 +88,31 @@ func TestPushAuthConfigScopes(t *testing.T) {
 		host   string
 		scopes []string
 	}{
-		"cache pull":  {"reg.example", []string{"repository:levelrail/app-cache:pull"}},
-		"other repo":  {"reg.example", []string{"repository:library/alpine:pull"}},
-		"pull only":   {"reg.example", []string{"repository:levelrail/app:pull"}},
-		"extra scope": {"reg.example", []string{"repository:levelrail/app:push,pull", "repository:x/y:pull"}},
-		"no scopes":   {"reg.example", nil},
-		"other host":  {"other.example", []string{"repository:levelrail/app:push,pull"}},
+		"cache pull":   {"reg.example", []string{"repository:levelrail/app-cache:pull"}},
+		"other repo":   {"reg.example", []string{"repository:library/alpine:pull"}},
+		"pull only":    {"reg.example", []string{"repository:levelrail/app:pull"}},
+		"extra scope":  {"reg.example", []string{"repository:levelrail/app:push,pull", "repository:x/y:pull"}},
+		"other host":   {"other.example", []string{"repository:levelrail/app:push,pull"}},
+		"nil other":    {"other.example", nil},
+		"extra action": {"reg.example", []string{"repository:levelrail/app:push,pull,delete"}},
+		"push only":    {"reg.example", []string{"repository:levelrail/app:push"}},
 	} {
 		if got := f(c.host, c.scopes); got.Password != "" || got.Username != "" {
 			t.Errorf("%s: credential leaked", name)
+		}
+	}
+}
+
+func TestPushAuthConfigActionOrderAndNilScopes(t *testing.T) {
+	f := pushAuthConfig("reg.example", "levelrail/app", "tok")
+	for _, sc := range [][]string{
+		{"repository:levelrail/app:pull,push"},
+		{"repository:levelrail/app:push,pull"},
+		{"levelrail/app:pull,push"},
+		nil,
+	} {
+		if got := f("reg.example", sc); got.Password != "tok" {
+			t.Errorf("scopes %v must get the token", sc)
 		}
 	}
 }
@@ -127,7 +143,7 @@ func TestDispatchFollowsNodeCapability(t *testing.T) {
 			return err
 		},
 		transfer: func(context.Context) TransferConfig {
-			return TransferConfig{Mode: TransferRegistry, RegistryHost: "reg.example", TokenTTL: time.Minute,
+			return TransferConfig{Mode: TransferRegistry, TokenAuth: true, RegistryHost: "reg.example", TokenTTL: time.Minute,
 				Issuer: testIssuer(t, &now), Verifier: okVerifier{},
 				Pull: func(context.Context, string, string, string) error { return nil }}
 		}}
@@ -138,5 +154,52 @@ func TestDispatchFollowsNodeCapability(t *testing.T) {
 	}
 	if len(nodes.pushed) != 2 || !nodes.pushed[0] || nodes.pushed[1] {
 		t.Fatalf("capable node must use registry and old node tar, got %v", nodes.pushed)
+	}
+}
+
+type failNodes struct {
+	capNodes
+	err   error
+	calls []bool
+}
+
+func (f *failNodes) BuildOnNode(_ context.Context, _ string, req RemoteRequest, _ io.Writer, _ func(ProgressEvent)) (*Result, error) {
+	f.calls = append(f.calls, req.Push != nil)
+	if req.Push != nil {
+		return nil, f.err
+	}
+	return &Result{Digest: "sha256:" + strings.Repeat("a", 64)}, nil
+}
+
+func TestDispatchFallsBackToTarOnPushAuthFailure(t *testing.T) {
+	now := time.Unix(1_000_000, 0)
+	cfg := func(tokenAuth bool) func(context.Context) TransferConfig {
+		return func(context.Context) TransferConfig {
+			return TransferConfig{Mode: TransferRegistry, TokenAuth: tokenAuth, RegistryHost: "reg.example", TokenTTL: time.Minute,
+				Issuer: testIssuer(t, &now), Verifier: okVerifier{},
+				Pull: func(context.Context, string, string, string) error { return nil }}
+		}
+	}
+	newRouter := func(n *failNodes, tokenAuth bool) *Router {
+		return &Router{remote: n, logger: slog.New(slog.DiscardHandler), transfer: cfg(tokenAuth),
+			load: func(_ context.Context, rd io.Reader, _ string, _ func(ProgressEvent)) error {
+				_, err := io.Copy(io.Discard, rd)
+				return err
+			}}
+	}
+	n := &failNodes{capNodes: capNodes{capable: map[string]bool{"n": true}}, err: errors.New("push: failed to fetch anonymous token: 401 Unauthorized")}
+	if _, err := newRouter(n, true).dispatchWith(context.Background(), "n", RemoteRequest{Tag: "levelrail/app:b1"}, nil); err != nil {
+		t.Fatalf("auth failure must fall back: %v", err)
+	}
+	if len(n.calls) != 2 || !n.calls[0] || n.calls[1] {
+		t.Fatalf("want registry then tar, got %v", n.calls)
+	}
+	n = &failNodes{capNodes: capNodes{capable: map[string]bool{"n": true}}, err: errors.New("compile error in step 3")}
+	if _, err := newRouter(n, true).dispatchWith(context.Background(), "n", RemoteRequest{Tag: "levelrail/app:b1"}, nil); err == nil || len(n.calls) != 1 {
+		t.Fatalf("a real build failure must not fall back: %v %v", err, n.calls)
+	}
+	n = &failNodes{capNodes: capNodes{capable: map[string]bool{"n": true}}}
+	if _, err := newRouter(n, false).dispatchWith(context.Background(), "n", RemoteRequest{Tag: "levelrail/app:b1"}, nil); err != nil || len(n.calls) != 1 || n.calls[0] {
+		t.Fatalf("registry not in token mode must use tar: %v %v", err, n.calls)
 	}
 }

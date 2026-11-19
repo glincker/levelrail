@@ -1,13 +1,31 @@
 package api
 
 import (
+	"context"
 	"encoding/json"
 	"net/http"
 	"strings"
+	"sync"
 	"time"
 
 	"github.com/GLINCKER/levelrail/internal/build"
+	"github.com/GLINCKER/levelrail/internal/runtimesettings"
 )
+
+// registryTokenLimiters keeps one limiter per router, apart from the sign-in buckets.
+var registryTokenLimiters sync.Map
+
+func (rt *Router) registryTokenLimiter() *apiRateLimiter {
+	if l, ok := registryTokenLimiters.Load(rt); ok {
+		return l.(*apiRateLimiter)
+	}
+	l := newAPIRateLimiter(rt.runtimeSettings.Limit(context.Background(), runtimesettings.KeyRegistryTokenRateLimit))
+	l.source = func() int {
+		return rt.runtimeSettings.Limit(context.Background(), runtimesettings.KeyRegistryTokenRateLimit)
+	}
+	actual, _ := registryTokenLimiters.LoadOrStore(rt, l)
+	return actual.(*apiRateLimiter)
+}
 
 // WithRegistryTokenService enables the registry bearer token endpoint used only
 // when build.transfer_mode is registry. Nil keeps it answering 501.
@@ -23,7 +41,13 @@ func (rt *Router) handleRegistryToken(w http.ResponseWriter, r *http.Request) {
 		http.Error(w, "registry token auth is not enabled", http.StatusNotImplemented)
 		return
 	}
-	if ok, retry := rt.codeLogin.redeemByIP.allow("regtok|" + clientIP(r)); !ok {
+	_, pass, ok := r.BasicAuth()
+	// Invalid tokens have no nonce and share one bucket per address; a valid job gets its own.
+	nonce := ""
+	if svc.Issuer != nil {
+		nonce = svc.Issuer.Nonce(pass)
+	}
+	if allowed, retry := rt.registryTokenLimiter().allow(clientIP(r) + "|" + nonce); !allowed {
 		writeRateLimited(w, retry)
 		return
 	}
@@ -31,7 +55,6 @@ func (rt *Router) handleRegistryToken(w http.ResponseWriter, r *http.Request) {
 		w.Header().Set("WWW-Authenticate", `Basic realm="registry"`)
 		w.WriteHeader(http.StatusUnauthorized)
 	}
-	_, pass, ok := r.BasicAuth()
 	q := r.URL.Query()
 	if !ok || pass == "" || q.Get("service") != svc.Service {
 		deny()

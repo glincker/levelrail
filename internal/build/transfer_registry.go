@@ -7,11 +7,14 @@ import (
 	"crypto/rand"
 	"crypto/sha256"
 	"crypto/x509"
+	"crypto/x509/pkix"
 	"encoding/base32"
 	"encoding/base64"
 	"encoding/json"
+	"encoding/pem"
 	"errors"
 	"fmt"
+	"math/big"
 	"net"
 	"net/http"
 	"net/netip"
@@ -80,8 +83,9 @@ func (c *RegistryClient) ManifestDigest(ctx context.Context, repo, reference str
 	}
 }
 
-// ValidateInsecureHost allows plain HTTP only for loopback, private or CGNAT/WireGuard-range addresses.
-func ValidateInsecureHost(host string) error {
+// ValidateInsecureHost allows plain HTTP only for loopback and private (RFC1918, ULA) addresses,
+// which covers the mesh; the shared CGNAT range 100.64.0.0/10 needs an explicit opt-in.
+func ValidateInsecureHost(host string, allowCGNAT bool) error {
 	h, _, err := net.SplitHostPort(host)
 	if err != nil {
 		h = host
@@ -93,11 +97,28 @@ func ValidateInsecureHost(host string) error {
 	if err != nil {
 		return fmt.Errorf("build: insecure registry %q must be an IP address on a private network", host)
 	}
-	cgnat := netip.MustParsePrefix("100.64.0.0/10")
-	if ip.IsLoopback() || ip.IsPrivate() || cgnat.Contains(ip) {
+	ip = ip.Unmap()
+	if ip.IsLoopback() || ip.IsPrivate() {
+		return nil
+	}
+	if allowCGNAT && netip.MustParsePrefix("100.64.0.0/10").Contains(ip) {
 		return nil
 	}
 	return fmt.Errorf("build: insecure registry %q is not loopback or private", host)
+}
+
+// CertBundlePEM wraps the signing key in a self-signed certificate, the form the registry's trusted bundle takes.
+func CertBundlePEM(key *ecdsa.PrivateKey, now time.Time, validFor time.Duration) ([]byte, error) {
+	tmpl := &x509.Certificate{
+		SerialNumber: big.NewInt(1), Subject: pkix.Name{CommonName: "levelrail-registry-token"},
+		NotBefore: now.Add(-time.Hour), NotAfter: now.Add(validFor),
+		KeyUsage: x509.KeyUsageDigitalSignature, BasicConstraintsValid: true,
+	}
+	der, err := x509.CreateCertificate(rand.Reader, tmpl, tmpl, &key.PublicKey, key)
+	if err != nil {
+		return nil, fmt.Errorf("build: registry token certificate: %w", err)
+	}
+	return pem.EncodeToMemory(&pem.Block{Type: "CERTIFICATE", Bytes: der}), nil
 }
 
 // RegistryAccess is one entry of a distribution token's access claim.
@@ -115,8 +136,9 @@ type RegistryTokenService struct {
 	Host        func() string
 	Service     string
 	TokenIssuer string
-	MaxTTL      time.Duration
-	now         func() time.Time
+	// BearerTTL is the live bearer lifetime; builds refresh through Exchange so revocation applies.
+	BearerTTL func() time.Duration
+	now       func() time.Time
 }
 
 // ErrRegistryScope is returned when the request asks for nothing the job token grants.
@@ -125,7 +147,7 @@ var ErrRegistryScope = errors.New("build: no requested scope is granted by this 
 // Exchange grants push and pull on the job's single repository only; pull-only
 // requests and every other repository get an empty grant, never an error.
 func (s *RegistryTokenService) Exchange(pushToken string, scopes []string) (string, time.Time, error) {
-	if s.Issuer == nil || s.Key == nil || s.Host == nil || s.Host() == "" {
+	if s.Issuer == nil || s.Key == nil || s.Host == nil || s.Host() == "" || s.ttl() <= 0 {
 		return "", time.Time{}, errors.New("build: registry token service is not configured")
 	}
 	var access []RegistryAccess
@@ -153,9 +175,9 @@ func (s *RegistryTokenService) Exchange(pushToken string, scopes []string) (stri
 		if _, err := s.Issuer.parse(pushToken); err != nil {
 			return "", time.Time{}, err
 		}
-		return s.sign(nil, s.nowT().Add(time.Minute))
+		return s.sign(nil, s.nowT().Add(s.ttl()))
 	}
-	exp := s.nowT().Add(s.MaxTTL)
+	exp := s.nowT().Add(s.ttl())
 	if tokExp.Before(exp) {
 		exp = tokExp
 	}
@@ -164,11 +186,18 @@ func (s *RegistryTokenService) Exchange(pushToken string, scopes []string) (stri
 
 // MintPull gives the control plane a short pull-only token for one repository.
 func (s *RegistryTokenService) MintPull(name string) (string, error) {
-	if s.Key == nil || name == "" {
+	if s.Key == nil || name == "" || s.ttl() <= 0 {
 		return "", errors.New("build: registry token service is not configured")
 	}
-	tok, _, err := s.sign([]RegistryAccess{{Type: "repository", Name: name, Actions: []string{"pull"}}}, s.nowT().Add(time.Minute))
+	tok, _, err := s.sign([]RegistryAccess{{Type: "repository", Name: name, Actions: []string{"pull"}}}, s.nowT().Add(s.ttl()))
 	return tok, err
+}
+
+func (s *RegistryTokenService) ttl() time.Duration {
+	if s.BearerTTL == nil {
+		return 0
+	}
+	return s.BearerTTL()
 }
 
 func hasAction(list, want string) bool {

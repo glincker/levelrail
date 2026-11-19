@@ -81,6 +81,7 @@ build.cache_reclaim_timeout
 build.cpu_percent
 build.memory_percent
 build.stage_log_tail_lines
+build.transfer_bearer_ttl
 build.transfer_mode
 build.transfer_push_ttl
 builds.memory_limit_mb
@@ -418,6 +419,7 @@ registry.dockerhub.limits_cache_seconds
 registry.dockerhub.tag_page_size
 registry.dockerhub.use_credential
 registry.mirror_prefix
+registry.token_rate_limit_rpm
 resources.description_max_chars
 resources.notes_max_bytes
 retention.ai_history_days

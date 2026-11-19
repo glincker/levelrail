@@ -2,6 +2,7 @@ package main
 
 import (
 	"context"
+	"crypto/ecdsa"
 	"crypto/rand"
 	"encoding/pem"
 	"errors"
@@ -19,6 +20,7 @@ import (
 	dockerclient "github.com/docker/docker/client"
 
 	"github.com/GLINCKER/levelrail/internal/build"
+	registryreconcile "github.com/GLINCKER/levelrail/internal/reconcile/registry"
 	"github.com/GLINCKER/levelrail/internal/runtimesettings"
 	"github.com/GLINCKER/levelrail/internal/store"
 )
@@ -31,6 +33,9 @@ type registryTransfer struct {
 	issuer *build.PushTokenIssuer
 	tokens *build.RegistryTokenService
 	host   atomic.Value
+	// ttl holds the live bearer TTL reader; settings lets the reconciler read build.transfer_mode itself.
+	ttl      atomic.Value
+	settings atomic.Pointer[runtimesettings.Service]
 }
 
 var (
@@ -76,21 +81,72 @@ func newRegistryTransfer(logger *slog.Logger) *registryTransfer {
 	}
 	t := &registryTransfer{issuer: issuer}
 	t.tokens = &build.RegistryTokenService{
-		Issuer: issuer, Key: key, Service: "levelrail-registry", TokenIssuer: "levelrail",
-		MaxTTL: 10 * time.Minute,
+		Issuer: issuer, Key: key, Service: registryTokenService, TokenIssuer: registryTokenIssuer,
+		BearerTTL: func() time.Duration {
+			return t.bearerTTL()
+		},
 		Host: func() string {
 			h, _ := t.host.Load().(string)
 			return h
 		},
 	}
+	t.installTokenAuth(key, logger)
 	sharedTransferMu.Lock()
 	sharedTransfer = t
 	sharedTransferMu.Unlock()
 	return t
 }
 
+//nolint:gosec // public service names and a URL path, not credentials
+const (
+	registryTokenService = "levelrail-registry"
+	registryTokenIssuer  = "levelrail"
+	registryTokenPath    = "/api/v1/registry/token"
+)
+
+// bearerTTL reads the live setting; before settings are attached it is zero, which fails closed.
+func (t *registryTransfer) bearerTTL() time.Duration {
+	if f, ok := t.ttl.Load().(func() time.Duration); ok {
+		return f()
+	}
+	return 0
+}
+
+// installTokenAuth lets the registry reconciler switch to token auth, but only while
+// transfer_mode is registry and a realm URL is known; otherwise htpasswd stays.
+func (t *registryTransfer) installTokenAuth(key *ecdsa.PrivateKey, logger *slog.Logger) {
+	bundle, err := build.CertBundlePEM(key, time.Now(), registryCertValidity)
+	if err != nil {
+		logger.Warn("registry transfer disabled: signing certificate could not be built")
+		return
+	}
+	registryreconcile.SetTokenAuthSource(func(ctx context.Context) *registryreconcile.TokenAuth {
+		st := t.settings.Load()
+		if st == nil {
+			return nil
+		}
+		if m, err := build.ParseTransferMode(st.String(ctx, runtimesettings.KeyBuildTransferMode)); err != nil || m != build.TransferRegistry {
+			return nil
+		}
+		base := dashboardBaseURL()
+		if base == "" {
+			return nil
+		}
+		return &registryreconcile.TokenAuth{Realm: base + registryTokenPath, Service: registryTokenService, Issuer: registryTokenIssuer, CertBundlePEM: bundle}
+	})
+}
+
+// registryCertValidity is long because the certificate only carries the public key.
+const registryCertValidity = 10 * 365 * 24 * time.Hour
+
 // config is read on every build so build.transfer_mode applies live.
 func (t *registryTransfer) config(db *store.DB, settings *runtimesettings.Service, cli *dockerclient.Client, logger *slog.Logger) func(ctx context.Context) build.TransferConfig {
+	if t != nil {
+		t.settings.Store(settings)
+		t.ttl.Store(func() time.Duration {
+			return settings.Duration(context.Background(), runtimesettings.KeyBuildTransferBearerTTL)
+		})
+	}
 	return func(ctx context.Context) build.TransferConfig {
 		mode, err := build.ParseTransferMode(settings.String(ctx, runtimesettings.KeyBuildTransferMode))
 		if err != nil || mode != build.TransferRegistry || t == nil {
@@ -102,7 +158,8 @@ func (t *registryTransfer) config(db *store.DB, settings *runtimesettings.Servic
 		}
 		insecure := strings.EqualFold(os.Getenv("APP_BUILD_TRANSFER_INSECURE"), "true")
 		if insecure {
-			if err := build.ValidateInsecureHost(rs.Host); err != nil {
+			allowCGNAT := strings.EqualFold(os.Getenv("APP_BUILD_TRANSFER_ALLOW_CGNAT"), "true")
+			if err := build.ValidateInsecureHost(rs.Host, allowCGNAT); err != nil {
 				logger.Warn("registry transfer disabled: insecure registry host is not private")
 				return build.TransferConfig{Mode: build.TransferTar}
 			}
@@ -110,7 +167,7 @@ func (t *registryTransfer) config(db *store.DB, settings *runtimesettings.Servic
 		}
 		t.host.Store(rs.Host)
 		return build.TransferConfig{
-			Mode: mode, RegistryHost: rs.Host, Insecure: insecure,
+			Mode: mode, RegistryHost: rs.Host, Insecure: insecure, TokenAuth: registryreconcile.TokenAuthActive(),
 			TokenTTL: settings.Duration(ctx, runtimesettings.KeyBuildTransferPushTTL),
 			Issuer:   t.issuer,
 			Verifier: &build.RegistryClient{Insecure: insecure, Bearer: t.tokens.MintPull},

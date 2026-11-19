@@ -2,8 +2,10 @@ package build
 
 import (
 	"context"
+	"errors"
 	"fmt"
 	"log/slog"
+	"strings"
 	"time"
 )
 
@@ -13,6 +15,8 @@ type TransferConfig struct {
 	// RegistryHost is the control plane registry host the builder can reach.
 	RegistryHost string
 	Insecure     bool
+	// TokenAuth is true only when the registry is confirmed to run in token-auth mode.
+	TokenAuth bool
 	// TokenTTL should cover the build timeout plus slack; the token dies with the job.
 	TokenTTL time.Duration
 	Issuer   *PushTokenIssuer
@@ -27,7 +31,7 @@ type PushCapable interface {
 }
 
 func (c TransferConfig) ready() bool {
-	return c.Mode == TransferRegistry && c.RegistryHost != "" && c.TokenTTL > 0 &&
+	return c.Mode == TransferRegistry && c.TokenAuth && c.RegistryHost != "" && c.TokenTTL > 0 &&
 		c.Issuer != nil && c.Verifier != nil && c.Pull != nil
 }
 
@@ -46,7 +50,29 @@ func (r *Router) dispatchWith(ctx context.Context, nodeID string, req RemoteRequ
 	if pc, ok := r.remote.(PushCapable); !ok || !pc.NodeSupportsBuildPush(nodeID) {
 		return r.dispatch(ctx, nodeID, req, progress)
 	}
-	return r.dispatchRegistry(ctx, nodeID, req, cfg, progress)
+	res, err := r.dispatchRegistry(ctx, nodeID, req, cfg, progress)
+	var pe *pushAuthError
+	if err != nil && errors.As(err, &pe) && ctx.Err() == nil {
+		r.logger.Warn("build: registry push was refused, using tar", slog.String("node_id", nodeID))
+		return r.dispatch(ctx, nodeID, req, progress)
+	}
+	return res, err
+}
+
+// pushAuthError marks a build failure that came from the registry refusing the push.
+type pushAuthError struct{ err error }
+
+func (e *pushAuthError) Error() string { return e.err.Error() }
+func (e *pushAuthError) Unwrap() error { return e.err }
+
+func isPushAuthFailure(err error) bool {
+	m := strings.ToLower(err.Error())
+	for _, h := range []string{"unauthorized", "401", "insufficient_scope", "authentication required", "failed to fetch oauth token", "failed to fetch anonymous token", "denied: requested access"} {
+		if strings.Contains(m, h) {
+			return true
+		}
+	}
+	return false
 }
 
 // dispatchRegistry has the builder push by digest, then trusts the digest only
@@ -73,7 +99,11 @@ func (r *Router) dispatchRegistry(ctx context.Context, nodeID string, req Remote
 	// No image frames come back in this mode, so the writer is a discard.
 	res, err := r.remote.BuildOnNode(ctx, nodeID, req, discardWriter{}, progress)
 	if err != nil {
-		return nil, fmt.Errorf("build: on node %s: %w", nodeID, err)
+		wrapped := fmt.Errorf("build: on node %s: %w", nodeID, err)
+		if isPushAuthFailure(err) {
+			return nil, &pushAuthError{err: wrapped}
+		}
+		return nil, wrapped
 	}
 	if err := VerifyPushedDigest(ctx, cfg.Verifier, ref, res.Digest); err != nil {
 		return nil, err
