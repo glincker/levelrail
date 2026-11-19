@@ -21,7 +21,8 @@ jobs:
   linux-packages:
     name: Build CLI deb and rpm
     # Release can end red on an unrelated verify job after the assets are published, so accept success or failure.
-    if: github.event_name == 'workflow_dispatch' || github.event.workflow_run.conclusion == 'success' || github.event.workflow_run.conclusion == 'failure'
+    # A dry run publishes nothing, so it is never packaged.
+    if: github.event_name == 'workflow_dispatch' || ((github.event.workflow_run.conclusion == 'success' || github.event.workflow_run.conclusion == 'failure') && !startsWith(github.event.workflow_run.display_title, 'Dry run'))
     runs-on: ubuntu-latest
     timeout-minutes: 15
     continue-on-error: true
