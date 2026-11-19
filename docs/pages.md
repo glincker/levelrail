@@ -235,6 +235,16 @@ A plain HTML form on a site can post to `/_forms/<form-name>` on the site's own 
 
 Browser posts redirect to the form's redirect URL or show a built-in thank-you page; `fetch()` with `Accept: application/json` gets `{"ok":true}`. Spam is dropped quietly (honeypot, link count), and posts are limited per IP and by body size. The limits and retention come from `FORMS_RATE_PER_IP_PER_MINUTE`, `FORMS_MAX_BODY_BYTES` and `FORMS_RETENTION_DAYS`. Submissions keep a salted hash of the sender address, never the address. Read them in the site's Forms tab or with `levelrail-cli pages submissions <site>`; `GET /api/v1/static-sites/{name}/submissions` returns them across forms. A password-protected site keeps the gate in front of the form route.
 
+## Deploy hook
+
+A git-connected site can have a secret URL that redeploys its branch when anything POSTs to it, such as a CMS publish, a CI job or a cron. Create it in the site's settings or with `levelrail-cli pages hook create <site>`; the URL is shown once and only its hash is stored. `pages hook rotate` replaces it and the old URL stops at once, `pages hook rm` revokes it.
+
+```bash
+curl -X POST https://levelrail.example.com/api/v1/hooks/pages/docs/<secret>
+```
+
+The call answers `202` with the deploy id when the deploy started, `409` while a deploy is already running or deploys are frozen, `429` when called too often (limits shared with build hooks) and `404` for an unknown site or a wrong secret. Each call is audited without the secret. Sites without a git source cannot have a hook. `GET /api/v1/static-sites/{name}/hook` returns only `{enabled, created_at}`.
+
 ## Traffic over time
 
 The site page shows a small requests chart with a 24 hour, 7 day and 30 day toggle. `GET /api/v1/static-sites/{name}/traffic?range=24h|7d|30d` returns a `series` array of buckets, each with `start`, `requests`, `pages`, `assets` and `errors` (4xx and 5xx). Recent buckets come from the edge access log and older hours from the stored hourly rollups, so history survives a restart.

@@ -24,6 +24,7 @@ Usage:
   levelrail-cli pages routes list|add|rm <name> ...
   levelrail-cli pages settings show|set <name> [flags]
   levelrail-cli pages submissions <site> | rm <site> <form> <id> [flags]
+  levelrail-cli pages hook create|rotate|rm|show <site> [flags]
 
 Publishes a folder or .zip as a static site: no build, no source control.
 The upload limit comes from APP_UPLOAD_MAX_BYTES. "deploy" accepts every flag of "levelrail-cli deploy".
@@ -51,6 +52,7 @@ Usage:
   levelrail-cli pages routes list|add|rm <name> ...
   levelrail-cli pages settings show|set <name> [flags]
   levelrail-cli pages submissions <site> | rm <site> <form> <id> [flags]
+  levelrail-cli pages hook create|rotate|rm|show <site> [flags]
 
 Publishes a folder or .zip as a static site: no build, no source control.
 The upload limit comes from APP_UPLOAD_MAX_BYTES. "deploy" accepts every flag of "levelrail-cli deploy".

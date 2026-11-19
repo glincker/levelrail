@@ -48,6 +48,8 @@ func runPages(prog string, args []string, stdout, stderr io.Writer, lookupEnv fu
 		return runStaticRoutes(prog, rest, stdout, stderr, lookupEnv)
 	case "submissions":
 		return runPagesSubmissions(prog, rest, stdout, stderr, lookupEnv)
+	case "hook":
+		return runPagesHook(prog, rest, stdout, stderr, lookupEnv)
 	default:
 		_, _ = fmt.Fprintf(stderr, "%s: unknown pages subcommand %q\n\n", prog, args[0])
 		_, _ = fmt.Fprint(stderr, pagesUsage(prog))
@@ -73,6 +75,7 @@ func pagesUsage(prog string) string {
   %[1]s pages routes list|add|rm <name> ...
   %[1]s pages settings show|set <name> [flags]
   %[1]s pages submissions <site> | rm <site> <form> <id> [flags]
+  %[1]s pages hook create|rotate|rm|show <site> [flags]
 
 Publishes a folder or .zip as a static site: no build, no source control.
 The upload limit comes from %[2]s. "deploy" accepts every flag of "%[1]s deploy".
