@@ -5,10 +5,12 @@ import (
 	"net/http"
 	"net/http/httptest"
 	"path/filepath"
+	"strings"
 	"testing"
 
 	"github.com/GLINCKER/levelrail/internal/staticroutes"
 	"github.com/GLINCKER/levelrail/internal/store"
+	"golang.org/x/crypto/bcrypt"
 )
 
 func TestStaticSiteSettingsAndRules(t *testing.T) {
@@ -131,5 +133,34 @@ func TestStaticSettingsNormaliseOutputAndPlaceholderImage(t *testing.T) {
 	}
 	if code, _ = do(http.MethodPatch, "/api/v1/static-sites/other/settings", `{"output_dir":"dist"}`); code != http.StatusNotFound {
 		t.Fatalf("foreign :pending image = %d, want 404", code)
+	}
+}
+
+func TestStaticSiteSettingsPasswordGate(t *testing.T) {
+	rt, db := newTestRouter(t)
+	cookie := loginTestSession(t, rt, db)
+	seedStaticSite(t, db, t.TempDir(), "docs", "d.example.com")
+	seedApp(t, db, "docs")
+	do := func(method, body string) (int, string) {
+		rec := httptest.NewRecorder()
+		rt.Handler().ServeHTTP(rec, authedRequest(t, cookie, method, "/api/v1/static-sites/docs/settings", body))
+		return rec.Code, rec.Body.String()
+	}
+	if code, _ := do(http.MethodPatch, `{"password":"short"}`); code != http.StatusUnprocessableEntity {
+		t.Fatalf("short password = %d, want 422", code)
+	}
+	code, body := do(http.MethodPatch, `{"password":"correct horse battery"}`)
+	if code != http.StatusOK || !strings.Contains(body, `"protected":true`) || strings.Contains(body, "correct horse") || strings.Contains(body, "$2") {
+		t.Fatalf("set password: %d %s", code, body)
+	}
+	hash, err := db.GetStaticSitePasswordHash(t.Context(), "docs")
+	if err != nil || bcrypt.CompareHashAndPassword([]byte(hash), []byte("correct horse battery")) != nil {
+		t.Fatalf("stored hash does not verify: %v", err)
+	}
+	if code, body = do(http.MethodGet, ""); code != http.StatusOK || !strings.Contains(body, `"protected":true`) {
+		t.Fatalf("get: %d %s", code, body)
+	}
+	if code, body = do(http.MethodPatch, `{"password":""}`); code != http.StatusOK || !strings.Contains(body, `"protected":false`) {
+		t.Fatalf("clear: %d %s", code, body)
 	}
 }

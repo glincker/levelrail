@@ -11,6 +11,7 @@ import (
 	"github.com/GLINCKER/levelrail/internal/spec"
 	"github.com/GLINCKER/levelrail/internal/staticroutes"
 	"github.com/GLINCKER/levelrail/internal/store"
+	"golang.org/x/crypto/bcrypt"
 )
 
 // staticSiteSettingsStore is implemented by *store.DB; a fake store without it
@@ -19,6 +20,12 @@ type staticSiteSettingsStore interface {
 	GetStaticSiteSettings(ctx context.Context, name string) (store.StaticSiteSettings, store.StaticUIRules, error)
 	SaveStaticSiteSettings(ctx context.Context, name string, s store.StaticSiteSettings) error
 	SaveStaticSiteUIRules(ctx context.Context, name string, r store.StaticUIRules) error
+}
+
+// staticSiteGateStore is the optional password gate half of the same store.
+type staticSiteGateStore interface {
+	GetStaticSitePasswordHash(ctx context.Context, name string) (string, error)
+	SetStaticSitePasswordHash(ctx context.Context, name, hash string) error
 }
 
 // staticSettingsResource is the stored overrides plus what the live site serves.
@@ -31,6 +38,8 @@ type staticSettingsResource struct {
 	CleanURLs     *bool  `json:"clean_urls"`
 	TrailingSlash string `json:"trailing_slash"`
 	NotFoundPage  string `json:"not_found_page"`
+	// Protected is true when a shared password gates the site; the hash never leaves the server.
+	Protected bool `json:"protected"`
 	// Effective is what the live deploy serves; empty before the first publish.
 	Effective staticroutes.Options `json:"effective"`
 }
@@ -45,6 +54,8 @@ type staticSettingsPatch struct {
 	TrailingSlash *string  `json:"trailing_slash"`
 	NotFoundPage  *string  `json:"not_found_page"`
 	Reset         []string `json:"reset"`
+	// Password sets the shared gate password; an empty string clears it.
+	Password *string `json:"password"`
 }
 
 type staticUIRulesBody struct {
@@ -126,9 +137,9 @@ func (rt *Router) isUnpublishedStaticApp(r *http.Request, name string) bool {
 	return err == nil && gs != nil && gs.BuildType == spec.BuildStatic
 }
 
-func (rt *Router) staticSettingsResource(site *store.StaticSite, s store.StaticSiteSettings) (staticSettingsResource, error) {
+func (rt *Router) staticSettingsResource(site *store.StaticSite, s store.StaticSiteSettings, protected bool) (staticSettingsResource, error) {
 	out := staticSettingsResource{Name: site.Name, BuildCommand: s.BuildCommand, OutputDir: s.OutputDir, SPAFallback: s.SPAFallback,
-		CleanURLs: s.CleanURLs, TrailingSlash: s.TrailingSlash, NotFoundPage: s.NotFoundPage}
+		CleanURLs: s.CleanURLs, TrailingSlash: s.TrailingSlash, NotFoundPage: s.NotFoundPage, Protected: protected}
 	if site.RootDir == "" {
 		return out, nil
 	}
@@ -153,12 +164,22 @@ func (rt *Router) handleGetStaticSiteSettings(w http.ResponseWriter, r *http.Req
 		rt.internalError(w, "api: static site settings: read", err, slog.String("name", site.Name))
 		return
 	}
-	out, err := rt.staticSettingsResource(site, s)
+	out, err := rt.staticSettingsResource(site, s, rt.siteProtected(r.Context(), site.Name))
 	if err != nil {
 		rt.internalError(w, "api: static site settings: live rules", err, slog.String("name", site.Name))
 		return
 	}
 	writeJSON(w, http.StatusOK, out)
+}
+
+// siteProtected reads the gate flag only; a store without the gate half reports open.
+func (rt *Router) siteProtected(ctx context.Context, name string) bool {
+	gs, ok := rt.staticSites.(staticSiteGateStore)
+	if !ok {
+		return false
+	}
+	h, err := gs.GetStaticSitePasswordHash(ctx, name)
+	return err == nil && h != ""
 }
 
 // applyStaticSettingsPatch validates p and applies it to s; the message is user facing.
@@ -226,6 +247,19 @@ func (rt *Router) handlePatchStaticSiteSettings(w http.ResponseWriter, r *http.R
 		writeError(w, http.StatusBadRequest, "invalid request body")
 		return
 	}
+	if p.Password != nil && !rt.callerHasAbility(r, AbilityWriteSensitive) {
+		writeError(w, http.StatusForbidden, "changing the site password needs the write:sensitive ability")
+		return
+	}
+	var pwHash *string
+	if p.Password != nil {
+		h, msg := hashSitePassword(*p.Password)
+		if msg != "" {
+			writeError(w, http.StatusUnprocessableEntity, msg)
+			return
+		}
+		pwHash = &h
+	}
 	s, ui, err := st.GetStaticSiteSettings(r.Context(), site.Name)
 	if err != nil {
 		rt.internalError(w, "api: static site settings: read", err, slog.String("name", site.Name))
@@ -239,11 +273,25 @@ func (rt *Router) handlePatchStaticSiteSettings(w http.ResponseWriter, r *http.R
 		rt.internalError(w, "api: static site settings: save", err, slog.String("name", site.Name))
 		return
 	}
+	if pwHash != nil {
+		gs, ok := rt.staticSites.(staticSiteGateStore)
+		if !ok {
+			writeError(w, http.StatusNotImplemented, "site passwords are not configured on this control plane")
+			return
+		}
+		if err := gs.SetStaticSitePasswordHash(r.Context(), site.Name, *pwHash); err != nil {
+			rt.internalError(w, "api: static site settings: save gate", err, slog.String("name", site.Name))
+			return
+		}
+		if rt.reconcileNudger != nil {
+			rt.reconcileNudger.Nudge()
+		}
+	}
 	if perr := rt.publishStaticUI(site, s, ui); perr != nil {
 		rt.internalError(w, "api: static site settings: apply to live site", perr, slog.String("name", site.Name))
 		return
 	}
-	out, err := rt.staticSettingsResource(site, s)
+	out, err := rt.staticSettingsResource(site, s, rt.siteProtected(r.Context(), site.Name))
 	if err != nil {
 		rt.internalError(w, "api: static site settings: live rules", err, slog.String("name", site.Name))
 		return
@@ -381,4 +429,20 @@ func (rt *Router) handlePutStaticSiteRules(w http.ResponseWriter, r *http.Reques
 		rs, _ = staticroutes.Compile(staticroutes.Input{}, staticroutes.DefaultLimits())
 	}
 	writeJSON(w, http.StatusOK, effectiveRules(rs, ui, published))
+}
+
+// hashSitePassword validates pw against the env bounds and returns its bcrypt
+// hash; an empty pw clears the gate and yields an empty hash.
+func hashSitePassword(pw string) (string, string) {
+	if pw == "" {
+		return "", ""
+	}
+	if err := spec.ValidatePagesPassword(pw, os.LookupEnv); err != nil {
+		return "", err.Error()
+	}
+	h, err := bcrypt.GenerateFromPassword([]byte(pw), bcrypt.DefaultCost)
+	if err != nil {
+		return "", "password could not be hashed"
+	}
+	return string(h), ""
 }

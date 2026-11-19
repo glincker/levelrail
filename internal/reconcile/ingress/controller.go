@@ -814,6 +814,10 @@ func (c *Controller) Reconcile(ctx context.Context) (reconcile.Result, error) {
 	if err != nil {
 		return notReady("StoreError", err), fmt.Errorf("ingress: list static sites: %w", err)
 	}
+	siteGates, err := c.staticSiteGates(ctx)
+	if err != nil {
+		return notReady("StoreError", err), fmt.Errorf("ingress: list static site gates: %w", err)
+	}
 	settings, err := c.store.GetIngressSettings(ctx)
 	if err != nil {
 		return notReady("StoreError", err), fmt.Errorf("ingress: get ingress settings: %w", err)
@@ -1147,13 +1151,12 @@ func (c *Controller) Reconcile(ctx context.Context) (reconcile.Result, error) {
 			c.logger.WarnContext(ctx, "ingress: static site routing rules unreadable, serving files without them",
 				slog.String("static_site", site.Name), slog.String("error", rulesErr.Error()))
 		}
-		staticRoutes = append(staticRoutes, c.staticRoutesFor(ctx, site, rules, authByDomain)...)
-		gated := false
-		for _, d := range site.Domains {
-			_, g := authByDomain[d]
-			gated = gated || g
+		siteGate := siteGates[site.Name]
+		staticRoutes = append(staticRoutes, c.staticRoutesFor(ctx, site, rules, authByDomain, siteGate)...)
+		deployAuth, deployOK := c.deployGate(ctx, site, authByDomain, siteGate)
+		if deployOK {
+			staticRoutes = append(staticRoutes, c.staticDeployRoutes(ctx, site, deployHost, deployAuth, claimedHosts)...)
 		}
-		staticRoutes = append(staticRoutes, c.staticDeployRoutes(ctx, site, deployHost, gated, claimedHosts)...)
 	}
 
 	// Platform primary domain (store.IngressSettings.PrimaryDomain): one
@@ -2087,7 +2090,7 @@ func withoutHosts(hosts []string, drop map[string]bool) []string {
 // staticRoutesFor splits a site's hosts so each gated host gets its own
 // route with basic auth; a gated host whose account cannot be resolved is
 // dropped (fail closed) rather than served publicly.
-func (c *Controller) staticRoutesFor(ctx context.Context, site store.StaticSite, rules *staticroutes.Ruleset, authByDomain map[string]store.DomainBasicAuth) []ingress.StaticRoute {
+func (c *Controller) staticRoutesFor(ctx context.Context, site store.StaticSite, rules *staticroutes.Ruleset, authByDomain map[string]store.DomainBasicAuth, siteGate *ingress.BasicAuthAccount) []ingress.StaticRoute {
 	var open []string
 	var routes []ingress.StaticRoute
 	for _, host := range site.Domains {
@@ -2103,7 +2106,47 @@ func (c *Controller) staticRoutesFor(ctx context.Context, site store.StaticSite,
 		routes = append(routes, ingress.StaticRoute{Hosts: []string{host}, RootDir: site.RootDir, Rules: rules, BasicAuth: account})
 	}
 	if len(open) > 0 {
-		routes = append([]ingress.StaticRoute{{Hosts: open, RootDir: site.RootDir, Rules: rules}}, routes...)
+		routes = append([]ingress.StaticRoute{{Hosts: open, RootDir: site.RootDir, Rules: rules, BasicAuth: siteGate}}, routes...)
 	}
 	return routes
+}
+
+// staticSiteGateUser is the fixed username of a site's shared password gate.
+const staticSiteGateUser = "site"
+
+// staticSiteGateStore is implemented by *store.DB; a store without it means no site is gated.
+type staticSiteGateStore interface {
+	ListStaticSitePasswordHashes(ctx context.Context) (map[string]string, error)
+}
+
+// staticSiteGates maps site name to its basic auth account; the stored value is already a bcrypt hash.
+func (c *Controller) staticSiteGates(ctx context.Context) (map[string]*ingress.BasicAuthAccount, error) {
+	gs, ok := c.store.(staticSiteGateStore)
+	if !ok {
+		return nil, nil
+	}
+	hashes, err := gs.ListStaticSitePasswordHashes(ctx)
+	if err != nil {
+		return nil, err
+	}
+	out := make(map[string]*ingress.BasicAuthAccount, len(hashes))
+	for name, h := range hashes {
+		out[name] = &ingress.BasicAuthAccount{Username: staticSiteGateUser, Password: h}
+	}
+	return out, nil
+}
+
+// deployGate picks the account guarding a site's per-deploy hosts: the site
+// password, else the first gated domain's credential. false means a gated
+// domain could not be resolved, so no deploy host is served (fail closed).
+func (c *Controller) deployGate(ctx context.Context, site store.StaticSite, authByDomain map[string]store.DomainBasicAuth, siteGate *ingress.BasicAuthAccount) (*ingress.BasicAuthAccount, bool) {
+	if siteGate != nil {
+		return siteGate, true
+	}
+	for _, d := range site.Domains {
+		if auth, gated := authByDomain[d]; gated {
+			return c.resolveBasicAuthAccount(ctx, d, auth)
+		}
+	}
+	return nil, true
 }

@@ -11,9 +11,9 @@ import (
 
 // staticDeployRoutes serves each retained deploy of a site on its own
 // immutable host, so a past deploy can be opened before it is promoted. A
-// gated site gets none, because the deploy host would bypass the gate.
-func (c *Controller) staticDeployRoutes(ctx context.Context, site store.StaticSite, fallbackHost string, gated bool, claimed map[string]string) []ingress.StaticRoute {
-	if gated || fallbackHost == "" || site.RootDir == "" {
+// gated site's deploy hosts carry the same credential as the site itself.
+func (c *Controller) staticDeployRoutes(ctx context.Context, site store.StaticSite, fallbackHost string, auth *ingress.BasicAuthAccount, claimed map[string]string) []ingress.StaticRoute {
+	if fallbackHost == "" || site.RootDir == "" {
 		return nil
 	}
 	svcDir := filepath.Dir(filepath.Clean(site.RootDir))
@@ -35,7 +35,7 @@ func (c *Controller) staticDeployRoutes(ctx context.Context, site store.StaticSi
 		}
 		claimed[host] = site.Name
 		rules, _ := staticroutes.LoadSidecar(d.Dir)
-		routes = append(routes, ingress.StaticRoute{Hosts: []string{host}, RootDir: d.Dir, Rules: rules})
+		routes = append(routes, ingress.StaticRoute{Hosts: []string{host}, RootDir: d.Dir, Rules: rules, BasicAuth: auth})
 	}
 	return routes
 }
