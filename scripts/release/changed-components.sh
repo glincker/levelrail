@@ -25,11 +25,11 @@ extra=()
 case "$component" in
 mcp)
 	cmd=./cmd/levelrail-mcp
-	extra=(scripts/build-mcp-npm-packages.sh scripts/render-mcp-server-json.mjs server.json deploy/packaging/npm/README-mcp.md)
+	extra=(scripts/build-mcp-npm-packages.sh scripts/render-mcp-server-json.mjs server.json deploy/packaging/npm/levelrail-mcp.js deploy/packaging/npm/README-mcp.md LICENSE)
 	;;
 cli)
 	cmd=./cmd/levelrail-cli
-	extra=(scripts/build-npm-packages.sh deploy/packaging/npm/ deploy/packaging/homebrew/ scripts/render-homebrew-formula.sh scripts/release/gen-windows-manifests.sh scripts/release/gen-aur-nix.sh scripts/release/build-cli-packages.sh)
+	extra=(scripts/build-npm-packages.sh deploy/packaging/npm/ LICENSE deploy/packaging/homebrew/ scripts/render-homebrew-formula.sh scripts/release/gen-windows-manifests.sh scripts/release/gen-aur-nix.sh scripts/release/build-cli-packages.sh)
 	;;
 agent)
 	cmd=./cmd/levelrail-agent

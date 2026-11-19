@@ -648,15 +648,17 @@ jobs:
           fetch-depth: 0
 
       # Skipped, not failed, until the owner adds the deploy key. The mirror
-      # only gets a new version when the provider changed since the last tag.
+      # only gets a new version when the provider changed since the last tag,
+      # unless publish_all asks for a repair sync.
       - name: Sync the provider into the mirror and tag it
         if: env.HAS_MIRROR_KEY == 'true'
         env:
           MIRROR_DEPLOY_KEY: ${{ secrets.TF_MIRROR_DEPLOY_KEY }}
+          PUBLISH_ALL: ${{ inputs.publish_all && 'true' || 'false' }}
         run: |
           set -euo pipefail
           prev="$(git describe --tags --abbrev=0 --match 'v*' "${{ env.RELEASE_TAG }}^" 2>/dev/null || true)"
-          if [ -n "$prev" ] && git diff --quiet "$prev" "${{ env.RELEASE_TAG }}" -- integrations/terraform-provider; then
+          if [ "$PUBLISH_ALL" != "true" ] && [ -n "$prev" ] && git diff --quiet "$prev" "${{ env.RELEASE_TAG }}" -- integrations/terraform-provider; then
             echo "provider unchanged since $prev, nothing to sync"
             exit 0
           fi
@@ -1405,3 +1407,65 @@ jobs:
             sleep 30
           done
           exit 1
+
+  # The publish jobs assemble their npm packages only after the release job,
+  # which a dry run never reaches, so a dry run assembles them here instead.
+  dry-run-npm-packages:
+    name: Assemble npm packages (dry run)
+    needs: [build-cli-binaries, build-mcp-binaries]
+    if: inputs.dry_run && !cancelled() && needs.build-cli-binaries.result == 'success'
+    runs-on: ubuntu-latest
+    timeout-minutes: 10
+    permissions:
+      contents: read
+    steps:
+      - name: Checkout
+        uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7
+        with:
+          ref: ${{ env.RELEASE_TAG }}
+          persist-credentials: false
+
+      - name: Download CLI binaries
+        uses: actions/download-artifact@9000827ccba6bdab643e8b6fd33ac0654aef8333 # v8
+        with:
+          pattern: cli-binary-*
+          path: dist
+          merge-multiple: true
+
+      - name: Download MCP binaries
+        if: needs.build-mcp-binaries.result == 'success'
+        uses: actions/download-artifact@9000827ccba6bdab643e8b6fd33ac0654aef8333 # v8
+        with:
+          pattern: mcp-binary-*
+          path: dist
+          merge-multiple: true
+
+      - name: Set up Node
+        uses: actions/setup-node@949feb2413d6458794dcd2491c4babbbce0c15c1 # v7
+        with:
+          node-version: 22
+
+      # npm pack --dry-run validates each package.json and lists the files a
+      # publish would upload, without contacting the registry.
+      - name: Build and pack the packages without publishing
+        env:
+          HAS_MCP: ${{ needs.build-mcp-binaries.result == 'success' }}
+        run: |
+          set -euo pipefail
+          scripts/build-npm-packages.sh "$RELEASE_TAG" dist npm-out/cli
+          if [ "$HAS_MCP" = "true" ]; then
+            scripts/build-mcp-npm-packages.sh "$RELEASE_TAG" dist npm-out/mcp
+          else
+            echo "::notice::MCP binaries were not built (NPM_PUBLISH_ENABLED off), MCP packages not assembled"
+          fi
+          {
+            echo "### npm packages a publish would upload (dry run)"
+            echo
+          } >> "$GITHUB_STEP_SUMMARY"
+          # Each builder resets its own output directory, so they get one each.
+          for dir in npm-out/*/*/; do
+            name=$(node -p "require('./${dir}package.json').name")
+            version=$(node -p "require('./${dir}package.json').version")
+            (cd "$dir" && npm pack --dry-run >/dev/null)
+            echo "- ${name}@${version}" >> "$GITHUB_STEP_SUMMARY"
+          done
