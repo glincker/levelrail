@@ -9,6 +9,7 @@ Subcommands: delete, deploy, domains, list, rollback, routes, settings, show
 ```
 Usage:
   levelrail-cli pages deploy <dir|zip> [--name N] [--domain D] [flags]
+  levelrail-cli pages deploy --git <url> [--branch b] [--build-command c] [--output-dir d] [--name N]
   levelrail-cli pages list [flags]
   levelrail-cli pages show <name> [flags]
   levelrail-cli pages delete <name> [flags]
@@ -30,6 +31,7 @@ Subcommands: add, status
 ```
 Usage:
   levelrail-cli pages deploy <dir|zip> [--name N] [--domain D] [flags]
+  levelrail-cli pages deploy --git <url> [--branch b] [--build-command c] [--output-dir d] [--name N]
   levelrail-cli pages list [flags]
   levelrail-cli pages show <name> [flags]
   levelrail-cli pages delete <name> [flags]
