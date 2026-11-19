@@ -51,6 +51,7 @@ for tool in curl jq; do
 done
 export LEVELRAIL_API_URL="${LEVELRAIL_URL%/}"
 export LEVELRAIL_TOKEN
+export APP_API_URL="$LEVELRAIL_API_URL" APP_API_TOKEN="$LEVELRAIL_TOKEN"
 
 cleanup() {
   local rc=$?
@@ -66,7 +67,7 @@ trap cleanup EXIT
 
 WORK="$(mktemp -d)"
 if [ -z "$CLI" ]; then
-  (cd "$(dirname "$0")/.." && go build -o "$WORK/levelrail" ./cmd/levelrail)
+  (cd "$(dirname "$0")/.." && go build -o "$WORK/levelrail" ./cmd/levelrail-cli)
   CLI="$WORK/levelrail"
 fi
 
