@@ -39,6 +39,8 @@ func runNodes(prog string, args []string, stdout, stderr io.Writer, lookupEnv fu
 		return runNodesUncordon(prog, rest, stdout, stderr, lookupEnv)
 	case "drain":
 		return runNodesDrain(prog, rest, stdout, stderr, lookupEnv)
+	case "build-trust":
+		return runNodesBuildTrust(prog, rest, stdout, stderr, lookupEnv)
 	case "workloads":
 		return runNodesWorkloads(prog, rest, stdout, stderr, lookupEnv)
 	case "health":
@@ -167,6 +169,7 @@ func nodesUsage(prog string) string {
   %[1]s nodes failure-resolve <id> <kind> <name> --wait|--restore    decide for an app or database with node-local data
   %[1]s nodes allocations [flags]                                requested versus allocatable CPU, memory and disk per node
   %[1]s nodes connectivity [flags]                                   WireGuard health of every node pair
+  %[1]s nodes build-trust <node> <server|managed|personal>           set a node's builder tier
   %[1]s nodes workloads <id> --accepts-app --accepts-build [flags]   set a node's accepted workload kinds
   %[1]s nodes health <id> [flags]                                    show a node's current reconcile conditions
   %[1]s nodes patch-status <id> [flags]                              show a node's latest available-OS-updates reading

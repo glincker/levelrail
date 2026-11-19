@@ -70,6 +70,8 @@ type nodeResource struct {
 	Provider  string    `json:"provider,omitempty"`
 	Zone      string    `json:"zone,omitempty"`
 	CreatedAt time.Time `json:"created_at"`
+	// BuildTrust is the builder tier (server, managed or personal), set on list and get.
+	BuildTrust string `json:"build_trust,omitempty"`
 	// AlertStatus is only populated by handleGetNode (a single-node
 	// fetch), never handleListNodes: it costs a handful of live metrics
 	// queries per kind, which is fine for one node on its own detail page
@@ -268,9 +270,11 @@ func (rt *Router) handleListNodes(w http.ResponseWriter, r *http.Request) {
 		counts, _ = cs.NodeResourceCounts(r.Context())
 	}
 	failures := rt.failureSummaries(r.Context())
+	tiers := rt.nodeBuildTrusts(r.Context())
 	out := make([]nodeResource, 0, len(nodes))
 	for _, n := range nodes {
 		res := toNodeResource(n)
+		res.BuildTrust = tiers[n.ID]
 		res.Failure = failures[n.ID]
 		res.IsLocal = n.ID == rt.localNodeID
 		res.ResourceCount = counts[n.ID]
@@ -309,6 +313,7 @@ func (rt *Router) handleGetNode(w http.ResponseWriter, r *http.Request) {
 	}
 
 	res := toNodeResource(*n)
+	res.BuildTrust = rt.nodeBuildTrusts(r.Context())[n.ID]
 	rt.fillNodeWorkloads(r.Context(), &res)
 	res.IsLocal = n.ID == rt.localNodeID
 	res.StatusReason = nodeStatusReason(*n, time.Now(), nodePendingStaleAfter())

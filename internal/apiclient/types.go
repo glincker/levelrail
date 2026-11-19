@@ -3355,6 +3355,8 @@ type NodeResource struct {
 	Provider              string    `json:"provider,omitempty"`
 	Zone                  string    `json:"zone,omitempty"`
 	CreatedAt             time.Time `json:"created_at"`
+	// BuildTrust is the builder tier: server, managed or personal.
+	BuildTrust string `json:"build_trust,omitempty"`
 	// AlertStatus is only set by GET /api/v1/nodes/{id} (a single-node
 	// fetch), never the list endpoint; nil when telemetry isn't
 	// configured on the control plane.

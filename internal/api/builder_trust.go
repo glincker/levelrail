@@ -35,6 +35,21 @@ type BuilderTrustStore interface {
 	SetEnvironmentBuilders(ctx context.Context, envID string, allowed []string, now time.Time) error
 }
 
+// nodeBuildTrusts maps node ID to tier, empty when the store cannot report it.
+func (rt *Router) nodeBuildTrusts(ctx context.Context) map[string]string {
+	l, ok := rt.nodes.(interface {
+		ListNodeBuildTrust(ctx context.Context) (map[string]string, error)
+	})
+	if !ok {
+		return nil
+	}
+	m, err := l.ListNodeBuildTrust(ctx)
+	if err != nil {
+		return nil
+	}
+	return m
+}
+
 type setNodeBuildTrustRequest struct {
 	BuildTrust string `json:"build_trust"`
 }
