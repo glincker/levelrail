@@ -20,7 +20,7 @@ func (r StaticRoute) formsRoute() (Route, bool) {
 		return Route{}, false
 	}
 	rp := NewReverseProxyHandler(r.FormsDial)
-	rp.Rewrite = &ProxyRewrite{URI: "/api/v1/forms/" + r.FormsApp + "/{http.regexp.lrform.1}"}
+	rp.Rewrite = &ProxyRewrite{URI: "/api/v1/forms/" + escapePlaceholders(r.FormsApp) + "/{http.regexp.lrform.1}"}
 	if len(r.FormsHeaders) > 0 {
 		rp.setRequestHeaders(r.FormsHeaders)
 	}

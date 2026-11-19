@@ -102,3 +102,47 @@ func TestProxyStripsCredentialHeaders(t *testing.T) {
 		t.Fatalf("cookie must be deleted: %s", open)
 	}
 }
+
+// Only placeholders the code itself emits may appear unescaped in a static site config.
+func TestStaticSiteConfigHasNoInjectedPlaceholders(t *testing.T) {
+	evil := "{env.SECRET}{file.x}{http.request.header.Cookie}"
+	for _, host := range []string{"a" + evil + ".example.com"} {
+		_, err := BuildRoutesConfig(RoutesOptions{ServerName: "ingress", ListenAddr: ":8443",
+			StaticRoutes: []StaticRoute{{Hosts: []string{host}, RootDir: t.TempDir()}}})
+		if err == nil {
+			t.Fatal("a host with braces must be rejected")
+		}
+	}
+	s := proxyConfig(t, StaticRoute{
+		FormsDial: "10.0.0.9:8080", FormsApp: "app" + evil,
+		FormsHeaders: map[string][]string{"X-Hop": {"fixed"}},
+		// Basic auth values are a fixed username and a hash, and Caddy does not expand them.
+		BasicAuth: &BasicAuthAccount{Username: "site", Password: "hash"},
+		Proxies: []StaticProxy{
+			{From: "/" + evil + "/*", Path: "/p" + evil + "/:splat", Dial: "10.0.0.5:3000"},
+			{From: "/x" + evil, Path: "/y" + evil},
+			{From: "/down" + evil + "/*", Path: "/z" + evil},
+		},
+	})
+	cfg, err := BuildRoutesConfig(RoutesOptions{ServerName: "ingress", ListenAddr: ":8443",
+		StaticRoutes: []StaticRoute{{Hosts: []string{"a.example.com"}, RootDir: "/srv/" + evil}}})
+	if err != nil {
+		t.Fatal(err)
+	}
+	raw, _ := json.Marshal(cfg)
+	s += string(raw)
+	// JSON escapes a backslash as \\, so an escaped brace reads \\{ here.
+	for _, bad := range []string{"{env.", "{file.", "{http.request.header.Cookie"} {
+		for i := 0; ; {
+			j := strings.Index(s[i:], bad)
+			if j < 0 {
+				break
+			}
+			at := i + j
+			if at == 0 || s[at-1] != '\\' {
+				t.Fatalf("unescaped %q at %d: %s", bad, at, s[max(0, at-40):min(len(s), at+60)])
+			}
+			i = at + len(bad)
+		}
+	}
+}

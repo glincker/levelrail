@@ -39,7 +39,7 @@ type FileServerHandler struct {
 // NewFileServerHandler builds the one handler shape a static route
 // needs: serve files from root for everything matched by the route.
 func NewFileServerHandler(root string) FileServerHandler {
-	return FileServerHandler{Handler: "file_server", Root: root}
+	return FileServerHandler{Handler: "file_server", Root: escapePlaceholders(root)}
 }
 
 // ProxyRoute is one reverse-proxy backend routed by hostname within a
@@ -698,6 +698,12 @@ func BuildRoutesConfig(opts RoutesOptions) (*Config, error) {
 		}
 		if r.RootDir == "" {
 			return nil, fmt.Errorf("ingress: build routes config: static route %d has no root directory", i)
+		}
+		// The host matcher expands placeholders, and no real hostname holds a brace.
+		for _, h := range r.Hosts {
+			if strings.ContainsAny(h, "{}") {
+				return nil, fmt.Errorf("ingress: build routes config: static route %d has an invalid host", i)
+			}
 		}
 		staticHandle := []any{NewStaticEncodeHandler(), NewFileServerHandler(r.RootDir)}
 		if r.Rules != nil {
