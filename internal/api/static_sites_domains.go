@@ -36,6 +36,8 @@ type staticSiteDomainResponse struct {
 	Verified bool               `json:"verified"`
 	Cert     string             `json:"cert"`
 	Detail   string             `json:"detail,omitempty"`
+	// Diagnosis is only set by the status route.
+	Diagnosis []siteDiagnosis `json:"diagnosis,omitempty"`
 }
 
 // handleAddStaticSiteDomain handles POST /api/v1/static-sites/{name}/domains:
@@ -154,5 +156,6 @@ func (rt *Router) handleStaticSiteDomainStatus(w http.ResponseWriter, r *http.Re
 			}
 		}
 	}
+	out.Diagnosis = rt.siteDomainDiagnosis(r.Context(), name, domain)
 	writeJSON(w, http.StatusOK, out)
 }

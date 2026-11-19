@@ -44,6 +44,15 @@ type StaticSiteDomain struct {
 	Verified bool                     `json:"verified"`
 	Cert     string                   `json:"cert"`
 	Detail   string                   `json:"detail,omitempty"`
+	// Diagnosis is the status route's checklist.
+	Diagnosis []StaticSiteDiagnosis `json:"diagnosis,omitempty"`
+}
+
+// StaticSiteDiagnosis is one row of a domain's status checklist.
+type StaticSiteDiagnosis struct {
+	Code string `json:"code"`
+	OK   bool   `json:"ok"`
+	Hint string `json:"hint"`
 }
 
 // CreateStaticSite calls POST /api/v1/static-sites.

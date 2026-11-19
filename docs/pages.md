@@ -200,6 +200,10 @@ levelrail pages domains status docs docs.example.com
 
 `pages deploy` zips the folder (skipping `.git`, `node_modules` and dotfiles other than `_redirects`, `_headers` and `.well-known`), creates the site if it is missing, uploads, publishes and prints the live URL. A `.zip` works too. `levelrail deploy ./dist` prints a hint toward `pages deploy` when the folder has an `index.html` and no Dockerfile or compose file.
 
+## Domain checklist
+
+`GET /api/v1/static-sites/{name}/domains/{domain}/status` also returns a `diagnosis` list of `{code, ok, hint}` rows: DNS pointing at this host (A, AAAA, CNAME, CDN proxy), propagation, ports 80 and 443, certificate and CA failure reason, a private or CGNAT host address, and whether `www` and the apex agree. It reuses the [domain doctor](/domain-diagnosis), so the same time limits apply (`APP_DOMAIN_DOCTOR_TIMEOUT`, `APP_DOMAIN_DOCTOR_PROBE_TIMEOUT`). Port checks only run when the domain resolves to this server. The dashboard shows the rows as a compact checklist on the domain card and `pages domains status` prints them.
+
 ## Traffic over time
 
 The site page shows a small requests chart with a 24 hour, 7 day and 30 day toggle. `GET /api/v1/static-sites/{name}/traffic?range=24h|7d|30d` returns a `series` array of buckets, each with `start`, `requests`, `pages`, `assets` and `errors` (4xx and 5xx). Recent buckets come from the edge access log and older hours from the stored hourly rollups, so history survives a restart.

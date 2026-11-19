@@ -4,7 +4,14 @@ import (
 	"encoding/json"
 	"net/http"
 	"testing"
+
+	"github.com/GLINCKER/levelrail/internal/domaindoctor"
 )
+
+func quietDoctorProbes(ip string) *domaindoctor.Probes {
+	called := false
+	return &domaindoctor.Probes{DNS: doctorFakeDNS{ips: []string{ip}}, TLS: doctorFakeTLS{called: &called}, HTTP: doctorFakeTLS{called: &called}}
+}
 
 func TestStaticSiteDomainAttach(t *testing.T) {
 	tests := []struct {
@@ -37,6 +44,7 @@ func TestStaticSiteDomainAttach(t *testing.T) {
 				t.Fatalf("zone records = %d, want %d", len(f.mgr.recs), tc.wantZone)
 			}
 
+			f.rt.traffic.doctorProbes = quietDoctorProbes("203.0.113.5")
 			st := f.do(t, http.MethodGet, "/api/v1/static-sites/web/domains/"+tc.domain+"/status", "")
 			if st.Code != http.StatusOK {
 				t.Fatalf("status route = %d body = %s", st.Code, st.Body.String())
@@ -60,5 +68,45 @@ func TestStaticSiteDomainRejectsBadInput(t *testing.T) {
 	}
 	if rec := f.do(t, http.MethodGet, "/api/v1/static-sites/web/domains/other.example.com/status", ""); rec.Code != http.StatusNotFound {
 		t.Fatalf("unattached status = %d", rec.Code)
+	}
+}
+
+func TestStaticSiteDomainDiagnosis(t *testing.T) {
+	f := newGoLiveFixture(t, "203.0.113.5")
+	seedAppWithDomains(t, f.db)
+	f.do(t, http.MethodPost, "/api/v1/static-sites/web/domains", `{"domain":"site.example.com"}`)
+	// Public DNS answers a different address, so the pointing check must fail.
+	f.rt.traffic.doctorProbes = quietDoctorProbes("198.51.100.9")
+
+	st := f.do(t, http.MethodGet, "/api/v1/static-sites/web/domains/site.example.com/status", "")
+	var sv staticSiteDomainResponse
+	if err := json.Unmarshal(st.Body.Bytes(), &sv); err != nil {
+		t.Fatalf("decode: %v", err)
+	}
+	got := map[string]siteDiagnosis{}
+	for _, d := range sv.Diagnosis {
+		if d.Hint == "" {
+			t.Errorf("%s has no hint", d.Code)
+		}
+		got[d.Code] = d
+	}
+	if d, ok := got[domaindoctor.IDDNSPointsHere]; !ok || d.OK {
+		t.Fatalf("points_here = %+v in %+v", d, sv.Diagnosis)
+	}
+	if d, ok := got[diagCodePrivate]; !ok || !d.OK {
+		t.Fatalf("private row = %+v", d)
+	}
+	if d, ok := got[diagCodeACME]; !ok || !d.OK {
+		t.Fatalf("acme row = %+v", d)
+	}
+}
+
+func TestShortHint(t *testing.T) {
+	long := ""
+	for range 50 {
+		long += "word "
+	}
+	if got := shortHint(long); len([]rune(got)) > siteDiagnosisHintMax {
+		t.Fatalf("hint len = %d", len([]rune(got)))
 	}
 }

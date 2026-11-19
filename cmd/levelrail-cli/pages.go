@@ -295,6 +295,7 @@ func printPagesDomain(out io.Writer, d staticSiteDomain) {
 	if d.Detail != "" {
 		_, _ = fmt.Fprintln(out, d.Detail)
 	}
+	printPagesDiagnosis(out, d.Diagnosis)
 }
 
 func pagesHasFlag(args []string, name string) bool {
