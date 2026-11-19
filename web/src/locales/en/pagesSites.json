@@ -30,7 +30,7 @@
     "drop": "Upload",
     "blank": "Starter",
     "blankHint": "Starts with a single index page you can replace later.",
-    "git": "Deploy from a git repository instead",
+    "git": "Git",
     "create": "Create and publish",
     "creating": "Working...",
     "cancel": "Cancel",
@@ -306,5 +306,57 @@
     "saved": "Routing rules saved",
     "invalid": "Some rules need fixing",
     "testHint": "Tests run against the saved rules."
+  },
+  "git": {
+    "repo": "Repository",
+    "repoPlaceholder": "Search your repositories or paste a URL",
+    "detecting": "Detecting framework...",
+    "unreadable": "Could not read that repository. Check the URL, or connect the account in the app flow for a private repo.",
+    "detected": "Detected build",
+    "plainHtml": "Plain HTML",
+    "static": "Static",
+    "notStatic": "Server app",
+    "branch": "Branch",
+    "command": "Build command",
+    "commandPlaceholder": "None, publish the files as they are",
+    "output": "Output directory",
+    "outputPlaceholder": "Repository root",
+    "serverWarning": "This repository looks like a server app, not a static site.",
+    "useAppFlow": "Use the app flow",
+    "forceStatic": "Deploy as static anyway",
+    "create": "Create and deploy",
+    "stage": {
+      "cloning": "Cloning the repository...",
+      "building": "Building and publishing...",
+      "ready": "Published"
+    },
+    "step": {
+      "site": "creating the site",
+      "source": "connecting the repository",
+      "build": "saving build settings",
+      "deploy": "starting the build"
+    },
+    "failedStep": "Failed while {{step}}: {{message}}",
+    "viewLog": "Open build log",
+    "fixSettings": "Fix settings",
+    "card": {
+      "title": "Git",
+      "repo": "Repository",
+      "branch": "Branch",
+      "commit": "Last commit",
+      "none": "none yet",
+      "onPush": "Deploy on push",
+      "onPushOn": "On, every push to {{branch}} deploys.",
+      "onPushRelease": "Tags only, a pushed tag deploys.",
+      "onPushHint": "Change the trigger in the app's Git settings.",
+      "openApp": "Git settings",
+      "redeploy": "Redeploy",
+      "redeploying": "Redeploying...",
+      "redeployFailed": "Could not start the deploy: {{message}}",
+      "redeployStarted": "Deploy started.",
+      "previews": "Branch previews",
+      "previewOpen": "Open preview",
+      "pr": "PR #{{number}}"
+    }
   }
 }

@@ -1,5 +1,4 @@
-import { useState, type FormEvent } from 'react'
-import { Link } from '@tanstack/react-router'
+import { lazy, Suspense, useState, type FormEvent } from 'react'
 import { useTranslation } from 'react-i18next'
 import { Alert, AlertDescription } from '@/components/ui/alert'
 import { Button } from '@/components/ui/button'
@@ -12,6 +11,7 @@ import {
 import { Input } from '@/components/ui/input'
 import { Label } from '@/components/ui/label'
 import { Progress } from '@/components/ui/progress'
+import { Skeleton } from '@/components/ui/skeleton'
 import { SegmentedControl } from '@/components/ui/segmented-control'
 import { SiteDropZone } from '../dropdeploy/SiteDropZone'
 import { useDropPublish } from '../../hooks/useDropPublish'
@@ -25,7 +25,10 @@ import { suggestSiteName } from './pageHelpers'
 import { starterSelection, type StarterId } from './starters'
 import { StarterGallery } from './starters/StarterGallery'
 
-type Mode = 'drop' | 'blank'
+// Git mode loads on demand so the pages list keeps its first-load budget.
+const GitSiteMode = lazy(() => import('./git/GitSiteMode'))
+
+type Mode = 'drop' | 'blank' | 'git'
 
 /** Compact create flow: name prefilled, then a drop (folder or zip) or a blank starter page. */
 export function NewSiteDialog({
@@ -47,15 +50,19 @@ export function NewSiteDialog({
   const [typedName, setTypedName] = useState<string | null>(null)
   const [createError, setCreateError] = useState<string | null>(null)
   const [creating, setCreating] = useState(false)
+  const [gitBusy, setGitBusy] = useState(false)
+  const [gitRepoName, setGitRepoName] = useState('')
 
   const name =
     typedName ??
-    (selection
-      ? siteNameFrom(selection.label) || suggestSiteName(existingNames)
-      : suggestSiteName(existingNames))
+    (mode === 'git' && gitRepoName
+      ? gitRepoName
+      : selection
+        ? siteNameFrom(selection.label) || suggestSiteName(existingNames)
+        : suggestSiteName(existingNames))
   const taken = existingNames.includes(name)
   const nameInvalid = !APP_NAME_PATTERN.test(name) || taken
-  const busy = creating || phase.state === 'busy'
+  const busy = creating || gitBusy || phase.state === 'busy'
   const ready = mode === 'blank' || selection !== null
   const failure =
     createError ??
@@ -126,10 +133,11 @@ export function NewSiteDialog({
                 aria-label={t('new.mode')}
                 value={mode}
                 disabled={busy}
-                onValueChange={(v) => setMode(v === 'blank' ? 'blank' : 'drop')}
+                onValueChange={setMode}
                 options={[
                   { value: 'drop', label: t('new.drop') },
                   { value: 'blank', label: t('new.blank') },
+                  { value: 'git', label: t('new.git') },
                 ]}
               />
             </div>
@@ -139,7 +147,17 @@ export function NewSiteDialog({
             >
               {taken ? t('new.nameTaken') : t('new.nameHint')}
             </p>
-            {mode === 'drop' ? (
+            {mode === 'git' ? (
+              <Suspense fallback={<Skeleton className="h-32 w-full" />}>
+                <GitSiteMode
+                  name={name}
+                  nameInvalid={nameInvalid}
+                  onRepoName={setGitRepoName}
+                  onBusyChange={setGitBusy}
+                  onClose={() => handleOpenChange(false)}
+                />
+              </Suspense>
+            ) : mode === 'drop' ? (
               selection ? (
                 <div className="flex items-start justify-between gap-2 rounded-md border border-border px-3 py-2">
                   <SelectionSummary selection={selection} />
@@ -185,21 +203,17 @@ export function NewSiteDialog({
                 <AlertDescription>{failure}</AlertDescription>
               </Alert>
             ) : null}
-            <div className="flex flex-wrap items-center justify-between gap-2">
-              <Link
-                to="/apps/new"
-                className="text-xs text-muted-foreground underline-offset-2 hover:underline focus-visible:underline"
-              >
-                {t('new.git')}
-              </Link>
-              <Button
-                type="submit"
-                size="sm"
-                disabled={busy || nameInvalid || !ready}
-              >
-                {busy ? t('new.creating') : t('new.create')}
-              </Button>
-            </div>
+            {mode === 'git' ? null : (
+              <div className="flex justify-end">
+                <Button
+                  type="submit"
+                  size="sm"
+                  disabled={busy || nameInvalid || !ready}
+                >
+                  {busy ? t('new.creating') : t('new.create')}
+                </Button>
+              </div>
+            )}
           </form>
         )}
       </DialogContent>
