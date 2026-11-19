@@ -330,6 +330,7 @@ Endpoints for:
 | POST | /api/v1/settings/secret-providers/{name}/test | AbilityRoot | handleTestSecretProvider |
 | POST | /api/v1/settings/cloud-connections/oracle | AbilityRoot | handleCreateOracleConnection |
 | POST | /api/v1/auth/tokens/{id}/rotate | Public | handleRotateToken |
+| GET | /api/v1/auth/dev-login | Public | handleDevLogin |
 | GET | /api/v1/auth/2fa | Session |  |
 | POST | /api/v1/auth/2fa/setup | Session |  |
 | POST | /api/v1/auth/2fa/confirm | Session |  |

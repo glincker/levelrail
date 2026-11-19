@@ -41,6 +41,8 @@ func (rt *Router) registerAuthRoutes(mux *http.ServeMux) {
 	// the minting caller's own abilities; consuming is necessarily
 	// unauthenticated, gated by possession of the token itself, same
 	// shape as reset-password below.
+	rt.devLoginToken, _ = rt.devLoginEnabled()
+	mux.HandleFunc("GET /api/v1/auth/dev-login", rt.handleDevLogin)
 	mux.HandleFunc("POST /api/v1/auth/session-links", rt.requireAbility(AbilityRoot, rt.handleMintSessionLink))
 	mux.HandleFunc("POST /api/v1/auth/session-links/consume", rt.handleConsumeSessionLink)
 	mux.HandleFunc("GET /api/v1/auth/session-links/{token}/consume", rt.handleConsumeSessionLinkGET)

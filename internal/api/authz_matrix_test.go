@@ -51,6 +51,7 @@ var publicRoutes = map[string]string{ //nolint:gosec // route paths, not credent
 	"GET /api/v1/dev-mode":                           "login screen banner, boolean only",
 	"GET /api/v1/gate/check":                         "ingress forward auth, 404 without the per-process gate secret",
 	"GET /gate/login":                                "app sign-in handoff, mints a token only for a signed-in dashboard session",
+	"GET /api/v1/auth/dev-login":                     "local dev only, answers 404 unless APP_DEV_LOGIN_TOKEN passed its boot checks, loopback only, rate limited",
 	"POST /api/v1/auth/login":                        "credential exchange, rate limited",
 	"POST /api/v1/auth/register":                     "first-run setup, refuses once an admin exists",
 	"GET /api/v1/auth/setup-status":                  "tells the SPA whether to show first-run setup",

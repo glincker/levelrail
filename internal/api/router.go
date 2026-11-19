@@ -447,6 +447,8 @@ type Router struct {
 	// tokenRedeemRateLimit throttles the unauthenticated token-redeeming
 	// routes (reset-password, invite accept) per client IP. nil means unthrottled.
 	tokenRedeemRateLimit *apiRateLimiter
+	// devLoginToken is set only when dev token login passed its boot checks.
+	devLoginToken string
 	// fetchLatestRelease is handleGetUpdates' GitHub Releases lookup;
 	// always non-nil, defaulted to defaultFetchLatestRelease in
 	// NewRouter, overridable in tests the same way lookupHost is above.

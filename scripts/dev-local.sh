@@ -59,6 +59,16 @@ build_next() {
 	echo "dev-local: built in ${SECONDS}s"
 }
 
+# dev_login_token creates the dev-login token once per data dir (mode 0600, outside the repo).
+dev_login_token() {
+	local f="$dir/dev-login-token"
+	if [ ! -s "$f" ]; then
+		(umask 077 && LC_ALL=C tr -dc 'A-Za-z0-9' </dev/urandom | head -c 48 >"$f")
+	fi
+	chmod 600 "$f"
+	cat "$f"
+}
+
 start_api() {
 	# Env-gated experimental features are not on the Beta features page; turn them
 	# on locally so work in progress is visible. LOCAL_EXPERIMENTAL overrides.
@@ -69,7 +79,7 @@ start_api() {
 		APP_DEV_MODE=1 APP_MAIL_DEMO="${LOCAL_MAIL_DEMO:-1}" APP_DEV_FIXTURES_FILE="$repo_root/test/fixtures/dev-fixtures.yml" \
 		APP_DATA_DIR="$dir/data" APP_HTTP_ADDR="127.0.0.1:$api_port" APP_AGENT_ADDR="127.0.0.1:0" \
 		APP_INGRESS_HTTP_ADDR="127.0.0.1:0" APP_INGRESS_HTTPS_ADDR="127.0.0.1:0" \
-		APP_PUBLIC_HOST="${LOCAL_PUBLIC_HOST:-localhost}" \
+		APP_PUBLIC_HOST="${LOCAL_PUBLIC_HOST:-localhost}" APP_DEV_LOGIN_TOKEN="$(dev_login_token)" \
 		nohup "$dir/levelrail" >"$dir/server.log" 2>&1 &)
 }
 
@@ -91,6 +101,7 @@ bring_up() {
 	fi
 	if wait_api; then
 		echo "dev-local: up. UI http://127.0.0.1:$web_port  API http://127.0.0.1:$api_port  login dev/dev"
+		echo "dev-local: token sign-in for test browsers (never log or share): http://127.0.0.1:$web_port/api/v1/auth/dev-login?token=$(dev_login_token)&next=/"
 		return 0
 	fi
 	echo "dev-local: API did not come up, see $dir/server.log" >&2

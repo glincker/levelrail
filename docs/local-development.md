@@ -76,3 +76,11 @@ Checked on macOS (Apple silicon) with Docker Desktop. The same code path runs on
 ## Next step
 
 When you are ready for a real server, follow [Getting started](/getting-started).
+
+## Token sign-in for test browsers
+
+`scripts/dev-local.sh` creates a random token once per data directory (`dev-login-token`, mode 0600, outside the repo), exports it as `APP_DEV_LOGIN_TOKEN` and prints a ready URL of the form `http://127.0.0.1:<web port>/api/v1/auth/dev-login?token=...&next=/`. Opening it signs the browser in as the `dev` user and redirects to `next`, a same-origin path only, so browser automation skips the interactive sign-in approval.
+
+The route answers 404 unless every check passes: a non-release build with `APP_DEV_MODE=1`, a token of at least 32 characters, `APP_PUBLIC_HOST` set to `localhost` or `127.0.0.1`, and a loopback remote address and Host header. The token is read from the query only, is rate limited, is never logged, and each use is recorded as a dev token sign-in in the audit log.
+
+Never set `APP_DEV_LOGIN_TOKEN` on a real install. Release builds ignore it.
