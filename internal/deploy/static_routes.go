@@ -49,7 +49,7 @@ func authorizeProxyRules(ctx context.Context, req Request, rs *spec.StaticRulese
 			scope, err = req.ProxyAuthorizer(ctx, app)
 		}
 		if errors.Is(err, ErrProxyTargetDenied) {
-			return fmt.Errorf("routing rules: %s: proxy target app %q was not found or you lack read access to it", pr.Source, app)
+			return fmt.Errorf("routing rules: %s: proxy target app %q was not found or is not available to you", pr.Source, app)
 		}
 		if err != nil {
 			return fmt.Errorf("routing rules: %s: check proxy target: %w", pr.Source, err)

@@ -35,7 +35,7 @@ func TestProxyScopeHolds(t *testing.T) {
 			t.Errorf("%s: got %v want %v", tc.name, got, tc.want)
 		}
 	}
-	if !(&Controller{store: scopeOwnersStore{}}).proxyScopeHolds(context.Background(), &staticroutes.Ruleset{}, "api") {
-		t.Error("a ruleset with no recorded scope keeps serving")
+	if (&Controller{store: scopeOwnersStore{}}).proxyScopeHolds(context.Background(), &staticroutes.Ruleset{}, "api") {
+		t.Error("a ruleset with no recorded scope answers 502")
 	}
 }

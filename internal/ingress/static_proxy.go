@@ -68,6 +68,12 @@ func (r StaticRoute) proxyRoutes() []Route {
 				"X-Forwarded-Host":  {"{http.request.host}"},
 				"X-Forwarded-Proto": {"{http.request.scheme}"},
 			})
+			// The visitor's cookies and the site gate's credentials are not the target app's to see.
+			del := []string{"Cookie"}
+			if r.BasicAuth != nil {
+				del = append(del, "Authorization")
+			}
+			rp.Headers.Request.Delete = del
 			handle = []any{rp}
 		}
 		if r.BasicAuth != nil {

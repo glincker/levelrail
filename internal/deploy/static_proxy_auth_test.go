@@ -39,7 +39,7 @@ func TestProxyAuth_AuthorisedTargetDeploysAndRecordsScope(t *testing.T) {
 func TestProxyAuth_MissingAndForbiddenShareOneMessage(t *testing.T) {
 	_, _, err := deployProxy(t, Request{ProxyAuthorizer: func(context.Context, string) (string, error) { return "", ErrProxyTargetDenied }})
 	_, _, errNil := deployProxy(t, Request{})
-	if err == nil || errNil == nil || !strings.Contains(err.Error(), `proxy target app "my-api" was not found or you lack read access to it`) {
+	if err == nil || errNil == nil || !strings.Contains(err.Error(), `proxy target app "my-api" was not found or is not available to you`) {
 		t.Fatalf("want the shared message, got %v", err)
 	}
 	if err.Error() != errNil.Error() {

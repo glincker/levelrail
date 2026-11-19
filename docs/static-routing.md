@@ -136,9 +136,11 @@ How it behaves:
 - Proxy rules are served on the live site only. Per-deploy hosts and pull request previews serve files only.
 - When the target app does not exist, is not running, or is the site itself, the path answers 502 with a fixed message. The routing rules API marks the rule with `kind: proxy` and `target_state` (`ok`, `missing` or `self`), and the site checks card lists a proxy target that is not reachable.
 - Writing a dashboard rule needs read access to the target app. A rule for an app you cannot read, or one that does not exist, is refused with the same message. A rule that is the site itself is refused.
-- Who may name a target: a deploy that carries proxy rules is checked against the target app the same way as the dashboard rules, so the acting principal needs read access to it. A target that does not exist and one you cannot read fail with the same message, which names the target. A manual or upload deploy, including `source_url`, acts as the caller. A git push, hook or queued deploy has no interactive caller, so the target must be in the site's own team and project. Pull request previews drop proxy rules and say so in the deploy log.
+- Who may name a target: a deploy that carries proxy rules is checked against the target app the same way as the dashboard rules, so the acting principal needs deploy access to it. A target behind an access gate (auth gate or basic auth on any of its domains) or in a protected environment is refused with the same message as a missing one. A target that does not exist and one you cannot read fail with the same message, which names the target. A manual or upload deploy, including `source_url`, acts as the caller. A git push, hook or queued deploy has no interactive caller, so the target must be in the site's own team and project and pass the same gate checks. Pull request previews drop proxy rules and say so in the deploy log.
 - The target's team and project are recorded at deploy. If the app is later moved elsewhere the path answers 502 until the site is redeployed. A site deployed before this record keeps serving until its next deploy.
-- At most `APP_PAGES_PROXY_MAX_RULES` proxy rules per site.
+- At most `APP_PAGES_PROXY_MAX_RULES` proxy rules per site. Proxy routes have no per-route rate or size limits yet.
+- Rule paths and targets must not contain `{` or `}`. The `Cookie` header is never forwarded, and when the site has a password gate the `Authorization` header is dropped too.
+- The controller re-checks each target's team and project on every pass. A proxy with no recorded scope (rules written before scopes existed) answers 502 until the site is redeployed or its rules are saved again.
 
 ## Safety
 

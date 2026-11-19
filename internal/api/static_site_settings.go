@@ -345,6 +345,9 @@ func (rt *Router) publishStaticUI(site *store.StaticSite, s store.StaticSiteSett
 	if err := rs.ApplyUI(rules, blocks, staticroutes.OptionOverrides{SPA: s.SPAFallback, CleanURLs: s.CleanURLs, TrailingSlash: s.TrailingSlash, NotFound: s.NotFoundPage}); err != nil {
 		return err
 	}
+	if err := rt.recordProxyScopes(context.Background(), rs); err != nil {
+		return err
+	}
 	if err := staticroutes.WriteSidecar(site.RootDir, rs); err != nil {
 		return err
 	}
@@ -400,7 +403,7 @@ func (rt *Router) handleGetStaticSiteRules(w http.ResponseWriter, r *http.Reques
 		}
 	}
 	out := effectiveRules(rs, ui, published)
-	rt.annotateProxyRows(r.Context(), site.Name, out.Redirects)
+	rt.annotateProxyRows(r, site.Name, out.Redirects)
 	writeJSON(w, http.StatusOK, out)
 }
 
@@ -449,7 +452,7 @@ func (rt *Router) handlePutStaticSiteRules(w http.ResponseWriter, r *http.Reques
 		rs, _ = staticroutes.Compile(staticroutes.Input{}, staticroutes.DefaultLimits())
 	}
 	out := effectiveRules(rs, ui, published)
-	rt.annotateProxyRows(r.Context(), site.Name, out.Redirects)
+	rt.annotateProxyRows(r, site.Name, out.Redirects)
 	writeJSON(w, http.StatusOK, out)
 }
 
@@ -467,4 +470,26 @@ func hashSitePassword(pw string) (string, string) {
 		return "", "password could not be hashed"
 	}
 	return string(h), ""
+}
+
+// recordProxyScopes stores the team and project of each proxy target so the
+// controller can refuse a target that later moves. The caller was checked when
+// the rules were saved; a target with no owner is left unscoped and answers 502.
+func (rt *Router) recordProxyScopes(ctx context.Context, rs *staticroutes.Ruleset) error {
+	for _, pr := range rs.ProxyRules() {
+		app, _ := pr.ProxyTarget()
+		scope, found, err := rt.proxyScopeOf(ctx, app)
+		if err != nil {
+			return err
+		}
+		if !found {
+			delete(rs.ProxyScopes, app)
+			continue
+		}
+		if rs.ProxyScopes == nil {
+			rs.ProxyScopes = map[string]string{}
+		}
+		rs.ProxyScopes[app] = scope
+	}
+	return nil
 }

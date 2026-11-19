@@ -88,3 +88,17 @@ func TestProxyConfigEscapesBraces(t *testing.T) {
 		t.Fatalf("unescaped placeholder in %s", s)
 	}
 }
+
+func TestProxyStripsCredentialHeaders(t *testing.T) {
+	s := proxyConfig(t, StaticRoute{
+		Proxies:   []StaticProxy{{From: "/api/*", Path: "/:splat", Dial: "10.0.0.5:3000"}},
+		BasicAuth: &BasicAuthAccount{Username: "site", Password: "hash"},
+	})
+	if !strings.Contains(s, `"delete":["Cookie","Authorization"]`) {
+		t.Fatalf("credential headers must be deleted: %s", s)
+	}
+	open := proxyConfig(t, StaticRoute{Proxies: []StaticProxy{{From: "/api/*", Path: "/:splat", Dial: "10.0.0.5:3000"}}})
+	if !strings.Contains(open, `"delete":["Cookie"]`) {
+		t.Fatalf("cookie must be deleted: %s", open)
+	}
+}

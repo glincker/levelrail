@@ -64,13 +64,14 @@ type proxyScopeOwners interface {
 }
 
 // proxyScopeHolds is false when the target now sits in another team or project
-// than the one recorded at deploy. Rulesets from before the record, or a store
-// without owners, are served as before until the site is redeployed.
+// than the one recorded at deploy or at the last rules save. It is checked on
+// every pass. A ruleset with no recorded scope (written before scopes existed)
+// answers 502 until the site is redeployed or its rules are saved again.
 func (c *Controller) proxyScopeHolds(ctx context.Context, rules *staticroutes.Ruleset, app string) bool {
 	want := rules.ProxyScopes[app]
 	owners, ok := c.store.(proxyScopeOwners)
 	if want == "" || !ok {
-		return true
+		return false
 	}
 	o, err := owners.OwnerOfApp(ctx, app)
 	return err == nil && o != nil && o.TeamID+"/"+o.ProjectID == want
