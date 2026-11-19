@@ -209,6 +209,17 @@ The site page shows a small requests chart with a 24 hour, 7 day and 30 day togg
 | `APP_PAGES_TRAFFIC_BUCKETS` | 24 | Buckets per series, clamped to 2 to 120 |
 | `APP_PAGES_TRAFFIC_RETENTION_DAYS` | 30 | Longest range the endpoint serves |
 
+## Smoke test
+
+`scripts/pages-smoke.sh` exercises a running Levelrail end to end: deploy, clean URLs, redirects, headers, custom 404, per-deploy URLs, promote and rollback, the password gate, checks, traffic and an optional git deploy. It prints PASS, FAIL or SKIP per step and exits nonzero on any failure. Features the server does not have yet are skipped, not failed. It is not part of CI because it needs a live instance.
+
+```bash
+LEVELRAIL_URL=http://127.0.0.1:8190 LEVELRAIL_TOKEN=... scripts/pages-smoke.sh
+SMOKE_DRY_RUN=1 scripts/pages-smoke.sh   # print the plan only
+```
+
+Optional: `SMOKE_HOST` (address to connect to for a real host), `SMOKE_GIT_URL` (public repo for the git step), `SMOKE_DOMAIN` (domain status step), `LEVELRAIL_CLI` (use a built binary instead of building one). It needs `curl` and `jq`, and always deletes its temp site on exit.
+
 ## Limitations
 
 - **Build toolchain**: the build container is Node based. For other generators (Hugo, Jekyll), set `APP_STATIC_BUILD_IMAGE` to an image that has the tool and a shell, or build in CI and serve the committed output with `build.path`.
