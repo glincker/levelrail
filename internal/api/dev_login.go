@@ -1,6 +1,7 @@
 package api
 
 import (
+	"context"
 	"crypto/subtle"
 	"log/slog"
 	"net"
@@ -47,6 +48,27 @@ func isLoopbackRemote(remoteAddr string) bool {
 	return ip != nil && ip.IsLoopback()
 }
 
+// hasForwardedHeaders is true when a proxy may sit in front, where a remote
+// caller could otherwise look like loopback.
+func hasForwardedHeaders(r *http.Request) bool {
+	for _, h := range []string{"X-Forwarded-For", "X-Forwarded-Host", "Forwarded"} {
+		if r.Header.Get(h) != "" {
+			return true
+		}
+	}
+	return false
+}
+
+// devUserEligible mirrors the password login checks: a disabled account or
+// one with a second factor enrolled never gets a token sign-in.
+func (rt *Router) devUserEligible(ctx context.Context, userID string) bool {
+	if rt.accountDisabled(ctx, userID) {
+		return false
+	}
+	enrolled, err := rt.hasSecondFactor(ctx, userID)
+	return err == nil && !enrolled
+}
+
 // safeDevLoginNext returns next only when it is a same-origin relative path.
 func safeDevLoginNext(next string) string {
 	if next == "" || next[0] != '/' || strings.HasPrefix(next, "//") || strings.ContainsAny(next, "\\\r\n\t") {
@@ -86,20 +108,24 @@ func (rt *Router) handleDevLogin(w http.ResponseWriter, r *http.Request) {
 	w.Header().Set("Referrer-Policy", "no-referrer")
 	w.Header().Set("Cache-Control", "no-store")
 	token, ok := rt.devLoginToken, rt.devLoginToken != ""
-	if !ok || !isLoopbackRemote(r.RemoteAddr) || !isLoopbackHostHeader(r.Host) {
+	if !ok || hasForwardedHeaders(r) || !isLoopbackRemote(r.RemoteAddr) || !isLoopbackHostHeader(r.Host) {
 		writeError(w, http.StatusNotFound, "not found")
 		return
 	}
-	if !rt.allowTokenRedeem(w, r, "dev-login") {
-		return
+	// One constant bucket: forwarded headers cannot mint fresh buckets.
+	if rt.tokenRedeemRateLimit != nil {
+		if allowed, retryAfter := rt.tokenRedeemRateLimit.allow("dev-login"); !allowed {
+			writeRateLimited(w, retryAfter)
+			return
+		}
 	}
 	got := r.URL.Query().Get("token")
 	if subtle.ConstantTimeCompare([]byte(got), []byte(token)) != 1 {
-		writeError(w, http.StatusUnauthorized, "invalid token")
+		writeError(w, http.StatusNotFound, "not found")
 		return
 	}
 	user, err := rt.auth.GetUserByEmail(r.Context(), devModeUsername)
-	if err != nil || user == nil {
+	if err != nil || user == nil || !rt.devUserEligible(r.Context(), user.ID) {
 		writeError(w, http.StatusNotFound, "not found")
 		return
 	}

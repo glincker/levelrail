@@ -59,17 +59,19 @@ build_next() {
 	echo "dev-local: built in ${SECONDS}s"
 }
 
-# dev_login_token creates the dev-login token once per data dir (mode 0600, outside the repo).
-dev_login_token() {
+# rotate_dev_login_token writes a fresh dev-login token (mode 0600, outside the repo) on every API start.
+rotate_dev_login_token() {
 	local f="$dir/dev-login-token"
-	if [ ! -s "$f" ]; then
-		(umask 077 && LC_ALL=C tr -dc 'A-Za-z0-9' </dev/urandom | head -c 48 >"$f")
-	fi
+	(umask 077 && LC_ALL=C tr -dc 'A-Za-z0-9' </dev/urandom | head -c 48 >"$f")
 	chmod 600 "$f"
-	cat "$f"
+}
+
+dev_login_token() {
+	cat "$dir/dev-login-token"
 }
 
 start_api() {
+	rotate_dev_login_token
 	# Env-gated experimental features are not on the Beta features page; turn them
 	# on locally so work in progress is visible. LOCAL_EXPERIMENTAL overrides.
 	# APP_PUBLIC_HOST=localhost gives <app>.localhost links, which browsers resolve to

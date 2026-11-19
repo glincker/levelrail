@@ -7,6 +7,10 @@ import (
 	"net/url"
 	"strings"
 	"testing"
+	"time"
+
+	"github.com/GLINCKER/levelrail/internal/authengine"
+	"github.com/GLINCKER/levelrail/internal/store"
 )
 
 const devLoginTestToken = "0123456789abcdef0123456789abcdef-test"
@@ -63,8 +67,8 @@ func TestDevLogin_Refusals(t *testing.T) {
 		remote     string
 		want       int
 	}{
-		{"wrong token", devLoginTestToken, "localhost", "/api/v1/auth/dev-login?token=nope", "127.0.0.1:1", "127.0.0.1:2", http.StatusUnauthorized},
-		{"missing token", devLoginTestToken, "localhost", "/api/v1/auth/dev-login", "127.0.0.1:1", "127.0.0.1:2", http.StatusUnauthorized},
+		{"wrong token", devLoginTestToken, "localhost", "/api/v1/auth/dev-login?token=nope", "127.0.0.1:1", "127.0.0.1:2", http.StatusNotFound},
+		{"missing token", devLoginTestToken, "localhost", "/api/v1/auth/dev-login", "127.0.0.1:1", "127.0.0.1:2", http.StatusNotFound},
 		{"short configured token", "short", "localhost", "/api/v1/auth/dev-login?token=short", "127.0.0.1:1", "127.0.0.1:2", http.StatusNotFound},
 		{"unset token", "", "localhost", good, "127.0.0.1:1", "127.0.0.1:2", http.StatusNotFound},
 		{"public host configured", devLoginTestToken, "example.com", good, "127.0.0.1:1", "127.0.0.1:2", http.StatusNotFound},
@@ -95,5 +99,78 @@ func TestDevLogin_OpenRedirectRejected(t *testing.T) {
 		if loc := rec.Header().Get("Location"); rec.Code != http.StatusFound || !strings.HasPrefix(loc, "/") || strings.HasPrefix(loc, "//") || loc != "/" {
 			t.Fatalf("next %q gave %d %q", next, rec.Code, loc)
 		}
+	}
+}
+
+func TestDevLogin_ForwardedHeadersRefused(t *testing.T) {
+	for _, h := range []string{"X-Forwarded-For", "X-Forwarded-Host", "Forwarded"} {
+		t.Run(h, func(t *testing.T) {
+			rt := devLoginRouter(t, devLoginTestToken, "localhost")
+			req := httptest.NewRequest(http.MethodGet, "/api/v1/auth/dev-login?token="+devLoginTestToken, nil)
+			req.Host = "127.0.0.1:1"
+			req.RemoteAddr = "127.0.0.1:2"
+			req.Header.Set(h, "203.0.113.9")
+			rec := httptest.NewRecorder()
+			rt.Handler().ServeHTTP(rec, req)
+			if rec.Code != http.StatusNotFound {
+				t.Fatalf("got %d want 404", rec.Code)
+			}
+		})
+	}
+}
+
+func TestDevLogin_RateLimitIgnoresForwardedBuckets(t *testing.T) {
+	rt := devLoginRouter(t, devLoginTestToken, "localhost")
+	rt.tokenRedeemRateLimit = newAPIRateLimiter(1)
+	target := "/api/v1/auth/dev-login?token=wrong"
+	if rec := devLoginDo(rt, target, "127.0.0.1:1", "127.0.0.1:2"); rec.Code != http.StatusNotFound {
+		t.Fatalf("first got %d", rec.Code)
+	}
+	// A different remote port and source must land in the same bucket.
+	if rec := devLoginDo(rt, target, "127.0.0.1:1", "[::1]:3"); rec.Code != http.StatusTooManyRequests {
+		t.Fatalf("second got %d want 429", rec.Code)
+	}
+}
+
+func TestDevLogin_DisabledOrMFAUserRefused(t *testing.T) {
+	for _, mode := range []string{"disabled", "mfa"} {
+		t.Run(mode, func(t *testing.T) {
+			t.Setenv("APP_DEV_MODE", "1")
+			t.Setenv("APP_DEV_LOGIN_TOKEN", devLoginTestToken)
+			t.Setenv("APP_PUBLIC_HOST", "localhost")
+			h := newMFAHarness(t)
+			ctx := context.Background()
+			if err := h.db.CreateUser(ctx, store.User{
+				ID: "user_devlogin", Email: devModeUsername, DisplayName: devModeUsername,
+				Abilities: []string{AbilityRoot}, CreatedAt: time.Now(),
+			}); err != nil {
+				t.Fatalf("create dev user: %v", err)
+			}
+			user, err := h.db.GetUserByEmail(ctx, devModeUsername)
+			if err != nil {
+				t.Fatal(err)
+			}
+			if mode == "disabled" {
+				if err := h.rt.authEngine.DisableUser(ctx, user.ID); err != nil {
+					t.Fatal(err)
+				}
+			} else {
+				if _, err := authengine.NewDirectory(h.db.DB).EnsureEngineUser(ctx, user.ID); err != nil {
+					t.Fatal(err)
+				}
+				enroll, err := h.rt.mfaLib.mfa.TOTPBegin(ctx, user.ID, user.Email)
+				if err != nil {
+					t.Fatal(err)
+				}
+				h.secret = enroll.Secret
+				if _, err := h.rt.mfaLib.mfa.TOTPFinish(ctx, user.ID, h.code(0)); err != nil {
+					t.Fatal(err)
+				}
+			}
+			rec := devLoginDo(h.rt, "/api/v1/auth/dev-login?token="+devLoginTestToken, "127.0.0.1:1", "127.0.0.1:2")
+			if rec.Code != http.StatusNotFound {
+				t.Fatalf("got %d want 404", rec.Code)
+			}
+		})
 	}
 }
