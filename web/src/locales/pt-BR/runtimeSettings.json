@@ -361,5 +361,8 @@
     "dismiss": "Pronto, ocultar token",
     "error": "Não foi possível criar o token: {{message}}",
     "saveError": "Não foi possível salvar: {{message}}"
+  },
+  "category": {
+    "weaker": "{{count}} enfraquecidas"
   }
 }

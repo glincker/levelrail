@@ -355,5 +355,8 @@
     "dismiss": "完成,隐藏令牌",
     "error": "无法创建令牌:{{message}}",
     "saveError": "无法保存:{{message}}"
+  },
+  "category": {
+    "weaker": "{{count}} 项已削弱"
   }
 }

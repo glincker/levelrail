@@ -358,5 +358,8 @@
     "dismiss": "Done, hide token",
     "error": "Could not create the token: {{message}}",
     "saveError": "Could not save: {{message}}"
+  },
+  "category": {
+    "weaker": "{{count}} weakened"
   }
 }

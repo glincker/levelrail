@@ -358,5 +358,8 @@
     "dismiss": "Fertig, Token ausblenden",
     "error": "Das Token konnte nicht erstellt werden: {{message}}",
     "saveError": "Speichern nicht möglich: {{message}}"
+  },
+  "category": {
+    "weaker": "{{count}} abgeschwächt"
   }
 }

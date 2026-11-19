@@ -361,5 +361,8 @@
     "dismiss": "Terminé, masquer le token",
     "error": "Impossible de créer le token : {{message}}",
     "saveError": "Impossible d'enregistrer : {{message}}"
+  },
+  "category": {
+    "weaker": "{{count}} affaiblis"
   }
 }
