@@ -14,7 +14,7 @@ type openAPIRoute struct {
 	Description string
 }
 
-// openAPIRoutes holds all 2185 routes known to scripts/gen-api-reference at
+// openAPIRoutes holds all 2187 routes known to scripts/gen-api-reference at
 // generation time. Run `go run ./scripts/gen-api-reference` after changing
 // any routes*.go registration and commit the result.
 var openAPIRoutes = []openAPIRoute{
@@ -2089,6 +2089,8 @@ var openAPIRoutes = []openAPIRoute{
 	{Method: "POST", Path: "/api/v1/static-sites", Ability: "AbilityWrite", Group: "Static Sites / Backup Targets / Registry Credentials", Handler: "handleCreateStaticSite", Description: ""},
 	{Method: "DELETE", Path: "/api/v1/static-sites/{name}", Ability: "AbilityWriteSensitive", Group: "Static Sites / Backup Targets / Registry Credentials", Handler: "handleDeleteStaticSite", Description: ""},
 	{Method: "GET", Path: "/api/v1/static-sites/{name}", Ability: "AbilityRead", Group: "Static Sites / Backup Targets / Registry Credentials", Handler: "handleGetStaticSite", Description: ""},
+	{Method: "POST", Path: "/api/v1/static-sites/{name}/domains", Ability: "AbilityWrite", Group: "Static Sites / Backup Targets / Registry Credentials", Handler: "handleAddStaticSiteDomain", Description: ""},
+	{Method: "GET", Path: "/api/v1/static-sites/{name}/domains/{domain}/status", Ability: "AbilityRead", Group: "Static Sites / Backup Targets / Registry Credentials", Handler: "handleStaticSiteDomainStatus", Description: ""},
 	{Method: "GET", Path: "/api/v1/brand", Ability: "Public", Group: "System", Handler: "handleBrand", Description: "Public: the frontend needs branding before a session exists (e.g. on the login screen itself)."},
 	{Method: "GET", Path: "/api/v1/dev-mode", Ability: "Public", Group: "System", Handler: "handleDevMode", Description: ""},
 	{Method: "GET", Path: "/api/v1/onboarding", Ability: "AbilityRead", Group: "System", Handler: "handleGetOnboardingState", Description: "Setup wizard state. Completing stays AbilityWrite so creating a first app any other way can dismiss it; step progress is admin-only."},

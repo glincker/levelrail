@@ -1362,6 +1362,8 @@ Endpoints for:
 | GET | /api/v1/registry-credentials/{id}/dockerhub | AbilityReadSensitive | handleDockerHubStatus |
 | POST | /api/v1/static-sites | AbilityWrite | handleCreateStaticSite |
 | GET | /api/v1/static-sites/{name} | AbilityRead | handleGetStaticSite |
+| POST | /api/v1/static-sites/{name}/domains | AbilityWrite | handleAddStaticSiteDomain |
+| GET | /api/v1/static-sites/{name}/domains/{domain}/status | AbilityRead | handleStaticSiteDomainStatus |
 
 ## Built-in Container Registry
 
