@@ -23,7 +23,14 @@ export function AppLogo({ image }: { image: string }) {
   )
 }
 
-export function AppMetaChips({ app }: { app: AppListEntry }) {
+// Static sites have no image to show, so the Pages treatment hides it.
+export function AppMetaChips({
+  app,
+  isStatic = false,
+}: {
+  app: AppListEntry
+  isStatic?: boolean
+}) {
   const { t } = useTranslation('deploys')
   const domain = app.domains?.[0]
   const extra = (app.domains?.length ?? 0) - 1
@@ -64,12 +71,14 @@ export function AppMetaChips({ app }: { app: AppListEntry }) {
           {extra > 0 ? <span>+{extra}</span> : null}
         </Badge>
       ) : null}
-      <span
-        title={app.image}
-        className="max-w-48 truncate font-mono text-xs text-muted-foreground"
-      >
-        {app.image}
-      </span>
+      {isStatic ? null : (
+        <span
+          title={app.image}
+          className="max-w-48 truncate font-mono text-xs text-muted-foreground"
+        >
+          {app.image}
+        </span>
+      )}
     </span>
   )
 }

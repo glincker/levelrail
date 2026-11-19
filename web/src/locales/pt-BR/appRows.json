@@ -1,8 +1,11 @@
 {
   "failing": {
     "fallback": "Precisa de atenção, abra o app para ver o motivo.",
-    "fix": "Ver deploys",
-    "fixLabel": "Ver deploys de {{name}}"
+    "fix": "Corrigir",
+    "fixLabel": "Ver deploys de {{name}}",
+    "fixLabelHealth": "Corrigir os health checks de {{name}}",
+    "fixLabelDomains": "Corrigir os domínios de {{name}}",
+    "fixLabelPages": "Abrir o site Pages {{name}}"
   },
   "logs": {
     "noContainer": "Nenhum container está em execução para este app, então não há nada para transmitir.",
@@ -56,5 +59,14 @@
       "error": "Falhou"
     }
   },
-  "description": "Descrição: {{text}}"
+  "description": "Descrição: {{text}}",
+  "card": {
+    "noPreview": "Sem prévia",
+    "noDomain": "Sem domínio",
+    "staticSite": "Site estático",
+    "lastDeploy": "Implantado",
+    "empty": "Nenhum app corresponde a estes filtros.",
+    "listLabel": "Apps",
+    "loading": "Carregando apps"
+  }
 }

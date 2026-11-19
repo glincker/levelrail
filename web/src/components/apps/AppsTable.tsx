@@ -12,6 +12,7 @@ import { PlacementLabel } from '../PlacementLabel'
 import { AppRowActions } from '../AppRowActions'
 import { StatusLabel } from '../AppRow'
 import { ManagedByStackTag } from '../stacks/ManagedByStackNotice'
+import { FailureReason } from './AppFailure'
 import { AppLogo, AppMetaChips } from './AppMetaChips'
 import {
   ErrorCell,
@@ -41,10 +42,12 @@ function MetricCell({ app, kind }: { app: AppListEntry; kind: MetricKind }) {
 
 export function AppsTable({
   apps,
+  staticNames,
   selected,
   onSelect,
 }: {
   apps: readonly AppListEntry[]
+  staticNames: ReadonlySet<string>
   selected: readonly string[]
   onSelect: (name: string, checked: boolean) => void
 }) {
@@ -58,17 +61,32 @@ export function AppsTable({
         cell: (app) => (
           <span className="flex min-w-0 flex-col gap-0.5">
             <span className="flex min-w-0 items-center gap-2">
-              <Link
-                to="/apps/$name"
-                params={{ name: app.name }}
-                className={`truncate text-sm font-medium text-foreground ${ROW_LINK_OVERLAY}`}
-              >
-                {app.name}
-              </Link>
+              {staticNames.has(app.name) ? (
+                <Link
+                  to="/pages/$name"
+                  params={{ name: app.name }}
+                  className={`truncate text-sm font-medium text-foreground ${ROW_LINK_OVERLAY}`}
+                >
+                  {app.name}
+                </Link>
+              ) : (
+                <Link
+                  to="/apps/$name"
+                  params={{ name: app.name }}
+                  className={`truncate text-sm font-medium text-foreground ${ROW_LINK_OVERLAY}`}
+                >
+                  {app.name}
+                </Link>
+              )}
               <StatusLabel status={app.status} />
             </span>
             <span className="flex min-w-0 items-center gap-x-2 overflow-hidden">
-              <AppMetaChips app={app} />
+              <FailureReason
+                status={app.status}
+                name={app.name}
+                isStatic={staticNames.has(app.name)}
+              />
+              <AppMetaChips app={app} isStatic={staticNames.has(app.name)} />
               <ManagedByStackTag stack={app.managed_by_stack} />
             </span>
           </span>
@@ -122,7 +140,7 @@ export function AppsTable({
         cell: (app) => <MetricCell app={app} kind="deployed" />,
       },
     ],
-    [t],
+    [t, staticNames],
   )
   return (
     <ResponsiveTable
