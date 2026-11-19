@@ -367,6 +367,8 @@ type (
 	serviceTemplateDetail              = apiclient.ServiceTemplateDetail
 	customTemplateListItem             = apiclient.CustomTemplateListItem
 	staticSiteResource                 = apiclient.StaticSiteResource
+	staticSiteDetail                   = apiclient.StaticSiteDetail
+	staticSiteDomain                   = apiclient.StaticSiteDomain
 
 	tagResource         = apiclient.TagResource
 	createTagRequest    = apiclient.CreateTagRequest

@@ -1,0 +1,285 @@
+package main
+
+import (
+	"context"
+	"fmt"
+	"io"
+	"os"
+	"path/filepath"
+	"sort"
+	"strings"
+	"text/tabwriter"
+
+	"github.com/GLINCKER/levelrail/internal/apiclient"
+)
+
+// runPages implements "pages ...", the Levelrail Pages (static sites) front door.
+func runPages(prog string, args []string, stdout, stderr io.Writer, lookupEnv func(string) (string, bool), stdin io.Reader) int {
+	if len(args) == 0 {
+		_, _ = fmt.Fprint(stderr, pagesUsage(prog))
+		return exitUsage
+	}
+	rest := args[1:]
+	switch args[0] {
+	case "-h", "--help", "help":
+		_, _ = fmt.Fprint(stdout, pagesUsage(prog))
+		return exitOK
+	case "deploy":
+		return runPagesDeploy(prog, rest, stdout, stderr, lookupEnv, stdin)
+	case "list":
+		return runStaticSitesList(prog, rest, stdout, stderr, lookupEnv)
+	case "show":
+		return runPagesShow(prog, rest, stdout, stderr, lookupEnv)
+	case "delete":
+		return runStaticSitesDelete(prog, rest, stdout, stderr, lookupEnv)
+	case "rollback":
+		return runPagesRollback(prog, rest, stdout, stderr, lookupEnv)
+	case "domains":
+		return runPagesDomains(prog, rest, stdout, stderr, lookupEnv)
+	case "routes":
+		return runStaticRoutes(prog, rest, stdout, stderr, lookupEnv)
+	default:
+		_, _ = fmt.Fprintf(stderr, "%s: unknown pages subcommand %q\n\n", prog, args[0])
+		_, _ = fmt.Fprint(stderr, pagesUsage(prog))
+		return exitUsage
+	}
+}
+
+func pagesUsage(prog string) string {
+	return fmt.Sprintf(`Usage:
+  %[1]s pages deploy <dir|zip> [--name N] [--domain D] [flags]
+  %[1]s pages list [flags]
+  %[1]s pages show <name> [flags]
+  %[1]s pages delete <name> [flags]
+  %[1]s pages rollback <name> [version] [flags]
+  %[1]s pages domains add <name> <domain> [flags]
+  %[1]s pages domains status <name> <domain> [flags]
+  %[1]s pages routes show|test|lint <name> [flags]
+
+Publishes a folder or .zip as a static site: no build, no source control.
+The upload limit comes from %[2]s. "deploy" accepts every flag of "%[1]s deploy".
+`, prog, envUploadMaxBytes)
+}
+
+// pagesValueFlags are the "deploy" flags that consume the next argument.
+var pagesValueFlags = map[string]bool{
+	"app": true, "name": true, "port": true, "env": true, "build-env": true, "include": true,
+	"upload-hash": true, "timeout": true, "token": true, "api-url": true, "profile": true,
+	"output": true, "query": true, "domain": true,
+}
+
+// pagesArgs splits deploy args into the --domain value, the rest, and the positional path.
+func pagesArgs(args []string) (domain string, rest []string, dir string) {
+	for i := 0; i < len(args); i++ {
+		a := args[i]
+		if !strings.HasPrefix(a, "-") || a == "-" {
+			dir = a
+			rest = append(rest, a)
+			continue
+		}
+		name, val, hasVal := strings.Cut(strings.TrimLeft(a, "-"), "=")
+		if name == "domain" {
+			if !hasVal && i+1 < len(args) {
+				i++
+				val = args[i]
+			}
+			domain = val
+			continue
+		}
+		rest = append(rest, a)
+		if pagesValueFlags[name] && !hasVal && i+1 < len(args) {
+			i++
+			rest = append(rest, args[i])
+		}
+	}
+	return domain, rest, dir
+}
+
+// pagesFlagValue reads one flag's value from args without a flag set.
+func pagesFlagValue(args []string, names ...string) string {
+	for i, a := range args {
+		name, val, hasVal := strings.Cut(strings.TrimLeft(a, "-"), "=")
+		for _, n := range names {
+			if strings.HasPrefix(a, "-") && name == n {
+				if hasVal {
+					return val
+				}
+				if i+1 < len(args) {
+					return args[i+1]
+				}
+			}
+		}
+	}
+	return ""
+}
+
+func runPagesDeploy(prog string, args []string, stdout, stderr io.Writer, lookupEnv func(string) (string, bool), stdin io.Reader) int {
+	if len(args) == 1 && (args[0] == "-h" || args[0] == "--help") {
+		_, _ = fmt.Fprint(stderr, pagesUsage(prog))
+		return exitOK
+	}
+	domain, rest, dir := pagesArgs(args)
+	if dir == "" {
+		dir = "."
+	}
+	code := runDeployUpload(prog, append([]string{"--static"}, rest...), stdout, stderr, lookupEnv, stdin)
+	if code != exitOK || domain == "" || pagesHasFlag(rest, "dry-run") {
+		return code
+	}
+	name := pagesFlagValue(rest, "app", "name")
+	if name == "" {
+		name = staticAppName(dir)
+	}
+	client := apiClientFromFlags(prog, pagesFlagValue(rest, "api-url"), pagesFlagValue(rest, "token"), pagesFlagValue(rest, "profile"), lookupEnv)
+	res, err := client.AddStaticSiteDomain(context.Background(), name, domain)
+	if err != nil {
+		return reportError(stdout, stderr, false, fmt.Errorf("site %q is live but adding domain %q failed: %w", name, domain, err))
+	}
+	printPagesDomain(stderr, res)
+	return exitOK
+}
+
+func runPagesShow(prog string, args []string, stdout, stderr io.Writer, lookupEnv func(string) (string, bool)) int {
+	fs, tokenP, apiURLP, profileP, jsonP, outputP, queryP := apiFlagSet(prog, "pages show", "print the site as JSON to stdout and nothing else", stderr)
+	tokenFlag, apiURLFlag, profileFlag, jsonOut, of, exitCode, ok := parseAPIFlags(fs, args, apiFlagPtrs{tokenP, apiURLP, profileP, jsonP, outputP, queryP}, prog, stderr)
+	if !ok {
+		return exitCode
+	}
+	name, ok := requireOneArg(fs, stderr, prog, "pages show", "site name")
+	if !ok {
+		return exitUsage
+	}
+	client := apiClientFromFlags(prog, apiURLFlag, tokenFlag, profileFlag, lookupEnv)
+	site, err := client.GetStaticSite(context.Background(), name)
+	if err != nil {
+		return reportError(stdout, stderr, jsonOut, fmt.Errorf("show site %q: %w", name, err))
+	}
+	return writeScheduledTaskResult(stdout, stderr, of, site, func() { printPagesSite(stdout, site) })
+}
+
+func printPagesSite(out io.Writer, s staticSiteDetail) {
+	_, _ = fmt.Fprintf(out, "name:       %s\npublished:  %t\nfiles:      %d (%s)\ndomains:    %s\n", s.Name, s.Published, s.FileCount, humanBytes(s.SizeBytes), strings.Join(s.Domains, ", "))
+	if d := s.LatestDeploy; d != nil {
+		_, _ = fmt.Fprintf(out, "latest:     %s %s (%s)\n", d.ID, d.Status, d.Source)
+		if d.Error != "" {
+			_, _ = fmt.Fprintf(out, "error:      %s\n", d.Error)
+		}
+	}
+}
+
+// previousPagesDeploy picks the newest succeeded deploy that is not the live one.
+func previousPagesDeploy(attempts []deployAttemptResource) string {
+	sorted := append([]deployAttemptResource(nil), attempts...)
+	sort.Slice(sorted, func(i, j int) bool { return sorted[i].StartedAt.After(sorted[j].StartedAt) })
+	for _, a := range sorted {
+		if a.Status == "succeeded" && !a.Live {
+			return a.ID
+		}
+	}
+	return ""
+}
+
+func runPagesRollback(prog string, args []string, stdout, stderr io.Writer, lookupEnv func(string) (string, bool)) int {
+	fs, tokenP, apiURLP, profileP, jsonP, outputP, queryP := apiFlagSet(prog, "pages rollback", "print the result as JSON to stdout and nothing else", stderr)
+	tokenFlag, apiURLFlag, profileFlag, jsonOut, of, exitCode, ok := parseAPIFlags(fs, args, apiFlagPtrs{tokenP, apiURLP, profileP, jsonP, outputP, queryP}, prog, stderr)
+	if !ok {
+		return exitCode
+	}
+	rest := fs.Args()
+	if len(rest) < 1 || len(rest) > 2 {
+		_, _ = fmt.Fprintf(stderr, "%s: pages rollback requires a site name and an optional deploy id\n", prog)
+		return exitUsage
+	}
+	name := rest[0]
+	ctx := context.Background()
+	client := apiClientFromFlags(prog, apiURLFlag, tokenFlag, profileFlag, lookupEnv)
+	version := ""
+	if len(rest) == 2 {
+		version = rest[1]
+	} else {
+		attempts, err := client.ListDeployAttempts(ctx, name)
+		if err != nil {
+			return reportError(stdout, stderr, jsonOut, fmt.Errorf("list deploys of %q: %w", name, err))
+		}
+		if version = previousPagesDeploy(attempts); version == "" {
+			return reportError(stdout, stderr, jsonOut, newValidationError("site %q has no earlier successful deploy to roll back to", name))
+		}
+	}
+	res, err := client.RollbackToDeploy(ctx, name, version, apiclient.RollbackToRequest{})
+	if err != nil {
+		return reportError(stdout, stderr, jsonOut, fmt.Errorf("roll back site %q to %q: %w", name, version, err))
+	}
+	return writeScheduledTaskResult(stdout, stderr, of, map[string]any{"site": name, "rolled_back_to": version, "deploy_id": res.DeployID}, func() {
+		_, _ = fmt.Fprintf(stdout, "site %q rolled back to deploy %s\n", name, version)
+	})
+}
+
+func runPagesDomains(prog string, args []string, stdout, stderr io.Writer, lookupEnv func(string) (string, bool)) int {
+	if len(args) == 0 || (args[0] != "add" && args[0] != "status") {
+		_, _ = fmt.Fprint(stderr, pagesUsage(prog))
+		return exitUsage
+	}
+	verb := args[0]
+	label := "pages domains " + verb
+	fs, tokenP, apiURLP, profileP, jsonP, outputP, queryP := apiFlagSet(prog, label, "print the domain result as JSON to stdout and nothing else", stderr)
+	tokenFlag, apiURLFlag, profileFlag, jsonOut, of, exitCode, ok := parseAPIFlags(fs, args[1:], apiFlagPtrs{tokenP, apiURLP, profileP, jsonP, outputP, queryP}, prog, stderr)
+	if !ok {
+		return exitCode
+	}
+	rest, ok := requireArgs(fs, stderr, prog, label, "a site name and a domain", 2)
+	if !ok {
+		return exitUsage
+	}
+	client := apiClientFromFlags(prog, apiURLFlag, tokenFlag, profileFlag, lookupEnv)
+	var res staticSiteDomain
+	var err error
+	if verb == "add" {
+		res, err = client.AddStaticSiteDomain(context.Background(), rest[0], rest[1])
+	} else {
+		res, err = client.StaticSiteDomainStatus(context.Background(), rest[0], rest[1])
+	}
+	if err != nil {
+		return reportError(stdout, stderr, jsonOut, fmt.Errorf("%s %q on site %q: %w", verb, rest[1], rest[0], err))
+	}
+	return writeScheduledTaskResult(stdout, stderr, of, res, func() { printPagesDomain(stdout, res) })
+}
+
+func printPagesDomain(out io.Writer, d staticSiteDomain) {
+	_, _ = fmt.Fprintf(out, "domain: %s\nmode:   %s\nDNS:    verified=%t\ncert:   %s\n", d.Domain, d.Mode, d.Verified, d.Cert)
+	if d.Mode == "manual" && len(d.Records) > 0 {
+		_, _ = fmt.Fprintln(out, "create these DNS records at your DNS provider:")
+	}
+	if len(d.Records) > 0 {
+		tw := tabwriter.NewWriter(out, 0, 2, 2, ' ', 0)
+		_, _ = fmt.Fprintln(tw, "TYPE\tNAME\tVALUE")
+		for _, r := range d.Records {
+			_, _ = fmt.Fprintf(tw, "%s\t%s\t%s\n", r.Type, r.Name, r.Value)
+		}
+		_ = tw.Flush()
+	}
+	if d.Detail != "" {
+		_, _ = fmt.Fprintln(out, d.Detail)
+	}
+}
+
+func pagesHasFlag(args []string, name string) bool {
+	for _, a := range args {
+		if n, _, _ := strings.Cut(strings.TrimLeft(a, "-"), "="); strings.HasPrefix(a, "-") && n == name {
+			return true
+		}
+	}
+	return false
+}
+
+// looksLikeStaticSite is true for a folder with index.html and no container or compose files.
+func looksLikeStaticSite(dir string) bool {
+	if _, err := os.Stat(filepath.Join(dir, "index.html")); err != nil {
+		return false
+	}
+	for _, f := range []string{"Dockerfile", "docker-compose.yml", "docker-compose.yaml", "compose.yml", "compose.yaml", "package.json"} {
+		if _, err := os.Stat(filepath.Join(dir, f)); err == nil {
+			return false
+		}
+	}
+	return true
+}

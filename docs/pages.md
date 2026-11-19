@@ -155,6 +155,18 @@ Anything a build puts in the published directory is public. Do not give a `PUBLI
 
 With a Cloudflare DNS integration connected, Levelrail creates a domain's record as proxied when the server-wide proxy setting is on. The Cache tab of an app has a Cloudflare proxy switch that overrides it for that app alone (`GET` and `PUT /api/v1/apps/{name}/cdn`, body `{"proxied": true | false | null}`, where `null` goes back to the server setting). The change applies to records written afterwards; run the domain's DNS fix to update an existing record. Keep the Cloudflare SSL/TLS mode on Full (strict).
 
+## From the CLI
+
+```bash
+levelrail pages deploy ./dist --name docs --domain docs.example.com
+levelrail pages list
+levelrail pages show docs
+levelrail pages rollback docs
+levelrail pages domains status docs docs.example.com
+```
+
+`pages deploy` zips the folder (skipping `.git`, `node_modules` and dotfiles other than `_redirects`, `_headers` and `.well-known`), creates the site if it is missing, uploads, publishes and prints the live URL. A `.zip` works too. `levelrail deploy ./dist` prints a hint toward `pages deploy` when the folder has an `index.html` and no Dockerfile or compose file.
+
 ## Limitations
 
 - **Build toolchain**: the build container is Node based. For other generators (Hugo, Jekyll), set `APP_STATIC_BUILD_IMAGE` to an image that has the tool and a shell, or build in CI and serve the committed output with `build.path`.

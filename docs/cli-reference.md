@@ -2261,6 +2261,19 @@ levelrail-cli compose schedules run|runs|pause|resume|rm <app> <service> <id|nam
 
 See [Compose apps](/compose-apps).
 
+## Pages
+
+```
+levelrail-cli pages deploy <dir|zip> [--name N] [--domain D] [flags]
+levelrail-cli pages list|show <name>|delete <name> [flags]
+levelrail-cli pages rollback <name> [deploy-id] [flags]
+levelrail-cli pages domains add <name> <domain> [flags]
+levelrail-cli pages domains status <name> <domain> [flags]
+levelrail-cli pages routes show|test|lint <name> [flags]
+```
+
+`pages deploy` publishes a folder or `.zip` as a static site with no build, creates the site on the first run and prints the live URL. It takes every flag of `deploy`. The upload size limit is read from `APP_UPLOAD_MAX_BYTES`. `rollback` without a deploy id goes back to the previous successful deploy. `domains add` prints the DNS records, created automatically when a DNS integration covers the zone, otherwise listed for you to create. See [Levelrail Pages](/pages).
+
 ## Static sites
 
 ```
