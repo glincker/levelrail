@@ -77,6 +77,13 @@ export interface SiteDomainSetup {
   verified: boolean
   cert: string
   detail?: string
+  diagnosis?: SiteDiagnosis[]
+}
+
+export interface SiteDiagnosis {
+  code: string
+  ok: boolean
+  hint: string
 }
 
 const siteBase = (name: string) =>

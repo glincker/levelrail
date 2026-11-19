@@ -147,7 +147,26 @@
       "live": "Live"
     },
     "done": "done",
-    "waiting": "waiting"
+    "waiting": "waiting",
+    "checks": "Domain checks",
+    "failed": "failed",
+    "check": {
+      "dns_resolves": "DNS record",
+      "dns_points_here": "Points here",
+      "dns_aaaa_mismatch": "IPv6 record",
+      "dns_cname_apex": "CNAME at apex",
+      "dns_proxied": "CDN proxy",
+      "proxy_ports": "Ports 80/443",
+      "net_port80": "Port 80",
+      "caa_blocks_issuer": "CAA",
+      "tls_certificate": "Certificate",
+      "cert_renewal": "Renewal",
+      "http_status": "Site answers",
+      "dns_propagation": "Propagation",
+      "host_private_address": "Public address",
+      "acme_failure": "Certificate issuance",
+      "dns_www_apex": "www and apex"
+    }
   },
   "summary": {
     "files_one": "{{count}} file",

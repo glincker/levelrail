@@ -1,4 +1,4 @@
-import { useState, type FormEvent } from 'react'
+import { lazy, Suspense, useState, type FormEvent } from 'react'
 import { useQuery, useQueryClient } from '@tanstack/react-query'
 import { useTranslation } from 'react-i18next'
 import {
@@ -25,6 +25,8 @@ import {
   fetchSiteDomainStatus,
   type SiteDomainSetup,
 } from '../../queries/pagesSites'
+
+const DomainChecklist = lazy(() => import('./DomainChecklist'))
 
 // Poll cadence while a domain waits for DNS; tunable per build.
 const POLL_MS = Number(import.meta.env.VITE_PAGES_DOMAIN_POLL_MS ?? 5000)
@@ -117,6 +119,11 @@ function SetupCard({
             ))}
           </tbody>
         </table>
+      ) : null}
+      {status.data?.diagnosis?.length ? (
+        <Suspense fallback={null}>
+          <DomainChecklist rows={status.data.diagnosis} />
+        </Suspense>
       ) : null}
       {current.detail && !done ? (
         <p className="text-xs text-muted-foreground" aria-live="polite">
