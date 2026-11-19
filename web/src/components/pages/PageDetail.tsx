@@ -18,7 +18,6 @@ import { RollbackCard } from './RollbackCard'
 import { SiteHero } from './SiteHero'
 import { PageDomains } from './PageDomains'
 import { SitePublisher } from '../dropdeploy/SitePublisher'
-import { PageRoutes } from './PageRoutes'
 import { useDeployProgress } from '../../hooks/useDeployProgress'
 import { PAGE_TABS, type PageTab } from './pageHelpers'
 import { usePageTabBadges } from './usePageTabBadges'
@@ -26,6 +25,8 @@ import { useApp, useDeleteApp } from '../../queries/apps'
 
 // Cards load on demand so the detail route keeps its first-load budget.
 const PageOverview = lazy(() => import('./PageOverview'))
+const PageRoutes = lazy(() => import('./PageRoutes'))
+const SiteSettingsForm = lazy(() => import('./SiteSettingsForm'))
 
 function Deployments({
   name,
@@ -61,6 +62,9 @@ function Settings({
   const { t } = useTranslation('pagesSites')
   return (
     <div className="space-y-2">
+      <Suspense fallback={<Skeleton className="h-48 w-full" />}>
+        <SiteSettingsForm name={name} />
+      </Suspense>
       <div className="flex flex-wrap items-center justify-between gap-3 rounded-lg border border-border bg-card px-4 py-2.5">
         <p className="text-sm font-medium">{t('settings.app')}</p>
         <Button

@@ -1,10 +1,6 @@
-import { useState, type FormEvent } from 'react'
+import { useMemo, useState, type FormEvent } from 'react'
 import { useTranslation } from 'react-i18next'
-import {
-  CircleCheckGlassIcon,
-  CopyGlassIcon,
-  SignpostGlassIcon,
-} from '@thesvg/ui-react'
+import { PlusGlassIcon, SignpostGlassIcon } from '@thesvg/ui-react'
 import { Alert, AlertDescription } from '@/components/ui/alert'
 import { Badge } from '@/components/ui/badge'
 import { Button } from '@/components/ui/button'
@@ -16,14 +12,31 @@ import {
 import { EmptyState } from '@/components/ui/empty-state'
 import { Input } from '@/components/ui/input'
 import { Skeleton } from '@/components/ui/skeleton'
-import { useCopyToClipboard } from '../../hooks/useCopyToClipboard'
 import { ApiError } from '@/lib/apiError'
+import { toast } from '@/components/ui/toast'
+import { useTestStaticRoutes } from '../../queries/staticRoutes'
 import {
-  useStaticRoutes,
-  useTestStaticRoutes,
-  type StaticRule,
-} from '../../queries/staticRoutes'
-import { redirectLine } from './pageHelpers'
+  RulesSaveError,
+  useSaveSiteRules,
+  useSiteRules,
+  type RuleSaveProblem,
+  type SiteRules,
+} from '../../queries/pagesSites'
+import {
+  HeaderEditorRow,
+  ReadOnlyHeader,
+  ReadOnlyRedirect,
+  RedirectEditorRow,
+} from './RuleRows'
+import {
+  draftFromUi,
+  draftToUi,
+  moveItem,
+  newHeader,
+  newRedirect,
+  sameRules,
+  type Draft,
+} from './rulesDraft'
 import { ProblemList } from '../static/ProblemList'
 import { StaticRoutesTester } from '../static/StaticRoutesTester'
 
@@ -77,80 +90,245 @@ function TestField({ app }: Readonly<{ app: string }>) {
   )
 }
 
-function AddRule({ initialFrom }: Readonly<{ initialFrom?: string }>) {
+function problemMap(
+  problems: readonly RuleSaveProblem[],
+  kind: RuleSaveProblem['kind'],
+): Map<number, string> {
+  const m = new Map<number, string>()
+  for (const p of problems) {
+    if (p.kind === kind && p.index >= 0) m.set(p.index, p.message)
+  }
+  return m
+}
+
+function initialDraft(d: SiteRules, from?: string): Draft | null {
+  if (!from || d.ui.redirects.some((r) => r.from === from)) return null
+  const base = draftFromUi(d.ui)
+  return { ...base, redirects: [...base.redirects, newRedirect(from)] }
+}
+
+function AddButton({
+  label,
+  onClick,
+}: Readonly<{ label: string; onClick: () => void }>) {
+  return (
+    <Button type="button" size="sm" variant="outline" onClick={onClick}>
+      <PlusGlassIcon className="size-4" aria-hidden="true" />
+      {label}
+    </Button>
+  )
+}
+
+function RulesEditor({
+  app,
+  data,
+  redirectFrom,
+}: Readonly<{ app: string; data: SiteRules; redirectFrom?: string }>) {
   const { t } = useTranslation('pagesSites')
-  const { copied, copy } = useCopyToClipboard()
-  const [from, setFrom] = useState(initialFrom ?? '')
-  const [to, setTo] = useState('/')
-  const [status, setStatus] = useState('301')
-  const ready = from.startsWith('/') && to.trim() !== ''
+  const save = useSaveSiteRules(app)
+  const [draft, setDraft] = useState<Draft | null>(() =>
+    initialDraft(data, redirectFrom),
+  )
+  const [problems, setProblems] = useState<RuleSaveProblem[]>([])
+  const saved = useMemo(() => draftFromUi(data.ui), [data.ui])
+  const cur = draft ?? saved
+  const dirty = draft !== null && !sameRules(draftToUi(draft), draftToUi(saved))
+  const edit = (next: Draft) => {
+    setDraft(next)
+    setProblems([])
+  }
+  const rErr = problemMap(problems, 'redirect')
+  const hErr = problemMap(problems, 'header')
+  const general = problems.filter((p) => p.index < 0)
+  const addRedirect = () =>
+    edit({ ...cur, redirects: [...cur.redirects, newRedirect()] })
+  const addHeader = () =>
+    edit({ ...cur, headers: [...cur.headers, newHeader()] })
+  const onSave = () => {
+    save.mutate(draftToUi(cur), {
+      onSuccess: () => {
+        setDraft(null)
+        setProblems([])
+        toast.add({ title: t('routes.saved'), type: 'success' })
+      },
+      onError: (e) => {
+        if (e instanceof RulesSaveError) {
+          setProblems(e.problems)
+          toast.add({ title: t('routes.invalid'), type: 'error' })
+        } else {
+          toast.add({ title: e.message, type: 'error' })
+        }
+      },
+    })
+  }
+  const lockedRedirects = data.redirects.filter((r) => r.source !== 'ui')
+  const lockedHeaders = data.headers.filter((h) => h.source !== 'ui')
   return (
-    <div className="flex flex-wrap items-center gap-2">
-      <Input
-        aria-label={t('routes.from')}
-        value={from}
-        placeholder="/old"
-        className="min-w-32 flex-1 font-mono"
-        onChange={(e) => setFrom(e.target.value)}
-      />
-      <Input
-        aria-label={t('routes.to')}
-        value={to}
-        placeholder="/new"
-        className="min-w-32 flex-1 font-mono"
-        onChange={(e) => setTo(e.target.value)}
-      />
-      <select
-        aria-label={t('routes.status')}
-        value={status}
-        onChange={(e) => setStatus(e.target.value)}
-        className="h-9 rounded-md border border-input bg-background px-2 text-sm"
-      >
-        <option value="301">301</option>
-        <option value="302">302</option>
-        <option value="200">200</option>
-      </select>
-      <Button
-        type="button"
-        size="sm"
-        variant="outline"
-        disabled={!ready}
-        onClick={() => copy(redirectLine(from, to, status))}
-      >
-        {copied ? (
-          <CircleCheckGlassIcon className="size-4" aria-hidden="true" />
+    <>
+      {data.problems.length > 0 ? (
+        <Alert variant="destructive">
+          <AlertDescription>
+            <ProblemList problems={data.problems} />
+          </AlertDescription>
+        </Alert>
+      ) : null}
+      {general.length > 0 ? (
+        <Alert variant="destructive" role="alert">
+          <AlertDescription>
+            {general.map((p) => (
+              <p key={p.message}>{p.message}</p>
+            ))}
+          </AlertDescription>
+        </Alert>
+      ) : null}
+      <section className="space-y-2 rounded-lg border border-border bg-card p-3">
+        <div className="flex flex-wrap items-center justify-between gap-2">
+          <h2 className="text-sm font-semibold">{t('routes.rules')}</h2>
+          <AddButton label={t('routes.addRedirect')} onClick={addRedirect} />
+        </div>
+        {cur.redirects.length + lockedRedirects.length === 0 ? (
+          <EmptyState
+            compact
+            icon={<SignpostGlassIcon className="size-6" />}
+            title={t('routes.none')}
+            action={
+              <Button size="sm" onClick={addRedirect}>
+                {t('routes.addRedirect')}
+              </Button>
+            }
+          />
         ) : (
-          <CopyGlassIcon className="size-4" aria-hidden="true" />
+          <ul className="divide-y divide-border rounded-md border border-border">
+            {cur.redirects.map((r, i) => (
+              <RedirectEditorRow
+                key={r.id}
+                row={r}
+                index={i}
+                count={cur.redirects.length}
+                error={rErr.get(i)}
+                onChange={(patch) =>
+                  edit({
+                    ...cur,
+                    redirects: cur.redirects.map((x) =>
+                      x.id === r.id ? { ...x, ...patch } : x,
+                    ),
+                  })
+                }
+                onMove={(to) =>
+                  edit({ ...cur, redirects: moveItem(cur.redirects, i, to) })
+                }
+                onRemove={() =>
+                  edit({
+                    ...cur,
+                    redirects: cur.redirects.filter((x) => x.id !== r.id),
+                  })
+                }
+                onEnterLast={addRedirect}
+              />
+            ))}
+            {lockedRedirects.map((r) => (
+              <ReadOnlyRedirect
+                key={`${r.source}:${r.from}:${r.to}`}
+                rule={r}
+              />
+            ))}
+          </ul>
         )}
-        {t('routes.copyLine')}
-      </Button>
-    </div>
+      </section>
+      <section className="space-y-2 rounded-lg border border-border bg-card p-3">
+        <div className="flex flex-wrap items-center justify-between gap-2">
+          <h2 className="text-sm font-semibold">{t('routes.headers')}</h2>
+          <AddButton label={t('routes.addHeader')} onClick={addHeader} />
+        </div>
+        {cur.headers.length + lockedHeaders.length === 0 ? (
+          <EmptyState
+            compact
+            icon={<SignpostGlassIcon className="size-6" />}
+            title={t('routes.noHeaders')}
+            action={
+              <Button size="sm" onClick={addHeader}>
+                {t('routes.addHeader')}
+              </Button>
+            }
+          />
+        ) : (
+          <ul className="divide-y divide-border rounded-md border border-border">
+            {cur.headers.map((h, i) => (
+              <HeaderEditorRow
+                key={h.id}
+                row={h}
+                index={i}
+                count={cur.headers.length}
+                error={hErr.get(i)}
+                onChange={(patch) =>
+                  edit({
+                    ...cur,
+                    headers: cur.headers.map((x) =>
+                      x.id === h.id ? { ...x, ...patch } : x,
+                    ),
+                  })
+                }
+                onMove={(to) =>
+                  edit({ ...cur, headers: moveItem(cur.headers, i, to) })
+                }
+                onRemove={() =>
+                  edit({
+                    ...cur,
+                    headers: cur.headers.filter((x) => x.id !== h.id),
+                  })
+                }
+              />
+            ))}
+            {lockedHeaders.map((h) => (
+              <ReadOnlyHeader key={`${h.source}:${h.path}`} rule={h} />
+            ))}
+          </ul>
+        )}
+      </section>
+      {dirty || save.isPending ? (
+        <div
+          role="region"
+          aria-label={t('routes.unsaved')}
+          className="sticky bottom-3 z-10 flex flex-wrap items-center justify-between gap-2 rounded-lg border border-border bg-popover px-3 py-2 shadow-md"
+        >
+          <p className="text-sm" aria-live="polite">
+            {save.isPending ? t('routes.saving') : t('routes.unsaved')}
+          </p>
+          <div className="flex gap-2">
+            <Button
+              type="button"
+              size="sm"
+              variant="outline"
+              disabled={save.isPending}
+              onClick={() => {
+                setDraft(null)
+                setProblems([])
+              }}
+            >
+              {t('routes.discard')}
+            </Button>
+            <Button
+              type="button"
+              size="sm"
+              disabled={save.isPending}
+              onClick={onSave}
+            >
+              {t('routes.save')}
+            </Button>
+          </div>
+        </div>
+      ) : null}
+    </>
   )
 }
 
-function RuleRow({ rule }: Readonly<{ rule: StaticRule }>) {
-  return (
-    <li className="flex flex-wrap items-center gap-x-3 gap-y-1 px-3 py-1.5 text-xs">
-      <code className="font-mono break-all">{rule.from}</code>
-      <span aria-hidden="true" className="text-muted-foreground">
-        {'→'}
-      </span>
-      <code className="min-w-0 flex-1 font-mono break-all">{rule.to}</code>
-      <Badge variant={rule.status === 200 ? 'info' : 'muted'}>
-        {rule.status}
-      </Badge>
-      {rule.force ? <Badge variant="warning">!</Badge> : null}
-    </li>
-  )
-}
-
-/** Routes tab: a single test field first, rules as compact rows, and a copy-ready add-rule row. */
+/** Routes tab: URL tester first, then the editable UI rules next to the read-only file and app.yaml ones. */
 export function PageRoutes({
   app,
   redirectFrom,
 }: Readonly<{ app: string; redirectFrom?: string }>) {
   const { t } = useTranslation('pagesSites')
-  const q = useStaticRoutes(app)
+  const q = useSiteRules(app)
   if (q.isPending) return <Skeleton className="h-40 w-full" />
   if (q.isError) {
     const notStatic = q.error instanceof ApiError && q.error.status === 404
@@ -173,37 +351,19 @@ export function PageRoutes({
       />
     )
   }
-  const d = q.data
   return (
     <div className="space-y-3">
       <section className="space-y-2 rounded-lg border border-border bg-card p-3">
         <h2 className="text-sm font-semibold">{t('routes.testTitle')}</h2>
         <TestField app={app} />
+        <p className="text-xs text-muted-foreground">{t('routes.testHint')}</p>
       </section>
-      {d.problems.length > 0 ? (
-        <Alert variant="destructive">
-          <AlertDescription>
-            <ProblemList problems={d.problems} />
-          </AlertDescription>
-        </Alert>
-      ) : null}
-      <section className="space-y-2 rounded-lg border border-border bg-card p-3">
-        <h2 className="text-sm font-semibold">{t('routes.rules')}</h2>
-        {d.rules.length === 0 ? (
-          <EmptyState
-            compact
-            icon={<SignpostGlassIcon className="size-6" />}
-            title={t('routes.none')}
-          />
-        ) : (
-          <ul className="divide-y divide-border rounded-md border border-border">
-            {d.rules.map((r) => (
-              <RuleRow key={r.source} rule={r} />
-            ))}
-          </ul>
-        )}
-        <AddRule key={redirectFrom ?? ''} initialFrom={redirectFrom} />
-      </section>
+      <RulesEditor
+        key={redirectFrom ?? ''}
+        app={app}
+        data={q.data}
+        redirectFrom={redirectFrom}
+      />
       <Collapsible>
         <CollapsibleTrigger className="px-1 text-xs text-muted-foreground">
           {t('routes.advanced')}
@@ -215,3 +375,5 @@ export function PageRoutes({
     </div>
   )
 }
+
+export default PageRoutes

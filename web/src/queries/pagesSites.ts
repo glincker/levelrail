@@ -2,7 +2,12 @@
 // grows into, plus the create call. Fields that the server does not send
 // yet stay undefined and the UI shows a dash rather than a guess.
 
-import { queryOptions, useQuery } from '@tanstack/react-query'
+import {
+  queryOptions,
+  useMutation,
+  useQuery,
+  useQueryClient,
+} from '@tanstack/react-query'
 import { ApiError, readErrorMessage } from '../lib/apiError'
 import { staticSitesKeys, type StaticSite } from './staticSites'
 
@@ -233,5 +238,199 @@ export function siteTrafficQueryOptions(name: string, window: TrafficWindow) {
     },
     staleTime: 60_000,
     retry: false,
+  })
+}
+
+export type TrailingSlash = '' | 'off' | 'add' | 'remove'
+
+export interface SiteSettings {
+  name: string
+  build_command: string
+  output_dir: string
+  spa_fallback: boolean | null
+  clean_urls: boolean | null
+  trailing_slash: TrailingSlash
+  not_found_page: string
+  effective: {
+    spa?: boolean
+    clean_urls?: boolean
+    trailing_slash?: string
+    not_found?: string
+  }
+}
+
+export type SiteSettingKey =
+  | 'build_command'
+  | 'output_dir'
+  | 'spa_fallback'
+  | 'clean_urls'
+  | 'trailing_slash'
+  | 'not_found_page'
+
+export interface SiteSettingsPatch {
+  build_command?: string
+  output_dir?: string
+  spa_fallback?: boolean
+  clean_urls?: boolean
+  trailing_slash?: TrailingSlash
+  not_found_page?: string
+  reset?: SiteSettingKey[]
+}
+
+export const siteSettingsKey = (name: string) =>
+  [...staticSitesKeys.all, 'settings', name] as const
+
+export function siteSettingsQueryOptions(name: string) {
+  return queryOptions({
+    queryKey: siteSettingsKey(name),
+    queryFn: async () =>
+      readJson<SiteSettings>(
+        await fetch(`${siteRoot(name)}/settings`),
+        'site settings',
+      ),
+    staleTime: 30_000,
+    retry: false,
+  })
+}
+
+export function useSiteSettings(name: string) {
+  return useQuery(siteSettingsQueryOptions(name))
+}
+
+export function useUpdateSiteSettings(name: string) {
+  const qc = useQueryClient()
+  return useMutation<SiteSettings, ApiError, SiteSettingsPatch>({
+    mutationFn: async (patch) =>
+      readJson<SiteSettings>(
+        await fetch(`${siteRoot(name)}/settings`, {
+          method: 'PATCH',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify(patch),
+        }),
+        'save settings',
+      ),
+    onSuccess: (data) => qc.setQueryData(siteSettingsKey(name), data),
+  })
+}
+
+export type RuleSource = 'ui' | 'app.yaml' | 'file'
+
+export interface UiRedirect {
+  from: string
+  to: string
+  status?: number
+  force?: boolean
+}
+
+export interface UiHeader {
+  path: string
+  set?: Record<string, string>
+  remove?: string[]
+}
+
+export interface UiRules {
+  redirects: UiRedirect[]
+  headers: UiHeader[]
+}
+
+export interface EffectiveRedirect {
+  from: string
+  to: string
+  status: number
+  force: boolean
+  source: RuleSource
+  origin: string
+}
+
+export interface EffectiveHeader {
+  path: string
+  set: Record<string, string>
+  remove: string[]
+  source: RuleSource
+  origin: string
+}
+
+export interface SiteRules {
+  redirects: EffectiveRedirect[]
+  headers: EffectiveHeader[]
+  options: Record<string, unknown>
+  problems: {
+    source: string
+    line?: number
+    severity: 'error' | 'warning'
+    message: string
+  }[]
+  published: boolean
+  ui: UiRules
+}
+
+/** One 422 problem; index -1 is a cap breach that belongs to no single row. */
+export interface RuleSaveProblem {
+  kind: 'redirect' | 'header'
+  index: number
+  message: string
+}
+
+export class RulesSaveError extends ApiError {
+  readonly problems: RuleSaveProblem[]
+  constructor(message: string, problems: RuleSaveProblem[]) {
+    super(422, message)
+    this.problems = problems
+  }
+}
+
+export const siteRulesKey = (name: string) =>
+  [...staticSitesKeys.all, 'rules', name] as const
+
+export function siteRulesQueryOptions(name: string) {
+  return queryOptions({
+    queryKey: siteRulesKey(name),
+    queryFn: async () =>
+      readJson<SiteRules>(await fetch(`${siteRoot(name)}/rules`), 'site rules'),
+    staleTime: 15_000,
+    retry: false,
+  })
+}
+
+export function useSiteRules(name: string) {
+  return useQuery(siteRulesQueryOptions(name))
+}
+
+async function putRules(name: string, body: UiRules): Promise<void> {
+  const res = await fetch(`${siteRoot(name)}/rules`, {
+    method: 'PUT',
+    headers: { 'Content-Type': 'application/json' },
+    body: JSON.stringify(body),
+  })
+  if (res.ok) return
+  if (res.status === 422) {
+    const j = (await res.json().catch(() => null)) as {
+      error?: string
+      problems?: RuleSaveProblem[]
+    } | null
+    throw new RulesSaveError(j?.error ?? 'invalid rules', j?.problems ?? [])
+  }
+  throw new ApiError(
+    res.status,
+    await readErrorMessage(res, `save rules failed: ${res.status}`),
+  )
+}
+
+/** Shows the new UI rules at once and restores the previous ones when the server refuses them. */
+export function useSaveSiteRules(name: string) {
+  const qc = useQueryClient()
+  const key = siteRulesKey(name)
+  return useMutation<void, ApiError, UiRules, { prev: SiteRules | undefined }>({
+    mutationFn: (body) => putRules(name, body),
+    onMutate: async (body) => {
+      await qc.cancelQueries({ queryKey: key })
+      const prev = qc.getQueryData<SiteRules>(key)
+      if (prev) qc.setQueryData<SiteRules>(key, { ...prev, ui: body })
+      return { prev }
+    },
+    onError: (_e, _b, ctx) => {
+      if (ctx?.prev) qc.setQueryData(key, ctx.prev)
+    },
+    onSettled: () => qc.invalidateQueries({ queryKey: key }),
   })
 }
