@@ -77,6 +77,10 @@ type staticRuleRow struct {
 	// Source is ui, app.yaml or file; Origin is the exact label such as "_redirects:3".
 	Source string `json:"source"`
 	Origin string `json:"origin"`
+	// Kind is "proxy" for a rule forwarding to an app, else "route".
+	Kind        string `json:"kind"`
+	TargetApp   string `json:"target_app,omitempty"`
+	TargetState string `json:"target_state,omitempty"`
 }
 
 type staticHeaderRow struct {
@@ -395,7 +399,9 @@ func (rt *Router) handleGetStaticSiteRules(w http.ResponseWriter, r *http.Reques
 			return
 		}
 	}
-	writeJSON(w, http.StatusOK, effectiveRules(rs, ui, published))
+	out := effectiveRules(rs, ui, published)
+	rt.annotateProxyRows(r.Context(), site.Name, out.Redirects)
+	writeJSON(w, http.StatusOK, out)
 }
 
 // handlePutStaticSiteRules handles PUT /api/v1/static-sites/{name}/rules: it
@@ -412,6 +418,9 @@ func (rt *Router) handlePutStaticSiteRules(w http.ResponseWriter, r *http.Reques
 	}
 	if _, _, probs := staticroutes.CompileUI(body.Redirects, body.Headers, staticroutes.LimitsFromEnv(os.LookupEnv)); len(probs) > 0 {
 		writeJSON(w, http.StatusUnprocessableEntity, staticRulesLintFailure{Error: "routing rules are invalid", Problems: probs})
+		return
+	}
+	if !rt.authorizeProxyRules(w, r, site.Name, body.Redirects) {
 		return
 	}
 	ui := store.StaticUIRules{Redirects: make([]store.StaticUIRedirect, 0, len(body.Redirects)), Headers: make([]store.StaticUIHeader, 0, len(body.Headers))}
@@ -439,7 +448,9 @@ func (rt *Router) handlePutStaticSiteRules(w http.ResponseWriter, r *http.Reques
 	if !published {
 		rs, _ = staticroutes.Compile(staticroutes.Input{}, staticroutes.DefaultLimits())
 	}
-	writeJSON(w, http.StatusOK, effectiveRules(rs, ui, published))
+	out := effectiveRules(rs, ui, published)
+	rt.annotateProxyRows(r.Context(), site.Name, out.Redirects)
+	writeJSON(w, http.StatusOK, out)
 }
 
 // hashSitePassword validates pw against the env bounds and returns its bcrypt

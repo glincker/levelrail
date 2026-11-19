@@ -63,6 +63,11 @@ func (p *Pipeline) prepareStaticRouting(ctx context.Context, req Request, destDi
 	if err := p.applyStaticUI(ctx, req.ServiceName, rs, l); err != nil {
 		return fmt.Errorf("routing rules: %w", err)
 	}
+	for _, pr := range rs.ProxyRules() {
+		if app, _ := pr.ProxyTarget(); app == req.ServiceName {
+			return fmt.Errorf("routing rules: %s: a site cannot proxy to itself", pr.Source)
+		}
+	}
 	for _, pr := range rs.Problems {
 		emitStatic(progress, stepStaticRoutes, fmt.Sprintf("%s: %s:%d: %s (line skipped)", pr.Severity, pr.Source, pr.Line, pr.Message), false)
 	}

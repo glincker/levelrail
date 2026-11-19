@@ -80,6 +80,15 @@ func CompileUI(redirects []UIRedirect, headers []UIHeader, l Limits) ([]Rule, []
 		}
 		blocks = append(blocks, b)
 	}
+	proxies := 0
+	for i := range rules {
+		if rules[i].IsProxy() {
+			proxies++
+		}
+	}
+	if l.MaxProxyRules > 0 && proxies > l.MaxProxyRules {
+		probs = append(probs, LineProblem{Kind: "redirect", Index: -1, Message: fmt.Sprintf("%d proxy rules is over the cap of %d (%s)", proxies, l.MaxProxyRules, EnvMaxProxyRules)})
+	}
 	if len(rules)+len(redirects)-len(rules) > l.MaxRules {
 		probs = append(probs, LineProblem{Kind: "redirect", Index: -1, Message: fmt.Sprintf("%d rules is over the cap of %d (%s)", len(redirects), l.MaxRules, EnvMaxRules)})
 	}

@@ -18,6 +18,8 @@ const (
 	KindServe    = "serve"
 	KindRedirect = "redirect"
 	KindNotFound = "not_found"
+	// KindProxy means the ingress forwards the request to an app; the file server never serves it.
+	KindProxy = "proxy"
 )
 
 // Request is the part of an HTTP request resolution looks at. Path is the
@@ -81,7 +83,7 @@ func (rs *Ruleset) resolvePath(fsys StatFS, req Request, p string, d *Decision) 
 		if caps == nil || !matchQuery(r, q, caps) {
 			continue
 		}
-		if !r.Force && fileAtPath {
+		if !r.Force && fileAtPath && !r.IsProxy() {
 			d.Trace = append(d.Trace, fmt.Sprintf("%s matches but a file exists at %s and the rule is not forced (add ! to the status)", r.Source, p))
 			continue
 		}
@@ -93,6 +95,13 @@ func (rs *Ruleset) resolvePath(fsys StatFS, req Request, p string, d *Decision) 
 }
 
 func (rs *Ruleset) applyRule(fsys StatFS, req Request, r *Rule, caps map[string]string, p string, d *Decision) bool {
+	if r.IsProxy() {
+		app, tmpl := r.ProxyTarget()
+		upstream := substitute(tmpl, caps)
+		d.Kind, d.Status, d.Location, d.Rule = KindProxy, 200, upstream, r.Source
+		d.Trace = append(d.Trace, fmt.Sprintf("%s: proxy to app %s at %s", r.Source, app, upstream))
+		return true
+	}
 	to := substitute(r.To, caps)
 	switch {
 	case isRedirectStatus(r.Status):
