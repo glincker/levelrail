@@ -215,7 +215,7 @@ levelrail pages domains status docs docs.example.com
 
 ## Domain checklist
 
-`GET /api/v1/static-sites/{name}/domains/{domain}/status` also returns a `diagnosis` list of `{code, ok, hint}` rows: DNS pointing at this host (A, AAAA, CNAME, CDN proxy), propagation, ports 80 and 443, certificate and CA failure reason, a private or CGNAT host address, and whether `www` and the apex agree. It reuses the [domain doctor](/domain-diagnosis), so the same time limits apply (`APP_DOMAIN_DOCTOR_TIMEOUT`, `APP_DOMAIN_DOCTOR_PROBE_TIMEOUT`). Port checks only run when the domain resolves to this server. The dashboard shows the rows as a compact checklist on the domain card and `pages domains status` prints them.
+`GET /api/v1/static-sites/{name}/domains/{domain}/status` also returns a `diagnosis` list of `{code, ok, hint}` rows: DNS pointing at this host (A, AAAA, CNAME, CDN proxy), propagation, ports 80 and 443, certificate and CA failure reason, a private or CGNAT host address, and whether `www` and the apex agree. It reuses the [domain doctor](/domain-diagnosis), so the same time limits apply (`APP_DOMAIN_DOCTOR_TIMEOUT`, `APP_DOMAIN_DOCTOR_PROBE_TIMEOUT`). The diagnosis is cached per site and domain for `APP_PAGES_DOCTOR_CACHE_TTL` (default 30s) and shared by concurrent callers; a stale one is returned at once and refreshed in the background. Add `?diagnose=1` to force a fresh run (`pages domains status` does). `verified` and `cert` are always live. A missing `www` or apex record is shown as an optional hint, not a failure. Port checks only run when the domain resolves to this server. The dashboard shows the rows as a compact checklist on the domain card and `pages domains status` prints them.
 
 ## Contact forms
 

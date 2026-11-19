@@ -118,7 +118,8 @@ func (rt *Router) handleAddStaticSiteDomain(w http.ResponseWriter, r *http.Reque
 }
 
 // handleStaticSiteDomainStatus handles GET /api/v1/static-sites/{name}/domains/{domain}/status:
-// a read-only probe of DNS propagation and the served certificate.
+// a read-only probe of DNS propagation and the served certificate. The
+// diagnosis rows are cached; ?diagnose=1 forces a fresh doctor run.
 func (rt *Router) handleStaticSiteDomainStatus(w http.ResponseWriter, r *http.Request) {
 	name, ok := rt.loadGoLiveApp(w, r)
 	if !ok {
@@ -156,6 +157,6 @@ func (rt *Router) handleStaticSiteDomainStatus(w http.ResponseWriter, r *http.Re
 			}
 		}
 	}
-	out.Diagnosis = rt.siteDomainDiagnosis(r.Context(), name, domain)
+	out.Diagnosis = rt.siteDomainDiagnosis(r.Context(), name, domain, r.URL.Query().Get("diagnose") == "1")
 	writeJSON(w, http.StatusOK, out)
 }

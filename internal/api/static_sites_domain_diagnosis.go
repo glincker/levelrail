@@ -114,7 +114,8 @@ func (rt *Router) wwwApexDiagnosis(ctx context.Context, domain string, resolved 
 	d := siteDiagnosis{Code: diagCodeWWW}
 	switch {
 	case err != nil || len(hosts) == 0:
-		d.Hint = sibling + " has no DNS record"
+		// Optional: many sites serve only one of the two names.
+		d.OK, d.Hint = true, sibling+" has no DNS record (optional)"
 	case len(resolved) > 0 && !hostsOverlap(hosts, resolved):
 		d.Hint = sibling + " points at a different address"
 	default:
@@ -123,8 +124,17 @@ func (rt *Router) wwwApexDiagnosis(ctx context.Context, domain string, resolved 
 	return d, true
 }
 
-// siteDomainDiagnosis runs the domain doctor and the extra rows for one site.
-func (rt *Router) siteDomainDiagnosis(ctx context.Context, name, domain string) []siteDiagnosis {
+// siteDomainDiagnosis returns the cached diagnosis for one site domain, or a
+// fresh run when force is set or nothing is cached yet.
+func (rt *Router) siteDomainDiagnosis(ctx context.Context, name, domain string, force bool) []siteDiagnosis {
+	ttl := envDuration(envPagesDoctorCacheTTL, defaultPagesDoctorCacheTTL)
+	return rt.siteDiag.get(ctx, name+"\x00"+domain, force, ttl, func(c context.Context) []siteDiagnosis {
+		return rt.runSiteDomainDiagnosis(c, name, domain)
+	})
+}
+
+// runSiteDomainDiagnosis runs the domain doctor and the extra rows for one site.
+func (rt *Router) runSiteDomainDiagnosis(ctx context.Context, name, domain string) []siteDiagnosis {
 	rep, status, _ := rt.runDomainDoctor(ctx, name, domain, nil)
 	if status != 0 {
 		return []siteDiagnosis{}

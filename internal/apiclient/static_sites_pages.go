@@ -83,7 +83,7 @@ func (c *Client) AddStaticSiteDomain(ctx context.Context, name, domain string) (
 // StaticSiteDomainStatus calls GET /api/v1/static-sites/{name}/domains/{domain}/status.
 func (c *Client) StaticSiteDomainStatus(ctx context.Context, name, domain string) (StaticSiteDomain, error) {
 	var out StaticSiteDomain
-	err := c.do(ctx, http.MethodGet, "/api/v1/static-sites/"+PathEscape(name)+"/domains/"+PathEscape(strings.ToLower(domain))+"/status", nil, &out)
+	err := c.do(ctx, http.MethodGet, "/api/v1/static-sites/"+PathEscape(name)+"/domains/"+PathEscape(strings.ToLower(domain))+"/status?diagnose=1", nil, &out)
 	return out, err
 }
 

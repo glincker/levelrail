@@ -1,9 +1,13 @@
 package api
 
 import (
+	"context"
 	"encoding/json"
 	"net/http"
+	"sync"
+	"sync/atomic"
 	"testing"
+	"time"
 
 	"github.com/GLINCKER/levelrail/internal/domaindoctor"
 )
@@ -108,5 +112,57 @@ func TestShortHint(t *testing.T) {
 	}
 	if got := shortHint(long); len([]rune(got)) > siteDiagnosisHintMax {
 		t.Fatalf("hint len = %d", len([]rune(got)))
+	}
+}
+
+func TestSiteDiagnosisCache(t *testing.T) {
+	var c siteDiagnosisCache
+	var runs atomic.Int32
+	run := func(context.Context) []siteDiagnosis {
+		runs.Add(1)
+		return []siteDiagnosis{{Code: "x", OK: true}}
+	}
+	ctx := context.Background()
+	c.get(ctx, "k", false, time.Hour, run)
+	c.get(ctx, "k", false, time.Hour, run)
+	if runs.Load() != 1 {
+		t.Fatalf("cache hit ran doctor %d times", runs.Load())
+	}
+	c.get(ctx, "k", true, time.Hour, run)
+	if runs.Load() != 2 {
+		t.Fatalf("force refresh runs = %d", runs.Load())
+	}
+}
+
+func TestSiteDiagnosisSingleFlight(t *testing.T) {
+	var c siteDiagnosisCache
+	var runs atomic.Int32
+	release := make(chan struct{})
+	run := func(context.Context) []siteDiagnosis {
+		runs.Add(1)
+		<-release
+		return []siteDiagnosis{}
+	}
+	var wg sync.WaitGroup
+	for range 5 {
+		wg.Add(1)
+		go func() {
+			defer wg.Done()
+			c.get(context.Background(), "k", true, time.Hour, run)
+		}()
+	}
+	time.Sleep(100 * time.Millisecond)
+	close(release)
+	wg.Wait()
+	if runs.Load() != 1 {
+		t.Fatalf("concurrent callers ran doctor %d times", runs.Load())
+	}
+}
+
+func TestWWWSiblingWithoutRecordIsHint(t *testing.T) {
+	f := newGoLiveFixture(t, "203.0.113.5")
+	d, ok := f.rt.wwwApexDiagnosis(context.Background(), "nodns.test", nil)
+	if !ok || !d.OK || d.Hint == "" {
+		t.Fatalf("www row = %+v ok=%v", d, ok)
 	}
 }

@@ -155,6 +155,7 @@ type Router struct {
 
 	dash        *dashboardCache // never nil after NewRouter; WithDashboardCache sets the ttl
 	dashPrewarm bool
+	siteDiag    siteDiagnosisCache
 
 	logger                 *slog.Logger
 	brand                  *brand.Brand
