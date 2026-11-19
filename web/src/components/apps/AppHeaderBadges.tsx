@@ -43,6 +43,7 @@ function Chip({
 export function AppHeaderBadges({
   app,
   attentionCount = 0,
+  isStatic = false,
 }: {
   app: Pick<
     AppDetail,
@@ -53,6 +54,8 @@ export function AppHeaderBadges({
     | 'previous_release_held_until'
   >
   attentionCount?: number
+  /** Static sites have no container port and show their deploy line elsewhere. */
+  isStatic?: boolean
 }) {
   const { t } = useTranslation('appAccess')
   const { t: tSleep } = useTranslation('sleepHistory')
@@ -122,7 +125,7 @@ export function AppHeaderBadges({
           </Chip>
         </Link>
       ) : null}
-      {network?.container_port ? (
+      {!isStatic && network?.container_port ? (
         <Link to="/apps/$name/network" params={{ name: app.name }}>
           <Chip
             label={portLabel}
@@ -154,7 +157,7 @@ export function AppHeaderBadges({
           </Chip>
         </Link>
       ) : null}
-      {lastOk?.finished_at ? (
+      {!isStatic && lastOk?.finished_at ? (
         <Link to="/apps/$name/deploys" params={{ name: app.name }}>
           <Chip
             label={deployedLabel}

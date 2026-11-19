@@ -49,6 +49,8 @@ import { useResourceReading } from './useResourceReading'
 import { isImageDeploy } from './suggestions'
 import { TrafficTiles } from './TrafficTiles'
 import { VisitorsCard } from './VisitorsCard'
+import { StaticStatStrip } from './StaticStatStrip'
+import type { VisitorsWindow } from '../../queries/appVisitors'
 import { useAppUrl } from './useAppUrl'
 import { useOverviewActions } from './useOverviewActions'
 import { useOverviewHotkeys } from './useOverviewHotkeys'
@@ -66,6 +68,7 @@ export function OverviewPage({
   attempts: DeployAttempt[]
 }) {
   const [deployTab, setDeployTab] = useState<DeployTab | null>(null)
+  const [range, setRange] = useState<VisitorsWindow>('24h')
   const baseUrl = useAppUrl(app)
   const { data: urls } = useAppUrls(app.name)
   const openUrl = baseUrl ?? pickOpenUrl(urls)
@@ -176,17 +179,25 @@ export function OverviewPage({
     ),
     kpis: (
       <div className="space-y-4">
-        <section
-          aria-label="Live traffic and resources"
-          className="grid grid-cols-[repeat(auto-fit,minmax(10.5rem,1fr))] gap-3"
-        >
-          {layout.containerMetrics ? <ResourceTiles reading={reading} /> : null}
-          {layout.traffic !== 'hidden' ? (
-            <TrafficTiles appName={app.name} url={url} hideEmpty />
-          ) : null}
-        </section>
+        {isStatic ? null : (
+          <section
+            aria-label="Live traffic and resources"
+            className="grid grid-cols-[repeat(auto-fit,minmax(10.5rem,1fr))] gap-3"
+          >
+            {layout.containerMetrics ? (
+              <ResourceTiles reading={reading} />
+            ) : null}
+            {layout.traffic !== 'hidden' ? (
+              <TrafficTiles appName={app.name} url={url} hideEmpty />
+            ) : null}
+          </section>
+        )}
         {layout.traffic !== 'hidden' ? (
-          <VisitorsCard appName={app.name} />
+          <VisitorsCard
+            appName={app.name}
+            window={isStatic ? range : undefined}
+            onWindowChange={isStatic ? setRange : undefined}
+          />
         ) : null}
       </div>
     ),
@@ -195,7 +206,7 @@ export function OverviewPage({
     activity: (
       <div className="space-y-6">
         {isStatic ? <DropDeployCard appName={app.name} /> : null}
-        {uploadAttempt ? (
+        {uploadAttempt && !isStatic ? (
           <UploadSourceCard
             appName={app.name}
             attempt={uploadAttempt}
@@ -245,6 +256,16 @@ export function OverviewPage({
         onDeploy={setDeployTab}
         gitMissing={git.error instanceof ApiError && git.error.status === 404}
         isStatic={isStatic}
+        statStrip={
+          isStatic ? (
+            <StaticStatStrip
+              appName={app.name}
+              range={range}
+              latest={latest}
+              domainCount={app.domains?.length ?? 0}
+            />
+          ) : undefined
+        }
         preview={
           <Suspense
             fallback={
@@ -261,16 +282,23 @@ export function OverviewPage({
           </Suspense>
         }
       />
-      <OverviewQuickLinks
-        app={app}
-        reading={reading}
-        latest={latest}
-        isStatic={isStatic}
-      />
+      {isStatic ? null : (
+        <OverviewQuickLinks
+          app={app}
+          reading={reading}
+          latest={latest}
+          isStatic={isStatic}
+        />
+      )}
       <RecommendedNextCard
         app={app}
         latest={latest}
-        omit={diagnosisShown ? ['add_domain', 'failed_deploy'] : ['add_domain']}
+        omit={[
+          'add_domain',
+          ...(diagnosisShown ? (['failed_deploy'] as const) : []),
+          // A static site has no process to probe.
+          ...(isStatic ? (['add_health_check'] as const) : []),
+        ]}
       />
       {layout.sections.map((id) => (
         <Fragment key={id}>{sections[id]}</Fragment>

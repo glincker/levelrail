@@ -12,6 +12,7 @@ import { deriveHeroStatus, phaseWords } from './heroStatus'
 import { HeroActions } from './HeroActions'
 import { pickHeroPrimary } from './heroPrimary'
 import { ReleaseLine } from './ReleaseLine'
+import { StaticDeployLine } from './StaticDeployLine'
 import { TagChips } from './TagChips'
 import { AutoUrlInfo } from './AutoUrlInfo'
 import { UrlLine } from './UrlLine'
@@ -31,6 +32,7 @@ export function OverviewHero({
   gitMissing = false,
   isStatic = false,
   preview,
+  statStrip,
 }: {
   app: AppDetail
   conditions: ReconcileCondition[]
@@ -46,6 +48,8 @@ export function OverviewHero({
   isStatic?: boolean
   /** Preview card shown top right from 900px, stacked below the identity block before. */
   preview?: ReactNode
+  /** Static sites: stat strip shown under the summary in the left column. */
+  statStrip?: ReactNode
 }) {
   const { t } = useTranslation('common')
   const { t: tAccess } = useTranslation('appAccess')
@@ -98,7 +102,7 @@ export function OverviewHero({
               title={status.title}
             />
             <span className="max-sm:hidden">
-              <AppLiveBadge app={app.name} />
+              <AppLiveBadge app={app.name} skipLocal={isStatic} />
             </span>
             {runningStage && latestAttempt ? (
               <Link
@@ -138,10 +142,19 @@ export function OverviewHero({
               </Link>
             </span>
           ) : null}
-          <ReleaseLine app={app} latest={released ?? latestAttempt} />
+          {isStatic ? (
+            <StaticDeployLine latest={released ?? latestAttempt} />
+          ) : (
+            <ReleaseLine app={app} latest={released ?? latestAttempt} />
+          )}
           <TagChips appName={app.name} tags={app.tags} />
-          <AppHeaderBadges app={app} attentionCount={attentionCount} />
+          <AppHeaderBadges
+            app={app}
+            attentionCount={attentionCount}
+            isStatic={isStatic}
+          />
         </section>
+        {statStrip}
       </div>
       {preview ? <div className="min-w-0">{preview}</div> : null}
     </div>

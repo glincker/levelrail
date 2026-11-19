@@ -40,5 +40,40 @@
     "mobile": "モバイル",
     "viewport": "表示幅",
     "recapture": "再取得"
+  },
+  "staticStrip": {
+    "label": "サイトの概要",
+    "visitors": "訪問者数、{{range}}",
+    "requests": "リクエスト数、{{range}}",
+    "errors": "エラー",
+    "errorsInfo": "選択した期間の4xxと5xxレスポンスの割合。",
+    "visitorsInfo": "選択した期間のユニーク訪問者数。プライバシーのリセットごとに数え直します。",
+    "deploy": "最新のデプロイ",
+    "size": "サイズ",
+    "files_one": "{{count}} ファイル",
+    "files_other": "{{count}} ファイル",
+    "domains": "ドメイン",
+    "addDomain": "ドメインを追加"
+  },
+  "staticLine": {
+    "details": "デプロイの詳細",
+    "source": {
+      "upload": "CLIアップロード",
+      "webhook": "Git push",
+      "git_push": "Git push",
+      "poll": "Gitポーリング",
+      "pr_comment": "PRコメント",
+      "manual": "ダッシュボード",
+      "promote": "昇格",
+      "clone": "クローン",
+      "auto_rollback": "自動ロールバック",
+      "schedule": "スケジュール",
+      "image": "イメージ",
+      "compose": "Compose",
+      "restart": "再起動",
+      "start": "開始",
+      "stop": "停止",
+      "other": "デプロイ"
+    }
   }
 }

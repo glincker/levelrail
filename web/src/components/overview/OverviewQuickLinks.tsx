@@ -11,19 +11,7 @@ import { formatSize } from '../../lib/format'
 import type { AppDetail } from '../../types/appDetail'
 import type { DeployAttempt } from '../../types/deployAttempt'
 import type { ResourceReading } from './useResourceReading'
-
-const DEPLOY_STATE: Record<DeployAttempt['status'], StatusState> = {
-  running: 'deploying',
-  succeeded: 'healthy',
-  failed: 'failed',
-  held: 'paused',
-  awaiting_approval: 'pending',
-  superseded: 'stopped',
-  queued: 'queued',
-  canceled: 'stopped',
-  refused: 'failed',
-  pending: 'pending',
-}
+import { DEPLOY_STATE } from './staticStripModel'
 
 interface Item {
   key: string

@@ -40,5 +40,40 @@
     "mobile": "Móvil",
     "viewport": "Ancho de vista",
     "recapture": "Recapturar"
+  },
+  "staticStrip": {
+    "label": "Resumen del sitio",
+    "visitors": "Visitantes, {{range}}",
+    "requests": "Solicitudes, {{range}}",
+    "errors": "Errores",
+    "errorsInfo": "Porcentaje de respuestas 4xx y 5xx en el rango elegido.",
+    "visitorsInfo": "Visitantes únicos en el rango elegido, contados de nuevo tras cada reinicio de privacidad.",
+    "deploy": "Último deploy",
+    "size": "Tamaño",
+    "files_one": "{{count}} archivo",
+    "files_other": "{{count}} archivos",
+    "domains": "Dominios",
+    "addDomain": "Añadir dominio"
+  },
+  "staticLine": {
+    "details": "Detalles del deploy",
+    "source": {
+      "upload": "Subida por CLI",
+      "webhook": "Git push",
+      "git_push": "Git push",
+      "poll": "Sondeo de Git",
+      "pr_comment": "Comentario de PR",
+      "manual": "Panel",
+      "promote": "Promoción",
+      "clone": "Clon",
+      "auto_rollback": "Rollback automático",
+      "schedule": "Programación",
+      "image": "Imagen",
+      "compose": "Compose",
+      "restart": "Reinicio",
+      "start": "Inicio",
+      "stop": "Parada",
+      "other": "Deploy"
+    }
   }
 }

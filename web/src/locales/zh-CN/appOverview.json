@@ -40,5 +40,40 @@
     "mobile": "手机",
     "viewport": "视口宽度",
     "recapture": "重新截取"
+  },
+  "staticStrip": {
+    "label": "站点概览",
+    "visitors": "访客,{{range}}",
+    "requests": "请求数,{{range}}",
+    "errors": "错误",
+    "errorsInfo": "所选时间范围内 4xx 和 5xx 响应的占比。",
+    "visitorsInfo": "所选时间范围内的独立访客,每次隐私重置后重新计数。",
+    "deploy": "最近部署",
+    "size": "大小",
+    "files_one": "{{count}} 个文件",
+    "files_other": "{{count}} 个文件",
+    "domains": "域名",
+    "addDomain": "添加域名"
+  },
+  "staticLine": {
+    "details": "部署详情",
+    "source": {
+      "upload": "CLI 上传",
+      "webhook": "Git 推送",
+      "git_push": "Git 推送",
+      "poll": "Git 轮询",
+      "pr_comment": "PR 评论",
+      "manual": "控制台",
+      "promote": "升级",
+      "clone": "克隆",
+      "auto_rollback": "自动回滚",
+      "schedule": "计划任务",
+      "image": "镜像",
+      "compose": "Compose",
+      "restart": "重启",
+      "start": "启动",
+      "stop": "停止",
+      "other": "部署"
+    }
   }
 }

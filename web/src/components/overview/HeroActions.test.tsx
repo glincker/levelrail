@@ -33,7 +33,10 @@ vi.mock('./useOverviewActions', () => ({
     goToDeploys: vi.fn(),
   }),
 }))
-vi.mock('../../queries/staticSites', () => ({ useIsStaticSite: () => false }))
+const staticSite = vi.hoisted(() => ({ value: false }))
+vi.mock('../../queries/staticSites', () => ({
+  useIsStaticSite: () => staticSite.value,
+}))
 vi.mock('../PromoteAppDialog', () => ({ PromoteAppDialog: () => null }))
 vi.mock('../CloneAppDialog', () => ({ CloneAppDialog: () => null }))
 vi.mock('../DeleteAppDialog', () => ({ DeleteAppDialog: () => null }))
@@ -98,5 +101,21 @@ describe('HeroActions', () => {
     expect(await screen.findByText('Delete...')).toBeInTheDocument()
     expect(screen.getByText('Restart')).toBeInTheDocument()
     expect(screen.getByText('Stop')).toBeInTheDocument()
+  })
+
+  it('drops the container deploy options and the key hint for a static site', async () => {
+    staticSite.value = true
+    try {
+      render(<HeroActions app={app} url="https://a.test" onDeploy={vi.fn()} />)
+      expect(document.querySelector('kbd')).toBeNull()
+      await userEvent.click(
+        screen.getByRole('button', { name: 'More deploy options' }),
+      )
+      expect(await screen.findByText('Redeploy current')).toBeInTheDocument()
+      expect(screen.queryByText('Build from source...')).toBeNull()
+      expect(screen.queryByText('Deploy image...')).toBeNull()
+    } finally {
+      staticSite.value = false
+    }
   })
 })

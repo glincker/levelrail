@@ -80,9 +80,11 @@ export function HeroActions({
         >
           <ExternalLinkGlassIcon size="1.4em" aria-hidden="true" />
           <span className="max-sm:sr-only">{t('overviewHero.openApp')}</span>
-          <span className="max-lg:hidden">
-            <Kbd keys={['O']} />
-          </span>
+          {isStatic ? null : (
+            <span className="max-lg:hidden">
+              <Kbd keys={['O']} />
+            </span>
+          )}
         </a>
       ) : null}
 
@@ -133,18 +135,22 @@ export function HeroActions({
               disabled: actions.redeploying,
               onSelect: actions.redeploy,
             },
-            {
-              id: 'deploy-image',
-              label: 'Deploy image...',
-              icon: <RocketGlassIcon size="1.4em" />,
-              onSelect: () => onDeploy('existing-image'),
-            },
-            {
-              id: 'build-source',
-              label: 'Build from source...',
-              icon: <GitBranchGlassIcon size="1.4em" />,
-              onSelect: () => onDeploy('build-from-source'),
-            },
+            ...(isStatic
+              ? []
+              : [
+                  {
+                    id: 'deploy-image',
+                    label: 'Deploy image...',
+                    icon: <RocketGlassIcon size="1.4em" />,
+                    onSelect: () => onDeploy('existing-image'),
+                  },
+                  {
+                    id: 'build-source',
+                    label: 'Build from source...',
+                    icon: <GitBranchGlassIcon size="1.4em" />,
+                    onSelect: () => onDeploy('build-from-source'),
+                  },
+                ]),
             {
               id: 'rollback',
               label: 'Rollback...',

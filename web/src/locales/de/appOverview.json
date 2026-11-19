@@ -40,5 +40,40 @@
     "mobile": "Mobil",
     "viewport": "Ansichtsbreite",
     "recapture": "Neu erfassen"
+  },
+  "staticStrip": {
+    "label": "Seitenübersicht",
+    "visitors": "Besucher, {{range}}",
+    "requests": "Anfragen, {{range}}",
+    "errors": "Fehler",
+    "errorsInfo": "Anteil der 4xx- und 5xx-Antworten im gewählten Zeitraum.",
+    "visitorsInfo": "Eindeutige Besucher im gewählten Zeitraum, nach jedem Datenschutz-Reset neu gezählt.",
+    "deploy": "Letzter Deploy",
+    "size": "Größe",
+    "files_one": "{{count}} Datei",
+    "files_other": "{{count}} Dateien",
+    "domains": "Domains",
+    "addDomain": "Domain hinzufügen"
+  },
+  "staticLine": {
+    "details": "Deploy-Details",
+    "source": {
+      "upload": "CLI-Upload",
+      "webhook": "Git-Push",
+      "git_push": "Git-Push",
+      "poll": "Git-Abfrage",
+      "pr_comment": "PR-Kommentar",
+      "manual": "Dashboard",
+      "promote": "Beförderung",
+      "clone": "Klon",
+      "auto_rollback": "Auto-Rollback",
+      "schedule": "Zeitplan",
+      "image": "Image",
+      "compose": "Compose",
+      "restart": "Neustart",
+      "start": "Start",
+      "stop": "Stopp",
+      "other": "Deploy"
+    }
   }
 }

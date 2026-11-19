@@ -55,9 +55,16 @@ export function GoLiveBadge({
 }
 
 /** AppLiveBadge shows the best state across the app's domains, for the app overview. */
-export function AppLiveBadge({ app }: { app: string }) {
+export function AppLiveBadge({
+  app,
+  skipLocal = false,
+}: {
+  app: string
+  /** Static sites skip loopback hosts: only a pending custom domain earns a state. */
+  skipLocal?: boolean
+}) {
   const { data } = useQuery(liveBadgesQueryOptions())
-  const entry = pickAppLiveEntry(data, app)
+  const entry = pickAppLiveEntry(data, app, skipLocal)
   if (!entry) return null
   return <LiveStateBadge app={app} domain={entry.domain} state={entry.state} />
 }
