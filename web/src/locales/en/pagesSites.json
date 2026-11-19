@@ -92,6 +92,8 @@
     "passwordHint": "Visitors sign in with user name site and this shared password. It covers every domain and deploy URL and is never shown again.",
     "passwordPlaceholder": "New password",
     "passwordClear": "Remove",
+    "passwordRemoveConfirm": "Remove the password? Anyone with the link can open the site.",
+    "passwordKeep": "Keep",
     "locked": "Password protected",
     "gitOnlyHint": "Applies to git builds. Not used for dropped folders yet.",
     "auto": "Auto",

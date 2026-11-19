@@ -1,4 +1,4 @@
-import { fireEvent, render, screen } from '@testing-library/react'
+import { act, fireEvent, render, screen } from '@testing-library/react'
 import { beforeEach, describe, expect, it, vi } from 'vitest'
 import { SiteSettingsForm } from './SiteSettingsForm'
 import type { SiteSettings } from '../../queries/pagesSites'
@@ -102,10 +102,30 @@ describe('SiteSettingsForm', () => {
     )
   })
 
-  it('clears the password when a protected site is switched off', () => {
+  it('asks before clearing and restores the switch when the clear fails', () => {
     h.data = { ...settings, protected: true }
     render(<SiteSettingsForm name="s" />)
     fireEvent.click(screen.getByRole('switch', { name: 'settings.password' }))
+    expect(h.mutate).not.toHaveBeenCalled()
+    fireEvent.click(
+      screen.getByRole('button', { name: 'settings.passwordKeep' }),
+    )
+    expect(
+      screen
+        .getByRole('switch', { name: 'settings.password' })
+        .getAttribute('aria-checked'),
+    ).toBe('true')
+    fireEvent.click(screen.getByRole('switch', { name: 'settings.password' }))
+    fireEvent.click(
+      screen.getByRole('button', { name: 'settings.passwordClear' }),
+    )
     expect(h.mutate).toHaveBeenCalledWith({ password: '' }, expect.anything())
+    const opts = h.mutate.mock.calls[0]?.[1] as { onError: (e: Error) => void }
+    act(() => opts.onError(new Error('nope')))
+    expect(
+      screen
+        .getByRole('switch', { name: 'settings.password' })
+        .getAttribute('aria-checked'),
+    ).toBe('true')
   })
 })

@@ -53,7 +53,7 @@ function overridden(key: SiteSettingKey, f: Form): boolean {
 }
 
 interface RowProps {
-  field: SiteSettingKey
+  field: SiteSettingKey | 'password'
   label: string
   hint?: string
   caption?: string
@@ -125,19 +125,40 @@ function PasswordRow({
   const update = useUpdateSiteSettings(name)
   const [enabled, setEnabled] = useState(protectedNow)
   const [pw, setPw] = useState('')
+  const [confirming, setConfirming] = useState(false)
   const fail = (e: Error) => toast.add({ title: e.message, type: 'error' })
   const done = () => {
     setPw('')
     toast.add({ title: t('settings.saved'), type: 'success' })
   }
+  const clear = () => {
+    setConfirming(false)
+    update.mutate(
+      { password: '' },
+      {
+        onSuccess: done,
+        onError: (e) => {
+          setEnabled(true)
+          fail(e)
+        },
+      },
+    )
+  }
   const toggle = (on: boolean) => {
+    if (!on && protectedNow) {
+      setEnabled(false)
+      setConfirming(true)
+      return
+    }
     setEnabled(on)
-    if (!on && protectedNow)
-      update.mutate({ password: '' }, { onSuccess: done, onError: fail })
+  }
+  const keep = () => {
+    setConfirming(false)
+    setEnabled(true)
   }
   return (
     <SettingRow
-      field="spa_fallback"
+      field="password"
       label={t('settings.password')}
       hint={t('settings.passwordHint')}
       dirty={enabled && pw !== ''}
@@ -156,6 +177,22 @@ function PasswordRow({
           disabled={update.isPending}
           onCheckedChange={toggle}
         />
+        {confirming ? (
+          <div className="flex flex-wrap items-center gap-2 text-sm">
+            <span>{t('settings.passwordRemoveConfirm')}</span>
+            <Button
+              size="sm"
+              variant="destructive"
+              disabled={update.isPending}
+              onClick={clear}
+            >
+              {t('settings.passwordClear')}
+            </Button>
+            <Button size="sm" variant="ghost" onClick={keep}>
+              {t('settings.passwordKeep')}
+            </Button>
+          </div>
+        ) : null}
         {enabled ? (
           <Input
             type="password"
