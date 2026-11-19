@@ -2107,6 +2107,24 @@
   "name",
   "pending_approval"
  ],
+ "pages": [
+  "action",
+  "data",
+  "deploy_id",
+  "files",
+  "note",
+  "status",
+  "url"
+ ],
+ "pages_manage": [
+  "action",
+  "data",
+  "deploy_id",
+  "files",
+  "note",
+  "status",
+  "url"
+ ],
  "plan_apply": [
   "changes",
   "hash",
