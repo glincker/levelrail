@@ -6,9 +6,9 @@ import (
 	"log/slog"
 	"net/http"
 	"os"
-	"path/filepath"
 	"strings"
 
+	"github.com/GLINCKER/levelrail/internal/spec"
 	"github.com/GLINCKER/levelrail/internal/staticroutes"
 	"github.com/GLINCKER/levelrail/internal/store"
 )
@@ -20,8 +20,6 @@ type staticSiteSettingsStore interface {
 	SaveStaticSiteSettings(ctx context.Context, name string, s store.StaticSiteSettings) error
 	SaveStaticSiteUIRules(ctx context.Context, name string, r store.StaticUIRules) error
 }
-
-const maxBuildCommandLen = 1024
 
 // staticSettingsResource is the stored overrides plus what the live site serves.
 // A null bool or empty string means "not overridden, app.yaml decides".
@@ -159,18 +157,17 @@ func applyStaticSettingsPatch(s *store.StaticSiteSettings, p staticSettingsPatch
 			return "reset: unknown setting " + f
 		}
 	}
+	bc, od := s.BuildCommand, s.OutputDir
 	if p.BuildCommand != nil {
-		if len(*p.BuildCommand) > maxBuildCommandLen || strings.ContainsAny(*p.BuildCommand, "\r\n\x00") {
-			return "build_command must be one line of at most 1024 bytes"
-		}
-		s.BuildCommand = *p.BuildCommand
+		bc = *p.BuildCommand
 	}
 	if p.OutputDir != nil {
-		if *p.OutputDir != "" && (!filepath.IsLocal(*p.OutputDir) || len(*p.OutputDir) > 255) {
-			return "output_dir must be a relative path inside the repository"
-		}
-		s.OutputDir = *p.OutputDir
+		od = *p.OutputDir
 	}
+	if err := spec.ValidateStaticOverrides(bc, od, spec.StaticBuildCommandMaxFromEnv(os.LookupEnv)); err != nil {
+		return err.Error()
+	}
+	s.BuildCommand, s.OutputDir = bc, od
 	if p.SPAFallback != nil {
 		s.SPAFallback = p.SPAFallback
 	}
