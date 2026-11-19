@@ -53,6 +53,9 @@ import (
 // Dockerfile, no user-authored build steps, just a source directory
 // Railpack inspects itself to determine how to build it.
 type RailpackRequest struct {
+	// Push, when set, exports the image to a registry by digest instead of a tar.
+	Push *PushGrant
+
 	// SourceDir is the app's source root Railpack inspects to detect its
 	// provider and generate a build plan, and the build context BuildKit
 	// reads from. Required.
@@ -295,6 +298,9 @@ func newRailpackSolveOpt(ctx context.Context, plan *rpplan.BuildPlan, req Railpa
 				},
 			},
 		},
+	}
+	if err := applyPush(opt, req.Push); err != nil {
+		return nil, nil, err
 	}
 	return def, opt, nil
 }

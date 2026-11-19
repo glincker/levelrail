@@ -13,6 +13,9 @@ import (
 // a filesystem, a network, or a daemon, so Validate can be exercised with
 // plain table-driven tests that need no live BuildKit connection.
 type Request struct {
+	// Push, when set, exports the image to a registry by digest instead of a tar.
+	Push *PushGrant
+
 	// ContextDir is the build context root, matching `docker build <dir>`.
 	// Required.
 	ContextDir string

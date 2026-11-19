@@ -46,6 +46,9 @@ type Router struct {
 	// direct call so the dispatch path can be exercised without a live
 	// Docker daemon.
 	load func(ctx context.Context, r io.Reader, tag string, progress func(ProgressEvent)) error
+
+	// transfer is the live registry transfer config; nil keeps the tar path.
+	transfer func(ctx context.Context) TransferConfig
 }
 
 // RouterOption configures optional Router behavior.
@@ -75,6 +78,12 @@ func WithRouterLoad(f func() []NodeLoad) RouterOption {
 // WithRouterSlotLimit supplies the slot limit assumed for a node that has not built yet.
 func WithRouterSlotLimit(f func(ctx context.Context, app string) int) RouterOption {
 	return func(r *Router) { r.slotLimit = f }
+}
+
+// WithRouterTransfer enables registry transfer: f is read on every build, so
+// flipping build.transfer_mode applies live. Incomplete config falls back to tar.
+func WithRouterTransfer(f func(ctx context.Context) TransferConfig) RouterOption {
+	return func(r *Router) { r.transfer = f }
 }
 
 // NewRouter builds a Router over local. nodes and remote may both be nil,
@@ -114,7 +123,7 @@ func (r *Router) Build(ctx context.Context, req Request, progress func(ProgressE
 	if err != nil {
 		return nil, err
 	}
-	return r.dispatch(ctx, nodeID, remoteReq, progress)
+	return r.dispatchWith(ctx, nodeID, remoteReq, progress)
 }
 
 // BuildRailpack implements internal/deploy.ImageBuilder.
@@ -134,7 +143,7 @@ func (r *Router) BuildRailpack(ctx context.Context, req RailpackRequest, progres
 	if err != nil {
 		return nil, err
 	}
-	return r.dispatch(ctx, nodeID, remoteReq, progress)
+	return r.dispatchWith(ctx, nodeID, remoteReq, progress)
 }
 
 // SelectedNode names the node the next build would run on, "" for the local one.

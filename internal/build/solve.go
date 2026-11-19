@@ -6,7 +6,6 @@ import (
 	"path/filepath"
 
 	bkclient "github.com/moby/buildkit/client"
-	"github.com/moby/buildkit/session"
 	"github.com/moby/buildkit/session/secrets/secretsprovider"
 	"github.com/tonistiigi/fsutil"
 )
@@ -100,8 +99,11 @@ func newSolveOpt(req Request, cache CacheConfig, out io.WriteCloser) (*bkclient.
 		},
 	}
 
+	if err := applyPush(opt, req.Push); err != nil {
+		return nil, err
+	}
 	if len(req.Secrets) > 0 {
-		opt.Session = []session.Attachable{secretsprovider.FromMap(req.Secrets)}
+		opt.Session = append(opt.Session, secretsprovider.FromMap(req.Secrets))
 	}
 
 	// cache.entries() is called unconditionally, not gated on
