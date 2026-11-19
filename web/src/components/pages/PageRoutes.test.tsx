@@ -22,7 +22,16 @@ vi.mock('../../queries/staticRoutes', () => ({
 vi.mock('../static/StaticRoutesTester', () => ({
   StaticRoutesTester: () => null,
 }))
-vi.mock('@/components/ui/toast', () => ({ toast: { add: vi.fn() } }))
+vi.mock('../../queries/apps', () => ({
+  useAppListOptional: () => ({ data: [{ name: 'api' }, { name: 's' }] }),
+}))
+vi.mock('@/components/ui/toast', () => ({
+  toast: { add: vi.fn() },
+  toastAction: (label: string, onClick: () => void) => ({
+    children: label,
+    onClick,
+  }),
+}))
 
 const base: SiteRules = {
   redirects: [
@@ -93,7 +102,7 @@ describe('PageRoutes editor', () => {
     fireEvent.change(
       screen.getAllByLabelText('routes.from')[0] as HTMLElement,
       {
-        target: { value: 'bad' },
+        target: { value: '/bad' },
       },
     )
     fireEvent.click(screen.getByText('routes.save'))
@@ -103,5 +112,45 @@ describe('PageRoutes editor', () => {
         'aria-invalid',
       ),
     ).toBe('true')
+  })
+
+  it('switches a row to a proxy and shows the app picker', () => {
+    render(<PageRoutes app="s" />)
+    fireEvent.change(screen.getByLabelText('routes.kindLabel'), {
+      target: { value: 'proxy' },
+    })
+    expect(screen.getByLabelText('routes.targetApp')).toBeTruthy()
+    expect(screen.queryByLabelText('routes.to')).toBeNull()
+  })
+
+  it('shows a client error before save and blocks the request', () => {
+    render(<PageRoutes app="s" />)
+    fireEvent.change(
+      screen.getAllByLabelText('routes.from')[0] as HTMLElement,
+      { target: { value: 'nope' } },
+    )
+    expect(screen.getByText('routes.problem.fromSlash')).toBeTruthy()
+    fireEvent.click(screen.getByText('routes.save'))
+    expect(h.mutate).not.toHaveBeenCalled()
+  })
+
+  it('highlights the rule a live path matches', () => {
+    render(<PageRoutes app="s" />)
+    fireEvent.change(screen.getByLabelText('routes.testLabel'), {
+      target: { value: '/a' },
+    })
+    expect(screen.getByText('/b')).toBeTruthy()
+  })
+
+  it('offers presets when there are no rules', () => {
+    h.rules = {
+      ...base,
+      redirects: [],
+      ui: { redirects: [], headers: [] },
+    }
+    render(<PageRoutes app="s" />)
+    fireEvent.click(screen.getByText('routes.preset.spa'))
+    const froms = screen.getAllByLabelText<HTMLInputElement>('routes.from')
+    expect(froms.map((f) => f.value)).toEqual(['/*'])
   })
 })

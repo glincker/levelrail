@@ -359,6 +359,9 @@ export interface EffectiveRedirect {
   force: boolean
   source: RuleSource
   origin: string
+  kind?: 'route' | 'proxy'
+  target_app?: string
+  target_state?: 'ok' | 'missing' | 'self'
 }
 
 export interface EffectiveHeader {

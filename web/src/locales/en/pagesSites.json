@@ -353,7 +353,42 @@
     "discard": "Discard",
     "saved": "Routing rules saved",
     "invalid": "Some rules need fixing",
-    "testHint": "Tests run against the saved rules."
+    "testHint": "Tests run against the saved rules.",
+    "kindLabel": "Rule type",
+    "kind": {
+      "redirect": "Redirect",
+      "rewrite": "Rewrite",
+      "proxy": "Proxy",
+      "status": "Respond"
+    },
+    "targetApp": "Target app",
+    "targetPath": "Target path",
+    "pickApp": "Pick an app",
+    "state": {
+      "ok": "App is reachable",
+      "missing": "No app with this name",
+      "self": "Points at this site"
+    },
+    "drag": "Drag to reorder",
+    "removed": "Rule removed",
+    "undo": "Undo",
+    "noMatch": "No rule matches, the file is served",
+    "served": "Saved rules serve",
+    "rulesHint": "Rules run top to bottom and the first match wins. Rules set here rank above app.yaml, then _redirects. Use :splat for the rest of the path. Proxy rules forward to an app with app://name/path.",
+    "preset": {
+      "spa": "Single page app fallback",
+      "moved": "Redirect a moved section",
+      "api": "Proxy /api to an app"
+    },
+    "problem": {
+      "fromSlash": "From must start with /",
+      "badChars": "Braces and backslashes are not allowed",
+      "toEmpty": "Add a target",
+      "proxyApp": "Pick the app to forward to",
+      "proxyAppMissing": "No app with this name",
+      "proxyAppSelf": "A site cannot proxy to itself",
+      "proxyPath": "Target path must start with /"
+    }
   },
   "git": {
     "repo": "Repository",
