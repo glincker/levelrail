@@ -164,3 +164,19 @@ func TestStaticSiteSettingsPasswordGate(t *testing.T) {
 		t.Fatalf("clear: %d %s", code, body)
 	}
 }
+
+func TestStaticSiteSettingsBadPasswordSavesNothing(t *testing.T) {
+	rt, db := newTestRouter(t)
+	cookie := loginTestSession(t, rt, db)
+	seedStaticSite(t, db, t.TempDir(), "docs", "d.example.com")
+	seedApp(t, db, "docs")
+	rec := httptest.NewRecorder()
+	rt.Handler().ServeHTTP(rec, authedRequest(t, cookie, http.MethodPatch, "/api/v1/static-sites/docs/settings", `{"output_dir":"dist","password":"short"}`))
+	if rec.Code != http.StatusUnprocessableEntity {
+		t.Fatalf("status = %d, want 422", rec.Code)
+	}
+	s, _, err := db.GetStaticSiteSettings(t.Context(), "docs")
+	if err != nil || s.OutputDir != "" {
+		t.Fatalf("output_dir = %q, err %v; want nothing saved", s.OutputDir, err)
+	}
+}

@@ -22,6 +22,12 @@ type staticSiteSettingsStore interface {
 	SaveStaticSiteUIRules(ctx context.Context, name string, r store.StaticUIRules) error
 }
 
+// Audit actions for the site password gate; the password itself is never recorded.
+const (
+	AuditActionStaticSitePasswordSet     = "static_site.password_set"
+	AuditActionStaticSitePasswordCleared = "static_site.password_cleared"
+)
+
 // staticSiteGateStore is the optional password gate half of the same store.
 type staticSiteGateStore interface {
 	GetStaticSitePasswordHash(ctx context.Context, name string) (string, error)
@@ -253,6 +259,10 @@ func (rt *Router) handlePatchStaticSiteSettings(w http.ResponseWriter, r *http.R
 	}
 	var pwHash *string
 	if p.Password != nil {
+		if _, ok := rt.staticSites.(staticSiteGateStore); !ok {
+			writeError(w, http.StatusNotImplemented, "site passwords are not configured on this control plane")
+			return
+		}
 		h, msg := hashSitePassword(*p.Password)
 		if msg != "" {
 			writeError(w, http.StatusUnprocessableEntity, msg)
@@ -274,15 +284,16 @@ func (rt *Router) handlePatchStaticSiteSettings(w http.ResponseWriter, r *http.R
 		return
 	}
 	if pwHash != nil {
-		gs, ok := rt.staticSites.(staticSiteGateStore)
-		if !ok {
-			writeError(w, http.StatusNotImplemented, "site passwords are not configured on this control plane")
-			return
-		}
+		gs, _ := rt.staticSites.(staticSiteGateStore)
 		if err := gs.SetStaticSitePasswordHash(r.Context(), site.Name, *pwHash); err != nil {
 			rt.internalError(w, "api: static site settings: save gate", err, slog.String("name", site.Name))
 			return
 		}
+		action := AuditActionStaticSitePasswordSet
+		if *pwHash == "" {
+			action = AuditActionStaticSitePasswordCleared
+		}
+		rt.auditGitSetting(r, site.Name, action, map[string]any{"site": site.Name})
 		if rt.reconcileNudger != nil {
 			rt.reconcileNudger.Nudge()
 		}
