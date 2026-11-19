@@ -245,18 +245,22 @@ export function OverviewPage({
         onDeploy={setDeployTab}
         gitMissing={git.error instanceof ApiError && git.error.status === 404}
         isStatic={isStatic}
+        preview={
+          <Suspense
+            fallback={
+              <div className="aspect-[8/5] w-full rounded-md bg-muted" />
+            }
+          >
+            <OverviewPreview
+              appName={app.name}
+              attempts={attempts}
+              url={openUrl}
+              isStatic={isStatic}
+              onDeploy={setDeployTab}
+            />
+          </Suspense>
+        }
       />
-      <Suspense
-        fallback={<div className="aspect-[8/5] max-w-xl rounded-md bg-muted" />}
-      >
-        <OverviewPreview
-          appName={app.name}
-          attempts={attempts}
-          url={openUrl}
-          isStatic={isStatic}
-          onDeploy={setDeployTab}
-        />
-      </Suspense>
       <OverviewQuickLinks
         app={app}
         reading={reading}

@@ -85,7 +85,7 @@ export default function OverviewPreview({
   const capturedAt = record?.status === 'ok' ? record.captured_at : undefined
 
   return (
-    <section aria-label={t('preview.label')} className="max-w-xl space-y-2">
+    <section aria-label={t('preview.label')} className="space-y-2">
       <div className="flex min-h-8 flex-wrap items-center gap-x-2 gap-y-1">
         <h2 className="text-sm font-medium">{t('preview.label')}</h2>
         {capturedAt ? (

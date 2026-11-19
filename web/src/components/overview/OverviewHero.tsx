@@ -1,3 +1,4 @@
+import type { ReactNode } from 'react'
 import { Display } from '@/components/ui/typography'
 import { Link } from '@tanstack/react-router'
 import { useTranslation } from 'react-i18next'
@@ -29,6 +30,7 @@ export function OverviewHero({
   onDeploy,
   gitMissing = false,
   isStatic = false,
+  preview,
 }: {
   app: AppDetail
   conditions: ReconcileCondition[]
@@ -42,6 +44,8 @@ export function OverviewHero({
   gitMissing?: boolean
   /** Static site: show the kind and a link to its Pages manager. */
   isStatic?: boolean
+  /** Preview card shown top right from 900px, stacked below the identity block before. */
+  preview?: ReactNode
 }) {
   const { t } = useTranslation('common')
   const { t: tAccess } = useTranslation('appAccess')
@@ -71,66 +75,75 @@ export function OverviewHero({
   })
 
   return (
-    <>
-      <section
-        aria-label={t('overviewHero.stickyLabel')}
-        className="sticky top-0 z-20 flex items-center justify-between gap-2 rounded-[var(--glinui-radius-lg)] border border-border bg-card px-3 py-2 shadow-sm"
-      >
-        <div className="flex min-w-0 items-center gap-x-3">
-          <Display as="h1" size="page" className="truncate">
-            {app.name}
-          </Display>
-          <StatusPill
-            tone={status.tone}
-            label={status.label}
-            live={status.live}
-            title={status.title}
+    <div
+      className={
+        preview
+          ? 'grid items-start gap-4 min-[900px]:grid-cols-[minmax(0,1fr)_minmax(0,26rem)]'
+          : undefined
+      }
+    >
+      <div className="min-w-0 space-y-4">
+        <section
+          aria-label={t('overviewHero.stickyLabel')}
+          className="sticky top-0 z-20 flex flex-wrap items-center justify-between gap-2 rounded-[var(--glinui-radius-lg)] border border-border bg-card px-3 py-2 shadow-sm"
+        >
+          <div className="flex min-w-0 items-center gap-x-3">
+            <Display as="h1" size="page" className="truncate">
+              {app.name}
+            </Display>
+            <StatusPill
+              tone={status.tone}
+              label={status.label}
+              live={status.live}
+              title={status.title}
+            />
+            <span className="max-sm:hidden">
+              <AppLiveBadge app={app.name} />
+            </span>
+            {runningStage && latestAttempt ? (
+              <Link
+                to="/apps/$name/deploys/$deployId/logs"
+                params={{ name: app.name, deployId: latestAttempt.id }}
+                className="text-xs whitespace-nowrap text-primary underline underline-offset-2 max-sm:hidden"
+              >
+                Watch live
+              </Link>
+            ) : null}
+          </div>
+          <HeroActions
+            app={app}
+            url={url}
+            onDeploy={onDeploy}
+            primary={primary}
+            gitMissing={gitMissing}
           />
-          <span className="max-sm:hidden">
-            <AppLiveBadge app={app.name} />
-          </span>
-          {runningStage && latestAttempt ? (
-            <Link
-              to="/apps/$name/deploys/$deployId/logs"
-              params={{ name: app.name, deployId: latestAttempt.id }}
-              className="text-xs whitespace-nowrap text-primary underline underline-offset-2 max-sm:hidden"
-            >
-              Watch live
-            </Link>
+        </section>
+        <section
+          aria-label="App summary"
+          className="flex flex-wrap items-center gap-x-4 gap-y-1 px-1"
+        >
+          <div className="flex min-w-0 items-center gap-0.5">
+            <UrlLine appName={app.name} url={url} />
+            <AutoUrlInfo appName={app.name} />
+          </div>
+          {isStatic ? (
+            <span className="flex items-center gap-2 text-xs">
+              <Badge variant="muted">{tAccess('static.badge')}</Badge>
+              <Link
+                to="/pages/$name"
+                params={{ name: app.name }}
+                className="text-primary underline underline-offset-2"
+              >
+                {tAccess('static.manage')}
+              </Link>
+            </span>
           ) : null}
-        </div>
-        <HeroActions
-          app={app}
-          url={url}
-          onDeploy={onDeploy}
-          primary={primary}
-          gitMissing={gitMissing}
-        />
-      </section>
-      <section
-        aria-label="App summary"
-        className="flex flex-wrap items-center gap-x-4 gap-y-1 px-1"
-      >
-        <div className="flex min-w-0 items-center gap-0.5">
-          <UrlLine appName={app.name} url={url} />
-          <AutoUrlInfo appName={app.name} />
-        </div>
-        {isStatic ? (
-          <span className="flex items-center gap-2 text-xs">
-            <Badge variant="muted">{tAccess('static.badge')}</Badge>
-            <Link
-              to="/pages/$name"
-              params={{ name: app.name }}
-              className="text-primary underline underline-offset-2"
-            >
-              {tAccess('static.manage')}
-            </Link>
-          </span>
-        ) : null}
-        <ReleaseLine app={app} latest={released ?? latestAttempt} />
-        <TagChips appName={app.name} tags={app.tags} />
-        <AppHeaderBadges app={app} attentionCount={attentionCount} />
-      </section>
-    </>
+          <ReleaseLine app={app} latest={released ?? latestAttempt} />
+          <TagChips appName={app.name} tags={app.tags} />
+          <AppHeaderBadges app={app} attentionCount={attentionCount} />
+        </section>
+      </div>
+      {preview ? <div className="min-w-0">{preview}</div> : null}
+    </div>
   )
 }
