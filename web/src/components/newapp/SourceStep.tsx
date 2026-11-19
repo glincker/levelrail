@@ -196,11 +196,7 @@ export function SourceStep({
           if (key === 'static') {
             return (
               <li key={key}>
-                <Link
-                  to="/pages"
-                  search={{ new: 1 }}
-                  className={TILE_CLASS}
-                >
+                <Link to="/pages" search={{ new: 1 }} className={TILE_CLASS}>
                   {body}
                 </Link>
               </li>
