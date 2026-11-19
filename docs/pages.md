@@ -132,7 +132,20 @@ To remove only the published site and keep the app record, use `levelrail-cli st
 
 If a site is ever left behind without an app, a background sweep removes it after a grace period. The default is 10 minutes. Set `APP_STATIC_ORPHAN_GRACE` (for example `1h`) to change it. An empty or `0` value falls back to the default.
 
-Every deploy writes a release directory. After a successful publish, Levelrail keeps the newest 10 releases of a site and deletes older ones. Set `APP_STATIC_KEEP_RELEASES` to change the count (minimum 3). The live release, the previous one (the rollback target), releases used by queued, running, held or awaiting approval deploys, and releases another site still serves are never deleted, and nothing is deleted while a publish lock is set.
+Every deploy writes a release directory. After a successful publish, Levelrail keeps the newest 10 releases of a site and deletes older ones. Set `APP_PAGES_KEEP_DEPLOYS` to change the count (minimum 3; the older name `APP_STATIC_KEEP_RELEASES` still works). The live release, the previous one (the rollback target), releases used by queued, running, held or awaiting approval deploys, and releases another site still serves are never deleted, and nothing is deleted while a publish lock is set.
+
+## Deploy URLs and promote
+
+Every retained deploy is served at its own URL, `<deployId8>--<site hostname>`: the first 8 letters or digits of the deploy id, two hyphens, then the site's automatic hostname (for example `ab12cd34--docs.203-0-113-9.sslip.io`; in local development `ab12cd34--docs.localhost` on the bound port). The files behind it never change, so you can review a deploy before it goes live. The site's own domains keep serving the promoted deploy.
+
+Deploy URLs follow the retention count above and disappear when a deploy's files are pruned. They need automatic hostnames, so none are served when those are off, and a site with a password gate on any domain gets none, because the deploy host would skip the gate.
+
+```bash
+levelrail pages deploys docs
+levelrail pages promote docs DEPLOY_ID
+```
+
+`GET /api/v1/static-sites/{name}/deploys` lists the deploys with `url`, `live` and `promotable`. `POST /api/v1/static-sites/{name}/deploys/{deployId}/promote` makes one live: it needs the same permission as a rollback, checks that the files still match the recorded content digest, and answers 410 when they were pruned.
 
 ## List your static sites
 

@@ -632,7 +632,7 @@ Usage:
   %[1]s github-app status|disconnect|repos|branches|use-as-source [flags]   check/forget a GitHub App connection, browse and use its repos
   %[1]s templates list|get|deploy|install [flags]         browse, deploy and install from the curated service catalog
   %[1]s compose deploy|status|logs|redeploy|rollback|down  run a Docker Compose file as one stack
-  %[1]s pages deploy|list|show|delete|rollback|domains|routes [flags]   publish a folder or .zip as a static site
+  %[1]s pages deploy|list|show|delete|rollback|deploys|promote|domains|routes [flags]   publish a folder or .zip as a static site
   %[1]s static-sites list|delete|routes [flags]            list build.type: static apps, remove an orphaned site, show and test routing rules
   %[1]s deploy-approvals list|get|approve|reject [flags]   two-person approval gate on a deploy/promote into a protected environment
   %[1]s build detect|branches --repo-url URL [flags]       check what framework a public repo would build as, or list its branches

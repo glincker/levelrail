@@ -34,6 +34,10 @@ func runPages(prog string, args []string, stdout, stderr io.Writer, lookupEnv fu
 		return runStaticSitesDelete(prog, rest, stdout, stderr, lookupEnv)
 	case "rollback":
 		return runPagesRollback(prog, rest, stdout, stderr, lookupEnv)
+	case "deploys":
+		return runPagesDeploys(prog, rest, stdout, stderr, lookupEnv)
+	case "promote":
+		return runPagesPromote(prog, rest, stdout, stderr, lookupEnv)
 	case "domains":
 		return runPagesDomains(prog, rest, stdout, stderr, lookupEnv)
 	case "settings":
@@ -55,6 +59,8 @@ func pagesUsage(prog string) string {
   %[1]s pages show <name> [flags]
   %[1]s pages delete <name> [flags]
   %[1]s pages rollback <name> [version] [flags]
+  %[1]s pages deploys <name> [flags]
+  %[1]s pages promote <name> <deploy> [flags]
   %[1]s pages domains add <name> <domain> [flags]
   %[1]s pages domains status <name> <domain> [flags]
   %[1]s pages routes show|test|lint <name> [flags]

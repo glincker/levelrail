@@ -137,3 +137,30 @@ func (c *Client) CreateStaticSiteFromGit(ctx context.Context, name string, git S
 	err := c.do(ctx, http.MethodPost, "/api/v1/static-sites", map[string]any{"name": name, "git": git, "deploy": deploy}, &out)
 	return out, err
 }
+
+// StaticSiteDeploy is one entry of GET /api/v1/static-sites/{name}/deploys.
+type StaticSiteDeploy struct {
+	ID         string `json:"id"`
+	Status     string `json:"status"`
+	Source     string `json:"source"`
+	CommitSHA  string `json:"commit_sha,omitempty"`
+	StartedAt  string `json:"started_at"`
+	FinishedAt string `json:"finished_at,omitempty"`
+	URL        string `json:"url,omitempty"`
+	Live       bool   `json:"live"`
+	Promotable bool   `json:"promotable"`
+}
+
+// ListStaticSiteDeploys calls GET /api/v1/static-sites/{name}/deploys.
+func (c *Client) ListStaticSiteDeploys(ctx context.Context, name string) ([]StaticSiteDeploy, error) {
+	var out struct {
+		Deploys []StaticSiteDeploy `json:"deploys"`
+	}
+	err := c.do(ctx, http.MethodGet, "/api/v1/static-sites/"+PathEscape(name)+"/deploys", nil, &out)
+	return out.Deploys, err
+}
+
+// PromoteStaticSiteDeploy calls POST /api/v1/static-sites/{name}/deploys/{id}/promote.
+func (c *Client) PromoteStaticSiteDeploy(ctx context.Context, name, deployID string) error {
+	return c.do(ctx, http.MethodPost, "/api/v1/static-sites/"+PathEscape(name)+"/deploys/"+PathEscape(deployID)+"/promote", nil, nil)
+}
