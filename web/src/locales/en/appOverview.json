@@ -31,29 +31,28 @@
     "empty": "Nothing to preview until the first deploy finishes.",
     "deploy": "Deploy",
     "captured": "Captured {{when}}",
-    "open": "Open app",
-    "turnOn": "Turn on screenshots",
     "off": "Previews are off for this app.",
     "serverOff": "Previews are switched off on this server.",
-    "frameBlocked": "Could not load the live site here. Open it in a new tab.",
     "desktop": "Desktop",
     "mobile": "Mobile",
     "viewport": "Viewport",
-    "recapture": "Recapture"
+    "recapture": "Recapture",
+    "thumbLabel": "{{name}} on {{host}}",
+    "deployedAgo": "Deployed"
   },
   "staticStrip": {
     "label": "Site summary",
-    "visitors": "Visitors, {{range}}",
-    "requests": "Requests, {{range}}",
+    "visitors": "Visitors",
+    "requests": "Requests",
     "errors": "Errors",
-    "errorsInfo": "Share of 4xx and 5xx responses in the selected range.",
-    "visitorsInfo": "Unique visitors in the selected range, counted again after each privacy reset.",
+    "errorsInfo": "Share of 4xx and 5xx responses in the selected range. 4xx: {{c4}}, 5xx: {{c5}}.",
+    "visitorsInfo": "Unique visitors in the selected range, counted again after each privacy reset. Data may be partial for new sites.",
     "deploy": "Last deploy",
     "size": "Size",
     "files_one": "{{count}} file",
     "files_other": "{{count}} files",
-    "domains": "Domains",
-    "addDomain": "Add domain"
+    "addDomain": "Add domain",
+    "errorsNone": "Share of 4xx and 5xx responses once the site has served requests."
   },
   "staticLine": {
     "details": "Deploy details",
@@ -75,5 +74,11 @@
       "stop": "Stop",
       "other": "Deploy"
     }
+  },
+  "recent": {
+    "label": "Recent deploys",
+    "all": "All deploys",
+    "logs": "Logs",
+    "rollback": "Rollback"
   }
 }

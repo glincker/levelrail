@@ -3,7 +3,9 @@ import { Display } from '@/components/ui/typography'
 import { Link } from '@tanstack/react-router'
 import { useTranslation } from 'react-i18next'
 import { StatusPill } from '@/components/kit'
+import { PlusGlassIcon } from '@thesvg/ui-react'
 import { Badge } from '@/components/ui/badge'
+import { buttonVariants } from '@/components/ui/button'
 import type { AppDetail } from '../../types/appDetail'
 import type { ReconcileCondition } from '../../types/deploy'
 import type { DeployAttempt } from '../../types/deployAttempt'
@@ -33,6 +35,8 @@ export function OverviewHero({
   isStatic = false,
   preview,
   statStrip,
+  recent,
+  domainCount = 0,
 }: {
   app: AppDetail
   conditions: ReconcileCondition[]
@@ -50,9 +54,13 @@ export function OverviewHero({
   preview?: ReactNode
   /** Static sites: stat strip shown under the summary in the left column. */
   statStrip?: ReactNode
+  /** Static sites: recent deploys under the stat bar. */
+  recent?: ReactNode
+  domainCount?: number
 }) {
   const { t } = useTranslation('common')
   const { t: tAccess } = useTranslation('appAccess')
+  const { t: tApp } = useTranslation('appOverview')
   const runningStage = latestAttempt
     ? computeDeployStages(latestAttempt, conditions, true).find(
         (s) => s.status === 'running',
@@ -124,12 +132,22 @@ export function OverviewHero({
         </section>
         <section
           aria-label="App summary"
-          className="flex flex-wrap items-center gap-x-4 gap-y-1 px-1"
+          className="flex flex-wrap items-center gap-x-3 gap-y-2 px-1"
         >
           <div className="flex min-w-0 items-center gap-0.5">
             <UrlLine appName={app.name} url={url} />
             <AutoUrlInfo appName={app.name} />
           </div>
+          {isStatic && domainCount === 0 ? (
+            <Link
+              to="/apps/$name/domains"
+              params={{ name: app.name }}
+              className={buttonVariants({ variant: 'ghost', size: 'sm' })}
+            >
+              <PlusGlassIcon size="1.2em" aria-hidden="true" />
+              {tApp('staticStrip.addDomain')}
+            </Link>
+          ) : null}
           {isStatic ? (
             <span className="flex items-center gap-2 text-xs">
               <Badge variant="muted">{tAccess('static.badge')}</Badge>
@@ -155,6 +173,7 @@ export function OverviewHero({
           />
         </section>
         {statStrip}
+        {recent}
       </div>
       {preview ? <div className="min-w-0">{preview}</div> : null}
     </div>

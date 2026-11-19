@@ -119,7 +119,7 @@ export function HeroActions({
           trigger={
             <Button
               size="icon-lg"
-              className="-ml-px rounded-l-none"
+              className="h-10 w-9 rounded-l-none border-l border-primary-foreground/25"
               aria-label="More deploy options"
             >
               <ChevronDownGlassIcon size="1.4em" aria-hidden="true" />
@@ -163,7 +163,12 @@ export function HeroActions({
 
       <ActionMenu
         trigger={
-          <Button variant="ghost" size="icon-lg" aria-label="More actions">
+          <Button
+            variant="ghost"
+            size="icon-lg"
+            className="size-10"
+            aria-label="More actions"
+          >
             <EllipsisGlassIcon size="1.4em" aria-hidden="true" />
           </Button>
         }

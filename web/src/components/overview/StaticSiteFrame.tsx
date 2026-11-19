@@ -1,6 +1,5 @@
 import { useEffect, useState } from 'react'
-import { useTranslation } from 'react-i18next'
-import { ImageGlassIcon } from '@thesvg/ui-react'
+import { SiteThumbnail } from './SiteThumbnail'
 import { cn } from '@/lib/utils'
 
 export type FrameDevice = 'desktop' | 'mobile'
@@ -34,12 +33,15 @@ export function StaticSiteFrame({
   url,
   device,
   title,
+  name,
+  deployedAt,
 }: {
   url: string
   device: FrameDevice
   title: string
+  name: string
+  deployedAt?: string
 }) {
-  const { t } = useTranslation('appOverview')
   const probe = useReachable(url)
   const mobile = device === 'mobile'
   return (
@@ -49,15 +51,7 @@ export function StaticSiteFrame({
       )}
     >
       {probe === 'blocked' ? (
-        <div className="absolute inset-0 flex flex-col items-center justify-center gap-1 px-4 text-center">
-          <ImageGlassIcon
-            className="size-6 text-muted-foreground"
-            aria-hidden="true"
-          />
-          <p className="text-sm text-muted-foreground">
-            {t('preview.frameBlocked')}
-          </p>
-        </div>
+        <SiteThumbnail url={url} title={name} deployedAt={deployedAt} />
       ) : probe === 'ok' ? (
         <div
           className={cn(

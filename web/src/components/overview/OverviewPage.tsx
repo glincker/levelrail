@@ -50,6 +50,7 @@ import { isImageDeploy } from './suggestions'
 import { TrafficTiles } from './TrafficTiles'
 import { VisitorsCard } from './VisitorsCard'
 import { StaticStatStrip } from './StaticStatStrip'
+import { RecentDeploys } from './RecentDeploys'
 import type { VisitorsWindow } from '../../queries/appVisitors'
 import { useAppUrl } from './useAppUrl'
 import { useOverviewActions } from './useOverviewActions'
@@ -258,12 +259,13 @@ export function OverviewPage({
         isStatic={isStatic}
         statStrip={
           isStatic ? (
-            <StaticStatStrip
-              appName={app.name}
-              range={range}
-              latest={latest}
-              domainCount={app.domains?.length ?? 0}
-            />
+            <StaticStatStrip appName={app.name} range={range} latest={latest} />
+          ) : undefined
+        }
+        domainCount={app.domains?.length ?? 0}
+        recent={
+          isStatic ? (
+            <RecentDeploys appName={app.name} attempts={attempts} />
           ) : undefined
         }
         preview={

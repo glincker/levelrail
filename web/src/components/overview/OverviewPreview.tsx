@@ -1,13 +1,11 @@
 import { useState } from 'react'
-import { Link } from '@tanstack/react-router'
 import { useTranslation } from 'react-i18next'
 import {
-  ExternalLinkGlassIcon,
   ImageGlassIcon,
   RefreshCwGlassIcon,
   RocketGlassIcon,
 } from '@thesvg/ui-react'
-import { Button, buttonVariants } from '@/components/ui/button'
+import { Button } from '@/components/ui/button'
 import { cn } from '@/lib/utils'
 import { DeployPreviewThumb } from '../DeployPreviewThumb'
 import { formatAbsoluteTime, formatRelativeTime } from '../../lib/relativeTime'
@@ -30,20 +28,6 @@ export interface OverviewPreviewProps {
   /** Static sites show the live page in a scaled frame instead of a capture. */
   isStatic?: boolean
   onDeploy: (tab: DeployTab) => void
-}
-
-function OpenLink({ url, label }: { url: string; label: string }) {
-  return (
-    <a
-      href={url}
-      target="_blank"
-      rel="noreferrer"
-      className={cn(buttonVariants({ variant: 'ghost', size: 'sm' }))}
-    >
-      <ExternalLinkGlassIcon className="size-5" data-icon="inline-start" />
-      {label}
-    </a>
-  )
 }
 
 export default function OverviewPreview({
@@ -78,8 +62,6 @@ export default function OverviewPreview({
 
   const serverOff = status.data !== undefined && !status.data.server_enabled
   const off = status.data?.mode === 'off'
-  const canTurnOn =
-    status.data !== undefined && !serverOff && status.data.mode !== 'screenshot'
   const record = history.data?.find((r) => r.deployment_id === released.id)
   const liveFrame = isStatic && url !== null
   const capturedAt = record?.status === 'ok' ? record.captured_at : undefined
@@ -128,21 +110,16 @@ export default function OverviewPreview({
               {t('preview.recapture')}
             </Button>
           ) : null}
-          {canTurnOn ? (
-            <Link
-              to="/apps/$name/deploy-settings"
-              params={{ name: appName }}
-              hash="automation"
-              className={cn(buttonVariants({ variant: 'ghost', size: 'sm' }))}
-            >
-              {t('preview.turnOn')}
-            </Link>
-          ) : null}
-          {url ? <OpenLink url={url} label={t('preview.open')} /> : null}
         </div>
       </div>
       {liveFrame ? (
-        <StaticSiteFrame url={url} device={device} title={t('preview.label')} />
+        <StaticSiteFrame
+          url={url}
+          device={device}
+          title={t('preview.label')}
+          name={appName}
+          deployedAt={released.finished_at ?? released.started_at}
+        />
       ) : off || serverOff ? (
         <div
           className={cn(

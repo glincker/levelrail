@@ -72,17 +72,14 @@ describe('OverviewPreview', () => {
     ])
     expect(screen.getByTestId('thumb').textContent).toBe('d2')
     expect(screen.getByText(/preview.captured/)).toBeTruthy()
-    expect(
-      screen.getByText('preview.open').closest('a')?.getAttribute('href'),
-    ).toBe('https://web.test')
-    expect(screen.queryByText('preview.turnOn')).toBeNull()
+    expect(screen.queryByText('preview.open')).toBeNull()
   })
 
-  it('offers Turn on screenshots when previews are off', () => {
+  it('explains when previews are off without a duplicate action', () => {
     usePreviewStatus.mockReturnValue(status({ mode: 'off' }))
     view([attempt({})])
     expect(screen.getByText('preview.off')).toBeTruthy()
-    expect(screen.getByText('preview.turnOn')).toBeTruthy()
+    expect(screen.queryByText('preview.turnOn')).toBeNull()
     expect(screen.queryByTestId('thumb')).toBeNull()
   })
 
@@ -93,10 +90,9 @@ describe('OverviewPreview', () => {
     expect(screen.queryByText('preview.turnOn')).toBeNull()
   })
 
-  it('offers screenshots from the metadata default and keeps the thumb', () => {
+  it('keeps the thumb on the metadata default', () => {
     usePreviewStatus.mockReturnValue(status({ mode: 'metadata' }))
     view([attempt({})])
-    expect(screen.getByText('preview.turnOn')).toBeTruthy()
     expect(screen.getByTestId('thumb')).toBeTruthy()
   })
 })
@@ -140,7 +136,7 @@ describe('OverviewPreview static site', () => {
     vi.unstubAllGlobals()
   })
 
-  it('falls back to a placeholder when the site cannot be reached', async () => {
+  it('falls back to a site thumbnail, not an error, when the site cannot be reached', async () => {
     vi.stubGlobal('fetch', vi.fn().mockRejectedValue(new TypeError('cert')))
     const { container } = render(
       <OverviewPreview
@@ -151,7 +147,10 @@ describe('OverviewPreview static site', () => {
         onDeploy={vi.fn()}
       />,
     )
-    await screen.findByText('preview.frameBlocked')
+    const card = await screen.findByRole('img')
+    expect(card.textContent).toContain('site.localhost:8443')
+    expect(card.textContent).toContain('site')
+    expect(screen.queryByText(/frameBlocked|Could not load/)).toBeNull()
     expect(container.querySelector('iframe')).toBeNull()
     vi.unstubAllGlobals()
   })
