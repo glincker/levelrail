@@ -40,6 +40,9 @@ type StaticRuleset struct {
 	// BaseOptions are the options before dashboard overrides, so clearing an override can restore them live.
 	BaseOptions *StaticServeOptions `json:"base_options,omitempty"`
 	Problems    []StaticProblem     `json:"problems"`
+	// ProxyScopes records each proxy target's team and project at deploy time,
+	// so the ingress can stop serving a target that moved out of that scope.
+	ProxyScopes map[string]string `json:"proxy_scopes,omitempty"`
 }
 
 var statusTokenRe = regexp.MustCompile(`^([0-9]{3})(!?)$`)

@@ -23,7 +23,10 @@ func (c *Controller) staticProxies(ctx context.Context, site string, rules *stat
 		app, tmpl := r.ProxyTarget()
 		dial, seen := dials[app]
 		if !seen {
-			dial = c.proxyDial(ctx, site, app, services, ready, readyAt)
+			dial = ""
+			if c.proxyScopeHolds(ctx, rules, app) {
+				dial = c.proxyDial(ctx, site, app, services, ready, readyAt)
+			}
 			dials[app] = dial
 		}
 		out = append(out, ingress.StaticProxy{From: r.From, Path: tmpl, Dial: dial})
@@ -53,4 +56,22 @@ func (c *Controller) proxyDial(ctx context.Context, site, app string, services [
 		return dial
 	}
 	return ""
+}
+
+// proxyScopeOwners is implemented by stores that know an app's team and project.
+type proxyScopeOwners interface {
+	OwnerOfApp(ctx context.Context, name string) (*store.ResourceOwner, error)
+}
+
+// proxyScopeHolds is false when the target now sits in another team or project
+// than the one recorded at deploy. Rulesets from before the record, or a store
+// without owners, are served as before until the site is redeployed.
+func (c *Controller) proxyScopeHolds(ctx context.Context, rules *staticroutes.Ruleset, app string) bool {
+	want := rules.ProxyScopes[app]
+	owners, ok := c.store.(proxyScopeOwners)
+	if want == "" || !ok {
+		return true
+	}
+	o, err := owners.OwnerOfApp(ctx, app)
+	return err == nil && o != nil && o.TeamID+"/"+o.ProjectID == want
 }

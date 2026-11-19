@@ -534,6 +534,7 @@ func (rt *Router) deployFromGitSourceInner(ctx context.Context, name string, gs 
 		Order:       order,
 	}
 	rt.applyAppBuildSettings(ctx, name, &buildReq)
+	buildReq.ProxyAuthorizer = rt.proxyScopeAuthorizer(name)
 
 	attemptID, progress, finishAttempt, _ := rt.beginBuildDeployAttempt(ctx, buildReq, *existing, source, "")
 	buildReq.AttemptID = attemptID
@@ -705,11 +706,12 @@ func (rt *Router) deployAdditionalServices(ctx context.Context, additional map[s
 
 		svcSpec := specServiceFromDesired(*svc, spec.Build{Type: buildCfg.BuildType, Path: buildCfg.BuildPath})
 		req := deploy.Request{
-			ServiceName: svcName,
-			Service:     svcSpec,
-			SourceDir:   sourceDir,
-			CommitSHA:   commitSHA,
-			ImageRepo:   svcName,
+			ServiceName:     svcName,
+			Service:         svcSpec,
+			SourceDir:       sourceDir,
+			CommitSHA:       commitSHA,
+			ImageRepo:       svcName,
+			ProxyAuthorizer: rt.proxyScopeAuthorizer(svcName),
 		}
 
 		_, progress, finishAttempt, _ := rt.beginBuildDeployAttempt(ctx, req, *svc, store.DeployAttemptSourceWebhook, "")

@@ -104,6 +104,7 @@ func (rt *Router) handleStaticSiteChecks(w http.ResponseWriter, r *http.Request)
 	}
 	res.Name = name
 	res.Checks = append(res.Checks, rt.proxyChecks(r.Context(), name, rs)...)
+	res.Score = scoreChecks(res.Checks)
 	w.Header().Set("Cache-Control", "no-store")
 	writeJSON(w, http.StatusOK, res)
 }

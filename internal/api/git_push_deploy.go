@@ -238,6 +238,7 @@ func (rt *Router) deployGitPush(r *http.Request, ws *pushStream, name string, pl
 	}
 	buildReq := manualBuildRequest(name, *existing, treq, buildType)
 	rt.applyAppBuildSettings(ctx, name, &buildReq)
+	buildReq.ProxyAuthorizer = rt.proxyScopeAuthorizer(name)
 
 	dctx := context.WithValue(ctx, commitMetaKey{}, commitMeta{
 		Branch:  plan.branch,

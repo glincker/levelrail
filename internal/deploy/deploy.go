@@ -186,6 +186,9 @@ type Request struct {
 	// Preview marks a pull request preview build, which may not use
 	// build.secrets unless APP_PREVIEW_BUILD_SECRETS is true.
 	Preview bool
+	// ProxyAuthorizer vets each app a static site's proxy rules name and
+	// returns its scope. Nil refuses every proxy rule.
+	ProxyAuthorizer ProxyAuthorizer
 
 	// nextDeploymentID is set by the Next.js build path and reaches the
 	// container env in finishDeploy.

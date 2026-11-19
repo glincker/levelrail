@@ -502,6 +502,7 @@ func (rt *Router) handleTriggerBuild(w http.ResponseWriter, r *http.Request) {
 	}
 	buildReq := manualBuildRequest(name, *existing, req, buildType)
 	rt.applyAppBuildSettings(r.Context(), name, &buildReq)
+	buildReq.ProxyAuthorizer = rt.proxyAuthorizerFor(r, name)
 	source := store.DeployAttemptSourceManual
 	attemptCtx := r.Context()
 	if req.UploadHash != "" {

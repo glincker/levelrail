@@ -386,6 +386,7 @@ func (rt *Router) replayManualBuild(ctx context.Context, name string, hr deploy.
 	ctx = withRerunOf(ctx, req.RerunOf)
 	buildReq := manualBuildRequest(name, *existing, req, buildType)
 	rt.applyAppBuildSettings(ctx, name, &buildReq)
+	buildReq.ProxyAuthorizer = rt.proxyScopeAuthorizer(name)
 	source := store.DeployAttemptSourceManual
 	if req.UploadHash != "" {
 		source = store.DeployAttemptSourceUpload

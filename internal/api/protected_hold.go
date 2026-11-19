@@ -216,6 +216,7 @@ func (rt *Router) replayGitPush(ctx context.Context, name string, req deploy.Hel
 	}
 	buildReq := manualBuildRequest(name, *existing, treq, buildType)
 	rt.applyAppBuildSettings(ctx, name, &buildReq)
+	buildReq.ProxyAuthorizer = rt.proxyScopeAuthorizer(name)
 	dctx := context.WithValue(ctx, commitMetaKey{}, commitMeta{Branch: req.Branch, Message: pushCommitSubject(commit.Message), Author: commit.Author.Name})
 	run := rt.beginManualBuild(dctx, *existing, buildReq, buildType, store.DeployAttemptSourceGitPush, "", "", false)
 	run.repoURL, run.ref, run.fromCache = req.PushMirror, req.CommitSHA, true

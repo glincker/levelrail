@@ -7,6 +7,7 @@ import (
 	"io"
 	"io/fs"
 	"os"
+	"slices"
 
 	"github.com/GLINCKER/levelrail/internal/build"
 	"github.com/GLINCKER/levelrail/internal/spec"
@@ -21,6 +22,47 @@ type StaticSiteSettingsReader interface {
 }
 
 const stepStaticRoutes = "Compile routing rules"
+
+// ErrProxyTargetDenied is what a ProxyAuthorizer returns for an app the
+// acting principal may not use, and for one that does not exist, so the
+// deploy message is no existence oracle.
+var ErrProxyTargetDenied = errors.New("not found or not accessible")
+
+// ProxyAuthorizer checks one proxy target and returns its scope key.
+type ProxyAuthorizer func(ctx context.Context, app string) (scope string, err error)
+
+// authorizeProxyRules refuses a deploy whose proxy rules name an app the
+// actor cannot use. Previews drop proxy rules instead, since a pull request
+// is untrusted input.
+func authorizeProxyRules(ctx context.Context, req Request, rs *spec.StaticRuleset, progress func(build.ProgressEvent)) error {
+	if req.Preview {
+		if n := rs.ProxyRuleCount(); n > 0 {
+			rs.Rules = slices.DeleteFunc(rs.Rules, func(r spec.StaticRule) bool { return r.IsProxy() })
+			emitStatic(progress, stepStaticRoutes, fmt.Sprintf("warning: %d proxy rules are not served on previews", n), false)
+		}
+		return nil
+	}
+	for _, pr := range rs.ProxyRules() {
+		app, _ := pr.ProxyTarget()
+		scope, err := "", ErrProxyTargetDenied
+		if req.ProxyAuthorizer != nil {
+			scope, err = req.ProxyAuthorizer(ctx, app)
+		}
+		if errors.Is(err, ErrProxyTargetDenied) {
+			return fmt.Errorf("routing rules: %s: proxy target app %q was not found or you lack read access to it", pr.Source, app)
+		}
+		if err != nil {
+			return fmt.Errorf("routing rules: %s: check proxy target: %w", pr.Source, err)
+		}
+		if scope != "" {
+			if rs.ProxyScopes == nil {
+				rs.ProxyScopes = map[string]string{}
+			}
+			rs.ProxyScopes[app] = scope
+		}
+	}
+	return nil
+}
 
 // WithStaticRouteLimits sets the caps on a static site's routing rules.
 func WithStaticRouteLimits(l spec.StaticLimits) Option {
@@ -67,6 +109,9 @@ func (p *Pipeline) prepareStaticRouting(ctx context.Context, req Request, destDi
 		if app, _ := pr.ProxyTarget(); app == req.ServiceName {
 			return fmt.Errorf("routing rules: %s: a site cannot proxy to itself", pr.Source)
 		}
+	}
+	if err := authorizeProxyRules(ctx, req, rs, progress); err != nil {
+		return err
 	}
 	for _, pr := range rs.Problems {
 		emitStatic(progress, stepStaticRoutes, fmt.Sprintf("%s: %s:%d: %s (line skipped)", pr.Severity, pr.Source, pr.Line, pr.Message), false)
