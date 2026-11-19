@@ -1,11 +1,10 @@
-import { useState } from 'react'
+import { lazy, Suspense } from 'react'
 import { useTranslation } from 'react-i18next'
 import { Button } from '@/components/ui/button'
-import { ConfirmDialog } from '@/components/ui/confirm-dialog'
 import { useDeployProgress } from '../../hooks/useDeployProgress'
 import { formatAge } from '../../lib/format'
-import { useRollbackToDeploy } from '../../queries/deployControl'
-import type { DeployAttempt } from '../../types/deployAttempt'
+
+const DeployRowActions = lazy(() => import('./DeployRowActions'))
 
 const SHOWN = 5
 
@@ -15,15 +14,13 @@ const DOT: Record<string, string> = {
   failed: 'bg-destructive',
 }
 
-/** Latest deploys as a timeline; the rollback action appears on hover or focus and always on touch. */
+/** Latest deploys as a timeline; the URL and promote actions appear on hover or focus and always on touch. */
 export function RecentDeploys({
   name,
   onViewAll,
 }: Readonly<{ name: string; onViewAll: () => void }>) {
   const { t } = useTranslation('pagesSites')
   const { attempts } = useDeployProgress(name)
-  const rollback = useRollbackToDeploy(name)
-  const [target, setTarget] = useState<DeployAttempt | null>(null)
   const rows = attempts.slice(0, SHOWN)
   return (
     <section
@@ -61,38 +58,17 @@ export function RecentDeploys({
               <span className="shrink-0 text-xs text-muted-foreground tabular-nums">
                 {formatAge(a.finished_at ?? a.started_at)}
               </span>
-              {a.status === 'succeeded' && !a.live ? (
-                <Button
-                  size="xs"
-                  variant="outline"
-                  className="transition-opacity duration-150 motion-reduce:transition-none [@media(hover:hover)]:opacity-0 [@media(hover:hover)]:group-focus-within:opacity-100 [@media(hover:hover)]:group-hover:opacity-100"
-                  onClick={() => setTarget(a)}
-                >
-                  {t('rollback.action')}
-                </Button>
+              {a.status === 'succeeded' ? (
+                <span className="transition-opacity duration-150 motion-reduce:transition-none [@media(hover:hover)]:opacity-0 [@media(hover:hover)]:group-focus-within:opacity-100 [@media(hover:hover)]:group-hover:opacity-100">
+                  <Suspense fallback={null}>
+                    <DeployRowActions name={name} deployId={a.id} />
+                  </Suspense>
+                </span>
               ) : null}
             </li>
           ))}
         </ol>
       )}
-      <ConfirmDialog
-        open={target !== null}
-        onOpenChange={(o) => {
-          if (!o) setTarget(null)
-        }}
-        title={t('rollback.confirmTitle', { name })}
-        description={t('rollback.confirmBody')}
-        confirmLabel={t('rollback.action')}
-        pending={rollback.isPending}
-        error={rollback.error?.message ?? null}
-        onConfirm={() => {
-          if (!target) return
-          rollback.mutate(
-            { deployId: target.id, confirm: true },
-            { onSuccess: () => setTarget(null) },
-          )
-        }}
-      />
     </section>
   )
 }

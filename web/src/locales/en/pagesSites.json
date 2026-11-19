@@ -182,6 +182,16 @@
     "confirmBody": "The site serves the previous version again.",
     "none": "No earlier version to roll back to."
   },
+  "promote": {
+    "action": "Promote",
+    "confirmTitle": "Make this deploy live for {{name}}?",
+    "confirmBody": "The site's own domains serve this deploy right away. Its own URL keeps working."
+  },
+  "deployUrl": {
+    "copy": "Copy deploy URL",
+    "copied": "Deploy URL copied",
+    "open": "Open deploy URL"
+  },
   "starters": {
     "label": "Starter template",
     "preview": "Preview of the {{name}} starter",
