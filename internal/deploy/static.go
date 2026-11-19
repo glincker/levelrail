@@ -133,7 +133,7 @@ func (p *Pipeline) deployStatic(ctx context.Context, req Request, progress func(
 	if err := copyStaticDir(checkoutRoot, srcRel, staticRoot, destRel); err != nil {
 		return "", fmt.Errorf("deploy: service %q: copy static files: %w", req.ServiceName, err)
 	}
-	if err := p.prepareStaticRouting(req, destDir, progress); err != nil {
+	if err := p.prepareStaticRouting(ctx, req, destDir, progress); err != nil {
 		return "", fmt.Errorf("deploy: service %q: %w", req.ServiceName, err)
 	}
 	duration := time.Since(start)

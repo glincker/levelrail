@@ -1366,6 +1366,10 @@ Endpoints for:
 | GET | /api/v1/static-sites/{name}/domains/{domain}/status | AbilityRead | handleStaticSiteDomainStatus |
 | GET | /api/v1/static-sites/{name}/checks | AbilityRead | handleStaticSiteChecks |
 | GET | /api/v1/static-sites/{name}/traffic | AbilityRead | handleStaticSiteTraffic |
+| GET | /api/v1/static-sites/{name}/settings | AbilityRead | handleGetStaticSiteSettings |
+| PATCH | /api/v1/static-sites/{name}/settings | AbilityWrite | handlePatchStaticSiteSettings |
+| GET | /api/v1/static-sites/{name}/rules | AbilityRead | handleGetStaticSiteRules |
+| PUT | /api/v1/static-sites/{name}/rules | AbilityWrite | handlePutStaticSiteRules |
 
 ## Built-in Container Registry
 

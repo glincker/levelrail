@@ -1,6 +1,7 @@
 package deploy
 
 import (
+	"context"
 	"errors"
 	"fmt"
 	"io"
@@ -9,7 +10,15 @@ import (
 
 	"github.com/GLINCKER/levelrail/internal/build"
 	"github.com/GLINCKER/levelrail/internal/spec"
+	"github.com/GLINCKER/levelrail/internal/staticroutes"
+	"github.com/GLINCKER/levelrail/internal/store"
 )
+
+// StaticSiteSettingsReader is optionally implemented by the static site store
+// so a publish carries the rules and options edited in the dashboard.
+type StaticSiteSettingsReader interface {
+	GetStaticSiteSettings(ctx context.Context, name string) (store.StaticSiteSettings, store.StaticUIRules, error)
+}
 
 const stepStaticRoutes = "Compile routing rules"
 
@@ -29,7 +38,7 @@ func (p *Pipeline) routeLimits() spec.StaticLimits {
 // published tree plus the app.yaml routing fields, stores the result beside
 // the tree and removes the two files so they are never served. It runs before
 // the commit point, so a failure leaves the previous deploy's rules serving.
-func (p *Pipeline) prepareStaticRouting(req Request, destDir string, progress func(build.ProgressEvent)) error {
+func (p *Pipeline) prepareStaticRouting(ctx context.Context, req Request, destDir string, progress func(build.ProgressEvent)) error {
 	l := p.routeLimits()
 	root, err := os.OpenRoot(destDir)
 	if err != nil {
@@ -49,6 +58,9 @@ func (p *Pipeline) prepareStaticRouting(req Request, destDir string, progress fu
 	}
 	rs, err := spec.CompileStatic(in, l)
 	if err != nil {
+		return fmt.Errorf("routing rules: %w", err)
+	}
+	if err := p.applyStaticUI(ctx, req.ServiceName, rs, l); err != nil {
 		return fmt.Errorf("routing rules: %w", err)
 	}
 	for _, pr := range rs.Problems {
@@ -84,4 +96,33 @@ func readRulesFile(root *os.Root, name string, limit int) (string, error) {
 		return "", fmt.Errorf("read %s: %w", name, err)
 	}
 	return string(raw), nil
+}
+
+// applyStaticUI folds the dashboard rules and option overrides into rs, so a
+// rollback to this tree restores them with the sidecar.
+func (p *Pipeline) applyStaticUI(ctx context.Context, name string, rs *spec.StaticRuleset, l spec.StaticLimits) error {
+	reader, ok := p.staticSites.(StaticSiteSettingsReader)
+	if !ok {
+		return nil
+	}
+	set, ui, err := reader.GetStaticSiteSettings(ctx, name)
+	if err != nil {
+		return err
+	}
+	redirects := make([]staticroutes.UIRedirect, 0, len(ui.Redirects))
+	for _, r := range ui.Redirects {
+		redirects = append(redirects, staticroutes.UIRedirect(r))
+	}
+	headers := make([]staticroutes.UIHeader, 0, len(ui.Headers))
+	for _, h := range ui.Headers {
+		headers = append(headers, staticroutes.UIHeader(h))
+	}
+	rules, blocks, probs := staticroutes.CompileUI(redirects, headers, l)
+	if len(probs) > 0 {
+		return fmt.Errorf("dashboard rules: %s", probs[0].Message)
+	}
+	wrapped := staticroutes.Ruleset{StaticRuleset: *rs}
+	err = wrapped.ApplyUI(rules, blocks, staticroutes.OptionOverrides{SPA: set.SPAFallback, CleanURLs: set.CleanURLs, TrailingSlash: set.TrailingSlash, NotFound: set.NotFoundPage})
+	*rs = wrapped.StaticRuleset
+	return err
 }

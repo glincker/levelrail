@@ -198,6 +198,9 @@ func (db *DB) DeleteStaticSite(ctx context.Context, name string) error {
 	if _, err := tx.ExecContext(ctx, `DELETE FROM static_site_domains WHERE static_site_name = ?`, name); err != nil {
 		return fmt.Errorf("store: delete static site %q: clear domains: %w", name, err)
 	}
+	if _, err := tx.ExecContext(ctx, `DELETE FROM static_site_settings WHERE name = ?`, name); err != nil {
+		return fmt.Errorf("store: delete static site %q: clear settings: %w", name, err)
+	}
 	res, err := tx.ExecContext(ctx, `DELETE FROM static_sites WHERE name = ?`, name)
 	if err != nil {
 		return fmt.Errorf("store: delete static site %q: %w", name, err)
