@@ -14,7 +14,7 @@ type openAPIRoute struct {
 	Description string
 }
 
-// openAPIRoutes holds all 2198 routes known to scripts/gen-api-reference at
+// openAPIRoutes holds all 2202 routes known to scripts/gen-api-reference at
 // generation time. Run `go run ./scripts/gen-api-reference` after changing
 // any routes*.go registration and commit the result.
 var openAPIRoutes = []openAPIRoute{
@@ -1423,6 +1423,7 @@ var openAPIRoutes = []openAPIRoute{
 	{Method: "POST", Path: "/api/v1/heartbeat/{token}/{signal}", Ability: "Public", Group: "Other", Handler: "handleHeartbeatPing", Description: "Heartbeat start or fail signal; a fail marks the monitor down at once."},
 	{Method: "POST", Path: "/api/v1/hooks/deploy/{id}/{token}", Ability: "Public", Group: "Other", Handler: "handleBuildHookTrigger", Description: ""},
 	{Method: "POST", Path: "/api/v1/hooks/image-update/{name}/{token}", Ability: "Public", Group: "Other", Handler: "handleImageUpdateWebhook", Description: ""},
+	{Method: "POST", Path: "/api/v1/hooks/pages/{site}/{secret}", Ability: "Public", Group: "Other", Handler: "handleStaticSiteHookTrigger", Description: ""},
 	{Method: "POST", Path: "/api/v1/hooks/pipeline/{id}/{token}", Ability: "Public", Group: "Other", Handler: "handlePipelineWebhook", Description: ""},
 	{Method: "POST", Path: "/api/v1/hooks/stacks/{name}/refresh", Ability: "Public", Group: "Other", Handler: "handleStackSyncRefreshWebhook", Description: "Same as the sync webhook, but the queued run only plans, whatever the stack's apply flag says."},
 	{Method: "POST", Path: "/api/v1/hooks/stacks/{name}/sync", Ability: "Public", Group: "Other", Handler: "handleStackSyncWebhook", Description: "Git push webhook for a stack sync: no session, authenticated only by X-Hub-Signature-256 (HMAC SHA-256 of the raw body; SHA-1 alone is refused) or X-Gitlab-Token against the stack's webhook secret. JSON body capped by stacks.sync_webhook_max_body_kb (413). Only ref and after are read: a push to the configured branch queues one sync that plans and applies per the stack's apply flags; other branches, tags and deletes answer 202 with ignored. Unknown stack, sync off and a bad signature all answer the same 404. Returns 202 without waiting; bursts coalesce into one pending run."},
@@ -2095,9 +2096,12 @@ var openAPIRoutes = []openAPIRoute{
 	{Method: "POST", Path: "/api/v1/static-sites/{name}/deploys/{deployId}/promote", Ability: "AbilityDeploy", Group: "Static Sites / Backup Targets / Registry Credentials", Handler: "handlePromoteStaticSiteDeploy", Description: ""},
 	{Method: "POST", Path: "/api/v1/static-sites/{name}/domains", Ability: "AbilityWrite", Group: "Static Sites / Backup Targets / Registry Credentials", Handler: "handleAddStaticSiteDomain", Description: ""},
 	{Method: "GET", Path: "/api/v1/static-sites/{name}/domains/{domain}/status", Ability: "AbilityRead", Group: "Static Sites / Backup Targets / Registry Credentials", Handler: "handleStaticSiteDomainStatus", Description: ""},
+	{Method: "DELETE", Path: "/api/v1/static-sites/{name}/hook", Ability: "AbilityWriteSensitive", Group: "Static Sites / Backup Targets / Registry Credentials", Handler: "handleDeleteStaticSiteHook", Description: ""},
+	{Method: "GET", Path: "/api/v1/static-sites/{name}/hook", Ability: "AbilityRead", Group: "Static Sites / Backup Targets / Registry Credentials", Handler: "handleGetStaticSiteHook", Description: "Static site traffic for 24h or 7d. Besides top_paths and top_404_paths (kept for old clients) it returns top_pages (page requests only, capped by APP_PAGES_TRAFFIC_TOP_N), assets {requests, bytes}, broken_links (404s on real links) and probe_requests (404s that look like scans)."},
+	{Method: "POST", Path: "/api/v1/static-sites/{name}/hook", Ability: "AbilityWriteSensitive", Group: "Static Sites / Backup Targets / Registry Credentials", Handler: "handlePutStaticSiteHook", Description: ""},
 	{Method: "GET", Path: "/api/v1/static-sites/{name}/rules", Ability: "AbilityRead", Group: "Static Sites / Backup Targets / Registry Credentials", Handler: "handleGetStaticSiteRules", Description: ""},
 	{Method: "PUT", Path: "/api/v1/static-sites/{name}/rules", Ability: "AbilityWrite", Group: "Static Sites / Backup Targets / Registry Credentials", Handler: "handlePutStaticSiteRules", Description: ""},
-	{Method: "GET", Path: "/api/v1/static-sites/{name}/settings", Ability: "AbilityRead", Group: "Static Sites / Backup Targets / Registry Credentials", Handler: "handleGetStaticSiteSettings", Description: "Static site traffic for 24h or 7d. Besides top_paths and top_404_paths (kept for old clients) it returns top_pages (page requests only, capped by APP_PAGES_TRAFFIC_TOP_N), assets {requests, bytes}, broken_links (404s on real links) and probe_requests (404s that look like scans)."},
+	{Method: "GET", Path: "/api/v1/static-sites/{name}/settings", Ability: "AbilityRead", Group: "Static Sites / Backup Targets / Registry Credentials", Handler: "handleGetStaticSiteSettings", Description: ""},
 	{Method: "PATCH", Path: "/api/v1/static-sites/{name}/settings", Ability: "AbilityWrite", Group: "Static Sites / Backup Targets / Registry Credentials", Handler: "handlePatchStaticSiteSettings", Description: ""},
 	{Method: "GET", Path: "/api/v1/static-sites/{name}/submissions", Ability: "AbilityReadSensitive", Group: "Static Sites / Backup Targets / Registry Credentials", Handler: "handleListStaticSiteSubmissions", Description: ""},
 	{Method: "DELETE", Path: "/api/v1/static-sites/{name}/submissions/{form}/{id}", Ability: "AbilityDeploy", Group: "Static Sites / Backup Targets / Registry Credentials", Handler: "handleDeleteStaticSiteSubmission", Description: ""},

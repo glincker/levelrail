@@ -134,6 +134,10 @@ func (rt *Router) registerSettingsRoutes(mux *http.ServeMux) {
 	mux.HandleFunc("GET /api/v1/static-sites/{name}/domains/{domain}/status", rt.requireAbilityForResource(AbilityRead, appResourceFromPath, rt.handleStaticSiteDomainStatus))
 	mux.HandleFunc("GET /api/v1/static-sites/{name}/checks", rt.requireAbilityForResource(AbilityRead, appResourceFromPath, rt.handleStaticSiteChecks))
 	// Static site traffic for 24h or 7d. Besides top_paths and top_404_paths (kept for old clients) it returns top_pages (page requests only, capped by APP_PAGES_TRAFFIC_TOP_N), assets {requests, bytes}, broken_links (404s on real links) and probe_requests (404s that look like scans).
+	mux.HandleFunc("GET /api/v1/static-sites/{name}/hook", rt.requireAbilityForResource(AbilityRead, appResourceFromPath, rt.handleGetStaticSiteHook))
+	mux.HandleFunc("POST /api/v1/static-sites/{name}/hook", rt.requireAbilityForResource(AbilityWriteSensitive, appResourceFromPath, rt.handlePutStaticSiteHook))
+	mux.HandleFunc("DELETE /api/v1/static-sites/{name}/hook", rt.requireAbilityForResource(AbilityWriteSensitive, appResourceFromPath, rt.handleDeleteStaticSiteHook))
+	mux.HandleFunc("POST /api/v1/hooks/pages/{site}/{secret}", rt.handleStaticSiteHookTrigger)
 	mux.HandleFunc("GET /api/v1/static-sites/{name}/settings", rt.requireAbilityForResource(AbilityRead, appResourceFromPath, rt.handleGetStaticSiteSettings))
 	mux.HandleFunc("PATCH /api/v1/static-sites/{name}/settings", rt.requireAbilityForResource(AbilityWrite, appResourceFromPath, rt.handlePatchStaticSiteSettings))
 	mux.HandleFunc("GET /api/v1/static-sites/{name}/rules", rt.requireAbilityForResource(AbilityRead, appResourceFromPath, rt.handleGetStaticSiteRules))

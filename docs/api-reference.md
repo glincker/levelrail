@@ -1375,6 +1375,9 @@ Endpoints for:
 | POST | /api/v1/static-sites/{name}/deploys/{deployId}/promote | AbilityDeploy | handlePromoteStaticSiteDeploy |
 | GET | /api/v1/static-sites/{name}/submissions | AbilityReadSensitive | handleListStaticSiteSubmissions |
 | DELETE | /api/v1/static-sites/{name}/submissions/{form}/{id} | AbilityDeploy | handleDeleteStaticSiteSubmission |
+| GET | /api/v1/static-sites/{name}/hook | AbilityRead | handleGetStaticSiteHook |
+| POST | /api/v1/static-sites/{name}/hook | AbilityWriteSensitive | handlePutStaticSiteHook |
+| DELETE | /api/v1/static-sites/{name}/hook | AbilityWriteSensitive | handleDeleteStaticSiteHook |
 
 ## Built-in Container Registry
 
@@ -2430,6 +2433,7 @@ Routes that do not fit an existing group.
 | GET | /api/v1/node-providers/{provider}/spend | AbilityRoot | handleGetNodeProviderSpend |
 | GET | /api/v1/dns/authority | AbilityRead | handleDNSAuthority |
 | POST | /mcp | Public |  |
+| POST | /api/v1/hooks/pages/{site}/{secret} | Public | handleStaticSiteHookTrigger |
 
 ## See also
 
