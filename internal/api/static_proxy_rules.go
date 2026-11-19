@@ -34,12 +34,13 @@ func (rt *Router) proxyTargetState(ctx context.Context, c *refCaller, site, app 
 // authorizeProxyRules checks every proxy target of the dashboard rules: the
 // site itself is refused, and the caller must be allowed to read the app. A
 // refusal and an unknown app share one message so it is no existence oracle.
-func (rt *Router) authorizeProxyRules(w http.ResponseWriter, r *http.Request, site string, redirects []staticroutes.UIRedirect) bool {
+func (rt *Router) authorizeProxyRules(w http.ResponseWriter, r *http.Request, site string, redirects []staticroutes.UIRedirect) (map[string]bool, bool) {
 	c, err := rt.newRefCaller(r)
 	if err != nil {
 		rt.internalError(w, "api: static site rules: proxy target authz", err)
-		return false
+		return nil, false
 	}
+	approved := map[string]bool{}
 	for i, rd := range redirects {
 		rule := staticroutes.Rule{To: rd.To}
 		if !rule.IsProxy() {
@@ -53,14 +54,15 @@ func (rt *Router) authorizeProxyRules(w http.ResponseWriter, r *http.Request, si
 			msg = "proxy target app not found"
 		} else if err != nil {
 			rt.internalError(w, "api: static site rules: proxy target authz", err)
-			return false
+			return nil, false
 		}
 		if msg != "" {
 			writeJSON(w, http.StatusUnprocessableEntity, staticRulesLintFailure{Error: "routing rules are invalid", Problems: []staticroutes.LineProblem{{Kind: "redirect", Index: i, Message: msg}}})
-			return false
+			return nil, false
 		}
+		approved[app] = true
 	}
-	return true
+	return approved, true
 }
 
 // annotateProxyRows fills the kind and target state of each rule row.

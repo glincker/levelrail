@@ -28,6 +28,10 @@ const stepStaticRoutes = "Compile routing rules"
 // deploy message is no existence oracle.
 var ErrProxyTargetDenied = errors.New("not found or not accessible")
 
+// ErrProxyTargetNew is returned by a non-interactive authorizer for a target
+// the live site does not already serve. The message stays uniform, with a hint.
+var ErrProxyTargetNew = errors.New("new proxy target needs approval")
+
 // ProxyAuthorizer checks one proxy target and returns its scope key.
 type ProxyAuthorizer func(ctx context.Context, app string) (scope string, err error)
 
@@ -47,6 +51,9 @@ func authorizeProxyRules(ctx context.Context, req Request, rs *spec.StaticRulese
 		scope, err := "", ErrProxyTargetDenied
 		if req.ProxyAuthorizer != nil {
 			scope, err = req.ProxyAuthorizer(ctx, app)
+		}
+		if errors.Is(err, ErrProxyTargetNew) {
+			return fmt.Errorf("routing rules: %s: proxy target app %q was not found or is not available to you; deploy from the dashboard or CLI to approve a new proxy target", pr.Source, app)
 		}
 		if errors.Is(err, ErrProxyTargetDenied) {
 			return fmt.Errorf("routing rules: %s: proxy target app %q was not found or is not available to you", pr.Source, app)

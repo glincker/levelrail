@@ -2,9 +2,13 @@ package api
 
 import (
 	"context"
+	"fmt"
 	"net/http"
 
 	"github.com/GLINCKER/levelrail/internal/deploy"
+	"github.com/GLINCKER/levelrail/internal/proxyguard"
+	"github.com/GLINCKER/levelrail/internal/staticroutes"
+	"github.com/GLINCKER/levelrail/internal/store"
 )
 
 // proxyAppExists is the shared existence check, so a missing target and a
@@ -29,52 +33,59 @@ func (rt *Router) proxyScopeOf(ctx context.Context, app string) (string, bool, e
 	return owner.TeamID + "/" + owner.ProjectID, true, nil
 }
 
+// proxyFacts loads the current domain access configuration of one app.
+func (rt *Router) proxyFacts(ctx context.Context, app string) (proxyguard.Facts, error) {
+	var f proxyguard.Facts
+	if rt.domains == nil {
+		return f, nil
+	}
+	all, err := rt.domains.ListServiceDomains(ctx)
+	if err != nil {
+		return f, err
+	}
+	for _, d := range all {
+		if d.ServiceName == app {
+			f.Domains = append(f.Domains, d)
+		}
+	}
+	if len(f.Domains) == 0 {
+		return f, nil
+	}
+	if rt.domainAuthGate != nil {
+		if f.Gates, err = rt.domainAuthGate.ListDomainAuthGates(ctx); err != nil {
+			return f, err
+		}
+	}
+	if rt.domainBasicAuth != nil {
+		if f.Basic, err = rt.domainBasicAuth.ListDomainBasicAuth(ctx); err != nil {
+			return f, err
+		}
+	}
+	if rt.domainPolicy.store != nil {
+		for _, d := range f.Domains {
+			rows, err := rt.domainPolicy.store.ListDomainTrafficPoliciesFor(ctx, d.Domain)
+			if err != nil {
+				return f, err
+			}
+			f.Policies = append(f.Policies, rows...)
+		}
+	}
+	return f, nil
+}
+
 // proxyTargetRestricted is true when the app sits behind its own access
-// gate (auth gate or basic auth on any domain) or in a protected environment.
-// A proxy would bypass that gate, so such targets are refused like missing ones.
+// control (auth gate, basic auth, geo, shield or forwarders on any domain) or
+// in a protected environment. A proxy would bypass that, so such targets are
+// refused like missing ones. The controller applies the same rule at serve time.
 func (rt *Router) proxyTargetRestricted(ctx context.Context, app string) (bool, error) {
 	if _, protected, err := rt.protectedEnvironmentOf(ctx, app); err != nil || protected {
 		return protected, err
 	}
-	if rt.domains == nil {
-		return false, nil
-	}
-	all, err := rt.domains.ListServiceDomains(ctx)
+	f, err := rt.proxyFacts(ctx, app)
 	if err != nil {
 		return false, err
 	}
-	mine := map[string]bool{}
-	for _, d := range all {
-		if d.ServiceName == app {
-			mine[d.Domain] = true
-		}
-	}
-	if len(mine) == 0 {
-		return false, nil
-	}
-	if rt.domainAuthGate != nil {
-		gates, err := rt.domainAuthGate.ListDomainAuthGates(ctx)
-		if err != nil {
-			return false, err
-		}
-		for _, g := range gates {
-			if g.Enabled && mine[g.Domain] {
-				return true, nil
-			}
-		}
-	}
-	if rt.domainBasicAuth != nil {
-		accts, err := rt.domainBasicAuth.ListDomainBasicAuth(ctx)
-		if err != nil {
-			return false, err
-		}
-		for _, a := range accts {
-			if mine[a.Domain] {
-				return true, nil
-			}
-		}
-	}
-	return false, nil
+	return f.Restricted(app), nil
 }
 
 // proxyTargetAllowed is the one target check for every interactive path:
@@ -101,24 +112,61 @@ func (rt *Router) proxyTargetAllowed(ctx context.Context, c *refCaller, site, ap
 }
 
 // proxyAuthorizerFor checks proxy targets as the interactive caller. The
-// caller's grants are read now, so a queued or long deploy cannot outlive the
-// request's identity.
+// principal is captured from the request, but its policies are loaded at check
+// time, so a queued or long deploy sees revoked or changed grants. The token's
+// own abilities stay as they were when the request began.
 func (rt *Router) proxyAuthorizerFor(r *http.Request, site string) deploy.ProxyAuthorizer {
-	c, err := rt.newRefCaller(r)
+	pt, pid, abilities, perr := rt.callerPrincipal(r)
 	return func(ctx context.Context, app string) (string, error) {
-		if err != nil {
-			return "", err
+		if perr != nil {
+			return "", fmt.Errorf("resolve caller: %w", perr)
 		}
+		policies, err := rt.policies.ListPoliciesForPrincipal(ctx, pt, pid)
+		if err != nil {
+			return "", fmt.Errorf("list policies: %w", err)
+		}
+		c := &refCaller{principalType: pt, principalID: pid, abilities: abilities, policies: policies}
 		return rt.proxyTargetAllowed(ctx, c, site, app)
 	}
 }
 
+// liveProxyTargets are the proxy targets the site's current sidecar serves.
+func (rt *Router) liveProxyTargets(ctx context.Context, site string) map[string]bool {
+	out := map[string]bool{}
+	g, ok := rt.staticSites.(interface {
+		GetStaticSite(ctx context.Context, name string) (*store.StaticSite, error)
+	})
+	if !ok {
+		return out
+	}
+	s, err := g.GetStaticSite(ctx, site)
+	if err != nil || s == nil || s.RootDir == "" {
+		return out
+	}
+	rs, err := staticroutes.LoadSidecar(s.RootDir)
+	if err != nil || rs == nil {
+		return out
+	}
+	for _, pr := range rs.ProxyRules() {
+		app, _ := pr.ProxyTarget()
+		if rs.ProxyScopes[app] != "" {
+			out[app] = true
+		}
+	}
+	return out
+}
+
 // proxyScopeAuthorizer is for deploys with no interactive caller (git push,
-// hooks, queued replays): a target must sit in the site's own team and project.
+// hooks, queued replays): a target must sit in the site's own team and project,
+// be unrestricted, and already be served by the live sidecar. A new target
+// needs a deploy from the dashboard or CLI, where a person approves it.
 func (rt *Router) proxyScopeAuthorizer(site string) deploy.ProxyAuthorizer {
 	return func(ctx context.Context, app string) (string, error) {
 		if app == site || !rt.proxyAppExists(ctx, app) {
 			return "", deploy.ErrProxyTargetDenied
+		}
+		if !rt.liveProxyTargets(ctx, site)[app] {
+			return "", deploy.ErrProxyTargetNew
 		}
 		want, ok, err := rt.proxyScopeOf(ctx, site)
 		if err != nil {

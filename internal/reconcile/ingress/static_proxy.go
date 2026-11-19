@@ -2,9 +2,11 @@ package ingress
 
 import (
 	"context"
+	"errors"
 	"time"
 
 	"github.com/GLINCKER/levelrail/internal/ingress"
+	"github.com/GLINCKER/levelrail/internal/proxyguard"
 	"github.com/GLINCKER/levelrail/internal/staticroutes"
 	"github.com/GLINCKER/levelrail/internal/store"
 )
@@ -24,7 +26,7 @@ func (c *Controller) staticProxies(ctx context.Context, site string, rules *stat
 		dial, seen := dials[app]
 		if !seen {
 			dial = ""
-			if c.proxyScopeHolds(ctx, rules, app) {
+			if c.proxyScopeHolds(ctx, rules, app) && !c.proxyTargetRestricted(ctx, app, services) {
 				dial = c.proxyDial(ctx, site, app, services, ready, readyAt)
 			}
 			dials[app] = dial
@@ -75,4 +77,52 @@ func (c *Controller) proxyScopeHolds(ctx context.Context, rules *staticroutes.Ru
 	}
 	o, err := owners.OwnerOfApp(ctx, app)
 	return err == nil && o != nil && o.TeamID+"/"+o.ProjectID == want
+}
+
+// proxyEnvironments is implemented by stores that can read an environment.
+type proxyEnvironments interface {
+	GetEnvironment(ctx context.Context, id string) (store.Environment, error)
+}
+
+// proxyTargetRestricted is true when the target now has an access gate, basic
+// auth, a geo, shield or forwarder policy on any domain, or sits in a protected
+// environment. It runs on every pass, so rollbacks get it too, and any lookup
+// error counts as restricted.
+func (c *Controller) proxyTargetRestricted(ctx context.Context, app string, services []store.DesiredService) bool {
+	var f proxyguard.Facts
+	for _, svc := range services {
+		if svc.Name != app {
+			continue
+		}
+		if envs, ok := c.store.(proxyEnvironments); ok && svc.EnvironmentID != "" {
+			e, err := envs.GetEnvironment(ctx, svc.EnvironmentID)
+			if err != nil && !errors.Is(err, store.ErrEnvironmentNotFound) {
+				return true
+			}
+			if err == nil && e.Protected {
+				return true
+			}
+		}
+		for _, d := range svc.Domains {
+			f.Domains = append(f.Domains, store.ServiceDomain{Domain: d, ServiceName: app})
+		}
+	}
+	if len(f.Domains) == 0 {
+		return false
+	}
+	var err error
+	if f.Basic, err = c.store.ListDomainBasicAuth(ctx); err != nil {
+		return true
+	}
+	if gs, ok := c.store.(AuthGateStore); ok {
+		if f.Gates, err = gs.ListDomainAuthGates(ctx); err != nil {
+			return true
+		}
+	}
+	if ps, ok := c.store.(TrafficPolicyStore); ok {
+		if f.Policies, err = ps.ListDomainTrafficPolicies(ctx); err != nil {
+			return true
+		}
+	}
+	return f.Restricted(app)
 }

@@ -302,7 +302,7 @@ func (rt *Router) handlePatchStaticSiteSettings(w http.ResponseWriter, r *http.R
 			rt.reconcileNudger.Nudge()
 		}
 	}
-	if perr := rt.publishStaticUI(site, s, ui); perr != nil {
+	if perr := rt.publishStaticUI(site, s, ui, nil); perr != nil {
 		rt.internalError(w, "api: static site settings: apply to live site", perr, slog.String("name", site.Name))
 		return
 	}
@@ -329,7 +329,9 @@ func uiToCompile(ui store.StaticUIRules) ([]staticroutes.UIRedirect, []staticrou
 // publishStaticUI rewrites the live tree's sidecar with the stored overrides and
 // wakes the ingress controller, so the edit serves without a redeploy. A site
 // not yet published has no sidecar to update; the next deploy picks them up.
-func (rt *Router) publishStaticUI(site *store.StaticSite, s store.StaticSiteSettings, ui store.StaticUIRules) error {
+// approved names the proxy targets a caller was just authorized for; only those
+// may gain a scope here.
+func (rt *Router) publishStaticUI(site *store.StaticSite, s store.StaticSiteSettings, ui store.StaticUIRules, approved map[string]bool) error {
 	if site.RootDir == "" {
 		return nil
 	}
@@ -345,7 +347,7 @@ func (rt *Router) publishStaticUI(site *store.StaticSite, s store.StaticSiteSett
 	if err := rs.ApplyUI(rules, blocks, staticroutes.OptionOverrides{SPA: s.SPAFallback, CleanURLs: s.CleanURLs, TrailingSlash: s.TrailingSlash, NotFound: s.NotFoundPage}); err != nil {
 		return err
 	}
-	if err := rt.recordProxyScopes(context.Background(), rs); err != nil {
+	if err := rt.recordProxyScopes(context.Background(), rs, approved); err != nil {
 		return err
 	}
 	if err := staticroutes.WriteSidecar(site.RootDir, rs); err != nil {
@@ -423,7 +425,8 @@ func (rt *Router) handlePutStaticSiteRules(w http.ResponseWriter, r *http.Reques
 		writeJSON(w, http.StatusUnprocessableEntity, staticRulesLintFailure{Error: "routing rules are invalid", Problems: probs})
 		return
 	}
-	if !rt.authorizeProxyRules(w, r, site.Name, body.Redirects) {
+	approved, ok := rt.authorizeProxyRules(w, r, site.Name, body.Redirects)
+	if !ok {
 		return
 	}
 	ui := store.StaticUIRules{Redirects: make([]store.StaticUIRedirect, 0, len(body.Redirects)), Headers: make([]store.StaticUIHeader, 0, len(body.Headers))}
@@ -442,7 +445,7 @@ func (rt *Router) handlePutStaticSiteRules(w http.ResponseWriter, r *http.Reques
 		rt.internalError(w, "api: static site rules: save", err, slog.String("name", site.Name))
 		return
 	}
-	if err := rt.publishStaticUI(site, s, ui); err != nil {
+	if err := rt.publishStaticUI(site, s, ui, approved); err != nil {
 		rt.internalError(w, "api: static site rules: apply to live site", err, slog.String("name", site.Name))
 		return
 	}
@@ -472,24 +475,27 @@ func hashSitePassword(pw string) (string, string) {
 	return string(h), ""
 }
 
-// recordProxyScopes stores the team and project of each proxy target so the
-// controller can refuse a target that later moves. The caller was checked when
-// the rules were saved; a target with no owner is left unscoped and answers 502.
-func (rt *Router) recordProxyScopes(ctx context.Context, rs *staticroutes.Ruleset) error {
+// recordProxyScopes keeps the recorded team and project of each proxy target
+// current without widening it. A recorded scope is never replaced: a target that
+// moved loses its scope and answers 502 until a real deploy. A target with no
+// scope gains one only when this request just approved it.
+func (rt *Router) recordProxyScopes(ctx context.Context, rs *staticroutes.Ruleset, approved map[string]bool) error {
 	for _, pr := range rs.ProxyRules() {
 		app, _ := pr.ProxyTarget()
 		scope, found, err := rt.proxyScopeOf(ctx, app)
 		if err != nil {
 			return err
 		}
-		if !found {
+		existing := rs.ProxyScopes[app]
+		switch {
+		case !found, existing != "" && existing != scope:
 			delete(rs.ProxyScopes, app)
-			continue
+		case existing == "" && approved[app]:
+			if rs.ProxyScopes == nil {
+				rs.ProxyScopes = map[string]string{}
+			}
+			rs.ProxyScopes[app] = scope
 		}
-		if rs.ProxyScopes == nil {
-			rs.ProxyScopes = map[string]string{}
-		}
-		rs.ProxyScopes[app] = scope
 	}
 	return nil
 }
