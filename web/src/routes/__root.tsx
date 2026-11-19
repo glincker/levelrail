@@ -12,6 +12,7 @@ import { brandQueryOptions } from '../queries/brand'
 import { demoQueryOptions } from '../queries/demo'
 import { shellCacheReady } from '../queries/shell'
 import { useIsDemo } from '../hooks/useDemo'
+import { startDemoGuard } from '../lib/demoGuardRuntime'
 import { DemoAnalytics } from '../components/demo/DemoAnalytics'
 import { BrandProvider } from '../components/BrandProvider'
 import { AppSidebar } from '../components/AppSidebar'
@@ -56,7 +57,10 @@ const DemoChrome = React.lazy(() =>
 )
 
 function LazyDemoChrome() {
-  if (!useIsDemo()) return null
+  const isDemo = useIsDemo()
+  // The write guard must not wait for the lazy chrome chunk.
+  React.useEffect(() => (isDemo ? startDemoGuard() : undefined), [isDemo])
+  if (!isDemo) return null
   return (
     <React.Suspense fallback={null}>
       <DemoChrome />

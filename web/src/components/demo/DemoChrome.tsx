@@ -1,4 +1,4 @@
-import { useContext, useEffect, useRef, useState } from 'react'
+import { useContext, useEffect, useState } from 'react'
 import { useTranslation } from 'react-i18next'
 import { useRouterState } from '@tanstack/react-router'
 import { toast, toastAction } from '@/components/ui/toast'
@@ -9,12 +9,8 @@ import {
   captureDemoEvent,
   initDemoAnalytics,
 } from '@/lib/demoAnalytics'
-import { installDemoFetchGuard, type DemoBlock } from '@/lib/demoFetchGuard'
-import {
-  createDemoToastGate,
-  installUserActionTracking,
-  showDemoToast,
-} from '@/lib/demoToast'
+import { setDemoBlockHandler } from '@/lib/demoGuardRuntime'
+import { showDemoToast } from '@/lib/demoToast'
 import { DEMO_INSTALL_EVENT } from '@/lib/installPrompt'
 import { isTourDismissed } from '@/lib/demoTour'
 import { DemoBanner } from './DemoBanner'
@@ -31,7 +27,6 @@ export function DemoChrome() {
   const brandName = brand?.ShortName || brand?.Name || ''
   const [tourDismissed, setTourDismissed] = useState(() => isTourDismissed())
   const [installOpen, setInstallOpen] = useState(false)
-  const onBlocked = useRef<(b: DemoBlock) => void>(() => undefined)
 
   useEffect(() => {
     if (isDemo) void initDemoAnalytics(info)
@@ -44,8 +39,7 @@ export function DemoChrome() {
 
   useEffect(() => {
     if (!isDemo) return
-    const gate = createDemoToastGate()
-    onBlocked.current = (b) => {
+    setDemoBlockHandler((b, gate) => {
       if (b.code === 'demo_readonly') {
         captureDemoEvent('demo_readonly_blocked', {
           method: b.method,
@@ -60,12 +54,10 @@ export function DemoChrome() {
           setInstallOpen(true)
         }),
       })
-    }
-    const stop = installUserActionTracking(gate)
-    installDemoFetchGuard((b) => {
-      onBlocked.current(b)
     })
-    return stop
+    return () => {
+      setDemoBlockHandler(null)
+    }
   }, [isDemo, t, brandName])
 
   // Claims the event so openDemoInstall() callers do not fall back to the docs tab.
