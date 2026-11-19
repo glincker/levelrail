@@ -182,7 +182,6 @@ func (rt *Router) handleCreateStaticSite(w http.ResponseWriter, r *http.Request)
 		writeError(w, http.StatusBadRequest, "name is required")
 		return
 	}
-	var sourceHash string
 	if req.SourceURL != "" {
 		if req.Git != nil || req.Deploy {
 			writeError(w, http.StatusBadRequest, "source_url cannot be combined with git or deploy")
@@ -195,9 +194,8 @@ func (rt *Router) handleCreateStaticSite(w http.ResponseWriter, r *http.Request)
 		if !rt.authorizeRefs(w, r, AbilityDeploy, notFoundAs(http.StatusNotFound, "app not found"), appRef(req.Name)) {
 			return
 		}
-		var serr *sourceURLError
-		if sourceHash, serr = rt.stagePagesSourceURL(r.Context(), req.Name, req.SourceURL); serr != nil {
-			writeError(w, serr.status, serr.msg)
+		if _, perr := parsePagesSourceURL(req.SourceURL); perr != nil {
+			writeError(w, perr.status, perr.msg)
 			return
 		}
 	}
@@ -241,9 +239,21 @@ func (rt *Router) handleCreateStaticSite(w http.ResponseWriter, r *http.Request)
 		domains = created.Domains
 	}
 	detail := staticSiteDetail{Name: req.Name, BuildType: "static", Domains: nonNilStrings(domains)}
-	if sourceHash != "" {
-		id, brec := rt.deployStaticFromURL(r, req.Name, sourceHash)
+	if req.SourceURL != "" {
+		// Staged only now, after every create check passed, so a refused create leaves no archive behind.
+		hash, fresh, serr := rt.stagePagesSourceURL(r.Context(), req.Name, req.SourceURL)
+		if serr != nil {
+			if rec.Code == http.StatusCreated {
+				rt.rollbackStaticSite(r.Context(), req.Name)
+			}
+			writeError(w, serr.status, serr.msg)
+			return
+		}
+		id, brec := rt.deployStaticFromURL(r, req.Name, hash)
 		if brec.Code >= 300 {
+			if fresh {
+				rt.removeStagedPagesSource(req.Name, hash)
+			}
 			if rec.Code == http.StatusCreated {
 				rt.rollbackStaticSite(r.Context(), req.Name)
 			}
@@ -254,6 +264,7 @@ func (rt *Router) handleCreateStaticSite(w http.ResponseWriter, r *http.Request)
 			_, _ = w.Write(brec.Body.Bytes())
 			return
 		}
+		rt.auditPagesURLDeploy(r, req.Name, req.SourceURL)
 		writeJSON(w, http.StatusCreated, createStaticSiteResponse{staticSiteDetail: detail, DeployID: id})
 		return
 	}

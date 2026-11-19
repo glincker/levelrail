@@ -210,6 +210,8 @@ levelrail pages domains status docs docs.example.com
 
 - Only `https` URLs without credentials are accepted. Private, loopback and link-local addresses are refused, including after redirects (at most 3, https only).
 - The download is capped by `APP_PAGES_URL_MAX_MB` (default 100) and `APP_PAGES_URL_TIMEOUT` (default 60s).
+- `APP_PAGES_URL_ALLOW_PRIVATE` (default off) lets the fetch reach private addresses; it is independent of other outbound settings. `APP_PAGES_URL_CONCURRENCY` (default 4) bounds parallel downloads and `APP_PAGES_URL_STORE_MAX_MB` (default 5120) refuses new downloads once stored archives reach that size.
+- A failed fetch returns one generic message; details stay in the server log, without query strings. A URL deploy is audited by host and path only, and only a static site can be deployed this way.
 - Archives with absolute paths, `..` segments, symlinks or special files are rejected. The file count and unpacked size limits are the upload limits (`APP_UPLOAD_MAX_FILES`, `APP_UPLOAD_MAX_EXTRACTED_BYTES`).
 - A zip with a single wrapper folder is served from inside that folder. A `.tar.gz` is served as packed.
 

@@ -6,8 +6,10 @@ import (
 	"bytes"
 	"compress/gzip"
 	"encoding/json"
+	"errors"
 	"net/http"
 	"net/http/httptest"
+	"net/url"
 	"strings"
 	"testing"
 
@@ -49,7 +51,7 @@ func serveArchive(t *testing.T, body []byte) string {
 	old := pagesURLClient
 	pagesURLClient = srv.Client
 	t.Cleanup(func() { pagesURLClient = old })
-	t.Setenv(netguard.AllowPrivateEnv, "true")
+	t.Setenv(EnvPagesURLAllowPrivate, "true")
 	return srv.URL + "/site"
 }
 
@@ -151,7 +153,7 @@ func TestCreateStaticSiteFromURLRefusesRedirectToHTTP(t *testing.T) {
 	old := pagesURLClient
 	pagesURLClient = srv.Client
 	t.Cleanup(func() { pagesURLClient = old })
-	t.Setenv(netguard.AllowPrivateEnv, "true")
+	t.Setenv(EnvPagesURLAllowPrivate, "true")
 	rt, _, cookie := newURLSiteRouter(t)
 	if rec := createFromURL(rt, cookie, t, "redir", srv.URL+"/x"); rec.Code != http.StatusBadRequest {
 		t.Fatalf("status = %d, want 400", rec.Code)
@@ -164,5 +166,58 @@ func TestCreateStaticSiteFromURLSizeCap(t *testing.T) {
 	rt, _, cookie := newURLSiteRouter(t)
 	if rec := createFromURL(rt, cookie, t, "bigsite", serveArchive(t, big)); rec.Code != http.StatusRequestEntityTooLarge {
 		t.Fatalf("status = %d, want 413", rec.Code)
+	}
+}
+
+func TestFromURLNotilWidenedByNotifyOptIn(t *testing.T) {
+	srv := httptest.NewTLSServer(http.HandlerFunc(func(w http.ResponseWriter, _ *http.Request) { _, _ = w.Write([]byte("x")) }))
+	t.Cleanup(srv.Close)
+	t.Setenv(netguard.AllowPrivateEnv, "true")
+	t.Setenv(EnvPagesURLAllowPrivate, "")
+	rt, _, cookie := newURLSiteRouter(t)
+	src := strings.Replace(srv.URL, "127.0.0.1", "localhost", 1) + "/site.zip"
+	if rec := createFromURL(rt, cookie, t, "notify-optin", src); rec.Code != http.StatusBadRequest {
+		t.Fatalf("status = %d, want 400", rec.Code)
+	}
+}
+
+func TestFromURLErrorDetailDropsQuery(t *testing.T) {
+	err := &url.Error{Op: "Get", URL: "https://h/x?sig=secret", Err: errors.New("connection refused")}
+	if got := fetchErrDetail(err); strings.Contains(got, "secret") || got != "connection refused" {
+		t.Fatalf("detail = %q", got)
+	}
+}
+
+func TestFromURLExistingAppStagesNothing(t *testing.T) {
+	hits := 0
+	srv := httptest.NewTLSServer(http.HandlerFunc(func(w http.ResponseWriter, _ *http.Request) { hits++; _, _ = w.Write([]byte("x")) }))
+	t.Cleanup(srv.Close)
+	old := pagesURLClient
+	pagesURLClient = srv.Client
+	t.Cleanup(func() { pagesURLClient = old })
+	t.Setenv(EnvPagesURLAllowPrivate, "true")
+	rt, _, cookie := newURLSiteRouter(t)
+	first := httptest.NewRecorder()
+	rt.Handler().ServeHTTP(first, authedRequest(t, cookie, http.MethodPost, "/api/v1/static-sites", `{"name":"dupe"}`))
+	if first.Code != http.StatusCreated {
+		t.Fatalf("seed = %d %s", first.Code, first.Body.String())
+	}
+	if rec := createFromURL(rt, cookie, t, "dupe", srv.URL+"/a.zip"); rec.Code != http.StatusConflict || hits != 0 {
+		t.Fatalf("status = %d hits = %d, want 409 and no download", rec.Code, hits)
+	}
+}
+
+func TestFromURLRefusesNonStaticApp(t *testing.T) {
+	rt, _, cookie := newURLSiteRouter(t)
+	seed := httptest.NewRecorder()
+	rt.Handler().ServeHTTP(seed, authedRequest(t, cookie, http.MethodPost, "/api/v1/apps", `{"name":"plain","image":"nginx:1","port":80}`))
+	if seed.Code >= 300 {
+		t.Fatalf("seed = %d %s", seed.Code, seed.Body.String())
+	}
+	body := `{"source_url":"https://example.com/a.zip","build":{"type":"static"}}`
+	rec := httptest.NewRecorder()
+	rt.Handler().ServeHTTP(rec, authedRequest(t, cookie, http.MethodPost, "/api/v1/apps/plain/builds", body))
+	if rec.Code != http.StatusBadRequest {
+		t.Fatalf("status = %d %s, want 400", rec.Code, rec.Body.String())
 	}
 }

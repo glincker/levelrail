@@ -11,6 +11,7 @@ import (
 	"path/filepath"
 	"regexp"
 	"sort"
+	"strings"
 	"time"
 )
 
@@ -190,6 +191,22 @@ func (s *Store) List(app string) ([]Meta, error) {
 	}
 	sort.Slice(out, func(i, j int) bool { return out[i].CreatedAt.After(out[j].CreatedAt) })
 	return out, nil
+}
+
+// Remove deletes one stored upload; a missing one is not an error.
+func (s *Store) Remove(app, hash string) error {
+	dir, err := s.appDir(app)
+	if err != nil {
+		return err
+	}
+	if len(hash) != 64 || strings.Trim(hash, "0123456789abcdef") != "" {
+		return ErrNotFound
+	}
+	_ = os.Remove(filepath.Join(dir, hash+".json"))
+	if err := os.Remove(filepath.Join(dir, hash+".tar.gz")); err != nil && !errors.Is(err, os.ErrNotExist) {
+		return err
+	}
+	return nil
 }
 
 // Usage returns the total bytes of stored archives.

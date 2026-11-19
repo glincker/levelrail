@@ -63,3 +63,9 @@ func TestRun_Pages_DeployURL(t *testing.T) {
 		t.Fatalf("body = %v out = %q", got, out)
 	}
 }
+
+func TestRedactPagesURL(t *testing.T) {
+	if got := redactPagesURL("https://u:p@example.com/a.zip?sig=secret#f"); got != "https://example.com/a.zip" {
+		t.Fatalf("got %q", got)
+	}
+}
