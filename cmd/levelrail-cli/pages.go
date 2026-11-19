@@ -50,6 +50,7 @@ func runPages(prog string, args []string, stdout, stderr io.Writer, lookupEnv fu
 func pagesUsage(prog string) string {
 	return fmt.Sprintf(`Usage:
   %[1]s pages deploy <dir|zip> [--name N] [--domain D] [flags]
+  %[1]s pages deploy --git <url> [--branch b] [--build-command c] [--output-dir d] [--name N]
   %[1]s pages list [flags]
   %[1]s pages show <name> [flags]
   %[1]s pages delete <name> [flags]
@@ -70,6 +71,7 @@ var pagesValueFlags = map[string]bool{
 	"app": true, "name": true, "port": true, "env": true, "build-env": true, "include": true,
 	"upload-hash": true, "timeout": true, "token": true, "api-url": true, "profile": true,
 	"output": true, "query": true, "domain": true,
+	"git": true, "branch": true, "build-command": true, "output-dir": true,
 }
 
 // pagesArgs splits deploy args into the --domain value, the rest, and the positional path.
@@ -122,6 +124,9 @@ func runPagesDeploy(prog string, args []string, stdout, stderr io.Writer, lookup
 		_, _ = fmt.Fprint(stderr, pagesUsage(prog))
 		return exitOK
 	}
+	if repo := pagesFlagValue(args, "git"); repo != "" {
+		return runPagesDeployGit(prog, repo, args, stdout, stderr, lookupEnv)
+	}
 	domain, rest, dir := pagesArgs(args)
 	if dir == "" {
 		dir = "."
@@ -140,6 +145,26 @@ func runPagesDeploy(prog string, args []string, stdout, stderr io.Writer, lookup
 		return reportError(stdout, stderr, false, fmt.Errorf("site %q is live but adding domain %q failed: %w", name, domain, err))
 	}
 	printPagesDomain(stderr, res)
+	return exitOK
+}
+
+// runPagesDeployGit creates a site from a repository and starts its first build in one call.
+func runPagesDeployGit(prog, repo string, args []string, stdout, stderr io.Writer, lookupEnv func(string) (string, bool)) int {
+	name := pagesFlagValue(args, "app", "name")
+	if name == "" {
+		name = strings.TrimSuffix(filepath.Base(strings.TrimRight(repo, "/")), ".git")
+	}
+	git := apiclient.StaticSiteGit{RepoURL: repo, Branch: pagesFlagValue(args, "branch"), BuildCommand: pagesFlagValue(args, "build-command"), OutputDir: pagesFlagValue(args, "output-dir")}
+	client := apiClientFromFlags(prog, pagesFlagValue(args, "api-url"), pagesFlagValue(args, "token"), pagesFlagValue(args, "profile"), lookupEnv)
+	res, err := client.CreateStaticSiteFromGit(context.Background(), name, git, true)
+	if err != nil {
+		return reportError(stdout, stderr, false, fmt.Errorf("create site %q from %s: %w", name, repo, err))
+	}
+	_, _ = fmt.Fprintf(stdout, "site %s created from %s, first build started", res.Name, repo)
+	if res.DeployID != "" {
+		_, _ = fmt.Fprintf(stdout, " (deploy %s)", res.DeployID)
+	}
+	_, _ = fmt.Fprintln(stdout)
 	return exitOK
 }
 

@@ -114,3 +114,26 @@ func (c *Client) StaticSiteTraffic(ctx context.Context, name, window string) (ma
 	err := c.do(ctx, http.MethodGet, path, nil, &out)
 	return out, err
 }
+
+// StaticSiteGit is the optional git object of POST /api/v1/static-sites.
+type StaticSiteGit struct {
+	RepoURL      string `json:"repo_url"`
+	Branch       string `json:"branch,omitempty"`
+	AccountID    string `json:"account_id,omitempty"`
+	BuildCommand string `json:"build_command,omitempty"`
+	OutputDir    string `json:"output_dir,omitempty"`
+	DeployOnPush *bool  `json:"deploy_on_push,omitempty"`
+}
+
+// StaticSiteCreated is the response of a create with a git source.
+type StaticSiteCreated struct {
+	StaticSiteDetail
+	DeployID string `json:"deploy_id,omitempty"`
+}
+
+// CreateStaticSiteFromGit calls POST /api/v1/static-sites with a git source and, with deploy, starts the first build.
+func (c *Client) CreateStaticSiteFromGit(ctx context.Context, name string, git StaticSiteGit, deploy bool) (StaticSiteCreated, error) {
+	var out StaticSiteCreated
+	err := c.do(ctx, http.MethodPost, "/api/v1/static-sites", map[string]any{"name": name, "git": git, "deploy": deploy}, &out)
+	return out, err
+}

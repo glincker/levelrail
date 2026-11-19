@@ -36,6 +36,20 @@ levelrail-cli apps create --name my-site --file app.yaml --service web \
 
 From the dashboard, use the **New** wizard and pick the **Git repository** card. If you push an `app.yaml` with a static service, the deploy trigger will pick it up automatically.
 
+## Create a site from a repository in one call
+
+`POST /api/v1/static-sites` accepts an optional `git` object and `deploy`:
+
+```json
+{"name": "my-site", "git": {"repo_url": "https://github.com/org/site.git", "branch": "main", "account_id": "", "build_command": "npm run build", "output_dir": "dist", "deploy_on_push": true}, "deploy": true}
+```
+
+It creates the app, connects the source and starts the first build. The response is the site detail plus `git_source` and `deploy_id` (empty if the attempt did not exist within `APP_PAGES_DEPLOY_ID_WAIT`, default 3s). `deploy_on_push: false` sets `trigger_mode` to `manual`. A body with only `name` still works. From the CLI: `levelrail-cli pages deploy --git <url> [--branch b] [--build-command c] [--output-dir d]`.
+
+### Which build settings win
+
+For the build command and output directory, a per-site setting (`PATCH /api/v1/static-sites/{name}/settings`) wins when set, then the git source build config (`PUT /apps/{name}/git-source/build`), then detection. The per-site settings can be saved before the first publish. `trigger_mode` (`push`, `release` or `manual`) is set with `PUT /apps/{name}/git-source/deploy-settings`; `manual` ignores pushes and polls.
+
 ## Build a static site
 
 Set `build.command` and `build.publish` to build the site on the control plane instead of committing the output:
