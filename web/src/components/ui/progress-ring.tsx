@@ -11,10 +11,13 @@ function clamp(value: number) {
 export function ProgressRing({
   value,
   label,
+  display,
   className,
 }: {
   value: number
   label: string
+  /** Text inside the ring; defaults to the rounded percentage. */
+  display?: string
   className?: string
 }) {
   const pct = clamp(value)
@@ -55,7 +58,7 @@ export function ProgressRing({
         />
       </svg>
       <span className="absolute text-xs font-medium tabular-nums">
-        {Math.round(pct)}
+        {display ?? Math.round(pct)}
       </span>
     </div>
   )

@@ -6,10 +6,15 @@ import { Button } from '@/components/ui/button'
 import { ConfirmDialog } from '@/components/ui/confirm-dialog'
 import { EmptyState } from '@/components/ui/empty-state'
 import { ListSkeleton } from '@/components/ui/list-skeleton'
-import { Progress } from '@/components/ui/progress'
+import { ProgressRing } from '@/components/ui/progress-ring'
+import {
+  Collapsible,
+  CollapsiblePanel,
+  CollapsibleTrigger,
+} from '@/components/ui/collapsible'
 import { toast } from '@/components/ui/toast'
 import { useIsRoot } from '../../hooks/useIsRoot'
-import { essentialSplit, firstAppProgress, isOpen } from '../../lib/setupGuide'
+import { essentialSplit, isOpen, stepCount } from '../../lib/setupGuide'
 import type {
   SetupGuide,
   SetupGuideOverride,
@@ -68,11 +73,9 @@ export function GuideBody({ guide }: { guide: SetupGuide }) {
   const [confirmReset, setConfirmReset] = useState(false)
   const busy = setStep.isPending || setHidden.isPending || reset.isPending
   const { essential, more } = essentialSplit(guide)
-  const firstApp = firstAppProgress(guide)
-  const moreOrdered = [
-    ...more.filter(isOpen),
-    ...more.filter((s) => !isOpen(s)),
-  ]
+  const { done, total, percent } = stepCount(guide)
+  const moreOpen = more.filter(isOpen)
+  const moreSettled = more.filter((s) => !isOpen(s))
 
   const onError = (err: unknown) => {
     toast.add({
@@ -125,21 +128,20 @@ export function GuideBody({ guide }: { guide: SetupGuide }) {
         aria-label={t('summary.ready', { percent: guide.ready_percent })}
         className="flex flex-wrap items-center gap-x-6 gap-y-3 rounded-lg border border-border bg-card px-4 py-3"
       >
-        <div className="min-w-0">
+        <ProgressRing
+          value={percent}
+          label={t('chip.steps', { done, total })}
+          display={`${done}/${total}`}
+          className="size-12"
+        />
+        <div className="min-w-0 flex-1">
           <p className="text-base font-semibold text-foreground">
-            {firstApp
-              ? t('chip.firstApp', firstApp)
-              : t('summary.ready', { percent: guide.ready_percent })}
+            {t('chip.steps', { done, total })}
           </p>
           <p className="text-xs text-muted-foreground tabular-nums">
-            {t('summary.steps', { done: guide.done, total: guide.total })}
+            {t('summary.ready', { percent: guide.ready_percent })}
           </p>
         </div>
-        <Progress
-          value={guide.ready_percent}
-          aria-label={t('summary.ready', { percent: guide.ready_percent })}
-          className="min-w-40 flex-1"
-        />
         {isRoot ? (
           <div className="flex shrink-0 gap-2">
             <Button
@@ -191,24 +193,33 @@ export function GuideBody({ guide }: { guide: SetupGuide }) {
         <h2 className="text-(length:--glinr-type-size-section) leading-(--glinr-type-leading-section) font-(weight:--glinr-type-heading-weight) text-foreground">
           {t('summary.essentialTitle')}
         </h2>
-        <p className="text-sm text-muted-foreground">
-          {t('summary.essentialHelp')}
-        </p>
         <ul className="space-y-2">
           {essential.map((s) => card(s, s.id === guide.next_step))}
         </ul>
       </section>
 
-      {moreOrdered.length > 0 ? (
+      {moreOpen.length > 0 ? (
         <section className="space-y-2">
           <h2 className="text-(length:--glinr-type-size-section) leading-(--glinr-type-leading-section) font-(weight:--glinr-type-heading-weight) text-foreground">
             {t('more.title')}
           </h2>
-          <p className="text-sm text-muted-foreground">{t('more.help')}</p>
           <ul className="space-y-2">
-            {moreOrdered.map((s) => card(s, s.id === guide.next_step))}
+            {moreOpen.map((s) => card(s, s.id === guide.next_step))}
           </ul>
         </section>
+      ) : null}
+
+      {moreSettled.length > 0 ? (
+        <Collapsible defaultOpen={false}>
+          <CollapsibleTrigger className="flex items-center gap-2 rounded-md px-1 py-1 text-sm font-medium text-muted-foreground hover:text-foreground">
+            {t('more.finished', { count: moreSettled.length })}
+          </CollapsibleTrigger>
+          <CollapsiblePanel>
+            <ul className="space-y-2 pt-2">
+              {moreSettled.map((s) => card(s))}
+            </ul>
+          </CollapsiblePanel>
+        </Collapsible>
       ) : null}
 
       <ConfirmDialog

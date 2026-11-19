@@ -125,6 +125,19 @@ describe('GetStartedHub', () => {
     ).toBeTruthy()
   })
 
+  it('shows the step count ring', async () => {
+    vi.stubGlobal(
+      'fetch',
+      vi.fn(() =>
+        Promise.resolve(jsonResponse(guide([step({ id: 'first_app' })]))),
+      ),
+    )
+    renderHub()
+    expect(
+      await screen.findByRole('progressbar', { name: /steps done/ }),
+    ).toBeInTheDocument()
+  })
+
   it('flips a step to skipped without a reload and offers undo', async () => {
     const before = guide([step({ id: 'teammate', optional: true })])
     const after = guide([
@@ -138,6 +151,9 @@ describe('GetStartedHub', () => {
 
     fireEvent.click(await screen.findByRole('button', { name: 'Skip' }))
 
+    fireEvent.click(
+      await screen.findByRole('button', { name: /Finished steps/ }),
+    )
     expect(
       await screen.findByRole('button', { name: 'Undo' }),
     ).toBeInTheDocument()

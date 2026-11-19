@@ -148,7 +148,8 @@
     "label": "Setup {{percent}}% ready",
     "firstApp": "First app: {{done}} of {{total}}",
     "cta": "Continue setup",
-    "open": "Open the setup guide"
+    "open": "Open the setup guide",
+    "steps": "{{done}} of {{total}} steps done"
   },
   "wizard": {
     "continue": "See what is left before production in the Get started guide"
@@ -216,7 +217,8 @@
   },
   "more": {
     "title": "Get ready for production",
-    "help": "These make the server safer for real users. None of them blocks your first deploy."
+    "help": "These make the server safer for real users. None of them blocks your first deploy.",
+    "finished": "Finished steps ({{count}})"
   },
   "strip": {
     "title": "Get your first app live",
