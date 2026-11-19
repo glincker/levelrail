@@ -17,7 +17,7 @@ function analysis(over: Partial<ImportAnalysis>): ImportAnalysis {
       spa: true,
     },
     ...over,
-  } as ImportAnalysis
+  } as unknown as ImportAnalysis
 }
 
 describe('staticDetection', () => {

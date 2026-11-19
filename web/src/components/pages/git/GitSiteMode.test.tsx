@@ -65,7 +65,7 @@ function preview(buildType: string): RepoPreview {
         output_dir: 'dist',
       },
     },
-  } as RepoPreview
+  } as unknown as RepoPreview
 }
 
 function mount() {
