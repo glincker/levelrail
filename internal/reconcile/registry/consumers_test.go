@@ -14,27 +14,29 @@ import (
 //
 //nolint:gosec // classification notes, not credentials
 var consumerTokenModeNotes = map[string]string{
-	"cmd/levelrail-cli/registry.go":             "ok: reads settings through the API, no credential",
-	"cmd/levelrail/boot_loaders.go":             "ok: cache ref only, the builder or Router attaches a cache scoped token",
-	"cmd/levelrail/deploy_safety.go":            "ok: digest lookup mints a pull-only bearer for the built-in host in token mode",
-	"cmd/levelrail/registry_transfer.go":        "ok: token exchange, pull and manifest check use minted bearers",
-	"internal/api/apps_create.go":               "ok: create-time digest lookup uses registryAuthFor, bearer in token mode",
-	"internal/api/deploy_safety.go":             "ok: registryAuthFor mints a pull-only bearer for the built-in host in token mode",
-	"internal/api/doctor_registry.go":           "ok: settings only, no credential",
-	"internal/api/registry_catalog.go":          "ok: catalog and tag browse mint a bearer in token mode",
-	"internal/api/registry_credentials.go":      "ok: host exemption check only, no credential use",
-	"internal/api/registry_settings.go":         "ok: generates the password, which token mode ignores",
-	"internal/api/standalone_domains_safety.go": "ok: host comparison only",
-	"internal/api/store_interfaces_settings.go": "ok: interface declaration",
-	"internal/apiclient/client.go":              "ok: API client, no credential",
-	"internal/build/client.go":                  "ok: option declaration, auth comes from the grant or CacheAuth",
-	"internal/deploy/deploy.go":                 "ok: option plumbing, source classified under cmd/levelrail/deploy_safety.go",
-	"internal/deploy/digest.go":                 "ok: interface, source classified under cmd/levelrail/deploy_safety.go",
-	"internal/reconcile/ingress/controller.go":  "ok: routes the registry host, no credential",
-	"internal/reconcile/registry/controller.go": "ok: switches the container between htpasswd and token auth",
+	"cmd/levelrail-cli/registry.go":                "ok: reads settings through the API, no credential",
+	"cmd/levelrail/boot_loaders.go":                "ok: cache ref only, the builder or Router attaches a cache scoped token",
+	"cmd/levelrail/deploy_safety.go":               "ok: digest lookup mints a pull-only bearer for the built-in host in token mode",
+	"cmd/levelrail/registry_transfer.go":           "ok: token exchange, pull and manifest check use minted bearers",
+	"internal/api/apps_create.go":                  "ok: create-time digest lookup uses registryAuthFor, bearer in token mode",
+	"internal/api/deploy_safety.go":                "ok: registryAuthFor mints a pull-only bearer for the built-in host in token mode",
+	"internal/api/doctor_registry.go":              "ok: settings only, no credential",
+	"internal/api/registry_catalog.go":             "ok: catalog and tag browse mint a bearer in token mode",
+	"internal/api/registry_credentials.go":         "ok: host exemption check only, no credential use",
+	"internal/api/registry_settings.go":            "ok: generates the password, which token mode ignores",
+	"internal/api/standalone_domains_safety.go":    "ok: host comparison only",
+	"internal/api/store_interfaces_settings.go":    "ok: interface declaration",
+	"internal/apiclient/client.go":                 "ok: API client, no credential",
+	"internal/build/client.go":                     "ok: option declaration, auth comes from the grant or CacheAuth",
+	"internal/deploy/deploy.go":                    "ok: option plumbing, source classified under cmd/levelrail/deploy_safety.go",
+	"internal/deploy/digest.go":                    "ok: interface, source classified under cmd/levelrail/deploy_safety.go",
+	"internal/reconcile/application/controller.go": "ok: resolveRegistryAuth mints a pull-only bearer for the built-in host in token mode",
+	"internal/reconcile/application/job_spec.go":   "ok: source classified under internal/reconcile/application/controller.go",
+	"internal/reconcile/ingress/controller.go":     "ok: routes the registry host, no credential",
+	"internal/reconcile/registry/controller.go":    "ok: switches the container between htpasswd and token auth",
 }
 
-var consumerPattern = regexp.MustCompile(`RegistryPasswordEnvKey|GetRegistrySettings\(|WithCacheRegistry\(|RegistryAuthSource|registryAuthFor\(`)
+var consumerPattern = regexp.MustCompile(`RegistryPasswordEnvKey|GetRegistrySettings\(|WithCacheRegistry\(|RegistryAuthSource|registryAuthFor\(|resolveRegistryAuth\(`)
 
 func moduleRoot(t *testing.T) string {
 	t.Helper()

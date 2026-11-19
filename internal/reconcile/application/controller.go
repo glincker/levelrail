@@ -254,15 +254,17 @@ type Controller struct {
 	meshDNSAddr            string                       // empty is valid: no mesh DNS server is running, or it hasn't resolved a container-reachable address, see WithMeshDNSAddr
 	meshDNSFn              func(nodeID string) []string // nil falls back to meshDNSAddr, see WithMeshDNSFunc
 	meshDB                 *MeshDatabaseConfig
-	meshZone               string                  // empty is valid: resolveDatabaseField falls back to the database's container name, see WithMeshZone
-	nodeGPU                NodeGPUChecker          // nil is valid: no GPU placement check, see WithNodeGPU
-	storageTargets         StorageTargetStore      // nil is valid: a service with no StorageTargetID never needs one, see WithStorageTargets
-	projectEnv             ProjectEnvStore         // nil is valid: project vars are just skipped, see WithProjectEnv
-	orgEnv                 OrganizationEnvStore    // nil is valid: organization vars are just skipped, see WithOrganizationEnv
-	environmentEnv         EnvironmentEnvLister    // nil is valid: environment vars are just skipped, see WithEnvironmentEnv
-	appIntegrations        AppIntegrationStore     // nil is valid: attached-integration env vars are just skipped, see WithAppIntegrations
-	bucketBindings         BucketBindingStore      // nil is valid: bound buckets are just skipped, see WithBucketBindings
-	networkPrefix          string                  // empty falls back to defaultNetworkPrefix, see WithNetworkPrefix
+	meshZone               string               // empty is valid: resolveDatabaseField falls back to the database's container name, see WithMeshZone
+	nodeGPU                NodeGPUChecker       // nil is valid: no GPU placement check, see WithNodeGPU
+	storageTargets         StorageTargetStore   // nil is valid: a service with no StorageTargetID never needs one, see WithStorageTargets
+	projectEnv             ProjectEnvStore      // nil is valid: project vars are just skipped, see WithProjectEnv
+	orgEnv                 OrganizationEnvStore // nil is valid: organization vars are just skipped, see WithOrganizationEnv
+	environmentEnv         EnvironmentEnvLister // nil is valid: environment vars are just skipped, see WithEnvironmentEnv
+	appIntegrations        AppIntegrationStore  // nil is valid: attached-integration env vars are just skipped, see WithAppIntegrations
+	bucketBindings         BucketBindingStore   // nil is valid: bound buckets are just skipped, see WithBucketBindings
+	networkPrefix          string               // empty falls back to defaultNetworkPrefix, see WithNetworkPrefix
+	pullTokens             func(image string) (string, bool, error)
+	pullTokenActive        func() bool
 	registryCreds          RegistryCredentialStore // nil is valid: a service with no RegistryCredentialID never needs one, see WithRegistryCredentials
 	databaseScope          DatabaseScopeStore      // nil is valid: every referenced database is attached, see WithDatabaseScope
 	databases              DatabaseAttachmentStore // nil is valid: a service with no DatabaseEnv/DatabaseAttachment never needs one, see WithDatabaseAttachments
@@ -415,6 +417,12 @@ func WithStorageTargets(s StorageTargetStore) Option {
 // credential would be a worse failure mode than Reconcile erroring.
 func WithRegistryCredentials(s RegistryCredentialStore) Option {
 	return func(ctrl *Controller) { ctrl.registryCreds = s }
+}
+
+// WithRegistryPullTokens mints pull-only bearers for built-in registry images while token mode is active.
+// mint is build.RegistryTokenService.MintPullForImage, read per call because the mode can change live.
+func WithRegistryPullTokens(mint func(image string) (string, bool, error), active func() bool) Option {
+	return func(ctrl *Controller) { ctrl.pullTokens, ctrl.pullTokenActive = mint, active }
 }
 
 // WithDatabaseAttachments enables container creation to resolve
@@ -1466,7 +1474,7 @@ func (c *Controller) createAndStart(ctx context.Context, name string, desired *s
 		spec.Labels = mergeLabel(spec.Labels, releasedLabelKey, releasedLabelValue(released))
 	}
 	if desired.RegistryCredentialID != "" {
-		auth, err := c.resolveRegistryAuth(ctx, desired.RegistryCredentialID)
+		auth, err := c.resolveRegistryAuth(ctx, desired.RegistryCredentialID, desired.Image)
 		if err != nil {
 			return fmt.Errorf("resolve registry credential: %w", err)
 		}
@@ -2276,7 +2284,17 @@ var StorageEnvKeys = []string{
 // (store.DesiredService.RegistryCredentialID) into the docker.RegistryAuth
 // ensureImage needs to pull a private image, the same
 // store-row-plus-secrets-lookup shape resolveStorageEnv below uses.
-func (c *Controller) resolveRegistryAuth(ctx context.Context, credentialID string) (*docker.RegistryAuth, error) {
+func (c *Controller) resolveRegistryAuth(ctx context.Context, credentialID, image string) (*docker.RegistryAuth, error) {
+	if c.pullTokens != nil && c.pullTokenActive != nil && c.pullTokenActive() {
+		// Token mode rejects the stored htpasswd login, so the built-in host gets a pull-only bearer.
+		tok, ok, err := c.pullTokens(image)
+		if err != nil {
+			return nil, fmt.Errorf("mint registry pull token: %w", err)
+		}
+		if ok {
+			return &docker.RegistryAuth{Bearer: tok}, nil
+		}
+	}
 	if c.registryCreds == nil {
 		return nil, fmt.Errorf("service declares a registry credential but no registry credential store is configured")
 	}

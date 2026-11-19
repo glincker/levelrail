@@ -203,3 +203,11 @@ func TestDispatchFallsBackToTarOnPushAuthFailure(t *testing.T) {
 		t.Fatalf("registry not in token mode must use tar: %v %v", err, n.calls)
 	}
 }
+
+func TestPushAuthFailureClassifiesRealmRefusal(t *testing.T) {
+	// The wording buildkit reports when the token realm answers a bare 401 after job end.
+	err := errors.New(`push: failed to fetch oauth token: unexpected status from GET request to https://cp/api/v1/registry/token: 401 Unauthorized`)
+	if !isPushAuthFailure(err) {
+		t.Fatal("a refused token realm must select the tar fallback")
+	}
+}
