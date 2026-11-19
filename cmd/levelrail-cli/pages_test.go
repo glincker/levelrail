@@ -103,3 +103,26 @@ func TestRun_Pages_SettingsSetAndRoutesAdd(t *testing.T) {
 		t.Fatalf("put = %v (calls %v)", put, calls)
 	}
 }
+
+func TestRun_Pages_DeployGitFlags(t *testing.T) {
+	var got map[string]any
+	srv := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		_ = json.NewDecoder(r.Body).Decode(&got)
+		w.WriteHeader(http.StatusCreated)
+		_ = json.NewEncoder(w).Encode(map[string]any{"name": "site", "deploy_id": "dep_1"})
+	}))
+	defer srv.Close()
+
+	out, _ := runCLIExpectOK(t, []string{"pages", "deploy", "--git", "https://example.com/org/site.git", "--branch", "dev", "--build-command", "make", "--output-dir", "out", "--api-url", srv.URL})
+	git, _ := got["git"].(map[string]any)
+	if got["name"] != "site" || got["deploy"] != true || git["repo_url"] != "https://example.com/org/site.git" || git["branch"] != "dev" || git["build_command"] != "make" || git["output_dir"] != "out" {
+		t.Errorf("request = %v", got)
+	}
+	if !strings.Contains(out, "deploy dep_1") {
+		t.Errorf("stdout = %q", out)
+	}
+	runCLIExpectOK(t, []string{"pages", "deploy", "--git", "https://example.com/org/site.git", "--name", "custom", "--api-url", srv.URL})
+	if got["name"] != "custom" {
+		t.Errorf("--name ignored: %v", got["name"])
+	}
+}

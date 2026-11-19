@@ -1,10 +1,15 @@
 package api
 
 import (
+	"context"
 	"encoding/json"
+	"errors"
 	"net/http"
 	"net/http/httptest"
 	"testing"
+	"time"
+
+	"github.com/GLINCKER/levelrail/internal/store"
 )
 
 func TestHandleCreateStaticSite(t *testing.T) {
@@ -61,4 +66,111 @@ func TestHandleCreateStaticSiteWithGit(t *testing.T) {
 	if rec := do(http.MethodGet, "/api/v1/static-sites/badout", ""); rec.Code != http.StatusNotFound {
 		t.Fatalf("a rejected create must not leave an app, got %d", rec.Code)
 	}
+}
+
+// failingSetConn makes the account link fail after the source was saved.
+type failingSetConn struct{ GitConnectionsStore }
+
+func (failingSetConn) GetGitConnection(context.Context, string) (store.GitConnection, error) {
+	return store.GitConnection{ID: "c1"}, nil
+}
+
+func (failingSetConn) SetGitSourceConnection(context.Context, string, string) error {
+	return errors.New("link failed")
+}
+
+func TestHandleCreateStaticSiteRollsBackOnGitFailure(t *testing.T) {
+	const body = `{"name":"gsite","git":{"repo_url":"https://github.com/org/site.git"}}`
+	cases := map[string]struct {
+		setup func(*Router, *fakeGitSourceSecrets)
+		body  string
+	}{
+		"connect fails":  {func(_ *Router, f *fakeGitSourceSecrets) { f.setErr = errors.New("boom") }, body},
+		"settings check": {func(_ *Router, f *fakeGitSourceSecrets) { f.existsErr = errors.New("boom") }, body},
+		"connection set": {func(rt *Router, _ *fakeGitSourceSecrets) { rt.gitConns = failingSetConn{rt.gitConns} }, `{"name":"gsite","git":{"repo_url":"https://github.com/org/site.git","account_id":"c1"}}`},
+	}
+	for name, tc := range cases {
+		t.Run(name, func(t *testing.T) {
+			secrets := newFakeGitSourceSecrets()
+			rt, db := newTestRouterWithGitSourceSecrets(t, secrets)
+			cookie := loginTestSession(t, rt, db)
+			tc.setup(rt, secrets)
+			do := func(method, path, b string) *httptest.ResponseRecorder {
+				rec := httptest.NewRecorder()
+				rt.Handler().ServeHTTP(rec, authedRequest(t, cookie, method, path, b))
+				return rec
+			}
+			if rec := do(http.MethodPost, "/api/v1/static-sites", tc.body); rec.Code != http.StatusInternalServerError {
+				t.Fatalf("create = %d %s, want 500", rec.Code, rec.Body.String())
+			}
+			if rec := do(http.MethodGet, "/api/v1/static-sites/gsite", ""); rec.Code != http.StatusNotFound {
+				t.Fatalf("app left behind after failed create: %d", rec.Code)
+			}
+		})
+	}
+}
+
+func TestHandleCreateStaticSiteKeepsExistingAppOnConflict(t *testing.T) {
+	secrets := newFakeGitSourceSecrets()
+	rt, db := newTestRouterWithGitSourceSecrets(t, secrets)
+	cookie := loginTestSession(t, rt, db)
+	do := func(b string) *httptest.ResponseRecorder {
+		rec := httptest.NewRecorder()
+		rt.Handler().ServeHTTP(rec, authedRequest(t, cookie, http.MethodPost, "/api/v1/static-sites", b))
+		return rec
+	}
+	if rec := do(`{"name":"keep"}`); rec.Code != http.StatusCreated {
+		t.Fatalf("seed = %d", rec.Code)
+	}
+	secrets.setErr = errors.New("boom")
+	if rec := do(`{"name":"keep","git":{"repo_url":"https://github.com/org/site.git"}}`); rec.Code != http.StatusConflict {
+		t.Fatalf("duplicate = %d, want 409", rec.Code)
+	}
+	rec := httptest.NewRecorder()
+	rt.Handler().ServeHTTP(rec, authedRequest(t, cookie, http.MethodGet, "/api/v1/static-sites/keep", ""))
+	if rec.Code != http.StatusOK {
+		t.Fatalf("existing app touched: %d", rec.Code)
+	}
+}
+
+func deployRouter(t *testing.T) (*Router, *store.DB, *http.Cookie) {
+	t.Helper()
+	db := openTestDB(t)
+	rt := NewRouter(discardLogger(), testBrand(), db, WithGitSourceSecrets(newFakeGitSourceSecrets()), WithBuilder(&fakeBuilder{}))
+	return rt, db, loginTestSession(t, rt, db)
+}
+
+func TestHandleCreateStaticSiteDeployID(t *testing.T) {
+	const body = `{"name":"dsite","deploy":true,"git":{"repo_url":"https://git.invalid/org/site.git"}}`
+	t.Run("returned when the attempt appears", func(t *testing.T) {
+		t.Setenv(EnvPagesDeployIDWait, "5s")
+		rt, db, cookie := deployRouter(t)
+		go func() {
+			for i := 0; i < 100; i++ {
+				time.Sleep(50 * time.Millisecond)
+				a := store.DeployAttempt{ID: "dep_seed", ServiceName: "dsite", Source: store.DeployAttemptSourceManual, Status: store.DeployAttemptStatusSucceeded, StartedAt: time.Now()}
+				now := time.Now()
+				a.FinishedAt = &now
+				if db.SaveDeployAttempt(context.Background(), a) == nil {
+					return
+				}
+			}
+		}()
+		rec := httptest.NewRecorder()
+		rt.Handler().ServeHTTP(rec, authedRequest(t, cookie, http.MethodPost, "/api/v1/static-sites", body))
+		var got createStaticSiteResponse
+		if rec.Code != http.StatusCreated || json.Unmarshal(rec.Body.Bytes(), &got) != nil || got.DeployID != "dep_seed" {
+			t.Fatalf("create = %d %s", rec.Code, rec.Body.String())
+		}
+	})
+	t.Run("omitted without error when none appears", func(t *testing.T) {
+		t.Setenv(EnvPagesDeployIDWait, "200ms")
+		rt, _, cookie := deployRouter(t)
+		rec := httptest.NewRecorder()
+		rt.Handler().ServeHTTP(rec, authedRequest(t, cookie, http.MethodPost, "/api/v1/static-sites", body))
+		var got createStaticSiteResponse
+		if rec.Code != http.StatusCreated || json.Unmarshal(rec.Body.Bytes(), &got) != nil || got.DeployID != "" || got.GitSource == nil {
+			t.Fatalf("create = %d %s", rec.Code, rec.Body.String())
+		}
+	})
 }
