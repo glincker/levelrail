@@ -19,6 +19,11 @@ func TestStaticSiteTraffic(t *testing.T) {
 	rec("/", 200, 1000, "192.0.2.1", time.Minute)
 	rec("/missing", 404, 50, "192.0.2.2", 2*time.Minute)
 	rec("/missing", 404, 50, "192.0.2.3", 3*time.Minute)
+	rec("/about/", 200, 10, "192.0.2.1", time.Minute)
+	rec("/About", 200, 10, "192.0.2.4", time.Minute)
+	rec("/assets/app-abc123.js", 200, 4000, "192.0.2.1", time.Minute)
+	rec("/.env", 404, 5, "192.0.2.9", time.Minute)
+	rec("/wp-login.php", 404, 5, "192.0.2.9", time.Minute)
 	rt, cookie := visitorsRouter(t, log)
 
 	get := func(q string) (int, staticSiteTrafficResponse) {
@@ -28,11 +33,25 @@ func TestStaticSiteTraffic(t *testing.T) {
 		return r.Code, res
 	}
 	code, res := get("")
-	if code != http.StatusOK || res.Window != "24h" || res.Requests != 3 || res.BytesOut != 1100 || res.Status["4xx"] != 2 {
+	if code != http.StatusOK || res.Window != "24h" || res.Requests != 8 || res.BytesOut != 5130 || res.Status["4xx"] != 4 {
 		t.Fatalf("24h = %d %+v", code, res)
 	}
-	if len(res.Top404Paths) != 1 || res.Top404Paths[0].Label != "/missing" || res.Top404Paths[0].Count != 2 || res.Partial {
+	if len(res.Top404Paths) != 3 || res.Top404Paths[0].Label != "/missing" || res.Top404Paths[0].Count != 2 || res.Partial {
 		t.Fatalf("404s = %+v", res)
+	}
+	if len(res.BrokenLinks) != 1 || res.BrokenLinks[0].Label != "/missing" || len(res.Probes) != 2 {
+		t.Fatalf("split = %+v %+v", res.BrokenLinks, res.Probes)
+	}
+	if res.Assets.Requests != 1 || res.Assets.Bytes != 4000 {
+		t.Fatalf("assets = %+v", res.Assets)
+	}
+	for _, p := range res.TopPages {
+		if p.Label == "/assets/app-abc123.js" || p.Label == "/.env" {
+			t.Fatalf("non-page in top_pages: %+v", res.TopPages)
+		}
+	}
+	if len(res.TopPages) == 0 || len(res.TopPaths) == 0 {
+		t.Fatalf("pages = %+v", res)
 	}
 	if code, res = get("?window=7d"); code != http.StatusOK || res.Window != "7d" {
 		t.Fatalf("7d = %d %+v", code, res)

@@ -154119,7 +154119,7 @@
     },
     "/api/v1/static-sites/{name}/traffic": {
       "get": {
-        "description": "Requires the `read` ability.",
+        "description": "Static site traffic for 24h or 7d. Besides top_paths and top_404_paths (kept for old clients) it returns top_pages (page requests only, capped by APP_PAGES_TRAFFIC_TOP_N), assets {requests, bytes}, broken_links (404s on real links) and probe_requests (404s that look like scans).\n\nRequires the `read` ability.",
         "operationId": "handleStaticSiteTraffic",
         "parameters": [
           {
@@ -154188,7 +154188,7 @@
             ]
           }
         ],
-        "summary": "Static Site Traffic",
+        "summary": "Static site traffic for 24h or 7d.",
         "tags": [
           "Static Sites / Backup Targets / Registry Credentials"
         ],
