@@ -19,6 +19,7 @@ import {
   ImagesGlassIcon,
   LayersGlassIcon,
   LayoutGridGlassIcon,
+  LayoutTemplateGlassIcon,
   LockGlassIcon,
   MailGlassIcon,
   PlugGlassIcon,
@@ -287,6 +288,7 @@ export const ROUTE_ENTRIES: RouteEntry[] = [
     'mail',
   ),
   nav('nav-backups', 'Backups', <UploadGlassIcon size="1.4em" />, '/backups'),
+  nav('nav-pages', 'Pages', <LayoutTemplateGlassIcon size="1.4em" />, '/pages'),
   nav('nav-assets', 'Assets', <ImagesGlassIcon size="1.4em" />, '/assets'),
   nav(
     'nav-deployments',

@@ -161,6 +161,7 @@ export const NAMESPACES = [
   'splitTesting',
   'scheduledDeploy',
   'assets',
+  'pagesSites',
   'uiShared',
   'relatedLinks',
   'gitSource',

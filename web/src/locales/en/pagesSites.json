@@ -1,0 +1,73 @@
+{
+  "title": "Pages",
+  "description": "Static sites served straight from the control plane, no container.",
+  "newSite": "New site",
+  "empty": {
+    "title": "No sites yet",
+    "body": "Drop a folder or a zip to publish your first site."
+  },
+  "list": {
+    "label": "Sites",
+    "name": "Name",
+    "url": "URL",
+    "lastDeploy": "Last deploy",
+    "status": "Status",
+    "size": "Size",
+    "noUrl": "no domain",
+    "none": "none",
+    "unknown": "-",
+    "loadFailed": "Could not load the sites."
+  },
+  "status": {
+    "running": "Live",
+    "attention": "Needs attention",
+    "unknown": "Unknown"
+  },
+  "new": {
+    "title": "New site",
+    "name": "Name",
+    "nameHint": "Lowercase letters, digits and hyphens.",
+    "drop": "Upload",
+    "blank": "Blank page",
+    "blankHint": "Starts with a single index page you can replace later.",
+    "git": "Deploy from a git repository instead",
+    "create": "Create and publish",
+    "creating": "Working...",
+    "cancel": "Cancel",
+    "nameTaken": "That name is already taken.",
+    "failed": "Could not create the site: {{message}}",
+    "mode": "Start from",
+    "change": "Change",
+    "stage": {
+      "packing": "Packing files...",
+      "creating": "Creating site...",
+      "uploading": "Uploading...",
+      "publishing": "Publishing..."
+    }
+  },
+  "detail": {
+    "back": "All sites",
+    "visit": "Visit",
+    "tabs": {
+      "label": "Site sections",
+      "deployments": "Deployments",
+      "domains": "Domains",
+      "routes": "Routes",
+      "settings": "Settings"
+    },
+    "publish": "Publish new version",
+    "hidePublish": "Hide upload",
+    "loading": "Loading..."
+  },
+  "settings": {
+    "app": "Full app settings",
+    "appHint": "Build, environment and access options live on the app page.",
+    "openApp": "Open app page",
+    "danger": "Delete site",
+    "dangerHint": "Removes the site and its published files.",
+    "delete": "Delete",
+    "deleting": "Deleting...",
+    "confirmTitle": "Delete {{name}}?",
+    "confirmBody": "The site stops serving and cannot be restored."
+  }
+}

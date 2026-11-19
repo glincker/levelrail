@@ -25,6 +25,7 @@ const EXPECTED_GLOBAL = [
   '/apps',
   '/deployments',
   '/functions',
+  '/pages',
   '/projects',
   '/templates',
   '/tags',

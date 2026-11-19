@@ -125,6 +125,7 @@
       "action-create-database": "创建一个新的托管数据库。",
       "nav-backups": "备份计划和数据的恢复点。",
       "nav-assets": "将文件上传到你自己的存储桶，复制 URL 并查看成本。",
+      "nav-pages": "发布静态站点：拖入文件夹、回滚、设置域名和路由。",
       "nav-domains": "你的应用的域名、证书和路由。",
       "nav-dns": "DNS 区域和记录。",
       "nav-firewall": "控制哪些端口和来源可以访问你的节点。",

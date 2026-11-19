@@ -55,6 +55,17 @@ export const NAV_REGISTRY: readonly NavRegistryEntry[] = [
     sidebar: true,
   },
   {
+    id: 'pages',
+    path: '/pages',
+    area: 'apps',
+    titleKey: 'shell.nav.pages',
+    icon: 'LayoutTemplate',
+    helpPath: null,
+    gated: null,
+    palette: true,
+    sidebar: false,
+  },
+  {
     id: 'deployments',
     path: '/deployments',
     area: 'apps',

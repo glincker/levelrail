@@ -125,6 +125,7 @@
       "action-create-database": "Eine neue verwaltete Datenbank bereitstellen.",
       "nav-backups": "Backup-Zeitpläne und Wiederherstellungspunkte für Ihre Daten.",
       "nav-assets": "Laden Sie Dateien in Ihren eigenen Bucket hoch, kopieren Sie URLs und sehen Sie, was es kostet.",
+      "nav-pages": "Statische Websites veröffentlichen: Ordner ablegen, zurückrollen, Domains und Routen setzen.",
       "nav-domains": "Domains, Zertifikate und Routing für Ihre Apps.",
       "nav-dns": "DNS-Zonen und -Einträge.",
       "nav-firewall": "Steuern Sie, welche Ports und Quellen Ihre Nodes erreichen dürfen.",
