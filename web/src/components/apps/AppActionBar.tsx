@@ -1,4 +1,5 @@
 import { useState } from 'react'
+import { Link } from '@tanstack/react-router'
 import { useTranslation } from 'react-i18next'
 import {
   CopyGlassIcon,
@@ -15,7 +16,8 @@ import {
 import { ActionMenu } from '@/components/kit'
 import { AppAccessDetailsDialog } from '../templates/AppAccessDetails'
 import { hasTemplateAccess } from '../templates/templateAccess'
-import { Button } from '@/components/ui/button'
+import { Button, buttonVariants } from '@/components/ui/button'
+import { useIsStaticSite } from '../../queries/staticSites'
 import { CloneAppDialog } from '../CloneAppDialog'
 import { DeleteAppDialog } from '../DeleteAppDialog'
 import { PromoteAppDialog } from '../PromoteAppDialog'
@@ -44,6 +46,7 @@ export function AppActionBar({
 }) {
   const { t } = useTranslation('common')
   const actions = useOverviewActions(app, null)
+  const isStatic = useIsStaticSite(app.name)
   const asleep = useAppAsleep(app.name)
   const { wake } = useAppSleepActions(app.name)
   const [promoteOpen, setPromoteOpen] = useState(false)
@@ -78,29 +81,46 @@ export function AppActionBar({
       ) : (
         deployButton
       )}
-      <Button
-        size="sm"
-        variant="outline"
-        disabled={actions.restarting}
-        onClick={actions.restart}
-      >
-        {actions.restarting || actions.slowRestart ? (
-          <LoaderGlassIcon
-            size="1.4em"
-            aria-hidden="true"
-            className="animate-spin motion-reduce:animate-none"
-          />
-        ) : (
-          <RotateCwGlassIcon size="1.4em" aria-hidden="true" />
-        )}
-        <span className="max-md:sr-only">{actions.restartLabel}</span>
-      </Button>
+      {isStatic ? (
+        <Link
+          to="/pages/$name"
+          params={{ name: app.name }}
+          className={buttonVariants({ variant: 'outline', size: 'sm' })}
+        >
+          {t('appActions.manageInPages')}
+        </Link>
+      ) : (
+        <Button
+          size="sm"
+          variant="outline"
+          disabled={actions.restarting}
+          onClick={actions.restart}
+        >
+          {actions.restarting || actions.slowRestart ? (
+            <LoaderGlassIcon
+              size="1.4em"
+              aria-hidden="true"
+              className="animate-spin motion-reduce:animate-none"
+            />
+          ) : (
+            <RotateCwGlassIcon size="1.4em" aria-hidden="true" />
+          )}
+          <span className="max-md:sr-only">{actions.restartLabel}</span>
+        </Button>
+      )}
       {actions.confirmDialog}
       <CopyAsCommand
         subject={app.name}
         actions={[
-          { kind: 'app.restart', app: app.name },
-          { kind: app.suspended ? 'app.start' : 'app.stop', app: app.name },
+          ...(isStatic
+            ? []
+            : ([
+                { kind: 'app.restart', app: app.name },
+                {
+                  kind: app.suspended ? 'app.start' : 'app.stop',
+                  app: app.name,
+                },
+              ] as const)),
           { kind: 'app.scale', app: app.name, replicas: app.replicas },
           { kind: 'app.rollback', app: app.name },
         ]}
@@ -127,23 +147,29 @@ export function AppActionBar({
             disabled: actions.redeploying,
             onSelect: actions.redeploy,
           },
-          {
-            id: 'toggle',
-            label: asleep
-              ? t('appActions.wake', { defaultValue: 'Wake now' })
-              : app.suspended
-                ? t('appActions.start', { defaultValue: 'Start' })
-                : actions.stopping
-                  ? t('appPower.stopping')
-                  : t('appActions.stop', { defaultValue: 'Stop' }),
-            icon: app.suspended ? (
-              <PlayGlassIcon size="1.4em" />
-            ) : (
-              <PauseGlassIcon size="1.4em" />
-            ),
-            disabled: asleep ? wake.isPending : actions.togglingRunning,
-            onSelect: asleep ? () => wake.mutate() : actions.toggleRunning,
-          },
+          ...(isStatic
+            ? []
+            : [
+                {
+                  id: 'toggle',
+                  label: asleep
+                    ? t('appActions.wake', { defaultValue: 'Wake now' })
+                    : app.suspended
+                      ? t('appActions.start', { defaultValue: 'Start' })
+                      : actions.stopping
+                        ? t('appPower.stopping')
+                        : t('appActions.stop', { defaultValue: 'Stop' }),
+                  icon: app.suspended ? (
+                    <PlayGlassIcon size="1.4em" />
+                  ) : (
+                    <PauseGlassIcon size="1.4em" />
+                  ),
+                  disabled: asleep ? wake.isPending : actions.togglingRunning,
+                  onSelect: asleep
+                    ? () => wake.mutate()
+                    : actions.toggleRunning,
+                },
+              ]),
           {
             id: 'promote',
             label: t('appActions.promote', { defaultValue: 'Promote...' }),

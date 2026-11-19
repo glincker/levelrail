@@ -245,6 +245,7 @@
     "restarting": "Reiniciando...",
     "more": "Mais ações",
     "redeploy": "Refazer o deploy do atual",
+    "manageInPages": "Gerenciar em Pages",
     "redeploying": "Refazendo o deploy...",
     "start": "Iniciar",
     "stop": "Parar",

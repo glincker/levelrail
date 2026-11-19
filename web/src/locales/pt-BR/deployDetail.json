@@ -443,6 +443,9 @@
     "prebuilt": "Sem etapas de build: este deploy usou uma imagem pré-construída.",
     "label": "Fases deste deploy",
     "step": {
+      "build": "Build",
+      "publish": "Publicar",
+      "live": "No ar",
       "pull": "Baixar imagem",
       "create": "Criar contêiner",
       "readiness": "Prontidão",

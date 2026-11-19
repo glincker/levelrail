@@ -237,6 +237,7 @@
     "restarting": "再起動中...",
     "more": "その他の操作",
     "redeploy": "現在のリリースを再デプロイ",
+    "manageInPages": "Pagesで管理",
     "redeploying": "再デプロイ中...",
     "start": "開始",
     "stop": "停止",

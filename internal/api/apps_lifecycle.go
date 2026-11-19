@@ -17,6 +17,9 @@ import (
 // existing, already-tested blue-green/recreate cutover logic).
 func (rt *Router) handleRestartApp(w http.ResponseWriter, r *http.Request) {
 	name := r.PathValue("name")
+	if rt.refuseStaticSiteAction(w, r, name, "restart") {
+		return
+	}
 
 	// A stopped app has no container to recreate, so the nonce bump would
 	// be accepted and then do nothing.
@@ -48,6 +51,16 @@ func (rt *Router) handleRestartApp(w http.ResponseWriter, r *http.Request) {
 	rt.reloadAndWriteApp(w, r, name, "restart app")
 }
 
+// refuseStaticSiteAction answers 409 for container-only actions on a static
+// site: it has no container, only a published tree that a redeploy replaces.
+func (rt *Router) refuseStaticSiteAction(w http.ResponseWriter, r *http.Request, name, action string) bool {
+	if !rt.isStaticSiteApp(r.Context(), name) {
+		return false
+	}
+	writeError(w, http.StatusConflict, "a static site has no container to "+action+"; redeploy it instead (Redeploy in Pages, or levelrail pages deploy)")
+	return true
+}
+
 // restartService is the one restart path, shared by the manual and the
 // scheduled restart, so both roll out through the same cutover.
 func (rt *Router) restartService(ctx context.Context, name string) error {
@@ -73,6 +86,9 @@ func (rt *Router) restartService(ctx context.Context, name string) error {
 // store.DesiredService.Suspended's own doc comment.
 func (rt *Router) handleStopApp(w http.ResponseWriter, r *http.Request) {
 	name := r.PathValue("name")
+	if rt.refuseStaticSiteAction(w, r, name, "stop") {
+		return
+	}
 
 	if svc, err := rt.apps.GetDesiredService(r.Context(), name); err == nil {
 		if rt.refuseOfflineNode(r.Context(), w, *svc, queueWhileOffline(r)) || writeDisruption(w, rt.checkDisruption(r, *svc, disruptionStop)) {

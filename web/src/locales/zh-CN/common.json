@@ -237,6 +237,7 @@
     "restarting": "重启中...",
     "more": "更多操作",
     "redeploy": "重新部署当前版本",
+    "manageInPages": "在 Pages 中管理",
     "redeploying": "重新部署中...",
     "start": "启动",
     "stop": "停止",
