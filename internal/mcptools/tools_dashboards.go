@@ -26,7 +26,7 @@ type dashboardSummary struct {
 
 type dashboardDetail struct {
 	dashboardSummary
-	Document string `json:"document" jsonschema:"the portable dashboard JSON: time range, refresh and widgets with their targets"`
+	Document string `json:"document" jsonschema:"portable dashboard JSON: time range, refresh, widgets and targets"`
 }
 
 type dashboardList struct {

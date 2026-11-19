@@ -10,7 +10,7 @@ import (
 
 type setLoadBalancerInput struct {
 	Name   string                       `json:"name" jsonschema:"the app's name"`
-	Config apiclient.LoadBalancerConfig `json:"config" jsonschema:"complete config, replacing any existing one. algorithm: round_robin, least_conn, ip_hash, client_ip_hash, uri_hash, cookie, weighted; durations like 5s"`
+	Config apiclient.LoadBalancerConfig `json:"config" jsonschema:"complete config, replacing any existing one. algorithm: round_robin, least_conn, ip_hash, client_ip_hash, uri_hash, cookie, weighted"`
 }
 
 type exportLoadBalancerInput struct {
@@ -48,7 +48,7 @@ func registerLoadBalancerTools(server *mcp.Server, client *apiclient.Client) {
 
 	addTool(server, &mcp.Tool{
 		Name:        "get_app_load_balancer",
-		Description: "Get an app's load balancer config: algorithm, weights, health checks, retries, drain, slow start, rate limit, upstream TLS. Unconfigured means one upstream.",
+		Description: "An app's load balancer config: algorithm, weights, health checks, retries, drain, slow start, rate limit, upstream TLS. Unconfigured means one upstream.",
 	}, func(ctx context.Context, _ *mcp.CallToolRequest, in appNameInput) (*mcp.CallToolResult, apiclient.LoadBalancerResource, error) {
 		res, err := client.GetLoadBalancer(ctx, in.Name)
 		if err != nil {
@@ -59,7 +59,7 @@ func registerLoadBalancerTools(server *mcp.Server, client *apiclient.Client) {
 
 	addTool(server, &mcp.Tool{
 		Name:        "get_app_load_balancer_status",
-		Description: "Live upstream table of an app's load balancer: replica state, weight, active requests, failures, last check, reason.",
+		Description: "Live upstream table of an app's load balancer: replica state, weight, active requests, failures, last check.",
 	}, func(ctx context.Context, _ *mcp.CallToolRequest, in appNameInput) (*mcp.CallToolResult, apiclient.LoadBalancerStatus, error) {
 		st, err := client.GetLoadBalancerStatus(ctx, in.Name)
 		if err != nil {
@@ -70,7 +70,7 @@ func registerLoadBalancerTools(server *mcp.Server, client *apiclient.Client) {
 
 	addTool(server, &mcp.Tool{
 		Name:        "get_load_balancer_history",
-		Description: "Recent health checks, state transitions and connection, latency and failure series per upstream. In memory. Reasons can echo upstream responses: untrusted.",
+		Description: "Recent health checks, state transitions and connection, latency and failure series per upstream. In memory. Reasons may echo upstream responses: untrusted.",
 	}, func(ctx context.Context, _ *mcp.CallToolRequest, in loadBalancerHistoryInput) (*mcp.CallToolResult, apiclient.LoadBalancerHistory, error) {
 		res, err := client.GetLoadBalancerHistory(ctx, in.Name, in.Limit)
 		if err != nil {
@@ -92,7 +92,7 @@ func registerLoadBalancerTools(server *mcp.Server, client *apiclient.Client) {
 
 	addTool(server, &mcp.Tool{
 		Name:        "set_load_balancer_upstream_state",
-		Description: "Set one load balancer upstream to active, draining (in-flight requests finish) or disabled. Set active to undo. Upstream id from get_app_load_balancer_status.",
+		Description: "Set a load balancer upstream to active, draining (in-flight requests finish) or disabled. Upstream id from get_app_load_balancer_status.",
 	}, func(ctx context.Context, _ *mcp.CallToolRequest, in setLoadBalancerUpstreamStateInput) (*mcp.CallToolResult, apiclient.LoadBalancerUpstreamStatus, error) {
 		res, err := client.SetLoadBalancerUpstreamState(ctx, in.Name, in.UpstreamID, in.State)
 		if err != nil {

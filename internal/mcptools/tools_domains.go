@@ -22,7 +22,7 @@ func registerDomainTools(server *mcp.Server, client *apiclient.Client) {
 
 	addTool(server, &mcp.Tool{
 		Name:        "get_app_network",
-		Description: "An app's live traffic path: declared port, the host port the proxy targets, and whether the container is running.",
+		Description: "An app's live traffic path: declared port, proxy target host port, and whether the container runs.",
 	}, func(ctx context.Context, _ *mcp.CallToolRequest, in appNameInput) (*mcp.CallToolResult, apiclient.NetworkResource, error) {
 		network, err := client.GetAppNetwork(ctx, in.Name)
 		if err != nil {
@@ -33,7 +33,7 @@ func registerDomainTools(server *mcp.Server, client *apiclient.Client) {
 
 	addTool(server, &mcp.Tool{
 		Name:        "get_domain_maintenance_status",
-		Description: "Get whether one of an app's domains has maintenance mode enabled (a static page instead of the app), since when, and when it switches off.",
+		Description: "Whether an app domain has maintenance mode on (a static page instead of the app), since when and until when.",
 	}, func(ctx context.Context, _ *mcp.CallToolRequest, in appDomainInput) (*mcp.CallToolResult, apiclient.DomainMaintenanceResource, error) {
 		status, err := client.GetDomainMaintenance(ctx, in.Name, in.Domain)
 		if err != nil {
@@ -44,7 +44,7 @@ func registerDomainTools(server *mcp.Server, client *apiclient.Client) {
 
 	addTool(server, &mcp.Tool{
 		Name:        "get_domain_redirect",
-		Description: "Whether an app domain redirects to a target URL instead of proxying, with the target and status code (301 or 302).",
+		Description: "Whether an app domain redirects to a target URL instead of proxying, with target and status (301 or 302).",
 	}, func(ctx context.Context, _ *mcp.CallToolRequest, in appDomainInput) (*mcp.CallToolResult, apiclient.DomainRedirectResource, error) {
 		status, err := client.GetDomainRedirect(ctx, in.Name, in.Domain)
 		if err != nil {
@@ -66,7 +66,7 @@ func registerDomainTools(server *mcp.Server, client *apiclient.Client) {
 
 	addTool(server, &mcp.Tool{
 		Name:        "check_domain_dns",
-		Description: "Real DNS lookup for an app's domain: connected, not_resolving, resolves_elsewhere or unconfigured. Diagnoses a domain not reaching its app.",
+		Description: "Real DNS lookup for an app's domain: connected, not_resolving, resolves_elsewhere or unconfigured.",
 	}, func(ctx context.Context, _ *mcp.CallToolRequest, in appDomainInput) (*mcp.CallToolResult, apiclient.DomainCheckResource, error) {
 		result, err := client.CheckDomain(ctx, in.Name, in.Domain)
 		if err != nil {

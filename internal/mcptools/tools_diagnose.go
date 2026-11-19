@@ -11,7 +11,7 @@ import (
 func registerDiagnosticTools(server *mcp.Server, client *apiclient.Client) {
 	addTool(server, &mcp.Tool{
 		Name:        "diagnose_app_failure",
-		Description: "Why an app's latest deploy failed or it crashloops: typed causes (WRONG_PORT, OOM_KILLED) with evidence and fixes. deploy_id picks a past attempt.",
+		Description: "Why an app's latest deploy failed or it crashloops: typed causes (WRONG_PORT, OOM_KILLED) with evidence and fixes. deploy_id: past attempt.",
 	}, func(ctx context.Context, _ *mcp.CallToolRequest, in diagnoseAppInput) (*mcp.CallToolResult, apiclient.DiagnosisResource, error) {
 		result, err := client.DiagnoseApp(ctx, in.Name, in.DeployID)
 		if err != nil {
@@ -22,7 +22,7 @@ func registerDiagnosticTools(server *mcp.Server, client *apiclient.Client) {
 
 	addTool(server, &mcp.Tool{
 		Name:        "preflight_app",
-		Description: "Pre-deploy checks of an app's config: DNS, port, disk, memory, image pull, repo, env, mounts, each with a fix hint. required_env verifies names.",
+		Description: "Pre-deploy checks of an app's config (DNS, port, disk, memory, image pull, repo, env, mounts) with fixes. required_env verifies names.",
 	}, func(ctx context.Context, _ *mcp.CallToolRequest, in preflightAppInput) (*mcp.CallToolResult, apiclient.PreflightReport, error) {
 		report, err := client.PreflightApp(ctx, in.Name, in.RequiredEnv)
 		if err != nil {

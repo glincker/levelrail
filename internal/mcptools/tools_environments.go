@@ -11,7 +11,7 @@ import (
 func registerEnvironmentTools(server *mcp.Server, client *apiclient.Client) {
 	addTool(server, &mcp.Tool{
 		Name:        "list_environments",
-		Description: "List a project's environments: name and whether protected (deploying into one needs confirm=true on deploy_app or rollback_app).",
+		Description: "List a project's environments: name and whether protected (deploys into one need confirm=true).",
 	}, func(ctx context.Context, _ *mcp.CallToolRequest, in projectIDInput) (*mcp.CallToolResult, []apiclient.EnvironmentResource, error) {
 		environments, err := client.ListEnvironments(ctx, in.ProjectID)
 		if err != nil {
@@ -22,7 +22,7 @@ func registerEnvironmentTools(server *mcp.Server, client *apiclient.Client) {
 
 	addTool(server, &mcp.Tool{
 		Name:        "preview_clone_environment",
-		Description: "What clone_environment would create: per app name, image, uncopied domains, secret env names, task count, shared env keys. Creates nothing.",
+		Description: "What clone_environment would create: per app name, image, uncopied domains, secret env names, task count, shared env keys.",
 	}, func(ctx context.Context, _ *mcp.CallToolRequest, in cloneEnvironmentPreviewInput) (*mcp.CallToolResult, apiclient.EnvironmentClonePreviewResource, error) {
 		preview, err := client.PreviewEnvironmentClone(ctx, in.EnvironmentID, in.NewEnvironmentName)
 		if err != nil {

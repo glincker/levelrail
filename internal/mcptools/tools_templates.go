@@ -11,7 +11,7 @@ import (
 func registerServiceTemplateTools(server *mcp.Server, client *apiclient.Client) {
 	addTool(server, &mcp.Tool{
 		Name:        "list_service_templates",
-		Description: "List the service template catalog (id, name, category, slogan), without each entry's full Compose body. Use get_service_template for that.",
+		Description: "List service templates (id, name, category, slogan) without Compose bodies; get_service_template has those.",
 	}, func(ctx context.Context, _ *mcp.CallToolRequest, _ struct{}) (*mcp.CallToolResult, []apiclient.ServiceTemplateListItem, error) {
 		templates, err := client.ListServiceTemplates(ctx)
 		if err != nil {

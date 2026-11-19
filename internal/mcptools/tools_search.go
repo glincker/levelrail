@@ -10,7 +10,7 @@ import (
 
 type searchInput struct {
 	Query string `json:"query" jsonschema:"scopes app: env: tag: node: kind: then free text, e.g. 'env:prod api'"`
-	Kind  string `json:"kind,omitempty" jsonschema:"limit to one kind: app, database, node, domain, template, deployment, setting, doc, action"`
+	Kind  string `json:"kind,omitempty" jsonschema:"limit to one kind: app, database, node, domain, template, deployment, setting, doc or action"`
 	Limit int    `json:"limit,omitempty" jsonschema:"hits to return, default 20, max 100"`
 }
 
@@ -27,7 +27,7 @@ type searchOutput struct {
 func registerSearchTools(server *mcp.Server, client *apiclient.Client) {
 	addTool(server, &mcp.Tool{
 		Name:        "search",
-		Description: "Search apps, databases, nodes, domains, templates, deployments, settings and docs at once. Returns only what the token may see.",
+		Description: "Search apps, databases, nodes, domains, templates, deployments, settings and docs at once; only what the token may see.",
 	}, func(ctx context.Context, _ *mcp.CallToolRequest, in searchInput) (*mcp.CallToolResult, searchOutput, error) {
 		resp, err := client.Search(ctx, in.Query, in.Kind, in.Limit, "")
 		if err != nil {
@@ -38,7 +38,7 @@ func registerSearchTools(server *mcp.Server, client *apiclient.Client) {
 
 	addTool(server, &mcp.Tool{
 		Name:        "search_actions",
-		Description: "Find actions the token may run on an app or database. Each hit names the mcp_tool and mcp_args; empty mcp_tool means use the href. Runs nothing.",
+		Description: "Find actions the token may run on an app or database. Each hit names mcp_tool and mcp_args; empty mcp_tool means use the href. Runs nothing.",
 	}, func(ctx context.Context, _ *mcp.CallToolRequest, in searchActionsInput) (*mcp.CallToolResult, searchOutput, error) {
 		resp, err := client.Search(ctx, in.Query, "action", in.Limit, "")
 		if err != nil {

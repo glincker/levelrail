@@ -26,7 +26,7 @@ func registerControlPlaneBackupTools(server *mcp.Server, client *apiclient.Clien
 
 	addTool(server, &mcp.Tool{
 		Name:        "create_control_plane_backup",
-		Description: "Take a snapshot of the control plane's own database now and return its name, size and sha256. Mutating (writes a backup file, changes no app or config).",
+		Description: "Snapshot the control plane's own database now; returns name, size and sha256. Writes a backup file, changes no app or config.",
 	}, func(ctx context.Context, _ *mcp.CallToolRequest, _ struct{}) (*mcp.CallToolResult, apiclient.ControlPlaneBackup, error) {
 		backup, err := client.CreateControlPlaneBackup(ctx)
 		if err != nil {

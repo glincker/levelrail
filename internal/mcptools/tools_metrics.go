@@ -17,7 +17,7 @@ const defaultMetricsWindow = time.Hour
 func registerAppMetricsTools(server *mcp.Server, client *apiclient.Client) {
 	addTool(server, &mcp.Tool{
 		Name:        "get_app_metrics",
-		Description: "Query an app's time-series metrics (cpu_percent, memory_usage_bytes, network, disk and more) over a window, bucketed.",
+		Description: "An app's time-series metrics (cpu_percent, memory_usage_bytes, network, disk and more) over a window, bucketed.",
 	}, func(ctx context.Context, _ *mcp.CallToolRequest, in appMetricsInput) (*mcp.CallToolResult, apiclient.AppMetricsResource, error) {
 		window := defaultMetricsWindow
 		if in.Since != "" {
@@ -48,7 +48,7 @@ func registerAppMetricsTools(server *mcp.Server, client *apiclient.Client) {
 
 type appMetricsInput struct {
 	Name   string `json:"name" jsonschema:"the app's name"`
-	Metric string `json:"metric" jsonschema:"metric key, e.g. cpu_percent, memory_usage_bytes, memory_limit_bytes, network_rx_bytes, disk_read_bytes"`
+	Metric string `json:"metric" jsonschema:"metric key, e.g. cpu_percent, memory_usage_bytes, network_rx_bytes"`
 	Since  string `json:"since,omitempty" jsonschema:"how far back to query, e.g. '1h', '30m'; default 1h"`
 	Step   string `json:"step,omitempty" jsonschema:"aggregation bucket width, e.g. '60s'; omitted returns raw unaggregated samples"`
 }

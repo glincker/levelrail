@@ -14,14 +14,14 @@ type canaryStartInput struct {
 	Weight       int     `json:"weight,omitempty" jsonschema:"manual canary only: percent of traffic, 1-99. Omit when using stages"`
 	Stages       []int   `json:"stages,omitempty" jsonschema:"ascending traffic percents, e.g. [10,25,50,100]; advances and rolls back on a breach"`
 	Interval     string  `json:"interval,omitempty" jsonschema:"staged canary: how long each stage observes traffic, such as 5m"`
-	MaxErrorRate float64 `json:"max_error_rate,omitempty" jsonschema:"staged canary: roll back when the canary 5xx rate exceeds the stable release's by this fraction, 0.02 is two points"`
-	MaxP95Ratio  float64 `json:"max_p95_ratio,omitempty" jsonschema:"staged canary: roll back when the canary p95 latency exceeds this multiple of the stable release's"`
+	MaxErrorRate float64 `json:"max_error_rate,omitempty" jsonschema:"staged canary: roll back when its 5xx rate exceeds the stable release's by this fraction (0.02 is two points)"`
+	MaxP95Ratio  float64 `json:"max_p95_ratio,omitempty" jsonschema:"staged canary: roll back when its p95 exceeds this multiple of the stable release's"`
 }
 
 func registerCanaryTools(server *mcp.Server, client *apiclient.Client) {
 	addTool(server, &mcp.Tool{
 		Name:        "get_canary",
-		Description: "An app's canary: image, traffic share, stages, live error rate and p95 against stable, and how the last one ended.",
+		Description: "An app's canary: image, traffic share, stages, live error rate and p95 vs stable, last outcome.",
 	}, func(ctx context.Context, _ *mcp.CallToolRequest, in appNameInput) (*mcp.CallToolResult, apiclient.CanaryResource, error) {
 		out, err := client.GetCanary(ctx, in.Name)
 		if err != nil {
@@ -32,7 +32,7 @@ func registerCanaryTools(server *mcp.Server, client *apiclient.Client) {
 
 	addTool(server, &mcp.Tool{
 		Name:        "start_canary",
-		Description: "Run a new image beside an app with a share of traffic. With stages it steps up and rolls back on an error rate or p95 breach. One per app, single-replica image apps.",
+		Description: "Run a new image beside an app with a share of traffic; stages step up and roll back on an error rate or p95 breach. One per single-replica image app.",
 	}, func(ctx context.Context, _ *mcp.CallToolRequest, in canaryStartInput) (*mcp.CallToolResult, apiclient.CanaryResource, error) {
 		out, err := client.StartCanaryWith(ctx, in.Name, apiclient.CanaryStartRequest{
 			Image: in.Image, Weight: in.Weight, Stages: in.Stages, Interval: in.Interval,
@@ -46,7 +46,7 @@ func registerCanaryTools(server *mcp.Server, client *apiclient.Client) {
 
 	addTool(server, &mcp.Tool{
 		Name:        "promote_canary",
-		Description: "Promote now: deploy the canary image to the app through the normal deploy path, skipping any remaining stages, then remove the canary.",
+		Description: "Promote now: deploy the canary image through the normal deploy path, skipping remaining stages, then remove the canary.",
 	}, func(ctx context.Context, _ *mcp.CallToolRequest, in appNameInput) (*mcp.CallToolResult, apiclient.CanaryResource, error) {
 		out, err := client.PromoteCanary(ctx, in.Name)
 		if err != nil {

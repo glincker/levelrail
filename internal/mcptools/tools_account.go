@@ -24,7 +24,7 @@ func registerAccountTools(server *mcp.Server, client *apiclient.Client) {
 
 	addTool(server, &mcp.Tool{
 		Name:        "get_my_access",
-		Description: "Show what this account can manage: tier, teams, IAM policies, sign-in providers and per-area capabilities with the missing ability.",
+		Description: "What this account can manage: tier, teams, IAM policies, sign-in providers, per-area capabilities with the missing ability.",
 	}, func(ctx context.Context, _ *mcp.CallToolRequest, _ struct{}) (*mcp.CallToolResult, apiclient.MyAccessResource, error) {
 		access, err := client.MyAccess(ctx)
 		if err != nil {
@@ -35,7 +35,7 @@ func registerAccountTools(server *mcp.Server, client *apiclient.Client) {
 
 	addTool(server, &mcp.Tool{
 		Name:        "list_my_sessions",
-		Description: "List this account's live browser sessions: browser, network, created, last seen and expiry. Needs a token that holds read:sensitive and belongs to a user.",
+		Description: "List this account's live browser sessions: browser, network, created, last seen, expiry. Needs a user token with read:sensitive.",
 	}, func(ctx context.Context, _ *mcp.CallToolRequest, _ struct{}) (*mcp.CallToolResult, []apiclient.Session, error) {
 		creds, err := client.MyCredentials(ctx)
 		if err != nil {
@@ -46,7 +46,7 @@ func registerAccountTools(server *mcp.Server, client *apiclient.Client) {
 
 	addTool(server, &mcp.Tool{
 		Name:        "list_my_tokens",
-		Description: "List this account's active API tokens: name, abilities, expiry, last use. Secrets are never returned. Needs read:sensitive and a user token.",
+		Description: "List this account's active API tokens: name, abilities, expiry, last use; no secrets. Needs a user token with read:sensitive.",
 	}, func(ctx context.Context, _ *mcp.CallToolRequest, _ struct{}) (*mcp.CallToolResult, []apiclient.SessionToken, error) {
 		creds, err := client.MyCredentials(ctx)
 		if err != nil {
@@ -57,7 +57,7 @@ func registerAccountTools(server *mcp.Server, client *apiclient.Client) {
 
 	addTool(server, &mcp.Tool{
 		Name:        "list_my_activity",
-		Description: "This account's own sign-ins, token use and security changes, newest first. Filter with kind, page with cursor; all includes non-security rows.",
+		Description: "This account's sign-ins, token use and security changes, newest first. Filter with kind; all includes non-security rows.",
 	}, func(ctx context.Context, _ *mcp.CallToolRequest, in myActivityInput) (*mcp.CallToolResult, apiclient.MyActivity, error) {
 		kind := in.Kind
 		if in.All && kind == "" {
@@ -73,7 +73,7 @@ func registerAccountTools(server *mcp.Server, client *apiclient.Client) {
 
 type myActivityInput struct {
 	Limit  int    `json:"limit,omitempty" jsonschema:"rows to return, 1 to 100, default 25"`
-	Kind   string `json:"kind,omitempty" jsonschema:"only one category: sign_in, security, sessions, tokens, token_use, account or failed"`
+	Kind   string `json:"kind,omitempty" jsonschema:"one category: sign_in, security, sessions, tokens, token_use, account or failed"`
 	Cursor string `json:"cursor,omitempty" jsonschema:"the next_cursor of a previous page"`
 	All    bool   `json:"all,omitempty" jsonschema:"include raw API requests, default is security events only"`
 }

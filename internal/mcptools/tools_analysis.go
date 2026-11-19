@@ -11,7 +11,7 @@ import (
 func registerAnalysisTools(server *mcp.Server, client *apiclient.Client) {
 	addTool(server, &mcp.Tool{
 		Name:        "get_analysis_report",
-		Description: "Get an analysis report by id, or list an app's. Read only.",
+		Description: "Get an analysis report by id, or list an app's.",
 	}, func(ctx context.Context, _ *mcp.CallToolRequest, in analysisReportInput) (*mcp.CallToolResult, any, error) {
 		if in.ID == "" {
 			rows, err := client.ListAnalysisReports(ctx, in.App)

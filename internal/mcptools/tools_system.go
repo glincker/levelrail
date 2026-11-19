@@ -22,7 +22,7 @@ func registerSystemTools(server *mcp.Server, client *apiclient.Client) {
 
 	addTool(server, &mcp.Tool{
 		Name:        "get_system_status",
-		Description: "Control plane configured signals: secrets, telemetry, alerts, Docker reachability, data disk usage. Lighter than get_system_doctor.",
+		Description: "Control plane configured signals: secrets, telemetry, alerts, Docker reachability, data disk. Lighter than get_system_doctor.",
 	}, func(ctx context.Context, _ *mcp.CallToolRequest, _ struct{}) (*mcp.CallToolResult, apiclient.SystemStatusResource, error) {
 		status, err := client.GetSystemStatus(ctx)
 		if err != nil {
@@ -44,7 +44,7 @@ func registerSystemTools(server *mcp.Server, client *apiclient.Client) {
 
 	addTool(server, &mcp.Tool{
 		Name:        "get_firewall_exposure",
-		Description: "Published container ports reachable from outside, per node, with severity and a plain explanation. Docker bypasses ufw for these. Read-only.",
+		Description: "Published container ports reachable from outside, per node, with severity and explanation (Docker bypasses ufw).",
 	}, func(ctx context.Context, _ *mcp.CallToolRequest, _ struct{}) (*mcp.CallToolResult, exposureSummary, error) {
 		report, err := client.GetExposure(ctx, "", false)
 		if err != nil {
@@ -55,7 +55,7 @@ func registerSystemTools(server *mcp.Server, client *apiclient.Client) {
 
 	addTool(server, &mcp.Tool{
 		Name:        "prune_system",
-		Description: "Remove stopped containers, dangling images, unused volumes and build cache fleet-wide. Never touches anything an app or database still desires.",
+		Description: "Remove stopped containers, dangling images, unused volumes and build cache fleet-wide, never anything an app or database still desires.",
 	}, func(ctx context.Context, _ *mcp.CallToolRequest, _ struct{}) (*mcp.CallToolResult, apiclient.SystemPruneResult, error) {
 		result, err := client.PruneSystem(ctx)
 		if err != nil {

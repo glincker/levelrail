@@ -36,7 +36,7 @@ type pruneBuildCacheInput struct {
 func registerBuildTools(server *mcp.Server, client *apiclient.Client) {
 	addTool(server, &mcp.Tool{
 		Name:        "list_builds",
-		Description: "List the build queue and history across apps (duration, cache hit ratio, image size change, node, platform), or one build by id with its failure hint.",
+		Description: "Build queue and history (duration, cache hit ratio, image size change, node, platform), or one build by id with its failure hint.",
 	}, func(ctx context.Context, _ *mcp.CallToolRequest, in listBuildsInput) (*mcp.CallToolResult, listBuildsOutput, error) {
 		if in.ID != "" {
 			b, err := client.GetBuild(ctx, in.ID)
@@ -54,7 +54,7 @@ func registerBuildTools(server *mcp.Server, client *apiclient.Client) {
 
 	addTool(server, &mcp.Tool{
 		Name:        "get_build_speed",
-		Description: "Build speed of one app: time saved by cache (cold vs cached build median) and typed suggestions to speed builds up.",
+		Description: "Build speed of one app: time saved by cache (cold vs cached median) and typed speed-up suggestions.",
 	}, func(ctx context.Context, _ *mcp.CallToolRequest, in buildSpeedInput) (*mcp.CallToolResult, apiclient.BuildSpeed, error) {
 		out, err := client.GetBuildSpeed(ctx, in.App)
 		if err != nil {
@@ -76,7 +76,7 @@ func registerBuildTools(server *mcp.Server, client *apiclient.Client) {
 
 	addTool(server, &mcp.Tool{
 		Name:        "preview_build_cache_prune",
-		Description: "Dry run of a build cache prune: the idle cache records that would be removed and the bytes freed. Changes nothing.",
+		Description: "Dry run of a build cache prune: the idle cache records that would be removed and the bytes freed.",
 	}, func(ctx context.Context, _ *mcp.CallToolRequest, in pruneBuildCacheInput) (*mcp.CallToolResult, apiclient.BuildCachePruneResource, error) {
 		out, err := client.PruneBuildCache(ctx, apiclient.BuildCachePruneRequest{Node: in.Node, OlderThanHours: in.OlderThanHours})
 		if err != nil {

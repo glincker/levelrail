@@ -16,7 +16,7 @@ type setAppEnvInput struct {
 	Name   string `json:"name" jsonschema:"the app's name"`
 	Key    string `json:"key" jsonschema:"the environment variable name"`
 	Value  string `json:"value" jsonschema:"the value to store; never returned or logged"`
-	Secret bool   `json:"secret,omitempty" jsonschema:"store the value envelope-encrypted as a write-only secret instead of a plain env var"`
+	Secret bool   `json:"secret,omitempty" jsonschema:"store as a write-only encrypted secret, not a plain env var"`
 	Force  bool   `json:"force,omitempty" jsonschema:"secret only: overwrite even if the key is locked"`
 }
 

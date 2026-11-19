@@ -11,7 +11,7 @@ import (
 func registerIAMTools(server *mcp.Server, client *apiclient.Client) {
 	addTool(server, &mcp.Tool{
 		Name:        "list_iam_policies",
-		Description: "List every IAM policy on the control plane: resource-scoped Allow/Deny documents attachable to a user or token, additive on top of a token's flat abilities.",
+		Description: "List IAM policies: resource-scoped Allow/Deny documents attachable to a user or token, on top of its flat abilities.",
 	}, func(ctx context.Context, _ *mcp.CallToolRequest, _ struct{}) (*mcp.CallToolResult, []apiclient.PolicyResource, error) {
 		policies, err := client.ListPolicies(ctx)
 		if err != nil {
@@ -33,7 +33,7 @@ func registerIAMTools(server *mcp.Server, client *apiclient.Client) {
 
 	addTool(server, &mcp.Tool{
 		Name:        "list_policy_templates",
-		Description: "List IAM policy templates (read-only, guest-one-environment, deployer-nonprod, ai-operator-nonprod, production-approver) with parameters and documents.",
+		Description: "List IAM policy templates with parameters and documents.",
 	}, func(ctx context.Context, _ *mcp.CallToolRequest, _ struct{}) (*mcp.CallToolResult, apiclient.PolicyTemplateList, error) {
 		list, err := client.ListPolicyTemplates(ctx)
 		if err != nil {
@@ -55,7 +55,7 @@ func registerIAMTools(server *mcp.Server, client *apiclient.Client) {
 
 	addTool(server, &mcp.Tool{
 		Name:        "get_iam_effective_permissions",
-		Description: "Show what a user or token can do on every app and database, grouped by ability, with how much comes from policies.",
+		Description: "What a user or token can do on every app and database, grouped by ability, with the policy share.",
 	}, func(ctx context.Context, _ *mcp.CallToolRequest, in principalInput) (*mcp.CallToolResult, apiclient.IAMEffective, error) {
 		eff, err := client.IAMEffectivePermissions(ctx, in.PrincipalType, in.PrincipalID)
 		if err != nil {
@@ -77,7 +77,7 @@ func registerIAMTools(server *mcp.Server, client *apiclient.Client) {
 
 	addTool(server, &mcp.Tool{
 		Name:        "suggest_least_privilege",
-		Description: "Suggest narrower abilities or revocation for each token from audit log usage. Read-only.",
+		Description: "Suggest narrower abilities or revocation for each token from audit log usage.",
 	}, func(ctx context.Context, _ *mcp.CallToolRequest, in suggestInput) (*mcp.CallToolResult, apiclient.IAMSuggestions, error) {
 		res, err := client.IAMSuggestions(ctx, in.Days)
 		if err != nil {

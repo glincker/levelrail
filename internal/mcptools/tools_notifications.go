@@ -11,7 +11,7 @@ import (
 func registerNotificationTools(server *mcp.Server, client *apiclient.Client) {
 	addTool(server, &mcp.Tool{
 		Name:        "list_notification_channels",
-		Description: "Global notification channels: name, kind, enabled, destination URL. Alert rules and deploy targets attach by channel_id.",
+		Description: "Global notification channels: name, kind, enabled, destination URL. Rules and deploy targets attach by channel_id.",
 	}, func(ctx context.Context, _ *mcp.CallToolRequest, _ struct{}) (*mcp.CallToolResult, []apiclient.NotificationChannelResource, error) {
 		channels, err := client.ListNotificationChannels(ctx)
 		if err != nil {

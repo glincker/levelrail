@@ -28,7 +28,7 @@ type modelLogsInput struct {
 type deployModelInput struct {
 	Name          string   `json:"name" jsonschema:"model name: lowercase letters, digits and hyphens"`
 	Engine        string   `json:"engine" jsonschema:"inference engine: ollama, vllm or llamacpp"`
-	Model         string   `json:"model" jsonschema:"an Ollama tag such as llama3.1:8b, or a HuggingFace repo such as meta-llama/Llama-3.1-8B-Instruct"`
+	Model         string   `json:"model" jsonschema:"an Ollama tag (llama3.1:8b) or HuggingFace repo (meta-llama/Llama-3.1-8B-Instruct)"`
 	NodeID        string   `json:"node_id,omitempty" jsonschema:"GPU node to run on; empty means the control plane's own host"`
 	GPUCount      int      `json:"gpu_count,omitempty" jsonschema:"number of GPUs; 0 or -1 means all GPUs on the node"`
 	GPUDeviceIDs  []string `json:"gpu_device_ids,omitempty" jsonschema:"specific GPU indexes or UUIDs; overrides gpu_count"`
@@ -36,9 +36,9 @@ type deployModelInput struct {
 	Quantization  string   `json:"quantization,omitempty" jsonschema:"quantization method for vllm, e.g. awq"`
 	Domain        string   `json:"domain,omitempty" jsonschema:"hostname for the OpenAI-compatible endpoint"`
 	HFToken       string   `json:"hf_token,omitempty" jsonschema:"HuggingFace access token for gated models, stored encrypted and never returned"`
-	Residency     string   `json:"residency,omitempty" jsonschema:"always (default) or on_demand: stop the engine when idle, start it on the first request"`
-	IdleTTLSecs   int      `json:"idle_ttl_seconds,omitempty" jsonschema:"with on_demand: idle seconds before the engine stops; 0 uses the platform default"`
-	SwapGroup     string   `json:"swap_group,omitempty" jsonschema:"models sharing this name on a node/GPU cannot both be resident; waking one stops the other"`
+	Residency     string   `json:"residency,omitempty" jsonschema:"always (default) or on_demand: stop when idle, start on first request"`
+	IdleTTLSecs   int      `json:"idle_ttl_seconds,omitempty" jsonschema:"with on_demand: idle seconds before stopping; 0 is the platform default"`
+	SwapGroup     string   `json:"swap_group,omitempty" jsonschema:"models sharing this name on a node/GPU are never resident together"`
 }
 
 type modelUsageInput struct {
@@ -52,7 +52,7 @@ type preflightModelInput struct {
 	Quant   string `json:"quant,omitempty" jsonschema:"GGUF quantization to check, for example Q4_K_M"`
 	File    string `json:"file,omitempty" jsonschema:"a single repository file to check"`
 	NodeID  string `json:"node_id,omitempty" jsonschema:"node to check fit and disk against; empty means the control plane's own host"`
-	HFToken string `json:"hf_token,omitempty" jsonschema:"HuggingFace token for gated or private repos, used for this check only and never stored"`
+	HFToken string `json:"hf_token,omitempty" jsonschema:"HuggingFace token for gated or private repos; used once, never stored"`
 }
 
 type modelActionResult struct {
@@ -62,7 +62,7 @@ type modelActionResult struct {
 func registerModelTools(server *mcp.Server, client *apiclient.Client) {
 	addTool(server, &mcp.Tool{
 		Name:        "list_models",
-		Description: "List AI models on GPU nodes: engine, model, node, and reconcile status (Downloading, Loading, ModelLoaded, NoGPUOnNode) with progress.",
+		Description: "AI models on GPU nodes: engine, model, node, reconcile status (Downloading, Loading, ModelLoaded, NoGPUOnNode) and progress.",
 	}, func(ctx context.Context, _ *mcp.CallToolRequest, _ struct{}) (*mcp.CallToolResult, []apiclient.ModelResource, error) {
 		out, err := client.ListModels(ctx)
 		if err != nil {
@@ -84,7 +84,7 @@ func registerModelTools(server *mcp.Server, client *apiclient.Client) {
 
 	addTool(server, &mcp.Tool{
 		Name:        "list_gpu_nodes",
-		Description: "List nodes reporting NVIDIA GPUs: driver, per-GPU VRAM and utilization, runtime state and fix, running models, reserved and free GPUs.",
+		Description: "Nodes reporting NVIDIA GPUs: driver, per-GPU VRAM and utilization, runtime state and fix, running models, free GPUs.",
 	}, func(ctx context.Context, _ *mcp.CallToolRequest, _ struct{}) (*mcp.CallToolResult, []apiclient.GPUNodeResource, error) {
 		out, err := client.ListGPUNodes(ctx)
 		if err != nil {
@@ -95,7 +95,7 @@ func registerModelTools(server *mcp.Server, client *apiclient.Client) {
 
 	addTool(server, &mcp.Tool{
 		Name:        "get_model_logs",
-		Description: "Search a model engine's stored logs in a time window; download and load progress appears here. Not a live tail: at most 200 entries per call.",
+		Description: "Search a model engine's stored logs in a time window (download and load progress included). Not a live tail: 200 entries max.",
 	}, func(ctx context.Context, _ *mcp.CallToolRequest, in modelLogsInput) (*mcp.CallToolResult, []apiclient.LogEntryResource, error) {
 		window := defaultLogsWindow
 		if in.Since != "" {
@@ -115,7 +115,7 @@ func registerModelTools(server *mcp.Server, client *apiclient.Client) {
 
 	addTool(server, &mcp.Tool{
 		Name:        "deploy_model",
-		Description: "Deploy a model container on a GPU node. Async: watch get_model until ModelLoaded. Returns the OpenAI compatible base URL and a one time API key.",
+		Description: "Deploy a model container on a GPU node. Async: watch get_model until ModelLoaded. Returns the OpenAI-compatible base URL and a one-time API key.",
 	}, func(ctx context.Context, _ *mcp.CallToolRequest, in deployModelInput) (*mcp.CallToolResult, apiclient.CreateModelResponse, error) {
 		out, err := client.CreateModel(ctx, apiclient.CreateModelRequest{
 			Name: in.Name, Engine: in.Engine, Model: in.Model, NodeID: in.NodeID, GPUCount: in.GPUCount,
@@ -131,7 +131,7 @@ func registerModelTools(server *mcp.Server, client *apiclient.Client) {
 
 	addTool(server, &mcp.Tool{
 		Name:        "delete_model",
-		Description: "Delete an AI model. Its container is removed asynchronously; the downloaded weights volume is kept so a redeploy does not download again.",
+		Description: "Delete an AI model. The container is removed asynchronously; the weights volume is kept, so a redeploy needs no download.",
 	}, func(ctx context.Context, _ *mcp.CallToolRequest, in modelNameInput) (*mcp.CallToolResult, modelActionResult, error) {
 		if err := client.DeleteModel(ctx, in.Name); err != nil {
 			return nil, modelActionResult{}, fmt.Errorf("delete model %q: %w", in.Name, err)
@@ -162,7 +162,7 @@ func registerModelTools(server *mcp.Server, client *apiclient.Client) {
 
 	addTool(server, &mcp.Tool{
 		Name:        "list_model_keys",
-		Description: "List a model's named API keys: prefix, status (active, rotating, expired, revoked), limits, expiry and last use. Key material is never returned.",
+		Description: "List a model's named API keys: prefix, status (active, rotating, expired, revoked), limits, expiry, last use. No key material.",
 	}, func(ctx context.Context, _ *mcp.CallToolRequest, in modelNameInput) (*mcp.CallToolResult, []apiclient.ModelKeyResource, error) {
 		out, err := client.ListModelKeys(ctx, in.Name)
 		if err != nil {
@@ -173,7 +173,7 @@ func registerModelTools(server *mcp.Server, client *apiclient.Client) {
 
 	addTool(server, &mcp.Tool{
 		Name:        "revoke_model_key",
-		Description: "Revoke one named API key of a model at once. Clients using it get 401 immediately and it cannot be undone; create or rotate a key to replace it. Destructive.",
+		Description: "Revoke one named API key of a model at once; its clients get 401 and it cannot be undone. Destructive.",
 	}, func(ctx context.Context, _ *mcp.CallToolRequest, in modelKeyInput) (*mcp.CallToolResult, modelActionResult, error) {
 		if err := client.RevokeModelKey(ctx, in.Name, in.KeyID); err != nil {
 			return nil, modelActionResult{}, fmt.Errorf("revoke key %q of model %q: %w", in.KeyID, in.Name, err)
@@ -183,7 +183,7 @@ func registerModelTools(server *mcp.Server, client *apiclient.Client) {
 
 	addTool(server, &mcp.Tool{
 		Name:        "get_model_usage",
-		Description: "Gateway usage of a model over a window: requests, status classes, rate limits, tokens, latency, hourly series and per key breakdown.",
+		Description: "Gateway usage of a model over a window: requests, status classes, rate limits, tokens, latency, hourly series, per-key breakdown.",
 	}, func(ctx context.Context, _ *mcp.CallToolRequest, in modelUsageInput) (*mcp.CallToolResult, apiclient.ModelUsageReport, error) {
 		var since time.Duration
 		if in.Since != "" {
@@ -202,7 +202,7 @@ func registerModelTools(server *mcp.Server, client *apiclient.Client) {
 
 	addTool(server, &mcp.Tool{
 		Name:        "preflight_model",
-		Description: "Check a HuggingFace repo before deploying: existence, gating, license, size, GGUF quantizations with fit verdicts. Estimates only.",
+		Description: "Check a HuggingFace repo before deploying: existence, gating, license, size, GGUF quantizations with fit verdicts.",
 	}, func(ctx context.Context, _ *mcp.CallToolRequest, in preflightModelInput) (*mcp.CallToolResult, apiclient.ModelPreflightResult, error) {
 		out, err := client.PreflightModel(ctx, apiclient.ModelPreflightRequest{
 			Repo: in.Repo, Engine: in.Engine, Quant: in.Quant, File: in.File, NodeID: in.NodeID, HFToken: in.HFToken,
@@ -215,7 +215,7 @@ func registerModelTools(server *mcp.Server, client *apiclient.Client) {
 
 	addTool(server, &mcp.Tool{
 		Name:        "list_model_cache",
-		Description: "List cached model weights per node: volume, owning model, size, last use, in use or prunable. Only the control plane's host is inspected today.",
+		Description: "Cached model weights per node: volume, owning model, size, last use, in use or prunable. Only the control plane's host is inspected.",
 	}, func(ctx context.Context, _ *mcp.CallToolRequest, _ struct{}) (*mcp.CallToolResult, apiclient.ModelCacheReport, error) {
 		out, err := client.ListModelCache(ctx)
 		if err != nil {

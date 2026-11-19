@@ -42,13 +42,13 @@ type alertHistoryInput struct {
 	Since   string `json:"since,omitempty" jsonschema:"RFC 3339 lower bound"`
 	Limit   int    `json:"limit,omitempty" jsonschema:"maximum entries, newest first (default 50)"`
 
-	IncludeChanges bool `json:"include_changes,omitempty" jsonschema:"attach app changes before each firing (deploys, config, env keys, scaling) with the likely cause"`
+	IncludeChanges bool `json:"include_changes,omitempty" jsonschema:"attach app changes before each firing with the likely cause"`
 }
 
 func registerAlertNoiseTools(server *mcp.Server, client *apiclient.Client) {
 	addTool(server, &mcp.Tool{
 		Name:        "list_alert_silences",
-		Description: "List alert silences (active and pending; expired with include_expired). A silence still evaluates and records alerts but stops notifications.",
+		Description: "List alert silences (active and pending; include_expired adds expired).",
 	}, func(ctx context.Context, _ *mcp.CallToolRequest, in listSilencesInput) (*mcp.CallToolResult, []apiclient.SilenceResource, error) {
 		out, err := client.ListAlertSilences(ctx, in.IncludeExpired)
 		if err != nil {
@@ -59,7 +59,7 @@ func registerAlertNoiseTools(server *mcp.Server, client *apiclient.Client) {
 
 	addTool(server, &mcp.Tool{
 		Name:        "create_alert_silence",
-		Description: "Silence alerts matching every given filter (at least one) for a duration. Alerts still evaluate; only notifications stop. Undo with expire_alert_silence.",
+		Description: "Silence alerts matching every given filter (at least one) for a duration; notifications stop, evaluation continues. Undo: expire_alert_silence.",
 	}, func(ctx context.Context, _ *mcp.CallToolRequest, in createSilenceInput) (*mcp.CallToolResult, apiclient.SilenceResource, error) {
 		m := apiclient.SilenceMatchers{RuleIDs: in.RuleIDs, Apps: in.Apps, Nodes: in.Nodes, Kinds: in.Kinds, Severities: in.Severities, Labels: in.Labels}
 		out, err := client.CreateAlertSilence(ctx, apiclient.CreateSilenceRequest{Matchers: m, Duration: in.Duration, Reason: in.Reason})
@@ -93,7 +93,7 @@ func registerAlertNoiseTools(server *mcp.Server, client *apiclient.Client) {
 
 	addTool(server, &mcp.Tool{
 		Name:        "list_maintenance_windows",
-		Description: "List recurring alert maintenance windows (cron plus duration plus timezone), with whether each is active now and its next start.",
+		Description: "List recurring alert maintenance windows (cron, duration, timezone) with whether each is active and its next start.",
 	}, func(ctx context.Context, _ *mcp.CallToolRequest, _ struct{}) (*mcp.CallToolResult, []apiclient.MaintenanceWindowResource, error) {
 		out, err := client.ListMaintenanceWindows(ctx)
 		if err != nil {
@@ -104,7 +104,7 @@ func registerAlertNoiseTools(server *mcp.Server, client *apiclient.Client) {
 
 	addTool(server, &mcp.Tool{
 		Name:        "list_alert_history",
-		Description: "Alert firings and resolutions, newest first, with each notification outcome. include_changes adds app changes before each firing.",
+		Description: "Alert firings and resolutions, newest first, with notification outcomes. include_changes adds app changes before each firing.",
 	}, func(ctx context.Context, _ *mcp.CallToolRequest, in alertHistoryInput) (*mcp.CallToolResult, []apiclient.AlertHistoryEntry, error) {
 		q := apiclient.AlertHistoryQuery{App: in.App, RuleID: in.RuleID, Outcome: in.Outcome, Event: in.Event, Since: in.Since, Limit: in.Limit, IncludeChanges: in.IncludeChanges}
 		out, err := client.ListAlertHistory(ctx, q)
@@ -116,7 +116,7 @@ func registerAlertNoiseTools(server *mcp.Server, client *apiclient.Client) {
 
 	addTool(server, &mcp.Tool{
 		Name:        "get_status_page",
-		Description: "Get the public status page settings and a preview of what it currently shows (component names, statuses, uptime).",
+		Description: "Public status page settings and a preview of what it shows (components, statuses, uptime).",
 	}, func(ctx context.Context, _ *mcp.CallToolRequest, _ struct{}) (*mcp.CallToolResult, statusPageOutput, error) {
 		settings, err := client.GetStatusPage(ctx)
 		if err != nil {

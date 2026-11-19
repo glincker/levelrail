@@ -23,7 +23,7 @@ type controlPlaneDrillOutput struct {
 func registerControlPlaneDRTools(server *mcp.Server, client *apiclient.Client) {
 	addTool(server, &mcp.Tool{
 		Name:        "get_control_plane_dr_status",
-		Description: "Control plane DR status: destination, schedule, retention, last backup and drill, escrow, checklist, warnings. Never key material.",
+		Description: "Control plane DR status: destination, schedule, retention, last backup and drill, escrow, checklist, warnings. No key material.",
 	}, func(ctx context.Context, _ *mcp.CallToolRequest, _ struct{}) (*mcp.CallToolResult, apiclient.ControlPlaneDR, error) {
 		st, err := client.GetControlPlaneDR(ctx)
 		if err != nil {
