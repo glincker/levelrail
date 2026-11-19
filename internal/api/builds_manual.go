@@ -4,7 +4,6 @@ import (
 	"context"
 	"errors"
 	"log/slog"
-	"net/http"
 	"regexp"
 	"strings"
 
@@ -172,29 +171,4 @@ func (rt *Router) keepStoredDomains(ctx context.Context, desired *store.DesiredS
 		desired.Volumes = cur.Volumes
 	}
 	return nil
-}
-
-// checkImageRepoUnshared refuses an explicit image repo another app already uses, because
-// registry push tokens are scoped per repo and a shared repo would let one app overwrite the other.
-func (rt *Router) checkImageRepoUnshared(ctx context.Context, name, repo string) (int, string) {
-	if repo == "" {
-		return 0, ""
-	}
-	all, err := rt.apps.ListDesiredServices(ctx)
-	if err != nil {
-		return http.StatusInternalServerError, "could not verify the image repo is unused"
-	}
-	if other := imageRepoOwner(all, name, repo); other != "" {
-		return http.StatusConflict, "image_repo " + repo + " is already used by app " + other + ", choose a different image_repo"
-	}
-	return 0, ""
-}
-
-func imageRepoOwner(all []store.DesiredService, name, repo string) string {
-	for _, o := range all {
-		if o.Name != name && defaultImageRepo(o.Name, o.Image) == repo {
-			return o.Name
-		}
-	}
-	return ""
 }

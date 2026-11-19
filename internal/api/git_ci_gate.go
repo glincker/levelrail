@@ -183,6 +183,9 @@ func (rt *Router) recordCIGateSkip(ctx context.Context, name, sha, reason, sourc
 		rt.logger.Warn("api: ci gate: record skip failed", slog.String("name", name), slog.String("error", err.Error()))
 		return
 	}
+	if st, _ := rt.checkFinalImageRepo(ctx, name, defaultImageRepo(name, existing.Image), false); st != 0 {
+		return
+	}
 	_, _, finish, _ := rt.beginBuildDeployAttempt(ctx, deploy.Request{
 		ServiceName: name,
 		CommitSHA:   sha,

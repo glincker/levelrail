@@ -95,6 +95,12 @@ func (rt *Router) handleUpdateApp(w http.ResponseWriter, r *http.Request) {
 	if appID == "" {
 		appID = name
 	}
+	if imageChanged {
+		if st, msg := rt.checkFinalImageRepo(r.Context(), name, defaultImageRepo(name, desired.Image), false); st != 0 {
+			writeError(w, st, msg)
+			return
+		}
+	}
 	portsRelease, portsOK := rt.admitPublishedPorts(w, r, appID, []store.DesiredService{*existing}, []store.DesiredService{desired})
 	if !portsOK {
 		return

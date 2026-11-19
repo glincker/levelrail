@@ -525,6 +525,9 @@ func (rt *Router) deployFromGitSourceInner(ctx context.Context, name string, gs 
 	svcSpec.Static = gs.StaticOptions()
 	svcSpec.Build.Args = mergeBuildArgs(svcSpec.Build.Args, extraBuildArgsFrom(ctx))
 
+	if st, msg := rt.checkFinalImageRepo(ctx, name, defaultImageRepo(name, existing.Image), true); st != 0 {
+		return st, msg
+	}
 	buildReq := deploy.Request{
 		ServiceName: name,
 		Service:     svcSpec,
