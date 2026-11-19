@@ -1110,7 +1110,16 @@ func (c *Controller) Reconcile(ctx context.Context) (reconcile.Result, error) {
 	var staticRoutes []ingress.StaticRoute
 	for _, site := range staticSites {
 		if len(site.Domains) == 0 {
-			continue
+			// Same zero-config hostname a container service gets, derived each
+			// pass and never persisted, so a published site is reachable at once.
+			if settings.FallbackDomainsDisabled {
+				continue
+			}
+			fallback, ok := fallbackResolver.Domain(site.Name)
+			if !ok {
+				continue
+			}
+			site.Domains = []string{fallback}
 		}
 		if owner, host, dup := firstDuplicateHost(site.Name, site.Domains, claimedHosts); dup {
 			// Mirrors the container-service guard above: store.SaveStaticSite

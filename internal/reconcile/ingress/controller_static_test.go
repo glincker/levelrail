@@ -252,3 +252,25 @@ func TestController_Reconcile_StaticSite_GatedDomain(t *testing.T) {
 		}
 	})
 }
+
+// A published static site with no configured domain is routed at the same
+// zero-config hostname a container service gets, and is counted as routed.
+func TestController_Reconcile_StaticSiteNoDomains_FallbackRouted(t *testing.T) {
+	st := &fakeStore{staticSites: []store.StaticSite{
+		{Name: "my-site2", RootDir: "/data/static/my-site2/1"},
+	}}
+	applier := &fakeApplier{}
+	c := New(st, newFakeRuntime(), applier, WithLogger(slog.New(slog.DiscardHandler)), WithPublicHost("203.0.113.5"))
+
+	result, err := c.Reconcile(context.Background())
+	if err != nil {
+		t.Fatalf("Reconcile() error = %v", err)
+	}
+	if cond := conditionOf(t, result); cond.Reason != "Routed1Services" {
+		t.Errorf("condition.Reason = %q, want Routed1Services", cond.Reason)
+	}
+	routes := applier.routes(t)
+	if len(routes) != 1 || routes[0].Match[0].Host[0] != "my-site2.203-0-113-5.sslip.io" {
+		t.Fatalf("routes = %+v, want one route for my-site2.203-0-113-5.sslip.io", routes)
+	}
+}
