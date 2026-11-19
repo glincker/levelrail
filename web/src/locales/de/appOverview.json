@@ -31,11 +31,8 @@
     "empty": "Keine Vorschau, bis der erste Deploy abgeschlossen ist.",
     "deploy": "Deployen",
     "captured": "Erfasst {{when}}",
-    "open": "App öffnen",
-    "turnOn": "Screenshots aktivieren",
     "off": "Vorschauen sind für diese App ausgeschaltet.",
     "serverOff": "Vorschauen sind auf diesem Server ausgeschaltet.",
-    "frameBlocked": "Die Live-Seite lässt sich hier nicht laden. In neuem Tab öffnen.",
     "desktop": "Desktop",
     "mobile": "Mobil",
     "viewport": "Ansichtsbreite",
@@ -43,16 +40,12 @@
   },
   "staticStrip": {
     "label": "Seitenübersicht",
-    "visitors": "Besucher, {{range}}",
-    "requests": "Anfragen, {{range}}",
     "errors": "Fehler",
-    "errorsInfo": "Anteil der 4xx- und 5xx-Antworten im gewählten Zeitraum.",
     "visitorsInfo": "Eindeutige Besucher im gewählten Zeitraum, nach jedem Datenschutz-Reset neu gezählt.",
     "deploy": "Letzter Deploy",
     "size": "Größe",
     "files_one": "{{count}} Datei",
     "files_other": "{{count}} Dateien",
-    "domains": "Domains",
     "addDomain": "Domain hinzufügen"
   },
   "staticLine": {

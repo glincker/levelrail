@@ -31,11 +31,8 @@
     "empty": "No hay vista previa hasta que termine el primer despliegue.",
     "deploy": "Desplegar",
     "captured": "Capturada {{when}}",
-    "open": "Abrir app",
-    "turnOn": "Activar capturas",
     "off": "Las vistas previas están desactivadas para esta app.",
     "serverOff": "Las vistas previas están desactivadas en este servidor.",
-    "frameBlocked": "No se pudo cargar el sitio en vivo aquí. Ábrelo en otra pestaña.",
     "desktop": "Escritorio",
     "mobile": "Móvil",
     "viewport": "Ancho de vista",
@@ -43,16 +40,12 @@
   },
   "staticStrip": {
     "label": "Resumen del sitio",
-    "visitors": "Visitantes, {{range}}",
-    "requests": "Solicitudes, {{range}}",
     "errors": "Errores",
-    "errorsInfo": "Porcentaje de respuestas 4xx y 5xx en el rango elegido.",
     "visitorsInfo": "Visitantes únicos en el rango elegido, contados de nuevo tras cada reinicio de privacidad.",
     "deploy": "Último deploy",
     "size": "Tamaño",
     "files_one": "{{count}} archivo",
     "files_other": "{{count}} archivos",
-    "domains": "Dominios",
     "addDomain": "Añadir dominio"
   },
   "staticLine": {

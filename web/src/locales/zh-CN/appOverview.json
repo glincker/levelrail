@@ -31,11 +31,8 @@
     "empty": "首次部署完成前没有预览。",
     "deploy": "部署",
     "captured": "{{when}}截取",
-    "open": "打开应用",
-    "turnOn": "开启截图",
     "off": "此应用的预览已关闭。",
     "serverOff": "此服务器已关闭预览。",
-    "frameBlocked": "无法在此加载在线站点。请在新标签页中打开。",
     "desktop": "桌面",
     "mobile": "手机",
     "viewport": "视口宽度",
@@ -43,16 +40,12 @@
   },
   "staticStrip": {
     "label": "站点概览",
-    "visitors": "访客,{{range}}",
-    "requests": "请求数,{{range}}",
     "errors": "错误",
-    "errorsInfo": "所选时间范围内 4xx 和 5xx 响应的占比。",
     "visitorsInfo": "所选时间范围内的独立访客,每次隐私重置后重新计数。",
     "deploy": "最近部署",
     "size": "大小",
     "files_one": "{{count}} 个文件",
     "files_other": "{{count}} 个文件",
-    "domains": "域名",
     "addDomain": "添加域名"
   },
   "staticLine": {

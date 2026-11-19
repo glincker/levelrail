@@ -1,5 +1,15 @@
 {
   "missing": [
+    "appOverview:preview.deployedAgo",
+    "appOverview:preview.thumbLabel",
+    "appOverview:recent.all",
+    "appOverview:recent.label",
+    "appOverview:recent.logs",
+    "appOverview:recent.rollback",
+    "appOverview:staticStrip.errorsInfo",
+    "appOverview:staticStrip.errorsNone",
+    "appOverview:staticStrip.requests",
+    "appOverview:staticStrip.visitors",
     "deploys:runnerPref.prodTip",
     "deploys:runnerPref.prodTipLabel",
     "nodes:allowedBuilders.addNode",

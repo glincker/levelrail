@@ -31,11 +31,8 @@
     "empty": "Sem prévia até o primeiro deploy terminar.",
     "deploy": "Fazer deploy",
     "captured": "Capturada {{when}}",
-    "open": "Abrir app",
-    "turnOn": "Ativar capturas de tela",
     "off": "As prévias estão desativadas para este app.",
     "serverOff": "As prévias estão desativadas neste servidor.",
-    "frameBlocked": "Não foi possível carregar o site ao vivo aqui. Abra em outra aba.",
     "desktop": "Desktop",
     "mobile": "Celular",
     "viewport": "Largura da visualização",
@@ -43,16 +40,12 @@
   },
   "staticStrip": {
     "label": "Resumo do site",
-    "visitors": "Visitantes, {{range}}",
-    "requests": "Requisições, {{range}}",
     "errors": "Erros",
-    "errorsInfo": "Parcela de respostas 4xx e 5xx no período escolhido.",
     "visitorsInfo": "Visitantes únicos no período escolhido, contados de novo após cada redefinição de privacidade.",
     "deploy": "Último deploy",
     "size": "Tamanho",
     "files_one": "{{count}} arquivo",
     "files_other": "{{count}} arquivos",
-    "domains": "Domínios",
     "addDomain": "Adicionar domínio"
   },
   "staticLine": {

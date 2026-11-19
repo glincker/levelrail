@@ -31,11 +31,8 @@
     "empty": "最初のデプロイが完了するまでプレビューはありません。",
     "deploy": "デプロイ",
     "captured": "{{when}}に取得",
-    "open": "アプリを開く",
-    "turnOn": "スクリーンショットを有効化",
     "off": "このアプリのプレビューはオフです。",
     "serverOff": "このサーバーではプレビューがオフです。",
-    "frameBlocked": "ここではライブサイトを読み込めません。新しいタブで開いてください。",
     "desktop": "デスクトップ",
     "mobile": "モバイル",
     "viewport": "表示幅",
@@ -43,16 +40,12 @@
   },
   "staticStrip": {
     "label": "サイトの概要",
-    "visitors": "訪問者数、{{range}}",
-    "requests": "リクエスト数、{{range}}",
     "errors": "エラー",
-    "errorsInfo": "選択した期間の4xxと5xxレスポンスの割合。",
     "visitorsInfo": "選択した期間のユニーク訪問者数。プライバシーのリセットごとに数え直します。",
     "deploy": "最新のデプロイ",
     "size": "サイズ",
     "files_one": "{{count}} ファイル",
     "files_other": "{{count}} ファイル",
-    "domains": "ドメイン",
     "addDomain": "ドメインを追加"
   },
   "staticLine": {

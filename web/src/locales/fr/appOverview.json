@@ -31,11 +31,8 @@
     "empty": "Aucun aperçu avant la fin du premier déploiement.",
     "deploy": "Déployer",
     "captured": "Capturé {{when}}",
-    "open": "Ouvrir l'app",
-    "turnOn": "Activer les captures",
     "off": "Les aperçus sont désactivés pour cette app.",
     "serverOff": "Les aperçus sont désactivés sur ce serveur.",
-    "frameBlocked": "Impossible de charger le site en direct ici. Ouvrez-le dans un nouvel onglet.",
     "desktop": "Bureau",
     "mobile": "Mobile",
     "viewport": "Largeur de vue",
@@ -43,16 +40,12 @@
   },
   "staticStrip": {
     "label": "Résumé du site",
-    "visitors": "Visiteurs, {{range}}",
-    "requests": "Requêtes, {{range}}",
     "errors": "Erreurs",
-    "errorsInfo": "Part des réponses 4xx et 5xx sur la période choisie.",
     "visitorsInfo": "Visiteurs uniques sur la période choisie, recomptés après chaque réinitialisation de confidentialité.",
     "deploy": "Dernier déploiement",
     "size": "Taille",
     "files_one": "{{count}} fichier",
     "files_other": "{{count}} fichiers",
-    "domains": "Domaines",
     "addDomain": "Ajouter un domaine"
   },
   "staticLine": {
