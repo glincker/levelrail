@@ -150,3 +150,18 @@ func TestRun_Pages_SettingsPasswordGate(t *testing.T) {
 		t.Fatalf("clear patch = %v", patch)
 	}
 }
+
+func TestRun_Pages_SettingsPasswordFlag(t *testing.T) {
+	var patch map[string]any
+	srv := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		patch = nil
+		_ = json.NewDecoder(r.Body).Decode(&patch)
+		_, _ = w.Write([]byte(`{"name":"docs","protected":true,"effective":{}}`))
+	}))
+	defer srv.Close()
+	runCLIExpectOK(t, []string{"pages", "settings", "set", "docs", "--password", "hunter two", "--api-url", srv.URL})
+	if patch["password"] != "hunter two" {
+		t.Fatalf("patch = %v", patch)
+	}
+	runCLIExpectValidationError(t, []string{"pages", "settings", "set", "docs", "--password", "x", "--clear-password", "--api-url", srv.URL})
+}

@@ -137,40 +137,51 @@ func runPagesSettingsSet(prog string, args []string, stdout, stderr io.Writer, l
 		return exitUsage
 	}
 	vals, given := map[string]string{}, map[string]bool{}
+	pwFlagSet := false
 	fs.Visit(func(f *flag.Flag) {
 		if p, ok := ptrs[f.Name]; ok {
 			vals[f.Name], given[f.Name] = *p, true
 		}
+		if f.Name == "password" {
+			pwFlagSet = true
+		}
 	})
-	pwGiven := given["password"] || *pwStdin || *pwEnv != "" || *clearPW
+	sources := 0
+	for _, on := range []bool{pwFlagSet, *pwStdin, *pwEnv != "", *clearPW} {
+		if on {
+			sources++
+		}
+	}
+	if sources > 1 {
+		return reportError(stdout, stderr, jsonOut, newValidationError("use only one of --password, --password-stdin, --password-env and --clear-password"))
+	}
+	pwGiven := sources == 1
+	pwValue := ""
 	switch {
-	case given["password"]:
-		if *pw == "" {
+	case pwFlagSet:
+		pwValue = *pw
+		if pwValue == "" {
 			return reportError(stdout, stderr, jsonOut, newValidationError("--password is empty, use --clear-password to remove the gate"))
 		}
-		vals["password"] = *pw
 	case *pwStdin:
 		line, rerr := bufio.NewReader(os.Stdin).ReadString('\n')
-		if rerr != nil && line == "" {
+		pwValue = strings.TrimRight(line, "\r\n")
+		if (rerr != nil && line == "") || pwValue == "" {
 			return reportError(stdout, stderr, jsonOut, newValidationError("--password-stdin found no password on stdin"))
 		}
-		vals["password"] = strings.TrimRight(line, "\r\n")
 	case *pwEnv != "":
 		v, found := lookupEnv(*pwEnv)
 		if !found || v == "" {
 			return reportError(stdout, stderr, jsonOut, newValidationError("--password-env: %s is not set", *pwEnv))
 		}
-		vals["password"] = v
-	}
-	if pwGiven && *clearPW && len(vals["password"]) > 0 {
-		return reportError(stdout, stderr, jsonOut, newValidationError("--clear-password cannot be combined with a password"))
+		pwValue = v
 	}
 	patch, err := pagesSettingsPatch(vals, given, pwGiven)
 	if err != nil {
 		return reportError(stdout, stderr, jsonOut, err)
 	}
 	if pwGiven {
-		patch.Password = ptrString(vals["password"])
+		patch.Password = ptrString(pwValue)
 	}
 	client := apiClientFromFlags(prog, apiURLFlag, tokenFlag, profileFlag, lookupEnv)
 	res, err := client.PatchStaticSiteSettings(context.Background(), name, patch)
