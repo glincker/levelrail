@@ -67,6 +67,16 @@ func TestStaticSiteSettingsAndRules(t *testing.T) {
 	if code != http.StatusOK || json.Unmarshal(raw, &eff) != nil || !eff.Published || eff.Headers[0].Source != "ui" {
 		t.Fatalf("get rules: %d %s", code, raw)
 	}
+	// Clearing the remaining overrides restores the compiled defaults on the live site at once.
+	code, raw = do(http.MethodPatch, "/api/v1/static-sites/docs/settings", `{"reset":["trailing_slash"]}`)
+	var cleared staticSettingsResource
+	if code != http.StatusOK || json.Unmarshal(raw, &cleared) != nil || cleared.Effective.TrailingSlash != "" || cleared.Effective.SPA {
+		t.Fatalf("reset live: %d %s", code, raw)
+	}
+	if live, err := staticroutes.LoadSidecar(dir); err != nil || live == nil || live.Options.SPA || live.Options.TrailingSlash != "" {
+		t.Fatalf("sidecar after reset: %+v %v", live, err)
+	}
+
 	if code, _ = do(http.MethodGet, "/api/v1/static-sites/ghost/settings", ""); code != http.StatusNotFound {
 		t.Fatalf("unknown site = %d, want 404", code)
 	}

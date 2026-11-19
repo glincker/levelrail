@@ -33,11 +33,13 @@ type StaticProblem struct {
 
 // StaticRuleset is everything compiled for one deploy.
 type StaticRuleset struct {
-	Version  int                 `json:"version"`
-	Rules    []StaticRule        `json:"rules"`
-	Headers  []StaticHeaderBlock `json:"headers"`
-	Options  StaticServeOptions  `json:"options"`
-	Problems []StaticProblem     `json:"problems"`
+	Version int                 `json:"version"`
+	Rules   []StaticRule        `json:"rules"`
+	Headers []StaticHeaderBlock `json:"headers"`
+	Options StaticServeOptions  `json:"options"`
+	// BaseOptions are the options before dashboard overrides, so clearing an override can restore them live.
+	BaseOptions *StaticServeOptions `json:"base_options,omitempty"`
+	Problems    []StaticProblem     `json:"problems"`
 }
 
 var statusTokenRe = regexp.MustCompile(`^([0-9]{3})(!?)$`)

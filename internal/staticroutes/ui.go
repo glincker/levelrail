@@ -107,6 +107,11 @@ func (rs *Ruleset) ApplyUI(rules []Rule, blocks []HeaderBlock, o OptionOverrides
 		}
 	}
 	rs.Rules, rs.Headers = keptRules, keptBlocks
+	if rs.BaseOptions == nil {
+		base := rs.Options
+		rs.BaseOptions = &base
+	}
+	rs.Options = *rs.BaseOptions
 	if o.SPA != nil {
 		rs.Options.SPA = *o.SPA
 	}
