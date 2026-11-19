@@ -111,7 +111,7 @@ export function NewSiteDialog({
         ) : (
           <form onSubmit={(e) => void submit(e)} className="space-y-3">
             <div className="flex flex-wrap items-end gap-3">
-              <div className="min-w-40 flex-1 space-y-1.5">
+              <div className="min-w-full flex-1 space-y-1.5 min-[420px]:min-w-40">
                 <Label htmlFor="pages-site-name">{t('new.name')}</Label>
                 <Input
                   id="pages-site-name"

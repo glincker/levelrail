@@ -428,7 +428,7 @@
     "cardDescription": "Déposez un dossier ou un .zip d'un site construit pour remplacer ce qui est en ligne. _redirects, _headers et 404.html sont pris en compte, et vous pouvez faire un rollback depuis l'historique des déploiements.",
     "zoneLabel": "Déposez ici un dossier de site ou un zip",
     "dropHere": "Déposez un dossier ou un .zip ici",
-    "hint": "Un dossier contenant index.html, ou un zip de celui-ci. Un unique dossier enveloppe à l'intérieur du zip est retiré pour vous.",
+    "hint": "Un dossier avec index.html, ou un zip de celui-ci.",
     "chooseFolder": "Choisir un dossier",
     "chooseZip": "Choisir un .zip",
     "empty": "Rien à publier dans ce dépôt. Il était vide ou ne contenait que des fichiers ignorés comme .git et node_modules. Déposez le dossier qui contient votre site construit.",

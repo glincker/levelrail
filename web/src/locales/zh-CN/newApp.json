@@ -411,7 +411,7 @@
     "cardDescription": "拖放已构建站点的文件夹或 .zip 来替换线上内容。_redirects、_headers 和 404.html 都会生效，并且可以从部署历史中回滚。",
     "zoneLabel": "将站点文件夹或 zip 拖放到此处",
     "dropHere": "将文件夹或 .zip 拖放到此处",
-    "hint": "包含 index.html 的文件夹，或它的 zip。zip 内的单层外壳文件夹会自动为你解开。",
+    "hint": "包含 index.html 的文件夹，或其 zip 压缩包。",
     "chooseFolder": "选择文件夹",
     "chooseZip": "选择 .zip",
     "empty": "此次拖放中没有可发布的内容。它为空，或只包含 .git 和 node_modules 之类被忽略的文件。请拖放包含你已构建站点的文件夹。",

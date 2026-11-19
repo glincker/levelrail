@@ -428,7 +428,7 @@
     "cardDescription": "Solte uma pasta ou um .zip de um site compilado para substituir o que está no ar. _redirects, _headers e 404.html são respeitados, e você pode fazer rollback pelo histórico de deploys.",
     "zoneLabel": "Solte aqui uma pasta de site ou zip",
     "dropHere": "Solte uma pasta ou .zip aqui",
-    "hint": "Uma pasta contendo index.html, ou um zip dela. Uma única pasta envoltória dentro do zip é desembrulhada para você.",
+    "hint": "Uma pasta com index.html, ou um zip dela.",
     "chooseFolder": "Escolher pasta",
     "chooseZip": "Escolher .zip",
     "empty": "Não há nada para publicar nesse envio. Ele estava vazio ou continha apenas arquivos ignorados, como .git e node_modules. Solte a pasta que contém seu site compilado.",

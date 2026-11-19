@@ -420,7 +420,7 @@
     "cardDescription": "Legen Sie einen Ordner oder eine .zip-Datei einer gebauten Website ab, um das Live-Angebot zu ersetzen. _redirects, _headers und 404.html werden berücksichtigt, und Sie können über den Deployment-Verlauf zurückrollen.",
     "zoneLabel": "Einen Website-Ordner oder eine Zip-Datei hier ablegen",
     "dropHere": "Einen Ordner oder eine .zip-Datei hier ablegen",
-    "hint": "Ein Ordner mit index.html oder ein Zip davon. Ein einzelner Wrapper-Ordner im Zip wird für Sie entpackt.",
+    "hint": "Ein Ordner mit index.html oder ein Zip davon.",
     "chooseFolder": "Ordner wählen",
     "chooseZip": ".zip wählen",
     "empty": "In diesem Ablegen gibt es nichts zu veröffentlichen. Es war leer oder enthielt nur ignorierte Dateien wie .git und node_modules. Legen Sie den Ordner ab, der Ihre gebaute Website enthält.",
