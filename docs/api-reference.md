@@ -1079,6 +1079,8 @@ Endpoints for:
 | GET | /api/v1/organizations/{id}/bindings | AbilityRead | handleListOrgBindings |
 | POST | /api/v1/organizations/{id}/bindings | AbilityWriteSensitive | handleCreateOrgBinding |
 | DELETE | /api/v1/organizations/{id}/bindings/{bid} | AbilityWriteSensitive | handleDeleteOrgBinding |
+| GET | /api/v1/environments/{id}/builders | AbilityRead | handleGetEnvironmentBuilders |
+| PUT | /api/v1/environments/{id}/builders | AbilityWriteSensitive | handleSetEnvironmentBuilders |
 
 ## Nodes
 
@@ -1146,6 +1148,7 @@ Endpoints for:
 | GET | /api/v1/nodes/{id}/resources | AbilityRead | handleListNodeResources |
 | GET | /api/v1/nodes/{id}/thresholds | AbilityRoot | handleGetNodeThresholds |
 | PUT | /api/v1/nodes/{id}/thresholds | AbilityRoot | handleSetNodeThresholds |
+| PUT | /api/v1/nodes/{id}/build-trust | AbilityRoot | handleSetNodeBuildTrust |
 
 ## Ingress / Certificates / Domains / Email / Cloudflare
 

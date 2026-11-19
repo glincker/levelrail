@@ -14,7 +14,7 @@ type openAPIRoute struct {
 	Description string
 }
 
-// openAPIRoutes holds all 2204 routes known to scripts/gen-api-reference at
+// openAPIRoutes holds all 2207 routes known to scripts/gen-api-reference at
 // generation time. Run `go run ./scripts/gen-api-reference` after changing
 // any routes*.go registration and commit the result.
 var openAPIRoutes = []openAPIRoute{
@@ -1076,6 +1076,7 @@ var openAPIRoutes = []openAPIRoute{
 	{Method: "GET", Path: "/api/v1/nodes/zones", Ability: "AbilityRoot", Group: "Nodes", Handler: "handleListZones", Description: ""},
 	{Method: "DELETE", Path: "/api/v1/nodes/{id}", Ability: "AbilityRoot", Group: "Nodes", Handler: "handleDeleteNode", Description: ""},
 	{Method: "GET", Path: "/api/v1/nodes/{id}", Ability: "AbilityRoot", Group: "Nodes", Handler: "handleGetNode", Description: ""},
+	{Method: "PUT", Path: "/api/v1/nodes/{id}/build-trust", Ability: "AbilityRoot", Group: "Nodes", Handler: "handleSetNodeBuildTrust", Description: "A node's tier and an environment's allow-list decide whose builds may reach production, so sensitive writes."},
 	{Method: "GET", Path: "/api/v1/nodes/{id}/capacity", Ability: "AbilityRoot", Group: "Nodes", Handler: "handleGetNodeCapacity", Description: ""},
 	{Method: "GET", Path: "/api/v1/nodes/{id}/capacity-forecast", Ability: "AbilityRoot", Group: "Nodes", Handler: "handleNodeCapacityForecast", Description: "Rough disk/memory exhaustion projection (node_capacity_forecast.go), a read-and-suggest layer over the same host samples patch-status/metrics above read, same AbilityRoot boundary and nil-telemetry 501 shape as every other node route."},
 	{Method: "POST", Path: "/api/v1/nodes/{id}/cert/drill", Ability: "AbilityRoot", Group: "Nodes", Handler: "handleNodeCertDrill", Description: ""},
@@ -1937,6 +1938,8 @@ var openAPIRoutes = []openAPIRoute{
 	{Method: "POST", Path: "/api/v1/environments", Ability: "AbilityWrite", Group: "Projects / Organizations / Environments", Handler: "handleCreateGlobalEnvironment", Description: ""},
 	{Method: "DELETE", Path: "/api/v1/environments/{id}", Ability: "AbilityWrite", Group: "Projects / Organizations / Environments", Handler: "handleDeleteEnvironment", Description: ""},
 	{Method: "PATCH", Path: "/api/v1/environments/{id}", Ability: "AbilityWrite", Group: "Projects / Organizations / Environments", Handler: "handleUpdateEnvironment", Description: ""},
+	{Method: "GET", Path: "/api/v1/environments/{id}/builders", Ability: "AbilityRead", Group: "Projects / Organizations / Environments", Handler: "handleGetEnvironmentBuilders", Description: ""},
+	{Method: "PUT", Path: "/api/v1/environments/{id}/builders", Ability: "AbilityWriteSensitive", Group: "Projects / Organizations / Environments", Handler: "handleSetEnvironmentBuilders", Description: ""},
 	{Method: "POST", Path: "/api/v1/environments/{id}/clone", Ability: "AbilityDeploy", Group: "Projects / Organizations / Environments", Handler: "handleEnvironmentClone", Description: ""},
 	{Method: "GET", Path: "/api/v1/environments/{id}/clone/preview", Ability: "AbilityRead", Group: "Projects / Organizations / Environments", Handler: "handleEnvironmentClonePreview", Description: "Clone environment (environment_clone.go): copy a whole environment's app set plus config into a brand-new environment, AbilityDeploy-gated like promote.go's own trigger route since it actually deploys real containers, not just database rows."},
 	{Method: "GET", Path: "/api/v1/environments/{id}/env", Ability: "AbilityRead", Group: "Projects / Organizations / Environments", Handler: "handleGetEnvironmentEnv", Description: "Shared env vars every service tagged with this environment inherits (environment_env.go): the tier between organizations/{id}/env and projects/{id}/env above and a service's own env below."},

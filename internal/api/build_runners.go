@@ -60,6 +60,8 @@ func wireBuildRunnerSettings(svc *runtimesettings.Service) {
 			Strategy:     build.ParseStrategy(svc.String(ctx, KeyBuildRunnerStrategy)),
 			PressureHold: svc.Bool(ctx, KeyBuildRemotePressure),
 			StaleAfter:   svc.Duration(ctx, KeyBuildRunnerStaleAfter),
+
+			PersonalInProduction: svc.Bool(ctx, KeyBuildPersonalInProduction),
 		}
 	})
 }
@@ -93,6 +95,7 @@ type buildRunnerResource struct {
 	LastBuildApp  string     `json:"last_build_app,omitempty"`
 	LastBuildStat string     `json:"last_build_status,omitempty"`
 	CacheBytes    *int64     `json:"cache_bytes,omitempty"`
+	Trust         string     `json:"trust,omitempty"`
 }
 
 type buildRunnersResponse struct {
@@ -203,6 +206,12 @@ func (rt *Router) handleListBuildRunners(w http.ResponseWriter, r *http.Request)
 			ID: n.ID, Name: n.Name, Kind: "node", Status: status, Health: health,
 			SlotsUsed: n.SlotsUsed, SlotsTotal: n.SlotsTotal, Waiting: n.Waiting,
 			Pressure: n.Pressure, Architecture: n.Arch, CPUCores: n.CPUCores, Labels: labelStrings(n.Labels),
+		}
+		if !n.Local {
+			res.Trust = n.Trust
+			if res.Trust == "" {
+				res.Trust = build.TrustServer
+			}
 		}
 		if res.Name == "" {
 			res.Name = n.ID
