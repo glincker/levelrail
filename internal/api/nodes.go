@@ -813,6 +813,9 @@ func joinBuildTrust(req createNodeJoinTokenRequest) (string, error) {
 	if tier == store.BuildTrustPersonal && !req.Builder {
 		return "", errors.New("build_trust personal requires builder: true")
 	}
+	if req.Builder && tier != store.BuildTrustPersonal {
+		return "", errors.New("builder: true requires build_trust personal")
+	}
 	return tier, nil
 }
 

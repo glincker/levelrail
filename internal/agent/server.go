@@ -171,6 +171,7 @@ func (s *Server) Enroll(ctx context.Context, req *agentpb.EnrollRequest) (*agent
 		CreatedAt: now, UpdatedAt: now,
 		AcceptsAppWorkloads:   tok.BuildTrust != store.BuildTrustPersonal,
 		AcceptsBuildWorkloads: tok.BuildTrust == store.BuildTrustPersonal,
+		BuildTrust:            tok.BuildTrust,
 	}); err != nil {
 		if errors.Is(err, store.ErrNodeNameTaken) {
 			return nil, status.Errorf(codes.AlreadyExists, "node name %q is already taken", req.GetNodeName())
@@ -179,7 +180,6 @@ func (s *Server) Enroll(ctx context.Context, req *agentpb.EnrollRequest) (*agent
 		return nil, status.Error(codes.Internal, "internal error")
 	}
 	enrolled = true
-	s.applyJoinBuildTrust(ctx, nodeID, tok.BuildTrust)
 	s.recordAgentInfo(ctx, nodeID, req.GetAgent())
 	s.recordEnrolled(ctx, store.SecurityKindEnroll, nodeID, tok.ID, req.GetCaPinState(), issued)
 
@@ -524,16 +524,3 @@ func randomNodeID() (string, error) {
 var enrollNodeNameRe = regexp.MustCompile(`^[A-Za-z0-9][A-Za-z0-9._-]{0,62}$`)
 
 func validEnrollNodeName(name string) bool { return enrollNodeNameRe.MatchString(name) }
-
-// applyJoinBuildTrust stamps the tier the join token carried; the node row already exists, so a failure only logs.
-func (s *Server) applyJoinBuildTrust(ctx context.Context, nodeID, tier string) {
-	setter, ok := s.store.(interface {
-		SetNodeBuildTrust(ctx context.Context, id, tier string) error
-	})
-	if !ok || tier == "" || tier == store.BuildTrustServer {
-		return
-	}
-	if err := setter.SetNodeBuildTrust(ctx, nodeID, tier); err != nil {
-		s.logger.Error("agent: enroll: set build trust failed", slog.String("node_id", nodeID), slog.String("error", err.Error()))
-	}
-}
