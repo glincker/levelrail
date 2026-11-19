@@ -1370,6 +1370,8 @@ Endpoints for:
 | PATCH | /api/v1/static-sites/{name}/settings | AbilityWrite | handlePatchStaticSiteSettings |
 | GET | /api/v1/static-sites/{name}/rules | AbilityRead | handleGetStaticSiteRules |
 | PUT | /api/v1/static-sites/{name}/rules | AbilityWrite | handlePutStaticSiteRules |
+| GET | /api/v1/static-sites/{name}/deploys | AbilityRead | handleListStaticSiteDeploys |
+| POST | /api/v1/static-sites/{name}/deploys/{deployId}/promote | AbilityDeploy | handlePromoteStaticSiteDeploy |
 
 ## Built-in Container Registry
 

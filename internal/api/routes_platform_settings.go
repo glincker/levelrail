@@ -138,6 +138,8 @@ func (rt *Router) registerSettingsRoutes(mux *http.ServeMux) {
 	mux.HandleFunc("PATCH /api/v1/static-sites/{name}/settings", rt.requireAbilityForResource(AbilityWrite, appResourceFromPath, rt.handlePatchStaticSiteSettings))
 	mux.HandleFunc("GET /api/v1/static-sites/{name}/rules", rt.requireAbilityForResource(AbilityRead, appResourceFromPath, rt.handleGetStaticSiteRules))
 	mux.HandleFunc("PUT /api/v1/static-sites/{name}/rules", rt.requireAbilityForResource(AbilityWrite, appResourceFromPath, rt.handlePutStaticSiteRules))
+	mux.HandleFunc("GET /api/v1/static-sites/{name}/deploys", rt.requireAbilityForResource(AbilityRead, appResourceFromPath, rt.handleListStaticSiteDeploys))
+	mux.HandleFunc("POST /api/v1/static-sites/{name}/deploys/{deployId}/promote", rt.requireAbilityForResource(AbilityDeploy, appResourceFromPath, rt.idempotent(rt.handlePromoteStaticSiteDeploy)))
 	mux.HandleFunc("GET /api/v1/static-sites/{name}/traffic", rt.requireAbilityForResource(AbilityRead, appResourceFromPath, rt.handleStaticSiteTraffic))
 	mux.HandleFunc("GET /api/v1/apps/{name}/static-routes", rt.requireAbilityForResource(AbilityRead, appResourceFromPath, rt.handleGetStaticRoutes))
 	mux.HandleFunc("POST /api/v1/apps/{name}/static-routes/test", rt.requireAbilityForResource(AbilityRead, appResourceFromPath, rt.handleTestStaticRoutes))

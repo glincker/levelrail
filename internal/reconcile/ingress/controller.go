@@ -1109,6 +1109,10 @@ func (c *Controller) Reconcile(ctx context.Context) (reconcile.Result, error) {
 
 	var staticRoutes []ingress.StaticRoute
 	for _, site := range staticSites {
+		deployHost := ""
+		if !settings.FallbackDomainsDisabled {
+			deployHost, _ = fallbackResolver.Domain(site.Name)
+		}
 		if len(site.Domains) == 0 {
 			// Same zero-config hostname a container service gets, derived each
 			// pass and never persisted, so a published site is reachable at once.
@@ -1144,6 +1148,12 @@ func (c *Controller) Reconcile(ctx context.Context) (reconcile.Result, error) {
 				slog.String("static_site", site.Name), slog.String("error", rulesErr.Error()))
 		}
 		staticRoutes = append(staticRoutes, c.staticRoutesFor(ctx, site, rules, authByDomain)...)
+		gated := false
+		for _, d := range site.Domains {
+			_, g := authByDomain[d]
+			gated = gated || g
+		}
+		staticRoutes = append(staticRoutes, c.staticDeployRoutes(ctx, site, deployHost, gated, claimedHosts)...)
 	}
 
 	// Platform primary domain (store.IngressSettings.PrimaryDomain): one
