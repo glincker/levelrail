@@ -14,6 +14,7 @@ import { Input } from '@/components/ui/input'
 import { Skeleton } from '@/components/ui/skeleton'
 import { ApiError } from '@/lib/apiError'
 import { toast } from '@/components/ui/toast'
+import { InfoTip } from '@/components/kit/InfoTip'
 import { useTestStaticRoutes } from '../../queries/staticRoutes'
 import {
   RulesSaveError,
@@ -47,9 +48,11 @@ function TestField({ app }: Readonly<{ app: string }>) {
   const invalid = !path.startsWith('/')
   const submit = (e: FormEvent) => {
     e.preventDefault()
-    if (!invalid) test.mutate({ path, query: '' })
+    if (invalid || test.isPending) return
+    test.mutate({ path, query: '' }, { onSuccess: setD })
   }
-  const d = test.data
+  // Keep the last result on screen while a new test runs so the row never blanks or flashes.
+  const [d, setD] = useState<typeof test.data>()
   return (
     <form onSubmit={submit} className="space-y-2">
       <div className="flex gap-2">
@@ -61,7 +64,7 @@ function TestField({ app }: Readonly<{ app: string }>) {
           className="h-10 flex-1 font-mono"
           onChange={(e) => setPath(e.target.value)}
         />
-        <Button type="submit" disabled={invalid || test.isPending}>
+        <Button type="submit" disabled={invalid} aria-busy={test.isPending}>
           {t('routes.test')}
         </Button>
       </div>
@@ -354,9 +357,11 @@ export function PageRoutes({
   return (
     <div className="space-y-3">
       <section className="space-y-2 rounded-lg border border-border bg-card p-3">
-        <h2 className="text-sm font-semibold">{t('routes.testTitle')}</h2>
+        <h2 className="flex items-center gap-1.5 text-sm font-semibold">
+          {t('routes.testTitle')}
+          <InfoTip>{t('routes.testHint')}</InfoTip>
+        </h2>
         <TestField app={app} />
-        <p className="text-xs text-muted-foreground">{t('routes.testHint')}</p>
       </section>
       <RulesEditor
         key={redirectFrom ?? ''}

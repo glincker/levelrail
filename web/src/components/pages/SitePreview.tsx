@@ -7,7 +7,7 @@ import { SegmentedControl } from '@/components/ui/segmented-control'
 import { Skeleton } from '@/components/ui/skeleton'
 import { appDetailQueryOptions } from '../../queries/apps'
 
-type Device = 'desktop' | 'mobile'
+export type Device = 'desktop' | 'mobile' | 'card'
 
 // A frame that never reports load (self-signed cert, refused connection) falls back after this.
 const LOAD_TIMEOUT_MS = Number(
@@ -16,11 +16,12 @@ const LOAD_TIMEOUT_MS = Number(
 
 // Fixed viewport sizes scaled by fixed factors so no inline style is needed.
 const FRAME: Record<Device, { box: string; iframe: string }> = {
-  desktop: { box: 'h-50 w-80', iframe: 'h-200 w-320 scale-25' },
+  desktop: { box: 'h-50 w-80 max-w-full', iframe: 'h-200 w-320 scale-25' },
   mobile: { box: 'h-50 w-[7.8rem]', iframe: 'h-125 w-97.5 scale-[0.4]' },
+  card: { box: 'h-40 w-full', iframe: 'h-200 w-320 scale-20' },
 }
 
-function Placeholder({ url }: Readonly<{ url: string | null }>) {
+export function Placeholder({ url }: Readonly<{ url: string | null }>) {
   const { t } = useTranslation('pagesSites')
   return (
     <div className="flex size-full flex-col items-center justify-center gap-2 p-3 text-center">
@@ -44,7 +45,7 @@ function Placeholder({ url }: Readonly<{ url: string | null }>) {
   )
 }
 
-function PreviewFrame({
+export function PreviewFrame({
   url,
   name,
   device,
@@ -81,7 +82,7 @@ export function SitePreview({ name }: Readonly<{ name: string }>) {
   const { t } = useTranslation('pagesSites')
   const app = useQuery({ ...appDetailQueryOptions(name), retry: false })
   const domain = app.data?.domains?.[0]
-  const [device, setDevice] = useState<Device>('desktop')
+  const [device, setDevice] = useState<Exclude<Device, 'card'>>('desktop')
   const url = domain ? `https://${domain}` : null
   return (
     <section

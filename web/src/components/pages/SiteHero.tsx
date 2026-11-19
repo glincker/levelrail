@@ -53,7 +53,7 @@ export function SiteHero({
     detail?.latest_deploy?.started_at ??
     detail?.updated_at
   return (
-    <div className="flex flex-wrap items-center gap-x-4 gap-y-2">
+    <div className="flex flex-wrap items-center gap-x-4 gap-y-2 rounded-xl border border-border bg-card px-4 py-3 shadow-xs">
       {state ? <StatusDot state={state} /> : null}
       {locked ? (
         <span
@@ -66,9 +66,9 @@ export function SiteHero({
         </span>
       ) : null}
       <SiteUrlChip name={name} />
-      <p className="flex items-center gap-x-3 text-xs text-muted-foreground tabular-nums">
+      <p className="flex flex-wrap items-center gap-1.5 text-xs text-muted-foreground tabular-nums">
         {detail ? (
-          <span>
+          <span className="rounded-md bg-muted px-2 py-0.5">
             {formatSize(detail.size_bytes)}
             {detail.file_count > 0
               ? ` · ${t('detail.files', { count: detail.file_count })}`
@@ -76,7 +76,9 @@ export function SiteHero({
           </span>
         ) : null}
         {lastAt ? (
-          <span>{t('detail.lastDeploy', { when: formatAge(lastAt) })}</span>
+          <span className="rounded-md bg-muted px-2 py-0.5">
+            {t('detail.lastDeploy', { when: formatAge(lastAt) })}
+          </span>
         ) : null}
       </p>
       <div className="ml-auto flex items-center gap-1.5">

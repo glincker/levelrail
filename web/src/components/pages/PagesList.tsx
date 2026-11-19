@@ -2,20 +2,16 @@ import { useState } from 'react'
 import { Link } from '@tanstack/react-router'
 import { useQuery } from '@tanstack/react-query'
 import { useTranslation } from 'react-i18next'
-import { LayoutTemplateGlassIcon, PlusGlassIcon } from '@thesvg/ui-react'
+import {
+  GlobeGlassIcon,
+  LayoutTemplateGlassIcon,
+  PlusGlassIcon,
+} from '@thesvg/ui-react'
 import { PageTemplate } from '@/components/shell/PageTemplate'
 import { Alert, AlertDescription } from '@/components/ui/alert'
 import { Button } from '@/components/ui/button'
 import { StatusBadge } from '@/components/ui/status-badge'
-import { TableSkeleton } from '@/components/ui/table-skeleton'
-import {
-  Table,
-  TableBody,
-  TableCell,
-  TableHead,
-  TableHeader,
-  TableRow,
-} from '@/components/ui/table'
+import { Skeleton } from '@/components/ui/skeleton'
 import { formatAge, formatSize } from '../../lib/format'
 import type { AppListEntry } from '../../types/appDetail'
 import { appListQueryOptions } from '../../queries/apps'
@@ -24,15 +20,16 @@ import {
   usePagesSites,
   type PagesSite,
 } from '../../queries/pagesSites'
+import { PreviewFrame } from './SitePreview'
 import { EntryCards } from './EntryCards'
 import { NewSiteDialog } from './NewSiteDialog'
 
-function SiteRow({
+function SiteCard({
   site,
   app,
 }: Readonly<{ site: PagesSite; app: AppListEntry | undefined }>) {
   const { t } = useTranslation('pagesSites')
-  // The list omits size and deploy time, so each rendered row reads its own detail once.
+  // The list omits size and deploy time, so each rendered card reads its own detail once.
   const detail = usePagesSiteDetail(site.name, site.size_bytes === undefined)
   const lastAt =
     site.last_deploy_at ??
@@ -42,48 +39,61 @@ function SiteRow({
   const sizeBytes = site.size_bytes ?? detail.data?.size_bytes
   const domain = site.domains[0]
   const variant = app?.status.variant
+  const url = domain ? `https://${domain}` : null
   return (
-    <TableRow>
-      <TableCell className="font-medium">
-        <Link
-          to="/pages/$name"
-          params={{ name: site.name }}
-          className="underline-offset-2 hover:underline focus-visible:underline"
-        >
-          {site.name}
-        </Link>
-      </TableCell>
-      <TableCell className="max-w-40 truncate sm:max-w-64 font-mono text-xs">
-        {domain ? (
-          <a
-            href={`https://${domain}`}
-            target="_blank"
-            rel="noreferrer"
-            className="underline-offset-2 hover:underline focus-visible:underline"
+    <li className="group relative flex w-64 flex-col overflow-hidden rounded-xl border border-border bg-card shadow-xs transition-shadow focus-within:ring-2 focus-within:ring-ring hover:shadow-md motion-reduce:transition-none">
+      <div className="relative h-40 w-full overflow-hidden border-b border-border bg-muted/40">
+        {url ? (
+          <PreviewFrame key={url} url={url} name={site.name} device="card" />
+        ) : (
+          <div className="flex size-full items-center justify-center">
+            <GlobeGlassIcon
+              className="size-8 text-muted-foreground/60"
+              aria-hidden="true"
+            />
+          </div>
+        )}
+      </div>
+      <div className="flex flex-col gap-1.5 p-3">
+        <div className="flex items-center justify-between gap-2">
+          <Link
+            to="/pages/$name"
+            params={{ name: site.name }}
+            className="truncate text-sm font-semibold after:absolute after:inset-0 after:content-[''] focus-visible:outline-none"
           >
-            {domain}
-          </a>
-        ) : (
-          <span className="text-muted-foreground">{t('list.noUrl')}</span>
-        )}
-      </TableCell>
-      <TableCell className="hidden text-muted-foreground sm:table-cell">
-        {lastAt ? formatAge(lastAt) : t('list.none')}
-      </TableCell>
-      <TableCell>
-        {variant ? (
-          <StatusBadge
-            variant={variant}
-            label={app?.status.label ?? t('status.unknown')}
-          />
-        ) : (
-          <span className="text-muted-foreground">{t('list.unknown')}</span>
-        )}
-      </TableCell>
-      <TableCell className="hidden text-right text-muted-foreground tabular-nums md:table-cell">
-        {sizeBytes === undefined ? t('list.unknown') : formatSize(sizeBytes)}
-      </TableCell>
-    </TableRow>
+            {site.name}
+          </Link>
+          {variant ? (
+            <StatusBadge
+              variant={variant}
+              label={app?.status.label ?? t('status.unknown')}
+            />
+          ) : null}
+        </div>
+        <p className="truncate font-mono text-xs text-muted-foreground">
+          {domain ?? t('list.noUrl')}
+        </p>
+        <p className="text-xs text-muted-foreground tabular-nums">
+          {lastAt ? formatAge(lastAt) : t('list.none')}
+          {sizeBytes === undefined ? '' : ` · ${formatSize(sizeBytes)}`}
+        </p>
+      </div>
+    </li>
+  )
+}
+
+function CardSkeleton() {
+  return (
+    <li
+      aria-hidden="true"
+      className="w-64 overflow-hidden rounded-xl border border-border bg-card"
+    >
+      <Skeleton className="h-40 w-full rounded-none" />
+      <div className="space-y-2 p-3">
+        <Skeleton className="h-4 w-2/3" />
+        <Skeleton className="h-3 w-1/2" />
+      </div>
+    </li>
   )
 }
 
@@ -106,7 +116,6 @@ export function PagesList({
     <PageTemplate
       icon={<LayoutTemplateGlassIcon size="1.4em" />}
       title={t('title')}
-      description={t('description')}
       width="wide"
       actions={
         <Button size="sm" onClick={() => openNew('drop')}>
@@ -116,7 +125,15 @@ export function PagesList({
       }
     >
       {sites.isPending ? (
-        <TableSkeleton rowCount={3} columnCount={5} />
+        <ul
+          role="status"
+          aria-label={t('list.label')}
+          className="flex flex-wrap gap-4"
+        >
+          <CardSkeleton />
+          <CardSkeleton />
+          <CardSkeleton />
+        </ul>
       ) : sites.isError ? (
         <Alert variant="destructive" role="alert">
           <AlertDescription>{t('list.loadFailed')}</AlertDescription>
@@ -127,32 +144,15 @@ export function PagesList({
           onBlank={() => openNew('blank')}
         />
       ) : (
-        <div className="rounded-lg border border-border bg-card">
-          <Table aria-label={t('list.label')}>
-            <TableHeader>
-              <TableRow>
-                <TableHead>{t('list.name')}</TableHead>
-                <TableHead>{t('list.url')}</TableHead>
-                <TableHead className="hidden sm:table-cell">
-                  {t('list.lastDeploy')}
-                </TableHead>
-                <TableHead>{t('list.status')}</TableHead>
-                <TableHead className="hidden text-right md:table-cell">
-                  {t('list.size')}
-                </TableHead>
-              </TableRow>
-            </TableHeader>
-            <TableBody>
-              {sites.data.map((site) => (
-                <SiteRow
-                  key={site.name}
-                  site={site}
-                  app={apps.data?.find((a) => a.name === site.name)}
-                />
-              ))}
-            </TableBody>
-          </Table>
-        </div>
+        <ul aria-label={t('list.label')} className="flex flex-wrap gap-4">
+          {sites.data.map((site) => (
+            <SiteCard
+              key={site.name}
+              site={site}
+              app={apps.data?.find((a) => a.name === site.name)}
+            />
+          ))}
+        </ul>
       )}
       <NewSiteDialog
         key={startMode}
