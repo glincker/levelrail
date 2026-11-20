@@ -12,7 +12,7 @@ export interface CliStep {
   command: string
 }
 
-function CliLine({ step }: { step: CliStep }) {
+export function CliLine({ step }: { step: CliStep }) {
   const { t } = useTranslation('fixit', { useSuspense: false })
   const [copied, setCopied] = useState(false)
   return (

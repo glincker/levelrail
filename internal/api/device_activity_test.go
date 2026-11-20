@@ -3,6 +3,7 @@ package api
 import (
 	"context"
 	"encoding/json"
+	"fmt"
 	"net/http"
 	"net/http/httptest"
 	"strings"
@@ -329,5 +330,44 @@ func TestAuditLog_DeviceLoginFamilyFilter(t *testing.T) {
 	}
 	if byPath := fetch("path=" + store.DeviceLoginAuditPath(id)); len(byPath) != 2 {
 		t.Errorf("per-request trail = %d entries, want expired and dismissed", len(byPath))
+	}
+}
+
+func TestAttentionDismiss_BatchClearsEveryResolvedLogin(t *testing.T) {
+	rt, db := newTestRouter(t)
+	admin := loginTestSession(t, rt, db)
+	var keys []string
+	for i := 0; i < 5; i++ {
+		d := startDeviceAuth(t, rt, fmt.Sprintf("flood-%d", i))
+		expireDeviceRowForTest(t, db, d.UserCode, time.Now().Add(-time.Minute))
+	}
+	startDeviceAuth(t, rt, "still-waiting")
+	items := getActivity(t, rt, authedRequest(t, admin, http.MethodGet, "/api/v1/auth/device/activity", "")).Items
+	for _, it := range items {
+		if it.Dismissible {
+			keys = append(keys, it.ItemKey)
+		}
+	}
+	if len(keys) != 5 {
+		t.Fatalf("dismissible keys = %d, want 5", len(keys))
+	}
+	post := func(body string) int {
+		return dismissItem(t, rt, authedRequest(t, admin, http.MethodPost, "/api/v1/attention/dismiss", body))
+	}
+	if code := post(`{"item_keys":["device_login:x:expired","bogus"]}`); code != http.StatusBadRequest {
+		t.Errorf("batch with a malformed key = %d, want 400", code)
+	}
+	stale := store.DeviceLoginItemKey("gone", store.DeviceLoginStateExpired)
+	raw, _ := json.Marshal(map[string][]string{"item_keys": append([]string{stale}, keys...)})
+	if code := post(string(raw)); code != http.StatusNoContent {
+		t.Fatalf("batch dismiss = %d, want 204", code)
+	}
+	for _, it := range getActivity(t, rt, authedRequest(t, admin, http.MethodGet, "/api/v1/auth/device/activity", "")).Items {
+		if it.Dismissible && !it.Dismissed {
+			t.Errorf("%s still shows after dismiss all", it.ClientName)
+		}
+	}
+	if got := len(auditByAction(t, db, store.AuditActionDeviceLoginDismissed)); got != 5 {
+		t.Errorf("dismiss audit entries = %d, want 5", got)
 	}
 }
