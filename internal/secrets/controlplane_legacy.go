@@ -42,6 +42,7 @@ var legacyFixed = map[string]legacyFamily{
 	"token-lifecycle":   {anyOf("expiry_notices", "rotation_pending")},
 	"secretconnections": {withPrefix("TOKEN_")},
 	"secretproviders":   {withPrefix("CFG_", "TOKEN_", "PREV_")},
+	"ddns":              {anyOf("settings", "target")},
 }
 
 var legacyPrefixed = []struct {

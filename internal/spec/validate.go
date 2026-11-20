@@ -30,7 +30,7 @@ var nameLike = regexp.MustCompile(`^[a-z][a-z0-9-]*$`)
 // an app taking one would share them. Existing apps are not renamed.
 var reservedNames = map[string]bool{
 	"build-records": true, "auth-engine": true, "webpush": true, "heartbeat": true,
-	"heartbeat-jobs": true, "token-lifecycle": true, "secretconnections": true, "secretproviders": true,
+	"heartbeat-jobs": true, "token-lifecycle": true, "secretconnections": true, "secretproviders": true, "ddns": true,
 }
 
 // IsReservedName reports whether name is a control plane secrets namespace.
