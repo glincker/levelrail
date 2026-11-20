@@ -193,8 +193,8 @@ func TestJanitorStagesAreReadThrough(t *testing.T) {
 			t.Fatalf("%s reports no state", id)
 		}
 		st, err := mg.State(ctx)
-		if err != nil || st.Mode != cleanup.ModePreview || !st.DryRun {
-			t.Errorf("%s state = %+v, %v (the janitor ships in dry run)", id, st, err)
+		if err != nil || st.Mode != cleanup.ModeOn || st.DryRun {
+			t.Errorf("%s state = %+v, %v (the janitor acts by default)", id, st, err)
 		}
 		if res := tg.Run(ctx, 0, cleanup.RunOptions{}); res.Err == nil {
 			t.Errorf("%s ran from the cleanup center", id)
