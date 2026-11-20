@@ -2445,6 +2445,9 @@ func (c *Client) ListServiceTemplatesFiltered(ctx context.Context, f TemplateLis
 	if f.HideDeprecated {
 		q.Set("include_deprecated", "false")
 	}
+	if f.NeedsDomain != "" {
+		q.Set("needs_domain", f.NeedsDomain)
+	}
 	path := "/api/v1/service-templates"
 	if len(q) > 0 {
 		path += "?" + q.Encode()

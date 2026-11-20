@@ -1,0 +1,62 @@
+id: libredb-studio
+name: LibreDB Studio
+slogan: A browser based SQL and NoSQL client for PostgreSQL, MySQL, MongoDB, Redis and more, with a query editor, schema explorer and saved connections. MIT licensed. The admin password and session secret are generated for you and shown in the deployment variables.
+description: A browser based SQL and NoSQL client for PostgreSQL, MySQL, MongoDB, Redis and more, with a query editor, schema explorer and saved connections. MIT licensed. The admin password and session secret are generated for you and shown in the deployment variables.
+category: Databases
+documentation_url: https://github.com/libredb/libredb-studio
+recommended_memory_bytes: 536870912
+requires_gpu: false
+platforms:
+    - linux/amd64
+    - linux/arm64
+manifest:
+    id: libredb-studio
+    name: LibreDB Studio
+    description: A browser based SQL and NoSQL client for PostgreSQL, MySQL, MongoDB, Redis and more, with a query editor, schema explorer and saved connections. MIT licensed. The admin password and session secret are generated for you and shown in the deployment variables.
+    icon: database
+    category: Databases
+    documentation_url: https://github.com/libredb/libredb-studio
+    source_repo: https://github.com/libredb/libredb-studio
+    license: MIT
+    license_class: permissive
+    license_url: https://github.com/libredb/libredb-studio/blob/main/LICENSE
+    hosted_use: ""
+    listing:
+        by: community
+        vendor_org: ""
+        proof: ""
+    status: active
+    status_reason: ""
+    replaced_by: ""
+    aliases: []
+    first_run:
+        - Sign in with the admin email and the generated password, then add a database connection from the sidebar.
+    compose_file: compose.yaml
+    recommended_memory_bytes: 536870912
+    env:
+        - key: ADMIN_EMAIL
+          label: Admin email
+          description: Email address of the admin account.
+          default: admin@libredb.org
+          generate: ""
+          length: 0
+          required: false
+          secret: false
+          type: ""
+          service: ""
+          path: ""
+          mode: ""
+    domains:
+        - service: libredb-studio
+          port: 3000
+          description: Public address of LibreDB Studio.
+    healthcheck:
+        service: libredb-studio
+        port: 3000
+        path: /
+        expect: 0
+        kind: ""
+        reason: ""
+    first_boot_seconds: 0
+    console_command: []
+    capabilities: []

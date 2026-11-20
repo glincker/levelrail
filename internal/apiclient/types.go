@@ -1827,6 +1827,9 @@ type TemplateFacts struct {
 	StatusReason string                `json:"status_reason,omitempty"`
 	ReplacedBy   string                `json:"replaced_by,omitempty"`
 	Preview      bool                  `json:"preview,omitempty"`
+	// NeedsDomain marks an entry reachable only through a domain.
+	NeedsDomain bool   `json:"needs_domain,omitempty"`
+	UpdatedAt   string `json:"updated_at,omitempty"`
 }
 
 // TemplateLicense is the stated license and its class.
@@ -1861,6 +1864,8 @@ type TemplateListFilter struct {
 	VerifiedOnly   bool
 	Arch           string
 	HideDeprecated bool
+	// NeedsDomain is "true" or "false" to filter on it; empty keeps both.
+	NeedsDomain string
 }
 
 // ServiceTemplateDetail mirrors internal/api's serviceTemplateDetail:

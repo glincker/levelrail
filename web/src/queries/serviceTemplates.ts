@@ -76,6 +76,10 @@ export interface TemplateFacts {
   replaced_by?: string
   // No real-engine pass recorded yet; still installable.
   preview?: boolean
+  // Reached only through a domain; does not work on a bare IP.
+  needs_domain?: boolean
+  // Date the template files last changed, YYYY-MM-DD.
+  updated_at?: string
 }
 
 // Mirrors serviceTemplateDetail's wire shape: the list item's fields plus

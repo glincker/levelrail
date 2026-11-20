@@ -58,6 +58,19 @@ export function TemplateFacetFilters({
           </option>
         ))}
       </NativeSelect>
+      <NativeSelect
+        aria-label={t('facts.filter.access')}
+        value={facets.access ?? ''}
+        onChange={(e) => {
+          onChange({
+            ...facets,
+            access: e.target.value === 'ip' ? 'ip' : undefined,
+          })
+        }}
+      >
+        <option value="">{t('facts.filter.anyAccess')}</option>
+        <option value="ip">{t('facts.filter.worksOnIp')}</option>
+      </NativeSelect>
     </>
   )
 }
