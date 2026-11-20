@@ -3285,10 +3285,250 @@
       "healthy": "正常",
       "failing": "故障",
       "paused": "已暂停",
-      "untested": "尚未测试"
+      "untested": "尚未测试",
+      "none": "未设置"
+    },
+    "runningOnBackup": "正在使用备用提供商",
+    "status": {
+      "lastError": "最近一次错误",
+      "noError": "无"
+    },
+    "row": {
+      "noFrom": "尚未设置发件地址",
+      "lastOk": "发送于 {{when}}",
+      "neverOk": "尚未发送",
+      "enabledLabel": "启用 {{name}}",
+      "edit": "编辑",
+      "editLabel": "编辑 {{name}}",
+      "test": "测试",
+      "testLabel": "通过 {{name}} 发送测试邮件",
+      "promote": "设为主要",
+      "promoteLabel": "将 {{name}} 设为主要提供商",
+      "promoted": "{{name}} 已成为主要提供商",
+      "remove": "移除",
+      "removeLabel": "移除 {{name}}",
+      "lastError": "最近一次错误：{{kind}}。运行测试以查看解决办法。"
+    },
+    "secret": {
+      "set": "设置",
+      "replace": "替换",
+      "replaceLabel": "替换 {{label}}",
+      "replaceHint": "输入新值。保存后会覆盖已存储的值。",
+      "keep": "保留已存储的值"
+    },
+    "panel": {
+      "editTitle": "编辑{{role}}提供商",
+      "addTitle": "添加{{role}}提供商",
+      "backend": "提供商",
+      "name": "标签",
+      "fromOverride": "此提供商的发件地址",
+      "fromOverrideHelp": "可选。留空则以 {{from}} 发送。",
+      "fromOverrideNoShared": "除非在下方设置了发件地址，否则需要填写。",
+      "sesSmtpNote": "SES SMTP 凭据来自 SES 控制台（SMTP 设置），不是你的 IAM 密钥。",
+      "needsSender": "此提供商尚未设置发件地址。请先设置，再保存。",
+      "needsSenderLink": "前往发件人身份",
+      "save": "保存提供商",
+      "add": "添加提供商",
+      "cancel": "取消"
+    },
+    "remove": {
+      "title": "移除 {{name}}？",
+      "description": "该提供商及其已存储的凭据将被删除。",
+      "primaryWithBackup": "存在备用提供商时，无法移除主要提供商。请先将备用提供商设为主要，或移除备用提供商。",
+      "consequenceCredentials": "其凭据将被删除，且无法恢复。",
+      "consequenceNoFailover": "主要提供商出现故障时，邮件将没有备用方案。",
+      "consequenceNoMail": "在你添加提供商之前，告警、邀请和密码重置邮件将停止发送。",
+      "confirm": "移除提供商",
+      "removing": "移除中...",
+      "done": "已移除 {{name}}"
+    },
+    "add": {
+      "primary": {
+        "title": "添加提供商",
+        "body": "选择告警、邀请和密码重置邮件的发送来源。",
+        "action": "添加提供商"
+      },
+      "backup": {
+        "title": "添加备用提供商",
+        "body": "如果主要提供商开始故障，邮件会自动切换到备用提供商。",
+        "action": "添加备用"
+      }
+    }
+  },
+  "emailSender": {
+    "title": "发件人身份与限额",
+    "optional": "可选",
+    "fromPlaceholder": "noreply@your-domain.com",
+    "envelopePlaceholder": "可选，默认为发件地址",
+    "capsHelp": "发送上限：0 表示使用服务器默认值，除非另行设置，否则不限制。",
+    "useSuggestion": "建议值：{{value}}",
+    "useSuggestionLabel": "使用建议值 {{value}}",
+    "domainHint": "请确认 {{domain}} 已在你的提供商处通过验证。",
+    "mailgunMismatch": "{{domain}} 不属于你的 Mailgun 域名 {{mailgun}}，Mailgun 很可能会拒绝它。",
+    "domainHintLink": "检查 SPF、DKIM 和 DMARC"
+  },
+  "emailTest": {
+    "title": "投递检查",
+    "description": "仅通过一个提供商发送真实邮件（不进行故障转移），然后确认其发件域名已发布 SPF、DKIM 和 DMARC。",
+    "noProviders": "请先在上方添加提供商，以发送测试邮件并检查其域名。",
+    "provider": "发送途径",
+    "to": "收件地址",
+    "domainFor": "{{name}} 的域名"
+  },
+  "emailPresets": {
+    "intro": "选择你的提供商，其连接详情会自动填入，你只需添加凭据和发件地址。",
+    "docs": "提供商文档",
+    "items": {
+      "resend": {
+        "name": "Resend",
+        "bestFor": "使用已验证域名进行简单的 API 发送。",
+        "credentialHint": "在 Resend 控制台的 API Keys 下创建 API 密钥。"
+      },
+      "ses": {
+        "name": "Amazon SES（API）",
+        "bestFor": "希望使用 IAM 密钥调用 SES API 的 AWS 账户。",
+        "credentialHint": "使用有权通过 SES 发送邮件的 IAM 访问密钥对应的密钥。"
+      },
+      "ses_smtp": {
+        "name": "Amazon SES（SMTP）",
+        "bestFor": "更倾向于使用 SMTP 凭据的 AWS 账户。",
+        "credentialHint": "在 SES 控制台的 SMTP 设置下创建 SMTP 凭据。它们不是你的 IAM 密钥。"
+      },
+      "postmark": {
+        "name": "Postmark",
+        "bestFor": "带有已验证发件人签名的事务性邮件。",
+        "credentialHint": "从你的 Postmark 服务器复制 Server API token。"
+      },
+      "sendgrid": {
+        "name": "SendGrid",
+        "bestFor": "已完成域名认证的现有 SendGrid 账户。",
+        "credentialHint": "在 Settings 下的 API Keys 中创建具有 Mail Send 权限的 API 密钥。"
+      },
+      "mailgun": {
+        "name": "Mailgun",
+        "bestFor": "从你在 Mailgun 中验证过的域名发送。",
+        "credentialHint": "从 Mailgun 控制台复制一个发送用的 API 密钥，然后输入你的发送域名。"
+      },
+      "gmail": {
+        "name": "Google Workspace 或 Gmail",
+        "bestFor": "来自 Google 账户的低流量邮件。",
+        "credentialHint": "为该账户使用应用专用密码。用户名请填写完整的账户地址。"
+      },
+      "microsoft365": {
+        "name": "Microsoft 365",
+        "bestFor": "来自 Microsoft 365 邮箱的低流量邮件。",
+        "credentialHint": "使用邮箱密码或应用专用密码。用户名请填写完整的邮箱地址。"
+      },
+      "brevo": {
+        "name": "Brevo",
+        "bestFor": "通过 SMTP 中继发送的 Brevo 账户。",
+        "credentialHint": "在你的 Brevo 账户中创建 SMTP 密钥。用户名为你的 Brevo 登录名。"
+      },
+      "smtp": {
+        "name": "其他 SMTP 服务器",
+        "bestFor": "任何支持 SMTP 的邮件服务器或中继。",
+        "credentialHint": "使用你的邮件服务器提供的密码。"
+      }
+    },
+    "ownMailServer": {
+      "name": "使用我的邮件服务器",
+      "bestFor": "通过邮件页面，以你自己的域名的 noreply 地址发送。"
+    }
+  },
+  "heartbeat": {
+    "title": "主机外心跳",
+    "description": "服务器健康时，向你选择的监控服务发送 ping，因此即使整台主机宕机，停止 ping 时你也会收到告警。",
+    "url": "Ping 地址",
+    "urlPlaceholder": "https://hc-ping.com/your-uuid",
+    "urlHint": "来自 Healthchecks、Uptime Kuma push 或类似服务。加密存储，且不会再次显示。",
+    "urlSet": "正在 ping {{host}}。粘贴新地址即可替换。",
+    "failUrl": "失败地址（可选）",
+    "failUrlHint": "服务器判断自身不健康时，改为调用此地址。",
+    "agentSilenceUrl": "Agent 失联地址（可选）",
+    "agentSilenceHint": "当节点在一段时间内无法连接控制平面时，每个节点都会 ping 此失败地址，因此即使服务器正常运行，控制平面失效也能被及时发现。加密存储。",
+    "agentSilenceSet": "节点失去控制平面连接时会 ping {{host}}。粘贴新地址即可替换。",
+    "clearAgentSilence": "移除 Agent 地址",
+    "body": "发送状态详情（版本、运行时长）",
+    "save": "保存",
+    "clear": "关闭",
+    "saved": "心跳已保存",
+    "envManaged": "由服务器上的 APP_HEARTBEAT_URL 设置。取消设置后，即可在此处管理心跳。",
+    "noKey": "保存地址需要先配置主密钥。",
+    "result": {
+      "none": "尚未 ping",
+      "ok": "最近一次 ping 已发送",
+      "fail_reported": "已上报失败",
+      "unhealthy": "已暂停发送，服务器不健康",
+      "error": "最近一次 ping 失败"
+    }
+  },
+  "rehydrate": {
+    "title": "恢复报告",
+    "description": "控制平面恢复后，从每个数据库和应用卷的最新备份中拉回数据。",
+    "helpLabel": "整台服务器恢复指南",
+    "actionsTitle": "恢复数据",
+    "actionsDescription": "计划为试运行。运行会用最新备份覆盖正在使用的数据库和卷。",
+    "allowStale": "允许使用超过时效限制的备份",
+    "plan": "计划（试运行）",
+    "run": "开始恢复",
+    "confirmTitle": "覆盖正在使用的数据？",
+    "confirmBody": "每个有可用备份的数据库和卷都会被该备份替换。请先审阅计划。",
+    "confirm": "立即恢复",
+    "cancel": "取消",
+    "started": "恢复已开始",
+    "empty": "尚无计划或运行记录。请先从试运行开始。",
+    "noItems": "没有可恢复的数据库或应用卷。",
+    "summary": "待恢复 {{restorable}} 项，已完成 {{succeeded}} 项，失败 {{failed}} 项，已阻止 {{blocked}} 项，已跳过 {{skipped}} 项。数据丢失窗口：{{window}}。",
+    "backupAge": "备份已有 {{age}}",
+    "mode": {
+      "plan": "计划",
+      "run": "运行"
+    },
+    "state": {
+      "planned": "可以运行",
+      "running": "运行中",
+      "succeeded": "已成功",
+      "partial": "部分恢复",
+      "failed": "失败"
+    },
+    "kind": {
+      "database": "数据库",
+      "volume": "应用卷"
+    },
+    "itemStatus": {
+      "planned": "已计划",
+      "running": "运行中",
+      "succeeded": "已恢复",
+      "failed": "失败",
+      "skipped": "已跳过",
+      "blocked": "已阻止"
+    },
+    "reason": {
+      "no_backup": "未找到成功的备份",
+      "backup_too_old": "最新备份已超过时效限制",
+      "engine_keeps_no_data": "不在磁盘上保存数据"
     }
   },
   "iacExport": {
+    "title": "导出",
+    "description": "将实时状态写成资源文件。两个字段都留空即导出所有可读取的内容。",
+    "project": "项目",
+    "projectPlaceholder": "shop",
+    "app": "应用",
+    "appPlaceholder": "web",
+    "includeValues": "包含明文环境变量值",
+    "run": "导出",
+    "running": "导出中...",
+    "download": "下载",
+    "copy": "复制",
+    "copied": "已复制",
+    "warning": "警告：{{message}}",
+    "textLabel": "导出的资源文件",
+    "button": "导出为代码",
+    "dialogTitle": "将 {{name}} 导出为代码",
+    "dialogDescription": "这是该单个资源的资源文件。密钥值绝不会包含在内。",
+    "loading": "导出中...",
+    "empty": "没有可导出的内容。",
     "studioButton": "将当前状态导出为模板"
   },
   "iacStudio": {
@@ -3344,6 +3584,19 @@
     }
   },
   "iacPlan": {
+    "summary": "待创建 {{create}} 项，待更新 {{update}} 项，待删除 {{delete}} 项，无变化 {{noop}} 项",
+    "summaryErrors": "待创建 {{create}} 项，待更新 {{update}} 项，待删除 {{delete}} 项，无变化 {{noop}} 项，{{error}} 项有错误",
+    "keptNote": "已保留，不在文件中",
+    "denied": "已拒绝",
+    "warning": "警告：{{message}}",
+    "matches": "实时状态已与文件一致。",
+    "status": {
+      "applied": "已执行",
+      "failed": "失败",
+      "denied": "已拒绝",
+      "skipped": "已跳过",
+      "noop": "无变化"
+    },
     "fix": "解决办法：{{hint}}",
     "codes": {
       "item_failed": {
@@ -3566,6 +3819,155 @@
         "message": "同步应用被拒绝或失败,堆栈保持不变。",
         "fix": "请在同一提交上运行堆栈计划;检查堆栈锁、受保护的应用和应用设置。"
       }
+    }
+  },
+  "iacImport": {
+    "button": "导入 YAML",
+    "dialogTitle": "为 {{name}} 导入 YAML",
+    "dialogDescription": "粘贴或上传资源 YAML，以预览会有哪些变化。此处不会执行任何操作。",
+    "textLabel": "待预览的 YAML",
+    "placeholder": "kind: App",
+    "preview": "预览",
+    "previewing": "规划中...",
+    "upload": "上传文件",
+    "uploadLabel": "上传 YAML 文件",
+    "cliNote": "要执行，请运行："
+  },
+  "iacHelp": {
+    "hint": "点击某个键即可查看其作用。",
+    "default": "默认值：{{value}}。"
+  },
+  "deployUrlCopies": {
+    "title": "部署地址副本",
+    "description": "近期部署是否保留副本，以及该副本能否访问。更改会在下一次同步时生效，无需重启。",
+    "modeLabel": "副本模式",
+    "modes": {
+      "off": {
+        "label": "关闭",
+        "description": "不保留任何副本。"
+      },
+      "private": {
+        "label": "私有",
+        "description": "副本保持暂停状态，没有公开地址或证书。"
+      },
+      "public": {
+        "label": "公开",
+        "description": "副本拥有各自的主机名和证书，可通过互联网访问。"
+      }
+    },
+    "source": {
+      "stored": "保存在此处",
+      "env": "来自环境变量",
+      "default": "默认"
+    },
+    "reset": "重置为默认值（{{mode}}）",
+    "saved": "部署地址副本已更新。",
+    "saving": "保存中...",
+    "confirm": {
+      "title": "将部署副本设为公开？",
+      "description": "每个保留的副本都会获得各自的公开主机名和证书。任何拥有该地址的人都可以访问你应用的旧版本。",
+      "confirm": "设为公开"
+    }
+  },
+  "appearancePage": {
+    "title": "外观",
+    "description": "主题底色、强调色、字体、文字大小、页面宽度、两侧边距和密度。更改会即时生效。",
+    "savedHere": "已保存在此浏览器中。开启同步后，也会跟随你的账户。",
+    "reset": "重置为默认值",
+    "defaultBadge": "默认",
+    "recommendedBadge": "推荐",
+    "presets": {
+      "title": "预设",
+      "description": "一键同时设置多个选项。",
+      "default": "默认",
+      "defaultHint": "标准外观",
+      "focusDark": "专注深色",
+      "focusDarkHint": "石墨色，宽松的内边距，舒适的密度",
+      "oled": "OLED",
+      "oledHint": "纯黑，宽页面，紧凑密度",
+      "paper": "纸张",
+      "paperHint": "暖色浅底，易读字体，窄页面",
+      "customDescription": "你的设置与任何预设都不一致。",
+      "custom": "自定义"
+    },
+    "theme": {
+      "title": "颜色模式",
+      "description": "浅色、深色或跟随浏览器。"
+    },
+    "darkBase": {
+      "title": "深色底色",
+      "description": "深色模式下使用的背景颜色。",
+      "soft": "柔和深色",
+      "softHint": "沉稳的近黑色",
+      "black": "纯黑",
+      "blackHint": "OLED，更省电",
+      "graphite": "石墨",
+      "graphiteHint": "中性色，视觉舒适",
+      "midnight": "午夜",
+      "midnightHint": "偏蓝色调"
+    },
+    "lightBase": {
+      "title": "浅色底色",
+      "description": "浅色模式下使用的背景颜色。",
+      "white": "白色",
+      "whiteHint": "经典，亮度最高",
+      "grey": "柔和灰",
+      "greyHint": "眩光更少，卡片为白色",
+      "paper": "纸张",
+      "paperHint": "暖色调",
+      "cool": "冷灰",
+      "coolHint": "略带蓝色调"
+    },
+    "accent": {
+      "title": "强调色",
+      "description": "用于当前页面、选中的卡片、链接和焦点。",
+      "teal": "青蓝",
+      "indigo": "靛蓝",
+      "violet": "紫罗兰",
+      "green": "绿色",
+      "amber": "琥珀色",
+      "rose": "玫瑰红",
+      "custom": "自定义颜色",
+      "customColor": "选择自定义强调色",
+      "customHex": "十六进制颜色",
+      "customInvalid": "请输入六位十六进制数字，例如 #0e7490。",
+      "adjusted": "已为可读性调整"
+    },
+    "font": {
+      "title": "字体",
+      "description": "Geist 随应用提供，其他字体使用你设备上已有的字体。",
+      "system": "Geist",
+      "systemHint": "默认，随应用打包",
+      "device": "系统",
+      "deviceHint": "你设备的字体",
+      "rounded": "圆角",
+      "roundedHint": "柔和的字形",
+      "serif": "衬线",
+      "serifHint": "经典，接近印刷文字",
+      "mono": "等宽",
+      "monoHint": "固定字符宽度",
+      "readable": "易读",
+      "readableHint": "字形较宽，行距更大"
+    },
+    "textSize": {
+      "title": "文字大小",
+      "description": "缩放所有文字和间距。",
+      "slider": "文字大小",
+      "quick": "快速选择",
+      "sample": "Aa 敏捷的棕色狐狸",
+      "reset": "重置大小"
+    },
+    "width": {
+      "title": "页面宽度",
+      "description": "大屏幕上页面内容的宽度。小于 1024px 的屏幕不受影响。",
+      "slider": "内容宽度",
+      "reset": "重置宽度"
+    },
+    "gutter": {
+      "title": "两侧边距",
+      "description": "平板尺寸及以上时，页面内容左右两侧的留白。",
+      "tight": "紧凑",
+      "tightHint": "为内容留出更多空间"
     }
   }
 }
