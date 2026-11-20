@@ -46,6 +46,8 @@ Flags:
     	do not take the control plane backup at all
   -no-wait
     	with --apply: return once the upgrade has started instead of following it
+  -now
+    	bypass the release cache and look up the newest release now
   -output string
     	output format: json, table, or text (default table; --json is shorthand for --output json)
   -plan

@@ -37339,12 +37339,22 @@
     },
     {
      "service": "libredb-studio",
+     "name": "HOSTNAME",
+     "kind": "preset"
+    },
+    {
+     "service": "libredb-studio",
      "name": "JWT_SECRET",
      "kind": "generated"
     },
     {
      "service": "libredb-studio",
      "name": "NEXT_PUBLIC_AUTH_PROVIDER",
+     "kind": "preset"
+    },
+    {
+     "service": "libredb-studio",
+     "name": "PORT",
      "kind": "preset"
     },
     {
