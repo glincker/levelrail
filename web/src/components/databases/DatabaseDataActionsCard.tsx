@@ -26,6 +26,7 @@ import {
   uploadDatabaseImport,
   useImportCheck,
 } from '../../queries/databasesData'
+import { ApiErrorAlert } from '../ApiErrorAlert'
 
 export function DatabaseDataActionsCard({ database }: { database: string }) {
   const { t } = useTranslation('databases')
@@ -343,11 +344,7 @@ function ImportForm({
           </AlertDescription>
         </Alert>
       ) : null}
-      {check.isError ? (
-        <Alert variant="destructive">
-          <AlertDescription>{check.error.message}</AlertDescription>
-        </Alert>
-      ) : null}
+      {check.isError ? <ApiErrorAlert error={check.error} /> : null}
       {uploading ? (
         <Progress
           value={Math.round(progress * 100)}
