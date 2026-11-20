@@ -297,6 +297,14 @@ A plain HTML form on a site can post to `/_forms/<form-name>` on the site's own 
 
 Browser posts redirect to the form's redirect URL or show a built-in thank-you page; `fetch()` with `Accept: application/json` gets `{"ok":true}`. Spam is dropped quietly (honeypot, link count), and posts are limited per IP and by body size. The limits and retention come from `FORMS_RATE_PER_IP_PER_MINUTE`, `FORMS_MAX_BODY_BYTES` and `FORMS_RETENTION_DAYS`. Submissions keep a salted hash of the sender address, never the address. Read them in the site's Forms tab or with `levelrail-cli pages submissions <site>`; `GET /api/v1/static-sites/{name}/submissions` returns them across forms. A password-protected site keeps the gate in front of the form route.
 
+### Export submissions as CSV
+
+In the site's Forms tab, each form has an **Export <form> as CSV** button. It downloads `GET /api/v1/apps/{name}/forms/{form}/export` (ability `read:sensitive`), a `text/csv` attachment named `<app>-<form>-submissions.csv` with up to 50,000 submissions. The columns are `id`, `created_at` (UTC, RFC3339) and `spam`, then one column per field name seen across the submissions, sorted by name. Cells that a spreadsheet would run as a formula are prefixed with a quote. Submissions marked as spam show a **Spam** badge in the tab, with the reason when one was recorded.
+
+### Preview the 404 page
+
+The site's Preview has a **Preview 404 page** toggle. It loads a path that no site serves (`/__missing-page-preview__`) on the site's domain, so you see your own `404.html` as visitors would. The toggle is disabled until the site has a domain.
+
 ## Deploy hook
 
 A git-connected site can have a secret URL that redeploys its branch when anything POSTs to it, such as a CMS publish, a CI job or a cron. Create it in the site's settings or with `levelrail-cli pages hook create <site>`; the URL is shown once and only its hash is stored. `pages hook rotate` replaces it and the old URL stops at once, `pages hook rm` revokes it. The API takes `POST /api/v1/static-sites/{name}/hook` to create (`409` when one exists) and the same call with `{"rotate": true}` to rotate (`409` when none exists), so a stale view cannot replace a hook by accident. Disconnecting the git source or deleting the app removes the hook, and a hook made before the current git source was connected stops working.

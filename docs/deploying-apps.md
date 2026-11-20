@@ -612,7 +612,15 @@ levelrail-cli apps run shop --service worker -- bin/migrate
 
 In the dashboard, the **Services** tab of a multi-service app has a replica stepper with Apply and a Restart button on each row. Apply sends the full service resource with the new replica count, so the server's own limits and errors show next to the control; Restart asks for confirmation first. Both need the deploy ability. A single-service app has no such column (use Scale on the Resources tab).
 
-`apps logs` follows live by default when stdout is a terminal and you gave no search flag; `--no-follow` prints stored entries instead. Piped output and `--json` never follow, so scripts keep the same stable output. The same actions are in the API (`PUT /api/v1/apps/{name}`, `POST /api/v1/apps/{name}/restart`, `GET /api/v1/apps/{name}/logs`, `POST /api/v1/jobs/runs`). See [Jobs](/jobs#run-a-command-with-apps-run) for `apps run`.
+`apps logs` follows live by default when stdout is a terminal and you gave no search flag; `--no-follow` prints stored entries instead. Piped output and `--json` never follow, so scripts keep the same stable output. To keep a slice of stored logs, give the window and a file: `--until` is an alias for `--to` (an RFC3339 end time; passing both is an error), and `--file` writes the entries to a file instead of stdout.
+
+```bash
+levelrail-cli apps logs shop --from 2026-11-19T22:00:00Z --until 2026-11-19T23:00:00Z --q error --file shop-errors.log
+```
+
+The file is created with mode 0600 and is never overwritten: if it already exists the command fails with `open --file` and the reason. `--file` counts as a search flag, so it prints stored entries rather than following live, and it uses the same format flags (`--json`, `--output`) as stdout.
+
+The same actions are in the API (`PUT /api/v1/apps/{name}`, `POST /api/v1/apps/{name}/restart`, `GET /api/v1/apps/{name}/logs`, `POST /api/v1/jobs/runs`). See [Jobs](/jobs#run-a-command-with-apps-run) for `apps run`.
 
 ### Scheduled tasks
 

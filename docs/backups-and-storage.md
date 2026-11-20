@@ -159,6 +159,20 @@ CLI: `levelrail-cli registry-credentials test <id>`. Dashboard: the **Test conne
 </Tab>
 </Tabs>
 
+### Run a write and restore drill on a backup target
+
+A connection test does not write anything. The drill does: `POST /api/v1/backup-targets/{id}/drill` (ability `write:sensitive`) uploads a random 256 byte sample object under the `.drill/` prefix, downloads it, compares the bytes and deletes it. A pass proves the target's key can write, read back and delete.
+
+```bash
+levelrail-cli backup-targets drill bkt_9f2a1c...
+# backup target "bkt_9f2a1c...": wrote and restored a 256 byte sample (upload 84 ms, download 41 ms), cleaned up: true
+```
+
+The command takes the target id and the usual API flags (`--token`, `--api-url`, `--profile`, `--json`, `--output`, `--query`). The response has `ok`, `stage`, `bytes`, `upload_ms`, `download_ms`, `cleaned_up`, `checksum_ok` and `error`.
+
+- A storage refusal still answers `200` with `ok: false`. `stage` names where it failed (`upload`, `download` or `compare`) and `error` holds the reason. The CLI prints `drill failed at <stage>: <error>` and exits with the check-failed code.
+- `404`: no such backup target. `501`: no master key is configured, or this target type cannot run the drill. `502`: the target could not be reached.
+
 <Tip>
 Better to find a stale credential here than from a failed 3am backup or a deploy that dies mid-pull.
 </Tip>
@@ -436,6 +450,7 @@ Limits to know about:
 | `PUT` | `/api/v1/backup-targets/{id}` | `write:sensitive` |
 | `DELETE` | `/api/v1/backup-targets/{id}` | `write:sensitive` |
 | `POST` | `/api/v1/backup-targets/{id}/test` | `write:sensitive` |
+| `POST` | `/api/v1/backup-targets/{id}/drill` | `write:sensitive` |
 | `GET` | `/api/v1/registry-credentials` | `read` |
 | `POST` | `/api/v1/registry-credentials` | `write:sensitive` |
 | `GET` | `/api/v1/registry-credentials/{id}` | `read` |
