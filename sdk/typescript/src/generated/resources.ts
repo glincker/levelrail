@@ -105,6 +105,8 @@ export function createResources(op: Bind) {
       listProbeAttempts: op("handleListProbeAttempts"),
       /** Next.js route table and warnings parsed from one deploy attempt's stored build log. Requires `read`. GET /api/v1/apps/{name}/deploys/{deployId}/build-report */
       nextBuildReport: op("handleNextBuildReport"),
+      /** Pin Deploy Requires `deploy`. PUT /api/v1/apps/{name}/deploys/{deployId}/pin */
+      pinDeploy: op("handlePinDeploy"),
       /** Publish Held Build Requires `deploy`. POST /api/v1/apps/{name}/deploys/{deployId}/publish */
       publishHeldBuild: op("handlePublishHeldBuild"),
       /** Reject Deploy Approval Requires `deploy`. POST /api/v1/deploy-approvals/{id}/reject */
@@ -121,6 +123,8 @@ export function createResources(op: Bind) {
       setDeployPolicy: op("handleSetDeployPolicy"),
       /** Deploys. Requires `deploy`. POST /api/v1/apps/{name}/deploys */
       triggerDeploy: op("handleTriggerDeploy"),
+      /** Unpin Deploy Requires `deploy`. DELETE /api/v1/apps/{name}/deploys/{deployId}/pin */
+      unpinDeploy: op("handleUnpinDeploy"),
     },
     apps: {
       /** Abort Canary Requires `deploy`. DELETE /api/v1/apps/{name}/canary */
@@ -1269,24 +1273,36 @@ export function createResources(op: Bind) {
     staticSites: {
       /** Add Static Site Domain Requires `write`. POST /api/v1/static-sites/{name}/domains */
       addStaticSiteDomain: op("handleAddStaticSiteDomain"),
+      /** Create Site Deploy Token Requires `write:sensitive`. POST /api/v1/static-sites/{name}/deploy-tokens */
+      createSiteDeployToken: op("handleCreateSiteDeployToken"),
       /** Create Static Site Requires `write`. POST /api/v1/static-sites */
       createStaticSite: op("handleCreateStaticSite"),
+      /** Delete Pages Notify Requires `write`. DELETE /api/v1/static-sites/{name}/notify */
+      deletePagesNotify: op("handleDeletePagesNotify"),
       /** Delete Static Site Requires `write:sensitive`. DELETE /api/v1/static-sites/{name} */
       deleteStaticSite: op("handleDeleteStaticSite"),
       /** Delete Static Site Hook Requires `write:sensitive`. DELETE /api/v1/static-sites/{name}/hook */
       deleteStaticSiteHook: op("handleDeleteStaticSiteHook"),
       /** Delete Static Site Submission Requires `deploy`. DELETE /api/v1/static-sites/{name}/submissions/{form}/{id} */
       deleteStaticSiteSubmission: op("handleDeleteStaticSiteSubmission"),
+      /** Get Pages Notify Requires `read`. GET /api/v1/static-sites/{name}/notify */
+      getPagesNotify: op("handleGetPagesNotify"),
       /** Get Static Site Requires `read`. GET /api/v1/static-sites/{name} */
       getStaticSite: op("handleGetStaticSite"),
       /** Static site traffic for 24h or 7d. Requires `read`. GET /api/v1/static-sites/{name}/hook */
       getStaticSiteHook: op("handleGetStaticSiteHook"),
+      /** Get Static Site Preset Requires `read`. GET /api/v1/static-sites/{name}/preset */
+      getStaticSitePreset: op("handleGetStaticSitePreset"),
       /** Get Static Site Rules Requires `read`. GET /api/v1/static-sites/{name}/rules */
       getStaticSiteRules: op("handleGetStaticSiteRules"),
       /** Get Static Site Settings Requires `read`. GET /api/v1/static-sites/{name}/settings */
       getStaticSiteSettings: op("handleGetStaticSiteSettings"),
+      /** List Site Deploy Tokens Requires `read`. GET /api/v1/static-sites/{name}/deploy-tokens */
+      listSiteDeployTokens: op("handleListSiteDeployTokens"),
       /** List Static Site Deploys Requires `read`. GET /api/v1/static-sites/{name}/deploys */
       listStaticSiteDeploys: op("handleListStaticSiteDeploys"),
+      /** List Static Site Previews Requires `read`. GET /api/v1/static-sites/{name}/previews */
+      listStaticSitePreviews: op("handleListStaticSitePreviews"),
       /** List Static Site Submissions Requires `read:sensitive`. GET /api/v1/static-sites/{name}/submissions */
       listStaticSiteSubmissions: op("handleListStaticSiteSubmissions"),
       /** Static sites (build.type: static): read-only dashboard visibility for sites served directly by embedded Cad... Requires `read`. GET /api/v1/static-sites */
@@ -1295,10 +1311,18 @@ export function createResources(op: Bind) {
       patchStaticSiteSettings: op("handlePatchStaticSiteSettings"),
       /** Promote Static Site Deploy Requires `deploy`. POST /api/v1/static-sites/{name}/deploys/{deployId}/promote */
       promoteStaticSiteDeploy: op("handlePromoteStaticSiteDeploy"),
+      /** Put Pages Notify Requires `write`. PUT /api/v1/static-sites/{name}/notify */
+      putPagesNotify: op("handlePutPagesNotify"),
       /** Put Static Site Hook Requires `write:sensitive`. POST /api/v1/static-sites/{name}/hook */
       putStaticSiteHook: op("handlePutStaticSiteHook"),
+      /** Put Static Site Preset Requires `write`. PUT /api/v1/static-sites/{name}/preset */
+      putStaticSitePreset: op("handlePutStaticSitePreset"),
       /** Put Static Site Rules Requires `write`. PUT /api/v1/static-sites/{name}/rules */
       putStaticSiteRules: op("handlePutStaticSiteRules"),
+      /** Revoke Site Deploy Token Requires `write:sensitive`. DELETE /api/v1/static-sites/{name}/deploy-tokens/{id} */
+      revokeSiteDeployToken: op("handleRevokeSiteDeployToken"),
+      /** Static Site Analytics Requires `read`. GET /api/v1/static-sites/{name}/analytics */
+      staticSiteAnalytics: op("handleStaticSiteAnalytics"),
       /** Static Site Checks Requires `read`. GET /api/v1/static-sites/{name}/checks */
       staticSiteChecks: op("handleStaticSiteChecks"),
       /** Static Site Deploy Log Requires `read`. GET /api/v1/static-sites/{name}/deploys/{deployId}/log */
