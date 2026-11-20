@@ -268,6 +268,10 @@ func (rt *Router) handlePatchStaticSiteSettings(w http.ResponseWriter, r *http.R
 			writeError(w, http.StatusNotImplemented, "site passwords are not configured on this control plane")
 			return
 		}
+		if len(*p.Password) > passwordMaxBytes {
+			writeError(w, http.StatusBadRequest, "password must be at most 72 bytes")
+			return
+		}
 		h, msg := hashSitePassword(*p.Password)
 		if msg != "" {
 			writeError(w, http.StatusUnprocessableEntity, msg)

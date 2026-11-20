@@ -180,3 +180,16 @@ func TestStaticSiteSettingsBadPasswordSavesNothing(t *testing.T) {
 		t.Fatalf("output_dir = %q, err %v; want nothing saved", s.OutputDir, err)
 	}
 }
+
+func TestStaticSiteSettingsPasswordOver72BytesIs400(t *testing.T) {
+	rt, db := newTestRouter(t)
+	cookie := loginTestSession(t, rt, db)
+	seedStaticSite(t, db, t.TempDir(), "docs", "d.example.com")
+	seedApp(t, db, "docs")
+	rec := httptest.NewRecorder()
+	body := `{"password":"` + strings.Repeat("a", 73) + `"}`
+	rt.Handler().ServeHTTP(rec, authedRequest(t, cookie, http.MethodPatch, "/api/v1/static-sites/docs/settings", body))
+	if rec.Code != http.StatusBadRequest {
+		t.Fatalf("status = %d, want 400", rec.Code)
+	}
+}

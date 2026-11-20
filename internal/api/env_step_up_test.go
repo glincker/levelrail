@@ -248,3 +248,11 @@ func TestConvertEnvToSecret(t *testing.T) {
 	}
 	f.do(t, f.cookie, http.MethodPost, "/api/v1/apps/web/env/API_SECRET/convert-to-secret", "", http.StatusNotFound)
 }
+
+func TestStepUp_PasswordOver72BytesIs400(t *testing.T) {
+	f := newEnvFixture(t)
+	rec := f.serve(authedRequest(t, f.cookie, http.MethodPost, "/api/v1/auth/step-up", stepUpBody(strings.Repeat("a", 73), stepUpActionReveal)))
+	if rec.Code != http.StatusBadRequest {
+		t.Fatalf("status = %d, want 400", rec.Code)
+	}
+}

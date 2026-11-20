@@ -70,6 +70,9 @@ func TestStaticSiteDomainRejectsBadInput(t *testing.T) {
 	if rec := f.do(t, http.MethodPost, "/api/v1/static-sites/web/domains", `{"domain":"not a domain"}`); rec.Code != http.StatusBadRequest {
 		t.Fatalf("bad domain = %d", rec.Code)
 	}
+	if rec := f.do(t, http.MethodPost, "/api/v1/static-sites/web/domains", `{"domain":"{{host}}.example.com"}`); rec.Code != http.StatusBadRequest {
+		t.Fatalf("placeholder domain = %d, want 400", rec.Code)
+	}
 	if rec := f.do(t, http.MethodGet, "/api/v1/static-sites/web/domains/other.example.com/status", ""); rec.Code != http.StatusNotFound {
 		t.Fatalf("unattached status = %d", rec.Code)
 	}

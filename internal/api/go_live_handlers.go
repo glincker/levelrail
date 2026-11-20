@@ -14,7 +14,7 @@ import (
 	"time"
 
 	"github.com/GLINCKER/levelrail/internal/dnsrecords"
-	"github.com/GLINCKER/levelrail/internal/ingress"
+	"github.com/GLINCKER/levelrail/internal/spec"
 	"github.com/GLINCKER/levelrail/internal/standalone"
 	"github.com/GLINCKER/levelrail/internal/store"
 	"github.com/libdns/libdns"
@@ -104,8 +104,8 @@ func (rt *Router) handleGoLiveRun(w http.ResponseWriter, r *http.Request) {
 	if !ok {
 		return
 	}
-	domain := strings.ToLower(strings.TrimSpace(r.PathValue("domain")))
-	if err := ingress.ValidateWildcardDomain(domain); err != nil || domain == "" {
+	domain, derr := spec.ValidateAppDomain(strings.TrimSpace(r.PathValue("domain")))
+	if derr != nil {
 		writeError(w, http.StatusBadRequest, "invalid domain")
 		return
 	}
@@ -215,7 +215,8 @@ func (rt *Router) handleGoLivePlan(w http.ResponseWriter, r *http.Request) {
 	policy := rt.effectiveAutomation(r.Context(), r, req.Automation)
 	out := goLivePlanResponse{Plans: make([]goLiveResult, 0, len(domains))}
 	for _, d := range domains {
-		if err := ingress.ValidateWildcardDomain(d); err != nil {
+		d, err := spec.ValidateAppDomain(d)
+		if err != nil {
 			writeError(w, http.StatusBadRequest, err.Error())
 			return
 		}

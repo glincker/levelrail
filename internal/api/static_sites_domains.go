@@ -8,8 +8,8 @@ import (
 	"strings"
 
 	"github.com/GLINCKER/levelrail/internal/dnsrecords"
-	"github.com/GLINCKER/levelrail/internal/ingress"
 	"github.com/GLINCKER/levelrail/internal/mailrecords"
+	"github.com/GLINCKER/levelrail/internal/spec"
 	"github.com/GLINCKER/levelrail/internal/store"
 )
 
@@ -53,8 +53,8 @@ func (rt *Router) handleAddStaticSiteDomain(w http.ResponseWriter, r *http.Reque
 		writeError(w, http.StatusBadRequest, "invalid request body")
 		return
 	}
-	domain := strings.ToLower(strings.TrimSpace(req.Domain))
-	if domain == "" || strings.HasPrefix(domain, "*.") || mailrecords.ValidHost(domain) != nil || ingress.ValidateWildcardDomain(domain) != nil {
+	domain, derr := spec.ValidateAppDomain(strings.TrimSpace(req.Domain))
+	if derr != nil || strings.HasPrefix(domain, "*.") || mailrecords.ValidHost(domain) != nil {
 		writeError(w, http.StatusBadRequest, "invalid domain")
 		return
 	}
