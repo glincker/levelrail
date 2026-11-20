@@ -37,6 +37,7 @@ func (rt *Router) handleCreateApp(w http.ResponseWriter, r *http.Request) {
 		writeAppInvalid(w, err)
 		return
 	}
+	req.Domains = normalizeDomainList(req.Domains)
 	if err := rt.checkAppDNSNames(r.Context(), req.Name, &req.DNSNames); err != nil {
 		writeAppInvalid(w, err)
 		return

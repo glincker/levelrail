@@ -11,10 +11,12 @@ package ingress
 
 import (
 	"fmt"
+	"log/slog"
 	"net"
 	"strconv"
 	"strings"
 	"time"
+	"unicode"
 
 	"github.com/GLINCKER/levelrail/internal/staticroutes"
 )
@@ -578,6 +580,12 @@ func BuildRoutesConfig(opts RoutesOptions) (*Config, error) {
 		if len(r.Hosts) == 0 {
 			return nil, fmt.Errorf("ingress: build routes config: route %d has no hosts", i)
 		}
+		// Last line of defense: the host matcher expands placeholders, so a
+		// brace or separator in a host must never reach Caddy.
+		if r.Hosts = safeMatcherHosts(r.Hosts); len(r.Hosts) == 0 {
+			slog.Warn("ingress: skipping route with no valid host", slog.Int("route", i))
+			continue
+		}
 		if r.BackendDial == "" && (r.LB == nil || len(r.LB.Upstreams) == 0) {
 			return nil, fmt.Errorf("ingress: build routes config: route %d has no backend dial address", i)
 		}
@@ -907,4 +915,16 @@ func BuildRoutesConfig(opts RoutesOptions) (*Config, error) {
 	}
 
 	return cfg, nil
+}
+
+func safeMatcherHosts(hosts []string) []string {
+	out := make([]string, 0, len(hosts))
+	for _, h := range hosts {
+		if h != "" && !strings.ContainsFunc(h, func(r rune) bool {
+			return unicode.IsSpace(r) || unicode.IsControl(r) || strings.ContainsRune("{}/\\", r)
+		}) {
+			out = append(out, h)
+		}
+	}
+	return out
 }

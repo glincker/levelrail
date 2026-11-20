@@ -65,3 +65,13 @@ func TestEditAppDomainsChangesOnlyDomains(t *testing.T) {
 		t.Fatalf("set empty = %d %+v", code, res)
 	}
 }
+
+func TestEditAppDomainsRejectsPlaceholderDomain(t *testing.T) {
+	rt, _, cookie := newTimelineRouter(t)
+	for _, d := range []string{"{http.request.host}", "a/b", "a.*.example.com"} {
+		body := `{"add":["` + d + `"]}`
+		if code := tlJSON(t, rt, cookie, http.MethodPatch, "/api/v1/apps/web/domains", body, nil); code != http.StatusBadRequest {
+			t.Fatalf("add %q = %d, want 400", d, code)
+		}
+	}
+}
