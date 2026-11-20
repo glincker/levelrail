@@ -199,3 +199,7 @@ This renders `pr-12.example.com` for pull request 12. `{branch}` (reduced to one
 ## Skip draft pull requests and chosen services
 
 Turn on "Skip previews for draft pull requests" (setting `deploy.preview_skip_drafts`, off by default) and a draft pull request or merge request gets no preview until it is marked ready for review. For a multi-service app, `levelrail-cli apps previews settings web --exclude-services worker,docs` leaves those services out of every preview. An empty value clears the list, and at least one service must remain.
+
+## Require a label
+
+`levelrail-cli apps previews settings web --require-label preview` builds a preview only for pull requests that carry that label, and adding the label later starts the build. GitHub and GitLab send labels with the event; other providers are never gated. An empty value clears the gate.

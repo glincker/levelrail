@@ -114,6 +114,8 @@ type previewPolicyResource struct {
 	WildcardDomain                 string `json:"wildcard_domain"`
 	// ExcludeServices lists service keys a multi-service preview leaves out.
 	ExcludeServices []string `json:"exclude_services"`
+	// RequireLabel limits previews to pull requests with this label; empty builds every one.
+	RequireLabel string `json:"require_label"`
 }
 
 func (rt *Router) previewPolicyFor(ctx context.Context, appName string) (previewPolicyResource, error) {
@@ -142,7 +144,7 @@ func (rt *Router) previewPolicyFor(ctx context.Context, appName string) (preview
 		MigrateCommand: s.MigrateCommand, MigrateTimeoutSeconds: s.MigrateTimeoutSeconds,
 		EffectiveMigrateTimeoutSeconds: int(previewMigrateTimeoutOr(s, rt.previewMigratePlatformTimeout(ctx)) / time.Second), ImageTagTemplate: s.ImageTagTemplate,
 		HostTemplate: s.HostTemplate, WildcardDomain: s.WildcardDomain,
-		ExcludeServices: append([]string{}, splitExcludeServices(s.ExcludeServices)...),
+		ExcludeServices: append([]string{}, splitExcludeServices(s.ExcludeServices)...), RequireLabel: s.RequireLabel,
 	}, nil
 }
 
@@ -181,6 +183,8 @@ type setPreviewPolicyRequest struct {
 	WildcardDomain *string `json:"wildcard_domain,omitempty"`
 	// ExcludeServices replaces the services a multi-service preview skips; empty clears it.
 	ExcludeServices *[]string `json:"exclude_services,omitempty"`
+	// RequireLabel sets the label a pull request needs before it gets a preview; empty clears it.
+	RequireLabel *string `json:"require_label,omitempty"`
 }
 
 // handleSetPreviewPolicy handles PUT /api/v1/apps/{name}/preview-policy.
@@ -234,6 +238,10 @@ func (rt *Router) handleSetPreviewPolicy(w http.ResponseWriter, r *http.Request)
 		return
 	}
 	if msg := applyPreviewExcludeFields(gs, &s, req); msg != "" {
+		writeError(w, http.StatusBadRequest, msg)
+		return
+	}
+	if msg := applyPreviewLabelField(&s, req); msg != "" {
 		writeError(w, http.StatusBadRequest, msg)
 		return
 	}

@@ -87,6 +87,7 @@ func runAppsPreviewsSettings(prog string, args []string, stdout, stderr io.Write
 	hostTpl := fs.String("host-template", "", "preview hostname pattern with {number} or {branch}, for example pr-{number}.{domain} (empty clears it)")
 	wildcard := fs.String("wildcard-domain", "", "domain the host template renders under, one of the app's own domains")
 	exclude := fs.String("exclude-services", "", "comma separated services of a multi-service app that previews leave out (empty clears it)")
+	requireLabel := fs.String("require-label", "", "only build a preview for pull requests carrying this label, GitHub and GitLab only (empty clears it)")
 	imageTag := fs.String("image-tag-template", "", "deploy a prebuilt image per pull request, for example ghcr.io/org/app:pr-{number} (empty clears it)")
 	fs.Usage = func() { _, _ = fmt.Fprint(stderr, appsPreviewsSettingsUsage(prog)) }
 
@@ -140,6 +141,8 @@ func runAppsPreviewsSettings(prog string, args []string, stdout, stderr io.Write
 			req.HostTemplate = hostTpl
 		case "wildcard-domain":
 			req.WildcardDomain = wildcard
+		case "require-label":
+			req.RequireLabel = requireLabel
 		case "exclude-services":
 			keys := []string{}
 			for _, k := range strings.Split(*exclude, ",") {
@@ -194,6 +197,9 @@ func printPreviewSettings(out io.Writer, appName string, p apiclient.PreviewPoli
 	if len(p.ExcludeServices) > 0 {
 		_, _ = fmt.Fprintf(tw, "services left out\t%s\n", strings.Join(p.ExcludeServices, ", "))
 	}
+	if p.RequireLabel != "" {
+		_, _ = fmt.Fprintf(tw, "preview label\t%s\n", p.RequireLabel)
+	}
 	if p.ImageTagTemplate != "" {
 		_, _ = fmt.Fprintf(tw, "prebuilt image\t%s\n", p.ImageTagTemplate)
 	}
@@ -228,7 +234,8 @@ Flags:
   --host-template str        preview hostname pattern, placeholders {number} {branch} {domain}
   --wildcard-domain str      domain for {domain}; must be one of the app's own domains
   --exclude-services str     services of a multi-service app that previews leave out, comma separated
-  --image-tag-template str   prebuilt image per pull request, placeholders {number} {sha} {short_sha} {branch}
+  --require-label str        only build previews for pull requests with this label (GitHub, GitLab)
+  --image-tag-template str  prebuilt image per pull request, placeholders {number} {sha} {short_sha} {branch}
   --token string             API token (default: %[2]s env var, then the credentials file)
   --api-url string          control plane base URL (default: %[3]s env var, then %[4]s)
   --profile string          named credentials profile to read (overrides APP_PROFILE, default "default")

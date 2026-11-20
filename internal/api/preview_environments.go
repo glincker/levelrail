@@ -114,6 +114,10 @@ func (rt *Router) handlePullRequestWebhookEvent(ctx context.Context, appName str
 		return http.StatusOK, fmt.Sprintf("ignored: pull request #%d is a draft, previews build once it is ready for review\n", ev.Number)
 	}
 
+	if msg := previewLabelGateMessage(rt.previewSettings(ctx, appName).RequireLabel, ev); msg != "" {
+		return http.StatusOK, msg
+	}
+
 	if rt.builder == nil {
 		return http.StatusNotImplemented, "git push deploys are not configured on this control plane\n"
 	}

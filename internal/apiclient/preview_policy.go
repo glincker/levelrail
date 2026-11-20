@@ -53,6 +53,7 @@ type PreviewPolicyResource struct {
 	HostTemplate                   string   `json:"host_template"`
 	WildcardDomain                 string   `json:"wildcard_domain"`
 	ExcludeServices                []string `json:"exclude_services"`
+	RequireLabel                   string   `json:"require_label"`
 }
 
 // SetPreviewPolicyRequest is PUT .../preview-policy's body; nil fields are left unchanged.
@@ -79,6 +80,7 @@ type SetPreviewPolicyRequest struct {
 	HostTemplate          *string   `json:"host_template,omitempty"`
 	WildcardDomain        *string   `json:"wildcard_domain,omitempty"`
 	ExcludeServices       *[]string `json:"exclude_services,omitempty"`
+	RequireLabel          *string   `json:"require_label,omitempty"`
 }
 
 type approvePreviewRequest struct {
