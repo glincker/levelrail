@@ -364,6 +364,7 @@
     "nodeLabel": "{{stage}}, {{status}}, {{duration}}",
     "barLabel": "Balken {{stage}}, {{percent}} Prozent der Zeitachse",
     "totals": "Gesamtzeit {{wall}}, Summe der Stufen {{stages}}.",
+    "totalsRunning": "Läuft seit {{wall}}, bisherige Stufen {{stages}}.",
     "gap": {
       "outside": "{{time}} lagen zwischen oder außerhalb der Stufen.",
       "overlap": "Die Stufen überlappten sich um {{time}}."
