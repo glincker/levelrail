@@ -11,6 +11,8 @@ import (
 	"net/url"
 	"strings"
 	"time"
+
+	"github.com/GLINCKER/levelrail/internal/dnszones"
 )
 
 // ZoneFinder resolves the zone a domain's records live in.
@@ -38,6 +40,34 @@ func (f ManagerZoneFinder) FindZone(ctx context.Context, domain string) (string,
 		}
 	}
 	return "", ErrZoneNotFound
+}
+
+// ListedZoneFinder matches the domain against the provider's own zone list
+// first, which works when the credentials can list zones but a record probe
+// cannot (a record the library fails to parse, or a pinned hosted zone). It
+// falls back to Fallback when the list errors or holds no match.
+type ListedZoneFinder struct {
+	P        dnszones.Provider
+	Fallback ZoneFinder
+}
+
+// FindZone implements ZoneFinder.
+func (f ListedZoneFinder) FindZone(ctx context.Context, domain string) (string, error) {
+	if zones, err := f.P.ListZones(ctx); err == nil {
+		names := make([]string, 0, len(zones))
+		for _, z := range zones {
+			if !z.Private {
+				names = append(names, z.Name)
+			}
+		}
+		if zone, ok := MatchZone(domain, names); ok {
+			return zone, nil
+		}
+	}
+	if f.Fallback == nil {
+		return "", ErrZoneNotFound
+	}
+	return f.Fallback.FindZone(ctx, domain)
 }
 
 const cloudflareAPIBase = "https://api.cloudflare.com/client/v4"

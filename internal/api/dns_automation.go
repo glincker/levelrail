@@ -12,6 +12,7 @@ import (
 	"time"
 
 	"github.com/GLINCKER/levelrail/internal/dnsrecords"
+	"github.com/GLINCKER/levelrail/internal/dnszones"
 	"github.com/GLINCKER/levelrail/internal/ingress"
 	"github.com/GLINCKER/levelrail/internal/store"
 	"github.com/libdns/libdns"
@@ -135,7 +136,11 @@ func (rt *Router) resolveDNSTarget(ctx context.Context, domain string) (*dnsTarg
 	if err != nil || mgr == nil {
 		return nil, err
 	}
-	zone, err := dnsrecords.ManagerZoneFinder{Mgr: mgr}.FindZone(ctx, domain)
+	var finder dnsrecords.ZoneFinder = dnsrecords.ManagerZoneFinder{Mgr: mgr}
+	if c, _ := rt.route53Creds(ctx); c != nil && provider == dnsProviderRoute53 {
+		finder = dnsrecords.ListedZoneFinder{P: dnszones.NewRoute53(c.accessKeyID, c.secretAccessKey, c.region, c.hostedZoneID), Fallback: finder}
+	}
+	zone, err := finder.FindZone(ctx, domain)
 	if err != nil {
 		return nil, err
 	}

@@ -11,6 +11,8 @@ import (
 	"time"
 
 	"github.com/libdns/libdns"
+
+	"github.com/GLINCKER/levelrail/internal/dnszones"
 )
 
 func rr(name, typ, data string) libdns.Record {
@@ -213,5 +215,35 @@ func TestCloudflareAPIFindZoneAndProxied(t *testing.T) {
 	bad := &CloudflareAPI{Token: "wrong-token", BaseURL: srv.URL}
 	if _, err := bad.FindZone(context.Background(), "app.example.com"); err == nil || strings.Contains(err.Error(), "wrong-token") {
 		t.Fatalf("error must exist and never carry the token: %v", err)
+	}
+}
+
+type listOnlyProvider struct {
+	dnszones.Provider
+	zones []dnszones.Zone
+	err   error
+}
+
+func (p listOnlyProvider) ListZones(context.Context) ([]dnszones.Zone, error) { return p.zones, p.err }
+
+func TestListedZoneFinder(t *testing.T) {
+	t.Parallel()
+	ctx := context.Background()
+	// The probe finds nothing (its records fail to read), the list still matches.
+	broken := ManagerZoneFinder{Mgr: fakeManager{}}
+	p := listOnlyProvider{zones: []dnszones.Zone{{Name: "apps.example.com"}, {Name: "example.com", Private: true}}}
+	for _, d := range []string{"app.apps.example.com", "app.run.apps.example.com"} {
+		if got, err := (ListedZoneFinder{P: p, Fallback: broken}).FindZone(ctx, d); err != nil || got != "apps.example.com." {
+			t.Fatalf("FindZone(%q) = %q %v", d, got, err)
+		}
+	}
+	if _, err := (ListedZoneFinder{P: p, Fallback: broken}).FindZone(ctx, "app.other.org"); !errors.Is(err, ErrZoneNotFound) {
+		t.Fatalf("unknown zone error = %v", err)
+	}
+	// A failing list falls back to the probe.
+	soa := rr("@", "SOA", "ns.example.com. h.example.com. 1 7200 900 1209600 86400")
+	fb := ManagerZoneFinder{Mgr: fakeManager{zones: map[string][]libdns.Record{"example.com.": {soa}}}}
+	if got, err := (ListedZoneFinder{P: listOnlyProvider{err: errors.New("denied")}, Fallback: fb}).FindZone(ctx, "app.example.com"); err != nil || got != "example.com." {
+		t.Fatalf("fallback = %q %v", got, err)
 	}
 }
