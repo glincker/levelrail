@@ -153,6 +153,18 @@ levelrail pages promote docs DEPLOY_ID
 
 `GET /api/v1/static-sites/{name}/deploys` lists the deploys with `url`, `live` and `promotable`. `POST /api/v1/static-sites/{name}/deploys/{deployId}/promote` makes one live: it needs the same permission as a rollback, checks that the files still match the recorded content digest, and answers 410 when they were pruned.
 
+## Resize images on request
+
+When `pages.image_resize` is on, a request for a JPEG or PNG file with a `w` query value is answered at that width, keeping the aspect ratio, for example `/img/hero.jpg?w=640`. It is off by default, because decoding images uses memory. Other file types, a missing or non-numeric `w`, an image already smaller than the width, and files over the limits below are served unchanged. Resized copies are cached in memory, oldest dropped first. All keys are runtime settings and apply on the next request (see [runtime settings](/runtime-settings)).
+
+| Setting | Default | Range | Meaning |
+| --- | --- | --- | --- |
+| `pages.image_resize` | off | on or off | Turn the `?w=` route on. |
+| `pages.image_resize_max_width` | 2048 | 16 to 16384 | Widest size a request may ask for. A larger `w` is served at this width. |
+| `pages.image_resize_max_source_bytes` | 10485760 | 1024 to 1073741824 | Largest source file, in bytes, that is decoded. |
+| `pages.image_resize_max_pixels` | 40000000 | 10000 to 2147483647 | Largest source image in pixels that is decoded. |
+| `pages.image_resize_cache_bytes` | 67108864 | 1048576 to 4294967296 | Memory held for resized copies. |
+
 ## Build logs and dependency cache
 
 Each deploy keeps its build log, with secrets masked the same way as app deploy logs. Read it with `levelrail pages logs docs [DEPLOY_ID]` (latest deploy when omitted) and add `--follow` to stream a running build.
@@ -330,7 +342,7 @@ levelrail-cli pages notify reset my-site   # back to every outcome
 
 ## Traffic over time
 
-The site page shows a small requests chart with a 24 hour, 7 day and 30 day toggle. `GET /api/v1/static-sites/{name}/traffic?range=24h|7d|30d` returns a `series` array of buckets, each with `start`, `requests`, `pages`, `assets` and `errors` (4xx and 5xx). Recent buckets come from the edge access log and older hours from the stored hourly rollups, so history survives a restart.
+The site page shows a small requests chart with a 24 hour, 7 day and 30 day toggle. `GET /api/v1/static-sites/{name}/traffic?range=24h|7d|30d` returns a `series` array of buckets, each with `start`, `requests`, `pages`, `assets` and `errors` (4xx and 5xx). Recent buckets come from the edge access log and older hours from the stored hourly rollups, so history survives a restart. A missing path that a broken link points to also shows "Linked from" with the pages that link to it. Each `broken_link` finding from `GET /api/v1/static-sites/{name}/checks` carries `path` (the page with the link) and `target` (the link that does not resolve).
 
 | Variable | Default | Effect |
 | --- | --- | --- |

@@ -72,11 +72,10 @@ visits. Each variant's QA link is shown in the UI and in `status`.
 
 ## Limits
 
-- One running test per app. Container apps with a domain only: static sites
-  are not supported yet (the UI says so), although ingress can already split a
-  static route once the API allows it.
+- One running test per app. Container apps with a domain, and Pages static sites, can be split.
+- On a static site the variants are the production site plus retained deploys of the site (named by deploy ID). Promoting a static variant makes that deploy live the same way a [rollback](/pages) does, and fails if that deploy is not a published version of the site.
 - Variants are branch deploys or retained releases of the same app; promoting
-  uses the variant's image.
+  uses the variant's image (container apps).
 - Variant requests reach their route through a local hop, so the variant sees
   the visitor's address in `X-Forwarded-For` rather than as the connection
   address.
