@@ -13,6 +13,7 @@ import { SegmentedControl } from '@/components/ui/segmented-control'
 import { Skeleton } from '@/components/ui/skeleton'
 import { formatSize } from '../../lib/format'
 import {
+  siteChecksQueryOptions,
   siteTrafficQueryOptions,
   type SiteTraffic,
   type TrafficCount,
@@ -70,10 +71,12 @@ function TopList({
   title,
   rows,
   action,
+  sources,
 }: Readonly<{
   title: string
   rows: TrafficCount[]
   action?: (path: string) => void
+  sources?: ReadonlyMap<string, readonly string[]>
 }>) {
   const { t } = useTranslation('pagesSites')
   const max = Math.max(1, ...rows.map((r) => r.count))
@@ -106,6 +109,11 @@ function TopList({
                 label={r.label}
                 className="h-1"
               />
+              {sources?.get(r.label)?.length ? (
+                <p className="truncate text-xs text-muted-foreground">
+                  {t('traffic.linkedFrom')}: {sources.get(r.label)?.join(', ')}
+                </p>
+              ) : null}
             </li>
           ))}
         </ul>
@@ -145,6 +153,15 @@ export function SiteTrafficCard({
   const [win, setWin] = useState<TrafficWindow>('24h')
   const q = useQuery(siteTrafficQueryOptions(name, win))
   const d = q.data
+  const checks = useQuery(siteChecksQueryOptions(name))
+  const brokenSources = new Map<string, string[]>()
+  for (const c of checks.data?.checks ?? []) {
+    if (c.id !== 'broken_link' || !c.target || !c.path) continue
+    brokenSources.set(c.target, [
+      ...(brokenSources.get(c.target) ?? []),
+      c.path,
+    ])
+  }
   return (
     <section
       aria-labelledby="pages-traffic-title"
@@ -200,6 +217,7 @@ export function SiteTrafficCard({
               title={t('traffic.brokenLinks')}
               rows={d.broken_links ?? d.top_404_paths}
               action={onAddRedirect}
+              sources={brokenSources}
             />
           </div>
           <SiteAnalyticsPanel name={name} range={win} />

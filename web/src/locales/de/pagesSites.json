@@ -284,6 +284,7 @@
     "partial": "Unvollständige Daten.",
     "topPages": "Meistbesuchte Seiten",
     "brokenLinks": "Defekte Links",
+    "linkedFrom": "Verlinkt auf",
     "assets": "Assets: {{count}} Anfragen, {{size}}",
     "assetsNote": "Skripte, Stylesheets, Bilder und Schriften werden hier mitgezählt, aber nicht aufgelistet.",
     "probes": "Sonden und Scans: {{count}}",

@@ -284,6 +284,7 @@
     "partial": "Partial data.",
     "topPages": "Top pages",
     "brokenLinks": "Broken links",
+    "linkedFrom": "Linked from",
     "assets": "Assets: {{count}} requests, {{size}}",
     "assetsNote": "Scripts, styles, images and fonts are counted here, not listed.",
     "probes": "Probes and scans: {{count}}",

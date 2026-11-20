@@ -284,6 +284,7 @@
     "partial": "Datos parciales.",
     "topPages": "Páginas más visitadas",
     "brokenLinks": "Enlaces rotos",
+    "linkedFrom": "Enlazado desde",
     "assets": "Recursos: {{count}} solicitudes, {{size}}",
     "assetsNote": "Los scripts, estilos, imágenes y fuentes se cuentan aquí, no se listan.",
     "probes": "Sondeos y escaneos: {{count}}",

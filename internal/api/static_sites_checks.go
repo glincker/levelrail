@@ -42,6 +42,8 @@ type staticSiteCheck struct {
 	Title  string `json:"title"`
 	Detail string `json:"detail"`
 	Path   string `json:"path,omitempty"`
+	// Target is the link a broken_link finding points at, so callers can join it with traffic.
+	Target string `json:"target,omitempty"`
 }
 
 // staticSiteChecksResponse is the body of GET /api/v1/static-sites/{name}/checks.
@@ -260,7 +262,7 @@ func checkHTML(res *staticSiteChecksResponse, root *os.Root, files []staticFile,
 			res.Checks = append(res.Checks, staticSiteCheck{ID: "broken_links_more", Status: checkFail, Title: "More broken links", Detail: strconv.Itoa(len(broken)-maxBrokenListed) + " more not listed."})
 			break
 		}
-		res.Checks = append(res.Checks, staticSiteCheck{ID: "broken_link", Status: checkFail, Title: "Broken link", Detail: b.from + " points to " + b.target + ", which does not resolve.", Path: b.from})
+		res.Checks = append(res.Checks, staticSiteCheck{ID: "broken_link", Status: checkFail, Title: "Broken link", Detail: b.from + " points to " + b.target + ", which does not resolve.", Path: b.from, Target: b.target})
 	}
 }
 

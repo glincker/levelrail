@@ -288,6 +288,7 @@
     "partial": "Dados parciais.",
     "topPages": "Páginas mais acessadas",
     "brokenLinks": "Links quebrados",
+    "linkedFrom": "Linkado em",
     "assets": "Recursos: {{count}} requisições, {{size}}",
     "assetsNote": "Scripts, estilos, imagens e fontes são contados aqui, não listados.",
     "probes": "Sondagens e varreduras: {{count}}",

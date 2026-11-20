@@ -280,6 +280,7 @@
     "partial": "一部のデータのみです。",
     "topPages": "人気のページ",
     "brokenLinks": "リンク切れ",
+    "linkedFrom": "リンク元",
     "assets": "アセット: {{count}}件のリクエスト、{{size}}",
     "assetsNote": "スクリプト、スタイル、画像、フォントはここで集計され、一覧には表示されません。",
     "probes": "プローブとスキャン: {{count}}",

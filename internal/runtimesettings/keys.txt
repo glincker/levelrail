@@ -395,6 +395,10 @@ pages.analytics_retention_days
 pages.build_cache_max_bytes
 pages.build_log_max_bytes
 pages.build_log_retention
+pages.image_resize
+pages.image_resize_max_pixels
+pages.image_resize_max_source_bytes
+pages.image_resize_max_width
 pages.preview_max_per_site
 pages.proxy_max_body_mb
 pages.proxy_response_timeout

@@ -180,6 +180,7 @@ export interface SiteCheck {
   title: string
   detail: string
   path?: string
+  target?: string
 }
 
 export interface SiteChecksReport {

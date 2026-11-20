@@ -284,6 +284,7 @@
     "partial": "Données partielles.",
     "topPages": "Pages les plus consultées",
     "brokenLinks": "Liens cassés",
+    "linkedFrom": "Lien présent sur",
     "assets": "Ressources : {{count}} requêtes, {{size}}",
     "assetsNote": "Les scripts, feuilles de style, images et polices sont comptés ici, sans être listés.",
     "probes": "Sondes et analyses : {{count}}",
