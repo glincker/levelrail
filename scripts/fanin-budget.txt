@@ -32,6 +32,7 @@ internal/frameworks 54
 internal/gitprovider/reporef 46
 internal/gitsshkey 27
 internal/gpu 190
+internal/identity 190
 internal/loadbalancer 201
 internal/meshpath 46
 internal/monitor 190
