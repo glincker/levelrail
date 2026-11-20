@@ -42,6 +42,25 @@ export function AutoUpdateStatus({ status }: { status: AutoStatus }) {
       })
     : null
 
+  const listAgeHours =
+    status.last_good_list_at && status.list_age_seconds !== undefined
+      ? Math.floor(status.list_age_seconds / 3600)
+      : null
+  // Only worth a row once the list is stale or came from the fallback source.
+  const showList =
+    listAgeHours !== null &&
+    (status.check_failures > 0 || status.list_source === 'fallback')
+  const listValue = showList
+    ? [
+        t('autoStatus.listAge', { hours: listAgeHours }),
+        status.list_source === 'fallback'
+          ? t('autoStatus.listSourceFallback')
+          : null,
+      ]
+        .filter(Boolean)
+        .join(', ')
+    : ''
+
   return (
     <div className="space-y-2 border-t border-border pt-3">
       <div className="flex flex-wrap items-center gap-2">
@@ -69,6 +88,11 @@ export function AutoUpdateStatus({ status }: { status: AutoStatus }) {
           </div>
         </div>
       ) : null}
+      {status.signature_pinned === false ? (
+        <p className="text-xs text-muted-foreground">
+          {t('autoStatus.unpinned')}
+        </p>
+      ) : null}
       <dl className="grid gap-x-6 gap-y-1 text-xs sm:grid-cols-2">
         {lastCheck ? (
           <Row label={t('autoStatus.lastCheck')} value={lastCheck} />
@@ -78,6 +102,9 @@ export function AutoUpdateStatus({ status }: { status: AutoStatus }) {
             label={t('autoStatus.failures')}
             value={String(status.check_failures)}
           />
+        ) : null}
+        {showList ? (
+          <Row label={t('autoStatus.lastGoodList')} value={listValue} />
         ) : null}
         {nextTry ? (
           <Row label={t('autoStatus.nextTry')} value={nextTry} />

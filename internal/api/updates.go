@@ -28,6 +28,8 @@ type githubRelease struct {
 	Assets      []struct {
 		Name string `json:"name"`
 	} `json:"assets"`
+	// Fallback is set when only the public release pages named this tag: no notes, no asset list.
+	Fallback bool `json:"-"`
 }
 
 // fetchLatestReleaseFunc matches defaultFetchLatestRelease's signature;
@@ -42,6 +44,9 @@ var fetchStableRelease = upgrade.FetchLatestStable
 func defaultFetchLatestRelease(ctx context.Context) (*githubRelease, error) {
 	rel, err := fetchStableRelease(ctx, githubRepo)
 	if err != nil {
+		if found, ferr := discoverStableRelease(ctx); ferr == nil {
+			return found, nil
+		}
 		return nil, fmt.Errorf("api: fetch github releases: %w", err)
 	}
 	if rel == nil {
@@ -64,6 +69,8 @@ type updatesCache struct {
 	release   *githubRelease
 	fetched   bool
 	fetchedAt time.Time
+	// failing is true while the latest fetch failed and the cached release is being served instead.
+	failing bool
 }
 
 func newUpdatesCache() *updatesCache {
@@ -111,7 +118,20 @@ func (c *updatesCache) set(release *githubRelease) {
 	c.release = release
 	c.fetched = true
 	c.fetchedAt = time.Now()
+	c.failing = false
 	c.mu.Unlock()
+}
+
+func (c *updatesCache) markFailing() {
+	c.mu.Lock()
+	c.failing = true
+	c.mu.Unlock()
+}
+
+func (c *updatesCache) isFailing() bool {
+	c.mu.Lock()
+	defer c.mu.Unlock()
+	return c.failing
 }
 
 // updateStatusResource is GET /api/v1/updates' wire shape. LatestVersion,
@@ -155,6 +175,7 @@ func (rt *Router) handleGetUpdates(w http.ResponseWriter, r *http.Request) {
 			fetched, err := rt.fetchLatestRelease(r.Context())
 			if err != nil {
 				rt.logger.Warn("api: fetch latest github release failed", slog.String("error", err.Error()))
+				rt.updatesCache.markFailing()
 				release, ok = rt.updatesCache.stale()
 			} else {
 				rt.updatesCache.set(fetched)

@@ -798,6 +798,10 @@
     "lastCheck": "Última comprobación",
     "failures": "Comprobaciones fallidas seguidas",
     "nextTry": "Próximo intento",
+    "lastGoodList": "Última lista de versiones correcta",
+    "listAge": "hace {{hours}} h",
+    "listSourceFallback": "Obtenida de las páginas públicas de versiones, sin notas de versión",
+    "unpinned": "Este servidor aún no tiene fijada una identidad de firma de versiones. La primera actualización se apoya solo en la suma de verificación; después, las siguientes deben llevar la misma firma.",
     "lastResult": "Último resultado",
     "result": {
       "applied": "Actualizado",

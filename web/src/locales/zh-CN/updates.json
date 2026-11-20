@@ -791,6 +791,10 @@
     "lastCheck": "上次检查",
     "failures": "连续检查失败次数",
     "nextTry": "下次重试",
+    "lastGoodList": "最近一次成功的版本列表",
+    "listAge": "{{hours}} 小时前",
+    "listSourceFallback": "来自公开发布页面，不含发布说明",
+    "unpinned": "此主机尚未固定发布签名身份。首次更新仅依赖校验和；成功后，后续更新必须带有相同的签名。",
     "lastResult": "上次结果",
     "result": {
       "applied": "已更新",

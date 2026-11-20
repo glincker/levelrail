@@ -798,6 +798,10 @@
     "lastCheck": "Last check",
     "failures": "Failed checks in a row",
     "nextTry": "Next try",
+    "lastGoodList": "Last good release list",
+    "listAge": "{{hours}} h ago",
+    "listSourceFallback": "Found on the public release pages, without release notes",
+    "unpinned": "No release signing identity is pinned on this host yet. The first update relies on the release checksum only; after it succeeds, later updates must carry the same signature.",
     "lastResult": "Last result",
     "result": {
       "applied": "Updated",

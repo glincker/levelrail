@@ -122,19 +122,19 @@ func TestEligible(t *testing.T) {
 		wantOK   bool
 		wantCode string
 	}{
-		{"patch release", Policy{Mode: ModePatch, Window: win}, "v0.5.0", Candidate{"v0.5.2", old}, 0, true, true, VerdictEligible},
-		{"patch mode skips a minor", Policy{Mode: ModePatch, Window: win}, "v0.5.0", Candidate{"v0.6.0", old}, 0, true, false, VerdictNotPatch},
-		{"any mode takes a minor", Policy{Mode: ModeAny, Window: win}, "v0.5.0", Candidate{"v0.6.0", old}, 0, true, true, VerdictEligible},
-		{"never a major jump", Policy{Mode: ModeAny, Window: win}, "v0.9.0", Candidate{"v1.0.0", old}, 0, true, false, VerdictMajor},
-		{"unacked breaking is held", Policy{Mode: ModeAny, Window: win}, "v0.5.0", Candidate{"v0.5.1", old}, 1, true, false, VerdictBreaking},
-		{"unreadable notes are held", Policy{Mode: ModeAny, Window: win}, "v0.5.0", Candidate{"v0.5.1", old}, 0, false, false, VerdictNoNotes},
-		{"minimum release age", Policy{Mode: ModeAny, Window: win, MinReleaseAgeDays: 3}, "v0.5.0", Candidate{"v0.5.1", young}, 0, true, false, VerdictTooYoung},
-		{"old enough passes the age gate", Policy{Mode: ModeAny, Window: win, MinReleaseAgeDays: 3}, "v0.5.0", Candidate{"v0.5.1", old}, 0, true, true, VerdictEligible},
-		{"zero age means immediately", Policy{Mode: ModeAny, Window: win}, "v0.5.0", Candidate{"v0.5.1", now}, 0, true, true, VerdictEligible},
-		{"paused", Policy{Mode: ModeAny, Window: win, Paused: true}, "v0.5.0", Candidate{"v0.5.1", old}, 0, true, false, VerdictPaused},
-		{"off", Policy{Mode: ModeOff, Window: win}, "v0.5.0", Candidate{"v0.5.1", old}, 0, true, false, VerdictOff},
-		{"no window", Policy{Mode: ModeAny}, "v0.5.0", Candidate{"v0.5.1", old}, 0, true, false, VerdictNoWindow},
-		{"not newer", Policy{Mode: ModeAny, Window: win}, "v0.5.1", Candidate{"v0.5.1", old}, 0, true, false, VerdictNotNewer},
+		{"patch release", Policy{Mode: ModePatch, Window: win}, "v0.5.0", Candidate{Tag: "v0.5.2", PublishedAt: old}, 0, true, true, VerdictEligible},
+		{"patch mode skips a minor", Policy{Mode: ModePatch, Window: win}, "v0.5.0", Candidate{Tag: "v0.6.0", PublishedAt: old}, 0, true, false, VerdictNotPatch},
+		{"any mode takes a minor", Policy{Mode: ModeAny, Window: win}, "v0.5.0", Candidate{Tag: "v0.6.0", PublishedAt: old}, 0, true, true, VerdictEligible},
+		{"never a major jump", Policy{Mode: ModeAny, Window: win}, "v0.9.0", Candidate{Tag: "v1.0.0", PublishedAt: old}, 0, true, false, VerdictMajor},
+		{"unacked breaking is held", Policy{Mode: ModeAny, Window: win}, "v0.5.0", Candidate{Tag: "v0.5.1", PublishedAt: old}, 1, true, false, VerdictBreaking},
+		{"unreadable notes are held", Policy{Mode: ModeAny, Window: win}, "v0.5.0", Candidate{Tag: "v0.5.1", PublishedAt: old}, 0, false, false, VerdictNoNotes},
+		{"minimum release age", Policy{Mode: ModeAny, Window: win, MinReleaseAgeDays: 3}, "v0.5.0", Candidate{Tag: "v0.5.1", PublishedAt: young}, 0, true, false, VerdictTooYoung},
+		{"old enough passes the age gate", Policy{Mode: ModeAny, Window: win, MinReleaseAgeDays: 3}, "v0.5.0", Candidate{Tag: "v0.5.1", PublishedAt: old}, 0, true, true, VerdictEligible},
+		{"zero age means immediately", Policy{Mode: ModeAny, Window: win}, "v0.5.0", Candidate{Tag: "v0.5.1", PublishedAt: now}, 0, true, true, VerdictEligible},
+		{"paused", Policy{Mode: ModeAny, Window: win, Paused: true}, "v0.5.0", Candidate{Tag: "v0.5.1", PublishedAt: old}, 0, true, false, VerdictPaused},
+		{"off", Policy{Mode: ModeOff, Window: win}, "v0.5.0", Candidate{Tag: "v0.5.1", PublishedAt: old}, 0, true, false, VerdictOff},
+		{"no window", Policy{Mode: ModeAny}, "v0.5.0", Candidate{Tag: "v0.5.1", PublishedAt: old}, 0, true, false, VerdictNoWindow},
+		{"not newer", Policy{Mode: ModeAny, Window: win}, "v0.5.1", Candidate{Tag: "v0.5.1", PublishedAt: old}, 0, true, false, VerdictNotNewer},
 	}
 	for _, tc := range tests {
 		t.Run(tc.name, func(t *testing.T) {
@@ -144,6 +144,35 @@ func TestEligible(t *testing.T) {
 			}
 			if tc.wantCode == VerdictTooYoung && v.WaitUntil.IsZero() {
 				t.Error("too young must say when it becomes eligible")
+			}
+		})
+	}
+}
+
+func TestEligibleWithoutNotesFromFallback(t *testing.T) {
+	now := mustTime(t, "2026-10-11T12:00:00Z")
+	win := Window{Cron: "0 3 * * *", Duration: 2 * time.Hour, Timezone: "UTC"}
+	old := now.Add(-10 * 24 * time.Hour)
+	tests := []struct {
+		name     string
+		mode     string
+		cand     Candidate
+		wantOK   bool
+		wantCode string
+	}{
+		{"patch of the running minor applies", ModeAny, Candidate{Tag: "v0.5.2", PublishedAt: old, FromFallback: true}, true, VerdictEligible},
+		{"new minor is held", ModeAny, Candidate{Tag: "v0.6.0", PublishedAt: old, FromFallback: true}, false, VerdictNoNotes},
+		{"new major is held", ModeAny, Candidate{Tag: "v1.0.0", PublishedAt: old, FromFallback: true}, false, VerdictMajor},
+		{"patch mode keeps its own rule", ModePatch, Candidate{Tag: "v0.6.0", PublishedAt: old, FromFallback: true}, false, VerdictNotPatch},
+		{"unknown publish date cannot satisfy the age rule", ModeAny, Candidate{Tag: "v0.5.2", FromFallback: true}, false, VerdictTooYoung},
+		{"api candidate without notes is still held", ModeAny, Candidate{Tag: "v0.5.2", PublishedAt: old}, false, VerdictNoNotes},
+	}
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			p := Policy{Mode: tt.mode, Window: win, MinReleaseAgeDays: 3}
+			v := Eligible(p, "v0.5.0", tt.cand, 0, false, now)
+			if v.OK != tt.wantOK || v.Code != tt.wantCode {
+				t.Fatalf("verdict = %+v, want ok=%v code=%s", v, tt.wantOK, tt.wantCode)
 			}
 		})
 	}

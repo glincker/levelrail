@@ -4,6 +4,7 @@ import (
 	"context"
 	"time"
 
+	"github.com/GLINCKER/levelrail/internal/selfupgrade"
 	"github.com/GLINCKER/levelrail/internal/store"
 	"github.com/GLINCKER/levelrail/internal/upgradesched"
 )
@@ -29,6 +30,13 @@ type upgradeAutoStatus struct {
 	LastResult       string `json:"last_result,omitempty"`
 	LastResultReason string `json:"last_result_reason,omitempty"`
 	LastResultAt     string `json:"last_result_at,omitempty"`
+	// LastGoodListAt is when a fresh release list was last read; ListAgeSeconds is its age now.
+	LastGoodListAt string `json:"last_good_list_at,omitempty"`
+	ListAgeSeconds int64  `json:"list_age_seconds,omitempty"`
+	// ListSource is "api" or "fallback" (public release pages, no breaking-change notes).
+	ListSource string `json:"list_source,omitempty"`
+	// SignaturePinned is false until a release signature was verified here, so the first update relies on the checksum.
+	SignaturePinned *bool `json:"signature_pinned,omitempty"`
 }
 
 // upgradeAutoStatusFor derives the status from the policy in force, this host's ability to apply an
@@ -47,9 +55,18 @@ func (rt *Router) upgradeAutoStatusFor(ctx context.Context, row store.UpgradePol
 		if !cs.LastCheckAt.IsZero() {
 			out.LastCheckAt = cs.LastCheckAt.UTC().Format(time.RFC3339)
 		}
+		if !cs.LastGoodAt.IsZero() {
+			out.LastGoodListAt = cs.LastGoodAt.UTC().Format(time.RFC3339)
+			out.ListAgeSeconds = max(0, int64(time.Since(cs.LastGoodAt).Seconds()))
+			out.ListSource = cs.Source
+		}
 		if !cs.NextCheckAt.IsZero() && cs.Failures > 0 {
 			out.NextCheckAt = cs.NextCheckAt.UTC().Format(time.RFC3339)
 		}
+	}
+	if rt.dataDir != "" {
+		_, pinned, _ := selfupgrade.ReadPin(rt.dataDir)
+		out.SignaturePinned = &pinned
 	}
 	if list, err := rt.upgradeSchedule.store.ListUpgradeSchedules(ctx, 1); err == nil && len(list) > 0 {
 		last := list[0]

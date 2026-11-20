@@ -805,6 +805,10 @@
     "lastCheck": "Última verificação",
     "failures": "Verificações com falha seguidas",
     "nextTry": "Próxima tentativa",
+    "lastGoodList": "Última lista de versões válida",
+    "listAge": "há {{hours}} h",
+    "listSourceFallback": "Obtida das páginas públicas de versões, sem notas de versão",
+    "unpinned": "Este host ainda não tem uma identidade de assinatura de versões fixada. A primeira atualização depende apenas do checksum; depois, as próximas devem ter a mesma assinatura.",
     "lastResult": "Último resultado",
     "result": {
       "applied": "Atualizado",

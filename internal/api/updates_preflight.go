@@ -167,6 +167,7 @@ func (rt *Router) latestRelease(ctx context.Context) (*githubRelease, bool) {
 	}
 	fetched, err := rt.fetchLatestRelease(ctx)
 	if err != nil {
+		rt.updatesCache.markFailing()
 		return rt.updatesCache.stale()
 	}
 	rt.updatesCache.set(fetched)

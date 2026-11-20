@@ -798,6 +798,10 @@
     "lastCheck": "Letzte Prüfung",
     "failures": "Fehlgeschlagene Prüfungen in Folge",
     "nextTry": "Nächster Versuch",
+    "lastGoodList": "Letzte gute Release-Liste",
+    "listAge": "vor {{hours}} Std.",
+    "listSourceFallback": "Von den öffentlichen Release-Seiten gelesen, ohne Release-Notizen",
+    "unpinned": "Auf diesem Host ist noch keine Signaturidentität für Releases festgelegt. Das erste Update stützt sich nur auf die Release-Prüfsumme; danach müssen weitere Updates dieselbe Signatur tragen.",
     "lastResult": "Letztes Ergebnis",
     "result": {
       "applied": "Aktualisiert",

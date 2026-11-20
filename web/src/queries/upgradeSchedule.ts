@@ -82,6 +82,12 @@ export interface AutoStatus {
   last_result?: string
   last_result_reason?: string
   last_result_at?: string
+  last_good_list_at?: string
+  list_age_seconds?: number
+  // "api" or "fallback" (public release pages, no breaking-change notes)
+  list_source?: string
+  // false until a release signature was verified on this host
+  signature_pinned?: boolean
 }
 
 export interface UpgradePolicy {

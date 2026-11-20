@@ -119,11 +119,17 @@ func (h upgradeHost) Latest(ctx context.Context) (upgradesched.Candidate, bool, 
 		return upgradesched.Candidate{}, false, errReleaseSourceUnavailable
 	}
 	c := upgradesched.Candidate{Tag: rel.Tag}
+	if gr, cached := h.rt.updatesCache.stale(); cached && gr != nil && gr.TagName == rel.Tag {
+		c.FromFallback = gr.Fallback
+	}
 	if t, err := time.Parse(time.RFC3339, rel.PublishedAt); err == nil {
 		c.PublishedAt = t
 	}
 	if rel.IsEdge() {
 		return c, true, upgradesched.ErrEdgeTarget
+	}
+	if h.rt.currentUpdateChannel(ctx) == upgrade.ChannelStable && h.rt.updatesCache.isFailing() {
+		return c, true, upgradesched.ErrStaleList
 	}
 	return c, true, nil
 }
@@ -152,6 +158,7 @@ func (h upgradeHost) Plan(ctx context.Context, target string) (upgradesched.Plan
 	if err != nil {
 		return upgradesched.Plan{}, err
 	}
+	out.FromFallback = plan.NotesSource == notesSourceFallback
 	if !found {
 		return upgradesched.Plan{}, upgradesched.ErrReleaseNotFound
 	}

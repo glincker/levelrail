@@ -791,6 +791,10 @@
     "lastCheck": "前回の確認",
     "failures": "連続した確認失敗",
     "nextTry": "次の再試行",
+    "lastGoodList": "最後に取得できたリリース一覧",
+    "listAge": "{{hours}}時間前",
+    "listSourceFallback": "公開リリースページから取得（リリースノートなし）",
+    "unpinned": "このホストにはまだリリース署名の ID が固定されていません。最初の更新はチェックサムのみに依存し、成功後の更新は同じ署名が必要になります。",
     "lastResult": "前回の結果",
     "result": {
       "applied": "更新済み",

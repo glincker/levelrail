@@ -805,6 +805,10 @@
     "lastCheck": "Dernière vérification",
     "failures": "Échecs de vérification consécutifs",
     "nextTry": "Prochaine tentative",
+    "lastGoodList": "Dernière liste de versions valide",
+    "listAge": "il y a {{hours}} h",
+    "listSourceFallback": "Trouvée sur les pages publiques des versions, sans notes de version",
+    "unpinned": "Aucune identité de signature des versions n'est encore épinglée sur cet hôte. La première mise à jour s'appuie uniquement sur la somme de contrôle ; ensuite, les mises à jour suivantes doivent porter la même signature.",
     "lastResult": "Dernier résultat",
     "result": {
       "applied": "Mis à jour",
