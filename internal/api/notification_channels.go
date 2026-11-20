@@ -70,9 +70,11 @@ type notificationChannelResource struct {
 	NotifyDeviceLogin bool `json:"notify_device_login"`
 	// NotifyDeviceLoginExpired opts the channel into a link-only notice when
 	// a pending CLI login expires unapproved.
-	NotifyDeviceLoginExpired bool   `json:"notify_device_login_expired"`
-	CreatedAt                string `json:"created_at"`
-	UpdatedAt                string `json:"updated_at"`
+	NotifyDeviceLoginExpired bool `json:"notify_device_login_expired"`
+	// ProjectID, when set, limits the channel to alert rules and deploy targets of that project's apps.
+	ProjectID string `json:"project_id"`
+	CreatedAt string `json:"created_at"`
+	UpdatedAt string `json:"updated_at"`
 }
 
 func toNotificationChannelResource(c alerting.NotificationChannel) notificationChannelResource {
@@ -81,8 +83,8 @@ func toNotificationChannelResource(c alerting.NotificationChannel) notificationC
 		Enabled: c.Enabled, InteractiveApprovals: c.InteractiveApprovals,
 		HasInteractiveSecret:     c.InteractiveSecret != "",
 		NotifyDeviceLogin:        c.NotifyDeviceLogin,
-		NotifyDeviceLoginExpired: c.NotifyDeviceLoginExpired,
-		CreatedAt:                c.CreatedAt, UpdatedAt: c.UpdatedAt,
+		NotifyDeviceLoginExpired: c.NotifyDeviceLoginExpired, ProjectID: c.ProjectID,
+		CreatedAt: c.CreatedAt, UpdatedAt: c.UpdatedAt,
 	}
 }
 
@@ -111,6 +113,8 @@ type createNotificationChannelRequest struct {
 	NotifyDeviceLogin    bool   `json:"notify_device_login,omitempty"`
 	// NotifyDeviceLoginExpired opts into a notice when a pending login lapses.
 	NotifyDeviceLoginExpired bool `json:"notify_device_login_expired,omitempty"`
+	// ProjectID limits the channel to one project; a blank value makes it instance wide.
+	ProjectID string `json:"project_id,omitempty"`
 }
 
 // notificationChannelsSupportingInteractiveApprovals is InteractiveApprovals'
@@ -225,6 +229,7 @@ func (req createNotificationChannelRequest) toChannel(id, existingSecret string)
 		ID: id, Name: req.Name, Kind: kind, NotifyURL: req.NotifyURL, Enabled: enabled,
 		InteractiveApprovals: req.InteractiveApprovals, InteractiveSecret: secret,
 		NotifyDeviceLogin: req.NotifyDeviceLogin, NotifyDeviceLoginExpired: req.NotifyDeviceLoginExpired,
+		ProjectID: strings.TrimSpace(req.ProjectID),
 	}, nil
 }
 
@@ -274,6 +279,9 @@ func (rt *Router) handleCreateNotificationChannel(w http.ResponseWriter, r *http
 	}
 	if err == nil {
 		err = rt.validateChannelDestination(r.Context(), channel.Kind, channel.NotifyURL)
+	}
+	if err == nil {
+		err = rt.validateChannelProject(r.Context(), channel.ProjectID)
 	}
 	if err != nil {
 		writeError(w, http.StatusBadRequest, err.Error())
@@ -336,6 +344,9 @@ func (rt *Router) handleUpdateNotificationChannel(w http.ResponseWriter, r *http
 	}
 	if err == nil {
 		err = rt.validateChannelDestination(r.Context(), channel.Kind, channel.NotifyURL)
+	}
+	if err == nil && channel.ProjectID != existing.ProjectID {
+		err = rt.validateChannelProject(r.Context(), channel.ProjectID)
 	}
 	if err != nil {
 		writeError(w, http.StatusBadRequest, err.Error())
