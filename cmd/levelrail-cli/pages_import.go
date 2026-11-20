@@ -60,7 +60,16 @@ func runPagesImport(prog string, args []string, stdout, stderr io.Writer) int {
 		if body == "" {
 			continue
 		}
-		if err := os.WriteFile(filepath.Join(dir, name), []byte(body), 0o644); err != nil { //nolint:gosec // site files are public
+		target := filepath.Join(dir, name)
+		if old, err := os.ReadFile(target); err == nil { //nolint:gosec // path is the user-chosen dir
+			// Keep what was there so a bad import never loses hand-written rules.
+			if err := os.WriteFile(target+".bak", old, 0o644); err != nil { //nolint:gosec // site files are public
+				_, _ = fmt.Fprintf(stderr, "%s: %v\n", prog, err)
+				return exitUsage
+			}
+			_, _ = fmt.Fprintf(stdout, "backed up existing %s to %s.bak\n", target, target)
+		}
+		if err := os.WriteFile(target, []byte(body), 0o644); err != nil { //nolint:gosec // site files are public
 			_, _ = fmt.Fprintf(stderr, "%s: %v\n", prog, err)
 			return exitUsage
 		}

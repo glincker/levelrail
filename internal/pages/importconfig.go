@@ -8,6 +8,8 @@ import (
 	"path/filepath"
 	"sort"
 	"strings"
+
+	"github.com/GLINCKER/levelrail/internal/spec"
 )
 
 // maxImportFile bounds how much of any candidate file is read.
@@ -102,6 +104,10 @@ func (r *ImportResult) skip(src, why string) {
 }
 
 func (r *ImportResult) addRedirect(from, to string, status int) {
+	if err := checkRedirectForms(from, to); err != nil {
+		r.skip(from+" -> "+to, err.Error())
+		return
+	}
 	line := from + " " + to
 	if status != 0 {
 		line += fmt.Sprintf(" %d", status)
@@ -115,6 +121,10 @@ func (r *ImportResult) addRedirect(from, to string, status int) {
 }
 
 func (r *ImportResult) addHeader(path, key, value string) {
+	if err := checkPathForms(path); err != nil {
+		r.skip("header path "+path, err.Error())
+		return
+	}
 	for i := range r.Headers {
 		if r.Headers[i].Path == path {
 			r.Headers[i].Headers = append(r.Headers[i].Headers, [2]string{key, value})
@@ -204,4 +214,46 @@ func (r *ImportResult) Render() (redirects, headers string) {
 		}
 	}
 	return rb.String(), hb.String()
+}
+
+// checkPathForms rejects wildcard shapes the engine does not match: regex
+// groups, :name+ or :name?, and a * that is not a whole last segment.
+func checkPathForms(p string) error {
+	for _, seg := range strings.Split(strings.Trim(p, "/"), "/") {
+		if strings.ContainsAny(seg, "()+?[]{}|\\") || seg != "*" && strings.Contains(seg, "*") {
+			return fmt.Errorf("pattern form %q is not supported (use :name or a trailing /*)", seg)
+		}
+	}
+	if _, err := spec.CompileStaticPattern(p); err != nil {
+		return err
+	}
+	return nil
+}
+
+// checkRedirectForms makes sure every :name in to is captured by from and
+// that :splat only appears when from ends in /*, as the engine requires.
+func checkRedirectForms(from, to string) error {
+	if err := checkPathForms(from); err != nil {
+		return err
+	}
+	known := map[string]bool{}
+	for _, seg := range strings.Split(from, "/") {
+		if strings.HasPrefix(seg, ":") {
+			known[seg[1:]] = true
+		}
+	}
+	hasSplat := from == "/*" || strings.HasSuffix(from, "/*")
+	if hasSplat {
+		known["splat"] = true
+	}
+	target := to
+	if i := strings.Index(target, "://"); i >= 0 {
+		target = target[i+3:]
+	}
+	for _, m := range spec.StaticPlaceholderRe.FindAllStringSubmatch(target, -1) {
+		if !known[m[1]] {
+			return fmt.Errorf("destination uses :%s which the source does not capture", m[1])
+		}
+	}
+	return nil
 }

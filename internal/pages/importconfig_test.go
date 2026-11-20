@@ -39,3 +39,33 @@ func TestImportDirConvertsAllShapes(t *testing.T) {
 		t.Fatalf("unsupported=%v sources=%v", res.Unsupported, res.Sources)
 	}
 }
+
+func TestImportWildcardForms(t *testing.T) {
+	cases := []struct {
+		name, from, to string
+		ok             bool
+	}{
+		{"bare splat", "/*", "/index.html", true},
+		{"trailing splat", "/blog/*", "/news/:splat", true},
+		{"named segment", "/u/:id", "/users/:id", true},
+		{"splat without star", "/a", "/b/:splat", false},
+		{"unknown placeholder", "/a/:x", "/b/:y", false},
+		{"named wildcard star", "/a/:rest*", "/b/:rest", false},
+		{"regex group", "/(.*)", "/x", false},
+		{"plus modifier", "/a/:id+", "/b", false},
+		{"star mid path", "/a/*/b", "/c", false},
+		{"partial segment", "/a/b*", "/c", false},
+	}
+	for _, c := range cases {
+		t.Run(c.name, func(t *testing.T) {
+			res := &ImportResult{}
+			res.addRedirect(c.from, c.to, 301)
+			if got := len(res.Redirects) == 1; got != c.ok {
+				t.Fatalf("converted=%v want %v unsupported=%v", got, c.ok, res.Unsupported)
+			}
+			if !c.ok && len(res.Unsupported) != 1 {
+				t.Fatalf("expected one unsupported entry, got %v", res.Unsupported)
+			}
+		})
+	}
+}

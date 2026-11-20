@@ -88,6 +88,9 @@ func hasMatcher(r jsonRule) bool {
 
 // jsonPattern turns a trailing ":name*" wildcard into "/*".
 func jsonPattern(p string) string {
+	if p == "/(.*)" {
+		return "/*"
+	}
 	if i := strings.LastIndex(p, "/:"); i >= 0 && strings.HasSuffix(p, "*") {
 		return p[:i] + "/*"
 	}
