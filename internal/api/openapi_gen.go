@@ -14,7 +14,7 @@ type openAPIRoute struct {
 	Description string
 }
 
-// openAPIRoutes holds all 2227 routes known to scripts/gen-api-reference at
+// openAPIRoutes holds all 2230 routes known to scripts/gen-api-reference at
 // generation time. Run `go run ./scripts/gen-api-reference` after changing
 // any routes*.go registration and commit the result.
 var openAPIRoutes = []openAPIRoute{
@@ -2124,6 +2124,9 @@ var openAPIRoutes = []openAPIRoute{
 	{Method: "DELETE", Path: "/api/v1/static-sites/{name}/hook", Ability: "AbilityWriteSensitive", Group: "Static Sites / Backup Targets / Registry Credentials", Handler: "handleDeleteStaticSiteHook", Description: ""},
 	{Method: "GET", Path: "/api/v1/static-sites/{name}/hook", Ability: "AbilityRead", Group: "Static Sites / Backup Targets / Registry Credentials", Handler: "handleGetStaticSiteHook", Description: "Static site traffic for 24h or 7d. Besides top_paths and top_404_paths (kept for old clients) it returns top_pages (page requests only, capped by APP_PAGES_TRAFFIC_TOP_N), assets {requests, bytes}, broken_links (404s on real links) and probe_requests (404s that look like scans)."},
 	{Method: "POST", Path: "/api/v1/static-sites/{name}/hook", Ability: "AbilityWriteSensitive", Group: "Static Sites / Backup Targets / Registry Credentials", Handler: "handlePutStaticSiteHook", Description: ""},
+	{Method: "DELETE", Path: "/api/v1/static-sites/{name}/notify", Ability: "AbilityWrite", Group: "Static Sites / Backup Targets / Registry Credentials", Handler: "handleDeletePagesNotify", Description: ""},
+	{Method: "GET", Path: "/api/v1/static-sites/{name}/notify", Ability: "AbilityRead", Group: "Static Sites / Backup Targets / Registry Credentials", Handler: "handleGetPagesNotify", Description: ""},
+	{Method: "PUT", Path: "/api/v1/static-sites/{name}/notify", Ability: "AbilityWrite", Group: "Static Sites / Backup Targets / Registry Credentials", Handler: "handlePutPagesNotify", Description: ""},
 	{Method: "GET", Path: "/api/v1/static-sites/{name}/rules", Ability: "AbilityRead", Group: "Static Sites / Backup Targets / Registry Credentials", Handler: "handleGetStaticSiteRules", Description: ""},
 	{Method: "PUT", Path: "/api/v1/static-sites/{name}/rules", Ability: "AbilityWrite", Group: "Static Sites / Backup Targets / Registry Credentials", Handler: "handlePutStaticSiteRules", Description: ""},
 	{Method: "GET", Path: "/api/v1/static-sites/{name}/settings", Ability: "AbilityRead", Group: "Static Sites / Backup Targets / Registry Credentials", Handler: "handleGetStaticSiteSettings", Description: ""},

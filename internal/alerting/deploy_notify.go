@@ -380,6 +380,17 @@ func sendDeployOutcome(ctx context.Context, client *http.Client, sender email.Se
 	}
 }
 
+// DeployEventFilter lets a feature suppress outcomes per resource, such as Pages event opt-in.
+type DeployEventFilter interface {
+	AllowDeployOutcome(ctx context.Context, resourceID string, succeeded bool) bool
+}
+
+// WithEventFilter sets the optional per-resource outcome filter.
+func (d *DeployDispatcher) WithEventFilter(f DeployEventFilter) *DeployDispatcher {
+	d.filter = f
+	return d
+}
+
 // DeployDispatcher sends deploy-outcome notifications to the enabled targets of one app.
 type DeployDispatcher struct {
 	db         *DB
@@ -390,6 +401,7 @@ type DeployDispatcher struct {
 	runtime    LogsSource
 	buildLogs  DeployLogSource
 	outcomes   *DeployOutcomeTracker
+	filter     DeployEventFilter
 }
 
 // DeployLogSource reads a deploy attempt's build output; *telemetry.DB satisfies it.
@@ -466,6 +478,9 @@ func (d *DeployDispatcher) Dispatch(ctx context.Context, resourceID string, ev D
 	}
 	d.attachLogs(ctx, resourceID, &ev)
 	ev.ReleaseNotes = ClampReleaseNotes(ev.ReleaseNotes, ReleaseNotesMaxBytes())
+	if d.filter != nil && !d.filter.AllowDeployOutcome(ctx, resourceID, ev.Succeeded) {
+		return
+	}
 	targets, err := d.db.ListDeployTargetsForResource(ctx, resourceID)
 	if err != nil {
 		d.logger.Error("alerting: list deploy targets failed",

@@ -100,4 +100,4 @@ Usage:
       [--trailing-slash add|remove|auto] [--404 path|auto] [--build-command CMD|auto] [--output-dir DIR|auto]
       [--password P | --password-stdin | --password-env VAR | --clear-password]
 ```
-
+- `pages notify show|set|off|reset <site>` attaches a notification channel and filters deploy notifications by `--on success,failure`.

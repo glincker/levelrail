@@ -304,6 +304,19 @@ curl -X POST https://levelrail.example.com/api/v1/hooks/pages/docs/<secret>
 
 The call answers `202` with the deploy id when the deploy started, `409` while a deploy is already running, a deploy of a protected environment awaits approval, or deploys are frozen, `429` when called too often (limits shared with build hooks) and `404` for an unknown site or a wrong secret. Calls are audited without the secret and with the hook's creation time, so rotations are told apart; the first call refused for rate in a window is audited, wrong secrets are not. Sites without a git source cannot have a hook. `GET /api/v1/static-sites/{name}/hook` returns only `{enabled, created_at}`.
 
+## Deploy notifications
+
+A Pages site sends a message when a deploy succeeds or fails, through the notification channels you already connected (email, chat, webhook, push). Channel secrets and the destination checks stay in the channel service, so a site never holds a webhook URL itself.
+
+```bash
+levelrail-cli pages notify set my-site --channel chn_abc123 --on failure
+levelrail-cli pages notify show my-site
+levelrail-cli pages notify off my-site     # mute without detaching channels
+levelrail-cli pages notify reset my-site   # back to every outcome
+```
+
+`--on` takes `success`, `failure` or both, comma separated. Without a stored filter a site notifies on every outcome of its attached channels. The API is `GET`, `PUT` and `DELETE /api/v1/static-sites/{name}/notify`; the response lists attached channel IDs and never their destinations.
+
 ## Traffic over time
 
 The site page shows a small requests chart with a 24 hour, 7 day and 30 day toggle. `GET /api/v1/static-sites/{name}/traffic?range=24h|7d|30d` returns a `series` array of buckets, each with `start`, `requests`, `pages`, `assets` and `errors` (4xx and 5xx). Recent buckets come from the edge access log and older hours from the stored hourly rollups, so history survives a restart.

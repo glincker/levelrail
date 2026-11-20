@@ -1390,6 +1390,9 @@ Endpoints for:
 | POST | /api/v1/static-sites/{name}/deploy-tokens | AbilityWriteSensitive | handleCreateSiteDeployToken |
 | DELETE | /api/v1/static-sites/{name}/deploy-tokens/{id} | AbilityWriteSensitive | handleRevokeSiteDeployToken |
 | POST | /api/v1/backup-targets/{id}/probe | AbilityWriteSensitive | handleProbeBackupTarget |
+| GET | /api/v1/static-sites/{name}/notify | AbilityRead | handleGetPagesNotify |
+| PUT | /api/v1/static-sites/{name}/notify | AbilityWrite | handlePutPagesNotify |
+| DELETE | /api/v1/static-sites/{name}/notify | AbilityWrite | handleDeletePagesNotify |
 
 ## Built-in Container Registry
 

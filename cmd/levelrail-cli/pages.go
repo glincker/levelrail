@@ -54,6 +54,8 @@ func runPages(prog string, args []string, stdout, stderr io.Writer, lookupEnv fu
 		return runPagesSubmissions(prog, rest, stdout, stderr, lookupEnv)
 	case "hook":
 		return runPagesHook(prog, rest, stdout, stderr, lookupEnv)
+	case "notify":
+		return runPagesNotify(prog, rest, stdout, stderr, lookupEnv)
 	case "token":
 		return runPagesToken(prog, rest, stdout, stderr, lookupEnv)
 	default:
@@ -85,6 +87,7 @@ func pagesUsage(prog string) string {
   %[1]s pages settings show|set <name> [flags]
   %[1]s pages submissions <site> | rm <site> <form> <id> [flags]
   %[1]s pages hook create|rotate|rm|show <site> [flags]
+  %[1]s pages notify show|set|off|reset <site> [flags]
 
 Publishes a folder or .zip as a static site: no build, no source control.
 The upload limit comes from %[2]s. "deploy" accepts every flag of "%[1]s deploy".
