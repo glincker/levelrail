@@ -112,6 +112,10 @@ Every domain gets an automatic TLS certificate from Let's Encrypt. The ingress r
 
 See [Domains and ingress](/domains-and-ingress) for domain verification, wildcard support, and custom proxies.
 
+## Split testing
+
+A static site with an explicit domain can run a [split test](/split-testing) between production and retained deploys, and promote the winner. See [Split testing](/split-testing) for the 409 you get when the site only has the automatic host.
+
 ## Rollback a static site
 
 Levelrail Pages keeps the built files from every deploy by storing them with the commit SHA as part of the path. To roll back:

@@ -45,9 +45,9 @@ func appsSplitUsage(prog string) string {
 
 Production gets the leftover percent when it is not listed. Visitors keep
 their variant through a cookie (HttpOnly, set only while a test runs). Open a
-variant's QA link to force it for yourself. Needs a container app with a
-domain; static sites are not supported yet. Promote is refused while
-publishing is locked.
+variant's QA link to force it for yourself. Works for container apps and
+static sites, and needs an explicit domain (the automatic host is not
+enough). Promote is refused while publishing is locked.
 `, prog)
 }
 
