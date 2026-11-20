@@ -944,7 +944,24 @@ Request limits and the trusted proxy list can also be changed without a restart:
 
 Per-app monthly spend caps (warn at 50, 80 and 100 percent by default, with throttle or pause only when you opt in per app) are described in [Spend caps](/spend-caps); the cap card sits on the app's Deploys tab.
 
-There is no per-IP connection limit: Caddy has none built in. Put a firewall rule or the [WAF rate limit](#opt-in-waf-and-rate-limiting) in front if you need one.
+### Concurrent requests and body read time
+
+Two runtime settings guard the edge for routes that are not websockets or event streams. A saved change re-renders the ingress config at once, with no restart.
+
+| Setting | Default | Range | What it does |
+| --- | --- | --- | --- |
+| `ingress.max_requests_per_ip` | `256` | 8 to 100000 | Most requests one client address may have in flight at once. A request over the limit gets `429` with `Retry-After: 1`. Websockets and event streams are not counted. |
+| `ingress.body_read_timeout_seconds` | `1800` | 60 to 86400 | Seconds a request body may take to arrive. Raise it for very slow or very large uploads, lower it to drop stalled clients sooner. |
+
+Change them in Settings, Runtime, Networking card, or with `levelrail-cli settings runtime get|set ingress.max_requests_per_ip`. Environment variables (`APP_INGRESS_MAX_REQUESTS_PER_IP`, `APP_INGRESS_BODY_READ_TIMEOUT_SECONDS`) seed the defaults. The count is per client address as the edge sees it, so behind a CDN or proxy set the trusted proxy list (below) first, or every visitor shares one address.
+
+```bash
+levelrail-cli settings runtime set ingress.max_requests_per_ip 512
+```
+
+The API server has its own limit on the request header block: `api.max_header_bytes` (default `65536`, 8192 to 1048576, Settings, Runtime, Networking card). The server reads it at start, so a change needs a restart. It is separate from `APP_INGRESS_MAX_HEADER_BYTES`, which applies to app traffic at the edge.
+
+For an address-based rate limit by route or path, use the [WAF rate limit](#opt-in-waf-and-rate-limiting).
 
 ### Real client IPs behind a CDN or proxy
 
@@ -954,6 +971,8 @@ By default the app sees the address that connected to Levelrail, and any `X-Forw
 APP_INGRESS_TRUSTED_PROXIES=203.0.113.0/24,private_ranges
 APP_INGRESS_CLIENT_IP_HEADERS=CF-Connecting-IP   # optional, defaults to X-Forwarded-For
 ```
+
+The edge and the API use one trusted proxy list: the value the edge applies (environment, dashboard value or the Cloudflare preset) is the list the API trusts when it reads a client address, so the two cannot disagree. `levelrail-cli doctor` warns with `ingress_trusted_bridge` when that list includes a range covering Docker bridge networks (`172.16.0.0/12`) while the dashboard listens on all interfaces, because containers on those networks would then count as proxies. Trust only the real proxy addresses, or bind the dashboard to `127.0.0.1` with `APP_HTTP_ADDR`.
 
 `private_ranges` expands to the RFC 1918 and loopback ranges. For a trusted peer, the client address is read from the header (right to left for `X-Forwarded-For`, so a forged left-most entry is ignored), appended to `X-Forwarded-For`, and sent to the app as `X-Real-IP`. Every app receives `X-Real-IP`, trusted proxy or not.
 
