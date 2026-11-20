@@ -14,7 +14,7 @@ type openAPIRoute struct {
 	Description string
 }
 
-// openAPIRoutes holds all 2247 routes known to scripts/gen-api-reference at
+// openAPIRoutes holds all 2248 routes known to scripts/gen-api-reference at
 // generation time. Run `go run ./scripts/gen-api-reference` after changing
 // any routes*.go registration and commit the result.
 var openAPIRoutes = []openAPIRoute{
@@ -1048,6 +1048,7 @@ var openAPIRoutes = []openAPIRoute{
 	{Method: "GET", Path: "/api/v1/settings/ingress", Ability: "AbilityRead", Group: "Ingress / Certificates / Domains / Email / Cloudflare", Handler: "handleGetIngressSettings", Description: "Ingress settings: GET is AbilityRead. PUT is AbilityRoot, since flipping acme_enabled changes certificate automation fleet-wide on the next reconcile."},
 	{Method: "PUT", Path: "/api/v1/settings/ingress", Ability: "AbilityRoot", Group: "Ingress / Certificates / Domains / Email / Cloudflare", Handler: "handleUpdateIngressSettings", Description: ""},
 	{Method: "POST", Path: "/api/v1/settings/ingress/apps-base-domain/backfill", Ability: "AbilityRoot", Group: "Ingress / Certificates / Domains / Email / Cloudflare", Handler: "handleBackfillBaseDomain", Description: ""},
+	{Method: "POST", Path: "/api/v1/settings/ingress/apps-base-domain/wildcard", Ability: "AbilityRoot", Group: "Ingress / Certificates / Domains / Email / Cloudflare", Handler: "handleBaseDomainWildcard", Description: ""},
 	{Method: "GET", Path: "/api/v1/settings/ingress/check", Ability: "AbilityRoot", Group: "Ingress / Certificates / Domains / Email / Cloudflare", Handler: "handleCheckIngressDomain", Description: ""},
 	{Method: "GET", Path: "/api/v1/settings/ingress/cloudflare", Ability: "AbilityRoot", Group: "Ingress / Certificates / Domains / Email / Cloudflare", Handler: "handleGetIngressCloudflare", Description: ""},
 	{Method: "PUT", Path: "/api/v1/settings/ingress/cloudflare", Ability: "AbilityRoot", Group: "Ingress / Certificates / Domains / Email / Cloudflare", Handler: "handlePutIngressCloudflare", Description: ""},

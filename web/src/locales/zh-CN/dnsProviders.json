@@ -60,6 +60,7 @@
     "running": "正在测试...",
     "credential": "凭据已存储",
     "zones": "已列出区域",
+    "permission": "权限",
     "zonesCount_other": "找到 {{count}} 个区域",
     "ok": "通过",
     "failed": "失败",

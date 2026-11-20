@@ -1302,6 +1302,7 @@ Endpoints for:
 | PUT | /api/v1/apps/{name}/domains/{domain}/tuning | AbilityDeploy | handleSetDomainTuning |
 | DELETE | /api/v1/apps/{name}/domains/{domain}/tuning | AbilityDeploy | handleClearDomainTuning |
 | POST | /api/v1/settings/route53-dns/test | AbilityRoot | handleTestRoute53DNS |
+| POST | /api/v1/settings/ingress/apps-base-domain/wildcard | AbilityRoot | handleBaseDomainWildcard |
 
 </Accordion>
 

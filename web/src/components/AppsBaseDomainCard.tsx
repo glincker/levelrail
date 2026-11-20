@@ -30,7 +30,9 @@ import { listedZoneNames, ROUTE53_IAM_ACTIONS } from '../lib/zoneSuggestions'
 import {
   dnsZoneQueryOptions,
   useBackfillBaseDomain,
+  useBaseDomainWildcard,
   useDomainAutomation,
+  type BaseDomainWildcard,
 } from '../queries/goLive'
 
 const BASE_DOMAIN_PATTERN =
@@ -187,6 +189,7 @@ export function AppsBaseDomainCard() {
   const automation = useDomainAutomation()
   const update = useUpdateIngressSettings({ inlineError: true })
   const backfill = useBackfillBaseDomain()
+  const wildcard = useBaseDomainWildcard()
   const [value, setValue] = useState(settings?.apps_base_domain ?? '')
   const debounced = useDebounced(value.trim().toLowerCase(), ZONE_HINT_DELAY_MS)
   if (!settings) return null
@@ -312,7 +315,91 @@ export function AppsBaseDomainCard() {
             ) : null}
           </div>
         ) : null}
+        {current !== '' && providerConnected ? (
+          <div className="space-y-2 border-t border-border pt-3">
+            <p className="text-xs text-muted-foreground">
+              {t('baseDomain.wildcardHelp', { base: current })}
+            </p>
+            <div className="flex flex-wrap gap-2">
+              <Button
+                type="button"
+                variant="outline"
+                size="sm"
+                disabled={wildcard.isPending}
+                onClick={() => {
+                  wildcard.mutate({ confirm: false, replace: false })
+                }}
+              >
+                {t('baseDomain.wildcardPreview')}
+              </Button>
+              {wildcard.data?.dry_run &&
+              wildcard.data.dns.planned !== 'unchanged' &&
+              wildcard.data.dns.record ? (
+                <Button
+                  type="button"
+                  size="sm"
+                  disabled={wildcard.isPending}
+                  onClick={() => {
+                    wildcard.mutate({ confirm: true, replace: false })
+                  }}
+                >
+                  {t('baseDomain.wildcardApply')}
+                </Button>
+              ) : null}
+              {wildcard.data?.dns.planned === 'conflict' ? (
+                <Button
+                  type="button"
+                  size="sm"
+                  variant="destructive"
+                  disabled={wildcard.isPending}
+                  onClick={() => {
+                    wildcard.mutate({ confirm: true, replace: true })
+                  }}
+                >
+                  {t('baseDomain.wildcardReplace')}
+                </Button>
+              ) : null}
+            </div>
+            {wildcard.isError ? (
+              <p className="text-xs text-destructive" role="alert">
+                {wildcard.error.message}
+              </p>
+            ) : null}
+            {wildcard.data ? <WildcardResult data={wildcard.data} /> : null}
+          </div>
+        ) : null}
       </CardContent>
     </Card>
+  )
+}
+
+function WildcardResult({ data }: { data: BaseDomainWildcard }) {
+  const { t } = useTranslation('domains')
+  const { record, replaced, message, planned } = data.dns
+  return (
+    <div className="space-y-0.5 text-xs" aria-live="polite">
+      {record ? (
+        <p className="font-mono">
+          {t('baseDomain.wildcardRecord', {
+            type: record.type,
+            name: data.dns.domain,
+            value: record.value,
+          })}
+        </p>
+      ) : null}
+      {(replaced ?? []).map((old) => (
+        <p key={`${old.type}-${old.value}`} className="font-mono">
+          {t('baseDomain.wildcardExisting', {
+            type: old.type,
+            name: old.name,
+            value: old.value,
+          })}
+        </p>
+      ))}
+      {planned === 'conflict' ? (
+        <p className="text-destructive">{t('baseDomain.wildcardConflict')}</p>
+      ) : null}
+      {message ? <p className="text-muted-foreground">{message}</p> : null}
+    </div>
   )
 }

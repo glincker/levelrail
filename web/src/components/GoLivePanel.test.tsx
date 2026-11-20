@@ -1,11 +1,15 @@
 import type { AnchorHTMLAttributes, ReactNode } from 'react'
-import { render, screen, waitFor } from '@testing-library/react'
+import { fireEvent, render, screen, waitFor } from '@testing-library/react'
 import { QueryClient, QueryClientProvider } from '@tanstack/react-query'
 import i18next from 'i18next'
 import { I18nextProvider, initReactI18next } from 'react-i18next'
 import { afterEach, describe, expect, it, vi } from 'vitest'
 import { GoLivePanel } from './GoLivePanel'
-import { NoProviderEmptyState, ZoneHint } from './AppsBaseDomainCard'
+import {
+  AppsBaseDomainCard,
+  NoProviderEmptyState,
+  ZoneHint,
+} from './AppsBaseDomainCard'
 import domainsEn from '../locales/en/domains.json'
 import type { GoLiveResult } from '../queries/goLive'
 import { createTestQueryClient } from '@/test/testQueryClient'
@@ -262,5 +266,69 @@ describe('base domain empty state and zone hint', () => {
     pick.click()
     expect(onPick).toHaveBeenCalledWith('example.com')
     expect(screen.getByText(/route53:ListHostedZones/)).toBeInTheDocument()
+  })
+})
+
+describe('base domain wildcard record', () => {
+  afterEach(() => {
+    vi.unstubAllGlobals()
+  })
+
+  it('previews a conflict and only replaces on the explicit button', async () => {
+    const wildcardBodies: unknown[] = []
+    vi.stubGlobal(
+      'fetch',
+      vi.fn((url: string, init?: RequestInit) => {
+        if (url.includes('apps-base-domain/wildcard')) {
+          wildcardBodies.push(
+            JSON.parse(typeof init?.body === 'string' ? init.body : '{}'),
+          )
+          return Promise.resolve(
+            res({
+              dry_run: true,
+              base_domain: 'apps.example.com',
+              dns: {
+                domain: '*.apps.example.com',
+                dns: 'preview',
+                planned: 'conflict',
+                record: { name: '*.apps', type: 'A', value: '203.0.113.5' },
+                replaced: [
+                  { name: '*.apps', type: 'A', value: '198.51.100.9' },
+                ],
+                message:
+                  'a different record exists; it would not be overwritten',
+              },
+            }),
+          )
+        }
+        if (url.includes('domain-automation')) {
+          return Promise.resolve(res({ dns_provider: 'route53' }))
+        }
+        if (url.includes('/dns/zone')) {
+          return Promise.resolve(
+            res({ found: true, zone: 'example.com', provider: 'route53' }),
+          )
+        }
+        return Promise.resolve(res({ apps_base_domain: 'apps.example.com' }))
+      }),
+    )
+    renderWith(<AppsBaseDomainCard />)
+    fireEvent.click(
+      await screen.findByRole('button', { name: 'Preview wildcard record' }),
+    )
+    expect(
+      await screen.findByText(/A \*\.apps\.example\.com/),
+    ).toBeInTheDocument()
+    expect(screen.getByText(/Existing: A \*\.apps/)).toBeInTheDocument()
+    expect(
+      screen.getByText(/will not be overwritten unless you replace/),
+    ).toBeInTheDocument()
+    expect(wildcardBodies).toEqual([{ confirm: false, replace: false }])
+    fireEvent.click(
+      screen.getByRole('button', { name: 'Replace the existing record' }),
+    )
+    await waitFor(() => {
+      expect(wildcardBodies[1]).toEqual({ confirm: true, replace: true })
+    })
   })
 })

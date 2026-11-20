@@ -411,6 +411,45 @@ func TestBackfillBaseDomain(t *testing.T) {
 	}
 }
 
+func TestBaseDomainWildcard(t *testing.T) {
+	const url = "/api/v1/settings/ingress/apps-base-domain/wildcard"
+	foreign := libdns.RR{Name: "*.apps", Type: "A", Data: "198.51.100.9", TTL: time.Minute}
+	cases := []struct {
+		name     string
+		existing []libdns.Record
+		body     string
+		wantDNS  string
+		wantData string
+		wantRecs int
+	}{
+		{"preview writes nothing", nil, `{}`, dnsResultPreview, "", 0},
+		{"confirm creates", nil, `{"confirm":true}`, "created", "203.0.113.5", 1},
+		{"foreign record kept", []libdns.Record{foreign}, `{"confirm":true}`, "conflict", "198.51.100.9", 1},
+		{"replace opt-in", []libdns.Record{foreign}, `{"confirm":true,"replace":true}`, "updated", "203.0.113.5", 1},
+	}
+	for _, tc := range cases {
+		t.Run(tc.name, func(t *testing.T) {
+			f := newGoLiveFixture(t, "203.0.113.5", tc.existing...)
+			if rec := f.do(t, http.MethodPut, "/api/v1/settings/ingress", `{"apps_base_domain":"apps.example.com"}`); rec.Code != http.StatusOK {
+				t.Fatalf("set base: %d %s", rec.Code, rec.Body.String())
+			}
+			rec := f.do(t, http.MethodPost, url, tc.body)
+			var out baseWildcardResponse
+			_ = json.Unmarshal(rec.Body.Bytes(), &out)
+			if rec.Code != http.StatusOK || out.DNS.DNS != tc.wantDNS || out.DNS.Domain != "*.apps.example.com" {
+				t.Fatalf("status=%d out=%+v", rec.Code, out)
+			}
+			if len(f.mgr.recs) != tc.wantRecs || (tc.wantData != "" && f.mgr.recs[0].RR().Data != tc.wantData) {
+				t.Fatalf("records = %+v", f.mgr.recs)
+			}
+		})
+	}
+	f := newGoLiveFixture(t, "203.0.113.5")
+	if rec := f.do(t, http.MethodPost, url, `{}`); rec.Code != http.StatusBadRequest {
+		t.Fatalf("no base domain status = %d", rec.Code)
+	}
+}
+
 func TestDomainAutomationSettings(t *testing.T) {
 	f := newGoLiveFixture(t, "203.0.113.5")
 	rec := f.do(t, http.MethodGet, "/api/v1/settings/domain-automation", "")

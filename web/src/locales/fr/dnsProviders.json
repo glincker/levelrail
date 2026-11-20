@@ -62,6 +62,7 @@
     "running": "Test en cours...",
     "credential": "Identifiant stocké",
     "zones": "Zones listées",
+    "permission": "Autorisations",
     "zonesCount_one": "{{count}} zone trouvée",
     "zonesCount_many": "{{count}} zones trouvées",
     "zonesCount_other": "{{count}} zones trouvées",

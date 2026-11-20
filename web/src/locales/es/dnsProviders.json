@@ -61,6 +61,7 @@
     "running": "Probando...",
     "credential": "Credencial guardada",
     "zones": "Zonas listadas",
+    "permission": "Permisos",
     "zonesCount_one": "{{count}} zona encontrada",
     "zonesCount_other": "{{count}} zonas encontradas",
     "ok": "Correcto",

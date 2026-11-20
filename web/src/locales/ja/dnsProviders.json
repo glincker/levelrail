@@ -60,6 +60,7 @@
     "running": "テスト中...",
     "credential": "認証情報が保存されています",
     "zones": "ゾーンを一覧表示しました",
+    "permission": "権限",
     "zonesCount_other": "{{count}} 個のゾーンが見つかりました",
     "ok": "合格",
     "failed": "失敗",

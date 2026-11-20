@@ -61,6 +61,7 @@
     "running": "Testing...",
     "credential": "Credential stored",
     "zones": "Zones listed",
+    "permission": "Permissions",
     "zonesCount_one": "{{count}} zone found",
     "zonesCount_other": "{{count}} zones found",
     "ok": "Passed",

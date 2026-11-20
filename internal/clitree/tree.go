@@ -242,6 +242,7 @@ var Tree = map[string]*Node{
 		"changes":              nil,
 		"rollback":             nil,
 		"backfill-base-domain": nil,
+		"base-wildcard":        nil,
 		"headers":              {Subs: map[string]*Node{"show": nil, "set": nil, "add": nil, "preset": nil, "clear": nil}},
 		"forwarders":           {Subs: map[string]*Node{"show": nil, "set": nil, "add": nil, "remove": nil, "clear": nil}},
 		"geo":                  {Subs: map[string]*Node{"show": nil, "set": nil, "clear": nil, "lookup": nil}},

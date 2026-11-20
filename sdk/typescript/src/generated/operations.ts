@@ -1869,6 +1869,7 @@ export const operations = {
   handleGetIngressSettings: ["GET","/api/v1/settings/ingress",0,0],
   handleUpdateIngressSettings: ["PUT","/api/v1/settings/ingress",1,0],
   handleBackfillBaseDomain: ["POST","/api/v1/settings/ingress/apps-base-domain/backfill",1,0],
+  handleBaseDomainWildcard: ["POST","/api/v1/settings/ingress/apps-base-domain/wildcard",1,0],
   handleCheckIngressDomain: ["GET","/api/v1/settings/ingress/check",0,0],
   handleGetIngressCloudflare: ["GET","/api/v1/settings/ingress/cloudflare",0,0],
   handlePutIngressCloudflare: ["PUT","/api/v1/settings/ingress/cloudflare",1,0],

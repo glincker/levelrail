@@ -61,6 +61,7 @@
     "running": "Wird getestet...",
     "credential": "Zugangsdaten gespeichert",
     "zones": "Zonen aufgelistet",
+    "permission": "Berechtigungen",
     "zonesCount_one": "{{count}} Zone gefunden",
     "zonesCount_other": "{{count}} Zonen gefunden",
     "ok": "Bestanden",
