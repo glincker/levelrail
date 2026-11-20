@@ -789,6 +789,8 @@ The same facts the public catalog shows are part of every template in your own L
 
 `GET /api/v1/service-templates` returns these as optional fields (`license`, `listing`, `trust`, `verification`, `arch`, `status`, `status_reason`, `replaced_by`) and accepts the filters `license_class`, `verified=true`, `arch` (amd64 or arm64) and `include_deprecated=false`. Nothing is hidden unless you ask. In the CLI, `levelrail-cli templates list --license-class permissive --arch arm64` filters the same way, and `templates get <id>` prints the license, trust, verification and any deprecation notice. The dashboard templates page has matching badges and a license and architecture filter.
 
+Two more optional fields: `needs_domain` is true for a template reached only through a domain (it declares one and publishes no host port), so it does not work on a bare IP, and `updated_at` is the date (YYYY-MM-DD) its files last changed. The list accepts `needs_domain=true|false`; the CLI equivalent is `levelrail-cli templates list --needs-domain true|false`, and the table gains DOMAIN and UPDATED columns. The dashboard shows a "Needs domain" badge, an "Updated" date and a reachability filter ("Works on an IP").
+
 ## Added 2026-10-27
 
 New templates, each booted under the platform's hardening flags (cap-drop ALL, no-new-privileges, pids limit) with a working health or login check:

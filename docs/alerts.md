@@ -128,6 +128,8 @@ levelrail-cli channels quiet-hours CHANNEL_ID --start 22:00 --end 07:00 --timezo
 
 `test` sends a real message and `deliveries` lists the recorded send history. Quiet hours hold back non-critical firing notifications on one channel. A disabled channel also silences the rules attached to it. API: `/api/v1/notification-channels`, with `/test`, `/deliveries` and `/quiet-hours`.
 
+A channel can be limited to one project by setting `project_id` when you create or update it through the API (blank means instance wide). A project channel only serves alert rules and deploy targets of apps filed under that project; attaching it to another project's app is refused with `unknown channel_id`.
+
 ## Which notification channels are supported?
 
 The code defines 18 kinds. Maturity is from [Feature status](/feature-status).
