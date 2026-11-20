@@ -8,6 +8,8 @@ import {
   type ResponsiveColumn,
 } from '@/components/ui/responsive-table'
 import type { AppListEntry } from '../../types/appDetail'
+import { CertTruthBadge } from '../CertTruthBadge'
+import type { CertificateStatus } from '../../queries/certificates'
 import { PlacementLabel } from '../PlacementLabel'
 import { AppRowActions } from '../AppRowActions'
 import { StatusLabel } from '../AppRow'
@@ -43,11 +45,13 @@ function MetricCell({ app, kind }: { app: AppListEntry; kind: MetricKind }) {
 export function AppsTable({
   apps,
   staticNames,
+  certsByApp,
   selected,
   onSelect,
 }: {
   apps: readonly AppListEntry[]
   staticNames: ReadonlySet<string>
+  certsByApp?: ReadonlyMap<string, CertificateStatus>
   selected: readonly string[]
   onSelect: (name: string, checked: boolean) => void
 }) {
@@ -112,6 +116,23 @@ export function AppsTable({
         ),
       },
       {
+        id: 'tls',
+        header: t('appsList.colTls'),
+        priority: 2,
+        width: 'w-32',
+        cell: (app) =>
+          certsByApp?.get(app.name) ? (
+            <CertTruthBadge
+              cert={certsByApp.get(app.name)}
+              showRenewal={false}
+            />
+          ) : (
+            <span className="text-sm text-muted-foreground">
+              {t('appsList.tlsNone')}
+            </span>
+          ),
+      },
+      {
         id: 'traffic',
         header: t('appsList.colTraffic'),
         priority: 2,
@@ -140,7 +161,7 @@ export function AppsTable({
         cell: (app) => <MetricCell app={app} kind="deployed" />,
       },
     ],
-    [t, staticNames],
+    [t, staticNames, certsByApp],
   )
   return (
     <ResponsiveTable

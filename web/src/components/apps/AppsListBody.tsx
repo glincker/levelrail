@@ -4,6 +4,8 @@ import { useTranslation } from 'react-i18next'
 import { APP_LIST_GRID } from '../AppRow'
 import type { AppListEntry } from '../../types/appDetail'
 import type { ViewMode } from '../../lib/appsListView'
+import { certificatesQueryOptions } from '../../queries/certificates'
+import { worstCertByApp } from '../../lib/certTruth'
 import { staticSitesQueryOptions } from '../../queries/staticSites'
 import { AppCardSkeleton, CARD_GRID_CLASS } from './AppCardSkeleton'
 import { AppsTable } from './AppsTable'
@@ -56,11 +58,17 @@ export function AppsListBody(props: {
     () => new Set(sites?.map((s) => s.name) ?? []),
     [sites],
   )
+  const { data: certs } = useQuery({
+    ...certificatesQueryOptions(),
+    retry: false,
+  })
+  const certsByApp = useMemo(() => worstCertByApp(certs ?? []), [certs])
   if (props.mode === 'table') {
     return (
       <AppsTable
         apps={props.apps}
         staticNames={staticNames}
+        certsByApp={certsByApp}
         selected={props.selected}
         onSelect={props.onSelect}
       />

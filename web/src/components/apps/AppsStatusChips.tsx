@@ -20,7 +20,8 @@ export function AppsStatusChips({
   active,
   onChange,
 }: {
-  counts: Record<StatusBucket, number>
+  // null while the summary loads, so a chip never flashes a false 0.
+  counts: Record<StatusBucket, number> | null
   active: StatusFilter
   onChange: (next: StatusFilter) => void
 }) {
@@ -46,16 +47,23 @@ export function AppsStatusChips({
               on
                 ? 'border-ring bg-tone-accent-soft text-foreground'
                 : 'border-border text-muted-foreground hover:bg-muted/60 hover:text-foreground',
-              counts[bucket] === 0 && !on && 'text-muted-foreground/70',
+              counts?.[bucket] === 0 && !on && 'text-muted-foreground/70',
             )}
           >
             <span
               aria-hidden="true"
               className={cn('size-2 rounded-full', chip.dot)}
             />
-            <span className="font-medium tabular-nums text-foreground">
-              {counts[bucket]}
-            </span>
+            {counts ? (
+              <span className="font-medium tabular-nums text-foreground">
+                {counts[bucket]}
+              </span>
+            ) : (
+              <span
+                aria-hidden="true"
+                className="h-3.5 w-4 animate-pulse rounded bg-muted motion-reduce:animate-none"
+              />
+            )}
             {chip.label}
           </button>
         )

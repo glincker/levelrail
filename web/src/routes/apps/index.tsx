@@ -132,12 +132,15 @@ function AppListPage() {
     [summary],
   )
   const counts = useMemo(
-    () => ({
-      running: summary?.running ?? 0,
-      deploying: summary?.deploying ?? 0,
-      failing: summary?.failing ?? 0,
-      stopped: summary?.stopped ?? 0,
-    }),
+    () =>
+      summary === undefined
+        ? null
+        : {
+            running: summary.running ?? 0,
+            deploying: summary.deploying ?? 0,
+            failing: summary.failing ?? 0,
+            stopped: summary.stopped ?? 0,
+          },
     [summary],
   )
   const setLabelSelector = (next: string) => {
