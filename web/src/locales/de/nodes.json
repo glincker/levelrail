@@ -1113,5 +1113,126 @@
       "paidShape": "Dieses Shape ist nicht durch die Kontingentgrenzen gedeckt und kann Kosten verursachen. Schalte {{setting}} ein, um es zu nutzen.",
       "unknownPrice": "Oracle nennt keinen Preis für dieses Shape, die Preisgrenze kann nicht geprüft werden. Schalte {{setting}} (oder provision.allow_unknown_price) ein, um es zu erlauben."
     }
+  },
+  "builderTrust": {
+    "title": "Build-Vertrauen",
+    "tipLabel": "Info zum Build-Vertrauen",
+    "tip": "Server- und verwaltete Builder dürfen jede Umgebung bauen. Ein persönlicher Builder (Laptop oder Heimrechner) bleibt von Produktion ferngehalten, außer die Umgebung erlaubt es.",
+    "tierLabel": "Stufe",
+    "unknown": "Nicht gemeldet",
+    "saved": "Build-Vertrauen auf {{tier}} gesetzt",
+    "tier": {
+      "server": "Server",
+      "managed": "Verwaltet",
+      "personal": "Persönlich"
+    },
+    "hint": {
+      "server": "Eigener Server, darf alles bauen.",
+      "managed": "Von dieser Control Plane erstellt, darf alles bauen.",
+      "personal": "Laptop oder Heimrechner, bleibt von Produktion ferngehalten."
+    }
+  },
+  "allowedBuilders": {
+    "title": "Erlaubte Builder",
+    "tiers": "Builder-Stufen",
+    "addNode": "Builder-Node hinzufügen",
+    "defaultPolicy": "Standardrichtlinie",
+    "customPolicy": "Eigene Liste",
+    "personalOff": "Persönliche Builder aus",
+    "personalOn": "Persönliche Builder an",
+    "productionTipLabel": "Info zu Produktions-Buildern",
+    "productionTip": "Produktion baut nie auf einem persönlichen Builder, außer Sie nehmen diesen Node oder diese Stufe hier auf oder aktivieren die Einstellung build.personal_builders_in_production.",
+    "save": "Speichern",
+    "reset": "Auf Standard zurücksetzen",
+    "saved": "Erlaubte Builder gespeichert"
+  },
+  "builders": {
+    "title": "Builder",
+    "tipLabel": "Info zu Buildern",
+    "tip": "Ein Builder führt Image-Builds für diesen Server aus, damit Deploys schlank bleiben. Wählen Sie in den Build-Einstellungen jeder App, welcher Builder sie nutzt.",
+    "addButton": "Builder hinzufügen",
+    "empty": "Noch keine Builder. Fügen Sie einen Laptop oder freien Rechner hinzu, um über diesen Server zu bauen.",
+    "col": {
+      "name": "Builder",
+      "status": "Status",
+      "tier": "Stufe",
+      "arch": "Architektur",
+      "lastSeen": "Zuletzt gesehen",
+      "builds": "Builds",
+      "avg": "Durchschnittlicher Build",
+      "pressure": "Auslastung"
+    },
+    "buildsNow": "{{used}} von {{total}}",
+    "never": "Nie",
+    "add": {
+      "title": "Builder hinzufügen",
+      "tipLabel": "Info zum Builder-Token",
+      "tip": "Das Token ist nur einmal verwendbar und wird nur einmal angezeigt. Der Builder tritt als persönlicher Builder bei und bleibt von Produktion ferngehalten, außer eine Umgebung erlaubt es.",
+      "description": "Führen Sie dies auf dem Rechner aus, der bauen soll.",
+      "macos": "macOS",
+      "linux": "Linux",
+      "windows": "Windows (demnächst)",
+      "macosHint": "Benötigt die levelrail CLI und Docker oder Lima.",
+      "linuxHint": "Benötigt die levelrail CLI und Docker.",
+      "commandLabel": "Beitrittsbefehl für den Builder",
+      "copy": "Kopieren",
+      "copied": "Kopiert",
+      "creating": "Token wird erstellt...",
+      "notCreated": "Erstellen Sie ein Token, um den Befehl zu erhalten.",
+      "create": "Token erstellen",
+      "once": "Wird nur einmal angezeigt. Jetzt kopieren.",
+      "done": "Fertig",
+      "waiting": "Warten auf die Verbindung Ihres Builders...",
+      "joined": "{{name}} ist verbunden und bereit zum Bauen."
+    },
+    "tierFor": "Stufe von {{name}}",
+    "activeBuilds": "{{active}} im Build",
+    "slotsTotal": "{{total}} Slots",
+    "emptyTipLabel": "Info zum Hinzufügen eines Builders",
+    "emptyTip": "Führen Sie einen Befehl auf dem Rechner aus, der bauen soll. Diese Seite aktualisiert sich, sobald er verbunden ist, und das Token funktioniert nur einmal.",
+    "avg": "Ø {{value}}",
+    "load": "{{used}} von {{total}} Build-Slots belegt",
+    "status": {
+      "ready": "Bereit",
+      "busy": "Baut",
+      "paused": "Pausiert",
+      "offline": "Offline",
+      "pressure": "Überlastet",
+      "draining": "Leert sich"
+    },
+    "pressure": {
+      "label": "Last {{level}}",
+      "ok": "ok",
+      "warn": "hoch",
+      "critical": "kritisch",
+      "unknown": "unbekannt"
+    },
+    "detail": {
+      "title": "Builder",
+      "tipLabel": "Info zu diesem Builder",
+      "tip": "Pausieren verhindert, dass hier neue Builds starten, laufende werden fertiggestellt. Entfernen löscht nur die Registrierung, beenden Sie zusätzlich den Agenten auf dem Rechner.",
+      "pause": "Pausieren",
+      "resume": "Fortsetzen",
+      "pauseError": "Builder konnte nicht geändert werden: {{message}}",
+      "test": "Builder testen",
+      "testing": "Wird getestet...",
+      "testTipLabel": "Info zum Builder-Test",
+      "testTip": "Führt einen kleinen Probe-Build ohne App-Daten aus, um zu prüfen, ob der Builder antwortet.",
+      "testPass": "Builder funktioniert",
+      "testFail": "Builder-Test fehlgeschlagen",
+      "latency": "Latenz {{ms}} ms",
+      "platform": "Plattform {{value}}",
+      "freeDisk": "Freier Speicher {{value}}",
+      "buildkit": "BuildKit {{value}}",
+      "testRequestFailed": "Test konnte nicht ausgeführt werden: {{message}}",
+      "remove": "Entfernen",
+      "recent": "Letzte Builds",
+      "recentEmpty": "Noch keine Builds.",
+      "trend": "Dauer der letzten {{count}} Builds",
+      "success": "Erfolgreich",
+      "failed": "Fehlgeschlagen",
+      "agent": "Agent {{value}}",
+      "acceptsApps": "Dieser Node betreibt auch Apps und kann hier nicht pausiert werden."
+    }
   }
 }

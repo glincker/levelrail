@@ -1113,5 +1113,126 @@
       "paidShape": "Esta forma no está cubierta por los límites de asignación y puede facturarse. Activa {{setting}} para usarla.",
       "unknownPrice": "Oracle no indica precio para esta forma, así que no se puede comprobar el tope. Activa {{setting}} (o provision.allow_unknown_price) para permitirla."
     }
+  },
+  "builderTrust": {
+    "title": "Confianza de compilación",
+    "tipLabel": "Sobre la confianza de compilación",
+    "tip": "Los compiladores de servidor y gestionados pueden compilar cualquier entorno. Un compilador personal (portátil o equipo de casa) se mantiene fuera de producción, salvo que el entorno lo permita.",
+    "tierLabel": "Nivel",
+    "unknown": "No informado",
+    "saved": "Confianza de compilación establecida en {{tier}}",
+    "tier": {
+      "server": "Servidor",
+      "managed": "Gestionado",
+      "personal": "Personal"
+    },
+    "hint": {
+      "server": "Servidor propio, puede compilar cualquier cosa.",
+      "managed": "Creado por este plano de control, puede compilar cualquier cosa.",
+      "personal": "Portátil o equipo de casa, se mantiene fuera de producción."
+    }
+  },
+  "allowedBuilders": {
+    "title": "Compiladores permitidos",
+    "tiers": "Niveles de compilador",
+    "addNode": "Añadir un nodo compilador",
+    "defaultPolicy": "Política predeterminada",
+    "customPolicy": "Lista personalizada",
+    "personalOff": "Compiladores personales desactivados",
+    "personalOn": "Compiladores personales activados",
+    "productionTipLabel": "Sobre los compiladores de producción",
+    "productionTip": "Producción nunca compila en un compilador personal, salvo que incluya aquí ese nodo o nivel, o active el ajuste build.personal_builders_in_production.",
+    "save": "Guardar",
+    "reset": "Restablecer a la predeterminada",
+    "saved": "Compiladores permitidos guardados"
+  },
+  "builders": {
+    "title": "Compiladores",
+    "tipLabel": "Sobre los compiladores",
+    "tip": "Un compilador ejecuta las compilaciones de imágenes para este servidor, así los despliegues se mantienen ligeros. Elija en los ajustes de compilación de cada app qué compilador usa.",
+    "addButton": "Añadir compilador",
+    "empty": "Todavía no hay compiladores. Añada un portátil o un equipo libre para compilar desde este servidor.",
+    "col": {
+      "name": "Compilador",
+      "status": "Estado",
+      "tier": "Nivel",
+      "arch": "Arq.",
+      "lastSeen": "Última vez visto",
+      "builds": "Compilaciones",
+      "avg": "Compilación media",
+      "pressure": "Carga"
+    },
+    "buildsNow": "{{used}} de {{total}}",
+    "never": "Nunca",
+    "add": {
+      "title": "Añadir un compilador",
+      "tipLabel": "Sobre el token del compilador",
+      "tip": "El token es de un solo uso y solo se muestra una vez. El compilador se une como compilador personal: se mantiene fuera de producción, salvo que un entorno lo permita.",
+      "description": "Ejecute esto en el equipo que debe compilar.",
+      "macos": "macOS",
+      "linux": "Linux",
+      "windows": "Windows (próximamente)",
+      "macosHint": "Necesita la CLI de levelrail y Docker o Lima.",
+      "linuxHint": "Necesita la CLI de levelrail y Docker.",
+      "commandLabel": "Comando para unirse del compilador",
+      "copy": "Copiar",
+      "copied": "Copiado",
+      "creating": "Creando token...",
+      "notCreated": "Cree un token para obtener el comando.",
+      "create": "Crear token",
+      "once": "Se muestra una sola vez. Cópielo ahora.",
+      "done": "Hecho",
+      "waiting": "Esperando a que se conecte su compilador...",
+      "joined": "{{name}} conectado. Está listo para compilar."
+    },
+    "tierFor": "Nivel de {{name}}",
+    "activeBuilds": "{{active}} compilando",
+    "slotsTotal": "{{total}} ranuras",
+    "emptyTipLabel": "Sobre añadir un compilador",
+    "emptyTip": "Ejecute un comando en el equipo que debe compilar. Esta página se actualiza cuando se conecta, y el token solo funciona una vez.",
+    "avg": "media {{value}}",
+    "load": "{{used}} de {{total}} ranuras de compilación en uso",
+    "status": {
+      "ready": "Listo",
+      "busy": "Compilando",
+      "paused": "Pausado",
+      "offline": "Sin conexión",
+      "pressure": "Bajo presión",
+      "draining": "Vaciando"
+    },
+    "pressure": {
+      "label": "Carga {{level}}",
+      "ok": "correcta",
+      "warn": "alta",
+      "critical": "crítica",
+      "unknown": "desconocida"
+    },
+    "detail": {
+      "title": "Compilador",
+      "tipLabel": "Sobre este compilador",
+      "tip": "Pausar evita que empiecen nuevas compilaciones aquí, y las que están en marcha terminan. Quitar solo borra el registro; detenga también el agente en el equipo.",
+      "pause": "Pausar",
+      "resume": "Reanudar",
+      "pauseError": "No se pudo cambiar el compilador: {{message}}",
+      "test": "Probar compilador",
+      "testing": "Probando...",
+      "testTipLabel": "Sobre la prueba del compilador",
+      "testTip": "Ejecuta una pequeña compilación de sondeo sin datos de apps para confirmar que el compilador responde.",
+      "testPass": "El compilador funciona",
+      "testFail": "La prueba del compilador falló",
+      "latency": "Latencia {{ms}} ms",
+      "platform": "Plataforma {{value}}",
+      "freeDisk": "Disco libre {{value}}",
+      "buildkit": "BuildKit {{value}}",
+      "testRequestFailed": "La prueba no pudo ejecutarse: {{message}}",
+      "remove": "Quitar",
+      "recent": "Compilaciones recientes",
+      "recentEmpty": "Todavía no hay compilaciones.",
+      "trend": "Duración de las últimas {{count}} compilaciones",
+      "success": "Correcta",
+      "failed": "Fallida",
+      "agent": "Agente {{value}}",
+      "acceptsApps": "Este nodo también ejecuta apps, así que no se puede pausar aquí."
+    }
   }
 }

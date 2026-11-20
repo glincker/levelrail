@@ -819,6 +819,16 @@
     "save": "Guardar",
     "saved": "Runner de build guardado",
     "cleared": "Runner de build borrado",
-    "retry": "Reintentar"
+    "retry": "Reintentar",
+    "prodTipLabel": "Sobre las compilaciones de producción",
+    "prodTip": "Los entornos de producción nunca compilan en un compilador personal, salvo que ese entorno lo permita. La compilación pasa entonces a otro compilador o al plano de control.",
+    "mode": "Ejecutar en",
+    "modeAuto": "Automático",
+    "modeControlPlane": "Solo el plano de control",
+    "modeNode": "Un compilador concreto",
+    "pickNode": "Elija un compilador",
+    "nodeNeeded": "Un compilador concreto necesita que elija uno.",
+    "modeTipLabel": "Sobre dónde se compila",
+    "modeTip": "Automático sigue la estrategia global. Solo el plano de control compila siempre en este servidor, nunca en un compilador. Un compilador concreto usa el que elija, y Solo este compilador impide que pase a otro nodo."
   }
 }

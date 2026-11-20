@@ -36,17 +36,23 @@
     "desktop": "Bureau",
     "mobile": "Mobile",
     "viewport": "Largeur de vue",
-    "recapture": "Recapturer"
+    "recapture": "Recapturer",
+    "thumbLabel": "{{name}} sur {{host}}",
+    "deployedAgo": "Déployé"
   },
   "staticStrip": {
     "label": "Résumé du site",
+    "visitors": "Visiteurs",
+    "requests": "Requêtes",
     "errors": "Erreurs",
+    "errorsInfo": "Part des réponses 4xx et 5xx sur la plage sélectionnée. 4xx : {{c4}}, 5xx : {{c5}}.",
     "visitorsInfo": "Visiteurs uniques sur la période choisie, recomptés après chaque réinitialisation de confidentialité.",
     "deploy": "Dernier déploiement",
     "size": "Taille",
     "files_one": "{{count}} fichier",
     "files_other": "{{count}} fichiers",
-    "addDomain": "Ajouter un domaine"
+    "addDomain": "Ajouter un domaine",
+    "errorsNone": "Part des réponses 4xx et 5xx une fois que le site a traité des requêtes."
   },
   "staticLine": {
     "details": "Détails du déploiement",
@@ -68,5 +74,11 @@
       "stop": "Arrêt",
       "other": "Déploiement"
     }
+  },
+  "recent": {
+    "label": "Deploys récents",
+    "all": "Tous les deploys",
+    "logs": "Logs",
+    "rollback": "Rollback"
   }
 }

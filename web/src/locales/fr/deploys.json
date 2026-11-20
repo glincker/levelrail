@@ -825,6 +825,16 @@
     "save": "Enregistrer",
     "saved": "Runner de build enregistré",
     "cleared": "Runner de build effacé",
-    "retry": "Réessayer"
+    "retry": "Réessayer",
+    "prodTipLabel": "À propos des builds de production",
+    "prodTip": "Les environnements de production ne compilent jamais sur un builder personnel, sauf si l'environnement l'autorise. Le build se rabat alors sur un autre builder ou sur le plan de contrôle.",
+    "mode": "Exécuter sur",
+    "modeAuto": "Automatique",
+    "modeControlPlane": "Plan de contrôle uniquement",
+    "modeNode": "Un builder précis",
+    "pickNode": "Choisir un builder",
+    "nodeNeeded": "Un builder précis nécessite de choisir un builder.",
+    "modeTipLabel": "À propos du placement des builds",
+    "modeTip": "Automatique suit la stratégie globale. Plan de contrôle uniquement compile toujours sur ce serveur, jamais sur un builder. Un builder précis utilise celui que vous choisissez, et Ce builder uniquement empêche le repli sur un autre node."
   }
 }

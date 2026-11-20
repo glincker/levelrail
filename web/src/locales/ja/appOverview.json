@@ -36,17 +36,23 @@
     "desktop": "デスクトップ",
     "mobile": "モバイル",
     "viewport": "表示幅",
-    "recapture": "再取得"
+    "recapture": "再取得",
+    "thumbLabel": "{{host}} 上の {{name}}",
+    "deployedAgo": "デプロイ済み"
   },
   "staticStrip": {
     "label": "サイトの概要",
+    "visitors": "訪問者",
+    "requests": "リクエスト",
     "errors": "エラー",
+    "errorsInfo": "選択した期間内の 4xx と 5xx の応答の割合です。4xx: {{c4}}、5xx: {{c5}}。",
     "visitorsInfo": "選択した期間のユニーク訪問者数。プライバシーのリセットごとに数え直します。",
     "deploy": "最新のデプロイ",
     "size": "サイズ",
     "files_one": "{{count}} ファイル",
     "files_other": "{{count}} ファイル",
-    "addDomain": "ドメインを追加"
+    "addDomain": "ドメインを追加",
+    "errorsNone": "サイトがリクエストを処理すると、4xx と 5xx の応答の割合を表示します。"
   },
   "staticLine": {
     "details": "デプロイの詳細",
@@ -68,5 +74,11 @@
       "stop": "停止",
       "other": "デプロイ"
     }
+  },
+  "recent": {
+    "label": "最近のデプロイ",
+    "all": "すべてのデプロイ",
+    "logs": "ログ",
+    "rollback": "ロールバック"
   }
 }

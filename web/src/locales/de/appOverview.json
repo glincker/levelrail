@@ -36,17 +36,23 @@
     "desktop": "Desktop",
     "mobile": "Mobil",
     "viewport": "Ansichtsbreite",
-    "recapture": "Neu erfassen"
+    "recapture": "Neu erfassen",
+    "thumbLabel": "{{name}} auf {{host}}",
+    "deployedAgo": "Deployt"
   },
   "staticStrip": {
     "label": "Seitenübersicht",
+    "visitors": "Besucher",
+    "requests": "Anfragen",
     "errors": "Fehler",
+    "errorsInfo": "Anteil der 4xx- und 5xx-Antworten im gewählten Zeitraum. 4xx: {{c4}}, 5xx: {{c5}}.",
     "visitorsInfo": "Eindeutige Besucher im gewählten Zeitraum, nach jedem Datenschutz-Reset neu gezählt.",
     "deploy": "Letzter Deploy",
     "size": "Größe",
     "files_one": "{{count}} Datei",
     "files_other": "{{count}} Dateien",
-    "addDomain": "Domain hinzufügen"
+    "addDomain": "Domain hinzufügen",
+    "errorsNone": "Anteil der 4xx- und 5xx-Antworten, sobald die Seite Anfragen beantwortet hat."
   },
   "staticLine": {
     "details": "Deploy-Details",
@@ -68,5 +74,11 @@
       "stop": "Stopp",
       "other": "Deploy"
     }
+  },
+  "recent": {
+    "label": "Letzte Deploys",
+    "all": "Alle Deploys",
+    "logs": "Logs",
+    "rollback": "Rollback"
   }
 }

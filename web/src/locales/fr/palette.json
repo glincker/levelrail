@@ -28,7 +28,10 @@
     "savedSearches": "Recherches enregistrées",
     "filters": "Filtres",
     "starter": "À essayer ensuite",
-    "related": "Liés"
+    "related": "Liés",
+    "Languages": "Langues",
+    "Create": "Créer",
+    "Ask": "Introuvable ?"
   },
   "kind": {
     "app": "Apps",
@@ -82,7 +85,8 @@
     "navigate": "naviguer",
     "select": "sélectionner",
     "secondary": "secondaire",
-    "close": "fermer"
+    "close": "fermer",
+    "groups": "groupes"
   },
   "keyboardShortcuts": "Raccourcis clavier",
   "keyboardShortcutsKeywords": "navigation rapide maintenir l aller à",
@@ -189,7 +193,13 @@
       "action-mail-backup": "Lance maintenant une sauvegarde de votre serveur de messagerie.",
       "action-mail-webmail": "Ouvre le webmail dans un nouvel onglet.",
       "action-mail-queue": "Ouvre la file des e-mails sortants."
-    }
+    },
+    "logs": "Logs",
+    "deploys": "Deploys",
+    "restart": "Redémarrer",
+    "status": "Statut",
+    "url": "URL",
+    "image": "Image"
   },
   "modes": {
     "docs": {
@@ -235,7 +245,21 @@
     }
   },
   "bubbles": {
-    "label": "Récents et suggérés"
+    "label": "Récents et suggérés",
+    "hint": "Appuyez sur Espace pour saisir ce lien, les flèches pour le déplacer, Espace pour le déposer, Échap pour annuler. Clic droit ou Maj plus F10 ouvre d'autres actions.",
+    "limit": "Limite d'épingles atteinte. Détachez d'abord un lien.",
+    "pinned": "{{title}} épinglé",
+    "unpinned": "{{title}} désépinglé",
+    "notPinnable": "Seules les pages et les apps peuvent être épinglées",
+    "moved": "{{title}} déplacé à la position {{position}} sur {{total}}",
+    "lifted": "{{title}} saisi, position {{position}} sur {{total}}. Utilisez les flèches pour déplacer, Espace pour déposer, Échap pour annuler.",
+    "dropped": "{{title}} déposé à la position {{position}} sur {{total}}",
+    "cancelled": "Déplacement annulé",
+    "menu": "Actions rapides sur les liens",
+    "unpin": "Désépingler",
+    "moveLeft": "Déplacer à gauche",
+    "moveRight": "Déplacer à droite",
+    "openNewTab": "Ouvrir dans un nouvel onglet"
   },
   "mail": {
     "addMailbox": "Mail : Ajouter une boîte mail",
@@ -246,5 +270,34 @@
     "backupFailed": "Échec de la sauvegarde du mail",
     "keywords": "mail e-mail boîte mail"
   },
-  "connectSource": "Connecter une source Git pour {{app}}"
+  "connectSource": "Connecter une source Git pour {{app}}",
+  "language": {
+    "title": "Langue",
+    "change": "Changer de langue",
+    "description": "Choisissez la langue du tableau de bord. Elle s'applique immédiatement et est enregistrée dans votre compte.",
+    "switchTo": "Langue : {{name}}",
+    "browser": "Langue : {{name}} (navigateur)",
+    "current": "Langue actuelle",
+    "saveFailed": "Impossible d'enregistrer la langue.",
+    "keywords": "langue langues locale idioma Sprache langue lingua 言語 语言"
+  },
+  "create": {
+    "domain": "Ajouter un domaine",
+    "project": "Créer un projet",
+    "keywords": "nouveau créer ajouter"
+  },
+  "goTo": "aller à ouvrir",
+  "hints": {
+    "label": "Modes de recherche",
+    "clear": "Effacer l'historique"
+  },
+  "clearInput": "Effacer la recherche",
+  "resultCount_one": "{{count}} résultat",
+  "resultCount_other": "{{count}} résultats",
+  "drag": {
+    "label": "Déplacer la palette",
+    "hint": "Glissez pour déplacer, ou maintenez Alt ou Option avec les flèches. Ajoutez Maj pour aller à un bord. Origine recentre.",
+    "moved": "Déplacée vers {{x}}, {{y}}"
+  },
+  "resultCount_many": "{{count}} résultats"
 }

@@ -1097,5 +1097,126 @@
       "paidShape": "このシェイプは枠の上限の対象外で、課金される可能性があります。使うには {{setting}} をオンにしてください。",
       "unknownPrice": "Oracleがこのシェイプの価格を提供しないため、価格上限を確認できません。許可するには {{setting}}(または provision.allow_unknown_price)をオンにしてください。"
     }
+  },
+  "builderTrust": {
+    "title": "ビルドの信頼",
+    "tipLabel": "ビルドの信頼について",
+    "tip": "サーバーと管理対象のビルダーは、すべての環境をビルドできます。個人用ビルダー（ノートパソコンや自宅のマシン）は、その環境で許可されていない限り本番から除外されます。",
+    "tierLabel": "ティア",
+    "unknown": "報告なし",
+    "saved": "ビルドの信頼レベルを {{tier}} に設定しました",
+    "tier": {
+      "server": "サーバー",
+      "managed": "管理対象",
+      "personal": "個人用"
+    },
+    "hint": {
+      "server": "所有するサーバーです。すべてをビルドできます。",
+      "managed": "このコントロールプレーンが作成しました。すべてをビルドできます。",
+      "personal": "ノートパソコンや自宅のマシンです。本番からは除外されます。"
+    }
+  },
+  "allowedBuilders": {
+    "title": "許可されたビルダー",
+    "tiers": "ビルダーのティア",
+    "addNode": "ビルダーノードを追加",
+    "defaultPolicy": "デフォルトのポリシー",
+    "customPolicy": "カスタムリスト",
+    "personalOff": "個人用ビルダー: オフ",
+    "personalOn": "個人用ビルダー: オン",
+    "productionTipLabel": "本番ビルダーについて",
+    "productionTip": "本番は、このノードまたはティアをここに登録するか、build.personal_builders_in_production 設定をオンにしない限り、個人用ビルダーではビルドしません。",
+    "save": "保存",
+    "reset": "デフォルトに戻す",
+    "saved": "許可されたビルダーを保存しました"
+  },
+  "builders": {
+    "title": "ビルダー",
+    "tipLabel": "ビルダーについて",
+    "tip": "ビルダーはこのサーバーのイメージビルドを実行し、デプロイを軽く保ちます。各アプリのビルド設定で、使うビルダーを選べます。",
+    "addButton": "ビルダーを追加",
+    "empty": "ビルダーはまだありません。このサーバーのビルドを担当させるノートパソコンや余裕のあるマシンを追加してください。",
+    "col": {
+      "name": "ビルダー",
+      "status": "状態",
+      "tier": "ティア",
+      "arch": "アーキテクチャ",
+      "lastSeen": "最終確認",
+      "builds": "ビルド",
+      "avg": "平均ビルド時間",
+      "pressure": "負荷"
+    },
+    "buildsNow": "{{used}} / {{total}}",
+    "never": "なし",
+    "add": {
+      "title": "ビルダーを追加",
+      "tipLabel": "ビルダートークンについて",
+      "tip": "トークンは一度だけ使え、一度だけ表示されます。ビルダーは個人用ビルダーとして参加し、環境で許可されていない限り本番から除外されます。",
+      "description": "ビルドを担当させるマシンでこれを実行します。",
+      "macos": "macOS",
+      "linux": "Linux",
+      "windows": "Windows（近日対応）",
+      "macosHint": "levelrail CLI と、Docker または Lima が必要です。",
+      "linuxHint": "levelrail CLI と Docker が必要です。",
+      "commandLabel": "ビルダーの参加コマンド",
+      "copy": "コピー",
+      "copied": "コピーしました",
+      "creating": "トークンを作成中...",
+      "notCreated": "トークンを作成するとコマンドが表示されます。",
+      "create": "トークンを作成",
+      "once": "表示は一度だけです。今すぐコピーしてください。",
+      "done": "完了",
+      "waiting": "ビルダーの接続を待っています...",
+      "joined": "{{name}} が接続しました。ビルドの準備ができています。"
+    },
+    "tierFor": "{{name}} のティア",
+    "activeBuilds": "{{active}} 件ビルド中",
+    "slotsTotal": "{{total}} スロット",
+    "emptyTipLabel": "ビルダーの追加について",
+    "emptyTip": "ビルドを担当させるマシンで、コマンドを一つ実行してください。接続するとこのページが更新されます。トークンは一度だけ使えます。",
+    "avg": "平均 {{value}}",
+    "load": "ビルドスロット {{total}} 件中 {{used}} 件使用中",
+    "status": {
+      "ready": "準備完了",
+      "busy": "ビルド中",
+      "paused": "一時停止中",
+      "offline": "オフライン",
+      "pressure": "負荷が高い",
+      "draining": "排出中"
+    },
+    "pressure": {
+      "label": "負荷 {{level}}",
+      "ok": "正常",
+      "warn": "高い",
+      "critical": "危険",
+      "unknown": "不明"
+    },
+    "detail": {
+      "title": "ビルダー",
+      "tipLabel": "このビルダーについて",
+      "tip": "一時停止すると、ここで新しいビルドは始まらず、実行中のものは完了します。削除は登録だけを消します。マシン上のエージェントも停止してください。",
+      "pause": "一時停止",
+      "resume": "再開",
+      "pauseError": "ビルダーを変更できませんでした: {{message}}",
+      "test": "ビルダーをテスト",
+      "testing": "テスト中...",
+      "testTipLabel": "ビルダーのテストについて",
+      "testTip": "アプリのデータを使わない小さなプローブビルドを実行し、ビルダーが応答するか確認します。",
+      "testPass": "ビルダーは動作しています",
+      "testFail": "ビルダーのテストに失敗しました",
+      "latency": "レイテンシ {{ms}} ms",
+      "platform": "プラットフォーム {{value}}",
+      "freeDisk": "空きディスク {{value}}",
+      "buildkit": "BuildKit {{value}}",
+      "testRequestFailed": "テストを実行できませんでした: {{message}}",
+      "remove": "削除",
+      "recent": "最近のビルド",
+      "recentEmpty": "まだビルドはありません。",
+      "trend": "直近 {{count}} 件のビルド時間",
+      "success": "成功",
+      "failed": "失敗",
+      "agent": "エージェント {{value}}",
+      "acceptsApps": "このノードはアプリも実行しているため、ここでは一時停止できません。"
+    }
   }
 }

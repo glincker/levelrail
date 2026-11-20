@@ -1129,5 +1129,126 @@
       "paidShape": "Cette forme n'est pas couverte par les limites de quota et peut être facturée. Activez {{setting}} pour l'utiliser.",
       "unknownPrice": "Oracle n'indique aucun prix pour cette forme, le plafond de prix ne peut pas être vérifié. Activez {{setting}} (ou provision.allow_unknown_price) pour l'autoriser."
     }
+  },
+  "builderTrust": {
+    "title": "Confiance de build",
+    "tipLabel": "À propos de la confiance de build",
+    "tip": "Les builders serveur et gérés peuvent compiler tous les environnements. Un builder personnel (ordinateur portable ou machine personnelle) est tenu à l'écart de la production, sauf si l'environnement l'autorise.",
+    "tierLabel": "Niveau",
+    "unknown": "Non signalé",
+    "saved": "Confiance de build définie sur {{tier}}",
+    "tier": {
+      "server": "Serveur",
+      "managed": "Géré",
+      "personal": "Personnel"
+    },
+    "hint": {
+      "server": "Serveur possédé, peut compiler n'importe quoi.",
+      "managed": "Créé par ce plan de contrôle, peut compiler n'importe quoi.",
+      "personal": "Ordinateur portable ou machine personnelle, tenu à l'écart de la production."
+    }
+  },
+  "allowedBuilders": {
+    "title": "Builders autorisés",
+    "tiers": "Niveaux de builders",
+    "addNode": "Ajouter un node builder",
+    "defaultPolicy": "Politique par défaut",
+    "customPolicy": "Liste personnalisée",
+    "personalOff": "Builders personnels désactivés",
+    "personalOn": "Builders personnels activés",
+    "productionTipLabel": "À propos des builders de production",
+    "productionTip": "La production ne compile jamais sur un builder personnel, sauf si vous ajoutez ce node ou ce niveau ici, ou activez le paramètre build.personal_builders_in_production.",
+    "save": "Enregistrer",
+    "reset": "Revenir à la valeur par défaut",
+    "saved": "Builders autorisés enregistrés"
+  },
+  "builders": {
+    "title": "Builders",
+    "tipLabel": "À propos des builders",
+    "tip": "Un builder exécute les builds d'images pour ce serveur afin que les deploys restent légers. Choisissez dans les paramètres de build de chaque app le builder qu'elle utilise.",
+    "addButton": "Ajouter un builder",
+    "empty": "Aucun builder pour le moment. Ajoutez un ordinateur portable ou une machine libre pour compiler via ce serveur.",
+    "col": {
+      "name": "Builder",
+      "status": "Statut",
+      "tier": "Niveau",
+      "arch": "Arch",
+      "lastSeen": "Vu en dernier",
+      "builds": "Builds",
+      "avg": "Build moyen",
+      "pressure": "Charge"
+    },
+    "buildsNow": "{{used}} sur {{total}}",
+    "never": "Jamais",
+    "add": {
+      "title": "Ajouter un builder",
+      "tipLabel": "À propos du token de builder",
+      "tip": "Le token est à usage unique et affiché une seule fois. Le builder se connecte comme builder personnel : il est tenu à l'écart de la production, sauf si un environnement l'autorise.",
+      "description": "Exécutez ceci sur la machine qui doit compiler.",
+      "macos": "macOS",
+      "linux": "Linux",
+      "windows": "Windows (bientôt)",
+      "macosHint": "Nécessite la CLI levelrail et Docker ou Lima.",
+      "linuxHint": "Nécessite la CLI levelrail et Docker.",
+      "commandLabel": "Commande de connexion du builder",
+      "copy": "Copier",
+      "copied": "Copié",
+      "creating": "Création du token...",
+      "notCreated": "Créez un token pour obtenir la commande.",
+      "create": "Créer un token",
+      "once": "Affiché une seule fois. Copiez-le maintenant.",
+      "done": "Terminé",
+      "waiting": "En attente de la connexion de votre builder...",
+      "joined": "{{name}} est connecté. Il est prêt à compiler."
+    },
+    "tierFor": "Niveau de {{name}}",
+    "activeBuilds": "{{active}} en build",
+    "slotsTotal": "{{total}} emplacements",
+    "emptyTipLabel": "À propos de l'ajout d'un builder",
+    "emptyTip": "Exécutez une commande sur la machine qui doit compiler. Cette page se met à jour à sa connexion, et le token ne fonctionne qu'une fois.",
+    "avg": "moy. {{value}}",
+    "load": "{{used}} emplacements de build sur {{total}} utilisés",
+    "status": {
+      "ready": "Prêt",
+      "busy": "En build",
+      "paused": "En pause",
+      "offline": "Hors ligne",
+      "pressure": "Sous charge",
+      "draining": "Vidage en cours"
+    },
+    "pressure": {
+      "label": "Charge {{level}}",
+      "ok": "ok",
+      "warn": "élevée",
+      "critical": "critique",
+      "unknown": "inconnue"
+    },
+    "detail": {
+      "title": "Builder",
+      "tipLabel": "À propos de ce builder",
+      "tip": "La pause empêche le démarrage de nouveaux builds ici, les builds en cours se terminent. Supprimer efface seulement l'enregistrement ; arrêtez aussi l'agent sur la machine.",
+      "pause": "Mettre en pause",
+      "resume": "Reprendre",
+      "pauseError": "Impossible de modifier le builder : {{message}}",
+      "test": "Tester le builder",
+      "testing": "Test en cours...",
+      "testTipLabel": "À propos du test du builder",
+      "testTip": "Lance un petit build de sonde sans données d'app pour vérifier que le builder répond.",
+      "testPass": "Le builder fonctionne",
+      "testFail": "Le test du builder a échoué",
+      "latency": "Latence {{ms}} ms",
+      "platform": "Plateforme {{value}}",
+      "freeDisk": "Disque libre {{value}}",
+      "buildkit": "BuildKit {{value}}",
+      "testRequestFailed": "Le test n'a pas pu s'exécuter : {{message}}",
+      "remove": "Supprimer",
+      "recent": "Builds récents",
+      "recentEmpty": "Aucun build pour le moment.",
+      "trend": "Durées des {{count}} derniers builds",
+      "success": "Réussi",
+      "failed": "Échoué",
+      "agent": "Agent {{value}}",
+      "acceptsApps": "Ce node exécute aussi des apps, il ne peut donc pas être mis en pause ici."
+    }
   }
 }

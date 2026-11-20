@@ -819,6 +819,16 @@
     "save": "Speichern",
     "saved": "Build-Runner gespeichert",
     "cleared": "Build-Runner zurückgesetzt",
-    "retry": "Erneut versuchen"
+    "retry": "Erneut versuchen",
+    "prodTipLabel": "Info zu Produktions-Builds",
+    "prodTip": "Produktionsumgebungen bauen nie auf einem persönlichen Builder, außer die Umgebung erlaubt es. Der Build weicht dann auf einen anderen Builder oder die Control Plane aus.",
+    "mode": "Ausführen auf",
+    "modeAuto": "Automatisch",
+    "modeControlPlane": "Nur Control Plane",
+    "modeNode": "Bestimmter Builder",
+    "pickNode": "Builder wählen",
+    "nodeNeeded": "Ein bestimmter Builder braucht einen gewählten Builder.",
+    "modeTipLabel": "Info zur Build-Platzierung",
+    "modeTip": "Automatisch folgt der globalen Strategie. Nur Control Plane baut immer auf diesem Server, nie auf einem Builder. Bestimmter Builder nutzt den gewählten Builder, und Nur dieser Builder verhindert das Ausweichen auf einen anderen Node."
   }
 }
