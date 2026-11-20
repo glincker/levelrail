@@ -7,6 +7,9 @@ import { SegmentedControl } from '@/components/ui/segmented-control'
 import { Skeleton } from '@/components/ui/skeleton'
 import { appDetailQueryOptions } from '../../queries/apps'
 
+// Any path no site serves, so the preview shows the site's own 404 page.
+const MISSING_PATH = '/__missing-page-preview__'
+
 export type Device = 'desktop' | 'mobile' | 'card'
 
 // A frame that never reports load (self-signed cert, refused connection) falls back after this.
@@ -83,7 +86,9 @@ export function SitePreview({ name }: Readonly<{ name: string }>) {
   const app = useQuery({ ...appDetailQueryOptions(name), retry: false })
   const domain = app.data?.domains?.[0]
   const [device, setDevice] = useState<Exclude<Device, 'card'>>('desktop')
-  const url = domain ? `https://${domain}` : null
+  const [missing, setMissing] = useState(false)
+  const base = domain ? `https://${domain}` : null
+  const url = base && missing ? `${base}${MISSING_PATH}` : base
   return (
     <section
       aria-label={t('preview.title')}
@@ -100,6 +105,17 @@ export function SitePreview({ name }: Readonly<{ name: string }>) {
             { value: 'mobile', label: t('preview.mobile') },
           ]}
         />
+      </div>
+      <div className="flex justify-end">
+        <Button
+          size="xs"
+          variant={missing ? 'secondary' : 'ghost'}
+          aria-pressed={missing}
+          disabled={!base}
+          onClick={() => setMissing((v) => !v)}
+        >
+          {t('preview.notFoundToggle')}
+        </Button>
       </div>
       <div className="flex justify-center rounded-md bg-muted/40 p-2">
         <div

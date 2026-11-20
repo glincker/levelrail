@@ -300,6 +300,7 @@
     }
   },
   "preview": {
+    "notFoundToggle": "Preview 404 page",
     "title": "Preview",
     "device": "Device",
     "desktop": "Desktop",
@@ -478,7 +479,10 @@
     "remove": "Delete",
     "delete": "Delete submission {{id}} of {{form}}",
     "deleteTip": "Delete this submission for good",
-    "confirmDelete": "Delete this submission?"
+    "confirmDelete": "Delete this submission?",
+    "exportCsv": "Export {{form}} as CSV",
+    "spam": "Spam",
+    "spamWhy": "Spam: {{reason}}"
   },
   "preset": {
     "title": "Performance preset",
