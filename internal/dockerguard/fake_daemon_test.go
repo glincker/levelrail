@@ -28,6 +28,8 @@ type fakeDaemon struct {
 	// logRelease gates the second log line so a test can prove the first
 	// one was flushed through the guard before the stream ended.
 	logRelease chan struct{}
+	// upgradeReply is the Upgrade header value in hijack replies; empty echoes the request.
+	upgradeReply string
 }
 
 type seenRequest struct {
@@ -86,8 +88,8 @@ func (f *fakeDaemon) serve(w http.ResponseWriter, r *http.Request) {
 		w.Header().Set("Content-Type", "application/json")
 		w.WriteHeader(http.StatusCreated)
 		_, _ = io.WriteString(w, `{"Id":"e1"}`)
-	case strings.HasPrefix(path, "/exec/") && strings.HasSuffix(path, "/start"):
-		f.hijackEcho(w)
+	case strings.HasPrefix(path, "/exec/") && strings.HasSuffix(path, "/start"), strings.HasSuffix(path, "/attach"), path == "/grpc", path == "/session":
+		f.hijackEcho(w, r)
 	case path == "/containers/json" || path == "/images/json" || path == "/volumes" || path == "/networks":
 		w.Header().Set("Content-Type", "application/json")
 		_, _ = io.WriteString(w, `[]`)
@@ -137,13 +139,20 @@ func (f *fakeDaemon) streamLogs(w http.ResponseWriter, r *http.Request) {
 	flusher.Flush()
 }
 
-func (f *fakeDaemon) hijackEcho(w http.ResponseWriter) {
+func (f *fakeDaemon) hijackEcho(w http.ResponseWriter, r *http.Request) {
+	reply := f.upgradeReply
+	if reply == "" {
+		reply = r.Header.Get("Upgrade")
+	}
+	if reply == "" {
+		reply = "tcp"
+	}
 	conn, rw, err := http.NewResponseController(w).Hijack()
 	if err != nil {
 		return
 	}
 	defer func() { _ = conn.Close() }()
-	_, _ = rw.WriteString("HTTP/1.1 101 UPGRADED\r\nContent-Type: application/vnd.docker.raw-stream\r\nConnection: Upgrade\r\nUpgrade: tcp\r\n\r\n")
+	_, _ = rw.WriteString("HTTP/1.1 101 UPGRADED\r\nContent-Type: application/vnd.docker.raw-stream\r\nConnection: Upgrade\r\nUpgrade: " + reply + "\r\n\r\n")
 	_ = rw.Flush()
 	line, err := bufio.NewReader(rw).ReadString('\n')
 	if err != nil {
