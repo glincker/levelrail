@@ -1,6 +1,7 @@
 // Pipeline files for a static site: no container, the folder is published with
 // the CLI. The token always comes from a secret variable, never the file.
-const INSTALL = 'curl -fsSL https://levelrail.com/install-cli.sh | sh'
+const INSTALL =
+  'curl -fsSL https://github.com/glincker/levelrail/releases/latest/download/install-cli.sh | sh'
 
 export interface StaticSnippet {
   target: string

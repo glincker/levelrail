@@ -11,7 +11,7 @@ Push to your git host and get a running app, preview environments per pull reque
 [Get started](/getting-started) | [Migration guide](/migrating-from-vercel)
 
 ```bash
-curl -fsSL https://levelrail.com/install.sh | sudo sh
+curl -fsSL https://github.com/glincker/levelrail/releases/latest/download/install.sh | sudo sh
 ```
 
 ## The parts of Vercel people miss when they leave

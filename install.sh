@@ -1,5 +1,5 @@
 #!/bin/sh
-# curl -fsSL https://levelrail.com/install.sh | sudo sh
+# curl -fsSL https://github.com/glincker/levelrail/releases/latest/download/install.sh | sudo sh
 #
 # Installs the levelrail control plane binary, a systemd unit, and Docker
 # (if missing) on a single Linux host.
@@ -1720,7 +1720,7 @@ Open the dashboard through an SSH tunnel from your own machine:
 
 Next, wire your domain through the existing proxy and check it end to end:
   levelrail-cli proxy --domain ${domain} --verify
-(CLI install: curl -fsSL https://levelrail.com/install-cli.sh | sh. Guide: ${PROXY_DOCS_URL})
+(CLI install: curl -fsSL https://github.com/glincker/levelrail/releases/latest/download/install-cli.sh | sh. Guide: ${PROXY_DOCS_URL})
 
 IMPORTANT: back up ${DATA_DIR}/master.key somewhere safe. Every stored
 secret is encrypted with it, and it cannot be recovered if lost.
@@ -1816,7 +1816,7 @@ Connect the CLI after you create the admin account. In the dashboard open
 "Connect your CLI" and copy the pairing code, then run:
 EOF
 	if [ "$CLI_PRESENT" -ne 1 ]; then
-		log "  curl -fsSL https://levelrail.com/install-cli.sh | sudo sh"
+		log "  curl -fsSL https://github.com/glincker/levelrail/releases/latest/download/install-cli.sh | sudo sh"
 	fi
 	cat <<EOF
   levelrail-cli login --api-url ${DASHBOARD_SCHEME}://${PUBLIC_IP:-<server-ip>}:${DASHBOARD_PORT} --code <XXXX-XXXX>
@@ -1827,8 +1827,8 @@ A new device may need approval. With no token yet, approve it on this server:
   Service status: systemctl status ${SERVICE_NAME}
   Logs:           journalctl -u ${SERVICE_NAME} -f
   Data directory: ${DATA_DIR}
-  Upgrade:        curl -fsSL https://levelrail.com/install.sh | sudo sh -s upgrade
-  Uninstall:      curl -fsSL https://levelrail.com/install.sh | sudo sh -s uninstall
+  Upgrade:        curl -fsSL https://github.com/glincker/levelrail/releases/latest/download/install.sh | sudo sh -s upgrade
+  Uninstall:      curl -fsSL https://github.com/glincker/levelrail/releases/latest/download/install.sh | sudo sh -s uninstall
   Locked out:     sudo APP_DATA_DIR=${DATA_DIR} ${BIN_PATH} recover-admin --username admin
 EOF
 }
@@ -1874,7 +1874,7 @@ write_upgrade_marker() {
 do_check() {
 	load_settings
 	preflight
-	url="https://levelrail.com/install.sh"
+	url="https://github.com/glincker/levelrail/releases/latest/download/install.sh"
 	domain_arg=""
 	[ -z "$DOMAIN_HINT" ] || domain_arg=" --domain ${DOMAIN_HINT}"
 	log ""
@@ -1912,7 +1912,7 @@ installed_version() {
 }
 
 CLI_PRESENT=0
-CLI_SITE_URL="https://levelrail.com/install-cli.sh"
+CLI_SITE_URL="https://github.com/glincker/levelrail/releases/latest/download/install-cli.sh"
 CLI_INSTALLER_URL="${LEVELRAIL_CLI_INSTALLER_URL:-$CLI_SITE_URL}"
 
 # verify_cli_script checks the downloaded CLI installer against the release

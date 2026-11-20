@@ -12,7 +12,7 @@ This page is the short path from a fresh Linux server to a working HTTPS address
 On a fresh server, as a user that can use `sudo`:
 
 ```bash
-curl -fsSL https://levelrail.com/install.sh | sudo sh
+curl -fsSL https://github.com/glincker/levelrail/releases/latest/download/install.sh | sudo sh
 ```
 
 The installer prints the dashboard link and a one-time setup token. Requirements and options are in [Installing Levelrail](/installing).

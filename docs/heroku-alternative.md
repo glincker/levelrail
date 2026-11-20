@@ -11,7 +11,7 @@ Push-to-deploy from your git host, managed databases, HTTPS (self-signed until y
 [Get started](/getting-started) | [View on GitHub](https://github.com/glincker/levelrail)
 
 ```bash
-curl -fsSL https://levelrail.com/install.sh | sudo sh
+curl -fsSL https://github.com/glincker/levelrail/releases/latest/download/install.sh | sudo sh
 ```
 
 ## What carries over from Heroku

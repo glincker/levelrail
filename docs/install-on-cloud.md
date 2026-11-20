@@ -18,10 +18,10 @@ Every snippet below runs the same script. It skips the install when the `levelra
 #!/bin/bash
 # Install the Levelrail control plane once. Safe to run on every boot.
 systemctl cat levelrail.service >/dev/null 2>&1 && exit 0
-curl -fsSL https://levelrail.com/install.sh | sh
+curl -fsSL https://github.com/glincker/levelrail/releases/latest/download/install.sh | sh
 ```
 
-Cloud boot hooks run as root, so the script does not need `sudo`. Pass `--domain` or `--profile` to the same `sh` call when you need them, for example `curl -fsSL https://levelrail.com/install.sh | sh -s -- --profile standard`. The flags are listed in `install.sh --help` and in [Installing Levelrail](/installing).
+Cloud boot hooks run as root, so the script does not need `sudo`. Pass `--domain` or `--profile` to the same `sh` call when you need them, for example `curl -fsSL https://github.com/glincker/levelrail/releases/latest/download/install.sh | sh -s -- --profile standard`. The flags are listed in `install.sh --help` and in [Installing Levelrail](/installing).
 
 ## Firewall ports
 
@@ -179,7 +179,7 @@ write_files:
     content: |
       #!/bin/bash
       systemctl cat levelrail.service >/dev/null 2>&1 && exit 0
-      curl -fsSL https://levelrail.com/install.sh | sh
+      curl -fsSL https://github.com/glincker/levelrail/releases/latest/download/install.sh | sh
 runcmd:
   - [ /usr/local/sbin/install-levelrail.sh ]
 ```

@@ -25,7 +25,7 @@ This page is about a single server. To pull apps onto a different server, use [M
 On a server where Coolify's Traefik (or another proxy container) holds ports 80 and 443, the installer notices and switches to coexist mode by itself. See [Server already runs a proxy](/installing#server-already-runs-a-proxy) for the full list of what changes.
 
 ```bash
-curl -fsSL https://levelrail.com/install.sh | sudo sh -s -- --coexist --domain apps.example.com
+curl -fsSL https://github.com/glincker/levelrail/releases/latest/download/install.sh | sudo sh -s -- --coexist --domain apps.example.com
 ```
 
 In coexist mode the ingress listens on `8088` and `8443`, and the managed routes live in the old proxy's dynamic configuration (see [Run behind an existing proxy](/behind-an-existing-proxy)). The old platform keeps serving everything.

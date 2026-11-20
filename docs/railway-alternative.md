@@ -11,7 +11,7 @@ Connect a repo, get a running service with a domain, TLS, a database and logs. T
 [Get started](/getting-started) | [View on GitHub](https://github.com/glincker/levelrail)
 
 ```bash
-curl -fsSL https://levelrail.com/install.sh | sudo sh
+curl -fsSL https://github.com/glincker/levelrail/releases/latest/download/install.sh | sudo sh
 ```
 
 <img src="/assets/screenshots/apps-list-light.png" alt="Levelrail apps list across nodes" className="block dark:hidden" />

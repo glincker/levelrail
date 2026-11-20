@@ -196,7 +196,7 @@ func stageFile(exe string) (string, error) {
 	}
 	f, err := os.CreateTemp(filepath.Dir(exe), "."+filepath.Base(exe)+".update-*")
 	if err != nil {
-		return "", fmt.Errorf("%w (%s): %w. Re-run with sudo (sudo levelrail-cli update --yes), or reinstall somewhere you own: curl -fsSL https://levelrail.com/install-cli.sh | LEVELRAIL_CLI_INSTALL_DIR=$HOME/.local/bin sh", ErrNotWritable, filepath.Dir(exe), err)
+		return "", fmt.Errorf("%w (%s): %w. Re-run with sudo (sudo levelrail-cli update --yes), or reinstall somewhere you own: curl -fsSL https://github.com/glincker/levelrail/releases/latest/download/install-cli.sh | LEVELRAIL_CLI_INSTALL_DIR=$HOME/.local/bin sh", ErrNotWritable, filepath.Dir(exe), err)
 	}
 	name := f.Name()
 	if err := f.Chmod(mode); err != nil {

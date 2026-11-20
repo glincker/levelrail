@@ -23,7 +23,7 @@ pipeline {
     }
     stage('Deploy') {
       steps {
-        sh 'curl -fsSL https://levelrail.com/install-cli.sh | sh'
+        sh 'curl -fsSL https://github.com/glincker/levelrail/releases/latest/download/install-cli.sh | sh'
         sh '''
           export PATH="$LEVELRAIL_CLI_INSTALL_DIR:$PATH"
           levelrail-cli apps deploy my-app --image "$IMAGE" --idempotency-key "jenkins-$BUILD_TAG"

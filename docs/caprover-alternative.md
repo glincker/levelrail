@@ -11,7 +11,7 @@ Levelrail runs apps on plain Docker containers with its own reconciler and a sma
 [Get started](/getting-started) | [View on GitHub](https://github.com/glincker/levelrail)
 
 ```bash
-curl -fsSL https://levelrail.com/install.sh | sudo sh
+curl -fsSL https://github.com/glincker/levelrail/releases/latest/download/install.sh | sudo sh
 ```
 
 ## Where Levelrail differs
@@ -33,7 +33,7 @@ curl -fsSL https://levelrail.com/install.sh | sudo sh
 The importer reads your existing instance through its own HTTP API and never changes anything there. Run it with --dry-run first.
 
 ```bash title="install, import, verify"
-curl -fsSL https://levelrail.com/install.sh | sudo sh
+curl -fsSL https://github.com/glincker/levelrail/releases/latest/download/install.sh | sudo sh
 # control plane running as a systemd service
 levelrail-cli import platform caprover --url https://captain.example.com --dry-run
 # dry run: report only, nothing is written here or changed there

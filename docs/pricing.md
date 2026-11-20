@@ -11,7 +11,7 @@ Levelrail is Apache 2.0 software you run on your own servers. There is no licens
 [Get started](/getting-started) | [View on GitHub](https://github.com/glincker/levelrail)
 
 ```bash
-curl -fsSL https://levelrail.com/install.sh | sudo sh
+curl -fsSL https://github.com/glincker/levelrail/releases/latest/download/install.sh | sudo sh
 ```
 
 ## Included for everyone

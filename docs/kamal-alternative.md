@@ -11,7 +11,7 @@ Kamal is deliberately minimal: no server component, just SSH from your machine o
 [Get started](/getting-started) | [View on GitHub](https://github.com/glincker/levelrail)
 
 ```bash
-curl -fsSL https://levelrail.com/install.sh | sudo sh
+curl -fsSL https://github.com/glincker/levelrail/releases/latest/download/install.sh | sudo sh
 ```
 
 ## What a control plane adds

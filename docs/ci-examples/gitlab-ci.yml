@@ -31,7 +31,7 @@ deploy:
     - PINNED=$(docker inspect --format '{{index .RepoDigests 0}}' "$IMAGE")
     # With a Node image, `npm install --global levelrail-cli@0.9.4` replaces these two lines.
     - apk add --no-cache curl
-    - curl -fsSL https://levelrail.com/install-cli.sh | sh
+    - curl -fsSL https://github.com/glincker/levelrail/releases/latest/download/install-cli.sh | sh
     - LEVELRAIL_TOKEN=$(levelrail-cli apps ci token "$APP" --provider gitlab)
     - export LEVELRAIL_TOKEN
     - levelrail-cli apps deploy "$APP" --image "$PINNED"

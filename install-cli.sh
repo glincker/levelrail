@@ -1,5 +1,5 @@
 #!/bin/sh
-# curl -fsSL https://levelrail.com/install-cli.sh | sh
+# curl -fsSL https://github.com/glincker/levelrail/releases/latest/download/install-cli.sh | sh
 #
 # Installs levelrail-cli, the client for an already-running Levelrail
 # control plane. This is the client, not the server: it needs no root,
@@ -25,7 +25,7 @@
 #                            export line to your shell profile (default: only
 #                            print it, never edit files)
 #
-# Windows: use install-cli.ps1 (irm https://levelrail.com/install-cli.ps1 | iex)
+# Windows: use install-cli.ps1 (irm https://github.com/glincker/levelrail/releases/latest/download/install-cli.ps1 | iex)
 
 set -eu
 
@@ -74,7 +74,7 @@ detect_platform() {
 	case "$os" in
 	Linux) GOOS="linux" ;;
 	Darwin) GOOS="darwin" ;;
-	MINGW* | MSYS* | CYGWIN*) fatal "this script is for Linux and macOS. On Windows run in PowerShell: irm https://levelrail.com/install-cli.ps1 | iex (or run this script from WSL)." ;;
+	MINGW* | MSYS* | CYGWIN*) fatal "this script is for Linux and macOS. On Windows run in PowerShell: irm https://github.com/glincker/levelrail/releases/latest/download/install-cli.ps1 | iex (or run this script from WSL)." ;;
 	*) fatal "unsupported OS: ${os}" ;;
 	esac
 	arch="$(uname -m)"

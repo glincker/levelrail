@@ -11,7 +11,7 @@ A walkthrough of the dashboard and the CLI, using real screenshots. No sign-up, 
 [Run it yourself](/getting-started) | [View on GitHub](https://github.com/glincker/levelrail)
 
 ```bash
-curl -fsSL https://levelrail.com/install.sh | sudo sh
+curl -fsSL https://github.com/glincker/levelrail/releases/latest/download/install.sh | sudo sh
 ```
 
 <img src="/assets/screenshots/dashboard-home-light.png" alt="Levelrail dashboard home with apps, nodes and recent deploys" className="block dark:hidden" />
@@ -22,7 +22,7 @@ curl -fsSL https://levelrail.com/install.sh | sudo sh
 The install script checks the host, installs Docker if it is missing and starts the control plane as a systemd service. Then you deploy.
 
 ```bash title="install, deploy"
-curl -fsSL https://levelrail.com/install.sh | sudo sh
+curl -fsSL https://github.com/glincker/levelrail/releases/latest/download/install.sh | sudo sh
 # checking host: docker, systemd, ports 80/443/8080 free
 # installing control plane as a systemd service
 # dashboard ready, setup token printed above

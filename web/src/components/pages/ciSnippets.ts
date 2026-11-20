@@ -9,7 +9,7 @@ export function ciSnippets(site: string, server: string) {
     token: \${{ secrets.LEVELRAIL_PAGES_TOKEN }}`,
     gitlab: `deploy:
   script:
-    - curl -fsSL https://levelrail.com/install-cli.sh | sh
+    - curl -fsSL https://github.com/glincker/levelrail/releases/latest/download/install-cli.sh | sh
     - levelrail-cli pages deploy ./dist --name ${site}
   variables:
     APP_API_URL: ${server}

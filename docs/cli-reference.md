@@ -12,7 +12,7 @@ Commands are shown as `levelrail-cli ...`. If you rename the binary, the command
 
 ## Install and sign in
 
-`curl -fsSL https://levelrail.com/install-cli.sh | sh`
+`curl -fsSL https://github.com/glincker/levelrail/releases/latest/download/install-cli.sh | sh`
 
 ```bash
 export APP_API_URL=https://console.example.com
