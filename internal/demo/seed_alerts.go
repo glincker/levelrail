@@ -39,6 +39,10 @@ func alertRules() []ruleSpec {
 			alerting.Rule{Kind: alerting.KindNodeDiskSpace, Threshold: 80}},
 		{"rule_demo_errors", "API error rate", "service:" + incidentApp, alerting.SeverityCritical, chanSlack,
 			alerting.Rule{Kind: alerting.KindThreshold, Metric: "http_responses_5xx", Comparator: alerting.GreaterThan, Threshold: 30, ForDuration: 3 * time.Minute}},
+		{"rule_demo_unhealthy", "Storefront probe failing", "service:storefront-web", alerting.SeverityCritical, chanSlack,
+			alerting.Rule{Kind: alerting.KindAppUnhealthy}},
+		{"rule_demo_advisory", "Known vulnerability in a running image", "all apps", alerting.SeverityWarning, chanMail,
+			alerting.Rule{Kind: alerting.KindAdvisoryMatch}},
 		{"rule_demo_backup", "pg-main backup missing", "database:pg-main", alerting.SeverityCritical, chanMail,
 			alerting.Rule{Kind: alerting.KindBackupMissing, BackupResourceKind: store.BackupResourceKindDatabase, BackupDatabaseName: "pg-main"}},
 	}
