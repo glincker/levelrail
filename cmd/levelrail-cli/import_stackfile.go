@@ -30,16 +30,20 @@ type portainerExport struct {
 
 func stackFileUsage(prog, sub string) string {
 	what := "a deploy.yml"
-	if sub == "portainer" {
+	switch sub {
+	case "portainer":
 		what = "a stack compose file or a stack export JSON"
+	case "railway":
+		what = "a railway.json or railway.toml (build and deploy settings, no variable values)"
 	}
 	return fmt.Sprintf(`Usage:
-  %[1]s import %[2]s FILE [--stack NAME] [--project NAME] [--environment NAME] [--write DIR [--force]] [--json]
+  %[1]s import %[2]s FILE [--stack NAME] [--project NAME] [--environment NAME] [--image-repo REPO] [--write DIR [--force]] [--json]
 
 Reads %[3]s and prints reviewable Levelrail documents (App kinds in a Stack).
 Dry run by default: nothing is written unless --write DIR is given. Fields with no
 equivalent are errors or listed in the notes. Secret values are never read: each
-becomes a secret name listed in SECRETS.md. Size limit: %[4]s (default %[5]d bytes).
+becomes a secret name listed in SECRETS.md. --image-repo gives an app with no image
+(railway) the image path REPO/APP:latest. Size limit: %[4]s (default %[5]d bytes).
 `, prog, sub, what, envStackFileMaxBytes, defaultComposeBytes)
 }
 
@@ -51,6 +55,8 @@ func runImportStackFile(prog, sub string, args []string, stdout, stderr io.Write
 	fset.StringVar(&f.stack, "stack", "", "stack name (default: derived from the source)")
 	fset.StringVar(&f.project, "project", "", "project name (default: the stack name)")
 	fset.StringVar(&f.environment, "environment", "", "environment name for the Stack document")
+	var imageRepo string
+	fset.StringVar(&imageRepo, "image-repo", "", "registry path for an app the source gives no image, as REPO/APP:latest")
 	fset.StringVar(&f.write, "write", "", "write the documents into this directory instead of printing them")
 	fset.BoolVar(&f.force, "force", false, "overwrite existing files in --write")
 	fset.BoolVar(&f.jsonOut, "json", false, "print the result as JSON")
@@ -78,9 +84,12 @@ func runImportStackFile(prog, sub string, args []string, stdout, stderr io.Write
 	}
 	var in platformimport.EmitInput
 	fallback := stackNameFromDir(filepath.Dir(path))
-	if sub == "portainer" {
+	switch sub {
+	case "portainer":
 		in, fallback, err = portainerInput(data, path)
-	} else {
+	case "railway":
+		in, err = platformimport.RailwayToEmit(data, fallback, filepath.Base(path))
+	default:
 		in, err = platformimport.DeployYMLToEmit(data)
 		if len(in.Apps) > 0 {
 			fallback = in.Apps[0].Name
@@ -100,7 +109,7 @@ func runImportStackFile(prog, sub string, args []string, stdout, stderr io.Write
 	if project == "" {
 		project = stack
 	}
-	opts := platformimport.EmitOptions{Stack: stack, Project: project, Environment: f.environment}
+	opts := platformimport.EmitOptions{Stack: stack, Project: project, Environment: f.environment, ImageRepo: imageRepo}
 	files, err := platformimport.EmitStack(in, opts)
 	if err != nil {
 		return reportError(stdout, stderr, f.jsonOut, err)

@@ -632,7 +632,7 @@ Usage:
   %[1]s import platform coolify|dokploy|caprover|heroku|vercel|render --url URL [flags]   import apps from another platform, see "%[1]s import platform -h"
   %[1]s import config [dir] [--out FILE] [--strict] [--json]   offline: propose an app.yaml from Procfile, app.json and vercel.json, see "%[1]s import config -h"
   %[1]s import compose-ref [dir] [--write DIR] [--json]   offline: emit documents for the image services of compose files, see "%[1]s import compose-ref -h"
-  %[1]s import deploy-yml|portainer FILE [--write DIR] [--json]   offline: emit documents from a deploy.yml or a Portainer stack, see "%[1]s import deploy-yml -h"
+  %[1]s import deploy-yml|portainer|railway FILE [--write DIR] [--json]   offline: emit documents from a deploy.yml, a Portainer stack or a railway.json/railway.toml, see "%[1]s import railway -h"
   %[1]s import takeover plan|run|status|rollback [flags]   move this server's ports 80 and 443 from the old proxy to the built-in ingress, see "%[1]s import takeover -h"
   %[1]s completion bash|zsh|fish                          print a shell completion script, see "%[1]s completion -h"
   %[1]s settings oauth|email|ingress|ai-assistant get|set [flags]   configure OAuth sign-in, outbound email, ingress/ACME, and the BYOK AI assistant

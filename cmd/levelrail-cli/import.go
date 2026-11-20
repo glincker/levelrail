@@ -71,7 +71,7 @@ func runImport(prog string, args []string, stdout, stderr io.Writer, lookupEnv f
 			return runImportVercel(prog, args[1:], os.Stdin, stdout, stderr, lookupEnv)
 		case "compose-ref":
 			return runImportComposeRef(prog, args[1:], stdout, stderr, lookupEnv)
-		case "deploy-yml", "portainer":
+		case "deploy-yml", "portainer", "railway":
 			return runImportStackFile(prog, args[0], args[1:], stdout, stderr, lookupEnv)
 		case "takeover":
 			return runImportTakeover(prog, args[1:], stdout, stderr, lookupEnv)
