@@ -94,6 +94,19 @@ func TestParamRoutesAreScopedOrAllowlisted(t *testing.T) {
 // paramRouteScopeAllowlist maps routes that check ownership inside the handler
 // (or are public by design) to a short reason. Shrink it, never grow it silently.
 var paramRouteScopeAllowlist = map[string]string{ //nolint:gosec // route names and reasons, no credentials
+	"DELETE /api/v1/observability/exports/{id}":                                             "root-only, export resolved from the instance export groups",
+	"GET /api/v1/builders/{id}":                                                             "requireAbility, builders are instance infra nodes like nodes/{id}",
+	"GET /api/v1/builds/{id}/record":                                                        "requireAbility, handler checks scope: handleGetBuildRecord (app and environment refs)",
+	"GET /api/v1/environments/{id}/builders":                                                "requireEnvironmentGrant wrapper checks the environment",
+	"POST /api/v1/backup-targets/{id}/probe":                                                "requireAbility, instance-level target like backup-targets/{id}/test",
+	"POST /api/v1/builders/{id}/pause":                                                      "requireAbility, builders are instance infra nodes like nodes/{id}",
+	"POST /api/v1/builders/{id}/resume":                                                     "requireAbility, builders are instance infra nodes like nodes/{id}",
+	"POST /api/v1/builders/{id}/test":                                                       "requireAbility, builders are instance infra nodes like nodes/{id}",
+	"POST /api/v1/hooks/pages/{site}/{secret}":                                              "public hook URL, authorised by the per-site secret",
+	"POST /api/v1/observability/exports/{id}/test":                                          "root-only, export resolved from the instance export groups",
+	"POST /api/v1/projects/{id}/export":                                                     "requireAbility, handler checks scope: handleExportProjectArchive (project and app refs)",
+	"PUT /api/v1/environments/{id}/builders":                                                "requireEnvironmentGrant wrapper checks the environment",
+	"PUT /api/v1/nodes/{id}/build-trust":                                                    "root-only, node infra setting",
 	"DELETE /api/v1/ai/sessions/{id}":                                                       "requireAbility, handler checks scope: handleDeleteAIChatSession",
 	"DELETE /api/v1/alert-maintenance-windows/{id}":                                         "requireAbility, handler checks scope: handleDeleteMaintenanceWindow",
 	"DELETE /api/v1/alert-silences/{id}":                                                    "requireAbility, handler checks scope: handleExpireAlertSilence",
