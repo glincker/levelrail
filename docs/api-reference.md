@@ -791,6 +791,8 @@ Endpoints for:
 | GET | /api/v1/apps/{name}/build-runner | AbilityRead | handleGetAppBuildRunner |
 | PUT | /api/v1/apps/{name}/build-runner | AbilityDeploy | handleSetAppBuildRunner |
 | DELETE | /api/v1/apps/{name}/build-runner | AbilityDeploy | handleClearAppBuildRunner |
+| PUT | /api/v1/apps/{name}/deploys/{deployId}/pin | AbilityDeploy | handlePinDeploy |
+| DELETE | /api/v1/apps/{name}/deploys/{deployId}/pin | AbilityDeploy | handleUnpinDeploy |
 | GET | /api/v1/apps/{name}/notes | AbilityRead |  |
 | PUT | /api/v1/apps/{name}/notes | AbilityWrite |  |
 

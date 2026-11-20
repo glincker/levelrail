@@ -150,6 +150,7 @@ func (rt *Router) writeAttempt(w http.ResponseWriter, r *http.Request, id string
 		return
 	}
 	res := toDeployAttemptResource(*a)
+	res.Pinned = rt.pinnedDeploys(r.Context(), a.ServiceName)[a.ID]
 	if attempts, err := rt.deployAttempts.ListDeployAttempts(r.Context(), a.ServiceName); err == nil {
 		rt.applyWait(r.Context(), &res, *a, attempts)
 		applyDeployOutcome(&res, *a, len(attempts) > 0 && attempts[0].ID == a.ID, rt.rolloutConditions(r.Context(), a.ServiceName))

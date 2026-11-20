@@ -116,10 +116,11 @@ func (rt *Router) loadImageApps(ctx context.Context, nodeID string) ([]imagelife
 			return nil, fmt.Errorf("list deploys of %s: %w", svc.Name, err)
 		}
 		state := imagelife.AppState{Name: svc.Name, LiveImage: svc.Image, LiveImageID: svc.LocalImageID()}
+		pinned := rt.pinnedDeploys(ctx, svc.Name)
 		for _, a := range attempts {
 			state.Attempts = append(state.Attempts, imagelife.Attempt{
 				ID: a.ID, Image: a.Image, Digest: a.ImageDigest, Source: a.Source, CommitSHA: a.CommitSHA,
-				Branch: a.Branch, Status: a.Status, StartedAt: a.StartedAt,
+				Branch: a.Branch, Status: a.Status, StartedAt: a.StartedAt, Pinned: pinned[a.ID],
 			})
 		}
 		if rt.deployGate != nil {

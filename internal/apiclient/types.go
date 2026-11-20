@@ -4208,14 +4208,16 @@ type DeployAttemptResource struct {
 	Sequence       int64  `json:"sequence,omitempty"`
 	Reason         string `json:"reason,omitempty"`
 
-	QueuedAt      *time.Time  `json:"queued_at,omitempty"`
-	QueuePosition int         `json:"queue_position,omitempty"`
-	WaitReason    string      `json:"wait_reason,omitempty"`
-	BlockedBy     string      `json:"blocked_by,omitempty"`
-	SupersededBy  string      `json:"superseded_by,omitempty"`
-	CanceledBy    string      `json:"canceled_by,omitempty"`
-	SBOMPackages  *int        `json:"sbom_packages,omitempty"`
-	VulnCounts    *VulnCounts `json:"vuln_counts,omitempty"`
+	QueuedAt      *time.Time `json:"queued_at,omitempty"`
+	QueuePosition int        `json:"queue_position,omitempty"`
+	WaitReason    string     `json:"wait_reason,omitempty"`
+	BlockedBy     string     `json:"blocked_by,omitempty"`
+	SupersededBy  string     `json:"superseded_by,omitempty"`
+	CanceledBy    string     `json:"canceled_by,omitempty"`
+	// Pinned is true when retention keeps this deploy and its image.
+	Pinned       bool        `json:"pinned,omitempty"`
+	SBOMPackages *int        `json:"sbom_packages,omitempty"`
+	VulnCounts   *VulnCounts `json:"vuln_counts,omitempty"`
 	// Failure classifies why the deploy failed or is blocked; absent otherwise.
 	Failure *DeployFailure `json:"failure,omitempty"`
 	// Outcome is in_progress, healthy, failed, canceled, superseded or

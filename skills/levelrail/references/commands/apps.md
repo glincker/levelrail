@@ -777,7 +777,7 @@ Flags:
 
 ## levelrail-cli apps deploys
 
-Subcommands: attempts, build-report, cancel, compare, failed, gate, list, logs, probes, promote, receipt, release-notes, rollback-to, show, stages, status, steps, timeline, url, wait
+Subcommands: attempts, build-report, cancel, compare, failed, gate, list, logs, pin, probes, promote, receipt, release-notes, rollback-to, show, stages, status, steps, timeline, unpin, url, wait
 
 ```
 Usage:
@@ -798,6 +798,8 @@ Usage:
   levelrail-cli apps deploys gate <name> [deploy-id] [--watch]            readiness gate, cutover, drain and post-deploy watch timeline
   levelrail-cli apps deploys build-report <name> <deploy-id> [flags]      Next.js route table and build warnings from one attempt's log
   levelrail-cli apps deploys cancel <name> <deploy-id> [flags]            cancel a queued or in-progress deploy before it cuts traffic
+  levelrail-cli apps deploys pin <name> <deploy-id> [flags]               keep a deploy and its image out of retention and cleanup
+  levelrail-cli apps deploys unpin <name> <deploy-id> [flags]             release a pin so retention may remove it again
   levelrail-cli apps deploys rollback-to <name> <deploy-id> [flags]       redeploy a past succeeded deploy's exact image, pinned by digest
   levelrail-cli apps deploys promote <name> <deploy-id> [flags]           alias of rollback-to: make any past succeeded deploy the live one
   levelrail-cli apps deploys rollback <name> <deploy-id> [flags]          alias of rollback-to

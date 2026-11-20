@@ -3367,6 +3367,20 @@ func (c *Client) CancelDeploy(ctx context.Context, appName, deployID string) (De
 	return out, err
 }
 
+// PinDeploy calls PUT /api/v1/apps/{name}/deploys/{deployId}/pin.
+func (c *Client) PinDeploy(ctx context.Context, appName, deployID string) (DeployAttemptResource, error) {
+	var out DeployAttemptResource
+	err := c.do(ctx, http.MethodPut, "/api/v1/apps/"+PathEscape(appName)+"/deploys/"+PathEscape(deployID)+"/pin", nil, &out)
+	return out, err
+}
+
+// UnpinDeploy calls DELETE /api/v1/apps/{name}/deploys/{deployId}/pin.
+func (c *Client) UnpinDeploy(ctx context.Context, appName, deployID string) (DeployAttemptResource, error) {
+	var out DeployAttemptResource
+	err := c.do(ctx, http.MethodDelete, "/api/v1/apps/"+PathEscape(appName)+"/deploys/"+PathEscape(deployID)+"/pin", nil, &out)
+	return out, err
+}
+
 // RollbackToDeploy calls POST /api/v1/apps/{name}/deploys/{deployId}/rollback:
 // redeploys the content that past deploy recorded, pinned by digest.
 func (c *Client) RollbackToDeploy(ctx context.Context, appName, deployID string, req RollbackToRequest) (DeployTriggerResult, error) {
