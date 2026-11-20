@@ -196,7 +196,7 @@ func (rt *Router) handleCreateObservabilityExport(w http.ResponseWriter, r *http
 			return
 		}
 	}
-	writeError(w, http.StatusInternalServerError, "created export not found")
+	rt.internalError(w, "create observability export", errors.New("created export not found"))
 }
 
 func (rt *Router) handleDeleteObservabilityExport(w http.ResponseWriter, r *http.Request) {

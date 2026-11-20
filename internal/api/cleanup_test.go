@@ -122,7 +122,7 @@ func TestCleanupOverviewShape(t *testing.T) {
 		t.Fatalf("token usage = %v, want bytes null", tok["usage"])
 	}
 	jan := byID["docker.images"]
-	if jan == nil || jan["read_through"] != true || jan["policy_key"] != "" || jan["mode"] != "preview" {
+	if jan == nil || jan["read_through"] != true || jan["policy_key"] != "" || jan["mode"] != "on" {
 		t.Fatalf("janitor target = %v", jan)
 	}
 }

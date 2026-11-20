@@ -2,6 +2,7 @@ package api
 
 import (
 	"net/http"
+	"strings"
 
 	"github.com/GLINCKER/levelrail/internal/identity"
 )
@@ -10,7 +11,7 @@ import (
 func cleanNameInput(w http.ResponseWriter, label, s string) (string, bool) {
 	n, err := identity.ValidateName(label, s)
 	if err != nil {
-		writeError(w, http.StatusBadRequest, err.Error())
+		writeError(w, http.StatusBadRequest, identityMessage(err))
 		return "", false
 	}
 	return n, true
@@ -20,8 +21,13 @@ func cleanNameInput(w http.ResponseWriter, label, s string) (string, bool) {
 func cleanEmailInput(w http.ResponseWriter, s string) (string, bool) {
 	n, err := identity.ValidateEmail(s)
 	if err != nil {
-		writeError(w, http.StatusBadRequest, err.Error())
+		writeError(w, http.StatusBadRequest, identityMessage(err))
 		return "", false
 	}
 	return n, true
+}
+
+// identityMessage drops the sentinel prefix so clients see only the reason.
+func identityMessage(err error) string {
+	return strings.TrimPrefix(err.Error(), identity.ErrInvalid.Error()+": ")
 }
