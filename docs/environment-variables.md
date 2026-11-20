@@ -527,6 +527,7 @@ These variables only seed the default of a [runtime setting](/runtime-settings).
 | `APP_PERF_STATEMENT_TIMING` | [`perf.statement_timing`](/runtime-settings#observability) | `false` |
 | `APP_RECONCILE_RESYNC_SECONDS` | [`reconcile.resync_seconds`](/runtime-settings#observability) | `30` |
 | `APP_STACK_DRIFT_SUMMARY_MAX` | [`stacks.drift_summary_max`](/runtime-settings#observability) | `50` |
+| `APP_STATUS_TEMPLATES_MAX` | [`status_page.templates_max`](/runtime-settings#observability) | `50` |
 | `APP_STORAGE_CRITICAL_FREE_PERCENT` | [`storage.critical_free_percent`](/runtime-settings#observability) | `5` |
 | `APP_STORAGE_LARGE_UNMANAGED_IMAGE_MB` | [`storage.large_unmanaged_image_mb`](/runtime-settings#observability) | `500` |
 | `APP_STORAGE_LOW_FREE_PERCENT` | [`storage.low_free_percent`](/runtime-settings#observability) | `15` |

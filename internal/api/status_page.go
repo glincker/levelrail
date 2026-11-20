@@ -75,6 +75,9 @@ func WithStatusPage(db StatusPageDB, cfg statuspage.Config, perMinute int) Optio
 		svc.SetMonitors(statusMonitorSource{rt})
 		rt.statusPage, rt.statusView, rt.statusSampler = db, svc, svc
 		rt.statusLimiter = newAPIRateLimiter(perMinute)
+		if ts, ok := any(db).(statusTemplateStore); ok {
+			rt.statusTemplates = ts
+		}
 		if ws, ok := any(db).(statuswebhook.Store); ok {
 			rt.statusHooksStore = ws
 			rt.statusHooks = statuswebhook.New(ws, rt.statusWebhookSealer, statuswebhook.ConfigFromEnv(), rt.logger)

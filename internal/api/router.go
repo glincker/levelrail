@@ -232,6 +232,7 @@ type Router struct {
 	statusSampler           *statuspage.Service
 	statusHooks             *statuswebhook.Service // nil is valid: webhook routes return 501
 	statusHooksStore        statuswebhook.Store
+	statusTemplates         statusTemplateStore
 	statusLimiter           *apiRateLimiter
 	heartbeatMu             sync.Mutex
 	heartbeatLimiter        *apiRateLimiter

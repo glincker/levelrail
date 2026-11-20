@@ -2469,6 +2469,10 @@ Routes that do not fit an existing group.
 | GET | /api/v1/pages/{site}/deploys/{deployId}/logs | AbilityReadSensitive | handlePagesDeployLogs |
 | GET | /api/v1/pages/presets | AbilityRead | handleListPagesPresets |
 | POST | /mcp | Public |  |
+| GET | /api/v1/status-page/incident-templates | AbilityRead | handleListStatusTemplates |
+| POST | /api/v1/status-page/incident-templates | AbilityWrite | handleCreateStatusTemplate |
+| PUT | /api/v1/status-page/incident-templates/{id} | AbilityWrite | handleUpdateStatusTemplate |
+| DELETE | /api/v1/status-page/incident-templates/{id} | AbilityWrite | handleDeleteStatusTemplate |
 
 ## See also
 

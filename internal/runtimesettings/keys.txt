@@ -533,6 +533,7 @@ stacks.sync_refresh_min_seconds
 stacks.sync_sparse_watch_ms
 stacks.sync_tick_seconds
 stacks.sync_webhook_max_body_kb
+status_page.templates_max
 storage.critical_free_percent
 storage.large_unmanaged_image_mb
 storage.low_free_percent

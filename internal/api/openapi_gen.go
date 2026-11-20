@@ -14,7 +14,7 @@ type openAPIRoute struct {
 	Description string
 }
 
-// openAPIRoutes holds all 2237 routes known to scripts/gen-api-reference at
+// openAPIRoutes holds all 2241 routes known to scripts/gen-api-reference at
 // generation time. Run `go run ./scripts/gen-api-reference` after changing
 // any routes*.go registration and commit the result.
 var openAPIRoutes = []openAPIRoute{
@@ -1844,6 +1844,10 @@ var openAPIRoutes = []openAPIRoute{
 	{Method: "POST", Path: "/api/v1/status-page/groups", Ability: "AbilityWrite", Group: "Other", Handler: "handleCreateStatusGroup", Description: ""},
 	{Method: "DELETE", Path: "/api/v1/status-page/groups/{id}", Ability: "AbilityWrite", Group: "Other", Handler: "handleDeleteStatusGroup", Description: ""},
 	{Method: "PUT", Path: "/api/v1/status-page/groups/{id}", Ability: "AbilityWrite", Group: "Other", Handler: "handleUpdateStatusGroup", Description: ""},
+	{Method: "GET", Path: "/api/v1/status-page/incident-templates", Ability: "AbilityRead", Group: "Other", Handler: "handleListStatusTemplates", Description: ""},
+	{Method: "POST", Path: "/api/v1/status-page/incident-templates", Ability: "AbilityWrite", Group: "Other", Handler: "handleCreateStatusTemplate", Description: ""},
+	{Method: "DELETE", Path: "/api/v1/status-page/incident-templates/{id}", Ability: "AbilityWrite", Group: "Other", Handler: "handleDeleteStatusTemplate", Description: ""},
+	{Method: "PUT", Path: "/api/v1/status-page/incident-templates/{id}", Ability: "AbilityWrite", Group: "Other", Handler: "handleUpdateStatusTemplate", Description: ""},
 	{Method: "GET", Path: "/api/v1/status-page/incidents", Ability: "AbilityRead", Group: "Other", Handler: "handleListStatusIncidents", Description: ""},
 	{Method: "POST", Path: "/api/v1/status-page/incidents", Ability: "AbilityWrite", Group: "Other", Handler: "handleCreateStatusIncident", Description: ""},
 	{Method: "DELETE", Path: "/api/v1/status-page/incidents/{id}", Ability: "AbilityWrite", Group: "Other", Handler: "handleDeleteStatusIncident", Description: ""},
