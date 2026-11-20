@@ -307,6 +307,10 @@
     "unavailable": "Preview unavailable",
     "frame": "Live preview of {{name}}"
   },
+  "previews": {
+    "title": "Branch previews",
+    "open": "Open"
+  },
   "recent": {
     "title": "Recent deployments",
     "viewAll": "View all",

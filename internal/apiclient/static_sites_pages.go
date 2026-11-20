@@ -169,6 +169,26 @@ func (c *Client) ListStaticSiteDeploys(ctx context.Context, name string) ([]Stat
 	return out.Deploys, err
 }
 
+// StaticSitePreview is one entry of GET /api/v1/static-sites/{name}/previews.
+type StaticSitePreview struct {
+	Branch    string `json:"branch"`
+	PRNumber  int    `json:"pr_number"`
+	Site      string `json:"site"`
+	CommitSHA string `json:"commit_sha,omitempty"`
+	Status    string `json:"status"`
+	URL       string `json:"url,omitempty"`
+	UpdatedAt string `json:"updated_at"`
+}
+
+// ListStaticSitePreviews calls GET /api/v1/static-sites/{name}/previews.
+func (c *Client) ListStaticSitePreviews(ctx context.Context, name string) ([]StaticSitePreview, error) {
+	var out struct {
+		Previews []StaticSitePreview `json:"previews"`
+	}
+	err := c.do(ctx, http.MethodGet, "/api/v1/static-sites/"+PathEscape(name)+"/previews", nil, &out)
+	return out.Previews, err
+}
+
 // PromoteStaticSiteDeploy calls POST /api/v1/static-sites/{name}/deploys/{id}/promote.
 func (c *Client) PromoteStaticSiteDeploy(ctx context.Context, name, deployID string) error {
 	return c.do(ctx, http.MethodPost, "/api/v1/static-sites/"+PathEscape(name)+"/deploys/"+PathEscape(deployID)+"/promote", nil, nil)

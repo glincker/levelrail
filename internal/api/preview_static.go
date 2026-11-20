@@ -126,6 +126,7 @@ func (rt *Router) deployPreviewStatic(ctx context.Context, appName, previewName 
 		}
 	}
 	rt.nudgeReconciler()
+	rt.prunePagesPreviews(ctx, appName, previewName)
 	return usedDomain, domainConflict, nil
 }
 

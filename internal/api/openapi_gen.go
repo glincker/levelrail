@@ -14,7 +14,7 @@ type openAPIRoute struct {
 	Description string
 }
 
-// openAPIRoutes holds all 2231 routes known to scripts/gen-api-reference at
+// openAPIRoutes holds all 2233 routes known to scripts/gen-api-reference at
 // generation time. Run `go run ./scripts/gen-api-reference` after changing
 // any routes*.go registration and commit the result.
 var openAPIRoutes = []openAPIRoute{
@@ -2129,6 +2129,7 @@ var openAPIRoutes = []openAPIRoute{
 	{Method: "DELETE", Path: "/api/v1/static-sites/{name}/notify", Ability: "AbilityWrite", Group: "Static Sites / Backup Targets / Registry Credentials", Handler: "handleDeletePagesNotify", Description: ""},
 	{Method: "GET", Path: "/api/v1/static-sites/{name}/notify", Ability: "AbilityRead", Group: "Static Sites / Backup Targets / Registry Credentials", Handler: "handleGetPagesNotify", Description: ""},
 	{Method: "PUT", Path: "/api/v1/static-sites/{name}/notify", Ability: "AbilityWrite", Group: "Static Sites / Backup Targets / Registry Credentials", Handler: "handlePutPagesNotify", Description: ""},
+	{Method: "GET", Path: "/api/v1/static-sites/{name}/previews", Ability: "AbilityRead", Group: "Static Sites / Backup Targets / Registry Credentials", Handler: "handleListStaticSitePreviews", Description: ""},
 	{Method: "GET", Path: "/api/v1/static-sites/{name}/rules", Ability: "AbilityRead", Group: "Static Sites / Backup Targets / Registry Credentials", Handler: "handleGetStaticSiteRules", Description: ""},
 	{Method: "PUT", Path: "/api/v1/static-sites/{name}/rules", Ability: "AbilityWrite", Group: "Static Sites / Backup Targets / Registry Credentials", Handler: "handlePutStaticSiteRules", Description: ""},
 	{Method: "GET", Path: "/api/v1/static-sites/{name}/settings", Ability: "AbilityRead", Group: "Static Sites / Backup Targets / Registry Credentials", Handler: "handleGetStaticSiteSettings", Description: ""},

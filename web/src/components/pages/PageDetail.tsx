@@ -31,6 +31,7 @@ const SiteGitCard = lazy(() => import('./SiteGitCard'))
 const SiteFormsCard = lazy(() => import('./SiteFormsCard'))
 const SiteHookCard = lazy(() => import('./SiteHookCard'))
 const SiteCiCard = lazy(() => import('./SiteCiCard'))
+const SitePreviewsCard = lazy(() => import('./SitePreviewsCard'))
 
 function Deployments({
   name,
@@ -46,6 +47,9 @@ function Deployments({
       ) : null}
       <Suspense fallback={null}>
         <SiteGitCard name={name} />
+      </Suspense>
+      <Suspense fallback={null}>
+        <SitePreviewsCard name={name} />
       </Suspense>
       <RollbackCard name={name} attempts={attempts} />
       <DeployAttemptsList

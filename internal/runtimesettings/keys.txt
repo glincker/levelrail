@@ -384,6 +384,7 @@ otlp.ingest_max_records
 pages.build_cache_max_bytes
 pages.build_log_max_bytes
 pages.build_log_retention
+pages.preview_max_per_site
 pages.proxy_max_body_mb
 pages.proxy_response_timeout
 perf.slow_statement_ms

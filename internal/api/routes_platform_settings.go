@@ -149,6 +149,7 @@ func (rt *Router) registerSettingsRoutes(mux *http.ServeMux) {
 	mux.HandleFunc("GET /api/v1/static-sites/{name}/rules", rt.requireAbilityForResource(AbilityRead, appResourceFromPath, rt.handleGetStaticSiteRules))
 	mux.HandleFunc("PUT /api/v1/static-sites/{name}/rules", rt.requireAbilityForResource(AbilityWrite, appResourceFromPath, rt.handlePutStaticSiteRules))
 	mux.HandleFunc("GET /api/v1/static-sites/{name}/deploys", rt.requireAbilityForResource(AbilityRead, appResourceFromPath, rt.handleListStaticSiteDeploys))
+	mux.HandleFunc("GET /api/v1/static-sites/{name}/previews", rt.requireAbilityForResource(AbilityRead, appResourceFromPath, rt.handleListStaticSitePreviews))
 	mux.HandleFunc("GET /api/v1/static-sites/{name}/deploys/{deployId}/log", rt.requireAbilityForResource(AbilityRead, appResourceFromPath, rt.handleStaticSiteDeployLog))
 	mux.HandleFunc("GET /api/v1/pages/{site}/deploys/{deployId}/logs", rt.requireAbilityForResource(AbilityReadSensitive, pagesResourceFromPath, rt.handlePagesDeployLogs))
 	mux.HandleFunc("GET /api/v1/static-sites/{name}/deploys/{deployId}/log/stream", rt.requireAbilityForResource(AbilityRead, appResourceFromPath, rt.withStreamReauth(appResourceFromPath, rt.handleStaticSiteDeployLogStream)))

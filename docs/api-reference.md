@@ -1394,6 +1394,7 @@ Endpoints for:
 | PUT | /api/v1/static-sites/{name}/notify | AbilityWrite | handlePutPagesNotify |
 | DELETE | /api/v1/static-sites/{name}/notify | AbilityWrite | handleDeletePagesNotify |
 | GET | /api/v1/static-sites/{name}/analytics | AbilityRead | handleStaticSiteAnalytics |
+| GET | /api/v1/static-sites/{name}/previews | AbilityRead | handleListStaticSitePreviews |
 
 ## Built-in Container Registry
 
