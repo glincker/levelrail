@@ -25,7 +25,7 @@ Set the optional `Description` field on a Go template (manifest templates reuse 
 
 {/* BEGIN GENERATED CATALOG TABLE */}
 
-Generated from `internal/catalog.Templates` plus registry-only templates (592 entries as of this build). Run `go run ./scripts/gen-template-catalog-docs` after changing a `templates_*.go` file to refresh this section.
+Generated from `internal/catalog.Templates` plus registry-only templates (593 entries as of this build). Run `go run ./scripts/gen-template-catalog-docs` after changing a `templates_*.go` file to refresh this section.
 
 | Category | Templates |
 | --- | --- |
@@ -48,7 +48,7 @@ Generated from `internal/catalog.Templates` plus registry-only templates (592 en
 | [Starter Kits](#starter-kits) | 7 |
 | [Storage](#storage) | 21 |
 | [Backups](#backups) | 2 |
-| [Databases](#databases) | 1 |
+| [Databases](#databases) | 2 |
 | [Mail](#mail) | 2 |
 | [Networking](#networking) | 6 |
 
@@ -741,6 +741,7 @@ Deliverability depends on reverse DNS, SPF, DKIM and a clean IP; see the mail te
 | Template | Slogan | ID | Notes |
 | --- | --- | --- | --- |
 | [GreptimeDB](https://docs.greptime.com/getting-started/installation/greptimedb-standalone/) | A time series database for metrics, logs and traces with SQL, PromQL and OpenTelemetry ingest. This runs a single standalone node with no login on the HTTP port. | `greptimedb` |  |
+| [LibreDB Studio](https://github.com/libredb/libredb-studio) | A browser based SQL and NoSQL client for PostgreSQL, MySQL, MongoDB, Redis and more, with a query editor, schema explorer and saved connections. MIT licensed. The admin password and session secret are generated for you and shown in the deployment variables. | `libredb-studio` |  |
 
 ## Mail
 

@@ -546,6 +546,7 @@ export const MISSING_TEMPLATE_LOGOS: readonly string[] = [
   'kitchenowl',
   'krakend',
   'kutt',
+  'libredb-studio',
   'libsql',
   'lightrag',
   'linkstack',

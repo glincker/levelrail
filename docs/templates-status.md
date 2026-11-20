@@ -145,7 +145,7 @@ Fixed in the wave N pass: `valkey` interpolated its password from the host shell
 
 Generated from the registry scan in `internal/catalog/platforms.json` (`scripts/scan-catalog-platforms`), not from the smoke run. A template is `yes` only when every image it uses lists `linux/arm64` in its manifest. `not checked` means unknown, not unsupported: the scan could not read a manifest or the image tag is set at install time.
 
-Last scan: 2026-11-11T22:14:40Z. **397 yes, 15 amd64 only, 180 not checked** of 592 templates.
+Last scan: 2026-11-20T08:25:50Z. **398 yes, 15 amd64 only, 180 not checked** of 593 templates.
 
 | Template | arm64 | Verified platforms |
 | --- | --- | --- |
@@ -395,6 +395,7 @@ Last scan: 2026-11-11T22:14:40Z. **397 yes, 15 amd64 only, 180 not checked** of 
 | `languagetool` | yes | linux/amd64, linux/arm64 |
 | `leantime` | yes | linux/amd64, linux/arm64 |
 | `librechat` | yes | linux/amd64, linux/arm64 |
+| `libredb-studio` | yes | linux/amd64, linux/arm64 |
 | `libreoffice` | yes | linux/amd64, linux/arm64 |
 | `librespeed` | yes | linux/amd64, linux/arm, linux/arm64 |
 | `libretranslate` | yes | linux/amd64, linux/arm64 |

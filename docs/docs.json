@@ -835,7 +835,8 @@
           {
             "group": "Databases",
             "pages": [
-              "self-host/greptimedb"
+              "self-host/greptimedb",
+              "self-host/libredb-studio"
             ]
           },
           {
