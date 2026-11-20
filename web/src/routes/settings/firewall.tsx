@@ -61,6 +61,7 @@ import { useTranslation } from 'react-i18next'
 import { PageTemplate } from '@/components/shell/PageTemplate'
 import { TableSkeleton } from '@/components/ui/table-skeleton'
 import { SettingsPageTitle } from '../../components/settings/SettingsPageTitle'
+import { ApiErrorAlert } from '../../components/ApiErrorAlert'
 
 // Settings-level, not tied to one app: a firewall rule is host-wide, the
 // same "account/platform scope, not routes/apps/" reasoning
@@ -391,14 +392,7 @@ function AddFirewallRuleDialog() {
           <CloseWarning action={action} sourceCIDR={sourceCIDR} />
 
           {createRule.isError ? (
-            <Alert variant="destructive">
-              <TriangleAlertGlassIcon
-                className="text-tone-warning"
-                size="1.7em"
-                aria-hidden="true"
-              />
-              <AlertDescription>{createRule.error.message}</AlertDescription>
-            </Alert>
+            <ApiErrorAlert error={createRule.error} />
           ) : null}
 
           <DialogFooter>
@@ -477,16 +471,7 @@ function DeleteFirewallRuleDialog({
                 })}
           </DialogDescription>
         </DialogHeader>
-        {deleteRule.isError ? (
-          <Alert variant="destructive">
-            <TriangleAlertGlassIcon
-              className="text-tone-warning"
-              size="1.7em"
-              aria-hidden="true"
-            />
-            <AlertDescription>{deleteRule.error.message}</AlertDescription>
-          </Alert>
-        ) : null}
+        {deleteRule.isError ? <ApiErrorAlert error={deleteRule.error} /> : null}
         <DialogFooter>
           <Button
             type="button"
