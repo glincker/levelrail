@@ -2439,6 +2439,7 @@ Routes that do not fit an existing group.
 | GET | /api/v1/node-providers/{provider}/spend | AbilityRoot | handleGetNodeProviderSpend |
 | GET | /api/v1/dns/authority | AbilityRead | handleDNSAuthority |
 | POST | /api/v1/hooks/pages/{site}/{secret} | Public | handleStaticSiteHookTrigger |
+| GET | /api/v1/builds/{id}/record | AbilityRead | handleGetBuildRecord |
 | POST | /mcp | Public |  |
 
 ## See also

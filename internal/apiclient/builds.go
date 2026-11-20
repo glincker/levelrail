@@ -2,6 +2,7 @@ package apiclient
 
 import (
 	"context"
+	"encoding/json"
 	"net/http"
 	"net/url"
 	"strconv"
@@ -334,5 +335,23 @@ func (c *Client) GetAppBuildRunner(ctx context.Context, app string) (AppBuildRun
 func (c *Client) SetAppBuildRunner(ctx context.Context, app string, req SetAppBuildRunnerRequest) (AppBuildRunner, error) {
 	var out AppBuildRunner
 	err := c.do(ctx, http.MethodPut, "/api/v1/apps/"+url.PathEscape(app)+"/build-runner", req, &out)
+	return out, err
+}
+
+// BuildRecordResource mirrors GET /api/v1/builds/{id}/record.
+type BuildRecordResource struct {
+	ID        string          `json:"id"`
+	BuildID   string          `json:"build_id"`
+	App       string          `json:"app"`
+	Claims    json.RawMessage `json:"claims"`
+	Signature string          `json:"signature"`
+	KeyID     string          `json:"key_id"`
+	CreatedAt time.Time       `json:"created_at"`
+}
+
+// GetBuildRecord calls GET /api/v1/builds/{id}/record.
+func (c *Client) GetBuildRecord(ctx context.Context, id string) (BuildRecordResource, error) {
+	var out BuildRecordResource
+	err := c.do(ctx, http.MethodGet, "/api/v1/builds/"+url.PathEscape(id)+"/record", nil, &out)
 	return out, err
 }

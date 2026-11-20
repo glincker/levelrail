@@ -245,9 +245,17 @@ func loadBuilder(ctx context.Context, logger *slog.Logger, db *store.DB, telemet
 			deploy.WithBuildSecretSource(&pkgregistry.Resolver{Store: db, Secrets: secretsManager}))
 	}
 
+	recordOpt, gateOpt := buildRecordWiring(ctx, logger, db, secretsManager)
+	if gateOpt != nil {
+		deployOpts = append(deployOpts, gateOpt)
+	}
 	memGuard := build.MemGuardFromEnv(os.LookupEnv)
 	limitsSource := api.BuildLimitsSourceWithHost(db, derivedBuildLimits(), buildMemoryCap(memGuard), buildCPUCap(buildCPUPercentSeed()))
 	var limiter *build.Limiter
+	routerOpts := []build.RouterOption{}
+	if recordOpt != nil {
+		routerOpts = append(routerOpts, recordOpt)
+	}
 	router := build.NewRouter(buildClient, buildRunnerNodeSource(db, agentRegistry, hostReports), agent.NewBuildDispatcher(agentRegistry), build.WithRouterLogger(logger),
 		build.WithRouterQuery(buildRunnerQuery(db)),
 		build.WithRouterTransfer(newRegistryTransfer(logger).config(db, runtimesettings.New(db, os.LookupEnv), rawDockerCli, logger)),
@@ -257,7 +265,12 @@ func loadBuilder(ctx context.Context, logger *slog.Logger, db *store.DB, telemet
 			}
 			return limiter.Load()
 		}),
-		build.WithRouterSlotLimit(func(ctx context.Context, app string) int { return limitsSource(ctx, app).MaxConcurrent }))
+		build.WithRouterSlotLimit(func(ctx context.Context, app string) int { return limitsSource(ctx, app).MaxConcurrent }),
+		func(r *build.Router) {
+			for _, o := range routerOpts {
+				o(r)
+			}
+		})
 	limiter = build.NewLimiter(router, limitsSource,
 		build.WithMemoryGuard(memGuard, hostMemoryMB),
 		build.WithRunRecorder(api.BuildRunRecorder(db)), build.WithLimiterLogger(logger),

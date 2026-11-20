@@ -14,7 +14,7 @@ type openAPIRoute struct {
 	Description string
 }
 
-// openAPIRoutes holds all 2208 routes known to scripts/gen-api-reference at
+// openAPIRoutes holds all 2209 routes known to scripts/gen-api-reference at
 // generation time. Run `go run ./scripts/gen-api-reference` after changing
 // any routes*.go registration and commit the result.
 var openAPIRoutes = []openAPIRoute{
@@ -1198,6 +1198,7 @@ var openAPIRoutes = []openAPIRoute{
 	{Method: "POST", Path: "/api/v1/builds/queue/resume", Ability: "AbilityWriteSensitive", Group: "Other", Handler: "handleBuildQueueResume", Description: ""},
 	{Method: "GET", Path: "/api/v1/builds/runners", Ability: "AbilityRead", Group: "Other", Handler: "handleListBuildRunners", Description: ""},
 	{Method: "GET", Path: "/api/v1/builds/{id}", Ability: "AbilityRead", Group: "Other", Handler: "handleGetBuild", Description: ""},
+	{Method: "GET", Path: "/api/v1/builds/{id}/record", Ability: "AbilityRead", Group: "Other", Handler: "handleGetBuildRecord", Description: "The record names an app's builder and digest, so it is hidden unless the caller can see the app's environment."},
 	{Method: "GET", Path: "/api/v1/cdn/overview", Ability: "AbilityRead", Group: "Other", Handler: "handleCDNOverview", Description: ""},
 	{Method: "GET", Path: "/api/v1/changelog", Ability: "AbilityRead", Group: "Other", Handler: "handleGetChangelog", Description: "\"What's new\" dashboard panel: recent entries parsed from the repo's own CHANGELOG.md, AbilityRead like updates above."},
 	{Method: "POST", Path: "/api/v1/ci/oidc-exchange", Ability: "Public", Group: "Other", Handler: "handleCIOIDCExchange", Description: ""},

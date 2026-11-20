@@ -37,6 +37,12 @@ func (c TransferConfig) ready() bool {
 
 // dispatchWith picks the transfer path for one dispatched build.
 func (r *Router) dispatchWith(ctx context.Context, nodeID string, req RemoteRequest, progress func(ProgressEvent)) (*Result, error) {
+	res, err := r.dispatchTransfer(ctx, nodeID, req, progress)
+	r.markBuilder(ctx, res, nodeID)
+	return res, err
+}
+
+func (r *Router) dispatchTransfer(ctx context.Context, nodeID string, req RemoteRequest, progress func(ProgressEvent)) (*Result, error) {
 	if r.transfer == nil {
 		return r.dispatch(ctx, nodeID, req, progress)
 	}
@@ -106,6 +112,9 @@ func (r *Router) dispatchRegistry(ctx context.Context, nodeID string, req Remote
 		return nil, wrapped
 	}
 	if err := VerifyPushedDigest(ctx, cfg.Verifier, ref, res.Digest); err != nil {
+		return nil, err
+	}
+	if err := r.recordBuild(ctx, nodeID, ref, req.Tag, res); err != nil {
 		return nil, err
 	}
 	// Pull is by digest only; the registry tag is never trusted as the image.

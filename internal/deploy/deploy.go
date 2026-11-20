@@ -246,7 +246,8 @@ type Pipeline struct {
 	buildSecretValues BuildSecretValues // nil: build.secrets is rejected at deploy
 	buildSecrets      BuildSecretSource // nil is valid: builds mount no package registry secrets
 
-	attest      bool            // request BuildKit SBOM and provenance on Dockerfile builds
+	attest      bool // request BuildKit SBOM and provenance on Dockerfile builds
+	buildGate   BuildGate
 	supplyChain SupplyChainHook // nil skips SBOM storage and the scan gate
 	secretScan  SecretScanHook  // nil skips deploy-time secret scanning
 	spendGuard  SpendGuardHook  // nil skips the block_deploys spend cap guard
@@ -450,6 +451,11 @@ func (p *Pipeline) deployRailpack(ctx context.Context, req Request, progress fun
 // finishDeploy is deployDockerfile and deployRailpack's shared tail: save
 // the built image, identified by its local image ID, as desired state.
 func (p *Pipeline) finishDeploy(ctx context.Context, req Request, res *build.Result) (string, error) {
+	if p.buildGate != nil {
+		if err := p.buildGate.CheckBuild(ctx, req.ServiceName, req.AttemptID, res.RecordID, res.Digest, res.BuilderTrust, res.BuilderNodeID); err != nil {
+			return "", fmt.Errorf("deploy: service %q: %w", req.ServiceName, err)
+		}
+	}
 	if p.supplyChain != nil {
 		if err := p.supplyChain.AfterBuild(ctx, req.ServiceName, req.AttemptID, res.Attestations); err != nil {
 			return "", fmt.Errorf("deploy: service %q: %w", req.ServiceName, err)

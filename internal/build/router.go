@@ -49,6 +49,9 @@ type Router struct {
 
 	// transfer is the live registry transfer config; nil keeps the tar path.
 	transfer func(ctx context.Context) TransferConfig
+
+	// recorder signs and stores a record for a digest a remote builder pushed.
+	recorder RecordSigner
 }
 
 // RouterOption configures optional Router behavior.

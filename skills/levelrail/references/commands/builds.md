@@ -10,6 +10,7 @@ Subcommands: cache, cancel, drain, kill-all, list, pause, prune, queue, resume, 
 Usage:
   levelrail-cli builds list [--app A] [--status S] [--limit N]
   levelrail-cli builds show <id>
+  levelrail-cli builds record <id>
   levelrail-cli builds cancel <id>
   levelrail-cli builds retry <id>
   levelrail-cli builds cache [--node N]
@@ -41,6 +42,7 @@ Subcommands: quota
 Usage:
   levelrail-cli builds list [--app A] [--status S] [--limit N]
   levelrail-cli builds show <id>
+  levelrail-cli builds record <id>
   levelrail-cli builds cancel <id>
   levelrail-cli builds retry <id>
   levelrail-cli builds cache [--node N]

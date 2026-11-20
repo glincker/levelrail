@@ -28,6 +28,12 @@ type Result struct {
 	// Digest is the pushed manifest digest of a registry-mode build.
 	Digest string
 
+	// BuilderNodeID and BuilderTrust name the remote node and tier that built it, empty for local builds.
+	BuilderNodeID string
+	BuilderTrust  string
+	// RecordID is the signed build record minted for a registry-mode remote build.
+	RecordID string
+
 	// Attestations holds the SBOM and provenance of a build run with Request.Attest.
 	Attestations Attestations
 }
