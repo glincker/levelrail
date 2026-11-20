@@ -81,3 +81,34 @@ func TestAddDomainCreatesRecordThroughRoute53(t *testing.T) {
 		t.Fatalf("undo = %+v", undo)
 	}
 }
+
+func TestAddDomainWritesToPublicZoneSharingNameWithPrivateZone(t *testing.T) {
+	rt, p := route53ZonesRouter(t)
+	p.zones = append([]dnszones.Zone{{ID: "Zprivate", Name: "apps.example.com", Provider: "route53", Private: true}}, p.zones...)
+	p.sets["Zprivate"] = nil
+	res, _ := rt.applyDomainDNS(context.Background(), nil, "web", "app.apps.example.com", dnsOpts{Mode: dnsModeAuto, CanWrite: true})
+	if res.DNS != dnsrecords.OutcomeCreated {
+		t.Fatalf("result = %+v", res)
+	}
+	if len(p.sets["Zprivate"]) != 0 || len(p.sets["Z1"]) != 1 {
+		t.Fatalf("private = %+v, public = %+v", p.sets["Zprivate"], p.sets["Z1"])
+	}
+}
+
+func TestRemoveManagedDNSDeletesFromTheZoneItWasWrittenIn(t *testing.T) {
+	rt, p := route53ZonesRouter(t)
+	ctx := context.Background()
+	if res, _ := rt.applyDomainDNS(ctx, nil, "web", "app.apps.example.com", dnsOpts{Mode: dnsModeAuto, CanWrite: true}); res.DNS != dnsrecords.OutcomeCreated {
+		t.Fatalf("result = %+v", res)
+	}
+	// A more specific zone appears later and now matches the domain first.
+	p.zones = append(p.zones, dnszones.Zone{ID: "Z4", Name: "app.apps.example.com", Provider: "route53"})
+	p.sets["Z4"] = nil
+	out := rt.removeManagedDNS(ctx, nil, "web", "app.apps.example.com")
+	if len(out) != 1 || out[0].DNS != "deleted" || out[0].Zone != "apps.example.com." {
+		t.Fatalf("result = %+v", out)
+	}
+	if len(p.sets["Z1"]) != 0 {
+		t.Fatalf("the record stayed in the original zone: %+v", p.sets["Z1"])
+	}
+}
