@@ -51,6 +51,7 @@ type sharedEnvSecretScope struct {
 	notFoundMsg string
 	notFound    error
 	load        func(ctx context.Context, id string) error
+	ref         func(id string) resourceRef // optional owner check, set where the path gate does not cover IAM
 	listAll     func(ctx context.Context, id string) ([]store.SharedEnvVar, error)
 	listKeys    func(ctx context.Context, id string) ([]string, error)
 	markSecret  func(ctx context.Context, id, key string) error
@@ -59,6 +60,15 @@ type sharedEnvSecretScope struct {
 }
 
 func (rt *Router) loadSharedEnvScope(w http.ResponseWriter, r *http.Request, scope sharedEnvSecretScope, id, verb string) bool {
+	if scope.ref != nil {
+		ability := AbilityWrite
+		if verb == "list" {
+			ability = AbilityRead
+		}
+		if !rt.authorizeRefs(w, r, ability, notFoundAs(http.StatusNotFound, scope.notFoundMsg), scope.ref(id)) {
+			return false
+		}
+	}
 	err := scope.load(r.Context(), id)
 	if errors.Is(err, scope.notFound) {
 		writeError(w, http.StatusNotFound, scope.notFoundMsg)

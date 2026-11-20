@@ -56,6 +56,7 @@ func (rt *Router) projectEnvSecretScope() sharedEnvSecretScope {
 		label:       "project",
 		notFoundMsg: "project not found",
 		notFound:    store.ErrProjectNotFound,
+		ref:         projectRef,
 		load: func(ctx context.Context, id string) error {
 			_, err := rt.projects.GetProject(ctx, id)
 			return err
