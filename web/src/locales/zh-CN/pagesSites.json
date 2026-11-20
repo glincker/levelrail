@@ -1,0 +1,549 @@
+{
+  "title": "页面",
+  "description": "直接由控制面提供的静态站点。",
+  "newSite": "新建站点",
+  "empty": {
+    "title": "还没有站点",
+    "body": "拖入文件夹或 zip 压缩包，发布你的第一个站点。"
+  },
+  "list": {
+    "label": "站点",
+    "name": "名称",
+    "url": "URL",
+    "lastDeploy": "最近部署",
+    "status": "状态",
+    "size": "大小",
+    "noUrl": "无域名",
+    "none": "无",
+    "unknown": "-",
+    "loadFailed": "无法加载站点。"
+  },
+  "status": {
+    "running": "已上线",
+    "attention": "需要处理",
+    "unknown": "未知"
+  },
+  "new": {
+    "title": "新建站点",
+    "name": "名称",
+    "nameHint": "小写字母、数字和连字符。",
+    "drop": "上传",
+    "blank": "入门模板",
+    "blankHint": "从一个首页开始，之后可以替换。",
+    "git": "Git",
+    "create": "创建并发布",
+    "creating": "处理中...",
+    "cancel": "取消",
+    "nameTaken": "该名称已被占用。",
+    "failed": "无法创建站点：{{message}}",
+    "mode": "起始方式",
+    "change": "更改",
+    "stage": {
+      "packing": "正在打包文件...",
+      "creating": "正在创建站点...",
+      "uploading": "正在上传...",
+      "publishing": "正在发布..."
+    }
+  },
+  "detail": {
+    "back": "全部站点",
+    "visit": "访问",
+    "tabs": {
+      "label": "站点分区",
+      "overview": "概览",
+      "deployments": "部署",
+      "domains": "域名",
+      "routes": "路由",
+      "settings": "设置",
+      "failing": "失败的检查"
+    },
+    "publish": "发布新版本",
+    "hidePublish": "隐藏上传",
+    "loading": "加载中...",
+    "dropOverlay": "拖放即可发布新版本",
+    "redeployed": "新版本已发布。",
+    "lastDeploy": "最近部署于 {{when}}",
+    "files_other": "{{count}} 个文件"
+  },
+  "settings": {
+    "app": "完整应用设置",
+    "appHint": "构建、环境和访问选项位于应用页面。",
+    "openApp": "打开应用页面",
+    "danger": "删除站点",
+    "dangerHint": "将删除站点及其已发布的文件。",
+    "delete": "删除",
+    "deleting": "删除中...",
+    "confirmTitle": "删除 {{name}}？",
+    "confirmBody": "站点将停止提供服务，且无法恢复。",
+    "dangerZone": "危险操作区",
+    "spa": "单页应用",
+    "spaHint": "对未知路径返回 index.html，使客户端路由生效。",
+    "cleanUrls": "简洁 URL",
+    "cleanUrlsHint": "通过 about.html 提供 /about。",
+    "trailingSlash": "末尾斜杠",
+    "slashOff": "保持原样",
+    "slashAdd": "始终添加",
+    "slashRemove": "始终移除",
+    "notFound": "自定义 404 页面",
+    "build": "构建命令",
+    "output": "输出目录",
+    "password": "密码",
+    "passwordHint": "访客使用用户名 site 和此共享密码登录。它适用于每个域名和部署 URL，且之后不会再次显示。",
+    "passwordPlaceholder": "新密码",
+    "passwordClear": "移除",
+    "passwordRemoveConfirm": "移除密码？任何拿到链接的人都可以打开该站点。",
+    "passwordKeep": "保留",
+    "locked": "受密码保护",
+    "gitOnlyHint": "适用于 git 构建，拖放的文件夹暂不使用。",
+    "auto": "自动",
+    "on": "开启",
+    "off": "关闭",
+    "current": "当前为 {{value}}",
+    "save": "保存",
+    "reset": "使用 app.yaml",
+    "resetGit": "使用 git 设置",
+    "fromGit": "来自 git 设置：{{value}}",
+    "saved": "设置已保存",
+    "loadFailed": "无法加载设置",
+    "buildPlaceholder": "npm run build",
+    "outputPlaceholder": "dist"
+  },
+  "domains": {
+    "label": "连接域名",
+    "add": "添加域名",
+    "adding": "添加中...",
+    "addFailed": "无法添加域名。",
+    "verify": "验证",
+    "checking": "检查中...",
+    "dnsOk": "DNS 已就绪",
+    "dnsWaiting": "等待 DNS 生效",
+    "certIssued": "证书已签发",
+    "certPending": "证书待签发",
+    "mode": {
+      "auto": "已为你配置 DNS",
+      "manual": "请添加以下记录"
+    },
+    "recordsLabel": "需要添加的 DNS 记录",
+    "type": "类型",
+    "host": "主机",
+    "value": "值",
+    "copyHost": "复制主机",
+    "copyValue": "复制值",
+    "statusFailed": "无法检查域名状态。",
+    "placeholder": "www.example.com",
+    "step1": "域名",
+    "step2": "DNS 记录",
+    "step3": "验证",
+    "createdForYou": "已为你创建 DNS 记录。",
+    "none": "还没有自定义域名",
+    "tls": "TLS",
+    "provisioning": "配置中",
+    "remove": "移除 {{domain}}",
+    "progress": "域名进度",
+    "step": {
+      "dns": "DNS",
+      "cert": "证书",
+      "live": "上线"
+    },
+    "done": "已完成",
+    "waiting": "等待中",
+    "checks": "域名检查",
+    "failed": "失败",
+    "check": {
+      "dns_resolves": "DNS 记录",
+      "dns_points_here": "指向此处",
+      "dns_aaaa_mismatch": "IPv6 记录",
+      "dns_cname_apex": "根域名上的 CNAME",
+      "dns_proxied": "CDN 代理",
+      "proxy_ports": "端口 80/443",
+      "net_port80": "端口 80",
+      "caa_blocks_issuer": "CAA",
+      "tls_certificate": "证书",
+      "cert_renewal": "续期",
+      "http_status": "站点响应",
+      "dns_propagation": "DNS 传播",
+      "host_private_address": "公网地址",
+      "acme_failure": "证书签发",
+      "dns_www_apex": "www 与根域名"
+    }
+  },
+  "summary": {
+    "files_other": "{{count}} 个文件",
+    "index": "已找到 index.html",
+    "redirects": "已找到 _redirects",
+    "headers": "已找到 _headers",
+    "noIndex": "顶层没有 index.html，站点根目录将显示 404。",
+    "overLimit": "超出上传大小上限，将被拒绝。",
+    "skipped": "隐藏的系统文件、.git 和 node_modules 将被跳过。"
+  },
+  "success": {
+    "title": "{{name}} 已发布",
+    "open": "打开",
+    "copy": "复制 URL",
+    "next": "下一步",
+    "addDomain": "添加域名",
+    "editRoutes": "编辑路由",
+    "viewDeploys": "查看部署"
+  },
+  "entry": {
+    "drop": {
+      "title": "拖入文件夹或 zip",
+      "body": "几秒钟即可发布已构建的站点。"
+    },
+    "git": {
+      "title": "连接 Git",
+      "body": "每次推送时自动构建并发布。"
+    },
+    "blank": {
+      "title": "从空白页面开始",
+      "body": "创建一个入门页面，之后再编辑。"
+    }
+  },
+  "rollback": {
+    "title": "上一版本",
+    "action": "回滚",
+    "confirmTitle": "回滚 {{name}}？",
+    "confirmBody": "站点将再次提供上一版本。",
+    "none": "没有可回滚的更早版本。"
+  },
+  "promote": {
+    "action": "设为线上版本",
+    "confirmTitle": "让此部署成为 {{name}} 的线上版本？",
+    "confirmBody": "站点自己的域名会立即提供此部署，它自己的 URL 仍然有效。"
+  },
+  "deployUrl": {
+    "copy": "复制部署 URL",
+    "copied": "已复制部署 URL",
+    "open": "打开部署 URL"
+  },
+  "starters": {
+    "label": "入门模板",
+    "preview": "{{name}} 入门模板预览",
+    "blank": {
+      "title": "空白",
+      "hint": "一个空的首页，之后可以替换。"
+    },
+    "landing": {
+      "title": "落地页",
+      "hint": "首屏、三张功能卡片和页脚。"
+    },
+    "docs": {
+      "title": "文档",
+      "hint": "侧边导航、标题和代码块。"
+    },
+    "portfolio": {
+      "title": "作品集",
+      "hint": "简介和精选作品网格。"
+    }
+  },
+  "checks": {
+    "title": "站点检查",
+    "score": "站点检查评分",
+    "rerun": "重新运行",
+    "running": "检查中...",
+    "failed": "无法运行站点检查。",
+    "allGood": "未发现问题。",
+    "scanned_other": "已扫描 {{count}} 个文件，{{size}}。",
+    "truncated": "站点较大，仅扫描了一部分。",
+    "passing_other": "{{count}} 项检查通过",
+    "status": {
+      "ok": "通过",
+      "warn": "警告",
+      "fail": "失败"
+    }
+  },
+  "traffic": {
+    "title": "流量",
+    "window": "时间范围",
+    "windows": {
+      "24h": "24 小时",
+      "7d": "7 天",
+      "30d": "30 天"
+    },
+    "noSeries": "暂无数据",
+    "series": {
+      "requests": "请求",
+      "requestsHint": "每个时间段内站点的全部请求。",
+      "pages": "页面",
+      "pagesHint": "仅统计页面加载，不含脚本和图片等资源。",
+      "errors": "错误",
+      "errorsHint": "状态码为 4xx 或 5xx 的响应。"
+    },
+    "requests": "请求",
+    "visitors": "访客",
+    "bandwidth": "带宽",
+    "statusLine": "2xx {{ok}}，3xx {{redirects}}，4xx {{clientErrors}}，5xx {{serverErrors}}",
+    "none": "暂无内容。",
+    "addRedirect": "添加重定向",
+    "unavailable": "无法显示流量：此服务器没有可用于站点的访问日志来源。",
+    "failed": "无法加载流量。",
+    "partial": "数据不完整。",
+    "topPages": "热门页面",
+    "brokenLinks": "失效链接",
+    "linkedFrom": "链接来源",
+    "assets": "资源：{{count}} 次请求，{{size}}",
+    "assetsNote": "脚本、样式、图片和字体计入此处，但不单独列出。",
+    "probes": "探测和扫描：{{count}}",
+    "probesList": "未找到内容的类扫描请求",
+    "show": "显示",
+    "hide": "隐藏"
+  },
+  "hero": {
+    "more": "更多操作",
+    "status": {
+      "live": "已上线",
+      "publishing": "发布中",
+      "notPublished": "未发布"
+    }
+  },
+  "preview": {
+    "notFoundToggle": "预览 404 页面",
+    "title": "预览",
+    "device": "设备",
+    "desktop": "桌面",
+    "mobile": "移动端",
+    "unavailable": "无法预览",
+    "frame": "{{name}} 的实时预览"
+  },
+  "previews": {
+    "title": "分支预览",
+    "open": "打开"
+  },
+  "recent": {
+    "title": "最近部署",
+    "viewAll": "查看全部",
+    "none": "还没有部署。",
+    "live": "已上线"
+  },
+  "routes": {
+    "testTitle": "测试 URL",
+    "testLabel": "要测试的路径",
+    "testPlaceholder": "/about",
+    "test": "测试",
+    "rules": "规则",
+    "none": "没有重定向或重写规则",
+    "from": "来源",
+    "to": "目标",
+    "status": "状态码",
+    "copyLine": "复制 _redirects 行",
+    "advanced": "更多工具",
+    "notStatic": "路由适用于已发布的静态站点",
+    "loadFailed": "无法加载规则",
+    "retry": "重试",
+    "headers": "响应头",
+    "addRedirect": "添加重定向",
+    "addHeader": "添加响应头",
+    "noHeaders": "没有自定义响应头",
+    "moveUp": "上移",
+    "moveDown": "下移",
+    "remove": "移除",
+    "force": "强制",
+    "headerPath": "响应头路径",
+    "headerSet": "要设置的响应头",
+    "headerSetPlaceholder": "名称: 值，每行一条",
+    "headerRemove": "要移除的响应头",
+    "headerRemovePlaceholder": "名称，用逗号分隔",
+    "source": {
+      "ui": "界面",
+      "app.yaml": "app.yaml",
+      "file": "文件"
+    },
+    "lockedHint": "只读，定义在 {{origin}} 中",
+    "unsaved": "有未保存的更改",
+    "saving": "保存中...",
+    "save": "保存更改",
+    "discard": "放弃",
+    "saved": "路由规则已保存",
+    "invalid": "部分规则需要修正",
+    "testHint": "测试基于已保存的规则运行。",
+    "kindLabel": "规则类型",
+    "kind": {
+      "redirect": "重定向",
+      "rewrite": "重写",
+      "proxy": "代理",
+      "status": "直接响应"
+    },
+    "targetApp": "目标应用",
+    "targetPath": "目标路径",
+    "pickApp": "选择应用",
+    "state": {
+      "ok": "应用可访问",
+      "missing": "没有此名称的应用",
+      "self": "指向此站点"
+    },
+    "drag": "拖动以重新排序",
+    "removed": "规则已移除",
+    "undo": "撤销",
+    "noMatch": "没有规则匹配，将提供该文件",
+    "served": "已保存的规则将提供",
+    "rulesHint": "规则从上到下执行，第一个匹配的规则生效。这里设置的规则优先于 app.yaml，再之后是 _redirects。使用 :splat 表示路径的其余部分。代理规则使用 app://name/path 转发到某个应用。",
+    "preset": {
+      "spa": "单页应用回退",
+      "moved": "重定向已移动的分区",
+      "api": "将 /api 代理到某个应用"
+    },
+    "problem": {
+      "fromSlash": "来源必须以 / 开头",
+      "badChars": "不允许使用花括号和反斜杠",
+      "toEmpty": "请添加目标",
+      "proxyApp": "请选择要转发到的应用",
+      "proxyAppMissing": "没有此名称的应用",
+      "proxyAppSelf": "站点不能代理到自身",
+      "proxyPath": "目标路径必须以 / 开头"
+    },
+    "view": {
+      "label": "规则视图",
+      "rows": "列表",
+      "raw": "原始文本"
+    },
+    "raw": {
+      "label": "文本形式的重定向规则",
+      "placeholder": "/old /new 301",
+      "hint": "每行一条规则：来源、目标、状态码。在状态码后加 ! 可强制生效。目标可以是 app://name/path。"
+    },
+    "diff": {
+      "title": "相对已保存规则的更改",
+      "toggle": "显示更改",
+      "none": "暂无更改",
+      "add": "新增",
+      "del": "删除",
+      "same": "未更改"
+    }
+  },
+  "git": {
+    "repo": "仓库",
+    "repoPlaceholder": "搜索你的仓库或粘贴 URL",
+    "detecting": "正在检测框架...",
+    "unreadable": "无法读取该仓库。请检查 URL，或在应用流程中为私有仓库连接账户。",
+    "detected": "检测到的构建",
+    "plainHtml": "纯 HTML",
+    "static": "静态",
+    "notStatic": "服务端应用",
+    "branch": "分支",
+    "command": "构建命令",
+    "commandPlaceholder": "无，直接发布文件",
+    "output": "输出目录",
+    "outputPlaceholder": "仓库根目录",
+    "serverWarning": "该仓库看起来是服务端应用，而不是静态站点。",
+    "useAppFlow": "使用应用流程",
+    "forceStatic": "仍以静态站点部署",
+    "create": "创建并部署",
+    "deployOnPush": "每次推送时部署",
+    "createFailed": "无法创建站点：{{message}}",
+    "steps": {
+      "label": "部署进度",
+      "cloning": "克隆",
+      "building": "构建",
+      "publishing": "发布",
+      "live": "上线",
+      "state": {
+        "pending": "等待中",
+        "running": "进行中",
+        "done": "已完成",
+        "failed": "失败",
+        "unknown": "状态未知"
+      }
+    },
+    "failedStep": "在{{step}}时失败：{{message}}",
+    "viewLog": "打开构建日志",
+    "fixSettings": "修复设置",
+    "card": {
+      "title": "Git",
+      "repo": "仓库",
+      "branch": "分支",
+      "commit": "最近提交",
+      "none": "尚无",
+      "onPush": "推送时部署",
+      "onPushHint": "立即生效。路径过滤和更多选项位于应用的 Git 设置中。",
+      "triggerPush": "推送时",
+      "triggerRelease": "发布时",
+      "triggerManual": "手动",
+      "triggerSaved": "部署触发条件已保存。",
+      "triggerFailed": "无法保存触发条件：{{message}}",
+      "openApp": "Git 设置",
+      "redeploy": "重新部署",
+      "redeploying": "重新部署中...",
+      "redeployFailed": "无法启动部署：{{message}}",
+      "redeployStarted": "部署已开始。",
+      "previews": "分支预览",
+      "previewOpen": "打开预览",
+      "pr": "PR #{{number}}"
+    }
+  },
+  "forms": {
+    "title": "表单提交",
+    "failed": "无法加载提交内容。",
+    "remove": "删除",
+    "delete": "删除 {{form}} 的提交 {{id}}",
+    "deleteTip": "永久删除此提交",
+    "confirmDelete": "删除此提交？",
+    "exportCsv": "将 {{form}} 导出为 CSV",
+    "spam": "垃圾信息",
+    "spamWhy": "垃圾信息：{{reason}}"
+  },
+  "preset": {
+    "title": "性能预设",
+    "tip": "按路径设置缓存和安全响应头。你自己的 _headers 文件始终优先。",
+    "none": "无"
+  },
+  "hook": {
+    "title": "部署钩子",
+    "tip": "一个秘密 URL，向它发送 POST 请求时会重新部署此站点的分支",
+    "create": "创建",
+    "createTip": "为 CMS、CI 任务或定时任务创建秘密 URL",
+    "rotate": "轮换",
+    "rotateTip": "签发新 URL，旧 URL 将停止工作",
+    "revoke": "撤销",
+    "revokeTip": "关闭此钩子",
+    "confirmRotate": "轮换 URL？当前 URL 将停止工作。",
+    "confirmRevoke": "撤销部署钩子？",
+    "copy": "复制",
+    "copied": "已复制",
+    "copyTip": "复制 URL",
+    "shownOnce": "请立即复制，之后不会再次显示。",
+    "since": "启用于 {{date}}",
+    "failed": "无法加载部署钩子。"
+  },
+  "logs": {
+    "action": "日志",
+    "title": "构建日志",
+    "copy": "复制日志",
+    "copied": "已复制",
+    "download": "下载日志",
+    "loading": "正在加载日志",
+    "empty": "没有日志输出。",
+    "error": "无法加载日志。",
+    "failedAt": "在{{step}}期间失败",
+    "step": {
+      "cloning": "克隆",
+      "building": "构建",
+      "publishing": "发布",
+      "live": "上线"
+    }
+  },
+  "ci": {
+    "title": "CI 部署",
+    "tip": "一个只能部署此站点的令牌。请将它作为密钥放入你的流水线，它无法访问其他任何内容，并且可以随时撤销。",
+    "create": "创建令牌",
+    "createTip": "为此站点创建仅用于部署的令牌",
+    "revoke": "撤销",
+    "revokeTip": "立即停止此令牌工作",
+    "confirmRevoke": "撤销此令牌？使用它的流水线将失败。",
+    "copy": "复制",
+    "copied": "已复制",
+    "shownOnce": "请立即复制，之后不会再次显示。请将其保存为 LEVELRAIL_PAGES_TOKEN。",
+    "expires": "{{date}} 过期",
+    "failed": "无法加载部署令牌。",
+    "github": "GitHub",
+    "gitlab": "GitLab",
+    "curl": "curl"
+  },
+  "analytics": {
+    "title": "分析",
+    "pages": "热门页面",
+    "referrers": "热门来源",
+    "codes": "状态码",
+    "none": "暂无内容。",
+    "privacy": "数据来自边缘访问日志。不存储 Cookie、客户端地址或查询字符串。最多可查看 {{days}} 天的范围。"
+  }
+}

@@ -1008,5 +1008,126 @@
       "paidShape": "此规格不在额度限制内,可能产生费用。开启 {{setting}} 才能使用。",
       "unknownPrice": "Oracle 未给出此规格的价格,无法检查价格上限。开启 {{setting}}(或 provision.allow_unknown_price)以允许。"
     }
+  },
+  "builderTrust": {
+    "title": "构建信任",
+    "tipLabel": "关于构建信任",
+    "tip": "服务器和托管构建节点可以构建任何环境。个人构建节点（笔记本电脑或家用机器）除非该环境允许，否则不用于生产。",
+    "tierLabel": "层级",
+    "unknown": "未报告",
+    "saved": "构建信任已设为 {{tier}}",
+    "tier": {
+      "server": "服务器",
+      "managed": "托管",
+      "personal": "个人"
+    },
+    "hint": {
+      "server": "自有服务器，可以构建任何内容。",
+      "managed": "由此控制面创建，可以构建任何内容。",
+      "personal": "笔记本电脑或家用机器，不用于生产。"
+    }
+  },
+  "allowedBuilders": {
+    "title": "允许的构建节点",
+    "tiers": "构建节点层级",
+    "addNode": "添加构建节点",
+    "defaultPolicy": "默认策略",
+    "customPolicy": "自定义列表",
+    "personalOff": "个人构建节点已关闭",
+    "personalOn": "个人构建节点已开启",
+    "productionTipLabel": "关于生产构建节点",
+    "productionTip": "除非你在此列出该节点或层级，或开启 build.personal_builders_in_production 设置，生产环境永远不会在个人构建节点上构建。",
+    "save": "保存",
+    "reset": "恢复默认",
+    "saved": "允许的构建节点已保存"
+  },
+  "builders": {
+    "title": "构建节点",
+    "tipLabel": "关于构建节点",
+    "tip": "构建节点为此服务器运行镜像构建，让部署保持轻量。请在每个应用的构建设置中选择它使用哪个构建节点。",
+    "addButton": "添加构建节点",
+    "empty": "还没有构建节点。添加笔记本电脑或闲置机器，即可借助此服务器进行构建。",
+    "col": {
+      "name": "构建节点",
+      "status": "状态",
+      "tier": "层级",
+      "arch": "架构",
+      "lastSeen": "最近在线",
+      "builds": "构建",
+      "avg": "平均构建时长",
+      "pressure": "负载"
+    },
+    "buildsNow": "{{used}} / {{total}}",
+    "never": "从未",
+    "add": {
+      "title": "添加构建节点",
+      "tipLabel": "关于构建节点令牌",
+      "tip": "令牌只能使用一次，且只显示一次。该构建节点会以个人构建节点的身份加入：除非某个环境允许，否则不用于生产。",
+      "description": "在应该执行构建的机器上运行此命令。",
+      "macos": "macOS",
+      "linux": "Linux",
+      "windows": "Windows（即将推出）",
+      "macosHint": "需要 levelrail CLI 以及 Docker 或 Lima。",
+      "linuxHint": "需要 levelrail CLI 和 Docker。",
+      "commandLabel": "构建节点加入命令",
+      "copy": "复制",
+      "copied": "已复制",
+      "creating": "正在创建令牌...",
+      "notCreated": "创建令牌以获取命令。",
+      "create": "创建令牌",
+      "once": "仅显示一次，请立即复制。",
+      "done": "完成",
+      "waiting": "正在等待你的构建节点连接...",
+      "joined": "{{name}} 已连接，可以开始构建。"
+    },
+    "tierFor": "{{name}} 的层级",
+    "activeBuilds": "{{active}} 个正在构建",
+    "slotsTotal": "{{total}} 个槽位",
+    "emptyTipLabel": "关于添加构建节点",
+    "emptyTip": "在应该执行构建的机器上运行一条命令。连接后此页面会自动更新，令牌只能使用一次。",
+    "avg": "平均 {{value}}",
+    "load": "{{used}} / {{total}} 个构建槽位正在使用",
+    "status": {
+      "ready": "就绪",
+      "busy": "构建中",
+      "paused": "已暂停",
+      "offline": "离线",
+      "pressure": "负载过高",
+      "draining": "排空中"
+    },
+    "pressure": {
+      "label": "负载 {{level}}",
+      "ok": "正常",
+      "warn": "偏高",
+      "critical": "严重",
+      "unknown": "未知"
+    },
+    "detail": {
+      "title": "构建节点",
+      "tipLabel": "关于此构建节点",
+      "tip": "暂停后，正在运行的构建会继续完成，但不会在此开始新的构建。移除只会删除注册信息，还需要在机器上停止代理。",
+      "pause": "暂停",
+      "resume": "恢复",
+      "pauseError": "无法更改构建节点：{{message}}",
+      "test": "测试构建节点",
+      "testing": "测试中...",
+      "testTipLabel": "关于构建节点测试",
+      "testTip": "运行一次不含应用数据的小型探测构建，以确认构建节点有响应。",
+      "testPass": "构建节点运行正常",
+      "testFail": "构建节点测试失败",
+      "latency": "延迟 {{ms}} ms",
+      "platform": "平台 {{value}}",
+      "freeDisk": "可用磁盘 {{value}}",
+      "buildkit": "BuildKit {{value}}",
+      "testRequestFailed": "无法运行测试：{{message}}",
+      "remove": "移除",
+      "recent": "最近的构建",
+      "recentEmpty": "还没有构建。",
+      "trend": "最近 {{count}} 次构建耗时",
+      "success": "成功",
+      "failed": "失败",
+      "agent": "代理 {{value}}",
+      "acceptsApps": "此节点同时运行应用，因此不能在这里暂停。"
+    }
   }
 }

@@ -2363,11 +2363,11 @@
     "names": {
       "hetzner": "Hetzner",
       "digitalocean": "DigitalOcean",
+      "vultr": "Vultr",
       "aws": "AWS",
       "azure": "Azure",
       "gcp": "Google Cloud",
-      "custom": "自定义数据中心",
-      "vultr": "Vultr"
+      "custom": "自定义数据中心"
     },
     "methods": {
       "api_token": {
@@ -2402,12 +2402,12 @@
     "permissions": {
       "hetzner": "具有读写权限的项目 API 令牌。Hetzner 没有更细的范围，因此请使用专用项目。",
       "digitalocean": "具有读写范围的个人访问令牌，或仅限于 droplet 和 ssh_key 的创建、读取和删除的自定义范围。",
+      "vultr": "Vultr API 密钥。密钥没有权限范围，请使用专用子用户，并把此服务器的地址加入访问控制列表。",
       "aws": "ec2:DescribeRegions、ec2:DescribeInstanceTypes、ec2:DescribeInstances、ec2:DescribeImages、ec2:RunInstances、ec2:TerminateInstances、ec2:CreateTags，以及用于创建节点安全组的安全组和 VPC 操作。",
       "awsRole": "使用角色时，基础身份只需要对该角色 ARN 拥有 sts:AssumeRole。请把上述操作放在该角色上。",
       "azure": "订阅上的 Reader，以及目标资源组上的 Virtual Machine Contributor 和 Network Contributor。",
       "gcp": "项目上的 compute.regions.list、compute.machineTypes.list、compute.instances.create、compute.instances.get 和 compute.instances.delete。",
-      "custom": "不存储任何凭据。节点使用一次性加入令牌主动连接到此控制平面。",
-      "vultr": "Vultr API 密钥。密钥没有权限范围，请使用专用子用户，并把此服务器的地址加入访问控制列表。"
+      "custom": "不存储任何凭据。节点使用一次性加入令牌主动连接到此控制平面。"
     },
     "permissionsTitle": "最小权限",
     "methodLegend": "连接方式",
@@ -2436,10 +2436,10 @@
       "custom": "裸金属、本地部署，或任何没有云 API 的虚拟机。",
       "hetzner": "具有读写权限的项目 API 令牌。",
       "digitalocean": "具有读写范围的个人访问令牌。",
+      "vultr": "在访问控制列表中包含此服务器地址的 API 密钥。",
       "aws": "访问密钥，或此控制平面自身的 AWS 身份。",
       "azure": "服务主体 JSON，或工作负载身份联合。",
-      "gcp": "服务账户密钥 JSON。",
-      "vultr": "在访问控制列表中包含此服务器地址的 API 密钥。"
+      "gcp": "服务账户密钥 JSON。"
     },
     "connected": "已连接",
     "notConnected": "未连接",
@@ -3531,58 +3531,6 @@
     "empty": "没有可导出的内容。",
     "studioButton": "将当前状态导出为模板"
   },
-  "iacStudio": {
-    "tabFiles": "文件",
-    "tabStudio": "Studio",
-    "templates": "模板",
-    "use": "使用",
-    "copy": "复制",
-    "useNamed": "使用模板 {{name}}",
-    "copyNamed": "复制模板 {{name}}",
-    "editor": "资源 YAML",
-    "placeholder": "version: 1\nkind: App\nmetadata:\n  name: web",
-    "cloudNote": "未开启云功能时，云类型会被拒绝。此处不需要输入云凭据。",
-    "planHash": "计划",
-    "beta": "测试版",
-    "codeDoc": "错误代码 {{code}}，打开参考文档",
-    "applyDisabled": "此实例已关闭应用操作。计划仍然可用。",
-    "replan": "重新计划",
-    "viewLabel": "编辑器视图",
-    "resultLabel": "计划结果",
-    "copyFailed": "无法复制到剪贴板",
-    "viewYaml": "YAML",
-    "viewForm": "表单",
-    "formLoading": "正在加载表单",
-    "stack": {
-      "title": "Stack 历史",
-      "pick": "Stack",
-      "none": "还没有 stack。应用 stack 后,修订会显示在这里。",
-      "timeline": "修订时间线",
-      "noRevisions": "还没有修订。",
-      "loadFailed": "无法加载修订。",
-      "driftNone": "与最近一次应用的修订没有偏差。",
-      "diffLive": "与实时状态比较"
-    },
-    "planAction": {
-      "create": "创建",
-      "update": "更新",
-      "delete": "删除",
-      "noop": "无变化",
-      "error": "错误"
-    },
-    "multiDoc": "此文本包含多个文档。表单以只读方式显示第一个。请使用 YAML 编辑以修改任何一个。",
-    "parseLine": "此文档无法解析（第 {{line}} 行）。",
-    "editAsYaml": "以 YAML 编辑",
-    "exportedNote": "已从实时状态导出。密钥不会被包含，而是以引用形式导出。",
-    "copyYaml": "复制 YAML",
-    "copied": "已复制",
-    "localTemplates": {
-      "cron-job": {
-        "title": "定时任务",
-        "description": "按计划运行命令，或调用应用上的路径。"
-      }
-    }
-  },
   "iacPlan": {
     "summary": "待创建 {{create}} 项，待更新 {{update}} 项，待删除 {{delete}} 项，无变化 {{noop}} 项",
     "summaryErrors": "待创建 {{create}} 项，待更新 {{update}} 项，待删除 {{delete}} 项，无变化 {{noop}} 项，{{error}} 项有错误",
@@ -3967,7 +3915,292 @@
       "title": "两侧边距",
       "description": "平板尺寸及以上时，页面内容左右两侧的留白。",
       "tight": "紧凑",
-      "tightHint": "为内容留出更多空间"
+      "tightHint": "为内容留出更多空间",
+      "normal": "标准",
+      "normalHint": "均衡",
+      "roomy": "宽松",
+      "roomyHint": "更平静，边距更大"
+    },
+    "density": {
+      "description": "卡片、列表和表单使用多少间距。",
+      "compactHint": "在屏幕上容纳更多内容",
+      "comfortableHint": "留出更多空间"
+    },
+    "sections": {
+      "color": "颜色",
+      "type": "字体",
+      "layout": "布局",
+      "look": "外观与背景",
+      "sync": "同步"
+    },
+    "motion": {
+      "title": "动效",
+      "description": "仪表盘中的动画和过渡效果。",
+      "system": "跟随系统",
+      "systemHint": "使用设备设置",
+      "on": "减少",
+      "onHint": "极简动画",
+      "off": "全部允许",
+      "offHint": "忽略设备设置"
+    },
+    "sync": {
+      "label": "同步到我的账户",
+      "hint": "在你登录的每个浏览器上保持这些选择。",
+      "syncing": "同步中...",
+      "synced": "已同步：{{when}}",
+      "justNow": "刚刚",
+      "notSynced": "未同步",
+      "tooLarge": "数据过大，无法同步。你的选择仅保存在此浏览器中。",
+      "off": "同步已关闭，选择仅保存在此浏览器中。",
+      "export": "导出",
+      "import": "导入",
+      "importLabel": "从 JSON 文件导入外观",
+      "importBad": "该文件不是有效的外观导出文件。",
+      "imported": "已导入。"
+    },
+    "look": {
+      "title": "外观风格",
+      "description": "玻璃风格会添加柔和的背景、更圆的角和胶囊形按钮。克制风格更扁平、更紧凑。",
+      "glass": "玻璃风格",
+      "glassHint": "柔和底色，胶囊按钮",
+      "restrained": "克制",
+      "restrainedHint": "扁平，紧凑的圆角"
+    },
+    "backdrop": {
+      "title": "背景",
+      "description": "品牌色会在应用背后添加柔和的色彩渐变。纯色则让背景保持完全深色或浅色。",
+      "branded": "品牌色",
+      "brandedHint": "柔和的色彩渐变",
+      "plain": "纯色",
+      "plainHint": "无渐变，纯色背景"
+    },
+    "radius": {
+      "title": "圆角",
+      "description": "按钮、卡片和输入框的圆角程度。",
+      "sharp": "直角",
+      "sharpHint": "方正，偏技术感",
+      "normal": "标准",
+      "normalHint": "默认样式",
+      "soft": "柔和",
+      "softHint": "更圆润，更亲切"
+    },
+    "contrast": {
+      "title": "高对比度",
+      "description": "更强的边框、弱化的文字和焦点环。",
+      "system": "跟随系统",
+      "systemHint": "使用设备设置",
+      "on": "开启",
+      "onHint": "始终使用高对比度",
+      "off": "关闭",
+      "offHint": "忽略设备设置",
+      "sample": "弱化文字示例"
+    },
+    "codeFont": {
+      "title": "代码字体",
+      "description": "用于代码、日志、终端和差异对比。Geist Mono 随应用提供，其他字体使用你设备上已有的字体。",
+      "system-mono": "Geist Mono",
+      "system-monoHint": "默认，随应用提供",
+      "device-mono": "系统等宽字体",
+      "device-monoHint": "设备默认",
+      "jetbrains": "JetBrains Mono",
+      "jetbrainsHint": "已安装时可用",
+      "fira": "Fira Code",
+      "firaHint": "已安装时可用",
+      "menlo": "Menlo",
+      "menloHint": "macOS 及类似系统"
+    },
+    "codeSize": {
+      "title": "代码字号",
+      "description": "代码、日志和终端的文字大小。",
+      "slider": "代码字号",
+      "reset": "重置大小",
+      "sample": "$ deploy --app web\n12:00:01 INFO build ok",
+      "sampleLabel": "代码示例"
+    },
+    "hub": {
+      "saved": "已保存",
+      "resetDone": "已恢复默认设置",
+      "theme": {
+        "title": "主题",
+        "system": "系统",
+        "systemHint": "跟随你的设备",
+        "light": "浅色",
+        "lightHint": "明亮的界面",
+        "dark": "深色",
+        "darkHint": "眩光较少",
+        "oled": "OLED",
+        "oledHint": "纯黑，仅限此设备"
+      },
+      "preview": {
+        "title": "实时预览",
+        "nav": "示例导航",
+        "apps": "应用",
+        "deployments": "部署",
+        "servers": "服务器",
+        "running": "运行中",
+        "stopped": "已停止",
+        "field": "应用名称",
+        "fieldValue": "web",
+        "primary": "部署",
+        "secondary": "取消",
+        "toast": "已在 12 秒内部署 web",
+        "dialogTitle": "删除应用？",
+        "dialogBody": "此操作无法撤销。",
+        "danger": "删除"
+      }
+    },
+    "listKeys": {
+      "title": "列表键盘快捷键",
+      "description": "单键可在列表中移动：j 和 k 上下移动，x 选择，Enter 打开，/ 聚焦筛选，? 显示快捷键。如果与屏幕阅读器或语音输入冲突，可以关闭。",
+      "on": "已启用",
+      "onHint": "j、k、x、Enter、/、?",
+      "off": "已禁用",
+      "offHint": "仅鼠标和 Tab"
+    }
+  },
+  "secretProviders": {
+    "title": "密钥提供方",
+    "hint": "在容器启动时解析的只读引用，解析失败则拒绝启动。用作应用的环境变量值：",
+    "namePlaceholder": "prod",
+    "formLabel": "密钥提供方",
+    "name": "名称",
+    "type": "提供方",
+    "projectDoppler": "项目",
+    "projectInfisical": "工作区 ID",
+    "envDoppler": "配置",
+    "envInfisical": "环境标识",
+    "path": "路径（可选）",
+    "baseUrl": "基础 URL（自托管）",
+    "projectOnePassword": "默认保险库",
+    "baseUrlConnect": "Connect 服务器 URL",
+    "errBaseUrl": "需要填写 Connect 服务器 URL。",
+    "readOnly": "只有管理员可以更改密钥提供方。",
+    "clientId": "客户端 ID",
+    "clientSecret": "客户端密钥",
+    "tokenOrIdentity": "访问令牌（或使用客户端 ID 和密钥）",
+    "errIdentity": "请同时填写客户端 ID 和客户端密钥（ID 不能包含冒号或空格）。",
+    "errIdentityReenter": "更改客户端 ID 后，请重新输入客户端密钥。",
+    "errVault": "需要填写默认保险库。",
+    "errIdentityOrToken": "请只使用访问令牌，或只使用客户端 ID 和密钥，不能两者同时使用。",
+    "token": "令牌",
+    "errName": "名称必须以字母开头，只能使用小写字母、数字或下划线（最多 40 个字符）。",
+    "errScope": "项目和环境为必填项。",
+    "errToken": "首次使用时需要令牌。",
+    "save": "保存",
+    "saving": "保存中...",
+    "cancel": "取消",
+    "add": "添加提供方",
+    "edit": "编辑",
+    "remove": "移除",
+    "test": "测试",
+    "testing": "测试中...",
+    "testOk": "连接正常。",
+    "testFail": "测试失败。",
+    "selfHosted": "自托管",
+    "noToken": "无令牌",
+    "loading": "正在加载提供方...",
+    "empty": "还没有密钥提供方。",
+    "removeTitle": "移除 {{name}}？",
+    "removeConsequence": "在重新添加此提供方之前，引用它的应用将无法启动。"
+  },
+  "iacStudio": {
+    "tabFiles": "文件",
+    "tabStudio": "Studio",
+    "templates": "模板",
+    "use": "使用",
+    "copy": "复制",
+    "useNamed": "使用模板 {{name}}",
+    "copyNamed": "复制模板 {{name}}",
+    "editor": "资源 YAML",
+    "placeholder": "version: 1\nkind: App\nmetadata:\n  name: web",
+    "cloudNote": "未开启云功能时，云类型会被拒绝。此处不需要输入云凭据。",
+    "planHash": "计划",
+    "beta": "测试版",
+    "codeDoc": "错误代码 {{code}}，打开参考文档",
+    "applyDisabled": "此实例已关闭应用操作。计划仍然可用。",
+    "replan": "重新计划",
+    "viewLabel": "编辑器视图",
+    "resultLabel": "计划结果",
+    "copyFailed": "无法复制到剪贴板",
+    "viewYaml": "YAML",
+    "viewForm": "表单",
+    "formLoading": "正在加载表单",
+    "stack": {
+      "title": "Stack 历史",
+      "pick": "Stack",
+      "none": "还没有 stack。应用 stack 后,修订会显示在这里。",
+      "timeline": "修订时间线",
+      "noRevisions": "还没有修订。",
+      "loadFailed": "无法加载修订。",
+      "driftNone": "与最近一次应用的修订没有偏差。",
+      "diffLive": "与实时状态比较"
+    },
+    "planAction": {
+      "create": "创建",
+      "update": "更新",
+      "delete": "删除",
+      "noop": "无变化",
+      "error": "错误"
+    },
+    "multiDoc": "此文本包含多个文档。表单以只读方式显示第一个。请使用 YAML 编辑以修改任何一个。",
+    "parseLine": "此文档无法解析（第 {{line}} 行）。",
+    "editAsYaml": "以 YAML 编辑",
+    "exportedNote": "已从实时状态导出。密钥不会被包含，而是以引用形式导出。",
+    "copyYaml": "复制 YAML",
+    "copied": "已复制",
+    "localTemplates": {
+      "cron-job": {
+        "title": "定时任务",
+        "description": "按计划运行命令，或调用应用上的路径。"
+      }
+    }
+  },
+  "obsExport": {
+    "title": "导出到",
+    "rootRequired": {
+      "title": "导出需要 root 令牌",
+      "why": "导出可以读取每个应用的日志和指标，因此只有 root 令牌可以管理它们。"
+    },
+    "about": "将此控制面的日志和指标发送到托管的可观测性服务。选择一个服务，填写详细信息，然后测试连接。",
+    "signal": {
+      "logs": "日志",
+      "metrics": "指标"
+    },
+    "dialog": {
+      "title": "导出到 {{name}}",
+      "name": "名称",
+      "create": "创建",
+      "creating": "创建中",
+      "cancel": "取消",
+      "done": "完成",
+      "help": "关于{{field}}"
+    },
+    "test": {
+      "title": "测试结果",
+      "run": "测试",
+      "running": "测试中",
+      "retry": "重新测试",
+      "pass": "已投递",
+      "failed": "测试失败"
+    },
+    "fix": {
+      "bad_token": "替换令牌",
+      "tls_error": "修复证书",
+      "unreachable": "检查地址",
+      "rejected": "检查端点路径",
+      "private_blocked": "允许内部地址"
+    },
+    "health": {
+      "ok": "正在投递",
+      "error": "失败",
+      "pending": "等待首次投递"
+    },
+    "list": {
+      "label": "活动导出",
+      "sent_other": "已发送 {{count}} 条",
+      "delete": "删除",
+      "deleteTitle": "删除 {{name}} 导出？",
+      "deleteConsequence": "日志和指标将不再发送到此服务。"
     }
   }
 }
