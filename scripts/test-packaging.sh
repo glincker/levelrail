@@ -17,6 +17,9 @@ mkdir -p "$work/dist"
 for p in linux-amd64 linux-arm64 darwin-amd64 darwin-arm64 windows-amd64.exe windows-arm64.exe; do
 	cp "$work/host-cli" "$work/dist/levelrail-cli-$p"
 done
+for p in darwin-amd64 darwin-arm64; do
+	printf 'agent %s' "$p" >"$work/dist/levelrail-agent-$p"
+done
 (cd "$work/dist" && sha256 -- * | sed 's/ \*/  /' >checksums.txt)
 
 echo "== homebrew formula"
@@ -29,6 +32,16 @@ want="$(awk '$2 == "levelrail-cli-linux-amd64" { print $1 }' "$work/dist/checksu
 grep -q "$want" "$work/levelrail-cli.rb" || fail "formula checksum"
 if command -v ruby >/dev/null; then ruby -c "$work/levelrail-cli.rb" >/dev/null || fail "formula is not valid ruby"; fi
 if "$root/scripts/render-homebrew-formula.sh" "$tag" /dev/null >/dev/null 2>&1; then fail "missing checksum should fail"; fi
+
+echo "== homebrew agent formula"
+"$root/scripts/render-homebrew-agent-formula.sh" "$tag" "$work/dist/checksums.txt" >"$work/levelrail-agent.rb"
+grep -q '@[A-Z_]*@' "$work/levelrail-agent.rb" && fail "unreplaced placeholder in agent formula"
+grep -q "download/$tag/levelrail-agent-darwin-arm64" "$work/levelrail-agent.rb" || fail "agent formula url"
+want="$(awk '$2 == "levelrail-agent-darwin-amd64" { print $1 }' "$work/dist/checksums.txt")"
+grep -q "$want" "$work/levelrail-agent.rb" || fail "agent formula checksum"
+grep -q '^  service do' "$work/levelrail-agent.rb" || fail "agent formula needs a service block"
+if command -v ruby >/dev/null; then ruby -c "$work/levelrail-agent.rb" >/dev/null || fail "agent formula is not valid ruby"; fi
+if "$root/scripts/render-homebrew-agent-formula.sh" "$tag" /dev/null >/dev/null 2>&1; then fail "missing agent checksum should fail"; fi
 
 echo "== npm packages"
 "$root/scripts/build-npm-packages.sh" "$tag" "$work/dist" "$work/npm" >/dev/null

@@ -18,6 +18,7 @@ export PATH="$tmp/bin:$PATH" FAKE_ASSETS="$tmp/assets"
 	for a in amd64 arm64; do
 		echo "levelrail-linux-$a"; echo "levelrail-agent-linux-$a"
 		echo "levelrail-agent-linux-$a.deb"; echo "levelrail-agent-linux-$a.rpm"
+		echo "levelrail-agent-darwin-$a"
 		echo "levelrail-cli-linux-$a"; echo "levelrail-cli-darwin-$a"; echo "levelrail-cli-windows-$a.exe"
 	done
 } >"$tmp/assets"

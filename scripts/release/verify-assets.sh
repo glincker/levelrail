@@ -1,6 +1,6 @@
 #!/usr/bin/env bash
 # Fails unless the release carries the assets release.yml publishes: checksums + sigstore bundle,
-# control plane linux amd64/arm64, CLI linux/darwin/windows amd64/arm64, agent binaries, deb and rpm.
+# control plane linux amd64/arm64, CLI linux/darwin/windows amd64/arm64, agent binaries (linux and darwin), deb and rpm.
 set -euo pipefail
 
 tag="${1:-}"
@@ -18,6 +18,7 @@ expected=(checksums.txt checksums.txt.sigstore.json release-manifest.json)
 for a in amd64 arm64; do
 	expected+=("levelrail-linux-$a" "levelrail-agent-linux-$a" "levelrail-agent-linux-$a.deb" "levelrail-agent-linux-$a.rpm")
 	for o in linux darwin; do expected+=("levelrail-cli-$o-$a"); done
+	expected+=("levelrail-agent-darwin-$a")
 	expected+=("levelrail-cli-windows-$a.exe")
 done
 

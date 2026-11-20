@@ -263,6 +263,7 @@
               "server-patching",
               "add-node-anywhere",
               "add-node-over-ssh",
+              "macos-agent",
               "home-hardware",
               "iot-fleet",
               "resource-aware-placement",
