@@ -12,6 +12,7 @@ import (
 	"time"
 
 	"github.com/GLINCKER/levelrail/internal/dnsrecords"
+	"github.com/GLINCKER/levelrail/internal/dnszones"
 	"github.com/GLINCKER/levelrail/internal/ingress"
 	"github.com/GLINCKER/levelrail/internal/store"
 	"github.com/libdns/libdns"
@@ -126,12 +127,10 @@ func (rt *Router) resolveDNSTarget(ctx context.Context, domain string) (*dnsTarg
 		}
 		return &dnsTarget{Manager: dnsrecords.NewCloudflareManager(token), Provider: dnsProviderCloudflare, Zone: zone, Proxy: api}, nil
 	}
-	mgr, err := rt.resolveRoute53RecordManager(ctx)
-	provider := dnsProviderRoute53
-	if err == nil && mgr == nil {
-		mgr, err = rt.resolveGoogleCloudRecordManager(ctx)
-		provider = dnsProviderGoogleCloud
+	if t, err := rt.route53DNSTarget(ctx, domain); t != nil || err != nil {
+		return t, err
 	}
+	mgr, err := rt.resolveGoogleCloudRecordManager(ctx)
 	if err != nil || mgr == nil {
 		return nil, err
 	}
@@ -139,7 +138,37 @@ func (rt *Router) resolveDNSTarget(ctx context.Context, domain string) (*dnsTarg
 	if err != nil {
 		return nil, err
 	}
-	return &dnsTarget{Manager: mgr, Provider: provider, Zone: zone}, nil
+	return &dnsTarget{Manager: mgr, Provider: dnsProviderGoogleCloud, Zone: zone}, nil
+}
+
+// route53DNSTarget matches domain against the zones the credentials list,
+// the same source as `dns zones list`. Probing records through libdns instead
+// pins every lookup to the configured hosted zone and hides provider errors
+// behind "no zone". Writes go to the matched zone, never to the pinned one.
+func (rt *Router) route53DNSTarget(ctx context.Context, domain string) (*dnsTarget, error) {
+	providers, err := rt.zoneProviders(ctx)
+	if err != nil {
+		return nil, err
+	}
+	p := providers[dnszones.ProviderRoute53]
+	if p == nil {
+		return nil, nil
+	}
+	zones, err := p.ListZones(ctx)
+	if err != nil {
+		return nil, fmt.Errorf("api: list route53 zones: %w", err)
+	}
+	var names []string
+	for _, z := range zones {
+		if !z.Private {
+			names = append(names, z.Name)
+		}
+	}
+	zone, ok := dnsrecords.MatchZone(domain, names)
+	if !ok {
+		return nil, dnsrecords.ErrZoneNotFound
+	}
+	return &dnsTarget{Manager: dnsrecords.ZoneManager{P: p}, Provider: dnsProviderRoute53, Zone: zone}, nil
 }
 
 // desiredDNSRecord decides the record that points domain at this server.
