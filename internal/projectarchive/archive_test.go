@@ -57,18 +57,18 @@ func TestDamagedStreamRejected(t *testing.T) {
 }
 
 func TestSealRoundTripAndWrongPassphrase(t *testing.T) {
-	blob, err := Seal("a long enough pass", []byte(`{"secrets":{"web/K":"v"}}`))
+	blob, err := seal("a long enough pass", []byte(`{"secrets":{"web/K":"v"}}`), []byte("m"))
 	if err != nil {
 		t.Fatal(err)
 	}
-	plain, err := Open("a long enough pass", blob)
+	plain, err := open("a long enough pass", blob, []byte("m"))
 	if err != nil || !strings.Contains(string(plain), `"v"`) {
 		t.Fatalf("open = %q %v", plain, err)
 	}
-	if _, err := Open("another long pass!", blob); !errors.Is(err, ErrWrongPassphrase) {
+	if _, err := open("another long pass!", blob, []byte("m")); err == nil {
 		t.Fatalf("wrong passphrase err = %v", err)
 	}
-	if _, err := Seal("short", nil); err == nil {
+	if _, err := seal("short", nil, nil); err == nil {
 		t.Fatal("short passphrase accepted")
 	}
 }

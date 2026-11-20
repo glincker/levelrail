@@ -102,7 +102,7 @@ func TestProjectArchive_RoundTripAcrossInstances(t *testing.T) {
 	if len(plan.Plan.Manual) == 0 || !strings.Contains(strings.Join(plan.Plan.Manual, " "), "shop.example.com") {
 		t.Fatalf("manual steps = %v", plan.Plan.Manual)
 	}
-	c, done := importCall(t, dst, dstCookie, "/api/v1/projects/import", projectImportRequest{Archive: raw, Passphrase: pass})
+	c, done := importCall(t, dst, dstCookie, "/api/v1/projects/import", projectImportRequest{Archive: raw, Passphrase: pass, ExpectedPlanHash: plan.Plan.Hash})
 	if c != http.StatusOK || done.Result == nil || !done.Result.OK() {
 		t.Fatalf("import = %d %+v", c, done)
 	}
@@ -143,5 +143,89 @@ func TestProjectArchive_TamperedArchiveRejected(t *testing.T) {
 	bad[len(bad)/2] ^= 0xff
 	if c, _ := importCall(t, rt, cookie, "/api/v1/projects/import/plan", projectImportRequest{Archive: bad}); c != http.StatusUnprocessableEntity {
 		t.Fatalf("tampered archive status = %d", c)
+	}
+}
+
+func TestProjectArchive_ImportNeedsPlanHash(t *testing.T) {
+	src, srcDB := newTestRouter(t)
+	srcCookie := loginTestSession(t, src, srcDB)
+	seedTwoAppProject(t, srcDB)
+	_, raw := exportArchive(t, src, srcCookie, map[string]any{})
+	dst, dstDB := newTestRouter(t)
+	dstCookie := loginTestSession(t, dst, dstDB)
+	if c, _ := importCall(t, dst, dstCookie, "/api/v1/projects/import", projectImportRequest{Archive: raw}); c != http.StatusUnprocessableEntity {
+		t.Fatalf("no hash status = %d", c)
+	}
+	if c, _ := importCall(t, dst, dstCookie, "/api/v1/projects/import", projectImportRequest{Archive: raw, ExpectedPlanHash: "v2:deadbeef"}); c != http.StatusConflict {
+		t.Fatalf("stale hash status = %d", c)
+	}
+	if _, err := dstDB.GetDesiredService(t.Context(), "web"); err == nil {
+		t.Fatal("a refused import created an app")
+	}
+}
+
+func TestProjectArchive_ImportOnlyCreatesProjectDocuments(t *testing.T) {
+	src, srcDB := newTestRouter(t)
+	srcCookie := loginTestSession(t, src, srcDB)
+	seedTwoAppProject(t, srcDB)
+	_, raw := exportArchive(t, src, srcCookie, map[string]any{})
+	arc, err := projectarchive.Read(bytes.NewReader(raw))
+	if err != nil {
+		t.Fatal(err)
+	}
+	var out bytes.Buffer
+	w := projectarchive.NewWriter(&out)
+	for n, b := range arc.Spec {
+		extra := "\n---\nkind: Setting\nmetadata: {name: evil}\nspec: {value: x}\n---\nkind: App\nmetadata: {name: intruder}\nspec: {project: elsewhere, service: {build: {image: ghcr.io/x/y:1}}}\n"
+		if err := w.AddBytes(projectarchive.SpecPrefix+n, append(b, []byte(extra)...)); err != nil {
+			t.Fatal(err)
+		}
+	}
+	if err := w.Close(projectarchive.Manifest{Project: "shop"}); err != nil {
+		t.Fatal(err)
+	}
+	dst, dstDB := newTestRouter(t)
+	dstCookie := loginTestSession(t, dst, dstDB)
+	c, plan := importCall(t, dst, dstCookie, "/api/v1/projects/import/plan", projectImportRequest{Archive: out.Bytes()})
+	if c != http.StatusOK {
+		t.Fatalf("plan = %d", c)
+	}
+	for _, it := range plan.Plan.Creates {
+		if it.Kind == "Setting" || it.Name == "intruder" || it.Name == "evil" {
+			t.Fatalf("foreign document planned: %+v", it)
+		}
+	}
+	if !strings.Contains(strings.Join(plan.Plan.Warnings, " "), "do not belong to this project") {
+		t.Fatalf("warnings = %v", plan.Plan.Warnings)
+	}
+	if c, _ := importCall(t, dst, dstCookie, "/api/v1/projects/import", projectImportRequest{Archive: out.Bytes(), ExpectedPlanHash: plan.Plan.Hash}); c != http.StatusOK {
+		t.Fatalf("import = %d", c)
+	}
+	if _, err := dstDB.GetDesiredService(t.Context(), "intruder"); err == nil {
+		t.Fatal("foreign app was created")
+	}
+}
+
+func TestProjectArchive_ImportAuditsAttemptAndOutcome(t *testing.T) {
+	src, srcDB := newTestRouter(t)
+	srcCookie := loginTestSession(t, src, srcDB)
+	seedTwoAppProject(t, srcDB)
+	_, raw := exportArchive(t, src, srcCookie, map[string]any{})
+	dst, dstDB := newTestRouter(t)
+	dstCookie := loginTestSession(t, dst, dstDB)
+	_, plan := importCall(t, dst, dstCookie, "/api/v1/projects/import/plan", projectImportRequest{Archive: raw})
+	if c, _ := importCall(t, dst, dstCookie, "/api/v1/projects/import", projectImportRequest{Archive: raw, ExpectedPlanHash: plan.Plan.Hash}); c != http.StatusOK {
+		t.Fatalf("import = %d", c)
+	}
+	entries, err := dstDB.ListAuditEntries(t.Context(), 50, nil, store.AuditEntryFilter{})
+	if err != nil {
+		t.Fatal(err)
+	}
+	seen := map[string]bool{}
+	for _, e := range entries {
+		seen[e.Action] = true
+	}
+	if !seen[AuditActionProjectArchiveImportAttempt] || !seen[AuditActionProjectArchiveImport] {
+		t.Fatalf("audit actions = %v", seen)
 	}
 }

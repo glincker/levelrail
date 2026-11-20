@@ -25,6 +25,8 @@ type ProjectImportRequest struct {
 	Archive    []byte `json:"archive"`
 	Passphrase string `json:"passphrase,omitempty"`
 	Rename     string `json:"rename,omitempty"`
+	// ExpectedPlanHash is the hash from the plan call, required to apply.
+	ExpectedPlanHash string `json:"expected_plan_hash,omitempty"`
 }
 
 // ProjectImportItem is one resource an import creates.

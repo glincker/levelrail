@@ -1,6 +1,7 @@
 package main
 
 import (
+	"bytes"
 	"context"
 	"encoding/json"
 	"errors"
@@ -8,6 +9,7 @@ import (
 	"io"
 	"os"
 	"strings"
+	"unicode"
 
 	"golang.org/x/term"
 
@@ -124,7 +126,7 @@ func runAppsProjectsImport(prog string, args []string, stdout, stderr io.Writer,
 	if err != nil {
 		return reportError(stdout, stderr, jsonOut, err)
 	}
-	arc, err := projectarchive.Read(strings.NewReader(string(raw)))
+	arc, err := projectarchive.Read(bytes.NewReader(raw))
 	if err != nil {
 		return reportError(stdout, stderr, jsonOut, fmt.Errorf("%s: %w", fs.Arg(0), err))
 	}
@@ -153,6 +155,7 @@ func runAppsProjectsImport(prog string, args []string, stdout, stderr io.Writer,
 	if len(planResp.Plan.Conflicts) > 0 {
 		return reportError(stdout, stderr, jsonOut, errors.New("import stopped: resolve the conflicts above or use --rename"))
 	}
+	req.ExpectedPlanHash = planResp.Plan.Hash
 	res, err := client.ImportProject(context.Background(), req)
 	if err != nil {
 		return reportError(stdout, stderr, jsonOut, fmt.Errorf("import: %w", err))
@@ -170,21 +173,35 @@ func runAppsProjectsImport(prog string, args []string, stdout, stderr io.Writer,
 }
 
 func printProjectImportPlan(w io.Writer, p apiclient.ProjectImportPlan) {
-	_, _ = fmt.Fprintf(w, "project %s (from %s, source version %s)\n", p.Project, p.SourceProject, p.SourceVersion)
+	_, _ = fmt.Fprintf(w, "project %s (from %s, source version %s)\n", cleanArchiveText(p.Project), cleanArchiveText(p.SourceProject), cleanArchiveText(p.SourceVersion))
 	_, _ = fmt.Fprintf(w, "will create %d:\n", len(p.Creates))
 	for _, c := range p.Creates {
-		_, _ = fmt.Fprintf(w, "  + %s %s\n", c.Kind, c.Name)
+		_, _ = fmt.Fprintf(w, "  + %s %s\n", cleanArchiveText(c.Kind), cleanArchiveText(c.Name))
 	}
 	if len(p.Conflicts) > 0 {
 		_, _ = fmt.Fprintln(w, "conflicts:")
 		for _, c := range p.Conflicts {
-			_, _ = fmt.Fprintf(w, "  ! %s %s: %s\n", c.Kind, c.Name, c.Detail)
+			_, _ = fmt.Fprintf(w, "  ! %s %s: %s\n", cleanArchiveText(c.Kind), cleanArchiveText(c.Name), cleanArchiveText(c.Detail))
 		}
+	}
+	for _, wn := range p.Warnings {
+		_, _ = fmt.Fprintf(w, "warning: %s\n", cleanArchiveText(wn))
 	}
 	if len(p.Manual) > 0 {
 		_, _ = fmt.Fprintln(w, "manual steps:")
 		for _, m := range p.Manual {
-			_, _ = fmt.Fprintf(w, "  - %s\n", m)
+			_, _ = fmt.Fprintf(w, "  - %s\n", cleanArchiveText(m))
 		}
 	}
+}
+
+// cleanArchiveText drops control characters so archive text cannot move the
+// cursor or rewrite earlier terminal output.
+func cleanArchiveText(in string) string {
+	return strings.Map(func(r rune) rune {
+		if unicode.IsControl(r) {
+			return -1
+		}
+		return r
+	}, in)
 }
