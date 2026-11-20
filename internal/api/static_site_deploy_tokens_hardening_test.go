@@ -9,7 +9,7 @@ import (
 
 func TestSiteDeployTokenRotationKeepsSiteScope(t *testing.T) {
 	rt, _, cookie := hookTestSite(t, false)
-	old := mintSiteDeployToken(t, rt, cookie, "docs")
+	old := mintSiteDeployToken(t, rt, cookie)
 	rec := rotateAs(t, rt, cookie, old.ID)
 	if rec.Code != http.StatusCreated {
 		t.Fatalf("rotate = %d %s", rec.Code, rec.Body.String())
@@ -29,7 +29,7 @@ func TestSiteDeployTokenRotationKeepsSiteScope(t *testing.T) {
 func TestSiteDeployTokenCannotStartNonStaticBuild(t *testing.T) {
 	rt, _, cookie := hookTestSite(t, false)
 	rt.builder = &fakeBuilder{tag: "img:sha"}
-	tok := mintSiteDeployToken(t, rt, cookie, "docs").Token
+	tok := mintSiteDeployToken(t, rt, cookie).Token
 	for _, body := range []string{
 		`{"build":{"type":"image","image":"x:1"}}`,
 		`{"build":{"type":"dockerfile"},"upload_hash":"abc"}`,
@@ -47,7 +47,7 @@ func TestSiteDeployTokenCannotStartNonStaticBuild(t *testing.T) {
 
 func TestSiteDeployTokenMintAndRevokeNeedASession(t *testing.T) {
 	rt, _, cookie := hookTestSite(t, false)
-	minted := mintSiteDeployToken(t, rt, cookie, "docs")
+	minted := mintSiteDeployToken(t, rt, cookie)
 	// A plain bearer token with deploy rights must not mint or revoke site tokens.
 	plain := mintTokenAs(t, rt, cookie, "plain")
 	if code := callWithToken(t, rt, plain.Token, http.MethodPost, "/api/v1/static-sites/docs/deploy-tokens", `{}`); code != http.StatusForbidden {
@@ -60,7 +60,7 @@ func TestSiteDeployTokenMintAndRevokeNeedASession(t *testing.T) {
 
 func TestDeletingTheSiteRevokesItsTokens(t *testing.T) {
 	rt, _, cookie := hookTestSite(t, false)
-	minted := mintSiteDeployToken(t, rt, cookie, "docs")
+	minted := mintSiteDeployToken(t, rt, cookie)
 	rt.revokeSiteTokens(context.Background(), "docs")
 	if tokenUsable(rt, minted.Token) {
 		t.Fatal("site token must be revoked with its site")
@@ -72,7 +72,7 @@ func TestDeletingTheSiteRevokesItsTokens(t *testing.T) {
 
 func TestSiteTokenOfDeletedAppDoesNotCarryToANewApp(t *testing.T) {
 	rt, db, cookie := hookTestSite(t, false)
-	tok := mintSiteDeployToken(t, rt, cookie, "docs").Token
+	tok := mintSiteDeployToken(t, rt, cookie).Token
 	if err := db.DeleteDesiredService(context.Background(), "docs"); err != nil {
 		t.Fatal(err)
 	}
@@ -84,7 +84,7 @@ func TestSiteTokenOfDeletedAppDoesNotCarryToANewApp(t *testing.T) {
 
 func TestLeavingATeamRevokesOwnedSiteTokens(t *testing.T) {
 	rt, _, cookie := hookTestSite(t, false)
-	minted := mintSiteDeployToken(t, rt, cookie, "docs")
+	minted := mintSiteDeployToken(t, rt, cookie)
 	if !tokenUsable(rt, minted.Token) {
 		t.Fatal("token should start valid")
 	}

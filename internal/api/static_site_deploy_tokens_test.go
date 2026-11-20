@@ -10,10 +10,10 @@ import (
 	"testing"
 )
 
-func mintSiteDeployToken(t *testing.T, rt *Router, cookie *http.Cookie, site string) createTokenResponse {
+func mintSiteDeployToken(t *testing.T, rt *Router, cookie *http.Cookie) createTokenResponse {
 	t.Helper()
 	var out createTokenResponse
-	req := authedRequest(t, cookie, http.MethodPost, "/api/v1/static-sites/"+site+"/deploy-tokens", `{"name":"gha"}`)
+	req := authedRequest(t, cookie, http.MethodPost, "/api/v1/static-sites/docs/deploy-tokens", `{"name":"gha"}`)
 	if code := iacCall(t, rt, req, &out); code != http.StatusCreated || out.Token == "" {
 		t.Fatalf("mint site token = %d", code)
 	}
@@ -23,7 +23,7 @@ func mintSiteDeployToken(t *testing.T, rt *Router, cookie *http.Cookie, site str
 func TestSiteDeployTokenCannotTouchOtherSitesOrRoutes(t *testing.T) {
 	rt, db, cookie := hookTestSite(t, false)
 	seedApp(t, db, "other")
-	tok := mintSiteDeployToken(t, rt, cookie, "docs").Token
+	tok := mintSiteDeployToken(t, rt, cookie).Token
 
 	for _, c := range []struct{ method, path string }{
 		{http.MethodGet, "/api/v1/apps/other"},
@@ -48,7 +48,7 @@ func TestSiteDeployTokenCannotTouchOtherSitesOrRoutes(t *testing.T) {
 
 func TestSiteDeployTokenListedWithoutSecretAndRevocable(t *testing.T) {
 	rt, _, cookie := hookTestSite(t, false)
-	minted := mintSiteDeployToken(t, rt, cookie, "docs")
+	minted := mintSiteDeployToken(t, rt, cookie)
 	if minted.ExpiresAt == nil {
 		t.Fatal("expected a default expiry")
 	}

@@ -120,7 +120,7 @@ func (rt *Router) handleExportProjectArchive(w http.ResponseWriter, r *http.Requ
 	}
 	// The export must be on record before any byte of it is sent.
 	detail := fmt.Sprintf(`{"apps":%d,"include_secrets":%t,"include_data":%t}`, len(svcs), req.IncludeSecrets, req.IncludeData)
-	if !rt.auditProjectTransfer(r, AuditActionProjectArchiveExport, http.MethodPost, "/api/v1/projects/"+proj.ID+"/export", http.StatusOK, detail) {
+	if !rt.auditProjectTransfer(r, AuditActionProjectArchiveExport, "/api/v1/projects/"+proj.ID+"/export", http.StatusOK, detail) {
 		rt.internalError(w, "api: archive export: audit failed", errors.New("audit entry not saved"), slog.String("id", proj.ID))
 		return
 	}
@@ -324,7 +324,7 @@ func (rt *Router) handleImportProjectPlan(w http.ResponseWriter, r *http.Request
 	// A plan with a passphrase opens sealed secrets, so it is on record like the apply.
 	if tr.hasPass {
 		detail := fmt.Sprintf(`{"project":%q}`, tr.project)
-		rt.auditProjectTransfer(r, AuditActionProjectArchiveImportPlan, http.MethodPost, "/api/v1/projects/import/plan", statusOr(sw.status), detail)
+		rt.auditProjectTransfer(r, AuditActionProjectArchiveImportPlan, "/api/v1/projects/import/plan", statusOr(sw.status), detail)
 	}
 	if !ok {
 		return
@@ -358,7 +358,7 @@ func (rt *Router) handleImportProject(w http.ResponseWriter, r *http.Request) {
 			// The response stays 200 with the full result; the row marks the partial failure.
 			status = http.StatusMultiStatus
 		}
-		if !rt.auditProjectTransfer(r, AuditActionProjectArchiveImport, http.MethodPost, "/api/v1/projects/import", status, detail) {
+		if !rt.auditProjectTransfer(r, AuditActionProjectArchiveImport, "/api/v1/projects/import", status, detail) {
 			rt.logger.Error("api: project import outcome audit not saved", slog.String("project", tr.project))
 		}
 	}()
@@ -385,7 +385,7 @@ func (rt *Router) handleImportProject(w http.ResponseWriter, r *http.Request) {
 	}
 	// The attempt is on record before anything changes, and no record means no change.
 	attempt := fmt.Sprintf(`{"project":%q,"planned":%d,"secrets_applied":%t}`, p.plan.Project, len(p.plan.Creates), p.plan.SecretsApplied)
-	if !rt.auditProjectTransfer(r, AuditActionProjectArchiveImportAttempt, http.MethodPost, "/api/v1/projects/import", http.StatusAccepted, attempt) {
+	if !rt.auditProjectTransfer(r, AuditActionProjectArchiveImportAttempt, "/api/v1/projects/import", http.StatusAccepted, attempt) {
 		rt.internalError(sw, "api: project import: audit failed", errors.New("attempt entry not saved"))
 		return
 	}
@@ -620,7 +620,7 @@ func importManualSteps(files map[string][]byte, m projectarchive.Manifest, pl *p
 	return steps
 }
 
-func (rt *Router) auditProjectTransfer(r *http.Request, action, method, path string, status int, detail string) bool {
+func (rt *Router) auditProjectTransfer(r *http.Request, action, path string, status int, detail string) bool {
 	if rt.auditLog == nil {
 		return false
 	}
@@ -632,7 +632,7 @@ func (rt *Router) auditProjectTransfer(r *http.Request, action, method, path str
 	}
 	entry := store.AuditEntry{
 		ID: id, ActorType: a.kind, ActorID: a.id, ActorName: a.name,
-		Ability: AbilityWriteSensitive, Method: method, Path: path, StatusCode: status,
+		Ability: AbilityWriteSensitive, Method: http.MethodPost, Path: path, StatusCode: status,
 		RemoteAddr: clientIP(r), CreatedAt: store.FormatAuditTime(time.Now()),
 		ClientKind: clientKindFromUserAgent(r.Header.Get("User-Agent")),
 		Action:     action, Detail: detail,

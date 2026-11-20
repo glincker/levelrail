@@ -87,7 +87,7 @@ func (rt *Router) handleListStaticSiteDeploys(w http.ResponseWriter, r *http.Req
 // It is the rollback path under another name: it points the live site at that
 // deploy's retained files after re-checking their content digest.
 func (rt *Router) handlePromoteStaticSiteDeploy(w http.ResponseWriter, r *http.Request) {
-	target, ok := rt.lookupAppAttempt(w, r, AbilityDeploy)
+	target, ok := rt.lookupAppAttempt(w, r)
 	if !ok {
 		return
 	}
