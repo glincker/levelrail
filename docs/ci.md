@@ -470,126 +470,6 @@ scripts/ci-changes.sh <base-sha> <head-sha>
 scripts/ci-go-plan.sh <base-sha> <head-sha>
 ```
 
-## Measured timings
-
-Measured 2026-10-24 from the last 60 runs of each workflow (`gh api`).
-Runs per week extrapolates from that window, so bursty workflows read high.
-Failed and cancelled counts are out of 60.
-
-| Workflow | Events | Median / p90 | Runs per week | Failed / cancelled |
-| --- | --- | --- | --- | --- |
-| `ci.yml` | PR 51, push 9 | 421 s / 840 s | about 240 (1.8 day window) | 13 / 23 |
-| `codeql.yml` (go 764 s, js 213 s) | push 58, schedule 2 | 634 s / 1218 s | 32 | 0 / 3 |
-| `release.yml` | tag push, dispatch | 426 s / 971 s | 20 | 26 / 0 (most before the tag-only trigger) |
-| `nightly.yml` | schedule | 2631 s / 4521 s | 7 | 54 / 1 |
-| `secret-scan`, `pr-hygiene`, `glinr-bot` | PR | 15 s, 20 s, 36 s | 340 to 500 | 0 / 0, 1, 20 |
-| `release-pacing`, `release-please`, `flake-report` | schedule, push, workflow_run | 7 s to 37 s | 37 to 171 | 2 / 0 |
-| Housekeeping (`stale`, `lock-closed`, `backup-tags`, `branch-cleanup`, `labels`) | schedule, PR | under 15 s | under 10, except `branch-cleanup` on every PR close | 0 / 0 |
-
-Where the runner minutes go, per `ci.yml` run (about 44 runner-minutes, from
-the jobs of 30 runs):
-
-| Job | Median | p90 | Runner-min per run |
-| --- | --- | --- | --- |
-| `Web tests (k/4)` (full vitest, on 2 of 3 recent runs because `ci.yml` itself changed) | 347 s | 384 s | 14.1 |
-| `Test (api-1..4)` | 378 s | 495 s | 7.9 |
-| `Test (rest)`, `Build, vet`, `Lint` | 490 s, 452 s, 346 s | 552 s, 464 s, 388 s | 2.8, 2.5, 1.9 |
-| `Test (e2e)`, `e2e-reconcile`, `e2e-fleet`, `docker` | 370 s, 305 s, 518 s, 349 s | 771 s, 492 s, 584 s, 492 s | 2.4, 1.8, 1.1, 1.9 |
-| `Web (tsc, eslint)` | 184 s | 242 s | 2.2 |
-
-Other sinks: `codeql.yml` cost 17.6 runner-minutes on every push to `main`
-(14 for the Go job), about 4.5 pushes a day. `release.yml` costs about 35
-runner-minutes per tag, mostly the four image builds. Flaky lanes are
-`Test (e2e-reconcile-2)` (4 of 5 runs failed) and the `api` shards (8 of 40).
-
-The first job starts 2 to 57 s after the run is created. Go build and
-module caches hit on PR runs. The tsc build-info cache could not hit while
-`tsc -b` re-checked the whole project on every run (about 31 s). Both web
-tsconfigs now set `incremental`, so a warm local run takes seconds; the cache
-save step still needs to allow PR runs for CI to benefit.
-
-Local hooks, one small sample diff each on a warm cache (seconds):
-
-| Stage | Before | After |
-| --- | --- | --- |
-| pre-commit, Go file only | 2.3 | 0.7 (warm cache both runs, so not a gain of this change) |
-| pre-commit, one web file | 35.3 | 29.5 (eslint and prettier now run beside `tsc -b`) |
-| pre-push, Go file (`internal/brand`) | 59.4 | 33.8 |
-| pre-push, web file only | 21.0 | 1.7 (`go build ./...` skipped when nothing Go-affecting changed) |
-| internal/api narrowing (`affected-api-tests.sh`) | 36 | 13 |
-
-A fresh worktree has no `web/src/routeTree.gen.ts` (gitignored, written by
-`vite build`), so pre-commit used to fail on every web change there. It now
-runs `vite build` once when the file is missing, about 20 s.
-
-pre-push bounds every `go test` it runs with `-timeout`, default `30m`,
-overridable with `LEVELRAIL_PUSH_TEST_TIMEOUT`. The default `go test`
-timeout of 10 minutes is shorter than a whole internal/api run: 3,940 tests
-take about 7 minutes serial on a loaded laptop (about 0.1 s each; only 18 tests
-pass 1 s, 69 s together), so there is no single slow test to fix. CI splits the
-package into the four `api-N` shards, each well under its `-timeout=10m`, and
-`test/e2e/reconcile` is a docker-lane package (live catalog deploys that pull images
-when a daemon is up, so a local run can pass 10 minutes) and CI gives it `-timeout=27m`;
-`scripts/verify.sh` passes `-timeout` (default 45m, `LEVELRAIL_VERIFY_TEST_TIMEOUT`).
-
-`scripts/test-fast.sh` runs `go test -short` for internal/api in shards
-from one binary, with CI's weights and quarantine skips (`-r REGEX`
-narrows tests). pre-push uses it for every internal/api run, in
-`min(4, cores)` shards, overridable with `LEVELRAIL_PREPUSH_API_SHARDS`
-(`1` keeps one `go test` process in the `affected` and full lanes). With
-coverage on, internal/api stays in the single `go test` run. Each shard's
-output is captured; a failure prints only the failing tests with their
-output lines, and the shard logs are kept. The run ends with per-shard
-seconds so a skewed split shows up. `scripts/test-api-shards.sh` checks that
-the shard split covers every internal/api test from `go test -list` exactly
-once. Test builds hash passwords at bcrypt's minimum cost: over 10
-minutes serial became about 3.
-
-## Measured: release push duplication and cold PR caches
-
-Measured 2026-11-06 from `gh run view` on `release/v0.9.1` and `release/v0.9.2`.
-Of the last 40 `ci.yml` runs, 29 were `push` runs on release branches, and every
-push to a branch with an open PR started a `push` run and a `pull_request` run a
-few seconds apart. Two runs of the same release commit (`42092187388` push,
-`42092199731` PR), job seconds:
-
-| Job | Push run | PR run | Why the PR run is slower |
-| --- | --- | --- | --- |
-| `Build, vet` | 323 | 729 | `go build` 66 vs 202, cross-compile 43 vs 327: cold build cache |
-| `Lint` | 207 | 403 | `golangci-lint` 142 vs 386: cold |
-| `Test (api-1..4)` | 316 to 331 | 404 to 542 | `go test` 274 vs 479 |
-| `Test (rest)` | 330 | 573 | 275 vs 544 |
-| Whole run | 95.5 runner-min, 16 min | 136.8 runner-min, 18 min | |
-
-The push run was warm because it saved and restored caches on its own ref; the
-PR run could only read `main`'s caches, and `main` had no `go-build` entry (it is
-saved once per release merge). Both runs also fought over the 20 concurrent job
-slots of the runner pool: PR run test lanes started 356 to 509 s after the run
-began. A release PR that is pushed to again cancels its previous PR run, but not
-the push run, so bursts of pushes left several full push runs finishing in the
-background (`cancelled` in the run list is mostly those).
-
-Expected effect, per push to a release PR: about 95 runner-minutes less (the
-duplicate run), PR run jobs start without queueing behind a second matrix, and
-from the second run of a day the PR run is warm (`Build, vet` about 330 s instead
-of 730 s, lanes about 300 to 330 s instead of 400 to 570 s). The first run of a
-day after a release merge still restores whatever `main` has.
-
-## Expected effect of the lane changes
-
-Estimates from the artifacts of three recent runs, to be compared with the table
-above after the first runs on the new layout.
-
-| Change | Expected | Basis |
-| --- | --- | --- |
-| Weighted api shards | api lanes lose about 25 s of test time (the slowest shard's summed test time 303 s to 276 s; shards were 232 to 303 s) | per-test means of 3 runs, packed greedily |
-| `e2e-reconcile` split in two | the reconcile lane drops from about 480 s to about 280 s; with `e2e-fleet` (about 410 s) now the longest e2e lane, a run that plans the fleet lanes saves roughly 65 s of wall time | per-test times of the reconcile package |
-| Planner tests on planner-only changes | no wall effect; a change to the planner tests alone no longer skips them | `ci-changes.sh` planner output |
-
-The api shard balance is noisy run to run (a shard's summed test time varied by
-up to 30% between runs with the same assignment), so the gain from weights is
-smaller than the spread.
-
 ## Runners
 
 Every job reads `runs-on` from the `CI_RUNNER` repository variable and falls
@@ -738,3 +618,123 @@ Knobs: `PRE_INTEGRATE_NODE_PATH`, `PRE_INTEGRATE_NODE_HEAP`, `PRE_INTEGRATE_TAIL
 uses the same migration number under a different file name), `LEVELRAIL_PUSH_BASE`.
 `scripts/next-migration.sh` prints the next free number across the working tree and
 all `origin/*` branches; `scripts/test-next-migration.sh` checks it on a temp repo.
+
+## Measured timings
+
+Measured 2026-10-24 from the last 60 runs of each workflow (`gh api`).
+Runs per week extrapolates from that window, so bursty workflows read high.
+Failed and cancelled counts are out of 60.
+
+| Workflow | Events | Median / p90 | Runs per week | Failed / cancelled |
+| --- | --- | --- | --- | --- |
+| `ci.yml` | PR 51, push 9 | 421 s / 840 s | about 240 (1.8 day window) | 13 / 23 |
+| `codeql.yml` (go 764 s, js 213 s) | push 58, schedule 2 | 634 s / 1218 s | 32 | 0 / 3 |
+| `release.yml` | tag push, dispatch | 426 s / 971 s | 20 | 26 / 0 (most before the tag-only trigger) |
+| `nightly.yml` | schedule | 2631 s / 4521 s | 7 | 54 / 1 |
+| `secret-scan`, `pr-hygiene`, `glinr-bot` | PR | 15 s, 20 s, 36 s | 340 to 500 | 0 / 0, 1, 20 |
+| `release-pacing`, `release-please`, `flake-report` | schedule, push, workflow_run | 7 s to 37 s | 37 to 171 | 2 / 0 |
+| Housekeeping (`stale`, `lock-closed`, `backup-tags`, `branch-cleanup`, `labels`) | schedule, PR | under 15 s | under 10, except `branch-cleanup` on every PR close | 0 / 0 |
+
+Where the runner minutes go, per `ci.yml` run (about 44 runner-minutes, from
+the jobs of 30 runs):
+
+| Job | Median | p90 | Runner-min per run |
+| --- | --- | --- | --- |
+| `Web tests (k/4)` (full vitest, on 2 of 3 recent runs because `ci.yml` itself changed) | 347 s | 384 s | 14.1 |
+| `Test (api-1..4)` | 378 s | 495 s | 7.9 |
+| `Test (rest)`, `Build, vet`, `Lint` | 490 s, 452 s, 346 s | 552 s, 464 s, 388 s | 2.8, 2.5, 1.9 |
+| `Test (e2e)`, `e2e-reconcile`, `e2e-fleet`, `docker` | 370 s, 305 s, 518 s, 349 s | 771 s, 492 s, 584 s, 492 s | 2.4, 1.8, 1.1, 1.9 |
+| `Web (tsc, eslint)` | 184 s | 242 s | 2.2 |
+
+Other sinks: `codeql.yml` cost 17.6 runner-minutes on every push to `main`
+(14 for the Go job), about 4.5 pushes a day. `release.yml` costs about 35
+runner-minutes per tag, mostly the four image builds. Flaky lanes are
+`Test (e2e-reconcile-2)` (4 of 5 runs failed) and the `api` shards (8 of 40).
+
+The first job starts 2 to 57 s after the run is created. Go build and
+module caches hit on PR runs. The tsc build-info cache could not hit while
+`tsc -b` re-checked the whole project on every run (about 31 s). Both web
+tsconfigs now set `incremental`, so a warm local run takes seconds; the cache
+save step still needs to allow PR runs for CI to benefit.
+
+Local hooks, one small sample diff each on a warm cache (seconds):
+
+| Stage | Before | After |
+| --- | --- | --- |
+| pre-commit, Go file only | 2.3 | 0.7 (warm cache both runs, so not a gain of this change) |
+| pre-commit, one web file | 35.3 | 29.5 (eslint and prettier now run beside `tsc -b`) |
+| pre-push, Go file (`internal/brand`) | 59.4 | 33.8 |
+| pre-push, web file only | 21.0 | 1.7 (`go build ./...` skipped when nothing Go-affecting changed) |
+| internal/api narrowing (`affected-api-tests.sh`) | 36 | 13 |
+
+A fresh worktree has no `web/src/routeTree.gen.ts` (gitignored, written by
+`vite build`), so pre-commit used to fail on every web change there. It now
+runs `vite build` once when the file is missing, about 20 s.
+
+pre-push bounds every `go test` it runs with `-timeout`, default `30m`,
+overridable with `LEVELRAIL_PUSH_TEST_TIMEOUT`. The default `go test`
+timeout of 10 minutes is shorter than a whole internal/api run: 3,940 tests
+take about 7 minutes serial on a loaded laptop (about 0.1 s each; only 18 tests
+pass 1 s, 69 s together), so there is no single slow test to fix. CI splits the
+package into the four `api-N` shards, each well under its `-timeout=10m`, and
+`test/e2e/reconcile` is a docker-lane package (live catalog deploys that pull images
+when a daemon is up, so a local run can pass 10 minutes) and CI gives it `-timeout=27m`;
+`scripts/verify.sh` passes `-timeout` (default 45m, `LEVELRAIL_VERIFY_TEST_TIMEOUT`).
+
+`scripts/test-fast.sh` runs `go test -short` for internal/api in shards
+from one binary, with CI's weights and quarantine skips (`-r REGEX`
+narrows tests). pre-push uses it for every internal/api run, in
+`min(4, cores)` shards, overridable with `LEVELRAIL_PREPUSH_API_SHARDS`
+(`1` keeps one `go test` process in the `affected` and full lanes). With
+coverage on, internal/api stays in the single `go test` run. Each shard's
+output is captured; a failure prints only the failing tests with their
+output lines, and the shard logs are kept. The run ends with per-shard
+seconds so a skewed split shows up. `scripts/test-api-shards.sh` checks that
+the shard split covers every internal/api test from `go test -list` exactly
+once. Test builds hash passwords at bcrypt's minimum cost: over 10
+minutes serial became about 3.
+
+## Measured: release push duplication and cold PR caches
+
+Measured 2026-11-06 from `gh run view` on `release/v0.9.1` and `release/v0.9.2`.
+Of the last 40 `ci.yml` runs, 29 were `push` runs on release branches, and every
+push to a branch with an open PR started a `push` run and a `pull_request` run a
+few seconds apart. Two runs of the same release commit (`42092187388` push,
+`42092199731` PR), job seconds:
+
+| Job | Push run | PR run | Why the PR run is slower |
+| --- | --- | --- | --- |
+| `Build, vet` | 323 | 729 | `go build` 66 vs 202, cross-compile 43 vs 327: cold build cache |
+| `Lint` | 207 | 403 | `golangci-lint` 142 vs 386: cold |
+| `Test (api-1..4)` | 316 to 331 | 404 to 542 | `go test` 274 vs 479 |
+| `Test (rest)` | 330 | 573 | 275 vs 544 |
+| Whole run | 95.5 runner-min, 16 min | 136.8 runner-min, 18 min | |
+
+The push run was warm because it saved and restored caches on its own ref; the
+PR run could only read `main`'s caches, and `main` had no `go-build` entry (it is
+saved once per release merge). Both runs also fought over the 20 concurrent job
+slots of the runner pool: PR run test lanes started 356 to 509 s after the run
+began. A release PR that is pushed to again cancels its previous PR run, but not
+the push run, so bursts of pushes left several full push runs finishing in the
+background (`cancelled` in the run list is mostly those).
+
+Expected effect, per push to a release PR: about 95 runner-minutes less (the
+duplicate run), PR run jobs start without queueing behind a second matrix, and
+from the second run of a day the PR run is warm (`Build, vet` about 330 s instead
+of 730 s, lanes about 300 to 330 s instead of 400 to 570 s). The first run of a
+day after a release merge still restores whatever `main` has.
+
+## Expected effect of the lane changes
+
+Estimates from the artifacts of three recent runs, to be compared with the table
+above after the first runs on the new layout.
+
+| Change | Expected | Basis |
+| --- | --- | --- |
+| Weighted api shards | api lanes lose about 25 s of test time (the slowest shard's summed test time 303 s to 276 s; shards were 232 to 303 s) | per-test means of 3 runs, packed greedily |
+| `e2e-reconcile` split in two | the reconcile lane drops from about 480 s to about 280 s; with `e2e-fleet` (about 410 s) now the longest e2e lane, a run that plans the fleet lanes saves roughly 65 s of wall time | per-test times of the reconcile package |
+| Planner tests on planner-only changes | no wall effect; a change to the planner tests alone no longer skips them | `ci-changes.sh` planner output |
+
+The api shard balance is noisy run to run (a shard's summed test time varied by
+up to 30% between runs with the same assignment), so the gain from weights is
+smaller than the spread.
