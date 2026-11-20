@@ -11,24 +11,38 @@ import (
 type deployURLRowStore interface {
 	ListDeployURLs(ctx context.Context, appName string) ([]store.DeployURL, error)
 	DeleteDeployURL(ctx context.Context, serviceName string) error
+	SaveDeployURL(ctx context.Context, u store.DeployURL) error
 }
 
-// removeRetainedSiblings deletes the retained previous-deploy copies of name in the same
-// operation as the app, so none outlives it with its own host and certificate. A copy whose
-// delete fails keeps its row, and the deploy-URL syncer retries it.
-func (rt *Router) removeRetainedSiblings(ctx context.Context, name string) {
+// retainedSiblingRows lists the retained previous-deploy copies of name. It must run before
+// the app's row is deleted, because that delete clears the deploy-url rows that name them.
+func (rt *Router) retainedSiblingRows(ctx context.Context, name string) []store.DeployURL {
 	rs, ok := rt.deployAttempts.(deployURLRowStore)
 	if !ok {
-		return
+		return nil
 	}
 	rows, err := rs.ListDeployURLs(ctx, name)
 	if err != nil {
 		rt.logger.Warn("api: delete app: list retained copies failed", slog.String("error", err.Error()), slog.String("name", name))
+		return nil
+	}
+	return rows
+}
+
+// removeRetainedSiblings deletes the given retained copies of name in the same operation as
+// the app, so none outlives it with its own host and certificate. A copy whose delete fails
+// gets its row written back, and the deploy-URL syncer retries it.
+func (rt *Router) removeRetainedSiblings(ctx context.Context, name string, rows []store.DeployURL) {
+	rs, ok := rt.deployAttempts.(deployURLRowStore)
+	if !ok {
 		return
 	}
 	for _, row := range rows {
 		if _, err := rt.deleteApp(ctx, row.ServiceName); err != nil && !errors.Is(err, store.ErrServiceNotFound) {
 			rt.logger.Warn("api: delete app: remove retained copy failed", slog.String("error", err.Error()), slog.String("name", name), slog.String("copy", row.ServiceName))
+			if serr := rs.SaveDeployURL(ctx, row); serr != nil {
+				rt.logger.Warn("api: delete app: keep retained copy row failed", slog.String("error", serr.Error()), slog.String("copy", row.ServiceName))
+			}
 			continue
 		}
 		if err := rs.DeleteDeployURL(ctx, row.ServiceName); err != nil {

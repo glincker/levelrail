@@ -119,6 +119,8 @@ func (rt *Router) deleteAppGuarded(ctx context.Context, name string, guard func(
 			return nil, err
 		}
 	}
+	// Read before the row delete: it also drops the app's deploy attempts, and their deploy-url rows with them.
+	copies := rt.retainedSiblingRows(ctx, name)
 	// Integration rows cascade with the service, so list them first.
 	integrationNS := rt.appIntegrationSecretNamespaces(ctx, name)
 	// Erase right after the row is gone, under the name lock (held since the
@@ -144,7 +146,7 @@ func (rt *Router) deleteAppGuarded(ctx context.Context, name string, guard func(
 	}
 	// Nudge before the slow teardown so the ingress route drops right away.
 	rt.nudgeReconciler()
-	rt.removeRetainedSiblings(ctx, name)
+	rt.removeRetainedSiblings(ctx, name, copies)
 	if finalizer != nil {
 		tctx, cancel := context.WithTimeout(context.WithoutCancel(ctx), rt.deleteTeardownTimeout())
 		teardownErr = finalizer.Finalize(tctx, name, existing.NodeID)
