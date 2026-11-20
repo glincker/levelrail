@@ -8,18 +8,18 @@ Releases are listed on the [releases page](https://github.com/glincker/levelrail
 
 The 0.8 release line adds an Inbox for alerts and approvals, recoverable upgrades, secret rotation, and provider, region and zone labels on nodes.
 
-The build did not follow the original phase plan in order. Parts of multi-node shipped while some single-node items (real public ACME renewal, a Linux idle-footprint measurement) are still open. The status sections below describe what is true today. The dated section above is a plan, not a schedule.
+The build did not follow the original phase plan in order. Parts of multi-node shipped while some single-node items (real public ACME renewal, a Linux idle-footprint measurement) are still open. The status sections below describe what is true today. The [Now, next, later](#now-next-later) section is a plan, not a schedule.
 
 ## Now, next, later
 
-Last updated 2026-11-09 (release/v0.9.6 branch). Levelrail is v1.x and single node is production ready. Everything below is planned, not promised: quarters are targets, items can move or drop, and nothing here is a commitment to a date. Items marked planned have no shipped code unless the line says so.
+Last updated 2026-11-20. Levelrail is v1.x and single node is production ready. Everything below is planned, not promised: quarters are targets, items can move or drop, and nothing here is a commitment to a date. Items marked planned have no shipped code unless the line says so.
 
 ### Now (Q4 2026)
 
 Goal: move beta features to stable. Reliability and evidence first.
 
-- Real hosts: record real-host runs for the multi-node WireGuard mesh and cross-host transport, and a bare metal or VPS idle-footprint number. Status: open, see [Open work](#open-work).
-- Public ACME: renewal close to expiry, DNS-01 wildcards and a deliberate failure against the production CA. Status: open, one live run is recorded in the [runbook](/acme-verification-runbook).
+- Real hosts: record real-host runs for the multi-node WireGuard mesh and cross-host transport, and a bare metal or VPS idle-footprint number. The mesh and cross-host transport are unverified outside fakes and local Docker daemons. Status: open, see [Open work](#open-work).
+- Public ACME: renewal close to expiry, DNS-01 wildcards and a deliberate failure against the production CA. Status: open, one live run against Let's Encrypt on a public VPS is recorded in the [runbook](/acme-verification-runbook).
 - Upgrade and downgrade testing across more releases with real data. Status: started, see [Upgrade safely](/upgrade-safely).
 - Stacks hardening: stacks are experimental behind `APP_EXPERIMENTAL=iac`, with drift, approvals and rollback built. Status: shipping in the 0.8 line, see the [changelog](/changelog) and [ADR 042](https://github.com/glincker/levelrail/blob/main/adr/042-stacks-and-revisions.md).
 - Public live demo: a hosted read-only instance you can try without installing. Status: the demo mode and the hosting runbook are shipped (see [Run a read-only demo](/run-a-read-only-demo) and [Host a public read-only demo](/hosted-demo)). A running public instance is not claimed here.
@@ -143,15 +143,14 @@ These exist and are tested, but are gated or carry a beta label. See [feature st
 
 ## Open work
 
-- Real public ACME: one live run against Let's Encrypt on a public VPS is recorded in the [runbook](/acme-verification-runbook). Renewal close to expiry, DNS-01 wildcards and a deliberate failure against the production CA are not yet exercised live.
-- Multi-node on real hosts: the WireGuard mesh and cross-host remote transport are unverified outside fakes and local Docker daemons.
+The first items in [Now, next, later](#now-next-later) (real public ACME, multi-node on real hosts, upgrade and downgrade testing, load and failover numbers, template coverage) are open work too. Details that are not repeated there:
+
 - Idle footprint on Linux: measured in a Docker Desktop container (not bare metal) with a harness and opt-in regression guard. A bare metal or VPS number is still open. See [performance](/performance).
-- Load and failover numbers: the harness exists (`levelrail-cli bench run`), no published results yet. See [benchmarks](/benchmarks).
 - Template coverage: a sample of the templates is deployed by e2e tests, not the whole catalog.
 - Other database engines: PITR covers Postgres, MySQL and MariaDB only (MongoDB has no oplog here), and the remaining engines have no TLS by default.
-- Upgrade and downgrade testing across versions with real data is part of Phase 5.
 - Real pause or scale-to-zero for spend caps: `pause` serves a maintenance response and does not stop containers. A real pause needs an ADR first.
 - Remote Go build cache for CI: needs a storage bucket before it can be enabled.
+- Load and failover numbers: the harness exists (`levelrail-cli bench run`), no published results yet. See [benchmarks](/benchmarks).
 
 ## Out of scope
 

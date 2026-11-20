@@ -229,18 +229,6 @@ In **Deploy settings** the **Auto rollback** card holds the mode, window and
 thresholds. An automatic rollback is recorded in the deploy history (reason
 and the measured numbers) and in the audit log as `deploy.auto_rollback`.
 
-## How this is tested
-
-`test/e2e/reconcile/deploy_safety_live_test.go` runs the real application
-and ingress controllers on a real reconcile engine against Docker, with the
-request metrics pipeline and the watch, while four clients hammer the
-ingress. It deploys a good release, a release that exits inside its stable
-window, and a release that answers 5xx until the watch rolls it back. The
-fixture app drops in-flight requests on `SIGTERM`, so only a real drain
-keeps them alive. A run on Docker Desktop: 2617 requests, 0 failed
-(transport errors or proxy 5xx), the bad release's own 500s excluded. With
-the drain turned off the same test loses requests at cutover.
-
 ## Digest-truthful deploys
 
 A floating tag such as `nginx:latest`, `main` or `1.27` names different
@@ -444,6 +432,30 @@ switch. The MCP server exposes `cancel_deploy`.
 
 Pruning removes only dangling (untagged) images, and Docker itself refuses to remove an image a container still uses, even when its tag has since moved to newer content. A pinned rollback tag is never dangling, so it is never a candidate. Both properties are checked against a real daemon in `internal/docker/prune_images_live_test.go`: a pinned tag, an untagged image still backing a running container, and a truly orphaned image go in, and only the last one comes out. A rollback whose image is gone anyway answers `410` with an instruction to redeploy from source instead of a half-working deploy. See [Delete and clean up](/deploying-apps#delete-and-clean-up) for the container, volume and certificate reaper.
 
+## Protecting an app
+
+A protected app refuses deploys, rollbacks, promotes, scaling, config writes and deletion with HTTP 423 until someone unprotects it. Unlike a freeze window there is no override flag: unprotect first. Reads, logs and metrics keep working.
+
+```
+levelrail-cli apps protect web --reason "customer demo week"
+levelrail-cli apps protect web --status
+levelrail-cli apps unprotect web
+```
+
+Protecting needs a reason, and both protect and unprotect appear in the app's event history. This is separate from `apps lock`, which only holds new builds back from going live. The API is `GET`, `PUT` and `DELETE /api/v1/apps/{name}/protection`.
+
+## How this is tested
+
+`test/e2e/reconcile/deploy_safety_live_test.go` runs the real application
+and ingress controllers on a real reconcile engine against Docker, with the
+request metrics pipeline and the watch, while four clients hammer the
+ingress. It deploys a good release, a release that exits inside its stable
+window, and a release that answers 5xx until the watch rolls it back. The
+fixture app drops in-flight requests on `SIGTERM`, so only a real drain
+keeps them alive. A run on Docker Desktop: 2617 requests, 0 failed
+(transport errors or proxy 5xx), the bad release's own 500s excluded. With
+the drain turned off the same test loses requests at cutover.
+
 ## Limits
 
 - On remote nodes reached over the agent transport the running image ID is
@@ -490,15 +502,3 @@ Pruning removes only dangling (untagged) images, and Docker itself refuses to re
 ### Still stuck
 
 For all failure codes and their meanings, see [Deploy failures](deploy-failures.md). Run `levelrail-cli apps diagnose <name>` for system details.
-
-## Protecting an app
-
-A protected app refuses deploys, rollbacks, promotes, scaling, config writes and deletion with HTTP 423 until someone unprotects it. Unlike a freeze window there is no override flag: unprotect first. Reads, logs and metrics keep working.
-
-```
-levelrail-cli apps protect web --reason "customer demo week"
-levelrail-cli apps protect web --status
-levelrail-cli apps unprotect web
-```
-
-Protecting needs a reason, and both protect and unprotect appear in the app's event history. This is separate from `apps lock`, which only holds new builds back from going live. The API is `GET`, `PUT` and `DELETE /api/v1/apps/{name}/protection`.

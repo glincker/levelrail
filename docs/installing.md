@@ -10,7 +10,7 @@ description: Requirements, then every supported way to get the Levelrail control
 
 <div className="flex flex-wrap items-center gap-2 not-prose"><span className="inline-flex h-9 w-9 items-center justify-center rounded-lg bg-white p-1.5 ring-1 ring-black/10"><img src="https://cdn.jsdelivr.net/gh/glincker/thesvg@a7c5ddd3f529accdf86519cc8fb96cb76cef4efd/public/icons/ubuntu/default.svg" alt="Ubuntu" title="Ubuntu" width="24" height="24" /></span><span className="inline-flex h-9 w-9 items-center justify-center rounded-lg bg-white p-1.5 ring-1 ring-black/10"><img src="https://cdn.jsdelivr.net/gh/glincker/thesvg@a7c5ddd3f529accdf86519cc8fb96cb76cef4efd/public/icons/debian/default.svg" alt="Debian" title="Debian" width="24" height="24" /></span><span className="inline-flex h-9 w-9 items-center justify-center rounded-lg bg-white p-1.5 ring-1 ring-black/10"><img src="https://cdn.jsdelivr.net/gh/glincker/thesvg@a7c5ddd3f529accdf86519cc8fb96cb76cef4efd/public/icons/docker/default.svg" alt="Docker" title="Docker" width="24" height="24" /></span></div>
 
-## What this covers
+## Choose an install path
 
 How to get the Levelrail control plane (`levelrail`) running on a Linux host, confirm it works, and upgrade or remove it later. The node agent is `levelrail-agent`, and `levelrail-cli` is the client. All three are static Go binaries.
 
@@ -123,7 +123,7 @@ A missing `checksums.txt` is a hard failure unless you set `LEVELRAIL_SKIP_CHECK
 <Step title="Open the setup link">
 Open one of the `http://<ip>:8080/login#setup=<token>` links from the install summary. The summary prints the token and these links only in an interactive terminal; in cloud-init or CI it points to `setup-token` instead. The public address is printed first, then private addresses. Container bridge addresses are hidden.
 
-**8080 is only the default.** If that port was taken, `install.sh` picks the next free one (`LEVELRAIL_DASHBOARD_PORT`) and prints the real one. Use the port from your own output.
+Use the dashboard port from your own output (see [Dashboard port 8080](#dashboard-port-8080)).
 </Step>
 <Step title="Create the admin account">
 After you create the admin account, the first-run screen opens: enable HTTPS in one click, then deploy your first app.
@@ -150,7 +150,7 @@ Set a primary domain plus ACME on the Domains page.
 </Steps>
 
 <Tip>
-**Pick a dashboard-only subdomain, not an app's own domain**, such as `console.example.com` or `panel.example.com` (the same convention CapRover uses for `captain.<domain>`). Reusing a domain an app already serves breaks whichever one loses the conflict, silently. See [Domains and ingress](/domains-and-ingress#the-dashboards-own-domain).
+**Pick a dashboard-only subdomain, not an app's own domain**, such as `console.example.com` or `panel.example.com`. Reusing a domain an app already serves breaks whichever one loses the conflict, silently. See [Domains and ingress](/domains-and-ingress#the-dashboards-own-domain).
 </Tip>
 
 <Accordion title="Lost the setup token or the dashboard port?">
@@ -185,35 +185,14 @@ AI chat, AI models, the [load balancer](/load-balancing), [platform as code](/pl
 
 ### Common scenarios
 
-<CodeGroup>
-```bash Pin a specific release
-curl -fsSLO https://github.com/glincker/levelrail/releases/latest/download/install.sh
-curl -fsSLO https://github.com/glincker/levelrail/releases/latest/download/checksums.txt
-grep ' install.sh$' checksums.txt | sha256sum -c -  # macOS: shasum -a 256 -c -
-sudo LEVELRAIL_VERSION=v0.9.0 sh install.sh
-```
+Download and verify `install.sh` as in [Option 1](#option-1-installsh-recommended), then run the variant you need:
 
-```bash Custom data directory
-curl -fsSLO https://github.com/glincker/levelrail/releases/latest/download/install.sh
-curl -fsSLO https://github.com/glincker/levelrail/releases/latest/download/checksums.txt
-grep ' install.sh$' checksums.txt | sha256sum -c -  # macOS: shasum -a 256 -c -
-sudo LEVELRAIL_DATA_DIR=/data/levelrail sh install.sh
+```bash
+sudo LEVELRAIL_VERSION=v0.9.0 sh install.sh        # pin a specific release
+sudo LEVELRAIL_DATA_DIR=/data/levelrail sh install.sh   # custom data directory
+sudo LEVELRAIL_CONFIGURE_UFW=1 sh install.sh       # configure UFW automatically
+sudo sh install.sh --force                         # ignore a failed preflight check
 ```
-
-```bash Configure UFW automatically
-curl -fsSLO https://github.com/glincker/levelrail/releases/latest/download/install.sh
-curl -fsSLO https://github.com/glincker/levelrail/releases/latest/download/checksums.txt
-grep ' install.sh$' checksums.txt | sha256sum -c -  # macOS: shasum -a 256 -c -
-sudo LEVELRAIL_CONFIGURE_UFW=1 sh install.sh
-```
-
-```bash Ignore a failed preflight check
-curl -fsSLO https://github.com/glincker/levelrail/releases/latest/download/install.sh
-curl -fsSLO https://github.com/glincker/levelrail/releases/latest/download/checksums.txt
-grep ' install.sh$' checksums.txt | sha256sum -c -  # macOS: shasum -a 256 -c -
-sudo sh install.sh --force
-```
-</CodeGroup>
 
 <Accordion title="Optional environment variables">
 
@@ -313,7 +292,7 @@ levelrail-cli proxy --domain apps.example.com --verify
 
 To move an existing install behind a proxy later: `sudo sh install.sh upgrade --coexist`.
 
-See [Behind an existing proxy](/behind-an-existing-proxy) for the proxy side. Let's Encrypt only validates on 80/443, so certificates for these domains are issued by your existing proxy, not Levelrail.
+Let's Encrypt only validates on 80/443, so certificates for these domains are issued by your existing proxy, not Levelrail. See [Behind an existing proxy](/behind-an-existing-proxy) for the proxy side.
 
 <Accordion title="Where the installer's settings live">
 
@@ -702,12 +681,9 @@ Replaces the binary with the newest release and keeps your unit file, chosen por
 The installer cannot undo a schema migration. For an upgrade that also restores the data, use the self-update above.
 </Warning>
 
-To pin a release instead of the latest:
+To pin a release instead of the latest, run the same verified script with:
 
 ```bash
-curl -fsSLO https://github.com/glincker/levelrail/releases/latest/download/install.sh
-curl -fsSLO https://github.com/glincker/levelrail/releases/latest/download/checksums.txt
-grep ' install.sh$' checksums.txt | sha256sum -c -  # macOS: shasum -a 256 -c -
 sudo LEVELRAIL_VERSION=<version> sh install.sh
 ```
 
@@ -767,16 +743,14 @@ The live database is kept beside the restored one as `.before-restore-<timestamp
 <Tabs>
 <Tab title="install.sh">
 ```bash
-# removes the service, unit file, and binary; keeps /var/lib/levelrail-data
 curl -fsSLO https://github.com/glincker/levelrail/releases/latest/download/install.sh
 curl -fsSLO https://github.com/glincker/levelrail/releases/latest/download/checksums.txt
 grep ' install.sh$' checksums.txt | sha256sum -c -  # macOS: shasum -a 256 -c -
+
+# removes the service, unit file, and binary; keeps /var/lib/levelrail-data
 sudo sh install.sh uninstall
 
 # also deletes the data directory (database, master key, certificates)
-curl -fsSLO https://github.com/glincker/levelrail/releases/latest/download/install.sh
-curl -fsSLO https://github.com/glincker/levelrail/releases/latest/download/checksums.txt
-grep ' install.sh$' checksums.txt | sha256sum -c -  # macOS: shasum -a 256 -c -
 sudo sh install.sh uninstall --purge
 ```
 
@@ -838,11 +812,10 @@ Fix: on the server, run `sudo APP_DATA_DIR=/var/lib/levelrail-data levelrail set
 
 ### Common errors
 
+Install failures (`control plane did not become healthy`, `could not list releases`, `checksum mismatch`) are in [If the install fails](#option-1-installsh-recommended).
+
 | Step | Error you see | Fix |
 | --- | --- | --- |
-| Install | `control plane did not become healthy within 60s` | `systemctl status levelrail` and `journalctl -u levelrail -n 100 --no-pager`. A port already in use is a common cause. |
-| Install | `could not list releases from GitHub. Set LEVELRAIL_VERSION=vX.Y.Z to pin one.` | The server cannot reach GitHub. Check outbound HTTPS, or pin a release. |
-| Install | `checksum mismatch for ...` | Do not continue. Run the installer again. Do not set `LEVELRAIL_SKIP_CHECKSUM=1` to get past it. |
 | Login | `start device login: ... connection refused` | The CLI points at the wrong address. Run `export APP_API_URL=http://127.0.0.1:<dashboard port>` and try again. |
 | Import | `plan import: ... connection refused` | The control plane is not running. Start it with `systemctl start levelrail`. |
 
