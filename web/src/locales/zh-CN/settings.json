@@ -2886,7 +2886,407 @@
     "prune": "清理（prune）：删除此来源创建、但文件已不再声明的应用",
     "pruneNeedsSource": "清理需要一个来源名称。",
     "noDeploy": "应用环境变更时不重启正在运行的应用",
-    "planning": "规划中..."
+    "planning": "规划中...",
+    "plan": "计划",
+    "apply": "执行",
+    "confirmTitle": "确认执行这些更改？",
+    "confirmSummary": "创建 {{create}} 项，更新 {{update}} 项，删除 {{delete}} 项。",
+    "confirmNote": "只有实际状态仍与你审阅过的计划一致时，才会执行。",
+    "confirmDeletes": "此操作将删除 {{count}} 个资源。",
+    "cancel": "取消",
+    "planTitle": "计划",
+    "resultTitle": "结果",
+    "resultCounts": "已执行 {{applied}} 项，失败 {{failed}} 项，跳过 {{skipped}} 项",
+    "banner": {
+      "description": "以 YAML 描述项目、应用、域名和数据库，审阅计划后再执行。",
+      "diagram": {
+        "host": "主机",
+        "docker": "Docker",
+        "ingress": "入口"
+      }
+    },
+    "optionsTitle": "选项",
+    "optionsDescription": "控制执行时如何处理已知的应用。",
+    "filesChosen_other": "已准备 {{count}} 个文件",
+    "noFiles": "在下方粘贴 YAML，或上传文件以生成计划。",
+    "planAgain": "重新生成计划",
+    "planFailed": "无法生成计划。请修正文件后重新生成计划。",
+    "applyFailed": "执行未完成。请重新生成计划，以审阅当前状态。"
+  },
+  "githubManualDialog": {
+    "title": "手动连接 GitHub App",
+    "descPrefix": "请自行在此创建该 App：",
+    "descSuffix": "（或你的 GitHub Enterprise Server 实例自己的 /settings/apps/new），然后在此粘贴生成的凭据。保存这些凭据不需要主域名，只有自动设置才需要。",
+    "instanceLabel": "GitHub 实例（可选）",
+    "instanceHint": "留空即使用 github.com。也支持自托管实例，例如 https://github.example.com。",
+    "appId": "App ID",
+    "clientId": "Client ID",
+    "clientSecret": "客户端密钥",
+    "webhookSecret": "Webhook 密钥",
+    "webhookHint": "你在 GitHub 上为该 App 自行设置的 Webhook 密钥，不在这里生成。",
+    "privateKey": "私钥（.pem）",
+    "privateKeyHint": "在 GitHub 上该 App 的通用页面生成一次，并下载为 .pem 文件。请粘贴其完整内容。",
+    "installationId": "安装 ID（可选）",
+    "accountLogin": "账户登录名（可选）",
+    "connect": "连接",
+    "connecting": "正在连接...",
+    "connected": "GitHub App 已连接。",
+    "connectFailed": "无法连接 GitHub App。"
+  },
+  "drCard": {
+    "neverRun": "从未运行",
+    "failed": "{{when}}失败：{{detail}}",
+    "passedPartial": "{{when}}通过（部分：仅校验和，未测试解密）",
+    "passed": "{{when}}通过，耗时 {{seconds}} 秒",
+    "started": "{{label}}已开始。",
+    "labelBackup": "备份",
+    "labelDrill": "恢复演练",
+    "title": "灾难恢复",
+    "description": "加密的异地备份、密钥托管和恢复演练。",
+    "backingUp": "正在备份...",
+    "runNow": "立即运行",
+    "runningDrill": "正在运行演练...",
+    "runDrill": "运行演练",
+    "warnings": "警告",
+    "lastBackup": "上次备份",
+    "never": "从未",
+    "nextBackup": "下次 {{when}}",
+    "lastDrill": "上次恢复演练",
+    "drillIdentity": "演练身份",
+    "identityConfigured": "已配置，演练会完整解密并恢复",
+    "identityMissing": "未配置，演练仅校验校验和（APP_CONTROL_PLANE_DRILL_IDENTITY_FILE）"
+  },
+  "buildCache": {
+    "modeMax": "max（缓存每一层，重建最快）",
+    "modeMin": "min（仅缓存最终层，占用空间更小）",
+    "checking": "正在检查存储桶...",
+    "readFailed": "无法读取存储桶：{{message}}",
+    "objects": "{{count}}{{plus}} 个对象，{{size}}",
+    "lastExport": "，上次导出 {{when}}",
+    "clearedMore": "已删除 {{deleted}} 个对象。仍有剩余，请再次清理。",
+    "cleared": "缓存已清理（已删除 {{deleted}} 个对象）。",
+    "deleteLayers": "删除已缓存的层",
+    "cancel": "取消",
+    "clear": "清理缓存",
+    "saved": "构建缓存已保存。",
+    "destination": "目标",
+    "chooseDestination": "选择目标",
+    "exportMode": "导出模式",
+    "useRemote": "使用远程缓存",
+    "storedUnder": "各层存储在 {{prefix}} 下。关闭此项可让此应用不再使用默认设置。",
+    "globalHint": "适用于每个没有自身设置的应用。每个应用的缓存位于 build-cache/<app>/ 下。",
+    "update": "更新",
+    "save": "保存",
+    "removed": "构建缓存设置已移除。",
+    "removeSetting": "移除设置",
+    "notConfiguredTitle": "此服务器未配置构建缓存",
+    "loadFailedTitle": "无法加载构建缓存设置",
+    "notConfiguredBody": "设置 APP_MASTER_KEY 并重启控制平面，以连接对象存储。",
+    "unknownError": "未知错误",
+    "loading": "正在加载...",
+    "noDestinationTitle": "还没有存储目标",
+    "noDestinationBody": "请先在“设置”→“存储目标”下连接一个存储桶，然后在此将其用作构建缓存。",
+    "usingDefault": "所有应用都使用默认构建缓存。在下方保存设置即可为此应用单独覆盖。",
+    "ranWithout": "上次构建未使用缓存",
+    "lastBuild": "上次使用缓存的构建：{{when}}",
+    "title": "构建缓存",
+    "titleAll": "所有应用的构建缓存",
+    "description": "将 BuildKit 层保存在存储目标中，使重建时可以跳过未变化的步骤。缓存问题绝不会导致构建失败，只会以警告形式报告。"
+  },
+  "gitConnections": {
+    "empty": {
+      "title": "尚未连接任何账户",
+      "description": {
+        "gitlab": "注册一个 GitLab OAuth 应用并完成授权。gitlab.com 与自托管实例可以并排连接。",
+        "bitbucket": "注册一个 Bitbucket OAuth 使用者并完成授权。之后可以为另一个工作区再添加一个使用者。",
+        "gitea": "注册一个 Gitea OAuth 应用并完成授权。每个 Gitea 或 Forgejo 服务器都是独立的连接。",
+        "forgejo": "注册一个 Forgejo OAuth 应用并完成授权。Codeberg 和自托管服务器各自是独立的连接。",
+        "bitbucket_server": "在你的 Bitbucket Server 上创建个人访问令牌，然后添加到这里。每个服务器或账户各自是一个独立连接。",
+        "azure_devops": "在你的 Azure DevOps 组织中创建个人访问令牌，然后添加到这里。"
+      }
+    },
+    "default": "默认",
+    "account": "已登录为 {{name}}",
+    "accountUnknown": "尚未读取账户",
+    "sources_other": "{{count}} 个 Git 来源",
+    "scopeNote": "连接属于此控制平面，由管理员管理。任何有权读取仓库的人都可以浏览某个账户可见的内容。",
+    "state": {
+      "ok": "已连接",
+      "notAuthorized": "未授权",
+      "needsReconnect": "需要重新连接",
+      "rateLimited": "已达速率限制"
+    },
+    "authorize": "授权",
+    "reconnect": "重新连接",
+    "setDefault": "设为默认",
+    "rename": {
+      "action": "重命名",
+      "label": "连接名称",
+      "save": "保存",
+      "cancel": "取消"
+    },
+    "disconnect": {
+      "action": "断开连接",
+      "pending": "正在断开",
+      "title": "断开 {{label}}？",
+      "description": "此控制平面将停止使用该账户，并在支持的提供商处撤销其令牌。其他已连接的账户不受影响。",
+      "sources_other": "{{count}} 个 Git 来源使用此账户。它们会保留并显示“需要重新连接”，在同一主机上连接账户后即可再次工作。"
+    },
+    "add": {
+      "first": "添加账户",
+      "another": "添加另一个账户",
+      "title": {
+        "gitlab": "添加 GitLab 账户",
+        "bitbucket": "添加 Bitbucket 账户",
+        "gitea": "添加 Gitea 账户",
+        "forgejo": "添加 Forgejo 账户",
+        "bitbucket_server": "添加 Bitbucket Server 账户",
+        "azure_devops": "添加 Azure DevOps 组织"
+      },
+      "description": "请在提供商处创建 OAuth 应用，回调 URI 为 {{callback}}，然后在此输入。随后你将被转到提供商页面完成授权。",
+      "application": "OAuth 应用",
+      "newApplication": "注册新的 OAuth 应用",
+      "reuse": "复用 {{label}} 的应用",
+      "applicationHelp": "复用同一应用，可在同一实例上使用其他账户登录。",
+      "instanceUrl": "实例 URL",
+      "instanceHelp": "gitlab.com 或自托管地址，例如 https://git.example.com。",
+      "clientId": {
+        "gitlab": "应用 ID",
+        "bitbucket": "使用者密钥",
+        "gitea": "Client ID",
+        "forgejo": "Client ID",
+        "bitbucket_server": "Client ID",
+        "azure_devops": "Client ID"
+      },
+      "clientSecret": "密钥",
+      "label": "名称（可选）",
+      "labelHelp": "完成授权后默认使用账户名称。之后可以重命名。",
+      "cancel": "取消",
+      "submit": "保存并授权",
+      "saving": "正在保存",
+      "tokenDescription": "在服务器上创建具有仓库读写权限的个人访问令牌，然后粘贴到这里。系统会先验证，再加密存储。",
+      "token": "个人访问令牌",
+      "tokenHelp": "位于“管理账户”→“个人访问令牌”下。令牌之后不会再次显示。",
+      "instanceHelpServer": "服务器的基础地址，例如 https://bitbucket.example.com。",
+      "connect": "验证并连接",
+      "verifying": "正在验证",
+      "test": "测试连接",
+      "testing": "正在测试",
+      "testOk": "已连接。服务器已响应，详情看起来正确。",
+      "testOkAccount": "已以 {{account}} 身份连接。",
+      "fixLabel": "修复",
+      "testKind": {
+        "bad_url": {
+          "message": "该地址看起来不是此类服务器。",
+          "fix": "请使用实例的根地址，例如 https://git.example.com，不要包含仓库路径。"
+        },
+        "bad_token": {
+          "message": "服务器拒绝了该令牌。",
+          "fix": "请创建一个具有仓库读取权限的新个人访问令牌，然后重新粘贴。"
+        },
+        "tls": {
+          "message": "服务器的 TLS 证书被拒绝。",
+          "fix": "请在服务器上安装受信任的证书，或将你的私有 CA 添加到此控制平面的信任存储中。"
+        },
+        "unreachable": {
+          "message": "此控制平面无法连接到服务器。",
+          "fix": "请检查主机名和端口，并确认网络或防火墙允许对其进行出站访问。"
+        },
+        "bad_scope": {
+          "message": "该令牌缺少此控制平面所需的权限范围。",
+          "fix": "请重新创建令牌，勾选上方步骤中列出的全部权限范围，然后粘贴新令牌。"
+        }
+      },
+      "callbackLabel": "回调 URL",
+      "callbackCopy": "复制",
+      "callbackCopied": "已复制",
+      "instanceHelpAzure": "你的组织地址，例如 https://dev.azure.com/ORG。",
+      "tokenHelpAzure": "用户设置 → 个人访问令牌，选择 Code（读写）权限范围。令牌之后不会再次显示。"
+    },
+    "token": {
+      "title": "使用令牌连接",
+      "description": "粘贴访问令牌，而无需注册 OAuth 应用。在没有公共域名的普通 http 安装上也可以使用。",
+      "host": "主机",
+      "guideLabel": "如何创建令牌",
+      "server": "服务器：",
+      "serverEmpty": "请在上方输入服务器 URL",
+      "serverHelp": "在浏览器中打开的地址，例如 http://git.lan:3000。http 和 https 均可使用。",
+      "tick": "勾选以下权限范围：",
+      "scopes": "需要勾选的权限范围",
+      "noDomain": "令牌会加密存储，且之后不会再次显示。无需公共域名或回调 URL。",
+      "steps": {
+        "gitlab": {
+          "open": "打开你的 GitLab 访问令牌页面：",
+          "create": "选择“添加新令牌”，命名为 {{name}}，并选择一个你可以接受的过期日期。",
+          "copy": "选择“创建个人访问令牌”，复制以 glpat- 开头的令牌。"
+        },
+        "bitbucket": {
+          "open": "打开 Atlassian API 令牌页面：",
+          "create": "选择“创建带权限范围的 API 令牌”，命名为 {{name}}，应用选择 Bitbucket，并选择你的工作区。",
+          "copy": "创建令牌后，以 Atlassian 邮箱、冒号和令牌的格式（邮箱:令牌）粘贴到下方。"
+        },
+        "gitea": {
+          "open": "打开你的 Gitea 应用页面：",
+          "create": "在“生成新令牌”下，命名为 {{name}}。",
+          "copy": "选择“生成令牌”并立即复制，Gitea 只会显示一次。"
+        },
+        "forgejo": {
+          "open": "打开你的 Forgejo 应用页面：",
+          "create": "在“生成新令牌”下，命名为 {{name}}。",
+          "copy": "选择“生成令牌”并立即复制，Forgejo 只会显示一次。"
+        }
+      },
+      "field": "访问令牌",
+      "fieldEmailToken": "邮箱和 API 令牌（邮箱:令牌）",
+      "check": "检查令牌",
+      "scopesFound": "权限范围：{{scopes}}",
+      "scopesUnknown": "此主机不报告令牌的权限范围，系统会改为检查仓库访问权限。",
+      "repos_other": "可以访问 {{count}}{{plus}} 个仓库。",
+      "noRepos": "目前无法访问任何仓库。请勾选仓库相关的权限范围，或确认该账户是某个项目的成员。",
+      "connected": "账户已连接",
+      "connectedBody": "令牌已检查并加密存储。"
+    },
+    "toast": {
+      "added": "账户已保存",
+      "addedBody": "请在提供商处完成授权。",
+      "disconnected": "账户已断开",
+      "renameFailed": "无法重命名账户",
+      "authorized": "账户已授权",
+      "authorizedBody": "其仓库现在可供选择。"
+    }
+  },
+  "gitConnectionsHub": {
+    "title": "Git 连接",
+    "description": "连接到此服务器的每个 Git 账户，涵盖所有主机。",
+    "loadFailed": "无法加载你的 Git 账户，请稍后再试。",
+    "attention_other": "有 {{count}} 个账户需要处理。请重新连接它们，以便其应用继续部署。",
+    "openSettings": "提供商设置",
+    "scopes": "权限范围：{{scopes}}",
+    "banner": {
+      "description": "可以连接任意数量的 GitHub、GitLab、Bitbucket、Azure DevOps、Gitea 或 Forgejo 账户，并从中任选仓库。",
+      "whatFor": "每个人、团队或组织连接一个账户。应用会与创建它们时所用的账户保持关联，因此你可以添加或移除账户，而不影响应用。",
+      "diagram": {
+        "repos": "仓库",
+        "server": "服务器",
+        "branches": "分支"
+      }
+    },
+    "add": {
+      "action": "添加账户",
+      "withToken": "使用令牌连接",
+      "withTokenAsks": "适用于 GitLab、Bitbucket、Gitea 或 Forgejo。粘贴令牌即可，无需 OAuth 应用或公共域名。",
+      "domainTitle": "请先设置主域名",
+      "domainBody": "此主机会在你登录后将你带回服务器，因此服务器需要一个公共域名。",
+      "continue": "继续"
+    },
+    "stats": {
+      "repos": "仓库",
+      "apps": "应用"
+    },
+    "health": {
+      "connected": "已连接",
+      "needsReconnect": "需要重新连接",
+      "notAuthorized": "未授权",
+      "rateLimited": "已达速率限制"
+    },
+    "disconnect": {
+      "description": "应用永远不会被删除。使用此账户的任何应用都会继续运行，但在下次部署前需要连接另一个账户。",
+      "affected": "这些应用需要另一个账户：{{apps}}"
+    },
+    "hosts": {
+      "github": {
+        "name": "GitHub",
+        "asks": "你将创建或选择一个 GitHub App，并将其安装到某个账户或组织上。",
+        "access": "访问权限取决于该 App 安装到的仓库。"
+      },
+      "gitlab": {
+        "name": "GitLab",
+        "asks": "你将粘贴 OAuth 应用的 ID 和密钥，然后登录。",
+        "access": "访问权限取决于你授予的 OAuth 权限范围。"
+      },
+      "bitbucket": {
+        "name": "Bitbucket",
+        "asks": "你将粘贴 OAuth 使用者密钥和密钥，然后登录。",
+        "access": "访问权限取决于你授予的 OAuth 权限。"
+      },
+      "bitbucket_server": {
+        "name": "Bitbucket Server",
+        "asks": "你将粘贴服务器 URL 和一个个人访问令牌。",
+        "access": "访问权限取决于令牌的权限。"
+      },
+      "gitea": {
+        "name": "Gitea",
+        "asks": "你将输入 Gitea URL 以及 OAuth 应用的 ID 和密钥，然后登录。",
+        "access": "访问权限取决于你授予的 OAuth 权限范围。"
+      },
+      "forgejo": {
+        "name": "Forgejo 和 Codeberg",
+        "asks": "你将输入服务器 URL（codeberg.org 也可以）以及 OAuth 应用的 ID 和密钥，然后登录。",
+        "access": "访问权限取决于你授予的 OAuth 权限范围。"
+      },
+      "azure_devops": {
+        "name": "Azure DevOps",
+        "asks": "你将粘贴组织 URL 和一个个人访问令牌。",
+        "access": "访问权限取决于令牌的权限。"
+      }
+    }
+  },
+  "emailBranding": {
+    "title": "品牌",
+    "description": "所有富文本邮件共享的徽标、强调色和页脚：密码重置、邀请、告警和公告。",
+    "logo": "徽标 URL",
+    "logoHint": "需为 https 图片 URL。服务器从不抓取该图片，因此远程徽标会告知其主机何时打开了邮件。",
+    "color": "强调色",
+    "colorHint": "六位十六进制值，例如 #107292。留空则使用品牌色。",
+    "footerText": "页脚文字",
+    "footerHint": "仅限纯文本。可用变量：{{variables}}。",
+    "address": "邮寄地址",
+    "links": "页脚链接",
+    "linkLabel": "标签",
+    "linkUrl": "https 链接",
+    "addLink": "添加链接",
+    "removeLink": "移除链接",
+    "poweredBy": "显示“由……提供支持”一行",
+    "save": "保存品牌设置",
+    "saving": "正在保存...",
+    "saved": "邮件品牌设置已保存。",
+    "preview": "预览",
+    "previewTitle": "邮件品牌预览",
+    "invalidHttps": "请使用完整的 https:// 地址。不接受纯 http 和其他协议。",
+    "invalidColor": "请使用六位十六进制颜色，例如 #107292。",
+    "templates": {
+      "label": "从模板开始",
+      "dashboardLink": "打开控制面板",
+      "minimal": {
+        "name": "极简",
+        "text": "由 {{brand_name}} 发送。"
+      },
+      "standard": {
+        "name": "标准",
+        "text": "由 {{brand_name}} 从 {{instance_name}} 发送。有疑问？请发送至 {{support_email}}。{{year}}"
+      },
+      "compliance": {
+        "name": "合规",
+        "text": "你收到此邮件，是因为 {{instance_name}} 上发生了相关活动。有疑问？请发送至 {{support_email}}。{{year}} {{brand_name}}",
+        "address": "{{brand_name}}，请将此行替换为你的邮寄地址"
+      }
+    }
+  },
+  "emailProviders": {
+    "title": "提供商",
+    "description": "主要提供商发送所有邮件。如果它失败，备份提供商会接管，直到主要提供商恢复。",
+    "loadError": "无法加载提供商：{{message}}",
+    "retry": "重试",
+    "roles": {
+      "primary": "主要",
+      "backup": "备用"
+    },
+    "health": {
+      "healthy": "正常",
+      "failing": "故障",
+      "paused": "已暂停",
+      "untested": "尚未测试"
+    }
   },
   "iacExport": {
     "studioButton": "将当前状态导出为模板"
