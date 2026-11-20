@@ -4246,5 +4246,54 @@
         "description": "Executa um comando ou chama um caminho de um app em um horário."
       }
     }
+  },
+  "obsExport": {
+    "about": "Envie logs e métricas deste plano de controle para um serviço de observabilidade hospedado. Escolha um serviço, preencha os dados e teste a conexão.",
+    "dialog": {
+      "cancel": "Cancelar",
+      "create": "Criar",
+      "creating": "Criando",
+      "done": "Concluído",
+      "help": "Sobre {{field}}",
+      "name": "Nome",
+      "title": "Exportar para {{name}}"
+    },
+    "fix": {
+      "bad_token": "Substitua o token",
+      "private_blocked": "Permita endereços internos",
+      "rejected": "Verifique o caminho do endpoint",
+      "tls_error": "Corrija o certificado",
+      "unreachable": "Verifique o endereço"
+    },
+    "health": {
+      "error": "Com falha",
+      "ok": "Entregando",
+      "pending": "Aguardando a primeira entrega"
+    },
+    "list": {
+      "delete": "Excluir",
+      "deleteConsequence": "Logs e métricas deixam de ser enviados para este serviço.",
+      "deleteTitle": "Excluir a exportação {{name}}?",
+      "label": "Exportações ativas",
+      "sent_one": "{{count}} enviado",
+      "sent_other": "{{count}} enviados"
+    },
+    "rootRequired": {
+      "title": "Exportações exigem um token root",
+      "why": "Exportações podem ler os logs e métricas de todos os apps, então somente tokens root as gerenciam."
+    },
+    "signal": {
+      "logs": "Logs",
+      "metrics": "Métricas"
+    },
+    "test": {
+      "failed": "O teste falhou",
+      "pass": "Entregue",
+      "retry": "Testar de novo",
+      "run": "Testar",
+      "running": "Testando",
+      "title": "Resultados do teste"
+    },
+    "title": "Exportar para"
   }
 }

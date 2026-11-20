@@ -36,7 +36,9 @@
     "desktop": "Desktop",
     "mobile": "Celular",
     "viewport": "Largura da visualização",
-    "recapture": "Capturar de novo"
+    "recapture": "Capturar de novo",
+    "deployedAgo": "Publicado",
+    "thumbLabel": "{{name}} em {{host}}"
   },
   "staticStrip": {
     "label": "Resumo do site",
@@ -46,7 +48,11 @@
     "size": "Tamanho",
     "files_one": "{{count}} arquivo",
     "files_other": "{{count}} arquivos",
-    "addDomain": "Adicionar domínio"
+    "addDomain": "Adicionar domínio",
+    "errorsInfo": "Proporção de respostas 4xx e 5xx no período selecionado. 4xx: {{c4}}, 5xx: {{c5}}.",
+    "errorsNone": "Proporção de respostas 4xx e 5xx assim que o site começar a atender requisições.",
+    "requests": "Requisições",
+    "visitors": "Visitantes"
   },
   "staticLine": {
     "details": "Detalhes do deploy",
@@ -68,5 +74,11 @@
       "stop": "Parada",
       "other": "Deploy"
     }
+  },
+  "recent": {
+    "all": "Todos os deploys",
+    "label": "Deploys recentes",
+    "logs": "Logs",
+    "rollback": "Rollback"
   }
 }

@@ -825,6 +825,16 @@
     "save": "Salvar",
     "saved": "Runner de build salvo",
     "cleared": "Runner de build limpo",
-    "retry": "Tentar de novo"
+    "retry": "Tentar de novo",
+    "mode": "Executar em",
+    "modeAuto": "Automático",
+    "modeControlPlane": "Somente plano de controle",
+    "modeNode": "Builder específico",
+    "modeTip": "Automático segue a estratégia global. Somente plano de controle sempre faz o build neste servidor, nunca em um builder. Builder específico usa o que você escolher, e Somente este builder impede que ele volte para outro node.",
+    "modeTipLabel": "Sobre o local do build",
+    "nodeNeeded": "Um builder específico precisa de um builder escolhido.",
+    "pickNode": "Escolha um builder",
+    "prodTip": "Ambientes de produção nunca fazem build em um builder pessoal, a menos que o ambiente permita. Nesse caso, o build passa para outro builder ou para o plano de controle.",
+    "prodTipLabel": "Sobre builds de produção"
   }
 }
