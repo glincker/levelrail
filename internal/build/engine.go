@@ -11,8 +11,8 @@ import (
 // ErrBuildEngineUnsupported means the container engine cannot host a source
 // build. The text carries "no buildkit" so failure classification maps it to
 // build_engine_unsupported.
-var ErrBuildEngineUnsupported = errors.New("build: source builds (Dockerfile, Railpack) are not supported on Podman: no BuildKit is reachable through its socket. " +
-	"Podman source builds are planned via a managed buildkitd. Image deploys work on Podman today, so deploy a prebuilt image or run the build on a Docker node")
+var ErrBuildEngineUnsupported = errors.New("build: this engine has no embedded BuildKit (no BuildKit endpoint on its socket), so source builds (Dockerfile, Railpack) cannot run here. " +
+	"Set APP_BUILDKIT_IMAGE to a sha256 pinned rootless BuildKit image to use a managed builder, deploy a prebuilt image, or run the build on a Docker node")
 
 // engineVersioner is the slice of the Docker client the Podman check needs.
 type engineVersioner interface {
@@ -22,6 +22,10 @@ type engineVersioner interface {
 // checkEngine fails fast on Podman instead of dialing BuildKit and surfacing
 // a raw gRPC h2c error. Lookup errors pass through: the solve reports them.
 func (c *Client) checkEngine(ctx context.Context) error {
+	// A managed rootless builder was already vetted for Podman in NewClient.
+	if c.managed {
+		return nil
+	}
 	ev := c.engine
 	if ev == nil {
 		if c.docker == nil {
@@ -29,17 +33,25 @@ func (c *Client) checkEngine(ctx context.Context) error {
 		}
 		ev = c.docker
 	}
+	if isPodman(ctx, ev) {
+		return ErrBuildEngineUnsupported
+	}
+	return nil
+}
+
+// isPodman reports whether the engine identifies as Podman. Lookup errors read as false.
+func isPodman(ctx context.Context, ev engineVersioner) bool {
 	v, err := ev.ServerVersion(ctx)
 	if err != nil {
-		return nil
+		return false
 	}
 	if strings.Contains(strings.ToLower(v.Platform.Name), "podman") {
-		return ErrBuildEngineUnsupported
+		return true
 	}
 	for _, comp := range v.Components {
 		if strings.Contains(strings.ToLower(comp.Name), "podman") {
-			return ErrBuildEngineUnsupported
+			return true
 		}
 	}
-	return nil
+	return false
 }
