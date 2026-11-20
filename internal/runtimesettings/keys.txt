@@ -529,6 +529,7 @@ templates.import_max_bytes
 templates.import_timeout
 tokens.default_ttl_days
 tokens.expiry_warning_days
+tokens.site_deploy_max_days
 tokens.system_rotation_lead_minutes
 tokens.unused_alert_days
 ui.outbound_utm

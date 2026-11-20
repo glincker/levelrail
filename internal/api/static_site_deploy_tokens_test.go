@@ -1,6 +1,10 @@
 package api
 
 import (
+	"context"
+	"encoding/json"
+
+	"github.com/GLINCKER/levelrail/internal/runtimesettings"
 	"net/http"
 	"strings"
 	"testing"
@@ -61,5 +65,22 @@ func TestSiteDeployTokenListedWithoutSecretAndRevocable(t *testing.T) {
 	}
 	if del := serve(rt, authedRequest(t, cookie, http.MethodDelete, "/api/v1/static-sites/other/deploy-tokens/"+minted.ID, "")); del.Code == http.StatusNoContent {
 		t.Fatal("revoking through another site must not succeed")
+	}
+}
+
+func TestSiteDeployTokenLifetimeCapRejects(t *testing.T) {
+	rt, _, cookie := hookTestSite(t, false)
+	if _, err := rt.runtimeSettings.Set(context.Background(), runtimesettings.KeyTokensSiteDeployMaxDays, json.RawMessage(`30`), "test"); err != nil {
+		t.Fatal(err)
+	}
+	post := func(body string) int {
+		req := authedRequest(t, cookie, http.MethodPost, "/api/v1/static-sites/docs/deploy-tokens", body)
+		return iacCall(t, rt, req, nil)
+	}
+	if code := post(`{"name":"a","expires_in_days":31}`); code != http.StatusUnprocessableEntity {
+		t.Errorf("31 days over cap 30 = %d, want 422", code)
+	}
+	if code := post(`{"name":"b","expires_in_days":30}`); code != http.StatusCreated {
+		t.Errorf("30 days at cap = %d, want 201", code)
 	}
 }

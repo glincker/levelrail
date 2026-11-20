@@ -3,12 +3,14 @@ package api
 import (
 	"context"
 	"errors"
+	"fmt"
 	"log/slog"
 	"math"
 	"net/http"
 	"slices"
 	"time"
 
+	"github.com/GLINCKER/levelrail/internal/runtimesettings"
 	"github.com/GLINCKER/levelrail/internal/store"
 )
 
@@ -195,6 +197,14 @@ func (rt *Router) siteTokenDeps(w http.ResponseWriter, r *http.Request, ability 
 	return site.Name, ss, true
 }
 
+// siteDeployTokenMaxDays reads the live cap, falling back to its default when settings are absent.
+func (rt *Router) siteDeployTokenMaxDays(ctx context.Context) int {
+	if rt.runtimeSettings == nil {
+		return 365
+	}
+	return max(rt.runtimeSettings.Int(ctx, runtimesettings.KeyTokensSiteDeployMaxDays), 1)
+}
+
 // handleCreateSiteDeployToken handles POST /api/v1/static-sites/{name}/deploy-tokens.
 func (rt *Router) handleCreateSiteDeployToken(w http.ResponseWriter, r *http.Request) {
 	site, _, ok := rt.siteTokenDeps(w, r, AbilityDeploy)
@@ -213,6 +223,10 @@ func (rt *Router) handleCreateSiteDeployToken(w http.ResponseWriter, r *http.Req
 	}
 	if in.ExpiresInDays < 0 || in.ExpiresInDays > maxExpiryDaysNoOverflow || len(in.Name) > siteTokenNameMax {
 		writeError(w, http.StatusBadRequest, "expires_in_days must not be negative and name at most 64 characters")
+		return
+	}
+	if limit := rt.siteDeployTokenMaxDays(r.Context()); in.ExpiresInDays > limit {
+		writeError(w, http.StatusUnprocessableEntity, fmt.Sprintf("expires_in_days must be at most %d, the Pages deploy token lifetime limit", limit))
 		return
 	}
 	days := in.ExpiresInDays

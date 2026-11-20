@@ -11,9 +11,9 @@ Save the printed token as a repository secret, then:
 ```yaml
 - uses: actions/checkout@v4
 - id: pages
-  uses: GLINCKER/levelrail/actions/pages-deploy@v1.5.6
+  uses: GLINCKER/levelrail/actions/pages-deploy@v1.5.7
   with:
-    version: v1.5.6
+    version: v1.5.7
     site: docs
     dir: ./dist
     server: https://levelrail.example.com
