@@ -8,6 +8,7 @@ import (
 	"fmt"
 	"io"
 	"net/http"
+	"slices"
 	"strings"
 
 	theauth "github.com/glincker/theauth-go/v2"
@@ -244,14 +245,18 @@ func (rt *oauthRuntime) checkSignup(ctx context.Context, provider string, s stor
 		return err
 	}
 	email := strings.ToLower(strings.TrimSpace(info.Email))
+	// A shared-tenant Microsoft mail attribute is attacker-controlled, so it never links.
+	sharedTenant := provider == store.OAuthProviderMicrosoft && sharedMicrosoftTenant(s.TenantID)
 	var legacyID, engineID sql.NullString
+	var abilities string
 	err = rt.db.QueryRowContext(ctx, `
-		SELECT u.id, m.engine_id FROM users u
+		SELECT u.id, m.engine_id, u.abilities FROM users u
 		LEFT JOIN authengine_user_map m ON m.legacy_id = u.id
-		WHERE lower(u.email) = ?`, email).Scan(&legacyID, &engineID)
+		WHERE lower(u.email) = ?`, email).Scan(&legacyID, &engineID, &abilities)
 	switch {
 	case err == nil:
-		if !engineID.Valid || !info.EmailVerified {
+		// Same rule as SAML: an email match never hands a root account to a provider.
+		if !engineID.Valid || !info.EmailVerified || sharedTenant || isRootAbilities(abilities) {
 			return errEmailInUse
 		}
 		return nil
@@ -263,14 +268,14 @@ func (rt *oauthRuntime) checkSignup(ctx context.Context, provider string, s stor
 		return err
 	}
 	if held {
-		if !info.EmailVerified {
+		if !info.EmailVerified || sharedTenant {
 			return errEmailInUse
 		}
 		return nil
 	}
 	// On the shared tenant the mail attribute is controlled by whoever owns the
 	// signing-in directory, so it cannot back a new account.
-	if provider == store.OAuthProviderMicrosoft && s.TenantID == "" {
+	if sharedTenant {
 		return errTenantRequired
 	}
 	if !s.SSOPolicy.JITProvisioning {
@@ -280,6 +285,24 @@ func (rt *oauthRuntime) checkSignup(ctx context.Context, provider string, s stor
 		return errDomainNotAllowed
 	}
 	return nil
+}
+
+// sharedMicrosoftTenant reports a tenant setting that lets any directory sign in.
+func sharedMicrosoftTenant(tenant string) bool {
+	switch strings.ToLower(strings.TrimSpace(tenant)) {
+	case "", "common", "organizations", "consumers":
+		return true
+	}
+	return false
+}
+
+func isRootAbilities(raw string) bool {
+	var abilities []string
+	if json.Unmarshal([]byte(raw), &abilities) != nil {
+		// Unreadable abilities are treated as privileged so they never link.
+		return true
+	}
+	return slices.Contains(abilities, AbilityRoot)
 }
 
 func (rt *oauthRuntime) exists(ctx context.Context, query string, args ...any) (bool, error) {
