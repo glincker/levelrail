@@ -38,7 +38,7 @@ func ruleOOMKilled(in Input, lines []line) *Cause {
 	c := &Cause{
 		Code:        CauseOOMKilled,
 		Title:       "Container killed for using too much memory",
-		Explanation: "The kernel killed the container because it exceeded its memory limit.",
+		Explanation: "The kernel killed the container because it exceeded its memory limit. The resource advisor (/resource-advisor) shows how much memory the app really uses, so you can size the limit.",
 		Confidence:  conf,
 		Evidence:    ev,
 	}
