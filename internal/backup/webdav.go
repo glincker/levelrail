@@ -64,14 +64,14 @@ func WebDAVAllowPrivate() bool { return webDAVSettings().AllowPrivate }
 
 // ValidateWebDAVHost refuses internal destinations unless the dedicated opt-in is on.
 func ValidateWebDAVHost(ctx context.Context, endpoint string) error {
-	if WebDAVAllowPrivate() {
-		return nil
-	}
 	u, err := url.Parse(endpoint)
 	if err != nil || u.Hostname() == "" {
 		return ErrWebDAVBadEndpoint
 	}
 	host := strings.ToLower(u.Hostname())
+	if WebDAVAllowPrivate() {
+		return validateAlwaysBlockedHost(ctx, host)
+	}
 	blocked := fmt.Errorf("%w: %s (enable the WebDAV private network setting to allow it)", netguard.ErrBlockedAddress, host)
 	if host == "localhost" || strings.HasSuffix(host, ".localhost") {
 		return blocked
@@ -94,6 +94,39 @@ func ValidateWebDAVHost(ctx context.Context, endpoint string) error {
 		}
 	}
 	return blocked
+}
+
+// alwaysBlockedWebDAV covers link-local and cloud metadata ranges that stay
+// refused even when the private network opt-in is on.
+func alwaysBlockedWebDAV(ip netip.Addr) bool {
+	ip = ip.Unmap().WithZone("")
+	return ip.IsLinkLocalUnicast() || ip.IsLinkLocalMulticast() ||
+		ip == netip.MustParseAddr("fd00:ec2::254") || (ip.Is4() && ip.As4()[0] == 0)
+}
+
+func validateAlwaysBlockedHost(ctx context.Context, host string) error {
+	blocked := fmt.Errorf("%w: %s (metadata and link-local addresses are never allowed)", netguard.ErrBlockedAddress, host)
+	if host == "metadata.google.internal" || host == "metadata" || host == "instance-data" || strings.HasSuffix(host, ".metadata.google.internal") {
+		return blocked
+	}
+	if ip, perr := netip.ParseAddr(host); perr == nil {
+		if alwaysBlockedWebDAV(ip) {
+			return blocked
+		}
+		return nil
+	}
+	lctx, cancel := context.WithTimeout(ctx, 3*time.Second)
+	defer cancel()
+	addrs, lerr := net.DefaultResolver.LookupNetIP(lctx, "ip", host)
+	if lerr != nil {
+		return nil
+	}
+	for _, a := range addrs {
+		if alwaysBlockedWebDAV(a) {
+			return blocked
+		}
+	}
+	return nil
 }
 
 // ValidateCABundle accepts only CERTIFICATE PEM blocks that parse as certificates.
@@ -603,9 +636,6 @@ func (w *webDAV) Probe(ctx context.Context) (TestReport, error) {
 
 // davDialControl refuses blocked addresses at connect time unless the live opt-in is on.
 func davDialControl(_, address string, _ syscall.RawConn) error {
-	if WebDAVAllowPrivate() {
-		return nil
-	}
 	host, _, err := net.SplitHostPort(address)
 	if err != nil {
 		return fmt.Errorf("backup: webdav: parse dial address %q: %w", address, err)
@@ -613,6 +643,12 @@ func davDialControl(_, address string, _ syscall.RawConn) error {
 	ip, err := netip.ParseAddr(host)
 	if err != nil {
 		return fmt.Errorf("backup: webdav: parse dial address %q: %w", address, err)
+	}
+	if alwaysBlockedWebDAV(ip) {
+		return fmt.Errorf("%w: %s (metadata and link-local addresses are never allowed)", netguard.ErrBlockedAddress, ip)
+	}
+	if WebDAVAllowPrivate() {
+		return nil
 	}
 	if netguard.IsBlocked(ip) {
 		return fmt.Errorf("%w: %s (enable the WebDAV private network setting to allow it)", netguard.ErrBlockedAddress, ip)

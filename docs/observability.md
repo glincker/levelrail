@@ -275,7 +275,7 @@ levelrail-cli observability rm prod
 
 `test` sends one synthetic log line and one metric per signal and prints either `accepted` or the exact HTTP status with a short fix for 401, 403 and 404. Credentials are stored encrypted, never returned by the API and never logged. A field written as `env:NAME` is read from that environment variable. Endpoints follow the same internal address rules as every other export destination.
 
-The API is `GET /api/v1/observability/presets`, `GET` and `POST /api/v1/observability/exports`, `POST /api/v1/observability/exports/{id}/test` and `DELETE /api/v1/observability/exports/{id}`. Each export is a set of ordinary data export destinations named `obs/<name>/<preset>/<signal>`, so [Data export](/data-export) status and alerts apply to them too. Traces are not exported by presets yet.
+The API is `GET /api/v1/observability/presets`, `GET` and `POST /api/v1/observability/exports`, `POST /api/v1/observability/exports/{id}/test` and `DELETE /api/v1/observability/exports/{id}`. Each export is a set of ordinary data export destinations named `obs/<name>/<preset>/<signal>`, so [Data export](/data-export) status and alerts apply to them too. Managing exports, including listing them, needs a root token; any other token gets a 403. The preset catalog is a plain read. Traces are not exported by presets yet.
 
 ### Grafana Cloud
 

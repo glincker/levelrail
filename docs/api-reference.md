@@ -1393,8 +1393,8 @@ Endpoints for:
 | GET | /api/v1/static-sites/{name}/notify | AbilityRead | handleGetPagesNotify |
 | PUT | /api/v1/static-sites/{name}/notify | AbilityWrite | handlePutPagesNotify |
 | DELETE | /api/v1/static-sites/{name}/notify | AbilityWrite | handleDeletePagesNotify |
-| GET | /api/v1/static-sites/{name}/analytics | AbilityRead | handleStaticSiteAnalytics |
 | GET | /api/v1/static-sites/{name}/previews | AbilityRead | handleListStaticSitePreviews |
+| GET | /api/v1/static-sites/{name}/analytics | AbilityRead | handleStaticSiteAnalytics |
 
 ## Built-in Container Registry
 
@@ -2459,12 +2459,12 @@ Routes that do not fit an existing group.
 | POST | /api/v1/builders/{id}/resume | AbilityWriteSensitive | handleResumeBuilder |
 | POST | /api/v1/builders/{id}/test | AbilityWriteSensitive | handleTestBuilder |
 | GET | /api/v1/observability/presets | AbilityRead | handleListObservabilityPresets |
-| GET | /api/v1/observability/exports | AbilityReadSensitive | handleListObservabilityExports |
-| POST | /api/v1/observability/exports | AbilityWriteSensitive | handleCreateObservabilityExport |
-| DELETE | /api/v1/observability/exports/{id} | AbilityWriteSensitive | handleDeleteObservabilityExport |
-| POST | /api/v1/observability/exports/{id}/test | AbilityWriteSensitive | handleTestObservabilityExport |
-| GET | /api/v1/pages/{site}/deploys/{deployId}/logs | AbilityReadSensitive | handlePagesDeployLogs |
+| GET | /api/v1/observability/exports | AbilityRoot | handleListObservabilityExports |
+| POST | /api/v1/observability/exports | AbilityRoot | handleCreateObservabilityExport |
+| DELETE | /api/v1/observability/exports/{id} | AbilityRoot | handleDeleteObservabilityExport |
+| POST | /api/v1/observability/exports/{id}/test | AbilityRoot | handleTestObservabilityExport |
 | POST | /mcp | Public |  |
+| GET | /api/v1/pages/{site}/deploys/{deployId}/logs | AbilityReadSensitive | handlePagesDeployLogs |
 
 ## See also
 

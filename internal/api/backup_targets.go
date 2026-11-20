@@ -463,6 +463,10 @@ func (rt *Router) handleUpdateBackupTarget(w http.ResponseWriter, r *http.Reques
 		return
 	}
 	if req.Provider == backupProviderWebDAV {
+		if (req.CABundle != "" || req.ClearCABundle) && req.AccessKeyID == "" {
+			writeError(w, http.StatusBadRequest, "changing the CA bundle requires access_key_id and secret_access_key in the same request")
+			return
+		}
 		if (req.CABundle != "" || req.ClearCABundle) && rt.backupSecrets != nil {
 			bundle := req.CABundle
 			if req.ClearCABundle {

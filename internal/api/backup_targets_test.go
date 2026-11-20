@@ -757,6 +757,12 @@ func TestHandleUpdateBackupTarget_ClearCABundle(t *testing.T) {
 	ok := httptest.NewRecorder()
 	rt.Handler().ServeHTTP(ok, authedRequest(t, cookie, http.MethodPut, "/api/v1/backup-targets/"+created.ID,
 		`{"name":"d","provider":"webdav","endpoint":"https://dav.example.com","bucket":"x","access_key_id":"u","secret_access_key":"p","clear_ca_bundle":true}`))
+	noCreds := httptest.NewRecorder()
+	rt.Handler().ServeHTTP(noCreds, authedRequest(t, cookie, http.MethodPut, "/api/v1/backup-targets/"+created.ID,
+		`{"name":"d","provider":"webdav","endpoint":"https://dav.example.com","bucket":"x","clear_ca_bundle":true}`))
+	if noCreds.Code != http.StatusBadRequest {
+		t.Fatalf("ca bundle change without credentials: status = %d", noCreds.Code)
+	}
 	if ok.Code != http.StatusOK {
 		t.Fatalf("status = %d, body = %s", ok.Code, ok.Body.String())
 	}

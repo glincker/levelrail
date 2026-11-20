@@ -313,3 +313,18 @@ func TestWebDAVHeaderTimeout(t *testing.T) {
 		t.Fatal("a server that never answers must time out")
 	}
 }
+
+func TestWebDAVMetadataStaysBlockedWithPrivateOptIn(t *testing.T) {
+	setWebDAVPrivate(t, true)
+	for _, ep := range []string{"http://169.254.169.254/", "http://[fe80::1]/", "http://[fd00:ec2::254]/", "http://metadata.google.internal/"} {
+		if err := ValidateWebDAVHost(context.Background(), ep); !errors.Is(err, netguard.ErrBlockedAddress) {
+			t.Fatalf("%s must be refused, got %v", ep, err)
+		}
+	}
+	if err := davDialControl("tcp", "169.254.169.254:80", nil); !errors.Is(err, netguard.ErrBlockedAddress) {
+		t.Fatalf("dial to metadata must be refused, got %v", err)
+	}
+	if err := ValidateWebDAVHost(context.Background(), "http://192.168.1.5/"); err != nil {
+		t.Fatalf("plain private host must be allowed: %v", err)
+	}
+}

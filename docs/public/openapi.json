@@ -126440,7 +126440,7 @@
     },
     "/api/v1/observability/exports": {
       "get": {
-        "description": "Requires the `read:sensitive` ability.",
+        "description": "Requires the `root` ability.",
         "operationId": "handleListObservabilityExports",
         "responses": {
           "200": {
@@ -126495,7 +126495,7 @@
         "security": [
           {
             "bearerAuth": [
-              "read:sensitive"
+              "root"
             ]
           }
         ],
@@ -126503,10 +126503,10 @@
         "tags": [
           "Other"
         ],
-        "x-required-ability": "read:sensitive"
+        "x-required-ability": "root"
       },
       "post": {
-        "description": "Requires the `write:sensitive` ability.",
+        "description": "Requires the `root` ability.",
         "operationId": "handleCreateObservabilityExport",
         "requestBody": {
           "content": {
@@ -126572,7 +126572,7 @@
         "security": [
           {
             "bearerAuth": [
-              "write:sensitive"
+              "root"
             ]
           }
         ],
@@ -126580,12 +126580,12 @@
         "tags": [
           "Other"
         ],
-        "x-required-ability": "write:sensitive"
+        "x-required-ability": "root"
       }
     },
     "/api/v1/observability/exports/{id}": {
       "delete": {
-        "description": "Requires the `write:sensitive` ability.",
+        "description": "Requires the `root` ability.",
         "operationId": "handleDeleteObservabilityExport",
         "parameters": [
           {
@@ -126650,7 +126650,7 @@
         "security": [
           {
             "bearerAuth": [
-              "write:sensitive"
+              "root"
             ]
           }
         ],
@@ -126658,12 +126658,12 @@
         "tags": [
           "Other"
         ],
-        "x-required-ability": "write:sensitive"
+        "x-required-ability": "root"
       }
     },
     "/api/v1/observability/exports/{id}/test": {
       "post": {
-        "description": "Requires the `write:sensitive` ability.",
+        "description": "Requires the `root` ability.",
         "operationId": "handleTestObservabilityExport",
         "parameters": [
           {
@@ -126739,7 +126739,7 @@
         "security": [
           {
             "bearerAuth": [
-              "write:sensitive"
+              "root"
             ]
           }
         ],
@@ -126747,7 +126747,7 @@
         "tags": [
           "Other"
         ],
-        "x-required-ability": "write:sensitive"
+        "x-required-ability": "root"
       }
     },
     "/api/v1/observability/presets": {

@@ -2,14 +2,25 @@ package main
 
 import (
 	"context"
+	"errors"
 	"flag"
 	"fmt"
 	"io"
+	"net/http"
 	"strings"
 	"text/tabwriter"
 
 	"github.com/GLINCKER/levelrail/internal/apiclient"
 )
+
+// obsRootHint explains a 403: observability exports are managed by root only.
+func obsRootHint(err error) error {
+	var apiErr *apiError
+	if errors.As(err, &apiErr) && apiErr.StatusCode == http.StatusForbidden {
+		return fmt.Errorf("%w (managing observability exports needs a root token)", err)
+	}
+	return err
+}
 
 func obsPresetsUsage(prog string) string {
 	return fmt.Sprintf(`Usage:
@@ -136,7 +147,7 @@ func runObservabilityAdd(prog string, args []string, stdout, stderr io.Writer, l
 	}
 	created, err := c.client.CreateObservabilityExport(context.Background(), req)
 	if err != nil {
-		return c.fail(fmt.Errorf("add observability export %q: %w", name, err))
+		return c.fail(obsRootHint(fmt.Errorf("add observability export %q: %w", name, err)))
 	}
 	return c.render(created, func() {
 		_, _ = fmt.Fprintf(stdout, "export %q created from %s\n", created.ID, created.PresetName)
@@ -154,7 +165,7 @@ func runObservabilityTest(prog string, args []string, stdout, stderr io.Writer, 
 	}
 	res, err := c.client.TestObservabilityExport(context.Background(), id)
 	if err != nil {
-		return c.fail(fmt.Errorf("test observability export %q: %w", id, err))
+		return c.fail(obsRootHint(fmt.Errorf("test observability export %q: %w", id, err)))
 	}
 	status := c.render(res, func() {
 		for _, r := range res.Results {
@@ -181,7 +192,7 @@ func runObservabilityList(prog string, args []string, stdout, stderr io.Writer, 
 	}
 	list, err := c.client.ListObservabilityExports(context.Background())
 	if err != nil {
-		return c.fail(fmt.Errorf("list observability exports: %w", err))
+		return c.fail(obsRootHint(fmt.Errorf("list observability exports: %w", err)))
 	}
 	return c.render(list, func() {
 		if len(list) == 0 {
@@ -205,7 +216,7 @@ func runObservabilityRm(prog string, args []string, stdout, stderr io.Writer, lo
 		return code
 	}
 	if err := c.client.DeleteObservabilityExport(context.Background(), id); err != nil {
-		return c.fail(fmt.Errorf("remove observability export %q: %w", id, err))
+		return c.fail(obsRootHint(fmt.Errorf("remove observability export %q: %w", id, err)))
 	}
 	return c.render(map[string]string{"deleted": id}, func() {
 		_, _ = fmt.Fprintf(stdout, "export %q removed\n", id)
