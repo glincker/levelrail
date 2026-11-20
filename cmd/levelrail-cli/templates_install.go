@@ -13,18 +13,19 @@ import (
 // manifest template with --env and --domain values and deploys it as a
 // compose stack (POST /api/v1/service-templates/{id}/install).
 func runTemplatesInstall(prog string, args []string, stdout, stderr io.Writer, lookupEnv func(string) (string, bool)) int {
-	var name string
+	var name, project string
 	env := stringMapFlag{}
 	domains := stringMapFlag{}
-	cmd, code, ok := parseComposeCmd(prog, "templates install", "templates install <id> [--name NAME] [--env KEY=VALUE]... [--domain SERVICE=HOST]...", args, 1, stderr, lookupEnv, func(fs *flag.FlagSet) {
+	cmd, code, ok := parseComposeCmd(prog, "templates install", "templates install <id> [--name NAME] [--project ID] [--env KEY=VALUE]... [--domain SERVICE=HOST]...", args, 1, stderr, lookupEnv, func(fs *flag.FlagSet) {
 		fs.StringVar(&name, "name", "", "app name (default: the template id plus a short random suffix)")
+		fs.StringVar(&project, "project", "", "group the installed services under this project id")
 		fs.Var(env, "env", "template setting KEY=VALUE (repeatable; see templates get <id>)")
 		fs.Var(domains, "domain", "put a service behind a domain, SERVICE=HOST (repeatable)")
 	})
 	if !ok {
 		return code
 	}
-	res, err := cmd.client.InstallTemplate(context.Background(), cmd.args[0], apiclient.TemplateInstallRequest{Name: name, Env: env, Domains: domains})
+	res, err := cmd.client.InstallTemplate(context.Background(), cmd.args[0], apiclient.TemplateInstallRequest{Name: name, Env: env, Domains: domains, ProjectID: project})
 	if err != nil {
 		return reportError(stdout, stderr, cmd.json, fmt.Errorf("install template %q: %w", cmd.args[0], err))
 	}

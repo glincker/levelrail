@@ -19,6 +19,8 @@ type templateInstallRequest struct {
 	Name    string            `json:"name,omitempty"`
 	Env     map[string]string `json:"env,omitempty"`
 	Domains map[string]string `json:"domains,omitempty"`
+	// ProjectID groups the installed services under a project; empty uses the switcher's project.
+	ProjectID string `json:"project_id,omitempty"`
 }
 
 func manifestIcon(m *catalog.Manifest) string {
@@ -61,6 +63,15 @@ func (rt *Router) handleInstallServiceTemplate(w http.ResponseWriter, r *http.Re
 		writeError(w, http.StatusBadRequest, "name must start with a letter and use only lowercase letters, digits and dashes (40 characters at most)")
 		return
 	}
+	req.ProjectID = defaultProjectFor(r, req.ProjectID)
+	if err := rt.validateProjectID(r.Context(), req.ProjectID); err != nil {
+		if errors.Is(err, store.ErrProjectNotFound) {
+			writeError(w, http.StatusBadRequest, "unknown project_id")
+			return
+		}
+		rt.internalError(w, "api: install template: check project failed", err, slog.String("project_id", req.ProjectID))
+		return
+	}
 	if _, err := rt.appCompose.GetAppByName(r.Context(), name); err == nil {
 		writeError(w, http.StatusConflict, "an app named "+name+" already exists")
 		return
@@ -84,6 +95,14 @@ func (rt *Router) handleInstallServiceTemplate(w http.ResponseWriter, r *http.Re
 	resp, ok := rt.lockedComposeDeploy(w, r, name, []byte(body), composeDeployOpts{source: store.ComposeRevisionSourceTemplate, templateID: tpl.ID, interpEnv: interpEnvWithoutFiles(tpl.Manifest, req.Env), capGrants: catalog.CapGrantMap(grants)})
 	if !ok {
 		return
+	}
+	if req.ProjectID != "" {
+		for _, svc := range resp.Services {
+			if err := rt.apps.UpdateServiceProject(r.Context(), svc.Name, req.ProjectID); err != nil {
+				rt.logger.Error("api: install template: assign project failed", slog.String("error", err.Error()), slog.String("name", svc.Name), slog.String("project_id", req.ProjectID))
+				w.Header().Set("X-Project-Incomplete", "true")
+			}
+		}
 	}
 	if !rt.auditCapabilityGrants(r, name, tpl.Manifest, grants) {
 		w.Header().Set("X-Audit-Incomplete", "true")
