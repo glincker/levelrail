@@ -52,6 +52,8 @@ type PullRequestEvent struct {
 	// Reopened marks an Opened action that was a reopened pull request
 	// rather than a new one.
 	Reopened bool
+	// Draft marks a draft pull request or merge request. Gitea sends no draft flag, so it is never set there.
+	Draft bool
 }
 
 // IsFork reports whether the pull request comes from a different
@@ -80,7 +82,7 @@ func isReopenAction(raw string) bool { return raw == "reopened" || raw == "reope
 
 func normalizePullRequestAction(raw string) (PullRequestAction, bool) {
 	switch raw {
-	case "opened", "reopened", "open", "reopen", "pullrequest:created":
+	case "opened", "reopened", "open", "reopen", "ready_for_review", "pullrequest:created":
 		return PullRequestOpened, true
 	case "synchronize", "synchronized", "update", "pullrequest:updated":
 		return PullRequestSynchronize, true
@@ -151,6 +153,7 @@ type githubPullRequestPayload struct {
 			Ref  string   `json:"ref"`
 			Repo repoInfo `json:"repo"`
 		} `json:"base"`
+		Draft bool `json:"draft"`
 	} `json:"pull_request"`
 }
 
@@ -170,6 +173,7 @@ func parseGitHubPullRequestEvent(body []byte) (PullRequestEvent, error) {
 		HeadRepoFullName: p.PullRequest.Head.Repo.FullName,
 		BaseRepoFullName: p.PullRequest.Base.Repo.FullName,
 		Reopened:         isReopenAction(p.Action),
+		Draft:            p.PullRequest.Draft,
 	}, nil
 }
 
@@ -191,6 +195,7 @@ type gitlabPullRequestPayload struct {
 		LastCommit struct {
 			ID string `json:"id"`
 		} `json:"last_commit"`
+		Draft bool `json:"draft"`
 	} `json:"object_attributes"`
 }
 
@@ -210,6 +215,7 @@ func parseGitLabPullRequestEvent(body []byte) (PullRequestEvent, error) {
 		HeadRepoFullName: p.ObjectAttributes.Source.PathWithNamespace,
 		BaseRepoFullName: p.ObjectAttributes.Target.PathWithNamespace,
 		Reopened:         isReopenAction(p.ObjectAttributes.Action),
+		Draft:            p.ObjectAttributes.Draft,
 	}, nil
 }
 
@@ -218,7 +224,8 @@ func parseGitLabPullRequestEvent(body []byte) (PullRequestEvent, error) {
 // https://support.atlassian.com/bitbucket-cloud/docs/event-payloads/#Pull-request-created
 type bitbucketPullRequestPayload struct {
 	PullRequest struct {
-		ID     int `json:"id"`
+		ID     int  `json:"id"`
+		Draft  bool `json:"draft"`
 		Source struct {
 			Branch struct {
 				Name string `json:"name"`
@@ -252,6 +259,7 @@ func parseBitbucketPullRequestEvent(body []byte, eventKey string) (PullRequestEv
 		BaseRef:          p.PullRequest.Destination.Branch.Name,
 		HeadRepoFullName: p.PullRequest.Source.Repository.FullName,
 		BaseRepoFullName: p.PullRequest.Destination.Repository.FullName,
+		Draft:            p.PullRequest.Draft,
 	}, nil
 }
 

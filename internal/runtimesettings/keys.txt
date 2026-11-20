@@ -179,6 +179,7 @@ deploy.inline_source_max_files
 deploy.max_concurrent
 deploy.max_concurrent_per_project
 deploy.orphan_grace_seconds
+deploy.preview_skip_drafts
 deploy.previous_release_hold
 deploy.procfile_default_port
 deploy.receipt_approval_window

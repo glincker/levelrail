@@ -110,6 +110,10 @@ func (rt *Router) handlePullRequestWebhookEvent(ctx context.Context, appName str
 		return status, message
 	}
 
+	if ev.Draft && rt.previewSkipDrafts(ctx) {
+		return http.StatusOK, fmt.Sprintf("ignored: pull request #%d is a draft, previews build once it is ready for review\n", ev.Number)
+	}
+
 	if rt.builder == nil {
 		return http.StatusNotImplemented, "git push deploys are not configured on this control plane\n"
 	}
@@ -444,7 +448,7 @@ func (rt *Router) deployPreviewSingle(ctx context.Context, appName, previewName 
 // this treats as a domain-conflict-shaped partial success (the rest of
 // the preview is still reachable) rather than special-casing the retry.
 func (rt *Router) deployPreviewMulti(ctx context.Context, appName, previewName string, gs store.GitSource, sourceDir, headSHA, wantDomain string, vars previewEnvVars) (usedDomain string, domainConflict bool, err error) {
-	services, primaryKey := previewServicesSpec(gs.Services, wantDomain)
+	services, primaryKey := previewServicesSpec(withoutExcludedServices(gs.Services, vars.Policy.ExcludeServices), wantDomain)
 	for k, svc := range services {
 		domain := ""
 		if len(svc.Domains) > 0 {
