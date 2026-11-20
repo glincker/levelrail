@@ -2484,6 +2484,410 @@
     "setUp": "设置内置镜像仓库",
     "manage": "管理"
   },
+  "registryVendors": {
+    "heading": "连接镜像仓库",
+    "subheading": "选择一个供应商以预填主机，并查看该凭据需要哪些令牌权限范围。",
+    "connect": "连接",
+    "connectFor": "连接 {{vendor}}",
+    "dialogTitle": "连接 {{vendor}}",
+    "dialogDescription": "密码会加密存储，保存后不再显示。",
+    "name": "名称",
+    "nameHelp": "在 app.yaml 的 build.registryCredential 中按名称引用。",
+    "host": "仓库主机",
+    "username": "用户名",
+    "password": "密码或令牌",
+    "neverShown": "保存后不会再次显示。",
+    "expires": "过期时间（可选）",
+    "shortLived": "该供应商发放的令牌约 {{hours}} 小时后失效。请在显示的日期前重新签发并更新凭据，目前尚未内置自动刷新。",
+    "scopesTitle": "所需权限范围",
+    "test": "测试连接",
+    "testing": "测试中...",
+    "save": "保存凭据",
+    "saving": "保存中...",
+    "saved": "已添加镜像仓库凭据“{{name}}”。",
+    "auth": {
+      "dockerhub": "请使用你的 Docker Hub 用户名和个人访问令牌，而不是账户密码。",
+      "ghcr": "请使用你的 GitHub 用户名和个人访问令牌（classic）。",
+      "gitlab": "请使用部署令牌或个人访问令牌作为密码。",
+      "ecr": "用户名始终为 AWS。密码是 aws ecr get-login-password 的输出，有效期 12 小时。",
+      "gar": "用户名为 _json_key，密码为服务账户密钥 JSON。",
+      "acr": "请使用仓库范围的令牌或服务主体：用户名为令牌名称或应用 ID，密码为其密钥。",
+      "harbor": "请使用机器人账户：用户名形如 robot$name，密码为其密钥。",
+      "quay": "请使用机器人账户：用户名为 org+robotname，密码为其令牌。",
+      "jfrog": "用户名为你的用户名，密码为身份令牌，而不是账户密码。",
+      "nexus": "请使用对 Docker 仓库有访问权限的用户的用户名和密码。",
+      "generic": "任何支持 Docker Registry HTTP API v2 和基础认证的镜像仓库。"
+    },
+    "scopes": {
+      "dockerhub": "只拉取镜像时只读访问即可。仅当构建需要推送时才选择读写。",
+      "ghcr": "拉取需要 read:packages，推送需要 write:packages。对于强制 SSO 的组织，请为令牌授权 SSO。",
+      "gitlab": "拉取需要 read_registry，推送需要 write_registry。部署令牌仅限于一个项目或群组。",
+      "ecr": "需要 ecr:GetAuthorizationToken、ecr:BatchGetImage、ecr:GetDownloadUrlForLayer 和 ecr:BatchCheckLayerAvailability，可来自密钥或角色。",
+      "gar": "拉取需要 roles/artifactregistry.reader，推送需要 roles/artifactregistry.writer。",
+      "acr": "拉取需要 AcrPull 角色（或具有 content/read 的令牌），推送需要 AcrPush。",
+      "harbor": "对镜像所在项目的拉取权限。",
+      "quay": "对该仓库的读取权限。",
+      "jfrog": "对该 Docker 仓库的读取权限。",
+      "nexus": "拉取需要 nx-repository-view-docker-*-read。",
+      "generic": "对你部署所用仓库的拉取权限。"
+    }
+  },
+  "packageRegistries": {
+    "heading": "构建用的软件包仓库",
+    "subheading": "私有 npm、PyPI、Maven、NuGet、Cargo、Go 和 RubyGems 仓库，以密钥形式挂载到 Dockerfile 构建中。",
+    "add": "添加软件包仓库",
+    "empty": "还没有软件包仓库。添加后，构建即可安装私有软件包。",
+    "dialogTitle": "添加软件包仓库",
+    "dialogDescription": "令牌会加密存储，并作为 BuildKit 密钥挂载到构建中。",
+    "ecosystems": {
+      "npm": "npm",
+      "pypi": "PyPI",
+      "maven": "Maven",
+      "nuget": "NuGet",
+      "cargo": "Cargo",
+      "go": "Go 代理",
+      "rubygems": "RubyGems"
+    },
+    "scopes": {
+      "instance": "所有构建",
+      "project": "单个项目",
+      "app": "单个应用"
+    },
+    "name": "名称",
+    "url": "仓库 URL",
+    "urlHelp": "URL 中不要包含凭据。请使用用户名和令牌字段。",
+    "username": "用户名（可选）",
+    "usernameHelp": "如果是仅使用 Bearer 令牌的仓库，请留空。",
+    "secret": "令牌或密码",
+    "secretHelp": "保存后不再显示，也绝不会放入构建参数、镜像层或构建日志中。",
+    "patterns": "GOPRIVATE 模式",
+    "scope": "适用范围",
+    "scopeRef": "项目 ID 或应用名称",
+    "scopeRefPlaceholder": "项目 ID 或应用名称",
+    "buildNote": "在 Dockerfile 中使用 RUN --mount=type=secret,id=<secret id> 引用生成的配置，例如 id=npmrc 配合 target=/root/.npmrc。远程构建节点暂不会接收该配置。",
+    "save": "保存仓库",
+    "saving": "保存中...",
+    "saved": "已添加软件包仓库“{{name}}”。",
+    "test": "测试",
+    "remove": "移除 {{name}}",
+    "mountAs": "密钥 ID {{id}}"
+  },
+  "storagePage": {
+    "gcsHmacHint": "请使用 HMAC 密钥，而不是服务账户 JSON。在 Google Cloud 中，打开 Cloud Storage、设置、互操作性，然后为一个可以写入该存储桶的服务账户创建密钥。",
+    "title": "存储目标",
+    "description": "用于日志归档和备份的兼容 S3 的对象存储。支持 AWS S3、Cloudflare R2、Backblaze B2、MinIO、Wasabi、Google Cloud Storage 或任何自定义端点。",
+    "notConfiguredTitle": "此服务器尚未配置存储",
+    "notConfiguredBody": "请设置 APP_MASTER_KEY 并重启控制平面，以便加密存储桶凭据。",
+    "loadErrorTitle": "无法加载存储目标",
+    "retry": "重试",
+    "logArchiveTitle": "所有应用的日志归档",
+    "logArchiveBody": "按计划将节点本地日志发送到目标位置。拥有自己策略的应用（应用日志中的“归档”标签页）则单独保存。",
+    "buildCacheTitle": "所有应用的构建缓存"
+  },
+  "doctorPage": {
+    "title": "诊断",
+    "description": "对此服务器进行一次健康检查：Docker、磁盘、端口、证书、备份、节点等。CLI 的 doctor 命令运行的是同样的检查。",
+    "guide": "诊断指南",
+    "rerun": "重新运行检查",
+    "filterLabel": "按状态筛选检查",
+    "filter": {
+      "all": "全部",
+      "fail": "失败",
+      "warn": "警告"
+    },
+    "lastChecked": "上次检查于 {{time}}",
+    "checking": "检查中...",
+    "copyDiagnostics": "复制诊断信息",
+    "copyDone": "已复制诊断信息",
+    "copyFailed": "无法复制到剪贴板",
+    "noMatches": "没有符合此筛选条件的检查。",
+    "allPassedTitle": "所有检查均已通过",
+    "allPassedBody": "目前没有需要处理的内容。",
+    "failedTitle_other": "{{count}} 项检查失败",
+    "warnTitle_other": "{{count}} 项检查需要关注",
+    "reviewBelow": "下方每个问题都附有修复方法或后续步骤，并提供“重新检查”按钮。",
+    "progress": "已完成 {{total}} 项检查中的 {{done}} 项",
+    "streamErrorTitle": "检查流被中断",
+    "streamErrorBody": "已显示目前的结果。请使用“重新运行检查”重新开始。",
+    "counts": {
+      "fail_other": "{{count}} 项失败",
+      "warn_other": "{{count}} 项警告",
+      "ok": "{{count}} 项通过",
+      "unknown": "{{count}} 项未检查"
+    },
+    "fixAll_other": "修复全部 {{count}} 个安全问题",
+    "fixAllTitle_other": "应用 {{count}} 个安全修复？",
+    "fixAllBody": "仅包含可一键修复且安全的项目。任何会重启服务或开放访问的操作都需要单独、明确地执行。以下是这些更改：",
+    "fixAllConfirm": "应用修复",
+    "fixAllPending": "应用中...",
+    "fixAllCli": "更喜欢终端？在服务器上运行此命令，它会打印同样的计划并先行询问。",
+    "ingressTitle": "入口是单点故障",
+    "ingressBody": "基于域名的 HTTPS 路由嵌入在此控制平面进程中运行。如果它崩溃或重启，路由会中断直到恢复，不过已在运行的容器始终通过各自的端口继续提供服务。",
+    "survivesCrash": "控制平面崩溃时仍可运行的部分",
+    "groups": {
+      "runtime": {
+        "title": "容器运行时",
+        "description": "Docker 连通性、版本、权限和遗留数据。"
+      },
+      "host": {
+        "title": "此服务器",
+        "description": "磁盘、inode、内存、CPU 和数据库。"
+      },
+      "network": {
+        "title": "网络与连通性",
+        "description": "端口、防火墙、DNS、证书，以及互联网能否访问此主机。"
+      },
+      "security": {
+        "title": "安全",
+        "description": "密钥轮换、令牌和发布签名检查。"
+      },
+      "backups": {
+        "title": "备份",
+        "description": "控制平面快照、数据库计划和恢复演练。"
+      },
+      "nodes": {
+        "title": "节点与网格",
+        "description": "Agent 连接、Agent 版本和 WireGuard 网格。"
+      },
+      "hardware": {
+        "title": "硬件",
+        "description": "GPU 和网络共享客户端工具。"
+      },
+      "other": {
+        "title": "其他检查",
+        "description": "此控制平面报告的其他检查。"
+      }
+    }
+  },
+  "firewallRules": {
+    "liveStatus": "实时防火墙状态",
+    "liveStatusNote": "来自此主机自身的预检。完整的加固清单请见“设置”中的“诊断”。",
+    "emptyTitle": "尚未配置防火墙规则",
+    "emptyBody": "添加规则以允许或拒绝访问某个端口，可选择限制为某个来源 CIDR。",
+    "cols": {
+      "action": "操作",
+      "port": "端口",
+      "protocol": "协议",
+      "source": "来源",
+      "label": "标签",
+      "added": "添加时间",
+      "actions": "操作"
+    },
+    "anywhere": "任意位置",
+    "none": "无",
+    "allow": "允许",
+    "deny": "拒绝",
+    "closeTitle": "此规则将关闭一个端口",
+    "restrictTitle": "此规则会将一个端口限制为单一来源",
+    "closeBody": "发往此端口的流量将被丢弃。针对管理 API、Agent 连接或入口的规则会被自动拒绝。",
+    "restrictBody": "来自此 CIDR 之外的流量将无法再访问此端口。针对管理 API、Agent 连接或入口的规则会被自动拒绝。",
+    "addRule": "添加规则",
+    "addDeny": "添加拒绝规则",
+    "adding": "添加中...",
+    "addTitle": "添加防火墙规则",
+    "addBody": "允许或拒绝访问某个端口，可选择限制为某个来源 CIDR。将在下一次协调周期生效。",
+    "createdToast": "已为端口 {{port}} 创建防火墙规则。",
+    "sourceCidr": "来源 CIDR（可选）",
+    "sourceCidrPlaceholder": "10.0.0.0/24（留空表示任意来源）",
+    "labelOptional": "标签（可选）",
+    "labelPlaceholder": "此规则的用途",
+    "cancel": "取消",
+    "remove": "移除",
+    "removing": "移除中...",
+    "removeTitle": "要移除此规则吗？",
+    "removeAllowBody": "下一次协调周期移除此规则后，将停止允许端口 {{port}}/{{protocol}} 的流量，除非此主机上的其他规则仍允许该流量。",
+    "removeDenyBody": "下一次协调周期移除此规则后，将停止拒绝端口 {{port}}/{{protocol}} 的流量。",
+    "removedToast": "已移除防火墙规则。"
+  },
+  "storageDestinations": {
+    "accountLabel": {
+      "r2": "Cloudflare 账户 ID",
+      "oracle": "命名空间",
+      "default": "账户或命名空间 ID"
+    },
+    "usage": {
+      "header": "用量",
+      "none": "空",
+      "ofQuota": "{{used}} / {{quota}}",
+      "overQuota": "超出配额",
+      "cost": "预计每月费用",
+      "free": "免费",
+      "defaultFor": "默认用于",
+      "noDefault": "无"
+    },
+    "kind": {
+      "agent": "节点目录",
+      "agentLocation": "{{node}}:{{directory}}"
+    },
+    "classes": {
+      "backups": "备份",
+      "archives": "日志归档",
+      "artifacts": "流水线产物",
+      "cache": "构建缓存",
+      "dumps": "数据转储"
+    },
+    "defaults": {
+      "title": "每类数据的默认目标",
+      "description": "未选择目标时各类数据的存放位置。节点目录只能保存备份和数据转储。",
+      "unset": "未设置",
+      "clear": "清除",
+      "saved": "{{class}} 现在将发送到 {{name}}。",
+      "cleared": "已清除 {{class}} 的默认目标。",
+      "pick": "选择目标"
+    },
+    "node": {
+      "add": "添加节点目录",
+      "title": "添加节点目录目标",
+      "description": "通过节点现有的 Agent 连接，将备份流式写入节点上受限的目录。无 SSH，无 Shell，无需凭据。",
+      "name": "名称",
+      "node": "节点",
+      "nodePlaceholder": "选择节点",
+      "directory": "目录",
+      "directoryHint": "相对于节点的存储根目录（Agent 上的 APP_AGENT_STORAGE_DIR）。默认为 backups。",
+      "quota": "软配额（GB）",
+      "quotaHint": "备份超过此值时会被标记。0 表示不限制。",
+      "verify": "保存前测试连接（会写入并删除一个探测文件）",
+      "connect": "连接",
+      "connecting": "连接中...",
+      "connected": "已连接节点目录“{{name}}”。",
+      "noNodes": "请先注册一个节点，才能在其上存储数据。"
+    },
+    "test": {
+      "title": "“{{name}}”的连接测试",
+      "passed": "“{{name}}”运行正常。",
+      "failedTitle": "“{{name}}”未通过连接测试",
+      "recheck": "重新检查",
+      "checking": "检查中...",
+      "close": "关闭",
+      "step": "{{name}}：{{status}}",
+      "ok": "正常",
+      "failed": "失败"
+    },
+    "fix": {
+      "enable_path_style": {
+        "title": "开启路径样式寻址",
+        "description": "此端点不响应虚拟主机式存储桶 URL。点击一次即可切换为 https://host/bucket/key 并重新检查。",
+        "action": "启用路径样式并重新检查"
+      },
+      "edit_credentials": {
+        "title": "输入新凭据",
+        "description": "端点拒绝了此访问密钥。请粘贴一对可用的密钥，保存后将加密且不再显示。",
+        "action": "保存凭据并重新检查"
+      },
+      "edit_policy": {
+        "title": "授予密钥存储桶访问权限",
+        "description": "该密钥有效，但无法在此存储桶中写入、读取和删除。请在服务商的策略中允许这些操作，或使用另一对密钥。",
+        "action": "使用其他密钥并重新检查"
+      },
+      "edit_bucket": {
+        "title": "更正存储桶名称",
+        "description": "端点上不存在此名称的存储桶。",
+        "action": "保存存储桶并重新检查"
+      },
+      "edit_region": {
+        "title": "更正区域",
+        "description": "该存储桶位于其他区域。",
+        "action": "保存区域并重新检查"
+      },
+      "edit_endpoint": {
+        "title": "更正端点",
+        "description": "无法连接到该端点，或其证书校验失败。私有网络端点还需要设置 APP_NOTIFY_ALLOW_PRIVATE_NETWORKS=true。",
+        "action": "保存端点并重新检查"
+      },
+      "sync_clock": {
+        "title": "同步此服务器的时钟",
+        "description": "存储端点报告时钟偏差较大。请在控制平面主机上启用 NTP，然后重新检查。",
+        "action": "重新检查"
+      },
+      "reconnect_node": {
+        "title": "让节点恢复在线",
+        "description": "节点未连接到控制平面。请启动其 Agent，然后重新检查。",
+        "action": "打开节点",
+        "recheck": "重新检查"
+      },
+      "enable_node_storage": {
+        "title": "为节点设置存储目录",
+        "description": "在 Agent 上将 APP_AGENT_STORAGE_DIR 设置为其可写入的目录，重启 Agent，然后重新检查。",
+        "action": "重新检查"
+      },
+      "fields": {
+        "accessKeyId": "访问密钥 ID",
+        "secretAccessKey": "秘密访问密钥",
+        "bucket": "存储桶",
+        "region": "区域",
+        "endpoint": "端点"
+      }
+    },
+    "empty": {
+      "title": "没有存储目标",
+      "description": "连接 AWS S3、Cloudflare R2、Backblaze B2、MinIO、Wasabi、任意兼容 S3 的存储桶，或已注册的节点，用于存储备份、归档和数据转储。"
+    }
+  },
+  "controlPlaneDrKeygen": {
+    "trigger": "生成密钥对",
+    "title": "新的备份接收方密钥",
+    "description": "公钥会添加到备份接收方中。私钥只显示一次，且绝不会存储在此服务器上。",
+    "warning": "请立即将私钥离线保存（密码管理器或保险箱）。没有私钥，备份将无法解密。",
+    "copy": "复制私钥",
+    "download": "下载私钥",
+    "use": "我已保存，添加公钥"
+  },
+  "controlPlaneDrRestore": {
+    "title": "恢复计划",
+    "description": "恢复会替换控制平面数据库，因此需要在控制平面停止时于主机上执行。以下是此安装实例的步骤。",
+    "noBackup": "目前还没有完整的异地备份。在依赖恢复之前，请先运行一次备份。",
+    "newest": "最新备份：{{key}}（{{when}}）",
+    "viaCli": "主机上的恢复命令",
+    "copy": "复制命令",
+    "copied": "已复制",
+    "warnings": {
+      "escrow_not_acknowledged": "主密钥托管未确认：如果没有主密钥，恢复后将无法读取已存储的密钥。",
+      "drill_not_passed": "尚未通过任何恢复演练，因此此计划未经测试。"
+    },
+    "steps": {
+      "backup_available": {
+        "title": "已有完整备份",
+        "body": "目标位置最新的加密备份同时包含数据和清单。"
+      },
+      "identity_ready": {
+        "title": "准备好私钥",
+        "body": "你需要与其中一个备份接收方匹配的私钥。"
+      },
+      "master_key_escrow": {
+        "title": "准备好主密钥托管",
+        "body": "备份中不包含主密钥。请从你的托管包中恢复。"
+      },
+      "stop_control_plane": {
+        "title": "停止控制平面",
+        "body": "数据库使用中时，恢复会拒绝运行。"
+      },
+      "run_restore": {
+        "title": "在主机上执行恢复",
+        "body": "当前数据库会作为恢复前副本，与恢复后的数据库并存保留。"
+      },
+      "start_and_verify": {
+        "title": "启动控制平面并验证",
+        "body": "确认应用、域名和节点已恢复，然后运行一次新的备份。"
+      }
+    }
+  },
+  "iacPage": {
+    "title": "基础设施即代码",
+    "description": "以 YAML 描述项目、环境、应用、域名和数据库，检查计划后再应用。",
+    "filesTitle": "资源文件",
+    "filesDescription": "一个或多个 YAML 文档，以 --- 分隔。文档中绝不保存密钥值，请使用 secretRef 引用。",
+    "yamlLabel": "YAML",
+    "upload": "上传文件",
+    "sourceLabel": "来源",
+    "sourcePlaceholder": "infra-repo",
+    "sourceHint": "为此次应用创建的应用添加标签，以便之后 prune 能找到它们。",
+    "projectLabel": "仅限项目",
+    "projectPlaceholder": "shop",
+    "prune": "清理（prune）：删除此来源创建、但文件已不再声明的应用",
+    "pruneNeedsSource": "清理需要一个来源名称。",
+    "noDeploy": "应用环境变更时不重启正在运行的应用",
+    "planning": "规划中..."
+  },
   "iacExport": {
     "studioButton": "将当前状态导出为模板"
   },
