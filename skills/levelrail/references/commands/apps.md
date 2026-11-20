@@ -1390,7 +1390,7 @@ Run "levelrail-cli apps previews pr-status <enable|disable> -h" for a verb's own
 
 ## levelrail-cli apps projects
 
-Subcommands: backfill-default-env, create, delete, env-get, env-set, export, get, list, restart, show, start, stop, topology
+Subcommands: backfill-default-env, create, delete, env-get, env-set, export, get, import, list, restart, show, start, stop, topology
 
 ```
 Usage:
@@ -1405,6 +1405,8 @@ Usage:
   levelrail-cli apps projects env-set <id> --var KEY=VALUE [flags]   replace a project's shared env vars
   levelrail-cli apps projects topology <id> [flags]                diagram-ready graph of a project's apps, databases, and volumes
   levelrail-cli apps projects export <name> [-o DIR|-] [flags]     write a project as plain docker-compose.yml, .env.example and volumes.json
+  levelrail-cli projects export <name> --out FILE.lrx [--include-data] [--include-secrets]   write a project archive
+  levelrail-cli projects import FILE.lrx [--plan] [--rename NAME]  create a project from an archive
 
 A project groups apps and databases (move one in with "levelrail-cli apps
 set-project" or "levelrail-cli databases set-project"); deleting a project

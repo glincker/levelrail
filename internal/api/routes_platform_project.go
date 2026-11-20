@@ -41,6 +41,10 @@ func (rt *Router) registerProjectRoutes(mux *http.ServeMux) {
 	// read; include_secrets is gated again on write:sensitive in the handler.
 	mux.HandleFunc("POST /api/v1/projects/{id}/clone", rt.requireAbility(AbilityWrite, rt.handleCloneProject))
 	mux.HandleFunc("GET /api/v1/projects/{id}/export", rt.requireAbility(AbilityReadSensitive, rt.handleExportProject))
+	// .lrx archive (project_transfer.go): write:sensitive, per-app and secret checks run in the handlers.
+	mux.HandleFunc("POST /api/v1/projects/{id}/export", rt.requireAbility(AbilityWriteSensitive, rt.handleExportProjectArchive))
+	mux.HandleFunc("POST /api/v1/projects/import/plan", rt.requireAbility(AbilityWriteSensitive, rt.handleImportProjectPlan))
+	mux.HandleFunc("POST /api/v1/projects/import", rt.requireAbility(AbilityWriteSensitive, rt.handleImportProject))
 	mux.HandleFunc("GET /api/v1/projects/{id}/topology", rt.requireAbility(AbilityRead, rt.handleGetProjectTopology))
 
 	// Organizations (organizations.go): groups projects, same ordinary

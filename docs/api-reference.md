@@ -1081,6 +1081,9 @@ Endpoints for:
 | DELETE | /api/v1/organizations/{id}/bindings/{bid} | AbilityWriteSensitive | handleDeleteOrgBinding |
 | GET | /api/v1/environments/{id}/builders | AbilityRead | handleGetEnvironmentBuilders |
 | PUT | /api/v1/environments/{id}/builders | Session | handleSetEnvironmentBuilders |
+| POST | /api/v1/projects/{id}/export | AbilityWriteSensitive | handleExportProjectArchive |
+| POST | /api/v1/projects/import/plan | AbilityWriteSensitive | handleImportProjectPlan |
+| POST | /api/v1/projects/import | AbilityWriteSensitive | handleImportProject |
 
 ## Nodes
 
