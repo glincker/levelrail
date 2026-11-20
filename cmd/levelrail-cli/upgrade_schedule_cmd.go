@@ -246,6 +246,33 @@ func printUpgradePolicy(out io.Writer, p apiclient.UpgradePolicy) {
 	if p.Decision != "" {
 		_, _ = fmt.Fprintf(out, "latest decision: %s %s\n", p.DecisionTag, p.Decision)
 	}
+	printUpgradeAutoStatus(out, p.Status)
+}
+
+// printUpgradeAutoStatus prints the plain status block: state and why, last check, last result.
+func printUpgradeAutoStatus(out io.Writer, st *apiclient.UpgradeAutoStatus) {
+	if st == nil {
+		return
+	}
+	line := "status: " + st.State
+	if st.Reason != "" {
+		line += " (" + st.Reason + ")"
+	}
+	_, _ = fmt.Fprintln(out, line)
+	if st.LastCheckAt != "" {
+		check := "last check: " + st.LastCheckAt
+		if st.CheckFailures > 0 {
+			check += fmt.Sprintf(", %d failed in a row, next try %s", st.CheckFailures, st.NextCheckAt)
+		}
+		_, _ = fmt.Fprintln(out, check)
+	}
+	if st.LastResult != "" {
+		res := "last result: " + st.LastResult
+		if st.LastResultReason != "" {
+			res += ": " + st.LastResultReason
+		}
+		_, _ = fmt.Fprintf(out, "%s (%s)\n", res, st.LastResultAt)
+	}
 }
 
 // runUpgradeBackupNow implements "upgrade backup-now".

@@ -285,6 +285,7 @@ type upgradePolicyResource struct {
 	PausedUntil         string                 `json:"paused_until,omitempty"`
 	HealthWindowSeconds int                    `json:"health_window_seconds"`
 	Notice              *upgradeNoticeResource `json:"notice"`
+	Status              *upgradeAutoStatus     `json:"status,omitempty"`
 }
 
 // upgradeNoticeResource is the one-time, dismissible notice that automatic upgrades are on.
@@ -347,7 +348,9 @@ func (rt *Router) handleGetUpgradePolicy(w http.ResponseWriter, r *http.Request)
 		rt.internalError(w, "api: get upgrade policy failed", err)
 		return
 	}
-	writeJSON(w, http.StatusOK, rt.upgradePolicyResource(row, defaulted))
+	res := rt.upgradePolicyResource(row, defaulted)
+	res.Status = rt.upgradeAutoStatusFor(r.Context(), row)
+	writeJSON(w, http.StatusOK, res)
 }
 
 // handleDismissUpgradeNotice handles POST /api/v1/updates/auto/notice/dismiss. Root only.
@@ -486,7 +489,9 @@ func (rt *Router) handleUpdateUpgradePolicy(w http.ResponseWriter, r *http.Reque
 		rt.internalError(w, "api: get upgrade policy failed", err)
 		return
 	}
-	writeJSON(w, http.StatusOK, rt.upgradePolicyResource(updated, false))
+	res := rt.upgradePolicyResource(updated, false)
+	res.Status = rt.upgradeAutoStatusFor(r.Context(), updated)
+	writeJSON(w, http.StatusOK, res)
 }
 
 type upgradeBackupNowResponse struct {

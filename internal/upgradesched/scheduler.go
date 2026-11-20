@@ -188,8 +188,13 @@ type Scheduler struct {
 	NewID func() string
 	// Defaults is the policy an install runs until an operator saves one; zero keeps unsaved installs off.
 	Defaults Defaults
+	// CheckBackoffMax and CheckAlertAfter read the live runtime settings; nil keeps the built-in values.
+	CheckBackoffMax func(ctx context.Context) time.Duration
+	CheckAlertAfter func(ctx context.Context) int
 
-	mu sync.Mutex
+	mu      sync.Mutex
+	checkMu sync.Mutex
+	check   CheckStatus
 }
 
 func (s *Scheduler) now() time.Time {
@@ -396,7 +401,8 @@ func (s *Scheduler) maybeFire(ctx context.Context, sc store.UpgradeSchedule) err
 		return s.block(ctx, sc, BlockerSummary(pre.Checks), true)
 	}
 	if !backedUp {
-		if _, err := s.Host.BackupNow(ctx); err != nil && !errors.Is(err, ErrBackupNotAvail) {
+		// An automatic upgrade never runs without a fresh backup; a person who clicked upgrade has already seen the preflight.
+		if _, err := s.Host.BackupNow(ctx); err != nil && (sc.Source == store.UpgradeSourceAuto || !errors.Is(err, ErrBackupNotAvail)) {
 			return s.block(ctx, sc, "backup failed: "+err.Error(), true)
 		}
 	}

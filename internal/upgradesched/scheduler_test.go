@@ -18,6 +18,7 @@ type fakeHost struct {
 	mu        sync.Mutex
 	latest    Candidate
 	latestErr error
+	onLatest  func()
 	plan      Plan
 	planErr   error
 	preflight []PreflightResult
@@ -32,6 +33,9 @@ type fakeHost struct {
 }
 
 func (h *fakeHost) Latest(context.Context) (Candidate, bool, error) {
+	if h.onLatest != nil {
+		h.onLatest()
+	}
 	return h.latest, h.latest.Tag != "", h.latestErr
 }
 

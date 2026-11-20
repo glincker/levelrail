@@ -572,6 +572,9 @@ tokens.site_deploy_max_days
 tokens.system_rotation_lead_minutes
 tokens.unused_alert_days
 ui.outbound_utm
+updates.check_alert_after
+updates.check_backoff_max
+updates.fallback_release_base_url
 updates.offered_channels
 upgrade.verify_backup
 vault.allow_private_address

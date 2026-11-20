@@ -58,25 +58,40 @@ type UpgradeScheduleRequest struct {
 
 // UpgradePolicy is the automatic upgrade policy.
 type UpgradePolicy struct {
-	Mode                  string         `json:"mode"`
-	Effective             string         `json:"effective"`
-	WindowCron            string         `json:"window_cron"`
-	WindowDurationMinutes int            `json:"window_duration_minutes"`
-	Timezone              string         `json:"timezone"`
-	MinReleaseAgeDays     int            `json:"min_release_age_days"`
-	NotifyChannelIDs      []string       `json:"notify_channel_ids"`
-	Paused                bool           `json:"paused"`
-	UpdatedBy             string         `json:"updated_by"`
-	UpdatedAt             string         `json:"updated_at"`
-	Decision              string         `json:"decision"`
-	DecisionTag           string         `json:"decision_tag"`
-	DecisionAt            string         `json:"decision_at"`
-	ServerTimezone        string         `json:"server_timezone"`
-	NextWindow            *UpgradeWindow `json:"next_window"`
-	DefaultApplied        bool           `json:"default_applied"`
-	PausedUntil           string         `json:"paused_until"`
-	HealthWindowSeconds   int            `json:"health_window_seconds"`
-	Notice                *UpgradeNotice `json:"notice"`
+	Mode                  string             `json:"mode"`
+	Effective             string             `json:"effective"`
+	WindowCron            string             `json:"window_cron"`
+	WindowDurationMinutes int                `json:"window_duration_minutes"`
+	Timezone              string             `json:"timezone"`
+	MinReleaseAgeDays     int                `json:"min_release_age_days"`
+	NotifyChannelIDs      []string           `json:"notify_channel_ids"`
+	Paused                bool               `json:"paused"`
+	UpdatedBy             string             `json:"updated_by"`
+	UpdatedAt             string             `json:"updated_at"`
+	Decision              string             `json:"decision"`
+	DecisionTag           string             `json:"decision_tag"`
+	DecisionAt            string             `json:"decision_at"`
+	ServerTimezone        string             `json:"server_timezone"`
+	NextWindow            *UpgradeWindow     `json:"next_window"`
+	DefaultApplied        bool               `json:"default_applied"`
+	PausedUntil           string             `json:"paused_until"`
+	HealthWindowSeconds   int                `json:"health_window_seconds"`
+	Notice                *UpgradeNotice     `json:"notice"`
+	Status                *UpgradeAutoStatus `json:"status"`
+}
+
+// UpgradeAutoStatus is the one-glance state of automatic updates: working, off, paused, blocked or degraded.
+type UpgradeAutoStatus struct {
+	State            string `json:"state"`
+	Reason           string `json:"reason"`
+	CanApply         bool   `json:"can_apply"`
+	LastCheckAt      string `json:"last_check_at"`
+	LastCheckError   string `json:"last_check_error"`
+	CheckFailures    int    `json:"check_failures"`
+	NextCheckAt      string `json:"next_check_at"`
+	LastResult       string `json:"last_result"`
+	LastResultReason string `json:"last_result_reason"`
+	LastResultAt     string `json:"last_result_at"`
 }
 
 // UpgradeNotice is the one-time notice that automatic upgrades are on by default.

@@ -11,6 +11,7 @@ import (
 
 	"github.com/GLINCKER/levelrail/internal/alerting"
 	"github.com/GLINCKER/levelrail/internal/dbupgrade"
+	"github.com/GLINCKER/levelrail/internal/runtimesettings"
 	"github.com/GLINCKER/levelrail/internal/selfupgrade"
 	"github.com/GLINCKER/levelrail/internal/store"
 	"github.com/GLINCKER/levelrail/internal/upgradesched"
@@ -56,6 +57,12 @@ func (rt *Router) UpgradeScheduler() *upgradesched.Scheduler {
 			NewID:    upgradesched.NewScheduleID,
 			Audit:    rt.auditSystemUpgradeEvent,
 			Defaults: c.defaults,
+		}
+		if rs := rt.runtimeSettings; rs != nil {
+			s.CheckBackoffMax = func(ctx context.Context) time.Duration {
+				return rs.Duration(ctx, runtimesettings.KeyUpdatesCheckBackoffMax)
+			}
+			s.CheckAlertAfter = func(ctx context.Context) int { return rs.Int(ctx, runtimesettings.KeyUpdatesCheckAlertAfter) }
 		}
 		if rt.alertNoise != nil {
 			s.Windows = rt.alertNoise.ListMaintenanceWindows
@@ -104,10 +111,12 @@ func (f channelFanout) Notify(ctx context.Context, ids []string, text string) er
 // backup and launcher that the dashboard's own buttons use.
 type upgradeHost struct{ rt *Router }
 
+var errReleaseSourceUnavailable = errors.New("the release source could not be reached, or it lists no release for this channel")
+
 func (h upgradeHost) Latest(ctx context.Context) (upgradesched.Candidate, bool, error) {
 	rel, ok := h.rt.latestReleaseForCurrentChannel(ctx)
 	if !ok || rel == nil {
-		return upgradesched.Candidate{}, false, nil
+		return upgradesched.Candidate{}, false, errReleaseSourceUnavailable
 	}
 	c := upgradesched.Candidate{Tag: rel.Tag}
 	if t, err := time.Parse(time.RFC3339, rel.PublishedAt); err == nil {
