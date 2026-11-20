@@ -70,7 +70,7 @@ export function AppHeader({ onSearch }: { onSearch: () => void }) {
             <span className="hidden flex-1 truncate text-left @xl:inline">
               {t('shell.search.placeholder')}
             </span>
-            <span className="hidden @3xl:inline-flex">
+            <span className="hidden @xl:inline-flex">
               <Kbd keys={[isMac ? '⌘' : 'Ctrl', 'K']} />
             </span>
           </Button>
