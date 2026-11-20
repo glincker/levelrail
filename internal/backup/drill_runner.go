@@ -11,6 +11,7 @@ import (
 	"log/slog"
 	"strconv"
 	"strings"
+	"sync"
 	"time"
 
 	"filippo.io/age"
@@ -68,6 +69,16 @@ type DrillRunner struct {
 	ScratchMemoryBytes int64
 	ScratchNanoCPUs    int64
 
+	// MaxConcurrentFn caps drills running at once; unset or non-positive uses DefaultDrillConcurrency.
+	MaxConcurrentFn func() int
+	// TimeoutFn bounds one drill; unset or non-positive uses DefaultDrillTimeout.
+	TimeoutFn func() time.Duration
+	// PidsLimit caps processes in drill helper containers; zero uses DefaultDrillPidsLimit.
+	PidsLimit int64
+
+	mu     sync.Mutex
+	active map[string]struct{}
+
 	// OnFailure is called once for every failed drill.
 	OnFailure func(ctx context.Context, d store.BackupDrill)
 	Logger    *slog.Logger
@@ -88,10 +99,63 @@ func (r *DrillRunner) log() *slog.Logger {
 	return slog.Default()
 }
 
+// Drill admission errors.
+var (
+	ErrDrillBusy     = errors.New("a restore drill for this backup is already running")
+	ErrDrillCapacity = errors.New("too many restore drills are running, try again later")
+)
+
+// Reserve claims the right to drill backupHistoryID and returns the release
+// func. It fails when that backup is already being drilled or the concurrency cap is reached.
+func (r *DrillRunner) Reserve(backupHistoryID string) (func(), error) {
+	limit := DefaultDrillConcurrency
+	if r.MaxConcurrentFn != nil {
+		if n := r.MaxConcurrentFn(); n > 0 {
+			limit = n
+		}
+	}
+	r.mu.Lock()
+	defer r.mu.Unlock()
+	if _, busy := r.active[backupHistoryID]; busy {
+		return nil, ErrDrillBusy
+	}
+	if len(r.active) >= limit {
+		return nil, ErrDrillCapacity
+	}
+	if r.active == nil {
+		r.active = map[string]struct{}{}
+	}
+	r.active[backupHistoryID] = struct{}{}
+	return func() {
+		r.mu.Lock()
+		delete(r.active, backupHistoryID)
+		r.mu.Unlock()
+	}, nil
+}
+
+func (r *DrillRunner) timeout() time.Duration {
+	if r.TimeoutFn != nil {
+		if t := r.TimeoutFn(); t > 0 {
+			return t
+		}
+	}
+	return DefaultDrillTimeout
+}
+
 // RunDrill executes one drill of backupHistoryID. The drill row is always
 // finished; the returned drill carries the outcome. A failed drill returns a
 // non-nil error describing it.
 func (r *DrillRunner) RunDrill(ctx context.Context, drillID, backupHistoryID, trigger string) (store.BackupDrill, error) {
+	release, err := r.Reserve(backupHistoryID)
+	if err != nil {
+		return store.BackupDrill{ID: drillID, BackupHistoryID: backupHistoryID, Trigger: trigger}, err
+	}
+	defer release()
+	return r.runReserved(ctx, drillID, backupHistoryID, trigger)
+}
+
+// runReserved is RunDrill for a caller that already holds the reservation.
+func (r *DrillRunner) runReserved(ctx context.Context, drillID, backupHistoryID, trigger string) (store.BackupDrill, error) {
 	started := r.now()
 	d := store.BackupDrill{
 		ID:              drillID,
@@ -108,7 +172,14 @@ func (r *DrillRunner) RunDrill(ctx context.Context, drillID, backupHistoryID, tr
 		return d, fmt.Errorf("start drill: %w", err)
 	}
 
-	runErr := r.execute(ctx, &d, bh)
+	runCtx, cancel := context.WithTimeout(ctx, r.timeout())
+	runErr := r.execute(runCtx, &d, bh)
+	if runErr != nil && runCtx.Err() != nil {
+		runErr = fmt.Errorf("drill stopped after %s: %w", r.timeout(), runCtx.Err())
+		r.sweepDrill(context.WithoutCancel(ctx), drillID)
+	}
+	cancel()
+	ctx = context.WithoutCancel(ctx)
 
 	d.DurationMS = r.now().Sub(started).Milliseconds()
 	d.FinishedAt = r.now().UTC().Format(time.RFC3339)
@@ -219,6 +290,7 @@ func (r *DrillRunner) drillVolume(ctx context.Context, d *store.BackupDrill, des
 		return errors.New("volume drills are not configured on this control plane")
 	}
 	scratch := "drill-" + d.ID
+	ctx = withHelperHardening(ctx, r.hardenHelper)
 
 	d.Stage = DrillStageDownload
 	hs, err := r.openObject(ctx, dest, bh)

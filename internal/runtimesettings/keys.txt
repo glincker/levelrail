@@ -65,6 +65,7 @@ backups.compose_restore_timeout
 backups.drill_interval_hours
 backups.drill_retention_days
 backups.drill_timeout
+backups.drill_max_concurrent
 backups.schedule_retain_default
 boot.deferred_stages
 boot.event_recheck

@@ -358,8 +358,13 @@ func (p *Protection) StartDrill(ctx context.Context, backupID string) (string, e
 	if err != nil {
 		return "", err
 	}
+	release, err := p.Drills.Reserve(backupID)
+	if err != nil {
+		return "", err
+	}
 	go func() { //nolint:gosec // deliberately not ctx: a drill outlives the request that started it
-		if _, err := p.Drills.RunDrill(context.Background(), id, backupID, store.DrillTriggerManual); err != nil && p.Logger != nil {
+		defer release()
+		if _, err := p.Drills.runReserved(context.Background(), id, backupID, store.DrillTriggerManual); err != nil && p.Logger != nil {
 			p.Logger.Error("backup: manual restore drill failed", slog.String("drill_id", id), slog.String("error", err.Error()))
 		}
 	}()

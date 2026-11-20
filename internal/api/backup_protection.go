@@ -287,7 +287,13 @@ func (rt *Router) handleStartBackupDrill(w http.ResponseWriter, r *http.Request)
 		writeError(w, http.StatusConflict, "restore drills are "+backup.DrillNotApplicable)
 		return
 	}
+	if !rt.authorizeDrillBackup(w, r, h) {
+		return
+	}
 	id, err := rt.backupProtection.StartDrill(r.Context(), req.BackupID)
+	if rt.writeDrillStartError(w, err) {
+		return
+	}
 	if err != nil {
 		rt.internalError(w, "api: start drill failed", err, slog.String("backup_id", req.BackupID))
 		return
