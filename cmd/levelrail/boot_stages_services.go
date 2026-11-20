@@ -473,7 +473,7 @@ func (s *bootState) startReconciler() {
 		networkPrefix:                b.ShortName,
 		firewallRulePrefix:           b.RuleCommentPrefix(),
 		instanceID:                   instanceID,
-		livenessTracker:              application.NewLivenessTracker(),
+		livenessTracker:              s.liveness(),
 		imageIDs:                     application.NewImageIDCache(reconcile.FullResyncFromEnv(os.Getenv)),
 		restartBackoff:               restartBackoff,
 		retainedDeploys:              &deployurls.Guard{Store: db, Max: deployurls.MaxUnreadyFromEnv(os.Getenv)},
@@ -591,4 +591,12 @@ func cloudRunBase(engineDir string) string {
 		return ""
 	}
 	return dir
+}
+
+// liveness returns the one shared liveness tracker, created on first use so alerting can observe it.
+func (s *bootState) liveness() *application.LivenessTracker {
+	if s.livenessTracker == nil {
+		s.livenessTracker = application.NewLivenessTracker()
+	}
+	return s.livenessTracker
 }
