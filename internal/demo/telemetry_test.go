@@ -182,8 +182,8 @@ func TestSeedAlertsAndOps(t *testing.T) {
 	s := seedStores(t, liveAnchor)
 
 	rules, err := s.Alerting.ListRules(ctx)
-	if err != nil || len(rules) != 8 {
-		t.Fatalf("rules = %d, err = %v, want 8", len(rules), err)
+	if err != nil || len(rules) != 10 {
+		t.Fatalf("rules = %d, err = %v, want 10", len(rules), err)
 	}
 	var firing int
 	for _, r := range rules {
