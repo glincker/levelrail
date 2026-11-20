@@ -782,5 +782,38 @@
     "zone": "Time zone",
     "zoneHelp": "Server time zone is {{zone}}. Backups and safety checks still run first.",
     "zoneInvalid": "Enter a valid time zone, for example Europe/Berlin."
+  },
+  "autoStatus": {
+    "state": {
+      "off": "Désactivées",
+      "paused": "En pause",
+      "blocked": "Bloquées",
+      "degraded": "Dégradées",
+      "ready": "Prêtes"
+    },
+    "summary": {
+      "off": "Les mises à jour automatiques sont désactivées, rien ne s'installe seul.",
+      "paused": "Les mises à jour automatiques sont en pause et reprendront d'elles-mêmes.",
+      "blocked": "Ce serveur ne peut pas se remplacer lui-même : {{reason}}",
+      "degraded": "Les vérifications de version échouent, aucune mise à jour ne peut démarrer : {{reason}}",
+      "ready": "Fonctionne. Les nouvelles versions s'installent dans la fenêtre ci-dessous."
+    },
+    "manual": {
+      "intro": "Mettez à jour depuis le serveur avec cette commande :",
+      "docker": "Sous Docker ? Récupérez une nouvelle image et recréez le conteneur."
+    },
+    "lastCheck": "Dernière vérification",
+    "failures": "Échecs de vérification consécutifs",
+    "nextTry": "Prochaine tentative",
+    "lastResult": "Dernier résultat",
+    "result": {
+      "applied": "Mis à jour",
+      "failed": "Échec",
+      "cancelled": "Annulé",
+      "missed": "Manqué",
+      "blocked": "Bloqué",
+      "pending": "En attente de la fenêtre",
+      "running": "En cours"
+    }
   }
 }

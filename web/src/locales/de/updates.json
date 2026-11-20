@@ -775,5 +775,38 @@
     "zone": "Time zone",
     "zoneHelp": "Server time zone is {{zone}}. Backups and safety checks still run first.",
     "zoneInvalid": "Enter a valid time zone, for example Europe/Berlin."
+  },
+  "autoStatus": {
+    "state": {
+      "off": "Aus",
+      "paused": "Pausiert",
+      "blocked": "Blockiert",
+      "degraded": "Eingeschränkt",
+      "ready": "Bereit"
+    },
+    "summary": {
+      "off": "Automatische Updates sind aus, es wird nichts von selbst installiert.",
+      "paused": "Automatische Updates sind pausiert und laufen von selbst weiter.",
+      "blocked": "Dieser Server kann sich nicht selbst ersetzen: {{reason}}",
+      "degraded": "Release-Prüfungen schlagen fehl, daher kann kein Update starten: {{reason}}",
+      "ready": "Funktioniert. Neue Releases werden im Fenster unten installiert."
+    },
+    "manual": {
+      "intro": "Aktualisiere stattdessen auf dem Server mit diesem Befehl:",
+      "docker": "Läuft der Server in Docker? Hole ein neues Image und erstelle den Container neu."
+    },
+    "lastCheck": "Letzte Prüfung",
+    "failures": "Fehlgeschlagene Prüfungen in Folge",
+    "nextTry": "Nächster Versuch",
+    "lastResult": "Letztes Ergebnis",
+    "result": {
+      "applied": "Aktualisiert",
+      "failed": "Fehlgeschlagen",
+      "cancelled": "Abgebrochen",
+      "missed": "Verpasst",
+      "blocked": "Blockiert",
+      "pending": "Wartet auf das Fenster",
+      "running": "Läuft"
+    }
   }
 }

@@ -768,5 +768,38 @@
     "zone": "Time zone",
     "zoneHelp": "Server time zone is {{zone}}. Backups and safety checks still run first.",
     "zoneInvalid": "Enter a valid time zone, for example Europe/Berlin."
+  },
+  "autoStatus": {
+    "state": {
+      "off": "オフ",
+      "paused": "一時停止中",
+      "blocked": "ブロック中",
+      "degraded": "低下",
+      "ready": "準備完了"
+    },
+    "summary": {
+      "off": "自動更新はオフです。自動ではインストールされません。",
+      "paused": "自動更新は一時停止中で、自動的に再開します。",
+      "blocked": "このサーバーは自分自身を置き換えられません: {{reason}}",
+      "degraded": "リリースの確認が失敗しているため、更新を開始できません: {{reason}}",
+      "ready": "正常です。新しいリリースは下の時間帯にインストールされます。"
+    },
+    "manual": {
+      "intro": "代わりにサーバー上でこのコマンドを実行して更新します:",
+      "docker": "Docker をお使いですか? 新しいイメージを取得してコンテナを作り直してください。"
+    },
+    "lastCheck": "前回の確認",
+    "failures": "連続した確認失敗",
+    "nextTry": "次の再試行",
+    "lastResult": "前回の結果",
+    "result": {
+      "applied": "更新済み",
+      "failed": "失敗",
+      "cancelled": "キャンセル",
+      "missed": "実行されず",
+      "blocked": "ブロック",
+      "pending": "時間帯を待機中",
+      "running": "実行中"
+    }
   }
 }

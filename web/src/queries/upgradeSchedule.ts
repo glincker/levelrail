@@ -67,6 +67,23 @@ export interface ScheduleRequest {
 
 export type PolicyMode = 'off' | 'patch' | 'any'
 
+export type AutoStatusState =
+  'off' | 'paused' | 'blocked' | 'degraded' | 'ready'
+
+// Mirrors upgradeAutoStatus in internal/api/updates_auto_status.go.
+export interface AutoStatus {
+  state: AutoStatusState
+  reason?: string
+  can_apply: boolean
+  last_check_at?: string
+  last_check_error?: string
+  check_failures: number
+  next_check_at?: string
+  last_result?: string
+  last_result_reason?: string
+  last_result_at?: string
+}
+
 export interface UpgradePolicy {
   mode: PolicyMode
   effective: PolicyMode | 'paused'
@@ -87,6 +104,7 @@ export interface UpgradePolicy {
   paused_until?: string
   health_window_seconds?: number
   notice?: { text: string; dismiss_url: string } | null
+  status?: AutoStatus
 }
 
 export type UpgradePolicyInput = Pick<

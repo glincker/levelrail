@@ -2,6 +2,7 @@ import { useId, useState } from 'react'
 import { useQuery } from '@tanstack/react-query'
 import { useTranslation } from 'react-i18next'
 import { ChevronRightGlassIcon, ClockGlassIcon } from '@thesvg/ui-react'
+import { ApiErrorAlert } from '@/components/ApiErrorAlert'
 import { Button } from '@/components/ui/button'
 import { Card, CardContent } from '@/components/ui/card'
 import { Field, FieldLabel } from '@/components/ui/field'
@@ -40,6 +41,7 @@ import {
   type UpgradePolicyInput,
 } from '@/queries/upgradeSchedule'
 import { cn } from '@/lib/utils'
+import { AutoUpdateStatus } from './AutoUpdateStatus'
 
 const LEVELS = ['patch', 'any'] as const
 const DAY_CHOICES: WindowDays[] = ['daily', 'weekdays', 'weekends']
@@ -384,6 +386,7 @@ function AutoUpdatesBody({
             ) : null}
           </div>
         </div>
+        {policy.status ? <AutoUpdateStatus status={policy.status} /> : null}
         {on ? (
           <div>
             <button
@@ -433,10 +436,8 @@ export function AutoUpdatesCard() {
   if (policy.isError) {
     return (
       <Card>
-        <CardContent className="flex items-center justify-between gap-3">
-          <p role="alert" className="text-sm text-destructive">
-            {t('quick.loadError')}
-          </p>
+        <CardContent className="space-y-3">
+          <ApiErrorAlert error={policy.error} />
           <Button
             type="button"
             size="sm"
