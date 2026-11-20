@@ -46,6 +46,8 @@ func (rt *Router) registerProjectRoutes(mux *http.ServeMux) {
 	mux.HandleFunc("POST /api/v1/projects/import/plan", rt.requireAbility(AbilityWriteSensitive, rt.handleImportProjectPlan))
 	mux.HandleFunc("POST /api/v1/projects/import", rt.requireAbility(AbilityWriteSensitive, rt.handleImportProject))
 	mux.HandleFunc("GET /api/v1/projects/{id}/topology", rt.requireAbility(AbilityRead, rt.handleGetProjectTopology))
+	mux.HandleFunc("GET /api/v1/projects/{id}/apps", rt.requireAbility(AbilityRead, rt.handleListProjectApps))
+	mux.HandleFunc("GET /api/v1/projects/{id}/databases", rt.requireAbility(AbilityRead, rt.handleListProjectDatabases))
 
 	// Organizations (organizations.go): groups projects, same ordinary
 	// AbilityRead/AbilityWrite boundary as projects above.

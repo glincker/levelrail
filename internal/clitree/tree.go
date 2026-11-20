@@ -143,7 +143,7 @@ var Tree = map[string]*Node{
 		}},
 		"auto-host":         nil,
 		"runtime":           {Subs: map[string]*Node{"show": nil, "set": nil}},
-		"projects":          {Subs: map[string]*Node{"create": nil, "list": nil, "get": nil, "delete": nil, "stop": nil, "start": nil, "restart": nil, "env-get": nil, "env-set": nil, "topology": nil, "export": nil, "import": nil, "show": nil, "backfill-default-env": nil}},
+		"projects":          {Subs: map[string]*Node{"create": nil, "list": nil, "get": nil, "delete": nil, "stop": nil, "start": nil, "restart": nil, "env-get": nil, "env-set": nil, "topology": nil, "apps": nil, "databases": nil, "export": nil, "import": nil, "show": nil, "backfill-default-env": nil}},
 		"environments":      {Subs: map[string]*Node{"create": nil, "list": nil, "update": nil, "delete": nil, "env-get": nil, "env-set": nil, "env-diff": nil, "clone-preview": nil, "clone": nil, "set-default": nil}},
 		"set-environment":   nil,
 		"move-env":          nil,

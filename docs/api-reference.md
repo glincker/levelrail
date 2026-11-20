@@ -1084,6 +1084,8 @@ Endpoints for:
 | POST | /api/v1/projects/{id}/export | AbilityWriteSensitive | handleExportProjectArchive |
 | POST | /api/v1/projects/import/plan | AbilityWriteSensitive | handleImportProjectPlan |
 | POST | /api/v1/projects/import | AbilityWriteSensitive | handleImportProject |
+| GET | /api/v1/projects/{id}/apps | AbilityRead | handleListProjectApps |
+| GET | /api/v1/projects/{id}/databases | AbilityRead | handleListProjectDatabases |
 
 ## Nodes
 

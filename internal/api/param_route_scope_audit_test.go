@@ -362,6 +362,8 @@ var paramRouteScopeAllowlist = map[string]string{ //nolint:gosec // route names 
 	"GET /api/v1/projects/{id}/export":                                                      "requireAbility, handler checks scope: handleExportProject",
 	"GET /api/v1/projects/{id}/quota":                                                       "requireAbility, handler checks scope: handleGetQuota",
 	"GET /api/v1/projects/{id}/topology":                                                    "requireAbility, handler checks scope: handleGetProjectTopology",
+	"GET /api/v1/projects/{id}/apps":                                                        "requireAbility, handler checks scope: handleListProjectApps",
+	"GET /api/v1/projects/{id}/databases":                                                   "requireAbility, handler checks scope: handleListProjectDatabases",
 	"GET /api/v1/registry-credentials/{id}":                                                 "requireAbility, handler checks scope: handleGetRegistryCredential",
 	"GET /api/v1/registry-credentials/{id}/dockerhub":                                       "requireAbility, handler checks scope: handleDockerHubStatus",
 	"GET /api/v1/registry-credentials/{id}/limits":                                          "requireAbility, handler checks scope: handleDockerHubLimits",

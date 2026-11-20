@@ -28,16 +28,8 @@ import (
 // the same requireAbility(AbilityRead/AbilityWrite, ...) shape apps.go
 // and databases.go already use, nothing new.
 //
-// There is deliberately no GET /api/v1/projects/{id}/apps or similar
-// server-side filtered listing: the project detail page
-// (web/src/routes/projects/$id.tsx) filters the same full
-// GET /api/v1/apps and GET /api/v1/databases responses the unfiltered
-// list pages already fetch (by project_id, a field toAppResource/
-// toDatabaseResource already includes in every row), the same
-// "additive organization, not a forced migration" principle that keeps
-// project_id nullable rather than reshaping either list endpoint's
-// contract. Revisit only if a real scale problem shows up; there is no
-// speculative server-side filtering surface built ahead of that.
+// GET /api/v1/projects/{id}/apps and /databases (project_resources.go) reuse
+// the global list handlers narrowed by project_id.
 
 // projectResource is the wire shape for a project: store.Project as-is,
 // the same direct-marshal choice appResource/databaseResource/
