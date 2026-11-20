@@ -202,4 +202,18 @@ Turn on "Skip previews for draft pull requests" (setting `deploy.preview_skip_dr
 
 ## Require a label
 
-`levelrail-cli apps previews settings web --require-label preview` builds a preview only for pull requests that carry that label, and adding the label later starts the build. GitHub and GitLab send labels with the event; other providers are never gated. An empty value clears the gate.
+Set `require_label` on the app's preview policy (`PUT /api/v1/apps/{name}/preview-policy`, up to 100 characters, no control characters) or run `levelrail-cli apps previews settings web --require-label preview`. A pull request or merge request then gets a preview only when it carries that label. The match ignores case, so `Preview` matches `preview`. An empty value clears the gate, and every pull request builds again.
+
+- A pull request without the label is ignored, and the webhook reply says that previews build once it is added.
+- Adding the label starts the build. On GitHub, a "labeled" event for any other label is ignored, so unrelated labels do not redeploy the preview. Pushes to a labeled pull request build as usual.
+- With no gate set, a "labeled" event on GitHub is ignored too.
+- Draft pull requests are still skipped first when "Skip previews for draft pull requests" is on, then the label is checked.
+- Closing a pull request always removes its preview. Changing or clearing the gate only affects later events and does not touch previews that already exist.
+
+| Provider | Label gate |
+| --- | --- |
+| GitHub | Applied |
+| GitLab | Applied |
+| Other providers | Never gated, their webhook payload has no labels |
+
+In the dashboard, the same setting is the "Required label" field on the app's Previews page, in the preview policy card (shown for apps with pull request previews), next to "Services left out". Each field has its own Save button, enabled once the value differs from what is saved, and a toast confirms "Preview settings saved." The label hint reads: "Only pull requests with this label get a preview, and adding it starts the build. GitHub and GitLab only. Empty builds every pull request." "Services left out" takes comma separated service names of a multi-service app (placeholder `worker, docs`) and is the same list as `--exclude-services` above. Its hint reads: "Comma separated services of a multi-service app that previews skip. At least one must remain."
