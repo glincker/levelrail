@@ -88,10 +88,23 @@ export function BuildersSection() {
                     {b.architecture ?? '-'}
                   </td>
                   <td className="px-3 py-2 tabular-nums text-muted-foreground">
-                    {t('builders.buildsNow', {
-                      used: b.slots_used,
-                      total: b.slots_total,
-                    })}
+                    {b.active_builds === undefined ? (
+                      t('builders.buildsNow', {
+                        used: b.slots_used,
+                        total: b.slots_total,
+                      })
+                    ) : (
+                      <>
+                        <span className="text-foreground">
+                          {t('builders.activeBuilds', {
+                            active: b.active_builds,
+                          })}
+                        </span>
+                        <span className="ml-1.5 text-xs">
+                          {t('builders.slotsTotal', { total: b.slots_total })}
+                        </span>
+                      </>
+                    )}
                   </td>
                   <td className="px-3 py-2 text-muted-foreground">
                     {b.last_seen_at ? (

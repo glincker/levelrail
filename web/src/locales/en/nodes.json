@@ -1181,6 +1181,8 @@
       "once": "Shown once. Copy it now.",
       "done": "Done"
     },
-    "tierFor": "Tier of {{name}}"
+    "tierFor": "Tier of {{name}}",
+    "activeBuilds": "{{active}} building",
+    "slotsTotal": "{{total}} slots"
   }
 }

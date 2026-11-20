@@ -14,6 +14,8 @@ export type RunnerKind = 'control_plane' | 'node'
 export type RunnerStatus =
   'ready' | 'busy' | 'pressure' | 'draining' | 'offline'
 
+export type RunnerMode = 'auto' | 'control_plane' | 'node'
+
 export interface BuildRunner {
   id: string
   name: string
@@ -22,6 +24,7 @@ export interface BuildRunner {
   health: string
   slots_used: number
   slots_total: number
+  active_builds?: number
   waiting: number
   load: number
   pressure: string
@@ -43,12 +46,14 @@ export interface BuildRunnersView {
 
 export interface AppBuildRunner {
   app?: string
+  mode?: RunnerMode
   node_id: string
   pinned: boolean
   labels: string[] | null
 }
 
 export interface AppBuildRunnerInput {
+  mode: RunnerMode
   node_id: string
   pinned: boolean
   labels: string[]

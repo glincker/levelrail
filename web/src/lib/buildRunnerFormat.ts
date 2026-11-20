@@ -1,5 +1,5 @@
 import type { StatusState } from '@/components/kit/tone'
-import type { RunnerStatus } from '../queries/buildRunners'
+import type { RunnerMode, RunnerStatus } from '../queries/buildRunners'
 
 // Slot use as a whole percent; a runner with no slots reads as empty, never NaN.
 export function capacityPercent(used: number, total: number): number {
@@ -40,4 +40,12 @@ export function parseLabels(raw: string): string[] {
         .filter(Boolean),
     ),
   )
+}
+
+// Mirrors the server: node mode needs a builder, control plane mode takes none.
+export function validateRunnerMode(
+  mode: RunnerMode,
+  nodeId: string,
+): 'nodeNeeded' | null {
+  return mode === 'node' && nodeId === '' ? 'nodeNeeded' : null
 }

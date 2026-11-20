@@ -59,6 +59,7 @@ describe('BuildersSection', () => {
                   health: '',
                   slots_used: 1,
                   slots_total: 2,
+                  active_builds: 1,
                   waiting: 0,
                   load: 0,
                   pressure: '',
