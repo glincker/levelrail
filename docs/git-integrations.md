@@ -10,8 +10,6 @@ Connect a git provider once for the whole control plane, then point any number o
 
 No provider at all? A [git push remote on your own server](/git-push-deploy) (beta) deploys a pushed branch with no webhook.
 
-This page covers connecting a provider, using a repository as an app's source, deploy triggers and path filters, deploying a commit by hand, monorepo build settings, webhook handling and replay, and per-pull-request previews.
-
 <Tip>
 Fastest path: connect the provider in the dashboard ([Connect a provider](#connect-a-provider)), then run `levelrail-cli github-app use-as-source <owner> <repo> --app-name my-app`. Pushes to the default branch deploy from then on.
 </Tip>
@@ -40,12 +38,10 @@ Webhook registration, branch listing and build detection still use the provider 
 
 ## Provider connections and git sources
 
-Two records are involved, and keeping them separate is deliberate.
+Two records are involved, kept separate on purpose.
 
 - A **provider connection** (a GitHub App installation, or a GitLab, Bitbucket or Gitea account authorized through an OAuth application) is a control-plane-wide credential that can see many repositories across many organizations or workspaces. You can connect several of each kind: see [Connecting more than one account](#connecting-more-than-one-account).
 - An app's **git source** (`GET/PUT/DELETE /api/v1/apps/{name}/git-source`) is a per-app record: one repository URL, one branch, one build configuration, one webhook secret, and one [deploy trigger mode](#deploy-triggers-push-or-release). Each app has its own webhook secret and its own enable and disable state.
-
-So you connect GitHub once, wire ten apps to ten different repositories, and never paste a personal token into an app by hand.
 
 ### Provider differences
 
@@ -56,13 +52,13 @@ So you connect GitHub once, wire ten apps to ten different repositories, and nev
 | **Bitbucket** | OAuth consumer you register | Long-lived | Bitbucket Cloud only |
 | **Gitea** | OAuth2 Application you register | Long-lived, refreshed | Almost always, via `instance_url` |
 
-All four support webhooks, [preview environments](/previews), and PR comments and commit statuses. GitHub's manifest flow creates the App on GitHub's side for you. GitLab, Bitbucket, and Gitea need you to create the application in their own settings first and paste its credentials in.
+All four support webhooks, [preview environments](/previews), and PR comments and commit statuses. GitHub's manifest flow creates the App for you; for the other three, create the application in the provider's settings first and paste its credentials in.
 
 `GET /api/v1/git-providers` (and `levelrail-cli git-providers`) answers "what can I do with each provider?" in one call: whether it is connected, can list branches, can register a webhook, and can authenticate a clone. The dashboard's repository picker uses it.
 
 ## Connect a provider
 
-Connecting is done in the dashboard on purpose. Each flow ends in a real browser redirect to github.com, your GitLab instance, or bitbucket.org, which a script or the CLI cannot drive. The CLI can register, rename, list and disconnect accounts, and print the authorize path to open in a browser.
+Connect in the dashboard: each flow ends in a browser redirect to the provider, which a script or the CLI cannot drive. The CLI can register, rename, list and disconnect accounts, and print the authorize path to open in a browser.
 
 <Note>
 All four need a master key configured on the control plane, the same one that encrypts every secret. Routes that need it return `501` without one. GitHub's manifest flow also needs a primary domain set in ingress settings first, because GitHub needs a reachable callback URL. Without one you get a `409` that says so.
@@ -124,7 +120,7 @@ Register an OAuth2 application in Gitea, then paste its `instance_url`, `client_
 </Tab>
 </Tabs>
 
-To disconnect GitHub, call `DELETE /api/v1/github-app`. To disconnect one GitLab, Bitbucket or Gitea account, call `DELETE /api/v1/git-connections/{id}` (or press Disconnect on its row). Either removes the connection and its secrets from the control plane, revokes the OAuth token at GitLab, and answers `{disconnected, token_revoked, note, affected_sources}`. It does not uninstall the GitHub App or delete the application on the provider's side; the note says where to do that. Other connected accounts are not touched.
+To disconnect GitHub, call `DELETE /api/v1/github-app`. To disconnect one GitLab, Bitbucket or Gitea account, call `DELETE /api/v1/git-connections/{id}` (or press Disconnect on its row). Either removes the connection and its secrets from the control plane, revokes the OAuth token at GitLab, and answers `{disconnected, token_revoked, note, affected_sources}`. GitLab's token is revoked at GitLab; GitHub (installation tokens are minted per call and never stored), Bitbucket and Gitea have nothing the control plane can revoke. It does not uninstall the GitHub App or delete the application on the provider's side; the note says where to do that. Other connected accounts are not touched.
 
 ### Connect with a token instead
 
@@ -239,8 +235,6 @@ API calls that hit a `needs_reauthorize` or `revoked` connection answer `409` wi
 
 GitLab, Bitbucket and Gitea refresh their OAuth tokens one caller at a time per connection. A caller that waited reuses the token another caller just refreshed, and a refresh token is never spent twice, so concurrent requests cannot break a provider that rotates refresh tokens.
 
-Disconnecting a provider reports what happened on the provider's side: GitLab's token is revoked at GitLab; GitHub (installation tokens are minted per call and never stored), Bitbucket and Gitea have nothing the control plane can revoke, and the response says where to remove the grant by hand.
-
 GitLab asks for the broad `api` OAuth scope, because it is the one scope that covers listing projects and registering webhooks. It grants read and write on everything the connecting account can see. Connect with a dedicated, least-privileged GitLab account or a bot user if that is too wide.
 
 ## Use a repository as an app's source
@@ -342,6 +336,8 @@ With `report_status` on (the default), the control plane reports to the provider
 - GitHub deploys get a Deployments API entry for each push deploy (environment `production`) and each pull request preview (environment `preview`), moving through `in_progress` to `success` or `failure`. A newer successful deploy marks earlier ones in the same environment `inactive`, a partially failed multi-service deploy is `failure`, a superseded deploy is `inactive`, and closing a pull request marks its preview deployment `inactive`. A deployment the provider refuses to create is kept as an `error` row with the reason.
 
 GitHub Apps registered recently request `statuses: write` and `deployments: write`. An App registered earlier needs those permissions added and accepted in GitHub, otherwise posts fail with a warning and nothing else changes. A failed post never fails a deploy or run.
+
+**GitLab deployments and environments.** With `git.gitlab_deployments` on (off by default), a deploy of an app whose source is on GitLab creates an environment named `<app>/production` or `<app>/preview-<n>` and a deployment with status `running`, then `success`, `failed` or `canceled` when the deploy ends. The environment links to the app URL, or to the app's deployments page when it has none. Closing a merge request stops its preview environment. The call needs a token with the `api` scope and Developer access on the project: when the connection's stored scopes lack `api`, the `deployments_report` capability reads `needs_scope` and nothing is sent. Set `git.gitlab_deployments_connections` to limit reporting to chosen connections. Each post and each failure shows on the app timeline with the error text masked.
 
 Turn reporting off for one app with `levelrail-cli apps git-source settings my-app --report-status=false`, or for the whole server with `APP_GIT_STATUS_ENABLED=false`. GitHub `merge_group` events route to pipelines with a `merge_group` trigger; subscribe the repository webhook to the "Merge groups" event.
 
@@ -710,11 +706,6 @@ The `root` tier covers routes that read or write credential material itself, the
 Bitbucket's `repo:push` payload marks each change as a branch or a tag, but the webhook parser discards that and always treats the change as a branch. A Bitbucket tag push is therefore never recognized, so `release` mode never deploys from Bitbucket. This fails closed: a tag push simply does not deploy.
 
 </Accordion>
-<Accordion title="GitLab and Gitea release events are not wired up">
-
-Both have their own release webhook events that Levelrail does not subscribe to. A tag push on either still triggers `release` mode correctly.
-
-</Accordion>
 <Accordion title="Private GitLab, Bitbucket, and Gitea repositories need a deploy token">
 
 `use-as-source` connects the repository and registers the webhook, but does not carry the OAuth token forward as the git source's deploy token. A private repository only builds once you paste a personal access token into the app's git source card. GitHub does not have this gap, because its installation token is minted fresh on every call. Likewise `can_auth_clone` in `GET /api/v1/git-providers` is true only for GitHub.
@@ -723,11 +714,6 @@ Both have their own release webhook events that Levelrail does not subscribe to.
 <Accordion title="GitHub Enterprise Server is not tested against a live instance">
 
 A GitHub Enterprise Server connection uses the instance's own host for the App, for listing and for authenticated clones: a repository URL on the connected instance's host gets the installation token, exactly like `github.com`. This is covered by unit tests only; it has not been run against a live Enterprise Server.
-
-</Accordion>
-<Accordion title="Disconnecting only revokes the token on GitLab">
-
-Disconnecting deletes the local connection and its secrets and, for GitLab, revokes the OAuth token. It never uninstalls the GitHub App or deletes the OAuth application on any provider, and Bitbucket and Gitea offer no API to revoke a token. The disconnect response and the toast say which of these applied.
 
 </Accordion>
 </AccordionGroup>
@@ -740,19 +726,11 @@ A push can reach a git source without a webhook ever being called: the webhook a
 
 ### Webhook is not triggering deploys
 
-**Likely cause:** The provider connection is not set up, the webhook is not registered on the repository, or the webhook is pointing to the wrong URL.
+**Likely cause:** The provider is not connected, the webhook is not registered or points to the wrong URL, or the pushed branch does not match the configured trigger branch.
 
-**How to confirm:** In the dashboard, go to Settings > Git integrations. Check that the provider is connected. Then open the app's git source settings and verify the webhook secret is present and the status shows "registered".
+**How to confirm:** In the dashboard, open Settings, Git connections and check the provider is connected. Then open the app's Source tab: the branch must match the pushed branch, the webhook secret must be present and the status should show "registered". The deliveries panel and the provider's own delivery logs show whether the request arrived. Control plane logs: `journalctl -u levelrail | grep webhook`.
 
-**Fix:** Reconnect the provider if needed. Make sure the app's git source has a valid webhook secret. If the webhook URL changed (for example, domain migration), re-register it by disabling and re-enabling the git source.
-
-### Build does not start after a push
-
-**Likely cause:** The webhook is not configured, the app is not listening for webhooks, or the branch does not match the configured trigger branch.
-
-**How to confirm:** Check the app's git source in the dashboard (App > Source). Verify the branch matches the pushed branch. Check webhook history in the dashboard if available.
-
-**Fix:** Verify the trigger branch matches where you are pushing. If the webhook is registered but not triggering, check the provider's webhook delivery logs (on GitHub, GitLab, etc.). The control plane logs may also show webhook errors: `journalctl -u levelrail | grep webhook`.
+**Fix:** Reconnect the provider if needed and correct the trigger branch. If the webhook URL changed (for example after a domain migration), re-register it by disabling and re-enabling the git source.
 
 ### Repository credentials are wrong
 
@@ -764,7 +742,7 @@ A push can reach a git source without a webhook ever being called: the webhook a
 
 ### Still stuck
 
-For help with git integrations, check the webhook history in the dashboard (if available) or provider's webhook delivery logs. Run `levelrail-cli github-app repos` (or the equivalent for other providers) to verify the connection is working.
+Check the webhook history on the app's Source tab and the provider's own delivery logs. Run `levelrail-cli github-app repos` (or `git-providers repos <provider>`) to verify the connection works.
 
 <CardGroup cols={2}>
 <Card title="Deploying and managing apps" href="/deploying-apps">
@@ -788,7 +766,3 @@ The deployment spec behind multi-service deploys.
 
 </Card>
 </CardGroup>
-
-## GitLab deployments and environments
-
-With `git.gitlab_deployments` on (off by default), a deploy of an app whose source is on GitLab creates an environment named `<app>/production` or `<app>/preview-<n>` and a deployment with status `running`, then `success`, `failed` or `canceled` when the deploy ends. The environment links to the app URL, or to the app's deployments page when it has none. Closing a merge request stops its preview environment. The call needs a token with the `api` scope and Developer access on the project: when the connection's stored scopes lack `api`, the `deployments_report` capability reads `needs_scope` and nothing is sent. Set `git.gitlab_deployments_connections` to limit reporting to chosen connections. Each post and each failure shows on the app timeline with the error text masked.

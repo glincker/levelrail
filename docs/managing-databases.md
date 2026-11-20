@@ -68,6 +68,21 @@ A database's Overview tab shows its connection details, resource usage, and the 
 
 Omit `node_id` at creation to let the control plane pick a node, or pass it to choose one. To move an existing database, use `levelrail-cli databases set-node <name> <node-id>` (or `PUT /api/v1/databases/{name}/node`), and `databases clear-node <name>` to move it back to the local node. Placement is fleet-level infrastructure, so it needs the `root` ability.
 
+### What happens when you create a database
+
+The dashboard (and `levelrail-cli databases create --wait`) shows each step. `levelrail-cli databases status <name>` prints the latest attempt, and the API serves it at `GET /api/v1/databases/{name}/provision` (live stream at `.../provision/stream`).
+
+1. Request accepted: the database is saved and queued.
+2. Check Docker: the node must answer. If it does not, the step fails with a Re-check Docker action.
+3. Download the image: shown with a percentage and layer count. Failures here usually mean the registry is unreachable or the image tag does not exist; use Retry.
+4. Create storage: the data volume. A leftover volume from a deleted database of the same name offers "Remove leftover volume and retry", which asks for explicit confirmation because it deletes that data.
+5. Credentials and TLS: generated credentials and certificates. A failure means no secrets master key is configured.
+6. Create the container and 7. Start the database: port or name conflicts fail here; Retry re-runs reconciliation.
+8. Wait for connections: the container must stay running after start.
+9. Apply size and backups, then 10. Ready.
+
+A failed step marks every later step as skipped. Retry starts a new attempt; the last few attempts are kept (`APP_DB_PROVISION_KEEP_ATTEMPTS`, default 5), and progress events are throttled by `APP_DB_PROVISION_EVENT_INTERVAL` (default 500ms).
+
 ## Supported engines
 
 `GET /api/v1/database-engines` serves the live list, which the dashboard's creation wizard and `databases create --interactive` read.
@@ -100,7 +115,7 @@ Three Postgres flavors run an allowlisted extension image. The engine stays `pos
 | TimescaleDB | `17-timescaledb` | `timescale/timescaledb:latest-pg17` | 15 |
 | PostGIS | `17-postgis` | `postgis/postgis:17-3.5` (`18-3.6` for Postgres 18) | 13 |
 
-Create the extension inside the database after it starts, for example `CREATE EXTENSION timescaledb;` or `CREATE EXTENSION postgis;`. The dashboard picker shows each flavor as its own card, and the database detail page shows the flavor next to the version.
+Create the extension inside the database after it starts, for example `CREATE EXTENSION timescaledb;` or `CREATE EXTENSION postgis;`. The dashboard picker shows each flavor as its own card, and the database detail page shows the flavor next to the version. The Postgres create form also has a **Postgres image** selector.
 
 ```bash
 levelrail-cli databases create --name geo --engine postgres --version 17-postgis
@@ -110,13 +125,11 @@ Flavors have no pinned patch tags, so the upgrade advisor offers no patch target
 
 ### Postgres with pgvector
 
-A Postgres version written `<major>-pgvector` (for example `17-pgvector`) runs the `pgvector/pgvector:pg17` image, so `CREATE EXTENSION vector` works. The engine stays `postgres`: backups, point-in-time restore, TLS, the database viewer, data copy, and the guarded major upgrade all behave the same. Only `<major>-pgvector` with Postgres 13 or newer is accepted; anything else mentioning pgvector is rejected with a `400`.
+The `<major>-pgvector` flavor from the table above (for example `17-pgvector`) runs the `pgvector/pgvector:pg17` image, so `CREATE EXTENSION vector` works. Only `<major>-pgvector` with Postgres 13 or newer is accepted; anything else mentioning pgvector is rejected with a `400`.
 
 ```bash
 levelrail-cli databases create --name vec --engine postgres --version 17-pgvector
 ```
-
-The dashboard create form has a **Postgres image** selector for Postgres, and the picker has a pgvector card.
 
 <Warning>
 The plain and pgvector images are built on different Debian releases, so a database cannot be switched between them with `set-version`: a glibc collation change can silently corrupt indexes.
@@ -223,6 +236,10 @@ levelrail-cli databases bulk stop db-a db-b --confirm-count 2 --output json
 Every database is authorized on its own at the same ability as the single-database action (`write:sensitive`), and gets its own audit row. `--dry-run` (`dry_run: true`) returns the plan, what would run and what is skipped and why, and changes nothing. A real stop needs `confirm_count` equal to the number of targets, and refuses databases in a protected environment (stop those one at a time). Results are `ok`, `skipped` (with a reason code), `denied`, `protected`, `not_found` or `error`, in a 207 response. How many databases run at once and how many one call may target are the runtime settings `databases.bulk_concurrency` and `databases.bulk_max_items`.
 
 Each row also has a menu with Open, Back up now and Copy connection string. The copied string holds a `<password>` placeholder, never the real password.
+
+### Keyboard on list pages
+
+The Apps, Databases and Builds lists share one keyboard layer. `j` and `k` move between rows, `x` selects the focused row, `Enter` opens it, `/` jumps to the filter and `?` shows or hides the shortcut line. Keys are ignored while you type in a field, and row scrolling is instant when reduced motion is on. Active filters show as chips with a clear-all; a filter that hides every row says so instead of looking like an empty list.
 
 ### Reusing a name after a delete
 
@@ -714,11 +731,6 @@ Backups are DDL plus rows as SQL. The image's entrypoint puts `CLICKHOUSE_DB` an
 Backups are RDB snapshots. KeyDB images ship `keydb-cli` instead of `redis-cli`, so the upgrade health check and the connection probe use whichever client the image has and report a failure if it has neither. This was checked against the repo's local Docker KeyDB test, not on a real host. The Dragonfly image ships no client, so its health check and connection probe send PING, INFO and CONFIG GET over a bash `/dev/tcp` socket on port 6379 inside the container, and report a failure if the image has no bash. Only the script text and its parsing are tested; it has not been run against the real Dragonfly image. Dragonfly starts one io thread per CPU and refuses to start when the threads times 256MiB exceed the available memory, which a many-core host with little RAM can hit and loop on forever. Set `APP_DRAGONFLY_PROACTOR_THREADS` (for example `2`) on the control plane to cap it for Dragonfly databases created or recreated afterward. An existing container keeps the command it was created with: remove it so the reconciler recreates it (the data volume is kept).
 
 </Accordion>
-<Accordion title="Redis, KeyDB, and Dragonfly authentication">
-
-These run passwordless by default, so `username` and `database` fields do not apply, and public access needs the explicit confirmation described above.
-
-</Accordion>
 </AccordionGroup>
 
 ## Slow query log
@@ -895,10 +907,7 @@ The backup schedule has no `databases` subcommand: use `backups schedule set`, o
 ### Known limits
 
 - Deleting a backup target leaves its stored credentials in the secrets store, unreferenced but not erased at rest.
-- A scheduled backup missed while the control plane is down is not replayed on restart.
 - Physical base backups for point-in-time restore follow each scheduled dump unless the database has its own base backup schedule (`pitr enable --base-backup-cron`, the API `base_backup_schedule` field, or the dashboard field), which runs independently of the dump schedule. Without either, they are manual.
-- Connection strings only switch to the TLS form for Postgres, Redis and Valkey. MySQL, MariaDB and MongoDB serve TLS next to plaintext and leave the client to ask for it.
-- MongoDB has no point-in-time restore.
 
 ## Next steps
 
@@ -939,21 +948,19 @@ Browse schemas and rows, or run read-only SQL.
 
 ### Database creation fails with "Error: database already exists"
 
-Likely cause: A database with that name already exists, either running or stopped.
+Likely cause: A database with that name already exists, running or stopped.
 
-How to confirm: Run `levelrail-cli databases list` and check if the name is in the list. Dashboard: go to Databases page and search for the name.
+How to confirm: `levelrail-cli databases list`, or search the Databases page.
 
 Fix: Choose a different name, or delete the existing database first with `levelrail-cli databases delete <existing-name> --confirm <existing-name>` if you no longer need it.
-
-Still stuck: See [Deleting databases](/managing-databases#stop-start-and-delete) for the full delete process.
 
 ### Database creation hangs or stays in "pending" state
 
 Likely cause: The reconciler has not processed the database resource yet, or Docker ran out of disk space on the node where it is being placed.
 
-How to confirm: Check the database status with `levelrail-cli databases status <name>`. If it shows a condition, read the reason. On the dashboard, go to Databases > your database > Overview, and look at the status card. If status shows "pending" for more than 2 minutes, check the control plane logs for errors: `levelrail logs --since 5m | grep database`.
+How to confirm: `levelrail-cli databases status <name>` (or the status card on the database's Overview) shows the condition and reason. If it stays "pending" for more than 2 minutes, check the control plane logs: `levelrail logs --since 5m | grep database`.
 
-Fix: Wait a minute for the next reconcile pass (which runs every 15 seconds). If it is still pending after 3 minutes, check node disk space with `levelrail-cli nodes list` and look for "Free" under the relevant node. If a node is running out of disk, delete old containers or images with `docker system prune` on that node.
+Fix: Wait a minute for the next reconcile pass (every 15 seconds). If it is still pending after 3 minutes, check the node's free disk space with `levelrail-cli nodes list`, and delete old containers or images with `docker system prune` on that node if it is running out.
 
 Still stuck: Check the reconciler logs with `levelrail logs database <name>` or read the full resource status: `levelrail-cli databases get <name> --output json | jq '.status'`.
 
@@ -965,7 +972,7 @@ How to confirm: Check where the database is running: `levelrail-cli databases st
 
 Fix: Ensure both app and database are on the same node (use `levelrail-cli databases set-node <name> <node-id>`), or verify that WireGuard mesh networking is enabled and working between nodes. For single-node setups, they should both run on the local node by default.
 
-Still stuck: See [Connecting apps to databases](/connecting-apps-to-databases) and [Network topology](/network-topology) for cross-node reachability.
+See also [Connecting apps to databases](/connecting-apps-to-databases) and [Network topology](/network-topology) for cross-node reachability.
 
 ### Database volume failed to mount or "permission denied" on data files
 
@@ -976,23 +983,3 @@ How to confirm: SSH to the node and check if the volume exists: `docker volume l
 Fix: If the volume exists but is unmounted, try restarting the database: `levelrail-cli databases stop <name> && levelrail-cli databases start <name>`. If the volume is missing or corrupted, restore from a backup: `levelrail-cli backups list <name>`, then `levelrail-cli backups restore <name> --backup <id>`.
 
 Still stuck: See [Backup recovery](/backups-and-storage) for full recovery procedures.
-
-
-## What happens when you create a database
-
-The dashboard (and `levelrail-cli databases create --wait`) shows each step. `levelrail-cli databases status <name>` prints the latest attempt, and the API serves it at `GET /api/v1/databases/{name}/provision` (live stream at `.../provision/stream`).
-
-1. Request accepted: the database is saved and queued.
-2. Check Docker: the node must answer. If it does not, the step fails with a Re-check Docker action.
-3. Download the image: shown with a percentage and layer count. Failures here usually mean the registry is unreachable or the image tag does not exist; use Retry.
-4. Create storage: the data volume. A leftover volume from a deleted database of the same name offers "Remove leftover volume and retry", which asks for explicit confirmation because it deletes that data.
-5. Credentials and TLS: generated credentials and certificates. A failure means no secrets master key is configured.
-6. Create the container and 7. Start the database: port or name conflicts fail here; Retry re-runs reconciliation.
-8. Wait for connections: the container must stay running after start.
-9. Apply size and backups, then 10. Ready.
-
-A failed step marks every later step as skipped. Retry starts a new attempt; the last few attempts are kept (`APP_DB_PROVISION_KEEP_ATTEMPTS`, default 5), and progress events are throttled by `APP_DB_PROVISION_EVENT_INTERVAL` (default 500ms).
-
-## Keyboard on list pages
-
-The Apps, Databases and Builds lists share one keyboard layer. `j` and `k` move between rows, `x` selects the focused row, `Enter` opens it, `/` jumps to the filter and `?` shows or hides the shortcut line. Keys are ignored while you type in a field, and row scrolling is instant when reduced motion is on. Active filters show as chips with a clear-all; a filter that hides every row says so instead of looking like an empty list.
