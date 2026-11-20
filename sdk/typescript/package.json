@@ -1,0 +1,32 @@
+{
+  "name": "levelrail-sdk-placeholder",
+  "version": "0.1.0",
+  "description": "Typed TypeScript client for the Levelrail control plane API. Zero runtime dependencies.",
+  "private": true,
+  "type": "module",
+  "license": "Apache-2.0",
+  "engines": {
+    "node": ">=20"
+  },
+  "sideEffects": false,
+  "main": "./dist/index.js",
+  "types": "./dist/index.d.ts",
+  "exports": {
+    ".": {
+      "types": "./dist/index.d.ts",
+      "default": "./dist/index.js"
+    }
+  },
+  "files": [
+    "dist",
+    "README.md"
+  ],
+  "scripts": {
+    "build": "tsc -p tsconfig.json",
+    "generate": "node ../../scripts/gen-ts-sdk.mjs",
+    "test": "node --test test/*.test.ts test/*.test.mjs"
+  },
+  "devDependencies": {
+    "typescript": "^5.9.0"
+  }
+}
