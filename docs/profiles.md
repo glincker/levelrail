@@ -32,7 +32,7 @@ A pipeline engine that only polls while a run is active, a retention default tha
 At install time:
 
 ```bash
-curl -fsSL https://levelrail.com/install.sh | sudo sh -s -- --profile minimal
+curl -fsSL https://github.com/glincker/levelrail/releases/latest/download/install.sh | sudo sh -s -- --profile minimal
 ```
 
 `LEVELRAIL_PROFILE=minimal` does the same. The installer writes `Environment=APP_SERVER_PROFILE=minimal` to the systemd drop-in and keeps it on upgrades. A machine with under 2 GB of RAM is told that minimal fits it, but is never switched silently.

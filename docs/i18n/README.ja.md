@@ -4,7 +4,7 @@
 <h1>Levelrail</h1>
 <p><strong>自分のサーバーへ、git push で本番デプロイ。</strong><br>
 Go 製の単一バイナリで動くセルフホスト型デプロイプラットフォームです。コントロールプレーンはアイドル時に約 200 MB の RAM を使い（<a href="../../docs/performance.md">計測値</a>）、570+ のワンクリックアプリ、ロールバック、プレビュー、HTTPS、データベースを標準で備えています。</p>
-<p><code>curl -fsSL https://levelrail.com/install.sh | sudo sh</code> &middot; <a href="https://demo.levelrail.com"><b>ライブデモを試す</b></a></p>
+<p><code>curl -fsSL https://github.com/glincker/levelrail/releases/latest/download/install.sh | sudo sh</code> &middot; <a href="https://demo.levelrail.com"><b>ライブデモを試す</b></a></p>
 <p>
   <a href="https://github.com/glincker/levelrail/stargazers"><img src="https://img.shields.io/github/stars/glincker/levelrail?style=flat&logo=github" alt="GitHub スター数"></a>
   <a href="../../LICENSE"><img src="https://img.shields.io/github/license/glincker/levelrail" alt="ライセンス：Apache 2.0"></a>
@@ -36,7 +36,7 @@ v1.x。単一サーバーは本番運用可能で、マルチノードはベー�
 systemd と root 権限を持つ Linux サーバー（amd64 または arm64）が必要です。インストーラーが Docker を追加します。ポート 80 と 443 を開けてください。
 
 ```bash
-curl -fsSL https://levelrail.com/install.sh | sudo sh
+curl -fsSL https://github.com/glincker/levelrail/releases/latest/download/install.sh | sudo sh
 ```
 
 1. インストーラーが表示するセットアップリンクを開き、パスワードを設定します。これで管理者アカウントが作成されます。
@@ -163,7 +163,7 @@ levelrail-cli import https://github.com/your-org/your-app --deploy
 259 の [MCP ツール](../../docs/mcp.md)は、トークンの権限にスコープが限定され、書き込みは確認が必須で、監査されます。`npx skills add https://github.com/glincker/levelrail --skill levelrail` でスキルを追加し、エージェントにリポジトリのデプロイを頼んでください。エージェントでインストールするには、サーバー上でシェルコマンドを実行できる Claude Code、Cursor などのエージェントに、次の内容を貼り付けます。
 
 ```text
-Install Levelrail on this server: run `curl -fsSL https://levelrail.com/install.sh | sudo sh`.
+Install Levelrail on this server: run `curl -fsSL https://github.com/glincker/levelrail/releases/latest/download/install.sh | sudo sh`.
 Open the setup link it prints and tell me, because I choose the password myself.
 Then run `levelrail-cli doctor` and `levelrail-cli status` and report anything that fails.
 Do not write any token or password to a file or into this chat.

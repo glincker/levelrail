@@ -232,7 +232,7 @@ deploy:
   image: alpine:3
   script:
     - apk add --no-cache curl
-    - curl -fsSL https://levelrail.com/install-cli.sh | sh
+    - curl -fsSL https://github.com/glincker/levelrail/releases/latest/download/install-cli.sh | sh
     - levelrail-cli pages deploy ./dist --name docs
   variables:
     APP_API_URL: https://levelrail.example.com

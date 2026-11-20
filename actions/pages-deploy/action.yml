@@ -33,7 +33,7 @@ runs:
         LEVELRAIL_MODIFY_PATH: "0"
       run: |
         set -euo pipefail
-        curl -fsSL https://levelrail.com/install-cli.sh | sh
+        curl -fsSL https://github.com/glincker/levelrail/releases/latest/download/install-cli.sh | sh
         echo "${LEVELRAIL_CLI_INSTALL_DIR}" >> "$GITHUB_PATH"
     - name: Deploy
       id: deploy

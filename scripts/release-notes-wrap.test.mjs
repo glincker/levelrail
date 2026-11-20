@@ -31,7 +31,7 @@ test('header has logo, title, badges, links', () => {
 test('image block lists real references', () => {
   assert.match(out, /docker pull ghcr\.io\/glincker\/levelrail:v1\.4\.0/)
   assert.match(out, /docker pull ghcr\.io\/glincker\/levelrail-agent:v1\.4\.0/)
-  assert.match(out, /curl -fsSL https:\/\/levelrail\.com\/install\.sh/)
+  assert.match(out, /curl -fsSL https:\/\/github\.com\/glincker\/levelrail\/releases\/latest\/download\/install\.sh/)
 })
 
 test('body kept and avatars skip bots and duplicates', () => {

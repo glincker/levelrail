@@ -122,7 +122,7 @@ On the test image, a container published with `docker run -p 25565:80 nginx:alpi
 SSH in and run the installer:
 
 ```bash
-curl -fsSL https://levelrail.com/install.sh | sudo sh
+curl -fsSL https://github.com/glincker/levelrail/releases/latest/download/install.sh | sudo sh
 ```
 
 The installer installs Docker if it is missing. Measured once on a 1 OCPU / 6 GB Arm VM, 2026-11-01: the install took 67 seconds, the control plane used about 160 to 176 MB of resident memory, and used RAM on the machine was 549 MB at 3 minutes and 646 MB at about 17 minutes, idle, with Docker installed and no apps. This is one measurement, not a guarantee.

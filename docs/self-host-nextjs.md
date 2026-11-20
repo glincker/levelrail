@@ -11,7 +11,7 @@ Build with the Next.js preset or your own Dockerfile, get HTTPS, preview environ
 [Get started](/getting-started) | [Vercel migration runbook](/migrating-from-vercel)
 
 ```bash
-curl -fsSL https://levelrail.com/install.sh | sudo sh
+curl -fsSL https://github.com/glincker/levelrail/releases/latest/download/install.sh | sudo sh
 ```
 
 ## What you get for a Next.js app

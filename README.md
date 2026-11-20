@@ -3,7 +3,7 @@
 <h1>Levelrail</h1>
 <p><strong>Git push to production on your own servers.</strong><br>
 A self-hosted deployment platform in one Go binary. The control plane idles at about 200 MB of RAM (<a href="docs/performance.md">measured</a>), with 570+ one-click apps, rollbacks, previews, HTTPS and databases built in.</p>
-<p><code>curl -fsSL https://levelrail.com/install.sh | sudo sh</code> &middot; <a href="https://demo.levelrail.com"><b>Try the live demo</b></a></p>
+<p><code>brew install glincker/tap/levelrail-cli</code> &middot; <a href="#install"><b>Install</b></a> &middot; <a href="https://demo.levelrail.com"><b>Try the live demo</b></a></p>
 <p>
   <a href="https://github.com/glincker/levelrail/stargazers"><img src="https://img.shields.io/github/stars/glincker/levelrail?style=flat&logo=github" alt="GitHub stars"></a>
   <a href="LICENSE"><img src="https://img.shields.io/github/license/glincker/levelrail" alt="License: Apache 2.0"></a>
@@ -14,6 +14,7 @@ A self-hosted deployment platform in one Go binary. The control plane idles at a
 <p>
   <a href="https://levelrail.com?utm_source=github&amp;utm_medium=readme&amp;utm_campaign=nav">Website</a> &middot;
   <a href="https://docs.levelrail.com?utm_source=github&amp;utm_medium=readme&amp;utm_campaign=nav">Docs</a> &middot;
+  <a href="#install">Install</a> &middot;
   <a href="#quickstart">Quickstart</a> &middot;
   <a href="#what-sets-levelrail-apart">Why Levelrail</a> &middot;
   <a href="docs/faq.md">FAQ</a> &middot;
@@ -25,13 +26,38 @@ A self-hosted deployment platform in one Go binary. The control plane idles at a
 
 v1.x. Single-server is production ready, multi-node is beta. Levelrail turns Linux servers into a private cloud and works with the Kubernetes clusters and cloud accounts you already have. Every feature carries a stable, beta or experimental label in [Feature status](docs/feature-status.md).
 
-## Quickstart
+## Install
 
-You need a Linux server (amd64 or arm64) with systemd and root. The installer adds Docker. Open ports 80 and 443.
+Pick one. Release assets on GitHub are the primary source: every binary, `install.sh`, `install-cli.sh` and `checksums.txt` ship with each [release](https://github.com/glincker/levelrail/releases/latest).
+
+- **Homebrew (CLI):** `brew install glincker/tap/levelrail-cli`
+- **Docker (server):** `docker pull ghcr.io/glincker/levelrail:latest` (see [Installing](docs/installing.md) for the full run command with volumes and ports)
+- **GitHub release download:** get `install.sh` from the [latest release](https://github.com/glincker/levelrail/releases/latest), then run it as root on a Linux server (amd64 or arm64, systemd). The installer adds Docker.
 
 ```bash
-curl -fsSL https://levelrail.com/install.sh | sudo sh
+curl -fsSLO https://github.com/glincker/levelrail/releases/latest/download/install.sh
+sudo sh install.sh
 ```
+
+<details>
+<summary>Advanced: verify the installer against checksums.txt first</summary>
+
+Download, verify and run as three separate steps, with no pipe to a shell.
+
+```bash
+curl -fsSLO https://github.com/glincker/levelrail/releases/latest/download/install.sh
+curl -fsSLO https://github.com/glincker/levelrail/releases/latest/download/checksums.txt
+grep ' install.sh$' checksums.txt | sha256sum -c -
+sudo sh install.sh
+```
+
+On macOS use `shasum -a 256 -c -` instead of `sha256sum -c -`. `checksums.txt` is signed with cosign keyless (`checksums.txt.sigstore.json` sits next to it). See [Installing](docs/installing.md#verifying-release-binaries) for how to check the signature.
+
+</details>
+
+## Quickstart
+
+You need a Linux server (amd64 or arm64) with systemd and root. The installer adds Docker. Open ports 80 and 443. Install first with one of the options in [Install](#install).
 
 1. Open the setup link the installer prints and choose a password. That creates the admin account.
 2. In the dashboard, copy the login line from the **Connect your CLI** card and run it (it looks like `levelrail-cli login --api-url http://127.0.0.1:8080 --code ABCD-EF23`).
@@ -157,7 +183,7 @@ All features, with maturity labels: [docs/features.md](docs/features.md).
 259 [MCP tools](docs/mcp.md), scoped to the token's abilities, confirm-gated for writes and audited. Add the skill with `npx skills add https://github.com/glincker/levelrail --skill levelrail`, then ask your agent to deploy your repo. To install with an agent, paste this into Claude Code, Cursor or any agent that can run shell commands on your server:
 
 ```text
-Install Levelrail on this server: run `curl -fsSL https://levelrail.com/install.sh | sudo sh`.
+Install Levelrail on this server: run `curl -fsSL https://github.com/glincker/levelrail/releases/latest/download/install.sh | sudo sh`.
 Open the setup link it prints and tell me, because I choose the password myself.
 Then run `levelrail-cli doctor` and `levelrail-cli status` and report anything that fails.
 Do not write any token or password to a file or into this chat.

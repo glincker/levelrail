@@ -9,7 +9,7 @@ This image is the Levelrail node agent. It runs deployments on an additional ser
 Install the control plane first:
 
 ```bash
-curl -fsSL https://levelrail.com/install.sh | sudo sh
+curl -fsSL https://github.com/glincker/levelrail/releases/latest/download/install.sh | sudo sh
 ```
 
 Then add a node: https://docs.levelrail.com/multi-node

@@ -11,7 +11,7 @@ Cloud Run is a good fit for bursty traffic. For a service that is up all day, a 
 [Migration guide](/migrating-from-cloud-run) | [Get started](/getting-started)
 
 ```bash
-curl -fsSL https://levelrail.com/install.sh | sudo sh
+curl -fsSL https://github.com/glincker/levelrail/releases/latest/download/install.sh | sudo sh
 ```
 
 ## What carries over from Cloud Run

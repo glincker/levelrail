@@ -16,7 +16,7 @@ steps:
     env:
       LEVELRAIL_CLI_INSTALL_DIR: "$BUILDKITE_BUILD_CHECKOUT_PATH/.bin"
     command: |
-      curl -fsSL https://levelrail.com/install-cli.sh | sh
+      curl -fsSL https://github.com/glincker/levelrail/releases/latest/download/install-cli.sh | sh
       export PATH="$$LEVELRAIL_CLI_INSTALL_DIR:$$PATH"
       levelrail-cli apps deploy my-app \
         --image "registry.example.com/team/my-app:$BUILDKITE_COMMIT" \

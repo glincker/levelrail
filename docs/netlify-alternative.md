@@ -11,7 +11,7 @@ Connect a repository, set a build command and a publish directory, and Levelrail
 [Get started](/getting-started) | [Migration guide](/migrating-from-netlify)
 
 ```bash
-curl -fsSL https://levelrail.com/install.sh | sudo sh
+curl -fsSL https://github.com/glincker/levelrail/releases/latest/download/install.sh | sudo sh
 ```
 
 ## What carries over

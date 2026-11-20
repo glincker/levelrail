@@ -20,7 +20,7 @@ export function config() {
     logoDarkPath: env('RELEASE_LOGO_DARK_PATH', 'docs/assets/brand/png/mark-on-dark-1024.png'),
     logoSize: env('RELEASE_LOGO_SIZE', '96'),
     badgeColor: env('RELEASE_BADGE_COLOR', '107292'),
-    installCmd: env('RELEASE_INSTALL_CMD', 'curl -fsSL https://levelrail.com/install.sh | sudo sh'),
+    installCmd: env('RELEASE_INSTALL_CMD', 'curl -fsSL https://github.com/glincker/levelrail/releases/latest/download/install.sh | sudo sh'),
     registry: env('RELEASE_REGISTRY', `ghcr.io/${owner}`),
     hubNamespace: env('DOCKERHUB_NAMESPACE', 'levelrail'),
     images: env('RELEASE_IMAGES', 'levelrail,levelrail-agent').split(',').filter(Boolean),

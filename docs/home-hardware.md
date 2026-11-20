@@ -29,7 +29,7 @@ uname -m   # x86_64 or aarch64 is fine, armv7l is not
 On the machine itself, as in [Installing](/installing):
 
 ```bash
-curl -fsSL https://levelrail.com/install.sh | sudo sh
+curl -fsSL https://github.com/glincker/levelrail/releases/latest/download/install.sh | sudo sh
 ```
 
 The install on a Pi 4 or Pi 5, an old laptop and a mini PC is the same command. It is not yet verified on real hardware for any of the three.
