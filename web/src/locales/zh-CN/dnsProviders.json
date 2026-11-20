@@ -63,7 +63,15 @@
     "zonesCount_other": "找到 {{count}} 个区域",
     "ok": "通过",
     "failed": "失败",
-    "heading": "测试结果"
+    "heading": "测试结果",
+    "state": {
+      "allowed": "已允许",
+      "denied": "已拒绝",
+      "unknown": "未知"
+    },
+    "policyHint": "缺失操作所需的最小IAM策略:",
+    "copyPolicy": "复制策略",
+    "copied": "已复制"
   },
   "zones": {
     "heading": "托管区域",

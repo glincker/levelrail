@@ -65,7 +65,15 @@
     "zonesCount_other": "{{count}} Zonen gefunden",
     "ok": "Bestanden",
     "failed": "Fehlgeschlagen",
-    "heading": "Testergebnisse"
+    "heading": "Testergebnisse",
+    "state": {
+      "allowed": "Erlaubt",
+      "denied": "Verweigert",
+      "unknown": "Unbekannt"
+    },
+    "policyHint": "Minimale IAM-Richtlinie fuer die fehlenden Aktionen:",
+    "copyPolicy": "Richtlinie kopieren",
+    "copied": "Kopiert"
   },
   "zones": {
     "heading": "Gehostete Zonen",

@@ -9,6 +9,9 @@ describe('listedZoneNames', () => {
       ),
     ).toEqual(['x.com', 'y.org'])
   })
+  it('prefers the structured zones field', () => {
+    expect(listedZoneNames('anything', ['A.com', 'bad'])).toEqual(['a.com'])
+  })
   it('returns nothing for other messages', () => {
     expect(listedZoneNames('no zone contains "a.b.com"')).toEqual([])
     expect(listedZoneNames(undefined)).toEqual([])

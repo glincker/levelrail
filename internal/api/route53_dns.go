@@ -164,3 +164,24 @@ func (rt *Router) handleDisconnectRoute53DNS(w http.ResponseWriter, r *http.Requ
 	}
 	writeJSON(w, http.StatusOK, rt.toRoute53DNSResource(r.Context(), settings))
 }
+
+// handleTestRoute53DNS handles POST /api/v1/settings/route53-dns/test: probes
+// each needed action with the stored key and reports which are denied. It
+// never writes a record. AbilityRoot, like the Cloud DNS test.
+func (rt *Router) handleTestRoute53DNS(w http.ResponseWriter, r *http.Request) {
+	c, err := rt.route53Creds(r.Context())
+	if err != nil {
+		rt.internalError(w, "api: route53 test credentials failed", err)
+		return
+	}
+	if c == nil {
+		writeJSON(w, http.StatusOK, &dnsTokenVerification{MissingScopes: []string{}, Message: "No Route 53 key is stored or Route 53 is not enabled yet."})
+		return
+	}
+	p := dnszones.NewRoute53(c.accessKeyID, c.secretAccessKey, c.region, c.hostedZoneID)
+	vctx, cancel := context.WithTimeout(r.Context(), dnsVerifyTimeout)
+	defer cancel()
+	v := verificationFrom("Route 53", dnszones.VerifyAccess(vctx, p))
+	addRoute53Preflight(vctx, v, p)
+	writeJSON(w, http.StatusOK, v)
+}

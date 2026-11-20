@@ -19,6 +19,7 @@ import {
   SheetTitle,
 } from '@/components/ui/sheet'
 import { toast } from '@/components/ui/toast'
+import { useCopyToClipboard } from '@/hooks/useCopyToClipboard'
 import { DnsHostTile } from '@/components/dns/DnsHostChip'
 import {
   cloudflareDnsSettingsQueryOptions,
@@ -28,6 +29,7 @@ import {
 import {
   route53DnsSettingsQueryOptions,
   useDisconnectRoute53Dns,
+  useTestRoute53Dns,
   useUpdateRoute53DnsSettings,
 } from '@/queries/route53Dns'
 import {
@@ -40,7 +42,8 @@ import type { DnsZone } from '@/types/dns'
 import type { ProviderId, ProviderState } from './providers'
 
 interface Step {
-  key: 'credential' | 'zones'
+  key: 'credential' | 'zones' | 'permission'
+  label?: string
   ok: boolean
   detail?: string
 }
@@ -261,6 +264,9 @@ function TestPanel({
 }) {
   const { t } = useTranslation('dnsProviders')
   const gcpTest = useTestGoogleCloudDns()
+  const r53Test = useTestRoute53Dns()
+  const { copy, copied } = useCopyToClipboard()
+  const [policy, setPolicy] = useState('')
   const [steps, setSteps] = useState<Step[] | null>(null)
   const [running, setRunning] = useState(false)
 
@@ -280,6 +286,20 @@ function TestPanel({
           },
         ])
         onResult(r.ok ? null : (r.error ?? t('test.failed')))
+      } else if (id === 'route53') {
+        const r = await r53Test.mutateAsync()
+        const perms = r.permissions ?? []
+        setPolicy(r.iam_policy ?? '')
+        setSteps([
+          { key: 'credential', ok: perms.length > 0 || r.ok === true },
+          ...perms.map((p) => ({
+            key: 'permission' as const,
+            label: p.action,
+            ok: p.state === 'allowed',
+            detail: t(`test.state.${p.state}`),
+          })),
+        ])
+        onResult(r.ok ? null : (r.message ?? t('test.failed')))
       } else {
         const fresh = await refetchZones()
         const count = (fresh ?? zones).filter((z) => z.provider === id).length
@@ -328,13 +348,32 @@ function TestPanel({
                   aria-hidden="true"
                 />
               )}
-              <span>{t(`test.${s.key}`)}</span>
+              <span>{s.label ?? t(`test.${s.key}`)}</span>
               <span className="text-muted-foreground">
                 {s.detail ?? (s.ok ? t('test.ok') : t('test.failed'))}
               </span>
             </li>
           ))}
         </ul>
+      ) : null}
+      {steps && policy ? (
+        <div className="space-y-1.5">
+          <p className="text-xs text-muted-foreground">
+            {t('test.policyHint')}
+          </p>
+          <pre className="max-h-48 overflow-auto rounded-md bg-muted p-2 text-xs">
+            {policy}
+          </pre>
+          <Button
+            size="sm"
+            variant="outline"
+            onClick={() => {
+              copy(policy)
+            }}
+          >
+            {copied ? t('test.copied') : t('test.copyPolicy')}
+          </Button>
+        </div>
       ) : null}
     </div>
   )

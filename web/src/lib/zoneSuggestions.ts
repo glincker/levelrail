@@ -2,7 +2,16 @@
 // domain field can offer them. Names only: no extra endpoint is involved.
 const LISTED_RE = /the provider lists (.+?)(?: and \d+ more)?$/
 
-export function listedZoneNames(message: string | undefined): string[] {
+// The structured zones field wins; the message parse stays for older servers.
+export function listedZoneNames(
+  message: string | undefined,
+  zones?: string[],
+): string[] {
+  if (zones && zones.length > 0) {
+    return zones
+      .map((n) => n.trim().toLowerCase())
+      .filter((n) => n.includes('.'))
+  }
   const match = message ? LISTED_RE.exec(message.trim()) : null
   const list = match?.[1]
   if (!list) return []

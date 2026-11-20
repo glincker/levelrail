@@ -98,6 +98,7 @@ export interface DnsZone {
   found: boolean
   zone?: string
   message?: string
+  zones?: string[]
 }
 
 export interface BaseDomainBackfill {

@@ -14,7 +14,7 @@ type openAPIRoute struct {
 	Description string
 }
 
-// openAPIRoutes holds all 2246 routes known to scripts/gen-api-reference at
+// openAPIRoutes holds all 2247 routes known to scripts/gen-api-reference at
 // generation time. Run `go run ./scripts/gen-api-reference` after changing
 // any routes*.go registration and commit the result.
 var openAPIRoutes = []openAPIRoute{
@@ -1061,6 +1061,7 @@ var openAPIRoutes = []openAPIRoute{
 	{Method: "DELETE", Path: "/api/v1/settings/route53-dns", Ability: "AbilityRoot", Group: "Ingress / Certificates / Domains / Email / Cloudflare", Handler: "handleDisconnectRoute53DNS", Description: ""},
 	{Method: "GET", Path: "/api/v1/settings/route53-dns", Ability: "AbilityRead", Group: "Ingress / Certificates / Domains / Email / Cloudflare", Handler: "handleGetRoute53DNSSettings", Description: "Route53 DNS-01: a second, independent ACME DNS-01 provider, same tier as cloudflare-dns above."},
 	{Method: "PUT", Path: "/api/v1/settings/route53-dns", Ability: "AbilityRoot", Group: "Ingress / Certificates / Domains / Email / Cloudflare", Handler: "handleUpdateRoute53DNSSettings", Description: ""},
+	{Method: "POST", Path: "/api/v1/settings/route53-dns/test", Ability: "AbilityRoot", Group: "Ingress / Certificates / Domains / Email / Cloudflare", Handler: "handleTestRoute53DNS", Description: ""},
 	{Method: "DELETE", Path: "/api/v1/settings/vault", Ability: "AbilityRoot", Group: "Ingress / Certificates / Domains / Email / Cloudflare", Handler: "handleDisconnectVault", Description: ""},
 	{Method: "GET", Path: "/api/v1/settings/vault", Ability: "AbilityRead", Group: "Ingress / Certificates / Domains / Email / Cloudflare", Handler: "handleGetVaultSettings", Description: "External HashiCorp Vault (instance-level, one connection per control plane): same GET AbilityRead / PUT+DELETE AbilityRoot tier as Cloudflare Tunnel above."},
 	{Method: "PUT", Path: "/api/v1/settings/vault", Ability: "AbilityRoot", Group: "Ingress / Certificates / Domains / Email / Cloudflare", Handler: "handleUpdateVaultSettings", Description: ""},

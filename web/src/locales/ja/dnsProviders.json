@@ -63,7 +63,15 @@
     "zonesCount_other": "{{count}} 個のゾーンが見つかりました",
     "ok": "合格",
     "failed": "失敗",
-    "heading": "テスト結果"
+    "heading": "テスト結果",
+    "state": {
+      "allowed": "許可",
+      "denied": "拒否",
+      "unknown": "不明"
+    },
+    "policyHint": "不足しているアクション用の最小IAMポリシー:",
+    "copyPolicy": "ポリシーをコピー",
+    "copied": "コピーしました"
   },
   "zones": {
     "heading": "ホストゾーン",

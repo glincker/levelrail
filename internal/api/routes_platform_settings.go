@@ -71,6 +71,7 @@ func (rt *Router) registerSettingsRoutes(mux *http.ServeMux) {
 	mux.HandleFunc("GET /api/v1/settings/route53-dns", rt.requireAbility(AbilityRead, rt.handleGetRoute53DNSSettings))
 	mux.HandleFunc("PUT /api/v1/settings/route53-dns", rt.requireAbility(AbilityRoot, rt.handleUpdateRoute53DNSSettings))
 	mux.HandleFunc("DELETE /api/v1/settings/route53-dns", rt.requireAbility(AbilityRoot, rt.handleDisconnectRoute53DNS))
+	mux.HandleFunc("POST /api/v1/settings/route53-dns/test", rt.requireAbility(AbilityRoot, rt.handleTestRoute53DNS))
 	mux.HandleFunc("GET /api/v1/settings/google-cloud-dns", rt.requireAbility(AbilityRead, rt.handleGetGoogleCloudDNSSettings))
 	mux.HandleFunc("PUT /api/v1/settings/google-cloud-dns", rt.requireAbility(AbilityRoot, rt.handleUpdateGoogleCloudDNSSettings))
 	mux.HandleFunc("DELETE /api/v1/settings/google-cloud-dns", rt.requireAbility(AbilityRoot, rt.handleDisconnectGoogleCloudDNS))

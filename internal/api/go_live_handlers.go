@@ -400,6 +400,8 @@ type dnsZoneResponse struct {
 	Found      bool   `json:"found"`
 	Zone       string `json:"zone,omitempty"`
 	Message    string `json:"message,omitempty"`
+	// Zones lists up to five public zone names the provider offers on a miss.
+	Zones []string `json:"zones,omitempty"`
 }
 
 // handleDNSZone handles GET /api/v1/dns/zone?domain=: whether a connected DNS
@@ -423,6 +425,7 @@ func (rt *Router) zoneLookup(ctx context.Context, domain string) dnsZoneResponse
 		var miss *dnsrecords.ZoneMissError
 		if errors.As(err, &miss) {
 			out.Message = miss.Error()
+			out.Zones = miss.Listed
 		}
 	case err != nil:
 		rt.dnsDebug("dns zone lookup failed", err)

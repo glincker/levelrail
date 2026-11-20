@@ -257,8 +257,8 @@ func (rt *Router) handleUpdateIngressSettings(w http.ResponseWriter, r *http.Req
 			return
 		}
 	}
-	if msg := rt.validateDNSAutomationFields(r.Context(), upd); msg != "" {
-		writeError(w, http.StatusBadRequest, msg)
+	if msg, zones := rt.validateDNSAutomationFields(r.Context(), upd); msg != "" {
+		writeZoneError(w, msg, zones)
 		return
 	}
 	req := upd.ingressSettingsResource

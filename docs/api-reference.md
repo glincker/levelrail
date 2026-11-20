@@ -1301,6 +1301,7 @@ Endpoints for:
 | GET | /api/v1/apps/{name}/domains/{domain}/tuning | AbilityRead | handleGetDomainTuning |
 | PUT | /api/v1/apps/{name}/domains/{domain}/tuning | AbilityDeploy | handleSetDomainTuning |
 | DELETE | /api/v1/apps/{name}/domains/{domain}/tuning | AbilityDeploy | handleClearDomainTuning |
+| POST | /api/v1/settings/route53-dns/test | AbilityRoot | handleTestRoute53DNS |
 
 </Accordion>
 

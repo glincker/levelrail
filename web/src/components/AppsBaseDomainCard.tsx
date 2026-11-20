@@ -25,6 +25,7 @@ import {
   useUpdateIngressSettings,
 } from '../queries/domains'
 import { useCopyToClipboard } from '../hooks/useCopyToClipboard'
+import { ApiError } from '../lib/apiError'
 import { listedZoneNames, ROUTE53_IAM_ACTIONS } from '../lib/zoneSuggestions'
 import {
   dnsZoneQueryOptions,
@@ -87,7 +88,7 @@ export function ZoneHint({
     )
   }
   const message = zone.data?.message ?? zone.error?.message
-  const suggestions = listedZoneNames(message)
+  const suggestions = listedZoneNames(message, zone.data?.zones)
   return (
     <div className="space-y-1.5" role="alert">
       <p className="text-xs text-destructive">
@@ -248,7 +249,12 @@ export function AppsBaseDomainCard() {
             <div className="space-y-1.5" role="alert">
               <p className="text-xs text-destructive">{update.error.message}</p>
               <ZoneSuggestions
-                names={listedZoneNames(update.error.message)}
+                names={listedZoneNames(
+                  update.error.message,
+                  update.error instanceof ApiError
+                    ? update.error.zones
+                    : undefined,
+                )}
                 onPick={setValue}
               />
             </div>

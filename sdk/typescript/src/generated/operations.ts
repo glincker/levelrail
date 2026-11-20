@@ -1894,6 +1894,7 @@ export const operations = {
   handleGetRoute53DNSSettings: ["GET","/api/v1/settings/route53-dns",0,0],
   handleUpdateRoute53DNSSettings: ["PUT","/api/v1/settings/route53-dns",1,0],
   handleDisconnectRoute53DNS: ["DELETE","/api/v1/settings/route53-dns",0,0],
+  handleTestRoute53DNS: ["POST","/api/v1/settings/route53-dns/test",1,0],
   handleListRuntimeSettings: ["GET","/api/v1/settings/runtime",0,0],
   handleApplyRuntimeSettings: ["POST","/api/v1/settings/runtime/apply",1,0],
   handleGetRuntimeOnboarding: ["GET","/api/v1/settings/runtime/onboarding",0,0],

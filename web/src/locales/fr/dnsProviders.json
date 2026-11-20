@@ -67,7 +67,15 @@
     "zonesCount_other": "{{count}} zones trouvées",
     "ok": "Réussi",
     "failed": "Échoué",
-    "heading": "Résultats du test"
+    "heading": "Résultats du test",
+    "state": {
+      "allowed": "Autorisee",
+      "denied": "Refusee",
+      "unknown": "Inconnue"
+    },
+    "policyHint": "Politique IAM minimale pour les actions manquantes :",
+    "copyPolicy": "Copier la politique",
+    "copied": "Copie"
   },
   "zones": {
     "heading": "Zones hébergées",

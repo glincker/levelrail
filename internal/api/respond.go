@@ -20,6 +20,15 @@ type apiError struct {
 	RequestID string `json:"request_id,omitempty"`
 }
 
+// writeZoneError is a 400 that also carries the zone names the provider
+// lists, so clients can offer them without parsing the message.
+func writeZoneError(w http.ResponseWriter, msg string, zones []string) {
+	writeJSON(w, http.StatusBadRequest, struct {
+		apiError
+		Zones []string `json:"zones,omitempty"`
+	}{apiError{Error: msg, Code: errorCodeForStatus(http.StatusBadRequest), RequestID: w.Header().Get(requestIDHeader)}, zones})
+}
+
 // errorCodeForStatus gives every plain writeError a stable machine code
 // derived from the HTTP status, so clients can branch without parsing text.
 func errorCodeForStatus(status int) string {
