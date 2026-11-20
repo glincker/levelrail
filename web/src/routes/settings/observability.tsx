@@ -15,6 +15,7 @@ import { useTranslation } from 'react-i18next'
 import { ChartLineGlassIcon } from '@thesvg/ui-react'
 import { PrometheusScrapeCard } from '../../components/settings/PrometheusScrapeCard'
 import { LogVolumeCard } from '../../components/logBudgets/LogVolumeCard'
+import { ObservabilityExportSection } from '../../components/observabilityExport/ObservabilityExportSection'
 import { PageTemplate } from '@/components/shell/PageTemplate'
 
 export const Route = createFileRoute('/settings/observability')({
@@ -46,6 +47,7 @@ function ObservabilitySettingsPage() {
     >
       <RemoteReadConnectionCard settings={settings} />
       <ObservabilitySettingsCard settings={settings} />
+      <ObservabilityExportSection />
       <PrometheusScrapeCard />
       <LogVolumeCard />
     </PageTemplate>

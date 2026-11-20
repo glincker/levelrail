@@ -4200,5 +4200,50 @@
         "description": "Run a command or call a path on an app on a schedule."
       }
     }
+  },
+  "obsExport": {
+    "title": "Export to",
+    "about": "Send logs and metrics from this control plane to a hosted observability service. Pick a service, fill in its details and test the connection.",
+    "signal": {
+      "logs": "Logs",
+      "metrics": "Metrics"
+    },
+    "dialog": {
+      "title": "Export to {{name}}",
+      "name": "Name",
+      "create": "Create",
+      "creating": "Creating",
+      "cancel": "Cancel",
+      "done": "Done",
+      "help": "About {{field}}"
+    },
+    "test": {
+      "title": "Test results",
+      "run": "Test",
+      "running": "Testing",
+      "retry": "Test again",
+      "pass": "Delivered",
+      "failed": "Test failed"
+    },
+    "fix": {
+      "bad_token": "Replace the token",
+      "tls_error": "Fix the certificate",
+      "unreachable": "Check the address",
+      "rejected": "Check the endpoint path",
+      "private_blocked": "Allow internal addresses"
+    },
+    "health": {
+      "ok": "Delivering",
+      "error": "Failing",
+      "pending": "Waiting for first delivery"
+    },
+    "list": {
+      "label": "Active exports",
+      "sent_one": "{{count}} sent",
+      "sent_other": "{{count}} sent",
+      "delete": "Delete",
+      "deleteTitle": "Delete {{name}} export?",
+      "deleteConsequence": "Logs and metrics stop being sent to this service."
+    }
   }
 }
