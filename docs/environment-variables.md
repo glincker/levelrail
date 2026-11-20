@@ -558,6 +558,9 @@ These variables only seed the default of a [runtime setting](/runtime-settings).
 | `APP_CLEANUP_INTERVAL` | [`cleanup.interval`](/runtime-settings#data-retention) | `6h` |
 | `APP_IMAGES_REMOVE_MAX_PER_REQUEST` | [`images.remove_max_per_request`](/runtime-settings#data-retention) | `200` |
 | `APP_NODES_PATCH_RUN_HISTORY` | [`nodes.patch_run_history`](/runtime-settings#data-retention) | `20` |
+| `APP_PAGES_BUILD_CACHE_MAX_BYTES` | [`pages.build_cache_max_bytes`](/runtime-settings#data-retention) | `1073741824` |
+| `APP_PAGES_BUILD_LOG_MAX_BYTES` | [`pages.build_log_max_bytes`](/runtime-settings#data-retention) | `5242880` |
+| `APP_PAGES_BUILD_LOG_RETENTION` | [`pages.build_log_retention`](/runtime-settings#data-retention) | `720h` |
 | `APP_RETENTION_AI_HISTORY_DAYS` | [`retention.ai_history_days`](/runtime-settings#data-retention) | `90` |
 | `APP_ALERT_HISTORY_RETENTION` | [`retention.alert_history_days`](/runtime-settings#data-retention) | `30` |
 | `APP_RETENTION_APP_HISTORY_DAYS` | [`retention.app_history_days`](/runtime-settings#data-retention) | `90` |

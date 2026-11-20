@@ -2461,6 +2461,7 @@ Routes that do not fit an existing group.
 | POST | /api/v1/observability/exports | AbilityWriteSensitive | handleCreateObservabilityExport |
 | DELETE | /api/v1/observability/exports/{id} | AbilityWriteSensitive | handleDeleteObservabilityExport |
 | POST | /api/v1/observability/exports/{id}/test | AbilityWriteSensitive | handleTestObservabilityExport |
+| GET | /api/v1/pages/{site}/deploys/{deployId}/logs | AbilityReadSensitive | handlePagesDeployLogs |
 | POST | /mcp | Public |  |
 
 ## See also

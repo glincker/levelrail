@@ -11,6 +11,7 @@ import (
 	"time"
 
 	"github.com/GLINCKER/levelrail/internal/deploylog"
+	"github.com/GLINCKER/levelrail/internal/pages"
 	"github.com/GLINCKER/levelrail/internal/secretmask"
 	"github.com/GLINCKER/levelrail/internal/store"
 	"github.com/GLINCKER/levelrail/internal/telemetry"
@@ -61,6 +62,14 @@ func (rt *Router) handleStaticSiteDeployLog(w http.ResponseWriter, r *http.Reque
 	ctx := r.Context()
 	var entries []telemetry.DeployLogEntry
 	running := attempt.FinishedAt == nil
+	logMax, retention := int64(0), time.Duration(0)
+	if rt.runtimeSettings != nil {
+		logMax, retention = rt.runtimeSettings.PagesBuildLogLimits(ctx)
+	}
+	if !running && pages.LogExpired(*attempt.FinishedAt, time.Now(), retention) {
+		writeError(w, http.StatusGone, "build log is past its retention")
+		return
+	}
 	recorded := false
 	if running && rt.deployRecorder != nil {
 		lines, _, unsubscribe, found := rt.deployRecorder.Snapshot(attempt.ID)
@@ -94,10 +103,20 @@ func (rt *Router) handleStaticSiteDeployLog(w http.ResponseWriter, r *http.Reque
 			Line: secretmask.Mask(e.Message), At: eventAt(e.Timestamp),
 		})
 	}
+	if kept, cut := pages.Window(out.Lines, func(l staticLogLine) int { return len(l.Line) }, logMax); cut {
+		out.Lines = append([]staticLogLine{{Stream: "system", Line: pages.TruncatedNotice}}, kept...)
+	}
 	if tail, err := strconv.Atoi(r.URL.Query().Get("tail")); err == nil && tail > 0 && tail < len(out.Lines) {
 		out.Lines = out.Lines[len(out.Lines)-tail:]
 	}
 	writeJSON(w, http.StatusOK, out)
+}
+
+// handlePagesDeployLogs handles GET /api/v1/pages/{site}/deploys/{deployId}/logs, the Pages-named
+// alias of the static site log with the same cap, retention and secret masking.
+func (rt *Router) handlePagesDeployLogs(w http.ResponseWriter, r *http.Request) {
+	r.SetPathValue("name", r.PathValue("site"))
+	rt.handleStaticSiteDeployLog(w, r)
 }
 
 // handleStaticSiteDeployLogStream handles GET .../deploys/{deployId}/log/stream by reusing the
@@ -137,4 +156,9 @@ func phaseAt(phases []phaseStart, t time.Time) string {
 		cur = p.phase
 	}
 	return cur
+}
+
+// pagesResourceFromPath names the site resource from the {site} path value, same scheme as apps.
+func pagesResourceFromPath(r *http.Request) string {
+	return "app:" + r.PathValue("site")
 }

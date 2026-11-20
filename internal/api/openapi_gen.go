@@ -14,7 +14,7 @@ type openAPIRoute struct {
 	Description string
 }
 
-// openAPIRoutes holds all 2230 routes known to scripts/gen-api-reference at
+// openAPIRoutes holds all 2231 routes known to scripts/gen-api-reference at
 // generation time. Run `go run ./scripts/gen-api-reference` after changing
 // any routes*.go registration and commit the result.
 var openAPIRoutes = []openAPIRoute{
@@ -1704,6 +1704,7 @@ var openAPIRoutes = []openAPIRoute{
 	{Method: "POST", Path: "/api/v1/package-registries", Ability: "AbilityWriteSensitive", Group: "Other", Handler: "handleCreatePackageRegistry", Description: ""},
 	{Method: "DELETE", Path: "/api/v1/package-registries/{id}", Ability: "AbilityWriteSensitive", Group: "Other", Handler: "handleDeletePackageRegistry", Description: ""},
 	{Method: "POST", Path: "/api/v1/package-registries/{id}/test", Ability: "AbilityWriteSensitive", Group: "Other", Handler: "handleTestPackageRegistry", Description: ""},
+	{Method: "GET", Path: "/api/v1/pages/{site}/deploys/{deployId}/logs", Ability: "AbilityReadSensitive", Group: "Other", Handler: "handlePagesDeployLogs", Description: ""},
 	{Method: "GET", Path: "/api/v1/pipeline-runs", Ability: "AbilityRead", Group: "Other", Handler: "handleListAllPipelineRuns", Description: ""},
 	{Method: "POST", Path: "/api/v1/pipelines/filters", Ability: "AbilityRead", Group: "Other", Handler: "handlePipelineFilters", Description: ""},
 	{Method: "GET", Path: "/api/v1/pipelines/oidc", Ability: "AbilityRead", Group: "Other", Handler: "handleGetPipelineOIDCInfo", Description: ""},
