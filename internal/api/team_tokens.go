@@ -27,6 +27,7 @@ type tokenScopeResource struct {
 	TeamRole   string   `json:"team_role"`
 	StackID    string   `json:"stack_id,omitempty"`
 	StackVerbs []string `json:"stack_verbs,omitempty"`
+	Site       string   `json:"site,omitempty"`
 }
 
 // resolveTokenScope validates a requested token scope for the minting user.
@@ -126,6 +127,16 @@ func (rt *Router) saveTokenScope(w http.ResponseWriter, r *http.Request, tokenID
 // storeTokenScope writes the stack scope first, so a failure there leaves
 // no half-scoped token behind once the caller revokes it.
 func (rt *Router) storeTokenScope(ctx context.Context, scope *store.APITokenScope) error {
+	if scope.Site != nil {
+		ss := rt.tokenSiteScopes()
+		if ss == nil {
+			return errors.New("store lacks token site scopes")
+		}
+		scope.Site.TokenID = scope.TokenID
+		if err := ss.SetAPITokenSiteScope(ctx, *scope.Site); err != nil {
+			return err
+		}
+	}
 	if scope.Stack != nil {
 		ss := rt.tokenStackScopes()
 		if ss == nil {
@@ -153,6 +164,14 @@ func (rt *Router) tokenScopeOf(ctx context.Context, tokenID string) *tokenScopeR
 	if db := rt.teamDB(); db != nil {
 		if s, err := db.GetAPITokenScope(ctx, tokenID); err == nil && s != nil {
 			out = &tokenScopeResource{TeamID: s.TeamID, ProjectID: s.ProjectID, TeamRole: s.Role}
+		}
+	}
+	if ss := rt.tokenSiteScopes(); ss != nil {
+		if s, err := ss.GetAPITokenSiteScope(ctx, tokenID); err == nil && s != nil {
+			if out == nil {
+				out = &tokenScopeResource{}
+			}
+			out.Site = s.SiteName
 		}
 	}
 	if ss := rt.tokenStackScopes(); ss != nil {

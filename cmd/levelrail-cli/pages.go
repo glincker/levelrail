@@ -52,6 +52,8 @@ func runPages(prog string, args []string, stdout, stderr io.Writer, lookupEnv fu
 		return runPagesSubmissions(prog, rest, stdout, stderr, lookupEnv)
 	case "hook":
 		return runPagesHook(prog, rest, stdout, stderr, lookupEnv)
+	case "token":
+		return runPagesToken(prog, rest, stdout, stderr, lookupEnv)
 	default:
 		_, _ = fmt.Fprintf(stderr, "%s: unknown pages subcommand %q\n\n", prog, args[0])
 		_, _ = fmt.Fprint(stderr, pagesUsage(prog))
@@ -69,6 +71,7 @@ func pagesUsage(prog string) string {
   %[1]s pages show <name> [flags]
   %[1]s pages delete <name> [flags]
   %[1]s pages rollback <name> [version] [flags]
+  %[1]s pages token create|list|revoke <site> [flags]   deploy-only tokens for CI (set as APP_API_TOKEN)
   %[1]s pages deploys <name> [flags]
   %[1]s pages promote <name> <deploy> [flags]
   %[1]s pages logs <name> [deploy] [--follow] [flags]

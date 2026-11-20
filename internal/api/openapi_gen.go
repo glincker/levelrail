@@ -14,7 +14,7 @@ type openAPIRoute struct {
 	Description string
 }
 
-// openAPIRoutes holds all 2209 routes known to scripts/gen-api-reference at
+// openAPIRoutes holds all 2212 routes known to scripts/gen-api-reference at
 // generation time. Run `go run ./scripts/gen-api-reference` after changing
 // any routes*.go registration and commit the result.
 var openAPIRoutes = []openAPIRoute{
@@ -2097,6 +2097,9 @@ var openAPIRoutes = []openAPIRoute{
 	{Method: "DELETE", Path: "/api/v1/static-sites/{name}", Ability: "AbilityWriteSensitive", Group: "Static Sites / Backup Targets / Registry Credentials", Handler: "handleDeleteStaticSite", Description: ""},
 	{Method: "GET", Path: "/api/v1/static-sites/{name}", Ability: "AbilityRead", Group: "Static Sites / Backup Targets / Registry Credentials", Handler: "handleGetStaticSite", Description: ""},
 	{Method: "GET", Path: "/api/v1/static-sites/{name}/checks", Ability: "AbilityRead", Group: "Static Sites / Backup Targets / Registry Credentials", Handler: "handleStaticSiteChecks", Description: ""},
+	{Method: "GET", Path: "/api/v1/static-sites/{name}/deploy-tokens", Ability: "AbilityRead", Group: "Static Sites / Backup Targets / Registry Credentials", Handler: "handleListSiteDeployTokens", Description: ""},
+	{Method: "POST", Path: "/api/v1/static-sites/{name}/deploy-tokens", Ability: "AbilityWriteSensitive", Group: "Static Sites / Backup Targets / Registry Credentials", Handler: "handleCreateSiteDeployToken", Description: ""},
+	{Method: "DELETE", Path: "/api/v1/static-sites/{name}/deploy-tokens/{id}", Ability: "AbilityWriteSensitive", Group: "Static Sites / Backup Targets / Registry Credentials", Handler: "handleRevokeSiteDeployToken", Description: ""},
 	{Method: "GET", Path: "/api/v1/static-sites/{name}/deploys", Ability: "AbilityRead", Group: "Static Sites / Backup Targets / Registry Credentials", Handler: "handleListStaticSiteDeploys", Description: ""},
 	{Method: "GET", Path: "/api/v1/static-sites/{name}/deploys/{deployId}/log", Ability: "AbilityRead", Group: "Static Sites / Backup Targets / Registry Credentials", Handler: "handleStaticSiteDeployLog", Description: ""},
 	{Method: "GET", Path: "/api/v1/static-sites/{name}/deploys/{deployId}/log/stream", Ability: "AbilityRead", Group: "Static Sites / Backup Targets / Registry Credentials", Handler: "handleStaticSiteDeployLogStream", Description: ""},

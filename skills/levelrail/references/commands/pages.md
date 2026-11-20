@@ -16,6 +16,7 @@ Usage:
   levelrail-cli pages show <name> [flags]
   levelrail-cli pages delete <name> [flags]
   levelrail-cli pages rollback <name> [version] [flags]
+  levelrail-cli pages token create|list|revoke <site> [flags]   deploy-only tokens for CI (set as APP_API_TOKEN)
   levelrail-cli pages deploys <name> [flags]
   levelrail-cli pages promote <name> <deploy> [flags]
   levelrail-cli pages logs <name> [deploy] [--follow] [flags]
@@ -45,6 +46,7 @@ Usage:
   levelrail-cli pages show <name> [flags]
   levelrail-cli pages delete <name> [flags]
   levelrail-cli pages rollback <name> [version] [flags]
+  levelrail-cli pages token create|list|revoke <site> [flags]   deploy-only tokens for CI (set as APP_API_TOKEN)
   levelrail-cli pages deploys <name> [flags]
   levelrail-cli pages promote <name> <deploy> [flags]
   levelrail-cli pages logs <name> [deploy] [--follow] [flags]

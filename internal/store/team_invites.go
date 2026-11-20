@@ -146,6 +146,7 @@ type APITokenScope struct {
 	ProjectID string
 	Role      string
 	Stack     *APITokenStackScope
+	Site      *APITokenSiteScope
 }
 
 // SetAPITokenScope records a token's team scope.

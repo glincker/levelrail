@@ -1383,6 +1383,9 @@ Endpoints for:
 | DELETE | /api/v1/static-sites/{name}/hook | AbilityWriteSensitive | handleDeleteStaticSiteHook |
 | GET | /api/v1/static-sites/{name}/deploys/{deployId}/log | AbilityRead | handleStaticSiteDeployLog |
 | GET | /api/v1/static-sites/{name}/deploys/{deployId}/log/stream | AbilityRead | handleStaticSiteDeployLogStream |
+| GET | /api/v1/static-sites/{name}/deploy-tokens | AbilityRead | handleListSiteDeployTokens |
+| POST | /api/v1/static-sites/{name}/deploy-tokens | AbilityWriteSensitive | handleCreateSiteDeployToken |
+| DELETE | /api/v1/static-sites/{name}/deploy-tokens/{id} | AbilityWriteSensitive | handleRevokeSiteDeployToken |
 
 ## Built-in Container Registry
 

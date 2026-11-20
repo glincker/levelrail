@@ -446,6 +446,9 @@ func (rt *Router) requireAbilityDecided(required string, decide authzDecision, n
 		if r, stackOK = rt.gateStackToken(w, r, rec.ID); !stackOK {
 			return
 		}
+		if !rt.gateSiteToken(w, r, rec.ID) {
+			return
+		}
 		abilities := rec.Abilities
 		if stackVerbGranted(r) || rt.driftReadGranted(r, rec.ID) {
 			// The stack gate (or the drift read grant) already bounded this one root route.

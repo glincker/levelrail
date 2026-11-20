@@ -202,6 +202,52 @@ A site can be gated with one shared password. Visitors get the browser's sign-in
 
 Length bounds come from `APP_PAGES_PASSWORD_MIN` (default 8) and `APP_PAGES_PASSWORD_MAX` (default 72, the bcrypt limit). A domain that has its own basic auth keeps that credential.
 
+## Deploy from CI
+
+A CI pipeline should not hold an admin token. Create a token that can only deploy one site:
+
+```bash
+levelrail pages token create docs --label github-actions
+```
+
+The token is shown once and stored hashed. It can upload an archive to that site, start the deploy and read the deploy status, and nothing else: other sites, settings, secrets and every other route answer 403. Expiry defaults to the token lifetime setting; pass `--expires-days N` to choose. `levelrail pages token list docs` shows tokens without secrets and `levelrail pages token revoke docs <id>` cuts one off. The dashboard has the same controls in the site's deploy area. The CLI reads the token from `APP_API_TOKEN` and the server from `APP_API_URL`, so the commands below need no extra flags.
+
+GitHub Actions, using the action in this repository:
+
+```yaml
+- uses: actions/checkout@v4
+- uses: GLINCKER/levelrail/actions/pages-deploy@main
+  with:
+    site: docs
+    dir: ./dist
+    server: https://levelrail.example.com
+    token: ${{ secrets.LEVELRAIL_PAGES_TOKEN }}
+```
+
+GitLab CI:
+
+```yaml
+deploy:
+  image: alpine:3
+  script:
+    - apk add --no-cache curl
+    - curl -fsSL https://levelrail.com/install-cli.sh | sh
+    - levelrail-cli pages deploy ./dist --name docs
+  variables:
+    APP_API_URL: https://levelrail.example.com
+    APP_API_TOKEN: $LEVELRAIL_PAGES_TOKEN
+```
+
+Plain curl, with a zip of the site:
+
+```bash
+curl -fsS -X POST "$APP_API_URL/api/v1/apps/docs/uploads" \
+  -H "Authorization: Bearer $APP_API_TOKEN" \
+  -H "Content-Type: application/zip" --data-binary @site.zip
+```
+
+Then start the deploy with `POST /api/v1/apps/docs/builds` using `upload_hash` from the response and `build.type: static`, and poll `GET /api/v1/apps/docs/deploys/{id}` until it is `succeeded`.
+
 ## From the CLI
 
 ```bash
