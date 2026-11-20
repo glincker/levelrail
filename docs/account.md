@@ -8,7 +8,7 @@ Settings, Account is the personal half of access: everything about your own sign
 
 ## Sections
 
-- **Profile**: your email and a display name you can edit inline.
+- **Profile**: your email and a display name you can edit inline. Names and emails are normalized when saved (surrounding spaces trimmed, equivalent character forms unified, emails lowercased), and some invisible or control characters, such as zero-width characters and line breaks, are rejected with a message naming the field. Display names allow up to 100 characters and emails up to 254 bytes. The same rules apply to organization, team, project and token names.
 - **Password**: change it; this signs out your other sessions.
 - **Two-factor** and **Passkeys**: enrol or remove second factors. Passkeys show their provider, synced or device-bound status and last use, and can be renamed, tested and removed (see [Security](/security#passkeys)).
 - **Active sessions and trusted devices**: every browser signed in as you. End one, or sign out all others. Trusted devices are browsers that skip the new-device check; remove any you no longer use.

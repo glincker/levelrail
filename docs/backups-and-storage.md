@@ -42,7 +42,7 @@ This path needs no bucket. It uses a `local` target, which stores backups on the
    levelrail-cli backups list <database>
    ```
 
-   The status column reads `succeeded` when it is done. To run it nightly, see [Schedules](#schedules).
+   The status column reads `succeeded` when it is done. Add `--label TEXT` to `backups trigger` to name a manual backup; the label shows in the `LABEL` column of `backups list`. To run it nightly, see [Schedules](#schedules).
 
 5. Replace the local target with an off-server one before you rely on it: follow the [Quick start](#quick-start) below with a Cloudflare R2 or S3 bucket, then point your schedules at it.
 

@@ -311,8 +311,14 @@ $ levelrail-cli backups trigger main --target bkt_ax7f2j1kd
 backup "bkh_p93kd7z1q" for database "main" started; check "levelrail-cli backups list main" for status
 
 $ levelrail-cli backups list main
-ID              TARGET         STATUS     SIZE     STARTED               FINISHED
-bkh_p93kd7z1q   bkt_ax7f2j1kd  succeeded  2148291  2026-09-12T03:00:01Z  2026-09-12T03:00:14Z
+ID              LABEL  TARGET         STATUS     SIZE     STARTED               FINISHED
+bkh_p93kd7z1q          bkt_ax7f2j1kd  succeeded  2148291  2026-09-12T03:00:01Z  2026-09-12T03:00:14Z
+```
+
+Add `--label TEXT` to give a manual backup a short name (up to 80 characters, no control characters). The label appears in a `LABEL` column of `backups list` and in a `label` field of the history JSON; the API takes it as `label` in the `POST /api/v1/databases/{name}/backups` body. Backups started without a label show it empty.
+
+```bash
+levelrail-cli backups trigger main --target bkt_ax7f2j1kd --label before-schema-change
 ```
 
 On the dashboard, use the target picker and **Back up now** button in the **Backups** card on a database's Overview tab. A manual backup is refused with `507` when the control plane's data directory has less than `APP_MIN_BACKUP_DISK_MB` free (default 256), because the backup history row is written there.
