@@ -138,6 +138,7 @@ These variables only seed the default of a [runtime setting](/runtime-settings).
 | `APP_API_CONDITIONAL_GET` | [`api.conditional_get`](/runtime-settings#networking) | `true` |
 | `APP_API_CONDITIONAL_GET_MAX_BYTES` | [`api.conditional_get_max_bytes`](/runtime-settings#networking) | `4194304` |
 | `APP_API_MAX_BODY_BYTES` | [`api.max_body_bytes`](/runtime-settings#networking) | `16777216` |
+| `APP_API_MAX_HEADER_BYTES` | [`api.max_header_bytes`](/runtime-settings#networking) | `65536` |
 | `APP_BUNDLE_IMPORT_MAX_BYTES` | [`apps.bundle_import_max_bytes`](/runtime-settings#networking) | `4194304` |
 | `APP_BUNDLE_IMPORT_MAX_ENTRIES` | [`apps.bundle_import_max_entries`](/runtime-settings#networking) | `16` |
 | `APP_BUNDLE_IMPORT_MAX_ENTRY_BYTES` | [`apps.bundle_import_max_entry_bytes`](/runtime-settings#networking) | `1048576` |
@@ -180,6 +181,7 @@ These variables only seed the default of a [runtime setting](/runtime-settings).
 | `APP_DOMAINS_WWW_MODE` | [`domains.www_mode`](/runtime-settings#networking) | `both` |
 | `APP_GAME_STATUS_CACHE` | [`games.status_cache`](/runtime-settings#networking) | `5s` |
 | `APP_GAME_STATUS_TIMEOUT` | [`games.status_timeout`](/runtime-settings#networking) | `3s` |
+| `APP_INGRESS_BODY_READ_TIMEOUT_SECONDS` | [`ingress.body_read_timeout_seconds`](/runtime-settings#networking) | `1800` |
 | `APP_INGRESS_CA_RETRY_BACKOFF` | [`ingress.ca_switch_retry_base`](/runtime-settings#networking) | `1m` |
 | `APP_INGRESS_CA_RETRY_BACKOFF_MAX` | [`ingress.ca_switch_retry_max`](/runtime-settings#networking) | `1h` |
 | `APP_CLOUDFLARE_IPS_MAX_BYTES` | [`ingress.cloudflare_ips_max_bytes`](/runtime-settings#networking) | `1048576` |
@@ -191,6 +193,7 @@ These variables only seed the default of a [runtime setting](/runtime-settings).
 | `APP_INGRESS_DNS01_ALL_HOSTS` | [`ingress.dns01_all_hosts`](/runtime-settings#networking) | `false` |
 | `APP_INGRESS_FALLBACK_CERTS` | [`ingress.fallback_certs`](/runtime-settings#networking) | `eager` |
 | `APP_INGRESS_MAX_BODY_BYTES` | [`ingress.max_body_bytes`](/runtime-settings#networking) | `1073741824` |
+| `APP_INGRESS_MAX_REQUESTS_PER_IP` | [`ingress.max_requests_per_ip`](/runtime-settings#networking) | `256` |
 | `APP_PROXY_CERT_WAIT` | [`ingress.proxy_cert_wait`](/runtime-settings#networking) | `5m0s` |
 | `APP_INGRESS_TRUSTED_PROXY_PRESET` | [`ingress.trusted_proxy_preset`](/runtime-settings#networking) | `none` |
 | `APP_INGRESS_UNMATCHED_MODE` | [`ingress.unmatched_mode`](/runtime-settings#networking) | `diagnostic` |
