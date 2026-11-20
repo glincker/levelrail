@@ -281,6 +281,16 @@ func TestPolicyValidate(t *testing.T) {
 	}
 }
 
+func TestDefaultPolicyActsButKeepsVolumes(t *testing.T) {
+	p := DefaultPolicy()
+	if p.DryRun {
+		t.Error("default policy should remove unused data on safe stages")
+	}
+	if p.DeleteOrphanVolumes {
+		t.Error("default policy must not delete orphaned volumes")
+	}
+}
+
 func TestDisabledStageIsSkipped(t *testing.T) {
 	fs := &fakeStore{quarantine: map[string]store.JanitorQuarantine{}, attempts: []store.PrunableAttempt{{ID: "a1", ServiceName: "web"}}}
 	now := time.Now()
