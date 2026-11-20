@@ -177,7 +177,7 @@ func (a *pipelineActions) Build(ctx context.Context, req pipeline.BuildRequest, 
 	}
 	defer cleanup()
 	tag, err := a.builder.BuildOnly(ctx, deploy.BuildOnlyRequest{
-		Type: req.Type, SourceDir: dir, BaseDirectory: req.Context, Dockerfile: req.Dockerfile, Tag: req.Image + ":" + req.Tag,
+		App: req.App, Type: req.Type, SourceDir: dir, BaseDirectory: req.Context, Dockerfile: req.Dockerfile, Tag: req.Image + ":" + req.Tag,
 	}, func(ev build.ProgressEvent) {
 		if ev.Log != "" {
 			log(strings.TrimRight(ev.Log, "\n"))

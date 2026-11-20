@@ -96,7 +96,7 @@ func TestValidateCreateBackupTargetRequest(t *testing.T) {
 	}
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
-			err := validateCreateBackupTargetRequest(tt.req)
+			err := validateCreateBackupTargetRequest(context.Background(), tt.req)
 			if (err != nil) != tt.wantErr {
 				t.Errorf("validateCreateBackupTargetRequest(%+v) error = %v, wantErr %v", tt.req, err, tt.wantErr)
 			}
@@ -127,7 +127,7 @@ func TestValidateUpdateBackupTargetRequest(t *testing.T) {
 	}
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
-			err := validateUpdateBackupTargetRequest(tt.req)
+			err := validateUpdateBackupTargetRequest(context.Background(), tt.req)
 			if (err != nil) != tt.wantErr {
 				t.Errorf("validateUpdateBackupTargetRequest(%+v) error = %v, wantErr %v", tt.req, err, tt.wantErr)
 			}
@@ -306,7 +306,7 @@ func TestHandleUpdateBackupTarget_Success(t *testing.T) {
 	setter.calls = nil
 
 	updateRec := httptest.NewRecorder()
-	updateBody := `{"name":"renamed","provider":"r2","endpoint":"https://x.r2.cloudflarestorage.com","region":"auto","bucket":"new-bucket"}`
+	updateBody := `{"name":"renamed","provider":"aws","region":"us-east-1","bucket":"new-bucket"}`
 	rt.Handler().ServeHTTP(updateRec, authedRequest(t, cookie, http.MethodPut, "/api/v1/backup-targets/"+created.ID, updateBody))
 	if updateRec.Code != http.StatusOK {
 		t.Fatalf("status = %d, want %d, body = %s", updateRec.Code, http.StatusOK, updateRec.Body.String())
@@ -316,7 +316,7 @@ func TestHandleUpdateBackupTarget_Success(t *testing.T) {
 	if err := json.NewDecoder(updateRec.Body).Decode(&got); err != nil {
 		t.Fatalf("decode response: %v", err)
 	}
-	if got.Name != "renamed" || got.Provider != "r2" || got.Bucket != "new-bucket" {
+	if got.Name != "renamed" || got.Provider != "aws" || got.Bucket != "new-bucket" {
 		t.Errorf("response = %+v, want the updated fields", got)
 	}
 	if len(setter.calls) != 0 {
@@ -688,5 +688,91 @@ func TestHandleDeleteBackupTarget_AuditFailureStaysSuccess(t *testing.T) {
 	}
 	if _, err := db.GetBackupTarget(context.Background(), id); !errors.Is(err, store.ErrBackupTargetNotFound) {
 		t.Fatalf("target should be gone, err = %v", err)
+	}
+}
+
+func TestHandleUpdateBackupTarget_RedirectNeedsNewCredentials(t *testing.T) {
+	t.Parallel()
+	setter := &fakeBackupSecretsSetter{}
+	rt, db := newTestRouterWithBackupSecrets(t, setter)
+	cookie := loginTestSession(t, rt, db)
+
+	createRec := httptest.NewRecorder()
+	createBody := `{"name":"s3","provider":"custom","endpoint":"https://s3.example.com","region":"r","bucket":"b","access_key_id":"AKID","secret_access_key":"topsecret"}`
+	rt.Handler().ServeHTTP(createRec, authedRequest(t, cookie, http.MethodPost, "/api/v1/backup-targets", createBody))
+	var created backupTargetResource
+	if err := json.NewDecoder(createRec.Body).Decode(&created); err != nil {
+		t.Fatalf("decode create response: %v", err)
+	}
+	put := func(body string) *httptest.ResponseRecorder {
+		rec := httptest.NewRecorder()
+		rt.Handler().ServeHTTP(rec, authedRequest(t, cookie, http.MethodPut, "/api/v1/backup-targets/"+created.ID, body))
+		return rec
+	}
+
+	for name, body := range map[string]string{
+		"other host":     `{"name":"s3","provider":"custom","endpoint":"https://other.example.net","region":"r","bucket":"b"}`,
+		"other port":     `{"name":"s3","provider":"custom","endpoint":"https://s3.example.com:8443","region":"r","bucket":"b"}`,
+		"other scheme":   `{"name":"s3","provider":"custom","endpoint":"http://s3.example.com","region":"r","bucket":"b"}`,
+		"provider swap":  `{"name":"s3","provider":"aws","bucket":"b"}`,
+		"dav+ endpoint":  `{"name":"s3","provider":"custom","endpoint":"dav+https://s3.example.com","region":"r","bucket":"b"}`,
+		"local endpoint": `{"name":"s3","provider":"custom","endpoint":"local://","region":"r","bucket":"b"}`,
+	} {
+		if rec := put(body); rec.Code != http.StatusBadRequest {
+			t.Errorf("%s: status = %d, want 400, body = %s", name, rec.Code, rec.Body.String())
+		}
+	}
+	stored, _ := db.GetBackupTarget(context.Background(), created.ID)
+	if stored.Endpoint != "https://s3.example.com" {
+		t.Fatalf("endpoint changed despite rejection: %q", stored.Endpoint)
+	}
+
+	if rec := put(`{"name":"s3","provider":"custom","endpoint":"https://S3.example.com:443","region":"r2","bucket":"b2"}`); rec.Code != http.StatusOK {
+		t.Errorf("same host update: status = %d, body = %s", rec.Code, rec.Body.String())
+	}
+	if rec := put(`{"name":"s3","provider":"custom","endpoint":"https://other.example.net","region":"r","bucket":"b","access_key_id":"N","secret_access_key":"M"}`); rec.Code != http.StatusOK {
+		t.Errorf("redirect with new credentials: status = %d, body = %s", rec.Code, rec.Body.String())
+	}
+}
+
+func TestHandleUpdateBackupTarget_ClearCABundle(t *testing.T) {
+	t.Parallel()
+	setter := &fakeBackupSecretsSetter{}
+	rt, db := newTestRouterWithBackupSecrets(t, setter)
+	cookie := loginTestSession(t, rt, db)
+	createRec := httptest.NewRecorder()
+	createBody := `{"name":"s3","provider":"custom","endpoint":"https://s3.example.com","region":"r","bucket":"b","access_key_id":"AKID","secret_access_key":"topsecret"}`
+	rt.Handler().ServeHTTP(createRec, authedRequest(t, cookie, http.MethodPost, "/api/v1/backup-targets", createBody))
+	var created backupTargetResource
+	if err := json.NewDecoder(createRec.Body).Decode(&created); err != nil {
+		t.Fatalf("decode: %v", err)
+	}
+	bad := httptest.NewRecorder()
+	rt.Handler().ServeHTTP(bad, authedRequest(t, cookie, http.MethodPut, "/api/v1/backup-targets/"+created.ID,
+		`{"name":"d","provider":"webdav","endpoint":"https://dav.example.com","bucket":"x","access_key_id":"u","secret_access_key":"p","ca_bundle":"-----BEGIN PRIVATE KEY-----\nAAAA\n-----END PRIVATE KEY-----\n"}`))
+	if bad.Code != http.StatusBadRequest {
+		t.Fatalf("non certificate bundle: status = %d", bad.Code)
+	}
+	setter.calls = nil
+	ok := httptest.NewRecorder()
+	rt.Handler().ServeHTTP(ok, authedRequest(t, cookie, http.MethodPut, "/api/v1/backup-targets/"+created.ID,
+		`{"name":"d","provider":"webdav","endpoint":"https://dav.example.com","bucket":"x","access_key_id":"u","secret_access_key":"p","clear_ca_bundle":true}`))
+	noCreds := httptest.NewRecorder()
+	rt.Handler().ServeHTTP(noCreds, authedRequest(t, cookie, http.MethodPut, "/api/v1/backup-targets/"+created.ID,
+		`{"name":"d","provider":"webdav","endpoint":"https://dav.example.com","bucket":"x","clear_ca_bundle":true}`))
+	if noCreds.Code != http.StatusBadRequest {
+		t.Fatalf("ca bundle change without credentials: status = %d", noCreds.Code)
+	}
+	if ok.Code != http.StatusOK {
+		t.Fatalf("status = %d, body = %s", ok.Code, ok.Body.String())
+	}
+	cleared := false
+	for _, c := range setter.calls {
+		if c.envKey == "ca_bundle" && c.plaintext == "" {
+			cleared = true
+		}
+	}
+	if !cleared {
+		t.Fatalf("ca_bundle not cleared: %+v", setter.calls)
 	}
 }

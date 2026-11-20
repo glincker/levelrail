@@ -37,6 +37,9 @@ type InboxItem struct {
 	HistoryEntry
 	Read     bool
 	Resolved bool
+	// Repeats counts older identical items folded into this one; RepeatIDs are their ids.
+	Repeats   int
+	RepeatIDs []string
 }
 
 // InboxFilter narrows ListInbox.
@@ -161,7 +164,31 @@ func (db *DB) ListInbox(ctx context.Context, principal string, f InboxFilter) ([
 	if limit <= 0 || limit > inboxMaxLimit {
 		limit = inboxDefaultLimit
 	}
-	return db.listInbox(ctx, principal, f, limit)
+	items, err := db.listInbox(ctx, principal, f, limit)
+	if err != nil {
+		return nil, err
+	}
+	return CollapseRepeats(items), nil
+}
+
+// CollapseRepeats folds consecutive identical items (same rule, target, event, outcome,
+// detail and read state) into the newest one, so a flapping alert is one row with a count.
+func CollapseRepeats(items []InboxItem) []InboxItem {
+	out := make([]InboxItem, 0, len(items))
+	for _, it := range items {
+		if n := len(out); n > 0 && sameInboxAlert(out[n-1], it) {
+			out[n-1].Repeats++
+			out[n-1].RepeatIDs = append(out[n-1].RepeatIDs, it.ID)
+			continue
+		}
+		out = append(out, it)
+	}
+	return out
+}
+
+func sameInboxAlert(a, b InboxItem) bool {
+	return a.RuleID == b.RuleID && a.ResourceID == b.ResourceID && a.Event == b.Event &&
+		a.Outcome == b.Outcome && a.Detail == b.Detail && a.Read == b.Read && a.Resolved == b.Resolved
 }
 
 func (db *DB) listInbox(ctx context.Context, principal string, f InboxFilter, limit int) ([]InboxItem, error) {

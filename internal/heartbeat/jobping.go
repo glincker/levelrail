@@ -4,6 +4,7 @@ import (
 	"context"
 	"errors"
 	"fmt"
+	"github.com/GLINCKER/levelrail/internal/secrets"
 	"log/slog"
 	"math/rand/v2"
 	"net/http"
@@ -29,7 +30,7 @@ const (
 	defaultJobBackoffMax  = 30 * time.Second
 	defaultJobQueue       = 64
 
-	jobSecretsService = "heartbeat-jobs"
+	jobSecretsService = secrets.ControlPlanePrefix + "heartbeat-jobs"
 )
 
 // JobPingConfig is the env-derived configuration of the per-job sender.

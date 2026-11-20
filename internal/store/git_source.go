@@ -496,6 +496,22 @@ func (db *DB) SetGitSourceFetchExtras(ctx context.Context, serviceName string, s
 	return nil
 }
 
+// SetGitSourceTriggerMode stores which events deploy; it returns
+// ErrGitSourceNotFound if no source is connected.
+func (db *DB) SetGitSourceTriggerMode(ctx context.Context, serviceName, mode string) error {
+	res, err := db.ExecContext(ctx, `
+		UPDATE service_git_sources SET trigger_mode = ?, updated_at = strftime('%Y-%m-%dT%H:%M:%fZ', 'now')
+		WHERE service_name = ?
+	`, mode, serviceName)
+	if err != nil {
+		return fmt.Errorf("store: set source %q trigger mode: %w", serviceName, err)
+	}
+	if n, _ := res.RowsAffected(); n == 0 {
+		return ErrGitSourceNotFound
+	}
+	return nil
+}
+
 // SetGitSourceAppAuth records whether non-request flows may clone the source
 // with the GitHub App; it returns ErrGitSourceNotFound if none is connected.
 func (db *DB) SetGitSourceAppAuth(ctx context.Context, serviceName string, allowed bool) error {

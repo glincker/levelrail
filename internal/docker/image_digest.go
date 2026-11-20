@@ -99,7 +99,7 @@ func (c *Client) ResolveImage(ctx context.Context, ref string, auth *RegistryAut
 
 	encoded := ""
 	if auth != nil {
-		encoded, err = registry.EncodeAuthConfig(registry.AuthConfig{Username: auth.Username, Password: auth.Password})
+		encoded, err = registry.EncodeAuthConfig(auth.authConfig())
 		if err != nil {
 			return ResolvedImage{}, fmt.Errorf("docker: resolve image %q: encode auth: %w", ref, err)
 		}

@@ -165,6 +165,10 @@ func alertRuleCondition(r alertRuleResource) string {
 		return fmt.Sprintf("task %s fails %d runs in a row", r.ScheduledTaskID, r.RestartCountThreshold)
 	case "control_plane_backup_stale":
 		return "the control plane's newest self-backup snapshot older than its age limit (platform-wide)"
+	case "advisory_match":
+		return "a running image matching a feed advisory at or above the alerts.advisory_min_severity setting, when alerts.advisory_notify is on (platform-wide)"
+	case "app_unhealthy":
+		return "an app container failing its liveness probe past the failure threshold (platform-wide, or one app with a service: resource)"
 	case "volume_usage":
 		return "any volume at or above the volumes.usage_alert_percent setting (platform-wide)"
 	case "log_archive_stale":

@@ -99,6 +99,8 @@ func (rt *Router) registerAppRoutes(mux *http.ServeMux) {
 	mux.HandleFunc("GET /api/v1/apps/{name}/deploys/{deployId}", rt.requireAbilityForResource(AbilityRead, appResourceFromPath, rt.handleGetDeploy))
 	mux.HandleFunc("POST /api/v1/apps/{name}/deploys/{deployId}/cancel", rt.requireAbilityForResource(AbilityDeploy, appResourceFromPath, rt.handleCancelDeploy))
 	mux.HandleFunc("POST /api/v1/apps/{name}/deploys/{deployId}/rollback", rt.requireAbilityForResource(AbilityDeploy, appResourceFromPath, rt.idempotent(rt.handleRollbackToDeploy)))
+	mux.HandleFunc("PUT /api/v1/apps/{name}/deploys/{deployId}/pin", rt.requireAbilityForResource(AbilityDeploy, appResourceFromPath, rt.handlePinDeploy))
+	mux.HandleFunc("DELETE /api/v1/apps/{name}/deploys/{deployId}/pin", rt.requireAbilityForResource(AbilityDeploy, appResourceFromPath, rt.handleUnpinDeploy))
 	mux.HandleFunc("POST /api/v1/apps/{name}/deploys/{deployId}/rollback-lock", rt.requireAbilityForResource(AbilityDeploy, appResourceFromPath, rt.idempotent(rt.handleRollbackAndLock)))
 	mux.HandleFunc("POST /api/v1/apps/{name}/deploys/{deployId}/publish", rt.requireAbilityForResource(AbilityDeploy, appResourceFromPath, rt.handlePublishHeldBuild))
 	mux.HandleFunc("GET /api/v1/apps/{name}/publish-lock", rt.requireAbilityForResource(AbilityRead, appResourceFromPath, rt.handleGetPublishLock))

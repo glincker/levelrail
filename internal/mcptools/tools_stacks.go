@@ -128,7 +128,7 @@ func registerStackTools(server *mcp.Server, client *apiclient.Client) {
 
 	addTool(server, &mcp.Tool{
 		Name:        "plan_stack",
-		Description: "Dry run of a stack apply: change list and plan hash. Changes nothing.",
+		Description: "Dry run of a stack apply: change list and plan hash.",
 	}, func(ctx context.Context, _ *mcp.CallToolRequest, in stackRunInput) (*mcp.CallToolResult, planStackOutput, error) {
 		res, _, err := client.PlanStack(ctx, in.Name, stackRequest(in))
 		if err != nil {

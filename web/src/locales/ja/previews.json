@@ -107,6 +107,17 @@
     "note": "すべてのアプリに適用されます。0 を指定すると起動時のデフォルトを維持します。アプリごとの上書きが引き続き優先されます。",
     "invalid": "0から {{max}} までの整数を入力してください。"
   },
+  "scope": {
+    "label": "必須のラベル",
+    "labelPlaceholder": "preview",
+    "labelHint": "このラベルが付いたプルリクエストだけがプレビューを作成し、ラベルを追加するとビルドが始まります。GitHubとGitLabのみ。空の場合はすべてのプルリクエストをビルドします。",
+    "services": "除外するサービス",
+    "servicesPlaceholder": "worker, docs",
+    "servicesHint": "プレビューでスキップする、複数サービスのアプリのサービス名をカンマ区切りで指定します。少なくとも1つは残す必要があります。",
+    "save": "保存",
+    "saved": "プレビュー設定を保存しました。",
+    "error": "プレビュー設定を更新できませんでした。"
+  },
   "migrate": {
     "command": "マイグレーションコマンド",
     "commandPlaceholder": "npm run migrate",

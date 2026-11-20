@@ -1,8 +1,11 @@
 {
   "failing": {
     "fallback": "対応が必要です。アプリを開いて原因を確認してください。",
-    "fix": "デプロイを見る",
-    "fixLabel": "{{name}}のデプロイを見る"
+    "fix": "修正",
+    "fixLabel": "{{name}}のデプロイを見る",
+    "fixLabelHealth": "{{name}}のヘルスチェックを修正",
+    "fixLabelDomains": "{{name}}のドメインを修正",
+    "fixLabelPages": "Pagesサイト{{name}}を開く"
   },
   "logs": {
     "noContainer": "このアプリには実行中のコンテナがないため、ストリームするものがありません。",
@@ -56,5 +59,14 @@
       "error": "失敗"
     }
   },
-  "description": "説明: {{text}}"
+  "description": "説明: {{text}}",
+  "card": {
+    "noPreview": "プレビューなし",
+    "noDomain": "ドメインなし",
+    "staticSite": "静的サイト",
+    "lastDeploy": "デプロイ",
+    "empty": "これらのフィルターに一致するアプリはありません。",
+    "listLabel": "アプリ",
+    "loading": "アプリを読み込み中"
+  }
 }

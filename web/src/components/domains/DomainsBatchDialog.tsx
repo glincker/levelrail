@@ -6,7 +6,6 @@ import {
   CircleCheckGlassIcon,
   CircleXGlassIcon,
 } from '@thesvg/ui-react'
-import { Alert, AlertDescription } from '@/components/ui/alert'
 import { Button } from '@/components/ui/button'
 import { Checkbox } from '@/components/ui/checkbox'
 import {
@@ -41,6 +40,7 @@ import {
 import { useDomainsBatch } from '../../queries/domainsBatch'
 import { EnvironmentTargetSelect, TargetSelect } from './DomainLifecycleDialogs'
 import { firstTarget, useTargetGroups } from './useTargetGroups'
+import { ApiErrorAlert } from '../ApiErrorAlert'
 
 // One selected row, live or parked.
 export interface BatchSubject {
@@ -313,11 +313,7 @@ export function DomainsBatchDialog({
           </div>
         )}
 
-        {batch.error ? (
-          <Alert variant="destructive">
-            <AlertDescription>{batch.error.message}</AlertDescription>
-          </Alert>
-        ) : null}
+        {batch.error ? <ApiErrorAlert error={batch.error} /> : null}
 
         <DialogFooter>
           <Button

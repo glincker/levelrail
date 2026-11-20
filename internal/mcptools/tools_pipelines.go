@@ -44,7 +44,7 @@ func registerPipelineTools(server *mcp.Server, client *apiclient.Client) {
 	registerPipelineOverviewTools(server, client)
 	addTool(server, &mcp.Tool{
 		Name:        "list_pipeline_runs",
-		Description: "List an app's CI/CD pipeline runs, newest first, with status, trigger, ref, and the reason string for each. Filter by pipeline name.",
+		Description: "List an app's CI/CD pipeline runs, newest first, with status, trigger, ref and reason. Filter by pipeline name.",
 	}, func(ctx context.Context, _ *mcp.CallToolRequest, in listPipelineRunsInput) (*mcp.CallToolResult, pipelineRunsOutput, error) {
 		runs, err := client.ListPipelineRuns(ctx, in.Name, in.Pipeline, in.Limit)
 		if err != nil {
@@ -58,7 +58,7 @@ func registerPipelineTools(server *mcp.Server, client *apiclient.Client) {
 
 	addTool(server, &mcp.Tool{
 		Name:        "explain_pipeline_run",
-		Description: "Explain a pipeline run: status and reason, the first failed job and step with exit code and its last output lines, approval gates it waits on, and skipped jobs. Read-only.",
+		Description: "Explain a pipeline run: status, first failed job and step with exit code and output, pending approval gates, skipped jobs.",
 	}, func(ctx context.Context, _ *mcp.CallToolRequest, in pipelineRunInput) (*mcp.CallToolResult, pipelineRunExplanation, error) {
 		run, err := client.GetPipelineRun(ctx, in.Name, in.RunID)
 		if err != nil {

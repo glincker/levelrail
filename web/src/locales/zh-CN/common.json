@@ -138,6 +138,8 @@
     "colP95": "p95",
     "colErrors": "错误",
     "colDeployed": "部署于",
+    "colTls": "TLS",
+    "tlsNone": "无域名",
     "selectApp": "选择 {{name}}",
     "count_other": "{{count}} 个应用",
     "count_filtered_other": "{{total}} 个应用中的 {{count}} 个",
@@ -237,6 +239,7 @@
     "restarting": "重启中...",
     "more": "更多操作",
     "redeploy": "重新部署当前版本",
+    "manageInPages": "在 Pages 中管理",
     "redeploying": "重新部署中...",
     "start": "启动",
     "stop": "停止",
@@ -535,6 +538,7 @@
       "settings": "设置",
       "help": "帮助",
       "functions": "函数",
+      "pages": "页面",
       "storage": "存储",
       "assets": "资产",
       "mail": "邮件",
@@ -1101,7 +1105,15 @@
   "projectsPage": {
     "list": {
       "name": "名称",
-      "created": "创建时间"
+      "created": "创建时间",
+      "pin": "固定 {{name}}",
+      "unpin": "取消固定 {{name}}"
+    },
+    "sort": {
+      "label": "排序方式",
+      "name": "名称",
+      "newest": "最新优先",
+      "oldest": "最早优先"
     },
     "empty": {
       "title": "还没有项目",

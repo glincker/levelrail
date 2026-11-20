@@ -5,4 +5,7 @@ export interface DnsTokenVerification {
   missing_scopes?: string[]
   zones_visible?: number
   message?: string
+  // Route 53 only: each probed action and the minimal policy for denied ones.
+  permissions?: { action: string; state: 'allowed' | 'denied' | 'unknown' }[]
+  iam_policy?: string
 }

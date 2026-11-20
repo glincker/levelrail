@@ -12,6 +12,7 @@ import (
 	"sync"
 	"time"
 
+	"github.com/GLINCKER/levelrail/internal/secrets"
 	"github.com/GLINCKER/levelrail/kit/netguard"
 )
 
@@ -24,7 +25,7 @@ type Secrets interface {
 }
 
 const (
-	secretsService = "ddns"
+	secretsService = secrets.ControlPlanePrefix + "ddns"
 	keySettings    = "settings"
 	keyTarget      = "target"
 

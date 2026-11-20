@@ -129,6 +129,8 @@ type triggerBuildRequest struct {
 	FromCache bool `json:"from_cache,omitempty"`
 	// UploadHash builds a directory previously sent to POST /api/v1/apps/{name}/uploads instead of a git checkout.
 	UploadHash string `json:"upload_hash,omitempty"`
+	// SourceURL is an https .zip or .tar.gz to download and publish; build.type static only.
+	SourceURL string `json:"source_url,omitempty"`
 	// InlineSource builds a pasted Dockerfile plus optional files, no git host or repository needed.
 	InlineSource *inlineSourceInput `json:"inline_source,omitempty"`
 	// NoCache disables the BuildKit layer cache; only build.type "dockerfile" supports it.
@@ -348,6 +350,20 @@ func (rt *Router) handleTriggerBuild(w http.ResponseWriter, r *http.Request) {
 		writeError(w, http.StatusBadRequest, "invalid request body")
 		return
 	}
+	if siteScopedRequest(r) {
+		if msg := rt.siteTokenBuildProblem(r.Context(), name, existing.Image, req); msg != "" {
+			writeError(w, http.StatusForbidden, msg)
+			return
+		}
+	}
+	finalRepo := req.ImageRepo
+	if finalRepo == "" {
+		finalRepo = rt.ownImageRepo(r.Context(), name, existing.Image)
+	}
+	if status, msg := rt.checkFinalImageRepo(r.Context(), name, finalRepo, true); status != 0 {
+		writeError(w, status, msg)
+		return
+	}
 	if status, msg := rt.validateRerunOf(r.Context(), name, req.RerunOf); status != 0 {
 		writeError(w, status, msg)
 		return
@@ -365,6 +381,30 @@ func (rt *Router) handleTriggerBuild(w http.ResponseWriter, r *http.Request) {
 	buildType := req.Build.Type
 	if buildType == "" {
 		buildType = spec.BuildDockerfile
+	}
+	stagedURL, markLaunched := "", func() {}
+	if req.SourceURL != "" {
+		if buildType != spec.BuildStatic || req.UploadHash != "" {
+			writeError(w, http.StatusBadRequest, "source_url needs build.type \"static\" and cannot be combined with upload_hash")
+			return
+		}
+		if !rt.isPagesSiteApp(r.Context(), name, existing.Image) {
+			writeError(w, http.StatusBadRequest, "source_url deploys only to a static site")
+			return
+		}
+		hash, fresh, serr := rt.stagePagesSourceURL(r.Context(), name, req.SourceURL)
+		if serr != nil {
+			writeError(w, serr.status, serr.msg)
+			return
+		}
+		req.UploadHash = hash
+		launched := false
+		defer func() {
+			if fresh && !launched {
+				rt.removeStagedPagesSource(name, hash)
+			}
+		}()
+		stagedURL, markLaunched = req.SourceURL, func() { launched = true }
 	}
 	switch buildType {
 	case spec.BuildDockerfile, spec.BuildRailpack, spec.BuildStatic, spec.BuildImage:
@@ -474,8 +514,9 @@ func (rt *Router) handleTriggerBuild(w http.ResponseWriter, r *http.Request) {
 			req.Build.StaticSPA = gs.StaticSPA
 		}
 	}
-	buildReq := manualBuildRequest(name, *existing, req, buildType)
+	buildReq := rt.manualBuildRequestFor(r.Context(), name, *existing, req, buildType)
 	rt.applyAppBuildSettings(r.Context(), name, &buildReq)
+	buildReq.ProxyAuthorizer = rt.proxyAuthorizerFor(r, name)
 	source := store.DeployAttemptSourceManual
 	attemptCtx := r.Context()
 	if req.UploadHash != "" {
@@ -496,7 +537,9 @@ func (rt *Router) handleTriggerBuild(w http.ResponseWriter, r *http.Request) {
 				rt.internalError(w, "api: trigger build: queue failed", err, slog.String("name", name))
 				return
 			}
+			markLaunched()
 			rt.auditInlineSource(r, name, inline)
+			rt.auditPagesURLDeploy(r, name, stagedURL)
 			writeJSON(w, http.StatusAccepted, resp)
 			return
 		}
@@ -511,7 +554,9 @@ func (rt *Router) handleTriggerBuild(w http.ResponseWriter, r *http.Request) {
 	run.repoURL, run.ref, run.fromCache = req.RepoURL, req.Ref, req.FromCache
 	go rt.runManualBuild(run) //nolint:gosec // the build outlives the request; runManualBuild derives its own context
 
+	markLaunched()
 	rt.auditInlineSource(r, name, inline)
+	rt.auditPagesURLDeploy(r, name, stagedURL)
 	writeJSON(w, http.StatusAccepted, triggerBuildResponse{ID: run.id})
 }
 

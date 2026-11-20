@@ -7,7 +7,7 @@ let launcher;
 try {
   launcher = require.resolve("levelrail-cli/bin/levelrail-cli.js");
 } catch {
-  console.error("levelrail: the levelrail-cli package is missing. Reinstall, or use https://levelrail.com/install-cli.sh");
+  console.error("levelrail: the levelrail-cli package is missing. Reinstall, or use https://github.com/glincker/levelrail/releases/latest/download/install-cli.sh");
   process.exit(1);
 }
 

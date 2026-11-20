@@ -65,7 +65,7 @@ func registerExpansionWriteTools(server *mcp.Server, client *apiclient.Client) {
 
 	addTool(server, &mcp.Tool{
 		Name:        "run_restore_drill",
-		Description: "Start a restore drill that restores a backup into a scratch target and verifies it. Needs confirm equal to backup_id; only exists with --allow-write.",
+		Description: "Restore a backup into a scratch target and verify it. Needs confirm equal to backup_id; only with --allow-write.",
 	}, func(ctx context.Context, _ *mcp.CallToolRequest, in runRestoreDrillInput) (*mcp.CallToolResult, restoreDrillStarted, error) {
 		if err := requireConfirm("run_restore_drill", "backup_id", in.BackupID, in.Confirm); err != nil {
 			return nil, restoreDrillStarted{}, err

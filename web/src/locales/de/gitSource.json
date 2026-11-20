@@ -69,6 +69,10 @@
     "release": {
       "label": "Tags und Releases",
       "description": "Nur bei einem Tag-Push oder (nur GitHub) einem veröffentlichten Release deployen. Branch-Pushes deployen nie."
+    },
+    "manual": {
+      "label": "Nur manuell",
+      "description": "Deployt nie bei einem Push. Deploy auf Anfrage über Dashboard, CLI oder API."
     }
   },
   "buildPacks": {

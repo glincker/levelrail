@@ -1,0 +1,571 @@
+{
+  "title": "Pages",
+  "description": "Sitios estáticos servidos directamente desde el plano de control.",
+  "newSite": "Nuevo sitio",
+  "empty": {
+    "title": "Todavía no hay sitios",
+    "body": "Suelte una carpeta o un zip para publicar su primer sitio."
+  },
+  "list": {
+    "label": "Sitios",
+    "name": "Nombre",
+    "url": "URL",
+    "lastDeploy": "Último despliegue",
+    "status": "Estado",
+    "size": "Tamaño",
+    "noUrl": "sin dominio",
+    "none": "ninguno",
+    "unknown": "-",
+    "loadFailed": "No se pudieron cargar los sitios."
+  },
+  "status": {
+    "running": "En línea",
+    "attention": "Requiere atención",
+    "unknown": "Desconocido"
+  },
+  "new": {
+    "title": "Nuevo sitio",
+    "name": "Nombre",
+    "nameHint": "Letras minúsculas, dígitos y guiones.",
+    "drop": "Subir",
+    "blank": "Plantilla",
+    "blankHint": "Empieza con una sola página index que puede reemplazar más adelante.",
+    "git": "Git",
+    "create": "Crear y publicar",
+    "creating": "Trabajando...",
+    "cancel": "Cancelar",
+    "nameTaken": "Ese nombre ya está en uso.",
+    "failed": "No se pudo crear el sitio: {{message}}",
+    "mode": "Empezar desde",
+    "change": "Cambiar",
+    "stage": {
+      "packing": "Empaquetando archivos...",
+      "creating": "Creando el sitio...",
+      "uploading": "Subiendo...",
+      "publishing": "Publicando..."
+    }
+  },
+  "detail": {
+    "back": "Todos los sitios",
+    "visit": "Visitar",
+    "tabs": {
+      "label": "Secciones del sitio",
+      "overview": "Resumen",
+      "deployments": "Despliegues",
+      "domains": "Dominios",
+      "routes": "Rutas",
+      "settings": "Ajustes",
+      "failing": "Comprobaciones fallidas"
+    },
+    "publish": "Publicar nueva versión",
+    "hidePublish": "Ocultar subida",
+    "loading": "Cargando...",
+    "dropOverlay": "Suelte para publicar una nueva versión",
+    "redeployed": "Nueva versión publicada.",
+    "lastDeploy": "Último despliegue {{when}}",
+    "files_one": "{{count}} archivo",
+    "files_other": "{{count}} archivos"
+  },
+  "settings": {
+    "app": "Ajustes completos de la aplicación",
+    "appHint": "Las opciones de compilación, entorno y acceso están en la página de la aplicación.",
+    "openApp": "Abrir página de la aplicación",
+    "danger": "Eliminar sitio",
+    "dangerHint": "Elimina el sitio y sus archivos publicados.",
+    "delete": "Eliminar",
+    "deleting": "Eliminando...",
+    "confirmTitle": "¿Eliminar {{name}}?",
+    "confirmBody": "El sitio dejará de servirse y no se puede restaurar.",
+    "dangerZone": "Zona de peligro",
+    "spa": "Aplicación de página única",
+    "spaHint": "Sirve index.html para las rutas desconocidas, para que funcionen las rutas del cliente.",
+    "cleanUrls": "URL limpias",
+    "cleanUrlsHint": "Sirve /about desde about.html.",
+    "trailingSlash": "Barra final",
+    "slashOff": "Dejar como está",
+    "slashAdd": "Añadir siempre",
+    "slashRemove": "Quitar siempre",
+    "notFound": "Página 404 personalizada",
+    "build": "Comando de compilación",
+    "output": "Directorio de salida",
+    "password": "Contraseña",
+    "passwordHint": "Los visitantes inician sesión con el usuario site y esta contraseña compartida. Se aplica a todos los dominios y URL de despliegue, y no se vuelve a mostrar.",
+    "passwordPlaceholder": "Nueva contraseña",
+    "passwordClear": "Quitar",
+    "passwordRemoveConfirm": "¿Quitar la contraseña? Cualquiera con el enlace podrá abrir el sitio.",
+    "passwordKeep": "Mantener",
+    "locked": "Protegido con contraseña",
+    "gitOnlyHint": "Se aplica a las compilaciones de Git. Todavía no se usa en las carpetas subidas.",
+    "auto": "Automático",
+    "on": "Activado",
+    "off": "Desactivado",
+    "current": "Actualmente {{value}}",
+    "save": "Guardar",
+    "reset": "Usar app.yaml",
+    "resetGit": "Usar ajustes de Git",
+    "fromGit": "Desde los ajustes de Git: {{value}}",
+    "saved": "Ajuste guardado",
+    "loadFailed": "No se pudieron cargar los ajustes",
+    "buildPlaceholder": "npm run build",
+    "outputPlaceholder": "dist"
+  },
+  "domains": {
+    "label": "Conectar un dominio",
+    "add": "Añadir dominio",
+    "adding": "Añadiendo...",
+    "addFailed": "No se pudo añadir el dominio.",
+    "verify": "Verificar",
+    "checking": "Comprobando...",
+    "dnsOk": "DNS listo",
+    "dnsWaiting": "Esperando al DNS",
+    "certIssued": "Certificado emitido",
+    "certPending": "Certificado pendiente",
+    "mode": {
+      "auto": "DNS configurado por nosotros",
+      "manual": "Añada estos registros"
+    },
+    "recordsLabel": "Registros DNS que añadir",
+    "type": "Tipo",
+    "host": "Host",
+    "value": "Valor",
+    "copyHost": "Copiar host",
+    "copyValue": "Copiar valor",
+    "statusFailed": "No se pudo comprobar el estado del dominio.",
+    "placeholder": "www.example.com",
+    "step1": "Dominio",
+    "step2": "Registros DNS",
+    "step3": "Verificar",
+    "createdForYou": "Creamos los registros DNS por usted.",
+    "none": "Todavía no hay dominio personalizado",
+    "tls": "TLS",
+    "provisioning": "Aprovisionando",
+    "remove": "Quitar {{domain}}",
+    "progress": "Progreso del dominio",
+    "step": {
+      "dns": "DNS",
+      "cert": "Certificado",
+      "live": "En línea"
+    },
+    "done": "listo",
+    "waiting": "esperando",
+    "checks": "Comprobaciones del dominio",
+    "failed": "fallido",
+    "check": {
+      "dns_resolves": "Registro DNS",
+      "dns_points_here": "Apunta aquí",
+      "dns_aaaa_mismatch": "Registro IPv6",
+      "dns_cname_apex": "CNAME en el dominio raíz",
+      "dns_proxied": "Proxy de CDN",
+      "proxy_ports": "Puertos 80/443",
+      "net_port80": "Puerto 80",
+      "caa_blocks_issuer": "CAA",
+      "tls_certificate": "Certificado",
+      "cert_renewal": "Renovación",
+      "http_status": "El sitio responde",
+      "dns_propagation": "Propagación",
+      "host_private_address": "Dirección pública",
+      "acme_failure": "Emisión del certificado",
+      "dns_www_apex": "www y dominio raíz"
+    }
+  },
+  "summary": {
+    "files_one": "{{count}} archivo",
+    "files_other": "{{count}} archivos",
+    "index": "index.html encontrado",
+    "redirects": "_redirects encontrado",
+    "headers": "_headers encontrado",
+    "noIndex": "No hay index.html en el nivel superior. La raíz del sitio mostrará un 404.",
+    "overLimit": "Supera el límite de tamaño de subida y será rechazado.",
+    "skipped": "Se omiten los archivos ocultos del sistema, .git y node_modules."
+  },
+  "success": {
+    "title": "{{name}} está publicado",
+    "open": "Abrir",
+    "copy": "Copiar URL",
+    "next": "Siguiente",
+    "addDomain": "Añadir dominio",
+    "editRoutes": "Editar rutas",
+    "viewDeploys": "Ver despliegues"
+  },
+  "entry": {
+    "drop": {
+      "title": "Suelte una carpeta o un zip",
+      "body": "Publique un sitio compilado en segundos."
+    },
+    "git": {
+      "title": "Conectar Git",
+      "body": "Compile y publique en cada push."
+    },
+    "blank": {
+      "title": "Empezar desde una página en blanco",
+      "body": "Cree una página inicial y edítela más tarde."
+    }
+  },
+  "rollback": {
+    "title": "Versión anterior",
+    "action": "Revertir",
+    "confirmTitle": "¿Revertir {{name}}?",
+    "confirmBody": "El sitio volverá a servir la versión anterior.",
+    "none": "No hay una versión anterior a la que revertir."
+  },
+  "promote": {
+    "action": "Promover",
+    "confirmTitle": "¿Poner este despliegue en línea para {{name}}?",
+    "confirmBody": "Los dominios propios del sitio sirven este despliegue de inmediato. Su URL propia sigue funcionando."
+  },
+  "deployUrl": {
+    "copy": "Copiar URL del despliegue",
+    "copied": "URL del despliegue copiada",
+    "open": "Abrir URL del despliegue"
+  },
+  "starters": {
+    "label": "Plantilla inicial",
+    "preview": "Vista previa de la plantilla {{name}}",
+    "blank": {
+      "title": "En blanco",
+      "hint": "Una sola página index vacía que puede reemplazar más adelante."
+    },
+    "landing": {
+      "title": "Página de inicio",
+      "hint": "Cabecera principal, tres tarjetas de funciones y pie de página."
+    },
+    "docs": {
+      "title": "Documentación",
+      "hint": "Navegación lateral, encabezados y un bloque de código."
+    },
+    "portfolio": {
+      "title": "Portafolio",
+      "hint": "Presentación y una cuadrícula de trabajos seleccionados."
+    }
+  },
+  "checks": {
+    "title": "Comprobación del sitio",
+    "score": "Puntuación de la comprobación del sitio",
+    "rerun": "Repetir",
+    "running": "Comprobando...",
+    "failed": "No se pudo ejecutar la comprobación del sitio.",
+    "allGood": "No se encontraron problemas.",
+    "scanned_one": "{{count}} archivo analizado, {{size}}.",
+    "scanned_other": "{{count}} archivos analizados, {{size}}.",
+    "truncated": "Sitio grande: solo se analizó una parte.",
+    "passing_one": "{{count}} comprobación superada",
+    "passing_other": "{{count}} comprobaciones superadas",
+    "status": {
+      "ok": "superada",
+      "warn": "advertencia",
+      "fail": "fallida"
+    }
+  },
+  "traffic": {
+    "title": "Tráfico",
+    "window": "Periodo",
+    "windows": {
+      "24h": "24 horas",
+      "7d": "7 días",
+      "30d": "30 días"
+    },
+    "noSeries": "Todavía no hay datos",
+    "series": {
+      "requests": "Solicitudes",
+      "requestsHint": "Todas las solicitudes al sitio por intervalo de tiempo.",
+      "pages": "Páginas",
+      "pagesHint": "Solo cargas de página, sin recursos como scripts e imágenes.",
+      "errors": "Errores",
+      "errorsHint": "Respuestas con estado 4xx o 5xx."
+    },
+    "requests": "Solicitudes",
+    "visitors": "Visitantes",
+    "bandwidth": "Ancho de banda",
+    "statusLine": "2xx {{ok}}, 3xx {{redirects}}, 4xx {{clientErrors}}, 5xx {{serverErrors}}",
+    "none": "Todavía nada.",
+    "addRedirect": "Añadir una redirección",
+    "unavailable": "El tráfico no está disponible: este servidor no tiene una fuente de registros de acceso para los sitios.",
+    "failed": "No se pudo cargar el tráfico.",
+    "partial": "Datos parciales.",
+    "topPages": "Páginas más visitadas",
+    "brokenLinks": "Enlaces rotos",
+    "linkedFrom": "Enlazado desde",
+    "assets": "Recursos: {{count}} solicitudes, {{size}}",
+    "assetsNote": "Los scripts, estilos, imágenes y fuentes se cuentan aquí, no se listan.",
+    "probes": "Sondeos y escaneos: {{count}}",
+    "probesList": "Solicitudes tipo escaneo que no encontraron nada",
+    "show": "Mostrar",
+    "hide": "Ocultar"
+  },
+  "hero": {
+    "more": "Más acciones",
+    "status": {
+      "live": "En línea",
+      "publishing": "Publicando",
+      "notPublished": "No publicado"
+    }
+  },
+  "preview": {
+    "notFoundToggle": "Vista previa de la página 404",
+    "title": "Vista previa",
+    "device": "Dispositivo",
+    "desktop": "Escritorio",
+    "mobile": "Móvil",
+    "unavailable": "Vista previa no disponible",
+    "frame": "Vista previa en vivo de {{name}}"
+  },
+  "previews": {
+    "title": "Vistas previas de ramas",
+    "open": "Abrir"
+  },
+  "recent": {
+    "title": "Despliegues recientes",
+    "viewAll": "Ver todos",
+    "none": "Todavía no hay despliegues.",
+    "live": "En línea"
+  },
+  "routes": {
+    "testTitle": "Probar una URL",
+    "testLabel": "Ruta a probar",
+    "testPlaceholder": "/about",
+    "test": "Probar",
+    "rules": "Reglas",
+    "none": "No hay reglas de redirección ni de reescritura",
+    "from": "Desde",
+    "to": "Hacia",
+    "status": "Código de estado",
+    "copyLine": "Copiar línea de _redirects",
+    "advanced": "Más herramientas",
+    "notStatic": "El enrutamiento se aplica a los sitios estáticos publicados",
+    "loadFailed": "No se pudieron cargar las reglas",
+    "retry": "Reintentar",
+    "headers": "Encabezados",
+    "addRedirect": "Añadir redirección",
+    "addHeader": "Añadir encabezado",
+    "noHeaders": "No hay encabezados personalizados",
+    "moveUp": "Subir",
+    "moveDown": "Bajar",
+    "remove": "Quitar",
+    "force": "Forzar",
+    "headerPath": "Ruta del encabezado",
+    "headerSet": "Encabezados a establecer",
+    "headerSetPlaceholder": "Nombre: valor, uno por línea",
+    "headerRemove": "Encabezados a quitar",
+    "headerRemovePlaceholder": "Nombres, separados por comas",
+    "source": {
+      "ui": "UI",
+      "app.yaml": "app.yaml",
+      "file": "Archivo"
+    },
+    "lockedHint": "Solo lectura, definido en {{origin}}",
+    "unsaved": "Cambios sin guardar",
+    "saving": "Guardando...",
+    "save": "Guardar cambios",
+    "discard": "Descartar",
+    "saved": "Reglas de enrutamiento guardadas",
+    "invalid": "Algunas reglas necesitan corrección",
+    "testHint": "Las pruebas se ejecutan con las reglas guardadas.",
+    "kindLabel": "Tipo de regla",
+    "kind": {
+      "redirect": "Redirección",
+      "rewrite": "Reescritura",
+      "proxy": "Proxy",
+      "status": "Responder"
+    },
+    "targetApp": "Aplicación de destino",
+    "targetPath": "Ruta de destino",
+    "pickApp": "Elija una aplicación",
+    "state": {
+      "ok": "La aplicación es accesible",
+      "missing": "No hay ninguna aplicación con este nombre",
+      "self": "Apunta a este sitio"
+    },
+    "drag": "Arrastre para reordenar",
+    "removed": "Regla eliminada",
+    "undo": "Deshacer",
+    "noMatch": "Ninguna regla coincide, se sirve el archivo",
+    "tester": {
+      "rule": "Regla {{n}}",
+      "forced": "Forzada",
+      "splat": "Splat",
+      "empty": "(vacío)",
+      "noCapture": "No se usó splat ni marcador",
+      "yields": "Solo se aplica si no existe un archivo en esta ruta. Añade ! al estado para forzarla.",
+      "note": {
+        "rewrite": "Sirve el archivo de destino y pasa a la siguiente regla si falta.",
+        "status": "Responde con este estado y la página de destino."
+      },
+      "empty_input": "Escribe una ruta para ver qué regla coincide.",
+      "tooLong": "La ruta supera {{max}} caracteres, el servidor responde 414.",
+      "none": "Ninguna regla coincide, el archivo se sirve tal cual.",
+      "queryLabel": "Consulta (opcional)",
+      "queryPlaceholder": "?ref=news",
+      "queryIgnored": "La consulta {{query}} no se usa para coincidir."
+    },
+    "served": "Las reglas guardadas sirven",
+    "rulesHint": "Las reglas se ejecutan de arriba abajo y gana la primera coincidencia. Las reglas definidas aquí tienen prioridad sobre app.yaml y, después, sobre _redirects. Use :splat para el resto de la ruta. Las reglas de proxy reenvían a una aplicación con app://name/path.",
+    "preset": {
+      "spa": "Respaldo para aplicación de página única",
+      "moved": "Redirigir una sección movida",
+      "api": "Hacer proxy de /api a una aplicación"
+    },
+    "problem": {
+      "fromSlash": "Desde debe empezar por /",
+      "badChars": "No se permiten llaves ni barras invertidas",
+      "toEmpty": "Añada un destino",
+      "proxyApp": "Elija la aplicación a la que reenviar",
+      "proxyAppMissing": "No hay ninguna aplicación con este nombre",
+      "proxyAppSelf": "Un sitio no puede hacer proxy hacia sí mismo",
+      "proxyPath": "La ruta de destino debe empezar por /"
+    },
+    "view": {
+      "label": "Vista de reglas",
+      "rows": "Filas",
+      "raw": "Texto sin formato"
+    },
+    "raw": {
+      "label": "Reglas de redirección como texto",
+      "placeholder": "/old /new 301",
+      "hint": "Una regla por línea: origen, destino, estado. Añada ! después del estado para forzar. Los destinos pueden ser app://name/path."
+    },
+    "diff": {
+      "title": "Cambios respecto a las reglas guardadas",
+      "toggle": "Mostrar cambios",
+      "none": "Todavía no hay cambios",
+      "add": "Añadido",
+      "del": "Eliminado",
+      "same": "Sin cambios"
+    }
+  },
+  "git": {
+    "repo": "Repositorio",
+    "repoPlaceholder": "Busque en sus repositorios o pegue una URL",
+    "detecting": "Detectando framework...",
+    "unreadable": "No se pudo leer ese repositorio. Compruebe la URL o conecte la cuenta desde el flujo de aplicaciones si es un repositorio privado.",
+    "detected": "Compilación detectada",
+    "plainHtml": "HTML simple",
+    "static": "Estático",
+    "notStatic": "Aplicación de servidor",
+    "branch": "Rama",
+    "command": "Comando de compilación",
+    "commandPlaceholder": "Ninguno, publicar los archivos tal cual",
+    "output": "Directorio de salida",
+    "outputPlaceholder": "Raíz del repositorio",
+    "serverWarning": "Este repositorio parece una aplicación de servidor, no un sitio estático.",
+    "useAppFlow": "Usar el flujo de aplicaciones",
+    "forceStatic": "Desplegar como estático de todos modos",
+    "create": "Crear y desplegar",
+    "deployOnPush": "Desplegar en cada push",
+    "createFailed": "No se pudo crear el sitio: {{message}}",
+    "steps": {
+      "label": "Progreso del despliegue",
+      "cloning": "Clonando",
+      "building": "Compilando",
+      "publishing": "Publicando",
+      "live": "En línea",
+      "state": {
+        "pending": "esperando",
+        "running": "en curso",
+        "done": "listo",
+        "failed": "fallido",
+        "unknown": "estado desconocido"
+      }
+    },
+    "failedStep": "Falló mientras {{step}}: {{message}}",
+    "viewLog": "Abrir registro de compilación",
+    "fixSettings": "Corregir ajustes",
+    "card": {
+      "title": "Git",
+      "repo": "Repositorio",
+      "branch": "Rama",
+      "commit": "Último commit",
+      "none": "todavía ninguno",
+      "onPush": "Desplegar al hacer push",
+      "onPushHint": "Se aplica de inmediato. Los filtros de ruta y más opciones están en los ajustes de Git de la aplicación.",
+      "triggerPush": "Al hacer push",
+      "triggerRelease": "Al publicar una release",
+      "triggerManual": "Manual",
+      "triggerSaved": "Desencadenador de despliegue guardado.",
+      "triggerFailed": "No se pudo guardar el desencadenador: {{message}}",
+      "openApp": "Ajustes de Git",
+      "redeploy": "Volver a desplegar",
+      "redeploying": "Volviendo a desplegar...",
+      "redeployFailed": "No se pudo iniciar el despliegue: {{message}}",
+      "redeployStarted": "Despliegue iniciado.",
+      "previews": "Vistas previas de ramas",
+      "previewOpen": "Abrir vista previa",
+      "pr": "PR #{{number}}"
+    }
+  },
+  "forms": {
+    "title": "Envíos de formularios",
+    "failed": "No se pudieron cargar los envíos.",
+    "remove": "Eliminar",
+    "delete": "Eliminar el envío {{id}} de {{form}}",
+    "deleteTip": "Eliminar este envío de forma definitiva",
+    "confirmDelete": "¿Eliminar este envío?",
+    "exportCsv": "Exportar {{form}} como CSV",
+    "spam": "Spam",
+    "spamWhy": "Spam: {{reason}}"
+  },
+  "preset": {
+    "title": "Preajuste de rendimiento",
+    "tip": "Caché y encabezados de seguridad por ruta. Su propio archivo _headers siempre tiene prioridad.",
+    "none": "Ninguno"
+  },
+  "hook": {
+    "title": "Hook de despliegue",
+    "tip": "Una URL secreta que vuelve a desplegar la rama de este sitio cuando se hace POST a ella",
+    "create": "Crear",
+    "createTip": "Crear una URL secreta para un CMS, un trabajo de CI o un cron",
+    "rotate": "Rotar",
+    "rotateTip": "Emitir una URL nueva; la anterior dejará de funcionar",
+    "revoke": "Revocar",
+    "revokeTip": "Desactivar el hook",
+    "confirmRotate": "¿Rotar la URL? La actual dejará de funcionar.",
+    "confirmRevoke": "¿Revocar el hook de despliegue?",
+    "copy": "Copiar",
+    "copied": "Copiado",
+    "copyTip": "Copiar la URL",
+    "shownOnce": "Cópiela ahora, no se volverá a mostrar.",
+    "since": "Activado desde {{date}}",
+    "failed": "No se pudo cargar el hook de despliegue."
+  },
+  "logs": {
+    "action": "Registros",
+    "title": "Registro de compilación",
+    "copy": "Copiar registro",
+    "copied": "Copiado",
+    "download": "Descargar registro",
+    "loading": "Cargando registro",
+    "empty": "No hay salida en el registro.",
+    "error": "No se pudo cargar el registro.",
+    "failedAt": "Falló durante {{step}}",
+    "step": {
+      "cloning": "Clonando",
+      "building": "Compilando",
+      "publishing": "Publicando",
+      "live": "En línea"
+    }
+  },
+  "ci": {
+    "title": "Despliegue de CI",
+    "tip": "Un token que solo puede desplegar este sitio. Guárdelo en su pipeline como secreto: no puede tocar nada más y puede revocarlo en cualquier momento.",
+    "create": "Crear token",
+    "createTip": "Crear un token solo de despliegue para este sitio",
+    "revoke": "Revocar",
+    "revokeTip": "Dejar de aceptar este token ahora",
+    "confirmRevoke": "¿Revocar este token? Los pipelines que lo usen fallarán.",
+    "copy": "Copiar",
+    "copied": "Copiado",
+    "shownOnce": "Cópielo ahora, no se volverá a mostrar. Guárdelo como LEVELRAIL_PAGES_TOKEN.",
+    "expires": "caduca {{date}}",
+    "failed": "No se pudieron cargar los tokens de despliegue.",
+    "github": "GitHub",
+    "gitlab": "GitLab",
+    "curl": "curl"
+  },
+  "analytics": {
+    "title": "Analítica",
+    "pages": "Páginas más visitadas",
+    "referrers": "Principales orígenes de tráfico",
+    "codes": "Códigos de estado",
+    "none": "Todavía nada.",
+    "privacy": "Calculado a partir del registro de acceso de borde. No se guardan cookies, direcciones de clientes ni cadenas de consulta. Rangos de hasta {{days}} días."
+  }
+}

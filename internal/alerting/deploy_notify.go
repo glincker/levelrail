@@ -12,6 +12,7 @@ import (
 	"strings"
 	"time"
 
+	"github.com/GLINCKER/levelrail/internal/diagnose"
 	"github.com/GLINCKER/levelrail/internal/email"
 	"github.com/GLINCKER/levelrail/internal/mailtemplates"
 	"github.com/GLINCKER/levelrail/internal/secretmask"
@@ -218,10 +219,30 @@ func summaryDeployText(ev DeployOutcome) string {
 	if ev.Error != "" {
 		msg += ": " + ev.Error
 	}
+	if d := deployDiagnosisLine(ev); d != "" {
+		msg += "\n" + d
+	}
 	if len(ev.LogLines) > 0 {
 		msg += "\nLast log lines:\n" + deployLogExcerpt(ev.LogLines)
 	}
 	return msg
+}
+
+// deployDiagnosisLine is the one-line likely cause from internal/diagnose, empty when nothing matched.
+func deployDiagnosisLine(ev DeployOutcome) string {
+	res := diagnose.Diagnose(diagnose.Input{
+		ServiceName:    ev.AppName,
+		Attempt:        &diagnose.AttemptInput{Status: "failed", Error: ev.Error},
+		RecentLogLines: ev.LogLines,
+	})
+	if res.Confidence == diagnose.ConfidenceNone || res.Explanation == "" {
+		return ""
+	}
+	line := "Likely cause: " + res.Explanation
+	if res.Suggestion != "" {
+		line += " Try: " + res.Suggestion
+	}
+	return line
 }
 
 // Separate from genericPayload: alert and deploy fields would otherwise leak into each other's JSON.
@@ -380,6 +401,17 @@ func sendDeployOutcome(ctx context.Context, client *http.Client, sender email.Se
 	}
 }
 
+// DeployEventFilter lets a feature suppress outcomes per resource, such as Pages event opt-in.
+type DeployEventFilter interface {
+	AllowDeployOutcome(ctx context.Context, resourceID string, succeeded bool) bool
+}
+
+// WithEventFilter sets the optional per-resource outcome filter.
+func (d *DeployDispatcher) WithEventFilter(f DeployEventFilter) *DeployDispatcher {
+	d.filter = f
+	return d
+}
+
 // DeployDispatcher sends deploy-outcome notifications to the enabled targets of one app.
 type DeployDispatcher struct {
 	db         *DB
@@ -390,6 +422,7 @@ type DeployDispatcher struct {
 	runtime    LogsSource
 	buildLogs  DeployLogSource
 	outcomes   *DeployOutcomeTracker
+	filter     DeployEventFilter
 }
 
 // DeployLogSource reads a deploy attempt's build output; *telemetry.DB satisfies it.
@@ -466,6 +499,9 @@ func (d *DeployDispatcher) Dispatch(ctx context.Context, resourceID string, ev D
 	}
 	d.attachLogs(ctx, resourceID, &ev)
 	ev.ReleaseNotes = ClampReleaseNotes(ev.ReleaseNotes, ReleaseNotesMaxBytes())
+	if d.filter != nil && !d.filter.AllowDeployOutcome(ctx, resourceID, ev.Succeeded) {
+		return
+	}
 	targets, err := d.db.ListDeployTargetsForResource(ctx, resourceID)
 	if err != nil {
 		d.logger.Error("alerting: list deploy targets failed",

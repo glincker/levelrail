@@ -7,6 +7,8 @@ import (
 	"net/http/httptest"
 	"strings"
 	"testing"
+
+	"github.com/GLINCKER/levelrail/internal/apiclient"
 )
 
 // Test helper that echoes a backup target built from the request.
@@ -247,5 +249,23 @@ func TestRun_BackupTargets_UnknownSubcommand(t *testing.T) {
 	}
 	if !strings.Contains(stderr.String(), "unknown backup-targets subcommand") {
 		t.Errorf("stderr = %q, want an unknown-subcommand error", stderr.String())
+	}
+}
+
+func TestRun_BackupTargetsUpdate_ClearCABundle(t *testing.T) {
+	var cleared bool
+	srv := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		var body apiclient.UpdateBackupTargetRequest
+		_ = json.NewDecoder(r.Body).Decode(&body)
+		cleared = body.ClearCABundle
+		_, _ = w.Write([]byte(`{"id":"bkt_1","name":"d"}`))
+	}))
+	t.Cleanup(srv.Close)
+	runCLIExpectOK(t, []string{
+		"backup-targets", "update", "bkt_1", "--name", "d", "--provider", "custom",
+		"--endpoint", "https://dav.example.com", "--bucket", "x", "--clear-ca-bundle", "--api-url", srv.URL,
+	})
+	if !cleared {
+		t.Error("request body must carry clear_ca_bundle")
 	}
 }

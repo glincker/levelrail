@@ -1,0 +1,367 @@
+// Package projectarchive reads and writes the .lrx project archive: a
+// gzip tar holding declarative spec files, optional encrypted secrets and
+// optional data dumps, sealed by a manifest of checksums.
+package projectarchive
+
+import (
+	"archive/tar"
+	"bufio"
+	"bytes"
+	"compress/gzip"
+	"crypto/sha256"
+	"encoding/hex"
+	"encoding/json"
+	"errors"
+	"fmt"
+	"io"
+	"os"
+	"path"
+	"slices"
+	"sort"
+	"strings"
+)
+
+// Format identifiers written into every manifest.
+const (
+	FormatVersion = 2
+	FormatKind    = "levelrail.project-archive"
+	ManifestName  = "manifest.json"
+	SecretsName   = "secrets.enc"
+	SpecPrefix    = "spec/"
+	DataPrefix    = "data/"
+	maxNameLen    = 255
+)
+
+// Limits caps what Read accepts. Zero fields fall back to DefaultLimits, so a
+// caller passes only what it overrides; the server fills them from runtime settings.
+type Limits struct {
+	// MaxTotalBytes caps the decompressed size of the whole archive.
+	MaxTotalBytes int64
+	// MaxEntries caps the number of tar entries.
+	MaxEntries int64
+	// MaxSpecBytes caps the in-memory size of spec and secret entries.
+	MaxSpecBytes int64
+}
+
+// DefaultLimits are used when a caller sets none, such as the CLI's own check.
+func DefaultLimits() Limits {
+	return Limits{MaxTotalBytes: 8 << 30, MaxEntries: 4096, MaxSpecBytes: 32 << 20}
+}
+
+func (l Limits) filled() Limits {
+	d := DefaultLimits()
+	if l.MaxTotalBytes <= 0 {
+		l.MaxTotalBytes = d.MaxTotalBytes
+	}
+	if l.MaxEntries <= 0 {
+		l.MaxEntries = d.MaxEntries
+	}
+	if l.MaxSpecBytes <= 0 {
+		l.MaxSpecBytes = d.MaxSpecBytes
+	}
+	return l
+}
+
+// Errors a caller can map to a response.
+var (
+	ErrChecksum = errors.New("projectarchive: checksum mismatch, the archive was changed or damaged")
+	ErrFormat   = errors.New("projectarchive: not a project archive or an unsupported format version")
+)
+
+// FileEntry is one archived file as the manifest records it.
+type FileEntry struct {
+	Name   string `json:"name"`
+	SHA256 string `json:"sha256"`
+	Size   int64  `json:"size"`
+}
+
+// Manifest is the last entry of the archive and covers every other entry.
+// Entries under data/ are stored as they came, plaintext, even when secrets
+// are sealed: protect the archive file itself when it holds data.
+type Manifest struct {
+	Format          int         `json:"format"`
+	Kind            string      `json:"kind"`
+	SourceVersion   string      `json:"source_version"`
+	Project         string      `json:"project"`
+	CreatedAt       string      `json:"created_at"`
+	Apps            []string    `json:"apps,omitempty"`
+	SecretsIncluded bool        `json:"secrets_included"`
+	DataIncluded    bool        `json:"data_included"`
+	Warnings        []string    `json:"warnings,omitempty"`
+	Files           []FileEntry `json:"files"`
+}
+
+// Writer streams entries into a gzip tar and finishes with the manifest.
+type Writer struct {
+	gz    *gzip.Writer
+	tw    *tar.Writer
+	files []FileEntry
+	// pass and secrets are held until Close, when the manifest the seal binds to is final.
+	pass    string
+	secrets []byte
+}
+
+// SetSecrets queues the secrets payload, sealed on Close and bound to the manifest.
+func (w *Writer) SetSecrets(pass string, plain []byte) { w.pass, w.secrets = pass, plain }
+
+// NewWriter starts an archive on w.
+func NewWriter(w io.Writer) *Writer {
+	gz := gzip.NewWriter(w)
+	return &Writer{gz: gz, tw: tar.NewWriter(gz)}
+}
+
+// AddBytes writes one small entry.
+func (w *Writer) AddBytes(name string, b []byte) error {
+	if err := validName(name); err != nil {
+		return err
+	}
+	sum := sha256.Sum256(b)
+	if err := w.tw.WriteHeader(&tar.Header{Name: name, Mode: 0o600, Size: int64(len(b)), Format: tar.FormatPAX}); err != nil {
+		return err
+	}
+	if _, err := w.tw.Write(b); err != nil {
+		return err
+	}
+	w.files = append(w.files, FileEntry{Name: name, SHA256: hex.EncodeToString(sum[:]), Size: int64(len(b))})
+	return nil
+}
+
+// AddStream spools r to a temp file first because a tar header needs the
+// size, then copies it in, so a large dump never sits in memory.
+func (w *Writer) AddStream(name string, r io.Reader) error {
+	if err := validName(name); err != nil {
+		return err
+	}
+	tmp, err := os.CreateTemp("", "lrx-data-*")
+	if err != nil {
+		return err
+	}
+	defer func() { _ = os.Remove(tmp.Name()); _ = tmp.Close() }()
+	h := sha256.New()
+	n, err := io.Copy(io.MultiWriter(tmp, h), r)
+	if err != nil {
+		return err
+	}
+	if _, err := tmp.Seek(0, io.SeekStart); err != nil {
+		return err
+	}
+	if err := w.tw.WriteHeader(&tar.Header{Name: name, Mode: 0o600, Size: n, Format: tar.FormatPAX}); err != nil {
+		return err
+	}
+	if _, err := io.Copy(w.tw, tmp); err != nil {
+		return err
+	}
+	w.files = append(w.files, FileEntry{Name: name, SHA256: hex.EncodeToString(h.Sum(nil)), Size: n})
+	return nil
+}
+
+// Close writes the manifest last and flushes the archive.
+func (w *Writer) Close(m Manifest) error {
+	m.Format, m.Kind = FormatVersion, FormatKind
+	m.SecretsIncluded = w.secrets != nil
+	sort.Slice(w.files, func(i, j int) bool { return w.files[i].Name < w.files[j].Name })
+	m.Files = w.files
+	if w.secrets != nil {
+		blob, err := seal(w.pass, w.secrets, canonicalManifest(m))
+		if err != nil {
+			return err
+		}
+		if err := w.AddBytes(SecretsName, blob); err != nil {
+			return err
+		}
+		sort.Slice(w.files, func(i, j int) bool { return w.files[i].Name < w.files[j].Name })
+		m.Files = w.files
+	}
+	raw, err := json.MarshalIndent(m, "", "  ")
+	if err != nil {
+		return err
+	}
+	if err := w.tw.WriteHeader(&tar.Header{Name: ManifestName, Mode: 0o600, Size: int64(len(raw)), Format: tar.FormatPAX}); err != nil {
+		return err
+	}
+	if _, err := w.tw.Write(raw); err != nil {
+		return err
+	}
+	if err := w.tw.Close(); err != nil {
+		return err
+	}
+	return w.gz.Close()
+}
+
+// Archive is a verified archive. Data entries are checksummed while
+// reading and not kept, a restore streams them from the original file.
+type Archive struct {
+	Manifest Manifest
+	// Spec maps each spec file name, without the prefix, to its bytes.
+	Spec map[string][]byte
+	// Secrets is the sealed secrets blob, empty when none were included.
+	Secrets []byte
+}
+
+// OpenSecrets verifies the seal against this archive's manifest, then
+// decrypts the secrets payload.
+func (a *Archive) OpenSecrets(pass string) ([]byte, error) {
+	if a.Secrets == nil {
+		return nil, ErrFormat
+	}
+	return open(pass, a.Secrets, canonicalManifest(a.Manifest))
+}
+
+// canonicalManifest is the manifest bytes the seal covers: every field and
+// every file entry except the sealed blob's own.
+func canonicalManifest(m Manifest) []byte {
+	c := m
+	c.Files = make([]FileEntry, 0, len(m.Files))
+	for _, f := range m.Files {
+		if f.Name != SecretsName {
+			c.Files = append(c.Files, f)
+		}
+	}
+	sort.Slice(c.Files, func(i, j int) bool { return c.Files[i].Name < c.Files[j].Name })
+	b, _ := json.Marshal(c)
+	return b
+}
+
+// errLimit stops a read once the decompressed size passes the cap.
+var errLimit = errors.New("projectarchive: archive expands past the size limit")
+
+type countingLimit struct {
+	r    io.Reader
+	left int64
+}
+
+func (c *countingLimit) Read(p []byte) (int, error) {
+	n, err := c.r.Read(p)
+	c.left -= int64(n)
+	if c.left < 0 {
+		return n, errLimit
+	}
+	return n, err
+}
+
+// Read parses r and verifies the manifest and every checksum. Any extra,
+// missing or altered entry is an error.
+func Read(r io.Reader) (*Archive, error) { return ReadWithLimits(r, Limits{}) }
+
+// ReadWithLimits is Read with caller supplied size limits.
+func ReadWithLimits(r io.Reader, lim Limits) (*Archive, error) {
+	lim = lim.filled()
+	br := bufio.NewReader(r)
+	gz, err := gzip.NewReader(br)
+	if err != nil {
+		return nil, ErrFormat
+	}
+	gz.Multistream(false)
+	capped := &countingLimit{r: gz, left: lim.MaxTotalBytes}
+	tr := tar.NewReader(capped)
+	seen := map[string]FileEntry{}
+	mem := map[string][]byte{}
+	var manifestRaw []byte
+	budget := lim.MaxSpecBytes
+	maxEntries := lim.MaxEntries
+	for count := int64(0); ; count++ {
+		h, err := tr.Next()
+		if errors.Is(err, io.EOF) {
+			break
+		}
+		if errors.Is(err, errLimit) {
+			return nil, err
+		}
+		if err != nil {
+			return nil, ErrFormat
+		}
+		if count >= maxEntries {
+			return nil, fmt.Errorf("%w: more than %d entries", ErrFormat, maxEntries)
+		}
+		if h.Typeflag != tar.TypeReg {
+			return nil, fmt.Errorf("%w: unexpected entry type for %q", ErrFormat, h.Name)
+		}
+		if err := validName(h.Name); err != nil && h.Name != ManifestName {
+			return nil, err
+		}
+		if h.Name != ManifestName && h.Name != SecretsName && !strings.HasPrefix(h.Name, SpecPrefix) && !strings.HasPrefix(h.Name, DataPrefix) {
+			return nil, fmt.Errorf("%w: unexpected entry %q", ErrFormat, h.Name)
+		}
+		if _, dup := seen[h.Name]; dup || (h.Name == ManifestName && manifestRaw != nil) {
+			return nil, fmt.Errorf("%w: duplicate entry %q", ErrFormat, h.Name)
+		}
+		hash := sha256.New()
+		keep := h.Name == ManifestName || !strings.HasPrefix(h.Name, DataPrefix)
+		var buf []byte
+		var n int64
+		if keep {
+			budget -= h.Size
+			if budget < 0 {
+				return nil, fmt.Errorf("%w: spec entries exceed the spec size limit", ErrFormat)
+			}
+			buf, err = io.ReadAll(io.TeeReader(io.LimitReader(tr, h.Size), hash))
+			n = int64(len(buf))
+		} else {
+			n, err = io.Copy(hash, tr) //nolint:gosec // hashed and discarded, and the reader under it is size capped
+		}
+		if errors.Is(err, errLimit) {
+			return nil, err
+		}
+		if err != nil {
+			return nil, ErrFormat
+		}
+		if h.Name == ManifestName {
+			manifestRaw = buf
+			continue
+		}
+		seen[h.Name] = FileEntry{Name: h.Name, SHA256: hex.EncodeToString(hash.Sum(nil)), Size: n}
+		if keep {
+			mem[h.Name] = buf
+		}
+	}
+	// After the tar end marker only zero padding may remain, then the gzip trailer and nothing past it.
+	rest, err := io.ReadAll(capped)
+	if errors.Is(err, errLimit) {
+		return nil, err
+	}
+	if err != nil {
+		return nil, ErrChecksum
+	}
+	if len(bytes.Trim(rest, "\x00")) != 0 {
+		return nil, fmt.Errorf("%w: data after the end of the archive", ErrFormat)
+	}
+	if _, perr := br.Peek(1); perr == nil {
+		return nil, fmt.Errorf("%w: data after the end of the archive", ErrFormat)
+	}
+	if manifestRaw == nil {
+		return nil, fmt.Errorf("%w: no manifest", ErrFormat)
+	}
+	var m Manifest
+	if err := json.Unmarshal(manifestRaw, &m); err != nil || m.Kind != FormatKind {
+		return nil, ErrFormat
+	}
+	if m.Format != FormatVersion {
+		return nil, fmt.Errorf("%w: format version %d, this build reads %d", ErrFormat, m.Format, FormatVersion)
+	}
+	if len(m.Files) != len(seen) {
+		return nil, ErrChecksum
+	}
+	for _, f := range m.Files {
+		got, ok := seen[f.Name]
+		if !ok || got.SHA256 != f.SHA256 || got.Size != f.Size {
+			return nil, ErrChecksum
+		}
+	}
+	if _, has := mem[SecretsName]; has != m.SecretsIncluded {
+		return nil, fmt.Errorf("%w: secrets entry and manifest disagree", ErrFormat)
+	}
+	a := &Archive{Manifest: m, Spec: map[string][]byte{}, Secrets: mem[SecretsName]}
+	for name, b := range mem {
+		if strings.HasPrefix(name, SpecPrefix) {
+			a.Spec[strings.TrimPrefix(name, SpecPrefix)] = b
+		}
+	}
+	return a, nil
+}
+
+func validName(name string) error {
+	if name == "" || len(name) > maxNameLen || strings.HasPrefix(name, "/") || path.Clean(name) != name || slices.Contains(strings.Split(name, "/"), "..") || strings.Contains(name, "\\") {
+		return fmt.Errorf("%w: unsafe entry name %q", ErrFormat, name)
+	}
+	return nil
+}

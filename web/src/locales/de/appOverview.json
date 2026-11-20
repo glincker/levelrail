@@ -25,5 +25,60 @@
     "recreate": "Neu erstellen",
     "blueGreen": "Blue-Green",
     "rolling": "Rolling"
+  },
+  "preview": {
+    "label": "Vorschau",
+    "empty": "Keine Vorschau, bis der erste Deploy abgeschlossen ist.",
+    "deploy": "Deployen",
+    "captured": "Erfasst {{when}}",
+    "off": "Vorschauen sind für diese App ausgeschaltet.",
+    "serverOff": "Vorschauen sind auf diesem Server ausgeschaltet.",
+    "desktop": "Desktop",
+    "mobile": "Mobil",
+    "viewport": "Ansichtsbreite",
+    "recapture": "Neu erfassen",
+    "thumbLabel": "{{name}} auf {{host}}",
+    "deployedAgo": "Deployt"
+  },
+  "staticStrip": {
+    "label": "Seitenübersicht",
+    "visitors": "Besucher",
+    "requests": "Anfragen",
+    "errors": "Fehler",
+    "errorsInfo": "Anteil der 4xx- und 5xx-Antworten im gewählten Zeitraum. 4xx: {{c4}}, 5xx: {{c5}}.",
+    "visitorsInfo": "Eindeutige Besucher im gewählten Zeitraum, nach jedem Datenschutz-Reset neu gezählt.",
+    "deploy": "Letzter Deploy",
+    "size": "Größe",
+    "files_one": "{{count}} Datei",
+    "files_other": "{{count}} Dateien",
+    "addDomain": "Domain hinzufügen",
+    "errorsNone": "Anteil der 4xx- und 5xx-Antworten, sobald die Seite Anfragen beantwortet hat."
+  },
+  "staticLine": {
+    "details": "Deploy-Details",
+    "source": {
+      "upload": "CLI-Upload",
+      "webhook": "Git-Push",
+      "git_push": "Git-Push",
+      "poll": "Git-Abfrage",
+      "pr_comment": "PR-Kommentar",
+      "manual": "Dashboard",
+      "promote": "Beförderung",
+      "clone": "Klon",
+      "auto_rollback": "Auto-Rollback",
+      "schedule": "Zeitplan",
+      "image": "Image",
+      "compose": "Compose",
+      "restart": "Neustart",
+      "start": "Start",
+      "stop": "Stopp",
+      "other": "Deploy"
+    }
+  },
+  "recent": {
+    "label": "Letzte Deploys",
+    "all": "Alle Deploys",
+    "logs": "Logs",
+    "rollback": "Rollback"
   }
 }

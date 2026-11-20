@@ -196,7 +196,7 @@ export function plannedChanges(
   return out
 }
 
-async function connectSource(
+export async function connectSource(
   appName: string,
   source: GitRepoSourceValue,
   e: NewAppEdits,

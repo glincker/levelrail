@@ -157,6 +157,8 @@ var restExemptions = restExemptionSet(map[string][]string{
 		"DELETE /api/v1/auth/tokens/{id}",
 		"POST /api/v1/auth/tokens/{id}/rotate",
 		"POST /api/v1/hooks/deploy/{id}/{token}",
+		// Audited inside the handler (static_site.hook_triggered), secret redacted from the path.
+		"POST /api/v1/hooks/pages/{site}/{secret}",
 		"POST /api/v1/auth/step-up/passkey/finish",
 		"POST /api/v1/auth/step-up",
 		"POST /api/v1/auth/sign-in-requests/codes/{id}/reveal",

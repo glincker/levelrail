@@ -298,6 +298,24 @@ func TestVault_ChainEndToEndFallback(t *testing.T) {
 	}
 }
 
+func TestVault_StoredKeyNotReplayedToNewBaseURL(t *testing.T) {
+	v, _, _ := testVault(t, nil)
+	first := fakeUpstream(t, "sk-good", `{"data":[]}`)
+	second := fakeUpstream(t, "", `{"data":[]}`)
+	ctx := context.Background()
+	if _, _, err := v.Set(ctx, "openai_compatible", SetInput{APIKey: "sk-good", BaseURL: first.URL + "/v1"}, true); err != nil {
+		t.Fatalf("initial set: %v", err)
+	}
+	_, _, err := v.Set(ctx, "openai_compatible", SetInput{BaseURL: second.URL + "/v1"}, true)
+	var se *SaveError
+	if !errors.As(err, &se) || se.Code != "key_required_for_new_url" {
+		t.Fatalf("err = %v, want key_required_for_new_url", err)
+	}
+	if _, _, err := v.Set(ctx, "openai_compatible", SetInput{BaseURL: first.URL + "/v1"}, true); err != nil {
+		t.Fatalf("re-saving the same url should reuse the key: %v", err)
+	}
+}
+
 func TestVault_TestRecordsStatus(t *testing.T) {
 	v, db, _ := testVault(t, nil)
 	ctx := context.Background()

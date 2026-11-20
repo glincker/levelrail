@@ -32,7 +32,10 @@ The full requirements are in [Installing](/installing#requirements). No server y
 ## 1. Install
 
 ```bash
-curl -fsSL https://levelrail.com/install.sh | sudo sh
+curl -fsSLO https://github.com/glincker/levelrail/releases/latest/download/install.sh
+curl -fsSLO https://github.com/glincker/levelrail/releases/latest/download/checksums.txt
+grep ' install.sh$' checksums.txt | sha256sum -c -  # macOS: shasum -a 256 -c -
+sudo sh install.sh
 ```
 
 Expected: preflight rows, then `Levelrail vX.Y.Z installed and running.` and a dashboard link. The installer checks the host, installs Docker if it is missing, downloads the newest release and verifies its checksum, starts the `levelrail` systemd service, and waits until it is healthy.
@@ -219,7 +222,10 @@ More: [Troubleshooting](/troubleshooting), [Installing: Troubleshooting](/instal
 `levelrail-cli` runs on your own machine. It talks to the control plane over HTTPS, so you need no SSH key and no open port.
 
 ```bash
-curl -fsSL https://levelrail.com/install-cli.sh | sh
+curl -fsSLO https://github.com/glincker/levelrail/releases/latest/download/install-cli.sh
+curl -fsSLO https://github.com/glincker/levelrail/releases/latest/download/checksums.txt
+grep ' install-cli.sh$' checksums.txt | sha256sum -c -  # macOS: shasum -a 256 -c -
+sh install-cli.sh
 export APP_API_URL=https://console.example.com
 levelrail-cli login --api-url https://console.example.com --code ABCD-EF23
 ```

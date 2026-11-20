@@ -21,7 +21,7 @@ type AppEnvView struct {
 func registerGetEnvTool(server *mcp.Server, client *apiclient.Client) {
 	addTool(server, &mcp.Tool{
 		Name:        "get_app_env",
-		Description: "Get an app's plain env vars and the names (never values) of its secrets and sensitive vars. Use before set_app_env or unset_app_env.",
+		Description: "An app's plain env vars and the names (never values) of its secrets and sensitive vars. Use before set_app_env or unset_app_env.",
 	}, func(ctx context.Context, _ *mcp.CallToolRequest, in appNameInput) (*mcp.CallToolResult, AppEnvView, error) {
 		app, err := client.GetApp(ctx, in.Name)
 		if err != nil {

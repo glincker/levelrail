@@ -36,84 +36,86 @@ export function SiteDropZone({
   }
 
   return (
-    <div
-      role="group"
-      aria-label={t('drop.zoneLabel')}
-      data-testid="site-drop-zone"
-      onDragOver={(e) => {
-        e.preventDefault()
-        if (!disabled) setDragging(true)
-      }}
-      onDragLeave={() => setDragging(false)}
-      onDrop={(e) => void onDrop(e)}
-      className={cn(
-        'flex flex-col items-center gap-3 rounded-lg border border-dashed border-border px-4 py-4 text-center transition-colors sm:flex-row sm:text-left',
-        dragging && 'border-brand bg-muted',
-      )}
-    >
-      <UploadGlassIcon
-        className="size-8 text-muted-foreground"
-        aria-hidden="true"
-      />
-      <div className="min-w-0 sm:flex-1">
-        <p className="text-sm font-medium text-foreground">
-          {t('drop.dropHere')}
-        </p>
-        <p className="max-w-md text-xs text-muted-foreground">
-          {t('drop.hint')}
-        </p>
-      </div>
-      <div className="flex flex-wrap justify-center gap-2">
-        <Button
-          type="button"
-          variant="outline"
-          size="sm"
-          disabled={disabled}
-          onClick={() => folderRef.current?.click()}
-        >
-          <FolderGlassIcon size="1.4em" aria-hidden="true" />
-          {t('drop.chooseFolder')}
-        </Button>
-        <Button
-          type="button"
-          variant="outline"
-          size="sm"
-          disabled={disabled}
-          onClick={() => zipRef.current?.click()}
-        >
-          <FileArchiveGlassIcon size="1.4em" aria-hidden="true" />
-          {t('drop.chooseZip')}
-        </Button>
-      </div>
-      <input
-        ref={folderRef}
-        type="file"
-        multiple
-        hidden
-        data-testid="site-folder-input"
-        aria-label={t('drop.chooseFolder')}
-        {...DIRECTORY_INPUT_ATTRS}
-        onChange={(e) => {
-          onSelect(
-            e.target.files ? selectionFromFileList(e.target.files) : null,
-          )
-          e.target.value = ''
+    <div className="@container">
+      <div
+        role="group"
+        aria-label={t('drop.zoneLabel')}
+        data-testid="site-drop-zone"
+        onDragOver={(e) => {
+          e.preventDefault()
+          if (!disabled) setDragging(true)
         }}
-      />
-      <input
-        ref={zipRef}
-        type="file"
-        accept=".zip,application/zip"
-        hidden
-        data-testid="site-zip-input"
-        aria-label={t('drop.chooseZip')}
-        onChange={(e) => {
-          onSelect(
-            e.target.files ? selectionFromFileList(e.target.files) : null,
-          )
-          e.target.value = ''
-        }}
-      />
+        onDragLeave={() => setDragging(false)}
+        onDrop={(e) => void onDrop(e)}
+        className={cn(
+          'flex min-h-36 flex-col items-center justify-center gap-3 rounded-lg border-2 border-dashed border-border px-4 py-5 text-center transition-colors @lg:min-h-0 @lg:flex-row @lg:justify-start @lg:py-4 @lg:text-left',
+          dragging && 'border-brand bg-muted ring-2 ring-brand/30',
+        )}
+      >
+        <UploadGlassIcon
+          className="size-8 text-muted-foreground"
+          aria-hidden="true"
+        />
+        <div className="min-w-0 @lg:flex-1">
+          <p className="text-sm font-medium text-foreground @lg:text-left">
+            {t('drop.dropHere')}
+          </p>
+          <p className="line-clamp-2 max-w-md text-xs text-muted-foreground">
+            {t('drop.hint')}
+          </p>
+        </div>
+        <div className="flex w-full flex-col justify-center gap-2 @xs:w-auto @xs:flex-row">
+          <Button
+            type="button"
+            variant="outline"
+            size="sm"
+            disabled={disabled}
+            onClick={() => folderRef.current?.click()}
+          >
+            <FolderGlassIcon size="1.4em" aria-hidden="true" />
+            {t('drop.chooseFolder')}
+          </Button>
+          <Button
+            type="button"
+            variant="outline"
+            size="sm"
+            disabled={disabled}
+            onClick={() => zipRef.current?.click()}
+          >
+            <FileArchiveGlassIcon size="1.4em" aria-hidden="true" />
+            {t('drop.chooseZip')}
+          </Button>
+        </div>
+        <input
+          ref={folderRef}
+          type="file"
+          multiple
+          hidden
+          data-testid="site-folder-input"
+          aria-label={t('drop.chooseFolder')}
+          {...DIRECTORY_INPUT_ATTRS}
+          onChange={(e) => {
+            onSelect(
+              e.target.files ? selectionFromFileList(e.target.files) : null,
+            )
+            e.target.value = ''
+          }}
+        />
+        <input
+          ref={zipRef}
+          type="file"
+          accept=".zip,application/zip"
+          hidden
+          data-testid="site-zip-input"
+          aria-label={t('drop.chooseZip')}
+          onChange={(e) => {
+            onSelect(
+              e.target.files ? selectionFromFileList(e.target.files) : null,
+            )
+            e.target.value = ''
+          }}
+        />
+      </div>
     </div>
   )
 }

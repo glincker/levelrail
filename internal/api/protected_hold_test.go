@@ -102,3 +102,16 @@ func TestNewerHoldSupersedesOlderOne(t *testing.T) {
 		t.Fatalf("awaiting %d superseded %d, want 1 and 1", awaiting, failed)
 	}
 }
+
+func TestSiteApprovalPendingSeesHeldDeploy(t *testing.T) {
+	rt, _, _ := newHoldRouter(t)
+	if rt.siteApprovalPending(context.Background(), "web") {
+		t.Fatal("pending before any hold")
+	}
+	if s, _, _ := rt.admitGitPush(context.Background(), "web", webhook.PushEvent{After: strings.Repeat("e", 40), Ref: "refs/heads/main"}); s != http.StatusAccepted {
+		t.Fatalf("hold status = %d", s)
+	}
+	if !rt.siteApprovalPending(context.Background(), "web") {
+		t.Fatal("a held deploy was not reported pending")
+	}
+}

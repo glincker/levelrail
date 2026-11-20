@@ -201,3 +201,51 @@ func (c *Client) RestoreVolumeTo(ctx context.Context, name, volume string, req V
 func volumePolicyPath(name, volume string) string {
 	return "/api/v1/apps/" + PathEscape(name) + "/volumes/" + PathEscape(volume) + "/backup-policy"
 }
+
+// DrillLatestRequest picks one of an app volume, a target or the control plane.
+type DrillLatestRequest struct {
+	App          string `json:"app,omitempty"`
+	Volume       string `json:"volume,omitempty"`
+	TargetID     string `json:"target_id,omitempty"`
+	ControlPlane bool   `json:"control_plane,omitempty"`
+}
+
+// DrillCheck is one check of a synchronous drill.
+type DrillCheck struct {
+	Name   string `json:"name"`
+	OK     bool   `json:"ok"`
+	Detail string `json:"detail,omitempty"`
+}
+
+// DrillLatestResponse mirrors internal/api's drillLatestResponse.
+type DrillLatestResponse struct {
+	Kind       string       `json:"kind"`
+	Status     string       `json:"status"`
+	DrillID    string       `json:"drill_id,omitempty"`
+	BackupID   string       `json:"backup_id,omitempty"`
+	BackupName string       `json:"backup_name,omitempty"`
+	DurationMS int64        `json:"duration_ms,omitempty"`
+	Checks     []DrillCheck `json:"checks,omitempty"`
+	Error      string       `json:"error,omitempty"`
+}
+
+// DrillLatestBackup calls POST /api/v1/backups/drill.
+func (c *Client) DrillLatestBackup(ctx context.Context, req DrillLatestRequest) (DrillLatestResponse, error) {
+	var out DrillLatestResponse
+	err := c.do(ctx, http.MethodPost, "/api/v1/backups/drill", req, &out)
+	return out, err
+}
+
+// BackupTargetProbe is the result of POST /api/v1/backup-targets/{id}/probe.
+type BackupTargetProbe struct {
+	OK        bool   `json:"ok"`
+	LatencyMs int64  `json:"latency_ms"`
+	FreeBytes *int64 `json:"free_bytes,omitempty"`
+}
+
+// ProbeBackupTarget calls POST /api/v1/backup-targets/{id}/probe.
+func (c *Client) ProbeBackupTarget(ctx context.Context, id string) (BackupTargetProbe, error) {
+	var out BackupTargetProbe
+	err := c.do(ctx, http.MethodPost, "/api/v1/backup-targets/"+PathEscape(id)+"/probe", nil, &out)
+	return out, err
+}

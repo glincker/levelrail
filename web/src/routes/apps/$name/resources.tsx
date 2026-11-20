@@ -1,5 +1,8 @@
 import { createFileRoute } from '@tanstack/react-router'
 import { useApp } from '../../../queries/apps'
+import { useIsStaticSite } from '../../../queries/staticSites'
+import { ResourcesSummary } from '../../../components/apps/ResourcesSummary'
+import { StaticResources } from '../../../components/apps/StaticResources'
 import { ResourceLimitsEditor } from '../../../components/ResourceLimitsEditor'
 import { OptimisePanel } from '../../../components/resourceAdvisor/OptimisePanel'
 import { LabelsEditor } from '../../../components/LabelsEditor'
@@ -9,7 +12,6 @@ import { AppBudgetCard } from '../../../components/AppBudgetCard'
 import { AppScalePanel } from '../../../components/AppScalePanel'
 import { AppReplicaTable } from '../../../components/AppReplicaTable'
 import { AppNextCacheRow } from '../../../components/AppNextCacheRow'
-import { AppCostChip } from '../../../components/usage/AppCostChip'
 
 // Also home to the sleep, autoscale and budget cards, moved off the
 // deploys page since they govern capacity and cost, not deploys.
@@ -22,10 +24,14 @@ export const Route = createFileRoute('/apps/$name/resources')({
 function ResourcesSection() {
   const { name } = Route.useParams()
   const { data: app } = useApp(name)
+  const isStatic = useIsStaticSite(name)
+
+  // No container means nothing to size, scale or cap: show disk and traffic.
+  if (isStatic) return <StaticResources name={name} />
 
   return (
     <div className="space-y-6">
-      <AppCostChip appName={name} />
+      <ResourcesSummary app={app} />
       <AppScalePanel app={app} />
       <AppReplicaTable appName={name} />
       <OptimisePanel appName={name} />

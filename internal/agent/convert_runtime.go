@@ -12,6 +12,9 @@ func runtimeToPB(s docker.ContainerSpec, pb *agentpb.ContainerSpec) *agentpb.Con
 		v := int32(min(*s.StopTimeoutSeconds, spec.MaxStopTimeoutSeconds)) //nolint:gosec // bounded by spec validation
 		pb.StopTimeoutSeconds = &v
 	}
+	if s.RegistryAuth != nil {
+		pb.RegistryBearer = s.RegistryAuth.Bearer
+	}
 	for _, u := range s.Ulimits {
 		pb.Ulimits = append(pb.Ulimits, &agentpb.Ulimit{Name: u.Name, Soft: u.Soft, Hard: u.Hard})
 	}
@@ -23,6 +26,9 @@ func runtimeFromPB(pb *agentpb.ContainerSpec, s docker.ContainerSpec) docker.Con
 	if pb.StopTimeoutSeconds != nil {
 		v := int(*pb.StopTimeoutSeconds)
 		s.StopTimeoutSeconds = &v
+	}
+	if pb.RegistryBearer != "" {
+		s.RegistryAuth = &docker.RegistryAuth{Bearer: pb.RegistryBearer}
 	}
 	for _, u := range pb.Ulimits {
 		s.Ulimits = append(s.Ulimits, docker.Ulimit{Name: u.GetName(), Soft: u.GetSoft(), Hard: u.GetHard()})

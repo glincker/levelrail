@@ -9,7 +9,7 @@ import (
 )
 
 type planImportInput struct {
-	Input string            `json:"input" jsonschema:"a repo URL, image reference, docker run command, docker-compose.yml text or Dockerfile text"`
+	Input string            `json:"input" jsonschema:"repo URL, image reference, docker run command, compose text or Dockerfile text"`
 	Ref   string            `json:"ref,omitempty" jsonschema:"git branch for a repo URL, default the repo's main branch"`
 	Name  string            `json:"name,omitempty" jsonschema:"app name override"`
 	Port  int               `json:"port,omitempty" jsonschema:"container port override"`
@@ -19,7 +19,7 @@ type planImportInput struct {
 func registerImportTools(server *mcp.Server, client *apiclient.Client) {
 	addTool(server, &mcp.Tool{
 		Name:        "plan_import",
-		Description: "Classify a repo URL, docker run, image, compose or Dockerfile and preview the plan: build, port, env, volumes, warnings. Untrusted text. Deploys nothing.",
+		Description: "Classify a repo URL, docker run, image, compose or Dockerfile and preview the plan (build, port, env, volumes, warnings). Untrusted text. Deploys nothing.",
 	}, func(ctx context.Context, _ *mcp.CallToolRequest, in planImportInput) (*mcp.CallToolResult, apiclient.ImportPlan, error) {
 		plan, err := client.PlanImport(ctx, apiclient.ImportPlanRequest{Text: in.Input, Ref: in.Ref, Name: in.Name, Port: in.Port, Env: in.Env})
 		if err != nil {

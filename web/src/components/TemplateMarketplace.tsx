@@ -106,7 +106,8 @@ export function TemplateMarketplace({
     category !== ALL_CATEGORIES ||
     verifiedOnly ||
     !!facets.licenseClass ||
-    !!facets.arch
+    !!facets.arch ||
+    !!facets.access
   const showFeatured = !searching && category === ALL_CATEGORIES
   const clearFilters = () => {
     setSearch('')
@@ -206,7 +207,7 @@ export function TemplateMarketplace({
             <TemplateGrid
               templates={visible}
               density={density}
-              resetKey={`${search}|${category}|${sort}|${verifiedOnly}|${facets.licenseClass ?? ''}|${facets.arch ?? ''}`}
+              resetKey={`${search}|${category}|${sort}|${verifiedOnly}|${facets.licenseClass ?? ''}|${facets.arch ?? ''}|${facets.access ?? ''}`}
               onSelect={onSelect}
               onDeployNow={onDeployNow}
               deployingId={deployingId}

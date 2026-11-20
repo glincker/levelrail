@@ -7,6 +7,8 @@ import (
 	"errors"
 	"fmt"
 	"time"
+
+	"github.com/GLINCKER/levelrail/internal/identity"
 )
 
 // User is a real, individually-identified account
@@ -56,6 +58,11 @@ func (db *DB) CreateUser(ctx context.Context, u User) error {
 	if u.IsFirstUser {
 		isFirst = 1
 	}
+	// Canonical form on write, and a case-insensitive pre-check so a legacy mixed-case row still blocks a duplicate.
+	u.Email = identity.NormalizeEmail(u.Email)
+	if _, getErr := db.GetUserByEmail(ctx, u.Email); getErr == nil {
+		return ErrUserEmailExists
+	}
 	abilitiesJSON, err := json.Marshal(nonNilSlice(u.Abilities))
 	if err != nil {
 		return fmt.Errorf("store: marshal abilities for user %q: %w", u.ID, err)
@@ -95,6 +102,12 @@ func (db *DB) GetUserByID(ctx context.Context, id string) (*User, error) {
 // pre-migration bare username migrates in unchanged (migrations/0035).
 func (db *DB) GetUserByEmail(ctx context.Context, email string) (*User, error) {
 	row := db.QueryRowContext(ctx, `SELECT `+userColumns+` FROM users WHERE email = ?`, email)
+	u, err := scanUser(row.Scan)
+	if !errors.Is(err, ErrUserNotFound) {
+		return u, err
+	}
+	// Legacy rows keep their original case; match them on the canonical form.
+	row = db.QueryRowContext(ctx, `SELECT `+userColumns+` FROM users WHERE lower(email) = ? ORDER BY created_at LIMIT 1`, identity.NormalizeEmail(email))
 	return scanUser(row.Scan)
 }
 

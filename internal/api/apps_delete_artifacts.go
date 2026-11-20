@@ -32,6 +32,7 @@ func (rt *Router) removeAppArtifactsUnlessReused(ctx context.Context, name, node
 // (Docker refuses to remove an image a container still runs); failures are logged.
 func (rt *Router) removeAppArtifacts(ctx context.Context, name, nodeID string) {
 	rt.clearDeletedAppBuildCache(ctx, name)
+	rt.removeAppPushMirror(name)
 	rt.removeNextImageCacheVolume(ctx, name, nodeID)
 	if st := rt.uploadStore(); st != nil {
 		if err := st.RemoveApp(name); err != nil {

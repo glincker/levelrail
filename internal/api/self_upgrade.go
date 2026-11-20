@@ -41,11 +41,13 @@ type SelfUpgradeStore interface {
 type SelfUpgradeLauncher func(ctx context.Context, args []string) error
 
 type selfUpgradeConfig struct {
-	store     SelfUpgradeStore
-	launch    SelfUpgradeLauncher
-	rollback  SelfUpgradeLauncher
-	restore   SelfUpgradeLauncher
-	notes     func(ctx context.Context) ([]upgrade.HistoryRelease, error)
+	store    SelfUpgradeStore
+	launch   SelfUpgradeLauncher
+	rollback SelfUpgradeLauncher
+	restore  SelfUpgradeLauncher
+	notes    func(ctx context.Context) ([]upgrade.HistoryRelease, error)
+	// discover finds the newest tag without the releases API; nil disables the fallback.
+	discover  func(ctx context.Context) (*githubRelease, error)
 	canLaunch func() (bool, string)
 	mu        sync.Mutex
 	cached    []upgrade.HistoryRelease
@@ -60,6 +62,7 @@ func WithSelfUpgrade(s SelfUpgradeStore, launch SelfUpgradeLauncher) Option {
 		c.notes = func(ctx context.Context) ([]upgrade.HistoryRelease, error) {
 			return upgrade.FetchHistory(ctx, githubRepo, "all", selfUpgradeNotesLimit)
 		}
+		c.discover = rt.discoverForChannel
 		c.canLaunch = hostCanLaunch
 		if launch == nil {
 			c.launch = systemdRunLauncher
@@ -143,22 +146,34 @@ func launchHostCommand(ctx context.Context, sub string, args []string) error {
 }
 
 func (c *selfUpgradeConfig) releases(ctx context.Context) ([]upgrade.HistoryRelease, error) {
+	list, _, err := c.releasesWithSource(ctx)
+	return list, err
+}
+
+// releasesWithSource also says when the list is only the newest tag learned
+// from the public release pages, which carries no release notes.
+func (c *selfUpgradeConfig) releasesWithSource(ctx context.Context) ([]upgrade.HistoryRelease, bool, error) {
 	c.mu.Lock()
 	defer c.mu.Unlock()
 	if c.cached != nil && time.Since(c.cachedAt) < selfUpgradeNotesTTL {
-		return c.cached, nil
+		return c.cached, false, nil
 	}
 	ctx, cancel := context.WithTimeout(ctx, historyFetchTimeout)
 	defer cancel()
 	list, err := c.notes(ctx)
 	if err != nil {
 		if c.cached != nil {
-			return c.cached, nil
+			return c.cached, false, nil
 		}
-		return nil, err
+		if c.discover != nil {
+			if found, derr := c.discover(ctx); derr == nil && found != nil {
+				return []upgrade.HistoryRelease{{Tag: found.TagName, URL: found.HTMLURL, PublishedAt: found.PublishedAt}}, true, nil
+			}
+		}
+		return nil, false, err
 	}
 	c.cached, c.cachedAt = list, time.Now()
-	return list, nil
+	return list, false, nil
 }
 
 func (c *selfUpgradeConfig) expire() {
@@ -179,10 +194,12 @@ type selfUpgradePlanResource struct {
 	TargetVersion  string                `json:"target_version"`
 	Breaking       []selfUpgradeBreaking `json:"breaking"`
 	NotesAvailable bool                  `json:"notes_available"`
-	CanApply       bool                  `json:"can_apply"`
-	CannotApplyWhy string                `json:"cannot_apply_reason,omitempty"`
-	Command        string                `json:"command"`
-	Steps          []string              `json:"steps"`
+	// NotesSource is "fallback" when the release was found on the public release pages and has no notes.
+	NotesSource    string   `json:"notes_source,omitempty"`
+	CanApply       bool     `json:"can_apply"`
+	CannotApplyWhy string   `json:"cannot_apply_reason,omitempty"`
+	Command        string   `json:"command"`
+	Steps          []string `json:"steps"`
 	// SignaturePinned is false until a release signature has been verified
 	// on this host; until then upgrades accept checksum-only releases.
 	SignaturePinned        bool   `json:"signature_pinned"`
@@ -292,7 +309,7 @@ func (rt *Router) buildSelfUpgradePlan(ctx context.Context, target string) (self
 	}
 	plan.Command = "sudo levelrail self-upgrade --to " + target
 	rt.fillPlanHost(&plan)
-	releases, err := rt.selfUpgrade.releases(ctx)
+	releases, fromFallback, err := rt.selfUpgrade.releasesWithSource(ctx)
 	if err == nil {
 		notes := make([]selfupgrade.ReleaseNotes, 0, len(releases))
 		known := false
@@ -306,7 +323,10 @@ func (rt *Router) buildSelfUpgradePlan(ctx context.Context, target string) (self
 		if !known {
 			return plan, http.StatusNotFound, "that release was not found"
 		}
-		plan.NotesAvailable = true
+		plan.NotesAvailable = !fromFallback
+		if fromFallback {
+			plan.NotesSource = notesSourceFallback
+		}
 		for _, b := range selfupgrade.BreakingBetween(notes, version.Version, target) {
 			plan.Breaking = append(plan.Breaking, selfUpgradeBreaking{ID: b.ID, Version: b.Version, Summary: b.Summary, RequiresAck: b.RequiresAck})
 		}

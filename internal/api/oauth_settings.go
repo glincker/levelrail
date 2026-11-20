@@ -133,6 +133,14 @@ func (rt *Router) handleUpdateOAuthProviderSettings(w http.ResponseWriter, r *ht
 		return
 	}
 
+	if req.Enabled && provider == store.OAuthProviderMicrosoft && req.TenantID == "" {
+		// A config already enabled with no tenant keeps working; it just cannot link by email.
+		if cur, err := rt.oauthSettings.GetOAuthProviderSettings(r.Context(), provider); err != nil || !cur.Enabled || cur.TenantID != "" {
+			writeError(w, http.StatusBadRequest, "tenant_id is required to enable Microsoft sign-in")
+			return
+		}
+	}
+
 	hasSecret := req.ClientSecret != ""
 	if !hasSecret {
 		_, err := rt.oauthSecrets.Resolve(r.Context(), store.OAuthProviderSecretsKey(provider), store.OAuthProviderSecretEnvKey)

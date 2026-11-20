@@ -34,6 +34,7 @@ import {
   LockGlassIcon,
   LayersGlassIcon,
   LayoutGridGlassIcon,
+  LayoutTemplateGlassIcon,
   LightbulbGlassIcon,
   ListGlassIcon,
   PackageGlassIcon,
@@ -70,6 +71,7 @@ export type GlobalTo =
   | '/apps'
   | '/deployments'
   | '/functions'
+  | '/pages'
   | '/deploy-timeline'
   | '/images'
   | '/storage'
@@ -254,6 +256,12 @@ export const GLOBAL_NAV_GROUPS: GlobalNavGroup[] = [
         label: 'Templates',
         to: '/templates',
         icon: glass(LayoutGridGlassIcon),
+      },
+      {
+        id: 'pages',
+        label: 'Pages',
+        to: '/pages',
+        icon: glass(LayoutTemplateGlassIcon),
       },
       {
         id: 'deployments',

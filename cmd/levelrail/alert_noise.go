@@ -49,6 +49,9 @@ func alertNoiseConfig(logger *slog.Logger, settings *runtimesettings.Service) al
 		GroupWindow:         warnEnvDuration(logger, "APP_ALERT_GROUP_WINDOW", 0),
 		RateLimit:           warnEnvInt(logger, "APP_ALERT_CHANNEL_RATE_LIMIT", alerting.DefaultRateLimit),
 		RateWindow:          warnEnvDuration(logger, "APP_ALERT_CHANNEL_RATE_WINDOW", alerting.DefaultRateWindow),
+		NotifyOnSleepFn: func(ctx context.Context) bool {
+			return settings.Bool(ctx, runtimesettings.KeyAlertsNotifyOnSleep)
+		},
 		HistoryRetentionFn: func(ctx context.Context) time.Duration {
 			return time.Duration(settings.Int(ctx, runtimesettings.KeyAlertHistoryDays)) * 24 * time.Hour
 		},

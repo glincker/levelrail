@@ -1,6 +1,9 @@
 import { createFileRoute } from '@tanstack/react-router'
 import { useApp } from '../../../queries/apps'
+import { useIsStaticSite } from '../../../queries/staticSites'
 import { HealthCheckEditor } from '../../../components/HealthCheckEditor'
+import { AppHealthSummary } from '../../../components/apps/AppHealthSummary'
+import { StaticHealth } from '../../../components/apps/StaticHealth'
 
 // Former "health" tab, now a real deep-linkable route. Reads app data
 // from the query cache the parent layout route's loader already primed.
@@ -12,5 +15,14 @@ function HealthSection() {
   const { name } = Route.useParams()
   const { data: app } = useApp(name)
 
-  return <HealthCheckEditor app={app} />
+  const isStatic = useIsStaticSite(name)
+
+  if (isStatic) return <StaticHealth name={name} />
+
+  return (
+    <div className="space-y-6">
+      <AppHealthSummary app={app} />
+      <HealthCheckEditor app={app} />
+    </div>
+  )
 }

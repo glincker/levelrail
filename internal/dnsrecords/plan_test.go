@@ -11,6 +11,8 @@ import (
 	"time"
 
 	"github.com/libdns/libdns"
+
+	"github.com/GLINCKER/levelrail/internal/dnszones"
 )
 
 func rr(name, typ, data string) libdns.Record {
@@ -213,5 +215,88 @@ func TestCloudflareAPIFindZoneAndProxied(t *testing.T) {
 	bad := &CloudflareAPI{Token: "wrong-token", BaseURL: srv.URL}
 	if _, err := bad.FindZone(context.Background(), "app.example.com"); err == nil || strings.Contains(err.Error(), "wrong-token") {
 		t.Fatalf("error must exist and never carry the token: %v", err)
+	}
+}
+
+type listOnlyProvider struct {
+	dnszones.Provider
+	zones []dnszones.Zone
+	err   error
+}
+
+func (p listOnlyProvider) ListZones(context.Context) ([]dnszones.Zone, error) { return p.zones, p.err }
+
+func TestListedZoneFinder(t *testing.T) {
+	t.Parallel()
+	ctx := context.Background()
+	// The probe finds nothing (its records fail to read), the list still matches.
+	broken := ManagerZoneFinder{Mgr: fakeManager{}}
+	p := listOnlyProvider{zones: []dnszones.Zone{{Name: "apps.example.com"}, {Name: "example.com", Private: true}}}
+	for _, d := range []string{"app.apps.example.com", "app.run.apps.example.com"} {
+		if got, err := (ListedZoneFinder{P: p, Fallback: broken}).FindZone(ctx, d); err != nil || got != "apps.example.com." {
+			t.Fatalf("FindZone(%q) = %q %v", d, got, err)
+		}
+	}
+	if _, err := (ListedZoneFinder{P: p, Fallback: broken}).FindZone(ctx, "app.other.org"); !errors.Is(err, ErrZoneNotFound) {
+		t.Fatalf("unknown zone error = %v", err)
+	}
+	// A failing list falls back to the probe.
+	soa := rr("@", "SOA", "ns.example.com. h.example.com. 1 7200 900 1209600 86400")
+	fb := ManagerZoneFinder{Mgr: fakeManager{zones: map[string][]libdns.Record{"example.com.": {soa}}}}
+	if got, err := (ListedZoneFinder{P: listOnlyProvider{err: errors.New("denied")}, Fallback: fb}).FindZone(ctx, "app.example.com"); err != nil || got != "example.com." {
+		t.Fatalf("fallback = %q %v", got, err)
+	}
+}
+
+func TestMatchZoneEdgeCases(t *testing.T) {
+	t.Parallel()
+	for _, tc := range []struct {
+		name, domain string
+		zones        []string
+		want         string
+		ok           bool
+	}{
+		{"longest wins", "a.b.example.com", []string{"example.com", "b.example.com"}, "b.example.com.", true},
+		{"trailing dots", "App.Example.COM.", []string{"example.com."}, "example.com.", true},
+		{"idn domain, a-label zone", "app.bücher.example", []string{"xn--bcher-kva.example"}, "xn--bcher-kva.example.", true},
+		{"a-label domain, idn zone", "app.xn--bcher-kva.example", []string{"bücher.example"}, "xn--bcher-kva.example.", true},
+		{"no match", "app.other.org", []string{"example.com"}, "", false},
+		{"suffix is not a parent", "badexample.com", []string{"example.com"}, "", false},
+	} {
+		got, ok := MatchZone(tc.domain, tc.zones)
+		if got != tc.want || ok != tc.ok {
+			t.Errorf("%s: MatchZone = %q %v, want %q %v", tc.name, got, ok, tc.want, tc.ok)
+		}
+	}
+}
+
+func TestListedZoneFinderMisses(t *testing.T) {
+	t.Parallel()
+	ctx := context.Background()
+	many := []dnszones.Zone{{Name: "f.org"}, {Name: "e.org"}, {Name: "d.org"}, {Name: "c.org"}, {Name: "b.org"}, {Name: "a.org"}}
+	for _, tc := range []struct {
+		name    string
+		p       listOnlyProvider
+		pinned  bool
+		domain  string
+		want    string
+		wantErr string
+	}{
+		{"public beats private of same name", listOnlyProvider{zones: []dnszones.Zone{{Name: "example.com", Private: true}, {Name: "example.com"}}}, false, "app.example.com", "example.com.", ""},
+		{"private only", listOnlyProvider{zones: []dnszones.Zone{{Name: "example.com", Private: true}}}, false, "app.example.com", "", `private hosted zone "example.com"`},
+		{"pinned zone misses", listOnlyProvider{zones: []dnszones.Zone{{Name: "other.org"}}}, true, "app.example.com", "", `pinned hosted zone "other.org" does not contain "app.example.com"`},
+		{"names capped at five", listOnlyProvider{zones: many}, false, "app.example.com", "", "lists a.org, b.org, c.org, d.org, e.org and 1 more"},
+		{"empty list", listOnlyProvider{}, false, "app.example.com", "", `no zone contains "app.example.com"`},
+	} {
+		got, err := (ListedZoneFinder{P: tc.p, Pinned: tc.pinned}).FindZone(ctx, tc.domain)
+		if tc.wantErr == "" {
+			if err != nil || got != tc.want {
+				t.Errorf("%s: got %q %v", tc.name, got, err)
+			}
+			continue
+		}
+		if !errors.Is(err, ErrZoneNotFound) || !strings.Contains(err.Error(), tc.wantErr) {
+			t.Errorf("%s: err = %v, want substring %q", tc.name, err, tc.wantErr)
+		}
 	}
 }

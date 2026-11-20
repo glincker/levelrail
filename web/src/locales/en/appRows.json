@@ -1,8 +1,11 @@
 {
   "failing": {
     "fallback": "Needs attention, open the app to see why.",
-    "fix": "View deploys",
-    "fixLabel": "View deploys for {{name}}"
+    "fix": "Fix",
+    "fixLabel": "View deploys for {{name}}",
+    "fixLabelHealth": "Fix health checks for {{name}}",
+    "fixLabelDomains": "Fix domains for {{name}}",
+    "fixLabelPages": "Open Pages site {{name}}"
   },
   "logs": {
     "noContainer": "No container is running for this app, so there is nothing to stream.",
@@ -56,5 +59,14 @@
       "error": "Failed"
     }
   },
-  "description": "Description: {{text}}"
+  "description": "Description: {{text}}",
+  "card": {
+    "noPreview": "No preview",
+    "noDomain": "No domain",
+    "staticSite": "Static site",
+    "lastDeploy": "Deployed",
+    "empty": "No apps match these filters.",
+    "listLabel": "Apps",
+    "loading": "Loading apps"
+  }
 }

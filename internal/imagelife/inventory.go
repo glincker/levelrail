@@ -36,6 +36,8 @@ type Attempt struct {
 	Branch    string
 	Status    string
 	StartedAt time.Time
+	// Pinned is set when a person pinned the deploy, so its image is never freed.
+	Pinned bool
 }
 
 // Pin is a rollback pin: an image kept alive as a rollback target.
@@ -213,12 +215,15 @@ func attachApp(entries []Entry, app AppState, keepPerApp int) {
 		if pendingStatuses[a.Status] {
 			role = RolePendingDeploy
 		}
+		if a.Pinned {
+			role = RoleRollbackTarget
+		}
 		if a.Status == succeededStatus {
 			key := attemptImageKey(entries, a)
 			if !recent[key] && len(recent) < keepPerApp {
 				recent[key] = true
 			}
-			if recent[key] {
+			if recent[key] && !a.Pinned {
 				role = RoleRecent
 			}
 		}

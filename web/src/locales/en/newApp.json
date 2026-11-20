@@ -82,11 +82,15 @@
       },
       "image": {
         "title": "Container image",
-        "hint": "Also Compose, docker run, site"
+        "hint": "Compose or docker run"
       },
       "sample": {
         "title": "Sample app",
         "hint": "Try it with one click"
+      },
+      "static": {
+        "title": "Static site",
+        "hint": "Drop a folder or zip, no container"
       }
     },
     "sample": {
@@ -416,7 +420,7 @@
     "cardDescription": "Drop a folder or a .zip of a built site to replace what is live. _redirects, _headers and 404.html are honored, and you can roll back from deploy history.",
     "zoneLabel": "Drop a site folder or zip here",
     "dropHere": "Drop a folder or .zip here",
-    "hint": "A folder holding index.html, or a zip of it. A single wrapper folder inside the zip is unwrapped for you.",
+    "hint": "A folder with index.html, or a zip of it.",
     "chooseFolder": "Choose folder",
     "chooseZip": "Choose .zip",
     "empty": "Nothing to publish in that drop. It was empty or held only ignored files such as .git and node_modules. Drop the folder that holds your built site.",

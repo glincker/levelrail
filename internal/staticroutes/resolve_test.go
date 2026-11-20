@@ -96,6 +96,8 @@ func TestResolve(t *testing.T) {
 		{name: "clean url redirects index.html", in: Input{Options: Options{CleanURLs: true}}, path: "/docs/index.html", kind: KindRedirect, status: 301, location: "/docs/"},
 		{name: "clean url root index", in: Input{Options: Options{CleanURLs: true}}, path: "/index.html", kind: KindRedirect, status: 301, location: "/"},
 		{name: "clean url dir served directly", in: Input{Options: Options{CleanURLs: true}}, path: "/docs", kind: KindServe, status: 200, file: "docs/index.html"},
+		{name: "clean file wins over same-named dir", in: Input{Options: Options{CleanURLs: true}}, path: "/docs/intro", kind: KindServe, status: 200, file: "docs/intro.html"},
+		{name: "clean url never serves rules file", in: Input{Options: Options{CleanURLs: true}}, path: "/_redirects", kind: KindNotFound, status: 404, file: "404.html"},
 		{name: "404.html not redirected", in: Input{Options: Options{CleanURLs: true}}, path: "/404.html", kind: KindServe, status: 200, file: "404.html"},
 
 		{name: "slash remove", in: Input{Options: Options{CleanURLs: true, TrailingSlash: SlashRemove}}, path: "/docs/", kind: KindRedirect, status: 308, location: "/docs"},

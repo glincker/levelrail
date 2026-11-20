@@ -98,4 +98,40 @@ describe('AutoUpdatesCard', () => {
       screen.getByRole('button', { name: 'Save schedule' }),
     ).toHaveProperty('disabled', true)
   })
+
+  it('shows why this host cannot apply and the documented command', async () => {
+    mockFetch({
+      ...policy,
+      status: {
+        state: 'blocked',
+        reason: 'the control plane does not run as root on this host',
+        can_apply: false,
+        check_failures: 0,
+      },
+    } as unknown as typeof policy)
+    renderCard()
+    expect(await screen.findByText('Blocked')).toBeTruthy()
+    expect(
+      screen.getByText(/cannot replace itself: the control plane/),
+    ).toBeTruthy()
+    expect(screen.getByText('levelrail-cli upgrade --apply')).toBeTruthy()
+  })
+
+  it('shows failing release checks with the failure count', async () => {
+    mockFetch({
+      ...policy,
+      status: {
+        state: 'degraded',
+        reason: 'dial tcp: timeout',
+        can_apply: true,
+        check_failures: 3,
+        next_check_at: '2026-11-20T12:00:00Z',
+      },
+    } as unknown as typeof policy)
+    renderCard()
+    expect(await screen.findByText('Degraded')).toBeTruthy()
+    expect(screen.getByText(/dial tcp: timeout/)).toBeTruthy()
+    expect(screen.getByText('3')).toBeTruthy()
+    expect(screen.queryByText('levelrail-cli upgrade --apply')).toBeNull()
+  })
 })

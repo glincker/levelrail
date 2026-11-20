@@ -4,6 +4,7 @@ import (
 	"errors"
 	"fmt"
 	"net/http"
+	"reflect"
 	"testing"
 )
 
@@ -48,8 +49,8 @@ func TestParsePullRequestEventForProvider_GitHub(t *testing.T) {
 	if err != nil {
 		t.Fatalf("ParsePullRequestEventForProvider() error = %v", err)
 	}
-	want := PullRequestEvent{Action: PullRequestOpened, Number: 42, HeadRef: "feature-x", HeadSHA: "abc123", BaseRef: "main"}
-	if got != want {
+	want := PullRequestEvent{Action: PullRequestOpened, Number: 42, HeadRef: "feature-x", HeadSHA: "abc123", BaseRef: "main", LabelsKnown: true}
+	if !reflect.DeepEqual(got, want) {
 		t.Errorf("ParsePullRequestEventForProvider() = %+v, want %+v", got, want)
 	}
 }
@@ -78,7 +79,7 @@ func TestParsePullRequestEventForProvider_GitHubSynchronizeAndClosed(t *testing.
 }
 
 func TestParsePullRequestEventForProvider_GitHubUnrecognizedAction(t *testing.T) {
-	body := []byte(`{"action":"labeled","number":7,"pull_request":{"head":{"ref":"x","sha":"sha1"}}}`)
+	body := []byte(`{"action":"assigned","number":7,"pull_request":{"head":{"ref":"x","sha":"sha1"}}}`)
 	_, err := ParsePullRequestEventForProvider(body, headerWith("X-GitHub-Event", "pull_request"))
 	if !errors.Is(err, ErrPullRequestEventFieldsMissing) {
 		t.Fatalf("ParsePullRequestEventForProvider() error = %v, want ErrPullRequestEventFieldsMissing", err)
@@ -119,8 +120,8 @@ func TestParsePullRequestEventForProvider_GitLab(t *testing.T) {
 	if err != nil {
 		t.Fatalf("ParsePullRequestEventForProvider() error = %v", err)
 	}
-	want := PullRequestEvent{Action: PullRequestOpened, Number: 9, HeadRef: "feature-y", HeadSHA: "def456", BaseRef: "main"}
-	if got != want {
+	want := PullRequestEvent{Action: PullRequestOpened, Number: 9, HeadRef: "feature-y", HeadSHA: "def456", BaseRef: "main", LabelsKnown: true}
+	if !reflect.DeepEqual(got, want) {
 		t.Errorf("ParsePullRequestEventForProvider() = %+v, want %+v", got, want)
 	}
 }
@@ -150,8 +151,8 @@ func TestParsePullRequestEventForProvider_GitLabSynchronizeReopenAndClosed(t *te
 			if err != nil {
 				t.Fatalf("ParsePullRequestEventForProvider() error = %v", err)
 			}
-			want := PullRequestEvent{Action: tt.want, Number: 14, HeadRef: "fix-bug", HeadSHA: "abc999", BaseRef: "develop", Reopened: tt.action == "reopen"}
-			if got != want {
+			want := PullRequestEvent{Action: tt.want, Number: 14, HeadRef: "fix-bug", HeadSHA: "abc999", BaseRef: "develop", LabelsKnown: true, Reopened: tt.action == "reopen"}
+			if !reflect.DeepEqual(got, want) {
 				t.Errorf("ParsePullRequestEventForProvider() = %+v, want %+v", got, want)
 			}
 		})
@@ -212,7 +213,7 @@ func TestParsePullRequestEventForProvider_Bitbucket(t *testing.T) {
 		t.Fatalf("ParsePullRequestEventForProvider() error = %v", err)
 	}
 	want := PullRequestEvent{Action: PullRequestOpened, Number: 3, HeadRef: "feature-z", HeadSHA: "ghi789", BaseRef: "main"}
-	if got != want {
+	if !reflect.DeepEqual(got, want) {
 		t.Errorf("ParsePullRequestEventForProvider() = %+v, want %+v", got, want)
 	}
 }
@@ -239,7 +240,7 @@ func TestParsePullRequestEventForProvider_BitbucketUpdatedFulfilledAndRejected(t
 				t.Fatalf("ParsePullRequestEventForProvider() error = %v", err)
 			}
 			want := PullRequestEvent{Action: tt.want, Number: 8, HeadRef: "hotfix-y", HeadSHA: "jkl012", BaseRef: "release"}
-			if got != want {
+			if !reflect.DeepEqual(got, want) {
 				t.Errorf("ParsePullRequestEventForProvider() = %+v, want %+v", got, want)
 			}
 		})
@@ -276,8 +277,21 @@ func TestParsePullRequestEventForProvider_Gitea(t *testing.T) {
 		t.Fatalf("ParsePullRequestEventForProvider() error = %v", err)
 	}
 	want := PullRequestEvent{Action: PullRequestOpened, Number: 5, HeadRef: "feature-w", HeadSHA: "mno345", BaseRef: "main"}
-	if got != want {
+	if !reflect.DeepEqual(got, want) {
 		t.Errorf("ParsePullRequestEventForProvider() = %+v, want %+v", got, want)
+	}
+}
+
+func TestParsePullRequestLabels(t *testing.T) {
+	gh := []byte(`{"action":"labeled","number":3,"label":{"name":"preview"},"pull_request":{"head":{"ref":"f","sha":"abc"},"base":{"ref":"main"},"labels":[{"name":"preview"},{"name":"bug"}]}}`)
+	ev, err := ParsePullRequestEventForProvider(gh, headerWith("X-GitHub-Event", "pull_request"))
+	if err != nil || !ev.LabelsKnown || ev.LabelAdded != "preview" || !ev.HasLabel("BUG") {
+		t.Fatalf("github labels = %+v, err %v", ev, err)
+	}
+	gl := []byte(`{"object_attributes":{"iid":4,"action":"update","last_commit":{"id":"abc"}},"labels":[{"title":"preview"}]}`)
+	ev, err = ParsePullRequestEventForProvider(gl, headerWith("X-Gitlab-Event", "Merge Request Hook"))
+	if err != nil || !ev.LabelsKnown || !ev.HasLabel("preview") || ev.LabelAdded != "" {
+		t.Fatalf("gitlab labels = %+v, err %v", ev, err)
 	}
 }
 
@@ -303,7 +317,7 @@ func TestParsePullRequestEventForProvider_GiteaSynchronizedReopenAndClosed(t *te
 				t.Fatalf("ParsePullRequestEventForProvider() error = %v", err)
 			}
 			want := PullRequestEvent{Action: tt.want, Number: 11, HeadRef: "fix-w", HeadSHA: "pqr678", BaseRef: "develop", Reopened: tt.action == "reopened"}
-			if got != want {
+			if !reflect.DeepEqual(got, want) {
 				t.Errorf("ParsePullRequestEventForProvider() = %+v, want %+v", got, want)
 			}
 		})

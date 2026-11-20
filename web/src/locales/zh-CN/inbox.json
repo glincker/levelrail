@@ -28,6 +28,7 @@
   "unreadOnly": "仅未读",
   "markAllRead": "全部标为已读",
   "markRead": "标为已读",
+  "repeatsTitle": "连续出现 {{count}} 次",
   "markedAll": "收件箱已标为已读。",
   "unreadCount_other": "{{count}} 条未读",
   "empty": {

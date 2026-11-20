@@ -777,7 +777,7 @@ Flags:
 
 ## levelrail-cli apps deploys
 
-Subcommands: attempts, build-report, cancel, compare, failed, gate, list, logs, probes, promote, receipt, release-notes, rollback-to, show, stages, status, steps, timeline, url, wait
+Subcommands: attempts, build-report, cancel, compare, failed, gate, list, logs, pin, probes, promote, receipt, release-notes, rollback-to, show, stages, status, steps, timeline, unpin, url, wait
 
 ```
 Usage:
@@ -798,6 +798,8 @@ Usage:
   levelrail-cli apps deploys gate <name> [deploy-id] [--watch]            readiness gate, cutover, drain and post-deploy watch timeline
   levelrail-cli apps deploys build-report <name> <deploy-id> [flags]      Next.js route table and build warnings from one attempt's log
   levelrail-cli apps deploys cancel <name> <deploy-id> [flags]            cancel a queued or in-progress deploy before it cuts traffic
+  levelrail-cli apps deploys pin <name> <deploy-id> [flags]               keep a deploy and its image out of retention and cleanup
+  levelrail-cli apps deploys unpin <name> <deploy-id> [flags]             release a pin so retention may remove it again
   levelrail-cli apps deploys rollback-to <name> <deploy-id> [flags]       redeploy a past succeeded deploy's exact image, pinned by digest
   levelrail-cli apps deploys promote <name> <deploy-id> [flags]           alias of rollback-to: make any past succeeded deploy the live one
   levelrail-cli apps deploys rollback <name> <deploy-id> [flags]          alias of rollback-to
@@ -1390,7 +1392,7 @@ Run "levelrail-cli apps previews pr-status <enable|disable> -h" for a verb's own
 
 ## levelrail-cli apps projects
 
-Subcommands: backfill-default-env, create, delete, env-get, env-set, export, get, list, restart, show, start, stop, topology
+Subcommands: apps, backfill-default-env, create, databases, delete, env-get, env-set, export, get, import, list, restart, show, start, stop, topology
 
 ```
 Usage:
@@ -1404,7 +1406,11 @@ Usage:
   levelrail-cli apps projects env-get <id> [flags]                 show a project's shared env vars
   levelrail-cli apps projects env-set <id> --var KEY=VALUE [flags]   replace a project's shared env vars
   levelrail-cli apps projects topology <id> [flags]                diagram-ready graph of a project's apps, databases, and volumes
+  levelrail-cli apps projects apps <id> [flags]                    list the apps in a project
+  levelrail-cli apps projects databases <id> [flags]               list the databases in a project
   levelrail-cli apps projects export <name> [-o DIR|-] [flags]     write a project as plain docker-compose.yml, .env.example and volumes.json
+  levelrail-cli projects export <name> --out FILE.lrx [--include-data] [--include-secrets]   write a project archive
+  levelrail-cli projects import FILE.lrx [--plan] [--rename NAME]  create a project from an archive
 
 A project groups apps and databases (move one in with "levelrail-cli apps
 set-project" or "levelrail-cli databases set-project"); deleting a project
@@ -1575,9 +1581,9 @@ Usage:
 
 Production gets the leftover percent when it is not listed. Visitors keep
 their variant through a cookie (HttpOnly, set only while a test runs). Open a
-variant's QA link to force it for yourself. Needs a container app with a
-domain; static sites are not supported yet. Promote is refused while
-publishing is locked.
+variant's QA link to force it for yourself. Works for container apps and
+static sites, and needs an explicit domain (the automatic host is not
+enough). Promote is refused while publishing is locked.
 ```
 
 ## levelrail-cli apps storage

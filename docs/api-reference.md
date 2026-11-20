@@ -330,6 +330,7 @@ Endpoints for:
 | POST | /api/v1/settings/secret-providers/{name}/test | AbilityRoot | handleTestSecretProvider |
 | POST | /api/v1/settings/cloud-connections/oracle | AbilityRoot | handleCreateOracleConnection |
 | POST | /api/v1/auth/tokens/{id}/rotate | Public | handleRotateToken |
+| GET | /api/v1/auth/dev-login | Public | handleDevLogin |
 | GET | /api/v1/auth/2fa | Session |  |
 | POST | /api/v1/auth/2fa/setup | Session |  |
 | POST | /api/v1/auth/2fa/confirm | Session |  |
@@ -790,6 +791,8 @@ Endpoints for:
 | GET | /api/v1/apps/{name}/build-runner | AbilityRead | handleGetAppBuildRunner |
 | PUT | /api/v1/apps/{name}/build-runner | AbilityDeploy | handleSetAppBuildRunner |
 | DELETE | /api/v1/apps/{name}/build-runner | AbilityDeploy | handleClearAppBuildRunner |
+| PUT | /api/v1/apps/{name}/deploys/{deployId}/pin | AbilityDeploy | handlePinDeploy |
+| DELETE | /api/v1/apps/{name}/deploys/{deployId}/pin | AbilityDeploy | handleUnpinDeploy |
 | GET | /api/v1/apps/{name}/notes | AbilityRead |  |
 | PUT | /api/v1/apps/{name}/notes | AbilityWrite |  |
 
@@ -1005,6 +1008,7 @@ Endpoints for:
 | PUT | /api/v1/databases/{name}/params | AbilityWrite | handleStageDatabaseParams |
 | DELETE | /api/v1/databases/{name}/params/pending | AbilityWrite | handleDiscardDatabaseParams |
 | POST | /api/v1/databases/{name}/params/apply | AbilityWriteSensitive | handleApplyDatabaseParams |
+| GET | /api/v1/databases/{name}/logs/download | AbilityRead | handleDownloadDatabaseLogs |
 | GET | /api/v1/databases/{name}/notes | AbilityRead |  |
 | PUT | /api/v1/databases/{name}/notes | AbilityWrite |  |
 
@@ -1078,6 +1082,13 @@ Endpoints for:
 | GET | /api/v1/organizations/{id}/bindings | AbilityRead | handleListOrgBindings |
 | POST | /api/v1/organizations/{id}/bindings | AbilityWriteSensitive | handleCreateOrgBinding |
 | DELETE | /api/v1/organizations/{id}/bindings/{bid} | AbilityWriteSensitive | handleDeleteOrgBinding |
+| GET | /api/v1/environments/{id}/builders | AbilityRead | handleGetEnvironmentBuilders |
+| PUT | /api/v1/environments/{id}/builders | Session | handleSetEnvironmentBuilders |
+| POST | /api/v1/projects/{id}/export | AbilityWriteSensitive | handleExportProjectArchive |
+| POST | /api/v1/projects/import/plan | AbilityWriteSensitive | handleImportProjectPlan |
+| POST | /api/v1/projects/import | AbilityWriteSensitive | handleImportProject |
+| GET | /api/v1/projects/{id}/apps | AbilityRead | handleListProjectApps |
+| GET | /api/v1/projects/{id}/databases | AbilityRead | handleListProjectDatabases |
 
 ## Nodes
 
@@ -1145,6 +1156,7 @@ Endpoints for:
 | GET | /api/v1/nodes/{id}/resources | AbilityRead | handleListNodeResources |
 | GET | /api/v1/nodes/{id}/thresholds | AbilityRoot | handleGetNodeThresholds |
 | PUT | /api/v1/nodes/{id}/thresholds | AbilityRoot | handleSetNodeThresholds |
+| PUT | /api/v1/nodes/{id}/build-trust | AbilityRoot | handleSetNodeBuildTrust |
 
 ## Ingress / Certificates / Domains / Email / Cloudflare
 
@@ -1289,6 +1301,8 @@ Endpoints for:
 | GET | /api/v1/apps/{name}/domains/{domain}/tuning | AbilityRead | handleGetDomainTuning |
 | PUT | /api/v1/apps/{name}/domains/{domain}/tuning | AbilityDeploy | handleSetDomainTuning |
 | DELETE | /api/v1/apps/{name}/domains/{domain}/tuning | AbilityDeploy | handleClearDomainTuning |
+| POST | /api/v1/settings/route53-dns/test | AbilityRoot | handleTestRoute53DNS |
+| POST | /api/v1/settings/ingress/apps-base-domain/wildcard | AbilityRoot | handleBaseDomainWildcard |
 
 </Accordion>
 
@@ -1360,6 +1374,37 @@ Endpoints for:
 | POST | /api/v1/registry-credentials/dockerhub/test | AbilityWriteSensitive | handleProbeDockerHub |
 | GET | /api/v1/registry-credentials/{id}/limits | AbilityReadSensitive | handleDockerHubLimits |
 | GET | /api/v1/registry-credentials/{id}/dockerhub | AbilityReadSensitive | handleDockerHubStatus |
+| POST | /api/v1/static-sites | AbilityWrite | handleCreateStaticSite |
+| GET | /api/v1/static-sites/{name} | AbilityRead | handleGetStaticSite |
+| POST | /api/v1/static-sites/{name}/domains | AbilityWrite | handleAddStaticSiteDomain |
+| GET | /api/v1/static-sites/{name}/domains/{domain}/status | AbilityRead | handleStaticSiteDomainStatus |
+| GET | /api/v1/static-sites/{name}/checks | AbilityRead | handleStaticSiteChecks |
+| GET | /api/v1/static-sites/{name}/traffic | AbilityRead | handleStaticSiteTraffic |
+| GET | /api/v1/static-sites/{name}/settings | AbilityRead | handleGetStaticSiteSettings |
+| PATCH | /api/v1/static-sites/{name}/settings | AbilityWrite | handlePatchStaticSiteSettings |
+| GET | /api/v1/static-sites/{name}/rules | AbilityRead | handleGetStaticSiteRules |
+| PUT | /api/v1/static-sites/{name}/rules | AbilityWrite | handlePutStaticSiteRules |
+| GET | /api/v1/static-sites/{name}/deploys | AbilityRead | handleListStaticSiteDeploys |
+| POST | /api/v1/static-sites/{name}/deploys/{deployId}/promote | AbilityDeploy | handlePromoteStaticSiteDeploy |
+| GET | /api/v1/static-sites/{name}/submissions | AbilityReadSensitive | handleListStaticSiteSubmissions |
+| DELETE | /api/v1/static-sites/{name}/submissions/{form}/{id} | AbilityDeploy | handleDeleteStaticSiteSubmission |
+| GET | /api/v1/static-sites/{name}/hook | AbilityRead | handleGetStaticSiteHook |
+| POST | /api/v1/static-sites/{name}/hook | AbilityWriteSensitive | handlePutStaticSiteHook |
+| DELETE | /api/v1/static-sites/{name}/hook | AbilityWriteSensitive | handleDeleteStaticSiteHook |
+| GET | /api/v1/static-sites/{name}/deploys/{deployId}/log | AbilityRead | handleStaticSiteDeployLog |
+| GET | /api/v1/static-sites/{name}/deploys/{deployId}/log/stream | AbilityRead | handleStaticSiteDeployLogStream |
+| GET | /api/v1/static-sites/{name}/deploy-tokens | AbilityRead | handleListSiteDeployTokens |
+| POST | /api/v1/static-sites/{name}/deploy-tokens | AbilityWriteSensitive | handleCreateSiteDeployToken |
+| DELETE | /api/v1/static-sites/{name}/deploy-tokens/{id} | AbilityWriteSensitive | handleRevokeSiteDeployToken |
+| POST | /api/v1/backup-targets/{id}/probe | AbilityWriteSensitive | handleProbeBackupTarget |
+| GET | /api/v1/static-sites/{name}/notify | AbilityRead | handleGetPagesNotify |
+| PUT | /api/v1/static-sites/{name}/notify | AbilityWrite | handlePutPagesNotify |
+| DELETE | /api/v1/static-sites/{name}/notify | AbilityWrite | handleDeletePagesNotify |
+| GET | /api/v1/static-sites/{name}/previews | AbilityRead | handleListStaticSitePreviews |
+| GET | /api/v1/static-sites/{name}/analytics | AbilityRead | handleStaticSiteAnalytics |
+| GET | /api/v1/static-sites/{name}/preset | AbilityRead | handleGetStaticSitePreset |
+| PUT | /api/v1/static-sites/{name}/preset | AbilityWrite | handlePutStaticSitePreset |
+| POST | /api/v1/backup-targets/{id}/drill | AbilityWriteSensitive | handleDrillBackupTarget |
 
 ## Built-in Container Registry
 
@@ -1376,6 +1421,7 @@ Endpoints for:
 | GET | /api/v1/registry/tags | AbilityRead | handleListRegistryTags |
 | GET | /api/v1/dockerhub/search | AbilityRead | handleDockerHubSearch |
 | GET | /api/v1/dockerhub/repositories/{namespace}/{repo}/tags | AbilityRead | handleDockerHubTags |
+| GET | /api/v1/registry/token | Public | handleRegistryToken |
 
 ## Git Provider Apps
 
@@ -1446,6 +1492,7 @@ Endpoints for:
 | GET | /api/v1/backups/copies | AbilityRead | handleListBackupCopies |
 | POST | /api/v1/databases/{name}/backup-schedule/pause | AbilityWriteSensitive | handlePauseBackupSchedule |
 | POST | /api/v1/databases/{name}/backup-schedule/resume | AbilityWriteSensitive | handleResumeBackupSchedule |
+| POST | /api/v1/backups/drill | AbilityWriteSensitive | handleBackupDrillLatest |
 
 ## App Volume Backups / Restore
 
@@ -2414,6 +2461,24 @@ Routes that do not fit an existing group.
 | GET | /api/v1/node-providers/{provider}/resources | AbilityRoot | handleListNodeProviderResources |
 | GET | /api/v1/node-providers/{provider}/spend | AbilityRoot | handleGetNodeProviderSpend |
 | GET | /api/v1/dns/authority | AbilityRead | handleDNSAuthority |
+| POST | /api/v1/hooks/pages/{site}/{secret} | Public | handleStaticSiteHookTrigger |
+| GET | /api/v1/builds/{id}/record | AbilityRead | handleGetBuildRecord |
+| GET | /api/v1/builders | AbilityRead | handleListBuilders |
+| GET | /api/v1/builders/{id} | AbilityRead | handleGetBuilder |
+| POST | /api/v1/builders/{id}/pause | AbilityWriteSensitive | handlePauseBuilder |
+| POST | /api/v1/builders/{id}/resume | AbilityWriteSensitive | handleResumeBuilder |
+| POST | /api/v1/builders/{id}/test | AbilityWriteSensitive | handleTestBuilder |
+| GET | /api/v1/observability/presets | AbilityRead | handleListObservabilityPresets |
+| GET | /api/v1/observability/exports | AbilityRoot | handleListObservabilityExports |
+| POST | /api/v1/observability/exports | AbilityRoot | handleCreateObservabilityExport |
+| DELETE | /api/v1/observability/exports/{id} | AbilityRoot | handleDeleteObservabilityExport |
+| POST | /api/v1/observability/exports/{id}/test | AbilityRoot | handleTestObservabilityExport |
+| GET | /api/v1/pages/{site}/deploys/{deployId}/logs | AbilityReadSensitive | handlePagesDeployLogs |
+| GET | /api/v1/pages/presets | AbilityRead | handleListPagesPresets |
+| GET | /api/v1/status-page/incident-templates | AbilityRead | handleListStatusTemplates |
+| POST | /api/v1/status-page/incident-templates | AbilityWrite | handleCreateStatusTemplate |
+| PUT | /api/v1/status-page/incident-templates/{id} | AbilityWrite | handleUpdateStatusTemplate |
+| DELETE | /api/v1/status-page/incident-templates/{id} | AbilityWrite | handleDeleteStatusTemplate |
 | POST | /mcp | Public |  |
 
 ## See also

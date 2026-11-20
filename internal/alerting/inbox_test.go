@@ -150,3 +150,13 @@ func TestFormatDigestEmpty(t *testing.T) {
 		t.Fatalf("FormatDigest(nil) = %q, want empty", got)
 	}
 }
+
+func TestCollapseRepeatsFoldsIdenticalNeighbours(t *testing.T) {
+	mk := func(id, rule string, read bool) InboxItem {
+		return InboxItem{HistoryEntry: HistoryEntry{ID: id, RuleID: rule, ResourceID: "a", Event: "fired"}, Read: read}
+	}
+	got := CollapseRepeats([]InboxItem{mk("1", "r", false), mk("2", "r", false), mk("3", "r", true), mk("4", "s", true)})
+	if len(got) != 3 || got[0].Repeats != 1 || got[0].RepeatIDs[0] != "2" || got[1].Repeats != 0 {
+		t.Fatalf("unexpected collapse: %+v", got)
+	}
+}

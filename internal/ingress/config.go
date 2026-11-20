@@ -159,6 +159,8 @@ type Route struct {
 type Matcher struct {
 	Host       []string            `json:"host,omitempty"`
 	Path       []string            `json:"path,omitempty"`
+	Method     []string            `json:"method,omitempty"`
+	PathRegexp *pathRegexpMatcher  `json:"path_regexp,omitempty"`
 	Expression *ExpressionMatcher  `json:"expression,omitempty"`
 	Not        []Matcher           `json:"not,omitempty"`
 	Vars       map[string][]string `json:"vars,omitempty"`
@@ -304,7 +306,7 @@ func NewBasicAuthHandler(username, bcryptHash string) BasicAuthHandler {
 		Handler: "authentication",
 		Providers: BasicAuthProviders{
 			HTTPBasic: &HTTPBasicAuthProvider{
-				Accounts: []BasicAuthAccount{{Username: username, Password: bcryptHash}},
+				Accounts: []BasicAuthAccount{{Username: escapePlaceholders(username), Password: bcryptHash}},
 				Hash:     BasicAuthHash{Algorithm: "bcrypt"},
 			},
 		},

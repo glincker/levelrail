@@ -30,8 +30,7 @@ type PatchState = 'loading' | 'unknown' | 'up-to-date' | 'updates' | 'security'
 type PatchStatusConfig = {
   icon: UiIcon
   variant: VariantProps<typeof badgeVariants>['variant']
-  labelKey:
-    'patch.checking' | 'patch.unknown' | 'patch.upToDate' | 'patch.updates'
+  labelKey: 'checking' | 'unknown' | 'upToDate' | 'updates'
 }
 
 function resolvePatchState(
@@ -55,31 +54,31 @@ function patchStatusConfig(state: PatchState): PatchStatusConfig {
       return {
         icon: CircleQuestionMarkGlassIcon,
         variant: 'muted',
-        labelKey: 'patch.checking',
+        labelKey: 'checking',
       }
     case 'unknown':
       return {
         icon: CircleQuestionMarkGlassIcon,
         variant: 'muted',
-        labelKey: 'patch.unknown',
+        labelKey: 'unknown',
       }
     case 'up-to-date':
       return {
         icon: CircleCheckGlassIcon,
         variant: 'success',
-        labelKey: 'patch.upToDate',
+        labelKey: 'upToDate',
       }
     case 'security':
       return {
         icon: CircleAlertGlassIcon,
         variant: 'destructive',
-        labelKey: 'patch.updates',
+        labelKey: 'updates',
       }
     default:
       return {
         icon: TriangleAlertGlassIcon,
         variant: 'warning',
-        labelKey: 'patch.updates',
+        labelKey: 'updates',
       }
   }
 }
@@ -95,7 +94,7 @@ export function NodePatchStatusCard({
   nodeName,
   isLocal,
 }: Readonly<Props>) {
-  const { t } = useTranslation('nodes')
+  const { t } = useTranslation('nodePatch')
   const { data, isPending, isError } = useNodePatchStatus(nodeId)
   const [previewOpen, setPreviewOpen] = useState(false)
   const state = resolvePatchState(isPending, isError, data)
@@ -105,8 +104,8 @@ export function NodePatchStatusCard({
   return (
     <Card id="node-patching">
       <CardHeader>
-        <CardTitle>{t('patch.title')}</CardTitle>
-        <CardDescription>{t('patch.description')}</CardDescription>
+        <CardTitle>{t('title')}</CardTitle>
+        <CardDescription>{t('description')}</CardDescription>
       </CardHeader>
       <CardContent className="space-y-3">
         <div className="flex flex-wrap items-center gap-2">
@@ -116,12 +115,12 @@ export function NodePatchStatusCard({
           </Badge>
           {state === 'security' && data ? (
             <Badge variant="destructive">
-              {t('patch.security', { count: data.security })}
+              {t('security', { count: data.security })}
             </Badge>
           ) : null}
           {data?.checked_at ? (
             <span className="text-xs text-muted-foreground">
-              {t('patch.checkedAt', {
+              {t('checkedAt', {
                 time: new Date(data.checked_at).toLocaleString(),
               })}
             </span>
@@ -134,7 +133,7 @@ export function NodePatchStatusCard({
                   size="sm"
                   onClick={() => setPreviewOpen(true)}
                 >
-                  {t('patch.preview')}
+                  {t('preview')}
                 </Button>
               </RoleGate>
             </span>
@@ -145,9 +144,7 @@ export function NodePatchStatusCard({
             <NodePatchRuns nodeId={nodeId} />
           </Suspense>
         ) : (
-          <p className="text-xs text-muted-foreground">
-            {t('patch.remoteNote')}
-          </p>
+          <p className="text-xs text-muted-foreground">{t('remoteNote')}</p>
         )}
       </CardContent>
       {previewOpen ? (

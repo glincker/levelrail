@@ -439,6 +439,9 @@
     "prebuilt": "Keine Build-Stufen: Dieses Deploy nutzte ein fertiges Image.",
     "label": "Phasen dieses Deploys",
     "step": {
+      "build": "Build",
+      "publish": "Veröffentlichen",
+      "live": "Live",
       "pull": "Image laden",
       "create": "Container erstellen",
       "readiness": "Bereitschaft",

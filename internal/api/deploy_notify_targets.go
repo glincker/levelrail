@@ -111,11 +111,7 @@ func (rt *Router) handleCreateDeployNotifyTarget(w http.ResponseWriter, r *http.
 		writeError(w, http.StatusNotImplemented, "notification channels are not configured on this control plane")
 		return
 	}
-	if _, err := rt.notificationChannels.GetNotificationChannel(r.Context(), target.ChannelID); errors.Is(err, alerting.ErrNotificationChannelNotFound) {
-		writeError(w, http.StatusBadRequest, "unknown channel_id")
-		return
-	} else if err != nil {
-		rt.internalError(w, "api: create deploy notify target: look up channel failed", err, slog.String("channel_id", target.ChannelID))
+	if !rt.requireChannelForApp(w, r, target.ChannelID, name, "create deploy notify target") {
 		return
 	}
 

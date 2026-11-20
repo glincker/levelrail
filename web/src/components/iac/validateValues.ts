@@ -5,6 +5,21 @@ import {
   type IacKindModel,
 } from './schemaToFields'
 
+function envInt(raw: unknown, fallback: number): number {
+  const n = Number(raw)
+  return Number.isFinite(n) && n > 0 ? Math.floor(n) : fallback
+}
+
+// Schema patterns and typed input are untrusted, so oversize ones skip the regex to avoid a stalled tab.
+const MAX_PATTERN_CHARS = envInt(
+  import.meta.env.VITE_IAC_PATTERN_MAX_CHARS,
+  256,
+)
+const MAX_PATTERN_INPUT_CHARS = envInt(
+  import.meta.env.VITE_IAC_PATTERN_INPUT_MAX_CHARS,
+  2048,
+)
+
 export interface FieldIssue {
   code:
     | 'required'
@@ -51,7 +66,12 @@ export function validateField(
   if (f.minLength !== undefined && s.length < f.minLength) {
     return { code: 'minLength', param: f.minLength }
   }
-  if (f.pattern && !f.secret) {
+  if (
+    f.pattern &&
+    !f.secret &&
+    f.pattern.length <= MAX_PATTERN_CHARS &&
+    s.length <= MAX_PATTERN_INPUT_CHARS
+  ) {
     try {
       if (!new RegExp(f.pattern).test(s)) return { code: 'pattern' }
     } catch {

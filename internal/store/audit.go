@@ -9,6 +9,7 @@ import (
 	"strings"
 	"time"
 
+	"github.com/GLINCKER/levelrail/internal/identity"
 	"github.com/GLINCKER/levelrail/internal/secretmask"
 )
 
@@ -125,6 +126,8 @@ type auditExecer interface {
 
 func insertAuditEntry(ctx context.Context, x auditChainDB, e AuditEntry) error {
 	e.Path, e.Detail, e.ActorName = secretmask.Mask(e.Path), secretmask.Mask(e.Detail), secretmask.Mask(e.ActorName)
+	// Self-reported names must not carry bidi or control characters into the audit view.
+	e.ActorName, e.AgentName, e.AgentClient = identity.Sanitize(e.ActorName), identity.Sanitize(e.AgentName), identity.Sanitize(e.AgentClient)
 	seq, prev, hash, alg, err := chainAuditEntry(ctx, x, e)
 	if err != nil {
 		return err

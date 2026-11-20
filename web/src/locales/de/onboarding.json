@@ -46,6 +46,10 @@
     "deploy": "Deployen Sie Apps aus einem Repo, einem Image oder einer Vorlage.",
     "protect": "Levelrail richtet HTTPS ein, erstellt Backups und meldet sich, wenn etwas ausfällt.",
     "time": "Die Einrichtung dauert etwa 5 Minuten. Jeder Schritt kann übersprungen werden.",
+    "tunnelHint": "Dieses Dashboard ist nicht öffentlich. Öffne auf deinem Laptop einen Tunnel und rufe dann http://127.0.0.1:{{port}} im Browser auf.",
+    "tunnelLabel": "SSH-Tunnelbefehl",
+    "tunnelHost": "<server-ip>",
+    "tunnelUser": "<user>",
     "dismiss": "Nicht mehr anzeigen"
   },
   "profile": {

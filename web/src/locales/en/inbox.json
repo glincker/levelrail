@@ -28,6 +28,7 @@
   "unreadOnly": "Unread only",
   "markAllRead": "Mark all read",
   "markRead": "Mark read",
+  "repeatsTitle": "Seen {{count}} times in a row",
   "markedAll": "Inbox marked read.",
   "unreadCount_one": "{{count}} unread",
   "unreadCount_other": "{{count}} unread",

@@ -28,6 +28,10 @@ type templateFacts struct {
 	ReplacedBy   string `json:"replaced_by,omitempty"`
 	// Preview marks a catalog entry with no real-engine pass yet; it stays installable.
 	Preview bool `json:"preview,omitempty"`
+	// NeedsDomain is true when the entry is reached only through a domain, so it does not work on a bare IP.
+	NeedsDomain bool `json:"needs_domain,omitempty"`
+	// UpdatedAt is the date the template files last changed, YYYY-MM-DD.
+	UpdatedAt string `json:"updated_at,omitempty"`
 }
 
 func factsFor(id string) templateFacts {
@@ -45,6 +49,8 @@ func factsFor(id string) templateFacts {
 		StatusReason: m.StatusReason,
 		ReplacedBy:   m.ReplacedBy,
 		Preview:      catalog.IsPreview(id),
+		NeedsDomain:  m.NeedsDomain,
+		UpdatedAt:    m.UpdatedAt,
 	}
 }
 
@@ -63,6 +69,7 @@ type templateFilter struct {
 	verifiedOnly      bool
 	arch              string
 	includeDeprecated bool
+	needsDomain       *bool
 }
 
 var licenseClasses = map[string]bool{
@@ -80,10 +87,11 @@ func parseTemplateFilter(r *http.Request) (templateFilter, string) {
 	if f.arch != "" && f.arch != "amd64" && f.arch != "arm64" {
 		return f, "arch must be amd64 or arm64"
 	}
+	var nd bool
 	for _, p := range []struct {
 		name string
 		dst  *bool
-	}{{"verified", &f.verifiedOnly}, {"include_deprecated", &f.includeDeprecated}} {
+	}{{"verified", &f.verifiedOnly}, {"include_deprecated", &f.includeDeprecated}, {"needs_domain", &nd}} {
 		switch strings.ToLower(q.Get(p.name)) {
 		case "":
 		case "true", "1":
@@ -94,6 +102,9 @@ func parseTemplateFilter(r *http.Request) (templateFilter, string) {
 			return f, p.name + " must be true or false"
 		}
 	}
+	if q.Get("needs_domain") != "" {
+		f.needsDomain = &nd
+	}
 	return f, ""
 }
 
@@ -102,6 +113,9 @@ func (f templateFilter) keep(facts templateFacts) bool {
 		return false
 	}
 	if f.verifiedOnly && (facts.Trust == nil || facts.Trust.Level == catalog.TrustListed) {
+		return false
+	}
+	if f.needsDomain != nil && facts.NeedsDomain != *f.needsDomain {
 		return false
 	}
 	if f.arch != "" {

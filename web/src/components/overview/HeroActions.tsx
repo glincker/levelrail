@@ -1,5 +1,5 @@
 import { useState } from 'react'
-import { Link } from '@tanstack/react-router'
+import { Link, useNavigate } from '@tanstack/react-router'
 import { useTranslation } from 'react-i18next'
 import {
   ChevronDownGlassIcon,
@@ -24,6 +24,7 @@ import { CloneAppDialog } from '../CloneAppDialog'
 import { DeleteAppDialog } from '../DeleteAppDialog'
 import { PromoteAppDialog } from '../PromoteAppDialog'
 import { SaveAsTemplateDialog } from '../SaveAsTemplateDialog'
+import { useIsStaticSite } from '../../queries/staticSites'
 import type { AppDetail } from '../../types/appDetail'
 import type { DeployTab } from './DeploySheet'
 import { useOverviewActions } from './useOverviewActions'
@@ -43,6 +44,11 @@ export function HeroActions({
   gitMissing?: boolean
 }) {
   const actions = useOverviewActions(app, url)
+  const isStatic = useIsStaticSite(app.name)
+  const navigate = useNavigate()
+  // A static site has no container to restart; its primary is always a redeploy.
+  const effectivePrimary =
+    isStatic && primary === 'restart' ? 'deploy' : primary
   const [promoteOpen, setPromoteOpen] = useState(false)
   const [cloneOpen, setCloneOpen] = useState(false)
   const [saveAsTemplateOpen, setSaveAsTemplateOpen] = useState(false)
@@ -74,9 +80,11 @@ export function HeroActions({
         >
           <ExternalLinkGlassIcon size="1.4em" aria-hidden="true" />
           <span className="max-sm:sr-only">{t('overviewHero.openApp')}</span>
-          <span className="max-lg:hidden">
-            <Kbd keys={['O']} />
-          </span>
+          {isStatic ? null : (
+            <span className="max-lg:hidden">
+              <Kbd keys={['O']} />
+            </span>
+          )}
         </a>
       ) : null}
 
@@ -85,25 +93,25 @@ export function HeroActions({
           size="lg"
           className="rounded-r-none"
           disabled={
-            (primary === 'restart' && actions.restarting) ||
-            (primary === 'retry' && actions.redeploying)
+            (effectivePrimary === 'restart' && actions.restarting) ||
+            (effectivePrimary === 'retry' && actions.redeploying)
           }
           onClick={
-            primary === 'restart'
+            effectivePrimary === 'restart'
               ? actions.restart
-              : primary === 'retry'
+              : effectivePrimary === 'retry'
                 ? actions.redeploy
                 : () => onDeploy('existing-image')
           }
         >
-          {primary === 'restart' ? (
+          {effectivePrimary === 'restart' ? (
             <RotateCwGlassIcon size="1.4em" aria-hidden="true" />
           ) : (
             <RocketGlassIcon size="1.4em" aria-hidden="true" />
           )}
-          {primary === 'restart'
+          {effectivePrimary === 'restart'
             ? actions.restartLabel
-            : primary === 'retry'
+            : effectivePrimary === 'retry'
               ? t('overviewHero.retryDeploy')
               : t('overviewHero.deploy')}
         </Button>
@@ -111,7 +119,7 @@ export function HeroActions({
           trigger={
             <Button
               size="icon-lg"
-              className="-ml-px rounded-l-none"
+              className="h-10 w-9 rounded-l-none border-l border-primary-foreground/25"
               aria-label="More deploy options"
             >
               <ChevronDownGlassIcon size="1.4em" aria-hidden="true" />
@@ -127,18 +135,22 @@ export function HeroActions({
               disabled: actions.redeploying,
               onSelect: actions.redeploy,
             },
-            {
-              id: 'deploy-image',
-              label: 'Deploy image...',
-              icon: <RocketGlassIcon size="1.4em" />,
-              onSelect: () => onDeploy('existing-image'),
-            },
-            {
-              id: 'build-source',
-              label: 'Build from source...',
-              icon: <GitBranchGlassIcon size="1.4em" />,
-              onSelect: () => onDeploy('build-from-source'),
-            },
+            ...(isStatic
+              ? []
+              : [
+                  {
+                    id: 'deploy-image',
+                    label: 'Deploy image...',
+                    icon: <RocketGlassIcon size="1.4em" />,
+                    onSelect: () => onDeploy('existing-image'),
+                  },
+                  {
+                    id: 'build-source',
+                    label: 'Build from source...',
+                    icon: <GitBranchGlassIcon size="1.4em" />,
+                    onSelect: () => onDeploy('build-from-source'),
+                  },
+                ]),
             {
               id: 'rollback',
               label: 'Rollback...',
@@ -151,33 +163,54 @@ export function HeroActions({
 
       <ActionMenu
         trigger={
-          <Button variant="ghost" size="icon-lg" aria-label="More actions">
+          <Button
+            variant="ghost"
+            size="icon-lg"
+            className="size-10"
+            aria-label="More actions"
+          >
             <EllipsisGlassIcon size="1.4em" aria-hidden="true" />
           </Button>
         }
         items={[
-          {
-            id: 'restart',
-            label: actions.restartLabel,
-            icon: <RotateCwGlassIcon size="1.4em" />,
-            disabled: actions.restarting,
-            onSelect: actions.restart,
-          },
-          {
-            id: 'toggle',
-            label: app.suspended
-              ? 'Start'
-              : actions.stopping
-                ? 'Stopping...'
-                : 'Stop',
-            icon: app.suspended ? (
-              <PlayGlassIcon size="1.4em" />
-            ) : (
-              <PauseGlassIcon size="1.4em" />
-            ),
-            disabled: actions.togglingRunning,
-            onSelect: actions.toggleRunning,
-          },
+          ...(isStatic
+            ? [
+                {
+                  id: 'manage-pages',
+                  label: t('appActions.manageInPages'),
+                  icon: <ExternalLinkGlassIcon size="1.4em" />,
+                  onSelect: () => {
+                    void navigate({
+                      to: '/pages/$name',
+                      params: { name: app.name },
+                    })
+                  },
+                },
+              ]
+            : [
+                {
+                  id: 'restart',
+                  label: actions.restartLabel,
+                  icon: <RotateCwGlassIcon size="1.4em" />,
+                  disabled: actions.restarting,
+                  onSelect: actions.restart,
+                },
+                {
+                  id: 'toggle',
+                  label: app.suspended
+                    ? 'Start'
+                    : actions.stopping
+                      ? 'Stopping...'
+                      : 'Stop',
+                  icon: app.suspended ? (
+                    <PlayGlassIcon size="1.4em" />
+                  ) : (
+                    <PauseGlassIcon size="1.4em" />
+                  ),
+                  disabled: actions.togglingRunning,
+                  onSelect: actions.toggleRunning,
+                },
+              ]),
           {
             id: 'copy-url',
             label: 'Copy URL',

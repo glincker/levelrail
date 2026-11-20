@@ -11,7 +11,7 @@ import (
 func registerVolumeBackupTools(server *mcp.Server, client *apiclient.Client) {
 	addTool(server, &mcp.Tool{
 		Name:        "list_app_volume_backups",
-		Description: "List an app service volume's backup history, newest first: status, size, target, and error for each attempt. The volume counterpart of a database's own backup history.",
+		Description: "List an app service volume's backup history, newest first: status, size, target, error.",
 	}, func(ctx context.Context, _ *mcp.CallToolRequest, in volumeBackupsInput) (*mcp.CallToolResult, []apiclient.BackupHistoryResource, error) {
 		history, err := client.ListVolumeBackups(ctx, in.Name, in.Volume, apiclient.ListBackupsOptions{
 			Limit:  in.Limit,

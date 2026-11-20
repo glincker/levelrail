@@ -52,6 +52,23 @@ type PullRequestEvent struct {
 	// Reopened marks an Opened action that was a reopened pull request
 	// rather than a new one.
 	Reopened bool
+	// Draft marks a draft pull request or merge request. Gitea sends no draft flag, so it is never set there.
+	Draft bool
+	// LabelsKnown is set for providers whose payload lists labels (GitHub, GitLab); others are never label gated.
+	LabelsKnown bool
+	Labels      []string
+	// LabelAdded is the label a GitHub "labeled" delivery just added; empty for every other action.
+	LabelAdded string
+}
+
+// HasLabel reports whether the pull request carries label, ignoring case.
+func (e PullRequestEvent) HasLabel(label string) bool {
+	for _, l := range e.Labels {
+		if strings.EqualFold(l, label) {
+			return true
+		}
+	}
+	return false
 }
 
 // IsFork reports whether the pull request comes from a different
@@ -80,7 +97,7 @@ func isReopenAction(raw string) bool { return raw == "reopened" || raw == "reope
 
 func normalizePullRequestAction(raw string) (PullRequestAction, bool) {
 	switch raw {
-	case "opened", "reopened", "open", "reopen", "pullrequest:created":
+	case "opened", "reopened", "open", "reopen", "ready_for_review", "labeled", "pullrequest:created":
 		return PullRequestOpened, true
 	case "synchronize", "synchronized", "update", "pullrequest:updated":
 		return PullRequestSynchronize, true
@@ -151,7 +168,14 @@ type githubPullRequestPayload struct {
 			Ref  string   `json:"ref"`
 			Repo repoInfo `json:"repo"`
 		} `json:"base"`
+		Draft  bool `json:"draft"`
+		Labels []struct {
+			Name string `json:"name"`
+		} `json:"labels"`
 	} `json:"pull_request"`
+	Label struct {
+		Name string `json:"name"`
+	} `json:"label"`
 }
 
 func parseGitHubPullRequestEvent(body []byte) (PullRequestEvent, error) {
@@ -163,6 +187,14 @@ func parseGitHubPullRequestEvent(body []byte) (PullRequestEvent, error) {
 	if !ok || p.Number == 0 || p.PullRequest.Head.SHA == "" {
 		return PullRequestEvent{}, ErrPullRequestEventFieldsMissing
 	}
+	var labels []string
+	for _, l := range p.PullRequest.Labels {
+		labels = append(labels, l.Name)
+	}
+	added := ""
+	if p.Action == "labeled" {
+		added = p.Label.Name
+	}
 	return PullRequestEvent{
 		Action: action, Number: p.Number,
 		HeadRef: p.PullRequest.Head.Ref, HeadSHA: p.PullRequest.Head.SHA,
@@ -170,6 +202,10 @@ func parseGitHubPullRequestEvent(body []byte) (PullRequestEvent, error) {
 		HeadRepoFullName: p.PullRequest.Head.Repo.FullName,
 		BaseRepoFullName: p.PullRequest.Base.Repo.FullName,
 		Reopened:         isReopenAction(p.Action),
+		Draft:            p.PullRequest.Draft,
+		LabelsKnown:      true,
+		Labels:           labels,
+		LabelAdded:       added,
 	}, nil
 }
 
@@ -191,7 +227,11 @@ type gitlabPullRequestPayload struct {
 		LastCommit struct {
 			ID string `json:"id"`
 		} `json:"last_commit"`
+		Draft bool `json:"draft"`
 	} `json:"object_attributes"`
+	Labels []struct {
+		Title string `json:"title"`
+	} `json:"labels"`
 }
 
 func parseGitLabPullRequestEvent(body []byte) (PullRequestEvent, error) {
@@ -203,6 +243,10 @@ func parseGitLabPullRequestEvent(body []byte) (PullRequestEvent, error) {
 	if !ok || p.ObjectAttributes.IID == 0 || p.ObjectAttributes.LastCommit.ID == "" {
 		return PullRequestEvent{}, ErrPullRequestEventFieldsMissing
 	}
+	var labels []string
+	for _, l := range p.Labels {
+		labels = append(labels, l.Title)
+	}
 	return PullRequestEvent{
 		Action: action, Number: p.ObjectAttributes.IID,
 		HeadRef: p.ObjectAttributes.SourceBranch, HeadSHA: p.ObjectAttributes.LastCommit.ID,
@@ -210,6 +254,9 @@ func parseGitLabPullRequestEvent(body []byte) (PullRequestEvent, error) {
 		HeadRepoFullName: p.ObjectAttributes.Source.PathWithNamespace,
 		BaseRepoFullName: p.ObjectAttributes.Target.PathWithNamespace,
 		Reopened:         isReopenAction(p.ObjectAttributes.Action),
+		Draft:            p.ObjectAttributes.Draft,
+		LabelsKnown:      true,
+		Labels:           labels,
 	}, nil
 }
 
@@ -218,7 +265,8 @@ func parseGitLabPullRequestEvent(body []byte) (PullRequestEvent, error) {
 // https://support.atlassian.com/bitbucket-cloud/docs/event-payloads/#Pull-request-created
 type bitbucketPullRequestPayload struct {
 	PullRequest struct {
-		ID     int `json:"id"`
+		ID     int  `json:"id"`
+		Draft  bool `json:"draft"`
 		Source struct {
 			Branch struct {
 				Name string `json:"name"`
@@ -252,6 +300,7 @@ func parseBitbucketPullRequestEvent(body []byte, eventKey string) (PullRequestEv
 		BaseRef:          p.PullRequest.Destination.Branch.Name,
 		HeadRepoFullName: p.PullRequest.Source.Repository.FullName,
 		BaseRepoFullName: p.PullRequest.Destination.Repository.FullName,
+		Draft:            p.PullRequest.Draft,
 	}, nil
 }
 

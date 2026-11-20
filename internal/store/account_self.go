@@ -5,8 +5,9 @@ import (
 	"database/sql"
 	"errors"
 	"fmt"
-	"strings"
 	"time"
+
+	"github.com/GLINCKER/levelrail/internal/identity"
 )
 
 // UserPreferences are one user's own display settings; empty strings mean "use the default".
@@ -130,7 +131,7 @@ func (db *DB) ConsumeEmailChange(ctx context.Context, tokenHash, userID string, 
 	if err := tx.Commit(); err != nil {
 		return "", fmt.Errorf("store: commit consume email change: %w", err)
 	}
-	return strings.ToLower(strings.TrimSpace(newEmail)), nil
+	return identity.NormalizeEmail(newEmail), nil
 }
 
 // UpdateUserEmail sets a user's email, ErrUserEmailExists when another account holds it.
@@ -144,7 +145,7 @@ type emailExecer interface {
 }
 
 func setUserEmail(ctx context.Context, q emailExecer, id, email string) error {
-	email = strings.ToLower(strings.TrimSpace(email))
+	email = identity.NormalizeEmail(email)
 	var taken string
 	err := q.QueryRowContext(ctx, `SELECT id FROM users WHERE email = ? AND id != ?`, email, id).Scan(&taken)
 	if err == nil {

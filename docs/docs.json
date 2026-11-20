@@ -445,6 +445,7 @@
               "migrate-from-vercel",
               "migrating-from-vercel",
               "migrating-from-netlify",
+              "migrating-from-render",
               "migrating-from-cloud-run"
             ],
             "icon": "/assets/icons/arrows-left-right.svg"
@@ -835,7 +836,8 @@
           {
             "group": "Databases",
             "pages": [
-              "self-host/greptimedb"
+              "self-host/greptimedb",
+              "self-host/libredb-studio"
             ]
           },
           {

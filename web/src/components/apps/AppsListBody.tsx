@@ -1,9 +1,13 @@
-import { useEffect, useRef, useState } from 'react'
-import { useVirtualizer } from '@tanstack/react-virtual'
-import { APP_LIST_GRID, AppRow } from '../AppRow'
+import { lazy, Suspense, useMemo } from 'react'
+import { useQuery } from '@tanstack/react-query'
+import { useTranslation } from 'react-i18next'
+import { APP_LIST_GRID } from '../AppRow'
 import type { AppListEntry } from '../../types/appDetail'
 import type { ViewMode } from '../../lib/appsListView'
-import { AppCard } from './AppCard'
+import { certificatesQueryOptions } from '../../queries/certificates'
+import { worstCertByApp } from '../../lib/certTruth'
+import { staticSitesQueryOptions } from '../../queries/staticSites'
+import { AppCardSkeleton, CARD_GRID_CLASS } from './AppCardSkeleton'
 import { AppsTable } from './AppsTable'
 
 export function ListHeader() {
@@ -23,110 +27,20 @@ export function ListHeader() {
   )
 }
 
-function columnsForWidth(width: number): number {
-  if (width >= 1100) return 3
-  if (width >= 700) return 2
-  return 1
-}
+const AppsCardGrid = lazy(() => import('./AppsCardGrid'))
 
-function useColumns(ref: React.RefObject<HTMLDivElement | null>): number {
-  const [cols, setCols] = useState(3)
-  useEffect(() => {
-    const el = ref.current
-    if (!el || typeof ResizeObserver === 'undefined') return undefined
-    const ro = new ResizeObserver(([entry]) => {
-      if (entry) setCols(columnsForWidth(entry.contentRect.width))
-    })
-    ro.observe(el)
-    return () => {
-      ro.disconnect()
-    }
-  }, [ref])
-  return cols
-}
-
-function AppsGridBody({
-  apps,
-  mode,
-  selected,
-  onSelect,
-}: {
-  apps: AppListEntry[]
-  mode: ViewMode
-  selected: string[]
-  onSelect: (name: string, checked: boolean) => void
-}) {
-  const parentRef = useRef<HTMLDivElement>(null)
-  const cols = useColumns(parentRef)
-  const perRow = mode === 'grid' ? cols : 1
-  const rowCount = Math.ceil(apps.length / perRow)
-  const virtualizer = useVirtualizer({
-    count: rowCount,
-    getScrollElement: () => parentRef.current,
-    estimateSize: () => (mode === 'grid' ? 176 : 60),
-    overscan: 6,
-  })
-
+function CardsFallback() {
+  const { t } = useTranslation('appRows')
   return (
-    <div
-      ref={parentRef}
-      className={
-        mode === 'grid'
-          ? 'max-h-[70vh] overflow-auto'
-          : 'max-h-[70vh] overflow-auto rounded-lg border border-border bg-card'
-      }
+    <ul
+      role="status"
+      aria-label={t('card.loading')}
+      className={CARD_GRID_CLASS}
     >
-      {mode === 'table' ? <ListHeader /> : null}
-      <div style={{ height: virtualizer.getTotalSize(), position: 'relative' }}>
-        {virtualizer.getVirtualItems().map((virtualRow) => {
-          const slice = apps.slice(
-            virtualRow.index * perRow,
-            virtualRow.index * perRow + perRow,
-          )
-          return (
-            <div
-              key={virtualRow.key}
-              data-index={virtualRow.index}
-              ref={virtualizer.measureElement}
-              style={{
-                position: 'absolute',
-                top: 0,
-                left: 0,
-                width: '100%',
-                transform: `translateY(${virtualRow.start}px)`,
-              }}
-            >
-              {mode === 'table' ? (
-                slice.map((app) => (
-                  <AppRow
-                    key={app.name}
-                    app={app}
-                    selected={selected.includes(app.name)}
-                    onSelect={onSelect}
-                  />
-                ))
-              ) : (
-                <div
-                  className="grid gap-3 pb-3"
-                  style={{
-                    gridTemplateColumns: `repeat(${perRow}, minmax(0, 1fr))`,
-                  }}
-                >
-                  {slice.map((app) => (
-                    <AppCard
-                      key={app.name}
-                      app={app}
-                      selected={selected.includes(app.name)}
-                      onSelect={onSelect}
-                    />
-                  ))}
-                </div>
-              )}
-            </div>
-          )
-        })}
-      </div>
-    </div>
+      <AppCardSkeleton />
+      <AppCardSkeleton />
+      <AppCardSkeleton />
+    </ul>
   )
 }
 
@@ -136,14 +50,38 @@ export function AppsListBody(props: {
   selected: string[]
   onSelect: (name: string, checked: boolean) => void
 }) {
+  const { data: sites } = useQuery({
+    ...staticSitesQueryOptions(),
+    retry: false,
+  })
+  const staticNames = useMemo(
+    () => new Set(sites?.map((s) => s.name) ?? []),
+    [sites],
+  )
+  const { data: certs } = useQuery({
+    ...certificatesQueryOptions(),
+    retry: false,
+  })
+  const certsByApp = useMemo(() => worstCertByApp(certs ?? []), [certs])
   if (props.mode === 'table') {
     return (
       <AppsTable
         apps={props.apps}
+        staticNames={staticNames}
+        certsByApp={certsByApp}
         selected={props.selected}
         onSelect={props.onSelect}
       />
     )
   }
-  return <AppsGridBody {...props} />
+  return (
+    <Suspense fallback={<CardsFallback />}>
+      <AppsCardGrid
+        apps={props.apps}
+        staticNames={staticNames}
+        selected={props.selected}
+        onSelect={props.onSelect}
+      />
+    </Suspense>
+  )
 }

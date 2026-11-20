@@ -11,6 +11,7 @@ import (
 	"strings"
 
 	"github.com/GLINCKER/levelrail/internal/ingress"
+	"github.com/GLINCKER/levelrail/internal/spec"
 	"github.com/GLINCKER/levelrail/internal/store"
 )
 
@@ -87,7 +88,7 @@ func (rt *Router) handleEditAppDomains(w http.ResponseWriter, r *http.Request) {
 	}
 	add, remove := normalizeDomainList(req.Add), normalizeDomainList(req.Remove)
 	for _, d := range append(slices.Clone(set), add...) {
-		if err := ingress.ValidateWildcardDomain(d); err != nil {
+		if _, err := spec.ValidateAppDomain(d); err != nil {
 			writeError(w, http.StatusBadRequest, err.Error())
 			return
 		}
@@ -204,10 +205,17 @@ func domainChangeEvent(name string, before, next []string) (store.AppEvent, bool
 	}, true
 }
 
+// normalizeDomainList canonicalizes valid domains. An invalid entry keeps its
+// lowercase form so validation rejects it, and so a legacy stored value can
+// still be removed by name.
 func normalizeDomainList(in []string) []string {
 	out := make([]string, 0, len(in))
 	for _, d := range in {
-		if d = strings.ToLower(strings.TrimSpace(d)); d != "" && !slices.Contains(out, d) {
+		d = strings.ToLower(strings.TrimSpace(d))
+		if norm, err := spec.ValidateAppDomain(d); err == nil {
+			d = norm
+		}
+		if d != "" && !slices.Contains(out, d) {
 			out = append(out, d)
 		}
 	}

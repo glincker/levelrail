@@ -443,6 +443,9 @@
     "prebuilt": "Aucune étape de build : ce déploiement a utilisé une image préconstruite.",
     "label": "Phases de ce déploiement",
     "step": {
+      "build": "Build",
+      "publish": "Publier",
+      "live": "En ligne",
       "pull": "Récupérer l'image",
       "create": "Créer le conteneur",
       "readiness": "Disponibilité",

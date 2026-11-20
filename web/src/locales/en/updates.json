@@ -774,6 +774,47 @@
       "notes": "Release notes",
       "migrations": "Database changes",
       "plan": "Backup and scheduling"
+    },
+    "checkOn": "Checking for new releases in the background is on. It only looks; installing is controlled by the switch above.",
+    "checkOff": "Background checks for new releases are off. Turning on automatic updates also turns them on.",
+    "installSteps": "Updates install between {{start}} and {{end}} {{zone}}; backup first, health check, automatic rollback.",
+    "nextWindows": "Next windows: {{list}}"
+  },
+  "autoStatus": {
+    "state": {
+      "off": "Off",
+      "paused": "Paused",
+      "blocked": "Blocked",
+      "degraded": "Degraded",
+      "ready": "Ready"
+    },
+    "summary": {
+      "off": "Automatic updates are off, so nothing installs on its own.",
+      "paused": "Automatic updates are paused and will resume on their own.",
+      "blocked": "This server cannot replace itself: {{reason}}",
+      "degraded": "Release checks are failing, so no update can start: {{reason}}",
+      "ready": "Working. New releases install in the window below."
+    },
+    "manual": {
+      "intro": "Update from the server instead with this command:",
+      "docker": "Running in Docker? Pull a new image and recreate the container."
+    },
+    "lastCheck": "Last check",
+    "failures": "Failed checks in a row",
+    "nextTry": "Next try",
+    "lastGoodList": "Last good release list",
+    "listAge": "{{hours}} h ago",
+    "listSourceFallback": "Found on the public release pages, without release notes",
+    "unpinned": "No release signing identity is pinned on this host yet. The first update relies on the release checksum only; after it succeeds, later updates must carry the same signature.",
+    "lastResult": "Last result",
+    "result": {
+      "applied": "Updated",
+      "failed": "Failed",
+      "cancelled": "Cancelled",
+      "missed": "Missed",
+      "blocked": "Blocked",
+      "pending": "Waiting for the window",
+      "running": "Running"
     }
   }
 }

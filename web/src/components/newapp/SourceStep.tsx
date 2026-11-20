@@ -7,6 +7,7 @@ import { Skeleton } from '@/components/ui/skeleton'
 import { Link } from '@tanstack/react-router'
 import {
   BoxGlassIcon,
+  FileDropzoneGlassIcon,
   GitBranchGlassIcon,
   LayersGlassIcon,
   RocketGlassIcon,
@@ -35,14 +36,18 @@ const RepoImportFlow = lazy(() =>
   })),
 )
 
-type SourceChoice = 'git' | 'template' | 'image' | 'sample'
+type SourceChoice = 'git' | 'template' | 'image' | 'sample' | 'static'
 
 const CHOICES: { key: SourceChoice; icon: UiIcon }[] = [
   { key: 'git', icon: GitBranchGlassIcon },
   { key: 'template', icon: LayersGlassIcon },
   { key: 'image', icon: BoxGlassIcon },
   { key: 'sample', icon: RocketGlassIcon },
+  { key: 'static', icon: FileDropzoneGlassIcon },
 ]
+
+const TILE_CLASS =
+  'flex h-full w-full flex-col items-start gap-2 rounded-container border border-border bg-card p-3 text-left shadow-card transition-colors hover:bg-muted/50 focus-visible:ring-3 focus-visible:ring-ring/50 focus-visible:outline-none motion-reduce:transition-none'
 
 const PRIVATE_HINT = /not found|refused access|cannot see it|token/i
 
@@ -167,22 +172,11 @@ export function SourceStep({
 
       <ul
         aria-label={t('source.choose.label')}
-        className="grid grid-cols-2 gap-3 md:grid-cols-4"
+        className="grid grid-cols-2 gap-3 md:grid-cols-5"
       >
-        {CHOICES.map(({ key, icon: ChoiceIcon }) => (
-          <li key={key}>
-            <button
-              type="button"
-              aria-pressed={choice === key}
-              onClick={() => {
-                setChoice(key)
-              }}
-              className={cn(
-                'flex h-full w-full flex-col items-start gap-2 rounded-container border border-border bg-card p-3 text-left shadow-card transition-colors hover:bg-muted/50 focus-visible:ring-3 focus-visible:ring-ring/50 focus-visible:outline-none motion-reduce:transition-none',
-                choice === key &&
-                  'border-primary bg-muted/60 ring-1 ring-primary',
-              )}
-            >
+        {CHOICES.map(({ key, icon: ChoiceIcon }) => {
+          const body = (
+            <>
               <ChoiceIcon
                 className={cn(
                   'size-7',
@@ -196,9 +190,37 @@ export function SourceStep({
               <span className="block text-xs text-muted-foreground">
                 {t(`source.choose.${key}.hint`)}
               </span>
-            </button>
-          </li>
-        ))}
+            </>
+          )
+          // Static sites live in Pages, so this tile navigates instead of switching the panel.
+          if (key === 'static') {
+            return (
+              <li key={key}>
+                <Link to="/pages" search={{ new: 1 }} className={TILE_CLASS}>
+                  {body}
+                </Link>
+              </li>
+            )
+          }
+          return (
+            <li key={key}>
+              <button
+                type="button"
+                aria-pressed={choice === key}
+                onClick={() => {
+                  setChoice(key)
+                }}
+                className={cn(
+                  TILE_CLASS,
+                  choice === key &&
+                    'border-primary bg-muted/60 ring-1 ring-primary',
+                )}
+              >
+                {body}
+              </button>
+            </li>
+          )
+        })}
       </ul>
 
       {choice === 'git' ? (

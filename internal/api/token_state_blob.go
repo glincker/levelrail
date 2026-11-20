@@ -4,11 +4,12 @@ import (
 	"context"
 	"encoding/json"
 	"fmt"
+	"github.com/GLINCKER/levelrail/internal/secrets"
 	"sync"
 )
 
 const (
-	tokenStateService  = "token-lifecycle"
+	tokenStateService  = secrets.ControlPlanePrefix + "token-lifecycle"
 	tokenStateNotices  = "expiry_notices" //nolint:gosec // state key, not a credential
 	tokenStateRotation = "rotation_pending"
 )

@@ -46,12 +46,14 @@ type PreviewPolicyResource struct {
 	GatePasswordSet           bool    `json:"gate_password_set"`
 	AllowIndexing             bool    `json:"allow_indexing"`
 
-	MigrateCommand                 string `json:"migrate_command"`
-	MigrateTimeoutSeconds          int    `json:"migrate_timeout_seconds"`
-	EffectiveMigrateTimeoutSeconds int    `json:"effective_migrate_timeout_seconds"`
-	ImageTagTemplate               string `json:"image_tag_template"`
-	HostTemplate                   string `json:"host_template"`
-	WildcardDomain                 string `json:"wildcard_domain"`
+	MigrateCommand                 string   `json:"migrate_command"`
+	MigrateTimeoutSeconds          int      `json:"migrate_timeout_seconds"`
+	EffectiveMigrateTimeoutSeconds int      `json:"effective_migrate_timeout_seconds"`
+	ImageTagTemplate               string   `json:"image_tag_template"`
+	HostTemplate                   string   `json:"host_template"`
+	WildcardDomain                 string   `json:"wildcard_domain"`
+	ExcludeServices                []string `json:"exclude_services"`
+	RequireLabel                   string   `json:"require_label"`
 }
 
 // SetPreviewPolicyRequest is PUT .../preview-policy's body; nil fields are left unchanged.
@@ -72,11 +74,13 @@ type SetPreviewPolicyRequest struct {
 	GatePassword     *string  `json:"gate_password,omitempty"`
 	AllowIndexing    *bool    `json:"allow_indexing,omitempty"`
 
-	MigrateCommand        *string `json:"migrate_command,omitempty"`
-	MigrateTimeoutSeconds *int    `json:"migrate_timeout_seconds,omitempty"`
-	ImageTagTemplate      *string `json:"image_tag_template,omitempty"`
-	HostTemplate          *string `json:"host_template,omitempty"`
-	WildcardDomain        *string `json:"wildcard_domain,omitempty"`
+	MigrateCommand        *string   `json:"migrate_command,omitempty"`
+	MigrateTimeoutSeconds *int      `json:"migrate_timeout_seconds,omitempty"`
+	ImageTagTemplate      *string   `json:"image_tag_template,omitempty"`
+	HostTemplate          *string   `json:"host_template,omitempty"`
+	WildcardDomain        *string   `json:"wildcard_domain,omitempty"`
+	ExcludeServices       *[]string `json:"exclude_services,omitempty"`
+	RequireLabel          *string   `json:"require_label,omitempty"`
 }
 
 type approvePreviewRequest struct {

@@ -38,6 +38,18 @@ var staticAllowedStatuses = map[int]bool{200: true, 301: true, 302: true, 303: t
 // IsStaticRedirectStatus reports whether s is a 3xx code.
 func IsStaticRedirectStatus(s int) bool { return s >= 300 && s < 400 }
 
+// StaticProxyPrefix starts the target of a proxy rule: app://<name>[/path].
+// Only an app on this control plane can be named, never an arbitrary URL.
+const StaticProxyPrefix = "app://"
+
+// DefaultStaticMaxProxyRules caps proxy rules per site when no env override is set.
+const DefaultStaticMaxProxyRules = 20
+
+// EnvStaticMaxProxyRules tunes the proxy rule cap.
+const EnvStaticMaxProxyRules = "APP_PAGES_PROXY_MAX_RULES"
+
+var staticProxyAppRe = regexp.MustCompile(`^[A-Za-z0-9][A-Za-z0-9._-]{0,62}$`)
+
 // StaticQueryMatch requires a query parameter; Value is a literal or ":name".
 type StaticQueryMatch struct {
 	Key   string `json:"key"`
@@ -58,6 +70,17 @@ type StaticRule struct {
 
 // Pattern returns the compiled From matcher, nil until validated.
 func (r *StaticRule) Pattern() *StaticPattern { return r.pat }
+
+// IsProxy reports whether the rule forwards to an app on this control plane.
+func (r *StaticRule) IsProxy() bool { return strings.HasPrefix(r.To, StaticProxyPrefix) }
+
+// ProxyTarget splits a proxy rule's To into the app name and the upstream
+// path template ("/" plus the remainder, :splat still unexpanded).
+func (r *StaticRule) ProxyTarget() (app, pathTmpl string) {
+	rest := strings.TrimPrefix(r.To, StaticProxyPrefix)
+	app, tail, _ := strings.Cut(rest, "/")
+	return app, "/" + tail
+}
 
 // StaticHeaderKV is one response header.
 type StaticHeaderKV struct {
@@ -95,11 +118,12 @@ type StaticLimits struct {
 	MaxHeaderBlocks int
 	MaxFileBytes    int
 	MaxValueLen     int
+	MaxProxyRules   int
 }
 
 // DefaultStaticLimits are the caps used when no environment override is set.
 func DefaultStaticLimits() StaticLimits {
-	return StaticLimits{MaxRules: 1000, MaxHeaderBlocks: 100, MaxFileBytes: 256 << 10, MaxValueLen: 2048}
+	return StaticLimits{MaxRules: 1000, MaxHeaderBlocks: 100, MaxFileBytes: 256 << 10, MaxValueLen: 2048, MaxProxyRules: DefaultStaticMaxProxyRules}
 }
 
 // StaticPattern is a path pattern with :name segments and a trailing * splat,
@@ -164,6 +188,9 @@ func CompileStaticPattern(p string) (*StaticPattern, error) {
 	return pt, nil
 }
 
+// Regexp is the RE2 source of the compiled matcher.
+func (pt *StaticPattern) Regexp() string { return pt.re.String() }
+
 // Match returns the captured values, or nil when path does not match.
 func (pt *StaticPattern) Match(path string) map[string]string {
 	m := pt.re.FindStringSubmatch(path)
@@ -193,6 +220,10 @@ func ValidateStaticRule(r *StaticRule, l StaticLimits) error {
 		return fmt.Errorf("from and to must be at most %d bytes", l.MaxValueLen)
 	}
 	for _, v := range []string{r.From, r.To} {
+		// Braces reach Caddy's placeholder expansion, so no rule string may hold them.
+		if strings.ContainsAny(v, "{}") {
+			return fmt.Errorf("%q must not contain { or }", v)
+		}
 		if !SafeHeaderValue(v) || strings.ContainsAny(v, " \t\\") {
 			return fmt.Errorf("%q must not contain spaces, backslashes or control characters", v)
 		}
@@ -223,7 +254,44 @@ func ValidateStaticRule(r *StaticRule, l StaticLimits) error {
 	return nil
 }
 
+// validateStaticProxy checks a rule whose target is app://name/path. From may
+// hold literal segments and a trailing * only, so the upstream path is built
+// from one safe capture.
+func validateStaticProxy(r *StaticRule) error {
+	if r.Status != 200 {
+		return fmt.Errorf("a rule to %s... must use status 200 (a rewrite)", StaticProxyPrefix)
+	}
+	if strings.Contains(r.From, ":") {
+		return fmt.Errorf("a proxy rule's from may use literal segments and a trailing * only")
+	}
+	if len(r.Query) > 0 {
+		return fmt.Errorf("a proxy rule cannot match on query parameters")
+	}
+	app, tmpl := r.ProxyTarget()
+	if !staticProxyAppRe.MatchString(app) {
+		return fmt.Errorf("to %q must name an app as app://<name>/<path>", r.To)
+	}
+	for _, seg := range strings.Split(tmpl, "/") {
+		if seg == "." || seg == ".." || strings.ContainsAny(seg, "?#%*") {
+			return fmt.Errorf("to %q: the path must not hold dot segments, ?, #, %% or *", r.To)
+		}
+		if strings.HasPrefix(seg, ":") && seg != ":"+staticSplatName {
+			return fmt.Errorf("to %q: only :splat can be used in a proxy path", r.To)
+		}
+		if strings.Contains(seg, ":") && seg != ":"+staticSplatName {
+			return fmt.Errorf("to %q: :splat must be a whole path segment", r.To)
+		}
+	}
+	if strings.Contains(tmpl, ":"+staticSplatName) && !strings.HasSuffix(r.From, "/*") && r.From != "/*" {
+		return fmt.Errorf("to uses :splat but from has no trailing *")
+	}
+	return nil
+}
+
 func validateStaticTarget(r *StaticRule, known map[string]bool) error {
+	if r.IsProxy() {
+		return validateStaticProxy(r)
+	}
 	pathLike := strings.HasPrefix(r.To, "/")
 	if pathLike {
 		if strings.HasPrefix(r.To, "//") {
@@ -231,7 +299,7 @@ func validateStaticTarget(r *StaticRule, known map[string]bool) error {
 		}
 	} else {
 		if r.Status == 200 {
-			return fmt.Errorf("a 200 rewrite to an external URL is a proxy and is not supported; use a path forwarder on the domain")
+			return fmt.Errorf("a 200 rewrite to an external URL is not supported; proxy to an app on this server with app://<name>/<path>")
 		}
 		if !IsStaticRedirectStatus(r.Status) {
 			return fmt.Errorf("status %d needs a path on this site as its destination", r.Status)

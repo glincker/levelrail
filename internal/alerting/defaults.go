@@ -99,6 +99,7 @@ func DefaultRuleSpecs(cfg DefaultsConfig) []DefaultRuleSpec {
 		{"log-archive-stale", "Log archive failing", KindLogArchiveStale, SeverityWarning},
 		{"backup-failed", "A database backup failed", KindBackupFailed, SeverityCritical},
 		{"deploy-failed", "A deploy failed", KindDeployFailed, SeverityWarning},
+		{"app-unhealthy", "An app is failing its health check", KindAppUnhealthy, SeverityWarning},
 		{"database-down", "A database is down", KindDatabaseDown, SeverityCritical},
 		{"database-backup-stale", "A database backup is stale", KindDatabaseBackupStale, SeverityWarning},
 	}

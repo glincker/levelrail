@@ -1,5 +1,11 @@
 import { Link } from '@tanstack/react-router'
-import { ChevronRightGlassIcon, FolderGlassIcon } from '@thesvg/ui-react'
+import {
+  ChevronRightGlassIcon,
+  FolderGlassIcon,
+  PinGlassIcon,
+  PinGlassOutlineIcon,
+} from '@thesvg/ui-react'
+import { useTranslation } from 'react-i18next'
 import { Button } from '@/components/ui/button'
 import { CloneProjectDialog } from './projects/CloneProjectDialog'
 import { DeleteProjectDialog } from './DeleteProjectDialog'
@@ -19,7 +25,17 @@ function formatProjectDate(iso: string): string {
   return new Date(iso).toLocaleString()
 }
 
-export function ProjectRow({ project }: { project: ProjectResource }) {
+export function ProjectRow({
+  project,
+  pinned,
+  onTogglePin,
+}: {
+  project: ProjectResource
+  pinned?: boolean
+  onTogglePin?: (id: string) => void
+}) {
+  const { t } = useTranslation('common')
+  const PinIcon = pinned ? PinGlassIcon : PinGlassOutlineIcon
   return (
     <div
       className={`${PROJECT_LIST_GRID} h-full w-full border-b border-border px-4 py-3`}
@@ -37,6 +53,23 @@ export function ProjectRow({ project }: { project: ProjectResource }) {
       </span>
 
       <span className="flex shrink-0 items-center gap-2 justify-self-end">
+        {onTogglePin ? (
+          <Button
+            type="button"
+            variant="ghost"
+            size="icon-sm"
+            aria-pressed={pinned}
+            aria-label={t(
+              pinned ? 'projectsPage.list.unpin' : 'projectsPage.list.pin',
+              { name: project.name },
+            )}
+            onClick={() => {
+              onTogglePin(project.id)
+            }}
+          >
+            <PinIcon className="size-5" aria-hidden="true" />
+          </Button>
+        ) : null}
         <Link to="/projects/$id" params={{ id: project.id }}>
           <Button type="button" variant="outline" size="sm">
             View

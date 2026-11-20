@@ -186,6 +186,17 @@ func (rt *Router) cloudflareDNSToken(ctx context.Context) (string, error) {
 }
 
 func (rt *Router) resolveRoute53RecordManager(ctx context.Context) (dnsrecords.Manager, error) {
+	c, err := rt.route53Creds(ctx)
+	if err != nil || c == nil {
+		return nil, err
+	}
+	return dnsrecords.NewRoute53ZoneManager(c.accessKeyID, c.secretAccessKey, c.region, c.hostedZoneID), nil
+}
+
+type route53Creds struct{ accessKeyID, secretAccessKey, region, hostedZoneID string }
+
+// route53Creds is the stored Route 53 credential, or nil when it is off or incomplete.
+func (rt *Router) route53Creds(ctx context.Context) (*route53Creds, error) {
 	if rt.route53DNSCredentialResolver == nil {
 		return nil, nil
 	}
@@ -208,7 +219,7 @@ func (rt *Router) resolveRoute53RecordManager(ctx context.Context) (dnsrecords.M
 	if accessKeyID == "" || secretAccessKey == "" {
 		return nil, nil
 	}
-	return dnsrecords.NewRoute53Manager(accessKeyID, secretAccessKey, settings.Region, settings.HostedZoneID), nil
+	return &route53Creds{accessKeyID, secretAccessKey, settings.Region, settings.HostedZoneID}, nil
 }
 
 // defaultDNSRecordStatus is the default dnsRecordStatusFunc: a real,

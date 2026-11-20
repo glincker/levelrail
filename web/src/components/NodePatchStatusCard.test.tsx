@@ -4,7 +4,7 @@ import i18next from 'i18next'
 import { initReactI18next } from 'react-i18next'
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest'
 import commonEn from '../locales/en/common.json'
-import nodesEn from '../locales/en/nodes.json'
+import nodePatchEn from '../locales/en/nodePatch.json'
 import { TooltipProvider } from '@/components/ui/tooltip'
 import { createTestQueryClient } from '@/test/testQueryClient'
 import type { PatchPreview, PatchRun } from '../queries/nodePatch'
@@ -25,9 +25,9 @@ vi.mock('@/hooks/useAbilities', () => ({
 void i18next.use(initReactI18next).init({
   lng: 'en',
   fallbackLng: 'en',
-  ns: ['nodes', 'common'],
-  defaultNS: 'nodes',
-  resources: { en: { nodes: nodesEn, common: commonEn } },
+  ns: ['nodePatch', 'common'],
+  defaultNS: 'nodePatch',
+  resources: { en: { nodePatch: nodePatchEn, common: commonEn } },
   interpolation: { escapeValue: false },
 })
 

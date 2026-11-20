@@ -1,0 +1,567 @@
+{
+  "title": "Pages",
+  "description": "コントロールプレーンから直接配信される静的サイト。",
+  "newSite": "新しいサイト",
+  "empty": {
+    "title": "サイトはまだありません",
+    "body": "フォルダーまたはzipをドロップして、最初のサイトを公開してください。"
+  },
+  "list": {
+    "label": "サイト",
+    "name": "名前",
+    "url": "URL",
+    "lastDeploy": "最終デプロイ",
+    "status": "ステータス",
+    "size": "サイズ",
+    "noUrl": "ドメインなし",
+    "none": "なし",
+    "unknown": "-",
+    "loadFailed": "サイトを読み込めませんでした。"
+  },
+  "status": {
+    "running": "公開中",
+    "attention": "要対応",
+    "unknown": "不明"
+  },
+  "new": {
+    "title": "新しいサイト",
+    "name": "名前",
+    "nameHint": "小文字の英字、数字、ハイフンを使えます。",
+    "drop": "アップロード",
+    "blank": "スターター",
+    "blankHint": "最初は index ページが1つだけあり、後から差し替えられます。",
+    "git": "Git",
+    "create": "作成して公開",
+    "creating": "処理中...",
+    "cancel": "キャンセル",
+    "nameTaken": "その名前は既に使われています。",
+    "failed": "サイトを作成できませんでした: {{message}}",
+    "mode": "開始方法",
+    "change": "変更",
+    "stage": {
+      "packing": "ファイルをまとめています...",
+      "creating": "サイトを作成しています...",
+      "uploading": "アップロード中...",
+      "publishing": "公開しています..."
+    }
+  },
+  "detail": {
+    "back": "すべてのサイト",
+    "visit": "開く",
+    "tabs": {
+      "label": "サイトのセクション",
+      "overview": "概要",
+      "deployments": "デプロイ",
+      "domains": "ドメイン",
+      "routes": "ルート",
+      "settings": "設定",
+      "failing": "失敗したチェック"
+    },
+    "publish": "新しいバージョンを公開",
+    "hidePublish": "アップロードを隠す",
+    "loading": "読み込み中...",
+    "dropOverlay": "ドロップして新しいバージョンを公開",
+    "redeployed": "新しいバージョンを公開しました。",
+    "lastDeploy": "最終デプロイ {{when}}",
+    "files_other": "{{count}}ファイル"
+  },
+  "settings": {
+    "app": "アプリの全設定",
+    "appHint": "ビルド、環境、アクセスのオプションはアプリのページにあります。",
+    "openApp": "アプリのページを開く",
+    "danger": "サイトを削除",
+    "dangerHint": "サイトと公開済みのファイルを削除します。",
+    "delete": "削除",
+    "deleting": "削除中...",
+    "confirmTitle": "{{name}} を削除しますか?",
+    "confirmBody": "サイトの配信が止まり、復元できません。",
+    "dangerZone": "危険な操作",
+    "spa": "シングルページアプリ",
+    "spaHint": "不明なパスでは index.html を配信し、クライアント側のルーティングが動くようにします。",
+    "cleanUrls": "クリーンURL",
+    "cleanUrlsHint": "/about は about.html から配信します。",
+    "trailingSlash": "末尾のスラッシュ",
+    "slashOff": "そのまま",
+    "slashAdd": "常に追加",
+    "slashRemove": "常に削除",
+    "notFound": "カスタム404ページ",
+    "build": "ビルドコマンド",
+    "output": "出力ディレクトリ",
+    "password": "パスワード",
+    "passwordHint": "訪問者はユーザー名 site と、この共有パスワードでサインインします。すべてのドメインとデプロイURLに適用され、再表示されません。",
+    "passwordPlaceholder": "新しいパスワード",
+    "passwordClear": "削除",
+    "passwordRemoveConfirm": "パスワードを削除しますか? リンクを知っている人は誰でもサイトを開けるようになります。",
+    "passwordKeep": "保持",
+    "locked": "パスワードで保護",
+    "gitOnlyHint": "Gitのビルドに適用されます。ドロップしたフォルダーにはまだ使われません。",
+    "auto": "自動",
+    "on": "オン",
+    "off": "オフ",
+    "current": "現在 {{value}}",
+    "save": "保存",
+    "reset": "app.yaml を使用",
+    "resetGit": "Git設定を使用",
+    "fromGit": "Git設定から: {{value}}",
+    "saved": "設定を保存しました",
+    "loadFailed": "設定を読み込めませんでした",
+    "buildPlaceholder": "npm run build",
+    "outputPlaceholder": "dist"
+  },
+  "domains": {
+    "label": "カスタムドメインを接続",
+    "add": "ドメインを追加",
+    "adding": "追加中...",
+    "addFailed": "ドメインを追加できませんでした。",
+    "verify": "検証",
+    "checking": "確認中...",
+    "dnsOk": "DNSの準備完了",
+    "dnsWaiting": "DNSの反映を待機中",
+    "certIssued": "証明書を発行済み",
+    "certPending": "証明書の発行待ち",
+    "mode": {
+      "auto": "DNSを自動で設定",
+      "manual": "次のレコードを追加"
+    },
+    "recordsLabel": "追加するDNSレコード",
+    "type": "種類",
+    "host": "ホスト",
+    "value": "値",
+    "copyHost": "ホストをコピー",
+    "copyValue": "値をコピー",
+    "statusFailed": "ドメインの状態を確認できませんでした。",
+    "placeholder": "www.example.com",
+    "step1": "ドメイン",
+    "step2": "DNSレコード",
+    "step3": "検証",
+    "createdForYou": "DNSレコードを自動で作成しました。",
+    "none": "カスタムドメインはまだありません",
+    "tls": "TLS",
+    "provisioning": "プロビジョニング中",
+    "remove": "{{domain}} を削除",
+    "progress": "ドメインの進行状況",
+    "step": {
+      "dns": "DNS",
+      "cert": "証明書",
+      "live": "公開"
+    },
+    "done": "完了",
+    "waiting": "待機中",
+    "checks": "ドメインのチェック",
+    "failed": "失敗",
+    "check": {
+      "dns_resolves": "DNSレコード",
+      "dns_points_here": "向き先",
+      "dns_aaaa_mismatch": "IPv6レコード",
+      "dns_cname_apex": "ルートドメインのCNAME",
+      "dns_proxied": "CDNプロキシ",
+      "proxy_ports": "ポート80/443",
+      "net_port80": "ポート80",
+      "caa_blocks_issuer": "CAA",
+      "tls_certificate": "証明書",
+      "cert_renewal": "更新",
+      "http_status": "サイトの応答",
+      "dns_propagation": "伝播",
+      "host_private_address": "公開アドレス",
+      "acme_failure": "証明書の発行",
+      "dns_www_apex": "wwwとルートドメイン"
+    }
+  },
+  "summary": {
+    "files_other": "{{count}}ファイル",
+    "index": "index.html を検出",
+    "redirects": "_redirects を検出",
+    "headers": "_headers を検出",
+    "noIndex": "最上位に index.html がありません。サイトのルートは404になります。",
+    "overLimit": "アップロードのサイズ上限を超えているため、拒否されます。",
+    "skipped": "非表示のシステムファイル、.git、node_modules はスキップされます。"
+  },
+  "success": {
+    "title": "{{name}} を公開しました",
+    "open": "開く",
+    "copy": "URLをコピー",
+    "next": "次へ",
+    "addDomain": "ドメインを追加",
+    "editRoutes": "ルートを編集",
+    "viewDeploys": "デプロイを表示"
+  },
+  "entry": {
+    "drop": {
+      "title": "フォルダーまたはzipをドロップ",
+      "body": "ビルド済みのサイトを数秒で公開します。"
+    },
+    "git": {
+      "title": "Gitを接続",
+      "body": "プッシュのたびにビルドして公開します。"
+    },
+    "blank": {
+      "title": "空のページから開始",
+      "body": "スターターページを作成し、後で編集します。"
+    }
+  },
+  "rollback": {
+    "title": "以前のバージョン",
+    "action": "ロールバック",
+    "confirmTitle": "{{name}} をロールバックしますか?",
+    "confirmBody": "サイトは以前のバージョンを再び配信します。",
+    "none": "ロールバックできる以前のバージョンはありません。"
+  },
+  "promote": {
+    "action": "本番に反映",
+    "confirmTitle": "{{name}} で、このデプロイを公開しますか?",
+    "confirmBody": "サイト独自のドメインは、このデプロイをすぐに配信します。独自のURLも引き続き使えます。"
+  },
+  "deployUrl": {
+    "copy": "デプロイURLをコピー",
+    "copied": "デプロイURLをコピーしました",
+    "open": "デプロイURLを開く"
+  },
+  "starters": {
+    "label": "スターターテンプレート",
+    "preview": "{{name}} スターターのプレビュー",
+    "blank": {
+      "title": "空白",
+      "hint": "後で差し替えられる、空の index ページが1つあります。"
+    },
+    "landing": {
+      "title": "ランディングページ",
+      "hint": "ヒーロー、3つの機能カード、フッター。"
+    },
+    "docs": {
+      "title": "ドキュメント",
+      "hint": "サイドナビゲーション、見出し、コードブロック。"
+    },
+    "portfolio": {
+      "title": "ポートフォリオ",
+      "hint": "紹介文と、選んだ作品のグリッド。"
+    }
+  },
+  "checks": {
+    "title": "サイトのチェック",
+    "score": "サイトチェックのスコア",
+    "rerun": "再実行",
+    "running": "チェック中...",
+    "failed": "サイトチェックを実行できませんでした。",
+    "allGood": "問題は見つかりませんでした。",
+    "scanned_other": "{{count}}ファイルをスキャン、{{size}}。",
+    "truncated": "大きなサイトのため、一部だけをスキャンしました。",
+    "passing_other": "{{count}}件のチェックに合格",
+    "status": {
+      "ok": "合格",
+      "warn": "警告",
+      "fail": "不合格"
+    }
+  },
+  "traffic": {
+    "title": "トラフィック",
+    "window": "期間",
+    "windows": {
+      "24h": "24時間",
+      "7d": "7日間",
+      "30d": "30日間"
+    },
+    "noSeries": "データはまだありません",
+    "series": {
+      "requests": "リクエスト",
+      "requestsHint": "時間帯ごとの、サイトへのすべてのリクエスト。",
+      "pages": "ページ",
+      "pagesHint": "ページの読み込みのみ。スクリプトや画像などのアセットは含みません。",
+      "errors": "エラー",
+      "errorsHint": "4xxまたは5xxのステータスを返したレスポンス。"
+    },
+    "requests": "リクエスト",
+    "visitors": "訪問者",
+    "bandwidth": "帯域幅",
+    "statusLine": "2xx {{ok}}、3xx {{redirects}}、4xx {{clientErrors}}、5xx {{serverErrors}}",
+    "none": "まだありません。",
+    "addRedirect": "リダイレクトを追加",
+    "unavailable": "トラフィックは利用できません。このサーバーには、サイト用のアクセスログのソースがありません。",
+    "failed": "トラフィックを読み込めませんでした。",
+    "partial": "一部のデータのみです。",
+    "topPages": "人気のページ",
+    "brokenLinks": "リンク切れ",
+    "linkedFrom": "リンク元",
+    "assets": "アセット: {{count}}件のリクエスト、{{size}}",
+    "assetsNote": "スクリプト、スタイル、画像、フォントはここで集計され、一覧には表示されません。",
+    "probes": "プローブとスキャン: {{count}}",
+    "probesList": "スキャンのようなリクエストで、何も見つからなかったもの",
+    "show": "表示",
+    "hide": "非表示"
+  },
+  "hero": {
+    "more": "その他の操作",
+    "status": {
+      "live": "公開中",
+      "publishing": "公開中",
+      "notPublished": "未公開"
+    }
+  },
+  "preview": {
+    "notFoundToggle": "404ページをプレビュー",
+    "title": "プレビュー",
+    "device": "デバイス",
+    "desktop": "デスクトップ",
+    "mobile": "モバイル",
+    "unavailable": "プレビューを利用できません",
+    "frame": "{{name}} のライブプレビュー"
+  },
+  "previews": {
+    "title": "ブランチのプレビュー",
+    "open": "開く"
+  },
+  "recent": {
+    "title": "最近のデプロイ",
+    "viewAll": "すべて表示",
+    "none": "まだデプロイはありません。",
+    "live": "公開中"
+  },
+  "routes": {
+    "testTitle": "URLをテスト",
+    "testLabel": "テストするパス",
+    "testPlaceholder": "/about",
+    "test": "テスト",
+    "rules": "ルール",
+    "none": "リダイレクトや書き換えのルールはありません",
+    "from": "変換元",
+    "to": "変換先",
+    "status": "ステータスコード",
+    "copyLine": "_redirects の行をコピー",
+    "advanced": "その他のツール",
+    "notStatic": "ルーティングは、公開済みの静的サイトに適用されます",
+    "loadFailed": "ルールを読み込めませんでした",
+    "retry": "再試行",
+    "headers": "ヘッダー",
+    "addHeader": "ヘッダーを追加",
+    "addRedirect": "リダイレクトを追加",
+    "noHeaders": "カスタムヘッダーはありません",
+    "moveUp": "上へ移動",
+    "moveDown": "下へ移動",
+    "remove": "削除",
+    "force": "強制",
+    "headerPath": "ヘッダーのパス",
+    "headerSet": "設定するヘッダー",
+    "headerSetPlaceholder": "名前: 値、1行に1つ",
+    "headerRemove": "削除するヘッダー",
+    "headerRemovePlaceholder": "名前をカンマ区切りで入力",
+    "source": {
+      "ui": "UI",
+      "app.yaml": "app.yaml",
+      "file": "ファイル"
+    },
+    "lockedHint": "読み取り専用です。{{origin}} で定義されています",
+    "unsaved": "未保存の変更",
+    "saving": "保存中...",
+    "save": "変更を保存",
+    "discard": "破棄",
+    "saved": "ルーティングルールを保存しました",
+    "invalid": "一部のルールを修正してください",
+    "testHint": "テストは、保存済みのルールに対して実行されます。",
+    "kindLabel": "ルールの種類",
+    "kind": {
+      "redirect": "リダイレクト",
+      "rewrite": "書き換え",
+      "proxy": "プロキシ",
+      "status": "応答"
+    },
+    "targetApp": "対象のアプリ",
+    "targetPath": "対象のパス",
+    "pickApp": "アプリを選択",
+    "state": {
+      "ok": "アプリに到達できます",
+      "missing": "この名前のアプリはありません",
+      "self": "このサイトを指しています"
+    },
+    "drag": "ドラッグして並べ替え",
+    "removed": "ルールを削除しました",
+    "undo": "元に戻す",
+    "noMatch": "一致するルールはありません。ファイルが配信されます",
+    "tester": {
+      "rule": "ルール {{n}}",
+      "forced": "強制",
+      "splat": "スプラット",
+      "empty": "(空)",
+      "noCapture": "スプラットもプレースホルダーも未使用",
+      "yields": "このパスにファイルがない場合のみ適用されます。ステータスに ! を付けると強制できます。",
+      "note": {
+        "rewrite": "対象ファイルを配信し、ない場合は次のルールに進みます。",
+        "status": "このステータスと対象ページで応答します。"
+      },
+      "empty_input": "パスを入力すると一致するルールが表示されます。",
+      "tooLong": "パスが{{max}}文字を超えています。サーバーは414を返します。",
+      "none": "一致するルールはありません。ファイルはそのまま配信されます。",
+      "queryLabel": "クエリ(任意)",
+      "queryPlaceholder": "?ref=news",
+      "queryIgnored": "クエリ {{query}} は一致判定に使われません。"
+    },
+    "served": "保存済みのルールの配信結果",
+    "rulesHint": "ルールは上から順に適用され、最初に一致したものが優先されます。ここで設定したルールは app.yaml より優先され、その後に _redirects が適用されます。残りのパスには :splat を使います。プロキシルールは app://name/path でアプリに転送します。",
+    "preset": {
+      "spa": "シングルページアプリのフォールバック",
+      "moved": "移動したセクションをリダイレクト",
+      "api": "/api をアプリにプロキシ"
+    },
+    "problem": {
+      "fromSlash": "変換元は / で始めてください",
+      "badChars": "波かっことバックスラッシュは使えません",
+      "toEmpty": "変換先を追加してください",
+      "proxyApp": "転送先のアプリを選んでください",
+      "proxyAppMissing": "この名前のアプリはありません",
+      "proxyAppSelf": "サイトは自分自身にプロキシできません",
+      "proxyPath": "対象のパスは / で始めてください"
+    },
+    "view": {
+      "label": "ルールの表示",
+      "rows": "行",
+      "raw": "テキスト"
+    },
+    "raw": {
+      "label": "テキストとしてのリダイレクトルール",
+      "placeholder": "/old /new 301",
+      "hint": "1行に1ルール: 変換元、変換先、ステータス。強制するにはステータスの後に ! を付けます。変換先には app://name/path を指定できます。"
+    },
+    "diff": {
+      "title": "保存済みルールからの変更",
+      "toggle": "変更を表示",
+      "none": "まだ変更はありません",
+      "add": "追加",
+      "del": "削除",
+      "same": "変更なし"
+    }
+  },
+  "git": {
+    "repo": "リポジトリ",
+    "repoPlaceholder": "リポジトリを検索するか、URLを貼り付けてください",
+    "detecting": "フレームワークを検出中...",
+    "unreadable": "そのリポジトリを読み取れませんでした。URLを確認するか、プライベートリポジトリの場合はアプリの設定フローでアカウントを接続してください。",
+    "detected": "検出されたビルド",
+    "plainHtml": "プレーンHTML",
+    "static": "静的",
+    "notStatic": "サーバーアプリ",
+    "branch": "ブランチ",
+    "command": "ビルドコマンド",
+    "commandPlaceholder": "なし。ファイルをそのまま公開します",
+    "output": "出力ディレクトリ",
+    "outputPlaceholder": "リポジトリのルート",
+    "serverWarning": "このリポジトリは、静的サイトではなくサーバーアプリのようです。",
+    "useAppFlow": "アプリのフローを使う",
+    "forceStatic": "それでも静的としてデプロイ",
+    "create": "作成してデプロイ",
+    "deployOnPush": "プッシュのたびにデプロイ",
+    "createFailed": "サイトを作成できませんでした: {{message}}",
+    "steps": {
+      "label": "デプロイの進行状況",
+      "cloning": "クローン",
+      "building": "ビルド",
+      "publishing": "公開",
+      "live": "公開中",
+      "state": {
+        "pending": "待機中",
+        "running": "実行中",
+        "done": "完了",
+        "failed": "失敗",
+        "unknown": "状態不明"
+      }
+    },
+    "failedStep": "{{step}}中に失敗しました: {{message}}",
+    "viewLog": "ビルドログを開く",
+    "fixSettings": "設定を修正",
+    "card": {
+      "title": "Git",
+      "repo": "リポジトリ",
+      "branch": "ブランチ",
+      "commit": "最終コミット",
+      "none": "まだありません",
+      "onPush": "プッシュ時にデプロイ",
+      "onPushHint": "すぐに適用されます。パスのフィルターなどは、アプリのGit設定にあります。",
+      "triggerPush": "プッシュ時",
+      "triggerRelease": "リリース時",
+      "triggerManual": "手動",
+      "triggerSaved": "デプロイのトリガーを保存しました。",
+      "triggerFailed": "トリガーを保存できませんでした: {{message}}",
+      "openApp": "Git設定",
+      "redeploy": "再デプロイ",
+      "redeploying": "再デプロイ中...",
+      "redeployFailed": "デプロイを開始できませんでした: {{message}}",
+      "redeployStarted": "デプロイを開始しました。",
+      "previews": "ブランチのプレビュー",
+      "previewOpen": "プレビューを開く",
+      "pr": "PR #{{number}}"
+    }
+  },
+  "forms": {
+    "title": "フォームの送信内容",
+    "failed": "送信内容を読み込めませんでした。",
+    "remove": "削除",
+    "delete": "{{form}} の送信内容 {{id}} を削除",
+    "deleteTip": "この送信内容を完全に削除します",
+    "confirmDelete": "この送信内容を削除しますか?",
+    "exportCsv": "{{form}} をCSVでエクスポート",
+    "spam": "スパム",
+    "spamWhy": "スパム: {{reason}}"
+  },
+  "preset": {
+    "title": "パフォーマンスプリセット",
+    "tip": "パスごとのキャッシュとセキュリティヘッダー。独自の _headers ファイルが常に優先されます。",
+    "none": "なし"
+  },
+  "hook": {
+    "title": "デプロイフック",
+    "tip": "このサイトのブランチを再デプロイする、シークレットURL。ここにPOSTすると実行されます",
+    "create": "作成",
+    "createTip": "CMS、CIジョブ、cron用のシークレットURLを作成",
+    "rotate": "再生成",
+    "rotateTip": "新しいURLを発行します。古いURLは使えなくなります",
+    "revoke": "無効化",
+    "revokeTip": "フックをオフにします",
+    "confirmRotate": "URLを再生成しますか? 現在のURLは使えなくなります。",
+    "confirmRevoke": "デプロイフックを無効化しますか?",
+    "copy": "コピー",
+    "copied": "コピーしました",
+    "copyTip": "URLをコピー",
+    "shownOnce": "今すぐコピーしてください。再表示されません。",
+    "since": "{{date}} から有効",
+    "failed": "デプロイフックを読み込めませんでした。"
+  },
+  "logs": {
+    "action": "ログ",
+    "title": "ビルドログ",
+    "copy": "ログをコピー",
+    "copied": "コピーしました",
+    "download": "ログをダウンロード",
+    "loading": "ログを読み込み中",
+    "empty": "ログの出力はありません。",
+    "error": "ログを読み込めませんでした。",
+    "failedAt": "{{step}}中に失敗しました",
+    "step": {
+      "cloning": "クローン",
+      "building": "ビルド",
+      "publishing": "公開",
+      "live": "公開中"
+    }
+  },
+  "ci": {
+    "title": "CIデプロイ",
+    "tip": "このサイトだけをデプロイできるトークンです。パイプラインにシークレットとして保存してください。ほかのものには触れられず、いつでも無効化できます。",
+    "create": "トークンを作成",
+    "createTip": "このサイト専用のデプロイトークンを作成",
+    "revoke": "無効化",
+    "revokeTip": "このトークンの使用を今すぐ停止",
+    "confirmRevoke": "このトークンを無効化しますか? これを使うパイプラインは失敗します。",
+    "copy": "コピー",
+    "copied": "コピーしました",
+    "shownOnce": "今すぐコピーしてください。再表示されません。LEVELRAIL_PAGES_TOKEN として保存してください。",
+    "expires": "{{date}} に失効",
+    "failed": "デプロイトークンを読み込めませんでした。",
+    "github": "GitHub",
+    "gitlab": "GitLab",
+    "curl": "curl"
+  },
+  "analytics": {
+    "title": "アナリティクス",
+    "pages": "人気のページ",
+    "referrers": "参照元",
+    "codes": "ステータスコード",
+    "none": "まだありません。",
+    "privacy": "エッジのアクセスログから集計しています。Cookie、クライアントアドレス、クエリ文字列は保存されません。表示範囲は最大{{days}}日です。"
+  }
+}

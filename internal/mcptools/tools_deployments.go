@@ -42,7 +42,7 @@ func splitList(s string) []string {
 func registerDeploymentTools(server *mcp.Server, client *apiclient.Client) {
 	addTool(server, &mcp.Tool{
 		Name:        "list_deployments",
-		Description: "List deployments across readable apps, newest first. Filter by status, app, branch, trigger, environment, time, text, live or PR; page with cursor.",
+		Description: "List deployments across readable apps, newest first; filter by status, app, branch, trigger, environment, time, text, live or PR.",
 	}, func(ctx context.Context, _ *mcp.CallToolRequest, in listDeploymentsInput) (*mcp.CallToolResult, apiclient.DeploymentList, error) {
 		opts := apiclient.DeploymentListOptions{
 			Statuses: splitList(in.Status), Triggers: splitList(in.Trigger), App: in.App, Branch: in.Branch,
@@ -61,7 +61,7 @@ func registerDeploymentTools(server *mcp.Server, client *apiclient.Client) {
 
 	addTool(server, &mcp.Tool{
 		Name:        "deployments_summary",
-		Description: "Summarize deployments across readable apps: counts by status, in-progress and needs-attention counts, 24h failure rate, median and p95 duration, deploys per day.",
+		Description: "Deployments across readable apps per day: counts by status, in-progress and attention, 24h failure rate, median and p95 duration.",
 	}, func(ctx context.Context, _ *mcp.CallToolRequest, in deploymentsSummaryInput) (*mcp.CallToolResult, apiclient.DeploymentSummary, error) {
 		s, err := client.GetDeploymentsSummary(ctx, in.Window)
 		if err != nil {

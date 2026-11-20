@@ -37,6 +37,7 @@ func (rt *Router) handleCreateApp(w http.ResponseWriter, r *http.Request) {
 		writeAppInvalid(w, err)
 		return
 	}
+	req.Domains = normalizeDomainList(req.Domains)
 	if err := rt.checkAppDNSNames(r.Context(), req.Name, &req.DNSNames); err != nil {
 		writeAppInvalid(w, err)
 		return
@@ -179,6 +180,10 @@ func (rt *Router) handleCreateApp(w http.ResponseWriter, r *http.Request) {
 		rt.internalError(w, "api: create app: recheck name failed", ferr, slog.String("name", req.Name))
 		return
 	}
+	if st, msg := rt.checkServiceImageRepo(r.Context(), desired); st != 0 {
+		writeError(w, st, msg)
+		return
+	}
 	for key, value := range req.Secrets {
 		if err := rt.secrets.SetValueGuarded(r.Context(), req.Name, key, value, false); err != nil {
 			if errors.Is(err, secrets.ErrSecretLocked) {
@@ -191,6 +196,7 @@ func (rt *Router) handleCreateApp(w http.ResponseWriter, r *http.Request) {
 	}
 
 	if err := rt.apps.SaveDesiredService(r.Context(), desired); err != nil {
+		rt.releaseImageRepoClaim(r.Context(), req.Name)
 		var domainTaken *store.ErrDomainTaken
 		if errors.As(err, &domainTaken) {
 			writeError(w, http.StatusConflict, domainTaken.Error())
@@ -285,7 +291,7 @@ func (rt *Router) resolveCreateImage(ctx context.Context, desired *store.Desired
 	tr := deploytrace.NewBuffered()
 	var auth *docker.RegistryAuth
 	if desired.RegistryCredentialID != "" {
-		if a, aerr := rt.registryAuthFor(ctx, desired.RegistryCredentialID); aerr == nil {
+		if a, aerr := rt.registryAuthFor(ctx, desired.RegistryCredentialID, desired.Image); aerr == nil {
 			auth = a
 		}
 	}

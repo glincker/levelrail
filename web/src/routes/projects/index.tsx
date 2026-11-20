@@ -4,7 +4,7 @@ import {
   type ErrorComponentProps,
 } from '@tanstack/react-router'
 import { useVirtualizer } from '@tanstack/react-virtual'
-import { useRef } from 'react'
+import { useMemo, useRef, useState } from 'react'
 import { TriangleAlertGlassIcon, FolderGlassIcon } from '@thesvg/ui-react'
 import { projectListQueryOptions, useProjects } from '../../queries/projects'
 import {
@@ -21,6 +21,17 @@ import { LazyProjectsDiagram } from '../../components/banners/LazyDiagrams'
 import { PageTemplate } from '../../components/shell/PageTemplate'
 import { EmptyState } from '../../components/ui/empty-state'
 import { Button } from '../../components/ui/button'
+import { NativeSelect } from '../../components/ui/native-select'
+import {
+  PROJECT_SORTS,
+  isProjectSort,
+  loadProjectPins,
+  loadProjectSort,
+  sortProjects,
+  storeProjectPins,
+  storeProjectSort,
+  type ProjectSort,
+} from '../../lib/projectSort'
 
 // Typed loader primes the Query cache, the component only reads that
 // cache via useProjects() (suspense), mirroring routes/nodes/index.tsx
@@ -53,7 +64,20 @@ function ListHeader() {
 }
 
 function ProjectListPage() {
-  const { data: projects } = useProjects()
+  const { data: unsorted } = useProjects()
+  const [sort, setSort] = useState<ProjectSort>(loadProjectSort)
+  const [pins, setPins] = useState<string[]>(loadProjectPins)
+  const projects = useMemo(
+    () => sortProjects(unsorted, sort, pins),
+    [unsorted, sort, pins],
+  )
+  const togglePin = (id: string) => {
+    const next = pins.includes(id)
+      ? pins.filter((p) => p !== id)
+      : [...pins, id]
+    setPins(next)
+    storeProjectPins(next)
+  }
   const parentRef = useRef<HTMLDivElement>(null)
   const {
     setContainer: setListContainer,
@@ -105,6 +129,30 @@ function ProjectListPage() {
       ) : (
         <>
           <ListKeyboardHint open={hintOpen} onClose={closeHint} />
+          <div className="flex items-center justify-end gap-2">
+            <label
+              htmlFor="projects-sort"
+              className="text-xs text-muted-foreground"
+            >
+              {t('projectsPage.sort.label')}
+            </label>
+            <NativeSelect
+              id="projects-sort"
+              value={sort}
+              onChange={(e) => {
+                const v = e.target.value
+                if (!isProjectSort(v)) return
+                setSort(v)
+                storeProjectSort(v)
+              }}
+            >
+              {PROJECT_SORTS.map((s) => (
+                <option key={s} value={s}>
+                  {t(`projectsPage.sort.${s}`)}
+                </option>
+              ))}
+            </NativeSelect>
+          </div>
           <div
             ref={(el) => {
               parentRef.current = el
@@ -138,7 +186,11 @@ function ProjectListPage() {
                       transform: `translateY(${virtualRow.start}px)`,
                     }}
                   >
-                    <ProjectRow project={project} />
+                    <ProjectRow
+                      project={project}
+                      pinned={pins.includes(project.id)}
+                      onTogglePin={togglePin}
+                    />
                   </div>
                 )
               })}

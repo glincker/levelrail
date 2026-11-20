@@ -52,18 +52,29 @@
     "secretAccessKey": "Geheimer AWS-Zugriffsschlüssel",
     "region": "Region (optional)",
     "hostedZoneId": "ID der gehosteten Zone (optional)",
-    "serviceAccount": "Dienstkonto-JSON"
+    "serviceAccount": "Dienstkonto-JSON",
+    "regionHint": "Route 53 ist global, daher selten relevant. Standard: {{region}}.",
+    "hostedZoneHint": "Leer lassen, um die Domain mit allen Zonen abzugleichen, die dieser Schlüssel auflisten kann."
   },
   "test": {
     "button": "Verbindung testen",
     "running": "Wird getestet...",
     "credential": "Zugangsdaten gespeichert",
     "zones": "Zonen aufgelistet",
+    "permission": "Berechtigungen",
     "zonesCount_one": "{{count}} Zone gefunden",
     "zonesCount_other": "{{count}} Zonen gefunden",
     "ok": "Bestanden",
     "failed": "Fehlgeschlagen",
-    "heading": "Testergebnisse"
+    "heading": "Testergebnisse",
+    "state": {
+      "allowed": "Erlaubt",
+      "denied": "Verweigert",
+      "unknown": "Unbekannt"
+    },
+    "policyHint": "Minimale IAM-Richtlinie fuer die fehlenden Aktionen:",
+    "copyPolicy": "Richtlinie kopieren",
+    "copied": "Kopiert"
   },
   "zones": {
     "heading": "Gehostete Zonen",

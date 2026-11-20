@@ -199,12 +199,19 @@ func (db *DB) DeleteDesiredService(ctx context.Context, name string) error {
 	if err := forgetBindingTarget(ctx, tx, BindingTargetApp, name); err != nil {
 		return fmt.Errorf("store: delete desired service %q: %w", name, err)
 	}
+	// Whatever route removed the app, tokens scoped to its name must not carry over to a new one.
+	if err := invalidateSiteScopes(ctx, tx, name); err != nil {
+		return fmt.Errorf("store: delete desired service %q: %w", name, err)
+	}
 	if err := tx.Commit(); err != nil {
 		return fmt.Errorf("store: delete desired service %q: %w", name, err)
 	}
 	// A recreated app of the same name must not inherit the old commit order.
 	if _, err := db.ExecContext(ctx, `DELETE FROM deploy_cursors WHERE service_name = ?`, name); err != nil {
 		return fmt.Errorf("store: delete desired service %q: clear deploy cursor: %w", name, err)
+	}
+	if err := db.ReleaseImageRepos(ctx, name); err != nil {
+		return fmt.Errorf("store: delete desired service %q: %w", name, err)
 	}
 	if _, err := db.ExecContext(ctx, `DELETE FROM deploy_freeze_windows WHERE scope = ?`, DeployFreezeScopeApp(name)); err != nil {
 		return fmt.Errorf("store: delete desired service %q: clear freeze windows: %w", name, err)

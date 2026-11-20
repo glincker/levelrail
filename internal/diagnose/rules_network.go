@@ -137,7 +137,10 @@ func candidatePaths(current string) []string {
 	return out
 }
 
-func crashloopCause(in Input) *Cause {
+// crashTailLines is how many of the last log lines a generic crash cause quotes.
+const crashTailLines = 20
+
+func crashloopCause(in Input, lines []line) *Cause {
 	cl := in.Crashloop
 	firing := cl != nil && cl.Firing
 	exitFail := in.Facts.HasExit && in.Facts.ExitCode != 0
@@ -151,6 +154,7 @@ func crashloopCause(in Input) *Cause {
 	if exitFail {
 		ev = append(ev, Signal{Source: "container_state", Excerpt: "exit code " + strconv.Itoa(in.Facts.ExitCode)})
 	}
+	ev = append(ev, logTailEvidence(lines, crashTailLines)...)
 	return &Cause{
 		Code:        CauseCrashloopGeneric,
 		Title:       "App keeps crashing on start",
@@ -159,4 +163,19 @@ func crashloopCause(in Input) *Cause {
 		Evidence:    ev,
 		Fixes:       []Fix{{Label: "Read the last log lines before each exit", Kind: FixManual, Hint: "Look at the logs right after startup: bad config, a missing dependency service or a wrong entrypoint are the usual causes."}},
 	}
+}
+
+// logTailEvidence quotes the last n non-empty log lines so a failed start shows its own output.
+func logTailEvidence(lines []line, n int) []Signal {
+	var tail []Signal
+	for i := len(lines) - 1; i >= 0 && len(tail) < n; i-- {
+		if strings.TrimSpace(lines[i].text) == "" {
+			continue
+		}
+		tail = append(tail, evidence(lines[i]))
+	}
+	for i, j := 0, len(tail)-1; i < j; i, j = i+1, j-1 {
+		tail[i], tail[j] = tail[j], tail[i]
+	}
+	return tail
 }

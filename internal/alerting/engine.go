@@ -59,6 +59,10 @@ type Engine struct {
 	databaseHealth   DatabaseHealthSource
 	deployFailures   DeployFailureSource
 	monitorDowns     MonitorDownSource
+	appHealth        AppHealthSource
+	advisories       AdvisorySource
+	advisoryEnabled  func(context.Context) bool
+	advisoryFloor    func(context.Context) string
 	traffic          trafficKinds
 	newNotifier      func(Rule) Notifier
 	logger           *slog.Logger
@@ -243,6 +247,9 @@ func (e *Engine) SetEmailDelivery(src EmailDeliverySource) { e.emailDelivery = s
 
 // SetCleanup enables kind=cleanup_failing rules.
 func (e *Engine) SetCleanup(src CleanupSource) { e.cleanup = src }
+
+// SetAppHealth wires the source the app_unhealthy rule reads; unset keeps the rule inert.
+func (e *Engine) SetAppHealth(src AppHealthSource) { e.appHealth = src }
 
 // SetMonitorDowns wires the source the monitor_down rule reads; unset keeps the rule inert.
 func (e *Engine) SetMonitorDowns(src MonitorDownSource) { e.monitorDowns = src }
@@ -556,6 +563,24 @@ func (e *Engine) Tick(ctx context.Context) error {
 				errs = append(errs, fmt.Errorf("rule %q: %w", r.ID, err))
 				continue
 			}
+		case KindAppUnhealthy:
+			if e.appHealth == nil {
+				continue
+			}
+			next, backupMissingNoticeText, err = EvaluateAppUnhealthy(ctx, e.appHealth, r, now)
+			if err != nil {
+				errs = append(errs, fmt.Errorf("rule %q: %w", r.ID, err))
+				continue
+			}
+		case KindAdvisoryMatch:
+			if e.advisories == nil || e.advisoryEnabled == nil || e.advisoryFloor == nil {
+				continue
+			}
+			next, backupMissingNoticeText, err = EvaluateAdvisoryMatch(ctx, e.advisories, e.advisoryEnabled(ctx), e.advisoryFloor(ctx), r, now)
+			if err != nil {
+				errs = append(errs, fmt.Errorf("rule %q: %w", r.ID, err))
+				continue
+			}
 		case KindSLOBurn:
 			if !e.sloThrottle.ready(r.ID, e.slo.EvalEvery, now) {
 				continue
@@ -824,7 +849,7 @@ func (e *Engine) dispatch(ctx context.Context, r Rule, resolved bool, certNotice
 	if (r.Kind == KindDomainHealth || r.Kind == KindDomainNotResolving || r.Kind == KindDomainTrafficDrop) && !resolved {
 		ev.DomainHealthNotices = domainHealthNotices
 	}
-	if (r.Kind == KindBackupMissing || IsDatabaseKind(r.Kind) || r.Kind == KindControlPlaneBackupStale || r.Kind == KindLogArchiveStale || r.Kind == KindExportBehind || r.Kind == KindBackupCopyBehind || r.Kind == KindRegistryRefreshFailing || r.Kind == KindRestoreDrillFailed || r.Kind == KindDeployFailed || r.Kind == KindMonitorDown || r.Kind == KindVolumeUsage) && !resolved {
+	if (r.Kind == KindBackupMissing || IsDatabaseKind(r.Kind) || r.Kind == KindControlPlaneBackupStale || r.Kind == KindLogArchiveStale || r.Kind == KindExportBehind || r.Kind == KindBackupCopyBehind || r.Kind == KindRegistryRefreshFailing || r.Kind == KindRestoreDrillFailed || r.Kind == KindDeployFailed || r.Kind == KindMonitorDown || r.Kind == KindVolumeUsage || r.Kind == KindAppUnhealthy || r.Kind == KindAdvisoryMatch) && !resolved {
 		ev.BackupMissingNotice = backupMissingNotice
 	}
 	if r.Kind == KindVersionSkew && !resolved {

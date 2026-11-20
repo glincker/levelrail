@@ -654,7 +654,6 @@
       "jenkins": "Jenkins",
       "buildkite": "Buildkite"
     },
-    "saveAs": "Speichern Sie dies als {{target}} in Ihrem Repository.",
     "needsDomain": "Es ist noch keine Dashboard-URL gesetzt. Legen Sie eine in den Einstellungen fest, damit Ihre CI diese Control Plane erreichen kann.",
     "oidcNote": "Fügen Sie zuerst unter Aus CI deployen eine vertrauenswürdige Pipeline hinzu, dann wird in Ihrer CI kein Token gespeichert.",
     "token": {
@@ -668,7 +667,9 @@
       "createInstallWide": "Installationsweites Token erstellen",
       "helpProjectMissing": "Diese Datei liest ein gespeichertes Token. Die App nennt ein Projekt, das nicht mehr existiert, daher kann das Token nicht auf ein Projekt begrenzt werden und kann jede App auf diesem Server deployen. Es kann nur: {{abilities}}. Korrigieren Sie zuerst das Projekt der App oder bevorzugen Sie eine OIDC-Pipeline."
     },
-    "apiUrl": "Setzen Sie LEVELRAIL_API_URL in Ihrer CI auf {{url}}."
+    "apiUrl": "Setzen Sie LEVELRAIL_API_URL in Ihrer CI auf {{url}}.",
+    "download": "Datei herunterladen",
+    "staticHint": "Das ist eine statische Website, daher veröffentlicht die Pipeline deinen gebauten Ordner mit der Levelrail-CLI. Es wird kein Image gebaut."
   },
   "approvalBanner": {
     "approved": "Genehmigt: {{app}} zielt jetzt auf {{image}}.",
@@ -818,6 +819,16 @@
     "save": "Speichern",
     "saved": "Build-Runner gespeichert",
     "cleared": "Build-Runner zurückgesetzt",
-    "retry": "Erneut versuchen"
+    "retry": "Erneut versuchen",
+    "prodTipLabel": "Info zu Produktions-Builds",
+    "prodTip": "Produktionsumgebungen bauen nie auf einem persönlichen Builder, außer die Umgebung erlaubt es. Der Build weicht dann auf einen anderen Builder oder die Control Plane aus.",
+    "mode": "Ausführen auf",
+    "modeAuto": "Automatisch",
+    "modeControlPlane": "Nur Control Plane",
+    "modeNode": "Bestimmter Builder",
+    "pickNode": "Builder wählen",
+    "nodeNeeded": "Ein bestimmter Builder braucht einen gewählten Builder.",
+    "modeTipLabel": "Info zur Build-Platzierung",
+    "modeTip": "Automatisch folgt der globalen Strategie. Nur Control Plane baut immer auf diesem Server, nie auf einem Builder. Bestimmter Builder nutzt den gewählten Builder, und Nur dieser Builder verhindert das Ausweichen auf einen anderen Node."
   }
 }

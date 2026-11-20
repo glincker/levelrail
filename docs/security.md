@@ -4,19 +4,22 @@ description: How Levelrail handles secrets, sessions, TLS, and access control, a
 "og:url": "https://docs.levelrail.com/security"
 ---
 
-Levelrail keeps your secrets encrypted, signs every request in with a session or a scoped token, and never reaches into your servers over SSH after setup. This page explains how those pieces fit together and links to the detailed page for each. It is a map, not a duplicate.
+Levelrail encrypts your secrets, authenticates every request with a session or a scoped token, and never reaches into your servers over SSH after setup. This page is a map: start with the checklist, then follow the links for detail.
 
-## Five things to do on a new install
+## Hardening checklist
 
-1. **Serve the dashboard over HTTPS and set the dashboard URL.** Once an `https://` URL is set, sign-in over plain HTTP is refused. See [Domains and ingress](/domains-and-ingress).
+1. **Serve the dashboard over HTTPS and set the dashboard URL.** Once an `https://` URL is set, sign-in over plain HTTP is refused. Keep port `8080` on loopback (the default in `docker-compose.yml`) and reach it through the ingress or an SSH tunnel. See [Domains and ingress](/domains-and-ingress).
 2. **Give people the narrowest ability that works.** Most humans need `write` and `deploy`; keep `root` for a few. Give CI and AI tokens one ability, and attach a Deny for production apps. See [Identity and access](/identity-and-access).
 3. **Turn on two-factor sign-in** for every account that holds `root`.
-4. **Pin the control plane on every agent** by setting `APP_CA_FINGERPRINT`, so enrollment cannot be intercepted. See [Multi-node](/multi-node).
-5. **Back up the master key separately from the data directory**, and keep it out of the same snapshot. See [Master key rotation](/master-key-rotation) and [Control plane backup](/control-plane-backup).
+4. **Pin the control plane on every agent** by setting `APP_CA_FINGERPRINT` to the fingerprint shown with the join token, so enrollment cannot be intercepted. See [Multi-node](/multi-node).
+5. **Back up the master key separately from the data directory**, and keep it out of the same snapshot, or wrap it with Vault or OpenBao. See [Master key rotation](/master-key-rotation) and [Control plane backup](/control-plane-backup).
+6. **Back up the control plane on a schedule and test a restore.** See [Control plane backup](/control-plane-backup).
+7. **Update on a regular cadence**, because fixes ship only in the latest release. See [Upgrade safely](/upgrade-safely).
+8. **Know how to check a download or image** before you run it: [Verify a release](/verify-a-release).
 
-The [Security center](/security-center) in the dashboard checks most of these from your instance's real state.
+The [Security center](/security-center) in the dashboard checks most of these from your instance's real state, so open it and clear what it flags.
 
-For what Levelrail defends against and where it does not yet, read the [threat model](/threat-model). Fixed issues are listed on the [security advisories](/security-advisories) page.
+For what Levelrail defends against and where it does not yet, read the [threat model](/threat-model), [deploy safety](/deploy-safety) and [supply chain](/supply-chain) pages. Fixed issues are listed on the [security advisories](/security-advisories) page.
 
 ```mermaid
 flowchart TD
@@ -93,7 +96,7 @@ Passkeys only work on the exact https address set as the dashboard URL.
 ## Sessions and tokens
 
 - **Session cookies** are `HttpOnly`, `SameSite=Lax`, and `Secure` whenever the request arrived over HTTPS (directly or through the embedded Caddy ingress). Once an `https://` dashboard URL is set, sign-in over plain HTTP is refused (`APP_ALLOW_INSECURE_LOGIN=true` is the recovery escape hatch).
-- **Cross-origin guard**: a state-changing request (POST, PUT, PATCH, DELETE) that authenticates with the session cookie and carries an `Origin` header naming a different host than the one served is rejected with 403. Bearer-token and CLI requests, which send no cookie or no `Origin`, are unaffected.
+- **Cross-origin guard (CSRF)**: a state-changing request (POST, PUT, PATCH, DELETE) that authenticates with the session cookie is rejected with 403 when its `Origin` names another host, when `Origin` is `null`, when there is no `Origin` but `Sec-Fetch-Site` says `cross-site` or `same-site`, or when there is no `Origin` and the `Referer` names another host. Bearer-token and CLI requests, which send no cookie, are unaffected.
 - **First admin** registration requires the one-time setup token from `<data dir>/setup-token`, so an exposed fresh install can't be claimed by a stranger.
 - **Rate limits use the real client address.** Behind the embedded ingress the control plane reads the right-most untrusted hop of `X-Forwarded-For`, but only when the TCP peer is loopback or listed in `APP_INGRESS_TRUSTED_PROXIES`. Any other peer cannot spoof its address, so one visitor can no longer exhaust the login or webhook budget for everyone.
 - **Token-redeeming routes are rate limited.** `POST /api/v1/auth/reset-password` and `POST /api/v1/invites/accept` are unauthenticated by design, so each gets a per-client-IP budget (`APP_API_RATE_LIMIT_TOKEN_REDEEM_RPM`, default `10` per minute, `0` disables). Over budget returns `429` with `Retry-After`.
@@ -180,7 +183,7 @@ What it proves: every head in the export is still part of the live chain at the 
 
 ## Container hardening
 
-Every container Levelrail creates (apps, databases, catalogue services, helpers) can be created with secure defaults: all Linux capabilities dropped except a minimal set, `no-new-privileges`, and a per-container process limit. It is controlled by `APP_CONTAINER_HARDENING` on the control plane and on each agent:
+Every container Levelrail creates (apps, databases, catalogue services, helpers) can be created with hardened defaults: all Linux capabilities dropped except a minimal set, `no-new-privileges`, and a per-container process limit. It is controlled by `APP_CONTAINER_HARDENING` on the control plane and on each agent:
 
 | Value | Behavior |
 | --- | --- |
@@ -224,11 +227,6 @@ Source builds (Dockerfile, Railpack) need BuildKit inside dockerd: on Podman, im
 ## Other hardening details
 
 <AccordionGroup>
-<Accordion title="CSRF">
-
-A cookie-authenticated state-changing request is refused when its `Origin` names another host, when `Origin` is `null`, when there is no `Origin` but `Sec-Fetch-Site` says `cross-site` or `same-site`, or when there is no `Origin` and the `Referer` names another host. Requests with a bearer token or no session cookie are not subject to the check.
-
-</Accordion>
 <Accordion title="Static responses">
 
 Redirect targets and custom error pages are written to the ingress with `{` and `}` escaped, so a placeholder such as `{env.NAME}` or `{file.path}` in operator text can never be expanded into a control plane secret.
@@ -296,19 +294,6 @@ This lives in `internal/ai` (`classify.go`, `engine.go`). See [AI assistant](/ai
 
 External MCP clients do not enforce that taint tracking, so the protection lives in the token: new tokens are read only by default and writing is a per-token opt-in. See [Connect an AI assistant safely](/mcp-safe-setup).
 
-## Production hardening checklist
-
-1. Set an `https://` dashboard URL and serve it through the ingress. Sign-in over plain HTTP is then refused.
-2. Keep port `8080` on loopback (the default in `docker-compose.yml`) and reach it through the ingress or an SSH tunnel.
-3. Set `APP_CA_FINGERPRINT` on every agent, using the fingerprint shown with the join token.
-4. Turn on two-factor sign-in for every account that holds `root`.
-5. Keep the master key outside the data directory and outside host snapshots, or wrap it with Vault or OpenBao. See [Master key rotation](/master-key-rotation).
-6. Back up the control plane on a schedule and test a restore. See [Control plane backup](/control-plane-backup).
-7. Update on a regular cadence, because fixes ship only in the latest release. See [Upgrade safely](/upgrade-safely).
-8. Open the [Security center](/security-center) and clear what it flags.
-9. Know how to check a download or image before you run it: [Verify a release](/verify-a-release).
-10. Read the [threat model](/threat-model), [deploy safety](/deploy-safety) and [supply chain](/supply-chain) pages for what each layer covers.
-
 ## Reporting a vulnerability
 
 Levelrail does not yet have a dedicated security disclosure address. Until one exists, open a private security advisory on the [GitHub repository](https://github.com/glincker/levelrail/security/advisories/new) rather than a public issue. The repository's [SECURITY.md](https://github.com/glincker/levelrail/blob/main/.github/SECURITY.md) has the full policy, including what to expect after reporting.
@@ -322,7 +307,7 @@ Levelrail does not yet have a dedicated security disclosure address. Until one e
 - [Secret scanning](/secret-scanning) checks the checked-out tree and plain env values at deploy time, but not git history or image layers.
 - Dashboard sessions are stored in the database and survive a restart. Sessions minted from API-token session links are held in memory and end on restart. API tokens are unaffected.
 - `GET /api/v1/system/containers` lists containers Levelrail does not manage only to `root` callers. Other callers with `read` see managed containers only.
-- Container hardening is on by default. A read-only root filesystem is opt-in, per app with `security.read_only_rootfs` in [app.yaml](/app-spec-reference#security) or fleet-wide with `APP_CONTAINER_READONLY_ROOTFS`. Capabilities, `no-new-privileges` and the PID limit have no per-app override yet.
+- Capabilities, `no-new-privileges` and the PID limit have no per-app override yet (see [Container hardening](#container-hardening)).
 - Rootless Docker and Podman detection and hardening adjustment ([above](#rootless-and-podman)) exist but are not verified against a real installation; bind-mount ownership and cgroup resource limits beyond `PidsLimit` are known gaps.
 
 ## Next steps

@@ -48,6 +48,6 @@ export function appHealthScoreQueryOptions(appName: string) {
   })
 }
 
-export function useAppHealthScore(appName: string) {
-  return useQuery(appHealthScoreQueryOptions(appName))
+export function useAppHealthScore(appName: string, enabled = true) {
+  return useQuery({ ...appHealthScoreQueryOptions(appName), enabled })
 }

@@ -28,7 +28,10 @@
     "savedSearches": "已保存的搜索",
     "filters": "筛选",
     "starter": "接下来试试",
-    "related": "相关"
+    "related": "相关",
+    "Languages": "语言",
+    "Create": "创建",
+    "Ask": "没有找到？"
   },
   "kind": {
     "app": "应用",
@@ -82,7 +85,8 @@
     "navigate": "导航",
     "select": "选择",
     "secondary": "次要操作",
-    "close": "关闭"
+    "close": "关闭",
+    "groups": "组"
   },
   "keyboardShortcuts": "键盘快捷键",
   "keyboardShortcutsKeywords": "快速导航 按住 l 前往",
@@ -125,6 +129,7 @@
       "action-create-database": "创建一个新的托管数据库。",
       "nav-backups": "备份计划和数据的恢复点。",
       "nav-assets": "将文件上传到你自己的存储桶，复制 URL 并查看成本。",
+      "nav-pages": "发布静态站点：拖入文件夹、回滚、设置域名和路由。",
       "nav-domains": "你的应用的域名、证书和路由。",
       "nav-dns": "DNS 区域和记录。",
       "nav-firewall": "控制哪些端口和来源可以访问你的节点。",
@@ -188,7 +193,13 @@
       "action-mail-backup": "立即开始备份你的邮件服务器。",
       "action-mail-webmail": "在新标签页中打开网页邮箱。",
       "action-mail-queue": "打开发件队列。"
-    }
+    },
+    "logs": "日志",
+    "deploys": "部署",
+    "restart": "重启",
+    "status": "状态",
+    "url": "URL",
+    "image": "镜像"
   },
   "modes": {
     "docs": {
@@ -234,7 +245,21 @@
     }
   },
   "bubbles": {
-    "label": "最近和建议"
+    "label": "最近和建议",
+    "hint": "按空格键拾起此链接，用方向键移动，再按空格键放下，按 Escape 取消。右键或按 Shift 加 F10 可打开更多操作。",
+    "limit": "已达到固定数量上限，请先取消固定一个链接。",
+    "pinned": "已固定 {{title}}",
+    "unpinned": "已取消固定 {{title}}",
+    "notPinnable": "只有页面和应用可以固定",
+    "moved": "{{title}} 已移动到第 {{position}} 个位置，共 {{total}} 个",
+    "lifted": "已拾起 {{title}}，位于第 {{position}} 个，共 {{total}} 个。使用方向键移动，空格键放下，Escape 取消。",
+    "dropped": "{{title}} 已放到第 {{position}} 个位置，共 {{total}} 个",
+    "cancelled": "已取消移动",
+    "menu": "快速链接操作",
+    "unpin": "取消固定",
+    "moveLeft": "左移",
+    "moveRight": "右移",
+    "openNewTab": "在新标签页中打开"
   },
   "mail": {
     "addMailbox": "邮件：添加邮箱",
@@ -245,5 +270,32 @@
     "backupFailed": "邮件备份失败",
     "keywords": "邮件 邮箱 mail email mailbox"
   },
-  "connectSource": "为 {{app}} 连接 Git 来源"
+  "connectSource": "为 {{app}} 连接 Git 来源",
+  "language": {
+    "title": "语言",
+    "change": "更改语言",
+    "description": "选择仪表盘语言。立即生效，并保存到你的账户。",
+    "switchTo": "语言：{{name}}",
+    "browser": "语言：{{name}}（浏览器）",
+    "current": "当前语言",
+    "saveFailed": "无法保存语言。",
+    "keywords": "语言 language languages locale idioma Sprache langue lingua 言語"
+  },
+  "create": {
+    "domain": "添加域名",
+    "project": "创建项目",
+    "keywords": "新建 创建 添加 new create add"
+  },
+  "goTo": "前往",
+  "hints": {
+    "label": "搜索模式",
+    "clear": "清除历史记录"
+  },
+  "clearInput": "清除搜索",
+  "resultCount_other": "{{count}} 条结果",
+  "drag": {
+    "label": "移动面板",
+    "hint": "拖动即可移动，或按住 Alt 或 Option 配合方向键移动。加上 Shift 可跳到边缘，按 Home 重新居中。",
+    "moved": "已移动到 {{x}}, {{y}}"
+  }
 }

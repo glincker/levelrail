@@ -200,6 +200,11 @@ func (rt *Router) handleCreateTeam(w http.ResponseWriter, r *http.Request) {
 		writeError(w, http.StatusBadRequest, "name is required")
 		return
 	}
+	name, ok := cleanNameInput(w, "name", req.Name)
+	if !ok {
+		return
+	}
+	req.Name = name
 	caller, err := rt.resolveTeamCaller(r, "")
 	if err != nil {
 		rt.internalError(w, "api: create team: caller", err)

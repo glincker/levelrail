@@ -1180,6 +1180,7 @@ type BackupHistoryResource struct {
 	StartedAt      string `json:"started_at"`
 	FinishedAt     string `json:"finished_at,omitempty"`
 	ChecksumSHA256 string `json:"checksum_sha256,omitempty"`
+	Label          string `json:"label,omitempty"`
 }
 
 // BackupVerificationResource mirrors internal/api's
@@ -1201,6 +1202,7 @@ type BackupVerificationResource struct {
 // TriggerBackupRequest mirrors internal/api's triggerBackupRequest.
 type TriggerBackupRequest struct {
 	TargetID string `json:"target_id"`
+	Label    string `json:"label,omitempty"`
 }
 
 // BackupScheduleResource mirrors internal/api's backupScheduleResource
@@ -1825,6 +1827,9 @@ type TemplateFacts struct {
 	StatusReason string                `json:"status_reason,omitempty"`
 	ReplacedBy   string                `json:"replaced_by,omitempty"`
 	Preview      bool                  `json:"preview,omitempty"`
+	// NeedsDomain marks an entry reachable only through a domain.
+	NeedsDomain bool   `json:"needs_domain,omitempty"`
+	UpdatedAt   string `json:"updated_at,omitempty"`
 }
 
 // TemplateLicense is the stated license and its class.
@@ -1859,6 +1864,8 @@ type TemplateListFilter struct {
 	VerifiedOnly   bool
 	Arch           string
 	HideDeprecated bool
+	// NeedsDomain is "true" or "false" to filter on it; empty keeps both.
+	NeedsDomain string
 }
 
 // ServiceTemplateDetail mirrors internal/api's serviceTemplateDetail:
@@ -2597,6 +2604,7 @@ type CreateBackupTargetRequest struct {
 	AccessKeyID     string `json:"access_key_id"`
 	SecretAccessKey string `json:"secret_access_key"`
 	EncryptDumps    *bool  `json:"encrypt_dumps,omitempty"`
+	CABundle        string `json:"ca_bundle,omitempty"`
 }
 
 // UpdateBackupTargetRequest mirrors internal/api's
@@ -2610,6 +2618,8 @@ type UpdateBackupTargetRequest struct {
 	Bucket          string `json:"bucket"`
 	AccessKeyID     string `json:"access_key_id,omitempty"`
 	SecretAccessKey string `json:"secret_access_key,omitempty"`
+	CABundle        string `json:"ca_bundle,omitempty"`
+	ClearCABundle   bool   `json:"clear_ca_bundle,omitempty"`
 }
 
 // RegistryCredentialResource mirrors internal/api's
@@ -3355,6 +3365,8 @@ type NodeResource struct {
 	Provider              string    `json:"provider,omitempty"`
 	Zone                  string    `json:"zone,omitempty"`
 	CreatedAt             time.Time `json:"created_at"`
+	// BuildTrust is the builder tier: server, managed or personal.
+	BuildTrust string `json:"build_trust,omitempty"`
 	// AlertStatus is only set by GET /api/v1/nodes/{id} (a single-node
 	// fetch), never the list endpoint; nil when telemetry isn't
 	// configured on the control plane.
@@ -4196,14 +4208,16 @@ type DeployAttemptResource struct {
 	Sequence       int64  `json:"sequence,omitempty"`
 	Reason         string `json:"reason,omitempty"`
 
-	QueuedAt      *time.Time  `json:"queued_at,omitempty"`
-	QueuePosition int         `json:"queue_position,omitempty"`
-	WaitReason    string      `json:"wait_reason,omitempty"`
-	BlockedBy     string      `json:"blocked_by,omitempty"`
-	SupersededBy  string      `json:"superseded_by,omitempty"`
-	CanceledBy    string      `json:"canceled_by,omitempty"`
-	SBOMPackages  *int        `json:"sbom_packages,omitempty"`
-	VulnCounts    *VulnCounts `json:"vuln_counts,omitempty"`
+	QueuedAt      *time.Time `json:"queued_at,omitempty"`
+	QueuePosition int        `json:"queue_position,omitempty"`
+	WaitReason    string     `json:"wait_reason,omitempty"`
+	BlockedBy     string     `json:"blocked_by,omitempty"`
+	SupersededBy  string     `json:"superseded_by,omitempty"`
+	CanceledBy    string     `json:"canceled_by,omitempty"`
+	// Pinned is true when retention keeps this deploy and its image.
+	Pinned       bool        `json:"pinned,omitempty"`
+	SBOMPackages *int        `json:"sbom_packages,omitempty"`
+	VulnCounts   *VulnCounts `json:"vuln_counts,omitempty"`
 	// Failure classifies why the deploy failed or is blocked; absent otherwise.
 	Failure *DeployFailure `json:"failure,omitempty"`
 	// Outcome is in_progress, healthy, failed, canceled, superseded or

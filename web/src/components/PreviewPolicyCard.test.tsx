@@ -1,4 +1,4 @@
-import { render, screen, waitFor } from '@testing-library/react'
+import { render, screen, waitFor, within } from '@testing-library/react'
 import userEvent from '@testing-library/user-event'
 import { QueryClientProvider } from '@tanstack/react-query'
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest'
@@ -94,6 +94,8 @@ describe('PreviewPolicyCard', () => {
       migrate_timeout_seconds: 0,
       effective_migrate_timeout_seconds: 600,
       image_tag_template: '',
+      exclude_services: [],
+      require_label: '',
     }
     vi.stubGlobal(
       'fetch',
@@ -192,6 +194,29 @@ describe('PreviewPolicyCard', () => {
 
     await waitFor(() => {
       expect(puts).toEqual([{ ttl_hours: 12 }])
+    })
+  })
+
+  it('saves the required label and the services left out', async () => {
+    const user = userEvent.setup()
+    renderWithClient(<PreviewPolicyCard appName="web" />)
+
+    await user.type(await screen.findByLabelText('Required label'), 'preview')
+    const labelRow = screen.getByLabelText('Required label').parentElement
+    await user.click(
+      within(labelRow as HTMLElement).getByRole('button', { name: 'Save' }),
+    )
+    await waitFor(() => {
+      expect(puts).toContainEqual({ require_label: 'preview' })
+    })
+
+    await user.type(screen.getByLabelText('Services left out'), 'worker, docs')
+    const svcRow = screen.getByLabelText('Services left out').parentElement
+    await user.click(
+      within(svcRow as HTMLElement).getByRole('button', { name: 'Save' }),
+    )
+    await waitFor(() => {
+      expect(puts).toContainEqual({ exclude_services: ['worker', 'docs'] })
     })
   })
 })

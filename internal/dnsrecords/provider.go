@@ -12,6 +12,8 @@ import (
 	"github.com/libdns/cloudflare"
 	"github.com/libdns/libdns"
 	"github.com/libdns/route53"
+
+	"github.com/GLINCKER/levelrail/internal/dnszones"
 )
 
 // Manager is the subset of libdns's interfaces a DNS records view needs:
@@ -43,4 +45,11 @@ func NewRoute53Manager(accessKeyID, secretAccessKey, region, hostedZoneID string
 		Region:          region,
 		HostedZoneID:    hostedZoneID,
 	}
+}
+
+// NewRoute53ZoneManager serves record automation through the Route 53 API.
+// The libdns module lists the whole zone before every read and write and
+// fails on one record it cannot parse, so only ACME DNS-01 keeps using it.
+func NewRoute53ZoneManager(accessKeyID, secretAccessKey, region, hostedZoneID string) Manager {
+	return ZoneManager{P: dnszones.NewRoute53(accessKeyID, secretAccessKey, region, hostedZoneID)}
 }

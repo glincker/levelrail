@@ -12,6 +12,7 @@ import (
 	"net/http"
 	"net/http/httputil"
 	"strconv"
+	"strings"
 	"sync/atomic"
 	"time"
 
@@ -74,8 +75,9 @@ func New(cfg Config) *Guard {
 			pr.Out.URL.Host = "docker"
 			pr.Out.Host = "docker"
 		},
-		Transport:     transport,
-		FlushInterval: -1,
+		Transport:      transport,
+		ModifyResponse: normalizeUpgrade,
+		FlushInterval:  -1,
 		ErrorHandler: func(w http.ResponseWriter, r *http.Request, err error) {
 			logger.Warn("dockerguard: upstream request failed", slog.String("method", r.Method), slog.String("path", r.URL.Path), slog.String("error", err.Error()))
 			writeDockerError(w, http.StatusBadGateway, "docker guard: upstream docker daemon unreachable")
@@ -247,4 +249,23 @@ func writeDockerError(w http.ResponseWriter, status int, msg string) {
 	w.Header().Set("Content-Type", "application/json")
 	w.WriteHeader(status)
 	_ = json.NewEncoder(w).Encode(map[string]string{"message": msg})
+}
+
+// normalizeUpgrade rewrites a 101 reply whose Upgrade value is a Docker
+// stream media type (Podman does this) to the protocol the client asked for,
+// because ReverseProxy refuses a reply that names a different protocol.
+func normalizeUpgrade(res *http.Response) error {
+	if res.StatusCode != http.StatusSwitchingProtocols {
+		return nil
+	}
+	want := res.Request.Header.Get("Upgrade")
+	if want == "" {
+		return nil
+	}
+	switch strings.ToLower(strings.TrimSpace(res.Header.Get("Upgrade"))) {
+	case "application/vnd.docker.raw-stream", "application/vnd.docker.multiplexed-stream", "application/vnd.docker.stdin-stream":
+		res.Header.Set("Upgrade", want)
+		res.Header.Set("Connection", "Upgrade")
+	}
+	return nil
 }

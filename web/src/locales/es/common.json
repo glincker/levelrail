@@ -119,6 +119,8 @@
     "colP95": "p95",
     "colErrors": "Errores",
     "colDeployed": "Desplegada",
+    "colTls": "TLS",
+    "tlsNone": "Sin dominio",
     "selectApp": "Seleccionar {{name}}",
     "count_one": "{{count}} aplicación",
     "count_other": "{{count}} aplicaciones",
@@ -208,6 +210,7 @@
     "restarting": "Reiniciando...",
     "more": "Más acciones",
     "redeploy": "Volver a desplegar la actual",
+    "manageInPages": "Gestionar en Pages",
     "redeploying": "Volviendo a desplegar...",
     "start": "Iniciar",
     "stop": "Detener",
@@ -403,6 +406,7 @@
       "settings": "Ajustes",
       "help": "Ayuda",
       "functions": "Funciones",
+      "pages": "Páginas",
       "storage": "Almacenamiento",
       "assets": "Recursos estáticos",
       "mail": "Correo",
@@ -851,7 +855,15 @@
   "projectsPage": {
     "list": {
       "name": "Nombre",
-      "created": "Creado"
+      "created": "Creado",
+      "pin": "Fijar {{name}}",
+      "unpin": "Desfijar {{name}}"
+    },
+    "sort": {
+      "label": "Ordenar por",
+      "name": "Nombre",
+      "newest": "Más recientes primero",
+      "oldest": "Más antiguos primero"
     },
     "empty": {
       "title": "Aún no hay proyectos",

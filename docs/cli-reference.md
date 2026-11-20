@@ -12,7 +12,7 @@ Commands are shown as `levelrail-cli ...`. If you rename the binary, the command
 
 ## Install and sign in
 
-`curl -fsSL https://levelrail.com/install-cli.sh | sh`
+`sh install-cli.sh` (download and verify it first, see [Installing](/installing))
 
 ```bash
 export APP_API_URL=https://console.example.com
@@ -608,6 +608,8 @@ levelrail-cli apps projects restart <id> [flags]
 levelrail-cli apps projects env-get <id> [flags]
 levelrail-cli apps projects env-set <id> --var KEY=VALUE [--var KEY=VALUE ...] [flags]
 levelrail-cli apps projects topology <id> [flags]
+levelrail-cli apps projects apps <id> [flags]
+levelrail-cli apps projects databases <id> [flags]
 levelrail-cli apps environments create <project-id> --name NAME [--protected] [flags]
 levelrail-cli apps environments list <project-id> [flags]
 levelrail-cli apps environments update <id> --protected=true|false [flags]
@@ -1353,6 +1355,18 @@ levelrail-cli otel destinations remove <id>
 
 OTLP/HTTP export of metrics and logs to your own collector. A signal-first view of the OTLP kinds of [Data export](/data-export#otlp-logs); header values are stored encrypted.
 
+## Observability export presets
+
+```
+levelrail-cli observability presets
+levelrail-cli observability add <preset> --name N --field K=V|K=env:NAME [--signal logs,metrics]
+levelrail-cli observability test <name>
+levelrail-cli observability list
+levelrail-cli observability rm <name>
+```
+
+One-form export to a provider: the preset builds the endpoint, headers and signals. Credentials are stored encrypted. See [Export presets](/observability#export-presets).
+
 ## Event webhooks
 
 ```
@@ -1891,7 +1905,7 @@ levelrail-cli setup undo <step> [flags]
 levelrail-cli setup reset [flags]
 ```
 
-The dashboard's Get started checklist from a terminal. `status` prints every step with its state, time estimate and note, plus the "ready for production" percentage. `next` prints the one step to do next and where to do it. `skip` and `undo` record or clear an operator override for a step id such as `teammate`; `reset` clears every override and shows the guide again. The three writes need a root scoped token. Steps and their rules: [Getting started](/getting-started#finish-setting-up). Supports `--json`, `--output json|table|text`, and `--query`.
+The dashboard's Get started checklist from a terminal. `status` prints every step with its state, time estimate and note, plus the "ready for production" percentage. `next` prints the one step to do next and where to do it. `skip` and `undo` record or clear an operator override for a step id such as `teammate`; `reset` clears every override and shows the guide again. The three writes need a root scoped token. Steps and their rules: [Getting started](/getting-started#finish-setting-up-for-real-use). Supports `--json`, `--output json|table|text`, and `--query`.
 
 ## Proxy
 
@@ -2260,6 +2274,32 @@ levelrail-cli compose schedules run|runs|pause|resume|rm <app> <service> <id|nam
 - `schedules` runs a command on a cron schedule inside one service's running container. `run` starts it now, `runs` prints the history with exit codes, `pause` and `resume` toggle it.
 
 See [Compose apps](/compose-apps).
+
+## Pages
+
+```
+levelrail-cli pages init [dir] [--starter blank|landing|docs|portfolio]
+levelrail-cli pages deploy <dir|zip> [--name N] [--domain D] [flags]
+levelrail-cli pages deploy --url <https://host/site.zip|.tar.gz> [--name N] [--domain D]
+levelrail-cli pages list|show <name>|delete <name> [flags]
+levelrail-cli pages rollback <name> [deploy-id] [flags]
+levelrail-cli pages deploys <name> [flags]
+levelrail-cli pages promote <name> <deploy-id> [flags]
+levelrail-cli pages logs <name> [deploy-id] [--follow] [flags]
+levelrail-cli pages domains add <name> <domain> [flags]
+levelrail-cli pages domains status <name> <domain> [flags]
+levelrail-cli pages routes show|test|lint <name> [flags]
+levelrail-cli pages routes list <name> [flags]
+levelrail-cli pages routes add <name> <from> <to> [--status N] [--force] [flags]   # <to> may be app://<app>/<path> to proxy
+levelrail-cli pages routes rm <name> <index|from> [flags]
+levelrail-cli pages submissions <site> [--limit N] [flags]
+levelrail-cli pages submissions rm <site> <form> <id> [flags]
+levelrail-cli pages hook create|rotate|rm|show <site> [flags]
+levelrail-cli pages settings show <name> [flags]
+levelrail-cli pages settings set <name> [--spa auto|on|off] [--clean-urls auto|on|off] [--trailing-slash add|remove|auto] [--404 path|auto] [--build-command CMD|auto] [--output-dir DIR|auto] [--password P | --password-stdin | --password-env VAR | --clear-password] [flags]
+```
+
+`pages init` scaffolds a deployable site from a starter without overwriting files. `pages deploy --url` has the control plane download an https `.zip` or `.tar.gz` (limits: `APP_PAGES_URL_MAX_MB`, `APP_PAGES_URL_TIMEOUT`). `pages deploy` publishes a folder or `.zip` as a static site with no build, creates the site on the first run and prints the live URL. It takes every flag of `deploy`. The upload size limit is read from `APP_UPLOAD_MAX_BYTES`. `rollback` without a deploy id goes back to the previous successful deploy. `deploys` lists a site's retained deploys with the URL each one is reachable at, and `promote` makes one of them the live deploy. `domains add` prints the DNS records, created automatically when a DNS integration covers the zone, otherwise listed for you to create. `domains status` also prints a checklist of `[ok]` and `[fail]` rows with a short reason for each failing DNS, port, certificate or address check. `pages settings` shows or changes a site's overrides (`auto` clears one, live at once). `--password-stdin` or `--password-env VAR` gate the site with a shared password without leaving it in shell history (`--password` works but is recorded by the shell), `--clear-password` removes the gate. `pages submissions` lists the form posts a site collected (see Contact forms in Pages) and `rm` deletes one. `pages routes list|add|rm` edits the dashboard redirects by index or from path. A `to` of `app://<app>/:splat` with a trailing `*` in `from` proxies that path to another app on this server (status defaults to 200, `list` marks proxy rules and an unreachable target); see [Static site routing rules](/static-routing#proxy-a-path-to-another-app). `pages hook create` prints a secret URL once that a CMS, CI job or cron can POST to in order to redeploy the site's branch (it fails when a hook already exists); `rotate` replaces an existing one (it fails when there is none), `rm` revokes it and `show` reports only whether it is enabled. See [Levelrail Pages](/pages).
 
 ## Static sites
 

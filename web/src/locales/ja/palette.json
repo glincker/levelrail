@@ -28,7 +28,10 @@
     "savedSearches": "保存した検索",
     "filters": "フィルター",
     "starter": "次に試す",
-    "related": "関連"
+    "related": "関連",
+    "Languages": "言語",
+    "Create": "作成",
+    "Ask": "見つかりませんか?"
   },
   "kind": {
     "app": "アプリ",
@@ -82,7 +85,8 @@
     "navigate": "移動",
     "select": "選択",
     "secondary": "サブ操作",
-    "close": "閉じる"
+    "close": "閉じる",
+    "groups": "グループ"
   },
   "keyboardShortcuts": "キーボードショートカット",
   "keyboardShortcutsKeywords": "クイック移動 長押し l 移動",
@@ -125,6 +129,7 @@
       "action-create-database": "新しいマネージドデータベースをプロビジョニングします。",
       "nav-backups": "データのバックアップスケジュールと復元ポイントです。",
       "nav-assets": "自分のバケットにファイルをアップロードし、URLをコピーして、コストを確認します。",
+      "nav-pages": "静的サイトを公開: フォルダをドロップし、ロールバックし、ドメインとルートを設定します。",
       "nav-domains": "アプリのドメイン、証明書、ルーティングです。",
       "nav-dns": "DNSのゾーンとレコードです。",
       "nav-firewall": "ノードに到達できるポートと送信元を制御します。",
@@ -188,7 +193,13 @@
       "action-mail-backup": "メールサーバーのバックアップを今すぐ開始します。",
       "action-mail-webmail": "新しいタブでWebメールを開きます。",
       "action-mail-queue": "送信メールのキューを開きます。"
-    }
+    },
+    "logs": "ログ",
+    "deploys": "デプロイ",
+    "restart": "再起動",
+    "status": "状態",
+    "url": "URL",
+    "image": "イメージ"
   },
   "modes": {
     "docs": {
@@ -234,7 +245,21 @@
     }
   },
   "bubbles": {
-    "label": "最近とおすすめ"
+    "label": "最近とおすすめ",
+    "hint": "スペースキーでこのリンクをつかみ、矢印キーで移動、スペースキーで配置、Escape でキャンセルします。右クリックか Shift と F10 で他の操作を開きます。",
+    "limit": "固定の上限に達しました。先にリンクの固定を解除してください。",
+    "pinned": "{{title}} を固定しました",
+    "unpinned": "{{title}} の固定を解除しました",
+    "notPinnable": "固定できるのはページとアプリだけです",
+    "moved": "{{title}} を {{total}} 件中 {{position}} 番目に移動しました",
+    "lifted": "{{title}} をつかみました。{{total}} 件中 {{position}} 番目です。矢印キーで移動、スペースキーで配置、Escape でキャンセルします。",
+    "dropped": "{{title}} を {{total}} 件中 {{position}} 番目に配置しました",
+    "cancelled": "移動をキャンセルしました",
+    "menu": "クイックリンクの操作",
+    "unpin": "固定を解除",
+    "moveLeft": "左へ移動",
+    "moveRight": "右へ移動",
+    "openNewTab": "新しいタブで開く"
   },
   "mail": {
     "addMailbox": "メール: メールボックスを追加",
@@ -245,5 +270,32 @@
     "backupFailed": "メールのバックアップに失敗しました",
     "keywords": "メール mail メールボックス"
   },
-  "connectSource": "{{app}}のGitソースを接続"
+  "connectSource": "{{app}}のGitソースを接続",
+  "language": {
+    "title": "言語",
+    "change": "言語を変更",
+    "description": "ダッシュボードの言語を選びます。すぐに反映され、アカウントに保存されます。",
+    "switchTo": "言語: {{name}}",
+    "browser": "言語: {{name}}（ブラウザー）",
+    "current": "現在の言語",
+    "saveFailed": "言語を保存できませんでした。",
+    "keywords": "言語 言語 locale idioma Sprache langue lingua 言語 语言"
+  },
+  "create": {
+    "domain": "ドメインを追加",
+    "project": "プロジェクトを作成",
+    "keywords": "新規 作成 追加"
+  },
+  "goTo": "移動 開く",
+  "hints": {
+    "label": "検索モード",
+    "clear": "履歴をクリア"
+  },
+  "clearInput": "検索をクリア",
+  "resultCount_other": "{{count}} 件",
+  "drag": {
+    "label": "パレットを移動",
+    "hint": "ドラッグで移動、または Alt か Option を押しながら矢印キーで移動します。Shift を加えると端へ移動します。Home で中央に戻ります。",
+    "moved": "{{x}}, {{y}} に移動しました"
+  }
 }

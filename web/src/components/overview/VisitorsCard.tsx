@@ -168,9 +168,20 @@ export function VisitorsBody({ data }: { data: AppVisitors }) {
   )
 }
 
-export function VisitorsCard({ appName }: { appName: string }) {
+export function VisitorsCard({
+  appName,
+  window: controlled,
+  onWindowChange,
+}: {
+  appName: string
+  /** Lets a sibling summary share the selected range. */
+  window?: VisitorsWindow
+  onWindowChange?: (w: VisitorsWindow) => void
+}) {
   const { t } = useTranslation('common')
-  const [win, setWin] = useState<VisitorsWindow>('24h')
+  const [local, setLocal] = useState<VisitorsWindow>('24h')
+  const win = controlled ?? local
+  const setWin = onWindowChange ?? setLocal
   const { data, isPending, isError, error, refetch } = useAppVisitors(
     appName,
     win,

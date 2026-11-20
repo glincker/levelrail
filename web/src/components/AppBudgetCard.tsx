@@ -26,6 +26,7 @@ import { AlertRuleButton } from './spend/AlertRuleButton'
 import { OverrideDeploysDialog } from './spend/OverrideDeploysDialog'
 import { PausePreviewDialog } from './spend/PausePreviewDialog'
 import { SpendMeter } from './spend/SpendMeter'
+import { InfoTip } from '@/components/kit'
 import { BudgetForm } from './budget/BudgetForm'
 import { BudgetHistory } from './budget/BudgetHistory'
 
@@ -277,8 +278,10 @@ export function AppBudgetCard({ appName }: { appName: string }) {
   return (
     <Card className="bg-linear-to-b from-card to-muted/50">
       <CardHeader>
-        <CardTitle>{t('title')}</CardTitle>
-        <p className="text-sm text-muted-foreground">{t('description')}</p>
+        <div className="flex items-center gap-2">
+          <CardTitle>{t('title')}</CardTitle>
+          <InfoTip>{t('description')}</InfoTip>
+        </div>
       </CardHeader>
       <CardContent>{body}</CardContent>
       <PausePreviewDialog

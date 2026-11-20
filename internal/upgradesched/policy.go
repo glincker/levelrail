@@ -112,6 +112,8 @@ func (p Policy) Active() bool { return p.Mode != ModeOff && !p.Paused }
 type Candidate struct {
 	Tag         string
 	PublishedAt time.Time
+	// FromFallback is set when the tag came from the public release pages, so it has no breaking-change notes.
+	FromFallback bool
 }
 
 // Verdict is the result of weighing a candidate against a policy.
@@ -163,11 +165,17 @@ func Eligible(p Policy, current string, cand Candidate, breakingNeedAck int, not
 	if p.Mode == ModePatch && !SamePatchLine(current, cand.Tag) {
 		return Verdict{Code: VerdictNotPatch, Reason: fmt.Sprintf("%s is not a patch release of the running minor version", cand.Tag)}
 	}
-	if !notesAvailable {
+	if !notesAvailable && cand.FromFallback && !SamePatchLine(current, cand.Tag) {
+		return Verdict{Code: VerdictNoNotes, Reason: fmt.Sprintf("%s was found without release notes (the release API is unreachable), so only releases within the running minor version are applied until the notes can be read", cand.Tag)}
+	}
+	if !notesAvailable && !cand.FromFallback {
 		return Verdict{Code: VerdictNoNotes, Reason: "release notes could not be fetched, so breaking changes cannot be ruled out"}
 	}
 	if breakingNeedAck > 0 {
 		return Verdict{Code: VerdictBreaking, Reason: fmt.Sprintf("%s has %d breaking change(s) that need your acknowledgement", cand.Tag, breakingNeedAck)}
+	}
+	if p.MinReleaseAgeDays > 0 && cand.PublishedAt.IsZero() && cand.FromFallback {
+		return Verdict{Code: VerdictTooYoung, Reason: fmt.Sprintf("%s has no known publish date through the fallback source, so the %d day minimum release age cannot be checked", cand.Tag, p.MinReleaseAgeDays)}
 	}
 	if p.MinReleaseAgeDays > 0 && !cand.PublishedAt.IsZero() {
 		ready := cand.PublishedAt.Add(time.Duration(p.MinReleaseAgeDays) * 24 * time.Hour)

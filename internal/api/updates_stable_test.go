@@ -5,12 +5,16 @@ import (
 	"errors"
 	"testing"
 
+	"github.com/GLINCKER/levelrail/internal/selfupgrade"
 	"github.com/GLINCKER/levelrail/kit/upgrade"
 )
 
 func TestDefaultFetchLatestRelease(t *testing.T) {
-	orig := fetchStableRelease
-	t.Cleanup(func() { fetchStableRelease = orig })
+	orig, origDiscover := fetchStableRelease, discoverTag
+	t.Cleanup(func() { fetchStableRelease, discoverTag = orig, origDiscover })
+	discoverTag = func(context.Context) (selfupgrade.Discovered, error) {
+		return selfupgrade.Discovered{}, errors.New("no web source")
+	}
 
 	tests := []struct {
 		name    string
@@ -42,5 +46,40 @@ func TestDefaultFetchLatestRelease(t *testing.T) {
 				t.Fatalf("got %+v, want tag %s with %d assets", got, tc.wantTag, tc.assets)
 			}
 		})
+	}
+}
+
+func TestLatestReleaseFallsBackToTheReleasePages(t *testing.T) {
+	orig, origDiscover := fetchStableRelease, discoverTag
+	t.Cleanup(func() { fetchStableRelease, discoverTag = orig, origDiscover })
+	fetchStableRelease = func(context.Context, string) (*upgrade.Release, error) { return nil, errors.New("api blocked") }
+	discoverTag = func(context.Context) (selfupgrade.Discovered, error) {
+		return selfupgrade.Discovered{Tag: "v1.5.8", URL: "https://github.com/glincker/levelrail/releases/tag/v1.5.8", PublishedAt: "2026-11-18T10:00:00Z", Source: "atom"}, nil
+	}
+	got, err := defaultFetchLatestRelease(context.Background())
+	if err != nil {
+		t.Fatalf("fallback should answer: %v", err)
+	}
+	if got.TagName != "v1.5.8" || !got.Fallback || got.Body != "" || len(got.Assets) != 0 {
+		t.Fatalf("fallback release = %+v, want tag only, flagged, no notes", got)
+	}
+
+	cfg := &selfUpgradeConfig{
+		notes:    func(context.Context) ([]upgrade.HistoryRelease, error) { return nil, errors.New("api blocked") },
+		discover: discoverStableRelease,
+	}
+	list, fromFallback, err := cfg.releasesWithSource(context.Background())
+	if err != nil || !fromFallback || len(list) != 1 || list[0].Tag != "v1.5.8" || list[0].Body != "" {
+		t.Fatalf("release list = %+v fallback=%v err=%v", list, fromFallback, err)
+	}
+	if cfg.cached != nil {
+		t.Fatal("a fallback answer must not be cached as a good list")
+	}
+}
+
+// No test may reach the public release pages; tests that need a fallback set their own.
+func init() {
+	discoverTag = func(context.Context) (selfupgrade.Discovered, error) {
+		return selfupgrade.Discovered{}, errors.New("release pages are disabled in tests")
 	}
 }

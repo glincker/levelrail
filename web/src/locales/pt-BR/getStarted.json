@@ -148,7 +148,8 @@
     "label": "Configuração {{percent}}% pronta",
     "firstApp": "Primeiro app: {{done}} de {{total}}",
     "cta": "Continuar configuração",
-    "open": "Abrir o guia de configuração"
+    "open": "Abrir o guia de configuração",
+    "steps": "{{done}} de {{total}} etapas concluídas"
   },
   "wizard": {
     "continue": "Veja o que falta para produção no guia Primeiros passos"
@@ -216,7 +217,8 @@
   },
   "more": {
     "title": "Prepare-se para produção",
-    "help": "Estes itens deixam o servidor mais seguro para usuários reais. Nenhum deles bloqueia seu primeiro deploy."
+    "help": "Estes itens deixam o servidor mais seguro para usuários reais. Nenhum deles bloqueia seu primeiro deploy.",
+    "finished": "Etapas concluídas ({{count}})"
   },
   "strip": {
     "title": "Coloque seu primeiro app no ar",

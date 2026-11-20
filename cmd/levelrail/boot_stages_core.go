@@ -24,6 +24,7 @@ import (
 	"github.com/GLINCKER/levelrail/internal/email"
 	"github.com/GLINCKER/levelrail/internal/integrity"
 	"github.com/GLINCKER/levelrail/internal/migrateagent"
+	"github.com/GLINCKER/levelrail/internal/pages"
 	"github.com/GLINCKER/levelrail/internal/release"
 	"github.com/GLINCKER/levelrail/internal/runtimesettings"
 	"github.com/GLINCKER/levelrail/internal/spec"
@@ -300,7 +301,7 @@ func (s *bootState) loadSecretsAndNotifiers() {
 		}
 	}
 
-	deployDispatcher := alerting.NewDeployDispatcher(alertingDB, notifyClient, alerting.TemplatedSender{Sender: emailSender, Render: alertMailRenderer(db, *b)}, pushSender, logger).WithLogSources(telemetryDB, telemetryDB).WithOutcomeTracker(alerting.NewDeployOutcomeTracker())
+	deployDispatcher := alerting.NewDeployDispatcher(alertingDB, notifyClient, alerting.TemplatedSender{Sender: emailSender, Render: alertMailRenderer(db, *b)}, pushSender, logger).WithLogSources(telemetryDB, telemetryDB).WithOutcomeTracker(alerting.NewDeployOutcomeTracker()).WithEventFilter(pages.NewNotifyStore(alertingDB))
 	s.secretsManager = secretsManager
 	s.masterKeyFilePath = masterKeyFilePath
 	s.emailSender = emailSender

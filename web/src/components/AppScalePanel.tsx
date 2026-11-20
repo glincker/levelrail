@@ -3,6 +3,7 @@ import { FieldLabel } from '@/components/ui/typography'
 import { useTranslation } from 'react-i18next'
 import { Alert, AlertDescription } from '@/components/ui/alert'
 import { Badge } from '@/components/ui/badge'
+import { InfoTip } from '@/components/kit'
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card'
 import { autoscaleQueryOptions } from '../queries/autoscale'
 import {
@@ -52,8 +53,8 @@ export function AppScalePanel({ app }: { app: AppDetail }) {
         <div className="flex flex-wrap items-center gap-2">
           <CardTitle>{t('title')}</CardTitle>
           <Badge variant="outline">{t('tag')}</Badge>
+          <InfoTip>{t('description')}</InfoTip>
         </div>
-        <p className="text-sm text-muted-foreground">{t('description')}</p>
       </CardHeader>
       <CardContent className="space-y-5">
         <dl className="grid grid-cols-2 gap-4 sm:grid-cols-4">

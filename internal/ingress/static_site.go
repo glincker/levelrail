@@ -167,6 +167,11 @@ func (m *staticSiteModule) ServeHTTP(w http.ResponseWriter, r *http.Request, _ c
 			userCache = true
 		}
 	}
+	if d.Kind == staticroutes.KindProxy {
+		// The proxy route runs ahead of this handler; reaching here means it was not built.
+		http.Error(w, proxyUnavailableBody, http.StatusBadGateway)
+		return nil
+	}
 	if d.Kind == staticroutes.KindRedirect {
 		h.Set("Location", d.Location)
 		w.WriteHeader(d.Status)
@@ -193,6 +198,9 @@ func (m *staticSiteModule) ServeHTTP(w http.ResponseWriter, r *http.Request, _ c
 		}
 		if h.Get("Etag") == "" {
 			h.Set("Etag", fmt.Sprintf(`"%x-%x"`, fi.ModTime().UnixNano(), fi.Size()))
+		}
+		if m.serveResized(w, r, f, fi, d.File) {
+			return nil
 		}
 		http.ServeContent(w, r, fi.Name(), fi.ModTime(), f)
 		return nil

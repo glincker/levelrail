@@ -15,6 +15,7 @@ func buildsUsage(prog string) string {
 	return fmt.Sprintf(`Usage:
   %[1]s builds list [--app A] [--status S] [--limit N]
   %[1]s builds show <id>
+  %[1]s builds record <id>
   %[1]s builds cancel <id>
   %[1]s builds retry <id>
   %[1]s builds cache [--node N]
@@ -22,6 +23,7 @@ func buildsUsage(prog string) string {
   %[1]s builds prune [--node N] [--older-than-hours H] [--apply]
   %[1]s builds queue [--json]
   %[1]s builds runners [--json]
+  %[1]s builds runner <app> [--mode auto|control_plane|node] [--node N] [--pin] [--label K=V]
   %[1]s builds pause [--reason TEXT]
   %[1]s builds drain [--reason TEXT]
   %[1]s builds resume
@@ -35,7 +37,7 @@ an in-flight build holds is never removed. cache quota shows the per app quota
 (0 is off) and the recent reclaims; --app-quota-gb changes the live setting
 (root or admin), --reclaim trims one app now. pause and drain hold new builds
 in the queue (running builds finish), resume starts them again, and kill-all
-cancels every queued and running build after a password step-up.
+cancels every queued and running build after a password step-up. runner shows\nor sets where an app builds: control_plane never sends its builds to a node,\nnode needs --node (--pin refuses any other runner), auto lets the router choose.
 `, prog)
 }
 
@@ -53,6 +55,8 @@ func runBuilds(prog string, args []string, stdout, stderr io.Writer, lookupEnv f
 		return runBuildsList(prog, args[1:], stdout, stderr, lookupEnv)
 	case "show":
 		return runBuildsShow(prog, args[1:], stdout, stderr, lookupEnv)
+	case "record":
+		return runBuildsRecord(prog, args[1:], stdout, stderr, lookupEnv)
 	case "cancel":
 		return runBuildsAction(prog, "cancel", args[1:], stdout, stderr, lookupEnv)
 	case "retry":
@@ -65,6 +69,8 @@ func runBuilds(prog string, args []string, stdout, stderr io.Writer, lookupEnv f
 		return runBuildsQueue(prog, args[1:], stdout, stderr, lookupEnv)
 	case "runners":
 		return runBuildsRunners(prog, args[1:], stdout, stderr, lookupEnv)
+	case "runner":
+		return runBuildsRunner(prog, args[1:], stdout, stderr, lookupEnv)
 	case "pause", "resume", "drain":
 		return runBuildsQueueChange(prog, args[0], args[1:], stdout, stderr, lookupEnv)
 	case "kill-all":
@@ -342,5 +348,22 @@ func runBuildsCacheQuota(prog string, args []string, stdout, stderr io.Writer, l
 			_, _ = fmt.Fprintf(tw, "%s\t%s\t%s\t%s\t%d\t%d\t%s\n", r.App, r.Trigger, r.At.Local().Format(time.DateTime), humanBytes(r.FreedBytes), r.RemovedCount, r.SkippedInUse, buildOrDash(note))
 		}
 		_ = tw.Flush()
+	})
+}
+
+func runBuildsRecord(prog string, args []string, stdout, stderr io.Writer, lookupEnv func(string) (string, bool)) int {
+	c, code, ok := parseBuildsCall(prog, "builds record", args, stderr, lookupEnv, nil)
+	if !ok {
+		return code
+	}
+	if len(c.rest) != 1 {
+		return usageError(stderr, prog, "builds record takes one build ID")
+	}
+	rec, err := c.client.GetBuildRecord(bg(), c.rest[0])
+	if err != nil {
+		return reportError(stdout, stderr, c.jsonO, fmt.Errorf("build record: %w", err))
+	}
+	return writeScheduledTaskResult(stdout, stderr, c.of, rec, func() {
+		_, _ = fmt.Fprintf(stdout, "%s  %s  key %s  signed %s\n%s\n", rec.BuildID, rec.App, rec.KeyID, rec.CreatedAt.Format(time.RFC3339), rec.Claims)
 	})
 }

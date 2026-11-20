@@ -6,3 +6,8 @@ package api
 func devModeEnabled() bool {
 	return false
 }
+
+// devLoginConfig is always empty in release builds.
+func devLoginConfig() (token, publicHost string) {
+	return "", ""
+}

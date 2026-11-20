@@ -3,6 +3,7 @@ package dnsrecords
 import (
 	"errors"
 	"fmt"
+	"golang.org/x/net/idna"
 	"net"
 	"strings"
 	"time"
@@ -40,10 +41,20 @@ type Plan struct {
 	Replace []libdns.RR
 }
 
+// NormalizeName lowercases, drops a trailing dot and converts an IDN name to
+// its A-label form, so U-label and punycode spellings compare equal.
+func NormalizeName(s string) string {
+	s = strings.TrimSuffix(strings.ToLower(strings.TrimSpace(s)), ".")
+	if a, err := idna.Lookup.ToASCII(s); err == nil {
+		return a
+	}
+	return s
+}
+
 // Candidates returns every zone name domain could belong to, longest first,
 // down to two labels (a bare TLD is never a zone).
 func Candidates(domain string) []string {
-	domain = strings.TrimSuffix(strings.ToLower(strings.TrimSpace(domain)), ".")
+	domain = NormalizeName(domain)
 	labels := strings.Split(domain, ".")
 	var out []string
 	for i := 0; i+2 <= len(labels); i++ {
@@ -58,7 +69,7 @@ func MatchZone(domain string, zones []string) (string, bool) {
 	best := ""
 	for _, c := range Candidates(domain) {
 		for _, z := range zones {
-			if strings.EqualFold(strings.TrimSuffix(z, "."), c) && len(c) > len(best) {
+			if NormalizeName(z) == c && len(c) > len(best) {
 				best = c
 			}
 		}
@@ -71,8 +82,7 @@ func MatchZone(domain string, zones []string) (string, bool) {
 
 // RelativeName is domain's record name inside zone: "@" for the apex.
 func RelativeName(domain, zone string) string {
-	domain = strings.TrimSuffix(strings.ToLower(strings.TrimSpace(domain)), ".")
-	zone = strings.TrimSuffix(strings.ToLower(strings.TrimSpace(zone)), ".")
+	domain, zone = NormalizeName(domain), NormalizeName(zone)
 	if domain == zone {
 		return "@"
 	}

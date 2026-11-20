@@ -1,6 +1,7 @@
 import { useState } from 'react'
 import { useTranslation } from 'react-i18next'
 import { Button } from '@/components/ui/button'
+import { InfoTip } from '@/components/kit'
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card'
 import { toast } from '@/components/ui/toast'
 import { deriveSleepState } from '../lib/sleepState'
@@ -18,6 +19,7 @@ import { SleepStatusHeader } from './sleep/SleepStatusHeader'
 /** AppSleepCard explains whether sleep can work for an app, why not, and offers one-click fixes. */
 export function AppSleepCard({ appName }: { appName: string }) {
   const { t } = useTranslation('deploys')
+  const { t: tp } = useTranslation('appPages')
   const { data: sleep } = useAppSleep(appName)
   const { setIdle, wake, sleepNow, applyFix } = useAppSleepActions(appName)
   const [fixingCode, setFixingCode] = useState<string | null>(null)
@@ -76,7 +78,10 @@ export function AppSleepCard({ appName }: { appName: string }) {
   return (
     <Card>
       <CardHeader>
-        <CardTitle>{t('appSleep.title')}</CardTitle>
+        <div className="flex items-center gap-2">
+          <CardTitle>{t('appSleep.title')}</CardTitle>
+          <InfoTip>{tp('resources.tips.sleep')}</InfoTip>
+        </div>
       </CardHeader>
       <CardContent className="space-y-4">
         <SleepStatusHeader state={state} sleep={sleep} actions={actions} />

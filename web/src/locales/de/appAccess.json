@@ -127,5 +127,18 @@
       "upstream_failing": "Der Proxy hat den Server erreicht, aber die App dahinter antwortet nicht.",
       "app_error": "Die App antwortete mit einem Fehler."
     }
+  },
+  "static": {
+    "badge": "Statische Seite",
+    "manage": "In Pages verwalten",
+    "primary": "Live-Adresse",
+    "published": "Veröffentlicht",
+    "notPublished": "Noch nicht veröffentlicht",
+    "notPublishedHint": "Veröffentliche Dateien, um eine Live-Adresse zu erhalten.",
+    "publish": "In Pages veröffentlichen",
+    "openSite": "Seite öffnen",
+    "updated": "Aktualisiert {{when}}",
+    "domains": "Eigene Domains",
+    "addDomain": "Domain hinzufügen"
   }
 }

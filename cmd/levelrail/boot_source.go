@@ -301,6 +301,13 @@ func appOptionsFor(deps dynamicSourceDeps) []application.Option {
 		application.WithSecretSources(currentSecretSources),
 		application.WithVaultResolver(vault.NewResolverWith(vault.TunablesFrom(deps.settingsService()))),
 		application.WithRegistryCredentials(deps.db),
+		application.WithRegistryPullTokens(func(image string) (string, bool, error) {
+			t := builtinRegistryTokens()
+			if t == nil {
+				return "", false, nil
+			}
+			return t.MintPullForImage(image)
+		}, registryreconcile.TokenAuthActive),
 		application.WithProjectEnv(sharedEnvResolver),
 		application.WithOrganizationEnv(sharedEnvResolver),
 		application.WithEnvironmentEnv(sharedEnvResolver),

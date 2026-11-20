@@ -37,7 +37,7 @@ every time something new needs HTTPS and a database.
 
 - One binary, single node. The control plane and the agent can run in
   the same process over an in-memory transport
-  ([architecture.md](/architecture#node-agent)), so there is nothing extra
+  ([architecture.md](/architecture#process-model)), so there is nothing extra
   to install for a one-server setup. It is also the best-tested path:
   per the [README status section](https://github.com/glincker/levelrail#status),
   "single node is the well-tested path."
@@ -49,7 +49,7 @@ every time something new needs HTTPS and a database.
 - TLS, metrics, and logs without installing anything else. Caddy is
   embedded for automatic certificates, and every node keeps its own metrics
   (15 second resolution) and full-text-searchable logs out of the box
-  ([architecture.md](/architecture#observability)). You don't need a
+  ([observability.md](/observability)). You don't need a
   separate Grafana or log shipper to see why something was slow.
 - A template catalog. Postgres, Redis, and many other
   one-click services are there for the database or tool a

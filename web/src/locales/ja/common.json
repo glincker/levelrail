@@ -138,6 +138,8 @@
     "colP95": "p95",
     "colErrors": "エラー",
     "colDeployed": "デプロイ日時",
+    "colTls": "TLS",
+    "tlsNone": "ドメインなし",
     "selectApp": "{{name}}を選択",
     "count_other": "{{count}}件のアプリ",
     "count_filtered_other": "{{total}}件中{{count}}件のアプリ",
@@ -237,6 +239,7 @@
     "restarting": "再起動中...",
     "more": "その他の操作",
     "redeploy": "現在のリリースを再デプロイ",
+    "manageInPages": "Pagesで管理",
     "redeploying": "再デプロイ中...",
     "start": "開始",
     "stop": "停止",
@@ -535,6 +538,7 @@
       "settings": "設定",
       "help": "ヘルプ",
       "functions": "関数",
+      "pages": "ページ",
       "storage": "ストレージ",
       "assets": "アセット",
       "mail": "メール",
@@ -1101,7 +1105,15 @@
   "projectsPage": {
     "list": {
       "name": "名前",
-      "created": "作成日時"
+      "created": "作成日時",
+      "pin": "{{name}} をピン留め",
+      "unpin": "{{name}} のピン留めを解除"
+    },
+    "sort": {
+      "label": "並べ替え",
+      "name": "名前",
+      "newest": "新しい順",
+      "oldest": "古い順"
     },
     "empty": {
       "title": "プロジェクトはまだありません",

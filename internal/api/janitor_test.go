@@ -66,8 +66,8 @@ func TestJanitorEndpoints(t *testing.T) {
 	if err := json.Unmarshal(rec.Body.Bytes(), &st); err != nil {
 		t.Fatal(err)
 	}
-	if !st.Policy.DryRun || !st.Policy.Enabled {
-		t.Fatalf("default policy must preview only: %+v", st.Policy)
+	if st.Policy.DryRun || !st.Policy.Enabled || st.Policy.DeleteOrphanVolumes {
+		t.Fatalf("default policy must act on safe stages and keep volumes: %+v", st.Policy)
 	}
 
 	if rec := do(http.MethodPut, "/api/v1/system/janitor/policy", `{"interval_minutes":1}`); rec.Code != http.StatusBadRequest {

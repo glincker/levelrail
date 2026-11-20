@@ -112,6 +112,10 @@ type previewPolicyResource struct {
 	ImageTagTemplate               string `json:"image_tag_template"`
 	HostTemplate                   string `json:"host_template"`
 	WildcardDomain                 string `json:"wildcard_domain"`
+	// ExcludeServices lists service keys a multi-service preview leaves out.
+	ExcludeServices []string `json:"exclude_services"`
+	// RequireLabel limits previews to pull requests with this label; empty builds every one.
+	RequireLabel string `json:"require_label"`
 }
 
 func (rt *Router) previewPolicyFor(ctx context.Context, appName string) (previewPolicyResource, error) {
@@ -140,6 +144,7 @@ func (rt *Router) previewPolicyFor(ctx context.Context, appName string) (preview
 		MigrateCommand: s.MigrateCommand, MigrateTimeoutSeconds: s.MigrateTimeoutSeconds,
 		EffectiveMigrateTimeoutSeconds: int(previewMigrateTimeoutOr(s, rt.previewMigratePlatformTimeout(ctx)) / time.Second), ImageTagTemplate: s.ImageTagTemplate,
 		HostTemplate: s.HostTemplate, WildcardDomain: s.WildcardDomain,
+		ExcludeServices: append([]string{}, splitExcludeServices(s.ExcludeServices)...), RequireLabel: s.RequireLabel,
 	}, nil
 }
 
@@ -176,6 +181,10 @@ type setPreviewPolicyRequest struct {
 	// HostTemplate and WildcardDomain take an empty string to clear them.
 	HostTemplate   *string `json:"host_template,omitempty"`
 	WildcardDomain *string `json:"wildcard_domain,omitempty"`
+	// ExcludeServices replaces the services a multi-service preview skips; empty clears it.
+	ExcludeServices *[]string `json:"exclude_services,omitempty"`
+	// RequireLabel sets the label a pull request needs before it gets a preview; empty clears it.
+	RequireLabel *string `json:"require_label,omitempty"`
 }
 
 // handleSetPreviewPolicy handles PUT /api/v1/apps/{name}/preview-policy.
@@ -193,7 +202,8 @@ func (rt *Router) handleSetPreviewPolicy(w http.ResponseWriter, r *http.Request)
 		writeError(w, http.StatusBadRequest, "at least one policy field is required")
 		return
 	}
-	if _, err := rt.gitSources.GetGitSource(ctx, name); errors.Is(err, store.ErrGitSourceNotFound) {
+	gs, err := rt.gitSources.GetGitSource(ctx, name)
+	if errors.Is(err, store.ErrGitSourceNotFound) {
 		writeError(w, http.StatusNotFound, "no git source connected for this app")
 		return
 	} else if err != nil {
@@ -224,6 +234,14 @@ func (rt *Router) handleSetPreviewPolicy(w http.ResponseWriter, r *http.Request)
 		return
 	}
 	if msg := rt.applyPreviewHostFields(ctx, name, &s, req); msg != "" {
+		writeError(w, http.StatusBadRequest, msg)
+		return
+	}
+	if msg := applyPreviewExcludeFields(gs, &s, req); msg != "" {
+		writeError(w, http.StatusBadRequest, msg)
+		return
+	}
+	if msg := applyPreviewLabelField(&s, req); msg != "" {
 		writeError(w, http.StatusBadRequest, msg)
 		return
 	}

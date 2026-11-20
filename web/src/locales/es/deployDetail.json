@@ -439,6 +439,9 @@
     "prebuilt": "Sin etapas de build: este despliegue usó una imagen ya construida.",
     "label": "Fases de este despliegue",
     "step": {
+      "build": "Compilar",
+      "publish": "Publicar",
+      "live": "En vivo",
       "pull": "Descargar imagen",
       "create": "Crear contenedor",
       "readiness": "Disponibilidad",

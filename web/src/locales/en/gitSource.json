@@ -69,6 +69,10 @@
     "release": {
       "label": "Tags & releases",
       "description": "Deploy only on a tag push, or (GitHub only) a published release. Branch pushes never deploy."
+    },
+    "manual": {
+      "label": "Manual only",
+      "description": "Never deploys from a push. Deploy on request from the dashboard, CLI or API."
     }
   },
   "buildPacks": {

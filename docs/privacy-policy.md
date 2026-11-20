@@ -10,7 +10,7 @@ This policy describes the Levelrail website at levelrail.com. For how the softwa
 
 ## What this website collects
 
-The website's own code does not load analytics scripts, advertising trackers or third-party widgets, and it does not ask you to create an account. We do not sell or share personal data collected through the site.
+The website loads PostHog for site analytics, and you can opt out at [levelrail.com/privacy](https://levelrail.com/privacy/). It does not ask you to create an account. The product itself sends no usage telemetry. We do not sell or share personal data collected through the site.
 
 ## Server logs
 

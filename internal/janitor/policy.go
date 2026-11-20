@@ -47,10 +47,11 @@ type Policy struct {
 	DisabledStages       []Stage `json:"disabled_stages"`
 }
 
-// DefaultPolicy reports only until an operator turns removal on.
+// DefaultPolicy removes only unused data on its safe stages. Orphaned volumes
+// are never deleted until an operator turns DeleteOrphanVolumes on.
 func DefaultPolicy() Policy {
 	return Policy{
-		Enabled: true, DryRun: true, IntervalMinutes: 60,
+		Enabled: true, DryRun: false, IntervalMinutes: 60,
 		DiskFreeBudgetPercent: 15, BuildCacheBudgetMB: 10240, BuildCacheMaxAgeHours: 168,
 		VolumeQuarantineDays: 14, AttemptRetentionDays: 30, AttemptKeepPerApp: 20,
 		DisabledStages: []Stage{},

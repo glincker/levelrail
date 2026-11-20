@@ -15,6 +15,7 @@ import { NativeSelect } from '@/components/ui/native-select'
 import { toast } from '@/components/ui/toast'
 import { useBackupHistory } from '../../queries/backupHistory'
 import { useCreateDatabaseBranch } from '../../queries/databaseBranch'
+import { ApiErrorAlert } from '../ApiErrorAlert'
 
 // Point-in-time branches exist only where the restore lands in a new database; the server checks PITR is on.
 const PITR_BRANCH_ENGINES = ['mysql', 'mariadb']
@@ -143,9 +144,7 @@ export function BranchDatabaseDialog({
             />
           </Field>
         )}
-        {branch.isError ? (
-          <p className="text-sm text-destructive">{branch.error.message}</p>
-        ) : null}
+        {branch.isError ? <ApiErrorAlert error={branch.error} /> : null}
         <DialogFooter>
           <Button
             type="button"

@@ -11,7 +11,7 @@ import (
 func registerDeployApprovalTools(server *mcp.Server, client *apiclient.Client) {
 	addTool(server, &mcp.Tool{
 		Name:        "list_deploy_approvals",
-		Description: "List pending (or with status 'all', every) two-person approval on a deploy or promote into a protected environment. service filters to one app.",
+		Description: "List pending (status 'all': every) two-person approvals for deploys or promotes into protected environments. service filters by app.",
 	}, func(ctx context.Context, _ *mcp.CallToolRequest, in listDeployApprovalsInput) (*mcp.CallToolResult, []apiclient.DeployApprovalResource, error) {
 		approvals, err := client.ListDeployApprovals(ctx, in.Status, in.Service)
 		if err != nil {
@@ -33,7 +33,7 @@ func registerDeployApprovalTools(server *mcp.Server, client *apiclient.Client) {
 
 	addTool(server, &mcp.Tool{
 		Name:        "approve_deploy_approval",
-		Description: "Approve a pending deploy approval; the gated deploy or promote then runs. Fails if the caller requested it or it is no longer pending.",
+		Description: "Approve a pending deploy approval; the gated deploy or promote then runs. Fails for the requester or a non-pending one.",
 	}, func(ctx context.Context, _ *mcp.CallToolRequest, in deployApprovalIDInput) (*mcp.CallToolResult, apiclient.DeployApprovalDecisionResult, error) {
 		result, err := client.ApproveDeployApproval(ctx, in.ID)
 		if err != nil {

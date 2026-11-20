@@ -50,15 +50,24 @@ function wrap() {
   )
 }
 
+type FetchCall = [string, RequestInit]
+
+function installCalls(fn: { mock: { calls: unknown[][] } }): FetchCall[] {
+  return (fn.mock.calls as unknown as FetchCall[]).filter(([u]) =>
+    u.includes('/install'),
+  )
+}
+
 function stubFetch() {
-  const fn = vi.fn(() =>
+  // The form also lists projects for its optional picker, so route by URL.
+  const fn = vi.fn((url: string) =>
     Promise.resolve(
       new Response(
-        JSON.stringify({
-          app_id: 'wiki',
-          services: [{ name: 'wiki-app' }],
-          revision: 1,
-        }),
+        JSON.stringify(
+          url === '/api/v1/projects'
+            ? []
+            : { app_id: 'wiki', services: [{ name: 'wiki-app' }], revision: 1 },
+        ),
         { status: 200 },
       ),
     ),
@@ -121,7 +130,7 @@ describe('TemplateDeployForm states', () => {
       'aria-invalid',
       'true',
     )
-    expect(fetchFn).not.toHaveBeenCalled()
+    expect(installCalls(fetchFn)).toHaveLength(0)
   })
 
   it('deploys with only the filled values and opens the app', async () => {
@@ -130,9 +139,11 @@ describe('TemplateDeployForm states', () => {
     await userEvent.type(screen.getByLabelText(/Admin email/), 'a@b.co')
     await userEvent.click(screen.getByRole('button', { name: 'Deploy' }))
     await waitFor(() => expect(navigate).toHaveBeenCalled())
-    const init = fetchFn.mock.calls[0] as unknown as [string, RequestInit]
-    expect(init[0]).toBe('/api/v1/service-templates/wikijs/install')
-    expect(JSON.parse(init[1].body as string)).toEqual({
+    const calls = installCalls(fetchFn)
+    expect(calls).toHaveLength(1)
+    const [url, init] = calls[0] ?? ['', {}]
+    expect(url).toBe('/api/v1/service-templates/wikijs/install')
+    expect(JSON.parse(init.body as string)).toEqual({
       env: { ADMIN_EMAIL: 'a@b.co' },
       domains: {},
     })

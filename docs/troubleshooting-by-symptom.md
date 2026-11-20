@@ -94,7 +94,7 @@ Deeper: [Troubleshooting](/troubleshooting), [Health checks](/app-spec-reference
 
 **Fix.**
 
-- Dashboard: Settings, Advanced, Automatic cleanup. It starts in preview only; turn off "Preview only" to let it delete.
+- Dashboard: Settings, Advanced, Automatic cleanup. It acts on unused data by default and keeps orphaned volumes; turn on "Preview only" to make it report without deleting.
 - CLI: `levelrail-cli janitor run --dry-run` shows what would be removed. `levelrail-cli janitor run` does one cleanup pass now.
 - API: `GET /api/v1/system/janitor` returns the cleanup state, and `GET /api/v1/system/janitor/runs` lists past passes.
 

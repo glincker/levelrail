@@ -14,7 +14,7 @@ your CI: build image, push to registry  ->  levelrail-cli apps deploy --image  -
 
 ## The three steps
 
-1. **Install the CLI** in the job, or call the [API](/api-reference) directly. The installer is `curl -fsSL https://levelrail.com/install-cli.sh | sh`. Set `LEVELRAIL_CLI_INSTALL_DIR` to a directory you can write to (the default is `/usr/local/bin` for root and `~/.local/bin` otherwise) and `LEVELRAIL_VERSION=vX.Y.Z` to pin a release.
+1. **Install the CLI** in the job, or call the [API](/api-reference) directly. The installer is `sh install-cli.sh` (download and verify it first, see [Installing](/installing)). Set `LEVELRAIL_CLI_INSTALL_DIR` to a directory you can write to (the default is `/usr/local/bin` for root and `~/.local/bin` otherwise) and `LEVELRAIL_VERSION=vX.Y.Z` to pin a release.
 2. **Authenticate with environment variables only.** `LEVELRAIL_API_URL` is your control plane URL and `LEVELRAIL_TOKEN` is an API token with at least the `deploy` ability. `LEVELRAIL_PROFILE` picks a saved profile and is not needed in CI. The CLI also reads `CI=true` (or `LEVELRAIL_CI=true`) and then never prompts, and it does so by itself when stdin or stdout is not a terminal.
 3. **Deploy by image, then wait.** `apps deploy` returns as soon as the deploy is accepted. `apps wait` is what tells you whether the rollout worked.
 
@@ -198,7 +198,10 @@ deploy:
     - docker build -t "$IMAGE" .
     - docker push "$IMAGE"
     - apk add --no-cache curl
-    - curl -fsSL https://levelrail.com/install-cli.sh | sh
+    - curl -fsSLO https://github.com/glincker/levelrail/releases/latest/download/install-cli.sh
+    - curl -fsSLO https://github.com/glincker/levelrail/releases/latest/download/checksums.txt
+    - grep ' install-cli.sh$' checksums.txt | sha256sum -c -  # macOS: shasum -a 256 -c -
+    - sh install-cli.sh
     - LEVELRAIL_TOKEN=$(levelrail-cli apps ci token my-app --provider gitlab)
     - export LEVELRAIL_TOKEN
     - levelrail-cli apps deploy my-app --image "$IMAGE"
@@ -231,7 +234,10 @@ jobs:
       - run:
           name: Deploy to Levelrail
           command: |
-            curl -fsSL https://levelrail.com/install-cli.sh | sh
+            curl -fsSLO https://github.com/glincker/levelrail/releases/latest/download/install-cli.sh
+            curl -fsSLO https://github.com/glincker/levelrail/releases/latest/download/checksums.txt
+            grep ' install-cli.sh$' checksums.txt | sha256sum -c -  # macOS: shasum -a 256 -c -
+            sh install-cli.sh
             export PATH="$LEVELRAIL_CLI_INSTALL_DIR:$PATH"
             LEVELRAIL_ID_TOKEN=$(circleci run oidc get --claims "{\"aud\":\"$LEVELRAIL_API_URL\"}")
             export LEVELRAIL_ID_TOKEN

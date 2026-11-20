@@ -4,6 +4,8 @@ import (
 	"context"
 	"fmt"
 	"io"
+	"os"
+	"strings"
 )
 
 // Unlike update, the access key and secret are required here.
@@ -11,8 +13,9 @@ func runBackupTargetsCreate(prog string, args []string, stdout, stderr io.Writer
 	fs, tokenFlagP, apiURLFlagP, profileFlagP, jsonOutP, outputFlagP, queryFlagP := apiFlagSet(prog, "backup-targets create", "print the created backup target as JSON to stdout and nothing else", stderr)
 	var name, provider, endpoint, region, bucket, accessKeyID, secretAccessKey string
 	fs.StringVar(&name, "name", "", "display name for the backup target (required)")
-	var targetType, localPath string
-	fs.StringVar(&provider, "provider", "", "provider: aws, r2, custom, or local (required)")
+	var targetType, localPath, caBundleFile string
+	fs.StringVar(&caBundleFile, "ca-bundle-file", "", "PEM file of extra CA certificates to trust (webdav only)")
+	fs.StringVar(&provider, "provider", "", "provider: aws, r2, custom, local or webdav (required)")
 	fs.StringVar(&targetType, "type", "", "alias of --provider")
 	fs.StringVar(&localPath, "path", "", "directory under APP_BACKUP_LOCAL_ROOT (local type only)")
 	fs.StringVar(&endpoint, "endpoint", "", "S3-compatible endpoint URL (required for r2 and custom, aws resolves its own default)")
@@ -57,9 +60,17 @@ func runBackupTargetsCreate(prog string, args []string, stdout, stderr io.Writer
 
 	client := apiClientFromFlags(prog, apiURLFlag, tokenFlag, profileFlag, lookupEnv)
 
+	caBundle := ""
+	if caBundleFile != "" {
+		raw, rerr := os.ReadFile(caBundleFile) //nolint:gosec // operator chosen CA bundle path
+		if rerr != nil {
+			return reportError(stdout, stderr, jsonOut, newValidationError("read --ca-bundle-file: %v", rerr))
+		}
+		caBundle = string(raw)
+	}
 	created, err := client.CreateBackupTarget(context.Background(), createBackupTargetRequest{
 		Name: name, Provider: provider, Endpoint: endpoint, Region: region, Bucket: bucket,
-		AccessKeyID: accessKeyID, SecretAccessKey: secretAccessKey,
+		AccessKeyID: accessKeyID, SecretAccessKey: secretAccessKey, CABundle: caBundle,
 	})
 	if err != nil {
 		return reportError(stdout, stderr, jsonOut, fmt.Errorf("create backup target %q: %w", name, err))
@@ -81,6 +92,10 @@ func backupTargetProviderProblem(provider, endpoint, region string) string {
 	case "r2":
 		if endpoint == "" {
 			return "--endpoint is required for the r2 provider"
+		}
+	case "webdav":
+		if !strings.HasPrefix(endpoint, "https://") {
+			return "--endpoint must be an https URL for the webdav provider (the bucket is the remote directory, key id and secret are the username and password)"
 		}
 	case "custom":
 		if endpoint == "" {
@@ -108,6 +123,7 @@ Flags:
   --bucket string                 bucket name (required)
   --access-key-id string          access key id (required)
   --secret-access-key string      secret access key (required)
+  --ca-bundle-file string         PEM file of extra CA certificates to trust (webdav only)
   --token string                 API token (default: %[2]s env var, then the credentials file)
   --api-url string               control plane base URL (default: %[3]s env var, then %[4]s)
   --profile string               named credentials profile to read (overrides APP_PROFILE, default "default")

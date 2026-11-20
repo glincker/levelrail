@@ -31,7 +31,7 @@ func tailEntries(entries []logEntryResource, tail int) []logEntryResource {
 // --follow switches to the SSE live tail, which takes no query params, so the search flags are rejected with it.
 func runAppsLogs(prog string, args []string, stdout, stderr io.Writer, lookupEnv func(string) (string, bool)) int {
 	fs, tokenFlagP, apiURLFlagP, profileFlagP, jsonOutP, outputFlagP, queryFlagP := apiFlagSet(prog, "apps logs", "print entries as a JSON array to stdout and nothing else", stderr)
-	var since, from, to, query, service string
+	var since, from, to, until, outFile, query, service string
 	var tail int
 	var follow, noFollow bool
 	fs.StringVar(&service, "service", "", "only this service of a multi-service app (reads <app>-<service>)")
@@ -39,6 +39,8 @@ func runAppsLogs(prog string, args []string, stdout, stderr io.Writer, lookupEnv
 	fs.StringVar(&since, "since", "", "how far back to search, e.g. \"1h\", \"30m\" (default: 1h, the server's own default window; mutually exclusive with --from and --follow)")
 	fs.StringVar(&from, "from", "", "RFC3339 start of the search window (overrides --since; mutually exclusive with --follow)")
 	fs.StringVar(&to, "to", "", "RFC3339 end of the search window (default: now; mutually exclusive with --follow)")
+	fs.StringVar(&until, "until", "", "alias for --to")
+	fs.StringVar(&outFile, "file", "", "write the entries to this new file instead of stdout (created 0600, never overwrites)")
 	fs.StringVar(&query, "q", "", "search expression: words, \"exact phrase\", prefix*, OR, NOT, -word, parentheses; omitted means every log line in range (mutually exclusive with --follow)")
 	fs.IntVar(&tail, "tail", 0, "only show the last N entries (applied client-side; mutually exclusive with --follow)")
 	fs.IntVar(&tail, "n", 0, "shorthand for --tail")
@@ -51,6 +53,12 @@ func runAppsLogs(prog string, args []string, stdout, stderr io.Writer, lookupEnv
 		return exitCode
 	}
 
+	if until != "" {
+		if to != "" {
+			return reportError(stdout, stderr, jsonOut, newValidationError("--to and --until are the same flag, pass one"))
+		}
+		to = until
+	}
 	rest := fs.Args()
 	if len(rest) != 1 {
 		_, _ = fmt.Fprintf(stderr, "%s: apps logs requires exactly one app name\n\n", prog)
@@ -60,7 +68,7 @@ func runAppsLogs(prog string, args []string, stdout, stderr io.Writer, lookupEnv
 	name := serviceAppName(rest[0], service)
 
 	// A terminal with no search flags wants the live tail; pipes and --json keep the stored-entries output.
-	searching := since != "" || from != "" || to != "" || query != "" || tail != 0 || of.Query != ""
+	searching := since != "" || from != "" || to != "" || until != "" || outFile != "" || query != "" || tail != 0 || of.Query != ""
 	if !follow && !noFollow && !searching && !jsonOut && of.Format != outputJSON && stdoutIsTerminal(stdout) {
 		follow = true
 	}
@@ -96,7 +104,16 @@ func runAppsLogs(prog string, args []string, stdout, stderr io.Writer, lookupEnv
 		hintBuildingDeploy(client, prog, name, stderr)
 	}
 
-	if err := renderResult(stdout, of.Format, of.Query, entries, func() { printLogEntriesHuman(stdout, entries) }); err != nil {
+	out := stdout
+	if outFile != "" {
+		f, ferr := os.OpenFile(outFile, os.O_WRONLY|os.O_CREATE|os.O_EXCL, 0o600) //nolint:gosec // path is the operator's own flag
+		if ferr != nil {
+			return reportError(stdout, stderr, jsonOut, fmt.Errorf("open --file: %w", ferr))
+		}
+		defer func() { _ = f.Close() }()
+		out = f
+	}
+	if err := renderResult(out, of.Format, of.Query, entries, func() { printLogEntriesHuman(out, entries) }); err != nil {
 		_, _ = fmt.Fprintln(stderr, err)
 		return exitCodeForError(err)
 	}
@@ -142,6 +159,8 @@ Flags:
   --since string          how far back to search, e.g. "1h", "30m" (default: 1h)
   --from string            RFC3339 start of the search window (overrides --since)
   --to string                RFC3339 end of the search window (default: now)
+  --until string           alias for --to
+  --file string              write the entries to a new file instead of stdout
   --q string                  full-text search phrase (default: every line in range)
   --tail, -n int         only show the last N entries (client-side)
   --service string       only this service of a multi-service app

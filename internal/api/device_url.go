@@ -3,7 +3,6 @@ package api
 import (
 	"net"
 	"net/http"
-	"net/netip"
 	"net/url"
 	"os"
 	"strings"
@@ -65,24 +64,5 @@ func peerIsTrustedProxy(r *http.Request) bool {
 	if err != nil {
 		host = r.RemoteAddr
 	}
-	ip, err := netip.ParseAddr(host)
-	if err != nil {
-		return false
-	}
-	if ip.IsLoopback() && loopbackTrusted() {
-		return true
-	}
-	for _, entry := range strings.Split(os.Getenv(envTrustedProxies), ",") {
-		entry = strings.TrimSpace(entry)
-		if entry == "" {
-			continue
-		}
-		if p, err := netip.ParsePrefix(entry); err == nil && p.Contains(ip) {
-			return true
-		}
-		if a, err := netip.ParseAddr(entry); err == nil && a == ip {
-			return true
-		}
-	}
-	return false
+	return isTrustedPeer(host, trustedProxyPrefixes())
 }

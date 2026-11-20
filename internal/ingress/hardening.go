@@ -39,6 +39,9 @@ type Hardening struct {
 	IdleTimeout       time.Duration
 	MaxHeaderBytes    int
 	MaxBodyBytes      int64
+	// BodyReadTimeout and MaxConnsPerIP stay zero (off) here; runtime settings fill them.
+	BodyReadTimeout   time.Duration
+	MaxConnsPerIP     int
 	Protocols         []string
 	TrustedProxies    []string
 	ClientIPHeaders   []string
@@ -197,6 +200,10 @@ func parseTrustedProxies(raw string) ([]string, error) {
 	return out, nil
 }
 
+// ParseTrustedProxyList expands a raw list (IPs, CIDRs, private_ranges) the same
+// way the edge does, so the API reads the entries Caddy is given.
+func ParseTrustedProxyList(raw string) ([]string, error) { return parseTrustedProxies(raw) }
+
 // TrustedProxiesConfig is Caddy's static trusted_proxies source.
 type TrustedProxiesConfig struct {
 	Source string   `json:"source"`
@@ -212,13 +219,21 @@ type RequestBodyHandler struct {
 
 // HeaderOps is Caddy's headers.HeaderOps.
 type HeaderOps struct {
-	Set    map[string][]string `json:"set,omitempty"`
-	Delete []string            `json:"delete,omitempty"`
+	Set     map[string][]string        `json:"set,omitempty"`
+	Delete  []string                   `json:"delete,omitempty"`
+	Replace map[string][]HeaderReplace `json:"replace,omitempty"`
+}
+
+// HeaderReplace is one regexp substitution in a header value.
+type HeaderReplace struct {
+	SearchRegexp string `json:"search_regexp"`
+	Replace      string `json:"replace"`
 }
 
 // ProxyHeaders is reverse_proxy's headers block.
 type ProxyHeaders struct {
-	Request *HeaderOps `json:"request,omitempty"`
+	Request  *HeaderOps `json:"request,omitempty"`
+	Response *HeaderOps `json:"response,omitempty"`
 }
 
 func (h Hardening) durationOrNil(d time.Duration) string {
@@ -292,6 +307,18 @@ func (h *Hardening) bodyLimitFor(override int64) any {
 		return nil
 	}
 	return RequestBodyHandler{Handler: "request_body", MaxSize: limit}
+}
+
+// connGuard returns the per-IP and body-read guard to prepend, or nil when both are off.
+func (h *Hardening) connGuard() any {
+	if h == nil || (h.BodyReadTimeout <= 0 && h.MaxConnsPerIP <= 0) {
+		return nil
+	}
+	g := ConnGuardHandler{Handler: "levelrail_conn_guard", MaxPerIP: h.MaxConnsPerIP}
+	if h.BodyReadTimeout > 0 {
+		g.BodyReadTimeout = h.BodyReadTimeout.String()
+	}
+	return g
 }
 
 const unavailablePageTemplate = `<!DOCTYPE html>

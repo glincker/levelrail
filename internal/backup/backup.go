@@ -42,6 +42,8 @@ type Destination struct {
 
 	AccessKeyID     string
 	SecretAccessKey string
+	// CABundle is an optional PEM bundle trusted in addition to system roots (WebDAV only).
+	CABundle string
 }
 
 // Uploader writes a single object to a Destination. Implementations

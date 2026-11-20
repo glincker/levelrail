@@ -27,6 +27,12 @@ func runStaticRoutes(prog string, args []string, stdout, stderr io.Writer, looku
 		return runStaticRoutesTest(prog, args[1:], stdout, stderr, lookupEnv)
 	case "lint":
 		return runStaticRoutesLint(prog, args[1:], stdout, stderr, lookupEnv)
+	case "list":
+		return runStaticRoutesList(prog, args[1:], stdout, stderr, lookupEnv)
+	case "add":
+		return runStaticRoutesAdd(prog, args[1:], stdout, stderr, lookupEnv)
+	case "rm":
+		return runStaticRoutesRm(prog, args[1:], stdout, stderr, lookupEnv)
 	default:
 		_, _ = fmt.Fprintf(stderr, "%s: unknown static-sites routes subcommand %q\n\n", prog, args[0])
 		_, _ = fmt.Fprint(stderr, staticRoutesUsage(prog))

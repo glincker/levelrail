@@ -1,4 +1,11 @@
-import { Fragment, useCallback, useEffect, useRef, useState } from 'react'
+import {
+  Fragment,
+  useCallback,
+  useEffect,
+  useRef,
+  useState,
+  type ReactNode,
+} from 'react'
 import {
   CheckGlassIcon,
   CopyGlassIcon,
@@ -174,6 +181,10 @@ export interface CodeBlockProps extends SharedProps {
   /** Render a non-copied "$" before each line. */
   prompt?: boolean
   maxHeight?: CodeBlockMaxHeight
+  /** Header text that replaces the language chip, for example a file path. */
+  title?: string
+  /** Extra header actions, shown before the copy button. */
+  actions?: ReactNode
 }
 
 /** Shared multi-line code, config and output block with copy, wrap and secret masking. */
@@ -187,6 +198,8 @@ export function CodeBlock({
   prompt = false,
   maxHeight = 'md',
   secret = false,
+  title,
+  actions,
   className,
 }: CodeBlockProps) {
   const { t } = useTranslation('common')
@@ -199,7 +212,7 @@ export function CodeBlock({
   const decorated = lineNumbers || prompt
   const lang = resolveLanguage(language)
   const isDiff = lang === 'diff'
-  const chip = language ?? label
+  const chip = title ?? language ?? label
 
   return (
     <div
@@ -236,6 +249,7 @@ export function CodeBlock({
               {t('codeBlock.wrap')}
             </Button>
           ) : null}
+          {actions}
           <CopyButton state={state} size="xs" onCopy={() => void copy()} />
         </div>
       </div>

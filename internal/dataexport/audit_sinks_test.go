@@ -135,13 +135,18 @@ func TestSplunkHalfSuccessAdvancesCursorOnlyForAcceptedBatch(t *testing.T) {
 		t.Fatal(err)
 	}
 	ctx, cancel := context.WithCancel(context.Background())
-	go svc.Run(ctx)
+	runDone := make(chan struct{})
+	go func() {
+		defer close(runDone)
+		svc.Run(ctx)
+	}()
 	waitFor(t, "second batch failing", func() bool {
 		st, _ := svc.Status(ctx, d.ID)
 		return st.FailuresTotal >= 2 && st.CursorID == "cb"
 	})
 	cancel()
-	svc.stopAll()
+	// Run must have returned, or a late reconcile could revive a worker that delivers beside the second service.
+	<-runDone
 	st, _ := db.GetExportStatus(context.Background(), d.ID)
 	if st.CursorID != "cb" || len(rcv.events()) != 2 {
 		t.Fatalf("cursor = %q events = %d, want cb and 2", st.CursorID, len(rcv.events()))

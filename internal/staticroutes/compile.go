@@ -29,6 +29,9 @@ func WriteSidecar(rootDir string, rs *Ruleset) error {
 
 // LoadSidecar reads the ruleset of the tree at rootDir; none yields nil without an error.
 func LoadSidecar(rootDir string) (*Ruleset, error) {
+	if rootDir == "" {
+		return nil, nil
+	}
 	rs, err := spec.LoadStaticSidecar(rootDir)
 	if err != nil || rs == nil {
 		return nil, err

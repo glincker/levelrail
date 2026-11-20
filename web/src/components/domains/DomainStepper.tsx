@@ -9,6 +9,7 @@ import {
   LoaderCircleGlassIcon,
   RefreshCwGlassIcon,
 } from '@thesvg/ui-react'
+import { ApiErrorAlert } from '../ApiErrorAlert'
 import { Alert, AlertDescription } from '@/components/ui/alert'
 import { Button, buttonVariants } from '@/components/ui/button'
 import { Field, FieldLabel } from '@/components/ui/field'
@@ -232,9 +233,7 @@ function CheckStep({
             : t('stepper.check.propagation')}
         </p>
       )}
-      {check.isError ? (
-        <p className="text-xs text-destructive">{check.error.message}</p>
-      ) : null}
+      {check.isError ? <ApiErrorAlert error={check.error} /> : null}
     </StepBody>
   )
 }

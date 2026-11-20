@@ -5,6 +5,7 @@ import (
 	"database/sql"
 	"errors"
 	"fmt"
+	"strings"
 	"time"
 
 	"github.com/GLINCKER/levelrail/internal/secretmask"
@@ -97,6 +98,44 @@ func (db *DB) ListDeployTraceSteps(ctx context.Context, attemptID string) ([]Dep
 		return nil, fmt.Errorf("store: iterate deploy trace steps: %w", err)
 	}
 	return out, nil
+}
+
+// ListDeployTraceStepsByStep returns the rows of one step kind for many
+// attempts in a single query, grouped by attempt id.
+func (db *DB) ListDeployTraceStepsByStep(ctx context.Context, step string, attemptIDs []string) (map[string][]DeployTraceStep, error) {
+	out := map[string][]DeployTraceStep{}
+	if len(attemptIDs) == 0 {
+		return out, nil
+	}
+	args := []any{step}
+	marks := make([]string, len(attemptIDs))
+	for i, id := range attemptIDs {
+		marks[i] = "?"
+		args = append(args, id)
+	}
+	rows, err := db.QueryContext(ctx, `
+		SELECT attempt_id, step_key, step, service, status, reason, detail, attempts, started_at, ended_at, duration_ms
+		FROM deploy_trace_steps WHERE step = ? AND attempt_id IN (`+strings.Join(marks, ",")+`) ORDER BY id ASC
+	`, args...)
+	if err != nil {
+		return nil, fmt.Errorf("store: list deploy trace steps by step: %w", err)
+	}
+	defer func() { _ = rows.Close() }()
+	for rows.Next() {
+		var (
+			s              DeployTraceStep
+			started, ended string
+		)
+		if err := rows.Scan(&s.AttemptID, &s.Key, &s.Step, &s.Service, &s.Status, &s.Reason, &s.Detail, &s.Attempts, &started, &ended, &s.DurationMS); err != nil {
+			return nil, fmt.Errorf("store: scan deploy trace step: %w", err)
+		}
+		s.StartedAt, _ = time.Parse(time.RFC3339Nano, started)
+		if ended != "" {
+			s.EndedAt, _ = time.Parse(time.RFC3339Nano, ended)
+		}
+		out[s.AttemptID] = append(out[s.AttemptID], s)
+	}
+	return out, rows.Err()
 }
 
 // TraceTargetFor resolves the newest attempt for (service, image), as

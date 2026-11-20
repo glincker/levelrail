@@ -269,6 +269,9 @@ func gitSourceTriggerMatchesPush(gs store.GitSource, ref string) (bool, string) 
 // A branch pattern replaces the single branch match but only ever admits
 // refs/heads/ refs of the source's own repository, never pull or note refs.
 func gitSourceTriggerMatchesPushMax(gs store.GitSource, ref string, maxRefBytes int) (bool, string) {
+	if effectiveGitSourceTriggerMode(gs.TriggerMode) == spec.TriggerModeManual {
+		return false, fmt.Sprintf("ignored: push to %q, trigger mode is %q which only deploys on request\n", truncatedRef(ref), spec.TriggerModeManual)
+	}
 	if effectiveGitSourceTriggerMode(gs.TriggerMode) == spec.TriggerModeRelease {
 		if !strings.HasPrefix(ref, "refs/tags/") {
 			return false, fmt.Sprintf("ignored: push to %q, trigger mode is %q which only deploys on a tag push or a published github release\n", truncatedRef(ref), spec.TriggerModeRelease)
@@ -480,7 +483,7 @@ func (rt *Router) deployFromGitSourceInner(ctx context.Context, name string, gs 
 		_, _, finishFetchAttempt, _ := rt.beginBuildDeployAttempt(ctx, deploy.Request{
 			ServiceName: name,
 			CommitSHA:   commitLabel,
-			ImageRepo:   defaultImageRepo(name, existing.Image),
+			ImageRepo:   rt.ownImageRepo(ctx, name, existing.Image),
 		}, *existing, source, "")
 		finishFetchAttempt(fmt.Errorf("fetch source: %w", err))
 		if errors.Is(err, errGitCommitNotFound) {
@@ -522,15 +525,19 @@ func (rt *Router) deployFromGitSourceInner(ctx context.Context, name string, gs 
 	svcSpec.Static = gs.StaticOptions()
 	svcSpec.Build.Args = mergeBuildArgs(svcSpec.Build.Args, extraBuildArgsFrom(ctx))
 
+	if st, msg := rt.checkFinalImageRepo(ctx, name, rt.ownImageRepo(ctx, name, existing.Image), true); st != 0 {
+		return st, msg
+	}
 	buildReq := deploy.Request{
 		ServiceName: name,
 		Service:     svcSpec,
 		SourceDir:   sourceDir,
 		CommitSHA:   commitLabel,
-		ImageRepo:   defaultImageRepo(name, existing.Image),
+		ImageRepo:   rt.ownImageRepo(ctx, name, existing.Image),
 		Order:       order,
 	}
 	rt.applyAppBuildSettings(ctx, name, &buildReq)
+	buildReq.ProxyAuthorizer = rt.proxyScopeAuthorizer(name)
 
 	attemptID, progress, finishAttempt, _ := rt.beginBuildDeployAttempt(ctx, buildReq, *existing, source, "")
 	buildReq.AttemptID = attemptID
@@ -702,11 +709,12 @@ func (rt *Router) deployAdditionalServices(ctx context.Context, additional map[s
 
 		svcSpec := specServiceFromDesired(*svc, spec.Build{Type: buildCfg.BuildType, Path: buildCfg.BuildPath})
 		req := deploy.Request{
-			ServiceName: svcName,
-			Service:     svcSpec,
-			SourceDir:   sourceDir,
-			CommitSHA:   commitSHA,
-			ImageRepo:   svcName,
+			ServiceName:     svcName,
+			Service:         svcSpec,
+			SourceDir:       sourceDir,
+			CommitSHA:       commitSHA,
+			ImageRepo:       svcName,
+			ProxyAuthorizer: rt.proxyScopeAuthorizer(svcName),
 		}
 
 		_, progress, finishAttempt, _ := rt.beginBuildDeployAttempt(ctx, req, *svc, store.DeployAttemptSourceWebhook, "")

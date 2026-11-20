@@ -8,16 +8,13 @@ import (
 	"os"
 	"path/filepath"
 	"slices"
-	"strconv"
 	"strings"
 
+	"github.com/GLINCKER/levelrail/internal/staticroutes"
 	"github.com/GLINCKER/levelrail/internal/store"
 )
 
-const (
-	defaultStaticKeepReleases = 10
-	minStaticKeepReleases     = 3
-)
+const minStaticKeepReleases = 3
 
 // StaticRetentionStore is the read surface pruning needs to know which
 // releases are still in use. *store.DB satisfies it.
@@ -27,15 +24,9 @@ type StaticRetentionStore interface {
 	GetPublishLock(ctx context.Context, name string) (*store.PublishLock, error)
 }
 
-// StaticKeepReleases reads APP_STATIC_KEEP_RELEASES: how many releases of one
-// static site stay on disk. Unset or invalid gives 10, anything below 3 gives 3.
-func StaticKeepReleases() int {
-	n, err := strconv.Atoi(strings.TrimSpace(os.Getenv("APP_STATIC_KEEP_RELEASES")))
-	if err != nil {
-		return defaultStaticKeepReleases
-	}
-	return max(n, minStaticKeepReleases)
-}
+// StaticKeepReleases is how many releases of one static site stay on disk,
+// see staticroutes.KeepDeploys for the env names.
+func StaticKeepReleases() int { return staticroutes.KeepDeploys() }
 
 // PruneStaticReleases deletes the oldest release directories of one static
 // site under <root>/<service>, keeping the newest keep (never fewer than 3).

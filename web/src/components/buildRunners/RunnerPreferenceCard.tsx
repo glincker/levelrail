@@ -9,14 +9,16 @@ import { NativeSelect } from '@/components/ui/native-select'
 import { Skeleton } from '@/components/ui/skeleton'
 import { Switch } from '@/components/ui/switch'
 import { toast } from '@/components/ui/toast'
+import { InfoTip } from '../kit/InfoTip'
 import { useCanDeploy } from '../../hooks/useCanDeploy'
-import { parseLabels } from '../../lib/buildRunnerFormat'
+import { parseLabels, validateRunnerMode } from '../../lib/buildRunnerFormat'
 import {
   useAppBuildRunner,
   useBuildRunners,
   useClearAppBuildRunner,
   useSaveAppBuildRunner,
   type AppBuildRunner,
+  type RunnerMode,
 } from '../../queries/buildRunners'
 
 function PreferenceForm({
@@ -28,20 +30,26 @@ function PreferenceForm({
   const { data } = useBuildRunners()
   const save = useSaveAppBuildRunner(appName)
   const clear = useClearAppBuildRunner(appName)
+  const [mode, setMode] = useState<RunnerMode>(pref.mode ?? 'auto')
   const [nodeId, setNodeId] = useState(pref.node_id)
   const [pinned, setPinned] = useState(pref.pinned)
   const [labels, setLabels] = useState((pref.labels ?? []).join(', '))
   const nodes = (data?.runners ?? []).filter((r) => r.kind === 'node')
   const error = save.error ?? clear.error
   const busy = save.isPending || clear.isPending
+  const problem = validateRunnerMode(mode, nodeId)
   const isSet =
-    pref.node_id !== '' || pref.pinned || (pref.labels ?? []).length > 0
+    (pref.mode ?? 'auto') !== 'auto' ||
+    pref.node_id !== '' ||
+    pref.pinned ||
+    (pref.labels ?? []).length > 0
 
   const onSave = () => {
     save.mutate(
       {
-        node_id: nodeId,
-        pinned: pinned && nodeId !== '',
+        mode,
+        node_id: mode === 'node' ? nodeId : '',
+        pinned: mode === 'node' && pinned,
         labels: parseLabels(labels),
       },
       {
@@ -53,6 +61,7 @@ function PreferenceForm({
   const onClear = () => {
     clear.mutate(undefined, {
       onSuccess: () => {
+        setMode('auto')
         setNodeId('')
         setPinned(false)
         setLabels('')
@@ -63,27 +72,54 @@ function PreferenceForm({
 
   return (
     <div className="space-y-4">
-      <div className="grid gap-4 sm:grid-cols-2">
+      <div className="grid gap-3 sm:grid-cols-3">
         <div className="space-y-1.5">
-          <Label htmlFor="runner-pref-node">{t('runnerPref.node')}</Label>
+          <div className="flex items-center gap-1.5">
+            <Label htmlFor="runner-pref-mode">{t('runnerPref.mode')}</Label>
+            <InfoTip label={t('runnerPref.modeTipLabel')}>
+              {t('runnerPref.modeTip')}
+            </InfoTip>
+          </div>
           <NativeSelect
-            id="runner-pref-node"
+            id="runner-pref-mode"
             className="w-full"
-            value={nodeId}
+            value={mode}
             disabled={!canDeploy || busy}
             onChange={(e) => {
-              setNodeId(e.target.value)
-              if (e.target.value === '') setPinned(false)
+              const next = e.target.value as RunnerMode
+              setMode(next)
+              if (next !== 'node') setPinned(false)
             }}
           >
-            <option value="">{t('runnerPref.anyNode')}</option>
-            {nodes.map((n) => (
-              <option key={n.id} value={n.id}>
-                {n.name}
-              </option>
-            ))}
+            <option value="auto">{t('runnerPref.modeAuto')}</option>
+            <option value="control_plane">
+              {t('runnerPref.modeControlPlane')}
+            </option>
+            <option value="node">{t('runnerPref.modeNode')}</option>
           </NativeSelect>
         </div>
+        {mode === 'node' ? (
+          <div className="space-y-1.5">
+            <Label htmlFor="runner-pref-node">{t('runnerPref.node')}</Label>
+            <NativeSelect
+              id="runner-pref-node"
+              className="w-full"
+              value={nodeId}
+              disabled={!canDeploy || busy}
+              aria-invalid={problem === 'nodeNeeded'}
+              onChange={(e) => {
+                setNodeId(e.target.value)
+              }}
+            >
+              <option value="">{t('runnerPref.pickNode')}</option>
+              {nodes.map((n) => (
+                <option key={n.id} value={n.id}>
+                  {n.name}
+                </option>
+              ))}
+            </NativeSelect>
+          </div>
+        ) : null}
         <div className="space-y-1.5">
           <Label htmlFor="runner-pref-labels">{t('runnerPref.labels')}</Label>
           <Input
@@ -97,26 +133,33 @@ function PreferenceForm({
           />
         </div>
       </div>
-      <div className="flex items-center gap-3">
-        <Switch
-          id="runner-pref-pin"
-          checked={pinned}
-          disabled={!canDeploy || busy || nodeId === ''}
-          onCheckedChange={setPinned}
-          aria-describedby="runner-pref-pin-hint"
-        />
-        <div className="min-w-0">
-          <Label htmlFor="runner-pref-pin">{t('runnerPref.pin')}</Label>
-          <p
-            id="runner-pref-pin-hint"
-            className="text-xs text-muted-foreground"
-          >
-            {nodeId === ''
-              ? t('runnerPref.pinNeedsNode')
-              : t('runnerPref.pinHint')}
-          </p>
+      {mode === 'node' ? (
+        <div className="flex items-center gap-3">
+          <Switch
+            id="runner-pref-pin"
+            checked={pinned}
+            disabled={!canDeploy || busy || nodeId === ''}
+            onCheckedChange={setPinned}
+            aria-describedby="runner-pref-pin-hint"
+          />
+          <div className="min-w-0">
+            <Label htmlFor="runner-pref-pin">{t('runnerPref.pin')}</Label>
+            <p
+              id="runner-pref-pin-hint"
+              className="text-xs text-muted-foreground"
+            >
+              {nodeId === ''
+                ? t('runnerPref.pinNeedsNode')
+                : t('runnerPref.pinHint')}
+            </p>
+          </div>
         </div>
-      </div>
+      ) : null}
+      {problem === 'nodeNeeded' ? (
+        <p className="text-xs text-muted-foreground">
+          {t('runnerPref.nodeNeeded')}
+        </p>
+      ) : null}
       {error ? (
         <p role="alert" className="text-sm text-destructive">
           {error.message}
@@ -136,7 +179,11 @@ function PreferenceForm({
         >
           {t('runnerPref.clear')}
         </Button>
-        <Button size="sm" disabled={!canDeploy || busy} onClick={onSave}>
+        <Button
+          size="sm"
+          disabled={!canDeploy || busy || problem !== null}
+          onClick={onSave}
+        >
           {t('runnerPref.save')}
         </Button>
       </div>
@@ -157,6 +204,9 @@ export function RunnerPreferenceCard({
         <CardTitle className="flex items-center gap-2">
           <ServerGlassIcon className="size-5" aria-hidden="true" />
           {t('runnerPref.title')}
+          <InfoTip label={t('runnerPref.prodTipLabel')}>
+            {t('runnerPref.prodTip')}
+          </InfoTip>
         </CardTitle>
         <p className="text-sm text-muted-foreground">
           {t('runnerPref.description')}
@@ -176,7 +226,7 @@ export function RunnerPreferenceCard({
           </div>
         ) : (
           <PreferenceForm
-            key={`${data.node_id}|${String(data.pinned)}|${(data.labels ?? []).join(',')}`}
+            key={`${data.mode ?? 'auto'}|${data.node_id}|${String(data.pinned)}|${(data.labels ?? []).join(',')}`}
             appName={appName}
             pref={data}
           />

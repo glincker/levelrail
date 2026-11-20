@@ -2,9 +2,38 @@ package spec
 
 import (
 	"fmt"
+	"path/filepath"
 	"regexp"
+	"strconv"
 	"strings"
 )
+
+// EnvStaticBuildCommandMax caps the byte length of a per-site build command override.
+const EnvStaticBuildCommandMax = "APP_STATIC_BUILD_COMMAND_MAX_BYTES"
+
+const defaultStaticBuildCommandMax = 1024
+
+// StaticBuildCommandMaxFromEnv returns the build command length cap.
+func StaticBuildCommandMaxFromEnv(lookup func(string) (string, bool)) int {
+	if v, ok := lookup(EnvStaticBuildCommandMax); ok {
+		if n, err := strconv.Atoi(strings.TrimSpace(v)); err == nil && n > 0 {
+			return n
+		}
+	}
+	return defaultStaticBuildCommandMax
+}
+
+// ValidateStaticOverrides checks a per-site build command and output directory;
+// either may be empty. The message is user facing.
+func ValidateStaticOverrides(command, outputDir string, maxCommand int) error {
+	if len(command) > maxCommand || strings.ContainsAny(command, "\r\n\x00") {
+		return fmt.Errorf("build_command must be one line of at most %d bytes", maxCommand)
+	}
+	if outputDir != "" && (len(outputDir) > 255 || !filepath.IsLocal(outputDir) || strings.ContainsRune(outputDir, 0)) {
+		return fmt.Errorf("output_dir must be a relative path inside the repository")
+	}
+	return nil
+}
 
 var buildArgNameRe = regexp.MustCompile(`^[A-Za-z_][A-Za-z0-9_]*$`)
 

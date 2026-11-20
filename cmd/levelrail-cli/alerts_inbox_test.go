@@ -10,12 +10,12 @@ import (
 )
 
 func TestAlertsInboxList(t *testing.T) {
-	srv, rec := recordingServer(t, http.StatusOK, []apiclient.InboxItem{{AlertHistoryEntry: apiclient.AlertHistoryEntry{ID: "ah_1", RuleName: "cpu", Severity: "critical", Event: "fired"}}})
+	srv, rec := recordingServer(t, http.StatusOK, []apiclient.InboxItem{{AlertHistoryEntry: apiclient.AlertHistoryEntry{ID: "ah_1", RuleName: "cpu", Severity: "critical", Event: "fired"}, Repeats: 2}})
 	stdout, _ := runCLIExpectOK(t, []string{"alerts", "inbox", "list", "--unread", "--limit", "5", "--api-url", srv.URL})
 	if rec.method != http.MethodGet || rec.path != "/api/v1/inbox" || !strings.Contains(rec.query, "unread=true") {
 		t.Fatalf("call = %+v", rec)
 	}
-	if !strings.Contains(stdout, "ah_1") {
+	if !strings.Contains(stdout, "ah_1") || !strings.Contains(stdout, "fired x3") {
 		t.Errorf("stdout = %q", stdout)
 	}
 }

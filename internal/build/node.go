@@ -46,6 +46,10 @@ type NodeInfo struct {
 	CacheBytes int64
 	// LastBuildAt is when the node last finished a build, zero when never.
 	LastBuildAt time.Time
+	// Trust is the builder tier (server, managed, personal); empty counts as server.
+	Trust string
+	// DiskFreeBytes is the free disk the node last reported, zero when unknown.
+	DiskFreeBytes int64
 }
 
 // Pressure levels a NodeInfo reports.
@@ -83,11 +87,22 @@ type Policy struct {
 	// StaleAfter is the heartbeat age past which a node is skipped; zero disables the check.
 	StaleAfter time.Duration
 	Now        time.Time
+	// PersonalInProduction lets personal builders build production environments that have no explicit allow-list.
+	PersonalInProduction bool
 }
+
+// Build placement modes an app can choose.
+const (
+	ModeAuto         = "auto"
+	ModeControlPlane = "control_plane"
+	ModeNode         = "node"
+)
 
 // Query describes the build being placed.
 type Query struct {
 	App string
+	// Mode control_plane keeps the build on the control plane, whatever runners exist.
+	Mode string
 	// TargetArch is the "os/arch" the image will run on, empty when unknown.
 	TargetArch string
 	// Labels every chosen runner must carry; an empty value only requires the key.
@@ -98,12 +113,53 @@ type Query struct {
 	Pinned    string
 	// LastNode is the runner that built this app last, used by StrategySticky.
 	LastNode string
+	// EnvKind is the kind of the app's environment, "production" restricts personal builders.
+	EnvKind string
+	// AllowedBuilders is the environment's explicit allow-list of tiers or node IDs; it beats the default.
+	AllowedBuilders []string
+}
+
+// Builder trust tiers, mirroring the store values.
+const (
+	TrustServer   = "server"
+	TrustManaged  = "managed"
+	TrustPersonal = "personal"
+)
+
+func (n NodeInfo) tier() string {
+	if n.Trust == "" {
+		return TrustServer
+	}
+	return n.Trust
+}
+
+// trustAllows reports whether n may build for the query's environment. An explicit
+// allow-list decides alone; otherwise personal builders are kept off production.
+func (q Query) trustAllows(n NodeInfo, p Policy) bool {
+	if len(q.AllowedBuilders) > 0 {
+		for _, a := range q.AllowedBuilders {
+			if a == n.ID || a == n.tier() {
+				return true
+			}
+		}
+		return false
+	}
+	if q.EnvKind == "" {
+		// No known environment (unknown app): only server builders qualify.
+		return n.tier() == TrustServer
+	}
+	if n.tier() == TrustPersonal && q.EnvKind == "production" && !p.PersonalInProduction {
+		return false
+	}
+	return true
 }
 
 // Decision is where a build runs and why.
 type Decision struct {
 	// Node is "" for the control plane.
-	Node   string
+	Node string
+	// Trust is the chosen node's builder tier, empty for the control plane.
+	Trust  string
 	Reason string
 }
 
@@ -190,6 +246,9 @@ func (n NodeInfo) label() string {
 // answer is the control plane, with the reason, so a build never fails for
 // want of a runner.
 func ChooseBuildNode(nodes []NodeInfo, q Query, p Policy) Decision {
+	if q.Mode == ModeControlPlane {
+		return Decision{Reason: "control plane: chosen for this app"}
+	}
 	var all []NodeInfo
 	for _, n := range nodes {
 		if n.AcceptsBuildWorkloads && !n.Local && n.ID != "" {
@@ -203,11 +262,14 @@ func ChooseBuildNode(nodes []NodeInfo, q Query, p Policy) Decision {
 
 	if q.Pinned != "" {
 		for _, n := range all {
-			if n.ID != q.Pinned && n.Name != q.Pinned {
+			if n.ID != q.Pinned {
 				continue
 			}
+			if !q.trustAllows(n, p) {
+				return Decision{Reason: "control plane: pinned runner " + n.label() + " is not allowed to build for this environment"}
+			}
 			if n.usable(p) {
-				return Decision{Node: n.ID, Reason: "pinned runner " + n.label()}
+				return Decision{Node: n.ID, Trust: n.tier(), Reason: "pinned runner " + n.label()}
 			}
 			return Decision{Reason: "control plane: pinned runner " + n.label() + " is " + unusableWhy(n)}
 		}
@@ -216,7 +278,7 @@ func ChooseBuildNode(nodes []NodeInfo, q Query, p Policy) Decision {
 
 	var live []NodeInfo
 	for _, n := range all {
-		if n.usable(p) {
+		if n.usable(p) && q.trustAllows(n, p) {
 			live = append(live, n)
 		}
 	}
@@ -230,7 +292,7 @@ func ChooseBuildNode(nodes []NodeInfo, q Query, p Policy) Decision {
 				return Decision{Reason: "control plane: no runner carries labels " + labelString(q.Labels)}
 			}
 		}
-		return Decision{Node: live[0].ID, Reason: "first online build node " + live[0].label()}
+		return Decision{Node: live[0].ID, Trust: live[0].tier(), Reason: "first online build node " + live[0].label()}
 	}
 
 	if len(q.Labels) > 0 {
@@ -258,7 +320,7 @@ func ChooseBuildNode(nodes []NodeInfo, q Query, p Policy) Decision {
 			best, bestScore = n, s
 		}
 	}
-	return Decision{Node: best.ID, Reason: explainChoice(best, q, p)}
+	return Decision{Node: best.ID, Trust: best.tier(), Reason: explainChoice(best, q, p)}
 }
 
 func filterNodes(in []NodeInfo, keep func(NodeInfo) bool) []NodeInfo {

@@ -117,6 +117,20 @@ func (c *Controller) Reconcile(ctx context.Context) (reconcile.Result, error) {
 
 	now := c.now()
 	since, everSeen := lastSeenAge(node, now)
+	if node.Status == store.NodeStatusOffline && everSeen && since <= c.timeout && node.LastSeenAt.After(node.UpdatedAt) {
+		// A heartbeat newer than the offline mark means the agent is alive. A graceful
+		// disconnect never qualifies: its last heartbeat precedes the mark.
+		if err := c.store.UpdateNodeStatus(ctx, c.nodeID, store.NodeStatusOnline); err != nil {
+			return unknownResult("MarkOnlineFailed", err.Error()),
+				fmt.Errorf("node-health/%s: mark online: %w", c.nodeID, err)
+		}
+		return trueResult("HeartbeatRecent", fmt.Sprintf("heartbeat received %s ago", since.Round(time.Second))), nil
+	}
+	if node.Status == store.NodeStatusOnline && (!everSeen || since > c.timeout) && c.awaitingFirstHeartbeat(node, now, everSeen) {
+		// The connect path flips status synchronously but its first last_seen write is
+		// buffered, so a pass in that gap must not read the old value as stale.
+		return unknownResult("AwaitingHeartbeat", "node just connected, waiting for its first heartbeat"), nil
+	}
 	if !everSeen || since > c.timeout {
 		msg := staleMessage(c.timeout, everSeen, since)
 
@@ -136,6 +150,14 @@ func (c *Controller) Reconcile(ctx context.Context) (reconcile.Result, error) {
 	}
 
 	return trueResult("HeartbeatRecent", fmt.Sprintf("heartbeat received %s ago", since.Round(time.Second))), nil
+}
+
+// awaitingFirstHeartbeat is true while status flipped online less than timeout ago and no heartbeat newer than that flip is recorded.
+func (c *Controller) awaitingFirstHeartbeat(node *store.Node, now time.Time, everSeen bool) bool {
+	if node.UpdatedAt.IsZero() || now.Sub(node.UpdatedAt) >= c.timeout {
+		return false
+	}
+	return !everSeen || node.LastSeenAt.Before(node.UpdatedAt)
 }
 
 // lastSeenAge returns how long ago node.LastSeenAt was, and whether it

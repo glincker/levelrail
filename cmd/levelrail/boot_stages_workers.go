@@ -150,6 +150,18 @@ func (s *bootState) startAlerting() {
 		certExpiryWarningWindow(logger), certRenewalStalledThreshold(logger), db, patchStatusThreshold(logger), nodeDiskSpaceThreshold(logger),
 		db, nodeCPUThreshold(logger), nodeMemoryThreshold(logger), db, apiRouter, domainHealthCheckInterval(logger),
 		db, backupMissingGracePeriod(logger), alertingNewNotifier, logger)
+	appHealth := alerting.NewAppHealthTracker()
+	alertingEngine.SetAppHealth(appHealth)
+	s.liveness().SetObserver(func(container, service string, unhealthy bool, failures int, at time.Time) {
+		appHealth.Record(container, service, unhealthy, failures, at)
+	})
+	alertingEngine.SetAdvisoryWatch(apiRouter,
+		func(c context.Context) bool {
+			return apiRouter.RuntimeSettings().Bool(c, runtimesettings.KeyAlertsAdvisoryNotify)
+		},
+		func(c context.Context) string {
+			return apiRouter.RuntimeSettings().String(c, runtimesettings.KeyAlertsAdvisoryMinSeverity)
+		})
 	alertingEngine.SetLogArchive(objectstore.HealthSource{Store: db})
 	alertingEngine.SetJobFailing(db, scheduledtask.FailureAlertWindow, scheduledtask.FailureAlertBatch)
 	alertingEngine.SetExportHealth(exportHealthSource{db: db})

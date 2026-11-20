@@ -26,6 +26,7 @@ func (rt *Router) Handler() http.Handler {
 	rt.registerPipelineOverviewRoutes(mux)
 	rt.registerModelRoutes(mux)
 	rt.registerDataExportRoutes(mux)
+	rt.registerObservabilityRoutes(mux)
 	rt.registerEventWebhookRoutes(mux)
 	rt.registerScheduledMaintenanceRoutes(mux)
 	rt.registerDeployPolicyRoutes(mux)

@@ -48,6 +48,7 @@ func (rt *Router) StaticOrphanGrace() time.Duration {
 // next reconcile even if file cleanup fails, then deletes the published tree.
 // A site that does not exist is not an error.
 func (rt *Router) removeStaticSite(ctx context.Context, name string) error {
+	rt.revokeSiteTokens(ctx, name)
 	d, ok := rt.staticSites.(staticSiteDeleter)
 	if !ok {
 		return nil

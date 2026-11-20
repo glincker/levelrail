@@ -125,7 +125,10 @@ func postBody(ctx context.Context, client *http.Client, url, contentType string,
 	}
 	req.Header.Set("Content-Type", contentType)
 	for k, v := range headers {
-		req.Header.Set(k, v)
+		// An empty value would send a blank header some backends reject.
+		if k != "" && v != "" {
+			req.Header.Set(k, v)
+		}
 	}
 	resp, err := client.Do(req)
 	if err != nil {

@@ -92,14 +92,25 @@ func (e ingressEdge) effectiveHardening(ctx context.Context, db edgeOverrideStor
 	h := e.layeredHardening(ctx, db, logger)
 	if h != nil && rs != nil {
 		h.MaxBodyBytes = ingressBodyCap(ctx, rs, h.MaxBodyBytes)
+		h.BodyReadTimeout = time.Duration(rs.Limit(ctx, runtimesettings.KeyIngressBodyReadTimeoutSec)) * time.Second
+		h.MaxConnsPerIP = rs.Limit(ctx, runtimesettings.KeyIngressMaxRequestsPerIP)
 		h.UnmatchedMode = rs.String(ctx, runtimesettings.KeyIngressUnmatchedMode)
 		h.UnmatchedRedirectURL = rs.String(ctx, runtimesettings.KeyIngressUnmatchedRedirectURL)
-		if rs.TrustedProxyPreset(ctx) == runtimesettings.TrustedProxyPresetCloudflare {
-			m := h.WithCloudflarePreset(cloudflareips.Default().CIDRs())
-			h = &m
-		}
+		h = withTrustedProxyPreset(h, rs.TrustedProxyPreset(ctx), cloudflareips.Default().CIDRs())
+	}
+	if h != nil {
+		api.SetResolvedTrustedProxies(h.TrustedProxies)
 	}
 	return h
+}
+
+// withTrustedProxyPreset adds the preset's ranges, giving the one list the edge and the API both trust.
+func withTrustedProxyPreset(h *ingressdriver.Hardening, preset string, cidrs []string) *ingressdriver.Hardening {
+	if h == nil || preset != runtimesettings.TrustedProxyPresetCloudflare {
+		return h
+	}
+	m := h.WithCloudflarePreset(cidrs)
+	return &m
 }
 
 // ingressBodyCap lets the stored runtime setting win, and clamps every other source so no env value or override drops the cap below its floor.
@@ -159,6 +170,17 @@ func (e ingressEdge) liveMaxBodyBytes(db edgeOverrideStore, logger *slog.Logger,
 			return 0
 		}
 		return h.MaxBodyBytes
+	}
+}
+
+// liveTrustedProxies resolves the list through the same layering as the edge
+// (and publishes it to the API), so doctor never reports the env-only boot count.
+func (e ingressEdge) liveTrustedProxies(db edgeOverrideStore, logger *slog.Logger, rs func() *runtimesettings.Service) func(context.Context) int {
+	return func(ctx context.Context) int {
+		if h := e.effectiveHardening(ctx, db, logger, rs()); h != nil {
+			return len(h.TrustedProxies)
+		}
+		return 0
 	}
 }
 

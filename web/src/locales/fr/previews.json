@@ -107,6 +107,17 @@
     "note": "S'applique à toutes les apps. 0 conserve la valeur par défaut au démarrage. Une surcharge par app l'emporte toujours.",
     "invalid": "Saisissez un nombre entier de 0 à {{max}}."
   },
+  "scope": {
+    "label": "Étiquette requise",
+    "labelPlaceholder": "preview",
+    "labelHint": "Seules les pull requests portant cette étiquette reçoivent une preview, et l'ajouter lance le build. GitHub et GitLab uniquement. Vide construit chaque pull request.",
+    "services": "Services exclus",
+    "servicesPlaceholder": "worker, docs",
+    "servicesHint": "Services d'une app multi-services, séparés par des virgules, que les previews ignorent. Au moins un doit rester.",
+    "save": "Enregistrer",
+    "saved": "Réglages des previews enregistrés.",
+    "error": "Impossible de mettre à jour les réglages des previews."
+  },
   "migrate": {
     "command": "Commande de migration",
     "commandPlaceholder": "npm run migrate",

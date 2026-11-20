@@ -14,6 +14,9 @@ type AppStore interface {
 	GetDesiredService(ctx context.Context, name string) (*store.DesiredService, error)
 	ListDesiredServices(ctx context.Context) ([]store.DesiredService, error)
 	DeleteDesiredService(ctx context.Context, name string) error
+	// ClaimImageRepo and ImageRepoOwner back the one-owner-per-image-repo rule.
+	ClaimImageRepo(ctx context.Context, repo, app string) (string, error)
+	ImageRepoOwner(ctx context.Context, repo string) (string, error)
 	// ListAppStreamsForService backs internal/reconcile/application's
 	// ServiceStore (the same interface this type satisfies for the
 	// application controller's own New call): one extra published

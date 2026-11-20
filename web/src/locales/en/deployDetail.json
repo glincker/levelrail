@@ -439,6 +439,9 @@
     "prebuilt": "No build stages: this deploy used a prebuilt image.",
     "label": "Phases of this deploy",
     "step": {
+      "build": "Build",
+      "publish": "Publish",
+      "live": "Live",
       "pull": "Pull image",
       "create": "Create container",
       "readiness": "Readiness",

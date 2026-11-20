@@ -33,11 +33,16 @@ type StaticProblem struct {
 
 // StaticRuleset is everything compiled for one deploy.
 type StaticRuleset struct {
-	Version  int                 `json:"version"`
-	Rules    []StaticRule        `json:"rules"`
-	Headers  []StaticHeaderBlock `json:"headers"`
-	Options  StaticServeOptions  `json:"options"`
-	Problems []StaticProblem     `json:"problems"`
+	Version int                 `json:"version"`
+	Rules   []StaticRule        `json:"rules"`
+	Headers []StaticHeaderBlock `json:"headers"`
+	Options StaticServeOptions  `json:"options"`
+	// BaseOptions are the options before dashboard overrides, so clearing an override can restore them live.
+	BaseOptions *StaticServeOptions `json:"base_options,omitempty"`
+	Problems    []StaticProblem     `json:"problems"`
+	// ProxyScopes records each proxy target's team and project at deploy time,
+	// so the ingress can stop serving a target that moved out of that scope.
+	ProxyScopes map[string]string `json:"proxy_scopes,omitempty"`
 }
 
 var statusTokenRe = regexp.MustCompile(`^([0-9]{3})(!?)$`)
@@ -189,10 +194,35 @@ func CompileStatic(in StaticInput, l StaticLimits) (*StaticRuleset, error) {
 	if len(rs.Rules) > l.MaxRules {
 		return nil, fmt.Errorf("%d routing rules is over the cap of %d (%s)", len(rs.Rules), l.MaxRules, EnvStaticMaxRules)
 	}
+	if n := rs.ProxyRuleCount(); l.MaxProxyRules > 0 && n > l.MaxProxyRules {
+		return nil, fmt.Errorf("%d proxy rules is over the cap of %d (%s)", n, l.MaxProxyRules, EnvStaticMaxProxyRules)
+	}
 	if len(rs.Headers) > l.MaxHeaderBlocks {
 		return nil, fmt.Errorf("%d header blocks is over the cap of %d (%s)", len(rs.Headers), l.MaxHeaderBlocks, EnvStaticMaxHeaderBlocks)
 	}
 	return rs, nil
+}
+
+// ProxyRuleCount is how many rules forward to an app.
+func (rs *StaticRuleset) ProxyRuleCount() int {
+	n := 0
+	for i := range rs.Rules {
+		if rs.Rules[i].IsProxy() {
+			n++
+		}
+	}
+	return n
+}
+
+// ProxyRules lists the rules that forward to an app, in rule order.
+func (rs *StaticRuleset) ProxyRules() []StaticRule {
+	var out []StaticRule
+	for _, r := range rs.Rules {
+		if r.IsProxy() {
+			out = append(out, r)
+		}
+	}
+	return out
 }
 
 // Prepare compiles the matchers of a ruleset read back from JSON.

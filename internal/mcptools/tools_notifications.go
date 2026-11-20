@@ -11,7 +11,7 @@ import (
 func registerNotificationTools(server *mcp.Server, client *apiclient.Client) {
 	addTool(server, &mcp.Tool{
 		Name:        "list_notification_channels",
-		Description: "Global notification channels: name, kind, enabled, destination URL. Alert rules and deploy targets attach by channel_id.",
+		Description: "Global notification channels: name, kind, enabled, destination URL. Rules and deploy targets attach by channel_id.",
 	}, func(ctx context.Context, _ *mcp.CallToolRequest, _ struct{}) (*mcp.CallToolResult, []apiclient.NotificationChannelResource, error) {
 		channels, err := client.ListNotificationChannels(ctx)
 		if err != nil {
@@ -22,7 +22,7 @@ func registerNotificationTools(server *mcp.Server, client *apiclient.Client) {
 
 	addTool(server, &mcp.Tool{
 		Name:        "list_notification_deliveries",
-		Description: "List a notification channel's recorded send history, newest first: deploy outcomes, alert rule firings, and test sends alike, with success/failure and error for each.",
+		Description: "List a notification channel's send history, newest first (deploy outcomes, alert firings, test sends) with success and error.",
 	}, func(ctx context.Context, _ *mcp.CallToolRequest, in notificationDeliveriesInput) (*mcp.CallToolResult, []apiclient.NotificationDeliveryResource, error) {
 		deliveries, err := client.ListNotificationDeliveries(ctx, in.ID, in.Limit)
 		if err != nil {

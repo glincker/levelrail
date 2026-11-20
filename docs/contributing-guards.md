@@ -206,3 +206,15 @@ These run a slow suite in the shape CI uses, so a local result predicts CI.
 - `scripts/gate-store.sh [-r regex] [-R]` runs `internal/store` with `-short`, optionally with `-race`, and prints failures and the slowest tests. `GATE_STORE_TIMEOUT` defaults to 25m.
 
 Both take minutes on a full run. Use `-r` with a test name to stay under a minute while iterating.
+
+## Real-host proof scripts
+
+`scripts/proof-abuse.sh`, `scripts/proof-gitpush.sh` and `scripts/proof-mesh.sh` drive a running Levelrail through its API and clean up what they create. They are not part of CI and need a host you control.
+
+| Script | What it checks |
+| --- | --- |
+| `proof-abuse.sh` | Ingress abuse defense on a throwaway app, in replay (`log_only`) then enforce mode, with the per-request latency overhead of each mode against no policy. |
+| `proof-gitpush.sh` | Git push deploy with a real BuildKit build, served on an sslip.io host with a certificate. |
+| `proof-mesh.sh` | A two-node WireGuard mesh: joins a second machine, checks the tunnel, runs an app on the remote node, drains it and simulates losing it. |
+
+Run each as `scripts/proof-<name>.sh`. All three need `LEVELRAIL_API_URL` (the dashboard address of the host) and `LEVELRAIL_TOKEN` (an API token). `proof-mesh.sh` also needs `PROOF_NODE_SSH` (the machine to join) and `PROOF_AGENT_BIN` (a `levelrail-agent` binary built for it). Optional variables such as `PROOF_APP`, `PROOF_BASE_IMAGE`, `PROOF_SSH` (abuse) and `PROOF_WAIT_SECONDS` (git push) are listed in each script's header comment.

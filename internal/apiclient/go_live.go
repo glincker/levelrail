@@ -220,6 +220,20 @@ func (c *Client) BackfillBaseDomain(ctx context.Context, confirm bool) (BaseDoma
 	return out, err
 }
 
+// BaseWildcard is the response of the apps base domain wildcard call.
+type BaseWildcard struct {
+	DryRun     bool            `json:"dry_run"`
+	BaseDomain string          `json:"base_domain"`
+	DNS        DomainDNSResult `json:"dns"`
+}
+
+// BaseDomainWildcard calls POST /api/v1/settings/ingress/apps-base-domain/wildcard.
+func (c *Client) BaseDomainWildcard(ctx context.Context, confirm, replace bool) (BaseWildcard, error) {
+	var out BaseWildcard
+	err := c.do(ctx, http.MethodPost, "/api/v1/settings/ingress/apps-base-domain/wildcard", map[string]bool{"confirm": confirm, "replace": replace}, &out)
+	return out, err
+}
+
 // DomainChangeEffect is one thing a domain change created or replaced.
 type DomainChangeEffect struct {
 	Action      string `json:"action"`

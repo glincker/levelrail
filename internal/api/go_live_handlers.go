@@ -14,7 +14,7 @@ import (
 	"time"
 
 	"github.com/GLINCKER/levelrail/internal/dnsrecords"
-	"github.com/GLINCKER/levelrail/internal/ingress"
+	"github.com/GLINCKER/levelrail/internal/spec"
 	"github.com/GLINCKER/levelrail/internal/standalone"
 	"github.com/GLINCKER/levelrail/internal/store"
 	"github.com/libdns/libdns"
@@ -104,8 +104,8 @@ func (rt *Router) handleGoLiveRun(w http.ResponseWriter, r *http.Request) {
 	if !ok {
 		return
 	}
-	domain := strings.ToLower(strings.TrimSpace(r.PathValue("domain")))
-	if err := ingress.ValidateWildcardDomain(domain); err != nil || domain == "" {
+	domain, derr := spec.ValidateAppDomain(strings.TrimSpace(r.PathValue("domain")))
+	if derr != nil {
 		writeError(w, http.StatusBadRequest, "invalid domain")
 		return
 	}
@@ -215,7 +215,8 @@ func (rt *Router) handleGoLivePlan(w http.ResponseWriter, r *http.Request) {
 	policy := rt.effectiveAutomation(r.Context(), r, req.Automation)
 	out := goLivePlanResponse{Plans: make([]goLiveResult, 0, len(domains))}
 	for _, d := range domains {
-		if err := ingress.ValidateWildcardDomain(d); err != nil {
+		d, err := spec.ValidateAppDomain(d)
+		if err != nil {
 			writeError(w, http.StatusBadRequest, err.Error())
 			return
 		}
@@ -399,6 +400,8 @@ type dnsZoneResponse struct {
 	Found      bool   `json:"found"`
 	Zone       string `json:"zone,omitempty"`
 	Message    string `json:"message,omitempty"`
+	// Zones lists up to five public zone names the provider offers on a miss.
+	Zones []string `json:"zones,omitempty"`
 }
 
 // handleDNSZone handles GET /api/v1/dns/zone?domain=: whether a connected DNS
@@ -419,8 +422,13 @@ func (rt *Router) zoneLookup(ctx context.Context, domain string) dnsZoneResponse
 	case errors.Is(err, dnsrecords.ErrZoneNotFound):
 		out.Configured = true
 		out.Message = "the connected DNS provider does not manage a zone for this domain"
+		var miss *dnsrecords.ZoneMissError
+		if errors.As(err, &miss) {
+			out.Message = miss.Error()
+			out.Zones = miss.Listed
+		}
 	case err != nil:
-		rt.logger.Error("api: zone lookup failed", slog.String("error", err.Error()), slog.String("domain", domain))
+		rt.dnsDebug("dns zone lookup failed", err)
 		out.Message = "could not reach the DNS provider"
 	case t == nil:
 		out.Message = "no DNS provider is connected"

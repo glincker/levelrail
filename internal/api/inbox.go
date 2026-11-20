@@ -34,6 +34,9 @@ type inboxItemResource struct {
 	alertHistoryResource
 	Read     bool `json:"read"`
 	Resolved bool `json:"resolved"`
+	// Repeats counts older identical items folded into this row.
+	Repeats   int      `json:"repeats,omitempty"`
+	RepeatIDs []string `json:"repeat_ids,omitempty"`
 }
 
 type inboxPrefsResource struct {
@@ -159,7 +162,7 @@ func (rt *Router) handleListInbox(w http.ResponseWriter, r *http.Request) {
 		if e.App != "" && !canSee(e.App) {
 			continue
 		}
-		out = append(out, inboxItemResource{Read: e.Read, Resolved: e.Resolved, alertHistoryResource: alertHistoryResource{
+		out = append(out, inboxItemResource{Read: e.Read, Resolved: e.Resolved, Repeats: e.Repeats, RepeatIDs: e.RepeatIDs, alertHistoryResource: alertHistoryResource{
 			ID: e.ID, At: e.At.UTC(), RuleID: e.RuleID, RuleName: e.RuleName, RuleKind: e.RuleKind, ResourceID: e.ResourceID,
 			App: e.App, Node: e.Node, Severity: e.Severity, Event: e.Event, Outcome: e.Outcome, Detail: e.Detail,
 			SilenceID: e.SilenceID, ChannelID: e.ChannelID, Error: e.Error, Cert: certPayloadFrom(e.Cert)}})

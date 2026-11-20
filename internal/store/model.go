@@ -22,7 +22,7 @@ var ErrModelDomainTaken = errors.New("store: model domain already in use")
 
 // ModelSecretsKey is the internal/secrets namespace holding a model's
 // optional HuggingFace token.
-func ModelSecretsKey(name string) string { return "model/" + name }
+func ModelSecretsKey(name string) string { return "_cp/model/" + name }
 
 // Model is one AI model resource served from a GPU node. NodeID "" is the
 // local node. GPUCount -1 means every GPU on the node; GPUDeviceIDs win

@@ -6,6 +6,7 @@ import (
 	"log/slog"
 	"strconv"
 	"strings"
+	"time"
 
 	"github.com/GLINCKER/levelrail/internal/docker"
 )
@@ -17,6 +18,14 @@ const (
 
 	DefaultDrillMemoryMB = 1024
 	DefaultDrillCPUMilli = 1000
+
+	// DefaultDrillConcurrency is how many drills may run at once.
+	DefaultDrillConcurrency = 2
+	// DefaultDrillTimeout bounds one drill when no setting is wired.
+	DefaultDrillTimeout = 30 * time.Minute
+	// DefaultDrillPidsLimit caps processes in a drill helper container.
+	DefaultDrillPidsLimit = 512
+	EnvDrillPidsLimit     = "APP_BACKUP_DRILL_PIDS_LIMIT"
 
 	drillScratchLabel  = "drill.scratch"
 	drillScratchPrefix = "drill-"
@@ -82,4 +91,40 @@ func (r *DrillRunner) SweepOrphans(ctx context.Context) (int, error) {
 		r.log().Info("backup: removed orphan drill container", slog.String("container", c.Name))
 	}
 	return removed, firstErr
+}
+
+// DrillPidsFromEnv returns the process cap for drill helper containers.
+func DrillPidsFromEnv(lookup func(string) (string, bool)) int64 {
+	if v, ok := lookup(EnvDrillPidsLimit); ok {
+		if n, err := strconv.ParseInt(strings.TrimSpace(v), 10, 64); err == nil && n > 0 {
+			return n
+		}
+	}
+	return DefaultDrillPidsLimit
+}
+
+// hardenHelper isolates a volume helper container used during a drill.
+func (r *DrillRunner) hardenHelper(spec *docker.ContainerSpec) {
+	r.hardenScratch(spec)
+	spec.SecurityOpt = append(spec.SecurityOpt, "no-new-privileges")
+	spec.PidsLimit = r.PidsLimit
+	if spec.PidsLimit <= 0 {
+		spec.PidsLimit = DefaultDrillPidsLimit
+	}
+}
+
+// sweepDrill removes any scratch container of one drill, after a stopped run.
+func (r *DrillRunner) sweepDrill(ctx context.Context, drillID string) {
+	if r.Runtime == nil {
+		return
+	}
+	list, err := r.Runtime.ListByPrefix(ctx, drillScratchPrefix+drillID)
+	if err != nil {
+		return
+	}
+	for _, c := range list {
+		if c.Labels[drillScratchLabel] == "1" {
+			_ = r.Runtime.Remove(ctx, c.ID, true)
+		}
+	}
 }

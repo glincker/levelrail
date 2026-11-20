@@ -107,6 +107,17 @@
     "note": "Gilt für jede App. 0 behält den Startstandard. Eine Überschreibung pro App hat weiterhin Vorrang.",
     "invalid": "Geben Sie eine ganze Zahl von 0 bis {{max}} ein."
   },
+  "scope": {
+    "label": "Erforderliches Label",
+    "labelPlaceholder": "preview",
+    "labelHint": "Nur Pull Requests mit diesem Label erhalten eine Vorschau, und das Hinzufügen startet den Build. Nur GitHub und GitLab. Leer baut jeden Pull Request.",
+    "services": "Ausgelassene Dienste",
+    "servicesPlaceholder": "worker, docs",
+    "servicesHint": "Durch Kommas getrennte Dienste eines Multi-Service-Apps, die Vorschauen überspringen. Mindestens einer muss bleiben.",
+    "save": "Speichern",
+    "saved": "Vorschau-Einstellungen gespeichert.",
+    "error": "Die Vorschau-Einstellungen konnten nicht aktualisiert werden."
+  },
   "migrate": {
     "command": "Migrationsbefehl",
     "commandPlaceholder": "npm run migrate",

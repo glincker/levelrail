@@ -46,6 +46,10 @@
     "deploy": "Deployez des apps depuis un dépôt, une image ou un modèle.",
     "protect": "Levelrail configure HTTPS, fait des sauvegardes et vous prévient quand quelque chose casse.",
     "time": "La configuration prend environ 5 minutes. Chaque étape peut être ignorée.",
+    "tunnelHint": "Ce tableau de bord n'est pas public. Depuis votre ordinateur portable, ouvrez un tunnel, puis accédez à http://127.0.0.1:{{port}}.",
+    "tunnelLabel": "Commande de tunnel SSH",
+    "tunnelHost": "<server-ip>",
+    "tunnelUser": "<user>",
     "dismiss": "Ne plus afficher"
   },
   "profile": {

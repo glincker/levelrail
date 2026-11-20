@@ -9,6 +9,7 @@ import (
 	"strings"
 	"time"
 
+	"github.com/GLINCKER/levelrail/internal/deploylog"
 	"github.com/GLINCKER/levelrail/internal/deploytrace"
 	"github.com/GLINCKER/levelrail/internal/store"
 	"github.com/GLINCKER/levelrail/internal/telemetry"
@@ -26,7 +27,21 @@ type traceLister interface {
 	ListDeployTraceSteps(ctx context.Context, attemptID string) ([]store.DeployTraceStep, error)
 }
 
+// traceRows lists an attempt's trace steps without the static phase rows,
+// which only the phase reader consumes.
 func (rt *Router) traceRows(ctx context.Context, attemptID string) []store.DeployTraceStep {
+	all := rt.allTraceRows(ctx, attemptID)
+	out := all[:0:0]
+	for _, r := range all {
+		if r.Step != deploylog.StepStaticPhase {
+			out = append(out, r)
+		}
+	}
+	return out
+}
+
+// allTraceRows lists every stored trace row of an attempt, phase rows included.
+func (rt *Router) allTraceRows(ctx context.Context, attemptID string) []store.DeployTraceStep {
 	l, ok := rt.deployAttempts.(traceLister)
 	if !ok {
 		return nil
@@ -127,7 +142,7 @@ func (rt *Router) serveTraceSteps(ctx context.Context, w http.ResponseWriter, at
 func traceLogEntries(attemptID string, rows []store.DeployTraceStep) []telemetry.DeployLogEntry {
 	out := make([]telemetry.DeployLogEntry, 0, len(rows))
 	for _, r := range rows {
-		if r.Step == deploytrace.StepBuildStage {
+		if r.Step == deploytrace.StepBuildStage || r.Step == deploylog.StepStaticPhase {
 			continue // stage rows have their own view, not a log line
 		}
 		ts := r.StartedAt

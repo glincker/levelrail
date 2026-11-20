@@ -13,6 +13,8 @@ const (
 	KeyTokensDefaultTTLDays  = "tokens.default_ttl_days"  //nolint:gosec // setting key, not a credential
 	KeyTokensUnusedAlertDays = "tokens.unused_alert_days" //nolint:gosec // setting key, not a credential
 
+	KeyTokensSiteDeployMaxDays = "tokens.site_deploy_max_days" //nolint:gosec // setting key, not a credential
+
 	KeyTokensExpiryWarningDays      = "tokens.expiry_warning_days"          //nolint:gosec // setting key, not a credential
 	KeyTokensSystemRotationLeadMins = "tokens.system_rotation_lead_minutes" //nolint:gosec // setting key, not a credential
 )
@@ -45,6 +47,12 @@ func init() {
 		Apply: ApplyLive, CheckValue: intRangeCheck(1, maxTokenWarningDays),
 		Title:       "API token expiry warning",
 		Description: "Days before a token you created expires that it appears as one grouped row on Status, from 1 to 90. It also bounds how long an expired token stays listed and what counts as still in use. Platform-owned tokens never show.",
+	})
+	Register(Definition{
+		Key: KeyTokensSiteDeployMaxDays, Category: CategorySecurity, Kind: KindInt, Default: "365",
+		Env: "APP_PAGES_TOKEN_MAX_DAYS", Apply: ApplyLive, CheckValue: intRangeCheck(1, tokensDaysCeiling),
+		Title:       "Pages deploy token max lifetime",
+		Description: "Longest lifetime in days a Pages site deploy token may be created with, from 1 to 3650. A longer expires_in_days is rejected. The security policy ceiling still applies on top.",
 	})
 	Register(Definition{
 		Key: KeyTokensSystemRotationLeadMins, Category: CategorySecurity, Kind: KindInt, Default: "30",

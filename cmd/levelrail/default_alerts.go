@@ -3,6 +3,7 @@ package main
 import (
 	"context"
 	"log/slog"
+	"net/mail"
 	"os"
 	"strings"
 
@@ -38,6 +39,10 @@ func routeDefaultAlerts(ctx context.Context, logger *slog.Logger, adb *alerting.
 			admin = u.Email
 			break
 		}
+	}
+	if _, err := mail.ParseAddress(admin); err != nil {
+		logger.Info("routing default alerts skipped: first admin has no valid email address, rules stay in-app")
+		return
 	}
 	if _, err := adb.RouteDefaultRules(ctx, admin); err != nil {
 		logger.Warn("routing default alerts to admin email failed", slog.String("error", err.Error()))

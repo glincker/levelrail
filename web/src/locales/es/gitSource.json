@@ -69,6 +69,10 @@
     "release": {
       "label": "Tags y releases",
       "description": "Despliega solo con un push de tag o (solo en GitHub) una release publicada. Los push de rama nunca despliegan."
+    },
+    "manual": {
+      "label": "Solo manual",
+      "description": "Nunca despliega con un push. Despliega bajo demanda desde el panel, la CLI o la API."
     }
   },
   "buildPacks": {

@@ -22,7 +22,7 @@ func registerOrganizationTools(server *mcp.Server, client *apiclient.Client) {
 
 	addTool(server, &mcp.Tool{
 		Name:        "list_projects",
-		Description: "List every project: a lightweight label apps and databases are filed under, optionally under an organization. No owner or members.",
+		Description: "List projects: labels apps and databases are filed under, optionally under an organization. No owner or members.",
 	}, func(ctx context.Context, _ *mcp.CallToolRequest, _ struct{}) (*mcp.CallToolResult, []apiclient.ProjectResource, error) {
 		projects, err := client.ListProjects(ctx)
 		if err != nil {

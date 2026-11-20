@@ -294,13 +294,37 @@ func (rt *Router) mintReplacement(ctx context.Context, old tokenResource, expire
 }
 
 func (rt *Router) copyTokenScope(ctx context.Context, fromID, toID string) error {
-	sc := rt.tokenScopeOf(ctx, fromID)
-	if sc == nil {
-		return nil
+	scope := &store.APITokenScope{TokenID: toID}
+	found := false
+	if db := rt.teamDB(); db != nil {
+		s, err := db.GetAPITokenScope(ctx, fromID)
+		if err != nil {
+			return fmt.Errorf("read team scope: %w", err)
+		}
+		if s != nil {
+			scope.TeamID, scope.ProjectID, scope.Role, found = s.TeamID, s.ProjectID, s.Role, true
+		}
 	}
-	scope := &store.APITokenScope{TokenID: toID, TeamID: sc.TeamID, ProjectID: sc.ProjectID, Role: sc.TeamRole}
-	if sc.StackID != "" {
-		scope.Stack = &store.APITokenStackScope{TokenID: toID, StackID: sc.StackID, Verbs: sc.StackVerbs}
+	if ss := rt.tokenSiteScopes(); ss != nil {
+		s, err := ss.GetAPITokenSiteScope(ctx, fromID)
+		if err != nil {
+			return fmt.Errorf("read site scope: %w", err)
+		}
+		if s != nil {
+			scope.Site, found = &store.APITokenSiteScope{TokenID: toID, SiteName: s.SiteName}, true
+		}
+	}
+	if ss := rt.tokenStackScopes(); ss != nil {
+		s, err := ss.GetAPITokenStackScope(ctx, fromID)
+		if err != nil {
+			return fmt.Errorf("read stack scope: %w", err)
+		}
+		if s != nil {
+			scope.Stack, found = &store.APITokenStackScope{TokenID: toID, StackID: s.StackID, Verbs: s.Verbs}, true
+		}
+	}
+	if !found {
+		return nil
 	}
 	if err := rt.storeTokenScope(ctx, scope); err != nil {
 		return fmt.Errorf("copy scope: %w", err)

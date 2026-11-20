@@ -501,14 +501,6 @@ Because nothing on the source changed, no source-side rollback is needed. Keep D
 
 `levelrail-cli migrate coolify|dokploy|caprover` predates the importer. It reads the same sources but writes `app.yaml` files (or creates apps one by one with `--apply`) instead of talking to the server-side importer, and it does not handle databases, volumes as resources, idempotent re-runs or the network opt-in. Use `import platform` for new work.
 
-## See also
-
-- [Getting started](/getting-started): deploying your first app
-- [App spec reference](/app-spec-reference): full app.yaml schema
-- [Backups and storage](/backups-and-storage): dump and restore tools for engines the copy step does not cover
-- [Comparison](/comparison): architectural differences between platforms
-- [Coolify alternative](/coolify-alternative) and [Dokploy alternative](/dokploy-alternative): why people switch
-
 ## Guided app import from Coolify
 
 Settings, Import from another platform, "Move apps from Coolify" walks every application through plan, stage, verify, volumes and cutover. The CLI mirrors it:
@@ -581,3 +573,11 @@ Rollback is one click (`import cutover rollback`) at any point after the switch.
 | `APP_CUTOVER_RESUME_MAX_AGE` | `30m` | Oldest interrupted run that is resumed instead of rolled back. |
 
 A rollback restores the DNS record's value and type, not a Cloudflare proxy (orange cloud) flag the old record carried, so check that setting after rolling back a proxied record.
+
+## See also
+
+- [Getting started](/getting-started): deploying your first app
+- [App spec reference](/app-spec-reference): full app.yaml schema
+- [Backups and storage](/backups-and-storage): dump and restore tools for engines the copy step does not cover
+- [Comparison](/comparison): architectural differences between platforms
+- [Coolify alternative](/coolify-alternative) and [Dokploy alternative](/dokploy-alternative): why people switch

@@ -12,7 +12,7 @@ import (
 func registerAppRequestsTool(server *mcp.Server, client *apiclient.Client) {
 	addTool(server, &mcp.Tool{
 		Name:        "get_app_requests",
-		Description: "App HTTP health at the ingress: request rate, 4xx and 5xx rates, p50/p95/p99. Tells whether users are affected or a deploy changed latency.",
+		Description: "App HTTP health at the ingress: request rate, 4xx and 5xx rates, p50/p95/p99.",
 	}, func(ctx context.Context, _ *mcp.CallToolRequest, in appRequestsInput) (*mcp.CallToolResult, apiclient.AppRequestsResource, error) {
 		window := defaultMetricsWindow
 		if in.Since != "" {

@@ -81,7 +81,7 @@ func (h *IdentityHolder) Set(id *Identity) {
 func LocalAgentInfo() *agentpb.AgentInfo {
 	return &agentpb.AgentInfo{
 		Version: version.Version, Commit: buildCommit(), Os: runtime.GOOS, Arch: runtime.GOARCH,
-		Capabilities: []string{CapContainerSpecSecurity, CapExitTimes, CapContainerSpecFiles, CapBuildNetwork, CapContainerSpecWorkdir, CapContainerInspect, CapContainerSpecRuntime},
+		Capabilities: []string{CapContainerSpecSecurity, CapExitTimes, CapContainerSpecFiles, CapBuildNetwork, CapContainerSpecWorkdir, CapContainerInspect, CapContainerSpecRuntime, CapBuildPush, CapRegistryBearer},
 	}
 }
 
@@ -97,6 +97,10 @@ const CapContainerSpecWorkdir = "container_spec_workdir"
 // (tmpfs, ulimits, init, stop timeout, sysctls, cap_drop, pids limit).
 const CapContainerSpecRuntime = "container_spec_runtime"
 
+// CapRegistryBearer means the agent pulls with the spec's registry bearer token. An older agent
+// ignores it, so the control plane does not send the token there.
+const CapRegistryBearer = "registry_bearer"
+
 // CapContainerSpecFiles means the agent writes the spec's inline files into
 // the container before starting it.
 const CapContainerSpecFiles = "container_spec_files"
@@ -107,6 +111,9 @@ const CapBuildNetwork = "build_network"
 
 // ErrAgentLacksBuildNetwork refuses a restricted-network build on an agent that cannot enforce it.
 var ErrAgentLacksBuildNetwork = errors.New("agent: build node agent too old to enforce security.build_network, upgrade the agent or set the build network to open")
+
+// CapBuildPush means the agent can push a build's image to a registry by digest with a job token.
+const CapBuildPush = "build_push"
 
 // CapExitTimes means the agent sends exit state start and finish times, so zero means never started.
 const CapExitTimes = "exit_times"

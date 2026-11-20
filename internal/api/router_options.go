@@ -745,6 +745,12 @@ func WithDoctorIngressPorts(httpPort, httpsPort int) Option {
 	}
 }
 
+// WithIngressBoundPorts supplies the ports the ingress really bound, so links
+// are right when the configured port is 0 (an OS-chosen port, as in dev).
+func WithIngressBoundPorts(f func() (httpPort, httpsPort int)) Option {
+	return func(rt *Router) { rt.ingressBoundPorts = f }
+}
+
 // WithDoctorDiskWarningBytes overrides the free-space floor GET
 // /api/v1/system/doctor's disk_space check warns below. Without one
 // configured (or passed as 0), defaultDoctorDiskWarningBytes (1GiB)

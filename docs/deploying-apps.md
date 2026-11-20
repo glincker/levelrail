@@ -31,13 +31,6 @@ Domains and TLS, managed databases, and git provider setup have their own pages:
 - **One mutation changes the image.** `POST /api/v1/apps/{name}/deploys` points the app at a tag and returns immediately. A rollback is the same call with an older tag. `apps rollback`, the dashboard rollback button, and automatic rollback on a crashloop all use it, so there is no second code path that can drift.
 - **Traffic only moves once the new container is ready.** The readiness probe has to pass before the old container is drained. If it never passes, the old container keeps serving and the deploy fails with a reason. The exception is a single-replica app with a writable volume and a fixed host port or stream port: it cannot run two copies, so the old container is stopped first and restarted if the new one fails (see [Pinned host ports](/deploy-safety#pinned-host-ports)). Set `strategy: recreate` for any other app that needs a single writer on its data.
 
-<Accordion title="For contributors: where this lives in the source">
-- Backend: `internal/api/apps.go`, `apps_multi.go`, `apps_compose.go`, `deploys.go`, `promote.go`, `exec.go`, `resources_live_apply.go`, `scheduled_tasks.go`
-- CLI: `cmd/levelrail-cli/apps*.go`
-- Dashboard: `web/src/routes/apps/$name/*.tsx`
-- An app is one or more `store.DesiredService` rows under one `store.App`. Redeploy goes through `setDesiredImage`, restart through `RestartService`, stop and start through `UpdateServiceSuspended`.
-</Accordion>
-
 ## Create an app
 
 There are four ways to create one. All four accept inline secret values (`--secret KEY=VALUE` on the CLI) that are encrypted as part of the same call, so a `{ secret: true }` variable declared in the spec needs no follow-up call.
@@ -586,6 +579,10 @@ Restart gets a fresh `restart_nonce` folded into the container name hash, so "sa
 
 In the dashboard, each row of the Apps list has an actions menu with Restart, Stop or Start, Redeploy, View logs, View deploys, and Open domain (only when the app has a domain). Stop asks for confirmation. Redeploy re-triggers the current image tag, and lands in the approvals queue when the environment requires approval. The app header has the same Restart, Stop or Start, and Redeploy buttons, plus Promote, Clone, and Delete. The empty Apps list and the welcome screen offer **Create app**, **Browse templates**, and **Connect Git**.
 
+### Container restart policy
+
+Long-running app containers get a Docker restart policy so apps come back after a host reboot or a Docker restart. It is the runtime setting `containers.restart_policy`: `unless-stopped` (default), `on-failure` or `no`. Change it in Settings, Runtime, Deploys card, or with `levelrail-cli settings runtime set containers.restart_policy no`. On a small host (1 GB), many apps starting at boot at once compete for memory; `no` leaves the start order to the control plane's sequential start. A change applies to containers created on the next deploy or recreate, and existing containers keep their old policy.
+
 ### One-off commands and the terminal
 
 `POST /api/v1/apps/{name}/exec` runs one command and returns its result.
@@ -619,7 +616,15 @@ levelrail-cli apps run shop --service worker -- bin/migrate
 
 In the dashboard, the **Services** tab of a multi-service app has a replica stepper with Apply and a Restart button on each row. Apply sends the full service resource with the new replica count, so the server's own limits and errors show next to the control; Restart asks for confirmation first. Both need the deploy ability. A single-service app has no such column (use Scale on the Resources tab).
 
-`apps logs` follows live by default when stdout is a terminal and you gave no search flag; `--no-follow` prints stored entries instead. Piped output and `--json` never follow, so scripts keep the same stable output. The same actions are in the API (`PUT /api/v1/apps/{name}`, `POST /api/v1/apps/{name}/restart`, `GET /api/v1/apps/{name}/logs`, `POST /api/v1/jobs/runs`). See [Jobs](/jobs#run-a-command-with-apps-run) for `apps run`.
+`apps logs` follows live by default when stdout is a terminal and you gave no search flag; `--no-follow` prints stored entries instead. Piped output and `--json` never follow, so scripts keep the same stable output. To keep a slice of stored logs, give the window and a file: `--until` is an alias for `--to` (an RFC3339 end time; passing both is an error), and `--file` writes the entries to a file instead of stdout.
+
+```bash
+levelrail-cli apps logs shop --from 2026-11-19T22:00:00Z --until 2026-11-19T23:00:00Z --q error --file shop-errors.log
+```
+
+The file is created with mode 0600 and is never overwritten: if it already exists the command fails with `open --file` and the reason. `--file` counts as a search flag, so it prints stored entries rather than following live, and it uses the same format flags (`--json`, `--output`) as stdout.
+
+The same actions are in the API (`PUT /api/v1/apps/{name}`, `POST /api/v1/apps/{name}/restart`, `GET /api/v1/apps/{name}/logs`, `POST /api/v1/jobs/runs`). See [Jobs](/jobs#run-a-command-with-apps-run) for `apps run`.
 
 ### Scheduled tasks
 
@@ -780,53 +785,32 @@ The data comes from `GET /api/v1/apps/{name}/timeline` and `GET /api/v1/apps/{na
 
 ## Troubleshooting
 
-### If this fails
+### Common failures
 
 | Error or reason | Where you see it | Fix |
 | --- | --- | --- |
 | `a deploy for this app is already running` (409) | `POST .../builds` or `POST .../deploys` | Wait with `levelrail-cli apps wait NAME`, or cancel the running build with `POST /api/v1/apps/{name}/builds/{id}/cancel`. |
-| `insufficient disk space at "...": N bytes free, need at least M bytes` | Build fails before BuildKit starts | Free disk space, or lower the floor with `APP_MIN_BUILD_DISK_MB`. See the disk preflight note under [From a git repository](#from-a-git-repository). |
 | Any deploy reason such as `ReadinessFailed` | `apps deploys list` | See [Status reasons](/status-reasons) for the meaning and next step of every reason. |
-| `image_pull_failed` (`manifest unknown`, `unauthorized`) | `apps deploys show NAME` | Fix the image name or tag, or add a registry credential. |
+| `image_pull_failed` (`manifest unknown`, `unauthorized`) | `apps deploys show NAME` | Verify the image name and tag, or add a registry credential in Settings > Registries. A private registry must be reachable from the control plane. |
 | `registry_rate_limited` (`toomanyrequests`) | `apps deploys show NAME` | Add a Docker Hub token under Integrations, or wait out the limit. See [private registries](/private-registries#docker-hub). |
+| Deploy stuck waiting for readiness | `apps deploys show NAME`, `apps timeline NAME` | Likely the readiness probe is failing, the app is not binding to the configured port, or the container crashed at startup. Check `levelrail-cli apps logs NAME --follow`. If the port is wrong, update it in the app settings and redeploy. If the readiness path is wrong, update the app spec. If the container is crashing, fix the code before redeploying. |
+| `disk_full` (build fails with `insufficient disk space`) | `apps deploys show NAME` | The build node has less free space than `APP_MIN_BUILD_DISK_MB` (default 1024 MB, which is 1 GiB). On the control plane run `docker image prune -a --force` and `docker builder prune`, add disk if needed, or set `APP_MIN_BUILD_DISK_MB` and restart the control plane. |
+| Container does not listen on the configured port | `apps logs NAME --follow` | Look for bind errors or startup failures and check the app's port setting matches what the process listens on. Update the port, or fix the code or configuration, and redeploy. |
 | `apps wait` exits 5 | CI step | The deploy finished as a failure. Run `apps deploys show NAME` for the reason. |
 | `apps wait` exits 6 | CI step | The wait timed out before the deploy finished. Raise `--timeout` or check the attempt's status. |
-
-### Deploy is stuck waiting for readiness
-
-**Likely cause:** The readiness probe is failing, the app is not binding to the configured port, or the container crashed during startup.
-
-**How to confirm:** Run `levelrail-cli apps deploys show <name>` for the failed or blocked attempt and its reason. Run `levelrail-cli apps timeline <name>` to see what changed around the deploy.
-
-**Fix:** Check the app's logs with `levelrail-cli apps logs <name> --follow`. If the port is wrong, update it in the app settings and redeploy. If the readiness path is wrong, update the app spec. If the container is crashing, check logs for errors and fix the code before redeploying.
-
-### Build fails with insufficient disk space
-
-**Likely cause:** The build node has less free space than `APP_MIN_BUILD_DISK_MB` (default 1024 MB, which is 1 GiB).
-
-**How to confirm:** Run `levelrail-cli apps deploys show <name>`. The failure code is `disk_full`.
-
-**Fix:** On the control plane, run `docker image prune -a --force` and `docker builder prune`. If more space is needed, add disk. To change the floor, set `APP_MIN_BUILD_DISK_MB` on the control plane and restart it.
-
-### Image pull fails
-
-**Likely cause:** Image name or tag is incorrect, registry requires authentication, or registry is unreachable.
-
-**How to confirm:** Run `levelrail-cli apps deploys show <name>`. The failure code is `image_pull_failed`, with the reason in the excerpt.
-
-**Fix:** Verify the image name and tag. If authentication is needed, add the credential in Settings > Registries. If the registry is private, ensure it is reachable from the control plane.
-
-### Container does not listen on the configured port
-
-**Likely cause:** Application is binding to a different port, or the process fails to start.
-
-**How to confirm:** Check `levelrail-cli apps logs <name> --follow` for bind errors or startup failures. Verify the port in the app settings matches what the application is listening on.
-
-**Fix:** Update the port in the app settings if the app is listening on a different port. If the app is not starting, fix the code or configuration and redeploy.
 
 ### Still stuck
 
 For every failure code, see [Deploy failures](/deploy-failures). Run `levelrail-cli apps diagnose <name>` to explain a failed deploy or crash loop, and attach its output to a support request.
+
+## For contributors
+
+<Accordion title="For contributors: where this lives in the source">
+- Backend: `internal/api/apps.go`, `apps_multi.go`, `apps_compose.go`, `deploys.go`, `promote.go`, `exec.go`, `resources_live_apply.go`, `scheduled_tasks.go`
+- CLI: `cmd/levelrail-cli/apps*.go`
+- Dashboard: `web/src/routes/apps/$name/*.tsx`
+- An app is one or more `store.DesiredService` rows under one `store.App`. Redeploy goes through `setDesiredImage`, restart through `RestartService`, stop and start through `UpdateServiceSuspended`.
+</Accordion>
 
 ## See also
 

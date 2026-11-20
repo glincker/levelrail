@@ -236,6 +236,7 @@ func (s *bootState) wireRouter() {
 	if buildLimiter != nil {
 		apiRouter.SetBuildLoad(buildLimiter)
 		apiRouter.SetBuildRunnerNodes(buildRunnerNodeSource(db, agentRegistry, hostReports))
+		apiRouter.SetBuilderProber(api.NewBuilderProber(agent.NewBuildDispatcher(agentRegistry)))
 		build.SetQueueGate(apiRouter.BuildQueueGate())
 	}
 	if wh, ok := webhookHandler.(*webhook.Handler); ok {
@@ -285,6 +286,8 @@ func (s *bootState) wireRouter() {
 		// WriteTimeout is omitted: it cannot exempt long-lived streams.
 		ReadTimeout: 30 * time.Second,
 		IdleTimeout: 120 * time.Second,
+		// Read once at start, so a saved change applies on the next restart.
+		MaxHeaderBytes: runtimesettings.ClampLimit(runtimesettings.KeyAPIMaxHeaderBytes, apiRouter.RuntimeSettings().Int(ctx, runtimesettings.KeyAPIMaxHeaderBytes)),
 	}
 	s.apiRouter = apiRouter
 	useSharedGitSettings(apiRouter.RuntimeSettings())
@@ -381,6 +384,9 @@ func (s *bootState) startMesh() error {
 	edgeInfo := edge.doctorInfo()
 	edgeInfo.Snapshot = setupIngressSnapshot(ctx, logger, ingressDriver, db, secretsManager, edge)
 	edgeInfo.LiveMaxBodyBytes = edge.liveMaxBodyBytes(db, logger, apiRouter.RuntimeSettings)
+	edgeInfo.LiveTrustedProxies = edge.liveTrustedProxies(db, logger, apiRouter.RuntimeSettings)
+	// Publish before the first reconcile pass so the API trusts the saved list from boot.
+	edgeInfo.LiveTrustedProxies(ctx)
 	apiRouter.SetDoctorIngressEdge(edgeInfo)
 	apiRouter.SetIngressResilience(api.IngressResilience{
 		Status:  ingressDriver.SnapshotStatus,
@@ -467,7 +473,7 @@ func (s *bootState) startReconciler() {
 		networkPrefix:                b.ShortName,
 		firewallRulePrefix:           b.RuleCommentPrefix(),
 		instanceID:                   instanceID,
-		livenessTracker:              application.NewLivenessTracker(),
+		livenessTracker:              s.liveness(),
 		imageIDs:                     application.NewImageIDCache(reconcile.FullResyncFromEnv(os.Getenv)),
 		restartBackoff:               restartBackoff,
 		retainedDeploys:              &deployurls.Guard{Store: db, Max: deployurls.MaxUnreadyFromEnv(os.Getenv)},
@@ -585,4 +591,12 @@ func cloudRunBase(engineDir string) string {
 		return ""
 	}
 	return dir
+}
+
+// liveness returns the one shared liveness tracker, created on first use so alerting can observe it.
+func (s *bootState) liveness() *application.LivenessTracker {
+	if s.livenessTracker == nil {
+		s.livenessTracker = application.NewLivenessTracker()
+	}
+	return s.livenessTracker
 }

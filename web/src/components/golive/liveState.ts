@@ -38,6 +38,11 @@ export function isAutomaticAddress(domain: string): boolean {
   return FREE_PROVIDER_HOST.test(domain)
 }
 
+/** isLocalAddress matches the loopback dev hosts, which never need DNS setup. */
+export function isLocalAddress(domain: string): boolean {
+  return /(^|\.)localhost(:\d+)?\/?$/i.test(domain)
+}
+
 /** showsLiveState is false for an automatic address that is not yet proven: it needs no DNS setup, so a waiting badge would mislead. */
 export function showsLiveState(
   domain: string,
@@ -52,10 +57,14 @@ export function showsLiveState(
 export function pickAppLiveEntry(
   entries: LiveBadgeEntry[] | undefined,
   app: string,
+  skipLocal = false,
 ): LiveBadgeEntry | undefined {
   const own =
     entries?.filter(
-      (e) => e.app === app && showsLiveState(e.domain, e.state),
+      (e) =>
+        e.app === app &&
+        showsLiveState(e.domain, e.state) &&
+        !(skipLocal && isLocalAddress(e.domain)),
     ) ?? []
   return own.reduce<LiveBadgeEntry | undefined>(
     (best, e) =>

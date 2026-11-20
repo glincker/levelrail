@@ -84,6 +84,7 @@ Subcommands: list, run, show
 Usage:
   levelrail-cli backups drill run --backup ID [--wait] [flags]   restore a backup into a scratch resource, validate it, destroy it
   levelrail-cli backups drill list [--app A --volume V | --database D] [--limit N]   drill history
+  levelrail-cli backups drill <app|bkt_ID|control-plane> [--volume V]   drill the latest backup of an app volume, a target or the control plane
   levelrail-cli backups drill show <drill-id>                    one drill's checks and error
 
 A drill proves a restore works. A failed drill exits non-zero.

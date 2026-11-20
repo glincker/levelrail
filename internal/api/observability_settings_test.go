@@ -121,3 +121,27 @@ func TestObservabilityRoutes_RequireAuth(t *testing.T) {
 		{http.MethodPut, "/api/v1/settings/observability"},
 	})
 }
+
+func TestObservabilityExportRoutes_SensitiveTokenForbidden(t *testing.T) {
+	rt, db := newTestRouter(t)
+	const plaintext = "sensitive-token" //nolint:gosec // fake fixture, not a real credential
+	if err := db.SaveAPIToken(context.Background(), store.APIToken{
+		ID: "tok_sens", Name: "sens", TokenHash: hashToken(plaintext), Abilities: []string{AbilityWriteSensitive, AbilityReadSensitive}, CreatedAt: time.Now(),
+	}); err != nil {
+		t.Fatalf("seed token: %v", err)
+	}
+	for _, c := range []struct{ method, path string }{
+		{http.MethodGet, "/api/v1/observability/exports"},
+		{http.MethodPost, "/api/v1/observability/exports"},
+		{http.MethodDelete, "/api/v1/observability/exports/x"},
+		{http.MethodPost, "/api/v1/observability/exports/x/test"},
+	} {
+		req := httptest.NewRequest(c.method, c.path, strings.NewReader(`{}`))
+		req.Header.Set("Authorization", "Bearer "+plaintext)
+		rec := httptest.NewRecorder()
+		rt.Handler().ServeHTTP(rec, req)
+		if rec.Code != http.StatusForbidden {
+			t.Errorf("%s %s: status = %d, want 403", c.method, c.path, rec.Code)
+		}
+	}
+}

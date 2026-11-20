@@ -217,9 +217,9 @@ Log collection resumes where it stopped. After a control plane restart, or when 
 It returns an excerpt of the newest matching lines, never a full dump: at most `--max-lines` lines (default 100) and a byte cap (default 8 KB, set with `--max-bytes` or `APP_MCP_LOG_MAX_BYTES`), plus counts and a notice such as `showing 40 of 1,812 matching lines (newest), use since/until or level to narrow`. It uses stored search with `level` and `limit`. `--json` prints the excerpt as one object.
 </Accordion>
 <Accordion title="Download and database logs">
-**Download** takes the same `from`, `to` and `q` filters as stored search and returns a plain-text attachment (not JSON), capped at 5,000 lines. There is no CLI command today: use the browser download, or `curl` with query params and a bearer token.
+**Download** takes the same `from`, `to` and `q` filters as stored search and returns a plain-text attachment (not JSON), capped at 5,000 lines. From the CLI, `levelrail-cli apps logs --file <path>` writes the entries to a new file (mode 0600, never overwrites). The browser download and `curl` with query params and a bearer token also work.
 
-**Database logs** mirror the app endpoints exactly (same query params, same SSE shape) and use the resource ID prefix `database:` instead of `service:`. There is no download endpoint for databases yet.
+**Database logs** mirror the app endpoints exactly (same query params, same SSE shape) and use the resource ID prefix `database:` instead of `service:`. Databases also have a download endpoint, `GET /api/v1/databases/{name}/logs/download`, and `levelrail-cli databases logs <name> --file <path>` writes it to a new file.
 </Accordion>
 <Accordion title="Reading lines in the log viewer (client side)">
 - Each row gets a subtle level tag (ERR, WRN, INF, DBG) detected from JSON `level` or `severity` keys, `level=WARN` style key/value pairs, or a leading `ERROR`, `WARN`, `INFO` or `DEBUG` prefix.
@@ -228,10 +228,6 @@ It returns an excerpt of the newest matching lines, never a full dump: at most `
 - "Jump to first error" scrolls to the first error or stderr line in the current view.
 </Accordion>
 </AccordionGroup>
-
-## Service level objectives
-
-An app's Alerts section shows one card per `slo_burn` rule: the error budget remaining for the window, a status (healthy, burning, paging, or no traffic) and the burn rate of each alert tier, computed from the app's ingress request metrics exactly as the rule evaluates them (`GET /api/v1/apps/{name}/slo-preview`, `levelrail-cli apps alerts slo`). An app that serves traffic with no SLO is offered a one click rule instead.
 
 ## Database slow query log
 
@@ -260,6 +256,46 @@ Apps can also report errors with any Sentry SDK and read them as grouped issues 
 ## Exporting to OpenTelemetry
 
 Metrics and logs can be pushed to an OTLP/HTTP collector, opt-in per destination. Pull-based, node-local collection stays the default and nothing leaves the node until you add a destination. The export set includes per-app container metrics, platform self metrics (reconcile lag, deploy duration and queue depth, agent connections) and container logs. See [Data export](/data-export#otlp-logs) and `levelrail-cli otel destinations`.
+
+## Export presets
+
+A preset turns a short provider form into the right export destinations: the endpoint for your region, the auth headers built from your secret, and sensible signals. Pick one from the dashboard, or use the CLI:
+
+```bash
+levelrail-cli observability presets
+levelrail-cli observability add axiom --name prod --field dataset=levelrail --field token=env:AXIOM_TOKEN
+levelrail-cli observability test prod
+levelrail-cli observability list
+levelrail-cli observability rm prod
+```
+
+`test` sends one synthetic log line and one metric per signal and prints either `accepted` or the exact HTTP status with a short fix for 401, 403 and 404. Credentials are stored encrypted, never returned by the API and never logged. A field written as `env:NAME` is read from that environment variable. Endpoints follow the same internal address rules as every other export destination.
+
+The API is `GET /api/v1/observability/presets`, `GET` and `POST /api/v1/observability/exports`, `POST /api/v1/observability/exports/{id}/test` and `DELETE /api/v1/observability/exports/{id}`. Each export is a set of ordinary data export destinations named `obs/<name>/<preset>/<signal>`, so [Data export](/data-export) status and alerts apply to them too. Managing exports, including listing them, needs a root token; any other token gets a 403. The preset catalog is a plain read. Traces are not exported by presets yet.
+
+### Grafana Cloud
+
+Fields: the OTLP endpoint of your stack (without a signal path), the instance ID and an access policy token with `logs:write` and `metrics:write`. Logs and metrics are on by default. Unverified: the Basic auth format (instance ID as user, token as password) follows the Grafana docs but has not been tested against a live stack.
+
+### Datadog
+
+Fields: your Datadog site and an API key. Logs are on by default. Metrics use the OTLP intake and are off by default, add them with `--signal logs,metrics`. Sites include US1, US3, US5, EU, AP1, AP2 and UK1. The metrics intake accepts delta temporality only and counters are exported as cumulative sums, so a metrics test can be rejected with a 400. Unverified: only US1 has been tested, the other site hosts follow Datadog's documented pattern.
+
+### Axiom
+
+Fields: a dataset that already exists, the region (`us` or `eu`) and an API token with ingest permission. Logs and metrics are on by default. Metrics are sent to the regional edge domain with the `x-axiom-metrics-dataset` header and need a metrics dataset.
+
+### Honeycomb
+
+Fields: the region (`us` or `eu`), an ingest key and, for Classic environments only, a dataset. Logs and metrics are on by default.
+
+### Better Stack
+
+Fields: the ingesting host and the token of an HTTP source, both shown in the source settings. Only logs are exported by this preset. A 403 means the token or host is wrong.
+
+### Generic OTLP/HTTP
+
+Fields: the base endpoint of any OTLP/HTTP collector, plus an optional auth header name and value. Logs go to `/v1/logs` and metrics to `/v1/metrics`. Status 400 is permanent, 413 means the payload is too large, and 429, 502, 503 and 504 are retried.
 
 ## External log drains
 
@@ -291,6 +327,36 @@ The response includes `resource_count`: how many placed services contributed a s
 <Note>
 Container restart count, build duration and deploy frequency are recorded as discrete events or computed client-side from deploy-attempt history, not as continuous collectors.
 </Note>
+
+## App metrics endpoint
+
+An app that serves metrics in the text exposition format can have them stored next to platform metrics. Set the container port and path once:
+
+```
+levelrail-cli apps metrics web --scraped --scrape-port 9100 --scrape-path /metrics
+levelrail-cli apps metrics web --scraped                       # list stored names
+levelrail-cli apps metrics web --scraped --metric http_requests_total --since 6h
+levelrail-cli apps metrics web --scraped --scrape-off
+```
+
+The same target and a metric picker sit at the bottom of the app's Metrics page. API: `GET|PUT|DELETE /api/v1/apps/{name}/scrape-target` and `GET /api/v1/apps/{name}/scraped-metrics[?metric=&from=&to=]`.
+
+The control plane only ever connects to the app container's own address on its own app network; the port and path are the only inputs, a path with a host, query or `..` is refused, and redirects are never followed. Invalid metric or label names, label names over 64 bytes, label values that are not UTF-8, non-finite values and series with too many labels are dropped. Each label set is stored once and samples point to it. A failed scrape records a short fixed reason (refused, timed out, status, too large, redirect) on the target, never the raw error. Limits are runtime settings that apply live (each seeded by its env var):
+
+| Setting | Default | What it bounds |
+| --- | --- | --- |
+| `app_metrics.scrape_interval` | 60s | time between scrapes |
+| `app_metrics.scrape_timeout` | 5s | one scrape, connect plus body |
+| `app_metrics.max_body_bytes` | 1048576 | response size; larger fails the scrape |
+| `app_metrics.max_series` | 500 | distinct series stored per scrape |
+| `app_metrics.max_labels` | 10 | labels per series |
+| `app_metrics.retention_hours` | 72 | how long samples are kept |
+| `app_metrics.query_max_points` | 10000 | samples one query returns |
+| `app_metrics.max_label_bytes` | 65536 | label text kept per scrape |
+| `app_metrics.max_stored_rows` | 500000 | samples stored per app; at the limit new scrapes are dropped |
+| `app_metrics.scrape_workers` | 4 | apps scraped at once (1 to 16) |
+
+Reads need read access to the app, so a team member only sees apps of their own teams.
 
 ## Request metrics (RED)
 
@@ -398,7 +464,7 @@ The local node reads its own figures. A remote node's agent sends a periodic hos
 
 **The `fleet` rollup** sums every node's numbers.
 
-- `total_cpu_percent` is a raw sum, not a percentage of fleet capacity (no node reports its core count).
+- `total_cpu_percent` is a raw sum, not a percentage of fleet capacity (the node resource usage endpoint does not use the core count agents report).
 - `memory_used_percent` and `disk_used_percent` are only computed from nodes that reported a capacity figure. `nodes_with_memory_capacity` and `nodes_with_disk_capacity` say how many of `node_count` that covers, so a 3-node fleet where only 1 node has host metrics reads as "1/3 nodes reporting", never as if the percentage covered the whole fleet.
 
 ## Capacity forecast
@@ -725,6 +791,27 @@ An app with no traffic, or fewer than `APP_SLO_MIN_REQUESTS` requests in a tier'
 - Preview without creating a rule: `levelrail-cli apps alerts slo <app> [--slo 99.9]`, `GET /api/v1/apps/{name}/slo-preview`, or the `get_slo_status` MCP tool.
 - An app with traffic and no SLO rule gets a suggestion on its alerts page to create a default 99.9% availability SLO.
 
+On the app's Alerts section, each `slo_burn` rule has a card: the error budget remaining for the window, a status (healthy, burning, paging, or no traffic) and the burn rate of each alert tier, computed from the app's ingress request metrics exactly as the rule evaluates them (`GET /api/v1/apps/{name}/slo-preview`, `levelrail-cli apps alerts slo`).
+
+## Default certificate expiry alerts
+
+The seeded `Certificate expires within N days` rules (14, 7, 3 and 1 days) are tuned to stay quiet:
+
+- One alert per certificate. When a certificate matches several windows, only the tightest window notifies. Wider windows resolve silently, and severity rises as time runs out.
+- Certificates the platform handles itself are skipped: the internal self-signed certificate used for local, sslip and dev hosts, and ACME certificates whose automatic renewal is not yet overdue. You are alerted when renewal is failing, stalled or overdue, or when the certificate is inside the last-resort window.
+- Notify once when the state changes, then at most one reminder per interval until the certificate is renewed, which resolves the alert on its own.
+- The default destination is the Inbox and the dashboard. Email and other channels are opt-in per rule. The Inbox card shows the domain, issuer, time left and why, with a `Renew now` or `Check DNS and retry` button, a `Connect a notification channel` button when no channel exists, and an `Also email me` toggle that is available only when an email provider is connected and your address is verified.
+- Opt-in emails carry the same facts plus buttons that open the domain page, the Inbox and notification settings. The buttons need a public dashboard address (`APP_DASHBOARD_URL` or `APP_PUBLIC_HOST`); without one the email has no links. Links open pages only, the fix still needs a signed-in click.
+
+| Variable | Default | Meaning |
+| --- | --- | --- |
+| `APP_DEFAULT_ALERT_CERT_DAYS` | `14,7,3,1` | Windows seeded on first boot |
+| `APP_ALERT_CERT_LAST_RESORT_HOURS` | `72` | Alert regardless of renewal state inside this window |
+| `APP_ALERT_CERT_REMINDER_INTERVAL` | `24h` | Minimum gap between reminders |
+| `APP_ALERT_CERT_RENEW_RATIO` | `0.333` | Fraction of lifetime left at which the ingress renews |
+
+API: `GET` and `PUT /api/v1/alert-defaults/cert-expiry/email` read and set the email opt-in.
+
 ## Alert templates
 
 An app's alerts page has an "Add recommended rules" button with an app type (web, worker, database). A web app gets crash loop, 5xx rate above 5%, p95 above 1s, CPU above 90% and a 99.9% availability SLO; workers and databases get crash loop and CPU. Rules that already exist by name are skipped, so it is safe to press twice. The new rules notify the first connected channel.
@@ -1014,22 +1101,16 @@ levelrail-cli push-subscriptions revoke <id>
 </Accordion>
 <Accordion title="Node metrics">
 - True host-level readings (real free/total CPU or memory) for any node other than the one running the control plane. `GET /api/v1/nodes/{id}/metrics` and `GET /api/v1/nodes/resource-usage` both sum already-collected per-container samples. A remote node's `memory_total_bytes` and `memory_available_bytes` come from its agent's host report on `nodes/resource-usage` only (not as time series), and its `disk_used_bytes` and `disk_total_bytes` stay absent rather than wrong. A future per-node agent writing host samples under the same `node:<id>` resource-ID format would show up in both endpoints automatically.
-- No node reports its own CPU core count, so the fleet-wide `total_cpu_percent` is a raw sum, not a percentage of fleet CPU capacity.
+- Remote agents report their CPU core count in the host report (used by placement and the builders list as `cpu_cores`), but the node resource usage endpoint does not use it yet, so the fleet-wide `total_cpu_percent` is still a raw sum, not a percentage of fleet CPU capacity.
 - Databases placed on a node do not appear in summed CPU and memory metrics.
 </Accordion>
 <Accordion title="CLI and API">
-- No `levelrail-cli apps logs download` wrapper (the endpoint exists and works via `curl`).
-- No download endpoint for database logs.
-- The slow query threshold is control-plane-wide (`APP_DATABASE_SLOW_QUERY_THRESHOLD_MS`), not configurable per database.
 - Postgres slow-query parsing only captures the single log line the `duration:` entry occupies. A query long enough to wrap, or followed by a `DETAIL` or parameters line, is not stitched back together.
-- The crashloop alert's attached lines are not stored with the alert. `GET /api/v1/apps/{name}/failure-context` returns the current tail instead.
 - The route breakdown is a bounded template of the URL path (first 3 segments, ids collapsed), not full paths, and it is not recorded for non-ingress traffic.
 - The investigation timeline does not include alert fire and resolve events yet. Use `levelrail-cli alerts history`.
 </Accordion>
 <Accordion title="Fixed configuration and scope">
-- The alert evaluation interval (30s) is fixed, not env-configurable (unlike per-kind thresholds).
 - No alert-rule-specific change history (visible only in the generic `GET /api/v1/audit-log`).
-- Grouping, streak, flap and held-notification state is in memory and does not survive a control plane restart.
 - Silences and history are global, not scoped by IAM policy on individual apps: any principal with the base `read` or `write` ability can list or create them for any app.
 </Accordion>
 </AccordionGroup>
@@ -1042,9 +1123,9 @@ Likely cause: The app was just created and metrics have not been collected yet (
 
 How to confirm: Check the app status: `levelrail-cli apps status <app>` should show it is running. Try generating some traffic: `curl https://<app-domain>` or run a load test. Wait 30 seconds and query metrics again: `levelrail-cli apps metrics <app> --metric cpu_percent`.
 
-Fix: No action needed for a just-created app; wait for the first sample. For an idle app, generate traffic to see metrics. If an app is running but metrics are still missing after 2 minutes, check if the app is actually receiving traffic.
+Fix: Wait for the first sample on a new app, and generate traffic for an idle one. If metrics are still missing after 2 minutes on a running app, check that it receives traffic.
 
-Still stuck: Check the control plane logs for telemetry errors: `levelrail logs --since 5m | grep telemetry`.
+Still stuck: check the control plane logs: `levelrail logs --since 5m | grep telemetry`.
 
 ### Alert not firing even though threshold is exceeded
 
@@ -1064,15 +1145,13 @@ How to confirm: Test the channel: `levelrail-cli channels test <channel-id>`. Ch
 
 Fix: Verify the webhook URL is correct and the service is reachable. For Slack, regenerate the webhook URL if it has expired. For email, ensure the email address is correct. Update the channel: `levelrail-cli channels update <channel-id> --notify-url <new-url>`, then test again.
 
-Still stuck: See [Notification channels](/observability#notification-channels) for setup per provider.
-
 ### Logs not showing up in the explorer
 
 Likely cause: The app was just created (first logs take a moment), or the app is not generating any logs.
 
-How to confirm: Check if the app is running: `levelrail-cli apps status <app>`. Verify it is actually writing logs: check the source code to ensure logs are being emitted. Query the logs: `levelrail-cli apps logs <app> --since 5m`.
+How to confirm: `levelrail-cli apps status <app>` shows it running, and `levelrail-cli apps logs <app> --since 5m` returns lines.
 
-Fix: Wait a moment for logs to be collected and indexed. If the app is not emitting logs, that is expected (silence from a healthy app is normal). Generate some activity: make a request to the app, or check application logs in the source (container stdout/stderr).
+Fix: Wait a moment for logs to be collected and indexed. A healthy app that writes nothing to stdout or stderr has no logs to show, so make a request to it to generate some.
 
 Still stuck: Check if logs exist at all: `levelrail-cli apps logs <app> --since 24h | head -20`.
 
@@ -1084,8 +1163,6 @@ How to confirm: Check if slow queries are being logged: `levelrail-cli databases
 
 Fix: Lower the slow query threshold if it is too high: on the control plane, set `APP_DATABASE_SLOW_QUERY_THRESHOLD_MS` to a lower value (default is 1000 ms). Run a slow query intentionally to test: `psql ... -c "SELECT COUNT(*) FROM <large-table>"`. Wait for the next sample interval (15 seconds) and check again.
 
-Still stuck: See [Slow queries](/observability#database-slow-query-log) for per-database configuration.
-
 ### Alert history shows many flapping alerts
 
 Likely cause: The metric is oscillating around the threshold, causing the alert to fire and resolve repeatedly.
@@ -1093,8 +1170,6 @@ Likely cause: The metric is oscillating around the threshold, causing the alert 
 How to confirm: Check the alert history: `levelrail-cli alerts history --app <app> --rule <rule-id>` shows fire and resolve events. Look for rapid alternation. Check the metric graph: `levelrail-cli apps metrics <app> --metric <metric-name>` shows the value oscillating.
 
 Fix: Adjust the rule's flap threshold or flap window to require more consecutive violations before firing: `levelrail-cli apps alerts update <app> <rule-id> --flap-threshold 3 --flap-window 5m`. This prevents noise while keeping the alert useful.
-
-Still stuck: See [Alert rules](/observability#alert-rules) for flap configuration details.
 
 ## See also
 
@@ -1115,52 +1190,3 @@ To transform logs before storage or export, see [Log pipelines](/log-pipelines) 
   </Card>
 </CardGroup>
 
-## Default certificate expiry alerts
-
-The seeded `Certificate expires within N days` rules (14, 7, 3 and 1 days) are tuned to stay quiet:
-
-- One alert per certificate. When a certificate matches several windows, only the tightest window notifies. Wider windows resolve silently, and severity rises as time runs out.
-- Certificates the platform handles itself are skipped: the internal self-signed certificate used for local, sslip and dev hosts, and ACME certificates whose automatic renewal is not yet overdue. You are alerted when renewal is failing, stalled or overdue, or when the certificate is inside the last-resort window.
-- Notify once when the state changes, then at most one reminder per interval until the certificate is renewed, which resolves the alert on its own.
-- The default destination is the Inbox and the dashboard. Email and other channels are opt-in per rule. The Inbox card shows the domain, issuer, time left and why, with a `Renew now` or `Check DNS and retry` button, a `Connect a notification channel` button when no channel exists, and an `Also email me` toggle that is available only when an email provider is connected and your address is verified.
-- Opt-in emails carry the same facts plus buttons that open the domain page, the Inbox and notification settings. The buttons need a public dashboard address (`APP_DASHBOARD_URL` or `APP_PUBLIC_HOST`); without one the email has no links. Links open pages only, the fix still needs a signed-in click.
-
-| Variable | Default | Meaning |
-| --- | --- | --- |
-| `APP_DEFAULT_ALERT_CERT_DAYS` | `14,7,3,1` | Windows seeded on first boot |
-| `APP_ALERT_CERT_LAST_RESORT_HOURS` | `72` | Alert regardless of renewal state inside this window |
-| `APP_ALERT_CERT_REMINDER_INTERVAL` | `24h` | Minimum gap between reminders |
-| `APP_ALERT_CERT_RENEW_RATIO` | `0.333` | Fraction of lifetime left at which the ingress renews |
-
-API: `GET` and `PUT /api/v1/alert-defaults/cert-expiry/email` read and set the email opt-in.
-
-
-## App metrics endpoint
-
-An app that serves metrics in the text exposition format can have them stored next to platform metrics. Set the container port and path once:
-
-```
-levelrail-cli apps metrics web --scraped --scrape-port 9100 --scrape-path /metrics
-levelrail-cli apps metrics web --scraped                       # list stored names
-levelrail-cli apps metrics web --scraped --metric http_requests_total --since 6h
-levelrail-cli apps metrics web --scraped --scrape-off
-```
-
-The same target and a metric picker sit at the bottom of the app's Metrics page. API: `GET|PUT|DELETE /api/v1/apps/{name}/scrape-target` and `GET /api/v1/apps/{name}/scraped-metrics[?metric=&from=&to=]`.
-
-The control plane only ever connects to the app container's own address on its own app network; the port and path are the only inputs, a path with a host, query or `..` is refused, and redirects are never followed. Invalid metric or label names, label names over 64 bytes, label values that are not UTF-8, non-finite values and series with too many labels are dropped. Each label set is stored once and samples point to it. A failed scrape records a short fixed reason (refused, timed out, status, too large, redirect) on the target, never the raw error. Limits are runtime settings that apply live (each seeded by its env var):
-
-| Setting | Default | What it bounds |
-| --- | --- | --- |
-| `app_metrics.scrape_interval` | 60s | time between scrapes |
-| `app_metrics.scrape_timeout` | 5s | one scrape, connect plus body |
-| `app_metrics.max_body_bytes` | 1048576 | response size; larger fails the scrape |
-| `app_metrics.max_series` | 500 | distinct series stored per scrape |
-| `app_metrics.max_labels` | 10 | labels per series |
-| `app_metrics.retention_hours` | 72 | how long samples are kept |
-| `app_metrics.query_max_points` | 10000 | samples one query returns |
-| `app_metrics.max_label_bytes` | 65536 | label text kept per scrape |
-| `app_metrics.max_stored_rows` | 500000 | samples stored per app; at the limit new scrapes are dropped |
-| `app_metrics.scrape_workers` | 4 | apps scraped at once (1 to 16) |
-
-Reads need read access to the app, so a team member only sees apps of their own teams.

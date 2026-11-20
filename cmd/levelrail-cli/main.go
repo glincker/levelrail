@@ -86,6 +86,10 @@ func runDispatch(prog string, args []string, stdout, stderr io.Writer, lookupEnv
 		return runNext(prog, args[1:], stdout, stderr, lookupEnv)
 	case "vm":
 		return runVM(prog, args[1:], stdout, stderr, lookupEnv)
+	case "builders":
+		return runBuilders(prog, args[1:], stdout, stderr, lookupEnv)
+	case "builder":
+		return runBuilder(prog, args[1:], stdout, stderr, lookupEnv)
 	case "open":
 		return runOpen(prog, args[1:], stdout, stderr, lookupEnv)
 	case "login":
@@ -238,6 +242,8 @@ func runDispatch(prog string, args []string, stdout, stderr io.Writer, lookupEnv
 		return runStack(prog, args[1:], stdout, stderr, lookupEnv)
 	case "compliance":
 		return runCompliance(prog, args[1:], stdout, stderr, lookupEnv)
+	case "observability":
+		return runObservability(prog, args[1:], stdout, stderr, lookupEnv)
 	case "otel":
 		return runOtel(prog, args[1:], stdout, stderr, lookupEnv)
 	case "event-webhooks":
@@ -416,6 +422,8 @@ func runDispatch(prog string, args []string, stdout, stderr io.Writer, lookupEnv
 		return runCompose(prog, args[1:], stdout, stderr, lookupEnv)
 	case "templates":
 		return runTemplates(prog, args[1:], stdout, stderr, lookupEnv)
+	case "pages":
+		return runPages(prog, args[1:], stdout, stderr, lookupEnv, os.Stdin)
 	case "static-sites":
 		return runStaticSites(prog, args[1:], stdout, stderr, lookupEnv)
 	case "deploy-approvals":
@@ -442,6 +450,8 @@ Usage:
   %[1]s open <app> [flags]           print an app's public URLs
   %[1]s dev [status|stop] [flags]    run a private instance on this machine, apps at <app>.localhost
   %[1]s vm init|start|stop|status|shell|set [flags]   run Levelrail in a private macOS VM (experimental, APP_VM_EXPERIMENTAL=on)
+  %[1]s builders list|add|show|pause|resume|test|remove [flags]   manage build nodes from the control plane
+  %[1]s builder join|start|stop|status|doctor|logout [flags]   use this Mac as a build-only node (experimental, APP_VM_EXPERIMENTAL=on)
   %[1]s backup <database> [--target ID] [flags]   back a database up now, same as backups trigger
   %[1]s restore <database> --latest --confirm NAME [flags]   restore a database, same as backups restore
   %[1]s projects list|get|create|delete [flags]   manage projects, same as apps projects
@@ -622,7 +632,7 @@ Usage:
   %[1]s import platform coolify|dokploy|caprover|heroku|vercel|render --url URL [flags]   import apps from another platform, see "%[1]s import platform -h"
   %[1]s import config [dir] [--out FILE] [--strict] [--json]   offline: propose an app.yaml from Procfile, app.json and vercel.json, see "%[1]s import config -h"
   %[1]s import compose-ref [dir] [--write DIR] [--json]   offline: emit documents for the image services of compose files, see "%[1]s import compose-ref -h"
-  %[1]s import deploy-yml|portainer FILE [--write DIR] [--json]   offline: emit documents from a deploy.yml or a Portainer stack, see "%[1]s import deploy-yml -h"
+  %[1]s import deploy-yml|portainer|railway FILE [--write DIR] [--json]   offline: emit documents from a deploy.yml, a Portainer stack or a railway.json/railway.toml, see "%[1]s import railway -h"
   %[1]s import takeover plan|run|status|rollback [flags]   move this server's ports 80 and 443 from the old proxy to the built-in ingress, see "%[1]s import takeover -h"
   %[1]s completion bash|zsh|fish                          print a shell completion script, see "%[1]s completion -h"
   %[1]s settings oauth|email|ingress|ai-assistant get|set [flags]   configure OAuth sign-in, outbound email, ingress/ACME, and the BYOK AI assistant
@@ -630,6 +640,7 @@ Usage:
   %[1]s github-app status|disconnect|repos|branches|use-as-source [flags]   check/forget a GitHub App connection, browse and use its repos
   %[1]s templates list|get|deploy|install [flags]         browse, deploy and install from the curated service catalog
   %[1]s compose deploy|status|logs|redeploy|rollback|down  run a Docker Compose file as one stack
+  %[1]s pages deploy|list|show|delete|rollback|deploys|promote|domains|routes [flags]   publish a folder or .zip as a static site
   %[1]s static-sites list|delete|routes [flags]            list build.type: static apps, remove an orphaned site, show and test routing rules
   %[1]s deploy-approvals list|get|approve|reject [flags]   two-person approval gate on a deploy/promote into a protected environment
   %[1]s build detect|branches --repo-url URL [flags]       check what framework a public repo would build as, or list its branches

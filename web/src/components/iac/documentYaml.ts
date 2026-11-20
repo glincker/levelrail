@@ -14,6 +14,13 @@ export type FieldValue = string | boolean | string[] | KvEntry[]
 export type FormValues = Record<string, FieldValue>
 type Tree = { [k: string]: unknown }
 
+// Prototype-polluting keys are dropped everywhere a map is built from pasted text.
+const UNSAFE_KEYS = new Set(['__proto__', 'constructor', 'prototype'])
+
+function newTree(): Tree {
+  return Object.create(null) as Tree
+}
+
 export class YamlParseError extends Error {
   readonly line: number
   constructor(message: string, line: number) {
@@ -132,14 +139,15 @@ function flow(src: string, no: number): unknown {
     }
     if (c === '{') {
       i++
-      const obj: Tree = {}
+      const obj: Tree = newTree()
       ws()
       while (src[i] !== '}') {
         const k = item()
         ws()
         if (src[i] !== ':') throw new YamlParseError('bad flow map', no)
         i++
-        obj[String(k)] = item()
+        const v = item()
+        if (!UNSAFE_KEYS.has(String(k))) obj[String(k)] = v
         ws()
         if (src[i] === ',') i++
         else if (src[i] !== '}') throw new YamlParseError('bad flow map', no)
@@ -241,14 +249,15 @@ export function parseYaml(src: string): unknown {
     return null
   }
   const map = (indent: number): Tree => {
-    const out: Tree = {}
+    const out: Tree = newTree()
     while (pos < lines.length) {
       const l = lines[pos] as Line
       if (l.indent !== indent || isSeq(l)) break
       const kv = splitKey(l.text, l.no)
       if (!kv) throw new YamlParseError('expected key: value', l.no)
       pos++
-      out[kv.key] = kv.rest ? inline(kv.rest, l.no) : child(indent, true)
+      const v = kv.rest ? inline(kv.rest, l.no) : child(indent, true)
+      if (!UNSAFE_KEYS.has(kv.key)) out[kv.key] = v
     }
     return out
   }
@@ -288,6 +297,7 @@ export function parseYaml(src: string): unknown {
 
 function setPath(tree: Tree, path: string[], val: unknown) {
   let cur = tree
+  if (path.some((p) => UNSAFE_KEYS.has(p))) return
   path.slice(0, -1).forEach((p) => {
     const next = cur[p]
     if (!next || typeof next !== 'object' || Array.isArray(next)) cur[p] = {}
@@ -331,6 +341,7 @@ function pruneEmpty(v: unknown): unknown {
 
 function mergeInto(dst: Tree, src: Tree) {
   for (const [k, v] of Object.entries(src)) {
+    if (UNSAFE_KEYS.has(k)) continue
     const d = dst[k]
     if (
       v &&
@@ -362,7 +373,7 @@ function fieldToYaml(f: IacField, v: FieldValue | undefined): unknown {
       for (const e of Array.isArray(v) ? (v as KvEntry[]) : []) {
         const k = e.key.trim()
         const val = e.value.trim()
-        if (!k || !val) continue
+        if (!k || !val || UNSAFE_KEYS.has(k)) continue
         if (e.secret) {
           if (f.secretRefs) out[k] = { secretRef: val }
         } else if (!isSecretLikeName(k)) out[k] = val
@@ -416,7 +427,13 @@ export function readDocument(yaml: string): ReadDocument {
     throw new YamlParseError('document must be a map', 1)
   }
   const tree = raw as Tree
-  return { kind: typeof tree.kind === 'string' ? tree.kind : null, tree }
+  return {
+    kind:
+      Object.hasOwn(tree, 'kind') && typeof tree.kind === 'string'
+        ? tree.kind
+        : null,
+    tree,
+  }
 }
 
 export function valuesFromTree(

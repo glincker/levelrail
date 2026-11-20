@@ -202,11 +202,13 @@ func TestOIDCRoleSync(t *testing.T) {
 		groups    []any
 		wantRole  string
 		wantAudit string
+		wantLoc   string
 	}{
-		{"sync off keeps an operator an operator", false, []string{AbilityRead, AbilityReadSensitive, AbilityWrite, AbilityDeploy}, nil, "", ""},
-		{"sync on downgrades and audits it", true, []string{AbilityRead, AbilityReadSensitive, AbilityWrite, AbilityDeploy}, nil, "role_viewer", "direction=downgrade"},
-		{"sync on upgrades through a mapping", true, []string{AbilityRead}, []any{"ops"}, "role_operator", "direction=upgrade"},
-		{"sync on never touches a root user", true, []string{AbilityRoot}, nil, "", ""},
+		{"sync off keeps an operator an operator", false, []string{AbilityRead, AbilityReadSensitive, AbilityWrite, AbilityDeploy}, nil, "", "", locComplete},
+		{"sync on downgrades and audits it", true, []string{AbilityRead, AbilityReadSensitive, AbilityWrite, AbilityDeploy}, nil, "role_viewer", "direction=downgrade", locComplete},
+		{"sync on upgrades through a mapping", true, []string{AbilityRead}, []any{"ops"}, "role_operator", "direction=upgrade", locComplete},
+		// A provider never links to a root account, so the sign-in is refused and the role stays.
+		{"sync on never touches a root user", true, []string{AbilityRoot}, nil, "", "", "/login?oauth_error=email_in_use"},
 	}
 	for _, tc := range tests {
 		t.Run(tc.name, func(t *testing.T) {
@@ -219,8 +221,8 @@ func TestOIDCRoleSync(t *testing.T) {
 				t.Fatal(err)
 			}
 			before, _ := h.db.UserRoleID(context.Background(), u.ID)
-			if got := oauthResult(h.signIn("oidc", groupsID("p1", "person@corp.test", tc.groups...))); got != locComplete {
-				t.Fatalf("sign-in: %q", got)
+			if got := oauthResult(h.signIn("oidc", groupsID("p1", "person@corp.test", tc.groups...))); got != tc.wantLoc {
+				t.Fatalf("sign-in: %q, want %q", got, tc.wantLoc)
 			}
 			after := h.roleOf("person@corp.test")
 			want := tc.wantRole

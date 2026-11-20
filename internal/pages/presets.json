@@ -1,0 +1,57 @@
+{
+  "presets": [
+    {
+      "id": "spa",
+      "name": "Single page app",
+      "description": "Always revalidate HTML so a deploy shows at once, hashed bundles cached for a year.",
+      "compression": ["zstd", "gzip"],
+      "headers": [
+        {"path": "/*", "set": {"Cache-Control": "public, max-age=0, must-revalidate"}},
+        {"path": "/assets/*", "set": {"Cache-Control": "public, max-age=31536000, immutable"}},
+        {"path": "/_next/static/*", "set": {"Cache-Control": "public, max-age=31536000, immutable"}},
+        {"path": "/static/*", "set": {"Cache-Control": "public, max-age=31536000, immutable"}}
+      ],
+      "security": {"X-Content-Type-Options": "nosniff", "Referrer-Policy": "strict-origin-when-cross-origin", "X-Frame-Options": "SAMEORIGIN"}
+    },
+    {
+      "id": "docs",
+      "name": "Docs",
+      "description": "HTML cached for five minutes, generated assets cached for a year.",
+      "compression": ["zstd", "gzip"],
+      "headers": [
+        {"path": "/*", "set": {"Cache-Control": "public, max-age=300, must-revalidate"}},
+        {"path": "/assets/*", "set": {"Cache-Control": "public, max-age=31536000, immutable"}},
+        {"path": "/_astro/*", "set": {"Cache-Control": "public, max-age=31536000, immutable"}},
+        {"path": "/_next/static/*", "set": {"Cache-Control": "public, max-age=31536000, immutable"}}
+      ],
+      "security": {"X-Content-Type-Options": "nosniff", "Referrer-Policy": "strict-origin-when-cross-origin", "X-Frame-Options": "SAMEORIGIN"}
+    },
+    {
+      "id": "marketing",
+      "name": "Marketing site",
+      "description": "HTML cached for ten minutes, images for a day, hashed assets for a year, stricter security headers.",
+      "compression": ["zstd", "gzip"],
+      "headers": [
+        {"path": "/*", "set": {"Cache-Control": "public, max-age=600, must-revalidate"}},
+        {"path": "/images/*", "set": {"Cache-Control": "public, max-age=86400"}},
+        {"path": "/assets/*", "set": {"Cache-Control": "public, max-age=31536000, immutable"}},
+        {"path": "/_astro/*", "set": {"Cache-Control": "public, max-age=31536000, immutable"}}
+      ],
+      "security": {"X-Content-Type-Options": "nosniff", "Referrer-Policy": "strict-origin-when-cross-origin", "X-Frame-Options": "DENY", "Permissions-Policy": "camera=(), microphone=(), geolocation=()"}
+    },
+    {
+      "id": "assets-heavy",
+      "name": "Assets heavy",
+      "description": "Revalidate HTML, long caching for media, fonts and hashed files.",
+      "compression": ["zstd", "gzip"],
+      "headers": [
+        {"path": "/*", "set": {"Cache-Control": "public, max-age=0, must-revalidate"}},
+        {"path": "/media/*", "set": {"Cache-Control": "public, max-age=2592000"}},
+        {"path": "/images/*", "set": {"Cache-Control": "public, max-age=2592000"}},
+        {"path": "/fonts/*", "set": {"Cache-Control": "public, max-age=31536000, immutable"}},
+        {"path": "/assets/*", "set": {"Cache-Control": "public, max-age=31536000, immutable"}}
+      ],
+      "security": {"X-Content-Type-Options": "nosniff", "Referrer-Policy": "strict-origin-when-cross-origin"}
+    }
+  ]
+}

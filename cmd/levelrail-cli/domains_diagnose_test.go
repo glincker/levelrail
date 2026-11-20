@@ -143,3 +143,40 @@ func TestRun_DomainsAdd_MissingArgs(t *testing.T) {
 		t.Fatalf("exit = %d, want %d", got, exitUsage)
 	}
 }
+
+func TestRun_DomainsAdd_ReportsAutomaticDNS(t *testing.T) {
+	tests := []struct {
+		name    string
+		dns     string
+		want    []string
+		wantNot []string
+	}{
+		{"created", `{"domain":"shop.example.com","dns":"created","provider":"route53","record":{"name":"shop","type":"A","value":"203.0.113.9"}}`,
+			[]string{"automatic DNS: created A shop -> 203.0.113.9 (route53)", "domains diagnose shop.example.com"}, []string{"create this record"}},
+		{"error shows server message and chosen record", `{"domain":"shop.example.com","dns":"error","message":"could not read the zone's records: AccessDenied","record":{"name":"shop","type":"A","value":"203.0.113.9"}}`,
+			[]string{"automatic DNS failed, nothing was created: could not read the zone's records: AccessDenied", "create this record at your DNS provider:", "A"}, []string{"skip it if", "CNAME"}},
+	}
+	for _, tc := range tests {
+		t.Run(tc.name, func(t *testing.T) {
+			srv := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+				if strings.HasSuffix(r.URL.Path, "/diagnose") {
+					_ = json.NewEncoder(w).Encode(diagnoseReport(false))
+					return
+				}
+				_, _ = w.Write([]byte(`{"domains":["shop.example.com"],"changed":true,"dns_results":[` + tc.dns + `]}`))
+			}))
+			defer srv.Close()
+			stdout, _ := runCLIExpectOK(t, []string{"domains", "add", "web", "shop.example.com", "--api-url", srv.URL})
+			for _, w := range tc.want {
+				if !strings.Contains(stdout, w) {
+					t.Errorf("stdout missing %q: %q", w, stdout)
+				}
+			}
+			for _, w := range tc.wantNot {
+				if strings.Contains(stdout, w) {
+					t.Errorf("stdout has %q: %q", w, stdout)
+				}
+			}
+		})
+	}
+}

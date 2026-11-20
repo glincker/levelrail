@@ -162,3 +162,6 @@ func (db *DB) StorageUsageByTarget(ctx context.Context) (map[string]StorageUsage
 	}
 	return out, nil
 }
+
+// WebDAVEndpointScheme prefixes the stored endpoint of a WebDAV target; the rest is the real base URL.
+const WebDAVEndpointScheme = "dav+"

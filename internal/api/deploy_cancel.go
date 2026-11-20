@@ -13,8 +13,8 @@ import (
 
 // lookupAppAttempt loads the app and one of its deploy attempts, writing the
 // error response itself when either is missing.
-func (rt *Router) lookupAppAttempt(w http.ResponseWriter, r *http.Request, ability string) (*store.DeployAttempt, bool) {
-	if !rt.requireAppAccess(w, r, r.PathValue("name"), ability) {
+func (rt *Router) lookupAppAttempt(w http.ResponseWriter, r *http.Request) (*store.DeployAttempt, bool) {
+	if !rt.requireAppAccess(w, r, r.PathValue("name"), AbilityDeploy) {
 		return nil, false
 	}
 	return rt.loadAppAttempt(w, r)
@@ -52,7 +52,7 @@ func (rt *Router) handleCancelDeploy(w http.ResponseWriter, r *http.Request) {
 		writeError(w, http.StatusNotImplemented, "deploy cancellation is not configured on this control plane")
 		return
 	}
-	a, ok := rt.lookupAppAttempt(w, r, AbilityDeploy)
+	a, ok := rt.lookupAppAttempt(w, r)
 	if !ok {
 		return
 	}
@@ -150,6 +150,7 @@ func (rt *Router) writeAttempt(w http.ResponseWriter, r *http.Request, id string
 		return
 	}
 	res := toDeployAttemptResource(*a)
+	res.Pinned = rt.pinnedDeploys(r.Context(), a.ServiceName)[a.ID]
 	if attempts, err := rt.deployAttempts.ListDeployAttempts(r.Context(), a.ServiceName); err == nil {
 		rt.applyWait(r.Context(), &res, *a, attempts)
 		applyDeployOutcome(&res, *a, len(attempts) > 0 && attempts[0].ID == a.ID, rt.rolloutConditions(r.Context(), a.ServiceName))

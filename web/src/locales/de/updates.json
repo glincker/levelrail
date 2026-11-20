@@ -774,6 +774,47 @@
     "undo": "Undo",
     "zone": "Time zone",
     "zoneHelp": "Server time zone is {{zone}}. Backups and safety checks still run first.",
-    "zoneInvalid": "Enter a valid time zone, for example Europe/Berlin."
+    "zoneInvalid": "Enter a valid time zone, for example Europe/Berlin.",
+    "checkOn": "Die Hintergrundprüfung auf neue Releases ist an. Sie sucht nur; die Installation steuert der Schalter oben.",
+    "checkOff": "Die Hintergrundprüfung auf neue Releases ist aus. Automatische Updates einzuschalten aktiviert sie ebenfalls.",
+    "installSteps": "Updates werden zwischen {{start}} und {{end}} {{zone}} installiert; zuerst Backup, Health-Check, automatisches Rollback.",
+    "nextWindows": "Nächste Fenster: {{list}}"
+  },
+  "autoStatus": {
+    "state": {
+      "off": "Aus",
+      "paused": "Pausiert",
+      "blocked": "Blockiert",
+      "degraded": "Eingeschränkt",
+      "ready": "Bereit"
+    },
+    "summary": {
+      "off": "Automatische Updates sind aus, es wird nichts von selbst installiert.",
+      "paused": "Automatische Updates sind pausiert und laufen von selbst weiter.",
+      "blocked": "Dieser Server kann sich nicht selbst ersetzen: {{reason}}",
+      "degraded": "Release-Prüfungen schlagen fehl, daher kann kein Update starten: {{reason}}",
+      "ready": "Funktioniert. Neue Releases werden im Fenster unten installiert."
+    },
+    "manual": {
+      "intro": "Aktualisiere stattdessen auf dem Server mit diesem Befehl:",
+      "docker": "Läuft der Server in Docker? Hole ein neues Image und erstelle den Container neu."
+    },
+    "lastCheck": "Letzte Prüfung",
+    "failures": "Fehlgeschlagene Prüfungen in Folge",
+    "nextTry": "Nächster Versuch",
+    "lastGoodList": "Letzte gute Release-Liste",
+    "listAge": "vor {{hours}} Std.",
+    "listSourceFallback": "Von den öffentlichen Release-Seiten gelesen, ohne Release-Notizen",
+    "unpinned": "Auf diesem Host ist noch keine Signaturidentität für Releases festgelegt. Das erste Update stützt sich nur auf die Release-Prüfsumme; danach müssen weitere Updates dieselbe Signatur tragen.",
+    "lastResult": "Letztes Ergebnis",
+    "result": {
+      "applied": "Aktualisiert",
+      "failed": "Fehlgeschlagen",
+      "cancelled": "Abgebrochen",
+      "missed": "Verpasst",
+      "blocked": "Blockiert",
+      "pending": "Wartet auf das Fenster",
+      "running": "Läuft"
+    }
   }
 }

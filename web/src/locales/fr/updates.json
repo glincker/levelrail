@@ -781,6 +781,47 @@
     "undo": "Undo",
     "zone": "Time zone",
     "zoneHelp": "Server time zone is {{zone}}. Backups and safety checks still run first.",
-    "zoneInvalid": "Enter a valid time zone, for example Europe/Berlin."
+    "zoneInvalid": "Enter a valid time zone, for example Europe/Berlin.",
+    "checkOn": "La vérification en arrière-plan des nouvelles versions est activée. Elle ne fait que chercher; l'installation dépend de l'interrupteur ci-dessus.",
+    "checkOff": "La vérification en arrière-plan des nouvelles versions est désactivée. Activer les mises à jour automatiques l'active aussi.",
+    "installSteps": "Les mises à jour s'installent entre {{start}} et {{end}} {{zone}}; sauvegarde d'abord, contrôle de santé, retour arrière automatique.",
+    "nextWindows": "Prochaines fenêtres : {{list}}"
+  },
+  "autoStatus": {
+    "state": {
+      "off": "Désactivées",
+      "paused": "En pause",
+      "blocked": "Bloquées",
+      "degraded": "Dégradées",
+      "ready": "Prêtes"
+    },
+    "summary": {
+      "off": "Les mises à jour automatiques sont désactivées, rien ne s'installe seul.",
+      "paused": "Les mises à jour automatiques sont en pause et reprendront d'elles-mêmes.",
+      "blocked": "Ce serveur ne peut pas se remplacer lui-même : {{reason}}",
+      "degraded": "Les vérifications de version échouent, aucune mise à jour ne peut démarrer : {{reason}}",
+      "ready": "Fonctionne. Les nouvelles versions s'installent dans la fenêtre ci-dessous."
+    },
+    "manual": {
+      "intro": "Mettez à jour depuis le serveur avec cette commande :",
+      "docker": "Sous Docker ? Récupérez une nouvelle image et recréez le conteneur."
+    },
+    "lastCheck": "Dernière vérification",
+    "failures": "Échecs de vérification consécutifs",
+    "nextTry": "Prochaine tentative",
+    "lastGoodList": "Dernière liste de versions valide",
+    "listAge": "il y a {{hours}} h",
+    "listSourceFallback": "Trouvée sur les pages publiques des versions, sans notes de version",
+    "unpinned": "Aucune identité de signature des versions n'est encore épinglée sur cet hôte. La première mise à jour s'appuie uniquement sur la somme de contrôle ; ensuite, les mises à jour suivantes doivent porter la même signature.",
+    "lastResult": "Dernier résultat",
+    "result": {
+      "applied": "Mis à jour",
+      "failed": "Échec",
+      "cancelled": "Annulé",
+      "missed": "Manqué",
+      "blocked": "Bloqué",
+      "pending": "En attente de la fenêtre",
+      "running": "En cours"
+    }
   }
 }

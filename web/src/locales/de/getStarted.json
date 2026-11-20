@@ -148,7 +148,8 @@
     "label": "Einrichtung zu {{percent}} % bereit",
     "firstApp": "Erste App: {{done}} von {{total}}",
     "cta": "Einrichtung fortsetzen",
-    "open": "Einrichtungsanleitung öffnen"
+    "open": "Einrichtungsanleitung öffnen",
+    "steps": "{{done}} von {{total}} Schritten erledigt"
   },
   "wizard": {
     "continue": "Sehen Sie in der Anleitung Erste Schritte, was vor der Produktion noch fehlt"
@@ -216,7 +217,8 @@
   },
   "more": {
     "title": "Bereit für die Produktion werden",
-    "help": "Diese Schritte machen den Server sicherer für echte Nutzer. Keiner davon blockiert Ihr erstes Deployment."
+    "help": "Diese Schritte machen den Server sicherer für echte Nutzer. Keiner davon blockiert Ihr erstes Deployment.",
+    "finished": "Erledigte Schritte ({{count}})"
   },
   "strip": {
     "title": "Ihre erste App live schalten",

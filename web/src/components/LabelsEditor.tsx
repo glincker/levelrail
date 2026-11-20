@@ -2,17 +2,13 @@ import { zodResolver } from '@hookform/resolvers/zod'
 import { useFieldArray, useForm } from 'react-hook-form'
 import { z } from 'zod'
 import { PlusGlassIcon, TagGlassIcon, XGlassIcon } from '@thesvg/ui-react'
+import { useTranslation } from 'react-i18next'
+import { InfoTip } from '@/components/kit'
 import type { AppDetail } from '../types/appDetail'
 import { useUpdateApp } from '../queries/apps'
 import { Alert, AlertDescription } from '@/components/ui/alert'
 import { Button } from '@/components/ui/button'
-import {
-  Card,
-  CardContent,
-  CardDescription,
-  CardHeader,
-  CardTitle,
-} from '@/components/ui/card'
+import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card'
 import { Field, FieldError, FieldGroup } from '@/components/ui/field'
 import { Input } from '@/components/ui/input'
 import { toast } from '@/components/ui/toast'
@@ -74,6 +70,7 @@ function toFieldValues(
 // merge collision for no real gain, this editor is small enough that a
 // little duplicated row-editor boilerplate is the safer trade.
 export function LabelsEditor({ app }: { app: AppDetail }) {
+  const { t: tp } = useTranslation('appPages')
   const updateApp = useUpdateApp(app.name, { inlineError: true })
   const { control, register, handleSubmit, formState } =
     useForm<LabelsFormValues>({
@@ -107,14 +104,12 @@ export function LabelsEditor({ app }: { app: AppDetail }) {
         <CardTitle className="flex items-center gap-2">
           <TagGlassIcon className="size-5" />
           Custom labels
+          <InfoTip>
+            {tp('resources.tips.labels')} Keys starting with{' '}
+            <code className="font-mono">{RESERVED_LABEL_PREFIX}</code> are
+            reserved for the platform.
+          </InfoTip>
         </CardTitle>
-        <CardDescription>
-          Arbitrary Docker labels applied to the container at create time, for
-          external tooling that keys off container labels (monitoring agents,
-          log shippers, homegrown scripts). Keys starting with{' '}
-          <code className="font-mono">{RESERVED_LABEL_PREFIX}</code> are
-          reserved for the platform.
-        </CardDescription>
       </CardHeader>
       <CardContent>
         <form

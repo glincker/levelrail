@@ -4,6 +4,7 @@ import (
 	"context"
 	"fmt"
 	"log/slog"
+	"strings"
 	"time"
 
 	"github.com/GLINCKER/levelrail/internal/dnszones"
@@ -20,6 +21,10 @@ type dnsTokenVerification struct {
 	MissingScopes []string `json:"missing_scopes"`
 	ZonesVisible  int      `json:"zones_visible"`
 	Message       string   `json:"message"`
+	// Permissions and IAMPolicy appear for Route 53 only: each needed action
+	// with its probed state, and the minimal policy for the denied ones.
+	Permissions []dnszones.PermissionCheck `json:"permissions,omitempty"`
+	IAMPolicy   string                     `json:"iam_policy,omitempty"`
 }
 
 // verifyDNSCredential tests a just-saved credential and returns nil when the
@@ -45,7 +50,25 @@ func (rt *Router) verifyDNSCredential(ctx context.Context, name string, build fu
 	if rep.Outcome != dnszones.AccessOK {
 		rt.logger.Warn("api: dns credential verification failed", slog.String("provider", name), slog.String("outcome", rep.Outcome))
 	}
-	return verificationFrom(name, rep)
+	v := verificationFrom(name, rep)
+	addRoute53Preflight(vctx, v, p)
+	return v
+}
+
+// addRoute53Preflight names which Route 53 actions work and, for the denied
+// ones, adds the minimal policy. It writes nothing to the zone.
+func addRoute53Preflight(ctx context.Context, v *dnsTokenVerification, p dnszones.Provider) {
+	r, ok := p.(*dnszones.Route53)
+	if !ok || v == nil {
+		return
+	}
+	v.Permissions = r.Preflight(ctx)
+	if miss := dnszones.MissingPermissions(v.Permissions); len(miss) > 0 {
+		v.OK = false
+		v.MissingScopes = miss
+		v.IAMPolicy = dnszones.MinimalIAMPolicy(miss, r.HostedZoneID)
+		v.Message = "Route 53 accepted the credential but these actions are denied: " + strings.Join(miss, ", ") + "."
+	}
 }
 
 func verificationFrom(name string, rep dnszones.AccessReport) *dnsTokenVerification {

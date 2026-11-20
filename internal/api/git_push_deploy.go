@@ -236,8 +236,9 @@ func (rt *Router) deployGitPush(r *http.Request, ws *pushStream, name string, pl
 		RepoURL: gitPushMirrorURL(name), Ref: hash,
 		Build: triggerBuildBuildInput{Type: buildType, Path: path, BaseDirectory: base, StaticSPA: rt.gitPushStaticSPA(ctx, name, buildType)},
 	}
-	buildReq := manualBuildRequest(name, *existing, treq, buildType)
+	buildReq := rt.manualBuildRequestFor(ctx, name, *existing, treq, buildType)
 	rt.applyAppBuildSettings(ctx, name, &buildReq)
+	buildReq.ProxyAuthorizer = rt.proxyScopeAuthorizer(name)
 
 	dctx := context.WithValue(ctx, commitMetaKey{}, commitMeta{
 		Branch:  plan.branch,

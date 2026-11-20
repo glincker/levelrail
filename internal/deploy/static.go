@@ -79,6 +79,9 @@ func (p *Pipeline) deployStatic(ctx context.Context, req Request, progress func(
 		return "", fmt.Errorf("deploy: service %q: build.type %q needs a static root directory configured (WithStaticRootDir)", req.ServiceName, spec.BuildStatic)
 	}
 
+	if err := p.applyStaticSiteSettings(ctx, &req); err != nil {
+		return "", fmt.Errorf("deploy: service %q: %w", req.ServiceName, err)
+	}
 	if req.Service.Build.RunsStaticBuild() {
 		return p.deployStaticBuilt(ctx, req, progress)
 	}
@@ -133,7 +136,7 @@ func (p *Pipeline) deployStatic(ctx context.Context, req Request, progress func(
 	if err := copyStaticDir(checkoutRoot, srcRel, staticRoot, destRel); err != nil {
 		return "", fmt.Errorf("deploy: service %q: copy static files: %w", req.ServiceName, err)
 	}
-	if err := p.prepareStaticRouting(req, destDir, progress); err != nil {
+	if err := p.prepareStaticRouting(ctx, req, destDir, progress); err != nil {
 		return "", fmt.Errorf("deploy: service %q: %w", req.ServiceName, err)
 	}
 	duration := time.Since(start)

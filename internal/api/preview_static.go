@@ -56,6 +56,26 @@ func (rt *Router) preGateStaticPreview(ctx context.Context, appName, previewName
 	return true, nil
 }
 
+// inheritSitePassword copies the parent site's password gate onto the preview site
+// before Deploy, so no preview host (domain, retry or fallback) is ever served open.
+func (rt *Router) inheritSitePassword(ctx context.Context, appName, previewName string) error {
+	gs, ok := rt.staticSites.(staticSiteGateStore)
+	if !ok {
+		return nil
+	}
+	hash, err := gs.GetStaticSitePasswordHash(ctx, appName)
+	if err != nil {
+		return fmt.Errorf("read site password of %q: %w", appName, err)
+	}
+	if hash == "" {
+		return nil
+	}
+	if err := gs.SetStaticSitePasswordHash(ctx, previewName, hash); err != nil {
+		return fmt.Errorf("gate preview site %q: %w", previewName, err)
+	}
+	return nil
+}
+
 // deployPreviewStatic publishes the PR's head commit as its own static site
 // under previewName, so the live site, its route and its release history are
 // never touched. A taken domain retries once without one, like the container
@@ -76,6 +96,9 @@ func (rt *Router) deployPreviewStatic(ctx context.Context, appName, previewName 
 	svcSpec.Domains = domainSlice(wantDomain)
 	req := deploy.Request{ServiceName: previewName, Service: svcSpec, SourceDir: sourceDir, CommitSHA: headSHA, ImageRepo: previewName, Preview: true}
 
+	if err := rt.inheritSitePassword(ctx, appName, previewName); err != nil {
+		return "", false, err
+	}
 	preGated, err := rt.preGateStaticPreview(ctx, appName, previewName, wantDomain, policy)
 	if err != nil {
 		return "", false, err
@@ -103,6 +126,7 @@ func (rt *Router) deployPreviewStatic(ctx context.Context, appName, previewName 
 		}
 	}
 	rt.nudgeReconciler()
+	rt.prunePagesPreviews(ctx, appName, previewName)
 	return usedDomain, domainConflict, nil
 }
 

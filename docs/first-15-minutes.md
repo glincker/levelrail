@@ -12,7 +12,10 @@ Install, sign in, turn on HTTPS, deploy one app, take one backup and run the doc
 ## 1. Install
 
 ```bash
-curl -fsSL https://levelrail.com/install.sh | sudo sh
+curl -fsSLO https://github.com/glincker/levelrail/releases/latest/download/install.sh
+curl -fsSLO https://github.com/glincker/levelrail/releases/latest/download/checksums.txt
+grep ' install.sh$' checksums.txt | sha256sum -c -  # macOS: shasum -a 256 -c -
+sudo sh install.sh
 ```
 
 You should see `Levelrail vX.Y.Z installed and running.` and a dashboard link with a one-time setup token. If it fails, see [Troubleshooting the first run](/getting-started#troubleshooting-the-first-run) or [Installing Levelrail](/installing). If the ports are not open yet, see [Cloud firewall rules](/cloud-firewall-rules).

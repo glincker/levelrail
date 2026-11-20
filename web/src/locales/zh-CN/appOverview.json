@@ -25,5 +25,60 @@
     "recreate": "重建",
     "blueGreen": "蓝绿",
     "rolling": "滚动"
+  },
+  "preview": {
+    "label": "预览",
+    "empty": "首次部署完成前没有预览。",
+    "deploy": "部署",
+    "captured": "{{when}}截取",
+    "off": "此应用的预览已关闭。",
+    "serverOff": "此服务器已关闭预览。",
+    "desktop": "桌面",
+    "mobile": "手机",
+    "viewport": "视口宽度",
+    "recapture": "重新截取",
+    "thumbLabel": "{{name}} 位于 {{host}}",
+    "deployedAgo": "已部署"
+  },
+  "staticStrip": {
+    "label": "站点概览",
+    "visitors": "访客",
+    "requests": "请求",
+    "errors": "错误",
+    "errorsInfo": "所选时间范围内 4xx 和 5xx 响应的占比。4xx：{{c4}}，5xx：{{c5}}。",
+    "visitorsInfo": "所选时间范围内的独立访客,每次隐私重置后重新计数。",
+    "deploy": "最近部署",
+    "size": "大小",
+    "files_one": "{{count}} 个文件",
+    "files_other": "{{count}} 个文件",
+    "addDomain": "添加域名",
+    "errorsNone": "网站处理请求后，这里会显示 4xx 和 5xx 响应的占比。"
+  },
+  "staticLine": {
+    "details": "部署详情",
+    "source": {
+      "upload": "CLI 上传",
+      "webhook": "Git 推送",
+      "git_push": "Git 推送",
+      "poll": "Git 轮询",
+      "pr_comment": "PR 评论",
+      "manual": "控制台",
+      "promote": "升级",
+      "clone": "克隆",
+      "auto_rollback": "自动回滚",
+      "schedule": "计划任务",
+      "image": "镜像",
+      "compose": "Compose",
+      "restart": "重启",
+      "start": "启动",
+      "stop": "停止",
+      "other": "部署"
+    }
+  },
+  "recent": {
+    "label": "最近部署",
+    "all": "全部部署",
+    "logs": "日志",
+    "rollback": "回滚"
   }
 }

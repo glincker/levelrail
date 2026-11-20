@@ -4,7 +4,6 @@ import (
 	"context"
 	"net/http"
 	"net/netip"
-	"os"
 	"strconv"
 
 	"github.com/caddyserver/caddy/v2"
@@ -54,9 +53,8 @@ type abuseModule struct {
 	App    string       `json:"app"`
 	Policy abuse.Policy `json:"policy"`
 
-	state   *abuse.State
-	trusted []netip.Prefix
-	decide  func(netip.Addr, string) abuse.Decision
+	state  *abuse.State
+	decide func(netip.Addr, string) abuse.Decision
 }
 
 func (abuseModule) CaddyModule() caddy.ModuleInfo {
@@ -71,7 +69,6 @@ func (abuseModule) CaddyModule() caddy.ModuleInfo {
 func (m *abuseModule) Provision(caddy.Context) error {
 	limits := abuse.CurrentLimits(context.Background())
 	m.state = abuse.DefaultRegistry().For(m.App, limits)
-	m.trusted, _ = abuse.ParseTrusted(os.Getenv(EnvTrustedProxies))
 	if eng, err := abuse.NewEngine(m.Policy, m.state, limits); err == nil {
 		m.decide = eng.Decide
 	}
@@ -112,7 +109,7 @@ func (m *abuseModule) clientAddr(r *http.Request) netip.Addr {
 			return a.Unmap()
 		}
 	}
-	return abuse.ResolveClientIP(r.RemoteAddr, r.Header.Values(headerForwardedFor), m.trusted)
+	return abuse.ResolveClientIP(r.RemoteAddr, r.Header.Values(headerForwardedFor), TrustedProxyPrefixes())
 }
 
 func writeAbuseReject(w http.ResponseWriter, d abuse.Decision) {

@@ -17,7 +17,7 @@ All three share one pattern: an external system that needs a working credential,
 
 ## First backup in 5 minutes
 
-This path needs no bucket. It uses a `local` target, which stores backups on the server itself. That proves the steps work, but it does not protect you if the server is lost. Finish with step 5.
+This path needs no bucket: a `local` target stores backups on the server itself. It proves the steps work but does not protect you if the server is lost. Finish with step 5.
 
 1. Back up `master.key`. Every stored secret is encrypted with it, and nothing can recover it. Copy `/var/lib/levelrail-data/master.key` (or `<data dir>/master.key`) to a password manager or other storage off the server.
 
@@ -42,11 +42,11 @@ This path needs no bucket. It uses a `local` target, which stores backups on the
    levelrail-cli backups list <database>
    ```
 
-   The status column reads `succeeded` when it is done. To run it nightly, see [Schedules](#schedules).
+   The status column reads `succeeded` when it is done. Add `--label TEXT` to `backups trigger` to name a manual backup (shown in the `LABEL` column). To run it nightly, see [Schedules](#schedules).
 
-5. Replace the local target with an off-server one before you rely on it: follow the [Quick start](#quick-start) below with a Cloudflare R2 or S3 bucket, then point your schedules at it.
+5. Before you rely on it, follow the [Quick start](#quick-start) below with a Cloudflare R2 or S3 bucket and point your schedules at that target.
 
-The control plane snapshot is also stored on the server's disk. For a copy that survives losing the machine, see [Control plane backup](/control-plane-backup) and [Disaster recovery](/disaster-recovery).
+The control plane snapshot also sits on the server's disk. For a copy that survives losing the machine, see [Control plane backup](/control-plane-backup) and [Disaster recovery](/disaster-recovery).
 
 ## Backup lifecycle at a glance
 
@@ -75,7 +75,7 @@ levelrail-cli backup-targets create \
   --secret-access-key ...
 ```
 
-The response never echoes the credentials back. `--provider` accepts `aws`, `r2`, or `custom`. `--endpoint` is required for `r2` and `custom`, and `aws` must omit it (AWS resolves its own endpoint per region). For Backblaze B2, Wasabi, Tigris, Google Cloud Storage, Oracle Cloud Object Storage, or MinIO, use [Object storage](/object-storage) to connect the bucket as a storage destination: the same record shows up under backup targets.
+The response never echoes the credentials. `--provider` accepts `aws`, `r2`, or `custom`. `--endpoint` is required for `r2` and `custom`, and `aws` must omit it (AWS resolves its own endpoint per region). For Backblaze B2, Wasabi, Tigris, Google Cloud Storage, Oracle Cloud Object Storage, or MinIO, use [Object storage](/object-storage) to connect the bucket as a storage destination: the same record shows up under backup targets.
 
 </Step>
 <Step title="Test the credential">
@@ -84,7 +84,7 @@ The response never echoes the credentials back. `--provider` accepts `aws`, `r2`
 levelrail-cli backup-targets test bkt_9f2a1c...
 ```
 
-The command exits non-zero with a specific message ("authentication rejected", "bucket not found") if the credential does not work, and succeeds silently if it does.
+It exits non-zero with a specific message ("authentication rejected", "bucket not found") if the credential does not work, and succeeds silently if it does.
 
 </Step>
 <Step title="Schedule a database's backups against it">
@@ -112,17 +112,15 @@ levelrail-cli app-volume-backups schedule set my-app uploads \
 
 ## Why a backup target is its own resource
 
-A backup target is not a field on a database or volume. It is a separate resource that any number of databases and app volumes reference by ID. You connect a bucket once in **Settings, Backup targets**, every backup schedule references it by `target_id`, and rotating a leaked access key happens in one place.
+A backup target is a separate resource, not a field on a database or volume. Any number of databases and app volumes reference it by ID. You connect a bucket once in **Settings, Backup targets**, every backup schedule references it by `target_id`, and rotating a leaked access key happens in one place.
 
 ### Credentials are write-only
 
-Credentials never round-trip through the API.
-
-- `access_key_id` and `secret_access_key` are accepted only in create and update request bodies.
+- Credentials never round-trip through the API: `access_key_id` and `secret_access_key` are accepted only in create and update request bodies.
 - They are written to the secrets store before the backup target record is saved, so a failed save never orphans a credential.
 - `GET` and `PUT` responses never echo credential fields, and error responses never include them.
 
-Registry credentials follow the same pattern: only the `password` field is accepted, it is written to the secrets store first, and it is never echoed back. When you reference a registry credential in `app.yaml` by name, the deploy authenticates without the password being stored in the file.
+Registry credentials follow the same pattern: only `password` is accepted, it goes to the secrets store first, and it is never echoed back. When you reference a registry credential in `app.yaml` by name, the deploy authenticates without the password being stored in the file.
 
 Every write endpoint on this page returns `501` if the control plane has no master key configured, because none of these resources can hold a working credential without one.
 
@@ -144,7 +142,7 @@ Both resources expose a `POST .../test` endpoint that validates the credential w
 
 CLI: `levelrail-cli backup-targets test <id>`. Dashboard: the **Test connection** button on each row of the Backup targets table.
 
-`HeadBucket` proves the bucket exists and can be reached, but not that the key can write or delete, which backups and pruning need. A storage destination's connection test (`levelrail-cli storage test <id>`) does a full write, read, and delete round trip, see [Object storage](/object-storage#what-the-connection-test-does).
+`HeadBucket` does not prove the key can write or delete, which backups and pruning need. A storage destination's connection test (`levelrail-cli storage test <id>`) does a full write, read, and delete round trip, see [Object storage](/object-storage#what-the-connection-test-does).
 
 </Tab>
 <Tab title="Registry credential">
@@ -159,9 +157,19 @@ CLI: `levelrail-cli registry-credentials test <id>`. Dashboard: the **Test conne
 </Tab>
 </Tabs>
 
-<Tip>
-Better to find a stale credential here than from a failed 3am backup or a deploy that dies mid-pull.
-</Tip>
+### Run a write and restore drill on a backup target
+
+`POST /api/v1/backup-targets/{id}/drill` (ability `write:sensitive`) uploads a random 256 byte sample under the `.drill/` prefix, downloads it, compares the bytes and deletes it. A pass proves the key can write, read back and delete.
+
+```bash
+levelrail-cli backup-targets drill bkt_9f2a1c...
+# backup target "bkt_9f2a1c...": wrote and restored a 256 byte sample (upload 84 ms, download 41 ms), cleaned up: true
+```
+
+It takes the target id and the usual API flags (`--token`, `--api-url`, `--profile`, `--json`, `--output`, `--query`). The response has `ok`, `stage`, `bytes`, `upload_ms`, `download_ms`, `cleaned_up`, `checksum_ok` and `error`.
+
+- A storage refusal answers `200` with `ok: false`; `stage` is `upload`, `download` or `compare` and `error` holds the reason. The CLI prints `drill failed at <stage>: <error>` and exits with the check-failed code.
+- `404`: no such backup target. `501`: no master key is configured, or this target type cannot run the drill. `502`: the target could not be reached.
 
 ## Database and app volume backups
 
@@ -423,7 +431,7 @@ Limits to know about:
 - Deleting a database keeps its data volume and your backups. See [Managing databases](/managing-databases#stop-start-and-delete).
 - The free-space floor protects the control plane's data directory. Nothing watches the Docker host's own disk for a major upgrade's snapshot copy: a copy that runs out of space fails the upgrade before it changes anything.
 - WAL and binary logs for point-in-time restore are shipped to the backup target only for databases on the control plane's own node.
-- A storage endpoint must resolve to a public address unless `APP_NOTIFY_ALLOW_PRIVATE_NETWORKS=true` is set in the control plane's environment. A local or same-network S3 server needs it, and `storage add` fails with `endpoint_blocked` without it. The name says notify, but the same switch gates storage and relaxes webhook checks too, so set it only on a host you control. The `minio/minio` Docker Hub image can no longer be pulled; see [Prove your backups work](/prove-your-backups-work) for S3-compatible alternatives with arm64 images.
+- A storage endpoint must resolve to a public address unless `APP_NOTIFY_ALLOW_PRIVATE_NETWORKS=true` is set in the control plane's environment. A local or same-network S3 server needs it, and `storage add` fails with `endpoint_blocked` without it. The name says notify, but the same switch also relaxes webhook checks, so set it only on a host you control. The `minio/minio` Docker Hub image can no longer be pulled; see [Prove your backups work](/prove-your-backups-work) for S3-compatible alternatives with arm64 images.
 - Deleting a backup target leaves its stored access key and secret in the secrets store, unreferenced and unreachable through the API but not erased at rest. Registry credentials behave the same way.
 
 ## API reference
@@ -436,6 +444,7 @@ Limits to know about:
 | `PUT` | `/api/v1/backup-targets/{id}` | `write:sensitive` |
 | `DELETE` | `/api/v1/backup-targets/{id}` | `write:sensitive` |
 | `POST` | `/api/v1/backup-targets/{id}/test` | `write:sensitive` |
+| `POST` | `/api/v1/backup-targets/{id}/drill` | `write:sensitive` |
 | `GET` | `/api/v1/registry-credentials` | `read` |
 | `POST` | `/api/v1/registry-credentials` | `write:sensitive` |
 | `GET` | `/api/v1/registry-credentials/{id}` | `read` |
@@ -527,7 +536,7 @@ levelrail-cli app-volume-backups delete <app> <volume> <backup-id>
 
 Likely cause: The backup schedule is not set, the backup target is not reachable, or the reconciler has not processed the backup task yet.
 
-How to confirm: Check if a schedule is configured: `levelrail-cli backups schedule <database>` or check the database's Backups tab in the dashboard. If a schedule exists, check the target: `levelrail-cli backup-targets test <target-id>` should report success. For recent backups, check the list: `levelrail-cli backups list <database> --limit 10`.
+How to confirm: Check if a schedule is configured: `levelrail-cli backups schedule <database>` or check the database's Backups tab in the dashboard. If a schedule exists, `levelrail-cli backup-targets test <target-id>` should report success. For recent backups: `levelrail-cli backups list <database> --limit 10`.
 
 Fix: Set a backup schedule if one does not exist: `levelrail-cli backups schedule set <database> --target <target-id> --cron "0 3 * * *" --retain 7`. If the target fails the test, fix the credentials or connectivity to the backup storage and try again. Wait a few minutes for the next reconcile pass to trigger the next backup.
 
@@ -537,17 +546,17 @@ Still stuck: See [Backup targets](/backups-and-storage#why-a-backup-target-is-it
 
 Likely cause: The network path to the backup storage is blocked, or the credentials (access key, secret, or bucket name) are incorrect.
 
-How to confirm: From the node running the control plane, test the connection manually. For S3: `aws s3 ls s3://<bucket> --endpoint <endpoint> --region <region>` with the stored credentials. Check the exact error message: `levelrail-cli backup-targets test <target-id>` shows the failure reason.
+How to confirm: From the node running the control plane, test the connection manually. For S3: `aws s3 ls s3://<bucket> --endpoint <endpoint> --region <region>` with the stored credentials. `levelrail-cli backup-targets test <target-id>` shows the failure reason.
 
-Fix: Verify the credentials match your storage provider (check in your provider's console). Verify the bucket name is correct and exists. If using a custom endpoint, ensure the URL is reachable from the control plane network. Update the target if needed: `levelrail-cli backup-targets update <target-id> --access-key-id <id> --secret-access-key <secret>`, then test again.
+Fix: Verify the credentials match your storage provider (check in your provider's console). Verify the bucket name and that it exists. If using a custom endpoint, ensure the URL is reachable from the control plane network. Update the target if needed: `levelrail-cli backup-targets update <target-id> --access-key-id <id> --secret-access-key <secret>`, then test again.
 
 Still stuck: See [Backup targets](/backups-and-storage#quick-start) for each provider's setup steps.
 
 ### Backup is old, "Health: 1 missing backup" warning
 
-Likely cause: A scheduled backup failed or is delayed. The most recent backup is older than expected based on the schedule.
+Likely cause: A scheduled backup failed or is delayed. The most recent backup is older than the schedule implies.
 
-How to confirm: Check the backup history: `levelrail-cli backups list <database> --limit 5` and note the timestamp on the most recent backup. Compare it to the cron schedule set on the database. Check for backup health: `levelrail-cli backups health` shows overall status. If health is not OK, check the Backups page in the dashboard for individual backup statuses and errors.
+How to confirm: Check the backup history with `levelrail-cli backups list <database> --limit 5` and compare the newest timestamp to the database's cron schedule. `levelrail-cli backups health` shows overall status. If health is not OK, check the Backups page in the dashboard for individual backup statuses and errors.
 
 Fix: Wait for the next scheduled backup to run (the reconciler checks every 15 seconds). If the backup is still not running after the scheduled time passes, trigger a manual backup: `levelrail-cli backups trigger <database> --target <target-id>`. If the trigger fails, check the backup target connectivity as described above.
 
@@ -557,9 +566,9 @@ Still stuck: Check control plane logs for the backup reconciler: `levelrail logs
 
 Likely cause: The backup file is corrupted, the restore target has incompatible schema, or the backup verification drill never ran.
 
-How to confirm: List available backups: `levelrail-cli backups list <database> --limit 5`. Check the backup status: each backup should show "completed". Run a restore drill to verify: `levelrail-cli backups drill run --backup <backup-id>`. A drill that fails means the backup may not restore cleanly.
+How to confirm: List available backups: `levelrail-cli backups list <database> --limit 5`. Run a restore drill to verify: `levelrail-cli backups drill run --backup <backup-id>`. A drill that fails means the backup may not restore cleanly.
 
-Fix: Use a different backup from the list (backups older than the failed one are usually safer). Run a drill first to catch issues before attempting a real restore. For a real restore: `levelrail-cli backups restore <database> --backup <backup-id> --confirm <database-name>`. This creates a new database instance from the backup, and you can switch traffic after verifying.
+Fix: Use an older backup (usually safer) and run a drill first to catch issues before a real restore. For a real restore: `levelrail-cli backups restore <database> --backup <backup-id> --confirm <database-name>`. This creates a new database instance from the backup, and you can switch traffic after verifying.
 
 Still stuck: See [Point-in-time restore](/database-upgrades) and [Restore drills](/backups-and-storage) for detailed recovery procedures.
 

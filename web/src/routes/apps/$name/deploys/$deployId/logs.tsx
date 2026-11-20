@@ -14,6 +14,7 @@ import { useDeployProgress } from '../../../../../hooks/useDeployProgress'
 import { useApp } from '../../../../../queries/apps'
 import { useBuildRunnerInfo } from '../../../../../queries/buildRunners'
 import { useGitSource } from '../../../../../queries/gitSources'
+import { useIsStaticSite } from '../../../../../queries/staticSites'
 import {
   computeDeployStages,
   computeRolloutSubStages,
@@ -147,6 +148,7 @@ function DeployLogsPage() {
   )
   const { data: app } = useApp(name)
   const { data: gitSource } = useGitSource(name)
+  const isStaticSite = useIsStaticSite(name)
   const { data: buildRow } = useBuildRunnerInfo(
     deployId,
     attempt?.status === 'running' || attempt?.status === 'queued',
@@ -205,6 +207,7 @@ function DeployLogsPage() {
     isLatestAttempt,
   )
   const isStatic =
+    isStaticSite ||
     gitSource?.build_type === 'static' ||
     /static/i.test(attempt.detected_framework ?? '')
   const state = deriveDeployState({
@@ -229,20 +232,34 @@ function DeployLogsPage() {
     attempt.finished_at,
   )
 
-  const noStageSteps: NoStageStep[] = [
-    {
-      key: 'pull',
-      status:
-        attempt.status === 'running' || attempt.status === 'queued'
-          ? 'running'
-          : attempt.status === 'failed' && subStages[0].status === 'skipped'
-            ? 'failed'
-            : 'done',
-    },
-    { key: 'create', status: rolloutTabStage.status },
-    { key: 'readiness', status: subStages[0].status },
-    { key: 'rollout', status: subStages[1].status },
-  ]
+  const noStageSteps: NoStageStep[] = isStatic
+    ? [
+        { key: 'build', status: stages[0].status },
+        { key: 'publish', status: rolloutTabStage.status },
+        {
+          key: 'live',
+          status:
+            state.phase === 'live'
+              ? 'done'
+              : state.phase === 'rollout_failed'
+                ? 'failed'
+                : 'pending',
+        },
+      ]
+    : [
+        {
+          key: 'pull',
+          status:
+            attempt.status === 'running' || attempt.status === 'queued'
+              ? 'running'
+              : attempt.status === 'failed' && subStages[0].status === 'skipped'
+                ? 'failed'
+                : 'done',
+        },
+        { key: 'create', status: rolloutTabStage.status },
+        { key: 'readiness', status: subStages[0].status },
+        { key: 'rollout', status: subStages[1].status },
+      ]
 
   return (
     <div className="flex h-full flex-col gap-5 overflow-y-auto">

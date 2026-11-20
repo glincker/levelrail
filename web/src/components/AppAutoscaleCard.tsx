@@ -15,6 +15,7 @@ import {
   useAutoscaleActions,
   type Autoscale,
 } from '../queries/autoscale'
+import { InfoTip } from '@/components/kit'
 import { AutoscaleForm } from './autoscale/AutoscaleForm'
 import { AutoscaleHistory } from './autoscale/AutoscaleHistory'
 
@@ -228,8 +229,10 @@ export function AppAutoscaleCard({ appName }: { appName: string }) {
   return (
     <Card>
       <CardHeader>
-        <CardTitle>{t('title')}</CardTitle>
-        <p className="text-sm text-muted-foreground">{t('description')}</p>
+        <div className="flex items-center gap-2">
+          <CardTitle>{t('title')}</CardTitle>
+          <InfoTip>{t('description')}</InfoTip>
+        </div>
       </CardHeader>
       <CardContent>{body}</CardContent>
     </Card>

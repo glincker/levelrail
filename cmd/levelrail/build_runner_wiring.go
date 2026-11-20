@@ -3,6 +3,7 @@ package main
 import (
 	"context"
 	"fmt"
+	"math"
 	"os"
 	"runtime"
 	"strings"
@@ -25,6 +26,10 @@ func buildRunnerNodeSource(db *store.DB, agentRegistry *agent.Registry, reports 
 		if err != nil {
 			return nil, fmt.Errorf("list node labels: %w", err)
 		}
+		trust, err := db.ListNodeBuildTrust(ctx)
+		if err != nil {
+			return nil, fmt.Errorf("list node build trust: %w", err)
+		}
 		infos := make([]build.NodeInfo, 0, len(nodes)+1)
 		infos = append(infos, build.NodeInfo{
 			Name: "control plane", Local: true, Online: true, AcceptsBuildWorkloads: true,
@@ -33,7 +38,7 @@ func buildRunnerNodeSource(db *store.DB, agentRegistry *agent.Registry, reports 
 		for _, n := range nodes {
 			info := build.NodeInfo{
 				ID: n.ID, Name: n.Name, AcceptsBuildWorkloads: n.AcceptsBuildWorkloads,
-				Draining: !n.Schedulable, Labels: labels[n.ID], Pressure: build.PressureUnknown,
+				Draining: !n.Schedulable, Labels: labels[n.ID], Pressure: build.PressureUnknown, Trust: trust[n.ID],
 			}
 			if _, err := agentRegistry.Get(n.ID); err == nil {
 				info.Online = true
@@ -47,6 +52,7 @@ func buildRunnerNodeSource(db *store.DB, agentRegistry *agent.Registry, reports 
 			if reports != nil {
 				if rep, ok := reports.Get(n.ID); ok {
 					info.CPUCores = int(rep.CPUCores)
+					info.DiskFreeBytes = int64(min(rep.DiskFreeBytes, math.MaxInt64))
 					info.Pressure = nodePressure(nodecapacity.Evaluate(nodecapacity.Sample{
 						DiskTotal: rep.DiskTotalBytes, DiskFree: rep.DiskFreeBytes,
 						InodesTotal: rep.DiskInodesTotal, InodesFree: rep.DiskInodesFree,
@@ -83,6 +89,7 @@ func buildRunnerQuery(db *store.DB) func(ctx context.Context, app string) build.
 			return q
 		}
 		if p, ok, err := db.GetBuildRunnerPref(ctx, app); err == nil && ok {
+			q.Mode = p.Mode
 			if p.Pinned {
 				q.Pinned = p.NodeID
 			} else {
@@ -96,6 +103,12 @@ func buildRunnerQuery(db *store.DB) func(ctx context.Context, app string) build.
 					q.LastNode = r.NodeID
 					break
 				}
+			}
+		}
+		if env, err := db.EnvironmentOfApp(ctx, app); err == nil && env != nil {
+			q.EnvKind = env.Kind
+			if allowed, err := db.GetEnvironmentBuilders(ctx, env.ID); err == nil {
+				q.AllowedBuilders = allowed
 			}
 		}
 		q.TargetArch = targetArch(ctx, db, app)

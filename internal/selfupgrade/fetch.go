@@ -48,7 +48,13 @@ type Fetcher struct {
 	Stall time.Duration
 	// Deadline caps the whole fetch. Zero uses the default limit.
 	Deadline time.Duration
+	// FallbackURL is tried once when the primary BaseURL fails. A release
+	// from it is refused unless it carries a signature bundle.
+	FallbackURL string
 }
+
+// ErrFallbackUnsigned is returned when only the fallback source answered and it published no signature.
+var ErrFallbackUnsigned = errors.New("the fallback source published no signature bundle")
 
 // ErrStalled is returned when a download stops receiving data.
 var ErrStalled = errors.New("download stalled")
@@ -69,6 +75,23 @@ func WithProgress(ctx context.Context, fn func(Progress)) context.Context {
 // Fetch downloads asset, checksums.txt and the signature bundle of tag into
 // dir. The checksums file is required, the bundle is optional.
 func (f Fetcher) Fetch(ctx context.Context, tag, asset, dir string) (Fetched, error) {
+	out, err := f.fetchFrom(ctx, tag, asset, dir)
+	if err == nil || f.FallbackURL == "" || ctx.Err() != nil || !ValidTag(tag) {
+		return out, err
+	}
+	fb := f
+	fb.BaseURL, fb.FallbackURL = f.FallbackURL, ""
+	alt, altErr := fb.fetchFrom(ctx, tag, asset, dir)
+	switch {
+	case altErr != nil:
+		return Fetched{}, fmt.Errorf("%w; fallback source also failed: %w", err, altErr)
+	case alt.BundlePath == "":
+		return Fetched{}, fmt.Errorf("%w; %w", err, ErrFallbackUnsigned)
+	}
+	return alt, nil
+}
+
+func (f Fetcher) fetchFrom(ctx context.Context, tag, asset, dir string) (Fetched, error) {
 	if !ValidTag(tag) {
 		return Fetched{}, fmt.Errorf("refusing unsafe release tag %q", tag)
 	}

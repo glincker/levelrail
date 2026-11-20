@@ -36,6 +36,9 @@ var ErrRemoteSecretsUnsupported = errors.New("build: secret mounts (private pack
 type RemoteRequest struct {
 	Kind RemoteKind
 
+	// Push, when set, makes the builder push to a registry and report the digest.
+	Push *PushGrant
+
 	// ContextDir is the build context root on whichever side currently
 	// holds it: the control plane's checkout when dispatching, the build
 	// node's unpacked copy when running.
@@ -141,11 +144,12 @@ func (c *Client) SolveRemote(ctx context.Context, req RemoteRequest, out io.Writ
 			BuildArgs:      req.BuildArgs,
 			NoCache:        req.NoCache,
 			Network:        req.Network,
+			Push:           req.Push,
 		}, req.Cache, out, progress)
 	case RemoteKindRailpack:
 		// Railpack ignores cache config here exactly as BuildRailpack does
 		// locally: newRailpackSolveOpt wires no cache entries at all.
-		return c.solveRailpack(ctx, RailpackRequest{SourceDir: req.ContextDir, Tag: req.Tag, Network: req.Network, Env: req.BuildArgs, Provider: req.RailpackProvider}, out, progress)
+		return c.solveRailpack(ctx, RailpackRequest{SourceDir: req.ContextDir, Tag: req.Tag, Network: req.Network, Env: req.BuildArgs, Provider: req.RailpackProvider, Push: req.Push}, out, progress)
 	default:
 		return nil, fmt.Errorf("build: dispatched build has an unrecognized kind %q", req.Kind)
 	}

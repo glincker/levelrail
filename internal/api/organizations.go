@@ -72,11 +72,11 @@ func (rt *Router) handleCreateOrganization(w http.ResponseWriter, r *http.Reques
 	if !decodeReq(w, r, &req) {
 		return
 	}
-	req.Name = strings.TrimSpace(req.Name)
-	if req.Name == "" {
-		writeError(w, http.StatusBadRequest, "name is required")
+	name, ok := cleanNameInput(w, "name", req.Name)
+	if !ok {
 		return
 	}
+	req.Name = name
 
 	caller, err := rt.resolveTeamCaller(r, "")
 	if err != nil {

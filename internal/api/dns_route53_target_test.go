@@ -54,12 +54,12 @@ func TestAppsBaseDomainAcceptedInsideListedRoute53Zone(t *testing.T) {
 	rt, _ := route53ZonesRouter(t)
 	for _, base := range []string{"apps.example.com", "run.apps.example.com", "apps.other.org"} {
 		upd := ingressSettingsUpdate{AppsBaseDomain: &base}
-		if msg := rt.validateDNSAutomationFields(context.Background(), upd); msg != "" {
+		if msg, _ := rt.validateDNSAutomationFields(context.Background(), upd); msg != "" {
 			t.Fatalf("apps_base_domain %q rejected: %s", base, msg)
 		}
 	}
 	base := "apps.unlisted.net"
-	if msg := rt.validateDNSAutomationFields(context.Background(), ingressSettingsUpdate{AppsBaseDomain: &base}); msg == "" {
+	if msg, _ := rt.validateDNSAutomationFields(context.Background(), ingressSettingsUpdate{AppsBaseDomain: &base}); msg == "" {
 		t.Fatal("a name outside every listed zone must be rejected")
 	}
 }

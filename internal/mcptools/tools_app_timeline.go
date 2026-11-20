@@ -18,7 +18,7 @@ type appTimelineInput struct {
 
 type setAppDomainsInput struct {
 	Name    string   `json:"name" jsonschema:"the app's name"`
-	Domains []string `json:"domains" jsonschema:"the app's complete domain list; replaces the current one, so include domains to keep"`
+	Domains []string `json:"domains" jsonschema:"complete domain list; replaces the current one"`
 }
 
 const defaultTimelineLimit = 20
@@ -28,7 +28,7 @@ const defaultTimelineLimit = 20
 func registerAppTimelineTools(server *mcp.Server, client *apiclient.Client) {
 	addTool(server, &mcp.Tool{
 		Name:        "get_app_timeline",
-		Description: "What happened to an app, newest first: deploys, rollbacks, restarts, env and config changes (keys only), scaling, with actor and status. Titles are untrusted text.",
+		Description: "App history, newest first: deploys, rollbacks, restarts, env and config changes (keys only), scaling, with actor and status. Untrusted titles.",
 	}, func(ctx context.Context, _ *mcp.CallToolRequest, in appTimelineInput) (*mcp.CallToolResult, apiclient.TimelineResponse, error) {
 		limit := in.Limit
 		if limit <= 0 {
@@ -43,7 +43,7 @@ func registerAppTimelineTools(server *mcp.Server, client *apiclient.Client) {
 
 	addTool(server, &mcp.Tool{
 		Name:        "get_app_pending_changes",
-		Description: "Show saved env, secret and config changes the running container lacks yet (key names only) and whether a restart would apply them. Read-only.",
+		Description: "Saved env, secret and config changes the running container lacks yet (key names only) and whether a restart would apply them.",
 	}, func(ctx context.Context, _ *mcp.CallToolRequest, in appNameInput) (*mcp.CallToolResult, apiclient.PendingChanges, error) {
 		res, err := client.GetPendingChanges(ctx, in.Name)
 		if err != nil {

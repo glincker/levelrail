@@ -12,7 +12,9 @@ import (
 // BuildOnlyRequest builds one image without touching desired state.
 type BuildOnlyRequest struct {
 	// Type is "dockerfile" (default) or "railpack".
-	Type          string
+	Type string
+	// App places the build under its environment policy, not the image name.
+	App           string
 	SourceDir     string
 	BaseDirectory string
 	Dockerfile    string
@@ -28,6 +30,7 @@ func (p *Pipeline) BuildOnly(ctx context.Context, req BuildOnlyRequest, progress
 	if err != nil {
 		return "", fmt.Errorf("deploy: build only: %w", err)
 	}
+	ctx = build.WithApp(ctx, req.App)
 	var res *build.Result
 	switch req.Type {
 	case "", "dockerfile":

@@ -12,6 +12,20 @@ const e = (
   state: LiveBadgeEntry['state'],
 ): LiveBadgeEntry => ({ app, domain, state, basis: 'stored' })
 
+describe('pickAppLiveEntry skipLocal', () => {
+  it('ignores a loopback host waiting for DNS but keeps a custom domain', () => {
+    const rows = [
+      e('web', 'web.localhost', 'waiting_dns'),
+      e('web', 'a.com', 'waiting_dns'),
+    ]
+    expect(pickAppLiveEntry(rows, 'web', true)?.domain).toBe('a.com')
+    expect(pickAppLiveEntry(rows.slice(0, 1), 'web', true)).toBeUndefined()
+    expect(pickAppLiveEntry(rows.slice(0, 1), 'web')?.domain).toBe(
+      'web.localhost',
+    )
+  })
+})
+
 describe('pickAppLiveEntry', () => {
   it('prefers a live domain over an earlier one waiting for DNS', () => {
     const got = pickAppLiveEntry(

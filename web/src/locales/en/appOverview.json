@@ -25,5 +25,60 @@
     "recreate": "Recreate",
     "blueGreen": "Blue-green",
     "rolling": "Rolling"
+  },
+  "preview": {
+    "label": "Preview",
+    "empty": "Nothing to preview until the first deploy finishes.",
+    "deploy": "Deploy",
+    "captured": "Captured {{when}}",
+    "off": "Previews are off for this app.",
+    "serverOff": "Previews are switched off on this server.",
+    "desktop": "Desktop",
+    "mobile": "Mobile",
+    "viewport": "Viewport",
+    "recapture": "Recapture",
+    "thumbLabel": "{{name}} on {{host}}",
+    "deployedAgo": "Deployed"
+  },
+  "staticStrip": {
+    "label": "Site summary",
+    "visitors": "Visitors",
+    "requests": "Requests",
+    "errors": "Errors",
+    "errorsInfo": "Share of 4xx and 5xx responses in the selected range. 4xx: {{c4}}, 5xx: {{c5}}.",
+    "visitorsInfo": "Unique visitors in the selected range, counted again after each privacy reset. Data may be partial for new sites.",
+    "deploy": "Last deploy",
+    "size": "Size",
+    "files_one": "{{count}} file",
+    "files_other": "{{count}} files",
+    "addDomain": "Add domain",
+    "errorsNone": "Share of 4xx and 5xx responses once the site has served requests."
+  },
+  "staticLine": {
+    "details": "Deploy details",
+    "source": {
+      "upload": "CLI upload",
+      "webhook": "Git push",
+      "git_push": "Git push",
+      "poll": "Git poll",
+      "pr_comment": "PR comment",
+      "manual": "Dashboard",
+      "promote": "Promotion",
+      "clone": "Clone",
+      "auto_rollback": "Auto rollback",
+      "schedule": "Schedule",
+      "image": "Image",
+      "compose": "Compose",
+      "restart": "Restart",
+      "start": "Start",
+      "stop": "Stop",
+      "other": "Deploy"
+    }
+  },
+  "recent": {
+    "label": "Recent deploys",
+    "all": "All deploys",
+    "logs": "Logs",
+    "rollback": "Rollback"
   }
 }

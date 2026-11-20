@@ -113,7 +113,7 @@ func (rt *Router) ingressHTTPSURL(s store.IngressSettings, host string) string {
 	}
 	port := s.PublicLinkPort()
 	if port == 0 {
-		port = rt.doctorHTTPSPort
+		port = rt.linkHTTPSPort()
 	}
 	return httpsURL(host, port)
 }
@@ -145,4 +145,25 @@ func httpsURL(host string, port int) string {
 		return "https://" + host
 	}
 	return "https://" + host + ":" + strconv.Itoa(port)
+}
+
+// linkHTTPSPort is the port a link must carry to reach this ingress: the live
+// bound port when the configured one is ephemeral (0), else the configured one.
+func (rt *Router) linkHTTPSPort() int {
+	if rt.doctorHTTPSPort == 0 && rt.ingressBoundPorts != nil {
+		if _, https := rt.ingressBoundPorts(); https > 0 {
+			return https
+		}
+	}
+	return rt.doctorHTTPSPort
+}
+
+// linkHTTPPort is linkHTTPSPort for plain http.
+func (rt *Router) linkHTTPPort() int {
+	if rt.doctorHTTPPort == 0 && rt.ingressBoundPorts != nil {
+		if http, _ := rt.ingressBoundPorts(); http > 0 {
+			return http
+		}
+	}
+	return rt.doctorHTTPPort
 }

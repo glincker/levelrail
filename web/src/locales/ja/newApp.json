@@ -82,11 +82,15 @@
       },
       "image": {
         "title": "コンテナイメージ",
-        "hint": "Compose、docker run、サイトも"
+        "hint": "Compose または docker run"
       },
       "sample": {
         "title": "サンプルアプリ",
         "hint": "ワンクリックで試す"
+      },
+      "static": {
+        "title": "静的サイト",
+        "hint": "フォルダまたは zip をドロップ、コンテナ不要"
       }
     },
     "sample": {
@@ -408,7 +412,7 @@
     "cardDescription": "ビルド済みのサイトのフォルダーまたは.zipをドロップして、公開中のものを置き換えます。_redirects、_headers、404.htmlは反映され、デプロイ履歴からロールバックできます。",
     "zoneLabel": "サイトのフォルダーまたはzipをここにドロップ",
     "dropHere": "フォルダーまたは.zipをここにドロップ",
-    "hint": "index.htmlを含むフォルダー、またはそのzipです。zip内の、単一のラッパーフォルダーは、自動で展開されます。",
+    "hint": "index.html を含むフォルダ、またはその zip。",
     "chooseFolder": "フォルダーを選択",
     "chooseZip": ".zipを選択",
     "empty": "そのドロップには、公開するものがありませんでした。空だったか、.gitやnode_modulesのような、無視されるファイルのみでした。ビルド済みのサイトを含むフォルダーをドロップしてください。",

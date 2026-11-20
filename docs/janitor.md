@@ -7,7 +7,7 @@ description: Reclaim disk on the control plane node on a schedule, with preview 
 
 Builds and deploys leave data behind. The janitor removes what nothing uses, in small bounded passes, and records what it did. Open it from Settings, Advanced, Automatic cleanup.
 
-It starts in preview mode: scheduled passes list what they would do and remove nothing. Turn off "Preview only" in the policy to let it act.
+Scheduled passes act by default, but only on unused data (see the table). Orphaned volumes are never deleted until you turn on "Delete volumes after quarantine". Turn on "Preview only" in the policy to make scheduled passes report without removing anything. A policy you saved earlier keeps its own setting.
 
 ## What it cleans
 

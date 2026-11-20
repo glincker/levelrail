@@ -133,6 +133,7 @@ func (rt *Router) registerIngressRoutes(mux *http.ServeMux) {
 	mux.HandleFunc("POST /api/v1/domains/{domain}/changes/{id}/rollback", rt.requireAbility(AbilityRoot, rt.handleRollbackDomainChange))
 	mux.HandleFunc("GET /api/v1/dns/zone", rt.requireAbility(AbilityRead, rt.handleDNSZone))
 	mux.HandleFunc("POST /api/v1/settings/ingress/apps-base-domain/backfill", rt.requireAbility(AbilityRoot, rt.handleBackfillBaseDomain))
+	mux.HandleFunc("POST /api/v1/settings/ingress/apps-base-domain/wildcard", rt.requireAbility(AbilityRoot, rt.handleBaseDomainWildcard))
 
 	// Domain redirect (domain_redirect.go): points one app-owned domain
 	// at an arbitrary target URL, enforced by Caddy's static_response

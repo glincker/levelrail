@@ -335,6 +335,10 @@ func (rt *Router) requireAbilityDecided(required string, decide authzDecision, n
 				if r, stackOK = rt.gateStackToken(w, r, pinned.userID); !stackOK {
 					return
 				}
+				var pinnedSiteOK bool
+				if r, pinnedSiteOK = rt.gateSiteToken(w, r, pinned.userID); !pinnedSiteOK {
+					return
+				}
 				allowed, err := decide(r.Context(), store.PrincipalTypeToken, pinned.userID, pinned.pinnedAbilities)
 				if err != nil {
 					rt.internalError(w, "api: pinned session ability decision failed", err)
@@ -444,6 +448,10 @@ func (rt *Router) requireAbilityDecided(required string, decide authzDecision, n
 		}
 		var stackOK bool
 		if r, stackOK = rt.gateStackToken(w, r, rec.ID); !stackOK {
+			return
+		}
+		var siteOK bool
+		if r, siteOK = rt.gateSiteToken(w, r, rec.ID); !siteOK {
 			return
 		}
 		abilities := rec.Abilities
@@ -707,6 +715,11 @@ func (rt *Router) handleRegister(w http.ResponseWriter, r *http.Request) {
 		writeError(w, http.StatusBadRequest, "username and password are required")
 		return
 	}
+	email, emailOK := cleanEmailInput(w, req.Email)
+	if !emailOK {
+		return
+	}
+	req.Email = email
 	n, err := rt.auth.CountUsers(r.Context())
 	if err != nil {
 		rt.internalError(w, "api: register: count users failed", err)

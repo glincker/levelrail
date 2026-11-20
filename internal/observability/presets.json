@@ -1,0 +1,145 @@
+{
+  "presets": [
+    {
+      "id": "grafana-cloud",
+      "name": "Grafana Cloud",
+      "description": "Send logs and metrics to a Grafana Cloud stack over OTLP/HTTP.",
+      "docs_anchor": "grafana-cloud",
+      "fields": [
+        {"key": "endpoint", "label": "OTLP endpoint", "type": "url", "required": true, "placeholder": "https://otlp-gateway-prod-us-central-0.grafana.net/otlp", "help": "Copy it from the stack's OpenTelemetry page, without a signal path."},
+        {"key": "instance_id", "label": "Instance ID", "required": true, "placeholder": "123456", "help": "The numeric instance ID shown next to the OTLP endpoint."},
+        {"key": "token", "label": "API token", "secret": true, "required": true, "help": "A cloud access policy token with the logs:write and metrics:write scopes."}
+      ],
+      "signals": [
+        {"signal": "logs", "kind": "logs_otlp", "default": true, "endpoint": "{endpoint}/v1/logs", "headers": {"Authorization": "Basic {basic:instance_id:token}"}},
+        {"signal": "metrics", "kind": "metrics_otlp", "default": true, "endpoint": "{endpoint}/v1/metrics", "headers": {"Authorization": "Basic {basic:instance_id:token}"}}
+      ],
+      "hints": {
+        "401": "The instance ID or token was rejected. Check that the instance ID is the number shown on the OTLP page and the token is current.",
+        "403": "The token is valid but lacks the logs:write or metrics:write scope. Create a new access policy with both scopes.",
+        "404": "The endpoint path was not found. Use the OTLP endpoint of your stack and leave out /v1/logs and /v1/metrics."
+      }
+    },
+    {
+      "id": "datadog",
+      "name": "Datadog",
+      "description": "Send logs to Datadog log intake. Metrics use the OTLP intake, which accepts delta temporality only, and are off by default.",
+      "docs_anchor": "datadog",
+      "fields": [
+        {"key": "site", "label": "Datadog site", "required": true, "default": "datadoghq.com", "choices": [
+          {"value": "datadoghq.com", "label": "US1 (datadoghq.com)"},
+          {"value": "us3.datadoghq.com", "label": "US3 (us3.datadoghq.com)"},
+          {"value": "us5.datadoghq.com", "label": "US5 (us5.datadoghq.com)"},
+          {"value": "datadoghq.eu", "label": "EU (datadoghq.eu)"},
+          {"value": "ap1.datadoghq.com", "label": "AP1 (ap1.datadoghq.com)"},
+          {"value": "ap2.datadoghq.com", "label": "AP2 (ap2.datadoghq.com)"},
+          {"value": "uk1.datadoghq.com", "label": "UK1 (uk1.datadoghq.com)"}
+        ]},
+        {"key": "api_key", "label": "API key", "secret": true, "required": true, "help": "An organization API key, not an application key."}
+      ],
+      "signals": [
+        {"signal": "logs", "kind": "logs_datadog", "default": true, "options": {"site": "{site}"}, "api_key": "{api_key}"},
+        {"signal": "metrics", "kind": "metrics_otlp", "default": false, "endpoint": "https://otlp.{site}/v1/metrics", "headers": {"dd-api-key": "{api_key}"}}
+      ],
+      "hints": {
+        "401": "Datadog rejected the API key. Use an API key, not an application key.",
+        "403": "The key is valid for another site. Pick the site that matches the URL you sign in to.",
+        "404": "The intake was not found for this site. Check the site value.",
+        "400": "Datadog rejected the payload. Its OTLP metrics intake accepts delta temporality only, and counters are exported as cumulative sums, so a metrics test may be rejected.",
+        "413": "The request was larger than the 5.1 MiB Datadog intake limit."
+      }
+    },
+    {
+      "id": "axiom",
+      "name": "Axiom",
+      "description": "Send logs and metrics to an Axiom dataset.",
+      "docs_anchor": "axiom",
+      "fields": [
+        {"key": "dataset", "label": "Dataset", "required": true, "placeholder": "levelrail", "help": "The dataset must already exist. Metrics need a metrics dataset."},
+        {"key": "region", "label": "Region", "default": "us", "choices": [
+          {"value": "us", "label": "US", "vars": {"host": "us-east-1.aws.edge.axiom.co"}},
+          {"value": "eu", "label": "EU", "vars": {"host": "eu-central-1.aws.edge.axiom.co"}}
+        ]},
+        {"key": "token", "label": "API token", "secret": true, "required": true, "help": "A token with ingest permission on the dataset."}
+      ],
+      "signals": [
+        {"signal": "logs", "kind": "logs_axiom", "default": true, "options": {"dataset": "{dataset}", "region": "{region}"}, "api_key": "{token}"},
+        {"signal": "metrics", "kind": "metrics_otlp", "default": true, "endpoint": "https://{host}/v1/metrics", "headers": {"Authorization": "Bearer {token}", "x-axiom-metrics-dataset": "{dataset}"}}
+      ],
+      "hints": {
+        "401": "Axiom rejected the token. Create a new API token with ingest permission.",
+        "403": "The token cannot ingest into this dataset. Grant ingest on the dataset to the token.",
+        "404": "The dataset was not found. Create it first or check its name and region."
+      }
+    },
+    {
+      "id": "honeycomb",
+      "name": "Honeycomb",
+      "description": "Send logs and metrics to Honeycomb over OTLP/HTTP.",
+      "docs_anchor": "honeycomb",
+      "fields": [
+        {"key": "region", "label": "Region", "default": "us", "choices": [
+          {"value": "us", "label": "US", "vars": {"host": "api.honeycomb.io"}},
+          {"value": "eu", "label": "EU", "vars": {"host": "api.eu1.honeycomb.io"}}
+        ]},
+        {"key": "dataset", "label": "Dataset (Classic only)", "placeholder": "levelrail", "help": "Only needed for Classic environments. Leave empty otherwise."},
+        {"key": "api_key", "label": "Ingest key", "secret": true, "required": true, "help": "An ingest key with permission to create datasets."}
+      ],
+      "signals": [
+        {"signal": "logs", "kind": "logs_otlp", "default": true, "endpoint": "https://{host}/v1/logs", "headers": {"x-honeycomb-team": "{api_key}", "x-honeycomb-dataset": "{dataset}"}},
+        {"signal": "metrics", "kind": "metrics_otlp", "default": true, "endpoint": "https://{host}/v1/metrics", "headers": {"x-honeycomb-team": "{api_key}", "x-honeycomb-dataset": "{dataset}"}}
+      ],
+      "hints": {
+        "401": "Honeycomb rejected the key. Check the key and that the region matches your team.",
+        "403": "The key cannot write to this dataset. Enable the create datasets permission on the key.",
+        "404": "The endpoint was not found. Check the region."
+      }
+    },
+    {
+      "id": "better-stack",
+      "name": "Better Stack",
+      "description": "Send logs to a Better Stack source. Metrics are not exported by this preset.",
+      "docs_anchor": "better-stack",
+      "fields": [
+        {"key": "ingesting_host", "label": "Ingesting host", "required": true, "placeholder": "s1234.eu-nbg-2.betterstackdata.com", "help": "Shown in the source settings."},
+        {"key": "source_token", "label": "Source token", "secret": true, "required": true, "help": "The token of an HTTP source."}
+      ],
+      "signals": [
+        {"signal": "logs", "kind": "logs_betterstack", "default": true, "endpoint": "https://{ingesting_host}", "api_key": "{source_token}"}
+      ],
+      "hints": {
+        "402": "The Better Stack plan quota or spending limit was reached.",
+        "403": "Better Stack rejected the source token or ingesting host. Copy both again from the source settings.",
+        "404": "The ingest endpoint was not found for this source. Check the ingesting host.",
+        "406": "The request body was not valid JSON or MessagePack.",
+        "413": "The request body was larger than 10 MiB."
+      }
+    },
+    {
+      "id": "otlp-http",
+      "name": "Generic OTLP/HTTP",
+      "description": "Send logs and metrics to any collector or backend that accepts OTLP/HTTP.",
+      "docs_anchor": "generic-otlp-http",
+      "fields": [
+        {"key": "endpoint", "label": "Base endpoint", "type": "url", "required": true, "placeholder": "https://collector.example.com", "help": "The URL before /v1/logs and /v1/metrics."},
+        {"key": "header_name", "label": "Auth header name", "default": "Authorization"},
+        {"key": "header_value", "label": "Auth header value", "secret": true, "help": "For example Bearer followed by the token. Leave empty for an open collector."}
+      ],
+      "signals": [
+        {"signal": "logs", "kind": "logs_otlp", "default": true, "endpoint": "{endpoint}/v1/logs", "headers": {"{header_name}": "{header_value}"}},
+        {"signal": "metrics", "kind": "metrics_otlp", "default": true, "endpoint": "{endpoint}/v1/metrics", "headers": {"{header_name}": "{header_value}"}}
+      ],
+      "hints": {
+        "401": "The collector rejected the credentials. Check the header name and value.",
+        "403": "The credentials are valid but not allowed to write. Check the collector's access rules.",
+        "404": "The collector has no OTLP/HTTP route at this URL. Check the base endpoint and that OTLP/HTTP is enabled.",
+        "400": "The collector rejected the payload as malformed. This is permanent, retrying will not help.",
+        "413": "The payload was larger than the collector accepts. Lower the batch size or raise the collector limit.",
+        "429": "The collector is rate limiting this sender. Delivery is retried automatically.",
+        "502": "The collector or a gateway in front of it is unavailable. Delivery is retried automatically.",
+        "503": "The collector is overloaded or unavailable. Delivery is retried automatically.",
+        "504": "The collector or a gateway in front of it timed out. Delivery is retried automatically."
+      }
+    }
+  ]
+}

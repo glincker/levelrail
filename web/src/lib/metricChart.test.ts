@@ -1,5 +1,9 @@
 import { describe, expect, it } from 'vitest'
-import { formatDurationValue, formatMetricValue } from './metricChart'
+import {
+  formatDurationValue,
+  formatMetricValue,
+  zeroFillSleep,
+} from './metricChart'
 
 describe('formatDurationValue', () => {
   it('renders whole seconds under a minute with no decimal', () => {
@@ -37,5 +41,24 @@ describe('formatMetricValue', () => {
   it('still formats percent and bytes as before', () => {
     expect(formatMetricValue('percent', 12.34)).toBe('12.3%')
     expect(formatMetricValue('bytes', 2048)).toBe('2.0 KiB')
+  })
+})
+
+describe('zeroFillSleep', () => {
+  const rows = [
+    { t: 10, primary: 5 },
+    { t: 20, primary: 6 },
+  ]
+
+  it('returns rows untouched while awake', () => {
+    expect(zeroFillSleep(rows, undefined, 0, 100, ['primary'])).toBe(rows)
+  })
+
+  it('drops points after sleep began and draws zero to the end', () => {
+    expect(zeroFillSleep(rows, 15, 0, 100, ['primary'])).toEqual([
+      { t: 10, primary: 5 },
+      { t: 15, primary: 0 },
+      { t: 100, primary: 0 },
+    ])
   })
 })

@@ -86,8 +86,11 @@ export function stepGroups(guide: SetupGuide): {
   return { next, todo, settled }
 }
 
-/** ESSENTIAL_STEPS is the "Ship your first app" group: the deploy comes before any server hardening. */
-export const ESSENTIAL_STEPS: readonly SetupGuideStepId[] = ['first_app']
+/** ESSENTIAL_STEPS is the "Ship your first app" group: the deploy and its domain come before any server hardening. */
+export const ESSENTIAL_STEPS: readonly SetupGuideStepId[] = [
+  'first_app',
+  'app_domain',
+]
 
 /** PRODUCTION_FIRST orders the "Make it production ready" group; unlisted steps keep the server order after these. */
 const PRODUCTION_FIRST: readonly SetupGuideStepId[] = [
@@ -130,4 +133,15 @@ export function firstAppProgress(
   const at = FIRST_APP_MILESTONES.findIndex((m) => m === guide?.milestone)
   if (at === -1 || at === FIRST_APP_MILESTONES.length - 1) return null
   return { done: at + 1, total: FIRST_APP_MILESTONES.length }
+}
+
+/** stepCount is the "3 of 6" figure: settled steps over all steps, never a stuck percentage. */
+export function stepCount(guide: SetupGuide | undefined): {
+  done: number
+  total: number
+  percent: number
+} {
+  const total = guide?.total ?? 0
+  const done = guide?.done ?? 0
+  return { done, total, percent: total > 0 ? (done / total) * 100 : 0 }
 }

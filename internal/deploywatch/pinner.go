@@ -20,6 +20,11 @@ type PinStore interface {
 	DeleteRollbackPin(ctx context.Context, serviceName, attemptID string) error
 }
 
+// userPinLister is the optional store surface listing a person's deploy pins.
+type userPinLister interface {
+	ListPinnedDeploys(ctx context.Context, serviceName string) (map[string]bool, error)
+}
+
 // Pinner tags each release that takes traffic with an extra local
 // reference, keeping the newest Keep per app. It only pins apps on the
 // local node, where its image client can reach the image.
@@ -104,7 +109,19 @@ func (p *Pinner) prune(ctx context.Context, serviceName string) {
 	if err != nil || len(pins) <= p.Keep {
 		return
 	}
-	for _, old := range pins[p.Keep:] {
+	var held map[string]bool
+	if l, ok := p.Store.(userPinLister); ok {
+		held, _ = l.ListPinnedDeploys(ctx, serviceName)
+	}
+	// A person's pins never use up the automatic slots and are never untagged.
+	kept := 0
+	for _, old := range pins {
+		if held[old.DeployAttemptID] {
+			continue
+		}
+		if kept++; kept <= p.Keep {
+			continue
+		}
 		if err := p.Images.UntagImage(ctx, old.PinRef); err != nil {
 			p.logger().Warn("deploywatch: unpin old release failed", slog.String("service", serviceName), slog.String("pin", old.PinRef), slog.String("error", err.Error()))
 			continue

@@ -9,6 +9,8 @@ import (
 	"fmt"
 	"log/slog"
 	"net/http"
+	"net/url"
+	"path"
 	"strings"
 	"time"
 
@@ -81,8 +83,44 @@ type backupTargetResource struct {
 // backupProviderLocal is the API-only provider name for a host directory target.
 const backupProviderLocal = "local"
 
+// backupProviderWebDAV is the API-only provider name for a WebDAV share; stored as custom with a dav+ endpoint.
+const backupProviderWebDAV = "webdav"
+
+// validateWebDAVTarget checks the https endpoint (private hosts only when the WebDAV private network setting is on)
+// and the directory path. username and password reuse the access key fields.
+func validateWebDAVTarget(ctx context.Context, name, endpoint, dir, caBundle string) error {
+	if name == "" {
+		return errors.New("name is required")
+	}
+	u, err := url.Parse(endpoint)
+	if err != nil || u.Host == "" || u.User != nil || (u.Scheme != "https" && (u.Scheme != "http" || !backup.WebDAVAllowPrivate())) {
+		return errors.New("endpoint must be an https URL without embedded credentials")
+	}
+	if err := backup.ValidateWebDAVHost(ctx, endpoint); err != nil {
+		return err
+	}
+	if strings.Contains(dir, "..") {
+		return errors.New("bucket (the remote directory) must not contain '..'")
+	}
+	if caBundle != "" {
+		if err := backup.ValidateCABundle(caBundle); err != nil {
+			return err
+		}
+	}
+	return nil
+}
+
+// webDAVStored maps an API webdav target onto the stored custom provider shape.
+func webDAVStored(t *store.BackupTarget, endpoint, dir string) {
+	t.Provider, t.Endpoint, t.Region = store.BackupProviderCustom, store.WebDAVEndpointScheme+endpoint, ""
+	t.Bucket = strings.Trim(path.Clean("/"+dir), "/")
+}
+
 func toBackupTargetResource(t store.BackupTarget) backupTargetResource {
 	provider, endpoint, localRoot := t.Provider, t.Endpoint, ""
+	if strings.HasPrefix(t.Endpoint, store.WebDAVEndpointScheme) {
+		provider, endpoint = backupProviderWebDAV, strings.TrimPrefix(t.Endpoint, store.WebDAVEndpointScheme)
+	}
 	if strings.HasPrefix(t.Endpoint, store.LocalEndpointScheme) {
 		provider, endpoint = backupProviderLocal, ""
 		localRoot = backup.ResolvedLocalRoot()
@@ -113,6 +151,8 @@ type createBackupTargetRequest struct {
 	SecretAccessKey string `json:"secret_access_key"`
 	// EncryptDumps defaults to on when this control plane has a backup key.
 	EncryptDumps *bool `json:"encrypt_dumps,omitempty"`
+	// CABundle is an optional write-only PEM bundle for webdav targets, stored as a secret.
+	CABundle string `json:"ca_bundle,omitempty"`
 }
 
 // validateCreateBackupTargetRequest checks everything except whether the
@@ -140,6 +180,13 @@ func validateBackupTargetFields(name, provider, endpoint, region, bucket string)
 	if bucket == "" {
 		return errors.New("bucket is required")
 	}
+	// Internal forms are only produced server side by the matching provider paths.
+	low := strings.ToLower(strings.TrimSpace(endpoint))
+	for _, internal := range []string{store.WebDAVEndpointScheme, store.LocalEndpointScheme, store.AgentEndpointScheme} {
+		if strings.HasPrefix(low, internal) {
+			return errors.New("endpoint must be an http or https URL")
+		}
+	}
 	if endpoint == "" && provider != store.BackupProviderAWS {
 		return errors.New("endpoint is required for r2 and custom providers")
 	}
@@ -149,7 +196,39 @@ func validateBackupTargetFields(name, provider, endpoint, region, bucket string)
 	return nil
 }
 
-func validateCreateBackupTargetRequest(req createBackupTargetRequest) error {
+// backupTargetDestination reduces a stored target to the parts that decide where its
+// credentials are sent: provider kind, scheme, host and effective port.
+func backupTargetDestination(provider, endpoint string) string {
+	kind, raw := provider, endpoint
+	switch {
+	case strings.HasPrefix(endpoint, store.WebDAVEndpointScheme):
+		kind, raw = backupProviderWebDAV, strings.TrimPrefix(endpoint, store.WebDAVEndpointScheme)
+	case strings.HasPrefix(endpoint, store.LocalEndpointScheme):
+		return backupProviderLocal
+	case strings.HasPrefix(endpoint, store.AgentEndpointScheme):
+		return endpoint
+	}
+	u, err := url.Parse(raw)
+	if err != nil || raw == "" {
+		return kind + "|" + raw
+	}
+	port := u.Port()
+	if port == "" {
+		port = map[string]string{"https": "443", "http": "80"}[strings.ToLower(u.Scheme)]
+	}
+	return kind + "|" + strings.ToLower(u.Scheme) + "|" + strings.ToLower(u.Hostname()) + "|" + port
+}
+
+func validateCreateBackupTargetRequest(ctx context.Context, req createBackupTargetRequest) error {
+	if req.Provider == backupProviderWebDAV {
+		if err := validateWebDAVTarget(ctx, req.Name, req.Endpoint, req.Bucket, req.CABundle); err != nil {
+			return err
+		}
+		if req.AccessKeyID == "" || req.SecretAccessKey == "" {
+			return errors.New("access_key_id (username) and secret_access_key (password) are required")
+		}
+		return nil
+	}
 	if req.Provider == backupProviderLocal {
 		if req.Name == "" {
 			return errors.New("name is required")
@@ -186,9 +265,21 @@ type updateBackupTargetRequest struct {
 	Bucket          string `json:"bucket"`
 	AccessKeyID     string `json:"access_key_id,omitempty"`
 	SecretAccessKey string `json:"secret_access_key,omitempty"`
+	CABundle        string `json:"ca_bundle,omitempty"`
+	// ClearCABundle drops the stored bundle; ca_bundle is write-only so it cannot be sent empty.
+	ClearCABundle bool `json:"clear_ca_bundle,omitempty"`
 }
 
-func validateUpdateBackupTargetRequest(req updateBackupTargetRequest) error {
+func validateUpdateBackupTargetRequest(ctx context.Context, req updateBackupTargetRequest) error {
+	if req.Provider == backupProviderWebDAV {
+		if err := validateWebDAVTarget(ctx, req.Name, req.Endpoint, req.Bucket, req.CABundle); err != nil {
+			return err
+		}
+		if (req.AccessKeyID == "") != (req.SecretAccessKey == "") {
+			return errors.New("access_key_id and secret_access_key must be set together to rotate credentials")
+		}
+		return nil
+	}
 	if err := validateBackupTargetFields(req.Name, req.Provider, req.Endpoint, req.Region, req.Bucket); err != nil {
 		return err
 	}
@@ -276,7 +367,7 @@ func (rt *Router) handleCreateBackupTarget(w http.ResponseWriter, r *http.Reques
 	if !decodeReq(w, r, &req) {
 		return
 	}
-	if err := validateCreateBackupTargetRequest(req); err != nil {
+	if err := validateCreateBackupTargetRequest(r.Context(), req); err != nil {
 		writeError(w, http.StatusBadRequest, err.Error())
 		return
 	}
@@ -306,7 +397,16 @@ func (rt *Router) handleCreateBackupTarget(w http.ResponseWriter, r *http.Reques
 		clean, _ := backup.CleanLocalPath(req.Bucket)
 		target.Provider, target.Endpoint, target.Region, target.Bucket = store.BackupProviderCustom, store.LocalEndpointScheme, "", clean
 	} else {
+		if req.Provider == backupProviderWebDAV {
+			webDAVStored(&target, req.Endpoint, req.Bucket)
+		}
 		secretsKey := store.BackupTargetSecretsKey(id)
+		if req.CABundle != "" {
+			if err := rt.backupSecrets.SetValue(r.Context(), secretsKey, "ca_bundle", req.CABundle); err != nil {
+				rt.internalError(w, "api: create backup target: set ca_bundle failed", err, slog.String("id", id))
+				return
+			}
+		}
 		if err := rt.backupSecrets.SetValue(r.Context(), secretsKey, "access_key_id", req.AccessKeyID); err != nil {
 			rt.internalError(w, "api: create backup target: set access_key_id failed", err, slog.String("id", id))
 			return
@@ -333,7 +433,8 @@ func (rt *Router) handleCreateBackupTarget(w http.ResponseWriter, r *http.Reques
 func (rt *Router) handleUpdateBackupTarget(w http.ResponseWriter, r *http.Request) {
 	id := r.PathValue("id")
 
-	if _, err := rt.backupTargets.GetBackupTarget(r.Context(), id); errors.Is(err, store.ErrBackupTargetNotFound) {
+	current, err := rt.backupTargets.GetBackupTarget(r.Context(), id)
+	if errors.Is(err, store.ErrBackupTargetNotFound) {
 		writeError(w, http.StatusNotFound, "backup target not found")
 		return
 	} else if err != nil {
@@ -345,11 +446,38 @@ func (rt *Router) handleUpdateBackupTarget(w http.ResponseWriter, r *http.Reques
 	if !decodeReq(w, r, &req) {
 		return
 	}
-	if err := validateUpdateBackupTargetRequest(req); err != nil {
+	if err := validateUpdateBackupTargetRequest(r.Context(), req); err != nil {
 		writeError(w, http.StatusBadRequest, err.Error())
 		return
 	}
 
+	provider, endpoint, region, bucket := req.Provider, req.Endpoint, req.Region, req.Bucket
+	if req.Provider == backupProviderWebDAV {
+		var t store.BackupTarget
+		webDAVStored(&t, req.Endpoint, req.Bucket)
+		provider, endpoint, region, bucket = t.Provider, t.Endpoint, t.Region, t.Bucket
+	}
+	// Stored credentials only follow an unchanged destination; a new one needs its own.
+	if req.AccessKeyID == "" && backupTargetDestination(current.Provider, current.Endpoint) != backupTargetDestination(provider, endpoint) {
+		writeError(w, http.StatusBadRequest, "changing the provider or endpoint requires access_key_id and secret_access_key in the same request")
+		return
+	}
+	if req.Provider == backupProviderWebDAV {
+		if (req.CABundle != "" || req.ClearCABundle) && req.AccessKeyID == "" {
+			writeError(w, http.StatusBadRequest, "changing the CA bundle requires access_key_id and secret_access_key in the same request")
+			return
+		}
+		if (req.CABundle != "" || req.ClearCABundle) && rt.backupSecrets != nil {
+			bundle := req.CABundle
+			if req.ClearCABundle {
+				bundle = ""
+			}
+			if err := rt.backupSecrets.SetValue(r.Context(), store.BackupTargetSecretsKey(id), "ca_bundle", bundle); err != nil {
+				rt.internalError(w, "api: update backup target: set ca_bundle failed", err, slog.String("id", id))
+				return
+			}
+		}
+	}
 	if req.AccessKeyID != "" {
 		if rt.backupSecrets == nil {
 			writeError(w, http.StatusNotImplemented, "backup targets are not configured on this control plane (no master key set)")
@@ -366,7 +494,7 @@ func (rt *Router) handleUpdateBackupTarget(w http.ResponseWriter, r *http.Reques
 		}
 	}
 
-	if err := rt.backupTargets.UpdateBackupTarget(r.Context(), id, req.Name, req.Provider, req.Endpoint, req.Region, req.Bucket); err != nil {
+	if err := rt.backupTargets.UpdateBackupTarget(r.Context(), id, req.Name, provider, endpoint, region, bucket); err != nil {
 		if errors.Is(err, store.ErrBackupTargetNotFound) {
 			writeError(w, http.StatusNotFound, "backup target not found")
 			return
@@ -470,6 +598,37 @@ func (rt *Router) handleTestBackupTarget(w http.ResponseWriter, r *http.Request)
 	w.WriteHeader(http.StatusNoContent)
 }
 
+// BackupTargetProber is the optional richer test: latency and free space.
+type BackupTargetProber interface {
+	ProbeTarget(ctx context.Context, targetID string) (backup.TestReport, error)
+}
+
+// handleProbeBackupTarget handles POST /api/v1/backup-targets/{id}/probe: the test-connection
+// check, answering 200 with {ok, latency_ms, free_bytes?} instead of an empty 204.
+func (rt *Router) handleProbeBackupTarget(w http.ResponseWriter, r *http.Request) {
+	prober, ok := rt.backupTargetTester.(BackupTargetProber)
+	if !ok || rt.backupTargetTester == nil {
+		writeError(w, http.StatusNotImplemented, "backup target testing is not configured on this control plane (no master key set)")
+		return
+	}
+	id := r.PathValue("id")
+	if _, err := rt.backupTargets.GetBackupTarget(r.Context(), id); errors.Is(err, store.ErrBackupTargetNotFound) {
+		writeError(w, http.StatusNotFound, "backup target not found")
+		return
+	} else if err != nil {
+		rt.internalError(w, "api: probe backup target: load failed", err, slog.String("id", id))
+		return
+	}
+	ctx, cancel := context.WithTimeout(r.Context(), backupTargetTestTimeout)
+	defer cancel()
+	rep, err := prober.ProbeTarget(ctx, id)
+	if err != nil {
+		writeError(w, http.StatusBadGateway, backupTargetTestErrorMessage(err))
+		return
+	}
+	writeJSON(w, http.StatusOK, rep)
+}
+
 // backupTargetTestErrorMessage classifies a failed TestTarget error into
 // the two specific reasons HeadBucket's own contract can actually
 // distinguish (see api_op_HeadBucket.go's doc comment: a generic 403 for
@@ -484,7 +643,9 @@ func backupTargetTestErrorMessage(err error) string {
 	if errors.As(err, &respErr) {
 		switch respErr.HTTPStatusCode() {
 		case http.StatusUnauthorized, http.StatusForbidden:
-			return "authentication rejected by the storage endpoint: check the access key id and secret access key"
+			return "authentication rejected by the storage endpoint: check the access key id and secret access key; the key needs s3:ListBucket on the bucket and s3:PutObject, s3:GetObject and s3:DeleteObject on its objects"
+		case http.StatusMovedPermanently, http.StatusBadRequest:
+			return "the storage endpoint refused the request, usually because the bucket is in another region: check the region"
 		case http.StatusNotFound:
 			return "bucket not found at the configured endpoint: check the bucket name, region, and endpoint"
 		}

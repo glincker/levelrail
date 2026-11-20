@@ -764,7 +764,20 @@
     "backfillPreview": "Preview existing apps",
     "backfillApply_one": "Apply to {{count}} app",
     "backfillApply_other": "Apply to {{count}} apps",
-    "backfillNone": "Every app already has a domain."
+    "backfillNone": "Every app already has a domain.",
+    "wildcardHelp": "Point every {{base}} address at this server with one wildcard record:",
+    "wildcardPreview": "Preview wildcard record",
+    "wildcardApply": "Create wildcard record",
+    "wildcardReplace": "Replace the existing record",
+    "wildcardRecord": "Record: {{type}} {{name}} -> {{value}}",
+    "wildcardExisting": "Existing: {{type}} {{name}} -> {{value}}",
+    "wildcardConflict": "A different record already exists at this name and will not be overwritten unless you replace it.",
+    "zoneMatched": "Matched zone {{zone}} in {{provider}}",
+    "suggestions": "Zones your provider lists:",
+    "iamHint": "IAM actions needed: {{actions}}",
+    "copyIam": "Copy IAM actions",
+    "copy": "Copy",
+    "copied": "Copied"
   },
   "automation": {
     "title": "Domain automation",
@@ -1183,7 +1196,10 @@
     "addressLabel": "Server address",
     "httpsLabel": "HTTPS",
     "portsLabel": "Ports check",
-    "unknown": "Not checked yet"
+    "unknown": "Not checked yet",
+    "addressTip": "The public IP your domains must point to.",
+    "httpsTip": "Certificates are issued automatically once HTTPS is on.",
+    "portsTip": "Checks that ports 80 and 443 reach this server from the internet."
   },
   "cutover": {
     "title": "Cutover checklist",

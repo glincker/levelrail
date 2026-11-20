@@ -66,7 +66,7 @@ function TestBox({ app }: Readonly<{ app: string }>) {
 
   const submit = (e: FormEvent) => {
     e.preventDefault()
-    if (!invalid) test.mutate({ path, query })
+    if (!invalid && !test.isPending) test.mutate({ path, query })
   }
   return (
     <Card>
@@ -102,8 +102,8 @@ function TestBox({ app }: Readonly<{ app: string }>) {
               onChange={(e) => setQuery(e.target.value)}
             />
           </div>
-          <Button type="submit" disabled={invalid || test.isPending}>
-            {test.isPending ? t('test.running') : t('test.run')}
+          <Button type="submit" disabled={invalid} aria-busy={test.isPending}>
+            {t('test.run')}
           </Button>
         </form>
         {invalid ? (

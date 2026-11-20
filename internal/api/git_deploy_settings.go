@@ -34,6 +34,8 @@ type gitDeploySettings struct {
 	BranchPattern     string   `json:"branch_pattern"`
 	FetchSubmodules   bool     `json:"fetch_submodules"`
 	FetchLFS          bool     `json:"fetch_lfs"`
+	// TriggerMode is push, release or manual.
+	TriggerMode string `json:"trigger_mode"`
 }
 
 type setGitDeploySettingsRequest struct {
@@ -46,6 +48,7 @@ type setGitDeploySettingsRequest struct {
 	BranchPattern     *string   `json:"branch_pattern,omitempty"`
 	FetchSubmodules   *bool     `json:"fetch_submodules,omitempty"`
 	FetchLFS          *bool     `json:"fetch_lfs,omitempty"`
+	TriggerMode       *string   `json:"trigger_mode,omitempty"`
 }
 
 // AuditActionGitFetchExtras marks the audit row of a submodule or LFS toggle.
@@ -75,6 +78,7 @@ func toGitDeploySettings(gs store.GitSource) gitDeploySettings {
 		BranchPattern:     gs.BranchPattern,
 		FetchSubmodules:   gs.FetchSubmodules,
 		FetchLFS:          gs.FetchLFS,
+		TriggerMode:       effectiveGitSourceTriggerMode(gs.TriggerMode),
 	}
 }
 
@@ -97,8 +101,8 @@ func (rt *Router) handleSetGitDeploySettings(w http.ResponseWriter, r *http.Requ
 		writeError(w, http.StatusBadRequest, "invalid request body")
 		return
 	}
-	if req.DeployPaths == nil && req.DeployPathsIgnore == nil && req.ReportStatus == nil && req.WaitForCI == nil && req.CIRequiredChecks == nil && req.TagPattern == nil && req.BranchPattern == nil && req.FetchSubmodules == nil && req.FetchLFS == nil {
-		writeError(w, http.StatusBadRequest, "deploy_paths, deploy_paths_ignore, report_status, wait_for_ci, ci_required_checks, tag_pattern, branch_pattern, fetch_submodules or fetch_lfs is required")
+	if req.DeployPaths == nil && req.DeployPathsIgnore == nil && req.ReportStatus == nil && req.WaitForCI == nil && req.CIRequiredChecks == nil && req.TagPattern == nil && req.BranchPattern == nil && req.FetchSubmodules == nil && req.FetchLFS == nil && req.TriggerMode == nil {
+		writeError(w, http.StatusBadRequest, "deploy_paths, deploy_paths_ignore, report_status, wait_for_ci, ci_required_checks, tag_pattern, branch_pattern, fetch_submodules, fetch_lfs or trigger_mode is required")
 		return
 	}
 	gs, err := rt.gitSources.GetGitSource(ctx, name)
@@ -138,6 +142,14 @@ func (rt *Router) handleSetGitDeploySettings(w http.ResponseWriter, r *http.Requ
 	if req.FetchLFS != nil {
 		next.FetchLFS = *req.FetchLFS
 	}
+	if req.TriggerMode != nil {
+		mode, err := normalizeGitSourceTriggerMode(*req.TriggerMode)
+		if err != nil || (gs.ComposePath != "" && mode == spec.TriggerModeManual) {
+			writeError(w, http.StatusBadRequest, "trigger_mode must be push, release or manual (a compose source: push or release)")
+			return
+		}
+		next.TriggerMode = mode
+	}
 	if err := rt.validateTriggerPatterns(ctx, req); err != nil {
 		writeError(w, http.StatusBadRequest, err.Error())
 		return
@@ -157,6 +169,9 @@ func (rt *Router) handleSetGitDeploySettings(w http.ResponseWriter, r *http.Requ
 		return
 	}
 	if (req.FetchSubmodules != nil || req.FetchLFS != nil) && !rt.saveFetchExtras(w, r, name, next) {
+		return
+	}
+	if req.TriggerMode != nil && !rt.saveTriggerMode(w, r, name, *gs, next.TriggerMode) {
 		return
 	}
 	if err := rt.gitSources.SetGitSourceDeploySettings(ctx, name, next.DeployPaths, next.DeployPathsIgnore, next.ReportStatus); err != nil {
@@ -262,6 +277,28 @@ func (rt *Router) skipPushForPaths(ctx context.Context, name string, gs store.Gi
 		return ""
 	}
 	return fmt.Sprintf("ignored: %s\n", res.Reason)
+}
+
+// AuditActionGitTriggerMode marks the audit row of a deploy-on-push change.
+const AuditActionGitTriggerMode = "git_source.trigger_mode"
+
+// triggerModeSetter is the optional store surface for the trigger mode.
+type triggerModeSetter interface {
+	SetGitSourceTriggerMode(ctx context.Context, serviceName, mode string) error
+}
+
+func (rt *Router) saveTriggerMode(w http.ResponseWriter, r *http.Request, name string, prev store.GitSource, mode string) bool {
+	setter, ok := rt.gitSources.(triggerModeSetter)
+	if !ok {
+		writeError(w, http.StatusNotImplemented, "trigger mode is not editable on this control plane")
+		return false
+	}
+	if err := setter.SetGitSourceTriggerMode(r.Context(), name, mode); err != nil {
+		rt.internalError(w, "api: set git source trigger mode failed", err, slog.String("name", name))
+		return false
+	}
+	rt.auditGitSetting(r, name, AuditActionGitTriggerMode, map[string]any{"app": name, "from": effectiveGitSourceTriggerMode(prev.TriggerMode), "to": mode})
+	return true
 }
 
 func (rt *Router) saveFetchExtras(w http.ResponseWriter, r *http.Request, name string, next gitDeploySettings) bool {

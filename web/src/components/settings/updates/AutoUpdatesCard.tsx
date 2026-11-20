@@ -2,6 +2,7 @@ import { useId, useState } from 'react'
 import { useQuery } from '@tanstack/react-query'
 import { useTranslation } from 'react-i18next'
 import { ChevronRightGlassIcon, ClockGlassIcon } from '@thesvg/ui-react'
+import { ApiErrorAlert } from '@/components/ApiErrorAlert'
 import { Button } from '@/components/ui/button'
 import { Card, CardContent } from '@/components/ui/card'
 import { Field, FieldLabel } from '@/components/ui/field'
@@ -40,6 +41,7 @@ import {
   type UpgradePolicyInput,
 } from '@/queries/upgradeSchedule'
 import { cn } from '@/lib/utils'
+import { AutoUpdateStatus } from './AutoUpdateStatus'
 
 const LEVELS = ['patch', 'any'] as const
 const DAY_CHOICES: WindowDays[] = ['daily', 'weekdays', 'weekends']
@@ -385,6 +387,33 @@ function AutoUpdatesBody({
           </div>
         </div>
         {on ? (
+          <div className="space-y-0.5 text-xs text-muted-foreground">
+            <p>
+              {t('quick.installSteps', {
+                start: win.start,
+                end: win.end,
+                zone: policy.timezone || 'UTC',
+              })}
+            </p>
+            {policy.next_windows && policy.next_windows.length > 0 ? (
+              <p>
+                {t('quick.nextWindows', {
+                  list: policy.next_windows
+                    .map(
+                      (w) =>
+                        `${new Date(w.start).toLocaleString([], { weekday: 'short', hour: '2-digit', minute: '2-digit' })} / ${new Date(w.start).toISOString().slice(11, 16)} UTC`,
+                    )
+                    .join(', '),
+                })}
+              </p>
+            ) : null}
+          </div>
+        ) : null}
+        <p className="text-xs text-muted-foreground">
+          {t(settings.auto_update_enabled ? 'quick.checkOn' : 'quick.checkOff')}
+        </p>
+        {policy.status ? <AutoUpdateStatus status={policy.status} /> : null}
+        {on ? (
           <div>
             <button
               type="button"
@@ -433,10 +462,8 @@ export function AutoUpdatesCard() {
   if (policy.isError) {
     return (
       <Card>
-        <CardContent className="flex items-center justify-between gap-3">
-          <p role="alert" className="text-sm text-destructive">
-            {t('quick.loadError')}
-          </p>
+        <CardContent className="space-y-3">
+          <ApiErrorAlert error={policy.error} />
           <Button
             type="button"
             size="sm"

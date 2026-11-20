@@ -138,3 +138,22 @@ export function useDisconnectRoute53Dns() {
     },
   })
 }
+
+// POST /api/v1/settings/route53-dns/test: probes each needed IAM action with
+// the stored key. Reads only, never writes a record.
+export function useTestRoute53Dns() {
+  return useMutation<DnsTokenVerification, ApiError, void>({
+    mutationFn: async () => {
+      const res = await fetch('/api/v1/settings/route53-dns/test', {
+        method: 'POST',
+      })
+      if (!res.ok) {
+        throw new ApiError(
+          res.status,
+          await readErrorMessage(res, `test route53 dns failed: ${res.status}`),
+        )
+      }
+      return (await res.json()) as DnsTokenVerification
+    },
+  })
+}

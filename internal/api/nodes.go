@@ -70,6 +70,8 @@ type nodeResource struct {
 	Provider  string    `json:"provider,omitempty"`
 	Zone      string    `json:"zone,omitempty"`
 	CreatedAt time.Time `json:"created_at"`
+	// BuildTrust is the builder tier (server, managed or personal), set on list and get.
+	BuildTrust string `json:"build_trust,omitempty"`
 	// AlertStatus is only populated by handleGetNode (a single-node
 	// fetch), never handleListNodes: it costs a handful of live metrics
 	// queries per kind, which is fine for one node on its own detail page
@@ -268,9 +270,11 @@ func (rt *Router) handleListNodes(w http.ResponseWriter, r *http.Request) {
 		counts, _ = cs.NodeResourceCounts(r.Context())
 	}
 	failures := rt.failureSummaries(r.Context())
+	tiers := rt.nodeBuildTrusts(r.Context())
 	out := make([]nodeResource, 0, len(nodes))
 	for _, n := range nodes {
 		res := toNodeResource(n)
+		res.BuildTrust = tiers[n.ID]
 		res.Failure = failures[n.ID]
 		res.IsLocal = n.ID == rt.localNodeID
 		res.ResourceCount = counts[n.ID]
@@ -309,6 +313,7 @@ func (rt *Router) handleGetNode(w http.ResponseWriter, r *http.Request) {
 	}
 
 	res := toNodeResource(*n)
+	res.BuildTrust = rt.nodeBuildTrusts(r.Context())[n.ID]
 	rt.fillNodeWorkloads(r.Context(), &res)
 	res.IsLocal = n.ID == rt.localNodeID
 	res.StatusReason = nodeStatusReason(*n, time.Now(), nodePendingStaleAfter())
@@ -758,7 +763,12 @@ func (rt *Router) handleCreateNodeJoinToken(w http.ResponseWriter, r *http.Reque
 			return
 		}
 	}
-	rec, err := rt.mintNodeJoinToken(r.Context(), rt.effectiveJoinTokenTTL())
+	tier, err := joinBuildTrust(req)
+	if err != nil {
+		writeError(w, http.StatusBadRequest, err.Error())
+		return
+	}
+	rec, err := rt.mintNodeJoinTokenTier(r.Context(), rt.effectiveJoinTokenTTL(), tier)
 	if err != nil {
 		rt.internalError(w, "api: create node join token failed", err)
 		return
@@ -785,6 +795,31 @@ type mintedJoinToken struct {
 // its own longer TTL (nodeProvisionJoinTokenTTL) rather than
 // nodeJoinTokenTTL.
 func (rt *Router) mintNodeJoinToken(ctx context.Context, ttl time.Duration) (mintedJoinToken, error) {
+	return rt.mintNodeJoinTokenTier(ctx, ttl, store.BuildTrustServer)
+}
+
+// joinBuildTrust resolves the tier a new join token carries; personal needs an explicit builder intent.
+func joinBuildTrust(req createNodeJoinTokenRequest) (string, error) {
+	tier := req.BuildTrust
+	if tier == "" {
+		tier = store.BuildTrustServer
+		if req.Builder {
+			tier = store.BuildTrustPersonal
+		}
+	}
+	if !store.ValidBuildTrust(tier) {
+		return "", errors.New("build_trust must be server, managed or personal")
+	}
+	if tier == store.BuildTrustPersonal && !req.Builder {
+		return "", errors.New("build_trust personal requires builder: true")
+	}
+	if req.Builder && tier != store.BuildTrustPersonal {
+		return "", errors.New("builder: true requires build_trust personal")
+	}
+	return tier, nil
+}
+
+func (rt *Router) mintNodeJoinTokenTier(ctx context.Context, ttl time.Duration, tier string) (mintedJoinToken, error) {
 	plaintext, err := randomToken()
 	if err != nil {
 		return mintedJoinToken{}, fmt.Errorf("generate token: %w", err)
@@ -796,10 +831,11 @@ func (rt *Router) mintNodeJoinToken(ctx context.Context, ttl time.Duration) (min
 
 	now := time.Now()
 	rec := store.NodeJoinToken{
-		ID:        id,
-		TokenHash: hashToken(plaintext),
-		CreatedAt: now,
-		ExpiresAt: now.Add(ttl),
+		ID:         id,
+		TokenHash:  hashToken(plaintext),
+		CreatedAt:  now,
+		ExpiresAt:  now.Add(ttl),
+		BuildTrust: tier,
 	}
 	if err := rt.nodes.SaveNodeJoinToken(ctx, rec); err != nil {
 		return mintedJoinToken{}, fmt.Errorf("save: %w", err)

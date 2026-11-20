@@ -37,31 +37,31 @@ func validateHostname(h string) error {
 
 // validateDNSAutomationFields checks the base domain, CNAME target and TTL of
 // a settings update; the base domain must sit in a zone the provider manages.
-func (rt *Router) validateDNSAutomationFields(ctx context.Context, upd ingressSettingsUpdate) string {
+func (rt *Router) validateDNSAutomationFields(ctx context.Context, upd ingressSettingsUpdate) (string, []string) {
 	if upd.DNSTTLSeconds != nil && (*upd.DNSTTLSeconds < 0 || *upd.DNSTTLSeconds > store.MaxDNSTTLSeconds) {
-		return "dns_ttl_seconds must be between 0 and 86400"
+		return "dns_ttl_seconds must be between 0 and 86400", nil
 	}
 	if upd.DNSCNAMETarget != nil {
 		if t := strings.ToLower(strings.TrimSpace(*upd.DNSCNAMETarget)); t != "" {
 			if err := validateHostname(t); err != nil {
-				return "dns_cname_target: " + err.Error()
+				return "dns_cname_target: " + err.Error(), nil
 			}
 		}
 	}
 	if upd.AppsBaseDomain == nil {
-		return ""
+		return "", nil
 	}
 	base := strings.ToLower(strings.TrimSpace(*upd.AppsBaseDomain))
 	if base == "" {
-		return ""
+		return "", nil
 	}
 	if err := validateHostname(base); err != nil {
-		return "apps_base_domain: " + err.Error()
+		return "apps_base_domain: " + err.Error(), nil
 	}
 	if z := rt.zoneLookup(ctx, "app."+base); !z.Found {
-		return "apps_base_domain must be inside a zone your DNS provider manages: " + z.Message
+		return "apps_base_domain must be inside a zone your DNS provider manages: " + z.Message, z.Zones
 	}
-	return ""
+	return "", nil
 }
 
 func (rt *Router) appsBaseDomain(ctx context.Context) string {

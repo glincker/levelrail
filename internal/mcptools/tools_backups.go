@@ -11,7 +11,7 @@ import (
 func registerBackupVerificationTools(server *mcp.Server, client *apiclient.Client) {
 	addTool(server, &mcp.Tool{
 		Name:        "list_backup_verifications",
-		Description: "List a database backup's verification attempt history, newest first: checksum match, size match, format validity for each attempt.",
+		Description: "A database backup's verification attempts, newest first: checksum match, size match, format validity.",
 	}, func(ctx context.Context, _ *mcp.CallToolRequest, in backupVerificationsInput) (*mcp.CallToolResult, []apiclient.BackupVerificationResource, error) {
 		verifications, err := client.ListBackupVerifications(ctx, in.Name, in.BackupID)
 		if err != nil {
@@ -51,7 +51,7 @@ type databasePITROutput struct {
 func registerDatabasePITRTools(server *mcp.Server, client *apiclient.Client) {
 	addTool(server, &mcp.Tool{
 		Name:        "get_database_pitr_status",
-		Description: "Get a database's point-in-time restore state: enabled, recoverable window, and whether restore is in place or into a new database.",
+		Description: "A database's point-in-time restore state: enabled, recoverable window, in-place or new-database restore.",
 	}, func(ctx context.Context, _ *mcp.CallToolRequest, in databasePITRInput) (*mcp.CallToolResult, databasePITROutput, error) {
 		status, err := client.GetPITRStatus(ctx, in.Name)
 		if err != nil {

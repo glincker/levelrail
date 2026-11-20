@@ -185,11 +185,27 @@ func (m *cacheModule) waitForFetch(r *http.Request, ch <-chan struct{}) {
 	}
 }
 
+// cacheOverrideHeaders can change the method or path behind a cache key, so they never reach the app on a cached route.
+var cacheOverrideHeaders = []string{"X-Http-Method-Override", "X-Original-Url", "X-Rewrite-Url", "X-Forwarded-Prefix"}
+
+func dropCachedRequestExtras(r *http.Request) {
+	for _, h := range cacheOverrideHeaders {
+		r.Header.Del(h)
+	}
+	if r.Body != nil && r.Body != http.NoBody {
+		r.Body = http.NoBody
+		r.ContentLength = 0
+		r.Header.Del("Content-Length")
+		r.Header.Del("Transfer-Encoding")
+	}
+}
+
 func (m *cacheModule) ServeHTTP(w http.ResponseWriter, r *http.Request, next caddyhttp.Handler) error {
 	rule, ok := m.rule(r)
 	if !ok || rule.Never {
 		return next.ServeHTTP(w, r)
 	}
+	dropCachedRequestExtras(r)
 	host := requestHost(r)
 	if reason := bypassReason(r, rule); reason != "" {
 		m.store.record(host, cacheBypass)

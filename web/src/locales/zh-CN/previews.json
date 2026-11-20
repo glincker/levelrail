@@ -107,6 +107,17 @@
     "note": "适用于所有应用。0 表示保留启动时的默认值。单个应用的覆盖项仍然优先。",
     "invalid": "请输入 0 到 {{max}} 之间的整数。"
   },
+  "scope": {
+    "label": "必需标签",
+    "labelPlaceholder": "preview",
+    "labelHint": "只有带此标签的拉取请求才会获得预览,添加标签会开始构建。仅支持 GitHub 和 GitLab。留空则为所有拉取请求构建。",
+    "services": "排除的服务",
+    "servicesPlaceholder": "worker, docs",
+    "servicesHint": "多服务应用中预览需要跳过的服务,用逗号分隔。至少需保留一个。",
+    "save": "保存",
+    "saved": "预览设置已保存。",
+    "error": "无法更新预览设置。"
+  },
   "migrate": {
     "command": "迁移命令",
     "commandPlaceholder": "npm run migrate",

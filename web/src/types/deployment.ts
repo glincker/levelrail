@@ -31,6 +31,14 @@ export interface DeploymentSteps {
   running: number
   failed: number
   failing_step?: string
+  /** Named steps of a static build: cloning, building, publishing, live. */
+  items?: DeploymentStep[]
+  total?: number
+}
+
+export interface DeploymentStep {
+  name: string
+  state: 'pending' | 'running' | 'done' | 'failed' | 'unknown'
 }
 
 /** Wire shape of one row from GET /api/v1/deployments. */

@@ -9,6 +9,8 @@ import (
 	"github.com/GLINCKER/levelrail/internal/runtimesettings"
 )
 
+const passwordMaxBytes = 72
+
 // passwordPolicy is the live length and character-mix rule for new passwords.
 type passwordPolicy struct {
 	MinLength int
@@ -33,6 +35,10 @@ func (rt *Router) passwordPolicyNow(ctx context.Context) passwordPolicy {
 // Check returns a plain-words reason the password is refused, or "" when it passes.
 // subject is how the field is named in the message, such as "password".
 func (p passwordPolicy) Check(subject, password string) string {
+	// bcrypt rejects more than 72 bytes, so refuse it here instead of failing later.
+	if len(password) > passwordMaxBytes {
+		return fmt.Sprintf("%s must be at most %d bytes", subject, passwordMaxBytes)
+	}
 	var problems []string
 	if len(password) < p.MinLength {
 		problems = append(problems, fmt.Sprintf("be at least %d characters", p.MinLength))

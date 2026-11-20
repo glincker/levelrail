@@ -12,6 +12,7 @@ const (
 	EnvMaxHeaderRules = spec.EnvStaticMaxHeaderBlocks
 	EnvMaxFileBytes   = "APP_STATIC_ROUTES_MAX_FILE_BYTES"
 	EnvMaxValueLen    = "APP_STATIC_ROUTES_MAX_VALUE_LEN"
+	EnvMaxProxyRules  = spec.EnvStaticMaxProxyRules
 )
 
 // Limits caps the size of a site's routing rules.
@@ -37,5 +38,6 @@ func LimitsFromEnv(lookup func(string) (string, bool)) Limits {
 	set(EnvMaxHeaderRules, &l.MaxHeaderBlocks)
 	set(EnvMaxFileBytes, &l.MaxFileBytes)
 	set(EnvMaxValueLen, &l.MaxValueLen)
+	set(EnvMaxProxyRules, &l.MaxProxyRules)
 	return l
 }

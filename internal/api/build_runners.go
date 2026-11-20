@@ -60,6 +60,8 @@ func wireBuildRunnerSettings(svc *runtimesettings.Service) {
 			Strategy:     build.ParseStrategy(svc.String(ctx, KeyBuildRunnerStrategy)),
 			PressureHold: svc.Bool(ctx, KeyBuildRemotePressure),
 			StaleAfter:   svc.Duration(ctx, KeyBuildRunnerStaleAfter),
+
+			PersonalInProduction: svc.Bool(ctx, KeyBuildPersonalInProduction),
 		}
 	})
 }
@@ -83,6 +85,7 @@ type buildRunnerResource struct {
 	SlotsUsed     int        `json:"slots_used"`
 	SlotsTotal    int        `json:"slots_total"`
 	Waiting       int        `json:"waiting"`
+	ActiveBuilds  int        `json:"active_builds"`
 	Load          float64    `json:"load"`
 	Pressure      string     `json:"pressure"`
 	Architecture  string     `json:"architecture,omitempty"`
@@ -93,6 +96,7 @@ type buildRunnerResource struct {
 	LastBuildApp  string     `json:"last_build_app,omitempty"`
 	LastBuildStat string     `json:"last_build_status,omitempty"`
 	CacheBytes    *int64     `json:"cache_bytes,omitempty"`
+	Trust         string     `json:"trust,omitempty"`
 }
 
 type buildRunnersResponse struct {
@@ -201,8 +205,14 @@ func (rt *Router) handleListBuildRunners(w http.ResponseWriter, r *http.Request)
 		status, health := runnerStatus(n)
 		res := buildRunnerResource{
 			ID: n.ID, Name: n.Name, Kind: "node", Status: status, Health: health,
-			SlotsUsed: n.SlotsUsed, SlotsTotal: n.SlotsTotal, Waiting: n.Waiting,
+			SlotsUsed: n.SlotsUsed, SlotsTotal: n.SlotsTotal, Waiting: n.Waiting, ActiveBuilds: n.SlotsUsed,
 			Pressure: n.Pressure, Architecture: n.Arch, CPUCores: n.CPUCores, Labels: labelStrings(n.Labels),
+		}
+		if !n.Local {
+			res.Trust = n.Trust
+			if res.Trust == "" {
+				res.Trust = build.TrustServer
+			}
 		}
 		if res.Name == "" {
 			res.Name = n.ID
@@ -253,12 +263,14 @@ func (rt *Router) localBuildCacheBytes(ctx context.Context) *int64 {
 
 type appBuildRunnerResource struct {
 	App    string   `json:"app"`
+	Mode   string   `json:"mode"`
 	NodeID string   `json:"node_id"`
 	Pinned bool     `json:"pinned"`
 	Labels []string `json:"labels"`
 }
 
 type setAppBuildRunnerRequest struct {
+	Mode   string   `json:"mode"`
 	NodeID string   `json:"node_id"`
 	Pinned bool     `json:"pinned"`
 	Labels []string `json:"labels"`
@@ -293,11 +305,36 @@ func toAppBuildRunner(app string, p store.BuildRunnerPref) appBuildRunnerResourc
 	if labels == nil {
 		labels = []string{}
 	}
-	return appBuildRunnerResource{App: app, NodeID: p.NodeID, Pinned: p.Pinned, Labels: labels}
+	mode := p.Mode
+	if mode == "" {
+		mode = build.ModeAuto
+	}
+	return appBuildRunnerResource{App: app, Mode: mode, NodeID: p.NodeID, Pinned: p.Pinned, Labels: labels}
 }
 
 func validRunnerLabel(l string) bool {
 	return l != "" && len(l) <= buildRunnerLabelMax && !strings.ContainsAny(l, ", \t\n") && !strings.HasPrefix(l, "=")
+}
+
+// validateRunnerMode returns the reason a mode and node combination is invalid, empty when it is fine.
+func validateRunnerMode(req setAppBuildRunnerRequest) string {
+	switch req.Mode {
+	case build.ModeAuto:
+		if req.Pinned && req.NodeID == "" {
+			return "pinning needs a node_id"
+		}
+	case build.ModeControlPlane:
+		if req.NodeID != "" || req.Pinned {
+			return "control_plane mode takes no node_id and no pin"
+		}
+	case build.ModeNode:
+		if req.NodeID == "" {
+			return "node mode needs a node_id"
+		}
+	default:
+		return "mode must be auto, control_plane or node"
+	}
+	return ""
 }
 
 // handleSetAppBuildRunner handles PUT /api/v1/apps/{name}/build-runner.
@@ -322,13 +359,17 @@ func (rt *Router) handleSetAppBuildRunner(w http.ResponseWriter, r *http.Request
 			return
 		}
 	}
-	if req.Pinned && req.NodeID == "" {
-		writeError(w, http.StatusBadRequest, "pinning needs a node_id")
+	if req.Mode == "" {
+		req.Mode = build.ModeAuto
+	}
+	if msg := validateRunnerMode(req); msg != "" {
+		writeError(w, http.StatusBadRequest, msg)
 		return
 	}
 	if req.NodeID != "" {
 		// Resolve a name to its ID first so a policy on node:<id> cannot be sidestepped.
 		id, found := rt.buildRunnerNodeID(r.Context(), req.NodeID)
+		req.NodeID = id
 		if !found {
 			writeError(w, http.StatusNotFound, "node not found")
 			return
@@ -344,7 +385,7 @@ func (rt *Router) handleSetAppBuildRunner(w http.ResponseWriter, r *http.Request
 		rt.internalError(w, "api: set build runner: load app failed", err)
 		return
 	}
-	p := store.BuildRunnerPref{App: app, NodeID: req.NodeID, Pinned: req.Pinned, Labels: req.Labels}
+	p := store.BuildRunnerPref{App: app, Mode: req.Mode, NodeID: req.NodeID, Pinned: req.Pinned, Labels: req.Labels}
 	if err := s.SetBuildRunnerPref(r.Context(), p, time.Now()); err != nil {
 		rt.internalError(w, "api: set build runner failed", err)
 		return

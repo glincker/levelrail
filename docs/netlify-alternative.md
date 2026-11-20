@@ -11,7 +11,10 @@ Connect a repository, set a build command and a publish directory, and Levelrail
 [Get started](/getting-started) | [Migration guide](/migrating-from-netlify)
 
 ```bash
-curl -fsSL https://levelrail.com/install.sh | sudo sh
+curl -fsSLO https://github.com/glincker/levelrail/releases/latest/download/install.sh
+curl -fsSLO https://github.com/glincker/levelrail/releases/latest/download/checksums.txt
+grep ' install.sh$' checksums.txt | sha256sum -c -  # macOS: shasum -a 256 -c -
+sudo sh install.sh
 ```
 
 ## What carries over
@@ -47,7 +50,7 @@ Stay on Netlify if you need Edge Functions, Netlify Identity or built-in analyti
 | Build hooks | Supported | Supported, with a secret URL per hook. See [Build hooks](/build-hooks) |
 | Scheduled functions | Functions on a schedule | A cron call to a path on a container app. See [Scheduled functions](/scheduled-functions) |
 | Lock deploys | Lock publishing | Publish lock: builds finish and wait as held builds. See [Publish lock](/publish-lock) |
-| Split testing | Branch based | Container apps with a domain only. Static sites are not supported yet. See [Split testing](/split-testing) |
+| Split testing | Branch based | Container apps and static sites with an explicit domain. See [Split testing](/split-testing) |
 | Drop deploy | Drag a folder | Drag a folder or a zip, or `levelrail-cli deploy ./site --static`. See [Drop deploy](/drop-deploy) |
 | Serverless functions | Netlify Functions | [Functions](/functions): container apps with triggers, a key-value store, versions and replay. They sleep when idle and wake on the first request, or stay running. Cold start is a container start |
 | Edge Functions | Supported | Not offered, and a stated non-goal |
