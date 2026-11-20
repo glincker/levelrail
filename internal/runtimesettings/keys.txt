@@ -19,6 +19,7 @@ api.conditional_get
 api.conditional_get_max_bytes
 api.expensive_read_ttl
 api.max_body_bytes
+api.max_header_bytes
 api.rate_limit_read_rpm
 api.rate_limit_redeem_rpm
 api.rate_limit_write_rpm
@@ -70,10 +71,10 @@ backup.webdav_max_response_bytes
 backup.webdav_request_timeout
 backups.compose_restore_timeout
 backups.drill_interval_hours
-backups.drill_retention_days
-backups.drill_timeout
 backups.drill_max_concurrent
 backups.drill_reserved_scheduled
+backups.drill_retention_days
+backups.drill_timeout
 backups.schedule_retain_default
 boot.deferred_stages
 boot.event_recheck
@@ -304,6 +305,7 @@ images.remove_max_per_request
 incidents.postmortem_action_items_max
 incidents.postmortem_body_max
 incidents.postmortem_field_max
+ingress.body_read_timeout_seconds
 ingress.ca_switch_retry_base
 ingress.ca_switch_retry_max
 ingress.cloudflare_ips_max_bytes
@@ -313,6 +315,7 @@ ingress.cloudflare_ips_timeout
 ingress.dns01_all_hosts
 ingress.fallback_certs
 ingress.max_body_bytes
+ingress.max_requests_per_ip
 ingress.proxy_cert_wait
 ingress.trusted_proxy_preset
 ingress.unmatched_mode
@@ -382,6 +385,7 @@ otlp.ingest_enabled
 otlp.ingest_max_body_bytes
 otlp.ingest_max_line_bytes
 otlp.ingest_max_records
+pages.analytics_retention_days
 pages.build_cache_max_bytes
 pages.build_log_max_bytes
 pages.build_log_retention
@@ -399,13 +403,13 @@ projects.archive_max_entries
 projects.archive_max_spec_bytes
 projects.archive_max_total_bytes
 projects.archive_min_passphrase
-projects.import_max_concurrent_global
 projects.clone_max_apps
 projects.clone_placeholder_domain
 projects.default_environment
 projects.default_environment_name
 projects.import_max_bytes
 projects.import_max_concurrent
+projects.import_max_concurrent_global
 provision.allow_unknown_price
 provision.capabilities.cache_ttl_seconds
 provision.capabilities.probe_concurrency

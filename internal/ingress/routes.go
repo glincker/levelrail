@@ -615,6 +615,9 @@ func BuildRoutesConfig(opts RoutesOptions) (*Config, error) {
 				handle = append([]any{BodyGuardHandler{Handler: "levelrail_body_guard", MaxSize: r.MaxBodyBytes}}, handle...)
 			}
 		}
+		if g := opts.Hardening.connGuard(); g != nil {
+			handle = append([]any{g}, handle...)
+		}
 		// Traffic controls, backend side: cache and path forwarders sit
 		// right before the reverse proxy, behind auth and WAF.
 		handle = r.Policy.wrapBackend(r.Hosts[0], handle)

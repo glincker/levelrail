@@ -286,6 +286,8 @@ func (s *bootState) wireRouter() {
 		// WriteTimeout is omitted: it cannot exempt long-lived streams.
 		ReadTimeout: 30 * time.Second,
 		IdleTimeout: 120 * time.Second,
+		// Read once at start, so a saved change applies on the next restart.
+		MaxHeaderBytes: runtimesettings.ClampLimit(runtimesettings.KeyAPIMaxHeaderBytes, apiRouter.RuntimeSettings().Int(ctx, runtimesettings.KeyAPIMaxHeaderBytes)),
 	}
 	s.apiRouter = apiRouter
 	useSharedGitSettings(apiRouter.RuntimeSettings())

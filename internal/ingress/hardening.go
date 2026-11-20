@@ -39,6 +39,9 @@ type Hardening struct {
 	IdleTimeout       time.Duration
 	MaxHeaderBytes    int
 	MaxBodyBytes      int64
+	// BodyReadTimeout and MaxConnsPerIP stay zero (off) here; runtime settings fill them.
+	BodyReadTimeout   time.Duration
+	MaxConnsPerIP     int
 	Protocols         []string
 	TrustedProxies    []string
 	ClientIPHeaders   []string
@@ -300,6 +303,18 @@ func (h *Hardening) bodyLimitFor(override int64) any {
 		return nil
 	}
 	return RequestBodyHandler{Handler: "request_body", MaxSize: limit}
+}
+
+// connGuard returns the per-IP and body-read guard to prepend, or nil when both are off.
+func (h *Hardening) connGuard() any {
+	if h == nil || (h.BodyReadTimeout <= 0 && h.MaxConnsPerIP <= 0) {
+		return nil
+	}
+	g := ConnGuardHandler{Handler: "levelrail_conn_guard", MaxPerIP: h.MaxConnsPerIP}
+	if h.BodyReadTimeout > 0 {
+		g.BodyReadTimeout = h.BodyReadTimeout.String()
+	}
+	return g
 }
 
 const unavailablePageTemplate = `<!DOCTYPE html>
