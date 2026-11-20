@@ -213,6 +213,10 @@ func (rt *Router) handleIssueGitRemote(w http.ResponseWriter, r *http.Request) {
 		rt.internalError(w, "api: issue git remote token failed", err)
 		return
 	}
+	// A first issue starts from no history: a copy left by an earlier app of this name would reject a new one.
+	if _, gerr := rt.gitPushStore.GetGitPushRemote(r.Context(), name); errors.Is(gerr, store.ErrGitPushRemoteNotFound) {
+		rt.removeAppPushMirror(name)
+	}
 	if err := rt.gitPushStore.SaveGitPushRemoteToken(r.Context(), name, tokenhash.Sum(token), gitPushDefaultBranch, time.Now()); err != nil {
 		rt.internalError(w, "api: save git remote failed", err)
 		return

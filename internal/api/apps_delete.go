@@ -144,6 +144,7 @@ func (rt *Router) deleteAppGuarded(ctx context.Context, name string, guard func(
 	}
 	// Nudge before the slow teardown so the ingress route drops right away.
 	rt.nudgeReconciler()
+	rt.removeRetainedSiblings(ctx, name)
 	if finalizer != nil {
 		tctx, cancel := context.WithTimeout(context.WithoutCancel(ctx), rt.deleteTeardownTimeout())
 		teardownErr = finalizer.Finalize(tctx, name, existing.NodeID)
