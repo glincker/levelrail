@@ -27,7 +27,15 @@ var discoverTag = func(ctx context.Context) (selfupgrade.Discovered, error) {
 // cannot be reached. The result has no notes and no asset list, so every
 // consumer must treat the notes as unavailable; verification is unchanged.
 func discoverStableRelease(ctx context.Context) (*githubRelease, error) {
+	return discoverStableReleaseVia(ctx, "")
+}
+
+// discoverStableReleaseVia adds the mirror listing as a last source when a base is set.
+func discoverStableReleaseVia(ctx context.Context, mirror string) (*githubRelease, error) {
 	found, err := discoverTag(ctx)
+	if err != nil && mirror != "" {
+		found, err = discoverMirror(ctx, mirror, selfupgrade.ListingChannelStable)
+	}
 	if err != nil {
 		return nil, err
 	}

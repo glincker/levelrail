@@ -474,6 +474,7 @@ type Router struct {
 	// channel update_settings currently names; always non-nil,
 	// constructed in NewRouter. Separate from updatesCache above so the
 	// stable channel's existing cache/behavior stays untouched.
+	channels            channelState
 	channelUpdatesCache *upgrade.Cache
 	// releaseHist lists recent releases and their schema versions for the
 	// rollback view (updates_releases.go); always non-nil.
@@ -1162,6 +1163,9 @@ func NewRouter(logger *slog.Logger, b *brand.Brand, s Store, opts ...Option) *Ro
 	// rt.sessions below. Both are overridable directly by this
 	// package's own tests, no Option needed.
 	rt.dnsRecordManager = rt.resolveDNSRecordManager
+	rt.fetchLatestRelease = func(ctx context.Context) (*githubRelease, error) {
+		return fetchLatestReleaseVia(ctx, rt.fallbackMirrorBase(ctx))
+	}
 	rt.fetch = rt.gitCheckout
 	rt.gitSourceFetch = rt.gitCheckoutWithToken
 	if c, ok := any(s).(ComposeDBBackupStore); ok {

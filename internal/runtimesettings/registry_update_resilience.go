@@ -33,7 +33,7 @@ func init() {
 		Key: KeyUpdatesFallbackBaseURL, Category: CategoryDeploys, Kind: KindString, Default: "",
 		Apply: ApplyLive, CheckValue: fallbackBaseURLCheck,
 		Title:       "Fallback release download URL",
-		Description: "An https mirror laid out like the primary release downloads (base/tag/asset), tried only when the primary download fails. A release from the mirror must carry a valid signature. Empty means no fallback. The next upgrade uses a changed value.",
+		Description: "An https mirror laid out like the primary release downloads (base/tag/asset), tried only when the primary download fails. A release from the mirror must carry a valid signature. Its latest.json file also names the newest tag when github.com is blocked. Empty means no fallback. The next upgrade uses a changed value.",
 	})
 }
 

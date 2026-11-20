@@ -128,7 +128,15 @@ func (h upgradeHost) Latest(ctx context.Context) (upgradesched.Candidate, bool, 
 	if rel.IsEdge() {
 		return c, true, upgradesched.ErrEdgeTarget
 	}
-	if h.rt.currentUpdateChannel(ctx) == upgrade.ChannelStable && h.rt.updatesCache.isFailing() {
+	channel := h.rt.currentUpdateChannel(ctx)
+	if channel != upgrade.ChannelStable {
+		c.FromFallback = h.rt.channels.fromMirror(channel, rel.Tag)
+		if h.rt.channels.isStale(channel) {
+			return c, true, upgradesched.ErrStaleList
+		}
+		return c, true, nil
+	}
+	if h.rt.updatesCache.isFailing() {
 		return c, true, upgradesched.ErrStaleList
 	}
 	return c, true, nil

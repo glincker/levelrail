@@ -42,9 +42,15 @@ type fetchLatestReleaseFunc func(ctx context.Context) (*githubRelease, error)
 var fetchStableRelease = upgrade.FetchLatestStable
 
 func defaultFetchLatestRelease(ctx context.Context) (*githubRelease, error) {
+	return fetchLatestReleaseVia(ctx, "")
+}
+
+// fetchLatestReleaseVia tries the releases API, the public release pages, then
+// the mirror listing when a mirror base is set.
+func fetchLatestReleaseVia(ctx context.Context, mirror string) (*githubRelease, error) {
 	rel, err := fetchStableRelease(ctx, githubRepo)
 	if err != nil {
-		if found, ferr := discoverStableRelease(ctx); ferr == nil {
+		if found, ferr := discoverStableReleaseVia(ctx, mirror); ferr == nil {
 			return found, nil
 		}
 		return nil, fmt.Errorf("api: fetch github releases: %w", err)
@@ -198,17 +204,7 @@ func (rt *Router) handleGetUpdates(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	release, ok := rt.channelUpdatesCache.Fresh(updatesCacheTTL, channel)
-	if !ok {
-		fetched, err := rt.upgradeFetchers.LatestForChannel(r.Context(), channel)
-		if err != nil {
-			rt.logger.Warn("api: fetch latest release for channel failed", slog.String("channel", channel), slog.String("error", err.Error()))
-			release, ok = rt.channelUpdatesCache.Stale(channel)
-		} else {
-			rt.channelUpdatesCache.Set(channel, fetched)
-			release, ok = fetched, true
-		}
-	}
+	release, ok := rt.channelRelease(r.Context(), channel)
 	if ok && release != nil {
 		tag, url, published := release.Tag, release.URL, release.PublishedAt
 		resp.LatestVersion = &tag

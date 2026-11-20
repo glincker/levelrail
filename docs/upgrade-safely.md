@@ -294,6 +294,21 @@ Self-upgrade (`--apply`, and the dashboard Upgrade button) only ever applies a r
 
 `LEVELRAIL_RELEASE_BASE_URL` points the download at an https mirror laid out like GitHub release downloads (`<base>/<tag>/<asset>`). `LEVELRAIL_INSECURE_MIRROR=1` allows plain http for a local test mirror. Use `--skip-notes-check` when GitHub's API is unreachable.
 
+### Learning the newest tag from a mirror
+
+When both the releases API and github.com are blocked, set `updates.fallback_release_base_url` and publish a small `latest.json` at the root of that mirror (`<base>/latest.json`, https only, at most 64 KiB, read within 10 seconds, redirects stay on the mirror host):
+
+```json
+{
+  "tag": "v1.5.8",
+  "published_at": "2026-11-18T10:00:00Z",
+  "beta": { "tag": "v1.6.0-beta.2" },
+  "edge": { "tag": "main-abc1234" }
+}
+```
+
+`tag` is the newest stable release and is the only required field. `published_at` is optional RFC 3339 time. `beta` and `edge` are optional and serve those channels; a stable tag in `beta`, a prerelease in `tag`, or any odd tag shape is refused. The listing only names a tag. The binary still comes from `<base>/<tag>/<asset>` and must pass the same checksum and signature checks, and a tag learned this way carries no release notes, so automatic updates stay within the same minor version. A result learned while the lookup is failing is marked stale and automatic updates hold. The release workflow could attach a `latest.json` asset to each release for mirror operators to copy; it does not today.
+
 ## Troubleshooting
 
 ### Upgrade fails and rolls back automatically

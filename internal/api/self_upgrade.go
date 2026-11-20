@@ -62,7 +62,7 @@ func WithSelfUpgrade(s SelfUpgradeStore, launch SelfUpgradeLauncher) Option {
 		c.notes = func(ctx context.Context) ([]upgrade.HistoryRelease, error) {
 			return upgrade.FetchHistory(ctx, githubRepo, "all", selfUpgradeNotesLimit)
 		}
-		c.discover = discoverStableRelease
+		c.discover = rt.discoverForChannel
 		c.canLaunch = hostCanLaunch
 		if launch == nil {
 			c.launch = systemdRunLauncher
