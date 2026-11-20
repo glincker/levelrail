@@ -5,12 +5,16 @@ import (
 	"context"
 	"crypto/tls"
 	"crypto/x509"
+	"encoding/pem"
 	"encoding/xml"
 	"errors"
 	"fmt"
 	"io"
+	"net"
 	"net/http"
+	"net/netip"
 	"net/url"
+	"os"
 	"path"
 	"strconv"
 	"strings"
@@ -29,8 +33,93 @@ const webDAVAttempts = 3
 
 var webDAVBackoff = 300 * time.Millisecond
 
-// webDAVMaxList bounds a recursive listing so a hostile server cannot make us walk forever.
+// webDAVMaxList is the one budget a recursive listing spends: every request and every
+// entry seen costs one, so a hostile server cannot make us walk forever.
 const webDAVMaxList = 20000
+
+// webDAVMaxResponse caps a single PROPFIND body.
+const webDAVMaxResponse = 8 << 20
+
+// Timeout env names; durations use Go syntax such as 45s. Defaults apply when unset or invalid.
+const (
+	EnvWebDAVHeaderTimeout  = "APP_BACKUP_WEBDAV_HEADER_TIMEOUT"
+	EnvWebDAVIdleTimeout    = "APP_BACKUP_WEBDAV_IDLE_TIMEOUT"
+	EnvWebDAVRequestTimeout = "APP_BACKUP_WEBDAV_REQUEST_TIMEOUT"
+)
+
+// EnvWebDAVAllowPrivate seeds the runtime opt-in that lets WebDAV targets use http and private
+// addresses. It is separate from the notification opt-in on purpose.
+const EnvWebDAVAllowPrivate = "APP_BACKUP_WEBDAV_ALLOW_PRIVATE_NETWORKS"
+
+// WebDAVAllowPrivate reports whether WebDAV targets may reach private networks.
+func WebDAVAllowPrivate() bool {
+	v, err := strconv.ParseBool(os.Getenv(EnvWebDAVAllowPrivate))
+	return err == nil && v
+}
+
+// ValidateWebDAVHost refuses internal destinations unless the dedicated opt-in is on.
+func ValidateWebDAVHost(ctx context.Context, endpoint string) error {
+	if WebDAVAllowPrivate() {
+		return nil
+	}
+	u, err := url.Parse(endpoint)
+	if err != nil || u.Hostname() == "" {
+		return ErrWebDAVBadEndpoint
+	}
+	host := strings.ToLower(u.Hostname())
+	blocked := fmt.Errorf("%w: %s (enable the WebDAV private network setting to allow it)", netguard.ErrBlockedAddress, host)
+	if host == "localhost" || strings.HasSuffix(host, ".localhost") {
+		return blocked
+	}
+	if ip, perr := netip.ParseAddr(host); perr == nil {
+		if netguard.IsBlocked(ip) {
+			return blocked
+		}
+		return nil
+	}
+	lctx, cancel := context.WithTimeout(ctx, 3*time.Second)
+	defer cancel()
+	addrs, lerr := net.DefaultResolver.LookupNetIP(lctx, "ip", host)
+	if lerr != nil || len(addrs) == 0 {
+		return nil
+	}
+	for _, a := range addrs {
+		if !netguard.IsBlocked(a) {
+			return nil
+		}
+	}
+	return blocked
+}
+
+// ValidateCABundle accepts only CERTIFICATE PEM blocks that parse as certificates.
+func ValidateCABundle(bundle string) error {
+	rest, n := []byte(bundle), 0
+	for {
+		var b *pem.Block
+		b, rest = pem.Decode(rest)
+		if b == nil {
+			break
+		}
+		if b.Type != "CERTIFICATE" {
+			return errors.New("ca_bundle may only contain CERTIFICATE PEM blocks")
+		}
+		if _, err := x509.ParseCertificate(b.Bytes); err != nil {
+			return errors.New("ca_bundle holds an invalid certificate")
+		}
+		n++
+	}
+	if n == 0 || len(strings.TrimSpace(string(rest))) != 0 {
+		return errors.New("ca_bundle must be PEM encoded certificates")
+	}
+	return nil
+}
+
+func davDuration(env string, def time.Duration) time.Duration {
+	if d, err := time.ParseDuration(strings.TrimSpace(os.Getenv(env))); err == nil && d > 0 {
+		return d
+	}
+	return def
+}
 
 // ErrWebDAVBadEndpoint means the stored WebDAV endpoint is not a usable URL.
 var ErrWebDAVBadEndpoint = errors.New("backup: webdav endpoint must be an https URL")
@@ -55,6 +144,8 @@ type webDAV struct {
 	client *http.Client
 	user   string
 	pass   string
+	// idle bounds the gap between body reads; request caps non-streaming calls.
+	idle, request time.Duration
 }
 
 // WebDAVBaseURL turns a stored endpoint and directory into the collection URL.
@@ -64,7 +155,7 @@ func WebDAVBaseURL(endpoint, dir string) (*url.URL, error) {
 	if err != nil || u.Host == "" || (u.Scheme != "https" && u.Scheme != "http") {
 		return nil, ErrWebDAVBadEndpoint
 	}
-	if u.Scheme == "http" && !netguard.AllowPrivate() {
+	if u.Scheme == "http" && !WebDAVAllowPrivate() {
 		return nil, ErrWebDAVBadEndpoint
 	}
 	u.User, u.RawQuery, u.Fragment = nil, "", ""
@@ -77,7 +168,7 @@ func newWebDAV(dest Destination) (*webDAV, error) {
 	if err != nil {
 		return nil, err
 	}
-	c := netguard.NewClient()
+	c := netguard.NewClientAllowing(EnvWebDAVAllowPrivate)
 	tr, ok := c.Transport.(*http.Transport)
 	if !ok {
 		return nil, errors.New("backup: webdav transport unavailable")
@@ -86,12 +177,17 @@ func newWebDAV(dest Destination) (*webDAV, error) {
 	if err != nil || pool == nil {
 		pool = x509.NewCertPool()
 	}
-	if dest.CABundle != "" && !pool.AppendCertsFromPEM([]byte(dest.CABundle)) {
-		return nil, errors.New("backup: webdav ca bundle has no valid PEM certificate")
+	if dest.CABundle != "" {
+		if err := ValidateCABundle(dest.CABundle); err != nil {
+			return nil, fmt.Errorf("backup: webdav: %w", err)
+		}
+		pool.AppendCertsFromPEM([]byte(dest.CABundle))
 	}
+	tr.ResponseHeaderTimeout = davDuration(EnvWebDAVHeaderTimeout, 30*time.Second)
 	tr.TLSClientConfig = &tls.Config{MinVersion: tls.VersionTLS12, RootCAs: pool}
 	c.CheckRedirect = func(*http.Request, []*http.Request) error { return http.ErrUseLastResponse }
-	return &webDAV{base: base, client: c, user: dest.AccessKeyID, pass: dest.SecretAccessKey}, nil
+	return &webDAV{base: base, client: c, user: dest.AccessKeyID, pass: dest.SecretAccessKey,
+		idle: davDuration(EnvWebDAVIdleTimeout, time.Minute), request: davDuration(EnvWebDAVRequestTimeout, 2*time.Minute)}, nil
 }
 
 func (w *webDAV) url(key string) string {
@@ -100,16 +196,50 @@ func (w *webDAV) url(key string) string {
 	return u.String()
 }
 
+// guardedBody cancels the request when reads stall and releases it on Close.
+type guardedBody struct {
+	io.ReadCloser
+	cancel context.CancelFunc
+	timer  *time.Timer
+	idle   time.Duration
+}
+
+func (g *guardedBody) Read(p []byte) (int, error) {
+	g.timer.Reset(g.idle)
+	return g.ReadCloser.Read(p)
+}
+
+func (g *guardedBody) Close() error {
+	g.timer.Stop()
+	err := g.ReadCloser.Close()
+	g.cancel()
+	return err
+}
+
 func (w *webDAV) do(ctx context.Context, method, target string, body io.Reader, hdr map[string]string) (*http.Response, error) {
+	var cancel context.CancelFunc
+	// Bulk transfers get an idle deadline only; small verbs also get an overall cap.
+	if method == http.MethodGet || method == http.MethodPut {
+		ctx, cancel = context.WithCancel(ctx)
+	} else {
+		ctx, cancel = context.WithTimeout(ctx, w.request)
+	}
 	req, err := http.NewRequestWithContext(ctx, method, target, body)
 	if err != nil {
+		cancel()
 		return nil, err
 	}
 	req.SetBasicAuth(w.user, w.pass)
 	for k, v := range hdr {
 		req.Header.Set(k, v)
 	}
-	return w.client.Do(req)
+	resp, err := w.client.Do(req)
+	if err != nil {
+		cancel()
+		return nil, err
+	}
+	resp.Body = &guardedBody{ReadCloser: resp.Body, cancel: cancel, timer: time.AfterFunc(w.idle, cancel), idle: w.idle}
+	return resp, nil
 }
 
 // retry runs fn up to webDAVAttempts times on transport errors and 5xx answers.
@@ -196,6 +326,7 @@ func (w *webDAV) Upload(ctx context.Context, key string, r io.Reader) error {
 	}
 	tmp := key + ".partial"
 	seeker, canSeek := r.(io.ReadSeeker)
+	cr := &countReader{r: r}
 	var last error
 	for i := 0; i < webDAVAttempts; i++ {
 		if i > 0 {
@@ -211,7 +342,8 @@ func (w *webDAV) Upload(ctx context.Context, key string, r io.Reader) error {
 			case <-time.After(webDAVBackoff * time.Duration(i)):
 			}
 		}
-		resp, err := w.do(ctx, http.MethodPut, w.url(tmp), r, nil)
+		cr.n = 0
+		resp, err := w.do(ctx, http.MethodPut, w.url(tmp), cr, nil)
 		if err != nil {
 			last = err
 			continue
@@ -231,16 +363,43 @@ func (w *webDAV) Upload(ctx context.Context, key string, r io.Reader) error {
 		_ = w.Delete(context.WithoutCancel(ctx), tmp)
 		return fmt.Errorf("backup: webdav upload: %w", last)
 	}
-	resp, err := w.retry(ctx, "MOVE", w.url(tmp), map[string]string{"Destination": w.url(key), "Overwrite": "T"}, nil)
+	// MOVE is sent once: a blind retry after a lost answer would fail on the vanished source.
+	resp, err := w.do(ctx, "MOVE", w.url(tmp), nil, map[string]string{"Destination": w.url(key), "Overwrite": "T"})
+	if err == nil {
+		_ = resp.Body.Close()
+		if resp.StatusCode == http.StatusCreated || resp.StatusCode == http.StatusNoContent || resp.StatusCode == http.StatusOK {
+			return nil
+		}
+	}
+	if w.landed(context.WithoutCancel(ctx), key, cr.n) {
+		return nil
+	}
+	_ = w.Delete(context.WithoutCancel(ctx), tmp)
 	if err != nil {
-		return err
+		return fmt.Errorf("backup: webdav move: %w", err)
+	}
+	return statusErr("move", resp)
+}
+
+type countReader struct {
+	r io.Reader
+	n int64
+}
+
+func (c *countReader) Read(p []byte) (int, error) {
+	n, err := c.r.Read(p)
+	c.n += int64(n)
+	return n, err
+}
+
+// landed reports whether key already exists with the size we uploaded.
+func (w *webDAV) landed(ctx context.Context, key string, size int64) bool {
+	resp, err := w.do(ctx, http.MethodHead, w.url(key), nil, nil)
+	if err != nil {
+		return false
 	}
 	_ = resp.Body.Close()
-	if resp.StatusCode != http.StatusCreated && resp.StatusCode != http.StatusNoContent && resp.StatusCode != http.StatusOK {
-		_ = w.Delete(context.WithoutCancel(ctx), tmp)
-		return statusErr("move", resp)
-	}
-	return nil
+	return resp.StatusCode == http.StatusOK && resp.ContentLength == size
 }
 
 // Download opens key for reading; a ranged read resumes a broken transfer.
@@ -312,7 +471,7 @@ func (w *webDAV) propfind(ctx context.Context, rel string) ([]davEntry, error) {
 		return nil, statusErr("propfind", resp)
 	}
 	var ms davMultistatus
-	if err := xml.NewDecoder(io.LimitReader(resp.Body, 64<<20)).Decode(&ms); err != nil {
+	if err := xml.NewDecoder(io.LimitReader(resp.Body, webDAVMaxResponse)).Decode(&ms); err != nil {
 		return nil, fmt.Errorf("backup: webdav propfind: bad response: %w", err)
 	}
 	selfPath := strings.TrimRight(path.Join(w.base.Path, rel), "/")
@@ -322,7 +481,22 @@ func (w *webDAV) propfind(ctx context.Context, rel string) ([]davEntry, error) {
 		if u, err := url.Parse(href); err == nil {
 			href = u.Path
 		}
-		e := davEntry{name: path.Base(strings.TrimRight(href, "/"))}
+		clean := strings.TrimRight(path.Clean("/"+href), "/")
+		isSelf := clean == selfPath
+		// Only the collection itself and its direct children are trusted.
+		if !isSelf {
+			parent := path.Dir(clean)
+			if parent == "/" {
+				parent = ""
+			}
+			if parent != selfPath {
+				continue
+			}
+		}
+		e := davEntry{name: path.Base(clean)}
+		if e.name == "." || e.name == ".." || e.name == "/" {
+			e.name = ""
+		}
 		for _, p := range r.Props {
 			if p.IsColl != nil {
 				e.dir = true
@@ -335,7 +509,7 @@ func (w *webDAV) propfind(ctx context.Context, rel string) ([]davEntry, error) {
 				e.free = &v
 			}
 		}
-		if strings.TrimRight(path.Clean("/"+href), "/") == selfPath {
+		if isSelf {
 			e.name = ""
 		}
 		out = append(out, e)
@@ -347,15 +521,28 @@ func (w *webDAV) propfind(ctx context.Context, rel string) ([]davEntry, error) {
 func (w *webDAV) List(ctx context.Context, prefix string) ([]RemoteObject, error) {
 	dir, namePrefix := path.Split(prefix)
 	var out []RemoteObject
+	budget := webDAVMaxList
+	spend := func() error {
+		if budget--; budget < 0 {
+			return errors.New("backup: webdav listing too large")
+		}
+		return nil
+	}
 	var walk func(rel string, depth int) error
 	walk = func(rel string, depth int) error {
+		if err := spend(); err != nil {
+			return err
+		}
 		entries, err := w.propfind(ctx, rel)
 		if err != nil {
 			return err
 		}
 		for _, e := range entries {
-			if e.name == "" {
+			if e.name == "" || e.name == "." || e.name == ".." {
 				continue
+			}
+			if err := spend(); err != nil {
+				return err
 			}
 			key := path.Join(rel, e.name)
 			if e.dir {
@@ -370,9 +557,6 @@ func (w *webDAV) List(ctx context.Context, prefix string) ([]RemoteObject, error
 				continue
 			}
 			out = append(out, RemoteObject{Key: key, Size: e.size})
-			if len(out) >= webDAVMaxList {
-				return errors.New("backup: webdav listing too large")
-			}
 		}
 		return nil
 	}

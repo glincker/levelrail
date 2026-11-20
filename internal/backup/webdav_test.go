@@ -105,7 +105,7 @@ func (f *fakeDAV) ServeHTTP(w http.ResponseWriter, r *http.Request) {
 
 func davDest(t *testing.T, srv *httptest.Server) Destination {
 	t.Helper()
-	t.Setenv("APP_NOTIFY_ALLOW_PRIVATE_NETWORKS", "true")
+	t.Setenv("APP_BACKUP_WEBDAV_ALLOW_PRIVATE_NETWORKS", "true")
 	ca := pem.EncodeToMemory(&pem.Block{Type: "CERTIFICATE", Bytes: srv.Certificate().Raw})
 	return Destination{Endpoint: WebDAVEndpointScheme + srv.URL, Bucket: "backups", AccessKeyID: "u", SecretAccessKey: "p", CABundle: string(ca)}
 }
@@ -182,7 +182,7 @@ func TestWebDAVBlocksPrivateHostByDefault(t *testing.T) {
 	srv := httptest.NewTLSServer(newFakeDAV())
 	defer srv.Close()
 	dest := davDest(t, srv)
-	t.Setenv("APP_NOTIFY_ALLOW_PRIVATE_NETWORKS", "false")
+	t.Setenv("APP_BACKUP_WEBDAV_ALLOW_PRIVATE_NETWORKS", "false")
 	if err := (Routed{}).Test(context.Background(), dest); !errors.Is(err, netguard.ErrBlockedAddress) {
 		t.Fatalf("loopback must be refused, got %v", err)
 	}
@@ -206,5 +206,94 @@ func TestWebDAVRejectsTraversalKey(t *testing.T) {
 	dest := davDest(t, srv)
 	if err := (Routed{}).Upload(context.Background(), dest, "../x", strings.NewReader("v"), 1); err == nil {
 		t.Fatal("traversal key accepted")
+	}
+}
+
+func TestWebDAVListIgnoresStrayHrefs(t *testing.T) {
+	webDAVBackoff = 0
+	srv := httptest.NewTLSServer(http.HandlerFunc(func(w http.ResponseWriter, _ *http.Request) {
+		const resp = `<?xml version="1.0"?><d:multistatus xmlns:d="DAV:">
+<d:response><d:href>/backups/</d:href><d:propstat><d:prop><d:resourcetype><d:collection/></d:resourcetype></d:prop></d:propstat></d:response>
+<d:response><d:href>/backups/good.dump</d:href><d:propstat><d:prop><d:getcontentlength>3</d:getcontentlength></d:prop></d:propstat></d:response>
+<d:response><d:href>/backups/../escape.dump</d:href><d:propstat><d:prop><d:getcontentlength>9</d:getcontentlength></d:prop></d:propstat></d:response>
+<d:response><d:href>/backups/sub/deep.dump</d:href><d:propstat><d:prop><d:getcontentlength>9</d:getcontentlength></d:prop></d:propstat></d:response>
+<d:response><d:href>/other/x.dump</d:href><d:propstat><d:prop><d:getcontentlength>9</d:getcontentlength></d:prop></d:propstat></d:response>
+<d:response><d:href>/backups/.</d:href><d:propstat><d:prop><d:getcontentlength>9</d:getcontentlength></d:prop></d:propstat></d:response>
+</d:multistatus>`
+		w.WriteHeader(http.StatusMultiStatus)
+		_, _ = io.WriteString(w, resp)
+	}))
+	defer srv.Close()
+	dest := davDest(t, srv)
+	dest.AccessKeyID, dest.SecretAccessKey = "", ""
+	objs, err := (Routed{}).List(context.Background(), dest, "")
+	if err != nil || len(objs) != 1 || objs[0].Key != "good.dump" {
+		t.Fatalf("list = %+v, %v", objs, err)
+	}
+}
+
+func TestWebDAVMoveIsSentOnce(t *testing.T) {
+	webDAVBackoff = 0
+	var moves, heads int
+	srv := httptest.NewTLSServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		switch r.Method {
+		case "MKCOL":
+			w.WriteHeader(http.StatusCreated)
+		case http.MethodPut:
+			_, _ = io.Copy(io.Discard, r.Body)
+			w.WriteHeader(http.StatusCreated)
+		case "MOVE":
+			moves++
+			w.WriteHeader(http.StatusInternalServerError)
+		case http.MethodHead:
+			heads++
+			w.WriteHeader(http.StatusNotFound)
+		default:
+			w.WriteHeader(http.StatusNoContent)
+		}
+	}))
+	defer srv.Close()
+	dest := davDest(t, srv)
+	dest.AccessKeyID, dest.SecretAccessKey = "", ""
+	if err := (Routed{}).Upload(context.Background(), dest, "k", strings.NewReader("v"), 1); err == nil {
+		t.Fatal("a failed move with no object at the destination must fail")
+	}
+	if moves != 1 || heads != 1 {
+		t.Fatalf("moves=%d heads=%d, want 1 and 1", moves, heads)
+	}
+}
+
+func TestWebDAVMoveErrorButObjectLanded(t *testing.T) {
+	webDAVBackoff = 0
+	srv := httptest.NewTLSServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		switch r.Method {
+		case http.MethodPut:
+			_, _ = io.Copy(io.Discard, r.Body)
+			w.WriteHeader(http.StatusCreated)
+		case "MOVE":
+			w.WriteHeader(http.StatusBadGateway)
+		case http.MethodHead:
+			w.Header().Set("Content-Length", "1")
+			w.WriteHeader(http.StatusOK)
+		default:
+			w.WriteHeader(http.StatusCreated)
+		}
+	}))
+	defer srv.Close()
+	dest := davDest(t, srv)
+	if err := (Routed{}).Upload(context.Background(), dest, "k", strings.NewReader("v"), 1); err != nil {
+		t.Fatalf("object landed, upload should succeed: %v", err)
+	}
+}
+
+func TestWebDAVHeaderTimeout(t *testing.T) {
+	t.Setenv(EnvWebDAVHeaderTimeout, "150ms")
+	release := make(chan struct{})
+	srv := httptest.NewTLSServer(http.HandlerFunc(func(http.ResponseWriter, *http.Request) { <-release }))
+	defer srv.Close()
+	defer close(release)
+	dest := davDest(t, srv)
+	if _, err := (Routed{}).Download(context.Background(), dest, "k"); err == nil {
+		t.Fatal("a server that never answers must time out")
 	}
 }

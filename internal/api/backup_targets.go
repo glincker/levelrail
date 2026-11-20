@@ -5,7 +5,6 @@ import (
 	"crypto/rand"
 	"encoding/base64"
 	"encoding/json"
-	"encoding/pem"
 	"errors"
 	"fmt"
 	"log/slog"
@@ -19,7 +18,6 @@ import (
 
 	"github.com/GLINCKER/levelrail/internal/backup"
 	"github.com/GLINCKER/levelrail/internal/store"
-	"github.com/GLINCKER/levelrail/kit/netguard"
 )
 
 // backupTargetTestTimeout bounds the synchronous connectivity check
@@ -88,25 +86,25 @@ const backupProviderLocal = "local"
 // backupProviderWebDAV is the API-only provider name for a WebDAV share; stored as custom with a dav+ endpoint.
 const backupProviderWebDAV = "webdav"
 
-// validateWebDAVTarget checks the https endpoint (private hosts only when the shared netguard opt-in is set)
+// validateWebDAVTarget checks the https endpoint (private hosts only when the WebDAV private network setting is on)
 // and the directory path. username and password reuse the access key fields.
 func validateWebDAVTarget(ctx context.Context, name, endpoint, dir, caBundle string) error {
 	if name == "" {
 		return errors.New("name is required")
 	}
 	u, err := url.Parse(endpoint)
-	if err != nil || u.Host == "" || u.User != nil || (u.Scheme != "https" && (u.Scheme != "http" || !netguard.AllowPrivate())) {
+	if err != nil || u.Host == "" || u.User != nil || (u.Scheme != "https" && (u.Scheme != "http" || !backup.WebDAVAllowPrivate())) {
 		return errors.New("endpoint must be an https URL without embedded credentials")
 	}
-	if err := netguard.ValidateURL(ctx, endpoint); err != nil {
+	if err := backup.ValidateWebDAVHost(ctx, endpoint); err != nil {
 		return err
 	}
 	if strings.Contains(dir, "..") {
 		return errors.New("bucket (the remote directory) must not contain '..'")
 	}
 	if caBundle != "" {
-		if block, _ := pem.Decode([]byte(caBundle)); block == nil {
-			return errors.New("ca_bundle must be PEM encoded certificates")
+		if err := backup.ValidateCABundle(caBundle); err != nil {
+			return err
 		}
 	}
 	return nil
@@ -182,6 +180,13 @@ func validateBackupTargetFields(name, provider, endpoint, region, bucket string)
 	if bucket == "" {
 		return errors.New("bucket is required")
 	}
+	// Internal forms are only produced server side by the matching provider paths.
+	low := strings.ToLower(strings.TrimSpace(endpoint))
+	for _, internal := range []string{store.WebDAVEndpointScheme, store.LocalEndpointScheme, store.AgentEndpointScheme} {
+		if strings.HasPrefix(low, internal) {
+			return errors.New("endpoint must be an http or https URL")
+		}
+	}
 	if endpoint == "" && provider != store.BackupProviderAWS {
 		return errors.New("endpoint is required for r2 and custom providers")
 	}
@@ -189,6 +194,29 @@ func validateBackupTargetFields(name, provider, endpoint, region, bucket string)
 		return fmt.Errorf("region is required for the %s provider", provider)
 	}
 	return nil
+}
+
+// backupTargetDestination reduces a stored target to the parts that decide where its
+// credentials are sent: provider kind, scheme, host and effective port.
+func backupTargetDestination(provider, endpoint string) string {
+	kind, raw := provider, endpoint
+	switch {
+	case strings.HasPrefix(endpoint, store.WebDAVEndpointScheme):
+		kind, raw = backupProviderWebDAV, strings.TrimPrefix(endpoint, store.WebDAVEndpointScheme)
+	case strings.HasPrefix(endpoint, store.LocalEndpointScheme):
+		return backupProviderLocal
+	case strings.HasPrefix(endpoint, store.AgentEndpointScheme):
+		return endpoint
+	}
+	u, err := url.Parse(raw)
+	if err != nil || raw == "" {
+		return kind + "|" + raw
+	}
+	port := u.Port()
+	if port == "" {
+		port = map[string]string{"https": "443", "http": "80"}[strings.ToLower(u.Scheme)]
+	}
+	return kind + "|" + strings.ToLower(u.Scheme) + "|" + strings.ToLower(u.Hostname()) + "|" + port
 }
 
 func validateCreateBackupTargetRequest(ctx context.Context, req createBackupTargetRequest) error {
@@ -238,6 +266,8 @@ type updateBackupTargetRequest struct {
 	AccessKeyID     string `json:"access_key_id,omitempty"`
 	SecretAccessKey string `json:"secret_access_key,omitempty"`
 	CABundle        string `json:"ca_bundle,omitempty"`
+	// ClearCABundle drops the stored bundle; ca_bundle is write-only so it cannot be sent empty.
+	ClearCABundle bool `json:"clear_ca_bundle,omitempty"`
 }
 
 func validateUpdateBackupTargetRequest(ctx context.Context, req updateBackupTargetRequest) error {
@@ -403,7 +433,8 @@ func (rt *Router) handleCreateBackupTarget(w http.ResponseWriter, r *http.Reques
 func (rt *Router) handleUpdateBackupTarget(w http.ResponseWriter, r *http.Request) {
 	id := r.PathValue("id")
 
-	if _, err := rt.backupTargets.GetBackupTarget(r.Context(), id); errors.Is(err, store.ErrBackupTargetNotFound) {
+	current, err := rt.backupTargets.GetBackupTarget(r.Context(), id)
+	if errors.Is(err, store.ErrBackupTargetNotFound) {
 		writeError(w, http.StatusNotFound, "backup target not found")
 		return
 	} else if err != nil {
@@ -425,8 +456,19 @@ func (rt *Router) handleUpdateBackupTarget(w http.ResponseWriter, r *http.Reques
 		var t store.BackupTarget
 		webDAVStored(&t, req.Endpoint, req.Bucket)
 		provider, endpoint, region, bucket = t.Provider, t.Endpoint, t.Region, t.Bucket
-		if req.CABundle != "" && rt.backupSecrets != nil {
-			if err := rt.backupSecrets.SetValue(r.Context(), store.BackupTargetSecretsKey(id), "ca_bundle", req.CABundle); err != nil {
+	}
+	// Stored credentials only follow an unchanged destination; a new one needs its own.
+	if req.AccessKeyID == "" && backupTargetDestination(current.Provider, current.Endpoint) != backupTargetDestination(provider, endpoint) {
+		writeError(w, http.StatusBadRequest, "changing the provider or endpoint requires access_key_id and secret_access_key in the same request")
+		return
+	}
+	if req.Provider == backupProviderWebDAV {
+		if (req.CABundle != "" || req.ClearCABundle) && rt.backupSecrets != nil {
+			bundle := req.CABundle
+			if req.ClearCABundle {
+				bundle = ""
+			}
+			if err := rt.backupSecrets.SetValue(r.Context(), store.BackupTargetSecretsKey(id), "ca_bundle", bundle); err != nil {
 				rt.internalError(w, "api: update backup target: set ca_bundle failed", err, slog.String("id", id))
 				return
 			}
