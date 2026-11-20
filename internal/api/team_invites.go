@@ -300,7 +300,7 @@ func (rt *Router) acceptingUserID(r *http.Request) (string, bool) {
 		return "", false
 	}
 	// This route runs outside requireAbility, so the stack gate never sees it.
-	if rt.tokenStackScoped(r.Context(), rec.ID) {
+	if rt.tokenStackScoped(r.Context(), rec.ID) || rt.tokenSiteScoped(r.Context(), rec.ID) {
 		return "", false
 	}
 	return rec.OwnerUserID, true

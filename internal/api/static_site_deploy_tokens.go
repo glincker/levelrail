@@ -4,6 +4,7 @@ import (
 	"context"
 	"errors"
 	"log/slog"
+	"math"
 	"net/http"
 	"slices"
 	"time"
@@ -12,9 +13,11 @@ import (
 )
 
 const (
-	siteTokenNameMax  = 64
-	msgSiteTokenDeny  = "this token can only deploy its own Pages site"
-	msgSiteTokenBuild = "this token can only start a static upload deploy of its own Pages site"
+	siteTokenNameMax = 64
+	// Largest day count whose Duration and time.Add stay in range.
+	maxExpiryDaysNoOverflow = int(math.MaxInt64 / int64(24*time.Hour) / 2)
+	msgSiteTokenDeny        = "this token can only deploy its own Pages site"
+	msgSiteTokenBuild       = "this token can only start a static upload deploy of its own Pages site"
 )
 
 // tokenSiteScopeStore is the site scope half of the token store.
@@ -124,13 +127,41 @@ func (rt *Router) revokeSiteTokens(ctx context.Context, site string) {
 			rt.logger.Warn("api: revoke site token failed", slog.String("token_id", id), slog.String("error", err.Error()))
 		}
 	}
+	// Rows stay as tombstones: a token that escapes revocation then denies everywhere instead of turning unscoped.
 	if d, ok := ss.(interface {
-		DeleteAPITokenSiteScopes(ctx context.Context, site string) error
+		InvalidateAPITokenSiteScopes(ctx context.Context, site string) error
 	}); ok {
-		if err := d.DeleteAPITokenSiteScopes(ctx, site); err != nil {
-			rt.logger.Warn("api: delete site scopes failed", slog.String("site", site), slog.String("error", err.Error()))
+		if err := d.InvalidateAPITokenSiteScopes(ctx, site); err != nil {
+			rt.logger.Warn("api: invalidate site scopes failed", slog.String("site", site), slog.String("error", err.Error()))
 		}
 	}
+}
+
+// revokeOwnedSiteTokens revokes the site tokens a user minted, when they leave a team.
+func (rt *Router) revokeOwnedSiteTokens(ctx context.Context, userID string) {
+	toks, err := rt.libraryListTokens(ctx, userID, false)
+	if err != nil {
+		rt.logger.Warn("api: list owned tokens failed", slog.String("error", err.Error()))
+		return
+	}
+	for _, t := range toks {
+		if t.Scope == nil || t.Scope.Site == "" {
+			continue
+		}
+		if err := rt.libraryRevokeToken(ctx, t.ID); err != nil && !isTokenGone(err) {
+			rt.logger.Warn("api: revoke owned site token failed", slog.String("token_id", t.ID), slog.String("error", err.Error()))
+		}
+	}
+}
+
+// tokenSiteScoped reports a site scope, or an unreadable one, so callers fail closed.
+func (rt *Router) tokenSiteScoped(ctx context.Context, tokenID string) bool {
+	ss := rt.tokenSiteScopes()
+	if ss == nil {
+		return false
+	}
+	sc, err := ss.GetAPITokenSiteScope(ctx, tokenID)
+	return err != nil || sc != nil
 }
 
 type siteDeployTokenRequest struct {
@@ -180,7 +211,7 @@ func (rt *Router) handleCreateSiteDeployToken(w http.ResponseWriter, r *http.Req
 		writeError(w, http.StatusBadRequest, "invalid request body")
 		return
 	}
-	if in.ExpiresInDays < 0 || len(in.Name) > siteTokenNameMax {
+	if in.ExpiresInDays < 0 || in.ExpiresInDays > maxExpiryDaysNoOverflow || len(in.Name) > siteTokenNameMax {
 		writeError(w, http.StatusBadRequest, "expires_in_days must not be negative and name at most 64 characters")
 		return
 	}

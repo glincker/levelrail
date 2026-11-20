@@ -212,12 +212,13 @@ levelrail pages token create docs --label github-actions
 
 The token is shown once and stored hashed. It can upload an archive to that site, start the deploy and read the deploy status, and nothing else: other sites, settings, secrets and every other route answer 403. Expiry defaults to the token lifetime setting; pass `--expires-days N` to choose. `levelrail pages token list docs` shows tokens without secrets and `levelrail pages token revoke docs <id>` cuts one off. The dashboard has the same controls in the site's deploy area. The CLI reads the token from `APP_API_TOKEN` and the server from `APP_API_URL`, so the commands below need no extra flags.
 
-GitHub Actions, using the action in this repository:
+GitHub Actions, using the action in this repository. Pin the action to a release tag or a full commit SHA, never a moving branch, and set `version` so the CLI matches:
 
 ```yaml
 - uses: actions/checkout@v4
-- uses: GLINCKER/levelrail/actions/pages-deploy@main
+- uses: GLINCKER/levelrail/actions/pages-deploy@v1.5.6
   with:
+    version: v1.5.6
     site: docs
     dir: ./dist
     server: https://levelrail.example.com

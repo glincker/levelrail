@@ -64,10 +64,19 @@ func (db *DB) ListAPITokenIDsForSite(ctx context.Context, site string) ([]string
 	return ids, rows.Err()
 }
 
-// DeleteAPITokenSiteScopes removes every site scope row for a site.
-func (db *DB) DeleteAPITokenSiteScopes(ctx context.Context, site string) error {
-	if _, err := db.ExecContext(ctx, `DELETE FROM api_token_site_scopes WHERE site_name = ?`, site); err != nil {
-		return fmt.Errorf("store: delete site scopes: %w", err)
+// InvalidateAPITokenSiteScopes blanks every scope row of a site so its tokens
+// deny everywhere, and a later site with the same name inherits nothing.
+func (db *DB) InvalidateAPITokenSiteScopes(ctx context.Context, site string) error {
+	return invalidateSiteScopes(ctx, db, site)
+}
+
+type siteScopeExecer interface {
+	ExecContext(ctx context.Context, query string, args ...any) (sql.Result, error)
+}
+
+func invalidateSiteScopes(ctx context.Context, x siteScopeExecer, site string) error {
+	if _, err := x.ExecContext(ctx, `UPDATE api_token_site_scopes SET site_name = '' WHERE site_name = ?`, site); err != nil {
+		return fmt.Errorf("store: invalidate site scopes: %w", err)
 	}
 	return nil
 }

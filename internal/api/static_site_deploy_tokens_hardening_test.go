@@ -69,3 +69,27 @@ func TestDeletingTheSiteRevokesItsTokens(t *testing.T) {
 		t.Fatalf("scope rows = %v, %v", ids, err)
 	}
 }
+
+func TestSiteTokenOfDeletedAppDoesNotCarryToANewApp(t *testing.T) {
+	rt, db, cookie := hookTestSite(t, false)
+	tok := mintSiteDeployToken(t, rt, cookie, "docs").Token
+	if err := db.DeleteDesiredService(context.Background(), "docs"); err != nil {
+		t.Fatal(err)
+	}
+	seedApp(t, db, "docs")
+	if code := callWithToken(t, rt, tok, http.MethodGet, "/api/v1/apps/docs", ""); code == http.StatusOK {
+		t.Fatalf("old site token reached a recreated app: %d", code)
+	}
+}
+
+func TestLeavingATeamRevokesOwnedSiteTokens(t *testing.T) {
+	rt, _, cookie := hookTestSite(t, false)
+	minted := mintSiteDeployToken(t, rt, cookie, "docs")
+	if !tokenUsable(rt, minted.Token) {
+		t.Fatal("token should start valid")
+	}
+	rt.revokeOwnedSiteTokens(context.Background(), minted.OwnerUserID)
+	if tokenUsable(rt, minted.Token) {
+		t.Fatal("owned site token must be revoked")
+	}
+}

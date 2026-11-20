@@ -335,6 +335,10 @@ func (rt *Router) requireAbilityDecided(required string, decide authzDecision, n
 				if r, stackOK = rt.gateStackToken(w, r, pinned.userID); !stackOK {
 					return
 				}
+				var pinnedSiteOK bool
+				if r, pinnedSiteOK = rt.gateSiteToken(w, r, pinned.userID); !pinnedSiteOK {
+					return
+				}
 				allowed, err := decide(r.Context(), store.PrincipalTypeToken, pinned.userID, pinned.pinnedAbilities)
 				if err != nil {
 					rt.internalError(w, "api: pinned session ability decision failed", err)

@@ -199,6 +199,10 @@ func (db *DB) DeleteDesiredService(ctx context.Context, name string) error {
 	if err := forgetBindingTarget(ctx, tx, BindingTargetApp, name); err != nil {
 		return fmt.Errorf("store: delete desired service %q: %w", name, err)
 	}
+	// Whatever route removed the app, tokens scoped to its name must not carry over to a new one.
+	if err := invalidateSiteScopes(ctx, tx, name); err != nil {
+		return fmt.Errorf("store: delete desired service %q: %w", name, err)
+	}
 	if err := tx.Commit(); err != nil {
 		return fmt.Errorf("store: delete desired service %q: %w", name, err)
 	}
