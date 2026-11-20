@@ -5,8 +5,10 @@ import (
 	"bytes"
 	"compress/gzip"
 	"errors"
+	"runtime"
 	"strings"
 	"testing"
+	"time"
 )
 
 const testPass = "correct horse battery"
@@ -137,5 +139,31 @@ func TestFilterForProjectAllowlist(t *testing.T) {
 	}
 	if len(skipped) != 3 {
 		t.Fatalf("skipped = %v", skipped)
+	}
+}
+
+func TestOpenRejectsCraftedKDFCostBeforeScrypt(t *testing.T) {
+	blob, err := seal(testPass, []byte("x"), []byte("m"))
+	if err != nil {
+		t.Fatal(err)
+	}
+	for _, c := range []struct {
+		name string
+		idx  int
+		val  byte
+	}{{"large r", 6, 255}, {"large p", 7, 255}, {"large logN", 5, 20}} {
+		bad := append([]byte{}, blob...)
+		bad[c.idx] = c.val
+		var before, after runtime.MemStats
+		runtime.ReadMemStats(&before)
+		start := time.Now()
+		_, err := open(testPass, bad, []byte("m"))
+		runtime.ReadMemStats(&after)
+		if !errors.Is(err, ErrFormat) {
+			t.Fatalf("%s: err = %v, want ErrFormat", c.name, err)
+		}
+		if time.Since(start) > time.Second || after.TotalAlloc-before.TotalAlloc > 1<<20 {
+			t.Fatalf("%s: header was not rejected cheaply", c.name)
+		}
 	}
 }

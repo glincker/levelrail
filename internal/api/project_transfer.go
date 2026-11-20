@@ -283,20 +283,31 @@ func (s *importStatusWriter) Write(b []byte) (int, error) {
 
 var importInflight sync.Map // actor key -> *atomic.Int32
 
+// importInflightGlobal counts imports across every caller.
+var importInflightGlobal atomic.Int32
+
 // acquireImportSlot caps parallel imports per caller, since each one holds a
 // whole archive in memory and may run a costly key derivation.
 func (rt *Router) acquireImportSlot(w http.ResponseWriter, r *http.Request) (func(), bool) {
-	limit := int32(rt.runtimeSettings.Limit(r.Context(), runtimesettings.KeyProjectsImportMaxConcurrent)) //nolint:gosec // clamped to 1..16
+	limit := int32(rt.runtimeSettings.Limit(r.Context(), runtimesettings.KeyProjectsImportMaxConcurrent))   //nolint:gosec // clamped to 1..16
+	globalLimit := int32(rt.runtimeSettings.Limit(r.Context(), runtimesettings.KeyProjectsImportMaxGlobal)) //nolint:gosec // clamped to 1..256
+	if importInflightGlobal.Add(1) > globalLimit {
+		importInflightGlobal.Add(-1)
+		w.Header().Set("Retry-After", "5")
+		writeError(w, http.StatusTooManyRequests, "too many project imports running on this instance, retry shortly")
+		return nil, false
+	}
 	a := rt.accessActor(r)
 	v, _ := importInflight.LoadOrStore(a.kind+":"+a.id, new(atomic.Int32))
 	n := v.(*atomic.Int32) //nolint:errcheck,forcetypeassert // only this function stores into the map
 	if n.Add(1) > limit {
 		n.Add(-1)
+		importInflightGlobal.Add(-1)
 		w.Header().Set("Retry-After", "5")
 		writeError(w, http.StatusTooManyRequests, "too many project imports running for this caller, retry shortly")
 		return nil, false
 	}
-	return func() { n.Add(-1) }, true
+	return func() { n.Add(-1); importInflightGlobal.Add(-1) }, true
 }
 
 var envPlaceholderRe = regexp.MustCompile(`\$\{\{\s*env\.([A-Za-z0-9_]+)\s*\}\}`)

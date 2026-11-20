@@ -71,13 +71,15 @@ type DrillRunner struct {
 
 	// MaxConcurrentFn caps drills running at once; unset or non-positive uses DefaultDrillConcurrency.
 	MaxConcurrentFn func() int
+	// ReservedScheduledFn is how many slots manual drills cannot take; unset or negative uses 1.
+	ReservedScheduledFn func() int
 	// TimeoutFn bounds one drill; unset or non-positive uses DefaultDrillTimeout.
 	TimeoutFn func() time.Duration
 	// PidsLimit caps processes in drill helper containers; zero uses DefaultDrillPidsLimit.
 	PidsLimit int64
 
 	mu     sync.Mutex
-	active map[string]struct{}
+	active map[string]string // backup id -> trigger
 
 	// OnFailure is called once for every failed drill.
 	OnFailure func(ctx context.Context, d store.BackupDrill)
@@ -105,15 +107,33 @@ var (
 	ErrDrillCapacity = errors.New("too many restore drills are running, try again later")
 )
 
-// Reserve claims the right to drill backupHistoryID and returns the release
-// func. It fails when that backup is already being drilled or the concurrency cap is reached.
+// Reserve claims the right to drill backupHistoryID for the scheduler and
+// returns the release func. It fails when that backup is already being
+// drilled or the concurrency cap is reached.
 func (r *DrillRunner) Reserve(backupHistoryID string) (func(), error) {
+	return r.reserve(backupHistoryID, store.DrillTriggerScheduled)
+}
+
+// ReserveManual is Reserve for a user started drill, which may not use the
+// slots kept for the scheduler.
+func (r *DrillRunner) ReserveManual(backupHistoryID string) (func(), error) {
+	return r.reserve(backupHistoryID, store.DrillTriggerManual)
+}
+
+func (r *DrillRunner) reserve(backupHistoryID, trigger string) (func(), error) {
 	limit := DefaultDrillConcurrency
 	if r.MaxConcurrentFn != nil {
 		if n := r.MaxConcurrentFn(); n > 0 {
 			limit = n
 		}
 	}
+	reserved := 1
+	if r.ReservedScheduledFn != nil {
+		if n := r.ReservedScheduledFn(); n >= 0 {
+			reserved = n
+		}
+	}
+	manualCap := max(limit-reserved, 1)
 	r.mu.Lock()
 	defer r.mu.Unlock()
 	if _, busy := r.active[backupHistoryID]; busy {
@@ -122,10 +142,21 @@ func (r *DrillRunner) Reserve(backupHistoryID string) (func(), error) {
 	if len(r.active) >= limit {
 		return nil, ErrDrillCapacity
 	}
-	if r.active == nil {
-		r.active = map[string]struct{}{}
+	if trigger == store.DrillTriggerManual {
+		manual := 0
+		for _, t := range r.active {
+			if t == store.DrillTriggerManual {
+				manual++
+			}
+		}
+		if manual >= manualCap {
+			return nil, ErrDrillCapacity
+		}
 	}
-	r.active[backupHistoryID] = struct{}{}
+	if r.active == nil {
+		r.active = map[string]string{}
+	}
+	r.active[backupHistoryID] = trigger
 	return func() {
 		r.mu.Lock()
 		delete(r.active, backupHistoryID)
@@ -146,7 +177,11 @@ func (r *DrillRunner) timeout() time.Duration {
 // finished; the returned drill carries the outcome. A failed drill returns a
 // non-nil error describing it.
 func (r *DrillRunner) RunDrill(ctx context.Context, drillID, backupHistoryID, trigger string) (store.BackupDrill, error) {
-	release, err := r.Reserve(backupHistoryID)
+	reserve := r.Reserve
+	if trigger == store.DrillTriggerManual {
+		reserve = r.ReserveManual
+	}
+	release, err := reserve(backupHistoryID)
 	if err != nil {
 		return store.BackupDrill{ID: drillID, BackupHistoryID: backupHistoryID, Trigger: trigger}, err
 	}

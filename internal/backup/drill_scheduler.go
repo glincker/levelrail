@@ -241,6 +241,10 @@ func (s *DrillScheduler) drillDue(ctx context.Context) error {
 			continue
 		}
 		if _, derr := s.runOne(ctx, id, h.ID); derr != nil {
+			if errors.Is(derr, ErrDrillCapacity) || errors.Is(derr, ErrDrillBusy) {
+				// A refused drill writes no row, so log it loudly; the next tick retries.
+				s.log().Warn("backup: scheduled restore drill skipped", slog.String("backup_id", h.ID), slog.String("reason", derr.Error()))
+			}
 			errs = append(errs, derr)
 		}
 	}

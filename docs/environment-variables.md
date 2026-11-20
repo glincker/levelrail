@@ -350,6 +350,7 @@ These variables only seed the default of a [runtime setting](/runtime-settings).
 | `APP_JOBS_TIMEOUT_MAX_SECONDS` | [`jobs.timeout_max_seconds`](/runtime-settings#deploys) | `86400` |
 | `APP_JOBS_TIMEOUT_MIN_SECONDS` | [`jobs.timeout_min_seconds`](/runtime-settings#deploys) | `1` |
 | `APP_NEXTJS_GENERATE_ACTIONS_KEY` | [`nextjs.generate_actions_key`](/runtime-settings#deploys) | `true` |
+| `APP_PAGES_PREVIEW_MAX_PER_SITE` | [`pages.preview_max_per_site`](/runtime-settings#deploys) | `20` |
 | `APP_PLACEMENT_AFFINITY_MAX_TERMS` | [`placement.affinity_max_terms`](/runtime-settings#deploys) | `8` |
 | `APP_PLACEMENT_SCORE_MODE` | [`placement.score_mode`](/runtime-settings#deploys) | `spread` |
 | `APP_PREVIEW_MIGRATE_TIMEOUT` | [`previews.migrate_timeout`](/runtime-settings#deploys) | `10m` |
@@ -363,6 +364,7 @@ These variables only seed the default of a [runtime setting](/runtime-settings).
 | `APP_PROJECTS_DEFAULT_ENVIRONMENT_NAME` | [`projects.default_environment_name`](/runtime-settings#deploys) | `production` |
 | `APP_PROJECT_IMPORT_MAX_BYTES` | [`projects.import_max_bytes`](/runtime-settings#deploys) | `268435456` |
 | `APP_PROJECT_IMPORT_MAX_CONCURRENT` | [`projects.import_max_concurrent`](/runtime-settings#deploys) | `2` |
+| `APP_PROJECT_IMPORT_MAX_CONCURRENT_GLOBAL` | [`projects.import_max_concurrent_global`](/runtime-settings#deploys) | `8` |
 | `APP_REGISTRY_DOCKERHUB_LIMIT_WARN_PERCENT` | [`registry.dockerhub.limit_warn_percent`](/runtime-settings#deploys) | `20` |
 | `APP_REGISTRY_DOCKERHUB_LIMITS_CACHE_SECONDS` | [`registry.dockerhub.limits_cache_seconds`](/runtime-settings#deploys) | `300` |
 | `APP_REGISTRY_DOCKERHUB_TAG_PAGE_SIZE` | [`registry.dockerhub.tag_page_size`](/runtime-settings#deploys) | `25` |
@@ -503,6 +505,7 @@ These variables only seed the default of a [runtime setting](/runtime-settings).
 | `APP_OTLP_INGEST_MAX_BODY_BYTES` | [`otlp.ingest_max_body_bytes`](/runtime-settings#observability) | `4194304` |
 | `APP_OTLP_INGEST_MAX_LINE_BYTES` | [`otlp.ingest_max_line_bytes`](/runtime-settings#observability) | `8192` |
 | `APP_OTLP_INGEST_MAX_RECORDS` | [`otlp.ingest_max_records`](/runtime-settings#observability) | `5000` |
+| `APP_PAGES_ANALYTICS_RETENTION_DAYS` | [`pages.analytics_retention_days`](/runtime-settings#observability) | `30` |
 | `APP_PERF_SLOW_STATEMENT_MS` | [`perf.slow_statement_ms`](/runtime-settings#observability) | `100` |
 | `APP_PERF_SLOW_STATEMENT_RING` | [`perf.slow_statement_ring`](/runtime-settings#observability) | `20` |
 | `APP_PERF_STATEMENT_TIMING` | [`perf.statement_timing`](/runtime-settings#observability) | `false` |
@@ -548,6 +551,7 @@ These variables only seed the default of a [runtime setting](/runtime-settings).
 | `APP_COMPOSE_RESTORE_TIMEOUT` | [`backups.compose_restore_timeout`](/runtime-settings#data-retention) | `2h` |
 | `APP_BACKUP_DRILL_INTERVAL_HOURS` | [`backups.drill_interval_hours`](/runtime-settings#data-retention) | `168` |
 | `APP_BACKUP_DRILL_MAX_CONCURRENT` | [`backups.drill_max_concurrent`](/runtime-settings#data-retention) | `2` |
+| `APP_BACKUP_DRILL_RESERVED_SCHEDULED` | [`backups.drill_reserved_scheduled`](/runtime-settings#data-retention) | `1` |
 | `APP_BACKUP_DRILL_RETENTION_DAYS` | [`backups.drill_retention_days`](/runtime-settings#data-retention) | `90` |
 | `APP_BACKUP_DRILL_TIMEOUT` | [`backups.drill_timeout`](/runtime-settings#data-retention) | `1h` |
 | `APP_BACKUP_SCHEDULE_RETAIN_DEFAULT` | [`backups.schedule_retain_default`](/runtime-settings#data-retention) | `0` |

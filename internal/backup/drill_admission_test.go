@@ -88,3 +88,16 @@ func (s *specCapture) Create(_ context.Context, spec docker.ContainerSpec) (stri
 	return "h-1", nil
 }
 func (s *specCapture) Start(context.Context, string) error { return nil }
+
+func TestManualDrillsCannotTakeTheSchedulerSlot(t *testing.T) {
+	r := &DrillRunner{MaxConcurrentFn: func() int { return 2 }, ReservedScheduledFn: func() int { return 1 }}
+	if _, err := r.ReserveManual("a"); err != nil {
+		t.Fatal(err)
+	}
+	if _, err := r.ReserveManual("b"); !errors.Is(err, ErrDrillCapacity) {
+		t.Fatalf("second manual = %v, want ErrDrillCapacity", err)
+	}
+	if _, err := r.Reserve("c"); err != nil {
+		t.Fatalf("scheduled drill refused: %v", err)
+	}
+}

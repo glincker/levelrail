@@ -73,6 +73,7 @@ backups.drill_interval_hours
 backups.drill_retention_days
 backups.drill_timeout
 backups.drill_max_concurrent
+backups.drill_reserved_scheduled
 backups.schedule_retain_default
 boot.deferred_stages
 boot.event_recheck
@@ -398,6 +399,7 @@ projects.archive_max_entries
 projects.archive_max_spec_bytes
 projects.archive_max_total_bytes
 projects.archive_min_passphrase
+projects.import_max_concurrent_global
 projects.clone_max_apps
 projects.clone_placeholder_domain
 projects.default_environment

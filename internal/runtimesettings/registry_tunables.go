@@ -25,6 +25,7 @@ const (
 	KeyBackupsDrillRetentionDays     = "backups.drill_retention_days"
 	KeyBackupsDrillTimeout           = "backups.drill_timeout"
 	KeyBackupsDrillMaxConcurrent     = "backups.drill_max_concurrent"
+	KeyBackupsDrillReservedScheduled = "backups.drill_reserved_scheduled"
 )
 
 var releaseChannels = []string{"stable", "beta", "edge"}
@@ -35,6 +36,12 @@ func init() {
 		Env: "APP_BACKUP_DRILL_MAX_CONCURRENT", Apply: ApplyLive, CheckValue: intRangeCheck(1, 16),
 		Title:       "Restore drill concurrency",
 		Description: "How many restore drills may run at once, from 1 to 16. A drill started beyond this is refused until one finishes. The next drill uses a changed value.",
+	})
+	Register(Definition{
+		Key: KeyBackupsDrillReservedScheduled, Category: CategoryRetention, Kind: KindInt, Default: "1",
+		Env: "APP_BACKUP_DRILL_RESERVED_SCHEDULED", Apply: ApplyLive, CheckValue: intRangeCheck(0, 15),
+		Title:       "Restore drill slots kept for the scheduler",
+		Description: "How many of the concurrent restore drill slots manual drills cannot use, from 0 to 15, so scheduled drills always find room. Manual drills keep at least one slot. The next drill uses a changed value.",
 	})
 	Register(Definition{
 		Key: KeyBackupsDrillRetentionDays, Category: CategoryRetention, Kind: KindInt, Default: "90",

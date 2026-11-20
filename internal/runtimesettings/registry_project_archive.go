@@ -11,6 +11,7 @@ const (
 	KeyProjectsImportMaxBytes       = "projects.import_max_bytes"
 	KeyProjectsImportMaxConcurrent  = "projects.import_max_concurrent"
 	KeyProjectsArchiveMinPassphrase = "projects.archive_min_passphrase"
+	KeyProjectsImportMaxGlobal      = "projects.import_max_concurrent_global"
 )
 
 func init() {
@@ -39,6 +40,11 @@ func init() {
 		Title:       "Concurrent project imports per caller",
 		Description: "How many project imports one caller may run at once, from 1 to 16. Further requests get HTTP 429 until one finishes. A change applies at once.",
 	}, 1, 16)
+	registerLimit(Definition{
+		Key: KeyProjectsImportMaxGlobal, Category: CategoryDeploys, Default: "8", Env: "APP_PROJECT_IMPORT_MAX_CONCURRENT_GLOBAL", Apply: ApplyLive,
+		Title:       "Concurrent project imports, instance wide",
+		Description: "How many project imports may run at once across every caller, from 1 to 256. Further requests get HTTP 429 until one finishes. A change applies at once.",
+	}, 1, 256)
 	registerLimit(Definition{
 		Key: KeyProjectsArchiveMinPassphrase, Category: CategorySecurity, Default: "12", Env: "APP_PROJECT_ARCHIVE_MIN_PASSPHRASE", Apply: ApplyLive, Risk: RiskWeakensSecurity,
 		Title:       "Project archive passphrase length",

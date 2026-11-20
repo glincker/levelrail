@@ -116,6 +116,9 @@ func newBackupProtection(db *store.DB, secretsManager *secrets.Manager, client *
 	drills.MaxConcurrentFn = func() int {
 		return drillSettings.Int(context.Background(), runtimesettings.KeyBackupsDrillMaxConcurrent)
 	}
+	drills.ReservedScheduledFn = func() int {
+		return drillSettings.Int(context.Background(), runtimesettings.KeyBackupsDrillReservedScheduled)
+	}
 	drills.TimeoutFn = func() time.Duration {
 		return drillSettings.Duration(context.Background(), runtimesettings.KeyBackupsDrillTimeout)
 	}

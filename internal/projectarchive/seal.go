@@ -20,7 +20,8 @@ import (
 const (
 	MinPassphraseFloor = 12
 	defaultKDFLogN     = 17
-	maxKDFLogN         = 20
+	minKDFLogN         = 15
+	maxKDFLogN         = 18
 	kdfR               = 8
 	kdfP               = 1
 	macLen             = 32
@@ -48,7 +49,8 @@ type kdfParams struct{ logN, r, p byte }
 // deriveKeys runs scrypt once and splits the output with HKDF into an
 // encryption key and an independent manifest MAC key.
 func deriveKeys(pass string, salt []byte, k kdfParams) (encKey, macKey []byte, err error) {
-	if k.logN < 10 || k.logN > maxKDFLogN || k.r == 0 || k.p == 0 {
+	// Only the cost shapes the writer emits are valid, so a header cannot force a large scrypt allocation.
+	if k.logN < minKDFLogN || k.logN > maxKDFLogN || k.r != kdfR || k.p != kdfP {
 		return nil, nil, ErrFormat
 	}
 	root, err := scrypt.Key([]byte(pass), salt, 1<<k.logN, int(k.r), int(k.p), 32)

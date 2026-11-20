@@ -358,7 +358,7 @@ func (p *Protection) StartDrill(ctx context.Context, backupID string) (string, e
 	if err != nil {
 		return "", err
 	}
-	release, err := p.Drills.Reserve(backupID)
+	release, err := p.Drills.ReserveManual(backupID)
 	if err != nil {
 		return "", err
 	}

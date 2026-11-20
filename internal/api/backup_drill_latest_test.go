@@ -124,6 +124,25 @@ func TestDrillRoutesHideDeniedApp(t *testing.T) {
 	}
 }
 
+func TestDrillStartHidesStatusOfDeniedBackup(t *testing.T) {
+	p := &fakeBackupProtection{}
+	rt, db := newProtectionRouter(t, p, nil)
+	ctx := context.Background()
+	seedVolumeBackup(t, db, "bad", store.BackupStatusFailed)
+	if err := db.SaveAPIToken(ctx, store.APIToken{ID: "ws", Name: "ws", TokenHash: hashToken("tok-ws"), Abilities: []string{AbilityWriteSensitive}}); err != nil {
+		t.Fatal(err)
+	}
+	if err := db.SavePolicy(ctx, store.Policy{ID: "pol_deny", Name: "deny", Document: `{"Statement":[{"Effect":"Deny","Action":["write:sensitive"],"Resource":["app:web"]}]}`}); err != nil {
+		t.Fatal(err)
+	}
+	if err := db.AttachPolicy(ctx, "att_deny", "pol_deny", store.PrincipalTypeToken, "ws"); err != nil {
+		t.Fatal(err)
+	}
+	if rec := tokenDo(rt, "tok-ws", `{"backup_id":"bad"}`, "/api/v1/backups/drills"); rec.Code != http.StatusNotFound || strings.Contains(rec.Body.String(), "status") {
+		t.Fatalf("denied backup = %d %s, want a plain 404", rec.Code, rec.Body)
+	}
+}
+
 func TestDrillStartMapsAdmissionErrors(t *testing.T) {
 	for err, want := range map[error]int{backup.ErrDrillBusy: http.StatusConflict, backup.ErrDrillCapacity: http.StatusTooManyRequests} {
 		p := &fakeBackupProtection{drillErr: err}

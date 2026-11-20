@@ -279,15 +279,16 @@ func (rt *Router) handleStartBackupDrill(w http.ResponseWriter, r *http.Request)
 		rt.internalError(w, "api: start drill: load backup failed", err, slog.String("backup_id", req.BackupID))
 		return
 	}
+	// Authorize first so a scoped caller learns nothing about a hidden backup from the 409 bodies.
+	if !rt.authorizeDrillBackup(w, r, h) {
+		return
+	}
 	if h.Status != store.BackupStatusSucceeded {
 		writeError(w, http.StatusConflict, fmt.Sprintf("backup %q has status %q, only a succeeded backup can be drilled", req.BackupID, h.Status))
 		return
 	}
 	if t, terr := rt.backupTargets.GetBackupTarget(r.Context(), h.TargetID); terr == nil && (strings.HasPrefix(t.Endpoint, store.LocalEndpointScheme) || strings.HasPrefix(t.Endpoint, backup.AgentEndpointScheme)) {
 		writeError(w, http.StatusConflict, "restore drills are "+backup.DrillNotApplicable)
-		return
-	}
-	if !rt.authorizeDrillBackup(w, r, h) {
 		return
 	}
 	id, err := rt.backupProtection.StartDrill(r.Context(), req.BackupID)

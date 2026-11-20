@@ -46,11 +46,14 @@ var drillControlPlaneBusy atomic.Bool
 // authorizeDrillBackup applies the per resource write:sensitive decision to the
 // app or database a backup belongs to, answering 404 when it is hidden.
 func (rt *Router) authorizeDrillBackup(w http.ResponseWriter, r *http.Request, h store.BackupHistory) bool {
-	ref := appRef(h.ServiceName)
+	return rt.authorizeRefs(w, r, AbilityWriteSensitive, notFoundAs(http.StatusNotFound, "backup not found"), drillBackupRef(h))
+}
+
+func drillBackupRef(h store.BackupHistory) resourceRef {
 	if h.ResourceKind != store.BackupResourceKindVolume {
-		ref = databaseRef(h.DatabaseName)
+		return databaseRef(h.DatabaseName)
 	}
-	return rt.authorizeRefs(w, r, AbilityWriteSensitive, notFoundAs(http.StatusNotFound, "backup not found"), ref)
+	return appRef(h.ServiceName)
 }
 
 // writeDrillStartError maps a refused drill start to its status; it reports whether it wrote one.
@@ -159,6 +162,15 @@ func (rt *Router) latestDrillBackup(w http.ResponseWriter, r *http.Request, req 
 	}
 	for _, h := range rows {
 		if h.Status != store.BackupStatusSucceeded {
+			continue
+		}
+		// Rows the caller may not drill are skipped before any status body, so they stay invisible.
+		denied, derr := rt.firstDeniedRef(r, AbilityWriteSensitive, []resourceRef{drillBackupRef(h)})
+		if derr != nil {
+			rt.internalError(w, "api: drill: authz failed", derr)
+			return "", store.BackupHistory{}, false
+		}
+		if denied != nil {
 			continue
 		}
 		if t, terr := rt.backupTargets.GetBackupTarget(r.Context(), h.TargetID); terr == nil && (strings.HasPrefix(t.Endpoint, store.LocalEndpointScheme) || strings.HasPrefix(t.Endpoint, backup.AgentEndpointScheme)) {
