@@ -43,7 +43,8 @@ type GeoStatus struct {
 // concurrent use; the MMDB reader is read only after Open.
 type GeoResolver struct {
 	header    string
-	useHeader bool
+	source    string
+	seedTrust string
 	reader    *maxminddb.Reader
 	status    GeoStatus
 }
@@ -72,32 +73,26 @@ func NewGeoResolver(getenv func(string) string) *GeoResolver {
 	if source == "" {
 		source = "auto"
 	}
-	trustedProxies := strings.TrimSpace(getenv(EnvTrustedProxies)) != ""
+	g.source = source
+	g.seedTrust = getenv(EnvTrustedProxies)
 	switch source {
-	case GeoSourceNone:
-	case GeoSourceHeader:
-		g.useHeader = true
-	case GeoSourceMMDB:
-		g.openDB(getenv(EnvGeoIPDB))
+	case GeoSourceNone, GeoSourceHeader:
 	default:
-		g.useHeader = trustedProxies
 		g.openDB(getenv(EnvGeoIPDB))
-	}
-	if g.useHeader {
-		g.status.Sources = append(g.status.Sources, GeoSourceHeader)
-		g.status.Header = g.header
-		if !trustedProxies {
-			g.status.HeaderNeeds = fmt.Sprintf("%s is only honoured from addresses in %s, which is empty", g.header, EnvTrustedProxies)
-		}
-	}
-	if g.reader != nil {
-		g.status.Sources = append(g.status.Sources, GeoSourceMMDB)
-	}
-	g.status.Active = len(g.status.Sources) > 0
-	if !g.status.Active {
-		g.status.Sources = []string{GeoSourceNone}
 	}
 	return g
+}
+
+// headerOn is evaluated per call so a trusted proxy list saved later applies
+// without rebuilding the resolver.
+func (g *GeoResolver) headerOn() bool {
+	switch g.source {
+	case GeoSourceNone, GeoSourceMMDB:
+		return false
+	case GeoSourceHeader:
+		return true
+	}
+	return TrustedProxiesConfigured(g.seedTrust)
 }
 
 func (g *GeoResolver) openDB(path string) {
@@ -117,7 +112,25 @@ func (g *GeoResolver) openDB(path string) {
 }
 
 // Status reports the active sources.
-func (g *GeoResolver) Status() GeoStatus { return g.status }
+func (g *GeoResolver) Status() GeoStatus {
+	st := g.status
+	st.Sources = nil
+	if g.headerOn() {
+		st.Sources = append(st.Sources, GeoSourceHeader)
+		st.Header = g.header
+		if !TrustedProxiesConfigured(g.seedTrust) {
+			st.HeaderNeeds = fmt.Sprintf("%s is only honoured from addresses in %s, which is empty", g.header, EnvTrustedProxies)
+		}
+	}
+	if g.reader != nil {
+		st.Sources = append(st.Sources, GeoSourceMMDB)
+	}
+	st.Active = len(st.Sources) > 0
+	if !st.Active {
+		st.Sources = []string{GeoSourceNone}
+	}
+	return st
+}
 
 // HeaderName is the country header honoured from trusted proxies.
 func (g *GeoResolver) HeaderName() string { return g.header }
@@ -129,7 +142,7 @@ func (g *GeoResolver) Country(addr netip.Addr, headerValue string, trustedPeer b
 	if g == nil {
 		return "", GeoSourceNone
 	}
-	if g.useHeader && trustedPeer {
+	if g.headerOn() && trustedPeer {
 		if c := strings.ToUpper(strings.TrimSpace(headerValue)); trafficpolicy.IsCountryCode(c) {
 			return c, GeoSourceHeader
 		}

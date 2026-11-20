@@ -16,6 +16,7 @@ var resolvedTrusted atomic.Pointer[[]netip.Prefix]
 
 // SetResolvedTrustedProxies publishes the edge's effective trusted proxy list.
 func SetResolvedTrustedProxies(entries []string) {
+	ingressdriver.PublishTrustedProxies(entries)
 	if entries == nil {
 		resolvedTrusted.Store(nil)
 		return
