@@ -2612,6 +2612,7 @@ type UpdateBackupTargetRequest struct {
 	AccessKeyID     string `json:"access_key_id,omitempty"`
 	SecretAccessKey string `json:"secret_access_key,omitempty"`
 	CABundle        string `json:"ca_bundle,omitempty"`
+	ClearCABundle   bool   `json:"clear_ca_bundle,omitempty"`
 }
 
 // RegistryCredentialResource mirrors internal/api's

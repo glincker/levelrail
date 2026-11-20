@@ -4,6 +4,7 @@ import (
 	"context"
 	"time"
 
+	"github.com/GLINCKER/levelrail/internal/backup"
 	"github.com/GLINCKER/levelrail/internal/iac"
 	"github.com/GLINCKER/levelrail/internal/models"
 	"github.com/GLINCKER/levelrail/internal/placement"
@@ -72,6 +73,18 @@ func (rt *Router) attachGuardSources() {
 		}
 	})
 	placement.SetAffinityTermsSource(lim(runtimesettings.KeyPlacementAffinityTerms))
+	backup.SetWebDAVSource(func() backup.WebDAVSettings {
+		ctx, rs := context.Background(), rt.runtimeSettings
+		return backup.WebDAVSettings{
+			AllowPrivate:  rs.Bool(ctx, runtimesettings.KeyBackupWebDAVAllowPrivate),
+			HeaderTimeout: rs.Duration(ctx, runtimesettings.KeyBackupWebDAVHeaderTimeout),
+			Idle:          rs.Duration(ctx, runtimesettings.KeyBackupWebDAVIdleTimeout),
+			Request:       rs.Duration(ctx, runtimesettings.KeyBackupWebDAVRequestTimeout),
+			MaxResponse:   int64(rs.Limit(ctx, runtimesettings.KeyBackupWebDAVMaxResponse)),
+			MaxEntries:    rs.Limit(ctx, runtimesettings.KeyBackupWebDAVMaxEntries),
+			MaxDepth:      rs.Limit(ctx, runtimesettings.KeyBackupWebDAVMaxDepth),
+		}
+	})
 	models.SetHFLimitSource(func() (time.Duration, int64) {
 		sec := rt.runtimeSettings.Limit(context.Background(), runtimesettings.KeyHFTimeoutSeconds)
 		return time.Duration(sec) * time.Second, int64(rt.runtimeSettings.Limit(context.Background(), runtimesettings.KeyHFMaxResponseBytes))

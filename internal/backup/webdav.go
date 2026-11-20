@@ -14,10 +14,11 @@ import (
 	"net/http"
 	"net/netip"
 	"net/url"
-	"os"
 	"path"
 	"strconv"
 	"strings"
+	"sync/atomic"
+	"syscall"
 	"time"
 
 	"github.com/GLINCKER/levelrail/internal/store"
@@ -33,29 +34,33 @@ const webDAVAttempts = 3
 
 var webDAVBackoff = 300 * time.Millisecond
 
-// webDAVMaxList is the one budget a recursive listing spends: every request and every
-// entry seen costs one, so a hostile server cannot make us walk forever.
-const webDAVMaxList = 20000
+// WebDAVSettings are the live WebDAV tunables; the API layer feeds them from runtime settings.
+type WebDAVSettings struct {
+	AllowPrivate                 bool
+	HeaderTimeout, Idle, Request time.Duration
+	MaxResponse                  int64
+	MaxEntries, MaxDepth         int
+}
 
-// webDAVMaxResponse caps a single PROPFIND body.
-const webDAVMaxResponse = 8 << 20
+func defaultWebDAVSettings() WebDAVSettings {
+	return WebDAVSettings{HeaderTimeout: 30 * time.Second, Idle: time.Minute, Request: 2 * time.Minute,
+		MaxResponse: 8 << 20, MaxEntries: 20000, MaxDepth: 8}
+}
 
-// Timeout env names; durations use Go syntax such as 45s. Defaults apply when unset or invalid.
-const (
-	EnvWebDAVHeaderTimeout  = "APP_BACKUP_WEBDAV_HEADER_TIMEOUT"
-	EnvWebDAVIdleTimeout    = "APP_BACKUP_WEBDAV_IDLE_TIMEOUT"
-	EnvWebDAVRequestTimeout = "APP_BACKUP_WEBDAV_REQUEST_TIMEOUT"
-)
+var webDAVSource atomic.Pointer[func() WebDAVSettings]
 
-// EnvWebDAVAllowPrivate seeds the runtime opt-in that lets WebDAV targets use http and private
-// addresses. It is separate from the notification opt-in on purpose.
-const EnvWebDAVAllowPrivate = "APP_BACKUP_WEBDAV_ALLOW_PRIVATE_NETWORKS"
+// SetWebDAVSource makes WebDAV targets follow live settings; unset, the safe defaults apply.
+func SetWebDAVSource(f func() WebDAVSettings) { webDAVSource.Store(&f) }
+
+func webDAVSettings() WebDAVSettings {
+	if f := webDAVSource.Load(); f != nil {
+		return (*f)()
+	}
+	return defaultWebDAVSettings()
+}
 
 // WebDAVAllowPrivate reports whether WebDAV targets may reach private networks.
-func WebDAVAllowPrivate() bool {
-	v, err := strconv.ParseBool(os.Getenv(EnvWebDAVAllowPrivate))
-	return err == nil && v
-}
+func WebDAVAllowPrivate() bool { return webDAVSettings().AllowPrivate }
 
 // ValidateWebDAVHost refuses internal destinations unless the dedicated opt-in is on.
 func ValidateWebDAVHost(ctx context.Context, endpoint string) error {
@@ -114,13 +119,6 @@ func ValidateCABundle(bundle string) error {
 	return nil
 }
 
-func davDuration(env string, def time.Duration) time.Duration {
-	if d, err := time.ParseDuration(strings.TrimSpace(os.Getenv(env))); err == nil && d > 0 {
-		return d
-	}
-	return def
-}
-
 // ErrWebDAVBadEndpoint means the stored WebDAV endpoint is not a usable URL.
 var ErrWebDAVBadEndpoint = errors.New("backup: webdav endpoint must be an https URL")
 
@@ -146,6 +144,7 @@ type webDAV struct {
 	pass   string
 	// idle bounds the gap between body reads; request caps non-streaming calls.
 	idle, request time.Duration
+	set           WebDAVSettings
 }
 
 // WebDAVBaseURL turns a stored endpoint and directory into the collection URL.
@@ -168,7 +167,7 @@ func newWebDAV(dest Destination) (*webDAV, error) {
 	if err != nil {
 		return nil, err
 	}
-	c := netguard.NewClientAllowing(EnvWebDAVAllowPrivate)
+	c := netguard.NewClient()
 	tr, ok := c.Transport.(*http.Transport)
 	if !ok {
 		return nil, errors.New("backup: webdav transport unavailable")
@@ -183,11 +182,15 @@ func newWebDAV(dest Destination) (*webDAV, error) {
 		}
 		pool.AppendCertsFromPEM([]byte(dest.CABundle))
 	}
-	tr.ResponseHeaderTimeout = davDuration(EnvWebDAVHeaderTimeout, 30*time.Second)
+	set := webDAVSettings()
+	tr.ResponseHeaderTimeout = set.HeaderTimeout
+	// The dial check reads the setting per connection so a toggle applies without a new client.
+	dialer := &net.Dialer{Timeout: 10 * time.Second, KeepAlive: 30 * time.Second, Control: davDialControl}
+	tr.DialContext = dialer.DialContext
 	tr.TLSClientConfig = &tls.Config{MinVersion: tls.VersionTLS12, RootCAs: pool}
 	c.CheckRedirect = func(*http.Request, []*http.Request) error { return http.ErrUseLastResponse }
 	return &webDAV{base: base, client: c, user: dest.AccessKeyID, pass: dest.SecretAccessKey,
-		idle: davDuration(EnvWebDAVIdleTimeout, time.Minute), request: davDuration(EnvWebDAVRequestTimeout, 2*time.Minute)}, nil
+		idle: set.Idle, request: set.Request, set: set}, nil
 }
 
 func (w *webDAV) url(key string) string {
@@ -471,7 +474,7 @@ func (w *webDAV) propfind(ctx context.Context, rel string) ([]davEntry, error) {
 		return nil, statusErr("propfind", resp)
 	}
 	var ms davMultistatus
-	if err := xml.NewDecoder(io.LimitReader(resp.Body, webDAVMaxResponse)).Decode(&ms); err != nil {
+	if err := xml.NewDecoder(io.LimitReader(resp.Body, w.set.MaxResponse)).Decode(&ms); err != nil {
 		return nil, fmt.Errorf("backup: webdav propfind: bad response: %w", err)
 	}
 	selfPath := strings.TrimRight(path.Join(w.base.Path, rel), "/")
@@ -521,7 +524,7 @@ func (w *webDAV) propfind(ctx context.Context, rel string) ([]davEntry, error) {
 func (w *webDAV) List(ctx context.Context, prefix string) ([]RemoteObject, error) {
 	dir, namePrefix := path.Split(prefix)
 	var out []RemoteObject
-	budget := webDAVMaxList
+	budget := w.set.MaxEntries
 	spend := func() error {
 		if budget--; budget < 0 {
 			return errors.New("backup: webdav listing too large")
@@ -546,7 +549,7 @@ func (w *webDAV) List(ctx context.Context, prefix string) ([]RemoteObject, error
 			}
 			key := path.Join(rel, e.name)
 			if e.dir {
-				if depth < 8 {
+				if depth < w.set.MaxDepth {
 					if err := walk(key, depth+1); err != nil {
 						return err
 					}
@@ -596,4 +599,23 @@ func (w *webDAV) Probe(ctx context.Context) (TestReport, error) {
 		}
 	}
 	return rep, nil
+}
+
+// davDialControl refuses blocked addresses at connect time unless the live opt-in is on.
+func davDialControl(_, address string, _ syscall.RawConn) error {
+	if WebDAVAllowPrivate() {
+		return nil
+	}
+	host, _, err := net.SplitHostPort(address)
+	if err != nil {
+		return fmt.Errorf("backup: webdav: parse dial address %q: %w", address, err)
+	}
+	ip, err := netip.ParseAddr(host)
+	if err != nil {
+		return fmt.Errorf("backup: webdav: parse dial address %q: %w", address, err)
+	}
+	if netguard.IsBlocked(ip) {
+		return fmt.Errorf("%w: %s (enable the WebDAV private network setting to allow it)", netguard.ErrBlockedAddress, ip)
+	}
+	return nil
 }

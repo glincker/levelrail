@@ -61,6 +61,13 @@ backup.default_retention_hours
 backup.hook_max_output_bytes
 backup.hook_timeout_seconds
 backup.local_root
+backup.webdav_allow_private_networks
+backup.webdav_header_timeout
+backup.webdav_idle_timeout
+backup.webdav_max_depth
+backup.webdav_max_entries
+backup.webdav_max_response_bytes
+backup.webdav_request_timeout
 backups.compose_restore_timeout
 backups.drill_interval_hours
 backups.drill_retention_days

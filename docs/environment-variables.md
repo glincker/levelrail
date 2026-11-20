@@ -67,6 +67,7 @@ These variables only seed the default of a [runtime setting](/runtime-settings).
 | `APP_AUDIT_ANCHOR_WEBHOOK_URL` | [`audit.anchor_webhook_url`](/runtime-settings#security) | empty |
 | `APP_AUTH_ENGINE_RATE_LIMIT_PER_EMAIL` | [`auth.engine_rate_limit_per_email`](/runtime-settings#security) | `60` |
 | `APP_AUTH_ENGINE_RATE_LIMIT_PER_IP` | [`auth.engine_rate_limit_per_ip`](/runtime-settings#security) | `60` |
+| `APP_BACKUP_WEBDAV_ALLOW_PRIVATE_NETWORKS` | [`backup.webdav_allow_private_networks`](/runtime-settings#security) | `false` |
 | `APP_CLOUD_ALLOW_CHECKSUM_ONLY` | [`cloud.allow_checksum_only`](/runtime-settings#security) | `false` |
 | `APP_CLOUD_ALLOW_PROTECTED_DELETE` | [`cloud.allow_protected_delete`](/runtime-settings#security) | `false` |
 | `APP_CLOUD_ENGINE_DENY_ADDRESSES` | [`cloud.engine_deny_addresses`](/runtime-settings#security) | empty |
@@ -225,6 +226,12 @@ These variables only seed the default of a [runtime setting](/runtime-settings).
 | `APP_SLEEP_MAX_WAITERS` | [`appsleep.max_waiters`](/runtime-settings#deploys) | `200` |
 | `APP_SLEEP_WAKE_WAIT_SECONDS` | [`appsleep.wake_wait_seconds`](/runtime-settings#deploys) | `0` |
 | `APP_BACKUP_LOCAL_ROOT` | [`backup.local_root`](/runtime-settings#deploys) | empty |
+| `APP_BACKUP_WEBDAV_HEADER_TIMEOUT` | [`backup.webdav_header_timeout`](/runtime-settings#deploys) | `30s` |
+| `APP_BACKUP_WEBDAV_IDLE_TIMEOUT` | [`backup.webdav_idle_timeout`](/runtime-settings#deploys) | `1m` |
+| `APP_BACKUP_WEBDAV_MAX_DEPTH` | [`backup.webdav_max_depth`](/runtime-settings#deploys) | `8` |
+| `APP_BACKUP_WEBDAV_MAX_ENTRIES` | [`backup.webdav_max_entries`](/runtime-settings#deploys) | `20000` |
+| `APP_BACKUP_WEBDAV_MAX_RESPONSE_BYTES` | [`backup.webdav_max_response_bytes`](/runtime-settings#deploys) | `8388608` |
+| `APP_BACKUP_WEBDAV_REQUEST_TIMEOUT` | [`backup.webdav_request_timeout`](/runtime-settings#deploys) | `2m` |
 | `APP_BOOT_DEFERRED_STAGES` | [`boot.deferred_stages`](/runtime-settings#deploys) | `false` |
 | `APP_BOOT_EVENT_RECHECK` | [`boot.event_recheck`](/runtime-settings#deploys) | `3s` |
 | `APP_BOOT_RECHECKS` | [`boot.rechecks`](/runtime-settings#deploys) | `3s:10s` |

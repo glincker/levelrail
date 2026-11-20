@@ -15,6 +15,7 @@ import (
 	"strings"
 	"sync"
 	"testing"
+	"time"
 )
 
 // fakeDAV is a tiny in-memory WebDAV server: enough verbs for the backup target.
@@ -103,9 +104,20 @@ func (f *fakeDAV) ServeHTTP(w http.ResponseWriter, r *http.Request) {
 	}
 }
 
+// setWebDAVPrivate flips the live opt-in for one test and restores the defaults after.
+func setWebDAVPrivate(t *testing.T, allow bool) {
+	t.Helper()
+	SetWebDAVSource(func() WebDAVSettings {
+		d := defaultWebDAVSettings()
+		d.AllowPrivate = allow
+		return d
+	})
+	t.Cleanup(func() { SetWebDAVSource(defaultWebDAVSettings) })
+}
+
 func davDest(t *testing.T, srv *httptest.Server) Destination {
 	t.Helper()
-	t.Setenv("APP_BACKUP_WEBDAV_ALLOW_PRIVATE_NETWORKS", "true")
+	setWebDAVPrivate(t, true)
 	ca := pem.EncodeToMemory(&pem.Block{Type: "CERTIFICATE", Bytes: srv.Certificate().Raw})
 	return Destination{Endpoint: WebDAVEndpointScheme + srv.URL, Bucket: "backups", AccessKeyID: "u", SecretAccessKey: "p", CABundle: string(ca)}
 }
@@ -182,7 +194,7 @@ func TestWebDAVBlocksPrivateHostByDefault(t *testing.T) {
 	srv := httptest.NewTLSServer(newFakeDAV())
 	defer srv.Close()
 	dest := davDest(t, srv)
-	t.Setenv("APP_BACKUP_WEBDAV_ALLOW_PRIVATE_NETWORKS", "false")
+	setWebDAVPrivate(t, false)
 	if err := (Routed{}).Test(context.Background(), dest); !errors.Is(err, netguard.ErrBlockedAddress) {
 		t.Fatalf("loopback must be refused, got %v", err)
 	}
@@ -287,12 +299,16 @@ func TestWebDAVMoveErrorButObjectLanded(t *testing.T) {
 }
 
 func TestWebDAVHeaderTimeout(t *testing.T) {
-	t.Setenv(EnvWebDAVHeaderTimeout, "150ms")
 	release := make(chan struct{})
 	srv := httptest.NewTLSServer(http.HandlerFunc(func(http.ResponseWriter, *http.Request) { <-release }))
 	defer srv.Close()
 	defer close(release)
 	dest := davDest(t, srv)
+	SetWebDAVSource(func() WebDAVSettings {
+		d := defaultWebDAVSettings()
+		d.AllowPrivate, d.HeaderTimeout = true, 150*time.Millisecond
+		return d
+	})
 	if _, err := (Routed{}).Download(context.Background(), dest, "k"); err == nil {
 		t.Fatal("a server that never answers must time out")
 	}
