@@ -39,27 +39,7 @@ func (p *setsProvider) DeleteRecordSet(_ context.Context, _ dnszones.Zone, k dns
 	return nil
 }
 
-// brokenLibdns fails every listing the way the libdns module does on an odd SRV, and records writes.
-type brokenLibdns struct{ appended []libdns.Record }
-
-func (b *brokenLibdns) GetRecords(context.Context, string) ([]libdns.Record, error) {
-	return nil, errors.New("failed to parse SRV record: expected format '_service._proto.name'")
-}
-
-func (b *brokenLibdns) AppendRecords(_ context.Context, _ string, r []libdns.Record) ([]libdns.Record, error) {
-	b.appended = append(b.appended, r...)
-	return r, nil
-}
-
-func (b *brokenLibdns) SetRecords(context.Context, string, []libdns.Record) ([]libdns.Record, error) {
-	return nil, nil
-}
-
-func (b *brokenLibdns) DeleteRecords(context.Context, string, []libdns.Record) ([]libdns.Record, error) {
-	return nil, nil
-}
-
-func TestTolerantListManager(t *testing.T) {
+func TestRoute53ZoneManagerSurvivesUnparseableRecords(t *testing.T) {
 	t.Parallel()
 	odd := dnszones.RecordSet{Name: "srv", Type: "SRV", TTL: 300, Values: []string{"1 1 1 x.example.com"}}
 	tests := []struct {
@@ -73,14 +53,14 @@ func TestTolerantListManager(t *testing.T) {
 		{"odd SRV in zone, target created", []dnszones.RecordSet{odd}, nil, Desired{Name: "run", Type: "A", Value: "203.0.113.5", TTL: 5 * time.Minute}, "", OutcomeCreated},
 		{"odd SRV and same A already there", []dnszones.RecordSet{odd, {Name: "run", Type: "A", TTL: 300, Values: []string{"203.0.113.5"}}}, nil, Desired{Name: "run", Type: "A", Value: "203.0.113.5"}, "", OutcomeUnchanged},
 		{"odd SRV and a different A conflicts", []dnszones.RecordSet{odd, {Name: "run", Type: "A", TTL: 300, Values: []string{"198.51.100.1"}}}, nil, Desired{Name: "run", Type: "A", Value: "203.0.113.5"}, "", OutcomeConflict},
+		{"alias at the target name conflicts", []dnszones.RecordSet{{Name: "run", Type: "A", Alias: &dnszones.Alias{DNSName: "lb.example.com"}}}, nil, Desired{Name: "run", Type: "A", Value: "203.0.113.5"}, "", OutcomeConflict},
 		{"true provider error surfaces", nil, errors.New("AccessDenied"), Desired{Name: "run", Type: "A", Value: "203.0.113.5"}, "AccessDenied", ""},
 	}
 	for _, tc := range tests {
 		t.Run(tc.name, func(t *testing.T) {
 			t.Parallel()
 			p := &setsProvider{sets: tc.sets, listErr: tc.listErr}
-			inner := &brokenLibdns{}
-			m := tolerantListManager{Manager: inner, lister: ZoneManager{P: p}}
+			m := ZoneManager{P: p}
 			recs, err := m.GetRecords(context.Background(), "apps.example.com.")
 			if tc.wantErr != "" {
 				if err == nil || !strings.Contains(err.Error(), tc.wantErr) {
@@ -100,13 +80,24 @@ func TestTolerantListManager(t *testing.T) {
 				if _, err := m.AppendRecords(context.Background(), "apps.example.com.", []libdns.Record{rr}); err != nil {
 					t.Fatal(err)
 				}
-				if len(inner.appended) != 1 {
-					t.Fatalf("write must go to the wrapped manager, got %d", len(inner.appended))
+				if len(p.upserts) != 1 || p.upserts[0].Name != "run" {
+					t.Fatalf("want one upsert of the target only, got %v", p.upserts)
 				}
+			} else if len(p.upserts) != 0 {
+				t.Fatalf("nothing may be written: %v", p.upserts)
 			}
-			if len(p.upserts) != 0 || len(p.deletes) != 0 {
-				t.Fatalf("the odd record must be untouched: upserts=%v deletes=%v", p.upserts, p.deletes)
+			if len(p.deletes) != 0 {
+				t.Fatalf("no record may be deleted: %v", p.deletes)
 			}
 		})
+	}
+}
+
+func TestZoneManagerRefusesToOverwriteAlias(t *testing.T) {
+	t.Parallel()
+	p := &setsProvider{sets: []dnszones.RecordSet{{Name: "run", Type: "A", Alias: &dnszones.Alias{DNSName: "lb.example.com"}}}}
+	rr := libdns.RR{Name: "run", Type: "A", Data: "203.0.113.5"}
+	if _, err := (ZoneManager{P: p}).AppendRecords(context.Background(), "apps.example.com.", []libdns.Record{rr}); err == nil || len(p.upserts) != 0 {
+		t.Fatalf("err = %v, upserts = %v, want a refusal and no write", err, p.upserts)
 	}
 }

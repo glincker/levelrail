@@ -66,6 +66,10 @@ func (m ZoneManager) GetRecords(ctx context.Context, zone string) ([]libdns.Reco
 	}
 	var out []libdns.Record
 	for _, rs := range sets {
+		if rs.Alias != nil {
+			// Shown as data no desired record equals, so a plan sees the name as taken.
+			out = append(out, libdns.RR{Name: rs.Name, Type: rs.Type, Data: "alias:" + rs.Alias.DNSName})
+		}
 		for _, v := range rs.Values {
 			out = append(out, libdns.RR{Name: rs.Name, Type: rs.Type, TTL: time.Duration(rs.TTL) * time.Second, Data: v})
 		}
@@ -93,6 +97,9 @@ func (m ZoneManager) write(ctx context.Context, zone string, recs []libdns.Recor
 		return nil, err
 	}
 	for k, rrs := range group(recs) {
+		if cur[k].Alias != nil {
+			return nil, fmt.Errorf("dnsrecords: %s %s is an alias record set, not overwriting it", k.name, k.typ)
+		}
 		rs := dnszones.RecordSet{Name: k.name, Type: k.typ, TTL: int(rrs[0].TTL / time.Second), Routing: dnszones.RoutingSimple}
 		if merge {
 			rs.Values = slices.Clone(cur[k].Values)
