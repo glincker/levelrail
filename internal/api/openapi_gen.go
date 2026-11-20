@@ -14,7 +14,7 @@ type openAPIRoute struct {
 	Description string
 }
 
-// openAPIRoutes holds all 2243 routes known to scripts/gen-api-reference at
+// openAPIRoutes holds all 2244 routes known to scripts/gen-api-reference at
 // generation time. Run `go run ./scripts/gen-api-reference` after changing
 // any routes*.go registration and commit the result.
 var openAPIRoutes = []openAPIRoute{
@@ -813,6 +813,7 @@ var openAPIRoutes = []openAPIRoute{
 	{Method: "GET", Path: "/api/v1/databases/{name}/links", Ability: "AbilityRead", Group: "Databases CRUD / Engines / Resources", Handler: "handleListDatabaseLinks", Description: ""},
 	{Method: "POST", Path: "/api/v1/databases/{name}/links", Ability: "AbilityWrite", Group: "Databases CRUD / Engines / Resources", Handler: "handleConnectDatabaseApp", Description: ""},
 	{Method: "GET", Path: "/api/v1/databases/{name}/logs", Ability: "AbilityRead", Group: "Databases CRUD / Engines / Resources", Handler: "handleQueryDatabaseLogs", Description: ""},
+	{Method: "GET", Path: "/api/v1/databases/{name}/logs/download", Ability: "AbilityRead", Group: "Databases CRUD / Engines / Resources", Handler: "handleDownloadDatabaseLogs", Description: "Plain-text export of a bounded window, same AbilityRead boundary as the query route."},
 	{Method: "GET", Path: "/api/v1/databases/{name}/logs/stream", Ability: "AbilityRead", Group: "Databases CRUD / Engines / Resources", Handler: "handleLiveDatabaseLogStream", Description: ""},
 	{Method: "POST", Path: "/api/v1/databases/{name}/major-upgrade", Ability: "AbilityRoot", Group: "Databases CRUD / Engines / Resources", Handler: "handleMajorUpgrade", Description: ""},
 	{Method: "GET", Path: "/api/v1/databases/{name}/major-upgrades", Ability: "AbilityRead", Group: "Databases CRUD / Engines / Resources", Handler: "handleListMajorUpgrades", Description: ""},

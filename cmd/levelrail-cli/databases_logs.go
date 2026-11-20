@@ -13,7 +13,7 @@ import (
 
 func runDatabasesLogs(prog string, args []string, stdout, stderr io.Writer, lookupEnv func(string) (string, bool)) int {
 	fs, tokenFlagP, apiURLFlagP, profileFlagP, jsonOutP, outputFlagP, queryFlagP := apiFlagSet(prog, "databases logs", "print entries as a JSON array to stdout and nothing else", stderr)
-	var since, from, to, query string
+	var since, from, to, query, outFile string
 	var tail int
 	var follow bool
 	fs.StringVar(&since, "since", "", "how far back to search, e.g. \"1h\", \"30m\" (default: 1h, the server's own default window; mutually exclusive with --from and --follow)")
@@ -21,6 +21,7 @@ func runDatabasesLogs(prog string, args []string, stdout, stderr io.Writer, look
 	fs.StringVar(&to, "to", "", "RFC3339 end of the search window (default: now; mutually exclusive with --follow)")
 	fs.StringVar(&query, "q", "", "full-text search phrase; omitted means every log line in range (mutually exclusive with --follow)")
 	fs.IntVar(&tail, "tail", 0, "only show the last N entries (applied client-side; mutually exclusive with --follow)")
+	fs.StringVar(&outFile, "file", "", "download the window as plain text into this new file (created 0600, never overwrites; mutually exclusive with --follow, --tail and --query)")
 	fs.BoolVar(&follow, "follow", false, "stream new log lines live, like \"docker logs -f\"; runs until Ctrl+C, ignores --since/--from/--to/--q/--tail/--query")
 	fs.BoolVar(&follow, "f", false, "shorthand for --follow")
 	fs.Usage = func() { _, _ = fmt.Fprint(stderr, databasesLogsUsage(prog)) }
@@ -39,7 +40,7 @@ func runDatabasesLogs(prog string, args []string, stdout, stderr io.Writer, look
 	name := rest[0]
 
 	if follow {
-		if since != "" || from != "" || to != "" || query != "" || tail != 0 || of.Query != "" {
+		if since != "" || from != "" || to != "" || query != "" || tail != 0 || of.Query != "" || outFile != "" {
 			return reportError(stdout, stderr, jsonOut, newValidationError("--follow is a live tail and cannot be combined with --since/--from/--to/--q/--tail/--query"))
 		}
 		client := apiClientFromFlags(prog, apiURLFlag, tokenFlag, profileFlag, lookupEnv)
@@ -57,6 +58,13 @@ func runDatabasesLogs(prog string, args []string, stdout, stderr io.Writer, look
 
 	client := apiClientFromFlags(prog, apiURLFlag, tokenFlag, profileFlag, lookupEnv)
 
+	if outFile != "" {
+		if tail != 0 || of.Query != "" {
+			return reportError(stdout, stderr, jsonOut, newValidationError("--file downloads plain text and cannot be combined with --tail or --query"))
+		}
+		return downloadDatabaseLogsToFile(client, name, outFile, fromTime, toTime, query, stdout, stderr, jsonOut)
+	}
+
 	entries, err := client.QueryDatabaseLogs(context.Background(), name, fromTime, toTime, query)
 	if err != nil {
 		return reportError(stdout, stderr, jsonOut, fmt.Errorf("query logs for database %q: %w", name, err))
@@ -67,6 +75,27 @@ func runDatabasesLogs(prog string, args []string, stdout, stderr io.Writer, look
 		_, _ = fmt.Fprintln(stderr, err)
 		return exitCodeForError(err)
 	}
+	return exitOK
+}
+
+// downloadDatabaseLogsToFile fetches the server's text export before creating the file, so a failed call leaves nothing behind.
+func downloadDatabaseLogsToFile(client *Client, name, path string, from, to time.Time, query string, stdout, stderr io.Writer, jsonOut bool) int {
+	data, err := client.DownloadDatabaseLogs(context.Background(), name, from, to, query)
+	if err != nil {
+		return reportError(stdout, stderr, jsonOut, fmt.Errorf("download logs for database %q: %w", name, err))
+	}
+	f, err := os.OpenFile(path, os.O_WRONLY|os.O_CREATE|os.O_EXCL, 0o600) //nolint:gosec // path is the operator's own flag
+	if err != nil {
+		return reportError(stdout, stderr, jsonOut, fmt.Errorf("open --file: %w", err))
+	}
+	if _, err := f.Write(data); err != nil {
+		_ = f.Close()
+		return reportError(stdout, stderr, jsonOut, fmt.Errorf("write --file: %w", err))
+	}
+	if err := f.Close(); err != nil {
+		return reportError(stdout, stderr, jsonOut, fmt.Errorf("close --file: %w", err))
+	}
+	_, _ = fmt.Fprintf(stderr, "wrote %d bytes to %s\n", len(data), path)
 	return exitOK
 }
 
@@ -108,6 +137,7 @@ Flags:
   --to string                RFC3339 end of the search window (default: now)
   --q string                  full-text search phrase (default: every line in range)
   --tail int                  only show the last N entries (client-side)
+  --file string               download the window as plain text into a new file (0600, never overwrites)
   --follow, -f              stream new log lines live until Ctrl+C, instead of a historical search
   --token string           API token (default: %[2]s env var, then the credentials file)
   --api-url string        control plane base URL (default: %[3]s env var, then %[4]s)

@@ -1006,6 +1006,7 @@ Endpoints for:
 | PUT | /api/v1/databases/{name}/params | AbilityWrite | handleStageDatabaseParams |
 | DELETE | /api/v1/databases/{name}/params/pending | AbilityWrite | handleDiscardDatabaseParams |
 | POST | /api/v1/databases/{name}/params/apply | AbilityWriteSensitive | handleApplyDatabaseParams |
+| GET | /api/v1/databases/{name}/logs/download | AbilityRead | handleDownloadDatabaseLogs |
 | GET | /api/v1/databases/{name}/notes | AbilityRead |  |
 | PUT | /api/v1/databases/{name}/notes | AbilityWrite |  |
 

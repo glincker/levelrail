@@ -38,6 +38,12 @@ func (rt *Router) handleQueryDatabaseLogs(w http.ResponseWriter, r *http.Request
 	rt.queryResourceLogs(w, r, rt.lookupDatabaseResource, "query database logs", "database")
 }
 
+// handleDownloadDatabaseLogs handles GET /api/v1/databases/{name}/logs/download:
+// the database-kind counterpart to handleDownloadLogs (logs_download.go).
+func (rt *Router) handleDownloadDatabaseLogs(w http.ResponseWriter, r *http.Request) {
+	rt.downloadResourceLogs(w, r, rt.lookupDatabaseResource, "download database logs", "database")
+}
+
 // handleLiveDatabaseLogStream handles
 // GET /api/v1/databases/{name}/logs/stream: the database-kind
 // counterpart to handleLiveLogStream (live_logs.go); both share

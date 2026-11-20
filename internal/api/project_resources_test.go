@@ -8,6 +8,15 @@ import (
 	"github.com/GLINCKER/levelrail/internal/store"
 )
 
+func TestDatabaseLogsDownload_DeniesOtherTeam(t *testing.T) {
+	f := newTeamFixture(t)
+	cookie := f.cookies[store.TeamRoleOwner]
+	code, body := teamDo(t, f.rt, http.MethodGet, "/api/v1/databases/"+dbB+"/logs/download", "", withCookie(cookie))
+	if code != http.StatusForbidden && code != http.StatusNotFound {
+		t.Errorf("other team database log download = %d %s, want 403 or 404", code, body)
+	}
+}
+
 func TestProjectResources_ListsOwnProjectAndDeniesOtherTeam(t *testing.T) {
 	f := newTeamFixture(t)
 	cookie := f.cookies[store.TeamRoleOwner]

@@ -72588,6 +72588,84 @@
         "x-required-ability": "read"
       }
     },
+    "/api/v1/databases/{name}/logs/download": {
+      "get": {
+        "description": "Plain-text export of a bounded window, same AbilityRead boundary as the query route.\n\nRequires the `read` ability.",
+        "operationId": "handleDownloadDatabaseLogs",
+        "parameters": [
+          {
+            "in": "path",
+            "name": "name",
+            "required": true,
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": {}
+              }
+            },
+            "description": "Successful response. The body shape is not described in this document."
+          },
+          "401": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            },
+            "description": "Missing or invalid credentials."
+          },
+          "403": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            },
+            "description": "The token lacks the required ability."
+          },
+          "4XX": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            },
+            "description": "Client error."
+          },
+          "default": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            },
+            "description": "Error response."
+          }
+        },
+        "security": [
+          {
+            "bearerAuth": [
+              "read"
+            ]
+          }
+        ],
+        "summary": "Plain-text export of a bounded window, same AbilityRead boundary as the query route.",
+        "tags": [
+          "Databases CRUD / Engines / Resources"
+        ],
+        "x-required-ability": "read"
+      }
+    },
     "/api/v1/databases/{name}/logs/stream": {
       "get": {
         "description": "Requires the `read` ability.",

@@ -33,6 +33,8 @@ func (rt *Router) registerDatabaseRoutes(mux *http.ServeMux) {
 	mux.HandleFunc("GET /api/v1/databases/{name}/metrics", rt.requireAbilityForResource(AbilityRead, databaseResourceFromPath, rt.handleQueryDatabaseMetrics))
 	mux.HandleFunc("GET /api/v1/databases/{name}/logs", rt.requireAbilityForResource(AbilityRead, databaseResourceFromPath, rt.handleQueryDatabaseLogs))
 	mux.HandleFunc("GET /api/v1/databases/{name}/logs/stream", rt.requireAbilityForResource(AbilityRead, databaseResourceFromPath, rt.withStreamReauth(databaseResourceFromPath, rt.handleLiveDatabaseLogStream)))
+	// Plain-text export of a bounded window, same AbilityRead boundary as the query route.
+	mux.HandleFunc("GET /api/v1/databases/{name}/logs/download", rt.requireAbilityForResource(AbilityRead, databaseResourceFromPath, rt.handleDownloadDatabaseLogs))
 
 	// Slow query log, Postgres/MySQL only (database_slow_queries.go's own
 	// doc comment explains why Redis and every other engine return 400):

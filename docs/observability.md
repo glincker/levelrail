@@ -219,7 +219,7 @@ It returns an excerpt of the newest matching lines, never a full dump: at most `
 <Accordion title="Download and database logs">
 **Download** takes the same `from`, `to` and `q` filters as stored search and returns a plain-text attachment (not JSON), capped at 5,000 lines. From the CLI, `levelrail-cli apps logs --file <path>` writes the entries to a new file (mode 0600, never overwrites). The browser download and `curl` with query params and a bearer token also work.
 
-**Database logs** mirror the app endpoints exactly (same query params, same SSE shape) and use the resource ID prefix `database:` instead of `service:`. There is no download endpoint for databases yet.
+**Database logs** mirror the app endpoints exactly (same query params, same SSE shape) and use the resource ID prefix `database:` instead of `service:`. Databases also have a download endpoint, `GET /api/v1/databases/{name}/logs/download`, and `levelrail-cli databases logs <name> --file <path>` writes it to a new file.
 </Accordion>
 <Accordion title="Reading lines in the log viewer (client side)">
 - Each row gets a subtle level tag (ERR, WRN, INF, DBG) detected from JSON `level` or `severity` keys, `level=WARN` style key/value pairs, or a leading `ERROR`, `WARN`, `INFO` or `DEBUG` prefix.
