@@ -96,12 +96,21 @@ func (e ingressEdge) effectiveHardening(ctx context.Context, db edgeOverrideStor
 		h.MaxConnsPerIP = rs.Limit(ctx, runtimesettings.KeyIngressMaxRequestsPerIP)
 		h.UnmatchedMode = rs.String(ctx, runtimesettings.KeyIngressUnmatchedMode)
 		h.UnmatchedRedirectURL = rs.String(ctx, runtimesettings.KeyIngressUnmatchedRedirectURL)
-		if rs.TrustedProxyPreset(ctx) == runtimesettings.TrustedProxyPresetCloudflare {
-			m := h.WithCloudflarePreset(cloudflareips.Default().CIDRs())
-			h = &m
-		}
+		h = withTrustedProxyPreset(h, rs.TrustedProxyPreset(ctx), cloudflareips.Default().CIDRs())
+	}
+	if h != nil {
+		api.SetResolvedTrustedProxies(h.TrustedProxies)
 	}
 	return h
+}
+
+// withTrustedProxyPreset adds the preset's ranges, giving the one list the edge and the API both trust.
+func withTrustedProxyPreset(h *ingressdriver.Hardening, preset string, cidrs []string) *ingressdriver.Hardening {
+	if h == nil || preset != runtimesettings.TrustedProxyPresetCloudflare {
+		return h
+	}
+	m := h.WithCloudflarePreset(cidrs)
+	return &m
 }
 
 // ingressBodyCap lets the stored runtime setting win, and clamps every other source so no env value or override drops the cap below its floor.

@@ -200,6 +200,10 @@ func parseTrustedProxies(raw string) ([]string, error) {
 	return out, nil
 }
 
+// ParseTrustedProxyList expands a raw list (IPs, CIDRs, private_ranges) the same
+// way the edge does, so the API reads the entries Caddy is given.
+func ParseTrustedProxyList(raw string) ([]string, error) { return parseTrustedProxies(raw) }
+
 // TrustedProxiesConfig is Caddy's static trusted_proxies source.
 type TrustedProxiesConfig struct {
 	Source string   `json:"source"`

@@ -57,5 +57,13 @@ func (rt *Router) doctorCheckIngressEdge(ctx context.Context) []doctorCheckResou
 	} else {
 		parts = append(parts, "systemd socket activation off (a control plane restart refuses connections briefly)")
 	}
-	return []doctorCheckResource{{Code: code, Name: name, Status: doctorStatusOK, Message: strings.Join(parts, "; ")}}
+	res := []doctorCheckResource{{Code: code, Name: name, Status: doctorStatusOK, Message: strings.Join(parts, "; ")}}
+	if p, ok := trustedDockerBridge(trustedProxyPrefixes()); ok && listensOnAllInterfaces(rt.dashboardListenAddr) {
+		res = append(res, doctorCheckResource{
+			Code: "ingress_trusted_bridge", Name: "Trusted proxy range", Status: doctorStatusWarn,
+			Message: "the trusted proxy list includes " + p.String() + ", which covers Docker bridge networks, while the dashboard listens on " + rt.dashboardListenAddr + ". Containers on those networks are treated as proxies",
+			Fix:     "trust only the real proxy addresses, or bind the dashboard to 127.0.0.1 (APP_HTTP_ADDR)",
+		})
+	}
+	return res
 }
