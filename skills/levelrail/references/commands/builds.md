@@ -18,6 +18,7 @@ Usage:
   levelrail-cli builds prune [--node N] [--older-than-hours H] [--apply]
   levelrail-cli builds queue [--json]
   levelrail-cli builds runners [--json]
+  levelrail-cli builds runner <app> [--mode auto|control_plane|node] [--node N] [--pin] [--label K=V]
   levelrail-cli builds pause [--reason TEXT]
   levelrail-cli builds drain [--reason TEXT]
   levelrail-cli builds resume
@@ -31,7 +32,7 @@ an in-flight build holds is never removed. cache quota shows the per app quota
 (0 is off) and the recent reclaims; --app-quota-gb changes the live setting
 (root or admin), --reclaim trims one app now. pause and drain hold new builds
 in the queue (running builds finish), resume starts them again, and kill-all
-cancels every queued and running build after a password step-up.
+cancels every queued and running build after a password step-up. runner shows\nor sets where an app builds: control_plane never sends its builds to a node,\nnode needs --node (--pin refuses any other runner), auto lets the router choose.
 ```
 
 ## levelrail-cli builds cache
@@ -50,6 +51,7 @@ Usage:
   levelrail-cli builds prune [--node N] [--older-than-hours H] [--apply]
   levelrail-cli builds queue [--json]
   levelrail-cli builds runners [--json]
+  levelrail-cli builds runner <app> [--mode auto|control_plane|node] [--node N] [--pin] [--label K=V]
   levelrail-cli builds pause [--reason TEXT]
   levelrail-cli builds drain [--reason TEXT]
   levelrail-cli builds resume
@@ -63,6 +65,6 @@ an in-flight build holds is never removed. cache quota shows the per app quota
 (0 is off) and the recent reclaims; --app-quota-gb changes the live setting
 (root or admin), --reclaim trims one app now. pause and drain hold new builds
 in the queue (running builds finish), resume starts them again, and kill-all
-cancels every queued and running build after a password step-up.
+cancels every queued and running build after a password step-up. runner shows\nor sets where an app builds: control_plane never sends its builds to a node,\nnode needs --node (--pin refuses any other runner), auto lets the router choose.
 ```
 
