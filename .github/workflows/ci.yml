@@ -270,6 +270,16 @@ jobs:
           GOOS=windows GOARCH=arm64 go build -o /dev/null ./cmd/levelrail-cli
           GOOS=darwin GOARCH=arm64 go build -o /dev/null ./cmd/levelrail-cli
 
+      # Node agents run on Mac hosts, so a linux-only import in the agent
+      # tree must fail here rather than on a user's machine.
+      - name: Cross-compile node agent (darwin)
+        if: needs.plan.outputs.scope != 'none'
+        env:
+          CGO_ENABLED: "0"
+        run: |
+          GOOS=darwin GOARCH=arm64 go build -o /dev/null ./cmd/levelrail-agent
+          GOOS=darwin GOARCH=amd64 go build -o /dev/null ./cmd/levelrail-agent
+
       # tools/ is its own module, so the package list above never reaches it.
       - name: Release notes generator
         if: needs.changes.outputs.tools == 'true'
