@@ -287,8 +287,8 @@ func TestCleanupPreviewReviewItem(t *testing.T) {
 	}
 	for _, it := range body.Items {
 		if it.Key == CleanupPreviewKey {
-			if string(it.Value) != "6" || !it.Onboarding {
-				t.Fatalf("review item = %+v, want 6: one managed target plus the five janitor stages in dry run", it)
+			if string(it.Value) != "1" || !it.Onboarding {
+				t.Fatalf("review item = %+v, want 1: only the managed target is in preview, the janitor stages act by default", it)
 			}
 			return
 		}
