@@ -26,6 +26,7 @@ import type databases from '../locales/en/databases.json'
 import type https from '../locales/en/https.json'
 import type golive from '../locales/en/golive.json'
 import type nodes from '../locales/en/nodes.json'
+import type nodePatch from '../locales/en/nodePatch.json'
 import type access from '../locales/en/access.json'
 import type logPipeline from '../locales/en/logPipeline.json'
 import type logBudgets from '../locales/en/logBudgets.json'
@@ -186,6 +187,7 @@ declare module 'i18next' {
       https: typeof https
       golive: typeof golive
       nodes: typeof nodes
+      nodePatch: typeof nodePatch
       access: typeof access
       logPipeline: typeof logPipeline
       logBudgets: typeof logBudgets

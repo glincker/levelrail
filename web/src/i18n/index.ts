@@ -25,6 +25,7 @@ export const NAMESPACES = [
   'https',
   'golive',
   'nodes',
+  'nodePatch',
   'access',
   'logPipeline',
   'logBudgets',

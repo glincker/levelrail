@@ -19,31 +19,31 @@ export function needsNewPreview(error: unknown): boolean {
 
 // Maps a coded API error to plain language with the next step.
 export function patchErrorMessage(
-  t: TFunction<'nodes'>,
+  t: TFunction<'nodePatch'>,
   error: unknown,
 ): string {
   switch (patchErrorCode(error)) {
     case 'patch_unsupported':
-      return t('patch.errors.patch_unsupported')
+      return t('errors.patch_unsupported')
     case 'patch_manager_unsupported':
-      return t('patch.errors.patch_manager_unsupported')
+      return t('errors.patch_manager_unsupported')
     case 'patch_in_progress':
-      return t('patch.errors.patch_in_progress')
+      return t('errors.patch_in_progress')
     case 'deploy_in_progress':
-      return t('patch.errors.deploy_in_progress')
+      return t('errors.deploy_in_progress')
     case 'preview_expired':
-      return t('patch.errors.preview_expired')
+      return t('errors.preview_expired')
     case 'preview_mismatch':
-      return t('patch.errors.preview_mismatch')
+      return t('errors.preview_mismatch')
     case 'preview_stale':
-      return t('patch.errors.preview_stale')
+      return t('errors.preview_stale')
     case 'drain_required':
-      return t('patch.errors.drain_required')
+      return t('errors.drain_required')
     case 'nothing_to_apply':
-      return t('patch.errors.nothing_to_apply')
+      return t('errors.nothing_to_apply')
     case 'runtime_upgrade_needs_systemd':
-      return t('patch.errors.runtime_upgrade_needs_systemd')
+      return t('errors.runtime_upgrade_needs_systemd')
     default:
-      return t('patch.errors.generic')
+      return t('errors.generic')
   }
 }
