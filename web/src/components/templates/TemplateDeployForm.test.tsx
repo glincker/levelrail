@@ -139,9 +139,11 @@ describe('TemplateDeployForm states', () => {
     await userEvent.type(screen.getByLabelText(/Admin email/), 'a@b.co')
     await userEvent.click(screen.getByRole('button', { name: 'Deploy' }))
     await waitFor(() => expect(navigate).toHaveBeenCalled())
-    const init = installCalls(fetchFn)[0]
-    expect(init[0]).toBe('/api/v1/service-templates/wikijs/install')
-    expect(JSON.parse(init[1].body as string)).toEqual({
+    const calls = installCalls(fetchFn)
+    expect(calls).toHaveLength(1)
+    const [url, init] = calls[0] ?? ['', {}]
+    expect(url).toBe('/api/v1/service-templates/wikijs/install')
+    expect(JSON.parse(init.body as string)).toEqual({
       env: { ADMIN_EMAIL: 'a@b.co' },
       domains: {},
     })
