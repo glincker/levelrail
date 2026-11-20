@@ -396,6 +396,7 @@ pages.build_cache_max_bytes
 pages.build_log_max_bytes
 pages.build_log_retention
 pages.image_resize
+pages.image_resize_cache_bytes
 pages.image_resize_max_pixels
 pages.image_resize_max_source_bytes
 pages.image_resize_max_width

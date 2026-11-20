@@ -199,6 +199,9 @@ func (m *staticSiteModule) ServeHTTP(w http.ResponseWriter, r *http.Request, _ c
 		if h.Get("Etag") == "" {
 			h.Set("Etag", fmt.Sprintf(`"%x-%x"`, fi.ModTime().UnixNano(), fi.Size()))
 		}
+		if m.serveResized(w, r, f, fi, d.File) {
+			return nil
+		}
 		http.ServeContent(w, r, fi.Name(), fi.ModTime(), f)
 		return nil
 	}

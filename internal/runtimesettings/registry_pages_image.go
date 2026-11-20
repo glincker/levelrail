@@ -1,5 +1,17 @@
 package runtimesettings
 
+import "context"
+
+// KeyPagesImageResizeCacheBytes caps the memory held by resized variants.
+const KeyPagesImageResizeCacheBytes = "pages.image_resize_cache_bytes"
+
+// PagesImageResize returns the live resize switch, the three source limits and the cache cap.
+func (s *Service) PagesImageResize(ctx context.Context) (on bool, maxWidth, maxSourceBytes, maxPixels, cacheBytes int) {
+	return s.Bool(ctx, KeyPagesImageResize), s.Limit(ctx, KeyPagesImageResizeMaxWidth),
+		s.Limit(ctx, KeyPagesImageResizeMaxSourceBytes), s.Limit(ctx, KeyPagesImageResizeMaxPixels),
+		s.Limit(ctx, KeyPagesImageResizeCacheBytes)
+}
+
 // KeyPagesImageResize turns on the on-demand image resize route for Pages sites.
 const KeyPagesImageResize = "pages.image_resize"
 
@@ -37,4 +49,10 @@ func init() {
 		Title:       "Pages image resize pixel cap",
 		Description: "Largest source image in pixels that is decoded for resizing, which bounds memory use. Bigger images are served unchanged. The next request uses a changed value.",
 	})
+	registerLimit(Definition{
+		Key: KeyPagesImageResizeCacheBytes, Category: CategoryNetworking, Default: "67108864",
+		Env: "APP_PAGES_IMAGE_RESIZE_CACHE_BYTES", Apply: ApplyLive,
+		Title:       "Pages image resize cache size",
+		Description: "Memory in bytes held for resized image variants, oldest dropped first. The next request uses a changed value.",
+	}, 1<<20, 1<<32)
 }
