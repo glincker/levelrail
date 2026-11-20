@@ -992,6 +992,8 @@
     "settings:obsExport.list.deleteTitle",
     "settings:obsExport.list.label",
     "settings:obsExport.list.sent_other",
+    "settings:obsExport.rootRequired.title",
+    "settings:obsExport.rootRequired.why",
     "settings:obsExport.signal.logs",
     "settings:obsExport.signal.metrics",
     "settings:obsExport.test.failed",

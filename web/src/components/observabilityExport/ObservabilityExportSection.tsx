@@ -4,6 +4,7 @@ import { Button } from '@/components/ui/button'
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card'
 import { ConfirmAction } from '@/components/ui/confirm-action'
 import { InfoTip } from '../kit'
+import { ApiError } from '../../lib/apiError'
 import {
   useDeleteObservabilityExport,
   useExportPresets,
@@ -113,6 +114,9 @@ export function ObservabilityExportSection() {
   const presets = useExportPresets()
   const exports = useObservabilityExports()
   const [picked, setPicked] = useState<ExportPreset | null>(null)
+  // Non-root tokens get 403 on the exports routes; presets stay readable.
+  const rootRequired =
+    exports.error instanceof ApiError && exports.error.status === 403
 
   // A build without the catalog (501 or older server) hides the section.
   if (presets.isError || !presets.data) return null
@@ -127,6 +131,17 @@ export function ObservabilityExportSection() {
         </CardTitle>
       </CardHeader>
       <CardContent className="space-y-3">
+        {rootRequired ? (
+          <p
+            role="status"
+            className="rounded-md border bg-muted/40 px-3 py-2 text-xs text-muted-foreground"
+          >
+            <span className="font-medium text-foreground">
+              {t('obsExport.rootRequired.title')}.
+            </span>{' '}
+            {t('obsExport.rootRequired.why')}
+          </p>
+        ) : null}
         <ul
           className="grid gap-2 sm:grid-cols-2 lg:grid-cols-3"
           aria-label={t('obsExport.title')}
@@ -136,7 +151,8 @@ export function ObservabilityExportSection() {
               <button
                 type="button"
                 onClick={() => setPicked(p)}
-                className="flex w-full items-center gap-2.5 rounded-lg border p-2.5 text-left transition-colors hover:bg-muted/60 focus-visible:ring-2 focus-visible:ring-ring motion-reduce:transition-none"
+                disabled={rootRequired}
+                className="flex w-full items-center gap-2.5 rounded-lg border p-2.5 text-left transition-colors hover:bg-muted/60 disabled:cursor-default disabled:hover:bg-transparent focus-visible:ring-2 focus-visible:ring-ring motion-reduce:transition-none"
               >
                 <PresetGlyph id={p.id} />
                 <span className="min-w-0">
@@ -159,7 +175,7 @@ export function ObservabilityExportSection() {
           </ul>
         ) : null}
       </CardContent>
-      {picked ? (
+      {picked && !rootRequired ? (
         <Suspense fallback={null}>
           <ExportPresetDialog preset={picked} onClose={() => setPicked(null)} />
         </Suspense>

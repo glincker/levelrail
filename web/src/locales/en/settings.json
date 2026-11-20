@@ -4203,6 +4203,10 @@
   },
   "obsExport": {
     "title": "Export to",
+    "rootRequired": {
+      "title": "Exports need a root token",
+      "why": "Exports can read every app's logs and metrics, so only root tokens manage them."
+    },
     "about": "Send logs and metrics from this control plane to a hosted observability service. Pick a service, fill in its details and test the connection.",
     "signal": {
       "logs": "Logs",

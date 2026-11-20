@@ -86,6 +86,22 @@ describe('ObservabilityExportSection', () => {
     expect(screen.getByRole('button', { name: 'Create' })).toBeDisabled()
   })
 
+  it('shows a root-required state when the exports list is forbidden', async () => {
+    vi.stubGlobal(
+      'fetch',
+      vi.fn((input: RequestInfo | URL) => {
+        const url = typeof input === 'string' ? input : (input as URL).href
+        if (url.endsWith('/presets')) return Promise.resolve(json(presets))
+        return Promise.resolve(json({ error: 'forbidden' }, 403))
+      }),
+    )
+    renderWithQueryI18n(<ObservabilityExportSection />)
+    expect(
+      await screen.findByText(/Exports need a root token/),
+    ).toBeInTheDocument()
+    expect(screen.getByRole('button', { name: /Datadog/ })).toBeDisabled()
+  })
+
   it('creates the export then shows a passing test per signal', async () => {
     const fn = mockApi({
       id: 'exp1',
