@@ -13,6 +13,7 @@ import (
 
 	theauth "github.com/glincker/theauth-go/v2"
 
+	"github.com/GLINCKER/levelrail/internal/identity"
 	"github.com/GLINCKER/levelrail/internal/store"
 )
 
@@ -244,7 +245,7 @@ func (rt *oauthRuntime) checkSignup(ctx context.Context, provider string, s stor
 	if err != nil || linked {
 		return err
 	}
-	email := strings.ToLower(strings.TrimSpace(info.Email))
+	email := identity.NormalizeEmail(info.Email)
 	// A shared-tenant Microsoft mail attribute is attacker-controlled, so it never links.
 	sharedTenant := provider == store.OAuthProviderMicrosoft && sharedMicrosoftTenant(s.TenantID)
 	var legacyID, engineID sql.NullString

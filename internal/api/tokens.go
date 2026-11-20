@@ -100,10 +100,11 @@ func (rt *Router) handleCreateToken(w http.ResponseWriter, r *http.Request) {
 		writeError(w, http.StatusBadRequest, "invalid request body")
 		return
 	}
-	if req.Name == "" {
-		writeError(w, http.StatusBadRequest, "name is required")
+	name, nameOK := cleanNameInput(w, "name", req.Name)
+	if !nameOK {
 		return
 	}
+	req.Name = name
 	defaulted := len(req.Abilities) == 0
 	if defaulted {
 		req.Abilities = rt.defaultTokenAbilities(r.Context(), req.AllowChanges)

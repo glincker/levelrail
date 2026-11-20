@@ -9,6 +9,7 @@ import (
 	"strings"
 	"time"
 
+	"github.com/GLINCKER/levelrail/internal/identity"
 	"github.com/GLINCKER/levelrail/internal/store"
 )
 
@@ -101,7 +102,13 @@ func (rt *Router) handleCreateTeamInvite(w http.ResponseWriter, r *http.Request)
 		writeError(w, http.StatusBadRequest, "invalid request body")
 		return
 	}
-	req.Email = strings.ToLower(strings.TrimSpace(req.Email))
+	req.Email = identity.NormalizeEmail(req.Email)
+	if req.Email != "" {
+		if _, err := identity.ValidateEmail(req.Email); err != nil {
+			writeError(w, http.StatusBadRequest, err.Error())
+			return
+		}
+	}
 	if req.Role == store.TeamRoleOwner || !store.ValidTeamRole(req.Role) {
 		writeError(w, http.StatusBadRequest, "role must be admin, developer or viewer; use transfer to make an owner")
 		return
@@ -268,7 +275,7 @@ func (rt *Router) precheckAccepter(r *http.Request, inv store.TeamInvite, req ac
 	}
 	email := inv.Email
 	if email == "" {
-		email = strings.ToLower(strings.TrimSpace(req.Email))
+		email = identity.NormalizeEmail(req.Email)
 	}
 	if email == "" || !strings.Contains(email, "@") {
 		return http.StatusBadRequest, "email is required"
@@ -327,7 +334,7 @@ func (rt *Router) inviteAccepter(r *http.Request, inv store.TeamInvite, req acce
 	}
 	email := inv.Email
 	if email == "" {
-		email = strings.ToLower(strings.TrimSpace(req.Email))
+		email = identity.NormalizeEmail(req.Email)
 	}
 	if email == "" || !strings.Contains(email, "@") {
 		return accepter{}, http.StatusBadRequest, "email is required"

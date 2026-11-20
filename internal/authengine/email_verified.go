@@ -2,7 +2,8 @@ package authengine
 
 import (
 	"context"
-	"strings"
+
+	"github.com/GLINCKER/levelrail/internal/identity"
 )
 
 // EmailVerified reports whether the library user with this email has a verified address.
@@ -14,6 +15,6 @@ func (e *Engine) EmailVerified(ctx context.Context, email string) bool {
 	var verified bool
 	err := e.db.QueryRowContext(ctx,
 		`SELECT email_verified_at IS NOT NULL FROM theauth_users WHERE email = ?`,
-		strings.ToLower(strings.TrimSpace(email))).Scan(&verified)
+		identity.NormalizeEmail(email)).Scan(&verified)
 	return err == nil && verified
 }

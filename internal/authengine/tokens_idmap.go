@@ -9,6 +9,8 @@ import (
 	"time"
 
 	"github.com/oklog/ulid/v2"
+
+	"github.com/GLINCKER/levelrail/internal/identity"
 )
 
 // ErrOwnerNotFound means the legacy user does not exist in the users table.
@@ -85,7 +87,7 @@ func (d *Directory) EnsureEngineUser(ctx context.Context, legacyID string) (stri
 	if _, err := tx.ExecContext(ctx, `
 		INSERT INTO theauth_users (id, email, name, display_name, created_at, updated_at)
 		VALUES (?, ?, ?, ?, ?, ?) ON CONFLICT (id) DO NOTHING`,
-		engineID, strings.ToLower(email), name, name, at.UTC().UnixMicro(), at.UTC().UnixMicro()); err != nil {
+		engineID, identity.NormalizeEmail(email), name, name, at.UTC().UnixMicro(), at.UTC().UnixMicro()); err != nil {
 		return "", fmt.Errorf("authengine: create library user for %s: %w", legacyID, err)
 	}
 	if err := tx.Commit(); err != nil {

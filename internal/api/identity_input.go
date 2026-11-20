@@ -1,0 +1,27 @@
+package api
+
+import (
+	"net/http"
+
+	"github.com/GLINCKER/levelrail/internal/identity"
+)
+
+// cleanNameInput validates a user-supplied display name and answers 400 itself on failure.
+func cleanNameInput(w http.ResponseWriter, label, s string) (string, bool) {
+	n, err := identity.ValidateName(label, s)
+	if err != nil {
+		writeError(w, http.StatusBadRequest, err.Error())
+		return "", false
+	}
+	return n, true
+}
+
+// cleanEmailInput validates and canonicalizes a user-supplied email or username and answers 400 itself on failure.
+func cleanEmailInput(w http.ResponseWriter, s string) (string, bool) {
+	n, err := identity.ValidateEmail(s)
+	if err != nil {
+		writeError(w, http.StatusBadRequest, err.Error())
+		return "", false
+	}
+	return n, true
+}

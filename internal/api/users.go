@@ -10,6 +10,7 @@ import (
 	"slices"
 	"time"
 
+	"github.com/GLINCKER/levelrail/internal/identity"
 	"github.com/GLINCKER/levelrail/internal/store"
 )
 
@@ -158,12 +159,18 @@ func (rt *Router) handleCreateUser(w http.ResponseWriter, r *http.Request) {
 		rt.writeResolveError(w, "create user", err)
 		return
 	}
-	displayName := req.DisplayName
-	if displayName == "" {
-		displayName = req.Email
+	email, ok := cleanEmailInput(w, req.Email)
+	if !ok {
+		return
+	}
+	displayName := email
+	if req.DisplayName != "" {
+		if displayName, ok = cleanNameInput(w, "display name", req.DisplayName); !ok {
+			return
+		}
 	}
 
-	user, err := rt.createLocalUser(r.Context(), req.Email, displayName, req.Password, abilities)
+	user, err := rt.createLocalUser(r.Context(), email, displayName, req.Password, abilities)
 	if errors.Is(err, store.ErrUserEmailExists) {
 		writeError(w, http.StatusConflict, "a user with this email already exists")
 		return
@@ -203,6 +210,7 @@ func (rt *Router) createLocalUser(ctx context.Context, email, displayName, passw
 // createLocalUserInTeam is createLocalUser for a user joining teamID as role
 // instead of the default team.
 func (rt *Router) createLocalUserInTeam(ctx context.Context, email, displayName, password string, abilities []string, teamID, role string) (store.User, error) {
+	email = identity.NormalizeEmail(email)
 	hash, err := hashPassword(password)
 	if err != nil {
 		return store.User{}, fmt.Errorf("hash password: %w", err)

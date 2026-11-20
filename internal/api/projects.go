@@ -130,10 +130,11 @@ func (rt *Router) handleCreateProject(w http.ResponseWriter, r *http.Request) {
 		writeError(w, http.StatusBadRequest, "invalid request body")
 		return
 	}
-	if req.Name == "" {
-		writeError(w, http.StatusBadRequest, "name is required")
+	name, nameOK := cleanNameInput(w, "name", req.Name)
+	if !nameOK {
 		return
 	}
+	req.Name = name
 	team, ok := rt.resolveProjectTeam(w, r, req.TeamID)
 	if !ok {
 		return

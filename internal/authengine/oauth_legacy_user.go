@@ -5,13 +5,13 @@ import (
 	"database/sql"
 	"errors"
 	"fmt"
-	"strings"
 	"time"
 
 	"github.com/oklog/ulid/v2"
 
 	"github.com/glincker/theauth-go/v2/crypto"
 
+	"github.com/GLINCKER/levelrail/internal/identity"
 	"github.com/GLINCKER/levelrail/internal/store"
 	"github.com/GLINCKER/levelrail/kit/ids"
 )
@@ -63,7 +63,7 @@ func (rt *oauthRuntime) legacyUserFor(ctx context.Context, engineID, roleID stri
 	if err != nil {
 		return "", false, fmt.Errorf("authengine: load library user %s: %w", engineID, err)
 	}
-	addr := strings.ToLower(strings.TrimSpace(email.String))
+	addr := identity.NormalizeEmail(email.String)
 	if addr == "" {
 		return "", false, fmt.Errorf("authengine: library user %s has no email", engineID)
 	}

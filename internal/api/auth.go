@@ -715,6 +715,11 @@ func (rt *Router) handleRegister(w http.ResponseWriter, r *http.Request) {
 		writeError(w, http.StatusBadRequest, "username and password are required")
 		return
 	}
+	email, emailOK := cleanEmailInput(w, req.Email)
+	if !emailOK {
+		return
+	}
+	req.Email = email
 	n, err := rt.auth.CountUsers(r.Context())
 	if err != nil {
 		rt.internalError(w, "api: register: count users failed", err)
