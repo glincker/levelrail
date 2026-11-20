@@ -188,7 +188,7 @@ func loadBuilder(ctx context.Context, logger *slog.Logger, db *store.DB, telemet
 	}
 
 	connectCtx, cancel := context.WithTimeout(ctx, 10*time.Second)
-	buildClient, err := build.NewClient(connectCtx, rawDockerCli, buildCacheOptions(ctx, db, logger)...)
+	buildClient, err := build.NewClient(connectCtx, rawDockerCli, append(buildCacheOptions(ctx, db, logger), build.WithFallbackTimeouts(fallbackTimeoutsFrom(runtimesettings.New(db, os.LookupEnv))))...)
 	cancel()
 	if err != nil {
 		_ = rawDockerCli.Close()
@@ -387,5 +387,12 @@ func buildNodeSource(db *store.DB, agentRegistry *agent.Registry) build.NodeSour
 			})
 		}
 		return infos, nil
+	}
+}
+
+func fallbackTimeoutsFrom(rs *runtimesettings.Service) func(context.Context) build.FallbackTimeouts {
+	return func(ctx context.Context) build.FallbackTimeouts {
+		p, r, i, y := rs.BuildkitFallbackTimeouts(ctx)
+		return build.FallbackTimeouts{Probe: p, Ready: r, Info: i, Retry: y}
 	}
 }

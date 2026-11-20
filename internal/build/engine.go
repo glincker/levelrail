@@ -12,7 +12,8 @@ import (
 // build. The text carries "no buildkit" so failure classification maps it to
 // build_engine_unsupported.
 var ErrBuildEngineUnsupported = errors.New("build: this engine has no embedded BuildKit (no BuildKit endpoint on its socket), so source builds (Dockerfile, Railpack) cannot run here. " +
-	"Set APP_BUILDKIT_IMAGE to a sha256 pinned rootless BuildKit image to use a managed builder, deploy a prebuilt image, or run the build on a Docker node")
+	"Set APP_BUILDKIT_IMAGE to a sha256 pinned rootless BuildKit image to use a managed builder, deploy a prebuilt image, or run the build on a Docker node. " +
+	"On Ubuntu 24.04, rootless BuildKit can fail to start when kernel.apparmor_restrict_unprivileged_userns=1")
 
 // engineVersioner is the slice of the Docker client the Podman check needs.
 type engineVersioner interface {

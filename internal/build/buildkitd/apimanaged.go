@@ -207,7 +207,7 @@ func (m *APIManager) validate(o *Observed, ref string) error {
 		return fmt.Errorf("%w: %s lacks the managed labels", ErrForeign, ContainerName)
 	case o.Privileged:
 		return fmt.Errorf("%w: %s is privileged", ErrForeign, ContainerName)
-	case o.Image != ref:
+	case !sameImage(o.Image, ref):
 		return fmt.Errorf("%w: %s runs %s, expected %s", ErrForeign, ContainerName, o.Image, ref)
 	}
 	for _, mt := range o.Mounts {
@@ -216,6 +216,26 @@ func (m *APIManager) validate(o *Observed, ref string) error {
 		}
 	}
 	return fmt.Errorf("%w: %s does not mount %s", ErrForeign, ContainerName, VolumeName)
+}
+
+// sameImage compares by digest when want is pinned, because Podman reports
+// the image without its tag. An unpinned want only tolerates a missing tag.
+func sameImage(got, want string) bool {
+	if got == want {
+		return true
+	}
+	if i := strings.Index(want, sha256Prefix); i >= 0 {
+		return strings.HasSuffix(got, want[i:])
+	}
+	return repoOf(got) == repoOf(want) && !strings.Contains(got, sha256Prefix)
+}
+
+// repoOf drops a trailing :tag, leaving a registry port untouched.
+func repoOf(ref string) string {
+	if i := strings.LastIndex(ref, ":"); i > strings.LastIndex(ref, "/") {
+		return ref[:i]
+	}
+	return ref
 }
 
 func managedLabels() map[string]string {

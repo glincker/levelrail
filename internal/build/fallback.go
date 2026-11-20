@@ -44,7 +44,8 @@ const (
 
 // ErrManagedBuilderUnavailable means the engine has no embedded BuildKit and
 // the managed builder container could not be started either.
-var ErrManagedBuilderUnavailable = errors.New("build: this engine has no embedded BuildKit and the managed builder container could not be started")
+var ErrManagedBuilderUnavailable = errors.New("build: this engine has no embedded BuildKit and the managed builder container could not be started. " +
+	"On Ubuntu 24.04, kernel.apparmor_restrict_unprivileged_userns=1 can block rootless BuildKit")
 
 // noGRPCUpgrade matches the dial failure of an engine that answers the /grpc
 // upgrade with a plain HTTP error instead of switching protocols.
@@ -57,9 +58,40 @@ func envDuration(name string, def time.Duration) time.Duration {
 	return def
 }
 
+// FallbackTimeouts are the timings of the managed builder fallback.
+type FallbackTimeouts struct{ Probe, Ready, Info, Retry time.Duration }
+
+// WithFallbackTimeouts reads the timings live from the runtime settings;
+// a zero field keeps the environment seeded default.
+func WithFallbackTimeouts(get func(context.Context) FallbackTimeouts) Option {
+	return func(c *Client) { c.fallbackTimeouts = get }
+}
+
+func resolveTimeouts(ctx context.Context, get func(context.Context) FallbackTimeouts) FallbackTimeouts {
+	t := FallbackTimeouts{
+		Probe: envDuration(EnvBuildkitProbeTimeout, defaultBuildkitProbeTimeout),
+		Ready: envDuration(EnvBuildkitReadyTimeout, defaultBuildkitReadyTimeout),
+		Info:  envDuration(EnvBuildkitInfoTimeout, defaultBuildkitInfoTimeout),
+		Retry: envDuration(EnvBuildkitRetryInterval, defaultBuildkitRetryInterval),
+	}
+	if get == nil {
+		return t
+	}
+	live := get(ctx)
+	for _, f := range []struct {
+		dst *time.Duration
+		v   time.Duration
+	}{{&t.Probe, live.Probe}, {&t.Ready, live.Ready}, {&t.Info, live.Info}, {&t.Retry, live.Retry}} {
+		if f.v > 0 {
+			*f.dst = f.v
+		}
+	}
+	return t
+}
+
 // probeEmbeddedBuildkit reports whether bk answers a control call in time.
-func probeEmbeddedBuildkit(ctx context.Context, bk *bkclient.Client) error {
-	pctx, cancel := context.WithTimeout(ctx, envDuration(EnvBuildkitProbeTimeout, defaultBuildkitProbeTimeout))
+func probeEmbeddedBuildkit(ctx context.Context, bk *bkclient.Client, timeout time.Duration) error {
+	pctx, cancel := context.WithTimeout(ctx, timeout)
 	defer cancel()
 	_, err := bk.Info(pctx)
 	return err
@@ -112,13 +144,12 @@ func maybeFallback(ctx context.Context, probeErr error, get func(string) string,
 // newManagedBuilderClient ensures the managed builder through the Engine API
 // only and returns a client that reaches it by running "buildctl dial-stdio"
 // inside it, so no docker CLI, host socket or published port is needed.
-func newManagedBuilderClient(ctx context.Context, docker *dockerclient.Client, cfg buildkitd.Config) (*bkclient.Client, error) {
+func newManagedBuilderClient(ctx context.Context, docker *dockerclient.Client, cfg buildkitd.Config, t FallbackTimeouts) (*bkclient.Client, error) {
 	mgr, err := buildkitd.NewAPIManager(cfg, buildkitd.NewDockerEngine(docker))
 	if err != nil {
 		return nil, fmt.Errorf("%w: %w", ErrManagedBuilderUnavailable, err)
 	}
-	ready := envDuration(EnvBuildkitReadyTimeout, defaultBuildkitReadyTimeout)
-	ctx, cancel := context.WithTimeout(ctx, ready)
+	ctx, cancel := context.WithTimeout(ctx, t.Ready)
 	defer cancel()
 	if err := mgr.Ensure(ctx); err != nil {
 		return nil, fmt.Errorf("%w: %w", ErrManagedBuilderUnavailable, err)
@@ -137,8 +168,7 @@ func newManagedBuilderClient(ctx context.Context, docker *dockerclient.Client, c
 	if err != nil {
 		return nil, fmt.Errorf("%w: %w", ErrManagedBuilderUnavailable, err)
 	}
-	infoTO := envDuration(EnvBuildkitInfoTimeout, defaultBuildkitInfoTimeout)
-	retry := envDuration(EnvBuildkitRetryInterval, defaultBuildkitRetryInterval)
+	infoTO, retry := t.Info, t.Retry
 	var lastErr error
 	for {
 		ictx, icancel := context.WithTimeout(ctx, infoTO)

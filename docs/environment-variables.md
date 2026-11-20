@@ -240,6 +240,10 @@ These variables only seed the default of a [runtime setting](/runtime-settings).
 | `APP_BOOT_RECHECKS` | [`boot.rechecks`](/runtime-settings#deploys) | `3s:10s` |
 | `APP_BOOTSTRAP_SCRIPT_MAX_BYTES` | [`bootstrap_scripts.max_bytes`](/runtime-settings#deploys) | `65536` |
 | `APP_BOOTSTRAP_SCRIPT_MAX_COUNT` | [`bootstrap_scripts.max_count`](/runtime-settings#deploys) | `50` |
+| `APP_BUILDKIT_INFO_TIMEOUT` | [`build.buildkit_info_timeout`](/runtime-settings#deploys) | `5s` |
+| `APP_BUILDKIT_PROBE_TIMEOUT` | [`build.buildkit_probe_timeout`](/runtime-settings#deploys) | `10s` |
+| `APP_BUILDKIT_READY_TIMEOUT` | [`build.buildkit_ready_timeout`](/runtime-settings#deploys) | `90s` |
+| `APP_BUILDKIT_RETRY_INTERVAL` | [`build.buildkit_retry_interval`](/runtime-settings#deploys) | `1s` |
 | `APP_BUILDKIT_PIDS_LIMIT` | [`build.buildkitd_pids_limit`](/runtime-settings#deploys) | `4096` |
 | `APP_BUILD_CACHE_APP_QUOTA_GB` | [`build.cache_app_quota_gb`](/runtime-settings#deploys) | `0` |
 | `APP_BUILD_CACHE_BUDGET` | [`build.cache_budget`](/runtime-settings#deploys) | `auto` |

@@ -65,7 +65,9 @@ What a build's `RUN` steps can reach. Claims here come from the code in
 - Builds run on the BuildKit that is embedded in the node's Docker Engine,
   reached through the engine's own API. If the engine has none and
   `APP_BUILDKIT_IMAGE` names a digest-pinned image, a managed builder container
-  (`levelrail-buildkitd`) is used instead. Levelrail does not request the
+  (`levelrail-buildkitd`) is used instead. How long Levelrail waits for that
+  builder is set under Settings, Deploys (the `build.buildkit_*` timeouts) and
+  applies live. Levelrail does not request the
   `network.host` entitlement, so the engine decides whether `RUN --network=host`
   is allowed. We expect it to be refused by default, but that rests on the
   engine's behaviour, not on Levelrail code, and it is covered by the planned

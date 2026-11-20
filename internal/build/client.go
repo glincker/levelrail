@@ -33,6 +33,8 @@ type Client struct {
 	cache  CacheConfig
 	// managed is true when builds run in the self-managed BuildKit container.
 	managed bool
+	// fallbackTimeouts reads the managed builder timings live; nil uses env defaults.
+	fallbackTimeouts func(context.Context) FallbackTimeouts
 }
 
 // Option configures optional Client behavior.
@@ -92,14 +94,19 @@ func NewClient(ctx context.Context, docker *dockerclient.Client, opts ...Option)
 		return nil, fmt.Errorf("build: connect to buildkit via docker daemon: %w", err)
 	}
 
+	pre := &Client{}
+	for _, opt := range opts {
+		opt(pre)
+	}
+	ft := resolveTimeouts(ctx, pre.fallbackTimeouts)
 	managed := false
 	// A transient probe error keeps the lazy embedded client, as before the probe
 	// existed, so a briefly slow daemon never creates a builder or drops builds.
-	if perr := probeEmbeddedBuildkit(ctx, bk); definitiveNoGRPC(perr) {
+	if perr := probeEmbeddedBuildkit(ctx, bk, ft.Probe); definitiveNoGRPC(perr) {
 		// Nothing is created unless a pinned builder image is configured.
 		_ = bk.Close()
 		bk, err = maybeFallback(ctx, perr, os.Getenv, isPodman(ctx, docker), func(sctx context.Context, cfg buildkitd.Config) (*bkclient.Client, error) {
-			return newManagedBuilderClient(sctx, docker, cfg)
+			return newManagedBuilderClient(sctx, docker, cfg, ft)
 		})
 		if err != nil {
 			return nil, err
