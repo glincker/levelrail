@@ -60,6 +60,8 @@ const basePolicy: PreviewPolicy = {
   migrate_timeout_seconds: 0,
   effective_migrate_timeout_seconds: 600,
   image_tag_template: '',
+  exclude_services: [],
+  require_label: '',
 }
 
 describe('PreviewLifecycleCard', () => {

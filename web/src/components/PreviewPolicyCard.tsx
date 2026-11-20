@@ -25,6 +25,7 @@ import { useGitSource } from '../queries/gitSources'
 import { useImageStatus } from '../queries/dockerIntegration'
 import { usePreviewPolicy, useSetPreviewPolicy } from '../queries/previewPolicy'
 import { PreviewMigrateFields } from './PreviewMigrateFields'
+import { PreviewScopeFields } from './PreviewScopeFields'
 import type { PreviewOnLimit, PreviewPolicy } from '../types/previewEnvironment'
 
 const ON_LIMIT_LABEL: Record<PreviewOnLimit, string> = {
@@ -95,7 +96,7 @@ export function PreviewPolicyCard({ appName }: { appName: string }) {
           </p>
         ) : (
           <PreviewPolicyForm
-            key={`${policy.data.on_limit}:${policy.data.ttl_hours}:${policy.data.migrate_command}:${policy.data.migrate_timeout_seconds}:${policy.data.image_tag_template}`}
+            key={`${policy.data.on_limit}:${policy.data.ttl_hours}:${policy.data.migrate_command}:${policy.data.migrate_timeout_seconds}:${policy.data.image_tag_template}:${policy.data.require_label}:${policy.data.exclude_services.join(',')}`}
             appName={appName}
             policy={policy.data}
             isImageApp={imageStatus.data?.source === 'registry'}
@@ -254,6 +255,8 @@ function PreviewPolicyForm({
           </Button>
         </div>
       </div>
+
+      <PreviewScopeFields appName={appName} policy={policy} />
 
       <PreviewMigrateFields
         appName={appName}

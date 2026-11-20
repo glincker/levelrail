@@ -107,6 +107,17 @@
     "note": "Applies to every app. 0 keeps the startup default. A per-app override still wins.",
     "invalid": "Enter a whole number from 0 to {{max}}."
   },
+  "scope": {
+    "label": "Required label",
+    "labelPlaceholder": "preview",
+    "labelHint": "Only pull requests with this label get a preview, and adding it starts the build. GitHub and GitLab only. Empty builds every pull request.",
+    "services": "Services left out",
+    "servicesPlaceholder": "worker, docs",
+    "servicesHint": "Comma separated services of a multi-service app that previews skip. At least one must remain.",
+    "save": "Save",
+    "saved": "Preview settings saved.",
+    "error": "Could not update preview settings."
+  },
   "migrate": {
     "command": "Migrate command",
     "commandPlaceholder": "npm run migrate",
