@@ -4,6 +4,7 @@ import (
 	"bytes"
 	"context"
 	"encoding/json"
+	"log/slog"
 	"net/http"
 	"net/http/httptest"
 	"strings"
@@ -228,4 +229,51 @@ func TestProjectArchive_ImportAuditsAttemptAndOutcome(t *testing.T) {
 	if !seen[AuditActionProjectArchiveImportAttempt] || !seen[AuditActionProjectArchiveImport] {
 		t.Fatalf("audit actions = %v", seen)
 	}
+}
+
+func TestProjectArchive_IncludeDataNeedsReadSensitive(t *testing.T) {
+	db := openTestDB(t)
+	rt := NewRouter(slog.New(slog.NewTextHandler(discardWriter{}, nil)), testBrand(), db, WithBackupDownloader(&fakeBackupDownloader{content: "x"}))
+	cookie := loginTestSession(t, rt, db)
+	seedTwoAppProject(t, db)
+	tok := mintTokenBody(t, rt, cookie, `{"name":"limited","abilities":["read","write:sensitive"]}`)
+	post := func(body string) int {
+		req := httptest.NewRequest(http.MethodPost, "/api/v1/projects/proj_x/export", strings.NewReader(body))
+		req.Header.Set("Authorization", "Bearer "+tok.Token)
+		rec := httptest.NewRecorder()
+		rt.Handler().ServeHTTP(rec, req)
+		return rec.Code
+	}
+	if c := post(`{"include_data":true}`); c != http.StatusForbidden {
+		t.Fatalf("include_data without read:sensitive = %d", c)
+	}
+	if c := post(`{}`); c != http.StatusOK {
+		t.Fatalf("plain export = %d", c)
+	}
+}
+
+func TestProjectArchive_ImportConcurrencyLimit(t *testing.T) {
+	rt, db := newTestRouter(t)
+	cookie := loginTestSession(t, rt, db)
+	var releases []func()
+	for i := 0; i < 2; i++ {
+		rec := httptest.NewRecorder()
+		rel, ok := rt.acquireImportSlot(rec, authedRequest(t, cookie, http.MethodPost, "/api/v1/projects/import", ""))
+		if !ok {
+			t.Fatalf("slot %d refused", i)
+		}
+		releases = append(releases, rel)
+	}
+	rec := httptest.NewRecorder()
+	if _, ok := rt.acquireImportSlot(rec, authedRequest(t, cookie, http.MethodPost, "/api/v1/projects/import", "")); ok || rec.Code != http.StatusTooManyRequests {
+		t.Fatalf("third slot = %v %d", ok, rec.Code)
+	}
+	releases[0]()
+	rec = httptest.NewRecorder()
+	rel, ok := rt.acquireImportSlot(rec, authedRequest(t, cookie, http.MethodPost, "/api/v1/projects/import", ""))
+	if !ok {
+		t.Fatal("a freed slot was not reusable")
+	}
+	rel()
+	releases[1]()
 }

@@ -10,20 +10,15 @@ import (
 	"errors"
 	"fmt"
 	"io"
-	"os"
-	"strconv"
 	"unicode/utf8"
 
 	"golang.org/x/crypto/hkdf"
 	"golang.org/x/crypto/scrypt"
 )
 
-// EnvMinPassphrase names the env var that can raise the shortest accepted
-// passphrase. It cannot lower it below minPassphraseFloor.
-const EnvMinPassphrase = "APP_PROJECT_ARCHIVE_MIN_PASSPHRASE" //nolint:gosec // an env var name, not a credential
-
+// MinPassphraseFloor is the shortest passphrase, in characters, no setting can lower.
 const (
-	minPassphraseFloor = 12
+	MinPassphraseFloor = 12
 	defaultKDFLogN     = 17
 	maxKDFLogN         = 20
 	kdfR               = 8
@@ -42,16 +37,11 @@ var ErrWrongPassphrase = errors.New("projectarchive: wrong passphrase or damaged
 // ErrManifestMismatch means the sealed secrets do not belong to this manifest.
 var ErrManifestMismatch = errors.New("projectarchive: wrong passphrase, or the sealed secrets do not belong to this archive")
 
-// MinPassphrase is the shortest passphrase, in characters, Seal accepts.
-func MinPassphrase() int {
-	if v, err := strconv.Atoi(os.Getenv(EnvMinPassphrase)); err == nil && v > minPassphraseFloor {
-		return v
-	}
-	return minPassphraseFloor
+// PassphraseOK reports whether pass has at least minLen characters, counted as
+// runes, and never fewer than MinPassphraseFloor.
+func PassphraseOK(pass string, minLen int) bool {
+	return utf8.RuneCountInString(pass) >= max(minLen, MinPassphraseFloor)
 }
-
-// PassphraseOK reports whether pass is long enough, counted in characters.
-func PassphraseOK(pass string) bool { return utf8.RuneCountInString(pass) >= MinPassphrase() }
 
 type kdfParams struct{ logN, r, p byte }
 
@@ -84,8 +74,8 @@ func manifestMAC(macKey, manifest []byte) []byte {
 // seal encrypts plain under a key derived from pass and binds it to the
 // canonical manifest through an HMAC that also sits in the GCM AAD.
 func seal(pass string, plain, manifest []byte) ([]byte, error) {
-	if !PassphraseOK(pass) {
-		return nil, fmt.Errorf("projectarchive: the passphrase needs at least %d characters", MinPassphrase())
+	if !PassphraseOK(pass, MinPassphraseFloor) {
+		return nil, fmt.Errorf("projectarchive: the passphrase needs at least %d characters", MinPassphraseFloor)
 	}
 	k := kdfParams{defaultKDFLogN, kdfR, kdfP}
 	salt := make([]byte, saltLen)

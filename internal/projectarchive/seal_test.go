@@ -53,11 +53,10 @@ func TestSealedBlobFromAnotherArchiveIsRefused(t *testing.T) {
 }
 
 func TestShortPassphraseRefusedAndFloorHolds(t *testing.T) {
-	t.Setenv(EnvMinPassphrase, "3")
-	if MinPassphrase() != 12 || PassphraseOK("short") {
-		t.Fatal("env lowered the floor")
+	if PassphraseOK("short", 3) || !PassphraseOK("exactly12char", 1) {
+		t.Fatal("the floor of 12 must hold whatever the setting says")
 	}
-	if !PassphraseOK("ééééééééééééé") {
+	if PassphraseOK("elevenchars", 5) || !PassphraseOK("ééééééééééééé", 12) {
 		t.Fatal("runes must count, not bytes")
 	}
 }
@@ -102,15 +101,12 @@ func TestReadRejectsHostileShapes(t *testing.T) {
 }
 
 func TestReadEnforcesLimits(t *testing.T) {
-	t.Setenv(EnvMaxTotalBytes, "20000")
 	big := rawTar(t, [][2]string{{DataPrefix + "a/b.bak", strings.Repeat("x", 1<<20)}, {ManifestName, okManifest}}, nil)
-	if _, err := Read(bytes.NewReader(big)); !errors.Is(err, errLimit) {
+	if _, err := ReadWithLimits(bytes.NewReader(big), Limits{MaxTotalBytes: 20000}); !errors.Is(err, errLimit) {
 		t.Fatalf("size err = %v", err)
 	}
-	t.Setenv(EnvMaxTotalBytes, "")
-	t.Setenv(EnvMaxEntries, "2")
 	many := rawTar(t, [][2]string{{SpecPrefix + "a", "1"}, {SpecPrefix + "b", "1"}, {ManifestName, okManifest}}, nil)
-	if _, err := Read(bytes.NewReader(many)); err == nil {
+	if _, err := ReadWithLimits(bytes.NewReader(many), Limits{MaxEntries: 2}); err == nil {
 		t.Fatal("entry cap not enforced")
 	}
 }

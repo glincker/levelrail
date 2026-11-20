@@ -18,7 +18,6 @@ import (
 	"path"
 	"slices"
 	"sort"
-	"strconv"
 	"strings"
 )
 
@@ -30,17 +29,38 @@ const (
 	SecretsName   = "secrets.enc"
 	SpecPrefix    = "spec/"
 	DataPrefix    = "data/"
-	// EnvMaxSpecBytes names the env var that caps the in-memory size of
-	// spec and secret entries read from an archive.
-	EnvMaxSpecBytes     = "APP_PROJECT_ARCHIVE_MAX_SPEC_BYTES"
-	defaultMaxSpecBytes = 32 << 20
-	// EnvMaxTotalBytes and EnvMaxEntries cap what an archive may expand to.
-	EnvMaxTotalBytes     = "APP_PROJECT_ARCHIVE_MAX_TOTAL_BYTES"
-	EnvMaxEntries        = "APP_PROJECT_ARCHIVE_MAX_ENTRIES"
-	defaultMaxTotalBytes = 8 << 30
-	defaultMaxEntries    = 4096
-	maxNameLen           = 255
+	maxNameLen    = 255
 )
+
+// Limits caps what Read accepts. Zero fields fall back to DefaultLimits, so a
+// caller passes only what it overrides; the server fills them from runtime settings.
+type Limits struct {
+	// MaxTotalBytes caps the decompressed size of the whole archive.
+	MaxTotalBytes int64
+	// MaxEntries caps the number of tar entries.
+	MaxEntries int64
+	// MaxSpecBytes caps the in-memory size of spec and secret entries.
+	MaxSpecBytes int64
+}
+
+// DefaultLimits are used when a caller sets none, such as the CLI's own check.
+func DefaultLimits() Limits {
+	return Limits{MaxTotalBytes: 8 << 30, MaxEntries: 4096, MaxSpecBytes: 32 << 20}
+}
+
+func (l Limits) filled() Limits {
+	d := DefaultLimits()
+	if l.MaxTotalBytes <= 0 {
+		l.MaxTotalBytes = d.MaxTotalBytes
+	}
+	if l.MaxEntries <= 0 {
+		l.MaxEntries = d.MaxEntries
+	}
+	if l.MaxSpecBytes <= 0 {
+		l.MaxSpecBytes = d.MaxSpecBytes
+	}
+	return l
+}
 
 // Errors a caller can map to a response.
 var (
@@ -202,13 +222,6 @@ func canonicalManifest(m Manifest) []byte {
 	return b
 }
 
-func envInt(name string, def int64) int64 {
-	if v, err := strconv.ParseInt(os.Getenv(name), 10, 64); err == nil && v > 0 {
-		return v
-	}
-	return def
-}
-
 // errLimit stops a read once the decompressed size passes the cap.
 var errLimit = errors.New("projectarchive: archive expands past the size limit")
 
@@ -226,29 +239,26 @@ func (c *countingLimit) Read(p []byte) (int, error) {
 	return n, err
 }
 
-func maxSpecBytes() int64 {
-	if v, err := strconv.ParseInt(os.Getenv(EnvMaxSpecBytes), 10, 64); err == nil && v > 0 {
-		return v
-	}
-	return defaultMaxSpecBytes
-}
-
 // Read parses r and verifies the manifest and every checksum. Any extra,
 // missing or altered entry is an error.
-func Read(r io.Reader) (*Archive, error) {
+func Read(r io.Reader) (*Archive, error) { return ReadWithLimits(r, Limits{}) }
+
+// ReadWithLimits is Read with caller supplied size limits.
+func ReadWithLimits(r io.Reader, lim Limits) (*Archive, error) {
+	lim = lim.filled()
 	br := bufio.NewReader(r)
 	gz, err := gzip.NewReader(br)
 	if err != nil {
 		return nil, ErrFormat
 	}
 	gz.Multistream(false)
-	lim := &countingLimit{r: gz, left: envInt(EnvMaxTotalBytes, defaultMaxTotalBytes)}
-	tr := tar.NewReader(lim)
+	capped := &countingLimit{r: gz, left: lim.MaxTotalBytes}
+	tr := tar.NewReader(capped)
 	seen := map[string]FileEntry{}
 	mem := map[string][]byte{}
 	var manifestRaw []byte
-	budget := maxSpecBytes()
-	maxEntries := envInt(EnvMaxEntries, defaultMaxEntries)
+	budget := lim.MaxSpecBytes
+	maxEntries := lim.MaxEntries
 	for count := int64(0); ; count++ {
 		h, err := tr.Next()
 		if errors.Is(err, io.EOF) {
@@ -282,7 +292,7 @@ func Read(r io.Reader) (*Archive, error) {
 		if keep {
 			budget -= h.Size
 			if budget < 0 {
-				return nil, fmt.Errorf("%w: spec entries exceed %s", ErrFormat, EnvMaxSpecBytes)
+				return nil, fmt.Errorf("%w: spec entries exceed the spec size limit", ErrFormat)
 			}
 			buf, err = io.ReadAll(io.TeeReader(io.LimitReader(tr, h.Size), hash))
 			n = int64(len(buf))
@@ -305,7 +315,7 @@ func Read(r io.Reader) (*Archive, error) {
 		}
 	}
 	// After the tar end marker only zero padding may remain, then the gzip trailer and nothing past it.
-	rest, err := io.ReadAll(lim)
+	rest, err := io.ReadAll(capped)
 	if errors.Is(err, errLimit) {
 		return nil, err
 	}

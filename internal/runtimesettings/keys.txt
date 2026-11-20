@@ -382,10 +382,16 @@ pipelines.oidc_listen_port
 placement.affinity_max_terms
 previews.migrate_timeout
 previews.migrate_wait
+projects.archive_max_entries
+projects.archive_max_spec_bytes
+projects.archive_max_total_bytes
+projects.archive_min_passphrase
 projects.clone_max_apps
 projects.clone_placeholder_domain
 projects.default_environment
 projects.default_environment_name
+projects.import_max_bytes
+projects.import_max_concurrent
 provision.allow_unknown_price
 provision.capabilities.cache_ttl_seconds
 provision.capabilities.probe_concurrency

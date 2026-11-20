@@ -9,11 +9,9 @@ import (
 	"io"
 	"log/slog"
 	"net/http"
-	"os"
 	"regexp"
 	"slices"
 	"sort"
-	"strconv"
 	"strings"
 	"sync"
 	"sync/atomic"
@@ -23,6 +21,7 @@ import (
 
 	"github.com/GLINCKER/levelrail/internal/iac"
 	"github.com/GLINCKER/levelrail/internal/projectarchive"
+	"github.com/GLINCKER/levelrail/internal/runtimesettings"
 	"github.com/GLINCKER/levelrail/internal/store"
 	"github.com/GLINCKER/levelrail/internal/version"
 )
@@ -35,8 +34,6 @@ const (
 	// Attempt rows are written before an import changes anything, plan rows when a passphrase was sent.
 	AuditActionProjectArchiveImportAttempt = "project.archive_import_attempt"
 	AuditActionProjectArchiveImportPlan    = "project.archive_import_plan"
-	envProjectImportMaxBytes               = "APP_PROJECT_IMPORT_MAX_BYTES"
-	envProjectImportConcurrent             = "APP_PROJECT_IMPORT_MAX_CONCURRENT"
 )
 
 type projectArchiveExportRequest struct {
@@ -56,8 +53,9 @@ func (rt *Router) handleExportProjectArchive(w http.ResponseWriter, r *http.Requ
 		writeError(w, http.StatusBadRequest, "invalid request body")
 		return
 	}
-	if req.IncludeSecrets && !projectarchive.PassphraseOK(req.Passphrase) {
-		writeError(w, http.StatusUnprocessableEntity, fmt.Sprintf("include_secrets needs a passphrase of at least %d characters", projectarchive.MinPassphrase()))
+	minPass := rt.runtimeSettings.Limit(ctx, runtimesettings.KeyProjectsArchiveMinPassphrase)
+	if req.IncludeSecrets && !projectarchive.PassphraseOK(req.Passphrase, minPass) {
+		writeError(w, http.StatusUnprocessableEntity, fmt.Sprintf("include_secrets needs a passphrase of at least %d characters", max(minPass, projectarchive.MinPassphraseFloor)))
 		return
 	}
 	if req.IncludeData && rt.backupDownloader == nil {
@@ -288,10 +286,7 @@ var importInflight sync.Map // actor key -> *atomic.Int32
 // acquireImportSlot caps parallel imports per caller, since each one holds a
 // whole archive in memory and may run a costly key derivation.
 func (rt *Router) acquireImportSlot(w http.ResponseWriter, r *http.Request) (func(), bool) {
-	limit := int32(2)
-	if v, err := strconv.ParseInt(os.Getenv(envProjectImportConcurrent), 10, 32); err == nil && v > 0 {
-		limit = int32(v)
-	}
+	limit := int32(rt.runtimeSettings.Limit(r.Context(), runtimesettings.KeyProjectsImportMaxConcurrent)) //nolint:gosec // clamped to 1..16
 	a := rt.accessActor(r)
 	v, _ := importInflight.LoadOrStore(a.kind+":"+a.id, new(atomic.Int32))
 	n := v.(*atomic.Int32) //nolint:errcheck,forcetypeassert // only this function stores into the map
@@ -305,13 +300,6 @@ func (rt *Router) acquireImportSlot(w http.ResponseWriter, r *http.Request) (fun
 }
 
 var envPlaceholderRe = regexp.MustCompile(`\$\{\{\s*env\.([A-Za-z0-9_]+)\s*\}\}`)
-
-func importMaxBytes() int64 {
-	if v, err := strconv.ParseInt(os.Getenv(envProjectImportMaxBytes), 10, 64); err == nil && v > 0 {
-		return v
-	}
-	return 256 << 20
-}
 
 func (rt *Router) handleImportProjectPlan(w http.ResponseWriter, r *http.Request) {
 	release, ok := rt.acquireImportSlot(w, r)
@@ -408,12 +396,16 @@ func (rt *Router) prepareProjectImport(w http.ResponseWriter, r *http.Request, t
 	noStore(w)
 	ctx := r.Context()
 	var req projectImportRequest
-	if err := json.NewDecoder(http.MaxBytesReader(w, r.Body, importMaxBytes())).Decode(&req); err != nil || len(req.Archive) == 0 {
+	if err := json.NewDecoder(http.MaxBytesReader(w, r.Body, int64(rt.runtimeSettings.Limit(ctx, runtimesettings.KeyProjectsImportMaxBytes)))).Decode(&req); err != nil || len(req.Archive) == 0 {
 		writeError(w, http.StatusBadRequest, "archive is required and must be base64 of a .lrx file")
 		return nil, false
 	}
 	tr.hasPass = req.Passphrase != ""
-	arc, err := projectarchive.Read(bytes.NewReader(req.Archive))
+	arc, err := projectarchive.ReadWithLimits(bytes.NewReader(req.Archive), projectarchive.Limits{
+		MaxTotalBytes: int64(rt.runtimeSettings.Limit(ctx, runtimesettings.KeyProjectsArchiveMaxTotalBytes)),
+		MaxEntries:    int64(rt.runtimeSettings.Limit(ctx, runtimesettings.KeyProjectsArchiveMaxEntries)),
+		MaxSpecBytes:  int64(rt.runtimeSettings.Limit(ctx, runtimesettings.KeyProjectsArchiveMaxSpecBytes)),
+	})
 	if err != nil {
 		writeError(w, http.StatusUnprocessableEntity, err.Error())
 		return nil, false

@@ -102,6 +102,7 @@ These variables only seed the default of a [runtime setting](/runtime-settings).
 | `APP_ORGS_AVATAR_MAX_BYTES` | [`orgs.avatar_max_bytes`](/runtime-settings#security) | `262144` |
 | `APP_ORGS_AVATAR_MAX_DIMENSION` | [`orgs.avatar_max_dimension`](/runtime-settings#security) | `1024` |
 | `APP_ORGS_STRICT_ISOLATION` | [`orgs.strict_isolation`](/runtime-settings#security) | `false` |
+| `APP_PROJECT_ARCHIVE_MIN_PASSPHRASE` | [`projects.archive_min_passphrase`](/runtime-settings#security) | `12` |
 | `APP_REGISTRY_TOKEN_RATE_LIMIT_RPM` | [`registry.token_rate_limit_rpm`](/runtime-settings#security) | `120` |
 | `APP_SECRET_PROVIDER_CACHE_TTL_SECONDS` | [`secrets.provider_cache_ttl_seconds`](/runtime-settings#security) | `60` |
 | `APP_SECRET_PROVIDER_MAX_RESPONSE_KIB` | [`secrets.provider_max_response_kib`](/runtime-settings#security) | `1024` |
@@ -346,10 +347,15 @@ These variables only seed the default of a [runtime setting](/runtime-settings).
 | `APP_PLACEMENT_SCORE_MODE` | [`placement.score_mode`](/runtime-settings#deploys) | `spread` |
 | `APP_PREVIEW_MIGRATE_TIMEOUT` | [`previews.migrate_timeout`](/runtime-settings#deploys) | `10m` |
 | `APP_PREVIEW_MIGRATE_WAIT` | [`previews.migrate_wait`](/runtime-settings#deploys) | `2m` |
+| `APP_PROJECT_ARCHIVE_MAX_ENTRIES` | [`projects.archive_max_entries`](/runtime-settings#deploys) | `4096` |
+| `APP_PROJECT_ARCHIVE_MAX_SPEC_BYTES` | [`projects.archive_max_spec_bytes`](/runtime-settings#deploys) | `33554432` |
+| `APP_PROJECT_ARCHIVE_MAX_TOTAL_BYTES` | [`projects.archive_max_total_bytes`](/runtime-settings#deploys) | `8589934592` |
 | `APP_PROJECT_CLONE_MAX_APPS` | [`projects.clone_max_apps`](/runtime-settings#deploys) | `50` |
 | `APP_PROJECT_CLONE_PLACEHOLDER_DOMAIN` | [`projects.clone_placeholder_domain`](/runtime-settings#deploys) | `clone.invalid` |
 | `APP_PROJECTS_DEFAULT_ENVIRONMENT` | [`projects.default_environment`](/runtime-settings#deploys) | `false` |
 | `APP_PROJECTS_DEFAULT_ENVIRONMENT_NAME` | [`projects.default_environment_name`](/runtime-settings#deploys) | `production` |
+| `APP_PROJECT_IMPORT_MAX_BYTES` | [`projects.import_max_bytes`](/runtime-settings#deploys) | `268435456` |
+| `APP_PROJECT_IMPORT_MAX_CONCURRENT` | [`projects.import_max_concurrent`](/runtime-settings#deploys) | `2` |
 | `APP_REGISTRY_DOCKERHUB_LIMIT_WARN_PERCENT` | [`registry.dockerhub.limit_warn_percent`](/runtime-settings#deploys) | `20` |
 | `APP_REGISTRY_DOCKERHUB_LIMITS_CACHE_SECONDS` | [`registry.dockerhub.limits_cache_seconds`](/runtime-settings#deploys) | `300` |
 | `APP_REGISTRY_DOCKERHUB_TAG_PAGE_SIZE` | [`registry.dockerhub.tag_page_size`](/runtime-settings#deploys) | `25` |
