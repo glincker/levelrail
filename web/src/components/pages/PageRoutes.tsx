@@ -49,6 +49,9 @@ import {
   type MatchRule,
   type Preset,
 } from './routesLogic'
+import { RawRoutesEditor } from './routesEditor/RawRoutesEditor'
+import { RoutesDiff } from './routesEditor/RoutesDiff'
+import { RoutesViewBar, type RoutesView } from './routesEditor/RoutesViewBar'
 import { ProblemList } from '../static/ProblemList'
 import { StaticRoutesTester } from '../static/StaticRoutesTester'
 
@@ -183,6 +186,8 @@ function RulesEditor({
   const [problems, setProblems] = useState<RuleSaveProblem[]>([])
   const [attempted, setAttempted] = useState(false)
   const [testPath, setTestPath] = useState('/')
+  const [view, setView] = useState<RoutesView>('rows')
+  const [showDiff, setShowDiff] = useState(false)
   const [dragFrom, setDragFrom] = useState<number | null>(null)
   const [dragOver, setDragOver] = useState<number | null>(null)
   const saved = useMemo(() => draftFromUi(data.ui), [data.ui])
@@ -304,9 +309,26 @@ function RulesEditor({
             {t('routes.rules')}
             <InfoTip>{t('routes.rulesHint')}</InfoTip>
           </h2>
-          <AddButton label={t('routes.addRedirect')} onClick={addRedirect} />
+          <div className="flex flex-wrap items-center gap-2">
+            <RoutesViewBar
+              view={view}
+              onView={setView}
+              diff={showDiff && dirty}
+              onDiff={setShowDiff}
+              canDiff={dirty}
+            />
+            <AddButton label={t('routes.addRedirect')} onClick={addRedirect} />
+          </div>
         </div>
-        {empty ? (
+        {showDiff && dirty ? (
+          <RoutesDiff saved={saved.redirects} draft={cur.redirects} />
+        ) : null}
+        {view === 'raw' ? (
+          <RawRoutesEditor
+            rows={cur.redirects}
+            onChange={(redirects) => edit({ ...cur, redirects })}
+          />
+        ) : empty ? (
           <EmptyState
             compact
             icon={<SignpostGlassIcon className="size-6" />}

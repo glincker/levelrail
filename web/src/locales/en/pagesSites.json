@@ -388,6 +388,24 @@
       "proxyAppMissing": "No app with this name",
       "proxyAppSelf": "A site cannot proxy to itself",
       "proxyPath": "Target path must start with /"
+    },
+    "view": {
+      "label": "Rules view",
+      "rows": "Rows",
+      "raw": "Raw text"
+    },
+    "raw": {
+      "label": "Redirect rules as text",
+      "placeholder": "/old /new 301",
+      "hint": "One rule per line: source, destination, status. Add ! after the status to force. Destinations can be app://name/path."
+    },
+    "diff": {
+      "title": "Changes against saved rules",
+      "toggle": "Show changes",
+      "none": "No changes yet",
+      "add": "Added",
+      "del": "Removed",
+      "same": "Unchanged"
     }
   },
   "git": {
