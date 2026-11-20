@@ -236,6 +236,7 @@ func (s *bootState) wireRouter() {
 	if buildLimiter != nil {
 		apiRouter.SetBuildLoad(buildLimiter)
 		apiRouter.SetBuildRunnerNodes(buildRunnerNodeSource(db, agentRegistry, hostReports))
+		apiRouter.SetBuilderProber(api.NewBuilderProber(agent.NewBuildDispatcher(agentRegistry)))
 		build.SetQueueGate(apiRouter.BuildQueueGate())
 	}
 	if wh, ok := webhookHandler.(*webhook.Handler); ok {

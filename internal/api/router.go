@@ -263,6 +263,7 @@ type Router struct {
 	buildPerf               BuildPerformanceStore                                         // see build_performance.go
 	buildQueue              buildQueueControl                                             // operator pause, drain and resume of new builds
 	buildRunnerNodes        build.NodeSource                                              // nil: the runner list shows the control plane only
+	builderProber           BuilderProber                                                 // nil: builder test returns 501
 	buildLoad               BuildLoadSource                                               // nil: the build center shows no live slot usage
 	appBuildCache           AppBuildCacher                                                // nil: per app build cache routes return 501
 	buildCacheNodes         BuildCacheResolver                                            // nil: build cache routes return 501

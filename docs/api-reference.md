@@ -2443,6 +2443,11 @@ Routes that do not fit an existing group.
 | GET | /api/v1/dns/authority | AbilityRead | handleDNSAuthority |
 | POST | /api/v1/hooks/pages/{site}/{secret} | Public | handleStaticSiteHookTrigger |
 | GET | /api/v1/builds/{id}/record | AbilityRead | handleGetBuildRecord |
+| GET | /api/v1/builders | AbilityRead | handleListBuilders |
+| GET | /api/v1/builders/{id} | AbilityRead | handleGetBuilder |
+| POST | /api/v1/builders/{id}/pause | AbilityWriteSensitive | handlePauseBuilder |
+| POST | /api/v1/builders/{id}/resume | AbilityWriteSensitive | handleResumeBuilder |
+| POST | /api/v1/builders/{id}/test | AbilityWriteSensitive | handleTestBuilder |
 | POST | /mcp | Public |  |
 
 ## See also

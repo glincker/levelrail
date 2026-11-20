@@ -19,6 +19,12 @@ func (rt *Router) registerBuildPerformanceRoutes(mux *http.ServeMux) {
 	mux.HandleFunc("PUT /api/v1/nodes/{id}/build-trust", rt.requireAbility(AbilityRoot, rt.handleSetNodeBuildTrust))
 	mux.HandleFunc("GET /api/v1/environments/{id}/builders", rt.requireAbility(AbilityRead, rt.requireEnvironmentGrant(AbilityRead, rt.handleGetEnvironmentBuilders)))
 	mux.HandleFunc("PUT /api/v1/environments/{id}/builders", rt.requireAuth(rt.requireEnvironmentGrant(AbilityRead, rt.requireAbility(AbilityWriteSensitive, rt.handleSetEnvironmentBuilders))))
+	mux.HandleFunc("GET /api/v1/builders", rt.requireAbility(AbilityRead, rt.handleListBuilders))
+	mux.HandleFunc("GET /api/v1/builders/{id}", rt.requireAbility(AbilityRead, rt.handleGetBuilder))
+	// Pausing or probing a builder changes where every app's builds may run, so write-sensitive.
+	mux.HandleFunc("POST /api/v1/builders/{id}/pause", rt.requireAbility(AbilityWriteSensitive, rt.handlePauseBuilder))
+	mux.HandleFunc("POST /api/v1/builders/{id}/resume", rt.requireAbility(AbilityWriteSensitive, rt.handleResumeBuilder))
+	mux.HandleFunc("POST /api/v1/builders/{id}/test", rt.requireAbility(AbilityWriteSensitive, rt.handleTestBuilder))
 	mux.HandleFunc("GET /api/v1/builds/queue", rt.requireAbility(AbilityRead, rt.handleGetBuildQueue))
 	// Holding or killing builds stops every app's deploys, so write-sensitive; kill-all also needs step-up.
 	mux.HandleFunc("POST /api/v1/builds/queue/pause", rt.requireAbility(AbilityWriteSensitive, rt.handleBuildQueuePause))

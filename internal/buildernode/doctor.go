@@ -12,6 +12,19 @@ type Check struct {
 	Name   string `json:"name"`
 	OK     bool   `json:"ok"`
 	Detail string `json:"detail"`
+	// Fix is one actionable line, set only on a failing check.
+	Fix string `json:"fix,omitempty"`
+}
+
+// fixes maps each check to the single step that most often repairs it.
+var fixes = map[string]string{
+	"arch":          "Use an arm64 or amd64 machine as a builder.",
+	"ram":           "Free memory or lower the VM size with `levelrail builder start --max-mem MiB`.",
+	"disk":          "Free disk space, build images and caches live under the VM directory.",
+	"lima":          "Run `brew install lima`, then `levelrail builder doctor` again.",
+	"vm":            "Run `limactl list` to inspect the builder VM, then `levelrail builder start`.",
+	"control-plane": "Run `levelrail builders add` on the control plane, then `levelrail builder join` with the printed line.",
+	"clock":         "Turn on automatic date and time in system settings so certificates validate.",
 }
 
 // DoctorEnv is everything doctor reads from the host, injected so tests run offline.
@@ -57,7 +70,13 @@ func Doctor(ctx context.Context, e DoctorEnv) ([]Check, error) {
 		return nil, err
 	}
 	var out []Check
-	add := func(name string, ok bool, detail string) { out = append(out, Check{name, ok, detail}) }
+	add := func(name string, ok bool, detail string) {
+		c := Check{Name: name, OK: ok, Detail: detail}
+		if !ok {
+			c.Fix = fixes[name]
+		}
+		out = append(out, c)
+	}
 
 	switch e.Arch {
 	case "arm64", "aarch64", "amd64", "x86_64":

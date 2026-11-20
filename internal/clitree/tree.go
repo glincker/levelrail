@@ -17,6 +17,7 @@ var Tree = map[string]*Node{
 	"next":           {Subs: map[string]*Node{"doctor": nil}},
 	"dev":            {Subs: map[string]*Node{"stop": nil, "status": nil}},
 	"vm":             {Subs: map[string]*Node{"init": nil, "start": nil, "stop": nil, "status": nil, "shell": nil, "set": nil, "export": nil, "reset": nil, "upgrade": nil, "uninstall": nil, "destroy": nil, "token": nil}},
+	"builders":       {Subs: map[string]*Node{"list": nil, "add": nil, "show": nil, "pause": nil, "resume": nil, "test": nil, "remove": nil}},
 	"builder":        {Subs: map[string]*Node{"join": nil, "start": nil, "stop": nil, "status": nil, "doctor": nil, "logout": nil}},
 	"login":          nil,
 	"whoami":         nil,

@@ -48,6 +48,8 @@ type NodeInfo struct {
 	LastBuildAt time.Time
 	// Trust is the builder tier (server, managed, personal); empty counts as server.
 	Trust string
+	// DiskFreeBytes is the free disk the node last reported, zero when unknown.
+	DiskFreeBytes int64
 }
 
 // Pressure levels a NodeInfo reports.

@@ -3,6 +3,7 @@ package main
 import (
 	"context"
 	"fmt"
+	"math"
 	"os"
 	"runtime"
 	"strings"
@@ -51,6 +52,7 @@ func buildRunnerNodeSource(db *store.DB, agentRegistry *agent.Registry, reports 
 			if reports != nil {
 				if rep, ok := reports.Get(n.ID); ok {
 					info.CPUCores = int(rep.CPUCores)
+					info.DiskFreeBytes = int64(min(rep.DiskFreeBytes, math.MaxInt64))
 					info.Pressure = nodePressure(nodecapacity.Evaluate(nodecapacity.Sample{
 						DiskTotal: rep.DiskTotalBytes, DiskFree: rep.DiskFreeBytes,
 						InodesTotal: rep.DiskInodesTotal, InodesFree: rep.DiskInodesFree,

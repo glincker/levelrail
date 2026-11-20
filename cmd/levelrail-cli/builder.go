@@ -14,6 +14,7 @@ import (
 	"syscall"
 	"time"
 
+	"github.com/GLINCKER/levelrail/internal/apiclient"
 	"github.com/GLINCKER/levelrail/internal/buildernode"
 	"github.com/GLINCKER/levelrail/internal/vmruntime"
 )
@@ -251,15 +252,44 @@ func runBuilderStatus(ctx context.Context, dir string, store buildernode.CredSto
 	if err != nil {
 		return err
 	}
+	remote := fetchBuilderView(ctx, s, lookup)
 	if asJSON {
-		return json.NewEncoder(stdout).Encode(s)
+		return json.NewEncoder(stdout).Encode(builderStatusView{Status: s, Remote: remote})
 	}
 	if !s.Joined {
 		_, _ = fmt.Fprintln(stdout, "Not joined. Run `builder join` first.")
 		return nil
 	}
 	_, _ = fmt.Fprintf(stdout, "Server: %s\nNode: %s\nVM: %s\nAgent: %s\nLimits: %d CPU, %d MiB\n", s.Server, s.Node, s.VM, s.Agent, s.MaxCPU, s.MaxMem)
+	if remote != nil {
+		_, _ = fmt.Fprintf(stdout, "Status: %s\nTier: %s\nPlatform: %s\nSlots: %d/%d\nLast seen: %s\nAvg build: %s\n",
+			remote.Status, remote.Tier, fmtPlatform(remote.BuilderResource), remote.ActiveBuilds, remote.SlotsTotal, fmtSeen(remote.LastSeenAt), fmtBuildMS(remote.AvgBuildMS))
+	}
 	return nil
+}
+
+// builderStatusView adds the control plane's view of this builder to the local status.
+type builderStatusView struct {
+	buildernode.Status
+	Remote *apiclient.BuilderDetailResource `json:"remote,omitempty"`
+}
+
+// fetchBuilderView is best effort: without an API token or a reachable server only local fields show.
+func fetchBuilderView(ctx context.Context, s buildernode.Status, lookup func(string) (string, bool)) *apiclient.BuilderDetailResource {
+	if !s.Joined || s.Server == "" || s.Node == "" {
+		return nil
+	}
+	token := resolveToken("", lookup, "levelrail", resolveProfile("", lookup))
+	if token == "" {
+		return nil
+	}
+	cctx, cancel := context.WithTimeout(ctx, 5*time.Second)
+	defer cancel()
+	d, err := NewClient(s.Server, token).GetBuilder(cctx, s.Node)
+	if err != nil {
+		return nil
+	}
+	return &d
 }
 
 func runBuilderDoctor(ctx context.Context, dir string, asJSON bool, stdout io.Writer, lookup func(string) (string, bool)) error {
@@ -295,6 +325,9 @@ func runBuilderDoctor(ctx context.Context, dir string, asJSON bool, stdout io.Wr
 				mark = "FAIL"
 			}
 			_, _ = fmt.Fprintf(stdout, "%s %-14s %s\n", mark, c.Name, c.Detail)
+			if c.Fix != "" {
+				_, _ = fmt.Fprintf(stdout, "     fix: %s\n", c.Fix)
+			}
 		}
 	}
 	if !buildernode.Passed(checks) {

@@ -14,7 +14,7 @@ type openAPIRoute struct {
 	Description string
 }
 
-// openAPIRoutes holds all 2212 routes known to scripts/gen-api-reference at
+// openAPIRoutes holds all 2217 routes known to scripts/gen-api-reference at
 // generation time. Run `go run ./scripts/gen-api-reference` after changing
 // any routes*.go registration and commit the result.
 var openAPIRoutes = []openAPIRoute{
@@ -1187,6 +1187,11 @@ var openAPIRoutes = []openAPIRoute{
 	{Method: "GET", Path: "/api/v1/build-limits", Ability: "AbilityRead", Group: "Other", Handler: "handleGetBuildLimits", Description: ""},
 	{Method: "PUT", Path: "/api/v1/build-limits", Ability: "AbilityRoot", Group: "Other", Handler: "handleSetBuildLimits", Description: "Limits decide when every app's builds are killed, so root only."},
 	{Method: "POST", Path: "/api/v1/build/detect", Ability: "AbilityDeploy", Group: "Other", Handler: "handleDetectFramework", Description: "Framework pre-flight detection (handleDetectFramework's own doc comment): also not scoped to an existing app, same AbilityDeploy boundary as the branch listing above."},
+	{Method: "GET", Path: "/api/v1/builders", Ability: "AbilityRead", Group: "Other", Handler: "handleListBuilders", Description: ""},
+	{Method: "GET", Path: "/api/v1/builders/{id}", Ability: "AbilityRead", Group: "Other", Handler: "handleGetBuilder", Description: ""},
+	{Method: "POST", Path: "/api/v1/builders/{id}/pause", Ability: "AbilityWriteSensitive", Group: "Other", Handler: "handlePauseBuilder", Description: "Pausing or probing a builder changes where every app's builds may run, so write-sensitive."},
+	{Method: "POST", Path: "/api/v1/builders/{id}/resume", Ability: "AbilityWriteSensitive", Group: "Other", Handler: "handleResumeBuilder", Description: ""},
+	{Method: "POST", Path: "/api/v1/builders/{id}/test", Ability: "AbilityWriteSensitive", Group: "Other", Handler: "handleTestBuilder", Description: ""},
 	{Method: "GET", Path: "/api/v1/builds", Ability: "AbilityRead", Group: "Other", Handler: "handleListBuilds", Description: ""},
 	{Method: "GET", Path: "/api/v1/builds/cache", Ability: "AbilityRead", Group: "Other", Handler: "handleBuildCache", Description: ""},
 	{Method: "POST", Path: "/api/v1/builds/cache/prune", Ability: "AbilityWriteSensitive", Group: "Other", Handler: "handleBuildCachePrune", Description: "Pruning frees disk shared by every app's builds, so write-sensitive even as a preview."},
