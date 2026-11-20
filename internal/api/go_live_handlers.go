@@ -420,7 +420,12 @@ func (rt *Router) zoneLookup(ctx context.Context, domain string) dnsZoneResponse
 	case errors.Is(err, dnsrecords.ErrZoneNotFound):
 		out.Configured = true
 		out.Message = "the connected DNS provider does not manage a zone for this domain"
+		var miss *dnsrecords.ZoneMissError
+		if errors.As(err, &miss) {
+			out.Message = miss.Error()
+		}
 	case err != nil:
+		rt.dnsDebug("dns zone lookup failed", err)
 		out.Message = "could not reach the DNS provider"
 	case t == nil:
 		out.Message = "no DNS provider is connected"

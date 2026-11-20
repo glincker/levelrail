@@ -105,6 +105,11 @@ func dnsAutomationBudget() time.Duration {
 	return defaultDNSAutoBudget
 }
 
+// dnsDebug logs a swallowed zone lookup error at debug level, never the credentials.
+func (rt *Router) dnsDebug(msg string, err error) {
+	rt.logger.Debug("api: "+msg, slog.String("error", err.Error()))
+}
+
 // resolveDNSTarget finds the provider and zone for domain. A nil target with
 // a nil error means no provider is connected; dnsrecords.ErrZoneNotFound
 // means one is but it does not manage the domain's zone.
@@ -136,9 +141,16 @@ func (rt *Router) resolveDNSTarget(ctx context.Context, domain string) (*dnsTarg
 	if err != nil || mgr == nil {
 		return nil, err
 	}
-	var finder dnsrecords.ZoneFinder = dnsrecords.ManagerZoneFinder{Mgr: mgr}
-	if c, _ := rt.route53Creds(ctx); c != nil && provider == dnsProviderRoute53 {
-		finder = dnsrecords.ListedZoneFinder{P: dnszones.NewRoute53(c.accessKeyID, c.secretAccessKey, c.region, c.hostedZoneID), Fallback: finder}
+	debug := rt.dnsDebug
+	var finder dnsrecords.ZoneFinder = dnsrecords.ManagerZoneFinder{Mgr: mgr, Debug: debug}
+	switch c, _ := rt.route53Creds(ctx); {
+	case c != nil && provider == dnsProviderRoute53:
+		p := dnszones.NewRoute53(c.accessKeyID, c.secretAccessKey, c.region, c.hostedZoneID)
+		finder = dnsrecords.ListedZoneFinder{P: p, Fallback: finder, Pinned: c.hostedZoneID != "", Debug: debug}
+	case provider == dnsProviderGoogleCloud:
+		if zm, ok := mgr.(dnsrecords.ZoneManager); ok {
+			finder = dnsrecords.ListedZoneFinder{P: zm.P, Fallback: finder, Debug: debug}
+		}
 	}
 	zone, err := finder.FindZone(ctx, domain)
 	if err != nil {

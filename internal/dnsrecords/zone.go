@@ -9,6 +9,7 @@ import (
 	"io"
 	"net/http"
 	"net/url"
+	"sort"
 	"strings"
 	"time"
 
@@ -21,16 +22,61 @@ type ZoneFinder interface {
 	FindZone(ctx context.Context, domain string) (string, error)
 }
 
+// maxListedZoneNames caps how many zone names an error lists.
+const maxListedZoneNames = 5
+
+// ZoneMissError is ErrZoneNotFound with the context an operator needs: the
+// zone names the provider does list, a pinned zone that cannot hold the
+// domain, or a private zone that matched. It carries names only.
+type ZoneMissError struct {
+	Domain string
+	// Listed holds up to maxListedZoneNames public zone names, sorted.
+	Listed []string
+	// More counts the listed names left out of Listed.
+	More int
+	// Pinned is the pinned hosted zone name when it was the only zone visible.
+	Pinned string
+	// Private is a private zone that matched the domain and cannot be used.
+	Private string
+}
+
+// Error implements error.
+func (e *ZoneMissError) Error() string {
+	switch {
+	case e.Pinned != "":
+		return fmt.Sprintf("the pinned hosted zone %q does not contain %q; clear the pinned zone or pick one that does", e.Pinned, e.Domain)
+	case e.Private != "":
+		return fmt.Sprintf("%q only matches the private hosted zone %q, which cannot publish public records", e.Domain, e.Private)
+	case len(e.Listed) > 0:
+		more := ""
+		if e.More > 0 {
+			more = fmt.Sprintf(" and %d more", e.More)
+		}
+		return fmt.Sprintf("no zone contains %q; the provider lists %s%s", e.Domain, strings.Join(e.Listed, ", "), more)
+	}
+	return fmt.Sprintf("no zone contains %q", e.Domain)
+}
+
+// Unwrap lets errors.Is(err, ErrZoneNotFound) keep working.
+func (e *ZoneMissError) Unwrap() error { return ErrZoneNotFound }
+
 // ManagerZoneFinder probes candidate zones through a Manager: a zone exists
 // when it lists and its apex SOA is at "@". It is the only option for
 // Route53, which libdns cannot enumerate zones for.
-type ManagerZoneFinder struct{ Mgr Manager }
+type ManagerZoneFinder struct {
+	Mgr Manager
+	// Debug, when set, receives each probe error that is otherwise skipped.
+	Debug func(msg string, err error)
+}
 
 // FindZone tries each candidate from longest to shortest.
 func (f ManagerZoneFinder) FindZone(ctx context.Context, domain string) (string, error) {
 	for _, c := range Candidates(domain) {
 		recs, err := f.Mgr.GetRecords(ctx, c+".")
 		if err != nil {
+			if f.Debug != nil {
+				f.Debug("dns zone probe failed for "+c, err)
+			}
 			continue
 		}
 		for _, rec := range recs {
@@ -45,29 +91,73 @@ func (f ManagerZoneFinder) FindZone(ctx context.Context, domain string) (string,
 // ListedZoneFinder matches the domain against the provider's own zone list
 // first, which works when the credentials can list zones but a record probe
 // cannot (a record the library fails to parse, or a pinned hosted zone). It
-// falls back to Fallback when the list errors or holds no match.
+// falls back to Fallback when the list errors or holds no match. Private
+// zones never match, so a public zone of the same name wins.
 type ListedZoneFinder struct {
 	P        dnszones.Provider
 	Fallback ZoneFinder
+	// Pinned is true when the operator pinned one hosted zone ID, so a lone
+	// listed zone that misses is reported as the pinned zone.
+	Pinned bool
+	// Debug, when set, receives the list error that is otherwise swallowed.
+	Debug func(msg string, err error)
 }
 
 // FindZone implements ZoneFinder.
 func (f ListedZoneFinder) FindZone(ctx context.Context, domain string) (string, error) {
-	if zones, err := f.P.ListZones(ctx); err == nil {
-		names := make([]string, 0, len(zones))
+	zones, err := f.P.ListZones(ctx)
+	var public, private []string
+	if err != nil {
+		if f.Debug != nil {
+			f.Debug("dns zone list failed", err)
+		}
+	} else {
 		for _, z := range zones {
-			if !z.Private {
-				names = append(names, z.Name)
+			if z.Private {
+				private = append(private, z.Name)
+			} else {
+				public = append(public, z.Name)
 			}
 		}
-		if zone, ok := MatchZone(domain, names); ok {
+		if zone, ok := MatchZone(domain, public); ok {
 			return zone, nil
 		}
 	}
-	if f.Fallback == nil {
+	if f.Fallback != nil {
+		zone, ferr := f.Fallback.FindZone(ctx, domain)
+		if ferr == nil || !errors.Is(ferr, ErrZoneNotFound) {
+			return zone, ferr
+		}
+	}
+	if err != nil {
 		return "", ErrZoneNotFound
 	}
-	return f.Fallback.FindZone(ctx, domain)
+	miss := &ZoneMissError{Domain: NormalizeName(domain)}
+	if p, ok := MatchZone(domain, private); ok {
+		miss.Private = strings.TrimSuffix(p, ".")
+	}
+	if f.Pinned && len(zones) == 1 {
+		miss.Pinned = NormalizeName(zones[0].Name)
+	}
+	miss.Listed, miss.More = ListedNames(public)
+	return "", miss
+}
+
+// ListedNames returns up to maxListedZoneNames sorted unique names and how many were cut.
+func ListedNames(names []string) ([]string, int) {
+	seen := make(map[string]bool, len(names))
+	var out []string
+	for _, n := range names {
+		if n = NormalizeName(n); n != "" && !seen[n] {
+			seen[n] = true
+			out = append(out, n)
+		}
+	}
+	sort.Strings(out)
+	if len(out) > maxListedZoneNames {
+		return out[:maxListedZoneNames], len(out) - maxListedZoneNames
+	}
+	return out, 0
 }
 
 const cloudflareAPIBase = "https://api.cloudflare.com/client/v4"
