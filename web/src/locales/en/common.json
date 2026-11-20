@@ -1113,7 +1113,15 @@
   "projectsPage": {
     "list": {
       "name": "Name",
-      "created": "Created"
+      "created": "Created",
+      "pin": "Pin {{name}}",
+      "unpin": "Unpin {{name}}"
+    },
+    "sort": {
+      "label": "Sort by",
+      "name": "Name",
+      "newest": "Newest first",
+      "oldest": "Oldest first"
     },
     "empty": {
       "title": "No projects yet",
