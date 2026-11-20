@@ -123,6 +123,7 @@ Flags:
   --bucket string                 bucket name (required)
   --access-key-id string          access key id (required)
   --secret-access-key string      secret access key (required)
+  --ca-bundle-file string         PEM file of extra CA certificates to trust (webdav only)
   --token string                 API token (default: %[2]s env var, then the credentials file)
   --api-url string               control plane base URL (default: %[3]s env var, then %[4]s)
   --profile string               named credentials profile to read (overrides APP_PROFILE, default "default")

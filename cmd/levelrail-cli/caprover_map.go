@@ -14,7 +14,7 @@ func mapCaproverApplication(app caproverAppDefinition, rootDomain string, includ
 	out.ServiceName, out.Issues = mapServiceName("CapRover", app.AppName, out.Issues)
 
 	out.Service.BuildType, out.Issues = mapCaproverBuildConfig(app, out.Issues)
-	out.Service.Domains = mapCaproverDomains(app, rootDomain)
+	out.Service.Domains = mapCaproverDomains(app, out.ServiceName, rootDomain)
 	out.Service.Port = app.ContainerHTTPPort
 	out.Issues = mapCaproverPorts(app.Ports, out.Issues)
 	out.Issues = mapCaproverVolumes(app, out.Issues)
@@ -37,11 +37,11 @@ func mapCaproverBuildConfig(app caproverAppDefinition, issues []migrationIssue) 
 	return spec.BuildDockerfile, issues
 }
 
-// Includes the default subdomain plus every custom domain, since app.yaml takes a list.
-func mapCaproverDomains(app caproverAppDefinition, rootDomain string) []string {
+// The default subdomain uses the sanitized service name, since a raw app name can hold characters a hostname cannot.
+func mapCaproverDomains(app caproverAppDefinition, subdomain, rootDomain string) []string {
 	var domains []string
 	if !app.NotExposeAsWebApp && rootDomain != "" {
-		domains = append(domains, app.AppName+"."+rootDomain)
+		domains = append(domains, subdomain+"."+rootDomain)
 	}
 	for _, d := range app.CustomDomain {
 		if d.PublicDomain != "" {
