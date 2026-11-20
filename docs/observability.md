@@ -261,6 +261,46 @@ Apps can also report errors with any Sentry SDK and read them as grouped issues 
 
 Metrics and logs can be pushed to an OTLP/HTTP collector, opt-in per destination. Pull-based, node-local collection stays the default and nothing leaves the node until you add a destination. The export set includes per-app container metrics, platform self metrics (reconcile lag, deploy duration and queue depth, agent connections) and container logs. See [Data export](/data-export#otlp-logs) and `levelrail-cli otel destinations`.
 
+## Export presets
+
+A preset turns a short provider form into the right export destinations: the endpoint for your region, the auth headers built from your secret, and sensible signals. Pick one from the dashboard, or use the CLI:
+
+```bash
+levelrail-cli observability presets
+levelrail-cli observability add axiom --name prod --field dataset=levelrail --field token=env:AXIOM_TOKEN
+levelrail-cli observability test prod
+levelrail-cli observability list
+levelrail-cli observability rm prod
+```
+
+`test` sends one synthetic log line and one metric per signal and prints either `accepted` or the exact HTTP status with a short fix for 401, 403 and 404. Credentials are stored encrypted, never returned by the API and never logged. A field written as `env:NAME` is read from that environment variable. Endpoints follow the same internal address rules as every other export destination.
+
+The API is `GET /api/v1/observability/presets`, `GET` and `POST /api/v1/observability/exports`, `POST /api/v1/observability/exports/{id}/test` and `DELETE /api/v1/observability/exports/{id}`. Each export is a set of ordinary data export destinations named `obs/<name>/<preset>/<signal>`, so [Data export](/data-export) status and alerts apply to them too. Traces are not exported by presets yet.
+
+### Grafana Cloud
+
+Fields: the OTLP endpoint of your stack (without a signal path), the instance ID and an access policy token with `logs:write` and `metrics:write`. Logs and metrics are on by default.
+
+### Datadog
+
+Fields: your Datadog site and an API key. Logs are on by default. Metrics use the OTLP intake and are off by default, add them with `--signal logs,metrics`.
+
+### Axiom
+
+Fields: a dataset that already exists, the region (`us` or `eu`) and an API token with ingest permission. Logs and metrics are on by default.
+
+### Honeycomb
+
+Fields: the region (`us` or `eu`), a dataset and an ingest key. Logs and metrics are on by default.
+
+### Better Stack
+
+Fields: the token of an HTTP source. Only logs are exported by this preset.
+
+### Generic OTLP/HTTP
+
+Fields: the base endpoint of any OTLP/HTTP collector, plus an optional auth header name and value. Logs go to `/v1/logs` and metrics to `/v1/metrics`.
+
 ## External log drains
 
 `PUT /api/v1/apps/{name}/log-drain` forwards an app's container log stream to an external HTTP endpoint or syslog target. The drain is in addition to, never instead of, the node-local store: it taps the same `LogBroadcaster` a live SSE viewer subscribes to.

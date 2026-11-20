@@ -472,6 +472,7 @@ var Tree = map[string]*Node{
 	"apply":          nil,
 	"diff":           nil,
 	"compliance":     {Subs: map[string]*Node{"evidence": {Subs: map[string]*Node{"create": nil, "list": nil, "download": nil, "verify": nil}}, "access-review": {Subs: map[string]*Node{"start": nil, "list": nil, "show": nil, "keep": nil, "revoke": nil, "complete": nil}}}},
+	"observability":  {Subs: map[string]*Node{"presets": nil, "add": nil, "test": nil, "list": nil, "rm": nil}},
 	"otel":           {Subs: map[string]*Node{"destinations": {Subs: map[string]*Node{"list": nil, "add": nil, "test": nil, "remove": nil}}}},
 	"policy":         {Subs: map[string]*Node{"list": nil, "set": nil, "check": nil}},
 	"app-types":      {Subs: map[string]*Node{"list": nil, "apply": nil, "check": nil}},

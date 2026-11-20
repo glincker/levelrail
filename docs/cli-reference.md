@@ -1353,6 +1353,18 @@ levelrail-cli otel destinations remove <id>
 
 OTLP/HTTP export of metrics and logs to your own collector. A signal-first view of the OTLP kinds of [Data export](/data-export#otlp-logs); header values are stored encrypted.
 
+## Observability export presets
+
+```
+levelrail-cli observability presets
+levelrail-cli observability add <preset> --name N --field K=V|K=env:NAME [--signal logs,metrics]
+levelrail-cli observability test <name>
+levelrail-cli observability list
+levelrail-cli observability rm <name>
+```
+
+One-form export to a provider: the preset builds the endpoint, headers and signals. Credentials are stored encrypted. See [Export presets](/observability#export-presets).
+
 ## Event webhooks
 
 ```

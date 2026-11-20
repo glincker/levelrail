@@ -242,6 +242,8 @@ func runDispatch(prog string, args []string, stdout, stderr io.Writer, lookupEnv
 		return runStack(prog, args[1:], stdout, stderr, lookupEnv)
 	case "compliance":
 		return runCompliance(prog, args[1:], stdout, stderr, lookupEnv)
+	case "observability":
+		return runObservability(prog, args[1:], stdout, stderr, lookupEnv)
 	case "otel":
 		return runOtel(prog, args[1:], stdout, stderr, lookupEnv)
 	case "event-webhooks":

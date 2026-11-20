@@ -14,7 +14,7 @@ type openAPIRoute struct {
 	Description string
 }
 
-// openAPIRoutes holds all 2222 routes known to scripts/gen-api-reference at
+// openAPIRoutes holds all 2227 routes known to scripts/gen-api-reference at
 // generation time. Run `go run ./scripts/gen-api-reference` after changing
 // any routes*.go registration and commit the result.
 var openAPIRoutes = []openAPIRoute{
@@ -1691,6 +1691,11 @@ var openAPIRoutes = []openAPIRoute{
 	{Method: "GET", Path: "/api/v1/node-provisions", Ability: "AbilityRoot", Group: "Other", Handler: "handleListNodeProvisions", Description: ""},
 	{Method: "DELETE", Path: "/api/v1/node-provisions/{id}", Ability: "AbilityRoot", Group: "Other", Handler: "handleDestroyNodeProvision", Description: ""},
 	{Method: "GET", Path: "/api/v1/node-provisions/{id}", Ability: "AbilityRoot", Group: "Other", Handler: "handleGetNodeProvision", Description: ""},
+	{Method: "GET", Path: "/api/v1/observability/exports", Ability: "AbilityReadSensitive", Group: "Other", Handler: "handleListObservabilityExports", Description: ""},
+	{Method: "POST", Path: "/api/v1/observability/exports", Ability: "AbilityWriteSensitive", Group: "Other", Handler: "handleCreateObservabilityExport", Description: ""},
+	{Method: "DELETE", Path: "/api/v1/observability/exports/{id}", Ability: "AbilityWriteSensitive", Group: "Other", Handler: "handleDeleteObservabilityExport", Description: ""},
+	{Method: "POST", Path: "/api/v1/observability/exports/{id}/test", Ability: "AbilityWriteSensitive", Group: "Other", Handler: "handleTestObservabilityExport", Description: ""},
+	{Method: "GET", Path: "/api/v1/observability/presets", Ability: "AbilityRead", Group: "Other", Handler: "handleListObservabilityPresets", Description: ""},
 	{Method: "GET", Path: "/api/v1/openapi.json", Ability: "AbilityRead", Group: "Other", Handler: "handleOpenAPISpec", Description: "Route metadata for the in-app API explorer (web/src/routes/settings/api-explorer.tsx): AbilityRead, same tier as system/status, since this is the API surface's own shape, not resource data."},
 	{Method: "POST", Path: "/api/v1/otlp/v1/logs", Ability: "Public", Group: "Other", Handler: "handleOTLPLogs", Description: ""},
 	{Method: "POST", Path: "/api/v1/otlp/v1/metrics", Ability: "Public", Group: "Other", Handler: "handleOTLPMetrics", Description: ""},

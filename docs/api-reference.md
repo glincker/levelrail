@@ -2453,6 +2453,11 @@ Routes that do not fit an existing group.
 | POST | /api/v1/builders/{id}/pause | AbilityWriteSensitive | handlePauseBuilder |
 | POST | /api/v1/builders/{id}/resume | AbilityWriteSensitive | handleResumeBuilder |
 | POST | /api/v1/builders/{id}/test | AbilityWriteSensitive | handleTestBuilder |
+| GET | /api/v1/observability/presets | AbilityRead | handleListObservabilityPresets |
+| GET | /api/v1/observability/exports | AbilityReadSensitive | handleListObservabilityExports |
+| POST | /api/v1/observability/exports | AbilityWriteSensitive | handleCreateObservabilityExport |
+| DELETE | /api/v1/observability/exports/{id} | AbilityWriteSensitive | handleDeleteObservabilityExport |
+| POST | /api/v1/observability/exports/{id}/test | AbilityWriteSensitive | handleTestObservabilityExport |
 | POST | /mcp | Public |  |
 
 ## See also
