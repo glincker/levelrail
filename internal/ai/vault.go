@@ -253,7 +253,8 @@ func (v *Vault) Set(ctx context.Context, id string, in SetInput, privateAllowed 
 	if in.BaseURL != "" && !info.BaseURLEditable {
 		return ProviderView{}, SetResult{}, &SaveError{Code: "base_url_fixed", Message: "This provider's base URL cannot be changed.", Fix: "Use the Other (OpenAI compatible) provider for a custom endpoint."}
 	}
-	baseURL := firstNonEmpty(in.BaseURL, cfg.BaseURL, info.DefaultBaseURL)
+	prevBaseURL := firstNonEmpty(cfg.BaseURL, info.DefaultBaseURL)
+	baseURL := firstNonEmpty(in.BaseURL, prevBaseURL)
 	if baseURL == "" {
 		return ProviderView{}, SetResult{}, &SaveError{Code: "base_url_required", Message: "A base URL is required for this provider.", Fix: "Enter the endpoint URL, for example https://my-resource.openai.azure.com/openai/v1."}
 	}
@@ -277,6 +278,10 @@ func (v *Vault) Set(ctx context.Context, id string, in SetInput, privateAllowed 
 			key, err = v.existingKey(ctx, id)
 			if err != nil {
 				return ProviderView{}, SetResult{}, err
+			}
+			// A stored key is never replayed to a different endpoint.
+			if key != "" && strings.TrimRight(check.URL, "/") != strings.TrimRight(prevBaseURL, "/") {
+				return ProviderView{}, SetResult{}, &SaveError{Code: "key_required_for_new_url", Message: "Changing the base URL needs the API key entered again.", Fix: "Paste the API key for the new endpoint."}
 			}
 		}
 		if key == "" && info.KeyRequired {
