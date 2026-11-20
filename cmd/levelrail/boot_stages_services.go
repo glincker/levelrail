@@ -384,6 +384,9 @@ func (s *bootState) startMesh() error {
 	edgeInfo := edge.doctorInfo()
 	edgeInfo.Snapshot = setupIngressSnapshot(ctx, logger, ingressDriver, db, secretsManager, edge)
 	edgeInfo.LiveMaxBodyBytes = edge.liveMaxBodyBytes(db, logger, apiRouter.RuntimeSettings)
+	edgeInfo.LiveTrustedProxies = edge.liveTrustedProxies(db, logger, apiRouter.RuntimeSettings)
+	// Publish before the first reconcile pass so the API trusts the saved list from boot.
+	edgeInfo.LiveTrustedProxies(ctx)
 	apiRouter.SetDoctorIngressEdge(edgeInfo)
 	apiRouter.SetIngressResilience(api.IngressResilience{
 		Status:  ingressDriver.SnapshotStatus,

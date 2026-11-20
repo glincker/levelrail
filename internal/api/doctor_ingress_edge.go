@@ -18,7 +18,9 @@ type DoctorIngressEdge struct {
 	MaxBodyBytes     int64
 	// LiveMaxBodyBytes resolves the cap now (saved setting, dashboard overrides, env), so doctor never shows the boot figure after a change.
 	LiveMaxBodyBytes func(ctx context.Context) int64
-	RetryWindow      time.Duration
+	// LiveTrustedProxies resolves the trusted list now (env, saved edge setting, preset).
+	LiveTrustedProxies func(ctx context.Context) int
+	RetryWindow        time.Duration
 	// Snapshot reports the ingress route snapshot; nil means the control plane has none.
 	Snapshot func() ingressdriver.SnapshotStatus
 }
@@ -47,10 +49,14 @@ func (rt *Router) doctorCheckIngressEdge(ctx context.Context) []doctorCheckResou
 	if maxBody > 0 {
 		parts = append(parts, fmt.Sprintf("request bodies capped at %d bytes", maxBody))
 	}
-	if e.TrustedProxies > 0 {
-		parts = append(parts, fmt.Sprintf("%d trusted proxy ranges", e.TrustedProxies))
+	trusted := e.TrustedProxies
+	if e.LiveTrustedProxies != nil {
+		trusted = e.LiveTrustedProxies(ctx)
+	}
+	if trusted > 0 {
+		parts = append(parts, fmt.Sprintf("%d trusted proxy ranges", trusted))
 	} else {
-		parts = append(parts, "no trusted proxies (behind a CDN, set APP_INGRESS_TRUSTED_PROXIES so apps see real client IPs)")
+		parts = append(parts, "no trusted proxies (behind a CDN, set APP_INGRESS_TRUSTED_PROXIES or the dashboard setting so apps see real client IPs)")
 	}
 	if e.SocketActivation {
 		parts = append(parts, "systemd socket activation on (restarts queue connections)")

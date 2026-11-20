@@ -16,6 +16,10 @@ var resolvedTrusted atomic.Pointer[[]netip.Prefix]
 
 // SetResolvedTrustedProxies publishes the edge's effective trusted proxy list.
 func SetResolvedTrustedProxies(entries []string) {
+	if entries == nil {
+		resolvedTrusted.Store(nil)
+		return
+	}
 	out := parseTrustedEntries(entries)
 	resolvedTrusted.Store(&out)
 }

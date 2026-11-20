@@ -57,3 +57,37 @@ func TestTrustedProxyListParityBetweenAPIAndEdge(t *testing.T) {
 		t.Fatal("a preset peer must be trusted by the api")
 	}
 }
+
+type mutableEdgeStore struct{ s store.IngressEdgeSettings }
+
+func (m *mutableEdgeStore) GetIngressEdgeSettings(context.Context) (store.IngressEdgeSettings, error) {
+	return m.s, nil
+}
+
+func TestTrustedProxySettingOnlyReachesAPIAndDoctor(t *testing.T) {
+	t.Setenv(ingressdriver.EnvTrustedProxies, "")
+	t.Cleanup(func() { api.SetResolvedTrustedProxies(nil) })
+	edge := ingressEdge{hardening: &ingressdriver.Hardening{}}
+	logger := slog.New(slog.NewTextHandler(io.Discard, nil))
+	db := &mutableEdgeStore{}
+	live := edge.liveTrustedProxies(db, logger, func() *runtimesettings.Service { return nil })
+	peer := &http.Request{RemoteAddr: "203.0.113.9:443"}
+
+	if live(context.Background()) != 0 || api.PeerIsTrustedProxy(peer) {
+		t.Fatal("nothing configured: no trusted proxies expected")
+	}
+	db.s.TrustedProxies = "203.0.113.9"
+	if n := live(context.Background()); n != 1 {
+		t.Fatalf("doctor count after a saved setting = %d, want 1", n)
+	}
+	if !api.PeerIsTrustedProxy(peer) {
+		t.Fatal("the saved peer must be trusted without a restart")
+	}
+	db.s.TrustedProxies = "private_ranges"
+	if live(context.Background()) < 2 || api.PeerIsTrustedProxy(peer) {
+		t.Fatal("a live change must replace the previous list")
+	}
+	if !api.PeerIsTrustedProxy(&http.Request{RemoteAddr: "10.1.2.3:1"}) {
+		t.Fatal("private_ranges must trust a private peer")
+	}
+}

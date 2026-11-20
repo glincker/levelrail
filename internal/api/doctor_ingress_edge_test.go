@@ -3,6 +3,7 @@ package api
 import (
 	"context"
 	"encoding/json"
+	"net/http/httptest"
 	"strings"
 	"testing"
 	"time"
@@ -64,5 +65,28 @@ func TestDoctorCheckIngressEdge_LiveBodyCap(t *testing.T) {
 	got = rt.doctorCheckIngressEdge(t.Context())
 	if len(got) != 1 || !strings.Contains(got[0].Message, "capped at 4194304 bytes") {
 		t.Errorf("a later change must show without a restart: %+v", got)
+	}
+}
+
+func TestDoctorCheckIngressEdge_LiveTrustedProxies(t *testing.T) {
+	rt := &Router{doctorEdge: &DoctorIngressEdge{Hardening: true, LiveTrustedProxies: func(context.Context) int { return 6 }}}
+	got := rt.doctorCheckIngressEdge(t.Context())
+	if len(got) == 0 || !strings.Contains(got[0].Message, "6 trusted proxy ranges") {
+		t.Fatalf("doctor must report the resolved list, got %+v", got)
+	}
+}
+
+func TestClientIPUsesPublishedTrustedList(t *testing.T) {
+	t.Setenv(envTrustedProxies, "")
+	t.Cleanup(func() { SetResolvedTrustedProxies(nil) })
+	r := httptest.NewRequest("GET", "/", nil)
+	r.RemoteAddr = "203.0.113.9:443"
+	r.Header.Set("X-Forwarded-For", "198.51.100.7")
+	if got := clientIP(r); got != "203.0.113.9" {
+		t.Fatalf("untrusted peer: got %s", got)
+	}
+	SetResolvedTrustedProxies([]string{"203.0.113.9"})
+	if got := clientIP(r); got != "198.51.100.7" {
+		t.Fatalf("published peer: got %s", got)
 	}
 }

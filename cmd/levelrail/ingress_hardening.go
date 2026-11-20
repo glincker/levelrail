@@ -173,6 +173,17 @@ func (e ingressEdge) liveMaxBodyBytes(db edgeOverrideStore, logger *slog.Logger,
 	}
 }
 
+// liveTrustedProxies resolves the list through the same layering as the edge
+// (and publishes it to the API), so doctor never reports the env-only boot count.
+func (e ingressEdge) liveTrustedProxies(db edgeOverrideStore, logger *slog.Logger, rs func() *runtimesettings.Service) func(context.Context) int {
+	return func(ctx context.Context) int {
+		if h := e.effectiveHardening(ctx, db, logger, rs()); h != nil {
+			return len(h.TrustedProxies)
+		}
+		return 0
+	}
+}
+
 func (e ingressEdge) doctorInfo() api.DoctorIngressEdge {
 	info := api.DoctorIngressEdge{SocketActivation: e.inherited.Active(), Hardening: e.hardening != nil}
 	if e.hardening != nil {
