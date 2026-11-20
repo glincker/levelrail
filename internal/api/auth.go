@@ -446,7 +446,8 @@ func (rt *Router) requireAbilityDecided(required string, decide authzDecision, n
 		if r, stackOK = rt.gateStackToken(w, r, rec.ID); !stackOK {
 			return
 		}
-		if !rt.gateSiteToken(w, r, rec.ID) {
+		var siteOK bool
+		if r, siteOK = rt.gateSiteToken(w, r, rec.ID); !siteOK {
 			return
 		}
 		abilities := rec.Abilities

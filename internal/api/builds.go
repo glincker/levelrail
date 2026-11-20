@@ -350,6 +350,12 @@ func (rt *Router) handleTriggerBuild(w http.ResponseWriter, r *http.Request) {
 		writeError(w, http.StatusBadRequest, "invalid request body")
 		return
 	}
+	if siteScopedRequest(r) {
+		if msg := rt.siteTokenBuildProblem(r.Context(), name, existing.Image, req); msg != "" {
+			writeError(w, http.StatusForbidden, msg)
+			return
+		}
+	}
 	finalRepo := req.ImageRepo
 	if finalRepo == "" {
 		finalRepo = rt.ownImageRepo(r.Context(), name, existing.Image)

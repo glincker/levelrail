@@ -12,8 +12,9 @@ import (
 )
 
 const (
-	siteTokenNameMax = 64
-	msgSiteTokenDeny = "this token can only deploy its own Pages site"
+	siteTokenNameMax  = 64
+	msgSiteTokenDeny  = "this token can only deploy its own Pages site"
+	msgSiteTokenBuild = "this token can only start a static upload deploy of its own Pages site"
 )
 
 // tokenSiteScopeStore is the site scope half of the token store.
@@ -50,27 +51,86 @@ var siteTokenRoutes = []string{
 	"GET /api/v1/static-sites/{name}",
 }
 
+type siteTokenCtxKey struct{}
+
+// siteScopedRequest reports whether the gate marked this request as made by a site token.
+func siteScopedRequest(r *http.Request) bool {
+	v, _ := r.Context().Value(siteTokenCtxKey{}).(bool)
+	return v
+}
+
 // gateSiteToken confines a site scoped token to its own site and the routes
 // above. Any lookup failure denies; a token without a site scope passes.
-func (rt *Router) gateSiteToken(w http.ResponseWriter, r *http.Request, tokenID string) bool {
+func (rt *Router) gateSiteToken(w http.ResponseWriter, r *http.Request, tokenID string) (*http.Request, bool) {
 	ss := rt.tokenSiteScopes()
 	if ss == nil {
-		return true
+		return r, true
 	}
 	sc, err := ss.GetAPITokenSiteScope(r.Context(), tokenID)
 	if err != nil {
 		rt.logger.Warn("api: site token scope lookup failed", slog.String("token_id", tokenID), slog.String("error", err.Error()))
-		writeError(w, http.StatusForbidden, msgSiteTokenDeny)
-		return false
+		rt.denySiteToken(w, r, tokenID)
+		return r, false
 	}
 	if sc == nil {
-		return true
+		return r, true
 	}
-	if !slices.Contains(siteTokenRoutes, r.Pattern) || r.PathValue("name") != sc.SiteName {
-		writeError(w, http.StatusForbidden, msgSiteTokenDeny)
-		return false
+	if !slices.Contains(siteTokenRoutes, r.Pattern) || r.PathValue("name") != sc.SiteName || !rt.siteScopeTargetsPages(r.Context(), sc.SiteName) {
+		rt.denySiteToken(w, r, tokenID)
+		return r, false
 	}
-	return true
+	return r.WithContext(context.WithValue(r.Context(), siteTokenCtxKey{}, true)), true
+}
+
+// denySiteToken audits the refusal before answering, so a probing token leaves a trace.
+func (rt *Router) denySiteToken(w http.ResponseWriter, r *http.Request, tokenID string) {
+	rt.recordAudit(r.Context(), r, AbilityDeploy, "token", tokenID, "", http.StatusForbidden)
+	writeError(w, http.StatusForbidden, msgSiteTokenDeny)
+}
+
+// siteScopeTargetsPages holds a scope to a live Pages site, so a reused app name never inherits it.
+func (rt *Router) siteScopeTargetsPages(ctx context.Context, name string) bool {
+	app, err := rt.apps.GetDesiredService(ctx, name)
+	return err == nil && app != nil && rt.isPagesSiteApp(ctx, name, app.Image)
+}
+
+// siteTokenBuildProblem limits a site token to a static upload deploy of its own Pages site.
+func (rt *Router) siteTokenBuildProblem(ctx context.Context, name, image string, req triggerBuildRequest) string {
+	b := req.Build
+	t := b.Type
+	if t != "static" || req.UploadHash == "" || !rt.isPagesSiteApp(ctx, name, image) {
+		return msgSiteTokenBuild
+	}
+	if req.SourceURL != "" || req.RepoURL != "" || req.InlineSource != nil || req.ImageRepo != "" || req.RerunOf != "" ||
+		req.Override || req.Reason != "" || req.NoCache || req.FromCache || b.Image != "" || len(b.Args) > 0 {
+		return msgSiteTokenBuild
+	}
+	return ""
+}
+
+// revokeSiteTokens drops every token scoped to a site and its scope rows.
+func (rt *Router) revokeSiteTokens(ctx context.Context, site string) {
+	ss := rt.tokenSiteScopes()
+	if ss == nil {
+		return
+	}
+	ids, err := ss.ListAPITokenIDsForSite(ctx, site)
+	if err != nil {
+		rt.logger.Warn("api: list site tokens for cleanup failed", slog.String("site", site), slog.String("error", err.Error()))
+		return
+	}
+	for _, id := range ids {
+		if err := rt.libraryRevokeToken(ctx, id); err != nil && !errors.Is(err, store.ErrAPITokenNotFound) && !isTokenGone(err) {
+			rt.logger.Warn("api: revoke site token failed", slog.String("token_id", id), slog.String("error", err.Error()))
+		}
+	}
+	if d, ok := ss.(interface {
+		DeleteAPITokenSiteScopes(ctx context.Context, site string) error
+	}); ok {
+		if err := d.DeleteAPITokenSiteScopes(ctx, site); err != nil {
+			rt.logger.Warn("api: delete site scopes failed", slog.String("site", site), slog.String("error", err.Error()))
+		}
+	}
 }
 
 type siteDeployTokenRequest struct {
@@ -110,6 +170,11 @@ func (rt *Router) handleCreateSiteDeployToken(w http.ResponseWriter, r *http.Req
 	if !ok {
 		return
 	}
+	ownerID, sessionOK := rt.currentSessionUserID(r)
+	if !rt.signedInUserSession(r) || !sessionOK {
+		writeError(w, http.StatusForbidden, "site deploy tokens are minted from a signed-in session")
+		return
+	}
 	var in siteDeployTokenRequest
 	if err := decodeJSONBodyLimit(r, &in, 1024); err != nil {
 		writeError(w, http.StatusBadRequest, "invalid request body")
@@ -142,7 +207,6 @@ func (rt *Router) handleCreateSiteDeployToken(w http.ResponseWriter, r *http.Req
 		label = "ci"
 	}
 	req := createTokenRequest{Name: "pages:" + site + ":" + label, Abilities: []string{AbilityRead, AbilityDeploy}}
-	ownerID, _ := rt.currentSessionUserID(r)
 	scope := &store.APITokenScope{Site: &store.APITokenSiteScope{SiteName: site}}
 	rt.libraryCreateToken(w, r, req, agentIdentity{}, ownerID, expiresAt, scope)
 }
@@ -177,6 +241,10 @@ func (rt *Router) handleListSiteDeployTokens(w http.ResponseWriter, r *http.Requ
 func (rt *Router) handleRevokeSiteDeployToken(w http.ResponseWriter, r *http.Request) {
 	site, ss, ok := rt.siteTokenDeps(w, r, AbilityDeploy)
 	if !ok {
+		return
+	}
+	if !rt.signedInUserSession(r) {
+		writeError(w, http.StatusForbidden, "site deploy tokens are revoked from a signed-in session")
 		return
 	}
 	id := r.PathValue("id")

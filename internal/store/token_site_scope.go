@@ -63,3 +63,11 @@ func (db *DB) ListAPITokenIDsForSite(ctx context.Context, site string) ([]string
 	}
 	return ids, rows.Err()
 }
+
+// DeleteAPITokenSiteScopes removes every site scope row for a site.
+func (db *DB) DeleteAPITokenSiteScopes(ctx context.Context, site string) error {
+	if _, err := db.ExecContext(ctx, `DELETE FROM api_token_site_scopes WHERE site_name = ?`, site); err != nil {
+		return fmt.Errorf("store: delete site scopes: %w", err)
+	}
+	return nil
+}
