@@ -28,6 +28,7 @@
   "unreadOnly": "Nur ungelesene",
   "markAllRead": "Alle als gelesen markieren",
   "markRead": "Als gelesen markieren",
+  "repeatsTitle": "{{count}} Mal in Folge aufgetreten",
   "markedAll": "Posteingang als gelesen markiert.",
   "unreadCount_one": "{{count}} ungelesen",
   "unreadCount_other": "{{count}} ungelesen",

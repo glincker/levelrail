@@ -28,6 +28,7 @@
   "unreadOnly": "Non lues uniquement",
   "markAllRead": "Tout marquer comme lu",
   "markRead": "Marquer comme lu",
+  "repeatsTitle": "Vu {{count}} fois de suite",
   "markedAll": "Boîte de réception marquée comme lue.",
   "unreadCount_one": "{{count}} non lue",
   "unreadCount_other": "{{count}} non lues",

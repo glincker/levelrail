@@ -28,6 +28,7 @@
   "unreadOnly": "Solo no leídas",
   "markAllRead": "Marcar todas como leídas",
   "markRead": "Marcar como leída",
+  "repeatsTitle": "Visto {{count}} veces seguidas",
   "markedAll": "Bandeja marcada como leída.",
   "unreadCount_one": "{{count}} sin leer",
   "unreadCount_other": "{{count}} sin leer",

@@ -28,6 +28,7 @@
   "unreadOnly": "Somente não lidos",
   "markAllRead": "Marcar todos como lidos",
   "markRead": "Marcar como lido",
+  "repeatsTitle": "Visto {{count}} vezes seguidas",
   "markedAll": "Caixa de entrada marcada como lida.",
   "unreadCount_one": "{{count}} não lido",
   "unreadCount_many": "{{count}} não lidos",
