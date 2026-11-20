@@ -217,7 +217,7 @@ Log collection resumes where it stopped. After a control plane restart, or when 
 It returns an excerpt of the newest matching lines, never a full dump: at most `--max-lines` lines (default 100) and a byte cap (default 8 KB, set with `--max-bytes` or `APP_MCP_LOG_MAX_BYTES`), plus counts and a notice such as `showing 40 of 1,812 matching lines (newest), use since/until or level to narrow`. It uses stored search with `level` and `limit`. `--json` prints the excerpt as one object.
 </Accordion>
 <Accordion title="Download and database logs">
-**Download** takes the same `from`, `to` and `q` filters as stored search and returns a plain-text attachment (not JSON), capped at 5,000 lines. There is no CLI command today: use the browser download, or `curl` with query params and a bearer token.
+**Download** takes the same `from`, `to` and `q` filters as stored search and returns a plain-text attachment (not JSON), capped at 5,000 lines. From the CLI, `levelrail-cli apps logs --file <path>` writes the entries to a new file (mode 0600, never overwrites). The browser download and `curl` with query params and a bearer token also work.
 
 **Database logs** mirror the app endpoints exactly (same query params, same SSE shape) and use the resource ID prefix `database:` instead of `service:`. There is no download endpoint for databases yet.
 </Accordion>
@@ -464,7 +464,7 @@ The local node reads its own figures. A remote node's agent sends a periodic hos
 
 **The `fleet` rollup** sums every node's numbers.
 
-- `total_cpu_percent` is a raw sum, not a percentage of fleet capacity (no node reports its core count).
+- `total_cpu_percent` is a raw sum, not a percentage of fleet capacity (the node resource usage endpoint does not use the core count agents report).
 - `memory_used_percent` and `disk_used_percent` are only computed from nodes that reported a capacity figure. `nodes_with_memory_capacity` and `nodes_with_disk_capacity` say how many of `node_count` that covers, so a 3-node fleet where only 1 node has host metrics reads as "1/3 nodes reporting", never as if the percentage covered the whole fleet.
 
 ## Capacity forecast
@@ -1101,7 +1101,7 @@ levelrail-cli push-subscriptions revoke <id>
 </Accordion>
 <Accordion title="Node metrics">
 - True host-level readings (real free/total CPU or memory) for any node other than the one running the control plane. `GET /api/v1/nodes/{id}/metrics` and `GET /api/v1/nodes/resource-usage` both sum already-collected per-container samples. A remote node's `memory_total_bytes` and `memory_available_bytes` come from its agent's host report on `nodes/resource-usage` only (not as time series), and its `disk_used_bytes` and `disk_total_bytes` stay absent rather than wrong. A future per-node agent writing host samples under the same `node:<id>` resource-ID format would show up in both endpoints automatically.
-- No node reports its own CPU core count, so the fleet-wide `total_cpu_percent` is a raw sum, not a percentage of fleet CPU capacity.
+- Remote agents report their CPU core count in the host report (used by placement and the builders list as `cpu_cores`), but the node resource usage endpoint does not use it yet, so the fleet-wide `total_cpu_percent` is still a raw sum, not a percentage of fleet CPU capacity.
 - Databases placed on a node do not appear in summed CPU and memory metrics.
 </Accordion>
 <Accordion title="CLI and API">
