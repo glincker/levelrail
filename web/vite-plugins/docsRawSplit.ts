@@ -8,7 +8,7 @@ import type { Plugin } from 'vite'
 const PART_PREFIX = '\0docs-raw-part:'
 const MAX_PART_BYTES = Number(process.env.DOCS_RAW_PART_BYTES) || 90_000
 
-function splitLines(text: string, maxBytes: number): string[] {
+export function splitLines(text: string, maxBytes: number): string[] {
   const parts: string[] = []
   let current = ''
   for (const line of text.split(/(?<=\n)/)) {
