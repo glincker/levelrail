@@ -30,6 +30,7 @@ const SiteSettingsForm = lazy(() => import('./SiteSettingsForm'))
 const SiteGitCard = lazy(() => import('./SiteGitCard'))
 const SiteFormsCard = lazy(() => import('./SiteFormsCard'))
 const SiteHookCard = lazy(() => import('./SiteHookCard'))
+const SiteCiCard = lazy(() => import('./SiteCiCard'))
 
 function Deployments({
   name,
@@ -73,6 +74,9 @@ function Settings({
       </Suspense>
       <Suspense fallback={<Skeleton className="h-12 w-full" />}>
         <SiteHookCard name={name} />
+      </Suspense>
+      <Suspense fallback={<Skeleton className="h-24 w-full" />}>
+        <SiteCiCard name={name} />
       </Suspense>
       <Suspense fallback={<Skeleton className="h-16 w-full" />}>
         <SiteFormsCard name={name} />

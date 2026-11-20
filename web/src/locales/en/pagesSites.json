@@ -492,5 +492,22 @@
       "publishing": "Publishing",
       "live": "Live"
     }
+  },
+  "ci": {
+    "title": "CI deploy",
+    "tip": "A token that can only deploy this site. Put it in your pipeline as a secret, it cannot touch anything else and you can revoke it any time.",
+    "create": "Create token",
+    "createTip": "Create a deploy-only token for this site",
+    "revoke": "Revoke",
+    "revokeTip": "Stop this token working now",
+    "confirmRevoke": "Revoke this token? Pipelines using it will fail.",
+    "copy": "Copy",
+    "copied": "Copied",
+    "shownOnce": "Copy it now, it is not shown again. Save it as LEVELRAIL_PAGES_TOKEN.",
+    "expires": "expires {{date}}",
+    "failed": "Could not load deploy tokens.",
+    "github": "GitHub",
+    "gitlab": "GitLab",
+    "curl": "curl"
   }
 }
