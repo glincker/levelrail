@@ -223,7 +223,10 @@ func printUpgradePolicy(out io.Writer, p apiclient.UpgradePolicy) {
 	if p.Effective == "paused" {
 		state += " (paused)"
 	}
-	_, _ = fmt.Fprintf(out, "automatic upgrades: %s\n", state)
+	_, _ = fmt.Fprintf(out, "automatic updates: %s\n", state)
+	if p.WindowSummary != "" {
+		_, _ = fmt.Fprintln(out, p.WindowSummary)
+	}
 	if p.WindowCron != "" {
 		_, _ = fmt.Fprintf(out, "window: %q for %dm in %s\n", p.WindowCron, p.WindowDurationMinutes, p.Timezone)
 	}
@@ -243,6 +246,7 @@ func printUpgradePolicy(out io.Writer, p apiclient.UpgradePolicy) {
 	if p.NextWindow != nil {
 		_, _ = fmt.Fprintf(out, "next window: %s to %s\n", p.NextWindow.Start, p.NextWindow.End)
 	}
+	printNextWindows(out, p.NextWindows, p.ServerTimezone)
 	if p.Decision != "" {
 		_, _ = fmt.Fprintf(out, "latest decision: %s %s\n", p.DecisionTag, p.Decision)
 	}
@@ -295,4 +299,23 @@ func runUpgradeBackupNow(prog string, args []string, stdout, stderr io.Writer, l
 		_, _ = fmt.Fprintf(stdout, "backup taken: %s\n", res.Backup.Name)
 		printUpgradeHuman(stdout, res.Preflight, "taken: "+res.Backup.Name)
 	})
+}
+
+// printNextWindows lists upcoming window starts in the server timezone and in UTC.
+func printNextWindows(out io.Writer, ws []apiclient.UpgradeWindow, serverTZ string) {
+	loc := time.UTC
+	if l, err := time.LoadLocation(serverTZ); err == nil && serverTZ != "" {
+		loc = l
+	}
+	for i, w := range ws {
+		t, err := time.Parse(time.RFC3339, w.Start)
+		if err != nil {
+			continue
+		}
+		label := "upcoming window starts:"
+		if i > 0 {
+			label = "                       "
+		}
+		_, _ = fmt.Fprintf(out, "%s %s (%s) / %s UTC\n", label, t.In(loc).Format("Mon 2006-01-02 15:04"), loc, t.UTC().Format("15:04"))
+	}
 }

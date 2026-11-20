@@ -20,7 +20,7 @@ func TestRun_SettingsUpdates_Get(t *testing.T) {
 	if !strings.Contains(stdout, "channel:             beta") {
 		t.Errorf("stdout = %q", stdout)
 	}
-	if !strings.Contains(stdout, "auto_update_enabled: true") {
+	if !strings.Contains(stdout, "check for updates:   true") {
 		t.Errorf("stdout = %q", stdout)
 	}
 }

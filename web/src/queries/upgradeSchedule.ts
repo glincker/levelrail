@@ -53,6 +53,8 @@ export interface UpgradeScheduleStatus {
   active: UpgradeSchedule | null
   recent: UpgradeSchedule[]
   next_window: UpgradeWindow | null
+  next_windows?: UpgradeWindow[]
+  window_summary?: string
 }
 
 export interface ScheduleRequest {
@@ -106,6 +108,8 @@ export interface UpgradePolicy {
   decision_at?: string
   server_timezone: string
   next_window: UpgradeWindow | null
+  next_windows?: UpgradeWindow[]
+  window_summary?: string
   default_applied?: boolean
   paused_until?: string
   health_window_seconds?: number

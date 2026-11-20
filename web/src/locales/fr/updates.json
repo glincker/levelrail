@@ -781,7 +781,11 @@
     "undo": "Undo",
     "zone": "Time zone",
     "zoneHelp": "Server time zone is {{zone}}. Backups and safety checks still run first.",
-    "zoneInvalid": "Enter a valid time zone, for example Europe/Berlin."
+    "zoneInvalid": "Enter a valid time zone, for example Europe/Berlin.",
+    "checkOn": "La vérification en arrière-plan des nouvelles versions est activée. Elle ne fait que chercher; l'installation dépend de l'interrupteur ci-dessus.",
+    "checkOff": "La vérification en arrière-plan des nouvelles versions est désactivée. Activer les mises à jour automatiques l'active aussi.",
+    "installSteps": "Les mises à jour s'installent entre {{start}} et {{end}} {{zone}}; sauvegarde d'abord, contrôle de santé, retour arrière automatique.",
+    "nextWindows": "Prochaines fenêtres : {{list}}"
   },
   "autoStatus": {
     "state": {

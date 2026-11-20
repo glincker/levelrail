@@ -73,6 +73,8 @@ type UpgradePolicy struct {
 	DecisionAt            string             `json:"decision_at"`
 	ServerTimezone        string             `json:"server_timezone"`
 	NextWindow            *UpgradeWindow     `json:"next_window"`
+	NextWindows           []UpgradeWindow    `json:"next_windows"`
+	WindowSummary         string             `json:"window_summary"`
 	DefaultApplied        bool               `json:"default_applied"`
 	PausedUntil           string             `json:"paused_until"`
 	HealthWindowSeconds   int                `json:"health_window_seconds"`

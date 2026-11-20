@@ -774,7 +774,11 @@
       "notes": "Release notes",
       "migrations": "Database changes",
       "plan": "Backup and scheduling"
-    }
+    },
+    "checkOn": "Checking for new releases in the background is on. It only looks; installing is controlled by the switch above.",
+    "checkOff": "Background checks for new releases are off. Turning on automatic updates also turns them on.",
+    "installSteps": "Updates install between {{start}} and {{end}} {{zone}}; backup first, health check, automatic rollback.",
+    "nextWindows": "Next windows: {{list}}"
   },
   "autoStatus": {
     "state": {

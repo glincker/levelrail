@@ -774,7 +774,11 @@
     "undo": "Undo",
     "zone": "Time zone",
     "zoneHelp": "Server time zone is {{zone}}. Backups and safety checks still run first.",
-    "zoneInvalid": "Enter a valid time zone, for example Europe/Berlin."
+    "zoneInvalid": "Enter a valid time zone, for example Europe/Berlin.",
+    "checkOn": "La comprobación en segundo plano de nuevas versiones está activada. Solo busca; la instalación la controla el interruptor de arriba.",
+    "checkOff": "La comprobación en segundo plano de nuevas versiones está desactivada. Activar las actualizaciones automáticas también la activa.",
+    "installSteps": "Las actualizaciones se instalan entre {{start}} y {{end}} {{zone}}; primero copia de seguridad, comprobación de salud y reversión automática.",
+    "nextWindows": "Próximas ventanas: {{list}}"
   },
   "autoStatus": {
     "state": {

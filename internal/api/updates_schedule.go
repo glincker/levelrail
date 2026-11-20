@@ -280,6 +280,10 @@ type upgradePolicyResource struct {
 	DecisionAt            string                 `json:"decision_at,omitempty"`
 	ServerTimezone        string                 `json:"server_timezone"`
 	NextWindow            *upgradeWindowResource `json:"next_window"`
+	// NextWindows lists the next window starts (UTC); clients show them in the server timezone and UTC.
+	NextWindows []upgradeWindowResource `json:"next_windows"`
+	// WindowSummary is one plain sentence on when and how updates install; empty when off or paused.
+	WindowSummary string `json:"window_summary,omitempty"`
 	// DefaultApplied is true while nobody has saved a policy and the install runs the default one.
 	DefaultApplied      bool                   `json:"default_applied"`
 	PausedUntil         string                 `json:"paused_until,omitempty"`
@@ -332,6 +336,10 @@ func (rt *Router) upgradePolicyResource(row store.UpgradePolicy, defaulted bool)
 				Start: span.Start.UTC().Format(time.RFC3339), End: span.End.UTC().Format(time.RFC3339),
 				Source: "upgrade_policy", Active: !span.Start.After(now),
 			}
+		}
+		out.NextWindows = nextWindowStarts(w, now, nextWindowsShown)
+		if out.Effective != "off" && out.Effective != "paused" {
+			out.WindowSummary = windowSummary(w, now)
 		}
 	}
 	return out
@@ -557,4 +565,39 @@ func (rt *Router) auditSystemUpgradeEvent(ctx context.Context, detail string) {
 	if err != nil {
 		rt.logger.Warn("api: upgrade scheduler audit failed", slog.String("error", err.Error()))
 	}
+}
+
+const nextWindowsShown = 3
+
+// nextWindowStarts walks forward from now, one window after the other.
+func nextWindowStarts(w upgradesched.Window, now time.Time, n int) []upgradeWindowResource {
+	out := make([]upgradeWindowResource, 0, n)
+	cursor := now
+	for len(out) < n {
+		span, ok, err := w.Next(cursor)
+		if err != nil || !ok || !span.End.After(cursor) {
+			break
+		}
+		out = append(out, upgradeWindowResource{
+			Start: span.Start.UTC().Format(time.RFC3339), End: span.End.UTC().Format(time.RFC3339),
+			Source: "upgrade_policy", Active: !span.Start.After(now),
+		})
+		cursor = span.End
+	}
+	return out
+}
+
+// windowSummary says in one sentence when updates install and what protects them.
+func windowSummary(w upgradesched.Window, now time.Time) string {
+	span, ok, err := w.Next(now)
+	if err != nil || !ok {
+		return ""
+	}
+	loc := time.UTC
+	if l, lerr := time.LoadLocation(w.Timezone); lerr == nil && w.Timezone != "" {
+		loc = l
+	}
+	start, end := span.Start.In(loc), span.Start.Add(w.Duration).In(loc)
+	zone, _ := start.Zone()
+	return fmt.Sprintf("Updates install between %s and %s %s; backup first, health check, automatic rollback.", start.Format("15:04"), end.Format("15:04"), zone)
 }

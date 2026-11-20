@@ -767,7 +767,11 @@
     "undo": "Undo",
     "zone": "Time zone",
     "zoneHelp": "Server time zone is {{zone}}. Backups and safety checks still run first.",
-    "zoneInvalid": "Enter a valid time zone, for example Europe/Berlin."
+    "zoneInvalid": "Enter a valid time zone, for example Europe/Berlin.",
+    "checkOn": "新しいリリースのバックグラウンド確認はオンです。確認のみで、インストールは上のスイッチで制御します。",
+    "checkOff": "新しいリリースのバックグラウンド確認はオフです。自動更新をオンにすると、これもオンになります。",
+    "installSteps": "更新は {{start}} から {{end}} ({{zone}}) の間にインストールされます。先にバックアップ、ヘルスチェック、自動ロールバックを行います。",
+    "nextWindows": "次のウィンドウ: {{list}}"
   },
   "autoStatus": {
     "state": {

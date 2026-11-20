@@ -18,6 +18,7 @@ func runUpgrade(prog string, args []string, stdout, stderr io.Writer, lookupEnv 
 	fs, tokenFlagP, apiURLFlagP, profileFlagP, jsonOutP, outputFlagP, queryFlagP := apiFlagSet(prog, "upgrade", "print the preflight as JSON to stdout and nothing else", stderr)
 	noBackup := fs.Bool("no-backup", false, "do not take the control plane backup at all")
 	skipBackup := fs.Bool("skip-backup", false, "do not stop when the control plane backup fails or the disk is short; with --apply the upgrade then has no database restore point")
+	now := fs.Bool("now", false, "bypass the release cache and look up the newest release now")
 	list := fs.Bool("list", false, "list the last 5 releases with a schema compatibility verdict")
 	channel := fs.String("channel", "", "with --list: stable, beta or all (default: the configured channel)")
 	planVersion := fs.String("rollback-plan", "", "preview a rollback to `version` (read-only; applying happens on the host)")
@@ -69,7 +70,11 @@ func runUpgrade(prog string, args []string, stdout, stderr io.Writer, lookupEnv 
 		return runUpgradeRollbackPlan(ctx, client, *planVersion, jsonOut, of, stdout, stderr)
 	}
 
-	pre, err := client.GetUpdatePreflight(ctx)
+	preflight := client.GetUpdatePreflight
+	if *now {
+		preflight = client.RecheckUpdatePreflight
+	}
+	pre, err := preflight(ctx)
 	if err != nil {
 		return reportError(stdout, stderr, jsonOut, fmt.Errorf("upgrade preflight: %w", err))
 	}

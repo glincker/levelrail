@@ -38,7 +38,7 @@ func runUpdatesAuto(prog string, args []string, stdout, stderr io.Writer, lookup
 	cron := fs.String("window-cron", "0 3 * * *", "with enable, when no window is set: maintenance window start as a cron `expression`")
 	days := fs.Int("days", 0, "with disable: pause automatic updates for this many `days` instead of turning them off")
 	fs.Usage = func() {
-		_, _ = fmt.Fprintf(stderr, "Usage:\n  %[1]s updates status\n  %[1]s updates enable [--mode any|patch]\n  %[1]s updates disable [--days N]\n  %[1]s updates channel <name>\n  %[1]s updates check\n  %[1]s updates history\n  %[1]s updates dismiss-notice\n\nAutomatic updates are on by default. Every update is checksum and signature verified, backed up\nand health checked before it stays; a failed check keeps the running version and rolls back.\n\nFlags:\n", prog)
+		_, _ = fmt.Fprintf(stderr, "Usage:\n  %[1]s updates status\n  %[1]s updates enable [--mode any|patch]\n  %[1]s updates disable [--days N]\n  %[1]s updates channel <name>\n  %[1]s updates check [--now]\n  %[1]s updates history\n  %[1]s updates dismiss-notice\n\nAutomatic updates are on by default. \"check\" only looks for a newer release (--now skips the cache); it installs nothing. Every update is checksum and signature verified, backed up\nand health checked before it stays; a failed check keeps the running version and rolls back.\n\nFlags:\n", prog)
 		fs.PrintDefaults()
 	}
 	tokenFlag, apiURLFlag, profileFlag, jsonOut, of, exitCode, ok := parseAPIFlags(fs, rest, apiFlagPtrs{tokenP, apiURLP, profileP, jsonP, outputP, queryP}, prog, stderr)
