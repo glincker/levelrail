@@ -138,6 +138,8 @@
     "colP95": "p95",
     "colErrors": "エラー",
     "colDeployed": "デプロイ日時",
+    "colTls": "TLS",
+    "tlsNone": "ドメインなし",
     "selectApp": "{{name}}を選択",
     "count_other": "{{count}}件のアプリ",
     "count_filtered_other": "{{total}}件中{{count}}件のアプリ",

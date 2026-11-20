@@ -119,6 +119,8 @@
     "colP95": "p95",
     "colErrors": "Errores",
     "colDeployed": "Desplegada",
+    "colTls": "TLS",
+    "tlsNone": "Sin dominio",
     "selectApp": "Seleccionar {{name}}",
     "count_one": "{{count}} aplicación",
     "count_other": "{{count}} aplicaciones",

@@ -138,6 +138,8 @@
     "colP95": "p95",
     "colErrors": "Erros",
     "colDeployed": "Implantado",
+    "colTls": "TLS",
+    "tlsNone": "Sem domínio",
     "selectApp": "Selecionar {{name}}",
     "count_one": "{{count}} app",
     "count_many": "{{count}} apps",

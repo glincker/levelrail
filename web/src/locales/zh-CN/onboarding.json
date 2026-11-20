@@ -46,6 +46,10 @@
     "deploy": "从仓库、镜像或模板部署应用。",
     "protect": "Levelrail 会配置 HTTPS、执行备份,并在出现故障时通知你。",
     "time": "设置大约需要 5 分钟。每一步都可以跳过。",
+    "tunnelHint": "此仪表盘不对外公开。在你的笔记本电脑上打开一个隧道，然后访问 http://127.0.0.1:{{port}}。",
+    "tunnelLabel": "SSH 隧道命令",
+    "tunnelHost": "<server-ip>",
+    "tunnelUser": "<user>",
     "dismiss": "不再显示"
   },
   "profile": {

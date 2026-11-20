@@ -46,6 +46,10 @@
     "deploy": "Faça deploy de apps a partir de um repositório, uma imagem ou um template.",
     "protect": "O Levelrail configura o HTTPS, faz backups e avisa quando algo quebra.",
     "time": "A configuração leva cerca de 5 minutos. Todas as etapas podem ser puladas.",
+    "tunnelHint": "Este painel não é público. No seu notebook, abra um túnel e depois acesse http://127.0.0.1:{{port}}.",
+    "tunnelLabel": "Comando do túnel SSH",
+    "tunnelHost": "<server-ip>",
+    "tunnelUser": "<user>",
     "dismiss": "Não mostrar isto novamente"
   },
   "profile": {

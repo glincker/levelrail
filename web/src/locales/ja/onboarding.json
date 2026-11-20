@@ -46,6 +46,10 @@
     "deploy": "リポジトリ、イメージ、テンプレートからアプリをデプロイします。",
     "protect": "LevelrailがHTTPSを設定し、バックアップを取り、問題が発生したときに通知します。",
     "time": "セットアップには約5分かかります。どの手順もスキップできます。",
+    "tunnelHint": "このダッシュボードは公開されていません。手元のノートPCからトンネルを開き、http://127.0.0.1:{{port}} にアクセスしてください。",
+    "tunnelLabel": "SSHトンネルコマンド",
+    "tunnelHost": "<server-ip>",
+    "tunnelUser": "<user>",
     "dismiss": "今後は表示しない"
   },
   "profile": {

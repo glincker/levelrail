@@ -138,6 +138,8 @@
     "colP95": "p95",
     "colErrors": "错误",
     "colDeployed": "部署于",
+    "colTls": "TLS",
+    "tlsNone": "无域名",
     "selectApp": "选择 {{name}}",
     "count_other": "{{count}} 个应用",
     "count_filtered_other": "{{total}} 个应用中的 {{count}} 个",
