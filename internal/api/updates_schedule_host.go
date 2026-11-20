@@ -215,8 +215,11 @@ func (h upgradeHost) Preflight(ctx context.Context, target string) (upgradesched
 	return upgradesched.PreflightResult{Checks: res.Checks, Blocked: res.Blocked, Edge: res.ReleaseKind == upgrade.KindEdgeImage}, nil
 }
 
+// controlPlaneBackupConfigured is the one check both the apply path and the status line use.
+func (rt *Router) controlPlaneBackupConfigured() bool { return rt.cpBackups != nil }
+
 func (h upgradeHost) BackupNow(ctx context.Context) (string, error) {
-	if h.rt.cpBackups == nil {
+	if !h.rt.controlPlaneBackupConfigured() {
 		return "", upgradesched.ErrBackupNotAvail
 	}
 	info, err := h.rt.cpBackups.Create(ctx)

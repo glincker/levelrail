@@ -4,6 +4,7 @@ import (
 	"context"
 	"errors"
 	"net/http"
+	"strings"
 	"testing"
 )
 
@@ -50,5 +51,12 @@ func TestAutoUpdateStatusStates(t *testing.T) {
 	st := get()
 	if st == nil || st.State != autoStateDegraded || st.CheckFailures < 1 || st.Reason == "" || st.NextCheckAt == "" {
 		t.Fatalf("failed checks must degrade with a retry time: %+v", st)
+	}
+
+	// Without a control plane backup, automatic updates are held, so status must say blocked.
+	rt.cpBackups = nil
+	st = get()
+	if st == nil || st.State != autoStateBlocked || st.CanApply || !strings.Contains(st.Reason, "no control plane backup") {
+		t.Fatalf("a host without a backup must be blocked with a reason: %+v", st)
 	}
 }

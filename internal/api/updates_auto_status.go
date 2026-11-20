@@ -63,6 +63,9 @@ func (rt *Router) upgradeAutoStatusFor(ctx context.Context, row store.UpgradePol
 		out.State, out.Reason = autoStatePaused, ""
 	case !out.CanApply:
 		out.State = autoStateBlocked
+	case !rt.controlPlaneBackupConfigured():
+		out.State, out.CanApply = autoStateBlocked, false
+		out.Reason = "Automatic updates are held: no control plane backup is configured. Configure one (see docs/control-plane-backup.md)."
 	case out.CheckFailures > 0:
 		out.State, out.Reason = autoStateDegraded, out.LastCheckError
 	default:
