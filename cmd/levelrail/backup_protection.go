@@ -111,6 +111,17 @@ func newBackupProtection(db *store.DB, secretsManager *secrets.Manager, client *
 		Logger:   logger,
 	}
 	drills.ScratchMemoryBytes, drills.ScratchNanoCPUs = backup.DrillLimitsFromEnv(os.LookupEnv)
+	drills.PidsLimit = backup.DrillPidsFromEnv(os.LookupEnv)
+	drillSettings := runtimesettings.New(db, nil)
+	drills.MaxConcurrentFn = func() int {
+		return drillSettings.Int(context.Background(), runtimesettings.KeyBackupsDrillMaxConcurrent)
+	}
+	drills.ReservedScheduledFn = func() int {
+		return drillSettings.Int(context.Background(), runtimesettings.KeyBackupsDrillReservedScheduled)
+	}
+	drills.TimeoutFn = func() time.Duration {
+		return drillSettings.Duration(context.Background(), runtimesettings.KeyBackupsDrillTimeout)
+	}
 	if sealer != nil {
 		drills.Identities = sealer.Identities
 	}

@@ -355,5 +355,8 @@
     "dismiss": "完了、トークンを隠す",
     "error": "トークンを作成できませんでした: {{message}}",
     "saveError": "保存できませんでした: {{message}}"
+  },
+  "category": {
+    "weaker": "{{count}} 件が緩和"
   }
 }

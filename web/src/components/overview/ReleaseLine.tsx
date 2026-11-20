@@ -34,6 +34,11 @@ export function ReleaseLine({
           {latest.commit_sha.slice(0, 7)}
         </span>
       ) : null}
+      {latest?.branch ? (
+        <span className="rounded bg-muted px-1.5 py-0.5 font-mono text-xs">
+          {latest.branch}
+        </span>
+      ) : null}
       {digest ? (
         <span className="rounded bg-muted px-1.5 py-0.5 font-mono text-xs">
           {shortDigest(digest)}

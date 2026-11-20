@@ -51,6 +51,10 @@ export type BrandIconName =
   | 'pagerduty'
   | 'microsoft-teams'
   | 'github'
+  | 'github-actions'
+  | 'circleci'
+  | 'jenkins'
+  | 'buildkite'
   | 'gitlab'
   | 'bitbucket'
   | 'mattermost'
@@ -207,6 +211,10 @@ const LOADERS: Record<
   pagerduty: () => import('@thesvg/react/pagerduty'),
   'microsoft-teams': () => import('@thesvg/react/microsoft-teams'),
   github: () => import('@thesvg/react/github'),
+  'github-actions': () => import('@thesvg/react/github-actions'),
+  circleci: () => import('@thesvg/react/circleci'),
+  jenkins: () => import('@thesvg/react/jenkins'),
+  buildkite: () => import('@thesvg/react/buildkite'),
   gitlab: () => import('@thesvg/react/gitlab'),
   bitbucket: () => import('@thesvg/react/bitbucket'),
   mattermost: () => import('@thesvg/react/mattermost'),
@@ -336,6 +344,7 @@ const DEFAULT_VARIANT: Partial<Record<BrandIconName, string>> = {
 // Brands with a single-colour variant that follows currentColor.
 const MONO_NAMES: ReadonlySet<BrandIconName> = new Set<BrandIconName>([
   'github',
+  'circleci',
   'google',
   'gitea',
   'go',

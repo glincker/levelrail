@@ -30,6 +30,8 @@ function relevance(template: ServiceTemplateListItem, query: string): number {
 export interface TemplateFacets {
   licenseClass?: LicenseClass
   arch?: TemplateArch
+  /** ip keeps only templates that work on a bare IP. */
+  access?: 'ip'
 }
 
 /** facetsMatch applies the license-class and architecture filters; unknown never matches a set filter. */
@@ -44,6 +46,7 @@ function facetsMatch(
     const state = template.arch?.[facets.arch]
     if (state !== 'tested' && state !== 'published') return false
   }
+  if (facets.access === 'ip' && template.needs_domain === true) return false
   return true
 }
 

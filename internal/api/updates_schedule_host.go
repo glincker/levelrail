@@ -11,6 +11,7 @@ import (
 
 	"github.com/GLINCKER/levelrail/internal/alerting"
 	"github.com/GLINCKER/levelrail/internal/dbupgrade"
+	"github.com/GLINCKER/levelrail/internal/runtimesettings"
 	"github.com/GLINCKER/levelrail/internal/selfupgrade"
 	"github.com/GLINCKER/levelrail/internal/store"
 	"github.com/GLINCKER/levelrail/internal/upgradesched"
@@ -56,6 +57,12 @@ func (rt *Router) UpgradeScheduler() *upgradesched.Scheduler {
 			NewID:    upgradesched.NewScheduleID,
 			Audit:    rt.auditSystemUpgradeEvent,
 			Defaults: c.defaults,
+		}
+		if rs := rt.runtimeSettings; rs != nil {
+			s.CheckBackoffMax = func(ctx context.Context) time.Duration {
+				return rs.Duration(ctx, runtimesettings.KeyUpdatesCheckBackoffMax)
+			}
+			s.CheckAlertAfter = func(ctx context.Context) int { return rs.Int(ctx, runtimesettings.KeyUpdatesCheckAlertAfter) }
 		}
 		if rt.alertNoise != nil {
 			s.Windows = rt.alertNoise.ListMaintenanceWindows
@@ -104,17 +111,33 @@ func (f channelFanout) Notify(ctx context.Context, ids []string, text string) er
 // backup and launcher that the dashboard's own buttons use.
 type upgradeHost struct{ rt *Router }
 
+var errReleaseSourceUnavailable = errors.New("the release source could not be reached, or it lists no release for this channel")
+
 func (h upgradeHost) Latest(ctx context.Context) (upgradesched.Candidate, bool, error) {
 	rel, ok := h.rt.latestReleaseForCurrentChannel(ctx)
 	if !ok || rel == nil {
-		return upgradesched.Candidate{}, false, nil
+		return upgradesched.Candidate{}, false, errReleaseSourceUnavailable
 	}
 	c := upgradesched.Candidate{Tag: rel.Tag}
+	if gr, cached := h.rt.updatesCache.stale(); cached && gr != nil && gr.TagName == rel.Tag {
+		c.FromFallback = gr.Fallback
+	}
 	if t, err := time.Parse(time.RFC3339, rel.PublishedAt); err == nil {
 		c.PublishedAt = t
 	}
 	if rel.IsEdge() {
 		return c, true, upgradesched.ErrEdgeTarget
+	}
+	channel := h.rt.currentUpdateChannel(ctx)
+	if channel != upgrade.ChannelStable {
+		c.FromFallback = h.rt.channels.fromMirror(channel, rel.Tag)
+		if h.rt.channels.isStale(channel) {
+			return c, true, upgradesched.ErrStaleList
+		}
+		return c, true, nil
+	}
+	if h.rt.updatesCache.isFailing() {
+		return c, true, upgradesched.ErrStaleList
 	}
 	return c, true, nil
 }
@@ -143,6 +166,7 @@ func (h upgradeHost) Plan(ctx context.Context, target string) (upgradesched.Plan
 	if err != nil {
 		return upgradesched.Plan{}, err
 	}
+	out.FromFallback = plan.NotesSource == notesSourceFallback
 	if !found {
 		return upgradesched.Plan{}, upgradesched.ErrReleaseNotFound
 	}
@@ -206,8 +230,11 @@ func (h upgradeHost) Preflight(ctx context.Context, target string) (upgradesched
 	return upgradesched.PreflightResult{Checks: res.Checks, Blocked: res.Blocked, Edge: res.ReleaseKind == upgrade.KindEdgeImage}, nil
 }
 
+// controlPlaneBackupConfigured is the one check both the apply path and the status line use.
+func (rt *Router) controlPlaneBackupConfigured() bool { return rt.cpBackups != nil }
+
 func (h upgradeHost) BackupNow(ctx context.Context) (string, error) {
-	if h.rt.cpBackups == nil {
+	if !h.rt.controlPlaneBackupConfigured() {
 		return "", upgradesched.ErrBackupNotAvail
 	}
 	info, err := h.rt.cpBackups.Create(ctx)

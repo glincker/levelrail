@@ -21,7 +21,10 @@ package registry
 
 import (
 	"context"
+	"crypto/sha256"
+	"encoding/hex"
 	"fmt"
+	"sync/atomic"
 	"time"
 
 	"golang.org/x/crypto/bcrypt"
@@ -99,6 +102,54 @@ printf '%s:%s\n' "$` + htpasswdUserEnv + `" "$` + htpasswdHashEnv + `" > /auth/h
 exec /entrypoint.sh /etc/docker/registry/config.yml
 `
 
+// tokenBundleEnv carries the trusted signing certificate into the container.
+const tokenBundleEnv = "LEVELRAIL_REGISTRY_TOKEN_BUNDLE" //nolint:gosec // env var name, not a credential value
+
+// tokenBootScript writes the trusted bundle the registry verifies bearer tokens against.
+const tokenBootScript = `set -e
+mkdir -p /auth
+printf '%s\n' "$` + tokenBundleEnv + `" > /auth/token-bundle.pem
+exec /entrypoint.sh /etc/docker/registry/config.yml
+`
+
+// authLabel records the applied auth mode so a mode change replaces the container;
+// no label means the default htpasswd mode, so existing containers are untouched.
+const authLabel = "levelrail.registry.auth"
+
+// TokenAuth is the token-auth setup for the registry; a nil value keeps htpasswd.
+type TokenAuth struct {
+	Realm, Service, Issuer string
+	// CertBundlePEM is the self-signed certificate of the token signing key.
+	CertBundlePEM []byte
+}
+
+func (t *TokenAuth) valid() bool {
+	return t != nil && t.Realm != "" && t.Service != "" && t.Issuer != "" && len(t.CertBundlePEM) > 0
+}
+
+func (t *TokenAuth) fingerprint() string {
+	sum := sha256.Sum256([]byte(t.Realm + "\x00" + t.Service + "\x00" + t.Issuer + "\x00" + string(t.CertBundlePEM)))
+	return "token:" + hex.EncodeToString(sum[:6])
+}
+
+var (
+	tokenSource atomic.Pointer[func(context.Context) *TokenAuth]
+	tokenActive atomic.Bool
+)
+
+// SetTokenAuthSource installs the process-wide source of token-auth settings; it is read each pass.
+func SetTokenAuthSource(f func(context.Context) *TokenAuth) {
+	if f == nil {
+		tokenSource.Store(nil)
+		return
+	}
+	tokenSource.Store(&f)
+}
+
+// TokenAuthActive is true only after a pass left the registry running in token-auth mode,
+// so registry transfer never pushes at an htpasswd registry.
+func TokenAuthActive() bool { return tokenActive.Load() }
+
 // Store is the narrow surface this controller needs from internal/store,
 // so tests can fake it without a real database. *store.DB satisfies this.
 type Store interface {
@@ -121,6 +172,29 @@ type Controller struct {
 	creds   CredentialResolver
 	runtime docker.Runtime
 	prefix  string
+	// tokenAuth overrides the process-wide source, for tests.
+	tokenAuth func(context.Context) *TokenAuth
+}
+
+// WithTokenAuth sets where this controller reads token-auth settings from.
+func WithTokenAuth(f func(context.Context) *TokenAuth) Option {
+	return func(c *Controller) { c.tokenAuth = f }
+}
+
+func (c *Controller) wantedTokenAuth(ctx context.Context) *TokenAuth {
+	f := c.tokenAuth
+	if f == nil {
+		if p := tokenSource.Load(); p != nil {
+			f = *p
+		}
+	}
+	if f == nil {
+		return nil
+	}
+	if t := f(ctx); t.valid() {
+		return t
+	}
+	return nil
 }
 
 // Option configures optional Controller behavior.
@@ -168,7 +242,10 @@ func VolumeName(prefix string) string {
 }
 
 // Reconcile implements reconcile.Controller.
-func (c *Controller) Reconcile(ctx context.Context) (reconcile.Result, error) {
+func (c *Controller) Reconcile(ctx context.Context) (res reconcile.Result, err error) {
+	tok := c.wantedTokenAuth(ctx)
+	running := false
+	defer func() { tokenActive.Store(running && tok != nil && err == nil) }()
 	settings, err := c.store.GetRegistrySettings(ctx)
 	if err != nil {
 		return notReady("StoreError", err), fmt.Errorf("registry: get settings: %w", err)
@@ -200,9 +277,12 @@ func (c *Controller) Reconcile(ctx context.Context) (reconcile.Result, error) {
 	if err != nil {
 		return notReady("CredentialResolveFailed", err), fmt.Errorf("registry: resolve password: %w", err)
 	}
-	hash, err := bcrypt.GenerateFromPassword([]byte(password), bcrypt.DefaultCost)
-	if err != nil {
-		return notReady("HashFailed", err), fmt.Errorf("registry: hash password: %w", err)
+	var hash []byte
+	if tok == nil {
+		hash, err = bcrypt.GenerateFromPassword([]byte(password), bcrypt.DefaultCost)
+		if err != nil {
+			return notReady("HashFailed", err), fmt.Errorf("registry: hash password: %w", err)
+		}
 	}
 
 	volName := VolumeName(c.prefix)
@@ -226,6 +306,21 @@ func (c *Controller) Reconcile(ctx context.Context) (reconcile.Result, error) {
 		Volumes:    []docker.VolumeMount{{Name: volName, ContainerPath: dataPath}},
 		Ports:      []docker.PortBinding{{ContainerPort: containerPort, HostPort: HostPort, HostIP: loopbackIP}},
 	}
+	wantAuth := ""
+	if tok != nil {
+		wantAuth = tok.fingerprint()
+		spec.Env = map[string]string{ //nolint:gosec // registry settings and a public certificate, not credentials
+			"REGISTRY_STORAGE_DELETE_ENABLED":    "true",
+			"REGISTRY_AUTH":                      "token",
+			"REGISTRY_AUTH_TOKEN_REALM":          tok.Realm,
+			"REGISTRY_AUTH_TOKEN_SERVICE":        tok.Service,
+			"REGISTRY_AUTH_TOKEN_ISSUER":         tok.Issuer,
+			"REGISTRY_AUTH_TOKEN_ROOTCERTBUNDLE": "/auth/token-bundle.pem",
+			tokenBundleEnv:                       string(tok.CertBundlePEM),
+		}
+		spec.Command = []string{tokenBootScript}
+		spec.Labels = map[string]string{authLabel: wantAuth}
+	}
 
 	justDeployed := false
 	switch {
@@ -235,7 +330,7 @@ func (c *Controller) Reconcile(ctx context.Context) (reconcile.Result, error) {
 		}
 		justDeployed = true
 
-	case !docker.SameImageRef(state.Image, image) || publishedBeyondLoopback(state):
+	case !docker.SameImageRef(state.Image, image) || publishedBeyondLoopback(state) || (!state.LabelsUnknown && state.Labels[authLabel] != wantAuth):
 		if err := c.replace(ctx, state, spec); err != nil {
 			return notReady("ReplaceFailed", err), fmt.Errorf("registry: %w", err)
 		}
@@ -256,9 +351,11 @@ func (c *Controller) Reconcile(ctx context.Context) (reconcile.Result, error) {
 		if state == nil || !state.Running {
 			return notReady("VanishedAfterStart", nil), fmt.Errorf("registry: %q not running immediately after starting it", target)
 		}
+		running = true
 		return ready("Running"), nil
 	}
 
+	running = true
 	return ready("Running"), nil
 }
 

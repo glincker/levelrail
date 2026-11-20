@@ -53,6 +53,8 @@ export interface UpgradeScheduleStatus {
   active: UpgradeSchedule | null
   recent: UpgradeSchedule[]
   next_window: UpgradeWindow | null
+  next_windows?: UpgradeWindow[]
+  window_summary?: string
 }
 
 export interface ScheduleRequest {
@@ -66,6 +68,29 @@ export interface ScheduleRequest {
 }
 
 export type PolicyMode = 'off' | 'patch' | 'any'
+
+export type AutoStatusState =
+  'off' | 'paused' | 'blocked' | 'degraded' | 'ready'
+
+// Mirrors upgradeAutoStatus in internal/api/updates_auto_status.go.
+export interface AutoStatus {
+  state: AutoStatusState
+  reason?: string
+  can_apply: boolean
+  last_check_at?: string
+  last_check_error?: string
+  check_failures: number
+  next_check_at?: string
+  last_result?: string
+  last_result_reason?: string
+  last_result_at?: string
+  last_good_list_at?: string
+  list_age_seconds?: number
+  // "api" or "fallback" (public release pages, no breaking-change notes)
+  list_source?: string
+  // false until a release signature was verified on this host
+  signature_pinned?: boolean
+}
 
 export interface UpgradePolicy {
   mode: PolicyMode
@@ -83,10 +108,13 @@ export interface UpgradePolicy {
   decision_at?: string
   server_timezone: string
   next_window: UpgradeWindow | null
+  next_windows?: UpgradeWindow[]
+  window_summary?: string
   default_applied?: boolean
   paused_until?: string
   health_window_seconds?: number
   notice?: { text: string; dismiss_url: string } | null
+  status?: AutoStatus
 }
 
 export type UpgradePolicyInput = Pick<

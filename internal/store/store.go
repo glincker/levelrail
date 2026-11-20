@@ -31,6 +31,8 @@ type DB struct {
 	resourceBoot sync.Once
 	// touches batches advisory last-seen writes; nil writes through.
 	touches *touchBuffer
+	// imageGuard vets an image before it becomes an app's desired image; see SetDesiredImageGuard.
+	imageGuard atomic.Pointer[DesiredImageGuard]
 }
 
 // Open opens (creating if needed) the SQLite database at path, applies

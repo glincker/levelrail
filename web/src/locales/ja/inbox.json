@@ -28,6 +28,7 @@
   "unreadOnly": "未読のみ",
   "markAllRead": "すべて既読にする",
   "markRead": "既読にする",
+  "repeatsTitle": "{{count}}回連続で発生",
   "markedAll": "受信トレイを既読にしました。",
   "unreadCount_other": "未読{{count}}件",
   "empty": {

@@ -16,9 +16,12 @@ import { ConditionsPanel } from '../ConditionsPanel'
 export function DetailsSection({
   app,
   conditions,
+  isStatic = false,
 }: {
   app: AppDetail
   conditions: ReconcileCondition[]
+  /** Static sites have no container to place or preflight. */
+  isStatic?: boolean
 }) {
   return (
     <Collapsible>
@@ -33,13 +36,17 @@ export function DetailsSection({
         <div className="space-y-6 pt-4">
           <AppHealthTimeline appName={app.name} />
           <AppOverview app={app} />
-          <PlacementCard
-            kind="app"
-            name={app.name}
-            currentNodeId={app.node_id}
-            volumeNames={app.volumes?.map((v) => v.name) ?? []}
-          />
-          <AppPreflightCard appName={app.name} />
+          {isStatic ? null : (
+            <>
+              <PlacementCard
+                kind="app"
+                name={app.name}
+                currentNodeId={app.node_id}
+                volumeNames={app.volumes?.map((v) => v.name) ?? []}
+              />
+              <AppPreflightCard appName={app.name} />
+            </>
+          )}
           <ConditionsPanel conditions={conditions} />
         </div>
       </CollapsiblePanel>

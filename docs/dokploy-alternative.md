@@ -11,7 +11,10 @@ Levelrail runs apps on plain Docker with its own reconciler and a small agent pe
 [Get started](/getting-started) | [View on GitHub](https://github.com/glincker/levelrail)
 
 ```bash
-curl -fsSL https://levelrail.com/install.sh | sudo sh
+curl -fsSLO https://github.com/glincker/levelrail/releases/latest/download/install.sh
+curl -fsSLO https://github.com/glincker/levelrail/releases/latest/download/checksums.txt
+grep ' install.sh$' checksums.txt | sha256sum -c -  # macOS: shasum -a 256 -c -
+sudo sh install.sh
 ```
 
 <img src="/assets/screenshots/apps-list-light.png" alt="Levelrail apps list showing every service, its status and its node" className="block dark:hidden" />
@@ -36,7 +39,10 @@ curl -fsSL https://levelrail.com/install.sh | sudo sh
 The importer reads your existing instance through its own HTTP API and never changes anything there. Run it with --dry-run first to see exactly what would be created.
 
 ```bash title="install, import, verify"
-curl -fsSL https://levelrail.com/install.sh | sudo sh
+curl -fsSLO https://github.com/glincker/levelrail/releases/latest/download/install.sh
+curl -fsSLO https://github.com/glincker/levelrail/releases/latest/download/checksums.txt
+grep ' install.sh$' checksums.txt | sha256sum -c -  # macOS: shasum -a 256 -c -
+sudo sh install.sh
 # control plane running as a systemd service
 levelrail-cli import platform dokploy --url https://dokploy.example.com --dry-run
 # dry run: report only, nothing is written here or changed there

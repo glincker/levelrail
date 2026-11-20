@@ -53,6 +53,11 @@ func (rt *Router) attachRuntimeSettings(s Store) {
 	wireDiagnosticSettings(svc)
 	abuse.SetLiveLimits(svc.AbuseLimits)
 	ingress.SetLiveAuthGateTimeout(svc.AuthGateTimeout)
+	ingress.SetLiveProxyLimits(func() (int64, time.Duration) { return svc.PagesProxyLimits(context.Background()) })
+	ingress.SetLiveImageResize(func() ingress.ImageResizeConfig {
+		on, w, b, px, c := svc.PagesImageResize(context.Background())
+		return ingress.ImageResizeConfig{On: on, MaxWidth: w, MaxSourceBytes: b, MaxPixels: px, CacheBytes: c}
+	})
 	loopbackDistrusted.Store(!svc.Bool(context.Background(), runtimesettings.KeyTrustLoopbackForwarded))
 }
 

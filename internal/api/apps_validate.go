@@ -6,7 +6,6 @@ import (
 	"fmt"
 
 	"github.com/GLINCKER/levelrail/internal/bindaddr"
-	"github.com/GLINCKER/levelrail/internal/ingress"
 	"github.com/GLINCKER/levelrail/internal/placement"
 	"github.com/GLINCKER/levelrail/internal/runtimesettings"
 	"github.com/GLINCKER/levelrail/internal/spec"
@@ -136,7 +135,7 @@ func validateAppResourceWith(a appResource, storedPortless bool) error {
 		return errors.New("hooks must set at least one of pre_deploy or post_deploy")
 	}
 	for _, domain := range a.Domains {
-		if err := ingress.ValidateWildcardDomain(domain); err != nil {
+		if _, err := spec.ValidateAppDomain(domain); err != nil {
 			return err
 		}
 	}

@@ -139,4 +139,23 @@ describe('DatabaseDataActionsCard', () => {
     )
     expect(submit).toBeEnabled()
   })
+
+  it('renders a failed import check through ApiErrorAlert', async () => {
+    granted = ['root']
+    vi.stubGlobal(
+      'fetch',
+      vi.fn((input: string) =>
+        Promise.resolve(
+          input.endsWith('/import')
+            ? jsonResponse({ error: 'check failed' }, 500)
+            : jsonResponse([]),
+        ),
+      ),
+    )
+    renderCard()
+    fireEvent.change(screen.getByLabelText('Dump file'), {
+      target: { files: [new File(['select 1'], 'dump.sql')] },
+    })
+    expect(await screen.findByTestId('api-error-alert')).toBeInTheDocument()
+  })
 })

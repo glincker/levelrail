@@ -12,7 +12,7 @@ It does not log what your apps ask their normal resolver for public names. It on
 
 ## Turn it on
 
-Three runtime settings control it. Each applies live, no restart. Under Settings, search for `dns.query_log`, or use the API or CLI settings commands.
+Four runtime settings control it. Each applies live, no restart. Under Settings, search for `dns.query_log`, or use the API or CLI settings commands.
 
 | Setting | Default | What it does |
 | --- | --- | --- |
@@ -21,7 +21,7 @@ Three runtime settings control it. Each applies live, no restart. Under Settings
 | `dns.query_log_privacy` | `names_only` | `full`, `names_only` or `counters_only`. |
 | `dns.query_log_app_refresh` | `10s` | How often the container IP to app map is rebuilt. |
 
-Each has an environment seed (`LEVELRAIL_DNS_QUERY_LOG_ENABLED`, `LEVELRAIL_DNS_QUERY_LOG_SIZE`, `LEVELRAIL_DNS_QUERY_LOG_PRIVACY`, `LEVELRAIL_DNS_QUERY_LOG_APP_REFRESH`) that only sets the first value. A saved setting wins.
+Each has an environment seed (`LEVELRAIL_DNS_QUERY_LOG_ENABLED`, `LEVELRAIL_DNS_QUERY_LOG_SIZE`, `LEVELRAIL_DNS_QUERY_LOG_PRIVACY`, `LEVELRAIL_DNS_QUERY_LOG_APP_REFRESH`) that only seeds the default while nothing is saved. A saved setting wins.
 
 ## Privacy levels
 

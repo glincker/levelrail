@@ -69,7 +69,9 @@ type Manager struct {
 	logger       *slog.Logger
 	requireBound bool
 	legacySeen   sync.Map
-	rebindMu     sync.Mutex
+	// migrated records namespaces and slots already relocated this process.
+	migrated sync.Map
+	rebindMu sync.Mutex
 }
 
 // ManagerOption configures a Manager.
@@ -106,6 +108,11 @@ func slotBinding(serviceName, envKey string) Binding {
 // SetValue encrypts plaintext under serviceName's DEK, generating one on
 // first use, and persists only the ciphertext.
 func (m *Manager) SetValue(ctx context.Context, serviceName, envKey, plaintext string) error {
+	m.migrateLegacy(ctx, serviceName, envKey)
+	return m.setValue(ctx, serviceName, envKey, plaintext)
+}
+
+func (m *Manager) setValue(ctx context.Context, serviceName, envKey, plaintext string) error {
 	m.valueMu.RLock()
 	defer m.valueMu.RUnlock()
 	dek, err := m.dekFor(ctx, serviceName)
@@ -141,6 +148,7 @@ func (m *Manager) SetValueGuarded(ctx context.Context, serviceName, envKey, plai
 // ListKeys returns every secret key set for serviceName with its locked
 // state, never a value.
 func (m *Manager) ListKeys(ctx context.Context, serviceName string) ([]store.SecretKeyInfo, error) {
+	m.migrateLegacyNamespace(ctx, serviceName)
 	keys, err := m.store.ListSecretKeys(ctx, serviceName)
 	if err != nil {
 		return nil, fmt.Errorf("secrets: list keys for %q: %w", serviceName, err)
@@ -170,6 +178,20 @@ func (m *Manager) SetLocked(ctx context.Context, serviceName, envKey string, loc
 // to any other slot fails with ErrBindingMismatch. Callers must never
 // persist what this returns.
 func (m *Manager) Resolve(ctx context.Context, serviceName, envKey string) (string, error) {
+	v, err := m.resolve(ctx, serviceName, envKey)
+	if !errors.Is(err, ErrValueNotFound) {
+		return v, err
+	}
+	if m.migrateLegacy(ctx, serviceName, envKey) {
+		return m.resolve(ctx, serviceName, envKey)
+	}
+	if legacy, ok := legacyFor(serviceName, envKey); ok {
+		return m.resolve(ctx, legacy, envKey)
+	}
+	return v, err
+}
+
+func (m *Manager) resolve(ctx context.Context, serviceName, envKey string) (string, error) {
 	wrapped, err := m.store.GetServiceDEK(ctx, serviceName)
 	if errors.Is(err, store.ErrServiceDEKNotFound) {
 		return "", ErrValueNotFound
@@ -217,6 +239,15 @@ func (m *Manager) noteLegacy(serviceName, envKey string) {
 // Exists reports whether a value has been set for (serviceName, envKey),
 // without decrypting it.
 func (m *Manager) Exists(ctx context.Context, serviceName, envKey string) (bool, error) {
+	ok, err := m.exists(ctx, serviceName, envKey)
+	if ok || err != nil {
+		return ok, err
+	}
+	m.migrateLegacy(ctx, serviceName, envKey)
+	return m.exists(ctx, serviceName, envKey)
+}
+
+func (m *Manager) exists(ctx context.Context, serviceName, envKey string) (bool, error) {
 	ok, err := m.store.HasSecretValue(ctx, serviceName, envKey)
 	if err != nil {
 		return false, fmt.Errorf("secrets: check value for %q/%q: %w", serviceName, envKey, err)
@@ -237,6 +268,11 @@ func (m *Manager) ExistsForServices(ctx context.Context, serviceNames []string, 
 
 // DeleteValue removes one stored value and keeps the namespace's DEK. Idempotent.
 func (m *Manager) DeleteValue(ctx context.Context, serviceName, envKey string) error {
+	m.migrateLegacy(ctx, serviceName, envKey)
+	return m.deleteValue(ctx, serviceName, envKey)
+}
+
+func (m *Manager) deleteValue(ctx context.Context, serviceName, envKey string) error {
 	if _, err := m.store.DeleteSecretValue(ctx, serviceName, envKey); err != nil {
 		return fmt.Errorf("secrets: delete value for %q/%q: %w", serviceName, envKey, err)
 	}
@@ -246,6 +282,7 @@ func (m *Manager) DeleteValue(ctx context.Context, serviceName, envKey string) e
 // DeleteAll permanently removes every value and the wrapped DEK for
 // serviceName, so nothing set under it can ever be decrypted again.
 func (m *Manager) DeleteAll(ctx context.Context, serviceName string) error {
+	m.migrateLegacyNamespace(ctx, serviceName)
 	if err := m.store.DeleteServiceSecrets(ctx, serviceName); err != nil {
 		return fmt.Errorf("secrets: delete all values for %q: %w", serviceName, err)
 	}

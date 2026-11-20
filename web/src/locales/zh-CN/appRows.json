@@ -1,8 +1,11 @@
 {
   "failing": {
     "fallback": "需要处理，请打开应用查看原因。",
-    "fix": "查看部署",
-    "fixLabel": "查看 {{name}} 的部署"
+    "fix": "修复",
+    "fixLabel": "查看 {{name}} 的部署",
+    "fixLabelHealth": "修复 {{name}} 的健康检查",
+    "fixLabelDomains": "修复 {{name}} 的域名",
+    "fixLabelPages": "打开 Pages 站点 {{name}}"
   },
   "logs": {
     "noContainer": "此应用没有运行中的容器，因此没有可流式查看的内容。",
@@ -56,5 +59,14 @@
       "error": "失败"
     }
   },
-  "description": "描述：{{text}}"
+  "description": "描述：{{text}}",
+  "card": {
+    "noPreview": "无预览",
+    "noDomain": "无域名",
+    "staticSite": "静态站点",
+    "lastDeploy": "部署于",
+    "empty": "没有应用匹配这些筛选条件。",
+    "listLabel": "应用",
+    "loading": "正在加载应用"
+  }
 }

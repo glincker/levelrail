@@ -4200,5 +4200,54 @@
         "description": "Ejecuta un comando o llama a una ruta de una app según un horario."
       }
     }
+  },
+  "obsExport": {
+    "title": "Exportar a",
+    "rootRequired": {
+      "title": "Las exportaciones necesitan un token raíz",
+      "why": "Las exportaciones pueden leer los registros y las métricas de todas las apps, por eso solo los tokens raíz las gestionan."
+    },
+    "about": "Envíe registros y métricas de este plano de control a un servicio de observabilidad alojado. Elija un servicio, complete sus datos y pruebe la conexión.",
+    "signal": {
+      "logs": "Registros",
+      "metrics": "Métricas"
+    },
+    "dialog": {
+      "title": "Exportar a {{name}}",
+      "name": "Nombre",
+      "create": "Crear",
+      "creating": "Creando",
+      "cancel": "Cancelar",
+      "done": "Hecho",
+      "help": "Sobre {{field}}"
+    },
+    "test": {
+      "title": "Resultados de la prueba",
+      "run": "Probar",
+      "running": "Probando",
+      "retry": "Probar de nuevo",
+      "pass": "Entregado",
+      "failed": "La prueba falló"
+    },
+    "fix": {
+      "bad_token": "Sustituya el token",
+      "tls_error": "Corrija el certificado",
+      "unreachable": "Revise la dirección",
+      "rejected": "Revise la ruta del endpoint",
+      "private_blocked": "Permita direcciones internas"
+    },
+    "health": {
+      "ok": "Entregando",
+      "error": "Fallando",
+      "pending": "Esperando la primera entrega"
+    },
+    "list": {
+      "label": "Exportaciones activas",
+      "sent_one": "{{count}} enviado",
+      "sent_other": "{{count}} enviados",
+      "delete": "Eliminar",
+      "deleteTitle": "¿Eliminar la exportación {{name}}?",
+      "deleteConsequence": "Los registros y las métricas dejan de enviarse a este servicio."
+    }
   }
 }

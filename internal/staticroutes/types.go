@@ -50,3 +50,6 @@ type Ruleset struct {
 }
 
 var placeholderRe = spec.StaticPlaceholderRe
+
+// ProxyPrefix starts the target of a rule that forwards to an app: app://<name>/<path>.
+const ProxyPrefix = spec.StaticProxyPrefix

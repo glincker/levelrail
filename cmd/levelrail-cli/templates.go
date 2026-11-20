@@ -83,10 +83,12 @@ func runTemplatesList(prog string, args []string, stdout, stderr io.Writer, look
 	fs.StringVar(&arch, "arch", "", "only templates whose images support this architecture: amd64 or arm64")
 	var category string
 	fs.StringVar(&category, "category", "", "only templates in this category (case-insensitive, see the CATEGORY column)")
+	var needsDomain string
+	fs.StringVar(&needsDomain, "needs-domain", "", "true: only templates that need a domain; false: only templates that work on a bare IP")
 	var hideDeprecated bool
 	fs.BoolVar(&hideDeprecated, "hide-deprecated", false, "leave out deprecated templates (they are listed, marked, by default)")
 	fs.Usage = func() {
-		_, _ = fmt.Fprintf(stderr, "Usage:\n  %s templates list [--custom] [--verified] [--license-class C] [--arch A] [--category NAME] [--hide-deprecated] [flags]\n\nLists every entry in the curated service catalog, without each entry's\ncompose body (see \"templates get\"). --custom lists your own saved\ntemplates instead.\n\nFlags:\n", prog)
+		_, _ = fmt.Fprintf(stderr, "Usage:\n  %s templates list [--custom] [--verified] [--license-class C] [--arch A] [--category NAME] [--hide-deprecated] [--needs-domain true|false] [flags]\n\nLists every entry in the curated service catalog, without each entry's\ncompose body (see \"templates get\"). --custom lists your own saved\ntemplates instead.\n\nFlags:\n", prog)
 		fs.PrintDefaults()
 	}
 
@@ -105,7 +107,7 @@ func runTemplatesList(prog string, args []string, stdout, stderr io.Writer, look
 		return writeScheduledTaskResult(stdout, stderr, of, result, func() { printCustomTemplatesTable(stdout, result) })
 	}
 
-	result, err := client.ListServiceTemplatesFiltered(context.Background(), apiclient.TemplateListFilter{LicenseClass: licenseClass, Arch: arch, HideDeprecated: hideDeprecated})
+	result, err := client.ListServiceTemplatesFiltered(context.Background(), apiclient.TemplateListFilter{LicenseClass: licenseClass, Arch: arch, HideDeprecated: hideDeprecated, NeedsDomain: needsDomain})
 	if err != nil {
 		return reportError(stdout, stderr, jsonOut, fmt.Errorf("list service templates: %w", err))
 	}
@@ -136,9 +138,9 @@ func printTemplatesTable(out io.Writer, templates []serviceTemplateListItem) {
 		return
 	}
 	tw := tabwriter.NewWriter(out, 0, 2, 2, ' ', 0)
-	_, _ = fmt.Fprintln(tw, "ID\tNAME\tCATEGORY\tLICENSE\tTRUST\tRAM\tGPU\tVERIFIED\tSLOGAN")
+	_, _ = fmt.Fprintln(tw, "ID\tNAME\tCATEGORY\tLICENSE\tTRUST\tRAM\tGPU\tVERIFIED\tDOMAIN\tUPDATED\tSLOGAN")
 	for _, t := range templates {
-		_, _ = fmt.Fprintf(tw, "%s\t%s\t%s\t%s\t%s\t%s\t%s\t%s\t%s\n", t.ID, t.Name+deprecatedMark(t.TemplateFacts)+previewMark(t.TemplateFacts), t.Category, licenseColumn(t.License), trustColumn(t.Trust), formatRecommendedMemory(t.RecommendedMemoryBytes), gpuColumn(t.RequiresGPU), verifiedColumn(t.Verified), t.Slogan)
+		_, _ = fmt.Fprintf(tw, "%s\t%s\t%s\t%s\t%s\t%s\t%s\t%s\t%s\t%s\t%s\n", t.ID, t.Name+deprecatedMark(t.TemplateFacts)+previewMark(t.TemplateFacts), t.Category, licenseColumn(t.License), trustColumn(t.Trust), formatRecommendedMemory(t.RecommendedMemoryBytes), gpuColumn(t.RequiresGPU), verifiedColumn(t.Verified), domainColumn(t.NeedsDomain), dashIfEmpty(t.UpdatedAt), t.Slogan)
 	}
 	_ = tw.Flush()
 }
@@ -171,6 +173,13 @@ func trustColumn(t *apiclient.TemplateTrust) string {
 		return "-"
 	}
 	return t.Level
+}
+
+func domainColumn(needs bool) string {
+	if needs {
+		return "required"
+	}
+	return "-"
 }
 
 func verifiedColumn(v bool) string {

@@ -64,6 +64,10 @@
     "release": {
       "label": "标签与发布",
       "description": "仅在推送标签，或（仅限 GitHub）发布版本时部署。推送分支绝不会部署。"
+    },
+    "manual": {
+      "label": "仅手动",
+      "description": "推送绝不会触发部署。可通过控制台、CLI 或 API 按需部署。"
     }
   },
   "buildPacks": {

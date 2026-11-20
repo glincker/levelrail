@@ -39,6 +39,8 @@ func runNodes(prog string, args []string, stdout, stderr io.Writer, lookupEnv fu
 		return runNodesUncordon(prog, rest, stdout, stderr, lookupEnv)
 	case "drain":
 		return runNodesDrain(prog, rest, stdout, stderr, lookupEnv)
+	case "build-trust":
+		return runNodesBuildTrust(prog, rest, stdout, stderr, lookupEnv)
 	case "workloads":
 		return runNodesWorkloads(prog, rest, stdout, stderr, lookupEnv)
 	case "health":
@@ -143,7 +145,7 @@ func nodesUsage(prog string) string {
   %[1]s nodes get <id> [flags]                                      show one node
   %[1]s nodes delete <id> [flags]                                    delete a node (fails if it still has placements, drain first)
   %[1]s nodes import --provider NAME --instance-id ID [--name N] [--mesh]   mint a join token for an existing cloud instance, nothing on the instance is changed
-  %[1]s nodes join-token [flags]                                     mint a one-time enrollment token, shown once
+  %[1]s nodes join-token [create] [--builder] [flags]                 mint a one-time enrollment token, shown once
   %[1]s nodes join-tokens [flags]                                    list pending (unused, unexpired) join tokens
   %[1]s nodes revoke-join-token <id>|--all [flags]                   revoke pending join tokens at once
   %[1]s nodes cordon <id> [flags]                                    mark a node unschedulable, without evacuating it
@@ -167,6 +169,7 @@ func nodesUsage(prog string) string {
   %[1]s nodes failure-resolve <id> <kind> <name> --wait|--restore    decide for an app or database with node-local data
   %[1]s nodes allocations [flags]                                requested versus allocatable CPU, memory and disk per node
   %[1]s nodes connectivity [flags]                                   WireGuard health of every node pair
+  %[1]s nodes build-trust <node> <server|managed|personal>           set a node's builder tier
   %[1]s nodes workloads <id> --accepts-app --accepts-build [flags]   set a node's accepted workload kinds
   %[1]s nodes health <id> [flags]                                    show a node's current reconcile conditions
   %[1]s nodes patch-status <id> [flags]                              show a node's latest available-OS-updates reading

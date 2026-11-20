@@ -34,12 +34,16 @@ func createVolumeHelper(ctx context.Context, rt docker.Runtime, volumeName, name
 		return "", fmt.Errorf("generate helper container name: %w", err)
 	}
 
-	id, err := rt.Create(ctx, docker.ContainerSpec{
+	spec := docker.ContainerSpec{
 		Name:    namePrefix + "-" + suffix,
 		Image:   volumeHelperImage,
 		Command: []string{"sleep", "86400"},
 		Volumes: []docker.VolumeMount{{Name: volumeName, ContainerPath: volumeMountPath, ReadOnly: readOnly}},
-	})
+	}
+	if harden, ok := ctx.Value(helperHardeningKey{}).(func(*docker.ContainerSpec)); ok {
+		harden(&spec)
+	}
+	id, err := rt.Create(ctx, spec)
 	if err != nil {
 		return "", fmt.Errorf("create helper container: %w", err)
 	}
@@ -56,4 +60,12 @@ func randomHelperSuffix() (string, error) {
 		return "", err
 	}
 	return hex.EncodeToString(buf), nil
+}
+
+type helperHardeningKey struct{}
+
+// withHelperHardening makes helpers created under ctx apply harden, so drills
+// isolate them while normal backups and restores stay unchanged.
+func withHelperHardening(ctx context.Context, harden func(*docker.ContainerSpec)) context.Context {
+	return context.WithValue(ctx, helperHardeningKey{}, harden)
 }

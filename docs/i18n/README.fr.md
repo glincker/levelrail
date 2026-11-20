@@ -7,7 +7,7 @@
 
 <p><strong>Git push vers la production sur vos propres serveurs.</strong><br>
 Une plateforme de déploiement auto-hébergée dans un seul binaire Go. Le plan de contrôle consomme au repos environ 200 Mo de RAM (<a href="../../docs/performance.md">mesuré</a>), avec 570+ apps en un clic, rollbacks, prévisualisations, HTTPS et bases de données intégrés.</p>
-<p><code>curl -fsSL https://levelrail.com/install.sh | sudo sh</code> &middot; <a href="https://demo.levelrail.com"><b>Essayer la démo en ligne</b></a></p>
+<p><code>sudo sh install.sh</code> (<a href="https://github.com/glincker/levelrail/releases/latest">GitHub release</a>) &middot; <a href="https://demo.levelrail.com"><b>Essayer la démo en ligne</b></a></p>
 <p>
   <a href="https://github.com/glincker/levelrail/stargazers"><img src="https://img.shields.io/github/stars/glincker/levelrail?style=flat&logo=github" alt="Étoiles GitHub"></a>
   <a href="../../LICENSE"><img src="https://img.shields.io/github/license/glincker/levelrail" alt="Licence : Apache 2.0"></a>
@@ -37,7 +37,10 @@ v1.x. Le mode mono-serveur est prêt pour la production, le multi-nœud est en b
 Il vous faut un serveur Linux (amd64 ou arm64) avec systemd et les droits root. L'installateur ajoute Docker. Ouvrez les ports 80 et 443.
 
 ```bash
-curl -fsSL https://levelrail.com/install.sh | sudo sh
+curl -fsSLO https://github.com/glincker/levelrail/releases/latest/download/install.sh
+curl -fsSLO https://github.com/glincker/levelrail/releases/latest/download/checksums.txt
+grep ' install.sh$' checksums.txt | sha256sum -c -  # macOS: shasum -a 256 -c -
+sudo sh install.sh
 ```
 
 1. Ouvrez le lien de configuration affiché par l'installateur et choisissez un mot de passe. Cela crée le compte administrateur.
@@ -164,7 +167,7 @@ Toutes les fonctionnalités, avec leurs étiquettes de maturité : [docs/feature
 259 [outils MCP](../../docs/mcp.md), limités aux capacités du jeton, avec confirmation obligatoire pour les écritures et audités. Ajoutez le skill avec `npx skills add https://github.com/glincker/levelrail --skill levelrail`, puis demandez à votre agent de déployer votre dépôt. Pour installer avec un agent, collez ceci dans Claude Code, Cursor ou tout agent capable d'exécuter des commandes shell sur votre serveur :
 
 ```text
-Install Levelrail on this server: run `curl -fsSL https://levelrail.com/install.sh | sudo sh`.
+Install Levelrail on this server: run `sudo sh install.sh` (download and verify it first, see [GitHub release](https://github.com/glincker/levelrail/releases/latest)).
 Open the setup link it prints and tell me, because I choose the password myself.
 Then run `levelrail-cli doctor` and `levelrail-cli status` and report anything that fails.
 Do not write any token or password to a file or into this chat.

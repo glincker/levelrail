@@ -19,7 +19,7 @@ function binaryPath() {
     return require.resolve(`${pkg}/bin/${file}`);
   } catch {
     throw new Error(
-      `the ${pkg} package is missing. Reinstall without --omit=optional, or use the install script: https://levelrail.com/install-cli.sh`,
+      `the ${pkg} package is missing. Reinstall without --omit=optional, or use the install script: https://github.com/glincker/levelrail/releases/latest/download/install-cli.sh`,
     );
   }
 }

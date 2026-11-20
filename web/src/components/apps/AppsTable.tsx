@@ -8,10 +8,13 @@ import {
   type ResponsiveColumn,
 } from '@/components/ui/responsive-table'
 import type { AppListEntry } from '../../types/appDetail'
+import { CertTruthBadge } from '../CertTruthBadge'
+import type { CertificateStatus } from '../../queries/certificates'
 import { PlacementLabel } from '../PlacementLabel'
 import { AppRowActions } from '../AppRowActions'
 import { StatusLabel } from '../AppRow'
 import { ManagedByStackTag } from '../stacks/ManagedByStackNotice'
+import { FailureReason } from './AppFailure'
 import { AppLogo, AppMetaChips } from './AppMetaChips'
 import {
   ErrorCell,
@@ -41,10 +44,14 @@ function MetricCell({ app, kind }: { app: AppListEntry; kind: MetricKind }) {
 
 export function AppsTable({
   apps,
+  staticNames,
+  certsByApp,
   selected,
   onSelect,
 }: {
   apps: readonly AppListEntry[]
+  staticNames: ReadonlySet<string>
+  certsByApp?: ReadonlyMap<string, CertificateStatus>
   selected: readonly string[]
   onSelect: (name: string, checked: boolean) => void
 }) {
@@ -58,17 +65,32 @@ export function AppsTable({
         cell: (app) => (
           <span className="flex min-w-0 flex-col gap-0.5">
             <span className="flex min-w-0 items-center gap-2">
-              <Link
-                to="/apps/$name"
-                params={{ name: app.name }}
-                className={`truncate text-sm font-medium text-foreground ${ROW_LINK_OVERLAY}`}
-              >
-                {app.name}
-              </Link>
+              {staticNames.has(app.name) ? (
+                <Link
+                  to="/pages/$name"
+                  params={{ name: app.name }}
+                  className={`truncate text-sm font-medium text-foreground ${ROW_LINK_OVERLAY}`}
+                >
+                  {app.name}
+                </Link>
+              ) : (
+                <Link
+                  to="/apps/$name"
+                  params={{ name: app.name }}
+                  className={`truncate text-sm font-medium text-foreground ${ROW_LINK_OVERLAY}`}
+                >
+                  {app.name}
+                </Link>
+              )}
               <StatusLabel status={app.status} />
             </span>
             <span className="flex min-w-0 items-center gap-x-2 overflow-hidden">
-              <AppMetaChips app={app} />
+              <FailureReason
+                status={app.status}
+                name={app.name}
+                isStatic={staticNames.has(app.name)}
+              />
+              <AppMetaChips app={app} isStatic={staticNames.has(app.name)} />
               <ManagedByStackTag stack={app.managed_by_stack} />
             </span>
           </span>
@@ -92,6 +114,23 @@ export function AppsTable({
             />
           </span>
         ),
+      },
+      {
+        id: 'tls',
+        header: t('appsList.colTls'),
+        priority: 2,
+        width: 'w-32',
+        cell: (app) =>
+          certsByApp?.get(app.name) ? (
+            <CertTruthBadge
+              cert={certsByApp.get(app.name)}
+              showRenewal={false}
+            />
+          ) : (
+            <span className="text-sm text-muted-foreground">
+              {t('appsList.tlsNone')}
+            </span>
+          ),
       },
       {
         id: 'traffic',
@@ -122,7 +161,7 @@ export function AppsTable({
         cell: (app) => <MetricCell app={app} kind="deployed" />,
       },
     ],
-    [t],
+    [t, staticNames, certsByApp],
   )
   return (
     <ResponsiveTable

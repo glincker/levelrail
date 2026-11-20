@@ -1,0 +1,29 @@
+id: libredb-studio
+name: LibreDB Studio
+description: A browser based SQL and NoSQL client for PostgreSQL, MySQL, MongoDB, Redis and more, with a query editor, schema explorer and saved connections. MIT licensed. The admin password and session secret are generated for you and shown in the deployment variables.
+icon: database
+category: Databases
+documentation_url: https://github.com/libredb/libredb-studio
+source_repo: https://github.com/libredb/libredb-studio
+license: MIT
+license_class: permissive
+license_url: https://github.com/libredb/libredb-studio/blob/main/LICENSE
+listing:
+  by: community
+status: active
+recommended_memory_bytes: 536870912
+first_run:
+  - Sign in with the admin email and the generated password, then add a database connection from the sidebar.
+env:
+  - key: ADMIN_EMAIL
+    label: Admin email
+    description: Email address of the admin account.
+    default: admin@libredb.org
+domains:
+  - service: libredb-studio
+    port: 3000
+    description: Public address of LibreDB Studio.
+healthcheck:
+  service: libredb-studio
+  port: 3000
+  path: /

@@ -391,7 +391,7 @@ levelrail-cli apps promote <name> --to ENVIRONMENT_ID [--target NAME] [--confirm
 - There is no bulk move. Move apps and databases between projects or environments one at a time.
 - Databases cannot be tagged with an environment, because the protected-environment gate only guards deploy, rollback and promote.
 - There is no per-project or per-organization audit view. Changes appear in the generic audit log (`GET /api/v1/audit-log`).
-- There is no server-side membership listing and no `GET /api/v1/projects/{id}/apps`. The dashboard filters the full `/apps`, `/databases` and `/projects` lists by each row's `project_id` or `org_id`.
+- `GET /api/v1/projects/{id}/apps` and `GET /api/v1/projects/{id}/databases` list one project's members (CLI: `apps projects apps <id>` and `apps projects databases <id>`). There is no membership listing for organizations; filter `/projects` by `org_id`.
 
 ## Next steps
 

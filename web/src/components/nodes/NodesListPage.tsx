@@ -7,6 +7,7 @@ import { nodePagesQueryOptions } from '../../queries/nodes'
 import { useFleetResourceUsage } from '../../queries/fleetResourceUsage'
 import { NODE_LIST_GRID, RowSkeleton } from '../../components/NodeRow'
 import { NodesTable } from '../../components/NodesTable'
+import { BuildersSection } from '../builders/BuildersSection'
 import { AddNodeWizard } from '../../components/AddNodeWizard'
 import { BuildStrainSuggestion } from '../../components/BuildStrainSuggestion'
 import { ZoneSpreadCard } from '../../components/nodes/ZoneSpreadCard'
@@ -92,6 +93,7 @@ export function NodeListView({
           {t('list.emptyDescription')}
         </p>
       ) : null}
+      <BuildersSection />
       <PendingJoinTokensCard />
       <BuildStrainSuggestion nodes={nodes} />
       {nodes.length > 0 ? (

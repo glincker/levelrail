@@ -6,6 +6,7 @@ import (
 	"fmt"
 	"io"
 	"strconv"
+	"strings"
 	"text/tabwriter"
 
 	"github.com/GLINCKER/levelrail/internal/apiclient"
@@ -85,6 +86,8 @@ func runAppsPreviewsSettings(prog string, args []string, stdout, stderr io.Write
 	migrateTimeout := fs.Int("migrate-timeout", 0, "seconds the migrate command may run (0 uses the platform default)")
 	hostTpl := fs.String("host-template", "", "preview hostname pattern with {number} or {branch}, for example pr-{number}.{domain} (empty clears it)")
 	wildcard := fs.String("wildcard-domain", "", "domain the host template renders under, one of the app's own domains")
+	exclude := fs.String("exclude-services", "", "comma separated services of a multi-service app that previews leave out (empty clears it)")
+	requireLabel := fs.String("require-label", "", "only build a preview for pull requests carrying this label, GitHub and GitLab only (empty clears it)")
 	imageTag := fs.String("image-tag-template", "", "deploy a prebuilt image per pull request, for example ghcr.io/org/app:pr-{number} (empty clears it)")
 	fs.Usage = func() { _, _ = fmt.Fprint(stderr, appsPreviewsSettingsUsage(prog)) }
 
@@ -138,6 +141,16 @@ func runAppsPreviewsSettings(prog string, args []string, stdout, stderr io.Write
 			req.HostTemplate = hostTpl
 		case "wildcard-domain":
 			req.WildcardDomain = wildcard
+		case "require-label":
+			req.RequireLabel = requireLabel
+		case "exclude-services":
+			keys := []string{}
+			for _, k := range strings.Split(*exclude, ",") {
+				if k = strings.TrimSpace(k); k != "" {
+					keys = append(keys, k)
+				}
+			}
+			req.ExcludeServices = &keys
 		}
 	})
 
@@ -181,6 +194,12 @@ func printPreviewSettings(out io.Writer, appName string, p apiclient.PreviewPoli
 	if p.HostTemplate != "" {
 		_, _ = fmt.Fprintf(tw, "host template\t%s (domain %s)\n", p.HostTemplate, p.WildcardDomain)
 	}
+	if len(p.ExcludeServices) > 0 {
+		_, _ = fmt.Fprintf(tw, "services left out\t%s\n", strings.Join(p.ExcludeServices, ", "))
+	}
+	if p.RequireLabel != "" {
+		_, _ = fmt.Fprintf(tw, "preview label\t%s\n", p.RequireLabel)
+	}
 	if p.ImageTagTemplate != "" {
 		_, _ = fmt.Fprintf(tw, "prebuilt image\t%s\n", p.ImageTagTemplate)
 	}
@@ -214,7 +233,9 @@ Flags:
   --migrate-timeout int      seconds the migrate command may run (0 uses the platform default)
   --host-template str        preview hostname pattern, placeholders {number} {branch} {domain}
   --wildcard-domain str      domain for {domain}; must be one of the app's own domains
-  --image-tag-template str   prebuilt image per pull request, placeholders {number} {sha} {short_sha} {branch}
+  --exclude-services str     services of a multi-service app that previews leave out, comma separated
+  --require-label str        only build previews for pull requests with this label (GitHub, GitLab)
+  --image-tag-template str  prebuilt image per pull request, placeholders {number} {sha} {short_sha} {branch}
   --token string             API token (default: %[2]s env var, then the credentials file)
   --api-url string          control plane base URL (default: %[3]s env var, then %[4]s)
   --profile string          named credentials profile to read (overrides APP_PROFILE, default "default")

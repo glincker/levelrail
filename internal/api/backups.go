@@ -204,6 +204,8 @@ type backupHistoryResource struct {
 	// HookOutput is a failing volume hook's masked output, filled only for
 	// callers who may change that app's hooks.
 	HookOutput string `json:"hook_output,omitempty"`
+	// Label is the operator's short name for a manual backup, empty when none was given.
+	Label string `json:"label,omitempty"`
 }
 
 func toBackupHistoryResource(h store.BackupHistory) backupHistoryResource {
@@ -231,6 +233,33 @@ func toBackupHistoryResource(h store.BackupHistory) backupHistoryResource {
 
 type triggerBackupRequest struct {
 	TargetID string `json:"target_id"`
+	Label    string `json:"label,omitempty"`
+}
+
+// backupLabelStore is optional on the history store, so test fakes need not implement it.
+type backupLabelStore interface {
+	SetBackupLabel(ctx context.Context, historyID, label string) error
+	BackupLabels(ctx context.Context, ids []string) (map[string]string, error)
+}
+
+// attachBackupLabels fills Label on resources; a read failure leaves them unlabeled rather than failing the list.
+func (rt *Router) attachBackupLabels(ctx context.Context, out []backupHistoryResource) {
+	ls, ok := rt.backupHistory.(backupLabelStore)
+	if !ok || len(out) == 0 {
+		return
+	}
+	ids := make([]string, len(out))
+	for i := range out {
+		ids[i] = out[i].ID
+	}
+	labels, err := ls.BackupLabels(ctx, ids)
+	if err != nil {
+		rt.logger.Warn("api: read backup labels failed", slog.String("error", err.Error()))
+		return
+	}
+	for i := range out {
+		out[i].Label = labels[out[i].ID]
+	}
 }
 
 // handleTriggerBackup handles POST /api/v1/databases/{name}/backups:
@@ -270,9 +299,21 @@ func (rt *Router) handleTriggerBackup(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
+	label, err := store.NormalizeBackupLabel(req.Label)
+	if err != nil {
+		writeError(w, http.StatusBadRequest, err.Error())
+		return
+	}
+
 	historyID, ok := rt.prepareBackupTrigger(w, r, req.TargetID, "api: trigger backup")
 	if !ok {
 		return
+	}
+	if ls, isLS := rt.backupHistory.(backupLabelStore); isLS && label != "" {
+		if err := ls.SetBackupLabel(r.Context(), historyID, label); err != nil {
+			rt.internalError(w, "api: trigger backup: save label failed", err, slog.String("id", historyID))
+			return
+		}
 	}
 
 	containerName := databaseContainerName(name)
@@ -287,6 +328,7 @@ func (rt *Router) handleTriggerBackup(w http.ResponseWriter, r *http.Request) {
 		DatabaseName: name,
 		TargetID:     req.TargetID,
 		Status:       store.BackupStatusRunning,
+		Label:        label,
 	})
 }
 
@@ -323,6 +365,7 @@ func (rt *Router) handleListBackupHistory(w http.ResponseWriter, r *http.Request
 	for _, h := range history {
 		out = append(out, toBackupHistoryResource(h))
 	}
+	rt.attachBackupLabels(r.Context(), out)
 	writeJSON(w, http.StatusOK, out)
 }
 
@@ -356,6 +399,7 @@ func (rt *Router) handleListAllBackups(w http.ResponseWriter, r *http.Request) {
 	for _, h := range history {
 		out = append(out, toBackupHistoryResource(h))
 	}
+	rt.attachBackupLabels(r.Context(), out)
 	writeJSON(w, http.StatusOK, out)
 }
 

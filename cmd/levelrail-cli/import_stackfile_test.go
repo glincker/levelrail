@@ -54,6 +54,18 @@ func writeStackFixture(t *testing.T, name, body string) string {
 	return p
 }
 
+func TestImportRailwayDryRun(t *testing.T) {
+	body := "[deploy]\nstartCommand = \"node server.js\"\nhealthcheckPath = \"/up\"\n"
+	p := writeStackFixture(t, "railway.toml", body)
+	out, errs, code := runStackFile(t, "railway", p, "--image-repo", "registry.example.com/team")
+	if code != exitOK {
+		t.Fatalf("exit %d: %s %s", code, out, errs)
+	}
+	if !strings.Contains(out, "Dry run") || !strings.Contains(out, "/up") {
+		t.Fatalf("output:\n%s", out)
+	}
+}
+
 func TestImportDeployYMLDryRun(t *testing.T) {
 	p := writeStackFixture(t, "deploy.yml", deployYMLFixture)
 	out, _, code := runStackFile(t, "deploy-yml", p)

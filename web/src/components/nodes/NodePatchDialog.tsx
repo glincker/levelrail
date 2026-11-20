@@ -40,17 +40,17 @@ function formatRemaining(ms: number): string {
 }
 
 function PackageFlags({ pkg }: { pkg: PatchPackage }) {
-  const { t } = useTranslation('nodes')
+  const { t } = useTranslation('nodePatch')
   return (
     <span className="flex flex-wrap gap-1">
       {pkg.security ? (
-        <Badge variant="destructive">{t('patch.dialog.badgeSecurity')}</Badge>
+        <Badge variant="destructive">{t('dialog.badgeSecurity')}</Badge>
       ) : null}
       {pkg.kernel ? (
-        <Badge variant="warning">{t('patch.dialog.badgeKernel')}</Badge>
+        <Badge variant="warning">{t('dialog.badgeKernel')}</Badge>
       ) : null}
       {pkg.container_runtime ? (
-        <Badge variant="warning">{t('patch.dialog.badgeRuntime')}</Badge>
+        <Badge variant="warning">{t('dialog.badgeRuntime')}</Badge>
       ) : null}
     </span>
   )
@@ -63,7 +63,7 @@ function PackageTable({
   packages: PatchPackage[]
   muted?: boolean
 }) {
-  const { t } = useTranslation('nodes')
+  const { t } = useTranslation('nodePatch')
   return (
     <div className="max-h-56 overflow-auto rounded-md border border-border">
       <table
@@ -72,15 +72,9 @@ function PackageTable({
       >
         <thead className="sticky top-0 bg-muted text-left text-muted-foreground">
           <tr>
-            <th className="px-2 py-1 font-medium">
-              {t('patch.dialog.colName')}
-            </th>
-            <th className="px-2 py-1 font-medium">
-              {t('patch.dialog.colVersion')}
-            </th>
-            <th className="px-2 py-1 font-medium">
-              {t('patch.dialog.colFlags')}
-            </th>
+            <th className="px-2 py-1 font-medium">{t('dialog.colName')}</th>
+            <th className="px-2 py-1 font-medium">{t('dialog.colVersion')}</th>
+            <th className="px-2 py-1 font-medium">{t('dialog.colFlags')}</th>
           </tr>
         </thead>
         <tbody className="divide-y divide-border">
@@ -145,7 +139,7 @@ interface Props {
 
 // Review, confirm and watch one patch run; mounted only while open so it stays a lazy chunk.
 export default function NodePatchDialog({ nodeId, nodeName, onClose }: Props) {
-  const { t } = useTranslation('nodes')
+  const { t } = useTranslation('nodePatch')
   const preview = useNodePatchPreview(nodeId)
   const apply = useNodePatchApply(nodeId)
   const [includeAll, setIncludeAll] = useState(false)
@@ -218,10 +212,10 @@ export default function NodePatchDialog({ nodeId, nodeName, onClose }: Props) {
         <DialogHeader>
           <DialogTitle>
             {live
-              ? t('patch.dialog.progress')
-              : t('patch.dialog.title', { name: nodeName })}
+              ? t('dialog.progress')
+              : t('dialog.title', { name: nodeName })}
           </DialogTitle>
-          <DialogDescription>{t('patch.dialog.description')}</DialogDescription>
+          <DialogDescription>{t('dialog.description')}</DialogDescription>
         </DialogHeader>
 
         {live ? (
@@ -230,7 +224,7 @@ export default function NodePatchDialog({ nodeId, nodeName, onClose }: Props) {
               <PatchRunStatusBadge status={live.status} />
               {!isTerminalRun(live.status) ? (
                 <span className="text-xs text-muted-foreground">
-                  {t('patch.dialog.reloadingNote')}
+                  {t('dialog.reloadingNote')}
                 </span>
               ) : null}
             </div>
@@ -253,7 +247,7 @@ export default function NodePatchDialog({ nodeId, nodeName, onClose }: Props) {
                       variant="outline"
                       onClick={goToDrains}
                     >
-                      {t('patch.dialog.openDrains')}
+                      {t('dialog.openDrains')}
                     </Button>
                   ) : null}
                   {needsNewPreview(errorSource) ? (
@@ -263,7 +257,7 @@ export default function NodePatchDialog({ nodeId, nodeName, onClose }: Props) {
                       variant="outline"
                       onClick={() => refresh(includeAll)}
                     >
-                      {t('patch.dialog.refresh')}
+                      {t('dialog.refresh')}
                     </Button>
                   ) : null}
                 </AlertDescription>
@@ -277,15 +271,15 @@ export default function NodePatchDialog({ nodeId, nodeName, onClose }: Props) {
             {data ? (
               <>
                 <p className="text-xs text-muted-foreground">
-                  {t('patch.dialog.manager', { manager: data.manager })}
+                  {t('dialog.manager', { manager: data.manager })}
                 </p>
                 <section className="space-y-1">
                   <h3 className="text-xs font-medium">
-                    {t('patch.dialog.packages')}
+                    {t('dialog.packages')}
                   </h3>
                   {data.packages.length === 0 ? (
                     <p className="text-sm text-muted-foreground">
-                      {t('patch.dialog.noPackages')}
+                      {t('dialog.noPackages')}
                     </p>
                   ) : (
                     <PackageTable packages={data.packages} />
@@ -295,10 +289,10 @@ export default function NodePatchDialog({ nodeId, nodeName, onClose }: Props) {
                 {data.held.length > 0 || data.other_available > 0 ? (
                   <section className="space-y-1 rounded-md bg-muted/40 p-2">
                     <h3 className="text-xs font-medium text-muted-foreground">
-                      {t('patch.dialog.held')}
+                      {t('dialog.held')}
                     </h3>
                     <p className="text-xs text-muted-foreground">
-                      {t('patch.dialog.heldHint', {
+                      {t('dialog.heldHint', {
                         count: data.other_available,
                       })}
                     </p>
@@ -310,38 +304,38 @@ export default function NodePatchDialog({ nodeId, nodeName, onClose }: Props) {
 
                 <ToggleRow
                   id="patch-include-held"
-                  label={t('patch.dialog.includeHeld')}
-                  warning={t('patch.dialog.includeHeldWarn')}
+                  label={t('dialog.includeHeld')}
+                  warning={t('dialog.includeHeldWarn')}
                   checked={includeAll}
                   onChange={toggleHeld}
                 />
                 <ToggleRow
                   id="patch-reboot"
-                  label={t('patch.dialog.reboot')}
-                  warning={t('patch.dialog.rebootWarn')}
+                  label={t('dialog.reboot')}
+                  warning={t('dialog.rebootWarn')}
                   checked={reboot}
                   onChange={setReboot}
                 />
                 {data.reboot_required_now ? (
                   <p className="text-xs text-tone-warning">
-                    {t('patch.dialog.rebootNow')}
+                    {t('dialog.rebootNow')}
                   </p>
                 ) : data.reboot_likely ? (
                   <p className="text-xs text-tone-warning">
-                    {t('patch.dialog.rebootLikely')}
+                    {t('dialog.rebootLikely')}
                   </p>
                 ) : null}
 
                 <div className="flex flex-wrap items-center gap-x-4 gap-y-2">
                   <div className="flex min-w-48 flex-1 items-center gap-2">
                     <label htmlFor="patch-confirm" className="text-xs">
-                      {t('patch.dialog.typeToConfirm', { name: nodeName })}
+                      {t('dialog.typeToConfirm', { name: nodeName })}
                     </label>
                     <Input
                       id="patch-confirm"
                       value={typed}
                       autoComplete="off"
-                      placeholder={t('patch.dialog.confirmPlaceholder')}
+                      placeholder={t('dialog.confirmPlaceholder')}
                       onChange={(e) => setTyped(e.target.value)}
                       className="h-8 max-w-40"
                     />
@@ -354,8 +348,8 @@ export default function NodePatchDialog({ nodeId, nodeName, onClose }: Props) {
                     }
                   >
                     {expired
-                      ? t('patch.dialog.expired')
-                      : t('patch.dialog.expiresIn', {
+                      ? t('dialog.expired')
+                      : t('dialog.expiresIn', {
                           time: formatRemaining(remaining),
                         })}
                   </span>
@@ -368,7 +362,7 @@ export default function NodePatchDialog({ nodeId, nodeName, onClose }: Props) {
         <DialogFooter>
           {live ? (
             <Button type="button" variant="outline" onClick={onClose}>
-              {t('patch.dialog.close')}
+              {t('dialog.close')}
             </Button>
           ) : (
             <>
@@ -378,16 +372,14 @@ export default function NodePatchDialog({ nodeId, nodeName, onClose }: Props) {
                   variant="outline"
                   onClick={() => refresh(includeAll)}
                 >
-                  {t('patch.dialog.refresh')}
+                  {t('dialog.refresh')}
                 </Button>
               ) : null}
               <Button type="button" variant="outline" onClick={onClose}>
-                {t('patch.dialog.cancel')}
+                {t('dialog.cancel')}
               </Button>
               <Button type="button" disabled={!canApply} onClick={submit}>
-                {apply.isPending
-                  ? t('patch.dialog.applying')
-                  : t('patch.dialog.apply')}
+                {apply.isPending ? t('dialog.applying') : t('dialog.apply')}
               </Button>
             </>
           )}

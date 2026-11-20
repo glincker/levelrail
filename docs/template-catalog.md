@@ -25,7 +25,7 @@ Set the optional `Description` field on a Go template (manifest templates reuse 
 
 {/* BEGIN GENERATED CATALOG TABLE */}
 
-Generated from `internal/catalog.Templates` plus registry-only templates (592 entries as of this build). Run `go run ./scripts/gen-template-catalog-docs` after changing a `templates_*.go` file to refresh this section.
+Generated from `internal/catalog.Templates` plus registry-only templates (593 entries as of this build). Run `go run ./scripts/gen-template-catalog-docs` after changing a `templates_*.go` file to refresh this section.
 
 | Category | Templates |
 | --- | --- |
@@ -48,7 +48,7 @@ Generated from `internal/catalog.Templates` plus registry-only templates (592 en
 | [Starter Kits](#starter-kits) | 7 |
 | [Storage](#storage) | 21 |
 | [Backups](#backups) | 2 |
-| [Databases](#databases) | 1 |
+| [Databases](#databases) | 2 |
 | [Mail](#mail) | 2 |
 | [Networking](#networking) | 6 |
 
@@ -741,6 +741,7 @@ Deliverability depends on reverse DNS, SPF, DKIM and a clean IP; see the mail te
 | Template | Slogan | ID | Notes |
 | --- | --- | --- | --- |
 | [GreptimeDB](https://docs.greptime.com/getting-started/installation/greptimedb-standalone/) | A time series database for metrics, logs and traces with SQL, PromQL and OpenTelemetry ingest. This runs a single standalone node with no login on the HTTP port. | `greptimedb` |  |
+| [LibreDB Studio](https://github.com/libredb/libredb-studio) | A browser based SQL and NoSQL client for PostgreSQL, MySQL, MongoDB, Redis and more, with a query editor, schema explorer and saved connections. MIT licensed. The admin password and session secret are generated for you and shown in the deployment variables. | `libredb-studio` |  |
 
 ## Mail
 
@@ -788,6 +789,8 @@ The same facts the public catalog shows are part of every template in your own L
 - **Deprecated**: the entry stays listed and installable, with the reason and, when there is one, a link to the replacement.
 
 `GET /api/v1/service-templates` returns these as optional fields (`license`, `listing`, `trust`, `verification`, `arch`, `status`, `status_reason`, `replaced_by`) and accepts the filters `license_class`, `verified=true`, `arch` (amd64 or arm64) and `include_deprecated=false`. Nothing is hidden unless you ask. In the CLI, `levelrail-cli templates list --license-class permissive --arch arm64` filters the same way, and `templates get <id>` prints the license, trust, verification and any deprecation notice. The dashboard templates page has matching badges and a license and architecture filter.
+
+Two more optional fields: `needs_domain` is true for a template reached only through a domain (it declares one and publishes no host port), so it does not work on a bare IP, and `updated_at` is the date (YYYY-MM-DD) its files last changed. The list accepts `needs_domain=true|false`; the CLI equivalent is `levelrail-cli templates list --needs-domain true|false`, and the table gains DOMAIN and UPDATED columns. The dashboard shows a "Needs domain" badge, an "Updated" date and a reachability filter ("Works on an IP").
 
 ## Added 2026-10-27
 

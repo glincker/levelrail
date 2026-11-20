@@ -757,7 +757,20 @@
     "backfillHelp": "既存のアプリは現在のアドレスのままです。ドメインのないアプリに {{base}} のアドレスを割り当てます:",
     "backfillPreview": "既存のアプリをプレビュー",
     "backfillApply_other": "{{count}} 件のアプリに適用",
-    "backfillNone": "すべてのアプリにすでにドメインがあります。"
+    "backfillNone": "すべてのアプリにすでにドメインがあります。",
+    "wildcardHelp": "ワイルドカードレコード1つで、{{base}} のすべてのアドレスをこのサーバーに向けます。",
+    "wildcardPreview": "ワイルドカードレコードをプレビュー",
+    "wildcardApply": "ワイルドカードレコードを作成",
+    "wildcardReplace": "既存のレコードを置き換える",
+    "wildcardRecord": "レコード: {{type}} {{name}} -> {{value}}",
+    "wildcardExisting": "既存: {{type}} {{name}} -> {{value}}",
+    "wildcardConflict": "この名前には別のレコードがあり、置き換えを選ばない限り上書きされません。",
+    "zoneMatched": "{{provider}} でゾーン {{zone}} を検出しました",
+    "suggestions": "プロバイダーが一覧したゾーン:",
+    "iamHint": "必要な IAM アクション: {{actions}}",
+    "copyIam": "IAM アクションをコピー",
+    "copy": "コピー",
+    "copied": "コピーしました"
   },
   "automation": {
     "title": "ドメインの自動化",
@@ -1173,7 +1186,10 @@
     "addressLabel": "サーバーのアドレス",
     "httpsLabel": "HTTPS",
     "portsLabel": "ポートの確認",
-    "unknown": "未確認"
+    "unknown": "未確認",
+    "addressTip": "ドメインの向け先となる公開 IP です。",
+    "httpsTip": "HTTPS を有効にすると証明書が自動で発行されます。",
+    "portsTip": "ポート 80 と 443 がインターネットからこのサーバーに届くか確認します。"
   },
   "cutover": {
     "title": "切り替えチェックリスト",

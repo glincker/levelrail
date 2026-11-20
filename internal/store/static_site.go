@@ -198,6 +198,9 @@ func (db *DB) DeleteStaticSite(ctx context.Context, name string) error {
 	if _, err := tx.ExecContext(ctx, `DELETE FROM static_site_domains WHERE static_site_name = ?`, name); err != nil {
 		return fmt.Errorf("store: delete static site %q: clear domains: %w", name, err)
 	}
+	if _, err := tx.ExecContext(ctx, `DELETE FROM static_site_settings WHERE name = ?`, name); err != nil {
+		return fmt.Errorf("store: delete static site %q: clear settings: %w", name, err)
+	}
 	res, err := tx.ExecContext(ctx, `DELETE FROM static_sites WHERE name = ?`, name)
 	if err != nil {
 		return fmt.Errorf("store: delete static site %q: %w", name, err)
@@ -206,11 +209,12 @@ func (db *DB) DeleteStaticSite(ctx context.Context, name string) error {
 	if err != nil {
 		return fmt.Errorf("store: delete static site %q: rows affected: %w", name, err)
 	}
-	if n == 0 {
-		return ErrServiceNotFound
-	}
+	// Commit the settings delete even for an unpublished app, so a new app of the same name starts clean.
 	if err := tx.Commit(); err != nil {
 		return fmt.Errorf("store: delete static site %q: commit: %w", name, err)
+	}
+	if n == 0 {
+		return ErrServiceNotFound
 	}
 	return nil
 }

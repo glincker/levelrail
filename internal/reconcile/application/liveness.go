@@ -63,12 +63,39 @@ type livenessEntry struct {
 type LivenessTracker struct {
 	mu    sync.Mutex
 	state map[string]*livenessEntry
+	// flagged holds containers reported unhealthy, kept across reset so a restart does not hide the failure.
+	flagged map[string]string // container -> service
+	observe func(container, service string, unhealthy bool, failures int, at time.Time)
+}
+
+// SetObserver reports a container going unhealthy (failures reached the threshold) and recovering
+// (a probe passed, or the container is gone). Set it before the tracker is shared.
+func (t *LivenessTracker) SetObserver(fn func(container, service string, unhealthy bool, failures int, at time.Time)) {
+	t.mu.Lock()
+	t.observe = fn
+	t.mu.Unlock()
+}
+
+func (t *LivenessTracker) flag(name, service string, unhealthy bool, failures int, now time.Time) {
+	t.mu.Lock()
+	fn := t.observe
+	prev, was := t.flagged[name]
+	if unhealthy {
+		t.flagged[name] = service
+	} else {
+		delete(t.flagged, name)
+		service = prev
+	}
+	t.mu.Unlock()
+	if fn != nil && (unhealthy || was) {
+		fn(name, service, unhealthy, failures, now)
+	}
 }
 
 // NewLivenessTracker builds an empty tracker. Long-running callers want
 // exactly one, shared across every controller they build.
 func NewLivenessTracker() *LivenessTracker {
-	return &LivenessTracker{state: make(map[string]*livenessEntry)}
+	return &LivenessTracker{state: make(map[string]*livenessEntry), flagged: make(map[string]string)}
 }
 
 // due reports whether name is ready for its next probe. This is the
@@ -86,10 +113,14 @@ func (t *LivenessTracker) due(name string, now time.Time, interval time.Duration
 
 func (t *LivenessTracker) recordSuccess(name string, now time.Time) {
 	t.mu.Lock()
-	defer t.mu.Unlock()
 	entry := t.entry(name)
 	entry.failures = 0
 	entry.lastProbe = now
+	_, was := t.flagged[name]
+	t.mu.Unlock()
+	if was {
+		t.flag(name, "", false, 0, now)
+	}
 }
 
 // recordFailure counts one failed probe and returns the resulting
@@ -129,15 +160,24 @@ func (t *LivenessTracker) resetAll(serviceName string, names []string, now time.
 // tracker is shared by every service's controller.
 func (t *LivenessTracker) retain(serviceName string, names []string) {
 	t.mu.Lock()
-	defer t.mu.Unlock()
 	keep := make(map[string]bool, len(names))
 	for _, name := range names {
 		keep[name] = true
 	}
+	var gone []string
 	for name := range t.state {
 		if !keep[name] && ownsContainer(serviceName, name) {
 			delete(t.state, name)
 		}
+	}
+	for name := range t.flagged {
+		if !keep[name] && ownsContainer(serviceName, name) {
+			gone = append(gone, name)
+		}
+	}
+	t.mu.Unlock()
+	for _, name := range gone {
+		t.flag(name, serviceName, false, 0, time.Now())
 	}
 }
 
@@ -221,6 +261,9 @@ func (c *Controller) checkReplicaLiveness(ctx context.Context, target, nodeID st
 // consecutive failures are in, restarts the container.
 func (c *Controller) handleLivenessFailure(ctx context.Context, target string, state *docker.ContainerState, threshold int, now time.Time, probeErr error) livenessOutcome {
 	failures := c.liveness.recordFailure(target, now)
+	if failures >= threshold {
+		c.liveness.flag(target, c.serviceName, true, failures, now)
+	}
 	if failures < threshold {
 		return livenessOutcome{severity: livenessDegraded, err: fmt.Errorf("liveness probe for %q failed (%d/%d): %w", target, failures, threshold, probeErr)}
 	}

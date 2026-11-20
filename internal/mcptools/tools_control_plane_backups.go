@@ -26,7 +26,7 @@ func registerControlPlaneBackupTools(server *mcp.Server, client *apiclient.Clien
 
 	addTool(server, &mcp.Tool{
 		Name:        "create_control_plane_backup",
-		Description: "Take a snapshot of the control plane's own database now and return its name, size and sha256. Mutating (writes a backup file, changes no app or config).",
+		Description: "Snapshot the control plane's own database now; returns name, size and sha256. Writes a backup file, changes no app or config.",
 	}, func(ctx context.Context, _ *mcp.CallToolRequest, _ struct{}) (*mcp.CallToolResult, apiclient.ControlPlaneBackup, error) {
 		backup, err := client.CreateControlPlaneBackup(ctx)
 		if err != nil {
@@ -37,7 +37,7 @@ func registerControlPlaneBackupTools(server *mcp.Server, client *apiclient.Clien
 
 	addTool(server, &mcp.Tool{
 		Name:        "verify_control_plane_backup",
-		Description: "Verify a control plane database snapshot by name: runs integrity checks and returns ok plus each result. A failed check is a normal result. Restores nothing.",
+		Description: "Verify a control plane database snapshot by name: runs integrity checks and returns ok plus each result. Restores nothing.",
 	}, func(ctx context.Context, _ *mcp.CallToolRequest, in controlPlaneBackupNameInput) (*mcp.CallToolResult, apiclient.ControlPlaneBackupVerification, error) {
 		res, err := client.VerifyControlPlaneBackup(ctx, in.Name)
 		if err != nil {

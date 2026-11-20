@@ -398,7 +398,7 @@ func (rt *Router) retryBuild(ctx context.Context, app, branch string) (string, e
 
 // handleRetryBuild handles POST /api/v1/apps/{name}/builds/{id}/retry.
 func (rt *Router) handleRetryBuild(w http.ResponseWriter, r *http.Request) {
-	a, ok := rt.lookupAppAttempt(w, withDeployID(r), AbilityDeploy)
+	a, ok := rt.lookupAppAttempt(w, withDeployID(r))
 	if !ok {
 		return
 	}

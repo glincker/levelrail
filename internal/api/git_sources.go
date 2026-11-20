@@ -403,7 +403,7 @@ func normalizeGitSourceTriggerMode(triggerMode string) (string, error) {
 		return spec.TriggerModePush, nil
 	}
 	switch triggerMode {
-	case spec.TriggerModePush, spec.TriggerModeRelease:
+	case spec.TriggerModePush, spec.TriggerModeRelease, spec.TriggerModeManual:
 		return triggerMode, nil
 	default:
 		return "", fmt.Errorf("trigger_mode %q is not recognized", triggerMode)
@@ -871,6 +871,7 @@ func (rt *Router) handleDeleteGitSource(w http.ResponseWriter, r *http.Request) 
 		return
 	}
 	rt.eraseGitSourceSecrets(r.Context(), name)
+	rt.revokePagesHookOnDisconnect(r, name)
 
 	w.WriteHeader(http.StatusNoContent)
 }

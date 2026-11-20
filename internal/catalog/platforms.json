@@ -1,5 +1,5 @@
 {
-  "scanned_at": "2026-11-11T22:14:40Z",
+  "scanned_at": "2026-11-20T08:25:50Z",
   "images": [
     {
       "image": "1dev/server",
@@ -1349,6 +1349,15 @@
         "linux/amd64"
       ],
       "checked_at": "2026-10-31T23:54:42Z"
+    },
+    {
+      "image": "ghcr.io/libredb/libredb-studio",
+      "tag": "1.3.0",
+      "platforms": [
+        "linux/amd64",
+        "linux/arm64"
+      ],
+      "checked_at": "2026-11-20T08:25:50Z"
     },
     {
       "image": "ghcr.io/librespeed/speedtest",
@@ -5224,6 +5233,10 @@
       "linux/arm64"
     ],
     "librechat": [
+      "linux/amd64",
+      "linux/arm64"
+    ],
+    "libredb-studio": [
       "linux/amd64",
       "linux/arm64"
     ],

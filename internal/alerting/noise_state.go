@@ -19,6 +19,8 @@ type NoiseConfig struct {
 	HistoryRetention    time.Duration
 	// HistoryRetentionFn, when set, supplies the live retention (0 keeps everything) instead of HistoryRetention.
 	HistoryRetentionFn func(ctx context.Context) time.Duration
+	// NotifyOnSleepFn, when it returns true, lets alerts for a sleeping app through. Nil keeps them quiet.
+	NotifyOnSleepFn func(ctx context.Context) bool
 }
 
 // Defaults for NoiseConfig, overridable per environment in cmd/levelrail.

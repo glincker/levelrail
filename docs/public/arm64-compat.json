@@ -1,13 +1,13 @@
 {
-  "generated_at": "2026-11-11T22:14:40Z",
+  "generated_at": "2026-11-20T08:25:50Z",
   "note": "yes means every image manifest lists the architecture. It is a manifest fact, not a tested claim. unknown means no readable manifest or an install-time image tag.",
   "counts": {
-    "templates": 592,
-    "images": 641,
-    "arm64_yes": 394,
+    "templates": 593,
+    "images": 642,
+    "arm64_yes": 395,
     "arm64_no": 15,
     "arm64_unknown": 183,
-    "image_arm64_yes": 435,
+    "image_arm64_yes": 436,
     "image_arm64_no": 15,
     "image_arm64_unknown": 191
   },
@@ -27,7 +27,7 @@
           ],
           "amd64": "yes",
           "arm64": "yes",
-          "source": "manifest",
+          "source": "cache",
           "checked_at": "2026-10-31T23:53:56Z"
         }
       ]
@@ -45,7 +45,7 @@
           ],
           "amd64": "yes",
           "arm64": "yes",
-          "source": "manifest",
+          "source": "cache",
           "checked_at": "2026-11-02T03:14:45Z"
         },
         {
@@ -57,7 +57,7 @@
           ],
           "amd64": "yes",
           "arm64": "yes",
-          "source": "manifest",
+          "source": "cache",
           "checked_at": "2026-11-02T03:14:45Z"
         }
       ]
@@ -89,7 +89,7 @@
           ],
           "amd64": "yes",
           "arm64": "yes",
-          "source": "manifest",
+          "source": "cache",
           "checked_at": "2026-10-31T23:54:42Z"
         },
         {
@@ -105,7 +105,7 @@
           ],
           "amd64": "yes",
           "arm64": "yes",
-          "source": "manifest",
+          "source": "cache",
           "checked_at": "2026-11-02T03:14:45Z"
         },
         {
@@ -121,7 +121,7 @@
           ],
           "amd64": "yes",
           "arm64": "yes",
-          "source": "manifest",
+          "source": "cache",
           "checked_at": "2026-10-31T23:54:42Z"
         }
       ]
@@ -139,7 +139,7 @@
           ],
           "amd64": "yes",
           "arm64": "yes",
-          "source": "manifest",
+          "source": "cache",
           "checked_at": "2026-10-31T23:53:56Z"
         }
       ]
@@ -157,7 +157,7 @@
           ],
           "amd64": "yes",
           "arm64": "yes",
-          "source": "manifest",
+          "source": "cache",
           "checked_at": "2026-10-31T23:53:56Z"
         }
       ]
@@ -178,7 +178,7 @@
           ],
           "amd64": "yes",
           "arm64": "yes",
-          "source": "manifest",
+          "source": "cache",
           "checked_at": "2026-10-31T23:53:56Z"
         }
       ]
@@ -201,7 +201,7 @@
           ],
           "amd64": "yes",
           "arm64": "yes",
-          "source": "manifest",
+          "source": "cache",
           "checked_at": "2026-10-31T23:53:56Z"
         }
       ]
@@ -220,7 +220,7 @@
           ],
           "amd64": "yes",
           "arm64": "yes",
-          "source": "manifest",
+          "source": "cache",
           "checked_at": "2026-10-31T23:54:42Z"
         },
         {
@@ -231,7 +231,7 @@
           ],
           "amd64": "yes",
           "arm64": "yes",
-          "source": "manifest",
+          "source": "cache",
           "checked_at": "2026-10-31T23:54:42Z"
         },
         {
@@ -247,7 +247,7 @@
           ],
           "amd64": "yes",
           "arm64": "yes",
-          "source": "manifest",
+          "source": "cache",
           "checked_at": "2026-10-31T23:54:42Z"
         }
       ]
@@ -282,7 +282,7 @@
           ],
           "amd64": "yes",
           "arm64": "yes",
-          "source": "manifest",
+          "source": "cache",
           "checked_at": "2026-10-31T23:54:42Z"
         }
       ]
@@ -309,7 +309,7 @@
           ],
           "amd64": "yes",
           "arm64": "yes",
-          "source": "manifest",
+          "source": "cache",
           "checked_at": "2026-11-02T03:14:45Z"
         }
       ]
@@ -327,7 +327,7 @@
           ],
           "amd64": "yes",
           "arm64": "yes",
-          "source": "manifest",
+          "source": "cache",
           "checked_at": "2026-10-31T23:53:56Z"
         }
       ]
@@ -359,7 +359,7 @@
           ],
           "amd64": "yes",
           "arm64": "yes",
-          "source": "manifest",
+          "source": "cache",
           "checked_at": "2026-10-31T23:54:42Z"
         }
       ]
@@ -377,7 +377,7 @@
           ],
           "amd64": "yes",
           "arm64": "yes",
-          "source": "manifest",
+          "source": "cache",
           "checked_at": "2026-10-31T23:53:56Z"
         },
         {
@@ -388,7 +388,7 @@
           ],
           "amd64": "yes",
           "arm64": "yes",
-          "source": "manifest",
+          "source": "cache",
           "checked_at": "2026-10-31T23:53:56Z"
         },
         {
@@ -399,7 +399,7 @@
           ],
           "amd64": "yes",
           "arm64": "yes",
-          "source": "manifest",
+          "source": "cache",
           "checked_at": "2026-10-31T23:53:56Z"
         },
         {
@@ -410,7 +410,7 @@
           ],
           "amd64": "yes",
           "arm64": "yes",
-          "source": "manifest",
+          "source": "cache",
           "checked_at": "2026-10-31T23:54:42Z"
         },
         {
@@ -421,7 +421,7 @@
           ],
           "amd64": "yes",
           "arm64": "yes",
-          "source": "manifest",
+          "source": "cache",
           "checked_at": "2026-10-31T23:54:42Z"
         },
         {
@@ -437,7 +437,7 @@
           ],
           "amd64": "yes",
           "arm64": "yes",
-          "source": "manifest",
+          "source": "cache",
           "checked_at": "2026-10-31T23:54:42Z"
         }
       ]
@@ -455,7 +455,7 @@
           ],
           "amd64": "yes",
           "arm64": "yes",
-          "source": "manifest",
+          "source": "cache",
           "checked_at": "2026-10-31T23:53:56Z"
         }
       ]
@@ -473,7 +473,7 @@
           ],
           "amd64": "yes",
           "arm64": "yes",
-          "source": "manifest",
+          "source": "cache",
           "checked_at": "2026-10-31T23:53:56Z"
         }
       ]
@@ -491,7 +491,7 @@
           ],
           "amd64": "yes",
           "arm64": "yes",
-          "source": "manifest",
+          "source": "cache",
           "checked_at": "2026-10-31T23:53:56Z"
         },
         {
@@ -502,7 +502,7 @@
           ],
           "amd64": "yes",
           "arm64": "yes",
-          "source": "manifest",
+          "source": "cache",
           "checked_at": "2026-10-31T23:53:56Z"
         },
         {
@@ -515,7 +515,7 @@
           ],
           "amd64": "yes",
           "arm64": "yes",
-          "source": "manifest",
+          "source": "cache",
           "checked_at": "2026-10-31T23:54:42Z"
         },
         {
@@ -530,7 +530,7 @@
           ],
           "amd64": "yes",
           "arm64": "yes",
-          "source": "manifest",
+          "source": "cache",
           "checked_at": "2026-10-31T23:54:42Z"
         }
       ]
@@ -562,7 +562,7 @@
           ],
           "amd64": "yes",
           "arm64": "yes",
-          "source": "manifest",
+          "source": "cache",
           "checked_at": "2026-10-31T23:53:56Z"
         }
       ]
@@ -599,7 +599,7 @@
           ],
           "amd64": "yes",
           "arm64": "yes",
-          "source": "manifest",
+          "source": "cache",
           "checked_at": "2026-11-02T03:14:45Z"
         },
         {
@@ -615,7 +615,7 @@
           ],
           "amd64": "yes",
           "arm64": "yes",
-          "source": "manifest",
+          "source": "cache",
           "checked_at": "2026-10-31T23:54:42Z"
         }
       ]
@@ -647,7 +647,7 @@
           ],
           "amd64": "yes",
           "arm64": "yes",
-          "source": "manifest",
+          "source": "cache",
           "checked_at": "2026-10-31T23:54:42Z"
         }
       ]
@@ -666,7 +666,7 @@
           ],
           "amd64": "yes",
           "arm64": "yes",
-          "source": "manifest",
+          "source": "cache",
           "checked_at": "2026-10-31T23:53:56Z"
         }
       ]
@@ -684,7 +684,7 @@
           ],
           "amd64": "yes",
           "arm64": "yes",
-          "source": "manifest",
+          "source": "cache",
           "checked_at": "2026-10-31T23:54:42Z"
         },
         {
@@ -700,7 +700,7 @@
           ],
           "amd64": "yes",
           "arm64": "yes",
-          "source": "manifest",
+          "source": "cache",
           "checked_at": "2026-11-02T03:14:45Z"
         }
       ]
@@ -724,7 +724,7 @@
           ],
           "amd64": "yes",
           "arm64": "yes",
-          "source": "manifest",
+          "source": "cache",
           "checked_at": "2026-10-31T23:54:42Z"
         }
       ]
@@ -754,7 +754,7 @@
           ],
           "amd64": "yes",
           "arm64": "yes",
-          "source": "manifest",
+          "source": "cache",
           "checked_at": "2026-11-02T03:14:45Z"
         },
         {
@@ -770,7 +770,7 @@
           ],
           "amd64": "yes",
           "arm64": "yes",
-          "source": "manifest",
+          "source": "cache",
           "checked_at": "2026-10-31T23:54:42Z"
         }
       ]
@@ -788,7 +788,7 @@
           ],
           "amd64": "yes",
           "arm64": "yes",
-          "source": "manifest",
+          "source": "cache",
           "checked_at": "2026-10-31T23:54:42Z"
         }
       ]
@@ -808,7 +808,7 @@
           ],
           "amd64": "yes",
           "arm64": "yes",
-          "source": "manifest",
+          "source": "cache",
           "checked_at": "2026-10-31T23:54:42Z"
         }
       ]
@@ -840,7 +840,7 @@
           ],
           "amd64": "yes",
           "arm64": "yes",
-          "source": "manifest",
+          "source": "cache",
           "checked_at": "2026-10-31T23:53:56Z"
         }
       ]
@@ -858,7 +858,7 @@
           ],
           "amd64": "yes",
           "arm64": "yes",
-          "source": "manifest",
+          "source": "cache",
           "checked_at": "2026-10-31T23:54:42Z"
         }
       ]
@@ -876,7 +876,7 @@
           ],
           "amd64": "yes",
           "arm64": "yes",
-          "source": "manifest",
+          "source": "cache",
           "checked_at": "2026-10-31T23:54:42Z"
         }
       ]
@@ -895,7 +895,7 @@
           ],
           "amd64": "yes",
           "arm64": "yes",
-          "source": "manifest",
+          "source": "cache",
           "checked_at": "2026-10-31T23:54:42Z"
         }
       ]
@@ -969,7 +969,7 @@
           ],
           "amd64": "yes",
           "arm64": "yes",
-          "source": "manifest",
+          "source": "cache",
           "checked_at": "2026-10-31T23:54:42Z"
         },
         {
@@ -982,7 +982,7 @@
           ],
           "amd64": "yes",
           "arm64": "yes",
-          "source": "manifest",
+          "source": "cache",
           "checked_at": "2026-10-31T23:54:42Z"
         }
       ]
@@ -1000,7 +1000,7 @@
           ],
           "amd64": "yes",
           "arm64": "yes",
-          "source": "manifest",
+          "source": "cache",
           "checked_at": "2026-10-31T23:54:42Z"
         }
       ]
@@ -1018,7 +1018,7 @@
           ],
           "amd64": "yes",
           "arm64": "yes",
-          "source": "manifest",
+          "source": "cache",
           "checked_at": "2026-10-31T23:54:42Z"
         }
       ]
@@ -1036,7 +1036,7 @@
           ],
           "amd64": "yes",
           "arm64": "yes",
-          "source": "manifest",
+          "source": "cache",
           "checked_at": "2026-10-31T23:53:56Z"
         },
         {
@@ -1047,7 +1047,7 @@
           ],
           "amd64": "yes",
           "arm64": "yes",
-          "source": "manifest",
+          "source": "cache",
           "checked_at": "2026-10-31T23:53:56Z"
         },
         {
@@ -1057,7 +1057,7 @@
           ],
           "amd64": "no",
           "arm64": "yes",
-          "source": "manifest",
+          "source": "cache",
           "checked_at": "2026-10-31T23:53:56Z"
         },
         {
@@ -1068,7 +1068,7 @@
           ],
           "amd64": "yes",
           "arm64": "yes",
-          "source": "manifest",
+          "source": "cache",
           "checked_at": "2026-11-01T00:10:24Z"
         },
         {
@@ -1079,7 +1079,7 @@
           ],
           "amd64": "yes",
           "arm64": "yes",
-          "source": "manifest",
+          "source": "cache",
           "checked_at": "2026-10-31T23:54:42Z"
         },
         {
@@ -1095,7 +1095,7 @@
           ],
           "amd64": "yes",
           "arm64": "yes",
-          "source": "manifest",
+          "source": "cache",
           "checked_at": "2026-10-31T23:54:42Z"
         }
       ]
@@ -1113,7 +1113,7 @@
           ],
           "amd64": "yes",
           "arm64": "yes",
-          "source": "manifest",
+          "source": "cache",
           "checked_at": "2026-10-31T23:53:56Z"
         },
         {
@@ -1124,7 +1124,7 @@
           ],
           "amd64": "yes",
           "arm64": "yes",
-          "source": "manifest",
+          "source": "cache",
           "checked_at": "2026-10-31T23:54:42Z"
         }
       ]
@@ -1142,7 +1142,7 @@
           ],
           "amd64": "yes",
           "arm64": "yes",
-          "source": "manifest",
+          "source": "cache",
           "checked_at": "2026-10-31T23:53:56Z"
         }
       ]
@@ -1161,7 +1161,7 @@
           ],
           "amd64": "yes",
           "arm64": "yes",
-          "source": "manifest",
+          "source": "cache",
           "checked_at": "2026-10-31T23:54:42Z"
         }
       ]
@@ -1192,7 +1192,7 @@
           ],
           "amd64": "yes",
           "arm64": "no",
-          "source": "manifest",
+          "source": "cache",
           "checked_at": "2026-10-31T23:53:56Z"
         },
         {
@@ -1208,7 +1208,7 @@
           ],
           "amd64": "yes",
           "arm64": "yes",
-          "source": "manifest",
+          "source": "cache",
           "checked_at": "2026-11-02T03:14:45Z"
         }
       ]
@@ -1240,7 +1240,7 @@
           ],
           "amd64": "yes",
           "arm64": "yes",
-          "source": "manifest",
+          "source": "cache",
           "checked_at": "2026-10-31T23:54:42Z"
         }
       ]
@@ -1272,7 +1272,7 @@
           ],
           "amd64": "yes",
           "arm64": "yes",
-          "source": "manifest",
+          "source": "cache",
           "checked_at": "2026-10-31T23:54:42Z"
         }
       ]
@@ -1290,7 +1290,7 @@
           ],
           "amd64": "yes",
           "arm64": "yes",
-          "source": "manifest",
+          "source": "cache",
           "checked_at": "2026-10-31T23:54:42Z"
         },
         {
@@ -1303,7 +1303,7 @@
           ],
           "amd64": "yes",
           "arm64": "yes",
-          "source": "manifest",
+          "source": "cache",
           "checked_at": "2026-10-31T23:54:42Z"
         }
       ]
@@ -1335,7 +1335,7 @@
           ],
           "amd64": "yes",
           "arm64": "yes",
-          "source": "manifest",
+          "source": "cache",
           "checked_at": "2026-11-01T00:10:24Z"
         },
         {
@@ -1348,7 +1348,7 @@
           ],
           "amd64": "yes",
           "arm64": "yes",
-          "source": "manifest",
+          "source": "cache",
           "checked_at": "2026-10-31T23:54:42Z"
         },
         {
@@ -1364,7 +1364,7 @@
           ],
           "amd64": "yes",
           "arm64": "yes",
-          "source": "manifest",
+          "source": "cache",
           "checked_at": "2026-10-31T23:54:42Z"
         }
       ]
@@ -1383,7 +1383,7 @@
           ],
           "amd64": "yes",
           "arm64": "yes",
-          "source": "manifest",
+          "source": "cache",
           "checked_at": "2026-11-01T00:10:24Z"
         }
       ]
@@ -1401,7 +1401,7 @@
           ],
           "amd64": "yes",
           "arm64": "yes",
-          "source": "manifest",
+          "source": "cache",
           "checked_at": "2026-10-31T23:53:56Z"
         },
         {
@@ -1417,7 +1417,7 @@
           ],
           "amd64": "yes",
           "arm64": "yes",
-          "source": "manifest",
+          "source": "cache",
           "checked_at": "2026-11-02T03:14:45Z"
         },
         {
@@ -1433,7 +1433,7 @@
           ],
           "amd64": "yes",
           "arm64": "yes",
-          "source": "manifest",
+          "source": "cache",
           "checked_at": "2026-10-31T23:54:42Z"
         }
       ]
@@ -1451,7 +1451,7 @@
           ],
           "amd64": "yes",
           "arm64": "yes",
-          "source": "manifest",
+          "source": "cache",
           "checked_at": "2026-10-31T23:54:42Z"
         },
         {
@@ -1463,7 +1463,7 @@
           ],
           "amd64": "yes",
           "arm64": "yes",
-          "source": "manifest",
+          "source": "cache",
           "checked_at": "2026-10-31T23:54:42Z"
         }
       ]
@@ -1481,7 +1481,7 @@
           ],
           "amd64": "yes",
           "arm64": "yes",
-          "source": "manifest",
+          "source": "cache",
           "checked_at": "2026-11-01T00:10:24Z"
         },
         {
@@ -1492,7 +1492,7 @@
           ],
           "amd64": "yes",
           "arm64": "yes",
-          "source": "manifest",
+          "source": "cache",
           "checked_at": "2026-10-31T23:53:56Z"
         }
       ]
@@ -1524,7 +1524,7 @@
           ],
           "amd64": "yes",
           "arm64": "yes",
-          "source": "manifest",
+          "source": "cache",
           "checked_at": "2026-10-31T23:54:42Z"
         }
       ]
@@ -1556,7 +1556,7 @@
           ],
           "amd64": "yes",
           "arm64": "yes",
-          "source": "manifest",
+          "source": "cache",
           "checked_at": "2026-11-01T23:30:55Z"
         }
       ]
@@ -1574,7 +1574,7 @@
           ],
           "amd64": "yes",
           "arm64": "yes",
-          "source": "manifest",
+          "source": "cache",
           "checked_at": "2026-10-31T23:54:42Z"
         }
       ]
@@ -1592,7 +1592,7 @@
           ],
           "amd64": "yes",
           "arm64": "yes",
-          "source": "manifest",
+          "source": "cache",
           "checked_at": "2026-10-31T23:54:42Z"
         }
       ]
@@ -1615,7 +1615,7 @@
           ],
           "amd64": "yes",
           "arm64": "yes",
-          "source": "manifest",
+          "source": "cache",
           "checked_at": "2026-10-31T23:54:42Z"
         }
       ]
@@ -1633,7 +1633,7 @@
           ],
           "amd64": "yes",
           "arm64": "yes",
-          "source": "manifest",
+          "source": "cache",
           "checked_at": "2026-10-31T23:54:42Z"
         },
         {
@@ -1649,7 +1649,7 @@
           ],
           "amd64": "yes",
           "arm64": "yes",
-          "source": "manifest",
+          "source": "cache",
           "checked_at": "2026-11-02T03:14:45Z"
         },
         {
@@ -1665,7 +1665,7 @@
           ],
           "amd64": "yes",
           "arm64": "yes",
-          "source": "manifest",
+          "source": "cache",
           "checked_at": "2026-10-31T23:54:42Z"
         }
       ]
@@ -1683,7 +1683,7 @@
           ],
           "amd64": "yes",
           "arm64": "yes",
-          "source": "manifest",
+          "source": "cache",
           "checked_at": "2026-10-31T23:54:42Z"
         }
       ]
@@ -1715,7 +1715,7 @@
           ],
           "amd64": "yes",
           "arm64": "yes",
-          "source": "manifest",
+          "source": "cache",
           "checked_at": "2026-11-01T00:10:24Z"
         }
       ]
@@ -1753,7 +1753,7 @@
           ],
           "amd64": "yes",
           "arm64": "no",
-          "source": "manifest",
+          "source": "cache",
           "checked_at": "2026-10-31T23:54:42Z"
         }
       ]
@@ -1787,7 +1787,7 @@
           ],
           "amd64": "yes",
           "arm64": "yes",
-          "source": "manifest",
+          "source": "cache",
           "checked_at": "2026-10-31T23:54:42Z"
         }
       ]
@@ -1805,7 +1805,7 @@
           ],
           "amd64": "yes",
           "arm64": "yes",
-          "source": "manifest",
+          "source": "cache",
           "checked_at": "2026-10-31T23:54:42Z"
         }
       ]
@@ -1823,7 +1823,7 @@
           ],
           "amd64": "yes",
           "arm64": "yes",
-          "source": "manifest",
+          "source": "cache",
           "checked_at": "2026-10-31T23:54:42Z"
         }
       ]
@@ -1845,7 +1845,7 @@
           ],
           "amd64": "yes",
           "arm64": "yes",
-          "source": "manifest",
+          "source": "cache",
           "checked_at": "2026-10-31T23:54:42Z"
         }
       ]
@@ -1878,7 +1878,7 @@
           ],
           "amd64": "yes",
           "arm64": "yes",
-          "source": "manifest",
+          "source": "cache",
           "checked_at": "2026-10-31T23:54:42Z"
         }
       ]
@@ -1896,7 +1896,7 @@
           ],
           "amd64": "yes",
           "arm64": "yes",
-          "source": "manifest",
+          "source": "cache",
           "checked_at": "2026-10-31T23:54:42Z"
         }
       ]
@@ -1928,7 +1928,7 @@
           ],
           "amd64": "yes",
           "arm64": "yes",
-          "source": "manifest",
+          "source": "cache",
           "checked_at": "2026-10-31T23:54:42Z"
         },
         {
@@ -1944,7 +1944,7 @@
           ],
           "amd64": "yes",
           "arm64": "yes",
-          "source": "manifest",
+          "source": "cache",
           "checked_at": "2026-10-31T23:54:42Z"
         }
       ]
@@ -1961,7 +1961,7 @@
           ],
           "amd64": "yes",
           "arm64": "no",
-          "source": "manifest",
+          "source": "cache",
           "checked_at": "2026-10-31T23:54:42Z"
         }
       ]
@@ -2007,7 +2007,7 @@
           ],
           "amd64": "yes",
           "arm64": "yes",
-          "source": "manifest",
+          "source": "cache",
           "checked_at": "2026-10-31T23:54:42Z"
         }
       ]
@@ -2025,7 +2025,7 @@
           ],
           "amd64": "yes",
           "arm64": "yes",
-          "source": "manifest",
+          "source": "cache",
           "checked_at": "2026-10-31T23:54:42Z"
         }
       ]
@@ -2071,7 +2071,7 @@
           ],
           "amd64": "yes",
           "arm64": "yes",
-          "source": "manifest",
+          "source": "cache",
           "checked_at": "2026-11-01T23:23:03Z"
         }
       ]
@@ -2103,7 +2103,7 @@
           ],
           "amd64": "yes",
           "arm64": "yes",
-          "source": "manifest",
+          "source": "cache",
           "checked_at": "2026-10-31T23:54:42Z"
         },
         {
@@ -2119,7 +2119,7 @@
           ],
           "amd64": "yes",
           "arm64": "yes",
-          "source": "manifest",
+          "source": "cache",
           "checked_at": "2026-11-02T03:14:45Z"
         },
         {
@@ -2135,7 +2135,7 @@
           ],
           "amd64": "yes",
           "arm64": "yes",
-          "source": "manifest",
+          "source": "cache",
           "checked_at": "2026-10-31T23:54:42Z"
         }
       ]
@@ -2156,7 +2156,7 @@
           ],
           "amd64": "yes",
           "arm64": "yes",
-          "source": "manifest",
+          "source": "cache",
           "checked_at": "2026-10-31T23:54:42Z"
         }
       ]
@@ -2178,7 +2178,7 @@
           ],
           "amd64": "yes",
           "arm64": "yes",
-          "source": "manifest",
+          "source": "cache",
           "checked_at": "2026-10-31T23:54:42Z"
         }
       ]
@@ -2200,7 +2200,7 @@
           ],
           "amd64": "yes",
           "arm64": "yes",
-          "source": "manifest",
+          "source": "cache",
           "checked_at": "2026-10-31T23:54:42Z"
         }
       ]
@@ -2218,7 +2218,7 @@
           ],
           "amd64": "yes",
           "arm64": "yes",
-          "source": "manifest",
+          "source": "cache",
           "checked_at": "2026-11-01T23:23:03Z"
         }
       ]
@@ -2236,7 +2236,7 @@
           ],
           "amd64": "yes",
           "arm64": "yes",
-          "source": "manifest",
+          "source": "cache",
           "checked_at": "2026-10-31T23:54:42Z"
         },
         {
@@ -2252,7 +2252,7 @@
           ],
           "amd64": "yes",
           "arm64": "yes",
-          "source": "manifest",
+          "source": "cache",
           "checked_at": "2026-11-02T03:14:45Z"
         },
         {
@@ -2268,7 +2268,7 @@
           ],
           "amd64": "yes",
           "arm64": "yes",
-          "source": "manifest",
+          "source": "cache",
           "checked_at": "2026-10-31T23:54:42Z"
         }
       ]
@@ -2286,7 +2286,7 @@
           ],
           "amd64": "yes",
           "arm64": "yes",
-          "source": "manifest",
+          "source": "cache",
           "checked_at": "2026-10-31T23:54:42Z"
         },
         {
@@ -2302,7 +2302,7 @@
           ],
           "amd64": "yes",
           "arm64": "yes",
-          "source": "manifest",
+          "source": "cache",
           "checked_at": "2026-10-31T23:54:42Z"
         }
       ]
@@ -2320,7 +2320,7 @@
           ],
           "amd64": "yes",
           "arm64": "yes",
-          "source": "manifest",
+          "source": "cache",
           "checked_at": "2026-10-31T23:54:42Z"
         },
         {
@@ -2336,7 +2336,7 @@
           ],
           "amd64": "yes",
           "arm64": "yes",
-          "source": "manifest",
+          "source": "cache",
           "checked_at": "2026-11-02T03:14:45Z"
         }
       ]
@@ -2354,7 +2354,7 @@
           ],
           "amd64": "yes",
           "arm64": "yes",
-          "source": "manifest",
+          "source": "cache",
           "checked_at": "2026-10-31T23:54:42Z"
         }
       ]
@@ -2372,7 +2372,7 @@
           ],
           "amd64": "yes",
           "arm64": "yes",
-          "source": "manifest",
+          "source": "cache",
           "checked_at": "2026-10-31T23:54:42Z"
         },
         {
@@ -2385,7 +2385,7 @@
           ],
           "amd64": "yes",
           "arm64": "yes",
-          "source": "manifest",
+          "source": "cache",
           "checked_at": "2026-10-31T23:54:42Z"
         }
       ]
@@ -2417,7 +2417,7 @@
           ],
           "amd64": "yes",
           "arm64": "yes",
-          "source": "manifest",
+          "source": "cache",
           "checked_at": "2026-10-31T23:54:42Z"
         }
       ]
@@ -2440,7 +2440,7 @@
           ],
           "amd64": "yes",
           "arm64": "yes",
-          "source": "manifest",
+          "source": "cache",
           "checked_at": "2026-10-31T23:54:42Z"
         },
         {
@@ -2456,7 +2456,7 @@
           ],
           "amd64": "yes",
           "arm64": "yes",
-          "source": "manifest",
+          "source": "cache",
           "checked_at": "2026-11-02T03:14:45Z"
         }
       ]
@@ -2502,7 +2502,7 @@
           ],
           "amd64": "yes",
           "arm64": "yes",
-          "source": "manifest",
+          "source": "cache",
           "checked_at": "2026-10-31T23:54:42Z"
         }
       ]
@@ -2520,7 +2520,7 @@
           ],
           "amd64": "yes",
           "arm64": "yes",
-          "source": "manifest",
+          "source": "cache",
           "checked_at": "2026-10-31T23:53:56Z"
         },
         {
@@ -2531,7 +2531,7 @@
           ],
           "amd64": "yes",
           "arm64": "yes",
-          "source": "manifest",
+          "source": "cache",
           "checked_at": "2026-10-31T23:54:42Z"
         }
       ]
@@ -2563,7 +2563,7 @@
           ],
           "amd64": "yes",
           "arm64": "yes",
-          "source": "manifest",
+          "source": "cache",
           "checked_at": "2026-10-31T23:54:42Z"
         }
       ]
@@ -2581,7 +2581,7 @@
           ],
           "amd64": "yes",
           "arm64": "yes",
-          "source": "manifest",
+          "source": "cache",
           "checked_at": "2026-10-31T23:54:42Z"
         },
         {
@@ -2592,7 +2592,7 @@
           ],
           "amd64": "yes",
           "arm64": "yes",
-          "source": "manifest",
+          "source": "cache",
           "checked_at": "2026-10-31T23:54:42Z"
         }
       ]
@@ -2610,7 +2610,7 @@
           ],
           "amd64": "yes",
           "arm64": "yes",
-          "source": "manifest",
+          "source": "cache",
           "checked_at": "2026-11-01T04:09:06Z"
         }
       ]
@@ -2628,7 +2628,7 @@
           ],
           "amd64": "yes",
           "arm64": "yes",
-          "source": "manifest",
+          "source": "cache",
           "checked_at": "2026-10-31T23:54:42Z"
         }
       ]
@@ -2646,7 +2646,7 @@
           ],
           "amd64": "yes",
           "arm64": "yes",
-          "source": "manifest",
+          "source": "cache",
           "checked_at": "2026-10-31T23:54:42Z"
         }
       ]
@@ -2708,7 +2708,7 @@
           ],
           "amd64": "yes",
           "arm64": "yes",
-          "source": "manifest",
+          "source": "cache",
           "checked_at": "2026-10-31T23:54:42Z"
         },
         {
@@ -2721,7 +2721,7 @@
           ],
           "amd64": "yes",
           "arm64": "yes",
-          "source": "manifest",
+          "source": "cache",
           "checked_at": "2026-10-31T23:54:42Z"
         }
       ]
@@ -2741,7 +2741,7 @@
           ],
           "amd64": "yes",
           "arm64": "yes",
-          "source": "manifest",
+          "source": "cache",
           "checked_at": "2026-10-31T23:54:42Z"
         }
       ]
@@ -2759,7 +2759,7 @@
           ],
           "amd64": "yes",
           "arm64": "yes",
-          "source": "manifest",
+          "source": "cache",
           "checked_at": "2026-10-31T23:54:42Z"
         }
       ]
@@ -2792,7 +2792,7 @@
           ],
           "amd64": "yes",
           "arm64": "yes",
-          "source": "manifest",
+          "source": "cache",
           "checked_at": "2026-10-31T23:54:42Z"
         }
       ]
@@ -2824,7 +2824,7 @@
           ],
           "amd64": "yes",
           "arm64": "yes",
-          "source": "manifest",
+          "source": "cache",
           "checked_at": "2026-10-31T23:54:42Z"
         }
       ]
@@ -2861,7 +2861,7 @@
           ],
           "amd64": "yes",
           "arm64": "yes",
-          "source": "manifest",
+          "source": "cache",
           "checked_at": "2026-11-02T03:14:45Z"
         },
         {
@@ -2877,7 +2877,7 @@
           ],
           "amd64": "yes",
           "arm64": "yes",
-          "source": "manifest",
+          "source": "cache",
           "checked_at": "2026-11-01T00:10:24Z"
         }
       ]
@@ -2930,7 +2930,7 @@
           ],
           "amd64": "yes",
           "arm64": "yes",
-          "source": "manifest",
+          "source": "cache",
           "checked_at": "2026-10-31T23:54:42Z"
         },
         {
@@ -2946,7 +2946,7 @@
           ],
           "amd64": "yes",
           "arm64": "yes",
-          "source": "manifest",
+          "source": "cache",
           "checked_at": "2026-10-31T23:54:42Z"
         }
       ]
@@ -2965,7 +2965,7 @@
           ],
           "amd64": "yes",
           "arm64": "yes",
-          "source": "manifest",
+          "source": "cache",
           "checked_at": "2026-10-31T23:54:42Z"
         }
       ]
@@ -2983,7 +2983,7 @@
           ],
           "amd64": "yes",
           "arm64": "yes",
-          "source": "manifest",
+          "source": "cache",
           "checked_at": "2026-11-01T23:30:55Z"
         }
       ]
@@ -3001,7 +3001,7 @@
           ],
           "amd64": "yes",
           "arm64": "yes",
-          "source": "manifest",
+          "source": "cache",
           "checked_at": "2026-10-31T23:54:42Z"
         },
         {
@@ -3014,7 +3014,7 @@
           ],
           "amd64": "yes",
           "arm64": "yes",
-          "source": "manifest",
+          "source": "cache",
           "checked_at": "2026-10-31T23:54:42Z"
         }
       ]
@@ -3034,7 +3034,7 @@
           ],
           "amd64": "yes",
           "arm64": "yes",
-          "source": "manifest",
+          "source": "cache",
           "checked_at": "2026-10-31T23:54:42Z"
         }
       ]
@@ -3052,7 +3052,7 @@
           ],
           "amd64": "yes",
           "arm64": "yes",
-          "source": "manifest",
+          "source": "cache",
           "checked_at": "2026-11-02T03:14:45Z"
         },
         {
@@ -3068,7 +3068,7 @@
           ],
           "amd64": "yes",
           "arm64": "yes",
-          "source": "manifest",
+          "source": "cache",
           "checked_at": "2026-11-02T03:14:45Z"
         }
       ]
@@ -3085,7 +3085,7 @@
           ],
           "amd64": "yes",
           "arm64": "no",
-          "source": "manifest",
+          "source": "cache",
           "checked_at": "2026-10-31T23:54:42Z"
         }
       ]
@@ -3105,7 +3105,7 @@
           ],
           "amd64": "yes",
           "arm64": "yes",
-          "source": "manifest",
+          "source": "cache",
           "checked_at": "2026-10-31T23:54:42Z"
         }
       ]
@@ -3144,7 +3144,7 @@
           ],
           "amd64": "yes",
           "arm64": "yes",
-          "source": "manifest",
+          "source": "cache",
           "checked_at": "2026-10-31T23:54:42Z"
         }
       ]
@@ -3162,7 +3162,7 @@
           ],
           "amd64": "yes",
           "arm64": "yes",
-          "source": "manifest",
+          "source": "cache",
           "checked_at": "2026-10-31T23:54:42Z"
         }
       ]
@@ -3194,7 +3194,7 @@
           ],
           "amd64": "yes",
           "arm64": "yes",
-          "source": "manifest",
+          "source": "cache",
           "checked_at": "2026-10-31T23:54:42Z"
         }
       ]
@@ -3212,7 +3212,7 @@
           ],
           "amd64": "yes",
           "arm64": "yes",
-          "source": "manifest",
+          "source": "cache",
           "checked_at": "2026-10-31T23:54:42Z"
         },
         {
@@ -3228,7 +3228,7 @@
           ],
           "amd64": "yes",
           "arm64": "yes",
-          "source": "manifest",
+          "source": "cache",
           "checked_at": "2026-11-02T03:14:45Z"
         },
         {
@@ -3239,7 +3239,7 @@
           ],
           "amd64": "yes",
           "arm64": "yes",
-          "source": "manifest",
+          "source": "cache",
           "checked_at": "2026-10-31T23:54:42Z"
         },
         {
@@ -3255,7 +3255,7 @@
           ],
           "amd64": "yes",
           "arm64": "yes",
-          "source": "manifest",
+          "source": "cache",
           "checked_at": "2026-10-31T23:54:42Z"
         }
       ]
@@ -3286,7 +3286,7 @@
           ],
           "amd64": "yes",
           "arm64": "no",
-          "source": "manifest",
+          "source": "cache",
           "checked_at": "2026-10-31T23:54:42Z"
         }
       ]
@@ -3304,7 +3304,7 @@
           ],
           "amd64": "yes",
           "arm64": "yes",
-          "source": "manifest",
+          "source": "cache",
           "checked_at": "2026-11-01T00:10:24Z"
         }
       ]
@@ -3322,7 +3322,7 @@
           ],
           "amd64": "yes",
           "arm64": "yes",
-          "source": "manifest",
+          "source": "cache",
           "checked_at": "2026-11-01T00:10:24Z"
         },
         {
@@ -3338,7 +3338,7 @@
           ],
           "amd64": "yes",
           "arm64": "yes",
-          "source": "manifest",
+          "source": "cache",
           "checked_at": "2026-11-02T03:14:45Z"
         }
       ]
@@ -3356,7 +3356,7 @@
           ],
           "amd64": "yes",
           "arm64": "yes",
-          "source": "manifest",
+          "source": "cache",
           "checked_at": "2026-10-31T23:54:42Z"
         },
         {
@@ -3367,7 +3367,7 @@
           ],
           "amd64": "yes",
           "arm64": "yes",
-          "source": "manifest",
+          "source": "cache",
           "checked_at": "2026-10-31T23:54:42Z"
         },
         {
@@ -3383,7 +3383,7 @@
           ],
           "amd64": "yes",
           "arm64": "yes",
-          "source": "manifest",
+          "source": "cache",
           "checked_at": "2026-10-31T23:54:42Z"
         }
       ]
@@ -3401,7 +3401,7 @@
           ],
           "amd64": "yes",
           "arm64": "yes",
-          "source": "manifest",
+          "source": "cache",
           "checked_at": "2026-10-31T23:54:42Z"
         },
         {
@@ -3414,7 +3414,7 @@
           ],
           "amd64": "yes",
           "arm64": "yes",
-          "source": "manifest",
+          "source": "cache",
           "checked_at": "2026-10-31T23:54:42Z"
         }
       ]
@@ -3433,7 +3433,7 @@
           ],
           "amd64": "yes",
           "arm64": "yes",
-          "source": "manifest",
+          "source": "cache",
           "checked_at": "2026-10-31T23:54:42Z"
         },
         {
@@ -3446,7 +3446,7 @@
           ],
           "amd64": "yes",
           "arm64": "yes",
-          "source": "manifest",
+          "source": "cache",
           "checked_at": "2026-10-31T23:54:42Z"
         }
       ]
@@ -3465,7 +3465,7 @@
           ],
           "amd64": "yes",
           "arm64": "yes",
-          "source": "manifest",
+          "source": "cache",
           "checked_at": "2026-10-31T23:54:42Z"
         }
       ]
@@ -3485,7 +3485,7 @@
           ],
           "amd64": "yes",
           "arm64": "yes",
-          "source": "manifest",
+          "source": "cache",
           "checked_at": "2026-10-31T23:54:42Z"
         },
         {
@@ -3496,7 +3496,7 @@
           ],
           "amd64": "yes",
           "arm64": "yes",
-          "source": "manifest",
+          "source": "cache",
           "checked_at": "2026-10-31T23:54:42Z"
         }
       ]
@@ -3515,7 +3515,7 @@
           ],
           "amd64": "yes",
           "arm64": "yes",
-          "source": "manifest",
+          "source": "cache",
           "checked_at": "2026-10-31T23:54:42Z"
         },
         {
@@ -3531,7 +3531,7 @@
           ],
           "amd64": "yes",
           "arm64": "yes",
-          "source": "manifest",
+          "source": "cache",
           "checked_at": "2026-11-02T03:14:45Z"
         },
         {
@@ -3547,7 +3547,7 @@
           ],
           "amd64": "yes",
           "arm64": "yes",
-          "source": "manifest",
+          "source": "cache",
           "checked_at": "2026-10-31T23:54:42Z"
         }
       ]
@@ -3579,7 +3579,7 @@
           ],
           "amd64": "yes",
           "arm64": "yes",
-          "source": "manifest",
+          "source": "cache",
           "checked_at": "2026-10-31T23:54:42Z"
         },
         {
@@ -3592,7 +3592,7 @@
           ],
           "amd64": "yes",
           "arm64": "yes",
-          "source": "manifest",
+          "source": "cache",
           "checked_at": "2026-10-31T23:54:42Z"
         }
       ]
@@ -3610,7 +3610,7 @@
           ],
           "amd64": "yes",
           "arm64": "yes",
-          "source": "manifest",
+          "source": "cache",
           "checked_at": "2026-10-31T23:54:42Z"
         },
         {
@@ -3626,7 +3626,7 @@
           ],
           "amd64": "yes",
           "arm64": "yes",
-          "source": "manifest",
+          "source": "cache",
           "checked_at": "2026-11-02T03:14:45Z"
         }
       ]
@@ -3643,7 +3643,7 @@
           ],
           "amd64": "yes",
           "arm64": "no",
-          "source": "manifest",
+          "source": "cache",
           "checked_at": "2026-11-01T00:10:24Z"
         }
       ]
@@ -3661,7 +3661,7 @@
           ],
           "amd64": "yes",
           "arm64": "yes",
-          "source": "manifest",
+          "source": "cache",
           "checked_at": "2026-10-31T23:54:42Z"
         }
       ]
@@ -3679,7 +3679,7 @@
           ],
           "amd64": "yes",
           "arm64": "yes",
-          "source": "manifest",
+          "source": "cache",
           "checked_at": "2026-11-01T04:36:49Z"
         }
       ]
@@ -3698,7 +3698,7 @@
           ],
           "amd64": "yes",
           "arm64": "yes",
-          "source": "manifest",
+          "source": "cache",
           "checked_at": "2026-10-31T23:54:42Z"
         }
       ]
@@ -3718,7 +3718,7 @@
           ],
           "amd64": "yes",
           "arm64": "yes",
-          "source": "manifest",
+          "source": "cache",
           "checked_at": "2026-10-31T23:54:42Z"
         }
       ]
@@ -3736,7 +3736,7 @@
           ],
           "amd64": "yes",
           "arm64": "yes",
-          "source": "manifest",
+          "source": "cache",
           "checked_at": "2026-10-31T23:54:42Z"
         },
         {
@@ -3752,7 +3752,7 @@
           ],
           "amd64": "yes",
           "arm64": "yes",
-          "source": "manifest",
+          "source": "cache",
           "checked_at": "2026-11-02T03:14:45Z"
         },
         {
@@ -3768,7 +3768,7 @@
           ],
           "amd64": "yes",
           "arm64": "yes",
-          "source": "manifest",
+          "source": "cache",
           "checked_at": "2026-10-31T23:54:42Z"
         }
       ]
@@ -3786,7 +3786,7 @@
           ],
           "amd64": "yes",
           "arm64": "yes",
-          "source": "manifest",
+          "source": "cache",
           "checked_at": "2026-10-31T23:54:42Z"
         },
         {
@@ -3797,7 +3797,7 @@
           ],
           "amd64": "yes",
           "arm64": "yes",
-          "source": "manifest",
+          "source": "cache",
           "checked_at": "2026-10-31T23:54:42Z"
         }
       ]
@@ -3829,7 +3829,7 @@
           ],
           "amd64": "yes",
           "arm64": "yes",
-          "source": "manifest",
+          "source": "cache",
           "checked_at": "2026-10-31T23:53:56Z"
         }
       ]
@@ -3862,7 +3862,7 @@
           ],
           "amd64": "yes",
           "arm64": "yes",
-          "source": "manifest",
+          "source": "cache",
           "checked_at": "2026-10-31T23:54:42Z"
         }
       ]
@@ -3896,7 +3896,7 @@
           ],
           "amd64": "yes",
           "arm64": "yes",
-          "source": "manifest",
+          "source": "cache",
           "checked_at": "2026-10-31T23:54:42Z"
         }
       ]
@@ -3917,7 +3917,7 @@
           ],
           "amd64": "yes",
           "arm64": "yes",
-          "source": "manifest",
+          "source": "cache",
           "checked_at": "2026-10-31T23:54:42Z"
         }
       ]
@@ -3936,7 +3936,7 @@
           ],
           "amd64": "yes",
           "arm64": "yes",
-          "source": "manifest",
+          "source": "cache",
           "checked_at": "2026-10-31T23:54:42Z"
         }
       ]
@@ -3969,7 +3969,7 @@
           ],
           "amd64": "yes",
           "arm64": "yes",
-          "source": "manifest",
+          "source": "cache",
           "checked_at": "2026-10-31T23:54:42Z"
         },
         {
@@ -3985,7 +3985,7 @@
           ],
           "amd64": "yes",
           "arm64": "yes",
-          "source": "manifest",
+          "source": "cache",
           "checked_at": "2026-11-02T03:14:45Z"
         }
       ]
@@ -4004,7 +4004,7 @@
           ],
           "amd64": "yes",
           "arm64": "yes",
-          "source": "manifest",
+          "source": "cache",
           "checked_at": "2026-10-31T23:54:42Z"
         },
         {
@@ -4020,7 +4020,7 @@
           ],
           "amd64": "yes",
           "arm64": "yes",
-          "source": "manifest",
+          "source": "cache",
           "checked_at": "2026-10-31T23:54:42Z"
         }
       ]
@@ -4066,7 +4066,7 @@
           ],
           "amd64": "yes",
           "arm64": "yes",
-          "source": "manifest",
+          "source": "cache",
           "checked_at": "2026-10-31T23:54:42Z"
         },
         {
@@ -4079,7 +4079,7 @@
           ],
           "amd64": "yes",
           "arm64": "yes",
-          "source": "manifest",
+          "source": "cache",
           "checked_at": "2026-10-31T23:54:42Z"
         }
       ]
@@ -4097,7 +4097,7 @@
           ],
           "amd64": "yes",
           "arm64": "yes",
-          "source": "manifest",
+          "source": "cache",
           "checked_at": "2026-10-31T23:54:42Z"
         },
         {
@@ -4113,7 +4113,7 @@
           ],
           "amd64": "yes",
           "arm64": "yes",
-          "source": "manifest",
+          "source": "cache",
           "checked_at": "2026-11-02T03:14:45Z"
         },
         {
@@ -4129,7 +4129,7 @@
           ],
           "amd64": "yes",
           "arm64": "yes",
-          "source": "manifest",
+          "source": "cache",
           "checked_at": "2026-10-31T23:54:42Z"
         }
       ]
@@ -4147,7 +4147,7 @@
           ],
           "amd64": "yes",
           "arm64": "yes",
-          "source": "manifest",
+          "source": "cache",
           "checked_at": "2026-10-31T23:54:42Z"
         }
       ]
@@ -4179,7 +4179,7 @@
           ],
           "amd64": "yes",
           "arm64": "yes",
-          "source": "manifest",
+          "source": "cache",
           "checked_at": "2026-10-31T23:54:42Z"
         },
         {
@@ -4195,7 +4195,7 @@
           ],
           "amd64": "yes",
           "arm64": "yes",
-          "source": "manifest",
+          "source": "cache",
           "checked_at": "2026-11-02T03:14:45Z"
         }
       ]
@@ -4213,7 +4213,7 @@
           ],
           "amd64": "yes",
           "arm64": "yes",
-          "source": "manifest",
+          "source": "cache",
           "checked_at": "2026-10-31T23:54:42Z"
         }
       ]
@@ -4232,7 +4232,7 @@
           ],
           "amd64": "yes",
           "arm64": "yes",
-          "source": "manifest",
+          "source": "cache",
           "checked_at": "2026-10-31T23:54:42Z"
         },
         {
@@ -4248,7 +4248,7 @@
           ],
           "amd64": "yes",
           "arm64": "yes",
-          "source": "manifest",
+          "source": "cache",
           "checked_at": "2026-11-02T03:14:45Z"
         }
       ]
@@ -4271,7 +4271,7 @@
           ],
           "amd64": "yes",
           "arm64": "yes",
-          "source": "manifest",
+          "source": "cache",
           "checked_at": "2026-11-02T03:14:45Z"
         },
         {
@@ -4282,7 +4282,7 @@
           ],
           "amd64": "yes",
           "arm64": "yes",
-          "source": "manifest",
+          "source": "cache",
           "checked_at": "2026-10-31T23:54:42Z"
         }
       ]
@@ -4300,7 +4300,7 @@
           ],
           "amd64": "yes",
           "arm64": "yes",
-          "source": "manifest",
+          "source": "cache",
           "checked_at": "2026-10-31T23:54:42Z"
         }
       ]
@@ -4332,7 +4332,7 @@
           ],
           "amd64": "yes",
           "arm64": "yes",
-          "source": "manifest",
+          "source": "cache",
           "checked_at": "2026-11-01T00:10:24Z"
         },
         {
@@ -4344,7 +4344,7 @@
           ],
           "amd64": "yes",
           "arm64": "yes",
-          "source": "manifest",
+          "source": "cache",
           "checked_at": "2026-10-31T23:54:42Z"
         },
         {
@@ -4360,7 +4360,7 @@
           ],
           "amd64": "yes",
           "arm64": "yes",
-          "source": "manifest",
+          "source": "cache",
           "checked_at": "2026-10-31T23:54:42Z"
         }
       ]
@@ -4393,7 +4393,7 @@
           ],
           "amd64": "yes",
           "arm64": "yes",
-          "source": "manifest",
+          "source": "cache",
           "checked_at": "2026-10-31T23:54:42Z"
         }
       ]
@@ -4413,7 +4413,7 @@
           ],
           "amd64": "yes",
           "arm64": "yes",
-          "source": "manifest",
+          "source": "cache",
           "checked_at": "2026-10-31T23:54:42Z"
         }
       ]
@@ -4432,7 +4432,7 @@
           ],
           "amd64": "yes",
           "arm64": "yes",
-          "source": "manifest",
+          "source": "cache",
           "checked_at": "2026-10-31T23:54:42Z"
         }
       ]
@@ -4451,7 +4451,7 @@
           ],
           "amd64": "yes",
           "arm64": "yes",
-          "source": "manifest",
+          "source": "cache",
           "checked_at": "2026-10-31T23:54:42Z"
         }
       ]
@@ -4470,7 +4470,7 @@
           ],
           "amd64": "yes",
           "arm64": "yes",
-          "source": "manifest",
+          "source": "cache",
           "checked_at": "2026-10-31T23:53:56Z"
         }
       ]
@@ -4488,7 +4488,7 @@
           ],
           "amd64": "yes",
           "arm64": "yes",
-          "source": "manifest",
+          "source": "cache",
           "checked_at": "2026-10-31T23:54:42Z"
         },
         {
@@ -4504,7 +4504,7 @@
           ],
           "amd64": "yes",
           "arm64": "yes",
-          "source": "manifest",
+          "source": "cache",
           "checked_at": "2026-10-31T23:54:42Z"
         }
       ]
@@ -4531,7 +4531,7 @@
           ],
           "amd64": "yes",
           "arm64": "yes",
-          "source": "manifest",
+          "source": "cache",
           "checked_at": "2026-10-31T23:54:42Z"
         }
       ]
@@ -4563,7 +4563,7 @@
           ],
           "amd64": "yes",
           "arm64": "yes",
-          "source": "manifest",
+          "source": "cache",
           "checked_at": "2026-11-02T03:14:45Z"
         }
       ]
@@ -4595,7 +4595,7 @@
           ],
           "amd64": "yes",
           "arm64": "yes",
-          "source": "manifest",
+          "source": "cache",
           "checked_at": "2026-10-31T23:54:42Z"
         }
       ]
@@ -4613,7 +4613,7 @@
           ],
           "amd64": "yes",
           "arm64": "yes",
-          "source": "manifest",
+          "source": "cache",
           "checked_at": "2026-11-02T03:14:45Z"
         }
       ]
@@ -4631,7 +4631,7 @@
           ],
           "amd64": "yes",
           "arm64": "yes",
-          "source": "manifest",
+          "source": "cache",
           "checked_at": "2026-10-31T23:54:42Z"
         },
         {
@@ -4642,7 +4642,7 @@
           ],
           "amd64": "yes",
           "arm64": "yes",
-          "source": "manifest",
+          "source": "cache",
           "checked_at": "2026-10-31T23:54:42Z"
         },
         {
@@ -4653,7 +4653,7 @@
           ],
           "amd64": "yes",
           "arm64": "yes",
-          "source": "manifest",
+          "source": "cache",
           "checked_at": "2026-10-31T23:54:42Z"
         },
         {
@@ -4669,7 +4669,7 @@
           ],
           "amd64": "yes",
           "arm64": "yes",
-          "source": "manifest",
+          "source": "cache",
           "checked_at": "2026-10-31T23:54:42Z"
         }
       ]
@@ -4701,7 +4701,7 @@
           ],
           "amd64": "yes",
           "arm64": "yes",
-          "source": "manifest",
+          "source": "cache",
           "checked_at": "2026-10-31T23:54:42Z"
         },
         {
@@ -4717,7 +4717,7 @@
           ],
           "amd64": "yes",
           "arm64": "yes",
-          "source": "manifest",
+          "source": "cache",
           "checked_at": "2026-11-02T03:14:45Z"
         },
         {
@@ -4733,7 +4733,7 @@
           ],
           "amd64": "yes",
           "arm64": "yes",
-          "source": "manifest",
+          "source": "cache",
           "checked_at": "2026-10-31T23:54:42Z"
         }
       ]
@@ -4751,7 +4751,7 @@
           ],
           "amd64": "yes",
           "arm64": "yes",
-          "source": "manifest",
+          "source": "cache",
           "checked_at": "2026-10-31T23:54:42Z"
         }
       ]
@@ -4769,7 +4769,7 @@
           ],
           "amd64": "yes",
           "arm64": "yes",
-          "source": "manifest",
+          "source": "cache",
           "checked_at": "2026-10-31T23:54:42Z"
         },
         {
@@ -4785,7 +4785,7 @@
           ],
           "amd64": "yes",
           "arm64": "yes",
-          "source": "manifest",
+          "source": "cache",
           "checked_at": "2026-11-02T03:14:45Z"
         },
         {
@@ -4801,7 +4801,7 @@
           ],
           "amd64": "yes",
           "arm64": "yes",
-          "source": "manifest",
+          "source": "cache",
           "checked_at": "2026-10-31T23:54:42Z"
         }
       ]
@@ -4819,7 +4819,7 @@
           ],
           "amd64": "yes",
           "arm64": "yes",
-          "source": "manifest",
+          "source": "cache",
           "checked_at": "2026-10-31T23:54:42Z"
         },
         {
@@ -4832,7 +4832,7 @@
           ],
           "amd64": "yes",
           "arm64": "yes",
-          "source": "manifest",
+          "source": "cache",
           "checked_at": "2026-10-31T23:54:42Z"
         },
         {
@@ -4848,7 +4848,7 @@
           ],
           "amd64": "yes",
           "arm64": "yes",
-          "source": "manifest",
+          "source": "cache",
           "checked_at": "2026-10-31T23:54:42Z"
         }
       ]
@@ -4880,7 +4880,7 @@
           ],
           "amd64": "yes",
           "arm64": "yes",
-          "source": "manifest",
+          "source": "cache",
           "checked_at": "2026-10-31T23:54:42Z"
         }
       ]
@@ -4898,7 +4898,7 @@
           ],
           "amd64": "yes",
           "arm64": "yes",
-          "source": "manifest",
+          "source": "cache",
           "checked_at": "2026-10-31T23:54:42Z"
         }
       ]
@@ -4918,7 +4918,7 @@
           ],
           "amd64": "yes",
           "arm64": "yes",
-          "source": "manifest",
+          "source": "cache",
           "checked_at": "2026-10-31T23:54:42Z"
         }
       ]
@@ -4936,7 +4936,7 @@
           ],
           "amd64": "yes",
           "arm64": "yes",
-          "source": "manifest",
+          "source": "cache",
           "checked_at": "2026-10-31T23:54:42Z"
         }
       ]
@@ -4954,7 +4954,7 @@
           ],
           "amd64": "yes",
           "arm64": "yes",
-          "source": "manifest",
+          "source": "cache",
           "checked_at": "2026-10-31T23:54:42Z"
         }
       ]
@@ -4972,7 +4972,7 @@
           ],
           "amd64": "yes",
           "arm64": "yes",
-          "source": "manifest",
+          "source": "cache",
           "checked_at": "2026-11-01T04:36:49Z"
         },
         {
@@ -4988,7 +4988,7 @@
           ],
           "amd64": "yes",
           "arm64": "yes",
-          "source": "manifest",
+          "source": "cache",
           "checked_at": "2026-11-02T03:14:45Z"
         }
       ]
@@ -5009,7 +5009,7 @@
           ],
           "amd64": "yes",
           "arm64": "yes",
-          "source": "manifest",
+          "source": "cache",
           "checked_at": "2026-10-31T23:54:42Z"
         }
       ]
@@ -5032,7 +5032,7 @@
           ],
           "amd64": "yes",
           "arm64": "yes",
-          "source": "manifest",
+          "source": "cache",
           "checked_at": "2026-11-01T00:10:24Z"
         },
         {
@@ -5045,7 +5045,7 @@
           ],
           "amd64": "yes",
           "arm64": "yes",
-          "source": "manifest",
+          "source": "cache",
           "checked_at": "2026-10-31T23:54:42Z"
         }
       ]
@@ -5063,7 +5063,7 @@
           ],
           "amd64": "yes",
           "arm64": "yes",
-          "source": "manifest",
+          "source": "cache",
           "checked_at": "2026-10-31T23:54:42Z"
         },
         {
@@ -5079,7 +5079,7 @@
           ],
           "amd64": "yes",
           "arm64": "yes",
-          "source": "manifest",
+          "source": "cache",
           "checked_at": "2026-10-31T23:54:42Z"
         }
       ]
@@ -5097,7 +5097,7 @@
           ],
           "amd64": "yes",
           "arm64": "yes",
-          "source": "manifest",
+          "source": "cache",
           "checked_at": "2026-10-31T23:54:42Z"
         },
         {
@@ -5113,7 +5113,7 @@
           ],
           "amd64": "yes",
           "arm64": "yes",
-          "source": "manifest",
+          "source": "cache",
           "checked_at": "2026-10-31T23:54:42Z"
         }
       ]
@@ -5130,7 +5130,7 @@
           ],
           "amd64": "yes",
           "arm64": "no",
-          "source": "manifest",
+          "source": "cache",
           "checked_at": "2026-10-31T23:54:42Z"
         }
       ]
@@ -5148,7 +5148,7 @@
           ],
           "amd64": "yes",
           "arm64": "yes",
-          "source": "manifest",
+          "source": "cache",
           "checked_at": "2026-10-31T23:54:42Z"
         }
       ]
@@ -5166,7 +5166,7 @@
           ],
           "amd64": "yes",
           "arm64": "yes",
-          "source": "manifest",
+          "source": "cache",
           "checked_at": "2026-10-31T23:54:42Z"
         }
       ]
@@ -5213,7 +5213,7 @@
           ],
           "amd64": "yes",
           "arm64": "yes",
-          "source": "manifest",
+          "source": "cache",
           "checked_at": "2026-10-31T23:54:42Z"
         }
       ]
@@ -5245,7 +5245,7 @@
           ],
           "amd64": "yes",
           "arm64": "yes",
-          "source": "manifest",
+          "source": "cache",
           "checked_at": "2026-10-31T23:54:42Z"
         },
         {
@@ -5256,7 +5256,7 @@
           ],
           "amd64": "yes",
           "arm64": "yes",
-          "source": "manifest",
+          "source": "cache",
           "checked_at": "2026-10-31T23:54:42Z"
         }
       ]
@@ -5289,7 +5289,7 @@
           ],
           "amd64": "yes",
           "arm64": "yes",
-          "source": "manifest",
+          "source": "cache",
           "checked_at": "2026-10-31T23:54:42Z"
         }
       ]
@@ -5333,7 +5333,7 @@
           ],
           "amd64": "yes",
           "arm64": "yes",
-          "source": "manifest",
+          "source": "cache",
           "checked_at": "2026-10-31T23:54:42Z"
         }
       ]
@@ -5363,7 +5363,7 @@
           ],
           "amd64": "yes",
           "arm64": "yes",
-          "source": "manifest",
+          "source": "cache",
           "checked_at": "2026-11-02T03:14:45Z"
         }
       ]
@@ -5381,7 +5381,7 @@
           ],
           "amd64": "yes",
           "arm64": "yes",
-          "source": "manifest",
+          "source": "cache",
           "checked_at": "2026-10-31T23:54:42Z"
         }
       ]
@@ -5404,7 +5404,7 @@
           ],
           "amd64": "yes",
           "arm64": "yes",
-          "source": "manifest",
+          "source": "cache",
           "checked_at": "2026-11-02T03:14:45Z"
         },
         {
@@ -5415,7 +5415,7 @@
           ],
           "amd64": "yes",
           "arm64": "yes",
-          "source": "manifest",
+          "source": "cache",
           "checked_at": "2026-10-31T23:54:42Z"
         }
       ]
@@ -5433,7 +5433,7 @@
           ],
           "amd64": "yes",
           "arm64": "yes",
-          "source": "manifest",
+          "source": "cache",
           "checked_at": "2026-10-31T23:54:42Z"
         },
         {
@@ -5444,7 +5444,7 @@
           ],
           "amd64": "yes",
           "arm64": "yes",
-          "source": "manifest",
+          "source": "cache",
           "checked_at": "2026-10-31T23:54:42Z"
         }
       ]
@@ -5476,7 +5476,7 @@
           ],
           "amd64": "yes",
           "arm64": "yes",
-          "source": "manifest",
+          "source": "cache",
           "checked_at": "2026-11-01T23:07:14Z"
         }
       ]
@@ -5495,7 +5495,7 @@
           ],
           "amd64": "yes",
           "arm64": "yes",
-          "source": "manifest",
+          "source": "cache",
           "checked_at": "2026-10-31T23:54:42Z"
         }
       ]
@@ -5528,7 +5528,7 @@
           ],
           "amd64": "yes",
           "arm64": "yes",
-          "source": "manifest",
+          "source": "cache",
           "checked_at": "2026-10-31T23:54:42Z"
         }
       ]
@@ -5574,7 +5574,7 @@
           ],
           "amd64": "yes",
           "arm64": "yes",
-          "source": "manifest",
+          "source": "cache",
           "checked_at": "2026-10-31T23:54:42Z"
         },
         {
@@ -5590,7 +5590,7 @@
           ],
           "amd64": "yes",
           "arm64": "yes",
-          "source": "manifest",
+          "source": "cache",
           "checked_at": "2026-11-02T03:14:45Z"
         },
         {
@@ -5606,7 +5606,7 @@
           ],
           "amd64": "yes",
           "arm64": "yes",
-          "source": "manifest",
+          "source": "cache",
           "checked_at": "2026-10-31T23:54:42Z"
         }
       ]
@@ -5624,7 +5624,7 @@
           ],
           "amd64": "yes",
           "arm64": "yes",
-          "source": "manifest",
+          "source": "cache",
           "checked_at": "2026-10-31T23:54:42Z"
         }
       ]
@@ -5642,7 +5642,7 @@
           ],
           "amd64": "yes",
           "arm64": "yes",
-          "source": "manifest",
+          "source": "cache",
           "checked_at": "2026-10-31T23:54:42Z"
         },
         {
@@ -5658,7 +5658,7 @@
           ],
           "amd64": "yes",
           "arm64": "yes",
-          "source": "manifest",
+          "source": "cache",
           "checked_at": "2026-11-02T03:14:45Z"
         }
       ]
@@ -5676,7 +5676,7 @@
           ],
           "amd64": "yes",
           "arm64": "yes",
-          "source": "manifest",
+          "source": "cache",
           "checked_at": "2026-10-31T23:54:42Z"
         },
         {
@@ -5687,7 +5687,7 @@
           ],
           "amd64": "yes",
           "arm64": "yes",
-          "source": "manifest",
+          "source": "cache",
           "checked_at": "2026-10-31T23:54:42Z"
         },
         {
@@ -5698,7 +5698,7 @@
           ],
           "amd64": "yes",
           "arm64": "yes",
-          "source": "manifest",
+          "source": "cache",
           "checked_at": "2026-11-01T00:10:24Z"
         },
         {
@@ -5709,7 +5709,7 @@
           ],
           "amd64": "yes",
           "arm64": "yes",
-          "source": "manifest",
+          "source": "cache",
           "checked_at": "2026-10-31T23:54:42Z"
         },
         {
@@ -5725,7 +5725,7 @@
           ],
           "amd64": "yes",
           "arm64": "yes",
-          "source": "manifest",
+          "source": "cache",
           "checked_at": "2026-11-02T03:14:45Z"
         },
         {
@@ -5741,7 +5741,7 @@
           ],
           "amd64": "yes",
           "arm64": "yes",
-          "source": "manifest",
+          "source": "cache",
           "checked_at": "2026-10-31T23:54:42Z"
         }
       ]
@@ -5759,7 +5759,7 @@
           ],
           "amd64": "yes",
           "arm64": "yes",
-          "source": "manifest",
+          "source": "cache",
           "checked_at": "2026-11-02T03:14:45Z"
         }
       ]
@@ -5778,7 +5778,7 @@
           ],
           "amd64": "yes",
           "arm64": "yes",
-          "source": "manifest",
+          "source": "cache",
           "checked_at": "2026-10-31T23:54:42Z"
         },
         {
@@ -5789,7 +5789,7 @@
           ],
           "amd64": "yes",
           "arm64": "yes",
-          "source": "manifest",
+          "source": "cache",
           "checked_at": "2026-10-31T23:54:42Z"
         },
         {
@@ -5805,7 +5805,7 @@
           ],
           "amd64": "yes",
           "arm64": "yes",
-          "source": "manifest",
+          "source": "cache",
           "checked_at": "2026-10-31T23:54:42Z"
         }
       ]
@@ -5823,7 +5823,7 @@
           ],
           "amd64": "yes",
           "arm64": "yes",
-          "source": "manifest",
+          "source": "cache",
           "checked_at": "2026-10-31T23:54:42Z"
         },
         {
@@ -5834,7 +5834,7 @@
           ],
           "amd64": "yes",
           "arm64": "yes",
-          "source": "manifest",
+          "source": "cache",
           "checked_at": "2026-10-31T23:54:42Z"
         },
         {
@@ -5846,8 +5846,26 @@
           ],
           "amd64": "yes",
           "arm64": "yes",
-          "source": "manifest",
+          "source": "cache",
           "checked_at": "2026-10-31T23:54:42Z"
+        }
+      ]
+    },
+    {
+      "id": "libredb-studio",
+      "amd64": "yes",
+      "arm64": "yes",
+      "images": [
+        {
+          "ref": "ghcr.io/libredb/libredb-studio:1.3.0",
+          "platforms": [
+            "linux/amd64",
+            "linux/arm64"
+          ],
+          "amd64": "yes",
+          "arm64": "yes",
+          "source": "manifest",
+          "checked_at": "2026-11-20T08:25:50Z"
         }
       ]
     },
@@ -5864,7 +5882,7 @@
           ],
           "amd64": "yes",
           "arm64": "yes",
-          "source": "manifest",
+          "source": "cache",
           "checked_at": "2026-10-31T23:54:42Z"
         }
       ]
@@ -5883,7 +5901,7 @@
           ],
           "amd64": "yes",
           "arm64": "yes",
-          "source": "manifest",
+          "source": "cache",
           "checked_at": "2026-10-31T23:54:42Z"
         }
       ]
@@ -5901,7 +5919,7 @@
           ],
           "amd64": "yes",
           "arm64": "yes",
-          "source": "manifest",
+          "source": "cache",
           "checked_at": "2026-10-31T23:54:42Z"
         }
       ]
@@ -5933,7 +5951,7 @@
           ],
           "amd64": "yes",
           "arm64": "yes",
-          "source": "manifest",
+          "source": "cache",
           "checked_at": "2026-10-31T23:54:42Z"
         }
       ]
@@ -5966,7 +5984,7 @@
           ],
           "amd64": "yes",
           "arm64": "yes",
-          "source": "manifest",
+          "source": "cache",
           "checked_at": "2026-10-31T23:53:56Z"
         },
         {
@@ -5979,7 +5997,7 @@
           ],
           "amd64": "yes",
           "arm64": "yes",
-          "source": "manifest",
+          "source": "cache",
           "checked_at": "2026-10-31T23:54:42Z"
         },
         {
@@ -5995,7 +6013,7 @@
           ],
           "amd64": "yes",
           "arm64": "yes",
-          "source": "manifest",
+          "source": "cache",
           "checked_at": "2026-10-31T23:54:42Z"
         }
       ]
@@ -6014,7 +6032,7 @@
           ],
           "amd64": "yes",
           "arm64": "yes",
-          "source": "manifest",
+          "source": "cache",
           "checked_at": "2026-11-01T22:50:28Z"
         }
       ]
@@ -6033,7 +6051,7 @@
           ],
           "amd64": "yes",
           "arm64": "yes",
-          "source": "manifest",
+          "source": "cache",
           "checked_at": "2026-10-31T23:54:42Z"
         }
       ]
@@ -6052,7 +6070,7 @@
           ],
           "amd64": "yes",
           "arm64": "yes",
-          "source": "manifest",
+          "source": "cache",
           "checked_at": "2026-10-31T23:54:42Z"
         }
       ]
@@ -6084,7 +6102,7 @@
           ],
           "amd64": "yes",
           "arm64": "yes",
-          "source": "manifest",
+          "source": "cache",
           "checked_at": "2026-10-31T23:54:42Z"
         },
         {
@@ -6095,7 +6113,7 @@
           ],
           "amd64": "yes",
           "arm64": "yes",
-          "source": "manifest",
+          "source": "cache",
           "checked_at": "2026-10-31T23:54:42Z"
         },
         {
@@ -6111,7 +6129,7 @@
           ],
           "amd64": "yes",
           "arm64": "yes",
-          "source": "manifest",
+          "source": "cache",
           "checked_at": "2026-11-02T03:14:45Z"
         }
       ]
@@ -6130,7 +6148,7 @@
           ],
           "amd64": "yes",
           "arm64": "yes",
-          "source": "manifest",
+          "source": "cache",
           "checked_at": "2026-10-31T23:54:42Z"
         },
         {
@@ -6146,7 +6164,7 @@
           ],
           "amd64": "yes",
           "arm64": "yes",
-          "source": "manifest",
+          "source": "cache",
           "checked_at": "2026-11-02T03:14:45Z"
         }
       ]
@@ -6164,7 +6182,7 @@
           ],
           "amd64": "yes",
           "arm64": "yes",
-          "source": "manifest",
+          "source": "cache",
           "checked_at": "2026-10-31T23:54:42Z"
         },
         {
@@ -6180,7 +6198,7 @@
           ],
           "amd64": "yes",
           "arm64": "yes",
-          "source": "manifest",
+          "source": "cache",
           "checked_at": "2026-11-02T03:14:45Z"
         }
       ]
@@ -6227,7 +6245,7 @@
           ],
           "amd64": "yes",
           "arm64": "yes",
-          "source": "manifest",
+          "source": "cache",
           "checked_at": "2026-10-31T23:54:42Z"
         }
       ]
@@ -6246,7 +6264,7 @@
           ],
           "amd64": "yes",
           "arm64": "yes",
-          "source": "manifest",
+          "source": "cache",
           "checked_at": "2026-11-01T00:10:24Z"
         }
       ]
@@ -6264,7 +6282,7 @@
           ],
           "amd64": "yes",
           "arm64": "yes",
-          "source": "manifest",
+          "source": "cache",
           "checked_at": "2026-10-31T23:54:42Z"
         }
       ]
@@ -6282,7 +6300,7 @@
           ],
           "amd64": "yes",
           "arm64": "yes",
-          "source": "manifest",
+          "source": "cache",
           "checked_at": "2026-10-31T23:54:42Z"
         }
       ]
@@ -6305,7 +6323,7 @@
           ],
           "amd64": "yes",
           "arm64": "yes",
-          "source": "manifest",
+          "source": "cache",
           "checked_at": "2026-11-02T03:14:45Z"
         },
         {
@@ -6316,7 +6334,7 @@
           ],
           "amd64": "yes",
           "arm64": "yes",
-          "source": "manifest",
+          "source": "cache",
           "checked_at": "2026-10-31T23:54:42Z"
         }
       ]
@@ -6335,7 +6353,7 @@
           ],
           "amd64": "yes",
           "arm64": "yes",
-          "source": "manifest",
+          "source": "cache",
           "checked_at": "2026-10-31T23:54:42Z"
         }
       ]
@@ -6353,7 +6371,7 @@
           ],
           "amd64": "yes",
           "arm64": "yes",
-          "source": "manifest",
+          "source": "cache",
           "checked_at": "2026-10-31T23:54:42Z"
         }
       ]
@@ -6371,7 +6389,7 @@
           ],
           "amd64": "yes",
           "arm64": "yes",
-          "source": "manifest",
+          "source": "cache",
           "checked_at": "2026-11-01T04:09:06Z"
         }
       ]
@@ -6389,7 +6407,7 @@
           ],
           "amd64": "yes",
           "arm64": "yes",
-          "source": "manifest",
+          "source": "cache",
           "checked_at": "2026-11-01T22:50:28Z"
         }
       ]
@@ -6435,7 +6453,7 @@
           ],
           "amd64": "yes",
           "arm64": "yes",
-          "source": "manifest",
+          "source": "cache",
           "checked_at": "2026-10-31T23:54:42Z"
         }
       ]
@@ -6457,7 +6475,7 @@
           ],
           "amd64": "yes",
           "arm64": "yes",
-          "source": "manifest",
+          "source": "cache",
           "checked_at": "2026-10-31T23:54:42Z"
         }
       ]
@@ -6502,7 +6520,7 @@
           ],
           "amd64": "yes",
           "arm64": "no",
-          "source": "manifest",
+          "source": "cache",
           "checked_at": "2026-10-31T23:54:42Z"
         }
       ]
@@ -6521,7 +6539,7 @@
           ],
           "amd64": "yes",
           "arm64": "yes",
-          "source": "manifest",
+          "source": "cache",
           "checked_at": "2026-11-01T00:10:24Z"
         }
       ]
@@ -6539,7 +6557,7 @@
           ],
           "amd64": "yes",
           "arm64": "yes",
-          "source": "manifest",
+          "source": "cache",
           "checked_at": "2026-11-01T04:09:06Z"
         }
       ]
@@ -6608,7 +6626,7 @@
           ],
           "amd64": "yes",
           "arm64": "yes",
-          "source": "manifest",
+          "source": "cache",
           "checked_at": "2026-11-02T03:14:45Z"
         }
       ]
@@ -6626,7 +6644,7 @@
           ],
           "amd64": "yes",
           "arm64": "yes",
-          "source": "manifest",
+          "source": "cache",
           "checked_at": "2026-10-31T23:54:42Z"
         }
       ]
@@ -6646,7 +6664,7 @@
           ],
           "amd64": "yes",
           "arm64": "yes",
-          "source": "manifest",
+          "source": "cache",
           "checked_at": "2026-10-31T23:54:42Z"
         },
         {
@@ -6662,7 +6680,7 @@
           ],
           "amd64": "yes",
           "arm64": "yes",
-          "source": "manifest",
+          "source": "cache",
           "checked_at": "2026-10-31T23:54:42Z"
         }
       ]
@@ -6680,7 +6698,7 @@
           ],
           "amd64": "yes",
           "arm64": "yes",
-          "source": "manifest",
+          "source": "cache",
           "checked_at": "2026-10-31T23:54:42Z"
         }
       ]
@@ -6698,7 +6716,7 @@
           ],
           "amd64": "yes",
           "arm64": "yes",
-          "source": "manifest",
+          "source": "cache",
           "checked_at": "2026-10-31T23:54:42Z"
         },
         {
@@ -6714,7 +6732,7 @@
           ],
           "amd64": "yes",
           "arm64": "yes",
-          "source": "manifest",
+          "source": "cache",
           "checked_at": "2026-11-02T03:14:45Z"
         }
       ]
@@ -6745,7 +6763,7 @@
           ],
           "amd64": "yes",
           "arm64": "no",
-          "source": "manifest",
+          "source": "cache",
           "checked_at": "2026-10-31T23:54:42Z"
         },
         {
@@ -6761,7 +6779,7 @@
           ],
           "amd64": "yes",
           "arm64": "yes",
-          "source": "manifest",
+          "source": "cache",
           "checked_at": "2026-11-02T03:14:45Z"
         }
       ]
@@ -6807,7 +6825,7 @@
           ],
           "amd64": "yes",
           "arm64": "yes",
-          "source": "manifest",
+          "source": "cache",
           "checked_at": "2026-10-31T23:54:42Z"
         }
       ]
@@ -6828,7 +6846,7 @@
           ],
           "amd64": "yes",
           "arm64": "yes",
-          "source": "manifest",
+          "source": "cache",
           "checked_at": "2026-10-31T23:54:42Z"
         },
         {
@@ -6844,7 +6862,7 @@
           ],
           "amd64": "yes",
           "arm64": "yes",
-          "source": "manifest",
+          "source": "cache",
           "checked_at": "2026-11-02T03:14:45Z"
         }
       ]
@@ -6862,7 +6880,7 @@
           ],
           "amd64": "yes",
           "arm64": "yes",
-          "source": "manifest",
+          "source": "cache",
           "checked_at": "2026-10-31T23:54:42Z"
         }
       ]
@@ -6885,7 +6903,7 @@
           ],
           "amd64": "yes",
           "arm64": "yes",
-          "source": "manifest",
+          "source": "cache",
           "checked_at": "2026-10-31T23:54:42Z"
         }
       ]
@@ -6904,7 +6922,7 @@
           ],
           "amd64": "yes",
           "arm64": "yes",
-          "source": "manifest",
+          "source": "cache",
           "checked_at": "2026-10-31T23:54:42Z"
         }
       ]
@@ -6923,7 +6941,7 @@
           ],
           "amd64": "yes",
           "arm64": "yes",
-          "source": "manifest",
+          "source": "cache",
           "checked_at": "2026-11-01T23:07:14Z"
         }
       ]
@@ -6940,7 +6958,7 @@
           ],
           "amd64": "yes",
           "arm64": "no",
-          "source": "manifest",
+          "source": "cache",
           "checked_at": "2026-11-01T00:10:24Z"
         }
       ]
@@ -6979,7 +6997,7 @@
           ],
           "amd64": "yes",
           "arm64": "yes",
-          "source": "manifest",
+          "source": "cache",
           "checked_at": "2026-10-31T23:54:42Z"
         },
         {
@@ -6995,7 +7013,7 @@
           ],
           "amd64": "yes",
           "arm64": "yes",
-          "source": "manifest",
+          "source": "cache",
           "checked_at": "2026-11-02T03:14:45Z"
         }
       ]
@@ -7013,7 +7031,7 @@
           ],
           "amd64": "yes",
           "arm64": "yes",
-          "source": "manifest",
+          "source": "cache",
           "checked_at": "2026-10-31T23:54:42Z"
         }
       ]
@@ -7031,7 +7049,7 @@
           ],
           "amd64": "yes",
           "arm64": "yes",
-          "source": "manifest",
+          "source": "cache",
           "checked_at": "2026-10-31T23:54:42Z"
         }
       ]
@@ -7077,7 +7095,7 @@
           ],
           "amd64": "yes",
           "arm64": "yes",
-          "source": "manifest",
+          "source": "cache",
           "checked_at": "2026-10-31T23:54:42Z"
         }
       ]
@@ -7095,7 +7113,7 @@
           ],
           "amd64": "yes",
           "arm64": "yes",
-          "source": "manifest",
+          "source": "cache",
           "checked_at": "2026-10-31T23:54:42Z"
         }
       ]
@@ -7114,7 +7132,7 @@
           ],
           "amd64": "yes",
           "arm64": "yes",
-          "source": "manifest",
+          "source": "cache",
           "checked_at": "2026-10-31T23:54:42Z"
         },
         {
@@ -7130,7 +7148,7 @@
           ],
           "amd64": "yes",
           "arm64": "yes",
-          "source": "manifest",
+          "source": "cache",
           "checked_at": "2026-11-02T03:14:45Z"
         }
       ]
@@ -7148,7 +7166,7 @@
           ],
           "amd64": "yes",
           "arm64": "yes",
-          "source": "manifest",
+          "source": "cache",
           "checked_at": "2026-10-31T23:54:42Z"
         }
       ]
@@ -7180,7 +7198,7 @@
           ],
           "amd64": "yes",
           "arm64": "yes",
-          "source": "manifest",
+          "source": "cache",
           "checked_at": "2026-10-31T23:54:42Z"
         }
       ]
@@ -7198,7 +7216,7 @@
           ],
           "amd64": "yes",
           "arm64": "yes",
-          "source": "manifest",
+          "source": "cache",
           "checked_at": "2026-10-31T23:54:42Z"
         },
         {
@@ -7210,7 +7228,7 @@
           ],
           "amd64": "yes",
           "arm64": "yes",
-          "source": "manifest",
+          "source": "cache",
           "checked_at": "2026-10-31T23:54:42Z"
         }
       ]
@@ -7244,7 +7262,7 @@
           ],
           "amd64": "yes",
           "arm64": "yes",
-          "source": "manifest",
+          "source": "cache",
           "checked_at": "2026-10-31T23:54:42Z"
         },
         {
@@ -7260,7 +7278,7 @@
           ],
           "amd64": "yes",
           "arm64": "yes",
-          "source": "manifest",
+          "source": "cache",
           "checked_at": "2026-10-31T23:54:42Z"
         }
       ]
@@ -7278,7 +7296,7 @@
           ],
           "amd64": "yes",
           "arm64": "yes",
-          "source": "manifest",
+          "source": "cache",
           "checked_at": "2026-10-31T23:54:42Z"
         },
         {
@@ -7291,7 +7309,7 @@
           ],
           "amd64": "yes",
           "arm64": "yes",
-          "source": "manifest",
+          "source": "cache",
           "checked_at": "2026-10-31T23:54:42Z"
         }
       ]
@@ -7313,7 +7331,7 @@
           ],
           "amd64": "yes",
           "arm64": "yes",
-          "source": "manifest",
+          "source": "cache",
           "checked_at": "2026-10-31T23:54:42Z"
         }
       ]
@@ -7345,7 +7363,7 @@
           ],
           "amd64": "yes",
           "arm64": "yes",
-          "source": "manifest",
+          "source": "cache",
           "checked_at": "2026-11-01T23:30:55Z"
         }
       ]
@@ -7363,7 +7381,7 @@
           ],
           "amd64": "yes",
           "arm64": "yes",
-          "source": "manifest",
+          "source": "cache",
           "checked_at": "2026-11-01T23:23:03Z"
         }
       ]
@@ -7416,7 +7434,7 @@
           ],
           "amd64": "yes",
           "arm64": "yes",
-          "source": "manifest",
+          "source": "cache",
           "checked_at": "2026-10-31T23:54:42Z"
         }
       ]
@@ -7434,7 +7452,7 @@
           ],
           "amd64": "yes",
           "arm64": "yes",
-          "source": "manifest",
+          "source": "cache",
           "checked_at": "2026-10-31T23:54:42Z"
         },
         {
@@ -7445,7 +7463,7 @@
           ],
           "amd64": "yes",
           "arm64": "yes",
-          "source": "manifest",
+          "source": "cache",
           "checked_at": "2026-10-31T23:54:42Z"
         },
         {
@@ -7461,7 +7479,7 @@
           ],
           "amd64": "yes",
           "arm64": "yes",
-          "source": "manifest",
+          "source": "cache",
           "checked_at": "2026-11-02T03:14:45Z"
         },
         {
@@ -7472,7 +7490,7 @@
           ],
           "amd64": "yes",
           "arm64": "yes",
-          "source": "manifest",
+          "source": "cache",
           "checked_at": "2026-10-31T23:54:42Z"
         }
       ]
@@ -7504,7 +7522,7 @@
           ],
           "amd64": "yes",
           "arm64": "yes",
-          "source": "manifest",
+          "source": "cache",
           "checked_at": "2026-10-31T23:54:42Z"
         },
         {
@@ -7520,7 +7538,7 @@
           ],
           "amd64": "yes",
           "arm64": "yes",
-          "source": "manifest",
+          "source": "cache",
           "checked_at": "2026-11-02T03:14:45Z"
         }
       ]
@@ -7541,7 +7559,7 @@
           ],
           "amd64": "yes",
           "arm64": "yes",
-          "source": "manifest",
+          "source": "cache",
           "checked_at": "2026-10-31T23:54:42Z"
         }
       ]
@@ -7561,7 +7579,7 @@
           ],
           "amd64": "yes",
           "arm64": "yes",
-          "source": "manifest",
+          "source": "cache",
           "checked_at": "2026-10-31T23:54:42Z"
         }
       ]
@@ -7579,7 +7597,7 @@
           ],
           "amd64": "yes",
           "arm64": "yes",
-          "source": "manifest",
+          "source": "cache",
           "checked_at": "2026-10-31T23:54:42Z"
         }
       ]
@@ -7611,7 +7629,7 @@
           ],
           "amd64": "yes",
           "arm64": "yes",
-          "source": "manifest",
+          "source": "cache",
           "checked_at": "2026-10-31T23:54:42Z"
         },
         {
@@ -7627,7 +7645,7 @@
           ],
           "amd64": "yes",
           "arm64": "yes",
-          "source": "manifest",
+          "source": "cache",
           "checked_at": "2026-10-31T23:54:42Z"
         },
         {
@@ -7643,7 +7661,7 @@
           ],
           "amd64": "yes",
           "arm64": "yes",
-          "source": "manifest",
+          "source": "cache",
           "checked_at": "2026-10-31T23:54:42Z"
         }
       ]
@@ -7662,7 +7680,7 @@
           ],
           "amd64": "yes",
           "arm64": "yes",
-          "source": "manifest",
+          "source": "cache",
           "checked_at": "2026-10-31T23:54:42Z"
         }
       ]
@@ -7680,7 +7698,7 @@
           ],
           "amd64": "yes",
           "arm64": "yes",
-          "source": "manifest",
+          "source": "cache",
           "checked_at": "2026-10-31T23:53:56Z"
         },
         {
@@ -7696,7 +7714,7 @@
           ],
           "amd64": "yes",
           "arm64": "yes",
-          "source": "manifest",
+          "source": "cache",
           "checked_at": "2026-11-02T03:14:45Z"
         },
         {
@@ -7712,7 +7730,7 @@
           ],
           "amd64": "yes",
           "arm64": "yes",
-          "source": "manifest",
+          "source": "cache",
           "checked_at": "2026-10-31T23:54:42Z"
         }
       ]
@@ -7735,7 +7753,7 @@
           ],
           "amd64": "yes",
           "arm64": "yes",
-          "source": "manifest",
+          "source": "cache",
           "checked_at": "2026-10-31T23:54:42Z"
         }
       ]
@@ -7783,7 +7801,7 @@
           ],
           "amd64": "yes",
           "arm64": "yes",
-          "source": "manifest",
+          "source": "cache",
           "checked_at": "2026-10-31T23:54:42Z"
         },
         {
@@ -7799,7 +7817,7 @@
           ],
           "amd64": "yes",
           "arm64": "yes",
-          "source": "manifest",
+          "source": "cache",
           "checked_at": "2026-11-02T03:14:45Z"
         }
       ]
@@ -7817,7 +7835,7 @@
           ],
           "amd64": "yes",
           "arm64": "yes",
-          "source": "manifest",
+          "source": "cache",
           "checked_at": "2026-10-31T23:54:42Z"
         }
       ]
@@ -7854,7 +7872,7 @@
           ],
           "amd64": "yes",
           "arm64": "yes",
-          "source": "manifest",
+          "source": "cache",
           "checked_at": "2026-10-31T23:54:42Z"
         },
         {
@@ -7867,7 +7885,7 @@
           ],
           "amd64": "yes",
           "arm64": "yes",
-          "source": "manifest",
+          "source": "cache",
           "checked_at": "2026-10-31T23:54:42Z"
         }
       ]
@@ -7886,7 +7904,7 @@
           ],
           "amd64": "yes",
           "arm64": "yes",
-          "source": "manifest",
+          "source": "cache",
           "checked_at": "2026-10-31T23:54:42Z"
         }
       ]
@@ -7918,7 +7936,7 @@
           ],
           "amd64": "yes",
           "arm64": "yes",
-          "source": "manifest",
+          "source": "cache",
           "checked_at": "2026-10-31T23:54:42Z"
         },
         {
@@ -7934,7 +7952,7 @@
           ],
           "amd64": "yes",
           "arm64": "yes",
-          "source": "manifest",
+          "source": "cache",
           "checked_at": "2026-10-31T23:54:42Z"
         }
       ]
@@ -7953,7 +7971,7 @@
           ],
           "amd64": "yes",
           "arm64": "yes",
-          "source": "manifest",
+          "source": "cache",
           "checked_at": "2026-10-31T23:54:42Z"
         }
       ]
@@ -7987,7 +8005,7 @@
           ],
           "amd64": "yes",
           "arm64": "yes",
-          "source": "manifest",
+          "source": "cache",
           "checked_at": "2026-10-31T23:54:42Z"
         },
         {
@@ -8003,7 +8021,7 @@
           ],
           "amd64": "yes",
           "arm64": "yes",
-          "source": "manifest",
+          "source": "cache",
           "checked_at": "2026-11-02T03:14:45Z"
         }
       ]
@@ -8022,7 +8040,7 @@
           ],
           "amd64": "yes",
           "arm64": "yes",
-          "source": "manifest",
+          "source": "cache",
           "checked_at": "2026-10-31T23:54:42Z"
         }
       ]
@@ -8040,7 +8058,7 @@
           ],
           "amd64": "yes",
           "arm64": "yes",
-          "source": "manifest",
+          "source": "cache",
           "checked_at": "2026-10-31T23:54:42Z"
         },
         {
@@ -8056,7 +8074,7 @@
           ],
           "amd64": "yes",
           "arm64": "yes",
-          "source": "manifest",
+          "source": "cache",
           "checked_at": "2026-11-02T03:14:45Z"
         }
       ]
@@ -8128,7 +8146,7 @@
           ],
           "amd64": "yes",
           "arm64": "yes",
-          "source": "manifest",
+          "source": "cache",
           "checked_at": "2026-10-31T23:54:42Z"
         }
       ]
@@ -8161,7 +8179,7 @@
           ],
           "amd64": "yes",
           "arm64": "yes",
-          "source": "manifest",
+          "source": "cache",
           "checked_at": "2026-10-31T23:53:56Z"
         }
       ]
@@ -8207,7 +8225,7 @@
           ],
           "amd64": "yes",
           "arm64": "yes",
-          "source": "manifest",
+          "source": "cache",
           "checked_at": "2026-10-31T23:54:42Z"
         }
       ]
@@ -8240,7 +8258,7 @@
           ],
           "amd64": "yes",
           "arm64": "yes",
-          "source": "manifest",
+          "source": "cache",
           "checked_at": "2026-10-31T23:54:42Z"
         },
         {
@@ -8256,7 +8274,7 @@
           ],
           "amd64": "yes",
           "arm64": "yes",
-          "source": "manifest",
+          "source": "cache",
           "checked_at": "2026-11-02T03:14:45Z"
         }
       ]
@@ -8274,7 +8292,7 @@
           ],
           "amd64": "yes",
           "arm64": "yes",
-          "source": "manifest",
+          "source": "cache",
           "checked_at": "2026-11-01T00:10:24Z"
         }
       ]
@@ -8292,7 +8310,7 @@
           ],
           "amd64": "yes",
           "arm64": "yes",
-          "source": "manifest",
+          "source": "cache",
           "checked_at": "2026-11-01T00:10:24Z"
         }
       ]
@@ -8310,7 +8328,7 @@
           ],
           "amd64": "yes",
           "arm64": "yes",
-          "source": "manifest",
+          "source": "cache",
           "checked_at": "2026-11-01T00:10:24Z"
         }
       ]
@@ -8328,7 +8346,7 @@
           ],
           "amd64": "yes",
           "arm64": "yes",
-          "source": "manifest",
+          "source": "cache",
           "checked_at": "2026-11-01T00:10:24Z"
         }
       ]
@@ -8346,7 +8364,7 @@
           ],
           "amd64": "yes",
           "arm64": "yes",
-          "source": "manifest",
+          "source": "cache",
           "checked_at": "2026-10-31T23:54:42Z"
         },
         {
@@ -8357,7 +8375,7 @@
           ],
           "amd64": "yes",
           "arm64": "yes",
-          "source": "manifest",
+          "source": "cache",
           "checked_at": "2026-10-31T23:54:42Z"
         }
       ]
@@ -8375,7 +8393,7 @@
           ],
           "amd64": "yes",
           "arm64": "yes",
-          "source": "manifest",
+          "source": "cache",
           "checked_at": "2026-11-01T00:10:24Z"
         }
       ]
@@ -8393,7 +8411,7 @@
           ],
           "amd64": "yes",
           "arm64": "yes",
-          "source": "manifest",
+          "source": "cache",
           "checked_at": "2026-11-01T00:10:24Z"
         }
       ]
@@ -8411,7 +8429,7 @@
           ],
           "amd64": "yes",
           "arm64": "yes",
-          "source": "manifest",
+          "source": "cache",
           "checked_at": "2026-11-01T23:07:14Z"
         }
       ]
@@ -8443,7 +8461,7 @@
           ],
           "amd64": "yes",
           "arm64": "yes",
-          "source": "manifest",
+          "source": "cache",
           "checked_at": "2026-10-31T23:54:42Z"
         }
       ]
@@ -8461,7 +8479,7 @@
           ],
           "amd64": "yes",
           "arm64": "yes",
-          "source": "manifest",
+          "source": "cache",
           "checked_at": "2026-10-31T23:53:56Z"
         }
       ]
@@ -8479,7 +8497,7 @@
           ],
           "amd64": "yes",
           "arm64": "yes",
-          "source": "manifest",
+          "source": "cache",
           "checked_at": "2026-10-31T23:54:42Z"
         },
         {
@@ -8495,7 +8513,7 @@
           ],
           "amd64": "yes",
           "arm64": "yes",
-          "source": "manifest",
+          "source": "cache",
           "checked_at": "2026-10-31T23:54:42Z"
         }
       ]
@@ -8513,7 +8531,7 @@
           ],
           "amd64": "yes",
           "arm64": "yes",
-          "source": "manifest",
+          "source": "cache",
           "checked_at": "2026-10-31T23:54:42Z"
         },
         {
@@ -8524,7 +8542,7 @@
           ],
           "amd64": "yes",
           "arm64": "yes",
-          "source": "manifest",
+          "source": "cache",
           "checked_at": "2026-10-31T23:54:42Z"
         }
       ]
@@ -8542,7 +8560,7 @@
           ],
           "amd64": "yes",
           "arm64": "yes",
-          "source": "manifest",
+          "source": "cache",
           "checked_at": "2026-10-31T23:54:42Z"
         },
         {
@@ -8553,7 +8571,7 @@
           ],
           "amd64": "yes",
           "arm64": "yes",
-          "source": "manifest",
+          "source": "cache",
           "checked_at": "2026-11-01T00:10:24Z"
         }
       ]
@@ -8593,7 +8611,7 @@
           ],
           "amd64": "yes",
           "arm64": "yes",
-          "source": "manifest",
+          "source": "cache",
           "checked_at": "2026-10-31T23:54:42Z"
         }
       ]
@@ -8611,7 +8629,7 @@
           ],
           "amd64": "yes",
           "arm64": "yes",
-          "source": "manifest",
+          "source": "cache",
           "checked_at": "2026-11-02T03:14:45Z"
         }
       ]
@@ -8643,7 +8661,7 @@
           ],
           "amd64": "yes",
           "arm64": "yes",
-          "source": "manifest",
+          "source": "cache",
           "checked_at": "2026-10-31T23:54:42Z"
         }
       ]
@@ -8666,7 +8684,7 @@
           ],
           "amd64": "yes",
           "arm64": "yes",
-          "source": "manifest",
+          "source": "cache",
           "checked_at": "2026-10-31T23:54:42Z"
         },
         {
@@ -8689,7 +8707,7 @@
           ],
           "amd64": "yes",
           "arm64": "yes",
-          "source": "manifest",
+          "source": "cache",
           "checked_at": "2026-10-31T23:54:42Z"
         }
       ]
@@ -8751,7 +8769,7 @@
           ],
           "amd64": "yes",
           "arm64": "yes",
-          "source": "manifest",
+          "source": "cache",
           "checked_at": "2026-10-31T23:54:42Z"
         },
         {
@@ -8761,7 +8779,7 @@
           ],
           "amd64": "yes",
           "arm64": "no",
-          "source": "manifest",
+          "source": "cache",
           "checked_at": "2026-10-31T23:54:42Z"
         }
       ]
@@ -8780,7 +8798,7 @@
           ],
           "amd64": "yes",
           "arm64": "yes",
-          "source": "manifest",
+          "source": "cache",
           "checked_at": "2026-10-31T23:54:42Z"
         }
       ]
@@ -8814,7 +8832,7 @@
           ],
           "amd64": "yes",
           "arm64": "yes",
-          "source": "manifest",
+          "source": "cache",
           "checked_at": "2026-10-31T23:54:42Z"
         },
         {
@@ -8870,7 +8888,7 @@
           ],
           "amd64": "yes",
           "arm64": "yes",
-          "source": "manifest",
+          "source": "cache",
           "checked_at": "2026-10-31T23:54:42Z"
         },
         {
@@ -8886,7 +8904,7 @@
           ],
           "amd64": "yes",
           "arm64": "yes",
-          "source": "manifest",
+          "source": "cache",
           "checked_at": "2026-11-02T03:14:45Z"
         },
         {
@@ -8902,7 +8920,7 @@
           ],
           "amd64": "yes",
           "arm64": "yes",
-          "source": "manifest",
+          "source": "cache",
           "checked_at": "2026-10-31T23:54:42Z"
         }
       ]
@@ -8921,7 +8939,7 @@
           ],
           "amd64": "yes",
           "arm64": "yes",
-          "source": "manifest",
+          "source": "cache",
           "checked_at": "2026-10-31T23:54:42Z"
         }
       ]
@@ -8941,7 +8959,7 @@
           ],
           "amd64": "yes",
           "arm64": "yes",
-          "source": "manifest",
+          "source": "cache",
           "checked_at": "2026-10-31T23:54:42Z"
         }
       ]
@@ -8961,7 +8979,7 @@
           ],
           "amd64": "yes",
           "arm64": "yes",
-          "source": "manifest",
+          "source": "cache",
           "checked_at": "2026-10-31T23:54:42Z"
         },
         {
@@ -8972,7 +8990,7 @@
           ],
           "amd64": "yes",
           "arm64": "yes",
-          "source": "manifest",
+          "source": "cache",
           "checked_at": "2026-10-31T23:54:42Z"
         },
         {
@@ -8988,7 +9006,7 @@
           ],
           "amd64": "yes",
           "arm64": "yes",
-          "source": "manifest",
+          "source": "cache",
           "checked_at": "2026-10-31T23:54:42Z"
         }
       ]
@@ -9006,7 +9024,7 @@
           ],
           "amd64": "yes",
           "arm64": "yes",
-          "source": "manifest",
+          "source": "cache",
           "checked_at": "2026-10-31T23:54:42Z"
         }
       ]
@@ -9024,7 +9042,7 @@
           ],
           "amd64": "yes",
           "arm64": "yes",
-          "source": "manifest",
+          "source": "cache",
           "checked_at": "2026-10-31T23:54:42Z"
         }
       ]
@@ -9056,7 +9074,7 @@
           ],
           "amd64": "yes",
           "arm64": "yes",
-          "source": "manifest",
+          "source": "cache",
           "checked_at": "2026-10-31T23:54:42Z"
         },
         {
@@ -9070,7 +9088,7 @@
           ],
           "amd64": "yes",
           "arm64": "yes",
-          "source": "manifest",
+          "source": "cache",
           "checked_at": "2026-10-31T23:54:42Z"
         }
       ]
@@ -9090,7 +9108,7 @@
           ],
           "amd64": "yes",
           "arm64": "yes",
-          "source": "manifest",
+          "source": "cache",
           "checked_at": "2026-10-31T23:54:42Z"
         },
         {
@@ -9102,7 +9120,7 @@
           ],
           "amd64": "yes",
           "arm64": "yes",
-          "source": "manifest",
+          "source": "cache",
           "checked_at": "2026-10-31T23:54:42Z"
         }
       ]
@@ -9120,7 +9138,7 @@
           ],
           "amd64": "yes",
           "arm64": "yes",
-          "source": "manifest",
+          "source": "cache",
           "checked_at": "2026-10-31T23:54:42Z"
         },
         {
@@ -9133,7 +9151,7 @@
           ],
           "amd64": "yes",
           "arm64": "yes",
-          "source": "manifest",
+          "source": "cache",
           "checked_at": "2026-10-31T23:54:42Z"
         },
         {
@@ -9149,7 +9167,7 @@
           ],
           "amd64": "yes",
           "arm64": "yes",
-          "source": "manifest",
+          "source": "cache",
           "checked_at": "2026-10-31T23:54:42Z"
         }
       ]
@@ -9167,7 +9185,7 @@
           ],
           "amd64": "yes",
           "arm64": "yes",
-          "source": "manifest",
+          "source": "cache",
           "checked_at": "2026-10-31T23:54:42Z"
         },
         {
@@ -9178,7 +9196,7 @@
           ],
           "amd64": "yes",
           "arm64": "yes",
-          "source": "manifest",
+          "source": "cache",
           "checked_at": "2026-10-31T23:54:42Z"
         },
         {
@@ -9189,7 +9207,7 @@
           ],
           "amd64": "yes",
           "arm64": "yes",
-          "source": "manifest",
+          "source": "cache",
           "checked_at": "2026-10-31T23:54:42Z"
         },
         {
@@ -9205,7 +9223,7 @@
           ],
           "amd64": "yes",
           "arm64": "yes",
-          "source": "manifest",
+          "source": "cache",
           "checked_at": "2026-10-31T23:54:42Z"
         },
         {
@@ -9218,7 +9236,7 @@
           ],
           "amd64": "yes",
           "arm64": "yes",
-          "source": "manifest",
+          "source": "cache",
           "checked_at": "2026-10-31T23:54:42Z"
         }
       ]
@@ -9236,7 +9254,7 @@
           ],
           "amd64": "yes",
           "arm64": "yes",
-          "source": "manifest",
+          "source": "cache",
           "checked_at": "2026-10-31T23:54:42Z"
         }
       ]
@@ -9254,7 +9272,7 @@
           ],
           "amd64": "yes",
           "arm64": "yes",
-          "source": "manifest",
+          "source": "cache",
           "checked_at": "2026-10-31T23:54:42Z"
         },
         {
@@ -9270,7 +9288,7 @@
           ],
           "amd64": "yes",
           "arm64": "yes",
-          "source": "manifest",
+          "source": "cache",
           "checked_at": "2026-10-31T23:54:42Z"
         }
       ]
@@ -9288,7 +9306,7 @@
           ],
           "amd64": "yes",
           "arm64": "yes",
-          "source": "manifest",
+          "source": "cache",
           "checked_at": "2026-10-31T23:54:42Z"
         }
       ]
@@ -9307,7 +9325,7 @@
           ],
           "amd64": "yes",
           "arm64": "yes",
-          "source": "manifest",
+          "source": "cache",
           "checked_at": "2026-11-02T03:14:45Z"
         }
       ]
@@ -9325,7 +9343,7 @@
           ],
           "amd64": "yes",
           "arm64": "yes",
-          "source": "manifest",
+          "source": "cache",
           "checked_at": "2026-10-31T23:54:42Z"
         }
       ]
@@ -9343,7 +9361,7 @@
           ],
           "amd64": "yes",
           "arm64": "yes",
-          "source": "manifest",
+          "source": "cache",
           "checked_at": "2026-10-31T23:54:42Z"
         }
       ]
@@ -9363,7 +9381,7 @@
           ],
           "amd64": "yes",
           "arm64": "yes",
-          "source": "manifest",
+          "source": "cache",
           "checked_at": "2026-11-02T03:14:45Z"
         },
         {
@@ -9393,7 +9411,7 @@
           ],
           "amd64": "yes",
           "arm64": "yes",
-          "source": "manifest",
+          "source": "cache",
           "checked_at": "2026-10-31T23:54:42Z"
         }
       ]
@@ -9413,7 +9431,7 @@
           ],
           "amd64": "yes",
           "arm64": "yes",
-          "source": "manifest",
+          "source": "cache",
           "checked_at": "2026-10-31T23:54:42Z"
         }
       ]
@@ -9457,7 +9475,7 @@
           ],
           "amd64": "yes",
           "arm64": "yes",
-          "source": "manifest",
+          "source": "cache",
           "checked_at": "2026-10-31T23:54:42Z"
         }
       ]
@@ -9488,7 +9506,7 @@
           ],
           "amd64": "yes",
           "arm64": "no",
-          "source": "manifest",
+          "source": "cache",
           "checked_at": "2026-10-31T23:54:42Z"
         }
       ]
@@ -9506,7 +9524,7 @@
           ],
           "amd64": "yes",
           "arm64": "yes",
-          "source": "manifest",
+          "source": "cache",
           "checked_at": "2026-10-31T23:54:42Z"
         }
       ]
@@ -9524,7 +9542,7 @@
           ],
           "amd64": "yes",
           "arm64": "yes",
-          "source": "manifest",
+          "source": "cache",
           "checked_at": "2026-10-31T23:54:42Z"
         },
         {
@@ -9535,7 +9553,7 @@
           ],
           "amd64": "yes",
           "arm64": "yes",
-          "source": "manifest",
+          "source": "cache",
           "checked_at": "2026-10-31T23:54:42Z"
         },
         {
@@ -9546,7 +9564,7 @@
           ],
           "amd64": "yes",
           "arm64": "yes",
-          "source": "manifest",
+          "source": "cache",
           "checked_at": "2026-10-31T23:54:42Z"
         },
         {
@@ -9557,7 +9575,7 @@
           ],
           "amd64": "yes",
           "arm64": "yes",
-          "source": "manifest",
+          "source": "cache",
           "checked_at": "2026-11-01T00:10:24Z"
         },
         {
@@ -9573,7 +9591,7 @@
           ],
           "amd64": "yes",
           "arm64": "yes",
-          "source": "manifest",
+          "source": "cache",
           "checked_at": "2026-10-31T23:54:42Z"
         },
         {
@@ -9589,7 +9607,7 @@
           ],
           "amd64": "yes",
           "arm64": "yes",
-          "source": "manifest",
+          "source": "cache",
           "checked_at": "2026-10-31T23:54:42Z"
         },
         {
@@ -9601,7 +9619,7 @@
           ],
           "amd64": "yes",
           "arm64": "yes",
-          "source": "manifest",
+          "source": "cache",
           "checked_at": "2026-10-31T23:54:42Z"
         }
       ]
@@ -9619,7 +9637,7 @@
           ],
           "amd64": "yes",
           "arm64": "yes",
-          "source": "manifest",
+          "source": "cache",
           "checked_at": "2026-10-31T23:54:42Z"
         },
         {
@@ -9635,7 +9653,7 @@
           ],
           "amd64": "yes",
           "arm64": "yes",
-          "source": "manifest",
+          "source": "cache",
           "checked_at": "2026-11-02T03:14:45Z"
         }
       ]
@@ -9667,7 +9685,7 @@
           ],
           "amd64": "yes",
           "arm64": "yes",
-          "source": "manifest",
+          "source": "cache",
           "checked_at": "2026-10-31T23:54:42Z"
         },
         {
@@ -9678,7 +9696,7 @@
           ],
           "amd64": "yes",
           "arm64": "yes",
-          "source": "manifest",
+          "source": "cache",
           "checked_at": "2026-10-31T23:54:42Z"
         },
         {
@@ -9694,7 +9712,7 @@
           ],
           "amd64": "yes",
           "arm64": "yes",
-          "source": "manifest",
+          "source": "cache",
           "checked_at": "2026-11-02T03:14:45Z"
         }
       ]
@@ -9712,7 +9730,7 @@
           ],
           "amd64": "yes",
           "arm64": "yes",
-          "source": "manifest",
+          "source": "cache",
           "checked_at": "2026-10-31T23:54:42Z"
         }
       ]
@@ -9730,7 +9748,7 @@
           ],
           "amd64": "yes",
           "arm64": "yes",
-          "source": "manifest",
+          "source": "cache",
           "checked_at": "2026-10-31T23:54:42Z"
         },
         {
@@ -9746,7 +9764,7 @@
           ],
           "amd64": "yes",
           "arm64": "yes",
-          "source": "manifest",
+          "source": "cache",
           "checked_at": "2026-11-02T03:14:45Z"
         },
         {
@@ -9762,7 +9780,7 @@
           ],
           "amd64": "yes",
           "arm64": "yes",
-          "source": "manifest",
+          "source": "cache",
           "checked_at": "2026-10-31T23:54:42Z"
         }
       ]
@@ -9780,7 +9798,7 @@
           ],
           "amd64": "yes",
           "arm64": "yes",
-          "source": "manifest",
+          "source": "cache",
           "checked_at": "2026-10-31T23:54:42Z"
         }
       ]
@@ -9799,7 +9817,7 @@
           ],
           "amd64": "yes",
           "arm64": "yes",
-          "source": "manifest",
+          "source": "cache",
           "checked_at": "2026-10-31T23:54:42Z"
         }
       ]
@@ -9820,7 +9838,7 @@
           ],
           "amd64": "yes",
           "arm64": "yes",
-          "source": "manifest",
+          "source": "cache",
           "checked_at": "2026-10-31T23:54:42Z"
         }
       ]
@@ -9860,7 +9878,7 @@
           ],
           "amd64": "yes",
           "arm64": "yes",
-          "source": "manifest",
+          "source": "cache",
           "checked_at": "2026-11-02T03:14:45Z"
         }
       ]
@@ -9878,7 +9896,7 @@
           ],
           "amd64": "yes",
           "arm64": "yes",
-          "source": "manifest",
+          "source": "cache",
           "checked_at": "2026-10-31T23:54:42Z"
         },
         {
@@ -9894,7 +9912,7 @@
           ],
           "amd64": "yes",
           "arm64": "yes",
-          "source": "manifest",
+          "source": "cache",
           "checked_at": "2026-10-31T23:54:42Z"
         },
         {
@@ -9910,7 +9928,7 @@
           ],
           "amd64": "yes",
           "arm64": "yes",
-          "source": "manifest",
+          "source": "cache",
           "checked_at": "2026-10-31T23:54:42Z"
         }
       ]
@@ -9933,7 +9951,7 @@
           ],
           "amd64": "yes",
           "arm64": "yes",
-          "source": "manifest",
+          "source": "cache",
           "checked_at": "2026-11-02T03:14:45Z"
         },
         {
@@ -9944,7 +9962,7 @@
           ],
           "amd64": "yes",
           "arm64": "yes",
-          "source": "manifest",
+          "source": "cache",
           "checked_at": "2026-10-31T23:54:42Z"
         }
       ]
@@ -9966,7 +9984,7 @@
           ],
           "amd64": "yes",
           "arm64": "yes",
-          "source": "manifest",
+          "source": "cache",
           "checked_at": "2026-10-31T23:54:42Z"
         }
       ]
@@ -9987,7 +10005,7 @@
           ],
           "amd64": "yes",
           "arm64": "yes",
-          "source": "manifest",
+          "source": "cache",
           "checked_at": "2026-10-31T23:54:42Z"
         }
       ]
@@ -10019,7 +10037,7 @@
           ],
           "amd64": "yes",
           "arm64": "yes",
-          "source": "manifest",
+          "source": "cache",
           "checked_at": "2026-10-31T23:54:42Z"
         }
       ]
@@ -10037,7 +10055,7 @@
           ],
           "amd64": "yes",
           "arm64": "yes",
-          "source": "manifest",
+          "source": "cache",
           "checked_at": "2026-10-31T23:54:42Z"
         }
       ]
@@ -10083,7 +10101,7 @@
           ],
           "amd64": "yes",
           "arm64": "yes",
-          "source": "manifest",
+          "source": "cache",
           "checked_at": "2026-10-31T23:54:42Z"
         }
       ]
@@ -10101,7 +10119,7 @@
           ],
           "amd64": "yes",
           "arm64": "yes",
-          "source": "manifest",
+          "source": "cache",
           "checked_at": "2026-10-31T23:54:42Z"
         }
       ]
@@ -10138,7 +10156,7 @@
           ],
           "amd64": "yes",
           "arm64": "yes",
-          "source": "manifest",
+          "source": "cache",
           "checked_at": "2026-10-31T23:54:42Z"
         }
       ]
@@ -10156,7 +10174,7 @@
           ],
           "amd64": "yes",
           "arm64": "yes",
-          "source": "manifest",
+          "source": "cache",
           "checked_at": "2026-10-31T23:54:42Z"
         }
       ]
@@ -10175,7 +10193,7 @@
           ],
           "amd64": "yes",
           "arm64": "yes",
-          "source": "manifest",
+          "source": "cache",
           "checked_at": "2026-10-31T23:54:42Z"
         }
       ]
@@ -10193,7 +10211,7 @@
           ],
           "amd64": "yes",
           "arm64": "yes",
-          "source": "manifest",
+          "source": "cache",
           "checked_at": "2026-10-31T23:54:42Z"
         },
         {
@@ -10209,7 +10227,7 @@
           ],
           "amd64": "yes",
           "arm64": "yes",
-          "source": "manifest",
+          "source": "cache",
           "checked_at": "2026-11-02T03:14:45Z"
         }
       ]
@@ -10255,7 +10273,7 @@
           ],
           "amd64": "yes",
           "arm64": "yes",
-          "source": "manifest",
+          "source": "cache",
           "checked_at": "2026-11-01T04:36:49Z"
         },
         {
@@ -10271,7 +10289,7 @@
           ],
           "amd64": "yes",
           "arm64": "yes",
-          "source": "manifest",
+          "source": "cache",
           "checked_at": "2026-11-02T03:14:45Z"
         }
       ]
@@ -10289,7 +10307,7 @@
           ],
           "amd64": "yes",
           "arm64": "yes",
-          "source": "manifest",
+          "source": "cache",
           "checked_at": "2026-10-31T23:54:42Z"
         }
       ]
@@ -10351,7 +10369,7 @@
           ],
           "amd64": "yes",
           "arm64": "yes",
-          "source": "manifest",
+          "source": "cache",
           "checked_at": "2026-10-31T23:54:42Z"
         },
         {
@@ -10367,7 +10385,7 @@
           ],
           "amd64": "yes",
           "arm64": "yes",
-          "source": "manifest",
+          "source": "cache",
           "checked_at": "2026-10-31T23:54:42Z"
         }
       ]
@@ -10406,7 +10424,7 @@
           ],
           "amd64": "yes",
           "arm64": "yes",
-          "source": "manifest",
+          "source": "cache",
           "checked_at": "2026-10-31T23:54:42Z"
         }
       ]
@@ -10424,7 +10442,7 @@
           ],
           "amd64": "yes",
           "arm64": "yes",
-          "source": "manifest",
+          "source": "cache",
           "checked_at": "2026-10-31T23:54:42Z"
         }
       ]
@@ -10443,7 +10461,7 @@
           ],
           "amd64": "yes",
           "arm64": "yes",
-          "source": "manifest",
+          "source": "cache",
           "checked_at": "2026-10-31T23:54:42Z"
         }
       ]
@@ -10466,7 +10484,7 @@
           ],
           "amd64": "yes",
           "arm64": "yes",
-          "source": "manifest",
+          "source": "cache",
           "checked_at": "2026-11-02T03:14:45Z"
         },
         {
@@ -10482,7 +10500,7 @@
           ],
           "amd64": "yes",
           "arm64": "yes",
-          "source": "manifest",
+          "source": "cache",
           "checked_at": "2026-10-31T23:54:42Z"
         }
       ]
@@ -10503,7 +10521,7 @@
           ],
           "amd64": "yes",
           "arm64": "yes",
-          "source": "manifest",
+          "source": "cache",
           "checked_at": "2026-10-31T23:54:42Z"
         }
       ]
@@ -10550,7 +10568,7 @@
           ],
           "amd64": "yes",
           "arm64": "yes",
-          "source": "manifest",
+          "source": "cache",
           "checked_at": "2026-10-31T23:54:42Z"
         },
         {
@@ -10561,7 +10579,7 @@
           ],
           "amd64": "yes",
           "arm64": "yes",
-          "source": "manifest",
+          "source": "cache",
           "checked_at": "2026-10-31T23:54:42Z"
         }
       ]
@@ -10581,7 +10599,7 @@
           ],
           "amd64": "yes",
           "arm64": "yes",
-          "source": "manifest",
+          "source": "cache",
           "checked_at": "2026-11-02T03:14:45Z"
         },
         {
@@ -10592,7 +10610,7 @@
           ],
           "amd64": "yes",
           "arm64": "yes",
-          "source": "manifest",
+          "source": "cache",
           "checked_at": "2026-11-02T03:14:45Z"
         }
       ]
@@ -10612,7 +10630,7 @@
           ],
           "amd64": "yes",
           "arm64": "yes",
-          "source": "manifest",
+          "source": "cache",
           "checked_at": "2026-10-31T23:54:42Z"
         }
       ]
@@ -10631,7 +10649,7 @@
           ],
           "amd64": "yes",
           "arm64": "yes",
-          "source": "manifest",
+          "source": "cache",
           "checked_at": "2026-11-02T03:14:45Z"
         }
       ]
@@ -10649,7 +10667,7 @@
           ],
           "amd64": "yes",
           "arm64": "yes",
-          "source": "manifest",
+          "source": "cache",
           "checked_at": "2026-10-31T23:54:42Z"
         }
       ]
@@ -10669,7 +10687,7 @@
           ],
           "amd64": "yes",
           "arm64": "yes",
-          "source": "manifest",
+          "source": "cache",
           "checked_at": "2026-10-31T23:54:42Z"
         }
       ]
@@ -10687,7 +10705,7 @@
           ],
           "amd64": "yes",
           "arm64": "yes",
-          "source": "manifest",
+          "source": "cache",
           "checked_at": "2026-11-01T23:30:55Z"
         }
       ]
@@ -10705,7 +10723,7 @@
           ],
           "amd64": "yes",
           "arm64": "yes",
-          "source": "manifest",
+          "source": "cache",
           "checked_at": "2026-10-31T23:54:42Z"
         },
         {
@@ -10721,7 +10739,7 @@
           ],
           "amd64": "yes",
           "arm64": "yes",
-          "source": "manifest",
+          "source": "cache",
           "checked_at": "2026-11-02T03:14:45Z"
         }
       ]
@@ -10739,7 +10757,7 @@
           ],
           "amd64": "yes",
           "arm64": "yes",
-          "source": "manifest",
+          "source": "cache",
           "checked_at": "2026-11-01T04:09:06Z"
         }
       ]
@@ -10773,7 +10791,7 @@
           ],
           "amd64": "yes",
           "arm64": "yes",
-          "source": "manifest",
+          "source": "cache",
           "checked_at": "2026-10-31T23:54:42Z"
         },
         {
@@ -10789,7 +10807,7 @@
           ],
           "amd64": "yes",
           "arm64": "yes",
-          "source": "manifest",
+          "source": "cache",
           "checked_at": "2026-10-31T23:54:42Z"
         },
         {
@@ -10800,7 +10818,7 @@
           ],
           "amd64": "yes",
           "arm64": "yes",
-          "source": "manifest",
+          "source": "cache",
           "checked_at": "2026-10-31T23:54:42Z"
         }
       ]
@@ -10823,7 +10841,7 @@
           ],
           "amd64": "yes",
           "arm64": "yes",
-          "source": "manifest",
+          "source": "cache",
           "checked_at": "2026-10-31T23:54:42Z"
         },
         {
@@ -10835,7 +10853,7 @@
           ],
           "amd64": "yes",
           "arm64": "yes",
-          "source": "manifest",
+          "source": "cache",
           "checked_at": "2026-10-31T23:54:42Z"
         }
       ]
@@ -10855,7 +10873,7 @@
           ],
           "amd64": "yes",
           "arm64": "yes",
-          "source": "manifest",
+          "source": "cache",
           "checked_at": "2026-10-31T23:53:56Z"
         }
       ]
@@ -10873,7 +10891,7 @@
           ],
           "amd64": "yes",
           "arm64": "yes",
-          "source": "manifest",
+          "source": "cache",
           "checked_at": "2026-11-01T04:09:06Z"
         }
       ]
@@ -10891,7 +10909,7 @@
           ],
           "amd64": "yes",
           "arm64": "yes",
-          "source": "manifest",
+          "source": "cache",
           "checked_at": "2026-10-31T23:54:42Z"
         }
       ]
@@ -10911,7 +10929,7 @@
           ],
           "amd64": "yes",
           "arm64": "yes",
-          "source": "manifest",
+          "source": "cache",
           "checked_at": "2026-10-31T23:54:42Z"
         }
       ]
@@ -10930,7 +10948,7 @@
           ],
           "amd64": "yes",
           "arm64": "yes",
-          "source": "manifest",
+          "source": "cache",
           "checked_at": "2026-11-01T04:09:06Z"
         }
       ]
@@ -10963,7 +10981,7 @@
           ],
           "amd64": "yes",
           "arm64": "yes",
-          "source": "manifest",
+          "source": "cache",
           "checked_at": "2026-10-31T23:54:42Z"
         }
       ]
@@ -10981,7 +10999,7 @@
           ],
           "amd64": "yes",
           "arm64": "yes",
-          "source": "manifest",
+          "source": "cache",
           "checked_at": "2026-10-31T23:54:42Z"
         }
       ]
@@ -11014,7 +11032,7 @@
           ],
           "amd64": "yes",
           "arm64": "yes",
-          "source": "manifest",
+          "source": "cache",
           "checked_at": "2026-10-31T23:54:42Z"
         }
       ]
@@ -11033,7 +11051,7 @@
           ],
           "amd64": "yes",
           "arm64": "yes",
-          "source": "manifest",
+          "source": "cache",
           "checked_at": "2026-10-31T23:53:56Z"
         }
       ]
@@ -11051,7 +11069,7 @@
           ],
           "amd64": "yes",
           "arm64": "yes",
-          "source": "manifest",
+          "source": "cache",
           "checked_at": "2026-10-31T23:54:42Z"
         }
       ]
@@ -11083,7 +11101,7 @@
           ],
           "amd64": "yes",
           "arm64": "yes",
-          "source": "manifest",
+          "source": "cache",
           "checked_at": "2026-11-01T23:30:55Z"
         }
       ]
@@ -11145,7 +11163,7 @@
           ],
           "amd64": "yes",
           "arm64": "yes",
-          "source": "manifest",
+          "source": "cache",
           "checked_at": "2026-10-31T23:54:42Z"
         },
         {
@@ -11156,7 +11174,7 @@
           ],
           "amd64": "yes",
           "arm64": "yes",
-          "source": "manifest",
+          "source": "cache",
           "checked_at": "2026-10-31T23:54:42Z"
         }
       ]
@@ -11175,7 +11193,7 @@
           ],
           "amd64": "yes",
           "arm64": "yes",
-          "source": "manifest",
+          "source": "cache",
           "checked_at": "2026-10-31T23:54:42Z"
         }
       ]
@@ -11212,7 +11230,7 @@
           ],
           "amd64": "yes",
           "arm64": "yes",
-          "source": "manifest",
+          "source": "cache",
           "checked_at": "2026-11-02T03:14:45Z"
         },
         {
@@ -11223,7 +11241,7 @@
           ],
           "amd64": "yes",
           "arm64": "yes",
-          "source": "manifest",
+          "source": "cache",
           "checked_at": "2026-10-31T23:54:42Z"
         }
       ]
@@ -11241,7 +11259,7 @@
           ],
           "amd64": "yes",
           "arm64": "yes",
-          "source": "manifest",
+          "source": "cache",
           "checked_at": "2026-10-31T23:54:42Z"
         }
       ]
@@ -11273,7 +11291,7 @@
           ],
           "amd64": "yes",
           "arm64": "yes",
-          "source": "manifest",
+          "source": "cache",
           "checked_at": "2026-10-31T23:54:42Z"
         },
         {
@@ -11284,7 +11302,7 @@
           ],
           "amd64": "yes",
           "arm64": "yes",
-          "source": "manifest",
+          "source": "cache",
           "checked_at": "2026-11-01T00:10:24Z"
         },
         {
@@ -11300,7 +11318,7 @@
           ],
           "amd64": "yes",
           "arm64": "yes",
-          "source": "manifest",
+          "source": "cache",
           "checked_at": "2026-11-02T03:14:45Z"
         }
       ]
@@ -11318,7 +11336,7 @@
           ],
           "amd64": "yes",
           "arm64": "yes",
-          "source": "manifest",
+          "source": "cache",
           "checked_at": "2026-10-31T23:54:42Z"
         }
       ]
@@ -11336,7 +11354,7 @@
           ],
           "amd64": "yes",
           "arm64": "yes",
-          "source": "manifest",
+          "source": "cache",
           "checked_at": "2026-10-31T23:54:42Z"
         }
       ]
@@ -11354,7 +11372,7 @@
           ],
           "amd64": "yes",
           "arm64": "yes",
-          "source": "manifest",
+          "source": "cache",
           "checked_at": "2026-11-01T04:36:49Z"
         },
         {
@@ -11370,7 +11388,7 @@
           ],
           "amd64": "yes",
           "arm64": "yes",
-          "source": "manifest",
+          "source": "cache",
           "checked_at": "2026-11-02T03:14:45Z"
         }
       ]
@@ -11389,7 +11407,7 @@
           ],
           "amd64": "yes",
           "arm64": "yes",
-          "source": "manifest",
+          "source": "cache",
           "checked_at": "2026-11-01T04:09:06Z"
         }
       ]
@@ -11420,7 +11438,7 @@
           ],
           "amd64": "yes",
           "arm64": "no",
-          "source": "manifest",
+          "source": "cache",
           "checked_at": "2026-10-31T23:54:42Z"
         }
       ]
@@ -11439,7 +11457,7 @@
           ],
           "amd64": "yes",
           "arm64": "yes",
-          "source": "manifest",
+          "source": "cache",
           "checked_at": "2026-10-31T23:54:42Z"
         }
       ]
@@ -11476,7 +11494,7 @@
           ],
           "amd64": "yes",
           "arm64": "yes",
-          "source": "manifest",
+          "source": "cache",
           "checked_at": "2026-10-31T23:54:42Z"
         },
         {
@@ -11489,7 +11507,7 @@
           ],
           "amd64": "yes",
           "arm64": "yes",
-          "source": "manifest",
+          "source": "cache",
           "checked_at": "2026-10-31T23:54:42Z"
         }
       ]
@@ -11521,7 +11539,7 @@
           ],
           "amd64": "yes",
           "arm64": "yes",
-          "source": "manifest",
+          "source": "cache",
           "checked_at": "2026-10-31T23:54:42Z"
         }
       ]
@@ -11553,7 +11571,7 @@
           ],
           "amd64": "yes",
           "arm64": "yes",
-          "source": "manifest",
+          "source": "cache",
           "checked_at": "2026-10-31T23:54:42Z"
         }
       ]
@@ -11571,7 +11589,7 @@
           ],
           "amd64": "yes",
           "arm64": "yes",
-          "source": "manifest",
+          "source": "cache",
           "checked_at": "2026-11-01T00:10:24Z"
         },
         {
@@ -11587,7 +11605,7 @@
           ],
           "amd64": "yes",
           "arm64": "yes",
-          "source": "manifest",
+          "source": "cache",
           "checked_at": "2026-11-02T03:14:45Z"
         }
       ]
@@ -11619,7 +11637,7 @@
           ],
           "amd64": "yes",
           "arm64": "yes",
-          "source": "manifest",
+          "source": "cache",
           "checked_at": "2026-10-31T23:53:56Z"
         }
       ]
@@ -11642,7 +11660,7 @@
           ],
           "amd64": "yes",
           "arm64": "yes",
-          "source": "manifest",
+          "source": "cache",
           "checked_at": "2026-11-02T03:14:45Z"
         },
         {
@@ -11653,7 +11671,7 @@
           ],
           "amd64": "yes",
           "arm64": "yes",
-          "source": "manifest",
+          "source": "cache",
           "checked_at": "2026-10-31T23:54:42Z"
         }
       ]
@@ -11671,7 +11689,7 @@
           ],
           "amd64": "yes",
           "arm64": "yes",
-          "source": "manifest",
+          "source": "cache",
           "checked_at": "2026-10-31T23:54:42Z"
         },
         {
@@ -11687,7 +11705,7 @@
           ],
           "amd64": "yes",
           "arm64": "yes",
-          "source": "manifest",
+          "source": "cache",
           "checked_at": "2026-11-02T03:14:45Z"
         },
         {
@@ -11700,7 +11718,7 @@
           ],
           "amd64": "yes",
           "arm64": "yes",
-          "source": "manifest",
+          "source": "cache",
           "checked_at": "2026-10-31T23:54:42Z"
         }
       ]
@@ -11774,7 +11792,7 @@
           ],
           "amd64": "yes",
           "arm64": "yes",
-          "source": "manifest",
+          "source": "cache",
           "checked_at": "2026-10-31T23:54:42Z"
         }
       ]
@@ -11825,7 +11843,7 @@
           ],
           "amd64": "yes",
           "arm64": "yes",
-          "source": "manifest",
+          "source": "cache",
           "checked_at": "2026-11-02T03:14:45Z"
         },
         {
@@ -11836,7 +11854,7 @@
           ],
           "amd64": "yes",
           "arm64": "yes",
-          "source": "manifest",
+          "source": "cache",
           "checked_at": "2026-10-31T23:54:42Z"
         }
       ]
@@ -11868,7 +11886,7 @@
           ],
           "amd64": "yes",
           "arm64": "yes",
-          "source": "manifest",
+          "source": "cache",
           "checked_at": "2026-10-31T23:54:42Z"
         }
       ]
@@ -11886,7 +11904,7 @@
           ],
           "amd64": "yes",
           "arm64": "yes",
-          "source": "manifest",
+          "source": "cache",
           "checked_at": "2026-10-31T23:54:42Z"
         }
       ]
@@ -11904,7 +11922,7 @@
           ],
           "amd64": "yes",
           "arm64": "yes",
-          "source": "manifest",
+          "source": "cache",
           "checked_at": "2026-10-31T23:54:42Z"
         },
         {
@@ -11915,7 +11933,7 @@
           ],
           "amd64": "yes",
           "arm64": "yes",
-          "source": "manifest",
+          "source": "cache",
           "checked_at": "2026-10-31T23:54:42Z"
         },
         {
@@ -11931,7 +11949,7 @@
           ],
           "amd64": "yes",
           "arm64": "yes",
-          "source": "manifest",
+          "source": "cache",
           "checked_at": "2026-10-31T23:54:42Z"
         },
         {
@@ -11947,7 +11965,7 @@
           ],
           "amd64": "yes",
           "arm64": "yes",
-          "source": "manifest",
+          "source": "cache",
           "checked_at": "2026-10-31T23:54:42Z"
         }
       ]
@@ -11966,7 +11984,7 @@
           ],
           "amd64": "yes",
           "arm64": "yes",
-          "source": "manifest",
+          "source": "cache",
           "checked_at": "2026-10-31T23:54:42Z"
         }
       ]
@@ -12017,7 +12035,7 @@
           ],
           "amd64": "yes",
           "arm64": "yes",
-          "source": "manifest",
+          "source": "cache",
           "checked_at": "2026-11-02T03:14:45Z"
         },
         {
@@ -12028,7 +12046,7 @@
           ],
           "amd64": "yes",
           "arm64": "yes",
-          "source": "manifest",
+          "source": "cache",
           "checked_at": "2026-10-31T23:54:42Z"
         },
         {
@@ -12039,7 +12057,7 @@
           ],
           "amd64": "yes",
           "arm64": "yes",
-          "source": "manifest",
+          "source": "cache",
           "checked_at": "2026-10-31T23:54:42Z"
         }
       ]
@@ -12057,7 +12075,7 @@
           ],
           "amd64": "yes",
           "arm64": "yes",
-          "source": "manifest",
+          "source": "cache",
           "checked_at": "2026-10-31T23:54:42Z"
         },
         {
@@ -12068,7 +12086,7 @@
           ],
           "amd64": "yes",
           "arm64": "yes",
-          "source": "manifest",
+          "source": "cache",
           "checked_at": "2026-10-31T23:54:42Z"
         }
       ]
@@ -12089,7 +12107,7 @@
           ],
           "amd64": "yes",
           "arm64": "yes",
-          "source": "manifest",
+          "source": "cache",
           "checked_at": "2026-10-31T23:54:42Z"
         }
       ]
@@ -12106,7 +12124,7 @@
           ],
           "amd64": "yes",
           "arm64": "no",
-          "source": "manifest",
+          "source": "cache",
           "checked_at": "2026-11-01T00:10:24Z"
         }
       ]
@@ -12123,7 +12141,7 @@
           ],
           "amd64": "yes",
           "arm64": "no",
-          "source": "manifest",
+          "source": "cache",
           "checked_at": "2026-10-31T23:54:42Z"
         }
       ]
@@ -12169,7 +12187,7 @@
           ],
           "amd64": "yes",
           "arm64": "yes",
-          "source": "manifest",
+          "source": "cache",
           "checked_at": "2026-10-31T23:54:42Z"
         },
         {
@@ -12185,7 +12203,7 @@
           ],
           "amd64": "yes",
           "arm64": "yes",
-          "source": "manifest",
+          "source": "cache",
           "checked_at": "2026-11-02T03:14:45Z"
         }
       ]
@@ -12245,7 +12263,7 @@
           ],
           "amd64": "yes",
           "arm64": "yes",
-          "source": "manifest",
+          "source": "cache",
           "checked_at": "2026-11-01T23:30:55Z"
         }
       ]
@@ -12268,7 +12286,7 @@
           ],
           "amd64": "yes",
           "arm64": "yes",
-          "source": "manifest",
+          "source": "cache",
           "checked_at": "2026-11-02T03:14:45Z"
         },
         {
@@ -12279,7 +12297,7 @@
           ],
           "amd64": "yes",
           "arm64": "yes",
-          "source": "manifest",
+          "source": "cache",
           "checked_at": "2026-10-31T23:54:42Z"
         }
       ]
@@ -12302,7 +12320,7 @@
           ],
           "amd64": "yes",
           "arm64": "yes",
-          "source": "manifest",
+          "source": "cache",
           "checked_at": "2026-11-02T03:14:45Z"
         },
         {
@@ -12313,7 +12331,7 @@
           ],
           "amd64": "yes",
           "arm64": "yes",
-          "source": "manifest",
+          "source": "cache",
           "checked_at": "2026-10-31T23:54:42Z"
         }
       ]
@@ -12359,7 +12377,7 @@
           ],
           "amd64": "yes",
           "arm64": "yes",
-          "source": "manifest",
+          "source": "cache",
           "checked_at": "2026-10-31T23:54:42Z"
         }
       ]
@@ -12377,7 +12395,7 @@
           ],
           "amd64": "yes",
           "arm64": "yes",
-          "source": "manifest",
+          "source": "cache",
           "checked_at": "2026-10-31T23:54:42Z"
         }
       ]
@@ -12396,7 +12414,7 @@
           ],
           "amd64": "yes",
           "arm64": "yes",
-          "source": "manifest",
+          "source": "cache",
           "checked_at": "2026-10-31T23:54:42Z"
         }
       ]
@@ -12415,7 +12433,7 @@
           ],
           "amd64": "yes",
           "arm64": "yes",
-          "source": "manifest",
+          "source": "cache",
           "checked_at": "2026-10-31T23:54:42Z"
         }
       ]
@@ -12466,7 +12484,7 @@
           ],
           "amd64": "yes",
           "arm64": "yes",
-          "source": "manifest",
+          "source": "cache",
           "checked_at": "2026-11-02T03:14:45Z"
         },
         {
@@ -12482,7 +12500,7 @@
           ],
           "amd64": "yes",
           "arm64": "yes",
-          "source": "manifest",
+          "source": "cache",
           "checked_at": "2026-10-31T23:54:42Z"
         },
         {
@@ -12493,7 +12511,7 @@
           ],
           "amd64": "yes",
           "arm64": "yes",
-          "source": "manifest",
+          "source": "cache",
           "checked_at": "2026-10-31T23:54:42Z"
         }
       ]
@@ -12511,7 +12529,7 @@
           ],
           "amd64": "yes",
           "arm64": "yes",
-          "source": "manifest",
+          "source": "cache",
           "checked_at": "2026-10-31T23:54:42Z"
         }
       ]
@@ -12543,7 +12561,7 @@
           ],
           "amd64": "yes",
           "arm64": "yes",
-          "source": "manifest",
+          "source": "cache",
           "checked_at": "2026-10-31T23:54:42Z"
         },
         {
@@ -12559,7 +12577,7 @@
           ],
           "amd64": "yes",
           "arm64": "yes",
-          "source": "manifest",
+          "source": "cache",
           "checked_at": "2026-11-02T03:14:45Z"
         }
       ]
@@ -12582,7 +12600,7 @@
           ],
           "amd64": "yes",
           "arm64": "yes",
-          "source": "manifest",
+          "source": "cache",
           "checked_at": "2026-11-02T03:14:45Z"
         },
         {
@@ -12612,7 +12630,7 @@
           ],
           "amd64": "yes",
           "arm64": "yes",
-          "source": "manifest",
+          "source": "cache",
           "checked_at": "2026-11-02T03:14:45Z"
         },
         {
@@ -12623,7 +12641,7 @@
           ],
           "amd64": "yes",
           "arm64": "yes",
-          "source": "manifest",
+          "source": "cache",
           "checked_at": "2026-10-31T23:54:42Z"
         }
       ]
@@ -12655,7 +12673,7 @@
           ],
           "amd64": "yes",
           "arm64": "yes",
-          "source": "manifest",
+          "source": "cache",
           "checked_at": "2026-10-31T23:54:42Z"
         }
       ]
@@ -12688,7 +12706,7 @@
           ],
           "amd64": "yes",
           "arm64": "yes",
-          "source": "manifest",
+          "source": "cache",
           "checked_at": "2026-10-31T23:54:42Z"
         }
       ]
@@ -12707,7 +12725,7 @@
           ],
           "amd64": "yes",
           "arm64": "yes",
-          "source": "manifest",
+          "source": "cache",
           "checked_at": "2026-10-31T23:54:42Z"
         },
         {
@@ -12720,7 +12738,7 @@
           ],
           "amd64": "yes",
           "arm64": "yes",
-          "source": "manifest",
+          "source": "cache",
           "checked_at": "2026-10-31T23:54:42Z"
         }
       ]
@@ -12740,7 +12758,7 @@
           ],
           "amd64": "yes",
           "arm64": "yes",
-          "source": "manifest",
+          "source": "cache",
           "checked_at": "2026-10-31T23:54:42Z"
         }
       ]
@@ -12778,7 +12796,7 @@
           ],
           "amd64": "yes",
           "arm64": "yes",
-          "source": "manifest",
+          "source": "cache",
           "checked_at": "2026-10-31T23:54:42Z"
         }
       ]
@@ -12810,7 +12828,7 @@
           ],
           "amd64": "yes",
           "arm64": "yes",
-          "source": "manifest",
+          "source": "cache",
           "checked_at": "2026-10-31T23:54:42Z"
         }
       ]
@@ -12842,7 +12860,7 @@
           ],
           "amd64": "yes",
           "arm64": "yes",
-          "source": "manifest",
+          "source": "cache",
           "checked_at": "2026-10-31T23:54:42Z"
         }
       ]
@@ -12877,7 +12895,7 @@
           ],
           "amd64": "yes",
           "arm64": "yes",
-          "source": "manifest",
+          "source": "cache",
           "checked_at": "2026-10-31T23:54:42Z"
         }
       ]
@@ -12900,7 +12918,7 @@
           ],
           "amd64": "yes",
           "arm64": "yes",
-          "source": "manifest",
+          "source": "cache",
           "checked_at": "2026-11-02T03:14:45Z"
         },
         {
@@ -12913,7 +12931,7 @@
           ],
           "amd64": "yes",
           "arm64": "yes",
-          "source": "manifest",
+          "source": "cache",
           "checked_at": "2026-10-31T23:54:42Z"
         }
       ]
@@ -12931,7 +12949,7 @@
           ],
           "amd64": "yes",
           "arm64": "yes",
-          "source": "manifest",
+          "source": "cache",
           "checked_at": "2026-10-31T23:54:42Z"
         }
       ]
@@ -12972,7 +12990,7 @@
           ],
           "amd64": "yes",
           "arm64": "yes",
-          "source": "manifest",
+          "source": "cache",
           "checked_at": "2026-10-31T23:54:42Z"
         }
       ]
@@ -12991,7 +13009,7 @@
           ],
           "amd64": "yes",
           "arm64": "yes",
-          "source": "manifest",
+          "source": "cache",
           "checked_at": "2026-10-31T23:54:42Z"
         },
         {
@@ -13007,7 +13025,7 @@
           ],
           "amd64": "yes",
           "arm64": "yes",
-          "source": "manifest",
+          "source": "cache",
           "checked_at": "2026-11-02T03:14:45Z"
         }
       ]
@@ -13026,7 +13044,7 @@
           ],
           "amd64": "yes",
           "arm64": "yes",
-          "source": "manifest",
+          "source": "cache",
           "checked_at": "2026-10-31T23:54:42Z"
         }
       ]
@@ -13066,7 +13084,7 @@
           ],
           "amd64": "yes",
           "arm64": "yes",
-          "source": "manifest",
+          "source": "cache",
           "checked_at": "2026-10-31T23:53:56Z"
         }
       ]
@@ -13084,7 +13102,7 @@
           ],
           "amd64": "yes",
           "arm64": "yes",
-          "source": "manifest",
+          "source": "cache",
           "checked_at": "2026-10-31T23:54:42Z"
         }
       ]
@@ -13102,7 +13120,7 @@
           ],
           "amd64": "yes",
           "arm64": "yes",
-          "source": "manifest",
+          "source": "cache",
           "checked_at": "2026-10-31T23:54:42Z"
         }
       ]
@@ -13139,7 +13157,7 @@
           ],
           "amd64": "yes",
           "arm64": "yes",
-          "source": "manifest",
+          "source": "cache",
           "checked_at": "2026-11-02T03:14:45Z"
         },
         {
@@ -13155,7 +13173,7 @@
           ],
           "amd64": "yes",
           "arm64": "yes",
-          "source": "manifest",
+          "source": "cache",
           "checked_at": "2026-10-31T23:54:42Z"
         },
         {
@@ -13166,7 +13184,7 @@
           ],
           "amd64": "yes",
           "arm64": "yes",
-          "source": "manifest",
+          "source": "cache",
           "checked_at": "2026-10-31T23:54:42Z"
         }
       ]
@@ -13199,7 +13217,7 @@
           ],
           "amd64": "yes",
           "arm64": "yes",
-          "source": "manifest",
+          "source": "cache",
           "checked_at": "2026-10-31T23:54:42Z"
         },
         {
@@ -13215,7 +13233,7 @@
           ],
           "amd64": "yes",
           "arm64": "yes",
-          "source": "manifest",
+          "source": "cache",
           "checked_at": "2026-10-31T23:54:42Z"
         }
       ]
@@ -13234,7 +13252,7 @@
           ],
           "amd64": "yes",
           "arm64": "yes",
-          "source": "manifest",
+          "source": "cache",
           "checked_at": "2026-11-01T00:10:24Z"
         }
       ]
@@ -13252,7 +13270,7 @@
           ],
           "amd64": "yes",
           "arm64": "yes",
-          "source": "manifest",
+          "source": "cache",
           "checked_at": "2026-10-31T23:54:42Z"
         },
         {
@@ -13268,7 +13286,7 @@
           ],
           "amd64": "yes",
           "arm64": "yes",
-          "source": "manifest",
+          "source": "cache",
           "checked_at": "2026-11-02T03:14:45Z"
         }
       ]
@@ -13286,7 +13304,7 @@
           ],
           "amd64": "yes",
           "arm64": "yes",
-          "source": "manifest",
+          "source": "cache",
           "checked_at": "2026-10-31T23:54:42Z"
         },
         {
@@ -13302,7 +13320,7 @@
           ],
           "amd64": "yes",
           "arm64": "yes",
-          "source": "manifest",
+          "source": "cache",
           "checked_at": "2026-11-02T03:14:45Z"
         }
       ]
@@ -13334,7 +13352,7 @@
           ],
           "amd64": "yes",
           "arm64": "yes",
-          "source": "manifest",
+          "source": "cache",
           "checked_at": "2026-11-01T04:09:06Z"
         }
       ]
@@ -13359,7 +13377,7 @@
           ],
           "amd64": "yes",
           "arm64": "yes",
-          "source": "manifest",
+          "source": "cache",
           "checked_at": "2026-10-31T23:54:42Z"
         },
         {
@@ -13374,7 +13392,7 @@
           ],
           "amd64": "yes",
           "arm64": "yes",
-          "source": "manifest",
+          "source": "cache",
           "checked_at": "2026-10-31T23:54:42Z"
         }
       ]
@@ -13392,7 +13410,7 @@
           ],
           "amd64": "yes",
           "arm64": "yes",
-          "source": "manifest",
+          "source": "cache",
           "checked_at": "2026-10-31T23:54:42Z"
         },
         {
@@ -13408,7 +13426,7 @@
           ],
           "amd64": "yes",
           "arm64": "yes",
-          "source": "manifest",
+          "source": "cache",
           "checked_at": "2026-10-31T23:54:42Z"
         }
       ]
@@ -13428,7 +13446,7 @@
           ],
           "amd64": "yes",
           "arm64": "yes",
-          "source": "manifest",
+          "source": "cache",
           "checked_at": "2026-10-31T23:54:42Z"
         },
         {
@@ -13444,7 +13462,7 @@
           ],
           "amd64": "yes",
           "arm64": "yes",
-          "source": "manifest",
+          "source": "cache",
           "checked_at": "2026-10-31T23:54:42Z"
         }
       ]
@@ -13490,7 +13508,7 @@
           ],
           "amd64": "yes",
           "arm64": "yes",
-          "source": "manifest",
+          "source": "cache",
           "checked_at": "2026-10-31T23:54:42Z"
         },
         {
@@ -13506,7 +13524,7 @@
           ],
           "amd64": "yes",
           "arm64": "yes",
-          "source": "manifest",
+          "source": "cache",
           "checked_at": "2026-10-31T23:54:42Z"
         }
       ]
@@ -13526,7 +13544,7 @@
           ],
           "amd64": "yes",
           "arm64": "yes",
-          "source": "manifest",
+          "source": "cache",
           "checked_at": "2026-11-02T03:14:45Z"
         },
         {
@@ -13542,7 +13560,7 @@
           ],
           "amd64": "yes",
           "arm64": "yes",
-          "source": "manifest",
+          "source": "cache",
           "checked_at": "2026-11-02T03:14:45Z"
         }
       ]
@@ -13565,7 +13583,7 @@
           ],
           "amd64": "yes",
           "arm64": "yes",
-          "source": "manifest",
+          "source": "cache",
           "checked_at": "2026-11-02T03:14:45Z"
         },
         {
@@ -13579,7 +13597,7 @@
           ],
           "amd64": "yes",
           "arm64": "yes",
-          "source": "manifest",
+          "source": "cache",
           "checked_at": "2026-10-31T23:54:42Z"
         },
         {
@@ -13593,7 +13611,7 @@
           ],
           "amd64": "yes",
           "arm64": "yes",
-          "source": "manifest",
+          "source": "cache",
           "checked_at": "2026-10-31T23:54:42Z"
         }
       ]
@@ -13625,7 +13643,7 @@
           ],
           "amd64": "yes",
           "arm64": "yes",
-          "source": "manifest",
+          "source": "cache",
           "checked_at": "2026-10-31T23:54:42Z"
         },
         {
@@ -13641,7 +13659,7 @@
           ],
           "amd64": "yes",
           "arm64": "yes",
-          "source": "manifest",
+          "source": "cache",
           "checked_at": "2026-11-02T03:14:45Z"
         }
       ]
@@ -13671,7 +13689,7 @@
           ],
           "amd64": "yes",
           "arm64": "yes",
-          "source": "manifest",
+          "source": "cache",
           "checked_at": "2026-10-31T23:54:42Z"
         }
       ]

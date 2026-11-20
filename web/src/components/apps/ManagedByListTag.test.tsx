@@ -4,7 +4,7 @@ import { QueryClient, QueryClientProvider } from '@tanstack/react-query'
 import { describe, expect, it, vi } from 'vitest'
 import { DatabasesI18n } from '../../test/databasesI18n'
 import { DatabasesTable } from '../DatabasesTable'
-import { AppCard } from './AppCard'
+import { AppPreviewCard } from './AppPreviewCard'
 import { AppsTable } from './AppsTable'
 import type { AppListEntry } from '../../types/appDetail'
 import type { DatabaseListEntry } from '../../types/databaseDetail'
@@ -67,12 +67,26 @@ function wrap(ui: ReactNode) {
 
 describe('managed-by tag in list renderings', () => {
   it('shows it in the apps table view', () => {
-    wrap(<AppsTable apps={[app]} selected={[]} onSelect={vi.fn()} />)
+    wrap(
+      <AppsTable
+        staticNames={new Set()}
+        apps={[app]}
+        selected={[]}
+        onSelect={vi.fn()}
+      />,
+    )
     expect(screen.getAllByText('tag:web-stack').length).toBeGreaterThan(0)
   })
 
   it('shows it in the apps grid card', () => {
-    wrap(<AppCard app={app} selected={false} onSelect={vi.fn()} />)
+    wrap(
+      <AppPreviewCard
+        app={app}
+        isStatic={false}
+        selected={false}
+        onSelect={vi.fn()}
+      />,
+    )
     expect(screen.getByText('tag:web-stack')).toBeInTheDocument()
   })
 

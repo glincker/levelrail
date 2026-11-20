@@ -42,6 +42,8 @@ export interface NodeResource {
   // PUT /api/v1/nodes/{id}/workloads, never patched individually.
   accepts_app_workloads: boolean
   accepts_build_workloads: boolean
+  // Builder tier (server, managed or personal), set on list and get.
+  build_trust?: string
   // Region is an optional, free-text operator-facing location label
   // (internal/store.Node.Region), e.g. "hetzner-fsn1" or "home-lab":
   // display/grouping metadata for the network topology view, not a

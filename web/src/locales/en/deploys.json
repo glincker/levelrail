@@ -654,7 +654,6 @@
       "jenkins": "Jenkins",
       "buildkite": "Buildkite"
     },
-    "saveAs": "Save this as {{target}} in your repository.",
     "needsDomain": "No dashboard URL is set yet. Set one in Settings so your CI can reach this control plane.",
     "oidcNote": "Add a trusted pipeline in Deploy from CI first, then no token is stored in your CI.",
     "token": {
@@ -668,7 +667,9 @@
       "createInstallWide": "Create install-wide token",
       "helpProjectMissing": "This file reads a stored token. The app names a project that no longer exists, so the token cannot be limited to a project and can deploy any app on this server. It can only: {{abilities}}. Fix the app's project first, or prefer an OIDC pipeline."
     },
-    "apiUrl": "Set LEVELRAIL_API_URL to {{url}} in your CI."
+    "apiUrl": "Set LEVELRAIL_API_URL to {{url}} in your CI.",
+    "download": "Download file",
+    "staticHint": "This is a static site, so the pipeline publishes your built folder with the Levelrail CLI. No image is built."
   },
   "approvalBanner": {
     "approved": "Approved: {{app}} now targets {{image}}.",
@@ -804,20 +805,30 @@
     "dismissHint": "Dismiss the build node suggestion"
   },
   "runnerPref": {
-    "title": "Build runner",
-    "description": "Choose where this app builds. Leave empty to follow the global strategy.",
+    "title": "Run builds on",
+    "description": "Choose where this app builds.",
     "node": "Build node",
-    "anyNode": "Any build node",
+    "anyNode": "Automatic",
     "labels": "Labels",
     "labelsPlaceholder": "gpu, arch=arm64",
-    "pin": "Pin to this node",
-    "pinHint": "If this node cannot build, use the control plane, never another node.",
-    "pinNeedsNode": "Pick a node to pin it.",
+    "pin": "Only this builder",
+    "pinHint": "If it cannot build, use the control plane, never another node.",
+    "pinNeedsNode": "Pick a builder first.",
     "noAbility": "You need deploy access to change this.",
     "clear": "Clear",
     "save": "Save",
     "saved": "Build runner saved",
     "cleared": "Build runner cleared",
-    "retry": "Retry"
+    "retry": "Retry",
+    "prodTipLabel": "About production builds",
+    "prodTip": "Production environments never build on a personal builder unless that environment allows it. The build then falls back to another builder or the control plane.",
+    "mode": "Run on",
+    "modeAuto": "Automatic",
+    "modeControlPlane": "Control plane only",
+    "modeNode": "Specific builder",
+    "pickNode": "Pick a builder",
+    "nodeNeeded": "A specific builder needs a builder picked.",
+    "modeTipLabel": "About build placement",
+    "modeTip": "Automatic follows the global strategy. Control plane only always builds on this server and never on a builder. Specific builder uses the one you pick, and Only this builder stops it falling back to another node."
   }
 }

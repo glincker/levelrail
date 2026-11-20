@@ -234,6 +234,8 @@ type deployAttemptResource struct {
 	Author        string `json:"author,omitempty"`
 	// Trigger classifies Source the way the deployments list does.
 	Trigger string `json:"trigger,omitempty"`
+	// Pinned is true when a person pinned the deploy so retention keeps it and its image.
+	Pinned bool `json:"pinned"`
 	// CacheWarning is set when the build carried on without its remote cache.
 	CacheWarning string `json:"cache_warning,omitempty"`
 
@@ -389,8 +391,10 @@ func (rt *Router) handleListDeployAttempts(w http.ResponseWriter, r *http.Reques
 	out := make([]deployAttemptResource, 0, len(attempts))
 	chainPos := rerunChainPositions(attempts)
 	liveID := newestSucceededID(attempts)
+	pinned := rt.pinnedDeploys(r.Context(), name)
 	for i, a := range attempts {
 		res := toDeployAttemptResource(a)
+		res.Pinned = pinned[a.ID]
 		applyDeployOutcome(&res, a, i == 0, conds)
 		if isRedeployOfEarlierImage(a, attempts) {
 			res.Trigger = store.DeploymentTriggerRollback

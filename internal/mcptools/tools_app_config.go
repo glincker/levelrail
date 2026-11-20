@@ -11,7 +11,7 @@ import (
 func registerAppConfigTools(server *mcp.Server, client *apiclient.Client) {
 	addTool(server, &mcp.Tool{
 		Name:        "get_app_git_source",
-		Description: "An app's git source: repo, branch, build type, webhook URL, whether a deploy token is stored (never the token). Explains missing push deploys.",
+		Description: "An app's git source: repo, branch, build type, webhook URL, whether a deploy token is stored (never the token).",
 	}, func(ctx context.Context, _ *mcp.CallToolRequest, in appNameInput) (*mcp.CallToolResult, apiclient.GitSourceResource, error) {
 		source, err := client.GetGitSource(ctx, in.Name)
 		if err != nil {
@@ -22,7 +22,7 @@ func registerAppConfigTools(server *mcp.Server, client *apiclient.Client) {
 
 	addTool(server, &mcp.Tool{
 		Name:        "get_app_hook_runs",
-		Description: "Most recent outcome of an app's pre-deploy and post-deploy hooks: exit code, success and captured output. A hook that never ran is absent.",
+		Description: "Latest outcome of an app's pre-deploy and post-deploy hooks: exit code, success, output. A hook that never ran is absent.",
 	}, func(ctx context.Context, _ *mcp.CallToolRequest, in appNameInput) (*mcp.CallToolResult, apiclient.AppHookRunsResource, error) {
 		runs, err := client.GetAppHookRuns(ctx, in.Name)
 		if err != nil {

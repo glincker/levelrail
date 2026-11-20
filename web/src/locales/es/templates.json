@@ -347,8 +347,16 @@
       "license": "Clase de licencia",
       "anyLicense": "Cualquier licencia",
       "arch": "Arquitectura",
-      "anyArch": "Cualquier arquitectura"
+      "anyArch": "Cualquier arquitectura",
+      "access": "Accesibilidad",
+      "anyAccess": "Cualquier accesibilidad",
+      "worksOnIp": "Funciona con una IP (no necesita dominio)"
     },
+    "needsDomain": {
+      "badge": "Requiere dominio",
+      "hint": "Solo se accede mediante un nombre de dominio, así que no funciona con una dirección IP sin más."
+    },
+    "updatedOn": "Actualizado el {{date}}",
     "preview": {
       "badge": "Vista previa",
       "hint": "Aún sin probar en una ejecución real del motor. Se instala igual; avisa si algo falla."

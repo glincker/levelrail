@@ -70,6 +70,10 @@ type Marketplace struct {
 	Verification *Verification
 	Admission    *Admission
 	Images       []ImageFact
+	// NeedsDomain is true when the entry is reached only through a domain: it declares one and publishes no host port.
+	NeedsDomain bool
+	// UpdatedAt is the date (YYYY-MM-DD) the template files last changed; empty when not recorded.
+	UpdatedAt string
 }
 
 // MarketplaceFor derives the marketplace facts of one template. A compose body
@@ -124,6 +128,8 @@ func marketplaceFor(t Template, meta TemplateMeta, hasMeta bool) Marketplace {
 		}
 		sort.Slice(m.Images, func(i, j int) bool { return m.Images[i].Service < m.Images[j].Service })
 	}
+	m.NeedsDomain = needsDomain(t)
+	m.UpdatedAt = UpdatedAtFor(t.ID)
 	m.Arch = archStates(m.Images, rec, verified)
 	m.Trust = trustFor(m, rec, verified)
 	return m
@@ -145,6 +151,26 @@ func MarketplaceByID(id string) (Marketplace, bool) {
 	})
 	m, ok := marketplaceCache[id]
 	return m, ok
+}
+
+// needsDomain reports an entry that cannot be reached on a bare IP: the
+// manifest asks for a domain and no service publishes a host port.
+func needsDomain(t Template) bool {
+	if t.Manifest == nil || len(t.Manifest.Domains) == 0 {
+		return false
+	}
+	f, err := compose.Parse([]byte(t.Compose))
+	if err != nil {
+		return false
+	}
+	for _, svc := range f.Services {
+		for _, p := range svc.Ports {
+			if p.HostPort > 0 {
+				return false
+			}
+		}
+	}
+	return true
 }
 
 var platformsByRef = sync.OnceValue(func() map[string][]string {

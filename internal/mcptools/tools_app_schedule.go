@@ -17,7 +17,7 @@ import (
 func registerAppScheduleTools(server *mcp.Server, client *apiclient.Client) {
 	addTool(server, &mcp.Tool{
 		Name:        "get_app_schedule",
-		Description: "Show an app's configured redeploy schedule (cron expression or one-time run_at, branch, timezone, whether it's enabled, and its next run time), or that none is configured.",
+		Description: "An app's redeploy schedule (cron or one-time run_at, branch, timezone, enabled, next run).",
 	}, func(ctx context.Context, _ *mcp.CallToolRequest, in appNameInput) (*mcp.CallToolResult, apiclient.AppScheduleResource, error) {
 		res, err := client.GetAppSchedule(ctx, in.Name)
 		if err != nil {
@@ -28,7 +28,7 @@ func registerAppScheduleTools(server *mcp.Server, client *apiclient.Client) {
 
 	addTool(server, &mcp.Tool{
 		Name:        "get_app_schedule_history",
-		Description: "Show an app's most recent scheduled-deploy evaluations, newest first: whether each fired, was skipped because a deploy freeze window was active, or failed, with a reason.",
+		Description: "An app's recent scheduled-deploy evaluations, newest first: fired, skipped (freeze) or failed, with reason.",
 	}, func(ctx context.Context, _ *mcp.CallToolRequest, in appNameInput) (*mcp.CallToolResult, []apiclient.AppScheduleHistoryEntry, error) {
 		res, err := client.ListAppScheduleHistory(ctx, in.Name, 0)
 		if err != nil {

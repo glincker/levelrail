@@ -1,3 +1,5 @@
+import { BuildTrustBadge } from './builders/BuildTrustBadge'
+import { isBuildTrustTier } from '../queries/builderTrust'
 import { useState } from 'react'
 import { Link } from '@tanstack/react-router'
 import { useTranslation } from 'react-i18next'
@@ -92,6 +94,11 @@ export function NodeRow({
           {node.accepts_app_workloads ? null : (
             <Badge variant="outline">{t('row.buildOnly')}</Badge>
           )}
+          {node.accepts_build_workloads &&
+          node.build_trust &&
+          isBuildTrustTier(node.build_trust) ? (
+            <BuildTrustBadge tier={node.build_trust} />
+          ) : null}
           {node.gpu?.present ? (
             <Badge variant={node.gpu.runtime_installed ? 'outline' : 'warning'}>
               {t('row.gpuFree', {

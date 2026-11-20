@@ -144,6 +144,7 @@ levelrail-cli apps branch-deploys delete web staging
 
 - `--mode` is `off`, `all`, or `patterns`. Only `all` and `patterns` give branches a deploy. In `patterns`, a pattern is an exact branch name or a glob where `*` matches any characters, including `/`. The production branch never gets one.
 - A branch deploy is removed when the branch is deleted, or after 14 days with no push. `APP_BRANCH_DEPLOY_TTL` changes the idle time.
+- Repeat pushes of one commit are folded: if a branch is still deploying a commit and the same commit arrives again within the coalesce window (for example a push and a variable change together), the repeat is skipped with an "already deploying this commit" note. The window is the runtime setting `deploys.coalesce_window` (default `15s`, from `1s` to `10m`, applies to the next push, environment seed `APP_DEPLOY_COALESCE_WINDOW`). Change it under Settings > Runtime, Deploys card, or with `levelrail-cli settings runtime set deploys.coalesce_window 30s`.
 - `APP_BRANCH_DEPLOY_MAX_PER_APP` (default 10) caps live branch deploys per app. A push past the cap is ignored with a note.
 - Branch-scoped env overrides are set with `levelrail-cli apps branch-env`.
 
@@ -194,3 +195,25 @@ levelrail-cli apps previews settings web --host-template 'pr-{number}.{domain}' 
 ```
 
 This renders `pr-12.example.com` for pull request 12. `{branch}` (reduced to one DNS label) works too. The template must contain `{number}` or `{branch}`, and the domain must be one of the app's own domains or a subdomain of one, so a template can never put a preview on a host the app does not own. The domain is checked again at deploy time; if it no longer matches, the preview falls back to the default host. Point a wildcard DNS record at the server for the domain, or let automatic DNS handle each host. An empty template clears the setting.
+
+## Skip draft pull requests and chosen services
+
+Turn on "Skip previews for draft pull requests" (setting `deploy.preview_skip_drafts`, off by default) and a draft pull request or merge request gets no preview until it is marked ready for review. For a multi-service app, `levelrail-cli apps previews settings web --exclude-services worker,docs` leaves those services out of every preview. An empty value clears the list, and at least one service must remain.
+
+## Require a label
+
+Set `require_label` on the app's preview policy (`PUT /api/v1/apps/{name}/preview-policy`, up to 100 characters, no control characters) or run `levelrail-cli apps previews settings web --require-label preview`. A pull request or merge request then gets a preview only when it carries that label. The match ignores case, so `Preview` matches `preview`. An empty value clears the gate, and every pull request builds again.
+
+- A pull request without the label is ignored, and the webhook reply says that previews build once it is added.
+- Adding the label starts the build. On GitHub, a "labeled" event for any other label is ignored, so unrelated labels do not redeploy the preview. Pushes to a labeled pull request build as usual.
+- With no gate set, a "labeled" event on GitHub is ignored too.
+- Draft pull requests are still skipped first when "Skip previews for draft pull requests" is on, then the label is checked.
+- Closing a pull request always removes its preview. Changing or clearing the gate only affects later events and does not touch previews that already exist.
+
+| Provider | Label gate |
+| --- | --- |
+| GitHub | Applied |
+| GitLab | Applied |
+| Other providers | Never gated, their webhook payload has no labels |
+
+In the dashboard, the same setting is the "Required label" field on the app's Previews page, in the preview policy card (shown for apps with pull request previews), next to "Services left out". Each field has its own Save button, enabled once the value differs from what is saved, and a toast confirms "Preview settings saved." The label hint reads: "Only pull requests with this label get a preview, and adding it starts the build. GitHub and GitLab only. Empty builds every pull request." "Services left out" takes comma separated service names of a multi-service app (placeholder `worker, docs`) and is the same list as `--exclude-services` above. Its hint reads: "Comma separated services of a multi-service app that previews skip. At least one must remain."

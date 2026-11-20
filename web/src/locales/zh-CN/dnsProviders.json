@@ -51,17 +51,28 @@
     "secretAccessKey": "AWS 秘密访问密钥",
     "region": "区域(可选)",
     "hostedZoneId": "托管区域 ID(可选)",
-    "serviceAccount": "服务账号 JSON"
+    "serviceAccount": "服务账号 JSON",
+    "regionHint": "Route 53 是全局服务,通常无需关注。默认值:{{region}}。",
+    "hostedZoneHint": "留空则在此密钥可列出的所有区域中匹配域名。"
   },
   "test": {
     "button": "测试连接",
     "running": "正在测试...",
     "credential": "凭据已存储",
     "zones": "已列出区域",
+    "permission": "权限",
     "zonesCount_other": "找到 {{count}} 个区域",
     "ok": "通过",
     "failed": "失败",
-    "heading": "测试结果"
+    "heading": "测试结果",
+    "state": {
+      "allowed": "已允许",
+      "denied": "已拒绝",
+      "unknown": "未知"
+    },
+    "policyHint": "缺失操作所需的最小IAM策略:",
+    "copyPolicy": "复制策略",
+    "copied": "已复制"
   },
   "zones": {
     "heading": "托管区域",

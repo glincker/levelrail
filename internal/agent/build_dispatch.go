@@ -29,6 +29,16 @@ func NewBuildDispatcher(registry *Registry) *BuildDispatcher {
 	return &BuildDispatcher{registry: registry}
 }
 
+// NodeSupportsBuildPush reports whether the node's agent advertises registry push; unknown means no.
+func (d *BuildDispatcher) NodeSupportsBuildPush(nodeID string) bool {
+	t, err := d.registry.Get(nodeID)
+	if err != nil {
+		return false
+	}
+	g, ok := t.(*GRPCTransport)
+	return ok && g.caps.has(CapBuildPush)
+}
+
 // BuildOnNode implements internal/build.NodeBuilder.
 func (d *BuildDispatcher) BuildOnNode(ctx context.Context, nodeID string, req build.RemoteRequest, image io.Writer, progress func(build.ProgressEvent)) (*build.Result, error) {
 	transport, err := d.registry.Get(nodeID)

@@ -56,7 +56,7 @@ func registerInterfaceExtraTools(server *mcp.Server, client *apiclient.Client) {
 
 	addTool(server, &mcp.Tool{
 		Name:        "simulate_placement",
-		Description: "Dry run, root token. Without zone or node: where count apps of cpu_milli and memory_mib would land. With exactly one of zone or node: what happens if it is lost.",
+		Description: "Dry run, root token. Without zone or node: where count apps of cpu_milli and memory_mib would land. With one of them: what happens if it is lost.",
 	}, func(ctx context.Context, _ *mcp.CallToolRequest, in simulateInput) (*mcp.CallToolResult, simulateOutput, error) {
 		if in.Zone != "" || in.Node != "" {
 			out, err := client.SimulateFailure(ctx, in.Zone, in.Node)

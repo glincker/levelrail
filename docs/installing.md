@@ -10,7 +10,7 @@ description: Requirements, then every supported way to get the Levelrail control
 
 <div className="flex flex-wrap items-center gap-2 not-prose"><span className="inline-flex h-9 w-9 items-center justify-center rounded-lg bg-white p-1.5 ring-1 ring-black/10"><img src="https://cdn.jsdelivr.net/gh/glincker/thesvg@a7c5ddd3f529accdf86519cc8fb96cb76cef4efd/public/icons/ubuntu/default.svg" alt="Ubuntu" title="Ubuntu" width="24" height="24" /></span><span className="inline-flex h-9 w-9 items-center justify-center rounded-lg bg-white p-1.5 ring-1 ring-black/10"><img src="https://cdn.jsdelivr.net/gh/glincker/thesvg@a7c5ddd3f529accdf86519cc8fb96cb76cef4efd/public/icons/debian/default.svg" alt="Debian" title="Debian" width="24" height="24" /></span><span className="inline-flex h-9 w-9 items-center justify-center rounded-lg bg-white p-1.5 ring-1 ring-black/10"><img src="https://cdn.jsdelivr.net/gh/glincker/thesvg@a7c5ddd3f529accdf86519cc8fb96cb76cef4efd/public/icons/docker/default.svg" alt="Docker" title="Docker" width="24" height="24" /></span></div>
 
-## What this covers
+## Choose an install path
 
 How to get the Levelrail control plane (`levelrail`) running on a Linux host, confirm it works, and upgrade or remove it later. The node agent is `levelrail-agent`, and `levelrail-cli` is the client. All three are static Go binaries.
 
@@ -74,7 +74,10 @@ Right after the install, the dashboard answers on port 8080 over plain HTTP, on 
 ## Option 1: install.sh (recommended)
 
 ```bash
-curl -fsSL https://levelrail.com/install.sh | sudo sh
+curl -fsSLO https://github.com/glincker/levelrail/releases/latest/download/install.sh
+curl -fsSLO https://github.com/glincker/levelrail/releases/latest/download/checksums.txt
+grep ' install.sh$' checksums.txt | sha256sum -c -  # macOS: shasum -a 256 -c -
+sudo sh install.sh
 ```
 
 The script:
@@ -120,7 +123,7 @@ A missing `checksums.txt` is a hard failure unless you set `LEVELRAIL_SKIP_CHECK
 <Step title="Open the setup link">
 Open one of the `http://<ip>:8080/login#setup=<token>` links from the install summary. The summary prints the token and these links only in an interactive terminal; in cloud-init or CI it points to `setup-token` instead. The public address is printed first, then private addresses. Container bridge addresses are hidden.
 
-**8080 is only the default.** If that port was taken, `install.sh` picks the next free one (`LEVELRAIL_DASHBOARD_PORT`) and prints the real one. Use the port from your own output.
+Use the dashboard port from your own output (see [Dashboard port 8080](#dashboard-port-8080)).
 </Step>
 <Step title="Create the admin account">
 After you create the admin account, the first-run screen opens: enable HTTPS in one click, then deploy your first app.
@@ -147,7 +150,7 @@ Set a primary domain plus ACME on the Domains page.
 </Steps>
 
 <Tip>
-**Pick a dashboard-only subdomain, not an app's own domain**, such as `console.example.com` or `panel.example.com` (the same convention CapRover uses for `captain.<domain>`). Reusing a domain an app already serves breaks whichever one loses the conflict, silently. See [Domains and ingress](/domains-and-ingress#the-dashboards-own-domain).
+**Pick a dashboard-only subdomain, not an app's own domain**, such as `console.example.com` or `panel.example.com`. Reusing a domain an app already serves breaks whichever one loses the conflict, silently. See [Domains and ingress](/domains-and-ingress#the-dashboards-own-domain).
 </Tip>
 
 <Accordion title="Lost the setup token or the dashboard port?">
@@ -182,27 +185,14 @@ AI chat, AI models, the [load balancer](/load-balancing), [platform as code](/pl
 
 ### Common scenarios
 
-<CodeGroup>
-```bash Pin a specific release
-curl -fsSL https://levelrail.com/install.sh \
-  | sudo LEVELRAIL_VERSION=v0.9.0 sh
-```
+Download and verify `install.sh` as in [Option 1](#option-1-installsh-recommended), then run the variant you need:
 
-```bash Custom data directory
-curl -fsSL https://levelrail.com/install.sh \
-  | sudo LEVELRAIL_DATA_DIR=/data/levelrail sh
+```bash
+sudo LEVELRAIL_VERSION=v0.9.0 sh install.sh        # pin a specific release
+sudo LEVELRAIL_DATA_DIR=/data/levelrail sh install.sh   # custom data directory
+sudo LEVELRAIL_CONFIGURE_UFW=1 sh install.sh       # configure UFW automatically
+sudo sh install.sh --force                         # ignore a failed preflight check
 ```
-
-```bash Configure UFW automatically
-curl -fsSL https://levelrail.com/install.sh \
-  | sudo LEVELRAIL_CONFIGURE_UFW=1 sh
-```
-
-```bash Ignore a failed preflight check
-curl -fsSL https://levelrail.com/install.sh \
-  | sudo sh -s -- --force
-```
-</CodeGroup>
 
 <Accordion title="Optional environment variables">
 
@@ -244,7 +234,10 @@ curl -fsSL https://levelrail.com/install.sh \
 <Tabs>
 <Tab title="Before install">
 ```bash
-curl -fsSL https://levelrail.com/install.sh | sh -s -- --check --domain apps.example.com
+curl -fsSLO https://github.com/glincker/levelrail/releases/latest/download/install.sh
+curl -fsSLO https://github.com/glincker/levelrail/releases/latest/download/checksums.txt
+grep ' install.sh$' checksums.txt | sha256sum -c -  # macOS: shasum -a 256 -c -
+sh install.sh --check --domain apps.example.com
 ```
 </Tab>
 <Tab title="After install (CLI)">
@@ -285,7 +278,10 @@ In coexist mode Levelrail does not own 80 and 443, so the one-click HTTPS on an 
 The installer never prompts. Pass `--coexist` (or `LEVELRAIL_COEXIST=1`) to choose the mode up front, for example to move a server whose ports are currently free:
 
 ```bash
-curl -fsSL https://levelrail.com/install.sh | sudo sh -s -- --coexist --domain apps.example.com
+curl -fsSLO https://github.com/glincker/levelrail/releases/latest/download/install.sh
+curl -fsSLO https://github.com/glincker/levelrail/releases/latest/download/checksums.txt
+grep ' install.sh$' checksums.txt | sha256sum -c -  # macOS: shasum -a 256 -c -
+sudo sh install.sh --coexist --domain apps.example.com
 ```
 
 `--domain` only fills in the next command, which the installer prints at the end:
@@ -296,7 +292,7 @@ levelrail-cli proxy --domain apps.example.com --verify
 
 To move an existing install behind a proxy later: `sudo sh install.sh upgrade --coexist`.
 
-See [Behind an existing proxy](/behind-an-existing-proxy) for the proxy side. Let's Encrypt only validates on 80/443, so certificates for these domains are issued by your existing proxy, not Levelrail.
+Let's Encrypt only validates on 80/443, so certificates for these domains are issued by your existing proxy, not Levelrail. See [Behind an existing proxy](/behind-an-existing-proxy) for the proxy side.
 
 <Accordion title="Where the installer's settings live">
 
@@ -330,8 +326,10 @@ Until the pin exists, `levelrail-cli doctor` shows **not signature verified** as
 The escape hatches are explicit and never silent: `APP_INSTALL_VERIFY=off` (or `self-upgrade --verify off`) skips the signature for that one run and prints a warning that it overrides the pin, and `sudo levelrail self-upgrade --unpin-signature` removes the pin (logged) until the next verified signature writes it again.
 
 ```bash
-curl -fsSL https://levelrail.com/install.sh \
-  | sudo APP_INSTALL_VERIFY=require sh
+curl -fsSLO https://github.com/glincker/levelrail/releases/latest/download/install.sh
+curl -fsSLO https://github.com/glincker/levelrail/releases/latest/download/checksums.txt
+grep ' install.sh$' checksums.txt | sha256sum -c -  # macOS: shasum -a 256 -c -
+sudo APP_INSTALL_VERIFY=require sh install.sh
 ```
 
 <Accordion title="cosign is installed for you">
@@ -343,7 +341,10 @@ If the download fails (offline host, blocked GitHub, wrong checksum) the install
 To install it on its own, for example to clear the Settings > Updates warning (this subcommand does fail loudly if it cannot install):
 
 ```bash
-curl -fsSL https://levelrail.com/install.sh | sudo sh -s -- install-cosign
+curl -fsSLO https://github.com/glincker/levelrail/releases/latest/download/install.sh
+curl -fsSLO https://github.com/glincker/levelrail/releases/latest/download/checksums.txt
+grep ' install.sh$' checksums.txt | sha256sum -c -  # macOS: shasum -a 256 -c -
+sudo sh install.sh install-cosign
 ```
 
 </Accordion>
@@ -448,20 +449,26 @@ The control plane listens on `:8080` by default. For a throwaway instance on you
 <Tabs>
 <Tab title="Linux">
 ```bash
-curl -fsSL https://levelrail.com/install-cli.sh | sh
+curl -fsSLO https://github.com/glincker/levelrail/releases/latest/download/install-cli.sh
+curl -fsSLO https://github.com/glincker/levelrail/releases/latest/download/checksums.txt
+grep ' install-cli.sh$' checksums.txt | sha256sum -c -  # macOS: shasum -a 256 -c -
+sh install-cli.sh
 ```
 
 Detects amd64 or arm64, verifies the release checksum (and its cosign signature, if `cosign` is installed) the same way `install.sh` does, and installs to `~/.local/bin`, no root needed. For a system-wide install, run with `sudo`: root installs to `/usr/local/bin`.
 </Tab>
 <Tab title="macOS">
 ```bash
-curl -fsSL https://levelrail.com/install-cli.sh | sh
+curl -fsSLO https://github.com/glincker/levelrail/releases/latest/download/install-cli.sh
+curl -fsSLO https://github.com/glincker/levelrail/releases/latest/download/checksums.txt
+grep ' install-cli.sh$' checksums.txt | sha256sum -c -  # macOS: shasum -a 256 -c -
+sh install-cli.sh
 ```
 
 Works on Intel and Apple silicon, with the same checksum and signature checks. It installs to `~/.local/bin` (or `/usr/local/bin` with `sudo`). The installer never edits your shell profile on its own: if the folder is not on your `PATH` it prints the exact line for your shell (`~/.zshrc` for zsh, `~/.bash_profile` for bash, `~/.config/fish/config.fish` for fish). Set `LEVELRAIL_MODIFY_PATH=1` to have it append that line for you:
 
 ```bash
-curl -fsSL https://levelrail.com/install-cli.sh | LEVELRAIL_MODIFY_PATH=1 sh
+curl -fsSL https://github.com/glincker/levelrail/releases/latest/download/install-cli.sh | LEVELRAIL_MODIFY_PATH=1 sh
 ```
 </Tab>
 <Tab title="Homebrew">
@@ -480,7 +487,7 @@ Pulls the binary for your platform (Linux, macOS or Windows, amd64 or arm64) as 
 </Tab>
 <Tab title="Windows">
 ```powershell
-irm https://levelrail.com/install-cli.ps1 | iex
+irm https://github.com/glincker/levelrail/releases/latest/download/install-cli.ps1 | iex
 ```
 
 Run it in PowerShell, no administrator rights needed. It installs `levelrail-cli.exe` to `%LOCALAPPDATA%\Levelrail\bin`, verifies the SHA-256 checksum (and the cosign signature if `cosign` is installed), and adds that folder to your user `PATH`, so open a new terminal after it finishes. Pin a version with `$env:LEVELRAIL_VERSION = "v0.3.0"` before the command. To remove it, save the script and run `.\install-cli.ps1 -Uninstall`. Prefer WSL? The Linux command works there too.
@@ -662,7 +669,10 @@ The same engine runs on the host as `sudo levelrail self-upgrade --to <version>`
 <Tabs>
 <Tab title="install.sh">
 ```bash
-curl -fsSL https://levelrail.com/install.sh | sudo sh -s upgrade
+curl -fsSLO https://github.com/glincker/levelrail/releases/latest/download/install.sh
+curl -fsSLO https://github.com/glincker/levelrail/releases/latest/download/checksums.txt
+grep ' install.sh$' checksums.txt | sha256sum -c -  # macOS: shasum -a 256 -c -
+sudo sh install.sh upgrade
 ```
 
 Replaces the binary with the newest release and keeps your unit file, chosen ports (the `10-install.conf` drop-in, see [Server already runs a proxy](#server-already-runs-a-proxy)), `systemctl edit` overrides and data. It restarts the service and waits for it to come back healthy. If the new binary is not healthy within `LEVELRAIL_HEALTH_WAIT` seconds the previous binary is put back and started again.
@@ -671,11 +681,10 @@ Replaces the binary with the newest release and keeps your unit file, chosen por
 The installer cannot undo a schema migration. For an upgrade that also restores the data, use the self-update above.
 </Warning>
 
-To pin a release instead of the latest:
+To pin a release instead of the latest, run the same verified script with:
 
 ```bash
-curl -fsSL https://levelrail.com/install.sh \
-  | sudo LEVELRAIL_VERSION=<version> sh
+sudo LEVELRAIL_VERSION=<version> sh install.sh
 ```
 
 Re-running the installer without arguments also works: it repairs the installation and rewrites the unit file, still keeping the ports in the drop-in.
@@ -734,11 +743,15 @@ The live database is kept beside the restored one as `.before-restore-<timestamp
 <Tabs>
 <Tab title="install.sh">
 ```bash
+curl -fsSLO https://github.com/glincker/levelrail/releases/latest/download/install.sh
+curl -fsSLO https://github.com/glincker/levelrail/releases/latest/download/checksums.txt
+grep ' install.sh$' checksums.txt | sha256sum -c -  # macOS: shasum -a 256 -c -
+
 # removes the service, unit file, and binary; keeps /var/lib/levelrail-data
-curl -fsSL https://levelrail.com/install.sh | sudo sh -s uninstall
+sudo sh install.sh uninstall
 
 # also deletes the data directory (database, master key, certificates)
-curl -fsSL https://levelrail.com/install.sh | sudo sh -s uninstall --purge
+sudo sh install.sh uninstall --purge
 ```
 
 <Warning>
@@ -763,7 +776,7 @@ Preflight checks block the install when they find conflicting software or missin
 
 Likely cause: the server does not meet the minimum requirements (Docker 24 or newer, ports 80/443 free, at least 1 GB RAM and 10 GB free disk).
 
-How to confirm: run `curl -fsSL https://levelrail.com/install.sh | sh -s -- --check` (no root needed), which is read-only and gives detailed output for each check.
+How to confirm: run `sh install.sh --check` (download and verify it first, see [Installing](/installing)) (no root needed), which is read-only and gives detailed output for each check.
 
 Fix: address the failed check (update Docker, free disk space, stop the process holding the port) and re-run the installer. To skip a check anyway, pass `--force` or set `LEVELRAIL_COEXIST=1` if ports are already taken.
 
@@ -799,11 +812,10 @@ Fix: on the server, run `sudo APP_DATA_DIR=/var/lib/levelrail-data levelrail set
 
 ### Common errors
 
+Install failures (`control plane did not become healthy`, `could not list releases`, `checksum mismatch`) are in [If the install fails](#option-1-installsh-recommended).
+
 | Step | Error you see | Fix |
 | --- | --- | --- |
-| Install | `control plane did not become healthy within 60s` | `systemctl status levelrail` and `journalctl -u levelrail -n 100 --no-pager`. A port already in use is a common cause. |
-| Install | `could not list releases from GitHub. Set LEVELRAIL_VERSION=vX.Y.Z to pin one.` | The server cannot reach GitHub. Check outbound HTTPS, or pin a release. |
-| Install | `checksum mismatch for ...` | Do not continue. Run the installer again. Do not set `LEVELRAIL_SKIP_CHECKSUM=1` to get past it. |
 | Login | `start device login: ... connection refused` | The CLI points at the wrong address. Run `export APP_API_URL=http://127.0.0.1:<dashboard port>` and try again. |
 | Import | `plan import: ... connection refused` | The control plane is not running. Start it with `systemctl start levelrail`. |
 

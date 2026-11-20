@@ -64,3 +64,20 @@ export function certTruth(cert: TruthInput | undefined): CertTruth {
     wantsRealCert: kind === 'none' || kind === 'internal' || kind === 'staging',
   }
 }
+
+// An app can own several domains; the list shows the one that most needs
+// attention (fewest days left, expired first).
+export function worstCertByApp(
+  certs: readonly CertificateStatus[],
+): Map<string, CertificateStatus> {
+  const out = new Map<string, CertificateStatus>()
+  for (const cert of certs) {
+    for (const app of cert.apps ?? []) {
+      const cur = out.get(app)
+      if (!cur || (cert.days_left ?? Infinity) < (cur.days_left ?? Infinity)) {
+        out.set(app, cert)
+      }
+    }
+  }
+  return out
+}

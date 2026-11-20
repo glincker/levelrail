@@ -19,6 +19,7 @@ interface TypedDetails {
   requestId?: string
   needs?: string
   capability?: string
+  zones?: string[]
 }
 
 // readErrorMessage records typed bodies here, keyed by their message, so the
@@ -33,6 +34,7 @@ export class ApiError extends Error {
   readonly requestId?: string
   readonly needs?: string
   readonly capability?: string
+  readonly zones?: string[]
 
   constructor(status: number, message: string, details?: TypedDetails) {
     super(message)
@@ -45,6 +47,7 @@ export class ApiError extends Error {
       this.requestId = d.requestId
       this.needs = d.needs
       this.capability = d.capability
+      this.zones = d.zones
     }
   }
 }
@@ -93,6 +96,7 @@ export async function readErrorMessage(
     request_id?: string
     needs?: string
     capability?: string
+    zones?: string[]
   } | null
   // Plain writeError bodies carry error plus code, typed ones message plus code.
   const text = body?.message ?? body?.error
@@ -104,6 +108,7 @@ export async function readErrorMessage(
       requestId: body.request_id,
       needs: body.needs,
       capability: body.capability,
+      zones: body.zones,
     })
     return text
   }

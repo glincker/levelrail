@@ -767,6 +767,47 @@
     "undo": "Undo",
     "zone": "Time zone",
     "zoneHelp": "Server time zone is {{zone}}. Backups and safety checks still run first.",
-    "zoneInvalid": "Enter a valid time zone, for example Europe/Berlin."
+    "zoneInvalid": "Enter a valid time zone, for example Europe/Berlin.",
+    "checkOn": "后台检查新版本已开启。它只负责查找,安装由上方开关控制。",
+    "checkOff": "后台检查新版本已关闭。开启自动更新也会开启它。",
+    "installSteps": "更新将在 {{start}} 至 {{end}} ({{zone}}) 之间安装;先备份,再做健康检查,失败则自动回滚。",
+    "nextWindows": "接下来的窗口:{{list}}"
+  },
+  "autoStatus": {
+    "state": {
+      "off": "已关闭",
+      "paused": "已暂停",
+      "blocked": "已阻止",
+      "degraded": "降级",
+      "ready": "就绪"
+    },
+    "summary": {
+      "off": "自动更新已关闭，不会自行安装。",
+      "paused": "自动更新已暂停，之后会自动恢复。",
+      "blocked": "此服务器无法替换自身：{{reason}}",
+      "degraded": "版本检查失败，无法开始更新：{{reason}}",
+      "ready": "运行正常。新版本会在下方时间窗口内安装。"
+    },
+    "manual": {
+      "intro": "请改为在服务器上用此命令更新：",
+      "docker": "使用 Docker？请拉取新镜像并重新创建容器。"
+    },
+    "lastCheck": "上次检查",
+    "failures": "连续检查失败次数",
+    "nextTry": "下次重试",
+    "lastGoodList": "最近一次成功的版本列表",
+    "listAge": "{{hours}} 小时前",
+    "listSourceFallback": "来自公开发布页面，不含发布说明",
+    "unpinned": "此主机尚未固定发布签名身份。首次更新仅依赖校验和；成功后，后续更新必须带有相同的签名。",
+    "lastResult": "上次结果",
+    "result": {
+      "applied": "已更新",
+      "failed": "失败",
+      "cancelled": "已取消",
+      "missed": "已错过",
+      "blocked": "已阻止",
+      "pending": "等待时间窗口",
+      "running": "进行中"
+    }
   }
 }

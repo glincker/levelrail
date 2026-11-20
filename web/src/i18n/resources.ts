@@ -26,6 +26,7 @@ import type databases from '../locales/en/databases.json'
 import type https from '../locales/en/https.json'
 import type golive from '../locales/en/golive.json'
 import type nodes from '../locales/en/nodes.json'
+import type nodePatch from '../locales/en/nodePatch.json'
 import type access from '../locales/en/access.json'
 import type logPipeline from '../locales/en/logPipeline.json'
 import type logBudgets from '../locales/en/logBudgets.json'
@@ -36,6 +37,8 @@ import type iacForm from '../locales/en/iacForm.json'
 import type stackSync from '../locales/en/stackSync.json'
 import type statusPage from '../locales/en/statusPage.json'
 import type assets from '../locales/en/assets.json'
+import type pagesSites from '../locales/en/pagesSites.json'
+import type appPages from '../locales/en/appPages.json'
 import type integrations from '../locales/en/integrations.json'
 import type clusters from '../locales/en/clusters.json'
 import type cloudProvider from '../locales/en/cloudProvider.json'
@@ -184,6 +187,7 @@ declare module 'i18next' {
       https: typeof https
       golive: typeof golive
       nodes: typeof nodes
+      nodePatch: typeof nodePatch
       access: typeof access
       logPipeline: typeof logPipeline
       logBudgets: typeof logBudgets
@@ -194,6 +198,8 @@ declare module 'i18next' {
       stackSync: typeof stackSync
       statusPage: typeof statusPage
       assets: typeof assets
+      pagesSites: typeof pagesSites
+      appPages: typeof appPages
       integrations: typeof integrations
       clusters: typeof clusters
       cloudProvider: typeof cloudProvider

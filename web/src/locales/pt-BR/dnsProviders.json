@@ -53,19 +53,30 @@
     "secretAccessKey": "Chave de acesso secreta da AWS",
     "region": "Região (opcional)",
     "hostedZoneId": "ID da zona hospedada (opcional)",
-    "serviceAccount": "JSON da conta de serviço"
+    "serviceAccount": "JSON da conta de serviço",
+    "regionHint": "O Route 53 é global, então raramente importa. Padrão: {{region}}.",
+    "hostedZoneHint": "Deixe vazio para procurar o domínio em todas as zonas que esta chave pode listar."
   },
   "test": {
     "button": "Testar conexão",
     "running": "Testando...",
     "credential": "Credencial armazenada",
     "zones": "Zonas listadas",
+    "permission": "Permissões",
     "zonesCount_one": "{{count}} zona encontrada",
     "zonesCount_many": "{{count}} zonas encontradas",
     "zonesCount_other": "{{count}} zonas encontradas",
     "ok": "Passou",
     "failed": "Falhou",
-    "heading": "Resultados do teste"
+    "heading": "Resultados do teste",
+    "state": {
+      "allowed": "Permitida",
+      "denied": "Negada",
+      "unknown": "Desconhecida"
+    },
+    "policyHint": "Politica IAM minima para as acoes ausentes:",
+    "copyPolicy": "Copiar politica",
+    "copied": "Copiado"
   },
   "zones": {
     "heading": "Zonas hospedadas",

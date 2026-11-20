@@ -14,8 +14,8 @@ import (
 	"github.com/GLINCKER/levelrail/internal/dnsrecords"
 	"github.com/GLINCKER/levelrail/internal/dnsstatus"
 	"github.com/GLINCKER/levelrail/internal/dnszones"
-	"github.com/GLINCKER/levelrail/internal/ingress"
 	"github.com/GLINCKER/levelrail/internal/mailrecords"
+	"github.com/GLINCKER/levelrail/internal/spec"
 )
 
 // dnsStatusResponse is the body of GET /api/v1/domains/dns-status and /api/v1/mail/dns/status.
@@ -167,8 +167,8 @@ func (rt *Router) appDomainStatus(r *http.Request, domain string) (dnsstatus.Sta
 // handleDomainDNSStatus handles GET /api/v1/domains/dns-status?domain=&app=: the app record's live state.
 func (rt *Router) handleDomainDNSStatus(w http.ResponseWriter, r *http.Request) {
 	q := r.URL.Query()
-	domain := dnszones.NormalizeDomain(q.Get("domain"))
-	if mailrecords.ValidHost(strings.TrimPrefix(domain, "*.")) != nil || ingress.ValidateWildcardDomain(domain) != nil {
+	domain, derr := spec.ValidateAppDomain(dnszones.NormalizeDomain(q.Get("domain")))
+	if derr != nil || mailrecords.ValidHost(strings.TrimPrefix(domain, "*.")) != nil {
 		writeError(w, http.StatusBadRequest, "domain must be a domain name such as app.example.com")
 		return
 	}

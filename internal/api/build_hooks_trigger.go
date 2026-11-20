@@ -58,6 +58,8 @@ type buildHookLimiters struct {
 	refused *apiRateLimiter
 	// refusalLog lets one refusal per hook per window reach the audit log and the store.
 	refusalLog *apiRateLimiter
+	// pagesInflight holds sites with a Pages hook deploy under way, so a second call answers 409.
+	pagesInflight sync.Map
 }
 
 func (rt *Router) buildHookLimits() *buildHookLimiters {

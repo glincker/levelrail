@@ -10,6 +10,8 @@ import (
 
 	theauth "github.com/glincker/theauth-go/v2"
 	"github.com/oklog/ulid/v2"
+
+	"github.com/GLINCKER/levelrail/internal/identity"
 )
 
 func parseULID(s string) (theauth.ULID, error) {
@@ -29,7 +31,7 @@ type LegacyUser struct {
 	CreatedAt    time.Time
 }
 
-func normEmail(e string) string { return strings.ToLower(strings.TrimSpace(e)) }
+func normEmail(e string) string { return identity.NormalizeEmail(e) }
 
 // SyncUser makes the library user for u exist and match: it creates the
 // id-map row and library user when missing, and mirrors the password hash

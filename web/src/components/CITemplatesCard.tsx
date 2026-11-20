@@ -3,10 +3,14 @@ import { useTranslation } from 'react-i18next'
 import { Button } from '@/components/ui/button'
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card'
 import { CodeBlock } from '@/components/ui/code-block'
+import { CIProviderPicker } from '@/components/CIProviderPicker'
+import { DownloadGlassIcon } from '@thesvg/ui-react'
 import { Input } from '@/components/ui/input'
 import { toast } from '@/components/ui/toast'
 import { InfoTip } from '@/components/kit'
 import { useCITemplates } from '../queries/ciDeploy'
+import { useIsStaticSite } from '../queries/staticSites'
+import { staticSiteSnippet } from '../lib/ciStaticSnippets'
 import { useCreateToken } from '../queries/tokens'
 import type { TokenAbility } from '../types/token'
 
@@ -22,8 +26,30 @@ export function CITemplatesCard({ appName }: { appName: string }) {
   // The plaintext token must not outlive the card in the mutation cache.
   useEffect(() => reset, [reset])
 
-  const current = templates.data.templates.find((tpl) => tpl.id === selected)
+  const isStatic = useIsStaticSite(appName)
+
+  // A static site has no image to build, so its files publish the folder instead.
+  const entries = templates.data.templates.flatMap((tpl) => {
+    if (!isStatic) return [tpl]
+    const snip = staticSiteSnippet(tpl.id, appName)
+    return snip
+      ? [{ ...tpl, target: snip.target, content: snip.content, auth: 'token' }]
+      : []
+  })
+  const current = entries.find((tpl) => tpl.id === selected) ?? entries[0]
   if (!current) return null
+
+  function download() {
+    if (!current) return
+    const url = URL.createObjectURL(
+      new Blob([current.content], { type: 'text/plain' }),
+    )
+    const a = document.createElement('a')
+    a.href = url
+    a.download = current.target.split('/').pop() ?? 'pipeline'
+    a.click()
+    URL.revokeObjectURL(url)
+  }
 
   function makeToken() {
     const scope = templates.data.deployer_scope
@@ -62,36 +88,38 @@ export function CITemplatesCard({ appName }: { appName: string }) {
         </CardTitle>
       </CardHeader>
       <CardContent className="space-y-3">
-        <div
-          className="flex flex-wrap gap-1.5"
-          role="group"
-          aria-label={t('ciTemplates.providerLabel')}
-        >
-          {templates.data.templates.map((tpl) => (
-            <Button
-              key={tpl.id}
-              type="button"
-              size="sm"
-              variant={tpl.id === current.id ? 'secondary' : 'outline'}
-              aria-pressed={tpl.id === current.id}
-              onClick={() => {
-                setSelected(tpl.id)
-                setRevealed('')
-                createToken.reset()
-              }}
-            >
-              {t(`ciTemplates.providers.${tpl.id}`, { defaultValue: tpl.id })}
-            </Button>
-          ))}
-        </div>
-        <p className="text-xs text-muted-foreground">
-          {t('ciTemplates.saveAs', { target: current.target })}
-        </p>
+        <CIProviderPicker
+          label={t('ciTemplates.providerLabel')}
+          value={current.id}
+          options={entries.map((tpl) => ({
+            id: tpl.id,
+            label: t(`ciTemplates.providers.${tpl.id}`, {
+              defaultValue: tpl.id,
+            }),
+          }))}
+          onChange={(id) => {
+            setSelected(id)
+            setRevealed('')
+            createToken.reset()
+          }}
+        />
+        {isStatic ? (
+          <p className="text-xs text-muted-foreground">
+            {t('ciTemplates.staticHint')}
+          </p>
+        ) : null}
         <CodeBlock
           code={current.content}
           language={current.target.endsWith('.yml') ? 'yaml' : 'groovy'}
+          title={current.target}
           label={current.target}
           maxHeight="md"
+          actions={
+            <Button type="button" size="xs" variant="ghost" onClick={download}>
+              <DownloadGlassIcon size="1.4em" aria-hidden="true" />
+              {t('ciTemplates.download')}
+            </Button>
+          }
         />
         {templates.data.needs_domain ? (
           <p className="text-xs text-tone-warning" role="status">

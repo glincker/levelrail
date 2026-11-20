@@ -107,6 +107,17 @@
     "note": "Aplica-se a todos os apps. 0 mantém o padrão de inicialização. Uma substituição por app ainda prevalece.",
     "invalid": "Informe um número inteiro de 0 a {{max}}."
   },
+  "scope": {
+    "label": "Rótulo obrigatório",
+    "labelPlaceholder": "preview",
+    "labelHint": "Só os pull requests com este rótulo recebem um preview, e adicioná-lo inicia o build. Apenas GitHub e GitLab. Vazio gera build de todos os pull requests.",
+    "services": "Serviços excluídos",
+    "servicesPlaceholder": "worker, docs",
+    "servicesHint": "Serviços de um app com vários serviços, separados por vírgula, que os previews ignoram. Pelo menos um deve permanecer.",
+    "save": "Salvar",
+    "saved": "Configurações de preview salvas.",
+    "error": "Não foi possível atualizar as configurações de preview."
+  },
   "migrate": {
     "command": "Comando de migração",
     "commandPlaceholder": "npm run migrate",

@@ -9,6 +9,8 @@ import (
 	"context"
 	"io"
 	"time"
+
+	"github.com/docker/docker/api/types/registry"
 )
 
 // PortBinding maps one container port to a host port. In a ContainerSpec,
@@ -340,6 +342,17 @@ func (s ContainerSpec) NeedsSecurityCapability() bool {
 type RegistryAuth struct {
 	Username string
 	Password string
+	// Bearer is a short-lived registry token used instead of Username and Password when the
+	// built-in registry runs token auth. Never persisted or logged.
+	Bearer string
+}
+
+// authConfig maps the credential to the daemon auth payload; a bearer takes the token field.
+func (a *RegistryAuth) authConfig() registry.AuthConfig {
+	if a.Bearer != "" {
+		return registry.AuthConfig{RegistryToken: a.Bearer}
+	}
+	return registry.AuthConfig{Username: a.Username, Password: a.Password}
 }
 
 // NetworkAttachment is a container's non-default network attachment:

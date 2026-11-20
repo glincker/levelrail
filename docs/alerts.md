@@ -17,6 +17,7 @@ A rule has a kind, and the kind decides what it watches. The kinds in `internal/
 - Nodes and resource pressure: `node_offline`, `node_disk_space`, `node_host_guardrail`, `node_resource_usage`, `node_cpu`, `node_memory`, `node_cert_expiring`, `volume_usage`, `patch_status`, `version_skew`. See [Host pressure](/host-pressure).
 - Databases: `database_down`, `database_connections_high`, `database_disk_high`, `database_backup_failing`, `database_backup_stale`, `pooler_saturated`.
 - Backups and exports: `backup_failed`, `backup_missing`, `backup_copy_behind`, `control_plane_backup_stale`, `restore_drill_failed`, `log_archive_stale`, `export_behind`.
+- Apps: `app_unhealthy` reports a container failing its liveness probe past the failure threshold and resolves when the probe passes; scope it to one app with a `service:<app>` resource. `advisory_match` reports running images matching a feed advisory and stays quiet until you turn on the `alerts.advisory_notify` setting; `alerts.advisory_min_severity` (default `high`) sets the floor.
 - Platform: `registry_refresh_failing`, `email_delivery_failing`, `cleanup_failing`, `budget_threshold`.
 - Uptime: `monitor_down`, which reports a down [monitor](/monitors). Monitors are experimental and off unless `APP_MONITORS_ENABLED` is true.
 
@@ -127,6 +128,8 @@ levelrail-cli channels quiet-hours CHANNEL_ID --start 22:00 --end 07:00 --timezo
 
 `test` sends a real message and `deliveries` lists the recorded send history. Quiet hours hold back non-critical firing notifications on one channel. A disabled channel also silences the rules attached to it. API: `/api/v1/notification-channels`, with `/test`, `/deliveries` and `/quiet-hours`.
 
+A channel can be limited to one project by setting `project_id` when you create or update it through the API (blank means instance wide). A project channel only serves alert rules and deploy targets of apps filed under that project; attaching it to another project's app is refused with `unknown channel_id`.
+
 ## Which notification channels are supported?
 
 The code defines 18 kinds. Maturity is from [Feature status](/feature-status).
@@ -163,6 +166,7 @@ Several controls sit between a firing rule and the channel:
 - Grouping: firing alerts for one target can be buffered into one summary. Off by default (`APP_ALERT_GROUP_WINDOW` is 0). A repeat of the same rule replaces its entry in the group.
 - Rate limit: at most 30 sends per 10 minutes per target (`APP_ALERT_CHANNEL_RATE_LIMIT`, `APP_ALERT_CHANNEL_RATE_WINDOW`). Over the limit, the send is recorded as `ratelimited`.
 - Inhibition: alerts for apps on a node that is offline are recorded as `inhibited`, so the node alert is the one you see.
+- Sleeping apps: an app stopped by [sleep when idle](/sleep-when-idle) sends no alerts while it sleeps. A firing alert is recorded as `inhibited` ("app is asleep by design") and is sent if it is still firing after the app wakes. Turn on the runtime setting `alerts.notify_on_sleep` (Settings, Runtime, Observability card, or `levelrail-cli settings runtime set alerts.notify_on_sleep true`) to be told about sleeping apps too. Default off, applied live.
 - Silences, maintenance windows and channel quiet hours, above.
 
 Noise control state is held in memory, so a control plane restart forgets pending groups and streaks. Severity is `info`, `warning` or `critical`. The inbox hides `info` by default.

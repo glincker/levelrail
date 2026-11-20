@@ -404,3 +404,18 @@ func TestStaticPreview_FirstDeployIsGatedBeforeReturn(t *testing.T) {
 		t.Fatalf("gate row found = %v, err %v; want gated before the reconciler is nudged", found, err)
 	}
 }
+
+func TestStaticPreview_InheritsSitePassword(t *testing.T) {
+	rt, db, secret, _, _, _ := setUpStaticPreviewApp(t)
+	ctx := context.Background()
+	if err := db.SetStaticSitePasswordHash(ctx, "web", "$2a$10$parenthashparenthashparenthashparenthashparenthashpa"); err != nil {
+		t.Fatalf("gate parent: %v", err)
+	}
+	if rec := sendPullRequestWebhook(rt, secret, githubPullRequestBody("opened", 42, "sha1", "main")); rec.Code != http.StatusOK {
+		t.Fatalf("status = %d, body = %s", rec.Code, rec.Body.String())
+	}
+	got, err := db.GetStaticSitePasswordHash(ctx, "web-pr-42")
+	if err != nil || got == "" {
+		t.Fatalf("preview hash = %q, err %v; want the parent's hash", got, err)
+	}
+}

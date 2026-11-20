@@ -115,6 +115,7 @@ func equalizeTiming(password string) {
 
 var (
 	errStepUpInvalid   = errors.New("step-up verification failed")
+	errStepUpTooLong   = errors.New("password must be at most 72 bytes")
 	errStepUpNeedsCode = errors.New("this account has two-factor authentication: enter the authenticator code as well")
 )
 
@@ -151,6 +152,9 @@ func (rt *Router) verifyPasswordProof(r *http.Request, userID string, p stepUpPr
 	if err := rt.stepUpAllowed(r, userID); err != nil {
 		rt.auditStepUpOutcome(r.Context(), r, userID, auditActionStepUpLocked, http.StatusTooManyRequests)
 		return err
+	}
+	if len(p.Password) > passwordMaxBytes {
+		return errStepUpTooLong
 	}
 	err := rt.checkPasswordProof(r, userID, p)
 	if errors.Is(err, errStepUpNeedsCode) {
@@ -222,6 +226,8 @@ func writeStepUpError(w http.ResponseWriter, err error) {
 		}
 		w.Header().Set("Retry-After", strconv.Itoa(secs))
 		writeCodedError(w, http.StatusTooManyRequests, "step_up_locked", locked.Error())
+	case errors.Is(err, errStepUpTooLong):
+		writeCodedError(w, http.StatusBadRequest, "password_too_long", err.Error())
 	case errors.Is(err, errStepUpNeedsCode):
 		writeCodedError(w, http.StatusForbidden, "step_up_code_required", err.Error())
 	default:

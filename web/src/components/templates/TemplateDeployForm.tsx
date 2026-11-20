@@ -18,6 +18,10 @@ import {
   type FormValues,
 } from '../../lib/templateForm'
 import { appSlug } from '../../lib/templateSummary'
+import { useProjectListOptional } from '../../queries/projects'
+import { getProjectScope } from '../../lib/projectScope'
+import { resolveSubmittedProjectId } from '../../lib/createResourcePlacement'
+import { NO_PROJECT_VALUE, ProjectSelectField } from '../PlacementFields'
 import type { TemplateEnvPrompt, TemplateManifest } from '../../types/compose'
 import { Alert, AlertDescription } from '@/components/ui/alert'
 import { Button } from '@/components/ui/button'
@@ -98,10 +102,17 @@ export function TemplateDeployForm({
   const navigate = useNavigate()
   const install = useInstallTemplate(manifest.id)
   const prompts = manifest.env ?? []
+  const projects = useProjectListOptional().data ?? []
   const groups = groupEnvPrompts(prompts)
   const draft = useDraft<FormValues>(
     `template-deploy:${manifest.id}`,
-    { name: '', env: {}, customDomain: false, domains: {} },
+    {
+      name: '',
+      env: {},
+      customDomain: false,
+      domains: {},
+      project: getProjectScope(),
+    },
     { omit: prompts.filter((p) => p.secret).map((p) => p.key) },
   )
   const values = draft.value
@@ -218,6 +229,15 @@ export function TemplateDeployForm({
           ))}
         </section>
       ) : null}
+
+      <ProjectSelectField
+        idPrefix="template"
+        projects={projects}
+        value={values.project || NO_PROJECT_VALUE}
+        onValueChange={(v) => {
+          update({ ...values, project: resolveSubmittedProjectId(v) ?? '' })
+        }}
+      />
 
       <section className="space-y-3" aria-labelledby="template-domain">
         <h3

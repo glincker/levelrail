@@ -91,7 +91,7 @@ services:
 | `routes[].from`, `to`, `status`, `force`, `query` | One rule, same meaning as a `_redirects` line. `query` maps a parameter name to a literal or `:name`. |
 | `headers[].path`, `values`, `remove` | One header block. |
 | `static.spa` | Serve `index.html` with status 200 for unknown paths that have no file extension. |
-| `static.cleanUrls` | `/about` serves `about.html` or `about/index.html`, and `/about.html` redirects to `/about`. |
+| `static.cleanUrls` | On by default for static sites: `/about` serves `about.html` or `about/index.html`, `/about.html` redirects to `/about` and `/docs` serves `docs/index.html`. Set `cleanUrls: false` (or the dashboard and CLI `clean-urls off`) to serve files only at their exact path. Dashboard settings win over `app.yaml`, which wins over `_redirects`. |
 | `static.trailingSlash` | `add` or `remove` redirects to the chosen form; `off` (default) leaves paths as requested. |
 | `static.notFound` | The page served with status 404. Defaults to `404.html` when it exists. |
 
@@ -105,6 +105,43 @@ These fields are only valid with `build.type: static`. A mistake in them fails t
 4. **404 page**, served with status 404. If there is none, a plain 404 response.
 
 A redirect that would send a request to the path it came from is skipped rather than looping.
+
+## Proxy a path to another app
+
+A rule whose target is `app://<name>/<path>` with status `200` forwards matching requests to another app on the same Levelrail. The browser sees one origin, so the page needs no CORS setup.
+
+```
+# _redirects
+/api/*  app://my-api/:splat  200
+/health app://my-api/healthz 200
+```
+
+```yaml
+# app.yaml
+routes:
+  - from: /api/*
+    to: app://my-api/v1/:splat
+    status: 200
+```
+
+The same rule can be added in the dashboard rules or with `pages routes add my-site '/api/*' 'app://my-api/:splat'` (status defaults to 200 for an `app://` target).
+
+How it behaves:
+
+- The target is an app name on this Levelrail, never a URL. The control plane resolves it to the app's internal address, so a rule cannot reach an arbitrary host.
+- `from` takes literal segments and an optional trailing `*`. `:splat` in the target is replaced by what `*` matched. `/api/*` with `app://my-api/v1/:splat` sends `/api/users/7` to `/v1/users/7`. The query string is carried over.
+- All methods are forwarded and request and response bodies stream. Hop by hop headers are dropped, and `X-Forwarded-*` headers are set by the proxy, never taken from the client.
+- A proxy rule applies even when a file exists at the path, so keep it to paths that are not files. The site password gate, when set, is checked first.
+- Request paths with `.` or `..` segments get a 400. A captured path holding a space, `?`, `#` or a non ASCII character does not match the rule and falls through to the files.
+- Proxy rules are served on the live site only. Per-deploy hosts and pull request previews serve files only.
+- When the target app does not exist, is not running, or is the site itself, the path answers 502 with a fixed message. The routing rules API marks the rule with `kind: proxy` and `target_state` (`ok`, `missing` or `self`), and the site checks card lists a proxy target that is not reachable.
+- Writing a dashboard rule needs read access to the target app. A rule for an app you cannot read, or one that does not exist, is refused with the same message. A rule that is the site itself is refused.
+- Who may name a target: a deploy that carries proxy rules is checked against the target app the same way as the dashboard rules, so the acting principal needs deploy access to it. A target behind an access gate (auth gate or basic auth on any of its domains), with a geo, shield (rate limit) or forwarder policy on any domain, or in a protected environment is refused with the same message as a missing one. The controller applies the same check on every pass, so a target that gains one of these later answers 502, and so does a rollback to an older tree. A target that does not exist and one you cannot read fail with the same message, which names the target. A manual or upload deploy, including `source_url`, acts as the caller. A git push, hook, replay or queued deploy has no interactive caller, so the target must be in the site's own team and project, pass the same checks, and already be served by the site's live rules. A new target is refused with the same message plus a hint to deploy from the dashboard or CLI, where you approve it. An app with no domain is internal only: you need deploy access to it, and only an interactive deploy can add it. Pull request previews drop proxy rules and say so in the deploy log.
+- The target's team and project are recorded at deploy. If the app is later moved elsewhere the path answers 502 until the site is redeployed. A site deployed before this record keeps serving until its next deploy.
+- Proxy responses never set cookies on the site origin: `Set-Cookie` from the target is removed, and `X-Content-Type-Options: nosniff` is added. A `Location` header that names the target's internal address is made relative.
+- At most `APP_PAGES_PROXY_MAX_RULES` proxy rules per site. A proxy route caps the request body at the `pages.proxy_max_body_mb` runtime setting (default 10 MiB, seeded by `APP_PAGES_PROXY_MAX_BODY_MB`) and waits at most the `pages.proxy_response_timeout` runtime setting (default 30s, seeded by `APP_PAGES_PROXY_RESPONSE_TIMEOUT`) for the target to start answering, then returns 502. WebSocket upgrades stay allowed. Both apply at the next ingress refresh.
+- Rule paths and targets must not contain `{` or `}`. The `Cookie` header is never forwarded, and when the site has a password gate the `Authorization` header is dropped too.
+- The controller re-checks each target's team and project on every pass. A proxy with no recorded scope (rules written before scopes existed) answers 502 until the site is redeployed. Saving settings or rules never widens a recorded scope: a target that moved teams loses its scope and answers 502 until a real deploy, and a scope is only added for a target the saving request was just authorized for.
 
 ## Safety
 
@@ -121,6 +158,9 @@ A redirect that would send a request to the path it came from is skipped rather 
 | `APP_STATIC_ROUTES_MAX_HEADER_BLOCKS` | `100` | Header blocks per site |
 | `APP_STATIC_ROUTES_MAX_FILE_BYTES` | `262144` | Size of each of `_redirects` and `_headers` |
 | `APP_STATIC_ROUTES_MAX_VALUE_LEN` | `2048` | Length of one path, destination or header value |
+| `APP_PAGES_PROXY_MAX_RULES` | `20` | Proxy rules per site |
+| `APP_PAGES_PROXY_MAX_BODY_MB` | `10` | Request body cap on proxy routes, in MiB (runtime setting `pages.proxy_max_body_mb`) |
+| `APP_PAGES_PROXY_RESPONSE_TIMEOUT` | `30s` | Wait for a proxy target's response headers (runtime setting `pages.proxy_response_timeout`) |
 
 Going over a cap fails the deploy with the variable's name in the message.
 

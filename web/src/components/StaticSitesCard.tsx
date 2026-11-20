@@ -32,7 +32,12 @@ export function StaticSitesCard() {
           aria-hidden="true"
         />
         <h2 className="text-(length:--glinr-type-size-section) leading-(--glinr-type-leading-section) font-(weight:--glinr-type-heading-weight) text-foreground">
-          {t('pages.title', { defaultValue: 'Pages' })}
+          <Link
+            to="/pages"
+            className="underline-offset-2 hover:underline focus-visible:underline"
+          >
+            {t('pages.title', { defaultValue: 'Pages' })}
+          </Link>
         </h2>
         <span className="text-xs text-muted-foreground">
           {t('pages.count', { count: sites.length })}

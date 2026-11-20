@@ -76,7 +76,9 @@ func (rt *Router) handleGetStaticRoutes(w http.ResponseWriter, r *http.Request) 
 	if !ok {
 		return
 	}
-	writeJSON(w, http.StatusOK, staticRoutesResponse{Ruleset: *rs, Published: published})
+	out := *rs
+	out.ProxyScopes = nil // team and project ids stay in the sidecar for the controller
+	writeJSON(w, http.StatusOK, staticRoutesResponse{Ruleset: out, Published: published})
 }
 
 // handleTestStaticRoutes handles POST /api/v1/apps/{name}/static-routes/test:

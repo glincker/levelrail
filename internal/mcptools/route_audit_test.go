@@ -135,7 +135,9 @@ var auditGaps = map[string]string{}
 
 // unexercised lists tools the placeholder args cannot drive to an API
 // call (client side validation, no HTTP at all).
-var unexercised = map[string]string{}
+var unexercised = map[string]string{
+	"pages_manage": "needs a valid action enum, covered by tools_pages_test.go",
+}
 
 func TestMCPToolRoutesAreAudited(t *testing.T) {
 	routes := loadAPIRoutes(t)

@@ -24,6 +24,8 @@ type CreateNodeJoinTokenRequest struct {
 	Provider         string `json:"provider,omitempty"`
 	Region           string `json:"region,omitempty"`
 	Zone             string `json:"zone,omitempty"`
+	BuildTrust       string `json:"build_trust,omitempty"`
+	Builder          bool   `json:"builder,omitempty"`
 }
 
 // CreateNodeJoinTokenFor calls POST /api/v1/nodes/join-tokens with req.

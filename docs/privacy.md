@@ -40,7 +40,7 @@ AI is a read and suggest layer on top of the API and is never in the reconciliat
 
 ## This website
 
-The documentation site's own code loads no analytics scripts and sets no cookies, and its fonts are served from the same origin. Like any web host, whoever serves the files can see ordinary server logs.
+The product itself sends no usage telemetry. The website at levelrail.com is separate: it loads PostHog for site analytics, and you can opt out at [levelrail.com/privacy](https://levelrail.com/privacy/). Like any web host, whoever serves the files can see ordinary server logs.
 
 This page describes how the software behaves, based on the source at the time of writing, and is not a legal contract. For a vulnerability report, follow the project's security policy on GitHub.
 

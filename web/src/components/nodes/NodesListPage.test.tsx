@@ -19,6 +19,7 @@ vi.mock('../AddNodeWizard', () => ({
   AddNodeWizard: () => <button type="button">Add node</button>,
 }))
 vi.mock('../HelpLink', () => ({ HelpLink: () => null }))
+vi.mock('../builders/BuildersSection', () => ({ BuildersSection: () => null }))
 vi.mock('./PendingJoinTokensCard', () => ({
   PendingJoinTokensCard: () => null,
 }))

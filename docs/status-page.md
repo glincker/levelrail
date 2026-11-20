@@ -132,6 +132,14 @@ Set on the control plane. Invalid values fall back to the default.
 | `GET` `POST` | `/api/v1/status-page/incidents` | `read`, `write` |
 | `POST` | `/api/v1/status-page/incidents/{id}/updates` | `write` |
 | `DELETE` | `/api/v1/status-page/incidents/{id}` | `write` |
+| `GET` `POST` | `/api/v1/status-page/incident-templates` | `read`, `write` |
+| `PUT` `DELETE` | `/api/v1/status-page/incident-templates/{id}` | `write` |
+
+Incident templates save a reusable incident draft. A template has `name` (unique, up to 140 characters), `title` (required, up to 140), `status` (default `investigating`), `impact` (`none`, `minor`, `major` or `critical`, default `none`) and `body`. A duplicate name returns 409, and creating one past the `status_page.templates_max` setting (default 50, range 1 to 500) is refused with 409.
+
+```bash
+curl -X POST $API/api/v1/status-page/incident-templates -H "Authorization: Bearer $TOKEN" -d '{"name":"Database slow","title":"Slow database","impact":"minor"}'
+```
 
 The `get_status_page` and `list_status_incidents` MCP tools are read only. Publishing incidents is deliberately not exposed to MCP, because it posts public text.
 

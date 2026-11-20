@@ -5,6 +5,7 @@ import (
 	"encoding/json"
 	"errors"
 	"fmt"
+	"github.com/GLINCKER/levelrail/internal/secrets"
 	"sort"
 	"strings"
 	"time"
@@ -15,7 +16,7 @@ import (
 )
 
 // OwnerKey is the internal/secrets namespace that holds every provider config and token.
-const OwnerKey = "secretproviders"
+const OwnerKey = secrets.ControlPlanePrefix + "secretproviders"
 
 const (
 	cfgPrefix   = "CFG_"

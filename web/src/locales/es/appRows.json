@@ -1,8 +1,11 @@
 {
   "failing": {
     "fallback": "Requiere atencion, abre la app para ver el motivo.",
-    "fix": "Ver despliegues",
-    "fixLabel": "Ver despliegues de {{name}}"
+    "fix": "Corregir",
+    "fixLabel": "Ver despliegues de {{name}}",
+    "fixLabelHealth": "Corregir los health checks de {{name}}",
+    "fixLabelDomains": "Corregir los dominios de {{name}}",
+    "fixLabelPages": "Abrir el sitio Pages {{name}}"
   },
   "logs": {
     "noContainer": "No hay ningun contenedor en ejecucion para esta app, asi que no hay nada que mostrar.",
@@ -56,5 +59,14 @@
       "error": "Falló"
     }
   },
-  "description": "Descripción: {{text}}"
+  "description": "Descripción: {{text}}",
+  "card": {
+    "noPreview": "Sin vista previa",
+    "noDomain": "Sin dominio",
+    "staticSite": "Sitio estático",
+    "lastDeploy": "Desplegado",
+    "empty": "Ninguna app coincide con estos filtros.",
+    "listLabel": "Apps",
+    "loading": "Cargando apps"
+  }
 }

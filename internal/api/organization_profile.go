@@ -20,6 +20,7 @@ import (
 	"time"
 	"unicode/utf8"
 
+	"github.com/GLINCKER/levelrail/internal/identity"
 	"github.com/GLINCKER/levelrail/internal/runtimesettings"
 	"github.com/GLINCKER/levelrail/internal/store"
 )
@@ -93,8 +94,11 @@ func (rt *Router) handlePatchOrganization(w http.ResponseWriter, r *http.Request
 		return
 	}
 	if req.Name != nil {
-		n := strings.TrimSpace(*req.Name)
-		if n == "" || utf8.RuneCountInString(n) > orgNameMaxRunes {
+		n, ok := cleanNameInput(w, "name", *req.Name)
+		if !ok {
+			return
+		}
+		if utf8.RuneCountInString(n) > orgNameMaxRunes {
 			writeError(w, http.StatusBadRequest, fmt.Sprintf("name is required and at most %d characters", orgNameMaxRunes))
 			return
 		}
@@ -128,7 +132,7 @@ func (rt *Router) handlePatchOrganization(w http.ResponseWriter, r *http.Request
 	}
 	var slug *string
 	if req.Slug != nil {
-		s := strings.ToLower(strings.TrimSpace(*req.Slug))
+		s := identity.NormalizeEmail(*req.Slug)
 		slug = &s
 	}
 	after, err := db.UpdateOrganizationProfile(r.Context(), id, store.OrgProfilePatch{Name: req.Name, Slug: slug, Description: req.Description})

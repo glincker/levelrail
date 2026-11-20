@@ -119,7 +119,7 @@ The node's capacity guard refused the deploy or build before it started, so the 
 The control plane could not reach the Docker daemon on the target node. Retryable once the daemon is back.
 
 ### build_engine_unsupported
-The container engine has no BuildKit (Podman), so Dockerfile and Railpack source builds cannot run. Deploy a prebuilt image, or run Docker for source builds. See [container runtimes](/container-runtimes).
+The container engine has no BuildKit (Podman), so Dockerfile and Railpack source builds cannot run. Set `APP_BUILDKIT_IMAGE` to a BuildKit image pinned by `sha256` digest so Levelrail can start a managed builder (a rootless image on Podman), deploy a prebuilt image, or run Docker for source builds. See [container runtimes](/container-runtimes).
 
 ### git_host_unreachable
 The git host could not be reached and the commit is not in the source cache. Retryable: redeploy a known commit, roll back, or use **Deploy from cache**. See [Deploying through git host outages](/git-host-outages).

@@ -181,6 +181,7 @@ func (r *BuildRelay) run(ctx context.Context, buildID string, b *agentBuild, req
 		Frame: &agentpb.BuildOutput_Done{Done: &agentpb.BuildDone{
 			DurationMs:       res.Duration.Milliseconds(),
 			ExporterResponse: res.ExporterResponse,
+			Digest:           res.Digest,
 		}},
 	})
 }

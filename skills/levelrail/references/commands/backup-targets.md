@@ -14,6 +14,7 @@ Usage:
   levelrail-cli backup-targets update <id> --name NAME --provider PROVIDER --bucket BUCKET [flags]        update a backup target, optionally rotating its credentials
   levelrail-cli backup-targets delete <id> [flags]                                                        disconnect a backup target
   levelrail-cli backup-targets test <id> [flags]                                                          probe a target's bucket over its stored credentials, without uploading or deleting anything
+  levelrail-cli backup-targets drill <id> [flags]                                                         write a sample object, restore it and compare, then clean up
 
 Valid --provider values: aws, r2, custom. --endpoint is required for r2 and custom (aws resolves its own default endpoint per region).
 

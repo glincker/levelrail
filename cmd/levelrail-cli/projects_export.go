@@ -4,14 +4,19 @@ import (
 	"context"
 	"fmt"
 	"io"
+	"strings"
 )
 
 // runAppsProjectsExport implements "apps projects export <name>": every app in a
 // project as one plain compose file, an env template and a volumes manifest.
 func runAppsProjectsExport(prog string, args []string, stdout, stderr io.Writer, lookupEnv func(string) (string, bool)) int {
 	fs, tokenFlagP, apiURLFlagP, profileFlagP, jsonOutP, outputFlagP, queryFlagP := apiFlagSet(prog, "apps projects export", "print the written file names as JSON", stderr)
-	var out string
-	var includeSecrets, force bool
+	var out, outFile, format, passFile string
+	var includeSecrets, force, includeData bool
+	fs.StringVar(&outFile, "out", "", "archive file to write (.lrx); selects the project archive format")
+	fs.StringVar(&format, "format", "compose", "compose (files for docker compose) or lrx (project archive for another Levelrail instance)")
+	fs.BoolVar(&includeData, "include-data", false, "lrx only: add the newest volume backups to the archive")
+	fs.StringVar(&passFile, "passphrase-file", "", "lrx only: file holding the passphrase for --include-secrets (else LEVELRAIL_ARCHIVE_PASSPHRASE, else a prompt)")
 	fs.StringVar(&out, "o", "", "directory to write the files into, or - for a tar stream on stdout (default ./<name>-export)")
 	fs.BoolVar(&includeSecrets, "include-secrets", false, "also write a .env with stored secret values (needs write:sensitive, audited)")
 	fs.BoolVar(&force, "force", false, "replace an existing .env in the output directory")
@@ -31,6 +36,9 @@ func runAppsProjectsExport(prog string, args []string, stdout, stderr io.Writer,
 	}
 	name := rest[0]
 	client := apiClientFromFlags(prog, apiURLFlag, tokenFlag, profileFlag, lookupEnv)
+	if format == "lrx" || includeData || strings.HasSuffix(outFile, ".lrx") {
+		return runProjectArchiveExport(client, name, outFile, passFile, includeSecrets, includeData, jsonOut, stdout, stderr, lookupEnv)
+	}
 	// The team gate looks {id} up as an ID only, so resolve a name first.
 	id := resolveProjectID(client, name)
 	data, err := client.ExportProject(context.Background(), id, includeSecrets)

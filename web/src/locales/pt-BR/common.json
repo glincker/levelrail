@@ -138,6 +138,8 @@
     "colP95": "p95",
     "colErrors": "Erros",
     "colDeployed": "Implantado",
+    "colTls": "TLS",
+    "tlsNone": "Sem domínio",
     "selectApp": "Selecionar {{name}}",
     "count_one": "{{count}} app",
     "count_many": "{{count}} apps",
@@ -245,6 +247,7 @@
     "restarting": "Reiniciando...",
     "more": "Mais ações",
     "redeploy": "Refazer o deploy do atual",
+    "manageInPages": "Gerenciar em Pages",
     "redeploying": "Refazendo o deploy...",
     "start": "Iniciar",
     "stop": "Parar",
@@ -545,6 +548,7 @@
       "settings": "Configurações",
       "help": "Ajuda",
       "functions": "Funções",
+      "pages": "Páginas",
       "storage": "Armazenamento",
       "assets": "Assets",
       "mail": "E-mail",
@@ -1117,7 +1121,15 @@
   "projectsPage": {
     "list": {
       "name": "Nome",
-      "created": "Criado em"
+      "created": "Criado em",
+      "pin": "Fixar {{name}}",
+      "unpin": "Desafixar {{name}}"
+    },
+    "sort": {
+      "label": "Ordenar por",
+      "name": "Nome",
+      "newest": "Mais recentes primeiro",
+      "oldest": "Mais antigos primeiro"
     },
     "empty": {
       "title": "Nenhum projeto ainda",

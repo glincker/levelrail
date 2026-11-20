@@ -46,6 +46,12 @@ type Router struct {
 	// direct call so the dispatch path can be exercised without a live
 	// Docker daemon.
 	load func(ctx context.Context, r io.Reader, tag string, progress func(ProgressEvent)) error
+
+	// transfer is the live registry transfer config; nil keeps the tar path.
+	transfer func(ctx context.Context) TransferConfig
+
+	// recorder signs and stores a record for a digest a remote builder pushed.
+	recorder RecordSigner
 }
 
 // RouterOption configures optional Router behavior.
@@ -77,6 +83,12 @@ func WithRouterSlotLimit(f func(ctx context.Context, app string) int) RouterOpti
 	return func(r *Router) { r.slotLimit = f }
 }
 
+// WithRouterTransfer enables registry transfer: f is read on every build, so
+// flipping build.transfer_mode applies live. Incomplete config falls back to tar.
+func WithRouterTransfer(f func(ctx context.Context) TransferConfig) RouterOption {
+	return func(r *Router) { r.transfer = f }
+}
+
 // NewRouter builds a Router over local. nodes and remote may both be nil,
 // which pins every build to local: that is the single-node default, not a
 // degraded mode.
@@ -93,11 +105,15 @@ func NewRouter(local *Client, nodes NodeSource, remote NodeBuilder, opts ...Rout
 
 // Build implements internal/deploy.ImageBuilder.
 func (r *Router) Build(ctx context.Context, req Request, progress func(ProgressEvent)) (*Result, error) {
-	nodeID, err := r.selectNode(ctx, AppFromTag(req.Tag))
+	nodeID, err := r.selectNode(ctx, AppFor(ctx, req.Tag))
 	if err != nil {
 		return nil, err
 	}
 	if nodeID == "" {
+		if auth, done := r.localCacheAuth(ctx, req); auth != nil {
+			defer done()
+			req.CacheAuth = auth
+		}
 		return r.local.Build(ctx, req, progress)
 	}
 
@@ -114,12 +130,12 @@ func (r *Router) Build(ctx context.Context, req Request, progress func(ProgressE
 	if err != nil {
 		return nil, err
 	}
-	return r.dispatch(ctx, nodeID, remoteReq, progress)
+	return r.dispatchWith(ctx, nodeID, remoteReq, progress)
 }
 
 // BuildRailpack implements internal/deploy.ImageBuilder.
 func (r *Router) BuildRailpack(ctx context.Context, req RailpackRequest, progress func(ProgressEvent)) (*Result, error) {
-	nodeID, err := r.selectNode(ctx, AppFromTag(req.Tag))
+	nodeID, err := r.selectNode(ctx, AppFor(ctx, req.Tag))
 	if err != nil {
 		return nil, err
 	}
@@ -134,7 +150,7 @@ func (r *Router) BuildRailpack(ctx context.Context, req RailpackRequest, progres
 	if err != nil {
 		return nil, err
 	}
-	return r.dispatch(ctx, nodeID, remoteReq, progress)
+	return r.dispatchWith(ctx, nodeID, remoteReq, progress)
 }
 
 // SelectedNode names the node the next build would run on, "" for the local one.

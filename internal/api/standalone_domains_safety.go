@@ -10,7 +10,7 @@ import (
 	"strings"
 	"time"
 
-	"github.com/GLINCKER/levelrail/internal/ingress"
+	"github.com/GLINCKER/levelrail/internal/spec"
 	"github.com/GLINCKER/levelrail/internal/standalone"
 	"github.com/GLINCKER/levelrail/internal/store"
 )
@@ -37,7 +37,7 @@ func validateStandaloneDomainName(domain string) string {
 	if domain == "" {
 		return "domain is required"
 	}
-	if err := ingress.ValidateWildcardDomain(domain); err != nil {
+	if _, err := spec.ValidateAppDomain(domain); err != nil {
 		return "invalid domain: " + err.Error()
 	}
 	if !standalone.ValidHostname(strings.TrimPrefix(domain, "*.")) || !strings.Contains(domain, ".") {

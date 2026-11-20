@@ -167,7 +167,7 @@ func TestService_CreateExternal(t *testing.T) {
 		if err != nil || e.HealthState != store.EndpointOnline || len(e.Discovered) != 1 || !e.CredentialSet {
 			t.Fatalf("endpoint = %+v, %v", e, err)
 		}
-		if creds.values["model/mac/"+endpointCredentialKey] != "sk-secret" {
+		if creds.values["_cp/model/mac/"+endpointCredentialKey] != "sk-secret" {
 			t.Errorf("credential not stored in the secrets manager: %v", creds.values)
 		}
 		v, err := svc.Get(ctx, "mac")
@@ -317,7 +317,7 @@ func TestService_EndpointCredential(t *testing.T) {
 		t.Fatal(err)
 	}
 	e, _ := db.GetInferenceEndpoint(ctx, "mac")
-	if !e.CredentialSet || creds.values["model/mac/"+endpointCredentialKey] != "sk-new" {
+	if !e.CredentialSet || creds.values["_cp/model/mac/"+endpointCredentialKey] != "sk-new" {
 		t.Fatalf("credential not set: %+v %v", e, creds.values)
 	}
 	if _, err := svc.SetEndpointCredential(ctx, "mac", ""); err != nil {

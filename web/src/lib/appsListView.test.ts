@@ -78,11 +78,11 @@ describe('status buckets', () => {
 })
 
 describe('view mode persistence', () => {
-  it('defaults to table and remembers grid', () => {
-    expect(loadViewMode()).toBe('table')
-    storeViewMode('grid')
+  it('defaults to cards and remembers table', () => {
     expect(loadViewMode()).toBe('grid')
     storeViewMode('table')
     expect(loadViewMode()).toBe('table')
+    storeViewMode('grid')
+    expect(loadViewMode()).toBe('grid')
   })
 })

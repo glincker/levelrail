@@ -208,3 +208,17 @@ func TestDeleteStaticSite(t *testing.T) {
 		t.Errorf("domain not released: %v", err)
 	}
 }
+
+func TestDeleteStaticSiteClearsSettingsOfUnpublishedApp(t *testing.T) {
+	db := openTestDB(t)
+	ctx := context.Background()
+	if err := db.SetStaticSiteDeployHook(ctx, "draft", "hash", time.Now()); err != nil {
+		t.Fatal(err)
+	}
+	if err := db.DeleteStaticSite(ctx, "draft"); !errors.Is(err, ErrServiceNotFound) {
+		t.Fatalf("delete = %v, want ErrServiceNotFound", err)
+	}
+	if hash, _, err := db.GetStaticSiteDeployHook(ctx, "draft"); err != nil || hash != "" {
+		t.Fatalf("hook after delete = %q, %v", hash, err)
+	}
+}

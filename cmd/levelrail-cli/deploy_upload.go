@@ -157,6 +157,9 @@ func runDeployUploadLimited(prog string, args []string, stdout, stderr io.Writer
 			return !isTerminal(stdin) || confirmUp(stdin, stderr)
 		})
 	}
+	if looksLikeStaticSite(dir) {
+		_, _ = fmt.Fprintf(stderr, "hint: %s looks like a static site; publish it without a build using \"%s pages deploy %s\"\n", dir, prog, dir)
+	}
 	if appName == "" {
 		appName = dirAppName(dir)
 	}

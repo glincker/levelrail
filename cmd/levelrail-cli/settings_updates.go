@@ -44,7 +44,7 @@ func runSettingsUpdatesGet(prog string, args []string, stdout, stderr io.Writer,
 	return runListCommand(prog, args, stdout, stderr, lookupEnv, listCommandParams[updateSettingsResource]{
 		cmdLabel:  "settings updates get",
 		jsonUsage: "print the update settings as JSON to stdout and nothing else",
-		usageText: fmt.Sprintf("Usage:\n  %s settings updates get [flags]\n\nShows the current release channel and auto-update-check setting.\n\nFlags:\n", prog),
+		usageText: fmt.Sprintf("Usage:\n  %s settings updates get [flags]\n\nShows the release channel and whether the background check for updates is on. Automatic installs are shown by the updates status command.\n\nFlags:\n", prog),
 		fetch: func(c *Client, ctx context.Context) (updateSettingsResource, error) {
 			return c.GetUpdateSettings(ctx)
 		},
@@ -58,9 +58,9 @@ func runSettingsUpdatesSet(prog string, args []string, stdout, stderr io.Writer,
 	var channel string
 	var autoUpdateEnabled bool
 	fs.StringVar(&channel, "channel", "stable", "release channel: stable, beta, or edge")
-	fs.BoolVar(&autoUpdateEnabled, "auto-update", false, "check for updates on this channel in the background")
+	fs.BoolVar(&autoUpdateEnabled, "auto-update", false, "check for new releases on this channel in the background; this only looks, installs are set with the updates enable and disable commands")
 	fs.Usage = func() {
-		_, _ = fmt.Fprintf(stderr, "Usage:\n  %s settings updates set [flags]\n\nConfigures the release channel and auto-update-check setting.\n\nFlags:\n", prog)
+		_, _ = fmt.Fprintf(stderr, "Usage:\n  %s settings updates set [flags]\n\nConfigures the release channel and the background check for updates. Automatic installs are controlled by the updates enable and disable commands.\n\nFlags:\n", prog)
 		fs.PrintDefaults()
 	}
 
@@ -84,5 +84,5 @@ func runSettingsUpdatesSet(prog string, args []string, stdout, stderr io.Writer,
 
 func printUpdateSettingsHuman(out io.Writer, s updateSettingsResource) {
 	_, _ = fmt.Fprintf(out, "channel:             %s\n", s.Channel)
-	_, _ = fmt.Fprintf(out, "auto_update_enabled: %v\n", s.AutoUpdateEnabled)
+	_, _ = fmt.Fprintf(out, "check for updates:   %v (background check only, nothing is installed by it)\n", s.AutoUpdateEnabled)
 }

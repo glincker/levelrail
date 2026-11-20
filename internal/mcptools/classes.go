@@ -106,6 +106,8 @@ var toolTable = map[string]Meta{
 	"extend_preview":                        {clsM, "previews", unt | wg},
 	"run_restore_drill":                     {clsM, "backups", wg},
 	"list_apps":                             {clsR, "apps", 0},
+	"pages":                                 {clsR, "apps", unt},
+	"pages_manage":                          {clsM, "apps", outb},
 	"get_app":                               {clsR, "apps", 0},
 	"get_app_status":                        {clsR, "apps", unt},
 	"get_app_timeline":                      {clsR, "apps", unt},

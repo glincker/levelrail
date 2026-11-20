@@ -774,6 +774,47 @@
     "undo": "Undo",
     "zone": "Time zone",
     "zoneHelp": "Server time zone is {{zone}}. Backups and safety checks still run first.",
-    "zoneInvalid": "Enter a valid time zone, for example Europe/Berlin."
+    "zoneInvalid": "Enter a valid time zone, for example Europe/Berlin.",
+    "checkOn": "La comprobación en segundo plano de nuevas versiones está activada. Solo busca; la instalación la controla el interruptor de arriba.",
+    "checkOff": "La comprobación en segundo plano de nuevas versiones está desactivada. Activar las actualizaciones automáticas también la activa.",
+    "installSteps": "Las actualizaciones se instalan entre {{start}} y {{end}} {{zone}}; primero copia de seguridad, comprobación de salud y reversión automática.",
+    "nextWindows": "Próximas ventanas: {{list}}"
+  },
+  "autoStatus": {
+    "state": {
+      "off": "Desactivadas",
+      "paused": "En pausa",
+      "blocked": "Bloqueadas",
+      "degraded": "Degradadas",
+      "ready": "Listas"
+    },
+    "summary": {
+      "off": "Las actualizaciones automáticas están desactivadas, no se instala nada por sí solo.",
+      "paused": "Las actualizaciones automáticas están en pausa y se reanudarán solas.",
+      "blocked": "Este servidor no puede reemplazarse a sí mismo: {{reason}}",
+      "degraded": "Las comprobaciones de versiones fallan, por lo que no puede empezar ninguna actualización: {{reason}}",
+      "ready": "Funciona. Las nuevas versiones se instalan en la ventana de abajo."
+    },
+    "manual": {
+      "intro": "Actualiza desde el servidor con este comando:",
+      "docker": "¿Usas Docker? Descarga una imagen nueva y recrea el contenedor."
+    },
+    "lastCheck": "Última comprobación",
+    "failures": "Comprobaciones fallidas seguidas",
+    "nextTry": "Próximo intento",
+    "lastGoodList": "Última lista de versiones correcta",
+    "listAge": "hace {{hours}} h",
+    "listSourceFallback": "Obtenida de las páginas públicas de versiones, sin notas de versión",
+    "unpinned": "Este servidor aún no tiene fijada una identidad de firma de versiones. La primera actualización se apoya solo en la suma de verificación; después, las siguientes deben llevar la misma firma.",
+    "lastResult": "Último resultado",
+    "result": {
+      "applied": "Actualizado",
+      "failed": "Falló",
+      "cancelled": "Cancelado",
+      "missed": "Perdido",
+      "blocked": "Bloqueado",
+      "pending": "Esperando la ventana",
+      "running": "En curso"
+    }
   }
 }

@@ -76,7 +76,7 @@ func (c *Controller) BuildJobSpec(ctx context.Context, desired *store.DesiredSer
 		spec.Resources = &merged
 	}
 	if desired.RegistryCredentialID != "" {
-		auth, err := c.resolveRegistryAuth(ctx, desired.RegistryCredentialID)
+		auth, err := c.resolveRegistryAuth(ctx, desired.RegistryCredentialID, desired.Image)
 		if err != nil {
 			return JobSpec{}, fmt.Errorf("resolve registry credential: %w", err)
 		}

@@ -4,6 +4,7 @@ import (
 	"context"
 	"os"
 	"path/filepath"
+	"strings"
 	"syscall"
 
 	"github.com/GLINCKER/levelrail/internal/cpbackup"
@@ -58,4 +59,14 @@ func verifyBackupEnabled(ctx context.Context, live string) bool {
 	}
 	defer func() { _ = db.Close() }()
 	return runtimesettings.New(db, nil).Bool(ctx, runtimesettings.KeyUpgradeVerifyBackup)
+}
+
+// fallbackReleaseURL reads the live fallback download setting; an unreadable database means no fallback.
+func fallbackReleaseURL(ctx context.Context, live string) string {
+	db, err := store.Open(ctx, live)
+	if err != nil {
+		return ""
+	}
+	defer func() { _ = db.Close() }()
+	return strings.TrimSpace(runtimesettings.New(db, nil).String(ctx, runtimesettings.KeyUpdatesFallbackBaseURL))
 }

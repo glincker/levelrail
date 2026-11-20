@@ -485,3 +485,40 @@ func TestGitHubDeploymentCreateAndStatusRequests(t *testing.T) {
 		t.Fatalf("status call = %+v", call)
 	}
 }
+
+func TestGitSourceTriggerModeToggle(t *testing.T) {
+	secrets := newFakeGitSourceSecrets()
+	rt, db := newTestRouterWithGitSourceSecrets(t, secrets)
+	cookie := loginTestSession(t, rt, db)
+	seedApp(t, db, "web")
+	created := connectGitSource(t, rt, cookie, `{"repo_url":"https://github.com/org/web.git","branch":"main","build_type":"dockerfile"}`)
+	put := func(body string) *httptest.ResponseRecorder {
+		rec := httptest.NewRecorder()
+		rt.Handler().ServeHTTP(rec, authedRequest(t, cookie, http.MethodPut, "/api/v1/apps/web/git-source/deploy-settings", body))
+		return rec
+	}
+	if rec := put(`{"trigger_mode":"sometimes"}`); rec.Code != http.StatusBadRequest {
+		t.Fatalf("bad mode = %d, want 400", rec.Code)
+	}
+	rec := put(`{"trigger_mode":"manual"}`)
+	var got gitDeploySettings
+	if rec.Code != http.StatusOK || json.Unmarshal(rec.Body.Bytes(), &got) != nil || got.TriggerMode != "manual" {
+		t.Fatalf("set manual: %d %s", rec.Code, rec.Body.String())
+	}
+	var fetchCalls []fakeGitSourceFetchCall
+	rt.gitSourceFetch = newFakeGitSourceFetch(&fetchCalls, t.TempDir(), new(bool), nil)
+	fb := &fakeBuilder{tag: "web:sha1"}
+	rt.builder = fb
+	body, _ := json.Marshal(map[string]any{"ref": "refs/heads/main", "after": "sha1", "before": "sha0", "commits": []map[string]any{{"id": "sha1", "modified": []string{"a.go"}}}})
+	requireStatusOK(t, postGitWebhook(t, rt, "X-Hub-Signature-256", sign([]byte(created.WebhookSecret), body), body, nil))
+	if fb.calls != 0 {
+		t.Fatalf("manual mode deployed on push: %d builds", fb.calls)
+	}
+	if rec := put(`{"trigger_mode":"push"}`); rec.Code != http.StatusOK {
+		t.Fatalf("set push: %d", rec.Code)
+	}
+	requireStatusOK(t, postGitWebhook(t, rt, "X-Hub-Signature-256", sign([]byte(created.WebhookSecret), body), body, nil))
+	if fb.calls != 1 {
+		t.Fatalf("push mode builds = %d, want 1", fb.calls)
+	}
+}

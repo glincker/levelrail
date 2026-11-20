@@ -12,6 +12,7 @@ import { Input } from '@/components/ui/input'
 import { Skeleton } from '@/components/ui/skeleton'
 import { toast } from '@/components/ui/toast'
 import { useIsRoot } from '../../hooks/useIsRoot'
+import { ApiErrorAlert } from '../../components/ApiErrorAlert'
 import {
   useBuildLimits,
   useResetBuildLimits,
@@ -190,16 +191,8 @@ function LimitsForm({ limits }: { limits: BuildLimits }) {
               {t('settings.rootOnly')}
             </p>
           ) : null}
-          {save.isError ? (
-            <p role="alert" className="text-sm text-destructive">
-              {save.error.message}
-            </p>
-          ) : null}
-          {reset.isError ? (
-            <p role="alert" className="text-sm text-destructive">
-              {reset.error.message}
-            </p>
-          ) : null}
+          {save.isError ? <ApiErrorAlert error={save.error} /> : null}
+          {reset.isError ? <ApiErrorAlert error={reset.error} /> : null}
           <div className="flex gap-2">
             <Button
               type="submit"

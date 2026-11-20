@@ -51,17 +51,28 @@
     "secretAccessKey": "AWSシークレットアクセスキー",
     "region": "リージョン(任意)",
     "hostedZoneId": "ホストゾーンID(任意)",
-    "serviceAccount": "サービスアカウントのJSON"
+    "serviceAccount": "サービスアカウントのJSON",
+    "regionHint": "Route 53 はグローバルなので、通常は影響しません。既定値: {{region}}。",
+    "hostedZoneHint": "空欄の場合、このキーで一覧できるすべてのゾーンからドメインを照合します。"
   },
   "test": {
     "button": "接続をテスト",
     "running": "テスト中...",
     "credential": "認証情報が保存されています",
     "zones": "ゾーンを一覧表示しました",
+    "permission": "権限",
     "zonesCount_other": "{{count}} 個のゾーンが見つかりました",
     "ok": "合格",
     "failed": "失敗",
-    "heading": "テスト結果"
+    "heading": "テスト結果",
+    "state": {
+      "allowed": "許可",
+      "denied": "拒否",
+      "unknown": "不明"
+    },
+    "policyHint": "不足しているアクション用の最小IAMポリシー:",
+    "copyPolicy": "ポリシーをコピー",
+    "copied": "コピーしました"
   },
   "zones": {
     "heading": "ホストゾーン",

@@ -466,6 +466,9 @@ message ContainerSpec {
   map<string, string> sysctls = 29;
   repeated string cap_drop = 30;
   int64 pids_limit = 31;
+  // registry_bearer is a short-lived pull token for the built-in registry in token mode. An agent
+  // that predates it ignores the field, and its pulls keep using the htpasswd login.
+  string registry_bearer = 32;
 }
 
 message Ulimit {
@@ -948,6 +951,15 @@ message BuildRequest {
   string network = 8;
   // railpack_provider, when set, fails a Railpack build that detects another provider.
   string railpack_provider = 9;
+  // push, when set, makes the node push the image to a registry instead of streaming a tar.
+  PushTarget push = 10;
+}
+
+// PushTarget is a job-scoped, short-lived push credential for one repo and tag.
+message PushTarget {
+  string ref = 1;
+  string token = 2;
+  bool insecure = 3;
 }
 
 enum BuildKind {
@@ -1019,6 +1031,8 @@ message BuildProgress {
 message BuildDone {
   int64 duration_ms = 1;
   map<string, string> exporter_response = 2;
+  // digest is the manifest digest pushed in registry transfer mode.
+  string digest = 3;
 }
 
 // BuildFailure is the error that ended a build. unsupported_provider is

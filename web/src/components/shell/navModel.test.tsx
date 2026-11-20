@@ -25,6 +25,7 @@ const EXPECTED_GLOBAL = [
   '/apps',
   '/deployments',
   '/functions',
+  '/pages',
   '/projects',
   '/templates',
   '/tags',
@@ -142,7 +143,7 @@ describe('global nav model', () => {
     expect(GLOBAL_NAV_GROUPS.length).toBeLessThanOrEqual(8)
   })
 
-  it('shows the Overview rows ungrouped and twenty-one or fewer sidebar rows', () => {
+  it('shows the Overview rows ungrouped and twenty-two or fewer sidebar rows', () => {
     const primary = GLOBAL_NAV_GROUPS.filter((g) => g.ungrouped)
     expect(primary).toHaveLength(1)
     expect(primary[0]?.items.map((i) => i.label)).toEqual([
@@ -152,7 +153,8 @@ describe('global nav model', () => {
       'Alerts',
     ])
     const rows = GLOBAL_NAV_GROUPS.flatMap((g) => g.items)
-    expect(rows.length).toBeLessThanOrEqual(21)
+    // Pages got its own Build row, so the cap is one higher than before.
+    expect(rows.length).toBeLessThanOrEqual(22)
   })
 
   it('groups Domains, Traffic, Firewall and Mail under Network', () => {
@@ -174,9 +176,10 @@ describe('global nav model', () => {
     expect(isSingleItemGroup({ items: [1, 2] })).toBe(false)
   })
 
-  it('keeps every group at five items or fewer', () => {
+  it('keeps every group at six items or fewer', () => {
+    // Build holds Pages as its sixth row.
     for (const g of GLOBAL_NAV_GROUPS) {
-      expect(g.items.length, g.id).toBeLessThanOrEqual(5)
+      expect(g.items.length, g.id).toBeLessThanOrEqual(6)
     }
   })
 

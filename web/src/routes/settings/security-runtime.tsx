@@ -4,8 +4,8 @@ import { useTranslation } from 'react-i18next'
 import { SlidersHorizontalGlassIcon } from '@thesvg/ui-react'
 import { Alert, AlertDescription } from '@/components/ui/alert'
 import { Button } from '@/components/ui/button'
-import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card'
 import { EmptyState } from '@/components/ui/empty-state'
+import { RuntimeCategoryCard } from '@/components/settings/RuntimeCategoryCard'
 import { RuntimeCategoryNav } from '@/components/settings/RuntimeCategoryNav'
 import { SettingRows } from '@/components/ui/setting-row'
 import { PageTemplate } from '@/components/shell/PageTemplate'
@@ -175,16 +175,21 @@ function SecurityRuntimePage() {
           />
         ) : null}
         <div className="min-w-0 flex-1 space-y-4">
-          {groups.map((group) => (
-            <Card
-              key={group.category}
-              id={categoryAnchor(group.category)}
-              className="scroll-mt-28"
-            >
-              <CardHeader>
-                <CardTitle>{t(`categories.${group.category}`)}</CardTitle>
-              </CardHeader>
-              <CardContent>
+          {groups.map((group, index) => {
+            const weaker = group.items.filter((i) => i.weaker_than_default)
+            const attention = group.items.some(
+              (i) => i.weaker_than_default || i.pending_restart,
+            )
+            return (
+              <RuntimeCategoryCard
+                key={group.category}
+                id={categoryAnchor(group.category)}
+                title={t(`categories.${group.category}`)}
+                count={group.items.length}
+                weaker={weaker.length}
+                forceOpen={filtering || Boolean(category)}
+                defaultOpen={index === 0 || attention}
+              >
                 <SettingRows>
                   {group.items.map((s) => (
                     <RuntimeSettingRow
@@ -195,9 +200,9 @@ function SecurityRuntimePage() {
                     />
                   ))}
                 </SettingRows>
-              </CardContent>
-            </Card>
-          ))}
+              </RuntimeCategoryCard>
+            )
+          })}
           {settings.length > 0 && !filtering && !category ? (
             <RetentionOverviewCard />
           ) : null}

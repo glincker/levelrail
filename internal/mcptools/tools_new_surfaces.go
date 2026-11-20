@@ -11,7 +11,7 @@ import (
 type imageInventoryInput struct {
 	Node       string `json:"node,omitempty" jsonschema:"node id; omit for the local node"`
 	KeepPerApp *int   `json:"keep_per_app,omitempty" jsonschema:"retention override, images kept per app; omit for the server default"`
-	LayersOf   string `json:"layers_of,omitempty" jsonschema:"an image id from the inventory; returns its layer breakdown instead of the inventory"`
+	LayersOf   string `json:"layers_of,omitempty" jsonschema:"image id from the inventory; returns its layers instead of the inventory"`
 }
 
 type imageInventoryOutput struct {
@@ -95,7 +95,7 @@ type listZonesOutput struct {
 func registerNewSurfaceTools(server *mcp.Server, client *apiclient.Client) {
 	addTool(server, &mcp.Tool{
 		Name:        "get_image_inventory",
-		Description: "List images on a node with owners, size and retention protection, or with layers_of the layer breakdown of one image.",
+		Description: "List images on a node with owners, size and retention protection; layers_of gives one image's layers.",
 	}, func(ctx context.Context, _ *mcp.CallToolRequest, in imageInventoryInput) (*mcp.CallToolResult, imageInventoryOutput, error) {
 		if in.LayersOf != "" {
 			l, err := client.GetImageLayers(ctx, in.Node, in.LayersOf)
@@ -117,7 +117,7 @@ func registerNewSurfaceTools(server *mcp.Server, client *apiclient.Client) {
 
 	addTool(server, &mcp.Tool{
 		Name:        "preview_image_gc",
-		Description: "Dry run of image garbage collection: the images retention would remove and the bytes it would reclaim. Changes nothing.",
+		Description: "Dry run of image garbage collection: the images retention would remove and the bytes it would reclaim.",
 	}, func(ctx context.Context, _ *mcp.CallToolRequest, in imageGCInput) (*mcp.CallToolResult, apiclient.ImageGCResource, error) {
 		out, err := client.RunImageGC(ctx, apiclient.ImageGCRequest{Node: in.Node, KeepPerApp: in.KeepPerApp, MinAgeHrs: in.MinAgeHrs, DryRun: true})
 		if err != nil {
@@ -128,7 +128,7 @@ func registerNewSurfaceTools(server *mcp.Server, client *apiclient.Client) {
 
 	addTool(server, &mcp.Tool{
 		Name:        "apply_image_gc",
-		Description: "Remove images that image retention marks as candidates (run preview_image_gc first). Needs a root token, like the REST API; rollback targets stay protected.",
+		Description: "Remove images retention marks as candidates (run preview_image_gc first). Needs a root token; rollback targets stay protected.",
 	}, func(ctx context.Context, _ *mcp.CallToolRequest, in imageGCInput) (*mcp.CallToolResult, apiclient.ImageGCResource, error) {
 		out, err := client.RunImageGC(ctx, apiclient.ImageGCRequest{Node: in.Node, KeepPerApp: in.KeepPerApp, MinAgeHrs: in.MinAgeHrs})
 		if err != nil {
@@ -139,7 +139,7 @@ func registerNewSurfaceTools(server *mcp.Server, client *apiclient.Client) {
 
 	addTool(server, &mcp.Tool{
 		Name:        "list_functions",
-		Description: "List scale-to-zero functions with sleeping state, invocations, 5xx rate and p95 over a window, or with runtimes the starter runtimes.",
+		Description: "List scale-to-zero functions: sleeping state, invocations, 5xx rate and p95 over a window, or the starter runtimes.",
 	}, func(ctx context.Context, _ *mcp.CallToolRequest, in listFunctionsInput) (*mcp.CallToolResult, listFunctionsOutput, error) {
 		if in.Runtimes {
 			rt, err := client.ListFunctionRuntimes(ctx)
@@ -157,7 +157,7 @@ func registerNewSurfaceTools(server *mcp.Server, client *apiclient.Client) {
 
 	addTool(server, &mcp.Tool{
 		Name:        "list_zones",
-		Description: "List failure domains with nodes and workloads. capacity adds totals and single-zone warnings; node_id gives preflight checks. Root token.",
+		Description: "List failure domains with nodes and workloads. capacity adds totals and single-zone warnings; node_id adds preflight. Root token.",
 	}, func(ctx context.Context, _ *mcp.CallToolRequest, in listZonesInput) (*mcp.CallToolResult, listZonesOutput, error) {
 		if in.NodeID != "" {
 			ob, err := client.GetNodeOnboarding(ctx, in.NodeID)
@@ -183,7 +183,7 @@ func registerNewSurfaceTools(server *mcp.Server, client *apiclient.Client) {
 
 	addTool(server, &mcp.Tool{
 		Name:        "list_storage_buckets",
-		Description: "List storage buckets with their destination, app bindings and env keys, optionally with stored size and object count. No credentials.",
+		Description: "List storage buckets with destination, app bindings and env keys, optionally size and object count. No credentials.",
 	}, func(ctx context.Context, _ *mcp.CallToolRequest, in listBucketsInput) (*mcp.CallToolResult, []bucketWithUsage, error) {
 		buckets, err := client.ListStorageBuckets(ctx, in.App)
 		if err != nil {
@@ -206,7 +206,7 @@ func registerNewSurfaceTools(server *mcp.Server, client *apiclient.Client) {
 
 	addTool(server, &mcp.Tool{
 		Name:        "create_storage_bucket",
-		Description: "Create a bucket on a storage destination, optionally binding it to an app (injects S3 env vars on the next deploy). Returns env key names, never values.",
+		Description: "Create a bucket on a storage destination, optionally bound to an app (S3 env vars on next deploy). Returns env key names, never values.",
 	}, func(ctx context.Context, _ *mcp.CallToolRequest, in createBucketInput) (*mcp.CallToolResult, apiclient.StorageBucket, error) {
 		b, err := client.CreateStorageBucket(ctx, apiclient.CreateStorageBucketRequest{Name: in.Name, TargetID: in.TargetID, AppName: in.AppName, EnvPrefix: in.EnvPrefix, Public: in.Public, QuotaBytes: in.QuotaBytes, LifecycleDays: in.LifecycleDays})
 		if err != nil {
@@ -260,7 +260,7 @@ func registerNewSurfaceTools(server *mcp.Server, client *apiclient.Client) {
 
 	addTool(server, &mcp.Tool{
 		Name:        "link_database_app",
-		Description: "Link an app to a database so a connection env var is injected on the next deploy. Reports host, mesh DNS and whether the link crosses nodes.",
+		Description: "Link an app to a database; a connection env var is injected on the next deploy. Reports host, mesh DNS and whether the link crosses nodes.",
 	}, func(ctx context.Context, _ *mcp.CallToolRequest, in linkDatabaseInput) (*mcp.CallToolResult, apiclient.AppConnectionResource, error) {
 		out, err := client.ConnectDatabaseApp(ctx, in.Database, in.App, in.EnvVar, in.Field)
 		if err != nil {

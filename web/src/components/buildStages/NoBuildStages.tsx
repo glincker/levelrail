@@ -9,7 +9,8 @@ import { useDeployDetailT } from '../deployDetail/useDeployDetailT'
 import type { DeployStageStatus } from '../../lib/deployStages'
 
 export interface NoStageStep {
-  key: 'pull' | 'create' | 'readiness' | 'rollout'
+  key:
+    'pull' | 'create' | 'readiness' | 'rollout' | 'build' | 'publish' | 'live'
   status: DeployStageStatus
 }
 

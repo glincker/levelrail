@@ -15,7 +15,7 @@ type iacFileInput struct {
 }
 
 type planApplyInput struct {
-	Files           []iacFileInput `json:"files" jsonschema:"resource YAML files (Project, Environment, Tag, Database, App, Domain, LoadBalancer, Pipeline, AlertRule). Secrets only by secretRef"`
+	Files           []iacFileInput `json:"files" jsonschema:"resource YAML files (Project, Environment, Tag, Database, App, Domain, LoadBalancer, Pipeline, AlertRule); secrets by secretRef only"`
 	Source          string         `json:"source,omitempty" jsonschema:"name of this apply source; apps it creates carry a managed-by tag. Required for prune"`
 	Project         string         `json:"project,omitempty" jsonschema:"only the documents belonging to this project"`
 	Prune           bool           `json:"prune,omitempty" jsonschema:"delete apps this source created that the files no longer declare"`
@@ -36,7 +36,7 @@ func (in planApplyInput) request() apiclient.IaCRequest {
 func registerIaCTools(server *mcp.Server, client *apiclient.Client) {
 	addTool(server, &mcp.Tool{
 		Name:        "plan_apply",
-		Description: "Dry run of resource files: validation and a plan (create, update diff, delete) against live state. Env values hidden. Changes nothing.",
+		Description: "Dry run of resource files: validation and a plan (create, update diff, delete) against live state. Env values hidden.",
 	}, func(ctx context.Context, _ *mcp.CallToolRequest, in planApplyInput) (*mcp.CallToolResult, iac.Plan, error) {
 		plan, err := client.PlanIaC(ctx, in.request())
 		if err != nil {
@@ -47,7 +47,7 @@ func registerIaCTools(server *mcp.Server, client *apiclient.Client) {
 
 	addTool(server, &mcp.Tool{
 		Name:        "apply_resources",
-		Description: "Apply resource files in dependency order with the caller's permissions. Pass expected_plan_hash from plan_apply to refuse drift. prune deletes undeclared apps.",
+		Description: "Apply resource files in dependency order with the caller's permissions. expected_plan_hash from plan_apply refuses drift. prune deletes undeclared apps.",
 	}, func(ctx context.Context, _ *mcp.CallToolRequest, in planApplyInput) (*mcp.CallToolResult, iac.ApplyResult, error) {
 		res, err := client.ApplyIaC(ctx, in.request())
 		if err != nil {

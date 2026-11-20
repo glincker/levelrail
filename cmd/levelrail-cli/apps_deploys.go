@@ -58,6 +58,10 @@ func runAppsDeploys(prog string, args []string, stdout, stderr io.Writer, lookup
 		return runAppsDeploysBuildReport(prog, args[1:], stdout, stderr, lookupEnv)
 	case "cancel":
 		return runAppsDeploysCancel(prog, args[1:], stdout, stderr, lookupEnv)
+	case "pin":
+		return runAppsDeploysPin(prog, false, args[1:], stdout, stderr, lookupEnv)
+	case "unpin":
+		return runAppsDeploysPin(prog, true, args[1:], stdout, stderr, lookupEnv)
 	case "rollback-to", "rollback", "promote":
 		return runAppsDeploysRollbackTo(prog, args[1:], stdout, stderr, lookupEnv, os.Stdin)
 	default:
@@ -90,6 +94,8 @@ func appsDeploysUsage(prog string) string {
   %[1]s apps deploys gate <name> [deploy-id] [--watch]            readiness gate, cutover, drain and post-deploy watch timeline
   %[1]s apps deploys build-report <name> <deploy-id> [flags]      Next.js route table and build warnings from one attempt's log
   %[1]s apps deploys cancel <name> <deploy-id> [flags]            cancel a queued or in-progress deploy before it cuts traffic
+  %[1]s apps deploys pin <name> <deploy-id> [flags]               keep a deploy and its image out of retention and cleanup
+  %[1]s apps deploys unpin <name> <deploy-id> [flags]             release a pin so retention may remove it again
   %[1]s apps deploys rollback-to <name> <deploy-id> [flags]       redeploy a past succeeded deploy's exact image, pinned by digest
   %[1]s apps deploys promote <name> <deploy-id> [flags]           alias of rollback-to: make any past succeeded deploy the live one
   %[1]s apps deploys rollback <name> <deploy-id> [flags]          alias of rollback-to

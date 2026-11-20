@@ -15,6 +15,16 @@ func (rt *Router) registerBuildPerformanceRoutes(mux *http.ServeMux) {
 	// Choosing where an app builds changes where its source and secrets are read, so deploy rights on the app.
 	mux.HandleFunc("PUT /api/v1/apps/{name}/build-runner", rt.requireAbilityForResource(AbilityDeploy, appResourceFromPath, rt.handleSetAppBuildRunner))
 	mux.HandleFunc("DELETE /api/v1/apps/{name}/build-runner", rt.requireAbilityForResource(AbilityDeploy, appResourceFromPath, rt.handleClearAppBuildRunner))
+	// A node's tier and an environment's allow-list decide whose builds may reach production, so sensitive writes.
+	mux.HandleFunc("PUT /api/v1/nodes/{id}/build-trust", rt.requireAbility(AbilityRoot, rt.handleSetNodeBuildTrust))
+	mux.HandleFunc("GET /api/v1/environments/{id}/builders", rt.requireAbility(AbilityRead, rt.requireEnvironmentGrant(AbilityRead, rt.handleGetEnvironmentBuilders)))
+	mux.HandleFunc("PUT /api/v1/environments/{id}/builders", rt.requireAuth(rt.requireEnvironmentGrant(AbilityRead, rt.requireAbility(AbilityWriteSensitive, rt.handleSetEnvironmentBuilders))))
+	mux.HandleFunc("GET /api/v1/builders", rt.requireAbility(AbilityRead, rt.handleListBuilders))
+	mux.HandleFunc("GET /api/v1/builders/{id}", rt.requireAbility(AbilityRead, rt.handleGetBuilder))
+	// Pausing or probing a builder changes where every app's builds may run, so write-sensitive.
+	mux.HandleFunc("POST /api/v1/builders/{id}/pause", rt.requireAbility(AbilityWriteSensitive, rt.handlePauseBuilder))
+	mux.HandleFunc("POST /api/v1/builders/{id}/resume", rt.requireAbility(AbilityWriteSensitive, rt.handleResumeBuilder))
+	mux.HandleFunc("POST /api/v1/builders/{id}/test", rt.requireAbility(AbilityWriteSensitive, rt.handleTestBuilder))
 	mux.HandleFunc("GET /api/v1/builds/queue", rt.requireAbility(AbilityRead, rt.handleGetBuildQueue))
 	// Holding or killing builds stops every app's deploys, so write-sensitive; kill-all also needs step-up.
 	mux.HandleFunc("POST /api/v1/builds/queue/pause", rt.requireAbility(AbilityWriteSensitive, rt.handleBuildQueuePause))
@@ -22,6 +32,8 @@ func (rt *Router) registerBuildPerformanceRoutes(mux *http.ServeMux) {
 	mux.HandleFunc("POST /api/v1/builds/queue/drain", rt.requireAbility(AbilityWriteSensitive, rt.handleBuildQueueDrain))
 	mux.HandleFunc("POST /api/v1/builds/kill-all", rt.requireAbility(AbilityWriteSensitive, rt.handleKillAllBuilds))
 	mux.HandleFunc("GET /api/v1/builds/{id}", rt.requireAbility(AbilityRead, rt.handleGetBuild))
+	// The record names an app's builder and digest, so it is hidden unless the caller can see the app's environment.
+	mux.HandleFunc("GET /api/v1/builds/{id}/record", rt.requireAbility(AbilityRead, rt.handleGetBuildRecord))
 	mux.HandleFunc("POST /api/v1/apps/{name}/builds/{id}/cancel", rt.requireAbilityForResource(AbilityDeploy, appResourceFromPath, rt.handleCancelBuild))
 	mux.HandleFunc("POST /api/v1/apps/{name}/builds/{id}/retry", rt.requireAbilityForResource(AbilityDeploy, appResourceFromPath, rt.handleRetryBuild))
 	mux.HandleFunc("GET /api/v1/apps/{name}/build-stats", rt.requireAbilityForResource(AbilityRead, appResourceFromPath, rt.handleBuildStats))

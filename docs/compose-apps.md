@@ -227,7 +227,10 @@ Values are inserted into parsed YAML values, never into the raw text, so a value
 levelrail-cli templates get wikijs
 levelrail-cli templates install wikijs --name wiki --domain wiki=wiki.example.com
 levelrail-cli templates install redmine --env SECRET_KEY_BASE=... --name tracker
+levelrail-cli templates install wikijs --name wiki --project <project-id>
 ```
+
+`--project ID` groups the installed services under that project. Without it, the project currently selected in the dashboard's project switcher is used. An unknown project id is refused with `400`. The dashboard's install form has a project picker for the same choice, and the API takes `project_id` in the install request.
 
 The dashboard's template page shows the same form: one field per setting, generated values listed but not asked for, and one optional domain per service.
 

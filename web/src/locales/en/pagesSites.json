@@ -1,0 +1,571 @@
+{
+  "title": "Pages",
+  "description": "Static sites served straight from the control plane.",
+  "newSite": "New site",
+  "empty": {
+    "title": "No sites yet",
+    "body": "Drop a folder or a zip to publish your first site."
+  },
+  "list": {
+    "label": "Sites",
+    "name": "Name",
+    "url": "URL",
+    "lastDeploy": "Last deploy",
+    "status": "Status",
+    "size": "Size",
+    "noUrl": "no domain",
+    "none": "none",
+    "unknown": "-",
+    "loadFailed": "Could not load the sites."
+  },
+  "status": {
+    "running": "Live",
+    "attention": "Needs attention",
+    "unknown": "Unknown"
+  },
+  "new": {
+    "title": "New site",
+    "name": "Name",
+    "nameHint": "Lowercase letters, digits and hyphens.",
+    "drop": "Upload",
+    "blank": "Starter",
+    "blankHint": "Starts with a single index page you can replace later.",
+    "git": "Git",
+    "create": "Create and publish",
+    "creating": "Working...",
+    "cancel": "Cancel",
+    "nameTaken": "That name is already taken.",
+    "failed": "Could not create the site: {{message}}",
+    "mode": "Start from",
+    "change": "Change",
+    "stage": {
+      "packing": "Packing files...",
+      "creating": "Creating site...",
+      "uploading": "Uploading...",
+      "publishing": "Publishing..."
+    }
+  },
+  "detail": {
+    "back": "All sites",
+    "visit": "Visit",
+    "tabs": {
+      "label": "Site sections",
+      "overview": "Overview",
+      "deployments": "Deployments",
+      "domains": "Domains",
+      "routes": "Routes",
+      "settings": "Settings",
+      "failing": "Failing checks"
+    },
+    "publish": "Publish new version",
+    "hidePublish": "Hide upload",
+    "loading": "Loading...",
+    "dropOverlay": "Drop to publish a new version",
+    "redeployed": "New version published.",
+    "lastDeploy": "Last deploy {{when}}",
+    "files_one": "{{count}} file",
+    "files_other": "{{count}} files"
+  },
+  "settings": {
+    "app": "Full app settings",
+    "appHint": "Build, environment and access options live on the app page.",
+    "openApp": "Open app page",
+    "danger": "Delete site",
+    "dangerHint": "Removes the site and its published files.",
+    "delete": "Delete",
+    "deleting": "Deleting...",
+    "confirmTitle": "Delete {{name}}?",
+    "confirmBody": "The site stops serving and cannot be restored.",
+    "dangerZone": "Danger zone",
+    "spa": "Single page app",
+    "spaHint": "Serve index.html for unknown paths so client side routes work.",
+    "cleanUrls": "Clean URLs",
+    "cleanUrlsHint": "Serve /about from about.html.",
+    "trailingSlash": "Trailing slash",
+    "slashOff": "Leave as is",
+    "slashAdd": "Always add",
+    "slashRemove": "Always remove",
+    "notFound": "Custom 404 page",
+    "build": "Build command",
+    "output": "Output directory",
+    "password": "Password",
+    "passwordHint": "Visitors sign in with user name site and this shared password. It covers every domain and deploy URL and is never shown again.",
+    "passwordPlaceholder": "New password",
+    "passwordClear": "Remove",
+    "passwordRemoveConfirm": "Remove the password? Anyone with the link can open the site.",
+    "passwordKeep": "Keep",
+    "locked": "Password protected",
+    "gitOnlyHint": "Applies to git builds. Not used for dropped folders yet.",
+    "auto": "Auto",
+    "on": "On",
+    "off": "Off",
+    "current": "Currently {{value}}",
+    "save": "Save",
+    "reset": "Use app.yaml",
+    "resetGit": "Use git settings",
+    "fromGit": "From git settings: {{value}}",
+    "saved": "Setting saved",
+    "loadFailed": "Could not load the settings",
+    "buildPlaceholder": "npm run build",
+    "outputPlaceholder": "dist"
+  },
+  "domains": {
+    "label": "Connect a domain",
+    "add": "Add domain",
+    "adding": "Adding...",
+    "addFailed": "Could not add the domain.",
+    "verify": "Verify",
+    "checking": "Checking...",
+    "dnsOk": "DNS ready",
+    "dnsWaiting": "Waiting for DNS",
+    "certIssued": "Certificate issued",
+    "certPending": "Certificate pending",
+    "mode": {
+      "auto": "DNS set up for you",
+      "manual": "Add these records"
+    },
+    "recordsLabel": "DNS records to add",
+    "type": "Type",
+    "host": "Host",
+    "value": "Value",
+    "copyHost": "Copy host",
+    "copyValue": "Copy value",
+    "statusFailed": "Could not check the domain status.",
+    "placeholder": "www.example.com",
+    "step1": "Domain",
+    "step2": "DNS records",
+    "step3": "Verify",
+    "createdForYou": "DNS records were created for you.",
+    "none": "No custom domain yet",
+    "tls": "TLS",
+    "provisioning": "Provisioning",
+    "remove": "Remove {{domain}}",
+    "progress": "Domain progress",
+    "step": {
+      "dns": "DNS",
+      "cert": "Certificate",
+      "live": "Live"
+    },
+    "done": "done",
+    "waiting": "waiting",
+    "checks": "Domain checks",
+    "failed": "failed",
+    "check": {
+      "dns_resolves": "DNS record",
+      "dns_points_here": "Points here",
+      "dns_aaaa_mismatch": "IPv6 record",
+      "dns_cname_apex": "CNAME at apex",
+      "dns_proxied": "CDN proxy",
+      "proxy_ports": "Ports 80/443",
+      "net_port80": "Port 80",
+      "caa_blocks_issuer": "CAA",
+      "tls_certificate": "Certificate",
+      "cert_renewal": "Renewal",
+      "http_status": "Site answers",
+      "dns_propagation": "Propagation",
+      "host_private_address": "Public address",
+      "acme_failure": "Certificate issuance",
+      "dns_www_apex": "www and apex"
+    }
+  },
+  "summary": {
+    "files_one": "{{count}} file",
+    "files_other": "{{count}} files",
+    "index": "index.html found",
+    "redirects": "_redirects found",
+    "headers": "_headers found",
+    "noIndex": "No index.html at the top level. The site root will show a 404.",
+    "overLimit": "This is over the upload size limit and will be rejected.",
+    "skipped": "Hidden system files, .git and node_modules are skipped."
+  },
+  "success": {
+    "title": "{{name}} is published",
+    "open": "Open",
+    "copy": "Copy URL",
+    "next": "Next",
+    "addDomain": "Add domain",
+    "editRoutes": "Edit routes",
+    "viewDeploys": "View deploys"
+  },
+  "entry": {
+    "drop": {
+      "title": "Drop a folder or zip",
+      "body": "Publish a built site in seconds."
+    },
+    "git": {
+      "title": "Connect git",
+      "body": "Build and publish on every push."
+    },
+    "blank": {
+      "title": "Start from a blank page",
+      "body": "Create a starter page and edit later."
+    }
+  },
+  "rollback": {
+    "title": "Previous version",
+    "action": "Roll back",
+    "confirmTitle": "Roll back {{name}}?",
+    "confirmBody": "The site serves the previous version again.",
+    "none": "No earlier version to roll back to."
+  },
+  "promote": {
+    "action": "Promote",
+    "confirmTitle": "Make this deploy live for {{name}}?",
+    "confirmBody": "The site's own domains serve this deploy right away. Its own URL keeps working."
+  },
+  "deployUrl": {
+    "copy": "Copy deploy URL",
+    "copied": "Deploy URL copied",
+    "open": "Open deploy URL"
+  },
+  "starters": {
+    "label": "Starter template",
+    "preview": "Preview of the {{name}} starter",
+    "blank": {
+      "title": "Blank",
+      "hint": "A single empty index page you can replace later."
+    },
+    "landing": {
+      "title": "Landing page",
+      "hint": "Hero, three feature cards and a footer."
+    },
+    "docs": {
+      "title": "Docs",
+      "hint": "Side navigation, headings and a code block."
+    },
+    "portfolio": {
+      "title": "Portfolio",
+      "hint": "Intro and a grid of selected work."
+    }
+  },
+  "checks": {
+    "title": "Site check",
+    "score": "Site check score",
+    "rerun": "Re-run",
+    "running": "Checking...",
+    "failed": "Could not run the site check.",
+    "allGood": "No problems found.",
+    "scanned_one": "{{count}} file scanned, {{size}}.",
+    "scanned_other": "{{count}} files scanned, {{size}}.",
+    "truncated": "Large site: only part of it was scanned.",
+    "passing_one": "{{count}} passing check",
+    "passing_other": "{{count}} passing checks",
+    "status": {
+      "ok": "passing",
+      "warn": "warning",
+      "fail": "failing"
+    }
+  },
+  "traffic": {
+    "title": "Traffic",
+    "window": "Time window",
+    "windows": {
+      "24h": "24 hours",
+      "7d": "7 days",
+      "30d": "30 days"
+    },
+    "noSeries": "No data yet",
+    "series": {
+      "requests": "Requests",
+      "requestsHint": "All requests to the site per time bucket.",
+      "pages": "Pages",
+      "pagesHint": "Page loads only, without assets such as scripts and images.",
+      "errors": "Errors",
+      "errorsHint": "Responses with a 4xx or 5xx status."
+    },
+    "requests": "Requests",
+    "visitors": "Visitors",
+    "bandwidth": "Bandwidth",
+    "statusLine": "2xx {{ok}}, 3xx {{redirects}}, 4xx {{clientErrors}}, 5xx {{serverErrors}}",
+    "none": "Nothing yet.",
+    "addRedirect": "Add a redirect",
+    "unavailable": "Traffic is not available: this server has no access log source for sites.",
+    "failed": "Could not load traffic.",
+    "partial": "Partial data.",
+    "topPages": "Top pages",
+    "brokenLinks": "Broken links",
+    "linkedFrom": "Linked from",
+    "assets": "Assets: {{count}} requests, {{size}}",
+    "assetsNote": "Scripts, styles, images and fonts are counted here, not listed.",
+    "probes": "Probes and scans: {{count}}",
+    "probesList": "Scan-like requests that found nothing",
+    "show": "Show",
+    "hide": "Hide"
+  },
+  "hero": {
+    "more": "More actions",
+    "status": {
+      "live": "Live",
+      "publishing": "Publishing",
+      "notPublished": "Not published"
+    }
+  },
+  "preview": {
+    "notFoundToggle": "Preview 404 page",
+    "title": "Preview",
+    "device": "Device",
+    "desktop": "Desktop",
+    "mobile": "Mobile",
+    "unavailable": "Preview unavailable",
+    "frame": "Live preview of {{name}}"
+  },
+  "previews": {
+    "title": "Branch previews",
+    "open": "Open"
+  },
+  "recent": {
+    "title": "Recent deployments",
+    "viewAll": "View all",
+    "none": "No deployments yet.",
+    "live": "Live"
+  },
+  "routes": {
+    "testTitle": "Test a URL",
+    "testLabel": "Path to test",
+    "testPlaceholder": "/about",
+    "test": "Test",
+    "rules": "Rules",
+    "none": "No redirect or rewrite rules",
+    "from": "From",
+    "to": "To",
+    "status": "Status code",
+    "copyLine": "Copy _redirects line",
+    "advanced": "More tools",
+    "notStatic": "Routing applies to published static sites",
+    "loadFailed": "Could not load the rules",
+    "retry": "Retry",
+    "headers": "Headers",
+    "addRedirect": "Add redirect",
+    "addHeader": "Add header",
+    "noHeaders": "No custom headers",
+    "moveUp": "Move up",
+    "moveDown": "Move down",
+    "remove": "Remove",
+    "force": "Force",
+    "headerPath": "Header path",
+    "headerSet": "Headers to set",
+    "headerSetPlaceholder": "Name: value, one per line",
+    "headerRemove": "Headers to remove",
+    "headerRemovePlaceholder": "Names, comma separated",
+    "source": {
+      "ui": "UI",
+      "app.yaml": "app.yaml",
+      "file": "File"
+    },
+    "lockedHint": "Read only, defined in {{origin}}",
+    "unsaved": "Unsaved changes",
+    "saving": "Saving...",
+    "save": "Save changes",
+    "discard": "Discard",
+    "saved": "Routing rules saved",
+    "invalid": "Some rules need fixing",
+    "testHint": "Tests run against the saved rules.",
+    "kindLabel": "Rule type",
+    "kind": {
+      "redirect": "Redirect",
+      "rewrite": "Rewrite",
+      "proxy": "Proxy",
+      "status": "Respond"
+    },
+    "targetApp": "Target app",
+    "targetPath": "Target path",
+    "pickApp": "Pick an app",
+    "state": {
+      "ok": "App is reachable",
+      "missing": "No app with this name",
+      "self": "Points at this site"
+    },
+    "drag": "Drag to reorder",
+    "removed": "Rule removed",
+    "undo": "Undo",
+    "noMatch": "No rule matches, the file is served",
+    "tester": {
+      "rule": "Rule {{n}}",
+      "forced": "Forced",
+      "splat": "Splat",
+      "empty": "(empty)",
+      "noCapture": "No splat or placeholder used",
+      "yields": "Applies only when no file exists at this path. Add ! to the status to force it.",
+      "note": {
+        "rewrite": "Serves the target file, falls through to the next rule if it is missing.",
+        "status": "Answers with this status and the target page."
+      },
+      "empty_input": "Enter a path to see which rule matches.",
+      "tooLong": "Path is longer than {{max}} characters, the server answers 414.",
+      "none": "No rule matches, the file is served as is.",
+      "queryLabel": "Query (optional)",
+      "queryPlaceholder": "?ref=news",
+      "queryIgnored": "The query {{query}} is not used for matching."
+    },
+    "served": "Saved rules serve",
+    "rulesHint": "Rules run top to bottom and the first match wins. Rules set here rank above app.yaml, then _redirects. Use :splat for the rest of the path. Proxy rules forward to an app with app://name/path.",
+    "preset": {
+      "spa": "Single page app fallback",
+      "moved": "Redirect a moved section",
+      "api": "Proxy /api to an app"
+    },
+    "problem": {
+      "fromSlash": "From must start with /",
+      "badChars": "Braces and backslashes are not allowed",
+      "toEmpty": "Add a target",
+      "proxyApp": "Pick the app to forward to",
+      "proxyAppMissing": "No app with this name",
+      "proxyAppSelf": "A site cannot proxy to itself",
+      "proxyPath": "Target path must start with /"
+    },
+    "view": {
+      "label": "Rules view",
+      "rows": "Rows",
+      "raw": "Raw text"
+    },
+    "raw": {
+      "label": "Redirect rules as text",
+      "placeholder": "/old /new 301",
+      "hint": "One rule per line: source, destination, status. Add ! after the status to force. Destinations can be app://name/path."
+    },
+    "diff": {
+      "title": "Changes against saved rules",
+      "toggle": "Show changes",
+      "none": "No changes yet",
+      "add": "Added",
+      "del": "Removed",
+      "same": "Unchanged"
+    }
+  },
+  "git": {
+    "repo": "Repository",
+    "repoPlaceholder": "Search your repositories or paste a URL",
+    "detecting": "Detecting framework...",
+    "unreadable": "Could not read that repository. Check the URL, or connect the account in the app flow for a private repo.",
+    "detected": "Detected build",
+    "plainHtml": "Plain HTML",
+    "static": "Static",
+    "notStatic": "Server app",
+    "branch": "Branch",
+    "command": "Build command",
+    "commandPlaceholder": "None, publish the files as they are",
+    "output": "Output directory",
+    "outputPlaceholder": "Repository root",
+    "serverWarning": "This repository looks like a server app, not a static site.",
+    "useAppFlow": "Use the app flow",
+    "forceStatic": "Deploy as static anyway",
+    "create": "Create and deploy",
+    "deployOnPush": "Deploy on every push",
+    "createFailed": "Could not create the site: {{message}}",
+    "steps": {
+      "label": "Deploy progress",
+      "cloning": "Cloning",
+      "building": "Building",
+      "publishing": "Publishing",
+      "live": "Live",
+      "state": {
+        "pending": "waiting",
+        "running": "in progress",
+        "done": "done",
+        "failed": "failed",
+        "unknown": "status unknown"
+      }
+    },
+    "failedStep": "Failed while {{step}}: {{message}}",
+    "viewLog": "Open build log",
+    "fixSettings": "Fix settings",
+    "card": {
+      "title": "Git",
+      "repo": "Repository",
+      "branch": "Branch",
+      "commit": "Last commit",
+      "none": "none yet",
+      "onPush": "Deploy on push",
+      "onPushHint": "Applies right away. Path filters and more live in the app's Git settings.",
+      "triggerPush": "On push",
+      "triggerRelease": "On release",
+      "triggerManual": "Manual",
+      "triggerSaved": "Deploy trigger saved.",
+      "triggerFailed": "Could not save the trigger: {{message}}",
+      "openApp": "Git settings",
+      "redeploy": "Redeploy",
+      "redeploying": "Redeploying...",
+      "redeployFailed": "Could not start the deploy: {{message}}",
+      "redeployStarted": "Deploy started.",
+      "previews": "Branch previews",
+      "previewOpen": "Open preview",
+      "pr": "PR #{{number}}"
+    }
+  },
+  "forms": {
+    "title": "Form submissions",
+    "failed": "Could not load submissions.",
+    "remove": "Delete",
+    "delete": "Delete submission {{id}} of {{form}}",
+    "deleteTip": "Delete this submission for good",
+    "confirmDelete": "Delete this submission?",
+    "exportCsv": "Export {{form}} as CSV",
+    "spam": "Spam",
+    "spamWhy": "Spam: {{reason}}"
+  },
+  "preset": {
+    "title": "Performance preset",
+    "tip": "Cache and security headers by path. Your own _headers file always wins.",
+    "none": "None"
+  },
+  "hook": {
+    "title": "Deploy hook",
+    "tip": "A secret URL that redeploys this site's branch when you POST to it",
+    "create": "Create",
+    "createTip": "Create a secret URL for a CMS, CI job or cron",
+    "rotate": "Rotate",
+    "rotateTip": "Issue a new URL, the old one stops working",
+    "revoke": "Revoke",
+    "revokeTip": "Turn the hook off",
+    "confirmRotate": "Rotate the URL? The current one stops working.",
+    "confirmRevoke": "Revoke the deploy hook?",
+    "copy": "Copy",
+    "copied": "Copied",
+    "copyTip": "Copy the URL",
+    "shownOnce": "Copy it now, it is not shown again.",
+    "since": "Enabled since {{date}}",
+    "failed": "Could not load the deploy hook."
+  },
+  "logs": {
+    "action": "Logs",
+    "title": "Build log",
+    "copy": "Copy log",
+    "copied": "Copied",
+    "download": "Download log",
+    "loading": "Loading log",
+    "empty": "No log output.",
+    "error": "Could not load the log.",
+    "failedAt": "Failed during {{step}}",
+    "step": {
+      "cloning": "Cloning",
+      "building": "Building",
+      "publishing": "Publishing",
+      "live": "Live"
+    }
+  },
+  "ci": {
+    "title": "CI deploy",
+    "tip": "A token that can only deploy this site. Put it in your pipeline as a secret, it cannot touch anything else and you can revoke it any time.",
+    "create": "Create token",
+    "createTip": "Create a deploy-only token for this site",
+    "revoke": "Revoke",
+    "revokeTip": "Stop this token working now",
+    "confirmRevoke": "Revoke this token? Pipelines using it will fail.",
+    "copy": "Copy",
+    "copied": "Copied",
+    "shownOnce": "Copy it now, it is not shown again. Save it as LEVELRAIL_PAGES_TOKEN.",
+    "expires": "expires {{date}}",
+    "failed": "Could not load deploy tokens.",
+    "github": "GitHub",
+    "gitlab": "GitLab",
+    "curl": "curl"
+  },
+  "analytics": {
+    "title": "Analytics",
+    "pages": "Top pages",
+    "referrers": "Top referrers",
+    "codes": "Status codes",
+    "none": "Nothing yet.",
+    "privacy": "Built from the edge access log. No cookies, client addresses or query strings are stored. Ranges up to {{days}} days."
+  }
+}

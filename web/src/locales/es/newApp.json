@@ -82,11 +82,15 @@
       },
       "image": {
         "title": "Imagen de contenedor",
-        "hint": "Tambien Compose, docker run, sitio"
+        "hint": "Compose o docker run"
       },
       "sample": {
         "title": "App de ejemplo",
         "hint": "Pruebala con un clic"
+      },
+      "static": {
+        "title": "Sitio estatico",
+        "hint": "Suelta una carpeta o zip, sin contenedor"
       }
     },
     "sample": {
@@ -416,7 +420,7 @@
     "cardDescription": "Suelta una carpeta o un .zip de un sitio ya compilado para reemplazar lo que está en vivo. Se respetan _redirects, _headers y 404.html, y puedes hacer rollback desde el historial de despliegues.",
     "zoneLabel": "Suelta aquí la carpeta o el zip de un sitio",
     "dropHere": "Suelta aquí una carpeta o un .zip",
-    "hint": "Una carpeta con index.html, o un zip de ella. Si el zip contiene una sola carpeta envolvente, se desempaqueta por ti.",
+    "hint": "Una carpeta con index.html, o un zip de ella.",
     "chooseFolder": "Elegir carpeta",
     "chooseZip": "Elegir .zip",
     "empty": "No hay nada que publicar en lo que soltaste: estaba vacío o solo contenía archivos ignorados como .git y node_modules. Suelta la carpeta que contiene tu sitio compilado.",

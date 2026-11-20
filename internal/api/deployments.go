@@ -27,6 +27,9 @@ type deploymentSteps struct {
 	Running     int    `json:"running"`
 	Failed      int    `json:"failed"`
 	FailingStep string `json:"failing_step,omitempty"`
+	// Items and Total name the phases of a static build; absent for other deploys.
+	Items []staticPhase `json:"items,omitempty"`
+	Total int           `json:"total,omitempty"`
 }
 
 // deploymentResource is the wire shape for one row of GET /api/v1/deployments.
@@ -137,6 +140,11 @@ func firstLine(s string, limit int) string {
 }
 
 func (rt *Router) toDeploymentResource(d store.Deployment) deploymentResource {
+	return rt.toDeploymentResourceWith(d, nil)
+}
+
+// toDeploymentResourceWith is toDeploymentResource with phase rows preloaded for a list.
+func (rt *Router) toDeploymentResourceWith(d store.Deployment, phaseRows map[string][]store.DeployTraceStep) deploymentResource {
 	a := d.Attempt
 	res := deploymentResource{
 		ID: a.ID, App: a.ServiceName, Status: d.Status, Trigger: d.Trigger, Environment: d.Environment,
@@ -161,6 +169,12 @@ func (rt *Router) toDeploymentResource(d store.Deployment) deploymentResource {
 			res.Steps = &deploymentSteps{Done: sum.Done, Running: sum.Running, Failed: sum.Failed, FailingStep: sum.FailingStep}
 			failingStep = sum.FailingStep
 		}
+	}
+	if phases := rt.staticPhasesFrom(a, false, phaseRows); phases != nil {
+		if res.Steps == nil {
+			res.Steps = &deploymentSteps{}
+		}
+		res.Steps.Items, res.Steps.Total = phases, len(phases)
 	}
 	if a.Error != "" {
 		msg := firstLine(a.Error, 300)
@@ -271,8 +285,9 @@ func (rt *Router) handleListDeployments(w http.ResponseWriter, r *http.Request) 
 	}
 	out := deploymentListResponse{Items: make([]deploymentResource, 0, len(rows)), NextCursor: next}
 	waits := rt.deploymentWaits(r.Context(), rows)
+	phaseRows := rt.preloadStaticPhaseRows(r.Context(), rows)
 	for _, d := range rows {
-		res := rt.toDeploymentResource(d)
+		res := rt.toDeploymentResourceWith(d, phaseRows)
 		applyDeploymentWait(&res, waits[d.Attempt.ID])
 		out.Items = append(out.Items, res)
 	}

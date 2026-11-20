@@ -1,7 +1,5 @@
 import { useState } from 'react'
 import { useTranslation } from 'react-i18next'
-import { TriangleAlertGlassIcon } from '@thesvg/ui-react'
-import { Alert, AlertDescription } from '@/components/ui/alert'
 import { Badge } from '@/components/ui/badge'
 import { Button } from '@/components/ui/button'
 import { Input } from '@/components/ui/input'
@@ -13,6 +11,7 @@ import {
   useSetDomainLimits,
   type DomainLimits,
 } from '../../queries/domainLimits'
+import { ApiErrorAlert } from '../ApiErrorAlert'
 
 const MB = 1024 * 1024
 
@@ -198,12 +197,7 @@ function Row({
           {t('limits.note')}
         </span>
       </div>
-      {error ? (
-        <Alert variant="destructive">
-          <TriangleAlertGlassIcon className="text-tone-warning" size="1.7em" />
-          <AlertDescription>{error.message}</AlertDescription>
-        </Alert>
-      ) : null}
+      {error ? <ApiErrorAlert error={error} /> : null}
     </form>
   )
 }

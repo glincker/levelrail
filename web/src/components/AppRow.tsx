@@ -7,7 +7,7 @@ import { STATUS_DOT_COLOR, STATUS_TEXT_COLOR } from '../lib/appStatus'
 import { TONE } from '@/components/kit/tone'
 import { cn } from '@/lib/utils'
 import { statusBucket } from '../lib/appsListView'
-import { failureReason } from '../lib/failureReason'
+import { FailureReason } from './apps/AppFailure'
 import { AppLogo, AppMetaChips } from './apps/AppMetaChips'
 import {
   ErrorCell,
@@ -148,37 +148,6 @@ function AppDescription({ text }: { text?: string }) {
     >
       {text}
     </span>
-  )
-}
-
-function FailureReason({
-  status,
-  name,
-}: {
-  status: AppStatusSummary
-  name: string
-}) {
-  const { t } = useTranslation('appRows')
-  if (status.variant !== 'destructive') return null
-  const text = failureReason(status) ?? t('failing.fallback')
-  const firstLine = text.split('\n')[0]
-  return (
-    <>
-      <span
-        className="max-w-full min-w-0 truncate text-xs text-muted-foreground"
-        title={text}
-      >
-        {firstLine}
-      </span>
-      <Link
-        to="/apps/$name/deploys"
-        params={{ name }}
-        aria-label={t('failing.fixLabel', { name })}
-        className="relative z-10 text-xs font-medium text-primary underline underline-offset-2 hover:no-underline"
-      >
-        {t('failing.fix')}
-      </Link>
-    </>
   )
 }
 

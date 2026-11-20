@@ -152,6 +152,8 @@ export interface MeshConnectivity {
 }
 
 export interface NodeJoinTokenRequest {
+  // Mints a personal builder token (internal/api/nodes.go joinBuildTrust).
+  builder?: boolean
   control_plane_addr?: string
   node_name?: string
   mesh?: boolean

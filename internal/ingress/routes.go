@@ -11,10 +11,12 @@ package ingress
 
 import (
 	"fmt"
+	"log/slog"
 	"net"
 	"strconv"
 	"strings"
 	"time"
+	"unicode"
 
 	"github.com/GLINCKER/levelrail/internal/staticroutes"
 )
@@ -39,7 +41,7 @@ type FileServerHandler struct {
 // NewFileServerHandler builds the one handler shape a static route
 // needs: serve files from root for everything matched by the route.
 func NewFileServerHandler(root string) FileServerHandler {
-	return FileServerHandler{Handler: "file_server", Root: root}
+	return FileServerHandler{Handler: "file_server", Root: escapePlaceholders(root)}
 }
 
 // ProxyRoute is one reverse-proxy backend routed by hostname within a
@@ -279,6 +281,14 @@ type StaticRoute struct {
 	// BasicAuth, if non-nil, puts the same basic auth handler a ProxyRoute
 	// gets ahead of the file server, so a gated static site is not public.
 	BasicAuth *BasicAuthAccount
+	// FormsDial and FormsApp, when both set, send /_forms/<name> on these
+	// hosts to the control plane's form endpoint for that app, same-origin.
+	FormsDial    string
+	FormsApp     string
+	FormsHeaders map[string][]string
+	// Proxies forward paths of this site to apps on this server; they rank
+	// before the forms route and the files, and sit behind BasicAuth.
+	Proxies []StaticProxy
 }
 
 // MaintenanceRoute is one domain currently in maintenance mode: every
@@ -570,6 +580,12 @@ func BuildRoutesConfig(opts RoutesOptions) (*Config, error) {
 		if len(r.Hosts) == 0 {
 			return nil, fmt.Errorf("ingress: build routes config: route %d has no hosts", i)
 		}
+		// Last line of defense: the host matcher expands placeholders, so a
+		// brace or separator in a host must never reach Caddy.
+		if r.Hosts = safeMatcherHosts(r.Hosts); len(r.Hosts) == 0 {
+			slog.Warn("ingress: skipping route with no valid host", slog.Int("route", i))
+			continue
+		}
 		if r.BackendDial == "" && (r.LB == nil || len(r.LB.Upstreams) == 0) {
 			return nil, fmt.Errorf("ingress: build routes config: route %d has no backend dial address", i)
 		}
@@ -598,6 +614,9 @@ func BuildRoutesConfig(opts RoutesOptions) (*Config, error) {
 			if r.MaxBodyBytes > 0 {
 				handle = append([]any{BodyGuardHandler{Handler: "levelrail_body_guard", MaxSize: r.MaxBodyBytes}}, handle...)
 			}
+		}
+		if g := opts.Hardening.connGuard(); g != nil {
+			handle = append([]any{g}, handle...)
 		}
 		// Traffic controls, backend side: cache and path forwarders sit
 		// right before the reverse proxy, behind auth and WAF.
@@ -691,6 +710,12 @@ func BuildRoutesConfig(opts RoutesOptions) (*Config, error) {
 		if r.RootDir == "" {
 			return nil, fmt.Errorf("ingress: build routes config: static route %d has no root directory", i)
 		}
+		// The host matcher expands placeholders, and no real hostname holds a brace.
+		for _, h := range r.Hosts {
+			if strings.ContainsAny(h, "{}") {
+				return nil, fmt.Errorf("ingress: build routes config: static route %d has an invalid host", i)
+			}
+		}
 		staticHandle := []any{NewStaticEncodeHandler(), NewFileServerHandler(r.RootDir)}
 		if r.Rules != nil {
 			staticHandle = []any{NewStaticEncodeHandler(), NewStaticSiteHandler(r.RootDir, r.Rules)}
@@ -703,6 +728,10 @@ func BuildRoutesConfig(opts RoutesOptions) (*Config, error) {
 		}
 		if r.BasicAuth != nil {
 			staticHandle = append([]any{NewBasicAuthHandler(r.BasicAuth.Username, r.BasicAuth.Password)}, staticHandle...)
+		}
+		routes = append(routes, r.proxyRoutes()...)
+		if fr, ok := r.formsRoute(); ok {
+			routes = append(routes, fr)
 		}
 		routes = append(routes, Route{
 			Match:  []Matcher{{Host: r.Hosts}},
@@ -889,4 +918,16 @@ func BuildRoutesConfig(opts RoutesOptions) (*Config, error) {
 	}
 
 	return cfg, nil
+}
+
+func safeMatcherHosts(hosts []string) []string {
+	out := make([]string, 0, len(hosts))
+	for _, h := range hosts {
+		if h != "" && !strings.ContainsFunc(h, func(r rune) bool {
+			return unicode.IsSpace(r) || unicode.IsControl(r) || strings.ContainsRune("{}/\\", r)
+		}) {
+			out = append(out, h)
+		}
+	}
+	return out
 }

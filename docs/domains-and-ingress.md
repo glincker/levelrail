@@ -10,7 +10,7 @@ description: Automatic TLS, domain routing, WAF, rate limiting, and redirects, a
 
 <div className="flex flex-wrap items-center gap-2 not-prose"><span className="inline-flex h-9 w-9 items-center justify-center rounded-lg bg-white p-1.5 ring-1 ring-black/10"><img src="https://cdn.jsdelivr.net/gh/glincker/thesvg@a7c5ddd3f529accdf86519cc8fb96cb76cef4efd/public/icons/caddy/default.svg" alt="Caddy" title="Caddy" width="24" height="24" /></span><span className="inline-flex h-9 w-9 items-center justify-center rounded-lg bg-white p-1.5 ring-1 ring-black/10"><img src="https://cdn.jsdelivr.net/gh/glincker/thesvg@a7c5ddd3f529accdf86519cc8fb96cb76cef4efd/public/icons/letsencrypt/default.svg" alt="Let's Encrypt" title="Let's Encrypt" width="24" height="24" /></span><span className="inline-flex h-9 w-9 items-center justify-center rounded-lg bg-white p-1.5 ring-1 ring-black/10"><img src="https://cdn.jsdelivr.net/gh/glincker/thesvg@a7c5ddd3f529accdf86519cc8fb96cb76cef4efd/public/icons/cloudflare/default.svg" alt="Cloudflare" title="Cloudflare" width="24" height="24" /></span></div>
 
-Ingress needs no install. The control plane embeds [Caddy](https://caddyserver.com/) as a Go library (`internal/ingress`) and drives it through its admin API. It does not use a hand-written Caddyfile. Config comes from the app specs the reconciler already knows about, so there is no `caddy` binary and no separate proxy container. Ingress config cannot drift from desired state. The reasoning is in [ADR 005](https://github.com/glincker/levelrail/blob/main/adr/005-caddy-embedded-ingress.md) and the [comparison](/comparison).
+Ingress needs no install. The control plane embeds [Caddy](https://caddyserver.com/) as a Go library (`internal/ingress`) and drives it through its admin API, generating config from the app specs the reconciler already knows about. There is no Caddyfile, no `caddy` binary and no separate proxy container, so ingress config cannot drift from desired state. The reasoning is in [ADR 005](https://github.com/glincker/levelrail/blob/main/adr/005-caddy-embedded-ingress.md) and the [comparison](/comparison).
 
 ## Start here
 
@@ -22,12 +22,7 @@ Pick the page for the job you have now.
 | Step through domain, DNS record, port and certificate in the dashboard | [Domain setup stepper](/domains) |
 | Create and edit DNS records at your provider from Levelrail | [DNS zones and records](/dns-zones) |
 | Find out why a domain does not load | [Diagnose a domain](/domain-diagnosis) |
-| Everything else about routing, TLS and edge controls | This page, using the table below |
-
-## What this covers
-
-| You want to | Go to |
-| --- | --- |
+| Everything else about routing, TLS and edge controls | This page, using the rows below |
 | Put an app on a domain | [Walkthrough: your first domain](#walkthrough-your-first-domain) |
 | Get HTTPS with no DNS at all | [Zero DNS setup](#zero-dns-setup-sslipio-hostnames-and-one-click-https) |
 | Have Levelrail create DNS records | [Add a domain and go live](#add-a-domain-and-go-live) |
@@ -145,9 +140,7 @@ flowchart TD
 
 ### Setting up DNS
 
-Create an **A record** (or AAAA for IPv6) pointing at your server's public IP address. DNS resolution happens before any request reaches your server, so this is no different from any other platform. Once it resolves and the app is deployed, Caddy starts routing and issuing certificates (depending on your [TLS configuration](#tls-whats-actually-shipped-today)). No manual reload is needed.
-
-DNS changes usually appear within minutes but can take a few hours depending on the record's TTL.
+Create an **A record** (or AAAA for IPv6) pointing at your server's public IP address, as in step 1 of the walkthrough. Once it resolves and the app is deployed, Caddy starts routing and issuing certificates (depending on your [TLS configuration](#tls-whats-actually-shipped-today)) with no manual reload. DNS changes usually appear within minutes but can take a few hours depending on the record's TTL.
 
 ### Managing DNS records from the dashboard
 
@@ -172,7 +165,7 @@ The **Guided setup** button on an app's Domains tab walks one domain through fou
 1. **Domain.** Pick the environment it belongs to, and optionally route the `www` or apex twin with a redirect to the one you typed.
 2. **DNS record.** The exact A, AAAA or CNAME record to add, re-checked live.
 3. **Container port.** Whether the running container really listens on the app's port. This reads the container's socket table, so it needs exec access enabled for the app; without it the step says it could not verify.
-4. **Certificate.** Which challenge applies. HTTP-01 needs the internet to reach port 80 on this server, and non-wildcard hosts use it by default. DNS-01 is used for wildcard hosts, and for single hosts only when you turn on the runtime setting `ingress.dns01_all_hosts` (see below) or switch one domain to it during a cutover. It needs a connected DNS provider: Cloudflare, Route53 or Google Cloud DNS, checked in that order. Without a provider, a non-wildcard host on a private (LAN, NAT, NAS) address cannot get a trusted certificate from ACME. Enabling `ingress.dns01_all_hosts` is refused while no provider is connected. DNS-01 for single hosts is not yet verified against a real CA. The step says which provider is connected, or none, and where to connect one. Use a wildcard host (which also needs a provider), a tunnel, or an uploaded certificate instead.
+4. **Certificate.** Which challenge applies. HTTP-01 needs the internet to reach port 80 on this server, and non-wildcard hosts use it by default. DNS-01 is used for wildcard hosts, and for single hosts only when you turn on the runtime setting `ingress.dns01_all_hosts` (see below) or switch one domain to it during a cutover. It needs a connected DNS provider: Cloudflare, Route53 or Google Cloud DNS, checked in that order. Without a provider, a non-wildcard host on a private (LAN, NAT, NAS) address cannot get a trusted certificate from ACME. The step says which provider is connected, or none, and where to connect one. Without one, use a wildcard host (which also needs a provider), a tunnel, or an uploaded certificate. Enabling `ingress.dns01_all_hosts` is refused while no provider is connected, and DNS-01 for single hosts is not yet verified against a real CA.
 
 When a certificate request fails, the dashboard shows the certificate authority's own error next to the one step that usually fixes it: open ports 80 and 443, fix the DNS record, wait out a rate limit, or correct a CAA record. The same reason appears on the Domains list and in `domains check`.
 
@@ -951,7 +944,24 @@ Request limits and the trusted proxy list can also be changed without a restart:
 
 Per-app monthly spend caps (warn at 50, 80 and 100 percent by default, with throttle or pause only when you opt in per app) are described in [Spend caps](/spend-caps); the cap card sits on the app's Deploys tab.
 
-There is no per-IP connection limit: Caddy has none built in. Put a firewall rule or the [WAF rate limit](#opt-in-waf-and-rate-limiting) in front if you need one.
+### Concurrent requests and body read time
+
+Two runtime settings guard the edge for routes that are not websockets or event streams. A saved change re-renders the ingress config at once, with no restart.
+
+| Setting | Default | Range | What it does |
+| --- | --- | --- | --- |
+| `ingress.max_requests_per_ip` | `256` | 8 to 100000 | Most requests one client address may have in flight at once. A request over the limit gets `429` with `Retry-After: 1`. Websockets and event streams are not counted. |
+| `ingress.body_read_timeout_seconds` | `1800` | 60 to 86400 | Seconds a request body may take to arrive. Raise it for very slow or very large uploads, lower it to drop stalled clients sooner. |
+
+Change them in Settings, Runtime, Networking card, or with `levelrail-cli settings runtime get|set ingress.max_requests_per_ip`. Environment variables (`APP_INGRESS_MAX_REQUESTS_PER_IP`, `APP_INGRESS_BODY_READ_TIMEOUT_SECONDS`) seed the defaults. The count is per client address as the edge sees it, so behind a CDN or proxy set the trusted proxy list (below) first, or every visitor shares one address.
+
+```bash
+levelrail-cli settings runtime set ingress.max_requests_per_ip 512
+```
+
+The API server has its own limit on the request header block: `api.max_header_bytes` (default `65536`, 8192 to 1048576, Settings, Runtime, Networking card). The server reads it at start, so a change needs a restart. It is separate from `APP_INGRESS_MAX_HEADER_BYTES`, which applies to app traffic at the edge.
+
+For an address-based rate limit by route or path, use the [WAF rate limit](#opt-in-waf-and-rate-limiting).
 
 ### Real client IPs behind a CDN or proxy
 
@@ -961,6 +971,8 @@ By default the app sees the address that connected to Levelrail, and any `X-Forw
 APP_INGRESS_TRUSTED_PROXIES=203.0.113.0/24,private_ranges
 APP_INGRESS_CLIENT_IP_HEADERS=CF-Connecting-IP   # optional, defaults to X-Forwarded-For
 ```
+
+The edge and the API use one trusted proxy list: the value the edge applies (environment, dashboard value or the Cloudflare preset) is the list the API trusts when it reads a client address, so the two cannot disagree. `levelrail-cli doctor` warns with `ingress_trusted_bridge` when that list includes a range covering Docker bridge networks (`172.16.0.0/12`) while the dashboard listens on all interfaces, because containers on those networks would then count as proxies. Trust only the real proxy addresses, or bind the dashboard to `127.0.0.1` with `APP_HTTP_ADDR`.
 
 `private_ranges` expands to the RFC 1918 and loopback ranges. For a trusted peer, the client address is read from the header (right to left for `X-Forwarded-For`, so a forged left-most entry is ignored), appended to `X-Forwarded-For`, and sent to the app as `X-Real-IP`. Every app receives `X-Real-IP`, trusted proxy or not.
 
@@ -1142,6 +1154,23 @@ The dashboard builds its **Open site** button from this field only, so it never 
 
 `GET /api/v1/domains/{domain}/activity` (`read` ability, limited to domains whose app you can see) returns the domain's recent changes from the audit log plus certificate issuance, renewals and the CA's last failure, newest first, as `{events: [{id, at, kind, title, detail, failed, action, actor: {type, name}, object: {type, id, href}}], next_cursor}`. Pass `next_cursor` back as `?before=` for the next page; `?limit=` and `?actions=` work as on the audit log. `levelrail-cli domains activity <domain>` prints it.
 
+## Request limits per domain
+
+`levelrail-cli domains limits set <app> <domain> --max-body 100MiB --read-timeout 120 --write-timeout 120` caps the request body of one domain and bounds the ingress read and write time on the connection to the app. A domain cap beats the app cap and the instance cap. 0 or unset keeps today's behavior. Allowed ranges come from the runtime settings `domains.limits_max_body_bytes` and `domains.limits_max_timeout_seconds`. Limits apply to app and standalone proxy domains. A redirect-only or maintenance-mode domain renders no proxy route, so its limits have no effect. The timeouts apply to the main upstream, not to path forwarders, and a read timeout shorter than a websocket idle period cuts that websocket. A lowered ceiling also tightens limits already stored. `domains limits clear` removes them.
+
+## Proxy tuning per domain
+
+`levelrail-cli domains tuning set <app> <domain> --preset websocket` picks proxy behavior by use case. The dashboard shows the same presets on the domain page under More options.
+
+| Preset | What it changes |
+| --- | --- |
+| `api` | Compresses text responses with zstd or gzip and waits up to 60 seconds for the app's response headers. |
+| `uploads` | Waits up to 300 seconds for response headers, for slow uploads and long jobs. |
+| `streaming` | Sends each response chunk at once (server-sent events, long polling) and waits up to 300 seconds for headers. |
+| `websocket` | Keeps open sockets alive for 60 seconds across a config reload and closes any socket after 24 hours at most. |
+
+Flags given after `--preset` override it: `--compression`, `--streaming`, `--websocket`, `--dial-timeout`, `--response-timeout`, `--stream-timeout` and `--close-delay` (seconds). Compression cannot be combined with streaming or websocket, and the stream flags need websocket on. Every number must sit between the runtime settings `domains.tuning_min_timeout_seconds` and `domains.tuning_max_timeout_seconds` (`domains.tuning_max_stream_seconds` for the stream lifetime), and preset values are clamped to them. A lowered bound also tightens tuning already stored. Tuning never changes host matching, authentication or the websocket upgrade itself, and it accepts no raw proxy config. If the ingress ever rejects a config that carries domain tuning, it applies the same config again without any tuning so every other domain keeps its changes, and the running config keeps serving until then. The tuned domains then show a `tuning_dropped` condition, the ingress reports `TuningDropped`, `domains tuning get` shows `effective: false`, and the same tuning is not tried again until it changes. A timeout or connection error never drops tuning. Saving needs deploy access on the app and writes an audit entry with the changed keys. `domains tuning clear` goes back to the defaults.
+
 ## Troubleshooting
 
 For a domain that does not load, start with [Diagnose a domain](/domain-diagnosis). It runs the checks and gives a fix for each result. The entries below cover errors you may see while setting up.
@@ -1153,10 +1182,7 @@ For a domain that does not load, start with [Diagnose a domain](/domain-diagnosi
 | `store: domain "shop.example.com" is already in use by service "api"` (409) | `apps domains add`, the Domains tab | A hostname belongs to one app. Remove it from the other app first, or use another hostname. |
 | `this server's public address is unknown; set APP_PUBLIC_HOST` | Domain doctor, go-live | Set `APP_PUBLIC_HOST` to the address that reaches ports 80 and 443, then restart. |
 | `sign-in over plain HTTP is disabled on this instance; sign in at https://...` | Sign-in page | Open the `https://` dashboard URL in the message. If you already are on it, check the warn log line `refused sign-in over plain HTTP` (peer, forwarded proto, reason) and the Doctor row "Ingress peer address". |
-| Hint `unreachable` | Enable HTTPS card | Let's Encrypt could not reach port 80. Open ports 80 and 443 in the host firewall and the cloud security group. |
-| Hint `rate_limited` | Enable HTTPS card | Let's Encrypt is throttling the name. Wait, and test with staging. |
-| Hint `dns` | Enable HTTPS card | The name does not resolve to this server. Check the public address the card shows. |
-| Hint `caa` | Enable HTTPS card | A CAA record blocks Let's Encrypt for this name. Change the CAA record. |
+| Hint `unreachable`, `rate_limited`, `dns` or `caa` | Enable HTTPS card | See the [hint table](#one-click-https-for-the-dashboard) above. |
 | `external_reachability_80` warning | `levelrail-cli doctor` | The check dials the server's own public address from the server. A router without hairpin support can fail it. Test from outside the network. |
 | `all predefined address pools have been fully subnetted` | Deploy fails | Docker is out of network subnets. See [App network pool](/troubleshooting#app-network-pool). |
 
@@ -1168,7 +1194,7 @@ Likely cause: ACME TLS is not enabled, or the certificate is still being issued 
 
 How to confirm: visit the domain in a browser and check the certificate details (usually by clicking the lock icon), or run `levelrail-cli domains doctor <app> <domain>` to see the certificate status.
 
-Fix: open the **Enable HTTPS** card on the Domains page (or run `levelrail-cli settings ingress https enable --wait 2m`), then follow the [ACME verification runbook](/acme-verification-runbook) to issue a real Let's Encrypt certificate. Certificates take a few seconds to issue.
+Fix: open the **Enable HTTPS** card on the Domains page (or run `levelrail-cli settings ingress https enable --wait 2m`), then follow the [ACME verification runbook](/acme-verification-runbook). Certificates take a few seconds to issue.
 
 ### The domain is added but requests get connection refused
 
@@ -1208,7 +1234,7 @@ Likely cause: the wildcard domain needs DNS-01 ACME, which requires DNS provider
 
 How to confirm: check the DNS provider section of the Domains page, or run `levelrail-cli domains cloudflare-dns get` or `levelrail-cli domains route53-dns get`. Also see the domain's status on the Domains page to check if the certificate is issued.
 
-Fix: connect a DNS provider (Cloudflare or Route53) on the Domains page and enable DNS-01 for wildcard domains. Then open the domain on the Domains page and check the certificate status.
+Fix: connect a DNS provider (Cloudflare or Route53) on the Domains page, then check the domain's certificate status there.
 
 Still stuck? Run `levelrail-cli domains doctor <app> <domain>` and attach its full JSON output to an issue on [GitHub](https://github.com/glincker/levelrail/issues), or check the [ACME verification runbook](/acme-verification-runbook).
 
@@ -1259,25 +1285,5 @@ Proxy a domain to a port or URL with no app behind it.
 
 ## Related
 
-- [Go live checklist](/go-live) and [Domain setup stepper](/domains)
-- [DNS zones and records](/dns-zones)
-- [Diagnose a domain](/domain-diagnosis)
-- [Move a domain with no downtime](/move-a-domain-with-no-downtime)
 - [Firewall](/firewall) and [host firewall](/host-firewall)
-
-## Request limits per domain
-
-`levelrail-cli domains limits set <app> <domain> --max-body 100MiB --read-timeout 120 --write-timeout 120` caps the request body of one domain and bounds the ingress read and write time on the connection to the app. A domain cap beats the app cap and the instance cap. 0 or unset keeps today's behavior. Allowed ranges come from the runtime settings `domains.limits_max_body_bytes` and `domains.limits_max_timeout_seconds`. Limits apply to app and standalone proxy domains. A redirect-only or maintenance-mode domain renders no proxy route, so its limits have no effect. The timeouts apply to the main upstream, not to path forwarders, and a read timeout shorter than a websocket idle period cuts that websocket. A lowered ceiling also tightens limits already stored. `domains limits clear` removes them.
-
-## Proxy tuning per domain
-
-`levelrail-cli domains tuning set <app> <domain> --preset websocket` picks proxy behavior by use case. The dashboard shows the same presets on the domain page under More options.
-
-| Preset | What it changes |
-| --- | --- |
-| `api` | Compresses text responses with zstd or gzip and waits up to 60 seconds for the app's response headers. |
-| `uploads` | Waits up to 300 seconds for response headers, for slow uploads and long jobs. |
-| `streaming` | Sends each response chunk at once (server-sent events, long polling) and waits up to 300 seconds for headers. |
-| `websocket` | Keeps open sockets alive for 60 seconds across a config reload and closes any socket after 24 hours at most. |
-
-Flags given after `--preset` override it: `--compression`, `--streaming`, `--websocket`, `--dial-timeout`, `--response-timeout`, `--stream-timeout` and `--close-delay` (seconds). Compression cannot be combined with streaming or websocket, and the stream flags need websocket on. Every number must sit between the runtime settings `domains.tuning_min_timeout_seconds` and `domains.tuning_max_timeout_seconds` (`domains.tuning_max_stream_seconds` for the stream lifetime), and preset values are clamped to them. A lowered bound also tightens tuning already stored. Tuning never changes host matching, authentication or the websocket upgrade itself, and it accepts no raw proxy config. If the ingress ever rejects a config that carries domain tuning, it applies the same config again without any tuning so every other domain keeps its changes, and the running config keeps serving until then. The tuned domains then show a `tuning_dropped` condition, the ingress reports `TuningDropped`, `domains tuning get` shows `effective: false`, and the same tuning is not tried again until it changes. A timeout or connection error never drops tuning. Saving needs deploy access on the app and writes an audit entry with the changed keys. `domains tuning clear` goes back to the defaults.
+- [Move a domain with no downtime](/move-a-domain-with-no-downtime)

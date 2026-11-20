@@ -96,6 +96,35 @@ func (c Config) SocketAddr() string {
 // ConfigFromEnv reads the settings. Rootless puts the socket under
 // XDG_RUNTIME_DIR, rootful under APP_DATA_DIR, as ADR 046 requires.
 func ConfigFromEnv(get func(string) string, rootless bool) (Config, error) {
+	cfg, err := settingsFromEnv(get, rootless)
+	if err != nil {
+		return Config{}, err
+	}
+	if rootless {
+		xdg := get("XDG_RUNTIME_DIR")
+		if xdg == "" {
+			return Config{}, errors.New("buildkitd: rootless needs XDG_RUNTIME_DIR")
+		}
+		cfg.SocketDir = filepath.Join(xdg, "levelrail", "buildkit")
+		cfg.ConfigDir = filepath.Join(xdg, "levelrail", "buildkit-conf")
+		return cfg, nil
+	}
+	data := get("APP_DATA_DIR")
+	if data == "" {
+		return Config{}, errors.New("buildkitd: rootful needs APP_DATA_DIR")
+	}
+	cfg.SocketDir = filepath.Join(data, "buildkit", "run")
+	cfg.ConfigDir = filepath.Join(data, "buildkit", "conf")
+	return cfg, nil
+}
+
+// SettingsFromEnv reads every setting except the host directories, for the
+// engine-API-only path that keeps the socket and config inside the container.
+func SettingsFromEnv(get func(string) string) (Config, error) {
+	return settingsFromEnv(get, true)
+}
+
+func settingsFromEnv(get func(string) string, rootless bool) (Config, error) {
 	cfg := Config{
 		Image:         DefaultImageRef,
 		Snapshotter:   "auto",
@@ -180,21 +209,6 @@ func ConfigFromEnv(get func(string) string, rootless bool) (Config, error) {
 		}
 		*d.dst = parsed
 	}
-	if rootless {
-		xdg := get("XDG_RUNTIME_DIR")
-		if xdg == "" {
-			return Config{}, errors.New("buildkitd: rootless needs XDG_RUNTIME_DIR")
-		}
-		cfg.SocketDir = filepath.Join(xdg, "levelrail", "buildkit")
-		cfg.ConfigDir = filepath.Join(xdg, "levelrail", "buildkit-conf")
-		return cfg, nil
-	}
-	data := get("APP_DATA_DIR")
-	if data == "" {
-		return Config{}, errors.New("buildkitd: rootful needs APP_DATA_DIR")
-	}
-	cfg.SocketDir = filepath.Join(data, "buildkit", "run")
-	cfg.ConfigDir = filepath.Join(data, "buildkit", "conf")
 	return cfg, nil
 }
 
@@ -225,3 +239,7 @@ func ensureDir0700(dir string) error {
 	}
 	return os.Chmod(dir, 0o700) //nolint:gosec // directories need the execute bit
 }
+
+// TOMLBody renders buildkitd.toml for callers that deliver it without a host
+// bind mount.
+func (c Config) TOMLBody(total int64) string { return c.tomlBody(total) }

@@ -30,7 +30,18 @@ export function TemplateFactBadges({
   const verification = facts.verification
   const deprecated = isDeprecated(facts)
   const preview = facts.preview === true
-  if (!license && !verification && !deprecated && !preview) return null
+  const needsDomain = facts.needs_domain === true
+  const updated = facts.updated_at
+  if (
+    !license &&
+    !verification &&
+    !deprecated &&
+    !preview &&
+    !needsDomain &&
+    !updated
+  ) {
+    return null
+  }
 
   return (
     <div className="flex flex-wrap items-center gap-2">
@@ -62,6 +73,20 @@ export function TemplateFactBadges({
         >
           <FlaskConicalGlassIcon className="size-4.5" aria-hidden="true" />
           {t('facts.preview.badge')}
+        </Badge>
+      ) : null}
+      {needsDomain ? (
+        <Badge
+          variant="muted"
+          className="text-xs"
+          title={t('facts.needsDomain.hint')}
+        >
+          {t('facts.needsDomain.badge')}
+        </Badge>
+      ) : null}
+      {updated ? (
+        <Badge variant="muted" className="text-xs">
+          {t('facts.updatedOn', { date: updated })}
         </Badge>
       ) : null}
       {deprecated ? (

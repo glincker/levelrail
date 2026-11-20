@@ -7,6 +7,7 @@ import (
 	"io"
 	"path"
 	"strings"
+	"time"
 
 	"github.com/GLINCKER/levelrail/internal/store"
 )
@@ -70,6 +71,13 @@ func (r Routed) Upload(ctx context.Context, dest Destination, key string, rd io.
 	if dest.IsLocal() {
 		return r.localUpload(dest, key, rd)
 	}
+	if dest.IsWebDAV() {
+		w, err := newWebDAV(dest)
+		if err != nil {
+			return err
+		}
+		return w.Upload(ctx, key, rd)
+	}
 	if !dest.IsAgent() {
 		return S3Uploader{}.Upload(ctx, dest, key, rd, size)
 	}
@@ -87,6 +95,13 @@ func (r Routed) Upload(ctx context.Context, dest Destination, key string, rd io.
 func (r Routed) Download(ctx context.Context, dest Destination, key string) (io.ReadCloser, error) {
 	if dest.IsLocal() {
 		return r.localDownload(dest, key)
+	}
+	if dest.IsWebDAV() {
+		w, err := newWebDAV(dest)
+		if err != nil {
+			return nil, err
+		}
+		return w.Download(ctx, key, 0)
 	}
 	if !dest.IsAgent() {
 		return S3Downloader{}.Download(ctx, dest, key)
@@ -107,6 +122,13 @@ func (r Routed) Delete(ctx context.Context, dest Destination, key string) error 
 	if dest.IsLocal() {
 		return r.localDelete(dest, key)
 	}
+	if dest.IsWebDAV() {
+		w, err := newWebDAV(dest)
+		if err != nil {
+			return err
+		}
+		return w.Delete(ctx, key)
+	}
 	if !dest.IsAgent() {
 		return S3Deleter{}.Delete(ctx, dest, key)
 	}
@@ -124,6 +146,13 @@ func (r Routed) Delete(ctx context.Context, dest Destination, key string) error 
 func (r Routed) List(ctx context.Context, dest Destination, prefix string) ([]RemoteObject, error) {
 	if dest.IsLocal() {
 		return r.localList(dest, prefix)
+	}
+	if dest.IsWebDAV() {
+		w, err := newWebDAV(dest)
+		if err != nil {
+			return nil, err
+		}
+		return w.List(ctx, prefix)
 	}
 	if !dest.IsAgent() {
 		return S3Lister{}.List(ctx, dest, prefix)
@@ -147,6 +176,10 @@ func (r Routed) List(ctx context.Context, dest Destination, prefix string) ([]Re
 func (r Routed) Test(ctx context.Context, dest Destination) error {
 	if dest.IsLocal() {
 		return r.localTest(dest)
+	}
+	if dest.IsWebDAV() {
+		_, err := r.Probe(ctx, dest)
+		return err
 	}
 	if !dest.IsAgent() {
 		return S3Tester{}.Test(ctx, dest)
@@ -172,4 +205,20 @@ func (r Routed) Test(ctx context.Context, dest Destination) error {
 		return fmt.Errorf("backup: test node %q: %w", node, err)
 	}
 	return nil
+}
+
+// Probe implements Prober for WebDAV targets; other kinds report only latency.
+func (r Routed) Probe(ctx context.Context, dest Destination) (TestReport, error) {
+	if dest.IsWebDAV() {
+		w, err := newWebDAV(dest)
+		if err != nil {
+			return TestReport{}, err
+		}
+		return w.Probe(ctx)
+	}
+	start := time.Now()
+	if err := r.Test(ctx, dest); err != nil {
+		return TestReport{}, err
+	}
+	return TestReport{OK: true, LatencyMs: time.Since(start).Milliseconds()}, nil
 }

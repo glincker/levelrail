@@ -2363,11 +2363,11 @@
     "names": {
       "hetzner": "Hetzner",
       "digitalocean": "DigitalOcean",
+      "vultr": "Vultr",
       "aws": "AWS",
       "azure": "Azure",
       "gcp": "Google Cloud",
-      "custom": "自定义数据中心",
-      "vultr": "Vultr"
+      "custom": "自定义数据中心"
     },
     "methods": {
       "api_token": {
@@ -2402,12 +2402,12 @@
     "permissions": {
       "hetzner": "具有读写权限的项目 API 令牌。Hetzner 没有更细的范围，因此请使用专用项目。",
       "digitalocean": "具有读写范围的个人访问令牌，或仅限于 droplet 和 ssh_key 的创建、读取和删除的自定义范围。",
+      "vultr": "Vultr API 密钥。密钥没有权限范围，请使用专用子用户，并把此服务器的地址加入访问控制列表。",
       "aws": "ec2:DescribeRegions、ec2:DescribeInstanceTypes、ec2:DescribeInstances、ec2:DescribeImages、ec2:RunInstances、ec2:TerminateInstances、ec2:CreateTags，以及用于创建节点安全组的安全组和 VPC 操作。",
       "awsRole": "使用角色时，基础身份只需要对该角色 ARN 拥有 sts:AssumeRole。请把上述操作放在该角色上。",
       "azure": "订阅上的 Reader，以及目标资源组上的 Virtual Machine Contributor 和 Network Contributor。",
       "gcp": "项目上的 compute.regions.list、compute.machineTypes.list、compute.instances.create、compute.instances.get 和 compute.instances.delete。",
-      "custom": "不存储任何凭据。节点使用一次性加入令牌主动连接到此控制平面。",
-      "vultr": "Vultr API 密钥。密钥没有权限范围，请使用专用子用户，并把此服务器的地址加入访问控制列表。"
+      "custom": "不存储任何凭据。节点使用一次性加入令牌主动连接到此控制平面。"
     },
     "permissionsTitle": "最小权限",
     "methodLegend": "连接方式",
@@ -2436,10 +2436,10 @@
       "custom": "裸金属、本地部署，或任何没有云 API 的虚拟机。",
       "hetzner": "具有读写权限的项目 API 令牌。",
       "digitalocean": "具有读写范围的个人访问令牌。",
+      "vultr": "在访问控制列表中包含此服务器地址的 API 密钥。",
       "aws": "访问密钥，或此控制平面自身的 AWS 身份。",
       "azure": "服务主体 JSON，或工作负载身份联合。",
-      "gcp": "服务账户密钥 JSON。",
-      "vultr": "在访问控制列表中包含此服务器地址的 API 密钥。"
+      "gcp": "服务账户密钥 JSON。"
     },
     "connected": "已连接",
     "notConnected": "未连接",
@@ -2484,62 +2484,1067 @@
     "setUp": "设置内置镜像仓库",
     "manage": "管理"
   },
-  "iacExport": {
-    "studioButton": "将当前状态导出为模板"
+  "registryVendors": {
+    "heading": "连接镜像仓库",
+    "subheading": "选择一个供应商以预填主机，并查看该凭据需要哪些令牌权限范围。",
+    "connect": "连接",
+    "connectFor": "连接 {{vendor}}",
+    "dialogTitle": "连接 {{vendor}}",
+    "dialogDescription": "密码会加密存储，保存后不再显示。",
+    "name": "名称",
+    "nameHelp": "在 app.yaml 的 build.registryCredential 中按名称引用。",
+    "host": "仓库主机",
+    "username": "用户名",
+    "password": "密码或令牌",
+    "neverShown": "保存后不会再次显示。",
+    "expires": "过期时间（可选）",
+    "shortLived": "该供应商发放的令牌约 {{hours}} 小时后失效。请在显示的日期前重新签发并更新凭据，目前尚未内置自动刷新。",
+    "scopesTitle": "所需权限范围",
+    "test": "测试连接",
+    "testing": "测试中...",
+    "save": "保存凭据",
+    "saving": "保存中...",
+    "saved": "已添加镜像仓库凭据“{{name}}”。",
+    "auth": {
+      "dockerhub": "请使用你的 Docker Hub 用户名和个人访问令牌，而不是账户密码。",
+      "ghcr": "请使用你的 GitHub 用户名和个人访问令牌（classic）。",
+      "gitlab": "请使用部署令牌或个人访问令牌作为密码。",
+      "ecr": "用户名始终为 AWS。密码是 aws ecr get-login-password 的输出，有效期 12 小时。",
+      "gar": "用户名为 _json_key，密码为服务账户密钥 JSON。",
+      "acr": "请使用仓库范围的令牌或服务主体：用户名为令牌名称或应用 ID，密码为其密钥。",
+      "harbor": "请使用机器人账户：用户名形如 robot$name，密码为其密钥。",
+      "quay": "请使用机器人账户：用户名为 org+robotname，密码为其令牌。",
+      "jfrog": "用户名为你的用户名，密码为身份令牌，而不是账户密码。",
+      "nexus": "请使用对 Docker 仓库有访问权限的用户的用户名和密码。",
+      "generic": "任何支持 Docker Registry HTTP API v2 和基础认证的镜像仓库。"
+    },
+    "scopes": {
+      "dockerhub": "只拉取镜像时只读访问即可。仅当构建需要推送时才选择读写。",
+      "ghcr": "拉取需要 read:packages，推送需要 write:packages。对于强制 SSO 的组织，请为令牌授权 SSO。",
+      "gitlab": "拉取需要 read_registry，推送需要 write_registry。部署令牌仅限于一个项目或群组。",
+      "ecr": "需要 ecr:GetAuthorizationToken、ecr:BatchGetImage、ecr:GetDownloadUrlForLayer 和 ecr:BatchCheckLayerAvailability，可来自密钥或角色。",
+      "gar": "拉取需要 roles/artifactregistry.reader，推送需要 roles/artifactregistry.writer。",
+      "acr": "拉取需要 AcrPull 角色（或具有 content/read 的令牌），推送需要 AcrPush。",
+      "harbor": "对镜像所在项目的拉取权限。",
+      "quay": "对该仓库的读取权限。",
+      "jfrog": "对该 Docker 仓库的读取权限。",
+      "nexus": "拉取需要 nx-repository-view-docker-*-read。",
+      "generic": "对你部署所用仓库的拉取权限。"
+    }
   },
-  "iacStudio": {
-    "tabFiles": "文件",
-    "tabStudio": "Studio",
-    "templates": "模板",
-    "use": "使用",
-    "copy": "复制",
-    "useNamed": "使用模板 {{name}}",
-    "copyNamed": "复制模板 {{name}}",
-    "editor": "资源 YAML",
-    "placeholder": "version: 1\nkind: App\nmetadata:\n  name: web",
-    "cloudNote": "未开启云功能时，云类型会被拒绝。此处不需要输入云凭据。",
-    "planHash": "计划",
-    "beta": "测试版",
-    "codeDoc": "错误代码 {{code}}，打开参考文档",
-    "applyDisabled": "此实例已关闭应用操作。计划仍然可用。",
-    "replan": "重新计划",
-    "viewLabel": "编辑器视图",
-    "resultLabel": "计划结果",
+  "packageRegistries": {
+    "heading": "构建用的软件包仓库",
+    "subheading": "私有 npm、PyPI、Maven、NuGet、Cargo、Go 和 RubyGems 仓库，以密钥形式挂载到 Dockerfile 构建中。",
+    "add": "添加软件包仓库",
+    "empty": "还没有软件包仓库。添加后，构建即可安装私有软件包。",
+    "dialogTitle": "添加软件包仓库",
+    "dialogDescription": "令牌会加密存储，并作为 BuildKit 密钥挂载到构建中。",
+    "ecosystems": {
+      "npm": "npm",
+      "pypi": "PyPI",
+      "maven": "Maven",
+      "nuget": "NuGet",
+      "cargo": "Cargo",
+      "go": "Go 代理",
+      "rubygems": "RubyGems"
+    },
+    "scopes": {
+      "instance": "所有构建",
+      "project": "单个项目",
+      "app": "单个应用"
+    },
+    "name": "名称",
+    "url": "仓库 URL",
+    "urlHelp": "URL 中不要包含凭据。请使用用户名和令牌字段。",
+    "username": "用户名（可选）",
+    "usernameHelp": "如果是仅使用 Bearer 令牌的仓库，请留空。",
+    "secret": "令牌或密码",
+    "secretHelp": "保存后不再显示，也绝不会放入构建参数、镜像层或构建日志中。",
+    "patterns": "GOPRIVATE 模式",
+    "scope": "适用范围",
+    "scopeRef": "项目 ID 或应用名称",
+    "scopeRefPlaceholder": "项目 ID 或应用名称",
+    "buildNote": "在 Dockerfile 中使用 RUN --mount=type=secret,id=<secret id> 引用生成的配置，例如 id=npmrc 配合 target=/root/.npmrc。远程构建节点暂不会接收该配置。",
+    "save": "保存仓库",
+    "saving": "保存中...",
+    "saved": "已添加软件包仓库“{{name}}”。",
+    "test": "测试",
+    "remove": "移除 {{name}}",
+    "mountAs": "密钥 ID {{id}}"
+  },
+  "storagePage": {
+    "gcsHmacHint": "请使用 HMAC 密钥，而不是服务账户 JSON。在 Google Cloud 中，打开 Cloud Storage、设置、互操作性，然后为一个可以写入该存储桶的服务账户创建密钥。",
+    "title": "存储目标",
+    "description": "用于日志归档和备份的兼容 S3 的对象存储。支持 AWS S3、Cloudflare R2、Backblaze B2、MinIO、Wasabi、Google Cloud Storage 或任何自定义端点。",
+    "notConfiguredTitle": "此服务器尚未配置存储",
+    "notConfiguredBody": "请设置 APP_MASTER_KEY 并重启控制平面，以便加密存储桶凭据。",
+    "loadErrorTitle": "无法加载存储目标",
+    "retry": "重试",
+    "logArchiveTitle": "所有应用的日志归档",
+    "logArchiveBody": "按计划将节点本地日志发送到目标位置。拥有自己策略的应用（应用日志中的“归档”标签页）则单独保存。",
+    "buildCacheTitle": "所有应用的构建缓存"
+  },
+  "doctorPage": {
+    "title": "诊断",
+    "description": "对此服务器进行一次健康检查：Docker、磁盘、端口、证书、备份、节点等。CLI 的 doctor 命令运行的是同样的检查。",
+    "guide": "诊断指南",
+    "rerun": "重新运行检查",
+    "filterLabel": "按状态筛选检查",
+    "filter": {
+      "all": "全部",
+      "fail": "失败",
+      "warn": "警告"
+    },
+    "lastChecked": "上次检查于 {{time}}",
+    "checking": "检查中...",
+    "copyDiagnostics": "复制诊断信息",
+    "copyDone": "已复制诊断信息",
     "copyFailed": "无法复制到剪贴板",
-    "viewYaml": "YAML",
-    "viewForm": "表单",
-    "formLoading": "正在加载表单",
-    "stack": {
-      "title": "Stack 历史",
-      "pick": "Stack",
-      "none": "还没有 stack。应用 stack 后,修订会显示在这里。",
-      "timeline": "修订时间线",
-      "noRevisions": "还没有修订。",
-      "loadFailed": "无法加载修订。",
-      "driftNone": "与最近一次应用的修订没有偏差。",
-      "diffLive": "与实时状态比较"
+    "noMatches": "没有符合此筛选条件的检查。",
+    "allPassedTitle": "所有检查均已通过",
+    "allPassedBody": "目前没有需要处理的内容。",
+    "failedTitle_other": "{{count}} 项检查失败",
+    "warnTitle_other": "{{count}} 项检查需要关注",
+    "reviewBelow": "下方每个问题都附有修复方法或后续步骤，并提供“重新检查”按钮。",
+    "progress": "已完成 {{total}} 项检查中的 {{done}} 项",
+    "streamErrorTitle": "检查流被中断",
+    "streamErrorBody": "已显示目前的结果。请使用“重新运行检查”重新开始。",
+    "counts": {
+      "fail_other": "{{count}} 项失败",
+      "warn_other": "{{count}} 项警告",
+      "ok": "{{count}} 项通过",
+      "unknown": "{{count}} 项未检查"
     },
-    "planAction": {
-      "create": "创建",
-      "update": "更新",
-      "delete": "删除",
-      "noop": "无变化",
-      "error": "错误"
-    },
-    "multiDoc": "此文本包含多个文档。表单以只读方式显示第一个。请使用 YAML 编辑以修改任何一个。",
-    "parseLine": "此文档无法解析（第 {{line}} 行）。",
-    "editAsYaml": "以 YAML 编辑",
-    "exportedNote": "已从实时状态导出。密钥不会被包含，而是以引用形式导出。",
-    "copyYaml": "复制 YAML",
-    "copied": "已复制",
-    "localTemplates": {
-      "cron-job": {
-        "title": "定时任务",
-        "description": "按计划运行命令，或调用应用上的路径。"
+    "fixAll_other": "修复全部 {{count}} 个安全问题",
+    "fixAllTitle_other": "应用 {{count}} 个安全修复？",
+    "fixAllBody": "仅包含可一键修复且安全的项目。任何会重启服务或开放访问的操作都需要单独、明确地执行。以下是这些更改：",
+    "fixAllConfirm": "应用修复",
+    "fixAllPending": "应用中...",
+    "fixAllCli": "更喜欢终端？在服务器上运行此命令，它会打印同样的计划并先行询问。",
+    "ingressTitle": "入口是单点故障",
+    "ingressBody": "基于域名的 HTTPS 路由嵌入在此控制平面进程中运行。如果它崩溃或重启，路由会中断直到恢复，不过已在运行的容器始终通过各自的端口继续提供服务。",
+    "survivesCrash": "控制平面崩溃时仍可运行的部分",
+    "groups": {
+      "runtime": {
+        "title": "容器运行时",
+        "description": "Docker 连通性、版本、权限和遗留数据。"
+      },
+      "host": {
+        "title": "此服务器",
+        "description": "磁盘、inode、内存、CPU 和数据库。"
+      },
+      "network": {
+        "title": "网络与连通性",
+        "description": "端口、防火墙、DNS、证书，以及互联网能否访问此主机。"
+      },
+      "security": {
+        "title": "安全",
+        "description": "密钥轮换、令牌和发布签名检查。"
+      },
+      "backups": {
+        "title": "备份",
+        "description": "控制平面快照、数据库计划和恢复演练。"
+      },
+      "nodes": {
+        "title": "节点与网格",
+        "description": "Agent 连接、Agent 版本和 WireGuard 网格。"
+      },
+      "hardware": {
+        "title": "硬件",
+        "description": "GPU 和网络共享客户端工具。"
+      },
+      "other": {
+        "title": "其他检查",
+        "description": "此控制平面报告的其他检查。"
       }
     }
   },
+  "firewallRules": {
+    "liveStatus": "实时防火墙状态",
+    "liveStatusNote": "来自此主机自身的预检。完整的加固清单请见“设置”中的“诊断”。",
+    "emptyTitle": "尚未配置防火墙规则",
+    "emptyBody": "添加规则以允许或拒绝访问某个端口，可选择限制为某个来源 CIDR。",
+    "cols": {
+      "action": "操作",
+      "port": "端口",
+      "protocol": "协议",
+      "source": "来源",
+      "label": "标签",
+      "added": "添加时间",
+      "actions": "操作"
+    },
+    "anywhere": "任意位置",
+    "none": "无",
+    "allow": "允许",
+    "deny": "拒绝",
+    "closeTitle": "此规则将关闭一个端口",
+    "restrictTitle": "此规则会将一个端口限制为单一来源",
+    "closeBody": "发往此端口的流量将被丢弃。针对管理 API、Agent 连接或入口的规则会被自动拒绝。",
+    "restrictBody": "来自此 CIDR 之外的流量将无法再访问此端口。针对管理 API、Agent 连接或入口的规则会被自动拒绝。",
+    "addRule": "添加规则",
+    "addDeny": "添加拒绝规则",
+    "adding": "添加中...",
+    "addTitle": "添加防火墙规则",
+    "addBody": "允许或拒绝访问某个端口，可选择限制为某个来源 CIDR。将在下一次协调周期生效。",
+    "createdToast": "已为端口 {{port}} 创建防火墙规则。",
+    "sourceCidr": "来源 CIDR（可选）",
+    "sourceCidrPlaceholder": "10.0.0.0/24（留空表示任意来源）",
+    "labelOptional": "标签（可选）",
+    "labelPlaceholder": "此规则的用途",
+    "cancel": "取消",
+    "remove": "移除",
+    "removing": "移除中...",
+    "removeTitle": "要移除此规则吗？",
+    "removeAllowBody": "下一次协调周期移除此规则后，将停止允许端口 {{port}}/{{protocol}} 的流量，除非此主机上的其他规则仍允许该流量。",
+    "removeDenyBody": "下一次协调周期移除此规则后，将停止拒绝端口 {{port}}/{{protocol}} 的流量。",
+    "removedToast": "已移除防火墙规则。"
+  },
+  "storageDestinations": {
+    "accountLabel": {
+      "r2": "Cloudflare 账户 ID",
+      "oracle": "命名空间",
+      "default": "账户或命名空间 ID"
+    },
+    "usage": {
+      "header": "用量",
+      "none": "空",
+      "ofQuota": "{{used}} / {{quota}}",
+      "overQuota": "超出配额",
+      "cost": "预计每月费用",
+      "free": "免费",
+      "defaultFor": "默认用于",
+      "noDefault": "无"
+    },
+    "kind": {
+      "agent": "节点目录",
+      "agentLocation": "{{node}}:{{directory}}"
+    },
+    "classes": {
+      "backups": "备份",
+      "archives": "日志归档",
+      "artifacts": "流水线产物",
+      "cache": "构建缓存",
+      "dumps": "数据转储"
+    },
+    "defaults": {
+      "title": "每类数据的默认目标",
+      "description": "未选择目标时各类数据的存放位置。节点目录只能保存备份和数据转储。",
+      "unset": "未设置",
+      "clear": "清除",
+      "saved": "{{class}} 现在将发送到 {{name}}。",
+      "cleared": "已清除 {{class}} 的默认目标。",
+      "pick": "选择目标"
+    },
+    "node": {
+      "add": "添加节点目录",
+      "title": "添加节点目录目标",
+      "description": "通过节点现有的 Agent 连接，将备份流式写入节点上受限的目录。无 SSH，无 Shell，无需凭据。",
+      "name": "名称",
+      "node": "节点",
+      "nodePlaceholder": "选择节点",
+      "directory": "目录",
+      "directoryHint": "相对于节点的存储根目录（Agent 上的 APP_AGENT_STORAGE_DIR）。默认为 backups。",
+      "quota": "软配额（GB）",
+      "quotaHint": "备份超过此值时会被标记。0 表示不限制。",
+      "verify": "保存前测试连接（会写入并删除一个探测文件）",
+      "connect": "连接",
+      "connecting": "连接中...",
+      "connected": "已连接节点目录“{{name}}”。",
+      "noNodes": "请先注册一个节点，才能在其上存储数据。"
+    },
+    "test": {
+      "title": "“{{name}}”的连接测试",
+      "passed": "“{{name}}”运行正常。",
+      "failedTitle": "“{{name}}”未通过连接测试",
+      "recheck": "重新检查",
+      "checking": "检查中...",
+      "close": "关闭",
+      "step": "{{name}}：{{status}}",
+      "ok": "正常",
+      "failed": "失败"
+    },
+    "fix": {
+      "enable_path_style": {
+        "title": "开启路径样式寻址",
+        "description": "此端点不响应虚拟主机式存储桶 URL。点击一次即可切换为 https://host/bucket/key 并重新检查。",
+        "action": "启用路径样式并重新检查"
+      },
+      "edit_credentials": {
+        "title": "输入新凭据",
+        "description": "端点拒绝了此访问密钥。请粘贴一对可用的密钥，保存后将加密且不再显示。",
+        "action": "保存凭据并重新检查"
+      },
+      "edit_policy": {
+        "title": "授予密钥存储桶访问权限",
+        "description": "该密钥有效，但无法在此存储桶中写入、读取和删除。请在服务商的策略中允许这些操作，或使用另一对密钥。",
+        "action": "使用其他密钥并重新检查"
+      },
+      "edit_bucket": {
+        "title": "更正存储桶名称",
+        "description": "端点上不存在此名称的存储桶。",
+        "action": "保存存储桶并重新检查"
+      },
+      "edit_region": {
+        "title": "更正区域",
+        "description": "该存储桶位于其他区域。",
+        "action": "保存区域并重新检查"
+      },
+      "edit_endpoint": {
+        "title": "更正端点",
+        "description": "无法连接到该端点，或其证书校验失败。私有网络端点还需要设置 APP_NOTIFY_ALLOW_PRIVATE_NETWORKS=true。",
+        "action": "保存端点并重新检查"
+      },
+      "sync_clock": {
+        "title": "同步此服务器的时钟",
+        "description": "存储端点报告时钟偏差较大。请在控制平面主机上启用 NTP，然后重新检查。",
+        "action": "重新检查"
+      },
+      "reconnect_node": {
+        "title": "让节点恢复在线",
+        "description": "节点未连接到控制平面。请启动其 Agent，然后重新检查。",
+        "action": "打开节点",
+        "recheck": "重新检查"
+      },
+      "enable_node_storage": {
+        "title": "为节点设置存储目录",
+        "description": "在 Agent 上将 APP_AGENT_STORAGE_DIR 设置为其可写入的目录，重启 Agent，然后重新检查。",
+        "action": "重新检查"
+      },
+      "fields": {
+        "accessKeyId": "访问密钥 ID",
+        "secretAccessKey": "秘密访问密钥",
+        "bucket": "存储桶",
+        "region": "区域",
+        "endpoint": "端点"
+      }
+    },
+    "empty": {
+      "title": "没有存储目标",
+      "description": "连接 AWS S3、Cloudflare R2、Backblaze B2、MinIO、Wasabi、任意兼容 S3 的存储桶，或已注册的节点，用于存储备份、归档和数据转储。"
+    }
+  },
+  "controlPlaneDrKeygen": {
+    "trigger": "生成密钥对",
+    "title": "新的备份接收方密钥",
+    "description": "公钥会添加到备份接收方中。私钥只显示一次，且绝不会存储在此服务器上。",
+    "warning": "请立即将私钥离线保存（密码管理器或保险箱）。没有私钥，备份将无法解密。",
+    "copy": "复制私钥",
+    "download": "下载私钥",
+    "use": "我已保存，添加公钥"
+  },
+  "controlPlaneDrRestore": {
+    "title": "恢复计划",
+    "description": "恢复会替换控制平面数据库，因此需要在控制平面停止时于主机上执行。以下是此安装实例的步骤。",
+    "noBackup": "目前还没有完整的异地备份。在依赖恢复之前，请先运行一次备份。",
+    "newest": "最新备份：{{key}}（{{when}}）",
+    "viaCli": "主机上的恢复命令",
+    "copy": "复制命令",
+    "copied": "已复制",
+    "warnings": {
+      "escrow_not_acknowledged": "主密钥托管未确认：如果没有主密钥，恢复后将无法读取已存储的密钥。",
+      "drill_not_passed": "尚未通过任何恢复演练，因此此计划未经测试。"
+    },
+    "steps": {
+      "backup_available": {
+        "title": "已有完整备份",
+        "body": "目标位置最新的加密备份同时包含数据和清单。"
+      },
+      "identity_ready": {
+        "title": "准备好私钥",
+        "body": "你需要与其中一个备份接收方匹配的私钥。"
+      },
+      "master_key_escrow": {
+        "title": "准备好主密钥托管",
+        "body": "备份中不包含主密钥。请从你的托管包中恢复。"
+      },
+      "stop_control_plane": {
+        "title": "停止控制平面",
+        "body": "数据库使用中时，恢复会拒绝运行。"
+      },
+      "run_restore": {
+        "title": "在主机上执行恢复",
+        "body": "当前数据库会作为恢复前副本，与恢复后的数据库并存保留。"
+      },
+      "start_and_verify": {
+        "title": "启动控制平面并验证",
+        "body": "确认应用、域名和节点已恢复，然后运行一次新的备份。"
+      }
+    }
+  },
+  "iacPage": {
+    "title": "基础设施即代码",
+    "description": "以 YAML 描述项目、环境、应用、域名和数据库，检查计划后再应用。",
+    "filesTitle": "资源文件",
+    "filesDescription": "一个或多个 YAML 文档，以 --- 分隔。文档中绝不保存密钥值，请使用 secretRef 引用。",
+    "yamlLabel": "YAML",
+    "upload": "上传文件",
+    "sourceLabel": "来源",
+    "sourcePlaceholder": "infra-repo",
+    "sourceHint": "为此次应用创建的应用添加标签，以便之后 prune 能找到它们。",
+    "projectLabel": "仅限项目",
+    "projectPlaceholder": "shop",
+    "prune": "清理（prune）：删除此来源创建、但文件已不再声明的应用",
+    "pruneNeedsSource": "清理需要一个来源名称。",
+    "noDeploy": "应用环境变更时不重启正在运行的应用",
+    "planning": "规划中...",
+    "plan": "计划",
+    "apply": "执行",
+    "confirmTitle": "确认执行这些更改？",
+    "confirmSummary": "创建 {{create}} 项，更新 {{update}} 项，删除 {{delete}} 项。",
+    "confirmNote": "只有实际状态仍与你审阅过的计划一致时，才会执行。",
+    "confirmDeletes": "此操作将删除 {{count}} 个资源。",
+    "cancel": "取消",
+    "planTitle": "计划",
+    "resultTitle": "结果",
+    "resultCounts": "已执行 {{applied}} 项，失败 {{failed}} 项，跳过 {{skipped}} 项",
+    "banner": {
+      "description": "以 YAML 描述项目、应用、域名和数据库，审阅计划后再执行。",
+      "diagram": {
+        "host": "主机",
+        "docker": "Docker",
+        "ingress": "入口"
+      }
+    },
+    "optionsTitle": "选项",
+    "optionsDescription": "控制执行时如何处理已知的应用。",
+    "filesChosen_other": "已准备 {{count}} 个文件",
+    "noFiles": "在下方粘贴 YAML，或上传文件以生成计划。",
+    "planAgain": "重新生成计划",
+    "planFailed": "无法生成计划。请修正文件后重新生成计划。",
+    "applyFailed": "执行未完成。请重新生成计划，以审阅当前状态。"
+  },
+  "githubManualDialog": {
+    "title": "手动连接 GitHub App",
+    "descPrefix": "请自行在此创建该 App：",
+    "descSuffix": "（或你的 GitHub Enterprise Server 实例自己的 /settings/apps/new），然后在此粘贴生成的凭据。保存这些凭据不需要主域名，只有自动设置才需要。",
+    "instanceLabel": "GitHub 实例（可选）",
+    "instanceHint": "留空即使用 github.com。也支持自托管实例，例如 https://github.example.com。",
+    "appId": "App ID",
+    "clientId": "Client ID",
+    "clientSecret": "客户端密钥",
+    "webhookSecret": "Webhook 密钥",
+    "webhookHint": "你在 GitHub 上为该 App 自行设置的 Webhook 密钥，不在这里生成。",
+    "privateKey": "私钥（.pem）",
+    "privateKeyHint": "在 GitHub 上该 App 的通用页面生成一次，并下载为 .pem 文件。请粘贴其完整内容。",
+    "installationId": "安装 ID（可选）",
+    "accountLogin": "账户登录名（可选）",
+    "connect": "连接",
+    "connecting": "正在连接...",
+    "connected": "GitHub App 已连接。",
+    "connectFailed": "无法连接 GitHub App。"
+  },
+  "drCard": {
+    "neverRun": "从未运行",
+    "failed": "{{when}}失败：{{detail}}",
+    "passedPartial": "{{when}}通过（部分：仅校验和，未测试解密）",
+    "passed": "{{when}}通过，耗时 {{seconds}} 秒",
+    "started": "{{label}}已开始。",
+    "labelBackup": "备份",
+    "labelDrill": "恢复演练",
+    "title": "灾难恢复",
+    "description": "加密的异地备份、密钥托管和恢复演练。",
+    "backingUp": "正在备份...",
+    "runNow": "立即运行",
+    "runningDrill": "正在运行演练...",
+    "runDrill": "运行演练",
+    "warnings": "警告",
+    "lastBackup": "上次备份",
+    "never": "从未",
+    "nextBackup": "下次 {{when}}",
+    "lastDrill": "上次恢复演练",
+    "drillIdentity": "演练身份",
+    "identityConfigured": "已配置，演练会完整解密并恢复",
+    "identityMissing": "未配置，演练仅校验校验和（APP_CONTROL_PLANE_DRILL_IDENTITY_FILE）"
+  },
+  "buildCache": {
+    "modeMax": "max（缓存每一层，重建最快）",
+    "modeMin": "min（仅缓存最终层，占用空间更小）",
+    "checking": "正在检查存储桶...",
+    "readFailed": "无法读取存储桶：{{message}}",
+    "objects": "{{count}}{{plus}} 个对象，{{size}}",
+    "lastExport": "，上次导出 {{when}}",
+    "clearedMore": "已删除 {{deleted}} 个对象。仍有剩余，请再次清理。",
+    "cleared": "缓存已清理（已删除 {{deleted}} 个对象）。",
+    "deleteLayers": "删除已缓存的层",
+    "cancel": "取消",
+    "clear": "清理缓存",
+    "saved": "构建缓存已保存。",
+    "destination": "目标",
+    "chooseDestination": "选择目标",
+    "exportMode": "导出模式",
+    "useRemote": "使用远程缓存",
+    "storedUnder": "各层存储在 {{prefix}} 下。关闭此项可让此应用不再使用默认设置。",
+    "globalHint": "适用于每个没有自身设置的应用。每个应用的缓存位于 build-cache/<app>/ 下。",
+    "update": "更新",
+    "save": "保存",
+    "removed": "构建缓存设置已移除。",
+    "removeSetting": "移除设置",
+    "notConfiguredTitle": "此服务器未配置构建缓存",
+    "loadFailedTitle": "无法加载构建缓存设置",
+    "notConfiguredBody": "设置 APP_MASTER_KEY 并重启控制平面，以连接对象存储。",
+    "unknownError": "未知错误",
+    "loading": "正在加载...",
+    "noDestinationTitle": "还没有存储目标",
+    "noDestinationBody": "请先在“设置”→“存储目标”下连接一个存储桶，然后在此将其用作构建缓存。",
+    "usingDefault": "所有应用都使用默认构建缓存。在下方保存设置即可为此应用单独覆盖。",
+    "ranWithout": "上次构建未使用缓存",
+    "lastBuild": "上次使用缓存的构建：{{when}}",
+    "title": "构建缓存",
+    "titleAll": "所有应用的构建缓存",
+    "description": "将 BuildKit 层保存在存储目标中，使重建时可以跳过未变化的步骤。缓存问题绝不会导致构建失败，只会以警告形式报告。"
+  },
+  "gitConnections": {
+    "empty": {
+      "title": "尚未连接任何账户",
+      "description": {
+        "gitlab": "注册一个 GitLab OAuth 应用并完成授权。gitlab.com 与自托管实例可以并排连接。",
+        "bitbucket": "注册一个 Bitbucket OAuth 使用者并完成授权。之后可以为另一个工作区再添加一个使用者。",
+        "gitea": "注册一个 Gitea OAuth 应用并完成授权。每个 Gitea 或 Forgejo 服务器都是独立的连接。",
+        "forgejo": "注册一个 Forgejo OAuth 应用并完成授权。Codeberg 和自托管服务器各自是独立的连接。",
+        "bitbucket_server": "在你的 Bitbucket Server 上创建个人访问令牌，然后添加到这里。每个服务器或账户各自是一个独立连接。",
+        "azure_devops": "在你的 Azure DevOps 组织中创建个人访问令牌，然后添加到这里。"
+      }
+    },
+    "default": "默认",
+    "account": "已登录为 {{name}}",
+    "accountUnknown": "尚未读取账户",
+    "sources_other": "{{count}} 个 Git 来源",
+    "scopeNote": "连接属于此控制平面，由管理员管理。任何有权读取仓库的人都可以浏览某个账户可见的内容。",
+    "state": {
+      "ok": "已连接",
+      "notAuthorized": "未授权",
+      "needsReconnect": "需要重新连接",
+      "rateLimited": "已达速率限制"
+    },
+    "authorize": "授权",
+    "reconnect": "重新连接",
+    "setDefault": "设为默认",
+    "rename": {
+      "action": "重命名",
+      "label": "连接名称",
+      "save": "保存",
+      "cancel": "取消"
+    },
+    "disconnect": {
+      "action": "断开连接",
+      "pending": "正在断开",
+      "title": "断开 {{label}}？",
+      "description": "此控制平面将停止使用该账户，并在支持的提供商处撤销其令牌。其他已连接的账户不受影响。",
+      "sources_other": "{{count}} 个 Git 来源使用此账户。它们会保留并显示“需要重新连接”，在同一主机上连接账户后即可再次工作。"
+    },
+    "add": {
+      "first": "添加账户",
+      "another": "添加另一个账户",
+      "title": {
+        "gitlab": "添加 GitLab 账户",
+        "bitbucket": "添加 Bitbucket 账户",
+        "gitea": "添加 Gitea 账户",
+        "forgejo": "添加 Forgejo 账户",
+        "bitbucket_server": "添加 Bitbucket Server 账户",
+        "azure_devops": "添加 Azure DevOps 组织"
+      },
+      "description": "请在提供商处创建 OAuth 应用，回调 URI 为 {{callback}}，然后在此输入。随后你将被转到提供商页面完成授权。",
+      "application": "OAuth 应用",
+      "newApplication": "注册新的 OAuth 应用",
+      "reuse": "复用 {{label}} 的应用",
+      "applicationHelp": "复用同一应用，可在同一实例上使用其他账户登录。",
+      "instanceUrl": "实例 URL",
+      "instanceHelp": "gitlab.com 或自托管地址，例如 https://git.example.com。",
+      "clientId": {
+        "gitlab": "应用 ID",
+        "bitbucket": "使用者密钥",
+        "gitea": "Client ID",
+        "forgejo": "Client ID",
+        "bitbucket_server": "Client ID",
+        "azure_devops": "Client ID"
+      },
+      "clientSecret": "密钥",
+      "label": "名称（可选）",
+      "labelHelp": "完成授权后默认使用账户名称。之后可以重命名。",
+      "cancel": "取消",
+      "submit": "保存并授权",
+      "saving": "正在保存",
+      "tokenDescription": "在服务器上创建具有仓库读写权限的个人访问令牌，然后粘贴到这里。系统会先验证，再加密存储。",
+      "token": "个人访问令牌",
+      "tokenHelp": "位于“管理账户”→“个人访问令牌”下。令牌之后不会再次显示。",
+      "instanceHelpServer": "服务器的基础地址，例如 https://bitbucket.example.com。",
+      "connect": "验证并连接",
+      "verifying": "正在验证",
+      "test": "测试连接",
+      "testing": "正在测试",
+      "testOk": "已连接。服务器已响应，详情看起来正确。",
+      "testOkAccount": "已以 {{account}} 身份连接。",
+      "fixLabel": "修复",
+      "testKind": {
+        "bad_url": {
+          "message": "该地址看起来不是此类服务器。",
+          "fix": "请使用实例的根地址，例如 https://git.example.com，不要包含仓库路径。"
+        },
+        "bad_token": {
+          "message": "服务器拒绝了该令牌。",
+          "fix": "请创建一个具有仓库读取权限的新个人访问令牌，然后重新粘贴。"
+        },
+        "tls": {
+          "message": "服务器的 TLS 证书被拒绝。",
+          "fix": "请在服务器上安装受信任的证书，或将你的私有 CA 添加到此控制平面的信任存储中。"
+        },
+        "unreachable": {
+          "message": "此控制平面无法连接到服务器。",
+          "fix": "请检查主机名和端口，并确认网络或防火墙允许对其进行出站访问。"
+        },
+        "bad_scope": {
+          "message": "该令牌缺少此控制平面所需的权限范围。",
+          "fix": "请重新创建令牌，勾选上方步骤中列出的全部权限范围，然后粘贴新令牌。"
+        }
+      },
+      "callbackLabel": "回调 URL",
+      "callbackCopy": "复制",
+      "callbackCopied": "已复制",
+      "instanceHelpAzure": "你的组织地址，例如 https://dev.azure.com/ORG。",
+      "tokenHelpAzure": "用户设置 → 个人访问令牌，选择 Code（读写）权限范围。令牌之后不会再次显示。"
+    },
+    "token": {
+      "title": "使用令牌连接",
+      "description": "粘贴访问令牌，而无需注册 OAuth 应用。在没有公共域名的普通 http 安装上也可以使用。",
+      "host": "主机",
+      "guideLabel": "如何创建令牌",
+      "server": "服务器：",
+      "serverEmpty": "请在上方输入服务器 URL",
+      "serverHelp": "在浏览器中打开的地址，例如 http://git.lan:3000。http 和 https 均可使用。",
+      "tick": "勾选以下权限范围：",
+      "scopes": "需要勾选的权限范围",
+      "noDomain": "令牌会加密存储，且之后不会再次显示。无需公共域名或回调 URL。",
+      "steps": {
+        "gitlab": {
+          "open": "打开你的 GitLab 访问令牌页面：",
+          "create": "选择“添加新令牌”，命名为 {{name}}，并选择一个你可以接受的过期日期。",
+          "copy": "选择“创建个人访问令牌”，复制以 glpat- 开头的令牌。"
+        },
+        "bitbucket": {
+          "open": "打开 Atlassian API 令牌页面：",
+          "create": "选择“创建带权限范围的 API 令牌”，命名为 {{name}}，应用选择 Bitbucket，并选择你的工作区。",
+          "copy": "创建令牌后，以 Atlassian 邮箱、冒号和令牌的格式（邮箱:令牌）粘贴到下方。"
+        },
+        "gitea": {
+          "open": "打开你的 Gitea 应用页面：",
+          "create": "在“生成新令牌”下，命名为 {{name}}。",
+          "copy": "选择“生成令牌”并立即复制，Gitea 只会显示一次。"
+        },
+        "forgejo": {
+          "open": "打开你的 Forgejo 应用页面：",
+          "create": "在“生成新令牌”下，命名为 {{name}}。",
+          "copy": "选择“生成令牌”并立即复制，Forgejo 只会显示一次。"
+        }
+      },
+      "field": "访问令牌",
+      "fieldEmailToken": "邮箱和 API 令牌（邮箱:令牌）",
+      "check": "检查令牌",
+      "scopesFound": "权限范围：{{scopes}}",
+      "scopesUnknown": "此主机不报告令牌的权限范围，系统会改为检查仓库访问权限。",
+      "repos_other": "可以访问 {{count}}{{plus}} 个仓库。",
+      "noRepos": "目前无法访问任何仓库。请勾选仓库相关的权限范围，或确认该账户是某个项目的成员。",
+      "connected": "账户已连接",
+      "connectedBody": "令牌已检查并加密存储。"
+    },
+    "toast": {
+      "added": "账户已保存",
+      "addedBody": "请在提供商处完成授权。",
+      "disconnected": "账户已断开",
+      "renameFailed": "无法重命名账户",
+      "authorized": "账户已授权",
+      "authorizedBody": "其仓库现在可供选择。"
+    }
+  },
+  "gitConnectionsHub": {
+    "title": "Git 连接",
+    "description": "连接到此服务器的每个 Git 账户，涵盖所有主机。",
+    "loadFailed": "无法加载你的 Git 账户，请稍后再试。",
+    "attention_other": "有 {{count}} 个账户需要处理。请重新连接它们，以便其应用继续部署。",
+    "openSettings": "提供商设置",
+    "scopes": "权限范围：{{scopes}}",
+    "banner": {
+      "description": "可以连接任意数量的 GitHub、GitLab、Bitbucket、Azure DevOps、Gitea 或 Forgejo 账户，并从中任选仓库。",
+      "whatFor": "每个人、团队或组织连接一个账户。应用会与创建它们时所用的账户保持关联，因此你可以添加或移除账户，而不影响应用。",
+      "diagram": {
+        "repos": "仓库",
+        "server": "服务器",
+        "branches": "分支"
+      }
+    },
+    "add": {
+      "action": "添加账户",
+      "withToken": "使用令牌连接",
+      "withTokenAsks": "适用于 GitLab、Bitbucket、Gitea 或 Forgejo。粘贴令牌即可，无需 OAuth 应用或公共域名。",
+      "domainTitle": "请先设置主域名",
+      "domainBody": "此主机会在你登录后将你带回服务器，因此服务器需要一个公共域名。",
+      "continue": "继续"
+    },
+    "stats": {
+      "repos": "仓库",
+      "apps": "应用"
+    },
+    "health": {
+      "connected": "已连接",
+      "needsReconnect": "需要重新连接",
+      "notAuthorized": "未授权",
+      "rateLimited": "已达速率限制"
+    },
+    "disconnect": {
+      "description": "应用永远不会被删除。使用此账户的任何应用都会继续运行，但在下次部署前需要连接另一个账户。",
+      "affected": "这些应用需要另一个账户：{{apps}}"
+    },
+    "hosts": {
+      "github": {
+        "name": "GitHub",
+        "asks": "你将创建或选择一个 GitHub App，并将其安装到某个账户或组织上。",
+        "access": "访问权限取决于该 App 安装到的仓库。"
+      },
+      "gitlab": {
+        "name": "GitLab",
+        "asks": "你将粘贴 OAuth 应用的 ID 和密钥，然后登录。",
+        "access": "访问权限取决于你授予的 OAuth 权限范围。"
+      },
+      "bitbucket": {
+        "name": "Bitbucket",
+        "asks": "你将粘贴 OAuth 使用者密钥和密钥，然后登录。",
+        "access": "访问权限取决于你授予的 OAuth 权限。"
+      },
+      "bitbucket_server": {
+        "name": "Bitbucket Server",
+        "asks": "你将粘贴服务器 URL 和一个个人访问令牌。",
+        "access": "访问权限取决于令牌的权限。"
+      },
+      "gitea": {
+        "name": "Gitea",
+        "asks": "你将输入 Gitea URL 以及 OAuth 应用的 ID 和密钥，然后登录。",
+        "access": "访问权限取决于你授予的 OAuth 权限范围。"
+      },
+      "forgejo": {
+        "name": "Forgejo 和 Codeberg",
+        "asks": "你将输入服务器 URL（codeberg.org 也可以）以及 OAuth 应用的 ID 和密钥，然后登录。",
+        "access": "访问权限取决于你授予的 OAuth 权限范围。"
+      },
+      "azure_devops": {
+        "name": "Azure DevOps",
+        "asks": "你将粘贴组织 URL 和一个个人访问令牌。",
+        "access": "访问权限取决于令牌的权限。"
+      }
+    }
+  },
+  "emailBranding": {
+    "title": "品牌",
+    "description": "所有富文本邮件共享的徽标、强调色和页脚：密码重置、邀请、告警和公告。",
+    "logo": "徽标 URL",
+    "logoHint": "需为 https 图片 URL。服务器从不抓取该图片，因此远程徽标会告知其主机何时打开了邮件。",
+    "color": "强调色",
+    "colorHint": "六位十六进制值，例如 #107292。留空则使用品牌色。",
+    "footerText": "页脚文字",
+    "footerHint": "仅限纯文本。可用变量：{{variables}}。",
+    "address": "邮寄地址",
+    "links": "页脚链接",
+    "linkLabel": "标签",
+    "linkUrl": "https 链接",
+    "addLink": "添加链接",
+    "removeLink": "移除链接",
+    "poweredBy": "显示“由……提供支持”一行",
+    "save": "保存品牌设置",
+    "saving": "正在保存...",
+    "saved": "邮件品牌设置已保存。",
+    "preview": "预览",
+    "previewTitle": "邮件品牌预览",
+    "invalidHttps": "请使用完整的 https:// 地址。不接受纯 http 和其他协议。",
+    "invalidColor": "请使用六位十六进制颜色，例如 #107292。",
+    "templates": {
+      "label": "从模板开始",
+      "dashboardLink": "打开控制面板",
+      "minimal": {
+        "name": "极简",
+        "text": "由 {{brand_name}} 发送。"
+      },
+      "standard": {
+        "name": "标准",
+        "text": "由 {{brand_name}} 从 {{instance_name}} 发送。有疑问？请发送至 {{support_email}}。{{year}}"
+      },
+      "compliance": {
+        "name": "合规",
+        "text": "你收到此邮件，是因为 {{instance_name}} 上发生了相关活动。有疑问？请发送至 {{support_email}}。{{year}} {{brand_name}}",
+        "address": "{{brand_name}}，请将此行替换为你的邮寄地址"
+      }
+    }
+  },
+  "emailProviders": {
+    "title": "提供商",
+    "description": "主要提供商发送所有邮件。如果它失败，备份提供商会接管，直到主要提供商恢复。",
+    "loadError": "无法加载提供商：{{message}}",
+    "retry": "重试",
+    "roles": {
+      "primary": "主要",
+      "backup": "备用"
+    },
+    "health": {
+      "healthy": "正常",
+      "failing": "故障",
+      "paused": "已暂停",
+      "untested": "尚未测试",
+      "none": "未设置"
+    },
+    "runningOnBackup": "正在使用备用提供商",
+    "status": {
+      "lastError": "最近一次错误",
+      "noError": "无"
+    },
+    "row": {
+      "noFrom": "尚未设置发件地址",
+      "lastOk": "发送于 {{when}}",
+      "neverOk": "尚未发送",
+      "enabledLabel": "启用 {{name}}",
+      "edit": "编辑",
+      "editLabel": "编辑 {{name}}",
+      "test": "测试",
+      "testLabel": "通过 {{name}} 发送测试邮件",
+      "promote": "设为主要",
+      "promoteLabel": "将 {{name}} 设为主要提供商",
+      "promoted": "{{name}} 已成为主要提供商",
+      "remove": "移除",
+      "removeLabel": "移除 {{name}}",
+      "lastError": "最近一次错误：{{kind}}。运行测试以查看解决办法。"
+    },
+    "secret": {
+      "set": "设置",
+      "replace": "替换",
+      "replaceLabel": "替换 {{label}}",
+      "replaceHint": "输入新值。保存后会覆盖已存储的值。",
+      "keep": "保留已存储的值"
+    },
+    "panel": {
+      "editTitle": "编辑{{role}}提供商",
+      "addTitle": "添加{{role}}提供商",
+      "backend": "提供商",
+      "name": "标签",
+      "fromOverride": "此提供商的发件地址",
+      "fromOverrideHelp": "可选。留空则以 {{from}} 发送。",
+      "fromOverrideNoShared": "除非在下方设置了发件地址，否则需要填写。",
+      "sesSmtpNote": "SES SMTP 凭据来自 SES 控制台（SMTP 设置），不是你的 IAM 密钥。",
+      "needsSender": "此提供商尚未设置发件地址。请先设置，再保存。",
+      "needsSenderLink": "前往发件人身份",
+      "save": "保存提供商",
+      "add": "添加提供商",
+      "cancel": "取消"
+    },
+    "remove": {
+      "title": "移除 {{name}}？",
+      "description": "该提供商及其已存储的凭据将被删除。",
+      "primaryWithBackup": "存在备用提供商时，无法移除主要提供商。请先将备用提供商设为主要，或移除备用提供商。",
+      "consequenceCredentials": "其凭据将被删除，且无法恢复。",
+      "consequenceNoFailover": "主要提供商出现故障时，邮件将没有备用方案。",
+      "consequenceNoMail": "在你添加提供商之前，告警、邀请和密码重置邮件将停止发送。",
+      "confirm": "移除提供商",
+      "removing": "移除中...",
+      "done": "已移除 {{name}}"
+    },
+    "add": {
+      "primary": {
+        "title": "添加提供商",
+        "body": "选择告警、邀请和密码重置邮件的发送来源。",
+        "action": "添加提供商"
+      },
+      "backup": {
+        "title": "添加备用提供商",
+        "body": "如果主要提供商开始故障，邮件会自动切换到备用提供商。",
+        "action": "添加备用"
+      }
+    }
+  },
+  "emailSender": {
+    "title": "发件人身份与限额",
+    "optional": "可选",
+    "fromPlaceholder": "noreply@your-domain.com",
+    "envelopePlaceholder": "可选，默认为发件地址",
+    "capsHelp": "发送上限：0 表示使用服务器默认值，除非另行设置，否则不限制。",
+    "useSuggestion": "建议值：{{value}}",
+    "useSuggestionLabel": "使用建议值 {{value}}",
+    "domainHint": "请确认 {{domain}} 已在你的提供商处通过验证。",
+    "mailgunMismatch": "{{domain}} 不属于你的 Mailgun 域名 {{mailgun}}，Mailgun 很可能会拒绝它。",
+    "domainHintLink": "检查 SPF、DKIM 和 DMARC"
+  },
+  "emailTest": {
+    "title": "投递检查",
+    "description": "仅通过一个提供商发送真实邮件（不进行故障转移），然后确认其发件域名已发布 SPF、DKIM 和 DMARC。",
+    "noProviders": "请先在上方添加提供商，以发送测试邮件并检查其域名。",
+    "provider": "发送途径",
+    "to": "收件地址",
+    "domainFor": "{{name}} 的域名"
+  },
+  "emailPresets": {
+    "intro": "选择你的提供商，其连接详情会自动填入，你只需添加凭据和发件地址。",
+    "docs": "提供商文档",
+    "items": {
+      "resend": {
+        "name": "Resend",
+        "bestFor": "使用已验证域名进行简单的 API 发送。",
+        "credentialHint": "在 Resend 控制台的 API Keys 下创建 API 密钥。"
+      },
+      "ses": {
+        "name": "Amazon SES（API）",
+        "bestFor": "希望使用 IAM 密钥调用 SES API 的 AWS 账户。",
+        "credentialHint": "使用有权通过 SES 发送邮件的 IAM 访问密钥对应的密钥。"
+      },
+      "ses_smtp": {
+        "name": "Amazon SES（SMTP）",
+        "bestFor": "更倾向于使用 SMTP 凭据的 AWS 账户。",
+        "credentialHint": "在 SES 控制台的 SMTP 设置下创建 SMTP 凭据。它们不是你的 IAM 密钥。"
+      },
+      "postmark": {
+        "name": "Postmark",
+        "bestFor": "带有已验证发件人签名的事务性邮件。",
+        "credentialHint": "从你的 Postmark 服务器复制 Server API token。"
+      },
+      "sendgrid": {
+        "name": "SendGrid",
+        "bestFor": "已完成域名认证的现有 SendGrid 账户。",
+        "credentialHint": "在 Settings 下的 API Keys 中创建具有 Mail Send 权限的 API 密钥。"
+      },
+      "mailgun": {
+        "name": "Mailgun",
+        "bestFor": "从你在 Mailgun 中验证过的域名发送。",
+        "credentialHint": "从 Mailgun 控制台复制一个发送用的 API 密钥，然后输入你的发送域名。"
+      },
+      "gmail": {
+        "name": "Google Workspace 或 Gmail",
+        "bestFor": "来自 Google 账户的低流量邮件。",
+        "credentialHint": "为该账户使用应用专用密码。用户名请填写完整的账户地址。"
+      },
+      "microsoft365": {
+        "name": "Microsoft 365",
+        "bestFor": "来自 Microsoft 365 邮箱的低流量邮件。",
+        "credentialHint": "使用邮箱密码或应用专用密码。用户名请填写完整的邮箱地址。"
+      },
+      "brevo": {
+        "name": "Brevo",
+        "bestFor": "通过 SMTP 中继发送的 Brevo 账户。",
+        "credentialHint": "在你的 Brevo 账户中创建 SMTP 密钥。用户名为你的 Brevo 登录名。"
+      },
+      "smtp": {
+        "name": "其他 SMTP 服务器",
+        "bestFor": "任何支持 SMTP 的邮件服务器或中继。",
+        "credentialHint": "使用你的邮件服务器提供的密码。"
+      }
+    },
+    "ownMailServer": {
+      "name": "使用我的邮件服务器",
+      "bestFor": "通过邮件页面，以你自己的域名的 noreply 地址发送。"
+    }
+  },
+  "heartbeat": {
+    "title": "主机外心跳",
+    "description": "服务器健康时，向你选择的监控服务发送 ping，因此即使整台主机宕机，停止 ping 时你也会收到告警。",
+    "url": "Ping 地址",
+    "urlPlaceholder": "https://hc-ping.com/your-uuid",
+    "urlHint": "来自 Healthchecks、Uptime Kuma push 或类似服务。加密存储，且不会再次显示。",
+    "urlSet": "正在 ping {{host}}。粘贴新地址即可替换。",
+    "failUrl": "失败地址（可选）",
+    "failUrlHint": "服务器判断自身不健康时，改为调用此地址。",
+    "agentSilenceUrl": "Agent 失联地址（可选）",
+    "agentSilenceHint": "当节点在一段时间内无法连接控制平面时，每个节点都会 ping 此失败地址，因此即使服务器正常运行，控制平面失效也能被及时发现。加密存储。",
+    "agentSilenceSet": "节点失去控制平面连接时会 ping {{host}}。粘贴新地址即可替换。",
+    "clearAgentSilence": "移除 Agent 地址",
+    "body": "发送状态详情（版本、运行时长）",
+    "save": "保存",
+    "clear": "关闭",
+    "saved": "心跳已保存",
+    "envManaged": "由服务器上的 APP_HEARTBEAT_URL 设置。取消设置后，即可在此处管理心跳。",
+    "noKey": "保存地址需要先配置主密钥。",
+    "result": {
+      "none": "尚未 ping",
+      "ok": "最近一次 ping 已发送",
+      "fail_reported": "已上报失败",
+      "unhealthy": "已暂停发送，服务器不健康",
+      "error": "最近一次 ping 失败"
+    }
+  },
+  "rehydrate": {
+    "title": "恢复报告",
+    "description": "控制平面恢复后，从每个数据库和应用卷的最新备份中拉回数据。",
+    "helpLabel": "整台服务器恢复指南",
+    "actionsTitle": "恢复数据",
+    "actionsDescription": "计划为试运行。运行会用最新备份覆盖正在使用的数据库和卷。",
+    "allowStale": "允许使用超过时效限制的备份",
+    "plan": "计划（试运行）",
+    "run": "开始恢复",
+    "confirmTitle": "覆盖正在使用的数据？",
+    "confirmBody": "每个有可用备份的数据库和卷都会被该备份替换。请先审阅计划。",
+    "confirm": "立即恢复",
+    "cancel": "取消",
+    "started": "恢复已开始",
+    "empty": "尚无计划或运行记录。请先从试运行开始。",
+    "noItems": "没有可恢复的数据库或应用卷。",
+    "summary": "待恢复 {{restorable}} 项，已完成 {{succeeded}} 项，失败 {{failed}} 项，已阻止 {{blocked}} 项，已跳过 {{skipped}} 项。数据丢失窗口：{{window}}。",
+    "backupAge": "备份已有 {{age}}",
+    "mode": {
+      "plan": "计划",
+      "run": "运行"
+    },
+    "state": {
+      "planned": "可以运行",
+      "running": "运行中",
+      "succeeded": "已成功",
+      "partial": "部分恢复",
+      "failed": "失败"
+    },
+    "kind": {
+      "database": "数据库",
+      "volume": "应用卷"
+    },
+    "itemStatus": {
+      "planned": "已计划",
+      "running": "运行中",
+      "succeeded": "已恢复",
+      "failed": "失败",
+      "skipped": "已跳过",
+      "blocked": "已阻止"
+    },
+    "reason": {
+      "no_backup": "未找到成功的备份",
+      "backup_too_old": "最新备份已超过时效限制",
+      "engine_keeps_no_data": "不在磁盘上保存数据"
+    }
+  },
+  "iacExport": {
+    "title": "导出",
+    "description": "将实时状态写成资源文件。两个字段都留空即导出所有可读取的内容。",
+    "project": "项目",
+    "projectPlaceholder": "shop",
+    "app": "应用",
+    "appPlaceholder": "web",
+    "includeValues": "包含明文环境变量值",
+    "run": "导出",
+    "running": "导出中...",
+    "download": "下载",
+    "copy": "复制",
+    "copied": "已复制",
+    "warning": "警告：{{message}}",
+    "textLabel": "导出的资源文件",
+    "button": "导出为代码",
+    "dialogTitle": "将 {{name}} 导出为代码",
+    "dialogDescription": "这是该单个资源的资源文件。密钥值绝不会包含在内。",
+    "loading": "导出中...",
+    "empty": "没有可导出的内容。",
+    "studioButton": "将当前状态导出为模板"
+  },
   "iacPlan": {
+    "summary": "待创建 {{create}} 项，待更新 {{update}} 项，待删除 {{delete}} 项，无变化 {{noop}} 项",
+    "summaryErrors": "待创建 {{create}} 项，待更新 {{update}} 项，待删除 {{delete}} 项，无变化 {{noop}} 项，{{error}} 项有错误",
+    "keptNote": "已保留，不在文件中",
+    "denied": "已拒绝",
+    "warning": "警告：{{message}}",
+    "matches": "实时状态已与文件一致。",
+    "status": {
+      "applied": "已执行",
+      "failed": "失败",
+      "denied": "已拒绝",
+      "skipped": "已跳过",
+      "noop": "无变化"
+    },
     "fix": "解决办法：{{hint}}",
     "codes": {
       "item_failed": {
@@ -2762,6 +3767,440 @@
         "message": "同步应用被拒绝或失败,堆栈保持不变。",
         "fix": "请在同一提交上运行堆栈计划;检查堆栈锁、受保护的应用和应用设置。"
       }
+    }
+  },
+  "iacImport": {
+    "button": "导入 YAML",
+    "dialogTitle": "为 {{name}} 导入 YAML",
+    "dialogDescription": "粘贴或上传资源 YAML，以预览会有哪些变化。此处不会执行任何操作。",
+    "textLabel": "待预览的 YAML",
+    "placeholder": "kind: App",
+    "preview": "预览",
+    "previewing": "规划中...",
+    "upload": "上传文件",
+    "uploadLabel": "上传 YAML 文件",
+    "cliNote": "要执行，请运行："
+  },
+  "iacHelp": {
+    "hint": "点击某个键即可查看其作用。",
+    "default": "默认值：{{value}}。"
+  },
+  "deployUrlCopies": {
+    "title": "部署地址副本",
+    "description": "近期部署是否保留副本，以及该副本能否访问。更改会在下一次同步时生效，无需重启。",
+    "modeLabel": "副本模式",
+    "modes": {
+      "off": {
+        "label": "关闭",
+        "description": "不保留任何副本。"
+      },
+      "private": {
+        "label": "私有",
+        "description": "副本保持暂停状态，没有公开地址或证书。"
+      },
+      "public": {
+        "label": "公开",
+        "description": "副本拥有各自的主机名和证书，可通过互联网访问。"
+      }
+    },
+    "source": {
+      "stored": "保存在此处",
+      "env": "来自环境变量",
+      "default": "默认"
+    },
+    "reset": "重置为默认值（{{mode}}）",
+    "saved": "部署地址副本已更新。",
+    "saving": "保存中...",
+    "confirm": {
+      "title": "将部署副本设为公开？",
+      "description": "每个保留的副本都会获得各自的公开主机名和证书。任何拥有该地址的人都可以访问你应用的旧版本。",
+      "confirm": "设为公开"
+    }
+  },
+  "appearancePage": {
+    "title": "外观",
+    "description": "主题底色、强调色、字体、文字大小、页面宽度、两侧边距和密度。更改会即时生效。",
+    "savedHere": "已保存在此浏览器中。开启同步后，也会跟随你的账户。",
+    "reset": "重置为默认值",
+    "defaultBadge": "默认",
+    "recommendedBadge": "推荐",
+    "presets": {
+      "title": "预设",
+      "description": "一键同时设置多个选项。",
+      "default": "默认",
+      "defaultHint": "标准外观",
+      "focusDark": "专注深色",
+      "focusDarkHint": "石墨色，宽松的内边距，舒适的密度",
+      "oled": "OLED",
+      "oledHint": "纯黑，宽页面，紧凑密度",
+      "paper": "纸张",
+      "paperHint": "暖色浅底，易读字体，窄页面",
+      "customDescription": "你的设置与任何预设都不一致。",
+      "custom": "自定义"
+    },
+    "theme": {
+      "title": "颜色模式",
+      "description": "浅色、深色或跟随浏览器。"
+    },
+    "darkBase": {
+      "title": "深色底色",
+      "description": "深色模式下使用的背景颜色。",
+      "soft": "柔和深色",
+      "softHint": "沉稳的近黑色",
+      "black": "纯黑",
+      "blackHint": "OLED，更省电",
+      "graphite": "石墨",
+      "graphiteHint": "中性色，视觉舒适",
+      "midnight": "午夜",
+      "midnightHint": "偏蓝色调"
+    },
+    "lightBase": {
+      "title": "浅色底色",
+      "description": "浅色模式下使用的背景颜色。",
+      "white": "白色",
+      "whiteHint": "经典，亮度最高",
+      "grey": "柔和灰",
+      "greyHint": "眩光更少，卡片为白色",
+      "paper": "纸张",
+      "paperHint": "暖色调",
+      "cool": "冷灰",
+      "coolHint": "略带蓝色调"
+    },
+    "accent": {
+      "title": "强调色",
+      "description": "用于当前页面、选中的卡片、链接和焦点。",
+      "teal": "青蓝",
+      "indigo": "靛蓝",
+      "violet": "紫罗兰",
+      "green": "绿色",
+      "amber": "琥珀色",
+      "rose": "玫瑰红",
+      "custom": "自定义颜色",
+      "customColor": "选择自定义强调色",
+      "customHex": "十六进制颜色",
+      "customInvalid": "请输入六位十六进制数字，例如 #0e7490。",
+      "adjusted": "已为可读性调整"
+    },
+    "font": {
+      "title": "字体",
+      "description": "Geist 随应用提供，其他字体使用你设备上已有的字体。",
+      "system": "Geist",
+      "systemHint": "默认，随应用打包",
+      "device": "系统",
+      "deviceHint": "你设备的字体",
+      "rounded": "圆角",
+      "roundedHint": "柔和的字形",
+      "serif": "衬线",
+      "serifHint": "经典，接近印刷文字",
+      "mono": "等宽",
+      "monoHint": "固定字符宽度",
+      "readable": "易读",
+      "readableHint": "字形较宽，行距更大"
+    },
+    "textSize": {
+      "title": "文字大小",
+      "description": "缩放所有文字和间距。",
+      "slider": "文字大小",
+      "quick": "快速选择",
+      "sample": "Aa 敏捷的棕色狐狸",
+      "reset": "重置大小"
+    },
+    "width": {
+      "title": "页面宽度",
+      "description": "大屏幕上页面内容的宽度。小于 1024px 的屏幕不受影响。",
+      "slider": "内容宽度",
+      "reset": "重置宽度"
+    },
+    "gutter": {
+      "title": "两侧边距",
+      "description": "平板尺寸及以上时，页面内容左右两侧的留白。",
+      "tight": "紧凑",
+      "tightHint": "为内容留出更多空间",
+      "normal": "标准",
+      "normalHint": "均衡",
+      "roomy": "宽松",
+      "roomyHint": "更平静，边距更大"
+    },
+    "density": {
+      "description": "卡片、列表和表单使用多少间距。",
+      "compactHint": "在屏幕上容纳更多内容",
+      "comfortableHint": "留出更多空间"
+    },
+    "sections": {
+      "color": "颜色",
+      "type": "字体",
+      "layout": "布局",
+      "look": "外观与背景",
+      "sync": "同步"
+    },
+    "motion": {
+      "title": "动效",
+      "description": "仪表盘中的动画和过渡效果。",
+      "system": "跟随系统",
+      "systemHint": "使用设备设置",
+      "on": "减少",
+      "onHint": "极简动画",
+      "off": "全部允许",
+      "offHint": "忽略设备设置"
+    },
+    "sync": {
+      "label": "同步到我的账户",
+      "hint": "在你登录的每个浏览器上保持这些选择。",
+      "syncing": "同步中...",
+      "synced": "已同步：{{when}}",
+      "justNow": "刚刚",
+      "notSynced": "未同步",
+      "tooLarge": "数据过大，无法同步。你的选择仅保存在此浏览器中。",
+      "off": "同步已关闭，选择仅保存在此浏览器中。",
+      "export": "导出",
+      "import": "导入",
+      "importLabel": "从 JSON 文件导入外观",
+      "importBad": "该文件不是有效的外观导出文件。",
+      "imported": "已导入。"
+    },
+    "look": {
+      "title": "外观风格",
+      "description": "玻璃风格会添加柔和的背景、更圆的角和胶囊形按钮。克制风格更扁平、更紧凑。",
+      "glass": "玻璃风格",
+      "glassHint": "柔和底色，胶囊按钮",
+      "restrained": "克制",
+      "restrainedHint": "扁平，紧凑的圆角"
+    },
+    "backdrop": {
+      "title": "背景",
+      "description": "品牌色会在应用背后添加柔和的色彩渐变。纯色则让背景保持完全深色或浅色。",
+      "branded": "品牌色",
+      "brandedHint": "柔和的色彩渐变",
+      "plain": "纯色",
+      "plainHint": "无渐变，纯色背景"
+    },
+    "radius": {
+      "title": "圆角",
+      "description": "按钮、卡片和输入框的圆角程度。",
+      "sharp": "直角",
+      "sharpHint": "方正，偏技术感",
+      "normal": "标准",
+      "normalHint": "默认样式",
+      "soft": "柔和",
+      "softHint": "更圆润，更亲切"
+    },
+    "contrast": {
+      "title": "高对比度",
+      "description": "更强的边框、弱化的文字和焦点环。",
+      "system": "跟随系统",
+      "systemHint": "使用设备设置",
+      "on": "开启",
+      "onHint": "始终使用高对比度",
+      "off": "关闭",
+      "offHint": "忽略设备设置",
+      "sample": "弱化文字示例"
+    },
+    "codeFont": {
+      "title": "代码字体",
+      "description": "用于代码、日志、终端和差异对比。Geist Mono 随应用提供，其他字体使用你设备上已有的字体。",
+      "system-mono": "Geist Mono",
+      "system-monoHint": "默认，随应用提供",
+      "device-mono": "系统等宽字体",
+      "device-monoHint": "设备默认",
+      "jetbrains": "JetBrains Mono",
+      "jetbrainsHint": "已安装时可用",
+      "fira": "Fira Code",
+      "firaHint": "已安装时可用",
+      "menlo": "Menlo",
+      "menloHint": "macOS 及类似系统"
+    },
+    "codeSize": {
+      "title": "代码字号",
+      "description": "代码、日志和终端的文字大小。",
+      "slider": "代码字号",
+      "reset": "重置大小",
+      "sample": "$ deploy --app web\n12:00:01 INFO build ok",
+      "sampleLabel": "代码示例"
+    },
+    "hub": {
+      "saved": "已保存",
+      "resetDone": "已恢复默认设置",
+      "theme": {
+        "title": "主题",
+        "system": "系统",
+        "systemHint": "跟随你的设备",
+        "light": "浅色",
+        "lightHint": "明亮的界面",
+        "dark": "深色",
+        "darkHint": "眩光较少",
+        "oled": "OLED",
+        "oledHint": "纯黑，仅限此设备"
+      },
+      "preview": {
+        "title": "实时预览",
+        "nav": "示例导航",
+        "apps": "应用",
+        "deployments": "部署",
+        "servers": "服务器",
+        "running": "运行中",
+        "stopped": "已停止",
+        "field": "应用名称",
+        "fieldValue": "web",
+        "primary": "部署",
+        "secondary": "取消",
+        "toast": "已在 12 秒内部署 web",
+        "dialogTitle": "删除应用？",
+        "dialogBody": "此操作无法撤销。",
+        "danger": "删除"
+      }
+    },
+    "listKeys": {
+      "title": "列表键盘快捷键",
+      "description": "单键可在列表中移动：j 和 k 上下移动，x 选择，Enter 打开，/ 聚焦筛选，? 显示快捷键。如果与屏幕阅读器或语音输入冲突，可以关闭。",
+      "on": "已启用",
+      "onHint": "j、k、x、Enter、/、?",
+      "off": "已禁用",
+      "offHint": "仅鼠标和 Tab"
+    }
+  },
+  "secretProviders": {
+    "title": "密钥提供方",
+    "hint": "在容器启动时解析的只读引用，解析失败则拒绝启动。用作应用的环境变量值：",
+    "namePlaceholder": "prod",
+    "formLabel": "密钥提供方",
+    "name": "名称",
+    "type": "提供方",
+    "projectDoppler": "项目",
+    "projectInfisical": "工作区 ID",
+    "envDoppler": "配置",
+    "envInfisical": "环境标识",
+    "path": "路径（可选）",
+    "baseUrl": "基础 URL（自托管）",
+    "projectOnePassword": "默认保险库",
+    "baseUrlConnect": "Connect 服务器 URL",
+    "errBaseUrl": "需要填写 Connect 服务器 URL。",
+    "readOnly": "只有管理员可以更改密钥提供方。",
+    "clientId": "客户端 ID",
+    "clientSecret": "客户端密钥",
+    "tokenOrIdentity": "访问令牌（或使用客户端 ID 和密钥）",
+    "errIdentity": "请同时填写客户端 ID 和客户端密钥（ID 不能包含冒号或空格）。",
+    "errIdentityReenter": "更改客户端 ID 后，请重新输入客户端密钥。",
+    "errVault": "需要填写默认保险库。",
+    "errIdentityOrToken": "请只使用访问令牌，或只使用客户端 ID 和密钥，不能两者同时使用。",
+    "token": "令牌",
+    "errName": "名称必须以字母开头，只能使用小写字母、数字或下划线（最多 40 个字符）。",
+    "errScope": "项目和环境为必填项。",
+    "errToken": "首次使用时需要令牌。",
+    "save": "保存",
+    "saving": "保存中...",
+    "cancel": "取消",
+    "add": "添加提供方",
+    "edit": "编辑",
+    "remove": "移除",
+    "test": "测试",
+    "testing": "测试中...",
+    "testOk": "连接正常。",
+    "testFail": "测试失败。",
+    "selfHosted": "自托管",
+    "noToken": "无令牌",
+    "loading": "正在加载提供方...",
+    "empty": "还没有密钥提供方。",
+    "removeTitle": "移除 {{name}}？",
+    "removeConsequence": "在重新添加此提供方之前，引用它的应用将无法启动。"
+  },
+  "iacStudio": {
+    "tabFiles": "文件",
+    "tabStudio": "Studio",
+    "templates": "模板",
+    "use": "使用",
+    "copy": "复制",
+    "useNamed": "使用模板 {{name}}",
+    "copyNamed": "复制模板 {{name}}",
+    "editor": "资源 YAML",
+    "placeholder": "version: 1\nkind: App\nmetadata:\n  name: web",
+    "cloudNote": "未开启云功能时，云类型会被拒绝。此处不需要输入云凭据。",
+    "planHash": "计划",
+    "beta": "测试版",
+    "codeDoc": "错误代码 {{code}}，打开参考文档",
+    "applyDisabled": "此实例已关闭应用操作。计划仍然可用。",
+    "replan": "重新计划",
+    "viewLabel": "编辑器视图",
+    "resultLabel": "计划结果",
+    "copyFailed": "无法复制到剪贴板",
+    "viewYaml": "YAML",
+    "viewForm": "表单",
+    "formLoading": "正在加载表单",
+    "stack": {
+      "title": "Stack 历史",
+      "pick": "Stack",
+      "none": "还没有 stack。应用 stack 后,修订会显示在这里。",
+      "timeline": "修订时间线",
+      "noRevisions": "还没有修订。",
+      "loadFailed": "无法加载修订。",
+      "driftNone": "与最近一次应用的修订没有偏差。",
+      "diffLive": "与实时状态比较"
+    },
+    "planAction": {
+      "create": "创建",
+      "update": "更新",
+      "delete": "删除",
+      "noop": "无变化",
+      "error": "错误"
+    },
+    "multiDoc": "此文本包含多个文档。表单以只读方式显示第一个。请使用 YAML 编辑以修改任何一个。",
+    "parseLine": "此文档无法解析（第 {{line}} 行）。",
+    "editAsYaml": "以 YAML 编辑",
+    "exportedNote": "已从实时状态导出。密钥不会被包含，而是以引用形式导出。",
+    "copyYaml": "复制 YAML",
+    "copied": "已复制",
+    "localTemplates": {
+      "cron-job": {
+        "title": "定时任务",
+        "description": "按计划运行命令，或调用应用上的路径。"
+      }
+    }
+  },
+  "obsExport": {
+    "title": "导出到",
+    "rootRequired": {
+      "title": "导出需要 root 令牌",
+      "why": "导出可以读取每个应用的日志和指标，因此只有 root 令牌可以管理它们。"
+    },
+    "about": "将此控制面的日志和指标发送到托管的可观测性服务。选择一个服务，填写详细信息，然后测试连接。",
+    "signal": {
+      "logs": "日志",
+      "metrics": "指标"
+    },
+    "dialog": {
+      "title": "导出到 {{name}}",
+      "name": "名称",
+      "create": "创建",
+      "creating": "创建中",
+      "cancel": "取消",
+      "done": "完成",
+      "help": "关于{{field}}"
+    },
+    "test": {
+      "title": "测试结果",
+      "run": "测试",
+      "running": "测试中",
+      "retry": "重新测试",
+      "pass": "已投递",
+      "failed": "测试失败"
+    },
+    "fix": {
+      "bad_token": "替换令牌",
+      "tls_error": "修复证书",
+      "unreachable": "检查地址",
+      "rejected": "检查端点路径",
+      "private_blocked": "允许内部地址"
+    },
+    "health": {
+      "ok": "正在投递",
+      "error": "失败",
+      "pending": "等待首次投递"
+    },
+    "list": {
+      "label": "活动导出",
+      "sent_other": "已发送 {{count}} 条",
+      "delete": "删除",
+      "deleteTitle": "删除 {{name}} 导出？",
+      "deleteConsequence": "日志和指标将不再发送到此服务。"
     }
   }
 }

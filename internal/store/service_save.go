@@ -28,6 +28,9 @@ func (db *DB) SaveSuspendedDesiredService(ctx context.Context, svc DesiredServic
 // saveDesiredService is SaveDesiredService with an optional hook run inside
 // the same transaction before the write; a hook error aborts the save.
 func (db *DB) saveDesiredService(ctx context.Context, svc DesiredService, inTx func(*sql.Tx) error, suspended bool) error {
+	if err := db.checkDesiredImage(ctx, svc); err != nil {
+		return err
+	}
 	domainsJSON, err := json.Marshal(nonNilSlice(svc.Domains))
 	if err != nil {
 		return fmt.Errorf("store: marshal domains for service %q: %w", svc.Name, err)

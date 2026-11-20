@@ -28,7 +28,10 @@
     "savedSearches": "Gespeicherte Suchen",
     "filters": "Filter",
     "starter": "Als Nächstes probieren",
-    "related": "Verwandt"
+    "related": "Verwandt",
+    "Languages": "Sprachen",
+    "Create": "Erstellen",
+    "Ask": "Nicht gefunden?"
   },
   "kind": {
     "app": "Apps",
@@ -82,7 +85,8 @@
     "navigate": "navigieren",
     "select": "auswählen",
     "secondary": "sekundär",
-    "close": "schließen"
+    "close": "schließen",
+    "groups": "Gruppen"
   },
   "keyboardShortcuts": "Tastenkürzel",
   "keyboardShortcutsKeywords": "schnelle navigation halten l gehe zu quick navigation hold l go to",
@@ -125,6 +129,7 @@
       "action-create-database": "Eine neue verwaltete Datenbank bereitstellen.",
       "nav-backups": "Backup-Zeitpläne und Wiederherstellungspunkte für Ihre Daten.",
       "nav-assets": "Laden Sie Dateien in Ihren eigenen Bucket hoch, kopieren Sie URLs und sehen Sie, was es kostet.",
+      "nav-pages": "Statische Websites veröffentlichen: Ordner ablegen, zurückrollen, Domains und Routen setzen.",
       "nav-domains": "Domains, Zertifikate und Routing für Ihre Apps.",
       "nav-dns": "DNS-Zonen und -Einträge.",
       "nav-firewall": "Steuern Sie, welche Ports und Quellen Ihre Nodes erreichen dürfen.",
@@ -188,7 +193,13 @@
       "action-mail-backup": "Startet jetzt ein Backup Ihres Mailservers.",
       "action-mail-webmail": "Öffnet Webmail in einem neuen Tab.",
       "action-mail-queue": "Öffnet die Warteschlange für ausgehende Mails."
-    }
+    },
+    "logs": "Logs",
+    "deploys": "Deploys",
+    "restart": "Neu starten",
+    "status": "Status",
+    "url": "URL",
+    "image": "Image"
   },
   "modes": {
     "docs": {
@@ -234,7 +245,21 @@
     }
   },
   "bubbles": {
-    "label": "Zuletzt und vorgeschlagen"
+    "label": "Zuletzt und vorgeschlagen",
+    "hint": "Leertaste zum Aufnehmen dieses Links, Pfeiltasten zum Verschieben, Leertaste zum Ablegen, Escape zum Abbrechen. Rechtsklick oder Umschalt plus F10 öffnet weitere Aktionen.",
+    "limit": "Pin-Limit erreicht. Lösen Sie zuerst einen Link.",
+    "pinned": "{{title}} angeheftet",
+    "unpinned": "{{title}} gelöst",
+    "notPinnable": "Nur Seiten und Apps können angeheftet werden",
+    "moved": "{{title}} auf Position {{position}} von {{total}} verschoben",
+    "lifted": "{{title}} aufgenommen, Position {{position}} von {{total}}. Pfeiltasten zum Verschieben, Leertaste zum Ablegen, Escape zum Abbrechen.",
+    "dropped": "{{title}} an Position {{position}} von {{total}} abgelegt",
+    "cancelled": "Verschieben abgebrochen",
+    "menu": "Aktionen für Schnelllinks",
+    "unpin": "Lösen",
+    "moveLeft": "Nach links verschieben",
+    "moveRight": "Nach rechts verschieben",
+    "openNewTab": "In neuem Tab öffnen"
   },
   "mail": {
     "addMailbox": "Mail: Postfach hinzufügen",
@@ -245,5 +270,33 @@
     "backupFailed": "Mail-Backup fehlgeschlagen",
     "keywords": "mail e-mail postfach email mailbox"
   },
-  "connectSource": "Git-Quelle für {{app}} verbinden"
+  "connectSource": "Git-Quelle für {{app}} verbinden",
+  "language": {
+    "title": "Sprache",
+    "change": "Sprache ändern",
+    "description": "Wählen Sie die Sprache des Dashboards. Sie gilt sofort und wird in Ihrem Konto gespeichert.",
+    "switchTo": "Sprache: {{name}}",
+    "browser": "Sprache: {{name}} (Browser)",
+    "current": "Aktuelle Sprache",
+    "saveFailed": "Die Sprache konnte nicht gespeichert werden.",
+    "keywords": "sprache sprachen locale idioma Sprache langue lingua 言語 语言"
+  },
+  "create": {
+    "domain": "Domain hinzufügen",
+    "project": "Projekt erstellen",
+    "keywords": "neu erstellen hinzufügen"
+  },
+  "goTo": "gehe zu öffnen",
+  "hints": {
+    "label": "Suchmodi",
+    "clear": "Verlauf löschen"
+  },
+  "clearInput": "Suche leeren",
+  "resultCount_one": "{{count}} Treffer",
+  "resultCount_other": "{{count}} Treffer",
+  "drag": {
+    "label": "Palette verschieben",
+    "hint": "Ziehen zum Verschieben oder Alt bzw. Option mit den Pfeiltasten halten. Mit Umschalt springen Sie an einen Rand. Pos1 zentriert neu.",
+    "moved": "Verschoben nach {{x}}, {{y}}"
+  }
 }

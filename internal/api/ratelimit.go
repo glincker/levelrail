@@ -4,7 +4,6 @@ import (
 	"net"
 	"net/http"
 	"net/netip"
-	"os"
 	"strings"
 	"sync"
 	"time"
@@ -183,20 +182,4 @@ func isTrustedPeer(host string, trusted []netip.Prefix) bool {
 		}
 	}
 	return false
-}
-
-func trustedProxyPrefixes() []netip.Prefix {
-	var out []netip.Prefix
-	for _, e := range strings.Split(os.Getenv(envTrustedProxies), ",") {
-		e = strings.TrimSpace(e)
-		if e == "" {
-			continue
-		}
-		if p, err := netip.ParsePrefix(e); err == nil {
-			out = append(out, p)
-		} else if a, err := netip.ParseAddr(e); err == nil {
-			out = append(out, netip.PrefixFrom(a, a.BitLen()))
-		}
-	}
-	return out
 }

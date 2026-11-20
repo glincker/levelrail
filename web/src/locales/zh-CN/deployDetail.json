@@ -435,6 +435,9 @@
     "prebuilt": "没有构建阶段：此部署使用了预构建镜像。",
     "label": "此部署的阶段",
     "step": {
+      "build": "构建",
+      "publish": "发布",
+      "live": "已上线",
       "pull": "拉取镜像",
       "create": "创建容器",
       "readiness": "就绪检查",

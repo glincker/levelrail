@@ -140,15 +140,15 @@ type stepMeta struct {
 }
 
 var catalog = []stepMeta{
+	{id: StepFirstApp, title: "Deploy your first app", minutes: 5, href: "/apps"},
+	{id: StepAppDomain, title: "Put the app on your domain", minutes: 4, href: "/domains", needs: []StepID{StepFirstApp}},
+	{id: StepTLS, title: "Get a valid TLS certificate", minutes: 2, href: "/settings/certificates", needs: []StepID{StepAppDomain}},
+	{id: StepPublicAddress, title: "Set the public dashboard address", minutes: 3, href: "/settings/general"},
+	{id: StepGitProvider, title: "Connect a Git provider", optional: true, minutes: 3, href: "/settings/github-app"},
+	{id: StepDNS, title: "Connect a DNS provider or proxy", optional: true, minutes: 3, href: "/domains"},
 	{id: StepSecureAdmin, title: "Secure the admin account", minutes: 2, href: "/settings/security"},
 	{id: StepSignInRecovery, title: "Set up a way back in", minutes: 3, href: "/settings/security"},
 	{id: StepSecurityReview, title: "Review your security defaults", minutes: 2, href: "/settings/security-runtime"},
-	{id: StepPublicAddress, title: "Set the public dashboard address", minutes: 3, href: "/settings/general"},
-	{id: StepGitProvider, title: "Connect a Git provider", optional: true, minutes: 3, href: "/settings/github-app"},
-	{id: StepFirstApp, title: "Deploy your first app", minutes: 5, href: "/apps"},
-	{id: StepAppDomain, title: "Put the app on your domain", minutes: 4, href: "/domains", needs: []StepID{StepFirstApp}},
-	{id: StepDNS, title: "Connect a DNS provider or proxy", optional: true, minutes: 3, href: "/domains"},
-	{id: StepTLS, title: "Get a valid TLS certificate", minutes: 2, href: "/settings/certificates", needs: []StepID{StepAppDomain}},
 	{id: StepBackupTarget, title: "Add a backup target", minutes: 4, href: "/settings/backup-targets"},
 	{id: StepFirstBackup, title: "Take the first backup", minutes: 2, href: "/settings/control-plane-backup", needs: []StepID{StepBackupTarget}},
 	{id: StepVerifiedBackup, title: "Verify a restore", minutes: 3, href: "/settings/control-plane-backup", needs: []StepID{StepFirstBackup}},

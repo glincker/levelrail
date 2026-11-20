@@ -98,12 +98,35 @@ export interface DnsZone {
   found: boolean
   zone?: string
   message?: string
+  zones?: string[]
 }
 
 export interface BaseDomainBackfill {
   dry_run: boolean
   base_domain: string
   items: { app: string; domain: string; status: string }[]
+}
+
+export interface DnsRecordPlan {
+  name: string
+  type: string
+  value: string
+  ttl_seconds?: number
+}
+
+export interface BaseDomainWildcard {
+  dry_run: boolean
+  base_domain: string
+  dns: {
+    domain: string
+    dns: string
+    planned?: string
+    provider?: string
+    zone?: string
+    record?: DnsRecordPlan
+    replaced?: DnsRecordPlan[]
+    message?: string
+  }
 }
 
 export const goLiveKeys = {
@@ -292,5 +315,16 @@ export function useBackfillBaseDomain() {
         void queryClient.invalidateQueries({ queryKey: domainKeys.all })
       }
     },
+  })
+}
+
+export function useBaseDomainWildcard() {
+  return useMutation({
+    mutationFn: (opts: { confirm: boolean; replace: boolean }) =>
+      request<BaseDomainWildcard>(
+        '/api/v1/settings/ingress/apps-base-domain/wildcard',
+        jsonInit('POST', opts),
+        'wildcard record',
+      ),
   })
 }

@@ -2,6 +2,7 @@
 // (internal/api/git_connections.go). No credential ever appears here.
 
 import type { GitConnectionStatus } from './gitProviders'
+import type { GitSourceTriggerMode } from './gitSource'
 
 export type GitConnectionProvider =
   | 'gitlab'
@@ -75,5 +76,5 @@ export interface UseRepoAsSourceRequest {
   build_type?: 'dockerfile' | 'railpack' | 'static'
   build_path?: string
   base_directory?: string
-  trigger_mode?: 'push' | 'release'
+  trigger_mode?: GitSourceTriggerMode
 }

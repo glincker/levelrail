@@ -84,17 +84,21 @@ func (p *Pipeline) deployStaticBuilt(ctx context.Context, req Request, progress 
 	}
 	defer os.RemoveAll(workDir) //nolint:errcheck // scratch dir
 	dockerfile := filepath.Join(workDir, "Dockerfile")
-	text, err := staticDockerfile(buildRoot, p.staticImage(), b)
+	tag := "levelrail-static-build:" + imageTagUnsafe.ReplaceAllString(strings.ToLower(req.ServiceName+"-"+req.CommitSHA), "-")
+	if len(tag) > 100 {
+		tag = tag[:100]
+	}
+	// Same per-site id and switch as Railpack, so cache usage, budget and clear cover these mounts too.
+	cacheID := ""
+	if build.PerAppCacheEnabled(ctx) {
+		cacheID = railpackCacheID(ctx, req, tag)
+	}
+	text, err := staticDockerfile(buildRoot, p.staticImage(), cacheID, b)
 	if err != nil {
 		return fail("%w", err)
 	}
 	if err := os.WriteFile(dockerfile, []byte(text), 0o600); err != nil {
 		return fail("write build file: %w", err)
-	}
-
-	tag := "levelrail-static-build:" + imageTagUnsafe.ReplaceAllString(strings.ToLower(req.ServiceName+"-"+req.CommitSHA), "-")
-	if len(tag) > 100 {
-		tag = tag[:100]
 	}
 	emitStatic(progress, stepStaticBuild, "running "+b.Command+" in a build container", false)
 	start := time.Now()
@@ -112,7 +116,7 @@ func (p *Pipeline) deployStaticBuilt(ctx context.Context, req Request, progress 
 		_ = os.RemoveAll(staging)
 		return fail("publish build output: %w", err)
 	}
-	if err := p.prepareStaticRouting(req, destDir, progress); err != nil {
+	if err := p.prepareStaticRouting(ctx, req, destDir, progress); err != nil {
 		return fail("%w", err)
 	}
 	duration := time.Since(start)
@@ -194,16 +198,16 @@ func swapIntoPlace(staging, dest string) error {
 // staticDockerfile renders the throwaway build: dependencies first for layer
 // caching, then the source and the user's command, then a scratch stage that
 // holds only the publish directory.
-func staticDockerfile(buildRoot, image string, b spec.Build) (string, error) {
+func staticDockerfile(buildRoot, image, cacheID string, b spec.Build) (string, error) {
 	publish, err := spec.NormalizeRepoPath("build.publish", b.Publish)
 	if err != nil || publish == "" {
 		return "", errors.New("build.publish must be a subdirectory")
 	}
 	var sb strings.Builder
 	sb.WriteString("FROM " + image + " AS build\nWORKDIR /src\n")
-	if manifests, install := nodeInstall(buildRoot); len(manifests) > 0 {
+	if manifests, install, pm := nodeInstall(buildRoot); len(manifests) > 0 {
 		quoted, _ := json.Marshal(append(manifests, "./"))
-		sb.WriteString("COPY " + string(quoted) + "\nRUN " + install + "\n")
+		sb.WriteString("COPY " + string(quoted) + "\nRUN " + packageCacheMount(cacheID, pm) + install + "\n")
 	}
 	sb.WriteString("COPY . .\n")
 	keys := make([]string, 0, len(b.Args))
@@ -222,13 +226,13 @@ func staticDockerfile(buildRoot, image string, b spec.Build) (string, error) {
 
 // nodeInstall picks the dependency files to copy early and the install command
 // that matches the lockfile, or nothing when the project has no package.json.
-func nodeInstall(buildRoot string) (manifests []string, install string) {
+func nodeInstall(buildRoot string) (manifests []string, install, pm string) {
 	has := func(name string) bool {
 		_, err := os.Stat(filepath.Join(buildRoot, name))
 		return err == nil
 	}
 	if !has("package.json") {
-		return nil, ""
+		return nil, "", ""
 	}
 	manifests = []string{"package.json"}
 	for _, f := range []string{"package-lock.json", "npm-shrinkwrap.json", "yarn.lock", "pnpm-lock.yaml", ".npmrc"} {
@@ -238,12 +242,27 @@ func nodeInstall(buildRoot string) (manifests []string, install string) {
 	}
 	switch {
 	case has("pnpm-lock.yaml"):
-		return manifests, "corepack enable && pnpm install --frozen-lockfile"
+		return manifests, "corepack enable && pnpm install --frozen-lockfile", "pnpm"
 	case has("yarn.lock"):
-		return manifests, "corepack enable && yarn install --frozen-lockfile"
+		return manifests, "corepack enable && YARN_CACHE_FOLDER=" + yarnCacheDir + " yarn install --frozen-lockfile", "yarn"
 	case has("package-lock.json"), has("npm-shrinkwrap.json"):
-		return manifests, "npm ci"
+		return manifests, "npm ci", "npm"
 	default:
-		return manifests, "npm install"
+		return manifests, "npm install", "npm"
 	}
+}
+
+const yarnCacheDir = "/yarn-cache"
+
+// packageCacheMount keeps the package manager download cache across builds of one site,
+// so a rebuild after a small change skips re-downloading every dependency.
+func packageCacheMount(cacheID, pm string) string {
+	if cacheID == "" {
+		return ""
+	}
+	target := map[string]string{"npm": "/root/.npm", "pnpm": "/root/.local/share/pnpm/store", "yarn": yarnCacheDir}[pm]
+	if target == "" {
+		return ""
+	}
+	return "--mount=type=cache,id=" + cacheID + "-" + pm + ",target=" + target + ",sharing=locked "
 }

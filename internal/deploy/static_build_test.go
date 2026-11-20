@@ -171,7 +171,7 @@ func TestStaticDockerfile(t *testing.T) {
 			dir := t.TempDir()
 			writeTree(t, dir, tt.files)
 			b := spec.Build{Type: spec.BuildStatic, Command: "npm run build", Publish: "dist/", Args: map[string]string{"VITE_API": "x"}}
-			got, err := staticDockerfile(dir, "node:22", b)
+			got, err := staticDockerfile(dir, "node:22", "", b)
 			if err != nil {
 				t.Fatal(err)
 			}
@@ -186,5 +186,22 @@ func TestStaticDockerfile(t *testing.T) {
 				}
 			}
 		})
+	}
+}
+
+func TestStaticDockerfile_PackageCacheMounts(t *testing.T) {
+	cases := map[string]struct{ file, want string }{
+		"npm":  {"package-lock.json", "--mount=type=cache,id=docs-npm,target=/root/.npm,sharing=locked npm ci"},
+		"pnpm": {"pnpm-lock.yaml", "id=docs-pnpm,target=/root/.local/share/pnpm/store"},
+		"yarn": {"yarn.lock", "id=docs-yarn,target=/yarn-cache"},
+	}
+	for name, c := range cases {
+		dir := t.TempDir()
+		writeTree(t, dir, map[string]string{"package.json": "{}", c.file: "x"})
+		b := spec.Build{Type: spec.BuildStatic, Command: "npm run build", Publish: "dist/"}
+		got, err := staticDockerfile(dir, "node:22", "docs", b)
+		if err != nil || !strings.Contains(got, c.want) {
+			t.Errorf("%s: err=%v missing %q in\n%s", name, err, c.want, got)
+		}
 	}
 }

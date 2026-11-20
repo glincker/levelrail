@@ -155,6 +155,7 @@ type Router struct {
 
 	dash        *dashboardCache // never nil after NewRouter; WithDashboardCache sets the ttl
 	dashPrewarm bool
+	siteDiag    siteDiagnosisCache
 
 	logger                 *slog.Logger
 	brand                  *brand.Brand
@@ -231,6 +232,7 @@ type Router struct {
 	statusSampler           *statuspage.Service
 	statusHooks             *statuswebhook.Service // nil is valid: webhook routes return 501
 	statusHooksStore        statuswebhook.Store
+	statusTemplates         statusTemplateStore
 	statusLimiter           *apiRateLimiter
 	heartbeatMu             sync.Mutex
 	heartbeatLimiter        *apiRateLimiter
@@ -262,6 +264,7 @@ type Router struct {
 	buildPerf               BuildPerformanceStore                                         // see build_performance.go
 	buildQueue              buildQueueControl                                             // operator pause, drain and resume of new builds
 	buildRunnerNodes        build.NodeSource                                              // nil: the runner list shows the control plane only
+	builderProber           BuilderProber                                                 // nil: builder test returns 501
 	buildLoad               BuildLoadSource                                               // nil: the build center shows no live slot usage
 	appBuildCache           AppBuildCacher                                                // nil: per app build cache routes return 501
 	buildCacheNodes         BuildCacheResolver                                            // nil: build cache routes return 501
@@ -447,6 +450,8 @@ type Router struct {
 	// tokenRedeemRateLimit throttles the unauthenticated token-redeeming
 	// routes (reset-password, invite accept) per client IP. nil means unthrottled.
 	tokenRedeemRateLimit *apiRateLimiter
+	// devLoginToken is set only when dev token login passed its boot checks.
+	devLoginToken string
 	// fetchLatestRelease is handleGetUpdates' GitHub Releases lookup;
 	// always non-nil, defaulted to defaultFetchLatestRelease in
 	// NewRouter, overridable in tests the same way lookupHost is above.
@@ -469,6 +474,7 @@ type Router struct {
 	// channel update_settings currently names; always non-nil,
 	// constructed in NewRouter. Separate from updatesCache above so the
 	// stable channel's existing cache/behavior stays untouched.
+	channels            channelState
 	channelUpdatesCache *upgrade.Cache
 	// releaseHist lists recent releases and their schema versions for the
 	// rollback view (updates_releases.go); always non-nil.
@@ -756,6 +762,8 @@ type Router struct {
 	dnsQuerier                   dnszones.Querier                                           // nil uses a real miekg/dns querier; tests swap in a fake
 	dnsNS                        dnsNameserverState                                         // lazy delegation checker, registrar lookup and demo zones (dns_zones_delegation.go)
 	registry                     RegistryStore                                              // always set, same shape as cloudflareTunnel above
+	registryTokenActive          func() bool                                                // true while the registry runs token auth, so the htpasswd login no longer works
+	registryToken                *build.RegistryTokenService                                // nil answers 501 on the registry token route
 	registrySecrets              RegistrySecrets                                            // nil is valid: PUT/DELETE /api/v1/settings/registry return 501, same shape as cloudflareTunnelSecrets above
 	secretConns                  SecretConnectionService                                    // nil until boot wires it: reads return an empty list, writes 501
 	k8sDeploymentRows            K8sDeploymentRows                                          // nil when the store lacks deployment tables: routes return 501
@@ -800,31 +808,32 @@ type Router struct {
 	benchmarks                   BenchmarkStore                                             // nil when the backing store lacks benchmark runs
 	chaosResults                 ChaosStore                                                 // nil when the backing store lacks chaos results
 	searchOnce                   sync.Once
-	searchSvc                    *search.Service          // built lazily by searchService, see search.go
-	tags                         TagStore                 // always set, same "core Store interface" shape as scheduledTasks above: tags/app_tags always exist, empty is a valid, non-error result
-	appIntegrations              AppIntegrationStore      // always set, same "core Store interface" shape as scheduledTasks above: attaching/listing needs no secrets configuration, only storing a field value does (rt.secrets, checked in handleAttachAppIntegration)
-	bitbucketAppClient           BitbucketAppClient       // always set (NewRouter defaults it to a real *bitbucketapp.Client), overridable in this package's own tests
-	giteaAppClient               GiteaAppClient           // always set (NewRouter defaults it to a real *giteaapp.Client), overridable in this package's own tests
-	bitbucketServerClient        BitbucketServerClient    // always set, overridable in this package's own tests
-	azureDevOpsClient            AzureDevOpsClient        // always set, overridable in this package's own tests
-	setupGuide                   SetupGuideStore          // nil unless the store implements it: /api/v1/setup/guide routes return 501
-	onboarding                   OnboardingStore          // always set, same "core Store interface, not an optional plug-in" shape as ingressSettings above: the row always exists (migrations/0067's own seeded row)
-	dbPinger                     DBPinger                 // nil is valid: GET /system/doctor reports its database check as unknown, same shape as dockerPinger above
-	doctorDiskWarningBytes       int64                    // 0 means "use defaultDoctorDiskWarningBytes", set via WithDoctorDiskWarningBytes
-	ingressPortOwner             IngressPortOwner         // nil is valid: GET /system/doctor's port checks can't tell this control plane's own ingress apart from another process, same "can't check further, don't guess" shape as dbPinger above
-	doctorHTTPPort               int                      // 0 means "use defaultDoctorHTTPPort (80)", set via WithDoctorIngressPorts
-	doctorHTTPSPort              int                      // 0 means "use defaultDoctorHTTPSPort (443)", set via WithDoctorIngressPorts
-	webhookBodies                webhookBodySeen          // recent signed webhook bodies, replay guard
-	ddnsMgr                      *ddns.Manager            // nil serves 501 on /settings/ddns
-	heartbeatSvc                 *heartbeat.Service       // nil serves 501 on /settings/heartbeat
-	jobPings                     *heartbeat.JobPinger     // nil rejects per-job heartbeat URLs
-	monitors                     MonitorService           // nil is valid: monitor routes return 404 (APP_MONITORS_ENABLED off)
-	parkedRetention              parkedRetentionState     // last retention run, for the dry run's next_run
-	runtimeSettings              *runtimesettings.Service // nil only in unit tests of other packages; nil serves env then default
-	changes                      changeBus                // topic nudges for GET /api/v1/events/changes; the zero value is ready
-	webhookDeliveries            WebhookDeliveryStore     // always set, same "core Store interface" shape as deployAttempts above
-	policies                     PolicyStore              // always set, same "core Store interface" shape as certs above: iam_policies/iam_policy_attachments always exist, empty is a valid, non-error result
-	deviceFlow                   *apiRateLimiter          // per-IP device-login-start token bucket
+	searchSvc                    *search.Service                  // built lazily by searchService, see search.go
+	tags                         TagStore                         // always set, same "core Store interface" shape as scheduledTasks above: tags/app_tags always exist, empty is a valid, non-error result
+	appIntegrations              AppIntegrationStore              // always set, same "core Store interface" shape as scheduledTasks above: attaching/listing needs no secrets configuration, only storing a field value does (rt.secrets, checked in handleAttachAppIntegration)
+	bitbucketAppClient           BitbucketAppClient               // always set (NewRouter defaults it to a real *bitbucketapp.Client), overridable in this package's own tests
+	giteaAppClient               GiteaAppClient                   // always set (NewRouter defaults it to a real *giteaapp.Client), overridable in this package's own tests
+	bitbucketServerClient        BitbucketServerClient            // always set, overridable in this package's own tests
+	azureDevOpsClient            AzureDevOpsClient                // always set, overridable in this package's own tests
+	setupGuide                   SetupGuideStore                  // nil unless the store implements it: /api/v1/setup/guide routes return 501
+	onboarding                   OnboardingStore                  // always set, same "core Store interface, not an optional plug-in" shape as ingressSettings above: the row always exists (migrations/0067's own seeded row)
+	dbPinger                     DBPinger                         // nil is valid: GET /system/doctor reports its database check as unknown, same shape as dockerPinger above
+	doctorDiskWarningBytes       int64                            // 0 means "use defaultDoctorDiskWarningBytes", set via WithDoctorDiskWarningBytes
+	ingressPortOwner             IngressPortOwner                 // nil is valid: GET /system/doctor's port checks can't tell this control plane's own ingress apart from another process, same "can't check further, don't guess" shape as dbPinger above
+	doctorHTTPPort               int                              // 0 means "use defaultDoctorHTTPPort (80)", set via WithDoctorIngressPorts
+	ingressBoundPorts            func() (httpPort, httpsPort int) // live bound ports, set via WithIngressBoundPorts
+	doctorHTTPSPort              int                              // 0 means "use defaultDoctorHTTPSPort (443)", set via WithDoctorIngressPorts
+	webhookBodies                webhookBodySeen                  // recent signed webhook bodies, replay guard
+	ddnsMgr                      *ddns.Manager                    // nil serves 501 on /settings/ddns
+	heartbeatSvc                 *heartbeat.Service               // nil serves 501 on /settings/heartbeat
+	jobPings                     *heartbeat.JobPinger             // nil rejects per-job heartbeat URLs
+	monitors                     MonitorService                   // nil is valid: monitor routes return 404 (APP_MONITORS_ENABLED off)
+	parkedRetention              parkedRetentionState             // last retention run, for the dry run's next_run
+	runtimeSettings              *runtimesettings.Service         // nil only in unit tests of other packages; nil serves env then default
+	changes                      changeBus                        // topic nudges for GET /api/v1/events/changes; the zero value is ready
+	webhookDeliveries            WebhookDeliveryStore             // always set, same "core Store interface" shape as deployAttempts above
+	policies                     PolicyStore                      // always set, same "core Store interface" shape as certs above: iam_policies/iam_policy_attachments always exist, empty is a valid, non-error result
+	deviceFlow                   *apiRateLimiter                  // per-IP device-login-start token bucket
 	instance                     InstanceStore
 	instanceLimit                *apiRateLimiter // per-IP budget for the public identity endpoint
 	instanceMemo                 *instanceCache
@@ -1154,6 +1163,9 @@ func NewRouter(logger *slog.Logger, b *brand.Brand, s Store, opts ...Option) *Ro
 	// rt.sessions below. Both are overridable directly by this
 	// package's own tests, no Option needed.
 	rt.dnsRecordManager = rt.resolveDNSRecordManager
+	rt.fetchLatestRelease = func(ctx context.Context) (*githubRelease, error) {
+		return fetchLatestReleaseVia(ctx, rt.fallbackMirrorBase(ctx))
+	}
 	rt.fetch = rt.gitCheckout
 	rt.gitSourceFetch = rt.gitCheckoutWithToken
 	if c, ok := any(s).(ComposeDBBackupStore); ok {

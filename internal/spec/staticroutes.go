@@ -23,8 +23,9 @@ type HeaderRule struct {
 
 // StaticOptions is a static service's static: block.
 type StaticOptions struct {
-	SPA           bool   `yaml:"spa,omitempty"`
-	CleanURLs     bool   `yaml:"cleanUrls,omitempty"`
+	SPA bool `yaml:"spa,omitempty"`
+	// CleanURLs nil means the static default (on); false opts out.
+	CleanURLs     *bool  `yaml:"cleanUrls,omitempty"`
 	TrailingSlash string `yaml:"trailingSlash,omitempty"`
 	NotFound      string `yaml:"notFound,omitempty"`
 }
@@ -67,8 +68,14 @@ func (s Service) StaticRoutingInput() StaticInput {
 		}
 		in.HeaderBlocks = append(in.HeaderBlocks, b)
 	}
+	// Static hosts serve about.html at /about by default, so auto means on.
+	clean := true
+	if s.Static != nil && s.Static.CleanURLs != nil {
+		clean = *s.Static.CleanURLs
+	}
+	in.Options.CleanURLs = clean
 	if s.Static != nil {
-		in.Options = StaticServeOptions{SPA: s.Static.SPA, CleanURLs: s.Static.CleanURLs, TrailingSlash: s.Static.TrailingSlash, NotFound: s.Static.NotFound}
+		in.Options = StaticServeOptions{SPA: s.Static.SPA, CleanURLs: clean, TrailingSlash: s.Static.TrailingSlash, NotFound: s.Static.NotFound}
 	}
 	return in
 }

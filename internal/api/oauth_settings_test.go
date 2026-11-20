@@ -229,7 +229,7 @@ func TestHandleUpdateOAuthProviderSettings_MicrosoftRoundTrip(t *testing.T) {
 	cookie := loginTestSession(t, rt, db)
 	rt.oauthSecrets = newFakeOAuthSecrets()
 
-	body := `{"enabled":true,"client_id":"ms-client-id","client_secret":"ms-secret","allowed_email_domain":"example.com"}`
+	body := `{"enabled":true,"client_id":"ms-client-id","client_secret":"ms-secret","allowed_email_domain":"example.com","tenant_id":"11111111-2222-3333-4444-555555555555"}`
 	rec := httptest.NewRecorder()
 	rt.Handler().ServeHTTP(rec, authedRequest(t, cookie, http.MethodPut, "/api/v1/settings/oauth/microsoft", body))
 	if rec.Code != http.StatusOK {
@@ -251,5 +251,18 @@ func TestHandleUpdateOAuthProviderSettings_MicrosoftRoundTrip(t *testing.T) {
 	}
 	if !strings.Contains(settingsRec.Body.String(), `"provider":"microsoft"`) {
 		t.Errorf("public providers list missing microsoft: %s", settingsRec.Body.String())
+	}
+}
+
+func TestHandleUpdateOAuthProviderSettings_MicrosoftNeedsTenant(t *testing.T) {
+	rt, db := newTestRouter(t)
+	cookie := loginTestSession(t, rt, db)
+	rt.oauthSecrets = newFakeOAuthSecrets()
+
+	body := `{"enabled":true,"client_id":"ms-client-id","client_secret":"ms-secret"}`
+	rec := httptest.NewRecorder()
+	rt.Handler().ServeHTTP(rec, authedRequest(t, cookie, http.MethodPut, "/api/v1/settings/oauth/microsoft", body))
+	if rec.Code != http.StatusBadRequest || !strings.Contains(rec.Body.String(), "tenant_id is required") {
+		t.Fatalf("status = %d, body = %s, want 400 naming tenant_id", rec.Code, rec.Body.String())
 	}
 }

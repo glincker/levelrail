@@ -175,3 +175,24 @@ func TestRun_DomainsBackfillIsDryRunByDefault(t *testing.T) {
 		t.Fatalf("exit=%d confirm=%v stdout=%q", got, confirm, stdout.String())
 	}
 }
+
+func TestRun_DomainsBaseWildcardIsPreviewByDefault(t *testing.T) {
+	var got struct{ Confirm, Replace bool }
+	srv := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		_ = json.NewDecoder(r.Body).Decode(&got)
+		w.Header().Set("Content-Type", "application/json")
+		_ = json.NewEncoder(w).Encode(apiclient.BaseWildcard{DryRun: !got.Confirm, BaseDomain: "apps.example.com", DNS: apiclient.DomainDNSResult{DNS: "preview", Message: "would create"}})
+	}))
+	defer srv.Close()
+
+	var stdout, stderr bytes.Buffer
+	code := run("levelrail-cli-test", []string{"domains", "base-wildcard", "--api-url", srv.URL}, &stdout, &stderr, envMap())
+	if code != exitOK || got.Confirm || !strings.Contains(stdout.String(), "preview for *.apps.example.com") {
+		t.Fatalf("exit=%d got=%+v stdout=%q", code, got, stdout.String())
+	}
+	stdout.Reset()
+	code = run("levelrail-cli-test", []string{"domains", "base-wildcard", "--confirm", "--replace", "--api-url", srv.URL}, &stdout, &stderr, envMap())
+	if code != exitOK || !got.Confirm || !got.Replace {
+		t.Fatalf("exit=%d got=%+v", code, got)
+	}
+}

@@ -120,7 +120,7 @@ func TestRun_UpgradeAutoAndBackupNow(t *testing.T) {
 	srv := scheduleServer(t, f)
 
 	out, _ := runCLIExpectOK(t, []string{"upgrade", "auto", "get", "--api-url", srv.URL})
-	for _, want := range []string{"automatic upgrades: patch", "0 3 * * *", "held: 1 breaking change"} {
+	for _, want := range []string{"automatic updates: patch", "0 3 * * *", "held: 1 breaking change"} {
 		if !strings.Contains(out, want) {
 			t.Errorf("get stdout missing %q: %s", want, out)
 		}

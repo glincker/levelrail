@@ -30,6 +30,7 @@ func buildRequestToPB(req build.RemoteRequest) (*agentpb.BuildRequest, error) {
 		},
 		Network:          string(req.Network),
 		RailpackProvider: req.RailpackProvider,
+		Push:             pushToPB(req.Push),
 	}, nil
 }
 
@@ -52,6 +53,7 @@ func buildRequestFromPB(req *agentpb.BuildRequest) (build.RemoteRequest, error) 
 		BuildArgs:        req.GetBuildArgs(),
 		NoCache:          req.GetNoCache(),
 		RailpackProvider: req.GetRailpackProvider(),
+		Push:             pushFromPB(req.GetPush()),
 		Cache: build.CacheConfig{
 			RegistryRef:      req.GetCache().GetRegistryRef(),
 			RegistryInsecure: req.GetCache().GetRegistryInsecure(),
@@ -130,5 +132,20 @@ func buildResultFromPB(tag string, done *agentpb.BuildDone) *build.Result {
 		Tag:              tag,
 		Duration:         time.Duration(done.GetDurationMs()) * time.Millisecond,
 		ExporterResponse: done.GetExporterResponse(),
+		Digest:           done.GetDigest(),
 	}
+}
+
+func pushToPB(g *build.PushGrant) *agentpb.PushTarget {
+	if g == nil {
+		return nil
+	}
+	return &agentpb.PushTarget{Ref: g.Ref, Token: g.Token, Insecure: g.Insecure}
+}
+
+func pushFromPB(p *agentpb.PushTarget) *build.PushGrant {
+	if p == nil || p.GetRef() == "" {
+		return nil
+	}
+	return &build.PushGrant{Ref: p.GetRef(), Token: p.GetToken(), Insecure: p.GetInsecure()}
 }

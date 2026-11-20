@@ -358,5 +358,8 @@
     "dismiss": "Listo, ocultar token",
     "error": "No se pudo crear el token: {{message}}",
     "saveError": "No se pudo guardar: {{message}}"
+  },
+  "category": {
+    "weaker": "{{count}} debilitados"
   }
 }

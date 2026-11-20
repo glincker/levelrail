@@ -1,6 +1,7 @@
 import { describe, expect, it } from 'vitest'
 import {
   essentialSplit,
+  stepCount,
   guideStep,
   showGuideEntryPoints,
   stepGroups,
@@ -92,5 +93,18 @@ describe('guideStep', () => {
   it('finds a step by id', () => {
     expect(guideStep(base, 'tls')?.state).toBe('in_progress')
     expect(guideStep(undefined, 'tls')).toBeUndefined()
+  })
+})
+
+describe('stepCount', () => {
+  it('reports done over total with a percent', () => {
+    expect(stepCount({ ...base, done: 3, total: 6 })).toEqual({
+      done: 3,
+      total: 6,
+      percent: 50,
+    })
+  })
+  it('is zero while the guide loads', () => {
+    expect(stepCount(undefined)).toEqual({ done: 0, total: 0, percent: 0 })
   })
 })

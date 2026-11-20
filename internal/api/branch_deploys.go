@@ -13,6 +13,7 @@ import (
 
 	"github.com/GLINCKER/levelrail/internal/branchdeploy"
 	"github.com/GLINCKER/levelrail/internal/ingress"
+	"github.com/GLINCKER/levelrail/internal/runtimesettings"
 	"github.com/GLINCKER/levelrail/internal/sourcecache"
 	"github.com/GLINCKER/levelrail/internal/spec"
 	"github.com/GLINCKER/levelrail/internal/store"
@@ -92,7 +93,7 @@ func (rt *Router) handleBranchDeployPush(ctx context.Context, appName string, gs
 		status, message = rt.teardownBranchDeployForDelete(ctx, appName, gs, branch)
 		return status, message, true
 	}
-	if effectiveGitSourceTriggerMode(gs.TriggerMode) == spec.TriggerModeRelease {
+	if effectiveGitSourceTriggerMode(gs.TriggerMode) != spec.TriggerModePush {
 		return 0, "", false
 	}
 	cfg, err := rt.branchDeploys.GetBranchDeploySettings(ctx, appName)
@@ -133,6 +134,20 @@ func (rt *Router) teardownBranchDeployForDelete(ctx context.Context, appName str
 	return status, msg
 }
 
+const (
+	envDeployCoalesceWindow     = "APP_DEPLOY_COALESCE_WINDOW"
+	defaultDeployCoalesceWindow = 15 * time.Second
+)
+
+// branchDeployCoalesced reports whether row is already deploying sha and started inside window, so a repeat trigger adds nothing.
+func branchDeployCoalesced(row *store.BranchDeploy, sha string, now time.Time, window time.Duration) bool {
+	if row.Status != store.BranchDeployDeploying || sha == "" || row.HeadSHA != sha {
+		return false
+	}
+	started, err := time.Parse(time.RFC3339Nano, row.UpdatedAt)
+	return err == nil && now.Sub(started) < window
+}
+
 // beginBranchDeploy creates or reuses the row for branch and marks it deploying.
 func (rt *Router) beginBranchDeploy(ctx context.Context, appName, branch, slug string, ev webhook.PushEvent) (*store.BranchDeploy, int, string) {
 	rt.branchDeployMu.Lock()
@@ -142,6 +157,10 @@ func (rt *Router) beginBranchDeploy(ctx context.Context, appName, branch, slug s
 	row, err := rt.branchDeploys.GetBranchDeployBySlug(ctx, appName, slug)
 	switch {
 	case err == nil:
+		window := rt.tunableDuration(ctx, runtimesettings.KeyDeployCoalesceWindow, envDeployCoalesceWindow, defaultDeployCoalesceWindow)
+		if branchDeployCoalesced(row, ev.After, time.Now().UTC(), window) {
+			return nil, http.StatusOK, fmt.Sprintf("ignored: %q is already deploying this commit\n", branch)
+		}
 		row.Branch, row.HeadSHA, row.HeadMessage = branch, ev.After, firstLine(ev.HeadMessage, branchMessageMax)
 		row.Status, row.StatusReason, row.UpdatedAt = store.BranchDeployDeploying, "", now
 		if uerr := rt.branchDeploys.UpdateBranchDeploy(ctx, *row); uerr != nil {

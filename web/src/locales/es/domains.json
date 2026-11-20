@@ -764,7 +764,20 @@
     "backfillPreview": "Ver las aplicaciones existentes",
     "backfillApply_one": "Aplicar a {{count}} aplicación",
     "backfillApply_other": "Aplicar a {{count}} aplicaciones",
-    "backfillNone": "Todas las aplicaciones ya tienen un dominio."
+    "backfillNone": "Todas las aplicaciones ya tienen un dominio.",
+    "wildcardHelp": "Dirige todas las direcciones de {{base}} a este servidor con un registro comodin:",
+    "wildcardPreview": "Previsualizar registro comodin",
+    "wildcardApply": "Crear registro comodin",
+    "wildcardReplace": "Reemplazar el registro existente",
+    "wildcardRecord": "Registro: {{type}} {{name}} -> {{value}}",
+    "wildcardExisting": "Existente: {{type}} {{name}} -> {{value}}",
+    "wildcardConflict": "Ya existe un registro distinto en este nombre y no se sobrescribira salvo que lo reemplaces.",
+    "zoneMatched": "Zona {{zone}} encontrada en {{provider}}",
+    "suggestions": "Zonas que lista tu proveedor:",
+    "iamHint": "Acciones IAM necesarias: {{actions}}",
+    "copyIam": "Copiar acciones IAM",
+    "copy": "Copiar",
+    "copied": "Copiado"
   },
   "automation": {
     "title": "Automatización de dominios",
@@ -1183,7 +1196,10 @@
     "addressLabel": "Dirección del servidor",
     "httpsLabel": "HTTPS",
     "portsLabel": "Revisión de puertos",
-    "unknown": "Aún sin revisar"
+    "unknown": "Aún sin revisar",
+    "addressTip": "La IP pública a la que deben apuntar tus dominios.",
+    "httpsTip": "Los certificados se emiten automáticamente cuando HTTPS está activo.",
+    "portsTip": "Comprueba que los puertos 80 y 443 llegan a este servidor desde internet."
   },
   "cutover": {
     "title": "Lista de migración",

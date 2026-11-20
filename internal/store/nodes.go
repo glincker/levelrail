@@ -64,6 +64,9 @@ type Node struct {
 	AcceptsAppWorkloads   bool
 	AcceptsBuildWorkloads bool
 
+	// BuildTrust is written only by SaveNode so the tier lands with the row; empty means server.
+	BuildTrust string
+
 	// MeshPublicKey and MeshAddress are the WireGuard mesh
 	// state (migrations/0014_node_mesh.sql). Both empty means this node
 	// has not joined the mesh yet, which is a normal transient state for
@@ -140,14 +143,14 @@ var ErrNodeNameTaken = errors.New("store: node name already taken")
 func (db *DB) SaveNode(ctx context.Context, n Node) error {
 	_, err := db.ExecContext(ctx, `
 		INSERT INTO nodes (id, name, address, status, cert_fingerprint, joined_at, last_seen_at, schedulable, accepts_app_workloads, accepts_build_workloads,
-			cert_not_after, cert_serial, cert_key_origin, created_at, updated_at)
-		VALUES (?, ?, ?, ?, ?, ?, ?, 1, ?, ?, ?, ?, ?, ?, ?)
+			cert_not_after, cert_serial, cert_key_origin, created_at, updated_at, build_trust)
+		VALUES (?, ?, ?, ?, ?, ?, ?, 1, ?, ?, ?, ?, ?, ?, ?, ?)
 	`,
 		n.ID, n.Name, n.Address, string(n.Status), n.CertFingerprint,
 		formatTimePtr(n.JoinedAt), formatTimePtr(n.LastSeenAt),
 		boolToInt(n.AcceptsAppWorkloads), boolToInt(n.AcceptsBuildWorkloads),
 		formatTimePtr(n.CertNotAfter), n.CertSerial, n.CertKeyOrigin,
-		formatTime(n.CreatedAt), formatTime(n.UpdatedAt),
+		formatTime(n.CreatedAt), formatTime(n.UpdatedAt), buildTrustOrDefault(n.BuildTrust),
 	)
 	if err == nil {
 		return nil

@@ -138,6 +138,8 @@
     "colP95": "p95",
     "colErrors": "Errors",
     "colDeployed": "Deployed",
+    "colTls": "TLS",
+    "tlsNone": "No domain",
     "selectApp": "Select {{name}}",
     "count_one": "{{count}} app",
     "count_other": "{{count}} apps",
@@ -241,6 +243,7 @@
     "restarting": "Restarting...",
     "more": "More actions",
     "redeploy": "Redeploy current",
+    "manageInPages": "Manage in Pages",
     "redeploying": "Redeploying...",
     "start": "Start",
     "stop": "Stop",
@@ -540,6 +543,7 @@
       "settings": "Settings",
       "help": "Help",
       "functions": "Functions",
+      "pages": "Pages",
       "storage": "Storage",
       "assets": "Assets",
       "mail": "Mail",
@@ -1109,7 +1113,15 @@
   "projectsPage": {
     "list": {
       "name": "Name",
-      "created": "Created"
+      "created": "Created",
+      "pin": "Pin {{name}}",
+      "unpin": "Unpin {{name}}"
+    },
+    "sort": {
+      "label": "Sort by",
+      "name": "Name",
+      "newest": "Newest first",
+      "oldest": "Oldest first"
     },
     "empty": {
       "title": "No projects yet",

@@ -209,7 +209,7 @@ func (rt *Router) plainHTTPFallbackURL(s store.IngressSettings, host, httpsLink 
 	if !s.TLSTerminatedUpstream || strings.HasPrefix(httpsLink, "http://") {
 		return ""
 	}
-	port := rt.doctorHTTPPort
+	port := rt.linkHTTPPort()
 	if port == 0 || port == 80 {
 		return "http://" + host
 	}

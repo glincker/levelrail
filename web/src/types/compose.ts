@@ -126,4 +126,5 @@ export interface TemplateInstallInput {
   name?: string
   env?: Record<string, string>
   domains?: Record<string, string>
+  project_id?: string
 }

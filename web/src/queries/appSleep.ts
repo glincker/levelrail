@@ -199,3 +199,17 @@ export function useAppAsleep(appName: string): boolean {
   })
   return data?.sleeping ?? false
 }
+
+/** useAppSleepSince returns the epoch ms the app went to sleep, or undefined while awake. */
+export function useAppSleepSince(appName: string): number | undefined {
+  const { data } = useQuery({
+    ...appSleepQueryOptions(appName),
+    staleTime: 15_000,
+    retry: false,
+  })
+  if (!data?.sleeping || !data.since) {
+    return undefined
+  }
+  const ms = Date.parse(data.since)
+  return Number.isNaN(ms) ? undefined : ms
+}

@@ -27,6 +27,7 @@ import (
 	ingressdriver "github.com/GLINCKER/levelrail/internal/ingress"
 	"github.com/GLINCKER/levelrail/internal/nodefailure"
 	"github.com/GLINCKER/levelrail/internal/reconcile"
+	registryreconcile "github.com/GLINCKER/levelrail/internal/reconcile/registry"
 	"github.com/GLINCKER/levelrail/internal/runtimesettings"
 	"github.com/GLINCKER/levelrail/internal/scheduledtask"
 	"github.com/GLINCKER/levelrail/internal/secrets"
@@ -167,6 +168,7 @@ func rootHandler(d rootDeps) (http.Handler, *api.Router) {
 		api.WithDoctorDiskWarningBytes(doctorDiskWarningBytes(logger)),
 		api.WithIngressPortOwner(ingressDriver),
 		api.WithDoctorIngressPorts(ingressPortFromAddr(ingressHTTPAddr()), ingressPortFromAddr(ingressHTTPSAddr())),
+		api.WithIngressBoundPorts(ingressDriver.BoundPorts),
 		api.WithDashboardListenAddr(httpAddr()),
 		api.WithDoctorNetworkTimeout(doctorNetworkTimeout(logger)),
 		api.WithDoctorPublicIPEndpoint(os.Getenv("APP_DOCTOR_PUBLIC_IP_ENDPOINT")),
@@ -274,6 +276,9 @@ func rootHandler(d rootDeps) (http.Handler, *api.Router) {
 		// The built-in registry's generated password goes through the
 		// same secretsManager, same nil-interface hazard.
 		opts = append(opts, api.WithRegistrySecrets(secretsManager))
+		if rtx := sharedRegistryTransfer(); rtx != nil {
+			opts = append(opts, api.WithRegistryTokenService(rtx.tokens), api.WithRegistryTokenActive(registryreconcile.TokenAuthActive))
+		}
 		// The built-in registry catalog picker resolves the same
 		// generated password server-side to authenticate its own upstream
 		// query, same nil-interface hazard.

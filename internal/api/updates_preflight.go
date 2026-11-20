@@ -167,6 +167,7 @@ func (rt *Router) latestRelease(ctx context.Context) (*githubRelease, bool) {
 	}
 	fetched, err := rt.fetchLatestRelease(ctx)
 	if err != nil {
+		rt.updatesCache.markFailing()
 		return rt.updatesCache.stale()
 	}
 	rt.updatesCache.set(fetched)
@@ -193,16 +194,7 @@ func (rt *Router) latestReleaseForCurrentChannel(ctx context.Context) (*upgrade.
 		return &upgrade.Release{Tag: release.TagName, URL: release.HTMLURL, PublishedAt: release.PublishedAt, Body: release.Body, AssetNames: names}, true
 	}
 
-	release, ok := rt.channelUpdatesCache.Fresh(updatesCacheTTL, channel)
-	if !ok {
-		fetched, err := rt.upgradeFetchers.LatestForChannel(ctx, channel)
-		if err != nil {
-			release, ok = rt.channelUpdatesCache.Stale(channel)
-		} else {
-			rt.channelUpdatesCache.Set(channel, fetched)
-			release, ok = fetched, true
-		}
-	}
+	release, ok := rt.channelRelease(ctx, channel)
 	if !ok || release == nil {
 		return nil, false
 	}

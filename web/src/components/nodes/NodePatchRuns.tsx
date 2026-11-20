@@ -7,7 +7,7 @@ import { PatchRunDetails, PatchRunStatusBadge } from './NodePatchRunDetails'
 
 // Recent patch runs of one node, newest first, each expandable to its details.
 export default function NodePatchRuns({ nodeId }: { nodeId: string }) {
-  const { t } = useTranslation('nodes')
+  const { t } = useTranslation('nodePatch')
   const runs = useNodePatchRuns(nodeId)
   const [open, setOpen] = useState<string | null>(null)
 
@@ -15,27 +15,25 @@ export default function NodePatchRuns({ nodeId }: { nodeId: string }) {
   if (runs.isError) {
     return (
       <div className="flex items-center gap-2 text-xs text-muted-foreground">
-        <span>{t('patch.historyFailed')}</span>
+        <span>{t('historyFailed')}</span>
         <Button
           type="button"
           size="sm"
           variant="outline"
           onClick={() => void runs.refetch()}
         >
-          {t('patch.retry')}
+          {t('retry')}
         </Button>
       </div>
     )
   }
   if (runs.data.length === 0) {
-    return (
-      <p className="text-xs text-muted-foreground">{t('patch.historyEmpty')}</p>
-    )
+    return <p className="text-xs text-muted-foreground">{t('historyEmpty')}</p>
   }
   return (
     <div className="space-y-1">
       <h3 className="text-xs font-medium text-muted-foreground">
-        {t('patch.history')}
+        {t('history')}
       </h3>
       <ul className="divide-y divide-border rounded-md border border-border">
         {runs.data.slice(0, 10).map((run) => {
@@ -52,11 +50,11 @@ export default function NodePatchRuns({ nodeId }: { nodeId: string }) {
                   {new Date(run.started_at).toLocaleString()}
                 </span>
                 <span className="text-muted-foreground">
-                  {t('patch.by', { actor: run.actor })}
+                  {t('by', { actor: run.actor })}
                 </span>
                 <PatchRunStatusBadge status={run.status} />
                 <span className="text-muted-foreground">
-                  {t('patch.packagesCount', { count: run.packages.length })}
+                  {t('packagesCount', { count: run.packages.length })}
                 </span>
               </button>
               {expanded ? (

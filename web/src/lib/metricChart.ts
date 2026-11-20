@@ -150,6 +150,30 @@ export function mergeMetricSeries(
   return Array.from(rows.values()).sort((a, b) => a.t - b.t)
 }
 
+// A sleeping app reports nothing, which reads as a gap. Draw it as zero from
+// the moment it slept so the chart shows idle, not missing data.
+export function zeroFillSleep(
+  rows: ChartRow[],
+  sleepSince: number | undefined,
+  from: number,
+  to: number,
+  keys: ReadonlyArray<'primary' | 'secondary'>,
+): ChartRow[] {
+  if (sleepSince === undefined || sleepSince >= to) {
+    return rows
+  }
+  const start = Math.max(sleepSince, from)
+  const zero = (t: number): ChartRow => {
+    const row: ChartRow = { t }
+    for (const k of keys) {
+      row[k] = 0
+    }
+    return row
+  }
+  const kept = rows.filter((r) => r.t < start)
+  return [...kept, zero(start), zero(to)]
+}
+
 // The most recent primary-series value, formatted, shown next to a
 // chart's title as a "current reading" the way Vercel/Grafana
 // small-multiple panels pair a stat with a sparkline rather than making

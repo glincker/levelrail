@@ -10,6 +10,7 @@ import { createTestQueryClient } from '@/test/testQueryClient'
 import { RunnersPanel } from './RunnersPanel'
 import { RunnerChip } from './RunnerChip'
 import { RunnerPreferenceCard } from './RunnerPreferenceCard'
+import { validateRunnerMode } from '../../lib/buildRunnerFormat'
 import type { BuildRunner } from '../../queries/buildRunners'
 
 const canDeploy = vi.hoisted(() => ({ value: true }))
@@ -199,7 +200,8 @@ describe('RunnerPreferenceCard', () => {
     const sent: { body?: string; method?: string }[] = []
     prefFetch(sent)
     wrap(<RunnerPreferenceCard appName="web" />)
-    await screen.findByRole('option', { name: 'builder-1' })
+    await screen.findByRole('option', { name: 'Specific builder' })
+    await userEvent.selectOptions(screen.getByLabelText('Run on'), 'node')
     await userEvent.selectOptions(screen.getByLabelText('Build node'), 'n1')
     await userEvent.type(screen.getByLabelText('Labels'), 'gpu')
     await userEvent.click(screen.getByRole('button', { name: 'Save' }))
@@ -207,6 +209,7 @@ describe('RunnerPreferenceCard', () => {
       expect(sent[0]?.method).toBe('PUT')
     })
     expect(JSON.parse(sent[0]?.body ?? '{}')).toEqual({
+      mode: 'node',
       node_id: 'n1',
       pinned: false,
       labels: ['gpu'],
@@ -216,10 +219,11 @@ describe('RunnerPreferenceCard', () => {
   it('shows the server error verbatim', async () => {
     prefFetch([])
     wrap(<RunnerPreferenceCard appName="web" />)
-    await screen.findByRole('option', { name: 'builder-1' })
+    await screen.findByRole('option', { name: 'Specific builder' })
+    await userEvent.selectOptions(screen.getByLabelText('Run on'), 'node')
     await userEvent.selectOptions(screen.getByLabelText('Build node'), 'n1')
     await userEvent.click(
-      screen.getByRole('switch', { name: 'Pin to this node' }),
+      screen.getByRole('switch', { name: 'Only this builder' }),
     )
     await userEvent.click(screen.getByRole('button', { name: 'Save' }))
     expect(await screen.findByRole('alert')).toHaveTextContent(
@@ -227,11 +231,43 @@ describe('RunnerPreferenceCard', () => {
     )
   })
 
+  it('sends control plane mode with no builder', async () => {
+    const sent: { body?: string; method?: string }[] = []
+    prefFetch(sent)
+    wrap(<RunnerPreferenceCard appName="web" />)
+    await screen.findByRole('option', { name: 'Control plane only' })
+    await userEvent.selectOptions(
+      screen.getByLabelText('Run on'),
+      'control_plane',
+    )
+    expect(screen.queryByLabelText('Build node')).not.toBeInTheDocument()
+    await userEvent.click(screen.getByRole('button', { name: 'Save' }))
+    await waitFor(() => {
+      expect(sent[0]?.method).toBe('PUT')
+    })
+    expect(JSON.parse(sent[0]?.body ?? '{}')).toEqual({
+      mode: 'control_plane',
+      node_id: '',
+      pinned: false,
+      labels: [],
+    })
+  })
+
+  it('blocks saving a specific builder without a builder picked', async () => {
+    prefFetch([])
+    wrap(<RunnerPreferenceCard appName="web" />)
+    await screen.findByRole('option', { name: 'Specific builder' })
+    await userEvent.selectOptions(screen.getByLabelText('Run on'), 'node')
+    expect(screen.getByRole('button', { name: 'Save' })).toBeDisabled()
+    expect(validateRunnerMode('node', '')).toBe('nodeNeeded')
+    expect(validateRunnerMode('control_plane', '')).toBeNull()
+  })
+
   it('disables the controls without deploy ability', async () => {
     canDeploy.value = false
     prefFetch([])
     wrap(<RunnerPreferenceCard appName="web" />)
-    expect(await screen.findByLabelText('Build node')).toBeDisabled()
+    expect(await screen.findByLabelText('Run on')).toBeDisabled()
     expect(screen.getByRole('button', { name: 'Save' })).toBeDisabled()
     expect(
       screen.getByText('You need deploy access to change this.'),

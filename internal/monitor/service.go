@@ -102,7 +102,8 @@ func (s *Service) rawRetention() time.Duration {
 	return s.cfg.RawRetention
 }
 
-func secretService(id string) string { return "monitor-" + id }
+// The _cp/ prefix keeps monitor header secrets out of app namespaces (secrets.ControlPlanePrefix; no import, it would cycle).
+func secretService(id string) string { return "_cp/monitor-" + id }
 func headerKey(name string) string   { return "hdr:" + name }
 
 // Run schedules every stored monitor and blocks until ctx ends.

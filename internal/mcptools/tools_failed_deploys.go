@@ -9,7 +9,7 @@ import (
 )
 
 type failedDeploysInput struct {
-	Since string `json:"since,omitempty" jsonschema:"only deploys newer than this Go duration such as 24h; empty uses the server default"`
+	Since string `json:"since,omitempty" jsonschema:"only deploys newer than this duration, e.g. 24h; default is the server's"`
 }
 
 type failedDeploysOutput struct {
@@ -19,7 +19,7 @@ type failedDeploysOutput struct {
 func registerFailedDeployTools(server *mcp.Server, client *apiclient.Client) {
 	addTool(server, &mcp.Tool{
 		Name:        "list_failed_deploys",
-		Description: "List each app's latest failed deploy attempt with its error and last_good_image, to pick a rollback target. Filter with since (e.g. 24h).",
+		Description: "Each app's latest failed deploy attempt with its error and last_good_image, to pick a rollback target. since filters (e.g. 24h).",
 	}, func(ctx context.Context, _ *mcp.CallToolRequest, in failedDeploysInput) (*mcp.CallToolResult, failedDeploysOutput, error) {
 		deploys, err := client.ListFailedDeploys(ctx, in.Since)
 		if err != nil {

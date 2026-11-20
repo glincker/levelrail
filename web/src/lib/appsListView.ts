@@ -39,9 +39,10 @@ const VIEW_KEY = 'apps.viewMode.v1'
 
 export function loadViewMode(): ViewMode {
   try {
-    return window.localStorage.getItem(VIEW_KEY) === 'grid' ? 'grid' : 'table'
+    // Cards are the default; only an explicit table choice is remembered as table.
+    return window.localStorage.getItem(VIEW_KEY) === 'table' ? 'table' : 'grid'
   } catch {
-    return 'table'
+    return 'grid'
   }
 }
 

@@ -2,6 +2,7 @@ package apiclient
 
 import (
 	"context"
+	"encoding/json"
 	"net/http"
 	"net/url"
 	"strconv"
@@ -280,6 +281,7 @@ type BuildRunner struct {
 	SlotsUsed     int        `json:"slots_used"`
 	SlotsTotal    int        `json:"slots_total"`
 	Waiting       int        `json:"waiting"`
+	ActiveBuilds  int        `json:"active_builds"`
 	Load          float64    `json:"load"`
 	Pressure      string     `json:"pressure"`
 	Architecture  string     `json:"architecture,omitempty"`
@@ -302,5 +304,54 @@ type BuildRunners struct {
 func (c *Client) GetBuildRunners(ctx context.Context) (BuildRunners, error) {
 	var out BuildRunners
 	err := c.do(ctx, http.MethodGet, "/api/v1/builds/runners", nil, &out)
+	return out, err
+}
+
+// AppBuildRunner is an app's build placement from /api/v1/apps/{name}/build-runner.
+type AppBuildRunner struct {
+	App    string   `json:"app"`
+	Mode   string   `json:"mode"`
+	NodeID string   `json:"node_id"`
+	Pinned bool     `json:"pinned"`
+	Labels []string `json:"labels"`
+}
+
+// SetAppBuildRunnerRequest is the PUT body: mode auto, control_plane or node.
+type SetAppBuildRunnerRequest struct {
+	Mode   string   `json:"mode"`
+	NodeID string   `json:"node_id,omitempty"`
+	Pinned bool     `json:"pinned,omitempty"`
+	Labels []string `json:"labels,omitempty"`
+}
+
+// GetAppBuildRunner calls GET /api/v1/apps/{name}/build-runner.
+func (c *Client) GetAppBuildRunner(ctx context.Context, app string) (AppBuildRunner, error) {
+	var out AppBuildRunner
+	err := c.do(ctx, http.MethodGet, "/api/v1/apps/"+url.PathEscape(app)+"/build-runner", nil, &out)
+	return out, err
+}
+
+// SetAppBuildRunner calls PUT /api/v1/apps/{name}/build-runner.
+func (c *Client) SetAppBuildRunner(ctx context.Context, app string, req SetAppBuildRunnerRequest) (AppBuildRunner, error) {
+	var out AppBuildRunner
+	err := c.do(ctx, http.MethodPut, "/api/v1/apps/"+url.PathEscape(app)+"/build-runner", req, &out)
+	return out, err
+}
+
+// BuildRecordResource mirrors GET /api/v1/builds/{id}/record.
+type BuildRecordResource struct {
+	ID        string          `json:"id"`
+	BuildID   string          `json:"build_id"`
+	App       string          `json:"app"`
+	Claims    json.RawMessage `json:"claims"`
+	Signature string          `json:"signature"`
+	KeyID     string          `json:"key_id"`
+	CreatedAt time.Time       `json:"created_at"`
+}
+
+// GetBuildRecord calls GET /api/v1/builds/{id}/record.
+func (c *Client) GetBuildRecord(ctx context.Context, id string) (BuildRecordResource, error) {
+	var out BuildRecordResource
+	err := c.do(ctx, http.MethodGet, "/api/v1/builds/"+url.PathEscape(id)+"/record", nil, &out)
 	return out, err
 }

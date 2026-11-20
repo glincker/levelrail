@@ -65,8 +65,8 @@ func TestDeriveStepStates(t *testing.T) {
 
 func TestDeriveBlockingAndNext(t *testing.T) {
 	g := Derive(Input{})
-	if g.NextStep != StepSecureAdmin {
-		t.Fatalf("fresh next = %q, want %q", g.NextStep, StepSecureAdmin)
+	if g.NextStep != StepFirstApp {
+		t.Fatalf("fresh next = %q, want %q", g.NextStep, StepFirstApp)
 	}
 	if b := stateOf(t, g, StepAppDomain).BlockedBy; len(b) != 1 || b[0] != StepFirstApp {
 		t.Fatalf("app_domain blocked_by = %v, want [first_app]", b)

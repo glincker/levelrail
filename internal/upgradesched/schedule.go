@@ -53,7 +53,7 @@ func (s *Scheduler) Schedule(ctx context.Context, req Request) (store.UpgradeSch
 		if errors.Is(err, ErrEdgeTarget) {
 			return store.UpgradeSchedule{}, ErrEdgeTarget
 		}
-		if err != nil {
+		if err != nil && !errors.Is(err, ErrStaleList) {
 			return store.UpgradeSchedule{}, fmt.Errorf("upgradesched: look up latest release: %w", err)
 		}
 		if !ok {
@@ -225,13 +225,21 @@ func (s *Scheduler) considerAuto(ctx context.Context) error {
 	if pol.Mode == ModeOff {
 		return nil
 	}
+	if !s.checkDue() {
+		return nil
+	}
 	cand, ok, err := s.Host.Latest(ctx)
+	if errors.Is(err, ErrEdgeTarget) {
+		s.noteCheck(ctx, nil, "")
+	} else {
+		s.noteCheck(ctx, err, checkSource(cand))
+	}
 	if errors.Is(err, ErrEdgeTarget) {
 		s.decide(ctx, row, cand.Tag, "held: edge builds are container images, so they are never applied automatically", false)
 		return nil
 	}
-	if err != nil {
-		return fmt.Errorf("upgradesched: look up latest release: %w", err)
+	if err != nil && !errors.Is(err, ErrStaleList) {
+		return nil
 	}
 	if !ok {
 		return nil
@@ -249,6 +257,7 @@ func (s *Scheduler) considerAuto(ctx context.Context) error {
 	if cand.PublishedAt.IsZero() {
 		cand.PublishedAt = plan.PublishedAt
 	}
+	cand.FromFallback = cand.FromFallback || plan.FromFallback
 	now := s.now()
 	v := Eligible(pol, s.Current(), cand, plan.NeedAckCount(), plan.NotesAvailable, now)
 	if !v.OK {

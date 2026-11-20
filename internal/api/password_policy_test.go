@@ -2,6 +2,7 @@ package api
 
 import (
 	"net/http"
+	"strings"
 	"testing"
 
 	"github.com/GLINCKER/levelrail/internal/runtimesettings"
@@ -21,6 +22,8 @@ func TestPasswordPolicyCheck(t *testing.T) {
 		{"two classes pass", passwordPolicy{8, 2}, "abcdefgh1", ""},
 		{"four classes pass", passwordPolicy{8, 4}, "Abcdef1!", ""},
 		{"three of four refused", passwordPolicy{8, 4}, "Abcdefg1", "password must mix at least 4 of: lowercase letters, uppercase letters, digits, symbols"},
+		{"72 bytes accepted", passwordPolicy{8, 0}, strings.Repeat("a", 72), ""},
+		{"73 bytes refused", passwordPolicy{8, 0}, strings.Repeat("a", 73), "password must be at most 72 bytes"},
 		{"both problems named", passwordPolicy{12, 3}, "abc", "password must be at least 12 characters and mix at least 3 of: lowercase letters, uppercase letters, digits, symbols"},
 	}
 	for _, tc := range cases {

@@ -52,18 +52,29 @@
     "secretAccessKey": "Clave de acceso secreta de AWS",
     "region": "Región (opcional)",
     "hostedZoneId": "ID de zona alojada (opcional)",
-    "serviceAccount": "JSON de la cuenta de servicio"
+    "serviceAccount": "JSON de la cuenta de servicio",
+    "regionHint": "Route 53 es global, rara vez importa. Predeterminada: {{region}}.",
+    "hostedZoneHint": "Déjalo vacío para buscar el dominio en todas las zonas que esta clave puede listar."
   },
   "test": {
     "button": "Probar conexión",
     "running": "Probando...",
     "credential": "Credencial guardada",
     "zones": "Zonas listadas",
+    "permission": "Permisos",
     "zonesCount_one": "{{count}} zona encontrada",
     "zonesCount_other": "{{count}} zonas encontradas",
     "ok": "Correcto",
     "failed": "Fallido",
-    "heading": "Resultados de la prueba"
+    "heading": "Resultados de la prueba",
+    "state": {
+      "allowed": "Permitida",
+      "denied": "Denegada",
+      "unknown": "Desconocida"
+    },
+    "policyHint": "Politica IAM minima para las acciones que faltan:",
+    "copyPolicy": "Copiar politica",
+    "copied": "Copiado"
   },
   "zones": {
     "heading": "Zonas alojadas",

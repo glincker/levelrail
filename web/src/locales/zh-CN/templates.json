@@ -337,8 +337,16 @@
       "license": "许可证类别",
       "anyLicense": "任何许可证",
       "arch": "架构",
-      "anyArch": "任何架构"
+      "anyArch": "任何架构",
+      "access": "访问方式",
+      "anyAccess": "任意访问方式",
+      "worksOnIp": "可通过 IP 使用（无需域名）"
     },
+    "needsDomain": {
+      "badge": "需要域名",
+      "hint": "只能通过域名访问，因此无法直接用于裸 IP 地址。"
+    },
+    "updatedOn": "更新于 {{date}}",
     "preview": {
       "badge": "预览",
       "hint": "尚未在真实引擎上测试。仍可安装，请反馈问题。"

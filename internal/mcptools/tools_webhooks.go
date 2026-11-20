@@ -31,5 +31,5 @@ func registerWebhookTools(server *mcp.Server, client *apiclient.Client) {
 type webhookDeliveriesInput struct {
 	Name   string `json:"name" jsonschema:"the app's name"`
 	Limit  int    `json:"limit,omitempty" jsonschema:"max deliveries to return, default the server's own default"`
-	Before string `json:"before,omitempty" jsonschema:"only return deliveries received before this RFC3339 timestamp, for paging backward"`
+	Before string `json:"before,omitempty" jsonschema:"only deliveries before this RFC3339 timestamp, for paging backward"`
 }

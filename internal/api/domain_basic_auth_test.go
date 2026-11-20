@@ -139,6 +139,21 @@ func TestHandleSetDomainBasicAuth_MissingUsernameRejected(t *testing.T) {
 	}
 }
 
+func TestHandleSetDomainBasicAuth_PlaceholderUsernameRejected(t *testing.T) {
+	rt, db := newTestRouterWithDomainBasicAuthSecrets(t, newFakeDomainBasicAuthSecrets())
+	seedAppWithDomain(t, db)
+	cookie := loginTestSession(t, rt, db)
+
+	for _, name := range []string{"{env.X}", "a\\u0007b"} {
+		rec := httptest.NewRecorder()
+		body := `{"username":"` + name + `","password":"hunter2"}`
+		rt.Handler().ServeHTTP(rec, authedRequest(t, cookie, http.MethodPut, "/api/v1/apps/web/domains/app.example.com/auth", body))
+		if rec.Code != http.StatusBadRequest {
+			t.Fatalf("%q: status = %d, want 400", name, rec.Code)
+		}
+	}
+}
+
 func TestHandleSetDomainBasicAuth_EnableWithoutPasswordRejected(t *testing.T) {
 	s := newFakeDomainBasicAuthSecrets()
 	rt, db := newTestRouterWithDomainBasicAuthSecrets(t, s)

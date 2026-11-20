@@ -12,14 +12,9 @@ import {
 import { probeTimingDefaults } from '../lib/healthCheckDefaults'
 import { Alert, AlertDescription } from '@/components/ui/alert'
 import { Button } from '@/components/ui/button'
-import {
-  Card,
-  CardContent,
-  CardDescription,
-  CardHeader,
-  CardTitle,
-} from '@/components/ui/card'
-import { HelpLink } from '@/components/HelpLink'
+import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card'
+import { InfoTip } from '@/components/kit'
+import { useTranslation } from 'react-i18next'
 import { ProbeFields, type HealthFormValues } from './ProbeFields'
 import { useRestartRequiredToast } from '../hooks/useRestartRequiredToast'
 
@@ -36,6 +31,7 @@ const healthSchema = z.object({
 // object, so a background refetch triggered by one of them must not wipe
 // out unsaved edits sitting in this one.
 export function HealthCheckEditor({ app }: { app: AppDetail }) {
+  const { t: tp } = useTranslation('appPages')
   const updateApp = useUpdateApp(app.name, { inlineError: true })
   const notifyRestartRequired = useRestartRequiredToast()
   const { control, register, handleSubmit, formState, setValue, getValues } =
@@ -101,16 +97,13 @@ export function HealthCheckEditor({ app }: { app: AppDetail }) {
         <CardTitle className="flex items-center gap-2">
           <ActivityGlassIcon className="size-5" />
           Health checks
-          <HelpLink
-            path="/app-spec-reference#health-checks"
-            label="Health check reference"
-          />
+          <InfoTip
+            helpPath="/app-spec-reference#health-checks"
+            helpLabel={tp('health.reference')}
+          >
+            {tp('health.probesTip')}
+          </InfoTip>
         </CardTitle>
-        <CardDescription>
-          Readiness gates a deploy&apos;s cutover; liveness restarts a hung
-          container. Each is an HTTP(S) request or a command run inside the
-          container.
-        </CardDescription>
       </CardHeader>
       <CardContent>
         <form

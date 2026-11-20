@@ -436,7 +436,7 @@ func TestController_Teardown(t *testing.T) {
 		if !reflect.DeepEqual(rt.removed, []string{"c1"}) {
 			t.Errorf("removed = %v, want only this model's container", rt.removed)
 		}
-		if sec.deletedKey != "model/chat" {
+		if sec.deletedKey != "_cp/model/chat" {
 			t.Errorf("secrets namespace = %q", sec.deletedKey)
 		}
 	})

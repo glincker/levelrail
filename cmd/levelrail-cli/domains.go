@@ -88,6 +88,8 @@ func runDomains(prog string, args []string, stdout, stderr io.Writer, lookupEnv 
 		return runDomainsRollback(prog, args[1:], stdout, stderr, lookupEnv)
 	case "backfill-base-domain":
 		return runDomainsBackfillBaseDomain(prog, args[1:], stdout, stderr, lookupEnv)
+	case "base-wildcard":
+		return runDomainsBaseWildcard(prog, args[1:], stdout, stderr, lookupEnv)
 	case "headers":
 		return runDomainsHeaders(prog, args[1:], stdout, stderr, lookupEnv)
 	case "forwarders":
@@ -162,6 +164,7 @@ func domainsUsage(prog string) string {
   %[1]s domains changes <domain> [--json]       recent changes and whether each can be rolled back
   %[1]s domains rollback <domain> <run-id> [--yes] [--json]  undo one DNS change or domain move inside the window
   %[1]s domains backfill-base-domain [flags]    give existing apps without a domain <app>.<base domain>
+  %[1]s domains base-wildcard [--confirm] [flags]  point *.<base domain> at this server (preview by default)
   %[1]s domains park <app> <domain> [flags]     take a domain off an app but keep it registered
   %[1]s domains move <domain> --from A --to B   hand a domain to another app (collision check, --confirm)
   %[1]s domains parked <verb> [flags]           list, attach or delete parked domains

@@ -31,7 +31,7 @@ func envSeconds(key string, def time.Duration) time.Duration {
 
 type waitForDeployInput struct {
 	Name           string `json:"name" jsonschema:"the app's name"`
-	DeployID       string `json:"deploy_id,omitempty" jsonschema:"the deploy attempt id, or latest (default); latest is resolved once so a newer deploy cannot take over"`
+	DeployID       string `json:"deploy_id,omitempty" jsonschema:"deploy attempt id, or latest (default), resolved once"`
 	MaxWaitSeconds int    `json:"max_wait_seconds,omitempty" jsonschema:"block at most this long, capped by the server limit (default 55)"`
 }
 
@@ -73,7 +73,7 @@ func waitDeploy(ctx context.Context, client *apiclient.Client, name, deployID st
 func registerWaitDeployTool(server *mcp.Server, client *apiclient.Client) {
 	addTool(server, &mcp.Tool{
 		Name:        "wait_for_deploy",
-		Description: "Wait for a deploy to finish: healthy, failed, canceled, superseded or blocked (with the failure). Blocks about 55 seconds; returns in_progress if still running, call again.",
+		Description: "Wait for a deploy to finish (healthy, failed, canceled, superseded or blocked, with failure). Blocks ~55s; in_progress means call again.",
 	}, func(ctx context.Context, _ *mcp.CallToolRequest, in waitForDeployInput) (*mcp.CallToolResult, waitForDeployOutput, error) {
 		out, err := waitDeploy(ctx, client, in.Name, in.DeployID, in.MaxWaitSeconds)
 		if err != nil {

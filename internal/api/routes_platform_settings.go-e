@@ -1,0 +1,254 @@
+package api
+
+import "net/http"
+
+// registerSettingsRoutes registers the email, observability, DNS, vault, registries, static sites and firewall routes.
+func (rt *Router) registerSettingsRoutes(mux *http.ServeMux) {
+	// Deprecated: kept for the dashboard, CLI and scripts that predate email providers. Reads the primary provider plus sender identity, use /api/v1/settings/email/providers.
+	mux.HandleFunc("GET /api/v1/settings/email", rt.requireAbility(AbilityRead, rt.handleGetEmailSettings))
+	// Deprecated: writes the primary provider and the sender identity together. Use /api/v1/settings/email/providers for providers.
+	mux.HandleFunc("PUT /api/v1/settings/email", rt.requireAbility(AbilityRoot, rt.handleUpdateEmailSettings))
+	// One primary plus at most one backup. List and get are AbilityRead; every write, test and promote is AbilityRoot.
+	mux.HandleFunc("GET /api/v1/settings/email/providers", rt.requireAbility(AbilityRead, rt.handleListEmailProviders))
+	// Creates the primary, or the backup when a primary exists. Root: it stores credentials.
+	mux.HandleFunc("POST /api/v1/settings/email/providers", rt.requireAbility(AbilityRoot, rt.handleCreateEmailProvider))
+	mux.HandleFunc("GET /api/v1/settings/email/providers/{id}", rt.requireAbility(AbilityRead, rt.handleGetEmailProvider))
+	// Replaces the provider fields; an empty credential keeps the stored value.
+	mux.HandleFunc("PUT /api/v1/settings/email/providers/{id}", rt.requireAbility(AbilityRoot, rt.handleUpdateEmailProvider))
+	// Refused for the primary while a backup exists.
+	mux.HandleFunc("DELETE /api/v1/settings/email/providers/{id}", rt.requireAbility(AbilityRoot, rt.handleDeleteEmailProvider))
+	// Root: sends one real message through that provider alone, with no failover.
+	mux.HandleFunc("POST /api/v1/settings/email/providers/{id}/test", rt.requireAbility(AbilityRoot, rt.handleTestEmailProvider))
+	// Swaps the primary and backup roles atomically, moving credentials with them.
+	mux.HandleFunc("POST /api/v1/settings/email/providers/{id}/promote", rt.requireAbility(AbilityRoot, rt.handlePromoteEmailProvider))
+	// Traffic export sinks: list and status are AbilityRead; every write and test is AbilityRoot. Credentials are write-only and come back as *_set booleans.
+	mux.HandleFunc("GET /api/v1/settings/traffic-export/sinks", rt.requireAbility(AbilityRead, rt.handleListTrafficExportSinks))
+	// Root: stores credentials. A new sink exports no visitor identity unless its fields list opts in.
+	mux.HandleFunc("POST /api/v1/settings/traffic-export/sinks", rt.requireAbility(AbilityRoot, rt.handleCreateTrafficExportSink))
+	mux.HandleFunc("GET /api/v1/settings/traffic-export/sinks/{id}", rt.requireAbility(AbilityRead, rt.handleGetTrafficExportSink))
+	// Omitted fields and empty credentials keep the stored value; the kind cannot change.
+	mux.HandleFunc("PUT /api/v1/settings/traffic-export/sinks/{id}", rt.requireAbility(AbilityRoot, rt.handleUpdateTrafficExportSink))
+	mux.HandleFunc("DELETE /api/v1/settings/traffic-export/sinks/{id}", rt.requireAbility(AbilityRoot, rt.handleDeleteTrafficExportSink))
+	// Root: sends one synthetic record through that sink alone; a failed delivery returns ok false with an error kind.
+	mux.HandleFunc("POST /api/v1/settings/traffic-export/sinks/{id}/test", rt.requireAbility(AbilityRoot, rt.handleTestTrafficExportSink))
+	// Last success, last error kind, queued and dropped counters per sink.
+	mux.HandleFunc("GET /api/v1/settings/traffic-export/status", rt.requireAbility(AbilityRead, rt.handleTrafficExportStatus))
+	// Root plus a fresh step-up and an enrolled authenticator: returns one stored credential, no-store, audited, never via MCP.
+	mux.HandleFunc("POST /api/v1/settings/email/providers/{id}/secrets/{field}/reveal", rt.requireAbility(AbilityRoot, rt.handleRevealEmailSecret))
+	// Root: a test send goes to any address, so it is not open to ordinary write tokens.
+	mux.HandleFunc("GET /api/v1/settings/email/branding", rt.requireAbility(AbilityRead, rt.handleGetEmailBranding))
+	mux.HandleFunc("PUT /api/v1/settings/email/branding", rt.requireAbility(AbilityRoot, rt.handleUpdateEmailBranding))
+	mux.HandleFunc("POST /api/v1/settings/email/branding/preview", rt.requireAbility(AbilityRoot, rt.handlePreviewEmailBranding))
+	mux.HandleFunc("POST /api/v1/settings/email/test", rt.requireAbility(AbilityRoot, rt.handleTestEmail))
+	mux.HandleFunc("GET /api/v1/settings/email/status", rt.requireAbility(AbilityRead, rt.handleEmailStatus))
+	mux.HandleFunc("GET /api/v1/settings/email/domain-check", rt.requireAbility(AbilityRoot, rt.handleEmailDomainCheck))
+	mux.HandleFunc("GET /api/v1/settings/email/deliveries", rt.requireAbility(AbilityRoot, rt.handleListEmailDeliveries))
+	mux.HandleFunc("GET /api/v1/settings/email/deliveries/{id}", rt.requireAbility(AbilityRoot, rt.handleGetEmailDelivery))
+
+	// Dynamic DNS updater: the stored setting wins, env is only the default. Root for both, the target URL or token is write-only.
+	mux.HandleFunc("GET /api/v1/settings/ddns", rt.requireAbility(AbilityRoot, rt.handleGetDDNS))
+	mux.HandleFunc("PUT /api/v1/settings/ddns", rt.requireAbility(AbilityRoot, rt.handlePutDDNS))
+	mux.HandleFunc("GET /api/v1/settings/ddns/status", rt.requireAbility(AbilityRoot, rt.handleDDNSStatus))
+
+	// Observability settings: the external Grafana/dashboard link,
+	// same precedent as email settings just above. GET is AbilityRead;
+	// PUT is AbilityRoot, matching every other instance-level config row.
+	mux.HandleFunc("GET /api/v1/settings/observability", rt.requireAbility(AbilityRead, rt.handleGetObservabilitySettings))
+	mux.HandleFunc("PUT /api/v1/settings/observability", rt.requireAbility(AbilityRoot, rt.handleUpdateObservabilitySettings))
+
+	// Cloudflare Tunnel (instance-level, one connection per control
+	// plane): GET is AbilityRead; PUT/DELETE are AbilityRoot, matching
+	// PUT /api/v1/settings/email's own tier for infrastructure config
+	// that changes how this control plane is reachable.
+	mux.HandleFunc("GET /api/v1/settings/cloudflare-tunnel", rt.requireAbility(AbilityRead, rt.handleGetCloudflareTunnelSettings))
+	mux.HandleFunc("PUT /api/v1/settings/cloudflare-tunnel", rt.requireAbility(AbilityRoot, rt.handleUpdateCloudflareTunnelSettings))
+	mux.HandleFunc("DELETE /api/v1/settings/cloudflare-tunnel", rt.requireAbility(AbilityRoot, rt.handleDisconnectCloudflareTunnel))
+	mux.HandleFunc("GET /api/v1/settings/cloudflare-dns", rt.requireAbility(AbilityRead, rt.handleGetCloudflareDNSSettings))
+	mux.HandleFunc("PUT /api/v1/settings/cloudflare-dns", rt.requireAbility(AbilityRoot, rt.handleUpdateCloudflareDNSSettings))
+	mux.HandleFunc("DELETE /api/v1/settings/cloudflare-dns", rt.requireAbility(AbilityRoot, rt.handleDisconnectCloudflareDNS))
+	// Route53 DNS-01: a second, independent ACME DNS-01 provider, same
+	// tier as cloudflare-dns above.
+	mux.HandleFunc("GET /api/v1/settings/route53-dns", rt.requireAbility(AbilityRead, rt.handleGetRoute53DNSSettings))
+	mux.HandleFunc("PUT /api/v1/settings/route53-dns", rt.requireAbility(AbilityRoot, rt.handleUpdateRoute53DNSSettings))
+	mux.HandleFunc("DELETE /api/v1/settings/route53-dns", rt.requireAbility(AbilityRoot, rt.handleDisconnectRoute53DNS))
+	mux.HandleFunc("GET /api/v1/settings/google-cloud-dns", rt.requireAbility(AbilityRead, rt.handleGetGoogleCloudDNSSettings))
+	mux.HandleFunc("PUT /api/v1/settings/google-cloud-dns", rt.requireAbility(AbilityRoot, rt.handleUpdateGoogleCloudDNSSettings))
+	mux.HandleFunc("DELETE /api/v1/settings/google-cloud-dns", rt.requireAbility(AbilityRoot, rt.handleDisconnectGoogleCloudDNS))
+	mux.HandleFunc("POST /api/v1/settings/google-cloud-dns/test", rt.requireAbility(AbilityRoot, rt.handleTestGoogleCloudDNS))
+
+	// External HashiCorp Vault (instance-level, one connection per
+	// control plane): same GET AbilityRead / PUT+DELETE AbilityRoot tier
+	// as Cloudflare Tunnel above.
+	mux.HandleFunc("GET /api/v1/settings/vault", rt.requireAbility(AbilityRead, rt.handleGetVaultSettings))
+	mux.HandleFunc("PUT /api/v1/settings/vault", rt.requireAbility(AbilityRoot, rt.handleUpdateVaultSettings))
+	mux.HandleFunc("POST /api/v1/settings/vault/rotate-credential", rt.requireAbility(AbilityRoot, rt.handleRotateVaultCredential))
+	mux.HandleFunc("DELETE /api/v1/settings/vault", rt.requireAbility(AbilityRoot, rt.handleDisconnectVault))
+
+	// Built-in container registry (instance-level, one registry per
+	// control plane): GET is AbilityRead; PUT/DELETE are AbilityRoot,
+	// matching PUT /api/v1/settings/cloudflare-tunnel's own tier for
+	// infrastructure config that runs a system container and generates
+	// credentials.
+	mux.HandleFunc("GET /api/v1/settings/registry", rt.requireAbility(AbilityRead, rt.handleGetRegistrySettings))
+	mux.HandleFunc("PUT /api/v1/settings/registry", rt.requireAbility(AbilityRoot, rt.handleUpdateRegistrySettings))
+	mux.HandleFunc("DELETE /api/v1/settings/registry", rt.requireAbility(AbilityRoot, rt.handleDisableRegistry))
+
+	// Built-in registry catalog (registry_catalog.go): read-only browsing
+	// for the app-creation "existing image" step's repository/tag picker.
+	// AbilityRead, same tier as the settings GET just above: no secret is
+	// ever returned, the resolved password is only used server-side to
+	// authenticate the upstream catalog query.
+	mux.HandleFunc("GET /api/v1/registry/repositories", rt.requireAbility(AbilityRead, rt.handleListRegistryRepositories))
+	mux.HandleFunc("GET /api/v1/registry/tags", rt.requireAbility(AbilityRead, rt.handleListRegistryTags))
+
+	// Public Docker Hub search (dockerhub_search.go): the same picker's
+	// third source, for a well-known public image that isn't in the
+	// built-in registry or a connected credential. AbilityRead, same tier
+	// as the built-in catalog just above: a read of a public,
+	// unauthenticated upstream, proxied server-side only to avoid a
+	// browser-to-hub.docker.com CORS call.
+	mux.HandleFunc("POST /api/v1/git-providers/{provider}/validate", rt.requireAbility(AbilityRoot, rt.handleValidateGitProvider))
+	mux.HandleFunc("GET /api/v1/dockerhub/search", rt.requireAbility(AbilityRead, rt.handleDockerHubSearch))
+	mux.HandleFunc("GET /api/v1/dockerhub/repositories/{namespace}/{repo}/tags", rt.requireAbility(AbilityRead, rt.handleDockerHubTags))
+
+	// Domains (centralized cross-app list, web/src/routes/domains):
+	// every service_domains row, AbilityRead like GET /api/v1/apps,
+	// no new ability tier: this is the same data DomainEditor already
+	// exposes per-app, aggregated across every app in one read-only call.
+	mux.HandleFunc("GET /api/v1/domains", rt.requireAbility(AbilityRead, rt.handleListDomains))
+	mux.HandleFunc("GET /api/v1/domains/export", rt.requireAbility(AbilityRead, rt.handleDomainsExport))
+
+	// Static sites (build.type: static): read-only
+	// dashboard visibility for sites served directly by embedded Caddy
+	// with no container, closing the gap flagged when static-site
+	// support (migration 0015) first landed. AbilityRead, the same
+	// passive-visibility boundary as handleListCertificates above: no
+	// create/update/delete route exists yet because the backend has no
+	// mutation path for a static site beyond internal/deploy.Pipeline's
+	// own git-push-triggered write.
+	mux.HandleFunc("GET /api/v1/static-sites", rt.requireAbility(AbilityRead, rt.handleListStaticSites))
+	mux.HandleFunc("POST /api/v1/static-sites", rt.requireAbility(AbilityWrite, rt.idempotent(rt.handleCreateStaticSite)))
+	mux.HandleFunc("GET /api/v1/static-sites/{name}", rt.requireAbilityForResource(AbilityRead, appResourceFromPath, rt.handleGetStaticSite))
+	mux.HandleFunc("DELETE /api/v1/static-sites/{name}", rt.requireAbilityForResource(AbilityWriteSensitive, appResourceFromPath, rt.handleDeleteStaticSite))
+	mux.HandleFunc("POST /api/v1/static-sites/{name}/domains", rt.requireAbilityForResource(AbilityWrite, appResourceFromPath, rt.handleAddStaticSiteDomain))
+	mux.HandleFunc("GET /api/v1/static-sites/{name}/domains/{domain}/status", rt.requireAbilityForResource(AbilityRead, appResourceFromPath, rt.handleStaticSiteDomainStatus))
+	mux.HandleFunc("GET /api/v1/static-sites/{name}/checks", rt.requireAbilityForResource(AbilityRead, appResourceFromPath, rt.handleStaticSiteChecks))
+	// Static site traffic for 24h or 7d. Besides top_paths and top_404_paths (kept for old clients) it returns top_pages (page requests only, capped by APP_PAGES_TRAFFIC_TOP_N), assets {requests, bytes}, broken_links (404s on real links) and probe_requests (404s that look like scans).
+	mux.HandleFunc("GET /api/v1/static-sites/{name}/hook", rt.requireAbilityForResource(AbilityRead, appResourceFromPath, rt.handleGetStaticSiteHook))
+	mux.HandleFunc("POST /api/v1/static-sites/{name}/hook", rt.requireAbilityForResource(AbilityWriteSensitive, appResourceFromPath, rt.handlePutStaticSiteHook))
+	mux.HandleFunc("DELETE /api/v1/static-sites/{name}/hook", rt.requireAbilityForResource(AbilityWriteSensitive, appResourceFromPath, rt.handleDeleteStaticSiteHook))
+	mux.HandleFunc("POST /api/v1/hooks/pages/{site}/{secret}", rt.handleStaticSiteHookTrigger)
+	mux.HandleFunc("GET /api/v1/static-sites/{name}/deploy-tokens", rt.requireAbilityForResource(AbilityRead, appResourceFromPath, rt.handleListSiteDeployTokens))
+	mux.HandleFunc("POST /api/v1/static-sites/{name}/deploy-tokens", rt.requireAbilityForResource(AbilityWriteSensitive, appResourceFromPath, rt.handleCreateSiteDeployToken))
+	mux.HandleFunc("DELETE /api/v1/static-sites/{name}/deploy-tokens/{id}", rt.requireAbilityForResource(AbilityWriteSensitive, appResourceFromPath, rt.handleRevokeSiteDeployToken))
+	mux.HandleFunc("GET /api/v1/static-sites/{name}/settings", rt.requireAbilityForResource(AbilityRead, appResourceFromPath, rt.handleGetStaticSiteSettings))
+	mux.HandleFunc("PATCH /api/v1/static-sites/{name}/settings", rt.requireAbilityForResource(AbilityWrite, appResourceFromPath, rt.handlePatchStaticSiteSettings))
+<<<<<<< HEAD
+	mux.HandleFunc("GET /api/v1/static-sites/{name}/notify", rt.requireAbilityForResource(AbilityRead, appResourceFromPath, rt.handleGetPagesNotify))
+	mux.HandleFunc("PUT /api/v1/static-sites/{name}/notify", rt.requireAbilityForResource(AbilityWrite, appResourceFromPath, rt.handlePutPagesNotify))
+	mux.HandleFunc("DELETE /api/v1/static-sites/{name}/notify", rt.requireAbilityForResource(AbilityWrite, appResourceFromPath, rt.handleDeletePagesNotify))
+=======
+	mux.HandleFunc("GET /api/v1/pages/presets", rt.requireAbility(AbilityRead, rt.handleListPagesPresets))
+	mux.HandleFunc("GET /api/v1/static-sites/{name}/preset", rt.requireAbilityForResource(AbilityRead, appResourceFromPath, rt.handleGetStaticSitePreset))
+	mux.HandleFunc("PUT /api/v1/static-sites/{name}/preset", rt.requireAbilityForResource(AbilityWrite, appResourceFromPath, rt.handlePutStaticSitePreset))
+>>>>>>> cd493342a (feat: performance presets for Pages sites)
+	mux.HandleFunc("GET /api/v1/static-sites/{name}/rules", rt.requireAbilityForResource(AbilityRead, appResourceFromPath, rt.handleGetStaticSiteRules))
+	mux.HandleFunc("PUT /api/v1/static-sites/{name}/rules", rt.requireAbilityForResource(AbilityWrite, appResourceFromPath, rt.handlePutStaticSiteRules))
+	mux.HandleFunc("GET /api/v1/static-sites/{name}/deploys", rt.requireAbilityForResource(AbilityRead, appResourceFromPath, rt.handleListStaticSiteDeploys))
+	mux.HandleFunc("GET /api/v1/static-sites/{name}/deploys/{deployId}/log", rt.requireAbilityForResource(AbilityRead, appResourceFromPath, rt.handleStaticSiteDeployLog))
+	mux.HandleFunc("GET /api/v1/static-sites/{name}/deploys/{deployId}/log/stream", rt.requireAbilityForResource(AbilityRead, appResourceFromPath, rt.withStreamReauth(appResourceFromPath, rt.handleStaticSiteDeployLogStream)))
+	mux.HandleFunc("POST /api/v1/static-sites/{name}/deploys/{deployId}/promote", rt.requireAbilityForResource(AbilityDeploy, appResourceFromPath, rt.idempotent(rt.handlePromoteStaticSiteDeploy)))
+	mux.HandleFunc("GET /api/v1/static-sites/{name}/submissions", rt.requireAbilityForResource(AbilityReadSensitive, appResourceFromPath, rt.handleListStaticSiteSubmissions))
+	mux.HandleFunc("DELETE /api/v1/static-sites/{name}/submissions/{form}/{id}", rt.requireAbilityForResource(AbilityDeploy, appResourceFromPath, rt.handleDeleteStaticSiteSubmission))
+	mux.HandleFunc("GET /api/v1/static-sites/{name}/traffic", rt.requireAbilityForResource(AbilityRead, appResourceFromPath, rt.handleStaticSiteTraffic))
+	mux.HandleFunc("GET /api/v1/apps/{name}/static-routes", rt.requireAbilityForResource(AbilityRead, appResourceFromPath, rt.handleGetStaticRoutes))
+	mux.HandleFunc("POST /api/v1/apps/{name}/static-routes/test", rt.requireAbilityForResource(AbilityRead, appResourceFromPath, rt.handleTestStaticRoutes))
+	mux.HandleFunc("POST /api/v1/apps/{name}/static-routes/lint", rt.requireAbilityForResource(AbilityRead, appResourceFromPath, rt.handleLintStaticRoutes))
+
+	// Backup targets (connected S3-compatible buckets a database backup
+	// can be uploaded to). Create and delete need AbilityWriteSensitive:
+	// create because its request body carries live bucket credentials,
+	// delete because it gates access to the same. List/get are ordinary
+	// AbilityRead, the same boundary handleListCertificates/
+	// handleListStaticSites already draw between visibility and mutation.
+	mux.HandleFunc("GET /api/v1/backup-targets", rt.requireAbility(AbilityRead, rt.handleListBackupTargets))
+	mux.HandleFunc("POST /api/v1/backup-targets", rt.requireAbility(AbilityWriteSensitive, rt.handleCreateBackupTarget))
+	mux.HandleFunc("GET /api/v1/backup-targets/{id}", rt.requireAbility(AbilityRead, rt.handleGetBackupTarget))
+	mux.HandleFunc("PUT /api/v1/backup-targets/{id}", rt.requireAbility(AbilityWriteSensitive, rt.handleUpdateBackupTarget))
+	mux.HandleFunc("DELETE /api/v1/backup-targets/{id}", rt.requireAbility(AbilityWriteSensitive, rt.handleDeleteBackupTarget))
+	mux.HandleFunc("GET /api/v1/backup-targets/{id}/encryption", rt.requireAbility(AbilityRead, rt.handleGetBackupTargetEncryption))
+	mux.HandleFunc("PUT /api/v1/backup-targets/{id}/encryption", rt.requireAbility(AbilityRoot, rt.handleSetBackupTargetEncryption))
+	mux.HandleFunc("POST /api/v1/backup-targets/{id}/probe", rt.requireAbility(AbilityWriteSensitive, rt.handleProbeBackupTarget))
+	mux.HandleFunc("POST /api/v1/backup-targets/{id}/test", rt.requireAbility(AbilityWriteSensitive, rt.handleTestBackupTarget))
+	// Second-destination copies: choosing where backups are mirrored is a sensitive write, listing is a read.
+	mux.HandleFunc("GET /api/v1/backups/copy-settings", rt.requireAbility(AbilityRead, rt.handleGetBackupCopySettings))
+	mux.HandleFunc("PUT /api/v1/backups/copy-settings", rt.requireAbility(AbilityWriteSensitive, rt.handleSetBackupCopySettings))
+	mux.HandleFunc("GET /api/v1/backups/copies", rt.requireAbility(AbilityRead, rt.handleListBackupCopies))
+
+	// Registry credentials (registry_credentials.go): same ability tiers
+	// as backup targets just above, same reasoning (POST/PUT/DELETE
+	// handle live pull credentials).
+	mux.HandleFunc("GET /api/v1/registry-credentials", rt.requireAbility(AbilityRead, rt.handleListRegistryCredentials))
+	mux.HandleFunc("POST /api/v1/registry-credentials", rt.requireAbility(AbilityWriteSensitive, rt.handleCreateRegistryCredential))
+	mux.HandleFunc("GET /api/v1/registry-credentials/{id}", rt.requireAbility(AbilityRead, rt.handleGetRegistryCredential))
+	mux.HandleFunc("PUT /api/v1/registry-credentials/{id}", rt.requireAbility(AbilityWriteSensitive, rt.handleUpdateRegistryCredential))
+	mux.HandleFunc("DELETE /api/v1/registry-credentials/{id}", rt.requireAbility(AbilityWriteSensitive, rt.handleDeleteRegistryCredential))
+	mux.HandleFunc("POST /api/v1/registry-credentials/{id}/test", rt.requireAbility(AbilityWriteSensitive, rt.handleTestRegistryCredential))
+	mux.HandleFunc("GET /api/v1/registry-credentials/{id}/usage", rt.requireAbility(AbilityRead, rt.handleRegistryCredentialUsage))
+	mux.HandleFunc("POST /api/v1/registry-credentials/presets/test", rt.requireAbility(AbilityWriteSensitive, rt.handleTestRegistryPreset))
+	mux.HandleFunc("POST /api/v1/registry-credentials/{id}/refresh", rt.requireAbility(AbilityWriteSensitive, rt.handleRefreshRegistryCredential))
+	mux.HandleFunc("POST /api/v1/registry-credentials/test", rt.requireAbility(AbilityWriteSensitive, rt.handleProbeRegistryCredential))
+	mux.HandleFunc("POST /api/v1/registry-credentials/dockerhub/test", rt.requireAbility(AbilityWriteSensitive, rt.handleProbeDockerHub))
+	mux.HandleFunc("GET /api/v1/registry-credentials/{id}/limits", rt.requireAbility(AbilityReadSensitive, rt.handleDockerHubLimits))
+	mux.HandleFunc("GET /api/v1/registry-credentials/{id}/dockerhub", rt.requireAbility(AbilityReadSensitive, rt.handleDockerHubStatus))
+	mux.HandleFunc("GET /api/v1/registry-vendors", rt.requireAbility(AbilityRead, rt.handleListRegistryVendors))
+	// Private package registries for builds: secrets mounted into
+	// Dockerfile builds, never returned by any route.
+	mux.HandleFunc("GET /api/v1/package-registries", rt.requireAbility(AbilityRead, rt.handleListPackageRegistries))
+	mux.HandleFunc("POST /api/v1/package-registries", rt.requireAbility(AbilityWriteSensitive, rt.handleCreatePackageRegistry))
+	mux.HandleFunc("DELETE /api/v1/package-registries/{id}", rt.requireAbility(AbilityWriteSensitive, rt.handleDeletePackageRegistry))
+	mux.HandleFunc("POST /api/v1/package-registries/{id}/test", rt.requireAbility(AbilityWriteSensitive, rt.handleTestPackageRegistry))
+
+	// Network shares (network_shares.go): an NFS/CIFS export mountable
+	// as a Docker local-driver volume. Same ability tiers as registry
+	// credentials just above: POST/PUT/DELETE handle a live CIFS
+	// password, test is a read-only reachability dial.
+	mux.HandleFunc("GET /api/v1/network-shares", rt.requireAbility(AbilityRead, rt.handleListNetworkShares))
+	mux.HandleFunc("POST /api/v1/network-shares", rt.requireAbility(AbilityWriteSensitive, rt.handleCreateNetworkShare))
+	mux.HandleFunc("GET /api/v1/network-shares/{id}", rt.requireAbility(AbilityRead, rt.handleGetNetworkShare))
+	mux.HandleFunc("PUT /api/v1/network-shares/{id}", rt.requireAbility(AbilityWriteSensitive, rt.handleUpdateNetworkShare))
+	mux.HandleFunc("DELETE /api/v1/network-shares/{id}", rt.requireAbility(AbilityWriteSensitive, rt.handleDeleteNetworkShare))
+	mux.HandleFunc("POST /api/v1/network-shares/{id}/test", rt.requireAbility(AbilityRead, rt.handleTestNetworkShare))
+
+	// Firewall rules (firewall_rules.go): declarative host firewall
+	// rules internal/reconcile/firewall converges onto ufw.
+	// AbilityWriteSensitive for create/delete, same tier as a backup
+	// target: a rule here changes what inbound traffic this host
+	// accepts. List is ordinary AbilityRead.
+	mux.HandleFunc("GET /api/v1/firewall-rules", rt.requireAbility(AbilityRead, rt.handleListFirewallRules))
+	mux.HandleFunc("POST /api/v1/firewall-rules", rt.requireAbility(AbilityWriteSensitive, rt.handleCreateFirewallRule))
+	mux.HandleFunc("DELETE /api/v1/firewall-rules/{id}", rt.requireAbility(AbilityWriteSensitive, rt.handleDeleteFirewallRule))
+	mux.HandleFunc("GET /api/v1/firewall/host", rt.requireAbility(AbilityRead, rt.handleHostFirewallStatus))
+	mux.HandleFunc("POST /api/v1/firewall/host/enable", rt.requireAbility(AbilityRoot, rt.handleEnableHostFirewall))
+	mux.HandleFunc("POST /api/v1/firewall/host/disable", rt.requireAbility(AbilityRoot, rt.handleDisableHostFirewall))
+
+	// Exposure audit (exposure.go): read-only list of published container
+	// ports and how reachable each is; preview is a pure computation.
+	// Restricting and unrestricting change the host's DOCKER-USER chain,
+	// so they are AbilityRoot like the ufw switch above.
+	mux.HandleFunc("GET /api/v1/firewall/exposure", rt.requireAbility(AbilityRead, rt.handleExposureReport))
+	mux.HandleFunc("POST /api/v1/firewall/exposure/preview", rt.requireAbility(AbilityRoot, rt.handleExposurePreview))
+	mux.HandleFunc("PUT /api/v1/firewall/exposure/restrictions/{protocol}/{port}", rt.requireAbility(AbilityRoot, rt.handleExposureRestrict))
+	mux.HandleFunc("DELETE /api/v1/firewall/exposure/restrictions/{protocol}/{port}", rt.requireAbility(AbilityRoot, rt.handleExposureUnrestrict))
+	mux.HandleFunc("POST /api/v1/firewall/exposure/restrictions/{protocol}/{port}/confirm", rt.requireAbility(AbilityRoot, rt.handleExposureConfirm))
+
+	// Registry credential browsing (registry_catalog.go): repository/tag
+	// lookup for a stored external credential, the same generic catalog
+	// client GET /api/v1/registry/repositories and /api/v1/registry/tags
+	// use above for the built-in registry. AbilityReadSensitive, the same
+	// tier GET /api/v1/git-providers and the github-app/gitlab-app/
+	// bitbucket-app repo-browsing routes below use: read-only, but only
+	// works because a stored credential's secret is resolved server-side.
+	mux.HandleFunc("GET /api/v1/registry-credentials/{id}/repositories", rt.requireAbility(AbilityReadSensitive, rt.handleListRegistryCredentialRepositories))
+	mux.HandleFunc("GET /api/v1/registry-credentials/{id}/tags", rt.requireAbility(AbilityReadSensitive, rt.handleListRegistryCredentialTags))
+}

@@ -165,6 +165,7 @@ func (db *DB) ListPrunableDeployAttempts(ctx context.Context, cutoff time.Time, 
 		WHERE rn > ? AND started_at < ?
 			AND status IN (?, ?, ?, ?, ?)
 			AND id NOT IN (SELECT deploy_attempt_id FROM rollback_pins)
+			AND id NOT IN (SELECT deploy_attempt_id FROM deploy_pins)
 		ORDER BY started_at LIMIT ?`,
 		keep, cutoff.UTC().Format(time.RFC3339Nano),
 		DeployAttemptStatusFailed, DeployAttemptStatusSuperseded, DeployAttemptStatusCanceled, DeployAttemptStatusHeld, DeployAttemptStatusRefused, limit)
@@ -196,6 +197,7 @@ var attemptDependents = []struct{ table, column string }{
 	{"deploy_exit_captures", "attempt_id"},
 	{"deploy_trace_steps", "attempt_id"},
 	{"deploy_timelines", "attempt_id"},
+	{"deploy_pins", "deploy_attempt_id"},
 	{"deploy_attempts", "id"},
 }
 

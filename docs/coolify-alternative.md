@@ -13,7 +13,10 @@ Levelrail is an open source deployment platform for your own servers. Its agent 
 [Get started](/getting-started) | [View on GitHub](https://github.com/glincker/levelrail)
 
 ```bash
-curl -fsSL https://levelrail.com/install.sh | sudo sh
+curl -fsSLO https://github.com/glincker/levelrail/releases/latest/download/install.sh
+curl -fsSLO https://github.com/glincker/levelrail/releases/latest/download/checksums.txt
+grep ' install.sh$' checksums.txt | sha256sum -c -  # macOS: shasum -a 256 -c -
+sudo sh install.sh
 ```
 
 <img src="/assets/screenshots/apps-list-light.png" alt="Levelrail apps list showing every service, its status and its node" className="block dark:hidden" />
@@ -38,7 +41,10 @@ curl -fsSL https://levelrail.com/install.sh | sudo sh
 The importer reads your Coolify instance through its API and changes nothing there. It creates the apps and databases on your Levelrail server. Databases and volumes are created empty, so copy their data separately (see the migration guide). Run a dry run first.
 
 ```bash title="install, import, dry run"
-curl -fsSL https://levelrail.com/install.sh | sudo sh
+curl -fsSLO https://github.com/glincker/levelrail/releases/latest/download/install.sh
+curl -fsSLO https://github.com/glincker/levelrail/releases/latest/download/checksums.txt
+grep ' install.sh$' checksums.txt | sha256sum -c -  # macOS: shasum -a 256 -c -
+sudo sh install.sh
 # on the server: sign in, then pass the Coolify API token from the environment
 levelrail-cli login --device
 export APP_IMPORT_SOURCE_TOKEN=...   # or pipe it in with --token-stdin

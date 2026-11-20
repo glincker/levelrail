@@ -81,4 +81,16 @@ describe('documentYaml', () => {
   it('reports the line of a bad document', () => {
     expect(() => parseYaml('a: 1\n  b: 2\n')).toThrow(YamlParseError)
   })
+
+  it('does not let a pasted __proto__ block set an inherited kind', () => {
+    const doc = readDocument(
+      '__proto__:\n  kind: App\nspec:\n  constructor: x\n',
+    )
+    expect(doc.kind).toBeNull()
+    expect(Object.hasOwn(doc.tree, '__proto__')).toBe(false)
+    expect(Object.hasOwn(doc.tree.spec as object, 'constructor')).toBe(false)
+    const flow = readDocument('spec: {__proto__: {kind: App}, a: 1}')
+    expect(flow.kind).toBeNull()
+    expect((flow.tree.spec as Record<string, unknown>).a).toBe(1)
+  })
 })

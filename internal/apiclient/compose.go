@@ -113,6 +113,8 @@ type TemplateInstallRequest struct {
 	Name    string            `json:"name,omitempty"`
 	Env     map[string]string `json:"env,omitempty"`
 	Domains map[string]string `json:"domains,omitempty"`
+	// ProjectID groups the installed services under a project.
+	ProjectID string `json:"project_id,omitempty"`
 }
 
 func profilesQuery(profiles []string) string {

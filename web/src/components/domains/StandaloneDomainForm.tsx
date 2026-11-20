@@ -1,7 +1,6 @@
 import { useId, useMemo, useState } from 'react'
 import { useTranslation } from 'react-i18next'
 import { ArrowRightGlassIcon, TriangleAlertGlassIcon } from '@thesvg/ui-react'
-import { Alert, AlertDescription } from '@/components/ui/alert'
 import { Button } from '@/components/ui/button'
 import { Checkbox } from '@/components/ui/checkbox'
 import { Field, FieldError, FieldLabel } from '@/components/ui/field'
@@ -27,6 +26,7 @@ import {
 } from '../../queries/standaloneDomains'
 import { StandaloneAdvancedOptions } from './StandaloneAdvancedOptions'
 import { StandaloneTargetPicker } from './StandaloneTargetPicker'
+import { ApiErrorAlert } from '../ApiErrorAlert'
 
 const VALIDATE_DELAY_MS = 400
 
@@ -191,9 +191,7 @@ export function StandaloneDomainForm({
 
       {mutation.isError &&
       !(mutation.error instanceof StandaloneConfirmationError) ? (
-        <Alert variant="destructive">
-          <AlertDescription>{mutation.error.message}</AlertDescription>
-        </Alert>
+        <ApiErrorAlert error={mutation.error} />
       ) : null}
 
       <div className="flex justify-end">

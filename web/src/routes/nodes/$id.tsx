@@ -46,6 +46,10 @@ const NodeResourcesTab = lazy(
   () => import('../../components/nodes/NodeResourcesTab'),
 )
 
+const NodeBuilderTrustCard = lazy(
+  () => import('../../components/nodes/NodeBuilderTrustCard'),
+)
+
 // Loader primes the node, its health and the node list (the drain dialog's target picker needs it).
 export const Route = createFileRoute('/nodes/$id')({
   loader: ({ context: { queryClient }, params: { id } }) =>
@@ -217,6 +221,7 @@ function NodeDetailPage() {
       <NodeAlertStatusCard nodeId={id} />
 
       <Suspense fallback={<Skeleton className="h-24 w-full" />}>
+        <NodeBuilderTrustCard nodeId={id} />
         <NodeResourcesTab nodeId={id} />
       </Suspense>
 

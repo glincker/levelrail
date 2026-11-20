@@ -1,4 +1,4 @@
-# irm https://levelrail.com/install-cli.ps1 | iex
+# irm https://github.com/glincker/levelrail/releases/latest/download/install-cli.ps1 | iex
 #
 # Installs levelrail-cli on Windows, the client for an already-running
 # Levelrail control plane. Per-user install, never needs admin.
@@ -367,7 +367,7 @@ public static extern System.IntPtr SendMessageTimeout(System.IntPtr hWnd, uint M
     Write-Info "  $binaryName auth login --device"
     Write-Info ''
     Write-Info 'To uninstall, run in PowerShell:'
-    Write-Info "  & ([scriptblock]::Create((irm https://levelrail.com/install-cli.ps1))) -Uninstall"
+    Write-Info "  & ([scriptblock]::Create((irm https://github.com/glincker/levelrail/releases/latest/download/install-cli.ps1))) -Uninstall"
     Write-Info "or delete $binPath and remove $installDir from your user PATH."
 }
 

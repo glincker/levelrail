@@ -1,0 +1,12 @@
+# nightly report service
+[build]
+builder = "DOCKERFILE"
+dockerfilePath = "docker/Dockerfile.report"
+
+[deploy]
+startCommand = "python report.py"
+cronSchedule = "0 3 * * *"
+restartPolicyType = "NEVER"
+
+[variables]
+REPORT_TOKEN = "not-a-real-token"

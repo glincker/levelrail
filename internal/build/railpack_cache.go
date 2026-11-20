@@ -27,6 +27,9 @@ func SetCachePerAppResolver(fn func(context.Context) (bool, error)) {
 	cachePerAppResolver.Store(&fn)
 }
 
+// PerAppCacheEnabled reports whether build caches are keyed per app.
+func PerAppCacheEnabled(ctx context.Context) bool { return perAppCacheEnabled(ctx) }
+
 func perAppCacheEnabled(ctx context.Context) bool {
 	if fn := cachePerAppResolver.Load(); fn != nil {
 		if on, err := (*fn)(ctx); err == nil {

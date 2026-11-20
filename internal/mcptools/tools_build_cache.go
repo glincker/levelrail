@@ -10,7 +10,7 @@ import (
 
 type getBuildCacheInput struct {
 	AppName string `json:"app_name,omitempty" jsonschema:"app to show; omit for the global default and every per-app setting"`
-	Stats   bool   `json:"stats,omitempty" jsonschema:"also list the app's cache prefix in the bucket for object count, size and last export time (needs app_name)"`
+	Stats   bool   `json:"stats,omitempty" jsonschema:"also report the app's cache prefix object count, size and last export (needs app_name)"`
 }
 
 type getBuildCacheOutput struct {
@@ -28,7 +28,7 @@ type setBuildCacheInput struct {
 func registerBuildCacheTools(server *mcp.Server, client *apiclient.Client) {
 	addTool(server, &mcp.Tool{
 		Name:        "get_build_cache",
-		Description: "BuildKit remote build cache settings per app or default: destination, export mode, last outcome, fallback warning. With stats, bucket size. No credentials.",
+		Description: "BuildKit remote cache settings per app or default: destination, export mode, last outcome, fallback warning. stats adds bucket size.",
 	}, func(ctx context.Context, _ *mcp.CallToolRequest, in getBuildCacheInput) (*mcp.CallToolResult, getBuildCacheOutput, error) {
 		settings, err := client.ListBuildCache(ctx)
 		if err != nil {

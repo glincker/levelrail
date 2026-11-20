@@ -1,0 +1,82 @@
+name: Levelrail Pages deploy
+description: Deploy a folder to a Levelrail Pages site with a site-scoped deploy token.
+inputs:
+  site:
+    description: Name of the Pages site.
+    required: true
+  dir:
+    description: Folder (or .zip) to publish.
+    required: false
+    default: "."
+  server:
+    description: Base URL of your Levelrail server, for example https://levelrail.example.com.
+    required: true
+  token:
+    description: Site deploy token from "levelrail-cli pages token create". Store it as a secret.
+    required: true
+  version:
+    description: CLI release tag to install, for example v1.5.7. Empty means the latest release.
+    required: false
+    default: ""
+  comment:
+    description: Comment the URL on pull requests (needs pull-requests write permission).
+    required: false
+    default: "true"
+  github-token:
+    description: Token used to download the release asset and post the PR comment.
+    required: false
+    default: ${{ github.token }}
+outputs:
+  url:
+    description: Live URL of the deployed site.
+    value: ${{ steps.deploy.outputs.url }}
+runs:
+  using: composite
+  steps:
+    - name: Install the CLI
+      shell: bash
+      env:
+        VERSION: ${{ inputs.version }}
+        GH_TOKEN: ${{ inputs.github-token }}
+        BIN_DIR: ${{ runner.temp }}/levelrail-bin
+        RUNNER_OS_NAME: ${{ runner.os }}
+        RUNNER_ARCH_NAME: ${{ runner.arch }}
+      run: |
+        set -euo pipefail
+        case "${RUNNER_OS_NAME}" in Linux) os=linux ;; macOS) os=darwin ;; *) echo "::error::unsupported runner OS ${RUNNER_OS_NAME}"; exit 1 ;; esac
+        case "${RUNNER_ARCH_NAME}" in X64) arch=amd64 ;; ARM64) arch=arm64 ;; *) echo "::error::unsupported runner arch ${RUNNER_ARCH_NAME}"; exit 1 ;; esac
+        asset="levelrail-cli-${os}-${arch}"
+        work="$(mktemp -d)"
+        tag_args=()
+        if [ -n "${VERSION}" ]; then tag_args=("${VERSION}"); fi
+        gh release download "${tag_args[@]}" --repo GLINCKER/levelrail --pattern "${asset}" --pattern checksums.txt --dir "${work}"
+        (cd "${work}" && grep " ${asset}\$" checksums.txt > expected.txt && { sha256sum -c expected.txt 2>/dev/null || shasum -a 256 -c expected.txt; })
+        mkdir -p "${BIN_DIR}"
+        install -m 0755 "${work}/${asset}" "${BIN_DIR}/levelrail-cli"
+        echo "${BIN_DIR}" >> "$GITHUB_PATH"
+    - name: Deploy
+      id: deploy
+      shell: bash
+      env:
+        APP_API_URL: ${{ inputs.server }}
+        APP_API_TOKEN: ${{ inputs.token }}
+        SITE: ${{ inputs.site }}
+        DIR: ${{ inputs.dir }}
+      run: |
+        set -euo pipefail
+        echo "::add-mask::${APP_API_TOKEN}"
+        out="$(levelrail-cli pages deploy "${DIR}" --name "${SITE}" --json)"
+        url="$(printf '%s' "${out}" | sed -n 's/.*"url"[[:space:]]*:[[:space:]]*"\([^"]*\)".*/\1/p' | head -n 1)"
+        echo "url=${url}" >> "$GITHUB_OUTPUT"
+        echo "Deployed ${SITE}: ${url}"
+    - name: Comment on the pull request
+      if: ${{ inputs.comment == 'true' && github.event_name == 'pull_request' }}
+      shell: bash
+      env:
+        GH_TOKEN: ${{ inputs.github-token }}
+        URL: ${{ steps.deploy.outputs.url }}
+        SITE: ${{ inputs.site }}
+        PR: ${{ github.event.pull_request.number }}
+      run: |
+        set -euo pipefail
+        gh pr comment "${PR}" --repo "${GITHUB_REPOSITORY}" --body "Levelrail Pages deployed \`${SITE}\`: ${URL}" || echo "::warning::could not comment on the pull request"

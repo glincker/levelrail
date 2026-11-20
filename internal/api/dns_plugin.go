@@ -124,7 +124,9 @@ func (rt *Router) pluginDNSTarget(ctx context.Context, domain string) (*dnsTarge
 	}
 	zone, ok := dnsrecords.MatchZone(domain, zones)
 	if !ok {
-		return nil, dnsrecords.ErrZoneNotFound
+		miss := &dnsrecords.ZoneMissError{Domain: dnsrecords.NormalizeName(domain)}
+		miss.Listed, miss.More = dnsrecords.ListedNames(zones)
+		return nil, miss
 	}
 	return &dnsTarget{Manager: mgr, Provider: dnsProviderCloudflare, Zone: zone, Plugin: name}, nil
 }

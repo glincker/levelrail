@@ -4,15 +4,14 @@ description: Authentication, authorization, roles, IAM policies, and audit loggi
 "og:url": "https://docs.levelrail.com/identity-and-access"
 ---
 
-This page covers who can sign in, what they can do once they are in, and the record of what they did. You can add a teammate with a role or invite them by email, scope a CI token down to one app, turn on two-factor auth, passkeys, OAuth or sign-in codes, and review who changed what in the audit log.
-
-Start with [Common tasks](#common-tasks). The sections after it explain how each mechanism behaves.
+Add teammates, scope a CI token to one app, turn on two-factor auth, passkeys, OAuth or sign-in codes, and review who changed what in the audit log. Start with [Common tasks](#common-tasks); the sections after it explain how each mechanism behaves.
 
 <Accordion title="For contributors: where this lives in the source">
 - Backend: `internal/api/{auth,users,roles,abilities,iam,iam_handlers,invites,tokens,twofactor,oauth,oauth_settings,device_auth,audit,audit_retention}.go`
 - CLI: `cmd/levelrail-cli/{users,iam,invites,tokens,auth}*.go`
 - Dashboard: `web/src/routes/settings/{users,iam-policies,security,tokens,oauth,cli-access,audit-log}.tsx`
 - OAuth sign-in decision logic: `completeOAuthSignin` in `internal/api/oauth.go`
+- Tests: `test/e2e/iam_policy_enforcement_test.go` drives a real admin session through the HTTP API to mint a user and a token, attach Deny and Allow policies and confirm the 403 and 200 responses. `internal/api/body_ref_authz_guard_test.go` fails the build when a handler reads a resource named in a request body without an authorization check.
 </Accordion>
 
 ## Common tasks
@@ -127,12 +126,7 @@ levelrail-cli audit-log --format csv --output-file audit-export.csv
 
 ## Why two permission models instead of one
 
-Most self-hosted platforms pick one shape and live with its downside.
-
-- Flat roles (admin/member/viewer) are easy to reason about but cannot express "this CI token may deploy exactly one app and nothing else."
-- A full IAM policy engine can express that, but it is overkill for "give Priya everything, give the contractor read-only."
-
-This platform keeps both, layered:
+Flat roles are easy to reason about but cannot express "this CI token may deploy exactly one app and nothing else." A full policy engine can, but is overkill for "give the contractor read-only." Levelrail keeps both, layered:
 
 | Layer | What it is |
 | --- | --- |
@@ -152,7 +146,7 @@ Every gated route resolves the request to exactly one principal before deciding 
 
 Sessions are an in-memory map keyed by an opaque token (`sessionStore`), with a TTL of 24h by default (overridable with `APP_SESSION_TTL`, a Go duration string). A restart clears every live session (an accepted tradeoff for a single-node control plane).
 
-**Session cookie security**
+**Session cookie and plain HTTP**
 
 The session cookie's `Secure` flag follows the request: it is set when the request arrived over TLS, or through the embedded Caddy ingress (a loopback peer sending `X-Forwarded-Proto: https`). `X-Forwarded-Proto` from any other peer is ignored, so a remote client cannot spoof it. A fresh install reached at `http://<server-ip>:8080` therefore works out of the box, and the dashboard shows a persistent "connection is not encrypted" banner until you move to HTTPS.
 
@@ -226,11 +220,9 @@ flowchart TD
 
 **Lists.** A Deny policy on `app:<name>` hides that app from `GET /api/v1/apps`, `apps-summary`, `apps-metrics`, deployments, certificates (including the auto-generated `sslip.io` hostname), `GET /api/v1/network/topology` (apps and databases) and the container names in `GET /api/v1/system/containers`, and returns `403` on every `/apps/{name}/...` route.
 
-**References in a request body or query.** The same check applies to a resource a request names outside its path: a database attached by name, a target environment or node, a promotion target, a compose or deploy-spec service name that already belongs to another app, a git source's additional services, a pipeline step that deploys another app, a standalone domain pointing at an app, or an `?app=` filter. A refused reference answers exactly like an unknown one, so the response never confirms that a hidden resource exists. Server-computed fan-outs (environment clone, protect-all, cutover reports, restore drills) skip resources the caller cannot see instead of failing. `internal/api/body_ref_authz_guard_test.go` fails the build when a handler reads such a field without one of these checks.
+**References in a request body or query.** The same check applies to a resource a request names outside its path: a database attached by name, a target environment or node, a promotion target, a compose or deploy-spec service name that already belongs to another app, a git source's additional services, a pipeline step that deploys another app, a standalone domain pointing at an app, or an `?app=` filter. A refused reference answers exactly like an unknown one, so the response never confirms that a hidden resource exists. Server-computed fan-outs (environment clone, protect-all, cutover reports, restore drills) skip resources the caller cannot see instead of failing.
 
 **Test before you trust.** `iam simulate` answers "can this principal do this on this resource" with the real evaluator, `iam effective` shows everything a principal can do grouped by ability, `iam analyze` runs static checks over every policy, and `iam templates` creates ready-made policies. A newly attached Deny takes effect on the very next request.
-
-`test/e2e/iam_policy_enforcement_test.go` covers this end to end: it drives a real admin session through the real HTTP API to mint a user and a token, attach Deny and Allow policies, and confirm the resulting 403 and 200 responses.
 
 ### Bootstrap: exactly one path to the first admin
 
@@ -797,7 +789,6 @@ levelrail-cli audit-purge
 - **Directory sync covers SCIM 2.0 only**
   Sign-in covers Google, GitHub, Microsoft, GitLab, Bitbucket, Discord, Slack, LinkedIn, Twitch, Facebook, Linear, Vercel, Hugging Face, Figma, Salesforce, Codeberg, Amazon Cognito, Dropbox, Kakao, Patreon, generic OIDC and [SAML 2.0](/sso-saml) (beta); accounts and groups sync through [SCIM](/scim). There is no LDAP sync.
 
-- There is no per-team or per-project access boundary. IAM policies scope to individual resources (`app:name`, `database:name`) or a wildcard. The Organizations settings page groups projects for display and navigation only.
 - SAML sign-in and SCIM provisioning are beta (the `saml-scim` feature, off by default). They are built on the sign-in library, with Levelrail's own checks in front, and were run against Keycloak 26.0.8 and SimpleSAMLphp 1.15 in a local lab, not against Okta or Entra ID. See [SAML](/sso-saml) and [SCIM](/scim).
 - Dashboard sessions are stored in the database and survive a restart. Sessions minted from API-token session links are held in memory and end on restart.
 

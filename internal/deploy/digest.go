@@ -30,7 +30,7 @@ var ErrFreshImageUnavailable = errors.New("image resolver unavailable, cannot re
 
 // RegistryAuthSource resolves a registry credential ID into pull auth.
 type RegistryAuthSource interface {
-	RegistryAuth(ctx context.Context, credentialID string) (*docker.RegistryAuth, error)
+	RegistryAuth(ctx context.Context, credentialID, image string) (*docker.RegistryAuth, error)
 }
 
 // WithImageResolver makes image deploys resolve floating tags to digests.
@@ -103,7 +103,7 @@ func (res ImageResolution) apply(desired *store.DesiredService) {
 func (p *Pipeline) resolveImage(ctx context.Context, image, credentialID string, requireFresh bool) (ImageResolution, error) {
 	var auth *docker.RegistryAuth
 	if credentialID != "" && p.registryAuth != nil && p.resolver != nil {
-		a, err := p.registryAuth.RegistryAuth(ctx, credentialID)
+		a, err := p.registryAuth.RegistryAuth(ctx, credentialID, image)
 		if err != nil {
 			return ImageResolution{}, fmt.Errorf("registry credential: %w", err)
 		}

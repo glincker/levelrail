@@ -2,19 +2,14 @@ import { zodResolver } from '@hookform/resolvers/zod'
 import { Controller, useForm } from 'react-hook-form'
 import { z } from 'zod'
 import { useTranslation } from 'react-i18next'
+import { InfoTip } from '@/components/kit'
 import { CpuGlassIcon } from '@thesvg/ui-react'
 import type { AppDetail, ServiceResources } from '../types/appDetail'
 import { useUpdateApp } from '../queries/apps'
 import { formatBytes, formatNanoCpus } from '../lib/format'
 import { Alert, AlertDescription } from '@/components/ui/alert'
 import { Button } from '@/components/ui/button'
-import {
-  Card,
-  CardContent,
-  CardDescription,
-  CardHeader,
-  CardTitle,
-} from '@/components/ui/card'
+import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card'
 import {
   Field,
   FieldDescription,
@@ -180,6 +175,7 @@ function toResources(values: ResourcesFormValues): ServiceResources {
 // background refetch stomp unsaved edits in a sibling editor.
 export function ResourceLimitsEditor({ app }: { app: AppDetail }) {
   const { t } = useTranslation('common')
+  const { t: tp } = useTranslation('appPages')
   const updateApp = useUpdateApp(app.name, { inlineError: true })
   const notifyRestartRequired = useRestartRequiredToast()
   const { control, register, handleSubmit, formState } =
@@ -214,14 +210,13 @@ export function ResourceLimitsEditor({ app }: { app: AppDetail }) {
         <CardTitle className="flex items-center gap-2">
           <CpuGlassIcon className="size-5" />
           Resource limits
+          <InfoTip>
+            {tp('resources.tips.limits')}
+            {app.memory_from_template
+              ? ` ${t('templateDefaults.memoryNote')}`
+              : null}
+          </InfoTip>
         </CardTitle>
-        <CardDescription>
-          Memory, CPU, swap, and CPU pinning limits applied to the container at
-          create time. Leave a limit off to run unbounded.
-          {app.memory_from_template
-            ? ` ${t('templateDefaults.memoryNote')}`
-            : null}
-        </CardDescription>
       </CardHeader>
       <CardContent>
         <form

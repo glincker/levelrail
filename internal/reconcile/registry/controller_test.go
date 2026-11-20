@@ -111,7 +111,7 @@ func (f *fakeRuntime) Create(_ context.Context, spec docker.ContainerSpec) (stri
 	}
 	f.nextID++
 	id := strconv.Itoa(f.nextID)
-	f.containers[spec.Name] = &docker.ContainerState{ID: id, Name: spec.Name, Image: spec.Image}
+	f.containers[spec.Name] = &docker.ContainerState{ID: id, Name: spec.Name, Image: spec.Image, Labels: spec.Labels}
 	return id, nil
 }
 

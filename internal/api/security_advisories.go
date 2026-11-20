@@ -10,6 +10,7 @@ import (
 	"sync"
 
 	"github.com/GLINCKER/levelrail/internal/advisoryfeed"
+	"github.com/GLINCKER/levelrail/internal/alerting"
 	"github.com/GLINCKER/levelrail/internal/attention"
 	"github.com/GLINCKER/levelrail/internal/store"
 )
@@ -145,4 +146,23 @@ func advisoryItem(res advisoryResource) attention.Item {
 		"worst":     worst,
 		"signature": res.Signature,
 	})
+}
+
+// AdvisoryHits lists running image matches at or above minSeverity for the alert engine; it is empty with no feed configured.
+func (rt *Router) AdvisoryHits(ctx context.Context, minSeverity string) ([]alerting.AdvisoryHit, error) {
+	svc := advisoryService()
+	if !svc.Enabled() {
+		return nil, nil
+	}
+	snap := svc.Snapshot(ctx)
+	images := rt.runningImages(ctx, func(string) bool { return true }, snap.UsesDigests())
+	_, matches := svc.Match(ctx, images)
+	floor := advisoryfeed.SeverityRank(minSeverity)
+	var out []alerting.AdvisoryHit
+	for _, m := range matches {
+		if advisoryfeed.SeverityRank(m.Severity) >= floor {
+			out = append(out, alerting.AdvisoryHit{App: m.App, AdvisoryID: m.AdvisoryID, Severity: m.Severity, FixedIn: m.FixedIn})
+		}
+	}
+	return out, nil
 }

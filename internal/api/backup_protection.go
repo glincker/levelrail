@@ -191,6 +191,14 @@ func toDrillResource(d store.BackupDrill) drillResource {
 	}
 }
 
+// drillResourceRef is the resource a drill ran against, as the list filter reads it.
+func drillResourceRef(d store.BackupDrill) resourceRef {
+	if d.DatabaseName != "" {
+		return databaseRef(d.DatabaseName)
+	}
+	return appRef(d.ServiceName)
+}
+
 // handleListBackupDrills handles GET /api/v1/backups/drills, optionally
 // narrowed by ?service=&volume= or ?database= and bounded by ?limit=.
 func (rt *Router) handleListBackupDrills(w http.ResponseWriter, r *http.Request) {
@@ -250,6 +258,9 @@ func (rt *Router) handleGetBackupDrill(w http.ResponseWriter, r *http.Request) {
 		rt.internalError(w, "api: get backup drill failed", err)
 		return
 	}
+	if !rt.authorizeRefs(w, r, AbilityRead, notFoundAs(http.StatusNotFound, "drill not found"), drillResourceRef(d)) {
+		return
+	}
 	writeJSON(w, http.StatusOK, toDrillResource(d))
 }
 
@@ -279,6 +290,10 @@ func (rt *Router) handleStartBackupDrill(w http.ResponseWriter, r *http.Request)
 		rt.internalError(w, "api: start drill: load backup failed", err, slog.String("backup_id", req.BackupID))
 		return
 	}
+	// Authorize first so a scoped caller learns nothing about a hidden backup from the 409 bodies.
+	if !rt.authorizeDrillBackup(w, r, h) {
+		return
+	}
 	if h.Status != store.BackupStatusSucceeded {
 		writeError(w, http.StatusConflict, fmt.Sprintf("backup %q has status %q, only a succeeded backup can be drilled", req.BackupID, h.Status))
 		return
@@ -288,6 +303,9 @@ func (rt *Router) handleStartBackupDrill(w http.ResponseWriter, r *http.Request)
 		return
 	}
 	id, err := rt.backupProtection.StartDrill(r.Context(), req.BackupID)
+	if rt.writeDrillStartError(w, err) {
+		return
+	}
 	if err != nil {
 		rt.internalError(w, "api: start drill failed", err, slog.String("backup_id", req.BackupID))
 		return

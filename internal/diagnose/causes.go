@@ -115,7 +115,7 @@ func Analyze(in Input) []Cause {
 		}
 	}
 	if len(causes) == 0 {
-		if c := crashloopCause(in); c != nil {
+		if c := crashloopCause(in, lines); c != nil {
 			causes = append(causes, *c)
 		}
 	}

@@ -6,6 +6,7 @@ import { tanstackRouter } from '@tanstack/router-plugin/vite'
 import { visualizer } from 'rollup-plugin-visualizer'
 import { docsManifestPlugin } from './vite-plugins/docsManifest.js'
 import { docsAssetsPlugin } from './vite-plugins/docsAssets.js'
+import { docsRawSplitPlugin } from './vite-plugins/docsRawSplit.js'
 import { precompressPlugin } from './vite-plugins/precompress.js'
 
 // https://vite.dev/config/
@@ -127,6 +128,7 @@ export default defineConfig({
     tailwindcss(),
     docsManifestPlugin(),
     docsAssetsPlugin(),
+    docsRawSplitPlugin(),
     precompressPlugin(),
     // Emits web/dist/stats.html, a treemap of final chunk sizes. Gated
     // behind ANALYZE so it doesn't run on every plain `npm run build`, only

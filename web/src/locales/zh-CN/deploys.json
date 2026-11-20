@@ -648,7 +648,6 @@
       "jenkins": "Jenkins",
       "buildkite": "Buildkite"
     },
-    "saveAs": "在你的仓库中将其保存为 {{target}}。",
     "needsDomain": "尚未设置仪表盘 URL。请在设置中设置,以便你的 CI 能访问此控制面。",
     "oidcNote": "请先在从 CI 部署中添加受信任的流水线,这样你的 CI 中就不会存储任何令牌。",
     "token": {
@@ -662,7 +661,9 @@
       "createInstallWide": "创建全安装范围的令牌",
       "helpProjectMissing": "此文件读取已存储的令牌。该应用指定的项目已不存在,因此令牌无法限定在项目内,并可以部署此服务器上的任何应用。它只能:{{abilities}}。请先修复应用的项目,或优先使用 OIDC 流水线。"
     },
-    "apiUrl": "在你的 CI 中将 LEVELRAIL_API_URL 设为 {{url}}。"
+    "apiUrl": "在你的 CI 中将 LEVELRAIL_API_URL 设为 {{url}}。",
+    "download": "下载文件",
+    "staticHint": "这是静态站点,流水线会用 Levelrail CLI 发布构建后的文件夹,不会构建镜像。"
   },
   "approvalBanner": {
     "approved": "已批准:{{app}} 现在指向 {{image}}。",
@@ -809,6 +810,16 @@
     "save": "保存",
     "saved": "构建运行器已保存",
     "cleared": "构建运行器已清除",
-    "retry": "重试"
+    "retry": "重试",
+    "prodTipLabel": "关于生产构建",
+    "prodTip": "除非该环境允许，生产环境不会在个人构建节点上构建。随后构建会回退到其他构建节点或控制面。",
+    "mode": "运行位置",
+    "modeAuto": "自动",
+    "modeControlPlane": "仅控制面",
+    "modeNode": "指定构建节点",
+    "pickNode": "选择构建节点",
+    "nodeNeeded": "指定构建节点时，需要先选择一个构建节点。",
+    "modeTipLabel": "关于构建位置",
+    "modeTip": "自动会遵循全局策略。仅控制面始终在此服务器上构建，从不使用构建节点。指定构建节点会使用你选择的节点，选择“仅此构建节点”可防止它回退到其他节点。"
   }
 }

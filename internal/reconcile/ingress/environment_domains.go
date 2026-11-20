@@ -4,6 +4,7 @@ import (
 	"context"
 	"log/slog"
 
+	"github.com/GLINCKER/levelrail/internal/spec"
 	"github.com/GLINCKER/levelrail/internal/store"
 )
 
@@ -32,5 +33,20 @@ func (c *Controller) environmentDomainSets(ctx context.Context) map[string]map[s
 // routedDomains is the host set svc routes this pass: its active
 // environment's own set when it has one, else its default domains.
 func routedDomains(svc store.DesiredService, sets map[string]map[string][]string) []string {
-	return store.EffectiveServiceDomains(svc.Domains, svc.EnvironmentID, sets[svc.Name])
+	return safeRoutedDomains(slog.Default(), svc.Name, store.EffectiveServiceDomains(svc.Domains, svc.EnvironmentID, sets[svc.Name]))
+}
+
+// safeRoutedDomains normalizes stored domains (legacy U-labels become A-labels)
+// and drops any that could reach the proxy as a placeholder or malformed host.
+func safeRoutedDomains(logger *slog.Logger, service string, domains []string) []string {
+	out := make([]string, 0, len(domains))
+	for _, d := range domains {
+		norm, err := spec.ValidateAppDomain(d)
+		if err != nil {
+			logger.Warn("ingress: skipping invalid stored domain", slog.String("service", service), slog.String("domain", d))
+			continue
+		}
+		out = append(out, norm)
+	}
+	return out
 }

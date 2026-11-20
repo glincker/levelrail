@@ -167,14 +167,16 @@ type Driver struct {
 
 	mu          sync.Mutex
 	listenPorts map[int]bool
-	lastApplied []byte
-	lastCASig   string
-	failedReset []byte
-	failedAt    time.Time
-	retryAfter  time.Duration
-	failCount   int
-	lastGood    []byte
-	backoff     CARetryBackoff
+	// pinnedListens maps a :0 listener to its first bound port for this run.
+	pinnedListens map[string]string
+	lastApplied   []byte
+	lastCASig     string
+	failedReset   []byte
+	failedAt      time.Time
+	retryAfter    time.Duration
+	failCount     int
+	lastGood      []byte
+	backoff       CARetryBackoff
 
 	snapshot            *SnapshotStore
 	snapshotFingerprint string
@@ -203,6 +205,7 @@ func (d *Driver) Apply(ctx context.Context, cfg *Config) error {
 		return fmt.Errorf("ingress: apply: config is nil")
 	}
 
+	d.pinEphemeralListens(cfg)
 	payload, err := json.Marshal(cfg)
 	if err != nil {
 		return fmt.Errorf("ingress: apply: marshal config: %w", err)
@@ -266,6 +269,7 @@ func (d *Driver) Apply(ctx context.Context, cfg *Config) error {
 	d.listenPorts = listenPortsOf(cfg)
 	d.lastApplied = payload
 	d.mu.Unlock()
+	d.recordEphemeralListens(cfg)
 	setCASwitchNotice("")
 	d.saveSnapshot(payload)
 
@@ -282,7 +286,7 @@ func (d *Driver) Stop(ctx context.Context) error {
 		return fmt.Errorf("ingress: stop: %w", err)
 	}
 	d.mu.Lock()
-	d.listenPorts = nil
+	d.listenPorts, d.pinnedListens = nil, nil
 	d.lastApplied, d.lastGood = nil, nil
 	d.mu.Unlock()
 	d.logger.InfoContext(ctx, "ingress stopped")

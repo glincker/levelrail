@@ -29,6 +29,7 @@ import (
 	"github.com/GLINCKER/levelrail/internal/preview"
 	"github.com/GLINCKER/levelrail/internal/proxyroutes"
 	"github.com/GLINCKER/levelrail/internal/reconcile"
+	"github.com/GLINCKER/levelrail/internal/reconcile/application"
 	"github.com/GLINCKER/levelrail/internal/safemode"
 	"github.com/GLINCKER/levelrail/internal/scheduledtask"
 	"github.com/GLINCKER/levelrail/internal/secrets"
@@ -100,6 +101,7 @@ type bootState struct {
 	routeCheck          ingressdriver.RouteCheck
 	gate                deployGate
 	alertingEngine      *alerting.Engine
+	livenessTracker     *application.LivenessTracker
 }
 
 // later registers a cleanup that runs after run's stages finish, in reverse order of registration.

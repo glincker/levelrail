@@ -53,6 +53,10 @@ type createNodeJoinTokenRequest struct {
 	Provider string `json:"provider,omitempty"`
 	Region   string `json:"region,omitempty"`
 	Zone     string `json:"zone,omitempty"`
+	// BuildTrust is server (default), managed or personal; personal needs Builder.
+	BuildTrust string `json:"build_trust,omitempty"`
+	// Builder makes the node build-only: it never receives app workloads.
+	Builder bool `json:"builder,omitempty"`
 }
 
 // joinDomain is the validated manual failure-domain labels for a join command.

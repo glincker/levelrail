@@ -102,7 +102,7 @@ func panicRecoveryMiddleware(logger *slog.Logger) func(http.Handler) http.Handle
 					logger.Error("api: panic recovered",
 						slog.String("request_id", requestIDFromContext(r.Context())),
 						slog.String("method", r.Method),
-						slog.String("path", r.URL.Path),
+						slog.String("path", loggablePath(r.URL.Path)),
 						slog.Any("panic", rec),
 						slog.String("stack", string(debug.Stack())),
 					)

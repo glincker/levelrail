@@ -1725,8 +1725,13 @@ func (c *Client) CheckDomain(ctx context.Context, name, domain string) (DomainCh
 // recorded and under way, not once the dump and upload actually finish.
 // ListBackups is how a caller finds out whether it did.
 func (c *Client) TriggerBackup(ctx context.Context, name, targetID string) (BackupHistoryResource, error) {
+	return c.TriggerBackupLabeled(ctx, name, targetID, "")
+}
+
+// TriggerBackupLabeled is TriggerBackup with a short operator label shown in backup lists.
+func (c *Client) TriggerBackupLabeled(ctx context.Context, name, targetID, label string) (BackupHistoryResource, error) {
 	var out BackupHistoryResource
-	err := c.do(ctx, http.MethodPost, "/api/v1/databases/"+PathEscape(name)+"/backups", TriggerBackupRequest{TargetID: targetID}, &out)
+	err := c.do(ctx, http.MethodPost, "/api/v1/databases/"+PathEscape(name)+"/backups", TriggerBackupRequest{TargetID: targetID, Label: label}, &out)
 	return out, err
 }
 
@@ -2439,6 +2444,9 @@ func (c *Client) ListServiceTemplatesFiltered(ctx context.Context, f TemplateLis
 	}
 	if f.HideDeprecated {
 		q.Set("include_deprecated", "false")
+	}
+	if f.NeedsDomain != "" {
+		q.Set("needs_domain", f.NeedsDomain)
 	}
 	path := "/api/v1/service-templates"
 	if len(q) > 0 {
@@ -3356,6 +3364,20 @@ func (c *Client) SetAutoRollbackSLOBurn(ctx context.Context, appName, mode strin
 func (c *Client) CancelDeploy(ctx context.Context, appName, deployID string) (DeployAttemptResource, error) {
 	var out DeployAttemptResource
 	err := c.do(ctx, http.MethodPost, "/api/v1/apps/"+PathEscape(appName)+"/deploys/"+PathEscape(deployID)+"/cancel", nil, &out)
+	return out, err
+}
+
+// PinDeploy calls PUT /api/v1/apps/{name}/deploys/{deployId}/pin.
+func (c *Client) PinDeploy(ctx context.Context, appName, deployID string) (DeployAttemptResource, error) {
+	var out DeployAttemptResource
+	err := c.do(ctx, http.MethodPut, "/api/v1/apps/"+PathEscape(appName)+"/deploys/"+PathEscape(deployID)+"/pin", nil, &out)
+	return out, err
+}
+
+// UnpinDeploy calls DELETE /api/v1/apps/{name}/deploys/{deployId}/pin.
+func (c *Client) UnpinDeploy(ctx context.Context, appName, deployID string) (DeployAttemptResource, error) {
+	var out DeployAttemptResource
+	err := c.do(ctx, http.MethodDelete, "/api/v1/apps/"+PathEscape(appName)+"/deploys/"+PathEscape(deployID)+"/pin", nil, &out)
 	return out, err
 }
 

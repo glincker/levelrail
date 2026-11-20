@@ -1265,7 +1265,7 @@ var pulls = newPullGroup()
 func (c *Client) pullImage(ctx context.Context, ref string, auth *RegistryAuth, onPull func(PullEvent)) error {
 	var pullOpts image.PullOptions
 	if auth != nil {
-		encoded, err := registry.EncodeAuthConfig(registry.AuthConfig{Username: auth.Username, Password: auth.Password})
+		encoded, err := registry.EncodeAuthConfig(auth.authConfig())
 		if err != nil {
 			return fmt.Errorf("docker: encode registry auth for image %q: %w", ref, err)
 		}

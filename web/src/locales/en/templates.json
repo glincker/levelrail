@@ -347,8 +347,16 @@
       "license": "License class",
       "anyLicense": "Any license",
       "arch": "Architecture",
-      "anyArch": "Any architecture"
+      "anyArch": "Any architecture",
+      "access": "Reachability",
+      "anyAccess": "Any reachability",
+      "worksOnIp": "Works on an IP (no domain needed)"
     },
+    "needsDomain": {
+      "badge": "Needs domain",
+      "hint": "Reached only through a domain name, so it does not work on a bare IP address."
+    },
+    "updatedOn": "Updated {{date}}",
     "preview": {
       "badge": "Preview",
       "hint": "Not tested on a real engine run yet. It still installs; please report issues."

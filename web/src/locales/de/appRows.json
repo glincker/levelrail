@@ -1,8 +1,11 @@
 {
   "failing": {
     "fallback": "Erfordert Aufmerksamkeit, öffnen Sie die App, um den Grund zu sehen.",
-    "fix": "Deployments anzeigen",
-    "fixLabel": "Deployments von {{name}} anzeigen"
+    "fix": "Beheben",
+    "fixLabel": "Deployments von {{name}} anzeigen",
+    "fixLabelHealth": "Health-Checks von {{name}} beheben",
+    "fixLabelDomains": "Domains von {{name}} beheben",
+    "fixLabelPages": "Pages-Seite {{name}} öffnen"
   },
   "logs": {
     "noContainer": "Für diese App läuft kein Container, daher gibt es nichts zu streamen.",
@@ -56,5 +59,14 @@
       "error": "Fehlgeschlagen"
     }
   },
-  "description": "Beschreibung: {{text}}"
+  "description": "Beschreibung: {{text}}",
+  "card": {
+    "noPreview": "Keine Vorschau",
+    "noDomain": "Keine Domain",
+    "staticSite": "Statische Seite",
+    "lastDeploy": "Deployt",
+    "empty": "Keine Apps passen zu diesen Filtern.",
+    "listLabel": "Apps",
+    "loading": "Apps werden geladen"
+  }
 }

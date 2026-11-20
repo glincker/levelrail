@@ -32,6 +32,7 @@ func domainsGoLiveUsage(prog string) string {
   %[1]s domains go-live runs [--limit N] [flags]     recent automation runs
   %[1]s domains go-live undo <run-id> [flags]        undo what one run created
   %[1]s domains backfill-base-domain [--confirm] [flags]
+  %[1]s domains base-wildcard [--confirm] [--replace] [flags]
 
 go-live adds the domain to the app when needed, creates its DNS record at the
 connected provider, and reports each step (dns, propagation, certificate,
@@ -254,6 +255,36 @@ func runDomainsBackfillBaseDomain(prog string, args []string, stdout, stderr io.
 		if len(res.Items) == 0 {
 			_, _ = fmt.Fprintln(stdout, "every app already has a domain")
 		}
+	})
+}
+
+// runDomainsBaseWildcard implements "domains base-wildcard".
+func runDomainsBaseWildcard(prog string, args []string, stdout, stderr io.Writer, lookupEnv func(string) (string, bool)) int {
+	fs, tokenFlagP, apiURLFlagP, profileFlagP, jsonOutP, outputFlagP, queryFlagP := apiFlagSet(prog, "domains base-wildcard", "print the result as JSON to stdout and nothing else", stderr)
+	var confirm, replace bool
+	fs.BoolVar(&confirm, "confirm", false, "create the record (the default is a preview)")
+	fs.BoolVar(&replace, "replace", false, "overwrite a different record already at this name")
+	fs.Usage = func() { _, _ = fmt.Fprint(stderr, domainsGoLiveUsage(prog)) }
+	tokenFlag, apiURLFlag, profileFlag, jsonOut, of, exitCode, ok := parseAPIFlags(fs, args, apiFlagPtrs{tokenFlagP, apiURLFlagP, profileFlagP, jsonOutP, outputFlagP, queryFlagP}, prog, stderr)
+	if !ok {
+		return exitCode
+	}
+	client := apiClientFromFlags(prog, apiURLFlag, tokenFlag, profileFlag, lookupEnv)
+	res, err := client.BaseDomainWildcard(context.Background(), confirm, replace)
+	if err != nil {
+		return reportError(stdout, stderr, jsonOut, fmt.Errorf("apps base domain wildcard: %w", err))
+	}
+	return writeScheduledTaskResult(stdout, stderr, of, res, func() {
+		if res.DryRun {
+			_, _ = fmt.Fprintf(stdout, "preview for *.%s (pass --confirm to create)\n", res.BaseDomain)
+		}
+		if r := res.DNS.Record; r != nil {
+			_, _ = fmt.Fprintf(stdout, "%s  %s  %s\n", r.Type, r.Name, r.Value)
+		}
+		for _, old := range res.DNS.Replaced {
+			_, _ = fmt.Fprintf(stdout, "existing: %s  %s  %s\n", old.Type, old.Name, old.Value)
+		}
+		_, _ = fmt.Fprintf(stdout, "%s: %s\n", res.DNS.DNS, res.DNS.Message)
 	})
 }
 

@@ -170,6 +170,15 @@ function InboxRow({ item, onRead }: { item: InboxItem; onRead: () => void }) {
           </div>
         ) : null}
       </div>
+      {item.repeats ? (
+        <Badge
+          variant="muted"
+          title={t('repeatsTitle', { count: item.repeats + 1 })}
+          aria-label={t('repeatsTitle', { count: item.repeats + 1 })}
+        >
+          {`x${item.repeats + 1}`}
+        </Badge>
+      ) : null}
       <Badge variant="outline">
         {t(`severity.${item.severity ?? 'warning'}`)}
       </Badge>

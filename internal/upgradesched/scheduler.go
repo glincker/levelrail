@@ -30,6 +30,9 @@ var (
 	// ErrEdgeTarget marks a target that is an edge container image: it has
 	// no release binary, so no upgrade can be scheduled for it.
 	ErrEdgeTarget = errors.New("upgradesched: edge builds are container images and cannot be applied by an upgrade")
+	// ErrStaleList accompanies a candidate taken from the last good release list
+	// because the source could not be reached now.
+	ErrStaleList = errors.New("upgradesched: the release source could not be reached, the last known release list was used")
 )
 
 // Breaking is one breaking change between the running version and a target.
@@ -49,6 +52,8 @@ type Plan struct {
 	CanApply       bool
 	CannotApplyWhy string
 	PublishedAt    time.Time
+	// FromFallback is set when the release was found without the releases API, so there are no notes.
+	FromFallback bool
 }
 
 // MissingAcks returns the ids of breaking changes that need an
@@ -188,8 +193,14 @@ type Scheduler struct {
 	NewID func() string
 	// Defaults is the policy an install runs until an operator saves one; zero keeps unsaved installs off.
 	Defaults Defaults
+	// CheckBackoffMax and CheckAlertAfter read the live runtime settings; nil keeps the built-in values.
+	CheckBackoffMax func(ctx context.Context) time.Duration
+	CheckAlertAfter func(ctx context.Context) int
 
-	mu sync.Mutex
+	mu          sync.Mutex
+	checkMu     sync.Mutex
+	check       CheckStatus
+	checkLoaded bool
 }
 
 func (s *Scheduler) now() time.Time {
@@ -396,7 +407,8 @@ func (s *Scheduler) maybeFire(ctx context.Context, sc store.UpgradeSchedule) err
 		return s.block(ctx, sc, BlockerSummary(pre.Checks), true)
 	}
 	if !backedUp {
-		if _, err := s.Host.BackupNow(ctx); err != nil && !errors.Is(err, ErrBackupNotAvail) {
+		// An automatic upgrade never runs without a fresh backup; a person who clicked upgrade has already seen the preflight.
+		if _, err := s.Host.BackupNow(ctx); err != nil && (sc.Source == store.UpgradeSourceAuto || !errors.Is(err, ErrBackupNotAvail)) {
 			return s.block(ctx, sc, "backup failed: "+err.Error(), true)
 		}
 	}

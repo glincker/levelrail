@@ -13,3 +13,9 @@ import "os"
 func devModeEnabled() bool {
 	return os.Getenv("APP_DEV_MODE") == "1"
 }
+
+// devLoginConfig reads the dev-login token and public host. Present only in
+// non-embedweb builds so a release binary can never enable the route.
+func devLoginConfig() (token, publicHost string) {
+	return os.Getenv("APP_DEV_LOGIN_TOKEN"), os.Getenv("APP_PUBLIC_HOST")
+}

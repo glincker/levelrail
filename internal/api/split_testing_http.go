@@ -6,10 +6,12 @@ import (
 	"log/slog"
 	"net/http"
 	"net/url"
+	"path/filepath"
 	"time"
 
 	"github.com/GLINCKER/levelrail/internal/ingress"
 	"github.com/GLINCKER/levelrail/internal/splittest"
+	"github.com/GLINCKER/levelrail/internal/staticroutes"
 	"github.com/GLINCKER/levelrail/internal/store"
 )
 
@@ -134,12 +136,12 @@ func (rt *Router) newSplitService() *splitService {
 		return nil
 	}
 	return &splitService{
-		st: rt.splitStore, reg: ingress.DefaultSplits(), defaults: splittest.DefaultsFromEnv(splittest.OSEnv),
+		st: staticSplitStore{SplitTestStore: rt.splitStore, list: rt.staticSplitDeployURLs}, reg: ingress.DefaultSplits(), defaults: splittest.DefaultsFromEnv(splittest.OSEnv),
 		logger: rt.logger, now: time.Now,
 		appDomains: func(ctx context.Context, app string) ([]string, error) {
 			svc, err := rt.apps.GetDesiredService(ctx, app)
 			if errors.Is(err, store.ErrServiceNotFound) {
-				return nil, splitErr(http.StatusBadRequest, "split testing is available for container apps only, static sites are not supported yet")
+				return rt.staticSplitDomains(ctx, app)
 			}
 			if err != nil {
 				return nil, err
@@ -147,6 +149,9 @@ func (rt *Router) newSplitService() *splitService {
 			return svc.Domains, nil
 		},
 		serviceImage: func(ctx context.Context, service string) (string, error) {
+			if image, ok := rt.staticSplitImage(ctx, service); ok {
+				return image, nil
+			}
 			svc, err := rt.apps.GetDesiredService(ctx, service)
 			if err != nil {
 				return "", err
@@ -173,6 +178,9 @@ func (rt *Router) newSplitService() *splitService {
 // image path with its readiness gate, freeze and protection checks. The
 // built-from-source refusal is skipped because the variant image is already built.
 func (rt *Router) splitDeployImage(ctx context.Context, app, image string) error {
+	if id, ok := splittest.ParseStaticImageRef(image); ok {
+		return rt.splitPromoteStatic(ctx, app, id)
+	}
 	svc, err := rt.apps.GetDesiredService(ctx, app)
 	if err != nil {
 		return err
@@ -299,4 +307,96 @@ func (rt *Router) handlePromoteSplit(w http.ResponseWriter, r *http.Request) {
 	name := r.PathValue("name")
 	res, err := svc.Promote(r.Context(), name, req.Variant)
 	rt.writeSplit(w, res, err, "promote", name)
+}
+
+// staticSplitStore lets static site deploys show up as release variants by
+// adding them to the container deploy URL list the split service reads.
+type staticSplitStore struct {
+	SplitTestStore
+	list func(ctx context.Context, app string) []store.DeployURL
+}
+
+func (s staticSplitStore) ListDeployURLs(ctx context.Context, app string) ([]store.DeployURL, error) {
+	rows, err := s.SplitTestStore.ListDeployURLs(ctx, app)
+	if err != nil {
+		return nil, err
+	}
+	return append(rows, s.list(ctx, app)...), nil
+}
+
+// staticSplitDomains returns a static site's domains, or the 400 that marks
+// the name as not splittable when it is neither an app nor a static site.
+func (rt *Router) staticSplitDomains(ctx context.Context, name string) ([]string, error) {
+	site, err := rt.splitStaticSite(ctx, name)
+	if errors.Is(err, store.ErrServiceNotFound) || (err == nil && site == nil) {
+		return nil, splitErr(http.StatusBadRequest, "split testing needs a container app or a static site")
+	}
+	if err != nil {
+		return nil, err
+	}
+	return site.Domains, nil
+}
+
+// staticSplitDeployURLs lists the retained deploys of a static site with
+// their immutable hosts, keyed by deploy ID so a release variant can name one.
+func (rt *Router) staticSplitDeployURLs(ctx context.Context, app string) []store.DeployURL {
+	site, err := rt.splitStaticSite(ctx, app)
+	if err != nil || site == nil {
+		return nil
+	}
+	if rt.deployAttempts == nil {
+		return nil
+	}
+	attempts, err := rt.deployAttempts.ListDeployAttempts(ctx, app)
+	if err != nil {
+		return nil
+	}
+	svcDir := filepath.Dir(filepath.Clean(site.RootDir))
+	if filepath.Base(svcDir) != app {
+		return nil
+	}
+	fallback, _ := rt.autoHost(ctx, app)
+	var out []store.DeployURL
+	for _, d := range staticroutes.RetainedDeploys(attempts, svcDir) {
+		if host := staticroutes.DeployHost(fallback, d.Attempt.ID); host != "" {
+			out = append(out, store.DeployURL{ServiceName: d.Attempt.ID, AppName: app, AttemptID: d.Attempt.ID, Host: host, CreatedAt: d.Attempt.StartedAt})
+		}
+	}
+	return out
+}
+
+// staticSplitImage maps a static deploy ID to its promote target.
+func (rt *Router) staticSplitImage(ctx context.Context, id string) (string, bool) {
+	if rt.deployAttempts == nil {
+		return "", false
+	}
+	a, err := rt.deployAttempts.GetDeployAttempt(ctx, id)
+	if err != nil || a == nil || !isStaticAttempt(*a) {
+		return "", false
+	}
+	return splittest.StaticImageRef(a.ID), true
+}
+
+// splitPromoteStatic makes a retained static deploy the live one through the
+// normal rollback path, which re-checks the recorded content digest.
+func (rt *Router) splitPromoteStatic(ctx context.Context, app, id string) error {
+	if rt.deployAttempts == nil {
+		return splitErr(http.StatusConflict, "deploy history is not available")
+	}
+	a, err := rt.deployAttempts.GetDeployAttempt(ctx, id)
+	if err != nil || a == nil || a.ServiceName != app || !isStaticAttempt(*a) {
+		return splitErr(http.StatusConflict, "that deploy is not a published version of this site")
+	}
+	if status, msg, _ := rt.rollbackStatic(ctx, *a); status != 0 {
+		return splitErr(status, "%s", msg)
+	}
+	return nil
+}
+
+func (rt *Router) splitStaticSite(ctx context.Context, name string) (*store.StaticSite, error) {
+	g, ok := rt.staticSites.(staticSiteGetter)
+	if !ok {
+		return nil, store.ErrServiceNotFound
+	}
+	return g.GetStaticSite(ctx, name)
 }

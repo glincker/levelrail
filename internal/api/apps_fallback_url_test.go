@@ -44,3 +44,28 @@ func TestHTTPSURL(t *testing.T) {
 		}
 	}
 }
+
+func TestIngressLinkPortFollowsBoundPort(t *testing.T) {
+	bound := func(h, s int) func() (int, int) { return func() (int, int) { return h, s } }
+	tests := []struct {
+		name   string
+		rt     *Router
+		https  string
+		httpIs int
+	}{
+		{"ephemeral config uses bound port", &Router{ingressBoundPorts: bound(41080, 41443)}, "https://a.localhost:41443", 41080},
+		{"bound 443 omits the port", &Router{ingressBoundPorts: bound(80, 443)}, "https://a.localhost", 80},
+		{"configured port wins over bound", &Router{doctorHTTPSPort: 8443, doctorHTTPPort: 8080, ingressBoundPorts: bound(1, 2)}, "https://a.localhost:8443", 8080},
+		{"nothing bound keeps the bare host", &Router{}, "https://a.localhost", 0},
+	}
+	for _, tc := range tests {
+		t.Run(tc.name, func(t *testing.T) {
+			if got := tc.rt.ingressHTTPSURL(store.IngressSettings{}, "a.localhost"); got != tc.https {
+				t.Errorf("https = %q, want %q", got, tc.https)
+			}
+			if got := tc.rt.linkHTTPPort(); got != tc.httpIs {
+				t.Errorf("http port = %d, want %d", got, tc.httpIs)
+			}
+		})
+	}
+}

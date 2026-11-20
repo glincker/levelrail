@@ -99,6 +99,8 @@ export interface PreviewPolicy {
   migrate_timeout_seconds: number
   effective_migrate_timeout_seconds: number
   image_tag_template: string
+  exclude_services: string[]
+  require_label: string
 }
 
 export type PreviewDatabaseStrategy = 'none' | 'shared' | 'fresh' | 'seed'
@@ -121,4 +123,6 @@ export interface PreviewPolicyUpdate {
   migrate_command?: string
   migrate_timeout_seconds?: number
   image_tag_template?: string
+  exclude_services?: string[]
+  require_label?: string
 }

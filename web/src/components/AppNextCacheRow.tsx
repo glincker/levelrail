@@ -8,6 +8,7 @@ import { useDatabases } from '../queries/databases'
 import { useConnectDatabaseApp } from '../queries/databaseLinks'
 import { useGitSource } from '../queries/gitSources'
 import { useRebuildApp } from '../queries/rebuildApp'
+import { InfoTip } from '@/components/kit'
 import type { AppDetail } from '../types/appDetail'
 
 const REDIS_ENGINE = 'redis'
@@ -47,8 +48,8 @@ export function AppNextCacheRow({ app }: { app: AppDetail }) {
         {t('title')}
       </summary>
       <div className="mt-3 space-y-3">
-        <p className="text-sm text-muted-foreground">{t('hint')}</p>
         <div className="flex items-center gap-3">
+          <InfoTip>{t('hint')}</InfoTip>
           <Switch
             id="next-cache-toggle"
             aria-labelledby="next-cache-toggle-label"

@@ -25,6 +25,15 @@ type Result struct {
 	// resulting image ID), passed through for callers that need it.
 	ExporterResponse map[string]string
 
+	// Digest is the pushed manifest digest of a registry-mode build.
+	Digest string
+
+	// BuilderNodeID and BuilderTrust name the remote node and tier that built it, empty for local builds.
+	BuilderNodeID string
+	BuilderTrust  string
+	// RecordID is the signed build record minted for a registry-mode remote build.
+	RecordID string
+
 	// Attestations holds the SBOM and provenance of a build run with Request.Attest.
 	Attestations Attestations
 }
@@ -216,6 +225,7 @@ func newResult(tag string, start time.Time, solveResp *bkclient.SolveResponse) *
 	res := &Result{Tag: tag, Duration: time.Since(start)}
 	if solveResp != nil {
 		res.ExporterResponse = solveResp.ExporterResponse
+		res.Digest = solveResp.ExporterResponse["containerimage.digest"]
 	}
 	return res
 }

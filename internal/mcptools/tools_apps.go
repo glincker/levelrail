@@ -60,7 +60,7 @@ func registerAppTools(server *mcp.Server, client *apiclient.Client) {
 
 	addTool(server, &mcp.Tool{
 		Name:        "get_app",
-		Description: "Get one app's current desired state: image, port, domains, env, resources, health checks, command override, volumes, bind mounts.",
+		Description: "One app's desired state: image, port, domains, env, resources, health checks, command override, volumes, bind mounts.",
 	}, func(ctx context.Context, _ *mcp.CallToolRequest, in appNameInput) (*mcp.CallToolResult, apiclient.AppResource, error) {
 		app, err := client.GetApp(ctx, in.Name)
 		if err != nil {
@@ -71,7 +71,7 @@ func registerAppTools(server *mcp.Server, client *apiclient.Client) {
 
 	addTool(server, &mcp.Tool{
 		Name:        "deploy_app",
-		Description: "Point an app at a new image tag. Asynchronous: watch get_app_status, or wait=true for the outcome and failure diagnosis. Protected environments need confirm and wait for another human's approval.",
+		Description: "Point an app at a new image tag. Async: wait=true returns the outcome and failure diagnosis. Protected environments need confirm and another human's approval.",
 	}, func(ctx context.Context, _ *mcp.CallToolRequest, in deployAppWaitInput) (*mcp.CallToolResult, deployAppOutput, error) {
 		result, err := client.DeployApp(ctx, in.Name, in.Image, in.Confirm)
 		if err != nil {
@@ -106,7 +106,7 @@ func registerAppTools(server *mcp.Server, client *apiclient.Client) {
 
 	addTool(server, &mcp.Tool{
 		Name:        "rollback_app",
-		Description: "Point an app back at an older image tag. Same approval gate as deploy_app, asynchronous. Refuses images never deployed and lists valid targets. Prefer rollback_app_to_deploy when a deploy_id is known.",
+		Description: "Point an app back at an older image tag. Same approval gate as deploy_app, async. Refuses never-deployed images. Prefer rollback_app_to_deploy given a deploy_id.",
 	}, func(ctx context.Context, _ *mcp.CallToolRequest, in deployAppInput) (*mcp.CallToolResult, apiclient.DeployTriggerResult, error) {
 		result, err := client.DeployAppWith(ctx, in.Name, apiclient.DeployTriggerRequest{Image: in.Image, Confirm: in.Confirm, Rollback: true})
 		if err != nil {
@@ -117,7 +117,7 @@ func registerAppTools(server *mcp.Server, client *apiclient.Client) {
 
 	addTool(server, &mcp.Tool{
 		Name:        "rollback_app_to_deploy",
-		Description: "Roll back to a past succeeded attempt (list_deploy_attempts), pinned by image digest. Fails closed if the image is gone or retagged. Same freeze and approval gate as deploy_app. Asynchronous.",
+		Description: "Roll back to a past succeeded attempt (list_deploy_attempts), pinned by digest; fails if the image is gone. Same freeze and approval gate as deploy_app. Async.",
 	}, func(ctx context.Context, _ *mcp.CallToolRequest, in rollbackToDeployInput) (*mcp.CallToolResult, apiclient.DeployTriggerResult, error) {
 		result, err := client.RollbackToDeploy(ctx, in.Name, in.DeployID, apiclient.RollbackToRequest{
 			Confirm:        in.Confirm,
@@ -132,7 +132,7 @@ func registerAppTools(server *mcp.Server, client *apiclient.Client) {
 
 	addTool(server, &mcp.Tool{
 		Name:        "clone_app",
-		Description: "Duplicate an app under a new name. Domains stay empty unless domain_suffix derives them; secrets copy only with copy_secrets (needs read:sensitive); volumes never copy.",
+		Description: "Duplicate an app under a new name. Domains stay empty unless domain_suffix; secrets copy only with copy_secrets (needs read:sensitive); volumes never.",
 	}, func(ctx context.Context, _ *mcp.CallToolRequest, in cloneAppInput) (*mcp.CallToolResult, apiclient.AppResource, error) {
 		app, err := client.CloneAppWith(ctx, in.Name, apiclient.CloneAppRequest{NewName: in.NewName, CopySecrets: in.CopySecrets, DomainSuffix: in.DomainSuffix, EnvironmentID: in.EnvironmentID, Domains: cloneDomainMode(in.DomainSuffix)})
 		if err != nil {
@@ -143,7 +143,7 @@ func registerAppTools(server *mcp.Server, client *apiclient.Client) {
 
 	addTool(server, &mcp.Tool{
 		Name:        "list_app_images",
-		Description: "List locally-present image tags under an app's current image repo, newest first, for deploy_app or rollback_app. Read-only.",
+		Description: "Local image tags under an app's image repo, newest first, for deploy_app or rollback_app.",
 	}, func(ctx context.Context, _ *mcp.CallToolRequest, in appNameInput) (*mcp.CallToolResult, []apiclient.ImageResource, error) {
 		images, err := client.ListAppImages(ctx, in.Name)
 		if err != nil {
@@ -176,7 +176,7 @@ func registerAppTools(server *mcp.Server, client *apiclient.Client) {
 
 	addTool(server, &mcp.Tool{
 		Name:        "list_deploys",
-		Description: "List an app's deploy and reconcile conditions. Same data as get_app_status: there is no separate deploy history.",
+		Description: "An app's deploy and reconcile conditions. Same data as get_app_status; no separate deploy history.",
 	}, func(ctx context.Context, _ *mcp.CallToolRequest, in appNameInput) (*mcp.CallToolResult, []apiclient.ConditionResource, error) {
 		conditions, err := client.GetDeployStatus(ctx, in.Name)
 		if err != nil {
@@ -235,7 +235,7 @@ func registerAppTools(server *mcp.Server, client *apiclient.Client) {
 
 	addTool(server, &mcp.Tool{
 		Name:        "get_deploy_sbom",
-		Description: "One deploy's SBOM summary: package count, types, license counts, first packages. Defaults to the newest deploy with an SBOM (Dockerfile builds with APP_BUILD_ATTEST=true).",
+		Description: "One deploy's SBOM summary: package count, types, licenses, first packages. Defaults to the newest with an SBOM (needs APP_BUILD_ATTEST=true).",
 	}, func(ctx context.Context, _ *mcp.CallToolRequest, in deployRefInput) (*mcp.CallToolResult, apiclient.SBOMSummary, error) {
 		id, err := supplyChainDeploy(ctx, client, in, true)
 		if err != nil {
@@ -250,7 +250,7 @@ func registerAppTools(server *mcp.Server, client *apiclient.Client) {
 
 	addTool(server, &mcp.Tool{
 		Name:        "get_deploy_vulnerabilities",
-		Description: "One deploy's vulnerability scan: counts by severity, top fixable findings and the gate decision. Defaults to the newest scanned deploy; never starts a scan.",
+		Description: "One deploy's vulnerability scan: severity counts, top fixable findings, gate decision. Defaults to the newest scanned deploy.",
 	}, func(ctx context.Context, _ *mcp.CallToolRequest, in deployRefInput) (*mcp.CallToolResult, apiclient.VulnReport, error) {
 		id, err := supplyChainDeploy(ctx, client, in, false)
 		if err != nil {

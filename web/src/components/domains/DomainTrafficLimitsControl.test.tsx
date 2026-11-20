@@ -91,4 +91,19 @@ describe('DomainTrafficLimitsControl', () => {
       expect(fetchMock.mock.calls[2]?.[1]).toMatchObject({ method: 'DELETE' })
     })
   })
+
+  it('renders a failed save through ApiErrorAlert', async () => {
+    const fetchMock = vi
+      .fn()
+      .mockResolvedValueOnce(json(base))
+      .mockResolvedValue(json({ error: 'limit rejected' }, 500))
+    vi.stubGlobal('fetch', fetchMock)
+    const user = userEvent.setup()
+    renderControl()
+    const body = await screen.findByLabelText('Max upload (MB)')
+    await user.clear(body)
+    await user.type(body, '20')
+    await user.click(screen.getByRole('button', { name: 'Save' }))
+    expect(await screen.findByTestId('api-error-alert')).toBeInTheDocument()
+  })
 })

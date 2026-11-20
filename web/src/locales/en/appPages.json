@@ -1,0 +1,86 @@
+{
+  "tip": {
+    "label": "More info",
+    "learnMore": "Learn more",
+    "about": "About {{label}}"
+  },
+  "resources": {
+    "summary": "Resource summary",
+    "replicas": "Replicas",
+    "limits": "Limits",
+    "labels": "Labels",
+    "tips": {
+      "scale": "Replicas share the traffic. More replicas add capacity and survive a container restart, at a proportional cost.",
+      "limits": "Hard caps on CPU and memory for each container. A container that hits its memory cap is restarted.",
+      "autoscale": "Adds or removes replicas when CPU or memory stays above or below the targets you set.",
+      "sleep": "Stops the app after a quiet period and wakes it on the next request, so idle apps cost nothing.",
+      "budget": "A monthly spend cap. What happens at the cap (warn or stop) is up to you.",
+      "labels": "Free-form key and value tags. Use them to group apps, filter lists and track cost."
+    }
+  },
+  "static": {
+    "disk": "Disk",
+    "files": "Files",
+    "updated": "Updated",
+    "published": "Live",
+    "unpublished": "Not published",
+    "loadFailed": "Could not load the site.",
+    "noContainer": "No container, so no CPU or memory. Storage and traffic are what matter here.",
+    "score": "Site check",
+    "failing_one": "{{count}} failing check",
+    "failing_other": "{{count}} failing checks",
+    "warning_one": "{{count}} warning",
+    "warning_other": "{{count}} warnings",
+    "allPassing": "All checks pass"
+  },
+  "health": {
+    "summary": "Health summary",
+    "score": "Production readiness",
+    "scoreTip": "One line per area: deploys, alerts, domains and TLS, secrets and backups. Anything not passing is listed first.",
+    "readiness": "Readiness",
+    "liveness": "Liveness",
+    "probeOn": "On",
+    "probeOff": "Off",
+    "probes": "Probes",
+    "probesTip": "Readiness gates a deploy cutover. Liveness restarts a hung container. Each is an HTTP request or a command run inside the container.",
+    "categories": "Checks",
+    "pass": "Passing",
+    "warn": "Warning",
+    "fail": "Failing",
+    "unavailable": "No health data yet",
+    "setUp": "Set up probes",
+    "reference": "Health check reference"
+  },
+  "quick": {
+    "label": "App status shortcuts",
+    "health": "Health",
+    "healthScore": "Health {{score}}",
+    "healthPass": "Health OK",
+    "failing_one": "{{count}} failing check",
+    "failing_other": "{{count}} failing checks",
+    "warning_one": "{{count}} warning",
+    "warning_other": "{{count}} warnings",
+    "resources": "Resources",
+    "cpu": "CPU {{value}}%",
+    "disk": "Disk {{size}}",
+    "domains": "Domains",
+    "domainCount_one": "{{count}} domain",
+    "domainCount_other": "{{count}} domains",
+    "noDomains": "Add a domain",
+    "deploys": "Deploys",
+    "deployLatest": "Deploy {{status}}",
+    "noDeploys": "No deploys yet",
+    "deployStatus": {
+      "running": "running",
+      "succeeded": "succeeded",
+      "failed": "failed",
+      "held": "held",
+      "awaiting_approval": "awaiting approval",
+      "superseded": "superseded",
+      "queued": "queued",
+      "canceled": "canceled",
+      "refused": "refused",
+      "pending": "pending"
+    }
+  }
+}

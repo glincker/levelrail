@@ -9,8 +9,11 @@ package ingress
 
 import (
 	"context"
+	"encoding/json"
 	"errors"
+	"github.com/GLINCKER/levelrail/internal/staticroutes"
 	"log/slog"
+	"strings"
 	"testing"
 
 	"github.com/GLINCKER/levelrail/internal/ingress"
@@ -251,4 +254,69 @@ func TestController_Reconcile_StaticSite_GatedDomain(t *testing.T) {
 			t.Fatalf("routes = %v, want none (fail closed)", routes)
 		}
 	})
+}
+
+// A published static site with no configured domain is routed at the same
+// zero-config hostname a container service gets, and is counted as routed.
+func TestController_Reconcile_StaticSiteNoDomains_FallbackRouted(t *testing.T) {
+	st := &fakeStore{staticSites: []store.StaticSite{
+		{Name: "my-site2", RootDir: "/data/static/my-site2/1"},
+	}}
+	applier := &fakeApplier{}
+	c := New(st, newFakeRuntime(), applier, WithLogger(slog.New(slog.DiscardHandler)), WithPublicHost("203.0.113.5"))
+
+	result, err := c.Reconcile(context.Background())
+	if err != nil {
+		t.Fatalf("Reconcile() error = %v", err)
+	}
+	if cond := conditionOf(t, result); cond.Reason != "Routed1Services" {
+		t.Errorf("condition.Reason = %q, want Routed1Services", cond.Reason)
+	}
+	routes := applier.routes(t)
+	if len(routes) != 1 || routes[0].Match[0].Host[0] != "my-site2.203-0-113-5.sslip.io" {
+		t.Fatalf("routes = %+v, want one route for my-site2.203-0-113-5.sslip.io", routes)
+	}
+}
+
+// TestController_Reconcile_StaticSite_UIRulesLiveWithoutRedeploy proves a rule
+// edit rewriting only the sidecar reaches the next route set with no deploy.
+func TestController_Reconcile_StaticSite_UIRulesLiveWithoutRedeploy(t *testing.T) {
+	root := t.TempDir()
+	rs, err := staticroutes.Compile(staticroutes.Input{Redirects: "/old /file-target 301\n"}, staticroutes.DefaultLimits())
+	if err != nil {
+		t.Fatal(err)
+	}
+	if err := staticroutes.WriteSidecar(root, rs); err != nil {
+		t.Fatal(err)
+	}
+	st := &fakeStore{staticSites: []store.StaticSite{{Name: "docs", Domains: []string{"docs.example.com"}, RootDir: root}}}
+	applier := &fakeApplier{}
+	c := New(st, newFakeRuntime(), applier, WithLogger(slog.New(slog.DiscardHandler)))
+
+	render := func() string {
+		if _, err := c.Reconcile(context.Background()); err != nil {
+			t.Fatalf("Reconcile() error = %v", err)
+		}
+		raw, err := json.Marshal(applier.routes(t))
+		if err != nil {
+			t.Fatal(err)
+		}
+		return string(raw)
+	}
+	if got := render(); strings.Contains(got, "/ui-target") {
+		t.Fatalf("route set before the edit already has the ui rule: %s", got)
+	}
+	rules, blocks, probs := staticroutes.CompileUI([]staticroutes.UIRedirect{{From: "/old", To: "/ui-target"}}, nil, staticroutes.DefaultLimits())
+	if len(probs) != 0 {
+		t.Fatal(probs)
+	}
+	if err := rs.ApplyUI(rules, blocks, staticroutes.OptionOverrides{}); err != nil {
+		t.Fatal(err)
+	}
+	if err := staticroutes.WriteSidecar(root, rs); err != nil {
+		t.Fatal(err)
+	}
+	if got := render(); !strings.Contains(got, "/ui-target") {
+		t.Fatalf("route set after the edit is missing the ui rule: %s", got)
+	}
 }

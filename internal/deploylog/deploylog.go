@@ -111,6 +111,8 @@ type attemptState struct {
 	stepSubs []chan StepEvent
 
 	stages *deploytrace.StageTracker
+
+	phases map[string]*phaseRec // static phases, apart from steps
 }
 
 // Recorder turns one attempt's build.ProgressEvent stream into both a
@@ -196,6 +198,7 @@ func (r *Recorder) Progress(attemptID string) func(build.ProgressEvent) {
 		stage := tracker.Observe(context.Background(), deploytrace.StageObs{
 			Step: ev.Step, Cached: ev.Cached, Completed: ev.Completed, Error: ev.Error, Log: ev.Log,
 		})
+		r.noteStaticPhase(attemptID, ev)
 		if ev.Log == "" {
 			return // step-lifecycle event, not output: nothing more to record
 		}

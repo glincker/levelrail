@@ -169,7 +169,7 @@ Netlify's lock publishing maps to the publish lock. Builds still run, then wait 
 
 ### Split testing
 
-Not available for static sites yet. Split testing works for container apps with a domain, between a branch deploy or a retained release and production. If you used Netlify split tests on a static site, there is no replacement today. See [Split testing](/split-testing).
+Split testing works for static sites and container apps that have an explicit domain. On a static site you split production against retained deploys, and a variant can be promoted live. See [Split testing](/split-testing).
 
 ### Drop deploy
 
@@ -195,7 +195,7 @@ No build runs. What you drop is what is served. See [Drop deploy](/drop-deploy).
 | Analytics | No browser-side analytics. Server-side request rate, errors and latency percentiles per app are built in |
 | Global CDN and edge network | Not provided. Files are served from the node or nodes you run |
 | Automatic form detection | Not supported. Forms are created explicitly |
-| Static split testing | Not supported yet |
+| Static split testing | Supported, needs an explicit domain |
 | Redirect conditions (country, language, role) | Not supported |
 | Proxy rewrites to external URLs in `_redirects` | Not supported there. Use a path forwarder |
 | Build plugins | Not supported |

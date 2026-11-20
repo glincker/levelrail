@@ -5,6 +5,7 @@ import (
 	"encoding/json"
 	"errors"
 	"fmt"
+	"github.com/GLINCKER/levelrail/internal/secrets"
 	"net/url"
 	"strings"
 	"sync"
@@ -29,7 +30,7 @@ const (
 const LegacyVaultName = "vault"
 
 // SecretsOwner is the internal/secrets namespace holding stored connection credentials.
-const SecretsOwner = "secretconnections" //nolint:gosec // namespace name, not a credential
+const SecretsOwner = secrets.ControlPlanePrefix + "secretconnections" //nolint:gosec // namespace name, not a credential
 
 // Errors the API maps to status codes.
 var (
@@ -270,7 +271,7 @@ func (s *Service) checkRef(ctx context.Context, ref string) error {
 	if !ok || svc == "" || key == "" {
 		return invalid("credential_ref must be <secret namespace>/<key>")
 	}
-	if svc == SecretsOwner {
+	if svc == SecretsOwner || svc == "secretconnections" || svc == "_cp" {
 		return invalid("credential_ref cannot point at another connection's stored credential")
 	}
 	exists, err := s.Secrets.Exists(ctx, svc, key)

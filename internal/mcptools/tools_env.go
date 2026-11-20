@@ -16,7 +16,7 @@ type setAppEnvInput struct {
 	Name   string `json:"name" jsonschema:"the app's name"`
 	Key    string `json:"key" jsonschema:"the environment variable name"`
 	Value  string `json:"value" jsonschema:"the value to store; never returned or logged"`
-	Secret bool   `json:"secret,omitempty" jsonschema:"store the value envelope-encrypted as a write-only secret instead of a plain env var"`
+	Secret bool   `json:"secret,omitempty" jsonschema:"store as a write-only encrypted secret, not a plain env var"`
 	Force  bool   `json:"force,omitempty" jsonschema:"secret only: overwrite even if the key is locked"`
 }
 
@@ -39,7 +39,7 @@ type EnvChangeResult struct {
 func registerEnvTools(server *mcp.Server, client *apiclient.Client) {
 	addTool(server, &mcp.Tool{
 		Name:        "set_app_env",
-		Description: "Set one environment variable on an app. With secret true the value is encrypted and write-only. Takes effect on the next deploy_app or restart_app.",
+		Description: "Set one env var on an app. secret true encrypts it and makes it write-only. Applies on the next deploy_app or restart_app.",
 	}, func(ctx context.Context, _ *mcp.CallToolRequest, in setAppEnvInput) (*mcp.CallToolResult, EnvChangeResult, error) {
 		res, err := setAppEnv(ctx, client, in)
 		if err != nil {
@@ -50,7 +50,7 @@ func registerEnvTools(server *mcp.Server, client *apiclient.Client) {
 
 	addTool(server, &mcp.Tool{
 		Name:        "unset_app_env",
-		Description: "Remove one environment variable from an app, plain or secret. Saved to desired state only: the container keeps its old environment until deploy_app or restart_app.",
+		Description: "Remove one env var (plain or secret) from an app. Desired state only: the container keeps it until deploy_app or restart_app.",
 	}, func(ctx context.Context, _ *mcp.CallToolRequest, in unsetAppEnvInput) (*mcp.CallToolResult, EnvChangeResult, error) {
 		res, err := unsetAppEnv(ctx, client, in)
 		if err != nil {

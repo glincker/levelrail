@@ -142,7 +142,7 @@ The agent checks that the identity directory is writable before it sends the tok
 levelrail-cli nodes list
 ```
 
-The node appears as soon as enrollment is saved, with `status: pending` until its first heartbeat, then `online`.
+The node appears as soon as enrollment is saved, `pending` until its first heartbeat, then `online`.
 
 </Step>
 <Step title="Use it for placement">
@@ -511,7 +511,7 @@ Defaults come from `APP_NODE_FAILURE_MODE`, `APP_NODE_FAILURE_GRACE` (5m), `APP_
 
 ### The spread scheduler
 
-When a move or a drain has no explicit target, the scheduler picks the eligible node with the most headroom, breaking ties by load and then node id. A node is not eligible when it is cordoned, offline, missing a label the selector requires, or short of the CPU or memory the resource requests. See [Resource-aware placement](/resource-aware-placement).
+A move or drain with no explicit target uses the same eligibility rules as auto-placement and picks the eligible node with the most headroom, breaking ties by load and then node id. See [Resource-aware placement](/resource-aware-placement).
 
 ## Moving an app with its volumes
 
@@ -921,6 +921,8 @@ levelrail-cli nodes resource-usage
 levelrail-cli nodes capacity-forecast <id>   # projects when disk or memory runs out
 ```
 
+`GET /api/v1/nodes/resource-usage` is the fleet-wide counterpart: one snapshot with every node's latest CPU, memory and disk reading plus a rollup, read by the node list's CPU/Memory/Disk columns and the dashboard's fleet summary card. The same caveats apply: CPU and memory are summed from containers, and disk is a real host reading that today is populated only for the node running the control plane. See [Observability](/observability) for the response shape.
+
 ### Capacity guardrails and free space
 
 Each node is watched for disk, inode, memory and swap headroom against warn and critical thresholds (env defaults `APP_NODE_DISK_WARN_FREE_PCT`, `APP_NODE_DISK_CRIT_FREE_PCT`, and the matching `INODE`, `MEM` and `SWAP` variables; per-node overrides live in the node's Capacity card). Warn raises an attention item and a notice. At critical, new builds and deploys on that node are refused with a clear reason while the running version keeps serving.
@@ -932,8 +934,6 @@ levelrail-cli nodes capacity <node>              # use "local" for the control p
 levelrail-cli nodes cleanup <node> --dry-run     # preview
 levelrail-cli nodes cleanup <node> --yes         # remove the safe classes
 ```
-
-`GET /api/v1/nodes/resource-usage` is the fleet-wide counterpart: one snapshot with every node's latest CPU, memory and disk reading plus a rollup, read by the node list's CPU/Memory/Disk columns and the dashboard's fleet summary card. The same caveats apply: CPU and memory are summed from containers, and disk is a real host reading that today is populated only for the node running the control plane. See [Observability](/observability) for the response shape.
 
 ## OS patch status
 
@@ -957,11 +957,11 @@ The dashboard renders this as a single status badge, not a chart, since it is on
 
 The node has enrolled but the control plane and agent have not successfully established a heartbeat yet.
 
-Likely cause: the agent cannot reach the control plane at the address in APP_CONTROL_PLANE_ADDR, or TLS verification is failing (e.g., the CA fingerprint does not match).
+Likely cause: the agent cannot reach the control plane at `APP_CONTROL_PLANE_ADDR`, or TLS verification is failing (for example the CA fingerprint does not match).
 
 How to confirm: run `levelrail-cli nodes health <node-id>` to see the condition reason. Also check the agent logs on the node with `docker logs levelrail-agent` (if running as a container) or `journalctl -u levelrail-agent -n 50` (if running as a service).
 
-Fix: verify that the agent can reach the control plane address from the node (try `ping` or `nc -zv` to the host and port in APP_CONTROL_PLANE_ADDR). If the address is wrong, reenroll the agent with a correct token using `levelrail-cli nodes reenroll-token <id>`. If the CA fingerprint was provided and does not match, the error will be explicit in the agent logs; regenerate a new enrollment token.
+Fix: check from the node that the host and port in `APP_CONTROL_PLANE_ADDR` answer (`nc -zv`). If the address is wrong, re-enroll with `levelrail-cli nodes reenroll-token <id>`. A CA fingerprint mismatch is explicit in the agent logs; mint a new token.
 
 ### A node shows "heartbeat stale" and is marked offline
 
@@ -971,7 +971,7 @@ Likely cause: the agent has crashed, lost network connectivity, or the connectio
 
 How to confirm: run `levelrail-cli nodes health <node-id>` to see how long ago the last heartbeat was received. Check if the agent process is running on the node (docker ps, systemctl status, or ps aux) and review its logs.
 
-Fix: restart the agent. If it crashes repeatedly, check the logs for errors (permission denied, Docker socket not found, etc.). If it was a network blip, restarting usually recovers it. For chronic reconnection issues, increase the heartbeat timeout with `APP_NODE_HEARTBEAT_TIMEOUT` on the control plane (default 2 minutes) or improve the node's network stability.
+Fix: restart the agent. If it crashes repeatedly, check its logs for errors (permission denied, Docker socket not found). For chronic reconnection issues, increase the heartbeat timeout with `APP_NODE_HEARTBEAT_TIMEOUT` on the control plane (default 45 seconds) or improve the node's network stability.
 
 ### Apps or databases cannot be placed on the new node
 
@@ -997,11 +997,11 @@ Fix: if the mesh was not enabled on enrollment, reenroll the node with mesh enab
 
 Moving an app or database to another node is not completing.
 
-Likely cause: the target node is unhealthy or not accepting workloads, the app or database is too large to move quickly, or a network partition interrupted the operation.
+Likely cause: the target node is unhealthy or not accepting workloads, the volumes are large, or a network partition interrupted the move.
 
-How to confirm: run `levelrail-cli nodes moves` to list all ongoing moves and their status. Check the target node's health with `levelrail-cli nodes health <target-node-id>`, and check if volumes are being synchronized (check the node's disk usage with `levelrail-cli nodes resource-usage`).
+How to confirm: `levelrail-cli nodes moves` lists moves and their status; `levelrail-cli nodes health <target-node-id>` shows the target's health.
 
-Fix: if the target node is unhealthy, fix its health issue first. If the move is hung, you can drain the node with a different target node using `levelrail-cli nodes drain <source-node> --target <other-node>`. Large moves with big volumes can take a long time; monitor progress with `levelrail-cli nodes resource-usage` or the dashboard.
+Fix: if the target node is unhealthy, fix that first. If the move is hung, drain the node to a different target with `levelrail-cli nodes drain <source-node> --target <other-node>`. Large volumes take a long time; follow progress in the dashboard.
 
 Still stuck? Run `levelrail-cli nodes list` and `levelrail-cli nodes health <node-id>` and attach their output to an issue on [GitHub](https://github.com/glincker/levelrail/issues).
 
