@@ -1725,8 +1725,13 @@ func (c *Client) CheckDomain(ctx context.Context, name, domain string) (DomainCh
 // recorded and under way, not once the dump and upload actually finish.
 // ListBackups is how a caller finds out whether it did.
 func (c *Client) TriggerBackup(ctx context.Context, name, targetID string) (BackupHistoryResource, error) {
+	return c.TriggerBackupLabeled(ctx, name, targetID, "")
+}
+
+// TriggerBackupLabeled is TriggerBackup with a short operator label shown in backup lists.
+func (c *Client) TriggerBackupLabeled(ctx context.Context, name, targetID, label string) (BackupHistoryResource, error) {
 	var out BackupHistoryResource
-	err := c.do(ctx, http.MethodPost, "/api/v1/databases/"+PathEscape(name)+"/backups", TriggerBackupRequest{TargetID: targetID}, &out)
+	err := c.do(ctx, http.MethodPost, "/api/v1/databases/"+PathEscape(name)+"/backups", TriggerBackupRequest{TargetID: targetID, Label: label}, &out)
 	return out, err
 }
 

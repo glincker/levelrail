@@ -178,6 +178,7 @@ deploy.procfile_default_port
 deploy.receipt_approval_window
 deploy.stable_window
 deploy.watch_window
+deploys.coalesce_window
 deploys.registry_push_debounce
 deploys.registry_push_max_body_bytes
 deploys.registry_push_timeout

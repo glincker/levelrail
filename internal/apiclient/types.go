@@ -1180,6 +1180,7 @@ type BackupHistoryResource struct {
 	StartedAt      string `json:"started_at"`
 	FinishedAt     string `json:"finished_at,omitempty"`
 	ChecksumSHA256 string `json:"checksum_sha256,omitempty"`
+	Label          string `json:"label,omitempty"`
 }
 
 // BackupVerificationResource mirrors internal/api's
@@ -1201,6 +1202,7 @@ type BackupVerificationResource struct {
 // TriggerBackupRequest mirrors internal/api's triggerBackupRequest.
 type TriggerBackupRequest struct {
 	TargetID string `json:"target_id"`
+	Label    string `json:"label,omitempty"`
 }
 
 // BackupScheduleResource mirrors internal/api's backupScheduleResource

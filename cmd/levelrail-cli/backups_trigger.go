@@ -12,6 +12,8 @@ func runBackupsTrigger(prog string, args []string, stdout, stderr io.Writer, loo
 	fs, tokenFlagP, apiURLFlagP, profileFlagP, jsonOutP, outputFlagP, queryFlagP := apiFlagSet(prog, "backups trigger", "print the started backup attempt as JSON to stdout and nothing else", stderr)
 	var targetID string
 	fs.StringVar(&targetID, "target", "", "backup target id to back up to (default: the only configured target)")
+	var label string
+	fs.StringVar(&label, "label", "", "short name for this backup, shown in backups list")
 	fs.Usage = func() { _, _ = fmt.Fprint(stderr, backupsTriggerUsage(prog)) }
 
 	tokenFlag, apiURLFlag, profileFlag, jsonOut, of, exitCode, ok := parseAPIFlags(fs, args, apiFlagPtrs{tokenFlagP, apiURLFlagP, profileFlagP, jsonOutP, outputFlagP, queryFlagP}, prog, stderr)
@@ -37,7 +39,7 @@ func runBackupsTrigger(prog string, args []string, stdout, stderr io.Writer, loo
 		targetID = id
 	}
 
-	started, err := client.TriggerBackup(context.Background(), name, targetID)
+	started, err := client.TriggerBackupLabeled(context.Background(), name, targetID, label)
 	if err != nil {
 		return reportError(stdout, stderr, jsonOut, fmt.Errorf("trigger backup for database %q: %w", name, err))
 	}
@@ -72,7 +74,7 @@ func soleBackupTarget(ctx context.Context, client *Client, prog string) (string,
 
 func backupsTriggerUsage(prog string) string {
 	return fmt.Sprintf(`Usage:
-  %[1]s backups trigger <database> [--target ID] [flags]
+  %[1]s backups trigger <database> [--target ID] [--label TEXT] [flags]
 
 Starts a manual backup of an existing database and returns as soon as
 the attempt is recorded and under way (asynchronous; the real dump and
@@ -81,6 +83,7 @@ upload have not necessarily finished by the time this returns). Check
 
 Flags:
   --target string          backup target id to back up to (default: the only configured target)
+  --label string           short name for this backup, shown in backups list (up to 80 characters)
   --token string           API token (default: %[2]s env var, then the credentials file)
   --api-url string        control plane base URL (default: %[3]s env var, then %[4]s)
   --profile string        named credentials profile to read (overrides APP_PROFILE, default "default")

@@ -316,6 +316,7 @@ These variables only seed the default of a [runtime setting](/runtime-settings).
 | `APP_RESTART_SCHEDULE_MIN_INTERVAL` | [`deploy.restart_schedule_min_interval`](/runtime-settings#deploys) | `1h0m0s` |
 | `APP_DEPLOY_STABLE_WINDOW` | [`deploy.stable_window`](/runtime-settings#deploys) | `10s` |
 | `APP_DEPLOY_WATCH_WINDOW` | [`deploy.watch_window`](/runtime-settings#deploys) | `5m` |
+| `APP_DEPLOY_COALESCE_WINDOW` | [`deploys.coalesce_window`](/runtime-settings#deploys) | `15s` |
 | `APP_REGISTRY_PUSH_DEBOUNCE` | [`deploys.registry_push_debounce`](/runtime-settings#deploys) | `30s` |
 | `APP_REGISTRY_PUSH_MAX_BODY_BYTES` | [`deploys.registry_push_max_body_bytes`](/runtime-settings#deploys) | `262144` |
 | `APP_REGISTRY_PUSH_TIMEOUT` | [`deploys.registry_push_timeout`](/runtime-settings#deploys) | `5m` |
