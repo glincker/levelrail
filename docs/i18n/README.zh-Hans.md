@@ -4,7 +4,7 @@
 <h1>Levelrail</h1>
 <p><strong>在你自己的服务器上，通过 git push 直达生产环境。</strong><br>
 单个 Go 二进制文件的自托管部署平台。控制平面空闲时约占用 200 MB 内存（<a href="../../docs/performance.md">实测</a>），内置 570+ 个一键应用、回滚、预览、HTTPS 和数据库。</p>
-<p><code>curl -fsSL https://github.com/glincker/levelrail/releases/latest/download/install.sh | sudo sh</code> &middot; <a href="https://demo.levelrail.com"><b>试用在线演示</b></a></p>
+<p><code>sudo sh install.sh</code> (<a href="https://github.com/glincker/levelrail/releases/latest">GitHub release</a>) &middot; <a href="https://demo.levelrail.com"><b>试用在线演示</b></a></p>
 <p>
   <a href="https://github.com/glincker/levelrail/stargazers"><img src="https://img.shields.io/github/stars/glincker/levelrail?style=flat&logo=github" alt="GitHub 星标"></a>
   <a href="../../LICENSE"><img src="https://img.shields.io/github/license/glincker/levelrail" alt="许可证：Apache 2.0"></a>
@@ -36,7 +36,10 @@ v1.x。单服务器已可用于生产，多节点为 beta。Levelrail 把 Linux 
 你需要一台带有 systemd 且拥有 root 权限的 Linux 服务器（amd64 或 arm64）。安装程序会自动安装 Docker。请开放 80 和 443 端口。
 
 ```bash
-curl -fsSL https://github.com/glincker/levelrail/releases/latest/download/install.sh | sudo sh
+curl -fsSLO https://github.com/glincker/levelrail/releases/latest/download/install.sh
+curl -fsSLO https://github.com/glincker/levelrail/releases/latest/download/checksums.txt
+grep ' install.sh$' checksums.txt | sha256sum -c -  # macOS: shasum -a 256 -c -
+sudo sh install.sh
 ```
 
 1. 打开安装程序打印出的设置链接并设置密码，这样就创建了管理员账号。
@@ -163,7 +166,7 @@ levelrail-cli import https://github.com/your-org/your-app --deploy
 259 个 [MCP 工具](../../docs/mcp.md)，按令牌的能力限定范围，写入操作需确认，并有审计。用 `npx skills add https://github.com/glincker/levelrail --skill levelrail` 添加该 skill，然后让你的 agent 部署你的仓库。若要借助 agent 安装，请把下面这段粘贴到 Claude Code、Cursor 或任何能在你的服务器上运行 shell 命令的 agent 中：
 
 ```text
-Install Levelrail on this server: run `curl -fsSL https://github.com/glincker/levelrail/releases/latest/download/install.sh | sudo sh`.
+Install Levelrail on this server: run `sudo sh install.sh` (download and verify it first, see [GitHub release](https://github.com/glincker/levelrail/releases/latest)).
 Open the setup link it prints and tell me, because I choose the password myself.
 Then run `levelrail-cli doctor` and `levelrail-cli status` and report anything that fails.
 Do not write any token or password to a file or into this chat.

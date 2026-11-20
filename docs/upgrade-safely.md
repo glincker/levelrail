@@ -413,7 +413,7 @@ Likely cause: the new binary cannot read the database schema (status 78, as abov
 
 How to confirm: run `sudo systemctl status levelrail` and check the last few lines of `sudo journalctl -u levelrail -n 50`. If you see "binary older than database", see the previous troubleshooting entry.
 
-Fix: if there is a permission error, check that `APP_DATA_DIR` is readable and writable by the user running the service. If the service file was corrupted during upgrade, run the installer again to rebuild it: `curl -fsSL https://github.com/glincker/levelrail/releases/latest/download/install.sh | sudo sh -s upgrade`. Then restart with `sudo systemctl restart levelrail`.
+Fix: if there is a permission error, check that `APP_DATA_DIR` is readable and writable by the user running the service. If the service file was corrupted during upgrade, run the installer again to rebuild it: `sudo sh install.sh upgrade` (download and verify it first, see [Installing](/installing)). Then restart with `sudo systemctl restart levelrail`.
 
 Still stuck? Check [Disaster recovery](/disaster-recovery) for how to restore from a backup, or attach `sudo journalctl -u levelrail` (last 100 lines) to an issue on [GitHub](https://github.com/glincker/levelrail/issues).
 

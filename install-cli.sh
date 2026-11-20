@@ -1,5 +1,5 @@
 #!/bin/sh
-# curl -fsSL https://github.com/glincker/levelrail/releases/latest/download/install-cli.sh | sh
+# Download install-cli.sh and checksums.txt from the latest GitHub release, verify, then: sh install-cli.sh
 #
 # Installs levelrail-cli, the client for an already-running Levelrail
 # control plane. This is the client, not the server: it needs no root,

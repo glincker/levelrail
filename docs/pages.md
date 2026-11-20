@@ -232,7 +232,10 @@ deploy:
   image: alpine:3
   script:
     - apk add --no-cache curl
-    - curl -fsSL https://github.com/glincker/levelrail/releases/latest/download/install-cli.sh | sh
+    - curl -fsSLO https://github.com/glincker/levelrail/releases/latest/download/install-cli.sh
+    - curl -fsSLO https://github.com/glincker/levelrail/releases/latest/download/checksums.txt
+    - grep ' install-cli.sh$' checksums.txt | sha256sum -c -  # macOS: shasum -a 256 -c -
+    - sh install-cli.sh
     - levelrail-cli pages deploy ./dist --name docs
   variables:
     APP_API_URL: https://levelrail.example.com

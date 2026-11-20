@@ -1,5 +1,5 @@
 #!/bin/sh
-# curl -fsSL https://github.com/glincker/levelrail/releases/latest/download/install.sh | sudo sh
+# Download install.sh and checksums.txt from the latest GitHub release, verify, then: sudo sh install.sh
 #
 # Installs the levelrail control plane binary, a systemd unit, and Docker
 # (if missing) on a single Linux host.
@@ -367,7 +367,7 @@ esac
 
 if [ "$MODE" != "check" ] && { [ "$MODE" != "protect" ] || [ "$DRY_RUN" -eq 0 ]; } && [ "$(id -u)" -ne 0 ]; then
 	if [ -f "$0" ]; then fatal "must run as root, e.g.: sudo sh $0"; fi
-	fatal "must run as root, e.g.: curl -fsSL <url> | sudo sh"
+	fatal "must run as root: download install.sh from the release, verify it against checksums.txt, then run sudo sh install.sh"
 fi
 
 github_api() {
@@ -1720,7 +1720,7 @@ Open the dashboard through an SSH tunnel from your own machine:
 
 Next, wire your domain through the existing proxy and check it end to end:
   levelrail-cli proxy --domain ${domain} --verify
-(CLI install: curl -fsSL https://github.com/glincker/levelrail/releases/latest/download/install-cli.sh | sh. Guide: ${PROXY_DOCS_URL})
+(CLI install: download install-cli.sh from the latest GitHub release, verify it against checksums.txt, then run sh install-cli.sh. Guide: ${PROXY_DOCS_URL})
 
 IMPORTANT: back up ${DATA_DIR}/master.key somewhere safe. Every stored
 secret is encrypted with it, and it cannot be recovered if lost.
@@ -1816,7 +1816,7 @@ Connect the CLI after you create the admin account. In the dashboard open
 "Connect your CLI" and copy the pairing code, then run:
 EOF
 	if [ "$CLI_PRESENT" -ne 1 ]; then
-		log "  curl -fsSL https://github.com/glincker/levelrail/releases/latest/download/install-cli.sh | sudo sh"
+		log "  download install-cli.sh from the latest GitHub release, verify it against checksums.txt, then: sudo sh install-cli.sh"
 	fi
 	cat <<EOF
   levelrail-cli login --api-url ${DASHBOARD_SCHEME}://${PUBLIC_IP:-<server-ip>}:${DASHBOARD_PORT} --code <XXXX-XXXX>
@@ -1827,8 +1827,8 @@ A new device may need approval. With no token yet, approve it on this server:
   Service status: systemctl status ${SERVICE_NAME}
   Logs:           journalctl -u ${SERVICE_NAME} -f
   Data directory: ${DATA_DIR}
-  Upgrade:        curl -fsSL https://github.com/glincker/levelrail/releases/latest/download/install.sh | sudo sh -s upgrade
-  Uninstall:      curl -fsSL https://github.com/glincker/levelrail/releases/latest/download/install.sh | sudo sh -s uninstall
+  Upgrade:        sudo sh install.sh upgrade (fresh download from the latest GitHub release, verified)
+  Uninstall:      sudo sh install.sh uninstall (same script)
   Locked out:     sudo APP_DATA_DIR=${DATA_DIR} ${BIN_PATH} recover-admin --username admin
 EOF
 }
@@ -1887,7 +1887,7 @@ do_check() {
 		installed="$(installed_version)"
 		log "${SERVICE_NAME} is already installed and running${installed:+ (${installed})}, and holds its own ports."
 		log "Upgrade with:"
-		log "  curl -fsSL ${url} | sudo sh -s upgrade"
+		log "  sudo sh install.sh upgrade (download ${url} and checksums.txt first, verify)"
 		return 0
 	fi
 	if [ "$COEXIST_ACTIVE" -eq 1 ] || [ "$COEXIST" -eq 1 ]; then
@@ -1896,12 +1896,12 @@ do_check() {
 			if port_listening "$port" && ! service_active; then log "  port ${port} is held by $(port_holders "$port")"; fi
 		done
 		log "Next step:"
-		log "  curl -fsSL ${url} | sudo sh -s -- --coexist${domain_arg}"
+		log "  sudo sh install.sh --coexist${domain_arg} (download ${url} and checksums.txt first, verify)"
 		[ -z "$DOMAIN_HINT" ] || log "  then: levelrail-cli proxy --domain ${DOMAIN_HINT} --verify"
 	else
 		log "Recommended mode: own ports (80/443 are free, automatic HTTPS)."
 		log "Next step:"
-		if [ -n "$DOMAIN_HINT" ]; then log "  curl -fsSL ${url} | sudo sh -s --${domain_arg}"; else log "  curl -fsSL ${url} | sudo sh"; fi
+		if [ -n "$DOMAIN_HINT" ]; then log "  sudo sh install.sh${domain_arg} (download ${url} and checksums.txt first, verify)"; else log "  sudo sh install.sh (download ${url} and checksums.txt first, verify)"; fi
 	fi
 }
 
@@ -1982,7 +1982,7 @@ fetch_cli_script() {
 # install_cli reuses install-cli.sh so the CLI gets the same checksum and
 # signature checks as the server binary. Never fatal: the server is already up.
 install_cli() {
-	cli_hint="curl -fsSL ${CLI_INSTALLER_URL} | sudo sh"
+	cli_hint="download ${CLI_INSTALLER_URL}, verify it against checksums.txt, then run sudo sh install-cli.sh"
 	[ "${LEVELRAIL_INSTALL_CLI:-1}" != "0" ] || return 0
 	if [ -n "${LEVELRAIL_BINARY_FILE:-}${LEVELRAIL_BINARY_URL:-}" ]; then
 		# A local-binary install skips the CLI download; say so only when none is present.

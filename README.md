@@ -183,7 +183,7 @@ All features, with maturity labels: [docs/features.md](docs/features.md).
 259 [MCP tools](docs/mcp.md), scoped to the token's abilities, confirm-gated for writes and audited. Add the skill with `npx skills add https://github.com/glincker/levelrail --skill levelrail`, then ask your agent to deploy your repo. To install with an agent, paste this into Claude Code, Cursor or any agent that can run shell commands on your server:
 
 ```text
-Install Levelrail on this server: run `curl -fsSL https://github.com/glincker/levelrail/releases/latest/download/install.sh | sudo sh`.
+Install Levelrail on this server: run `sudo sh install.sh` (download and verify it first, see [GitHub release](https://github.com/glincker/levelrail/releases/latest)).
 Open the setup link it prints and tell me, because I choose the password myself.
 Then run `levelrail-cli doctor` and `levelrail-cli status` and report anything that fails.
 Do not write any token or password to a file or into this chat.

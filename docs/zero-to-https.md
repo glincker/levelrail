@@ -12,7 +12,10 @@ This page is the short path from a fresh Linux server to a working HTTPS address
 On a fresh server, as a user that can use `sudo`:
 
 ```bash
-curl -fsSL https://github.com/glincker/levelrail/releases/latest/download/install.sh | sudo sh
+curl -fsSLO https://github.com/glincker/levelrail/releases/latest/download/install.sh
+curl -fsSLO https://github.com/glincker/levelrail/releases/latest/download/checksums.txt
+grep ' install.sh$' checksums.txt | sha256sum -c -  # macOS: shasum -a 256 -c -
+sudo sh install.sh
 ```
 
 The installer prints the dashboard link and a one-time setup token. Requirements and options are in [Installing Levelrail](/installing).

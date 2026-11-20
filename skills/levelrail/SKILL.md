@@ -16,7 +16,7 @@ Levelrail is a self-hosted deployment platform. You drive it with the CLI (`leve
 
 ## Set up
 
-1. Install the CLI: `curl -fsSL https://github.com/glincker/levelrail/releases/latest/download/install-cli.sh | sh` (macOS and Linux, installs to `~/.local/bin`). Or with Node: `npx levelrail-cli <command>` / `npm install --global levelrail-cli` (client only, never the server).
+1. Install the CLI: `sh install-cli.sh` (download and verify it first, see [Installing](/installing)) (macOS and Linux, installs to `~/.local/bin`). Or with Node: `npx levelrail-cli <command>` / `npm install --global levelrail-cli` (client only, never the server).
 2. Point it at the instance and log in: `export APP_API_URL=https://console.example.com`, then `levelrail-cli auth login --device`. The user approves the code in the dashboard. In CI, use an API token instead. A second `auth login` on a machine with a working login does nothing (it reuses it); `--force` signs in again.
 3. In a project, run `levelrail-cli init`. It writes `app.yaml`, an `AGENTS.md` with this project's deploy instructions, an `.mcp.json` entry for `levelrail-mcp`, and with `--profile` a `.levelrail/profile` pointer. Add `--dry-run` to preview.
 4. To see what a project is before deploying, run `levelrail-cli apps detect --json`. It reads the directory offline.
