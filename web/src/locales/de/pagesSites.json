@@ -1,0 +1,552 @@
+{
+  "title": "Seiten",
+  "description": "Statische Websites, direkt vom Control Plane ausgeliefert.",
+  "newSite": "Neue Website",
+  "empty": {
+    "title": "Noch keine Websites",
+    "body": "Ziehen Sie einen Ordner oder eine ZIP-Datei hierher, um Ihre erste Website zu veröffentlichen."
+  },
+  "list": {
+    "label": "Websites",
+    "name": "Name",
+    "url": "URL",
+    "lastDeploy": "Letztes Deployment",
+    "status": "Status",
+    "size": "Größe",
+    "noUrl": "keine Domain",
+    "none": "keine",
+    "unknown": "-",
+    "loadFailed": "Die Websites konnten nicht geladen werden."
+  },
+  "status": {
+    "running": "Live",
+    "attention": "Benötigt Aufmerksamkeit",
+    "unknown": "Unbekannt"
+  },
+  "new": {
+    "title": "Neue Website",
+    "name": "Name",
+    "nameHint": "Kleinbuchstaben, Ziffern und Bindestriche.",
+    "drop": "Hochladen",
+    "blank": "Starter",
+    "blankHint": "Beginnt mit einer einzelnen Indexseite, die Sie später ersetzen können.",
+    "git": "Git",
+    "create": "Erstellen und veröffentlichen",
+    "creating": "Wird verarbeitet...",
+    "cancel": "Abbrechen",
+    "nameTaken": "Dieser Name ist bereits vergeben.",
+    "failed": "Die Website konnte nicht erstellt werden: {{message}}",
+    "mode": "Starten mit",
+    "change": "Ändern",
+    "stage": {
+      "packing": "Dateien werden gepackt...",
+      "creating": "Website wird erstellt...",
+      "uploading": "Wird hochgeladen...",
+      "publishing": "Wird veröffentlicht..."
+    }
+  },
+  "detail": {
+    "back": "Alle Websites",
+    "visit": "Aufrufen",
+    "tabs": {
+      "label": "Bereiche der Website",
+      "overview": "Übersicht",
+      "deployments": "Deployments",
+      "domains": "Domains",
+      "routes": "Routen",
+      "settings": "Einstellungen",
+      "failing": "Fehlgeschlagene Prüfungen"
+    },
+    "publish": "Neue Version veröffentlichen",
+    "hidePublish": "Upload ausblenden",
+    "loading": "Wird geladen...",
+    "dropOverlay": "Zum Veröffentlichen einer neuen Version loslassen",
+    "redeployed": "Neue Version veröffentlicht.",
+    "lastDeploy": "Letztes Deployment {{when}}",
+    "files_one": "{{count}} Datei",
+    "files_other": "{{count}} Dateien"
+  },
+  "settings": {
+    "app": "Alle App-Einstellungen",
+    "appHint": "Build-, Umgebungs- und Zugriffsoptionen befinden sich auf der App-Seite.",
+    "openApp": "App-Seite öffnen",
+    "danger": "Website löschen",
+    "dangerHint": "Entfernt die Website und ihre veröffentlichten Dateien.",
+    "delete": "Löschen",
+    "deleting": "Wird gelöscht...",
+    "confirmTitle": "{{name}} löschen?",
+    "confirmBody": "Die Website wird nicht mehr ausgeliefert und lässt sich nicht wiederherstellen.",
+    "dangerZone": "Gefahrenbereich",
+    "spa": "Single-Page-App",
+    "spaHint": "Liefert index.html für unbekannte Pfade aus, damit clientseitige Routen funktionieren.",
+    "cleanUrls": "Saubere URLs",
+    "cleanUrlsHint": "Liefert /about aus about.html aus.",
+    "trailingSlash": "Abschließender Schrägstrich",
+    "slashOff": "Wie angegeben belassen",
+    "slashAdd": "Immer hinzufügen",
+    "slashRemove": "Immer entfernen",
+    "notFound": "Eigene 404-Seite",
+    "build": "Build-Befehl",
+    "output": "Ausgabeverzeichnis",
+    "password": "Passwort",
+    "passwordHint": "Besucher melden sich mit dem Benutzernamen site und diesem gemeinsamen Passwort an. Es gilt für jede Domain und jede Deployment-URL und wird nie erneut angezeigt.",
+    "passwordPlaceholder": "Neues Passwort",
+    "passwordClear": "Entfernen",
+    "passwordRemoveConfirm": "Passwort entfernen? Jeder mit dem Link kann die Website dann öffnen.",
+    "passwordKeep": "Behalten",
+    "locked": "Passwortgeschützt",
+    "gitOnlyHint": "Gilt für Git-Builds. Für hochgeladene Ordner noch nicht verwendet.",
+    "auto": "Automatisch",
+    "on": "An",
+    "off": "Aus",
+    "current": "Aktuell {{value}}",
+    "save": "Speichern",
+    "reset": "app.yaml verwenden",
+    "resetGit": "Git-Einstellungen verwenden",
+    "fromGit": "Aus den Git-Einstellungen: {{value}}",
+    "saved": "Einstellung gespeichert",
+    "loadFailed": "Die Einstellungen konnten nicht geladen werden",
+    "buildPlaceholder": "npm run build",
+    "outputPlaceholder": "dist"
+  },
+  "domains": {
+    "label": "Domain verbinden",
+    "add": "Domain hinzufügen",
+    "adding": "Wird hinzugefügt...",
+    "addFailed": "Die Domain konnte nicht hinzugefügt werden.",
+    "verify": "Prüfen",
+    "checking": "Wird geprüft...",
+    "dnsOk": "DNS bereit",
+    "dnsWaiting": "Warten auf DNS",
+    "certIssued": "Zertifikat ausgestellt",
+    "certPending": "Zertifikat ausstehend",
+    "mode": {
+      "auto": "DNS für Sie eingerichtet",
+      "manual": "Diese Einträge hinzufügen"
+    },
+    "recordsLabel": "Hinzuzufügende DNS-Einträge",
+    "type": "Typ",
+    "host": "Host",
+    "value": "Wert",
+    "copyHost": "Host kopieren",
+    "copyValue": "Wert kopieren",
+    "statusFailed": "Der Status der Domain konnte nicht geprüft werden.",
+    "placeholder": "www.example.com",
+    "step1": "Domain",
+    "step2": "DNS-Einträge",
+    "step3": "Prüfen",
+    "createdForYou": "Die DNS-Einträge wurden für Sie erstellt.",
+    "none": "Noch keine eigene Domain",
+    "tls": "TLS",
+    "provisioning": "Wird bereitgestellt",
+    "remove": "{{domain}} entfernen",
+    "progress": "Fortschritt der Domain",
+    "step": {
+      "dns": "DNS",
+      "cert": "Zertifikat",
+      "live": "Live"
+    },
+    "done": "fertig",
+    "waiting": "wartet",
+    "checks": "Domain-Prüfungen",
+    "failed": "fehlgeschlagen",
+    "check": {
+      "dns_resolves": "DNS-Eintrag",
+      "dns_points_here": "Zeigt hierher",
+      "dns_aaaa_mismatch": "IPv6-Eintrag",
+      "dns_cname_apex": "CNAME an der Apex-Domain",
+      "dns_proxied": "CDN-Proxy",
+      "proxy_ports": "Ports 80/443",
+      "net_port80": "Port 80",
+      "caa_blocks_issuer": "CAA",
+      "tls_certificate": "Zertifikat",
+      "cert_renewal": "Erneuerung",
+      "http_status": "Website antwortet",
+      "dns_propagation": "Propagierung",
+      "host_private_address": "Öffentliche Adresse",
+      "acme_failure": "Zertifikatsausstellung",
+      "dns_www_apex": "www und Apex-Domain"
+    }
+  },
+  "summary": {
+    "files_one": "{{count}} Datei",
+    "files_other": "{{count}} Dateien",
+    "index": "index.html gefunden",
+    "redirects": "_redirects gefunden",
+    "headers": "_headers gefunden",
+    "noIndex": "Keine index.html auf der obersten Ebene. Die Wurzel der Website zeigt eine 404-Seite.",
+    "overLimit": "Dies überschreitet das Upload-Limit und wird abgelehnt.",
+    "skipped": "Versteckte Systemdateien, .git und node_modules werden übersprungen."
+  },
+  "success": {
+    "title": "{{name}} ist veröffentlicht",
+    "open": "Öffnen",
+    "copy": "URL kopieren",
+    "next": "Weiter",
+    "addDomain": "Domain hinzufügen",
+    "editRoutes": "Routen bearbeiten",
+    "viewDeploys": "Deployments anzeigen"
+  },
+  "entry": {
+    "drop": {
+      "title": "Ordner oder ZIP ablegen",
+      "body": "Eine fertige Website in wenigen Sekunden veröffentlichen."
+    },
+    "git": {
+      "title": "Git verbinden",
+      "body": "Bei jedem Push bauen und veröffentlichen."
+    },
+    "blank": {
+      "title": "Mit einer leeren Seite beginnen",
+      "body": "Eine Startseite anlegen und später bearbeiten."
+    }
+  },
+  "rollback": {
+    "title": "Vorherige Version",
+    "action": "Zurückrollen",
+    "confirmTitle": "{{name}} zurückrollen?",
+    "confirmBody": "Die Website liefert wieder die vorherige Version aus.",
+    "none": "Es gibt keine frühere Version, auf die zurückgerollt werden kann."
+  },
+  "promote": {
+    "action": "Live schalten",
+    "confirmTitle": "Dieses Deployment für {{name}} live schalten?",
+    "confirmBody": "Die eigenen Domains der Website liefern dieses Deployment sofort aus. Die eigene URL funktioniert weiterhin."
+  },
+  "deployUrl": {
+    "copy": "Deployment-URL kopieren",
+    "copied": "Deployment-URL kopiert",
+    "open": "Deployment-URL öffnen"
+  },
+  "starters": {
+    "label": "Starter-Vorlage",
+    "preview": "Vorschau der Vorlage {{name}}",
+    "blank": {
+      "title": "Leer",
+      "hint": "Eine einzelne leere Indexseite, die Sie später ersetzen können."
+    },
+    "landing": {
+      "title": "Landingpage",
+      "hint": "Hero-Bereich, drei Feature-Karten und eine Fußzeile."
+    },
+    "docs": {
+      "title": "Dokumentation",
+      "hint": "Seitennavigation, Überschriften und ein Codeblock."
+    },
+    "portfolio": {
+      "title": "Portfolio",
+      "hint": "Einführung und ein Raster mit ausgewählten Arbeiten."
+    }
+  },
+  "checks": {
+    "title": "Website-Prüfung",
+    "score": "Ergebnis der Website-Prüfung",
+    "rerun": "Erneut ausführen",
+    "running": "Wird geprüft...",
+    "failed": "Die Website-Prüfung konnte nicht ausgeführt werden.",
+    "allGood": "Keine Probleme gefunden.",
+    "scanned_one": "{{count}} Datei geprüft, {{size}}.",
+    "scanned_other": "{{count}} Dateien geprüft, {{size}}.",
+    "truncated": "Große Website: Nur ein Teil wurde geprüft.",
+    "passing_one": "{{count}} bestandene Prüfung",
+    "passing_other": "{{count}} bestandene Prüfungen",
+    "status": {
+      "ok": "bestanden",
+      "warn": "Warnung",
+      "fail": "fehlgeschlagen"
+    }
+  },
+  "traffic": {
+    "title": "Traffic",
+    "window": "Zeitraum",
+    "windows": {
+      "24h": "24 Stunden",
+      "7d": "7 Tage",
+      "30d": "30 Tage"
+    },
+    "noSeries": "Noch keine Daten",
+    "series": {
+      "requests": "Anfragen",
+      "requestsHint": "Alle Anfragen an die Website pro Zeitabschnitt.",
+      "pages": "Seiten",
+      "pagesHint": "Nur Seitenaufrufe, ohne Assets wie Skripte und Bilder.",
+      "errors": "Fehler",
+      "errorsHint": "Antworten mit dem Status 4xx oder 5xx."
+    },
+    "requests": "Anfragen",
+    "visitors": "Besucher",
+    "bandwidth": "Bandbreite",
+    "statusLine": "2xx {{ok}}, 3xx {{redirects}}, 4xx {{clientErrors}}, 5xx {{serverErrors}}",
+    "none": "Noch nichts vorhanden.",
+    "addRedirect": "Weiterleitung hinzufügen",
+    "unavailable": "Traffic ist nicht verfügbar: Dieser Server hat keine Zugriffslog-Quelle für Websites.",
+    "failed": "Der Traffic konnte nicht geladen werden.",
+    "partial": "Unvollständige Daten.",
+    "topPages": "Meistbesuchte Seiten",
+    "brokenLinks": "Defekte Links",
+    "assets": "Assets: {{count}} Anfragen, {{size}}",
+    "assetsNote": "Skripte, Stylesheets, Bilder und Schriften werden hier mitgezählt, aber nicht aufgelistet.",
+    "probes": "Sonden und Scans: {{count}}",
+    "probesList": "Scan-ähnliche Anfragen, die nichts gefunden haben",
+    "show": "Anzeigen",
+    "hide": "Ausblenden"
+  },
+  "hero": {
+    "more": "Weitere Aktionen",
+    "status": {
+      "live": "Live",
+      "publishing": "Wird veröffentlicht",
+      "notPublished": "Nicht veröffentlicht"
+    }
+  },
+  "preview": {
+    "notFoundToggle": "404-Seite in der Vorschau anzeigen",
+    "title": "Vorschau",
+    "device": "Gerät",
+    "desktop": "Desktop",
+    "mobile": "Mobil",
+    "unavailable": "Vorschau nicht verfügbar",
+    "frame": "Live-Vorschau von {{name}}"
+  },
+  "previews": {
+    "title": "Branch-Vorschauen",
+    "open": "Öffnen"
+  },
+  "recent": {
+    "title": "Letzte Deployments",
+    "viewAll": "Alle anzeigen",
+    "none": "Noch keine Deployments.",
+    "live": "Live"
+  },
+  "routes": {
+    "testTitle": "Eine URL testen",
+    "testLabel": "Zu testender Pfad",
+    "testPlaceholder": "/about",
+    "test": "Testen",
+    "rules": "Regeln",
+    "none": "Keine Weiterleitungs- oder Rewrite-Regeln",
+    "from": "Von",
+    "to": "Nach",
+    "status": "Statuscode",
+    "copyLine": "_redirects-Zeile kopieren",
+    "advanced": "Weitere Werkzeuge",
+    "notStatic": "Routing gilt für veröffentlichte statische Websites",
+    "loadFailed": "Die Regeln konnten nicht geladen werden",
+    "retry": "Erneut versuchen",
+    "headers": "Header",
+    "addRedirect": "Weiterleitung hinzufügen",
+    "addHeader": "Header hinzufügen",
+    "noHeaders": "Keine eigenen Header",
+    "moveUp": "Nach oben",
+    "moveDown": "Nach unten",
+    "remove": "Entfernen",
+    "force": "Erzwingen",
+    "headerPath": "Header-Pfad",
+    "headerSet": "Zu setzende Header",
+    "headerSetPlaceholder": "Name: Wert, eine Zeile pro Eintrag",
+    "headerRemove": "Zu entfernende Header",
+    "headerRemovePlaceholder": "Namen, durch Komma getrennt",
+    "source": {
+      "ui": "Oberfläche",
+      "app.yaml": "app.yaml",
+      "file": "Datei"
+    },
+    "lockedHint": "Nur lesbar, definiert in {{origin}}",
+    "unsaved": "Nicht gespeicherte Änderungen",
+    "saving": "Wird gespeichert...",
+    "save": "Änderungen speichern",
+    "discard": "Verwerfen",
+    "saved": "Routing-Regeln gespeichert",
+    "invalid": "Einige Regeln müssen korrigiert werden",
+    "testHint": "Tests laufen gegen die gespeicherten Regeln.",
+    "kindLabel": "Regeltyp",
+    "kind": {
+      "redirect": "Weiterleitung",
+      "rewrite": "Rewrite",
+      "proxy": "Proxy",
+      "status": "Antworten"
+    },
+    "targetApp": "Ziel-App",
+    "targetPath": "Zielpfad",
+    "pickApp": "App auswählen",
+    "state": {
+      "ok": "App ist erreichbar",
+      "missing": "Keine App mit diesem Namen",
+      "self": "Zeigt auf diese Website"
+    },
+    "drag": "Zum Sortieren ziehen",
+    "removed": "Regel entfernt",
+    "undo": "Rückgängig",
+    "noMatch": "Keine Regel passt, die Datei wird ausgeliefert",
+    "served": "Gespeicherte Regeln liefern",
+    "rulesHint": "Regeln laufen von oben nach unten, die erste Übereinstimmung gewinnt. Hier gesetzte Regeln stehen vor app.yaml, danach kommt _redirects. Verwenden Sie :splat für den Rest des Pfads. Proxy-Regeln leiten an eine App mit app://name/path weiter.",
+    "preset": {
+      "spa": "Fallback für Single-Page-Apps",
+      "moved": "Einen verschobenen Bereich weiterleiten",
+      "api": "/api an eine App weiterleiten"
+    },
+    "problem": {
+      "fromSlash": "Von muss mit / beginnen",
+      "badChars": "Geschweifte Klammern und Backslashes sind nicht erlaubt",
+      "toEmpty": "Ziel hinzufügen",
+      "proxyApp": "App für die Weiterleitung auswählen",
+      "proxyAppMissing": "Keine App mit diesem Namen",
+      "proxyAppSelf": "Eine Website kann nicht an sich selbst weiterleiten",
+      "proxyPath": "Zielpfad muss mit / beginnen"
+    },
+    "view": {
+      "label": "Regelansicht",
+      "rows": "Zeilen",
+      "raw": "Rohtext"
+    },
+    "raw": {
+      "label": "Weiterleitungsregeln als Text",
+      "placeholder": "/old /new 301",
+      "hint": "Eine Regel pro Zeile: Quelle, Ziel, Status. Fügen Sie nach dem Status ein ! hinzu, um zu erzwingen. Ziele können app://name/path sein."
+    },
+    "diff": {
+      "title": "Änderungen gegenüber den gespeicherten Regeln",
+      "toggle": "Änderungen anzeigen",
+      "none": "Noch keine Änderungen",
+      "add": "Hinzugefügt",
+      "del": "Entfernt",
+      "same": "Unverändert"
+    }
+  },
+  "git": {
+    "repo": "Repository",
+    "repoPlaceholder": "Repositorys durchsuchen oder eine URL einfügen",
+    "detecting": "Framework wird erkannt...",
+    "unreadable": "Dieses Repository konnte nicht gelesen werden. Prüfen Sie die URL oder verbinden Sie für ein privates Repository das Konto im App-Ablauf.",
+    "detected": "Erkannter Build",
+    "plainHtml": "Reines HTML",
+    "static": "Statisch",
+    "notStatic": "Server-App",
+    "branch": "Branch",
+    "command": "Build-Befehl",
+    "commandPlaceholder": "Keiner, die Dateien werden unverändert veröffentlicht",
+    "output": "Ausgabeverzeichnis",
+    "outputPlaceholder": "Wurzel des Repositorys",
+    "serverWarning": "Dieses Repository sieht nach einer Server-App aus, nicht nach einer statischen Website.",
+    "useAppFlow": "App-Ablauf verwenden",
+    "forceStatic": "Trotzdem als statische Website deployen",
+    "create": "Erstellen und deployen",
+    "deployOnPush": "Bei jedem Push deployen",
+    "createFailed": "Die Website konnte nicht erstellt werden: {{message}}",
+    "steps": {
+      "label": "Deployment-Fortschritt",
+      "cloning": "Klonen",
+      "building": "Build",
+      "publishing": "Veröffentlichen",
+      "live": "Live",
+      "state": {
+        "pending": "wartet",
+        "running": "läuft",
+        "done": "fertig",
+        "failed": "fehlgeschlagen",
+        "unknown": "Status unbekannt"
+      }
+    },
+    "failedStep": "Fehlgeschlagen beim Schritt {{step}}: {{message}}",
+    "viewLog": "Build-Log öffnen",
+    "fixSettings": "Einstellungen korrigieren",
+    "card": {
+      "title": "Git",
+      "repo": "Repository",
+      "branch": "Branch",
+      "commit": "Letzter Commit",
+      "none": "noch keiner",
+      "onPush": "Bei Push deployen",
+      "onPushHint": "Gilt sofort. Pfadfilter und weitere Optionen befinden sich in den Git-Einstellungen der App.",
+      "triggerPush": "Bei Push",
+      "triggerRelease": "Bei Release",
+      "triggerManual": "Manuell",
+      "triggerSaved": "Deployment-Auslöser gespeichert.",
+      "triggerFailed": "Der Auslöser konnte nicht gespeichert werden: {{message}}",
+      "openApp": "Git-Einstellungen",
+      "redeploy": "Neu deployen",
+      "redeploying": "Wird neu deployt...",
+      "redeployFailed": "Das Deployment konnte nicht gestartet werden: {{message}}",
+      "redeployStarted": "Deployment gestartet.",
+      "previews": "Branch-Vorschauen",
+      "previewOpen": "Vorschau öffnen",
+      "pr": "PR #{{number}}"
+    }
+  },
+  "forms": {
+    "title": "Formulareinsendungen",
+    "failed": "Die Einsendungen konnten nicht geladen werden.",
+    "remove": "Löschen",
+    "delete": "Einsendung {{id}} von {{form}} löschen",
+    "deleteTip": "Diese Einsendung endgültig löschen",
+    "confirmDelete": "Diese Einsendung löschen?",
+    "exportCsv": "{{form}} als CSV exportieren",
+    "spam": "Spam",
+    "spamWhy": "Spam: {{reason}}"
+  },
+  "preset": {
+    "title": "Performance-Voreinstellung",
+    "tip": "Cache- und Sicherheitsheader nach Pfad. Ihre eigene _headers-Datei hat immer Vorrang.",
+    "none": "Keine"
+  },
+  "hook": {
+    "title": "Deploy-Hook",
+    "tip": "Eine geheime URL, die den Branch dieser Website neu deployt, wenn Sie per POST darauf senden",
+    "create": "Erstellen",
+    "createTip": "Eine geheime URL für ein CMS, einen CI-Job oder einen Cron-Job erstellen",
+    "rotate": "Erneuern",
+    "rotateTip": "Eine neue URL ausstellen, die alte funktioniert dann nicht mehr",
+    "revoke": "Widerrufen",
+    "revokeTip": "Den Hook deaktivieren",
+    "confirmRotate": "URL erneuern? Die aktuelle funktioniert dann nicht mehr.",
+    "confirmRevoke": "Deploy-Hook widerrufen?",
+    "copy": "Kopieren",
+    "copied": "Kopiert",
+    "copyTip": "URL kopieren",
+    "shownOnce": "Kopieren Sie sie jetzt, sie wird nicht erneut angezeigt.",
+    "since": "Aktiviert seit {{date}}",
+    "failed": "Der Deploy-Hook konnte nicht geladen werden."
+  },
+  "logs": {
+    "action": "Logs",
+    "title": "Build-Log",
+    "copy": "Log kopieren",
+    "copied": "Kopiert",
+    "download": "Log herunterladen",
+    "loading": "Log wird geladen",
+    "empty": "Keine Log-Ausgabe.",
+    "error": "Das Log konnte nicht geladen werden.",
+    "failedAt": "Fehlgeschlagen bei {{step}}",
+    "step": {
+      "cloning": "Klonen",
+      "building": "Build",
+      "publishing": "Veröffentlichen",
+      "live": "Live"
+    }
+  },
+  "ci": {
+    "title": "CI-Deployment",
+    "tip": "Ein Token, das nur diese Website deployen kann. Legen Sie es in Ihrer Pipeline als Secret ab. Es kann nichts anderes ändern, und Sie können es jederzeit widerrufen.",
+    "create": "Token erstellen",
+    "createTip": "Ein Deploy-Token nur für diese Website erstellen",
+    "revoke": "Widerrufen",
+    "revokeTip": "Dieses Token sofort deaktivieren",
+    "confirmRevoke": "Dieses Token widerrufen? Pipelines, die es verwenden, schlagen dann fehl.",
+    "copy": "Kopieren",
+    "copied": "Kopiert",
+    "shownOnce": "Kopieren Sie es jetzt, es wird nicht erneut angezeigt. Speichern Sie es als LEVELRAIL_PAGES_TOKEN.",
+    "expires": "läuft ab am {{date}}",
+    "failed": "Deploy-Tokens konnten nicht geladen werden.",
+    "github": "GitHub",
+    "gitlab": "GitLab",
+    "curl": "curl"
+  },
+  "analytics": {
+    "title": "Analysen",
+    "pages": "Meistbesuchte Seiten",
+    "referrers": "Top-Verweise",
+    "codes": "Statuscodes",
+    "none": "Noch nichts vorhanden.",
+    "privacy": "Aus dem Edge-Zugriffslog erstellt. Es werden keine Cookies, Client-Adressen oder Query-Strings gespeichert. Zeiträume bis zu {{days}} Tage."
+  }
+}
