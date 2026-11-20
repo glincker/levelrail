@@ -14,7 +14,7 @@ type openAPIRoute struct {
 	Description string
 }
 
-// openAPIRoutes holds all 2233 routes known to scripts/gen-api-reference at
+// openAPIRoutes holds all 2236 routes known to scripts/gen-api-reference at
 // generation time. Run `go run ./scripts/gen-api-reference` after changing
 // any routes*.go registration and commit the result.
 var openAPIRoutes = []openAPIRoute{
@@ -1704,6 +1704,7 @@ var openAPIRoutes = []openAPIRoute{
 	{Method: "POST", Path: "/api/v1/package-registries", Ability: "AbilityWriteSensitive", Group: "Other", Handler: "handleCreatePackageRegistry", Description: ""},
 	{Method: "DELETE", Path: "/api/v1/package-registries/{id}", Ability: "AbilityWriteSensitive", Group: "Other", Handler: "handleDeletePackageRegistry", Description: ""},
 	{Method: "POST", Path: "/api/v1/package-registries/{id}/test", Ability: "AbilityWriteSensitive", Group: "Other", Handler: "handleTestPackageRegistry", Description: ""},
+	{Method: "GET", Path: "/api/v1/pages/presets", Ability: "AbilityRead", Group: "Other", Handler: "handleListPagesPresets", Description: ""},
 	{Method: "GET", Path: "/api/v1/pages/{site}/deploys/{deployId}/logs", Ability: "AbilityReadSensitive", Group: "Other", Handler: "handlePagesDeployLogs", Description: ""},
 	{Method: "GET", Path: "/api/v1/pipeline-runs", Ability: "AbilityRead", Group: "Other", Handler: "handleListAllPipelineRuns", Description: ""},
 	{Method: "POST", Path: "/api/v1/pipelines/filters", Ability: "AbilityRead", Group: "Other", Handler: "handlePipelineFilters", Description: ""},
@@ -2129,6 +2130,8 @@ var openAPIRoutes = []openAPIRoute{
 	{Method: "DELETE", Path: "/api/v1/static-sites/{name}/notify", Ability: "AbilityWrite", Group: "Static Sites / Backup Targets / Registry Credentials", Handler: "handleDeletePagesNotify", Description: ""},
 	{Method: "GET", Path: "/api/v1/static-sites/{name}/notify", Ability: "AbilityRead", Group: "Static Sites / Backup Targets / Registry Credentials", Handler: "handleGetPagesNotify", Description: ""},
 	{Method: "PUT", Path: "/api/v1/static-sites/{name}/notify", Ability: "AbilityWrite", Group: "Static Sites / Backup Targets / Registry Credentials", Handler: "handlePutPagesNotify", Description: ""},
+	{Method: "GET", Path: "/api/v1/static-sites/{name}/preset", Ability: "AbilityRead", Group: "Static Sites / Backup Targets / Registry Credentials", Handler: "handleGetStaticSitePreset", Description: ""},
+	{Method: "PUT", Path: "/api/v1/static-sites/{name}/preset", Ability: "AbilityWrite", Group: "Static Sites / Backup Targets / Registry Credentials", Handler: "handlePutStaticSitePreset", Description: ""},
 	{Method: "GET", Path: "/api/v1/static-sites/{name}/previews", Ability: "AbilityRead", Group: "Static Sites / Backup Targets / Registry Credentials", Handler: "handleListStaticSitePreviews", Description: ""},
 	{Method: "GET", Path: "/api/v1/static-sites/{name}/rules", Ability: "AbilityRead", Group: "Static Sites / Backup Targets / Registry Credentials", Handler: "handleGetStaticSiteRules", Description: ""},
 	{Method: "PUT", Path: "/api/v1/static-sites/{name}/rules", Ability: "AbilityWrite", Group: "Static Sites / Backup Targets / Registry Credentials", Handler: "handlePutStaticSiteRules", Description: ""},

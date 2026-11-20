@@ -9,15 +9,18 @@ Subcommands: delete, deploy, deploys, domains, hook, init, list, promote, rollba
 ```
 Usage:
   levelrail-cli pages init [dir] [--starter blank|landing|docs|portfolio]
+  levelrail-cli pages import <dir> [--write]
   levelrail-cli pages deploy <dir|zip> [--name N] [--domain D] [flags]
   levelrail-cli pages deploy --url <https://host/site.zip|.tar.gz> [--name N] [--domain D]
   levelrail-cli pages deploy --git <url> [--branch b] [--build-command c] [--output-dir d] [--name N]
   levelrail-cli pages list [flags]
   levelrail-cli pages show <name> [flags]
+  levelrail-cli pages analytics <name> [--range 24h|7d|30d] [flags]
   levelrail-cli pages delete <name> [flags]
   levelrail-cli pages rollback <name> [version] [flags]
   levelrail-cli pages token create|list|revoke <site> [flags]   deploy-only tokens for CI (set as APP_API_TOKEN)
   levelrail-cli pages deploys <name> [flags]
+  levelrail-cli pages previews <name> [flags]
   levelrail-cli pages promote <name> <deploy> [flags]
   levelrail-cli pages logs <name> [deploy] [--follow] [flags]
   levelrail-cli pages domains add <name> <domain> [flags]
@@ -25,8 +28,10 @@ Usage:
   levelrail-cli pages routes show|test|lint <name> [flags]
   levelrail-cli pages routes list|add|rm <name> ...
   levelrail-cli pages settings show|set <name> [flags]
+  levelrail-cli pages preset list|show|set <name> [preset|none]   cache and security header presets
   levelrail-cli pages submissions <site> | rm <site> <form> <id> [flags]
   levelrail-cli pages hook create|rotate|rm|show <site> [flags]
+  levelrail-cli pages notify show|set|off|reset <site> [flags]
 
 Publishes a folder or .zip as a static site: no build, no source control.
 The upload limit comes from APP_UPLOAD_MAX_BYTES. "deploy" accepts every flag of "levelrail-cli deploy".
@@ -39,15 +44,18 @@ Subcommands: add, status
 ```
 Usage:
   levelrail-cli pages init [dir] [--starter blank|landing|docs|portfolio]
+  levelrail-cli pages import <dir> [--write]
   levelrail-cli pages deploy <dir|zip> [--name N] [--domain D] [flags]
   levelrail-cli pages deploy --url <https://host/site.zip|.tar.gz> [--name N] [--domain D]
   levelrail-cli pages deploy --git <url> [--branch b] [--build-command c] [--output-dir d] [--name N]
   levelrail-cli pages list [flags]
   levelrail-cli pages show <name> [flags]
+  levelrail-cli pages analytics <name> [--range 24h|7d|30d] [flags]
   levelrail-cli pages delete <name> [flags]
   levelrail-cli pages rollback <name> [version] [flags]
   levelrail-cli pages token create|list|revoke <site> [flags]   deploy-only tokens for CI (set as APP_API_TOKEN)
   levelrail-cli pages deploys <name> [flags]
+  levelrail-cli pages previews <name> [flags]
   levelrail-cli pages promote <name> <deploy> [flags]
   levelrail-cli pages logs <name> [deploy] [--follow] [flags]
   levelrail-cli pages domains add <name> <domain> [flags]
@@ -55,8 +63,10 @@ Usage:
   levelrail-cli pages routes show|test|lint <name> [flags]
   levelrail-cli pages routes list|add|rm <name> ...
   levelrail-cli pages settings show|set <name> [flags]
+  levelrail-cli pages preset list|show|set <name> [preset|none]   cache and security header presets
   levelrail-cli pages submissions <site> | rm <site> <form> <id> [flags]
   levelrail-cli pages hook create|rotate|rm|show <site> [flags]
+  levelrail-cli pages notify show|set|off|reset <site> [flags]
 
 Publishes a folder or .zip as a static site: no build, no source control.
 The upload limit comes from APP_UPLOAD_MAX_BYTES. "deploy" accepts every flag of "levelrail-cli deploy".
@@ -100,4 +110,4 @@ Usage:
       [--trailing-slash add|remove|auto] [--404 path|auto] [--build-command CMD|auto] [--output-dir DIR|auto]
       [--password P | --password-stdin | --password-env VAR | --clear-password]
 ```
-- `pages notify show|set|off|reset <site>` attaches a notification channel and filters deploy notifications by `--on success,failure`.
+

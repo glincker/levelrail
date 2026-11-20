@@ -263,15 +263,25 @@ func (rs *Ruleset) notFoundPage(fsys StatFS) string {
 // name are joined with ", " in file order, and "! Name" removes it last.
 func (rs *Ruleset) applyHeaders(d *Decision, p string) {
 	idx := map[string]int{}
+	presetSet := map[string]bool{}
 	for i := range rs.Headers {
 		b := &rs.Headers[i]
 		if b.Pattern().Match(p) == nil {
 			continue
 		}
+		preset := strings.HasPrefix(b.Source, "preset:")
 		for _, kv := range b.Set {
 			if j, ok := idx[kv.Name]; ok {
+				// Preset blocks run last and the later, more specific one replaces an earlier preset value.
+				if preset && presetSet[kv.Name] {
+					d.Headers[j].Value = kv.Value
+					continue
+				}
 				d.Headers[j].Value += ", " + kv.Value
 				continue
+			}
+			if preset {
+				presetSet[kv.Name] = true
 			}
 			idx[kv.Name] = len(d.Headers)
 			d.Headers = append(d.Headers, kv)

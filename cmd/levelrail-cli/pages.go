@@ -52,6 +52,8 @@ func runPages(prog string, args []string, stdout, stderr io.Writer, lookupEnv fu
 		return runPagesDomains(prog, rest, stdout, stderr, lookupEnv)
 	case "settings":
 		return runPagesSettings(prog, rest, stdout, stderr, lookupEnv)
+	case "preset":
+		return runPagesPreset(prog, rest, stdout, stderr, lookupEnv)
 	case "routes":
 		return runStaticRoutes(prog, rest, stdout, stderr, lookupEnv)
 	case "submissions":
@@ -91,6 +93,7 @@ func pagesUsage(prog string) string {
   %[1]s pages routes show|test|lint <name> [flags]
   %[1]s pages routes list|add|rm <name> ...
   %[1]s pages settings show|set <name> [flags]
+  %[1]s pages preset list|show|set <name> [preset|none]   cache and security header presets
   %[1]s pages submissions <site> | rm <site> <form> <id> [flags]
   %[1]s pages hook create|rotate|rm|show <site> [flags]
   %[1]s pages notify show|set|off|reset <site> [flags]

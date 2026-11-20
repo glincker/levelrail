@@ -1395,6 +1395,8 @@ Endpoints for:
 | DELETE | /api/v1/static-sites/{name}/notify | AbilityWrite | handleDeletePagesNotify |
 | GET | /api/v1/static-sites/{name}/previews | AbilityRead | handleListStaticSitePreviews |
 | GET | /api/v1/static-sites/{name}/analytics | AbilityRead | handleStaticSiteAnalytics |
+| GET | /api/v1/static-sites/{name}/preset | AbilityRead | handleGetStaticSitePreset |
+| PUT | /api/v1/static-sites/{name}/preset | AbilityWrite | handlePutStaticSitePreset |
 
 ## Built-in Container Registry
 
@@ -2463,8 +2465,9 @@ Routes that do not fit an existing group.
 | POST | /api/v1/observability/exports | AbilityRoot | handleCreateObservabilityExport |
 | DELETE | /api/v1/observability/exports/{id} | AbilityRoot | handleDeleteObservabilityExport |
 | POST | /api/v1/observability/exports/{id}/test | AbilityRoot | handleTestObservabilityExport |
-| POST | /mcp | Public |  |
 | GET | /api/v1/pages/{site}/deploys/{deployId}/logs | AbilityReadSensitive | handlePagesDeployLogs |
+| GET | /api/v1/pages/presets | AbilityRead | handleListPagesPresets |
+| POST | /mcp | Public |  |
 
 ## See also
 

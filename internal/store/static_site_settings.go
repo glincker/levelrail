@@ -17,6 +17,7 @@ type StaticSiteSettings struct {
 	CleanURLs     *bool  `json:"clean_urls"`
 	TrailingSlash string `json:"trailing_slash"`
 	NotFoundPage  string `json:"not_found_page"`
+	Preset        string `json:"preset,omitempty"`
 }
 
 // StaticUIRedirect is one redirect rule edited in the dashboard.

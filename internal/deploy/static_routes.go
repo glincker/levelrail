@@ -10,6 +10,7 @@ import (
 	"slices"
 
 	"github.com/GLINCKER/levelrail/internal/build"
+	"github.com/GLINCKER/levelrail/internal/pages"
 	"github.com/GLINCKER/levelrail/internal/spec"
 	"github.com/GLINCKER/levelrail/internal/staticroutes"
 	"github.com/GLINCKER/levelrail/internal/store"
@@ -180,6 +181,9 @@ func (p *Pipeline) applyStaticUI(ctx context.Context, name string, rs *spec.Stat
 	}
 	wrapped := staticroutes.Ruleset{StaticRuleset: *rs}
 	err = wrapped.ApplyUI(rules, blocks, staticroutes.OptionOverrides{SPA: set.SPAFallback, CleanURLs: set.CleanURLs, TrailingSlash: set.TrailingSlash, NotFound: set.NotFoundPage})
+	if err == nil {
+		err = pages.Apply(&wrapped.StaticRuleset, set.Preset, l)
+	}
 	*rs = wrapped.StaticRuleset
 	return err
 }

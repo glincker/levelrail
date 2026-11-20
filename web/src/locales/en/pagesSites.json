@@ -480,6 +480,11 @@
     "deleteTip": "Delete this submission for good",
     "confirmDelete": "Delete this submission?"
   },
+  "preset": {
+    "title": "Performance preset",
+    "tip": "Cache and security headers by path. Your own _headers file always wins.",
+    "none": "None"
+  },
   "hook": {
     "title": "Deploy hook",
     "tip": "A secret URL that redeploys this site's branch when you POST to it",

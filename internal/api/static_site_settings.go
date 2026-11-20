@@ -8,6 +8,7 @@ import (
 	"os"
 	"strings"
 
+	"github.com/GLINCKER/levelrail/internal/pages"
 	"github.com/GLINCKER/levelrail/internal/spec"
 	"github.com/GLINCKER/levelrail/internal/staticroutes"
 	"github.com/GLINCKER/levelrail/internal/store"
@@ -345,6 +346,9 @@ func (rt *Router) publishStaticUI(site *store.StaticSite, s store.StaticSiteSett
 		return errors.New(probs[0].Message)
 	}
 	if err := rs.ApplyUI(rules, blocks, staticroutes.OptionOverrides{SPA: s.SPAFallback, CleanURLs: s.CleanURLs, TrailingSlash: s.TrailingSlash, NotFound: s.NotFoundPage}); err != nil {
+		return err
+	}
+	if err := pages.Apply(&rs.StaticRuleset, s.Preset, staticroutes.LimitsFromEnv(os.LookupEnv)); err != nil {
 		return err
 	}
 	if err := rt.recordProxyScopes(context.Background(), rs, approved); err != nil {
