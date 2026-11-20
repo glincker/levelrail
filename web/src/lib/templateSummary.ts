@@ -39,7 +39,10 @@ export function parseMemory(value: string): number | undefined {
 }
 
 function firstMatch(compose: string, key: string): string | undefined {
-  const m = new RegExp(`^\\s*${key}:\\s*["']?([^"'\\s#]+)`, 'm').exec(compose)
+  const safeKey = key.replace(/[.*+?^${}()|[\]\\]/g, '\\$&')
+  const m = new RegExp(`^\\s*${safeKey}:\\s*["']?([^"'\\s#]+)`, 'm').exec(
+    compose,
+  )
   return m?.[1]
 }
 
