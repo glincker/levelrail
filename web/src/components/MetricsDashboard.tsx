@@ -10,12 +10,14 @@ import { DeployMarkerDetails } from './DeployMarkerDetails'
 import { InvestigationPanel } from './InvestigationPanel'
 import { Button } from './ui/button'
 import { useMetricSeries } from '../queries/metrics'
+import { useAppSleepSince } from '../queries/appSleep'
 import type { MetricName } from '../types/metrics'
 import type { DeployAttempt } from '../types/deployAttempt'
 import {
   type ChartMarker,
   type ChartUnit,
   useMergedChartQuery,
+  zeroFillSleep,
 } from '../lib/metricChart'
 import { attachPrevious, capRows, MAX_CHART_POINTS } from '../lib/chartSeries'
 import { chartPalette } from '../lib/chartPalette'
@@ -126,18 +128,23 @@ interface Interaction {
   onMarkerClick: (marker: ChartMarker) => void
 }
 
+// Memory keeps its limit line while asleep, so only activity charts zero-fill.
+const ZERO_ON_SLEEP: ReadonlySet<string> = new Set(['cpu', 'network', 'disk'])
+
 function ChartCard({
   appName,
   group,
   range,
   markers,
   interaction,
+  sleepSince,
 }: {
   appName: string
   group: ChartGroupConfig
   range: ResolvedTimeRange
   markers: ChartMarker[]
   interaction: Interaction
+  sleepSince?: number
 }) {
   const { t } = useTranslation('observability')
   const params = {
@@ -164,10 +171,19 @@ function ChartCard({
     Boolean(group.secondary),
   )
   const previous = primaryQuery.data?.previous_points
-  const rows = useMemo(
-    () => capRows(attachPrevious(merged, previous), MAX_CHART_POINTS),
-    [merged, previous],
-  )
+  const zeroOnSleep = ZERO_ON_SLEEP.has(group.titleKey)
+  const rows = useMemo(() => {
+    const filled = zeroOnSleep
+      ? zeroFillSleep(
+          merged,
+          sleepSince,
+          range.from.getTime(),
+          range.to.getTime(),
+          group.secondary ? ['primary', 'secondary'] : ['primary'],
+        )
+      : merged
+    return capRows(attachPrevious(filled, previous), MAX_CHART_POINTS)
+  }, [merged, previous, zeroOnSleep, sleepSince, range, group.secondary])
 
   return (
     <MetricChartCard
@@ -214,6 +230,7 @@ export function MetricsDashboard({
     [search.range, search.from, search.to, refreshNonce],
   )
   const compare = search.compare === true
+  const sleepSince = useAppSleepSince(appName)
   const selectedAt = search.at ? Date.parse(search.at) : undefined
 
   const restartQuery = useMetricSeries(appName, 'container_restart_count', {
@@ -360,6 +377,7 @@ export function MetricsDashboard({
             range={range}
             markers={markers}
             interaction={interaction}
+            sleepSince={sleepSince}
           />
         ))}
       </div>

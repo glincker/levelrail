@@ -11,7 +11,9 @@ import (
 // InboxItem mirrors internal/api's inboxItemResource.
 type InboxItem struct {
 	AlertHistoryEntry
-	Read bool `json:"read"`
+	Read      bool     `json:"read"`
+	Repeats   int      `json:"repeats,omitempty"`
+	RepeatIDs []string `json:"repeat_ids,omitempty"`
 }
 
 // InboxPrefs mirrors internal/api's inboxPrefsResource.

@@ -72,7 +72,11 @@ func printInbox(out io.Writer, list []apiclient.InboxItem) {
 		if e.Read {
 			mark = ""
 		}
-		_, _ = fmt.Fprintf(tw, "%s\t%s\t%s\t%s\t%s\t%s\t%s\n", e.ID, e.At.Format(time.RFC3339), orDash(e.Severity), orDash(e.App), e.RuleName, e.Event, mark)
+		event := e.Event
+		if e.Repeats > 0 {
+			event = fmt.Sprintf("%s x%d", event, e.Repeats+1)
+		}
+		_, _ = fmt.Fprintf(tw, "%s\t%s\t%s\t%s\t%s\t%s\t%s\n", e.ID, e.At.Format(time.RFC3339), orDash(e.Severity), orDash(e.App), e.RuleName, event, mark)
 	}
 	_ = tw.Flush()
 }
