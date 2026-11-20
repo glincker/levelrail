@@ -99,6 +99,26 @@ func IsPlatformKind(k Kind) bool {
 type alertScope struct {
 	ac          AlertContext
 	nodeOffline bool
+	sleeping    bool
+}
+
+// SleepSource reports whether an app is asleep on purpose. *store.DB satisfies it.
+type SleepSource interface {
+	GetAppSleep(ctx context.Context, serviceName string) (store.AppSleep, error)
+}
+
+// appSleeping is true when the app is stopped by sleep-when-idle and the
+// operator has not asked for notices about it. A lookup error counts as awake.
+func (n *NoiseControl) appSleeping(ctx context.Context, app string) bool {
+	if n.cfg.NotifyOnSleepFn != nil && n.cfg.NotifyOnSleepFn(ctx) {
+		return false
+	}
+	src, ok := n.placement.(SleepSource)
+	if !ok || app == "" {
+		return false
+	}
+	a, err := src.GetAppSleep(ctx, app)
+	return err == nil && a.Sleeping
 }
 
 func (n *NoiseControl) describe(ctx context.Context, r Rule) alertScope {
@@ -110,6 +130,7 @@ func (n *NoiseControl) describe(ctx context.Context, r Rule) alertScope {
 	if n.placement == nil {
 		return sc
 	}
+	sc.sleeping = n.appSleeping(ctx, sc.ac.App)
 	svc, err := n.placement.GetDesiredService(ctx, sc.ac.App)
 	if err != nil || svc == nil || svc.NodeID == "" {
 		return sc
@@ -301,6 +322,11 @@ func (n *NoiseControl) deliver(ctx context.Context, sc alertScope, ev Event, eve
 		n.record(ctx, sc, r, event, OutcomeInhibited, "node "+firstNonEmpty(sc.ac.NodeName, sc.ac.NodeID)+" is offline", "", nil, now)
 		return
 	}
+	if sc.sleeping && event == EventFired {
+		n.holdIfFiring(ev, OutcomeInhibited, "")
+		n.record(ctx, sc, r, event, OutcomeInhibited, "app is asleep by design; sent if it is still firing after it wakes", "", nil, now)
+		return
+	}
 	if n.cfg.GroupWindow > 0 && event == EventFired {
 		n.mu.Lock()
 		n.groups.add(targetKey(r)+"|"+r.ResourceID, ev, now)
@@ -348,7 +374,7 @@ func (n *NoiseControl) Recheck(ctx context.Context, r Rule, now time.Time, send 
 	if _, still := n.silencedBy(ctx, sc.ac, now); still {
 		return
 	}
-	if sc.nodeOffline && sup.outcome == OutcomeInhibited {
+	if (sc.nodeOffline || sc.sleeping) && sup.outcome == OutcomeInhibited {
 		return
 	}
 	if n.quietNow(ctx, r, now) {

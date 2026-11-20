@@ -12,6 +12,7 @@ import (
 	"strings"
 	"time"
 
+	"github.com/GLINCKER/levelrail/internal/diagnose"
 	"github.com/GLINCKER/levelrail/internal/email"
 	"github.com/GLINCKER/levelrail/internal/mailtemplates"
 	"github.com/GLINCKER/levelrail/internal/secretmask"
@@ -218,10 +219,30 @@ func summaryDeployText(ev DeployOutcome) string {
 	if ev.Error != "" {
 		msg += ": " + ev.Error
 	}
+	if d := deployDiagnosisLine(ev); d != "" {
+		msg += "\n" + d
+	}
 	if len(ev.LogLines) > 0 {
 		msg += "\nLast log lines:\n" + deployLogExcerpt(ev.LogLines)
 	}
 	return msg
+}
+
+// deployDiagnosisLine is the one-line likely cause from internal/diagnose, empty when nothing matched.
+func deployDiagnosisLine(ev DeployOutcome) string {
+	res := diagnose.Diagnose(diagnose.Input{
+		ServiceName:    ev.AppName,
+		Attempt:        &diagnose.AttemptInput{Status: "failed", Error: ev.Error},
+		RecentLogLines: ev.LogLines,
+	})
+	if res.Confidence == diagnose.ConfidenceNone || res.Explanation == "" {
+		return ""
+	}
+	line := "Likely cause: " + res.Explanation
+	if res.Suggestion != "" {
+		line += " Try: " + res.Suggestion
+	}
+	return line
 }
 
 // Separate from genericPayload: alert and deploy fields would otherwise leak into each other's JSON.

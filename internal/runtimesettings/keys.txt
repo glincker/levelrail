@@ -14,6 +14,7 @@ abuse.shards
 abuse.suggest_burst_seconds
 abuse.suggest_client_share
 account.preferences_max_bytes
+alerts.notify_on_sleep
 api.apps_metrics_max
 api.conditional_get
 api.conditional_get_max_bytes
