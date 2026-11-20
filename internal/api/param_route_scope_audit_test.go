@@ -98,6 +98,7 @@ var paramRouteScopeAllowlist = map[string]string{ //nolint:gosec // route names 
 	"GET /api/v1/builders/{id}":                                                             "requireAbility, builders are instance infra nodes like nodes/{id}",
 	"GET /api/v1/builds/{id}/record":                                                        "requireAbility, handler checks scope: handleGetBuildRecord (app and environment refs)",
 	"GET /api/v1/environments/{id}/builders":                                                "requireEnvironmentGrant wrapper checks the environment",
+	"POST /api/v1/backup-targets/{id}/drill":                                                "requireAbility, instance-level target like backup-targets/{id}/test",
 	"POST /api/v1/backup-targets/{id}/probe":                                                "requireAbility, instance-level target like backup-targets/{id}/test",
 	"POST /api/v1/builders/{id}/pause":                                                      "requireAbility, builders are instance infra nodes like nodes/{id}",
 	"POST /api/v1/builders/{id}/resume":                                                     "requireAbility, builders are instance infra nodes like nodes/{id}",

@@ -14,7 +14,7 @@ type openAPIRoute struct {
 	Description string
 }
 
-// openAPIRoutes holds all 2236 routes known to scripts/gen-api-reference at
+// openAPIRoutes holds all 2237 routes known to scripts/gen-api-reference at
 // generation time. Run `go run ./scripts/gen-api-reference` after changing
 // any routes*.go registration and commit the result.
 var openAPIRoutes = []openAPIRoute{
@@ -2057,6 +2057,7 @@ var openAPIRoutes = []openAPIRoute{
 	{Method: "DELETE", Path: "/api/v1/backup-targets/{id}", Ability: "AbilityWriteSensitive", Group: "Static Sites / Backup Targets / Registry Credentials", Handler: "handleDeleteBackupTarget", Description: ""},
 	{Method: "GET", Path: "/api/v1/backup-targets/{id}", Ability: "AbilityRead", Group: "Static Sites / Backup Targets / Registry Credentials", Handler: "handleGetBackupTarget", Description: ""},
 	{Method: "PUT", Path: "/api/v1/backup-targets/{id}", Ability: "AbilityWriteSensitive", Group: "Static Sites / Backup Targets / Registry Credentials", Handler: "handleUpdateBackupTarget", Description: ""},
+	{Method: "POST", Path: "/api/v1/backup-targets/{id}/drill", Ability: "AbilityWriteSensitive", Group: "Static Sites / Backup Targets / Registry Credentials", Handler: "handleDrillBackupTarget", Description: ""},
 	{Method: "GET", Path: "/api/v1/backup-targets/{id}/encryption", Ability: "AbilityRead", Group: "Static Sites / Backup Targets / Registry Credentials", Handler: "handleGetBackupTargetEncryption", Description: ""},
 	{Method: "PUT", Path: "/api/v1/backup-targets/{id}/encryption", Ability: "AbilityRoot", Group: "Static Sites / Backup Targets / Registry Credentials", Handler: "handleSetBackupTargetEncryption", Description: ""},
 	{Method: "POST", Path: "/api/v1/backup-targets/{id}/probe", Ability: "AbilityWriteSensitive", Group: "Static Sites / Backup Targets / Registry Credentials", Handler: "handleProbeBackupTarget", Description: ""},
