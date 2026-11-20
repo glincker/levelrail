@@ -24,6 +24,7 @@ internal/diagnose 25
 internal/dnszones 26
 internal/docker 211
 internal/dockerguard 75
+internal/edgefw 21
 internal/email 35
 internal/envredact 76
 internal/extdb 36

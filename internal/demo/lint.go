@@ -114,7 +114,7 @@ func (l *linter) orphans(q rowQuerier, label, query string) error {
 
 func (l *linter) references(st Stores) error {
 	checks := []struct{ label, query string }{
-		{"deploy attempt without service", `SELECT id FROM deploy_attempts WHERE service_name NOT IN (SELECT name FROM desired_services)`},
+		{"deploy attempt without service", `SELECT id FROM deploy_attempts WHERE service_name NOT IN (SELECT name FROM desired_services UNION SELECT name FROM static_sites)`},
 		{"service with unknown node", `SELECT name FROM desired_services WHERE node_id <> '' AND node_id NOT IN (SELECT id FROM nodes)`},
 		{"database with unknown node", `SELECT name FROM desired_databases WHERE node_id <> '' AND node_id NOT IN (SELECT id FROM nodes)`},
 		{"service with unknown project", `SELECT name FROM desired_services WHERE project_id IS NOT NULL AND project_id NOT IN (SELECT id FROM projects)`},
