@@ -73,10 +73,11 @@ func VendorEndpoint(kind store.ExportKind, o store.ExportOptions) (string, error
 		if o.Dataset == "" {
 			return "", fmt.Errorf("options.dataset is required for an axiom destination")
 		}
-		host := "api.axiom.co"
 		if region == "eu" {
-			host = "api.eu.axiom.co"
+			// The EU region is served only by its edge domain, with the edge ingest path.
+			return "https://eu-central-1.aws.edge.axiom.co/v1/ingest/" + url.PathEscape(o.Dataset), nil
 		}
+		host := "api.axiom.co"
 		return "https://" + host + "/v1/datasets/" + url.PathEscape(o.Dataset) + "/ingest", nil
 	case store.ExportKindLogsBetterStack:
 		return "https://in.logs.betterstack.com", nil

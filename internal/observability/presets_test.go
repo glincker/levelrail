@@ -17,7 +17,7 @@ var sampleFields = map[string]map[string]string{
 	"datadog":       {"site": "datadoghq.eu", "api_key": secretValue},
 	"axiom":         {"dataset": "lr", "region": "eu", "token": secretValue},
 	"honeycomb":     {"region": "eu", "dataset": "lr", "api_key": secretValue},
-	"better-stack":  {"source_token": secretValue},
+	"better-stack":  {"ingesting_host": "s1.eu-nbg-2.betterstackdata.com", "source_token": secretValue},
 	"otlp-http":     {"endpoint": "https://collector.example.com", "header_value": "Bearer " + secretValue},
 }
 
@@ -82,8 +82,49 @@ func TestRenderProviderSpecifics(t *testing.T) {
 
 	ax, _ := Lookup("axiom")
 	got, _ = ax.Render("a", sampleFields["axiom"], []string{"logs", "metrics"})
-	if got[0].Endpoint != "https://api.eu.axiom.co/v1/datasets/lr/ingest" || got[1].Endpoint != "https://api.eu.axiom.co/v1/metrics" {
+	if got[0].Endpoint != "https://eu-central-1.aws.edge.axiom.co/v1/ingest/lr" || got[1].Endpoint != "https://eu-central-1.aws.edge.axiom.co/v1/metrics" {
 		t.Fatalf("axiom = %q %q", got[0].Endpoint, got[1].Endpoint)
+	}
+
+	if got[1].Input.Headers["x-axiom-metrics-dataset"] != "lr" || got[1].Input.Headers["X-Axiom-Dataset"] != "" {
+		t.Fatalf("axiom metrics dataset header = %v", got[1].Input.Headers)
+	}
+	usAx := map[string]string{"dataset": "lr", "token": secretValue}
+	got, _ = ax.Render("a", usAx, []string{"metrics"})
+	if got[0].Endpoint != "https://us-east-1.aws.edge.axiom.co/v1/metrics" {
+		t.Fatalf("axiom us metrics = %q", got[0].Endpoint)
+	}
+	got, _ = ax.Render("a", sampleFields["axiom"], []string{"metrics"})
+	if got[0].Endpoint != "https://eu-central-1.aws.edge.axiom.co/v1/metrics" {
+		t.Fatalf("axiom eu metrics = %q", got[0].Endpoint)
+	}
+
+	got, _ = dd.Render("d", map[string]string{"site": "uk1.datadoghq.com", "api_key": secretValue}, []string{"metrics"})
+	if _, bad := got[0].Input.Headers["dd-protocol"]; bad || got[0].Endpoint != "https://otlp.uk1.datadoghq.com/v1/metrics" {
+		t.Fatalf("datadog uk1 metrics = %+v", got[0])
+	}
+	if _, err := dd.Render("d", map[string]string{"site": "ap2.datadoghq.com", "api_key": secretValue}, nil); err != nil {
+		t.Fatalf("datadog ap2: %v", err)
+	}
+
+	hcNoDS, _ := hc.Render("h", map[string]string{"api_key": secretValue}, nil)
+	for _, r := range hcNoDS {
+		if _, has := r.Input.Headers["x-honeycomb-dataset"]; has || len(r.Input.Headers) != 1 {
+			t.Fatalf("honeycomb without dataset must send only the team header, got %v", r.HeaderNames)
+		}
+	}
+	got, _ = hc.Render("h", sampleFields["honeycomb"], []string{"logs"})
+	if got[0].Input.Headers["x-honeycomb-dataset"] != "lr" {
+		t.Fatalf("honeycomb classic dataset header missing: %v", got[0].HeaderNames)
+	}
+
+	bs, _ := Lookup("better-stack")
+	got, err = bs.Render("b", sampleFields["better-stack"], nil)
+	if err != nil || got[0].Endpoint != "https://s1.eu-nbg-2.betterstackdata.com" || got[0].Input.APIKey != secretValue {
+		t.Fatalf("better stack = %+v, %v", got, err)
+	}
+	if _, err := bs.Render("b", map[string]string{"source_token": "t"}, nil); !errors.Is(err, ErrInvalid) {
+		t.Fatalf("better stack without host: %v", err)
 	}
 
 	open, _ := Lookup("otlp-http")
@@ -125,6 +166,22 @@ func TestHintMapsStatusToProviderText(t *testing.T) {
 	}
 	if status, hint := p.Hint(errors.New("dial tcp: no such host")); status != 0 || hint != "" {
 		t.Errorf("network error should carry no status hint, got %d %q", status, hint)
+	}
+}
+
+func TestProviderHints(t *testing.T) {
+	t.Parallel()
+	for id, tc := range map[string]map[int]string{
+		"better-stack": {402: "quota", 403: "source token", 406: "MessagePack", 413: "10 MiB"},
+		"otlp-http":    {400: "malformed", 413: "larger", 429: "rate limiting", 502: "retried", 503: "retried", 504: "retried"},
+		"datadog":      {400: "delta", 413: "5.1 MiB"},
+	} {
+		p, _ := Lookup(id)
+		for code, sub := range tc {
+			if _, h := p.Hint(fmt.Errorf("export returned status %d", code)); !strings.Contains(h, sub) {
+				t.Errorf("%s %d hint = %q, want %q", id, code, h, sub)
+			}
+		}
 	}
 }
 

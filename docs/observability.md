@@ -279,27 +279,27 @@ The API is `GET /api/v1/observability/presets`, `GET` and `POST /api/v1/observab
 
 ### Grafana Cloud
 
-Fields: the OTLP endpoint of your stack (without a signal path), the instance ID and an access policy token with `logs:write` and `metrics:write`. Logs and metrics are on by default.
+Fields: the OTLP endpoint of your stack (without a signal path), the instance ID and an access policy token with `logs:write` and `metrics:write`. Logs and metrics are on by default. Unverified: the Basic auth format (instance ID as user, token as password) follows the Grafana docs but has not been tested against a live stack.
 
 ### Datadog
 
-Fields: your Datadog site and an API key. Logs are on by default. Metrics use the OTLP intake and are off by default, add them with `--signal logs,metrics`.
+Fields: your Datadog site and an API key. Logs are on by default. Metrics use the OTLP intake and are off by default, add them with `--signal logs,metrics`. Sites include US1, US3, US5, EU, AP1, AP2 and UK1. The metrics intake accepts delta temporality only and counters are exported as cumulative sums, so a metrics test can be rejected with a 400. Unverified: only US1 has been tested, the other site hosts follow Datadog's documented pattern.
 
 ### Axiom
 
-Fields: a dataset that already exists, the region (`us` or `eu`) and an API token with ingest permission. Logs and metrics are on by default.
+Fields: a dataset that already exists, the region (`us` or `eu`) and an API token with ingest permission. Logs and metrics are on by default. Metrics are sent to the regional edge domain with the `x-axiom-metrics-dataset` header and need a metrics dataset.
 
 ### Honeycomb
 
-Fields: the region (`us` or `eu`), a dataset and an ingest key. Logs and metrics are on by default.
+Fields: the region (`us` or `eu`), an ingest key and, for Classic environments only, a dataset. Logs and metrics are on by default.
 
 ### Better Stack
 
-Fields: the token of an HTTP source. Only logs are exported by this preset.
+Fields: the ingesting host and the token of an HTTP source, both shown in the source settings. Only logs are exported by this preset. A 403 means the token or host is wrong.
 
 ### Generic OTLP/HTTP
 
-Fields: the base endpoint of any OTLP/HTTP collector, plus an optional auth header name and value. Logs go to `/v1/logs` and metrics to `/v1/metrics`.
+Fields: the base endpoint of any OTLP/HTTP collector, plus an optional auth header name and value. Logs go to `/v1/logs` and metrics to `/v1/metrics`. Status 400 is permanent, 413 means the payload is too large, and 429, 502, 503 and 504 are retried.
 
 ## External log drains
 
