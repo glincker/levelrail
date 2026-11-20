@@ -207,6 +207,10 @@ func (rt *Router) handlePromoteApp(w http.ResponseWriter, r *http.Request) {
 	updated, err := rt.setDesiredImage(r.Context(), target, image)
 	if err != nil {
 		undo()
+		if errors.Is(err, store.ErrDesiredImageRefused) {
+			writeError(w, http.StatusForbidden, imageRefusedMessage)
+			return
+		}
 		rt.internalError(w, "api: promote app failed", err, slog.String("source", name), slog.String("target", res.target.Name))
 		return
 	}

@@ -258,6 +258,10 @@ func (rt *Router) applyDeploy(w http.ResponseWriter, r *http.Request, existing s
 			writeError(w, http.StatusUnprocessableEntity, "image pull failed: "+err.Error())
 			return
 		}
+		if errors.Is(err, store.ErrDesiredImageRefused) {
+			writeError(w, http.StatusForbidden, imageRefusedMessage)
+			return
+		}
 		if req.Pull {
 			writeError(w, http.StatusBadGateway, "could not resolve the image from its registry; retry without pull to use the cached image")
 			return
@@ -525,6 +529,8 @@ func (rt *Router) handleSetAutoRollbackSLOBurn(w http.ResponseWriter, r *http.Re
 	}
 	writeJSON(w, http.StatusOK, autoRollbackSLOBurnSettingResource(req))
 }
+
+const imageRefusedMessage = "this image may not be deployed to this app's environment"
 
 // setDesiredImage points existing's image at image and saves it: the
 // same mutation handleTriggerDeploy and handlePromoteApp (promote.go)

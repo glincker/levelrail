@@ -42,13 +42,24 @@ func (rt *Router) handleGetBuildRecord(w http.ResponseWriter, r *http.Request) {
 		rt.internalError(w, "api: get build record failed", err)
 		return
 	}
+	// A caller without the app, or a record whose app is gone, sees the same 404 as a missing record.
+	if _, err := rt.apps.GetDesiredService(r.Context(), rec.App); errors.Is(err, store.ErrServiceNotFound) {
+		writeError(w, http.StatusNotFound, "build record not found")
+		return
+	} else if err != nil {
+		rt.internalError(w, "api: build record app failed", err)
+		return
+	}
+	refs := []resourceRef{appRef(rec.App)}
 	env, err := rd.EnvironmentOfApp(r.Context(), rec.App)
 	if err != nil {
 		rt.internalError(w, "api: build record environment failed", err)
 		return
 	}
-	// A caller without the environment sees the same 404 as a missing record.
-	if env != nil && !rt.authorizeRefs(w, r, AbilityRead, notFoundAs(http.StatusNotFound, "build record not found"), environmentRef(env.ID)) {
+	if env != nil {
+		refs = append(refs, environmentRef(env.ID))
+	}
+	if !rt.authorizeRefs(w, r, AbilityRead, notFoundAs(http.StatusNotFound, "build record not found"), refs...) {
 		return
 	}
 	writeJSON(w, http.StatusOK, buildRecordResource{
