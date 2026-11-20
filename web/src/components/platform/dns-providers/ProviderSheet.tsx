@@ -188,6 +188,11 @@ function ProviderForm({
                 onChange={(e) => setRegion(e.target.value)}
                 disabled={busy}
               />
+              <FieldDescription>
+                {t('field.regionHint', {
+                  region: r53Settings.data?.region ?? 'us-east-1',
+                })}
+              </FieldDescription>
             </Field>
             <Field>
               <FieldLabel htmlFor="dnsp-r53-zone">
@@ -201,6 +206,7 @@ function ProviderForm({
                 onChange={(e) => setZoneId(e.target.value)}
                 disabled={busy}
               />
+              <FieldDescription>{t('field.hostedZoneHint')}</FieldDescription>
             </Field>
           </div>
         </>

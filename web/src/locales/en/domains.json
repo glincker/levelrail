@@ -764,7 +764,13 @@
     "backfillPreview": "Preview existing apps",
     "backfillApply_one": "Apply to {{count}} app",
     "backfillApply_other": "Apply to {{count}} apps",
-    "backfillNone": "Every app already has a domain."
+    "backfillNone": "Every app already has a domain.",
+    "zoneMatched": "Matched zone {{zone}} in {{provider}}",
+    "suggestions": "Zones your provider lists:",
+    "iamHint": "IAM actions needed: {{actions}}",
+    "copyIam": "Copy IAM actions",
+    "copy": "Copy",
+    "copied": "Copied"
   },
   "automation": {
     "title": "Domain automation",

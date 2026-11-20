@@ -239,4 +239,28 @@ describe('base domain empty state and zone hint', () => {
     )
     expect(screen.getByText(/Enter a hostname/)).toBeInTheDocument()
   })
+
+  it('offers listed zones as suggestions on a miss', async () => {
+    vi.stubGlobal(
+      'fetch',
+      vi.fn(() =>
+        Promise.resolve(
+          res({
+            domain: 'app.apps.other.org',
+            provider: 'route53',
+            configured: true,
+            found: false,
+            message:
+              'no zone contains "app.apps.other.org"; the provider lists example.com',
+          }),
+        ),
+      ),
+    )
+    const onPick = vi.fn()
+    renderWith(<ZoneHint domain="apps.other.org" onPick={onPick} />)
+    const pick = await screen.findByRole('button', { name: 'example.com' })
+    pick.click()
+    expect(onPick).toHaveBeenCalledWith('example.com')
+    expect(screen.getByText(/route53:ListHostedZones/)).toBeInTheDocument()
+  })
 })

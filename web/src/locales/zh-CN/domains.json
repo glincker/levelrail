@@ -757,7 +757,13 @@
     "backfillHelp": "已有的应用保留其地址。为没有域名的应用分配一个 {{base}} 地址:",
     "backfillPreview": "预览现有应用",
     "backfillApply_other": "应用到 {{count}} 个应用",
-    "backfillNone": "每个应用都已有域名。"
+    "backfillNone": "每个应用都已有域名。",
+    "zoneMatched": "已在 {{provider}} 匹配区域 {{zone}}",
+    "suggestions": "提供商列出的区域:",
+    "iamHint": "所需 IAM 操作:{{actions}}",
+    "copyIam": "复制 IAM 操作",
+    "copy": "复制",
+    "copied": "已复制"
   },
   "automation": {
     "title": "域名自动化",

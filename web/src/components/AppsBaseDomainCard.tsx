@@ -2,7 +2,12 @@ import { useEffect, useState } from 'react'
 import { useQuery } from '@tanstack/react-query'
 import { Link } from '@tanstack/react-router'
 import { useTranslation } from 'react-i18next'
-import { CloudGlassIcon, GlobeGlassIcon } from '@thesvg/ui-react'
+import {
+  CheckGlassIcon,
+  CloudGlassIcon,
+  CopyGlassIcon,
+  GlobeGlassIcon,
+} from '@thesvg/ui-react'
 import { Alert, AlertDescription } from '@/components/ui/alert'
 import { Button } from '@/components/ui/button'
 import {
@@ -19,6 +24,8 @@ import {
   ingressSettingsQueryOptions,
   useUpdateIngressSettings,
 } from '../queries/domains'
+import { useCopyToClipboard } from '../hooks/useCopyToClipboard'
+import { listedZoneNames, ROUTE53_IAM_ACTIONS } from '../lib/zoneSuggestions'
 import {
   dnsZoneQueryOptions,
   useBackfillBaseDomain,
@@ -42,8 +49,15 @@ function useDebounced(value: string, delay: number): string {
   return debounced
 }
 
-export function ZoneHint({ domain }: { domain: string }) {
+export function ZoneHint({
+  domain,
+  onPick,
+}: {
+  domain: string
+  onPick?: (zone: string) => void
+}) {
   const { t } = useTranslation('domains')
+  const { t: tp } = useTranslation('dnsProviders')
   const zone = useQuery({
     ...dnsZoneQueryOptions(`app.${domain}`),
     enabled: BASE_DOMAIN_PATTERN.test(domain),
@@ -63,15 +77,88 @@ export function ZoneHint({ domain }: { domain: string }) {
   if (zone.data?.found) {
     return (
       <p className="text-xs text-emerald-700 dark:text-emerald-400">
-        {t('baseDomain.zoneFound', {
+        {t('baseDomain.zoneMatched', {
           zone: zone.data.zone,
-          provider: zone.data.provider,
+          provider: tp(`providers.${zone.data.provider}`, {
+            defaultValue: zone.data.provider,
+          }),
         })}
       </p>
     )
   }
+  const message = zone.data?.message ?? zone.error?.message
+  const suggestions = listedZoneNames(message)
   return (
-    <p className="text-xs text-destructive">{t('baseDomain.zoneNotFound')}</p>
+    <div className="space-y-1.5" role="alert">
+      <p className="text-xs text-destructive">
+        {message ?? t('baseDomain.zoneNotFound')}
+      </p>
+      {onPick ? <ZoneSuggestions names={suggestions} onPick={onPick} /> : null}
+      {zone.data?.provider === 'route53' ||
+      zone.data?.provider === undefined ? (
+        <IamHint />
+      ) : null}
+    </div>
+  )
+}
+
+export function ZoneSuggestions({
+  names,
+  onPick,
+}: {
+  names: string[]
+  onPick: (zone: string) => void
+}) {
+  const { t } = useTranslation('domains')
+  if (names.length === 0) return null
+  return (
+    <div className="flex flex-wrap items-center gap-1.5">
+      <span className="text-xs text-muted-foreground">
+        {t('baseDomain.suggestions')}
+      </span>
+      {names.map((name) => (
+        <Button
+          key={name}
+          type="button"
+          variant="outline"
+          size="sm"
+          className="h-6 px-2 font-mono text-xs"
+          onClick={() => {
+            onPick(name)
+          }}
+        >
+          {name}
+        </Button>
+      ))}
+    </div>
+  )
+}
+
+function IamHint() {
+  const { t } = useTranslation('domains')
+  const { copy, copied } = useCopyToClipboard()
+  const actions = ROUTE53_IAM_ACTIONS.join(', ')
+  return (
+    <p className="flex flex-wrap items-center gap-1.5 text-xs text-muted-foreground">
+      {t('baseDomain.iamHint', { actions })}
+      <Button
+        type="button"
+        variant="ghost"
+        size="sm"
+        className="h-6 px-2"
+        aria-label={t('baseDomain.copyIam')}
+        onClick={() => {
+          copy(ROUTE53_IAM_ACTIONS.join('\n'))
+        }}
+      >
+        {copied ? (
+          <CheckGlassIcon className="size-3.5" aria-hidden="true" />
+        ) : (
+          <CopyGlassIcon className="size-3.5" aria-hidden="true" />
+        )}
+        {copied ? t('baseDomain.copied') : t('baseDomain.copy')}
+      </Button>
+    </p>
   )
 }
 
@@ -140,6 +227,8 @@ export function AppsBaseDomainCard() {
               className="font-mono"
               value={value}
               placeholder="apps.example.com"
+              disabled={update.isPending}
+              aria-busy={update.isPending}
               onChange={(e) => {
                 setValue(e.target.value)
               }}
@@ -152,9 +241,17 @@ export function AppsBaseDomainCard() {
               {t('baseDomain.save')}
             </Button>
           </div>
-          {dirty ? <ZoneHint domain={debounced} /> : null}
+          {dirty || current !== '' ? (
+            <ZoneHint domain={dirty ? debounced : current} onPick={setValue} />
+          ) : null}
           {update.isError ? (
-            <p className="text-xs text-destructive">{update.error.message}</p>
+            <div className="space-y-1.5" role="alert">
+              <p className="text-xs text-destructive">{update.error.message}</p>
+              <ZoneSuggestions
+                names={listedZoneNames(update.error.message)}
+                onPick={setValue}
+              />
+            </div>
           ) : null}
         </div>
         {current !== '' ? (

@@ -51,7 +51,9 @@
     "secretAccessKey": "AWSシークレットアクセスキー",
     "region": "リージョン(任意)",
     "hostedZoneId": "ホストゾーンID(任意)",
-    "serviceAccount": "サービスアカウントのJSON"
+    "serviceAccount": "サービスアカウントのJSON",
+    "regionHint": "Route 53 はグローバルなので、通常は影響しません。既定値: {{region}}。",
+    "hostedZoneHint": "空欄の場合、このキーで一覧できるすべてのゾーンからドメインを照合します。"
   },
   "test": {
     "button": "接続をテスト",

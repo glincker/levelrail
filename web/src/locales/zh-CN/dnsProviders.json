@@ -51,7 +51,9 @@
     "secretAccessKey": "AWS 秘密访问密钥",
     "region": "区域(可选)",
     "hostedZoneId": "托管区域 ID(可选)",
-    "serviceAccount": "服务账号 JSON"
+    "serviceAccount": "服务账号 JSON",
+    "regionHint": "Route 53 是全局服务,通常无需关注。默认值:{{region}}。",
+    "hostedZoneHint": "留空则在此密钥可列出的所有区域中匹配域名。"
   },
   "test": {
     "button": "测试连接",

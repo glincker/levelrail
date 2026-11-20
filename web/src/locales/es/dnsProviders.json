@@ -52,7 +52,9 @@
     "secretAccessKey": "Clave de acceso secreta de AWS",
     "region": "Región (opcional)",
     "hostedZoneId": "ID de zona alojada (opcional)",
-    "serviceAccount": "JSON de la cuenta de servicio"
+    "serviceAccount": "JSON de la cuenta de servicio",
+    "regionHint": "Route 53 es global, rara vez importa. Predeterminada: {{region}}.",
+    "hostedZoneHint": "Déjalo vacío para buscar el dominio en todas las zonas que esta clave puede listar."
   },
   "test": {
     "button": "Probar conexión",

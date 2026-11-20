@@ -757,7 +757,13 @@
     "backfillHelp": "既存のアプリは現在のアドレスのままです。ドメインのないアプリに {{base}} のアドレスを割り当てます:",
     "backfillPreview": "既存のアプリをプレビュー",
     "backfillApply_other": "{{count}} 件のアプリに適用",
-    "backfillNone": "すべてのアプリにすでにドメインがあります。"
+    "backfillNone": "すべてのアプリにすでにドメインがあります。",
+    "zoneMatched": "{{provider}} でゾーン {{zone}} を検出しました",
+    "suggestions": "プロバイダーが一覧したゾーン:",
+    "iamHint": "必要な IAM アクション: {{actions}}",
+    "copyIam": "IAM アクションをコピー",
+    "copy": "コピー",
+    "copied": "コピーしました"
   },
   "automation": {
     "title": "ドメインの自動化",

@@ -764,7 +764,13 @@
     "backfillPreview": "Ver las aplicaciones existentes",
     "backfillApply_one": "Aplicar a {{count}} aplicación",
     "backfillApply_other": "Aplicar a {{count}} aplicaciones",
-    "backfillNone": "Todas las aplicaciones ya tienen un dominio."
+    "backfillNone": "Todas las aplicaciones ya tienen un dominio.",
+    "zoneMatched": "Zona {{zone}} encontrada en {{provider}}",
+    "suggestions": "Zonas que lista tu proveedor:",
+    "iamHint": "Acciones IAM necesarias: {{actions}}",
+    "copyIam": "Copiar acciones IAM",
+    "copy": "Copiar",
+    "copied": "Copiado"
   },
   "automation": {
     "title": "Automatización de dominios",

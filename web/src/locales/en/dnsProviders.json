@@ -52,7 +52,9 @@
     "secretAccessKey": "AWS secret access key",
     "region": "Region (optional)",
     "hostedZoneId": "Hosted zone ID (optional)",
-    "serviceAccount": "Service account JSON"
+    "serviceAccount": "Service account JSON",
+    "regionHint": "Route 53 is global, so this rarely matters. Default: {{region}}.",
+    "hostedZoneHint": "Leave empty to match the domain against every zone this key can list."
   },
   "test": {
     "button": "Test connection",

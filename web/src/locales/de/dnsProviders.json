@@ -52,7 +52,9 @@
     "secretAccessKey": "Geheimer AWS-Zugriffsschlüssel",
     "region": "Region (optional)",
     "hostedZoneId": "ID der gehosteten Zone (optional)",
-    "serviceAccount": "Dienstkonto-JSON"
+    "serviceAccount": "Dienstkonto-JSON",
+    "regionHint": "Route 53 ist global, daher selten relevant. Standard: {{region}}.",
+    "hostedZoneHint": "Leer lassen, um die Domain mit allen Zonen abzugleichen, die dieser Schlüssel auflisten kann."
   },
   "test": {
     "button": "Verbindung testen",
