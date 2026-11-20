@@ -6,6 +6,7 @@ import (
 	"encoding/json"
 	"errors"
 	"fmt"
+	"github.com/GLINCKER/levelrail/internal/secrets"
 	"io"
 	"log/slog"
 	"net/http"
@@ -18,7 +19,7 @@ import (
 )
 
 const (
-	secretsService = "heartbeat"
+	secretsService = secrets.ControlPlanePrefix + "heartbeat"
 	secretURL      = "url"
 	secretFailURL  = "fail_url"
 	secretAgentURL = "agent_silence_url"

@@ -107,7 +107,7 @@ func TestService_Create(t *testing.T) {
 		if err != nil {
 			t.Fatal(err)
 		}
-		if !got.Model.HFTokenSet || sec.values["model/v/HF_TOKEN"] != "hf_x" {
+		if !got.Model.HFTokenSet || sec.values["_cp/model/v/HF_TOKEN"] != "hf_x" {
 			t.Errorf("token flag/secret = %v/%v", got.Model.HFTokenSet, sec.values)
 		}
 	})

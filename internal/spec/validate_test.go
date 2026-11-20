@@ -239,3 +239,16 @@ func TestValidateServiceName_RejectsReserved(t *testing.T) {
 		t.Fatal(err)
 	}
 }
+
+func TestValidateServiceName_RejectsControlPlaneNamespaces(t *testing.T) {
+	for _, n := range []string{"_cp/webpush", "_cp/monitor-x", "model/llama"} {
+		if ValidateServiceName(n) == nil {
+			t.Errorf("%q must not be a valid app name", n)
+		}
+	}
+	for _, n := range []string{"webpush", "heartbeat", "secretproviders", "token-lifecycle"} {
+		if ValidateServiceName(n) == nil {
+			t.Errorf("%q is reserved", n)
+		}
+	}
+}

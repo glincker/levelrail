@@ -7,12 +7,12 @@ import (
 	"log/slog"
 )
 
-// controlPlanePrefix starts with an underscore, which no app name can, so the
+// ControlPlanePrefix starts with an underscore, which no app name can, so the
 // control plane's own keys never share a namespace with app secrets.
-const controlPlanePrefix = "_cp/"
+const ControlPlanePrefix = "_cp/"
 
 // ControlPlaneService maps a control plane key owner to its private namespace.
-func ControlPlaneService(name string) string { return controlPlanePrefix + name }
+func ControlPlaneService(name string) string { return ControlPlanePrefix + name }
 
 // KeyMover is the slice of Manager a key relocation needs.
 type KeyMover interface {

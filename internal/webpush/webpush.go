@@ -11,6 +11,7 @@ import (
 	"encoding/json"
 	"errors"
 	"fmt"
+	"github.com/GLINCKER/levelrail/internal/secrets"
 	"log/slog"
 	"net/http"
 
@@ -28,7 +29,7 @@ import (
 // credential this control plane generates for itself rather than an
 // operator pasting one in.
 const (
-	secretsServiceName = "webpush"
+	secretsServiceName = secrets.ControlPlanePrefix + "webpush"
 	vapidPrivateKeyEnv = "vapid_private_key"
 	vapidPublicKeyEnv  = "vapid_public_key"
 )
