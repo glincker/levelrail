@@ -2,7 +2,7 @@ import { useState } from 'react'
 import { useTranslation } from 'react-i18next'
 import { useNavigate } from '@tanstack/react-router'
 import { LinkGlassIcon } from '@thesvg/ui-react'
-import { Alert, AlertDescription } from '@/components/ui/alert'
+import { ApiErrorAlert } from '../ApiErrorAlert'
 import { Banner } from '@/components/ui/banner'
 import { Button } from '@/components/ui/button'
 import { Field, FieldError, FieldHint, FieldLabel } from '@/components/ui/field'
@@ -187,11 +187,7 @@ export function DeployLinkForm({ prefill }: { prefill: DeployLinkPrefill }) {
         </div>
       ) : null}
 
-      {createApp.isError ? (
-        <Alert variant="destructive">
-          <AlertDescription>{createApp.error.message}</AlertDescription>
-        </Alert>
-      ) : null}
+      {createApp.isError ? <ApiErrorAlert error={createApp.error} /> : null}
 
       <Button type="submit" disabled={createApp.isPending}>
         {createApp.isPending

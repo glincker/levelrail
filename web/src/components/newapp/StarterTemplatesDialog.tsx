@@ -19,6 +19,7 @@ import {
   DialogTitle,
   DialogTrigger,
 } from '@/components/ui/dialog'
+import { ApiErrorAlert } from '../ApiErrorAlert'
 import { Field, FieldError, FieldLabel } from '@/components/ui/field'
 import { Input } from '@/components/ui/input'
 import {
@@ -130,7 +131,7 @@ export function StarterTemplatesDialog({
         </DialogHeader>
 
         {templates.isError ? (
-          <p className="text-sm text-tone-danger">{templates.error.message}</p>
+          <ApiErrorAlert error={templates.error} />
         ) : (
           <ul className="grid gap-2 sm:grid-cols-2">
             {(templates.data ?? []).map((tpl) => (
@@ -202,7 +203,7 @@ export function StarterTemplatesDialog({
             ))}
             {render.error &&
             !(render.error instanceof ProjectTemplateValidationError) ? (
-              <p className="text-sm text-tone-danger">{render.error.message}</p>
+              <ApiErrorAlert error={render.error} />
             ) : null}
             <Button type="submit" disabled={render.isPending}>
               {render.isPending
