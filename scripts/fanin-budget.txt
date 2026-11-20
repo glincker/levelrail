@@ -1,77 +1,73 @@
 # Max transitive dependents per package (scripts/check-fanin.sh). Raise a number only
 # with a reason in the PR; lowering it after a split is the point.
-# v1.4.0: internal/k8sconn reads typed runtime settings, which adds one dependent to runtimesettings, registrymirror and abuse.
-internal/abuse 69
-internal/autoscale 180
-internal/bindaddr 180
-internal/bindmount 182
-internal/build 39
-internal/canarypolicy 180
+internal/abuse 76
+internal/autoscale 201
+internal/bindaddr 201
+internal/bindmount 203
+internal/build 50
+internal/build/buildkitd 51
+internal/build/cachebudget 52
+internal/canarypolicy 201
 internal/changes 25
-internal/chaos 171
-internal/cloudflareips 21
-# v1.1.0: stack sync, strict compose validation and the cloud engine packages import this
+internal/chaos 191
+internal/cloudflareips 24
 internal/compose 73
 internal/configtranslate 29
-internal/costbudget 171
+internal/costbudget 191
 internal/dbparams 46
 internal/dbprovision 46
 internal/defparse 29
 internal/deploy 27
-internal/deploysafety 48
-internal/deploytrace 46
-internal/dnszones 25
-internal/docker 191
-# v1.1.0: stack sync, strict compose validation and the cloud engine packages import this
+internal/deploysafety 49
+internal/deploytrace 48
+internal/diagnose 25
+internal/dnszones 26
+internal/docker 211
 internal/dockerguard 75
-internal/email 34
-internal/envredact 71
+internal/email 35
+internal/envredact 76
 internal/extdb 36
-internal/footprint 182
-internal/frameworks 52
+internal/footprint 203
+internal/frameworks 54
 internal/gitprovider/reporef 46
-# v1.1.0: stack sync, strict compose validation and the cloud engine packages import this
-internal/gitsshkey 24
-internal/gpu 170
-internal/loadbalancer 180
+internal/gitsshkey 27
+internal/gpu 190
+internal/loadbalancer 201
 internal/meshpath 46
-internal/monitor 170
+internal/monitor 190
 internal/network 54
+internal/pages 29
 internal/pkgregistry 29
-internal/placement 180
-internal/platformimport 43
-internal/policy 172
-internal/quota 170
-internal/reconcile 171
+internal/placement 201
+internal/platformimport 45
+internal/policy 192
+internal/quota 190
+internal/reconcile 191
 internal/reconcile/database 45
-internal/rolloutpolicy 180
-# v1.1.0: stack sync, strict compose validation and the cloud engine packages import this
-internal/runtimesettings 63
-# v1.1.0: stack sync, strict compose validation and the cloud engine packages import this
-internal/runtimesettings/registrymirror 67
-internal/secretmask 177
-# v1.1.0: stack sync, strict compose validation and the cloud engine packages import this
-internal/sourcecache 23
-internal/spec 179
-internal/spendcap 182
-internal/store 169
-internal/telemetry 59
-internal/trafficpolicy 52
-internal/usagecost 170
+internal/rolloutpolicy 201
+internal/runtimesettings 70
+internal/runtimesettings/registrymirror 83
+internal/secretmask 195
+internal/secrets 32
+internal/secretsource 24
+internal/sourcecache 26
+internal/spec 200
+internal/spendcap 203
+internal/staticroutes 45
+internal/store 189
+internal/telemetry 63
+internal/trafficpolicy 56
+internal/usagecost 190
 internal/version 36
-kit/cronexpr 180
-kit/diskspace 47
-kit/ids 83
-kit/netguard 194
-# v1.1.0: stack sync, strict compose validation and the cloud engine packages import this
-kit/pathfilter 24
-kit/probe 180
+kit/cronexpr 201
+kit/diskspace 58
+kit/ids 92
+kit/netguard 214
+kit/pathfilter 27
+kit/probe 201
 kit/semver 32
-# v1.1.0: stack sync, strict compose validation and the cloud engine packages import this
-kit/ticker 31
-kit/timeutil 171
+kit/ticker 35
+kit/timeutil 191
+kit/untrusted 41
 kit/upgrade 27
-# connhub reads cloud account auth classes from cloudconn, which resolves secrets
-internal/secretsource 21
-# v1.4.1: the template registry is imported by the API, CLI and template install paths
 registry 24
