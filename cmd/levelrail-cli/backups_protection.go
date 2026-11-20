@@ -5,6 +5,7 @@ import (
 	"flag"
 	"fmt"
 	"io"
+	"strings"
 	"text/tabwriter"
 	"time"
 
@@ -181,6 +182,9 @@ func runBackupsDrill(prog string, args []string, stdout, stderr io.Writer, looku
 	case "show":
 		return runBackupsDrillShow(prog, args[1:], stdout, stderr, lookupEnv)
 	}
+	if !strings.HasPrefix(args[0], "-") {
+		return runBackupsDrillLatest(prog, args, stdout, stderr, lookupEnv)
+	}
 	_, _ = fmt.Fprintf(stderr, "%s: unknown backups drill subcommand %q\n\n%s", prog, args[0], backupsDrillUsage(prog))
 	return exitUsage
 }
@@ -189,6 +193,7 @@ func backupsDrillUsage(prog string) string {
 	return fmt.Sprintf(`Usage:
   %[1]s backups drill run --backup ID [--wait] [flags]   restore a backup into a scratch resource, validate it, destroy it
   %[1]s backups drill list [--app A --volume V | --database D] [--limit N]   drill history
+  %[1]s backups drill <app|bkt_ID|control-plane> [--volume V]   drill the latest backup of an app volume, a target or the control plane
   %[1]s backups drill show <drill-id>                    one drill's checks and error
 
 A drill proves a restore works. A failed drill exits non-zero.

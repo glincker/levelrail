@@ -349,14 +349,14 @@ func (r *Runner) ResolveDestination(ctx context.Context, targetID string) (Desti
 		return Destination{}, fmt.Errorf("resolve secret access key for target %q: %w", targetID, err)
 	}
 
-	return Destination{
+	return withWebDAVExtras(ctx, r.Secrets, secretsKey, Destination{
 		Provider:        target.Provider,
 		Endpoint:        target.Endpoint,
 		Region:          target.Region,
 		Bucket:          target.Bucket,
 		AccessKeyID:     accessKeyID,
 		SecretAccessKey: secretAccessKey,
-	}, nil
+	}), nil
 }
 
 // countingReader wraps a Dumper's stream so RunBackup can report

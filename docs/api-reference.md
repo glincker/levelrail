@@ -1389,6 +1389,7 @@ Endpoints for:
 | GET | /api/v1/static-sites/{name}/deploy-tokens | AbilityRead | handleListSiteDeployTokens |
 | POST | /api/v1/static-sites/{name}/deploy-tokens | AbilityWriteSensitive | handleCreateSiteDeployToken |
 | DELETE | /api/v1/static-sites/{name}/deploy-tokens/{id} | AbilityWriteSensitive | handleRevokeSiteDeployToken |
+| POST | /api/v1/backup-targets/{id}/probe | AbilityWriteSensitive | handleProbeBackupTarget |
 
 ## Built-in Container Registry
 
@@ -1476,6 +1477,7 @@ Endpoints for:
 | GET | /api/v1/backups/copies | AbilityRead | handleListBackupCopies |
 | POST | /api/v1/databases/{name}/backup-schedule/pause | AbilityWriteSensitive | handlePauseBackupSchedule |
 | POST | /api/v1/databases/{name}/backup-schedule/resume | AbilityWriteSensitive | handleResumeBackupSchedule |
+| POST | /api/v1/backups/drill | AbilityWriteSensitive | handleBackupDrillLatest |
 
 ## App Volume Backups / Restore
 

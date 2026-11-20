@@ -169,6 +169,7 @@ func (rt *Router) registerSettingsRoutes(mux *http.ServeMux) {
 	mux.HandleFunc("DELETE /api/v1/backup-targets/{id}", rt.requireAbility(AbilityWriteSensitive, rt.handleDeleteBackupTarget))
 	mux.HandleFunc("GET /api/v1/backup-targets/{id}/encryption", rt.requireAbility(AbilityRead, rt.handleGetBackupTargetEncryption))
 	mux.HandleFunc("PUT /api/v1/backup-targets/{id}/encryption", rt.requireAbility(AbilityRoot, rt.handleSetBackupTargetEncryption))
+	mux.HandleFunc("POST /api/v1/backup-targets/{id}/probe", rt.requireAbility(AbilityWriteSensitive, rt.handleProbeBackupTarget))
 	mux.HandleFunc("POST /api/v1/backup-targets/{id}/test", rt.requireAbility(AbilityWriteSensitive, rt.handleTestBackupTarget))
 	// Second-destination copies: choosing where backups are mirrored is a sensitive write, listing is a read.
 	mux.HandleFunc("GET /api/v1/backups/copy-settings", rt.requireAbility(AbilityRead, rt.handleGetBackupCopySettings))

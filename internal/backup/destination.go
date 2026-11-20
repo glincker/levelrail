@@ -42,14 +42,14 @@ func resolveTargetDestination(ctx context.Context, targets TargetGetter, secrets
 		return Destination{}, fmt.Errorf("resolve secret access key for target %q: %w", targetID, err)
 	}
 
-	return Destination{
+	return withWebDAVExtras(ctx, secrets, secretsKey, Destination{
 		Provider:        target.Provider,
 		Endpoint:        target.Endpoint,
 		Region:          target.Region,
 		Bucket:          target.Bucket,
 		AccessKeyID:     accessKeyID,
 		SecretAccessKey: secretAccessKey,
-	}, nil
+	}), nil
 }
 
 // resolveCopyDestination is resolveTargetDestination for flows that go through
@@ -63,4 +63,14 @@ func resolveCopyDestination(ctx context.Context, targets TargetGetter, secrets S
 		return Destination{Provider: target.Provider, Endpoint: target.Endpoint, Bucket: target.Bucket}, nil
 	}
 	return resolveTargetDestination(ctx, targets, secrets, targetID)
+}
+
+// withWebDAVExtras adds the optional CA bundle secret to a WebDAV destination.
+func withWebDAVExtras(ctx context.Context, secrets SecretsResolver, secretsKey string, d Destination) Destination {
+	if d.IsWebDAV() {
+		if ca, err := secrets.Resolve(ctx, secretsKey, "ca_bundle"); err == nil {
+			d.CABundle = ca
+		}
+	}
+	return d
 }

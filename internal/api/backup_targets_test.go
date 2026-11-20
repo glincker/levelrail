@@ -96,7 +96,7 @@ func TestValidateCreateBackupTargetRequest(t *testing.T) {
 	}
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
-			err := validateCreateBackupTargetRequest(tt.req)
+			err := validateCreateBackupTargetRequest(context.Background(), tt.req)
 			if (err != nil) != tt.wantErr {
 				t.Errorf("validateCreateBackupTargetRequest(%+v) error = %v, wantErr %v", tt.req, err, tt.wantErr)
 			}
@@ -127,7 +127,7 @@ func TestValidateUpdateBackupTargetRequest(t *testing.T) {
 	}
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
-			err := validateUpdateBackupTargetRequest(tt.req)
+			err := validateUpdateBackupTargetRequest(context.Background(), tt.req)
 			if (err != nil) != tt.wantErr {
 				t.Errorf("validateUpdateBackupTargetRequest(%+v) error = %v, wantErr %v", tt.req, err, tt.wantErr)
 			}

@@ -2597,6 +2597,7 @@ type CreateBackupTargetRequest struct {
 	AccessKeyID     string `json:"access_key_id"`
 	SecretAccessKey string `json:"secret_access_key"`
 	EncryptDumps    *bool  `json:"encrypt_dumps,omitempty"`
+	CABundle        string `json:"ca_bundle,omitempty"`
 }
 
 // UpdateBackupTargetRequest mirrors internal/api's
@@ -2610,6 +2611,7 @@ type UpdateBackupTargetRequest struct {
 	Bucket          string `json:"bucket"`
 	AccessKeyID     string `json:"access_key_id,omitempty"`
 	SecretAccessKey string `json:"secret_access_key,omitempty"`
+	CABundle        string `json:"ca_bundle,omitempty"`
 }
 
 // RegistryCredentialResource mirrors internal/api's

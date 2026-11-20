@@ -14,7 +14,7 @@ type openAPIRoute struct {
 	Description string
 }
 
-// openAPIRoutes holds all 2220 routes known to scripts/gen-api-reference at
+// openAPIRoutes holds all 2222 routes known to scripts/gen-api-reference at
 // generation time. Run `go run ./scripts/gen-api-reference` after changing
 // any routes*.go registration and commit the result.
 var openAPIRoutes = []openAPIRoute{
@@ -760,6 +760,7 @@ var openAPIRoutes = []openAPIRoute{
 	{Method: "GET", Path: "/api/v1/backups/copy-settings", Ability: "AbilityRead", Group: "Database Backups / Restore / Clone Restore", Handler: "handleGetBackupCopySettings", Description: "Second-destination copies: choosing where backups are mirrored is a sensitive write, listing is a read."},
 	{Method: "PUT", Path: "/api/v1/backups/copy-settings", Ability: "AbilityWriteSensitive", Group: "Database Backups / Restore / Clone Restore", Handler: "handleSetBackupCopySettings", Description: ""},
 	{Method: "GET", Path: "/api/v1/backups/coverage", Ability: "AbilityRead", Group: "Database Backups / Restore / Clone Restore", Handler: "handleBackupCoverage", Description: ""},
+	{Method: "POST", Path: "/api/v1/backups/drill", Ability: "AbilityWriteSensitive", Group: "Database Backups / Restore / Clone Restore", Handler: "handleBackupDrillLatest", Description: ""},
 	{Method: "GET", Path: "/api/v1/backups/drills", Ability: "AbilityRead", Group: "Database Backups / Restore / Clone Restore", Handler: "handleListBackupDrills", Description: ""},
 	{Method: "POST", Path: "/api/v1/backups/drills", Ability: "AbilityWriteSensitive", Group: "Database Backups / Restore / Clone Restore", Handler: "handleStartBackupDrill", Description: ""},
 	{Method: "GET", Path: "/api/v1/backups/drills/{id}", Ability: "AbilityRead", Group: "Database Backups / Restore / Clone Restore", Handler: "handleGetBackupDrill", Description: ""},
@@ -2051,6 +2052,7 @@ var openAPIRoutes = []openAPIRoute{
 	{Method: "PUT", Path: "/api/v1/backup-targets/{id}", Ability: "AbilityWriteSensitive", Group: "Static Sites / Backup Targets / Registry Credentials", Handler: "handleUpdateBackupTarget", Description: ""},
 	{Method: "GET", Path: "/api/v1/backup-targets/{id}/encryption", Ability: "AbilityRead", Group: "Static Sites / Backup Targets / Registry Credentials", Handler: "handleGetBackupTargetEncryption", Description: ""},
 	{Method: "PUT", Path: "/api/v1/backup-targets/{id}/encryption", Ability: "AbilityRoot", Group: "Static Sites / Backup Targets / Registry Credentials", Handler: "handleSetBackupTargetEncryption", Description: ""},
+	{Method: "POST", Path: "/api/v1/backup-targets/{id}/probe", Ability: "AbilityWriteSensitive", Group: "Static Sites / Backup Targets / Registry Credentials", Handler: "handleProbeBackupTarget", Description: ""},
 	{Method: "POST", Path: "/api/v1/backup-targets/{id}/test", Ability: "AbilityWriteSensitive", Group: "Static Sites / Backup Targets / Registry Credentials", Handler: "handleTestBackupTarget", Description: ""},
 	{Method: "GET", Path: "/api/v1/domains", Ability: "AbilityRead", Group: "Static Sites / Backup Targets / Registry Credentials", Handler: "handleListDomains", Description: "Domains (centralized cross-app list, web/src/routes/domains): every service_domains row, AbilityRead like GET /api/v1/apps, no new ability tier: this is the same data DomainEditor already exposes per-app, aggregated across every app in one read-only call."},
 	{Method: "GET", Path: "/api/v1/domains/automation/runs", Ability: "AbilityRead", Group: "Static Sites / Backup Targets / Registry Credentials", Handler: "handleListAutomationRuns", Description: ""},
