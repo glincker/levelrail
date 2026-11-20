@@ -4,10 +4,9 @@ import type { DeployStepEvent } from '../../hooks/useDeployStepStream'
 import type { BuildStageName } from '../../lib/buildStages'
 import { StageLogPanel } from './StageLogPanel'
 import { StageOverview } from './StageOverview'
-import { StageWaterfall } from './StageWaterfall'
 import { useBuildStages, useRefetchOnBuildSteps } from './useBuildStages'
 
-/** Self-contained graph, waterfall and stage log for compact hosts. */
+/** Self-contained waterfall and stage log for compact hosts. */
 export function BuildStagesPanel({
   appName,
   deployId,
@@ -19,7 +18,7 @@ export function BuildStagesPanel({
 }) {
   const { t } = useDeployDetailT()
   const [selected, setSelected] = useState<BuildStageName | null>(null)
-  const { data, nowMs } = useBuildStages(appName, deployId)
+  const { data } = useBuildStages(appName, deployId)
   useRefetchOnBuildSteps(appName, deployId, steps)
   const finished =
     data !== undefined && data.status !== 'running' && data.status !== 'queued'
@@ -33,7 +32,6 @@ export function BuildStagesPanel({
       />
       {data && data.stages.length > 0 ? (
         <>
-          <StageWaterfall data={data} nowMs={nowMs} />
           {selected ? (
             <StageLogPanel
               key={selected}

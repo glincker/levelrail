@@ -24,9 +24,9 @@ import { BuildStepList } from './BuildStepList'
 import { useDeployDetailT } from './useDeployDetailT'
 
 function heightFor(count: number): string {
-  if (count <= 12) return 'h-64'
-  if (count <= 40) return 'h-96'
-  return 'h-[60dvh] min-h-96 max-h-[48rem]'
+  if (count <= 12) return 'h-80'
+  if (count <= 40) return 'h-[50dvh] min-h-96 max-h-[40rem]'
+  return 'h-[65dvh] min-h-96 max-h-[48rem]'
 }
 
 function Fact({ label, value }: { label: string; value?: string }) {

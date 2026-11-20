@@ -51,13 +51,11 @@ function RolloutRow({
   state,
   nowMs,
   conditions,
-  last,
 }: {
   row: TimelineRow
   state: DeployState
   nowMs: number
   conditions: ReconcileCondition[]
-  last: boolean
 }) {
   const { t } = useDeployDetailT()
   const { stage } = row
@@ -80,84 +78,77 @@ function RolloutRow({
     row.key === 'health-check' &&
     conditions.length > 0
 
+  const open = stage.status === 'running' || stage.status === 'failed'
+  const hasDetails = Boolean(started || finished || showConditions)
   return (
-    <li className="relative flex gap-3 pb-5 last:pb-0">
-      {last ? null : (
-        <span
-          className="absolute top-6 bottom-0 left-2 w-px bg-border"
+    <li
+      title={reason ?? undefined}
+      className="min-w-0 space-y-1 py-1 md:min-w-44 md:flex-1"
+    >
+      <div className="flex flex-wrap items-center gap-x-2 gap-y-1">
+        <StageIcon
+          className={cn('size-4 shrink-0', ICON_CLASS[stage.status])}
           aria-hidden="true"
         />
-      )}
-      <StageIcon
-        className={cn(
-          'relative z-10 mt-0.5 size-5 shrink-0 bg-background',
-          ICON_CLASS[stage.status],
-        )}
-        aria-hidden="true"
-      />
-      <div className="min-w-0 flex-1 space-y-1">
-        <div className="flex flex-wrap items-center gap-x-2 gap-y-1">
-          <span className="text-sm font-medium text-foreground">{label}</span>
-          <span className="text-xs text-muted-foreground">
-            {t(`rollout.stageStatus.${stage.status}`)}
+        <span className="text-sm font-medium text-foreground">{label}</span>
+        <span className="text-xs text-muted-foreground">
+          {t(`rollout.stageStatus.${stage.status}`)}
+        </span>
+        {duration ? (
+          <span className="text-xs text-muted-foreground/80">
+            {stage.status === 'running'
+              ? t('rollout.runningFor', { duration })
+              : t('rollout.duration', { duration })}
           </span>
-          {duration ? (
-            <span className="text-xs text-muted-foreground/80">
-              {stage.status === 'running'
-                ? t('rollout.runningFor', { duration })
-                : t('rollout.duration', { duration })}
-            </span>
-          ) : null}
-          {stuck ? (
-            <Badge variant="warning">
-              {t('rollout.reason.stuck', {
-                limit: formatDurationMs(state.stuckAfterMs ?? 0) ?? '',
-              })}
-            </Badge>
-          ) : null}
-        </div>
-        {reason ? (
-          <p
-            className={cn(
-              'text-sm',
-              stage.status === 'failed'
-                ? 'text-tone-danger'
-                : 'text-muted-foreground',
-            )}
-          >
-            {reason}
-          </p>
         ) : null}
-        {started || finished || showConditions ? (
-          <details className="text-xs text-muted-foreground">
-            <summary className="cursor-pointer">{t('rollout.details')}</summary>
-            <div className="space-y-1 pt-1">
-              {started ? <p>{t('rollout.started', { at: started })}</p> : null}
-              {finished ? (
-                <p>{t('rollout.finished', { at: finished })}</p>
-              ) : null}
-              {showConditions ? (
-                <ul className="space-y-0.5 font-mono break-words">
-                  {conditions.map((c) => (
-                    <li key={`${c.Type}-${c.Reason}`}>
-                      {t('rollout.conditionLine', {
-                        reason: c.Reason,
-                        status: c.Status,
-                        message: c.Message,
-                      })}
-                    </li>
-                  ))}
-                </ul>
-              ) : null}
-            </div>
-          </details>
+        {stuck ? (
+          <Badge variant="warning">
+            {t('rollout.reason.stuck', {
+              limit: formatDurationMs(state.stuckAfterMs ?? 0) ?? '',
+            })}
+          </Badge>
         ) : null}
       </div>
+      {reason && open ? (
+        <p
+          className={cn(
+            'text-xs',
+            stage.status === 'failed'
+              ? 'text-tone-danger'
+              : 'text-muted-foreground',
+          )}
+        >
+          {reason}
+        </p>
+      ) : null}
+      {hasDetails || (reason && !open) ? (
+        <details className="text-xs text-muted-foreground">
+          <summary className="cursor-pointer">{t('rollout.details')}</summary>
+          <div className="space-y-1 pt-1">
+            {reason && !open ? <p>{reason}</p> : null}
+            {started ? <p>{t('rollout.started', { at: started })}</p> : null}
+            {finished ? <p>{t('rollout.finished', { at: finished })}</p> : null}
+            {showConditions ? (
+              <ul className="space-y-0.5 font-mono break-words">
+                {conditions.map((c) => (
+                  <li key={`${c.Type}-${c.Reason}`}>
+                    {t('rollout.conditionLine', {
+                      reason: c.Reason,
+                      status: c.Status,
+                      message: c.Message,
+                    })}
+                  </li>
+                ))}
+              </ul>
+            ) : null}
+          </div>
+        </details>
+      ) : null}
     </li>
   )
 }
 
-/** RolloutTab is a vertical timeline of stages with reasons, durations and stuck hints. */
+/** RolloutTab is a compact stepper of stages; the running one stays expanded. */
 export function RolloutTab({
   appName,
   deployId,
@@ -177,14 +168,14 @@ export function RolloutTab({
 }) {
   const { t } = useDeployDetailT()
   return (
-    <div className="space-y-4">
+    <div className="space-y-2">
       {state.isStatic ? null : <RolloutStateCard appName={appName} />}
       <RolloutCountsPanel appName={appName} />
       <section
         aria-label={t('rollout.title')}
-        className="rounded-lg border border-border p-4"
+        className="rounded-lg border border-border px-3 py-2"
       >
-        <h3 className="mb-3 text-sm font-semibold text-foreground">
+        <h3 className="mb-1 text-sm font-semibold text-foreground">
           {t('rollout.title')}
         </h3>
         {state.isStatic ? (
@@ -192,21 +183,20 @@ export function RolloutTab({
             {t('rollout.staticNote')}
           </p>
         ) : null}
-        <ol>
-          {rows.map((row, i) => (
+        <ol className="flex flex-col divide-y divide-border/60 md:flex-row md:flex-wrap md:gap-x-4 md:divide-y-0">
+          {rows.map((row) => (
             <RolloutRow
               key={row.key}
               row={row}
               state={state}
               nowMs={nowMs}
               conditions={conditions}
-              last={i === rows.length - 1}
             />
           ))}
         </ol>
       </section>
 
-      <details className="rounded-lg border border-border px-4 py-3">
+      <details className="rounded-lg border border-border px-3 py-2">
         <summary className="cursor-pointer text-sm font-medium text-foreground">
           {t('rollout.technical')}
         </summary>

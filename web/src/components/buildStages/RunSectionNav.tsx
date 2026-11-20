@@ -11,7 +11,7 @@ import {
 /** Sticky anchor nav; a chip row that scrolls sideways on narrow screens. */
 export function RunSectionNav() {
   const { t } = useDeployDetailT()
-  const [active, setActive] = useState<RunSectionId>('summary')
+  const [active, setActive] = useState<RunSectionId>('logs')
 
   useEffect(() => {
     const els = RUN_SECTIONS.map((id) =>
