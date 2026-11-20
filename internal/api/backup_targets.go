@@ -643,7 +643,9 @@ func backupTargetTestErrorMessage(err error) string {
 	if errors.As(err, &respErr) {
 		switch respErr.HTTPStatusCode() {
 		case http.StatusUnauthorized, http.StatusForbidden:
-			return "authentication rejected by the storage endpoint: check the access key id and secret access key"
+			return "authentication rejected by the storage endpoint: check the access key id and secret access key; the key needs s3:ListBucket on the bucket and s3:PutObject, s3:GetObject and s3:DeleteObject on its objects"
+		case http.StatusMovedPermanently, http.StatusBadRequest:
+			return "the storage endpoint refused the request, usually because the bucket is in another region: check the region"
 		case http.StatusNotFound:
 			return "bucket not found at the configured endpoint: check the bucket name, region, and endpoint"
 		}
