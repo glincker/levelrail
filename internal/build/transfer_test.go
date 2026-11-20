@@ -138,6 +138,7 @@ func TestDispatchFollowsNodeCapability(t *testing.T) {
 	now := time.Unix(1_000_000, 0)
 	nodes := &capNodes{capable: map[string]bool{"new": true}}
 	r := &Router{remote: nodes, logger: slog.New(slog.DiscardHandler),
+		nodes: func(context.Context) ([]NodeInfo, error) { return []NodeInfo{{ID: "new"}, {ID: "old"}}, nil },
 		load: func(_ context.Context, rd io.Reader, _ string, _ func(ProgressEvent)) error {
 			_, err := io.Copy(io.Discard, rd)
 			return err

@@ -136,11 +136,15 @@ func (n NodeInfo) tier() string {
 func (q Query) trustAllows(n NodeInfo, p Policy) bool {
 	if len(q.AllowedBuilders) > 0 {
 		for _, a := range q.AllowedBuilders {
-			if a == n.ID || a == n.Name || a == n.tier() {
+			if a == n.ID || a == n.tier() {
 				return true
 			}
 		}
 		return false
+	}
+	if q.EnvKind == "" {
+		// No known environment (unknown app): only server builders qualify.
+		return n.tier() == TrustServer
 	}
 	if n.tier() == TrustPersonal && q.EnvKind == "production" && !p.PersonalInProduction {
 		return false
@@ -151,7 +155,9 @@ func (q Query) trustAllows(n NodeInfo, p Policy) bool {
 // Decision is where a build runs and why.
 type Decision struct {
 	// Node is "" for the control plane.
-	Node   string
+	Node string
+	// Trust is the chosen node's builder tier, empty for the control plane.
+	Trust  string
 	Reason string
 }
 
@@ -254,14 +260,14 @@ func ChooseBuildNode(nodes []NodeInfo, q Query, p Policy) Decision {
 
 	if q.Pinned != "" {
 		for _, n := range all {
-			if n.ID != q.Pinned && n.Name != q.Pinned {
+			if n.ID != q.Pinned {
 				continue
 			}
 			if !q.trustAllows(n, p) {
 				return Decision{Reason: "control plane: pinned runner " + n.label() + " is not allowed to build for this environment"}
 			}
 			if n.usable(p) {
-				return Decision{Node: n.ID, Reason: "pinned runner " + n.label()}
+				return Decision{Node: n.ID, Trust: n.tier(), Reason: "pinned runner " + n.label()}
 			}
 			return Decision{Reason: "control plane: pinned runner " + n.label() + " is " + unusableWhy(n)}
 		}
@@ -284,7 +290,7 @@ func ChooseBuildNode(nodes []NodeInfo, q Query, p Policy) Decision {
 				return Decision{Reason: "control plane: no runner carries labels " + labelString(q.Labels)}
 			}
 		}
-		return Decision{Node: live[0].ID, Reason: "first online build node " + live[0].label()}
+		return Decision{Node: live[0].ID, Trust: live[0].tier(), Reason: "first online build node " + live[0].label()}
 	}
 
 	if len(q.Labels) > 0 {
@@ -312,7 +318,7 @@ func ChooseBuildNode(nodes []NodeInfo, q Query, p Policy) Decision {
 			best, bestScore = n, s
 		}
 	}
-	return Decision{Node: best.ID, Reason: explainChoice(best, q, p)}
+	return Decision{Node: best.ID, Trust: best.tier(), Reason: explainChoice(best, q, p)}
 }
 
 func filterNodes(in []NodeInfo, keep func(NodeInfo) bool) []NodeInfo {

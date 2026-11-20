@@ -12,6 +12,7 @@ import (
 	"fmt"
 	"log/slog"
 	"regexp"
+	"strings"
 	"sync"
 	"sync/atomic"
 	"time"
@@ -523,4 +524,13 @@ func randomNodeID() (string, error) {
 
 var enrollNodeNameRe = regexp.MustCompile(`^[A-Za-z0-9][A-Za-z0-9._-]{0,62}$`)
 
-func validEnrollNodeName(name string) bool { return enrollNodeNameRe.MatchString(name) }
+// Tier words and ID-shaped names are refused so a name can never alias a tier or node ID.
+var nodeIDShapeRe = regexp.MustCompile(`^[0-9a-f]{24}$`)
+
+func validEnrollNodeName(name string) bool {
+	switch strings.ToLower(name) {
+	case "server", "managed", "personal":
+		return false
+	}
+	return enrollNodeNameRe.MatchString(name) && !nodeIDShapeRe.MatchString(name)
+}

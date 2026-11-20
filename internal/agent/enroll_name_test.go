@@ -17,3 +17,14 @@ func TestValidEnrollNodeName(t *testing.T) {
 		}
 	}
 }
+
+func TestValidEnrollNodeNameRejectsAliases(t *testing.T) {
+	for _, n := range []string{"server", "Managed", "PERSONAL", "0123456789abcdef01234567"} {
+		if validEnrollNodeName(n) {
+			t.Errorf("%q must be refused", n)
+		}
+	}
+	if !validEnrollNodeName("server-2") {
+		t.Error("server-2 should stay valid")
+	}
+}

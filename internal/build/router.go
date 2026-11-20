@@ -105,7 +105,7 @@ func NewRouter(local *Client, nodes NodeSource, remote NodeBuilder, opts ...Rout
 
 // Build implements internal/deploy.ImageBuilder.
 func (r *Router) Build(ctx context.Context, req Request, progress func(ProgressEvent)) (*Result, error) {
-	nodeID, err := r.selectNode(ctx, AppFromTag(req.Tag))
+	nodeID, err := r.selectNode(ctx, AppFor(ctx, req.Tag))
 	if err != nil {
 		return nil, err
 	}
@@ -135,7 +135,7 @@ func (r *Router) Build(ctx context.Context, req Request, progress func(ProgressE
 
 // BuildRailpack implements internal/deploy.ImageBuilder.
 func (r *Router) BuildRailpack(ctx context.Context, req RailpackRequest, progress func(ProgressEvent)) (*Result, error) {
-	nodeID, err := r.selectNode(ctx, AppFromTag(req.Tag))
+	nodeID, err := r.selectNode(ctx, AppFor(ctx, req.Tag))
 	if err != nil {
 		return nil, err
 	}

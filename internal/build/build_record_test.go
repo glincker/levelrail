@@ -51,3 +51,17 @@ func TestMarkBuilderTarPathHasNoRecord(t *testing.T) {
 	}
 	recordRouter(TrustServer, nil).markBuilder(context.Background(), nil, "n1")
 }
+
+func TestNodeTierUnknownIsPersonalAndDecisionWins(t *testing.T) {
+	r := recordRouter(TrustServer, nil)
+	if got := r.nodeTier(context.Background(), "ghost"); got != TrustPersonal {
+		t.Fatalf("unknown node tier = %q, want personal", got)
+	}
+	ctx := WithDecision(context.Background(), Decision{Node: "ghost", Trust: TrustManaged})
+	if got := r.nodeTier(ctx, "ghost"); got != TrustManaged {
+		t.Fatalf("decision tier = %q, want managed", got)
+	}
+	if got := (&Router{}).nodeTier(context.Background(), "n1"); got != TrustPersonal {
+		t.Fatalf("no node source tier = %q, want personal", got)
+	}
+}

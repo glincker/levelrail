@@ -369,6 +369,7 @@ func (rt *Router) handleSetAppBuildRunner(w http.ResponseWriter, r *http.Request
 	if req.NodeID != "" {
 		// Resolve a name to its ID first so a policy on node:<id> cannot be sidestepped.
 		id, found := rt.buildRunnerNodeID(r.Context(), req.NodeID)
+		req.NodeID = id
 		if !found {
 			writeError(w, http.StatusNotFound, "node not found")
 			return

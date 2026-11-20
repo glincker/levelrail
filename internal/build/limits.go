@@ -194,12 +194,13 @@ func (l *Limiter) BuildRailpack(ctx context.Context, req RailpackRequest, progre
 }
 
 func (l *Limiter) run(ctx context.Context, tag, srcDir string, progress func(ProgressEvent), do func(context.Context, func(ProgressEvent), string, int) (*Result, error)) (*Result, error) {
-	lim := l.limits(ctx, AppFromTag(tag))
+	app := AppFor(ctx, tag)
+	lim := l.limits(ctx, app)
 	queued := l.clock.Now()
 	nodeID, reason := "", ""
 	switch {
 	case l.decide != nil:
-		d := l.decide(ctx, AppFromTag(tag))
+		d := l.decide(ctx, app)
 		nodeID, reason = d.Node, d.Reason
 		ctx = WithDecision(ctx, d)
 	case l.node != nil:
@@ -223,7 +224,7 @@ func (l *Limiter) run(ctx context.Context, tag, srcDir string, progress func(Pro
 	phase(ActiveBuilding)
 
 	started := l.clock.Now()
-	run := Run{App: AppFromTag(tag), Tag: tag, StartedAt: started, QueueWait: started.Sub(queued), Node: nodeID, RunnerReason: reason, Platform: HostPlatform()}
+	run := Run{App: app, Tag: tag, StartedAt: started, QueueWait: started.Sub(queued), Node: nodeID, RunnerReason: reason, Platform: HostPlatform()}
 
 	bctx, cancel := context.WithCancelCause(ctx)
 	defer cancel(nil)

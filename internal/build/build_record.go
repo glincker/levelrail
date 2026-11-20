@@ -6,6 +6,24 @@ import (
 	"log/slog"
 )
 
+type buildAppKey struct{}
+
+// WithApp names the app a build is for when the image tag does not.
+func WithApp(ctx context.Context, app string) context.Context {
+	if app == "" {
+		return ctx
+	}
+	return context.WithValue(ctx, buildAppKey{}, app)
+}
+
+// AppFor is the app a build is placed for: the named one, else the tag's repo.
+func AppFor(ctx context.Context, tag string) string {
+	if a, ok := ctx.Value(buildAppKey{}).(string); ok && a != "" {
+		return a
+	}
+	return AppFromTag(tag)
+}
+
 // RecordInput is what the control plane knows when a remote builder's digest is accepted.
 type RecordInput struct {
 	App          string
@@ -24,21 +42,25 @@ func WithRouterRecorder(f RecordSigner) RouterOption {
 	return func(r *Router) { r.recorder = f }
 }
 
-// nodeTier is the builder tier of a node, server when it is unknown.
+// nodeTier is the builder tier of a node. The placement decision's tier wins;
+// an unknown node counts as personal so it fails closed.
 func (r *Router) nodeTier(ctx context.Context, nodeID string) string {
+	if d, ok := DecisionFrom(ctx); ok && d.Node == nodeID && d.Trust != "" {
+		return d.Trust
+	}
 	if r.nodes == nil {
-		return TrustServer
+		return TrustPersonal
 	}
 	infos, err := r.nodes(ctx)
 	if err != nil {
-		return TrustServer
+		return TrustPersonal
 	}
 	for _, n := range infos {
 		if n.ID == nodeID {
 			return n.tier()
 		}
 	}
-	return TrustServer
+	return TrustPersonal
 }
 
 // markBuilder stamps who built the image so the deploy path can apply tier policy.
@@ -59,7 +81,7 @@ func (r *Router) recordBuild(ctx context.Context, nodeID, ref, tag string, res *
 		}
 		return nil
 	}
-	id, err := r.recorder(ctx, RecordInput{App: AppFromTag(tag), Ref: ref, Tag: tag, Digest: res.Digest, BuilderNode: nodeID, BuilderTrust: tier})
+	id, err := r.recorder(ctx, RecordInput{App: AppFor(ctx, tag), Ref: ref, Tag: tag, Digest: res.Digest, BuilderNode: nodeID, BuilderTrust: tier})
 	if err != nil {
 		if tier == TrustPersonal {
 			return fmt.Errorf("build: record personal builder result: %w", err)

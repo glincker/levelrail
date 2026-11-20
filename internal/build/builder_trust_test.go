@@ -1,6 +1,9 @@
 package build
 
-import "testing"
+import (
+	"context"
+	"testing"
+)
 
 func TestChooseBuildNodeBuilderTrust(t *testing.T) {
 	laptop := NodeInfo{ID: "n-laptop", Name: "laptop", AcceptsBuildWorkloads: true, Online: true, Trust: TrustPersonal}
@@ -23,5 +26,43 @@ func TestChooseBuildNodeBuilderTrust(t *testing.T) {
 		if got := ChooseBuildNode(nodes, c.q, c.p).Node; got != c.want {
 			t.Errorf("%s: got %q want %q", c.name, got, c.want)
 		}
+	}
+}
+
+func TestTrustMatchesTierOrIDNeverName(t *testing.T) {
+	// A node named like a tier word must not satisfy a tier allow-list.
+	alias := NodeInfo{ID: "n-a", Name: "server", AcceptsBuildWorkloads: true, Online: true, Trust: TrustPersonal}
+	byName := NodeInfo{ID: "n-b", Name: "n-c", AcceptsBuildWorkloads: true, Online: true, Trust: TrustPersonal}
+	q := Query{EnvKind: "preview", AllowedBuilders: []string{"server"}}
+	if d := ChooseBuildNode([]NodeInfo{alias}, q, Policy{}); d.Node != "" {
+		t.Fatalf("tier-word name matched: %+v", d)
+	}
+	q = Query{EnvKind: "preview", AllowedBuilders: []string{"n-b"}}
+	if d := ChooseBuildNode([]NodeInfo{alias, byName}, q, Policy{}); d.Node != "n-b" || d.Trust != TrustPersonal {
+		t.Fatalf("id match failed: %+v", d)
+	}
+	// A pin by name never resolves.
+	if d := ChooseBuildNode([]NodeInfo{alias}, Query{EnvKind: "preview", Pinned: "server"}, Policy{}); d.Node != "" {
+		t.Fatalf("pin by name resolved: %+v", d)
+	}
+}
+
+func TestUnknownEnvironmentUsesServerBuildersOnly(t *testing.T) {
+	laptop := NodeInfo{ID: "a", Name: "laptop", AcceptsBuildWorkloads: true, Online: true, Trust: TrustPersonal}
+	srv := NodeInfo{ID: "z", Name: "srv", AcceptsBuildWorkloads: true, Online: true}
+	if d := ChooseBuildNode([]NodeInfo{laptop, srv}, Query{}, Policy{}); d.Node != "z" {
+		t.Fatalf("unknown app placed on %+v", d)
+	}
+	if d := ChooseBuildNode([]NodeInfo{laptop}, Query{}, Policy{}); d.Node != "" {
+		t.Fatalf("unknown app reached a personal builder: %+v", d)
+	}
+}
+
+func TestAppForPrefersContextApp(t *testing.T) {
+	if got := AppFor(WithApp(context.Background(), "web"), "h/img:t"); got != "web" {
+		t.Fatalf("got %q", got)
+	}
+	if got := AppFor(context.Background(), "h/img:t"); got != "img" {
+		t.Fatalf("got %q", got)
 	}
 }
