@@ -24,53 +24,41 @@ void i18n.use(initReactI18next).init({
   interpolation: { escapeValue: false },
 })
 
+const BUILDER = {
+  id: 'n1',
+  name: 'mac-1',
+  status: 'busy',
+  paused: false,
+  tier: 'personal',
+  os: 'darwin',
+  arch: 'arm64',
+  agent_version: '1.5.7',
+  cpu_cores: 8,
+  pressure: 'warn',
+  slots_used: 1,
+  slots_total: 2,
+  active_builds: 1,
+  waiting: 0,
+  accepts_app_workloads: false,
+  labels: null,
+  recent_builds: 3,
+  recent_failed: 0,
+  avg_build_ms: 65000,
+}
+
 afterEach(() => {
   vi.unstubAllGlobals()
 })
 
 describe('BuildersSection', () => {
-  it('lists node runners with tier and hides the control plane', async () => {
+  it('lists builders with tier, load and platform', async () => {
     vi.stubGlobal(
       'fetch',
       vi.fn(() =>
         Promise.resolve(
-          new Response(
-            JSON.stringify({
-              strategy: 'first',
-              runners: [
-                {
-                  id: 'cp',
-                  name: 'control',
-                  kind: 'control_plane',
-                  status: 'ready',
-                  health: '',
-                  slots_used: 0,
-                  slots_total: 2,
-                  waiting: 0,
-                  load: 0,
-                  pressure: '',
-                  labels: null,
-                },
-                {
-                  id: 'n1',
-                  name: 'mac-1',
-                  kind: 'node',
-                  status: 'ready',
-                  health: '',
-                  slots_used: 1,
-                  slots_total: 2,
-                  active_builds: 1,
-                  waiting: 0,
-                  load: 0,
-                  pressure: '',
-                  architecture: 'arm64',
-                  labels: null,
-                  trust: 'personal',
-                },
-              ],
-            }),
-            { status: 200 },
-          ),
+          new Response(JSON.stringify({ builders: [BUILDER] }), {
+            status: 200,
+          }),
         ),
       ),
     )
@@ -82,11 +70,32 @@ describe('BuildersSection', () => {
       </QueryClientProvider>,
     )
     expect(await screen.findByText('mac-1')).toBeInTheDocument()
-    expect(screen.queryByText('control')).toBeNull()
     expect(screen.getByLabelText('Tier of mac-1')).toHaveValue('personal')
-    expect(screen.getByText('arm64')).toBeInTheDocument()
+    expect(screen.getByText('darwin / arm64')).toBeInTheDocument()
     expect(
       screen.getByRole('button', { name: 'Add builder' }),
     ).toBeInTheDocument()
+  })
+
+  it('shows the empty state with one add button', async () => {
+    vi.stubGlobal(
+      'fetch',
+      vi.fn(() =>
+        Promise.resolve(
+          new Response(JSON.stringify({ builders: [] }), { status: 200 }),
+        ),
+      ),
+    )
+    render(
+      <QueryClientProvider client={createTestQueryClient()}>
+        <I18nextProvider i18n={i18n}>
+          <BuildersSection />
+        </I18nextProvider>
+      </QueryClientProvider>,
+    )
+    expect(await screen.findByText(/No builders yet/)).toBeInTheDocument()
+    expect(screen.getAllByRole('button', { name: 'Add builder' })).toHaveLength(
+      1,
+    )
   })
 })

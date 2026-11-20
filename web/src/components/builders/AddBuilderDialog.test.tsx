@@ -24,9 +24,23 @@ afterEach(() => {
 describe('AddBuilderDialog', () => {
   it('mints a builder token and shows the join command once', async () => {
     const sent: string[] = []
+    let listCalls = 0
     vi.stubGlobal(
       'fetch',
       vi.fn((_u: string, init?: RequestInit) => {
+        if (_u === '/api/v1/builders') {
+          return Promise.resolve(
+            new Response(
+              JSON.stringify({
+                builders:
+                  listCalls++ < 2
+                    ? []
+                    : [{ id: 'new1', name: 'laptop', tier: 'personal' }],
+              }),
+              { status: 200 },
+            ),
+          )
+        }
         sent.push(typeof init?.body === 'string' ? init.body : '')
         return Promise.resolve(
           new Response(
@@ -57,5 +71,10 @@ describe('AddBuilderDialog', () => {
     )
     expect(JSON.parse(sent[0] ?? '{}')).toEqual({ builder: true })
     expect(screen.getByRole('button', { name: /Copy/ })).toBeInTheDocument()
-  })
+    expect(screen.getByText(/Waiting for your builder/)).toBeInTheDocument()
+    expect(
+      await screen.findByText(/laptop connected/, undefined, { timeout: 8000 }),
+    ).toBeInTheDocument()
+    expect(screen.getByLabelText('Builder join command')).toBeInTheDocument()
+  }, 15000)
 })

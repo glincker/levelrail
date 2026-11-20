@@ -1,20 +1,16 @@
 import { useTranslation } from 'react-i18next'
-import { Link } from '@tanstack/react-router'
 import { HammerGlassIcon } from '@thesvg/ui-react'
-import { StatusBadge } from '@/components/ui/status-badge'
-import { RelativeTime } from '@/components/kit'
+import { Card, CardContent } from '@/components/ui/card'
 import { InfoTip } from '../kit/InfoTip'
-import { runnerState } from '../../lib/buildRunnerFormat'
-import { useBuildRunners } from '../../queries/buildRunners'
+import { useBuilders } from '../../queries/builders'
 import { AddBuilderButton } from './AddBuilderButton'
-import { BuildTierSelect } from './BuildTierSelect'
+import { BuilderCard } from './BuilderCard'
 
-// Build-capable nodes from the runners API; the control plane is not a builder to enroll.
+// Builders come from the builder read model; the control plane is not listed.
 export function BuildersSection() {
   const { t } = useTranslation('nodes')
-  const { t: td } = useTranslation('deploys')
-  const { data } = useBuildRunners()
-  const builders = (data?.runners ?? []).filter((r) => r.kind === 'node')
+  const { data, isSuccess } = useBuilders()
+  const builders = data?.builders ?? []
 
   return (
     <section aria-labelledby="builders-title" className="space-y-2">
@@ -27,97 +23,32 @@ export function BuildersSection() {
           {t('builders.title')}
           <InfoTip label={t('builders.tipLabel')}>{t('builders.tip')}</InfoTip>
         </h2>
-        <span className="ml-auto">
-          <AddBuilderButton />
-        </span>
+        {builders.length > 0 ? (
+          <span className="ml-auto">
+            <AddBuilderButton />
+          </span>
+        ) : null}
       </div>
-      {builders.length === 0 ? (
-        <p className="text-sm text-muted-foreground">{t('builders.empty')}</p>
+      {isSuccess && builders.length === 0 ? (
+        <Card>
+          <CardContent className="flex flex-wrap items-center gap-3">
+            <p className="flex-1 basis-56 text-sm text-muted-foreground">
+              {t('builders.empty')}
+            </p>
+            <span className="flex items-center gap-1.5">
+              <AddBuilderButton variant="default" />
+              <InfoTip label={t('builders.emptyTipLabel')}>
+                {t('builders.emptyTip')}
+              </InfoTip>
+            </span>
+          </CardContent>
+        </Card>
       ) : (
-        <div className="overflow-x-auto rounded-lg border border-border">
-          <table className="w-full text-sm">
-            <thead className="text-left text-xs text-muted-foreground">
-              <tr className="border-b border-border">
-                <th className="px-3 py-2 font-medium">
-                  {t('builders.col.name')}
-                </th>
-                <th className="px-3 py-2 font-medium">
-                  {t('builders.col.status')}
-                </th>
-                <th className="px-3 py-2 font-medium">
-                  {t('builders.col.tier')}
-                </th>
-                <th className="px-3 py-2 font-medium">
-                  {t('builders.col.arch')}
-                </th>
-                <th className="px-3 py-2 font-medium">
-                  {t('builders.col.builds')}
-                </th>
-                <th className="px-3 py-2 font-medium">
-                  {t('builders.col.lastSeen')}
-                </th>
-              </tr>
-            </thead>
-            <tbody>
-              {builders.map((b) => (
-                <tr
-                  key={b.id}
-                  className="border-b border-border last:border-b-0"
-                >
-                  <td className="px-3 py-2 font-medium">
-                    <Link to="/nodes/$id" params={{ id: b.id }}>
-                      {b.name}
-                    </Link>
-                  </td>
-                  <td className="px-3 py-2">
-                    <StatusBadge
-                      state={runnerState(b.status)}
-                      label={td(`runners.status.${b.status}`)}
-                    />
-                  </td>
-                  <td className="px-3 py-2">
-                    <BuildTierSelect
-                      id={`builder-tier-${b.id}`}
-                      nodeId={b.id}
-                      value={b.trust ?? ''}
-                      label={t('builders.tierFor', { name: b.name })}
-                      className="w-32"
-                    />
-                  </td>
-                  <td className="px-3 py-2 text-muted-foreground">
-                    {b.architecture ?? '-'}
-                  </td>
-                  <td className="px-3 py-2 tabular-nums text-muted-foreground">
-                    {b.active_builds === undefined ? (
-                      t('builders.buildsNow', {
-                        used: b.slots_used,
-                        total: b.slots_total,
-                      })
-                    ) : (
-                      <>
-                        <span className="text-foreground">
-                          {t('builders.activeBuilds', {
-                            active: b.active_builds,
-                          })}
-                        </span>
-                        <span className="ml-1.5 text-xs">
-                          {t('builders.slotsTotal', { total: b.slots_total })}
-                        </span>
-                      </>
-                    )}
-                  </td>
-                  <td className="px-3 py-2 text-muted-foreground">
-                    {b.last_seen_at ? (
-                      <RelativeTime at={b.last_seen_at} />
-                    ) : (
-                      t('builders.never')
-                    )}
-                  </td>
-                </tr>
-              ))}
-            </tbody>
-          </table>
-        </div>
+        <ul className="grid gap-2 lg:grid-cols-2 2xl:grid-cols-3">
+          {builders.map((b) => (
+            <BuilderCard key={b.id} builder={b} />
+          ))}
+        </ul>
       )}
     </section>
   )

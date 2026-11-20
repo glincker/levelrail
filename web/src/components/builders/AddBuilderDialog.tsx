@@ -1,6 +1,12 @@
 import { useState } from 'react'
+import { useQueryClient } from '@tanstack/react-query'
 import { useTranslation } from 'react-i18next'
-import { CheckGlassIcon, CopyGlassIcon } from '@thesvg/ui-react'
+import {
+  CheckGlassIcon,
+  CircleCheckGlassIcon,
+  CopyGlassIcon,
+  LoaderCircleGlassIcon,
+} from '@thesvg/ui-react'
 import { Alert, AlertDescription } from '@/components/ui/alert'
 import { Button } from '@/components/ui/button'
 import {
@@ -15,12 +21,55 @@ import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs'
 import { InfoTip } from '../kit/InfoTip'
 import { useCreateNodeJoinToken } from '../../queries/nodes'
 import { buildBuilderJoinCommand } from '../../lib/builderJoin'
+import { findJoinedBuilder } from '../../lib/builderFormat'
+import {
+  buildersOptions,
+  useBuilders,
+  type Builder,
+} from '../../queries/builders'
+
+function WaitingStatus({ joined }: Readonly<{ joined: Builder | undefined }>) {
+  const { t } = useTranslation('nodes')
+  return (
+    <p
+      role="status"
+      className="flex items-center gap-2 rounded-lg border border-border px-3 py-2 text-sm"
+    >
+      {joined ? (
+        <>
+          <CircleCheckGlassIcon
+            aria-hidden="true"
+            size="1.4em"
+            className="text-tone-success"
+          />
+          {t('builders.add.joined', { name: joined.name })}
+        </>
+      ) : (
+        <>
+          <LoaderCircleGlassIcon
+            aria-hidden="true"
+            size="1.4em"
+            className="animate-spin motion-reduce:animate-none"
+          />
+          {t('builders.add.waiting')}
+        </>
+      )}
+    </p>
+  )
+}
 
 // Minted on open and kept in state only: the server never returns the token again.
 function TokenBody({ onClose }: Readonly<{ onClose: () => void }>) {
   const { t } = useTranslation('nodes')
   const mint = useCreateNodeJoinToken()
   const [copied, setCopied] = useState(false)
+  const queryClient = useQueryClient()
+  const [baseline, setBaseline] = useState<string[] | null>(null)
+  const { data: list } = useBuilders(true, baseline !== null)
+  const joined =
+    baseline === null
+      ? undefined
+      : findJoinedBuilder(list?.builders ?? [], baseline)
   const command = mint.data
     ? buildBuilderJoinCommand(window.location.origin, mint.data)
     : ''
@@ -87,6 +136,7 @@ function TokenBody({ onClose }: Readonly<{ onClose: () => void }>) {
           </TabsContent>
         ))}
       </Tabs>
+      {mint.data ? <WaitingStatus joined={joined} /> : null}
       {mint.isError ? (
         <Alert variant="destructive">
           <AlertDescription>{mint.error.message}</AlertDescription>
@@ -102,7 +152,18 @@ function TokenBody({ onClose }: Readonly<{ onClose: () => void }>) {
             variant="outline"
             disabled={mint.isPending}
             onClick={() => {
-              mint.mutate({ builder: true })
+              mint.mutate(
+                { builder: true },
+                {
+                  onSuccess: () => {
+                    void queryClient
+                      .ensureQueryData(buildersOptions())
+                      .then((cached) => {
+                        setBaseline((cached.builders ?? []).map((b) => b.id))
+                      })
+                  },
+                },
+              )
             }}
           >
             {t('builders.add.create')}

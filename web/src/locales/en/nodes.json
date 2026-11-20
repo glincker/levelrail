@@ -1158,7 +1158,9 @@
       "tier": "Tier",
       "arch": "Arch",
       "lastSeen": "Last seen",
-      "builds": "Builds"
+      "builds": "Builds",
+      "avg": "Average build",
+      "pressure": "Pressure"
     },
     "buildsNow": "{{used}} of {{total}}",
     "never": "Never",
@@ -1179,10 +1181,58 @@
       "notCreated": "Create a token to get the command.",
       "create": "Create token",
       "once": "Shown once. Copy it now.",
-      "done": "Done"
+      "done": "Done",
+      "waiting": "Waiting for your builder to connect...",
+      "joined": "{{name}} connected. It is ready to build."
     },
     "tierFor": "Tier of {{name}}",
     "activeBuilds": "{{active}} building",
-    "slotsTotal": "{{total}} slots"
+    "slotsTotal": "{{total}} slots",
+    "emptyTipLabel": "About adding a builder",
+    "emptyTip": "Run one command on the machine that should build. This page updates when it connects, and the token works once.",
+    "avg": "avg {{value}}",
+    "load": "{{used}} of {{total}} build slots in use",
+    "status": {
+      "ready": "Ready",
+      "busy": "Building",
+      "paused": "Paused",
+      "offline": "Offline",
+      "pressure": "Under pressure",
+      "draining": "Draining"
+    },
+    "pressure": {
+      "label": "Load {{level}}",
+      "ok": "ok",
+      "warn": "high",
+      "critical": "critical",
+      "unknown": "unknown"
+    },
+    "detail": {
+      "title": "Builder",
+      "tipLabel": "About this builder",
+      "tip": "Pausing stops new builds from starting here while running ones finish. Removing deletes the registration only; stop the agent on the machine too.",
+      "pause": "Pause",
+      "resume": "Resume",
+      "pauseError": "Could not change the builder: {{message}}",
+      "test": "Test builder",
+      "testing": "Testing...",
+      "testTipLabel": "About the builder test",
+      "testTip": "Runs a small probe build with no app data to confirm the builder responds.",
+      "testPass": "Builder is working",
+      "testFail": "Builder test failed",
+      "latency": "Latency {{ms}} ms",
+      "platform": "Platform {{value}}",
+      "freeDisk": "Free disk {{value}}",
+      "buildkit": "BuildKit {{value}}",
+      "testRequestFailed": "Test could not run: {{message}}",
+      "remove": "Remove",
+      "recent": "Recent builds",
+      "recentEmpty": "No builds yet.",
+      "trend": "Last {{count}} build durations",
+      "success": "Succeeded",
+      "failed": "Failed",
+      "agent": "Agent {{value}}",
+      "acceptsApps": "This node also runs apps, so it cannot be paused here."
+    }
   }
 }

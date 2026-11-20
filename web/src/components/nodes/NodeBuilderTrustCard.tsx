@@ -1,3 +1,4 @@
+import { lazy, Suspense } from 'react'
 import { useTranslation } from 'react-i18next'
 import { ShieldGlassIcon } from '@thesvg/ui-react'
 import { Alert, AlertDescription } from '@/components/ui/alert'
@@ -15,6 +16,9 @@ import {
   type BuildTrustTier,
 } from '../../queries/builderTrust'
 
+// Lazy so the detail panel stays out of the node page chunk.
+const BuilderDetailPanel = lazy(() => import('../builders/BuilderDetailPanel'))
+
 const TIER_VARIANT = {
   server: 'success',
   managed: 'info',
@@ -30,7 +34,7 @@ function BuildTrustBadge({ tier }: Readonly<{ tier: BuildTrustTier }>) {
 
 // Only rendered for build-capable nodes. The current tier comes from the
 // runners list, which already reports it per node.
-export default function NodeBuilderTrustCard({
+function TrustCard({
   nodeId,
   disabled,
 }: Readonly<{ nodeId: string; disabled?: boolean }>) {
@@ -104,5 +108,18 @@ export default function NodeBuilderTrustCard({
         ) : null}
       </CardContent>
     </Card>
+  )
+}
+
+export default function NodeBuilderTrustCard(
+  props: Readonly<{ nodeId: string; disabled?: boolean }>,
+) {
+  return (
+    <>
+      <TrustCard {...props} />
+      <Suspense fallback={null}>
+        <BuilderDetailPanel nodeId={props.nodeId} />
+      </Suspense>
+    </>
   )
 }
