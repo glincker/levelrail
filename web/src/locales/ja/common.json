@@ -1105,7 +1105,15 @@
   "projectsPage": {
     "list": {
       "name": "名前",
-      "created": "作成日時"
+      "created": "作成日時",
+      "pin": "{{name}} をピン留め",
+      "unpin": "{{name}} のピン留めを解除"
+    },
+    "sort": {
+      "label": "並べ替え",
+      "name": "名前",
+      "newest": "新しい順",
+      "oldest": "古い順"
     },
     "empty": {
       "title": "プロジェクトはまだありません",

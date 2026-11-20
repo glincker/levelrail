@@ -1121,7 +1121,15 @@
   "projectsPage": {
     "list": {
       "name": "Nome",
-      "created": "Criado em"
+      "created": "Criado em",
+      "pin": "Fixar {{name}}",
+      "unpin": "Desafixar {{name}}"
+    },
+    "sort": {
+      "label": "Ordenar por",
+      "name": "Nome",
+      "newest": "Mais recentes primeiro",
+      "oldest": "Mais antigos primeiro"
     },
     "empty": {
       "title": "Nenhum projeto ainda",

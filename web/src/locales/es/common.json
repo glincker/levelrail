@@ -855,7 +855,15 @@
   "projectsPage": {
     "list": {
       "name": "Nombre",
-      "created": "Creado"
+      "created": "Creado",
+      "pin": "Fijar {{name}}",
+      "unpin": "Desfijar {{name}}"
+    },
+    "sort": {
+      "label": "Ordenar por",
+      "name": "Nombre",
+      "newest": "Más recientes primero",
+      "oldest": "Más antiguos primero"
     },
     "empty": {
       "title": "Aún no hay proyectos",

@@ -1105,7 +1105,15 @@
   "projectsPage": {
     "list": {
       "name": "名称",
-      "created": "创建时间"
+      "created": "创建时间",
+      "pin": "固定 {{name}}",
+      "unpin": "取消固定 {{name}}"
+    },
+    "sort": {
+      "label": "排序方式",
+      "name": "名称",
+      "newest": "最新优先",
+      "oldest": "最早优先"
     },
     "empty": {
       "title": "还没有项目",

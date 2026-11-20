@@ -347,8 +347,16 @@
       "license": "Lizenzklasse",
       "anyLicense": "Beliebige Lizenz",
       "arch": "Architektur",
-      "anyArch": "Beliebige Architektur"
+      "anyArch": "Beliebige Architektur",
+      "access": "Erreichbarkeit",
+      "anyAccess": "Beliebige Erreichbarkeit",
+      "worksOnIp": "Funktioniert über eine IP (keine Domain nötig)"
     },
+    "needsDomain": {
+      "badge": "Domain erforderlich",
+      "hint": "Nur über einen Domainnamen erreichbar, funktioniert daher nicht mit einer reinen IP-Adresse."
+    },
+    "updatedOn": "Aktualisiert am {{date}}",
     "preview": {
       "badge": "Vorschau",
       "hint": "Noch nicht mit einer echten Engine getestet. Sie lässt sich trotzdem installieren, melden Sie bitte Probleme."

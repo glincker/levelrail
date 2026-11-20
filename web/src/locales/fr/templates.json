@@ -357,8 +357,16 @@
       "license": "Classe de licence",
       "anyLicense": "Toute licence",
       "arch": "Architecture",
-      "anyArch": "Toute architecture"
+      "anyArch": "Toute architecture",
+      "access": "Accessibilité",
+      "anyAccess": "Toute accessibilité",
+      "worksOnIp": "Fonctionne avec une IP (aucun domaine requis)"
     },
+    "needsDomain": {
+      "badge": "Domaine requis",
+      "hint": "Accessible uniquement par un nom de domaine, il ne fonctionne donc pas avec une adresse IP seule."
+    },
+    "updatedOn": "Mis à jour le {{date}}",
     "preview": {
       "badge": "Aperçu",
       "hint": "Pas encore testé sur une vraie exécution du moteur. Il s'installe quand même ; merci de signaler les problèmes."
