@@ -137,7 +137,7 @@ contributes:
           field: rows
           columns: [{ key: sha, label: Commit }, { key: status, label: Status }]
         - { type: markdown, field: note }
-        - { type: button, action: refresh, label: Refresh, confirm: Refresh the list now? }
+        - { type: button, action: refresh, label: Refresh, confirm: "Refresh the list now?" }
   commands:
     - { id: deploys, description: Show recent deploys, panel: deploys }
     - { id: refresh, description: Refresh the list, panel: deploys, action: refresh }

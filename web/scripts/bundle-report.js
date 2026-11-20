@@ -2,6 +2,7 @@
 // Per-chunk size report and budget gate. Reads dist/assets after `vite build`.
 //   node scripts/bundle-report.js            report the largest chunks, fail over budget
 //   node scripts/bundle-report.js --update   rewrite bundle-budgets.json from this build
+//   node scripts/bundle-report.js --headroom print the chunks closest to their budget, read only
 import { readdirSync, readFileSync, statSync, writeFileSync } from 'node:fs'
 import path from 'node:path'
 
@@ -12,6 +13,7 @@ const budgetFile = path.join(root, 'bundle-budgets.json')
 const MIN_BUDGETED_BYTES = 30_000
 const HEADROOM = 0.15
 const TOP_N = 20
+const HEADROOM_TOP_N = Number(process.env.BUNDLE_HEADROOM_TOP_N) || 5
 
 // Rollup names a chunk "<name>-<8 char hash>.js"; mermaid's own diagram
 // chunks carry an uppercase id first and are lazy, so they are not budgeted.
@@ -68,6 +70,23 @@ try {
 }
 
 const ranked = [...sizes].sort(([, a], [, b]) => b - a)
+
+if (process.argv.includes('--headroom')) {
+  const closest = ranked
+    .filter(([name]) => budgets[name] !== undefined)
+    .map(([name, size]) => ({ name, size, budget: budgets[name] }))
+    .sort((a, b) => (a.budget - a.size) / a.budget - (b.budget - b.size) / b.budget)
+    .slice(0, HEADROOM_TOP_N)
+  console.log('[bundle-report] chunks closest to their budget')
+  for (const c of closest) {
+    const pct = (((c.budget - c.size) / c.budget) * 100).toFixed(1)
+    console.log(
+      `  ${c.name.padEnd(36)} ${toKb(c.size).padStart(10)} of ${toKb(c.budget).padStart(10)}  ${pct}% left`,
+    )
+  }
+  process.exit(0)
+}
+
 console.log('[bundle-report] largest chunks (raw size / budget)')
 for (const [name, size] of ranked.slice(0, TOP_N)) {
   const budget = budgets[name]
