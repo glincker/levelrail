@@ -18,6 +18,7 @@ import {
   type TrafficCount,
   type TrafficWindow,
 } from '../../queries/pagesSites'
+import { SiteAnalyticsPanel } from './SiteAnalyticsPanel'
 import { splitCells, STATUS_CELLS, STATUS_CLASSES } from './pageHelpers'
 
 const TrafficSeriesChart = lazy(() => import('./TrafficSeriesChart'))
@@ -201,6 +202,7 @@ export function SiteTrafficCard({
               action={onAddRedirect}
             />
           </div>
+          <SiteAnalyticsPanel name={name} range={win} />
           {d.assets ? (
             <Fold
               summary={t('traffic.assets', {

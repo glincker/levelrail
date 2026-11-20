@@ -4,10 +4,12 @@ import (
 	"encoding/json"
 	"net/http"
 	"net/netip"
+	"strings"
 	"testing"
 	"time"
 
 	"github.com/GLINCKER/levelrail/internal/ingress"
+	"github.com/GLINCKER/levelrail/internal/pages"
 	"github.com/GLINCKER/levelrail/internal/trafficclass"
 )
 
@@ -87,5 +89,31 @@ func TestStaticSiteTrafficSeries(t *testing.T) {
 	}
 	if r = doPolicy(t, rt, cookie, http.MethodGet, "/api/v1/static-sites/web/traffic?range=30d", ""); r.Code != http.StatusOK {
 		t.Fatalf("30d = %d", r.Code)
+	}
+}
+
+func TestStaticSiteAnalyticsPrivacy(t *testing.T) {
+	log := ingress.NewAccessLog(100)
+	now := time.Now()
+	log.Record("web.example.com", ingress.AccessRecord{Time: now.Add(-time.Minute), Host: "web.example.com", Path: "/about?token=secret", Status: 200, Referrer: "news.example.org", Client: netip.MustParseAddr("192.0.2.1")})
+	log.Record("web.example.com", ingress.AccessRecord{Time: now.Add(-time.Minute), Host: "web.example.com", Path: "/gone", Status: 404, Client: netip.MustParseAddr("192.0.2.2")})
+	rt, cookie := visitorsRouter(t, log)
+	r := doPolicy(t, rt, cookie, http.MethodGet, "/api/v1/static-sites/web/analytics?range=7d", "")
+	if r.Code != http.StatusOK {
+		t.Fatalf("code = %d %s", r.Code, r.Body.String())
+	}
+	body := r.Body.String()
+	for _, bad := range []string{"token", "secret", "192.0.2"} {
+		if strings.Contains(body, bad) {
+			t.Fatalf("leaked %q: %s", bad, body)
+		}
+	}
+	var res pages.Analytics
+	_ = json.Unmarshal(r.Body.Bytes(), &res)
+	if len(res.Status) != 2 || res.RetentionDays != 30 {
+		t.Fatalf("res = %+v", res)
+	}
+	if r = doPolicy(t, rt, cookie, http.MethodGet, "/api/v1/static-sites/web/analytics?range=1h", ""); r.Code != http.StatusBadRequest {
+		t.Fatalf("bad range = %d", r.Code)
 	}
 }

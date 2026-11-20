@@ -173,3 +173,14 @@ func (c *Client) ListStaticSiteDeploys(ctx context.Context, name string) ([]Stat
 func (c *Client) PromoteStaticSiteDeploy(ctx context.Context, name, deployID string) error {
 	return c.do(ctx, http.MethodPost, "/api/v1/static-sites/"+PathEscape(name)+"/deploys/"+PathEscape(deployID)+"/promote", nil, nil)
 }
+
+// StaticSiteAnalytics calls GET /api/v1/static-sites/{name}/analytics for a 24h, 7d or 30d range.
+func (c *Client) StaticSiteAnalytics(ctx context.Context, name, rng string) (map[string]any, error) {
+	var out map[string]any
+	path := "/api/v1/static-sites/" + PathEscape(name) + "/analytics"
+	if rng != "" {
+		path += "?range=" + rng
+	}
+	err := c.do(ctx, http.MethodGet, path, nil, &out)
+	return out, err
+}

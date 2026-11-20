@@ -527,5 +527,13 @@
     "github": "GitHub",
     "gitlab": "GitLab",
     "curl": "curl"
+  },
+  "analytics": {
+    "title": "Analytics",
+    "pages": "Top pages",
+    "referrers": "Top referrers",
+    "codes": "Status codes",
+    "none": "Nothing yet.",
+    "privacy": "Built from the edge access log. No cookies, client addresses or query strings are stored. Ranges up to {{days}} days."
   }
 }

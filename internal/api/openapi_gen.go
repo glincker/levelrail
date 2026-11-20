@@ -2112,6 +2112,7 @@ var openAPIRoutes = []openAPIRoute{
 	{Method: "POST", Path: "/api/v1/static-sites", Ability: "AbilityWrite", Group: "Static Sites / Backup Targets / Registry Credentials", Handler: "handleCreateStaticSite", Description: ""},
 	{Method: "DELETE", Path: "/api/v1/static-sites/{name}", Ability: "AbilityWriteSensitive", Group: "Static Sites / Backup Targets / Registry Credentials", Handler: "handleDeleteStaticSite", Description: ""},
 	{Method: "GET", Path: "/api/v1/static-sites/{name}", Ability: "AbilityRead", Group: "Static Sites / Backup Targets / Registry Credentials", Handler: "handleGetStaticSite", Description: ""},
+	{Method: "GET", Path: "/api/v1/static-sites/{name}/analytics", Ability: "AbilityRead", Group: "Static Sites / Backup Targets / Registry Credentials", Handler: "handleStaticSiteAnalytics", Description: ""},
 	{Method: "GET", Path: "/api/v1/static-sites/{name}/checks", Ability: "AbilityRead", Group: "Static Sites / Backup Targets / Registry Credentials", Handler: "handleStaticSiteChecks", Description: ""},
 	{Method: "GET", Path: "/api/v1/static-sites/{name}/deploy-tokens", Ability: "AbilityRead", Group: "Static Sites / Backup Targets / Registry Credentials", Handler: "handleListSiteDeployTokens", Description: ""},
 	{Method: "POST", Path: "/api/v1/static-sites/{name}/deploy-tokens", Ability: "AbilityWriteSensitive", Group: "Static Sites / Backup Targets / Registry Credentials", Handler: "handleCreateSiteDeployToken", Description: ""},

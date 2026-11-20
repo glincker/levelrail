@@ -32,6 +32,8 @@ func runPages(prog string, args []string, stdout, stderr io.Writer, lookupEnv fu
 		return runPagesDeploy(prog, rest, stdout, stderr, lookupEnv, stdin)
 	case "list":
 		return runStaticSitesList(prog, rest, stdout, stderr, lookupEnv)
+	case "analytics":
+		return runPagesAnalytics(prog, rest, stdout, stderr, lookupEnv)
 	case "show":
 		return runPagesShow(prog, rest, stdout, stderr, lookupEnv)
 	case "delete":
@@ -74,6 +76,7 @@ func pagesUsage(prog string) string {
   %[1]s pages deploy --git <url> [--branch b] [--build-command c] [--output-dir d] [--name N]
   %[1]s pages list [flags]
   %[1]s pages show <name> [flags]
+  %[1]s pages analytics <name> [--range 24h|7d|30d] [flags]
   %[1]s pages delete <name> [flags]
   %[1]s pages rollback <name> [version] [flags]
   %[1]s pages token create|list|revoke <site> [flags]   deploy-only tokens for CI (set as APP_API_TOKEN)
