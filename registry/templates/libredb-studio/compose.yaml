@@ -7,12 +7,14 @@ services:
             ADMIN_PASSWORD: $SERVICE_PASSWORD_LIBREDBADMIN
             JWT_SECRET: $SERVICE_PASSWORD_64_LIBREDBJWT
             NEXT_PUBLIC_AUTH_PROVIDER: local
+            HOSTNAME: 0.0.0.0
+            PORT: "3000"
             STORAGE_PROVIDER: local
             STORAGE_SQLITE_PATH: /app/data/libredb-storage.db
         volumes:
             - data:/app/data
         healthcheck:
-            test: ["CMD-SHELL", "wget -q -O /dev/null http://127.0.0.1:3000/ || exit 1"]
+            test: ["CMD-SHELL", "wget -q -O /dev/null http://127.0.0.1:3000/ || node -e \"fetch('http://127.0.0.1:3000/').then(r=>process.exit(r.status<500?0:1)).catch(()=>process.exit(1))\" || bun -e \"fetch('http://127.0.0.1:3000/').then(r=>process.exit(r.status<500?0:1)).catch(()=>process.exit(1))\""]
             interval: 15s
             timeout: 8s
             retries: 10
