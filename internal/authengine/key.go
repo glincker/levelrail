@@ -11,10 +11,17 @@ import (
 )
 
 const (
-	keyService = "auth-engine"
-	keyName    = "encryption_key"
-	keyBytes   = 32
+	legacyKeyService = "auth-engine"
+	keyName          = "encryption_key"
+	keyBytes         = 32
 )
+
+var keyService = secrets.ControlPlaneService("auth-engine")
+
+func validKey(v string) bool {
+	k, err := base64.StdEncoding.DecodeString(v)
+	return err == nil && len(k) == keyBytes
+}
 
 // SecretResolver reads a stored secret by service and key (internal/secrets.Manager).
 type SecretResolver interface {
@@ -30,6 +37,11 @@ type KeyStore interface {
 // LoadOrCreateKey returns the 32-byte key the library uses to encrypt TOTP
 // secrets, generating it on first use. persist=false (dry runs) keeps a new key in memory only.
 func LoadOrCreateKey(ctx context.Context, ks KeyStore, persist bool) ([]byte, error) {
+	if km, ok := ks.(secrets.KeyMover); ok && persist {
+		if err := secrets.MigrateKey(ctx, km, legacyKeyService, keyService, keyName, validKey, nil); err != nil {
+			return nil, fmt.Errorf("authengine: migrate encryption key: %w", err)
+		}
+	}
 	v, err := ks.Resolve(ctx, keyService, keyName)
 	if err == nil {
 		key, decErr := base64.StdEncoding.DecodeString(v)

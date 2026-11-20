@@ -26,10 +26,23 @@ var egressHostLike = regexp.MustCompile(`^[A-Za-z0-9]([A-Za-z0-9.-]{0,251}[A-Za-
 // is checked here instead.
 var nameLike = regexp.MustCompile(`^[a-z][a-z0-9-]*$`)
 
+// reservedNames are namespaces the control plane keeps its own secrets under;
+// an app taking one would share them. Existing apps are not renamed.
+var reservedNames = map[string]bool{
+	"build-records": true, "auth-engine": true, "webpush": true, "heartbeat": true,
+	"heartbeat-jobs": true, "token-lifecycle": true, "secretconnections": true, "secretproviders": true,
+}
+
+// IsReservedName reports whether name is a control plane secrets namespace.
+func IsReservedName(name string) bool { return reservedNames[name] }
+
 // ValidateServiceName checks a service name against the key rules plus the 63 character DNS label limit.
 func ValidateServiceName(name string) error {
 	if len(name) > 63 || !nameLike.MatchString(name) {
 		return fmt.Errorf("name %q must be lowercase letters, digits and hyphens, start with a letter and be at most 63 characters", name)
+	}
+	if reservedNames[name] {
+		return fmt.Errorf("name %q is reserved", name)
 	}
 	return nil
 }

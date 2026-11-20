@@ -18,10 +18,17 @@ import (
 )
 
 const (
-	keyService = "build-records"
-	keyName    = "signing-key"
-	domain     = "levelrail-build-record-v1\n"
+	legacyKeyService = "build-records"
+	keyName          = "signing-key"
+	domain           = "levelrail-build-record-v1\n"
 )
+
+var keyService = secrets.ControlPlaneService("build-records")
+
+func validSeed(v string) bool {
+	raw, err := base64.StdEncoding.DecodeString(v)
+	return err == nil && len(raw) == ed25519.SeedSize
+}
 
 // ErrBadSignature means the record was altered or signed by another key.
 var ErrBadSignature = errors.New("buildrecord: signature does not verify")
@@ -66,6 +73,11 @@ func NewSigner(priv ed25519.PrivateKey) *Signer {
 // LoadOrCreateSigner reads the key from the secrets store, generating it on first use.
 // The seed is stored encrypted and never logged.
 func LoadOrCreateSigner(ctx context.Context, ks KeyStore) (*Signer, error) {
+	if km, ok := ks.(secrets.KeyMover); ok {
+		if err := secrets.MigrateKey(ctx, km, legacyKeyService, keyService, keyName, validSeed, nil); err != nil {
+			return nil, fmt.Errorf("buildrecord: migrate signing key: %w", err)
+		}
+	}
 	seed, err := ks.Resolve(ctx, keyService, keyName)
 	if err == nil {
 		raw, derr := base64.StdEncoding.DecodeString(seed)

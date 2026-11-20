@@ -4,10 +4,13 @@ import (
 	"context"
 	"crypto/ed25519"
 	"crypto/rand"
+	"encoding/base64"
 	"errors"
 	"strings"
 	"testing"
 	"time"
+
+	"github.com/GLINCKER/levelrail/internal/secrets"
 )
 
 type memStore struct {
@@ -110,5 +113,41 @@ func TestAllowListDecidesAlone(t *testing.T) {
 	p := Policy{EnvKind: "production", Allowed: []string{TierManaged}}
 	if p.TierAllowed(TierPersonal, "n1") || !p.TierAllowed(TierManaged, "n2") {
 		t.Fatal("allow-list must decide alone")
+	}
+}
+
+type moverKeys struct{ v map[string]string }
+
+func (m *moverKeys) Resolve(_ context.Context, s, k string) (string, error) {
+	if x, ok := m.v[s+"|"+k]; ok {
+		return x, nil
+	}
+	return "", secrets.ErrValueNotFound
+}
+func (m *moverKeys) SetValue(_ context.Context, s, k, p string) error { m.v[s+"|"+k] = p; return nil }
+func (m *moverKeys) DeleteValue(_ context.Context, s, k string) error {
+	delete(m.v, s+"|"+k)
+	return nil
+}
+
+func TestLoadOrCreateSigner_MigratesLegacyKeyIdempotently(t *testing.T) {
+	ctx := context.Background()
+	ks := &moverKeys{v: map[string]string{}}
+	orig := testSigner(t)
+	ks.v[legacyKeyService+"|"+keyName] = base64.StdEncoding.EncodeToString(orig.priv.Seed())
+	for i := 0; i < 2; i++ {
+		got, err := LoadOrCreateSigner(ctx, ks)
+		if err != nil {
+			t.Fatal(err)
+		}
+		if got.KeyID() != orig.KeyID() {
+			t.Fatal("key changed across migration")
+		}
+	}
+	if _, ok := ks.v[legacyKeyService+"|"+keyName]; ok {
+		t.Fatal("legacy slot should be empty")
+	}
+	if !strings.HasPrefix(keyService, "_") {
+		t.Fatal("signing key must live in the private namespace")
 	}
 }

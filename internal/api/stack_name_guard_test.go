@@ -204,3 +204,12 @@ func TestImportBundleAndComposeDeploy_SameNameNoDeadlock(t *testing.T) {
 		}
 	}
 }
+
+func TestAppNameFree_RejectsReservedControlPlaneNames(t *testing.T) {
+	rt, _ := newTestRouter(t)
+	for _, n := range []string{"build-records", "auth-engine"} {
+		if err := rt.appNameFree(context.Background(), n); !errors.Is(err, errAppNameTaken) {
+			t.Fatalf("%s: err = %v, want taken", n, err)
+		}
+	}
+}

@@ -92,7 +92,8 @@ func (r *Router) dispatchRegistry(ctx context.Context, nodeID string, req Remote
 	if err != nil {
 		return nil, err
 	}
-	token, err := cfg.Issuer.IssueWithCache(repo, tag, cacheRepoFull(req.Cache, cfg.RegistryHost), cfg.TokenTTL)
+	req, cacheRepo := r.cacheForTier(ctx, nodeID, req, cfg.RegistryHost)
+	token, err := cfg.Issuer.IssueWithCache(repo, tag, cacheRepo, cfg.TokenTTL)
 	if err != nil {
 		return nil, err
 	}
@@ -122,6 +123,16 @@ func (r *Router) dispatchRegistry(ctx context.Context, nodeID string, req Remote
 		return nil, fmt.Errorf("build: pull pushed image: %w", err)
 	}
 	return res, nil
+}
+
+// cacheForTier withholds the shared registry cache from personal builders: a
+// push there could poison later builds on server nodes, so they build uncached.
+func (r *Router) cacheForTier(ctx context.Context, nodeID string, req RemoteRequest, host string) (RemoteRequest, string) {
+	if r.nodeTier(ctx, nodeID) == TrustPersonal {
+		req.Cache.RegistryRef = ""
+		return req, ""
+	}
+	return req, cacheRepoFull(req.Cache, host)
 }
 
 // cacheRepoFull is the host-qualified cache repository when the cache lives on the control plane registry.

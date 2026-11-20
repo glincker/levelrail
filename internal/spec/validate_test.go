@@ -228,3 +228,14 @@ func TestService_EffectiveReplicas(t *testing.T) {
 		})
 	}
 }
+
+func TestValidateServiceName_RejectsReserved(t *testing.T) {
+	for _, n := range []string{"build-records", "auth-engine"} {
+		if err := ValidateServiceName(n); err == nil {
+			t.Fatalf("%s should be reserved", n)
+		}
+	}
+	if err := ValidateServiceName("web"); err != nil {
+		t.Fatal(err)
+	}
+}
