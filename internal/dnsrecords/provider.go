@@ -12,6 +12,8 @@ import (
 	"github.com/libdns/cloudflare"
 	"github.com/libdns/libdns"
 	"github.com/libdns/route53"
+
+	"github.com/GLINCKER/levelrail/internal/dnszones"
 )
 
 // Manager is the subset of libdns's interfaces a DNS records view needs:
@@ -42,5 +44,27 @@ func NewRoute53Manager(accessKeyID, secretAccessKey, region, hostedZoneID string
 		SecretAccessKey: secretAccessKey,
 		Region:          region,
 		HostedZoneID:    hostedZoneID,
+	}
+}
+
+// tolerantListManager lists through the zone provider API, which keeps every
+// record set, while writes stay on the wrapped manager. The libdns listing
+// fails the whole zone on one record it cannot parse.
+type tolerantListManager struct {
+	Manager
+	lister ZoneManager
+}
+
+// GetRecords implements Manager.
+func (m tolerantListManager) GetRecords(ctx context.Context, zone string) ([]libdns.Record, error) {
+	return m.lister.GetRecords(ctx, zone)
+}
+
+// NewRoute53TolerantManager is NewRoute53Manager with a listing that survives
+// records the libdns module cannot parse. Writes behave as before.
+func NewRoute53TolerantManager(accessKeyID, secretAccessKey, region, hostedZoneID string) Manager {
+	return tolerantListManager{
+		Manager: NewRoute53Manager(accessKeyID, secretAccessKey, region, hostedZoneID),
+		lister:  ZoneManager{P: dnszones.NewRoute53(accessKeyID, secretAccessKey, region, hostedZoneID)},
 	}
 }

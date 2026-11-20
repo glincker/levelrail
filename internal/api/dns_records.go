@@ -190,7 +190,7 @@ func (rt *Router) resolveRoute53RecordManager(ctx context.Context) (dnsrecords.M
 	if err != nil || c == nil {
 		return nil, err
 	}
-	return dnsrecords.NewRoute53Manager(c.accessKeyID, c.secretAccessKey, c.region, c.hostedZoneID), nil
+	return dnsrecords.NewRoute53TolerantManager(c.accessKeyID, c.secretAccessKey, c.region, c.hostedZoneID), nil
 }
 
 type route53Creds struct{ accessKeyID, secretAccessKey, region, hostedZoneID string }

@@ -240,7 +240,7 @@ func (rt *Router) applyDomainDNS(ctx context.Context, r *http.Request, app, doma
 		return res, nil
 	case err != nil:
 		rt.logger.Error("api: resolve dns target failed", slog.String("error", err.Error()), slog.String("domain", domain))
-		res.DNS, res.Message = dnsResultError, "could not reach the DNS provider"
+		res.DNS, res.Message = dnsResultError, "could not reach the DNS provider: "+dnsErrText(err)
 		return res, nil
 	case target == nil:
 		res.Message = "no DNS provider is connected"
@@ -265,7 +265,7 @@ func (rt *Router) applyDomainDNS(ctx context.Context, r *http.Request, app, doma
 	existing, err := target.Manager.GetRecords(ctx, target.Zone)
 	if err != nil {
 		rt.logger.Error("api: dns automation: list records failed", slog.String("error", err.Error()), slog.String("domain", domain))
-		res.DNS, res.Message = dnsResultError, "could not read the zone's records"
+		res.DNS, res.Message = dnsResultError, "could not read the zone's records: "+dnsErrText(err)
 		return res, nil
 	}
 	plan := dnsrecords.PlanRecord(desired, existing, opts.Replace)
@@ -295,6 +295,16 @@ func (rt *Router) applyDomainDNS(ctx context.Context, r *http.Request, app, doma
 	return rt.writeDomainDNS(ctx, r, app, domain, target, desired, plan, res)
 }
 
+// dnsErrText is the provider's own message, trimmed so one reply stays readable.
+func dnsErrText(err error) string {
+	const maxLen = 300
+	m := strings.TrimSpace(err.Error())
+	if len(m) > maxLen {
+		m = m[:maxLen] + "..."
+	}
+	return m
+}
+
 func previewMessage(outcome string, d dnsrecords.Desired) string {
 	switch outcome {
 	case dnsrecords.OutcomeCreated:
@@ -314,7 +324,7 @@ func (rt *Router) writeDomainDNS(ctx context.Context, r *http.Request, app, doma
 	if len(plan.Replace) > 0 {
 		if _, err := t.Manager.DeleteRecords(ctx, t.Zone, recordsOf(plan.Replace)); err != nil {
 			rt.logger.Error("api: dns automation: delete replaced failed", slog.String("error", err.Error()), slog.String("domain", domain))
-			res.DNS, res.Message = dnsResultError, "could not replace the existing record"
+			res.DNS, res.Message = dnsResultError, "could not replace the existing record: "+dnsErrText(err)
 			return res, nil
 		}
 		for _, old := range plan.Replace {
@@ -324,7 +334,7 @@ func (rt *Router) writeDomainDNS(ctx context.Context, r *http.Request, app, doma
 	}
 	if _, err := t.Manager.AppendRecords(ctx, t.Zone, []libdns.Record{rr}); err != nil {
 		rt.logger.Error("api: dns automation: create record failed", slog.String("error", err.Error()), slog.String("domain", domain))
-		res.DNS, res.Message = dnsResultError, "the DNS provider rejected the record"
+		res.DNS, res.Message = dnsResultError, "the DNS provider rejected the record: "+dnsErrText(err)
 		if errors.Is(err, errDNSNotConfirmed) {
 			res.Message = "the DNS plugin wrote the record but could not confirm it is live; check the zone, then run the fix again"
 			undo = append(undo, undoAction{Kind: undoKindDNSRecord, Domain: domain, Name: d.Name, RecordType: d.Type, Value: d.Value})

@@ -109,6 +109,8 @@ type domainsAddDomainResult struct {
 	Records     []apiclient.DoctorRecord     `json:"records"`
 	Propagation *apiclient.DoctorPropagation `json:"propagation,omitempty"`
 	Status      string                       `json:"status,omitempty"`
+	// Automatic is what the server did about the DNS record, when it tried.
+	Automatic *apiclient.DomainDNSResult `json:"automatic_dns,omitempty"`
 }
 
 // runDomainsAdd implements "domains add <app> <domain>...": add, then print the exact DNS records.
@@ -137,6 +139,11 @@ func runDomainsAdd(prog string, args []string, stdout, stderr io.Writer, lookupE
 	result := domainsAddResult{App: app, Changed: edited.Changed}
 	for _, d := range wanted {
 		entry := domainsAddDomainResult{Domain: d, Records: []apiclient.DoctorRecord{}}
+		for i := range edited.DNSResults {
+			if edited.DNSResults[i].Domain == d {
+				entry.Automatic = &edited.DNSResults[i]
+			}
+		}
 		rep, derr := client.DomainDiagnose(ctx, d)
 		if derr == nil {
 			entry.Records, entry.Propagation, entry.Status = rep.Records, rep.Propagation, rep.Status
@@ -146,15 +153,54 @@ func runDomainsAdd(prog string, args []string, stdout, stderr io.Writer, lookupE
 	return writeScheduledTaskResult(stdout, stderr, of, result, func() {
 		for _, d := range result.Domains {
 			_, _ = fmt.Fprintf(stdout, "%s added to app %q\n", d.Domain, app)
-			if len(d.Records) == 0 {
-				_, _ = fmt.Fprintln(stdout, "  no record to show: this server's public address is unknown, set APP_PUBLIC_HOST")
-				continue
-			}
-			_, _ = fmt.Fprintln(stdout, "  create this record at your DNS provider (skip it if a connected provider already did):")
-			printRecords(stdout, d.Records, "    ")
-			_, _ = fmt.Fprintf(stdout, "  then run: %s domains diagnose %s\n", prog, d.Domain)
+			printDomainsAddDNS(stdout, prog, d)
 		}
 	})
+}
+
+// printDomainsAddDNS reports what automatic DNS did, and when it did not finish the job
+// prints the record the server chose so the manual step matches it.
+func printDomainsAddDNS(stdout io.Writer, prog string, d domainsAddDomainResult) {
+	records := d.Records
+	if a := d.Automatic; a != nil {
+		switch a.DNS {
+		case "created", "updated", "unchanged":
+			_, _ = fmt.Fprintf(stdout, "  automatic DNS: %s%s\n", a.DNS, describeAutoRecord(a))
+			_, _ = fmt.Fprintf(stdout, "  then run: %s domains diagnose %s\n", prog, d.Domain)
+			return
+		case "error":
+			_, _ = fmt.Fprintf(stdout, "  automatic DNS failed, nothing was created: %s\n", a.Message)
+		case "conflict":
+			_, _ = fmt.Fprintf(stdout, "  automatic DNS made no change: %s\n", a.Message)
+		case "preview":
+			_, _ = fmt.Fprintf(stdout, "  automatic DNS preview: %s\n", a.Message)
+		default:
+			if a.Message != "" {
+				_, _ = fmt.Fprintf(stdout, "  automatic DNS did not run: %s\n", a.Message)
+			}
+		}
+		if a.Record != nil {
+			records = []apiclient.DoctorRecord{{Type: a.Record.Type, Name: a.Record.Name, Value: a.Record.Value}}
+		}
+	}
+	if len(records) == 0 {
+		_, _ = fmt.Fprintln(stdout, "  no record to show: this server's public address is unknown, set APP_PUBLIC_HOST")
+		return
+	}
+	_, _ = fmt.Fprintln(stdout, "  create this record at your DNS provider:")
+	printRecords(stdout, records, "    ")
+	_, _ = fmt.Fprintf(stdout, "  then run: %s domains diagnose %s\n", prog, d.Domain)
+}
+
+func describeAutoRecord(a *apiclient.DomainDNSResult) string {
+	if a.Record == nil {
+		return ""
+	}
+	out := fmt.Sprintf(" %s %s -> %s", a.Record.Type, a.Record.Name, a.Record.Value)
+	if a.Provider != "" {
+		out += " (" + a.Provider + ")"
+	}
+	return out
 }
 
 func domainsDiagnoseUsage(prog string) string {
