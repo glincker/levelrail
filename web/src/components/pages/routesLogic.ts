@@ -86,6 +86,12 @@ export interface MatchRule {
   from: string
   to: string
   status: number
+  force?: boolean
+}
+
+export interface MatchCapture {
+  name: string
+  value: string
 }
 
 export interface MatchResult {
@@ -93,51 +99,163 @@ export interface MatchResult {
   status: number
   target: string
   kind: RuleKind
+  from: string
+  force: boolean
+  /** Request path after the server's clean-up, which is what the rules saw. */
+  path: string
+  captures: MatchCapture[]
+  /** A non-forced rule yields to a real file at the path, which the browser cannot see. */
+  yieldsToFile: boolean
 }
+
+export interface TestInput {
+  path: string
+  query: string
+}
+
+/** Tester input to what the server sees: leading slash added, fragment dropped, ?query split off. */
+export function normalizeTestInput(
+  pathInput: string,
+  queryInput: string,
+): TestInput {
+  const noFrag = (pathInput.split('#')[0] ?? '').trim()
+  const [rawPath = '', ...rest] = noFrag.split('?')
+  const q = (queryInput.trim() || rest.join('?')).replace(/^\?/, '')
+  const path = rawPath.trim()
+  if (path === '') return { path: '', query: q }
+  return { path: path.startsWith('/') ? path : `/${path}`, query: q }
+}
+
+/** Same cap as the server, which answers 414 beyond it. */
+export const MAX_REQUEST_PATH = 2048
+
+const SPLAT = 'splat'
+const PLACEHOLDER = /:([A-Za-z_][A-Za-z0-9_]*)/g
+const NAME = /^[A-Za-z_][A-Za-z0-9_]*$/
 
 function escapeRe(s: string): string {
   return s.replace(/[.*+?^${}()|[\]\\]/g, '\\$&')
 }
 
-function compile(from: string): { re: RegExp; names: string[] } {
-  const names: string[] = []
-  const body = from
-    .split('/')
-    .map((seg) => {
-      if (seg === '*') {
-        names.push('splat')
-        return '(.*)'
-      }
-      if (seg.startsWith(':') && seg.length > 1) {
-        names.push(seg.slice(1))
-        return '([^/]+)'
-      }
-      return escapeRe(seg)
-    })
-    .join('/')
-  return { re: new RegExp(`^${body}$`), names }
+/** Mirrors the server's path clean-up: dot segments resolved, one trailing slash kept. */
+export function cleanRequestPath(p: string): string {
+  const out: string[] = []
+  for (const seg of p.split('/')) {
+    if (seg === '' || seg === '.') continue
+    if (seg === '..') out.pop()
+    else out.push(seg)
+  }
+  const joined = '/' + out.join('/')
+  return p.endsWith('/') && joined !== '/' ? joined + '/' : joined
 }
 
-/** First-match-wins client matcher over rules in precedence order, for the live tester. */
+/** Server pattern rules: case-insensitive, optional trailing slash, trailing * is an optional splat. */
+function compile(from: string): { re: RegExp; names: string[] } | null {
+  const trimmed = from.endsWith('/') ? from.slice(0, -1) : from
+  const segs = trimmed === '' ? [] : trimmed.slice(1).split('/')
+  const names: string[] = []
+  let body = ''
+  for (let i = 0; i < segs.length; i++) {
+    const seg = segs[i] ?? ''
+    if (seg === '') return null
+    if (seg === '*') {
+      if (i !== segs.length - 1) return null
+      body += '(?:/([\\s\\S]*))?'
+      names.push(SPLAT)
+    } else if (seg.startsWith(':')) {
+      const name = seg.slice(1)
+      if (!NAME.test(name) || name === SPLAT || names.includes(name)) {
+        return null
+      }
+      body += '/([^/]+)'
+      names.push(name)
+    } else if (/[*:]/.test(seg)) {
+      return null
+    } else {
+      body += '/' + escapeRe(seg)
+    }
+  }
+  body += segs.length === 0 ? '/' : '/?'
+  return { re: new RegExp(`^${body}$`, 'i'), names }
+}
+
+const KEEP = /[!'()*]/g
+const pct = (c: string) => '%' + c.charCodeAt(0).toString(16).toUpperCase()
+
+function pathEscape(seg: string): string {
+  return encodeURIComponent(seg)
+    .replace(/%(24|26|2B|3D|3A|40)/g, (_, h: string) =>
+      String.fromCharCode(parseInt(h, 16)),
+    )
+    .replace(KEEP, pct)
+}
+
+function queryEscape(v: string): string {
+  return encodeURIComponent(v).replace(KEEP, pct).replace(/%20/g, '+')
+}
+
+/** Re-escapes captured values like the server so a decoded control char never reaches a Location. */
+function substitute(to: string, caps: Map<string, string>): string {
+  const q = to.indexOf('?')
+  const fill = (s: string, query: boolean) =>
+    s.replace(PLACEHOLDER, (tok: string, name: string) => {
+      const v = caps.get(name)
+      if (v === undefined) return tok
+      return query ? queryEscape(v) : v.split('/').map(pathEscape).join('/')
+    })
+  if (q < 0) return fill(to, false)
+  return fill(to.slice(0, q), false) + '?' + fill(to.slice(q + 1), true)
+}
+
+function guardLocation(loc: string): string {
+  return loc.startsWith('/') ? '/' + loc.replace(/^[/\\]+/, '') : loc
+}
+
+const stripSlash = (s: string) => (s.endsWith('/') ? s.slice(0, -1) : s)
+
+/**
+ * First-match-wins client matcher over rules in precedence order, for the live tester.
+ * Mirrors internal/staticroutes: the query never takes part in matching, it is only carried
+ * onto redirect targets. Returns null for no match or a path past the server cap.
+ */
 export function matchPath(
   rules: readonly MatchRule[],
-  path: string,
+  rawPath: string,
+  query = '',
 ): MatchResult | null {
+  const path = cleanRequestPath(rawPath)
+  if (path.length > MAX_REQUEST_PATH) return null
   for (let i = 0; i < rules.length; i++) {
     const r = rules[i]
     if (!r || !r.from.startsWith('/') || BAD.test(r.from)) continue
-    const { re, names } = compile(r.from)
-    const m = re.exec(path)
+    const c = compile(r.from)
+    if (!c) continue
+    const m = c.re.exec(path)
     if (!m) continue
-    let target = r.to
-    names.forEach((n, j) => {
-      target = target.split(`:${n}`).join(m[j + 1] ?? '')
-    })
+    const caps = new Map<string, string>()
+    c.names.forEach((n, j) => caps.set(n, m[j + 1] ?? ''))
+    const proxy = parseProxy(r.to) !== null
+    let target = substitute(r.to, caps)
+    if (r.status >= 300 && r.status < 400 && !proxy) {
+      const self =
+        target.startsWith('/') &&
+        !target.includes('?') &&
+        stripSlash(target) === stripSlash(path)
+      if (self) continue
+      const withQ =
+        query && !target.includes('?') ? `${target}?${query}` : target
+      target = guardLocation(withQ)
+    }
     return {
       index: i,
       status: r.status,
       target,
       kind: inferKind(r.to, r.status),
+      from: r.from,
+      force: Boolean(r.force),
+      path,
+      captures: c.names.map((n) => ({ name: n, value: caps.get(n) ?? '' })),
+      yieldsToFile: !r.force && !proxy,
     }
   }
   return null

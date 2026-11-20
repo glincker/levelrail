@@ -10,7 +10,6 @@ import {
   CollapsibleTrigger,
 } from '@/components/ui/collapsible'
 import { EmptyState } from '@/components/ui/empty-state'
-import { Input } from '@/components/ui/input'
 import { Skeleton } from '@/components/ui/skeleton'
 import { ApiError } from '@/lib/apiError'
 import { toast, toastAction } from '@/components/ui/toast'
@@ -27,7 +26,6 @@ import {
 import {
   HeaderEditorRow,
   ReadOnlyHeader,
-  KindChip,
   ReadOnlyRedirect,
   RedirectEditorRow,
 } from './RuleRows'
@@ -44,11 +42,13 @@ import {
   PRESETS,
   buildProxy,
   matchPath,
+  normalizeTestInput,
   targetState,
   validateRow,
   type MatchRule,
   type Preset,
 } from './routesLogic'
+import { RedirectTester } from './RedirectTester'
 import { RawRoutesEditor } from './routesEditor/RawRoutesEditor'
 import { RoutesDiff } from './routesEditor/RoutesDiff'
 import { RoutesViewBar, type RoutesView } from './routesEditor/RoutesViewBar'
@@ -59,62 +59,48 @@ function TestField({
   app,
   path,
   onPath,
+  query,
+  onQuery,
   live,
 }: Readonly<{
   app: string
   path: string
   onPath: (p: string) => void
+  query: string
+  onQuery: (q: string) => void
   live: ReturnType<typeof matchPath>
 }>) {
   const { t } = useTranslation('pagesSites')
   const test = useTestStaticRoutes(app)
-  const invalid = !path.startsWith('/')
+  const norm = normalizeTestInput(path, query)
+  const invalid = norm.path === ''
   const submit = (e: FormEvent) => {
     e.preventDefault()
     if (invalid || test.isPending) return
-    test.mutate({ path, query: '' }, { onSuccess: setD })
+    test.mutate(norm, { onSuccess: setD })
   }
   // Keep the last result on screen while a new test runs so the row never blanks or flashes.
   const [d, setD] = useState<typeof test.data>()
   return (
     <form onSubmit={submit} className="space-y-2">
-      <div className="flex gap-2">
-        <Input
-          aria-label={t('routes.testLabel')}
-          value={path}
-          placeholder={t('routes.testPlaceholder')}
-          aria-invalid={invalid}
-          className="h-9 flex-1 font-mono"
-          onChange={(e) => onPath(e.target.value)}
-        />
-        <Button
-          type="submit"
-          size="sm"
-          className="h-9"
-          disabled={invalid}
-          aria-busy={test.isPending}
-        >
-          {t('routes.test')}
-        </Button>
-      </div>
-      <p
-        className="flex min-h-5 flex-wrap items-center gap-2 text-sm"
-        aria-live="polite"
-      >
-        {live ? (
-          <>
-            <KindChip kind={live.kind} />
-            <Badge variant={live.status >= 400 ? 'warning' : 'success'}>
-              {live.status}
-            </Badge>
-            <span className="font-mono text-xs break-all">{live.target}</span>
-          </>
-        ) : (
-          <span className="text-xs text-muted-foreground">
-            {t('routes.noMatch')}
-          </span>
-        )}
-      </p>
+      <RedirectTester
+        path={path}
+        query={query}
+        onPath={onPath}
+        onQuery={onQuery}
+        live={live}
+        action={
+          <Button
+            type="submit"
+            size="sm"
+            className="h-9"
+            disabled={invalid}
+            aria-busy={test.isPending}
+          >
+            {t('routes.test')}
+          </Button>
+        }
+      />
       {test.isError ? (
         <Alert variant="destructive" role="alert">
           <AlertDescription>{test.error.message}</AlertDescription>
@@ -186,6 +172,7 @@ function RulesEditor({
   const [problems, setProblems] = useState<RuleSaveProblem[]>([])
   const [attempted, setAttempted] = useState(false)
   const [testPath, setTestPath] = useState('/')
+  const [testQuery, setTestQuery] = useState('')
   const [view, setView] = useState<RoutesView>('rows')
   const [showDiff, setShowDiff] = useState(false)
   const [dragFrom, setDragFrom] = useState<number | null>(null)
@@ -213,10 +200,15 @@ function RulesEditor({
       from: r.from.trim(),
       to: r.to.trim(),
       status: Number(r.status),
+      force: r.force,
     })),
     ...lockedRedirects,
   ]
-  const live = testPath.startsWith('/') ? matchPath(rules, testPath) : null
+  const testNorm = normalizeTestInput(testPath, testQuery)
+  const live =
+    testNorm.path === ''
+      ? null
+      : matchPath(rules, testNorm.path, testNorm.query)
   const addRedirect = () =>
     edit({ ...cur, redirects: [...cur.redirects, newRedirect()] })
   const addHeader = () =>
@@ -301,7 +293,14 @@ function RulesEditor({
           {t('routes.testTitle')}
           <InfoTip>{t('routes.testHint')}</InfoTip>
         </h2>
-        <TestField app={app} path={testPath} onPath={setTestPath} live={live} />
+        <TestField
+          app={app}
+          path={testPath}
+          onPath={setTestPath}
+          query={testQuery}
+          onQuery={setTestQuery}
+          live={live}
+        />
       </section>
       <section className="space-y-2 rounded-lg border border-border bg-card p-3">
         <div className="flex flex-wrap items-center justify-between gap-2">

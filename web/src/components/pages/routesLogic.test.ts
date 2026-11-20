@@ -3,6 +3,9 @@ import {
   buildProxy,
   inferKind,
   matchPath,
+  normalizeTestInput,
+  cleanRequestPath,
+  MAX_REQUEST_PATH,
   parseProxy,
   statusForKind,
   targetState,
@@ -101,5 +104,106 @@ describe('reorder', () => {
   it('moves an item and ignores out of range targets', () => {
     expect(moveItem(['a', 'b', 'c'], 0, 2)).toEqual(['b', 'c', 'a'])
     expect(moveItem(['a', 'b'], 0, 5)).toEqual(['a', 'b'])
+  })
+})
+
+describe('matchPath server semantics', () => {
+  it('matches case-insensitively with an optional trailing slash', () => {
+    const r = [{ from: '/About', to: '/about-us', status: 301 }]
+    expect(matchPath(r, '/about/')?.index).toBe(0)
+    expect(matchPath(r, '/ABOUT')?.index).toBe(0)
+  })
+  it('lets a trailing splat match its bare parent with an empty capture', () => {
+    const r = [{ from: '/blog/*', to: '/news/:splat', status: 301 }]
+    const m = matchPath(r, '/blog')
+    expect(m?.captures).toEqual([{ name: 'splat', value: '' }])
+    expect(m?.target).toBe('/news/')
+    expect(matchPath(r, '/blog/a/b')?.target).toBe('/news/a/b')
+  })
+  it('fills named placeholders and escapes the captured value', () => {
+    const r = [{ from: '/u/:id', to: '/users?id=:id', status: 302 }]
+    expect(matchPath(r, '/u/a b')?.target).toBe('/users?id=a+b')
+    expect(matchPath(r, '/u/7')?.captures).toEqual([{ name: 'id', value: '7' }])
+    expect(matchPath(r, '/u/7/x')).toBeNull()
+  })
+  it('carries the query onto redirects only, and not when the target has one', () => {
+    const redirect = [{ from: '/a', to: '/b', status: 301 }]
+    expect(matchPath(redirect, '/a', 'x=1')?.target).toBe('/b?x=1')
+    const own = [{ from: '/a', to: '/b?y=2', status: 301 }]
+    expect(matchPath(own, '/a', 'x=1')?.target).toBe('/b?y=2')
+    const rewrite = [{ from: '/a', to: '/b', status: 200 }]
+    expect(matchPath(rewrite, '/a', 'x=1')?.target).toBe('/b')
+  })
+  it('skips a redirect that would loop onto itself', () => {
+    const r = [
+      { from: '/a', to: '/a/', status: 301 },
+      { from: '/*', to: '/home', status: 302 },
+    ]
+    expect(matchPath(r, '/a')?.index).toBe(1)
+  })
+  it('collapses leading slashes in a redirect location', () => {
+    const r = [{ from: '/x/*', to: '/:splat', status: 301 }]
+    expect(matchPath(r, '/x//evil.test')?.target).toBe('/evil.test')
+  })
+  it('reports forced rules and rules that yield to a file', () => {
+    const r = [
+      { from: '/a', to: '/b', status: 301, force: true },
+      { from: '/c', to: '/d', status: 200 },
+      { from: '/p/*', to: 'app://api/:splat', status: 200 },
+    ]
+    expect(matchPath(r, '/a')).toMatchObject({
+      force: true,
+      yieldsToFile: false,
+    })
+    expect(matchPath(r, '/c')).toMatchObject({
+      kind: 'rewrite',
+      yieldsToFile: true,
+    })
+    expect(matchPath(r, '/p/x')).toMatchObject({
+      kind: 'proxy',
+      yieldsToFile: false,
+    })
+  })
+  it('reports 404 and 410 rules as status kind', () => {
+    const r = [{ from: '/gone', to: '/404.html', status: 410 }]
+    expect(matchPath(r, '/gone')).toMatchObject({ kind: 'status', status: 410 })
+  })
+  it('keeps first-match-wins order and ignores rules the server would reject', () => {
+    const r = [
+      { from: '/a/*/b', to: '/x', status: 301 },
+      { from: '/:splat', to: '/x', status: 301 },
+      { from: '/a', to: '/first', status: 301 },
+      { from: '/a', to: '/second', status: 301 },
+    ]
+    expect(matchPath(r, '/a')?.index).toBe(2)
+  })
+  it('bounds the path like the server', () => {
+    const r = [{ from: '/*', to: '/i', status: 200 }]
+    expect(matchPath(r, '/' + 'a'.repeat(MAX_REQUEST_PATH))).toBeNull()
+  })
+})
+
+describe('test input', () => {
+  it('adds a leading slash and splits the query off', () => {
+    expect(normalizeTestInput('about', '')).toEqual({
+      path: '/about',
+      query: '',
+    })
+    expect(normalizeTestInput('/a?x=1#top', '')).toEqual({
+      path: '/a',
+      query: 'x=1',
+    })
+    expect(normalizeTestInput('/a', '?y=2')).toEqual({
+      path: '/a',
+      query: 'y=2',
+    })
+  })
+  it('treats empty input as idle', () => {
+    expect(normalizeTestInput('  ', '').path).toBe('')
+  })
+  it('cleans dot segments and keeps one trailing slash', () => {
+    expect(cleanRequestPath('/a/./b/../c/')).toBe('/a/c/')
+    expect(cleanRequestPath('//a//b')).toBe('/a/b')
+    expect(cleanRequestPath('/')).toBe('/')
   })
 })

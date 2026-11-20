@@ -379,6 +379,24 @@
     "removed": "Regla eliminada",
     "undo": "Deshacer",
     "noMatch": "Ninguna regla coincide, se sirve el archivo",
+    "tester": {
+      "rule": "Regla {{n}}",
+      "forced": "Forzada",
+      "splat": "Splat",
+      "empty": "(vacío)",
+      "noCapture": "No se usó splat ni marcador",
+      "yields": "Solo se aplica si no existe un archivo en esta ruta. Añade ! al estado para forzarla.",
+      "note": {
+        "rewrite": "Sirve el archivo de destino y pasa a la siguiente regla si falta.",
+        "status": "Responde con este estado y la página de destino."
+      },
+      "empty_input": "Escribe una ruta para ver qué regla coincide.",
+      "tooLong": "La ruta supera {{max}} caracteres, el servidor responde 414.",
+      "none": "Ninguna regla coincide, el archivo se sirve tal cual.",
+      "queryLabel": "Consulta (opcional)",
+      "queryPlaceholder": "?ref=news",
+      "queryIgnored": "La consulta {{query}} no se usa para coincidir."
+    },
     "served": "Las reglas guardadas sirven",
     "rulesHint": "Las reglas se ejecutan de arriba abajo y gana la primera coincidencia. Las reglas definidas aquí tienen prioridad sobre app.yaml y, después, sobre _redirects. Use :splat para el resto de la ruta. Las reglas de proxy reenvían a una aplicación con app://name/path.",
     "preset": {

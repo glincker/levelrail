@@ -375,6 +375,24 @@
     "removed": "规则已移除",
     "undo": "撤销",
     "noMatch": "没有规则匹配，将提供该文件",
+    "tester": {
+      "rule": "规则 {{n}}",
+      "forced": "强制",
+      "splat": "通配段",
+      "empty": "(空)",
+      "noCapture": "未使用通配段或占位符",
+      "yields": "仅当该路径下没有文件时生效。在状态码后加 ! 可强制生效。",
+      "note": {
+        "rewrite": "提供目标文件，若不存在则交给下一条规则。",
+        "status": "以该状态码返回目标页面。"
+      },
+      "empty_input": "输入路径以查看匹配的规则。",
+      "tooLong": "路径超过 {{max}} 个字符，服务器返回 414。",
+      "none": "没有规则匹配，将原样提供该文件。",
+      "queryLabel": "查询参数(可选)",
+      "queryPlaceholder": "?ref=news",
+      "queryIgnored": "查询参数 {{query}} 不参与匹配。"
+    },
     "served": "已保存的规则将提供",
     "rulesHint": "规则从上到下执行，第一个匹配的规则生效。这里设置的规则优先于 app.yaml，再之后是 _redirects。使用 :splat 表示路径的其余部分。代理规则使用 app://name/path 转发到某个应用。",
     "preset": {

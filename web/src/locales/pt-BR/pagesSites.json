@@ -383,6 +383,24 @@
     "removed": "Regra removida",
     "undo": "Desfazer",
     "noMatch": "Nenhuma regra corresponde, o arquivo é servido",
+    "tester": {
+      "rule": "Regra {{n}}",
+      "forced": "Forçada",
+      "splat": "Splat",
+      "empty": "(vazio)",
+      "noCapture": "Nenhum splat ou marcador usado",
+      "yields": "Só se aplica quando não há arquivo neste caminho. Adicione ! ao status para forçar.",
+      "note": {
+        "rewrite": "Serve o arquivo de destino e segue para a próxima regra se faltar.",
+        "status": "Responde com este status e a página de destino."
+      },
+      "empty_input": "Digite um caminho para ver qual regra corresponde.",
+      "tooLong": "O caminho passa de {{max}} caracteres, o servidor responde 414.",
+      "none": "Nenhuma regra corresponde, o arquivo é servido como está.",
+      "queryLabel": "Consulta (opcional)",
+      "queryPlaceholder": "?ref=news",
+      "queryIgnored": "A consulta {{query}} não é usada na correspondência."
+    },
     "served": "As regras salvas servem",
     "rulesHint": "As regras rodam de cima para baixo e a primeira correspondência vence. Regras definidas aqui têm prioridade sobre o app.yaml e depois o _redirects. Use :splat para o restante do caminho. Regras de proxy encaminham para um app com app://nome/caminho.",
     "preset": {

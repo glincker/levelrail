@@ -379,6 +379,24 @@
     "removed": "Rule removed",
     "undo": "Undo",
     "noMatch": "No rule matches, the file is served",
+    "tester": {
+      "rule": "Rule {{n}}",
+      "forced": "Forced",
+      "splat": "Splat",
+      "empty": "(empty)",
+      "noCapture": "No splat or placeholder used",
+      "yields": "Applies only when no file exists at this path. Add ! to the status to force it.",
+      "note": {
+        "rewrite": "Serves the target file, falls through to the next rule if it is missing.",
+        "status": "Answers with this status and the target page."
+      },
+      "empty_input": "Enter a path to see which rule matches.",
+      "tooLong": "Path is longer than {{max}} characters, the server answers 414.",
+      "none": "No rule matches, the file is served as is.",
+      "queryLabel": "Query (optional)",
+      "queryPlaceholder": "?ref=news",
+      "queryIgnored": "The query {{query}} is not used for matching."
+    },
     "served": "Saved rules serve",
     "rulesHint": "Rules run top to bottom and the first match wins. Rules set here rank above app.yaml, then _redirects. Use :splat for the rest of the path. Proxy rules forward to an app with app://name/path.",
     "preset": {

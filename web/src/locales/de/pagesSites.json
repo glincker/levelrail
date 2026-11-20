@@ -379,6 +379,24 @@
     "removed": "Regel entfernt",
     "undo": "Rückgängig",
     "noMatch": "Keine Regel passt, die Datei wird ausgeliefert",
+    "tester": {
+      "rule": "Regel {{n}}",
+      "forced": "Erzwungen",
+      "splat": "Splat",
+      "empty": "(leer)",
+      "noCapture": "Weder Splat noch Platzhalter verwendet",
+      "yields": "Gilt nur, wenn unter diesem Pfad keine Datei existiert. Mit ! am Status erzwingen.",
+      "note": {
+        "rewrite": "Liefert die Zieldatei, sonst geht es mit der nächsten Regel weiter.",
+        "status": "Antwortet mit diesem Status und der Zielseite."
+      },
+      "empty_input": "Pfad eingeben, um die passende Regel zu sehen.",
+      "tooLong": "Der Pfad ist länger als {{max}} Zeichen, der Server antwortet mit 414.",
+      "none": "Keine Regel passt, die Datei wird unverändert ausgeliefert.",
+      "queryLabel": "Query (optional)",
+      "queryPlaceholder": "?ref=news",
+      "queryIgnored": "Die Query {{query}} wird nicht zum Abgleich verwendet."
+    },
     "served": "Gespeicherte Regeln liefern",
     "rulesHint": "Regeln laufen von oben nach unten, die erste Übereinstimmung gewinnt. Hier gesetzte Regeln stehen vor app.yaml, danach kommt _redirects. Verwenden Sie :splat für den Rest des Pfads. Proxy-Regeln leiten an eine App mit app://name/path weiter.",
     "preset": {

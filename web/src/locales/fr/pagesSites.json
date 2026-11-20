@@ -379,6 +379,24 @@
     "removed": "Règle retirée",
     "undo": "Annuler",
     "noMatch": "Aucune règle ne correspond, le fichier est servi",
+    "tester": {
+      "rule": "Règle {{n}}",
+      "forced": "Forcée",
+      "splat": "Splat",
+      "empty": "(vide)",
+      "noCapture": "Ni splat ni paramètre utilisé",
+      "yields": "S'applique seulement si aucun fichier n'existe à ce chemin. Ajoutez ! au statut pour la forcer.",
+      "note": {
+        "rewrite": "Sert le fichier cible, sinon passe à la règle suivante.",
+        "status": "Répond avec ce statut et la page cible."
+      },
+      "empty_input": "Saisissez un chemin pour voir quelle règle correspond.",
+      "tooLong": "Le chemin dépasse {{max}} caractères, le serveur répond 414.",
+      "none": "Aucune règle ne correspond, le fichier est servi tel quel.",
+      "queryLabel": "Requête (facultatif)",
+      "queryPlaceholder": "?ref=news",
+      "queryIgnored": "La requête {{query}} n'est pas utilisée pour la correspondance."
+    },
     "served": "Les règles enregistrées servent",
     "rulesHint": "Les règles s'exécutent de haut en bas, la première correspondance l'emporte. Les règles définies ici passent avant app.yaml, puis _redirects. Utilisez :splat pour le reste du chemin. Les règles de proxy transmettent vers une app avec app://nom/chemin.",
     "preset": {
