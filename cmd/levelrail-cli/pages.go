@@ -26,6 +26,8 @@ func runPages(prog string, args []string, stdout, stderr io.Writer, lookupEnv fu
 		return exitOK
 	case "init":
 		return runPagesInit(prog, rest, stdout, stderr)
+	case "import":
+		return runPagesImport(prog, rest, stdout, stderr)
 	case "deploy":
 		return runPagesDeploy(prog, rest, stdout, stderr, lookupEnv, stdin)
 	case "list":
@@ -64,6 +66,7 @@ func runPages(prog string, args []string, stdout, stderr io.Writer, lookupEnv fu
 func pagesUsage(prog string) string {
 	return fmt.Sprintf(`Usage:
   %[1]s pages init [dir] [--starter blank|landing|docs|portfolio]
+  %[1]s pages import <dir> [--write]
   %[1]s pages deploy <dir|zip> [--name N] [--domain D] [flags]
   %[1]s pages deploy --url <https://host/site.zip|.tar.gz> [--name N] [--domain D]
   %[1]s pages deploy --git <url> [--branch b] [--build-command c] [--output-dir d] [--name N]
