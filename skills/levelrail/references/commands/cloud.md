@@ -51,7 +51,7 @@ The provider credential for "accounts add" is read from LEVELRAIL_CLOUD_CREDENTI
 
 ## levelrail-cli cloud aws
 
-Subcommands: acm, audit, cleanup-plan, ecr, elasticache, guard, idle, link-kit, logs, metrics, rds, secrets, snapshots, vault-kit
+Subcommands: acm, audit, cleanup-plan, cloudfront, ecr, elasticache, guard, idle, link-kit, logs, metrics, rds, secrets, snapshots, ssm, vault-kit
 
 ```
 Usage:
