@@ -47,6 +47,150 @@ The provider credential for "accounts add" is read from LEVELRAIL_CLOUD_CREDENTI
 "rm" on an instance terminates it and needs the root ability; add --keep-boot-volume to keep the disk.
 ```
 
+## levelrail-cli cloud aws
+
+Subcommands: acm, audit, cleanup-plan, ecr, guard, link-kit, secrets
+
+```
+Usage:
+  levelrail-cli cloud accounts list|verify|probe|regions|rm|grants [ID]
+  levelrail-cli cloud accounts add ID --provider P [--method M] [--region R] [--role-arn ARN] [--account-id ID] [--external-id X] [--label L] [--team T]
+  levelrail-cli cloud accounts add ID --provider oracle --tenancy OCID --user OCID --fingerprint FP --compartment OCID --region R [--subnet OCID]
+  levelrail-cli cloud instances list ACCOUNT [--region R]
+  levelrail-cli cloud instances show|start|stop|soft-stop|reboot|soft-reboot|rm ACCOUNT INSTANCE
+  levelrail-cli cloud instances resize ACCOUNT INSTANCE [--type T] [--ocpus N] [--memory-gb N]
+  levelrail-cli cloud instances tag ACCOUNT INSTANCE KEY=VALUE...
+  levelrail-cli cloud spend ACCOUNT [--refresh]
+  levelrail-cli cloud aws link-kit --trusted-principal ARN [--role-name N] [--region R] [--template-url URL] [--guard-policy ARN]
+  levelrail-cli cloud aws ecr|acm|secrets|audit|guard|cleanup-plan ACCOUNT ... (run "cloud aws" for details)
+  levelrail-cli cloud oracle policy-kit --group G --compartment NAME_OR_OCID [--policy-name N] [--manage]
+
+The provider credential for "accounts add" is read from LEVELRAIL_CLOUD_CREDENTIAL, never from a flag (for oracle it is the PEM private key).
+"rm" on an instance terminates it and needs the root ability; add --keep-boot-volume to keep the disk.
+Usage:
+  levelrail-cli cloud aws ecr list|login ACCOUNT [--region R]
+  levelrail-cli cloud aws ecr create ACCOUNT NAME [--region R] [--env E] [--project P]
+  levelrail-cli cloud aws acm list ACCOUNT [--region R]
+  levelrail-cli cloud aws acm request ACCOUNT DOMAIN [--alt NAME]... [--region R]
+  levelrail-cli cloud aws secrets list ACCOUNT [--path /P] [--region R]
+  levelrail-cli cloud aws secrets put ACCOUNT /NAME [--overwrite] [--region R]
+  levelrail-cli cloud aws secrets reveal ACCOUNT NAME [--kind ssm|secretsmanager] [--region R]
+  levelrail-cli cloud aws audit ACCOUNT RESOURCE [--region R]
+  levelrail-cli cloud aws guard ACCOUNT [--kill-switch on|off]
+  levelrail-cli cloud aws cleanup-plan ACCOUNT [--region R]
+
+Every command takes --json. Every service is off until enabled in runtime settings. "secrets put" reads the value from LEVELRAIL_AWS_SECRET_VALUE.
+"cleanup-plan" is a dry run and never deletes anything.
+```
+
+## levelrail-cli cloud aws acm
+
+Subcommands: list, request
+
+```
+Usage of levelrail-cli cloud aws acm:
+  -alt value
+    	alternative certificate name, repeatable
+  -api-url string
+    	control plane API base URL (overrides LEVELRAIL_API_URL or APP_API_URL and the credentials file, default http://localhost:8080)
+  -env string
+    	env tag for new resources
+  -json
+    	print the result as JSON to stdout and nothing else
+  -kill-switch string
+    	on or off, root only
+  -kind string
+    	ssm or secretsmanager (default "ssm")
+  -output string
+    	output format: json, table, or text (default table; --json is shorthand for --output json)
+  -overwrite
+    	overwrite an existing parameter
+  -path string
+    	SSM path prefix
+  -profile string
+    	named credentials profile to read (overrides APP_PROFILE, default "default")
+  -project string
+    	project tag for new resources
+  -query string
+    	JMESPath expression to filter the result before printing (e.g. "[?status=='running'].name")
+  -region string
+    	AWS region, defaults to the account region
+  -token string
+    	API token (overrides LEVELRAIL_TOKEN or APP_API_TOKEN and the credentials file)
+```
+
+## levelrail-cli cloud aws ecr
+
+Subcommands: create, list, login
+
+```
+Usage of levelrail-cli cloud aws ecr:
+  -alt value
+    	alternative certificate name, repeatable
+  -api-url string
+    	control plane API base URL (overrides LEVELRAIL_API_URL or APP_API_URL and the credentials file, default http://localhost:8080)
+  -env string
+    	env tag for new resources
+  -json
+    	print the result as JSON to stdout and nothing else
+  -kill-switch string
+    	on or off, root only
+  -kind string
+    	ssm or secretsmanager (default "ssm")
+  -output string
+    	output format: json, table, or text (default table; --json is shorthand for --output json)
+  -overwrite
+    	overwrite an existing parameter
+  -path string
+    	SSM path prefix
+  -profile string
+    	named credentials profile to read (overrides APP_PROFILE, default "default")
+  -project string
+    	project tag for new resources
+  -query string
+    	JMESPath expression to filter the result before printing (e.g. "[?status=='running'].name")
+  -region string
+    	AWS region, defaults to the account region
+  -token string
+    	API token (overrides LEVELRAIL_TOKEN or APP_API_TOKEN and the credentials file)
+```
+
+## levelrail-cli cloud aws secrets
+
+Subcommands: list, put, reveal
+
+```
+Usage of levelrail-cli cloud aws secrets:
+  -alt value
+    	alternative certificate name, repeatable
+  -api-url string
+    	control plane API base URL (overrides LEVELRAIL_API_URL or APP_API_URL and the credentials file, default http://localhost:8080)
+  -env string
+    	env tag for new resources
+  -json
+    	print the result as JSON to stdout and nothing else
+  -kill-switch string
+    	on or off, root only
+  -kind string
+    	ssm or secretsmanager (default "ssm")
+  -output string
+    	output format: json, table, or text (default table; --json is shorthand for --output json)
+  -overwrite
+    	overwrite an existing parameter
+  -path string
+    	SSM path prefix
+  -profile string
+    	named credentials profile to read (overrides APP_PROFILE, default "default")
+  -project string
+    	project tag for new resources
+  -query string
+    	JMESPath expression to filter the result before printing (e.g. "[?status=='running'].name")
+  -region string
+    	AWS region, defaults to the account region
+  -token string
+    	API token (overrides LEVELRAIL_TOKEN or APP_API_TOKEN and the credentials file)
+```
+
 ## levelrail-cli cloud connect
 
 Subcommands: oci
@@ -91,7 +235,7 @@ read-only check and prints a class and a short reason. Config flags: --region,
 
 ## levelrail-cli cloud instances
 
-Subcommands: list, rm, show, start, stop, tag
+Subcommands: list, reboot, resize, rm, show, soft-reboot, soft-stop, start, stop, tag
 
 ```
 cloud instances --help: an account ID and instance ID are required

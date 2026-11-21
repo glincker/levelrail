@@ -140,7 +140,8 @@
     "deleteBody": "保存された認証情報が削除され、付与された権限は使えなくなります。クラウド側のリソースには触れません。確認のため名前を入力してください。",
     "regions": "リージョン",
     "regionsFailed": "リージョンを取得できませんでした。",
-    "instances": "インスタンス"
+    "instances": "インスタンス",
+    "services": "サービス"
   },
   "access": {
     "needsShare": "アクセスを確認するには、このアカウントの共有権限が必要です。",
@@ -259,6 +260,72 @@
       "saveTags": "タグを保存",
       "readOnly": "このインスタンスのタグは読み取り専用です。",
       "saved": "タグを保存しました。"
+    }
+  },
+  "services": {
+    "on": "オン",
+    "off": "オフ",
+    "toggle": "{{name}}を有効にする",
+    "copy": "コピー",
+    "copied": "コピーしました",
+    "disabled": "このサービスはオフです。rootユーザーがここまたはランタイム設定で有効にできます。",
+    "disabledRoot": "このサービスはオフです。スイッチで有効にします。",
+    "ecr": {
+      "title": "コンテナレジストリ (ECR)",
+      "name": "リポジトリ",
+      "namePlaceholder": "my-app",
+      "uri": "URI",
+      "create": "作成",
+      "copyLogin": "ログインコマンドをコピー",
+      "empty": "リポジトリはありません。"
+    },
+    "acm": {
+      "title": "証明書 (ACM)",
+      "domain": "ドメイン",
+      "request": "証明書をリクエスト",
+      "empty": "証明書はありません。",
+      "copyName": "名前をコピー",
+      "copyValue": "値をコピー",
+      "domainPlaceholder": "app.example.com"
+    },
+    "secrets": {
+      "title": "パラメータ (SSM)",
+      "name": "名前",
+      "value": "値",
+      "overwrite": "上書き",
+      "put": "保存",
+      "redacted": "非表示",
+      "empty": "パラメータはありません。",
+      "namePlaceholder": "/app/key"
+    },
+    "cloudtrail": {
+      "title": "監査 (CloudTrail)"
+    },
+    "audit": {
+      "resource": "リソース名",
+      "search": "検索",
+      "hint": "リソース名を入力すると最近のイベントを表示します。",
+      "empty": "イベントはありません。",
+      "time": "時刻",
+      "event": "イベント",
+      "user": "ユーザー"
+    },
+    "guard": {
+      "title": "支出ガード",
+      "cap": "月間上限",
+      "noCap": "なし",
+      "mtd": "当月累計",
+      "unavailable": "取得不可",
+      "killSwitch": "緊急停止",
+      "rootOnly": "rootのみ変更できます。",
+      "cleanup": "クリーンアッププラン",
+      "dryRun": "ドライラン",
+      "loadPlan": "プランを読み込む",
+      "resource": "リソース",
+      "reason": "理由",
+      "expired": "期限切れ {{when}}",
+      "orphan": "未接続の{{kind}}:",
+      "nothing": "整理する対象はありません。"
     }
   }
 }

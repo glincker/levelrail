@@ -140,7 +140,8 @@
     "deleteBody": "The stored credential is removed and grants stop working. Resources in the cloud account are not touched. Type the name to confirm.",
     "regions": "Regions",
     "regionsFailed": "Regions could not be listed.",
-    "instances": "Instances"
+    "instances": "Instances",
+    "services": "Services"
   },
   "access": {
     "needsShare": "You need the share permission on this account to see who has access.",
@@ -259,6 +260,72 @@
       "saveTags": "Save tags",
       "readOnly": "Tags are read only for this instance.",
       "saved": "Tags saved."
+    }
+  },
+  "services": {
+    "on": "On",
+    "off": "Off",
+    "toggle": "Enable {{name}}",
+    "copy": "Copy",
+    "copied": "Copied",
+    "disabled": "This service is off. A root user can enable it here or in runtime settings.",
+    "disabledRoot": "This service is off. Use the switch to enable it.",
+    "ecr": {
+      "title": "Container registry (ECR)",
+      "name": "Repository",
+      "namePlaceholder": "my-app",
+      "uri": "URI",
+      "create": "Create",
+      "copyLogin": "Copy login command",
+      "empty": "No repositories."
+    },
+    "acm": {
+      "title": "Certificates (ACM)",
+      "domain": "Domain",
+      "request": "Request certificate",
+      "empty": "No certificates.",
+      "copyName": "Copy name",
+      "copyValue": "Copy value",
+      "domainPlaceholder": "app.example.com"
+    },
+    "secrets": {
+      "title": "Parameters (SSM)",
+      "name": "Name",
+      "value": "Value",
+      "overwrite": "Overwrite",
+      "put": "Save",
+      "redacted": "Hidden",
+      "empty": "No parameters.",
+      "namePlaceholder": "/app/key"
+    },
+    "cloudtrail": {
+      "title": "Audit (CloudTrail)"
+    },
+    "audit": {
+      "resource": "Resource name",
+      "search": "Search",
+      "hint": "Enter a resource name to see its recent events.",
+      "empty": "No events.",
+      "time": "Time",
+      "event": "Event",
+      "user": "User"
+    },
+    "guard": {
+      "title": "Spend guard",
+      "cap": "Monthly cap",
+      "noCap": "none",
+      "mtd": "Month to date",
+      "unavailable": "unavailable",
+      "killSwitch": "Kill switch",
+      "rootOnly": "Only root can change this.",
+      "cleanup": "Cleanup plan",
+      "dryRun": "Dry run",
+      "loadPlan": "Load plan",
+      "resource": "Resource",
+      "reason": "Reason",
+      "expired": "Expired {{when}}",
+      "orphan": "Unattached {{kind}}:",
+      "nothing": "Nothing to clean up."
     }
   }
 }

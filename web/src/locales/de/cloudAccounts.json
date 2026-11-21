@@ -140,7 +140,8 @@
     "deleteBody": "Die gespeicherten Zugangsdaten werden entfernt und Freigaben funktionieren nicht mehr. Ressourcen im Cloud-Konto bleiben unberührt. Tippe den Namen zur Bestätigung.",
     "regions": "Regionen",
     "regionsFailed": "Regionen konnten nicht aufgelistet werden.",
-    "instances": "Instanzen"
+    "instances": "Instanzen",
+    "services": "Dienste"
   },
   "access": {
     "needsShare": "Du brauchst die Freigabe-Berechtigung für dieses Konto, um den Zugriff zu sehen.",
@@ -259,6 +260,72 @@
       "saveTags": "Tags speichern",
       "readOnly": "Die Tags dieser Instanz sind schreibgeschützt.",
       "saved": "Tags gespeichert."
+    }
+  },
+  "services": {
+    "on": "An",
+    "off": "Aus",
+    "toggle": "{{name}} aktivieren",
+    "copy": "Kopieren",
+    "copied": "Kopiert",
+    "disabled": "Dieser Dienst ist aus. Ein Root-Nutzer kann ihn hier oder in den Laufzeiteinstellungen aktivieren.",
+    "disabledRoot": "Dieser Dienst ist aus. Mit dem Schalter aktivieren.",
+    "ecr": {
+      "title": "Container-Registry (ECR)",
+      "name": "Repository",
+      "namePlaceholder": "my-app",
+      "uri": "URI",
+      "create": "Erstellen",
+      "copyLogin": "Login-Befehl kopieren",
+      "empty": "Keine Repositories."
+    },
+    "acm": {
+      "title": "Zertifikate (ACM)",
+      "domain": "Domain",
+      "request": "Zertifikat anfordern",
+      "empty": "Keine Zertifikate.",
+      "copyName": "Name kopieren",
+      "copyValue": "Wert kopieren",
+      "domainPlaceholder": "app.example.com"
+    },
+    "secrets": {
+      "title": "Parameter (SSM)",
+      "name": "Name",
+      "value": "Wert",
+      "overwrite": "Überschreiben",
+      "put": "Speichern",
+      "redacted": "Verborgen",
+      "empty": "Keine Parameter.",
+      "namePlaceholder": "/app/key"
+    },
+    "cloudtrail": {
+      "title": "Audit (CloudTrail)"
+    },
+    "audit": {
+      "resource": "Ressourcenname",
+      "search": "Suchen",
+      "hint": "Ressourcennamen eingeben, um die letzten Ereignisse zu sehen.",
+      "empty": "Keine Ereignisse.",
+      "time": "Zeit",
+      "event": "Ereignis",
+      "user": "Nutzer"
+    },
+    "guard": {
+      "title": "Ausgabenschutz",
+      "cap": "Monatslimit",
+      "noCap": "keins",
+      "mtd": "Bisher im Monat",
+      "unavailable": "nicht verfügbar",
+      "killSwitch": "Notaus",
+      "rootOnly": "Nur Root kann das ändern.",
+      "cleanup": "Bereinigungsplan",
+      "dryRun": "Probelauf",
+      "loadPlan": "Plan laden",
+      "resource": "Ressource",
+      "reason": "Grund",
+      "expired": "Abgelaufen {{when}}",
+      "orphan": "Nicht angehängt {{kind}}:",
+      "nothing": "Nichts zu bereinigen."
     }
   }
 }

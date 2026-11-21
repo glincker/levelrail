@@ -140,7 +140,8 @@
     "deleteBody": "已保存的凭据会被移除，授权将失效。云账号中的资源不受影响。请输入名称确认。",
     "regions": "区域",
     "regionsFailed": "无法列出区域。",
-    "instances": "实例"
+    "instances": "实例",
+    "services": "服务"
   },
   "access": {
     "needsShare": "需要此账号的共享权限才能查看谁有访问权。",
@@ -259,6 +260,72 @@
       "saveTags": "保存标签",
       "readOnly": "此实例的标签为只读。",
       "saved": "标签已保存。"
+    }
+  },
+  "services": {
+    "on": "开",
+    "off": "关",
+    "toggle": "启用{{name}}",
+    "copy": "复制",
+    "copied": "已复制",
+    "disabled": "此服务已关闭。root 用户可在此处或运行时设置中启用。",
+    "disabledRoot": "此服务已关闭。使用开关启用。",
+    "ecr": {
+      "title": "容器镜像仓库 (ECR)",
+      "name": "仓库",
+      "namePlaceholder": "my-app",
+      "uri": "URI",
+      "create": "创建",
+      "copyLogin": "复制登录命令",
+      "empty": "没有仓库。"
+    },
+    "acm": {
+      "title": "证书 (ACM)",
+      "domain": "域名",
+      "request": "申请证书",
+      "empty": "没有证书。",
+      "copyName": "复制名称",
+      "copyValue": "复制值",
+      "domainPlaceholder": "app.example.com"
+    },
+    "secrets": {
+      "title": "参数 (SSM)",
+      "name": "名称",
+      "value": "值",
+      "overwrite": "覆盖",
+      "put": "保存",
+      "redacted": "已隐藏",
+      "empty": "没有参数。",
+      "namePlaceholder": "/app/key"
+    },
+    "cloudtrail": {
+      "title": "审计 (CloudTrail)"
+    },
+    "audit": {
+      "resource": "资源名称",
+      "search": "搜索",
+      "hint": "输入资源名称以查看其最近事件。",
+      "empty": "没有事件。",
+      "time": "时间",
+      "event": "事件",
+      "user": "用户"
+    },
+    "guard": {
+      "title": "支出防护",
+      "cap": "月度上限",
+      "noCap": "无",
+      "mtd": "本月累计",
+      "unavailable": "不可用",
+      "killSwitch": "紧急开关",
+      "rootOnly": "仅 root 可修改。",
+      "cleanup": "清理计划",
+      "dryRun": "试运行",
+      "loadPlan": "加载计划",
+      "resource": "资源",
+      "reason": "原因",
+      "expired": "已过期 {{when}}",
+      "orphan": "未挂载的{{kind}}：",
+      "nothing": "无需清理。"
     }
   }
 }

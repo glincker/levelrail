@@ -22,6 +22,7 @@ import type { CloudVerifyResult } from '../../types/cloudAccounts'
 import { CapabilityResults } from './CapabilityResults'
 import { CloudAccountAccess } from './CloudAccountAccess'
 import { CloudInstancesTab } from './CloudInstancesTab'
+import { CloudServicesTab } from './CloudServicesTab'
 import { CloudSpendCard } from './CloudSpendCard'
 import { CloudProviderMark } from './CloudProviderMark'
 
@@ -96,6 +97,9 @@ export function CloudAccountDetail({ id }: Readonly<{ id: string }>) {
         <TabsList aria-label={t('detail.tabs')}>
           <TabsTrigger value="overview">{t('detail.overview')}</TabsTrigger>
           <TabsTrigger value="instances">{t('detail.instances')}</TabsTrigger>
+          {a.provider === 'aws' ? (
+            <TabsTrigger value="services">{t('detail.services')}</TabsTrigger>
+          ) : null}
           <TabsTrigger value="access">{t('detail.access')}</TabsTrigger>
         </TabsList>
         <TabsContent value="overview" className="space-y-4 pt-2">
@@ -234,6 +238,11 @@ export function CloudAccountDetail({ id }: Readonly<{ id: string }>) {
         <TabsContent value="instances" className="pt-2">
           <CloudInstancesTab accountId={id} provider={a.provider} />
         </TabsContent>
+        {a.provider === 'aws' ? (
+          <TabsContent value="services" className="pt-2">
+            <CloudServicesTab accountId={id} />
+          </TabsContent>
+        ) : null}
         <TabsContent value="access" className="pt-2">
           <CloudAccountAccess accountId={id} canShare={actions.share} />
         </TabsContent>

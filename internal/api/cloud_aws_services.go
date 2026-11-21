@@ -536,7 +536,7 @@ func (rt *Router) handleAWSKillSwitch(w http.ResponseWriter, r *http.Request) {
 	}
 	raw, _ := json.Marshal(body.Enabled)
 	if _, err := rt.runtimeSettings.Set(r.Context(), runtimesettings.KeyCloudGuardKillSwitch, raw, rt.eventActor(r)); err != nil {
-		writeError(w, http.StatusInternalServerError, "could not save the kill switch")
+		rt.internalError(w, "save cloud kill switch", err)
 		return
 	}
 	rt.auditCloud(r, "cloud.aws.guard.kill_switch", map[string]any{"account": a.ID, "enabled": body.Enabled})

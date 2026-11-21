@@ -296,7 +296,14 @@ func runCloudAWS(prog string, args []string, stdout, stderr io.Writer, lookupEnv
 	if len(args) > 0 && isCloudAWSService(args[0]) {
 		return runCloudAWSServices(prog, args[0], args[1:], stdout, stderr, lookupEnv)
 	}
-	if len(args) == 0 || args[0] != "link-kit" {
+	if len(args) == 0 {
+		_, _ = fmt.Fprint(stderr, cloudAccountsUsage(prog))
+		_, _ = fmt.Fprint(stderr, cloudAWSServicesUsage(prog))
+		return exitUsage
+	}
+	switch args[0] {
+	case "link-kit":
+	default:
 		_, _ = fmt.Fprint(stderr, cloudAccountsUsage(prog))
 		_, _ = fmt.Fprint(stderr, cloudAWSServicesUsage(prog))
 		return exitUsage

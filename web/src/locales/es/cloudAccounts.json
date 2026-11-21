@@ -140,7 +140,8 @@
     "deleteBody": "Se elimina la credencial guardada y los permisos dejan de funcionar. Los recursos de la cuenta cloud no se tocan. Escribe el nombre para confirmar.",
     "regions": "Regiones",
     "regionsFailed": "No se pudieron listar las regiones.",
-    "instances": "Instancias"
+    "instances": "Instancias",
+    "services": "Servicios"
   },
   "access": {
     "needsShare": "Necesitas el permiso de compartir en esta cuenta para ver quién tiene acceso.",
@@ -259,6 +260,72 @@
       "saveTags": "Guardar etiquetas",
       "readOnly": "Las etiquetas son de solo lectura en esta instancia.",
       "saved": "Etiquetas guardadas."
+    }
+  },
+  "services": {
+    "on": "Activo",
+    "off": "Inactivo",
+    "toggle": "Activar {{name}}",
+    "copy": "Copiar",
+    "copied": "Copiado",
+    "disabled": "Este servicio está desactivado. Un usuario root puede activarlo aquí o en los ajustes de ejecución.",
+    "disabledRoot": "Este servicio está desactivado. Usa el interruptor para activarlo.",
+    "ecr": {
+      "title": "Registro de contenedores (ECR)",
+      "name": "Repositorio",
+      "namePlaceholder": "my-app",
+      "uri": "URI",
+      "create": "Crear",
+      "copyLogin": "Copiar comando de acceso",
+      "empty": "Sin repositorios."
+    },
+    "acm": {
+      "title": "Certificados (ACM)",
+      "domain": "Dominio",
+      "request": "Solicitar certificado",
+      "empty": "Sin certificados.",
+      "copyName": "Copiar nombre",
+      "copyValue": "Copiar valor",
+      "domainPlaceholder": "app.example.com"
+    },
+    "secrets": {
+      "title": "Parámetros (SSM)",
+      "name": "Nombre",
+      "value": "Valor",
+      "overwrite": "Sobrescribir",
+      "put": "Guardar",
+      "redacted": "Oculto",
+      "empty": "Sin parámetros.",
+      "namePlaceholder": "/app/key"
+    },
+    "cloudtrail": {
+      "title": "Auditoría (CloudTrail)"
+    },
+    "audit": {
+      "resource": "Nombre del recurso",
+      "search": "Buscar",
+      "hint": "Escribe un recurso para ver sus eventos recientes.",
+      "empty": "Sin eventos.",
+      "time": "Hora",
+      "event": "Evento",
+      "user": "Usuario"
+    },
+    "guard": {
+      "title": "Control de gasto",
+      "cap": "Límite mensual",
+      "noCap": "ninguno",
+      "mtd": "Acumulado del mes",
+      "unavailable": "no disponible",
+      "killSwitch": "Interruptor de emergencia",
+      "rootOnly": "Solo root puede cambiarlo.",
+      "cleanup": "Plan de limpieza",
+      "dryRun": "Simulación",
+      "loadPlan": "Cargar plan",
+      "resource": "Recurso",
+      "reason": "Motivo",
+      "expired": "Caducó {{when}}",
+      "orphan": "{{kind}} sin asociar:",
+      "nothing": "Nada que limpiar."
     }
   }
 }

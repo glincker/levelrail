@@ -159,3 +159,76 @@ export interface CloudSpendReport {
   stale: boolean
   error_code?: string
 }
+
+export type AwsServiceName = 'ecr' | 'acm' | 'secrets' | 'cloudtrail'
+
+export interface AwsGuardStatus {
+  kill_switch: boolean
+  monthly_cap_usd: number
+  per_create_max_usd: number
+  mtd_spend_usd: number | null
+  spend_state: string
+  services?: Partial<Record<AwsServiceName, boolean>> | null
+}
+
+export interface AwsEcrRepo {
+  name: string
+  uri: string
+  arn: string
+  scan_on_push: boolean
+}
+
+export interface AwsEcrLoginToken {
+  registry: string
+  user: string
+  password: string
+  expires_at: string
+}
+
+export interface AwsAcmRecord {
+  domain: string
+  name: string
+  type: string
+  value: string
+  status: string
+}
+
+export interface AwsAcmCert {
+  arn: string
+  domain: string
+  status: string
+  records: AwsAcmRecord[] | null
+}
+
+export interface AwsSecretRow {
+  name: string
+  type?: string
+  arn?: string
+  value: string
+}
+
+export interface AwsSecretsList {
+  ssm_parameters: AwsSecretRow[] | null
+  secrets_manager: AwsSecretRow[] | null
+}
+
+export interface AwsAuditEvent {
+  id: string
+  name: string
+  source: string
+  username: string
+  time: string
+  resources: string[]
+}
+
+export interface AwsCleanupPlan {
+  dry_run: boolean
+  region: string
+  expired: { arn: string; expired_at: string }[] | null
+  unparsed: string[] | null
+  orphans: {
+    volumes: { id: string; detail: string }[] | null
+    addresses: { id: string; detail: string }[] | null
+    snapshots: { id: string; detail: string }[] | null
+  }
+}

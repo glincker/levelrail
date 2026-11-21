@@ -140,7 +140,8 @@
     "deleteBody": "L'identifiant stocké est supprimé et les accès cessent de fonctionner. Les ressources du compte cloud ne sont pas touchées. Saisissez le nom pour confirmer.",
     "regions": "Régions",
     "regionsFailed": "Impossible de lister les régions.",
-    "instances": "Instances"
+    "instances": "Instances",
+    "services": "Services"
   },
   "access": {
     "needsShare": "Il faut la permission de partage sur ce compte pour voir qui y a accès.",
@@ -259,6 +260,72 @@
       "saveTags": "Enregistrer les étiquettes",
       "readOnly": "Les étiquettes sont en lecture seule pour cette instance.",
       "saved": "Étiquettes enregistrées."
+    }
+  },
+  "services": {
+    "on": "Actif",
+    "off": "Inactif",
+    "toggle": "Activer {{name}}",
+    "copy": "Copier",
+    "copied": "Copié",
+    "disabled": "Ce service est désactivé. Un utilisateur root peut l'activer ici ou dans les paramètres d'exécution.",
+    "disabledRoot": "Ce service est désactivé. Utilisez l'interrupteur pour l'activer.",
+    "ecr": {
+      "title": "Registre de conteneurs (ECR)",
+      "name": "Dépôt",
+      "namePlaceholder": "my-app",
+      "uri": "URI",
+      "create": "Créer",
+      "copyLogin": "Copier la commande de connexion",
+      "empty": "Aucun dépôt."
+    },
+    "acm": {
+      "title": "Certificats (ACM)",
+      "domain": "Domaine",
+      "request": "Demander un certificat",
+      "empty": "Aucun certificat.",
+      "copyName": "Copier le nom",
+      "copyValue": "Copier la valeur",
+      "domainPlaceholder": "app.example.com"
+    },
+    "secrets": {
+      "title": "Paramètres (SSM)",
+      "name": "Nom",
+      "value": "Valeur",
+      "overwrite": "Écraser",
+      "put": "Enregistrer",
+      "redacted": "Masqué",
+      "empty": "Aucun paramètre.",
+      "namePlaceholder": "/app/key"
+    },
+    "cloudtrail": {
+      "title": "Audit (CloudTrail)"
+    },
+    "audit": {
+      "resource": "Nom de la ressource",
+      "search": "Rechercher",
+      "hint": "Saisissez une ressource pour voir ses événements récents.",
+      "empty": "Aucun événement.",
+      "time": "Heure",
+      "event": "Événement",
+      "user": "Utilisateur"
+    },
+    "guard": {
+      "title": "Garde des dépenses",
+      "cap": "Plafond mensuel",
+      "noCap": "aucun",
+      "mtd": "Cumul du mois",
+      "unavailable": "indisponible",
+      "killSwitch": "Coupe-circuit",
+      "rootOnly": "Seul root peut le modifier.",
+      "cleanup": "Plan de nettoyage",
+      "dryRun": "Simulation",
+      "loadPlan": "Charger le plan",
+      "resource": "Ressource",
+      "reason": "Motif",
+      "expired": "Expiré {{when}}",
+      "orphan": "{{kind}} non attaché :",
+      "nothing": "Rien à nettoyer."
     }
   }
 }
