@@ -89,8 +89,8 @@ var awsCapabilities = []Capability{
 				"rds:DescribeDBInstances", "rds:DescribeDBClusters", "rds:DescribeDBSnapshots", "rds:DescribeDBClusterSnapshots",
 				"rds:DescribeDBParameterGroups", "rds:ListTagsForResource", "elasticache:DescribeCacheClusters", "elasticache:DescribeReplicationGroups",
 				"elasticache:DescribeSnapshots", "elasticache:ListTagsForResource", "ecr:DescribeRepositories", "ecr:ListImages",
-				"acm:ListCertificates", "acm:DescribeCertificate", "ssm:DescribeInstanceInformation", "ssm:GetCommandInvocation",
-				"cloudtrail:LookupEvents", "cloudwatch:GetMetricData", "cloudwatch:ListMetrics", "logs:DescribeLogGroups",
+				"acm:ListCertificates", "acm:DescribeCertificate", "ssm:DescribeInstanceInformation",
+				"cloudtrail:LookupEvents", "cloudwatch:GetMetricData", "cloudwatch:ListMetrics", "logs:DescribeLogGroups", "logs:FilterLogEvents",
 			}, Resources: []string{all}},
 			// CloudFront is a global service, so its actions skip the region condition.
 			{Actions: []string{"cloudfront:ListDistributions", "cloudfront:GetDistribution", "cloudfront:ListInvalidations"}, Resources: []string{all}, Global: true},
@@ -112,24 +112,37 @@ var awsCapabilities = []Capability{
 			}, Resources: []string{all}, Tag: TagResource},
 			{Actions: []string{"ec2:CreateTags"}, Resources: []string{all}, Conditions: []CapCondition{{
 				Operator: "StringEquals", Key: "ec2:CreateAction",
-				Values: []string{"RunInstances", "CreateVolume", "CreateSecurityGroup", "CreateKeyPair", "AllocateAddress"},
+				Values: []string{"RunInstances", "CreateVolume", "CreateSecurityGroup", "CreateKeyPair", "AllocateAddress", "CreateSnapshot", "CreateSnapshots"},
 			}}},
-			// Managed services have no uniform tag condition key, so they are scoped by ARN pattern.
-			{Actions: []string{"ec2:CreateSnapshot", "ec2:CreateSnapshots"}, Resources: []string{"arn:*:ec2:*:*:volume/*", "arn:*:ec2:*::snapshot/*", "arn:*:ec2:*:*:instance/*"}},
+			// Snapshots are tagged on create; the source volume or instance must carry the managed tag.
+			{Actions: []string{"ec2:CreateSnapshot", "ec2:CreateSnapshots"}, Resources: []string{"arn:*:ec2:*::snapshot/*"}, Tag: TagRequest},
+			{Actions: []string{"ec2:CreateSnapshot", "ec2:CreateSnapshots"}, Resources: []string{"arn:*:ec2:*:*:volume/*", "arn:*:ec2:*:*:instance/*"}, Tag: TagResource},
+			// Create actions need the request tag; supporting resources (subnet group, parameter and option groups) have no tag key of their own.
 			{Actions: []string{
-				"rds:CreateDBInstance", "rds:CreateDBCluster", "rds:ModifyDBInstance", "rds:StartDBInstance", "rds:StopDBInstance", "rds:StartDBCluster", "rds:StopDBCluster",
-				"rds:CreateDBSnapshot", "rds:CreateDBClusterSnapshot", "rds:CopyDBSnapshot", "rds:AddTagsToResource",
-			}, Resources: []string{"arn:*:rds:*:*:db:*", "arn:*:rds:*:*:cluster:*", "arn:*:rds:*:*:snapshot:*", "arn:*:rds:*:*:cluster-snapshot:*", "arn:*:rds:*:*:subgrp:*", "arn:*:rds:*:*:pg:*", "arn:*:rds:*:*:cluster-pg:*"}},
-			{Actions: []string{"elasticache:CreateSnapshot", "elasticache:RebootCacheCluster"},
-				Resources: []string{"arn:*:elasticache:*:*:cluster:*", "arn:*:elasticache:*:*:replicationgroup:*", "arn:*:elasticache:*:*:snapshot:*"}},
-			{Actions: []string{"ecr:CreateRepository", "ecr:PutLifecyclePolicy"}, Resources: []string{"arn:*:ecr:*:*:repository/*"}},
+				"rds:CreateDBInstance", "rds:CreateDBCluster", "rds:CreateDBSnapshot", "rds:CreateDBClusterSnapshot", "rds:CopyDBSnapshot", "rds:AddTagsToResource",
+			}, Resources: []string{
+				"arn:*:rds:*:*:db:*", "arn:*:rds:*:*:cluster:*", "arn:*:rds:*:*:snapshot:*", "arn:*:rds:*:*:cluster-snapshot:*",
+				"arn:*:rds:*:*:subgrp:*", "arn:*:rds:*:*:pg:*", "arn:*:rds:*:*:cluster-pg:*", "arn:*:rds:*:*:og:*",
+			}, Tag: TagRequest},
+			{Actions: []string{"rds:ModifyDBInstance", "rds:StartDBInstance", "rds:StopDBInstance", "rds:StartDBCluster", "rds:StopDBCluster"},
+				Resources: []string{"arn:*:rds:*:*:db:*", "arn:*:rds:*:*:cluster:*"}, Tag: TagResource},
+			{Actions: []string{"elasticache:CreateSnapshot", "elasticache:AddTagsToResource"},
+				Resources: []string{"arn:*:elasticache:*:*:cluster:*", "arn:*:elasticache:*:*:replicationgroup:*", "arn:*:elasticache:*:*:snapshot:*"}, Tag: TagRequest},
+			{Actions: []string{"elasticache:RebootCacheCluster"}, Resources: []string{"arn:*:elasticache:*:*:cluster:*"}, Tag: TagResource},
+			{Actions: []string{"ecr:CreateRepository", "ecr:TagResource"}, Resources: []string{"arn:*:ecr:*:*:repository/*"}, Tag: TagRequest},
+			{Actions: []string{"ecr:PutLifecyclePolicy"}, Resources: []string{"arn:*:ecr:*:*:repository/*"}, Tag: TagResource},
 			// GetAuthorizationToken cannot be scoped to a resource.
 			{Actions: []string{"ecr:GetAuthorizationToken"}, Resources: []string{all}},
-			{Actions: []string{"acm:RequestCertificate"}, Resources: []string{all}},
+			// RequestCertificate has no resource type, so it is scoped by request tag only.
+			{Actions: []string{"acm:RequestCertificate", "acm:AddTagsToCertificate"}, Resources: []string{all}, Tag: TagRequest},
 			{Actions: []string{"cloudfront:CreateInvalidation"}, Resources: []string{"arn:*:cloudfront::*:distribution/*"}, Global: true},
 			{Actions: []string{"secretsmanager:ListSecrets"}, Resources: []string{all}},
-			{Actions: []string{"secretsmanager:GetSecretValue", "secretsmanager:PutSecretValue"}, Resources: []string{"arn:*:secretsmanager:*:*:secret:*"}},
-			{Actions: []string{"ssm:GetParametersByPath", "ssm:PutParameter"}, Resources: []string{"arn:*:ssm:*:*:parameter/*"}},
+			// Secrets and parameters are limited to the levelrail/ name prefix; RDS managed passwords use the rds! prefix.
+			{Actions: []string{"secretsmanager:GetSecretValue", "secretsmanager:PutSecretValue"}, Resources: []string{"arn:*:secretsmanager:*:*:secret:levelrail/*"}},
+			{Actions: []string{"secretsmanager:CreateSecret", "secretsmanager:TagResource"}, Resources: []string{"arn:*:secretsmanager:*:*:secret:rds!*"}},
+			{Actions: []string{"ssm:GetParametersByPath", "ssm:PutParameter"}, Resources: []string{"arn:*:ssm:*:*:parameter/levelrail/*"}},
+			// RDS managed master passwords resolve the key through DescribeKey, which has no tag key.
+			{Actions: []string{"kms:DescribeKey"}, Resources: []string{all}},
 		},
 	},
 	{
@@ -167,15 +180,21 @@ var awsCapabilities = []Capability{
 			{Actions: []string{"s3:DeleteBucket"}, Resources: []string{"arn:*:s3:::{bucket_prefix}*"}, Global: true},
 			{Actions: []string{"s3:DeleteObject"}, Resources: []string{"arn:*:s3:::{bucket_prefix}*/*"}, Global: true},
 			{Actions: []string{"route53:DeleteHostedZone"}, Resources: []string{"{hosted_zone_ids}"}, Global: true},
-			{Actions: []string{"ec2:DeleteSnapshot"}, Resources: []string{"arn:*:ec2:*::snapshot/*"}},
+			{Actions: []string{"ec2:DeleteSnapshot"}, Resources: []string{"arn:*:ec2:*::snapshot/*"}, Tag: TagResource},
 			{Actions: []string{"rds:DeleteDBInstance", "rds:DeleteDBSnapshot", "rds:DeleteDBClusterSnapshot"},
-				Resources: []string{"arn:*:rds:*:*:db:*", "arn:*:rds:*:*:snapshot:*", "arn:*:rds:*:*:cluster-snapshot:*"}},
+				Resources: []string{"arn:*:rds:*:*:db:*", "arn:*:rds:*:*:snapshot:*", "arn:*:rds:*:*:cluster-snapshot:*"}, Tag: TagResource},
 			{Actions: []string{"elasticache:DeleteCacheCluster", "elasticache:DeleteReplicationGroup"},
-				Resources: []string{"arn:*:elasticache:*:*:cluster:*", "arn:*:elasticache:*:*:replicationgroup:*"}},
-			{Actions: []string{"ecr:DeleteRepository"}, Resources: []string{"arn:*:ecr:*:*:repository/*"}},
-			// Remote command and shell access run code on hosts, so only this tier grants them.
-			{Actions: []string{"ssm:SendCommand"}, Resources: []string{"arn:*:ssm:*:*:document/AWS-RunShellScript", "arn:*:ec2:*:*:instance/*"}},
-			{Actions: []string{"ssm:StartSession"}, Resources: []string{"arn:*:ec2:*:*:instance/*", "arn:*:ssm:*:*:document/SSM-SessionManagerRunShell"}},
+				Resources: []string{"arn:*:elasticache:*:*:cluster:*", "arn:*:elasticache:*:*:replicationgroup:*"}, Tag: TagResource},
+			// Final snapshots on delete are created and tagged by the delete call itself.
+			{Actions: []string{"elasticache:CreateSnapshot", "rds:CreateDBSnapshot", "rds:CreateDBClusterSnapshot", "rds:AddTagsToResource"},
+				Resources: []string{"arn:*:elasticache:*:*:snapshot:*", "arn:*:rds:*:*:snapshot:*", "arn:*:rds:*:*:cluster-snapshot:*"}, Tag: TagRequest},
+			{Actions: []string{"ecr:DeleteRepository"}, Resources: []string{"arn:*:ecr:*:*:repository/*"}, Tag: TagResource},
+			// Remote command and shell access run code on hosts, so only this tier grants them. Documents have no tag key, instances do.
+			{Actions: []string{"ssm:SendCommand"}, Resources: []string{"arn:*:ssm:*:*:document/AWS-RunShellScript"}},
+			{Actions: []string{"ssm:SendCommand"}, Resources: []string{"arn:*:ec2:*:*:instance/*"}, Tag: TagResource},
+			{Actions: []string{"ssm:StartSession"}, Resources: []string{"arn:*:ssm:*:*:document/SSM-SessionManagerRunShell"}},
+			{Actions: []string{"ssm:StartSession"}, Resources: []string{"arn:*:ec2:*:*:instance/*"}, Tag: TagResource},
+			{Actions: []string{"ssm:GetCommandInvocation"}, Resources: []string{all}},
 		},
 	},
 }
@@ -185,6 +204,14 @@ var awsCapabilities = []Capability{
 var awsBoundaryDeny = []string{
 	"iam:Create*", "iam:Delete*", "iam:Put*", "iam:Attach*", "iam:Detach*", "iam:Update*", "iam:Add*", "iam:Remove*",
 	"iam:Set*", "iam:Tag*", "iam:Untag*", "iam:Upload*", "iam:Enable*", "iam:Disable*", "organizations:*", "account:*",
+}
+
+// awsBoundaryDenyScoped blocks actions inside allowed services that could widen exposure or hide
+// activity: sharing snapshots, resource policies, run documents, audit and log changes.
+var awsBoundaryDenyScoped = []string{
+	"rds:ModifyDBSnapshotAttribute", "rds:ModifyDBClusterSnapshotAttribute", "secretsmanager:PutResourcePolicy", "ecr:SetRepositoryPolicy",
+	"ssm:CreateDocument", "ssm:UpdateDocument", "ssm:CreateAssociation", "cloudtrail:StopLogging", "cloudtrail:DeleteTrail",
+	"cloudtrail:UpdateTrail", "cloudtrail:PutEventSelectors", "logs:DeleteLogGroup", "logs:PutSubscriptionFilter", "cloudfront:UpdateDistribution",
 }
 
 // AWSCapabilities returns the registry, always-on entries excluded.

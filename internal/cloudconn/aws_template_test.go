@@ -160,3 +160,29 @@ func TestQuickCreateAndTerraform(t *testing.T) {
 		t.Error("short external id accepted")
 	}
 }
+
+func TestBoundaryDeniesExposureActionsWithinLimit(t *testing.T) {
+	doc := BoundaryPolicy(PolicyOptions{Regions: []string{"eu-west-1"}})
+	denied := map[string]bool{}
+	for _, st := range doc.Statement {
+		if st.Effect == "Deny" {
+			for _, a := range st.Action {
+				denied[a] = true
+			}
+		}
+	}
+	for _, a := range []string{
+		"rds:ModifyDBSnapshotAttribute", "rds:ModifyDBClusterSnapshotAttribute", "secretsmanager:PutResourcePolicy", "ecr:SetRepositoryPolicy",
+		"ssm:CreateDocument", "ssm:UpdateDocument", "ssm:CreateAssociation", "cloudtrail:StopLogging", "cloudtrail:DeleteTrail",
+		"cloudtrail:UpdateTrail", "cloudtrail:PutEventSelectors", "logs:DeleteLogGroup", "logs:PutSubscriptionFilter", "cloudfront:UpdateDistribution",
+	} {
+		if !denied[a] {
+			t.Errorf("boundary does not deny %s", a)
+		}
+	}
+	b, _ := json.Marshal(doc)
+	n := len(strings.Join(strings.Fields(string(b)), ""))
+	if n > 6144 {
+		t.Fatalf("boundary has %d non-whitespace characters, limit is 6144", n)
+	}
+}

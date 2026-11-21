@@ -169,7 +169,9 @@ Resources:
                     "CreateVolume",
                     "CreateSecurityGroup",
                     "CreateKeyPair",
-                    "AllocateAddress"
+                    "AllocateAddress",
+                    "CreateSnapshot",
+                    "CreateSnapshots"
                   ]
                 }
               }
@@ -182,9 +184,51 @@ Resources:
                 "ec2:CreateSnapshots"
               ],
               "Resource": [
+                "arn:*:ec2:*::snapshot/*"
+              ],
+              "Condition": {
+                "StringEquals": {
+                  "aws:RequestTag/levelrail:managed": [
+                    "true"
+                  ],
+                  "aws:RequestedRegion": [
+                    "eu-west-1",
+                    "us-east-1"
+                  ]
+                }
+              }
+            },
+            {
+              "Sid": "Deploy6",
+              "Effect": "Allow",
+              "Action": [
+                "ec2:CreateSnapshot",
+                "ec2:CreateSnapshots"
+              ],
+              "Resource": [
                 "arn:*:ec2:*:*:volume/*",
-                "arn:*:ec2:*::snapshot/*",
                 "arn:*:ec2:*:*:instance/*"
+              ],
+              "Condition": {
+                "StringEquals": {
+                  "aws:RequestedRegion": [
+                    "eu-west-1",
+                    "us-east-1"
+                  ],
+                  "aws:ResourceTag/levelrail:managed": [
+                    "true"
+                  ]
+                }
+              }
+            },
+            {
+              "Sid": "Deploy20",
+              "Effect": "Allow",
+              "Action": [
+                "kms:DescribeKey"
+              ],
+              "Resource": [
+                "*"
               ],
               "Condition": {
                 "StringEquals": {
@@ -366,6 +410,9 @@ Resources:
                   "aws:RequestedRegion": [
                     "eu-west-1",
                     "us-east-1"
+                  ],
+                  "aws:ResourceTag/levelrail:managed": [
+                    "true"
                   ]
                 }
               }
@@ -426,6 +473,29 @@ Resources:
                 "iam:Disable*",
                 "organizations:*",
                 "account:*"
+              ],
+              "Resource": [
+                "*"
+              ]
+            },
+            {
+              "Sid": "DenyExposureChanges",
+              "Effect": "Deny",
+              "Action": [
+                "rds:ModifyDBSnapshotAttribute",
+                "rds:ModifyDBClusterSnapshotAttribute",
+                "secretsmanager:PutResourcePolicy",
+                "ecr:SetRepositoryPolicy",
+                "ssm:CreateDocument",
+                "ssm:UpdateDocument",
+                "ssm:CreateAssociation",
+                "cloudtrail:StopLogging",
+                "cloudtrail:DeleteTrail",
+                "cloudtrail:UpdateTrail",
+                "cloudtrail:PutEventSelectors",
+                "logs:DeleteLogGroup",
+                "logs:PutSubscriptionFilter",
+                "cloudfront:UpdateDistribution"
               ],
               "Resource": [
                 "*"
@@ -526,11 +596,11 @@ Resources:
                     "acm:ListCertificates",
                     "acm:DescribeCertificate",
                     "ssm:DescribeInstanceInformation",
-                    "ssm:GetCommandInvocation",
                     "cloudtrail:LookupEvents",
                     "cloudwatch:GetMetricData",
                     "cloudwatch:ListMetrics",
-                    "logs:DescribeLogGroups"
+                    "logs:DescribeLogGroups",
+                    "logs:FilterLogEvents"
                   ],
                   "Resource": [
                     "*"

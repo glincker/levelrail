@@ -160,6 +160,8 @@ func BoundaryPolicy(opt PolicyOptions) PolicyDocument {
 	doc = collapseManaged(doc, opt)
 	doc.Statement = append(doc.Statement, PolicyStatement{
 		Sid: "DenyIdentityChanges", Effect: "Deny", Action: append([]string(nil), awsBoundaryDeny...), Resource: []string{"*"},
+	}, PolicyStatement{
+		Sid: "DenyExposureChanges", Effect: "Deny", Action: append([]string(nil), awsBoundaryDenyScoped...), Resource: []string{"*"},
 	})
 	return doc
 }
