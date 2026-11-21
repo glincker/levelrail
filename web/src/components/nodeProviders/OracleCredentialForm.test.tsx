@@ -55,12 +55,17 @@ describe('OracleCredentialForm', () => {
 
     const fill = (label: string, value: string) =>
       fireEvent.change(screen.getByLabelText(label), { target: { value } })
-    fill('Tenancy OCID', 'ocid1.tenancy.oc1..aaa')
-    fill('User OCID', 'ocid1.user.oc1..bbb')
-    fill('Key fingerprint', 'aa:bb')
-    fill('Region', 'eu-frankfurt-1')
-    fill('Subnet OCID', 'ocid1.subnet.oc1..ccc')
+    fill(
+      'Paste your OCI config',
+      '[DEFAULT]\nuser=ocid1.user.oc1..bbb\nfingerprint=aa:bb:cc:dd:ee:ff:00:11:22:33:44:55:66:77:88:99\ntenancy=ocid1.tenancy.oc1..aaa\nregion=eu-frankfurt-1\nkey_file=~/k.pem\n',
+    )
+    // Parsed values collapse into a summary instead of six inputs.
+    expect(screen.getByRole('status')).toHaveTextContent(
+      'Detected: tenancy ocid1...1..aaa, region eu-frankfurt-1',
+    )
     fill('Private key (PEM)', PEM)
+    fireEvent.click(screen.getByRole('button', { name: /Advanced/ }))
+    fill('Subnet OCID', 'ocid1.subnet.oc1..ccc')
 
     // Compartment follows the tenancy until the user edits it.
     expect(screen.getByLabelText('Compartment OCID')).toHaveValue(

@@ -1,6 +1,7 @@
 import { useRef, useState } from 'react'
 import { useTranslation } from 'react-i18next'
 import {
+  ChevronRightGlassIcon,
   CircleCheckGlassIcon,
   PlugGlassIcon,
   TriangleAlertGlassIcon,
@@ -11,6 +12,12 @@ import { Textarea } from '@/components/ui/textarea'
 import { Button } from '@/components/ui/button'
 import { Alert, AlertDescription } from '@/components/ui/alert'
 import { toast } from '@/components/ui/toast'
+import {
+  Collapsible,
+  CollapsiblePanel,
+  CollapsibleTrigger,
+} from '@/components/ui/collapsible'
+import { OCI_RE, parseOciConfig, shortOcid } from '@/lib/ociConfig'
 import { OracleKeyWizard } from './OracleKeyWizard'
 import { OracleSessionForm } from './OracleSessionForm'
 import {
@@ -24,6 +31,15 @@ import type {
   NodeProviderTestResult,
 } from '../../types/nodeProvision'
 
+const CONFIG_PLACEHOLDER = [
+  '[DEFAULT]',
+  'user=ocid1.user.oc1...',
+  'fingerprint=aa:bb:cc:...',
+  'tenancy=ocid1.tenancy.oc1...',
+  'region=us-phoenix-1',
+  'key_file=~/.oci/oci_api_key.pem',
+].join('\n')
+
 // Format examples, not translatable copy.
 const FORMAT = {
   tenancy: 'ocid1.tenancy.oc1...',
@@ -34,19 +50,30 @@ const FORMAT = {
   subnet: 'ocid1.subnet.oc1...',
 } as const
 
+function bad<K extends string>(value: string, re: RegExp, key: K): K | null {
+  return value.trim() !== '' && !re.test(value.trim()) ? key : null
+}
+
 // The private key is held only in this component state and cleared the moment
 // a save succeeds; the API never returns it, so there is nothing to prefill.
 export function OracleCredentialForm({
   provider,
   label,
   onSaved,
+  requireSubnet = true,
 }: {
   provider: NodeProviderResource
   label: string
   onSaved: () => void
+  // The node provider endpoint needs a subnet to create servers.
+  requireSubnet?: boolean
 }) {
   const { t } = useTranslation('nodes')
   const connected = provider.has_token
+  const [configText, setConfigText] = useState('')
+  const [keyFile, setKeyFile] = useState('')
+  const [editing, setEditing] = useState(false)
+  const [advancedOpen, setAdvancedOpen] = useState(false)
   const [tenancy, setTenancy] = useState('')
   const [user, setUser] = useState('')
   const [fingerprint, setFingerprint] = useState('')
@@ -59,6 +86,7 @@ export function OracleCredentialForm({
   const [confirmDisconnect, setConfirmDisconnect] = useState(false)
   const [mode, setMode] = useState<'api_key' | 'session'>('api_key')
   const fileRef = useRef<HTMLInputElement>(null)
+  const configFileRef = useRef<HTMLInputElement>(null)
 
   const connect = useSetNodeProviderCredential()
   const test = useTestNodeProvider()
@@ -67,10 +95,59 @@ export function OracleCredentialForm({
 
   // The root compartment is the tenancy itself, the usual first choice.
   const effectiveCompartment = compartmentTouched ? compartment : tenancy
-  const canSubmit =
-    [tenancy, user, fingerprint, privateKey, region, subnet].every(
-      (v) => v.trim() !== '',
-    ) && effectiveCompartment.trim() !== ''
+  const fields = { tenancy, user, fingerprint, region } as const
+  const missing = (Object.keys(fields) as (keyof typeof fields)[]).filter(
+    (k) => fields[k].trim() === '',
+  )
+  const allFour = missing.length === 0
+  const errs = {
+    tenancy: bad(tenancy, OCI_RE.tenancy, 'oracle.form.errors.tenancy'),
+    user: bad(user, OCI_RE.user, 'oracle.form.errors.user'),
+    fingerprint: bad(
+      fingerprint,
+      OCI_RE.fingerprint,
+      'oracle.form.errors.fingerprint',
+    ),
+    region: bad(region, OCI_RE.region, 'oracle.form.errors.region'),
+    compartment: bad(
+      effectiveCompartment,
+      OCI_RE.compartment,
+      'oracle.form.errors.compartment',
+    ),
+    subnet: bad(subnet, OCI_RE.subnet, 'oracle.form.errors.subnet'),
+    key:
+      privateKey.trim() !== '' && !OCI_RE.key.test(privateKey)
+        ? ('oracle.form.errors.key' as const)
+        : null,
+  }
+  const hasErr = Object.values(errs).some(Boolean)
+  const detected = allFour && !editing && !errs.tenancy && !errs.region
+  const showFields = editing || (configText.trim() !== '' && !allFour)
+  const subnetMissing = requireSubnet && subnet.trim() === ''
+  const baseReady =
+    allFour &&
+    privateKey.trim() !== '' &&
+    effectiveCompartment.trim() !== '' &&
+    !hasErr
+  const canSubmit = baseReady && !subnetMissing
+
+  function applyConfig(text: string) {
+    setConfigText(text)
+    const c = parseOciConfig(text)
+    // Only overwrite with what the config actually carries.
+    if (c.tenancy) setTenancy(c.tenancy)
+    if (c.user) setUser(c.user)
+    if (c.fingerprint) setFingerprint(c.fingerprint)
+    if (c.region) setRegion(c.region)
+    setKeyFile(c.keyFile)
+    setEditing(false)
+  }
+
+  async function loadConfigFile(file: File | undefined) {
+    if (!file) return
+    applyConfig(await file.text())
+    if (configFileRef.current) configFileRef.current.value = ''
+  }
 
   function body(): Omit<SetNodeProviderCredentialInput, 'provider'> {
     return {
@@ -163,151 +240,268 @@ export function OracleCredentialForm({
   }
 
   return (
-    <form onSubmit={submit} className="space-y-4" autoComplete="off">
+    <form onSubmit={submit} className="space-y-3" autoComplete="off">
       {modeToggle}
-      <p className="text-sm text-muted-foreground">{t('oracle.form.intro')}</p>
-      <OracleKeyWizard
-        connected={connected}
-        onUseKey={(pem, fp) => {
-          setPrivateKey(pem)
-          setFingerprint(fp)
-        }}
-      />
-      <div className="grid gap-3 sm:grid-cols-2">
+      <ol className="list-inside list-decimal space-y-0.5 rounded-lg border border-border bg-muted/30 p-3 text-xs text-muted-foreground">
+        <li className="font-medium text-foreground">
+          {t('oracle.form.howTitle')}
+        </li>
+        <li>{t('oracle.form.how1')}</li>
+        <li>{t('oracle.form.how2')}</li>
+        <li>{t('oracle.form.how3')}</li>
+      </ol>
+      <div className="grid gap-3 md:grid-cols-2">
         <Field>
-          <FieldLabel htmlFor={id('tenancy')}>
-            {t('oracle.form.tenancy')}
-          </FieldLabel>
-          <Input
-            id={id('tenancy')}
-            value={tenancy}
-            onChange={(e) => setTenancy(e.target.value)}
-            placeholder={FORMAT.tenancy}
-            className="font-mono text-xs"
+          <div className="flex items-center justify-between gap-2">
+            <FieldLabel htmlFor={id('config')}>
+              {t('oracle.form.configTitle')}
+            </FieldLabel>
+            <Button
+              type="button"
+              variant="outline"
+              size="sm"
+              onClick={() => configFileRef.current?.click()}
+            >
+              {t('oracle.form.configFile')}
+            </Button>
+            <input
+              ref={configFileRef}
+              type="file"
+              className="sr-only"
+              tabIndex={-1}
+              aria-label={t('oracle.form.configFile')}
+              onChange={(e) => void loadConfigFile(e.target.files?.[0])}
+            />
+          </div>
+          <Textarea
+            id={id('config')}
+            value={configText}
+            onChange={(e) => applyConfig(e.target.value)}
+            rows={5}
             spellCheck={false}
+            placeholder={CONFIG_PLACEHOLDER}
+            className="font-mono text-xs"
           />
+          {!showFields && configText.trim() === '' ? (
+            <FieldDescription>{t('oracle.form.configHelp')}</FieldDescription>
+          ) : null}
         </Field>
         <Field>
-          <FieldLabel htmlFor={id('user')}>{t('oracle.form.user')}</FieldLabel>
-          <Input
-            id={id('user')}
-            value={user}
-            onChange={(e) => setUser(e.target.value)}
-            placeholder={FORMAT.user}
-            className="font-mono text-xs"
+          <div className="flex items-center justify-between gap-2">
+            <FieldLabel htmlFor={id('key')}>{t('oracle.form.key')}</FieldLabel>
+            <Button
+              type="button"
+              variant="outline"
+              size="sm"
+              onClick={() => fileRef.current?.click()}
+            >
+              {t('oracle.form.keyFile')}
+            </Button>
+            <input
+              ref={fileRef}
+              type="file"
+              accept=".pem,.key,text/plain"
+              className="sr-only"
+              tabIndex={-1}
+              aria-label={t('oracle.form.keyFile')}
+              onChange={(e) => void loadKeyFile(e.target.files?.[0])}
+            />
+          </div>
+          <Textarea
+            id={id('key')}
+            autoComplete="off"
+            value={privateKey}
+            onChange={(e) => setPrivateKey(e.target.value)}
+            rows={5}
             spellCheck={false}
-          />
-        </Field>
-        <Field>
-          <FieldLabel htmlFor={id('fingerprint')}>
-            {t('oracle.form.fingerprint')}
-          </FieldLabel>
-          <Input
-            id={id('fingerprint')}
-            value={fingerprint}
-            onChange={(e) => setFingerprint(e.target.value)}
-            placeholder={FORMAT.fingerprint}
+            aria-invalid={errs.key ? true : undefined}
+            placeholder={
+              connected
+                ? t('oracle.form.keyStored')
+                : '-----BEGIN PRIVATE KEY-----'
+            }
             className="font-mono text-xs"
-            spellCheck={false}
-          />
-        </Field>
-        <Field>
-          <FieldLabel htmlFor={id('region')}>
-            {t('oracle.form.region')}
-          </FieldLabel>
-          <Input
-            id={id('region')}
-            value={region}
-            onChange={(e) => setRegion(e.target.value)}
-            placeholder={FORMAT.region}
-            className="font-mono text-xs"
-            spellCheck={false}
-          />
-        </Field>
-        <Field>
-          <FieldLabel htmlFor={id('compartment')}>
-            {t('oracle.form.compartment')}
-          </FieldLabel>
-          <Input
-            id={id('compartment')}
-            value={effectiveCompartment}
-            onChange={(e) => {
-              setCompartmentTouched(true)
-              setCompartment(e.target.value)
-            }}
-            placeholder={FORMAT.compartment}
-            className="font-mono text-xs"
-            spellCheck={false}
           />
           <FieldDescription>
-            {t('oracle.form.compartmentHelp')}
+            {errs.key
+              ? t(errs.key)
+              : keyFile
+                ? t('oracle.form.keyFromConfig', { path: keyFile })
+                : connected
+                  ? t('oracle.form.keyStoredHelp')
+                  : t('oracle.form.keyHelp')}
           </FieldDescription>
         </Field>
-        <Field>
-          <FieldLabel htmlFor={id('subnet')}>
-            {t('oracle.form.subnet')}
-          </FieldLabel>
-          <Input
-            id={id('subnet')}
-            value={subnet}
-            onChange={(e) => setSubnet(e.target.value)}
-            placeholder={FORMAT.subnet}
-            className="font-mono text-xs"
-            spellCheck={false}
-          />
-        </Field>
       </div>
-      <Field>
-        <div className="flex items-center justify-between gap-2">
-          <FieldLabel htmlFor={id('key')}>{t('oracle.form.key')}</FieldLabel>
+
+      {showFields ? (
+        <div className="grid gap-3 sm:grid-cols-2 lg:grid-cols-4">
+          {(
+            [
+              ['tenancy', tenancy, setTenancy],
+              ['user', user, setUser],
+              ['fingerprint', fingerprint, setFingerprint],
+              ['region', region, setRegion],
+            ] as const
+          ).map(([key, value, set]) => (
+            <Field key={key}>
+              <FieldLabel htmlFor={id(key)}>
+                {t(`oracle.form.${key}`)}
+              </FieldLabel>
+              <Input
+                id={id(key)}
+                value={value}
+                onChange={(e) => set(e.target.value)}
+                placeholder={FORMAT[key]}
+                aria-invalid={errs[key] ? true : undefined}
+                aria-describedby={errs[key] ? id(`${key}-err`) : undefined}
+                className="font-mono text-xs"
+                spellCheck={false}
+              />
+              {errs[key] ? (
+                <FieldDescription
+                  id={id(`${key}-err`)}
+                  className="text-destructive"
+                >
+                  {t(errs[key])}
+                </FieldDescription>
+              ) : null}
+            </Field>
+          ))}
+        </div>
+      ) : null}
+
+      {detected ? (
+        <div
+          role="status"
+          className="flex flex-wrap items-center gap-2 rounded-lg border border-border bg-muted/30 px-3 py-2 text-sm"
+        >
+          <CircleCheckGlassIcon
+            className="text-tone-success"
+            size="1.4em"
+            aria-hidden="true"
+          />
+          <span className="text-tone-success">
+            {t('oracle.form.detected', {
+              tenancy: shortOcid(tenancy),
+              region: region.trim(),
+            })}
+          </span>
           <Button
             type="button"
-            variant="outline"
+            variant="ghost"
             size="sm"
-            onClick={() => fileRef.current?.click()}
+            className="ml-auto"
+            onClick={() => setEditing(true)}
           >
-            {t('oracle.form.keyFile')}
+            {t('oracle.form.edit')}
           </Button>
-          <input
-            ref={fileRef}
-            type="file"
-            accept=".pem,.key,text/plain"
-            className="sr-only"
-            tabIndex={-1}
-            aria-label={t('oracle.form.keyFile')}
-            onChange={(e) => void loadKeyFile(e.target.files?.[0])}
-          />
         </div>
-        <Textarea
-          id={id('key')}
-          autoComplete="off"
-          value={privateKey}
-          onChange={(e) => setPrivateKey(e.target.value)}
-          rows={4}
-          spellCheck={false}
-          placeholder={
-            connected
-              ? t('oracle.form.keyStored')
-              : '-----BEGIN PRIVATE KEY-----'
-          }
-          className="font-mono text-xs"
-        />
-        <FieldDescription>
-          {connected
-            ? t('oracle.form.keyStoredHelp')
-            : t('oracle.form.keyHelp')}
-        </FieldDescription>
-      </Field>
+      ) : editing || missing.length > 0 ? (
+        <p className="text-xs text-muted-foreground">
+          {configText.trim() !== '' && missing.length > 0
+            ? t('oracle.form.missing', {
+                fields: missing.map((f) => t(`oracle.form.${f}`)).join(', '),
+              })
+            : t('oracle.form.manualHelp')}
+          {editing && allFour ? (
+            <Button
+              type="button"
+              variant="ghost"
+              size="sm"
+              className="ml-2"
+              onClick={() => setEditing(false)}
+            >
+              {t('oracle.form.done')}
+            </Button>
+          ) : null}
+        </p>
+      ) : null}
 
-      <section
-        aria-label={t('oracle.form.permissionsTitle')}
-        className="space-y-1 rounded-lg border border-border bg-muted/30 p-3 text-xs"
+      <Collapsible
+        open={advancedOpen}
+        onOpenChange={setAdvancedOpen}
+        className="rounded-lg border border-border bg-muted/30 p-3"
       >
-        <h3 className="text-sm font-medium">
-          {t('oracle.form.permissionsTitle')}
-        </h3>
-        <p className="text-muted-foreground">{t('oracle.form.permissions')}</p>
-      </section>
+        <CollapsibleTrigger className="flex items-center gap-2 text-sm font-medium">
+          <ChevronRightGlassIcon
+            size="1.4em"
+            aria-hidden="true"
+            className={
+              advancedOpen
+                ? 'rotate-90 transition-transform motion-reduce:transition-none'
+                : 'transition-transform motion-reduce:transition-none'
+            }
+          />
+          {t('oracle.form.advanced')}
+          <span className="text-xs font-normal text-muted-foreground">
+            {requireSubnet
+              ? t('oracle.form.advancedHintServers')
+              : t('oracle.form.advancedHint')}
+          </span>
+        </CollapsibleTrigger>
+        <CollapsiblePanel className="space-y-3 pt-3">
+          <div className="grid gap-3 sm:grid-cols-2">
+            <Field>
+              <FieldLabel htmlFor={id('compartment')}>
+                {t('oracle.form.compartment')}
+              </FieldLabel>
+              <Input
+                id={id('compartment')}
+                value={effectiveCompartment}
+                onChange={(e) => {
+                  setCompartmentTouched(true)
+                  setCompartment(e.target.value)
+                }}
+                placeholder={FORMAT.compartment}
+                aria-invalid={errs.compartment ? true : undefined}
+                className="font-mono text-xs"
+                spellCheck={false}
+              />
+              <FieldDescription>
+                {errs.compartment
+                  ? t(errs.compartment)
+                  : t('oracle.form.compartmentHelp')}
+              </FieldDescription>
+            </Field>
+            <Field>
+              <FieldLabel htmlFor={id('subnet')}>
+                {t('oracle.form.subnet')}
+              </FieldLabel>
+              <Input
+                id={id('subnet')}
+                value={subnet}
+                onChange={(e) => setSubnet(e.target.value)}
+                placeholder={FORMAT.subnet}
+                aria-invalid={errs.subnet ? true : undefined}
+                className="font-mono text-xs"
+                spellCheck={false}
+              />
+              <FieldDescription>
+                {errs.subnet
+                  ? t(errs.subnet)
+                  : requireSubnet
+                    ? t('oracle.form.subnetHelp')
+                    : t('oracle.form.subnetOptional')}
+              </FieldDescription>
+            </Field>
+          </div>
+          <OracleKeyWizard
+            connected={connected}
+            onUseKey={(pem, fp) => {
+              setPrivateKey(pem)
+              setFingerprint(fp)
+            }}
+          />
+        </CollapsiblePanel>
+      </Collapsible>
+
+      <p className="text-xs text-muted-foreground">
+        <span className="font-medium text-foreground">
+          {t('oracle.form.permissionsTitle')}:
+        </span>{' '}
+        {t('oracle.form.permissions')}
+      </p>
 
       {result ? (
         <Alert variant={result.ok ? 'default' : 'destructive'}>
@@ -327,6 +521,12 @@ export function OracleCredentialForm({
           <TriangleAlertGlassIcon className="text-tone-warning" size="1.7em" />
           <AlertDescription>{error}</AlertDescription>
         </Alert>
+      ) : null}
+
+      {baseReady && subnetMissing ? (
+        <p className="text-xs text-muted-foreground">
+          {t('oracle.form.subnetNeeded')}
+        </p>
       ) : null}
 
       <div className="flex flex-wrap items-center gap-2">
