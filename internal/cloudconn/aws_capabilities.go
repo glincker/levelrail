@@ -72,7 +72,7 @@ var awsCapabilities = []Capability{
 	{
 		Name: capVerify, Always: true, Summary: "Let Levelrail check its own permissions",
 		Statements: []CapStatement{{
-			Actions: []string{"iam:SimulatePrincipalPolicy"}, Resources: []string{"{self_role}"}, Global: true,
+			Actions: []string{"iam:SimulatePrincipalPolicy", "iam:ListAttachedRolePolicies"}, Resources: []string{"{self_role}"}, Global: true,
 		}},
 	},
 	{

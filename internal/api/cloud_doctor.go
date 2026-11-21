@@ -5,10 +5,14 @@ import (
 	"encoding/json"
 	"fmt"
 	"net/http"
+	"slices"
 	"strings"
 
+	"github.com/GLINCKER/levelrail/internal/awsx"
+	"github.com/GLINCKER/levelrail/internal/awsx/iam"
 	"github.com/GLINCKER/levelrail/internal/cloudconn"
 	"github.com/GLINCKER/levelrail/internal/cloudguard"
+	"github.com/GLINCKER/levelrail/internal/provision"
 	"github.com/GLINCKER/levelrail/internal/runtimesettings"
 	"github.com/GLINCKER/levelrail/internal/store"
 )
@@ -284,7 +288,71 @@ func (rt *Router) doctorAWSAccount(ctx context.Context, a store.CloudAccount) []
 	} else {
 		steps = append(steps, doctorStep{ID: "aws.capabilities", Title: "Permission tiers", Status: doctorSkip, Detail: "Skipped until the account is verified."})
 	}
-	return append(steps, rt.doctorGuardSteps(cfg, true, a)...)
+	guard := rt.doctorGuardSteps(cfg, true, a)
+	if res.OK {
+		rt.doctorLivePolicy(ctx, a, cfg, guard)
+	}
+	return append(steps, guard...)
+}
+
+// doctorLivePolicy replaces the recorded-only policy step with a live IAM read of the role.
+func (rt *Router) doctorLivePolicy(ctx context.Context, a store.CloudAccount, cfg map[string]json.RawMessage, steps []doctorStep) {
+	want := rt.doctorGuardPolicyARN()
+	if want == "" {
+		_ = json.Unmarshal(cfg["guard_policy_arn"], &want)
+	}
+	var roleARN string
+	_ = json.Unmarshal(cfg["role_arn"], &roleARN)
+	role := iam.RoleName(roleARN)
+	if want == "" || role == "" {
+		return
+	}
+	creds, err := rt.accountAWSCredentials(ctx, a)
+	if err != nil {
+		return
+	}
+	arns, err := rt.listRolePolicies(ctx, creds, role)
+	step := doctorPolicyReadStep(want, arns, err)
+	for i := range steps {
+		if steps[i].ID == step.ID {
+			steps[i] = step
+		}
+	}
+}
+
+// doctorPolicyReadStep turns an IAM read into a step; a denied read is a warn with the fix, never a fail.
+func doctorPolicyReadStep(want string, arns []string, err error) doctorStep {
+	step := doctorStep{ID: "aws.guard_policy", Title: "Budget guard policy"}
+	switch {
+	case err != nil && awsx.ClassOf(err) == awsx.ClassAuth:
+		step.Status, step.Detail = doctorWarn, "The role may not read its own attached policies, so the guard policy could not be confirmed."
+		step.Fix = "Allow iam:ListAttachedRolePolicies on the role (the verify tier in the link kit includes it)."
+	case err != nil:
+		step.Status, step.Detail = doctorWarn, "The attached policies could not be read from IAM."
+		step.Fix = "Run the doctor again, or check the AWS status and the role trust."
+	case slices.Contains(arns, want):
+		step.Status, step.Detail = doctorOK, "The guard policy is attached to the linked role."
+	default:
+		step.Status, step.Detail = doctorWarn, "The guard policy is not attached to the linked role."
+		step.Fix = "Attach the policy to the role, or link again with the link kit, which attaches it by default."
+	}
+	return step
+}
+
+func (rt *Router) listRolePolicies(ctx context.Context, creds provision.AWSCredentials, role string) ([]string, error) {
+	p, err := creds.CredentialsProvider(ctx, iam.Region)
+	if err != nil {
+		return nil, err
+	}
+	c, err := p.Retrieve(ctx)
+	if err != nil {
+		return nil, err
+	}
+	cl, err := newAWSXClient(awsx.Credentials{AccessKeyID: c.AccessKeyID, SecretAccessKey: c.SecretAccessKey, SessionToken: c.SessionToken})
+	if err != nil {
+		return nil, err
+	}
+	return iam.New(cl).ListAttachedRolePolicies(ctx, role)
 }
 
 func (rt *Router) doctorCapabilitySteps(ctx context.Context, a store.CloudAccount, value string) []doctorStep {

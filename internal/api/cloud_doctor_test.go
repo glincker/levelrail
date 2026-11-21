@@ -8,6 +8,7 @@ import (
 	"strings"
 	"testing"
 
+	"github.com/GLINCKER/levelrail/internal/awsx"
 	"github.com/GLINCKER/levelrail/internal/cloudconn"
 	"github.com/GLINCKER/levelrail/internal/cloudguard"
 )
@@ -119,5 +120,19 @@ func TestCloudDoctorEndpointsAuthzAndNoSecrets(t *testing.T) {
 	rt.Handler().ServeHTTP(anon, httptest.NewRequest(http.MethodGet, "/api/v1/cloud-accounts/ora-doc/doctor", nil))
 	if anon.Code != http.StatusUnauthorized && anon.Code != http.StatusForbidden {
 		t.Fatalf("anonymous doctor = %d", anon.Code)
+	}
+}
+
+func TestDoctorPolicyReadStep(t *testing.T) {
+	arn := "arn:aws:iam::123456789012:policy/budget-guard"
+	if s := doctorPolicyReadStep(arn, []string{"x", arn}, nil); s.Status != doctorOK {
+		t.Fatalf("attached = %+v", s)
+	}
+	if s := doctorPolicyReadStep(arn, []string{"x"}, nil); s.Status != doctorWarn || s.Fix == "" {
+		t.Fatalf("missing = %+v", s)
+	}
+	denied := &awsx.Error{Service: "iam", Op: "ListAttachedRolePolicies", Code: "AccessDenied", Status: 403, Class: awsx.ClassAuth}
+	if s := doctorPolicyReadStep(arn, nil, denied); s.Status != doctorWarn || !strings.Contains(s.Fix, "iam:ListAttachedRolePolicies") {
+		t.Fatalf("denied = %+v", s)
 	}
 }

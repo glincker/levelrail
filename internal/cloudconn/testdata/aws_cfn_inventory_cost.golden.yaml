@@ -22,7 +22,8 @@ Resources:
               "Sid": "Verify1",
               "Effect": "Allow",
               "Action": [
-                "iam:SimulatePrincipalPolicy"
+                "iam:SimulatePrincipalPolicy",
+                "iam:ListAttachedRolePolicies"
               ],
               "Resource": [
                 "arn:*:iam::*:role/LevelrailAccess"
@@ -384,7 +385,8 @@ Resources:
                   "Sid": "Verify1",
                   "Effect": "Allow",
                   "Action": [
-                    "iam:SimulatePrincipalPolicy"
+                    "iam:SimulatePrincipalPolicy",
+                    "iam:ListAttachedRolePolicies"
                   ],
                   "Resource": [
                     "arn:*:iam::*:role/LevelrailAccess"
