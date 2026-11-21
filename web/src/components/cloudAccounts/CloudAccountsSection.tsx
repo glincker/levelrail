@@ -1,13 +1,22 @@
+import { useState } from 'react'
 import { Link } from '@tanstack/react-router'
 import { useTranslation } from 'react-i18next'
 import { CloudGlassIcon, PlusGlassIcon } from '@thesvg/ui-react'
 import { Button } from '@/components/ui/button'
+import {
+  Dialog,
+  DialogContent,
+  DialogDescription,
+  DialogHeader,
+  DialogTitle,
+} from '@/components/ui/dialog'
 import { EmptyState } from '@/components/ui/empty-state'
 import { StatusBadge } from '@/components/ui/status-badge'
 import { useCloudAccountActions } from '../../hooks/useCloudAccountActions'
 import { accountStatusState } from '../../lib/cloudAccounts'
 import { formatRelativeTime } from '../../lib/relativeTime'
 import { useCloudAccounts } from '../../queries/cloudAccounts'
+import { OracleCredentialForm } from '../nodeProviders/OracleCredentialForm'
 import { CloudProviderMark } from './CloudProviderMark'
 import { DigitalOceanConnect } from './DigitalOceanConnect'
 import { DoctorPanel } from './DoctorPanel'
@@ -15,11 +24,12 @@ import { DoctorPanel } from './DoctorPanel'
 const HEADING =
   'font-(family-name:--glinr-font-display) text-(length:--glinr-type-size-section) leading-(--glinr-type-leading-section) font-(weight:--glinr-type-heading-weight) text-foreground'
 
-// Oracle and the other API key providers keep their own guided flow on the provider page.
+// Oracle opens its guided form here and creates a cloud account, so no subnet is asked for.
 export function CloudAccountsSection() {
   const { t } = useTranslation('cloudAccounts')
   const { data, isPending, isError, refetch } = useCloudAccounts()
   const actions = useCloudAccountActions()
+  const [oracleOpen, setOracleOpen] = useState(false)
   const accounts = data ?? []
 
   return (
@@ -34,13 +44,7 @@ export function CloudAccountsSection() {
             <Button
               variant="outline"
               size="sm"
-              render={
-                <Link
-                  to="/integrations/cloud/$provider"
-                  params={{ provider: 'oracle' }}
-                  search={{ connect: '1' }}
-                />
-              }
+              onClick={() => setOracleOpen(true)}
             >
               <PlusGlassIcon size="1.4em" aria-hidden="true" />
               {t('section.addOracle')}
@@ -122,6 +126,23 @@ export function CloudAccountsSection() {
           ))}
         </ul>
       )}
+      <Dialog open={oracleOpen} onOpenChange={setOracleOpen}>
+        <DialogContent>
+          <DialogHeader>
+            <DialogTitle>{t('section.addOracleTitle')}</DialogTitle>
+            <DialogDescription>
+              {t('section.addOracleDescription')}
+            </DialogDescription>
+          </DialogHeader>
+          <OracleCredentialForm
+            provider={{ provider: 'oracle', has_token: false }}
+            label={t('providers.oracle')}
+            requireSubnet={false}
+            cloudAccount
+            onSaved={() => setOracleOpen(false)}
+          />
+        </DialogContent>
+      </Dialog>
     </section>
   )
 }

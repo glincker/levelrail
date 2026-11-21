@@ -20,7 +20,11 @@ void testI18n.use(initReactI18next).init({
 
 const PEM = '-----BEGIN PRIVATE KEY-----\nsecretbody\n-----END PRIVATE KEY-----'
 
-function renderForm(provider: NodeProviderResource, onSaved = vi.fn()) {
+function renderForm(
+  provider: NodeProviderResource,
+  onSaved = vi.fn(),
+  cloudAccount = false,
+) {
   const client = new QueryClient({
     defaultOptions: { queries: { retry: false }, mutations: { retry: false } },
   })
@@ -31,6 +35,8 @@ function renderForm(provider: NodeProviderResource, onSaved = vi.fn()) {
           provider={provider}
           label="Oracle Cloud"
           onSaved={onSaved}
+          requireSubnet={!cloudAccount}
+          cloudAccount={cloudAccount}
         />
       </I18nextProvider>
     </QueryClientProvider>,
@@ -82,6 +88,32 @@ describe('OracleCredentialForm', () => {
       compartment_ocid: 'ocid1.tenancy.oc1..aaa',
     })
     expect(screen.getByLabelText('Private key (PEM)')).toHaveValue('')
+  })
+
+  it('creates a cloud account without a subnet and refreshes the list', async () => {
+    const fetchMock = vi
+      .fn()
+      .mockResolvedValue(new Response(JSON.stringify({ id: 'a1' })))
+    vi.stubGlobal('fetch', fetchMock)
+    const onSaved = vi.fn()
+    renderForm({ provider: 'oracle', has_token: false }, onSaved, true)
+    fireEvent.change(screen.getByLabelText('Paste your OCI config'), {
+      target: {
+        value:
+          '[DEFAULT]\nuser=ocid1.user.oc1..bbb\nfingerprint=aa:bb:cc:dd:ee:ff:00:11:22:33:44:55:66:77:88:99\ntenancy=ocid1.tenancy.oc1..aaa\nregion=eu-frankfurt-1\n',
+      },
+    })
+    fireEvent.change(screen.getByLabelText('Private key (PEM)'), {
+      target: { value: PEM },
+    })
+    fireEvent.click(screen.getByRole('button', { name: 'Test and connect' }))
+
+    await vi.waitFor(() => expect(onSaved).toHaveBeenCalled())
+    const [url, init] = fetchMock.mock.calls[0] as [string, { body: string }]
+    expect(url).toBe('/api/v1/cloud-accounts')
+    const body = JSON.parse(init.body) as Record<string, unknown>
+    expect(body).toMatchObject({ provider: 'oracle', method: 'api_key' })
+    expect(body).not.toHaveProperty('subnet_ocid')
   })
 
   it('shows a placeholder, not the key, when one is stored', () => {

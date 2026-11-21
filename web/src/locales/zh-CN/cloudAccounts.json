@@ -2,6 +2,8 @@
   "section": {
     "title": "云账号",
     "addOracle": "添加 Oracle",
+    "addOracleTitle": "添加 Oracle 账户",
+    "addOracleDescription": "粘贴 OCI 配置和 API 密钥。子网仅在创建服务器时需要，此处为可选。",
     "linkAws": "关联 AWS",
     "connectDigitalOcean": "连接 DigitalOcean",
     "connectDigitalOceanHint": "在运行时设置中填写 DigitalOcean OAuth 客户端 ID 和密钥，即可一键连接。",

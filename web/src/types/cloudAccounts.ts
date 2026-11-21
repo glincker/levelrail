@@ -7,7 +7,6 @@ export interface CloudAccount {
   team_id?: string
   status: string
   linked: boolean
-  needs_relogin?: boolean
   last_verified_at?: string
   created_by?: string
   created_at: string
@@ -16,6 +15,17 @@ export interface CloudAccount {
   session_expires_at?: string
   needs_relogin?: boolean
   relogin_command?: string
+}
+
+export interface OracleApiKeyInput {
+  label?: string
+  tenancy_ocid: string
+  user_ocid: string
+  fingerprint: string
+  private_key_pem: string
+  region: string
+  compartment_ocid: string
+  subnet_ocid?: string
 }
 
 export interface OracleSessionInput {

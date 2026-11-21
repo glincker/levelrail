@@ -128,7 +128,7 @@ describe('AwsSsoLogin', () => {
     await waitFor(() => {
       expect(bodies.select).toBeDefined()
     })
-    const sent = JSON.parse(bodies.select) as Record<string, string>
+    const sent = JSON.parse(bodies.select ?? '{}') as Record<string, string>
     expect(sent).toMatchObject({
       session_id: 's1',
       account_id: '111122223333',
@@ -165,7 +165,7 @@ describe('AwsSsoLogin', () => {
     await waitFor(() => {
       expect(screen.getByText('sso.reloginDone')).toBeInTheDocument()
     })
-    expect(JSON.parse(bodies.relogin)).toEqual({ account_id: 'aws-1' })
+    expect(JSON.parse(bodies.relogin ?? '{}')).toEqual({ account_id: 'aws-1' })
     expect(onDone).toHaveBeenCalled()
   })
 })

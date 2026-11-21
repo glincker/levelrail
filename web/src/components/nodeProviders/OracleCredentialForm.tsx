@@ -20,6 +20,7 @@ import {
 import { OCI_RE, parseOciConfig, shortOcid } from '@/lib/ociConfig'
 import { OracleKeyWizard } from './OracleKeyWizard'
 import { OracleSessionForm } from './OracleSessionForm'
+import { useCreateOracleApiKeyAccount } from '../../queries/cloudAccounts'
 import {
   useDisconnectNodeProvider,
   useSetNodeProviderCredential,
@@ -61,12 +62,15 @@ export function OracleCredentialForm({
   label,
   onSaved,
   requireSubnet = true,
+  cloudAccount = false,
 }: {
   provider: NodeProviderResource
   label: string
   onSaved: () => void
   // The node provider endpoint needs a subnet to create servers.
   requireSubnet?: boolean
+  // Create through the cloud accounts API instead of the node provider one.
+  cloudAccount?: boolean
 }) {
   const { t } = useTranslation('nodes')
   const connected = provider.has_token
@@ -89,6 +93,7 @@ export function OracleCredentialForm({
   const configFileRef = useRef<HTMLInputElement>(null)
 
   const connect = useSetNodeProviderCredential()
+  const createAccount = useCreateOracleApiKeyAccount()
   const test = useTestNodeProvider()
   const disconnect = useDisconnectNodeProvider()
   const id = (field: string) => `node-provider-oracle-${field}`
@@ -174,19 +179,35 @@ export function OracleCredentialForm({
   function submit(e: React.FormEvent) {
     e.preventDefault()
     if (!canSubmit) return
+    if (cloudAccount) {
+      const { subnet_ocid, ...rest } = body()
+      createAccount.mutate(
+        {
+          tenancy_ocid: rest.tenancy_ocid ?? '',
+          user_ocid: rest.user_ocid ?? '',
+          fingerprint: rest.fingerprint ?? '',
+          private_key_pem: rest.private_key_pem ?? '',
+          region: rest.region ?? '',
+          compartment_ocid: rest.compartment_ocid ?? '',
+          ...(subnet_ocid ? { subnet_ocid } : {}),
+        },
+        { onSuccess: afterSave },
+      )
+      return
+    }
     connect.mutate(
       { provider: 'oracle', verify: true, ...body() },
-      {
-        onSuccess: () => {
-          setPrivateKey('')
-          toast.add({
-            title: t('oracle.form.saved', { provider: label }),
-            type: 'success',
-          })
-          onSaved()
-        },
-      },
+      { onSuccess: afterSave },
     )
+  }
+
+  function afterSave() {
+    setPrivateKey('')
+    toast.add({
+      title: t('oracle.form.saved', { provider: label }),
+      type: 'success',
+    })
+    onSaved()
   }
 
   async function loadKeyFile(file: File | undefined) {
@@ -195,13 +216,15 @@ export function OracleCredentialForm({
     if (fileRef.current) fileRef.current.value = ''
   }
 
-  const error = connect.isError
-    ? connect.error.message
-    : test.isError
-      ? test.error.message
-      : disconnect.isError
-        ? disconnect.error.message
-        : null
+  const error = createAccount.isError
+    ? createAccount.error.message
+    : connect.isError
+      ? connect.error.message
+      : test.isError
+        ? test.error.message
+        : disconnect.isError
+          ? disconnect.error.message
+          : null
 
   const modeToggle = (
     <div
@@ -530,21 +553,26 @@ export function OracleCredentialForm({
       ) : null}
 
       <div className="flex flex-wrap items-center gap-2">
-        <Button type="submit" disabled={!canSubmit || connect.isPending}>
-          {connect.isPending
+        <Button
+          type="submit"
+          disabled={!canSubmit || connect.isPending || createAccount.isPending}
+        >
+          {connect.isPending || createAccount.isPending
             ? t('oracle.form.saving')
             : t('oracle.form.testAndConnect')}
         </Button>
-        <Button
-          type="button"
-          variant="outline"
-          disabled={!canSubmit || test.isPending}
-          onClick={runTest}
-        >
-          <PlugGlassIcon size="1.4em" aria-hidden="true" />
-          {test.isPending ? t('oracle.form.testing') : t('oracle.form.test')}
-        </Button>
-        {connected ? (
+        {cloudAccount ? null : (
+          <Button
+            type="button"
+            variant="outline"
+            disabled={!canSubmit || test.isPending}
+            onClick={runTest}
+          >
+            <PlugGlassIcon size="1.4em" aria-hidden="true" />
+            {test.isPending ? t('oracle.form.testing') : t('oracle.form.test')}
+          </Button>
+        )}
+        {connected && !cloudAccount ? (
           <Button
             type="button"
             variant="ghost"
@@ -557,7 +585,7 @@ export function OracleCredentialForm({
             {t('oracle.form.testStored')}
           </Button>
         ) : null}
-        {connected ? (
+        {connected && !cloudAccount ? (
           <Button
             type="button"
             variant="ghost"

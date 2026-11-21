@@ -2,6 +2,8 @@
   "section": {
     "title": "Cloud-Konten",
     "addOracle": "Oracle hinzufügen",
+    "addOracleTitle": "Oracle-Konto hinzufügen",
+    "addOracleDescription": "OCI-Konfiguration und API-Schlüssel einfügen. Ein Subnetz wird nur zum Erstellen von Servern benötigt und ist hier optional.",
     "linkAws": "AWS verknüpfen",
     "connectDigitalOcean": "DigitalOcean verbinden",
     "connectDigitalOceanHint": "Hinterlege Client-ID und Secret der DigitalOcean-OAuth-App in den Laufzeiteinstellungen, um mit einem Klick zu verbinden.",

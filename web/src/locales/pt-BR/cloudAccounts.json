@@ -2,6 +2,8 @@
   "section": {
     "title": "Contas cloud",
     "addOracle": "Adicionar Oracle",
+    "addOracleTitle": "Adicionar conta Oracle",
+    "addOracleDescription": "Cole sua configuração OCI e a chave de API. A sub-rede só é necessária para criar servidores, aqui é opcional.",
     "linkAws": "Vincular AWS",
     "connectDigitalOcean": "Conectar DigitalOcean",
     "connectDigitalOceanHint": "Defina o client id e o segredo OAuth da DigitalOcean nas configurações de execução para conectar com um clique.",

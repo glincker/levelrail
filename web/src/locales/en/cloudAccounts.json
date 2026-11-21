@@ -2,6 +2,8 @@
   "section": {
     "title": "Cloud accounts",
     "addOracle": "Add Oracle",
+    "addOracleTitle": "Add Oracle account",
+    "addOracleDescription": "Paste your OCI config and API key. A subnet is only needed to create servers, so it is optional here.",
     "linkAws": "Link AWS",
     "connectDigitalOcean": "Connect DigitalOcean",
     "connectDigitalOceanHint": "Set the DigitalOcean OAuth client id and secret in runtime settings to connect with one click.",

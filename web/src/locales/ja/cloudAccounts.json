@@ -2,6 +2,8 @@
   "section": {
     "title": "クラウドアカウント",
     "addOracle": "Oracleを追加",
+    "addOracleTitle": "Oracle アカウントを追加",
+    "addOracleDescription": "OCI 設定と API キーを貼り付けます。サブネットはサーバー作成時のみ必要なため、ここでは任意です。",
     "linkAws": "AWSを連携",
     "connectDigitalOcean": "DigitalOceanに接続",
     "connectDigitalOceanHint": "ランタイム設定にDigitalOceanのOAuthクライアントIDとシークレットを設定すると、ワンクリックで接続できます。",

@@ -30,6 +30,7 @@ import type {
   CloudSpendReport,
   CloudVerifyResult,
   CreateAwsRoleAccountInput,
+  OracleApiKeyInput,
   OracleSessionCheck,
   OracleSessionInput,
 } from '../types/cloudAccounts'
@@ -174,6 +175,21 @@ export function useCreateOracleSessionAccount() {
           verify: true,
           ...input,
         },
+        fallbackMessage: 'create cloud account failed',
+      }),
+    onSuccess: () => qc.invalidateQueries({ queryKey: cloudAccountKeys.all }),
+  })
+}
+
+// Subnet is optional here: it is only needed when provisioning servers.
+export function useCreateOracleApiKeyAccount() {
+  const qc = useQueryClient()
+  return useMutation({
+    meta: { errorToast: false },
+    mutationFn: (input: OracleApiKeyInput) =>
+      apiRequest<CloudAccount>(BASE, {
+        method: 'POST',
+        body: { provider: 'oracle', method: 'api_key', verify: true, ...input },
         fallbackMessage: 'create cloud account failed',
       }),
     onSuccess: () => qc.invalidateQueries({ queryKey: cloudAccountKeys.all }),
