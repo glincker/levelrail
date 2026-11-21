@@ -77,6 +77,7 @@ func DefaultRegistry() Registry {
 	for _, n := range []string{ProviderOracle, ProviderAWS, ProviderAzure, ProviderGCP, ProviderHetzner, ProviderDigitalOcean} {
 		r[n] = notImplemented{name: n}
 	}
+	r[ProviderAWS] = NewAWSProvider(AWSOptions{})
 	return r
 }
 
