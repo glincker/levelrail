@@ -78,7 +78,9 @@
       "principalHint": "L'identité AWS sous laquelle Levelrail s'exécute. Elle seule peut assumer le rôle.",
       "guard": "ARN de la politique garde-fou (facultatif)",
       "roleName": "Nom du rôle (facultatif)",
-      "roleNamePlaceholder": "Nom par défaut"
+      "roleNamePlaceholder": "Nom par défaut",
+      "principalPrefilled": "Prérempli avec l'identité sous laquelle Levelrail s'exécute (compte {{account}}). Vous pouvez le modifier.",
+      "principalNotConfigured": "Aucune identité AWS trouvée. Lancez aws login ou définissez des identifiants AWS pour le processus Levelrail, ou collez l'ARN."
     },
     "issues": {
       "noCapabilities": "Choisissez au moins une capacité.",
@@ -133,7 +135,8 @@
     "deleteTitle": "Supprimer {{name}} ?",
     "deleteBody": "L'identifiant stocké est supprimé et les accès cessent de fonctionner. Les ressources du compte cloud ne sont pas touchées. Saisissez le nom pour confirmer.",
     "regions": "Régions",
-    "regionsFailed": "Impossible de lister les régions."
+    "regionsFailed": "Impossible de lister les régions.",
+    "instances": "Instances"
   },
   "access": {
     "needsShare": "Il faut la permission de partage sur ce compte pour voir qui y a accès.",
@@ -156,6 +159,102 @@
       "view_spend": "Voir les dépenses",
       "manage_budget": "Gérer le budget",
       "share": "Partager"
+    }
+  },
+  "spend": {
+    "title": "Dépenses du mois",
+    "estimated": "estimé",
+    "refresh": "Actualiser",
+    "none": "Aucune dépense enregistrée.",
+    "monthToDate": "depuis le début du mois ({{currency}})",
+    "stale": "Ces données sont périmées.",
+    "dataAge": "Données au {{time}}",
+    "limited": "Actualisé récemment. Réessayez plus tard.",
+    "limitedIn": "Actualisé récemment. Réessayez dans {{seconds}} secondes.",
+    "usageLink": "Dépenses des comptes cloud",
+    "state": {
+      "disabled": "Le suivi des dépenses est désactivé",
+      "tag_not_active": "L'étiquette d'allocation des coûts n'est pas active",
+      "data_unavailable": "Les données de dépenses ne sont pas disponibles"
+    },
+    "hint": {
+      "disabled": "Activez les dépenses cloud dans les paramètres d'exécution.",
+      "tag_not_active": "Activez l'étiquette d'allocation des coûts levelrail:project dans la console de facturation, puis actualisez.",
+      "data_unavailable": "Donnez au compte un accès en lecture aux coûts, puis actualisez."
+    }
+  },
+  "instances": {
+    "noAccess": "Vous n'avez pas accès à la liste des instances de ce compte.",
+    "empty": "Aucune instance trouvée.",
+    "cancel": "Annuler",
+    "managed": "Gérée",
+    "unmanaged": "Non gérée",
+    "col": {
+      "name": "Nom",
+      "state": "État",
+      "size": "Taille",
+      "region": "Région",
+      "ip": "IP publique",
+      "managed": "Gestion",
+      "actions": "Actions"
+    },
+    "state": {
+      "pending": "En attente",
+      "running": "En cours",
+      "stopping": "Arrêt en cours",
+      "stopped": "Arrêtée",
+      "terminating": "Suppression en cours",
+      "terminated": "Supprimée",
+      "unknown": "Inconnu"
+    },
+    "action": {
+      "start": "Démarrer",
+      "stop": "Arrêter",
+      "soft_stop": "Arrêt propre",
+      "reboot": "Redémarrer",
+      "soft_reboot": "Redémarrage propre"
+    },
+    "stop": {
+      "title": "Arrêter {{name}} ?",
+      "body": "L'instance reste hors ligne jusqu'à son prochain démarrage."
+    },
+    "resize": {
+      "open": "Redimensionner",
+      "title": "Redimensionner {{name}}",
+      "current": "Taille actuelle : {{shape}}",
+      "oracleReboot": "Redimensionner une instance Oracle la redémarre.",
+      "type": "Nouveau type d'instance",
+      "ocpus": "OCPUs",
+      "memory": "Mémoire (Go)",
+      "confirm": "Redimensionner"
+    },
+    "terminate": {
+      "open": "Supprimer",
+      "title": "Supprimer {{name}} ?",
+      "body": "L'instance est supprimée chez le fournisseur et ne peut pas être récupérée. Saisissez le nom pour confirmer.",
+      "confirm": "Supprimer",
+      "keepVolume": "Conserver le volume de démarrage"
+    },
+    "detail": {
+      "state": "État",
+      "shape": "Taille",
+      "region": "Région",
+      "zone": "Zone",
+      "publicIp": "IP publique",
+      "privateIp": "IP privée",
+      "image": "Image",
+      "bootVolume": "Volume de démarrage",
+      "project": "Projet",
+      "environment": "Environnement",
+      "tags": "Étiquettes",
+      "noTags": "Aucune étiquette.",
+      "tagKey": "Clé d'étiquette",
+      "tagValue": "Valeur d'étiquette",
+      "removeTag": "Retirer",
+      "addTag": "Ajouter une étiquette",
+      "saveTags": "Enregistrer les étiquettes",
+      "readOnly": "Les étiquettes sont en lecture seule pour cette instance.",
+      "saved": "Étiquettes enregistrées."
     }
   }
 }

@@ -78,7 +78,9 @@
       "principalHint": "A identidade AWS com a qual o Levelrail roda. Só ela pode assumir o papel.",
       "guard": "ARN da política de guarda (opcional)",
       "roleName": "Nome do papel (opcional)",
-      "roleNamePlaceholder": "Nome padrão"
+      "roleNamePlaceholder": "Nome padrão",
+      "principalPrefilled": "Preenchido com a identidade sob a qual o Levelrail executa (conta {{account}}). Você pode editar.",
+      "principalNotConfigured": "Nenhuma identidade da AWS encontrada. Execute aws login ou defina credenciais da AWS para o processo do Levelrail, ou cole o ARN."
     },
     "issues": {
       "noCapabilities": "Escolha ao menos uma capacidade.",
@@ -133,7 +135,8 @@
     "deleteTitle": "Excluir {{name}}?",
     "deleteBody": "A credencial guardada é removida e as concessões deixam de funcionar. Os recursos na conta cloud não são tocados. Digite o nome para confirmar.",
     "regions": "Regiões",
-    "regionsFailed": "Não foi possível listar as regiões."
+    "regionsFailed": "Não foi possível listar as regiões.",
+    "instances": "Instâncias"
   },
   "access": {
     "needsShare": "Você precisa da permissão de compartilhar nesta conta para ver quem tem acesso.",
@@ -156,6 +159,102 @@
       "view_spend": "Ver gastos",
       "manage_budget": "Gerenciar orçamento",
       "share": "Compartilhar"
+    }
+  },
+  "spend": {
+    "title": "Gasto deste mês",
+    "estimated": "estimado",
+    "refresh": "Atualizar",
+    "none": "Nenhum gasto registrado ainda.",
+    "monthToDate": "no mês até agora ({{currency}})",
+    "stale": "Estes dados estão desatualizados.",
+    "dataAge": "Dados de {{time}}",
+    "limited": "Atualizado há pouco. Tente novamente mais tarde.",
+    "limitedIn": "Atualizado há pouco. Tente novamente em {{seconds}} segundos.",
+    "usageLink": "Gasto das contas cloud",
+    "state": {
+      "disabled": "O gasto está desativado",
+      "tag_not_active": "A tag de alocação de custos não está ativa",
+      "data_unavailable": "Os dados de gasto não estão disponíveis"
+    },
+    "hint": {
+      "disabled": "Ative o gasto cloud nas configurações de execução.",
+      "tag_not_active": "Ative a tag de alocação de custos levelrail:project no console de cobrança e atualize.",
+      "data_unavailable": "Dê à conta acesso de leitura a custos e atualize."
+    }
+  },
+  "instances": {
+    "noAccess": "Você não tem acesso para listar as instâncias desta conta.",
+    "empty": "Nenhuma instância encontrada.",
+    "cancel": "Cancelar",
+    "managed": "Gerenciada",
+    "unmanaged": "Não gerenciada",
+    "col": {
+      "name": "Nome",
+      "state": "Estado",
+      "size": "Tamanho",
+      "region": "Região",
+      "ip": "IP público",
+      "managed": "Gestão",
+      "actions": "Ações"
+    },
+    "state": {
+      "pending": "Pendente",
+      "running": "Em execução",
+      "stopping": "Parando",
+      "stopped": "Parada",
+      "terminating": "Encerrando",
+      "terminated": "Encerrada",
+      "unknown": "Desconhecido"
+    },
+    "action": {
+      "start": "Iniciar",
+      "stop": "Parar",
+      "soft_stop": "Parada suave",
+      "reboot": "Reiniciar",
+      "soft_reboot": "Reinício suave"
+    },
+    "stop": {
+      "title": "Parar {{name}}?",
+      "body": "A instância fica offline até ser iniciada novamente."
+    },
+    "resize": {
+      "open": "Redimensionar",
+      "title": "Redimensionar {{name}}",
+      "current": "Tamanho atual: {{shape}}",
+      "oracleReboot": "Redimensionar uma instância Oracle a reinicia.",
+      "type": "Novo tipo de instância",
+      "ocpus": "OCPUs",
+      "memory": "Memória (GB)",
+      "confirm": "Redimensionar"
+    },
+    "terminate": {
+      "open": "Encerrar",
+      "title": "Encerrar {{name}}?",
+      "body": "A instância é excluída no provedor e não pode ser recuperada. Digite o nome para confirmar.",
+      "confirm": "Encerrar",
+      "keepVolume": "Manter o volume de inicialização"
+    },
+    "detail": {
+      "state": "Estado",
+      "shape": "Tamanho",
+      "region": "Região",
+      "zone": "Zona",
+      "publicIp": "IP público",
+      "privateIp": "IP privado",
+      "image": "Imagem",
+      "bootVolume": "Volume de inicialização",
+      "project": "Projeto",
+      "environment": "Ambiente",
+      "tags": "Tags",
+      "noTags": "Sem tags.",
+      "tagKey": "Chave da tag",
+      "tagValue": "Valor da tag",
+      "removeTag": "Remover",
+      "addTag": "Adicionar tag",
+      "saveTags": "Salvar tags",
+      "readOnly": "As tags desta instância são somente leitura.",
+      "saved": "Tags salvas."
     }
   }
 }

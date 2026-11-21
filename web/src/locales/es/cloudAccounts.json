@@ -78,7 +78,9 @@
       "principalHint": "La identidad de AWS con la que corre Levelrail. Es la única que puede asumir el rol.",
       "guard": "ARN de la política guardia (opcional)",
       "roleName": "Nombre del rol (opcional)",
-      "roleNamePlaceholder": "Nombre por defecto"
+      "roleNamePlaceholder": "Nombre por defecto",
+      "principalPrefilled": "Rellenado con la identidad con la que se ejecuta Levelrail (cuenta {{account}}). Puedes editarlo.",
+      "principalNotConfigured": "No se encontró una identidad de AWS. Ejecuta aws login o define credenciales de AWS para el proceso de Levelrail, o pega el ARN."
     },
     "issues": {
       "noCapabilities": "Elige al menos una capacidad.",
@@ -133,7 +135,8 @@
     "deleteTitle": "¿Eliminar {{name}}?",
     "deleteBody": "Se elimina la credencial guardada y los permisos dejan de funcionar. Los recursos de la cuenta cloud no se tocan. Escribe el nombre para confirmar.",
     "regions": "Regiones",
-    "regionsFailed": "No se pudieron listar las regiones."
+    "regionsFailed": "No se pudieron listar las regiones.",
+    "instances": "Instancias"
   },
   "access": {
     "needsShare": "Necesitas el permiso de compartir en esta cuenta para ver quién tiene acceso.",
@@ -156,6 +159,102 @@
       "view_spend": "Ver gasto",
       "manage_budget": "Gestionar presupuesto",
       "share": "Compartir"
+    }
+  },
+  "spend": {
+    "title": "Gasto de este mes",
+    "estimated": "estimado",
+    "refresh": "Actualizar",
+    "none": "Aún no hay gasto registrado.",
+    "monthToDate": "en lo que va del mes ({{currency}})",
+    "stale": "Estos datos están desactualizados.",
+    "dataAge": "Datos a {{time}}",
+    "limited": "Se actualizó hace poco. Inténtalo más tarde.",
+    "limitedIn": "Se actualizó hace poco. Inténtalo de nuevo en {{seconds}} segundos.",
+    "usageLink": "Gasto de cuentas cloud",
+    "state": {
+      "disabled": "El gasto está desactivado",
+      "tag_not_active": "La etiqueta de asignación de costes no está activa",
+      "data_unavailable": "Los datos de gasto no están disponibles"
+    },
+    "hint": {
+      "disabled": "Activa el gasto cloud en los ajustes de ejecución.",
+      "tag_not_active": "Activa la etiqueta de asignación de costes levelrail:project en la consola de facturación y actualiza.",
+      "data_unavailable": "Da a la cuenta acceso de lectura a costes y actualiza."
+    }
+  },
+  "instances": {
+    "noAccess": "No tienes acceso para listar las instancias de esta cuenta.",
+    "empty": "No se encontraron instancias.",
+    "cancel": "Cancelar",
+    "managed": "Gestionada",
+    "unmanaged": "No gestionada",
+    "col": {
+      "name": "Nombre",
+      "state": "Estado",
+      "size": "Tamaño",
+      "region": "Región",
+      "ip": "IP pública",
+      "managed": "Gestión",
+      "actions": "Acciones"
+    },
+    "state": {
+      "pending": "Pendiente",
+      "running": "En ejecución",
+      "stopping": "Deteniéndose",
+      "stopped": "Detenida",
+      "terminating": "Terminando",
+      "terminated": "Terminada",
+      "unknown": "Desconocido"
+    },
+    "action": {
+      "start": "Iniciar",
+      "stop": "Detener",
+      "soft_stop": "Detención suave",
+      "reboot": "Reiniciar",
+      "soft_reboot": "Reinicio suave"
+    },
+    "stop": {
+      "title": "¿Detener {{name}}?",
+      "body": "La instancia queda sin conexión hasta que se inicie de nuevo."
+    },
+    "resize": {
+      "open": "Redimensionar",
+      "title": "Redimensionar {{name}}",
+      "current": "Tamaño actual: {{shape}}",
+      "oracleReboot": "Redimensionar una instancia de Oracle la reinicia.",
+      "type": "Nuevo tipo de instancia",
+      "ocpus": "OCPUs",
+      "memory": "Memoria (GB)",
+      "confirm": "Redimensionar"
+    },
+    "terminate": {
+      "open": "Terminar",
+      "title": "¿Terminar {{name}}?",
+      "body": "La instancia se elimina en el proveedor y no se puede recuperar. Escribe el nombre para confirmar.",
+      "confirm": "Terminar",
+      "keepVolume": "Conservar el volumen de arranque"
+    },
+    "detail": {
+      "state": "Estado",
+      "shape": "Tamaño",
+      "region": "Región",
+      "zone": "Zona",
+      "publicIp": "IP pública",
+      "privateIp": "IP privada",
+      "image": "Imagen",
+      "bootVolume": "Volumen de arranque",
+      "project": "Proyecto",
+      "environment": "Entorno",
+      "tags": "Etiquetas",
+      "noTags": "Sin etiquetas.",
+      "tagKey": "Clave de etiqueta",
+      "tagValue": "Valor de etiqueta",
+      "removeTag": "Quitar",
+      "addTag": "Añadir etiqueta",
+      "saveTags": "Guardar etiquetas",
+      "readOnly": "Las etiquetas son de solo lectura en esta instancia.",
+      "saved": "Etiquetas guardadas."
     }
   }
 }

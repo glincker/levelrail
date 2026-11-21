@@ -1,5 +1,5 @@
 import { useState } from 'react'
-import { createFileRoute } from '@tanstack/react-router'
+import { Link, createFileRoute } from '@tanstack/react-router'
 import { useTranslation } from 'react-i18next'
 import { CoinsGlassIcon, DownloadGlassIcon } from '@thesvg/ui-react'
 import { PageTemplate } from '@/components/shell/PageTemplate'
@@ -35,6 +35,7 @@ function UsageSkeleton() {
 
 function UsagePage() {
   const { t } = useTranslation('usage')
+  const { t: tCloud } = useTranslation('cloudAccounts')
   const [period, setPeriod] = useState<UsagePeriod>('mtd')
   const [pricesOpen, setPricesOpen] = useState(false)
   const report = useUsageReport(period)
@@ -58,6 +59,9 @@ function UsagePage() {
               {t('settings.open')}
             </Button>
           ) : null}
+          <Button variant="outline" render={<Link to="/integrations" />}>
+            {tCloud('spend.usageLink')}
+          </Button>
           <Button
             variant="outline"
             render={

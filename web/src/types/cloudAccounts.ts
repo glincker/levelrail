@@ -84,3 +84,77 @@ export interface CloudGrantInput {
   actions: string[]
   expires_at?: string
 }
+
+export interface CloudAccessData {
+  root: boolean
+  accounts: Record<string, string[]>
+}
+
+export interface AwsControlIdentity {
+  account: string
+  arn: string
+  configured: boolean
+}
+
+export interface CloudInstance {
+  id: string
+  name: string
+  region: string
+  state: string
+  raw_state: string
+  shape: string
+  ocpus?: number
+  memory_gb?: number
+  public_ipv4?: string
+  created_at: string
+  tags: Record<string, string>
+  managed: boolean
+  read_only: boolean
+}
+
+export interface CloudInstanceDetail extends CloudInstance {
+  private_ipv4?: string
+  zone?: string
+  image_id?: string
+  boot_volume_gb?: number
+  project?: string
+  environment?: string
+  resize_advisory?: string
+  verbs: string[]
+}
+
+export type CloudInstanceAction =
+  'start' | 'stop' | 'soft_stop' | 'reboot' | 'soft_reboot'
+
+export interface CloudResizeInput {
+  instance_type?: string
+  ocpus?: number
+  memory_gb?: number
+}
+
+export interface CloudSpendTotal {
+  currency: string
+  amount: number
+}
+
+export interface CloudSpendLine extends CloudSpendTotal {
+  name: string
+  provider_id?: string
+}
+
+export interface CloudSpendReport {
+  account_id: string
+  provider: string
+  period_start: string
+  period_end: string
+  state: string
+  fix_hint?: string
+  totals: CloudSpendTotal[]
+  by_service: CloudSpendLine[]
+  source: string
+  estimated: boolean
+  data_as_of?: string
+  fetched_at: string
+  stale: boolean
+  error_code?: string
+}

@@ -78,7 +78,9 @@
       "principalHint": "LevelrailがAWSで使うID。このIDだけがロールを引き受けられます。",
       "guard": "ガードポリシーのARN(任意)",
       "roleName": "ロール名(任意)",
-      "roleNamePlaceholder": "既定の名前"
+      "roleNamePlaceholder": "既定の名前",
+      "principalPrefilled": "Levelrail の実行 ID から自動入力しました(アカウント {{account}})。編集できます。",
+      "principalNotConfigured": "AWS の ID が見つかりません。aws login を実行するか、Levelrail プロセスに AWS 認証情報を設定するか、ARN を貼り付けてください。"
     },
     "issues": {
       "noCapabilities": "機能を1つ以上選んでください。",
@@ -133,7 +135,8 @@
     "deleteTitle": "{{name}}を削除しますか?",
     "deleteBody": "保存された認証情報が削除され、付与された権限は使えなくなります。クラウド側のリソースには触れません。確認のため名前を入力してください。",
     "regions": "リージョン",
-    "regionsFailed": "リージョンを取得できませんでした。"
+    "regionsFailed": "リージョンを取得できませんでした。",
+    "instances": "インスタンス"
   },
   "access": {
     "needsShare": "アクセスを確認するには、このアカウントの共有権限が必要です。",
@@ -156,6 +159,102 @@
       "view_spend": "費用を表示",
       "manage_budget": "予算を管理",
       "share": "共有"
+    }
+  },
+  "spend": {
+    "title": "今月の利用額",
+    "estimated": "推定",
+    "refresh": "更新",
+    "none": "利用額はまだ記録されていません。",
+    "monthToDate": "月初から({{currency}})",
+    "stale": "このデータは古くなっています。",
+    "dataAge": "データ時点: {{time}}",
+    "limited": "最近更新されました。後でもう一度お試しください。",
+    "limitedIn": "最近更新されました。{{seconds}} 秒後にもう一度お試しください。",
+    "usageLink": "クラウドアカウントの利用額",
+    "state": {
+      "disabled": "利用額の取得はオフです",
+      "tag_not_active": "コスト配分タグが有効ではありません",
+      "data_unavailable": "利用額データを取得できません"
+    },
+    "hint": {
+      "disabled": "ランタイム設定でクラウド利用額を有効にしてください。",
+      "tag_not_active": "請求コンソールでコスト配分タグ levelrail:project を有効にしてから更新してください。",
+      "data_unavailable": "アカウントにコストの読み取り権限を付与してから更新してください。"
+    }
+  },
+  "instances": {
+    "noAccess": "このアカウントのインスタンスを一覧する権限がありません。",
+    "empty": "インスタンスが見つかりません。",
+    "cancel": "キャンセル",
+    "managed": "管理対象",
+    "unmanaged": "管理対象外",
+    "col": {
+      "name": "名前",
+      "state": "状態",
+      "size": "サイズ",
+      "region": "リージョン",
+      "ip": "パブリック IP",
+      "managed": "管理",
+      "actions": "操作"
+    },
+    "state": {
+      "pending": "保留中",
+      "running": "実行中",
+      "stopping": "停止中",
+      "stopped": "停止済み",
+      "terminating": "終了中",
+      "terminated": "終了済み",
+      "unknown": "不明"
+    },
+    "action": {
+      "start": "開始",
+      "stop": "停止",
+      "soft_stop": "通常停止",
+      "reboot": "再起動",
+      "soft_reboot": "通常再起動"
+    },
+    "stop": {
+      "title": "{{name}} を停止しますか?",
+      "body": "再び開始するまでインスタンスはオフラインになります。"
+    },
+    "resize": {
+      "open": "サイズ変更",
+      "title": "{{name}} のサイズ変更",
+      "current": "現在のサイズ: {{shape}}",
+      "oracleReboot": "Oracle インスタンスのサイズを変更すると再起動されます。",
+      "type": "新しいインスタンスタイプ",
+      "ocpus": "OCPU",
+      "memory": "メモリ (GB)",
+      "confirm": "サイズ変更"
+    },
+    "terminate": {
+      "open": "終了",
+      "title": "{{name}} を終了しますか?",
+      "body": "インスタンスはプロバイダー側で削除され、元に戻せません。確認のため名前を入力してください。",
+      "confirm": "終了",
+      "keepVolume": "ブートボリュームを残す"
+    },
+    "detail": {
+      "state": "状態",
+      "shape": "シェイプ",
+      "region": "リージョン",
+      "zone": "ゾーン",
+      "publicIp": "パブリック IP",
+      "privateIp": "プライベート IP",
+      "image": "イメージ",
+      "bootVolume": "ブートボリューム",
+      "project": "プロジェクト",
+      "environment": "環境",
+      "tags": "タグ",
+      "noTags": "タグはありません。",
+      "tagKey": "タグキー",
+      "tagValue": "タグ値",
+      "removeTag": "削除",
+      "addTag": "タグを追加",
+      "saveTags": "タグを保存",
+      "readOnly": "このインスタンスのタグは読み取り専用です。",
+      "saved": "タグを保存しました。"
     }
   }
 }

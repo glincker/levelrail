@@ -4,8 +4,7 @@ import { CloudGlassIcon, PlusGlassIcon } from '@thesvg/ui-react'
 import { Button } from '@/components/ui/button'
 import { EmptyState } from '@/components/ui/empty-state'
 import { StatusBadge } from '@/components/ui/status-badge'
-import { useIsRoot } from '../../hooks/useIsRoot'
-import { cloudAccountActions } from '../../lib/cloudAccess'
+import { useCloudAccountActions } from '../../hooks/useCloudAccountActions'
 import { accountStatusState } from '../../lib/cloudAccounts'
 import { formatRelativeTime } from '../../lib/relativeTime'
 import { useCloudAccounts } from '../../queries/cloudAccounts'
@@ -18,7 +17,7 @@ const HEADING =
 export function CloudAccountsSection() {
   const { t } = useTranslation('cloudAccounts')
   const { data, isPending, isError, refetch } = useCloudAccounts()
-  const actions = cloudAccountActions(useIsRoot())
+  const actions = useCloudAccountActions()
   const accounts = data ?? []
 
   return (

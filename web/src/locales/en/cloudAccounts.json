@@ -78,7 +78,9 @@
       "principalHint": "The AWS identity Levelrail runs as. It is the only one allowed to assume the role.",
       "guard": "Guard policy ARN (optional)",
       "roleName": "Role name (optional)",
-      "roleNamePlaceholder": "Default name"
+      "roleNamePlaceholder": "Default name",
+      "principalPrefilled": "Prefilled from the identity Levelrail runs as (account {{account}}). You can edit it.",
+      "principalNotConfigured": "No AWS identity found. Run aws login or set AWS credentials for the Levelrail process, or paste the ARN."
     },
     "issues": {
       "noCapabilities": "Pick at least one capability.",
@@ -133,7 +135,8 @@
     "deleteTitle": "Delete {{name}}?",
     "deleteBody": "The stored credential is removed and grants stop working. Resources in the cloud account are not touched. Type the name to confirm.",
     "regions": "Regions",
-    "regionsFailed": "Regions could not be listed."
+    "regionsFailed": "Regions could not be listed.",
+    "instances": "Instances"
   },
   "access": {
     "needsShare": "You need the share permission on this account to see who has access.",
@@ -156,6 +159,102 @@
       "view_spend": "View spend",
       "manage_budget": "Manage budget",
       "share": "Share"
+    }
+  },
+  "spend": {
+    "title": "Spend this month",
+    "estimated": "estimated",
+    "refresh": "Refresh",
+    "none": "No spend recorded yet.",
+    "monthToDate": "month to date ({{currency}})",
+    "stale": "This data is stale.",
+    "dataAge": "Data as of {{time}}",
+    "limited": "Refreshed recently. Try again later.",
+    "limitedIn": "Refreshed recently. Try again in {{seconds}} seconds.",
+    "usageLink": "Cloud account spend",
+    "state": {
+      "disabled": "Spend is turned off",
+      "tag_not_active": "Cost allocation tag is not active",
+      "data_unavailable": "Spend data is not available"
+    },
+    "hint": {
+      "disabled": "Turn on cloud spend in the runtime settings.",
+      "tag_not_active": "Activate the levelrail:project cost allocation tag in the billing console, then refresh.",
+      "data_unavailable": "Grant the account cost read access and refresh."
+    }
+  },
+  "instances": {
+    "noAccess": "You do not have access to list instances on this account.",
+    "empty": "No instances found.",
+    "cancel": "Cancel",
+    "managed": "Managed",
+    "unmanaged": "Unmanaged",
+    "col": {
+      "name": "Name",
+      "state": "State",
+      "size": "Size",
+      "region": "Region",
+      "ip": "Public IP",
+      "managed": "Managed",
+      "actions": "Actions"
+    },
+    "state": {
+      "pending": "Pending",
+      "running": "Running",
+      "stopping": "Stopping",
+      "stopped": "Stopped",
+      "terminating": "Terminating",
+      "terminated": "Terminated",
+      "unknown": "Unknown"
+    },
+    "action": {
+      "start": "Start",
+      "stop": "Stop",
+      "soft_stop": "Soft stop",
+      "reboot": "Reboot",
+      "soft_reboot": "Soft reboot"
+    },
+    "stop": {
+      "title": "Stop {{name}}?",
+      "body": "The instance goes offline until it is started again."
+    },
+    "resize": {
+      "open": "Resize",
+      "title": "Resize {{name}}",
+      "current": "Current size: {{shape}}",
+      "oracleReboot": "Resizing an Oracle instance reboots it.",
+      "type": "New instance type",
+      "ocpus": "OCPUs",
+      "memory": "Memory (GB)",
+      "confirm": "Resize"
+    },
+    "terminate": {
+      "open": "Terminate",
+      "title": "Terminate {{name}}?",
+      "body": "The instance is deleted at the provider and cannot be recovered. Type the name to confirm.",
+      "confirm": "Terminate",
+      "keepVolume": "Keep the boot volume"
+    },
+    "detail": {
+      "state": "State",
+      "shape": "Shape",
+      "region": "Region",
+      "zone": "Zone",
+      "publicIp": "Public IP",
+      "privateIp": "Private IP",
+      "image": "Image",
+      "bootVolume": "Boot volume",
+      "project": "Project",
+      "environment": "Environment",
+      "tags": "Tags",
+      "noTags": "No tags.",
+      "tagKey": "Tag key",
+      "tagValue": "Tag value",
+      "removeTag": "Remove",
+      "addTag": "Add tag",
+      "saveTags": "Save tags",
+      "readOnly": "Tags are read only for this instance.",
+      "saved": "Tags saved."
     }
   }
 }

@@ -7,8 +7,8 @@ import { Button } from '@/components/ui/button'
 import { ConfirmDialog } from '@/components/ui/confirm-dialog'
 import { StatusBadge } from '@/components/ui/status-badge'
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs'
-import { useIsRoot } from '../../hooks/useIsRoot'
-import { cloudAccountActions, deleteConfirmName } from '../../lib/cloudAccess'
+import { useCloudAccountActions } from '../../hooks/useCloudAccountActions'
+import { deleteConfirmName } from '../../lib/cloudAccess'
 import { AWS_CAPABILITIES, accountStatusState } from '../../lib/cloudAccounts'
 import { formatAbsoluteTime } from '../../lib/relativeTime'
 import {
@@ -21,6 +21,8 @@ import {
 import type { CloudVerifyResult } from '../../types/cloudAccounts'
 import { CapabilityResults } from './CapabilityResults'
 import { CloudAccountAccess } from './CloudAccountAccess'
+import { CloudInstancesTab } from './CloudInstancesTab'
+import { CloudSpendCard } from './CloudSpendCard'
 import { CloudProviderMark } from './CloudProviderMark'
 
 function messageOf(e: unknown): string {
@@ -30,7 +32,7 @@ function messageOf(e: unknown): string {
 export function CloudAccountDetail({ id }: Readonly<{ id: string }>) {
   const { t } = useTranslation('cloudAccounts')
   const navigate = useNavigate()
-  const actions = cloudAccountActions(useIsRoot())
+  const actions = useCloudAccountActions(id)
   const account = useCloudAccount(id)
   const regions = useCloudAccountRegions(id, account.isSuccess)
   const verify = useVerifyCloudAccount()
@@ -93,6 +95,7 @@ export function CloudAccountDetail({ id }: Readonly<{ id: string }>) {
       <Tabs defaultValue="overview">
         <TabsList aria-label={t('detail.tabs')}>
           <TabsTrigger value="overview">{t('detail.overview')}</TabsTrigger>
+          <TabsTrigger value="instances">{t('detail.instances')}</TabsTrigger>
           <TabsTrigger value="access">{t('detail.access')}</TabsTrigger>
         </TabsList>
         <TabsContent value="overview" className="space-y-4 pt-2">
@@ -126,6 +129,7 @@ export function CloudAccountDetail({ id }: Readonly<{ id: string }>) {
               <dd>{a.linked ? t('detail.stored') : t('detail.missing')}</dd>
             </div>
           </dl>
+          <CloudSpendCard accountId={id} />
           <div className="flex flex-wrap items-center gap-2">
             <Button
               size="sm"
@@ -226,6 +230,9 @@ export function CloudAccountDetail({ id }: Readonly<{ id: string }>) {
               </ul>
             )}
           </section>
+        </TabsContent>
+        <TabsContent value="instances" className="pt-2">
+          <CloudInstancesTab accountId={id} provider={a.provider} />
         </TabsContent>
         <TabsContent value="access" className="pt-2">
           <CloudAccountAccess accountId={id} canShare={actions.share} />

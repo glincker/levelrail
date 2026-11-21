@@ -10,6 +10,7 @@ import {
   type AwsWizardState,
   type ScopeIssue,
 } from '../../lib/cloudAccounts'
+import type { AwsControlIdentity } from '../../types/cloudAccounts'
 
 // Example ARNs and ids, not translatable text.
 const EX_0 = 'eu-west-1, us-east-1'
@@ -20,10 +21,12 @@ export function AwsLinkScopeStep({
   state,
   onChange,
   showIssues,
+  identity,
 }: Readonly<{
   state: AwsWizardState
   onChange: (patch: Partial<AwsWizardState>) => void
   showIssues: boolean
+  identity?: AwsControlIdentity
 }>) {
   const { t } = useTranslation('cloudAccounts')
   const uid = useId()
@@ -123,6 +126,18 @@ export function AwsLinkScopeStep({
           <p className="text-xs text-muted-foreground">
             {t('wizard.scope.principalHint')}
           </p>
+          {identity?.configured ? (
+            <p className="text-xs text-muted-foreground">
+              {t('wizard.scope.principalPrefilled', {
+                account: identity.account,
+              })}
+            </p>
+          ) : null}
+          {identity && !identity.configured ? (
+            <p className="text-xs text-muted-foreground">
+              {t('wizard.scope.principalNotConfigured')}
+            </p>
+          ) : null}
           {err('badPrincipal')}
         </div>
         <div className="space-y-1">

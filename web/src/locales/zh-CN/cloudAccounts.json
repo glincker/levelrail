@@ -78,7 +78,9 @@
       "principalHint": "Levelrail 运行时使用的 AWS 身份。只有它可以代入该角色。",
       "guard": "防护策略 ARN(可选)",
       "roleName": "角色名称(可选)",
-      "roleNamePlaceholder": "默认名称"
+      "roleNamePlaceholder": "默认名称",
+      "principalPrefilled": "已根据 Levelrail 运行所用的身份预填(账户 {{account}}),可自行修改。",
+      "principalNotConfigured": "未找到 AWS 身份。请运行 aws login,或为 Levelrail 进程设置 AWS 凭证,或直接粘贴 ARN。"
     },
     "issues": {
       "noCapabilities": "至少选择一项能力。",
@@ -133,7 +135,8 @@
     "deleteTitle": "删除 {{name}}?",
     "deleteBody": "已保存的凭据会被移除，授权将失效。云账号中的资源不受影响。请输入名称确认。",
     "regions": "区域",
-    "regionsFailed": "无法列出区域。"
+    "regionsFailed": "无法列出区域。",
+    "instances": "实例"
   },
   "access": {
     "needsShare": "需要此账号的共享权限才能查看谁有访问权。",
@@ -156,6 +159,102 @@
       "view_spend": "查看花费",
       "manage_budget": "管理预算",
       "share": "共享"
+    }
+  },
+  "spend": {
+    "title": "本月支出",
+    "estimated": "估算",
+    "refresh": "刷新",
+    "none": "尚无支出记录。",
+    "monthToDate": "本月至今({{currency}})",
+    "stale": "此数据已过期。",
+    "dataAge": "数据截至 {{time}}",
+    "limited": "刚刚刷新过,请稍后再试。",
+    "limitedIn": "刚刚刷新过,请在 {{seconds}} 秒后再试。",
+    "usageLink": "云账户支出",
+    "state": {
+      "disabled": "支出统计已关闭",
+      "tag_not_active": "成本分配标签未启用",
+      "data_unavailable": "支出数据不可用"
+    },
+    "hint": {
+      "disabled": "请在运行时设置中开启云支出。",
+      "tag_not_active": "请在账单控制台启用成本分配标签 levelrail:project,然后刷新。",
+      "data_unavailable": "请授予账户成本读取权限,然后刷新。"
+    }
+  },
+  "instances": {
+    "noAccess": "你无权列出此账户的实例。",
+    "empty": "未找到实例。",
+    "cancel": "取消",
+    "managed": "已托管",
+    "unmanaged": "未托管",
+    "col": {
+      "name": "名称",
+      "state": "状态",
+      "size": "规格",
+      "region": "区域",
+      "ip": "公网 IP",
+      "managed": "托管",
+      "actions": "操作"
+    },
+    "state": {
+      "pending": "等待中",
+      "running": "运行中",
+      "stopping": "停止中",
+      "stopped": "已停止",
+      "terminating": "终止中",
+      "terminated": "已终止",
+      "unknown": "未知"
+    },
+    "action": {
+      "start": "启动",
+      "stop": "停止",
+      "soft_stop": "正常停止",
+      "reboot": "重启",
+      "soft_reboot": "正常重启"
+    },
+    "stop": {
+      "title": "停止 {{name}}?",
+      "body": "实例将离线,直到再次启动。"
+    },
+    "resize": {
+      "open": "调整规格",
+      "title": "调整 {{name}} 的规格",
+      "current": "当前规格:{{shape}}",
+      "oracleReboot": "调整 Oracle 实例规格会重启该实例。",
+      "type": "新实例类型",
+      "ocpus": "OCPU",
+      "memory": "内存 (GB)",
+      "confirm": "调整规格"
+    },
+    "terminate": {
+      "open": "终止",
+      "title": "终止 {{name}}?",
+      "body": "实例将在云服务商处删除且无法恢复。请输入名称以确认。",
+      "confirm": "终止",
+      "keepVolume": "保留启动卷"
+    },
+    "detail": {
+      "state": "状态",
+      "shape": "规格",
+      "region": "区域",
+      "zone": "可用区",
+      "publicIp": "公网 IP",
+      "privateIp": "私网 IP",
+      "image": "镜像",
+      "bootVolume": "启动卷",
+      "project": "项目",
+      "environment": "环境",
+      "tags": "标签",
+      "noTags": "没有标签。",
+      "tagKey": "标签键",
+      "tagValue": "标签值",
+      "removeTag": "移除",
+      "addTag": "添加标签",
+      "saveTags": "保存标签",
+      "readOnly": "此实例的标签为只读。",
+      "saved": "标签已保存。"
     }
   }
 }

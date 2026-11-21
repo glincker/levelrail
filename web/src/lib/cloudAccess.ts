@@ -1,24 +1,54 @@
-// UX gate only: the server decides every cloud account action. Writes and
-// provider calls are root only today, so that is all the buttons mirror.
+import type { CloudAccessData } from '../types/cloudAccounts'
+
+// UX gate only: the server decides every cloud account action. Build, delete
+// and the account writes stay root only; the rest follow the actions the API
+// says the caller holds on the account.
 export interface CloudAccountActions {
   create: boolean
   verify: boolean
   probe: boolean
   edit: boolean
   remove: boolean
-  /** Grants list and edit; a share holder may pass server side even without root. */
+  build: boolean
+  delete: boolean
+  view: boolean
+  operate: boolean
+  manageBudget: boolean
+  viewSpend: boolean
+  /** Grants list and edit. */
   share: boolean
 }
 
-export function cloudAccountActions(isRoot: boolean): CloudAccountActions {
+export function cloudAccountActions(
+  isRoot: boolean,
+  held: readonly string[] = [],
+): CloudAccountActions {
+  const has = (a: string) => isRoot || held.includes(a)
   return {
     create: isRoot,
     verify: isRoot,
     probe: isRoot,
     edit: isRoot,
     remove: isRoot,
-    share: isRoot,
+    build: isRoot,
+    delete: isRoot,
+    view: has('view'),
+    operate: has('operate'),
+    manageBudget: has('manage_budget'),
+    viewSpend: has('view_spend'),
+    share: has('share'),
   }
+}
+
+// Root comes from the user list or the access payload, whichever settles first.
+export function actionsFromAccess(
+  isRoot: boolean,
+  access: CloudAccessData | undefined,
+  accountId: string | undefined,
+): CloudAccountActions {
+  const root = isRoot || access?.root === true
+  const held = accountId ? (access?.accounts[accountId] ?? []) : []
+  return cloudAccountActions(root, held)
 }
 
 // The delete dialog asks for the account label, falling back to the id.

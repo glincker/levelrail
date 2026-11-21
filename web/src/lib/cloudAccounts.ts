@@ -113,12 +113,12 @@ export function canLeaveStep(
 
 export function nextStep(step: AwsStep): AwsStep {
   const i = AWS_STEPS.indexOf(step)
-  return AWS_STEPS[Math.min(i + 1, AWS_STEPS.length - 1)]
+  return AWS_STEPS[Math.min(i + 1, AWS_STEPS.length - 1)] ?? step
 }
 
 export function prevStep(step: AwsStep): AwsStep {
   const i = AWS_STEPS.indexOf(step)
-  return AWS_STEPS[Math.max(i - 1, 0)]
+  return AWS_STEPS[Math.max(i - 1, 0)] ?? step
 }
 
 export function accountStatusState(status: string): StatusState {

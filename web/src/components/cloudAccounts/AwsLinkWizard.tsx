@@ -4,8 +4,7 @@ import { useTranslation } from 'react-i18next'
 import { CloudGlassIcon } from '@thesvg/ui-react'
 import { PageTemplate } from '@/components/shell/PageTemplate'
 import { Button } from '@/components/ui/button'
-import { useIsRoot } from '../../hooks/useIsRoot'
-import { cloudAccountActions } from '../../lib/cloudAccess'
+import { useCloudAccountActions } from '../../hooks/useCloudAccountActions'
 import {
   AWS_STEPS,
   INITIAL_WIZARD,
@@ -17,7 +16,9 @@ import {
   type AwsStep,
   type AwsWizardState,
 } from '../../lib/cloudAccounts'
+import { principalFromIdentity } from '../../lib/cloudSpend'
 import {
+  useAwsControlIdentity,
   useAwsLinkKit,
   useCreateAwsRoleAccount,
   useProbeCloudAccount,
@@ -40,9 +41,16 @@ function messageOf(e: unknown): string {
 export function AwsLinkWizard() {
   const { t } = useTranslation('cloudAccounts')
   const navigate = useNavigate()
-  const actions = cloudAccountActions(useIsRoot())
+  const actions = useCloudAccountActions()
   const [step, setStep] = useState<AwsStep>('scope')
-  const [state, setState] = useState<AwsWizardState>(INITIAL_WIZARD)
+  const identity = useAwsControlIdentity(actions.create)
+  const [raw, setState] = useState<AwsWizardState>(INITIAL_WIZARD)
+  const [principalEdited, setPrincipalEdited] = useState(false)
+  // Prefill is derived, so a user edit (even to empty) is never overwritten.
+  const prefill = principalFromIdentity(identity.data)
+  const state: AwsWizardState = principalEdited
+    ? raw
+    : { ...raw, trustedPrincipalArn: prefill }
   const [showIssues, setShowIssues] = useState(false)
   const [kit, setKit] = useState<AwsLinkKit | null>(null)
   const [account, setAccount] = useState<CloudAccount | null>(null)
@@ -60,6 +68,7 @@ export function AwsLinkWizard() {
     probeAccount.isPending
 
   const patch = (p: Partial<AwsWizardState>) => {
+    if (p.trustedPrincipalArn !== undefined) setPrincipalEdited(true)
     setState((s) => ({ ...s, ...p }))
     // Any scope change invalidates the generated kit and its external id.
     if (step === 'scope') setKit(null)
@@ -150,6 +159,7 @@ export function AwsLinkWizard() {
           </ol>
           {step === 'scope' ? (
             <AwsLinkScopeStep
+              identity={identity.data}
               state={state}
               onChange={patch}
               showIssues={showIssues}

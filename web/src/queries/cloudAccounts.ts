@@ -4,15 +4,24 @@ import {
   useQuery,
   useQueryClient,
 } from '@tanstack/react-query'
+import { ApiError, readErrorMessage } from '../lib/apiError'
 import { apiRequest } from '../lib/apiRequest'
+import { parseRetryAfter } from '../lib/cloudSpend'
 import type {
+  AwsControlIdentity,
   AwsLinkKit,
   AwsLinkKitInput,
+  CloudAccessData,
   CloudAccount,
   CloudCapabilityResult,
   CloudGrant,
   CloudGrantInput,
+  CloudInstance,
+  CloudInstanceAction,
+  CloudInstanceDetail,
   CloudRegion,
+  CloudResizeInput,
+  CloudSpendReport,
   CloudVerifyResult,
   CreateAwsRoleAccountInput,
 } from '../types/cloudAccounts'
@@ -25,6 +34,14 @@ export const cloudAccountKeys = {
   detail: (id: string) => [...cloudAccountKeys.all, 'detail', id] as const,
   regions: (id: string) => [...cloudAccountKeys.all, 'regions', id] as const,
   grants: (id: string) => [...cloudAccountKeys.all, 'grants', id] as const,
+  instances: (id: string) =>
+    [...cloudAccountKeys.all, 'instances', id] as const,
+  instance: (id: string, iid: string) =>
+    [...cloudAccountKeys.instances(id), iid] as const,
+  spend: (id: string) => [...cloudAccountKeys.all, 'spend', id] as const,
+  access: () => [...cloudAccountKeys.all, 'me-access'] as const,
+  controlIdentity: () =>
+    [...cloudAccountKeys.all, 'aws-control-identity'] as const,
 }
 
 const enc = encodeURIComponent
@@ -169,5 +186,178 @@ export function useRevokeCloudGrant(id: string) {
       }),
     onSuccess: () =>
       qc.invalidateQueries({ queryKey: cloudAccountKeys.grants(id) }),
+  })
+}
+
+export function useCloudAccess() {
+  return useQuery({
+    queryKey: cloudAccountKeys.access(),
+    retry: false,
+    staleTime: 30_000,
+    queryFn: () =>
+      apiRequest<CloudAccessData>('/api/v1/me/cloud-access', {
+        fallbackMessage: 'load cloud access failed',
+      }),
+  })
+}
+
+export function useAwsControlIdentity(enabled: boolean) {
+  return useQuery({
+    queryKey: cloudAccountKeys.controlIdentity(),
+    enabled,
+    retry: false,
+    staleTime: 60_000,
+    queryFn: () =>
+      apiRequest<AwsControlIdentity>(`${BASE}/aws/control-identity`, {
+        fallbackMessage: 'load control identity failed',
+      }),
+  })
+}
+
+export function useCloudInstances(id: string, enabled: boolean) {
+  return useQuery({
+    queryKey: cloudAccountKeys.instances(id),
+    enabled,
+    retry: false,
+    queryFn: async () =>
+      (await apiRequest<CloudInstance[] | null>(
+        `${BASE}/${enc(id)}/instances`,
+        {
+          fallbackMessage: 'load instances failed',
+        },
+      )) ?? [],
+  })
+}
+
+export function useCloudInstance(id: string, iid: string | null) {
+  return useQuery({
+    queryKey: cloudAccountKeys.instance(id, iid ?? ''),
+    enabled: iid !== null,
+    retry: false,
+    queryFn: () =>
+      apiRequest<CloudInstanceDetail>(
+        `${BASE}/${enc(id)}/instances/${enc(iid ?? '')}`,
+        { fallbackMessage: 'load instance failed' },
+      ),
+  })
+}
+
+export function useCloudInstanceAction(id: string) {
+  const qc = useQueryClient()
+  return useMutation({
+    mutationFn: ({
+      iid,
+      action,
+    }: {
+      iid: string
+      action: CloudInstanceAction
+    }) =>
+      apiRequest<{ status: string }>(
+        `${BASE}/${enc(id)}/instances/${enc(iid)}/actions`,
+        {
+          method: 'POST',
+          body: { action },
+          fallbackMessage: 'instance action failed',
+        },
+      ),
+    onSettled: () =>
+      qc.invalidateQueries({ queryKey: cloudAccountKeys.instances(id) }),
+  })
+}
+
+export function useSetInstanceTags(id: string) {
+  const qc = useQueryClient()
+  return useMutation({
+    mutationFn: ({
+      iid,
+      tags,
+    }: {
+      iid: string
+      tags: Record<string, string>
+    }) =>
+      apiRequest<{ status: string }>(
+        `${BASE}/${enc(id)}/instances/${enc(iid)}/tags`,
+        { method: 'PUT', body: { tags }, fallbackMessage: 'save tags failed' },
+      ),
+    onSettled: () =>
+      qc.invalidateQueries({ queryKey: cloudAccountKeys.instances(id) }),
+  })
+}
+
+export function useResizeInstance(id: string) {
+  const qc = useQueryClient()
+  return useMutation({
+    mutationFn: ({ iid, spec }: { iid: string; spec: CloudResizeInput }) =>
+      apiRequest<{ status: string }>(
+        `${BASE}/${enc(id)}/instances/${enc(iid)}/resize`,
+        { method: 'POST', body: spec, fallbackMessage: 'resize failed' },
+      ),
+    onSettled: () =>
+      qc.invalidateQueries({ queryKey: cloudAccountKeys.instances(id) }),
+  })
+}
+
+export function useTerminateInstance(id: string) {
+  const qc = useQueryClient()
+  return useMutation({
+    mutationFn: ({
+      iid,
+      keepBootVolume,
+    }: {
+      iid: string
+      keepBootVolume: boolean
+    }) =>
+      apiRequest<null>(
+        `${BASE}/${enc(id)}/instances/${enc(iid)}?keep_boot_volume=${String(keepBootVolume)}`,
+        { method: 'DELETE', fallbackMessage: 'terminate failed' },
+      ),
+    onSettled: () =>
+      qc.invalidateQueries({ queryKey: cloudAccountKeys.instances(id) }),
+  })
+}
+
+export function useCloudSpend(id: string, enabled: boolean) {
+  return useQuery({
+    queryKey: cloudAccountKeys.spend(id),
+    enabled,
+    retry: false,
+    queryFn: () =>
+      apiRequest<CloudSpendReport>(`${BASE}/${enc(id)}/spend`, {
+        fallbackMessage: 'load spend failed',
+      }),
+  })
+}
+
+/** Carries the Retry-After seconds a 429 refresh answered with. */
+export class SpendRefreshLimited extends Error {
+  readonly retryAfterSeconds: number | null
+  constructor(retryAfterSeconds: number | null) {
+    super('spend refresh limited')
+    this.name = 'SpendRefreshLimited'
+    this.retryAfterSeconds = retryAfterSeconds
+  }
+}
+
+export function useRefreshCloudSpend(id: string) {
+  const qc = useQueryClient()
+  return useMutation({
+    mutationFn: async (): Promise<CloudSpendReport> => {
+      const res = await fetch(`${BASE}/${enc(id)}/spend/refresh`, {
+        method: 'POST',
+      })
+      if (res.status === 429) {
+        throw new SpendRefreshLimited(
+          parseRetryAfter(res.headers.get('Retry-After')),
+        )
+      }
+      if (!res.ok) {
+        throw new ApiError(
+          res.status,
+          await readErrorMessage(res, `refresh spend failed: ${res.status}`),
+        )
+      }
+      return (await res.json()) as CloudSpendReport
+    },
+    onSuccess: (rep) => qc.setQueryData(cloudAccountKeys.spend(id), rep),
   })
 }
