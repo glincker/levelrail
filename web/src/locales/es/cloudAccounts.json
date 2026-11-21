@@ -3,6 +3,8 @@
     "title": "Cuentas cloud",
     "addOracle": "Añadir Oracle",
     "linkAws": "Vincular AWS",
+    "connectDigitalOcean": "Conectar DigitalOcean",
+    "connectDigitalOceanHint": "Configura el client id y el secreto de OAuth de DigitalOcean en los ajustes de ejecución para conectar con un clic.",
     "loading": "Cargando cuentas cloud",
     "loadFailed": "No se pudieron cargar las cuentas cloud.",
     "empty": "Aún no hay cuentas cloud. Vincula una cuenta de AWS con un rol acotado o añade una clave de API de Oracle.",

@@ -388,3 +388,30 @@ export function useRefreshCloudSpend(id: string) {
     onSuccess: (rep) => qc.setQueryData(cloudAccountKeys.spend(id), rep),
   })
 }
+
+export interface DigitalOceanOAuthStatus {
+  enabled: boolean
+  redirect_uri?: string
+  hint?: string
+}
+
+export function useDigitalOceanOAuthStatus(enabled: boolean) {
+  return useQuery({
+    queryKey: [...cloudAccountKeys.all, 'do-oauth-status'] as const,
+    enabled,
+    retry: false,
+    queryFn: () =>
+      apiRequest<DigitalOceanOAuthStatus>(`${BASE}/oauth/digitalocean/status`, {
+        fallbackMessage: 'load digitalocean oauth status failed',
+      }),
+  })
+}
+
+export function useStartDigitalOceanOAuth() {
+  return useMutation({
+    mutationFn: () =>
+      apiRequest<{ url: string }>(`${BASE}/oauth/digitalocean/start`, {
+        fallbackMessage: 'start digitalocean oauth failed',
+      }),
+  })
+}

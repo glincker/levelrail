@@ -24,7 +24,7 @@ type Config struct {
 	VaultTokenRef  string `json:"vault_token_ref,omitempty"`
 }
 
-var validAuth = map[string]bool{AuthOIDCFederation: true, AuthRoleAssumption: true, AuthSecretRef: true, AuthStatic: true, AuthVaultAWS: true}
+var validAuth = map[string]bool{AuthOIDCFederation: true, AuthRoleAssumption: true, AuthSecretRef: true, AuthStatic: true, AuthVaultAWS: true, AuthOAuth: true}
 
 // authAllowed lists the methods each provider supports.
 var authAllowed = map[string][]string{
@@ -33,7 +33,7 @@ var authAllowed = map[string][]string{
 	ProviderAzure:        {AuthOIDCFederation, AuthRoleAssumption, AuthSecretRef, AuthStatic},
 	ProviderGCP:          {AuthOIDCFederation, AuthSecretRef, AuthStatic},
 	ProviderHetzner:      {AuthSecretRef, AuthStatic},
-	ProviderDigitalOcean: {AuthSecretRef, AuthStatic},
+	ProviderDigitalOcean: {AuthSecretRef, AuthStatic, AuthOAuth},
 }
 
 func invalid(format string, a ...any) error {

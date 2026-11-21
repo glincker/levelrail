@@ -3,6 +3,8 @@
     "title": "クラウドアカウント",
     "addOracle": "Oracleを追加",
     "linkAws": "AWSを連携",
+    "connectDigitalOcean": "DigitalOceanに接続",
+    "connectDigitalOceanHint": "ランタイム設定にDigitalOceanのOAuthクライアントIDとシークレットを設定すると、ワンクリックで接続できます。",
     "loading": "クラウドアカウントを読み込み中",
     "loadFailed": "クラウドアカウントを読み込めませんでした。",
     "empty": "クラウドアカウントはまだありません。権限を絞ったロールでAWSアカウントを連携するか、Oracle APIキーを追加してください。",

@@ -167,6 +167,10 @@ cloud.instances.cache_ttl_seconds
 cloud.instances.events_window_days
 cloud.max_concurrent_plans
 cloud.max_destroys
+cloud.oauth.digitalocean.client_id
+cloud.oauth.digitalocean.client_secret
+cloud.oauth.digitalocean.refresh_lead_seconds
+cloud.oauth.digitalocean.timeout_seconds
 cloud.plan_job_retention_hours
 cloud.plan_max_age_minutes
 cloud.require_full_estimate

@@ -3,6 +3,8 @@
     "title": "Cloud-Konten",
     "addOracle": "Oracle hinzufügen",
     "linkAws": "AWS verknüpfen",
+    "connectDigitalOcean": "DigitalOcean verbinden",
+    "connectDigitalOceanHint": "Hinterlege Client-ID und Secret der DigitalOcean-OAuth-App in den Laufzeiteinstellungen, um mit einem Klick zu verbinden.",
     "loading": "Cloud-Konten werden geladen",
     "loadFailed": "Cloud-Konten konnten nicht geladen werden.",
     "empty": "Noch keine Cloud-Konten. Verknüpfe ein AWS-Konto mit einer eng gefassten Rolle oder füge einen Oracle-API-Schlüssel hinzu.",

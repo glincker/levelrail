@@ -3,6 +3,8 @@
     "title": "Cloud accounts",
     "addOracle": "Add Oracle",
     "linkAws": "Link AWS",
+    "connectDigitalOcean": "Connect DigitalOcean",
+    "connectDigitalOceanHint": "Set the DigitalOcean OAuth client id and secret in runtime settings to connect with one click.",
     "loading": "Loading cloud accounts",
     "loadFailed": "Could not load cloud accounts.",
     "empty": "No cloud accounts yet. Link an AWS account with a scoped role or add an Oracle API key.",

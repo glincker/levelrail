@@ -2567,6 +2567,9 @@ Routes that do not fit an existing group.
 | DELETE | /api/v1/cloud-accounts/{id}/aws/rds/cluster-snapshots/{sid} | Public | handleRDSClusterSnapshotDelete |
 | GET | /api/v1/health-presets | AbilityRead | handleGetHealthPresets |
 | GET | /api/v1/field-descriptors/{resource} | AbilityRead | handleGetFieldDescriptors |
+| GET | /api/v1/cloud-accounts/oauth/digitalocean/status | AbilityRoot | handleDOOAuthStatus |
+| GET | /api/v1/cloud-accounts/oauth/digitalocean/start | AbilityRoot | handleDOOAuthStart |
+| GET | /api/v1/cloud-accounts/oauth/digitalocean/callback | AbilityRoot | handleDOOAuthCallback |
 | POST | /mcp | Public |  |
 
 ## See also

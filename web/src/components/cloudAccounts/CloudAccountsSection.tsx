@@ -9,6 +9,7 @@ import { accountStatusState } from '../../lib/cloudAccounts'
 import { formatRelativeTime } from '../../lib/relativeTime'
 import { useCloudAccounts } from '../../queries/cloudAccounts'
 import { CloudProviderMark } from './CloudProviderMark'
+import { DigitalOceanConnect } from './DigitalOceanConnect'
 import { DoctorPanel } from './DoctorPanel'
 
 const HEADING =
@@ -28,7 +29,8 @@ export function CloudAccountsSection() {
           {t('section.title')}
         </h2>
         {actions.create ? (
-          <div className="flex flex-wrap gap-2">
+          <div className="flex flex-wrap items-center gap-2">
+            <DigitalOceanConnect />
             <Button
               variant="outline"
               size="sm"

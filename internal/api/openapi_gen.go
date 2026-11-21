@@ -14,7 +14,7 @@ type openAPIRoute struct {
 	Description string
 }
 
-// openAPIRoutes holds all 2336 routes known to scripts/gen-api-reference at
+// openAPIRoutes holds all 2339 routes known to scripts/gen-api-reference at
 // generation time. Run `go run ./scripts/gen-api-reference` after changing
 // any routes*.go registration and commit the result.
 var openAPIRoutes = []openAPIRoute{
@@ -1228,6 +1228,9 @@ var openAPIRoutes = []openAPIRoute{
 	{Method: "POST", Path: "/api/v1/cloud-accounts/aws/link-kit", Ability: "AbilityRoot", Group: "Other", Handler: "handleAWSLinkKit", Description: ""},
 	{Method: "POST", Path: "/api/v1/cloud-accounts/aws/vault-kit", Ability: "AbilityRoot", Group: "Other", Handler: "handleAWSVaultKit", Description: ""},
 	{Method: "GET", Path: "/api/v1/cloud-accounts/doctor/preflight", Ability: "AbilityRoot", Group: "Other", Handler: "handleCloudDoctorPreflight", Description: ""},
+	{Method: "GET", Path: "/api/v1/cloud-accounts/oauth/digitalocean/callback", Ability: "AbilityRoot", Group: "Other", Handler: "handleDOOAuthCallback", Description: ""},
+	{Method: "GET", Path: "/api/v1/cloud-accounts/oauth/digitalocean/start", Ability: "AbilityRoot", Group: "Other", Handler: "handleDOOAuthStart", Description: ""},
+	{Method: "GET", Path: "/api/v1/cloud-accounts/oauth/digitalocean/status", Ability: "AbilityRoot", Group: "Other", Handler: "handleDOOAuthStatus", Description: ""},
 	{Method: "POST", Path: "/api/v1/cloud-accounts/oracle/policy-kit", Ability: "AbilityRoot", Group: "Other", Handler: "handleOraclePolicyKit", Description: ""},
 	{Method: "DELETE", Path: "/api/v1/cloud-accounts/{id}", Ability: "AbilityRoot", Group: "Other", Handler: "handleDeleteCloudAccount", Description: ""},
 	{Method: "GET", Path: "/api/v1/cloud-accounts/{id}", Ability: "Public", Group: "Other", Handler: "handleGetCloudAccount", Description: ""},

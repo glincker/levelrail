@@ -423,6 +423,7 @@ func (rt *Router) handleUpdateCloudAccount(w http.ResponseWriter, r *http.Reques
 		a.Status = *req.Status
 		if a.Status == store.CloudAccountStatusDisabled {
 			rt.revokeVaultAccount(r.Context(), a)
+			rt.revokeDOOAuthAccount(r.Context(), a)
 		}
 	}
 	if len(req.Config) > 0 || req.AllowedRegions != nil {
@@ -518,6 +519,7 @@ func (rt *Router) handleDeleteCloudAccount(w http.ResponseWriter, r *http.Reques
 		}
 	}
 	rt.revokeVaultAccount(r.Context(), a)
+	rt.revokeDOOAuthAccount(r.Context(), a)
 	if err := st.DeleteCloudAccount(r.Context(), a.ID); err != nil {
 		rt.internalError(w, "api: delete cloud account failed", err, slog.String("account", a.ID))
 		return
@@ -615,6 +617,9 @@ func (rt *Router) accountCredential(ctx context.Context, a store.CloudAccount) (
 	}
 	if rt.nodeProviderSecrets == nil {
 		return "", errors.New("no secrets backend")
+	}
+	if isDigitalOceanOAuthAccount(a) {
+		return rt.doOAuthAccessToken(ctx, a)
 	}
 	return rt.nodeProviderSecrets.Resolve(ctx, cloudAccountSecretRef(a), store.NodeProviderTokenEnvKey)
 }
@@ -882,7 +887,13 @@ func (rt *Router) resolveNodeProvisionerForAccount(ctx context.Context, provider
 	} else if accountID != "" {
 		return nil, false, http.StatusNotImplemented, "cloud accounts are not available on this store"
 	}
-	token, err := rt.nodeProviderSecrets.Resolve(ctx, cloudAccountSecretRef(acct), store.NodeProviderTokenEnvKey)
+	var token string
+	var err error
+	if isDigitalOceanOAuthAccount(acct) {
+		token, err = rt.doOAuthAccessToken(ctx, acct)
+	} else {
+		token, err = rt.nodeProviderSecrets.Resolve(ctx, cloudAccountSecretRef(acct), store.NodeProviderTokenEnvKey)
+	}
 	if err != nil {
 		return nil, false, http.StatusBadRequest, "no credential is stored for this provider yet"
 	}

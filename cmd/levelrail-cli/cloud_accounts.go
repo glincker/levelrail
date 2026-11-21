@@ -20,6 +20,7 @@ func cloudAccountsUsage(prog string) string {
   %[1]s cloud accounts list|verify|probe|regions|rm|grants [ID]
   %[1]s cloud accounts add ID --provider P [--method M] [--region R] [--role-arn ARN] [--account-id ID] [--external-id X] [--label L] [--team T]
   %[1]s cloud accounts add ID --provider oracle --tenancy OCID --user OCID --fingerprint FP --compartment OCID --region R [--subnet OCID]
+  %[1]s cloud accounts oauth-url digitalocean
   %[1]s cloud instances list ACCOUNT [--region R]
   %[1]s cloud instances show|start|stop|soft-stop|reboot|soft-reboot|rm ACCOUNT INSTANCE
   %[1]s cloud instances resize ACCOUNT INSTANCE [--type T] [--ocpus N] [--memory-gb N]
@@ -184,6 +185,15 @@ func runCloudAccounts(prog string, args []string, stdout, stderr io.Writer, look
 				head, keys = []string{"ID", "PRINCIPAL", "SCOPE", "ACTIONS"}, []string{"id", "principal_id", "resource_kind", "actions"}
 			}
 			return rows, func() { printCloudTable(stdout, head, rows, keys...) }, err
+		})
+	case "oauth-url":
+		return cloudCall(prog, "cloud accounts oauth-url", rest, stdout, stderr, lookupEnv, nil, func(c *apiclient.Client, pos []string, _ outputFlags) (any, func(), error) {
+			if len(pos) != 1 || pos[0] != "digitalocean" {
+				return nil, nil, fmt.Errorf("the provider must be digitalocean")
+			}
+			var out cloudRow
+			err := c.CloudRequest(ctx, "GET", "/oauth/digitalocean/start", nil, &out)
+			return out, func() { _, _ = fmt.Fprintln(stdout, out["url"]) }, err
 		})
 	case "rm":
 		return cloudCall(prog, "cloud accounts rm", rest, stdout, stderr, lookupEnv, nil, func(c *apiclient.Client, pos []string, _ outputFlags) (any, func(), error) {
