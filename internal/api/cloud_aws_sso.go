@@ -8,13 +8,12 @@ import (
 	"errors"
 	"log/slog"
 	"net/http"
-	"os"
-	"strconv"
 	"strings"
 	"sync"
 	"time"
 
 	"github.com/GLINCKER/levelrail/internal/cloudconn"
+	"github.com/GLINCKER/levelrail/internal/runtimesettings"
 	"github.com/GLINCKER/levelrail/internal/store"
 )
 
@@ -43,13 +42,6 @@ var awsSSOSessions = struct {
 	sync.Mutex
 	m map[string]*ssoSession
 }{m: map[string]*ssoSession{}}
-
-func ssoEnvInt(name string, def int) int {
-	if v, err := strconv.Atoi(strings.TrimSpace(os.Getenv(name))); err == nil && v > 0 {
-		return v
-	}
-	return def
-}
 
 func putSSOSession(s *ssoSession) (string, error) {
 	b := make([]byte, 16)
@@ -88,6 +80,29 @@ func dropSSOSession(id string) {
 
 func isAWSSSOAccount(a store.CloudAccount) bool {
 	return a.Provider == cloudconn.ProviderAWS && a.AuthMethod == cloudconn.AuthAWSSSO
+}
+
+// forgetSSOAccount drops cached role keys so a deleted or disabled account stops working at once.
+func (rt *Router) forgetSSOAccount(a store.CloudAccount) {
+	if isAWSSSOAccount(a) {
+		rt.awsProvider().SSOBroker().Forget(a.ID)
+	}
+}
+
+// ssoSettings reads the live cloud.aws.sso.* values; a router without settings keeps the defaults.
+func (rt *Router) ssoSettings() cloudconn.SSOSettings {
+	if rt.runtimeSettings == nil {
+		return cloudconn.DefaultSSOSettings()
+	}
+	ctx := context.Background()
+	rs := rt.runtimeSettings
+	return cloudconn.SSOSettings{
+		RenewPercent:     rs.Int(ctx, runtimesettings.KeyCloudAWSSSORenewPercent),
+		TokenSkewSeconds: rs.Int(ctx, runtimesettings.KeyCloudAWSSSOTokenSkew),
+		MaxAccounts:      rs.Int(ctx, runtimesettings.KeyCloudAWSSSOMaxAccounts),
+		TimeoutSeconds:   rs.Int(ctx, runtimesettings.KeyCloudAWSSSOTimeout),
+		MaxResponseBytes: rs.Int(ctx, runtimesettings.KeyCloudAWSSSOMaxResponseBytes),
+	}
 }
 
 // persistSSOBundle seals a refreshed bundle back under the account's secret.
@@ -246,7 +261,7 @@ func (rt *Router) handleAWSSSOPoll(w http.ResponseWriter, r *http.Request) {
 		rt.finishSSORelogin(w, r, req.SessionID, s)
 		return
 	}
-	accts, err := br.Client.ListAccounts(ctx, s.region, tok.AccessToken, ssoEnvInt("APP_CLOUD_AWS_SSO_MAX_ACCOUNTS", 100))
+	accts, err := br.Client.ListAccounts(ctx, s.region, tok.AccessToken, cloudconn.SSOCurrentSettings().MaxAccounts)
 	if err != nil {
 		s.token = nil
 		writeError(w, http.StatusBadGateway, "the AWS account list could not be read")

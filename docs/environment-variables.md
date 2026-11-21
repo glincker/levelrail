@@ -71,6 +71,11 @@ These variables only seed the default of a [runtime setting](/runtime-settings).
 | `APP_BACKUP_WEBDAV_ALLOW_PRIVATE_NETWORKS` | [`backup.webdav_allow_private_networks`](/runtime-settings#security) | `false` |
 | `APP_CLOUD_ALLOW_CHECKSUM_ONLY` | [`cloud.allow_checksum_only`](/runtime-settings#security) | `false` |
 | `APP_CLOUD_ALLOW_PROTECTED_DELETE` | [`cloud.allow_protected_delete`](/runtime-settings#security) | `false` |
+| `APP_CLOUD_AWS_SSO_MAX_ACCOUNTS` | [`cloud.aws.sso.max_accounts`](/runtime-settings#security) | `100` |
+| `APP_CLOUD_AWS_MAX_RESPONSE_BYTES` | [`cloud.aws.sso.max_response_bytes`](/runtime-settings#security) | `4194304` |
+| `APP_CLOUD_AWS_SSO_RENEW_PERCENT` | [`cloud.aws.sso.renew_percent`](/runtime-settings#security) | `80` |
+| `APP_CLOUD_AWS_SSO_TIMEOUT_SECONDS` | [`cloud.aws.sso.timeout_seconds`](/runtime-settings#security) | `15` |
+| `APP_CLOUD_AWS_SSO_TOKEN_SKEW_SECONDS` | [`cloud.aws.sso.token_skew_seconds`](/runtime-settings#security) | `60` |
 | `APP_CLOUD_ENGINE_DENY_ADDRESSES` | [`cloud.engine_deny_addresses`](/runtime-settings#security) | empty |
 | `APP_CLOUD_ENGINE_IMAGE` | [`cloud.engine_image`](/runtime-settings#security) | empty |
 | `APP_CLOUD_ENGINE_NETWORK` | [`cloud.engine_network`](/runtime-settings#security) | empty |

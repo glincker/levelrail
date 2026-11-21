@@ -502,7 +502,8 @@
     "relogin": "Iniciar sesión de nuevo",
     "reloginNeeded": "La sesión de AWS terminó. Inicia sesión de nuevo para seguir usando esta cuenta.",
     "startUrlExample": "https://d-1234567890.awsapps.com/start",
-    "regionExample": "eu-west-1"
+    "regionExample": "eu-west-1",
+    "accountRegion": "Región de esta cuenta (opcional, por defecto la región del inicio de sesión)"
   },
   "relogin": {
     "title": "Sesión del navegador",

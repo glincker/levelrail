@@ -326,4 +326,5 @@ export interface AwsSsoSelectInput {
   account_id: string
   role_name: string
   name?: string
+  region?: string
 }

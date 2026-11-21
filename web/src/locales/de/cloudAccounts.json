@@ -502,7 +502,8 @@
     "relogin": "Erneut anmelden",
     "reloginNeeded": "Die AWS-Anmeldung ist abgelaufen. Melde dich erneut an, um das Konto weiter zu nutzen.",
     "startUrlExample": "https://d-1234567890.awsapps.com/start",
-    "regionExample": "eu-west-1"
+    "regionExample": "eu-west-1",
+    "accountRegion": "Region für dieses Konto (optional, Standard ist die Anmelderegion)"
   },
   "relogin": {
     "title": "Browser-Sitzung",

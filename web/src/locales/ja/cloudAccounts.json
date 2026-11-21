@@ -502,7 +502,8 @@
     "relogin": "再度サインイン",
     "reloginNeeded": "AWS のサインインが終了しました。このアカウントを使い続けるには再度サインインしてください。",
     "startUrlExample": "https://d-1234567890.awsapps.com/start",
-    "regionExample": "eu-west-1"
+    "regionExample": "eu-west-1",
+    "accountRegion": "このアカウントのリージョン(任意、未指定ならサインインのリージョン)"
   },
   "relogin": {
     "title": "ブラウザセッション",

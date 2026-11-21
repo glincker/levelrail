@@ -34,6 +34,7 @@ export function AwsSsoLogin({ reloginAccountId, onDone }: Props) {
     null,
   )
   const [label, setLabel] = useState('')
+  const [accountRegion, setAccountRegion] = useState('')
   const [error, setError] = useState<string | null>(null)
   const [finished, setFinished] = useState(false)
   const start = useAwsSsoStart()
@@ -104,6 +105,7 @@ export function AwsSsoLogin({ reloginAccountId, onDone }: Props) {
         account_id: pick.account,
         role_name: pick.role,
         name: label.trim() || undefined,
+        region: accountRegion.trim() || undefined,
       },
       {
         onSuccess: (a) => {
@@ -232,6 +234,17 @@ export function AwsSsoLogin({ reloginAccountId, onDone }: Props) {
               value={label}
               onChange={(e) => {
                 setLabel(e.target.value)
+              }}
+            />
+          </label>
+          <label className="block space-y-1 text-sm">
+            <span>{t('sso.accountRegion')}</span>
+            <input
+              className={FIELD}
+              value={accountRegion}
+              placeholder={t('sso.regionExample')}
+              onChange={(e) => {
+                setAccountRegion(e.target.value)
               }}
             />
           </label>

@@ -122,6 +122,11 @@ cleanup.interval
 cloud.allow_checksum_only
 cloud.allow_protected_delete
 cloud.aws.name_prefix
+cloud.aws.sso.max_accounts
+cloud.aws.sso.max_response_bytes
+cloud.aws.sso.renew_percent
+cloud.aws.sso.timeout_seconds
+cloud.aws.sso.token_skew_seconds
 cloud.cloudfront.max_invalidation_paths
 cloud.connections_enabled
 cloud.default_monthly_cost_limit

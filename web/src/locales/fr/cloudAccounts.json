@@ -502,7 +502,8 @@
     "relogin": "Se reconnecter",
     "reloginNeeded": "La connexion AWS a pris fin. Reconnectez-vous pour continuer à utiliser ce compte.",
     "startUrlExample": "https://d-1234567890.awsapps.com/start",
-    "regionExample": "eu-west-1"
+    "regionExample": "eu-west-1",
+    "accountRegion": "Région de ce compte (facultatif, par défaut la région de connexion)"
   },
   "relogin": {
     "title": "Session du navigateur",

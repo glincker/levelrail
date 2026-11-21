@@ -226,3 +226,65 @@ func TestSSOProviderCheckClassNeedsRelogin(t *testing.T) {
 		t.Fatalf("class=%s err=%v", class, err)
 	}
 }
+
+func TestSSOPortalErrorNameComesFromHeader(t *testing.T) {
+	srv := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, _ *http.Request) {
+		w.Header().Set("X-Amzn-Errortype", "UnauthorizedException:http://internal.amazon.com/coral/")
+		w.WriteHeader(401)
+		_, _ = w.Write([]byte(`{"message":"Session token not found or invalid"}`))
+	}))
+	t.Cleanup(srv.Close)
+	c := &SSOClient{HTTP: srv.Client(), OIDCBase: func(string) string { return srv.URL }, PortalBase: func(string) string { return srv.URL }}
+	_, err := c.ListAccounts(context.Background(), "eu-west-1", "t", 5)
+	var he *SSOHTTPError
+	if !errors.As(err, &he) || he.Status != 401 || he.Code != "UnauthorizedException" {
+		t.Fatalf("want 401 UnauthorizedException, got %v", err)
+	}
+}
+
+func TestSSODeviceTokenEndedCodes(t *testing.T) {
+	for _, code := range []string{"expired_token", "access_denied", "invalid_grant"} {
+		srv := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, _ *http.Request) {
+			w.WriteHeader(400)
+			_, _ = w.Write([]byte(`{"error":"` + code + `"}`))
+		}))
+		c := &SSOClient{HTTP: srv.Client(), OIDCBase: func(string) string { return srv.URL }, PortalBase: func(string) string { return srv.URL }}
+		_, err := c.DeviceToken(context.Background(), "eu-west-1", SSOBundle{ClientID: "c", ClientSecret: "s"}, "d", time.Now())
+		srv.Close()
+		if !errors.Is(err, ErrSSODenied) {
+			t.Fatalf("%s must end the login, got %v", code, err)
+		}
+	}
+	srv := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, _ *http.Request) {
+		w.WriteHeader(400)
+		_, _ = w.Write([]byte(`{"error":"slow_down"}`))
+	}))
+	defer srv.Close()
+	c := &SSOClient{HTTP: srv.Client(), OIDCBase: func(string) string { return srv.URL }, PortalBase: func(string) string { return srv.URL }}
+	if _, err := c.DeviceToken(context.Background(), "r", SSOBundle{}, "d", time.Now()); !errors.Is(err, ErrSSOSlowDown) {
+		t.Fatalf("want slow down, got %v", err)
+	}
+}
+
+func TestSSOSettingsApplyLive(t *testing.T) {
+	cur := DefaultSSOSettings()
+	SetSSOSettings(func() SSOSettings { return cur })
+	t.Cleanup(func() { SetSSOSettings(DefaultSSOSettings) })
+	f := newFakeSSO(t)
+	b := NewSSOBroker(f.client())
+	now := time.Now()
+	b.now = func() time.Time { return now }
+	seed := bundleJSON(SSOBundle{ClientID: "cid", ClientSecret: "s", AccessToken: "access-1", AccessExpiresAt: now.Add(time.Hour).Unix(), RefreshToken: "r", UpdatedAt: 1})
+	cur.RenewPercent = 10 // renew after 6 minutes of a 1h credential
+	if _, err := b.Credentials(context.Background(), ssoConn(), seed); err != nil {
+		t.Fatal(err)
+	}
+	now = now.Add(7 * time.Minute)
+	if _, err := b.Credentials(context.Background(), ssoConn(), seed); err != nil || f.credCalls.Load() != 2 {
+		t.Fatalf("a lowered renew percent must apply at once: %v calls=%d", err, f.credCalls.Load())
+	}
+	cur.RenewPercent = 500 // out of range falls back to the default
+	if got := SSOCurrentSettings().RenewPercent; got != 80 {
+		t.Fatalf("out of range value must fall back, got %d", got)
+	}
+}

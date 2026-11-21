@@ -452,6 +452,7 @@ func (rt *Router) handleUpdateCloudAccount(w http.ResponseWriter, r *http.Reques
 		if a.Status == store.CloudAccountStatusDisabled {
 			rt.revokeVaultAccount(r.Context(), a)
 			rt.revokeDOOAuthAccount(r.Context(), a)
+			rt.forgetSSOAccount(a)
 		}
 	}
 	if len(req.Config) > 0 || req.AllowedRegions != nil {
@@ -559,6 +560,7 @@ func (rt *Router) handleDeleteCloudAccount(w http.ResponseWriter, r *http.Reques
 	}
 	rt.revokeVaultAccount(r.Context(), a)
 	rt.revokeDOOAuthAccount(r.Context(), a)
+	rt.forgetSSOAccount(a)
 	if err := st.DeleteCloudAccount(r.Context(), a.ID); err != nil {
 		rt.internalError(w, "api: delete cloud account failed", err, slog.String("account", a.ID))
 		return
@@ -605,6 +607,7 @@ func (rt *Router) awsProvider() *cloudconn.AWSProvider {
 	}
 	// Refreshed aws_sso tokens are sealed again through the router that serves the call.
 	p.SSOBroker().SetPersist(rt.persistSSOBundle)
+	cloudconn.SetSSOSettings(rt.ssoSettings)
 	return p
 }
 

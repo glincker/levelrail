@@ -131,3 +131,43 @@ func TestAWSSSOLoginSelectAndRelogin(t *testing.T) {
 		t.Fatalf("verify after relogin = %d %s", code, body)
 	}
 }
+
+func TestAWSSSODisableAndDeleteForgetCachedKeys(t *testing.T) {
+	t.Setenv("AWS_EC2_METADATA_DISABLED", "true")
+	t.Setenv("AWS_CONFIG_FILE", t.TempDir()+"/none")
+	t.Setenv("AWS_SHARED_CREDENTIALS_FILE", t.TempDir()+"/none")
+	srv := ssoFakeServer(t)
+	rt, cookie, secrets := connectTestRouter(t, &fakeNodeProvisioner{})
+	broker := cloudconn.NewSSOBroker(&cloudconn.SSOClient{HTTP: srv.Client(), OIDCBase: func(string) string { return srv.URL }, PortalBase: func(string) string { return srv.URL }})
+	rt.SetCloudProviders(cloudconn.Registry{cloudconn.ProviderAWS: cloudconn.NewAWSProvider(cloudconn.AWSOptions{
+		SSO: broker, NewSTS: func(aws.Config) cloudconn.STSAPI { return ssoFakeSTS{} }})})
+	do := func(path, body string) (int, string) {
+		return teamDo(t, rt, http.MethodPost, "/api/v1/cloud-accounts/aws/sso/"+path, body, withCookie(cookie))
+	}
+	_, body := do("start", `{"start_url":"https://d-1.awsapps.com/start","region":"eu-west-1"}`)
+	var st ssoStartResponse
+	_ = json.Unmarshal([]byte(body), &st)
+	awsSSOSessions.Lock()
+	awsSSOSessions.m[st.SessionID].interval = 0
+	awsSSOSessions.Unlock()
+	do("poll", `{"session_id":"`+st.SessionID+`"}`)
+	if code, b := do("select", `{"session_id":"`+st.SessionID+`","account_id":"111122223333","role_name":"Admin","id":"aws-sso-prod"}`); code != http.StatusCreated {
+		t.Fatalf("select = %d %s", code, b)
+	}
+	if code, b := teamDo(t, rt, http.MethodPost, "/api/v1/cloud-accounts/aws-sso-prod/verify", "", withCookie(cookie)); code != http.StatusOK || !strings.Contains(b, `"ok":true`) {
+		t.Fatalf("verify = %d %s", code, b)
+	}
+	// The keys are cached now; a sealed bundle that needs a login only shows once the cache is dropped.
+	for k := range secrets.values {
+		secrets.values[k] = `{"client_id":"cid","client_secret":"s","needs_relogin":true,"updated_at":1}`
+	}
+	if code, b := teamDo(t, rt, http.MethodPatch, "/api/v1/cloud-accounts/aws-sso-prod", `{"status":"disabled"}`, withCookie(cookie)); code != http.StatusOK {
+		t.Fatalf("disable = %d %s", code, b)
+	}
+	if code, b := teamDo(t, rt, http.MethodPatch, "/api/v1/cloud-accounts/aws-sso-prod", `{"status":"active"}`, withCookie(cookie)); code != http.StatusOK {
+		t.Fatalf("enable = %d %s", code, b)
+	}
+	if code, b := teamDo(t, rt, http.MethodPost, "/api/v1/cloud-accounts/aws-sso-prod/verify", "", withCookie(cookie)); code != http.StatusOK || !strings.Contains(b, cloudconn.ClassNeedsRelogin) {
+		t.Fatalf("disable must drop cached keys: %d %s", code, b)
+	}
+}

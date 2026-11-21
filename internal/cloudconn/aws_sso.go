@@ -12,6 +12,7 @@ import (
 	"regexp"
 	"strings"
 	"sync"
+	"sync/atomic"
 	"time"
 
 	"github.com/aws/aws-sdk-go-v2/aws"
@@ -35,8 +36,53 @@ var (
 	// ErrSSODenied covers an expired or refused device code.
 	ErrSSODenied = errors.New("cloudconn: aws sso authorization ended")
 
+	ssoSettingsFn atomic.Pointer[func() SSOSettings]
+
 	ssoRoleRe = regexp.MustCompile(`^[A-Za-z0-9+=,.@_-]{1,64}$`)
 )
+
+// SSOSettings are the live tunables of the aws_sso path; the API layer feeds them from runtime settings.
+type SSOSettings struct {
+	RenewPercent     int
+	TokenSkewSeconds int
+	MaxAccounts      int
+	TimeoutSeconds   int
+	MaxResponseBytes int
+}
+
+// DefaultSSOSettings is what a broker uses until a settings source is registered.
+func DefaultSSOSettings() SSOSettings {
+	return SSOSettings{RenewPercent: 80, TokenSkewSeconds: 60, MaxAccounts: 100, TimeoutSeconds: 15, MaxResponseBytes: 4 << 20}
+}
+
+// SetSSOSettings registers the live source, read again on every call so a change applies at once.
+func SetSSOSettings(fn func() SSOSettings) { ssoSettingsFn.Store(&fn) }
+
+// SSOCurrentSettings returns the live values with out of range ones replaced by the defaults.
+func SSOCurrentSettings() SSOSettings {
+	d := DefaultSSOSettings()
+	f := ssoSettingsFn.Load()
+	if f == nil {
+		return d
+	}
+	s := (*f)()
+	if s.RenewPercent < 1 || s.RenewPercent > 99 {
+		s.RenewPercent = d.RenewPercent
+	}
+	if s.TokenSkewSeconds < 0 {
+		s.TokenSkewSeconds = d.TokenSkewSeconds
+	}
+	if s.MaxAccounts < 1 {
+		s.MaxAccounts = d.MaxAccounts
+	}
+	if s.TimeoutSeconds < 1 {
+		s.TimeoutSeconds = d.TimeoutSeconds
+	}
+	if s.MaxResponseBytes < 1 {
+		s.MaxResponseBytes = d.MaxResponseBytes
+	}
+	return s
+}
 
 // SSOBundle is the sealed secret of an aws_sso account: the OIDC client registration and tokens.
 type SSOBundle struct {
@@ -96,7 +142,7 @@ type SSOClient struct {
 // NewSSOClient returns the production client.
 func NewSSOClient() *SSOClient {
 	return &SSOClient{
-		HTTP:       &http.Client{Timeout: time.Duration(envIntDefault("APP_CLOUD_AWS_SSO_TIMEOUT_SECONDS", 15)) * time.Second},
+		HTTP:       &http.Client{},
 		OIDCBase:   func(r string) string { return "https://oidc." + r + ".amazonaws.com" },
 		PortalBase: func(r string) string { return "https://portal.sso." + r + ".amazonaws.com" },
 	}
@@ -128,6 +174,9 @@ func validateSSOConfig(cfg Config) error {
 }
 
 func (c *SSOClient) do(ctx context.Context, method, endpoint string, hdr map[string]string, in, out any) error {
+	set := SSOCurrentSettings()
+	ctx, cancel := context.WithTimeout(ctx, time.Duration(set.TimeoutSeconds)*time.Second)
+	defer cancel()
 	var body io.Reader
 	if in != nil {
 		raw, err := json.Marshal(in)
@@ -152,7 +201,7 @@ func (c *SSOClient) do(ctx context.Context, method, endpoint string, hdr map[str
 		return errors.New("cloudconn: aws sso endpoint unreachable")
 	}
 	defer func() { _ = resp.Body.Close() }()
-	raw, _ := io.ReadAll(io.LimitReader(resp.Body, int64(envIntDefault("APP_CLOUD_AWS_MAX_RESPONSE_BYTES", 4<<20))))
+	raw, _ := io.ReadAll(io.LimitReader(resp.Body, int64(set.MaxResponseBytes)))
 	if resp.StatusCode/100 != 2 {
 		var e struct {
 			Error string `json:"error"`
@@ -167,6 +216,10 @@ func (c *SSOClient) do(ctx context.Context, method, endpoint string, hdr map[str
 		if code == "" {
 			code = e.Code
 		}
+		// The portal answers with the error name in a header and a body of only a message.
+		if code == "" {
+			code = errorTypeHeader(resp.Header.Get("X-Amzn-Errortype"))
+		}
 		return &SSOHTTPError{Status: resp.StatusCode, Code: code}
 	}
 	if out == nil {
@@ -176,6 +229,17 @@ func (c *SSOClient) do(ctx context.Context, method, endpoint string, hdr map[str
 		return errors.New("cloudconn: aws sso response was not valid")
 	}
 	return nil
+}
+
+// errorTypeHeader reduces "UnauthorizedException:http://..." to the bare exception name.
+func errorTypeHeader(v string) string {
+	if i := strings.IndexAny(v, ":"); i >= 0 {
+		v = v[:i]
+	}
+	if i := strings.LastIndex(v, "#"); i >= 0 {
+		v = v[i+1:]
+	}
+	return strings.TrimSpace(v)
 }
 
 // Register creates the public OIDC client for one start URL; refresh needs the issuer URL.
@@ -253,7 +317,7 @@ func (c *SSOClient) DeviceToken(ctx context.Context, region string, b SSOBundle,
 			return b, ErrSSOPending
 		case "slow_down":
 			return b, ErrSSOSlowDown
-		case "expired_token", "access_denied":
+		case "expired_token", "access_denied", "invalid_grant":
 			return b, ErrSSODenied
 		}
 	}
@@ -421,10 +485,10 @@ func (b *SSOBroker) Forget(name string) {
 }
 
 func ssoSkew() time.Duration {
-	return time.Duration(envIntDefault("APP_CLOUD_AWS_SSO_TOKEN_SKEW_SECONDS", 60)) * time.Second
+	return time.Duration(SSOCurrentSettings().TokenSkewSeconds) * time.Second
 }
 
-func ssoRenewPercent() int { return min(envIntDefault("APP_CLOUD_AWS_SSO_RENEW_PERCENT", 80), 99) }
+func ssoRenewPercent() int { return SSOCurrentSettings().RenewPercent }
 
 func (b *SSOBroker) save(ctx context.Context, name string, e *ssoEntry, nb SSOBundle) {
 	e.bundle = nb

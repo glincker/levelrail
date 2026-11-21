@@ -502,7 +502,8 @@
     "relogin": "重新登录",
     "reloginNeeded": "AWS 登录已结束。请重新登录以继续使用此账户。",
     "startUrlExample": "https://d-1234567890.awsapps.com/start",
-    "regionExample": "eu-west-1"
+    "regionExample": "eu-west-1",
+    "accountRegion": "此账户的区域(可选,默认使用登录区域)"
   },
   "relogin": {
     "title": "浏览器会话",

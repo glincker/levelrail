@@ -502,7 +502,8 @@
     "relogin": "Sign in again",
     "reloginNeeded": "The AWS sign in ended. Sign in again to keep using this account.",
     "startUrlExample": "https://d-1234567890.awsapps.com/start",
-    "regionExample": "eu-west-1"
+    "regionExample": "eu-west-1",
+    "accountRegion": "Region for this account (optional, defaults to the sign in region)"
   },
   "relogin": {
     "title": "Browser session",
