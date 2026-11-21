@@ -45,14 +45,28 @@ type Field struct {
 	Flag string `json:"flag,omitempty"`
 	// FlagFile marks a flag that takes a file path whose content becomes the value.
 	FlagFile bool `json:"flag_file,omitempty"`
+	// FormOnly marks a field the CLI infers instead of taking a flag.
+	FormOnly bool `json:"form_only,omitempty"`
+	// Placeholder and HelpURL are language neutral hints the dashboard shows beside the input.
+	Placeholder string `json:"placeholder,omitempty"`
+	HelpURL     string `json:"help_url,omitempty"`
 	// Doc is the English one line description used by the CLI help and the docs table.
 	Doc string `json:"doc"`
+}
+
+// Docs places the generated docs page of a resource. It is not served over the API.
+type Docs struct {
+	File        string // path under docs/, for example backup-target-fields.md
+	Title       string
+	Description string
 }
 
 // Resource is the ordered field list of one resource kind.
 type Resource struct {
 	Name   string  `json:"name"`
 	Fields []Field `json:"fields"`
+	// Docs is required: the generator and the contract test read it for every resource.
+	Docs Docs `json:"-"`
 }
 
 var registry = map[string]Resource{}
@@ -61,6 +75,9 @@ var registry = map[string]Resource{}
 func Register(r Resource) {
 	if _, dup := registry[r.Name]; dup {
 		panic("fielddesc: duplicate resource " + r.Name)
+	}
+	if r.Docs.File == "" || r.Docs.Title == "" {
+		panic("fielddesc: resource " + r.Name + " needs Docs.File and Docs.Title")
 	}
 	seen := map[string]bool{}
 	for _, f := range r.Fields {

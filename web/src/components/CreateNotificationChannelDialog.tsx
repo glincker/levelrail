@@ -1,4 +1,5 @@
 import { useState } from 'react'
+import { useQuery } from '@tanstack/react-query'
 import { zodResolver } from '@hookform/resolvers/zod'
 import { Controller, useForm } from 'react-hook-form'
 import {
@@ -22,12 +23,16 @@ import {
 } from '@/components/ui/dialog'
 import { Alert, AlertDescription } from '@/components/ui/alert'
 import { Button } from '@/components/ui/button'
-import { Input } from '@/components/ui/input'
-import { Field, FieldError, FieldHint, FieldLabel } from '@/components/ui/field'
+import { Field, FieldLabel } from '@/components/ui/field'
 import { toast } from '@/components/ui/toast'
 import { cn } from '@/lib/utils'
 import { BrandTile } from './BrandLogoBadge'
 import { BrowserPushField } from './BrowserPushField'
+import { DescriptorFields } from './DescriptorFields'
+import {
+  FIELD_RESOURCES,
+  fieldDescriptorsQueryOptions,
+} from '../queries/fieldDescriptors'
 import {
   CHANNEL_KIND_BRAND_ICON,
   CHANNEL_KIND_LABEL,
@@ -38,7 +43,8 @@ import {
 } from '../queries/notificationChannels'
 import {
   CHANNEL_DEFAULT_VALUES,
-  CHANNEL_KIND_META,
+  camelToSnake,
+  snakeToCamel,
   NOTIFICATION_CHANNEL_KIND_ORDER,
   createChannelSchema,
   resolveNotifyUrl,
@@ -53,12 +59,26 @@ export function CreateNotificationChannelDialog() {
   const [webpushReady, setWebpushReady] = useState(false)
   const createChannel = useCreateNotificationChannel()
   const testChannel = useTestNotificationChannel()
-  const { control, register, handleSubmit, formState, reset, watch } =
+  const { control, handleSubmit, formState, reset, watch, setValue } =
     useForm<CreateChannelForm>({
       resolver: zodResolver(createChannelSchema),
       defaultValues: CHANNEL_DEFAULT_VALUES,
     })
   const kind = watch('kind')
+  const { data: descriptorSet } = useQuery({
+    ...fieldDescriptorsQueryOptions(FIELD_RESOURCES.notificationChannel),
+    retry: false,
+  })
+  const descriptors = descriptorSet?.fields ?? []
+  const descriptorValues = Object.fromEntries(
+    Object.entries(watch()).map(([k, v]) => [camelToSnake(k), v]),
+  )
+  const descriptorErrors = Object.fromEntries(
+    Object.entries(formState.errors).map(([k, e]) => [
+      camelToSnake(k),
+      e.message,
+    ]),
+  )
   const notifyUrl = watch('notifyUrl')
   const pushoverUserKey = watch('pushoverUserKey')
   const pushoverApiToken = watch('pushoverApiToken')
@@ -149,238 +169,97 @@ export function CreateNotificationChannelDialog() {
           }}
           className="space-y-4"
         >
-          <Field>
-            <FieldLabel>Channel type</FieldLabel>
-            <Controller
-              control={control}
-              name="kind"
-              render={({ field }) => (
-                <div className="grid grid-cols-3 gap-2 sm:grid-cols-6">
-                  {NOTIFICATION_CHANNEL_KIND_ORDER.map((option) => {
-                    const brandIcon = CHANNEL_KIND_BRAND_ICON[option]
-                    const selected = field.value === option
-                    return (
-                      <button
-                        key={option}
-                        type="button"
-                        aria-pressed={selected}
-                        onClick={() => {
-                          field.onChange(option)
-                          setVerified(false)
-                        }}
-                        className={cn(
-                          'flex flex-col items-center gap-1.5 rounded-lg border p-2.5 text-xs font-medium transition-colors',
-                          selected
-                            ? 'border-primary bg-primary/5 text-foreground'
-                            : 'border-border text-muted-foreground hover:bg-muted',
-                        )}
-                      >
-                        {brandIcon ? (
-                          <BrandTile
-                            name={brandIcon}
-                            label={CHANNEL_KIND_LABEL[option]}
-                            size="sm"
-                          />
-                        ) : option === 'email' ? (
-                          <MailGlassIcon
-                            className="size-6"
-                            aria-hidden="true"
-                          />
-                        ) : option === 'pushover' ? (
-                          <BellRingGlassIcon
-                            className="size-6"
-                            aria-hidden="true"
-                          />
-                        ) : option === 'webpush' ? (
-                          <SmartphoneGlassIcon
-                            className="size-6"
-                            aria-hidden="true"
-                          />
-                        ) : (
-                          <WebhookGlassIcon
-                            className="size-6"
-                            aria-hidden="true"
-                          />
-                        )}
-                        <span className="truncate">
-                          {CHANNEL_KIND_LABEL[option]}
-                        </span>
-                      </button>
-                    )
-                  })}
-                </div>
-              )}
-            />
-          </Field>
-
-          <Field>
-            <FieldLabel htmlFor="channel-name">Name</FieldLabel>
-            <Input
-              id="channel-name"
-              placeholder="e.g. Team Slack"
-              {...register('name')}
-            />
-            <FieldError errors={[formState.errors.name]} />
-          </Field>
-
-          {kind === 'pushover' ? (
-            <>
-              <Field>
-                <FieldLabel htmlFor="channel-pushover-user-key">
-                  Pushover User Key
-                </FieldLabel>
-                <Input
-                  id="channel-pushover-user-key"
-                  placeholder="uQiRzpo4DXghDmr9QzzfQu27cmVRsG"
-                  {...register('pushoverUserKey', {
-                    onChange: () => {
-                      setVerified(false)
-                    },
-                  })}
-                />
-                <FieldError errors={[formState.errors.pushoverUserKey]} />
-              </Field>
-              <Field>
-                <FieldLabel htmlFor="channel-pushover-api-token">
-                  Pushover Application API Token
-                </FieldLabel>
-                <Input
-                  id="channel-pushover-api-token"
-                  placeholder="azGDORePK8gMaC0QOYAMyEEuzJnyUi"
-                  {...register('pushoverApiToken', {
-                    onChange: () => {
-                      setVerified(false)
-                    },
-                  })}
-                />
-                <FieldError errors={[formState.errors.pushoverApiToken]} />
-                <FieldHint href={CHANNEL_KIND_META.pushover.href}>
-                  What gets sent: app name, image/tag, success or failure, and
-                  the error message on failure. Nothing else about your app.
-                </FieldHint>
-              </Field>
-            </>
-          ) : kind === 'pagerduty' ? (
-            <Field>
-              <FieldLabel htmlFor="channel-pagerduty-routing-key">
-                Integration/Routing Key
-              </FieldLabel>
-              <Input
-                id="channel-pagerduty-routing-key"
-                placeholder="a1b2c3d4e5f6a1b2c3d4e5f6a1b2c3d4"
-                {...register('pagerdutyRoutingKey', {
-                  onChange: () => {
-                    setVerified(false)
-                  },
-                })}
-              />
-              <FieldError errors={[formState.errors.pagerdutyRoutingKey]} />
-              <FieldHint href={CHANNEL_KIND_META.pagerduty.href}>
-                What gets sent: app name, image/tag, success or failure, and the
-                error message on failure. Nothing else about your app.
-              </FieldHint>
-            </Field>
-          ) : kind === 'resend' ? (
-            <>
-              <Field>
-                <FieldLabel htmlFor="channel-resend-api-key">
-                  Resend API Key
-                </FieldLabel>
-                <Input
-                  id="channel-resend-api-key"
-                  placeholder="re_123456789"
-                  {...register('resendApiKey', {
-                    onChange: () => {
-                      setVerified(false)
-                    },
-                  })}
-                />
-                <FieldError errors={[formState.errors.resendApiKey]} />
-              </Field>
-              <Field>
-                <FieldLabel htmlFor="channel-resend-to">
-                  Destination email address
-                </FieldLabel>
-                <Input
-                  id="channel-resend-to"
-                  placeholder="ops@example.com"
-                  {...register('resendTo', {
-                    onChange: () => {
-                      setVerified(false)
-                    },
-                  })}
-                />
-                <FieldError errors={[formState.errors.resendTo]} />
-              </Field>
-              <Field>
-                <FieldLabel htmlFor="channel-resend-from">
-                  From address (optional)
-                </FieldLabel>
-                <Input
-                  id="channel-resend-from"
-                  placeholder="alerts@yourdomain.com"
-                  {...register('resendFrom', {
-                    onChange: () => {
-                      setVerified(false)
-                    },
-                  })}
-                />
-                <FieldError errors={[formState.errors.resendFrom]} />
-                <FieldHint href="https://resend.com/docs/dashboard/domains/introduction">
-                  Left blank, sends from Resend&apos;s own onboarding@resend.dev
-                  sender, which works without verifying a domain.
-                </FieldHint>
-              </Field>
-            </>
-          ) : kind === 'opsgenie' ? (
-            <Field>
-              <FieldLabel htmlFor="channel-opsgenie-api-key">
-                Opsgenie API Key
-              </FieldLabel>
-              <Input
-                id="channel-opsgenie-api-key"
-                placeholder="00000000-0000-0000-0000-000000000000"
-                {...register('opsgenieApiKey', {
-                  onChange: () => {
-                    setVerified(false)
-                  },
-                })}
-              />
-              <FieldError errors={[formState.errors.opsgenieApiKey]} />
-              <FieldHint href="https://support.atlassian.com/opsgenie/docs/api-integration/">
-                What gets sent: app name, image/tag, success or failure, and the
-                error message on failure. Nothing else about your app.
-              </FieldHint>
-            </Field>
-          ) : kind === 'webpush' ? (
-            <BrowserPushField onReadyChange={setWebpushReady} />
+          {descriptors.length === 0 ? (
+            <Alert variant="destructive">
+              <AlertDescription>
+                The form fields could not be loaded. Reload the page and try
+                again.
+              </AlertDescription>
+            </Alert>
           ) : (
-            <Field>
-              <FieldLabel htmlFor="channel-notify-url">
-                {kind === 'email'
-                  ? 'Notify email address'
-                  : kind === 'ntfy'
-                    ? 'Topic URL'
-                    : kind === 'gotify'
-                      ? 'Message endpoint URL'
-                      : 'Webhook URL'}
-              </FieldLabel>
-              <Input
-                id="channel-notify-url"
-                placeholder={CHANNEL_KIND_META[kind].placeholder}
-                {...register('notifyUrl', {
-                  onChange: () => {
-                    setVerified(false)
-                  },
-                })}
-              />
-              <FieldError errors={[formState.errors.notifyUrl]} />
-              <FieldHint href={CHANNEL_KIND_META[kind].href}>
-                What gets sent: app name, image/tag, success or failure, and the
-                error message on failure. Nothing else about your app.
-              </FieldHint>
-            </Field>
+            <DescriptorFields
+              fields={descriptors}
+              values={descriptorValues}
+              idPrefix="channel"
+              errors={descriptorErrors}
+              onChange={(key, value) => {
+                setValue(snakeToCamel(key) as keyof CreateChannelForm, value, {
+                  shouldValidate: formState.isSubmitted,
+                })
+                setVerified(false)
+              }}
+              renderField={(f) =>
+                f.id === 'kind' ? (
+                  <Field key={f.id}>
+                    <FieldLabel>Channel type</FieldLabel>
+                    <Controller
+                      control={control}
+                      name="kind"
+                      render={({ field }) => (
+                        <div className="grid grid-cols-3 gap-2 sm:grid-cols-6">
+                          {NOTIFICATION_CHANNEL_KIND_ORDER.map((option) => {
+                            const brandIcon = CHANNEL_KIND_BRAND_ICON[option]
+                            const selected = field.value === option
+                            return (
+                              <button
+                                key={option}
+                                type="button"
+                                aria-pressed={selected}
+                                onClick={() => {
+                                  field.onChange(option)
+                                  setVerified(false)
+                                }}
+                                className={cn(
+                                  'flex flex-col items-center gap-1.5 rounded-lg border p-2.5 text-xs font-medium transition-colors',
+                                  selected
+                                    ? 'border-primary bg-primary/5 text-foreground'
+                                    : 'border-border text-muted-foreground hover:bg-muted',
+                                )}
+                              >
+                                {brandIcon ? (
+                                  <BrandTile
+                                    name={brandIcon}
+                                    label={CHANNEL_KIND_LABEL[option]}
+                                    size="sm"
+                                  />
+                                ) : option === 'email' ? (
+                                  <MailGlassIcon
+                                    className="size-6"
+                                    aria-hidden="true"
+                                  />
+                                ) : option === 'pushover' ? (
+                                  <BellRingGlassIcon
+                                    className="size-6"
+                                    aria-hidden="true"
+                                  />
+                                ) : option === 'webpush' ? (
+                                  <SmartphoneGlassIcon
+                                    className="size-6"
+                                    aria-hidden="true"
+                                  />
+                                ) : (
+                                  <WebhookGlassIcon
+                                    className="size-6"
+                                    aria-hidden="true"
+                                  />
+                                )}
+                                <span className="truncate">
+                                  {CHANNEL_KIND_LABEL[option]}
+                                </span>
+                              </button>
+                            )
+                          })}
+                        </div>
+                      )}
+                    />
+                  </Field>
+                ) : undefined
+              }
+            />
           )}
+          {kind === 'webpush' ? (
+            <BrowserPushField onReadyChange={setWebpushReady} />
+          ) : null}
 
           <div className="flex items-center gap-2">
             <Button

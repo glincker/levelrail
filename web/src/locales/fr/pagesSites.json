@@ -211,7 +211,8 @@
   "promote": {
     "action": "Mettre en ligne",
     "confirmTitle": "Mettre ce déploiement en ligne pour {{name}} ?",
-    "confirmBody": "Les domaines propres du site servent ce déploiement immédiatement. Son URL dédiée continue de fonctionner."
+    "confirmBody": "Les domaines propres du site servent ce déploiement immédiatement. Son URL dédiée continue de fonctionner.",
+    "pending": "Mise en ligne"
   },
   "deployUrl": {
     "copy": "Copier l'URL de déploiement",

@@ -134,7 +134,12 @@
     "errorTitle": "El drenaje se detuvo",
     "failedHint": "El nodo sigue acordonado. Corrige la causa que se muestra en el movimiento fallido y vuelve a drenar, o desacordona el nodo para devolverlo a la rotación.",
     "toNode": "a {{node}}",
-    "toAuto": "a un nodo elegido automáticamente"
+    "toAuto": "a un nodo elegido automáticamente",
+    "progress": {
+      "summary": "{{done}} de {{total}} movidos, {{failed}} con error",
+      "eta": "unos {{seconds}} s restantes",
+      "stalled": "Sin avance desde hace un rato. Revisa el nodo y los movimientos de abajo."
+    }
   },
   "drains": {
     "title": "Drenajes",

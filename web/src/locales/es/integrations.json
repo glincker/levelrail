@@ -171,10 +171,123 @@
         "label": "Destino",
         "help": "Dirección syslog como network://host:puerto. Vacío para syslog local."
       },
+      "header_name": {
+        "label": "Nombre del encabezado de autenticación",
+        "help": "Encabezado opcional enviado con cada lote, por ejemplo Authorization o X-Api-Key."
+      },
+      "header_value": {
+        "label": "Valor del encabezado de autenticación",
+        "help": "Se guarda cifrado y no se vuelve a mostrar. Déjalo vacío para conservar el valor guardado."
+      },
       "enabled": {
         "label": "Reenvío",
         "help": "Activa o pausa el reenvío sin perder la configuración."
       }
+    },
+    "notificationChannel": {
+      "kind": {
+        "label": "Tipo de canal",
+        "help": "Destino de la alerta o del aviso de despliegue."
+      },
+      "name": {
+        "label": "Nombre",
+        "help": "Nombre que se muestra en el panel y en la CLI."
+      },
+      "notify_url_webhook": {
+        "label": "URL del webhook",
+        "help": "Se envía el nombre de la aplicación, la imagen/etiqueta, si tuvo éxito o falló y, en caso de fallo, el mensaje de error. Nada más sobre su aplicación."
+      },
+      "notify_url_email": {
+        "label": "Correo electrónico de aviso",
+        "help": "Se envía el nombre de la aplicación, la imagen/etiqueta, si tuvo éxito o falló y, en caso de fallo, el mensaje de error. Nada más sobre su aplicación."
+      },
+      "notify_url_ntfy": {
+        "label": "URL del tema",
+        "help": "Se envía el nombre de la aplicación, la imagen/etiqueta, si tuvo éxito o falló y, en caso de fallo, el mensaje de error. Nada más sobre su aplicación."
+      },
+      "notify_url_gotify": {
+        "label": "URL del endpoint de mensajes",
+        "help": "Se envía el nombre de la aplicación, la imagen/etiqueta, si tuvo éxito o falló y, en caso de fallo, el mensaje de error. Nada más sobre su aplicación."
+      },
+      "pushover_user_key": {
+        "label": "Clave de usuario de Pushover",
+        "help": "Su clave de usuario, visible en el panel de Pushover."
+      },
+      "pushover_api_token": {
+        "label": "Token de API de la aplicación Pushover",
+        "help": "Se envía el nombre de la aplicación, la imagen/etiqueta, si tuvo éxito o falló y, en caso de fallo, el mensaje de error. Nada más sobre su aplicación."
+      },
+      "pagerduty_routing_key": {
+        "label": "Clave de integración / enrutamiento",
+        "help": "Se envía el nombre de la aplicación, la imagen/etiqueta, si tuvo éxito o falló y, en caso de fallo, el mensaje de error. Nada más sobre su aplicación."
+      },
+      "resend_api_key": {
+        "label": "Clave de API de Resend",
+        "help": "Clave de API con permiso para enviar correos."
+      },
+      "resend_to": {
+        "label": "Correo electrónico de destino",
+        "help": "Dirección que recibe el correo de alerta."
+      },
+      "resend_from": {
+        "label": "Dirección de remitente (opcional)",
+        "help": "Remitente de un dominio verificado en Resend. Si queda vacío, se usa onboarding@resend.dev."
+      },
+      "opsgenie_api_key": {
+        "label": "Clave de API de Opsgenie",
+        "help": "Se envía el nombre de la aplicación, la imagen/etiqueta, si tuvo éxito o falló y, en caso de fallo, el mensaje de error. Nada más sobre su aplicación."
+      },
+      "enabled": {
+        "label": "Envío",
+        "help": "Active o pause las notificaciones sin borrar el canal."
+      },
+      "notify_device_login": {
+        "label": "Avisos de inicio de sesión de dispositivo",
+        "help": "Aviso solo con enlace cuando un inicio de sesión de la CLI espera aprobación. El código nunca se incluye."
+      },
+      "notify_device_login_expired": {
+        "label": "Avisos de inicio de sesión de dispositivo caducado",
+        "help": "Aviso solo con enlace cuando un inicio de sesión pendiente de la CLI caduca sin aprobación. El código nunca se incluye."
+      }
+    },
+    "dnsProvider": {
+      "provider": {
+        "label": "Proveedor",
+        "help": "Proveedor DNS donde están los registros de su dominio."
+      },
+      "cloudflare": {
+        "token": {
+          "label": "Token de API de Cloudflare",
+          "help": "Token de API con alcance limitado y permiso Zone:DNS:Edit, no la clave global de API."
+        }
+      },
+      "route53": {
+        "access_key_id": {
+          "label": "ID de clave de acceso de AWS",
+          "help": "ID de clave de acceso de un usuario IAM con acceso a la zona alojada."
+        },
+        "secret_access_key": {
+          "label": "Clave secreta de acceso de AWS",
+          "help": "Se guarda cifrada y no se vuelve a mostrar."
+        },
+        "region": {
+          "label": "Región (opcional)",
+          "help": "Si queda vacío, se usa la cadena de regiones predeterminada del SDK de AWS."
+        },
+        "hosted_zone_id": {
+          "label": "ID de la zona alojada (opcional)",
+          "help": "Si queda vacío, la zona se busca según el dominio."
+        }
+      },
+      "googlecloud": {
+        "service_account_json": {
+          "label": "Clave JSON de la cuenta de servicio",
+          "help": "Requiere permisos de administrador de Cloud DNS. No se vuelve a mostrar tras guardarla."
+        }
+      }
     }
+  },
+  "logDrain": {
+    "advanced": "Avanzado"
   }
 }

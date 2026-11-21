@@ -64,6 +64,14 @@ export interface LogDrain {
   type: LogDrainType
   target: string
   enabled: boolean
+  // Name only: the value is write only and never returned.
+  header_name?: string
+  header_set?: boolean
+}
+
+// What PUT log-drain accepts; header_value is write only, blank keeps the stored one.
+export interface LogDrainInput extends LogDrain {
+  header_value?: string
 }
 
 // Matches internal/api/apps.go's appResource exactly. `domains` and

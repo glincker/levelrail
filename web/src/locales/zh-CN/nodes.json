@@ -134,7 +134,12 @@
     "errorTitle": "排空已停止",
     "failedHint": "该节点保持隔离状态。请修复失败迁移上显示的原因，然后再次排空，或取消隔离该节点以使其重新参与调度。",
     "toNode": "到 {{node}}",
-    "toAuto": "到自动选择的节点"
+    "toAuto": "到自动选择的节点",
+    "progress": {
+      "summary": "已迁移 {{done}} / {{total}},失败 {{failed}}",
+      "eta": "约剩 {{seconds}} 秒",
+      "stalled": "已有一段时间没有进展。请检查节点和下方的迁移。"
+    }
   },
   "drains": {
     "title": "排空记录",

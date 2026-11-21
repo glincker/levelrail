@@ -66,6 +66,11 @@ type AppResource struct {
 	RequireRefWarnings []string `json:"require_ref_warnings,omitempty"`
 	// TemplateID is the catalog template the app was deployed from, empty otherwise.
 	TemplateID string `json:"template_id,omitempty"`
+	// AppKind and KindSource come from the list and get payloads: card shape and how it was chosen.
+	AppKind    string `json:"app_kind,omitempty"`
+	KindSource string `json:"kind_source,omitempty"`
+	// Preview is the list endpoint's thumbnail card with its render state (none, queued, rendering, ready, failed).
+	Preview *AppPreviewCard `json:"preview,omitempty"`
 	// PendingImage is set while a rollout to a new image is in progress or
 	// failed; Image is then the last image confirmed serving.
 	PendingImage string `json:"pending_image,omitempty"`
@@ -316,6 +321,9 @@ type LogDrainResource struct {
 	Type    string `json:"type"`
 	Target  string `json:"target"`
 	Enabled bool   `json:"enabled"`
+	// HeaderName is returned; HeaderSet says a value is stored, the value is never returned.
+	HeaderName string `json:"header_name,omitempty"`
+	HeaderSet  bool   `json:"header_set,omitempty"`
 }
 
 // SetLogDrainRequest mirrors internal/api's setLogDrainRequest.
@@ -323,6 +331,9 @@ type SetLogDrainRequest struct {
 	Type    string `json:"type"`
 	Target  string `json:"target"`
 	Enabled bool   `json:"enabled"`
+	// HeaderValue is write only; empty keeps the stored value, empty HeaderName clears the header.
+	HeaderName  string `json:"header_name,omitempty"`
+	HeaderValue string `json:"header_value,omitempty"`
 }
 
 // BuildTriggerRequest mirrors internal/api's triggerBuildRequest
@@ -5003,4 +5014,11 @@ type SetNodeFailureDomainRequest struct {
 	Region   *string `json:"region,omitempty"`
 	Provider *string `json:"provider,omitempty"`
 	Zone     *string `json:"zone,omitempty"`
+}
+
+// AppPreviewCard mirrors internal/api's previewCardResource: only the fields a script needs.
+type AppPreviewCard struct {
+	ImageURL string `json:"image_url,omitempty"`
+	State    string `json:"state,omitempty"`
+	Reason   string `json:"reason,omitempty"`
 }

@@ -209,7 +209,8 @@
   "promote": {
     "action": "设为线上版本",
     "confirmTitle": "让此部署成为 {{name}} 的线上版本？",
-    "confirmBody": "站点自己的域名会立即提供此部署，它自己的 URL 仍然有效。"
+    "confirmBody": "站点自己的域名会立即提供此部署，它自己的 URL 仍然有效。",
+    "pending": "生效中"
   },
   "deployUrl": {
     "copy": "复制部署 URL",

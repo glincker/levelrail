@@ -102,6 +102,7 @@ func (rt *Router) registerNodeRoutes(mux *http.ServeMux) {
 	// Health timeline, doctor checks and fleet version skew (node_insight.go).
 	mux.HandleFunc("GET /api/v1/nodes/{id}/timeline", rt.requireAbilityForResource(AbilityRoot, nodeResourceFromPath, rt.handleNodeTimeline))
 	mux.HandleFunc("GET /api/v1/nodes/{id}/doctor", rt.requireAbilityForResource(AbilityRoot, nodeResourceFromPath, rt.handleNodeDoctor))
+	mux.HandleFunc("GET /api/v1/nodes/{id}/agent-update", rt.requireAbilityForResource(AbilityRoot, nodeResourceFromPath, rt.handleNodeAgentUpdate))
 	mux.HandleFunc("GET /api/v1/nodes/version-skew", rt.requireAbility(AbilityRoot, rt.handleNodeVersionSkew))
 	// Rough disk/memory exhaustion projection (node_capacity_forecast.go),
 	// a read-and-suggest layer over the same host samples

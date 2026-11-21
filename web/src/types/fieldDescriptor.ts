@@ -1,4 +1,4 @@
-// Wire shape of GET /api/v1/backup-targets/field-descriptors (internal/fielddesc).
+// Wire shape of GET /api/v1/field-descriptors/{resource} (internal/fielddesc).
 export type FieldType = 'string' | 'text' | 'secret' | 'select' | 'bool'
 
 export interface FieldCondition {
@@ -18,6 +18,9 @@ export interface FieldDescriptor {
   secret: boolean
   show_when?: FieldCondition[]
   flag?: string
+  form_only?: boolean
+  placeholder?: string
+  help_url?: string
   doc: string
 }
 

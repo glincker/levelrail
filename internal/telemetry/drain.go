@@ -42,6 +42,9 @@ type DrainConfig struct {
 	Type       DrainSinkType
 	Target     string
 	Enabled    bool
+	// HeaderName and HeaderValue add one request header on http delivery. HeaderValue is a secret.
+	HeaderName  string
+	HeaderValue string
 }
 
 // DrainSink is the narrow surface a log drain forwarder needs from a
@@ -201,7 +204,9 @@ func buildDrainSink(cfg DrainConfig, httpClient *http.Client, programTag string)
 		if cfg.Target == "" {
 			return nil, errors.New("telemetry: http log drain requires a target URL")
 		}
-		return NewHTTPSink(cfg.Target, httpClient), nil
+		sink := NewHTTPSink(cfg.Target, httpClient)
+		sink.HeaderName, sink.HeaderValue = cfg.HeaderName, cfg.HeaderValue
+		return sink, nil
 	case DrainSinkSyslog:
 		return newSyslogSink(cfg.Target, programTag)
 	default:

@@ -166,10 +166,123 @@
         "label": "送信先",
         "help": "network://host:port形式のsyslogアドレスです。空欄ならローカルsyslogです。"
       },
+      "header_name": {
+        "label": "認証ヘッダー名",
+        "help": "各バッチに付けて送る任意のヘッダー。例: Authorization、X-Api-Key。"
+      },
+      "header_value": {
+        "label": "認証ヘッダーの値",
+        "help": "暗号化して保存され、再表示されません。空欄のままにすると保存済みの値を保持します。"
+      },
       "enabled": {
         "label": "転送",
         "help": "設定を残したまま転送をオンまたは一時停止します。"
       }
+    },
+    "notificationChannel": {
+      "kind": {
+        "label": "チャネルの種類",
+        "help": "アラートやデプロイ通知の送信先です。"
+      },
+      "name": {
+        "label": "名前",
+        "help": "ダッシュボードとCLIに表示される名前です。"
+      },
+      "notify_url_webhook": {
+        "label": "Webhook URL",
+        "help": "送信される内容は、アプリ名、イメージ/タグ、成功または失敗、失敗時のエラーメッセージのみです。アプリについてそれ以外は送信しません。"
+      },
+      "notify_url_email": {
+        "label": "通知先のメールアドレス",
+        "help": "送信される内容は、アプリ名、イメージ/タグ、成功または失敗、失敗時のエラーメッセージのみです。アプリについてそれ以外は送信しません。"
+      },
+      "notify_url_ntfy": {
+        "label": "トピックURL",
+        "help": "送信される内容は、アプリ名、イメージ/タグ、成功または失敗、失敗時のエラーメッセージのみです。アプリについてそれ以外は送信しません。"
+      },
+      "notify_url_gotify": {
+        "label": "メッセージ送信先URL",
+        "help": "送信される内容は、アプリ名、イメージ/タグ、成功または失敗、失敗時のエラーメッセージのみです。アプリについてそれ以外は送信しません。"
+      },
+      "pushover_user_key": {
+        "label": "Pushover ユーザーキー",
+        "help": "Pushover ダッシュボードに表示されるユーザーキーです。"
+      },
+      "pushover_api_token": {
+        "label": "Pushover アプリケーションAPIトークン",
+        "help": "送信される内容は、アプリ名、イメージ/タグ、成功または失敗、失敗時のエラーメッセージのみです。アプリについてそれ以外は送信しません。"
+      },
+      "pagerduty_routing_key": {
+        "label": "インテグレーション/ルーティングキー",
+        "help": "送信される内容は、アプリ名、イメージ/タグ、成功または失敗、失敗時のエラーメッセージのみです。アプリについてそれ以外は送信しません。"
+      },
+      "resend_api_key": {
+        "label": "Resend APIキー",
+        "help": "メール送信の権限を持つAPIキーです。"
+      },
+      "resend_to": {
+        "label": "送信先メールアドレス",
+        "help": "アラートメールを受け取るアドレスです。"
+      },
+      "resend_from": {
+        "label": "送信元アドレス（任意）",
+        "help": "Resendで認証済みのドメインのアドレスです。空欄の場合は onboarding@resend.dev を使います。"
+      },
+      "opsgenie_api_key": {
+        "label": "Opsgenie APIキー",
+        "help": "送信される内容は、アプリ名、イメージ/タグ、成功または失敗、失敗時のエラーメッセージのみです。アプリについてそれ以外は送信しません。"
+      },
+      "enabled": {
+        "label": "配信",
+        "help": "チャネルを削除せずに、通知の配信をオンまたは一時停止します。"
+      },
+      "notify_device_login": {
+        "label": "デバイスログインの通知",
+        "help": "CLIのログインが承認待ちのとき、リンクのみの通知を送ります。コードは含まれません。"
+      },
+      "notify_device_login_expired": {
+        "label": "期限切れデバイスログインの通知",
+        "help": "承認されないまま保留中のCLIログインが期限切れになったとき、リンクのみの通知を送ります。コードは含まれません。"
+      }
+    },
+    "dnsProvider": {
+      "provider": {
+        "label": "プロバイダー",
+        "help": "ドメインのレコードを管理しているDNSホストです。"
+      },
+      "cloudflare": {
+        "token": {
+          "label": "Cloudflare APIトークン",
+          "help": "Zone:DNS:Edit 権限を持つスコープ付きAPIトークンです。グローバルAPIキーではありません。"
+        }
+      },
+      "route53": {
+        "access_key_id": {
+          "label": "AWS アクセスキーID",
+          "help": "ホストゾーンにアクセスできるIAMユーザーのアクセスキーIDです。"
+        },
+        "secret_access_key": {
+          "label": "AWS シークレットアクセスキー",
+          "help": "暗号化して保存され、保存後は再表示されません。"
+        },
+        "region": {
+          "label": "リージョン（任意）",
+          "help": "空欄の場合、AWS SDKの既定のリージョン解決順序が使われます。"
+        },
+        "hosted_zone_id": {
+          "label": "ホストゾーンID（任意）",
+          "help": "空欄の場合、ドメインに一致するゾーンを検索します。"
+        }
+      },
+      "googlecloud": {
+        "service_account_json": {
+          "label": "サービスアカウントのJSONキー",
+          "help": "Cloud DNSの管理者権限が必要です。保存後は再表示されません。"
+        }
+      }
     }
+  },
+  "logDrain": {
+    "advanced": "詳細設定"
   }
 }

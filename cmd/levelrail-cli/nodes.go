@@ -55,6 +55,8 @@ func runNodes(prog string, args []string, stdout, stderr io.Writer, lookupEnv fu
 		return runNodesDoctor(prog, rest, stdout, stderr, lookupEnv)
 	case "timeline":
 		return runNodesTimeline(prog, rest, stdout, stderr, lookupEnv)
+	case "agent-update":
+		return runNodesAgentUpdate(prog, rest, stdout, stderr, lookupEnv)
 	case "version-skew":
 		return runNodesVersionSkew(prog, rest, stdout, stderr, lookupEnv)
 	case "metrics":

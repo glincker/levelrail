@@ -134,7 +134,12 @@
     "errorTitle": "Drenagem interrompida",
     "failedHint": "O node continua isolado. Corrija a causa exibida na movimentação que falhou e drene novamente, ou remova o isolamento do node para colocá-lo de volta em rotação.",
     "toNode": "para {{node}}",
-    "toAuto": "para um node escolhido automaticamente"
+    "toAuto": "para um node escolhido automaticamente",
+    "progress": {
+      "summary": "{{done}} de {{total}} movidos, {{failed}} com falha",
+      "eta": "cerca de {{seconds}} s restantes",
+      "stalled": "Sem progresso há algum tempo. Verifique o node e as movimentações abaixo."
+    }
   },
   "drains": {
     "title": "Drenagens",

@@ -9,6 +9,7 @@ import (
 	"github.com/GLINCKER/levelrail/internal/agent"
 	"github.com/GLINCKER/levelrail/internal/docker"
 	"github.com/GLINCKER/levelrail/internal/footprint"
+	"github.com/GLINCKER/levelrail/internal/secrets"
 	"github.com/GLINCKER/levelrail/internal/store"
 	"github.com/GLINCKER/levelrail/internal/telemetry"
 )
@@ -229,8 +230,13 @@ func (s *multiNodeLogSource) LogSourceFor(nodeID string) (telemetry.LogSource, e
 	return src, nil
 }
 
+// drainSecretResolver is the one secrets read the drain forwarder needs.
+type drainSecretResolver interface {
+	Resolve(ctx context.Context, serviceName, envKey string) (string, error)
+}
+
 // Only enabled drains are returned; DrainForwarder spawns a goroutine only for these.
-func drainTargets(db *store.DB) func(context.Context) ([]telemetry.DrainConfig, error) {
+func drainTargets(db *store.DB, secretResolver drainSecretResolver) func(context.Context) ([]telemetry.DrainConfig, error) {
 	return func(ctx context.Context) ([]telemetry.DrainConfig, error) {
 		services, err := db.ListDesiredServices(ctx)
 		if err != nil {
@@ -242,12 +248,22 @@ func drainTargets(db *store.DB) func(context.Context) ([]telemetry.DrainConfig, 
 			if svc.LogDrain == nil || !svc.LogDrain.Enabled {
 				continue
 			}
-			configs = append(configs, telemetry.DrainConfig{
+			cfg := telemetry.DrainConfig{
 				ResourceID: "service:" + svc.Name,
 				Type:       telemetry.DrainSinkType(svc.LogDrain.Type),
 				Target:     svc.LogDrain.Target,
 				Enabled:    true,
-			})
+			}
+			if name := svc.LogDrain.HeaderName; name != "" && secretResolver != nil {
+				value, err := secretResolver.Resolve(ctx, store.LogDrainSecretService(svc.Name), store.LogDrainSecretKey)
+				if err != nil {
+					// Skip the drain rather than send logs without the credential the receiver expects.
+					slog.Warn("log drain header unavailable, drain skipped", slog.String("app", svc.Name))
+					continue
+				}
+				cfg.HeaderName, cfg.HeaderValue = name, value
+			}
+			configs = append(configs, cfg)
 		}
 		return configs, nil
 	}
@@ -299,4 +315,12 @@ func runLogsRetentionSweep(ctx context.Context, db *telemetry.DB, retention func
 			sweep()
 		}
 	}
+}
+
+// drainResolver avoids a typed nil manager becoming a non-nil interface.
+func drainResolver(m *secrets.Manager) drainSecretResolver {
+	if m == nil {
+		return nil
+	}
+	return m
 }

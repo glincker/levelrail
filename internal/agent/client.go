@@ -353,13 +353,13 @@ func WithKeepalive(pingTime, timeout time.Duration) SessionOption {
 // Sends go through sendMu: a gRPC stream is not safe for concurrent Send.
 func serveSession(ctx context.Context, stream agentClientStream, rt docker.Runtime, builder BuildRunner, mesh MeshApplier, meshNodeID string, heartbeatInterval time.Duration, gpuProbe GPUProbe, logger *slog.Logger, hostProbes ...HostProbe) error {
 	var sendMu sync.Mutex
-	send := func(msg *agentpb.AgentMessage) {
+	rawSend := func(msg *agentpb.AgentMessage) error {
 		sendMu.Lock()
 		defer sendMu.Unlock()
-		if err := stream.Send(msg); err != nil {
-			logger.Warn("agent: session: send failed", slog.String("error", err.Error()))
-		}
+		return stream.Send(msg)
 	}
+	send, replay := bufferedSend(offlineBufferFrom(ctx), rawSend, logger)
+	go replay()
 	emitEvent := func(ev *agentpb.ProxiedEvent) {
 		send(&agentpb.AgentMessage{Payload: &agentpb.AgentMessage_Event{Event: ev}})
 	}

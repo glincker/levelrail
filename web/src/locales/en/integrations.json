@@ -171,10 +171,123 @@
         "label": "Syslog address",
         "help": "Syslog address as network://host:port. Leave empty for local syslog."
       },
+      "header_name": {
+        "label": "Auth header name",
+        "help": "Optional header sent with every batch, for example Authorization or X-Api-Key."
+      },
+      "header_value": {
+        "label": "Auth header value",
+        "help": "Stored encrypted and never shown again. Leave blank to keep the stored value."
+      },
       "enabled": {
         "label": "Forwarding",
         "help": "Turn forwarding on or pause it without losing the settings."
       }
+    },
+    "notificationChannel": {
+      "kind": {
+        "label": "Channel type",
+        "help": "Where the alert or deploy notice is sent."
+      },
+      "name": {
+        "label": "Name",
+        "help": "Display name shown in the dashboard and the CLI."
+      },
+      "notify_url_webhook": {
+        "label": "Webhook URL",
+        "help": "What gets sent: app name, image/tag, success or failure, and the error message on failure. Nothing else about your app."
+      },
+      "notify_url_email": {
+        "label": "Notify email address",
+        "help": "What gets sent: app name, image/tag, success or failure, and the error message on failure. Nothing else about your app."
+      },
+      "notify_url_ntfy": {
+        "label": "Topic URL",
+        "help": "What gets sent: app name, image/tag, success or failure, and the error message on failure. Nothing else about your app."
+      },
+      "notify_url_gotify": {
+        "label": "Message endpoint URL",
+        "help": "What gets sent: app name, image/tag, success or failure, and the error message on failure. Nothing else about your app."
+      },
+      "pushover_user_key": {
+        "label": "Pushover User Key",
+        "help": "Your user key from the Pushover dashboard."
+      },
+      "pushover_api_token": {
+        "label": "Pushover Application API Token",
+        "help": "What gets sent: app name, image/tag, success or failure, and the error message on failure. Nothing else about your app."
+      },
+      "pagerduty_routing_key": {
+        "label": "Integration/Routing Key",
+        "help": "What gets sent: app name, image/tag, success or failure, and the error message on failure. Nothing else about your app."
+      },
+      "resend_api_key": {
+        "label": "Resend API Key",
+        "help": "API key with permission to send email."
+      },
+      "resend_to": {
+        "label": "Destination email address",
+        "help": "Address that receives the alert email."
+      },
+      "resend_from": {
+        "label": "From address (optional)",
+        "help": "Sender on a domain you verified in Resend. Left blank, onboarding@resend.dev is used."
+      },
+      "opsgenie_api_key": {
+        "label": "Opsgenie API Key",
+        "help": "What gets sent: app name, image/tag, success or failure, and the error message on failure. Nothing else about your app."
+      },
+      "enabled": {
+        "label": "Delivery",
+        "help": "Send notifications here, or pause them without deleting the channel."
+      },
+      "notify_device_login": {
+        "label": "Device login alerts",
+        "help": "Link-only notice when a CLI login is waiting for approval. The code is never included."
+      },
+      "notify_device_login_expired": {
+        "label": "Expired device login alerts",
+        "help": "Link-only notice when a pending CLI login expires unapproved. The code is never included."
+      }
+    },
+    "dnsProvider": {
+      "provider": {
+        "label": "Provider",
+        "help": "DNS host that holds the records for your domain."
+      },
+      "cloudflare": {
+        "token": {
+          "label": "Cloudflare API token",
+          "help": "Scoped API token with Zone:DNS:Edit permission, not the global API key."
+        }
+      },
+      "route53": {
+        "access_key_id": {
+          "label": "AWS access key ID",
+          "help": "Access key ID of an IAM user with access to the hosted zone."
+        },
+        "secret_access_key": {
+          "label": "AWS secret access key",
+          "help": "Stored encrypted and never shown again."
+        },
+        "region": {
+          "label": "Region (optional)",
+          "help": "Left empty, the AWS SDK default region chain applies."
+        },
+        "hosted_zone_id": {
+          "label": "Hosted zone ID (optional)",
+          "help": "Left empty, the zone is found by matching the domain."
+        }
+      },
+      "googlecloud": {
+        "service_account_json": {
+          "label": "Service account JSON key",
+          "help": "Needs Cloud DNS admin rights. Never shown again after saving."
+        }
+      }
     }
+  },
+  "logDrain": {
+    "advanced": "Advanced"
   }
 }

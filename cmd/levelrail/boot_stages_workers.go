@@ -103,7 +103,7 @@ func (s *bootState) startTelemetry() {
 	// A pure extra consumer of the log stream: never touches logCollector or its store writes.
 	drainForwarder := telemetry.NewDrainForwarder(logBroadcaster, notifyClient, logger, b.ShortName)
 	go func() {
-		if err := drainForwarder.Run(ctx, logTargetsResyncInterval, drainTargets(db)); err != nil && !errors.Is(err, context.Canceled) {
+		if err := drainForwarder.Run(ctx, logTargetsResyncInterval, drainTargets(db, drainResolver(s.secretsManager))); err != nil && !errors.Is(err, context.Canceled) {
 			logger.Error("telemetry log drain forwarder stopped", slog.String("error", err.Error()))
 		}
 	}()

@@ -37,10 +37,10 @@ export function pagesDeploysQueryOptions(name: string) {
   })
 }
 
-/** Makes a retained deploy the live one, the same effect as a rollback to it. */
+/** Resolves to the API's serving field: 'pending' while the ingress has not yet picked up the new files. */
 export function usePromoteDeploy(name: string) {
   const queryClient = useQueryClient()
-  return useMutation<void, ApiError, string>({
+  return useMutation<string, ApiError, string>({
     mutationFn: async (deployId) => {
       const res = await fetch(
         `/api/v1/static-sites/${encodeURIComponent(name)}/deploys/${encodeURIComponent(deployId)}/promote`,
@@ -52,6 +52,8 @@ export function usePromoteDeploy(name: string) {
           await readErrorMessage(res, `promote failed: ${res.status}`),
         )
       }
+      const body = (await res.json().catch(() => ({}))) as { serving?: string }
+      return body.serving ?? 'live'
     },
     onSuccess: () =>
       queryClient.invalidateQueries({ queryKey: appKeys.detail(name) }),

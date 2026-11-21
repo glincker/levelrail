@@ -3,6 +3,8 @@ package alerting
 import (
 	"context"
 	"strings"
+
+	"github.com/GLINCKER/levelrail/internal/store"
 )
 
 // PushAudience says which users may receive a browser push. The zero value
@@ -40,6 +42,31 @@ func pushAudienceForResource(resourceID string) PushAudience {
 		return PushAudience{AppName: app}
 	}
 	return PushAudience{}
+}
+
+// domainOwnerResolver is the optional store surface that names the app holding a domain.
+type domainOwnerResolver interface {
+	DomainOwnerOf(ctx context.Context, domain string) (owner string, found bool, err error)
+}
+
+// resolvePushAudience maps a domain rule to its owning app's team admins plus root.
+// Nodes and volumes have no team owner in the store, so they keep the admin-only zero audience.
+func resolvePushAudience(ctx context.Context, src any, resourceID string) PushAudience {
+	a := pushAudienceForResource(resourceID)
+	domain, ok := strings.CutPrefix(resourceID, "domain:")
+	if !ok || domain == "" {
+		return a
+	}
+	r, ok := src.(domainOwnerResolver)
+	if !ok {
+		return a
+	}
+	owner, found, err := r.DomainOwnerOf(ctx, domain)
+	// Standalone and parked claims have no app, and a static site name is not an app, so those stay admin-only.
+	if err != nil || !found || owner == store.StandaloneDomainOwner || owner == store.ParkedDomainOwner {
+		return a
+	}
+	return PushAudience{AppName: owner, AdminOnly: true}
 }
 
 // channelProjectGetter is the optional store surface that reads a channel's project.

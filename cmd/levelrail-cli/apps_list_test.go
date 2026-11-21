@@ -81,3 +81,23 @@ func TestRun_AppsList_StartingToken_NotANumber_IsValidationError(t *testing.T) {
 		t.Errorf("stderr = %q, want the offset-format error", stderr)
 	}
 }
+
+func TestRun_AppsList_JSON_ExposesPreviewStateAndKind(t *testing.T) {
+	srv := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, _ *http.Request) {
+		w.Header().Set("Content-Type", "application/json")
+		_, _ = w.Write([]byte(`[{"name":"web","app_kind":"static","preview":{"state":"rendering"}},{"name":"api"}]`))
+	}))
+	defer srv.Close()
+
+	stdout, _ := runCLIExpectOK(t, []string{"apps", "list", "--api-url", srv.URL, "--json"})
+	var got []appResource
+	if err := json.Unmarshal([]byte(stdout), &got); err != nil {
+		t.Fatalf("decode: %v", err)
+	}
+	if got[0].AppKind != "static" || got[0].Preview.State != "rendering" {
+		t.Errorf("first row = %+v, want kind static and state rendering", got[0])
+	}
+	if got[1].Preview == nil || got[1].Preview.State != "none" {
+		t.Errorf("second row preview = %+v, want state none", got[1].Preview)
+	}
+}

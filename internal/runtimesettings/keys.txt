@@ -416,10 +416,14 @@ net.outbound_timeout
 network.gc_max_removals
 nextjs.generate_actions_key
 nextjs.memory_floor_mb
+nodes.agent_buffer_max_bytes
+nodes.agent_buffer_max_items
+nodes.agent_update_health_failures
 nodes.alert_cpu_percent
 nodes.alert_disk_percent
 nodes.alert_memory_percent
 nodes.alert_sustained_intervals
+nodes.drain_stall_seconds
 nodes.patch_adopt_limit
 nodes.patch_apply_timeout
 nodes.patch_output_tail_lines

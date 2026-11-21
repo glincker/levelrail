@@ -89,3 +89,18 @@ func (c *Client) GetNodeVersionSkew(ctx context.Context) (NodeVersionSkew, error
 	err := c.do(ctx, http.MethodGet, nodesCollectionPath()+"/version-skew", nil, &out)
 	return out, err
 }
+
+// NodeAgentUpdate mirrors internal/nodeinsight.UpdateDecision.
+type NodeAgentUpdate struct {
+	Action  string `json:"action"`
+	Channel string `json:"channel"`
+	Target  string `json:"target_version,omitempty"`
+	Reason  string `json:"reason"`
+}
+
+// GetNodeAgentUpdate calls GET /api/v1/nodes/{id}/agent-update.
+func (c *Client) GetNodeAgentUpdate(ctx context.Context, id string) (NodeAgentUpdate, error) {
+	var out NodeAgentUpdate
+	err := c.do(ctx, http.MethodGet, nodePath(id)+"/agent-update", nil, &out)
+	return out, err
+}

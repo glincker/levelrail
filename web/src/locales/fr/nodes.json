@@ -134,7 +134,12 @@
     "errorTitle": "Drainage arrêté",
     "failedHint": "Le node reste cordonné. Corrigez la cause indiquée sur le déplacement en échec, puis drainez à nouveau, ou décordonnez le node pour le remettre en rotation.",
     "toNode": "vers {{node}}",
-    "toAuto": "vers un node choisi automatiquement"
+    "toAuto": "vers un node choisi automatiquement",
+    "progress": {
+      "summary": "{{done}} sur {{total}} déplacés, {{failed}} en échec",
+      "eta": "environ {{seconds}} s restantes",
+      "stalled": "Aucune progression depuis un moment. Vérifiez le node et les déplacements ci-dessous."
+    }
   },
   "drains": {
     "title": "Drainages",

@@ -28,7 +28,17 @@ type LogDrain struct {
 	Type    LogDrainType `json:"type"`
 	Target  string       `json:"target"`
 	Enabled bool         `json:"enabled"`
+	// HeaderName is the optional auth header; its value lives in the secrets store
+	// under LogDrainSecretService, never in this row.
+	HeaderName string `json:"header_name,omitempty"`
 }
+
+// LogDrainSecretKey is the secrets store key of a drain's header value.
+const LogDrainSecretKey = "header"
+
+// LogDrainSecretService is the secrets namespace of one app's drain header, separate from the
+// app's own env secrets so it never shows in its secret list.
+func LogDrainSecretService(app string) string { return "logdrain:" + app }
 
 // UpdateServiceLogDrain sets or clears svc's log drain, the only way
 // log_drain ever changes: SaveDesiredService's own doc comment explains

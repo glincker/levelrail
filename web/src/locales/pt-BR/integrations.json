@@ -175,10 +175,123 @@
         "label": "Destino",
         "help": "Endereço syslog como network://host:porta. Vazio para syslog local."
       },
+      "header_name": {
+        "label": "Nome do cabeçalho de autenticação",
+        "help": "Cabeçalho opcional enviado com cada lote, por exemplo Authorization ou X-Api-Key."
+      },
+      "header_value": {
+        "label": "Valor do cabeçalho de autenticação",
+        "help": "Armazenado criptografado e nunca exibido novamente. Deixe em branco para manter o valor armazenado."
+      },
       "enabled": {
         "label": "Encaminhamento",
         "help": "Ative ou pause o encaminhamento sem perder as configurações."
       }
+    },
+    "notificationChannel": {
+      "kind": {
+        "label": "Tipo de canal",
+        "help": "Para onde vai o alerta ou o aviso de deploy."
+      },
+      "name": {
+        "label": "Nome",
+        "help": "Nome exibido no painel e na CLI."
+      },
+      "notify_url_webhook": {
+        "label": "URL do webhook",
+        "help": "Enviado: nome do app, imagem/tag, sucesso ou falha e, em caso de falha, a mensagem de erro. Nada mais sobre seu app."
+      },
+      "notify_url_email": {
+        "label": "E-mail para notificação",
+        "help": "Enviado: nome do app, imagem/tag, sucesso ou falha e, em caso de falha, a mensagem de erro. Nada mais sobre seu app."
+      },
+      "notify_url_ntfy": {
+        "label": "URL do tópico",
+        "help": "Enviado: nome do app, imagem/tag, sucesso ou falha e, em caso de falha, a mensagem de erro. Nada mais sobre seu app."
+      },
+      "notify_url_gotify": {
+        "label": "URL do endpoint de mensagens",
+        "help": "Enviado: nome do app, imagem/tag, sucesso ou falha e, em caso de falha, a mensagem de erro. Nada mais sobre seu app."
+      },
+      "pushover_user_key": {
+        "label": "User Key do Pushover",
+        "help": "Sua user key, disponível no painel do Pushover."
+      },
+      "pushover_api_token": {
+        "label": "Token de API da aplicação Pushover",
+        "help": "Enviado: nome do app, imagem/tag, sucesso ou falha e, em caso de falha, a mensagem de erro. Nada mais sobre seu app."
+      },
+      "pagerduty_routing_key": {
+        "label": "Integration/Routing Key",
+        "help": "Enviado: nome do app, imagem/tag, sucesso ou falha e, em caso de falha, a mensagem de erro. Nada mais sobre seu app."
+      },
+      "resend_api_key": {
+        "label": "Chave de API do Resend",
+        "help": "Chave de API com permissão para enviar e-mails."
+      },
+      "resend_to": {
+        "label": "E-mail de destino",
+        "help": "Endereço que recebe o e-mail de alerta."
+      },
+      "resend_from": {
+        "label": "Endereço de remetente (opcional)",
+        "help": "Remetente de um domínio verificado no Resend. Se ficar vazio, usa onboarding@resend.dev."
+      },
+      "opsgenie_api_key": {
+        "label": "Chave de API do Opsgenie",
+        "help": "Enviado: nome do app, imagem/tag, sucesso ou falha e, em caso de falha, a mensagem de erro. Nada mais sobre seu app."
+      },
+      "enabled": {
+        "label": "Envio",
+        "help": "Ative ou pause as notificações sem apagar o canal."
+      },
+      "notify_device_login": {
+        "label": "Avisos de login por dispositivo",
+        "help": "Aviso só com link quando um login da CLI aguarda aprovação. O código nunca é incluído."
+      },
+      "notify_device_login_expired": {
+        "label": "Avisos de login por dispositivo expirado",
+        "help": "Aviso só com link quando um login pendente da CLI expira sem aprovação. O código nunca é incluído."
+      }
+    },
+    "dnsProvider": {
+      "provider": {
+        "label": "Provedor",
+        "help": "Provedor de DNS onde ficam os registros do seu domínio."
+      },
+      "cloudflare": {
+        "token": {
+          "label": "Token de API do Cloudflare",
+          "help": "Token de API com escopo limitado e permissão Zone:DNS:Edit, não a chave global de API."
+        }
+      },
+      "route53": {
+        "access_key_id": {
+          "label": "ID da chave de acesso da AWS",
+          "help": "ID da chave de acesso de um usuário IAM com acesso à hosted zone."
+        },
+        "secret_access_key": {
+          "label": "Chave secreta de acesso da AWS",
+          "help": "Armazenada criptografada e nunca mais exibida."
+        },
+        "region": {
+          "label": "Região (opcional)",
+          "help": "Se ficar vazio, vale a cadeia de regiões padrão do SDK da AWS."
+        },
+        "hosted_zone_id": {
+          "label": "ID da hosted zone (opcional)",
+          "help": "Se ficar vazio, a zona é encontrada pelo domínio."
+        }
+      },
+      "googlecloud": {
+        "service_account_json": {
+          "label": "Chave JSON da conta de serviço",
+          "help": "Precisa de permissão de administrador do Cloud DNS. Não é exibida novamente após salvar."
+        }
+      }
     }
+  },
+  "logDrain": {
+    "advanced": "Avançado"
   }
 }

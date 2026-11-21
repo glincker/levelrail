@@ -1,6 +1,12 @@
 package fielddesc
 
-import "testing"
+import (
+	"encoding/json"
+	"os"
+	"path/filepath"
+	"strings"
+	"testing"
+)
 
 func TestBackupTargetVisibilityAndValidation(t *testing.T) {
 	r, _ := Get(BackupTarget)
@@ -36,5 +42,77 @@ func TestLogDrainTargetRequiredOnlyForHTTP(t *testing.T) {
 	}
 	if got := r.Validate(map[string]string{"type": "pigeon"}); len(got) == 0 {
 		t.Fatal("unknown type must fail")
+	}
+}
+
+// A resource is complete only with locale keys in every language, a docs row, a flag
+// or an explicit form only mark, and a non empty doc line. Adding a resource file is
+// the whole job: this test then holds it to the same bar as the others.
+func TestEveryDescriptorIsComplete(t *testing.T) {
+	langs := []string{"en", "de", "fr", "ja", "es", "pt-BR", "zh-CN"}
+	repo := filepath.Join("..", "..")
+	locales := map[string]map[string]any{}
+	load := func(lang, ns string) map[string]any {
+		k := lang + "/" + ns
+		if m, ok := locales[k]; ok {
+			return m
+		}
+		raw, err := os.ReadFile(filepath.Join(repo, "web", "src", "locales", lang, ns+".json")) //nolint:gosec // fixed repo path
+		if err != nil {
+			t.Fatal(err)
+		}
+		var m map[string]any
+		if err := json.Unmarshal(raw, &m); err != nil {
+			t.Fatal(err)
+		}
+		locales[k] = m
+		return m
+	}
+	for _, name := range Names() {
+		res, _ := Get(name)
+		docs, err := os.ReadFile(filepath.Join(repo, "docs", res.Docs.File)) //nolint:gosec // fixed repo path
+		if err != nil {
+			t.Fatalf("%s: docs page missing, run go run ./scripts/gen-field-docs: %v", name, err)
+		}
+		if string(docs) != DocsPage(res) {
+			t.Errorf("%s: docs page is stale, run go run ./scripts/gen-field-docs", name)
+		}
+		for _, f := range res.Fields {
+			if f.Doc == "" {
+				t.Errorf("%s.%s: empty doc", name, f.ID)
+			}
+			if f.Flag == "" && !f.FormOnly {
+				flagged := false
+				for _, o := range res.Fields {
+					if o.Key == f.Key && o.Flag != "" {
+						flagged = true
+					}
+				}
+				if !flagged {
+					t.Errorf("%s.%s: key %q has no CLI flag and is not FormOnly", name, f.ID, f.Key)
+				}
+			}
+			for _, k := range []string{f.LabelKey, f.HelpKey} {
+				ns, key, found := strings.Cut(k, ":")
+				if !found {
+					t.Errorf("%s.%s: key %q lacks a namespace", name, f.ID, k)
+					continue
+				}
+				for _, l := range langs {
+					var cur any = load(l, ns)
+					for _, part := range strings.Split(key, ".") {
+						m, ok := cur.(map[string]any)
+						if !ok {
+							cur = nil
+							break
+						}
+						cur = m[part]
+					}
+					if s, ok := cur.(string); !ok || s == "" {
+						t.Errorf("%s.%s: locale %s misses %s", name, f.ID, l, k)
+					}
+				}
+			}
+		}
 	}
 }

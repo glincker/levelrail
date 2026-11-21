@@ -4,27 +4,15 @@ import (
 	"context"
 	"fmt"
 	"io"
+
+	"github.com/GLINCKER/levelrail/internal/fielddesc"
 )
 
 // Provider-specific flags are packed into --notify-url for the API, so operators do not need the wire format.
 func runChannelsCreate(prog string, args []string, stdout, stderr io.Writer, lookupEnv func(string) (string, bool)) int {
 	fs, tokenFlagP, apiURLFlagP, profileFlagP, jsonOutP, outputFlagP, queryFlagP := apiFlagSet(prog, "channels create", "print the created channel as JSON to stdout and nothing else", stderr)
-	var name, kind, notifyURL, pushoverUserKey, pushoverAPIToken, pagerDutyRoutingKey string
-	var resendAPIKey, resendTo, resendFrom, opsgenieAPIKey string
-	var disabled, notifyDeviceLogin, notifyDeviceLoginExpired bool
-	fs.StringVar(&name, "name", "", "display name for the channel (required)")
-	fs.StringVar(&kind, "kind", "", "channel kind: generic, slack, discord, telegram, email, pushover, pagerduty, teams, resend, ntfy, gotify, mattermost, lark, rocketchat, opsgenie, webex, googlechat (required)")
-	fs.StringVar(&notifyURL, "notify-url", "", "destination (webhook URL, Telegram sendMessage URL with chat_id and an optional message_thread_id topic, email address, or PagerDuty routing key); required unless a kind-specific alternative below is set")
-	fs.StringVar(&pushoverUserKey, "pushover-user-key", "", "Pushover User Key (--kind pushover only, an alternative to --notify-url)")
-	fs.StringVar(&pushoverAPIToken, "pushover-api-token", "", "Pushover Application API Token (--kind pushover only, an alternative to --notify-url)")
-	fs.StringVar(&pagerDutyRoutingKey, "pagerduty-routing-key", "", "PagerDuty Events API v2 Integration/Routing Key (--kind pagerduty only, an alternative to --notify-url)")
-	fs.StringVar(&resendAPIKey, "resend-api-key", "", "Resend API Key (--kind resend only, an alternative to --notify-url)")
-	fs.StringVar(&resendTo, "resend-to", "", "Resend destination email address (--kind resend only, required with --resend-api-key)")
-	fs.StringVar(&resendFrom, "resend-from", "", "Resend from address (--kind resend only, optional, defaults to onboarding@resend.dev)")
-	fs.StringVar(&opsgenieAPIKey, "opsgenie-api-key", "", "Opsgenie API Key (--kind opsgenie only, an alternative to --notify-url)")
-	fs.BoolVar(&notifyDeviceLogin, "notify-device-login", false, "send a link-only notice here when a CLI login is waiting for approval (never includes the code)")
-	fs.BoolVar(&notifyDeviceLoginExpired, "notify-device-login-expired", false, "send a link-only notice here when a pending CLI login expires unapproved (never includes the code)")
-	fs.BoolVar(&disabled, "disabled", false, "create the channel disabled (default: enabled)")
+	descFlags := registerDescriptorFlags(fs, fielddesc.NotificationChannel)
+	disabled := fs.Bool("disabled", false, "create the channel disabled (default: enabled)")
 	fs.Usage = func() { _, _ = fmt.Fprint(stderr, channelsCreateUsage(prog)) }
 
 	tokenFlag, apiURLFlag, profileFlag, jsonOut, of, exitCode, ok := parseAPIFlags(fs, args, apiFlagPtrs{tokenFlagP, apiURLFlagP, profileFlagP, jsonOutP, outputFlagP, queryFlagP}, prog, stderr)
@@ -32,6 +20,11 @@ func runChannelsCreate(prog string, args []string, stdout, stderr io.Writer, loo
 		return exitCode
 	}
 
+	str := func(n string) string { return *descFlags[n] }
+	flagOn := func(n string) bool { return fs.Lookup(n).Value.String() == "true" }
+	name, kind, notifyURL := str("name"), str("kind"), str("notify-url")
+	pushoverUserKey, pushoverAPIToken, pagerDutyRoutingKey := str("pushover-user-key"), str("pushover-api-token"), str("pagerduty-routing-key")
+	resendAPIKey, resendTo, resendFrom, opsgenieAPIKey := str("resend-api-key"), str("resend-to"), str("resend-from"), str("opsgenie-api-key")
 	if name == "" {
 		return reportError(stdout, stderr, jsonOut, newValidationError("--name is required"))
 	}
@@ -56,11 +49,11 @@ func runChannelsCreate(prog string, args []string, stdout, stderr io.Writer, loo
 		return reportError(stdout, stderr, jsonOut, newValidationError("--notify-url is required (or, for --kind pushover, both --pushover-user-key and --pushover-api-token; or, for --kind pagerduty, --pagerduty-routing-key; or, for --kind resend, both --resend-api-key and --resend-to; or, for --kind opsgenie, --opsgenie-api-key)"))
 	}
 
-	enabled := !disabled
+	enabled := !*disabled
 	client := apiClientFromFlags(prog, apiURLFlag, tokenFlag, profileFlag, lookupEnv)
 
 	created, err := client.CreateNotificationChannel(context.Background(), createNotificationChannelRequest{
-		Name: name, Kind: kind, NotifyURL: resolvedURL, Enabled: &enabled, NotifyDeviceLogin: notifyDeviceLogin, NotifyDeviceLoginExpired: notifyDeviceLoginExpired,
+		Name: name, Kind: kind, NotifyURL: resolvedURL, Enabled: &enabled, NotifyDeviceLogin: flagOn("notify-device-login"), NotifyDeviceLoginExpired: flagOn("notify-device-login-expired"),
 	})
 	if err != nil {
 		return reportError(stdout, stderr, jsonOut, fmt.Errorf("create notification channel %q: %w", name, err))

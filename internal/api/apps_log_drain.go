@@ -5,6 +5,7 @@ import (
 	"errors"
 	"log/slog"
 	"net/http"
+	"strings"
 
 	"github.com/GLINCKER/levelrail/internal/fielddesc"
 	"github.com/GLINCKER/levelrail/internal/store"
@@ -20,6 +21,9 @@ type logDrainResource struct {
 	Type    store.LogDrainType `json:"type"`
 	Target  string             `json:"target"`
 	Enabled bool               `json:"enabled"`
+	// HeaderName is returned; the value never is, only whether one is stored.
+	HeaderName string `json:"header_name,omitempty"`
+	HeaderSet  bool   `json:"header_set,omitempty"`
 }
 
 // setLogDrainRequest is handleSetAppLogDrain's request body.
@@ -27,10 +31,31 @@ type setLogDrainRequest struct {
 	Type    store.LogDrainType `json:"type"`
 	Target  string             `json:"target"`
 	Enabled bool               `json:"enabled"`
+	// HeaderName empty clears the header. HeaderValue is write only: empty keeps the stored value.
+	HeaderName  string `json:"header_name,omitempty"`
+	HeaderValue string `json:"header_value,omitempty"`
 }
 
 func toLogDrainResource(name string, d store.LogDrain) logDrainResource {
-	return logDrainResource{AppName: name, Type: d.Type, Target: d.Target, Enabled: d.Enabled}
+	return logDrainResource{AppName: name, Type: d.Type, Target: d.Target, Enabled: d.Enabled, HeaderName: d.HeaderName, HeaderSet: d.HeaderName != ""}
+}
+
+// validLogDrainHeaderName accepts an HTTP token and refuses names that would break framing.
+func validLogDrainHeaderName(name string) bool {
+	if name == "" || len(name) > 100 {
+		return false
+	}
+	for _, c := range name {
+		ok := c == '-' || c >= '0' && c <= '9' || c >= 'a' && c <= 'z' || c >= 'A' && c <= 'Z'
+		if !ok {
+			return false
+		}
+	}
+	switch strings.ToLower(name) {
+	case "host", "content-length", "content-type", "transfer-encoding", "connection":
+		return false
+	}
+	return true
 }
 
 // handleGetAppLogDrain handles GET /api/v1/apps/{name}/log-drain: the
@@ -81,6 +106,9 @@ func (rt *Router) handleSetAppLogDrain(w http.ResponseWriter, r *http.Request) {
 	}
 
 	drain := store.LogDrain{Type: req.Type, Target: req.Target, Enabled: req.Enabled}
+	if !rt.applyLogDrainHeader(w, r, name, &drain, req) {
+		return
+	}
 	if err := rt.apps.UpdateServiceLogDrain(r.Context(), name, &drain); errors.Is(err, store.ErrServiceNotFound) {
 		writeError(w, http.StatusNotFound, "app not found")
 		return
@@ -92,12 +120,65 @@ func (rt *Router) handleSetAppLogDrain(w http.ResponseWriter, r *http.Request) {
 	writeJSON(w, http.StatusOK, toLogDrainResource(name, drain))
 }
 
+// applyLogDrainHeader stores or clears the optional auth header and reports whether the request may go on.
+// The value goes only to the secrets store; a blank value keeps what is stored.
+func (rt *Router) applyLogDrainHeader(w http.ResponseWriter, r *http.Request, name string, drain *store.LogDrain, req setLogDrainRequest) bool {
+	ns := store.LogDrainSecretService(name)
+	if req.HeaderName == "" || req.Type != store.LogDrainHTTP {
+		if req.HeaderValue != "" {
+			writeError(w, http.StatusBadRequest, "header_value needs header_name on an http drain")
+			return false
+		}
+		if rt.secrets != nil {
+			if err := rt.secrets.DeleteAll(r.Context(), ns); err != nil {
+				rt.internalError(w, "api: clear log drain header failed", err, slog.String("name", name))
+				return false
+			}
+		}
+		return true
+	}
+	if !validLogDrainHeaderName(req.HeaderName) {
+		writeError(w, http.StatusBadRequest, "header_name must be a plain header name such as Authorization")
+		return false
+	}
+	if strings.ContainsAny(req.HeaderValue, "\r\n") {
+		writeError(w, http.StatusBadRequest, "header_value must be a single line")
+		return false
+	}
+	if rt.secrets == nil {
+		writeError(w, http.StatusNotImplemented, "secrets are not configured, set the master key to store a drain header")
+		return false
+	}
+	if req.HeaderValue == "" {
+		have, err := rt.secrets.Exists(r.Context(), ns, store.LogDrainSecretKey)
+		if err != nil {
+			rt.internalError(w, "api: check log drain header failed", err, slog.String("name", name))
+			return false
+		}
+		if !have {
+			writeError(w, http.StatusBadRequest, "header_value is required with a new header_name")
+			return false
+		}
+	} else if err := rt.secrets.SetValueGuarded(r.Context(), ns, store.LogDrainSecretKey, req.HeaderValue, true); err != nil {
+		rt.internalError(w, "api: store log drain header failed", err, slog.String("name", name))
+		return false
+	}
+	drain.HeaderName = req.HeaderName
+	return true
+}
+
 // handleClearAppLogDrain handles DELETE /api/v1/apps/{name}/log-drain:
 // stops forwarding this app's logs externally, leaving the node-local
 // store and live tail untouched.
 func (rt *Router) handleClearAppLogDrain(w http.ResponseWriter, r *http.Request) {
 	name := r.PathValue("name")
 
+	if rt.secrets != nil {
+		if err := rt.secrets.DeleteAll(r.Context(), store.LogDrainSecretService(name)); err != nil {
+			rt.internalError(w, "api: clear log drain header failed", err, slog.String("name", name))
+			return
+		}
+	}
 	if err := rt.apps.UpdateServiceLogDrain(r.Context(), name, nil); errors.Is(err, store.ErrServiceNotFound) {
 		writeError(w, http.StatusNotFound, "app not found")
 		return

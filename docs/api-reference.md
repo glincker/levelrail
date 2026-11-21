@@ -1160,6 +1160,7 @@ Endpoints for:
 | GET | /api/v1/nodes/{id}/timeline | AbilityRoot | handleNodeTimeline |
 | GET | /api/v1/nodes/{id}/doctor | AbilityRoot | handleNodeDoctor |
 | GET | /api/v1/nodes/version-skew | AbilityRoot | handleNodeVersionSkew |
+| GET | /api/v1/nodes/{id}/agent-update | AbilityRoot | handleNodeAgentUpdate |
 
 ## Ingress / Certificates / Domains / Email / Cloudflare
 
@@ -2564,6 +2565,8 @@ Routes that do not fit an existing group.
 | POST | /api/v1/cloud-accounts/{id}/aws/rds/clusters/{cid}/actions | Public | handleRDSClusterAction |
 | GET | /api/v1/cloud-accounts/{id}/aws/rds/cluster-snapshots | Public | handleRDSClusterSnapshots |
 | DELETE | /api/v1/cloud-accounts/{id}/aws/rds/cluster-snapshots/{sid} | Public | handleRDSClusterSnapshotDelete |
+| GET | /api/v1/health-presets | AbilityRead | handleGetHealthPresets |
+| GET | /api/v1/field-descriptors/{resource} | AbilityRead | handleGetFieldDescriptors |
 | POST | /mcp | Public |  |
 
 ## See also

@@ -166,10 +166,123 @@
         "label": "目标",
         "help": "network://主机:端口 形式的 syslog 地址。留空使用本机 syslog。"
       },
+      "header_name": {
+        "label": "认证请求头名称",
+        "help": "随每批日志一起发送的可选请求头，例如 Authorization 或 X-Api-Key。"
+      },
+      "header_value": {
+        "label": "认证请求头的值",
+        "help": "加密存储，不会再次显示。留空则保留已存储的值。"
+      },
       "enabled": {
         "label": "转发",
         "help": "开启或暂停转发,设置不会丢失。"
       }
+    },
+    "notificationChannel": {
+      "kind": {
+        "label": "渠道类型",
+        "help": "告警或部署通知的发送目标。"
+      },
+      "name": {
+        "label": "名称",
+        "help": "在控制台和 CLI 中显示的名称。"
+      },
+      "notify_url_webhook": {
+        "label": "Webhook URL",
+        "help": "发送内容：应用名称、镜像/标签、成功或失败，失败时还包括错误信息。不会发送应用的其他任何信息。"
+      },
+      "notify_url_email": {
+        "label": "通知邮箱地址",
+        "help": "发送内容：应用名称、镜像/标签、成功或失败，失败时还包括错误信息。不会发送应用的其他任何信息。"
+      },
+      "notify_url_ntfy": {
+        "label": "主题 URL",
+        "help": "发送内容：应用名称、镜像/标签、成功或失败，失败时还包括错误信息。不会发送应用的其他任何信息。"
+      },
+      "notify_url_gotify": {
+        "label": "消息接口 URL",
+        "help": "发送内容：应用名称、镜像/标签、成功或失败，失败时还包括错误信息。不会发送应用的其他任何信息。"
+      },
+      "pushover_user_key": {
+        "label": "Pushover 用户密钥",
+        "help": "Pushover 控制台中显示的用户密钥。"
+      },
+      "pushover_api_token": {
+        "label": "Pushover 应用 API 令牌",
+        "help": "发送内容：应用名称、镜像/标签、成功或失败，失败时还包括错误信息。不会发送应用的其他任何信息。"
+      },
+      "pagerduty_routing_key": {
+        "label": "集成/路由密钥",
+        "help": "发送内容：应用名称、镜像/标签、成功或失败，失败时还包括错误信息。不会发送应用的其他任何信息。"
+      },
+      "resend_api_key": {
+        "label": "Resend API 密钥",
+        "help": "具有发送邮件权限的 API 密钥。"
+      },
+      "resend_to": {
+        "label": "目标邮箱地址",
+        "help": "接收告警邮件的地址。"
+      },
+      "resend_from": {
+        "label": "发件地址（可选）",
+        "help": "Resend 中已验证域名下的发件地址。留空则使用 onboarding@resend.dev。"
+      },
+      "opsgenie_api_key": {
+        "label": "Opsgenie API 密钥",
+        "help": "发送内容：应用名称、镜像/标签、成功或失败，失败时还包括错误信息。不会发送应用的其他任何信息。"
+      },
+      "enabled": {
+        "label": "投递",
+        "help": "开启或暂停通知投递，不会删除该渠道。"
+      },
+      "notify_device_login": {
+        "label": "设备登录提醒",
+        "help": "CLI 登录等待批准时发送仅含链接的提醒，不包含验证码。"
+      },
+      "notify_device_login_expired": {
+        "label": "设备登录过期提醒",
+        "help": "待批准的 CLI 登录未经批准即过期时发送仅含链接的提醒，不包含验证码。"
+      }
+    },
+    "dnsProvider": {
+      "provider": {
+        "label": "服务商",
+        "help": "保存域名记录的 DNS 服务商。"
+      },
+      "cloudflare": {
+        "token": {
+          "label": "Cloudflare API 令牌",
+          "help": "具有 Zone:DNS:Edit 权限的限定范围 API 令牌，而非全局 API 密钥。"
+        }
+      },
+      "route53": {
+        "access_key_id": {
+          "label": "AWS 访问密钥 ID",
+          "help": "对托管区域有访问权限的 IAM 用户的访问密钥 ID。"
+        },
+        "secret_access_key": {
+          "label": "AWS 私有访问密钥",
+          "help": "加密保存，保存后不再显示。"
+        },
+        "region": {
+          "label": "区域（可选）",
+          "help": "留空则使用 AWS SDK 的默认区域查找规则。"
+        },
+        "hosted_zone_id": {
+          "label": "托管区域 ID（可选）",
+          "help": "留空则根据域名自动匹配区域。"
+        }
+      },
+      "googlecloud": {
+        "service_account_json": {
+          "label": "服务账号 JSON 密钥",
+          "help": "需要 Cloud DNS 管理员权限。保存后不再显示。"
+        }
+      }
     }
+  },
+  "logDrain": {
+    "advanced": "高级"
   }
 }

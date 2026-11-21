@@ -171,10 +171,123 @@
         "label": "Ziel",
         "help": "Syslog-Adresse als network://host:port. Leer lassen für lokales Syslog."
       },
+      "header_name": {
+        "label": "Name des Auth-Headers",
+        "help": "Optionaler Header, der mit jedem Batch gesendet wird, zum Beispiel Authorization oder X-Api-Key."
+      },
+      "header_value": {
+        "label": "Wert des Auth-Headers",
+        "help": "Verschlüsselt gespeichert und nie wieder angezeigt. Leer lassen, um den gespeicherten Wert zu behalten."
+      },
       "enabled": {
         "label": "Weiterleitung",
         "help": "Weiterleitung ein- oder ausschalten, ohne die Einstellungen zu verlieren."
       }
+    },
+    "notificationChannel": {
+      "kind": {
+        "label": "Kanaltyp",
+        "help": "Wohin der Alarm oder Deploy-Hinweis gesendet wird."
+      },
+      "name": {
+        "label": "Name",
+        "help": "Anzeigename im Dashboard und in der CLI."
+      },
+      "notify_url_webhook": {
+        "label": "Webhook-URL",
+        "help": "Gesendet werden: App-Name, Image/Tag, Erfolg oder Fehler sowie bei einem Fehler die Fehlermeldung. Sonst nichts über Ihre App."
+      },
+      "notify_url_email": {
+        "label": "E-Mail-Adresse für Benachrichtigungen",
+        "help": "Gesendet werden: App-Name, Image/Tag, Erfolg oder Fehler sowie bei einem Fehler die Fehlermeldung. Sonst nichts über Ihre App."
+      },
+      "notify_url_ntfy": {
+        "label": "Topic-URL",
+        "help": "Gesendet werden: App-Name, Image/Tag, Erfolg oder Fehler sowie bei einem Fehler die Fehlermeldung. Sonst nichts über Ihre App."
+      },
+      "notify_url_gotify": {
+        "label": "Endpunkt-URL für Nachrichten",
+        "help": "Gesendet werden: App-Name, Image/Tag, Erfolg oder Fehler sowie bei einem Fehler die Fehlermeldung. Sonst nichts über Ihre App."
+      },
+      "pushover_user_key": {
+        "label": "Pushover-User-Key",
+        "help": "Ihr User-Key aus dem Pushover-Dashboard."
+      },
+      "pushover_api_token": {
+        "label": "Pushover-API-Token der Anwendung",
+        "help": "Gesendet werden: App-Name, Image/Tag, Erfolg oder Fehler sowie bei einem Fehler die Fehlermeldung. Sonst nichts über Ihre App."
+      },
+      "pagerduty_routing_key": {
+        "label": "Integration/Routing Key",
+        "help": "Gesendet werden: App-Name, Image/Tag, Erfolg oder Fehler sowie bei einem Fehler die Fehlermeldung. Sonst nichts über Ihre App."
+      },
+      "resend_api_key": {
+        "label": "Resend-API-Key",
+        "help": "API-Schlüssel mit Berechtigung zum Senden von E-Mails."
+      },
+      "resend_to": {
+        "label": "Ziel-E-Mail-Adresse",
+        "help": "Adresse, die die Alarm-E-Mail erhält."
+      },
+      "resend_from": {
+        "label": "Absenderadresse (optional)",
+        "help": "Absender einer in Resend verifizierten Domain. Ohne Angabe wird onboarding@resend.dev verwendet."
+      },
+      "opsgenie_api_key": {
+        "label": "Opsgenie-API-Key",
+        "help": "Gesendet werden: App-Name, Image/Tag, Erfolg oder Fehler sowie bei einem Fehler die Fehlermeldung. Sonst nichts über Ihre App."
+      },
+      "enabled": {
+        "label": "Zustellung",
+        "help": "Benachrichtigungen hier senden oder pausieren, ohne den Kanal zu löschen."
+      },
+      "notify_device_login": {
+        "label": "Hinweise zur Geräteanmeldung",
+        "help": "Hinweis nur mit Link, wenn eine CLI-Anmeldung auf Freigabe wartet. Der Code wird nie mitgesendet."
+      },
+      "notify_device_login_expired": {
+        "label": "Hinweise zu abgelaufener Geräteanmeldung",
+        "help": "Hinweis nur mit Link, wenn eine wartende CLI-Anmeldung ungenehmigt abläuft. Der Code wird nie mitgesendet."
+      }
+    },
+    "dnsProvider": {
+      "provider": {
+        "label": "Anbieter",
+        "help": "DNS-Anbieter, bei dem die Einträge Ihrer Domain liegen."
+      },
+      "cloudflare": {
+        "token": {
+          "label": "Cloudflare-API-Token",
+          "help": "API-Token mit Berechtigung Zone:DNS:Edit, nicht der globale API-Schlüssel."
+        }
+      },
+      "route53": {
+        "access_key_id": {
+          "label": "AWS Access Key ID",
+          "help": "Access Key ID eines IAM-Benutzers mit Zugriff auf die Hosted Zone."
+        },
+        "secret_access_key": {
+          "label": "AWS Secret Access Key",
+          "help": "Verschlüsselt gespeichert und nie wieder angezeigt."
+        },
+        "region": {
+          "label": "Region (optional)",
+          "help": "Ohne Angabe gilt die Standard-Regionskette des AWS SDK."
+        },
+        "hosted_zone_id": {
+          "label": "Hosted-Zone-ID (optional)",
+          "help": "Ohne Angabe wird die Zone über die passende Domain gefunden."
+        }
+      },
+      "googlecloud": {
+        "service_account_json": {
+          "label": "JSON-Schlüssel des Dienstkontos",
+          "help": "Benötigt Cloud-DNS-Administratorrechte. Nach dem Speichern nie wieder angezeigt."
+        }
+      }
     }
+  },
+  "logDrain": {
+    "advanced": "Erweitert"
   }
 }

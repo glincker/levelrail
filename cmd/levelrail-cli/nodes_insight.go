@@ -144,3 +144,34 @@ func printNodeVersionSkew(out io.Writer, rep apiclient.NodeVersionSkew) {
 		}
 	}
 }
+
+func runNodesAgentUpdate(prog string, args []string, stdout, stderr io.Writer, lookupEnv func(string) (string, bool)) int {
+	fs, tokenFlagP, apiURLFlagP, profileFlagP, jsonOutP, outputFlagP, queryFlagP := apiFlagSet(prog, "nodes agent-update", "print the decision as JSON to stdout and nothing else", stderr)
+	fs.Usage = func() {
+		_, _ = fmt.Fprintf(stderr, "Usage:\n  %s nodes agent-update <id> [flags]\n\nShows which agent version the node should run, following the control plane update channel.\n", prog)
+	}
+	tokenFlag, apiURLFlag, profileFlag, jsonOut, of, exitCode, ok := parseAPIFlags(fs, args, apiFlagPtrs{tokenFlagP, apiURLFlagP, profileFlagP, jsonOutP, outputFlagP, queryFlagP}, prog, stderr)
+	if !ok {
+		return exitCode
+	}
+	id, ok := requireOneArg(fs, stderr, prog, "nodes agent-update", "node id")
+	if !ok {
+		return exitUsage
+	}
+	client := apiClientFromFlags(prog, apiURLFlag, tokenFlag, profileFlag, lookupEnv)
+	d, err := client.GetNodeAgentUpdate(context.Background(), id)
+	if err != nil {
+		return reportError(stdout, stderr, jsonOut, fmt.Errorf("agent update for node %q: %w", id, err))
+	}
+	if err := renderResult(stdout, of.Format, of.Query, d, func() {
+		_, _ = fmt.Fprintf(stdout, "%s on channel %s", d.Action, d.Channel)
+		if d.Target != "" {
+			_, _ = fmt.Fprintf(stdout, " to %s", d.Target)
+		}
+		_, _ = fmt.Fprintf(stdout, ": %s\n", d.Reason)
+	}); err != nil {
+		_, _ = fmt.Fprintln(stderr, err)
+		return exitCodeForError(err)
+	}
+	return exitOK
+}

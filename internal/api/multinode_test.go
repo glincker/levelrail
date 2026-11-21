@@ -258,6 +258,9 @@ func TestDrain_StartsJobAndCordons(t *testing.T) {
 	if !strings.Contains(rec.Body.String(), `"resource":"web"`) || !strings.Contains(rec.Body.String(), `"to_node_id":"n2"`) {
 		t.Fatalf("drain moves = %s", rec.Body.String())
 	}
+	if !strings.Contains(rec.Body.String(), `"progress":{"state":"running"`) || !strings.Contains(rec.Body.String(), `"total":1`) {
+		t.Fatalf("drain progress missing: %s", rec.Body.String())
+	}
 	if bad := mnDo(t, rt, cookie, http.MethodPost, "/api/v1/nodes/n2/drain?target_node_id=n1", ""); bad.Code != http.StatusBadRequest {
 		t.Fatalf("drain onto a cordoned node = %d, want 400", bad.Code)
 	}
@@ -478,5 +481,39 @@ func TestWithWorkloadsFeed(t *testing.T) {
 		if c.ID == "n1" && (len(c.Workloads) != 1 || c.Workloads[0]["tier"] != "data" || c.Workloads[0]["name"] != "cache") {
 			t.Fatalf("workloads = %+v", c.Workloads)
 		}
+	}
+}
+
+// A label edit must change placement eligibility on the next read, with no restart.
+func TestNodeLabelsApplyLiveToPlacement(t *testing.T) {
+	rt, db, cookie := newMultiNodeRouter(t)
+	seedMNNode(t, db, "n1", map[string]string{"disk": "ssd"})
+	seedMNNode(t, db, "n2", nil)
+	seedMNApp(t, db, "")
+	if rec := mnDo(t, rt, cookie, http.MethodPut, "/api/v1/apps/web/placement", `{"node_selector":{"disk":"ssd"}}`); rec.Code != http.StatusOK {
+		t.Fatalf("PUT placement = %d: %s", rec.Code, rec.Body.String())
+	}
+	eligible := func() string {
+		rec := mnDo(t, rt, cookie, http.MethodGet, "/api/v1/apps/web/placement", "")
+		var v placementResource
+		if err := json.Unmarshal(rec.Body.Bytes(), &v); err != nil {
+			t.Fatal(err)
+		}
+		return strings.Join(v.Eligible, ",")
+	}
+	if got := eligible(); got != "n1" {
+		t.Fatalf("before = %q, want n1", got)
+	}
+	if rec := mnDo(t, rt, cookie, http.MethodPut, "/api/v1/nodes/n2/labels", `{"labels":{"disk":"ssd"}}`); rec.Code != http.StatusOK {
+		t.Fatalf("PUT labels = %d", rec.Code)
+	}
+	if got := eligible(); !strings.Contains(got, "n2") {
+		t.Fatalf("after = %q, want n2 eligible", got)
+	}
+	if rec := mnDo(t, rt, cookie, http.MethodPut, "/api/v1/nodes/n1/labels", `{"labels":{}}`); rec.Code != http.StatusOK {
+		t.Fatalf("clear labels = %d", rec.Code)
+	}
+	if got := eligible(); got != "n2" {
+		t.Fatalf("after clear = %q, want n2", got)
 	}
 }

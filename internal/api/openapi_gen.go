@@ -14,7 +14,7 @@ type openAPIRoute struct {
 	Description string
 }
 
-// openAPIRoutes holds all 2333 routes known to scripts/gen-api-reference at
+// openAPIRoutes holds all 2336 routes known to scripts/gen-api-reference at
 // generation time. Run `go run ./scripts/gen-api-reference` after changing
 // any routes*.go registration and commit the result.
 var openAPIRoutes = []openAPIRoute{
@@ -1084,6 +1084,7 @@ var openAPIRoutes = []openAPIRoute{
 	{Method: "GET", Path: "/api/v1/nodes/zones", Ability: "AbilityRoot", Group: "Nodes", Handler: "handleListZones", Description: ""},
 	{Method: "DELETE", Path: "/api/v1/nodes/{id}", Ability: "AbilityRoot", Group: "Nodes", Handler: "handleDeleteNode", Description: ""},
 	{Method: "GET", Path: "/api/v1/nodes/{id}", Ability: "AbilityRoot", Group: "Nodes", Handler: "handleGetNode", Description: ""},
+	{Method: "GET", Path: "/api/v1/nodes/{id}/agent-update", Ability: "AbilityRoot", Group: "Nodes", Handler: "handleNodeAgentUpdate", Description: ""},
 	{Method: "PUT", Path: "/api/v1/nodes/{id}/build-trust", Ability: "AbilityRoot", Group: "Nodes", Handler: "handleSetNodeBuildTrust", Description: "A node's tier and an environment's allow-list decide whose builds may reach production, so sensitive writes."},
 	{Method: "GET", Path: "/api/v1/nodes/{id}/capacity", Ability: "AbilityRoot", Group: "Nodes", Handler: "handleGetNodeCapacity", Description: ""},
 	{Method: "GET", Path: "/api/v1/nodes/{id}/capacity-forecast", Ability: "AbilityRoot", Group: "Nodes", Handler: "handleNodeCapacityForecast", Description: "Rough disk/memory exhaustion projection (node_capacity_forecast.go), a read-and-suggest layer over the same host samples patch-status/metrics above read, same AbilityRoot boundary and nil-telemetry 501 shape as every other node route."},
@@ -1426,6 +1427,7 @@ var openAPIRoutes = []openAPIRoute{
 	{Method: "PUT", Path: "/api/v1/external-databases/{name}", Ability: "AbilityRoot", Group: "Other", Handler: "handleUpdateExternalDatabase", Description: ""},
 	{Method: "GET", Path: "/api/v1/external-databases/{name}/password", Ability: "AbilityRoot", Group: "Other", Handler: "handleRevealExternalDatabasePassword", Description: ""},
 	{Method: "POST", Path: "/api/v1/external-databases/{name}/probe", Ability: "AbilityWrite", Group: "Other", Handler: "handleProbeExternalDatabase", Description: ""},
+	{Method: "GET", Path: "/api/v1/field-descriptors/{resource}", Ability: "AbilityRead", Group: "Other", Handler: "handleGetFieldDescriptors", Description: ""},
 	{Method: "GET", Path: "/api/v1/firewall-rules", Ability: "AbilityRead", Group: "Other", Handler: "handleListFirewallRules", Description: "Firewall rules (firewall_rules.go): declarative host firewall rules internal/reconcile/firewall converges onto ufw. AbilityWriteSensitive for create/delete, same tier as a backup target: a rule here changes what inbound traffic this host accepts. List is ordinary AbilityRead."},
 	{Method: "POST", Path: "/api/v1/firewall-rules", Ability: "AbilityWriteSensitive", Group: "Other", Handler: "handleCreateFirewallRule", Description: ""},
 	{Method: "DELETE", Path: "/api/v1/firewall-rules/{id}", Ability: "AbilityWriteSensitive", Group: "Other", Handler: "handleDeleteFirewallRule", Description: ""},
@@ -1512,6 +1514,7 @@ var openAPIRoutes = []openAPIRoute{
 	{Method: "GET", Path: "/api/v1/gitea-app/callback", Ability: "AbilityRoot", Group: "Other", Handler: "handleGitConnectCallback", Description: ""},
 	{Method: "GET", Path: "/api/v1/gitea-app/connect", Ability: "AbilityRoot", Group: "Other", Handler: "handleStartGitConnect", Description: ""},
 	{Method: "GET", Path: "/api/v1/go-live/status", Ability: "AbilityRead", Group: "Other", Handler: "handleLiveBadges", Description: ""},
+	{Method: "GET", Path: "/api/v1/health-presets", Ability: "AbilityRead", Group: "Other", Handler: "handleGetHealthPresets", Description: ""},
 	{Method: "GET", Path: "/api/v1/heartbeat/{token}", Ability: "Public", Group: "Other", Handler: "handleHeartbeatPing", Description: "Heartbeat ping for a cron monitor, authenticated only by the secret token in the path. Answers 204 or a uniform 404."},
 	{Method: "POST", Path: "/api/v1/heartbeat/{token}", Ability: "Public", Group: "Other", Handler: "handleHeartbeatPing", Description: "Heartbeat ping for a cron monitor, authenticated only by the secret token in the path. Answers 204 or a uniform 404."},
 	{Method: "GET", Path: "/api/v1/heartbeat/{token}/{signal}", Ability: "Public", Group: "Other", Handler: "handleHeartbeatPing", Description: "Heartbeat start or fail signal; a fail marks the monitor down at once."},

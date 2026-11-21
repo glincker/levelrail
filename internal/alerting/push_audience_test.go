@@ -4,6 +4,8 @@ import (
 	"context"
 	"errors"
 	"testing"
+
+	"github.com/GLINCKER/levelrail/internal/store"
 )
 
 func TestDeployDispatcher_Dispatch_WebpushAudienceIsAppAndChannelProject(t *testing.T) {
@@ -86,6 +88,39 @@ func TestPushAudienceForResource(t *testing.T) {
 	for _, id := range []string{"node:n1", "database:db", "service:", ""} {
 		if got := pushAudienceForResource(id); got != (PushAudience{}) {
 			t.Errorf("%q audience = %+v, want the zero value", id, got)
+		}
+	}
+}
+
+type fakeDomainOwners struct {
+	owner string
+	found bool
+}
+
+func (f fakeDomainOwners) DomainOwnerOf(context.Context, string) (string, bool, error) {
+	return f.owner, f.found, nil
+}
+
+func TestResolvePushAudience_DomainMapsToOwningAppAdmins(t *testing.T) {
+	ctx := context.Background()
+	got := resolvePushAudience(ctx, fakeDomainOwners{owner: "web", found: true}, "domain:shop.example.com")
+	if want := (PushAudience{AppName: "web", AdminOnly: true}); got != want {
+		t.Errorf("owned domain audience = %+v, want %+v", got, want)
+	}
+}
+
+func TestResolvePushAudience_UnresolvedStaysAdminOnly(t *testing.T) {
+	ctx := context.Background()
+	cases := map[string]PushAudience{
+		"unowned domain":     resolvePushAudience(ctx, fakeDomainOwners{}, "domain:free.example.com"),
+		"parked domain":      resolvePushAudience(ctx, fakeDomainOwners{owner: store.ParkedDomainOwner, found: true}, "domain:p.example.com"),
+		"no resolver":        resolvePushAudience(ctx, struct{}{}, "domain:x.example.com"),
+		"node has no team":   resolvePushAudience(ctx, fakeDomainOwners{owner: "web", found: true}, "node:n1"),
+		"volume has no team": resolvePushAudience(ctx, fakeDomainOwners{owner: "web", found: true}, "volume:v1"),
+	}
+	for name, got := range cases {
+		if got != (PushAudience{}) {
+			t.Errorf("%s audience = %+v, want the zero admin-only audience", name, got)
 		}
 	}
 }

@@ -209,7 +209,8 @@
   "promote": {
     "action": "本番に反映",
     "confirmTitle": "{{name}} で、このデプロイを公開しますか?",
-    "confirmBody": "サイト独自のドメインは、このデプロイをすぐに配信します。独自のURLも引き続き使えます。"
+    "confirmBody": "サイト独自のドメインは、このデプロイをすぐに配信します。独自のURLも引き続き使えます。",
+    "pending": "反映中"
   },
   "deployUrl": {
     "copy": "デプロイURLをコピー",

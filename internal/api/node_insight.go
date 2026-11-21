@@ -5,11 +5,13 @@ import (
 	"log/slog"
 	"math"
 	"net/http"
+	"runtime"
 	"time"
 
 	"github.com/GLINCKER/levelrail/internal/alerting"
 	"github.com/GLINCKER/levelrail/internal/nodeinsight"
 	"github.com/GLINCKER/levelrail/internal/nodepreflight"
+	"github.com/GLINCKER/levelrail/internal/runtimesettings"
 	"github.com/GLINCKER/levelrail/internal/store"
 	"github.com/GLINCKER/levelrail/internal/version"
 )
@@ -112,10 +114,53 @@ func (rt *Router) handleNodeVersionSkew(w http.ResponseWriter, r *http.Request) 
 	in := make([]nodeinsight.NodeVersion, 0, len(nodes))
 	for i := range nodes {
 		n := nodes[i]
+		local := rt.isLocalNodeRecord(&n)
+		v, os, arch := n.AgentVersion, n.AgentOS, n.AgentArch
+		if local {
+			// The control plane's own node has no agent row version, but it runs this build.
+			v, os, arch = version.Version, orDefault(os, runtime.GOOS), orDefault(arch, runtime.GOARCH)
+		}
 		in = append(in, nodeinsight.NodeVersion{
-			ID: n.ID, Name: n.Name, Version: n.AgentVersion, OS: n.AgentOS, Arch: n.AgentArch,
-			Online: n.Status == store.NodeStatusOnline, Schedulable: n.Schedulable, Local: rt.isLocalNodeRecord(&n),
+			ID: n.ID, Name: n.Name, Version: v, OS: os, Arch: arch,
+			Online: n.Status == store.NodeStatusOnline, Schedulable: n.Schedulable, Local: local,
 		})
 	}
 	writeJSON(w, http.StatusOK, nodeinsight.BuildSkew(version.Version, in))
+}
+
+// handleNodeAgentUpdate handles GET /api/v1/nodes/{id}/agent-update: what the
+// agent should run, following the control plane channel. It names a version
+// only; the agent fetches and verifies the release itself.
+func (rt *Router) handleNodeAgentUpdate(w http.ResponseWriter, r *http.Request) {
+	id := r.PathValue("id")
+	n, err := rt.nodes.GetNode(r.Context(), id)
+	if errors.Is(err, store.ErrNodeNotFound) {
+		writeError(w, http.StatusNotFound, "node not found")
+		return
+	} else if err != nil {
+		rt.internalError(w, "api: node agent update: load failed", err, slog.String("node_id", id))
+		return
+	}
+	facts := nodeinsight.UpdateFacts{
+		Channel: rt.currentUpdateChannel(r.Context()), ControlPlane: version.Version, AgentVersion: n.AgentVersion,
+		AgentOnline: n.Status == store.NodeStatusOnline,
+	}
+	if rt.isLocalNodeRecord(n) {
+		facts.AgentVersion = version.Version
+	}
+	vh := rt.agentVersions.Observe(id, facts.AgentVersion, time.Now())
+	facts.PreviousGood = vh.LastGood
+	if lister, ok := rt.nodes.(nodeStatusEventLister); ok {
+		if events, err := lister.ListNodeStatusEvents(r.Context(), id, timelineEventCap); err == nil {
+			in := make([]nodeinsight.Event, 0, len(events))
+			for _, e := range events {
+				in = append(in, nodeinsight.Event{From: string(e.FromStatus), To: string(e.ToStatus), At: e.CreatedAt})
+			}
+			facts.HealthFailures = nodeinsight.OfflineSince(in, vh.Since)
+		}
+	}
+	if rt.runtimeSettings != nil {
+		facts.MaxHealthFailures = rt.runtimeSettings.Int(r.Context(), runtimesettings.KeyAgentUpdateHealthFailed)
+	}
+	writeJSON(w, http.StatusOK, nodeinsight.DecideUpdate(facts))
 }

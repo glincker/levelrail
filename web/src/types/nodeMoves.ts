@@ -49,6 +49,21 @@ export interface NodeDrainBlocked {
 
 export type NodeDrainStatus = 'running' | 'succeeded' | 'partial' | 'failed'
 
+export type NodeDrainState =
+  'running' | 'done' | 'partial' | 'failed' | 'stalled'
+
+export interface NodeDrainProgressInfo {
+  state: NodeDrainState
+  total: number
+  succeeded: number
+  failed: number
+  rolled_back: number
+  running: number
+  blocked: number
+  percent: number
+  eta_seconds?: number
+}
+
 export interface NodeDrain {
   id: string
   node_id: string
@@ -57,6 +72,7 @@ export interface NodeDrain {
   error?: string
   blocked: NodeDrainBlocked[]
   moves: NodeMove[]
+  progress?: NodeDrainProgressInfo
   started_at: string
   updated_at: string
   finished_at?: string

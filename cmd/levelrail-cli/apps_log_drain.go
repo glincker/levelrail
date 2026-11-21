@@ -4,6 +4,8 @@ import (
 	"context"
 	"fmt"
 	"io"
+	"os"
+	"strings"
 
 	"github.com/GLINCKER/levelrail/internal/fielddesc"
 )
@@ -104,12 +106,23 @@ func runAppsLogDrainSet(prog string, args []string, stdout, stderr io.Writer, lo
 		}
 	}
 
+	headerValue := ""
+	if file := *descFlags["header-value-file"]; file != "" {
+		raw, rerr := os.ReadFile(file) //nolint:gosec // operator-chosen path, the same as the other *-file flags
+		if rerr != nil {
+			return reportError(stdout, stderr, jsonOut, newValidationError("read --header-value-file: %v", rerr))
+		}
+		headerValue = strings.TrimRight(string(raw), "\r\n")
+	}
+
 	client := apiClientFromFlags(prog, apiURLFlag, tokenFlag, profileFlag, lookupEnv)
 
 	drain, err := client.SetLogDrain(context.Background(), name, setLogDrainRequest{
-		Type:    typeFlag,
-		Target:  targetFlag,
-		Enabled: !disabled,
+		Type:        typeFlag,
+		Target:      targetFlag,
+		Enabled:     !disabled,
+		HeaderName:  *descFlags["header-name"],
+		HeaderValue: headerValue,
 	})
 	if err != nil {
 		return reportError(stdout, stderr, jsonOut, fmt.Errorf("set log drain for app %q: %w", name, err))
@@ -150,4 +163,7 @@ func printLogDrainHuman(out io.Writer, d logDrainResource) {
 		status = "disabled"
 	}
 	_, _ = fmt.Fprintf(out, "app:    %s\ntype:   %s\ntarget: %s\nstatus: %s\n", d.AppName, d.Type, d.Target, status)
+	if d.HeaderName != "" {
+		_, _ = fmt.Fprintf(out, "header: %s (value stored, not shown)\n", d.HeaderName)
+	}
 }

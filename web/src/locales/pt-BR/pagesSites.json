@@ -213,7 +213,8 @@
   "promote": {
     "action": "Promover",
     "confirmTitle": "Tornar este deploy ativo para {{name}}?",
-    "confirmBody": "Os domínios próprios do site passam a servir este deploy imediatamente. A URL própria continua funcionando."
+    "confirmBody": "Os domínios próprios do site passam a servir este deploy imediatamente. A URL própria continua funcionando.",
+    "pending": "Publicando"
   },
   "deployUrl": {
     "copy": "Copiar URL do deploy",

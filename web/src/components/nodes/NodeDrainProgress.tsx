@@ -2,6 +2,7 @@ import { useTranslation } from 'react-i18next'
 import { TriangleAlertGlassIcon } from '@thesvg/ui-react'
 import { Alert, AlertDescription, AlertTitle } from '@/components/ui/alert'
 import { Badge } from '@/components/ui/badge'
+import { Progress } from '@/components/ui/progress'
 import type { NodeDrain, NodeDrainStatus } from '../../types/nodeMoves'
 import { MoveStatusBadge } from './NodeMoveSteps'
 import { useNodeNames } from './useNodeNames'
@@ -54,6 +55,27 @@ export function NodeDrainProgress({ drain }: { drain: NodeDrain }) {
             <p>{t('drain.partialHint')}</p>
           </AlertDescription>
         </Alert>
+      ) : null}
+
+      {drain.progress && drain.progress.total > 0 ? (
+        <div className="space-y-1">
+          <Progress value={drain.progress.percent} />
+          <p className="text-xs text-muted-foreground">
+            {t('drain.progress.summary', {
+              done: drain.progress.succeeded,
+              total: drain.progress.total,
+              failed: drain.progress.failed + drain.progress.rolled_back,
+            })}
+            {drain.progress.eta_seconds
+              ? ` ${t('drain.progress.eta', { seconds: drain.progress.eta_seconds })}`
+              : ''}
+          </p>
+          {drain.progress.state === 'stalled' ? (
+            <p className="text-xs text-tone-warning">
+              {t('drain.progress.stalled')}
+            </p>
+          ) : null}
+        </div>
       ) : null}
 
       {nothingToMove ? (

@@ -24,6 +24,7 @@ import (
 	"github.com/GLINCKER/levelrail/internal/docker"
 	"github.com/GLINCKER/levelrail/internal/dockerguard"
 	"github.com/GLINCKER/levelrail/internal/gpu"
+	"github.com/GLINCKER/levelrail/internal/nodeinsight"
 	"github.com/GLINCKER/levelrail/internal/version"
 )
 
@@ -225,6 +226,9 @@ func runReconnectLoop(ctx context.Context, addr string, renewer *agent.Renewer, 
 		opts = append(opts, agent.WithKeepalive(t, timeout))
 	}
 
+	ctx = agent.WithOfflineBuffer(ctx, agent.OfflineBufferFromEnv(os.LookupEnv))
+	health := newHealthTracker(agentDataDir(), version.Version, agent.StableSessionSeconds(os.LookupEnv), os.LookupEnv, logger)
+
 	delay := reconnectBaseDelay
 	for {
 		if ctx.Err() != nil {
@@ -241,6 +245,10 @@ func runReconnectLoop(ctx context.Context, addr string, renewer *agent.Renewer, 
 		}
 		if ctx.Err() != nil {
 			return // shutting down: the session ending is expected, not a failure
+		}
+		if d := health.sessionEnded(time.Since(sessionStart)); d.Action == nodeinsight.UpdateRollback {
+			logger.Error("this agent version keeps failing; reinstall the last good version",
+				slog.String("last_good", d.Target), slog.String("running", version.Version))
 		}
 		if agent.IsAuthRejection(err) || holder.Current().Expired(time.Now()) {
 			if adoptIdentityFromDisk(holder, file, logger) {

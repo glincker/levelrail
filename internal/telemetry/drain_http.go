@@ -36,6 +36,9 @@ type httpSinkLine struct {
 type HTTPSink struct {
 	URL    string
 	Client *http.Client
+	// HeaderName, when set, carries HeaderValue on every request (an ingest token).
+	HeaderName  string
+	HeaderValue string
 }
 
 // NewHTTPSink builds an HTTPSink. client defaults to a fresh
@@ -72,6 +75,9 @@ func (s *HTTPSink) Send(ctx context.Context, entries []LogEntry) error {
 		return fmt.Errorf("telemetry: build http drain request: %w", err)
 	}
 	req.Header.Set("Content-Type", "application/json")
+	if s.HeaderName != "" {
+		req.Header.Set(s.HeaderName, s.HeaderValue)
+	}
 
 	resp, err := s.Client.Do(req)
 	if err != nil {

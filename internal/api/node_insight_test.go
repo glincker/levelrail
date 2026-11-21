@@ -42,11 +42,33 @@ func TestNodeInsightRoutes(t *testing.T) {
 	if code := get("/api/v1/nodes/version-skew", &skew); code != http.StatusOK || len(skew.Nodes) == 0 {
 		t.Fatalf("skew code=%d nodes=%d", code, len(skew.Nodes))
 	}
+	var upd nodeinsight.UpdateDecision
+	if code := get("/api/v1/nodes/node_a/agent-update", &upd); code != http.StatusOK || upd.Action == "" || upd.Channel == "" {
+		t.Fatalf("agent update code=%d %+v", code, upd)
+	}
 	var none nodeinsight.Timeline
 	if code := get("/api/v1/nodes/nope/timeline", &none); code != http.StatusNotFound {
 		t.Fatalf("unknown node code=%d", code)
 	}
 	if code := get("/api/v1/nodes/node_a/timeline?window=banana", &none); code != http.StatusBadRequest {
 		t.Fatalf("bad window code=%d", code)
+	}
+}
+
+func TestVersionSkewShowsLocalNodeVersion(t *testing.T) {
+	rt, db := newTestRouter(t)
+	cookie := loginTestSession(t, rt, db)
+	seedNode(t, db, "node_local", "local")
+	rt.localNodeID = "node_local"
+	rec := httptest.NewRecorder()
+	rt.Handler().ServeHTTP(rec, authedRequest(t, cookie, http.MethodGet, "/api/v1/nodes/version-skew", ""))
+	var skew nodeinsight.SkewReport
+	if err := json.Unmarshal(rec.Body.Bytes(), &skew); err != nil {
+		t.Fatal(err)
+	}
+	for _, n := range skew.Nodes {
+		if n.ID == "node_local" && (n.Version == "" || n.Class != nodeinsight.SkewCurrent) {
+			t.Fatalf("local node = %+v", n)
+		}
 	}
 }

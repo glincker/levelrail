@@ -78,3 +78,18 @@ func TestLogDrainFieldDescriptorsServed(t *testing.T) {
 		t.Fatalf("status %d body %s", rec.Code, rec.Body.String())
 	}
 }
+
+func TestGenericFieldDescriptorsServeEveryResource(t *testing.T) {
+	rt, db := newTestRouter(t)
+	cookie := loginTestSession(t, rt, db)
+	for _, name := range fielddesc.Names() {
+		rec := apiDo(t, rt, cookie, "GET", "/api/v1/field-descriptors/"+name, "")
+		var got fielddesc.Resource
+		if rec.Code != 200 || json.Unmarshal(rec.Body.Bytes(), &got) != nil || got.Name != name || len(got.Fields) == 0 {
+			t.Fatalf("%s: status %d body %s", name, rec.Code, rec.Body.String())
+		}
+	}
+	if rec := apiDo(t, rt, cookie, "GET", "/api/v1/field-descriptors/nope", ""); rec.Code != 404 {
+		t.Fatalf("unknown resource status %d", rec.Code)
+	}
+}

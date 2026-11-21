@@ -2,7 +2,10 @@ import { fireEvent, render, screen } from '@testing-library/react'
 import { beforeEach, describe, expect, it, vi } from 'vitest'
 import DeployRowActions from './DeployRowActions'
 
-const h = vi.hoisted(() => ({ mutate: vi.fn() }))
+const h = vi.hoisted(() => ({
+  mutate: vi.fn(),
+  data: undefined as string | undefined,
+}))
 
 vi.mock('react-i18next', () => ({
   useTranslation: () => ({ t: (k: string) => k }),
@@ -27,10 +30,14 @@ vi.mock('../../queries/pagesDeploys', () => ({
     mutate: h.mutate,
     isPending: false,
     error: null,
+    data: h.data,
   }),
 }))
 
-beforeEach(() => h.mutate.mockReset())
+beforeEach(() => {
+  h.mutate.mockReset()
+  h.data = undefined
+})
 
 describe('DeployRowActions', () => {
   it('links to the deploy URL and promotes after confirming', () => {
@@ -47,5 +54,16 @@ describe('DeployRowActions', () => {
     render(<DeployRowActions name="site" deployId="dep_b" />)
     expect(screen.queryByText('promote.action')).toBeNull()
     expect(screen.queryByLabelText('deployUrl.open')).toBeNull()
+  })
+
+  it('shows the going-live chip only while serving is pending', () => {
+    const { unmount } = render(
+      <DeployRowActions name="site" deployId="dep_a" />,
+    )
+    expect(screen.queryByText('promote.pending')).toBeNull()
+    unmount()
+    h.data = 'pending'
+    render(<DeployRowActions name="site" deployId="dep_a" />)
+    expect(screen.getByText('promote.pending')).toBeTruthy()
   })
 })

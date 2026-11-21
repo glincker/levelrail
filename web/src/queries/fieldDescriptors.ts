@@ -4,6 +4,7 @@ import { ApiError, readErrorMessage } from '../lib/apiError'
 import type { FieldDescriptorSet } from '../types/fieldDescriptor'
 
 export const fieldDescriptorKeys = {
+  resource: (name: string) => ['field-descriptors', name] as const,
   backupTarget: ['field-descriptors', 'backup-targets'] as readonly [
     'field-descriptors',
     string,
@@ -43,3 +44,20 @@ export function backupTargetFieldsQueryOptions() {
     staleTime: Infinity,
   })
 }
+
+// Any registered resource is served by the one generic route, so a new descriptor file
+// needs no query of its own.
+export function fieldDescriptorsQueryOptions(resource: string) {
+  return queryOptions({
+    queryKey: fieldDescriptorKeys.resource(resource),
+    queryFn: () =>
+      fetchFields(`/api/v1/field-descriptors/${encodeURIComponent(resource)}`),
+    staleTime: Infinity,
+  })
+}
+
+// Resource names as registered in internal/fielddesc.
+export const FIELD_RESOURCES = {
+  notificationChannel: 'notification-channels',
+  dnsProvider: 'dns-providers',
+} as const

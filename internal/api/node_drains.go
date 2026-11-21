@@ -1,25 +1,30 @@
 package api
 
 import (
+	"context"
 	"errors"
 	"log/slog"
 	"net/http"
+	"time"
 
+	"github.com/GLINCKER/levelrail/internal/nodeinsight"
 	"github.com/GLINCKER/levelrail/internal/placement"
+	"github.com/GLINCKER/levelrail/internal/runtimesettings"
 	"github.com/GLINCKER/levelrail/internal/store"
 )
 
 type nodeDrainResource struct {
-	ID           string                   `json:"id"`
-	NodeID       string                   `json:"node_id"`
-	TargetNodeID string                   `json:"target_node_id,omitempty"`
-	Status       string                   `json:"status"`
-	Error        string                   `json:"error,omitempty"`
-	Blocked      []store.NodeDrainBlocked `json:"blocked"`
-	Moves        []nodeMoveResource       `json:"moves"`
-	StartedAt    string                   `json:"started_at"`
-	UpdatedAt    string                   `json:"updated_at"`
-	FinishedAt   string                   `json:"finished_at,omitempty"`
+	ID           string                    `json:"id"`
+	NodeID       string                    `json:"node_id"`
+	TargetNodeID string                    `json:"target_node_id,omitempty"`
+	Status       string                    `json:"status"`
+	Error        string                    `json:"error,omitempty"`
+	Blocked      []store.NodeDrainBlocked  `json:"blocked"`
+	Moves        []nodeMoveResource        `json:"moves"`
+	Progress     nodeinsight.DrainProgress `json:"progress"`
+	StartedAt    string                    `json:"started_at"`
+	UpdatedAt    string                    `json:"updated_at"`
+	FinishedAt   string                    `json:"finished_at,omitempty"`
 }
 
 func (rt *Router) drainResource(r *http.Request, d store.NodeDrain) (nodeDrainResource, error) {
@@ -38,6 +43,11 @@ func (rt *Router) drainResource(r *http.Request, d store.NodeDrain) (nodeDrainRe
 	for i := len(moves) - 1; i >= 0; i-- {
 		out.Moves = append(out.Moves, toNodeMoveResource(moves[i]))
 	}
+	in := nodeinsight.DrainInput{Status: d.Status, Blocked: len(d.Blocked), StartedAt: d.StartedAt, UpdatedAt: d.UpdatedAt, StallAfter: rt.drainStallAfter(r.Context())}
+	for _, m := range moves {
+		in.Moves = append(in.Moves, nodeinsight.DrainMove{Status: m.Status, StartedAt: m.StartedAt, FinishedAt: m.FinishedAt})
+	}
+	out.Progress = nodeinsight.BuildDrainProgress(in, time.Now())
 	return out, nil
 }
 
@@ -140,4 +150,16 @@ func (rt *Router) handleGetNodeDrain(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 	writeJSON(w, http.StatusOK, res)
+}
+
+// drainStallAfter is how long a running drain may go without an update before
+// it is shown as stalled; a move's own timeout is far shorter.
+func (rt *Router) drainStallAfter(ctx context.Context) time.Duration {
+	if rt.runtimeSettings == nil {
+		return 10 * time.Minute
+	}
+	if n := rt.runtimeSettings.Int(ctx, runtimesettings.KeyNodeDrainStallSeconds); n > 0 {
+		return time.Duration(n) * time.Second
+	}
+	return 10 * time.Minute
 }

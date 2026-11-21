@@ -211,7 +211,8 @@
   "promote": {
     "action": "Promover",
     "confirmTitle": "¿Poner este despliegue en línea para {{name}}?",
-    "confirmBody": "Los dominios propios del sitio sirven este despliegue de inmediato. Su URL propia sigue funcionando."
+    "confirmBody": "Los dominios propios del sitio sirven este despliegue de inmediato. Su URL propia sigue funcionando.",
+    "pending": "Publicando"
   },
   "deployUrl": {
     "copy": "Copiar URL del despliegue",

@@ -83,6 +83,7 @@ import (
 	"github.com/GLINCKER/levelrail/internal/functions"
 	"github.com/GLINCKER/levelrail/internal/hostpressure"
 	"github.com/GLINCKER/levelrail/internal/nodefailure"
+	"github.com/GLINCKER/levelrail/internal/nodeinsight"
 	"github.com/GLINCKER/levelrail/internal/repolayout"
 	"github.com/GLINCKER/levelrail/internal/repolist"
 	"github.com/GLINCKER/levelrail/internal/runtimesettings"
@@ -173,6 +174,7 @@ type Router struct {
 	doctorLookupHost       func(ctx context.Context, host string) ([]string, error) // nil uses the system resolver
 	agentCAFingerprint     string                                                   // empty: join tokens are returned without a CA pin
 	nodeCerts              nodeCertConfig
+	agentVersions          nodeinsight.VersionTracker  // rollback target per node, see handleNodeAgentUpdate
 	packageRegistries      PackageRegistryStore        // always set, private package registry rows and registry credential usage
 	nodeProviderConns      NodeProviderConnectionStore // always set, connection metadata for node providers
 	nodeProvisions         NodeProvisionStore          // always set, same "core Store interface" shape as cloudflareDNS above

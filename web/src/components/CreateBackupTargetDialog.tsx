@@ -6,7 +6,6 @@ import { z } from 'zod'
 import {
   EyeGlassIcon,
   EyeOffGlassIcon,
-  FolderGlassIcon,
   TriangleAlertGlassIcon,
   UploadGlassIcon,
 } from '@thesvg/ui-react'
@@ -22,7 +21,6 @@ import {
 import { Alert, AlertDescription, AlertTitle } from '@/components/ui/alert'
 import { Button } from '@/components/ui/button'
 import { Input } from '@/components/ui/input'
-import { Textarea } from '@/components/ui/textarea'
 import {
   Select,
   SelectContent,
@@ -34,7 +32,9 @@ import { Field, FieldError, FieldLabel } from '@/components/ui/field'
 import { toast } from '@/components/ui/toast'
 import { ApiError } from '../lib/apiError'
 import { useCreateBackupTarget } from '../queries/backupTargets'
-import { useBackupTargetFields } from '../queries/useBackupTargetFields'
+import { useQuery } from '@tanstack/react-query'
+import { backupTargetFieldsQueryOptions } from '../queries/fieldDescriptors'
+import { DescriptorFields } from './DescriptorFields'
 import { PROVIDER_LABEL } from './backupTargetProvider'
 import { BrandTile } from './BrandLogoBadge'
 import { SftpHostKeyCheck } from './SftpHostKeyCheck'
@@ -151,9 +151,15 @@ const ENDPOINT_PLACEHOLDER: Record<BackupProvider, string> = {
 // dashboard's session is never scoped down, a 403 is a real, surfaced
 // error, not something the UI pre-empts by hiding buttons).
 export function CreateBackupTargetDialog() {
-  const { t } = useTranslation('settings')
+  const { t: tKey } = useTranslation()
+  // Keys come from the server registry, so they cannot be checked at compile time.
+  const t = tKey as (key: string) => string
   const { t: tb } = useTranslation('backups')
-  const fields = useBackupTargetFields()
+  const { data: descriptorSet } = useQuery({
+    ...backupTargetFieldsQueryOptions(),
+    retry: false,
+  })
+  const descriptors = descriptorSet?.fields ?? []
   const [open, setOpen] = useState(false)
   const [revealSecret, setRevealSecret] = useState(false)
   const createBackupTarget = useCreateBackupTarget()
@@ -163,9 +169,15 @@ export function CreateBackupTargetDialog() {
       defaultValues,
     })
   const watchedProvider = watch('provider')
-  const isLocal = watchedProvider === 'local'
-  const isSftp = watchedProvider === 'sftp'
-  const watchedAuth = watch('auth')
+  const formValues = Object.fromEntries(
+    Object.entries(watch()).map(([k, v]) => [
+      k,
+      typeof v === 'string' ? v : '',
+    ]),
+  )
+  const errorMessages = Object.fromEntries(
+    Object.entries(formState.errors).map(([k, e]) => [k, e.message]),
+  )
 
   function handleOpenChange(next: boolean) {
     setOpen(next)
@@ -307,132 +319,32 @@ export function CreateBackupTargetDialog() {
               }}
               className="space-y-4"
             >
-              <Field>
-                <FieldLabel htmlFor="backup-target-name">
-                  {fields.label('name', 'Name')}
-                </FieldLabel>
-                <Input
-                  id="backup-target-name"
-                  placeholder="e.g. primary-backups"
-                  {...register('name')}
-                />
-                <FieldError errors={[formState.errors.name]} />
-              </Field>
-
-              <Field>
-                <FieldLabel htmlFor="backup-target-provider">
-                  Provider
-                </FieldLabel>
-                <Controller
-                  control={control}
-                  name="provider"
-                  render={({ field }) => (
-                    <Select value={field.value} onValueChange={field.onChange}>
-                      <SelectTrigger
-                        id="backup-target-provider"
-                        className="w-full"
-                      >
-                        <SelectValue />
-                      </SelectTrigger>
-                      <SelectContent>
-                        {(Object.keys(PROVIDER_LABEL) as BackupProvider[]).map(
-                          (provider) => (
-                            <SelectItem key={provider} value={provider}>
-                              <span className="flex items-center gap-2">
-                                <BrandTile
-                                  name={backupTargetBrand(provider)}
-                                  label={PROVIDER_LABEL[provider]}
-                                  size="xs"
-                                />
-                                {PROVIDER_LABEL[provider]}
-                              </span>
-                            </SelectItem>
-                          ),
-                        )}
-                      </SelectContent>
-                    </Select>
-                  )}
-                />
-              </Field>
-
-              {isLocal ? (
-                <Field>
-                  <FieldLabel htmlFor="backup-target-path">
-                    <span className="flex items-center gap-2">
-                      <FolderGlassIcon className="size-5" aria-hidden="true" />
-                      {t('backupTargetLocal.path')}
-                    </span>
-                  </FieldLabel>
-                  <Input
-                    id="backup-target-path"
-                    className="font-mono"
-                    placeholder={t('backupTargetLocal.placeholder')}
-                    aria-describedby="backup-target-path-hint"
-                    {...register('bucket')}
-                  />
-                  <p
-                    id="backup-target-path-hint"
-                    className="text-xs text-muted-foreground"
-                  >
-                    {t('backupTargetLocal.hint')}
-                  </p>
-                  <FieldError errors={[formState.errors.bucket]} />
-                </Field>
-              ) : isSftp ? (
-                <Field>
-                  <FieldLabel htmlFor="backup-target-sftp-path">
-                    {fields.label('sftp.path', tb('sftpTarget.path'))}
-                  </FieldLabel>
-                  <Input
-                    id="backup-target-sftp-path"
-                    className="font-mono"
-                    placeholder="backups/levelrail"
-                    aria-describedby="backup-target-sftp-path-hint"
-                    {...register('bucket')}
-                  />
-                  <p
-                    id="backup-target-sftp-path-hint"
-                    className="text-xs text-muted-foreground"
-                  >
-                    {tb('sftpTarget.pathHint')}
-                  </p>
-                  <FieldError errors={[formState.errors.bucket]} />
-                </Field>
+              {descriptors.length === 0 ? (
+                <Alert variant="destructive">
+                  <AlertDescription>
+                    The form fields could not be loaded. Reload the page and try
+                    again.
+                  </AlertDescription>
+                </Alert>
               ) : (
-                <>
-                  <Field>
-                    <FieldLabel htmlFor="backup-target-bucket">
-                      {fields.label('s3.bucket', 'Bucket')}
-                    </FieldLabel>
-                    <Input
-                      id="backup-target-bucket"
-                      placeholder="my-backups-bucket"
-                      {...register('bucket')}
-                    />
-                    <FieldError errors={[formState.errors.bucket]} />
-                  </Field>
-
-                  <Field>
-                    <FieldLabel htmlFor="backup-target-region">
-                      {fields.label('s3.region', 'Region')}{' '}
-                      <span className="text-muted-foreground">(optional)</span>
-                    </FieldLabel>
-                    <Input
-                      id="backup-target-region"
-                      placeholder="us-east-1"
-                      {...register('region')}
-                    />
-                  </Field>
-                </>
-              )}
-
-              {watchedProvider === 'aws' || isLocal ? null : (
-                <Field>
-                  <FieldLabel htmlFor="backup-target-endpoint">
-                    <span className="flex items-center gap-2">
-                      {isSftp
-                        ? fields.label('sftp.endpoint', tb('sftpTarget.host'))
-                        : fields.label('s3.endpoint', 'Endpoint')}
+                <DescriptorFields
+                  fields={descriptors}
+                  values={formValues}
+                  idPrefix="backup-target"
+                  optionalLabel="(optional)"
+                  errors={errorMessages}
+                  onChange={(key, value) => {
+                    setValue(key as keyof CreateBackupTargetFormValues, value, {
+                      shouldValidate: formState.isSubmitted,
+                    })
+                  }}
+                  placeholder={(f) =>
+                    f.key === 'endpoint' && f.id === 's3.endpoint'
+                      ? ENDPOINT_PLACEHOLDER[watchedProvider]
+                      : undefined
+                  }
+                  labelAdornment={(f) =>
+                    f.key === 'endpoint' ? (
                       <BrandTile
                         name={backupTargetBrand(
                           watchedProvider,
@@ -441,185 +353,155 @@ export function CreateBackupTargetDialog() {
                         label={PROVIDER_LABEL[watchedProvider]}
                         size="xs"
                       />
-                    </span>
-                  </FieldLabel>
-                  <Input
-                    id="backup-target-endpoint"
-                    placeholder={ENDPOINT_PLACEHOLDER[watchedProvider]}
-                    {...register('endpoint')}
-                  />
-                  <FieldError errors={[formState.errors.endpoint]} />
-                </Field>
-              )}
-
-              {isSftp ? (
-                <>
-                  <Field>
-                    <FieldLabel htmlFor="backup-target-access-key-id">
-                      {fields.label('sftp.username', tb('sftpTarget.username'))}
-                    </FieldLabel>
-                    <Input
-                      id="backup-target-access-key-id"
-                      className="font-mono"
-                      autoComplete="off"
-                      autoCapitalize="off"
-                      spellCheck={false}
-                      {...register('access_key_id')}
-                    />
-                    <FieldError errors={[formState.errors.access_key_id]} />
-                  </Field>
-                  <Field>
-                    <FieldLabel htmlFor="backup-target-auth">
-                      {fields.label('sftp.auth', tb('sftpTarget.auth'))}
-                    </FieldLabel>
-                    <Controller
-                      control={control}
-                      name="auth"
-                      render={({ field }) => (
-                        <Select
-                          value={field.value}
-                          onValueChange={field.onChange}
-                        >
-                          <SelectTrigger
-                            id="backup-target-auth"
-                            className="w-full"
-                          >
-                            <SelectValue />
-                          </SelectTrigger>
-                          <SelectContent>
-                            <SelectItem value="password">
-                              {tb('sftpTarget.authPassword')}
-                            </SelectItem>
-                            <SelectItem value="key">
-                              {tb('sftpTarget.authKey')}
-                            </SelectItem>
-                          </SelectContent>
-                        </Select>
-                      )}
-                    />
-                  </Field>
-                  {fields.visible(
-                    'sftp.private_key',
-                    { provider: 'sftp', auth: watchedAuth },
-                    watchedAuth === 'key',
-                  ) ? (
-                    <>
-                      <Field>
-                        <FieldLabel htmlFor="backup-target-private-key">
-                          {fields.label(
-                            'sftp.private_key',
-                            tb('sftpTarget.privateKey'),
-                          )}
-                        </FieldLabel>
-                        <Textarea
-                          id="backup-target-private-key"
-                          className="font-mono"
-                          autoComplete="off"
-                          spellCheck={false}
-                          {...register('private_key')}
-                        />
-                        <FieldError errors={[formState.errors.private_key]} />
-                      </Field>
-                      <Field>
-                        <FieldLabel htmlFor="backup-target-passphrase">
-                          {fields.label(
-                            'sftp.private_key_passphrase',
-                            tb('sftpTarget.passphrase'),
-                          )}
-                        </FieldLabel>
-                        <Input
-                          id="backup-target-passphrase"
-                          type="password"
-                          autoComplete="off"
-                          {...register('private_key_passphrase')}
-                        />
-                      </Field>
-                    </>
-                  ) : (
-                    <Field>
-                      <FieldLabel htmlFor="backup-target-secret-access-key">
-                        {fields.label(
-                          'sftp.password',
-                          tb('sftpTarget.password'),
-                        )}
-                      </FieldLabel>
-                      <Input
-                        id="backup-target-secret-access-key"
-                        type="password"
-                        autoComplete="off"
-                        {...register('secret_access_key')}
-                      />
-                      <FieldError
-                        errors={[formState.errors.secret_access_key]}
-                      />
-                    </Field>
-                  )}
-                  <SftpHostKeyCheck
-                    endpoint={watch('endpoint') ?? ''}
-                    hostKey={watch('host_key') ?? ''}
-                    confirmed={watch('host_key_confirmed')}
-                    onHostKey={(key) => {
-                      setValue('host_key', key, { shouldValidate: true })
-                    }}
-                    onConfirmed={(ok) => {
-                      setValue('host_key_confirmed', ok, {
-                        shouldValidate: true,
-                      })
-                    }}
-                  />
-                  <FieldError errors={[formState.errors.host_key]} />
-                </>
-              ) : isLocal ? null : (
-                <>
-                  <Field>
-                    <FieldLabel htmlFor="backup-target-access-key-id">
-                      {fields.label('s3.access_key_id', 'Access key ID')}
-                    </FieldLabel>
-                    <Input
-                      id="backup-target-access-key-id"
-                      className="font-mono"
-                      autoComplete="off"
-                      autoCapitalize="off"
-                      spellCheck={false}
-                      {...register('access_key_id')}
-                    />
-                    <FieldError errors={[formState.errors.access_key_id]} />
-                  </Field>
-
-                  <Field>
-                    <FieldLabel htmlFor="backup-target-secret-access-key">
-                      {fields.label(
-                        's3.secret_access_key',
-                        'Secret access key',
-                      )}
-                    </FieldLabel>
-                    <div className="relative">
-                      <Input
-                        id="backup-target-secret-access-key"
-                        type={revealSecret ? 'text' : 'password'}
-                        className="pr-9 font-mono"
-                        autoComplete="off"
-                        {...register('secret_access_key')}
-                      />
-                      <button
-                        type="button"
-                        onClick={() => {
-                          setRevealSecret((v) => !v)
-                        }}
-                        aria-label={revealSecret ? 'Hide value' : 'Show value'}
-                        aria-pressed={revealSecret}
-                        className="absolute inset-y-0 right-0 flex w-9 items-center justify-center text-muted-foreground hover:text-foreground"
-                      >
-                        {revealSecret ? (
-                          <EyeOffGlassIcon className="size-5" />
-                        ) : (
-                          <EyeGlassIcon className="size-5" />
-                        )}
-                      </button>
-                    </div>
-                    <FieldError errors={[formState.errors.secret_access_key]} />
-                  </Field>
-                </>
+                    ) : null
+                  }
+                  renderField={(f) => {
+                    // The dialog has one optional region input for every S3 style provider.
+                    if (f.id === 'custom.region') return null
+                    if (f.id === 'provider') {
+                      return (
+                        <Field key={f.id}>
+                          <FieldLabel htmlFor="backup-target-provider">
+                            {t(f.label_key)}
+                          </FieldLabel>
+                          <Controller
+                            control={control}
+                            name="provider"
+                            render={({ field }) => (
+                              <Select
+                                value={field.value}
+                                onValueChange={field.onChange}
+                              >
+                                <SelectTrigger
+                                  id="backup-target-provider"
+                                  className="w-full"
+                                >
+                                  <SelectValue />
+                                </SelectTrigger>
+                                <SelectContent>
+                                  {(
+                                    Object.keys(
+                                      PROVIDER_LABEL,
+                                    ) as BackupProvider[]
+                                  ).map((provider) => (
+                                    <SelectItem key={provider} value={provider}>
+                                      <span className="flex items-center gap-2">
+                                        <BrandTile
+                                          name={backupTargetBrand(provider)}
+                                          label={PROVIDER_LABEL[provider]}
+                                          size="xs"
+                                        />
+                                        {PROVIDER_LABEL[provider]}
+                                      </span>
+                                    </SelectItem>
+                                  ))}
+                                </SelectContent>
+                              </Select>
+                            )}
+                          />
+                        </Field>
+                      )
+                    }
+                    if (f.id === 'sftp.auth') {
+                      return (
+                        <Field key={f.id}>
+                          <FieldLabel htmlFor="backup-target-auth">
+                            {t(f.label_key)}
+                          </FieldLabel>
+                          <Controller
+                            control={control}
+                            name="auth"
+                            render={({ field }) => (
+                              <Select
+                                value={field.value}
+                                onValueChange={field.onChange}
+                              >
+                                <SelectTrigger
+                                  id="backup-target-auth"
+                                  className="w-full"
+                                >
+                                  <SelectValue />
+                                </SelectTrigger>
+                                <SelectContent>
+                                  {(f.options ?? []).map((option) => (
+                                    <SelectItem key={option} value={option}>
+                                      {tb(
+                                        option === 'key'
+                                          ? 'sftpTarget.authKey'
+                                          : 'sftpTarget.authPassword',
+                                      )}
+                                    </SelectItem>
+                                  ))}
+                                </SelectContent>
+                              </Select>
+                            )}
+                          />
+                        </Field>
+                      )
+                    }
+                    if (f.id === 'sftp.host_key') {
+                      return (
+                        <div key={f.id} className="space-y-2">
+                          <SftpHostKeyCheck
+                            endpoint={watch('endpoint') ?? ''}
+                            hostKey={watch('host_key') ?? ''}
+                            confirmed={watch('host_key_confirmed')}
+                            onHostKey={(key) => {
+                              setValue('host_key', key, {
+                                shouldValidate: true,
+                              })
+                            }}
+                            onConfirmed={(ok) => {
+                              setValue('host_key_confirmed', ok, {
+                                shouldValidate: true,
+                              })
+                            }}
+                          />
+                          <FieldError errors={[formState.errors.host_key]} />
+                        </div>
+                      )
+                    }
+                    if (f.id === 's3.secret_access_key') {
+                      return (
+                        <Field key={f.id}>
+                          <FieldLabel htmlFor="backup-target-s3-secret_access_key">
+                            {t(f.label_key)}
+                          </FieldLabel>
+                          <div className="relative">
+                            <Input
+                              id="backup-target-s3-secret_access_key"
+                              type={revealSecret ? 'text' : 'password'}
+                              className="pr-9 font-mono"
+                              autoComplete="off"
+                              {...register('secret_access_key')}
+                            />
+                            <button
+                              type="button"
+                              onClick={() => {
+                                setRevealSecret((v) => !v)
+                              }}
+                              aria-label={
+                                revealSecret ? 'Hide value' : 'Show value'
+                              }
+                              aria-pressed={revealSecret}
+                              className="absolute inset-y-0 right-0 flex w-9 items-center justify-center text-muted-foreground hover:text-foreground"
+                            >
+                              {revealSecret ? (
+                                <EyeOffGlassIcon className="size-5" />
+                              ) : (
+                                <EyeGlassIcon className="size-5" />
+                              )}
+                            </button>
+                          </div>
+                          <FieldError
+                            errors={[formState.errors.secret_access_key]}
+                          />
+                        </Field>
+                      )
+                    }
+                    return undefined
+                  }}
+                />
               )}
 
               {generalError ? (

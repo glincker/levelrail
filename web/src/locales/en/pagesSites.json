@@ -211,7 +211,8 @@
   "promote": {
     "action": "Promote",
     "confirmTitle": "Make this deploy live for {{name}}?",
-    "confirmBody": "The site's own domains serve this deploy right away. Its own URL keeps working."
+    "confirmBody": "The site's own domains serve this deploy right away. Its own URL keeps working.",
+    "pending": "Going live"
   },
   "deployUrl": {
     "copy": "Copy deploy URL",

@@ -302,6 +302,7 @@ var paramRouteScopeAllowlist = map[string]string{ //nolint:gosec // route names 
 	"GET /api/v1/auth/saml/{id}/metadata":                                                   "public or token-authenticated: handleSAMLMetadata",
 	"GET /api/v1/auth/session-links/{token}/consume":                                        "public or token-authenticated: handleConsumeSessionLinkGET",
 	"GET /api/v1/backup-targets/{id}":                                                       "requireAbility, handler checks scope: handleGetBackupTarget",
+	"GET /api/v1/field-descriptors/{resource}":                                              "static registry lookup, no resource scope",
 	"GET /api/v1/backup-targets/{id}/encryption":                                            "requireAbility, handler checks scope: handleGetBackupTargetEncryption",
 	"GET /api/v1/backups/drills/{id}":                                                       "requireAbility, handler checks scope: handleGetBackupDrill",
 	"GET /api/v1/benchmarks/{id}":                                                           "requireAbility, handler checks scope: handleGetBenchmark",

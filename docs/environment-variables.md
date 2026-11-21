@@ -563,10 +563,14 @@ These variables only seed the default of a [runtime setting](/runtime-settings).
 | `APP_METRICS_IDLE_INTERVAL` | [`metrics.idle_interval`](/runtime-settings#observability) | `1m` |
 | `APP_METRICS_PRESENCE_WINDOW` | [`metrics.presence_window`](/runtime-settings#observability) | `2m` |
 | `APP_MONITOR_RAW_RETENTION` | [`monitors.raw_retention`](/runtime-settings#observability) | `48h` |
+| `APP_NODE_AGENT_BUFFER_MAX_BYTES` | [`nodes.agent_buffer_max_bytes`](/runtime-settings#observability) | `4194304` |
+| `APP_NODE_AGENT_BUFFER_MAX_ITEMS` | [`nodes.agent_buffer_max_items`](/runtime-settings#observability) | `2000` |
+| `APP_NODE_AGENT_UPDATE_HEALTH_FAILURES` | [`nodes.agent_update_health_failures`](/runtime-settings#observability) | `3` |
 | `APP_ALERT_NODE_CPU_PERCENT` | [`nodes.alert_cpu_percent`](/runtime-settings#observability) | `85` |
 | `APP_ALERT_NODE_DISK_SPACE_THRESHOLD_PERCENT` | [`nodes.alert_disk_percent`](/runtime-settings#observability) | `90` |
 | `APP_ALERT_NODE_MEMORY_PERCENT` | [`nodes.alert_memory_percent`](/runtime-settings#observability) | `90` |
 | `APP_ALERT_NODE_SUSTAINED_INTERVALS` | [`nodes.alert_sustained_intervals`](/runtime-settings#observability) | `3` |
+| `APP_NODE_DRAIN_STALL_SECONDS` | [`nodes.drain_stall_seconds`](/runtime-settings#observability) | `600` |
 | `APP_NODES_PATCH_OUTPUT_TAIL_LINES` | [`nodes.patch_output_tail_lines`](/runtime-settings#observability) | `200` |
 | `APP_NODES_PATCH_POLL_INTERVAL` | [`nodes.patch_poll_interval`](/runtime-settings#observability) | `2s` |
 | `APP_METRICS_SCRAPE_ENABLED` | [`observability.metrics_scrape_enabled`](/runtime-settings#observability) | `true` |

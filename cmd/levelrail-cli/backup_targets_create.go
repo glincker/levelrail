@@ -164,7 +164,7 @@ Flags:
 }
 
 // registerDescriptorFlags defines one string flag per descriptor flag and returns the
-// destination of each by flag name.
+// destination of each by flag name. Bool flags are registered too and read with fs.Lookup.
 func registerDescriptorFlags(fs *flag.FlagSet, resource string) map[string]*string {
 	out := map[string]*string{}
 	res, ok := fielddesc.Get(resource)
@@ -172,6 +172,10 @@ func registerDescriptorFlags(fs *flag.FlagSet, resource string) map[string]*stri
 		return out
 	}
 	for _, f := range res.FlagSpecs() {
+		if f.Bool {
+			fs.Bool(f.Name, false, f.Usage)
+			continue
+		}
 		out[f.Name] = fs.String(f.Name, "", f.Usage)
 	}
 	return out

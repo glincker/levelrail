@@ -12,10 +12,13 @@ import type { ReactNode } from 'react'
 import type { ServiceProbe } from '../types/appDetail'
 import type { ProbeFormValues } from '../lib/healthProbeForm'
 import { describeProbe } from '../lib/healthProbeForm'
+import { useTranslation } from 'react-i18next'
+import { probeTimingDefaults } from '../lib/healthCheckDefaults'
 import {
-  HEALTH_CHECK_PATH_PRESETS,
-  probeTimingDefaults,
-} from '../lib/healthCheckDefaults'
+  useHealthPresets,
+  type HealthPreset,
+  type HealthPresetTiming,
+} from '../queries/healthPresets'
 import { formatDurationNs } from '../lib/format'
 import { HealthCheckAutoDetect } from './HealthCheckAutoDetect'
 import {
@@ -98,9 +101,28 @@ function ToggleField({
   )
 }
 
-function isCustomPath(path: string): boolean {
-  return path !== '' && !HEALTH_CHECK_PATH_PRESETS.some((p) => p.path === path)
+function isCustomPath(path: string, presets: HealthPreset[]): boolean {
+  return (
+    presets.length > 0 && path !== '' && !presets.some((p) => p.path === path)
+  )
 }
+
+// Catalog timing wins; the local defaults only cover the moment before it loads.
+function presetTiming(
+  t: HealthPresetTiming | undefined,
+  kind: 'readiness' | 'liveness',
+) {
+  if (!t) return probeTimingDefaults(kind)
+  const str = (n: number) => (n > 0 ? String(n) : '')
+  return {
+    intervalSeconds: str(t.interval_seconds),
+    timeoutSeconds: str(t.timeout_seconds),
+    failures: str(t.failures),
+  }
+}
+
+// Buttons shown before the "more" disclosure; the rest of the catalog stays one click away.
+const PRESETS_SHOWN = 5
 
 export function ProbeFields({
   title,
@@ -117,17 +139,19 @@ export function ProbeFields({
   const value = useWatch({ control, name: fieldPrefix })
   // Caller passes key={app.name} so this remounts (and re-derives this
   // local UI-only choice) when the editor is reused for a different app.
-  const [customPath, setCustomPath] = useState(() =>
-    isCustomPath(currentProbe?.path ?? ''),
-  )
+  const { t: tp } = useTranslation('appPages')
+  const catalog = useHealthPresets()
+  const presets = catalog?.presets ?? []
+  const [showAllPresets, setShowAllPresets] = useState(false)
+  const [pickedCustom, setPickedCustom] = useState(false)
 
   const currentSummary = currentProbe
     ? `Currently: ${describeProbe(currentProbe)}, every ${formatDurationNs(currentProbe.interval)}`
     : 'Currently: not configured'
 
   function applyPreset(path: string) {
-    setCustomPath(false)
-    const defaults = probeTimingDefaults(fieldPrefix)
+    setPickedCustom(false)
+    const defaults = presetTiming(catalog?.[fieldPrefix], fieldPrefix)
     setValue(`${fieldPrefix}.useExec`, false, { shouldDirty: true })
     setValue(`${fieldPrefix}.path`, path, {
       shouldDirty: true,
@@ -145,7 +169,7 @@ export function ProbeFields({
   }
 
   function useCustomPath() {
-    setCustomPath(true)
+    setPickedCustom(true)
     setValue(`${fieldPrefix}.useExec`, false, { shouldDirty: true })
     const defaults = probeTimingDefaults(fieldPrefix)
     if (value.intervalSeconds === '') {
@@ -169,9 +193,11 @@ export function ProbeFields({
     setValue(`${fieldPrefix}.enabled`, false, { shouldDirty: true })
   }
 
-  const activePresetId = !customPath
-    ? HEALTH_CHECK_PATH_PRESETS.find((p) => p.path === value.path)?.id
-    : undefined
+  const activePresetId = presets.find((p) => p.path === value.path)?.id
+  const customPath = pickedCustom || isCustomPath(value.path, presets)
+  const visiblePresets = showAllPresets
+    ? presets
+    : presets.slice(0, PRESETS_SHOWN)
 
   return (
     <div className="rounded-md border border-border p-3">
@@ -218,7 +244,7 @@ export function ProbeFields({
                   role="group"
                   aria-label={`${title} path preset`}
                 >
-                  {HEALTH_CHECK_PATH_PRESETS.map((preset) => (
+                  {visiblePresets.map((preset) => (
                     <Button
                       key={preset.id}
                       type="button"
@@ -226,11 +252,25 @@ export function ProbeFields({
                       variant={
                         activePresetId === preset.id ? 'secondary' : 'outline'
                       }
+                      title={preset.hint}
                       onClick={() => applyPreset(preset.path)}
                     >
                       {preset.path}
                     </Button>
                   ))}
+                  {presets.length > PRESETS_SHOWN ? (
+                    <Button
+                      type="button"
+                      size="xs"
+                      variant="ghost"
+                      aria-expanded={showAllPresets}
+                      onClick={() => setShowAllPresets((v) => !v)}
+                    >
+                      {showAllPresets
+                        ? tp('health.fewerPresets')
+                        : tp('health.morePresets')}
+                    </Button>
+                  ) : null}
                   <Button
                     type="button"
                     size="xs"

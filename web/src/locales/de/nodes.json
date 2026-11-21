@@ -134,7 +134,12 @@
     "errorTitle": "Drain gestoppt",
     "failedHint": "Der Node bleibt gesperrt. Beheben Sie die beim fehlgeschlagenen Verschieben gezeigte Ursache und drainen Sie dann erneut, oder entsperren Sie den Node, um ihn wieder in die Rotation zu nehmen.",
     "toNode": "nach {{node}}",
-    "toAuto": "auf einen automatisch gewählten Node"
+    "toAuto": "auf einen automatisch gewählten Node",
+    "progress": {
+      "summary": "{{done}} von {{total}} verschoben, {{failed}} fehlgeschlagen",
+      "eta": "noch etwa {{seconds}} s",
+      "stalled": "Seit einer Weile kein Fortschritt. Prüfe den Node und die Verschiebungen unten."
+    }
   },
   "drains": {
     "title": "Drains",

@@ -5,6 +5,7 @@ import (
 	"encoding/json"
 	"net/http"
 	"net/http/httptest"
+	"strings"
 	"testing"
 
 	"github.com/GLINCKER/levelrail/internal/store"
@@ -192,5 +193,56 @@ func TestHandleClearAppLogDrain_AppNotFound(t *testing.T) {
 	rt.Handler().ServeHTTP(rec, authedRequest(t, cookie, http.MethodDelete, "/api/v1/apps/missing/log-drain", ""))
 	if rec.Code != http.StatusNotFound {
 		t.Fatalf("status = %d, want %d", rec.Code, http.StatusNotFound)
+	}
+}
+
+func TestLogDrainHeader_StoredEncryptedAndNeverEchoed(t *testing.T) {
+	setter := &fakeSecretSetter{}
+	rt, db := newTestRouterWithSecrets(t, setter)
+	cookie := loginTestSession(t, rt, db)
+	seedWebAppForTest(t, db)
+
+	put := func(body string) *httptest.ResponseRecorder {
+		rec := httptest.NewRecorder()
+		rt.Handler().ServeHTTP(rec, authedRequest(t, cookie, http.MethodPut, "/api/v1/apps/web/log-drain", body))
+		return rec
+	}
+	rec := put(`{"type":"http","target":"https://c.example.com/in","enabled":true,"header_name":"Authorization","header_value":"Bearer s3cret-value"}`)
+	if rec.Code != http.StatusOK {
+		t.Fatalf("status = %d, body = %s", rec.Code, rec.Body.String())
+	}
+	if len(setter.sets) != 1 || setter.sets[0].service != "logdrain:web" || setter.sets[0].value != "Bearer s3cret-value" {
+		t.Fatalf("secret not stored under the drain namespace: %+v", setter.sets)
+	}
+	var res logDrainResource
+	if err := json.Unmarshal(rec.Body.Bytes(), &res); err != nil || res.HeaderName != "Authorization" || !res.HeaderSet {
+		t.Fatalf("response = %s", rec.Body.String())
+	}
+
+	for _, path := range []string{"/api/v1/apps/web/log-drain", "/api/v1/apps/web"} {
+		get := httptest.NewRecorder()
+		rt.Handler().ServeHTTP(get, authedRequest(t, cookie, http.MethodGet, path, ""))
+		if strings.Contains(get.Body.String(), "s3cret-value") || strings.Contains(rec.Body.String(), "s3cret-value") {
+			t.Fatalf("secret echoed by %s", path)
+		}
+	}
+
+	// A blank value keeps the stored secret instead of writing again.
+	setter.existsValues = map[string]bool{"logdrain:web/header": true}
+	if rec := put(`{"type":"http","target":"https://c.example.com/in","enabled":false,"header_name":"Authorization"}`); rec.Code != http.StatusOK {
+		t.Fatalf("keep status = %d, body = %s", rec.Code, rec.Body.String())
+	}
+	if len(setter.sets) != 1 {
+		t.Fatalf("blank value rewrote the secret: %+v", setter.sets)
+	}
+
+	for _, bad := range []string{
+		`{"type":"http","target":"https://c.example.com","enabled":true,"header_name":"Bad Name","header_value":"x"}`,
+		`{"type":"http","target":"https://c.example.com","enabled":true,"header_name":"Host","header_value":"x"}`,
+		`{"type":"http","target":"https://c.example.com","enabled":true,"header_name":"X-Key","header_value":"a\r\nb"}`,
+	} {
+		if rec := put(bad); rec.Code != http.StatusBadRequest {
+			t.Fatalf("%s: status = %d", bad, rec.Code)
+		}
 	}
 }

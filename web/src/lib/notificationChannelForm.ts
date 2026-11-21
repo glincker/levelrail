@@ -250,3 +250,9 @@ export function resolveNotifyUrl(values: CreateChannelForm): string {
   }
   return values.notifyUrl.trim()
 }
+
+// The registry names fields in snake case (the wire and CLI naming); the form keeps camel case.
+export const snakeToCamel = (k: string): string =>
+  k.replace(/_([a-z])/g, (_, c: string) => c.toUpperCase())
+export const camelToSnake = (k: string): string =>
+  k.replace(/[A-Z]/g, (c) => `_${c.toLowerCase()}`)

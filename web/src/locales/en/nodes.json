@@ -134,7 +134,12 @@
     "errorTitle": "Drain stopped",
     "failedHint": "The node stays cordoned. Fix the cause shown on the failed move, then drain again, or uncordon the node to put it back in rotation.",
     "toNode": "to {{node}}",
-    "toAuto": "to an automatically chosen node"
+    "toAuto": "to an automatically chosen node",
+    "progress": {
+      "summary": "{{done}} of {{total}} moved, {{failed}} failed",
+      "eta": "about {{seconds}} s left",
+      "stalled": "No progress for a while. Check the node and the moves below."
+    }
   },
   "drains": {
     "title": "Drains",
