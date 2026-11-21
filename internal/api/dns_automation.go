@@ -8,6 +8,7 @@ import (
 	"net"
 	"net/http"
 	"os"
+	"slices"
 	"strings"
 	"time"
 
@@ -132,31 +133,71 @@ func (rt *Router) resolveDNSTarget(ctx context.Context, domain string) (*dnsTarg
 		}
 		return &dnsTarget{Manager: dnsrecords.NewCloudflareManager(token), Provider: dnsProviderCloudflare, Zone: zone, Proxy: api}, nil
 	}
-	mgr, err := rt.resolveRoute53RecordManager(ctx)
-	provider := dnsProviderRoute53
-	if err == nil && mgr == nil {
-		mgr, err = rt.resolveGoogleCloudRecordManager(ctx)
-		provider = dnsProviderGoogleCloud
+	if t, err := rt.route53DNSTarget(ctx, domain); t != nil || err != nil {
+		return t, err
 	}
+	mgr, err := rt.resolveGoogleCloudRecordManager(ctx)
 	if err != nil || mgr == nil {
 		return nil, err
 	}
 	debug := rt.dnsDebug
 	var finder dnsrecords.ZoneFinder = dnsrecords.ManagerZoneFinder{Mgr: mgr, Debug: debug}
-	switch c, _ := rt.route53Creds(ctx); {
-	case c != nil && provider == dnsProviderRoute53:
-		p := dnszones.NewRoute53(c.accessKeyID, c.secretAccessKey, c.region, c.hostedZoneID)
-		finder = dnsrecords.ListedZoneFinder{P: p, Fallback: finder, Pinned: c.hostedZoneID != "", Debug: debug}
-	case provider == dnsProviderGoogleCloud:
-		if zm, ok := mgr.(dnsrecords.ZoneManager); ok {
-			finder = dnsrecords.ListedZoneFinder{P: zm.P, Fallback: finder, Debug: debug}
-		}
+	if zm, ok := mgr.(dnsrecords.ZoneManager); ok {
+		finder = dnsrecords.ListedZoneFinder{P: zm.P, Fallback: finder, Debug: debug}
 	}
 	zone, err := finder.FindZone(ctx, domain)
 	if err != nil {
 		return nil, err
 	}
-	return &dnsTarget{Manager: mgr, Provider: provider, Zone: zone}, nil
+	return &dnsTarget{Manager: mgr, Provider: dnsProviderGoogleCloud, Zone: zone}, nil
+}
+
+// route53DNSTarget matches domain against the zones the credentials list,
+// the same source as `dns zones list`. Probing records through libdns instead
+// pins every lookup to the configured hosted zone and hides provider errors
+// behind "no zone". Writes go to the matched zone, never to the pinned one.
+func (rt *Router) route53DNSTarget(ctx context.Context, domain string) (*dnsTarget, error) {
+	p, err := rt.route53ZoneProvider(ctx)
+	if err != nil || p == nil {
+		return nil, err
+	}
+	p = publicZoneProvider{p}
+	zones, err := p.ListZones(ctx)
+	if err != nil {
+		return nil, fmt.Errorf("api: list route53 zones: %w", err)
+	}
+	names := make([]string, len(zones))
+	for i, z := range zones {
+		names[i] = z.Name
+	}
+	zone, ok := dnsrecords.MatchZone(domain, names)
+	if !ok {
+		return nil, dnsrecords.ErrZoneNotFound
+	}
+	return &dnsTarget{Manager: dnsrecords.ZoneManager{P: p}, Provider: dnsProviderRoute53, Zone: zone}, nil
+}
+
+// route53ZoneProvider reads only the Route53 credentials, so an unrelated
+// provider's configuration cannot break it. The zone providers hook is the
+// test seam.
+func (rt *Router) route53ZoneProvider(ctx context.Context) (dnszones.Provider, error) {
+	if rt.dnsZoneProviders != nil {
+		providers, err := rt.dnsZoneProviders(ctx)
+		return providers[dnszones.ProviderRoute53], err
+	}
+	return rt.resolveRoute53ZoneProvider(ctx)
+}
+
+// publicZoneProvider hides private zones. ZoneManager finds its zone again by
+// name, and a private zone that shares the public zone's name must not win.
+type publicZoneProvider struct{ dnszones.Provider }
+
+func (p publicZoneProvider) ListZones(ctx context.Context) ([]dnszones.Zone, error) {
+	zones, err := p.Provider.ListZones(ctx)
+	if err != nil {
+		return nil, err
+	}
+	return slices.DeleteFunc(zones, func(z dnszones.Zone) bool { return z.Private }), nil
 }
 
 // desiredDNSRecord decides the record that points domain at this server.
@@ -402,8 +443,14 @@ func (rt *Router) removeManagedDNS(ctx context.Context, r *http.Request, app, do
 	var out []domainDNSResult
 	for _, row := range rows {
 		rr := libdns.RR{Name: row.Name, Type: row.RecordType, Data: row.Value}
-		res := domainDNSResult{Domain: domain, Provider: target.Provider, Zone: target.Zone, Record: &dnsRecordResource{Name: row.Name, Type: row.RecordType, Value: row.Value}}
-		if err := deleteExactRecord(ctx, target, rr); err != nil {
+		// The row's name is relative to the zone it was written in, which a
+		// newer, more specific zone may no longer be the target's zone.
+		saved := *target
+		if row.Zone != "" {
+			saved.Zone = row.Zone
+		}
+		res := domainDNSResult{Domain: domain, Provider: saved.Provider, Zone: saved.Zone, Record: &dnsRecordResource{Name: row.Name, Type: row.RecordType, Value: row.Value}}
+		if err := deleteExactRecord(ctx, &saved, rr); err != nil {
 			rt.logger.Error("api: dns automation: delete managed record failed", slog.String("error", err.Error()), slog.String("domain", domain))
 			res.DNS, res.Message = dnsResultError, "could not delete the record"
 			out = append(out, res)
