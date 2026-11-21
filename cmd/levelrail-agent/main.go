@@ -55,6 +55,11 @@ Environment:
   APP_AGENT_IDENTITY_FILE      where the enrolled identity is stored
   APP_LOG_LEVEL                debug, info (default), warn or error
   APP_AGENT_SERVICE_NAME       service to restart after an update (default levelrail-agent)
+
+self-update refuses (exit code 3) when the binary is package managed: under
+/usr/bin, /usr/local/Cellar or /opt/homebrew/Cellar, owned by dpkg or rpm, or
+marked "package" in the install-source file of the data directory. Update it
+with the package manager. dev and main-<sha> builds are never update targets.
 `
 
 // handleInfoArgs answers version and help before any config is read.

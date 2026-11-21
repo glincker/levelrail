@@ -73,6 +73,7 @@ func setup(t *testing.T, rel *fakeRelease, d nodeinsight.UpdateDecision) (Option
 	return Options{
 		Decide:  func(context.Context) (nodeinsight.UpdateDecision, error) { return d, nil },
 		Release: rel, Service: svc, Asset: testAsset, Current: "v1.0.0", ExePath: exe, DataDir: filepath.Dir(exe),
+		Smoke: func(context.Context, string) (string, error) { return d.Target, nil },
 	}, svc
 }
 
@@ -337,5 +338,62 @@ func TestLaunchdDomainOverrideAndSystemDefault(t *testing.T) {
 	argv, _ = SystemService{Name: "com.levelrail.agent", GOOS: "darwin"}.Argv()
 	if !strings.HasPrefix(argv[3], "gui/") {
 		t.Errorf("per-user unit installed, argv = %v", argv)
+	}
+}
+
+func TestInstallWithoutSmokeRefused(t *testing.T) {
+	o, _ := setup(t, &fakeRelease{body: []byte("new")}, install)
+	o.Apply = true
+	o.Smoke = nil
+	if _, err := Run(context.Background(), o); err == nil {
+		t.Fatal("install without a version check must fail")
+	}
+	if read(t, o.ExePath) != "old" {
+		t.Fatal("binary changed")
+	}
+}
+
+func TestDevAndMainTargetsSkippedQuietly(t *testing.T) {
+	for _, tgt := range []string{"dev", "main-abc1234"} {
+		d := install
+		d.Target = tgt
+		o, svc := setup(t, &fakeRelease{}, d)
+		o.Apply = true
+		res, err := Run(context.Background(), o)
+		if err != nil || res.Action != ActionNone || svc.restarts != 0 {
+			t.Fatalf("%s: res=%+v err=%v", tgt, res, err)
+		}
+	}
+	if !IsReleaseTarget("v1.5.8") {
+		t.Fatal("v1.5.8 is a release")
+	}
+}
+
+func TestPackageManagedDetection(t *testing.T) {
+	no := func(string) bool { return false }
+	dir := t.TempDir()
+	cases := []struct {
+		exe  string
+		goos string
+		owns func(string) bool
+		want bool
+	}{
+		{"/usr/bin/levelrail-agent", "linux", no, true},
+		{"/opt/homebrew/Cellar/levelrail/1/bin/a", "darwin", no, true},
+		{"/usr/local/Cellar/levelrail/1/bin/a", "darwin", no, true},
+		{"/usr/local/bin/levelrail-agent", "linux", no, false},
+		{"/usr/local/bin/levelrail-agent", "linux", func(string) bool { return true }, true},
+		{"/usr/local/bin/levelrail-agent", "darwin", func(string) bool { return true }, false},
+	}
+	for _, c := range cases {
+		if got := packageManagedWith(c.exe, dir, c.goos, c.owns); got != c.want {
+			t.Errorf("%s %s: got %v", c.goos, c.exe, got)
+		}
+	}
+	if err := os.WriteFile(filepath.Join(dir, sourceFile), []byte("package\n"), 0o600); err != nil {
+		t.Fatal(err)
+	}
+	if !packageManagedWith("/srv/agent", dir, "linux", no) {
+		t.Fatal("install-source marker must mark it package managed")
 	}
 }

@@ -43,3 +43,12 @@ func TestSelfUpdateReadsNoTokenVariable(t *testing.T) {
 		}
 	}
 }
+
+func TestUsageDocumentsPackageManagedRefusal(t *testing.T) {
+	if !strings.Contains(usageText, "package managed") || !strings.Contains(usageText, "exit code 3") {
+		t.Fatal("help text must explain the package managed refusal")
+	}
+	if exitPackageManaged != 3 {
+		t.Fatalf("exit code = %d", exitPackageManaged)
+	}
+}

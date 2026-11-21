@@ -14,10 +14,12 @@ import (
 	"regexp"
 	"runtime"
 	"strconv"
+	"strings"
 	"time"
 
 	"github.com/GLINCKER/levelrail/internal/nodeinsight"
 	"github.com/GLINCKER/levelrail/internal/selfupgrade"
+	"github.com/GLINCKER/levelrail/kit/semver"
 )
 
 // Outcomes reported in Result.Action.
@@ -67,7 +69,7 @@ type Options struct {
 	// update is installed only when the control plane says AutoApply.
 	Apply bool
 	Check bool
-	// Smoke runs the staged binary and returns its version. Nil skips it.
+	// Smoke runs the staged binary and returns its version; required to install.
 	Smoke func(ctx context.Context, path string) (string, error)
 }
 
@@ -79,6 +81,16 @@ type Result struct {
 	Reason   string `json:"reason,omitempty"`
 	Previous string `json:"previous,omitempty"`
 	Detail   string `json:"verification,omitempty"`
+}
+
+// IsReleaseTarget reports whether v is a published release tag such as v1.2.3,
+// as opposed to dev or main-<sha> builds.
+func IsReleaseTarget(v string) bool {
+	if len(v) < 2 || v[0] != 'v' || v[1] < '0' || v[1] > '9' {
+		return false
+	}
+	_, ok := semver.Compare(v, v)
+	return ok
 }
 
 // PrevPath is where the replaced binary is kept.
@@ -96,6 +108,12 @@ func Run(ctx context.Context, o Options) (Result, error) {
 		return res, nil
 	}
 	if d.Target == "" || d.Target == o.Current {
+		return res, nil
+	}
+	if d.Target == "dev" || strings.HasPrefix(d.Target, "main-") {
+		// Unpublished builds are never fetchable; skip without an error.
+		res.Target = d.Target
+		res.Reason = "target " + d.Target + " is not a release version"
 		return res, nil
 	}
 	if !selfupgrade.ValidTag(d.Target) {
@@ -188,14 +206,17 @@ func Install(ctx context.Context, o Options, target string) (string, error) {
 	if err := selfupgrade.VerifyChecksum(stage, fetched.ChecksumsPath, o.Asset); err != nil {
 		return detail, err
 	}
-	if o.Smoke != nil {
-		got, err := o.Smoke(ctx, stage)
-		if err != nil {
-			return detail, fmt.Errorf("the downloaded agent did not run: %w", err)
-		}
-		if got != target {
-			return detail, fmt.Errorf("%w: wanted %s, got %s", selfupgrade.ErrVersionMismatch, target, got)
-		}
+	// The signature covers the checksums, not the tag, so the staged binary's
+	// own version is the only tie between the requested tag and these bytes.
+	if o.Smoke == nil {
+		return detail, errors.New("refusing to install without a version check of the downloaded agent")
+	}
+	got, err := o.Smoke(ctx, stage)
+	if err != nil {
+		return detail, fmt.Errorf("the downloaded agent did not run: %w", err)
+	}
+	if got != target {
+		return detail, fmt.Errorf("%w: wanted %s, got %s", selfupgrade.ErrVersionMismatch, target, got)
 	}
 	prev := PrevPath(o.ExePath)
 	_ = os.Remove(prev)

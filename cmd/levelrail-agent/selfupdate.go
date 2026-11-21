@@ -34,6 +34,8 @@ const (
 	envControlPlane   = "APP_CONTROL_PLANE_ADDR"
 	updateHTTPTimeout = 5 * time.Minute
 	smokeTimeout      = 10 * time.Second
+	// exitPackageManaged is the self-update exit code when a package manager owns the binary.
+	exitPackageManaged = 3
 )
 
 // updateConfigured says whether this agent knows its control plane address.
@@ -138,6 +140,9 @@ func buildUpdateOptions(lookup func(string) (string, bool)) (agentupdate.Options
 	if err != nil {
 		return agentupdate.Options{}, err
 	}
+	if agentupdate.PackageManaged(exe, agentDataDir()) {
+		return agentupdate.Options{}, fmt.Errorf("%w (%s)", agentupdate.ErrPackageManaged, exe)
+	}
 	return agentupdate.Options{
 		Decide: identityDecider(lookup), Release: rel, Service: systemService(lookup),
 		Asset: asset, Current: version.Version, ExePath: exe, Smoke: smokeVersion, DataDir: agentDataDir(),
@@ -160,6 +165,9 @@ func runSelfUpdate(args []string, out, errOut io.Writer, lookup func(string) (st
 	o, err := buildUpdateOptions(lookup)
 	if err != nil {
 		_, _ = fmt.Fprintln(errOut, err)
+		if errors.Is(err, agentupdate.ErrPackageManaged) {
+			return exitPackageManaged
+		}
 		return 1
 	}
 	o.Check, o.Apply = *check, *apply
@@ -197,6 +205,10 @@ func autoUpdateLoop(ctx context.Context, lookup func(string) (string, bool), log
 		case <-t.C:
 		}
 		o, err := buildUpdateOptions(lookup)
+		if errors.Is(err, agentupdate.ErrPackageManaged) {
+			logger.Debug("agent self-update off: package managed", slog.String("error", err.Error()))
+			return
+		}
 		if err != nil {
 			logger.Warn("agent update check skipped", slog.String("error", err.Error()))
 			continue
@@ -205,6 +217,9 @@ func autoUpdateLoop(ctx context.Context, lookup func(string) (string, bool), log
 		if err != nil {
 			logger.Warn("agent update failed", slog.String("error", err.Error()))
 			continue
+		}
+		if res.Action == agentupdate.ActionNone && res.Target != "" {
+			logger.Debug("agent update skipped", slog.String("target", res.Target), slog.String("reason", res.Reason))
 		}
 		if res.Action != agentupdate.ActionNone {
 			logger.Info("agent update", slog.String("action", res.Action), slog.String("target", res.Target))
