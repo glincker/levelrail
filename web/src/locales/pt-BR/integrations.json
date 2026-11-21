@@ -160,5 +160,25 @@
         "hint": "Canais de alertas e eventos"
       }
     }
+  },
+  "fields": {
+    "logDrain": {
+      "type": {
+        "label": "Tipo de destino",
+        "help": "Para onde vão os logs: um endpoint HTTP ou syslog."
+      },
+      "target_http": {
+        "label": "URL de destino",
+        "help": "URL HTTP que recebe o fluxo de logs."
+      },
+      "target_syslog": {
+        "label": "Destino",
+        "help": "Endereço syslog como network://host:porta. Vazio para syslog local."
+      },
+      "enabled": {
+        "label": "Encaminhamento",
+        "help": "Ative ou pause o encaminhamento sem perder as configurações."
+      }
+    }
   }
 }

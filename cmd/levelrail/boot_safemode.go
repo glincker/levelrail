@@ -25,6 +25,16 @@ type safeModeError struct {
 func (e *safeModeError) Error() string { return e.err.Error() }
 func (e *safeModeError) Unwrap() error { return e.err }
 
+// bootWait is a variable so tests can observe the backoff without sleeping.
+var bootWait = func(ctx context.Context, d time.Duration) {
+	t := time.NewTimer(d)
+	defer t.Stop()
+	select {
+	case <-ctx.Done():
+	case <-t.C:
+	}
+}
+
 // prepareBoot applies a staged restore, consults the boot ledger and checks the database file.
 // A non-nil entry means this boot must go straight to safe mode.
 func prepareBoot(ctx context.Context, logger *slog.Logger) (*safemode.Ledger, safemode.Policy, *safemode.Entry) {
@@ -45,10 +55,7 @@ func prepareBoot(ctx context.Context, logger *slog.Logger) (*safemode.Ledger, sa
 	if d := policy.Backoff(prev.Failures); d > 0 {
 		logger.Warn("previous boot did not become healthy, waiting before starting again",
 			slog.Int("failed_boots", prev.Failures), slog.Duration("wait", d))
-		select {
-		case <-ctx.Done():
-		case <-time.After(d):
-		}
+		bootWait(ctx, d)
 	}
 	err := integrity.BootCheck(ctx, filepath.Join(dataDir, storeFilename))
 	if errors.Is(err, integrity.ErrCorrupt) {

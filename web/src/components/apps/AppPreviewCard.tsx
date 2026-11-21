@@ -23,11 +23,12 @@ const CARD_CLASS =
 
 function PreviewPlaceholder({ app }: Readonly<{ app: AppListEntry }>) {
   const { t } = useTranslation('appRows')
+  const failed = app.preview?.state === 'failed'
   return (
     <div className="flex size-full flex-col items-center justify-center gap-2 bg-gradient-to-br from-muted/60 to-muted/20 text-center">
       <AppLogo image={app.image} />
       <span className="text-xs text-muted-foreground">
-        {t('card.noPreview')}
+        {failed ? t('card.previewFailed') : t('card.noPreview')}
       </span>
     </div>
   )
@@ -53,9 +54,17 @@ function WebThumb({ app }: Readonly<{ app: AppListEntry }>) {
   const card = app.preview?.card
   // The URL carries the capture version, so the browser cache serves it
   // after the first load of each deploy.
-  const showImage = seen && !!imageUrl && failedUrl !== imageUrl
-  const showCard = !showImage && !!card && (!imageUrl || failedUrl === imageUrl)
-  const showPlaceholder = !showImage && !showCard
+  const state = app.preview?.state
+  const rendering = state === 'queued' || state === 'rendering'
+  const failed = state === 'failed'
+  const showImage =
+    !rendering && !failed && seen && !!imageUrl && failedUrl !== imageUrl
+  const showCard =
+    !rendering &&
+    !showImage &&
+    !!card &&
+    (failed || !imageUrl || failedUrl === imageUrl)
+  const showPlaceholder = !rendering && !showImage && !showCard
   return (
     <div
       ref={ref}
@@ -84,6 +93,15 @@ function WebThumb({ app }: Readonly<{ app: AppListEntry }>) {
             </div>
           ) : null}
         </>
+      ) : null}
+      {rendering ? (
+        <div
+          className="absolute inset-0"
+          aria-hidden="true"
+          data-testid="card-render-skeleton"
+        >
+          <SkeletonLine className="h-full rounded-none" />
+        </div>
       ) : null}
       {showCard ? <PreviewCard appName={app.name} meta={card} /> : null}
       {showPlaceholder ? <PreviewPlaceholder app={app} /> : null}

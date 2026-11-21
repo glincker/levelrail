@@ -803,6 +803,7 @@ func (c *Controller) Name() string { return "ingress" }
 // desired state, build the config, or apply it to Caddy is reported as
 // an error.
 func (c *Controller) Reconcile(ctx context.Context) (reconcile.Result, error) {
+	pass := ingress.BeginPass()
 	c.issues.reset()
 	c.listing.Store(&containerListing{})
 	defer c.listing.Store(nil)
@@ -1305,6 +1306,7 @@ func (c *Controller) Reconcile(ctx context.Context) (reconcile.Result, error) {
 	if err != nil {
 		return notReady("ApplyFailed", err), fmt.Errorf("ingress: apply config: %w", err)
 	}
+	ingress.EndPass(pass)
 	for _, host := range droppedTuning {
 		c.issues.note(host, store.DomainCondTuningDropped, store.DomainConditionDegraded, "proxy tuning was rejected by the ingress and is not applied; change or clear it")
 	}

@@ -44,7 +44,7 @@ const (
 
 const usageText = `levelrail-agent: Levelrail node agent
 
-Usage: levelrail-agent [--help | --version | reenroll]
+Usage: levelrail-agent [--help | --version | reenroll | doctor]
 
 Environment:
   APP_CONTROL_PLANE_ADDR       host:port of the control plane agent listener (required)
@@ -71,6 +71,9 @@ func handleInfoArgs(args []string, out io.Writer) bool {
 }
 
 func main() {
+	if len(os.Args) > 1 && os.Args[1] == "doctor" {
+		os.Exit(runDoctor(os.Stdout))
+	}
 	if handleInfoArgs(os.Args[1:], os.Stdout) {
 		return
 	}

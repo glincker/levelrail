@@ -308,8 +308,9 @@ func runPagesRollback(prog string, args []string, stdout, stderr io.Writer, look
 	if err != nil {
 		return reportError(stdout, stderr, jsonOut, fmt.Errorf("roll back site %q to %q: %w", name, version, err))
 	}
-	return writeScheduledTaskResult(stdout, stderr, of, map[string]any{"site": name, "rolled_back_to": version, "deploy_id": res.DeployID}, func() {
+	return writeScheduledTaskResult(stdout, stderr, of, map[string]any{"site": name, "rolled_back_to": version, "deploy_id": res.DeployID, "serving": res.Serving}, func() {
 		_, _ = fmt.Fprintf(stdout, "site %q rolled back to deploy %s\n", name, version)
+		printPagesServingNote(stdout, res.Serving)
 	})
 }
 

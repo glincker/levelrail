@@ -62,6 +62,7 @@
   "description": "描述：{{text}}",
   "card": {
     "noPreview": "无预览",
+    "previewFailed": "预览不可用",
     "noDomain": "无域名",
     "staticSite": "静态站点",
     "lastDeploy": "部署于",

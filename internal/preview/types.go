@@ -35,6 +35,7 @@ const (
 	ReasonNotHTML       = "not_html"
 	ReasonRedirect      = "redirect"
 	ReasonCaptureFailed = "capture_failed"
+	ReasonBlockedTarget = "blocked_target"
 )
 
 // ErrNotFound means no preview exists for the requested deployment.
@@ -193,6 +194,9 @@ type Target struct {
 	Network      string
 	Host         string
 	Port         int
+	// PublicURL is set instead of Network for an app on a remote node: the
+	// browser renders its public ingress address, never a private one.
+	PublicURL string
 }
 
 // SkipError tells the Manager a capture must not run, recording Reason
@@ -219,6 +223,22 @@ type Resolver interface {
 	CurrentDeployment(ctx context.Context, app string) (string, error)
 	AppExists(ctx context.Context, app string) (bool, error)
 }
+
+// RenderGate is optional on a Resolver: it says whether an app's kind has a
+// page worth rendering (web and static only), so an API, worker, cron or
+// database app is never rendered.
+type RenderGate interface {
+	Renderable(ctx context.Context, app string) (bool, error)
+}
+
+// Card render states reported to the list API.
+const (
+	StateNone      = "none"
+	StateQueued    = "queued"
+	StateRendering = "rendering"
+	StateReady     = "ready"
+	StateFailed    = "failed"
+)
 
 // Store persists settings, records and the small image-tracking state.
 type Store interface {

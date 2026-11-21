@@ -16,6 +16,7 @@ run() {
 run go run ./scripts/gen-api-reference
 run go run ./scripts/gen-runtime-settings-docs
 run go run ./scripts/geniacref
+run go run ./scripts/gen-field-docs
 run scripts/gen-skill-references.sh
 run node scripts/gen-versions-table.mjs
 # Template generators feed docs/template-catalog.md, gen-template-gallery/catalog-index.json

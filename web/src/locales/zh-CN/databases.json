@@ -1116,5 +1116,23 @@
     "optionalHint": "在私有明文端口旁同时提供 TLS,让旧客户端仍可连接。数据库会重启。",
     "optionalToast": "TLS 现在为可选,数据库将重启",
     "optionalFailed": "无法切换 TLS"
+  },
+  "wiring": {
+    "title": "此数据库的连接关系",
+    "apps": "已连接的应用",
+    "noApps": "尚未连接任何应用。",
+    "outTitle": "运行位置和访问范围",
+    "node": "节点",
+    "noNode": "无节点",
+    "access": "访问",
+    "private": "私有",
+    "public": "公开",
+    "publicOn": "在端口 {{port}} 公开",
+    "backups": "备份",
+    "noBackups": "没有备份计划",
+    "project": "项目",
+    "noProject": "无项目",
+    "on": "开启",
+    "none": "无"
   }
 }

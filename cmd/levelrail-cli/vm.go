@@ -83,6 +83,7 @@ const vmUsage = `Usage:
   %[1]s vm start [--control-plane-bin PATH]
   %[1]s vm stop
   %[1]s vm status [--json]
+  %[1]s vm logs [--lines N]   (control plane log from the guest; env APP_VM_LOG_LINES, default 200)
   %[1]s vm shell   (a guest shell; the VM user has passwordless sudo, the VM is the boundary)
   %[1]s vm set <memory|cpus|disk|dashboard-port|ingress-port> <value>
   %[1]s vm export [--encrypt AGE_RECIPIENT] <file>
@@ -152,11 +153,11 @@ func vmExperimental(env vmruntime.Lookup) bool {
 }
 
 type vmFlags struct {
-	memory, cpus, disk, dashPort, ingPort int
-	bin                                   string
-	noStart, jsonOut, printPassword       bool
-	yes, keepCreds, check, exchange       bool
-	encrypt, cookieJar                    string
+	memory, cpus, disk, dashPort, ingPort, lines int
+	bin                                          string
+	noStart, jsonOut, printPassword              bool
+	yes, keepCreds, check, exchange              bool
+	encrypt, cookieJar                           string
 }
 
 func parseVMFlags(prog, sub string, args []string, stderr io.Writer) (vmFlags, []string, error) {
@@ -177,6 +178,8 @@ func parseVMFlags(prog, sub string, args []string, stderr io.Writer) (vmFlags, [
 		fs.StringVar(&f.bin, "control-plane-bin", "", "linux control plane binary to copy into the guest")
 	case "status":
 		fs.BoolVar(&f.jsonOut, "json", false, "print the result as JSON")
+	case "logs":
+		fs.IntVar(&f.lines, "lines", 0, "number of log lines (env APP_VM_LOG_LINES, default 200)")
 	case "export":
 		fs.StringVar(&f.encrypt, "encrypt", "", "encrypt the archive to this age X25519 public key")
 	case "upgrade":
@@ -201,9 +204,9 @@ func parseVMFlags(prog, sub string, args []string, stderr io.Writer) (vmFlags, [
 func vmDispatch(ctx context.Context, env *vmEnv, prog string, args []string, stdout, stderr io.Writer, lookupEnv func(string) (string, bool)) int {
 	sub := args[0]
 	switch sub {
-	case "init", "start", "stop", "status", "shell", "set", "export", "upgrade", "reset", "uninstall", "destroy", "token":
+	case "init", "start", "stop", "status", "logs", "shell", "set", "export", "upgrade", "reset", "uninstall", "destroy", "token":
 	default:
-		_, _ = fmt.Fprintf(stderr, "%s vm: unknown command %q (init, start, stop, status, shell, set, export, upgrade, reset, uninstall, destroy, token)\n", prog, sub)
+		_, _ = fmt.Fprintf(stderr, "%s vm: unknown command %q (init, start, stop, status, logs, shell, set, export, upgrade, reset, uninstall, destroy, token)\n", prog, sub)
 		return exitUsage
 	}
 	f, rest, err := parseVMFlags(prog, sub, args[1:], stderr)
@@ -227,6 +230,8 @@ func vmDispatch(ctx context.Context, env *vmEnv, prog string, args []string, std
 		err = env.stop(ctx, stdout)
 	case "status":
 		err = env.status(ctx, f.jsonOut, stdout, lookupEnv)
+	case "logs":
+		err = env.logs(ctx, f.lines, stdout, lookupEnv)
 	case "shell":
 		err = env.shell(ctx)
 	case "set":
@@ -702,6 +707,31 @@ func (e *vmEnv) stop(ctx context.Context, stdout io.Writer) error {
 		return err
 	}
 	_, _ = fmt.Fprintln(stdout, "Stopped.")
+	return nil
+}
+
+const defaultVMLogLines = 200
+
+func (e *vmEnv) logs(ctx context.Context, lines int, stdout io.Writer, lookupEnv vmruntime.Lookup) error {
+	if lines <= 0 {
+		n, err := vmruntime.IntEnv(lookupEnv, "APP_VM_LOG_LINES", defaultVMLogLines)
+		if err != nil || n == 0 {
+			n = defaultVMLogLines
+		}
+		lines = n
+	}
+	inst, err := e.instance(ctx)
+	if err != nil {
+		return err
+	}
+	if inst == nil || inst.Status != "Running" {
+		return errors.New("the VM is not running; run `levelrail vm start`")
+	}
+	out, err := e.runner.Run(ctx, "shell", vmInstance, "--", "sudo", "journalctl", "-u", vmGuestUnit, "-n", strconv.Itoa(lines), "--no-pager")
+	if err != nil {
+		return err
+	}
+	_, _ = stdout.Write(out)
 	return nil
 }
 

@@ -509,5 +509,107 @@
     "keyType": "Schlüsseltyp",
     "fingerprint": "Fingerabdruck",
     "confirm": "Ich habe diesen Fingerabdruck mit dem Server abgeglichen"
+  },
+  "fields": {
+    "backupTarget": {
+      "name": {
+        "label": "Name",
+        "help": "Anzeigename im Dashboard und in der CLI."
+      },
+      "provider": {
+        "label": "Anbieter",
+        "help": "Wo die Backups gespeichert werden."
+      },
+      "s3": {
+        "bucket": {
+          "label": "Bucket",
+          "help": "Name des Buckets, der die Backups aufnimmt."
+        },
+        "region": {
+          "label": "Region",
+          "help": "Region des Buckets. Eigene Anbieter benötigen sie."
+        },
+        "endpoint": {
+          "label": "Endpunkt",
+          "help": "S3-kompatible Endpunkt-URL. R2 und eigene Anbieter benötigen sie."
+        },
+        "access_key_id": {
+          "label": "Zugriffsschlüssel-ID",
+          "help": "Zugriffsschlüssel der Zugangsdaten."
+        },
+        "secret_access_key": {
+          "label": "Geheimer Zugriffsschlüssel",
+          "help": "Verschlüsselt gespeichert und nie wieder angezeigt."
+        }
+      },
+      "custom": {
+        "region": {
+          "label": "Region",
+          "help": "Region des Buckets. Eigene Anbieter benötigen sie."
+        }
+      },
+      "local": {
+        "path": {
+          "label": "Verzeichnis",
+          "help": "Ordner unter dem Backup-Stamm der Steuerungsebene."
+        }
+      },
+      "webdav": {
+        "endpoint": {
+          "label": "Freigabe-URL",
+          "help": "https-Adresse der WebDAV-Freigabe."
+        },
+        "directory": {
+          "label": "Remote-Verzeichnis",
+          "help": "Verzeichnis auf der Freigabe für die Backups."
+        },
+        "username": {
+          "label": "Benutzername",
+          "help": "Kontoname für die Anmeldung."
+        },
+        "password": {
+          "label": "Passwort",
+          "help": "Verschlüsselt gespeichert und nie wieder angezeigt."
+        },
+        "ca_bundle": {
+          "label": "CA-Bundle",
+          "help": "Optionale PEM-Zertifikate als vertrauenswürdig. Verschlüsselt gespeichert und nie wieder angezeigt."
+        }
+      },
+      "sftp": {
+        "endpoint": {
+          "label": "Server",
+          "help": "Host oder HOST:PORT des SFTP-Servers."
+        },
+        "path": {
+          "label": "Remote-Verzeichnis",
+          "help": "Relative Pfade beginnen im Anmeldeverzeichnis. Pfade mit .. werden abgelehnt."
+        },
+        "username": {
+          "label": "Benutzername",
+          "help": "Kontoname für die Anmeldung."
+        },
+        "auth": {
+          "label": "Authentifizierung",
+          "help": "Mit Passwort oder privatem Schlüssel anmelden."
+        },
+        "password": {
+          "label": "Passwort",
+          "help": "Verschlüsselt gespeichert und nie wieder angezeigt."
+        },
+        "private_key": {
+          "label": "Privater Schlüssel",
+          "help": "PEM- oder OpenSSH-Schlüssel. Verschlüsselt gespeichert und nie wieder angezeigt."
+        },
+        "private_key_passphrase": {
+          "label": "Schlüssel-Passphrase",
+          "help": "Nur für verschlüsselte Schlüssel nötig. Verschlüsselt gespeichert und nie wieder angezeigt."
+        },
+        "host_key": {
+          "label": "Host-Schlüssel",
+          "help": "Angehefteter Server-Schlüssel. Fingerabdruck mit dem des Server-Besitzers vergleichen."
+        }
+      }
+    }
   }
 }

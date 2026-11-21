@@ -10,6 +10,7 @@ import { Label } from '@/components/ui/label'
 import { toast } from '@/components/ui/toast'
 import { cn } from '@/lib/utils'
 import { BrandTile } from '../BrandLogoBadge'
+import { useBackupTargetFields } from '../../queries/useBackupTargetFields'
 import { backupCoverageKeys } from '../../queries/backupCoverage'
 import {
   backupTargetListQueryOptions,
@@ -44,6 +45,7 @@ export function TargetSetupForm({
   const { data: existing } = useQuery(backupTargetListQueryOptions())
   const localRoot = existing?.find((x) => x.local_root)?.local_root
   const { t } = useTranslation('backups')
+  const fields = useBackupTargetFields()
   const create = useCreateBackupTarget()
   const queryClient = useQueryClient()
   const [presetId, setPresetId] = useState<PresetId>('r2')
@@ -156,7 +158,7 @@ export function TargetSetupForm({
         </FormField>
         <FormField
           id="target-bucket"
-          label={t('target.field.bucket')}
+          label={fields.label('s3.bucket', t('target.field.bucket'))}
           invalid={missing === 'bucket'}
         >
           <Input
@@ -173,7 +175,10 @@ export function TargetSetupForm({
             </p>
           ) : null}
         </FormField>
-        <FormField id="target-region" label={t('target.field.region')}>
+        <FormField
+          id="target-region"
+          label={fields.label('s3.region', t('target.field.region'))}
+        >
           <Input
             id="target-region"
             value={values.region}
@@ -186,7 +191,7 @@ export function TargetSetupForm({
         {preset.provider !== 'aws' ? (
           <FormField
             id="target-endpoint"
-            label={t('target.field.endpoint')}
+            label={fields.label('s3.endpoint', t('target.field.endpoint'))}
             invalid={missing === 'endpoint'}
           >
             <Input
@@ -201,7 +206,10 @@ export function TargetSetupForm({
         ) : null}
         <FormField
           id="target-key"
-          label={t('target.field.accessKeyId')}
+          label={fields.label(
+            's3.access_key_id',
+            t('target.field.accessKeyId'),
+          )}
           invalid={missing === 'accessKeyId'}
         >
           <Input
@@ -215,7 +223,10 @@ export function TargetSetupForm({
         </FormField>
         <FormField
           id="target-secret"
-          label={t('target.field.secretAccessKey')}
+          label={fields.label(
+            's3.secret_access_key',
+            t('target.field.secretAccessKey'),
+          )}
           invalid={missing === 'secretAccessKey'}
         >
           <SecretInput

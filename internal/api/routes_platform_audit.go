@@ -68,6 +68,7 @@ func (rt *Router) registerAuditRoutes(mux *http.ServeMux) {
 	mux.HandleFunc("GET /api/v1/apps/{name}/visitors", rt.requireAbilityForResource(AbilityRead, appResourceFromPath, rt.handleAppVisitors))
 	mux.HandleFunc("GET /api/v1/apps/{name}/visitors/export", rt.requireAbilityForResource(AbilityRead, appResourceFromPath, rt.handleAppVisitorsExport))
 	mux.HandleFunc("GET /api/v1/apps/{name}/traces/{id}", rt.requireAbilityForResource(AbilityRead, appResourceFromPath, rt.handleGetTrace))
+	mux.HandleFunc("GET /api/v1/log-drains/field-descriptors", rt.requireAbility(AbilityRead, rt.handleGetLogDrainFields))
 	mux.HandleFunc("GET /api/v1/apps/{name}/log-drain", rt.requireAbilityForResource(AbilityRead, appResourceFromPath, rt.handleGetAppLogDrain))
 	mux.HandleFunc("PUT /api/v1/apps/{name}/log-drain", rt.requireAbilityForResource(AbilityWriteSensitive, appResourceFromPath, rt.handleSetAppLogDrain))
 	mux.HandleFunc("DELETE /api/v1/apps/{name}/log-drain", rt.requireAbilityForResource(AbilityWriteSensitive, appResourceFromPath, rt.handleClearAppLogDrain))

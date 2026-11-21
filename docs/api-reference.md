@@ -1157,6 +1157,9 @@ Endpoints for:
 | GET | /api/v1/nodes/{id}/thresholds | AbilityRoot | handleGetNodeThresholds |
 | PUT | /api/v1/nodes/{id}/thresholds | AbilityRoot | handleSetNodeThresholds |
 | PUT | /api/v1/nodes/{id}/build-trust | AbilityRoot | handleSetNodeBuildTrust |
+| GET | /api/v1/nodes/{id}/timeline | AbilityRoot | handleNodeTimeline |
+| GET | /api/v1/nodes/{id}/doctor | AbilityRoot | handleNodeDoctor |
+| GET | /api/v1/nodes/version-skew | AbilityRoot | handleNodeVersionSkew |
 
 ## Ingress / Certificates / Domains / Email / Cloudflare
 
@@ -1406,6 +1409,7 @@ Endpoints for:
 | PUT | /api/v1/static-sites/{name}/preset | AbilityWrite | handlePutStaticSitePreset |
 | POST | /api/v1/backup-targets/{id}/drill | AbilityWriteSensitive | handleDrillBackupTarget |
 | POST | /api/v1/backup-targets/sftp-host-key | AbilityWriteSensitive | handleScanSFTPHostKey |
+| GET | /api/v1/backup-targets/field-descriptors | AbilityRead | handleGetBackupTargetFields |
 
 ## Built-in Container Registry
 
@@ -2519,6 +2523,7 @@ Routes that do not fit an existing group.
 | GET | /api/v1/cloud-accounts/{id}/aws/guard | Public | handleAWSGuardStatus |
 | POST | /api/v1/cloud-accounts/{id}/aws/guard/kill-switch | AbilityRoot | handleAWSKillSwitch |
 | GET | /api/v1/cloud-accounts/{id}/aws/cleanup/plan | Public | handleAWSCleanupPlan |
+| GET | /api/v1/log-drains/field-descriptors | AbilityRead | handleGetLogDrainFields |
 | POST | /mcp | Public |  |
 
 ## See also

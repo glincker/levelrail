@@ -7,6 +7,7 @@ import (
 	"testing"
 
 	"github.com/GLINCKER/levelrail/internal/preview"
+	"github.com/GLINCKER/levelrail/internal/store"
 )
 
 func previewGet(t *testing.T, rt *Router, cookie *http.Cookie, target string, hdr map[string]string) *httptest.ResponseRecorder {
@@ -97,7 +98,7 @@ func TestListPreviewCards_ImageAndCard(t *testing.T) {
 	fp.records["dep_c"] = preview.Record{DeploymentID: "dep_c", App: "docs", Status: preview.StatusOK, Source: preview.SourceCard, Meta: `{"title":"Docs"}`}
 	rt := &Router{preview: latestPreview{fp}}
 
-	got := rt.listPreviewCards(context.Background(), []string{"web", "docs", "none"})
+	got := rt.listPreviewCards(context.Background(), []store.DesiredService{{Name: "web"}, {Name: "docs"}, {Name: "none"}})
 	if got["web"].ImageURL == "" {
 		t.Errorf("web image url empty: %+v", got["web"])
 	}
@@ -107,7 +108,7 @@ func TestListPreviewCards_ImageAndCard(t *testing.T) {
 	if _, ok := got["none"]; ok {
 		t.Error("app without preview must be absent")
 	}
-	if (&Router{preview: fp}).listPreviewCards(context.Background(), []string{"web"}) != nil {
+	if (&Router{preview: fp}).listPreviewCards(context.Background(), []store.DesiredService{{Name: "web"}}) != nil {
 		t.Error("service without the batch method must yield nil")
 	}
 }

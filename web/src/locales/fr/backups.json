@@ -518,5 +518,107 @@
     "keyType": "Type de clé",
     "fingerprint": "Empreinte",
     "confirm": "J'ai vérifié cette empreinte auprès du serveur"
+  },
+  "fields": {
+    "backupTarget": {
+      "name": {
+        "label": "Nom",
+        "help": "Nom affiché dans le tableau de bord et la CLI."
+      },
+      "provider": {
+        "label": "Fournisseur",
+        "help": "Où les sauvegardes sont stockées."
+      },
+      "s3": {
+        "bucket": {
+          "label": "Bucket",
+          "help": "Nom du bucket qui reçoit les sauvegardes."
+        },
+        "region": {
+          "label": "Région",
+          "help": "Région du bucket. Les fournisseurs personnalisés l'exigent."
+        },
+        "endpoint": {
+          "label": "Point de terminaison",
+          "help": "URL compatible S3. R2 et les fournisseurs personnalisés l'exigent."
+        },
+        "access_key_id": {
+          "label": "ID de clé d'accès",
+          "help": "Clé d'accès des identifiants."
+        },
+        "secret_access_key": {
+          "label": "Clé d'accès secrète",
+          "help": "Stockée chiffrée et jamais réaffichée."
+        }
+      },
+      "custom": {
+        "region": {
+          "label": "Région",
+          "help": "Région du bucket. Les fournisseurs personnalisés l'exigent."
+        }
+      },
+      "local": {
+        "path": {
+          "label": "Répertoire",
+          "help": "Dossier sous la racine de sauvegarde du plan de contrôle."
+        }
+      },
+      "webdav": {
+        "endpoint": {
+          "label": "URL du partage",
+          "help": "Adresse https du partage WebDAV."
+        },
+        "directory": {
+          "label": "Répertoire distant",
+          "help": "Répertoire du partage qui reçoit les sauvegardes."
+        },
+        "username": {
+          "label": "Nom d'utilisateur",
+          "help": "Nom du compte utilisé pour se connecter."
+        },
+        "password": {
+          "label": "Mot de passe",
+          "help": "Stocké chiffré et jamais réaffiché."
+        },
+        "ca_bundle": {
+          "label": "Bundle CA",
+          "help": "Certificats PEM facultatifs à approuver. Stockés chiffrés et jamais réaffichés."
+        }
+      },
+      "sftp": {
+        "endpoint": {
+          "label": "Serveur",
+          "help": "Hôte ou HÔTE:PORT du serveur SFTP."
+        },
+        "path": {
+          "label": "Répertoire distant",
+          "help": "Les chemins relatifs partent du répertoire de connexion. Les chemins contenant .. sont refusés."
+        },
+        "username": {
+          "label": "Nom d'utilisateur",
+          "help": "Nom du compte utilisé pour se connecter."
+        },
+        "auth": {
+          "label": "Authentification",
+          "help": "Se connecter avec un mot de passe ou une clé privée."
+        },
+        "password": {
+          "label": "Mot de passe",
+          "help": "Stocké chiffré et jamais réaffiché."
+        },
+        "private_key": {
+          "label": "Clé privée",
+          "help": "Clé PEM ou OpenSSH. Stockée chiffrée et jamais réaffichée."
+        },
+        "private_key_passphrase": {
+          "label": "Phrase secrète de la clé",
+          "help": "Nécessaire seulement pour une clé chiffrée. Stockée chiffrée et jamais réaffichée."
+        },
+        "host_key": {
+          "label": "Clé d'hôte",
+          "help": "Clé du serveur épinglée. Comparez son empreinte avec celle du propriétaire du serveur."
+        }
+      }
+    }
   }
 }

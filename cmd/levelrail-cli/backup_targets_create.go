@@ -2,32 +2,25 @@ package main
 
 import (
 	"context"
+	"flag"
 	"fmt"
 	"io"
 	"os"
 	"strings"
+
+	"github.com/GLINCKER/levelrail/internal/fielddesc"
 )
 
 // Unlike update, the access key and secret are required here.
 func runBackupTargetsCreate(prog string, args []string, stdout, stderr io.Writer, lookupEnv func(string) (string, bool)) int {
 	fs, tokenFlagP, apiURLFlagP, profileFlagP, jsonOutP, outputFlagP, queryFlagP := apiFlagSet(prog, "backup-targets create", "print the created backup target as JSON to stdout and nothing else", stderr)
-	var name, provider, endpoint, region, bucket, accessKeyID, secretAccessKey string
-	fs.StringVar(&name, "name", "", "display name for the backup target (required)")
-	var targetType, localPath, caBundleFile, hostKey, privateKeyFile, passphrase string
+	var targetType string
 	var trustNewHostKey bool
-	fs.StringVar(&hostKey, "host-key", "", "pinned SSH host key as printed by scan-host-key, e.g. \"ssh-ed25519 SHA256:...\" (sftp only)")
-	fs.BoolVar(&trustNewHostKey, "trust-new-host-key", false, "sftp: fetch the server key now, print its fingerprint and pin it without a prior check (explicit trust on first use)")
-	fs.StringVar(&privateKeyFile, "private-key-file", "", "SSH private key file to authenticate with instead of a password (sftp only)")
-	fs.StringVar(&passphrase, "private-key-passphrase", "", "passphrase of an encrypted private key (sftp only)")
-	fs.StringVar(&caBundleFile, "ca-bundle-file", "", "PEM file of extra CA certificates to trust (webdav only)")
-	fs.StringVar(&provider, "provider", "", "provider: aws, r2, custom, local, webdav or sftp (required)")
 	fs.StringVar(&targetType, "type", "", "alias of --provider")
-	fs.StringVar(&localPath, "path", "", "directory under APP_BACKUP_LOCAL_ROOT (local type only)")
-	fs.StringVar(&endpoint, "endpoint", "", "S3-compatible endpoint URL (required for r2 and custom, aws resolves its own default)")
-	fs.StringVar(&region, "region", "", "bucket region")
-	fs.StringVar(&bucket, "bucket", "", "bucket name (required)")
-	fs.StringVar(&accessKeyID, "access-key-id", "", "access key id (required)")
-	fs.StringVar(&secretAccessKey, "secret-access-key", "", "secret access key (required)")
+	fs.BoolVar(&trustNewHostKey, "trust-new-host-key", false, "sftp: fetch the server key now, print its fingerprint and pin it without a prior check (explicit trust on first use)")
+	// Flags come from the field descriptors so a new field needs no edit here.
+	descFlags := registerDescriptorFlags(fs, fielddesc.BackupTarget)
+	val := func(flagName string) string { return *descFlags[flagName] }
 	fs.Usage = func() { _, _ = fmt.Fprint(stderr, backupTargetsCreateUsage(prog)) }
 
 	tokenFlag, apiURLFlag, profileFlag, jsonOut, of, exitCode, ok := parseAPIFlags(fs, args, apiFlagPtrs{tokenFlagP, apiURLFlagP, profileFlagP, jsonOutP, outputFlagP, queryFlagP}, prog, stderr)
@@ -35,11 +28,11 @@ func runBackupTargetsCreate(prog string, args []string, stdout, stderr io.Writer
 		return exitCode
 	}
 
+	name, provider, endpoint, region, bucket := val("name"), val("provider"), val("endpoint"), val("region"), val("bucket")
+	accessKeyID, secretAccessKey, hostKey, passphrase := val("access-key-id"), val("secret-access-key"), val("host-key"), val("private-key-passphrase")
+	caBundleFile, privateKeyFile, localPath := val("ca-bundle-file"), val("private-key-file"), val("path")
 	if provider == "" {
 		provider = targetType
-	}
-	if name == "" {
-		return reportError(stdout, stderr, jsonOut, newValidationError("--name is required"))
 	}
 	if provider == "sftp" && bucket == "" {
 		bucket = localPath
@@ -50,17 +43,8 @@ func runBackupTargetsCreate(prog string, args []string, stdout, stderr io.Writer
 		}
 		bucket = localPath
 	}
-	if provider == "" {
-		return reportError(stdout, stderr, jsonOut, newValidationError("--provider is required"))
-	}
-	if provider != "local" && provider != "sftp" && bucket == "" {
-		return reportError(stdout, stderr, jsonOut, newValidationError("--bucket is required"))
-	}
-	if msg := backupTargetProviderProblem(provider, endpoint, region); msg != "" {
+	if msg := backupTargetProviderProblem(provider, endpoint, region); msg != "" && name != "" {
 		return reportError(stdout, stderr, jsonOut, newValidationError("%s", msg))
-	}
-	if provider != "local" && accessKeyID == "" {
-		return reportError(stdout, stderr, jsonOut, newValidationError("--access-key-id is required"))
 	}
 	if provider == "sftp" {
 		if (secretAccessKey == "") == (privateKeyFile == "") {
@@ -70,8 +54,12 @@ func runBackupTargetsCreate(prog string, args []string, stdout, stderr io.Writer
 			return reportError(stdout, stderr, jsonOut, newValidationError("sftp needs exactly one of --host-key (verified) or --trust-new-host-key (pin what the server shows now)"))
 		}
 	}
-	if provider != "local" && provider != "sftp" && secretAccessKey == "" {
-		return reportError(stdout, stderr, jsonOut, newValidationError("--secret-access-key is required"))
+	if msg := backupTargetDescriptorProblem(map[string]string{
+		"name": name, "provider": provider, "endpoint": endpoint, "region": region, "bucket": bucket,
+		"access_key_id": accessKeyID, "secret_access_key": secretAccessKey, "private_key": privateKeyFile,
+		"host_key": hostKey,
+	}, trustNewHostKey); msg != "" {
+		return reportError(stdout, stderr, jsonOut, newValidationError("%s", msg))
 	}
 
 	client := apiClientFromFlags(prog, apiURLFlag, tokenFlag, profileFlag, lookupEnv)
@@ -173,4 +161,46 @@ Flags:
   --query string           JMESPath expression to filter the result before printing
   -h, --help               show this help
 `, prog, apiTokenEnvHelp, apiURLEnvHelp, defaultAPIURL)
+}
+
+// registerDescriptorFlags defines one string flag per descriptor flag and returns the
+// destination of each by flag name.
+func registerDescriptorFlags(fs *flag.FlagSet, resource string) map[string]*string {
+	out := map[string]*string{}
+	res, ok := fielddesc.Get(resource)
+	if !ok {
+		return out
+	}
+	for _, f := range res.FlagSpecs() {
+		out[f.Name] = fs.String(f.Name, "", f.Usage)
+	}
+	return out
+}
+
+// backupTargetDescriptorProblem runs the shared field registry and words the first problem
+// with the CLI flag name, so required and select errors match the API apart from the dashes.
+func backupTargetDescriptorProblem(values map[string]string, hostKeyTrusted bool) string {
+	res, ok := fielddesc.Get(fielddesc.BackupTarget)
+	if !ok {
+		return ""
+	}
+	if values["private_key"] != "" {
+		values["auth"] = "key"
+	} else {
+		values["auth"] = "password"
+	}
+	if hostKeyTrusted && values["host_key"] == "" {
+		values["host_key"] = "pending"
+	}
+	problems := res.Validate(values)
+	if len(problems) == 0 {
+		return ""
+	}
+	msg := problems[0].Message
+	for _, f := range res.FlagSpecs() {
+		if f.Key == problems[0].Key {
+			return strings.Replace(msg, f.Key, "--"+f.Name, 1)
+		}
+	}
+	return msg
 }

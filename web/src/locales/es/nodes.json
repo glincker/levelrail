@@ -1163,5 +1163,59 @@
     "macosNote": "Vista previa. Las cargas de trabajo se ejecutan con Docker Desktop, OrbStack o Lima, que comparten los archivos de tu Mac, así que un Mac se usa mejor como builder que como lugar para apps de producción.",
     "waiting": "Esperando a que el nodo se conecte",
     "connected": "Conectado: {{name}}"
+  },
+  "timeline": {
+    "title": "Historial de salud",
+    "window": "Ventana de tiempo",
+    "windows": {
+      "24h": "24 horas",
+      "168h": "7 días",
+      "720h": "30 días"
+    },
+    "loading": "Cargando el historial de salud",
+    "unavailable": "El historial no está disponible en este momento.",
+    "stripLabel": "Periodos en línea y fuera de línea",
+    "noUptime": "No se registró tiempo en línea ni fuera de línea en esta ventana.",
+    "summary_one": "{{uptime}} % de disponibilidad, {{count}} cambio",
+    "summary_other": "{{uptime}} % de disponibilidad, {{count}} cambios"
+  },
+  "doctor": {
+    "title": "Doctor del agente",
+    "run": "Ejecutar comprobaciones",
+    "hide": "Ocultar comprobaciones",
+    "running": "Ejecutando comprobaciones",
+    "unavailable": "Las comprobaciones no están disponibles en este momento.",
+    "noReport": "El agente aún no ha enviado un informe previo, por lo que faltan las comprobaciones de Docker, disco, reloj y puertos.",
+    "status": {
+      "pass": "Correcto",
+      "warn": "Aviso",
+      "fail": "Error",
+      "unknown": "Desconocido"
+    },
+    "checks": {
+      "docker": "Docker",
+      "architecture": "Arquitectura",
+      "disk": "Disco",
+      "clock": "Reloj",
+      "wireguard": "WireGuard",
+      "mesh_port": "Puerto de malla",
+      "firewall": "Cortafuegos",
+      "control_plane": "Plano de control",
+      "cert": "Certificado",
+      "heartbeat": "Latido",
+      "agent_version": "Versión del agente",
+      "schedulable": "Planificación"
+    }
+  },
+  "skew": {
+    "title_one": "{{count}} agente va por detrás de {{version}}",
+    "title_other": "{{count}} agentes van por detrás de {{version}}",
+    "description": "Actualice en este orden: primero los nodos acordonados, luego los nodos en línea y al final los nodos fuera de línea.",
+    "step": "{{from}} a {{to}}",
+    "notes": {
+      "cordoned": "acordonado",
+      "offline": "fuera de línea"
+    },
+    "howTo": "Descargue la nueva imagen o el nuevo binario del agente en cada nodo y reinícielo. La identidad registrada se conserva."
   }
 }

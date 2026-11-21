@@ -371,8 +371,16 @@ These variables only seed the default of a [runtime setting](/runtime-settings).
 | `APP_JOBS_TIMEOUT_MIN_SECONDS` | [`jobs.timeout_min_seconds`](/runtime-settings#deploys) | `1` |
 | `APP_NEXTJS_GENERATE_ACTIONS_KEY` | [`nextjs.generate_actions_key`](/runtime-settings#deploys) | `true` |
 | `APP_PAGES_PREVIEW_MAX_PER_SITE` | [`pages.preview_max_per_site`](/runtime-settings#deploys) | `20` |
+| `APP_PAGES_SERVING_WAIT` | [`pages.serving_wait`](/runtime-settings#deploys) | `8s` |
 | `APP_PLACEMENT_AFFINITY_MAX_TERMS` | [`placement.affinity_max_terms`](/runtime-settings#deploys) | `8` |
 | `APP_PLACEMENT_SCORE_MODE` | [`placement.score_mode`](/runtime-settings#deploys) | `spread` |
+| `APP_PREVIEW_BROWSER_CPU_MILLIS` | [`preview.browser_cpu_millis`](/runtime-settings#deploys) | `1000` |
+| `APP_PREVIEW_MEMORY_MB` | [`preview.browser_memory_mb`](/runtime-settings#deploys) | `512` |
+| `APP_PREVIEW_DEFAULT_MODE` | [`preview.default_mode`](/runtime-settings#deploys) | `screenshot` |
+| `APP_PREVIEW_IDLE_STOP_SECONDS` | [`preview.idle_stop_seconds`](/runtime-settings#deploys) | `120` |
+| `APP_PREVIEW_MAX_CONCURRENT` | [`preview.max_concurrent`](/runtime-settings#deploys) | `1` |
+| `APP_PREVIEW_MIN_INTERVAL_SECONDS` | [`preview.min_interval_seconds`](/runtime-settings#deploys) | `3600` |
+| `APP_PREVIEW_RENDER_TIMEOUT_SECONDS` | [`preview.render_timeout_seconds`](/runtime-settings#deploys) | `30` |
 | `APP_PREVIEW_MIGRATE_TIMEOUT` | [`previews.migrate_timeout`](/runtime-settings#deploys) | `10m` |
 | `APP_PREVIEW_MIGRATE_WAIT` | [`previews.migrate_wait`](/runtime-settings#deploys) | `2m` |
 | `APP_PROJECT_ARCHIVE_MAX_ENTRIES` | [`projects.archive_max_entries`](/runtime-settings#deploys) | `4096` |

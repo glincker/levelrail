@@ -1130,5 +1130,23 @@
     "optionalHint": "Ofrece TLS junto al puerto privado sin cifrar para que los clientes antiguos puedan seguir conectándose. La base de datos se reinicia.",
     "optionalToast": "TLS ahora es opcional, la base de datos se reiniciará",
     "optionalFailed": "No se pudo cambiar TLS"
+  },
+  "wiring": {
+    "title": "Cómo está conectada esta base de datos",
+    "apps": "Apps conectadas",
+    "noApps": "Aún no hay ninguna app conectada.",
+    "outTitle": "Dónde se ejecuta y quién puede acceder",
+    "node": "Nodo",
+    "noNode": "Sin nodo",
+    "access": "Acceso",
+    "private": "Privado",
+    "public": "Público",
+    "publicOn": "Público en el puerto {{port}}",
+    "backups": "Copias de seguridad",
+    "noBackups": "Sin programación de copias",
+    "project": "Proyecto",
+    "noProject": "Sin proyecto",
+    "on": "Activo",
+    "none": "Ninguno"
   }
 }

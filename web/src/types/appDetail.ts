@@ -328,7 +328,13 @@ export interface AppListEntry extends AppDetail {
   // Present only when sleep-when-idle is on for the app.
   sleep?: { idle_minutes: number; sleeping: boolean; since?: string }
   // Latest cached thumbnail URL or text card metadata, absent when none.
-  preview?: { image_url?: string; card?: PreviewCardMeta }
+  preview?: {
+    image_url?: string
+    card?: PreviewCardMeta
+    // Render state of the real screenshot, reported for web and static apps.
+    state?: 'none' | 'queued' | 'rendering' | 'ready' | 'failed'
+    reason?: string
+  }
 }
 
 // Mirrors internal/api/apps.go's appStatusSummary exactly. `variant`

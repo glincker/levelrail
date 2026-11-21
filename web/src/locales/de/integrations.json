@@ -156,5 +156,25 @@
         "hint": "Kanäle für Alarme und Ereignisse"
       }
     }
+  },
+  "fields": {
+    "logDrain": {
+      "type": {
+        "label": "Zieltyp",
+        "help": "Wohin die Logs gehen: HTTP-Endpunkt oder Syslog."
+      },
+      "target_http": {
+        "label": "Ziel-URL",
+        "help": "HTTP-URL, die den Log-Strom erhält."
+      },
+      "target_syslog": {
+        "label": "Ziel",
+        "help": "Syslog-Adresse als network://host:port. Leer lassen für lokales Syslog."
+      },
+      "enabled": {
+        "label": "Weiterleitung",
+        "help": "Weiterleitung ein- oder ausschalten, ohne die Einstellungen zu verlieren."
+      }
+    }
   }
 }

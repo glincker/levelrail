@@ -156,5 +156,25 @@
         "hint": "Canaux pour alertes et événements"
       }
     }
+  },
+  "fields": {
+    "logDrain": {
+      "type": {
+        "label": "Type de destination",
+        "help": "Où partent les journaux : un point HTTP ou syslog."
+      },
+      "target_http": {
+        "label": "URL cible",
+        "help": "URL HTTP qui reçoit le flux de journaux."
+      },
+      "target_syslog": {
+        "label": "Cible",
+        "help": "Adresse syslog au format network://hôte:port. Laisser vide pour le syslog local."
+      },
+      "enabled": {
+        "label": "Transfert",
+        "help": "Activer ou suspendre le transfert sans perdre les réglages."
+      }
+    }
   }
 }

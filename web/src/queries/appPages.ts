@@ -77,6 +77,17 @@ export async function fetchAppPage(
   return { items, total, offset }
 }
 
+// Polls while a card render is queued or running, then stops by itself.
+const PREVIEW_POLL_MS = Number(import.meta.env.VITE_PREVIEW_POLL_MS ?? 4000)
+
+export function previewPending(pages: readonly AppPage[] | undefined): boolean {
+  return (pages ?? []).some((p) =>
+    p.items.some(
+      (a) => a.preview?.state === 'queued' || a.preview?.state === 'rendering',
+    ),
+  )
+}
+
 export function appPagesQueryOptions(params: AppPageParams) {
   return infiniteQueryOptions({
     queryKey: [
@@ -93,6 +104,8 @@ export function appPagesQueryOptions(params: AppPageParams) {
       return last.items.length > 0 && next < last.total ? next : undefined
     },
     staleTime: DEDUPE_STALE_MS,
+    refetchInterval: (query) =>
+      previewPending(query.state.data?.pages) ? PREVIEW_POLL_MS : false,
   })
 }
 

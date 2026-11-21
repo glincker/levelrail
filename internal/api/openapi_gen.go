@@ -14,7 +14,7 @@ type openAPIRoute struct {
 	Description string
 }
 
-// openAPIRoutes holds all 2288 routes known to scripts/gen-api-reference at
+// openAPIRoutes holds all 2293 routes known to scripts/gen-api-reference at
 // generation time. Run `go run ./scripts/gen-api-reference` after changing
 // any routes*.go registration and commit the result.
 var openAPIRoutes = []openAPIRoute{
@@ -1080,6 +1080,7 @@ var openAPIRoutes = []openAPIRoute{
 	{Method: "GET", Path: "/api/v1/nodes/resource-usage", Ability: "AbilityRoot", Group: "Nodes", Handler: "handleFleetResourceUsage", Description: "Fleet-wide latest CPU/memory/disk snapshot plus rollup (node_resource_usage.go), the node-scoped counterpart to GET /apps/resource-usage above: registered as a literal path segment under /nodes/, which Go's net/http mux matches ahead of the /nodes/{id} wildcard above regardless of registration order, the same precedent apps/resource-usage already relies on."},
 	{Method: "POST", Path: "/api/v1/nodes/ssh-provision", Ability: "AbilityRoot", Group: "Nodes", Handler: "handleCreateSSHNodeProvision", Description: "SSH node provisioning: AbilityRoot like every node route (an SSH credential is as sensitive as a join token). The show route stays a top-level sibling: nesting {id} under /nodes/ would conflict with /nodes/{id}/health."},
 	{Method: "POST", Path: "/api/v1/nodes/ssh-provision/preflight", Ability: "AbilityRoot", Group: "Nodes", Handler: "handleSSHProvisionPreflight", Description: ""},
+	{Method: "GET", Path: "/api/v1/nodes/version-skew", Ability: "AbilityRoot", Group: "Nodes", Handler: "handleNodeVersionSkew", Description: ""},
 	{Method: "GET", Path: "/api/v1/nodes/zones", Ability: "AbilityRoot", Group: "Nodes", Handler: "handleListZones", Description: ""},
 	{Method: "DELETE", Path: "/api/v1/nodes/{id}", Ability: "AbilityRoot", Group: "Nodes", Handler: "handleDeleteNode", Description: ""},
 	{Method: "GET", Path: "/api/v1/nodes/{id}", Ability: "AbilityRoot", Group: "Nodes", Handler: "handleGetNode", Description: ""},
@@ -1091,6 +1092,7 @@ var openAPIRoutes = []openAPIRoute{
 	{Method: "POST", Path: "/api/v1/nodes/{id}/cleanup", Ability: "AbilityRoot", Group: "Nodes", Handler: "handleNodeCleanup", Description: ""},
 	{Method: "GET", Path: "/api/v1/nodes/{id}/cleanup-runs", Ability: "AbilityRoot", Group: "Nodes", Handler: "handleListNodeCleanupRuns", Description: ""},
 	{Method: "POST", Path: "/api/v1/nodes/{id}/cordon", Ability: "AbilityRoot", Group: "Nodes", Handler: "handleCordonNode", Description: ""},
+	{Method: "GET", Path: "/api/v1/nodes/{id}/doctor", Ability: "AbilityRoot", Group: "Nodes", Handler: "handleNodeDoctor", Description: ""},
 	{Method: "POST", Path: "/api/v1/nodes/{id}/drain", Ability: "AbilityRoot", Group: "Nodes", Handler: "handleDrainNode", Description: ""},
 	{Method: "GET", Path: "/api/v1/nodes/{id}/drains", Ability: "AbilityRoot", Group: "Nodes", Handler: "handleListNodeDrains", Description: ""},
 	{Method: "GET", Path: "/api/v1/nodes/{id}/events", Ability: "AbilityRoot", Group: "Nodes", Handler: "handleListNodeEvents", Description: ""},
@@ -1120,6 +1122,7 @@ var openAPIRoutes = []openAPIRoute{
 	{Method: "PUT", Path: "/api/v1/nodes/{id}/taints", Ability: "AbilityRoot", Group: "Nodes", Handler: "handleSetNodeTaints", Description: ""},
 	{Method: "GET", Path: "/api/v1/nodes/{id}/thresholds", Ability: "AbilityRoot", Group: "Nodes", Handler: "handleGetNodeThresholds", Description: ""},
 	{Method: "PUT", Path: "/api/v1/nodes/{id}/thresholds", Ability: "AbilityRoot", Group: "Nodes", Handler: "handleSetNodeThresholds", Description: ""},
+	{Method: "GET", Path: "/api/v1/nodes/{id}/timeline", Ability: "AbilityRoot", Group: "Nodes", Handler: "handleNodeTimeline", Description: "Health timeline, doctor checks and fleet version skew (node_insight.go)."},
 	{Method: "POST", Path: "/api/v1/nodes/{id}/uncordon", Ability: "AbilityRoot", Group: "Nodes", Handler: "handleUncordonNode", Description: ""},
 	{Method: "PUT", Path: "/api/v1/nodes/{id}/workloads", Ability: "AbilityRoot", Group: "Nodes", Handler: "handleSetNodeWorkloads", Description: ""},
 	{Method: "GET", Path: "/.well-known/jwks.json", Ability: "Public", Group: "Other", Handler: "handleOIDCJWKS", Description: ""},
@@ -1537,6 +1540,7 @@ var openAPIRoutes = []openAPIRoute{
 	{Method: "DELETE", Path: "/api/v1/log-archive/policy", Ability: "AbilityWrite", Group: "Other", Handler: "handleDeleteLogArchivePolicy", Description: ""},
 	{Method: "PUT", Path: "/api/v1/log-archive/policy", Ability: "AbilityWrite", Group: "Other", Handler: "handleSetLogArchivePolicy", Description: ""},
 	{Method: "GET", Path: "/api/v1/log-archive/runs", Ability: "AbilityRead", Group: "Other", Handler: "handleListLogArchiveRuns", Description: ""},
+	{Method: "GET", Path: "/api/v1/log-drains/field-descriptors", Ability: "AbilityRead", Group: "Other", Handler: "handleGetLogDrainFields", Description: ""},
 	{Method: "GET", Path: "/api/v1/logs/access", Ability: "AbilityRead", Group: "Other", Handler: "handleAccessSearch", Description: ""},
 	{Method: "GET", Path: "/api/v1/logs/queries", Ability: "AbilityRead", Group: "Other", Handler: "handleListSavedLogQueries", Description: ""},
 	{Method: "POST", Path: "/api/v1/logs/queries", Ability: "AbilityWrite", Group: "Other", Handler: "handleCreateSavedLogQuery", Description: ""},
@@ -2104,6 +2108,7 @@ var openAPIRoutes = []openAPIRoute{
 	{Method: "POST", Path: "/api/v1/webhooks/slack/interactions", Ability: "Public", Group: "Secrets / Git Source / Webhooks / Preview Environments", Handler: "handleSlackInteraction", Description: "Chat-interactive deploy approval (chat_interactions.go): a Slack/Discord button click posts back here, unauthenticated like POST .../webhooks/github/{name} above; its own signature check (Slack HMAC, Discord Ed25519) stands in for auth, and the decision itself runs through the exact same functions the gated routes above call."},
 	{Method: "GET", Path: "/api/v1/backup-targets", Ability: "AbilityRead", Group: "Static Sites / Backup Targets / Registry Credentials", Handler: "handleListBackupTargets", Description: "Backup targets (connected S3-compatible buckets a database backup can be uploaded to). Create and delete need AbilityWriteSensitive: create because its request body carries live bucket credentials, delete because it gates access to the same. List/get are ordinary AbilityRead, the same boundary handleListCertificates/ handleListStaticSites already draw between visibility and mutation."},
 	{Method: "POST", Path: "/api/v1/backup-targets", Ability: "AbilityWriteSensitive", Group: "Static Sites / Backup Targets / Registry Credentials", Handler: "handleCreateBackupTarget", Description: ""},
+	{Method: "GET", Path: "/api/v1/backup-targets/field-descriptors", Ability: "AbilityRead", Group: "Static Sites / Backup Targets / Registry Credentials", Handler: "handleGetBackupTargetFields", Description: ""},
 	{Method: "POST", Path: "/api/v1/backup-targets/sftp-host-key", Ability: "AbilityWriteSensitive", Group: "Static Sites / Backup Targets / Registry Credentials", Handler: "handleScanSFTPHostKey", Description: ""},
 	{Method: "DELETE", Path: "/api/v1/backup-targets/{id}", Ability: "AbilityWriteSensitive", Group: "Static Sites / Backup Targets / Registry Credentials", Handler: "handleDeleteBackupTarget", Description: ""},
 	{Method: "GET", Path: "/api/v1/backup-targets/{id}", Ability: "AbilityRead", Group: "Static Sites / Backup Targets / Registry Credentials", Handler: "handleGetBackupTarget", Description: ""},

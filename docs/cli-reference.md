@@ -2483,6 +2483,7 @@ levelrail-cli vm init [--memory MiB] [--cpus N] [--disk GiB] [--dashboard-port P
 levelrail-cli vm start [--control-plane-bin PATH]
 levelrail-cli vm stop
 levelrail-cli vm status [--json]
+levelrail-cli vm logs [--lines N]
 levelrail-cli vm shell
 levelrail-cli vm set <memory|cpus|disk|dashboard-port|ingress-port> <value>
 levelrail-cli vm export [--encrypt AGE_RECIPIENT] <file>
@@ -2491,7 +2492,14 @@ levelrail-cli vm reset --yes [--keep-credentials]
 levelrail-cli vm uninstall --yes
 levelrail-cli vm token (--check | --exchange --cookie-jar PATH) [--json]
 ```
-Runs Levelrail in a private Linux VM on macOS with no host folders mounted. `vm shell` opens a guest shell where the VM user has passwordless sudo, so the VM is the boundary. Settings live in a host file, and the environment only seeds it at `init`. An export archive holds the control plane database and its secrets. Keep it private; without `--encrypt` it is clear text. See [Desktop runtime](/desktop-runtime).
+Runs Levelrail in a private Linux VM on macOS with no host folders mounted. `vm shell` opens a guest shell where the VM user has passwordless sudo, so the VM is the boundary. Settings live in a host file, and the environment only seeds it at `init`. An export archive holds the control plane database and its secrets. Keep it private; without `--encrypt` it is clear text. `vm logs` prints the control plane journal from the guest (`APP_VM_LOG_LINES`, default 200). See [Desktop runtime](/desktop-runtime) and [macOS runtime](/macos-runtime).
+
+```
+levelrail-cli doctor macos [--json]
+levelrail-cli launchd install|uninstall|print <control-plane|agent> --binary PATH [--arg A] [--env K=V]
+levelrail-cli launchd status [--json]
+```
+`doctor macos` is offline and checks Lima, virtualization support, macOS version, free disk and the VM loopback ports. `launchd` manages per-user units in `~/Library/LaunchAgents`; `print` only shows the plist. Secrets in `--env` are refused.
 
 The `up` and `deploy` inference reads an optional definition file (`levelrail-definition.json`, schemaVersion 2) with `dockerfilePath`; an explicit `--dockerfile` or `--image` wins.
 

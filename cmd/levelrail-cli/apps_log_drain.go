@@ -4,6 +4,8 @@ import (
 	"context"
 	"fmt"
 	"io"
+
+	"github.com/GLINCKER/levelrail/internal/fielddesc"
 )
 
 // runAppsLogDrain dispatches "apps log-drain <verb> [flags]" to one of
@@ -73,10 +75,8 @@ func runAppsLogDrainGet(prog string, args []string, stdout, stderr io.Writer, lo
 
 func runAppsLogDrainSet(prog string, args []string, stdout, stderr io.Writer, lookupEnv func(string) (string, bool)) int {
 	fs, tokenFlagP, apiURLFlagP, profileFlagP, jsonOutP, outputFlagP, queryFlagP := apiFlagSet(prog, "apps log-drain set", "print the log drain as JSON to stdout and nothing else", stderr)
-	var typeFlag, targetFlag string
 	var disabled bool
-	fs.StringVar(&typeFlag, "type", "", `sink type: "http" or "syslog" (required)`)
-	fs.StringVar(&targetFlag, "target", "", "sink target: an HTTP URL, or a syslog network://host:port (empty for local syslog)")
+	descFlags := registerDescriptorFlags(fs, fielddesc.LogDrain)
 	fs.BoolVar(&disabled, "disabled", false, "save the drain but leave forwarding paused (default: enabled)")
 	fs.Usage = func() {
 		_, _ = fmt.Fprintf(stderr, "Usage:\n  %s apps log-drain set <name> --type TYPE --target TARGET [flags]\n\nConfigures an app's log drain, additive to the built-in log store.\n\nFlags:\n", prog)
@@ -92,10 +92,16 @@ func runAppsLogDrainSet(prog string, args []string, stdout, stderr io.Writer, lo
 	if !ok {
 		return exitUsage
 	}
+	typeFlag, targetFlag := *descFlags["type"], *descFlags["target"]
 	if typeFlag == "" {
 		_, _ = fmt.Fprintf(stderr, "%s: apps log-drain set requires --type\n\n", prog)
 		fs.Usage()
 		return exitUsage
+	}
+	if res, ok := fielddesc.Get(fielddesc.LogDrain); ok {
+		if msg := fielddesc.FirstProblem(res.Validate(map[string]string{"type": typeFlag, "target": targetFlag})); msg != "" {
+			return reportError(stdout, stderr, jsonOut, newValidationError("--%s", msg))
+		}
 	}
 
 	client := apiClientFromFlags(prog, apiURLFlag, tokenFlag, profileFlag, lookupEnv)

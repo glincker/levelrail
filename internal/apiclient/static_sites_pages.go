@@ -190,8 +190,19 @@ func (c *Client) ListStaticSitePreviews(ctx context.Context, name string) ([]Sta
 }
 
 // PromoteStaticSiteDeploy calls POST /api/v1/static-sites/{name}/deploys/{id}/promote.
-func (c *Client) PromoteStaticSiteDeploy(ctx context.Context, name, deployID string) error {
-	return c.do(ctx, http.MethodPost, "/api/v1/static-sites/"+PathEscape(name)+"/deploys/"+PathEscape(deployID)+"/promote", nil, nil)
+// The result's Serving is "live" or "pending".
+func (c *Client) PromoteStaticSiteDeploy(ctx context.Context, name, deployID string) (PromoteStaticSiteResult, error) {
+	var out PromoteStaticSiteResult
+	err := c.do(ctx, http.MethodPost, "/api/v1/static-sites/"+PathEscape(name)+"/deploys/"+PathEscape(deployID)+"/promote", nil, &out)
+	return out, err
+}
+
+// PromoteStaticSiteResult is the promote response.
+type PromoteStaticSiteResult struct {
+	Status     string `json:"status"`
+	DeployID   string `json:"deploy_id"`
+	CDNWarning string `json:"cdn_warning,omitempty"`
+	Serving    string `json:"serving,omitempty"`
 }
 
 // StaticSiteAnalytics calls GET /api/v1/static-sites/{name}/analytics for a 24h, 7d or 30d range.

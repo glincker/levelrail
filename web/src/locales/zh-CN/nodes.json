@@ -1149,5 +1149,57 @@
     "macosNote": "预览版。工作负载通过 Docker Desktop、OrbStack 或 Lima 运行，它们会共享你 Mac 上的文件，因此 Mac 更适合用作构建机，而不是运行生产应用。",
     "waiting": "正在等待节点连接",
     "connected": "已连接：{{name}}"
+  },
+  "timeline": {
+    "title": "健康时间线",
+    "window": "时间范围",
+    "windows": {
+      "24h": "24 小时",
+      "168h": "7 天",
+      "720h": "30 天"
+    },
+    "loading": "正在加载健康时间线",
+    "unavailable": "时间线暂时不可用。",
+    "stripLabel": "在线与离线时段",
+    "noUptime": "此时间范围内没有在线或离线记录。",
+    "summary_other": "在线率 {{uptime}}%，状态变化 {{count}} 次"
+  },
+  "doctor": {
+    "title": "代理诊断",
+    "run": "运行检查",
+    "hide": "隐藏检查",
+    "running": "正在运行检查",
+    "unavailable": "检查暂时不可用。",
+    "noReport": "代理尚未发送预检报告，因此缺少 Docker、磁盘、时钟和端口检查。",
+    "status": {
+      "pass": "通过",
+      "warn": "警告",
+      "fail": "失败",
+      "unknown": "未知"
+    },
+    "checks": {
+      "docker": "Docker",
+      "architecture": "架构",
+      "disk": "磁盘",
+      "clock": "时钟",
+      "wireguard": "WireGuard",
+      "mesh_port": "网格端口",
+      "firewall": "防火墙",
+      "control_plane": "控制平面",
+      "cert": "证书",
+      "heartbeat": "心跳",
+      "agent_version": "代理版本",
+      "schedulable": "调度"
+    }
+  },
+  "skew": {
+    "title_other": "{{count}} 个代理落后于 {{version}}",
+    "description": "请按此顺序升级：先升级已隔离的节点，然后是在线节点，最后是离线节点。",
+    "step": "{{from}} 升级到 {{to}}",
+    "notes": {
+      "cordoned": "已隔离",
+      "offline": "离线"
+    },
+    "howTo": "在每个节点上拉取新的代理镜像或二进制文件并重启。已注册的身份会保留。"
   }
 }

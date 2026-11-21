@@ -110,7 +110,7 @@ func Seed(ctx context.Context, db *store.DB, opts Options) (Manifest, error) {
 	}
 
 	s := &seeder{ctx: ctx, db: db, opts: opts, rng: newRNG(opts.Seed)}
-	steps := []func() error{s.users, s.organization, s.nodes, s.services, s.deploys, s.readiness, s.databases, s.audit, s.statusPage, s.teams, s.approvals, s.usage, s.fleetExtras, s.pages, s.backupExtras, s.previewSettings}
+	steps := []func() error{s.users, s.organization, s.nodes, s.services, s.deploys, s.readiness, s.databases, s.audit, s.statusPage, s.teams, s.approvals, s.usage, s.fleetExtras, s.pages, s.backupExtras, s.previewSettings, s.previewShots}
 	for _, step := range steps {
 		if err := step(); err != nil {
 			return Manifest{}, err

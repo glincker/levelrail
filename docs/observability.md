@@ -295,7 +295,7 @@ Fields: your Datadog site and an API key. Logs are on by default. Metrics use th
 
 ### Axiom
 
-Fields: a dataset that already exists, the region (`us` or `eu`) and an API token with ingest permission. Logs and metrics are on by default. Metrics are sent to the regional edge domain with the `x-axiom-metrics-dataset` header and need a metrics dataset.
+Fields: a dataset that already exists, the region (`us` or `eu`) and an API token with ingest permission. Logs and metrics are on by default. Both signals are sent to the regional edge domain (`us-east-1.aws.edge.axiom.co` or `eu-central-1.aws.edge.axiom.co`; logs to `/v1/ingest/<dataset>`, existing targets keep their saved URL). Metrics also use the `x-axiom-metrics-dataset` header and need a metrics dataset.
 
 ### Honeycomb
 

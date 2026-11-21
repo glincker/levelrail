@@ -261,7 +261,7 @@ func (rt *Router) handleListApps(w http.ResponseWriter, r *http.Request) {
 	placement := rt.placementResolver(r.Context())
 	owners := rt.loadStackOwners(r.Context())
 	descriptions := rt.appDescriptions(r.Context())
-	previews := rt.listPreviewCards(r.Context(), appNames)
+	previews := rt.listPreviewCards(r.Context(), svcs)
 	jobs := rt.jobsByApp(r.Context(), time.Now())
 	var lastDeploy map[string]time.Time
 	if src, ok := rt.deployAttempts.(latestDeployActivitySource); ok {

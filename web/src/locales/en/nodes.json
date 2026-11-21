@@ -1163,5 +1163,59 @@
     "macosNote": "Preview. Workloads run through Docker Desktop, OrbStack or Lima, which share your Mac's files, so a Mac is best used as a builder rather than a place for production apps.",
     "waiting": "Waiting for the node to connect",
     "connected": "Connected: {{name}}"
+  },
+  "timeline": {
+    "title": "Health timeline",
+    "window": "Time window",
+    "windows": {
+      "24h": "24 hours",
+      "168h": "7 days",
+      "720h": "30 days"
+    },
+    "loading": "Loading health timeline",
+    "unavailable": "The timeline is unavailable right now.",
+    "stripLabel": "Online and offline periods",
+    "noUptime": "No online or offline time recorded in this window.",
+    "summary_one": "{{uptime}}% uptime, {{count}} change",
+    "summary_other": "{{uptime}}% uptime, {{count}} changes"
+  },
+  "doctor": {
+    "title": "Agent doctor",
+    "run": "Run checks",
+    "hide": "Hide checks",
+    "running": "Running checks",
+    "unavailable": "The checks are unavailable right now.",
+    "noReport": "The agent has not sent a preflight report yet, so docker, disk, clock and port checks are missing.",
+    "status": {
+      "pass": "Pass",
+      "warn": "Warn",
+      "fail": "Fail",
+      "unknown": "Unknown"
+    },
+    "checks": {
+      "docker": "Docker",
+      "architecture": "Architecture",
+      "disk": "Disk",
+      "clock": "Clock",
+      "wireguard": "WireGuard",
+      "mesh_port": "Mesh port",
+      "firewall": "Firewall",
+      "control_plane": "Control plane",
+      "cert": "Certificate",
+      "heartbeat": "Heartbeat",
+      "agent_version": "Agent version",
+      "schedulable": "Scheduling"
+    }
+  },
+  "skew": {
+    "title_one": "{{count}} agent is behind {{version}}",
+    "title_other": "{{count}} agents are behind {{version}}",
+    "description": "Upgrade in this order: cordoned nodes first, then online nodes, offline nodes last.",
+    "step": "{{from}} to {{to}}",
+    "notes": {
+      "cordoned": "cordoned",
+      "offline": "offline"
+    },
+    "howTo": "Pull the new agent image or binary on each node and restart it. The enrolled identity is kept."
   }
 }

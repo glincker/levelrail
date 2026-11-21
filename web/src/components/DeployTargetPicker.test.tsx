@@ -3,7 +3,10 @@ import userEvent from '@testing-library/user-event'
 import { afterEach, describe, expect, it, vi } from 'vitest'
 import { DatabasesI18n } from '../test/databasesI18n'
 import { DeployTargetPicker } from './DeployTargetPicker'
-import type { DeployTargetGroup } from '../types/deployTargets'
+import type {
+  DeployTargetGroup,
+  DeployTargetNode,
+} from '../types/deployTargets'
 
 const groups: DeployTargetGroup[] = [
   {
@@ -65,17 +68,17 @@ describe('DeployTargetPicker', () => {
     const user = userEvent.setup()
     const withHints: DeployTargetGroup[] = [
       {
-        ...groups[1],
+        ...(groups[1] as DeployTargetGroup),
         nodes: [
           {
-            ...groups[1].nodes[0],
+            ...(groups[1]?.nodes[0] as DeployTargetNode),
             monthly_cost_estimate: 12.5,
             cost_currency: 'USD',
             free_capacity: { cpu_cores: 1.5 },
           },
         ],
       },
-      { ...groups[0] },
+      { ...(groups[0] as DeployTargetGroup) },
     ]
     render(
       <DatabasesI18n>

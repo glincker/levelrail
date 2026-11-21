@@ -1144,5 +1144,23 @@
     "optionalHint": "Propose TLS à côté du port privé non chiffré pour que les anciens clients puissent encore se connecter. La base de données redémarre.",
     "optionalToast": "TLS est maintenant facultatif, la base de données va redémarrer",
     "optionalFailed": "Impossible de changer TLS"
+  },
+  "wiring": {
+    "title": "Comment cette base de données est reliée",
+    "apps": "Apps connectées",
+    "noApps": "Aucune app connectée pour l'instant.",
+    "outTitle": "Où elle s'exécute et qui peut y accéder",
+    "node": "Nœud",
+    "noNode": "Aucun nœud",
+    "access": "Accès",
+    "private": "Privé",
+    "public": "Public",
+    "publicOn": "Public sur le port {{port}}",
+    "backups": "Sauvegardes",
+    "noBackups": "Aucune planification de sauvegarde",
+    "project": "Projet",
+    "noProject": "Aucun projet",
+    "on": "Actif",
+    "none": "Aucun"
   }
 }

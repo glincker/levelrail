@@ -99,7 +99,7 @@ Four vendors have a destination kind of their own, so you paste a key and pick a
 | --- | --- | --- | --- |
 | `logs_newrelic` | `https://log-api.newrelic.com/log/v1`, or `log-api.eu.newrelic.com` | `Api-Key` | `region` us or eu |
 | `logs_datadog` | `https://http-intake.logs.<site>/api/v2/logs` | `DD-API-KEY` | `site`, default `datadoghq.com` |
-| `logs_axiom` | `https://api.axiom.co/v1/datasets/<dataset>/ingest`, or `https://eu-central-1.aws.edge.axiom.co/v1/ingest/<dataset>` for the EU region | `Authorization: Bearer` | `dataset` (required), `region` |
+| `logs_axiom` | `https://us-east-1.aws.edge.axiom.co/v1/ingest/<dataset>`, or `https://eu-central-1.aws.edge.axiom.co/v1/ingest/<dataset>` for the EU region (destinations saved earlier keep their stored URL) | `Authorization: Bearer` | `dataset` (required), `region` |
 | `logs_betterstack` | `https://in.logs.betterstack.com` | `Authorization: Bearer` | none; use `--endpoint` for a source specific host |
 
 The key is stored encrypted like any export header and never returned; a destination shows `has_api_key` instead. An explicit `--endpoint` overrides the preset, for a proxy or a regional host. Changing `region`, `site` or `dataset` on a preset destination moves its endpoint with it.

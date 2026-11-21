@@ -1177,5 +1177,59 @@
     "macosNote": "Prévia. As cargas de trabalho rodam via Docker Desktop, OrbStack ou Lima, que compartilham os arquivos do seu Mac, então um Mac é mais indicado como builder do que como lugar para apps de produção.",
     "waiting": "Aguardando o nó se conectar",
     "connected": "Conectado: {{name}}"
+  },
+  "timeline": {
+    "title": "Histórico de saúde",
+    "window": "Janela de tempo",
+    "windows": {
+      "24h": "24 horas",
+      "168h": "7 dias",
+      "720h": "30 dias"
+    },
+    "loading": "Carregando o histórico de saúde",
+    "unavailable": "O histórico não está disponível agora.",
+    "stripLabel": "Períodos online e offline",
+    "noUptime": "Nenhum tempo online ou offline registrado nesta janela.",
+    "summary_one": "{{uptime}}% de disponibilidade, {{count}} mudança",
+    "summary_other": "{{uptime}}% de disponibilidade, {{count}} mudanças"
+  },
+  "doctor": {
+    "title": "Doutor do agente",
+    "run": "Executar verificações",
+    "hide": "Ocultar verificações",
+    "running": "Executando verificações",
+    "unavailable": "As verificações não estão disponíveis agora.",
+    "noReport": "O agente ainda não enviou um relatório prévio, então faltam as verificações de Docker, disco, relógio e portas.",
+    "status": {
+      "pass": "OK",
+      "warn": "Aviso",
+      "fail": "Falha",
+      "unknown": "Desconhecido"
+    },
+    "checks": {
+      "docker": "Docker",
+      "architecture": "Arquitetura",
+      "disk": "Disco",
+      "clock": "Relógio",
+      "wireguard": "WireGuard",
+      "mesh_port": "Porta da malha",
+      "firewall": "Firewall",
+      "control_plane": "Plano de controle",
+      "cert": "Certificado",
+      "heartbeat": "Heartbeat",
+      "agent_version": "Versão do agente",
+      "schedulable": "Agendamento"
+    }
+  },
+  "skew": {
+    "title_one": "{{count}} agente está atrás de {{version}}",
+    "title_other": "{{count}} agentes estão atrás de {{version}}",
+    "description": "Atualize nesta ordem: primeiro os nós isolados, depois os nós online e por último os nós offline.",
+    "step": "{{from}} para {{to}}",
+    "notes": {
+      "cordoned": "isolado",
+      "offline": "offline"
+    },
+    "howTo": "Baixe a nova imagem ou o novo binário do agente em cada nó e reinicie-o. A identidade registrada é mantida."
   }
 }

@@ -1177,5 +1177,59 @@
     "macosNote": "Préversion. Les charges de travail passent par Docker Desktop, OrbStack ou Lima, qui partagent les fichiers de votre Mac. Un Mac convient donc mieux comme machine de build que comme hôte d'apps en production.",
     "waiting": "En attente de la connexion du nœud",
     "connected": "Connecté : {{name}}"
+  },
+  "timeline": {
+    "title": "Historique de santé",
+    "window": "Période",
+    "windows": {
+      "24h": "24 heures",
+      "168h": "7 jours",
+      "720h": "30 jours"
+    },
+    "loading": "Chargement de l'historique de santé",
+    "unavailable": "L'historique est indisponible pour le moment.",
+    "stripLabel": "Périodes en ligne et hors ligne",
+    "noUptime": "Aucun temps en ligne ou hors ligne enregistré sur cette période.",
+    "summary_one": "{{uptime}} % de disponibilité, {{count}} changement",
+    "summary_other": "{{uptime}} % de disponibilité, {{count}} changements"
+  },
+  "doctor": {
+    "title": "Docteur de l'agent",
+    "run": "Lancer les vérifications",
+    "hide": "Masquer les vérifications",
+    "running": "Vérifications en cours",
+    "unavailable": "Les vérifications sont indisponibles pour le moment.",
+    "noReport": "L'agent n'a pas encore envoyé de rapport préalable, donc les vérifications Docker, disque, horloge et ports manquent.",
+    "status": {
+      "pass": "OK",
+      "warn": "Alerte",
+      "fail": "Échec",
+      "unknown": "Inconnu"
+    },
+    "checks": {
+      "docker": "Docker",
+      "architecture": "Architecture",
+      "disk": "Disque",
+      "clock": "Horloge",
+      "wireguard": "WireGuard",
+      "mesh_port": "Port du maillage",
+      "firewall": "Pare-feu",
+      "control_plane": "Plan de contrôle",
+      "cert": "Certificat",
+      "heartbeat": "Signal de vie",
+      "agent_version": "Version de l'agent",
+      "schedulable": "Planification"
+    }
+  },
+  "skew": {
+    "title_one": "{{count}} agent est en retard sur {{version}}",
+    "title_other": "{{count}} agents sont en retard sur {{version}}",
+    "description": "Mettez à jour dans cet ordre : les nœuds isolés d'abord, puis les nœuds en ligne, les nœuds hors ligne en dernier.",
+    "step": "{{from}} vers {{to}}",
+    "notes": {
+      "cordoned": "isolé",
+      "offline": "hors ligne"
+    },
+    "howTo": "Récupérez la nouvelle image ou le nouveau binaire de l'agent sur chaque nœud, puis redémarrez-le. L'identité enrôlée est conservée."
   }
 }

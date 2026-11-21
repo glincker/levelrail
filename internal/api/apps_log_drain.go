@@ -6,6 +6,7 @@ import (
 	"log/slog"
 	"net/http"
 
+	"github.com/GLINCKER/levelrail/internal/fielddesc"
 	"github.com/GLINCKER/levelrail/internal/store"
 )
 
@@ -72,13 +73,11 @@ func (rt *Router) handleSetAppLogDrain(w http.ResponseWriter, r *http.Request) {
 		writeError(w, http.StatusBadRequest, "invalid request body")
 		return
 	}
-	if req.Type != store.LogDrainHTTP && req.Type != store.LogDrainSyslog {
-		writeError(w, http.StatusBadRequest, "type must be \"http\" or \"syslog\"")
-		return
-	}
-	if req.Type == store.LogDrainHTTP && req.Target == "" {
-		writeError(w, http.StatusBadRequest, "target is required for an http drain")
-		return
+	if res, ok := fielddesc.Get(fielddesc.LogDrain); ok {
+		if msg := fielddesc.FirstProblem(res.Validate(map[string]string{"type": string(req.Type), "target": req.Target})); msg != "" {
+			writeError(w, http.StatusBadRequest, msg)
+			return
+		}
 	}
 
 	drain := store.LogDrain{Type: req.Type, Target: req.Target, Enabled: req.Enabled}
@@ -108,4 +107,15 @@ func (rt *Router) handleClearAppLogDrain(w http.ResponseWriter, r *http.Request)
 	}
 
 	w.WriteHeader(http.StatusNoContent)
+}
+
+// handleGetLogDrainFields handles GET /api/v1/log-drains/field-descriptors: the field registry the CLI,
+// the dashboard card and the docs are built from.
+func (rt *Router) handleGetLogDrainFields(w http.ResponseWriter, _ *http.Request) {
+	res, ok := fielddesc.Get(fielddesc.LogDrain)
+	if !ok {
+		rt.internalError(w, "field descriptors", errors.New("field descriptors unavailable"))
+		return
+	}
+	writeJSON(w, http.StatusOK, res)
 }

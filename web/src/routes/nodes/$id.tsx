@@ -32,6 +32,8 @@ import { NodePatchStatusCard } from '../../components/NodePatchStatusCard'
 import { IacExportButton } from '../../components/IacExportButton'
 import { IacImportPreview } from '../../components/IacImportPreview'
 import { NodeEventsCard } from '../../components/NodeEventsCard'
+import { NodeHealthTimelineCard } from '../../components/nodes/NodeHealthTimelineCard'
+import { NodeDoctorCard } from '../../components/nodes/NodeDoctorCard'
 import { routeErrorMessage } from '../../lib/apiError'
 import { Button } from '@/components/ui/button'
 import { Alert, AlertDescription } from '@/components/ui/alert'
@@ -240,7 +242,9 @@ function NodeDetailPage() {
         nodeName={node.name}
         isLocal={node.is_local}
       />
+      <NodeHealthTimelineCard nodeId={id} />
       <NodeEventsCard nodeId={id} />
+      <NodeDoctorCard nodeId={id} />
       <NodeCapacityCard nodeId={id} />
       <NodeThresholdsCard nodeId={id} />
       <NodeCapacityForecastCard nodeId={id} />

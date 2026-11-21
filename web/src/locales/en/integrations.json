@@ -156,5 +156,25 @@
         "hint": "Channels for alerts and events"
       }
     }
+  },
+  "fields": {
+    "logDrain": {
+      "type": {
+        "label": "Sink type",
+        "help": "Where the logs are sent: an HTTP endpoint or syslog."
+      },
+      "target_http": {
+        "label": "Endpoint URL",
+        "help": "HTTP URL that receives the log stream."
+      },
+      "target_syslog": {
+        "label": "Syslog address",
+        "help": "Syslog address as network://host:port. Leave empty for local syslog."
+      },
+      "enabled": {
+        "label": "Forwarding",
+        "help": "Turn forwarding on or pause it without losing the settings."
+      }
+    }
   }
 }

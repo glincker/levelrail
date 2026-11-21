@@ -62,6 +62,7 @@
   "description": "Description: {{text}}",
   "card": {
     "noPreview": "No preview",
+    "previewFailed": "Preview unavailable",
     "noDomain": "No domain",
     "staticSite": "Static site",
     "lastDeploy": "Deployed",

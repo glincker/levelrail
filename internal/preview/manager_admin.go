@@ -21,7 +21,7 @@ func (m *Manager) Settings(ctx context.Context, app string) (AppSettings, error)
 		return AppSettings{}, fmt.Errorf("preview: load settings for %q: %w", app, err)
 	}
 	s.App = app
-	s.Normalize(m.cfg.DefaultMode, s.Mode != "")
+	s.Normalize(m.live(ctx).DefaultMode, s.Mode != "")
 	if s.Path == "" {
 		s.Path = DefaultPath
 	}
@@ -443,7 +443,7 @@ func (m *Manager) pruneImage(ctx context.Context) error {
 func (m *Manager) busy() bool {
 	m.mu.Lock()
 	defer m.mu.Unlock()
-	return m.running
+	return m.workers > 0
 }
 
 // ensureImage makes the browser image available, recording it for later
@@ -475,6 +475,7 @@ func (m *Manager) Start(ctx context.Context) {
 	m.baseCtx = ctx
 	m.mu.Unlock()
 	go func() {
+		defer m.pool.closeAll()
 		m.Sweep(ctx)
 		t := time.NewTicker(m.cfg.SweepInterval)
 		defer t.Stop()

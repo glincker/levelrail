@@ -1149,5 +1149,57 @@
     "macosNote": "プレビュー版です。ワークロードはDocker Desktop、OrbStack、Limaを通じて実行され、Macのファイルを共有します。そのため、Macは本番アプリの置き場ではなくビルダーとして使うのが最適です。",
     "waiting": "ノードの接続を待っています",
     "connected": "接続しました: {{name}}"
+  },
+  "timeline": {
+    "title": "ヘルスタイムライン",
+    "window": "期間",
+    "windows": {
+      "24h": "24時間",
+      "168h": "7日間",
+      "720h": "30日間"
+    },
+    "loading": "ヘルスタイムラインを読み込み中",
+    "unavailable": "現在タイムラインを利用できません。",
+    "stripLabel": "オンラインとオフラインの期間",
+    "noUptime": "この期間にオンラインまたはオフラインの記録はありません。",
+    "summary_other": "稼働率 {{uptime}}%、変化 {{count}} 回"
+  },
+  "doctor": {
+    "title": "エージェント診断",
+    "run": "チェックを実行",
+    "hide": "チェックを隠す",
+    "running": "チェックを実行中",
+    "unavailable": "現在チェックを利用できません。",
+    "noReport": "エージェントがまだ事前チェックのレポートを送信していないため、Docker、ディスク、時計、ポートのチェックがありません。",
+    "status": {
+      "pass": "正常",
+      "warn": "警告",
+      "fail": "失敗",
+      "unknown": "不明"
+    },
+    "checks": {
+      "docker": "Docker",
+      "architecture": "アーキテクチャ",
+      "disk": "ディスク",
+      "clock": "時計",
+      "wireguard": "WireGuard",
+      "mesh_port": "メッシュポート",
+      "firewall": "ファイアウォール",
+      "control_plane": "コントロールプレーン",
+      "cert": "証明書",
+      "heartbeat": "ハートビート",
+      "agent_version": "エージェントのバージョン",
+      "schedulable": "スケジューリング"
+    }
+  },
+  "skew": {
+    "title_other": "{{count}} 台のエージェントが {{version}} より古い状態です",
+    "description": "次の順に更新してください。まず隔離済みノード、次にオンラインのノード、最後にオフラインのノードです。",
+    "step": "{{from}} から {{to}}",
+    "notes": {
+      "cordoned": "隔離済み",
+      "offline": "オフライン"
+    },
+    "howTo": "各ノードで新しいエージェントのイメージまたはバイナリを取得し、再起動してください。登録済みの ID は保持されます。"
   }
 }

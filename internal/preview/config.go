@@ -35,6 +35,12 @@ const (
 	EnvMetaMaxImgKB  = "APP_PREVIEW_META_MAX_IMAGE_KB"
 	EnvMetaRedirects = "APP_PREVIEW_META_MAX_REDIRECTS"
 	EnvMetaMinImgPx  = "APP_PREVIEW_META_MIN_IMAGE_PX"
+
+	EnvMaxConcurrent  = "APP_PREVIEW_MAX_CONCURRENT"
+	EnvMinInterval    = "APP_PREVIEW_MIN_INTERVAL_SECONDS"
+	EnvRenderTimeout  = "APP_PREVIEW_RENDER_TIMEOUT_SECONDS"
+	EnvIdleStop       = "APP_PREVIEW_IDLE_STOP_SECONDS"
+	EnvBrowserCPUMill = "APP_PREVIEW_BROWSER_CPU_MILLIS"
 )
 
 // Bounds on the thumbnail canvas, so a typo cannot ask for a huge allocation.
@@ -77,6 +83,12 @@ type Config struct {
 	MetaMaxImage int64
 	MetaRedirect int
 	MetaMinImgPx int
+
+	// Seeds for the live render settings; a runtime setting overrides each.
+	MaxConcurrent int
+	MinInterval   time.Duration
+	RenderTimeout time.Duration
+	IdleStop      time.Duration
 }
 
 // ConfigFromEnv reads Config from lookup (os.LookupEnv in production).
@@ -93,7 +105,7 @@ func ConfigFromEnv(lookup func(string) (string, bool), logger *slog.Logger) Conf
 		Timeout:       e.duration(EnvTimeout, 30*time.Second),
 		PullTimeout:   e.duration(EnvPullTimeout, 5*time.Minute),
 		MemoryMB:      int64(e.integer(EnvMemoryMB, 512)),
-		CPUs:          e.float(EnvCPUs, 1.0),
+		CPUs:          float64(e.integer(EnvBrowserCPUMill, int(e.float(EnvCPUs, 1.0)*1000))) / 1000,
 		ViewportW:     w,
 		ViewportH:     h,
 		ThumbWidth:    e.bounded(EnvThumbWidth, 640, minThumbPx, maxThumbPx),
@@ -108,13 +120,17 @@ func ConfigFromEnv(lookup func(string) (string, bool), logger *slog.Logger) Conf
 		MinFreeDisk:   int64(e.integer(EnvMinFreeDiskMB, 2048)) << 20,
 		QueueDepth:    e.integer(EnvQueueDepth, 8),
 		SweepInterval: e.duration(EnvSweepInterval, time.Hour),
-		DefaultMode:   e.mode(EnvDefaultMode, ModeMetadata),
+		DefaultMode:   e.mode(EnvDefaultMode, ModeScreenshot),
 		ThumbHeight:   e.bounded(EnvThumbHeight, 400, minThumbPx, maxThumbPx),
 		MetaTimeout:   e.duration(EnvMetaTimeout, 5*time.Second),
 		MetaMaxHTML:   int64(e.integer(EnvMetaMaxHTMLKB, 512)) << 10,
 		MetaMaxImage:  int64(e.integer(EnvMetaMaxImgKB, 2048)) << 10,
 		MetaRedirect:  e.integer(EnvMetaRedirects, 3),
 		MetaMinImgPx:  e.integer(EnvMetaMinImgPx, 120),
+		MaxConcurrent: e.integer(EnvMaxConcurrent, 1),
+		MinInterval:   time.Duration(e.integer(EnvMinInterval, 3600)) * time.Second,
+		RenderTimeout: time.Duration(e.integer(EnvRenderTimeout, 30)) * time.Second,
+		IdleStop:      time.Duration(e.integer(EnvIdleStop, 120)) * time.Second,
 	}
 }
 

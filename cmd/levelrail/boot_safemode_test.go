@@ -67,17 +67,25 @@ func TestPrepareBootBackoffWaitsAndHonoursCancel(t *testing.T) {
 	t.Setenv(safemode.EnvBackoffBase, "300ms")
 	safemode.NewLedger(dir).Begin()
 
-	start := time.Now()
-	prepareBoot(context.Background(), quietBootLogger())
-	if time.Since(start) < 250*time.Millisecond {
-		t.Fatal("a boot after a failed one must wait out the backoff")
-	}
+	var waits []time.Duration
+	orig := bootWait
+	bootWait = func(_ context.Context, d time.Duration) { waits = append(waits, d) }
+	t.Cleanup(func() { bootWait = orig })
 
+	prepareBoot(context.Background(), quietBootLogger())
+	if len(waits) != 1 || waits[0] <= 0 {
+		t.Fatalf("a boot after a failed one must wait out the backoff, got %v", waits)
+	}
+}
+
+func TestBootWaitHonoursCancel(t *testing.T) {
 	ctx, cancel := context.WithCancel(context.Background())
 	cancel()
-	start = time.Now()
-	prepareBoot(ctx, quietBootLogger())
-	if time.Since(start) > 200*time.Millisecond {
+	done := make(chan struct{})
+	go func() { bootWait(ctx, time.Hour); close(done) }()
+	select {
+	case <-done:
+	case <-time.After(10 * time.Second):
 		t.Fatal("a stop signal during the backoff must end the wait")
 	}
 }

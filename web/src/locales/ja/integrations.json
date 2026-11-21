@@ -151,5 +151,25 @@
         "hint": "アラートとイベントのチャネル"
       }
     }
+  },
+  "fields": {
+    "logDrain": {
+      "type": {
+        "label": "送信先の種類",
+        "help": "ログの送信先です。HTTPエンドポイントまたはsyslogです。"
+      },
+      "target_http": {
+        "label": "送信先URL",
+        "help": "ログストリームを受け取るHTTP URLです。"
+      },
+      "target_syslog": {
+        "label": "送信先",
+        "help": "network://host:port形式のsyslogアドレスです。空欄ならローカルsyslogです。"
+      },
+      "enabled": {
+        "label": "転送",
+        "help": "設定を残したまま転送をオンまたは一時停止します。"
+      }
+    }
   }
 }

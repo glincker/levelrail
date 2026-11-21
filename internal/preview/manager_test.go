@@ -237,7 +237,7 @@ func TestQueue_SingleFlightAndCoalescing(t *testing.T) {
 func TestQueue_DropsOldestWhenFull(t *testing.T) {
 	h := newHarness(t, func(c *Config) { c.QueueDepth = 2 })
 	h.m.mu.Lock()
-	h.m.running = true
+	h.m.workers = 1
 	h.m.mu.Unlock()
 	h.m.enqueue(job{app: "a"})
 	h.m.enqueue(job{app: "b"})

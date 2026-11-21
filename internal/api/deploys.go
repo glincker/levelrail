@@ -85,6 +85,9 @@ type deployTriggerResult struct {
 	// CDNWarning is set when a publish, deploy or rollback could not purge the
 	// CDN cache. The publish itself succeeded.
 	CDNWarning string `json:"cdn_warning,omitempty"`
+	// Serving is "live" or "pending" for a Pages promote or rollback: whether the ingress
+	// already serves the new files when the call returns.
+	Serving string `json:"serving,omitempty"`
 }
 
 // handleTriggerDeploy handles POST /api/v1/apps/{name}/deploys. It

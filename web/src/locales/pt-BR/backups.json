@@ -518,5 +518,107 @@
     "keyType": "Tipo de chave",
     "fingerprint": "Impressão digital",
     "confirm": "Conferi esta impressão digital com o servidor"
+  },
+  "fields": {
+    "backupTarget": {
+      "name": {
+        "label": "Nome",
+        "help": "Nome exibido no painel e na CLI."
+      },
+      "provider": {
+        "label": "Provedor",
+        "help": "Onde os backups são armazenados."
+      },
+      "s3": {
+        "bucket": {
+          "label": "Bucket",
+          "help": "Nome do bucket que recebe os backups."
+        },
+        "region": {
+          "label": "Região",
+          "help": "Região do bucket. Provedores personalizados a exigem."
+        },
+        "endpoint": {
+          "label": "Endpoint",
+          "help": "URL compatível com S3. R2 e provedores personalizados a exigem."
+        },
+        "access_key_id": {
+          "label": "ID da chave de acesso",
+          "help": "Chave de acesso das credenciais."
+        },
+        "secret_access_key": {
+          "label": "Chave de acesso secreta",
+          "help": "Armazenada criptografada e nunca exibida novamente."
+        }
+      },
+      "custom": {
+        "region": {
+          "label": "Região",
+          "help": "Região do bucket. Provedores personalizados a exigem."
+        }
+      },
+      "local": {
+        "path": {
+          "label": "Diretório",
+          "help": "Pasta sob a raiz de backup do plano de controle."
+        }
+      },
+      "webdav": {
+        "endpoint": {
+          "label": "URL do compartilhamento",
+          "help": "Endereço https do compartilhamento WebDAV."
+        },
+        "directory": {
+          "label": "Diretório remoto",
+          "help": "Diretório do compartilhamento que recebe os backups."
+        },
+        "username": {
+          "label": "Usuário",
+          "help": "Nome da conta usada para entrar."
+        },
+        "password": {
+          "label": "Senha",
+          "help": "Armazenada criptografada e nunca exibida novamente."
+        },
+        "ca_bundle": {
+          "label": "Pacote de CA",
+          "help": "Certificados PEM opcionais a confiar. Armazenados criptografados e nunca exibidos novamente."
+        }
+      },
+      "sftp": {
+        "endpoint": {
+          "label": "Servidor",
+          "help": "Host ou HOST:PORTA do servidor SFTP."
+        },
+        "path": {
+          "label": "Diretório remoto",
+          "help": "Caminhos relativos começam no diretório de login. Caminhos com .. são recusados."
+        },
+        "username": {
+          "label": "Usuário",
+          "help": "Nome da conta usada para entrar."
+        },
+        "auth": {
+          "label": "Autenticação",
+          "help": "Entre com senha ou chave privada."
+        },
+        "password": {
+          "label": "Senha",
+          "help": "Armazenada criptografada e nunca exibida novamente."
+        },
+        "private_key": {
+          "label": "Chave privada",
+          "help": "Chave PEM ou OpenSSH. Armazenada criptografada e nunca exibida novamente."
+        },
+        "private_key_passphrase": {
+          "label": "Frase secreta da chave",
+          "help": "Necessária só para chave criptografada. Armazenada criptografada e nunca exibida novamente."
+        },
+        "host_key": {
+          "label": "Chave do host",
+          "help": "Chave do servidor fixada. Compare a impressão digital com a do dono do servidor."
+        }
+      }
+    }
   }
 }

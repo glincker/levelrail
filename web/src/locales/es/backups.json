@@ -509,5 +509,107 @@
     "keyType": "Tipo de clave",
     "fingerprint": "Huella",
     "confirm": "He comprobado esta huella con el servidor"
+  },
+  "fields": {
+    "backupTarget": {
+      "name": {
+        "label": "Nombre",
+        "help": "Nombre que se muestra en el panel y en la CLI."
+      },
+      "provider": {
+        "label": "Proveedor",
+        "help": "Dónde se guardan las copias de seguridad."
+      },
+      "s3": {
+        "bucket": {
+          "label": "Bucket",
+          "help": "Nombre del bucket que recibe las copias."
+        },
+        "region": {
+          "label": "Región",
+          "help": "Región del bucket. Los proveedores personalizados la exigen."
+        },
+        "endpoint": {
+          "label": "Endpoint",
+          "help": "URL compatible con S3. R2 y los proveedores personalizados la exigen."
+        },
+        "access_key_id": {
+          "label": "ID de clave de acceso",
+          "help": "Clave de acceso de las credenciales."
+        },
+        "secret_access_key": {
+          "label": "Clave de acceso secreta",
+          "help": "Se guarda cifrada y nunca se vuelve a mostrar."
+        }
+      },
+      "custom": {
+        "region": {
+          "label": "Región",
+          "help": "Región del bucket. Los proveedores personalizados la exigen."
+        }
+      },
+      "local": {
+        "path": {
+          "label": "Directorio",
+          "help": "Carpeta bajo la raíz de copias del plano de control."
+        }
+      },
+      "webdav": {
+        "endpoint": {
+          "label": "URL del recurso",
+          "help": "Dirección https del recurso WebDAV."
+        },
+        "directory": {
+          "label": "Directorio remoto",
+          "help": "Directorio del recurso que recibe las copias."
+        },
+        "username": {
+          "label": "Usuario",
+          "help": "Nombre de cuenta para iniciar sesión."
+        },
+        "password": {
+          "label": "Contraseña",
+          "help": "Se guarda cifrada y nunca se vuelve a mostrar."
+        },
+        "ca_bundle": {
+          "label": "Paquete de CA",
+          "help": "Certificados PEM opcionales de confianza. Se guardan cifrados y nunca se vuelven a mostrar."
+        }
+      },
+      "sftp": {
+        "endpoint": {
+          "label": "Servidor",
+          "help": "Host o HOST:PUERTO del servidor SFTP."
+        },
+        "path": {
+          "label": "Directorio remoto",
+          "help": "Las rutas relativas parten del directorio de inicio. Se rechazan las rutas con .."
+        },
+        "username": {
+          "label": "Usuario",
+          "help": "Nombre de cuenta para iniciar sesión."
+        },
+        "auth": {
+          "label": "Autenticación",
+          "help": "Inicia sesión con contraseña o clave privada."
+        },
+        "password": {
+          "label": "Contraseña",
+          "help": "Se guarda cifrada y nunca se vuelve a mostrar."
+        },
+        "private_key": {
+          "label": "Clave privada",
+          "help": "Clave PEM u OpenSSH. Se guarda cifrada y nunca se vuelve a mostrar."
+        },
+        "private_key_passphrase": {
+          "label": "Frase de la clave",
+          "help": "Solo para claves cifradas. Se guarda cifrada y nunca se vuelve a mostrar."
+        },
+        "host_key": {
+          "label": "Clave de host",
+          "help": "Clave del servidor fijada. Compara su huella con la del propietario del servidor."
+        }
+      }
+    }
   }
 }

@@ -209,3 +209,15 @@ describe('AppPreviewCard', () => {
     expect(document.querySelector('img')).toHaveAttribute('src', IMG)
   })
 })
+
+describe('AppPreviewCard render state', () => {
+  it('shows a skeleton while a render is queued', () => {
+    renderCard(app({ preview: { state: 'queued', image_url: '/x.jpg' } }))
+    expect(screen.getByTestId('card-render-skeleton')).toBeTruthy()
+    expect(document.querySelector('img')).toBeNull()
+  })
+  it('shows a quiet text note when the render failed', () => {
+    renderCard(app({ preview: { state: 'failed', reason: 'timeout' } }))
+    expect(screen.getByText('Preview unavailable')).toBeTruthy()
+  })
+})

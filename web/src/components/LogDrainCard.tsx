@@ -20,6 +20,7 @@ import {
 import { Field, FieldDescription, FieldLabel } from '@/components/ui/field'
 import { toast } from '@/components/ui/toast'
 import { useClearLogDrain, useSetLogDrain } from '../queries/apps'
+import { useLogDrainFields } from '../queries/useBackupTargetFields'
 import type { AppDetail, LogDrainType } from '../types/appDetail'
 
 // Configure/remove card for PUT/DELETE /api/v1/apps/{name}/log-drain
@@ -28,6 +29,7 @@ import type { AppDetail, LogDrainType } from '../types/appDetail'
 // node-local log store (Logs tab), never a replacement for it.
 export function LogDrainCard({ app }: { app: AppDetail }) {
   const existing = app.log_drain
+  const fields = useLogDrainFields()
   const [type, setType] = useState<LogDrainType>(existing?.type ?? 'http')
   const [target, setTarget] = useState(existing?.target ?? '')
   const setLogDrain = useSetLogDrain()
@@ -139,7 +141,9 @@ export function LogDrainCard({ app }: { app: AppDetail }) {
 
         <div className="space-y-3">
           <Field>
-            <FieldLabel htmlFor="log-drain-type">Sink type</FieldLabel>
+            <FieldLabel htmlFor="log-drain-type">
+              {fields.label('type', 'Sink type')}
+            </FieldLabel>
             <Select
               value={type}
               onValueChange={(value) => {
@@ -159,7 +163,9 @@ export function LogDrainCard({ app }: { app: AppDetail }) {
           </Field>
           <Field>
             <FieldLabel htmlFor="log-drain-target">
-              {type === 'http' ? 'Endpoint URL' : 'Syslog address'}
+              {type === 'http'
+                ? fields.label('target_http', 'Endpoint URL')
+                : fields.label('target_syslog', 'Syslog address')}
             </FieldLabel>
             <Input
               id="log-drain-target"

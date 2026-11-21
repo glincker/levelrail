@@ -12,6 +12,7 @@ import (
 	"time"
 
 	"github.com/GLINCKER/levelrail/internal/preview"
+	"github.com/GLINCKER/levelrail/internal/store"
 )
 
 const previewBodyLimit = 4 << 10
@@ -296,11 +297,20 @@ func servePreviewImage(w http.ResponseWriter, r *http.Request, path string) {
 	http.ServeContent(w, r, "", info.ModTime(), f)
 }
 
+// RenderableApp reports whether an app's kind has a page worth rendering:
+// web and static only. API, worker, cron and database cards are type specific.
+func RenderableApp(svc store.DesiredService) bool {
+	kind, _ := classifyApp(kindInputFor(svc, false))
+	return kind == appKindWeb || kind == appKindStatic
+}
+
 // previewCardResource is the list-entry thumbnail: an image URL when a file
-// exists, card metadata otherwise.
+// exists, card metadata otherwise, and State while a real render is pending.
 type previewCardResource struct {
 	ImageURL string            `json:"image_url,omitempty"`
 	Card     *preview.CardMeta `json:"card,omitempty"`
+	State    string            `json:"state,omitempty"`
+	Reason   string            `json:"reason,omitempty"`
 }
 
 // previewLatestLister is optional on PreviewService so one list request can
@@ -309,11 +319,30 @@ type previewLatestLister interface {
 	LatestRenderable(ctx context.Context, apps []string) (map[string]preview.Record, error)
 }
 
+// previewCardStater is optional too: it adds the render state and queues a
+// background render for an app that has none, never waiting for it.
+type previewCardStater interface {
+	CardStates(ctx context.Context, apps []string) (map[string]preview.CardState, error)
+}
+
 // listPreviewCards returns the latest thumbnail per app, empty when the
-// service is absent or fails (cards then fall back to the placeholder).
-func (rt *Router) listPreviewCards(ctx context.Context, apps []string) map[string]previewCardResource {
+// service is absent or fails (cards then fall back to the placeholder). The
+// render state is reported only for web and static apps.
+func (rt *Router) listPreviewCards(ctx context.Context, svcs []store.DesiredService) map[string]previewCardResource {
+	if rt.preview == nil || len(svcs) == 0 {
+		return nil
+	}
+	apps := make([]string, 0, len(svcs))
+	renderable := make(map[string]bool, len(svcs))
+	for _, s := range svcs {
+		apps = append(apps, s.Name)
+		renderable[s.Name] = RenderableApp(s)
+	}
+	if cs, ok := rt.preview.(previewCardStater); ok {
+		return rt.cardsFromStates(ctx, cs, apps, renderable)
+	}
 	l, ok := rt.preview.(previewLatestLister)
-	if !ok || len(apps) == 0 {
+	if !ok {
 		return nil
 	}
 	recs, err := l.LatestRenderable(ctx, apps)
@@ -328,6 +357,34 @@ func (rt *Router) listPreviewCards(ctx context.Context, apps []string) map[strin
 			continue
 		}
 		out[app] = previewCardResource{ImageURL: res.ImageURL, Card: res.Meta}
+	}
+	return out
+}
+
+func (rt *Router) cardsFromStates(ctx context.Context, cs previewCardStater, apps []string, renderable map[string]bool) map[string]previewCardResource {
+	// Only web and static apps are asked for: asking also queues a render.
+	ask := make([]string, 0, len(apps))
+	for _, a := range apps {
+		if renderable[a] {
+			ask = append(ask, a)
+		}
+	}
+	states, err := cs.CardStates(ctx, ask)
+	if err != nil {
+		rt.logger.Warn("api: latest previews for app list failed", slog.String("error", err.Error()))
+		return nil
+	}
+	out := make(map[string]previewCardResource, len(states))
+	for app, st := range states {
+		card := previewCardResource{State: st.State, Reason: st.Reason}
+		if st.Record != nil {
+			res := toPreviewRecordResource(app, *st.Record)
+			card.ImageURL, card.Card = res.ImageURL, res.Meta
+		}
+		if card.ImageURL == "" && card.Card == nil && card.State == preview.StateNone {
+			continue
+		}
+		out[app] = card
 	}
 	return out
 }

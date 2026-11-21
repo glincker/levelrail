@@ -18,6 +18,7 @@ import (
 	smithyhttp "github.com/aws/smithy-go/transport/http"
 
 	"github.com/GLINCKER/levelrail/internal/backup"
+	"github.com/GLINCKER/levelrail/internal/fielddesc"
 	"github.com/GLINCKER/levelrail/internal/store"
 )
 
@@ -296,7 +297,31 @@ func backupTargetDestination(provider, endpoint, region string) string {
 	return kind + "|" + strings.ToLower(u.Scheme) + "|" + strings.ToLower(u.Hostname()) + "|" + port
 }
 
+// descriptorProblem runs the shared field registry over the request values so required
+// and select errors read the same on every surface. Skipped keys are optional credentials.
+func descriptorProblem(values map[string]string, skip ...string) error {
+	res, ok := fielddesc.Get(fielddesc.BackupTarget)
+	if !ok {
+		return nil
+	}
+	if values["private_key"] != "" {
+		values["auth"] = "key"
+	} else {
+		values["auth"] = "password"
+	}
+	if msg := fielddesc.FirstProblem(res.ValidateExcept(values, skip...)); msg != "" {
+		return errors.New(msg)
+	}
+	return nil
+}
+
 func validateCreateBackupTargetRequest(ctx context.Context, req createBackupTargetRequest) error {
+	if err := descriptorProblem(map[string]string{
+		"name": req.Name, "provider": req.Provider, "endpoint": req.Endpoint, "region": req.Region, "bucket": req.Bucket,
+		"access_key_id": req.AccessKeyID, "secret_access_key": req.SecretAccessKey, "private_key": req.PrivateKey, "host_key": req.HostKey,
+	}); err != nil {
+		return err
+	}
 	if req.Provider == backupProviderSFTP {
 		if err := validateSFTPTarget(ctx, req.Name, req.Endpoint, req.Bucket, req.HostKey); err != nil {
 			return err
@@ -358,6 +383,12 @@ type updateBackupTargetRequest struct {
 }
 
 func validateUpdateBackupTargetRequest(ctx context.Context, req updateBackupTargetRequest) error {
+	if err := descriptorProblem(map[string]string{
+		"name": req.Name, "provider": req.Provider, "endpoint": req.Endpoint, "region": req.Region, "bucket": req.Bucket,
+		"private_key": req.PrivateKey, "host_key": req.HostKey,
+	}, "access_key_id", "secret_access_key", "private_key"); err != nil {
+		return err
+	}
 	if req.Provider == backupProviderSFTP {
 		if err := validateSFTPTarget(ctx, req.Name, req.Endpoint, req.Bucket, req.HostKey); err != nil {
 			return err
@@ -837,4 +868,15 @@ func randomBackupTargetID() (string, error) {
 		return "", fmt.Errorf("api: generate backup target id: %w", err)
 	}
 	return "bkt_" + base64.RawURLEncoding.EncodeToString(buf), nil
+}
+
+// handleGetBackupTargetFields handles GET /api/v1/backup-targets/field-descriptors: the one field
+// registry the CLI, the dashboard form and the docs are built from.
+func (rt *Router) handleGetBackupTargetFields(w http.ResponseWriter, _ *http.Request) {
+	res, ok := fielddesc.Get(fielddesc.BackupTarget)
+	if !ok {
+		rt.internalError(w, "field descriptors", errors.New("field descriptors unavailable"))
+		return
+	}
+	writeJSON(w, http.StatusOK, res)
 }

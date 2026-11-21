@@ -415,6 +415,8 @@ type DeployTriggerResult struct {
 	PendingApproval *DeployApprovalResource `json:"pending_approval,omitempty"`
 	// DeployID is the attempt this trigger created; empty from older servers.
 	DeployID string `json:"deploy_id,omitempty"`
+	// Serving is "live" or "pending" for a Pages rollback; empty for other deploys.
+	Serving string `json:"serving,omitempty"`
 }
 
 // DeployApprovalResource mirrors internal/api's deployApprovalResource

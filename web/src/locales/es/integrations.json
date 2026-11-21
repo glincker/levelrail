@@ -156,5 +156,25 @@
         "hint": "Canales para alertas y eventos"
       }
     }
+  },
+  "fields": {
+    "logDrain": {
+      "type": {
+        "label": "Tipo de destino",
+        "help": "A dónde van los registros: un endpoint HTTP o syslog."
+      },
+      "target_http": {
+        "label": "URL de destino",
+        "help": "URL HTTP que recibe el flujo de registros."
+      },
+      "target_syslog": {
+        "label": "Destino",
+        "help": "Dirección syslog como network://host:puerto. Vacío para syslog local."
+      },
+      "enabled": {
+        "label": "Reenvío",
+        "help": "Activa o pausa el reenvío sin perder la configuración."
+      }
+    }
   }
 }

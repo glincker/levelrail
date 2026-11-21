@@ -34,6 +34,7 @@ import { Field, FieldError, FieldLabel } from '@/components/ui/field'
 import { toast } from '@/components/ui/toast'
 import { ApiError } from '../lib/apiError'
 import { useCreateBackupTarget } from '../queries/backupTargets'
+import { useBackupTargetFields } from '../queries/useBackupTargetFields'
 import { PROVIDER_LABEL } from './backupTargetProvider'
 import { BrandTile } from './BrandLogoBadge'
 import { SftpHostKeyCheck } from './SftpHostKeyCheck'
@@ -152,6 +153,7 @@ const ENDPOINT_PLACEHOLDER: Record<BackupProvider, string> = {
 export function CreateBackupTargetDialog() {
   const { t } = useTranslation('settings')
   const { t: tb } = useTranslation('backups')
+  const fields = useBackupTargetFields()
   const [open, setOpen] = useState(false)
   const [revealSecret, setRevealSecret] = useState(false)
   const createBackupTarget = useCreateBackupTarget()
@@ -306,7 +308,9 @@ export function CreateBackupTargetDialog() {
               className="space-y-4"
             >
               <Field>
-                <FieldLabel htmlFor="backup-target-name">Name</FieldLabel>
+                <FieldLabel htmlFor="backup-target-name">
+                  {fields.label('name', 'Name')}
+                </FieldLabel>
                 <Input
                   id="backup-target-name"
                   placeholder="e.g. primary-backups"
@@ -377,7 +381,7 @@ export function CreateBackupTargetDialog() {
               ) : isSftp ? (
                 <Field>
                   <FieldLabel htmlFor="backup-target-sftp-path">
-                    {tb('sftpTarget.path')}
+                    {fields.label('sftp.path', tb('sftpTarget.path'))}
                   </FieldLabel>
                   <Input
                     id="backup-target-sftp-path"
@@ -398,7 +402,7 @@ export function CreateBackupTargetDialog() {
                 <>
                   <Field>
                     <FieldLabel htmlFor="backup-target-bucket">
-                      Bucket
+                      {fields.label('s3.bucket', 'Bucket')}
                     </FieldLabel>
                     <Input
                       id="backup-target-bucket"
@@ -410,7 +414,7 @@ export function CreateBackupTargetDialog() {
 
                   <Field>
                     <FieldLabel htmlFor="backup-target-region">
-                      Region{' '}
+                      {fields.label('s3.region', 'Region')}{' '}
                       <span className="text-muted-foreground">(optional)</span>
                     </FieldLabel>
                     <Input
@@ -426,7 +430,9 @@ export function CreateBackupTargetDialog() {
                 <Field>
                   <FieldLabel htmlFor="backup-target-endpoint">
                     <span className="flex items-center gap-2">
-                      {isSftp ? tb('sftpTarget.host') : 'Endpoint'}
+                      {isSftp
+                        ? fields.label('sftp.endpoint', tb('sftpTarget.host'))
+                        : fields.label('s3.endpoint', 'Endpoint')}
                       <BrandTile
                         name={backupTargetBrand(
                           watchedProvider,
@@ -450,7 +456,7 @@ export function CreateBackupTargetDialog() {
                 <>
                   <Field>
                     <FieldLabel htmlFor="backup-target-access-key-id">
-                      {tb('sftpTarget.username')}
+                      {fields.label('sftp.username', tb('sftpTarget.username'))}
                     </FieldLabel>
                     <Input
                       id="backup-target-access-key-id"
@@ -464,7 +470,7 @@ export function CreateBackupTargetDialog() {
                   </Field>
                   <Field>
                     <FieldLabel htmlFor="backup-target-auth">
-                      {tb('sftpTarget.auth')}
+                      {fields.label('sftp.auth', tb('sftpTarget.auth'))}
                     </FieldLabel>
                     <Controller
                       control={control}
@@ -492,11 +498,18 @@ export function CreateBackupTargetDialog() {
                       )}
                     />
                   </Field>
-                  {watchedAuth === 'key' ? (
+                  {fields.visible(
+                    'sftp.private_key',
+                    { provider: 'sftp', auth: watchedAuth },
+                    watchedAuth === 'key',
+                  ) ? (
                     <>
                       <Field>
                         <FieldLabel htmlFor="backup-target-private-key">
-                          {tb('sftpTarget.privateKey')}
+                          {fields.label(
+                            'sftp.private_key',
+                            tb('sftpTarget.privateKey'),
+                          )}
                         </FieldLabel>
                         <Textarea
                           id="backup-target-private-key"
@@ -509,7 +522,10 @@ export function CreateBackupTargetDialog() {
                       </Field>
                       <Field>
                         <FieldLabel htmlFor="backup-target-passphrase">
-                          {tb('sftpTarget.passphrase')}
+                          {fields.label(
+                            'sftp.private_key_passphrase',
+                            tb('sftpTarget.passphrase'),
+                          )}
                         </FieldLabel>
                         <Input
                           id="backup-target-passphrase"
@@ -522,7 +538,10 @@ export function CreateBackupTargetDialog() {
                   ) : (
                     <Field>
                       <FieldLabel htmlFor="backup-target-secret-access-key">
-                        {tb('sftpTarget.password')}
+                        {fields.label(
+                          'sftp.password',
+                          tb('sftpTarget.password'),
+                        )}
                       </FieldLabel>
                       <Input
                         id="backup-target-secret-access-key"
@@ -554,7 +573,7 @@ export function CreateBackupTargetDialog() {
                 <>
                   <Field>
                     <FieldLabel htmlFor="backup-target-access-key-id">
-                      Access key ID
+                      {fields.label('s3.access_key_id', 'Access key ID')}
                     </FieldLabel>
                     <Input
                       id="backup-target-access-key-id"
@@ -569,7 +588,10 @@ export function CreateBackupTargetDialog() {
 
                   <Field>
                     <FieldLabel htmlFor="backup-target-secret-access-key">
-                      Secret access key
+                      {fields.label(
+                        's3.secret_access_key',
+                        'Secret access key',
+                      )}
                     </FieldLabel>
                     <div className="relative">
                       <Input

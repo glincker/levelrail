@@ -1130,5 +1130,23 @@
     "optionalHint": "TLS neben dem unverschlüsselten privaten Port anbieten, damit ältere Clients sich weiter verbinden können. Die Datenbank startet neu.",
     "optionalToast": "TLS ist jetzt optional, die Datenbank wird neu gestartet",
     "optionalFailed": "TLS konnte nicht umgestellt werden"
+  },
+  "wiring": {
+    "title": "So ist diese Datenbank verbunden",
+    "apps": "Verbundene Apps",
+    "noApps": "Noch keine App verbunden.",
+    "outTitle": "Wo sie läuft und wer sie erreicht",
+    "node": "Knoten",
+    "noNode": "Kein Knoten",
+    "access": "Zugriff",
+    "private": "Privat",
+    "public": "Öffentlich",
+    "publicOn": "Öffentlich auf Port {{port}}",
+    "backups": "Backups",
+    "noBackups": "Kein Backup-Zeitplan",
+    "project": "Projekt",
+    "noProject": "Kein Projekt",
+    "on": "Aktiv",
+    "none": "Keine"
   }
 }

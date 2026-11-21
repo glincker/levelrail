@@ -7,10 +7,13 @@ import (
 	"log/slog"
 	"os"
 	"strconv"
+	"time"
 
+	"github.com/GLINCKER/levelrail/internal/api"
 	"github.com/GLINCKER/levelrail/internal/docker"
 	"github.com/GLINCKER/levelrail/internal/preview"
 	"github.com/GLINCKER/levelrail/internal/reconcile/application"
+	"github.com/GLINCKER/levelrail/internal/runtimesettings"
 	"github.com/GLINCKER/levelrail/internal/store"
 )
 
@@ -76,12 +79,22 @@ func (r previewResolver) Resolve(ctx context.Context, app, image string) (previe
 		return &preview.SkipError{DeploymentID: id, Reason: reason, Detail: detail}
 	}
 	switch {
+	case svc.NodeID != "" && svc.NodeID != r.localNodeID && len(svc.Domains) > 0:
+		// No agent protocol change: a remote app is rendered through its public address.
+		return preview.Target{DeploymentID: id, Image: svc.Image, PublicURL: "https://" + svc.Domains[0]}, nil
 	case svc.NodeID != "" && svc.NodeID != r.localNodeID:
-		return preview.Target{}, skip(preview.ReasonRemoteNode, "the app runs on another node")
+		return preview.Target{}, skip(preview.ReasonRemoteNode, "the app runs on another node and has no public address")
 	case svc.AppID == "":
 		return preview.Target{}, skip(preview.ReasonNoAppNetwork, "the app has no private network to capture from")
 	case svc.Port <= 0:
 		return preview.Target{}, skip(preview.ReasonNoAppNetwork, "the app declares no port")
+	}
+	state, err := r.runtime.InspectByName(ctx, application.ContainerName(svc.Name, application.NameImage(*svc), svc.RestartNonce))
+	if err != nil {
+		return preview.Target{}, fmt.Errorf("inspect container of %q: %w", app, err)
+	}
+	if state == nil || !state.Running {
+		return preview.Target{}, skip(preview.ReasonUnreachable, "the app is not running")
 	}
 	return preview.Target{
 		DeploymentID: id, Image: svc.Image,
@@ -136,6 +149,18 @@ func (r previewResolver) ResolveMeta(ctx context.Context, app, image string) (pr
 	}, nil
 }
 
+// Renderable limits automatic renders to web and static apps that serve a page.
+func (r previewResolver) Renderable(ctx context.Context, app string) (bool, error) {
+	svc, err := r.db.GetDesiredService(ctx, app)
+	if errors.Is(err, store.ErrServiceNotFound) {
+		return false, nil
+	}
+	if err != nil {
+		return false, fmt.Errorf("load app %q: %w", app, err)
+	}
+	return api.RenderableApp(*svc), nil
+}
+
 func (r previewResolver) CurrentDeployment(ctx context.Context, app string) (string, error) {
 	svc, err := r.db.GetDesiredService(ctx, app)
 	if errors.Is(err, store.ErrServiceNotFound) {
@@ -162,6 +187,7 @@ func (r previewResolver) AppExists(ctx context.Context, app string) (bool, error
 func newPreviewManager(ctx context.Context, logger *slog.Logger, db *store.DB, client *docker.Client, dataDir, namespace, localNodeID string) *preview.Manager {
 	cfg := preview.ConfigFromEnv(os.LookupEnv, logger)
 	sqlStore := preview.NewSQLStore(db)
+	settings := runtimesettings.New(db, os.LookupEnv)
 	m := preview.New(cfg, preview.Deps{
 		Store:     sqlStore,
 		Resolver:  previewResolver{db: db, runtime: client, sql: sqlStore, networkPrefix: namespace, localNodeID: localNodeID},
@@ -169,7 +195,23 @@ func newPreviewManager(ctx context.Context, logger *slog.Logger, db *store.DB, c
 		DataDir:   dataDir,
 		Namespace: namespace,
 		Logger:    logger,
-	})
+	}, preview.WithLive(func(c context.Context) preview.Live { return liveFromSettings(c, settings) }))
 	m.Start(ctx)
 	return m
+}
+
+// liveFromSettings maps the runtime settings to the manager's live values.
+func liveFromSettings(ctx context.Context, s *runtimesettings.Service) preview.Live {
+	r := s.PreviewRender(ctx)
+	mode, err := preview.ParseMode(r.DefaultMode)
+	if err != nil || mode == preview.ModeOff {
+		mode = preview.ModeScreenshot
+	}
+	return preview.Live{
+		DefaultMode: mode, MaxConcurrent: r.MaxConcurrent,
+		MinInterval:   time.Duration(r.MinInterval) * time.Second,
+		RenderTimeout: time.Duration(r.RenderTimeout) * time.Second,
+		IdleStop:      time.Duration(r.IdleStop) * time.Second,
+		MemoryMB:      int64(r.MemoryMB), CPUs: float64(r.CPUMillis) / 1000,
+	}
 }

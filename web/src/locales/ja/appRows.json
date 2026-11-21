@@ -62,6 +62,7 @@
   "description": "説明: {{text}}",
   "card": {
     "noPreview": "プレビューなし",
+    "previewFailed": "プレビューを表示できません",
     "noDomain": "ドメインなし",
     "staticSite": "静的サイト",
     "lastDeploy": "デプロイ",

@@ -1163,5 +1163,59 @@
     "macosNote": "Vorschau. Workloads laufen über Docker Desktop, OrbStack oder Lima, die die Dateien Ihres Macs teilen. Ein Mac eignet sich daher am besten als Builder und nicht als Ort für Produktions-Apps.",
     "waiting": "Warten auf die Verbindung des Nodes",
     "connected": "Verbunden: {{name}}"
+  },
+  "timeline": {
+    "title": "Gesundheitsverlauf",
+    "window": "Zeitfenster",
+    "windows": {
+      "24h": "24 Stunden",
+      "168h": "7 Tage",
+      "720h": "30 Tage"
+    },
+    "loading": "Gesundheitsverlauf wird geladen",
+    "unavailable": "Der Verlauf ist gerade nicht verfügbar.",
+    "stripLabel": "Online- und Offline-Zeiträume",
+    "noUptime": "In diesem Zeitfenster wurde keine Online- oder Offline-Zeit erfasst.",
+    "summary_one": "{{uptime}} % Verfügbarkeit, {{count}} Wechsel",
+    "summary_other": "{{uptime}} % Verfügbarkeit, {{count}} Wechsel"
+  },
+  "doctor": {
+    "title": "Agent-Doktor",
+    "run": "Prüfungen starten",
+    "hide": "Prüfungen ausblenden",
+    "running": "Prüfungen laufen",
+    "unavailable": "Die Prüfungen sind gerade nicht verfügbar.",
+    "noReport": "Der Agent hat noch keinen Preflight-Bericht gesendet, daher fehlen die Prüfungen für Docker, Speicherplatz, Uhr und Ports.",
+    "status": {
+      "pass": "OK",
+      "warn": "Warnung",
+      "fail": "Fehler",
+      "unknown": "Unbekannt"
+    },
+    "checks": {
+      "docker": "Docker",
+      "architecture": "Architektur",
+      "disk": "Speicherplatz",
+      "clock": "Uhr",
+      "wireguard": "WireGuard",
+      "mesh_port": "Mesh-Port",
+      "firewall": "Firewall",
+      "control_plane": "Control Plane",
+      "cert": "Zertifikat",
+      "heartbeat": "Heartbeat",
+      "agent_version": "Agent-Version",
+      "schedulable": "Planung"
+    }
+  },
+  "skew": {
+    "title_one": "{{count}} Agent liegt hinter {{version}}",
+    "title_other": "{{count}} Agents liegen hinter {{version}}",
+    "description": "Aktualisieren Sie in dieser Reihenfolge: zuerst gesperrte Nodes, dann Online-Nodes, Offline-Nodes zuletzt.",
+    "step": "{{from}} auf {{to}}",
+    "notes": {
+      "cordoned": "gesperrt",
+      "offline": "offline"
+    },
+    "howTo": "Laden Sie auf jedem Node das neue Agent-Image oder die Binärdatei und starten Sie den Agent neu. Die registrierte Identität bleibt erhalten."
   }
 }

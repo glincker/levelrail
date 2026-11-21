@@ -151,5 +151,25 @@
         "hint": "告警和事件的通知渠道"
       }
     }
+  },
+  "fields": {
+    "logDrain": {
+      "type": {
+        "label": "目标类型",
+        "help": "日志发送到哪里:HTTP 端点或 syslog。"
+      },
+      "target_http": {
+        "label": "目标 URL",
+        "help": "接收日志流的 HTTP 地址。"
+      },
+      "target_syslog": {
+        "label": "目标",
+        "help": "network://主机:端口 形式的 syslog 地址。留空使用本机 syslog。"
+      },
+      "enabled": {
+        "label": "转发",
+        "help": "开启或暂停转发,设置不会丢失。"
+      }
+    }
   }
 }

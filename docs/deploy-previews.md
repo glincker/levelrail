@@ -4,14 +4,14 @@ description: "Deploy thumbnails in three tiers, from free page metadata to a rea
 "og:url": "https://docs.levelrail.com/deploy-previews"
 ---
 
-When a deploy goes live, the control plane can save a small thumbnail of the running app and show it in the app's deploy history. There are three modes per app, and the default costs about nothing.
+When a deploy goes live, the control plane can save a small thumbnail of the running app and show it in the app's deploy history. There are three modes per app. By default, app cards show a real screenshot of the running page, rendered once and cached, so the app list shows what your app actually looks like.
 
 ```mermaid
 flowchart TD
   Deploy["Deploy goes live"] --> Mode{"Preview mode?"}
   Mode -->|off| None["No preview"]
-  Mode -->|"metadata (default)"| Meta["One request to the app:<br/>read title + og:image/twitter:image"]
-  Mode -->|screenshot| Shot["Short-lived browser container:<br/>load page, take screenshot"]
+  Mode -->|metadata| Meta["One request to the app:<br/>read title + og:image/twitter:image"]
+  Mode -->|"screenshot (default)"| Shot["Short-lived browser container:<br/>load page, take screenshot"]
   Meta --> HasImg{"Usable image found?"}
   HasImg -->|yes| SiteImg["Thumbnail: Site image"]
   HasImg -->|no| Card["Thumbnail: Card<br/>(title, description, theme color)"]
@@ -23,10 +23,26 @@ flowchart TD
 | Mode | What it does | Cost |
 | --- | --- | --- |
 | `off` | No preview. | None. |
-| `metadata` (default) | One small request to the app, reads its title and social image (`og:image` or `twitter:image`). Uses that image as the thumbnail, or a text card when there is none. | No browser, no container, no browser image download. One request of at most 5 seconds and 512 KB, plus at most one 2 MB social image. |
-| `screenshot` | A real screenshot from a short-lived browser container. | Up to 512 MB of memory and 1 CPU for about 10 seconds per deploy, and a browser image of about 143 MB downloaded once. |
+| `metadata` | One small request to the app, reads its title and social image (`og:image` or `twitter:image`). Uses that image as the thumbnail, or a text card when there is none. | No browser, no container, no browser image download. One request of at most 5 seconds and 512 KB, plus at most one 2 MB social image. |
+| `screenshot` (default) | A real screenshot from a short-lived browser container. | Up to 512 MB of memory and 1 CPU for about 10 seconds per render, at most one render per app per hour, and a browser image of about 143 MB downloaded once. |
 
-New apps start in the server's default mode, `metadata`. Nothing runs while idle in any mode: there is no resident browser, and a screenshot capture starts a container, takes one picture and removes the container again.
+New apps start in the server's default mode, `screenshot`, which you can change with the runtime setting `preview.default_mode` (`metadata` or `screenshot`). A per-app choice always wins.
+
+## When a screenshot renders
+
+- Only **web and static apps** that serve a page render. API, worker, cron and database apps never do: their cards are type specific.
+- A render is queued in the background when an app's card is first listed without a screenshot, and when a new release goes live. It is never done while a request waits, and at most one render is queued per app.
+- Renders are rate limited per app by `preview.min_interval_seconds` (default one hour), so a burst of redeploys costs one render. A manual recapture ignores the limit.
+- Only `preview.max_concurrent` renders run at once (default 1).
+- If the app is not running, answers an error, shows a login or times out, the card shows a quiet text card and the render is **not** retried in a loop. It tries again on the next deploy, or when you recapture.
+- The list API reports `preview.state` for each web or static app: `none`, `queued`, `rendering`, `ready` or `failed` (with a `reason`). The dashboard shows a skeleton while a render is queued or running.
+- An app on another node is rendered through its public address (its first domain) from the control plane, when it has one. The address goes through the same outbound guard as webhooks: internal addresses are refused, and the host name is pinned to the address that was checked. Without a public address the card says `remote_node`.
+
+## Memory cost and how to turn it off
+
+The headless browser is started on demand and stopped `preview.idle_stop_seconds` (default 120) after the last render, so nothing sits in memory between bursts. While running it is capped by `preview.browser_memory_mb` (default 512) and `preview.browser_cpu_millis` (default 1000). Set `preview.idle_stop_seconds` to 0 to stop it right after each render.
+
+To turn real renders off, set `preview.default_mode` to `metadata` (no browser, ever), or set an app to `off`. `APP_PREVIEW_ENABLED=false` switches the whole feature off.
 
 ## Choose a mode
 
@@ -89,7 +105,7 @@ To use a different browser image, point `APP_PREVIEW_IMAGE` at it. It must expos
 
 A preview is a picture of what the app served, so treat it like the app.
 
-- Metadata is on by default and screenshots are opt-in. The default reads only the public head of your page and, at most, one image the page itself names. A screenshot is never taken unless you choose it for that app.
+- Screenshots are the default for web and static apps. If you prefer that nothing renders a browser, set `preview.default_mode` to `metadata`, which reads only the public head of your page and at most one image the page itself names.
 - Internal pages can leak. If the path you pick shows internal data to anyone who can reach the app, the thumbnail shows it too. Pick a public page, such as `/`.
 - The browser never logs in. It sends no cookies and no tokens, and a 401 or 403, or a redirect to a login page, is recorded as skipped with no image stored.
 - The image has the same access as the app. It is served only to people who can read the app, through the authenticated API. It is never public and never appears on the public [status page](/status-page).
@@ -108,17 +124,18 @@ The deploy history shows a "No preview" note with the reason when a capture does
 | `unreachable` | The app did not answer on its private network. |
 | `blank_image` | The page rendered a single flat color. |
 | `no_app_network` | The app has no per-app network or declares no port. |
-| `remote_node` | The app runs on another node. Only the local node is supported. |
+| `remote_node` | The app runs on another node and has no public address to render. |
+| `blocked_target` | The public address resolves to an internal address and was refused. |
 | `browser_image_unavailable` | The browser image could not be pulled. |
 | `not_html` | The page answered something other than HTML (metadata mode). |
 | `redirect` | The page redirected away from the app (metadata mode). |
 | `timeout`, `capture_failed`, `bad_image` | The capture itself failed. |
 
-A failed recapture never replaces a preview that already exists (image or card), and a card never replaces a site image or screenshot.
+Any of these also appears as the `reason` of a failed card state. A failed recapture never replaces a preview that already exists (image or card), and a card never replaces a site image or screenshot.
 
 ## How cards load
 
-The apps list never loads your sites live. `GET /api/v1/apps` carries each app's latest thumbnail URL (or card text) in a `preview` field, so one request describes every card. A card fetches its image only once it scrolls into view. The image URL carries the capture version, and the server answers it with an `ETag`, `Cache-Control: private, max-age=31536000, immutable` (with `?v=`) and Range support, so the browser downloads each deploy's thumbnail once. If the image is missing the card shows the text card, then a plain placeholder. Thumbnails stay JPEG.
+The apps list never loads your sites live. `GET /api/v1/apps` carries each app's latest thumbnail URL (or card text) and its render `state` in a `preview` field, so one request describes every card. A card fetches its image only once it scrolls into view. The image URL carries the capture version, and the server answers it with an `ETag`, `Cache-Control: private, max-age=31536000, immutable` (with `?v=`) and Range support, so the browser downloads each deploy's thumbnail once. If the image is missing the card shows the text card, then a plain placeholder. Thumbnails stay JPEG.
 
 ## Retention and cleanup
 
@@ -134,12 +151,23 @@ These rules apply to every source alike: screenshots, site images and cards.
 
 ## Settings
 
-Set these on the control plane. Unset or malformed values fall back to the default.
+The render settings are runtime settings: change them in **Settings**, with `levelrail-cli settings set <key> <value>` or through the API, and they apply to the next render without a restart. The environment variable only seeds the default. See the [runtime settings reference](/runtime-settings).
+
+| Setting | Default | Meaning |
+| --- | --- | --- |
+| `preview.default_mode` | `screenshot` | Mode of an app nobody has configured: `metadata` or `screenshot`. |
+| `preview.max_concurrent` | `1` | Renders at once, 1 to 8. |
+| `preview.min_interval_seconds` | `3600` | Least seconds between renders of one app. 0 turns the limit off. |
+| `preview.render_timeout_seconds` | `30` | Time limit for one render. |
+| `preview.idle_stop_seconds` | `120` | Stop the browser this long after the last render. |
+| `preview.browser_memory_mb` | `512` | Browser memory cap. |
+| `preview.browser_cpu_millis` | `1000` | Browser CPU cap in thousandths of a core. |
+
+The variables below are read at start, and unset or malformed values fall back to the default.
 
 | Variable | Default | Meaning |
 | --- | --- | --- |
 | `APP_PREVIEW_ENABLED` | `true` | Global switch. When off, nothing runs in any mode and manual captures are refused. |
-| `APP_PREVIEW_DEFAULT_MODE` | `metadata` | Mode of an app nobody has configured: `off`, `metadata` or `screenshot`. |
 | `APP_PREVIEW_META_TIMEOUT` | `5s` | Limit for each request of the metadata mode. |
 | `APP_PREVIEW_META_MAX_HTML_KB` | `512` | Most HTML read from a page. |
 | `APP_PREVIEW_META_MAX_IMAGE_KB` | `2048` | Largest social image downloaded. |
@@ -147,10 +175,9 @@ Set these on the control plane. Unset or malformed values fall back to the defau
 | `APP_PREVIEW_META_MIN_IMAGE_PX` | `120` | Smallest side of a social image worth using. |
 | `APP_PREVIEW_THUMB_HEIGHT` | `400` | Height of the canvas a social image is fitted onto. Between 64 and 2048. |
 | `APP_PREVIEW_IMAGE` | pinned `chromedp/headless-shell` | Browser image. Point it at your own digest-pinned copy if you prefer. |
-| `APP_PREVIEW_TIMEOUT` | `30s` | Hard limit for one capture. |
+| `APP_PREVIEW_TIMEOUT` | `30s` | Seed for the render time limit, and the age after which a leftover capture container is swept. |
 | `APP_PREVIEW_PULL_TIMEOUT` | `5m` | Limit for the first image pull. |
-| `APP_PREVIEW_MEMORY_MB` | `512` | Memory cap of the capture container. |
-| `APP_PREVIEW_CPUS` | `1.0` | CPU cap of the capture container. |
+| `APP_PREVIEW_CPUS` | `1.0` | Seed for the browser CPU cap. |
 | `APP_PREVIEW_VIEWPORT` | `1280x800` | Browser window size. |
 | `APP_PREVIEW_THUMB_WIDTH` | `640` | Thumbnail width in pixels. Between 64 and 2048. |
 | `APP_PREVIEW_QUALITY` | `72` | JPEG quality. |
@@ -180,7 +207,7 @@ Reading needs the app read ability. Changing settings, capturing and pruning nee
 
 ## Limits
 
-- Local node only. Apps on other nodes are skipped.
+- Apps on other nodes render through their public address only, with no agent change. Without one they are skipped.
 - Screenshots skip apps without a per-app network or a declared port. Metadata needs only a running container with a published port.
 - WebP and other formats are not decoded for site images, only JPEG and PNG.
 - The page is requested by service name, so an app that routes by `Host` header shows its default site.
