@@ -98,6 +98,22 @@ export function AwsLinkScopeStep({
           {err('badRegions')}
         </div>
         <div className="space-y-1">
+          <Label htmlFor={`${uid}-zones`}>{t('wizard.scope.zones')}</Label>
+          <Input
+            id={`${uid}-zones`}
+            value={state.zonesText}
+            aria-invalid={issues.has('needsZones') || issues.has('badZones')}
+            onChange={(e) => {
+              onChange({ zonesText: e.target.value })
+            }}
+          />
+          <p className="text-xs text-muted-foreground">
+            {t('wizard.scope.zonesHint')}
+          </p>
+          {err('needsZones')}
+          {err('badZones')}
+        </div>
+        <div className="space-y-1">
           <Label htmlFor={`${uid}-region`}>{t('wizard.scope.region')}</Label>
           <Input
             id={`${uid}-region`}

@@ -3,10 +3,12 @@ package api
 import (
 	"context"
 	"errors"
+	"log/slog"
 	"net/http"
 	"slices"
 	"time"
 
+	"github.com/GLINCKER/levelrail/internal/provision"
 	"github.com/GLINCKER/levelrail/internal/store"
 )
 
@@ -201,28 +203,31 @@ func authorizeCloudGrant(in cloudGrantRequest) error {
 			return errCloudNoEscalation
 		}
 	}
-	if in.ExpiresAt == nil && cloudAllHeldExpire(in.GrantorGrants, in.Resource, in.Now) {
+	if latest, bounded := cloudLatestHeldExpiry(in.GrantorGrants, in.Resource, in.Now); bounded && (in.ExpiresAt == nil || in.ExpiresAt.After(latest)) {
 		return errors.New("a grant cannot outlive the grantor's own access")
 	}
 	return nil
 }
 
-// cloudAllHeldExpire reports whether every grant covering the scope has an expiry.
-func cloudAllHeldExpire(grants []store.CloudGrant, res cloudResource, now time.Time) bool {
-	seen := false
+// cloudLatestHeldExpiry returns the latest expiry among live grants covering the scope.
+// bounded is false when none covers it or any of them never expires.
+func cloudLatestHeldExpiry(grants []store.CloudGrant, res cloudResource, now time.Time) (latest time.Time, bounded bool) {
 	for _, g := range grants {
 		if g.AccountID != res.AccountID || !cloudGrantCovers(g, res) {
 			continue
 		}
-		if g.ExpiresAt != nil && !now.Before(*g.ExpiresAt) {
+		if g.ExpiresAt == nil {
+			return time.Time{}, false
+		}
+		if !now.Before(*g.ExpiresAt) {
 			continue
 		}
-		if g.ExpiresAt == nil {
-			return false
+		bounded = true
+		if g.ExpiresAt.After(latest) {
+			latest = *g.ExpiresAt
 		}
-		seen = true
 	}
-	return seen
+	return latest, bounded
 }
 
 // cloudAuthzStore is the store surface the wrapper needs; *store.DB satisfies it.
@@ -256,11 +261,49 @@ func (rt *Router) cloudCallerFor(ctx context.Context, db cloudAuthzStore, princi
 	if err != nil {
 		return cloudCaller{}, err
 	}
+	if principalType == store.PrincipalTypeToken {
+		if roles, err = rt.scopeTokenRoles(ctx, principalID, roles); err != nil {
+			return cloudCaller{}, err
+		}
+	}
 	c := cloudCaller{teamRoles: roles, principals: []store.CloudPrincipal{{Type: store.CloudPrincipalUser, ID: userID}}}
 	for team := range roles {
 		c.principals = append(c.principals, store.CloudPrincipal{Type: store.CloudPrincipalTeam, ID: team})
 	}
 	return c, nil
+}
+
+// scopeTokenRoles narrows a token owner's team roles to the token's own scope.
+func (rt *Router) scopeTokenRoles(ctx context.Context, tokenID string, roles map[string]string) (map[string]string, error) {
+	scope, err := rt.principalTeamScope(ctx, store.PrincipalTypeToken, tokenID)
+	if err != nil {
+		return nil, err
+	}
+	if scope == nil {
+		return roles, nil
+	}
+	out := map[string]string{}
+	for team := range roles {
+		if role := scope.roleOfTeam(team); role != "" {
+			out[team] = role
+		}
+	}
+	return out, nil
+}
+
+// tokenScopeAllowsAccount is false when a scoped token cannot reach the account's team.
+func (rt *Router) tokenScopeAllowsAccount(ctx context.Context, principalType, principalID string, acct store.CloudAccount) (bool, error) {
+	if principalType != store.PrincipalTypeToken {
+		return true, nil
+	}
+	scope, err := rt.principalTeamScope(ctx, principalType, principalID)
+	if err != nil || scope == nil {
+		return err == nil, err
+	}
+	if acct.TeamID == "" {
+		return scope.instance, nil
+	}
+	return scope.allowsTeam(acct.TeamID), nil
 }
 
 // requireCloudAccess gates a cloud route on one action over the scope resourceFn
@@ -277,6 +320,10 @@ func (rt *Router) requireCloudAccess(db cloudAuthzStore, action string, resource
 				allowed, notVisible, err := rt.decideCloudForCaller(ctx, db, principalType, principalID, abilities, ability, &in)
 				hidden = notVisible
 				return allowed, err
+			}
+			if scopedOut, err := rt.cloudScopedOut(ctx, db, principalType, principalID, res); err != nil || scopedOut {
+				hidden = scopedOut
+				return false, err
 			}
 			denied, err := rt.cloudDenied(ctx, principalType, principalID, ability, res)
 			if err != nil {
@@ -305,9 +352,6 @@ func (rt *Router) decideCloudForCaller(ctx context.Context, db cloudAuthzStore, 
 	if err != nil {
 		return false, false, err
 	}
-	if in.Denied, err = rt.cloudDenied(ctx, principalType, principalID, ability, in.Resource); err != nil {
-		return false, false, err
-	}
 	acct, err := db.GetCloudAccount(ctx, in.Resource.AccountID)
 	if errors.Is(err, store.ErrCloudAccountNotFound) {
 		return false, true, nil
@@ -315,12 +359,38 @@ func (rt *Router) decideCloudForCaller(ctx context.Context, db cloudAuthzStore, 
 	if err != nil {
 		return false, false, err
 	}
+	// Compartment grants only apply once the instance's compartment is known; unknown stays unscoped.
+	if in.Resource.Instance != "" && in.Resource.Compartment == "" && acct.Provider == "oracle" {
+		in.Resource.Compartment = rt.instanceCompartment(ctx, acct, in.Resource.Instance)
+	}
+	if in.Denied, err = rt.cloudDenied(ctx, principalType, principalID, ability, in.Resource); err != nil {
+		return false, false, err
+	}
+	if ok, err := rt.tokenScopeAllowsAccount(ctx, principalType, principalID, acct); err != nil || !ok {
+		return false, !ok, err
+	}
 	in.OwnerTeamAdmin = acct.TeamID != "" && isTeamAdminRole(caller.teamRoles[acct.TeamID])
 	if in.Grants, err = db.ListCloudGrantsForPrincipals(ctx, in.Resource.AccountID, caller.principals); err != nil {
 		return false, false, err
 	}
 	d := authorizeCloud(*in)
 	return d.Allowed, d.Hidden, nil
+}
+
+// cloudScopedOut reports a team scoped token reaching for an account outside its scope.
+func (rt *Router) cloudScopedOut(ctx context.Context, db cloudAuthzStore, principalType, principalID string, res cloudResource) (bool, error) {
+	if principalType != store.PrincipalTypeToken || res.AccountID == "" {
+		return false, nil
+	}
+	acct, err := db.GetCloudAccount(ctx, res.AccountID)
+	if errors.Is(err, store.ErrCloudAccountNotFound) {
+		return false, nil
+	}
+	if err != nil {
+		return false, err
+	}
+	ok, err := rt.tokenScopeAllowsAccount(ctx, principalType, principalID, acct)
+	return !ok, err
 }
 
 func (rt *Router) cloudDenied(ctx context.Context, principalType, principalID, ability string, res cloudResource) (bool, error) {
@@ -334,4 +404,34 @@ func (rt *Router) cloudDenied(ctx context.Context, principalType, principalID, a
 
 func isTeamAdminRole(role string) bool {
 	return role == store.TeamRoleOwner || role == store.TeamRoleAdmin
+}
+
+// instanceCompartment asks the provider which compartment holds an instance; "" when it cannot tell.
+func (rt *Router) instanceCompartment(ctx context.Context, a store.CloudAccount, instanceID string) string {
+	p, ok, _, _ := rt.resolveNodeProvisionerForAccount(ctx, a.Provider, a.ID)
+	if !ok {
+		return ""
+	}
+	im, ok := p.(provision.InstanceManager)
+	if !ok {
+		return ""
+	}
+	d, err := im.DescribeInstance(ctx, instanceID)
+	if err != nil {
+		return ""
+	}
+	return d.CompartmentID
+}
+
+// dropCloudGrantsFor removes the cloud grants a deleted user or team held.
+func (rt *Router) dropCloudGrantsFor(ctx context.Context, principalType, principalID string) {
+	st, ok := rt.apps.(interface {
+		DeleteCloudGrantsForPrincipal(ctx context.Context, principalType, principalID string) error
+	})
+	if !ok {
+		return
+	}
+	if err := st.DeleteCloudGrantsForPrincipal(ctx, principalType, principalID); err != nil {
+		rt.logger.Warn("api: drop cloud grants failed", slog.String("principal_type", principalType))
+	}
 }

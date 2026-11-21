@@ -279,6 +279,7 @@ func (rt *Router) handleDeleteTeam(w http.ResponseWriter, r *http.Request) {
 		rt.internalError(w, "api: delete team", err)
 		return
 	}
+	rt.dropCloudGrantsFor(r.Context(), store.CloudPrincipalTeam, id)
 	rt.recordTeamEvent(r, id, caller.userID, "team.deleted", id, "")
 	w.WriteHeader(http.StatusNoContent)
 }

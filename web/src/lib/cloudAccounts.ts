@@ -22,6 +22,7 @@ export type AwsStep = (typeof AWS_STEPS)[number]
 export interface AwsWizardState {
   capabilities: readonly AwsCapability[]
   regionsText: string
+  zonesText: string
   trustedPrincipalArn: string
   guardPolicyArn: string
   roleName: string
@@ -33,6 +34,7 @@ export interface AwsWizardState {
 export const INITIAL_WIZARD: AwsWizardState = {
   capabilities: DEFAULT_CAPABILITIES,
   regionsText: '',
+  zonesText: '',
   trustedPrincipalArn: '',
   guardPolicyArn: '',
   roleName: '',
@@ -42,6 +44,7 @@ export const INITIAL_WIZARD: AwsWizardState = {
 }
 
 const REGION_RE = /^[a-z]{2}(-[a-z]+)+-\d$/
+const ZONE_RE = /^[A-Z0-9]{1,32}$/
 const PRINCIPAL_RE = /^arn:aws[a-z-]*:iam::\d{12}:(root|role\/.+|user\/.+)$/
 const ROLE_RE = /^arn:aws[a-z-]*:iam::\d{12}:role\/.+$/
 const POLICY_RE = /^arn:aws[a-z-]*:iam::(\d{12}|aws):policy\/.+$/
@@ -59,6 +62,14 @@ export function parseRegions(text: string): string[] {
   const seen = new Set<string>()
   for (const part of text.split(/[\s,]+/)) {
     if (part !== '') seen.add(part.toLowerCase())
+  }
+  return [...seen]
+}
+
+export function parseZones(text: string): string[] {
+  const seen = new Set<string>()
+  for (const part of text.split(/[\s,]+/)) {
+    if (part !== '') seen.add(part.toUpperCase())
   }
   return [...seen]
 }
@@ -84,7 +95,13 @@ export function isPolicyArn(value: string): boolean {
 }
 
 export type ScopeIssue =
-  'noCapabilities' | 'badRegions' | 'badPrincipal' | 'badGuard' | 'badRegion'
+  | 'noCapabilities'
+  | 'badRegions'
+  | 'needsZones'
+  | 'badZones'
+  | 'badPrincipal'
+  | 'badGuard'
+  | 'badRegion'
 
 // First step is valid when the kit can be generated; the server re-checks everything.
 export function scopeIssues(s: AwsWizardState): ScopeIssue[] {
@@ -92,6 +109,14 @@ export function scopeIssues(s: AwsWizardState): ScopeIssue[] {
   if (s.capabilities.length === 0) out.push('noCapabilities')
   if (invalidRegions(parseRegions(s.regionsText)).length > 0) {
     out.push('badRegions')
+  }
+  const zones = parseZones(s.zonesText)
+  if (zones.some((z) => !ZONE_RE.test(z))) out.push('badZones')
+  else if (
+    zones.length === 0 &&
+    (s.capabilities.includes('dns') || s.capabilities.includes('destructive'))
+  ) {
+    out.push('needsZones')
   }
   if (!isPrincipalArn(s.trustedPrincipalArn)) out.push('badPrincipal')
   if (s.guardPolicyArn.trim() !== '' && !isPolicyArn(s.guardPolicyArn)) {

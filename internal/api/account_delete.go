@@ -180,6 +180,7 @@ func (rt *Router) handleDeleteAccount(w http.ResponseWriter, r *http.Request) {
 		rt.internalError(w, "api: delete account failed", err, slog.String("user_id", userID))
 		return
 	}
+	rt.dropCloudGrantsFor(r.Context(), store.CloudPrincipalUser, userID)
 	rt.sessions.revokeAll(userID)
 	rt.revokeTrustedDevices(r.Context(), r, anonymousSignIn(userID), userID, "user_deleted")
 	rt.retireSignInRequests(r.Context(), r, userID, "user_deleted")

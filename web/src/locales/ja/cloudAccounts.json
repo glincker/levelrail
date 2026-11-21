@@ -73,6 +73,8 @@
       "tiers": "Levelrailに許可する操作",
       "regions": "許可するリージョン",
       "regionsHint": "カンマ区切り。空欄ですべてのリージョン。",
+      "zones": "ホストゾーンID",
+      "zonesHint": "Route 53のゾーンIDをカンマ区切りで入力。dnsとdestructiveの階層では必須です。",
       "region": "ホームリージョン",
       "principal": "信頼するプリンシパルのARN",
       "principalHint": "LevelrailがAWSで使うID。このIDだけがロールを引き受けられます。",
@@ -85,6 +87,8 @@
     "issues": {
       "noCapabilities": "機能を1つ以上選んでください。",
       "badRegions": "eu-west-1のようなリージョンIDを使ってください。",
+      "needsZones": "dnsとdestructiveが操作できるホストゾーンIDを追加してください。",
+      "badZones": "Z0123ABCDのようなゾーンIDを使用してください。",
       "badPrincipal": "IAMのroot、ロール、ユーザーのARNを入力してください。",
       "badGuard": "IAMポリシーのARNを入力してください。",
       "badRegion": "us-east-1のようなリージョンIDを使ってください。"

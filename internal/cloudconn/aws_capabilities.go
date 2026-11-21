@@ -125,7 +125,7 @@ var awsCapabilities = []Capability{
 		},
 	},
 	{
-		Name: CapDNS, Mutating: true, Summary: "Read zones and change records in tagged zones", Hint: "Add the dns tier to the stack and update it.",
+		Name: CapDNS, Mutating: true, Summary: "Read zones and change records in the listed zones", Hint: "Add the dns tier to the stack and update it.",
 		Statements: []CapStatement{
 			{Actions: []string{"route53:ListHostedZones", "route53:ListHostedZonesByName", "route53:GetChange"}, Resources: []string{all}, Global: true},
 			// The hostedzone resource type has no condition keys, so zones are scoped by ARN.
@@ -133,7 +133,7 @@ var awsCapabilities = []Capability{
 		},
 	},
 	{
-		Name: CapDestructive, Mutating: true, Summary: "Delete tagged resources", Hint: "Add the destructive tier only when Levelrail should delete resources.",
+		Name: CapDestructive, Mutating: true, Summary: "Delete tagged resources and the listed zones", Hint: "Add the destructive tier only when Levelrail should delete resources.",
 		Statements: []CapStatement{
 			{Actions: []string{
 				"ec2:TerminateInstances", "ec2:DeleteVolume", "ec2:DeleteSecurityGroup", "ec2:DeleteKeyPair", "ec2:ReleaseAddress", "ec2:DetachVolume",

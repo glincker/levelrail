@@ -73,6 +73,8 @@
       "tiers": "Qué puede hacer Levelrail",
       "regions": "Regiones permitidas",
       "regionsHint": "Separadas por comas. Déjalo vacío para todas las regiones.",
+      "zones": "IDs de zonas alojadas",
+      "zonesHint": "IDs de zonas de Route 53, separados por comas. Obligatorio para los niveles dns y destructive.",
       "region": "Región principal",
       "principal": "ARN del principal de confianza",
       "principalHint": "La identidad de AWS con la que corre Levelrail. Es la única que puede asumir el rol.",
@@ -85,6 +87,8 @@
     "issues": {
       "noCapabilities": "Elige al menos una capacidad.",
       "badRegions": "Usa ids de región como eu-west-1.",
+      "needsZones": "Añade las zonas alojadas que dns y destructive pueden tocar.",
+      "badZones": "Usa IDs de zona como Z0123ABCD.",
       "badPrincipal": "Introduce un ARN de root, rol o usuario de IAM.",
       "badGuard": "Introduce un ARN de política de IAM.",
       "badRegion": "Usa un id de región como us-east-1."

@@ -5,6 +5,7 @@ import (
 	"log/slog"
 	"net/http"
 	"slices"
+	"strings"
 	"time"
 
 	"github.com/GLINCKER/levelrail/internal/store"
@@ -56,12 +57,21 @@ func grantDetail(g store.CloudGrant) map[string]any {
 }
 
 // authorizeGrantChange checks the caller may hand out g: root, owner team admin, or a share holder with no escalation.
-func (rt *Router) authorizeGrantChange(r *http.Request, st cloudAccountStore, acct store.CloudAccount, g store.CloudGrant) (grantor string, err error) {
+// prior is the stored row being replaced or removed, nil for a new one.
+func (rt *Router) authorizeGrantChange(r *http.Request, st cloudAccountStore, acct store.CloudAccount, g store.CloudGrant, prior *store.CloudGrant) (grantor string, err error) {
 	ptype, pid, abilities, err := rt.callerPrincipal(r)
 	if err != nil {
 		return "", err
 	}
 	root := hasAbility(abilities, AbilityRoot)
+	if root {
+		if root, err = rt.tokenScopeAllowsAccount(r.Context(), ptype, pid, acct); err != nil {
+			return "", err
+		}
+	}
+	if prior != nil && !root && strings.HasPrefix(prior.GrantedBy, store.CloudGrantRootPrefix) {
+		return "", errors.New("only root can change a grant that root issued")
+	}
 	caller, err := rt.cloudCallerFor(r.Context(), st, ptype, pid)
 	if err != nil {
 		return "", err
@@ -136,7 +146,12 @@ func (rt *Router) handleCreateCloudGrant(w http.ResponseWriter, r *http.Request)
 			return
 		}
 	}
-	grantor, err := rt.authorizeGrantChange(r, st, a, g)
+	existing, err := rt.conflictingCloudGrant(r, st, g)
+	if err != nil {
+		rt.internalError(w, "api: list cloud grants failed", err, slog.String("account", a.ID))
+		return
+	}
+	grantor, err := rt.authorizeGrantChange(r, st, a, g, existing)
 	if err != nil {
 		rt.writeGrantRefusal(w, err)
 		return
@@ -148,6 +163,21 @@ func (rt *Router) handleCreateCloudGrant(w http.ResponseWriter, r *http.Request)
 	}
 	rt.auditCloud(r, "cloud.grant.created", grantDetail(g))
 	writeJSON(w, http.StatusCreated, toCloudGrantWire(g))
+}
+
+// conflictingCloudGrant finds the stored row an upsert of g would replace.
+func (rt *Router) conflictingCloudGrant(r *http.Request, st cloudAccountStore, g store.CloudGrant) (*store.CloudGrant, error) {
+	grants, err := st.ListCloudGrants(r.Context(), g.AccountID)
+	if err != nil {
+		return nil, err
+	}
+	for i := range grants {
+		o := grants[i]
+		if o.ResourceKind == g.ResourceKind && o.ResourceRef == g.ResourceRef && o.PrincipalType == g.PrincipalType && o.PrincipalID == g.PrincipalID {
+			return &o, nil
+		}
+	}
+	return nil, nil
 }
 
 func (rt *Router) writeGrantRefusal(w http.ResponseWriter, err error) {
@@ -189,6 +219,7 @@ func (rt *Router) handleUpdateCloudGrant(w http.ResponseWriter, r *http.Request)
 	if !ok {
 		return
 	}
+	prior := g
 	var body cloudGrantBody
 	if err := decodeJSONBody(r, &body); err != nil {
 		writeError(w, http.StatusBadRequest, "invalid request body")
@@ -204,7 +235,11 @@ func (rt *Router) handleUpdateCloudGrant(w http.ResponseWriter, r *http.Request)
 		writeError(w, http.StatusBadRequest, "the grant is not valid: check actions")
 		return
 	}
-	grantor, err := rt.authorizeGrantChange(r, st, a, g)
+	if body.ExpiresAt != nil && !body.ExpiresAt.After(time.Now()) {
+		writeError(w, http.StatusBadRequest, "expires_at must be in the future")
+		return
+	}
+	grantor, err := rt.authorizeGrantChange(r, st, a, g, &prior)
 	if err != nil {
 		rt.writeGrantRefusal(w, err)
 		return
@@ -228,7 +263,7 @@ func (rt *Router) handleDeleteCloudGrant(w http.ResponseWriter, r *http.Request)
 	if !ok {
 		return
 	}
-	if _, err := rt.authorizeGrantChange(r, st, a, g); err != nil {
+	if _, err := rt.authorizeGrantChange(r, st, a, g, &g); err != nil {
 		rt.writeGrantRefusal(w, err)
 		return
 	}

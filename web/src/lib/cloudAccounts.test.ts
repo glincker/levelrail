@@ -17,7 +17,12 @@ const PRINCIPAL = 'arn:aws:iam::123456789012:role/levelrail'
 const ROLE = 'arn:aws:iam::123456789012:role/LevelrailAccess'
 
 function ready(over: Partial<AwsWizardState> = {}): AwsWizardState {
-  return { ...INITIAL_WIZARD, trustedPrincipalArn: PRINCIPAL, ...over }
+  return {
+    ...INITIAL_WIZARD,
+    trustedPrincipalArn: PRINCIPAL,
+    zonesText: 'Z0123ABCD',
+    ...over,
+  }
 }
 
 describe('aws link wizard rules', () => {
@@ -41,7 +46,8 @@ describe('aws link wizard rules', () => {
   })
 
   it('reports scope issues before the kit is generated', () => {
-    expect(scopeIssues(INITIAL_WIZARD)).toEqual(['badPrincipal'])
+    expect(scopeIssues(INITIAL_WIZARD)).toEqual(['needsZones', 'badPrincipal'])
+    expect(scopeIssues(ready({ zonesText: '' }))).toEqual(['needsZones'])
     expect(
       scopeIssues(
         ready({

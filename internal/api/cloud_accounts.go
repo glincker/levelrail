@@ -333,6 +333,7 @@ func (rt *Router) handleCreateCloudAccount(w http.ResponseWriter, r *http.Reques
 	}
 	rt.nodeProviderCatalog.invalidate(acct.Provider)
 	got, _ := st.GetCloudAccount(r.Context(), acct.ID)
+	rt.auditCloud(r, "cloud.account.created", cloudAccountAuditDetail(acct))
 	writeJSON(w, http.StatusCreated, rt.toCloudAccountWire(r.Context(), got))
 }
 
@@ -413,6 +414,7 @@ func (rt *Router) handleUpdateCloudAccount(w http.ResponseWriter, r *http.Reques
 	}
 	rt.nodeProviderCatalog.invalidate(a.Provider)
 	rt.providerCaps.invalidate(a.Provider)
+	rt.auditCloud(r, "cloud.account.updated", cloudAccountAuditDetail(a))
 	writeJSON(w, http.StatusOK, rt.toCloudAccountWire(r.Context(), a))
 }
 
@@ -475,6 +477,7 @@ func (rt *Router) handleDeleteCloudAccount(w http.ResponseWriter, r *http.Reques
 	}
 	rt.nodeProviderCatalog.invalidate(a.Provider)
 	rt.providerCaps.invalidate(a.Provider)
+	rt.auditCloud(r, "cloud.account.deleted", cloudAccountAuditDetail(a))
 	w.WriteHeader(http.StatusNoContent)
 }
 
@@ -692,6 +695,8 @@ type awsLinkKitRequest struct {
 	TemplateURL string `json:"template_url,omitempty"`
 	StackName   string `json:"stack_name,omitempty"`
 	Region      string `json:"region,omitempty"`
+	// HostedZoneIDs scope the dns and destructive tiers to named Route 53 zones.
+	HostedZoneIDs []string `json:"hosted_zone_ids,omitempty"`
 }
 
 type awsLinkKitResponse struct {
@@ -704,6 +709,23 @@ type awsLinkKitResponse struct {
 	GuardPolicyARN string `json:"guard_policy_arn,omitempty"`
 }
 
+// requireZonesForZoneTiers refuses the dns and destructive tiers without named zones, so the role never spans every zone.
+func requireZonesForZoneTiers(capabilities, zones []string) error {
+	if len(zones) > 0 {
+		return nil
+	}
+	if len(capabilities) == 0 {
+		return errors.New("hosted_zone_ids is required because every tier includes dns")
+	}
+	for _, c := range capabilities {
+		switch strings.ToLower(strings.TrimSpace(c)) {
+		case cloudconn.CapDNS, cloudconn.CapDestructive:
+			return errors.New("hosted_zone_ids is required for the dns and destructive tiers")
+		}
+	}
+	return nil
+}
+
 func (rt *Router) handleAWSLinkKit(w http.ResponseWriter, r *http.Request) {
 	var req awsLinkKitRequest
 	if err := decodeJSONBody(r, &req); err != nil {
@@ -714,13 +736,17 @@ func (rt *Router) handleAWSLinkKit(w http.ResponseWriter, r *http.Request) {
 		writeError(w, http.StatusBadRequest, "guard_policy_arn must be an IAM managed policy ARN")
 		return
 	}
+	if err := requireZonesForZoneTiers(req.Capabilities, req.HostedZoneIDs); err != nil {
+		writeError(w, http.StatusBadRequest, err.Error())
+		return
+	}
 	ext, err := newCloudID("lr-")
 	if err != nil {
 		rt.internalError(w, "api: mint external id failed", err)
 		return
 	}
-	in := cloudconn.TemplateInput{RoleName: req.RoleName, TrustPrincipalARN: req.TrustedPrincipalARN, ExternalID: ext, Capabilities: req.Capabilities, Regions: req.Regions}
-	opt := cloudconn.PolicyOptions{RoleName: req.RoleName, Regions: req.Regions}
+	in := cloudconn.TemplateInput{RoleName: req.RoleName, TrustPrincipalARN: req.TrustedPrincipalARN, ExternalID: ext, Capabilities: req.Capabilities, Regions: req.Regions, HostedZoneIDs: req.HostedZoneIDs}
+	opt := cloudconn.PolicyOptions{RoleName: req.RoleName, Regions: req.Regions, HostedZoneIDs: req.HostedZoneIDs}
 	yaml, err := cloudconn.CloudFormationTemplate(in)
 	if err != nil {
 		writeError(w, http.StatusBadRequest, "the link kit inputs are not valid")
@@ -847,6 +873,11 @@ func (rt *Router) removeDefaultCloudAccount(ctx context.Context, provider string
 			rt.logger.Warn("api: remove default cloud account failed", slog.String("provider", provider))
 		}
 	}
+}
+
+// cloudAccountAuditDetail names the account only; config and credentials never enter the row.
+func cloudAccountAuditDetail(a store.CloudAccount) map[string]any {
+	return map[string]any{"account": a.ID, "provider": a.Provider, "team": a.TeamID, "status": a.Status}
 }
 
 // auditCloud writes one detail row beside the request row; details name scope and principals, never secrets.

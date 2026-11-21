@@ -38,6 +38,7 @@ export interface CloudRegion {
 export interface AwsLinkKitInput {
   capabilities: string[]
   regions: string[]
+  hosted_zone_ids: string[]
   role_name?: string
   trusted_principal_arn: string
   guard_policy_arn?: string

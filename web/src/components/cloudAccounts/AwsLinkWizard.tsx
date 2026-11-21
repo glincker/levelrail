@@ -11,6 +11,7 @@ import {
   canLeaveStep,
   nextStep,
   parseRegions,
+  parseZones,
   prevStep,
   scopeIssues,
   type AwsStep,
@@ -84,6 +85,7 @@ export function AwsLinkWizard() {
       {
         capabilities: [...state.capabilities],
         regions: parseRegions(state.regionsText),
+        hosted_zone_ids: parseZones(state.zonesText),
         trusted_principal_arn: state.trustedPrincipalArn.trim(),
         role_name: state.roleName || undefined,
         guard_policy_arn: state.guardPolicyArn.trim() || undefined,

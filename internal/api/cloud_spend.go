@@ -140,12 +140,25 @@ type spendExtras struct {
 type spendExtrasCache struct {
 	mu   sync.Mutex
 	rows map[string]spendExtras
+	// locks serializes the paid calls per account.
+	locks map[string]*sync.Mutex
+}
+
+func (c *spendExtrasCache) accountLock(id string) *sync.Mutex {
+	c.mu.Lock()
+	defer c.mu.Unlock()
+	l, ok := c.locks[id]
+	if !ok {
+		l = &sync.Mutex{}
+		c.locks[id] = l
+	}
+	return l
 }
 
 var spendExtrasCaches sync.Map
 
 func (rt *Router) spendExtrasCache() *spendExtrasCache {
-	v, _ := spendExtrasCaches.LoadOrStore(rt, &spendExtrasCache{rows: map[string]spendExtras{}})
+	v, _ := spendExtrasCaches.LoadOrStore(rt, &spendExtrasCache{rows: map[string]spendExtras{}, locks: map[string]*sync.Mutex{}})
 	return v.(*spendExtrasCache)
 }
 
@@ -153,22 +166,40 @@ func (rt *Router) spendExtrasCache() *spendExtrasCache {
 func (rt *Router) spendWire(ctx context.Context, a store.CloudAccount, rd cloudspend.Reader, rep cloudspend.SpendReport, force bool) cloudSpendWire {
 	c := rt.spendExtrasCache()
 	ttl := rt.cloudSpendConfig().CacheTTL
+	started := time.Now()
 	c.mu.Lock()
 	ex, hit := c.rows[a.ID]
 	c.mu.Unlock()
 	if !hit || force || time.Since(ex.at) >= ttl {
-		ex = spendExtras{at: time.Now(), budgets: []cloudspend.ProviderBudget{}}
-		if f, err := rd.Forecast(ctx, cloudspend.SpendQuery{AccountID: a.ID}); err == nil {
-			ex.forecast = &f
-		}
-		if b, err := rd.Budgets(ctx, cloudspend.SpendQuery{AccountID: a.ID}); err == nil && b != nil {
-			ex.budgets = b
-		}
+		lock := c.accountLock(a.ID)
+		lock.Lock()
+		defer lock.Unlock()
+		// A caller that waited reuses what the one ahead of it just stored.
 		c.mu.Lock()
-		c.rows[a.ID] = ex
+		ex, hit = c.rows[a.ID]
 		c.mu.Unlock()
+		if hit && ex.at.After(started) {
+			return cloudSpendWire{SpendReport: rep, Forecast: ex.forecast, Budgets: ex.budgets}
+		}
+		if !hit || force || time.Since(ex.at) >= ttl {
+			ex = rt.fetchSpendExtras(ctx, a, rd)
+			c.mu.Lock()
+			c.rows[a.ID] = ex
+			c.mu.Unlock()
+		}
 	}
 	return cloudSpendWire{SpendReport: rep, Forecast: ex.forecast, Budgets: ex.budgets}
+}
+
+func (rt *Router) fetchSpendExtras(ctx context.Context, a store.CloudAccount, rd cloudspend.Reader) spendExtras {
+	ex := spendExtras{at: time.Now(), budgets: []cloudspend.ProviderBudget{}}
+	if f, err := rd.Forecast(ctx, cloudspend.SpendQuery{AccountID: a.ID}); err == nil {
+		ex.forecast = &f
+	}
+	if b, err := rd.Budgets(ctx, cloudspend.SpendQuery{AccountID: a.ID}); err == nil && b != nil {
+		ex.budgets = b
+	}
+	return ex
 }
 
 func spendDisabled(a store.CloudAccount) cloudspend.SpendReport {

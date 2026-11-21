@@ -73,6 +73,8 @@
       "tiers": "Ce que Levelrail peut faire",
       "regions": "Régions autorisées",
       "regionsHint": "Séparées par des virgules. Laisser vide pour toutes les régions.",
+      "zones": "ID de zones hébergées",
+      "zonesHint": "ID de zones Route 53, séparés par des virgules. Requis pour les niveaux dns et destructive.",
       "region": "Région d'origine",
       "principal": "ARN du principal de confiance",
       "principalHint": "L'identité AWS sous laquelle Levelrail s'exécute. Elle seule peut assumer le rôle.",
@@ -85,6 +87,8 @@
     "issues": {
       "noCapabilities": "Choisissez au moins une capacité.",
       "badRegions": "Utilisez des ids de région comme eu-west-1.",
+      "needsZones": "Ajoutez les zones hébergées que dns et destructive peuvent modifier.",
+      "badZones": "Utilisez des ID de zone comme Z0123ABCD.",
       "badPrincipal": "Saisissez un ARN IAM root, rôle ou utilisateur.",
       "badGuard": "Saisissez un ARN de politique IAM.",
       "badRegion": "Utilisez un id de région comme us-east-1."

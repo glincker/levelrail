@@ -73,6 +73,8 @@
       "tiers": "Levelrail 可执行的操作",
       "regions": "允许的区域",
       "regionsHint": "用逗号分隔。留空表示所有区域。",
+      "zones": "托管区域ID",
+      "zonesHint": "Route 53区域ID，用逗号分隔。dns和destructive层级必填。",
       "region": "主区域",
       "principal": "受信任主体 ARN",
       "principalHint": "Levelrail 运行时使用的 AWS 身份。只有它可以代入该角色。",
@@ -85,6 +87,8 @@
     "issues": {
       "noCapabilities": "至少选择一项能力。",
       "badRegions": "请使用 eu-west-1 这样的区域 ID。",
+      "needsZones": "请添加dns和destructive可操作的托管区域ID。",
+      "badZones": "请使用类似Z0123ABCD的区域ID。",
       "badPrincipal": "请输入 IAM root、角色或用户 ARN。",
       "badGuard": "请输入 IAM 策略 ARN。",
       "badRegion": "请使用 us-east-1 这样的区域 ID。"
