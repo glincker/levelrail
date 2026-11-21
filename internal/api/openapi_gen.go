@@ -14,7 +14,7 @@ type openAPIRoute struct {
 	Description string
 }
 
-// openAPIRoutes holds all 2249 routes known to scripts/gen-api-reference at
+// openAPIRoutes holds all 2262 routes known to scripts/gen-api-reference at
 // generation time. Run `go run ./scripts/gen-api-reference` after changing
 // any routes*.go registration and commit the result.
 var openAPIRoutes = []openAPIRoute{
@@ -1218,6 +1218,19 @@ var openAPIRoutes = []openAPIRoute{
 	{Method: "PUT", Path: "/api/v1/cleanup/{id}/mode", Ability: "AbilityRoot", Group: "Other", Handler: "handleSetCleanupMode", Description: ""},
 	{Method: "POST", Path: "/api/v1/cleanup/{id}/preview", Ability: "AbilityRoot", Group: "Other", Handler: "handlePreviewCleanup", Description: "A preview reads row counts only, but it is the same decision surface as a run, so it shares the Root gate."},
 	{Method: "POST", Path: "/api/v1/cleanup/{id}/run", Ability: "AbilityRoot", Group: "Other", Handler: "handleRunCleanup", Description: "A run deletes data permanently."},
+	{Method: "GET", Path: "/api/v1/cloud-accounts", Ability: "AbilityRead", Group: "Other", Handler: "handleListCloudAccounts", Description: ""},
+	{Method: "POST", Path: "/api/v1/cloud-accounts", Ability: "AbilityRoot", Group: "Other", Handler: "handleCreateCloudAccount", Description: ""},
+	{Method: "POST", Path: "/api/v1/cloud-accounts/aws/link-kit", Ability: "AbilityRoot", Group: "Other", Handler: "handleAWSLinkKit", Description: ""},
+	{Method: "DELETE", Path: "/api/v1/cloud-accounts/{id}", Ability: "AbilityRoot", Group: "Other", Handler: "handleDeleteCloudAccount", Description: ""},
+	{Method: "GET", Path: "/api/v1/cloud-accounts/{id}", Ability: "Public", Group: "Other", Handler: "handleGetCloudAccount", Description: ""},
+	{Method: "PATCH", Path: "/api/v1/cloud-accounts/{id}", Ability: "AbilityRoot", Group: "Other", Handler: "handleUpdateCloudAccount", Description: ""},
+	{Method: "GET", Path: "/api/v1/cloud-accounts/{id}/grants", Ability: "Public", Group: "Other", Handler: "handleListCloudGrants", Description: ""},
+	{Method: "POST", Path: "/api/v1/cloud-accounts/{id}/grants", Ability: "Public", Group: "Other", Handler: "handleCreateCloudGrant", Description: ""},
+	{Method: "DELETE", Path: "/api/v1/cloud-accounts/{id}/grants/{gid}", Ability: "Public", Group: "Other", Handler: "handleDeleteCloudGrant", Description: ""},
+	{Method: "PATCH", Path: "/api/v1/cloud-accounts/{id}/grants/{gid}", Ability: "Public", Group: "Other", Handler: "handleUpdateCloudGrant", Description: ""},
+	{Method: "POST", Path: "/api/v1/cloud-accounts/{id}/probe", Ability: "AbilityRoot", Group: "Other", Handler: "handleProbeCloudAccount", Description: ""},
+	{Method: "GET", Path: "/api/v1/cloud-accounts/{id}/regions", Ability: "Public", Group: "Other", Handler: "handleCloudAccountRegions", Description: ""},
+	{Method: "POST", Path: "/api/v1/cloud-accounts/{id}/verify", Ability: "AbilityRoot", Group: "Other", Handler: "handleVerifyCloudAccount", Description: ""},
 	{Method: "GET", Path: "/api/v1/clusters", Ability: "AbilityRoot", Group: "Other", Handler: "handleListK8sClusters", Description: ""},
 	{Method: "POST", Path: "/api/v1/clusters", Ability: "AbilityRoot", Group: "Other", Handler: "handleConnectK8sCluster", Description: ""},
 	{Method: "DELETE", Path: "/api/v1/clusters/{name}", Ability: "AbilityRoot", Group: "Other", Handler: "handleDisconnectK8sCluster", Description: ""},

@@ -24,6 +24,9 @@ var (
 	}
 )
 
+// requireCloudAccess rides requireAbilityDecided at write:sensitive for every action above view.
+var restCloudAccessRe = regexp.MustCompile(`requireCloudAccess\(\w+,\s*"(?:share|operate|manage_budget)"`)
+
 type restRoute struct {
 	key, path, ability string
 }
@@ -78,6 +81,8 @@ func loadRESTMutatingRoutes(t *testing.T) []restRoute {
 				if ability == "AbilityRead" {
 					ability = AbilityRead
 				}
+			} else if restCloudAccessRe.MatchString(rest) {
+				ability = AbilityWriteSensitive
 			} else if f == "loki.go" && restLokiWrapRe.MatchString(rest) {
 				ability = AbilityRead
 			}

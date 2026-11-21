@@ -413,6 +413,7 @@ func (rt *Router) handleSetNodeProviderCredential(w http.ResponseWriter, r *http
 	rt.nodeProviderCatalog.invalidate(req.Provider)
 	rt.providerCaps.invalidate(req.Provider)
 	rt.saveNodeProviderConnection(r, req)
+	rt.ensureDefaultCloudAccount(r.Context(), req.Provider, req.Method, strings.TrimSpace(req.Label), rt.nodeProviderActor(r))
 	res := rt.nodeProviderResourceFor(r.Context(), req.Provider)
 	res.Capabilities = rt.storedCredentialCapabilities(r.Context(), req.Provider)
 	writeJSON(w, http.StatusOK, res)
@@ -575,6 +576,7 @@ func (rt *Router) handleDisconnectNodeProvider(w http.ResponseWriter, r *http.Re
 			return
 		}
 	}
+	rt.removeDefaultCloudAccount(r.Context(), provider)
 	rt.nodeProviderCatalog.invalidate(provider)
 	rt.providerCaps.invalidate(provider)
 	w.WriteHeader(http.StatusNoContent)

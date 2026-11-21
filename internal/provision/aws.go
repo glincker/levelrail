@@ -47,6 +47,8 @@ type AWSCredentials struct {
 	// chain, are the two supported ways to avoid a long-lived key with
 	// direct EC2 permissions.
 	UseAmbientCredentials bool `json:"use_ambient_credentials,omitempty"`
+	// ExternalID is presented when assuming RoleARN, for roles that trust an account by external id.
+	ExternalID string `json:"external_id,omitempty"`
 }
 
 func (c AWSCredentials) region() string {
@@ -148,7 +150,11 @@ func (c AWSCredentials) CredentialsProvider(ctx context.Context, region string) 
 	}
 	if c.RoleARN != "" {
 		stsClient := sts.New(sts.Options{Region: region, Credentials: credsProvider})
-		credsProvider = aws.NewCredentialsCache(stscreds.NewAssumeRoleProvider(stsClient, c.RoleARN))
+		credsProvider = aws.NewCredentialsCache(stscreds.NewAssumeRoleProvider(stsClient, c.RoleARN, func(o *stscreds.AssumeRoleOptions) {
+			if c.ExternalID != "" {
+				o.ExternalID = aws.String(c.ExternalID)
+			}
+		}))
 	}
 	return credsProvider, nil
 }

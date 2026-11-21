@@ -34,6 +34,9 @@ var tenantRoutes = map[string]bool{
 	"GET /api/v1/events/changes":      true,
 	"GET /api/v1/deploy-approvals":    true,
 	"GET /api/v1/attention/feed":      true,
+	// Cloud accounts filter by grant or owning team and answer 404 outside it.
+	"GET /api/v1/cloud-accounts":      true,
+	"GET /api/v1/cloud-accounts/{id}": true,
 	// Each section is replayed through the gate as its own request.
 	"GET /api/v1/shell":                  true,
 	"GET /api/v1/traffic/summary":        true,

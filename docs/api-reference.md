@@ -2480,6 +2480,19 @@ Routes that do not fit an existing group.
 | POST | /api/v1/status-page/incident-templates | AbilityWrite | handleCreateStatusTemplate |
 | PUT | /api/v1/status-page/incident-templates/{id} | AbilityWrite | handleUpdateStatusTemplate |
 | DELETE | /api/v1/status-page/incident-templates/{id} | AbilityWrite | handleDeleteStatusTemplate |
+| GET | /api/v1/cloud-accounts | AbilityRead | handleListCloudAccounts |
+| POST | /api/v1/cloud-accounts | AbilityRoot | handleCreateCloudAccount |
+| POST | /api/v1/cloud-accounts/aws/link-kit | AbilityRoot | handleAWSLinkKit |
+| GET | /api/v1/cloud-accounts/{id} | Public | handleGetCloudAccount |
+| PATCH | /api/v1/cloud-accounts/{id} | AbilityRoot | handleUpdateCloudAccount |
+| DELETE | /api/v1/cloud-accounts/{id} | AbilityRoot | handleDeleteCloudAccount |
+| POST | /api/v1/cloud-accounts/{id}/verify | AbilityRoot | handleVerifyCloudAccount |
+| GET | /api/v1/cloud-accounts/{id}/regions | Public | handleCloudAccountRegions |
+| POST | /api/v1/cloud-accounts/{id}/probe | AbilityRoot | handleProbeCloudAccount |
+| GET | /api/v1/cloud-accounts/{id}/grants | Public | handleListCloudGrants |
+| POST | /api/v1/cloud-accounts/{id}/grants | Public | handleCreateCloudGrant |
+| PATCH | /api/v1/cloud-accounts/{id}/grants/{gid} | Public | handleUpdateCloudGrant |
+| DELETE | /api/v1/cloud-accounts/{id}/grants/{gid} | Public | handleDeleteCloudGrant |
 | POST | /mcp | Public |  |
 
 ## See also
