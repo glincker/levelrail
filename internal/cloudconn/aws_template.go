@@ -157,6 +157,7 @@ func BoundaryPolicy(opt PolicyOptions) PolicyDocument {
 	opt = opt.filled()
 	caps, _ := ResolveCapabilities(nil)
 	doc := renderCaps(caps, opt)
+	doc = collapseManaged(doc, opt)
 	doc.Statement = append(doc.Statement, PolicyStatement{
 		Sid: "DenyIdentityChanges", Effect: "Deny", Action: append([]string(nil), awsBoundaryDeny...), Resource: []string{"*"},
 	})
@@ -389,4 +390,57 @@ func TerraformSnippet(in TemplateInput) (string, error) {
 	w("resource \"aws_iam_role_policy\" \"levelrail\" {\n  name   = \"levelrail-access\"\n  role   = aws_iam_role.levelrail.id\n  policy = <<-POLICY\n%s\n  POLICY\n}\n", indent(roleJSON, 4))
 	w("output \"role_arn\" {\n  value = aws_iam_role.levelrail.arn\n}")
 	return b.String(), nil
+}
+
+// boundaryWildcardServices are collapsed to service wildcards in the permission boundary so it
+// fits the managed policy size limit. The role policy keeps the exact actions and resources.
+var boundaryWildcardServices = map[string]bool{
+	"rds": true, "elasticache": true, "ecr": true, "acm": true, "cloudfront": true,
+	"secretsmanager": true, "ssm": true, "cloudtrail": true, "cloudwatch": true, "logs": true,
+}
+
+func collapseManaged(doc PolicyDocument, opt PolicyOptions) PolicyDocument {
+	kept := doc.Statement[:0:0]
+	seen := map[string]bool{}
+	for _, st := range doc.Statement {
+		var rest []string
+		for _, a := range st.Action {
+			svc, _, _ := strings.Cut(a, ":")
+			if boundaryWildcardServices[svc] {
+				seen[svc] = true
+				continue
+			}
+			rest = append(rest, a)
+		}
+		if len(rest) == 0 {
+			continue
+		}
+		st.Action = rest
+		kept = append(kept, st)
+	}
+	regional, global := []string{}, []string{}
+	svcs := make([]string, 0, len(seen))
+	for k := range seen {
+		svcs = append(svcs, k)
+	}
+	sort.Strings(svcs)
+	for _, svc := range svcs {
+		if svc == "cloudfront" {
+			global = append(global, svc+":*")
+		} else {
+			regional = append(regional, svc+":*")
+		}
+	}
+	if len(regional) > 0 {
+		st := PolicyStatement{Sid: "ManagedServices", Effect: "Allow", Action: regional, Resource: []string{"*"}}
+		if len(opt.Regions) > 0 {
+			st.Condition = map[string]map[string][]string{"StringEquals": {"aws:RequestedRegion": sortedCopy(opt.Regions)}}
+		}
+		kept = append(kept, st)
+	}
+	if len(global) > 0 {
+		kept = append(kept, PolicyStatement{Sid: "ManagedGlobalServices", Effect: "Allow", Action: global, Resource: []string{"*"}})
+	}
+	doc.Statement = kept
+	return doc
 }

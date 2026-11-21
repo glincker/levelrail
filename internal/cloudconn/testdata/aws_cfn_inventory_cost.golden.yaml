@@ -40,6 +40,7 @@ Resources:
                 "ec2:DescribeSubnets",
                 "ec2:DescribeSecurityGroups",
                 "ec2:DescribeVolumes",
+                "ec2:DescribeSnapshots",
                 "ec2:DescribeAddresses",
                 "ec2:DescribeKeyPairs",
                 "ec2:DescribeAvailabilityZones"
@@ -169,6 +170,27 @@ Resources:
                     "CreateSecurityGroup",
                     "CreateKeyPair",
                     "AllocateAddress"
+                  ]
+                }
+              }
+            },
+            {
+              "Sid": "Deploy5",
+              "Effect": "Allow",
+              "Action": [
+                "ec2:CreateSnapshot",
+                "ec2:CreateSnapshots"
+              ],
+              "Resource": [
+                "arn:*:ec2:*:*:volume/*",
+                "arn:*:ec2:*::snapshot/*",
+                "arn:*:ec2:*:*:instance/*"
+              ],
+              "Condition": {
+                "StringEquals": {
+                  "aws:RequestedRegion": [
+                    "eu-west-1",
+                    "us-east-1"
                   ]
                 }
               }
@@ -331,6 +353,60 @@ Resources:
               ]
             },
             {
+              "Sid": "Destructive5",
+              "Effect": "Allow",
+              "Action": [
+                "ec2:DeleteSnapshot"
+              ],
+              "Resource": [
+                "arn:*:ec2:*::snapshot/*"
+              ],
+              "Condition": {
+                "StringEquals": {
+                  "aws:RequestedRegion": [
+                    "eu-west-1",
+                    "us-east-1"
+                  ]
+                }
+              }
+            },
+            {
+              "Sid": "ManagedServices",
+              "Effect": "Allow",
+              "Action": [
+                "acm:*",
+                "cloudtrail:*",
+                "cloudwatch:*",
+                "ecr:*",
+                "elasticache:*",
+                "logs:*",
+                "rds:*",
+                "secretsmanager:*",
+                "ssm:*"
+              ],
+              "Resource": [
+                "*"
+              ],
+              "Condition": {
+                "StringEquals": {
+                  "aws:RequestedRegion": [
+                    "eu-west-1",
+                    "us-east-1"
+                  ]
+                }
+              }
+            },
+            {
+              "Sid": "ManagedGlobalServices",
+              "Effect": "Allow",
+              "Action": [
+                "cloudfront:*"
+              ],
+              "Resource": [
+                "*"
+              ]
+            },
+            {
               "Sid": "DenyIdentityChanges",
               "Effect": "Deny",
               "Action": [
@@ -403,6 +479,7 @@ Resources:
                     "ec2:DescribeSubnets",
                     "ec2:DescribeSecurityGroups",
                     "ec2:DescribeVolumes",
+                    "ec2:DescribeSnapshots",
                     "ec2:DescribeAddresses",
                     "ec2:DescribeKeyPairs",
                     "ec2:DescribeAvailabilityZones"
@@ -425,6 +502,55 @@ Resources:
                   "Action": [
                     "ec2:DescribeRegions",
                     "tag:GetResources"
+                  ],
+                  "Resource": [
+                    "*"
+                  ]
+                },
+                {
+                  "Sid": "Inventory3",
+                  "Effect": "Allow",
+                  "Action": [
+                    "rds:DescribeDBInstances",
+                    "rds:DescribeDBClusters",
+                    "rds:DescribeDBSnapshots",
+                    "rds:DescribeDBClusterSnapshots",
+                    "rds:DescribeDBParameterGroups",
+                    "rds:ListTagsForResource",
+                    "elasticache:DescribeCacheClusters",
+                    "elasticache:DescribeReplicationGroups",
+                    "elasticache:DescribeSnapshots",
+                    "elasticache:ListTagsForResource",
+                    "ecr:DescribeRepositories",
+                    "ecr:ListImages",
+                    "acm:ListCertificates",
+                    "acm:DescribeCertificate",
+                    "ssm:DescribeInstanceInformation",
+                    "ssm:GetCommandInvocation",
+                    "cloudtrail:LookupEvents",
+                    "cloudwatch:GetMetricData",
+                    "cloudwatch:ListMetrics",
+                    "logs:DescribeLogGroups"
+                  ],
+                  "Resource": [
+                    "*"
+                  ],
+                  "Condition": {
+                    "StringEquals": {
+                      "aws:RequestedRegion": [
+                        "eu-west-1",
+                        "us-east-1"
+                      ]
+                    }
+                  }
+                },
+                {
+                  "Sid": "Inventory4",
+                  "Effect": "Allow",
+                  "Action": [
+                    "cloudfront:ListDistributions",
+                    "cloudfront:GetDistribution",
+                    "cloudfront:ListInvalidations"
                   ],
                   "Resource": [
                     "*"

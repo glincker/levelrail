@@ -81,9 +81,19 @@ var awsCapabilities = []Capability{
 		Statements: []CapStatement{
 			{Actions: []string{
 				"ec2:DescribeInstances", "ec2:DescribeInstanceTypes", "ec2:DescribeImages", "ec2:DescribeVpcs", "ec2:DescribeSubnets",
-				"ec2:DescribeSecurityGroups", "ec2:DescribeVolumes", "ec2:DescribeAddresses", "ec2:DescribeKeyPairs", "ec2:DescribeAvailabilityZones",
+				"ec2:DescribeSecurityGroups", "ec2:DescribeVolumes", "ec2:DescribeSnapshots", "ec2:DescribeAddresses", "ec2:DescribeKeyPairs", "ec2:DescribeAvailabilityZones",
 			}, Resources: []string{all}},
 			{Actions: []string{"ec2:DescribeRegions", "tag:GetResources"}, Resources: []string{all}, Global: true},
+			// Describe and List actions of these services do not support resource scoping, so they use "*".
+			{Actions: []string{
+				"rds:DescribeDBInstances", "rds:DescribeDBClusters", "rds:DescribeDBSnapshots", "rds:DescribeDBClusterSnapshots",
+				"rds:DescribeDBParameterGroups", "rds:ListTagsForResource", "elasticache:DescribeCacheClusters", "elasticache:DescribeReplicationGroups",
+				"elasticache:DescribeSnapshots", "elasticache:ListTagsForResource", "ecr:DescribeRepositories", "ecr:ListImages",
+				"acm:ListCertificates", "acm:DescribeCertificate", "ssm:DescribeInstanceInformation", "ssm:GetCommandInvocation",
+				"cloudtrail:LookupEvents", "cloudwatch:GetMetricData", "cloudwatch:ListMetrics", "logs:DescribeLogGroups",
+			}, Resources: []string{all}},
+			// CloudFront is a global service, so its actions skip the region condition.
+			{Actions: []string{"cloudfront:ListDistributions", "cloudfront:GetDistribution", "cloudfront:ListInvalidations"}, Resources: []string{all}, Global: true},
 		},
 	},
 	{
@@ -104,6 +114,22 @@ var awsCapabilities = []Capability{
 				Operator: "StringEquals", Key: "ec2:CreateAction",
 				Values: []string{"RunInstances", "CreateVolume", "CreateSecurityGroup", "CreateKeyPair", "AllocateAddress"},
 			}}},
+			// Managed services have no uniform tag condition key, so they are scoped by ARN pattern.
+			{Actions: []string{"ec2:CreateSnapshot", "ec2:CreateSnapshots"}, Resources: []string{"arn:*:ec2:*:*:volume/*", "arn:*:ec2:*::snapshot/*", "arn:*:ec2:*:*:instance/*"}},
+			{Actions: []string{
+				"rds:CreateDBInstance", "rds:CreateDBCluster", "rds:ModifyDBInstance", "rds:StartDBInstance", "rds:StopDBInstance", "rds:StartDBCluster", "rds:StopDBCluster",
+				"rds:CreateDBSnapshot", "rds:CreateDBClusterSnapshot", "rds:CopyDBSnapshot", "rds:AddTagsToResource",
+			}, Resources: []string{"arn:*:rds:*:*:db:*", "arn:*:rds:*:*:cluster:*", "arn:*:rds:*:*:snapshot:*", "arn:*:rds:*:*:cluster-snapshot:*", "arn:*:rds:*:*:subgrp:*", "arn:*:rds:*:*:pg:*", "arn:*:rds:*:*:cluster-pg:*"}},
+			{Actions: []string{"elasticache:CreateSnapshot", "elasticache:RebootCacheCluster"},
+				Resources: []string{"arn:*:elasticache:*:*:cluster:*", "arn:*:elasticache:*:*:replicationgroup:*", "arn:*:elasticache:*:*:snapshot:*"}},
+			{Actions: []string{"ecr:CreateRepository", "ecr:PutLifecyclePolicy"}, Resources: []string{"arn:*:ecr:*:*:repository/*"}},
+			// GetAuthorizationToken cannot be scoped to a resource.
+			{Actions: []string{"ecr:GetAuthorizationToken"}, Resources: []string{all}},
+			{Actions: []string{"acm:RequestCertificate"}, Resources: []string{all}},
+			{Actions: []string{"cloudfront:CreateInvalidation"}, Resources: []string{"arn:*:cloudfront::*:distribution/*"}, Global: true},
+			{Actions: []string{"secretsmanager:ListSecrets"}, Resources: []string{all}},
+			{Actions: []string{"secretsmanager:GetSecretValue", "secretsmanager:PutSecretValue"}, Resources: []string{"arn:*:secretsmanager:*:*:secret:*"}},
+			{Actions: []string{"ssm:GetParametersByPath", "ssm:PutParameter"}, Resources: []string{"arn:*:ssm:*:*:parameter/*"}},
 		},
 	},
 	{
@@ -141,6 +167,15 @@ var awsCapabilities = []Capability{
 			{Actions: []string{"s3:DeleteBucket"}, Resources: []string{"arn:*:s3:::{bucket_prefix}*"}, Global: true},
 			{Actions: []string{"s3:DeleteObject"}, Resources: []string{"arn:*:s3:::{bucket_prefix}*/*"}, Global: true},
 			{Actions: []string{"route53:DeleteHostedZone"}, Resources: []string{"{hosted_zone_ids}"}, Global: true},
+			{Actions: []string{"ec2:DeleteSnapshot"}, Resources: []string{"arn:*:ec2:*::snapshot/*"}},
+			{Actions: []string{"rds:DeleteDBInstance", "rds:DeleteDBSnapshot", "rds:DeleteDBClusterSnapshot"},
+				Resources: []string{"arn:*:rds:*:*:db:*", "arn:*:rds:*:*:snapshot:*", "arn:*:rds:*:*:cluster-snapshot:*"}},
+			{Actions: []string{"elasticache:DeleteCacheCluster", "elasticache:DeleteReplicationGroup"},
+				Resources: []string{"arn:*:elasticache:*:*:cluster:*", "arn:*:elasticache:*:*:replicationgroup:*"}},
+			{Actions: []string{"ecr:DeleteRepository"}, Resources: []string{"arn:*:ecr:*:*:repository/*"}},
+			// Remote command and shell access run code on hosts, so only this tier grants them.
+			{Actions: []string{"ssm:SendCommand"}, Resources: []string{"arn:*:ssm:*:*:document/AWS-RunShellScript", "arn:*:ec2:*:*:instance/*"}},
+			{Actions: []string{"ssm:StartSession"}, Resources: []string{"arn:*:ec2:*:*:instance/*", "arn:*:ssm:*:*:document/SSM-SessionManagerRunShell"}},
 		},
 	},
 }
