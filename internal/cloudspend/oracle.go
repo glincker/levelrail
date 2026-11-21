@@ -38,16 +38,21 @@ func init() { Register(ProviderOracle, newOracleFromCreds) }
 
 func newOracleFromCreds(c Credentials, cfg func() Config) (Reader, error) {
 	region := c["home_region"]
-	if !oracleRegionRe.MatchString(region) || c["tenancy_ocid"] == "" || c["user_ocid"] == "" || c["fingerprint"] == "" {
+	session := c["session_token"] != ""
+	if !oracleRegionRe.MatchString(region) || c["tenancy_ocid"] == "" || (!session && (c["user_ocid"] == "" || c["fingerprint"] == "")) {
 		return nil, errors.New("cloudspend: oracle credentials are incomplete")
 	}
 	key, err := parseRSAKey(c["private_key_pem"])
 	if err != nil {
 		return nil, err
 	}
+	keyID := ocisign.KeyID(c["tenancy_ocid"], c["user_ocid"], c["fingerprint"])
+	if session {
+		keyID = ocisign.SessionKeyID(c["session_token"])
+	}
 	return &OracleReader{
 		cfg: cfg, tenant: c["tenancy_ocid"],
-		signer:     ocisign.Signer{KeyID: ocisign.KeyID(c["tenancy_ocid"], c["user_ocid"], c["fingerprint"]), Key: key},
+		signer:     ocisign.Signer{KeyID: keyID, Key: key},
 		usageBase:  "https://usageapi." + region + ".oci.oraclecloud.com",
 		budgetBase: "https://usage." + region + ".oci.oraclecloud.com",
 	}, nil

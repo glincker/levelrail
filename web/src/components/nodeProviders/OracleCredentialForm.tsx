@@ -12,6 +12,7 @@ import { Button } from '@/components/ui/button'
 import { Alert, AlertDescription } from '@/components/ui/alert'
 import { toast } from '@/components/ui/toast'
 import { OracleKeyWizard } from './OracleKeyWizard'
+import { OracleSessionForm } from './OracleSessionForm'
 import {
   useDisconnectNodeProvider,
   useSetNodeProviderCredential,
@@ -56,6 +57,7 @@ export function OracleCredentialForm({
   const [subnet, setSubnet] = useState('')
   const [result, setResult] = useState<NodeProviderTestResult | null>(null)
   const [confirmDisconnect, setConfirmDisconnect] = useState(false)
+  const [mode, setMode] = useState<'api_key' | 'session'>('api_key')
   const fileRef = useRef<HTMLInputElement>(null)
 
   const connect = useSetNodeProviderCredential()
@@ -124,8 +126,45 @@ export function OracleCredentialForm({
         ? disconnect.error.message
         : null
 
+  const modeToggle = (
+    <div
+      role="group"
+      aria-label={t('oracle.session.modeLabel')}
+      className="flex flex-wrap gap-2"
+    >
+      <Button
+        type="button"
+        size="sm"
+        variant={mode === 'api_key' ? 'default' : 'outline'}
+        aria-pressed={mode === 'api_key'}
+        onClick={() => setMode('api_key')}
+      >
+        {t('oracle.session.modeKey')}
+      </Button>
+      <Button
+        type="button"
+        size="sm"
+        variant={mode === 'session' ? 'default' : 'outline'}
+        aria-pressed={mode === 'session'}
+        onClick={() => setMode('session')}
+      >
+        {t('oracle.session.modeSession')}
+      </Button>
+    </div>
+  )
+
+  if (mode === 'session') {
+    return (
+      <div className="space-y-4">
+        {modeToggle}
+        <OracleSessionForm label={label} onSaved={onSaved} />
+      </div>
+    )
+  }
+
   return (
     <form onSubmit={submit} className="space-y-4" autoComplete="off">
+      {modeToggle}
       <p className="text-sm text-muted-foreground">{t('oracle.form.intro')}</p>
       <OracleKeyWizard
         connected={connected}

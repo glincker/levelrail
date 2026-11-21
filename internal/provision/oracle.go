@@ -39,6 +39,8 @@ type OracleCredential struct {
 	// SubnetOCID is required until the network slice can create one.
 	SubnetOCID string
 	Region     string
+	// SessionToken switches signing to the browser session scheme; UserOCID and Fingerprint are then unused.
+	SessionToken string
 }
 
 // OracleSettings are the tunables the later settings slice will feed live.
@@ -102,9 +104,13 @@ func NewOracleWithEndpoints(cred OracleCredential, settings OracleSettings, iaas
 }
 
 func newOracle(cred OracleCredential, settings OracleSettings, iaasBase, identityBase string, insecure bool) (*Oracle, error) {
+	session := cred.SessionToken != ""
 	for field, v := range map[string]string{
 		"tenancy": cred.TenancyOCID, "user": cred.UserOCID, "compartment": cred.CompartmentOCID,
 	} {
+		if session && field == "user" {
+			continue
+		}
 		if !oracleOCIDRe.MatchString(v) {
 			return nil, fmt.Errorf("provision: oracle %s OCID is not valid", field)
 		}
@@ -115,18 +121,22 @@ func newOracle(cred OracleCredential, settings OracleSettings, iaasBase, identit
 	if !oracleRegionRe.MatchString(cred.Region) {
 		return nil, errors.New("provision: oracle region is not valid")
 	}
-	if cred.Fingerprint == "" {
+	if cred.Fingerprint == "" && !session {
 		return nil, errors.New("provision: oracle fingerprint is required")
 	}
 	key, err := parseOraclePrivateKey(cred.PrivateKeyPEM)
 	if err != nil {
 		return nil, err
 	}
+	keyID := ocisign.KeyID(cred.TenancyOCID, cred.UserOCID, cred.Fingerprint)
+	if session {
+		keyID = ocisign.SessionKeyID(cred.SessionToken)
+	}
 	return &Oracle{
 		cred:     cred,
 		settings: settings.withDefaults(),
 		signer: ocisign.Signer{
-			KeyID:         ocisign.KeyID(cred.TenancyOCID, cred.UserOCID, cred.Fingerprint),
+			KeyID:         keyID,
 			Key:           key,
 			AllowInsecure: insecure,
 		},
@@ -134,6 +144,9 @@ func newOracle(cred OracleCredential, settings OracleSettings, iaasBase, identit
 		identityBase: identityBase,
 	}, nil
 }
+
+// SessionAuth reports a browser session login, which cannot create nodes.
+func (o *Oracle) SessionAuth() bool { return o.cred.SessionToken != "" }
 
 func parseOraclePrivateKey(pemText string) (*rsa.PrivateKey, error) {
 	block, _ := pem.Decode([]byte(pemText))

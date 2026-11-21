@@ -503,5 +503,14 @@
     "reloginNeeded": "AWS のサインインが終了しました。このアカウントを使い続けるには再度サインインしてください。",
     "startUrlExample": "https://d-1234567890.awsapps.com/start",
     "regionExample": "eu-west-1"
+  },
+  "relogin": {
+    "title": "ブラウザセッション",
+    "expires": "セッションの有効期限: {{when}}。",
+    "expired": "セッションは失効済みか {{when}} に終了します。このアカウントを使い続けるには再ログインしてください。",
+    "token": "セキュリティトークンファイルの内容",
+    "key": "セッション秘密鍵ファイルの内容",
+    "submit": "再ログイン",
+    "done": "セッションを置き換えました"
   }
 }

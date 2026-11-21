@@ -1026,6 +1026,23 @@
       "micro": "Das Limit für Micro-Shapes würde überschritten. Erhöhe {{setting}}.",
       "paidShape": "Dieses Shape ist nicht durch die Kontingentgrenzen gedeckt und kann Kosten verursachen. Schalte {{setting}} ein, um es zu nutzen.",
       "unknownPrice": "Oracle nennt keinen Preis für dieses Shape, die Preisgrenze kann nicht geprüft werden. Schalte {{setting}} (oder provision.allow_unknown_price) ein, um es zu erlauben."
+    },
+    "session": {
+      "modeLabel": "Zugangsart",
+      "modeKey": "API-Schlüssel",
+      "modeSession": "Browser-Sitzung (zum Testen, läuft nach Stunden ab)",
+      "intro": "Melde dich im Browser an, statt einen API-Schlüssel zu erstellen. Die Sitzung hält einige Stunden, nutze sie nur zum Testen.",
+      "command": "Führe diesen Befehl auf deinem Rechner aus",
+      "commandHelp": "Er öffnet eine Browser-Anmeldung und schreibt eine Token-Datei und eine Schlüsseldatei unter ~/.oci.",
+      "profile": "Profilkonfiguration (optional)",
+      "profileHelp": "Füge die Zeilen tenancy und region aus ~/.oci/config ein. Mehr wird nicht gelesen.",
+      "token": "Inhalt der Security-Token-Datei",
+      "key": "Inhalt der privaten Sitzungsschlüssel-Datei",
+      "keyHelp": "Wird einmal gesendet, verschlüsselt gespeichert und nie wieder angezeigt.",
+      "check": "Sitzung prüfen",
+      "connect": "Verbinden",
+      "expires": "Sitzung läuft {{when}} ab",
+      "saved": "{{provider}} mit einer Browser-Sitzung verbunden"
     }
   },
   "builderTrust": {

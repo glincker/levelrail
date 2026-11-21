@@ -503,5 +503,14 @@
     "reloginNeeded": "Die AWS-Anmeldung ist abgelaufen. Melde dich erneut an, um das Konto weiter zu nutzen.",
     "startUrlExample": "https://d-1234567890.awsapps.com/start",
     "regionExample": "eu-west-1"
+  },
+  "relogin": {
+    "title": "Browser-Sitzung",
+    "expires": "Sitzung läuft {{when}} ab.",
+    "expired": "Sitzung abgelaufen oder endet {{when}}. Melde dich erneut an, um dieses Konto weiter zu nutzen.",
+    "token": "Inhalt der Security-Token-Datei",
+    "key": "Inhalt der privaten Sitzungsschlüssel-Datei",
+    "submit": "Erneut anmelden",
+    "done": "Sitzung ersetzt"
   }
 }

@@ -503,5 +503,14 @@
     "reloginNeeded": "La connexion AWS a pris fin. Reconnectez-vous pour continuer à utiliser ce compte.",
     "startUrlExample": "https://d-1234567890.awsapps.com/start",
     "regionExample": "eu-west-1"
+  },
+  "relogin": {
+    "title": "Session du navigateur",
+    "expires": "La session expire {{when}}.",
+    "expired": "La session a expiré ou se termine {{when}}. Reconnectez-vous pour continuer à utiliser ce compte.",
+    "token": "Contenu du fichier de jeton de sécurité",
+    "key": "Contenu du fichier de clé privée de session",
+    "submit": "Se reconnecter",
+    "done": "Session remplacée"
   }
 }

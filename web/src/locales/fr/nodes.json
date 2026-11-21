@@ -1040,6 +1040,23 @@
       "micro": "La limite des formes micro serait dépassée. Augmentez {{setting}}.",
       "paidShape": "Cette forme n'est pas couverte par les limites de quota et peut être facturée. Activez {{setting}} pour l'utiliser.",
       "unknownPrice": "Oracle n'indique aucun prix pour cette forme, le plafond de prix ne peut pas être vérifié. Activez {{setting}} (ou provision.allow_unknown_price) pour l'autoriser."
+    },
+    "session": {
+      "modeLabel": "Type d'identifiants",
+      "modeKey": "Clé d'API",
+      "modeSession": "Session du navigateur (test, expire en quelques heures)",
+      "intro": "Connectez-vous avec le navigateur au lieu de créer une clé d'API. La session dure quelques heures, réservez-la aux tests.",
+      "command": "Exécutez cette commande sur votre machine",
+      "commandHelp": "Elle ouvre une connexion dans le navigateur et écrit un fichier de jeton et un fichier de clé privée sous ~/.oci.",
+      "profile": "Configuration du profil (facultatif)",
+      "profileHelp": "Collez les lignes tenancy et region de ~/.oci/config. Rien d'autre n'est lu.",
+      "token": "Contenu du fichier de jeton de sécurité",
+      "key": "Contenu du fichier de clé privée de session",
+      "keyHelp": "Envoyée une fois, stockée chiffrée et jamais réaffichée.",
+      "check": "Vérifier la session",
+      "connect": "Connecter",
+      "expires": "La session expire {{when}}",
+      "saved": "{{provider}} connecté avec une session du navigateur"
     }
   },
   "builderTrust": {

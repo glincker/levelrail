@@ -199,6 +199,7 @@ type oracleStoredCredential struct {
 	Region          string `json:"region"`
 	CompartmentOCID string `json:"compartment_ocid"`
 	SubnetOCID      string `json:"subnet_ocid"`
+	SessionToken    string `json:"session_token,omitempty"`
 }
 
 // oracleCredentialValue validates the API key fields with the cloud
@@ -243,7 +244,7 @@ func (rt *Router) newOracleProvisioner(token string) (NodeProvisioner, error) {
 	}
 	cred := provision.OracleCredential{
 		TenancyOCID: c.TenancyOCID, UserOCID: c.UserOCID, Fingerprint: c.Fingerprint, PrivateKeyPEM: c.PrivateKeyPEM,
-		CompartmentOCID: c.CompartmentOCID, SubnetOCID: c.SubnetOCID, Region: c.Region,
+		CompartmentOCID: c.CompartmentOCID, SubnetOCID: c.SubnetOCID, Region: c.Region, SessionToken: c.SessionToken,
 	}
 	settings := rt.oracleSettings(context.Background())
 	if rt.oracleTestBase != "" {

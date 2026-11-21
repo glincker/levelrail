@@ -121,6 +121,7 @@ func (rt *Router) toCloudAccountWire(ctx context.Context, a store.CloudAccount) 
 	w := cloudAccountWire{ID: a.ID, Provider: a.Provider, Label: a.DisplayName, Method: a.AuthMethod, Config: cfg, TeamID: a.TeamID,
 		Status: a.Status, Linked: linked, LastVerifiedAt: a.LastVerifiedAt, CreatedBy: a.CreatedBy, CreatedAt: a.CreatedAt, UpdatedAt: a.UpdatedAt}
 	if isOracleSessionAccount(a) {
+		rt.syncOracleSessionWindow(ctx)
 		if exp, ok := sessionExpiry(a); ok {
 			w.SessionExpiresAt = &exp
 		}
@@ -918,6 +919,10 @@ func (rt *Router) resolveNodeProvisionerForAccount(ctx context.Context, provider
 			}
 			if got.Status == store.CloudAccountStatusDisabled {
 				return nil, false, http.StatusConflict, "cloud account is disabled"
+			}
+			rt.syncOracleSessionWindow(ctx)
+			if oracleSessionNeedsRelogin(got) {
+				return nil, false, http.StatusConflict, cloudCheckMessages[cloudconn.ClassNeedsRelogin] + " Run: " + cloudconn.OracleReloginCommand("")
 			}
 			acct = got
 		case errors.Is(err, store.ErrCloudAccountNotFound) && accountID != "":

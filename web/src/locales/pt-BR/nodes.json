@@ -1040,6 +1040,23 @@
       "micro": "O limite de shapes micro seria excedido. Aumente {{setting}}.",
       "paidShape": "Este shape não é coberto pelos limites de cota e pode gerar cobrança. Ative {{setting}} para usá-lo.",
       "unknownPrice": "A Oracle não informa preço para este shape, então o teto de preço não pode ser verificado. Ative {{setting}} (ou provision.allow_unknown_price) para permitir."
+    },
+    "session": {
+      "modeLabel": "Tipo de credencial",
+      "modeKey": "Chave de API",
+      "modeSession": "Sessão do navegador (teste, expira em horas)",
+      "intro": "Entre pelo navegador em vez de criar uma chave de API. A sessão dura poucas horas, use apenas para testes.",
+      "command": "Execute este comando no seu computador",
+      "commandHelp": "Ele abre um login no navegador e grava um arquivo de token e um arquivo de chave privada em ~/.oci.",
+      "profile": "Configuração do perfil (opcional)",
+      "profileHelp": "Cole as linhas tenancy e region de ~/.oci/config. Nada mais é lido.",
+      "token": "Conteúdo do arquivo do token de segurança",
+      "key": "Conteúdo do arquivo da chave privada da sessão",
+      "keyHelp": "Enviada uma vez, armazenada criptografada e nunca mais exibida.",
+      "check": "Verificar sessão",
+      "connect": "Conectar",
+      "expires": "A sessão expira {{when}}",
+      "saved": "{{provider}} conectado com uma sessão do navegador"
     }
   },
   "allowedBuilders": {

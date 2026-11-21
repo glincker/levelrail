@@ -9,6 +9,7 @@ import (
 	"time"
 
 	"github.com/GLINCKER/levelrail/internal/cloudconn"
+	"github.com/GLINCKER/levelrail/internal/runtimesettings"
 	"github.com/GLINCKER/levelrail/internal/store"
 )
 
@@ -163,4 +164,11 @@ func (rt *Router) handleOracleSessionImport(w http.ResponseWriter, r *http.Reque
 		"needs_relogin":   expired || cloudconn.OracleSessionNeedsRelogin(exp, time.Now()),
 		"relogin_command": cloudconn.OracleReloginCommand(""),
 	})
+}
+
+// syncOracleSessionWindow pushes the live relogin window into cloudconn before an expiry check.
+func (rt *Router) syncOracleSessionWindow(ctx context.Context) {
+	if rt.runtimeSettings != nil {
+		cloudconn.SetOracleSessionMinSeconds(rt.runtimeSettings.Int(ctx, runtimesettings.KeyCloudOracleSessionMinSecs))
+	}
 }

@@ -1026,6 +1026,23 @@
       "micro": "Se superaría el límite de formas micro. Sube {{setting}} para permitir otra.",
       "paidShape": "Esta forma no está cubierta por los límites de asignación y puede facturarse. Activa {{setting}} para usarla.",
       "unknownPrice": "Oracle no indica precio para esta forma, así que no se puede comprobar el tope. Activa {{setting}} (o provision.allow_unknown_price) para permitirla."
+    },
+    "session": {
+      "modeLabel": "Tipo de credencial",
+      "modeKey": "Clave de API",
+      "modeSession": "Sesión del navegador (pruebas, caduca en horas)",
+      "intro": "Inicia sesión con el navegador en lugar de crear una clave de API. La sesión dura unas horas, úsala solo para pruebas.",
+      "command": "Ejecuta este comando en tu equipo",
+      "commandHelp": "Abre un inicio de sesión en el navegador y escribe un archivo de token y un archivo de clave privada en ~/.oci.",
+      "profile": "Configuración del perfil (opcional)",
+      "profileHelp": "Pega las líneas tenancy y region de ~/.oci/config. No se lee nada más.",
+      "token": "Contenido del archivo del token de seguridad",
+      "key": "Contenido del archivo de clave privada de la sesión",
+      "keyHelp": "Se envía una vez, se guarda cifrada y no se vuelve a mostrar.",
+      "check": "Comprobar sesión",
+      "connect": "Conectar",
+      "expires": "La sesión caduca {{when}}",
+      "saved": "{{provider}} conectado con una sesión del navegador"
     }
   },
   "builderTrust": {

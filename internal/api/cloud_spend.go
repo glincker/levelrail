@@ -86,7 +86,11 @@ func (rt *Router) cloudSpendCredentials(ctx context.Context, a store.CloudAccoun
 		if err := json.Unmarshal([]byte(token), &c); err != nil {
 			return nil, errors.New("the stored Oracle credential is not readable")
 		}
-		return cloudspend.Credentials{"home_region": c.Region, "tenancy_ocid": c.TenancyOCID, "user_ocid": c.UserOCID, "fingerprint": c.Fingerprint, "private_key_pem": c.PrivateKeyPEM}, nil
+		rt.syncOracleSessionWindow(ctx)
+		if oracleSessionNeedsRelogin(a) {
+			return nil, errors.New("the Oracle browser session has expired, log in again")
+		}
+		return cloudspend.Credentials{"home_region": c.Region, "tenancy_ocid": c.TenancyOCID, "user_ocid": c.UserOCID, "fingerprint": c.Fingerprint, "private_key_pem": c.PrivateKeyPEM, "session_token": c.SessionToken}, nil
 	default:
 		token, err := rt.accountCredential(ctx, a)
 		if err != nil {

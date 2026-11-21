@@ -52,6 +52,7 @@ func (rt *Router) oracleProber() cloudconn.OracleProber {
 
 // oracleCheckResult runs the account's one read-only list call and maps the class to the fixed texts.
 func (rt *Router) oracleCheckResult(ctx context.Context, a store.CloudAccount, value string) cloudCheckResult {
+	rt.syncOracleSessionWindow(ctx)
 	if oracleSessionNeedsRelogin(a) {
 		return needsReloginResult()
 	}
@@ -110,6 +111,7 @@ func (rt *Router) handleOraclePolicyKit(w http.ResponseWriter, r *http.Request) 
 
 // probeOracleAccount answers the per capability result for an Oracle account.
 func (rt *Router) probeOracleAccount(w http.ResponseWriter, r *http.Request, a store.CloudAccount, names []string) {
+	rt.syncOracleSessionWindow(r.Context())
 	if oracleSessionNeedsRelogin(a) {
 		writeCodedError(w, http.StatusConflict, cloudconn.ClassNeedsRelogin, cloudCheckMessages[cloudconn.ClassNeedsRelogin]+" Run: "+cloudconn.OracleReloginCommand(""))
 		return

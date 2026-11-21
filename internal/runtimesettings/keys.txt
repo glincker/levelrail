@@ -171,6 +171,7 @@ cloud.oauth.digitalocean.client_id
 cloud.oauth.digitalocean.client_secret
 cloud.oauth.digitalocean.refresh_lead_seconds
 cloud.oauth.digitalocean.timeout_seconds
+cloud.oracle.session_min_seconds
 cloud.plan_job_retention_hours
 cloud.plan_max_age_minutes
 cloud.require_full_estimate

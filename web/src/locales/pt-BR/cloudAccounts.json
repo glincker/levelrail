@@ -503,5 +503,14 @@
     "reloginNeeded": "O login da AWS terminou. Entre novamente para continuar usando esta conta.",
     "startUrlExample": "https://d-1234567890.awsapps.com/start",
     "regionExample": "eu-west-1"
+  },
+  "relogin": {
+    "title": "Sessão do navegador",
+    "expires": "A sessão expira {{when}}.",
+    "expired": "A sessão expirou ou termina {{when}}. Entre novamente para continuar usando esta conta.",
+    "token": "Conteúdo do arquivo do token de segurança",
+    "key": "Conteúdo do arquivo da chave privada da sessão",
+    "submit": "Entrar novamente",
+    "done": "Sessão substituída"
   }
 }

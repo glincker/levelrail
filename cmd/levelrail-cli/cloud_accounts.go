@@ -22,8 +22,8 @@ func cloudAccountsUsage(prog string) string {
   %[1]s cloud accounts add ID --provider P [--method M] [--region R] [--role-arn ARN] [--account-id ID] [--external-id X] [--label L] [--team T]
   %[1]s cloud accounts add ID --provider oracle --tenancy OCID --user OCID --fingerprint FP --compartment OCID --region R [--subnet OCID]
   %[1]s cloud accounts oauth-url digitalocean
-  %[1]s cloud accounts add ID --provider oracle --auth oci_session --profile DEFAULT --compartment OCID
-  %[1]s cloud accounts relogin ID [--profile DEFAULT]   (run "oci session authenticate" first)
+  %[1]s cloud accounts add ID --provider oracle --auth oci_session --oci-profile DEFAULT --compartment OCID
+  %[1]s cloud accounts relogin ID [--oci-profile DEFAULT]   (run "oci session authenticate" first)
   %[1]s cloud instances list ACCOUNT [--region R]
   %[1]s cloud instances show|start|stop|soft-stop|reboot|soft-reboot|rm ACCOUNT INSTANCE
   %[1]s cloud instances resize ACCOUNT INSTANCE [--type T] [--ocpus N] [--memory-gb N]
@@ -124,7 +124,7 @@ func runCloudAccounts(prog string, args []string, stdout, stderr io.Writer, look
 		var tenancy, user, fingerprint, compartment, subnet, profile string
 		setup := func(fs *flag.FlagSet) {
 			fs.StringVar(&method, "auth", "", "credential method (alias of --method), oci_session for a browser login")
-			fs.StringVar(&profile, "profile", "DEFAULT", "oci_session: profile in ~/.oci/config")
+			fs.StringVar(&profile, "oci-profile", "DEFAULT", "oci_session: profile in ~/.oci/config")
 			fs.StringVar(&tenancy, "tenancy", "", "oracle tenancy OCID")
 			fs.StringVar(&user, "user", "", "oracle user OCID")
 			fs.StringVar(&fingerprint, "fingerprint", "", "oracle API key fingerprint")
@@ -168,7 +168,7 @@ func runCloudAccounts(prog string, args []string, stdout, stderr io.Writer, look
 		})
 	case "relogin":
 		var profile string
-		setup := func(fs *flag.FlagSet) { fs.StringVar(&profile, "profile", "DEFAULT", "profile in ~/.oci/config") }
+		setup := func(fs *flag.FlagSet) { fs.StringVar(&profile, "oci-profile", "DEFAULT", "profile in ~/.oci/config") }
 		return cloudCall(prog, "cloud accounts relogin", rest, stdout, stderr, lookupEnv, setup, func(c *apiclient.Client, pos []string, _ outputFlags) (any, func(), error) {
 			if !needArgs(stderr, prog, pos) {
 				return nil, nil, fmt.Errorf("an account ID is required")

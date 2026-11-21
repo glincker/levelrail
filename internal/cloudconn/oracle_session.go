@@ -6,6 +6,7 @@ import (
 	"encoding/json"
 	"errors"
 	"strings"
+	"sync/atomic"
 	"time"
 
 	"github.com/GLINCKER/levelrail/internal/ocisign"
@@ -29,9 +30,22 @@ func OracleReloginCommand(profile string) string {
 	return "oci session authenticate --profile-name " + profile + " --region <region>"
 }
 
+// oracleSessionMinSeconds is pushed from the runtime setting by the API layer, so a change
+// applies live without this package importing the settings service. Negative means unset.
+var oracleSessionMinSeconds atomic.Int64
+
+func init() { oracleSessionMinSeconds.Store(-1) }
+
+// SetOracleSessionMinSeconds records the relogin window in seconds.
+func SetOracleSessionMinSeconds(n int) { oracleSessionMinSeconds.Store(int64(n)) }
+
 // oracleSessionMinRemaining is how long before exp a session counts as needing relogin.
 func oracleSessionMinRemaining() time.Duration {
-	return time.Duration(envIntDefault("APP_CLOUD_OCI_SESSION_MIN_SECONDS", 300)) * time.Second
+	n := oracleSessionMinSeconds.Load()
+	if n < 0 {
+		n = 300
+	}
+	return time.Duration(n) * time.Second
 }
 
 // OracleSessionExpiry reads exp from the token's JWT payload without verifying it: the

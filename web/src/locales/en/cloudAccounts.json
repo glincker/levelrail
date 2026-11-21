@@ -503,5 +503,14 @@
     "reloginNeeded": "The AWS sign in ended. Sign in again to keep using this account.",
     "startUrlExample": "https://d-1234567890.awsapps.com/start",
     "regionExample": "eu-west-1"
+  },
+  "relogin": {
+    "title": "Browser session",
+    "expires": "Session expires {{when}}.",
+    "expired": "Session expired or ends {{when}}. Log in again to keep using this account.",
+    "token": "Security token file contents",
+    "key": "Session private key file contents",
+    "submit": "Relogin",
+    "done": "Session replaced"
   }
 }

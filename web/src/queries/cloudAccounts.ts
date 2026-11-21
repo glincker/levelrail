@@ -30,6 +30,8 @@ import type {
   CloudSpendReport,
   CloudVerifyResult,
   CreateAwsRoleAccountInput,
+  OracleSessionCheck,
+  OracleSessionInput,
 } from '../types/cloudAccounts'
 
 const BASE = '/api/v1/cloud-accounts'
@@ -143,6 +145,49 @@ export function useCreateAwsRoleAccount() {
         method: 'POST',
         body: { provider: 'aws', method: 'role_assumption', ...input },
         fallbackMessage: 'create cloud account failed',
+      }),
+    onSuccess: () => qc.invalidateQueries({ queryKey: cloudAccountKeys.all }),
+  })
+}
+
+// Offline check of pasted session files; nothing is stored.
+export function useImportOracleSession() {
+  return useMutation({
+    mutationFn: (input: OracleSessionInput) =>
+      apiRequest<OracleSessionCheck>(`${BASE}/oracle/session-import`, {
+        method: 'POST',
+        body: input,
+        fallbackMessage: 'check oracle session failed',
+      }),
+  })
+}
+
+export function useCreateOracleSessionAccount() {
+  const qc = useQueryClient()
+  return useMutation({
+    mutationFn: (input: OracleSessionInput & { label?: string }) =>
+      apiRequest<CloudAccount>(BASE, {
+        method: 'POST',
+        body: {
+          provider: 'oracle',
+          method: 'oci_session',
+          verify: true,
+          ...input,
+        },
+        fallbackMessage: 'create cloud account failed',
+      }),
+    onSuccess: () => qc.invalidateQueries({ queryKey: cloudAccountKeys.all }),
+  })
+}
+
+export function useReloginOracleSession(id: string) {
+  const qc = useQueryClient()
+  return useMutation({
+    mutationFn: (input: { session_token: string; private_key_pem: string }) =>
+      apiRequest<CloudAccount>(`${BASE}/${enc(id)}`, {
+        method: 'PATCH',
+        body: input,
+        fallbackMessage: 'relogin cloud account failed',
       }),
     onSuccess: () => qc.invalidateQueries({ queryKey: cloudAccountKeys.all }),
   })

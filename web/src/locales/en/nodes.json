@@ -1026,6 +1026,23 @@
       "micro": "The micro shape limit would be exceeded. Raise {{setting}} to allow another.",
       "paidShape": "This shape is not covered by the allowance limits and may bill. Turn on {{setting}} to use it.",
       "unknownPrice": "Oracle lists no price for this shape, so the price cap cannot be checked. Turn on {{setting}} (or provision.allow_unknown_price) to allow it."
+    },
+    "session": {
+      "modeLabel": "Credential type",
+      "modeKey": "API key",
+      "modeSession": "Browser session (testing, expires in hours)",
+      "intro": "Log in with your browser instead of creating an API key. The session lasts a few hours, so use it for testing only.",
+      "command": "Run this command on your computer",
+      "commandHelp": "It opens a browser login and writes a security token file and a private key file under ~/.oci.",
+      "profile": "Profile config (optional)",
+      "profileHelp": "Paste the tenancy and region lines from ~/.oci/config. Nothing else is read.",
+      "token": "Security token file contents",
+      "key": "Session private key file contents",
+      "keyHelp": "Sent once, stored encrypted and never shown again.",
+      "check": "Check session",
+      "connect": "Connect",
+      "expires": "Session expires {{when}}",
+      "saved": "{{provider}} connected with a browser session"
     }
   },
   "builderTrust": {

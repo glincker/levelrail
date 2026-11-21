@@ -1012,6 +1012,23 @@
       "micro": "将超出 micro 规格上限。请提高 {{setting}}。",
       "paidShape": "此规格不在额度限制内,可能产生费用。开启 {{setting}} 才能使用。",
       "unknownPrice": "Oracle 未给出此规格的价格,无法检查价格上限。开启 {{setting}}(或 provision.allow_unknown_price)以允许。"
+    },
+    "session": {
+      "modeLabel": "凭据类型",
+      "modeKey": "API 密钥",
+      "modeSession": "浏览器会话(仅用于测试,数小时后过期)",
+      "intro": "通过浏览器登录,无需创建 API 密钥。会话只持续数小时,仅用于测试。",
+      "command": "在你的电脑上运行此命令",
+      "commandHelp": "它会打开浏览器登录,并在 ~/.oci 下写入令牌文件和私钥文件。",
+      "profile": "配置文件内容(可选)",
+      "profileHelp": "粘贴 ~/.oci/config 中的 tenancy 和 region 行,不会读取其他内容。",
+      "token": "安全令牌文件内容",
+      "key": "会话私钥文件内容",
+      "keyHelp": "只发送一次,加密保存,不再显示。",
+      "check": "检查会话",
+      "connect": "连接",
+      "expires": "会话将于 {{when}} 过期",
+      "saved": "{{provider}} 已通过浏览器会话连接"
     }
   },
   "builderTrust": {

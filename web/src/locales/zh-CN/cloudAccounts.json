@@ -503,5 +503,14 @@
     "reloginNeeded": "AWS 登录已结束。请重新登录以继续使用此账户。",
     "startUrlExample": "https://d-1234567890.awsapps.com/start",
     "regionExample": "eu-west-1"
+  },
+  "relogin": {
+    "title": "浏览器会话",
+    "expires": "会话将于 {{when}} 过期。",
+    "expired": "会话已过期或将于 {{when}} 结束。请重新登录以继续使用此账户。",
+    "token": "安全令牌文件内容",
+    "key": "会话私钥文件内容",
+    "submit": "重新登录",
+    "done": "会话已替换"
   }
 }

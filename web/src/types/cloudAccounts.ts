@@ -12,6 +12,27 @@ export interface CloudAccount {
   created_by?: string
   created_at: string
   updated_at: string
+  // Oracle browser session accounts only; never carries the token or key.
+  session_expires_at?: string
+  needs_relogin?: boolean
+  relogin_command?: string
+}
+
+export interface OracleSessionInput {
+  profile_config?: string
+  session_token: string
+  private_key_pem: string
+  tenancy_ocid?: string
+  region?: string
+  compartment_ocid?: string
+}
+
+export interface OracleSessionCheck {
+  tenancy_ocid: string
+  region: string
+  expires_at: string
+  needs_relogin: boolean
+  relogin_command: string
 }
 
 export interface CloudVerifyResult {

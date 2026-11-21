@@ -397,6 +397,11 @@ func (rt *Router) handleCreateNodeProvision(w http.ResponseWriter, r *http.Reque
 		return
 	}
 
+	if sa, isSession := provisioner.(interface{ SessionAuth() bool }); isSession && sa.SessionAuth() {
+		writeError(w, http.StatusBadRequest, "creating nodes needs an Oracle API key account; a browser session account can only read and manage instances")
+		return
+	}
+
 	if reason := rt.checkProvisionSizeRegion(r.Context(), provisioner, req.Region, req.Size); reason != "" {
 		writeError(w, http.StatusBadRequest, reason)
 		return

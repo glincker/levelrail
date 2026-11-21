@@ -1,8 +1,11 @@
 package main
 
 import (
+	"encoding/json"
 	"net/http"
 	"net/http/httptest"
+	"os"
+	"path/filepath"
 	"strings"
 	"testing"
 )
@@ -44,5 +47,34 @@ func TestCloudDoctorCLITextAndJSON(t *testing.T) {
 	js, _ := runCLIExpectOK(t, []string{"cloud", "doctor", "--account", "aws-prod", "--json", "--api-url", srv.URL})
 	if !strings.Contains(js, `"ready"`) || !strings.Contains(js, `"fix"`) {
 		t.Fatalf("json = %q", js)
+	}
+}
+
+func TestCloudAccountsAddOCISessionSendsProfileFiles(t *testing.T) {
+	home := t.TempDir()
+	if err := os.MkdirAll(filepath.Join(home, ".oci"), 0o700); err != nil {
+		t.Fatal(err)
+	}
+	cfg := "[DEFAULT]\ntenancy=ocid1.tenancy.oc1..aaa\nregion=us-ashburn-1\nsecurity_token_file=~/.oci/tok\nkey_file=~/.oci/key.pem\n"
+	for name, body := range map[string]string{"config": cfg, "tok": "a.b.c\n", "key.pem": "KEYPEM"} {
+		if err := os.WriteFile(filepath.Join(home, ".oci", name), []byte(body), 0o600); err != nil {
+			t.Fatal(err)
+		}
+	}
+	t.Setenv("HOME", home)
+	var got map[string]any
+	srv := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		_ = json.NewDecoder(r.Body).Decode(&got)
+		w.Header().Set("Content-Type", "application/json")
+		_, _ = w.Write([]byte(`{"id":"ora-s","provider":"oracle","status":"active"}`))
+	}))
+	defer srv.Close()
+	runCLIExpectOK(t, []string{"cloud", "accounts", "add", "ora-s", "--provider", "oracle", "--auth", "oci_session",
+		"--compartment", "ocid1.compartment.oc1..bbb", "--api-url", srv.URL})
+	if got["session_token"] != "a.b.c" || got["private_key_pem"] != "KEYPEM" || got["method"] != "oci_session" {
+		t.Fatalf("body = %v", got)
+	}
+	if pc, _ := got["profile_config"].(string); !strings.Contains(pc, "us-ashburn-1") || strings.Contains(pc, "key_file") {
+		t.Fatalf("profile_config = %q", pc)
 	}
 }
