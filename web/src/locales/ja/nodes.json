@@ -1129,5 +1129,25 @@
       "agent": "エージェント {{value}}",
       "acceptsApps": "このノードはアプリも実行しているため、ここでは一時停止できません。"
     }
+  },
+  "installAgent": {
+    "title": "別のマシンでビルドとアプリを実行する",
+    "description": "LinuxサーバーまたはMacにエージェントをインストールすると、1分ほどでこのコントロールプレーンに参加します。",
+    "cta": "サーバーを追加",
+    "dismiss": "このバナーを非表示にする",
+    "dialogTitle": "エージェントをインストール",
+    "dialogDescription": "追加したいマシンでコマンドを1つ実行してください。接続されるとこのページが検知します。",
+    "tabsLabel": "オペレーティングシステム",
+    "linux": "Linux",
+    "macos": "macOS",
+    "minting": "1回限りの参加コマンドを作成しています",
+    "mintFailed": "参加コマンドを作成できませんでした: {{message}}",
+    "linuxLabel": "サーバーで実行",
+    "linuxHint": "サーバーにDockerが必要です。このコマンドは1回限りで、{{time}}に期限切れになります。",
+    "macosLabel": "Macのターミナルで実行",
+    "macosHint": "1回限り、{{time}}に期限切れになります。",
+    "macosNote": "プレビュー版です。ワークロードはDocker Desktop、OrbStack、Limaを通じて実行され、Macのファイルを共有します。そのため、Macは本番アプリの置き場ではなくビルダーとして使うのが最適です。",
+    "waiting": "ノードの接続を待っています",
+    "connected": "接続しました: {{name}}"
   }
 }

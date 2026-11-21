@@ -1143,5 +1143,25 @@
       "agent": "Agent {{value}}",
       "acceptsApps": "Dieser Node betreibt auch Apps und kann hier nicht pausiert werden."
     }
+  },
+  "installAgent": {
+    "title": "Builds und Apps auf einem anderen Rechner ausführen",
+    "description": "Installieren Sie den Agent auf einem Linux-Server oder einem Mac, und er tritt dieser Control Plane innerhalb einer Minute bei.",
+    "cta": "Server hinzufügen",
+    "dismiss": "Diesen Hinweis ausblenden",
+    "dialogTitle": "Agent installieren",
+    "dialogDescription": "Führen Sie einen Befehl auf dem Rechner aus, den Sie hinzufügen möchten. Diese Seite erkennt, wann er sich verbindet.",
+    "tabsLabel": "Betriebssystem",
+    "linux": "Linux",
+    "macos": "macOS",
+    "minting": "Einmaliger Beitrittsbefehl wird erstellt",
+    "mintFailed": "Beitrittsbefehl konnte nicht erstellt werden: {{message}}",
+    "linuxLabel": "Auf dem Server ausführen",
+    "linuxHint": "Benötigt Docker auf dem Server. Der Befehl ist nur einmal verwendbar und läuft um {{time}} ab.",
+    "macosLabel": "Im Terminal auf dem Mac ausführen",
+    "macosHint": "Nur einmal verwendbar, läuft um {{time}} ab.",
+    "macosNote": "Vorschau. Workloads laufen über Docker Desktop, OrbStack oder Lima, die die Dateien Ihres Macs teilen. Ein Mac eignet sich daher am besten als Builder und nicht als Ort für Produktions-Apps.",
+    "waiting": "Warten auf die Verbindung des Nodes",
+    "connected": "Verbunden: {{name}}"
   }
 }

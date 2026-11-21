@@ -313,7 +313,18 @@
     "title": "最近のデプロイ",
     "viewAll": "すべて表示",
     "none": "まだデプロイはありません。",
-    "live": "公開中"
+    "live": "公開中",
+    "copySha": "コミットハッシュをコピー",
+    "copied": "コミットハッシュをコピーしました",
+    "col": {
+      "commit": "コミット",
+      "message": "メッセージ",
+      "state": "ステータス",
+      "branch": "ブランチ",
+      "author": "作成者",
+      "when": "日時",
+      "actions": "デプロイ操作"
+    }
   },
   "routes": {
     "testTitle": "URLをテスト",
@@ -563,5 +574,67 @@
     "codes": "ステータスコード",
     "none": "まだありません。",
     "privacy": "エッジのアクセスログから集計しています。Cookie、クライアントアドレス、クエリ文字列は保存されません。表示範囲は最大{{days}}日です。"
+  },
+  "overview": {
+    "strip": {
+      "label": "最新の本番デプロイ",
+      "noMessage": "コミットメッセージなし",
+      "none": "まだデプロイされていません"
+    },
+    "state": {
+      "succeeded": "準備完了",
+      "running": "ビルド中",
+      "failed": "失敗",
+      "queued": "待機中",
+      "held": "保留中",
+      "canceled": "キャンセル済み",
+      "superseded": "置き換え済み",
+      "pending": "保留",
+      "refused": "拒否されました",
+      "awaiting_approval": "承認待ち",
+      "unknown": "不明"
+    },
+    "duration": "{{minutes}}分{{seconds}}秒",
+    "wiring": {
+      "title": "このサイトの接続構成",
+      "domains": "ドメイン",
+      "noDomains": "ドメインはまだありません。",
+      "tls": {
+        "healthy": "TLS正常",
+        "expiring_soon": "TLSの期限が近づいています",
+        "expired": "TLSの期限切れ",
+        "unknown": "TLS保留中"
+      },
+      "more": "ほか{{count}}件",
+      "forms": "フォーム",
+      "noForms": "フォームの送信はまだありません。",
+      "addForm": "フォームを追加",
+      "submissions": "送信数: {{count}}",
+      "routes": "ルートとルール",
+      "noRoutes": "ルールはまだありません。",
+      "addRule": "ルールを追加",
+      "ruleSummary": "ルール {{rules}}、ヘッダーブロック {{headers}}、プロキシ対象アプリ {{proxied}}",
+      "on": "オン",
+      "off": "オフ",
+      "lastDeploy": "最終デプロイ: {{state}}",
+      "noDeploy": "まだデプロイされていません",
+      "password": "パスワード保護",
+      "cleanUrls": "クリーンURL",
+      "spa": "シングルページのフォールバック",
+      "openSettings": "設定を開く",
+      "outTitle": "接続先",
+      "apps": "プロキシ対象アプリ",
+      "noApps": "なし",
+      "repo": "Gitリポジトリ",
+      "notConnected": "未接続",
+      "hook": "デプロイフック",
+      "tokens": "CIデプロイトークン",
+      "tokensActive": "{{count}}件が有効",
+      "none": "なし"
+    },
+    "previews": {
+      "title": "最近のプレビュー",
+      "none": "ブランチのプレビューはまだありません。"
+    }
   }
 }

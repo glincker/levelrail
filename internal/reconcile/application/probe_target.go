@@ -73,16 +73,21 @@ func (c *Controller) probeTarget(ctx context.Context, state *docker.ContainerSta
 	if err != nil {
 		return probe.Target{}, err
 	}
-	if c.meshPaths == nil || nodeID == "" {
+	if nodeID == "" {
 		return probe.Target{Addr: addr}, nil
+	}
+	if c.meshPaths == nil {
+		return c.noMeshTarget(addr), nil
 	}
 	path, err := c.meshPaths.Path(ctx, nodeID)
 	if err != nil {
 		return probe.Target{}, fmt.Errorf("resolve mesh path to node %s: %w", nodeID, err)
 	}
-	// No mesh for this node: the agent shares the control plane's network.
-	if path.Local || path.NoMesh {
+	if path.Local {
 		return probe.Target{Addr: addr}, nil
+	}
+	if path.NoMesh {
+		return c.noMeshTarget(addr), nil
 	}
 	if !path.Usable {
 		return probe.Target{}, fmt.Errorf("the control plane cannot reach node %s over the WireGuard mesh, so the readiness probe never ran (the app itself was not checked): %s", nodeID, path.Reason)
@@ -96,6 +101,22 @@ func (c *Controller) probeTarget(ctx context.Context, state *docker.ContainerSta
 		return probe.Target{Addr: net.JoinHostPort(bound, strconv.Itoa(primary.HostPort))}, nil
 	}
 	return probe.Target{Addr: net.JoinHostPort(path.Address, strconv.Itoa(primary.HostPort))}, nil
+}
+
+// hostProber is a runtime whose agent can probe from its own host.
+type hostProber interface {
+	probe.RemoteChecker
+	ProbesOnHost() bool
+}
+
+// noMeshTarget has the node's agent probe its own loopback when it can, since
+// the control plane has no route to the node. A runtime without that ability
+// (a local node, an older agent) keeps the loopback of this process.
+func (c *Controller) noMeshTarget(addr string) probe.Target {
+	if hp, ok := c.runtime.(hostProber); ok && hp.ProbesOnHost() {
+		return probe.Target{Addr: addr, Remote: hp}
+	}
+	return probe.Target{Addr: addr}
 }
 
 // runtimeExecutor adapts docker.Runtime's streaming Exec to probe.Executor.

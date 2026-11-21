@@ -8,6 +8,7 @@ import (
 	"io"
 	"log/slog"
 	"os"
+	goruntime "runtime"
 	"sort"
 	"strconv"
 	"strings"
@@ -104,7 +105,7 @@ func NewClient(opts ...ClientOption) (*Client, error) {
 	switch {
 	case c.host != "":
 		dockerOpts = append(dockerOpts, dockerclient.WithHost(c.host))
-	case runtime.Source == envRuntimeSocket:
+	case ConnectHost(runtime, goruntime.GOOS) != "":
 		dockerOpts = append(dockerOpts, dockerclient.WithHost(runtime.Host))
 	}
 	probe, err := dockerclient.NewClientWithOpts(dockerOpts...)

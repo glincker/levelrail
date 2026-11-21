@@ -7,10 +7,12 @@ import (
 	"errors"
 	"fmt"
 	"github.com/GLINCKER/levelrail/internal/cloudmeta"
+	"io"
 	"log/slog"
 	"os"
 	"os/signal"
 	"path/filepath"
+	"runtime"
 	"strconv"
 	"syscall"
 	"time"
@@ -40,7 +42,37 @@ const (
 	buildKitConnectTimeout = 10 * time.Second
 )
 
+const usageText = `levelrail-agent: Levelrail node agent
+
+Usage: levelrail-agent [--help | --version | reenroll]
+
+Environment:
+  APP_CONTROL_PLANE_ADDR       host:port of the control plane agent listener (required)
+  APP_JOIN_TOKEN               one-time join token, only for the first enrolment
+  APP_CA_FINGERPRINT           control plane CA fingerprint to pin
+  APP_AGENT_IDENTITY_FILE      where the enrolled identity is stored
+`
+
+// handleInfoArgs answers version and help before any config is read.
+func handleInfoArgs(args []string, out io.Writer) bool {
+	if len(args) == 0 {
+		return false
+	}
+	switch args[0] {
+	case "--version", "-version", "version":
+		_, _ = fmt.Fprintln(out, version.Version)
+		return true
+	case "--help", "-h", "help":
+		_, _ = fmt.Fprint(out, usageText)
+		return true
+	}
+	return false
+}
+
 func main() {
+	if handleInfoArgs(os.Args[1:], os.Stdout) {
+		return
+	}
 	logger := slog.New(slog.NewTextHandler(os.Stdout, nil))
 	if err := run(logger); err != nil {
 		logger.Error("exited with error", slog.String("error", err.Error()))
@@ -62,6 +94,7 @@ func run(logger *slog.Logger) error {
 	}
 
 	logger.Info("starting", slog.String("version", version.Version))
+	logPlatformLimits(logger, runtime.GOOS)
 
 	id, err := loadOrEnroll(ctx, addr, identityFilePath(), logger)
 	if err != nil {
@@ -117,6 +150,8 @@ func loadBuildRunner(ctx context.Context, logger *slog.Logger, guardHost string)
 	rawOpts := []dockerclient.Opt{dockerclient.FromEnv, dockerclient.WithAPIVersionNegotiation()}
 	if guardHost != "" {
 		rawOpts = append(rawOpts, dockerclient.WithHost(guardHost))
+	} else if h := docker.ConnectHost(docker.DetectRuntimeSocket(os.LookupEnv), runtime.GOOS); h != "" {
+		rawOpts = append(rawOpts, dockerclient.WithHost(h))
 	}
 	rawDockerCli, err := dockerclient.NewClientWithOpts(rawOpts...)
 	if err != nil {

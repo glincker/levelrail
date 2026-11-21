@@ -35,6 +35,9 @@ type Config struct {
 	TCP      bool
 	Interval time.Duration
 	Timeout  time.Duration
+	// MaxRedirects is the resolved redirect bound a Prober hands to a
+	// RemoteChecker; 0 keeps the checker's default. Local attempts ignore it.
+	MaxRedirects int
 }
 
 // IsExec reports whether c is an exec probe.
@@ -100,6 +103,15 @@ func (c Config) validateExec() error {
 type Target struct {
 	Addr        string
 	ContainerID string
+	// Remote, when set, runs a TCP or HTTP attempt on the host that owns Addr
+	// instead of dialing it from this process.
+	Remote RemoteChecker
+}
+
+// RemoteChecker runs one probe attempt on another host and returns the same
+// *Failure an in-process attempt would, or nil on success.
+type RemoteChecker interface {
+	CheckRemote(ctx context.Context, addr string, cfg Config) error
 }
 
 // Executor runs cmd inside a container and reports its exit code and
@@ -144,7 +156,13 @@ type Prober struct {
 	exec      Executor
 	limits    Limits
 	onAttempt func(Attempt)
+	// loopbackOnly refuses any connection or redirect to a non-loopback address.
+	loopbackOnly bool
 }
+
+// ErrRemoteUnsupported is wrapped by a RemoteChecker that cannot run the
+// attempt, so the Prober falls back to dialing the address itself.
+var ErrRemoteUnsupported = errors.New("probe: remote checker unavailable")
 
 // Option configures an optional Prober behavior.
 type Option func(*Prober)
@@ -164,6 +182,12 @@ type Attempt struct {
 	StatusCode int // HTTP status; 0 for an exec probe or a response-less HTTP failure
 	ExitCode   int // exec exit code; 0 for an HTTP probe
 	Error      string
+}
+
+// WithLoopbackOnly makes the Prober refuse any connection, redirect or name
+// resolution that does not end at a loopback IP address.
+func WithLoopbackOnly() Option {
+	return func(p *Prober) { p.loopbackOnly = true }
 }
 
 // WithOnAttempt reports every individual probe attempt to fn, once per
@@ -187,6 +211,9 @@ func New(client *http.Client, exec Executor, limits Limits, opts ...Option) *Pro
 	p := &Prober{client: client, exec: exec, limits: limits.withDefaults()}
 	for _, opt := range opts {
 		opt(p)
+	}
+	if p.loopbackOnly {
+		p.client = loopbackClient()
 	}
 	return p
 }
@@ -250,6 +277,16 @@ func (p *Prober) attempt(ctx context.Context, t Target, cfg Config) error {
 	timeout := cfg.Timeout
 	if timeout <= 0 {
 		timeout = p.limits.DefaultTimeout
+	}
+	if t.Remote != nil && !cfg.IsExec() {
+		remoteCfg := cfg
+		remoteCfg.Timeout, remoteCfg.MaxRedirects = timeout, p.limits.MaxRedirects
+		start := time.Now()
+		err := t.Remote.CheckRemote(ctx, t.Addr, remoteCfg)
+		if !errors.Is(err, ErrRemoteUnsupported) {
+			p.report(start, t.Addr, 0, 0, err)
+			return err
+		}
 	}
 	if cfg.TCP {
 		return p.tcpAttempt(ctx, t.Addr, timeout)

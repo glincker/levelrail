@@ -1,11 +1,20 @@
 package docker
 
 import (
+	"context"
 	"fmt"
+	"log/slog"
+	"net"
 	"os"
 	"path/filepath"
+	"runtime"
 	"strings"
+	"time"
 )
+
+// socketDialTimeout bounds the liveness probe of one candidate socket; a
+// stale socket file refuses at once, so this only caps a wedged listener.
+const socketDialTimeout = 1500 * time.Millisecond
 
 // RuntimeKind is the container engine DetectRuntimeSocket believes it is
 // talking to, decided from the socket path and, when available, refined
@@ -18,6 +27,7 @@ const (
 	RuntimeKindPodman         RuntimeKind = "podman"
 	RuntimeKindDockerDesktop  RuntimeKind = "docker-desktop"
 	RuntimeKindColima         RuntimeKind = "colima"
+	RuntimeKindLima           RuntimeKind = "lima"
 	RuntimeKindOrbStack       RuntimeKind = "orbstack"
 	RuntimeKindRancherDesktop RuntimeKind = "rancher-desktop"
 	RuntimeKindUnknown        RuntimeKind = "unknown"
@@ -55,10 +65,21 @@ type RuntimeInfo struct {
 // it never dials the daemon, so a live Docker client's own ServerVersion
 // is the only verified corroborating signal available.
 func DetectRuntimeSocket(lookupEnv func(string) (string, bool)) RuntimeInfo {
-	return detectRuntimeSocket(lookupEnv, socketExists)
+	return detectRuntimeSocketProbe(lookupEnv, socketExists, dialableSocket, runtime.GOOS)
 }
 
 func detectRuntimeSocket(lookupEnv func(string) (string, bool), exists func(string) bool) RuntimeInfo {
+	return detectRuntimeSocketOS(lookupEnv, exists, runtime.GOOS)
+}
+
+// detectRuntimeSocketOS takes goos so the macOS-only candidates are testable on any host.
+func detectRuntimeSocketOS(lookupEnv func(string) (string, bool), exists func(string) bool, goos string) RuntimeInfo {
+	return detectRuntimeSocketProbe(lookupEnv, exists, exists, goos)
+}
+
+// detectRuntimeSocketProbe prefers the first candidate that exists and answers
+// a dial, so a stale socket file left by a quit desktop app does not hide a live one.
+func detectRuntimeSocketProbe(lookupEnv func(string) (string, bool), exists, live func(string) bool, goos string) RuntimeInfo {
 	if lookupEnv == nil {
 		lookupEnv = os.LookupEnv
 	}
@@ -68,10 +89,19 @@ func detectRuntimeSocket(lookupEnv func(string) (string, bool), exists func(stri
 	if v, ok := lookupEnv("DOCKER_HOST"); ok && strings.TrimSpace(v) != "" {
 		return classifySocket(strings.TrimSpace(v), "DOCKER_HOST")
 	}
-	for _, path := range candidateSockets(lookupEnv) {
-		if exists(path) {
+	var dead []string
+	for _, path := range candidateSockets(lookupEnv, goos) {
+		if !exists(path) {
+			continue
+		}
+		if live(path) {
 			return classifySocket("unix://"+path, "detected")
 		}
+		dead = append(dead, path)
+	}
+	if len(dead) > 0 {
+		slog.Warn("docker: runtime sockets found but not reachable", slog.String("sockets", strings.Join(dead, ",")))
+		return classifySocket("unix://"+dead[0], "detected")
 	}
 	return classifySocket("unix:///var/run/docker.sock", "default")
 }
@@ -79,7 +109,7 @@ func detectRuntimeSocket(lookupEnv func(string) (string, bool), exists func(stri
 // candidateSockets lists rootless Docker and Podman socket paths in the
 // order upstream tooling (dockerd-rootless-setuptool, podman machine)
 // actually creates them, checked before the rootful default.
-func candidateSockets(lookupEnv func(string) (string, bool)) []string {
+func candidateSockets(lookupEnv func(string) (string, bool), goos string) []string {
 	var out []string
 	if xdg, ok := lookupEnv("XDG_RUNTIME_DIR"); ok && strings.TrimSpace(xdg) != "" {
 		xdg = strings.TrimSpace(xdg)
@@ -99,8 +129,31 @@ func candidateSockets(lookupEnv func(string) (string, bool)) []string {
 			filepath.Join(home, ".orbstack", "run", "docker.sock"),
 			filepath.Join(home, ".rd", "docker.sock"),
 		)
+		if goos == "darwin" {
+			out = append(out, limaSockets(home)...)
+		}
 	}
 	return append(out, "/run/podman/podman.sock", "/var/run/docker.sock")
+}
+
+// limaSockets lists each Lima instance's Docker socket, sorted by instance
+// name; Lima names the directory after the instance so it cannot be a fixed path.
+func limaSockets(home string) []string {
+	matches, err := filepath.Glob(filepath.Join(home, ".lima", "*", "sock", "docker.sock"))
+	if err != nil {
+		return nil
+	}
+	return matches
+}
+
+// ConnectHost is the host the Docker client must dial explicitly, or "" when
+// the SDK's own DOCKER_HOST handling is right. On macOS the standard socket
+// path is often absent, so a detected desktop-runtime socket is used.
+func ConnectHost(info RuntimeInfo, goos string) string {
+	if info.Source == envRuntimeSocket || (info.Source == "detected" && goos == "darwin") {
+		return info.Host
+	}
+	return ""
 }
 
 func classifySocket(host, source string) RuntimeInfo {
@@ -119,6 +172,8 @@ func kindFromPath(lower string) RuntimeKind {
 		return RuntimeKindPodman
 	case strings.Contains(lower, "/.colima/"):
 		return RuntimeKindColima
+	case strings.Contains(lower, "/.lima/"):
+		return RuntimeKindLima
 	case strings.Contains(lower, "/.orbstack/"):
 		return RuntimeKindOrbStack
 	case strings.Contains(lower, "/.rd/"), strings.Contains(lower, "/.rancher-desktop/"):
@@ -193,4 +248,14 @@ func SupportFor(info RuntimeInfo, goos string) (SupportLevel, string) {
 func socketExists(path string) bool {
 	_, err := os.Stat(path)
 	return err == nil
+}
+
+func dialableSocket(path string) bool {
+	d := net.Dialer{Timeout: socketDialTimeout}
+	conn, err := d.DialContext(context.Background(), "unix", path)
+	if err != nil {
+		return false
+	}
+	_ = conn.Close()
+	return true
 }

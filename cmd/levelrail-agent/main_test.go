@@ -1,6 +1,7 @@
 package main
 
 import (
+	"bytes"
 	"context"
 	"io"
 	"log/slog"
@@ -11,6 +12,7 @@ import (
 	"time"
 
 	"github.com/GLINCKER/levelrail/internal/agent"
+	"github.com/GLINCKER/levelrail/internal/version"
 )
 
 func testLogger() *slog.Logger {
@@ -157,5 +159,32 @@ func TestRequirePinOrOptOut(t *testing.T) {
 	t.Setenv(envAllowUnpinnedEnroll, "1")
 	if err := requirePinOrOptOut(logger); err != nil {
 		t.Fatalf("explicit opt-out should be allowed, got %v", err)
+	}
+}
+
+func TestLogPlatformLimits(t *testing.T) {
+	var buf bytes.Buffer
+	logger := slog.New(slog.NewTextHandler(&buf, nil))
+	logPlatformLimits(logger, "linux")
+	if buf.Len() != 0 {
+		t.Fatalf("linux must log nothing, got %q", buf.String())
+	}
+	logPlatformLimits(logger, "darwin")
+	if !strings.Contains(buf.String(), "not supported on macOS") {
+		t.Fatalf("darwin log missing: %q", buf.String())
+	}
+}
+
+func TestHandleInfoArgs(t *testing.T) {
+	var out bytes.Buffer
+	if !handleInfoArgs([]string{"--version"}, &out) || strings.TrimSpace(out.String()) != version.Version {
+		t.Fatalf("version output %q", out.String())
+	}
+	out.Reset()
+	if !handleInfoArgs([]string{"-h"}, &out) || !strings.Contains(out.String(), "APP_CONTROL_PLANE_ADDR") {
+		t.Fatalf("help output %q", out.String())
+	}
+	if handleInfoArgs(nil, &out) || handleInfoArgs([]string{"reenroll"}, &out) {
+		t.Fatal("must not swallow normal args")
 	}
 }

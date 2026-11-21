@@ -317,7 +317,18 @@
     "title": "Recent deployments",
     "viewAll": "View all",
     "none": "No deployments yet.",
-    "live": "Live"
+    "live": "Live",
+    "copySha": "Copy commit hash",
+    "copied": "Commit hash copied",
+    "col": {
+      "commit": "Commit",
+      "message": "Message",
+      "state": "Status",
+      "branch": "Branch",
+      "author": "Author",
+      "when": "When",
+      "actions": "Deploy actions"
+    }
   },
   "routes": {
     "testTitle": "Test a URL",
@@ -567,5 +578,67 @@
     "codes": "Status codes",
     "none": "Nothing yet.",
     "privacy": "Built from the edge access log. No cookies, client addresses or query strings are stored. Ranges up to {{days}} days."
+  },
+  "overview": {
+    "strip": {
+      "label": "Latest production deploy",
+      "noMessage": "No commit message",
+      "none": "Nothing deployed yet"
+    },
+    "state": {
+      "succeeded": "Ready",
+      "running": "Building",
+      "failed": "Failed",
+      "queued": "Queued",
+      "held": "Held",
+      "canceled": "Canceled",
+      "superseded": "Superseded",
+      "pending": "Pending",
+      "refused": "Refused",
+      "awaiting_approval": "Awaiting approval",
+      "unknown": "Unknown"
+    },
+    "duration": "{{minutes}}m {{seconds}}s",
+    "wiring": {
+      "title": "How this site is wired",
+      "domains": "Domains",
+      "noDomains": "No domain yet.",
+      "tls": {
+        "healthy": "TLS ok",
+        "expiring_soon": "TLS expiring",
+        "expired": "TLS expired",
+        "unknown": "TLS pending"
+      },
+      "more": "+{{count}} more",
+      "forms": "Forms",
+      "noForms": "No form posts yet.",
+      "addForm": "Add a form",
+      "submissions": "Submissions: {{count}}",
+      "routes": "Routes and rules",
+      "noRoutes": "No rules yet.",
+      "addRule": "Add a rule",
+      "ruleSummary": "Rules {{rules}}, header blocks {{headers}}, proxied apps {{proxied}}",
+      "on": "On",
+      "off": "Off",
+      "lastDeploy": "Last deploy: {{state}}",
+      "noDeploy": "Not deployed yet",
+      "password": "Password protection",
+      "cleanUrls": "Clean URLs",
+      "spa": "Single page fallback",
+      "openSettings": "Open settings",
+      "outTitle": "Connects to",
+      "apps": "Proxied apps",
+      "noApps": "None",
+      "repo": "Git repository",
+      "notConnected": "Not connected",
+      "hook": "Deploy hook",
+      "tokens": "CI deploy tokens",
+      "tokensActive": "{{count}} active",
+      "none": "None"
+    },
+    "previews": {
+      "title": "Recent previews",
+      "none": "No branch previews yet."
+    }
   }
 }

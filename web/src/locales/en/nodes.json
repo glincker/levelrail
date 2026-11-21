@@ -1143,5 +1143,25 @@
       "agent": "Agent {{value}}",
       "acceptsApps": "This node also runs apps, so it cannot be paused here."
     }
+  },
+  "installAgent": {
+    "title": "Run builds and apps on another machine",
+    "description": "Install the agent on a Linux server or a Mac and it joins this control plane in a minute.",
+    "cta": "Add a server",
+    "dismiss": "Hide this banner",
+    "dialogTitle": "Install the agent",
+    "dialogDescription": "Run one command on the machine you want to add. This page notices when it connects.",
+    "tabsLabel": "Operating system",
+    "linux": "Linux",
+    "macos": "macOS",
+    "minting": "Creating a single-use join command",
+    "mintFailed": "Could not create a join command: {{message}}",
+    "linuxLabel": "Run on the server",
+    "linuxHint": "Needs Docker on the server. The command is single use and expires at {{time}}.",
+    "macosLabel": "Run in Terminal on the Mac",
+    "macosHint": "Single use, expires at {{time}}.",
+    "macosNote": "Preview. Workloads run through Docker Desktop, OrbStack or Lima, which share your Mac's files, so a Mac is best used as a builder rather than a place for production apps.",
+    "waiting": "Waiting for the node to connect",
+    "connected": "Connected: {{name}}"
   }
 }

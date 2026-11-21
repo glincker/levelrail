@@ -1157,5 +1157,25 @@
       "agent": "Agent {{value}}",
       "acceptsApps": "Ce node exécute aussi des apps, il ne peut donc pas être mis en pause ici."
     }
+  },
+  "installAgent": {
+    "title": "Exécuter des builds et des apps sur une autre machine",
+    "description": "Installez l'agent sur un serveur Linux ou un Mac, et il rejoint ce plan de contrôle en une minute.",
+    "cta": "Ajouter un serveur",
+    "dismiss": "Masquer cette bannière",
+    "dialogTitle": "Installer l'agent",
+    "dialogDescription": "Exécutez une commande sur la machine que vous voulez ajouter. Cette page détecte sa connexion.",
+    "tabsLabel": "Système d'exploitation",
+    "linux": "Linux",
+    "macos": "macOS",
+    "minting": "Création d'une commande d'adhésion à usage unique",
+    "mintFailed": "Impossible de créer une commande d'adhésion : {{message}}",
+    "linuxLabel": "À exécuter sur le serveur",
+    "linuxHint": "Nécessite Docker sur le serveur. La commande est à usage unique et expire à {{time}}.",
+    "macosLabel": "À exécuter dans Terminal sur le Mac",
+    "macosHint": "Usage unique, expire à {{time}}.",
+    "macosNote": "Préversion. Les charges de travail passent par Docker Desktop, OrbStack ou Lima, qui partagent les fichiers de votre Mac. Un Mac convient donc mieux comme machine de build que comme hôte d'apps en production.",
+    "waiting": "En attente de la connexion du nœud",
+    "connected": "Connecté : {{name}}"
   }
 }

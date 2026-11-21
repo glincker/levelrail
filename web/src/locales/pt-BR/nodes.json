@@ -1157,5 +1157,25 @@
     "tip": "Um builder executa os builds de imagem deste servidor para que os deploys fiquem leves. Escolha qual builder cada app usa nas configurações de build do app.",
     "tipLabel": "Sobre builders",
     "title": "Builders"
+  },
+  "installAgent": {
+    "title": "Execute builds e apps em outra máquina",
+    "description": "Instale o agente em um servidor Linux ou em um Mac e ele entra neste plano de controle em um minuto.",
+    "cta": "Adicionar um servidor",
+    "dismiss": "Ocultar este banner",
+    "dialogTitle": "Instalar o agente",
+    "dialogDescription": "Execute um comando na máquina que você quer adicionar. Esta página percebe quando ela se conecta.",
+    "tabsLabel": "Sistema operacional",
+    "linux": "Linux",
+    "macos": "macOS",
+    "minting": "Criando um comando de entrada de uso único",
+    "mintFailed": "Não foi possível criar um comando de entrada: {{message}}",
+    "linuxLabel": "Execute no servidor",
+    "linuxHint": "Requer Docker no servidor. O comando é de uso único e expira às {{time}}.",
+    "macosLabel": "Execute no Terminal do Mac",
+    "macosHint": "Uso único, expira às {{time}}.",
+    "macosNote": "Prévia. As cargas de trabalho rodam via Docker Desktop, OrbStack ou Lima, que compartilham os arquivos do seu Mac, então um Mac é mais indicado como builder do que como lugar para apps de produção.",
+    "waiting": "Aguardando o nó se conectar",
+    "connected": "Conectado: {{name}}"
   }
 }

@@ -123,6 +123,8 @@ export interface NodeJoinCommands {
   docker: string
   podman?: string
   binary: string
+  // Only present while the server has the macOS agent preview switched on.
+  macos?: string
 }
 
 // Response body for GET /api/v1/nodes/{id}/patch-status

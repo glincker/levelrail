@@ -199,7 +199,7 @@ export function PageDetail({
               <PageOverview
                 name={name}
                 onAddRedirect={onAddRedirect}
-                onViewDeploys={() => onTabChange('deployments')}
+                onOpenTab={onTabChange}
               />
             </Suspense>
           </TabsContent>

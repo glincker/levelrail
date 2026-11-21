@@ -6,13 +6,15 @@ class LevelrailAgent < Formula
 
   depends_on :macos
 
-  on_arm do
-    url "https://github.com/glincker/levelrail/releases/download/@TAG@/levelrail-agent-darwin-arm64"
-    sha256 "@SHA_DARWIN_ARM64@"
-  end
-  on_intel do
-    url "https://github.com/glincker/levelrail/releases/download/@TAG@/levelrail-agent-darwin-amd64"
-    sha256 "@SHA_DARWIN_AMD64@"
+  on_macos do
+    on_arm do
+      url "https://github.com/glincker/levelrail/releases/download/@TAG@/levelrail-agent-darwin-arm64"
+      sha256 "@SHA_DARWIN_ARM64@"
+    end
+    on_intel do
+      url "https://github.com/glincker/levelrail/releases/download/@TAG@/levelrail-agent-darwin-amd64"
+      sha256 "@SHA_DARWIN_AMD64@"
+    end
   end
 
   def install
@@ -29,16 +31,12 @@ class LevelrailAgent < Formula
         . "$env_file"
         set +a
       fi
+      mkdir -p "#{var}/levelrail-agent"
       : "${APP_AGENT_IDENTITY_FILE:=#{var}/levelrail-agent/identity.json}"
       export APP_AGENT_IDENTITY_FILE
       exec "#{opt_bin}/levelrail-agent"
     SH
     chmod 0555, bin/"levelrail-agent-service"
-  end
-
-  def post_install
-    (var/"levelrail-agent").mkpath
-    (var/"log").mkpath
   end
 
   service do
@@ -77,6 +75,7 @@ class LevelrailAgent < Formula
 
   test do
     assert_predicate bin/"levelrail-agent", :executable?
-    assert_match "APP_CONTROL_PLANE_ADDR must be set", shell_output("#{bin}/levelrail-agent 2>&1", 1)
+    assert_match version.to_s, shell_output("#{bin}/levelrail-agent --version")
+    assert_match "APP_CONTROL_PLANE_ADDR", shell_output("#{bin}/levelrail-agent --help")
   end
 end

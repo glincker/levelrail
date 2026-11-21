@@ -322,6 +322,10 @@ message AgentRequest {
     // InspectContainers reads live detail for this control plane's own
     // containers only. Sent only to agents advertising "container_inspect".
     InspectContainersRequest inspect_containers = 26;
+    // Probe runs one readiness attempt on the agent's own host, for nodes
+    // the control plane has no mesh route to. Sent only to agents
+    // advertising "host_probe".
+    ProbeRequest probe = 27;
   }
 }
 
@@ -354,7 +358,32 @@ message AgentResponse {
     ArchiveStat archive_stat = 15;
     LogsResponse logs = 16;
     InspectContainersResponse inspect_containers = 17;
+    ProbeResponse probe = 18;
   }
+}
+
+// ProbeRequest is one TCP or HTTP probe attempt. The agent dials addr from
+// its own host and refuses anything but a loopback address.
+message ProbeRequest {
+  string addr = 1;
+  bool tcp = 2;
+  string path = 3;
+  string scheme = 4;
+  string host = 5;
+  bool tls_skip_verify = 6;
+  // has_follow_redirects distinguishes an explicit false from unset.
+  bool has_follow_redirects = 7;
+  bool follow_redirects = 8;
+  string expected_status = 9;
+  int64 timeout_ns = 10;
+  // max_redirects is the control plane's resolved redirect bound; 0 keeps the agent default.
+  int32 max_redirects = 11;
+}
+
+// ProbeResponse carries the attempt outcome; failure_reason is empty on success.
+message ProbeResponse {
+  string failure_kind = 1;
+  string failure_reason = 2;
 }
 
 message LogsRequest {

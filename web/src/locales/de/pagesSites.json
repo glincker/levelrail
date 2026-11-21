@@ -317,7 +317,18 @@
     "title": "Letzte Deployments",
     "viewAll": "Alle anzeigen",
     "none": "Noch keine Deployments.",
-    "live": "Live"
+    "live": "Live",
+    "copySha": "Commit-Hash kopieren",
+    "copied": "Commit-Hash kopiert",
+    "col": {
+      "commit": "Commit",
+      "message": "Nachricht",
+      "state": "Status",
+      "branch": "Branch",
+      "author": "Autor",
+      "when": "Wann",
+      "actions": "Deploy-Aktionen"
+    }
   },
   "routes": {
     "testTitle": "Eine URL testen",
@@ -567,5 +578,67 @@
     "codes": "Statuscodes",
     "none": "Noch nichts vorhanden.",
     "privacy": "Aus dem Edge-Zugriffslog erstellt. Es werden keine Cookies, Client-Adressen oder Query-Strings gespeichert. Zeiträume bis zu {{days}} Tage."
+  },
+  "overview": {
+    "strip": {
+      "label": "Letztes Produktions-Deploy",
+      "noMessage": "Keine Commit-Nachricht",
+      "none": "Noch nichts deployt"
+    },
+    "state": {
+      "succeeded": "Bereit",
+      "running": "Wird gebaut",
+      "failed": "Fehlgeschlagen",
+      "queued": "In der Warteschlange",
+      "held": "Angehalten",
+      "canceled": "Abgebrochen",
+      "superseded": "Ersetzt",
+      "pending": "Ausstehend",
+      "refused": "Abgelehnt",
+      "awaiting_approval": "Wartet auf Freigabe",
+      "unknown": "Unbekannt"
+    },
+    "duration": "{{minutes}} Min. {{seconds}} Sek.",
+    "wiring": {
+      "title": "So ist diese Site verbunden",
+      "domains": "Domains",
+      "noDomains": "Noch keine Domain.",
+      "tls": {
+        "healthy": "TLS in Ordnung",
+        "expiring_soon": "TLS läuft bald ab",
+        "expired": "TLS abgelaufen",
+        "unknown": "TLS ausstehend"
+      },
+      "more": "+{{count}} weitere",
+      "forms": "Formulare",
+      "noForms": "Noch keine Formulareinsendungen.",
+      "addForm": "Formular hinzufügen",
+      "submissions": "Einsendungen: {{count}}",
+      "routes": "Routen und Regeln",
+      "noRoutes": "Noch keine Regeln.",
+      "addRule": "Regel hinzufügen",
+      "ruleSummary": "Regeln {{rules}}, Header-Blöcke {{headers}}, Proxy-Apps {{proxied}}",
+      "on": "An",
+      "off": "Aus",
+      "lastDeploy": "Letztes Deploy: {{state}}",
+      "noDeploy": "Noch nicht deployt",
+      "password": "Passwortschutz",
+      "cleanUrls": "Saubere URLs",
+      "spa": "Fallback für Single-Page-Apps",
+      "openSettings": "Einstellungen öffnen",
+      "outTitle": "Verbindet sich mit",
+      "apps": "Proxy-Apps",
+      "noApps": "Keine",
+      "repo": "Git-Repository",
+      "notConnected": "Nicht verbunden",
+      "hook": "Deploy-Hook",
+      "tokens": "CI-Deploy-Tokens",
+      "tokensActive": "{{count}} aktiv",
+      "none": "Keine"
+    },
+    "previews": {
+      "title": "Letzte Previews",
+      "none": "Noch keine Branch-Previews."
+    }
   }
 }

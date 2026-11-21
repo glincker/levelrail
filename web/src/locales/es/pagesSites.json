@@ -317,7 +317,18 @@
     "title": "Despliegues recientes",
     "viewAll": "Ver todos",
     "none": "Todavía no hay despliegues.",
-    "live": "En línea"
+    "live": "En línea",
+    "copySha": "Copiar hash del commit",
+    "copied": "Hash del commit copiado",
+    "col": {
+      "commit": "Commit",
+      "message": "Mensaje",
+      "state": "Estado",
+      "branch": "Rama",
+      "author": "Autor",
+      "when": "Cuándo",
+      "actions": "Acciones de deploy"
+    }
   },
   "routes": {
     "testTitle": "Probar una URL",
@@ -567,5 +578,67 @@
     "codes": "Códigos de estado",
     "none": "Todavía nada.",
     "privacy": "Calculado a partir del registro de acceso de borde. No se guardan cookies, direcciones de clientes ni cadenas de consulta. Rangos de hasta {{days}} días."
+  },
+  "overview": {
+    "strip": {
+      "label": "Último deploy de producción",
+      "noMessage": "Sin mensaje de commit",
+      "none": "Todavía no se ha desplegado nada"
+    },
+    "state": {
+      "succeeded": "Listo",
+      "running": "Compilando",
+      "failed": "Fallido",
+      "queued": "En cola",
+      "held": "En espera",
+      "canceled": "Cancelado",
+      "superseded": "Reemplazado",
+      "pending": "Pendiente",
+      "refused": "Rechazado",
+      "awaiting_approval": "Esperando aprobación",
+      "unknown": "Desconocido"
+    },
+    "duration": "{{minutes}} min {{seconds}} s",
+    "wiring": {
+      "title": "Cómo está conectado este sitio",
+      "domains": "Dominios",
+      "noDomains": "Todavía no hay dominio.",
+      "tls": {
+        "healthy": "TLS correcto",
+        "expiring_soon": "TLS por caducar",
+        "expired": "TLS caducado",
+        "unknown": "TLS pendiente"
+      },
+      "more": "+{{count}} más",
+      "forms": "Formularios",
+      "noForms": "Todavía no hay envíos de formularios.",
+      "addForm": "Añadir un formulario",
+      "submissions": "Envíos: {{count}}",
+      "routes": "Rutas y reglas",
+      "noRoutes": "Todavía no hay reglas.",
+      "addRule": "Añadir una regla",
+      "ruleSummary": "Reglas {{rules}}, bloques de encabezados {{headers}}, apps con proxy {{proxied}}",
+      "on": "Activado",
+      "off": "Desactivado",
+      "lastDeploy": "Último deploy: {{state}}",
+      "noDeploy": "Todavía sin deploy",
+      "password": "Protección con contraseña",
+      "cleanUrls": "URLs limpias",
+      "spa": "Fallback de página única",
+      "openSettings": "Abrir ajustes",
+      "outTitle": "Se conecta a",
+      "apps": "Apps con proxy",
+      "noApps": "Ninguna",
+      "repo": "Repositorio Git",
+      "notConnected": "No conectado",
+      "hook": "Hook de deploy",
+      "tokens": "Tokens de deploy para CI",
+      "tokensActive": "{{count}} activos",
+      "none": "Ninguno"
+    },
+    "previews": {
+      "title": "Previsualizaciones recientes",
+      "none": "Todavía no hay previsualizaciones de ramas."
+    }
   }
 }

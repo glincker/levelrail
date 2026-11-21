@@ -8,6 +8,7 @@ import (
 	"io"
 	"net"
 	"net/http"
+	"syscall"
 	"time"
 )
 
@@ -15,7 +16,29 @@ import (
 // connection can be reused; probe bodies are never inspected.
 const maxDrainBytes = 64 * 1024
 
-var errTooManyRedirects = errors.New("too many redirects")
+var (
+	errTooManyRedirects = errors.New("too many redirects")
+	errNotLoopback      = errors.New("refused: only loopback addresses are allowed")
+)
+
+// loopbackControl is a net.Dialer Control hook: it sees the resolved remote IP.
+func loopbackControl(_, address string, _ syscall.RawConn) error {
+	host, _, err := net.SplitHostPort(address)
+	if err != nil {
+		return errNotLoopback
+	}
+	if ip := net.ParseIP(host); ip == nil || !ip.IsLoopback() {
+		return errNotLoopback
+	}
+	return nil
+}
+
+func loopbackDialer() *net.Dialer { return &net.Dialer{Control: loopbackControl} }
+
+// loopbackClient never uses a proxy and dials loopback addresses only.
+func loopbackClient() *http.Client {
+	return &http.Client{Transport: &http.Transport{DialContext: loopbackDialer().DialContext, DisableKeepAlives: true}}
+}
 
 func (p *Prober) httpAttempt(ctx context.Context, addr string, cfg Config, timeout time.Duration) (err error) {
 	start := time.Now()
@@ -100,9 +123,15 @@ func (p *Prober) clientFor(cfg Config) *http.Client {
 	c := *p.client
 	maxHops := p.limits.MaxRedirects
 	follow := cfg.followRedirects()
-	c.CheckRedirect = func(_ *http.Request, via []*http.Request) error {
+	loopbackOnly := p.loopbackOnly
+	c.CheckRedirect = func(req *http.Request, via []*http.Request) error {
 		if !follow {
 			return http.ErrUseLastResponse
+		}
+		if loopbackOnly {
+			if ip := net.ParseIP(req.URL.Hostname()); ip == nil || !ip.IsLoopback() {
+				return errNotLoopback
+			}
 		}
 		if len(via) > maxHops {
 			return errTooManyRedirects

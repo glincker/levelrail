@@ -1,6 +1,7 @@
 <?xml version="1.0" encoding="UTF-8"?>
 <!DOCTYPE plist PUBLIC "-//Apple//DTD PLIST 1.0//EN" "http://www.apple.com/DTDs/PropertyList-1.0.dtd">
-<!-- Replace every @PLACEHOLDER@ before loading. The join token is deliberately not here:
+<!-- Create @STATE_DIR@ and @LOG_DIR@ first (mkdir -p), or the job exits 78 with no log.
+     Replace every @PLACEHOLDER@ before loading. The join token is deliberately not here:
      enrol once in the foreground, the saved identity file is what this service uses. -->
 <plist version="1.0">
 <dict>
@@ -27,6 +28,9 @@
 	<true/>
 	<key>KeepAlive</key>
 	<true/>
+	<!-- Placeholder: seconds between respawns, so an unenrolled start does not loop every 10 seconds. -->
+	<key>ThrottleInterval</key>
+	<integer>30</integer>
 	<key>StandardOutPath</key>
 	<string>@LOG_DIR@/levelrail-agent.log</string>
 	<key>StandardErrorPath</key>

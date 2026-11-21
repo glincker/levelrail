@@ -1129,5 +1129,25 @@
       "agent": "代理 {{value}}",
       "acceptsApps": "此节点同时运行应用，因此不能在这里暂停。"
     }
+  },
+  "installAgent": {
+    "title": "在另一台机器上运行构建和应用",
+    "description": "在 Linux 服务器或 Mac 上安装代理，一分钟内即可加入此控制平面。",
+    "cta": "添加服务器",
+    "dismiss": "隐藏此横幅",
+    "dialogTitle": "安装代理",
+    "dialogDescription": "在要添加的机器上运行一条命令。节点连接后，此页面会自动感知。",
+    "tabsLabel": "操作系统",
+    "linux": "Linux",
+    "macos": "macOS",
+    "minting": "正在创建一次性加入命令",
+    "mintFailed": "无法创建加入命令：{{message}}",
+    "linuxLabel": "在服务器上运行",
+    "linuxHint": "服务器上需要 Docker。该命令仅可使用一次，将于 {{time}} 过期。",
+    "macosLabel": "在 Mac 的终端中运行",
+    "macosHint": "仅可使用一次，将于 {{time}} 过期。",
+    "macosNote": "预览版。工作负载通过 Docker Desktop、OrbStack 或 Lima 运行，它们会共享你 Mac 上的文件，因此 Mac 更适合用作构建机，而不是运行生产应用。",
+    "waiting": "正在等待节点连接",
+    "connected": "已连接：{{name}}"
   }
 }
