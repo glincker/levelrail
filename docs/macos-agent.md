@@ -9,7 +9,7 @@ description: "Install the Levelrail node agent on a Mac with Homebrew or a downl
 The node agent is published for macOS on Apple silicon and Intel. A Mac can join a Levelrail control plane as an extra node, which suits build jobs and light workloads on hardware you already own. The control plane itself still runs on Linux.
 
 <Warning>
-This feature is beta. The agent binary is cross-compiled for macOS and the install pieces are checked statically. A full enrol and deploy on a real Mac through a published release has not been verified yet. See [Limits](#limits).
+This feature is beta. It was verified locally on an Apple silicon Mac against a Linux control plane in a Lima VM: enrol, a Homebrew install from a local tap, `brew services` start, restart and stop, and a container deploy through the Lima Docker socket. It has not been run from a published release, with Docker Desktop or OrbStack, or on Intel.
 </Warning>
 
 ## Requirements
@@ -31,7 +31,7 @@ Newer Homebrew versions may ask you to trust a third party tap first (`brew trus
 <Steps>
 <Step title="Enrol once in the foreground">
 
-Copy the address, token and CA fingerprint from the join command in the dashboard, then run:
+Copy the address, token and CA fingerprint from the join command in the dashboard (the join token expires after 15 minutes), then run:
 
 ```bash
 APP_CONTROL_PLANE_ADDR=<host:port> APP_JOIN_TOKEN=<token> \
@@ -40,7 +40,7 @@ APP_AGENT_IDENTITY_FILE="$(brew --prefix)/var/levelrail-agent/identity.json" \
 levelrail-agent
 ```
 
-Stop it with Ctrl-C when the node shows as connected. The identity is saved, so the token is not needed again.
+Stop it with Ctrl-C when the log prints `enrolled node_id=...` and the node shows as online in the dashboard. The identity is saved, so the token is not needed again.
 
 Do this before you start the service. Without a saved identity and a join token the service exits with status 78 and launchd respawns it about every 10 seconds (every 30 seconds with the launchd template below).
 
@@ -63,7 +63,7 @@ The agent finds the runtime socket on its own (see [Container socket](#container
 brew services start levelrail-agent
 ```
 
-Logs go to `$(brew --prefix)/var/log/levelrail-agent.log`.
+Logs go to `$(brew --prefix)/var/log/levelrail-agent.log`. The launchd job is named `sh.brew.levelrail-agent`.
 
 </Step>
 </Steps>
@@ -113,6 +113,10 @@ The same socket is used for builds. On Linux the agent keeps using `DOCKER_HOST`
 
 The control plane refuses a deploy to a node whose free disk is under the critical threshold (7 percent by default) with `this node is out of room (disk space is down to X percent free)`. A nearly full Mac volume reaches that easily. Free space on the Mac, or lower the thresholds on the control plane with `APP_NODE_DISK_CRIT_FREE_PCT` and `APP_NODE_DISK_WARN_FREE_PCT` (defaults 7 and 15 percent). These are control plane environment variables, not runtime settings.
 
+## Debug logs
+
+Set `APP_LOG_LEVEL=debug` in the agent's environment (for example in the launchd plist or the service environment) and restart it. At debug the agent also logs each readiness probe attempt with its kind, target, outcome and elapsed milliseconds.
+
 ## Stop and uninstall
 
 ```bash
@@ -131,5 +135,7 @@ Then remove the node in the dashboard, and delete the state directory (`$(brew -
 - Features that rely on Linux kernel facilities are not available on macOS: cgroup resource limits, host firewall rules, the kernel WireGuard module (the mesh is off unless `APP_MESH_ENABLED=1`, then uses the userspace implementation and needs root), NVIDIA GPU access and `/proc` host stats. The agent logs `not supported on macOS: <feature>` once at start and keeps running. Memory, swap and process size fall back to macOS or Go runtime values.
 - The agent reports `darwin` and the CPU architecture to the control plane. The control plane has no scheduling rule that keeps production workloads off a Mac node by default, so place workloads deliberately. Not verified end to end.
 - Docker runs in a VM on macOS, so host networking and ports published on `127.0.0.1` belong to the VM or the runtime's forwarder, not to the Mac. Not verified for every runtime.
-- The macOS build is cross-compiled and guarded in CI, but running a node on a real Mac with a published release, `brew install`, `brew services` and the launchd template is not verified.
+- Without the mesh, an app on a Mac node is not reachable through the control plane's ingress: the app status shows `CrossNodeIngress False NoMeshIngressPath`. Only the port published on the Mac's loopback address works.
+- Stopping the service marks the node offline at once. Deleting an app while the agent is stopped leaves its container until the agent reconnects, then it is removed.
+- Verified locally: the Lima path with a Homebrew install from a local tap, `brew services` and a foreground enrol, on Apple silicon. Not verified: a published release download, Docker Desktop, OrbStack, Intel Macs, and Gatekeeper on every macOS version.
 - Gatekeeper behaviour on a downloaded binary follows the quarantine steps above and is not verified on every macOS version.

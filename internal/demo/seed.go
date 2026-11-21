@@ -41,6 +41,8 @@ type Options struct {
 	DomainSuffix string
 	// Scenario picks the storyline: ScenarioIncident (default) or ScenarioCalm.
 	Scenario string
+	// DataDir, when set, is where the Pages sites get a small real file tree so their size and file count are not zero.
+	DataDir string
 }
 
 const (

@@ -4,6 +4,7 @@ import (
 	"context"
 	"errors"
 	"fmt"
+	"log/slog"
 	"net"
 	"time"
 
@@ -52,14 +53,34 @@ func executeProbe(ctx context.Context, req *agentpb.ProbeRequest) (*agentpb.Prob
 		return nil, fmt.Errorf("agent: host probe config: %w", err)
 	}
 	out := &agentpb.ProbeResponse{}
-	if perr := probe.New(nil, nil, probe.Limits{MaxRedirects: int(req.GetMaxRedirects()), DefaultTimeout: timeout}, probe.WithLoopbackOnly()).Check(ctx, probe.Target{Addr: req.GetAddr()}, cfg); perr != nil {
+	start := time.Now()
+	perr := probe.New(nil, nil, probe.Limits{MaxRedirects: int(req.GetMaxRedirects()), DefaultTimeout: timeout}, probe.WithLoopbackOnly()).Check(ctx, probe.Target{Addr: req.GetAddr()}, cfg)
+	if perr != nil {
 		out.FailureReason = perr.Error()
 		var f *probe.Failure
 		if errors.As(perr, &f) {
 			out.FailureKind = string(f.Kind)
 		}
 	}
+	logProbeAttempt(ctx, cfg.TCP, req.GetAddr(), out.GetFailureKind(), perr != nil, time.Since(start))
 	return out, nil
+}
+
+// logProbeAttempt records one attempt for debug sessions; it never includes bodies or headers.
+func logProbeAttempt(ctx context.Context, tcp bool, addr, failureKind string, failed bool, elapsed time.Duration) {
+	kind, outcome := "http", "ok"
+	if tcp {
+		kind = "tcp"
+	}
+	if failed {
+		outcome = failureKind
+		if outcome == "" {
+			outcome = "failed"
+		}
+	}
+	slog.DebugContext(ctx, "host probe attempt",
+		slog.String("kind", kind), slog.String("target", addr),
+		slog.String("outcome", outcome), slog.Int64("elapsed_ms", elapsed.Milliseconds()))
 }
 
 // ProbesOnHost reports whether this node's agent can run probes itself.

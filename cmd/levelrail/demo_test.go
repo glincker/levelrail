@@ -34,7 +34,7 @@ func TestDemoHandlerEndToEnd(t *testing.T) {
 		t.Fatalf("openStore() error = %v", err)
 	}
 	t.Cleanup(func() { _ = db.Close() })
-	if _, err := demo.Seed(ctx, db, demo.Options{Seed: 1, Anchor: time.Date(2026, 10, 14, 0, 0, 0, 0, time.UTC)}); err != nil {
+	if _, err := demo.Seed(ctx, db, demo.Options{Seed: 1, Anchor: time.Date(2026, 10, 14, 0, 0, 0, 0, time.UTC), DataDir: t.TempDir()}); err != nil {
 		t.Fatalf("Seed() error = %v", err)
 	}
 	tdb, err := openTelemetryStore(ctx)
@@ -48,6 +48,9 @@ func TestDemoHandlerEndToEnd(t *testing.T) {
 	}
 	t.Cleanup(func() { _ = adb.Close() })
 
+	if err := demo.SeedAlerting(ctx, adb, demo.Options{Seed: 1, Anchor: time.Date(2026, 10, 14, 0, 0, 0, 0, time.UTC)}); err != nil {
+		t.Fatalf("SeedAlerting() error = %v", err)
+	}
 	h, err := buildDemoHandler(ctx, demoTestLogger(), demoTestBrand(), db, tdb, adb, telemetry.NewLogBroadcaster())
 	if err != nil {
 		t.Fatalf("buildDemoHandler() error = %v", err)
@@ -87,6 +90,29 @@ func TestDemoHandlerEndToEnd(t *testing.T) {
 	}
 	if rec.Code != http.StatusOK || cookie == nil {
 		t.Fatalf("demo session status = %d body = %s", rec.Code, rec.Body.String())
+	}
+
+	// Screens that once failed against the seed must now answer 200 with the expected shape.
+	for target, want := range map[string]string{
+		"/api/v1/apps/acme-landing":                 `"name":"acme-landing"`,
+		"/api/v1/apps/acme-handbook":                `"name":"acme-handbook"`,
+		"/api/v1/static-sites/acme-landing":         `"file_count":5`,
+		"/api/v1/static-sites/acme-landing/deploys": `"id"`,
+		"/api/v1/backups/coverage":                  `"resources"`,
+		"/api/v1/backups/drills":                    `drill_demo_pg_main`,
+		"/api/v1/storage/orphans":                   `"orphans"`,
+		"/api/v1/alert-defaults":                    `"kind"`,
+	} {
+		rec := do(http.MethodGet, target, cookie)
+		if rec.Code != http.StatusOK || !strings.Contains(rec.Body.String(), want) {
+			t.Errorf("GET %s = %d, want 200 containing %s; body = %.200s", target, rec.Code, want, rec.Body.String())
+		}
+	}
+	if rec := do(http.MethodGet, "/api/v1/apps/storefront-web", cookie); !strings.Contains(rec.Body.String(), `"project_id":"proj_storefront"`) {
+		t.Errorf("app detail lacks its project: %.200s", rec.Body.String())
+	}
+	if rec := do(http.MethodGet, "/api/v1/apps/storefront-web/previews", cookie); rec.Code != http.StatusOK {
+		t.Errorf("GET previews = %d", rec.Code)
 	}
 
 	tests := []struct {

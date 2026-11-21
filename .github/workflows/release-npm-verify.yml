@@ -125,6 +125,7 @@ jobs:
             local work
             work=$(mktemp -d) &&
               cd "$work" &&
+              work_dir="$work" &&
               npm init -y >/dev/null &&
               npm install --prefer-online "levelrail-cli@${version}" &&
               out=$(npx --no-install levelrail-cli version) &&
@@ -143,9 +144,22 @@ jobs:
               printf '%s\n' "$out" | grep -F -- "$version" >/dev/null
           }
           retry check_cli || { echo "levelrail-cli@${version} did not install and print its version" >&2; exit 1; }
-          npm audit signatures
+          # Registry signing keys can lag a fresh publish (EMISSINGSIGNATUREKEY), so retry
+          # the check itself; it is never skipped. The install dir holds the lockfile.
+          audit_signatures() { (cd "$work_dir" && npm audit signatures); }
+          retry audit_signatures || { echo "npm audit signatures never passed for levelrail-cli@${version}" >&2; exit 1; }
           retry check_forwarders || { echo "the levelrail and @levelrail/cli forwarders did not print ${version}" >&2; exit 1; }
           {
             echo "### npm install verified on ${{ matrix.os }}"
             echo "https://www.npmjs.com/package/levelrail-cli/v/${version}"
+          } >> "$GITHUB_STEP_SUMMARY"
+
+      # The Release run is already finished, so this job is the only marker of a bad install.
+      - name: Say how to recover
+        if: failure()
+        run: |
+          {
+            echo "### npm install verification failed on ${{ matrix.os }} for ${RELEASE_TAG}"
+            echo "Rerun this job once the registry has settled: \`gh run rerun ${{ github.run_id }} --repo ${{ github.repository }} --failed\`"
+            echo "Or start it by hand: \`gh workflow run release-npm-verify.yml -f tag=${RELEASE_TAG}\`"
           } >> "$GITHUB_STEP_SUMMARY"

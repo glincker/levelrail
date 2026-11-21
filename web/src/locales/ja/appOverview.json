@@ -80,5 +80,85 @@
     "all": "すべてのデプロイ",
     "logs": "ログ",
     "rollback": "ロールバック"
+  },
+  "summary": {
+    "label": "アプリの概要",
+    "noMessage": "コミットメッセージなし",
+    "none": "まだデプロイされていません"
+  },
+  "state": {
+    "succeeded": "成功",
+    "running": "実行中",
+    "failed": "失敗",
+    "queued": "待機中",
+    "held": "保留中",
+    "canceled": "キャンセル済み",
+    "superseded": "置き換え済み",
+    "pending": "保留",
+    "refused": "拒否",
+    "awaiting_approval": "承認待ち",
+    "unknown": "不明"
+  },
+  "duration": "{{minutes}}分{{seconds}}秒",
+  "wiring": {
+    "title": "このアプリの接続構成",
+    "domains": "ドメイン",
+    "noDomains": "ドメインはまだありません。",
+    "addDomain": "ドメインを追加",
+    "more": "他{{count}}件",
+    "tls": {
+      "healthy": "TLS 正常",
+      "expiring_soon": "TLS 期限間近",
+      "expired": "TLS 期限切れ",
+      "unknown": "TLS 保留中"
+    },
+    "storage": "データベースとストレージ",
+    "noStorage": "リンクされたデータベースやボリュームはありません。",
+    "addStorage": "ボリュームを追加",
+    "databases": "データベース",
+    "volumes": "ボリューム",
+    "env": "環境",
+    "noEnv": "変数は設定されていません。",
+    "addEnv": "変数を追加",
+    "envSummary": "変数 {{vars}} 件、シークレット {{secrets}} 件",
+    "port": "ポート {{port}}",
+    "strategy": "戦略: {{strategy}}",
+    "noNode": "ノードの報告なし",
+    "offline": "オフライン",
+    "openSettings": "デプロイ設定",
+    "outTitle": "接続先",
+    "databasesOut": "データベース",
+    "none": "なし",
+    "node": "ノード",
+    "registry": "レジストリ",
+    "dependsOn": "依存先",
+    "replicas_other": "{{count}} レプリカ",
+    "buildGit": "Git ビルド",
+    "buildImage": "イメージ"
+  },
+  "deploys": {
+    "title": "デプロイメント",
+    "viewAll": "すべて表示",
+    "none": "デプロイはまだありません。",
+    "col": {
+      "commit": "コミット",
+      "message": "メッセージ",
+      "state": "状態",
+      "branch": "ブランチ",
+      "author": "作成者",
+      "when": "日時",
+      "actions": "操作"
+    },
+    "copySha": "コミットをコピー",
+    "copied": "コピーしました",
+    "live": "公開中",
+    "rollback": "ロールバック",
+    "logs": "ログ"
+  },
+  "previews": {
+    "title": "最近のプレビュー",
+    "none": "プレビュー環境はまだありません。",
+    "all": "すべてのプレビュー",
+    "pr": "PR #{{number}}"
   }
 }

@@ -80,5 +80,85 @@
     "all": "全部部署",
     "logs": "日志",
     "rollback": "回滚"
+  },
+  "summary": {
+    "label": "应用概览",
+    "noMessage": "无提交信息",
+    "none": "尚未部署"
+  },
+  "state": {
+    "succeeded": "成功",
+    "running": "运行中",
+    "failed": "失败",
+    "queued": "排队中",
+    "held": "已挂起",
+    "canceled": "已取消",
+    "superseded": "已被取代",
+    "pending": "待处理",
+    "refused": "已拒绝",
+    "awaiting_approval": "等待审批",
+    "unknown": "未知"
+  },
+  "duration": "{{minutes}} 分 {{seconds}} 秒",
+  "wiring": {
+    "title": "此应用的连接方式",
+    "domains": "域名",
+    "noDomains": "暂无域名。",
+    "addDomain": "添加域名",
+    "more": "另有 {{count}} 个",
+    "tls": {
+      "healthy": "TLS 正常",
+      "expiring_soon": "TLS 即将到期",
+      "expired": "TLS 已过期",
+      "unknown": "TLS 待处理"
+    },
+    "storage": "数据库和存储",
+    "noStorage": "未关联数据库或卷。",
+    "addStorage": "添加卷",
+    "databases": "数据库",
+    "volumes": "卷",
+    "env": "环境",
+    "noEnv": "未设置变量。",
+    "addEnv": "添加变量",
+    "envSummary": "{{vars}} 个变量，{{secrets}} 个密钥",
+    "port": "端口 {{port}}",
+    "strategy": "策略：{{strategy}}",
+    "noNode": "未上报节点",
+    "offline": "离线",
+    "openSettings": "部署设置",
+    "outTitle": "连接到",
+    "databasesOut": "数据库",
+    "none": "无",
+    "node": "节点",
+    "registry": "镜像仓库",
+    "dependsOn": "依赖于",
+    "replicas_other": "{{count}} 个副本",
+    "buildGit": "Git 构建",
+    "buildImage": "镜像"
+  },
+  "deploys": {
+    "title": "部署记录",
+    "viewAll": "查看全部",
+    "none": "暂无部署。",
+    "col": {
+      "commit": "提交",
+      "message": "信息",
+      "state": "状态",
+      "branch": "分支",
+      "author": "作者",
+      "when": "时间",
+      "actions": "操作"
+    },
+    "copySha": "复制提交",
+    "copied": "已复制",
+    "live": "线上",
+    "rollback": "回滚",
+    "logs": "日志"
+  },
+  "previews": {
+    "title": "最近的预览",
+    "none": "暂无预览环境。",
+    "all": "全部预览",
+    "pr": "PR #{{number}}"
   }
 }

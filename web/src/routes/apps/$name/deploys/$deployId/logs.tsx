@@ -18,6 +18,7 @@ import { useIsStaticSite } from '../../../../../queries/staticSites'
 import {
   computeDeployStages,
   computeRolloutSubStages,
+  settleRolloutSubStages,
 } from '../../../../../lib/deployStages'
 import { deriveDeployState } from '../../../../../lib/deployState'
 import { summarizeAppStatus } from '../../../../../lib/appStatus'
@@ -200,7 +201,7 @@ function DeployLogsPage() {
     attempt.source !== undefined && IMAGE_ONLY_SOURCES.has(attempt.source)
   const isLatestAttempt = attempts[0]?.id === deployId
   const stages = computeDeployStages(attempt, conditions, isLatestAttempt)
-  const subStages = computeRolloutSubStages(
+  const rawSubStages = computeRolloutSubStages(
     attempt,
     conditions,
     isLatestAttempt,
@@ -220,8 +221,10 @@ function DeployLogsPage() {
     stuckAfterMs: STUCK_AFTER_MS,
   })
 
+  const subStages =
+    state.phase === 'live' ? settleRolloutSubStages(rawSubStages) : rawSubStages
   const rolloutTabStage =
-    isStatic && state.phase === 'live'
+    state.phase === 'live'
       ? { ...stages[1], status: 'done' as const }
       : stages[1]
   const rows = buildTimelineRows(
@@ -456,7 +459,11 @@ function DeployLogsPage() {
           id="rollout"
           title={t('sections.rollout')}
           chip={t(
-            `buildStages.status.${rolloutTabStage.status === 'failed' ? 'failed' : rolloutTabStage.status === 'done' ? 'done' : 'running'}`,
+            rolloutTabStage.status === 'failed' ||
+              rolloutTabStage.status === 'done' ||
+              rolloutTabStage.status === 'running'
+              ? `buildStages.status.${rolloutTabStage.status}`
+              : `rollout.stageStatus.${rolloutTabStage.status}`,
           )}
         >
           <div

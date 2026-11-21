@@ -80,5 +80,86 @@
     "all": "Tous les deploys",
     "logs": "Logs",
     "rollback": "Rollback"
+  },
+  "summary": {
+    "label": "Résumé de l'app",
+    "noMessage": "Aucun message de commit",
+    "none": "Pas encore déployée"
+  },
+  "state": {
+    "succeeded": "Réussi",
+    "running": "En cours",
+    "failed": "Échoué",
+    "queued": "En file d'attente",
+    "held": "En attente",
+    "canceled": "Annulé",
+    "superseded": "Remplacé",
+    "pending": "En attente",
+    "refused": "Refusé",
+    "awaiting_approval": "En attente d'approbation",
+    "unknown": "Inconnu"
+  },
+  "duration": "{{minutes}} min {{seconds}} s",
+  "wiring": {
+    "title": "Comment cette app est reliée",
+    "domains": "Domaines",
+    "noDomains": "Aucun domaine pour l'instant.",
+    "addDomain": "Ajouter un domaine",
+    "more": "+{{count}} de plus",
+    "tls": {
+      "healthy": "TLS ok",
+      "expiring_soon": "TLS bientôt expiré",
+      "expired": "TLS expiré",
+      "unknown": "TLS en attente"
+    },
+    "storage": "Bases de données et stockage",
+    "noStorage": "Aucune base de données ni aucun volume lié.",
+    "addStorage": "Ajouter un volume",
+    "databases": "Bases de données",
+    "volumes": "Volumes",
+    "env": "Environnement",
+    "noEnv": "Aucune variable définie.",
+    "addEnv": "Ajouter une variable",
+    "envSummary": "{{vars}} variables, {{secrets}} secrets",
+    "port": "Port {{port}}",
+    "strategy": "Stratégie : {{strategy}}",
+    "noNode": "Aucun nœud signalé",
+    "offline": "hors ligne",
+    "openSettings": "Paramètres de deploy",
+    "outTitle": "Se connecte à",
+    "databasesOut": "Bases de données",
+    "none": "Aucun",
+    "node": "Nœud",
+    "registry": "Registre",
+    "dependsOn": "Dépend de",
+    "replicas_one": "{{count}} réplica",
+    "replicas_other": "{{count}} réplicas",
+    "buildGit": "Build Git",
+    "buildImage": "Image"
+  },
+  "deploys": {
+    "title": "Deployments",
+    "viewAll": "Tout afficher",
+    "none": "Aucun deploy pour l'instant.",
+    "col": {
+      "commit": "Commit",
+      "message": "Message",
+      "state": "État",
+      "branch": "Branche",
+      "author": "Auteur",
+      "when": "Quand",
+      "actions": "Actions"
+    },
+    "copySha": "Copier le commit",
+    "copied": "Copié",
+    "live": "En ligne",
+    "rollback": "Rollback",
+    "logs": "Logs"
+  },
+  "previews": {
+    "title": "Previews récentes",
+    "none": "Aucun environnement de preview pour l'instant.",
+    "all": "Toutes les previews",
+    "pr": "PR #{{number}}"
   }
 }

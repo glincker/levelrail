@@ -2,6 +2,7 @@ package demo
 
 import (
 	"context"
+	"errors"
 	"fmt"
 	"strings"
 	"time"
@@ -37,6 +38,9 @@ func (d *Docker) ListImages(ctx context.Context, repo string) ([]docker.ImageInf
 	}
 	var out []docker.ImageInfo
 	for _, svc := range svcs {
+		if strings.HasSuffix(svc.Image, ":pending") {
+			continue
+		}
 		base, _, _ := strings.Cut(svc.Image, ":")
 		if repo != "" && base != repo {
 			continue
@@ -60,7 +64,7 @@ func (d *Docker) ListByPrefix(ctx context.Context, prefix string) ([]docker.Cont
 	}
 	var out []docker.ContainerState
 	for _, svc := range svcs {
-		if !strings.HasPrefix(svc.Name, prefix) {
+		if !strings.HasPrefix(svc.Name, prefix) || strings.HasSuffix(svc.Image, ":pending") {
 			continue
 		}
 		out = append(out, docker.ContainerState{
@@ -78,4 +82,16 @@ func (*Docker) DiskUsage(context.Context) (docker.DiskUsage, error) {
 		ContainersTotalBytes: 300 << 20, VolumesTotalBytes: 4 << 30,
 		BuildCacheTotalBytes: 2 << 30, BuildCacheReclaimableBytes: 1 << 30,
 	}, nil
+}
+
+// Volumes answers the orphaned volume routes with none found, so the storage
+// cards read "nothing orphaned" instead of an error. Nothing can be removed.
+type Volumes struct{}
+
+// ListNamedVolumes reports no volumes.
+func (Volumes) ListNamedVolumes(context.Context) ([]docker.NamedVolume, error) { return nil, nil }
+
+// RemoveVolume refuses: the demo owns no Docker volumes.
+func (Volumes) RemoveVolume(context.Context, string) error {
+	return errors.New("demo: volumes cannot be removed")
 }

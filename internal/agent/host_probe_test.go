@@ -1,8 +1,10 @@
 package agent
 
 import (
+	"bytes"
 	"context"
 	"errors"
+	"log/slog"
 	"net"
 	"net/http"
 	"net/http/httptest"
@@ -114,5 +116,41 @@ func TestCheckRemote_LacksCapabilitySendsNothing(t *testing.T) {
 	err := tr.CheckRemote(context.Background(), "127.0.0.1:80", probe.Config{TCP: true})
 	if !errors.Is(err, ErrAgentLacksCapability) || !errors.Is(err, probe.ErrRemoteUnsupported) {
 		t.Fatalf("got %v", err)
+	}
+}
+
+func TestExecuteProbe_LogsAttemptAtDebugOnly(t *testing.T) {
+	ln, err := net.Listen("tcp", "127.0.0.1:0")
+	if err != nil {
+		t.Fatal(err)
+	}
+	defer func() { _ = ln.Close() }()
+	go func() {
+		for {
+			c, aerr := ln.Accept()
+			if aerr != nil {
+				return
+			}
+			_ = c.Close()
+		}
+	}()
+	prev := slog.Default()
+	t.Cleanup(func() { slog.SetDefault(prev) })
+	for _, tc := range []struct {
+		level slog.Level
+		want  bool
+	}{{slog.LevelDebug, true}, {slog.LevelInfo, false}} {
+		var buf bytes.Buffer
+		slog.SetDefault(slog.New(slog.NewTextHandler(&buf, &slog.HandlerOptions{Level: tc.level})))
+		if _, err := executeProbe(context.Background(), &agentpb.ProbeRequest{Addr: ln.Addr().String(), Tcp: true, TimeoutNs: int64(time.Second)}); err != nil {
+			t.Fatal(err)
+		}
+		out := buf.String()
+		if got := strings.Contains(out, "host probe attempt"); got != tc.want {
+			t.Fatalf("level %v: logged=%v want %v: %q", tc.level, got, tc.want, out)
+		}
+		if tc.want && (!strings.Contains(out, "kind=tcp") || !strings.Contains(out, "outcome=") || !strings.Contains(out, "elapsed_ms=")) {
+			t.Fatalf("missing fields: %q", out)
+		}
 	}
 }

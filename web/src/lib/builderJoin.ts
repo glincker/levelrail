@@ -6,7 +6,7 @@ export function buildBuilderJoinCommand(
   res: NodeJoinTokenResponse,
 ): string {
   const parts = [
-    'levelrail builder join',
+    'levelrail-cli builder join',
     `--server ${server}`,
     `--token ${res.token}`,
   ]

@@ -20,18 +20,13 @@ import { useStaticRoutes } from '../../queries/staticRoutes'
 import { StatusDot } from './SiteHero'
 import { deployStateKey, proxiedApps, repoLabel } from './overviewHelpers'
 import { siteState } from './pageHelpers'
+import { TLS_DOT } from './tlsDot'
 import type { PageTab } from './pageTabs'
 
 /** Domains listed inline before the rest collapse into a +N. */
 const SHOWN_DOMAINS = 3
 
-const TLS_DOT: Record<string, string> = {
-  healthy: 'bg-success',
-  expiring_soon: 'bg-warning',
-  expired: 'bg-destructive',
-}
-
-function Group({
+export function Group({
   title,
   count,
   children,
@@ -96,7 +91,9 @@ function Domains({
                   aria-hidden="true"
                   className={`size-1.5 shrink-0 rounded-full ${cert ? (TLS_DOT[cert.status] ?? 'bg-muted-foreground/50') : 'bg-muted-foreground/50'}`}
                 />
-                <span className="min-w-0 flex-1 truncate font-mono">{d}</span>
+                <span className="min-w-0 flex-1 truncate font-mono" title={d}>
+                  {d}
+                </span>
                 <span className="shrink-0 text-muted-foreground">
                   {t(`overview.wiring.tls.${cert?.status ?? 'unknown'}`)}
                 </span>

@@ -1084,6 +1084,7 @@ These tune `levelrail-cli doctor` and the structured diagnosis of failed deploys
 | `APP_AGENT_ADDR` | computed | Address the agent gRPC listener binds to. Unset binds to loopback only on the minimal profile until a remote node exists. Control plane. |
 | `APP_AGENT_ADVERTISE_HOST` | ``127.0.0.1`` | Host name or IP agents dial for the gRPC server. It must match the server's TLS certificate, so the default only works on one machine. Control plane. |
 | `APP_AGENT_IDENTITY_FILE` | ``./levelrail-agent-identity.json`` | File where the agent stores its enrolled identity. Agent. |
+| `APP_LOG_LEVEL` | ``info`` | Log level of the node agent: `debug`, `info`, `warn` or `error`, case-insensitive. An unknown value logs one warning and keeps `info`. Debug adds one line per readiness probe attempt. Agent. |
 | `APP_AGENT_LOG_BATCH_MAX` | ``5000`` | Most log lines the agent sends in one relay batch. Agent. |
 | `APP_AGENT_INSPECT_MAX_CONTAINERS` | ``50`` | Most containers the agent returns from one live container inspect, whatever the control plane asks for. Agent. |
 | `APP_AGENT_INSPECT_MAX_BYTES` | ``262144`` | Largest live container inspect answer, in bytes, capped at 1048576; containers past it are left out and the answer is marked truncated. Agent. |

@@ -80,5 +80,86 @@
     "label": "Deploys recentes",
     "logs": "Logs",
     "rollback": "Rollback"
+  },
+  "summary": {
+    "label": "Resumo do app",
+    "noMessage": "Sem mensagem de commit",
+    "none": "Ainda sem deploy"
+  },
+  "state": {
+    "succeeded": "Concluído",
+    "running": "Em execução",
+    "failed": "Falhou",
+    "queued": "Na fila",
+    "held": "Em espera",
+    "canceled": "Cancelado",
+    "superseded": "Substituído",
+    "pending": "Pendente",
+    "refused": "Recusado",
+    "awaiting_approval": "Aguardando aprovação",
+    "unknown": "Desconhecido"
+  },
+  "duration": "{{minutes}} min {{seconds}} s",
+  "wiring": {
+    "title": "Como este app está conectado",
+    "domains": "Domínios",
+    "noDomains": "Nenhum domínio ainda.",
+    "addDomain": "Adicionar domínio",
+    "more": "+{{count}} mais",
+    "tls": {
+      "healthy": "TLS ok",
+      "expiring_soon": "TLS expirando",
+      "expired": "TLS expirado",
+      "unknown": "TLS pendente"
+    },
+    "storage": "Bancos de dados e armazenamento",
+    "noStorage": "Nenhum banco de dados ou volume vinculado.",
+    "addStorage": "Adicionar volume",
+    "databases": "Bancos de dados",
+    "volumes": "Volumes",
+    "env": "Ambiente",
+    "noEnv": "Nenhuma variável definida.",
+    "addEnv": "Adicionar variável",
+    "envSummary": "{{vars}} variáveis, {{secrets}} segredos",
+    "port": "Porta {{port}}",
+    "strategy": "Estratégia: {{strategy}}",
+    "noNode": "Nenhum node informado",
+    "offline": "offline",
+    "openSettings": "Configurações de deploy",
+    "outTitle": "Conecta-se a",
+    "databasesOut": "Bancos de dados",
+    "none": "Nenhum",
+    "node": "Node",
+    "registry": "Registro",
+    "dependsOn": "Depende de",
+    "replicas_one": "{{count}} réplica",
+    "replicas_other": "{{count}} réplicas",
+    "buildGit": "Build via Git",
+    "buildImage": "Imagem"
+  },
+  "deploys": {
+    "title": "Deploys",
+    "viewAll": "Ver todos",
+    "none": "Nenhum deploy ainda.",
+    "col": {
+      "commit": "Commit",
+      "message": "Mensagem",
+      "state": "Estado",
+      "branch": "Branch",
+      "author": "Autor",
+      "when": "Quando",
+      "actions": "Ações"
+    },
+    "copySha": "Copiar commit",
+    "copied": "Copiado",
+    "live": "Ativo",
+    "rollback": "Rollback",
+    "logs": "Logs"
+  },
+  "previews": {
+    "title": "Prévias recentes",
+    "none": "Nenhum ambiente de prévia ainda.",
+    "all": "Todas as prévias",
+    "pr": "PR #{{number}}"
   }
 }

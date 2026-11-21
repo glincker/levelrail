@@ -36,6 +36,7 @@ export function OverviewHero({
   preview,
   statStrip,
   recent,
+  summary,
   domainCount = 0,
 }: {
   app: AppDetail
@@ -56,6 +57,8 @@ export function OverviewHero({
   statStrip?: ReactNode
   /** Static sites: recent deploys under the stat bar. */
   recent?: ReactNode
+  /** Replaces the default summary row (the app overview passes its slim strip). */
+  summary?: ReactNode
   domainCount?: number
 }) {
   const { t } = useTranslation('common')
@@ -130,48 +133,50 @@ export function OverviewHero({
             gitMissing={gitMissing}
           />
         </section>
-        <section
-          aria-label="App summary"
-          className="flex flex-wrap items-center gap-x-3 gap-y-2 px-1"
-        >
-          <div className="flex min-w-0 items-center gap-0.5">
-            <UrlLine appName={app.name} url={url} />
-            <AutoUrlInfo appName={app.name} />
-          </div>
-          {isStatic && domainCount === 0 ? (
-            <Link
-              to="/apps/$name/domains"
-              params={{ name: app.name }}
-              className={buttonVariants({ variant: 'ghost', size: 'sm' })}
-            >
-              <PlusGlassIcon size="1.2em" aria-hidden="true" />
-              {tApp('staticStrip.addDomain')}
-            </Link>
-          ) : null}
-          {isStatic ? (
-            <span className="flex items-center gap-2 text-xs">
-              <Badge variant="muted">{tAccess('static.badge')}</Badge>
+        {summary ?? (
+          <section
+            aria-label="App summary"
+            className="flex flex-wrap items-center gap-x-3 gap-y-2 px-1"
+          >
+            <div className="flex min-w-0 items-center gap-0.5">
+              <UrlLine appName={app.name} url={url} />
+              <AutoUrlInfo appName={app.name} />
+            </div>
+            {isStatic && domainCount === 0 ? (
               <Link
-                to="/pages/$name"
+                to="/apps/$name/domains"
                 params={{ name: app.name }}
-                className="text-primary underline underline-offset-2"
+                className={buttonVariants({ variant: 'ghost', size: 'sm' })}
               >
-                {tAccess('static.manage')}
+                <PlusGlassIcon size="1.2em" aria-hidden="true" />
+                {tApp('staticStrip.addDomain')}
               </Link>
-            </span>
-          ) : null}
-          {isStatic ? (
-            <StaticDeployLine latest={released ?? latestAttempt} />
-          ) : (
-            <ReleaseLine app={app} latest={released ?? latestAttempt} />
-          )}
-          <TagChips appName={app.name} tags={app.tags} />
-          <AppHeaderBadges
-            app={app}
-            attentionCount={attentionCount}
-            isStatic={isStatic}
-          />
-        </section>
+            ) : null}
+            {isStatic ? (
+              <span className="flex items-center gap-2 text-xs">
+                <Badge variant="muted">{tAccess('static.badge')}</Badge>
+                <Link
+                  to="/pages/$name"
+                  params={{ name: app.name }}
+                  className="text-primary underline underline-offset-2"
+                >
+                  {tAccess('static.manage')}
+                </Link>
+              </span>
+            ) : null}
+            {isStatic ? (
+              <StaticDeployLine latest={released ?? latestAttempt} />
+            ) : (
+              <ReleaseLine app={app} latest={released ?? latestAttempt} />
+            )}
+            <TagChips appName={app.name} tags={app.tags} />
+            <AppHeaderBadges
+              app={app}
+              attentionCount={attentionCount}
+              isStatic={isStatic}
+            />
+          </section>
+        )}
         {statStrip}
         {recent}
       </div>

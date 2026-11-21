@@ -51,6 +51,7 @@ Environment:
   APP_JOIN_TOKEN               one-time join token, only for the first enrolment
   APP_CA_FINGERPRINT           control plane CA fingerprint to pin
   APP_AGENT_IDENTITY_FILE      where the enrolled identity is stored
+  APP_LOG_LEVEL                debug, info (default), warn or error
 `
 
 // handleInfoArgs answers version and help before any config is read.
@@ -73,7 +74,14 @@ func main() {
 	if handleInfoArgs(os.Args[1:], os.Stdout) {
 		return
 	}
-	logger := slog.New(slog.NewTextHandler(os.Stdout, nil))
+	raw := os.Getenv(envLogLevel)
+	level, levelOK := parseLogLevel(raw)
+	logger := slog.New(slog.NewTextHandler(os.Stdout, &slog.HandlerOptions{Level: level}))
+	// Probe and other deep packages log through the default logger.
+	slog.SetDefault(logger)
+	if !levelOK {
+		logger.Warn("unknown log level, using info", slog.String("variable", envLogLevel), slog.String("value", raw))
+	}
 	if err := run(logger); err != nil {
 		logger.Error("exited with error", slog.String("error", err.Error()))
 		os.Exit(1)

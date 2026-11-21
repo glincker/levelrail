@@ -17,6 +17,7 @@ import (
 
 	"github.com/GLINCKER/levelrail/internal/alerting"
 	"github.com/GLINCKER/levelrail/internal/api"
+	"github.com/GLINCKER/levelrail/internal/backup"
 	"github.com/GLINCKER/levelrail/internal/brand"
 	"github.com/GLINCKER/levelrail/internal/demo"
 	"github.com/GLINCKER/levelrail/internal/store"
@@ -118,7 +119,7 @@ func runDemoSeed(ctx context.Context, logger *slog.Logger, args []string, stdout
 	}
 	defer func() { _ = alertingDB.Close() }()
 	m, err := demo.SeedAll(ctx, demo.Stores{DB: db, Telemetry: telemetryDB, Alerting: alertingDB},
-		demo.Options{Seed: *seed, Anchor: anchor, DomainSuffix: demoDomainSuffix(b), Scenario: scenario})
+		demo.Options{Seed: *seed, Anchor: anchor, DomainSuffix: demoDomainSuffix(b), Scenario: scenario, DataDir: dataDirFromEnv()})
 	if err != nil {
 		return err
 	}
@@ -206,6 +207,9 @@ func buildDemoHandler(ctx context.Context, logger *slog.Logger, b *brand.Brand, 
 		api.WithLogBroadcaster(broadcaster),
 		api.WithAccessSource(demo.Access{}),
 		api.WithAlertRules(alertingDB),
+		api.WithAlertDefaults(alertingDB),
+		api.WithBackupProtection(&backup.Protection{Store: db}, db),
+		api.WithOrphanedVolumeManager(demo.Volumes{}),
 		api.WithAlertNoise(alertingDB),
 		api.WithInbox(alertingDB),
 		api.WithStatusPage(db, statusPageConfig(logger), statusPageRateLimit(logger)),

@@ -28,6 +28,7 @@ vi.mock('@tanstack/react-router', async (importOriginal) => {
 })
 vi.mock('../queries/deployControl', () => ({
   useRollbackToDeploy: () => ({ isPending: false, mutate: vi.fn() }),
+  useCancelDeploy: () => ({ isPending: false, mutate: vi.fn() }),
 }))
 
 const attempt: DeployAttempt = {
@@ -55,5 +56,28 @@ describe('DeployHeader chain position', () => {
   it.each([undefined, 1])('stays quiet for chain position %s', (position) => {
     renderHeader({ ...attempt, chain_position: position })
     expect(screen.queryByText(/of this chain/)).toBeNull()
+  })
+})
+
+describe('DeployHeader actions', () => {
+  it.each<DeployAttempt['status']>(['running', 'queued'])(
+    'offers Cancel build while %s',
+    (status) => {
+      renderHeader({ ...attempt, status })
+      expect(screen.getByRole('button', { name: /cancel build/i })).toBeTruthy()
+    },
+  )
+
+  it.each<DeployAttempt['status']>(['succeeded', 'failed'])(
+    'hides Cancel build once %s',
+    (status) => {
+      renderHeader({ ...attempt, status })
+      expect(screen.queryByRole('button', { name: /cancel build/i })).toBeNull()
+    },
+  )
+
+  it('leaves the log download to the logs card', () => {
+    renderHeader(attempt)
+    expect(screen.queryByRole('link', { name: /download/i })).toBeNull()
   })
 })

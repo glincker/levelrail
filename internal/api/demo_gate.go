@@ -140,7 +140,6 @@ var demoReadDenylist = []string{
 	"/api/v1/external-databases/{name}/password",
 	"/api/v1/mesh/connectivity",
 	"/api/v1/storage/providers",
-	"/api/v1/storage/orphans",
 	"/api/v1/domains/{domain}/diagnose/stream",
 	"/api/v1/domains/{domain}/cert/preflight",
 	"/api/v1/domains/{domain}/verify",

@@ -190,7 +190,7 @@ function DeployRow({
           <CopySha attempt={a} />
         </TableCell>
         <TableCell>
-          <span className="block max-w-56 truncate text-xs">
+          <span className="block max-w-56 truncate text-xs" title={message}>
             {a.live ? (
               <Badge className="mr-1.5">{t('recent.live')}</Badge>
             ) : null}

@@ -51,6 +51,10 @@ import { TrafficTiles } from './TrafficTiles'
 import { VisitorsCard } from './VisitorsCard'
 import { StaticStatStrip } from './StaticStatStrip'
 import { RecentDeploys } from './RecentDeploys'
+import { AppDeploys } from './AppDeploys'
+import { AppRecentPreviews } from './AppRecentPreviews'
+import { AppSummaryStrip } from './AppSummaryStrip'
+import { AppWiring } from './AppWiring'
 import type { VisitorsWindow } from '../../queries/appVisitors'
 import { useAppUrl } from './useAppUrl'
 import { useOverviewActions } from './useOverviewActions'
@@ -239,77 +243,131 @@ export function OverviewPage({
       <DetailsSection app={app} conditions={conditions} isStatic={isStatic} />
     ),
   }
-  return (
-    <div className="space-y-4">
-      {actions.confirmDialog}
-      <OverviewHero
-        app={app}
-        conditions={conditions}
-        latestAttempt={latest}
+  const serverOutcome = appStatus?.outcome
+    ? { outcome: appStatus.outcome, reason: appStatus.outcome_reason }
+    : undefined
+  const preview = (
+    <Suspense
+      fallback={<div className="aspect-[8/5] w-full rounded-md bg-muted" />}
+    >
+      <OverviewPreview
+        appName={app.name}
         attempts={attempts}
         url={openUrl}
-        attentionCount={suggestions.attention.length}
-        serverOutcome={
-          appStatus?.outcome
-            ? { outcome: appStatus.outcome, reason: appStatus.outcome_reason }
-            : undefined
-        }
-        onDeploy={setDeployTab}
-        gitMissing={git.error instanceof ApiError && git.error.status === 404}
         isStatic={isStatic}
-        statStrip={
-          isStatic ? (
-            <StaticStatStrip appName={app.name} range={range} latest={latest} />
-          ) : undefined
-        }
-        domainCount={app.domains?.length ?? 0}
-        recent={
-          isStatic ? (
-            <RecentDeploys appName={app.name} attempts={attempts} />
-          ) : undefined
-        }
-        preview={
-          <Suspense
-            fallback={
-              <div className="aspect-[8/5] w-full rounded-md bg-muted" />
-            }
-          >
-            <OverviewPreview
-              appName={app.name}
-              attempts={attempts}
-              url={openUrl}
-              isStatic={isStatic}
-              onDeploy={setDeployTab}
-            />
-          </Suspense>
-        }
+        onDeploy={setDeployTab}
       />
-      {isStatic ? null : (
-        <OverviewQuickLinks
-          app={app}
-          reading={reading}
-          latest={latest}
-          isStatic={isStatic}
-        />
-      )}
-      <RecommendedNextCard
+    </Suspense>
+  )
+  // Failures stay full width above the grid; the access card moves to the side column.
+  const top = layout.sections.filter(
+    (id) => id === 'attention' || id === 'diagnosis',
+  )
+  const main = layout.sections.filter(
+    (id) => id !== 'attention' && id !== 'diagnosis' && id !== 'access',
+  )
+  const hero = (
+    <OverviewHero
+      app={app}
+      conditions={conditions}
+      latestAttempt={latest}
+      attempts={attempts}
+      url={openUrl}
+      attentionCount={suggestions.attention.length}
+      serverOutcome={serverOutcome}
+      onDeploy={setDeployTab}
+      gitMissing={git.error instanceof ApiError && git.error.status === 404}
+      isStatic={isStatic}
+      statStrip={
+        isStatic ? (
+          <StaticStatStrip appName={app.name} range={range} latest={latest} />
+        ) : undefined
+      }
+      domainCount={app.domains?.length ?? 0}
+      recent={
+        isStatic ? (
+          <RecentDeploys appName={app.name} attempts={attempts} />
+        ) : undefined
+      }
+      preview={isStatic ? preview : undefined}
+      summary={
+        isStatic ? undefined : (
+          <AppSummaryStrip
+            app={app}
+            attempts={attempts}
+            url={openUrl}
+            attentionCount={suggestions.attention.length}
+          />
+        )
+      }
+    />
+  )
+  const next = (
+    <RecommendedNextCard
+      app={app}
+      latest={latest}
+      omit={[
+        'add_domain',
+        ...(diagnosisShown ? (['failed_deploy'] as const) : []),
+        // A static site has no process to probe.
+        ...(isStatic ? (['add_health_check'] as const) : []),
+      ]}
+    />
+  )
+  const sheet = (
+    <DeploySheet
+      appName={app.name}
+      tab={deployTab}
+      onClose={() => setDeployTab(null)}
+    />
+  )
+  if (isStatic) {
+    return (
+      <div className="space-y-4">
+        {actions.confirmDialog}
+        {hero}
+        {next}
+        {layout.sections.map((id) => (
+          <Fragment key={id}>{sections[id]}</Fragment>
+        ))}
+        {sheet}
+      </div>
+    )
+  }
+  return (
+    <div className="space-y-3">
+      {actions.confirmDialog}
+      {hero}
+      <OverviewQuickLinks
         app={app}
+        reading={reading}
         latest={latest}
-        omit={[
-          'add_domain',
-          ...(diagnosisShown ? (['failed_deploy'] as const) : []),
-          // A static site has no process to probe.
-          ...(isStatic ? (['add_health_check'] as const) : []),
-        ]}
+        isStatic={isStatic}
       />
-      {layout.sections.map((id) => (
+      {next}
+      {top.map((id) => (
         <Fragment key={id}>{sections[id]}</Fragment>
       ))}
-      <DeploySheet
-        appName={app.name}
-        tab={deployTab}
-        onClose={() => setDeployTab(null)}
-      />
+      <div className="grid gap-3 lg:grid-cols-[minmax(0,1fr)_20rem]">
+        <div className="min-w-0 space-y-3">
+          <AppWiring
+            app={app}
+            conditions={conditions}
+            latest={latest}
+            serverOutcome={serverOutcome}
+          />
+          <AppDeploys name={app.name} attempts={attempts} />
+          {main.map((id) => (
+            <Fragment key={id}>{sections[id]}</Fragment>
+          ))}
+        </div>
+        <div className="min-w-0 space-y-3">
+          {preview}
+          {sections.access}
+          <AppRecentPreviews name={app.name} />
+        </div>
+      </div>
+      {sheet}
     </div>
   )
 }
