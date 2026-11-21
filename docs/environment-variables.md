@@ -456,6 +456,7 @@ These variables only seed the default of a [runtime setting](/runtime-settings).
 | `APP_CONTAINERS_INSPECT_TIMEOUT` | [`apps.containers_inspect_timeout`](/runtime-settings#observability) | `5s` |
 | `APP_AUTOSCALE_GAUGE_MAX_BYTES` | [`autoscale.gauge_max_bytes`](/runtime-settings#observability) | `1048576` |
 | `APP_AUTOSCALE_GAUGE_TIMEOUT` | [`autoscale.gauge_timeout`](/runtime-settings#observability) | `3s` |
+| `APP_CLOUD_AWS_NAME_PREFIX` | [`cloud.aws.name_prefix`](/runtime-settings#observability) | `levelrail` |
 | `APP_CLOUD_CLOUDFRONT_MAX_INVALIDATION_PATHS` | [`cloud.cloudfront.max_invalidation_paths`](/runtime-settings#observability) | `50` |
 | `APP_CLOUD_GUARD_ACCOUNT_CAPS` | [`cloud.guard.account_caps`](/runtime-settings#observability) | empty |
 | `APP_CLOUD_GUARD_DEFAULT_EXPIRES_HOURS` | [`cloud.guard.default_expires_hours`](/runtime-settings#observability) | `168` |
