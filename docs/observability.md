@@ -277,6 +277,18 @@ The API is `GET /api/v1/observability/presets`, `GET` and `POST /api/v1/observab
 
 Fields: the OTLP endpoint of your stack (without a signal path), the instance ID and an access policy token with `logs:write` and `metrics:write`. Logs and metrics are on by default. Unverified: the Basic auth format (instance ID as user, token as password) follows the Grafana docs but has not been tested against a live stack.
 
+### Grafana Loki
+
+Fields: the Loki base URL, an optional username (the Loki user or instance ID), an optional token and an optional tenant ID. Logs only. `/loki/api/v1/push` is added when the URL has no path. The username and token become a Basic `Authorization` header, which is what Grafana Cloud uses. The tenant ID is sent as `X-Scope-OrgID` for a multi-tenant self-hosted Loki. Leave the credentials blank only for a Loki you reach without auth.
+
+```bash
+levelrail-cli observability add grafana-loki --name loki \
+  --field endpoint=https://logs-prod-012.grafana.net \
+  --field user=123456 --field token=env:GRAFANA_LOKI_TOKEN
+```
+
+Unverified: not tested against a live Grafana Cloud stack.
+
 ### Datadog
 
 Fields: your Datadog site and an API key. Logs are on by default. Metrics use the OTLP intake and are off by default, add them with `--signal logs,metrics`. Sites include US1, US3, US5, EU, AP1, AP2 and UK1. The metrics intake accepts delta temporality only and counters are exported as cumulative sums, so a metrics test can be rejected with a 400. Unverified: only US1 has been tested, the other site hosts follow Datadog's documented pattern.

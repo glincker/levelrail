@@ -65,8 +65,12 @@ func resolveCopyDestination(ctx context.Context, targets TargetGetter, secrets S
 	return resolveTargetDestination(ctx, targets, secrets, targetID)
 }
 
-// withWebDAVExtras adds the optional CA bundle secret to a WebDAV destination.
+// withWebDAVExtras adds the optional CA bundle (WebDAV) or key secrets (SFTP).
 func withWebDAVExtras(ctx context.Context, secrets SecretsResolver, secretsKey string, d Destination) Destination {
+	if d.IsSFTP() {
+		d.PrivateKey, _ = secrets.Resolve(ctx, secretsKey, "private_key")
+		d.KeyPassphrase, _ = secrets.Resolve(ctx, secretsKey, "key_passphrase")
+	}
 	if d.IsWebDAV() {
 		if ca, err := secrets.Resolve(ctx, secretsKey, "ca_bundle"); err == nil {
 			d.CABundle = ca

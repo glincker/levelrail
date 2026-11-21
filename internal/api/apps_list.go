@@ -7,6 +7,7 @@ import (
 	"strconv"
 	"strings"
 	"sync"
+	"time"
 
 	"github.com/GLINCKER/levelrail/internal/store"
 )
@@ -260,6 +261,12 @@ func (rt *Router) handleListApps(w http.ResponseWriter, r *http.Request) {
 	placement := rt.placementResolver(r.Context())
 	owners := rt.loadStackOwners(r.Context())
 	descriptions := rt.appDescriptions(r.Context())
+	previews := rt.listPreviewCards(r.Context(), appNames)
+	jobs := rt.jobsByApp(r.Context(), time.Now())
+	var lastDeploy map[string]time.Time
+	if src, ok := rt.deployAttempts.(latestDeployActivitySource); ok {
+		lastDeploy, _ = src.LatestDeployActivity(r.Context())
+	}
 	out := make([]appListResource, 0, len(svcs))
 	for _, s := range svcs {
 		resource := toAppResourceRaw(s)
@@ -280,6 +287,16 @@ func (rt *Router) handleListApps(w http.ResponseWriter, r *http.Request) {
 		if sl, ok := sleepRows[s.Name]; ok {
 			item.Sleep = &sl
 		}
+		if pc, ok := previews[s.Name]; ok {
+			item.Preview = &pc
+		}
+		js := jobs[s.Name]
+		item.AppKind, item.KindSource = classifyApp(kindInputFor(s, js != nil))
+		var deployedAt *time.Time
+		if t, ok := lastDeploy[s.Name]; ok {
+			deployedAt = &t
+		}
+		item.Summary = buildAppSummary(item.AppKind, s, conditions, deployedAt, js)
 		out = append(out, item)
 	}
 	w.Header().Set("X-Total-Count", strconv.Itoa(total))

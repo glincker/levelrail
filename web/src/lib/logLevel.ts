@@ -9,6 +9,8 @@ const LEVEL_ALIASES: Record<string, LogLevel> = {
   panic: 'error',
   critical: 'error',
   crit: 'error',
+  alert: 'error',
+  emerg: 'error',
   warn: 'warn',
   warning: 'warn',
   info: 'info',
@@ -23,7 +25,7 @@ const KV_LEVEL = /(?:^|\s)(?:level|lvl|severity)=["']?([A-Za-z]+)["']?/i
 const PREFIX_LEVEL =
   /^\W{0,3}(error|err|fatal|panic|critical|crit|warning|warn|info|notice|debug|trace)\b/i
 const BRACKET_LEVEL =
-  /\[\s*(error|err|fatal|critical|warning|warn|info|debug|trace)\s*\]/i
+  /\[\s*(error|err|fatal|critical|crit|alert|emerg|warning|warn|info|notice|debug|trace)\s*\]/i
 
 function fromName(value: unknown): LogLevel | null {
   if (typeof value !== 'string') {

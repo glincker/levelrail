@@ -68,5 +68,25 @@
     "empty": "没有应用匹配这些筛选条件。",
     "listLabel": "应用",
     "loading": "正在加载应用"
+  },
+  "kind": {
+    "badge": {
+      "api": "API",
+      "worker": "Worker",
+      "cron": "定时任务",
+      "database": "数据库"
+    },
+    "cardLabel": "{{name}} 的{{kind}}卡片",
+    "ready": {
+      "true": "就绪",
+      "false": "未就绪",
+      "unknown": "就绪状态未知"
+    },
+    "neverDeployed": "尚未部署",
+    "replicas_other": "{{count}} 个副本",
+    "nextRun": "下次运行",
+    "lastRun": "上次运行",
+    "notScheduled": "未设置计划",
+    "neverRan": "从未运行"
   }
 }

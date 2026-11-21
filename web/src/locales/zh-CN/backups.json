@@ -481,5 +481,24 @@
     "restoreCancel": "取消",
     "restoreClose": "关闭",
     "restoreAccepted": "恢复已开始。安全转储：{{id}}。它在后台运行，请在运行历史和审计日志中查看结果。"
+  },
+  "sftpTarget": {
+    "host": "服务器",
+    "path": "远程目录",
+    "pathHint": "相对路径从 SSH 用户的登录目录开始。包含 .. 的路径会被拒绝。",
+    "username": "SSH 用户名",
+    "auth": "认证方式",
+    "authPassword": "密码",
+    "authKey": "私钥",
+    "password": "密码",
+    "privateKey": "私钥(PEM 或 OpenSSH 格式)",
+    "passphrase": "密钥口令(可选)",
+    "hostKeyTitle": "服务器主机密钥",
+    "hostKeyHint": "Levelrail 只会连接密钥与此处固定的密钥一致的服务器。请获取密钥,并将其指纹与服务器所有者提供的指纹进行比对。",
+    "fetchKey": "获取主机密钥",
+    "fetching": "获取中...",
+    "keyType": "密钥类型",
+    "fingerprint": "指纹",
+    "confirm": "我已与服务器核对此指纹"
   }
 }

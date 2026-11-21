@@ -62,14 +62,32 @@ describe('SiteWiring', () => {
     h.settings = undefined
     const onOpenTab = vi.fn<(tab: string) => void>()
     render(<SiteWiring name="docs" onOpenTab={onOpenTab} />)
-    fireEvent.click(screen.getByText('success.addDomain'))
-    fireEvent.click(screen.getByText('overview.wiring.addForm'))
-    fireEvent.click(screen.getByText('overview.wiring.addRule'))
+    fireEvent.click(screen.getByLabelText('success.addDomain'))
+    fireEvent.click(screen.getByLabelText('overview.wiring.addForm'))
+    fireEvent.click(screen.getByLabelText('overview.wiring.addRule'))
     expect(onOpenTab.mock.calls.map((c) => c[0])).toEqual([
       'domains',
       'settings',
       'routes',
     ])
+  })
+
+  it('opens settings from a setting chip and remembers a collapsed group', () => {
+    h.domains = []
+    h.settings = { protected: false, effective: {} }
+    const onOpenTab = vi.fn<(tab: string) => void>()
+    window.localStorage.clear()
+    render(<SiteWiring name="docs" onOpenTab={onOpenTab} />)
+    fireEvent.click(
+      screen.getByRole('button', { name: /overview.wiring.password/ }),
+    )
+    expect(onOpenTab).toHaveBeenCalledWith('settings')
+    fireEvent.click(
+      screen.getByRole('button', { name: /overview.wiring.forms/ }),
+    )
+    expect(window.localStorage.getItem('lr.wiring.pages.docs.forms')).toBe(
+      'closed',
+    )
   })
 
   it('counts domains, forms and rules from the real data', () => {

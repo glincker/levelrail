@@ -68,5 +68,26 @@
     "empty": "Aucune app ne correspond à ces filtres.",
     "listLabel": "Apps",
     "loading": "Chargement des apps"
+  },
+  "kind": {
+    "badge": {
+      "api": "API",
+      "worker": "Worker",
+      "cron": "Cron",
+      "database": "Base de données"
+    },
+    "cardLabel": "Carte {{kind}} pour {{name}}",
+    "ready": {
+      "true": "Prêt",
+      "false": "Pas prêt",
+      "unknown": "Disponibilité inconnue"
+    },
+    "neverDeployed": "Pas encore déployé",
+    "replicas_one": "{{count}} réplique",
+    "replicas_other": "{{count}} répliques",
+    "nextRun": "Prochaine exécution",
+    "lastRun": "Dernière exécution",
+    "notScheduled": "Non planifié",
+    "neverRan": "Jamais exécuté"
   }
 }

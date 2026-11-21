@@ -526,7 +526,8 @@
         "aws": "AWS S3",
         "custom": "Compatible con S3",
         "local": "Directorio local",
-        "r2": "Cloudflare R2"
+        "r2": "Cloudflare R2",
+        "sftp": "SFTP"
       },
       "providers": "Proveedores",
       "status": "Estado de las copias de seguridad",

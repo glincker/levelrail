@@ -165,3 +165,6 @@ func (db *DB) StorageUsageByTarget(ctx context.Context) (map[string]StorageUsage
 
 // WebDAVEndpointScheme prefixes the stored endpoint of a WebDAV target; the rest is the real base URL.
 const WebDAVEndpointScheme = "dav+"
+
+// SFTPEndpointScheme prefixes the stored endpoint of an SFTP target; the rest is host:port.
+const SFTPEndpointScheme = "sftp+"

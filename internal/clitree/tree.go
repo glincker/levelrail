@@ -310,7 +310,7 @@ var Tree = map[string]*Node{
 	"push-subscriptions": {Subs: map[string]*Node{"list": nil, "revoke": nil}},
 	"env":                {Subs: map[string]*Node{"set": nil, "unset": nil, "pull": nil, "push": nil}},
 	"shared-env":         {Subs: map[string]*Node{"list": nil, "set": nil, "delete": nil}},
-	"backup-targets":     {Subs: map[string]*Node{"list": nil, "get": nil, "create": nil, "update": nil, "delete": nil, "test": nil}},
+	"backup-targets":     {Subs: map[string]*Node{"list": nil, "get": nil, "create": nil, "update": nil, "delete": nil, "test": nil, "scan-host-key": nil}},
 	"firewall": {Subs: map[string]*Node{"list": nil, "allow": nil, "deny": nil, "delete": nil, "exposure": nil, "restrict": nil, "unrestrict": nil,
 		"ingress": {Subs: map[string]*Node{
 			"status": nil, "traffic": nil, "audit": nil, "block": nil, "bypass": nil,

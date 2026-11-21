@@ -224,3 +224,10 @@ func TestToDesiredServices_DropUngrantedCapsOnRollback(t *testing.T) {
 		t.Fatal("an unknown cap must still be rejected when dropping is on")
 	}
 }
+
+func TestUndeclaredCaps_SetpcapNeverCoveredByAGrant(t *testing.T) {
+	got := undeclaredCaps([]string{"SETPCAP"}, []string{"SETPCAP"}, false)
+	if len(got) != 1 {
+		t.Errorf("a compose cap_add of SETPCAP must stay undeclared even if listed as granted, got %v", got)
+	}
+}

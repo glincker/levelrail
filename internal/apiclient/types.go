@@ -2581,6 +2581,8 @@ type BackupTargetResource struct {
 	EncryptDumps bool `json:"encrypt_dumps"`
 	// LocalRoot is the control plane APP_BACKUP_LOCAL_ROOT, set for local targets only.
 	LocalRoot string `json:"local_root,omitempty"`
+	// HostKey is the pinned SSH host key of an sftp target.
+	HostKey string `json:"host_key,omitempty"`
 }
 
 // BackupTargetEncryptionResource mirrors internal/api's backupTargetEncryptionResource.
@@ -2605,6 +2607,10 @@ type CreateBackupTargetRequest struct {
 	SecretAccessKey string `json:"secret_access_key"`
 	EncryptDumps    *bool  `json:"encrypt_dumps,omitempty"`
 	CABundle        string `json:"ca_bundle,omitempty"`
+	// Write-only sftp key credentials and the pinned server key.
+	PrivateKey           string `json:"private_key,omitempty"`
+	PrivateKeyPassphrase string `json:"private_key_passphrase,omitempty"`
+	HostKey              string `json:"host_key,omitempty"`
 }
 
 // UpdateBackupTargetRequest mirrors internal/api's
@@ -2620,6 +2626,17 @@ type UpdateBackupTargetRequest struct {
 	SecretAccessKey string `json:"secret_access_key,omitempty"`
 	CABundle        string `json:"ca_bundle,omitempty"`
 	ClearCABundle   bool   `json:"clear_ca_bundle,omitempty"`
+	// Write-only sftp key credentials and the pinned server key.
+	PrivateKey           string `json:"private_key,omitempty"`
+	PrivateKeyPassphrase string `json:"private_key_passphrase,omitempty"`
+	HostKey              string `json:"host_key,omitempty"`
+}
+
+// SFTPHostKeyScan mirrors internal/api's sftpHostKeyResponse.
+type SFTPHostKeyScan struct {
+	HostKey     string `json:"host_key"`
+	KeyType     string `json:"key_type"`
+	Fingerprint string `json:"fingerprint"`
 }
 
 // RegistryCredentialResource mirrors internal/api's

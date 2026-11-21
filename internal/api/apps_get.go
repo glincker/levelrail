@@ -33,6 +33,7 @@ func (rt *Router) handleGetApp(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 	resource.Tags = tagNames
+	resource.AppKind, resource.KindSource = classifyApp(kindInputFor(*svc, rt.appHasJobs(r.Context(), name)))
 	rt.attachSecretPolicy(r.Context(), &resource, *svc)
 	pendingImage := ""
 	if serving, ok := rt.lastServingImage(r.Context(), *svc); ok {
@@ -166,4 +167,10 @@ func (rt *Router) linkHTTPPort() int {
 		}
 	}
 	return rt.doctorHTTPPort
+}
+
+// appHasJobs is one indexed lookup on the detail path only; the list batches it instead.
+func (rt *Router) appHasJobs(ctx context.Context, name string) bool {
+	n, err := rt.scheduledTasks.CountScheduledTasksForService(ctx, name)
+	return err == nil && n > 0
 }

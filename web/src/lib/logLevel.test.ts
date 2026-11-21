@@ -30,3 +30,16 @@ describe('prettyJsonLine', () => {
     expect(prettyJsonLine(l)).toBeNull()
   })
 })
+
+describe('detectLogLevel bracketed server levels', () => {
+  it('reads a bracketed notice as info', () => {
+    expect(
+      detectLogLevel('2026/11/21 04:10:37 [notice] 1#1: start worker'),
+    ).toBe('info')
+  })
+  it('reads a bracketed emerg as error', () => {
+    expect(detectLogLevel('2026/11/21 04:10:37 [emerg] 1#1: bind failed')).toBe(
+      'error',
+    )
+  })
+})

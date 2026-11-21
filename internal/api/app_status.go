@@ -70,4 +70,8 @@ type appListResource struct {
 	Sleep *appListSleep `json:"sleep,omitempty"`
 	// ManagedByStack names the stack owning this app, omitted when none.
 	ManagedByStack string `json:"managed_by_stack,omitempty"`
+	// Preview is the latest cached thumbnail or text card, omitted when none exists.
+	Preview *previewCardResource `json:"preview,omitempty"`
+	// Summary is a compact card payload built from already loaded data, never from new probes.
+	Summary *appListSummary `json:"summary,omitempty"`
 }

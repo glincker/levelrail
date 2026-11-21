@@ -1674,7 +1674,8 @@
         "aws": "AWS S3",
         "r2": "Cloudflare R2",
         "custom": "Compatível com S3",
-        "local": "Diretório local"
+        "local": "Diretório local",
+        "sftp": "SFTP"
       },
       "status": "Status dos backups",
       "statusBody": "Execuções, cobertura e simulações de restauração ficam na página de Backups.",

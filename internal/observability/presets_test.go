@@ -15,6 +15,7 @@ const secretValue = "s3cret-value-xyz"
 var sampleFields = map[string]map[string]string{
 	"grafana-cloud": {"endpoint": "https://otlp-gateway-prod-eu-west-0.grafana.net/otlp/", "instance_id": "4242", "token": secretValue},
 	"datadog":       {"site": "datadoghq.eu", "api_key": secretValue},
+	"grafana-loki":  {"endpoint": "https://logs-prod-012.grafana.net/", "user": "777", "token": secretValue},
 	"axiom":         {"dataset": "lr", "region": "eu", "token": secretValue},
 	"honeycomb":     {"region": "eu", "dataset": "lr", "api_key": secretValue},
 	"better-stack":  {"ingesting_host": "s1.eu-nbg-2.betterstackdata.com", "source_token": secretValue},
@@ -131,6 +132,32 @@ func TestRenderProviderSpecifics(t *testing.T) {
 	got, _ = open.Render("o", map[string]string{"endpoint": "https://collector.example.com"}, []string{"logs"})
 	if len(got[0].Input.Headers) != 0 {
 		t.Fatalf("blank credential must send no header, got %v", got[0].HeaderNames)
+	}
+}
+
+func TestGrafanaLokiPreset(t *testing.T) {
+	t.Parallel()
+	p, ok := Lookup("grafana-loki")
+	if !ok {
+		t.Fatal("grafana-loki preset missing")
+	}
+	got, err := p.Render("l", sampleFields["grafana-loki"], nil)
+	if err != nil || len(got) != 1 || got[0].Input.Kind != store.ExportKindLogsLoki {
+		t.Fatalf("loki = %+v, %v", got, err)
+	}
+	want := "Basic " + base64.StdEncoding.EncodeToString([]byte("777:"+secretValue))
+	if got[0].Endpoint != "https://logs-prod-012.grafana.net" || got[0].Input.Headers["Authorization"] != want {
+		t.Fatalf("loki render = %q %v", got[0].Endpoint, got[0].HeaderNames)
+	}
+	if _, has := got[0].Input.Headers["X-Scope-OrgID"]; has {
+		t.Fatal("blank tenant must send no tenant header")
+	}
+	got, _ = p.Render("l", map[string]string{"endpoint": "https://loki.example.com", "tenant": "team-a"}, nil)
+	if len(got[0].Input.Headers) != 1 || got[0].Input.Headers["X-Scope-OrgID"] != "team-a" {
+		t.Fatalf("tenant only headers = %v", got[0].Input.Headers)
+	}
+	if _, err := p.Render("l", map[string]string{"user": "1"}, nil); !errors.Is(err, ErrInvalid) {
+		t.Fatalf("missing endpoint: %v", err)
 	}
 }
 

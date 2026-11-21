@@ -68,5 +68,25 @@
     "empty": "これらのフィルターに一致するアプリはありません。",
     "listLabel": "アプリ",
     "loading": "アプリを読み込み中"
+  },
+  "kind": {
+    "badge": {
+      "api": "API",
+      "worker": "ワーカー",
+      "cron": "Cron",
+      "database": "データベース"
+    },
+    "cardLabel": "{{name}} の {{kind}} カード",
+    "ready": {
+      "true": "準備完了",
+      "false": "未準備",
+      "unknown": "準備状態は不明"
+    },
+    "neverDeployed": "未デプロイ",
+    "replicas_other": "レプリカ {{count}}",
+    "nextRun": "次回実行",
+    "lastRun": "前回実行",
+    "notScheduled": "未スケジュール",
+    "neverRan": "未実行"
   }
 }

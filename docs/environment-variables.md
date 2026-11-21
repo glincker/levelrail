@@ -67,6 +67,7 @@ These variables only seed the default of a [runtime setting](/runtime-settings).
 | `APP_AUDIT_ANCHOR_WEBHOOK_URL` | [`audit.anchor_webhook_url`](/runtime-settings#security) | empty |
 | `APP_AUTH_ENGINE_RATE_LIMIT_PER_EMAIL` | [`auth.engine_rate_limit_per_email`](/runtime-settings#security) | `60` |
 | `APP_AUTH_ENGINE_RATE_LIMIT_PER_IP` | [`auth.engine_rate_limit_per_ip`](/runtime-settings#security) | `60` |
+| `APP_BACKUP_SFTP_ALLOW_PRIVATE_NETWORKS` | [`backup.sftp_allow_private_networks`](/runtime-settings#security) | `false` |
 | `APP_BACKUP_WEBDAV_ALLOW_PRIVATE_NETWORKS` | [`backup.webdav_allow_private_networks`](/runtime-settings#security) | `false` |
 | `APP_CLOUD_ALLOW_CHECKSUM_ONLY` | [`cloud.allow_checksum_only`](/runtime-settings#security) | `false` |
 | `APP_CLOUD_ALLOW_PROTECTED_DELETE` | [`cloud.allow_protected_delete`](/runtime-settings#security) | `false` |
@@ -234,6 +235,12 @@ These variables only seed the default of a [runtime setting](/runtime-settings).
 | `APP_SLEEP_MAX_WAITERS` | [`appsleep.max_waiters`](/runtime-settings#deploys) | `200` |
 | `APP_SLEEP_WAKE_WAIT_SECONDS` | [`appsleep.wake_wait_seconds`](/runtime-settings#deploys) | `0` |
 | `APP_BACKUP_LOCAL_ROOT` | [`backup.local_root`](/runtime-settings#deploys) | empty |
+| `APP_BACKUP_SFTP_CONNECT_TIMEOUT` | [`backup.sftp_connect_timeout`](/runtime-settings#deploys) | `15s` |
+| `APP_BACKUP_SFTP_IDLE_TIMEOUT` | [`backup.sftp_idle_timeout`](/runtime-settings#deploys) | `1m` |
+| `APP_BACKUP_SFTP_MAX_CONNECTIONS` | [`backup.sftp_max_connections`](/runtime-settings#deploys) | `4` |
+| `APP_BACKUP_SFTP_MAX_DEPTH` | [`backup.sftp_max_depth`](/runtime-settings#deploys) | `8` |
+| `APP_BACKUP_SFTP_MAX_ENTRIES` | [`backup.sftp_max_entries`](/runtime-settings#deploys) | `20000` |
+| `APP_BACKUP_SFTP_SCAN_PER_MINUTE` | [`backup.sftp_scan_per_minute`](/runtime-settings#deploys) | `10` |
 | `APP_BACKUP_WEBDAV_HEADER_TIMEOUT` | [`backup.webdav_header_timeout`](/runtime-settings#deploys) | `30s` |
 | `APP_BACKUP_WEBDAV_IDLE_TIMEOUT` | [`backup.webdav_idle_timeout`](/runtime-settings#deploys) | `1m` |
 | `APP_BACKUP_WEBDAV_MAX_DEPTH` | [`backup.webdav_max_depth`](/runtime-settings#deploys) | `8` |

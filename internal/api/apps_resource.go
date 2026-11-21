@@ -94,6 +94,9 @@ type appResource struct {
 	// value, and an empty value on input falls to the store defaults.
 	Strategy string `json:"strategy"`
 	Replicas int    `json:"replicas"`
+	// AppKind is response-only: web, api, worker, cron, database or static. KindSource says whether spec, probe or heuristic decided it.
+	AppKind    string `json:"app_kind,omitempty"`
+	KindSource string `json:"kind_source,omitempty"`
 	// NextCache overrides app.yaml next.cache: none, redis, or empty to use the spec value.
 	NextCache string `json:"next_cache,omitempty"`
 	// NextImageCache overrides app.yaml next.image_cache: persistent, none, or empty to use the spec value.

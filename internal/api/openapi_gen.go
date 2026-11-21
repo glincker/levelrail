@@ -14,7 +14,7 @@ type openAPIRoute struct {
 	Description string
 }
 
-// openAPIRoutes holds all 2248 routes known to scripts/gen-api-reference at
+// openAPIRoutes holds all 2249 routes known to scripts/gen-api-reference at
 // generation time. Run `go run ./scripts/gen-api-reference` after changing
 // any routes*.go registration and commit the result.
 var openAPIRoutes = []openAPIRoute{
@@ -2065,6 +2065,7 @@ var openAPIRoutes = []openAPIRoute{
 	{Method: "POST", Path: "/api/v1/webhooks/slack/interactions", Ability: "Public", Group: "Secrets / Git Source / Webhooks / Preview Environments", Handler: "handleSlackInteraction", Description: "Chat-interactive deploy approval (chat_interactions.go): a Slack/Discord button click posts back here, unauthenticated like POST .../webhooks/github/{name} above; its own signature check (Slack HMAC, Discord Ed25519) stands in for auth, and the decision itself runs through the exact same functions the gated routes above call."},
 	{Method: "GET", Path: "/api/v1/backup-targets", Ability: "AbilityRead", Group: "Static Sites / Backup Targets / Registry Credentials", Handler: "handleListBackupTargets", Description: "Backup targets (connected S3-compatible buckets a database backup can be uploaded to). Create and delete need AbilityWriteSensitive: create because its request body carries live bucket credentials, delete because it gates access to the same. List/get are ordinary AbilityRead, the same boundary handleListCertificates/ handleListStaticSites already draw between visibility and mutation."},
 	{Method: "POST", Path: "/api/v1/backup-targets", Ability: "AbilityWriteSensitive", Group: "Static Sites / Backup Targets / Registry Credentials", Handler: "handleCreateBackupTarget", Description: ""},
+	{Method: "POST", Path: "/api/v1/backup-targets/sftp-host-key", Ability: "AbilityWriteSensitive", Group: "Static Sites / Backup Targets / Registry Credentials", Handler: "handleScanSFTPHostKey", Description: ""},
 	{Method: "DELETE", Path: "/api/v1/backup-targets/{id}", Ability: "AbilityWriteSensitive", Group: "Static Sites / Backup Targets / Registry Credentials", Handler: "handleDeleteBackupTarget", Description: ""},
 	{Method: "GET", Path: "/api/v1/backup-targets/{id}", Ability: "AbilityRead", Group: "Static Sites / Backup Targets / Registry Credentials", Handler: "handleGetBackupTarget", Description: ""},
 	{Method: "PUT", Path: "/api/v1/backup-targets/{id}", Ability: "AbilityWriteSensitive", Group: "Static Sites / Backup Targets / Registry Credentials", Handler: "handleUpdateBackupTarget", Description: ""},

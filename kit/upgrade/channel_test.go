@@ -92,6 +92,8 @@ func TestUpdateAvailable(t *testing.T) {
 		{"edge sha falls back to inequality", "main-aaaaaaa", &Release{Tag: "main-bbbbbbb"}, true},
 		{"edge same sha is up to date", "main-aaaaaaa", &Release{Tag: "main-aaaaaaa"}, false},
 		{"release build vs edge sha falls back", "v1.0.0", &Release{Tag: "main-bbbbbbb"}, true},
+		{"pseudo build is not behind its own release", "v1.5.7-0.20261121034610-498c7b0d1ce9", &Release{Tag: "v1.5.7"}, false},
+		{"pseudo build sees a newer release", "v1.5.7-0.20261121034610-498c7b0d1ce9", &Release{Tag: "v1.5.8"}, true},
 		{"dev never updates to edge sha", "dev", &Release{Tag: "main-bbbbbbb"}, false},
 	}
 	for _, tt := range tests {

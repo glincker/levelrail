@@ -1,6 +1,13 @@
 import type { ReactNode } from 'react'
 import { Link } from '@tanstack/react-router'
 import { useTranslation } from 'react-i18next'
+import {
+  ContainerRegistryGlassIcon,
+  DatabaseGlassIcon,
+  PlusGlassIcon,
+  ServerGlassIcon,
+  WaypointsGlassIcon,
+} from '@thesvg/ui-react'
 import { StatusPill } from '@/components/kit'
 import { Badge } from '@/components/ui/badge'
 import { buttonVariants } from '@/components/ui/button'
@@ -9,8 +16,22 @@ import { useGitSource } from '../../queries/gitSources'
 import type { AppDetail } from '../../types/appDetail'
 import type { ReconcileCondition } from '../../types/deploy'
 import type { DeployAttempt } from '../../types/deployAttempt'
-import { Group } from '../pages/SiteWiring'
-import { TLS_DOT } from '../pages/tlsDot'
+import {
+  DOT,
+  TLS_DOT,
+  tlsTone,
+  worstTone,
+  type WireTone,
+} from '../pages/tlsDot'
+import {
+  CenterWires,
+  EmptyRow,
+  Group,
+  ToneChip,
+  WIRING_COLUMN,
+  WIRING_GRID,
+  WireItem,
+} from '../pages/wiringKit'
 import { linkedDatabases, registryHost } from './wiringModel'
 import { deriveHeroStatus } from './heroStatus'
 
@@ -27,25 +48,43 @@ function EmptyLink({
   name,
 }: Readonly<{ text: string; action: string; to: AppTab; name: string }>) {
   return (
-    <div className="flex flex-wrap items-center gap-x-2 gap-y-0.5">
-      <p className="text-xs text-muted-foreground">{text}</p>
-      <Link
-        to={to}
-        params={{ name }}
-        className={buttonVariants({ variant: 'outline', size: 'xs' })}
-      >
-        {action}
-      </Link>
-    </div>
+    <EmptyRow
+      text={text}
+      action={action}
+      actionNode={
+        <Link
+          to={to}
+          params={{ name }}
+          aria-label={action}
+          title={action}
+          className={buttonVariants({ variant: 'outline', size: 'icon-xs' })}
+        >
+          <PlusGlassIcon aria-hidden="true" />
+        </Link>
+      }
+    />
   )
+}
+
+/** Group open state is remembered per app. */
+function key(name: string, group: string): string {
+  return `lr.wiring.app.${name}.${group}`
 }
 
 function Domains({ app }: Readonly<{ app: AppDetail }>) {
   const { t } = useTranslation('appOverview')
   const certs = useCertificates().data ?? []
   const domains = app.domains ?? []
+  const tones = domains.map((d) =>
+    tlsTone(certs.find((c) => c.domain === d)?.status),
+  )
   return (
-    <Group title={t('wiring.domains')} count={domains.length}>
+    <Group
+      title={t('wiring.domains')}
+      count={domains.length}
+      tone={worstTone(tones)}
+      storageKey={key(app.name, 'domains')}
+    >
       {domains.length === 0 ? (
         <EmptyLink
           text={t('wiring.noDomains')}
@@ -55,22 +94,28 @@ function Domains({ app }: Readonly<{ app: AppDetail }>) {
         />
       ) : (
         <ul className="space-y-1">
-          {domains.slice(0, SHOWN_DOMAINS).map((d) => {
+          {domains.slice(0, SHOWN_DOMAINS).map((d, i) => {
             const cert = certs.find((c) => c.domain === d)
             return (
               <li key={d} className="flex min-w-0 items-center gap-1.5 text-xs">
                 <span
                   aria-hidden="true"
-                  className={`size-1.5 shrink-0 rounded-full ${cert ? (TLS_DOT[cert.status] ?? 'bg-muted-foreground/50') : 'bg-muted-foreground/50'}`}
+                  className={`size-1.5 shrink-0 rounded-full ${cert ? (TLS_DOT[cert.status] ?? DOT.warn) : DOT.warn}`}
                 />
-                <span className="min-w-0 flex-1 truncate font-mono" title={d}>
+                <a
+                  href={`https://${d}`}
+                  target="_blank"
+                  rel="noreferrer"
+                  title={d}
+                  className="min-w-0 flex-1 truncate font-mono underline-offset-2 hover:underline focus-visible:underline"
+                >
                   {d}
-                </span>
-                <span className="shrink-0 text-muted-foreground">
+                </a>
+                <ToneChip tone={tones[i] ?? 'warn'}>
                   {t(`wiring.tls.${cert?.status ?? 'unknown'}`, {
                     defaultValue: t('wiring.tls.unknown'),
                   })}
-                </span>
+                </ToneChip>
               </li>
             )
           })}
@@ -95,7 +140,12 @@ function Storage({ app }: Readonly<{ app: AppDetail }>) {
   const volumes = app.volumes ?? []
   const total = dbs.length + volumes.length
   return (
-    <Group title={t('wiring.storage')} count={total}>
+    <Group
+      title={t('wiring.storage')}
+      count={total}
+      tone={total > 0 ? 'ok' : 'off'}
+      storageKey={key(app.name, 'storage')}
+    >
       {total === 0 ? (
         <EmptyLink
           text={t('wiring.noStorage')}
@@ -138,7 +188,12 @@ function Env({ app }: Readonly<{ app: AppDetail }>) {
   const vars = Object.keys(app.env ?? {}).length
   const secrets = app.secret_env?.length ?? 0
   return (
-    <Group title={t('wiring.env')} count={vars + secrets}>
+    <Group
+      title={t('wiring.env')}
+      count={vars + secrets}
+      tone={vars + secrets > 0 ? 'ok' : 'off'}
+      storageKey={key(app.name, 'env')}
+    >
       {vars + secrets === 0 ? (
         <EmptyLink
           text={t('wiring.noEnv')}
@@ -153,6 +208,14 @@ function Env({ app }: Readonly<{ app: AppDetail }>) {
       )}
     </Group>
   )
+}
+
+const CENTER_TONE: Record<string, WireTone> = {
+  success: 'ok',
+  info: 'ok',
+  accent: 'ok',
+  warning: 'warn',
+  danger: 'bad',
 }
 
 function Center({
@@ -177,7 +240,7 @@ function Center({
     serverOutcome,
   })
   return (
-    <div className="min-w-0 space-y-2 rounded-lg border border-border bg-muted/30 p-3">
+    <div className="relative min-w-0 space-y-2 rounded-lg border border-border bg-muted/30 p-3">
       <div className="flex flex-wrap items-center justify-between gap-2">
         <h3 className="truncate text-sm font-semibold">{app.name}</h3>
         <StatusPill
@@ -202,23 +265,32 @@ function Center({
       <Link
         to="/apps/$name/deploy-settings"
         params={{ name: app.name }}
-        className={buttonVariants({ variant: 'ghost', size: 'xs' })}
+        className={buttonVariants({ size: 'xs' })}
       >
         {t('wiring.openSettings')}
       </Link>
+      <CenterWires tone={CENTER_TONE[status.tone] ?? 'off'} />
     </div>
   )
 }
 
-function OutRow({
-  label,
+function LabelLink({
+  to,
+  name,
   children,
-}: Readonly<{ label: string; children: ReactNode }>) {
+}: Readonly<{
+  to: AppTab | '/apps/$name/deploy-settings'
+  name: string
+  children: ReactNode
+}>) {
   return (
-    <div className="flex min-w-0 items-center justify-between gap-2 text-xs">
-      <span className="font-medium">{label}</span>
-      <span className="min-w-0 truncate text-muted-foreground">{children}</span>
-    </div>
+    <Link
+      to={to}
+      params={{ name }}
+      className="max-w-full truncate rounded font-medium underline-offset-2 hover:underline focus-visible:ring-2 focus-visible:ring-ring"
+    >
+      {children}
+    </Link>
   )
 }
 
@@ -227,39 +299,86 @@ function Outbound({ app }: Readonly<{ app: AppDetail }>) {
   const dbs = linkedDatabases(app)
   const deps = app.depends_on ?? []
   const registry = registryHost(app.image)
+  const nodeTone: WireTone = app.node_name
+    ? app.node_offline
+      ? 'bad'
+      : 'ok'
+    : 'off'
   return (
-    <div className="min-w-0 space-y-1.5">
-      <h3 className="text-xs font-medium">{t('wiring.outTitle')}</h3>
-      <OutRow label={t('wiring.databasesOut')}>
-        {dbs.length === 0 ? (
-          t('wiring.none')
-        ) : (
-          <span className="flex flex-wrap justify-end gap-x-2">
-            {dbs.map((d) => (
-              <Link
-                key={d}
-                to="/databases/$name"
-                params={{ name: d }}
-                className="text-foreground underline underline-offset-2"
-              >
-                {d}
-              </Link>
-            ))}
-          </span>
-        )}
-      </OutRow>
+    <div className={WIRING_COLUMN}>
+      <h3 className="sr-only">{t('wiring.outTitle')}</h3>
+      <WireItem
+        tone={dbs.length > 0 ? 'ok' : 'off'}
+        icon={<DatabaseGlassIcon />}
+        label={
+          <LabelLink to="/apps/$name/volumes" name={app.name}>
+            {t('wiring.databasesOut')}
+          </LabelLink>
+        }
+        value={
+          dbs.length === 0 ? undefined : (
+            <span className="flex flex-wrap gap-x-2">
+              {dbs.map((d) => (
+                <Link
+                  key={d}
+                  to="/databases/$name"
+                  params={{ name: d }}
+                  className="text-foreground underline underline-offset-2"
+                >
+                  {d}
+                </Link>
+              ))}
+            </span>
+          )
+        }
+        chip={dbs.length > 0 ? t('wiring.connected') : t('wiring.none')}
+      />
       {deps.length > 0 ? (
-        <OutRow label={t('wiring.dependsOn')}>{deps.join(', ')}</OutRow>
+        <WireItem
+          tone="ok"
+          icon={<WaypointsGlassIcon />}
+          label={
+            <LabelLink to="/apps/$name/deploy-settings" name={app.name}>
+              {t('wiring.dependsOn')}
+            </LabelLink>
+          }
+          value={deps.join(', ')}
+          chip={t('wiring.connected')}
+        />
       ) : null}
-      <OutRow label={t('wiring.node')}>
-        {app.node_name
-          ? `${app.node_name}${app.node_offline ? ` (${t('wiring.offline')})` : ''}`
-          : t('wiring.noNode')}
-      </OutRow>
+      <WireItem
+        tone={nodeTone}
+        icon={<ServerGlassIcon />}
+        label={
+          <LabelLink to="/apps/$name/deploy-settings" name={app.name}>
+            {t('wiring.node')}
+          </LabelLink>
+        }
+        value={
+          app.node_name
+            ? `${app.node_name}${app.node_offline ? ` (${t('wiring.offline')})` : ''}`
+            : t('wiring.noNode')
+        }
+        chip={
+          app.node_name
+            ? app.node_offline
+              ? t('wiring.offline')
+              : t('wiring.connected')
+            : t('wiring.none')
+        }
+      />
       {registry ? (
-        <OutRow label={t('wiring.registry')}>
-          <span className="font-mono">{registry}</span>
-        </OutRow>
+        <WireItem
+          tone="ok"
+          icon={<ContainerRegistryGlassIcon />}
+          label={
+            <LabelLink to="/apps/$name/deploy-settings" name={app.name}>
+              {t('wiring.registry')}
+            </LabelLink>
+          }
+          value={<span className="font-mono">{registry}</span>}
+          chip={t('wiring.connected')}
+        />
       ) : null}
     </div>
   )
@@ -286,20 +405,18 @@ export function AppWiring({
       <h2 id="app-wiring-title" className="text-sm font-semibold">
         {t('wiring.title')}
       </h2>
-      <div className="grid gap-3 @xl:grid-cols-[minmax(0,1fr)_1.25rem_minmax(0,1.1fr)_1.25rem_minmax(0,1fr)] @xl:items-center">
-        <div className="min-w-0 space-y-1">
+      <div className={WIRING_GRID}>
+        <div className={WIRING_COLUMN}>
           <Domains app={app} />
           <Storage app={app} />
           <Env app={app} />
         </div>
-        <span aria-hidden="true" className="hidden h-px bg-border @xl:block" />
         <Center
           app={app}
           conditions={conditions}
           latest={latest}
           serverOutcome={serverOutcome}
         />
-        <span aria-hidden="true" className="hidden h-px bg-border @xl:block" />
         <Outbound app={app} />
       </div>
     </section>

@@ -481,5 +481,24 @@
     "restoreCancel": "キャンセル",
     "restoreClose": "閉じる",
     "restoreAccepted": "リストアを開始しました。安全用ダンプ: {{id}}。バックグラウンドで実行されるため、結果は、実行履歴と監査ログで確認してください。"
+  },
+  "sftpTarget": {
+    "host": "サーバー",
+    "path": "リモートディレクトリ",
+    "pathHint": "相対パスは SSH ユーザーのログインディレクトリから始まります。.. を含むパスは拒否されます。",
+    "username": "SSH ユーザー名",
+    "auth": "認証方式",
+    "authPassword": "パスワード",
+    "authKey": "秘密鍵",
+    "password": "パスワード",
+    "privateKey": "秘密鍵(PEM または OpenSSH 形式)",
+    "passphrase": "鍵のパスフレーズ(任意)",
+    "hostKeyTitle": "サーバーのホスト鍵",
+    "hostKeyHint": "Levelrail は、ここで固定した鍵と一致するサーバーにのみ接続します。鍵を取得し、サーバーの管理者から受け取ったフィンガープリントと照合してください。",
+    "fetchKey": "ホスト鍵を取得",
+    "fetching": "取得中...",
+    "keyType": "鍵の種類",
+    "fingerprint": "フィンガープリント",
+    "confirm": "このフィンガープリントをサーバー側で確認しました"
   }
 }

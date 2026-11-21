@@ -4,6 +4,7 @@ import { BrandIcon, isBrandIconName } from '../BrandIcon'
 // Preset ids that do not match a brand mark name one to one.
 const PRESET_LOGOS: Record<string, string> = {
   'grafana-cloud': 'grafana',
+  'grafana-loki': 'grafana',
   'otlp-http': 'opentelemetry',
 }
 

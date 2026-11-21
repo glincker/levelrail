@@ -1405,6 +1405,7 @@ Endpoints for:
 | GET | /api/v1/static-sites/{name}/preset | AbilityRead | handleGetStaticSitePreset |
 | PUT | /api/v1/static-sites/{name}/preset | AbilityWrite | handlePutStaticSitePreset |
 | POST | /api/v1/backup-targets/{id}/drill | AbilityWriteSensitive | handleDrillBackupTarget |
+| POST | /api/v1/backup-targets/sftp-host-key | AbilityWriteSensitive | handleScanSFTPHostKey |
 
 ## Built-in Container Registry
 

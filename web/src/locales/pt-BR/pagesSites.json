@@ -638,7 +638,9 @@
       "hook": "Hook de deploy",
       "tokens": "Tokens de deploy para CI",
       "tokensActive": "{{count}} ativos",
-      "none": "Nenhum"
+      "none": "Nenhum",
+      "connect": "Conectar",
+      "connected": "Conectado"
     },
     "previews": {
       "title": "Previews recentes",

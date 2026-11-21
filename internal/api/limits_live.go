@@ -85,6 +85,18 @@ func (rt *Router) attachGuardSources() {
 			MaxDepth:      rs.Limit(ctx, runtimesettings.KeyBackupWebDAVMaxDepth),
 		}
 	})
+	backup.SetSFTPSource(func() backup.SFTPSettings {
+		ctx, rs := context.Background(), rt.runtimeSettings
+		return backup.SFTPSettings{
+			AllowPrivate: rs.Bool(ctx, runtimesettings.KeyBackupSFTPAllowPrivate),
+			Connect:      rs.Duration(ctx, runtimesettings.KeyBackupSFTPConnectTimeout),
+			Idle:         rs.Duration(ctx, runtimesettings.KeyBackupSFTPIdleTimeout),
+			MaxEntries:   rs.Limit(ctx, runtimesettings.KeyBackupSFTPMaxEntries),
+			MaxDepth:     rs.Limit(ctx, runtimesettings.KeyBackupSFTPMaxDepth),
+			MaxConns:     rs.Limit(ctx, runtimesettings.KeyBackupSFTPMaxConns),
+			MaxPerClient: 8,
+		}
+	})
 	models.SetHFLimitSource(func() (time.Duration, int64) {
 		sec := rt.runtimeSettings.Limit(context.Background(), runtimesettings.KeyHFTimeoutSeconds)
 		return time.Duration(sec) * time.Second, int64(rt.runtimeSettings.Limit(context.Background(), runtimesettings.KeyHFMaxResponseBytes))

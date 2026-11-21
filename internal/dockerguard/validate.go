@@ -81,6 +81,7 @@ func (p Policy) checkCaps(caps []string, grant docker.CreateDeclaration) []Viola
 		switch {
 		case containsCap(p.AllowedCaps, c):
 		case containsCap(GrantableCaps, c) && containsCap(grant.CapAdd, c):
+		case containsCap(EngineDeclaredCaps, c) && containsCap(grant.CapAdd, c):
 		default:
 			out = append(out, violation(RuleCapAdd, "HostConfig.CapAdd %s is outside the hardening profile", c))
 		}

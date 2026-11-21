@@ -78,6 +78,13 @@ func (r Routed) Upload(ctx context.Context, dest Destination, key string, rd io.
 		}
 		return w.Upload(ctx, key, rd)
 	}
+	if dest.IsSFTP() {
+		c, err := newSFTP(dest)
+		if err != nil {
+			return err
+		}
+		return c.Upload(ctx, key, rd)
+	}
 	if !dest.IsAgent() {
 		return S3Uploader{}.Upload(ctx, dest, key, rd, size)
 	}
@@ -102,6 +109,13 @@ func (r Routed) Download(ctx context.Context, dest Destination, key string) (io.
 			return nil, err
 		}
 		return w.Download(ctx, key, 0)
+	}
+	if dest.IsSFTP() {
+		c, err := newSFTP(dest)
+		if err != nil {
+			return nil, err
+		}
+		return c.Download(ctx, key)
 	}
 	if !dest.IsAgent() {
 		return S3Downloader{}.Download(ctx, dest, key)
@@ -129,6 +143,13 @@ func (r Routed) Delete(ctx context.Context, dest Destination, key string) error 
 		}
 		return w.Delete(ctx, key)
 	}
+	if dest.IsSFTP() {
+		c, err := newSFTP(dest)
+		if err != nil {
+			return err
+		}
+		return c.Delete(ctx, key)
+	}
 	if !dest.IsAgent() {
 		return S3Deleter{}.Delete(ctx, dest, key)
 	}
@@ -154,6 +175,13 @@ func (r Routed) List(ctx context.Context, dest Destination, prefix string) ([]Re
 		}
 		return w.List(ctx, prefix)
 	}
+	if dest.IsSFTP() {
+		c, err := newSFTP(dest)
+		if err != nil {
+			return nil, err
+		}
+		return c.List(ctx, prefix)
+	}
 	if !dest.IsAgent() {
 		return S3Lister{}.List(ctx, dest, prefix)
 	}
@@ -177,7 +205,7 @@ func (r Routed) Test(ctx context.Context, dest Destination) error {
 	if dest.IsLocal() {
 		return r.localTest(dest)
 	}
-	if dest.IsWebDAV() {
+	if dest.IsWebDAV() || dest.IsSFTP() {
 		_, err := r.Probe(ctx, dest)
 		return err
 	}
@@ -207,7 +235,7 @@ func (r Routed) Test(ctx context.Context, dest Destination) error {
 	return nil
 }
 
-// Probe implements Prober for WebDAV targets; other kinds report only latency.
+// Probe implements Prober for WebDAV and SFTP targets; other kinds report only latency.
 func (r Routed) Probe(ctx context.Context, dest Destination) (TestReport, error) {
 	if dest.IsWebDAV() {
 		w, err := newWebDAV(dest)
@@ -215,6 +243,13 @@ func (r Routed) Probe(ctx context.Context, dest Destination) (TestReport, error)
 			return TestReport{}, err
 		}
 		return w.Probe(ctx)
+	}
+	if dest.IsSFTP() {
+		c, err := newSFTP(dest)
+		if err != nil {
+			return TestReport{}, err
+		}
+		return c.Probe(ctx)
 	}
 	start := time.Now()
 	if err := r.Test(ctx, dest); err != nil {

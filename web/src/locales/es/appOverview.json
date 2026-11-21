@@ -135,7 +135,8 @@
     "replicas_one": "{{count}} réplica",
     "replicas_other": "{{count}} réplicas",
     "buildGit": "Build desde Git",
-    "buildImage": "Imagen"
+    "buildImage": "Imagen",
+    "connected": "Conectado"
   },
   "deploys": {
     "title": "Despliegues",

@@ -236,16 +236,46 @@ func printPagesSite(out io.Writer, s staticSiteDetail) {
 	}
 }
 
-// previousPagesDeploy picks the newest succeeded deploy that is not the live one.
+// previousPagesDeploy follows the production history, not the list order: it returns
+// the content that was live before the current deploy, resolving promote and rollback
+// copies to the deploy they re-published, so a rollback after a promote undoes the promote.
 func previousPagesDeploy(attempts []deployAttemptResource) string {
-	sorted := append([]deployAttemptResource(nil), attempts...)
-	sort.Slice(sorted, func(i, j int) bool { return sorted[i].StartedAt.After(sorted[j].StartedAt) })
-	for _, a := range sorted {
-		if a.Status == "succeeded" && !a.Live {
-			return a.ID
+	var done []deployAttemptResource
+	for _, a := range attempts {
+		if a.Status == "succeeded" {
+			done = append(done, a)
+		}
+	}
+	sort.Slice(done, func(i, j int) bool { return done[i].StartedAt.After(done[j].StartedAt) })
+	cur := -1
+	for i, a := range done {
+		if a.Live {
+			cur = i
+			break
+		}
+	}
+	if cur < 0 {
+		if len(done) == 0 {
+			return ""
+		}
+		cur = 0
+	}
+	current := pagesDeployContent(done[cur])
+	for _, a := range done[cur+1:] {
+		if c := pagesDeployContent(a); c != current {
+			return c
 		}
 	}
 	return ""
+}
+
+// pagesDeployContent is the deploy whose files a row serves: a promote or rollback copy
+// names its source in Reason, every other row serves its own files.
+func pagesDeployContent(a deployAttemptResource) string {
+	if src, ok := strings.CutPrefix(strings.TrimSpace(a.Reason), "RollbackTo:"); ok && strings.TrimSpace(src) != "" {
+		return strings.TrimSpace(src)
+	}
+	return a.ID
 }
 
 func runPagesRollback(prog string, args []string, stdout, stderr io.Writer, lookupEnv func(string) (string, bool)) int {

@@ -401,7 +401,8 @@ func (rt *Router) handleListDeployAttempts(w http.ResponseWriter, r *http.Reques
 		}
 		res.ChainPosition = chainPos(a.ID)
 		res.DeployURL = deployURLs[a.ID]
-		res.Live = liveImage != "" && a.ID == liveID && a.Image == liveImage
+		// A static promote or rollback copy keeps the older deploy's image, so live is the newest success.
+		res.Live = liveImage != "" && a.ID == liveID && (a.Image == liveImage || isStaticAttempt(a))
 		if held[a.ID] && (!res.Live || isStaticAttempt(a)) {
 			res.Live = false
 			res.PublishState = publishStateHeld

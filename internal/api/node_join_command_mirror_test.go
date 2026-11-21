@@ -31,7 +31,8 @@ func TestBuildJoinCommandsRegistryMirror(t *testing.T) {
 }
 
 func TestBuildJoinCommandsMacOSFlag(t *testing.T) {
-	t.Cleanup(func() { experimental.Set() })
+	// Restore the package default (all on), not an empty set, or later tests see gated routes off.
+	t.Cleanup(enableAllExperimental)
 	rt, _ := newTestRouter(t)
 
 	experimental.Set()

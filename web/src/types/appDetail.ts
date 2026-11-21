@@ -8,6 +8,7 @@
 
 import type { PublishedPort } from './publishedPort'
 import type { EnvVarMeta } from '../lib/envRows'
+import type { PreviewCardMeta } from './preview'
 
 export interface ServiceResources {
   memory_bytes?: number
@@ -82,6 +83,9 @@ export interface LogDrain {
 // never-empty/zero value), so both are required here too, not optional.
 export interface AppDetail {
   name: string
+  // Response-only classification, see AppKind.
+  app_kind?: AppKind
+  kind_source?: AppKindSource
   /** When the held previous release is removed; absent when none is held. */
   previous_release_held_until?: string
   // Name of the stack managing this app, absent when none or iac is off.
@@ -297,7 +301,25 @@ export interface AppBindMount {
 // optional field bolted onto AppDetail: GET /api/v1/apps/{name} never
 // sends `status`, so callers of that endpoint should never see it typed
 // as possibly-present.
+// Mirrors internal/api/app_kind.go. `probe` is reserved: no probe content
+// type is stored, so today the source is spec or heuristic.
+export type AppKind = 'web' | 'api' | 'worker' | 'cron' | 'database' | 'static'
+export type AppKindSource = 'spec' | 'probe' | 'heuristic'
+
+// Compact card data from already loaded server state. Restart counts and
+// database size or connections are not collected cheaply, so they are absent.
+export interface AppListSummary {
+  ready?: 'true' | 'false' | 'unknown'
+  last_deploy_at?: string
+  replicas?: number
+  jobs?: number
+  next_run_at?: string
+  last_run_at?: string
+  last_run_status?: string
+}
+
 export interface AppListEntry extends AppDetail {
+  summary?: AppListSummary
   status: AppStatusSummary
   // Resolved name of environment_id, empty when the app has none.
   environment_name?: string
@@ -305,6 +327,8 @@ export interface AppListEntry extends AppDetail {
   description?: string
   // Present only when sleep-when-idle is on for the app.
   sleep?: { idle_minutes: number; sleeping: boolean; since?: string }
+  // Latest cached thumbnail URL or text card metadata, absent when none.
+  preview?: { image_url?: string; card?: PreviewCardMeta }
 }
 
 // Mirrors internal/api/apps.go's appStatusSummary exactly. `variant`

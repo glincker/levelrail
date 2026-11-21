@@ -116,6 +116,10 @@ The deploy history shows a "No preview" note with the reason when a capture does
 
 A failed recapture never replaces a preview that already exists (image or card), and a card never replaces a site image or screenshot.
 
+## How cards load
+
+The apps list never loads your sites live. `GET /api/v1/apps` carries each app's latest thumbnail URL (or card text) in a `preview` field, so one request describes every card. A card fetches its image only once it scrolls into view. The image URL carries the capture version, and the server answers it with an `ETag`, `Cache-Control: private, max-age=31536000, immutable` (with `?v=`) and Range support, so the browser downloads each deploy's thumbnail once. If the image is missing the card shows the text card, then a plain placeholder. Thumbnails stay JPEG.
+
 ## Retention and cleanup
 
 These rules apply to every source alike: screenshots, site images and cards.

@@ -499,5 +499,24 @@
     "restoreCancel": "Annuler",
     "restoreClose": "Fermer",
     "restoreAccepted": "Restauration démarrée. Dump de sécurité : {{id}}. Elle s'exécute en arrière-plan, consultez donc l'historique des exécutions et le journal d'audit pour le résultat."
+  },
+  "sftpTarget": {
+    "host": "Serveur",
+    "path": "Répertoire distant",
+    "pathHint": "Les chemins relatifs partent du répertoire de connexion de l'utilisateur SSH. Les chemins contenant .. sont refusés.",
+    "username": "Nom d'utilisateur SSH",
+    "auth": "Authentification",
+    "authPassword": "Mot de passe",
+    "authKey": "Clé privée",
+    "password": "Mot de passe",
+    "privateKey": "Clé privée (format PEM ou OpenSSH)",
+    "passphrase": "Phrase secrète de la clé (facultatif)",
+    "hostKeyTitle": "Clé d'hôte du serveur",
+    "hostKeyHint": "Levelrail ne se connecte qu'à un serveur dont la clé correspond à celle épinglée ici. Récupérez la clé, puis comparez son empreinte avec celle fournie par le propriétaire du serveur.",
+    "fetchKey": "Récupérer la clé d'hôte",
+    "fetching": "Récupération...",
+    "keyType": "Type de clé",
+    "fingerprint": "Empreinte",
+    "confirm": "J'ai vérifié cette empreinte auprès du serveur"
   }
 }

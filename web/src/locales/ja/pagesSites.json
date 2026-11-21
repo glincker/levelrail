@@ -630,7 +630,9 @@
       "hook": "デプロイフック",
       "tokens": "CIデプロイトークン",
       "tokensActive": "{{count}}件が有効",
-      "none": "なし"
+      "none": "なし",
+      "connect": "接続",
+      "connected": "接続済み"
     },
     "previews": {
       "title": "最近のプレビュー",

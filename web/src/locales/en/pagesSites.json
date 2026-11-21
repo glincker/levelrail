@@ -634,7 +634,9 @@
       "hook": "Deploy hook",
       "tokens": "CI deploy tokens",
       "tokensActive": "{{count}} active",
-      "none": "None"
+      "none": "None",
+      "connect": "Connect",
+      "connected": "Connected"
     },
     "previews": {
       "title": "Recent previews",

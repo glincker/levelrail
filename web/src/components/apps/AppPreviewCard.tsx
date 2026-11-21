@@ -1,3 +1,4 @@
+import { useState } from 'react'
 import { Link } from '@tanstack/react-router'
 import { useTranslation } from 'react-i18next'
 import { GlobeGlassIcon } from '@thesvg/ui-react'
@@ -8,8 +9,11 @@ import type { AppListEntry } from '../../types/appDetail'
 import { StatusDot } from '../AppRow'
 import { AppRowActions } from '../AppRowActions'
 import { ManagedByStackTag } from '../stacks/ManagedByStackNotice'
-import { PreviewFrame } from '../pages/SitePreview'
+import { PreviewCard } from '../PreviewCard'
+import { SkeletonLine } from '../kit'
 import { FailureReason } from './AppFailure'
+import { AppKindCard } from './AppKindCard'
+import { isBackendKind } from '../../lib/appKind'
 import { AppLogo } from './AppMetaChips'
 import { LastDeployCell } from './AppMetricCells'
 import { useAppRowMetrics } from './useAppRowMetrics'
@@ -29,23 +33,60 @@ function PreviewPlaceholder({ app }: Readonly<{ app: AppListEntry }>) {
   )
 }
 
-function Thumb({
-  app,
-  url,
-}: Readonly<{ app: AppListEntry; url: string | null }>) {
+function Thumb({ app }: Readonly<{ app: AppListEntry }>) {
+  const kind = app.app_kind
+  if (isBackendKind(kind)) {
+    return (
+      <div className="relative aspect-video w-full overflow-hidden border-b border-border">
+        <AppKindCard app={app} kind={kind} />
+      </div>
+    )
+  }
+  return <WebThumb app={app} />
+}
+
+function WebThumb({ app }: Readonly<{ app: AppListEntry }>) {
   const { ref, seen } = useInView<HTMLDivElement>()
-  // Only a healthy site is worth loading; a failing one would show an error page.
-  const live = url !== null && app.status.variant === 'success'
+  const [failedUrl, setFailedUrl] = useState<string | null>(null)
+  const [loadedUrl, setLoadedUrl] = useState<string | null>(null)
+  const imageUrl = app.preview?.image_url
+  const card = app.preview?.card
+  // The URL carries the capture version, so the browser cache serves it
+  // after the first load of each deploy.
+  const showImage = seen && !!imageUrl && failedUrl !== imageUrl
+  const showCard = !showImage && !!card && (!imageUrl || failedUrl === imageUrl)
+  const showPlaceholder = !showImage && !showCard
   return (
     <div
       ref={ref}
-      className="relative h-32 w-full overflow-hidden border-b border-border bg-muted/40"
+      className="relative aspect-video w-full overflow-hidden border-b border-border bg-muted/40"
     >
-      {live && seen ? (
-        <PreviewFrame key={url} url={url} name={app.name} device="card" />
-      ) : (
-        <PreviewPlaceholder app={app} />
-      )}
+      {showImage ? (
+        <>
+          <img
+            src={imageUrl}
+            alt=""
+            width={640}
+            height={360}
+            loading="lazy"
+            decoding="async"
+            className="size-full object-cover object-top"
+            onLoad={() => setLoadedUrl(imageUrl)}
+            onError={() => setFailedUrl(imageUrl)}
+          />
+          {loadedUrl !== imageUrl ? (
+            <div
+              className="absolute inset-0"
+              aria-hidden="true"
+              data-testid="card-thumb-skeleton"
+            >
+              <SkeletonLine className="h-full rounded-none" />
+            </div>
+          ) : null}
+        </>
+      ) : null}
+      {showCard ? <PreviewCard appName={app.name} meta={card} /> : null}
+      {showPlaceholder ? <PreviewPlaceholder app={app} /> : null}
     </div>
   )
 }
@@ -70,7 +111,7 @@ export function AppPreviewCard({
     "truncate text-sm font-semibold after:absolute after:inset-0 after:content-[''] focus-visible:outline-none"
   return (
     <li className={cn(CARD_CLASS, failing && 'border-destructive/40')}>
-      <Thumb app={app} url={domain ? `https://${domain}` : null} />
+      <Thumb app={app} />
       <div className="flex flex-col gap-1.5 p-3">
         <div className="flex items-center gap-2">
           <StatusDot status={app.status} />

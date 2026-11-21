@@ -110,3 +110,15 @@ func TestElevatedCapListsAgree(t *testing.T) {
 		t.Error("CHOWN is a Review cap")
 	}
 }
+
+func TestSetpcapCannotBeGrantedByTemplate(t *testing.T) {
+	for _, class := range []string{CapClassCapAdd, CapClassNetAdmin} {
+		m := Manifest{Capabilities: []ManifestCapability{{Class: class, Service: "web", Reason: "r", Caps: []string{"SETPCAP"}}}}
+		if errs := m.validateCapabilityShape(); len(errs) == 0 {
+			t.Errorf("%s: Validate accepted SETPCAP", class)
+		}
+		if _, err := m.CapabilityGrants(CapabilityPolicy{Enabled: map[string]bool{CapClassNetAdmin: true}}); class == CapClassCapAdd && err == nil {
+			t.Error("CapabilityGrants granted SETPCAP under cap_add")
+		}
+	}
+}

@@ -294,6 +294,14 @@ func edgeSHA(v string) (string, bool) {
 	return sha, ok && sha != ""
 }
 
+// goPseudoSuffix matches the "-0.<timestamp>-<sha>" tail Go stamps on a build
+// of an untagged commit (v1.5.7-0.20261121034610-498c7b0d1ce9).
+var goPseudoSuffix = regexp.MustCompile(`-(?:[0-9A-Za-z.]+\.)?0\.\d{14}-[0-9a-f]{12}$`)
+
+// trimPseudo drops that tail so a build cut after a release branch squash is
+// not called older than the release it carries (semver ranks v1.5.7-0.x below v1.5.7).
+func trimPseudo(v string) string { return goPseudoSuffix.ReplaceAllString(v, "") }
+
 // UpdateAvailable reports whether latest represents a newer build than
 // currentVersion. A "dev" build never reports an update available:
 // there is no meaningful newer build to compare an unreleased build
@@ -308,7 +316,7 @@ func UpdateAvailable(currentVersion string, latest *Release) bool {
 			return !strings.HasPrefix(cur, want) && !strings.HasPrefix(want, cur)
 		}
 	}
-	cmp, ok := semver.Compare(currentVersion, latest.Tag)
+	cmp, ok := semver.Compare(trimPseudo(currentVersion), latest.Tag)
 	if !ok {
 		return latest.Tag != currentVersion
 	}

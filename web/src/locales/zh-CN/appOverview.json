@@ -134,7 +134,8 @@
     "dependsOn": "依赖于",
     "replicas_other": "{{count}} 个副本",
     "buildGit": "Git 构建",
-    "buildImage": "镜像"
+    "buildImage": "镜像",
+    "connected": "已连接"
   },
   "deploys": {
     "title": "部署记录",

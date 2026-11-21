@@ -490,5 +490,24 @@
     "restoreCancel": "Cancelar",
     "restoreClose": "Cerrar",
     "restoreAccepted": "Restauración iniciada. Copia de seguridad previa: {{id}}. Se ejecuta en segundo plano, revisa el historial y el registro de auditoría para ver el resultado."
+  },
+  "sftpTarget": {
+    "host": "Servidor",
+    "path": "Directorio remoto",
+    "pathHint": "Las rutas relativas empiezan en el directorio de inicio del usuario SSH. Se rechazan las rutas que contienen ..",
+    "username": "Usuario SSH",
+    "auth": "Autenticación",
+    "authPassword": "Contraseña",
+    "authKey": "Clave privada",
+    "password": "Contraseña",
+    "privateKey": "Clave privada (formato PEM u OpenSSH)",
+    "passphrase": "Frase de contraseña de la clave (opcional)",
+    "hostKeyTitle": "Clave de host del servidor",
+    "hostKeyHint": "Levelrail solo se conecta a un servidor cuya clave coincida con la que fijas aquí. Obtén la clave y compara su huella con la que te dio el responsable del servidor.",
+    "fetchKey": "Obtener clave de host",
+    "fetching": "Obteniendo...",
+    "keyType": "Tipo de clave",
+    "fingerprint": "Huella",
+    "confirm": "He comprobado esta huella con el servidor"
   }
 }

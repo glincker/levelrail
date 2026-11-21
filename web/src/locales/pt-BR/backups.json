@@ -499,5 +499,24 @@
     "restoreCancel": "Cancelar",
     "restoreClose": "Fechar",
     "restoreAccepted": "Restauração iniciada. Dump de segurança: {{id}}. Ela roda em segundo plano, então confira o histórico de execuções e o log de auditoria para ver o resultado."
+  },
+  "sftpTarget": {
+    "host": "Servidor",
+    "path": "Diretório remoto",
+    "pathHint": "Caminhos relativos começam no diretório de login do usuário SSH. Caminhos com .. são recusados.",
+    "username": "Usuário SSH",
+    "auth": "Autenticação",
+    "authPassword": "Senha",
+    "authKey": "Chave privada",
+    "password": "Senha",
+    "privateKey": "Chave privada (formato PEM ou OpenSSH)",
+    "passphrase": "Frase secreta da chave (opcional)",
+    "hostKeyTitle": "Chave de host do servidor",
+    "hostKeyHint": "O Levelrail só se conecta a um servidor cuja chave corresponda à que você fixa aqui. Obtenha a chave e compare a impressão digital com a que o responsável pelo servidor lhe passou.",
+    "fetchKey": "Obter chave de host",
+    "fetching": "Obtendo...",
+    "keyType": "Tipo de chave",
+    "fingerprint": "Impressão digital",
+    "confirm": "Conferi esta impressão digital com o servidor"
   }
 }

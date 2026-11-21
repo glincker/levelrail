@@ -7,6 +7,7 @@ import (
 	"log/slog"
 	"net/http"
 	"net/url"
+	"os"
 	"strconv"
 	"time"
 
@@ -261,9 +262,74 @@ func (rt *Router) handleGetPreviewImage(w http.ResponseWriter, r *http.Request) 
 		rt.internalError(w, "api: open preview image failed", err, slog.String("name", app), slog.String("deployment_id", id))
 		return
 	}
-	w.Header().Set("Content-Type", "image/jpeg")
-	w.Header().Set("Cache-Control", "private, max-age=86400")
-	http.ServeFile(w, r, path)
+	servePreviewImage(w, r, path)
+}
+
+const (
+	previewCacheVersioned = "private, max-age=31536000, immutable"
+	previewCacheDefault   = "private, max-age=86400, stale-while-revalidate=604800"
+)
+
+// servePreviewImage sends the thumbnail with a strong ETag, 304 and Range
+// support. The ?v= URL changes with every capture, so a versioned request is
+// immutable; the route is authenticated, hence always private.
+func servePreviewImage(w http.ResponseWriter, r *http.Request, path string) {
+	f, err := os.Open(path) //nolint:gosec // path comes from the preview FileStore, which validates app and deployment names
+	if err != nil {
+		writeError(w, http.StatusNotFound, "no preview for this deployment")
+		return
+	}
+	defer func() { _ = f.Close() }()
+	info, err := f.Stat()
+	if err != nil || info.IsDir() {
+		writeError(w, http.StatusNotFound, "no preview for this deployment")
+		return
+	}
+	h := w.Header()
+	h.Set("Content-Type", "image/jpeg")
+	h.Set("ETag", `"`+strconv.FormatInt(info.Size(), 16)+"-"+strconv.FormatInt(info.ModTime().UnixNano(), 16)+`"`)
+	if r.URL.Query().Get("v") != "" {
+		h.Set("Cache-Control", previewCacheVersioned)
+	} else {
+		h.Set("Cache-Control", previewCacheDefault)
+	}
+	http.ServeContent(w, r, "", info.ModTime(), f)
+}
+
+// previewCardResource is the list-entry thumbnail: an image URL when a file
+// exists, card metadata otherwise.
+type previewCardResource struct {
+	ImageURL string            `json:"image_url,omitempty"`
+	Card     *preview.CardMeta `json:"card,omitempty"`
+}
+
+// previewLatestLister is optional on PreviewService so one list request can
+// carry every card thumbnail without a query per app.
+type previewLatestLister interface {
+	LatestRenderable(ctx context.Context, apps []string) (map[string]preview.Record, error)
+}
+
+// listPreviewCards returns the latest thumbnail per app, empty when the
+// service is absent or fails (cards then fall back to the placeholder).
+func (rt *Router) listPreviewCards(ctx context.Context, apps []string) map[string]previewCardResource {
+	l, ok := rt.preview.(previewLatestLister)
+	if !ok || len(apps) == 0 {
+		return nil
+	}
+	recs, err := l.LatestRenderable(ctx, apps)
+	if err != nil {
+		rt.logger.Warn("api: latest previews for app list failed", slog.String("error", err.Error()))
+		return nil
+	}
+	out := make(map[string]previewCardResource, len(recs))
+	for app, rec := range recs {
+		res := toPreviewRecordResource(app, rec)
+		if res.ImageURL == "" && res.Meta == nil {
+			continue
+		}
+		out[app] = previewCardResource{ImageURL: res.ImageURL, Card: res.Meta}
+	}
+	return out
 }
 
 // previewImageURLs maps deployment IDs of app to their thumbnail URL. An

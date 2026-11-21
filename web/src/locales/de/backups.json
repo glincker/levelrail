@@ -490,5 +490,24 @@
     "restoreCancel": "Abbrechen",
     "restoreClose": "Schließen",
     "restoreAccepted": "Wiederherstellung gestartet. Sicherheits-Dump: {{id}}. Sie läuft im Hintergrund, prüfen Sie den Ausführungsverlauf und das Audit-Log auf das Ergebnis."
+  },
+  "sftpTarget": {
+    "host": "Server",
+    "path": "Remoteverzeichnis",
+    "pathHint": "Relative Pfade beginnen im Anmeldeverzeichnis des SSH-Benutzers. Pfade mit .. werden abgelehnt.",
+    "username": "SSH-Benutzername",
+    "auth": "Authentifizierung",
+    "authPassword": "Passwort",
+    "authKey": "Privater Schlüssel",
+    "password": "Passwort",
+    "privateKey": "Privater Schlüssel (PEM- oder OpenSSH-Format)",
+    "passphrase": "Passphrase des Schlüssels (optional)",
+    "hostKeyTitle": "Host-Schlüssel des Servers",
+    "hostKeyHint": "Levelrail verbindet sich nur mit einem Server, dessen Schlüssel dem hier festgelegten entspricht. Rufen Sie den Schlüssel ab und vergleichen Sie den Fingerabdruck mit dem, den Sie vom Serverbetreiber erhalten haben.",
+    "fetchKey": "Host-Schlüssel abrufen",
+    "fetching": "Wird abgerufen...",
+    "keyType": "Schlüsseltyp",
+    "fingerprint": "Fingerabdruck",
+    "confirm": "Ich habe diesen Fingerabdruck mit dem Server abgeglichen"
   }
 }

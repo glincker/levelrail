@@ -71,6 +71,29 @@ func (m *Manager) List(ctx context.Context, app string) ([]Record, error) {
 	return recs, nil
 }
 
+// LatestRenderable returns, per requested app, the newest successful record
+// that can draw a card (a file or text card metadata), in one store read.
+func (m *Manager) LatestRenderable(ctx context.Context, apps []string) (map[string]Record, error) {
+	recs, err := m.deps.Store.ListAllPreviewRecords(ctx)
+	if err != nil {
+		return nil, fmt.Errorf("preview: list latest records: %w", err)
+	}
+	want := make(map[string]bool, len(apps))
+	for _, a := range apps {
+		want[a] = true
+	}
+	out := make(map[string]Record, len(apps))
+	for _, r := range recs {
+		if !want[r.App] || r.Status != StatusOK || (!r.HasFile() && r.Meta == "") {
+			continue
+		}
+		if cur, ok := out[r.App]; !ok || r.CapturedAt.After(cur.CapturedAt) {
+			out[r.App] = r
+		}
+	}
+	return out, nil
+}
+
 // OpenImage returns the file path of an app's stored thumbnail. It marks the
 // preview as viewed, at most once per viewedTouchAfter.
 func (m *Manager) OpenImage(ctx context.Context, app, deploymentID string) (string, Record, error) {

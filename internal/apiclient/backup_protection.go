@@ -249,3 +249,10 @@ func (c *Client) ProbeBackupTarget(ctx context.Context, id string) (BackupTarget
 	err := c.do(ctx, http.MethodPost, "/api/v1/backup-targets/"+PathEscape(id)+"/probe", nil, &out)
 	return out, err
 }
+
+// ScanSFTPHostKey calls POST /api/v1/backup-targets/sftp-host-key: it reads the key a server offers, sending no credentials.
+func (c *Client) ScanSFTPHostKey(ctx context.Context, endpoint string) (SFTPHostKeyScan, error) {
+	var out SFTPHostKeyScan
+	err := c.do(ctx, http.MethodPost, "/api/v1/backup-targets/sftp-host-key", map[string]string{"endpoint": endpoint}, &out)
+	return out, err
+}

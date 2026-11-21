@@ -68,5 +68,26 @@
     "empty": "No apps match these filters.",
     "listLabel": "Apps",
     "loading": "Loading apps"
+  },
+  "kind": {
+    "badge": {
+      "api": "API",
+      "worker": "Worker",
+      "cron": "Cron",
+      "database": "Database"
+    },
+    "cardLabel": "{{kind}} card for {{name}}",
+    "ready": {
+      "true": "Ready",
+      "false": "Not ready",
+      "unknown": "Readiness unknown"
+    },
+    "neverDeployed": "Not deployed yet",
+    "replicas_one": "{{count}} replica",
+    "replicas_other": "{{count}} replicas",
+    "nextRun": "Next run",
+    "lastRun": "Last run",
+    "notScheduled": "Not scheduled",
+    "neverRan": "Never ran"
   }
 }

@@ -78,6 +78,8 @@ type orgFixture struct {
 // default org and org A, and seeds org B objects across the tenant lists.
 func newOrgFixture(t *testing.T) *orgFixture {
 	t.Helper()
+	// The probes hit gated routes (environments, mail); do not rely on state an earlier test left.
+	enableAllExperimental()
 	f := &orgFixture{teamFixture: newTeamFixture(t)}
 	ctx := context.Background()
 	// Doctor checks must not touch the real network or resolver, or a slow CI host times the run out.

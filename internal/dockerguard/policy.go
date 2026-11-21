@@ -13,6 +13,11 @@ import (
 // create was declared with them: the egress sidecar's firewall needs these.
 var GrantableCaps = []string{"NET_ADMIN", "NET_RAW"}
 
+// EngineDeclaredCaps are added by Levelrail's own database containers (the
+// setpriv privilege drop needs SETPCAP). Allowed only when the create declares
+// them; not grantable by templates or compose files.
+var EngineDeclaredCaps = []string{"SETPCAP"}
+
 // ReviewTierCaps are the small set a template may declare for the Review
 // tier. They sit inside the hardening profile, so the guard already allows them.
 var ReviewTierCaps = []string{"CHOWN", "DAC_OVERRIDE", "SETUID", "SETGID", "FOWNER"}

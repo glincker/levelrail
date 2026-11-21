@@ -50,6 +50,26 @@
       }
     },
     {
+      "id": "grafana-loki",
+      "name": "Grafana Loki",
+      "description": "Send logs to a Loki push endpoint, Grafana Cloud or self-hosted. Logs only.",
+      "docs_anchor": "grafana-loki",
+      "fields": [
+        {"key": "endpoint", "label": "Loki URL", "type": "url", "required": true, "placeholder": "https://logs-prod-012.grafana.net", "help": "The Loki base URL. /loki/api/v1/push is added when no path is given."},
+        {"key": "user", "label": "Username", "placeholder": "123456", "help": "The Loki user or instance ID for Basic auth. Leave blank when only a tenant header is needed."},
+        {"key": "token", "label": "API token", "secret": true, "help": "The Basic auth password, such as a Grafana Cloud access policy token with logs:write."},
+        {"key": "tenant", "label": "Tenant ID", "placeholder": "tenant-a", "help": "Sent as X-Scope-OrgID. Only for a multi-tenant Loki."}
+      ],
+      "signals": [
+        {"signal": "logs", "kind": "logs_loki", "default": true, "endpoint": "{endpoint}", "headers": {"Authorization": "{authbasic:user:token}", "X-Scope-OrgID": "{tenant}"}}
+      ],
+      "hints": {
+        "401": "Loki rejected the user or token. For Grafana Cloud use the numeric user shown on the Loki details page and a current access policy token.",
+        "403": "The token lacks the logs:write scope or the tenant is not allowed.",
+        "404": "The push path was not found. Use the base URL of your Loki, without /loki/api/v1/push."
+      }
+    },
+    {
       "id": "axiom",
       "name": "Axiom",
       "description": "Send logs and metrics to an Axiom dataset.",

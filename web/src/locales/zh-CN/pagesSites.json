@@ -630,7 +630,9 @@
       "hook": "部署钩子",
       "tokens": "CI 部署令牌",
       "tokensActive": "{{count}} 个有效",
-      "none": "无"
+      "none": "无",
+      "connect": "连接",
+      "connected": "已连接"
     },
     "previews": {
       "title": "最近的预览",
