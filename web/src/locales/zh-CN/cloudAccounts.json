@@ -369,7 +369,10 @@
       "snapshot": "快照",
       "stop": "停止",
       "start": "启动",
-      "adopt": "接管"
+      "adopt": "接管",
+      "clusters": "集群",
+      "autoRestart": "已停止,AWS 将在 {{days}} 天后重启",
+      "deleteSnapshot": "删除快照"
     },
     "ebs": {
       "title": "卷和快照 (EBS)",

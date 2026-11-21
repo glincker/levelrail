@@ -165,18 +165,22 @@ type Cluster struct {
 	MultiAZ, Encrypted                     bool
 	Members                                []string
 	SecretARN, MasterUsername              string
+	AutoRestartAt                          time.Time
 	Tags                                   map[string]string
 }
 
 // Managed reports the ownership tag.
 func (k Cluster) Managed() bool { return k.Tags[ManagedTag] == "true" }
 
-// DescribeDBClusters lists clusters (all pages).
-func (c *Client) DescribeDBClusters(ctx context.Context, region string) ([]Cluster, error) {
+// DescribeDBClusters lists clusters (all pages), or the one named.
+func (c *Client) DescribeDBClusters(ctx context.Context, region string, id ...string) ([]Cluster, error) {
 	var res []Cluster
 	marker := ""
 	for {
 		v := url.Values{}
+		if len(id) > 0 && id[0] != "" {
+			v.Set("DBClusterIdentifier", id[0])
+		}
 		if marker != "" {
 			v.Set("Marker", marker)
 		}
@@ -195,6 +199,7 @@ func (c *Client) DescribeDBClusters(ctx context.Context, region string) ([]Clust
 				Members  []string `xml:"DBClusterMembers>DBClusterMember>DBInstanceIdentifier"`
 				Secret   string   `xml:"MasterUserSecret>SecretArn"`
 				User     string   `xml:"MasterUsername"`
+				Restart  string   `xml:"AutomaticRestartTime"`
 				Tags     []xTag   `xml:"TagList>Tag"`
 			} `xml:"DescribeDBClustersResult>DBClusters>DBCluster"`
 			Marker string `xml:"DescribeDBClustersResult>Marker"`
@@ -205,7 +210,7 @@ func (c *Client) DescribeDBClusters(ctx context.Context, region string) ([]Clust
 		for _, x := range out.Items {
 			res = append(res, Cluster{ID: x.ID, ARN: x.ARN, Engine: x.Engine, EngineVersion: x.Version, Status: x.Status,
 				Endpoint: x.Endpoint, ReaderEndpoint: x.Reader, Port: x.Port, MultiAZ: x.MultiAZ, Encrypted: x.Enc,
-				Members: x.Members, SecretARN: x.Secret, MasterUsername: x.User, Tags: tagMap(x.Tags)})
+				Members: x.Members, SecretARN: x.Secret, MasterUsername: x.User, AutoRestartAt: parseTime(x.Restart), Tags: tagMap(x.Tags)})
 		}
 		if out.Marker == "" {
 			return res, nil
@@ -628,4 +633,125 @@ func (c *Client) CreateCluster(ctx context.Context, in CreateInput) error {
 	sgParams(v, in.SecurityGroupIDs)
 	addTags(v, tags)
 	return c.aws.Query(ctx, Service, in.Region, "CreateDBCluster", version, v, nil)
+}
+
+// MaxStopDays is how long AWS keeps a cluster stopped before it starts it again.
+const MaxStopDays = 7
+
+// requireManagedCluster loads the cluster and refuses unless it carries the ownership tag.
+func (c *Client) requireManagedCluster(ctx context.Context, region, id string) (Cluster, error) {
+	list, err := c.DescribeDBClusters(ctx, region, id)
+	if err != nil {
+		return Cluster{}, err
+	}
+	if len(list) == 0 {
+		return Cluster{}, &awsx.Error{Service: "rds", Op: "DescribeDBClusters", Code: "DBClusterNotFoundFault", Status: 404, Class: awsx.ClassNotFound}
+	}
+	if !list[0].Managed() {
+		return Cluster{}, ErrNotManaged
+	}
+	return list[0], nil
+}
+
+// StopCluster stops a managed cluster and records when; AWS restarts it after MaxStopDays.
+func (c *Client) StopCluster(ctx context.Context, region, id string) error {
+	k, err := c.requireManagedCluster(ctx, region, id)
+	if err != nil {
+		return err
+	}
+	if err := c.aws.Query(ctx, Service, region, "StopDBCluster", version, url.Values{"DBClusterIdentifier": {id}}, nil); err != nil {
+		return err
+	}
+	return c.AddTags(ctx, region, k.ARN, map[string]string{StoppedAtTag: c.now().UTC().Format(time.RFC3339)})
+}
+
+// StartCluster starts a managed cluster and clears the stopped marker.
+func (c *Client) StartCluster(ctx context.Context, region, id string) error {
+	k, err := c.requireManagedCluster(ctx, region, id)
+	if err != nil {
+		return err
+	}
+	if err := c.aws.Query(ctx, Service, region, "StartDBCluster", version, url.Values{"DBClusterIdentifier": {id}}, nil); err != nil {
+		return err
+	}
+	return c.AddTags(ctx, region, k.ARN, map[string]string{StoppedAtTag: ""})
+}
+
+// ClusterSnapshot is the read view of one cluster snapshot.
+type ClusterSnapshot struct {
+	ID, ARN, ClusterID, Engine, Status, Type string
+	AllocatedGB                              int
+	CreatedAt                                time.Time
+	Tags                                     map[string]string
+}
+
+// Managed reports the ownership tag.
+func (s ClusterSnapshot) Managed() bool { return s.Tags[ManagedTag] == "true" }
+
+// DescribeDBClusterSnapshots lists cluster snapshots (all pages), optionally for one cluster or one snapshot.
+func (c *Client) DescribeDBClusterSnapshots(ctx context.Context, region, clusterID, snapshotID string) ([]ClusterSnapshot, error) {
+	var res []ClusterSnapshot
+	marker := ""
+	for {
+		v := url.Values{}
+		if clusterID != "" {
+			v.Set("DBClusterIdentifier", clusterID)
+		}
+		if snapshotID != "" {
+			v.Set("DBClusterSnapshotIdentifier", snapshotID)
+		}
+		if marker != "" {
+			v.Set("Marker", marker)
+		}
+		var out struct {
+			Items []struct {
+				ID      string `xml:"DBClusterSnapshotIdentifier"`
+				ARN     string `xml:"DBClusterSnapshotArn"`
+				Cluster string `xml:"DBClusterIdentifier"`
+				Engine  string `xml:"Engine"`
+				Status  string `xml:"Status"`
+				Type    string `xml:"SnapshotType"`
+				Alloc   int    `xml:"AllocatedStorage"`
+				Created string `xml:"SnapshotCreateTime"`
+				Tags    []xTag `xml:"TagList>Tag"`
+			} `xml:"DescribeDBClusterSnapshotsResult>DBClusterSnapshots>DBClusterSnapshot"`
+			Marker string `xml:"DescribeDBClusterSnapshotsResult>Marker"`
+		}
+		if err := c.aws.Query(ctx, Service, region, "DescribeDBClusterSnapshots", version, v, &out); err != nil {
+			return nil, err
+		}
+		for _, x := range out.Items {
+			res = append(res, ClusterSnapshot{ID: x.ID, ARN: x.ARN, ClusterID: x.Cluster, Engine: x.Engine, Status: x.Status, Type: x.Type,
+				AllocatedGB: x.Alloc, CreatedAt: parseTime(x.Created), Tags: tagMap(x.Tags)})
+		}
+		if out.Marker == "" {
+			return res, nil
+		}
+		marker = out.Marker
+	}
+}
+
+// CreateClusterSnapshot snapshots a managed cluster and tags the snapshot as managed.
+func (c *Client) CreateClusterSnapshot(ctx context.Context, region, clusterID, snapshotID string, m Meta) error {
+	if _, err := c.requireManagedCluster(ctx, region, clusterID); err != nil {
+		return err
+	}
+	v := url.Values{"DBClusterIdentifier": {clusterID}, "DBClusterSnapshotIdentifier": {snapshotID}}
+	addTags(v, c.guard.Tags(m))
+	return c.aws.Query(ctx, Service, region, "CreateDBClusterSnapshot", version, v, nil)
+}
+
+// DeleteClusterSnapshot removes a cluster snapshot only when it carries the managed tag.
+func (c *Client) DeleteClusterSnapshot(ctx context.Context, region, snapshotID string) error {
+	list, err := c.DescribeDBClusterSnapshots(ctx, region, "", snapshotID)
+	if err != nil {
+		return err
+	}
+	if len(list) == 0 {
+		return &awsx.Error{Service: "rds", Op: "DescribeDBClusterSnapshots", Code: "DBClusterSnapshotNotFoundFault", Status: 404, Class: awsx.ClassNotFound}
+	}
+	if !list[0].Managed() {
+		return ErrNotManaged
+	}
+	return c.aws.Query(ctx, Service, region, "DeleteDBClusterSnapshot", version, url.Values{"DBClusterSnapshotIdentifier": {snapshotID}}, nil)
 }

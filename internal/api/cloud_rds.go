@@ -150,6 +150,8 @@ func (rt *Router) handleRDSClusters(w http.ResponseWriter, r *http.Request) {
 		Port      int               `json:"port"`
 		MultiAZ   bool              `json:"multi_az"`
 		Members   []string          `json:"members"`
+		StoppedAt string            `json:"stopped_at,omitempty"`
+		AutoStart *time.Time        `json:"auto_restart_at,omitempty"`
 		SecretARN string            `json:"secret_arn,omitempty"`
 		Managed   bool              `json:"managed"`
 		Tags      map[string]string `json:"tags"`
@@ -164,9 +166,9 @@ func (rt *Router) handleRDSClusters(w http.ResponseWriter, r *http.Request) {
 			t = map[string]string{}
 		}
 		out = append(out, clusterWire{ID: k.ID, Engine: k.Engine, Status: k.Status, Endpoint: k.Endpoint, Reader: k.ReaderEndpoint, Port: k.Port,
-			MultiAZ: k.MultiAZ, Members: m, SecretARN: k.SecretARN, Managed: k.Managed(), Tags: t})
+			MultiAZ: k.MultiAZ, Members: m, SecretARN: k.SecretARN, Managed: k.Managed(), Tags: t, StoppedAt: t[rds.StoppedAtTag], AutoStart: timePtr(k.AutoRestartAt)})
 	}
-	writeJSON(w, http.StatusOK, map[string]any{"region": c.region, "clusters": out})
+	writeJSON(w, http.StatusOK, map[string]any{"region": c.region, "clusters": out, "max_stop_days": rds.MaxStopDays})
 }
 
 func (rt *Router) handleRDSEstimate(w http.ResponseWriter, r *http.Request) {
@@ -412,4 +414,92 @@ func (rt *Router) handleRDSConnectAsDatabase(w http.ResponseWriter, r *http.Requ
 	}
 	rt.auditCloud(r, "cloud.aws.rds.connect_as_database", map[string]any{"account": c.acct.ID, "region": c.region, "id": i.ID, "name": name, "secret_arn": secret})
 	rt.createExternalDatabase(w, r, externalDatabaseRequest{Name: name, Engine: engine, Host: host, Port: port, Username: i.MasterUsername, Database: i.DBName, TLSMode: "require"})
+}
+
+// handleRDSClusterAction runs snapshot, stop or start on a managed cluster. A stopped cluster is
+// started again by AWS after max_stop_days, so the response says so.
+func (rt *Router) handleRDSClusterAction(w http.ResponseWriter, r *http.Request) {
+	var body rdsActionBody
+	if err := decodeJSONBody(r, &body); err != nil {
+		writeError(w, http.StatusBadRequest, "invalid request body")
+		return
+	}
+	switch body.Action {
+	case "snapshot", "stop", "start":
+	default:
+		writeError(w, http.StatusBadRequest, "action must be snapshot, stop or start")
+		return
+	}
+	c, ok := rt.awsCallFor(w, r, rds.ServiceName, body.Region)
+	if !ok {
+		return
+	}
+	id := r.PathValue("cid")
+	cl := rds.New(c.client, c.guard)
+	var err error
+	snap := body.SnapshotID
+	switch body.Action {
+	case "snapshot":
+		if snap == "" {
+			snap = rdsSnapshotName(id)
+		}
+		err = cl.CreateClusterSnapshot(r.Context(), c.region, id, snap, rt.awsTagMeta(r, id, body.Env, body.Project))
+	case "stop":
+		err = cl.StopCluster(r.Context(), c.region, id)
+	case "start":
+		err = cl.StartCluster(r.Context(), c.region, id)
+	}
+	if err != nil {
+		rt.auditCloud(r, "cloud.aws.rds.cluster_"+body.Action+"_failed", map[string]any{"account": c.acct.ID, "region": c.region, "id": id})
+		writeRDSError(w, err)
+		return
+	}
+	rt.auditCloud(r, "cloud.aws.rds.cluster_"+body.Action, map[string]any{"account": c.acct.ID, "region": c.region, "id": id, "snapshot": snap})
+	resp := map[string]any{"id": id, "action": body.Action, "snapshot_id": snap}
+	if body.Action == "stop" {
+		resp["auto_restart_days"] = rds.MaxStopDays
+		resp["auto_restart_note"] = fmt.Sprintf("AWS starts a stopped cluster again after %d days", rds.MaxStopDays)
+	}
+	writeJSON(w, http.StatusAccepted, resp)
+}
+
+func (rt *Router) handleRDSClusterSnapshots(w http.ResponseWriter, r *http.Request) {
+	c, ok := rt.awsCallFor(w, r, rds.ServiceName, r.URL.Query().Get("region"))
+	if !ok {
+		return
+	}
+	list, err := rds.New(c.client, c.guard).DescribeDBClusterSnapshots(r.Context(), c.region, r.URL.Query().Get("cluster"), "")
+	if err != nil {
+		writeAWSError(w, err)
+		return
+	}
+	type snapWire struct {
+		ID          string    `json:"id"`
+		ClusterID   string    `json:"cluster_id"`
+		Engine      string    `json:"engine"`
+		Status      string    `json:"status"`
+		Type        string    `json:"type"`
+		AllocatedGB int       `json:"allocated_gb"`
+		CreatedAt   time.Time `json:"created_at"`
+		Managed     bool      `json:"managed"`
+	}
+	out := make([]snapWire, 0, len(list))
+	for _, s := range list {
+		out = append(out, snapWire{ID: s.ID, ClusterID: s.ClusterID, Engine: s.Engine, Status: s.Status, Type: s.Type, AllocatedGB: s.AllocatedGB, CreatedAt: s.CreatedAt, Managed: s.Managed()})
+	}
+	writeJSON(w, http.StatusOK, map[string]any{"region": c.region, "snapshots": out})
+}
+
+func (rt *Router) handleRDSClusterSnapshotDelete(w http.ResponseWriter, r *http.Request) {
+	c, ok := rt.awsCallFor(w, r, rds.ServiceName, r.URL.Query().Get("region"))
+	if !ok {
+		return
+	}
+	sid := r.PathValue("sid")
+	if err := rds.New(c.client, c.guard).DeleteClusterSnapshot(r.Context(), c.region, sid); err != nil {
+		writeRDSError(w, err)
+		return
+	}
+	rt.auditCloud(r, "cloud.aws.rds.cluster_snapshot_delete", map[string]any{"account": c.acct.ID, "region": c.region, "snapshot": sid})
+	w.WriteHeader(http.StatusNoContent)
 }

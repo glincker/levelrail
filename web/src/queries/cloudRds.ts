@@ -23,6 +23,25 @@ export interface AwsRdsEstimate {
   default_expires_hours: number
 }
 
+export interface AwsRdsCluster {
+  id: string
+  engine: string
+  status: string
+  members: string[]
+  managed: boolean
+  stopped_at?: string
+  auto_restart_at?: string
+}
+
+export interface AwsRdsClusterSnapshot {
+  id: string
+  cluster_id: string
+  status: string
+  managed: boolean
+}
+
+export type AwsRdsClusterAction = 'snapshot' | 'stop' | 'start'
+
 export type AwsRdsAction = 'snapshot' | 'stop' | 'start' | 'adopt'
 
 export interface AwsRdsCreate {
@@ -94,6 +113,59 @@ export function useAwsRdsCreate(id: string) {
         method: 'POST',
         body,
         fallbackMessage: 'create database failed',
+      }),
+    onSuccess: () => qc.invalidateQueries({ queryKey: key(id) }),
+  })
+}
+
+export function useAwsRdsClusters(id: string) {
+  return useQuery({
+    queryKey: [...key(id), 'clusters'],
+    retry: false,
+    queryFn: async () =>
+      await apiRequest<{
+        clusters: AwsRdsCluster[] | null
+        max_stop_days: number
+      }>(`${base(id)}/clusters`, { fallbackMessage: 'load clusters failed' }),
+  })
+}
+
+export function useAwsRdsClusterSnapshots(id: string) {
+  return useQuery({
+    queryKey: [...key(id), 'cluster-snapshots'],
+    retry: false,
+    queryFn: async () =>
+      (
+        await apiRequest<{ snapshots: AwsRdsClusterSnapshot[] | null }>(
+          `${base(id)}/cluster-snapshots`,
+          { fallbackMessage: 'load cluster snapshots failed' },
+        )
+      ).snapshots ?? [],
+  })
+}
+
+export function useAwsRdsClusterAction(id: string) {
+  const qc = useQueryClient()
+  return useMutation({
+    meta: { errorToast: false },
+    mutationFn: (v: { cid: string; action: AwsRdsClusterAction }) =>
+      apiRequest<unknown>(`${base(id)}/clusters/${enc(v.cid)}/actions`, {
+        method: 'POST',
+        body: { action: v.action },
+        fallbackMessage: 'cluster action failed',
+      }),
+    onSuccess: () => qc.invalidateQueries({ queryKey: key(id) }),
+  })
+}
+
+export function useAwsRdsClusterSnapshotDelete(id: string) {
+  const qc = useQueryClient()
+  return useMutation({
+    meta: { errorToast: false },
+    mutationFn: (sid: string) =>
+      apiRequest<unknown>(`${base(id)}/cluster-snapshots/${enc(sid)}`, {
+        method: 'DELETE',
+        fallbackMessage: 'delete cluster snapshot failed',
       }),
     onSuccess: () => qc.invalidateQueries({ queryKey: key(id) }),
   })

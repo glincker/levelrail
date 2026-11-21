@@ -369,7 +369,10 @@
       "snapshot": "Instantané",
       "stop": "Arrêter",
       "start": "Démarrer",
-      "adopt": "Adopter"
+      "adopt": "Adopter",
+      "clusters": "Clusters",
+      "autoRestart": "Arrêté, AWS le redémarre après {{days}} jours",
+      "deleteSnapshot": "Supprimer l'instantané"
     },
     "ebs": {
       "title": "Volumes et instantanés (EBS)",

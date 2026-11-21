@@ -369,7 +369,10 @@
       "snapshot": "スナップショット",
       "stop": "停止",
       "start": "開始",
-      "adopt": "取り込む"
+      "adopt": "取り込む",
+      "clusters": "クラスター",
+      "autoRestart": "停止中、{{days}}日後にAWSが再起動します",
+      "deleteSnapshot": "スナップショットを削除"
     },
     "ebs": {
       "title": "ボリュームとスナップショット (EBS)",

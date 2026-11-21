@@ -1,11 +1,13 @@
 import { render, screen } from '@testing-library/react'
 import userEvent from '@testing-library/user-event'
 import { beforeEach, describe, expect, it, vi } from 'vitest'
-import type { AwsRdsInstance } from '../../queries/cloudRds'
+import type { AwsRdsCluster, AwsRdsInstance } from '../../queries/cloudRds'
 import { RdsCard } from './RdsCard'
 
 const mutate = vi.fn()
+const clusterMutate = vi.fn()
 let instances: AwsRdsInstance[] = []
+let clusters: AwsRdsCluster[] = []
 
 vi.mock('../../queries/cloudRds', () => ({
   useAwsRds: () => ({ isPending: false, error: null, data: instances }),
@@ -17,6 +19,14 @@ vi.mock('../../queries/cloudRds', () => ({
     error: null,
   }),
   useAwsRdsEstimate: () => ({ data: undefined }),
+  useAwsRdsClusters: () => ({ data: { max_stop_days: 7, clusters } }),
+  useAwsRdsClusterSnapshots: () => ({ data: [] }),
+  useAwsRdsClusterAction: () => ({
+    mutate: clusterMutate,
+    isError: false,
+    error: null,
+  }),
+  useAwsRdsClusterSnapshotDelete: () => ({ mutate: vi.fn() }),
 }))
 
 const base: AwsRdsInstance = {
@@ -34,6 +44,7 @@ const base: AwsRdsInstance = {
 
 beforeEach(() => {
   mutate.mockReset()
+  clusters = []
 })
 
 describe('RdsCard', () => {
@@ -83,5 +94,24 @@ describe('RdsCard', () => {
     expect(
       screen.getByRole('button', { name: 'services.rds.create' }),
     ).toBeInTheDocument()
+  })
+
+  it('starts a stopped cluster and shows the auto restart note', async () => {
+    instances = []
+    clusters = [
+      {
+        id: 'c1',
+        engine: 'aurora-postgresql',
+        status: 'stopped',
+        members: [],
+        managed: true,
+      },
+    ]
+    render(<RdsCard id="acct" canCreate={false} />)
+    expect(screen.getByText(/services.rds.autoRestart/)).toBeInTheDocument()
+    await userEvent.click(
+      screen.getByRole('button', { name: 'services.rds.start' }),
+    )
+    expect(clusterMutate).toHaveBeenCalledWith({ cid: 'c1', action: 'start' })
   })
 })

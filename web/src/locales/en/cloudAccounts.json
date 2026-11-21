@@ -369,7 +369,10 @@
       "snapshot": "Snapshot",
       "stop": "Stop",
       "start": "Start",
-      "adopt": "Adopt"
+      "adopt": "Adopt",
+      "clusters": "Clusters",
+      "autoRestart": "Stopped, AWS restarts it after {{days}} days",
+      "deleteSnapshot": "Delete snapshot"
     },
     "ebs": {
       "title": "Volumes and snapshots (EBS)",

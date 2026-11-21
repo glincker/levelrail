@@ -9,11 +9,17 @@ import {
   RDS_ENGINES,
   rdsCanStart,
   rdsCanStop,
+  rdsClusterCanStart,
+  rdsClusterCanStop,
   rdsNeedsTypedConfirm,
 } from '../../lib/cloudRds'
 import {
   useAwsRds,
   useAwsRdsAction,
+  useAwsRdsClusterAction,
+  useAwsRdsClusters,
+  useAwsRdsClusterSnapshotDelete,
+  useAwsRdsClusterSnapshots,
   useAwsRdsCreate,
   useAwsRdsEstimate,
   type AwsRdsAction,
@@ -128,6 +134,97 @@ function CreateDialog({
   )
 }
 
+function ClusterSection({ id }: Readonly<{ id: string }>) {
+  const { t } = useTranslation('cloudAccounts')
+  const clusters = useAwsRdsClusters(id)
+  const snaps = useAwsRdsClusterSnapshots(id)
+  const act = useAwsRdsClusterAction(id)
+  const del = useAwsRdsClusterSnapshotDelete(id)
+  const list = clusters.data?.clusters ?? []
+  const days = clusters.data?.max_stop_days ?? 0
+  if (list.length === 0 && (snaps.data ?? []).length === 0) return null
+  return (
+    <div className="space-y-1">
+      <h4 className="text-xs font-medium">{t('services.rds.clusters')}</h4>
+      {act.isError ? (
+        <p role="alert" className="text-sm text-destructive">
+          {messageOf(act.error)}
+        </p>
+      ) : null}
+      <ul className="space-y-1">
+        {list.map((k) => (
+          <li key={k.id} className="flex flex-wrap items-center gap-2 text-sm">
+            <span className="font-mono text-xs">{k.id}</span>
+            <span className="text-xs text-muted-foreground">
+              {k.status} · {k.engine}
+              {k.status === 'stopped' && days > 0
+                ? ` · ${t('services.rds.autoRestart', { days })}`
+                : ''}
+            </span>
+            <span className="ml-auto flex gap-1">
+              {k.managed ? (
+                <Button
+                  size="sm"
+                  variant="outline"
+                  onClick={() => {
+                    act.mutate({ cid: k.id, action: 'snapshot' })
+                  }}
+                >
+                  {t('services.rds.snapshot')}
+                </Button>
+              ) : null}
+              {rdsClusterCanStop(k) ? (
+                <Button
+                  size="sm"
+                  variant="outline"
+                  onClick={() => {
+                    act.mutate({ cid: k.id, action: 'stop' })
+                  }}
+                >
+                  {t('services.rds.stop')}
+                </Button>
+              ) : null}
+              {rdsClusterCanStart(k) ? (
+                <Button
+                  size="sm"
+                  variant="outline"
+                  onClick={() => {
+                    act.mutate({ cid: k.id, action: 'start' })
+                  }}
+                >
+                  {t('services.rds.start')}
+                </Button>
+              ) : null}
+            </span>
+          </li>
+        ))}
+      </ul>
+      <ul className="space-y-1">
+        {(snaps.data ?? []).map((s) => (
+          <li key={s.id} className="flex flex-wrap items-center gap-2 text-sm">
+            <span className="font-mono text-xs">{s.id}</span>
+            <span className="text-xs text-muted-foreground">
+              {s.cluster_id} · {s.status}
+            </span>
+            {s.managed ? (
+              <Button
+                size="sm"
+                variant="outline"
+                className="ml-auto"
+                onClick={() => {
+                  del.mutate(s.id)
+                }}
+              >
+                {t('services.rds.deleteSnapshot')}
+              </Button>
+            ) : null}
+          </li>
+        ))}
+      </ul>
+    </div>
+  )
+}
+
 export function RdsCard({
   id,
   canCreate,
@@ -227,6 +324,7 @@ export function RdsCard({
           </li>
         ))}
       </ul>
+      <ClusterSection id={id} />
     </div>
   )
 }

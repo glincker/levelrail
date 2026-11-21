@@ -91,3 +91,18 @@ func TestCloudRDS_AdoptWritesTagOnly(t *testing.T) {
 		}
 	}
 }
+
+func TestCloudRDS_ClusterStopSurfacesAutoRestart(t *testing.T) {
+	rt, db := awsServicesRouter(t, func(c awsxtest.Call, _ int) awsxtest.Reply {
+		if rdsAction(c) == "DescribeDBClusters" {
+			return awsxtest.Reply{Body: `<R><DescribeDBClustersResult><DBClusters><DBCluster><DBClusterIdentifier>k</DBClusterIdentifier><DBClusterArn>arn:k</DBClusterArn><TagList><Tag><Key>levelrail:managed</Key><Value>true</Value></Tag></TagList></DBCluster></DBClusters></DescribeDBClustersResult></R>`}
+		}
+		return awsxtest.Reply{Body: "<R/>"}
+	})
+	enableAWSFlag(t, rt, runtimesettings.KeyCloudGuardRDS)
+	root := loginTestSession(t, rt, db)
+	code, out := teamDo(t, rt, http.MethodPost, rdsBase+"clusters/k/actions", `{"action":"stop"}`, withCookie(root))
+	if code != http.StatusAccepted || !strings.Contains(out, `"auto_restart_days":7`) {
+		t.Fatalf("cluster stop = %d %s", code, out)
+	}
+}

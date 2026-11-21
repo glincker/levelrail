@@ -29,3 +29,17 @@ export function rdsCanStop(i: {
 export function rdsCanStart(i: { managed: boolean; status: string }): boolean {
   return i.managed && i.status === 'stopped'
 }
+
+export function rdsClusterCanStop(k: {
+  managed: boolean
+  status: string
+}): boolean {
+  return k.managed && k.status === 'available'
+}
+
+export function rdsClusterCanStart(k: {
+  managed: boolean
+  status: string
+}): boolean {
+  return k.managed && k.status === 'stopped'
+}

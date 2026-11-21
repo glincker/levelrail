@@ -2544,6 +2544,9 @@ Routes that do not fit an existing group.
 | GET | /api/v1/cloud-accounts/{id}/aws/idle | Public | handleAWSIdle |
 | GET | /api/v1/cloud-accounts/doctor/preflight | AbilityRoot | handleCloudDoctorPreflight |
 | GET | /api/v1/cloud-accounts/{id}/doctor | Public | handleCloudAccountDoctor |
+| POST | /api/v1/cloud-accounts/{id}/aws/rds/clusters/{cid}/actions | Public | handleRDSClusterAction |
+| GET | /api/v1/cloud-accounts/{id}/aws/rds/cluster-snapshots | Public | handleRDSClusterSnapshots |
+| DELETE | /api/v1/cloud-accounts/{id}/aws/rds/cluster-snapshots/{sid} | Public | handleRDSClusterSnapshotDelete |
 | POST | /mcp | Public |  |
 
 ## See also

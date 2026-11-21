@@ -14,7 +14,7 @@ type openAPIRoute struct {
 	Description string
 }
 
-// openAPIRoutes holds all 2313 routes known to scripts/gen-api-reference at
+// openAPIRoutes holds all 2316 routes known to scripts/gen-api-reference at
 // generation time. Run `go run ./scripts/gen-api-reference` after changing
 // any routes*.go registration and commit the result.
 var openAPIRoutes = []openAPIRoute{
@@ -1248,7 +1248,10 @@ var openAPIRoutes = []openAPIRoute{
 	{Method: "GET", Path: "/api/v1/cloud-accounts/{id}/aws/guard", Ability: "Public", Group: "Other", Handler: "handleAWSGuardStatus", Description: ""},
 	{Method: "POST", Path: "/api/v1/cloud-accounts/{id}/aws/guard/kill-switch", Ability: "AbilityRoot", Group: "Other", Handler: "handleAWSKillSwitch", Description: ""},
 	{Method: "GET", Path: "/api/v1/cloud-accounts/{id}/aws/idle", Ability: "Public", Group: "Other", Handler: "handleAWSIdle", Description: ""},
+	{Method: "GET", Path: "/api/v1/cloud-accounts/{id}/aws/rds/cluster-snapshots", Ability: "Public", Group: "Other", Handler: "handleRDSClusterSnapshots", Description: ""},
+	{Method: "DELETE", Path: "/api/v1/cloud-accounts/{id}/aws/rds/cluster-snapshots/{sid}", Ability: "Public", Group: "Other", Handler: "handleRDSClusterSnapshotDelete", Description: ""},
 	{Method: "GET", Path: "/api/v1/cloud-accounts/{id}/aws/rds/clusters", Ability: "Public", Group: "Other", Handler: "handleRDSClusters", Description: ""},
+	{Method: "POST", Path: "/api/v1/cloud-accounts/{id}/aws/rds/clusters/{cid}/actions", Ability: "Public", Group: "Other", Handler: "handleRDSClusterAction", Description: ""},
 	{Method: "GET", Path: "/api/v1/cloud-accounts/{id}/aws/rds/estimate", Ability: "Public", Group: "Other", Handler: "handleRDSEstimate", Description: ""},
 	{Method: "GET", Path: "/api/v1/cloud-accounts/{id}/aws/rds/instances", Ability: "Public", Group: "Other", Handler: "handleRDSList", Description: ""},
 	{Method: "POST", Path: "/api/v1/cloud-accounts/{id}/aws/rds/instances", Ability: "Public", Group: "Other", Handler: "handleRDSCreate", Description: ""},

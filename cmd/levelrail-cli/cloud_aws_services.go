@@ -24,6 +24,9 @@ func cloudAWSServicesUsage(prog string) string {
   %[1]s cloud aws secrets put ACCOUNT /NAME [--overwrite] [--region R]
   %[1]s cloud aws secrets reveal ACCOUNT NAME [--kind ssm|secretsmanager] [--region R]
   %[1]s cloud aws rds list|show|snapshot|stop|start|adopt|connect ACCOUNT [ID] [--region R]
+  %[1]s cloud aws rds clusters|cluster-snapshots ACCOUNT [--region R]
+  %[1]s cloud aws rds cluster-snapshot|cluster-stop|cluster-start ACCOUNT CLUSTER [--region R]
+  %[1]s cloud aws rds cluster-snapshot-delete ACCOUNT SNAPSHOT [--region R]
   %[1]s cloud aws rds create ACCOUNT ID --engine E --class C [--username U] [--storage GB] [--multi-az] [--cluster] [--confirm] [--env E] [--project P]
   %[1]s cloud aws snapshots list|create|delete ACCOUNT [SNAPSHOT] [--volume V | --instance I] [--exclude-boot] [--description D] [--region R]
   %[1]s cloud aws metrics ACCOUNT INSTANCE [--names CPUUtilization,NetworkIn] [--hours N] [--region R]
@@ -112,7 +115,8 @@ func runCloudAWSServices(prog, verb string, args []string, stdout, stderr io.Wri
 		}
 		if verb == "rds" {
 			switch sub {
-			case "list", "show", "snapshot", "stop", "start", "adopt", "connect", "create":
+			case "list", "show", "snapshot", "stop", "start", "adopt", "connect", "create",
+				"clusters", "cluster-snapshots", "cluster-snapshot", "cluster-stop", "cluster-start", "cluster-snapshot-delete":
 			default:
 				return nil, nil, fmt.Errorf("unknown subcommand %q", sub)
 			}
@@ -259,6 +263,26 @@ func runCloudAWSServices(prog, verb string, args []string, stdout, stderr io.Wri
 			return out, func() {
 				printCloudTable(stdout, []string{"ID", "ACTION", "SNAPSHOT"}, []cloudRow{out}, "id", "action", "snapshot_id")
 			}, err
+		case "rds clusters":
+			err = call("GET", withQ(base+"rds/clusters"), nil)
+			return out, table([]string{"ID", "ENGINE", "STATUS", "MANAGED", "AUTO RESTART"}, "clusters", "id", "engine", "status", "managed", "auto_restart_at"), err
+		case "rds cluster-snapshots":
+			err = call("GET", withQ(base+"rds/cluster-snapshots"), nil)
+			return out, table([]string{"ID", "CLUSTER", "STATUS", "TYPE", "MANAGED"}, "snapshots", "id", "cluster_id", "status", "type", "managed"), err
+		case "rds cluster-snapshot", "rds cluster-stop", "rds cluster-start":
+			if len(rest) < 1 {
+				return nil, nil, fmt.Errorf("a cluster ID is required")
+			}
+			err = call("POST", base+"rds/clusters/"+url.PathEscape(rest[0])+"/actions", cloudRow{"action": strings.TrimPrefix(sub, "cluster-"), "region": region, "env": env, "project": project})
+			return out, func() {
+				printCloudTable(stdout, []string{"ID", "ACTION", "SNAPSHOT", "AUTO RESTART DAYS"}, []cloudRow{out}, "id", "action", "snapshot_id", "auto_restart_days")
+			}, err
+		case "rds cluster-snapshot-delete":
+			if len(rest) < 1 {
+				return nil, nil, fmt.Errorf("a snapshot ID is required")
+			}
+			err = call("DELETE", withQ(base+"rds/cluster-snapshots/"+url.PathEscape(rest[0])), nil)
+			return out, func() { _, _ = fmt.Fprintln(stdout, "deleted") }, err
 		case "rds connect":
 			if len(rest) < 1 {
 				return nil, nil, fmt.Errorf("an instance ID is required")

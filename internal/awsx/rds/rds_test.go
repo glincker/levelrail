@@ -156,3 +156,43 @@ func TestPlanRestop(t *testing.T) {
 		t.Fatalf("plan=%+v err=%v", plan, err)
 	}
 }
+
+func TestClusterStopRefusesUnmanagedAndTagsManaged(t *testing.T) {
+	managed := false
+	c, rec := awsxtest.New(t, func(_ awsxtest.Call, n int) awsxtest.Reply {
+		if n == 1 {
+			tag := ""
+			if managed {
+				tag = `<TagList><Tag><Key>levelrail:managed</Key><Value>true</Value></Tag></TagList>`
+			}
+			return awsxtest.Reply{Body: `<R><DescribeDBClustersResult><DBClusters><DBCluster><DBClusterIdentifier>k</DBClusterIdentifier><DBClusterArn>arn:k</DBClusterArn>` + tag + `</DBCluster></DBClusters></DescribeDBClustersResult></R>`}
+		}
+		return awsxtest.Reply{Body: "<R/>"}
+	})
+	cl := New(c, guardFor(okCfg()))
+	if err := cl.StopCluster(context.Background(), "us-east-1", "k"); !errors.Is(err, ErrNotManaged) {
+		t.Fatalf("unmanaged stop err=%v", err)
+	}
+	if len(rec.Calls()) != 1 {
+		t.Fatal("unmanaged cluster reached a write")
+	}
+}
+
+func TestClusterSnapshotsParseAndDeleteNeedsManaged(t *testing.T) {
+	c, rec := awsxtest.New(t, func(awsxtest.Call, int) awsxtest.Reply {
+		return awsxtest.Reply{Body: `<R><DescribeDBClusterSnapshotsResult><DBClusterSnapshots><DBClusterSnapshot><DBClusterSnapshotIdentifier>s1</DBClusterSnapshotIdentifier><DBClusterIdentifier>k</DBClusterIdentifier><Status>available</Status></DBClusterSnapshot></DBClusterSnapshots></DescribeDBClusterSnapshotsResult></R>`}
+	})
+	cl := New(c, guardFor(okCfg()))
+	list, err := cl.DescribeDBClusterSnapshots(context.Background(), "us-east-1", "k", "")
+	if err != nil || len(list) != 1 || list[0].ClusterID != "k" || list[0].Managed() {
+		t.Fatalf("list=%+v err=%v", list, err)
+	}
+	if err := cl.DeleteClusterSnapshot(context.Background(), "us-east-1", "s1"); !errors.Is(err, ErrNotManaged) {
+		t.Fatalf("delete err=%v", err)
+	}
+	for _, call := range rec.Calls() {
+		if form(call).Get("Action") == "DeleteDBClusterSnapshot" {
+			t.Fatal("unmanaged snapshot was deleted")
+		}
+	}
+}
