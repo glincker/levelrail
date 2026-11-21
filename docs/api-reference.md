@@ -2493,6 +2493,17 @@ Routes that do not fit an existing group.
 | POST | /api/v1/cloud-accounts/{id}/grants | Public | handleCreateCloudGrant |
 | PATCH | /api/v1/cloud-accounts/{id}/grants/{gid} | Public | handleUpdateCloudGrant |
 | DELETE | /api/v1/cloud-accounts/{id}/grants/{gid} | Public | handleDeleteCloudGrant |
+| GET | /api/v1/cloud-accounts/{id}/instances | Public | handleListCloudInstances |
+| GET | /api/v1/cloud-accounts/{id}/instances/{iid} | Public | handleGetCloudInstance |
+| POST | /api/v1/cloud-accounts/{id}/instances/{iid}/actions | Public | handleCloudInstanceAction |
+| PUT | /api/v1/cloud-accounts/{id}/instances/{iid}/tags | Public | handleCloudInstanceTags |
+| POST | /api/v1/cloud-accounts/{id}/instances/{iid}/resize | Public | handleCloudInstanceResize |
+| DELETE | /api/v1/cloud-accounts/{id}/instances/{iid} | Public | handleCloudInstanceTerminate |
+| GET | /api/v1/cloud-accounts/{id}/spend | Public | handleGetCloudSpend |
+| POST | /api/v1/cloud-accounts/{id}/spend/refresh | Public | handleRefreshCloudSpend |
+| GET | /api/v1/cloud-accounts/{id}/spend/estimate | Public | handleCloudSpendEstimate |
+| GET | /api/v1/cloud-accounts/aws/control-identity | AbilityRoot | handleAWSControlIdentity |
+| GET | /api/v1/me/cloud-access | Public | handleMeCloudAccess |
 | POST | /mcp | Public |  |
 
 ## See also

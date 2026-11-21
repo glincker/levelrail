@@ -25,7 +25,7 @@ var (
 )
 
 // requireCloudAccess rides requireAbilityDecided at write:sensitive for every action above view.
-var restCloudAccessRe = regexp.MustCompile(`requireCloudAccess\(\w+,\s*"(?:share|operate|manage_budget)"`)
+var restCloudAccessRe = regexp.MustCompile(`requireCloudAccess\(\w+,\s*"(?:share|operate|manage_budget|build|delete|view_spend)"`)
 
 type restRoute struct {
 	key, path, ability string

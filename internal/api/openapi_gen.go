@@ -14,7 +14,7 @@ type openAPIRoute struct {
 	Description string
 }
 
-// openAPIRoutes holds all 2262 routes known to scripts/gen-api-reference at
+// openAPIRoutes holds all 2273 routes known to scripts/gen-api-reference at
 // generation time. Run `go run ./scripts/gen-api-reference` after changing
 // any routes*.go registration and commit the result.
 var openAPIRoutes = []openAPIRoute{
@@ -1220,6 +1220,7 @@ var openAPIRoutes = []openAPIRoute{
 	{Method: "POST", Path: "/api/v1/cleanup/{id}/run", Ability: "AbilityRoot", Group: "Other", Handler: "handleRunCleanup", Description: "A run deletes data permanently."},
 	{Method: "GET", Path: "/api/v1/cloud-accounts", Ability: "AbilityRead", Group: "Other", Handler: "handleListCloudAccounts", Description: ""},
 	{Method: "POST", Path: "/api/v1/cloud-accounts", Ability: "AbilityRoot", Group: "Other", Handler: "handleCreateCloudAccount", Description: ""},
+	{Method: "GET", Path: "/api/v1/cloud-accounts/aws/control-identity", Ability: "AbilityRoot", Group: "Other", Handler: "handleAWSControlIdentity", Description: ""},
 	{Method: "POST", Path: "/api/v1/cloud-accounts/aws/link-kit", Ability: "AbilityRoot", Group: "Other", Handler: "handleAWSLinkKit", Description: ""},
 	{Method: "DELETE", Path: "/api/v1/cloud-accounts/{id}", Ability: "AbilityRoot", Group: "Other", Handler: "handleDeleteCloudAccount", Description: ""},
 	{Method: "GET", Path: "/api/v1/cloud-accounts/{id}", Ability: "Public", Group: "Other", Handler: "handleGetCloudAccount", Description: ""},
@@ -1228,8 +1229,17 @@ var openAPIRoutes = []openAPIRoute{
 	{Method: "POST", Path: "/api/v1/cloud-accounts/{id}/grants", Ability: "Public", Group: "Other", Handler: "handleCreateCloudGrant", Description: ""},
 	{Method: "DELETE", Path: "/api/v1/cloud-accounts/{id}/grants/{gid}", Ability: "Public", Group: "Other", Handler: "handleDeleteCloudGrant", Description: ""},
 	{Method: "PATCH", Path: "/api/v1/cloud-accounts/{id}/grants/{gid}", Ability: "Public", Group: "Other", Handler: "handleUpdateCloudGrant", Description: ""},
+	{Method: "GET", Path: "/api/v1/cloud-accounts/{id}/instances", Ability: "Public", Group: "Other", Handler: "handleListCloudInstances", Description: ""},
+	{Method: "DELETE", Path: "/api/v1/cloud-accounts/{id}/instances/{iid}", Ability: "Public", Group: "Other", Handler: "handleCloudInstanceTerminate", Description: ""},
+	{Method: "GET", Path: "/api/v1/cloud-accounts/{id}/instances/{iid}", Ability: "Public", Group: "Other", Handler: "handleGetCloudInstance", Description: ""},
+	{Method: "POST", Path: "/api/v1/cloud-accounts/{id}/instances/{iid}/actions", Ability: "Public", Group: "Other", Handler: "handleCloudInstanceAction", Description: ""},
+	{Method: "POST", Path: "/api/v1/cloud-accounts/{id}/instances/{iid}/resize", Ability: "Public", Group: "Other", Handler: "handleCloudInstanceResize", Description: ""},
+	{Method: "PUT", Path: "/api/v1/cloud-accounts/{id}/instances/{iid}/tags", Ability: "Public", Group: "Other", Handler: "handleCloudInstanceTags", Description: ""},
 	{Method: "POST", Path: "/api/v1/cloud-accounts/{id}/probe", Ability: "AbilityRoot", Group: "Other", Handler: "handleProbeCloudAccount", Description: ""},
 	{Method: "GET", Path: "/api/v1/cloud-accounts/{id}/regions", Ability: "Public", Group: "Other", Handler: "handleCloudAccountRegions", Description: ""},
+	{Method: "GET", Path: "/api/v1/cloud-accounts/{id}/spend", Ability: "Public", Group: "Other", Handler: "handleGetCloudSpend", Description: ""},
+	{Method: "GET", Path: "/api/v1/cloud-accounts/{id}/spend/estimate", Ability: "Public", Group: "Other", Handler: "handleCloudSpendEstimate", Description: ""},
+	{Method: "POST", Path: "/api/v1/cloud-accounts/{id}/spend/refresh", Ability: "Public", Group: "Other", Handler: "handleRefreshCloudSpend", Description: ""},
 	{Method: "POST", Path: "/api/v1/cloud-accounts/{id}/verify", Ability: "AbilityRoot", Group: "Other", Handler: "handleVerifyCloudAccount", Description: ""},
 	{Method: "GET", Path: "/api/v1/clusters", Ability: "AbilityRoot", Group: "Other", Handler: "handleListK8sClusters", Description: ""},
 	{Method: "POST", Path: "/api/v1/clusters", Ability: "AbilityRoot", Group: "Other", Handler: "handleConnectK8sCluster", Description: ""},
@@ -1590,6 +1600,7 @@ var openAPIRoutes = []openAPIRoute{
 	{Method: "GET", Path: "/api/v1/mcp/oauth/consent/{id}", Ability: "Session", Group: "Other", Handler: "handleMCPConsentGet", Description: ""},
 	{Method: "POST", Path: "/api/v1/mcp/oauth/consent/{id}/approve", Ability: "Session", Group: "Other", Handler: "handleMCPConsentApprove", Description: ""},
 	{Method: "POST", Path: "/api/v1/mcp/oauth/consent/{id}/deny", Ability: "Session", Group: "Other", Handler: "handleMCPConsentDeny", Description: ""},
+	{Method: "GET", Path: "/api/v1/me/cloud-access", Ability: "Public", Group: "Other", Handler: "handleMeCloudAccess", Description: ""},
 	{Method: "GET", Path: "/api/v1/me/onboarding", Ability: "Public", Group: "Other", Handler: "handleGetMeOnboarding", Description: ""},
 	{Method: "PUT", Path: "/api/v1/me/onboarding", Ability: "Public", Group: "Other", Handler: "handlePutMeOnboarding", Description: ""},
 	{Method: "POST", Path: "/api/v1/me/onboarding/reset", Ability: "Public", Group: "Other", Handler: "handleResetMeOnboarding", Description: ""},

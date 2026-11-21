@@ -37,6 +37,15 @@ var tenantRoutes = map[string]bool{
 	// Cloud accounts filter by grant or owning team and answer 404 outside it.
 	"GET /api/v1/cloud-accounts":      true,
 	"GET /api/v1/cloud-accounts/{id}": true,
+	// Instance reads, power actions, tags and spend answer by grant too; resize and terminate stay instance wide.
+	"GET /api/v1/me/cloud-access":                              true,
+	"GET /api/v1/cloud-accounts/{id}/instances":                true,
+	"GET /api/v1/cloud-accounts/{id}/instances/{iid}":          true,
+	"POST /api/v1/cloud-accounts/{id}/instances/{iid}/actions": true,
+	"PUT /api/v1/cloud-accounts/{id}/instances/{iid}/tags":     true,
+	"GET /api/v1/cloud-accounts/{id}/spend":                    true,
+	"POST /api/v1/cloud-accounts/{id}/spend/refresh":           true,
+	"GET /api/v1/cloud-accounts/{id}/spend/estimate":           true,
 	// Each section is replayed through the gate as its own request.
 	"GET /api/v1/shell":                  true,
 	"GET /api/v1/traffic/summary":        true,

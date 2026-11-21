@@ -17,6 +17,7 @@ func cloudUsage(prog string) string {
   %[1]s cloud connection update NAME [--auth METHOD] [config flags] [--credential-ref REF] [--team ID]
   %[1]s cloud connection delete NAME [flags]
   %[1]s cloud connection test NAME [flags]
+  %[1]s cloud accounts|instances|spend|aws ...   see "%[1]s cloud accounts help"
   %[1]s cloud connect oci [flags]   guided setup of a scoped OCI credential (dry run by default)
 
 Preview. Cloud connections are off until the runtime setting cloud.connections_enabled
@@ -42,6 +43,14 @@ func runCloud(prog string, args []string, stdout, stderr io.Writer, lookupEnv fu
 		return runCloudConnect(prog, args[1:], stdout, stderr, lookupEnv)
 	case "connection":
 		return runCloudConnection(prog, args[1:], stdout, stderr, lookupEnv)
+	case "accounts":
+		return runCloudAccounts(prog, args[1:], stdout, stderr, lookupEnv)
+	case "instances":
+		return runCloudInstances(prog, args[1:], stdout, stderr, lookupEnv)
+	case "spend":
+		return runCloudSpend(prog, args[1:], stdout, stderr, lookupEnv)
+	case "aws":
+		return runCloudAWS(prog, args[1:], stdout, stderr, lookupEnv)
 	}
 	_, _ = fmt.Fprintf(stderr, "%s: unknown cloud subcommand %q\n\n", prog, args[0])
 	_, _ = fmt.Fprint(stderr, cloudUsage(prog))

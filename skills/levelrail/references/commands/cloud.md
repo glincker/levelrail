@@ -13,6 +13,7 @@ Usage:
   levelrail-cli cloud connection update NAME [--auth METHOD] [config flags] [--credential-ref REF] [--team ID]
   levelrail-cli cloud connection delete NAME [flags]
   levelrail-cli cloud connection test NAME [flags]
+  levelrail-cli cloud accounts|instances|spend|aws ...   see "levelrail-cli cloud accounts help"
   levelrail-cli cloud connect oci [flags]   guided setup of a scoped OCI credential (dry run by default)
 
 Preview. Cloud connections are off until the runtime setting cloud.connections_enabled
@@ -54,6 +55,7 @@ Usage:
   levelrail-cli cloud connection update NAME [--auth METHOD] [config flags] [--credential-ref REF] [--team ID]
   levelrail-cli cloud connection delete NAME [flags]
   levelrail-cli cloud connection test NAME [flags]
+  levelrail-cli cloud accounts|instances|spend|aws ...   see "levelrail-cli cloud accounts help"
   levelrail-cli cloud connect oci [flags]   guided setup of a scoped OCI credential (dry run by default)
 
 Preview. Cloud connections are off until the runtime setting cloud.connections_enabled

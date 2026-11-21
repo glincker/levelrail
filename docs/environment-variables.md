@@ -448,6 +448,14 @@ These variables only seed the default of a [runtime setting](/runtime-settings).
 | `APP_CONTAINERS_INSPECT_TIMEOUT` | [`apps.containers_inspect_timeout`](/runtime-settings#observability) | `5s` |
 | `APP_AUTOSCALE_GAUGE_MAX_BYTES` | [`autoscale.gauge_max_bytes`](/runtime-settings#observability) | `1048576` |
 | `APP_AUTOSCALE_GAUGE_TIMEOUT` | [`autoscale.gauge_timeout`](/runtime-settings#observability) | `3s` |
+| `APP_CLOUD_INSTANCES_CACHE_TTL_SECONDS` | [`cloud.instances.cache_ttl_seconds`](/runtime-settings#observability) | `30` |
+| `APP_CLOUD_SPEND_AWS_COST_EXPLORER` | [`cloud.spend.aws_cost_explorer`](/runtime-settings#observability) | `false` |
+| `APP_CLOUD_SPEND_CACHE_TTL_MINUTES` | [`cloud.spend.cache_ttl_minutes`](/runtime-settings#observability) | `15` |
+| `APP_CLOUD_SPEND_ENABLED` | [`cloud.spend.enabled`](/runtime-settings#observability) | `true` |
+| `APP_CLOUD_SPEND_MAX_PAGES` | [`cloud.spend.max_pages`](/runtime-settings#observability) | `5` |
+| `APP_CLOUD_SPEND_REFRESH_MIN_INTERVAL_MINUTES` | [`cloud.spend.refresh_min_interval_minutes`](/runtime-settings#observability) | `5` |
+| `APP_CLOUD_SPEND_REFRESH_PER_USER_PER_HOUR` | [`cloud.spend.refresh_per_user_per_hour`](/runtime-settings#observability) | `6` |
+| `APP_CLOUD_SPEND_STALE_AFTER_HOURS` | [`cloud.spend.stale_after_hours`](/runtime-settings#observability) | `72` |
 | `APP_DB_QUERY_MAX_BYTES` | [`database_viewer.max_bytes`](/runtime-settings#observability) | `4194304` |
 | `APP_DB_QUERY_MAX_CELL_BYTES` | [`database_viewer.max_cell_bytes`](/runtime-settings#observability) | `65536` |
 | `APP_DB_QUERY_MAX_ROWS` | [`database_viewer.max_rows`](/runtime-settings#observability) | `1000` |
