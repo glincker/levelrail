@@ -340,5 +340,15 @@
       "paste": "Cole em Conectar",
       "verify": "O Levelrail verifica com uma checagem somente leitura"
     }
+  },
+  "linkedAccounts": {
+    "title": "Contas de nuvem",
+    "manage": "Gerenciar em Contas de nuvem",
+    "add": "Adicionar conta",
+    "active": "Ativa",
+    "attention": "Requer atenção",
+    "relogin": "Requer novo login",
+    "managed": "Padrão",
+    "legacyHint": "A credencial única antiga abaixo é mantida por compatibilidade; gerencie este provedor pelas contas dele."
   }
 }

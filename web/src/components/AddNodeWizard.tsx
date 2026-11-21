@@ -188,7 +188,7 @@ function WizardBody({
           connected={
             new Set(
               (providers.data ?? [])
-                .filter((x) => x.has_token)
+                .filter((x) => x.connected ?? x.has_token)
                 .map((x) => x.provider),
             )
           }

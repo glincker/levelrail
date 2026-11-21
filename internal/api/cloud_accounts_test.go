@@ -3,9 +3,12 @@ package api
 import (
 	"context"
 	"encoding/json"
+	"log/slog"
 	"net/http"
+	"net/http/httptest"
 	"strings"
 	"testing"
+	"time"
 
 	"github.com/GLINCKER/levelrail/internal/store"
 )
@@ -99,4 +102,48 @@ func TestOrgIsolation_CloudAccounts(t *testing.T) {
 		t.Errorf("org A owner does not see its own account: %s", own)
 	}
 	orgCases(t, "CloudAccounts", leaks, checked)
+}
+
+func TestNodeProviders_ListIncludesVisibleCloudAccounts(t *testing.T) {
+	db := openTestDB(t)
+	rt := NewRouter(slog.New(slog.NewTextHandler(discardWriter{}, nil)), testBrand(), db, WithNodeProviderSecrets(newFakeNodeProviderSecrets()))
+	cookie := loginTestSession(t, rt, db)
+	if err := db.CreateCloudAccount(context.Background(), store.CloudAccount{ID: "acct-oci-a", Provider: "oracle",
+		DisplayName: "oci-prod", AuthMethod: "api_key", Config: json.RawMessage(`{"region":"us-ashburn-1"}`)}); err != nil {
+		t.Fatal(err)
+	}
+	const plaintext = "np-read-token" //nolint:gosec // fixture
+	if err := db.SaveAPIToken(context.Background(), store.APIToken{
+		ID: "tok_npr", Name: "r", TokenHash: hashToken(plaintext), Abilities: []string{AbilityRead}, CreatedAt: time.Now(),
+	}); err != nil {
+		t.Fatal(err)
+	}
+	oracle := func(rec *httptest.ResponseRecorder) nodeProviderResource {
+		var rows []nodeProviderResource
+		if rec.Code != http.StatusOK || json.Unmarshal(rec.Body.Bytes(), &rows) != nil {
+			t.Fatalf("list = %d %s", rec.Code, rec.Body.String())
+		}
+		for _, r := range rows {
+			if r.Provider == "oracle" {
+				return r
+			}
+		}
+		t.Fatal("no oracle row")
+		return nodeProviderResource{}
+	}
+	rootReq := httptest.NewRequest(http.MethodGet, "/api/v1/node-providers", nil)
+	rootReq.AddCookie(cookie)
+	rec := httptest.NewRecorder()
+	rt.Handler().ServeHTTP(rec, rootReq)
+	own := oracle(rec)
+	if len(own.Accounts) != 1 || own.Accounts[0].Region != "us-ashburn-1" || !own.Connected || own.HasToken {
+		t.Fatalf("root oracle row = %+v", own)
+	}
+	tokReq := httptest.NewRequest(http.MethodGet, "/api/v1/node-providers", nil)
+	tokReq.Header.Set("Authorization", "Bearer "+plaintext)
+	rec = httptest.NewRecorder()
+	rt.Handler().ServeHTTP(rec, tokReq)
+	if hidden := oracle(rec); len(hidden.Accounts) != 0 || hidden.Connected {
+		t.Errorf("hidden account leaked to a read-only token: %+v", hidden)
+	}
 }

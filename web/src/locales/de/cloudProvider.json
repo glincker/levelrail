@@ -340,5 +340,15 @@
       "paste": "In Verbinden einfügen",
       "verify": "Levelrail prüft ihn mit einem reinen Lesetest"
     }
+  },
+  "linkedAccounts": {
+    "title": "Cloud-Konten",
+    "manage": "In Cloud-Konten verwalten",
+    "add": "Konto hinzufügen",
+    "active": "Aktiv",
+    "attention": "Prüfung nötig",
+    "relogin": "Neu anmelden nötig",
+    "managed": "Standard",
+    "legacyHint": "Die ältere einzelne Zugangsdaten-Variante unten bleibt aus Kompatibilitätsgründen bestehen; verwalte diesen Anbieter über seine Konten."
   }
 }

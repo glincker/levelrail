@@ -14,9 +14,22 @@ export type NodeProviderMethod =
 
 export type NodeProviderStatus = 'connected' | 'not_connected' | 'test_failed'
 
+export interface NodeProviderAccount {
+  id: string
+  label: string
+  status: string
+  auth_method: string
+  region?: string
+  needs_relogin: boolean
+  managed: boolean
+}
+
 export interface NodeProviderResource {
   provider: string
   has_token: boolean
+  // True when the legacy credential or any active cloud account exists.
+  connected?: boolean
+  accounts?: NodeProviderAccount[]
   status?: NodeProviderStatus
   methods?: NodeProviderMethod[]
   method?: NodeProviderMethod

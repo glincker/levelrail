@@ -340,5 +340,15 @@
       "paste": "Pégalo en Conectar",
       "verify": "Levelrail lo verifica con una comprobación de solo lectura"
     }
+  },
+  "linkedAccounts": {
+    "title": "Cuentas cloud",
+    "manage": "Gestionar en Cuentas cloud",
+    "add": "Añadir cuenta",
+    "active": "Activa",
+    "attention": "Requiere atención",
+    "relogin": "Requiere nuevo inicio de sesión",
+    "managed": "Predeterminada",
+    "legacyHint": "La credencial única anterior de abajo se mantiene por compatibilidad; gestiona este proveedor desde sus cuentas."
   }
 }

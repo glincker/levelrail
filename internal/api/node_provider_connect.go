@@ -90,9 +90,25 @@ type nodeProviderResource struct {
 	LastTestedAt   *time.Time `json:"last_tested_at,omitempty"`
 	LastTestOK     *bool      `json:"last_test_ok,omitempty"`
 	LastTestDetail string     `json:"last_test_detail,omitempty"`
+	// Connected is true when the legacy credential or any active cloud account exists.
+	Connected bool `json:"connected"`
+	// Accounts are the cloud accounts the caller may view; no secret is part of them.
+	Accounts []nodeProviderAccount `json:"accounts"`
 	// Capabilities is set only on the save response, so the panel can render
 	// right after a token is stored.
 	Capabilities *provision.ProviderCapabilities `json:"capabilities,omitempty"`
+}
+
+// nodeProviderAccount is the safe summary of one cloud account under a provider.
+type nodeProviderAccount struct {
+	ID           string `json:"id"`
+	Label        string `json:"label"`
+	Status       string `json:"status"`
+	AuthMethod   string `json:"auth_method"`
+	Region       string `json:"region,omitempty"`
+	NeedsRelogin bool   `json:"needs_relogin"`
+	// Managed marks the "<provider>-default" account mirrored from the legacy credential.
+	Managed bool `json:"managed"`
 }
 
 // NodeProviderConnectionStore is the store surface for connection metadata.
@@ -157,7 +173,49 @@ func (rt *Router) handleListNodeProviders(w http.ResponseWriter, r *http.Request
 		rt.internalError(w, "api: list node providers failed", err)
 		return
 	}
+	rt.attachNodeProviderAccounts(r, out)
 	writeJSON(w, http.StatusOK, out)
+}
+
+// attachNodeProviderAccounts adds the cloud accounts the caller may view. A failure
+// leaves the legacy fields intact rather than hiding the page.
+func (rt *Router) attachNodeProviderAccounts(r *http.Request, out []nodeProviderResource) {
+	for i := range out {
+		out[i].Accounts = []nodeProviderAccount{}
+		out[i].Connected = out[i].HasToken
+	}
+	st, ok := rt.cloudAcctStore()
+	if !ok {
+		return
+	}
+	accts, err := st.ListCloudAccounts(r.Context(), "")
+	if err == nil {
+		accts, err = rt.cloudAccountVisible(r, st, accts)
+	}
+	if err != nil {
+		rt.logger.Warn("api: node provider accounts unavailable", slog.String("error", err.Error()))
+		return
+	}
+	byProvider := map[string]int{}
+	for i := range out {
+		byProvider[out[i].Provider] = i
+	}
+	for _, a := range accts {
+		i, found := byProvider[a.Provider]
+		if !found {
+			continue
+		}
+		w := rt.toCloudAccountWire(r.Context(), a)
+		var cfg struct {
+			Region string `json:"region"`
+		}
+		_ = json.Unmarshal(w.Config, &cfg)
+		out[i].Accounts = append(out[i].Accounts, nodeProviderAccount{ID: a.ID, Label: a.DisplayName, Status: a.Status,
+			AuthMethod: a.AuthMethod, Region: cfg.Region, NeedsRelogin: w.NeedsRelogin, Managed: a.ID == store.DefaultCloudAccountID(a.Provider)})
+		if a.Status == store.CloudAccountStatusActive {
+			out[i].Connected = true
+		}
+	}
 }
 
 // setNodeProviderCredentialRequest is the body of POST

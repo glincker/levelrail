@@ -340,5 +340,15 @@
       "paste": "粘贴到“连接”中",
       "verify": "Levelrail 用只读检查进行验证"
     }
+  },
+  "linkedAccounts": {
+    "title": "云账户",
+    "manage": "在云账户中管理",
+    "add": "添加账户",
+    "active": "正常",
+    "attention": "需要关注",
+    "relogin": "需要重新登录",
+    "managed": "默认",
+    "legacyHint": "下方较早的单一凭据为兼容而保留,请通过账户管理此提供商。"
   }
 }

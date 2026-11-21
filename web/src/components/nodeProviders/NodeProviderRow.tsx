@@ -11,6 +11,7 @@ import { RelativeTime } from '../kit/RelativeTime'
 import { nodeProviderBrand } from '../../lib/providerBrands'
 import type { NodeProviderResource } from '../../types/nodeProvision'
 import { CONNECT_DIALOG_PARAMS } from './connectDialogParams'
+import { NodeProviderAccounts } from './NodeProviderAccounts'
 import { NodeProviderConnectDialog } from './NodeProviderConnectDialog'
 
 const NAME_KEYS = {
@@ -55,7 +56,7 @@ export function NodeProviderRow({
   )
   const known = asKnown(provider.provider)
   const label = known ? t(NAME_KEYS[known]) : provider.provider
-  const connected = provider.has_token
+  const connected = provider.connected ?? provider.has_token
   const failed = provider.status === 'test_failed'
   const detail =
     provider.label && provider.provider === 'custom'
@@ -122,8 +123,11 @@ export function NodeProviderRow({
         }}
       >
         <SettingsGlassIcon size="1.4em" aria-hidden="true" />
-        {connected ? t('nodeProviders.update') : t('nodeProviders.connect')}
+        {provider.has_token
+          ? t('nodeProviders.update')
+          : t('nodeProviders.connect')}
       </Button>
+      <NodeProviderAccounts provider={provider} />
       <NodeProviderConnectDialog
         provider={provider}
         label={label}
