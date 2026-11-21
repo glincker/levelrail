@@ -55,6 +55,9 @@ type cloudConnectionConfig struct {
 	VaultRole      string `json:"vault_role,omitempty"`
 	VaultNamespace string `json:"vault_namespace,omitempty"`
 	VaultTokenRef  string `json:"vault_token_ref,omitempty"`
+	StartURL       string `json:"start_url,omitempty"`
+	SSORegion      string `json:"sso_region,omitempty"`
+	RoleName       string `json:"role_name,omitempty"`
 }
 
 // cloudConnectionResource never carries credential material; credential_ref is a reference, not a value.

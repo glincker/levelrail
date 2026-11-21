@@ -150,6 +150,15 @@ func (rt *Router) accountAWSCredentials(ctx context.Context, a store.CloudAccoun
 		}
 		return provision.AWSCredentials{Region: cfg.Region, AccessKeyID: k.AccessKeyID, SecretAccessKey: k.SecretAccessKey, SessionToken: k.SessionToken}, nil
 	}
+	if isAWSSSOAccount(a) {
+		var cfg cloudconn.Config
+		_ = json.Unmarshal(a.Config, &cfg)
+		k, _, kerr := rt.awsProvider().SSOKeys(ctx, awsTarget(a, token))
+		if kerr != nil {
+			return provision.AWSCredentials{}, kerr
+		}
+		return provision.AWSCredentials{Region: cfg.Region, AccessKeyID: k.AccessKeyID, SecretAccessKey: k.SecretAccessKey, SessionToken: k.SessionToken}, nil
+	}
 	if isAWSRoleAccount(a) {
 		var cfg cloudconn.Config
 		_ = json.Unmarshal(a.Config, &cfg)

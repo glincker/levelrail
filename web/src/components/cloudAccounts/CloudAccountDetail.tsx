@@ -19,6 +19,7 @@ import {
   useVerifyCloudAccount,
 } from '../../queries/cloudAccounts'
 import type { CloudVerifyResult } from '../../types/cloudAccounts'
+import { AwsSsoLogin } from './AwsSsoLogin'
 import { CapabilityResults } from './CapabilityResults'
 import { CloudAccountAccess } from './CloudAccountAccess'
 import { DoctorPanel } from './DoctorPanel'
@@ -94,6 +95,12 @@ export function CloudAccountDetail({ id }: Readonly<{ id: string }>) {
       }
       width="wide"
     >
+      {a.needs_relogin ? (
+        <div role="alert" className="mb-3 space-y-2 rounded-md border p-3">
+          <p className="text-sm">{t('sso.reloginNeeded')}</p>
+          <AwsSsoLogin reloginAccountId={a.id} />
+        </div>
+      ) : null}
       <Tabs defaultValue="overview">
         <TabsList aria-label={t('detail.tabs')}>
           <TabsTrigger value="overview">{t('detail.overview')}</TabsTrigger>

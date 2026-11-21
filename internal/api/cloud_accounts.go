@@ -128,6 +128,9 @@ func (rt *Router) toCloudAccountWire(ctx context.Context, a store.CloudAccount) 
 			w.ReloginCommand = cloudconn.OracleReloginCommand("")
 		}
 	}
+	if isAWSSSOAccount(a) {
+		w.NeedsRelogin = rt.ssoNeedsRelogin(ctx, a)
+	}
 	return w
 }
 
@@ -253,7 +256,7 @@ func isAWSVaultAccount(a store.CloudAccount) bool {
 
 // isAWSBrokeredAccount covers the methods that assume a role or lease short lived keys.
 func isAWSBrokeredAccount(a store.CloudAccount) bool {
-	return isAWSRoleAccount(a) || isAWSVaultAccount(a)
+	return isAWSRoleAccount(a) || isAWSVaultAccount(a) || isAWSSSOAccount(a)
 }
 
 func awsVaultAccountConfig(req createCloudAccountRequest) (map[string]string, string) {
@@ -591,14 +594,17 @@ var cloudCheckMessages = map[string]string{
 	cloudconn.ClassConfigInvalid:        "The account settings do not validate.",
 	cloudconn.ClassCredentialUnresolved: "The credential could not be read.",
 	cloudconn.ClassUnknown:              "The check failed for an unclassified reason.",
-	cloudconn.ClassNeedsRelogin:         "The browser session expired or is about to; log in again and replace the session.",
+	cloudconn.ClassNeedsRelogin:         "The sign in expired or is about to; sign in again.",
 }
 
 func (rt *Router) awsProvider() *cloudconn.AWSProvider {
-	if p, ok := rt.cloudProviders[cloudconn.ProviderAWS].(*cloudconn.AWSProvider); ok {
-		return p
+	p, ok := rt.cloudProviders[cloudconn.ProviderAWS].(*cloudconn.AWSProvider)
+	if !ok {
+		p = cloudconn.NewAWSProvider(cloudconn.AWSOptions{})
 	}
-	return cloudconn.NewAWSProvider(cloudconn.AWSOptions{})
+	// Refreshed aws_sso tokens are sealed again through the router that serves the call.
+	p.SSOBroker().SetPersist(rt.persistSSOBundle)
+	return p
 }
 
 func awsTarget(a store.CloudAccount, credential string) cloudconn.Target {

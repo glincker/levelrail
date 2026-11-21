@@ -7,6 +7,7 @@ export interface CloudAccount {
   team_id?: string
   status: string
   linked: boolean
+  needs_relogin?: boolean
   last_verified_at?: string
   created_by?: string
   created_at: string
@@ -275,4 +276,33 @@ export interface AwsCleanupPlan {
     addresses: { id: string; detail: string }[] | null
     snapshots: { id: string; detail: string }[] | null
   }
+}
+
+export interface AwsSsoStart {
+  session_id: string
+  user_code: string
+  verification_uri: string
+  verification_uri_complete: string
+  interval: number
+  expires_in: number
+}
+
+export interface AwsSsoAccount {
+  account_id: string
+  account_name: string
+  roles: string[]
+}
+
+export interface AwsSsoPoll {
+  status: 'pending' | 'slow_down' | 'done' | 'denied'
+  interval?: number
+  accounts?: AwsSsoAccount[]
+  account_id?: string
+}
+
+export interface AwsSsoSelectInput {
+  session_id: string
+  account_id: string
+  role_name: string
+  name?: string
 }

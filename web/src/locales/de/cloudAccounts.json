@@ -482,5 +482,26 @@
       "fail": "Fehler",
       "skip": "Übersprungen"
     }
+  },
+  "sso": {
+    "option": "Stattdessen mit AWS SSO anmelden",
+    "back": "Stattdessen Rolle oder Vault nutzen",
+    "title": "Mit AWS SSO anmelden",
+    "startUrl": "Start-URL des Identity Center",
+    "region": "Region des Identity Center",
+    "start": "Anmeldung starten",
+    "enterCode": "AWS öffnen und diesen Code bestätigen:",
+    "openBrowser": "AWS-Anmeldeseite öffnen",
+    "waiting": "Warte auf deine Freigabe im Browser.",
+    "pickRole": "Konto und Rolle zum Verknüpfen wählen.",
+    "noAccounts": "Dieser Login hat keine zugewiesenen Konten.",
+    "label": "Bezeichnung (optional)",
+    "link": "Konto verknüpfen",
+    "denied": "Die Anmeldung wurde abgelehnt oder ist abgelaufen. Starte neu.",
+    "reloginDone": "Erneut angemeldet.",
+    "relogin": "Erneut anmelden",
+    "reloginNeeded": "Die AWS-Anmeldung ist abgelaufen. Melde dich erneut an, um das Konto weiter zu nutzen.",
+    "startUrlExample": "https://d-1234567890.awsapps.com/start",
+    "regionExample": "eu-west-1"
   }
 }
