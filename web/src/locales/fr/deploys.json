@@ -836,5 +836,11 @@
     "nodeNeeded": "Un builder précis nécessite de choisir un builder.",
     "modeTipLabel": "À propos du placement des builds",
     "modeTip": "Automatique suit la stratégie globale. Plan de contrôle uniquement compile toujours sur ce serveur, jamais sur un builder. Un builder précis utilise celui que vous choisissez, et Ce builder uniquement empêche le repli sur un autre node."
+  },
+  "copyRow": {
+    "rolledBackTo": "Retour à {{id}}",
+    "rolledBack": "Retour arrière",
+    "promotedFrom": "Promu depuis {{id}}",
+    "promoted": "Promu"
   }
 }

@@ -33,6 +33,22 @@ const attempt = (i: number) => ({
 })
 
 describe('RecentDeploys', () => {
+  it('labels a rollback copy row and hides its duration', () => {
+    h.attempts = [
+      {
+        ...attempt(1),
+        commit_message: undefined,
+        reason: 'RollbackTo: dep_abcdef1234567',
+        finished_at: '2026-01-01T00:00:00Z',
+      },
+    ]
+    render(<RecentDeploys name="docs" onViewAll={vi.fn()} />)
+    expect(
+      screen.getByText('copyRow.rolledBackTo:{"id":"dep_abcdef12"}'),
+    ).toBeTruthy()
+    expect(screen.queryByText(/overview.duration/)).toBeNull()
+  })
+
   it('renders at most five rows with sha, message, state and build time', () => {
     h.attempts = Array.from({ length: 7 }, (_, i) => attempt(i))
     render(<RecentDeploys name="docs" onViewAll={vi.fn()} />)

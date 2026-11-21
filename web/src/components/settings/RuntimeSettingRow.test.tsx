@@ -82,6 +82,63 @@ describe('RuntimeSettingRow weakening reset', () => {
   })
 })
 
+describe('RuntimeSettingRow save confirmation', () => {
+  const windowSetting: RuntimeSetting = {
+    ...buildNetwork,
+    key: 'security.replay_window',
+    kind: 'int',
+    default: 600,
+    value: 600,
+    allowed_strings: undefined,
+  }
+
+  function renderRow() {
+    render(
+      <QueryClientProvider client={new QueryClient()}>
+        <AllI18n>
+          <RuntimeSettingRow setting={windowSetting} canEdit />
+        </AllI18n>
+      </QueryClientProvider>,
+    )
+  }
+
+  it('saves straight away when the server does not flag a weakening', async () => {
+    const fetchMock = vi.fn(() =>
+      Promise.resolve(
+        new Response(JSON.stringify(windowSetting), { status: 200 }),
+      ),
+    )
+    vi.stubGlobal('fetch', fetchMock)
+    renderRow()
+    fireEvent.change(screen.getByRole('spinbutton'), {
+      target: { value: '900' },
+    })
+    fireEvent.click(screen.getByRole('button', { name: /^save$/i }))
+    await waitFor(() => expect(fetchMock).toHaveBeenCalledTimes(1))
+    expect(screen.queryByText('Lower this protection?')).toBeNull()
+    vi.unstubAllGlobals()
+  })
+
+  it('asks to confirm only when the server requires it', async () => {
+    const fetchMock = vi.fn(() =>
+      Promise.resolve(
+        new Response(
+          JSON.stringify({ error: 'weakens', code: 'confirmation_required' }),
+          { status: 400, headers: { 'Content-Type': 'application/json' } },
+        ),
+      ),
+    )
+    vi.stubGlobal('fetch', fetchMock)
+    renderRow()
+    fireEvent.change(screen.getByRole('spinbutton'), {
+      target: { value: '900' },
+    })
+    fireEvent.click(screen.getByRole('button', { name: /^save$/i }))
+    expect(await screen.findByText('Lower this protection?')).toBeTruthy()
+    vi.unstubAllGlobals()
+  })
+})
+
 describe('RuntimeSettingRow risk badge', () => {
   function renderRow(setting: RuntimeSetting) {
     render(

@@ -21,6 +21,8 @@ func runPagesDelete(prog string, args []string, stdout, stderr io.Writer, lookup
 
 func runSiteDelete(prog, cmd string, withApp bool, args []string, stdout, stderr io.Writer, lookupEnv func(string) (string, bool)) int {
 	fs, tokenFlagP, apiURLFlagP, profileFlagP, jsonOutP, outputFlagP, queryFlagP := apiFlagSet(prog, cmd, "print {\"deleted\": true} as JSON to stdout on success and nothing else", stderr)
+	// Delete never prompts; --yes is accepted so scripts can pass it like other destructive commands.
+	fs.Bool("yes", false, "accepted for consistency with other destructive commands; delete never prompts")
 	fs.Usage = func() { _, _ = fmt.Fprint(stderr, staticSitesDeleteUsage(prog)) }
 
 	tokenFlag, apiURLFlag, profileFlag, jsonOut, of, exitCode, ok := parseAPIFlags(fs, args, apiFlagPtrs{tokenFlagP, apiURLFlagP, profileFlagP, jsonOutP, outputFlagP, queryFlagP}, prog, stderr)
@@ -65,6 +67,7 @@ Flags:
   --json                    print {"deleted": true} as JSON to stdout on success, nothing else
   --output string          output format: json, table, or text (default table; --json is shorthand for --output json)
   --query string           JMESPath expression to filter the result before printing
+  --yes                     accepted for consistency; delete never prompts
   -h, --help               show this help
 `, prog, apiTokenEnvHelp, apiURLEnvHelp, defaultAPIURL)
 }

@@ -14,6 +14,7 @@ import {
 } from '@/components/ui/table'
 import { useCopyToClipboard } from '../../hooks/useCopyToClipboard'
 import { useDeployProgress } from '../../hooks/useDeployProgress'
+import { copyLabelKey, deployCopyOf } from '../../lib/deployCopy'
 import { formatAge } from '../../lib/format'
 import type { DeployAttempt } from '../../types/deployAttempt'
 import {
@@ -63,7 +64,9 @@ function CopySha({ attempt }: Readonly<{ attempt: DeployAttempt }>) {
 
 function StateCell({ attempt }: Readonly<{ attempt: DeployAttempt }>) {
   const { t } = useTranslation('pagesSites')
-  const secs = buildSeconds(attempt.started_at, attempt.finished_at)
+  const secs = deployCopyOf(attempt)
+    ? null
+    : buildSeconds(attempt.started_at, attempt.finished_at)
   const dur = secs === null ? null : splitDuration(secs)
   return (
     <span className="inline-flex items-center gap-1.5 text-xs">
@@ -174,7 +177,12 @@ function DeployRow({
   onLog: () => void
 }>) {
   const { t } = useTranslation('pagesSites')
-  const message = a.commit_message?.split('\n')[0]
+  const { t: td } = useTranslation('deploys')
+  const copy = deployCopyOf(a)
+  const copyLabel = copy
+    ? td(copyLabelKey(copy), { id: copy.target })
+    : undefined
+  const message = copyLabel ?? a.commit_message?.split('\n')[0]
   return (
     <>
       <TableRow

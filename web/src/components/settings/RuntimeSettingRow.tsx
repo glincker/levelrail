@@ -21,7 +21,6 @@ import { Textarea } from '@/components/ui/textarea'
 import { toast } from '@/components/ui/toast'
 import {
   draftOf,
-  needsConfirm,
   settingItemId,
   toWrite,
   valueLabelKey,
@@ -90,6 +89,11 @@ export function RuntimeSettingRow({
           toast.add({ type: 'success', title: t('toast.saved', { title }) })
         },
         onError: (err) => {
+          // The server decides what lowers a protection, so only then ask.
+          if (!confirmWeakening && err instanceof ResetConfirmationError) {
+            setConfirming(next)
+            return
+          }
           if (confirmWeakening) return
           toast.add({
             type: 'error',
@@ -125,10 +129,6 @@ export function RuntimeSettingRow({
   }
 
   function request(next: RuntimeSettingWrite) {
-    if (needsConfirm(setting, next)) {
-      setConfirming(next)
-      return
-    }
     submit(next)
   }
 

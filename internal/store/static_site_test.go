@@ -222,3 +222,30 @@ func TestDeleteStaticSiteClearsSettingsOfUnpublishedApp(t *testing.T) {
 		t.Fatalf("hook after delete = %q, %v", hash, err)
 	}
 }
+
+// A Pages site's backing app shares its name and domains, so repeated
+// deploys must not collide with the app's own claim.
+func TestSaveStaticSite_OwnAppDomain_RepeatedDeploys(t *testing.T) {
+	db := openTestDB(t)
+	ctx := context.Background()
+
+	if err := db.SaveDesiredService(ctx, DesiredService{
+		Name: "docs", Image: "img:v1", Port: 80, Domains: []string{"docs.example.com"},
+	}); err != nil {
+		t.Fatalf("SaveDesiredService(docs) error = %v", err)
+	}
+	for i, root := range []string{"/data/static/docs/a", "/data/static/docs/b"} {
+		if err := db.SaveStaticSite(ctx, StaticSite{Name: "docs", Domains: []string{"docs.example.com"}, RootDir: root}); err != nil {
+			t.Fatalf("deploy %d: SaveStaticSite() error = %v", i+1, err)
+		}
+	}
+	sites, err := db.ListStaticSites(ctx)
+	if err != nil || len(sites) != 1 || !reflect.DeepEqual(sites[0].Domains, []string{"docs.example.com"}) {
+		t.Fatalf("ListStaticSites() = %+v, %v", sites, err)
+	}
+	if err := db.SaveDesiredService(ctx, DesiredService{
+		Name: "docs", Image: "img:v2", Port: 80, Domains: []string{"docs.example.com"},
+	}); err != nil {
+		t.Fatalf("re-save app error = %v", err)
+	}
+}

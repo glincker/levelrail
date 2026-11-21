@@ -35,14 +35,17 @@ const WAYS: { key: WayKey; icon: UiIcon }[] = [
 export function MoreWays({
   onPlan,
   embedded = false,
+  defaultOpen = null,
 }: {
   onPlan: (plan: ImportPlan, request: ImportPlanRequest) => void
   /** Drop the card chrome when the parent already frames it. */
   embedded?: boolean
+  /** Form to show on first render, so a parent tile needs no second click. */
+  defaultOpen?: WayKey | null
 }) {
   const { t } = useTranslation('newApp')
   const navigate = useNavigate()
-  const [open, setOpen] = useState<WayKey | null>(null)
+  const [open, setOpen] = useState<WayKey | null>(defaultOpen)
 
   return (
     <section

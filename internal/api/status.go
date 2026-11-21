@@ -2,8 +2,8 @@ package api
 
 import (
 	"net/http"
-	"syscall"
 
+	"github.com/GLINCKER/levelrail/internal/diskfree"
 	"github.com/GLINCKER/levelrail/internal/docker"
 )
 
@@ -118,14 +118,13 @@ func (rt *Router) handleSystemStatus(w http.ResponseWriter, r *http.Request) {
 	}
 
 	if rt.dataDir != "" {
-		var stat syscall.Statfs_t
-		if err := syscall.Statfs(rt.dataDir, &stat); err == nil {
+		if stat, err := diskfree.Stat(rt.dataDir); err == nil {
 			// Bavail (blocks available to an unprivileged user) is the
 			// honest "free" number to show an operator deciding whether
 			// they're about to run out of room, not Bfree (includes
 			// root-reserved blocks).
-			resp.DataDirTotalBytes = int64(stat.Blocks) * int64(stat.Bsize) //nolint:gosec // statfs fields are always non-negative in practice
-			resp.DataDirFreeBytes = int64(stat.Bavail) * int64(stat.Bsize)  //nolint:gosec // statfs fields are always non-negative in practice
+			resp.DataDirTotalBytes = stat.Total
+			resp.DataDirFreeBytes = stat.Free
 		}
 	}
 

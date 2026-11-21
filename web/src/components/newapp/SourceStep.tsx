@@ -292,7 +292,9 @@ export function SourceStep({
 
       {choice === 'template' ? <FeaturedTemplates /> : null}
 
-      {choice === 'image' ? <MoreWays onPlan={onPlan} embedded /> : null}
+      {choice === 'image' ? (
+        <MoreWays onPlan={onPlan} embedded defaultOpen="image" />
+      ) : null}
 
       {choice === 'sample' ? (
         <section

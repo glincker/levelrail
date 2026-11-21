@@ -82,6 +82,20 @@ function useInvalidate() {
     queryClient.invalidateQueries({ queryKey: runtimeSettingsKeys.all })
 }
 
+// Thrown when the server says a write or reset weakens a protection and needs an explicit yes.
+export class ResetConfirmationError extends ApiError {}
+
+async function throwIfConfirmation(res: Response) {
+  if (res.status !== 400) return
+  const body = (await res
+    .clone()
+    .json()
+    .catch(() => null)) as { code?: string; error?: string } | null
+  if (body?.code === 'confirmation_required') {
+    throw new ResetConfirmationError(400, body.error ?? 'confirmation required')
+  }
+}
+
 export function useSetRuntimeSetting() {
   const invalidate = useInvalidate()
   return useMutation({
@@ -90,23 +104,20 @@ export function useSetRuntimeSetting() {
       key: string
       value: RuntimeSettingWrite
       confirmWeakening?: boolean
-    }) =>
-      json<RuntimeSetting>(
-        await fetch(
-          `${BASE}/${encodeURIComponent(v.key)}`,
-          send('PUT', {
-            value: v.value,
-            ...(v.confirmWeakening ? { confirm_weakening: true } : {}),
-          }),
-        ),
-        'save setting',
-      ),
+    }) => {
+      const res = await fetch(
+        `${BASE}/${encodeURIComponent(v.key)}`,
+        send('PUT', {
+          value: v.value,
+          ...(v.confirmWeakening ? { confirm_weakening: true } : {}),
+        }),
+      )
+      await throwIfConfirmation(res)
+      return json<RuntimeSetting>(res, 'save setting')
+    },
     onSuccess: invalidate,
   })
 }
-
-// Thrown when a reset would restore a weaker value and needs an explicit yes.
-export class ResetConfirmationError extends ApiError {}
 
 export function useResetRuntimeSetting() {
   const invalidate = useInvalidate()
@@ -118,18 +129,7 @@ export function useResetRuntimeSetting() {
         }`,
         send('DELETE'),
       )
-      if (res.status === 400) {
-        const body = (await res
-          .clone()
-          .json()
-          .catch(() => null)) as { code?: string; error?: string } | null
-        if (body?.code === 'confirmation_required') {
-          throw new ResetConfirmationError(
-            400,
-            body.error ?? 'confirmation required',
-          )
-        }
-      }
+      await throwIfConfirmation(res)
       return json<RuntimeSetting>(res, 'reset setting')
     },
     onSuccess: invalidate,

@@ -830,5 +830,11 @@
     "nodeNeeded": "A specific builder needs a builder picked.",
     "modeTipLabel": "About build placement",
     "modeTip": "Automatic follows the global strategy. Control plane only always builds on this server and never on a builder. Specific builder uses the one you pick, and Only this builder stops it falling back to another node."
+  },
+  "copyRow": {
+    "rolledBackTo": "Rolled back to {{id}}",
+    "rolledBack": "Rolled back",
+    "promotedFrom": "Promoted from {{id}}",
+    "promoted": "Promoted"
   }
 }

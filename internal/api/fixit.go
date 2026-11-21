@@ -260,8 +260,7 @@ func (rt *Router) addressCandidates(ctx context.Context) []fixit.Option {
 }
 
 func (rt *Router) fixitDiskFree(context.Context) (int64, int64, error) {
-	var st syscallStatfs
-	return statfsBytes(rt.dataDir, &st)
+	return statfsBytes(rt.dataDir)
 }
 
 func (rt *Router) fixitReclaimable(ctx context.Context) (fixit.DiskReclaim, error) {

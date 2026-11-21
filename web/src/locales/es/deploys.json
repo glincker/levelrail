@@ -830,5 +830,11 @@
     "nodeNeeded": "Un compilador concreto necesita que elija uno.",
     "modeTipLabel": "Sobre dónde se compila",
     "modeTip": "Automático sigue la estrategia global. Solo el plano de control compila siempre en este servidor, nunca en un compilador. Un compilador concreto usa el que elija, y Solo este compilador impide que pase a otro nodo."
+  },
+  "copyRow": {
+    "rolledBackTo": "Revertido a {{id}}",
+    "rolledBack": "Revertido",
+    "promotedFrom": "Promovido desde {{id}}",
+    "promoted": "Promovido"
   }
 }

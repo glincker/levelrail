@@ -100,7 +100,8 @@ func claimStaticSiteDomains(ctx context.Context, tx *sql.Tx, siteName string, do
 		if err != nil {
 			return fmt.Errorf("check domain %q availability: %w", domain, err)
 		}
-		if found {
+		// A site's backing app shares its name and holds the same domains.
+		if found && owner != siteName {
 			return &ErrDomainTaken{Domain: domain, Owner: owner}
 		}
 

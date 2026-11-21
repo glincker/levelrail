@@ -8,10 +8,10 @@ import (
 	"sort"
 	"strings"
 	"sync"
-	"syscall"
 	"time"
 
 	"github.com/GLINCKER/levelrail/internal/appimport"
+	"github.com/GLINCKER/levelrail/internal/diskfree"
 	"github.com/GLINCKER/levelrail/internal/dockerssh"
 	"github.com/GLINCKER/levelrail/internal/imagemove"
 	"github.com/GLINCKER/levelrail/internal/platformimport"
@@ -210,11 +210,11 @@ func (rt *Router) targetFreeBytes() int64 {
 	if rt.dataDir == "" {
 		return -1
 	}
-	var st syscall.Statfs_t
-	if err := syscall.Statfs(rt.dataDir, &st); err != nil {
+	info, err := diskfree.Stat(rt.dataDir)
+	if err != nil {
 		return -1
 	}
-	return int64(st.Bavail) * int64(st.Bsize) //nolint:gosec // statfs fields are non-negative in practice
+	return info.Free
 }
 
 // appImportCalc is one evaluation of a session against the live discovery.

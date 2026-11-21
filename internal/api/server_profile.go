@@ -6,9 +6,9 @@ import (
 	"log/slog"
 	"net/http"
 	"strings"
-	"syscall"
 	"time"
 
+	"github.com/GLINCKER/levelrail/internal/diskfree"
 	"github.com/GLINCKER/levelrail/internal/experimental"
 	"github.com/GLINCKER/levelrail/internal/network"
 	"github.com/GLINCKER/levelrail/internal/profile"
@@ -236,11 +236,14 @@ func (rt *Router) handleSetServerProfile(w http.ResponseWriter, r *http.Request)
 }
 
 func diskTotalBytes(dir string) int64 {
-	var st syscall.Statfs_t
-	if dir == "" || syscall.Statfs(dir, &st) != nil {
+	if dir == "" {
 		return 0
 	}
-	return int64(st.Blocks) * int64(st.Bsize) //nolint:gosec // block counts of a real filesystem fit int64
+	info, err := diskfree.Stat(dir)
+	if err != nil {
+		return 0
+	}
+	return info.Total
 }
 
 func problemSummary(ps []profile.Problem) string {

@@ -4,9 +4,9 @@ import (
 	"context"
 	"net/http"
 	"os"
-	"syscall"
 	"time"
 
+	"github.com/GLINCKER/levelrail/internal/diskfree"
 	"github.com/GLINCKER/levelrail/internal/selfupgrade"
 	"github.com/GLINCKER/levelrail/internal/version"
 	"github.com/GLINCKER/levelrail/kit/upgrade"
@@ -214,11 +214,8 @@ func (rt *Router) dataDirFreeBytes() func() (int64, error) {
 		return nil
 	}
 	return func() (int64, error) {
-		var st syscall.Statfs_t
-		if err := syscall.Statfs(rt.dataDir, &st); err != nil {
-			return 0, err
-		}
-		return int64(st.Bavail) * int64(st.Bsize), nil //nolint:gosec // statfs fields are non-negative
+		info, err := diskfree.Stat(rt.dataDir)
+		return info.Free, err
 	}
 }
 
