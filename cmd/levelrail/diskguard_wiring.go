@@ -28,6 +28,9 @@ func startDiskGuard(ctx context.Context, logger *slog.Logger, dataDir string, ch
 				continue
 			}
 			if err := notifier.SendNotice(ctx, c, text); err != nil {
+				if errors.Is(err, alerting.ErrNoticeSkipped) {
+					continue
+				}
 				logger.Warn("diskguard: notice failed", slog.String("channel_id", c.ID), slog.String("error", err.Error()))
 			}
 		}

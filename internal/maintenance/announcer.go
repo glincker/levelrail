@@ -2,6 +2,7 @@ package maintenance
 
 import (
 	"context"
+	"errors"
 	"fmt"
 	"log/slog"
 	"time"
@@ -84,6 +85,10 @@ func (a *Announcer) Tick(ctx context.Context) error {
 			}
 			enabled++
 			if err := a.Notifier.SendNotice(ctx, c, NoticeText(w)); err != nil {
+				if errors.Is(err, alerting.ErrNoticeSkipped) {
+					enabled--
+					continue
+				}
 				a.Logger.Warn("maintenance: announce failed",
 					slog.String("window_id", w.ID), slog.String("channel_id", c.ID), slog.String("error", err.Error()))
 				continue

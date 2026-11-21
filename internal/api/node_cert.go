@@ -124,9 +124,11 @@ type nodeAgentResource struct {
 	ReportedAt *time.Time `json:"reported_at,omitempty"`
 	// Outdated is true when the agent is older than MinVersion, or has
 	// never reported a version while a minimum is set.
-	Outdated            bool   `json:"outdated"`
-	MinVersion          string `json:"min_version,omitempty"`
-	ControlPlaneVersion string `json:"control_plane_version"`
+	Outdated bool `json:"outdated"`
+	// Capabilities is what the live agent session advertised; empty while offline.
+	Capabilities        []string `json:"capabilities,omitempty"`
+	MinVersion          string   `json:"min_version,omitempty"`
+	ControlPlaneVersion string   `json:"control_plane_version"`
 }
 
 func (rt *Router) nodeCertAndAgent(n store.Node, now time.Time, renewal map[string]store.NodeTrustState) (*nodeCertResource, *nodeAgentResource) {
@@ -161,6 +163,9 @@ func (rt *Router) nodeCertAndAgent(n store.Node, now time.Time, renewal map[stri
 	if ag.MinVersion != "" {
 		cmp, ok := semver.Compare(n.AgentVersion, ag.MinVersion)
 		ag.Outdated = n.AgentVersion == "" || (ok && cmp < 0)
+	}
+	if cp, ok := rt.nodeCerts.sessions.(interface{ NodeCapabilities(string) []string }); ok {
+		ag.Capabilities = cp.NodeCapabilities(n.ID)
 	}
 	return cert, ag
 }

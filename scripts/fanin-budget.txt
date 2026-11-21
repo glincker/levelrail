@@ -27,6 +27,7 @@ internal/dockerguard 75
 internal/edgefw 21
 internal/email 35
 internal/envredact 76
+internal/experimental 32
 internal/extdb 36
 internal/footprint 203
 internal/frameworks 54
@@ -35,6 +36,7 @@ internal/gitsshkey 27
 internal/gpu 190
 internal/identity 190
 internal/loadbalancer 201
+internal/mailtemplates 21
 internal/meshpath 46
 internal/monitor 190
 internal/network 54

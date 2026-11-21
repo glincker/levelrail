@@ -76,6 +76,8 @@ type ContainerState struct {
 	// Created is when the container was created, zero when unknown.
 	Created time.Time
 	Running bool
+	// Health is the Docker health status (healthy, unhealthy, starting), empty without a healthcheck.
+	Health string
 	// Ports reflects live port bindings. Docker only actually binds a
 	// container's published ports once it's running, so this is empty
 	// for a created-but-not-yet-started container, not an error.

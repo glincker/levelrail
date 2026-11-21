@@ -39,6 +39,9 @@ func (n ChannelNotifier) Notify(ctx context.Context, channelIDs []string, text s
 			continue
 		}
 		if err := n.Sender.SendNotice(ctx, *ch, text); err != nil {
+			if errors.Is(err, alerting.ErrNoticeSkipped) {
+				continue
+			}
 			errs = append(errs, fmt.Errorf("channel %q: %w", id, err))
 		}
 	}

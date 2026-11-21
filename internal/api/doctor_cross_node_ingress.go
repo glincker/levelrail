@@ -5,6 +5,7 @@ import (
 	"fmt"
 	"strings"
 
+	"github.com/GLINCKER/levelrail/internal/experimental"
 	"github.com/GLINCKER/levelrail/internal/reconcile"
 	"github.com/GLINCKER/levelrail/internal/store"
 )
@@ -14,6 +15,20 @@ import (
 // WireGuard path reaches it. blocked is false for a local app, an app with
 // no host to route, or a remote app whose mesh path is up.
 func (rt *Router) remoteIngressBlock(ctx context.Context, svc store.DesiredService) (hosts []string, why string, blocked bool) {
+	hosts, why, blocked = rt.meshIngressBlock(ctx, svc)
+	if blocked && rt.viaAgentTunnel(svc.NodeID) {
+		return nil, "", false
+	}
+	return hosts, why, blocked
+}
+
+// viaAgentTunnel is true when the flag is on and the node's agent can carry ingress tunnels.
+func (rt *Router) viaAgentTunnel(nodeID string) bool {
+	return rt.agentTunnels != nil && experimental.Enabled(experimental.AgentIngressTunnel) && rt.agentTunnels(nodeID)
+}
+
+// meshIngressBlock is the mesh-only verdict, before any tunnel fallback.
+func (rt *Router) meshIngressBlock(ctx context.Context, svc store.DesiredService) (hosts []string, why string, blocked bool) {
 	if rt.isLocalNode(svc.NodeID) {
 		return nil, "", false
 	}
@@ -91,9 +106,17 @@ func (rt *Router) doctorCheckCrossNodeIngress(ctx context.Context) []doctorCheck
 // for an app whose host is unreachable. Returns nil (clearing it) when the
 // app is local, has no host, or its mesh path is usable.
 func (rt *Router) crossNodeIngressAppCondition(ctx context.Context, svc store.DesiredService) *reconcile.Condition {
-	hosts, why, blocked := rt.remoteIngressBlock(ctx, svc)
+	hosts, why, blocked := rt.meshIngressBlock(ctx, svc)
 	if !blocked {
 		return nil
+	}
+	if rt.viaAgentTunnel(svc.NodeID) {
+		return &reconcile.Condition{
+			Type:    "CrossNodeIngress",
+			Status:  reconcile.ConditionTrue,
+			Reason:  "AgentTunnel",
+			Message: fmt.Sprintf("host(s) %s reach %q through the agent tunnel because the node has no usable mesh path", strings.Join(hosts, ", "), svc.Name),
+		}
 	}
 	return &reconcile.Condition{
 		Type:   "CrossNodeIngress",

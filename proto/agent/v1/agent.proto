@@ -57,6 +57,12 @@ service AgentService {
   // for its node, without opening a Session. The agent uses it to test a
   // renewed certificate before discarding the old one.
   rpc CheckIdentity(CheckIdentityRequest) returns (CheckIdentityResponse);
+
+  // Tunnel carries the bytes of one ingress tunnel, opened by the agent
+  // after a TunnelOpenRequest on Session. The first frame is a TunnelHello;
+  // authenticated by the same mTLS identity as Session. Sent only to agents
+  // advertising "ingress_tunnel".
+  rpc Tunnel(stream TunnelFrame) returns (stream TunnelFrame);
 }
 
 message EnrollRequest {
@@ -326,6 +332,9 @@ message AgentRequest {
     // the control plane has no mesh route to. Sent only to agents
     // advertising "host_probe".
     ProbeRequest probe = 27;
+    // TunnelOpen asks the agent to open an ingress tunnel to one of its own
+    // service ports. Sent only to agents advertising "ingress_tunnel".
+    TunnelOpenRequest tunnel_open = 28;
   }
 }
 
@@ -359,6 +368,46 @@ message AgentResponse {
     LogsResponse logs = 16;
     InspectContainersResponse inspect_containers = 17;
     ProbeResponse probe = 18;
+    TunnelOpenResponse tunnel_open = 19;
+  }
+}
+
+// TunnelOpenRequest names the target by service and container port only.
+// The agent resolves the loopback host port itself and never accepts a host
+// or address from the wire.
+message TunnelOpenRequest {
+  // tunnel_id is 16 random bytes, single use.
+  bytes tunnel_id = 1;
+  string service = 2;
+  uint32 container_port = 3;
+  int64 deadline_ns = 4;
+}
+
+// TunnelOpenResponse acknowledges the open; failure_reason is empty when the
+// agent accepted it and will dial the Tunnel RPC.
+message TunnelOpenResponse {
+  string failure_reason = 1;
+}
+
+// TunnelHello is the first frame on the Tunnel RPC and binds it to a pending open.
+message TunnelHello {
+  bytes tunnel_id = 1;
+}
+
+// TunnelReset ends a tunnel with an error; reason is at most 256 bytes.
+message TunnelReset {
+  string reason = 1;
+}
+
+// TunnelFrame is one frame of a tunnel. data carries at most 32768 bytes; a
+// larger frame fails only its own tunnel.
+message TunnelFrame {
+  oneof frame {
+    TunnelHello hello = 1;
+    bytes data = 2;
+    // half_close means the sender will write no more data.
+    Empty half_close = 3;
+    TunnelReset reset = 4;
   }
 }
 

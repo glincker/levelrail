@@ -450,7 +450,12 @@ func (s *bootState) startReconciler() {
 	restartBackoff := newRestartBackoff(logger)
 	wireRestartQuarantine(ctx, restartBackoff, db, s.alertingDB, logger)
 	s.apiRouter.SetCrashBreaker(restartBackoff)
+	agentTunnels := startAgentTunnels(s.agentServer, dataDirFromEnv(), logger, s.later)
+	if agentTunnels != nil {
+		s.apiRouter.SetAgentTunnels(agentTunnels.Capable)
+	}
 	sourceDeps := dynamicSourceDeps{
+		agentTunnels:                 agentTunnels,
 		deployGate:                   gate,
 		orphanReaper:                 orphanReaper,
 		janitor:                      janitorEngine,

@@ -426,6 +426,10 @@ type Controller struct {
 	nodeUpstreams NodeUpstreamResolver
 	meshPaths     meshpath.Resolver
 
+	// tunnels routes mesh-less nodes through the agent session; tunnelTargets is this pass's set.
+	tunnels       *AgentTunnels
+	tunnelTargets []ingress.TunnelTarget
+
 	// localNodeID is this control plane's own node ID (see WithLocalNodeID).
 	localNodeID string
 
@@ -888,6 +892,7 @@ func (c *Controller) Reconcile(ctx context.Context) (reconcile.Result, error) {
 	}
 	var lbPlans []lbPlan
 	var remoteBlocks []remoteBlock
+	c.tunnelTargets = c.tunnelTargets[:0]
 	now := time.Now()
 
 	var routes []ingress.ProxyRoute
@@ -1337,7 +1342,15 @@ func (c *Controller) Reconcile(ctx context.Context) (reconcile.Result, error) {
 	if cond := lbCondition(lbPlans); cond != nil {
 		conditions = append(conditions, *cond)
 	}
-	if cond := crossNodeIngressCondition(remoteBlocks); cond != nil {
+	c.syncTunnels(ctx)
+	cond := crossNodeIngressCondition(remoteBlocks)
+	if tun := agentTunnelCondition(c.tunnelTargets); cond == nil {
+		cond = tun
+	} else if tun != nil {
+		// One condition type per result: the blocked state wins but still names what the tunnel carries.
+		cond.Message += "; " + tun.Message
+	}
+	if cond != nil {
 		conditions = append(conditions, *cond)
 	}
 	if cond := standalonePlan.condition(); cond != nil {

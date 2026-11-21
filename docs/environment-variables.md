@@ -668,6 +668,14 @@ These variables now take a whole number of seconds. The old duration-valued name
 
 If you set an old name in your environment, switch to the new one and write the value in seconds.
 
+## Browser push
+
+| Variable | Default | Meaning |
+| --- | --- | --- |
+| `APP_WEBPUSH_ALLOWED_HOSTS` | Google FCM, Mozilla autopush, Windows WNS and Apple web push hosts | Comma separated push service hosts a browser may register (`*.example.com` matches subdomains). Setting it replaces the defaults. Control plane. |
+| `APP_WEBPUSH_SEND_TIMEOUT` | `10s` | Time limit for delivering one notification to all browsers. Control plane. |
+| `APP_WEBPUSH_MAX_SUBSCRIPTIONS_PER_USER` | `20` | Most browsers one account may register. Control plane. |
+
 ## Sessions and cookies
 
 | Variable | Default | Meaning |

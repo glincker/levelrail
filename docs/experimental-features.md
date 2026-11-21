@@ -30,6 +30,7 @@ The value is a comma separated list of feature keys. Unknown keys are logged at 
 | `resource-advisor` | [Resource advisor](/resource-advisor) (beta): limit, idle and tuning suggestions |
 | `traffic-analytics` | [Traffic analytics](/traffic-analytics) (beta): classify requests so Top pages counts page views, not API or asset calls |
 | `macos-agent` | macOS node agent (experimental): shows the macOS install command in the dashboard when you add a node. Applies live |
+| `agent-ingress-tunnel` | Agent ingress tunnel (experimental): ingress reaches an app on a node with no usable mesh path through the agent's outbound connection, when the agent advertises `ingress_tunnel`. A node with a usable mesh keeps using it. The app status shows `CrossNodeIngress True AgentTunnel` once the route through the tunnel is in place. Wired at server start. The agent process needs `APP_EXPERIMENTAL=agent-ingress-tunnel` in its own environment too, because it advertises `ingress_tunnel` only with its flag on (for a Mac, add it to `$(brew --prefix)/etc/levelrail-agent.env`, see the macOS agent page). Plain HTTP on the ingress port redirects to HTTPS, so test with HTTPS. Not yet verified on a real host |
 | `cli-console` | [CLI console](/cli-console) (beta): a web console for the platform CLI, never a host shell |
 | `mobile-api` | [Mobile API](/mobile-api) (beta): phone pairing, device tokens and the mobile overview endpoint |
 | `mcp-http` | [Remote MCP](/mcp) (experimental): a read-only MCP endpoint at `POST /mcp` for bearer token clients |

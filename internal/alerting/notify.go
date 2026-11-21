@@ -109,9 +109,9 @@ func (n httpNotifier) Notify(ctx context.Context, ev Event) error {
 	return n.build(ctx, n.client, n.url, ev)
 }
 
-// PushSender sends one browser push to every registered subscription; *webpush.Sender satisfies it.
+// PushSender sends one browser push to the registered subscriptions of users the audience allows; *webpush.Sender satisfies it.
 type PushSender interface {
-	Send(ctx context.Context, title, body string) error
+	Send(ctx context.Context, title, body string, audience PushAudience) error
 }
 
 // NewNotifier picks the Notifier for r.NotifyKind, falling back to generic so a mistyped kind still notifies someone.
@@ -838,7 +838,7 @@ func (n emailNotifier) Notify(ctx context.Context, ev Event) error {
 	return nil
 }
 
-// webpushNotifier implements Notifier directly: every registered subscription receives the push, not r.NotifyURL.
+// webpushNotifier implements Notifier directly: eligible subscriptions receive the push, not r.NotifyURL.
 type webpushNotifier struct {
 	sender PushSender // nil means "no browser push capability configured"
 }
@@ -854,7 +854,7 @@ func (n webpushNotifier) Notify(ctx context.Context, ev Event) error {
 	if ev.Headline != "" {
 		title = ev.Headline
 	}
-	if err := n.sender.Send(ctx, title, summaryText(ev)); err != nil {
+	if err := n.sender.Send(ctx, title, summaryText(ev), PushAudienceFrom(ctx)); err != nil {
 		return fmt.Errorf("alerting: notify: %w", err)
 	}
 	return nil

@@ -14,6 +14,8 @@ import (
 	"sync"
 	"sync/atomic"
 	"testing"
+
+	"github.com/GLINCKER/levelrail/internal/alerting"
 )
 
 // fakeVendorRequest is one request a fake vendor endpoint received.
@@ -227,7 +229,7 @@ type recordingPush struct {
 	sends []string
 }
 
-func (p *recordingPush) Send(_ context.Context, title, body string) error {
+func (p *recordingPush) Send(_ context.Context, title, body string, _ alerting.PushAudience) error {
 	p.mu.Lock()
 	defer p.mu.Unlock()
 	p.sends = append(p.sends, title+"|"+body)

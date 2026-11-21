@@ -2,6 +2,7 @@ package alerting
 
 import (
 	"context"
+	"errors"
 	"fmt"
 	"log/slog"
 	"strings"
@@ -92,7 +93,10 @@ func (r *DigestRunner) RunOnce(ctx context.Context) (int, error) {
 				r.log().Error("alerting: digest channel missing", slog.String("principal", p.Principal), slog.String("error", err.Error()))
 				continue
 			}
-			if err := r.Sender.SendNotice(ctx, *ch, text); err != nil {
+			if err := r.Sender.SendNotice(WithPushAudience(ctx, PushAudience{UserID: strings.TrimPrefix(p.Principal, "user:")}), *ch, text); err != nil {
+				if errors.Is(err, ErrNoticeSkipped) {
+					continue
+				}
 				r.log().Error("alerting: digest send failed", slog.String("principal", p.Principal), slog.String("error", err.Error()))
 				continue
 			}

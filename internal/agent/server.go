@@ -66,6 +66,7 @@ type Server struct {
 
 	sessionsMu sync.Mutex
 	sessions   map[string]*liveSession
+	tunnels    *tunnelHub
 
 	caPool   *x509.CertPool
 	secStore SecurityStore
@@ -118,6 +119,7 @@ func NewServer(ca *CA, st EnrollStore, registry *Registry, logger *slog.Logger, 
 		certValidity: DefaultClientCertValidity, renewGrace: DefaultCertRenewGrace,
 		now: time.Now, sessions: map[string]*liveSession{},
 	}
+	s.tunnels = newTunnelHub(logger)
 	for _, opt := range opts {
 		opt(s)
 	}
@@ -313,7 +315,9 @@ func (s *Server) Session(stream agentpb.AgentService_SessionServer) error {
 		},
 	})
 	live := s.trackSession(nodeID, m)
-	s.registry.Register(nodeID, newGRPCTransportWithCaps(m, caps))
+	tp := newGRPCTransportWithCaps(m, caps)
+	tp.attachTunnels(s.tunnels, nodeID)
+	s.registry.Register(nodeID, tp)
 	s.observeSession(ctx, nodeID)
 	s.logger.Info("agent: node connected", slog.String("node_id", nodeID))
 
@@ -323,6 +327,7 @@ func (s *Server) Session(stream agentpb.AgentService_SessionServer) error {
 
 	defer func() {
 		close(heartbeatDone)
+		s.tunnels.closeOwner(m)
 		if !s.untrackSession(nodeID, live) {
 			s.logger.Info("agent: superseded session ended", slog.String("node_id", nodeID))
 			return

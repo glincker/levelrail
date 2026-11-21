@@ -297,7 +297,7 @@ func (s *bootState) loadSecretsAndNotifiers() {
 			if subscriber == "" {
 				subscriber = b.SupportURL
 			}
-			pushSender = webpush.NewSender(db, publicKey, privateKey, subscriber, notifyClient, logger)
+			pushSender = webpush.NewSender(db, publicKey, privateKey, subscriber, notifyClient, logger).WithPolicy(api.NewPushRecipients(db))
 		}
 	}
 

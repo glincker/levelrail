@@ -26,7 +26,10 @@ func WithMeshPaths(r meshpath.Resolver) Option {
 // "no ready backend yet", the same silent skip as a local mid-deploy.
 func (c *Controller) dialForRemoteService(ctx context.Context, svc store.DesiredService, targetReady bool) (dial, why string, ok bool) {
 	if c.meshPaths == nil {
-		return "", "mesh networking is off on this control plane: set APP_MESH_ENABLED=1 and restart it", false
+		if d, used := c.agentTunnelDial(ctx, svc, targetReady); used {
+			return d, "", d != ""
+		}
+		return "", c.tunnelBlockWhy(svc.NodeID, "mesh networking is off on this control plane: set APP_MESH_ENABLED=1 and restart it", true), false
 	}
 	path, err := c.meshPaths.Path(ctx, svc.NodeID)
 	if err != nil {
@@ -35,7 +38,10 @@ func (c *Controller) dialForRemoteService(ctx context.Context, svc store.Desired
 		return "", "", false
 	}
 	if !path.Usable {
-		return "", path.Reason, false
+		if d, used := c.agentTunnelDial(ctx, svc, targetReady); used {
+			return d, "", d != ""
+		}
+		return "", c.tunnelBlockWhy(svc.NodeID, path.Reason, path.NoMesh), false
 	}
 	if c.nodeUpstreams == nil {
 		return "", "", false

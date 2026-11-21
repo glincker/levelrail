@@ -828,7 +828,7 @@ Channels are global destinations you connect once (Settings -> Notification chan
 For most kinds, `notify_url` is a webhook URL. A few pack credentials into that one field (Pushover's user key and app token, PagerDuty's routing key). Two are exceptions:
 
 - `email` sends through the control plane's SMTP sender (Settings -> Email, or `APP_SMTP_HOST`, `APP_SMTP_PORT`, `APP_SMTP_USERNAME`, `APP_SMTP_PASSWORD`, `APP_SMTP_FROM`).
-- `webpush` ignores `notify_url`: the destination is every browser subscription registered under Settings -> Notification channels -> Browser push.
+- `webpush` ignores `notify_url`: the destination is the browser subscriptions registered under Settings -> Notification channels -> Browser push, limited to users who may see the event (admins for instance notices, readers of the app for app events).
 
 Both return a "not configured" error if the control plane has no master key set.
 

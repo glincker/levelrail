@@ -14,9 +14,16 @@ import (
 	"github.com/GLINCKER/levelrail/internal/secrets"
 	"log/slog"
 	"net/http"
+	"net/url"
+	"os"
+	"strings"
+	"sync"
+	"time"
+	"unicode/utf8"
 
 	webpushgo "github.com/SherClockHolmes/webpush-go"
 
+	"github.com/GLINCKER/levelrail/internal/alerting"
 	"github.com/GLINCKER/levelrail/internal/store"
 	"github.com/GLINCKER/levelrail/kit/netguard"
 )
@@ -96,6 +103,9 @@ type Subscriptions interface {
 // shape email.Sender's own consumers already follow).
 type Sender struct {
 	subs       Subscriptions
+	policy     RecipientPolicy
+	validate   func(endpoint string) error
+	timeout    time.Duration
 	publicKey  string
 	privateKey string
 	subscriber string
@@ -113,7 +123,33 @@ func NewSender(subs Subscriptions, publicKey, privateKey, subscriber string, cli
 	if logger == nil {
 		logger = slog.Default()
 	}
-	return &Sender{subs: subs, publicKey: publicKey, privateKey: privateKey, subscriber: subscriber, client: client, logger: logger}
+	timeout := SendTimeout(os.Getenv)
+	// A copy, so the caller's shared client keeps its redirect behaviour.
+	own := *client
+	own.CheckRedirect = func(*http.Request, []*http.Request) error { return http.ErrUseLastResponse }
+	own.Timeout = timeout
+	allowed := AllowedHosts(os.Getenv)
+	return &Sender{subs: subs, timeout: timeout, validate: func(e string) error { return ValidateEndpoint(e, allowed) }, publicKey: publicKey, privateKey: privateKey, subscriber: subscriber, client: &own, logger: logger}
+}
+
+// RecipientPolicy decides whether a user may receive a push for an audience.
+type RecipientPolicy interface {
+	AllowPush(ctx context.Context, userID string, audience alerting.PushAudience) bool
+}
+
+// WithEndpointValidator replaces the endpoint check run before every send.
+func (s *Sender) WithEndpointValidator(fn func(endpoint string) error) *Sender {
+	s.validate = fn
+	return s
+}
+
+// pruneTimeout gives removing a dead subscription its own deadline, apart from the send one.
+const pruneTimeout = 5 * time.Second
+
+// WithPolicy sets the recipient policy. Without one nobody receives a push.
+func (s *Sender) WithPolicy(p RecipientPolicy) *Sender {
+	s.policy = p
+	return s
 }
 
 // pushPayload is the JSON body this control plane's own push-sw.js
@@ -130,48 +166,130 @@ type pushPayload struct {
 // one past a few minutes.
 const pushTTLSeconds = 300
 
-// Send pushes one notification to every registered subscription.
-// A per-subscription failure never aborts the loop: one dead or revoked
-// browser must not silence every other one. Returns an error only when
-// no registered subscription exists at all, or every send attempt
-// failed, mirroring email.Sender's own "nothing configured" failure
-// shape that NewDeployDispatcher's doc comment already describes for
-// every other channel kind.
-func (s *Sender) Send(ctx context.Context, title, body string) error {
+// Payload bounds: a push message must fit one encrypted record.
+const (
+	maxTitleBytes   = 256
+	maxPayloadBytes = 3000
+)
+
+// Send pushes one notification to the subscriptions of users the audience
+// allows. A per-subscription failure never aborts the others, and the whole
+// call stops at the send timeout. Returns an error only when no eligible
+// subscription exists, or every send attempt failed.
+func (s *Sender) Send(ctx context.Context, title, body string, audience alerting.PushAudience) error {
 	if s.privateKey == "" {
 		return errors.New("webpush: vapid keys are not configured on this control plane")
 	}
+	ctx, cancel := context.WithTimeout(ctx, s.timeout)
+	defer cancel()
+
 	subs, err := s.subs.ListPushSubscriptions(ctx)
 	if err != nil {
 		return fmt.Errorf("webpush: list subscriptions: %w", err)
 	}
+	subs = s.eligible(ctx, subs, audience)
 	if len(subs) == 0 {
-		return errors.New("webpush: no browser has registered for push notifications yet")
+		return errors.New("webpush: no registered browser may receive this notification")
 	}
 
-	payload, err := json.Marshal(pushPayload{Title: title, Body: body})
+	payload, err := encodePayload(title, body)
 	if err != nil {
 		return fmt.Errorf("webpush: encode payload: %w", err)
 	}
 
-	var lastErr error
-	sent := 0
+	var (
+		mu      sync.Mutex
+		wg      sync.WaitGroup
+		lastErr error
+		sent    int
+		slots   = make(chan struct{}, sendConcurrency)
+	)
 	for _, sub := range subs {
-		if err := s.sendOne(ctx, sub, payload); err != nil {
-			lastErr = err
-			s.logger.Error("webpush: send failed",
-				slog.String("subscription_id", sub.ID), slog.String("error", err.Error()))
-			continue
-		}
-		sent++
+		wg.Add(1)
+		slots <- struct{}{}
+		go func() {
+			defer wg.Done()
+			defer func() { <-slots }()
+			err := s.sendOne(ctx, sub, payload)
+			mu.Lock()
+			defer mu.Unlock()
+			if err != nil {
+				lastErr = err
+				s.logger.Error("webpush: send failed",
+					slog.String("subscription_id", sub.ID), slog.String("error", err.Error()))
+				return
+			}
+			sent++
+		}()
 	}
+	wg.Wait()
 	if sent == 0 {
 		return fmt.Errorf("webpush: every subscription failed, last error: %w", lastErr)
 	}
 	return nil
 }
 
+// eligible keeps the subscriptions whose owner the policy still allows, asking once per user.
+func (s *Sender) eligible(ctx context.Context, subs []store.PushSubscription, audience alerting.PushAudience) []store.PushSubscription {
+	if s.policy == nil {
+		return nil
+	}
+	verdict := map[string]bool{}
+	out := subs[:0:0]
+	for _, sub := range subs {
+		ok, seen := verdict[sub.UserID]
+		if !seen {
+			ok = s.policy.AllowPush(ctx, sub.UserID, audience)
+			verdict[sub.UserID] = ok
+		}
+		if ok {
+			out = append(out, sub)
+		}
+	}
+	return out
+}
+
+// encodePayload cuts the title and body so the JSON stays under the record limit.
+func encodePayload(title, body string) ([]byte, error) {
+	title = cutBytes(title, maxTitleBytes)
+	for {
+		out, err := json.Marshal(pushPayload{Title: title, Body: body})
+		if err != nil || len(out) <= maxPayloadBytes || body == "" {
+			return out, err
+		}
+		// Shrink in proportion to the overshoot, so escaped bytes are accounted for.
+		body = cutBytes(body, min(len(body)*maxPayloadBytes/len(out), len(body)-1))
+	}
+}
+
+// cutBytes shortens s to at most n bytes without splitting a rune.
+func cutBytes(s string, n int) string {
+	if len(s) <= n {
+		return s
+	}
+	for n > 0 && !utf8.RuneStart(s[n]) {
+		n--
+	}
+	return s[:n]
+}
+
+// scrubError drops the request URL a transport error carries, so the endpoint never reaches logs or delivery records.
+func scrubError(err error, endpoint string) error {
+	var ue *url.Error
+	if errors.As(err, &ue) {
+		err = ue.Err
+	}
+	return errors.New(strings.ReplaceAll(err.Error(), endpoint, "[endpoint]"))
+}
+
 func (s *Sender) sendOne(ctx context.Context, sub store.PushSubscription, payload []byte) error {
+	// Rows saved before the host list existed are re-checked, and dropped when they fail.
+	if s.validate != nil {
+		if err := s.validate(sub.Endpoint); err != nil {
+			s.prune(ctx, sub.ID)
+			return errors.New("subscription endpoint not allowed, pruned")
+		}
+	}
 	resp, err := webpushgo.SendNotificationWithContext(ctx, payload, &webpushgo.Subscription{
 		Endpoint: sub.Endpoint,
 		Keys:     webpushgo.Keys{Auth: sub.Auth, P256dh: sub.P256dh},
@@ -183,7 +301,7 @@ func (s *Sender) sendOne(ctx context.Context, sub store.PushSubscription, payloa
 		VAPIDPrivateKey: s.privateKey,
 	})
 	if err != nil {
-		return fmt.Errorf("send: %w", err)
+		return fmt.Errorf("send: %w", scrubError(err, sub.Endpoint))
 	}
 	defer func() { _ = resp.Body.Close() }()
 
@@ -191,14 +309,20 @@ func (s *Sender) sendOne(ctx context.Context, sub store.PushSubscription, payloa
 	// gone (uninstalled browser, revoked permission): resending to it
 	// forever would just accumulate dead rows.
 	if resp.StatusCode == http.StatusNotFound || resp.StatusCode == http.StatusGone {
-		if delErr := s.subs.DeletePushSubscriptionByID(ctx, sub.ID); delErr != nil {
-			s.logger.Error("webpush: prune expired subscription failed",
-				slog.String("subscription_id", sub.ID), slog.String("error", delErr.Error()))
-		}
+		s.prune(ctx, sub.ID)
 		return fmt.Errorf("subscription expired (status %d), pruned", resp.StatusCode)
 	}
 	if resp.StatusCode < 200 || resp.StatusCode >= 300 {
 		return fmt.Errorf("receiver returned status %d", resp.StatusCode)
 	}
 	return nil
+}
+
+func (s *Sender) prune(ctx context.Context, id string) {
+	pctx, cancel := context.WithTimeout(context.WithoutCancel(ctx), pruneTimeout)
+	defer cancel()
+	if err := s.subs.DeletePushSubscriptionByID(pctx, id); err != nil {
+		s.logger.Error("webpush: prune subscription failed",
+			slog.String("subscription_id", id), slog.String("error", err.Error()))
+	}
 }

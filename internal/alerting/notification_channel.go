@@ -43,6 +43,9 @@ type NotificationChannel struct {
 // and DeleteNotificationChannel when id doesn't match any row.
 var ErrNotificationChannelNotFound = errors.New("alerting: notification channel not found")
 
+// ErrNoticeSkipped is returned by SendNotice when the channel's project scope excludes the notice. Callers count it as not sent, and it is not a failure.
+var ErrNoticeSkipped = errors.New("alerting: notice skipped for a project scoped channel")
+
 const notificationChannelIDPrefix = "chn_"
 
 // NewNotificationChannelID mirrors NewDeployTargetID's exact shape.
@@ -273,7 +276,7 @@ func sendTextNotification(ctx context.Context, client *http.Client, sender email
 		if pushSender == nil {
 			return fmt.Errorf("alerting: test notification: browser push is not configured on this control plane")
 		}
-		if err := pushSender.Send(ctx, "Levelrail", testText); err != nil {
+		if err := pushSender.Send(ctx, "Levelrail", testText, PushAudienceFrom(ctx)); err != nil {
 			return fmt.Errorf("alerting: test notification: %w", err)
 		}
 		return nil
@@ -300,6 +303,10 @@ func (d *DeployDispatcher) SendChannelTest(ctx context.Context, c NotificationCh
 // SendNotice sends a plain-text notice through channel c, using the same
 // per-kind payload logic and SSRF-guarded client as SendTest.
 func (d *DeployDispatcher) SendNotice(ctx context.Context, c NotificationChannel, text string) error {
+	// A project channel only carries notices about its own apps.
+	if c.ProjectID != "" && PushAudienceFrom(ctx).AppName == "" {
+		return ErrNoticeSkipped
+	}
 	revealed, err := d.db.RevealNotificationChannel(ctx, c)
 	if err != nil {
 		return err

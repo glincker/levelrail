@@ -391,7 +391,7 @@ func sendDeployOutcome(ctx context.Context, client *http.Client, sender email.Se
 		if !ev.Succeeded {
 			title = fmt.Sprintf("Deploy FAILED: %s", ev.AppName)
 		}
-		if err := pushSender.Send(ctx, title, deployText(t.NotifyKind, ev)); err != nil {
+		if err := pushSender.Send(ctx, title, deployText(t.NotifyKind, ev), PushAudienceFrom(ctx)); err != nil {
 			return fmt.Errorf("alerting: notify deploy outcome: %w", err)
 		}
 		return nil
@@ -521,7 +521,12 @@ func (d *DeployDispatcher) Dispatch(ctx context.Context, resourceID string, ev D
 		target, sendErr := d.db.RevealChannelTarget(ctx, t.ChannelID, t.NotifyURL)
 		if sendErr == nil {
 			t.NotifyURL = target
-			sendErr = sendDeployOutcome(ctx, d.client, d.sender, d.pushSender, t, ev)
+			sendCtx := ctx
+			if t.NotifyKind == NotifyWebpush {
+				aud := withChannelProject(ctx, d.db, t.ChannelID, PushAudience{AppName: ev.AppName})
+				sendCtx = WithPushAudience(ctx, aud)
+			}
+			sendErr = sendDeployOutcome(sendCtx, d.client, d.sender, d.pushSender, t, ev)
 		}
 		if sendErr != nil {
 			d.logger.Error("alerting: deploy outcome notification failed",

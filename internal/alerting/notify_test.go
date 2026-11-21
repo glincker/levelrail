@@ -1120,14 +1120,16 @@ func TestNewNotifier_AllValidKinds_Recognized(t *testing.T) {
 
 // fakePushSender records each call and can be told to fail.
 type fakePushSender struct {
-	err    error
-	title  string
-	body   string
-	called int
+	err      error
+	title    string
+	body     string
+	called   int
+	audience PushAudience
 }
 
-func (f *fakePushSender) Send(_ context.Context, title, body string) error {
+func (f *fakePushSender) Send(_ context.Context, title, body string, aud PushAudience) error {
 	f.called++
+	f.audience = aud
 	f.title, f.body = title, body
 	return f.err
 }

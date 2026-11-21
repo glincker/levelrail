@@ -193,9 +193,17 @@ func (rt *Router) userTeamScope(ctx context.Context, db teamStore, userID string
 	if err != nil {
 		return nil, fmt.Errorf("api: team scope: load user: %w", err)
 	}
+	return teamScopeOfUser(ctx, db, user)
+}
+
+// teamScopeOfUser is the scope of a loaded user: nil for root, else their teams.
+func teamScopeOfUser(ctx context.Context, db interface {
+	UserTeamRoles(ctx context.Context, userID string) (map[string]string, error)
+}, user *store.User) (*teamScope, error) {
 	if slices.Contains(user.Abilities, AbilityRoot) {
 		return nil, nil
 	}
+	userID := user.ID
 	roles, err := db.UserTeamRoles(ctx, userID)
 	if err != nil {
 		return nil, fmt.Errorf("api: team scope: %w", err)

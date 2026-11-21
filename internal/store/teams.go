@@ -192,6 +192,11 @@ func (db *DB) RemoveTeamMember(ctx context.Context, teamID, userID string) error
 	if err != nil {
 		return err
 	}
+	if teamID == DefaultTeamID {
+		if err := db.DeletePushSubscriptionsForUser(ctx, userID); err != nil {
+			return err
+		}
+	}
 	return db.syncAbilitiesFromRoles(ctx, userID, false)
 }
 

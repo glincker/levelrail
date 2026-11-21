@@ -10,6 +10,7 @@ import (
 	"strings"
 	"time"
 
+	"github.com/GLINCKER/levelrail/internal/alerting"
 	"github.com/GLINCKER/levelrail/internal/attention"
 	"github.com/GLINCKER/levelrail/internal/store"
 )
@@ -201,10 +202,10 @@ func (rt *Router) notifyDeviceLoginExpired() {
 			text += " " + base + deviceCLIPath
 		}
 		for _, c := range channels {
-			if !c.Enabled || !c.NotifyDeviceLoginExpired {
+			if !c.Enabled || !c.NotifyDeviceLoginExpired || c.ProjectID != "" {
 				continue
 			}
-			if err := rt.deviceNotifier.SendNotice(ctx, c, text); err != nil {
+			if err := rt.deviceNotifier.SendNotice(alerting.WithPushAudience(ctx, alerting.PushAudience{RootOnly: true}), c, text); err != nil {
 				rt.logger.Error("api: send device login expiry notice failed",
 					slog.String("channel_id", c.ID), slog.String("error", err.Error()))
 			}

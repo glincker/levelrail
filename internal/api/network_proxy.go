@@ -96,6 +96,9 @@ func (rt *Router) handleGetNetworkProxy(w http.ResponseWriter, r *http.Request) 
 				Reachable:   !blocked,
 				Reason:      why,
 			}
+			if _, _, viaMesh := rt.meshIngressBlock(ctx, svc); viaMesh && !blocked {
+				row.Reason = "reachable through the agent tunnel"
+			}
 			if blocked {
 				row.FixCommand = fmt.Sprintf(
 					"levelrail-cli nodes mesh   # fix the mesh path; or: levelrail-cli apps set-node %s <this control plane's own node id>",

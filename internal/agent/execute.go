@@ -197,6 +197,14 @@ func Execute(ctx context.Context, rt docker.Runtime, req *agentpb.AgentRequest, 
 		}
 		resp.Result = &agentpb.AgentResponse_Probe{Probe: out}
 
+	case *agentpb.AgentRequest_TunnelOpen:
+		out, err := executeTunnelOpen(ctx, rt, op.TunnelOpen)
+		if err != nil {
+			resp.Error = err.Error()
+			return resp
+		}
+		resp.Result = &agentpb.AgentResponse_TunnelOpen{TunnelOpen: out}
+
 	case *agentpb.AgentRequest_ListNetworksByPrefix:
 		networks, err := rt.ListNetworksByPrefix(ctx, op.ListNetworksByPrefix.GetPrefix())
 		if err != nil {

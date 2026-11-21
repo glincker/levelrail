@@ -95,6 +95,8 @@ type dynamicSourceDeps struct {
 	// janitor runs scheduled cleanup passes on the local node.
 	janitor     *janitor.Engine
 	ingressEdge ingressEdge
+	// agentTunnels is nil unless the agent-ingress-tunnel flag was on at boot.
+	agentTunnels *ingressreconcile.AgentTunnels
 	// runtimeSettings is read each pass so a saved ingress body cap lands without a restart.
 	runtimeSettings func() *runtimesettings.Service
 	// lbRegistry is shared with the API so it can report live upstream status.
@@ -161,6 +163,9 @@ func dynamicSource(deps dynamicSourceDeps) reconcile.Source {
 			ingressreconcile.WithLocalNodeID(localNodeIDOf(deps)),
 			// Routes remote apps to their node's mesh address.
 			ingressreconcile.WithMeshPaths(newMeshPathResolver(deps.meshCfg, deps.db)),
+		}
+		if deps.agentTunnels != nil {
+			ingressOpts = append(ingressOpts, ingressreconcile.WithAgentTunnels(deps.agentTunnels))
 		}
 		ingressOpts = append(ingressOpts, deps.ingressEdge.options(ctx, deps.db, deps.logger, deps.settingsService())...)
 		if experimental.Enabled(experimental.AIModels) {

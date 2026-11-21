@@ -155,7 +155,7 @@ The code defines 18 kinds. Maturity is from [Feature status](/feature-status).
 | `googlechat` | Google Chat | beta |
 | `webpush` | Browser push | beta |
 
-Beta means tested against local fakes that check each vendor's documented payload shape, with no real vendor account accepting a send yet. `webpush` is tested with a recording sender only, and its destination is every registered browser subscription instead of a URL. `channels create` accepts every kind except `webpush`. For email providers see [Email notifications](/email-notifications).
+Beta means tested against local fakes that check each vendor's documented payload shape, with no real vendor account accepting a send yet. `webpush` is tested with a recording sender only, and its destination is the registered browser subscriptions instead of a URL. Only users who may see an event receive it: instance notices go to admins, and app events go to users who can read that app. `channels create` accepts every kind except `webpush`. For email providers see [Email notifications](/email-notifications).
 
 ## How does Levelrail avoid alert noise?
 

@@ -888,6 +888,8 @@ type Router struct {
 	// meshPaths reports whether a remote node is reachable over the mesh,
 	// set via SetMeshPaths. nil reads as "mesh networking is off".
 	meshPaths meshpath.Resolver
+	// agentTunnels says whether a node's agent advertises ingress tunnels; nil means none.
+	agentTunnels func(nodeID string) bool
 	// meshHubResolver turns a hostname advertise host into the mesh endpoint IP; nil keeps the IP-only rule.
 	meshHubResolver *meshnet.HubHostResolver
 	// dnsQueryLog is nil when mesh DNS query visibility is not wired; the routes then report disabled.

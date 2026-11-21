@@ -901,6 +901,9 @@ func (e *Engine) sendEvent(ctx context.Context, ev Event) error {
 	}
 	sendErr := e.revealRuleTarget(ctx, &r)
 	if sendErr == nil {
+		if r.NotifyKind == NotifyWebpush {
+			ctx = WithPushAudience(ctx, withChannelProject(ctx, e.rules, r.ChannelID, pushAudienceForResource(r.ResourceID)))
+		}
 		sendErr = e.newNotifier(r).Notify(ctx, ev)
 	}
 	if sendErr != nil {

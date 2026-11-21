@@ -213,6 +213,7 @@ func RunSession(ctx context.Context, addr string, id *Identity, rt docker.Runtim
 	if logger == nil {
 		logger = slog.Default()
 	}
+	logAgentCapabilities(logger, &capsLogOnce)
 
 	var cfg sessionConfig
 	for _, opt := range opts {
@@ -254,6 +255,7 @@ func RunSession(ctx context.Context, addr string, id *Identity, rt docker.Runtim
 	defer func() { _ = conn.Close() }()
 
 	client := agentpb.NewAgentServiceClient(conn)
+	ctx = withTunnels(ctx, client)
 	stream, err := client.Session(ctx)
 	if err != nil {
 		return fmt.Errorf("agent: open session: %w", err)

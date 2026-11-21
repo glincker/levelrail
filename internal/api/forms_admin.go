@@ -238,7 +238,7 @@ func (rt *Router) applyFormRequest(w http.ResponseWriter, r *http.Request, f *st
 		}
 	}
 	if req.NotifyChannelIDs != nil {
-		ids, ok := rt.checkFormChannels(r.Context(), w, req.NotifyChannelIDs)
+		ids, ok := rt.checkFormChannels(r.Context(), w, f.AppName, req.NotifyChannelIDs)
 		if !ok {
 			return false
 		}
@@ -247,7 +247,7 @@ func (rt *Router) applyFormRequest(w http.ResponseWriter, r *http.Request, f *st
 	return true
 }
 
-func (rt *Router) checkFormChannels(ctx context.Context, w http.ResponseWriter, in []string) ([]string, bool) {
+func (rt *Router) checkFormChannels(ctx context.Context, w http.ResponseWriter, appName string, in []string) ([]string, bool) {
 	seen := map[string]bool{}
 	out := make([]string, 0, len(in))
 	for _, id := range in {
@@ -268,7 +268,12 @@ func (rt *Router) checkFormChannels(ctx context.Context, w http.ResponseWriter, 
 		return nil, false
 	}
 	for _, id := range out {
-		if _, err := rt.notificationChannels.GetNotificationChannel(ctx, id); err != nil {
+		c, err := rt.notificationChannels.GetNotificationChannel(ctx, id)
+		if err != nil {
+			writeError(w, http.StatusBadRequest, "unknown notification channel "+id)
+			return nil, false
+		}
+		if ok, err := rt.channelServesApp(ctx, c, appName); err != nil || !ok {
 			writeError(w, http.StatusBadRequest, "unknown notification channel "+id)
 			return nil, false
 		}
