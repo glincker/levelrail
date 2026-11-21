@@ -557,7 +557,8 @@
       "resources": "Recursos",
       "security": "Segurança",
       "console": "Console",
-      "integrations": "Integrações"
+      "integrations": "Integrações",
+      "integrations-aws-link": "Vincular conta AWS"
     },
     "quickNav": {
       "label": "Navegação rápida (segure L)"

@@ -1,0 +1,161 @@
+{
+  "section": {
+    "title": "Cloud accounts",
+    "addOracle": "Add Oracle",
+    "linkAws": "Link AWS",
+    "loading": "Loading cloud accounts",
+    "loadFailed": "Could not load cloud accounts.",
+    "empty": "No cloud accounts yet. Link an AWS account with a scoped role or add an Oracle API key.",
+    "verified": "Verified {{when}}",
+    "neverVerified": "Not verified yet"
+  },
+  "common": {
+    "retry": "Retry",
+    "backToIntegrations": "Back to Integrations"
+  },
+  "providers": {
+    "aws": "AWS",
+    "oracle": "Oracle Cloud",
+    "hetzner": "Hetzner",
+    "digitalocean": "DigitalOcean",
+    "vultr": "Vultr",
+    "azure": "Azure",
+    "gcp": "Google Cloud",
+    "linode": "Linode",
+    "akamai": "Akamai"
+  },
+  "status": {
+    "active": "Active",
+    "error": "Needs attention",
+    "disabled": "Disabled"
+  },
+  "capabilities": {
+    "inventory": {
+      "name": "Inventory",
+      "hint": "Read instances, volumes and networks."
+    },
+    "deploy": {
+      "name": "Deploy",
+      "hint": "Create and change compute resources."
+    },
+    "cost": {
+      "name": "Cost",
+      "hint": "Read spend from Cost Explorer."
+    },
+    "s3": {
+      "name": "S3",
+      "hint": "Manage buckets and objects."
+    },
+    "dns": {
+      "name": "DNS",
+      "hint": "Manage Route 53 records."
+    },
+    "destructive": {
+      "name": "Destructive",
+      "hint": "Terminate and delete. Off unless you need it."
+    }
+  },
+  "wizard": {
+    "title": "Link an AWS account",
+    "description": "Create a least privilege role in your account, then hand Levelrail its ARN. No access keys are stored.",
+    "steps": "Link steps",
+    "stepNames": {
+      "scope": "Scope",
+      "kit": "Create the role",
+      "connect": "Connect"
+    },
+    "back": "Back",
+    "generate": "Generate link kit",
+    "regenerate": "Regenerate link kit",
+    "openAccount": "Open account",
+    "needsAdmin": "Only an administrator can link a cloud account.",
+    "scope": {
+      "tiers": "What Levelrail may do",
+      "regions": "Allowed regions",
+      "regionsHint": "Comma separated. Leave empty for every region.",
+      "region": "Home region",
+      "principal": "Trusted principal ARN",
+      "principalHint": "The AWS identity Levelrail runs as. It is the only one allowed to assume the role.",
+      "guard": "Guard policy ARN (optional)",
+      "roleName": "Role name (optional)",
+      "roleNamePlaceholder": "Default name"
+    },
+    "issues": {
+      "noCapabilities": "Pick at least one capability.",
+      "badRegions": "Use region ids such as eu-west-1.",
+      "badPrincipal": "Enter an IAM root, role or user ARN.",
+      "badGuard": "Enter an IAM policy ARN.",
+      "badRegion": "Use a region id such as us-east-1."
+    },
+    "kit": {
+      "readFirstTitle": "Read the policy first",
+      "readFirst": "Review the policy JSON before you create anything. The role can only do what it allows, and the external id guards against a confused deputy.",
+      "quickCreate": "Open CloudFormation quick create",
+      "noQuickCreate": "No quick create link without a template URL. Use the template or Terraform below.",
+      "externalId": "External id:",
+      "formats": "Link kit formats",
+      "policy": "Policy JSON",
+      "cloudformation": "CloudFormation",
+      "terraform": "Terraform",
+      "created": "I created the role"
+    },
+    "connect": {
+      "roleArn": "Role ARN",
+      "badArn": "Enter an IAM role ARN.",
+      "label": "Label",
+      "go": "Create and verify",
+      "retry": "Verify again",
+      "identity": "Account {{account}}."
+    }
+  },
+  "probe": {
+    "ok": "Allowed",
+    "missing": "Missing access",
+    "verified": "Confirmed by a real call",
+    "simulated": "Checked by policy simulation"
+  },
+  "detail": {
+    "loading": "Cloud account",
+    "notFound": "Cloud account not found",
+    "loadFailed": "Could not load this account.",
+    "tabs": "Account sections",
+    "overview": "Overview",
+    "access": "Access",
+    "method": "Method",
+    "lastVerified": "Last verified",
+    "defaultRegion": "Home region",
+    "credential": "Credential",
+    "stored": "Stored",
+    "missing": "Missing",
+    "verify": "Verify",
+    "probe": "Probe capabilities",
+    "delete": "Delete account",
+    "deleteTitle": "Delete {{name}}?",
+    "deleteBody": "The stored credential is removed and grants stop working. Resources in the cloud account are not touched. Type the name to confirm.",
+    "regions": "Regions",
+    "regionsFailed": "Regions could not be listed."
+  },
+  "access": {
+    "needsShare": "You need the share permission on this account to see who has access.",
+    "principalType": "Who",
+    "user": "User",
+    "team": "Team",
+    "principalId": "User or team id",
+    "expires": "Expires (optional)",
+    "actions": "Actions",
+    "add": "Add grant",
+    "loadFailed": "Could not load grants.",
+    "empty": "No grants yet. Only administrators can use this account.",
+    "expiresAt": "Expires {{when}}",
+    "noExpiry": "No expiry",
+    "revokeNamed": "Revoke access for {{name}}",
+    "revoke": "Revoke",
+    "action": {
+      "view": "View",
+      "operate": "Operate",
+      "view_spend": "View spend",
+      "manage_budget": "Manage budget",
+      "share": "Share"
+    }
+  }
+}

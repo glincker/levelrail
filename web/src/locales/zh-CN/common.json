@@ -547,7 +547,8 @@
       "resources": "资源",
       "security": "安全",
       "console": "控制台",
-      "integrations": "集成"
+      "integrations": "集成",
+      "integrations-aws-link": "关联 AWS 账号"
     },
     "quickNav": {
       "label": "快速导航（按住 L）"

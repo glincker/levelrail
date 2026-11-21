@@ -547,7 +547,8 @@
       "resources": "リソース",
       "security": "セキュリティ",
       "console": "コンソール",
-      "integrations": "連携"
+      "integrations": "連携",
+      "integrations-aws-link": "AWSアカウントを連携"
     },
     "quickNav": {
       "label": "クイックナビゲーション (Lキーを長押し)"

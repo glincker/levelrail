@@ -1,0 +1,161 @@
+{
+  "section": {
+    "title": "クラウドアカウント",
+    "addOracle": "Oracleを追加",
+    "linkAws": "AWSを連携",
+    "loading": "クラウドアカウントを読み込み中",
+    "loadFailed": "クラウドアカウントを読み込めませんでした。",
+    "empty": "クラウドアカウントはまだありません。権限を絞ったロールでAWSアカウントを連携するか、Oracle APIキーを追加してください。",
+    "verified": "{{when}}に確認済み",
+    "neverVerified": "未確認"
+  },
+  "common": {
+    "retry": "再試行",
+    "backToIntegrations": "連携に戻る"
+  },
+  "providers": {
+    "aws": "AWS",
+    "oracle": "Oracle Cloud",
+    "hetzner": "Hetzner",
+    "digitalocean": "DigitalOcean",
+    "vultr": "Vultr",
+    "azure": "Azure",
+    "gcp": "Google Cloud",
+    "linode": "Linode",
+    "akamai": "Akamai"
+  },
+  "status": {
+    "active": "有効",
+    "error": "要確認",
+    "disabled": "無効"
+  },
+  "capabilities": {
+    "inventory": {
+      "name": "インベントリ",
+      "hint": "インスタンス、ボリューム、ネットワークを読み取ります。"
+    },
+    "deploy": {
+      "name": "デプロイ",
+      "hint": "コンピュートリソースを作成・変更します。"
+    },
+    "cost": {
+      "name": "コスト",
+      "hint": "Cost Explorerから費用を読み取ります。"
+    },
+    "s3": {
+      "name": "S3",
+      "hint": "バケットとオブジェクトを管理します。"
+    },
+    "dns": {
+      "name": "DNS",
+      "hint": "Route 53のレコードを管理します。"
+    },
+    "destructive": {
+      "name": "破壊的操作",
+      "hint": "終了と削除。必要な場合のみ有効にしてください。"
+    }
+  },
+  "wizard": {
+    "title": "AWSアカウントを連携",
+    "description": "アカウントに最小権限のロールを作成し、そのARNをLevelrailに渡します。アクセスキーは保存されません。",
+    "steps": "連携の手順",
+    "stepNames": {
+      "scope": "範囲",
+      "kit": "ロールを作成",
+      "connect": "接続"
+    },
+    "back": "戻る",
+    "generate": "連携キットを生成",
+    "regenerate": "連携キットを再生成",
+    "openAccount": "アカウントを開く",
+    "needsAdmin": "クラウドアカウントを連携できるのは管理者のみです。",
+    "scope": {
+      "tiers": "Levelrailに許可する操作",
+      "regions": "許可するリージョン",
+      "regionsHint": "カンマ区切り。空欄ですべてのリージョン。",
+      "region": "ホームリージョン",
+      "principal": "信頼するプリンシパルのARN",
+      "principalHint": "LevelrailがAWSで使うID。このIDだけがロールを引き受けられます。",
+      "guard": "ガードポリシーのARN(任意)",
+      "roleName": "ロール名(任意)",
+      "roleNamePlaceholder": "既定の名前"
+    },
+    "issues": {
+      "noCapabilities": "機能を1つ以上選んでください。",
+      "badRegions": "eu-west-1のようなリージョンIDを使ってください。",
+      "badPrincipal": "IAMのroot、ロール、ユーザーのARNを入力してください。",
+      "badGuard": "IAMポリシーのARNを入力してください。",
+      "badRegion": "us-east-1のようなリージョンIDを使ってください。"
+    },
+    "kit": {
+      "readFirstTitle": "先にポリシーを読む",
+      "readFirst": "何かを作成する前にポリシーJSONを確認してください。ロールはポリシーで許可された操作しかできず、external idは混乱した代理人攻撃を防ぎます。",
+      "quickCreate": "CloudFormationクイック作成を開く",
+      "noQuickCreate": "テンプレートURLがないとクイック作成リンクは使えません。下のテンプレートかTerraformを使ってください。",
+      "externalId": "External id:",
+      "formats": "キットの形式",
+      "policy": "ポリシーJSON",
+      "cloudformation": "CloudFormation",
+      "terraform": "Terraform",
+      "created": "ロールを作成しました"
+    },
+    "connect": {
+      "roleArn": "ロールARN",
+      "badArn": "IAMロールのARNを入力してください。",
+      "label": "ラベル",
+      "go": "作成して確認",
+      "retry": "もう一度確認",
+      "identity": "アカウント{{account}}。"
+    }
+  },
+  "probe": {
+    "ok": "許可",
+    "missing": "アクセス不足",
+    "verified": "実際の呼び出しで確認済み",
+    "simulated": "ポリシーシミュレーションで確認"
+  },
+  "detail": {
+    "loading": "クラウドアカウント",
+    "notFound": "クラウドアカウントが見つかりません",
+    "loadFailed": "このアカウントを読み込めませんでした。",
+    "tabs": "アカウントのセクション",
+    "overview": "概要",
+    "access": "アクセス",
+    "method": "方式",
+    "lastVerified": "最終確認",
+    "defaultRegion": "ホームリージョン",
+    "credential": "認証情報",
+    "stored": "保存済み",
+    "missing": "なし",
+    "verify": "確認",
+    "probe": "機能をテスト",
+    "delete": "アカウントを削除",
+    "deleteTitle": "{{name}}を削除しますか?",
+    "deleteBody": "保存された認証情報が削除され、付与された権限は使えなくなります。クラウド側のリソースには触れません。確認のため名前を入力してください。",
+    "regions": "リージョン",
+    "regionsFailed": "リージョンを取得できませんでした。"
+  },
+  "access": {
+    "needsShare": "アクセスを確認するには、このアカウントの共有権限が必要です。",
+    "principalType": "対象",
+    "user": "ユーザー",
+    "team": "チーム",
+    "principalId": "ユーザーまたはチームID",
+    "expires": "有効期限(任意)",
+    "actions": "操作",
+    "add": "権限を追加",
+    "loadFailed": "権限を読み込めませんでした。",
+    "empty": "権限はまだありません。このアカウントを使えるのは管理者のみです。",
+    "expiresAt": "{{when}}に期限切れ",
+    "noExpiry": "期限なし",
+    "revokeNamed": "{{name}}のアクセスを取り消す",
+    "revoke": "取り消す",
+    "action": {
+      "view": "表示",
+      "operate": "操作",
+      "view_spend": "費用を表示",
+      "manage_budget": "予算を管理",
+      "share": "共有"
+    }
+  }
+}

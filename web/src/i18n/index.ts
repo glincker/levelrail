@@ -180,6 +180,7 @@ export const NAMESPACES = [
   'integrations',
   'clusters',
   'cloudProvider',
+  'cloudAccounts',
 ] as const
 
 void i18n

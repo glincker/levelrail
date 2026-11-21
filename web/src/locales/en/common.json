@@ -552,7 +552,8 @@
       "resources": "Resources",
       "security": "Security",
       "console": "Console",
-      "integrations": "Integrations"
+      "integrations": "Integrations",
+      "integrations-aws-link": "Link AWS account"
     },
     "quickNav": {
       "label": "Quick navigation (hold L)"

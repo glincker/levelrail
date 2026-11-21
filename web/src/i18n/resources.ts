@@ -42,6 +42,7 @@ import type appPages from '../locales/en/appPages.json'
 import type integrations from '../locales/en/integrations.json'
 import type clusters from '../locales/en/clusters.json'
 import type cloudProvider from '../locales/en/cloudProvider.json'
+import type cloudAccounts from '../locales/en/cloudAccounts.json'
 import type uiShared from '../locales/en/uiShared.json'
 import type relatedLinks from '../locales/en/relatedLinks.json'
 import type gitSource from '../locales/en/gitSource.json'
@@ -203,6 +204,7 @@ declare module 'i18next' {
       integrations: typeof integrations
       clusters: typeof clusters
       cloudProvider: typeof cloudProvider
+      cloudAccounts: typeof cloudAccounts
       uiShared: typeof uiShared
       relatedLinks: typeof relatedLinks
       certBudget: typeof certBudget

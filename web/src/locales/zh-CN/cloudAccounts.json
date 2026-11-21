@@ -1,0 +1,161 @@
+{
+  "section": {
+    "title": "云账号",
+    "addOracle": "添加 Oracle",
+    "linkAws": "关联 AWS",
+    "loading": "正在加载云账号",
+    "loadFailed": "无法加载云账号。",
+    "empty": "还没有云账号。请用限定权限的角色关联 AWS 账号，或添加 Oracle API 密钥。",
+    "verified": "{{when}}已验证",
+    "neverVerified": "尚未验证"
+  },
+  "common": {
+    "retry": "重试",
+    "backToIntegrations": "返回集成"
+  },
+  "providers": {
+    "aws": "AWS",
+    "oracle": "Oracle Cloud",
+    "hetzner": "Hetzner",
+    "digitalocean": "DigitalOcean",
+    "vultr": "Vultr",
+    "azure": "Azure",
+    "gcp": "Google Cloud",
+    "linode": "Linode",
+    "akamai": "Akamai"
+  },
+  "status": {
+    "active": "正常",
+    "error": "需要处理",
+    "disabled": "已停用"
+  },
+  "capabilities": {
+    "inventory": {
+      "name": "资源清单",
+      "hint": "读取实例、卷和网络。"
+    },
+    "deploy": {
+      "name": "部署",
+      "hint": "创建和修改计算资源。"
+    },
+    "cost": {
+      "name": "费用",
+      "hint": "从 Cost Explorer 读取花费。"
+    },
+    "s3": {
+      "name": "S3",
+      "hint": "管理存储桶和对象。"
+    },
+    "dns": {
+      "name": "DNS",
+      "hint": "管理 Route 53 记录。"
+    },
+    "destructive": {
+      "name": "破坏性操作",
+      "hint": "终止和删除。除非需要，否则保持关闭。"
+    }
+  },
+  "wizard": {
+    "title": "关联 AWS 账号",
+    "description": "在你的账号中创建最小权限角色，再把角色 ARN 交给 Levelrail。不会保存访问密钥。",
+    "steps": "关联步骤",
+    "stepNames": {
+      "scope": "范围",
+      "kit": "创建角色",
+      "connect": "连接"
+    },
+    "back": "返回",
+    "generate": "生成关联套件",
+    "regenerate": "重新生成关联套件",
+    "openAccount": "打开账号",
+    "needsAdmin": "只有管理员可以关联云账号。",
+    "scope": {
+      "tiers": "Levelrail 可执行的操作",
+      "regions": "允许的区域",
+      "regionsHint": "用逗号分隔。留空表示所有区域。",
+      "region": "主区域",
+      "principal": "受信任主体 ARN",
+      "principalHint": "Levelrail 运行时使用的 AWS 身份。只有它可以代入该角色。",
+      "guard": "防护策略 ARN(可选)",
+      "roleName": "角色名称(可选)",
+      "roleNamePlaceholder": "默认名称"
+    },
+    "issues": {
+      "noCapabilities": "至少选择一项能力。",
+      "badRegions": "请使用 eu-west-1 这样的区域 ID。",
+      "badPrincipal": "请输入 IAM root、角色或用户 ARN。",
+      "badGuard": "请输入 IAM 策略 ARN。",
+      "badRegion": "请使用 us-east-1 这样的区域 ID。"
+    },
+    "kit": {
+      "readFirstTitle": "请先阅读策略",
+      "readFirst": "创建任何内容之前，请先检查策略 JSON。角色只能执行策略允许的操作，external id 可防止混淆代理问题。",
+      "quickCreate": "打开 CloudFormation 快速创建",
+      "noQuickCreate": "没有模板 URL 就没有快速创建链接。请使用下面的模板或 Terraform。",
+      "externalId": "External id:",
+      "formats": "套件格式",
+      "policy": "策略 JSON",
+      "cloudformation": "CloudFormation",
+      "terraform": "Terraform",
+      "created": "我已创建角色"
+    },
+    "connect": {
+      "roleArn": "角色 ARN",
+      "badArn": "请输入 IAM 角色 ARN。",
+      "label": "标签",
+      "go": "创建并验证",
+      "retry": "重新验证",
+      "identity": "账号 {{account}}。"
+    }
+  },
+  "probe": {
+    "ok": "已允许",
+    "missing": "缺少权限",
+    "verified": "已通过真实调用确认",
+    "simulated": "已通过策略模拟检查"
+  },
+  "detail": {
+    "loading": "云账号",
+    "notFound": "未找到云账号",
+    "loadFailed": "无法加载此账号。",
+    "tabs": "账号分区",
+    "overview": "概览",
+    "access": "访问",
+    "method": "方式",
+    "lastVerified": "上次验证",
+    "defaultRegion": "主区域",
+    "credential": "凭据",
+    "stored": "已保存",
+    "missing": "缺失",
+    "verify": "验证",
+    "probe": "探测能力",
+    "delete": "删除账号",
+    "deleteTitle": "删除 {{name}}?",
+    "deleteBody": "已保存的凭据会被移除，授权将失效。云账号中的资源不受影响。请输入名称确认。",
+    "regions": "区域",
+    "regionsFailed": "无法列出区域。"
+  },
+  "access": {
+    "needsShare": "需要此账号的共享权限才能查看谁有访问权。",
+    "principalType": "对象",
+    "user": "用户",
+    "team": "团队",
+    "principalId": "用户或团队 ID",
+    "expires": "到期时间(可选)",
+    "actions": "操作",
+    "add": "添加授权",
+    "loadFailed": "无法加载授权。",
+    "empty": "还没有授权。只有管理员可以使用此账号。",
+    "expiresAt": "{{when}}到期",
+    "noExpiry": "永不过期",
+    "revokeNamed": "撤销 {{name}} 的访问",
+    "revoke": "撤销",
+    "action": {
+      "view": "查看",
+      "operate": "操作",
+      "view_spend": "查看花费",
+      "manage_budget": "管理预算",
+      "share": "共享"
+    }
+  }
+}

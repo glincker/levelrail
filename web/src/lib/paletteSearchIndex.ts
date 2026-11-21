@@ -97,6 +97,8 @@ export const ITEM_KEYWORDS: Readonly<Record<string, string>> = {
     'alert slack discord webhook notify notification',
   'nav-integrations':
     'integration cloud provider oracle kubernetes git dns tunnel connection connect health expiry token oauth scope catalog',
+  'nav-integrations-aws-link':
+    'aws amazon cloud account link role iam cloudformation terraform external id least privilege',
   'settings-git-connections': 'git github gitlab repo repository source',
   'settings-github-app': 'github git repo repository app',
   'settings-agents': 'agent node worker connect',

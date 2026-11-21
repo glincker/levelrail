@@ -416,7 +416,8 @@
       "security": "Centro de seguridad",
       "console": "Consola",
       "inbox": "Bandeja de entrada",
-      "integrations": "Integraciones"
+      "integrations": "Integraciones",
+      "integrations-aws-link": "Vincular cuenta AWS"
     },
     "quickNav": {
       "label": "Navegación rápida (mantén L)"

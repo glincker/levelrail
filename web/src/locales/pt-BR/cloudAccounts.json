@@ -1,0 +1,161 @@
+{
+  "section": {
+    "title": "Contas cloud",
+    "addOracle": "Adicionar Oracle",
+    "linkAws": "Vincular AWS",
+    "loading": "Carregando contas cloud",
+    "loadFailed": "Não foi possível carregar as contas cloud.",
+    "empty": "Ainda não há contas cloud. Vincule uma conta AWS com um papel restrito ou adicione uma chave de API da Oracle.",
+    "verified": "Verificada {{when}}",
+    "neverVerified": "Ainda não verificada"
+  },
+  "common": {
+    "retry": "Tentar de novo",
+    "backToIntegrations": "Voltar para Integrações"
+  },
+  "providers": {
+    "aws": "AWS",
+    "oracle": "Oracle Cloud",
+    "hetzner": "Hetzner",
+    "digitalocean": "DigitalOcean",
+    "vultr": "Vultr",
+    "azure": "Azure",
+    "gcp": "Google Cloud",
+    "linode": "Linode",
+    "akamai": "Akamai"
+  },
+  "status": {
+    "active": "Ativa",
+    "error": "Requer atenção",
+    "disabled": "Desativada"
+  },
+  "capabilities": {
+    "inventory": {
+      "name": "Inventário",
+      "hint": "Ler instâncias, volumes e redes."
+    },
+    "deploy": {
+      "name": "Deploy",
+      "hint": "Criar e alterar recursos de computação."
+    },
+    "cost": {
+      "name": "Custo",
+      "hint": "Ler gastos do Cost Explorer."
+    },
+    "s3": {
+      "name": "S3",
+      "hint": "Gerenciar buckets e objetos."
+    },
+    "dns": {
+      "name": "DNS",
+      "hint": "Gerenciar registros do Route 53."
+    },
+    "destructive": {
+      "name": "Destrutivo",
+      "hint": "Encerrar e excluir. Desligado a menos que você precise."
+    }
+  },
+  "wizard": {
+    "title": "Vincular uma conta AWS",
+    "description": "Crie um papel de privilégio mínimo na sua conta e passe o ARN dele ao Levelrail. Nenhuma chave de acesso é guardada.",
+    "steps": "Etapas da vinculação",
+    "stepNames": {
+      "scope": "Escopo",
+      "kit": "Criar o papel",
+      "connect": "Conectar"
+    },
+    "back": "Voltar",
+    "generate": "Gerar kit de vinculação",
+    "regenerate": "Gerar kit de novo",
+    "openAccount": "Abrir conta",
+    "needsAdmin": "Só um administrador pode vincular uma conta cloud.",
+    "scope": {
+      "tiers": "O que o Levelrail pode fazer",
+      "regions": "Regiões permitidas",
+      "regionsHint": "Separadas por vírgula. Deixe vazio para todas as regiões.",
+      "region": "Região principal",
+      "principal": "ARN do principal confiável",
+      "principalHint": "A identidade AWS com a qual o Levelrail roda. Só ela pode assumir o papel.",
+      "guard": "ARN da política de guarda (opcional)",
+      "roleName": "Nome do papel (opcional)",
+      "roleNamePlaceholder": "Nome padrão"
+    },
+    "issues": {
+      "noCapabilities": "Escolha ao menos uma capacidade.",
+      "badRegions": "Use ids de região como eu-west-1.",
+      "badPrincipal": "Informe um ARN de root, papel ou usuário do IAM.",
+      "badGuard": "Informe um ARN de política do IAM.",
+      "badRegion": "Use um id de região como us-east-1."
+    },
+    "kit": {
+      "readFirstTitle": "Leia a política primeiro",
+      "readFirst": "Revise o JSON da política antes de criar qualquer coisa. O papel só pode o que ela permite, e o external id protege contra o confused deputy.",
+      "quickCreate": "Abrir criação rápida do CloudFormation",
+      "noQuickCreate": "Sem URL de template não há link de criação rápida. Use o template ou o Terraform abaixo.",
+      "externalId": "External id:",
+      "formats": "Formatos do kit",
+      "policy": "JSON da política",
+      "cloudformation": "CloudFormation",
+      "terraform": "Terraform",
+      "created": "Criei o papel"
+    },
+    "connect": {
+      "roleArn": "ARN do papel",
+      "badArn": "Informe um ARN de papel do IAM.",
+      "label": "Rótulo",
+      "go": "Criar e verificar",
+      "retry": "Verificar de novo",
+      "identity": "Conta {{account}}."
+    }
+  },
+  "probe": {
+    "ok": "Permitido",
+    "missing": "Falta acesso",
+    "verified": "Confirmado por uma chamada real",
+    "simulated": "Checado por simulação de política"
+  },
+  "detail": {
+    "loading": "Conta cloud",
+    "notFound": "Conta cloud não encontrada",
+    "loadFailed": "Não foi possível carregar esta conta.",
+    "tabs": "Seções da conta",
+    "overview": "Visão geral",
+    "access": "Acesso",
+    "method": "Método",
+    "lastVerified": "Última verificação",
+    "defaultRegion": "Região principal",
+    "credential": "Credencial",
+    "stored": "Guardada",
+    "missing": "Ausente",
+    "verify": "Verificar",
+    "probe": "Testar capacidades",
+    "delete": "Excluir conta",
+    "deleteTitle": "Excluir {{name}}?",
+    "deleteBody": "A credencial guardada é removida e as concessões deixam de funcionar. Os recursos na conta cloud não são tocados. Digite o nome para confirmar.",
+    "regions": "Regiões",
+    "regionsFailed": "Não foi possível listar as regiões."
+  },
+  "access": {
+    "needsShare": "Você precisa da permissão de compartilhar nesta conta para ver quem tem acesso.",
+    "principalType": "Quem",
+    "user": "Usuário",
+    "team": "Equipe",
+    "principalId": "Id de usuário ou equipe",
+    "expires": "Expira (opcional)",
+    "actions": "Ações",
+    "add": "Adicionar concessão",
+    "loadFailed": "Não foi possível carregar as concessões.",
+    "empty": "Ainda não há concessões. Só administradores podem usar esta conta.",
+    "expiresAt": "Expira {{when}}",
+    "noExpiry": "Sem expiração",
+    "revokeNamed": "Revogar acesso de {{name}}",
+    "revoke": "Revogar",
+    "action": {
+      "view": "Ver",
+      "operate": "Operar",
+      "view_spend": "Ver gastos",
+      "manage_budget": "Gerenciar orçamento",
+      "share": "Compartilhar"
+    }
+  }
+}

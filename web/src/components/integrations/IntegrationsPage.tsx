@@ -14,6 +14,7 @@ import {
 import { useConnections } from '../../queries/connections'
 import { CardGrid, ObjectCardSkeleton } from '../cards/ObjectCard'
 import { AttentionStrip } from './AttentionStrip'
+import { CloudAccountsSection } from '../cloudAccounts/CloudAccountsSection'
 import { CatalogSection } from './CatalogSection'
 import { ConnectionCard } from './ConnectionCard'
 import { FilterBar } from './FilterBar'
@@ -158,11 +159,13 @@ export function IntegrationsPage({
           <>
             {catalog}
             <InfraGroups />
+            <CloudAccountsSection />
           </>
         ) : (
           <>
             <AttentionStrip items={attentionList(all, now)} now={now} />
             <InfraGroups />
+            <CloudAccountsSection />
             <section
               aria-labelledby="integrations-connected"
               className="space-y-4"

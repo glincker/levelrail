@@ -1056,6 +1056,17 @@ export const NAV_REGISTRY: readonly NavRegistryEntry[] = [
     sidebar: true,
   },
   {
+    id: 'integrations-aws-link',
+    path: '/integrations/cloud-accounts/aws-link',
+    area: 'platform',
+    titleKey: 'shell.nav.integrations-aws-link',
+    icon: 'Cloud',
+    helpPath: null,
+    gated: null,
+    palette: true,
+    sidebar: false,
+  },
+  {
     id: 'settings-git-connections',
     path: '/settings/git-connections',
     area: 'settings-integrations',

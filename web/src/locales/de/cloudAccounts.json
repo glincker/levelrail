@@ -1,0 +1,161 @@
+{
+  "section": {
+    "title": "Cloud-Konten",
+    "addOracle": "Oracle hinzufügen",
+    "linkAws": "AWS verknüpfen",
+    "loading": "Cloud-Konten werden geladen",
+    "loadFailed": "Cloud-Konten konnten nicht geladen werden.",
+    "empty": "Noch keine Cloud-Konten. Verknüpfe ein AWS-Konto mit einer eng gefassten Rolle oder füge einen Oracle-API-Schlüssel hinzu.",
+    "verified": "Geprüft {{when}}",
+    "neverVerified": "Noch nicht geprüft"
+  },
+  "common": {
+    "retry": "Erneut versuchen",
+    "backToIntegrations": "Zurück zu Integrationen"
+  },
+  "providers": {
+    "aws": "AWS",
+    "oracle": "Oracle Cloud",
+    "hetzner": "Hetzner",
+    "digitalocean": "DigitalOcean",
+    "vultr": "Vultr",
+    "azure": "Azure",
+    "gcp": "Google Cloud",
+    "linode": "Linode",
+    "akamai": "Akamai"
+  },
+  "status": {
+    "active": "Aktiv",
+    "error": "Braucht Aufmerksamkeit",
+    "disabled": "Deaktiviert"
+  },
+  "capabilities": {
+    "inventory": {
+      "name": "Inventar",
+      "hint": "Instanzen, Volumes und Netzwerke lesen."
+    },
+    "deploy": {
+      "name": "Deploy",
+      "hint": "Compute-Ressourcen anlegen und ändern."
+    },
+    "cost": {
+      "name": "Kosten",
+      "hint": "Ausgaben aus Cost Explorer lesen."
+    },
+    "s3": {
+      "name": "S3",
+      "hint": "Buckets und Objekte verwalten."
+    },
+    "dns": {
+      "name": "DNS",
+      "hint": "Route-53-Einträge verwalten."
+    },
+    "destructive": {
+      "name": "Destruktiv",
+      "hint": "Beenden und löschen. Aus, solange du es nicht brauchst."
+    }
+  },
+  "wizard": {
+    "title": "AWS-Konto verknüpfen",
+    "description": "Lege in deinem Konto eine Rolle mit minimalen Rechten an und gib Levelrail ihre ARN. Es werden keine Zugriffsschlüssel gespeichert.",
+    "steps": "Verknüpfungsschritte",
+    "stepNames": {
+      "scope": "Umfang",
+      "kit": "Rolle anlegen",
+      "connect": "Verbinden"
+    },
+    "back": "Zurück",
+    "generate": "Verknüpfungspaket erzeugen",
+    "regenerate": "Verknüpfungspaket neu erzeugen",
+    "openAccount": "Konto öffnen",
+    "needsAdmin": "Nur Administratoren können ein Cloud-Konto verknüpfen.",
+    "scope": {
+      "tiers": "Was Levelrail darf",
+      "regions": "Erlaubte Regionen",
+      "regionsHint": "Kommagetrennt. Leer lassen für alle Regionen.",
+      "region": "Heimatregion",
+      "principal": "ARN des vertrauten Principals",
+      "principalHint": "Die AWS-Identität, als die Levelrail läuft. Nur sie darf die Rolle übernehmen.",
+      "guard": "ARN der Guard-Richtlinie (optional)",
+      "roleName": "Rollenname (optional)",
+      "roleNamePlaceholder": "Standardname"
+    },
+    "issues": {
+      "noCapabilities": "Wähle mindestens eine Fähigkeit.",
+      "badRegions": "Nutze Regions-IDs wie eu-west-1.",
+      "badPrincipal": "Gib eine IAM-Root-, Rollen- oder Benutzer-ARN ein.",
+      "badGuard": "Gib eine IAM-Richtlinien-ARN ein.",
+      "badRegion": "Nutze eine Regions-ID wie us-east-1."
+    },
+    "kit": {
+      "readFirstTitle": "Richtlinie zuerst lesen",
+      "readFirst": "Prüfe das Richtlinien-JSON, bevor du etwas anlegst. Die Rolle darf nur, was die Richtlinie erlaubt, und die External-ID schützt vor einem Confused-Deputy-Angriff.",
+      "quickCreate": "CloudFormation-Schnellerstellung öffnen",
+      "noQuickCreate": "Ohne Template-URL gibt es keinen Schnellerstellungs-Link. Nutze unten das Template oder Terraform.",
+      "externalId": "External-ID:",
+      "formats": "Formate des Verknüpfungspakets",
+      "policy": "Richtlinien-JSON",
+      "cloudformation": "CloudFormation",
+      "terraform": "Terraform",
+      "created": "Ich habe die Rolle angelegt"
+    },
+    "connect": {
+      "roleArn": "Rollen-ARN",
+      "badArn": "Gib eine IAM-Rollen-ARN ein.",
+      "label": "Bezeichnung",
+      "go": "Anlegen und prüfen",
+      "retry": "Erneut prüfen",
+      "identity": "Konto {{account}}."
+    }
+  },
+  "probe": {
+    "ok": "Erlaubt",
+    "missing": "Zugriff fehlt",
+    "verified": "Durch echten Aufruf bestätigt",
+    "simulated": "Per Richtliniensimulation geprüft"
+  },
+  "detail": {
+    "loading": "Cloud-Konto",
+    "notFound": "Cloud-Konto nicht gefunden",
+    "loadFailed": "Dieses Konto konnte nicht geladen werden.",
+    "tabs": "Kontobereiche",
+    "overview": "Übersicht",
+    "access": "Zugriff",
+    "method": "Methode",
+    "lastVerified": "Zuletzt geprüft",
+    "defaultRegion": "Heimatregion",
+    "credential": "Zugangsdaten",
+    "stored": "Gespeichert",
+    "missing": "Fehlt",
+    "verify": "Prüfen",
+    "probe": "Fähigkeiten testen",
+    "delete": "Konto löschen",
+    "deleteTitle": "{{name}} löschen?",
+    "deleteBody": "Die gespeicherten Zugangsdaten werden entfernt und Freigaben funktionieren nicht mehr. Ressourcen im Cloud-Konto bleiben unberührt. Tippe den Namen zur Bestätigung.",
+    "regions": "Regionen",
+    "regionsFailed": "Regionen konnten nicht aufgelistet werden."
+  },
+  "access": {
+    "needsShare": "Du brauchst die Freigabe-Berechtigung für dieses Konto, um den Zugriff zu sehen.",
+    "principalType": "Wer",
+    "user": "Benutzer",
+    "team": "Team",
+    "principalId": "Benutzer- oder Team-ID",
+    "expires": "Läuft ab (optional)",
+    "actions": "Aktionen",
+    "add": "Freigabe hinzufügen",
+    "loadFailed": "Freigaben konnten nicht geladen werden.",
+    "empty": "Noch keine Freigaben. Nur Administratoren können dieses Konto nutzen.",
+    "expiresAt": "Läuft ab {{when}}",
+    "noExpiry": "Kein Ablauf",
+    "revokeNamed": "Zugriff für {{name}} entziehen",
+    "revoke": "Entziehen",
+    "action": {
+      "view": "Ansehen",
+      "operate": "Bedienen",
+      "view_spend": "Ausgaben sehen",
+      "manage_budget": "Budget verwalten",
+      "share": "Teilen"
+    }
+  }
+}
