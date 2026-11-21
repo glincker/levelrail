@@ -482,5 +482,26 @@
       "fail": "Falha",
       "skip": "Ignorado"
     }
+  },
+  "sso": {
+    "option": "Entrar com AWS SSO",
+    "back": "Usar uma função ou Vault",
+    "title": "Entrar com AWS SSO",
+    "startUrl": "URL inicial do Identity Center",
+    "region": "Região do Identity Center",
+    "start": "Iniciar login",
+    "enterCode": "Abra a AWS e confirme este código:",
+    "openBrowser": "Abrir a página de login da AWS",
+    "waiting": "Aguardando sua aprovação no navegador.",
+    "pickRole": "Escolha a conta e a função para vincular.",
+    "noAccounts": "Este login não tem contas atribuídas.",
+    "label": "Rótulo (opcional)",
+    "link": "Vincular conta",
+    "denied": "O login foi recusado ou expirou. Comece de novo.",
+    "reloginDone": "Login refeito.",
+    "relogin": "Entrar novamente",
+    "reloginNeeded": "O login da AWS terminou. Entre novamente para continuar usando esta conta.",
+    "startUrlExample": "https://d-1234567890.awsapps.com/start",
+    "regionExample": "eu-west-1"
   }
 }

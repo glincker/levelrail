@@ -482,5 +482,26 @@
       "fail": "失败",
       "skip": "已跳过"
     }
+  },
+  "sso": {
+    "option": "改用 AWS SSO 登录",
+    "back": "改用角色或 Vault",
+    "title": "使用 AWS SSO 登录",
+    "startUrl": "Identity Center 起始 URL",
+    "region": "Identity Center 区域",
+    "start": "开始登录",
+    "enterCode": "打开 AWS 并确认此代码:",
+    "openBrowser": "打开 AWS 登录页面",
+    "waiting": "正在等待你在浏览器中批准。",
+    "pickRole": "选择要关联的账户和角色。",
+    "noAccounts": "此登录没有分配的账户。",
+    "label": "标签(可选)",
+    "link": "关联账户",
+    "denied": "登录被拒绝或已过期,请重新开始。",
+    "reloginDone": "已重新登录。",
+    "relogin": "重新登录",
+    "reloginNeeded": "AWS 登录已结束。请重新登录以继续使用此账户。",
+    "startUrlExample": "https://d-1234567890.awsapps.com/start",
+    "regionExample": "eu-west-1"
   }
 }

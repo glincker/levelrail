@@ -482,5 +482,26 @@
       "fail": "Fail",
       "skip": "Skipped"
     }
+  },
+  "sso": {
+    "option": "Sign in with AWS SSO instead",
+    "back": "Use a role or Vault instead",
+    "title": "Sign in with AWS SSO",
+    "startUrl": "Identity Center start URL",
+    "region": "Identity Center region",
+    "start": "Start sign in",
+    "enterCode": "Open AWS and confirm this code:",
+    "openBrowser": "Open the AWS sign in page",
+    "waiting": "Waiting for you to approve in the browser.",
+    "pickRole": "Pick the account and role to link.",
+    "noAccounts": "This login has no accounts assigned.",
+    "label": "Label (optional)",
+    "link": "Link account",
+    "denied": "The sign in was refused or expired. Start again.",
+    "reloginDone": "Signed in again.",
+    "relogin": "Sign in again",
+    "reloginNeeded": "The AWS sign in ended. Sign in again to keep using this account.",
+    "startUrlExample": "https://d-1234567890.awsapps.com/start",
+    "regionExample": "eu-west-1"
   }
 }

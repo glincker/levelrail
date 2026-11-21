@@ -14,7 +14,7 @@ type openAPIRoute struct {
 	Description string
 }
 
-// openAPIRoutes holds all 2340 routes known to scripts/gen-api-reference at
+// openAPIRoutes holds all 2344 routes known to scripts/gen-api-reference at
 // generation time. Run `go run ./scripts/gen-api-reference` after changing
 // any routes*.go registration and commit the result.
 var openAPIRoutes = []openAPIRoute{
@@ -1226,6 +1226,10 @@ var openAPIRoutes = []openAPIRoute{
 	{Method: "POST", Path: "/api/v1/cloud-accounts", Ability: "AbilityRoot", Group: "Other", Handler: "handleCreateCloudAccount", Description: ""},
 	{Method: "GET", Path: "/api/v1/cloud-accounts/aws/control-identity", Ability: "AbilityRoot", Group: "Other", Handler: "handleAWSControlIdentity", Description: ""},
 	{Method: "POST", Path: "/api/v1/cloud-accounts/aws/link-kit", Ability: "AbilityRoot", Group: "Other", Handler: "handleAWSLinkKit", Description: ""},
+	{Method: "POST", Path: "/api/v1/cloud-accounts/aws/sso/poll", Ability: "AbilityRoot", Group: "Other", Handler: "handleAWSSSOPoll", Description: ""},
+	{Method: "POST", Path: "/api/v1/cloud-accounts/aws/sso/relogin", Ability: "AbilityRoot", Group: "Other", Handler: "handleAWSSSORelogin", Description: ""},
+	{Method: "POST", Path: "/api/v1/cloud-accounts/aws/sso/select", Ability: "AbilityRoot", Group: "Other", Handler: "handleAWSSSOSelect", Description: ""},
+	{Method: "POST", Path: "/api/v1/cloud-accounts/aws/sso/start", Ability: "AbilityRoot", Group: "Other", Handler: "handleAWSSSOStart", Description: ""},
 	{Method: "POST", Path: "/api/v1/cloud-accounts/aws/vault-kit", Ability: "AbilityRoot", Group: "Other", Handler: "handleAWSVaultKit", Description: ""},
 	{Method: "GET", Path: "/api/v1/cloud-accounts/doctor/preflight", Ability: "AbilityRoot", Group: "Other", Handler: "handleCloudDoctorPreflight", Description: ""},
 	{Method: "GET", Path: "/api/v1/cloud-accounts/oauth/digitalocean/callback", Ability: "AbilityRoot", Group: "Other", Handler: "handleDOOAuthCallback", Description: ""},

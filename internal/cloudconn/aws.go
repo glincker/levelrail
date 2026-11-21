@@ -63,6 +63,8 @@ type AWSOptions struct {
 	NewSimulator    func(aws.Config) PolicySimulator
 	// VaultBroker overrides the shared lease cache used by vault_aws, for tests.
 	VaultBroker *vault.AWSBroker
+	// SSO overrides the shared aws_sso credential cache, for tests.
+	SSO *SSOBroker
 }
 
 // AWSProvider is the read-only AWS side: identity, regions and capability probes.
@@ -108,6 +110,8 @@ func (*AWSProvider) ValidateConfig(cfg Config, authMethod string) error {
 		return invalid("static access keys are disabled; use role_assumption or set APP_CLOUD_ALLOW_STATIC_KEYS")
 	case authMethod == AuthVaultAWS:
 		return validateVaultConfig(cfg)
+	case authMethod == AuthAWSSSO:
+		return validateSSOConfig(cfg)
 	}
 	return nil
 }
@@ -176,6 +180,12 @@ func (p *AWSProvider) session(ctx context.Context, t Target) (aws.Config, string
 			return aws.Config{}, class, err
 		}
 		loaders = append(loaders, config.WithCredentialsProvider(p.vaultProvider(t)))
+	}
+	if c.AuthMethod == AuthAWSSSO {
+		if _, class, err := p.SSOKeys(ctx, t); err != nil {
+			return aws.Config{}, class, err
+		}
+		loaders = append(loaders, config.WithCredentialsProvider(p.ssoProvider(t)))
 	}
 	cfg, err := config.LoadDefaultConfig(ctx, loaders...)
 	if err != nil {
