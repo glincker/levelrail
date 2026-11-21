@@ -449,6 +449,7 @@ These variables only seed the default of a [runtime setting](/runtime-settings).
 | `APP_AUTOSCALE_GAUGE_MAX_BYTES` | [`autoscale.gauge_max_bytes`](/runtime-settings#observability) | `1048576` |
 | `APP_AUTOSCALE_GAUGE_TIMEOUT` | [`autoscale.gauge_timeout`](/runtime-settings#observability) | `3s` |
 | `APP_CLOUD_INSTANCES_CACHE_TTL_SECONDS` | [`cloud.instances.cache_ttl_seconds`](/runtime-settings#observability) | `30` |
+| `APP_CLOUD_INSTANCES_EVENTS_WINDOW_DAYS` | [`cloud.instances.events_window_days`](/runtime-settings#observability) | `7` |
 | `APP_CLOUD_SPEND_AWS_COST_EXPLORER` | [`cloud.spend.aws_cost_explorer`](/runtime-settings#observability) | `false` |
 | `APP_CLOUD_SPEND_CACHE_TTL_MINUTES` | [`cloud.spend.cache_ttl_minutes`](/runtime-settings#observability) | `15` |
 | `APP_CLOUD_SPEND_ENABLED` | [`cloud.spend.enabled`](/runtime-settings#observability) | `true` |

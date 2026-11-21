@@ -30,6 +30,7 @@ Usage:
   levelrail-cli nodes labels <id> [key=value ...] [flags]                    show or replace a node's labels
   levelrail-cli nodes taint <id> [key[=value]:Effect ...] [--clear]          show or replace the taints that keep workloads off a node
   levelrail-cli nodes placement <app|database> <name> [key=value ...]        show or set which node labels a resource requires
+  levelrail-cli nodes targets [flags]                                        deploy targets grouped by cloud account
   levelrail-cli nodes zones [flags]                                          failure domains with their nodes and workloads
   levelrail-cli nodes simulate [--cpu M] [--memory MiB] [--count N]          dry run: where new apps would land and why
   levelrail-cli nodes failure --zone Z | --node ID                           dry run: where workloads go if a zone or node dies
