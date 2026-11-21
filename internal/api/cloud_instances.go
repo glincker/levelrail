@@ -566,7 +566,7 @@ func (rt *Router) handleCloudInstanceEvents(w http.ResponseWriter, r *http.Reque
 	}
 	days := rt.tunableInt(r.Context(), runtimesettings.KeyCloudInstancesEventsWindowDays, "APP_CLOUD_INSTANCES_EVENTS_WINDOW_DAYS", 7)
 	out := cloudInstanceEventsWire{State: "unsupported", Since: time.Now().UTC().AddDate(0, 0, -days), Events: []cloudInstanceEventWire{}}
-	if a.Provider != "aws" && a.Provider != "oracle" {
+	if a.Provider != "aws" && a.Provider != "oracle" && a.Provider != "digitalocean" && a.Provider != "hetzner" {
 		writeJSON(w, http.StatusOK, out)
 		return
 	}

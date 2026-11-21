@@ -123,6 +123,8 @@ type hetznerCreateServerRequest struct {
 	Location   string `json:"location"`
 	Image      string `json:"image"`
 	UserData   string `json:"user_data"`
+	// Labels carry the ownership marker the instance manager reads.
+	Labels map[string]string `json:"labels,omitempty"`
 }
 
 type hetznerServerResponse struct {
@@ -145,6 +147,7 @@ func (h *Hetzner) CreateServer(ctx context.Context, opts CreateOpts) (serverID, 
 	req := hetznerCreateServerRequest{
 		Name: opts.Name, ServerType: opts.Size, Location: opts.Region,
 		Image: hetznerImage, UserData: opts.UserData,
+		Labels: map[string]string{hetznerManagedLabel: "true"},
 	}
 	if err := h.client.do(ctx, http.MethodPost, "/servers", req, &out); err != nil {
 		return "", "", fmt.Errorf("provision: hetzner create server: %w", err)
