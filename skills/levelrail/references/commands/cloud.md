@@ -395,7 +395,7 @@ Usage of levelrail-cli cloud aws logs:
 
 ## levelrail-cli cloud aws rds
 
-Subcommands: adopt, connect, create, list, show, snapshot, start, stop
+Subcommands: adopt, cluster-snapshot, cluster-snapshot-delete, cluster-snapshots, cluster-start, cluster-stop, connect, create, list, show, snapshot, start, stop
 
 ```
 Usage of levelrail-cli cloud aws rds:
