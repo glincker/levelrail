@@ -41,8 +41,12 @@ type NodeProvision struct {
 	// NodeID is set once the enrolled node is found by Name.
 	NodeID        string
 	FailureReason string
-	CreatedAt     time.Time
-	UpdatedAt     time.Time
+	// AccountID is the cloud account whose credential built the VM.
+	AccountID string
+	CreatedBy string
+	TeamID    string
+	CreatedAt time.Time
+	UpdatedAt time.Time
 }
 
 // ErrNodeProvisionNotFound is returned by GetNodeProvision when id
@@ -67,9 +71,9 @@ const NodeProviderTokenEnvKey = "token"
 // pattern BackupTarget/RegistryCredential use.
 func (db *DB) SaveNodeProvision(ctx context.Context, p NodeProvision) error {
 	_, err := db.ExecContext(ctx, `
-		INSERT INTO node_provisions (id, provider, region, size, name, role, status, provider_server_id, ip_address, node_id, failure_reason, created_at, updated_at)
-		VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
-	`, p.ID, p.Provider, p.Region, p.Size, p.Name, p.Role, p.Status, p.ProviderServerID, p.IPAddress, p.NodeID, p.FailureReason, formatTime(p.CreatedAt), formatTime(p.UpdatedAt))
+		INSERT INTO node_provisions (id, provider, region, size, name, role, status, provider_server_id, ip_address, node_id, failure_reason, account_id, created_by, team_id, created_at, updated_at)
+		VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
+	`, p.ID, p.Provider, p.Region, p.Size, p.Name, p.Role, p.Status, p.ProviderServerID, p.IPAddress, p.NodeID, p.FailureReason, p.AccountID, p.CreatedBy, p.TeamID, formatTime(p.CreatedAt), formatTime(p.UpdatedAt))
 	if err != nil {
 		return fmt.Errorf("store: save node provision %q: %w", p.ID, err)
 	}
@@ -80,7 +84,7 @@ func (db *DB) SaveNodeProvision(ctx context.Context, p NodeProvision) error {
 // ErrNodeProvisionNotFound.
 func (db *DB) GetNodeProvision(ctx context.Context, id string) (NodeProvision, error) {
 	row := db.QueryRowContext(ctx, `
-		SELECT id, provider, region, size, name, role, status, provider_server_id, ip_address, node_id, failure_reason, created_at, updated_at
+		SELECT id, provider, region, size, name, role, status, provider_server_id, ip_address, node_id, failure_reason, account_id, created_by, team_id, created_at, updated_at
 		FROM node_provisions WHERE id = ?
 	`, id)
 	p, err := scanNodeProvision(row.Scan)
@@ -96,7 +100,7 @@ func (db *DB) GetNodeProvision(ctx context.Context, id string) (NodeProvision, e
 // ListNodeProvisions returns every node provision, newest first.
 func (db *DB) ListNodeProvisions(ctx context.Context) ([]NodeProvision, error) {
 	rows, err := db.QueryContext(ctx, `
-		SELECT id, provider, region, size, name, role, status, provider_server_id, ip_address, node_id, failure_reason, created_at, updated_at
+		SELECT id, provider, region, size, name, role, status, provider_server_id, ip_address, node_id, failure_reason, account_id, created_by, team_id, created_at, updated_at
 		FROM node_provisions ORDER BY created_at DESC
 	`)
 	if err != nil {
@@ -145,7 +149,7 @@ func scanNodeProvision(scan func(dest ...any) error) (NodeProvision, error) {
 		createdAt, updatedAt string
 	)
 	if err := scan(&p.ID, &p.Provider, &p.Region, &p.Size, &p.Name, &p.Role, &p.Status,
-		&p.ProviderServerID, &p.IPAddress, &p.NodeID, &p.FailureReason, &createdAt, &updatedAt); err != nil {
+		&p.ProviderServerID, &p.IPAddress, &p.NodeID, &p.FailureReason, &p.AccountID, &p.CreatedBy, &p.TeamID, &createdAt, &updatedAt); err != nil {
 		return NodeProvision{}, err
 	}
 	var err error
