@@ -158,6 +158,17 @@ func runCloudAccounts(prog string, args []string, stdout, stderr io.Writer, look
 			var out cloudRow
 			err := c.CloudRequest(ctx, "POST", idPath(pos)+"/"+verb, cloudRow{}, &out)
 			return out, func() {
+				// probe answers with a capabilities list, verify with ok/class/message.
+				if caps, ok := out["capabilities"].([]any); ok {
+					rows := make([]cloudRow, 0, len(caps))
+					for _, c := range caps {
+						if m, ok := c.(map[string]any); ok {
+							rows = append(rows, cloudRow(m))
+						}
+					}
+					printCloudTable(stdout, []string{"CAPABILITY", "OK", "VERIFIED", "METHOD"}, rows, "name", "ok", "verified", "method")
+					return
+				}
 				printCloudTable(stdout, []string{"OK", "CLASS", "MESSAGE"}, []cloudRow{out}, "ok", "class", "message")
 			}, err
 		})
