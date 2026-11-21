@@ -1,9 +1,10 @@
 import type { AnchorHTMLAttributes, ReactNode } from 'react'
 import { fireEvent, render, screen } from '@testing-library/react'
 import userEvent from '@testing-library/user-event'
+import { QueryClient, QueryClientProvider } from '@tanstack/react-query'
 import i18next from 'i18next'
 import { I18nextProvider, initReactI18next } from 'react-i18next'
-import { describe, expect, it, vi } from 'vitest'
+import { afterEach, describe, expect, it, vi } from 'vitest'
 import appRowsEn from '../../locales/en/appRows.json'
 import type { AppListEntry } from '../../types/appDetail'
 import { AppPreviewCard } from './AppPreviewCard'
@@ -54,16 +55,18 @@ function app(over: Partial<AppListEntry> = {}): AppListEntry {
 
 function renderCard(a: AppListEntry, isStatic = false) {
   return render(
-    <I18nextProvider i18n={i18n}>
-      <ul>
-        <AppPreviewCard
-          app={a}
-          isStatic={isStatic}
-          selected={false}
-          onSelect={vi.fn()}
-        />
-      </ul>
-    </I18nextProvider>,
+    <QueryClientProvider client={new QueryClient()}>
+      <I18nextProvider i18n={i18n}>
+        <ul>
+          <AppPreviewCard
+            app={a}
+            isStatic={isStatic}
+            selected={false}
+            onSelect={vi.fn()}
+          />
+        </ul>
+      </I18nextProvider>
+    </QueryClientProvider>,
   )
 }
 
@@ -109,7 +112,7 @@ describe('AppPreviewCard', () => {
 
   it('uses the placeholder when there is no cached preview, never an iframe', () => {
     const { container } = renderCard(app())
-    expect(screen.getByText('No preview')).toBeInTheDocument()
+    expect(screen.getByText('No preview yet')).toBeInTheDocument()
     expect(container.querySelector('iframe')).toBeNull()
   })
 
@@ -123,7 +126,7 @@ describe('AppPreviewCard', () => {
         },
       }),
     )
-    expect(screen.getByText('No preview')).toBeInTheDocument()
+    expect(screen.getByText('No preview yet')).toBeInTheDocument()
     expect(
       screen.getByText('readiness probe failing on port 3000'),
     ).toBeInTheDocument()
@@ -143,7 +146,7 @@ describe('AppPreviewCard', () => {
 
   it('falls back to the placeholder without a domain', async () => {
     renderCard(app({ domains: [] }))
-    expect(screen.getByText('No preview')).toBeInTheDocument()
+    expect(screen.getByText('No preview yet')).toBeInTheDocument()
     expect(screen.getByText('No domain')).toBeInTheDocument()
     await userEvent.tab()
     expect(screen.getByRole('link', { name: 'web' })).toHaveFocus()
@@ -171,7 +174,7 @@ describe('AppPreviewCard', () => {
         }),
       )
       expect(screen.getByTestId(`kind-card-${kind}`)).toHaveTextContent(badge)
-      expect(screen.queryByText('No preview')).toBeNull()
+      expect(screen.queryByText('No preview yet')).toBeNull()
     },
   )
 
@@ -211,13 +214,39 @@ describe('AppPreviewCard', () => {
 })
 
 describe('AppPreviewCard render state', () => {
-  it('shows a skeleton while a render is queued', () => {
+  it('labels a queued render and never shows a bare grey box', () => {
     renderCard(app({ preview: { state: 'queued', image_url: '/x.jpg' } }))
-    expect(screen.getByTestId('card-render-skeleton')).toBeTruthy()
+    expect(screen.getByText('Preview queued')).toBeTruthy()
     expect(document.querySelector('img')).toBeNull()
   })
-  it('shows a quiet text note when the render failed', () => {
+  it('labels a render in progress', () => {
+    renderCard(app({ preview: { state: 'rendering' } }))
+    expect(screen.getByText('Rendering preview')).toBeTruthy()
+  })
+  it('shows a quiet text note and the reason when the render failed', () => {
     renderCard(app({ preview: { state: 'failed', reason: 'timeout' } }))
     expect(screen.getByText('Preview unavailable')).toBeTruthy()
+    expect(screen.getByText('The capture took too long.')).toBeTruthy()
+  })
+})
+
+describe('AppPreviewCard automatic address', () => {
+  afterEach(() => vi.unstubAllGlobals())
+  it('shows the automatic hostname instead of No domain', async () => {
+    vi.stubGlobal(
+      'fetch',
+      vi.fn().mockResolvedValue(
+        new Response(
+          JSON.stringify({
+            enabled: true,
+            hostname: 'web.apps.example.test',
+          }),
+          { status: 200 },
+        ),
+      ),
+    )
+    renderCard(app({ domains: [] }))
+    expect(await screen.findByText('web.apps.example.test')).toBeTruthy()
+    expect(screen.queryByText('No domain')).toBeNull()
   })
 })

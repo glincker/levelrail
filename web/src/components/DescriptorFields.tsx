@@ -23,6 +23,8 @@ interface DescriptorFieldsProps {
   placeholder?: (field: FieldDescriptor) => string | undefined
   /** Text appended to the label of optional fields. */
   optionalLabel?: string
+  /** Extra node under a default-rendered field, for example a path hint. */
+  fieldExtra?: (field: FieldDescriptor) => ReactNode
 }
 
 // Renders every visible field of a descriptor set in registry order. Select fields have no
@@ -38,6 +40,7 @@ export function DescriptorFields({
   labelAdornment,
   placeholder,
   optionalLabel,
+  fieldExtra,
 }: DescriptorFieldsProps) {
   const { t: tKey } = useTranslation()
   // Keys come from the server registry, so they cannot be checked at compile time.
@@ -93,6 +96,7 @@ export function DescriptorFields({
               <FieldHint id={`${id}-help`} href={f.help_url}>
                 {t(f.help_key)}
               </FieldHint>
+              {fieldExtra?.(f)}
               {message ? <FieldError>{message}</FieldError> : null}
             </Field>
           )

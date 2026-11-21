@@ -249,6 +249,7 @@
         "hint": "Mesma máquina, não é seguro"
       }
     },
+    "fieldsUnavailable": "Não foi possível carregar os campos do formulário. Recarregue a página e tente novamente.",
     "localRootHint": "Armazenado em {{root}}. Informe uma pasta dentro dele.",
     "localWarning": "Backups armazenados no próprio disco desta máquina se perdem junto com ela. Eles protegem contra um deploy ruim ou uma tabela excluída, não contra um disco morto, ransomware ou um servidor excluído. Use para experimentar e depois adicione um destino externo.",
     "field": {

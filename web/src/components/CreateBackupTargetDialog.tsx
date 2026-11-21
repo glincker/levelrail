@@ -36,9 +36,8 @@ import { useQuery } from '@tanstack/react-query'
 import { backupTargetFieldsQueryOptions } from '../queries/fieldDescriptors'
 import { DescriptorFields } from './DescriptorFields'
 import { PROVIDER_LABEL } from './backupTargetProvider'
-import { BrandTile } from './BrandLogoBadge'
+import { BackupProviderTile } from './BackupProviderTile'
 import { SftpHostKeyCheck } from './SftpHostKeyCheck'
-import { backupTargetBrand } from '../lib/providerBrands'
 import type { BackupProvider } from '../types/backupTarget'
 
 // Mirrors validateCreateBackupTargetRequest (internal/api/
@@ -345,13 +344,10 @@ export function CreateBackupTargetDialog() {
                   }
                   labelAdornment={(f) =>
                     f.key === 'endpoint' ? (
-                      <BrandTile
-                        name={backupTargetBrand(
-                          watchedProvider,
-                          watch('endpoint'),
-                        )}
+                      <BackupProviderTile
+                        provider={watchedProvider}
+                        endpoint={watch('endpoint')}
                         label={PROVIDER_LABEL[watchedProvider]}
-                        size="xs"
                       />
                     ) : null
                   }
@@ -386,10 +382,9 @@ export function CreateBackupTargetDialog() {
                                   ).map((provider) => (
                                     <SelectItem key={provider} value={provider}>
                                       <span className="flex items-center gap-2">
-                                        <BrandTile
-                                          name={backupTargetBrand(provider)}
+                                        <BackupProviderTile
+                                          provider={provider}
                                           label={PROVIDER_LABEL[provider]}
-                                          size="xs"
                                         />
                                         {PROVIDER_LABEL[provider]}
                                       </span>

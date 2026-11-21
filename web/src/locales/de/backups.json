@@ -248,6 +248,7 @@
         "hint": "Gleicher Rechner, nicht sicher"
       }
     },
+    "fieldsUnavailable": "Die Formularfelder konnten nicht geladen werden. Laden Sie die Seite neu und versuchen Sie es erneut.",
     "localRootHint": "Gespeichert unter {{root}}. Geben Sie einen Ordner darin an.",
     "localWarning": "Backups auf dem eigenen Datenträger dieses Rechners gehen mit dem Rechner verloren. Sie schützen vor einem fehlerhaften Deployment oder einer gelöschten Tabelle, nicht vor einem defekten Datenträger, Ransomware oder einem gelöschten Server. Nutzen Sie dies zum Ausprobieren und fügen Sie dann ein externes Ziel hinzu.",
     "field": {

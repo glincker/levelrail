@@ -69,7 +69,7 @@ kit/ids 92
 kit/netguard 214
 kit/pathfilter 27
 kit/probe 201
-kit/semver 32
+kit/semver 40
 kit/ticker 35
 kit/timeutil 191
 kit/untrusted 41

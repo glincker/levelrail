@@ -248,6 +248,7 @@
         "hint": "Misma máquina, no es seguro"
       }
     },
+    "fieldsUnavailable": "No se pudieron cargar los campos del formulario. Recarga la página e inténtalo de nuevo.",
     "localRootHint": "Se guarda en {{root}}. Escribe una carpeta dentro de ella.",
     "localWarning": "Los respaldos guardados en el disco de esta misma máquina se pierden junto con ella. Protegen frente a un mal despliegue o una tabla eliminada, no frente a un disco dañado, un ataque de ransomware o un servidor eliminado. Úsalo para probar y luego añade un destino externo.",
     "field": {

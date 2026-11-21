@@ -61,7 +61,9 @@
   },
   "description": "描述：{{text}}",
   "card": {
-    "noPreview": "无预览",
+    "noPreviewYet": "暂无预览",
+    "previewQueued": "预览已排队",
+    "previewRendering": "正在生成预览",
     "previewFailed": "预览不可用",
     "noDomain": "无域名",
     "staticSite": "静态站点",

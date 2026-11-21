@@ -4,13 +4,13 @@ import { useTranslation } from 'react-i18next'
 import { ServerGlassIcon, TriangleAlertGlassIcon } from '@thesvg/ui-react'
 import { Alert, AlertDescription } from '@/components/ui/alert'
 import { Button } from '@/components/ui/button'
-import { Input } from '@/components/ui/input'
 import { SecretInput } from '@/components/ui/secret-input'
-import { Label } from '@/components/ui/label'
+import { Field, FieldLabel } from '@/components/ui/field'
 import { toast } from '@/components/ui/toast'
 import { cn } from '@/lib/utils'
 import { BrandTile } from '../BrandLogoBadge'
-import { useBackupTargetFields } from '../../queries/useBackupTargetFields'
+import { backupTargetFieldsQueryOptions } from '../../queries/fieldDescriptors'
+import { DescriptorFields } from '../DescriptorFields'
 import { backupCoverageKeys } from '../../queries/backupCoverage'
 import {
   backupTargetListQueryOptions,
@@ -26,6 +26,36 @@ import {
   type PresetId,
   type TargetFormValues,
 } from './targetPresets'
+
+// The S3 style fields every preset shares, in form order.
+const S3_FIELD_IDS = [
+  'name',
+  's3.bucket',
+  's3.region',
+  's3.endpoint',
+  's3.access_key_id',
+  's3.secret_access_key',
+]
+
+// Wire key of a descriptor to the form value it edits.
+const FORM_KEY: Record<string, keyof TargetFormValues> = {
+  name: 'name',
+  bucket: 'bucket',
+  region: 'region',
+  endpoint: 'endpoint',
+  access_key_id: 'accessKeyId',
+  secret_access_key: 'secretAccessKey',
+}
+function descriptorValues(v: TargetFormValues): Record<string, string> {
+  return {
+    name: v.name,
+    bucket: v.bucket,
+    region: v.region,
+    endpoint: v.endpoint,
+    access_key_id: v.accessKeyId,
+    secret_access_key: v.secretAccessKey,
+  }
+}
 
 const EMPTY: TargetFormValues = {
   name: '',
@@ -45,7 +75,15 @@ export function TargetSetupForm({
   const { data: existing } = useQuery(backupTargetListQueryOptions())
   const localRoot = existing?.find((x) => x.local_root)?.local_root
   const { t } = useTranslation('backups')
-  const fields = useBackupTargetFields()
+  const { t: tKey } = useTranslation()
+  const { data: registry } = useQuery({
+    ...backupTargetFieldsQueryOptions(),
+    retry: false,
+  })
+  const descriptors = (registry?.fields ?? [])
+    .filter((f) => S3_FIELD_IDS.includes(f.id))
+    // Visibility is decided here by preset, the registry rule keys on the dialog's provider.
+    .map((f) => ({ ...f, show_when: undefined }))
   const create = useCreateBackupTarget()
   const queryClient = useQueryClient()
   const [presetId, setPresetId] = useState<PresetId>('r2')
@@ -141,104 +179,56 @@ export function TargetSetupForm({
         </Alert>
       ) : null}
 
-      <div className="grid gap-3 sm:grid-cols-2">
-        <FormField
-          id="target-name"
-          label={t('target.field.name')}
-          invalid={missing === 'name'}
-        >
-          <Input
-            id="target-name"
-            value={values.name}
-            placeholder={t('target.placeholder.name')}
-            onChange={(e) => {
-              set('name', e.target.value)
+      {descriptors.length === 0 ? (
+        <Alert variant="destructive">
+          <AlertDescription>{t('target.fieldsUnavailable')}</AlertDescription>
+        </Alert>
+      ) : (
+        <div className="grid gap-3 sm:grid-cols-2">
+          <DescriptorFields
+            fields={descriptors}
+            values={descriptorValues(values)}
+            idPrefix="target"
+            onChange={(key, v) => {
+              const formKey = FORM_KEY[key]
+              if (formKey) set(formKey, v)
             }}
-          />
-        </FormField>
-        <FormField
-          id="target-bucket"
-          label={fields.label('s3.bucket', t('target.field.bucket'))}
-          invalid={missing === 'bucket'}
-        >
-          <Input
-            id="target-bucket"
-            value={values.bucket}
-            autoComplete="off"
-            onChange={(e) => {
-              set('bucket', e.target.value)
+            placeholder={(f) => {
+              if (f.id === 'name') return t('target.placeholder.name')
+              if (f.id === 's3.region') return preset.region
+              if (f.id === 's3.endpoint') return endpointPlaceholder
+              return undefined
             }}
-          />
-          {preset.sameMachine && localRoot ? (
-            <p className="text-xs text-muted-foreground">
-              {t('target.localRootHint', { root: localRoot })}
-            </p>
-          ) : null}
-        </FormField>
-        <FormField
-          id="target-region"
-          label={fields.label('s3.region', t('target.field.region'))}
-        >
-          <Input
-            id="target-region"
-            value={values.region}
-            placeholder={preset.region}
-            onChange={(e) => {
-              set('region', e.target.value)
+            renderField={(f) => {
+              if (f.id === 's3.endpoint' && preset.provider === 'aws')
+                return null
+              if (f.id !== 's3.secret_access_key') return undefined
+              return (
+                <Field key={f.id}>
+                  <FieldLabel htmlFor="target-secret">
+                    {(tKey as (key: string) => string)(f.label_key)}
+                  </FieldLabel>
+                  <SecretInput
+                    id="target-secret"
+                    value={values.secretAccessKey}
+                    autoComplete="new-password"
+                    onChange={(e) => {
+                      set('secretAccessKey', e.target.value)
+                    }}
+                  />
+                </Field>
+              )
             }}
+            fieldExtra={(f) =>
+              f.id === 's3.bucket' && preset.sameMachine && localRoot ? (
+                <p className="text-xs text-muted-foreground">
+                  {t('target.localRootHint', { root: localRoot })}
+                </p>
+              ) : null
+            }
           />
-        </FormField>
-        {preset.provider !== 'aws' ? (
-          <FormField
-            id="target-endpoint"
-            label={fields.label('s3.endpoint', t('target.field.endpoint'))}
-            invalid={missing === 'endpoint'}
-          >
-            <Input
-              id="target-endpoint"
-              value={values.endpoint}
-              placeholder={endpointPlaceholder}
-              onChange={(e) => {
-                set('endpoint', e.target.value)
-              }}
-            />
-          </FormField>
-        ) : null}
-        <FormField
-          id="target-key"
-          label={fields.label(
-            's3.access_key_id',
-            t('target.field.accessKeyId'),
-          )}
-          invalid={missing === 'accessKeyId'}
-        >
-          <Input
-            id="target-key"
-            value={values.accessKeyId}
-            autoComplete="off"
-            onChange={(e) => {
-              set('accessKeyId', e.target.value)
-            }}
-          />
-        </FormField>
-        <FormField
-          id="target-secret"
-          label={fields.label(
-            's3.secret_access_key',
-            t('target.field.secretAccessKey'),
-          )}
-          invalid={missing === 'secretAccessKey'}
-        >
-          <SecretInput
-            id="target-secret"
-            value={values.secretAccessKey}
-            autoComplete="new-password"
-            onChange={(e) => {
-              set('secretAccessKey', e.target.value)
-            }}
-          />
-        </FormField>
-      </div>
+        </div>
+      )}
 
       {missing ? (
         <p role="alert" className="text-sm text-destructive">
@@ -255,24 +245,5 @@ export function TargetSetupForm({
         {create.isPending ? t('target.connecting') : t('target.connect')}
       </Button>
     </form>
-  )
-}
-
-function FormField({
-  id,
-  label,
-  invalid,
-  children,
-}: {
-  id: string
-  label: string
-  invalid?: boolean
-  children: React.ReactNode
-}) {
-  return (
-    <div className="space-y-1.5" data-invalid={invalid ? 'true' : undefined}>
-      <Label htmlFor={id}>{label}</Label>
-      {children}
-    </div>
   )
 }

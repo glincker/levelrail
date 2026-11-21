@@ -1,9 +1,12 @@
 import { useState } from 'react'
+import { useQuery } from '@tanstack/react-query'
 import { Link } from '@tanstack/react-router'
 import { useTranslation } from 'react-i18next'
 import { GlobeGlassIcon } from '@thesvg/ui-react'
 import { Checkbox } from '@/components/ui/checkbox'
 import { cn } from '@/lib/utils'
+import { autoHostQueryOptions } from '../../queries/certBudget'
+import { previewReasonText } from '../../lib/previewReasons'
 import { useInView } from '../../hooks/useInView'
 import type { AppListEntry } from '../../types/appDetail'
 import { StatusDot } from '../AppRow'
@@ -21,15 +24,32 @@ import { useAppRowMetrics } from './useAppRowMetrics'
 const CARD_CLASS =
   'group/card relative flex flex-col overflow-hidden rounded-xl border border-border bg-card shadow-xs transition-shadow focus-within:ring-2 focus-within:ring-ring hover:shadow-md motion-reduce:transition-none'
 
-function PreviewPlaceholder({ app }: Readonly<{ app: AppListEntry }>) {
+function PreviewPlaceholder({
+  app,
+  state,
+}: Readonly<{ app: AppListEntry; state?: string }>) {
   const { t } = useTranslation('appRows')
-  const failed = app.preview?.state === 'failed'
+  const reason =
+    state === 'failed' ? previewReasonText(app.preview?.reason) : undefined
+  let label = t('card.noPreviewYet')
+  if (state === 'failed') label = t('card.previewFailed')
+  else if (state === 'queued') label = t('card.previewQueued')
+  else if (state === 'rendering') label = t('card.previewRendering')
   return (
-    <div className="flex size-full flex-col items-center justify-center gap-2 bg-gradient-to-br from-muted/60 to-muted/20 text-center">
+    <div
+      data-testid="card-preview-placeholder"
+      className="flex size-full flex-col items-center justify-center gap-1.5 bg-gradient-to-br from-muted/60 to-muted/20 px-3 text-center"
+    >
       <AppLogo image={app.image} />
-      <span className="text-xs text-muted-foreground">
-        {failed ? t('card.previewFailed') : t('card.noPreview')}
-      </span>
+      <span className="text-xs text-muted-foreground">{label}</span>
+      {reason ? (
+        <span
+          className="max-w-full truncate text-xs text-muted-foreground/80"
+          title={reason}
+        >
+          {reason}
+        </span>
+      ) : null}
     </div>
   )
 }
@@ -64,7 +84,7 @@ function WebThumb({ app }: Readonly<{ app: AppListEntry }>) {
     !showImage &&
     !!card &&
     (failed || !imageUrl || failedUrl === imageUrl)
-  const showPlaceholder = !rendering && !showImage && !showCard
+  const showPlaceholder = !showImage && !showCard
   return (
     <div
       ref={ref}
@@ -94,17 +114,8 @@ function WebThumb({ app }: Readonly<{ app: AppListEntry }>) {
           ) : null}
         </>
       ) : null}
-      {rendering ? (
-        <div
-          className="absolute inset-0"
-          aria-hidden="true"
-          data-testid="card-render-skeleton"
-        >
-          <SkeletonLine className="h-full rounded-none" />
-        </div>
-      ) : null}
       {showCard ? <PreviewCard appName={app.name} meta={card} /> : null}
-      {showPlaceholder ? <PreviewPlaceholder app={app} /> : null}
+      {showPlaceholder ? <PreviewPlaceholder app={app} state={state} /> : null}
     </div>
   )
 }
@@ -124,6 +135,11 @@ export function AppPreviewCard({
   const { t: tc } = useTranslation('common')
   const metrics = useAppRowMetrics(app.name)
   const domain = app.domains?.[0]
+  const autoHost = useQuery({
+    ...autoHostQueryOptions(app.name),
+    enabled: !domain,
+  })
+  const address = domain ?? autoHost.data?.hostname
   const failing = app.status.variant === 'destructive'
   const linkClass =
     "truncate text-sm font-semibold after:absolute after:inset-0 after:content-[''] focus-visible:outline-none"
@@ -163,7 +179,7 @@ export function AppPreviewCard({
         </div>
         <p className="flex items-center gap-1 truncate font-mono text-xs text-muted-foreground">
           <GlobeGlassIcon className="size-3.5 shrink-0" aria-hidden="true" />
-          <span className="truncate">{domain ?? t('card.noDomain')}</span>
+          <span className="truncate">{address ?? t('card.noDomain')}</span>
         </p>
         <div className="flex min-w-0 flex-wrap items-center gap-x-2 gap-y-0.5">
           {failing ? (

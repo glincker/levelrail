@@ -248,6 +248,7 @@
         "hint": "Same machine, not safe"
       }
     },
+    "fieldsUnavailable": "The form fields could not be loaded. Reload the page and try again.",
     "localRootHint": "Stored under {{root}}. Enter a folder inside it.",
     "localWarning": "Backups stored on this machine's own disk are lost with the machine. They protect against a bad deploy or a deleted table, not against a dead disk, ransomware or a deleted server. Use this to try things out, then add an off-site destination.",
     "field": {

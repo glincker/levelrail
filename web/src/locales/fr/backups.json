@@ -249,6 +249,7 @@
         "hint": "Même machine, pas sûr"
       }
     },
+    "fieldsUnavailable": "Les champs du formulaire n'ont pas pu être chargés. Rechargez la page et réessayez.",
     "localRootHint": "Stocké sous {{root}}. Saisissez un dossier à l'intérieur.",
     "localWarning": "Les sauvegardes stockées sur le disque de cette machine sont perdues avec elle. Elles protègent contre un mauvais déploiement ou une table supprimée, pas contre un disque mort, un ransomware ou un serveur supprimé. Utilisez-les pour essayer, puis ajoutez une destination hors site.",
     "field": {

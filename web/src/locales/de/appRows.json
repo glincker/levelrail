@@ -61,7 +61,9 @@
   },
   "description": "Beschreibung: {{text}}",
   "card": {
-    "noPreview": "Keine Vorschau",
+    "noPreviewYet": "Noch keine Vorschau",
+    "previewQueued": "Vorschau in der Warteschlange",
+    "previewRendering": "Vorschau wird erstellt",
     "previewFailed": "Vorschau nicht verfügbar",
     "noDomain": "Keine Domain",
     "staticSite": "Statische Seite",

@@ -107,6 +107,7 @@ func (s *bootState) startTelemetry() {
 			logger.Error("telemetry log drain forwarder stopped", slog.String("error", err.Error()))
 		}
 	}()
+	s.startLocalOnboarding()
 }
 
 // startAlerting starts the alerting engine and its sweepers.

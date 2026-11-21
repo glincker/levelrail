@@ -146,3 +146,52 @@ func waitForLineCount(t *testing.T, sink *fakeSink, want int) {
 	}
 	t.Fatalf("sink received %d lines within timeout, want %d", sink.lineCount(), want)
 }
+
+// An enabled drain whose target changes must be rebuilt without a pause and re-enable.
+func TestDrainForwarder_RestartsOnTargetChange(t *testing.T) {
+	broadcaster := NewLogBroadcaster()
+	var mu sync.Mutex
+	sinks := map[string]*fakeSink{}
+	forwarder := NewDrainForwarder(broadcaster, nil, nil, "test-tag")
+	forwarder.buildSink = func(cfg DrainConfig) (DrainSink, error) {
+		mu.Lock()
+		defer mu.Unlock()
+		s := &fakeSink{}
+		sinks[cfg.Target] = s
+		return s, nil
+	}
+	target := "https://old.example.com"
+	configFunc := func(context.Context) ([]DrainConfig, error) {
+		mu.Lock()
+		defer mu.Unlock()
+		return []DrainConfig{{ResourceID: "service:web", Type: DrainSinkHTTP, Target: target, Enabled: true}}, nil
+	}
+	ctx, cancel := context.WithCancel(context.Background())
+	defer cancel()
+	go func() { _ = forwarder.Run(ctx, 10*time.Millisecond, configFunc) }()
+	waitForSubscriber(t, broadcaster, "service:web")
+
+	mu.Lock()
+	target = "https://new.example.com"
+	mu.Unlock()
+	deadline := time.Now().Add(2 * time.Second)
+	for time.Now().Before(deadline) {
+		mu.Lock()
+		_, ok := sinks["https://new.example.com"]
+		mu.Unlock()
+		if ok {
+			break
+		}
+		time.Sleep(5 * time.Millisecond)
+	}
+	mu.Lock()
+	newSink := sinks["https://new.example.com"]
+	mu.Unlock()
+	if newSink == nil {
+		t.Fatal("forwarder did not rebuild the sink after the target changed")
+	}
+	// Let the new subscription register before publishing.
+	time.Sleep(50 * time.Millisecond)
+	broadcaster.Publish(LogEntry{ResourceID: "service:web", Stream: "stdout", Message: "hi"})
+	waitForLineCount(t, newSink, 1)
+}

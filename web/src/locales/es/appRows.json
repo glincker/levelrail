@@ -61,7 +61,9 @@
   },
   "description": "Descripción: {{text}}",
   "card": {
-    "noPreview": "Sin vista previa",
+    "noPreviewYet": "Aún no hay vista previa",
+    "previewQueued": "Vista previa en cola",
+    "previewRendering": "Generando vista previa",
     "previewFailed": "Vista previa no disponible",
     "noDomain": "Sin dominio",
     "staticSite": "Sitio estático",

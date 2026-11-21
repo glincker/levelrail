@@ -61,7 +61,9 @@
   },
   "description": "説明: {{text}}",
   "card": {
-    "noPreview": "プレビューなし",
+    "noPreviewYet": "プレビューはまだありません",
+    "previewQueued": "プレビューは待機中です",
+    "previewRendering": "プレビューを生成中",
     "previewFailed": "プレビューを表示できません",
     "noDomain": "ドメインなし",
     "staticSite": "静的サイト",
