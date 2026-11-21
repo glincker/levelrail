@@ -28,6 +28,8 @@ expect "web/src/locales/en/common.json" "locales" "fanin codegen"
 expect "web/src/i18n/index.ts" "locales" "docs"
 expect "docs/self-host/seaweedfs.mdx" "docs codegen" "fanin locales"
 expect "scripts/newtool/main.go" "fanin execgate" "docs"
+expect "internal/agentupdate/agentupdate.go" "agentupdate" "docs locales"
+expect "cmd/levelrail-agent/main.go" "agentupdate" "docs"
 expect "README.txt" "dashes" "docs codegen fanin execgate clitree"
 
 [ "$fail" -eq 0 ] && echo "preflight_test: ok"

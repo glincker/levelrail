@@ -75,3 +75,4 @@ kit/timeutil 191
 kit/untrusted 41
 kit/upgrade 27
 registry 24
+internal/updatewindow 80

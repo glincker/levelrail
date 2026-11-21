@@ -103,6 +103,9 @@ func (rt *Router) registerNodeRoutes(mux *http.ServeMux) {
 	mux.HandleFunc("GET /api/v1/nodes/{id}/timeline", rt.requireAbilityForResource(AbilityRoot, nodeResourceFromPath, rt.handleNodeTimeline))
 	mux.HandleFunc("GET /api/v1/nodes/{id}/doctor", rt.requireAbilityForResource(AbilityRoot, nodeResourceFromPath, rt.handleNodeDoctor))
 	mux.HandleFunc("GET /api/v1/nodes/{id}/agent-update", rt.requireAbilityForResource(AbilityRoot, nodeResourceFromPath, rt.handleNodeAgentUpdate))
+	mux.HandleFunc("POST /api/v1/nodes/{id}/agent-update/hold", rt.requireAbilityForResource(AbilityRoot, nodeResourceFromPath, rt.handleNodeAgentUpdateControl("hold")))
+	mux.HandleFunc("DELETE /api/v1/nodes/{id}/agent-update/hold", rt.requireAbilityForResource(AbilityRoot, nodeResourceFromPath, rt.handleNodeAgentUpdateControl("unhold")))
+	mux.HandleFunc("POST /api/v1/nodes/{id}/agent-update/override", rt.requireAbilityForResource(AbilityRoot, nodeResourceFromPath, rt.handleNodeAgentUpdateControl("override")))
 	mux.HandleFunc("GET /api/v1/nodes/version-skew", rt.requireAbility(AbilityRoot, rt.handleNodeVersionSkew))
 	// Rough disk/memory exhaustion projection (node_capacity_forecast.go),
 	// a read-and-suggest layer over the same host samples

@@ -146,9 +146,12 @@ func printNodeVersionSkew(out io.Writer, rep apiclient.NodeVersionSkew) {
 }
 
 func runNodesAgentUpdate(prog string, args []string, stdout, stderr io.Writer, lookupEnv func(string) (string, bool)) int {
+	if len(args) > 0 && (args[0] == "hold" || args[0] == "unhold" || args[0] == "apply") {
+		return runNodesAgentUpdateControl(prog, args[0], args[1:], stdout, stderr, lookupEnv)
+	}
 	fs, tokenFlagP, apiURLFlagP, profileFlagP, jsonOutP, outputFlagP, queryFlagP := apiFlagSet(prog, "nodes agent-update", "print the decision as JSON to stdout and nothing else", stderr)
 	fs.Usage = func() {
-		_, _ = fmt.Fprintf(stderr, "Usage:\n  %s nodes agent-update <id> [flags]\n\nShows which agent version the node should run, following the control plane update channel.\n", prog)
+		_, _ = fmt.Fprintf(stderr, "Usage:\n  %s nodes agent-update <id> [flags]\n\nShows which agent version the node should run, following the control plane update channel,\nand why an update is waiting.\n\n  %s nodes agent-update hold|unhold <id>      stop or resume automatic updates for one node\n  %s nodes agent-update apply <id> --force    update anyway on the next agent check\n", prog, prog, prog)
 	}
 	tokenFlag, apiURLFlag, profileFlag, jsonOut, of, exitCode, ok := parseAPIFlags(fs, args, apiFlagPtrs{tokenFlagP, apiURLFlagP, profileFlagP, jsonOutP, outputFlagP, queryFlagP}, prog, stderr)
 	if !ok {
@@ -169,6 +172,54 @@ func runNodesAgentUpdate(prog string, args []string, stdout, stderr io.Writer, l
 			_, _ = fmt.Fprintf(stdout, " to %s", d.Target)
 		}
 		_, _ = fmt.Fprintf(stdout, ": %s\n", d.Reason)
+		if d.Held {
+			_, _ = fmt.Fprintf(stdout, "this node is on hold; release it with: %s nodes agent-update unhold %s\n", prog, id)
+		}
+	}); err != nil {
+		_, _ = fmt.Fprintln(stderr, err)
+		return exitCodeForError(err)
+	}
+	return exitOK
+}
+
+const agentUpdateDisclaimer = "Skips the maintenance window and hold. The update is still signature verified and rolls back on failure."
+
+// runNodesAgentUpdateControl handles hold, unhold and apply. apply is the
+// explicit override: it needs --force, shows a disclaimer and asks unless --yes.
+func runNodesAgentUpdateControl(prog, action string, args []string, stdout, stderr io.Writer, lookupEnv func(string) (string, bool)) int {
+	fs, tokenFlagP, apiURLFlagP, profileFlagP, jsonOutP, outputFlagP, queryFlagP := apiFlagSet(prog, "nodes agent-update "+action, "print the result as JSON to stdout and nothing else", stderr)
+	force := fs.Bool("force", false, "update anyway (apply only)")
+	yes := fs.Bool("yes", false, "skip the confirmation prompt (apply only)")
+	fs.Usage = func() {
+		_, _ = fmt.Fprintf(stderr, "Usage:\n  %s nodes agent-update %s <id> [flags]\n\n  --force   update anyway on the next agent check (apply only)\n  --yes     skip the confirmation prompt (apply only)\n", prog, action)
+	}
+	tokenFlag, apiURLFlag, profileFlag, jsonOut, of, exitCode, ok := parseAPIFlags(fs, args, apiFlagPtrs{tokenFlagP, apiURLFlagP, profileFlagP, jsonOutP, outputFlagP, queryFlagP}, prog, stderr)
+	if !ok {
+		return exitCode
+	}
+	id, ok := requireOneArg(fs, stderr, prog, "nodes agent-update "+action, "node id")
+	if !ok {
+		return exitUsage
+	}
+	if action == "apply" {
+		if !*force {
+			_, _ = fmt.Fprintf(stderr, "nothing was changed. To update anyway run: %s nodes agent-update apply %s --force\n%s\n", prog, id, agentUpdateDisclaimer)
+			return exitUsage
+		}
+		_, _ = fmt.Fprintln(stderr, agentUpdateDisclaimer)
+		if !*yes {
+			if err := confirmDestructive(stderr, "Update this agent anyway?"); err != nil {
+				return reportError(stdout, stderr, jsonOut, err)
+			}
+		}
+		action = "override"
+	}
+	client := apiClientFromFlags(prog, apiURLFlag, tokenFlag, profileFlag, lookupEnv)
+	if err := client.NodeAgentUpdateControl(context.Background(), id, action); err != nil {
+		return reportError(stdout, stderr, jsonOut, fmt.Errorf("agent update %s for node %q: %w", action, id, err))
+	}
+	if err := renderResult(stdout, of.Format, of.Query, map[string]string{"node_id": id, "action": action}, func() {
+		_, _ = fmt.Fprintf(stdout, "node %q: %s recorded\n", id, action)
 	}); err != nil {
 		_, _ = fmt.Fprintln(stderr, err)
 		return exitCodeForError(err)

@@ -20,6 +20,7 @@ RULES=(
 	'(\.go$|^go\.mod$|^go\.sum$)|fanin'
 	'(\.go$|^go\.mod$|^go\.sum$)|execgate'
 	'^internal/runtimesettings/|runtimesettings'
+	'^(internal/agentupdate/|internal/selfupgrade/|internal/nodeinsight/|cmd/levelrail-agent/|proto/agent/|\.github/workflows/release\.yml$|\.goreleaser|test/agentupdateguard/)|agentupdate'
 	'^web/src/(locales|i18n)/|locales'
 	'^web/src/(locales|i18n)/|localecheck'
 	'^docs/|docs'
@@ -39,6 +40,7 @@ guard_cmd() {
 	codegen) echo "scripts/code-gen-check.sh" ;;
 	fanin) echo "scripts/check-fanin.sh" ;;
 	execgate) echo "go test ./test/execgate" ;;
+	agentupdate) echo "go test ./test/agentupdateguard" ;;
 	runtimesettings) echo "go test ./internal/runtimesettings" ;;
 	locales) echo "if [ -d web/node_modules ]; then cd web && node_modules/.bin/vitest run src/i18n/localeParity.test.ts src/i18n/locales.test.ts; else echo 'hint: web/node_modules missing, run scripts/dev-bootstrap.sh to check locale parity'; exit 3; fi" ;;
 	docs) echo "bash scripts/docs-check.sh --links-only" ;;

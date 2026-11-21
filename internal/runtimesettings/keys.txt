@@ -432,7 +432,11 @@ nextjs.memory_floor_mb
 nodes.agent_auto_update
 nodes.agent_buffer_max_bytes
 nodes.agent_buffer_max_items
+nodes.agent_update_channel
+nodes.agent_update_force_nodes
 nodes.agent_update_health_failures
+nodes.agent_update_held_nodes
+nodes.agent_update_window
 nodes.alert_cpu_percent
 nodes.alert_disk_percent
 nodes.alert_memory_percent

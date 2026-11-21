@@ -397,3 +397,47 @@ func TestPackageManagedDetection(t *testing.T) {
 		t.Fatal("install-source marker must mark it package managed")
 	}
 }
+
+func TestRefusalsPrintTheNextStep(t *testing.T) {
+	rel := &fakeRelease{body: []byte("new"), verifyErr: errors.New("bad signature")}
+	d := install
+	d.AutoApply = true
+	o, _ := setup(t, rel, d)
+	_, _ = Run(context.Background(), o)
+	res, _ := Run(context.Background(), o)
+	if res.Action != ActionHold || !strings.Contains(res.Reason, ForceCommand("v1.1.0")) {
+		t.Fatalf("held target must name the retry command: %+v", res)
+	}
+	o2, _ := setup(t, &fakeRelease{body: []byte("new")}, install)
+	res, _ = Run(context.Background(), o2)
+	if res.Action != ActionAvailable || !strings.Contains(res.Reason, ForceCommand("v1.1.0")) {
+		t.Fatalf("waiting update must name the apply command: %+v", res)
+	}
+	o3, _ := setup(t, &fakeRelease{}, nodeinsight.UpdateDecision{Action: nodeinsight.UpdateNone})
+	o3.Current = "dev"
+	res, _ = Run(context.Background(), o3)
+	if !strings.Contains(res.Reason, "--force-target") {
+		t.Fatalf("dev build must be told how to reach a release: %+v", res)
+	}
+	if !strings.Contains(PackageManagedHelp, "--allow-package-managed") {
+		t.Fatal("package managed help must name the override")
+	}
+}
+
+func TestForceTargetSkipsTheControlPlaneAnswer(t *testing.T) {
+	rel := &fakeRelease{body: []byte("new")}
+	o, _ := setup(t, rel, nodeinsight.UpdateDecision{Action: nodeinsight.UpdateNone})
+	o.Decide = func(context.Context) (nodeinsight.UpdateDecision, error) {
+		return nodeinsight.UpdateDecision{}, errors.New("unreachable")
+	}
+	o.Apply, o.ForceTarget = true, "v1.1.0"
+	o.Smoke = func(context.Context, string) (string, error) { return "v1.1.0", nil }
+	res, err := Run(context.Background(), o)
+	if err != nil || res.Action != ActionRestarted || !rel.verified {
+		t.Fatalf("res=%+v err=%v verified=%v", res, err, rel.verified)
+	}
+	o.ForceTarget = "bad tag;"
+	if _, err := Run(context.Background(), o); err == nil {
+		t.Fatal("an unsafe forced tag must still be refused")
+	}
+}

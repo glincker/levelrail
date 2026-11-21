@@ -146,12 +146,18 @@ func (rt *Router) handleNodeAgentUpdate(w http.ResponseWriter, r *http.Request) 
 		rt.internalError(w, "api: node agent update: load failed", err, slog.String("node_id", id))
 		return
 	}
-	writeJSON(w, http.StatusOK, rt.DecideAgentUpdate(r.Context(), n))
+	writeJSON(w, http.StatusOK, rt.decideAgentUpdate(r.Context(), n, false))
 }
 
 // DecideAgentUpdate is the one update decision for a node, used by the REST
 // route and by the agent listener's node-scoped UpdateCheck.
 func (rt *Router) DecideAgentUpdate(ctx context.Context, n *store.Node) nodeinsight.UpdateDecision {
+	return rt.decideAgentUpdate(ctx, n, true)
+}
+
+// decideAgentUpdate consumes a queued Update anyway request only when the
+// agent itself asks, so viewing the status never spends it.
+func (rt *Router) decideAgentUpdate(ctx context.Context, n *store.Node, consume bool) nodeinsight.UpdateDecision {
 	facts := nodeinsight.UpdateFacts{
 		Channel: rt.currentUpdateChannel(ctx), ControlPlane: version.Version, AgentVersion: n.AgentVersion,
 		AgentOnline: n.Status == store.NodeStatusOnline,
@@ -177,5 +183,8 @@ func (rt *Router) DecideAgentUpdate(ctx context.Context, n *store.Node) nodeinsi
 	}
 	d := nodeinsight.DecideUpdate(facts)
 	d.AutoApply = auto
+	if d.Action == nodeinsight.UpdateInstall || d.Action == nodeinsight.UpdateRollback {
+		rt.applyUpdatePolicy(ctx, n, facts.AgentVersion, &d, auto, consume)
+	}
 	return d
 }

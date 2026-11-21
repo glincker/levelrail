@@ -71,6 +71,9 @@ type Options struct {
 	Check bool
 	// Smoke runs the staged binary and returns its version; required to install.
 	Smoke func(ctx context.Context, path string) (string, error)
+	// ForceTarget installs this release instead of the control plane answer. It
+	// still goes through the signed download, version check and rollback.
+	ForceTarget string
 }
 
 // Result describes what a run did.
@@ -93,17 +96,31 @@ func IsReleaseTarget(v string) bool {
 	return ok
 }
 
+// ForceCommand is the one-line retry for a target the agent did not apply.
+func ForceCommand(target string) string {
+	return "levelrail-agent self-update --apply --force-target " + target
+}
+
 // PrevPath is where the replaced binary is kept.
 func PrevPath(exe string) string { return exe + ".prev" }
 
 // Run asks for the target and, when allowed, installs it.
 func Run(ctx context.Context, o Options) (Result, error) {
 	res := Result{Action: ActionNone, Current: o.Current}
-	d, err := o.Decide(ctx)
-	if err != nil {
-		return res, fmt.Errorf("ask the control plane for the target version: %w", err)
+	var d nodeinsight.UpdateDecision
+	if o.ForceTarget != "" {
+		d = nodeinsight.UpdateDecision{Action: nodeinsight.UpdateInstall, Target: o.ForceTarget, Reason: "target chosen with --force-target"}
+	} else {
+		var err error
+		d, err = o.Decide(ctx)
+		if err != nil {
+			return res, fmt.Errorf("ask the control plane for the target version: %w", err)
+		}
 	}
 	res.Reason = d.Reason
+	if d.Action == nodeinsight.UpdateNone && !IsReleaseTarget(o.Current) {
+		res.Reason += "; this is a development build, to move to a release run: " + ForceCommand("<release tag>")
+	}
 	if d.Action != nodeinsight.UpdateInstall && d.Action != nodeinsight.UpdateRollback {
 		return res, nil
 	}
@@ -113,7 +130,7 @@ func Run(ctx context.Context, o Options) (Result, error) {
 	if d.Target == "dev" || strings.HasPrefix(d.Target, "main-") {
 		// Unpublished builds are never fetchable; skip without an error.
 		res.Target = d.Target
-		res.Reason = "target " + d.Target + " is not a release version"
+		res.Reason = "target " + d.Target + " is not a release version; to pick a release run: " + ForceCommand("<release tag>")
 		return res, nil
 	}
 	if !selfupgrade.ValidTag(d.Target) {
@@ -122,7 +139,7 @@ func Run(ctx context.Context, o Options) (Result, error) {
 	res.Target = d.Target
 	if f, ok := readFailedIn(o.DataDir); ok && f.Target == d.Target && !o.Apply {
 		res.Action = ActionHold
-		res.Reason = fmt.Sprintf("%s failed earlier (%s); pass --apply to try it again", d.Target, f.Reason)
+		res.Reason = fmt.Sprintf("%s failed earlier (%s); to try it again run: %s", d.Target, f.Reason, ForceCommand(d.Target))
 		return res, nil
 	}
 	if o.Check {
@@ -131,12 +148,16 @@ func Run(ctx context.Context, o Options) (Result, error) {
 	}
 	if !o.Apply && !d.AutoApply {
 		res.Action = ActionAvailable
-		res.Reason += " (automatic updates are off: pass --apply to install)"
+		res.Reason += " (not applied automatically; to install now run: " + ForceCommand(d.Target) + ")"
 		return res, nil
 	}
 	detail, err := Install(ctx, o, d.Target)
 	res.Detail = detail
 	if err != nil {
+		if errors.Is(err, fs.ErrPermission) {
+			// Not a bad release, so do not hold the target; tell the operator what to run.
+			return res, fmt.Errorf("%w; next step: run as the user that owns %s, for example: sudo %s", err, o.ExePath, ForceCommand(d.Target))
+		}
 		if o.DataDir != "" && !errors.Is(err, ErrBusy) {
 			_ = WriteFailed(o.DataDir, Failed{Target: d.Target, At: time.Now(), Reason: err.Error()})
 		}

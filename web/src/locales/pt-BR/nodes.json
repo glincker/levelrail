@@ -1284,6 +1284,11 @@
     "autoUpdate": {
       "on": "As atualizações automáticas do agente estão ativadas. Os agentes instalam sozinhos a versão do plano de controle.",
       "off": "As atualizações automáticas do agente estão desativadas. Execute levelrail-agent self-update --apply em um nó ou ative nodes.agent_auto_update nas configurações."
+    },
+    "updateAnyway": {
+      "action": "Atualizar mesmo assim",
+      "queued": "Na fila para a próxima verificação do agente",
+      "disclaimer": "Ignora a janela de manutenção e a retenção. A atualização continua verificada por assinatura e é revertida em caso de falha."
     }
   }
 }

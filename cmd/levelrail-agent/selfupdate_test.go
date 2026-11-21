@@ -34,7 +34,7 @@ func TestSelfUpdateReadsNoTokenVariable(t *testing.T) {
 		}
 		return "", false
 	}
-	if _, err := buildUpdateOptions(lookup); err != nil {
+	if _, err := buildUpdateOptions(lookup, false); err != nil {
 		t.Fatal(err)
 	}
 	for _, k := range keys {

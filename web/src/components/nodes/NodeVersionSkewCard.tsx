@@ -1,12 +1,17 @@
 import { Link } from '@tanstack/react-router'
 import { useTranslation } from 'react-i18next'
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card'
-import { useNodeVersionSkew } from '../../queries/nodeInsight'
+import { Button } from '@/components/ui/button'
+import {
+  useNodeVersionSkew,
+  useUpdateAgentAnyway,
+} from '../../queries/nodeInsight'
 
 // Only appears when at least one agent is behind, so a current fleet stays quiet.
 export function NodeVersionSkewCard() {
   const { t } = useTranslation('nodes')
   const { data } = useNodeVersionSkew()
+  const anyway = useUpdateAgentAnyway()
   if (!data || data.behind === 0) return null
 
   return (
@@ -35,11 +40,25 @@ export function NodeVersionSkewCard() {
                 {t('skew.step', { from: s.from || '?', to: s.to })}
                 {s.note === 'cordoned' ? `, ${t('skew.notes.cordoned')}` : ''}
                 {s.note === 'offline' ? `, ${t('skew.notes.offline')}` : ''}
-              </span>
+              </span>{' '}
+              <Button
+                variant="link"
+                size="sm"
+                className="h-auto p-0 text-xs"
+                disabled={anyway.isPending}
+                onClick={() => anyway.mutate(s.node_id)}
+              >
+                {anyway.isSuccess && anyway.variables === s.node_id
+                  ? t('skew.updateAnyway.queued')
+                  : t('skew.updateAnyway.action')}
+              </Button>
             </li>
           ))}
         </ol>
         <p className="text-xs text-muted-foreground">{t('skew.howTo')}</p>
+        <p className="text-xs text-muted-foreground">
+          {t('skew.updateAnyway.disclaimer')}
+        </p>
         <p className="text-xs text-muted-foreground">
           {data.auto_update
             ? t('skew.autoUpdate.on')

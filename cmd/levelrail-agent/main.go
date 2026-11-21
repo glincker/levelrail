@@ -46,7 +46,7 @@ const (
 
 const usageText = `levelrail-agent: Levelrail node agent
 
-Usage: levelrail-agent [--help | --version | reenroll | doctor | self-update [--check|--apply]]
+Usage: levelrail-agent [--help | --version | reenroll | doctor | self-update [--check|--apply [--force-target <tag>] [--allow-package-managed]]]
 
 Environment:
   APP_CONTROL_PLANE_ADDR       host:port of the control plane agent listener (required)
@@ -59,7 +59,8 @@ Environment:
 self-update refuses (exit code 3) when the binary is package managed: under
 /usr/bin, /usr/local/Cellar or /opt/homebrew/Cellar, owned by dpkg or rpm, or
 marked "package" in the install-source file of the data directory. Update it
-with the package manager. dev and main-<sha> builds are never update targets.
+with the package manager, or pass --allow-package-managed to --apply. A failed or held
+target is retried with --apply --force-target <tag>. dev and main-<sha> builds are never update targets.
 `
 
 // handleInfoArgs answers version and help before any config is read.

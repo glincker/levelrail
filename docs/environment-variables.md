@@ -579,7 +579,11 @@ These variables only seed the default of a [runtime setting](/runtime-settings).
 | `APP_NODE_AGENT_AUTO_UPDATE` | [`nodes.agent_auto_update`](/runtime-settings#observability) | `false` |
 | `APP_NODE_AGENT_BUFFER_MAX_BYTES` | [`nodes.agent_buffer_max_bytes`](/runtime-settings#observability) | `4194304` |
 | `APP_NODE_AGENT_BUFFER_MAX_ITEMS` | [`nodes.agent_buffer_max_items`](/runtime-settings#observability) | `2000` |
+| `APP_NODE_AGENT_UPDATE_CHANNEL` | [`nodes.agent_update_channel`](/runtime-settings#observability) | `stable` |
+| `APP_NODE_AGENT_UPDATE_FORCE_NODES` | [`nodes.agent_update_force_nodes`](/runtime-settings#observability) | empty |
 | `APP_NODE_AGENT_UPDATE_HEALTH_FAILURES` | [`nodes.agent_update_health_failures`](/runtime-settings#observability) | `3` |
+| `APP_NODE_AGENT_UPDATE_HELD_NODES` | [`nodes.agent_update_held_nodes`](/runtime-settings#observability) | empty |
+| `APP_NODE_AGENT_UPDATE_WINDOW` | [`nodes.agent_update_window`](/runtime-settings#observability) | empty |
 | `APP_ALERT_NODE_CPU_PERCENT` | [`nodes.alert_cpu_percent`](/runtime-settings#observability) | `85` |
 | `APP_ALERT_NODE_DISK_SPACE_THRESHOLD_PERCENT` | [`nodes.alert_disk_percent`](/runtime-settings#observability) | `90` |
 | `APP_ALERT_NODE_MEMORY_PERCENT` | [`nodes.alert_memory_percent`](/runtime-settings#observability) | `90` |

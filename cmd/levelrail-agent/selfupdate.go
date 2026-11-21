@@ -128,7 +128,9 @@ func smokeVersion(ctx context.Context, path string) (string, error) {
 	return strings.TrimSpace(string(out)), err
 }
 
-func buildUpdateOptions(lookup func(string) (string, bool)) (agentupdate.Options, error) {
+// buildUpdateOptions wires one run. allowPackageManaged is only ever set by an
+// explicit manual flag; the automatic loop always passes false.
+func buildUpdateOptions(lookup func(string) (string, bool), allowPackageManaged bool) (agentupdate.Options, error) {
 	if !updateConfigured(lookup) {
 		return agentupdate.Options{}, fmt.Errorf("set %s so the agent can ask the control plane for its target version", envControlPlane)
 	}
@@ -140,7 +142,7 @@ func buildUpdateOptions(lookup func(string) (string, bool)) (agentupdate.Options
 	if err != nil {
 		return agentupdate.Options{}, err
 	}
-	if agentupdate.PackageManaged(exe, agentDataDir()) {
+	if !allowPackageManaged && agentupdate.PackageManaged(exe, agentDataDir()) {
 		return agentupdate.Options{}, fmt.Errorf("%w (%s)", agentupdate.ErrPackageManaged, exe)
 	}
 	return agentupdate.Options{
@@ -155,6 +157,8 @@ func runSelfUpdate(args []string, out, errOut io.Writer, lookup func(string) (st
 	fs.SetOutput(errOut)
 	check := fs.Bool("check", false, "only report the target version")
 	apply := fs.Bool("apply", false, "install the target and restart now")
+	allowPkg := fs.Bool("allow-package-managed", false, "update in place even though a package manager owns the binary")
+	force := fs.String("force-target", "", "install this release tag instead of the control plane answer (needs --apply)")
 	if err := fs.Parse(args); err != nil {
 		return 2
 	}
@@ -162,15 +166,23 @@ func runSelfUpdate(args []string, out, errOut io.Writer, lookup func(string) (st
 		_, _ = fmt.Fprintln(errOut, "pass only one of --check and --apply")
 		return 2
 	}
-	o, err := buildUpdateOptions(lookup)
+	if *force != "" && !*apply {
+		_, _ = fmt.Fprintln(errOut, "--force-target needs --apply: "+agentupdate.ForceCommand(*force))
+		return 2
+	}
+	if *allowPkg {
+		_, _ = fmt.Fprintln(errOut, "note: updating a package-managed binary in place; the package manager may replace it later. The download is still signature verified and rolls back on failure.")
+	}
+	o, err := buildUpdateOptions(lookup, *allowPkg)
 	if err != nil {
 		_, _ = fmt.Fprintln(errOut, err)
 		if errors.Is(err, agentupdate.ErrPackageManaged) {
+			_, _ = fmt.Fprintln(errOut, "next step: "+agentupdate.PackageManagedHelp)
 			return exitPackageManaged
 		}
 		return 1
 	}
-	o.Check, o.Apply = *check, *apply
+	o.Check, o.Apply, o.ForceTarget = *check, *apply, *force
 	ctx, cancel := context.WithTimeout(context.Background(), updateHTTPTimeout)
 	defer cancel()
 	res, err := agentupdate.Run(ctx, o)
@@ -204,9 +216,9 @@ func autoUpdateLoop(ctx context.Context, lookup func(string) (string, bool), log
 			return
 		case <-t.C:
 		}
-		o, err := buildUpdateOptions(lookup)
+		o, err := buildUpdateOptions(lookup, false)
 		if errors.Is(err, agentupdate.ErrPackageManaged) {
-			logger.Debug("agent self-update off: package managed", slog.String("error", err.Error()))
+			logger.Info("agent self-update off: package managed; the agent keeps running", slog.String("next_step", agentupdate.PackageManagedHelp))
 			return
 		}
 		if err != nil {
@@ -215,11 +227,12 @@ func autoUpdateLoop(ctx context.Context, lookup func(string) (string, bool), log
 		}
 		res, err := agentupdate.Run(ctx, o)
 		if err != nil {
-			logger.Warn("agent update failed", slog.String("error", err.Error()))
+			// The running agent is untouched; the loop just tries again next interval.
+			logger.Warn("agent update did not apply; the agent keeps running", slog.String("error", err.Error()))
 			continue
 		}
 		if res.Action == agentupdate.ActionNone && res.Target != "" {
-			logger.Debug("agent update skipped", slog.String("target", res.Target), slog.String("reason", res.Reason))
+			logger.Info("agent update waiting", slog.String("target", res.Target), slog.String("reason", res.Reason))
 		}
 		if res.Action != agentupdate.ActionNone {
 			logger.Info("agent update", slog.String("action", res.Action), slog.String("target", res.Target))

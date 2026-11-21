@@ -32,6 +32,11 @@ type UpdateDecision struct {
 	// AutoApply mirrors the nodes.agent_auto_update runtime setting: when true
 	// the agent restarts into the new version without an operator flag.
 	AutoApply bool `json:"auto_apply"`
+	// Waiting says why a pending update is not applying on its own (window,
+	// hold, channel, automatic updates off); empty when nothing waits.
+	Waiting string `json:"waiting,omitempty"`
+	// Held is true when this node has a per-node hold.
+	Held bool `json:"held,omitempty"`
 }
 
 // DecideUpdate keeps agents on the control plane version of the control plane

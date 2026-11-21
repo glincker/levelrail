@@ -1161,6 +1161,9 @@ Endpoints for:
 | GET | /api/v1/nodes/{id}/doctor | AbilityRoot | handleNodeDoctor |
 | GET | /api/v1/nodes/version-skew | AbilityRoot | handleNodeVersionSkew |
 | GET | /api/v1/nodes/{id}/agent-update | AbilityRoot | handleNodeAgentUpdate |
+| POST | /api/v1/nodes/{id}/agent-update/hold | AbilityRoot | handleNodeAgentUpdateControl |
+| DELETE | /api/v1/nodes/{id}/agent-update/hold | AbilityRoot | handleNodeAgentUpdateControl |
+| POST | /api/v1/nodes/{id}/agent-update/override | AbilityRoot | handleNodeAgentUpdateControl |
 
 ## Ingress / Certificates / Domains / Email / Cloudflare
 

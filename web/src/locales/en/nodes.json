@@ -1270,6 +1270,11 @@
     "autoUpdate": {
       "on": "Automatic agent updates are on. Agents install the control plane version themselves.",
       "off": "Automatic agent updates are off. Run levelrail-agent self-update --apply on a node, or turn on nodes.agent_auto_update in settings."
+    },
+    "updateAnyway": {
+      "action": "Update anyway",
+      "queued": "Queued for the next agent check",
+      "disclaimer": "Skips the maintenance window and hold. The update is still signature verified and rolls back on failure."
     }
   }
 }

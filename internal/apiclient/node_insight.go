@@ -98,6 +98,9 @@ type NodeAgentUpdate struct {
 	Reason  string `json:"reason"`
 	// AutoApply is the nodes.agent_auto_update runtime setting.
 	AutoApply bool `json:"auto_apply"`
+	// Waiting is why a pending update is not applying on its own.
+	Waiting string `json:"waiting,omitempty"`
+	Held    bool   `json:"held,omitempty"`
 }
 
 // GetNodeAgentUpdate calls GET /api/v1/nodes/{id}/agent-update.
@@ -105,4 +108,14 @@ func (c *Client) GetNodeAgentUpdate(ctx context.Context, id string) (NodeAgentUp
 	var out NodeAgentUpdate
 	err := c.do(ctx, http.MethodGet, nodePath(id)+"/agent-update", nil, &out)
 	return out, err
+}
+
+// NodeAgentUpdateControl calls POST or DELETE on /api/v1/nodes/{id}/agent-update/{hold|override}.
+// Actions: hold, unhold, override (a one-time Update anyway request).
+func (c *Client) NodeAgentUpdateControl(ctx context.Context, id, action string) error {
+	method, leaf := http.MethodPost, action
+	if action == "unhold" {
+		method, leaf = http.MethodDelete, "hold"
+	}
+	return c.do(ctx, method, nodePath(id)+"/agent-update/"+leaf, nil, nil)
 }

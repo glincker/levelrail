@@ -14,7 +14,7 @@ type openAPIRoute struct {
 	Description string
 }
 
-// openAPIRoutes holds all 2344 routes known to scripts/gen-api-reference at
+// openAPIRoutes holds all 2347 routes known to scripts/gen-api-reference at
 // generation time. Run `go run ./scripts/gen-api-reference` after changing
 // any routes*.go registration and commit the result.
 var openAPIRoutes = []openAPIRoute{
@@ -1085,6 +1085,9 @@ var openAPIRoutes = []openAPIRoute{
 	{Method: "DELETE", Path: "/api/v1/nodes/{id}", Ability: "AbilityRoot", Group: "Nodes", Handler: "handleDeleteNode", Description: ""},
 	{Method: "GET", Path: "/api/v1/nodes/{id}", Ability: "AbilityRoot", Group: "Nodes", Handler: "handleGetNode", Description: ""},
 	{Method: "GET", Path: "/api/v1/nodes/{id}/agent-update", Ability: "AbilityRoot", Group: "Nodes", Handler: "handleNodeAgentUpdate", Description: ""},
+	{Method: "DELETE", Path: "/api/v1/nodes/{id}/agent-update/hold", Ability: "AbilityRoot", Group: "Nodes", Handler: "handleNodeAgentUpdateControl", Description: ""},
+	{Method: "POST", Path: "/api/v1/nodes/{id}/agent-update/hold", Ability: "AbilityRoot", Group: "Nodes", Handler: "handleNodeAgentUpdateControl", Description: ""},
+	{Method: "POST", Path: "/api/v1/nodes/{id}/agent-update/override", Ability: "AbilityRoot", Group: "Nodes", Handler: "handleNodeAgentUpdateControl", Description: ""},
 	{Method: "PUT", Path: "/api/v1/nodes/{id}/build-trust", Ability: "AbilityRoot", Group: "Nodes", Handler: "handleSetNodeBuildTrust", Description: "A node's tier and an environment's allow-list decide whose builds may reach production, so sensitive writes."},
 	{Method: "GET", Path: "/api/v1/nodes/{id}/capacity", Ability: "AbilityRoot", Group: "Nodes", Handler: "handleGetNodeCapacity", Description: ""},
 	{Method: "GET", Path: "/api/v1/nodes/{id}/capacity-forecast", Ability: "AbilityRoot", Group: "Nodes", Handler: "handleNodeCapacityForecast", Description: "Rough disk/memory exhaustion projection (node_capacity_forecast.go), a read-and-suggest layer over the same host samples patch-status/metrics above read, same AbilityRoot boundary and nil-telemetry 501 shape as every other node route."},

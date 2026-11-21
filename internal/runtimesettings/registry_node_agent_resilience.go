@@ -1,16 +1,27 @@
 package runtimesettings
 
+import "github.com/GLINCKER/levelrail/internal/updatewindow"
+
 // Agent offline buffer and self-update health limits.
 const (
 	KeyAgentBufferMaxItems     = "nodes.agent_buffer_max_items"
 	KeyAgentBufferMaxBytes     = "nodes.agent_buffer_max_bytes"
 	KeyAgentUpdateHealthFailed = "nodes.agent_update_health_failures"
 	KeyAgentAutoUpdate         = "nodes.agent_auto_update"
+	KeyAgentUpdateWindow       = "nodes.agent_update_window"
+	KeyAgentUpdateChannel      = "nodes.agent_update_channel"
+	KeyAgentUpdateHeldNodes    = "nodes.agent_update_held_nodes"
+	KeyAgentUpdateForceNodes   = "nodes.agent_update_force_nodes"
 	KeyNodeDrainStallSeconds   = "nodes.drain_stall_seconds"
 	agentBufferItemsCeiling    = 100000
 	agentBufferBytesCeiling    = 256 << 20
 	agentUpdateFailuresCeiling = 20
 )
+
+func windowCheck(v string) error {
+	_, err := updatewindow.Parse(v)
+	return err
+}
 
 func init() {
 	Register(Definition{
@@ -36,6 +47,30 @@ func init() {
 		Env: "APP_NODE_AGENT_AUTO_UPDATE", Apply: ApplyLive,
 		Title:       "Agent automatic update",
 		Description: "When on, agents that check for updates install the control plane version and restart themselves. Off by default: agents then only update when an operator runs levelrail-agent self-update --apply.",
+	})
+	Register(Definition{
+		Key: KeyAgentUpdateWindow, Category: CategoryObservability, Kind: KindString, Default: "",
+		Env: "APP_NODE_AGENT_UPDATE_WINDOW", Apply: ApplyLive, CheckValue: windowCheck,
+		Title:       "Agent update window",
+		Description: "Daily HH:MM-HH:MM range, in the control plane's local time, when automatic agent updates may install, for example 02:00-05:00. Empty means any time. An operator can still update anyway.",
+	})
+	Register(Definition{
+		Key: KeyAgentUpdateChannel, Category: CategoryObservability, Kind: KindString, Default: "stable",
+		Env: "APP_NODE_AGENT_UPDATE_CHANNEL", Apply: ApplyLive, AllowedStrings: []string{"stable", "hold-minor"},
+		Title:       "Agent update channel",
+		Description: "stable lets agents follow the control plane version automatically. hold-minor only installs patch updates automatically; minor and major updates wait for an explicit apply.",
+	})
+	Register(Definition{
+		Key: KeyAgentUpdateHeldNodes, Category: CategoryObservability, Kind: KindStringList, Default: "",
+		Env: "APP_NODE_AGENT_UPDATE_HELD_NODES", Apply: ApplyLive,
+		Title:       "Agent update held nodes",
+		Description: "Node ids whose agents never update automatically. Managed with levelrail nodes agent-update hold and unhold. An operator can still update anyway.",
+	})
+	Register(Definition{
+		Key: KeyAgentUpdateForceNodes, Category: CategoryObservability, Kind: KindStringList, Default: "",
+		Env: "APP_NODE_AGENT_UPDATE_FORCE_NODES", Apply: ApplyLive,
+		Title:       "Agent update anyway queue",
+		Description: "Node ids with a one-time Update anyway request. Each entry is cleared when that agent picks it up; it never turns on automatic updates.",
 	})
 	Register(Definition{
 		Key: KeyNodeDrainStallSeconds, Category: CategoryObservability, Kind: KindInt, Default: "600",

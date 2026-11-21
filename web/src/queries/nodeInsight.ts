@@ -1,4 +1,4 @@
-import { useQuery } from '@tanstack/react-query'
+import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query'
 import { ApiError, readErrorMessage } from '../lib/apiError'
 import { pollMs } from '../lib/pollTier'
 
@@ -119,5 +119,25 @@ export function useNodeVersionSkew() {
       ),
     retry: false,
     refetchInterval: pollMs('steady'),
+  })
+}
+
+// Queues a one-time Update anyway for the node; it never turns on automatic updates.
+export function useUpdateAgentAnyway() {
+  const qc = useQueryClient()
+  return useMutation({
+    mutationFn: async (id: string) => {
+      const res = await fetch(
+        `/api/v1/nodes/${encodeURIComponent(id)}/agent-update/override`,
+        { method: 'POST' },
+      )
+      if (!res.ok) {
+        throw new ApiError(
+          res.status,
+          await readErrorMessage(res, `update anyway failed: ${res.status}`),
+        )
+      }
+    },
+    onSuccess: () => qc.invalidateQueries({ queryKey: nodeInsightKeys.skew() }),
   })
 }

@@ -1270,6 +1270,11 @@
     "autoUpdate": {
       "on": "Automatische Agent-Updates sind aktiv. Agents installieren die Version der Steuerungsebene selbst.",
       "off": "Automatische Agent-Updates sind aus. Führen Sie auf einem Node levelrail-agent self-update --apply aus oder aktivieren Sie nodes.agent_auto_update in den Einstellungen."
+    },
+    "updateAnyway": {
+      "action": "Trotzdem aktualisieren",
+      "queued": "Für die nächste Agent-Prüfung vorgemerkt",
+      "disclaimer": "Überspringt Wartungsfenster und Sperre. Das Update wird weiterhin per Signatur geprüft und bei einem Fehler zurückgerollt."
     }
   }
 }

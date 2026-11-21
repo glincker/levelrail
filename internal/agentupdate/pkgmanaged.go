@@ -15,6 +15,9 @@ import (
 // in-place replace would be overwritten or fight the package database.
 var ErrPackageManaged = errors.New("the agent binary is managed by a package manager; update it with that package manager instead")
 
+// PackageManagedHelp is the next step printed when a package manager owns the agent.
+const PackageManagedHelp = "update it with your package manager (for example apt-get install --only-upgrade levelrail-agent, dnf upgrade levelrail-agent or brew upgrade levelrail-agent), or run: levelrail-agent self-update --apply --allow-package-managed"
+
 const (
 	sourceFile   = "install-source"
 	ownerTimeout = 3 * time.Second

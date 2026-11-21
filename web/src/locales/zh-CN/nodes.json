@@ -1254,6 +1254,11 @@
     "autoUpdate": {
       "on": "代理自动更新已开启。代理会自行安装控制平面的版本。",
       "off": "代理自动更新已关闭。请在节点上运行 levelrail-agent self-update --apply，或在设置中开启 nodes.agent_auto_update。"
+    },
+    "updateAnyway": {
+      "action": "仍然更新",
+      "queued": "已排队，将在代理下次检查时执行",
+      "disclaimer": "跳过维护窗口和暂停。更新仍会进行签名验证，失败时会回滚。"
     }
   }
 }
