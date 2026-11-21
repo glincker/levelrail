@@ -4,7 +4,7 @@ package runtimesettings
 const (
 	KeyCloudGuardECR           = "cloud.guard.service.ecr"
 	KeyCloudGuardACM           = "cloud.guard.service.acm"
-	KeyCloudGuardSecrets       = "cloud.guard.service.secrets" //nolint:gosec // setting key, not a credential
+	KeyCloudGuardParams        = "cloud.guard.service.parameters"
 	KeyCloudGuardCloudTrail    = "cloud.guard.service.cloudtrail"
 	KeyCloudGuardMonthlyCapUSD = "cloud.guard.monthly_cap_usd"
 	KeyCloudGuardAccountCaps   = "cloud.guard.account_caps"
@@ -23,7 +23,7 @@ func init() {
 	}
 	flag(KeyCloudGuardECR, "APP_CLOUD_GUARD_ECR", "AWS container registry", "Lets the control plane list and create ECR repositories and issue registry login tokens.")
 	flag(KeyCloudGuardACM, "APP_CLOUD_GUARD_ACM", "AWS certificates", "Lets the control plane request ACM certificates.")
-	flag(KeyCloudGuardSecrets, "APP_CLOUD_GUARD_SECRETS", "AWS secrets", "Lets the control plane list and write SSM parameters and list Secrets Manager entries.")
+	flag(KeyCloudGuardParams, "APP_CLOUD_GUARD_PARAMS", "AWS parameter store", "Lets the control plane list and write SSM parameters and list Secrets Manager entry names.")
 	flag(KeyCloudGuardCloudTrail, "APP_CLOUD_GUARD_CLOUDTRAIL", "AWS audit events", "Lets the control plane read CloudTrail events for a resource.")
 	registerLimitInt(KeyCloudGuardMonthlyCapUSD, "APP_CLOUD_GUARD_MONTHLY_CAP_USD", "0", "AWS monthly cap (USD)", "Default monthly spend cap per account that blocks new creates. 0 means no cap.", 0, cloudGuardMaxUSD)
 	Register(Definition{

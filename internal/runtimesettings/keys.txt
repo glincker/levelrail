@@ -142,7 +142,7 @@ cloud.guard.per_create_max_usd
 cloud.guard.service.acm
 cloud.guard.service.cloudtrail
 cloud.guard.service.ecr
-cloud.guard.service.secrets
+cloud.guard.service.parameters
 cloud.instances.cache_ttl_seconds
 cloud.instances.events_window_days
 cloud.max_concurrent_plans

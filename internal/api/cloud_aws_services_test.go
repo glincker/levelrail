@@ -65,7 +65,7 @@ func TestCloudAWSServices_SecretsListIsRedactedAndRevealIsAudited(t *testing.T) 
 		}
 		return awsxtest.Reply{Status: 400, Body: `{"__type":"Bad"}`}
 	})
-	enableAWSFlag(t, rt, runtimesettings.KeyCloudGuardSecrets)
+	enableAWSFlag(t, rt, runtimesettings.KeyCloudGuardParams)
 	root := loginTestSession(t, rt, db)
 	code, body := teamDo(t, rt, http.MethodGet, awsSvcBase+"secrets", "", withCookie(root))
 	if code != http.StatusOK || strings.Contains(body, "hunter2") || !strings.Contains(body, "[redacted]") || !strings.Contains(body, "/app/db") {

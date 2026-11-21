@@ -37,7 +37,7 @@ type awsServiceDef struct{ key, env string }
 var awsServices = map[string]awsServiceDef{
 	ecr.ServiceName: {runtimesettings.KeyCloudGuardECR, "APP_CLOUD_GUARD_ECR"},
 	"acm":           {runtimesettings.KeyCloudGuardACM, "APP_CLOUD_GUARD_ACM"},
-	"secrets":       {runtimesettings.KeyCloudGuardSecrets, "APP_CLOUD_GUARD_SECRETS"},
+	"secrets":       {runtimesettings.KeyCloudGuardParams, "APP_CLOUD_GUARD_PARAMS"},
 	"cloudtrail":    {runtimesettings.KeyCloudGuardCloudTrail, "APP_CLOUD_GUARD_CLOUDTRAIL"},
 }
 
