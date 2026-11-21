@@ -27,6 +27,9 @@ type UpdateDecision struct {
 	Channel string `json:"channel"`
 	Target  string `json:"target_version,omitempty"`
 	Reason  string `json:"reason"`
+	// AutoApply mirrors the nodes.agent_auto_update runtime setting: when true
+	// the agent restarts into the new version without an operator flag.
+	AutoApply bool `json:"auto_apply"`
 }
 
 // DecideUpdate keeps agents on the control plane version of the control plane

@@ -1,6 +1,7 @@
 package api
 
 import (
+	"context"
 	"errors"
 	"log/slog"
 	"math"
@@ -125,7 +126,11 @@ func (rt *Router) handleNodeVersionSkew(w http.ResponseWriter, r *http.Request) 
 			Online: n.Status == store.NodeStatusOnline, Schedulable: n.Schedulable, Local: local,
 		})
 	}
-	writeJSON(w, http.StatusOK, nodeinsight.BuildSkew(version.Version, in))
+	report := nodeinsight.BuildSkew(version.Version, in)
+	if rt.runtimeSettings != nil {
+		report.AutoUpdate = rt.runtimeSettings.Bool(r.Context(), runtimesettings.KeyAgentAutoUpdate)
+	}
+	writeJSON(w, http.StatusOK, report)
 }
 
 // handleNodeAgentUpdate handles GET /api/v1/nodes/{id}/agent-update: what the
@@ -141,17 +146,23 @@ func (rt *Router) handleNodeAgentUpdate(w http.ResponseWriter, r *http.Request) 
 		rt.internalError(w, "api: node agent update: load failed", err, slog.String("node_id", id))
 		return
 	}
+	writeJSON(w, http.StatusOK, rt.DecideAgentUpdate(r.Context(), n))
+}
+
+// DecideAgentUpdate is the one update decision for a node, used by the REST
+// route and by the agent listener's node-scoped UpdateCheck.
+func (rt *Router) DecideAgentUpdate(ctx context.Context, n *store.Node) nodeinsight.UpdateDecision {
 	facts := nodeinsight.UpdateFacts{
-		Channel: rt.currentUpdateChannel(r.Context()), ControlPlane: version.Version, AgentVersion: n.AgentVersion,
+		Channel: rt.currentUpdateChannel(ctx), ControlPlane: version.Version, AgentVersion: n.AgentVersion,
 		AgentOnline: n.Status == store.NodeStatusOnline,
 	}
 	if rt.isLocalNodeRecord(n) {
 		facts.AgentVersion = version.Version
 	}
-	vh := rt.agentVersions.Observe(id, facts.AgentVersion, time.Now())
+	vh := rt.agentVersions.Observe(n.ID, facts.AgentVersion, time.Now())
 	facts.PreviousGood = vh.LastGood
 	if lister, ok := rt.nodes.(nodeStatusEventLister); ok {
-		if events, err := lister.ListNodeStatusEvents(r.Context(), id, timelineEventCap); err == nil {
+		if events, err := lister.ListNodeStatusEvents(ctx, n.ID, timelineEventCap); err == nil {
 			in := make([]nodeinsight.Event, 0, len(events))
 			for _, e := range events {
 				in = append(in, nodeinsight.Event{From: string(e.FromStatus), To: string(e.ToStatus), At: e.CreatedAt})
@@ -159,8 +170,12 @@ func (rt *Router) handleNodeAgentUpdate(w http.ResponseWriter, r *http.Request) 
 			facts.HealthFailures = nodeinsight.OfflineSince(in, vh.Since)
 		}
 	}
+	auto := false
 	if rt.runtimeSettings != nil {
-		facts.MaxHealthFailures = rt.runtimeSettings.Int(r.Context(), runtimesettings.KeyAgentUpdateHealthFailed)
+		facts.MaxHealthFailures = rt.runtimeSettings.Int(ctx, runtimesettings.KeyAgentUpdateHealthFailed)
+		auto = rt.runtimeSettings.Bool(ctx, runtimesettings.KeyAgentAutoUpdate)
 	}
-	writeJSON(w, http.StatusOK, nodeinsight.DecideUpdate(facts))
+	d := nodeinsight.DecideUpdate(facts)
+	d.AutoApply = auto
+	return d
 }

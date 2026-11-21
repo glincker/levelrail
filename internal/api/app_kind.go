@@ -6,6 +6,7 @@ import (
 	"strings"
 	"time"
 
+	"github.com/GLINCKER/levelrail/internal/apiclient"
 	"github.com/GLINCKER/levelrail/internal/reconcile"
 	"github.com/GLINCKER/levelrail/internal/store"
 	"github.com/GLINCKER/levelrail/kit/cronexpr"
@@ -110,18 +111,8 @@ func kindInputFor(svc store.DesiredService, hasJobs bool) appKindInput {
 	return in
 }
 
-// appListSummary holds only data the server already has; absent fields are omitted rather than guessed.
-// Restart counts, database size and connections are not collected cheaply, so they are not here.
-type appListSummary struct {
-	// Ready is "true", "false" or "unknown", from the Ready condition.
-	Ready        string     `json:"ready,omitempty"`
-	LastDeployAt *time.Time `json:"last_deploy_at,omitempty"`
-	Replicas     int        `json:"replicas,omitempty"`
-	Jobs         int        `json:"jobs,omitempty"`
-	NextRunAt    *time.Time `json:"next_run_at,omitempty"`
-	LastRunAt    *time.Time `json:"last_run_at,omitempty"`
-	LastRunState string     `json:"last_run_status,omitempty"`
-}
+// appListSummary is the one definition of the list card data, shared with the CLI client.
+type appListSummary = apiclient.AppListSummary
 
 type enabledTaskSource interface {
 	ListEnabledScheduledTasks(ctx context.Context) ([]store.ScheduledTask, error)

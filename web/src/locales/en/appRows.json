@@ -91,6 +91,10 @@
     "nextRun": "Next run",
     "lastRun": "Last run",
     "notScheduled": "Not scheduled",
-    "neverRan": "Never ran"
+    "neverRan": "Never ran",
+    "restarts_one": "{{count}} restart",
+    "restarts_other": "{{count}} restarts",
+    "restartsRising": "Restart count is increasing",
+    "dbSize": "Database size {{size}}"
   }
 }

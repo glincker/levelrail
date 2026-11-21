@@ -5,6 +5,8 @@ import (
 	"fmt"
 	"io"
 	"time"
+
+	"github.com/GLINCKER/levelrail/internal/fielddesc"
 )
 
 // runRegistryCredentialsCreate implements "registry-credentials create":
@@ -12,14 +14,10 @@ import (
 // unlike "registry-credentials update" where rotating it is optional.
 func runRegistryCredentialsCreate(prog string, args []string, stdout, stderr io.Writer, lookupEnv func(string) (string, bool)) int {
 	fs, tokenFlagP, apiURLFlagP, profileFlagP, jsonOutP, outputFlagP, queryFlagP := apiFlagSet(prog, "registry-credentials create", "print the created registry credential as JSON to stdout and nothing else", stderr)
-	var name, registryHost, username, password, expiresAt, preset, region string
+	var preset, region string
+	descFlags := registerDescriptorFlags(fs, fielddesc.RegistryCredential)
 	fs.StringVar(&preset, "preset", "", "mint a self-refreshing login from a connected cloud account: ecr, artifact_registry or acr")
 	fs.StringVar(&region, "region", "", "cloud region for --preset (ECR region, Artifact Registry location)")
-	fs.StringVar(&name, "name", "", "display name for the registry credential (required)")
-	fs.StringVar(&registryHost, "registry-host", "", "registry hostname, e.g. ghcr.io (required)")
-	fs.StringVar(&username, "username", "", "registry username (required)")
-	fs.StringVar(&password, "password", "", "registry password or token (required)")
-	fs.StringVar(&expiresAt, "expires-at", "", "optional RFC3339 expiry the operator already knows, e.g. from a GitHub PAT")
 	fs.Usage = func() { _, _ = fmt.Fprint(stderr, registryCredentialsCreateUsage(prog)) }
 
 	tokenFlag, apiURLFlag, profileFlag, jsonOut, of, exitCode, ok := parseAPIFlags(fs, args, apiFlagPtrs{tokenFlagP, apiURLFlagP, profileFlagP, jsonOutP, outputFlagP, queryFlagP}, prog, stderr)
@@ -27,6 +25,8 @@ func runRegistryCredentialsCreate(prog string, args []string, stdout, stderr io.
 		return exitCode
 	}
 
+	name, registryHost, username := *descFlags["name"], *descFlags["registry-host"], *descFlags["username"]
+	password, expiresAt := *descFlags["password"], *descFlags["expires-at"]
 	if name == "" {
 		return reportError(stdout, stderr, jsonOut, newValidationError("--name is required"))
 	}

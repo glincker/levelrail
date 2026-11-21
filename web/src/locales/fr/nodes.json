@@ -1235,6 +1235,10 @@
       "cordoned": "isolé",
       "offline": "hors ligne"
     },
-    "howTo": "Récupérez la nouvelle image ou le nouveau binaire de l'agent sur chaque nœud, puis redémarrez-le. L'identité enrôlée est conservée."
+    "howTo": "Récupérez la nouvelle image ou le nouveau binaire de l'agent sur chaque nœud, puis redémarrez-le. L'identité enrôlée est conservée.",
+    "autoUpdate": {
+      "on": "Les mises à jour automatiques de l'agent sont activées. Les agents installent eux-mêmes la version du plan de contrôle.",
+      "off": "Les mises à jour automatiques de l'agent sont désactivées. Exécutez levelrail-agent self-update --apply sur un nœud ou activez nodes.agent_auto_update dans les paramètres."
+    }
   }
 }

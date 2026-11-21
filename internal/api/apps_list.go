@@ -267,6 +267,11 @@ func (rt *Router) handleListApps(w http.ResponseWriter, r *http.Request) {
 	if src, ok := rt.deployAttempts.(latestDeployActivitySource); ok {
 		lastDeploy, _ = src.LatestDeployActivity(r.Context())
 	}
+	kinds := make(map[string]string, len(svcs))
+	for _, s := range svcs {
+		kinds[s.Name], _ = classifyApp(kindInputFor(s, jobs[s.Name] != nil))
+	}
+	live := rt.liveSummarySignals(r.Context(), svcs, kinds, time.Now())
 	out := make([]appListResource, 0, len(svcs))
 	for _, s := range svcs {
 		resource := toAppResourceRaw(s)
@@ -297,6 +302,7 @@ func (rt *Router) handleListApps(w http.ResponseWriter, r *http.Request) {
 			deployedAt = &t
 		}
 		item.Summary = buildAppSummary(item.AppKind, s, conditions, deployedAt, js)
+		applyLiveSignals(item.Summary, live[s.Name])
 		out = append(out, item)
 	}
 	w.Header().Set("X-Total-Count", strconv.Itoa(total))

@@ -1,4 +1,5 @@
 import { useState } from 'react'
+import { useQuery } from '@tanstack/react-query'
 import { useTranslation } from 'react-i18next'
 import { zodResolver } from '@hookform/resolvers/zod'
 import { Controller, useForm } from 'react-hook-form'
@@ -37,6 +38,12 @@ import {
 import type { NotificationChannel } from '../types/notificationChannel'
 import { NOTIFICATION_CHANNEL_KIND_ORDER } from '../lib/notificationChannelForm'
 import { ChannelQuietHours } from './ChannelQuietHours'
+import { DescriptorFields } from './DescriptorFields'
+import {
+  FIELD_RESOURCES,
+  fieldDescriptorsQueryOptions,
+} from '../queries/fieldDescriptors'
+import { isFieldVisible } from '../types/fieldDescriptor'
 
 const editChannelSchema = z
   .object({
@@ -123,7 +130,7 @@ export function EditNotificationChannelDialog({
   const testChannel = useTestNotificationChannel()
   const testExisting = useTestExistingNotificationChannel()
   const defaultValues = defaultsFromChannel(channel)
-  const { control, register, handleSubmit, formState, reset, watch } =
+  const { control, register, handleSubmit, formState, reset, watch, setValue } =
     useForm<EditChannelForm>({
       resolver: zodResolver(editChannelSchema),
       defaultValues,
@@ -131,6 +138,27 @@ export function EditNotificationChannelDialog({
   const kind = watch('kind')
   const notifyUrl = watch('notifyUrl')
   const interactiveApprovals = watch('interactiveApprovals')
+  const { data: descriptorSet } = useQuery({
+    ...fieldDescriptorsQueryOptions(FIELD_RESOURCES.notificationChannel),
+    retry: false,
+  })
+  const allFields = descriptorSet?.fields ?? []
+  const nameFields = allFields.filter((f) => f.key === 'name')
+  const urlFields = allFields.filter((f) => f.key === 'notify_url')
+  const hasUrlDescriptor = urlFields.some((f) => isFieldVisible(f, { kind }))
+  const descriptorValues = { kind, name: watch('name'), notify_url: notifyUrl }
+  const descriptorErrors = {
+    name: formState.errors.name?.message,
+    notify_url: formState.errors.notifyUrl?.message,
+  }
+  function handleDescriptorChange(key: string, value: string) {
+    if (key === 'name') {
+      setValue('name', value, { shouldValidate: formState.isSubmitted })
+      return
+    }
+    setValue('notifyUrl', value, { shouldValidate: formState.isSubmitted })
+    setVerified(false)
+  }
   const isInteractiveKind = (INTERACTIVE_KINDS as readonly string[]).includes(
     kind,
   )
@@ -262,15 +290,25 @@ export function EditNotificationChannelDialog({
             />
           </Field>
 
-          <Field>
-            <FieldLabel htmlFor="edit-channel-name">Name</FieldLabel>
-            <Input
-              id="edit-channel-name"
-              placeholder="e.g. Team Slack"
-              {...register('name')}
+          {nameFields.length > 0 ? (
+            <DescriptorFields
+              fields={nameFields}
+              values={descriptorValues}
+              idPrefix="edit-channel"
+              errors={descriptorErrors}
+              onChange={handleDescriptorChange}
             />
-            <FieldError errors={[formState.errors.name]} />
-          </Field>
+          ) : (
+            <Field>
+              <FieldLabel htmlFor="edit-channel-name">Name</FieldLabel>
+              <Input
+                id="edit-channel-name"
+                placeholder="e.g. Team Slack"
+                {...register('name')}
+              />
+              <FieldError errors={[formState.errors.name]} />
+            </Field>
+          )}
 
           {kind === 'webpush' ? (
             <Field>
@@ -281,6 +319,14 @@ export function EditNotificationChannelDialog({
                 notifications. There is no per-channel URL to edit.
               </p>
             </Field>
+          ) : hasUrlDescriptor ? (
+            <DescriptorFields
+              fields={urlFields}
+              values={descriptorValues}
+              idPrefix="edit-channel"
+              errors={descriptorErrors}
+              onChange={handleDescriptorChange}
+            />
           ) : (
             <Field>
               <FieldLabel htmlFor="edit-channel-notify-url">

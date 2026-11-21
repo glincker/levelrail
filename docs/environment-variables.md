@@ -454,6 +454,9 @@ These variables only seed the default of a [runtime setting](/runtime-settings).
 | `APP_APP_METRICS_SCRAPE_TIMEOUT` | [`app_metrics.scrape_timeout`](/runtime-settings#observability) | `5s` |
 | `APP_APP_METRICS_SCRAPE_WORKERS` | [`app_metrics.scrape_workers`](/runtime-settings#observability) | `4` |
 | `APP_CONTAINERS_INSPECT_TIMEOUT` | [`apps.containers_inspect_timeout`](/runtime-settings#observability) | `5s` |
+| `APP_APPS_SUMMARY_CACHE_MAX_ENTRIES` | [`apps.summary_cache_max_entries`](/runtime-settings#observability) | `500` |
+| `APP_APPS_SUMMARY_CACHE_SECONDS` | [`apps.summary_cache_seconds`](/runtime-settings#observability) | `30` |
+| `APP_APPS_SUMMARY_TIMEOUT` | [`apps.summary_timeout`](/runtime-settings#observability) | `800ms` |
 | `APP_AUTOSCALE_GAUGE_MAX_BYTES` | [`autoscale.gauge_max_bytes`](/runtime-settings#observability) | `1048576` |
 | `APP_AUTOSCALE_GAUGE_TIMEOUT` | [`autoscale.gauge_timeout`](/runtime-settings#observability) | `3s` |
 | `APP_CLOUD_AWS_NAME_PREFIX` | [`cloud.aws.name_prefix`](/runtime-settings#observability) | `levelrail` |
@@ -563,6 +566,7 @@ These variables only seed the default of a [runtime setting](/runtime-settings).
 | `APP_METRICS_IDLE_INTERVAL` | [`metrics.idle_interval`](/runtime-settings#observability) | `1m` |
 | `APP_METRICS_PRESENCE_WINDOW` | [`metrics.presence_window`](/runtime-settings#observability) | `2m` |
 | `APP_MONITOR_RAW_RETENTION` | [`monitors.raw_retention`](/runtime-settings#observability) | `48h` |
+| `APP_NODE_AGENT_AUTO_UPDATE` | [`nodes.agent_auto_update`](/runtime-settings#observability) | `false` |
 | `APP_NODE_AGENT_BUFFER_MAX_BYTES` | [`nodes.agent_buffer_max_bytes`](/runtime-settings#observability) | `4194304` |
 | `APP_NODE_AGENT_BUFFER_MAX_ITEMS` | [`nodes.agent_buffer_max_items`](/runtime-settings#observability) | `2000` |
 | `APP_NODE_AGENT_UPDATE_HEALTH_FAILURES` | [`nodes.agent_update_health_failures`](/runtime-settings#observability) | `3` |

@@ -1205,6 +1205,10 @@
       "cordoned": "已隔离",
       "offline": "离线"
     },
-    "howTo": "在每个节点上拉取新的代理镜像或二进制文件并重启。已注册的身份会保留。"
+    "howTo": "在每个节点上拉取新的代理镜像或二进制文件并重启。已注册的身份会保留。",
+    "autoUpdate": {
+      "on": "代理自动更新已开启。代理会自行安装控制平面的版本。",
+      "off": "代理自动更新已关闭。请在节点上运行 levelrail-agent self-update --apply，或在设置中开启 nodes.agent_auto_update。"
+    }
   }
 }

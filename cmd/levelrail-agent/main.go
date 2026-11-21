@@ -14,6 +14,7 @@ import (
 	"path/filepath"
 	"runtime"
 	"strconv"
+	"sync/atomic"
 	"syscall"
 	"time"
 
@@ -45,7 +46,7 @@ const (
 
 const usageText = `levelrail-agent: Levelrail node agent
 
-Usage: levelrail-agent [--help | --version | reenroll | doctor]
+Usage: levelrail-agent [--help | --version | reenroll | doctor | self-update [--check|--apply]]
 
 Environment:
   APP_CONTROL_PLANE_ADDR       host:port of the control plane agent listener (required)
@@ -53,6 +54,7 @@ Environment:
   APP_CA_FINGERPRINT           control plane CA fingerprint to pin
   APP_AGENT_IDENTITY_FILE      where the enrolled identity is stored
   APP_LOG_LEVEL                debug, info (default), warn or error
+  APP_AGENT_SERVICE_NAME       service to restart after an update (default levelrail-agent)
 `
 
 // handleInfoArgs answers version and help before any config is read.
@@ -74,6 +76,9 @@ func handleInfoArgs(args []string, out io.Writer) bool {
 func main() {
 	if len(os.Args) > 1 && os.Args[1] == "doctor" {
 		os.Exit(runDoctor(os.Stdout))
+	}
+	if len(os.Args) > 1 && os.Args[1] == "self-update" {
+		os.Exit(runSelfUpdate(os.Args[2:], os.Stdout, os.Stderr, os.LookupEnv))
 	}
 	if handleInfoArgs(os.Args[1:], os.Stdout) {
 		return
@@ -229,6 +234,8 @@ func runReconnectLoop(ctx context.Context, addr string, renewer *agent.Renewer, 
 	ctx = agent.WithOfflineBuffer(ctx, agent.OfflineBufferFromEnv(os.LookupEnv))
 	health := newHealthTracker(agentDataDir(), version.Version, agent.StableSessionSeconds(os.LookupEnv), os.LookupEnv, logger)
 
+	go autoUpdateLoop(ctx, os.LookupEnv, logger)
+
 	delay := reconnectBaseDelay
 	for {
 		if ctx.Err() != nil {
@@ -236,19 +243,21 @@ func runReconnectLoop(ctx context.Context, addr string, renewer *agent.Renewer, 
 		}
 
 		var err error
+		var handshook atomic.Bool
 		sessionStart := time.Now()
 		if holder.Current().Expired(time.Now()) && !adoptIdentityFromDisk(holder, file, logger) {
 			err = errors.New("certificate expired")
 			delay = reconnectMaxDelay
 		} else {
-			err = agent.RunSession(ctx, addr, holder.Current(), rt, logger, opts...)
+			err = agent.RunSession(ctx, addr, holder.Current(), rt, logger, append(opts, agent.WithSessionStarted(func() { handshook.Store(true) }))...)
 		}
 		if ctx.Err() != nil {
 			return // shutting down: the session ending is expected, not a failure
 		}
-		if d := health.sessionEnded(time.Since(sessionStart)); d.Action == nodeinsight.UpdateRollback {
-			logger.Error("this agent version keeps failing; reinstall the last good version",
+		if d := health.sessionEnded(time.Since(sessionStart), handshook.Load() && !agent.IsAuthRejection(err)); d.Action == nodeinsight.UpdateRollback {
+			logger.Error("this agent version keeps failing; returning to the previous binary",
 				slog.String("last_good", d.Target), slog.String("running", version.Version))
+			rollbackToPrev(ctx, os.LookupEnv, logger, agentDataDir())
 		}
 		if agent.IsAuthRejection(err) || holder.Current().Expired(time.Now()) {
 			if adoptIdentityFromDisk(holder, file, logger) {

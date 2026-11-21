@@ -1235,6 +1235,10 @@
       "cordoned": "isolado",
       "offline": "offline"
     },
-    "howTo": "Baixe a nova imagem ou o novo binário do agente em cada nó e reinicie-o. A identidade registrada é mantida."
+    "howTo": "Baixe a nova imagem ou o novo binário do agente em cada nó e reinicie-o. A identidade registrada é mantida.",
+    "autoUpdate": {
+      "on": "As atualizações automáticas do agente estão ativadas. Os agentes instalam sozinhos a versão do plano de controle.",
+      "off": "As atualizações automáticas do agente estão desativadas. Execute levelrail-agent self-update --apply em um nó ou ative nodes.agent_auto_update nas configurações."
+    }
   }
 }

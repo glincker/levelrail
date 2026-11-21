@@ -8,7 +8,7 @@ import {
 import { Badge } from '@/components/ui/badge'
 import { TemplateLogo } from '../TemplateLogo'
 import { logoIdForImage } from '../../lib/imageLogo'
-import { KindBadge } from './AppKindCard'
+import { KindBadge, RestartChip } from './AppKindCard'
 import { isBackendKind } from '../../lib/appKind'
 import { AsleepFor } from '../AsleepFor'
 import type { AppListEntry } from '../../types/appDetail'
@@ -39,6 +39,7 @@ export function AppMetaChips({
   return (
     <span className="flex min-w-0 flex-nowrap items-center gap-1 overflow-hidden">
       {isBackendKind(app.app_kind) ? <KindBadge kind={app.app_kind} /> : null}
+      <RestartChip summary={app.summary} />
       {app.is_trial ? (
         <Badge variant="accent" className="gap-1 px-1.5 py-0">
           <FlaskConicalGlassIcon

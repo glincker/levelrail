@@ -6,6 +6,8 @@ import (
 	"io"
 	"os"
 	"strings"
+
+	"github.com/GLINCKER/levelrail/internal/fielddesc"
 )
 
 const domainsGoogleCloudDNSJSONUsage = "print the result as JSON to stdout and nothing else"
@@ -67,9 +69,9 @@ Only tested against a local fake of the Cloud DNS API.
 // runGoogleCloudDNSVerb registers the common flags (plus --key-file when keyFlag is set), then calls action.
 func runGoogleCloudDNSVerb(prog, verb string, args []string, stdout, stderr io.Writer, lookupEnv func(string) (string, bool), keyFlag string, action func(*Client, string) (any, func(io.Writer), error)) int {
 	fs, tokenFlagP, apiURLFlagP, profileFlagP, jsonOutP, outputFlagP, queryFlagP := apiFlagSet(prog, "domains google-cloud-dns "+verb, domainsGoogleCloudDNSJSONUsage, stderr)
-	var keyFile string
+	var keyFilePtr *string
 	if keyFlag != "" {
-		fs.StringVar(&keyFile, keyFlag, "", "path to the service account JSON key file (required)")
+		keyFilePtr = registerDescriptorFlagsWhen(fs, fielddesc.DNSProvider, map[string]string{"provider": "googlecloud"})[keyFlag]
 	}
 	fs.Usage = func() {
 		_, _ = fmt.Fprintf(stderr, "Usage:\n  %s domains google-cloud-dns %s [flags]\n\nFlags:\n", prog, verb)
@@ -78,6 +80,10 @@ func runGoogleCloudDNSVerb(prog, verb string, args []string, stdout, stderr io.W
 	tokenFlag, apiURLFlag, profileFlag, jsonOut, of, exitCode, ok := parseAPIFlags(fs, args, apiFlagPtrs{tokenFlagP, apiURLFlagP, profileFlagP, jsonOutP, outputFlagP, queryFlagP}, prog, stderr)
 	if !ok {
 		return exitCode
+	}
+	var keyFile string
+	if keyFilePtr != nil {
+		keyFile = *keyFilePtr
 	}
 	if keyFlag != "" && keyFile == "" {
 		_, _ = fmt.Fprintf(stderr, "%s: domains google-cloud-dns %s requires --%s\n\n", prog, verb, keyFlag)

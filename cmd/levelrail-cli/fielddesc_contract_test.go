@@ -1,7 +1,9 @@
 package main
 
 import (
+	"encoding/json"
 	"flag"
+	"strings"
 	"testing"
 
 	"github.com/GLINCKER/levelrail/internal/fielddesc"
@@ -19,5 +21,34 @@ func TestFieldDescriptorFlagsRegister(t *testing.T) {
 				t.Errorf("%s.%s: flag --%s not registered", name, f.ID, f.Flag)
 			}
 		}
+	}
+}
+
+func TestFieldsCommandListsEveryResource(t *testing.T) {
+	list, _ := runCLIExpectOK(t, []string{"fields"})
+	for _, name := range fielddesc.Names() {
+		if !strings.Contains(list, name) {
+			t.Errorf("fields list misses %s", name)
+		}
+		table, _ := runCLIExpectOK(t, []string{"fields", name})
+		res, _ := fielddesc.Get(name)
+		for _, f := range res.Fields {
+			if !strings.Contains(table, f.Key) {
+				t.Errorf("%s table misses %s", name, f.Key)
+			}
+		}
+		js, _ := runCLIExpectOK(t, []string{"fields", name, "--json"})
+		var got fielddesc.Resource
+		if err := json.Unmarshal([]byte(js), &got); err != nil || got.Name != name || len(got.Fields) != len(res.Fields) {
+			t.Errorf("%s json mismatch: %v", name, err)
+		}
+	}
+}
+
+func TestDNSProviderFlagsArePerProvider(t *testing.T) {
+	fs := flag.NewFlagSet("t", flag.ContinueOnError)
+	flags := registerDescriptorFlagsWhen(fs, fielddesc.DNSProvider, map[string]string{"provider": "route53"})
+	if flags["aws-region"] == nil || flags["cf-api-token"] != nil || flags["key-file"] != nil {
+		t.Fatalf("route53 flags wrong: %v", flags)
 	}
 }

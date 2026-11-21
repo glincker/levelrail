@@ -1221,6 +1221,10 @@
       "cordoned": "gesperrt",
       "offline": "offline"
     },
-    "howTo": "Laden Sie auf jedem Node das neue Agent-Image oder die Binärdatei und starten Sie den Agent neu. Die registrierte Identität bleibt erhalten."
+    "howTo": "Laden Sie auf jedem Node das neue Agent-Image oder die Binärdatei und starten Sie den Agent neu. Die registrierte Identität bleibt erhalten.",
+    "autoUpdate": {
+      "on": "Automatische Agent-Updates sind aktiv. Agents installieren die Version der Steuerungsebene selbst.",
+      "off": "Automatische Agent-Updates sind aus. Führen Sie auf einem Node levelrail-agent self-update --apply aus oder aktivieren Sie nodes.agent_auto_update in den Einstellungen."
+    }
   }
 }

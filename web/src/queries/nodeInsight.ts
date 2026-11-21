@@ -62,6 +62,7 @@ export interface NodeVersionSkew {
   ahead: number
   unknown: number
   plan: NodeUpgradeStep[]
+  auto_update: boolean
 }
 
 async function getJson<T>(url: string, what: string): Promise<T> {

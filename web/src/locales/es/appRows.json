@@ -91,6 +91,10 @@
     "nextRun": "Próxima ejecución",
     "lastRun": "Última ejecución",
     "notScheduled": "Sin programar",
-    "neverRan": "Nunca ejecutado"
+    "neverRan": "Nunca ejecutado",
+    "restarts_one": "{{count}} reinicio",
+    "restarts_other": "{{count}} reinicios",
+    "restartsRising": "El número de reinicios está aumentando",
+    "dbSize": "Tamaño de la base de datos {{size}}"
   }
 }

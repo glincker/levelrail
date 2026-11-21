@@ -96,6 +96,8 @@ type NodeAgentUpdate struct {
 	Channel string `json:"channel"`
 	Target  string `json:"target_version,omitempty"`
 	Reason  string `json:"reason"`
+	// AutoApply is the nodes.agent_auto_update runtime setting.
+	AutoApply bool `json:"auto_apply"`
 }
 
 // GetNodeAgentUpdate calls GET /api/v1/nodes/{id}/agent-update.

@@ -17,7 +17,7 @@ func runAppsList(prog string, args []string, stdout, stderr io.Writer, lookupEnv
 	startingTokenFlag := fs.String("starting-token", "", "resume from the next_token a previous --max-items call printed, to fetch the next page")
 	lo := registerListOpts(fs)
 	fs.Usage = func() {
-		_, _ = fmt.Fprintf(stderr, "Usage:\n  %s apps list [flags]\n\nLists every app the caller's token can read. --json always prints a bare\narray. With --max-items or --starting-token, next_token and total_count go\nto stderr as \"next_token=N total_count=M\", so a script can page through a\nlarge fleet without the stdout shape changing. JSON rows carry app_kind and\npreview.state (none, queued, rendering, ready or failed); the table omits them.\n\nFlags:\n", prog)
+		_, _ = fmt.Fprintf(stderr, "Usage:\n  %s apps list [flags]\n\nLists every app the caller's token can read. --json always prints a bare\narray. With --max-items or --starting-token, next_token and total_count go\nto stderr as \"next_token=N total_count=M\", so a script can page through a\nlarge fleet without the stdout shape changing. JSON rows carry app_kind and\npreview.state (none, queued, rendering, ready or failed), and summary with restarts and, for\ndatabases, db_size_bytes when the node answered in time; the table omits them.\n\nFlags:\n", prog)
 		fs.PrintDefaults()
 	}
 

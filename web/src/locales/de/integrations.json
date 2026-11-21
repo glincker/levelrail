@@ -285,6 +285,28 @@
           "help": "Benötigt Cloud-DNS-Administratorrechte. Nach dem Speichern nie wieder angezeigt."
         }
       }
+    },
+    "registryCredential": {
+      "name": {
+        "label": "Name",
+        "help": "In Listen angezeigt und in app.yaml per Name referenziert."
+      },
+      "registry_host": {
+        "label": "Registry-Host",
+        "help": "Hostname der Registry, zum Beispiel ghcr.io."
+      },
+      "username": {
+        "label": "Benutzername",
+        "help": "Konto zum Abrufen privater Images."
+      },
+      "password": {
+        "label": "Passwort (oder Zugriffstoken)",
+        "help": "Verschluesselt gespeichert und nie wieder angezeigt."
+      },
+      "expires_at": {
+        "label": "Laeuft ab (optional)",
+        "help": "Nur wenn das Ablaufdatum bekannt ist. Es kann nicht automatisch erkannt werden."
+      }
     }
   },
   "logDrain": {

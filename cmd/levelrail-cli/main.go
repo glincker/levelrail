@@ -416,6 +416,8 @@ func runDispatch(prog string, args []string, stdout, stderr io.Writer, lookupEnv
 		return runCompletion(prog, args[1:], stdout, stderr, lookupEnv)
 	case "settings":
 		return runSettings(prog, args[1:], stdout, stderr, lookupEnv)
+	case "fields":
+		return runFields(prog, args[1:], stdout, stderr, lookupEnv)
 	case "git-providers":
 		return runGitProviders(prog, args[1:], stdout, stderr, lookupEnv)
 	case "github-app":
@@ -639,6 +641,7 @@ Usage:
   %[1]s import takeover plan|run|status|rollback [flags]   move this server's ports 80 and 443 from the old proxy to the built-in ingress, see "%[1]s import takeover -h"
   %[1]s completion bash|zsh|fish                          print a shell completion script, see "%[1]s completion -h"
   %[1]s settings oauth|email|ingress|ai-assistant get|set [flags]   configure OAuth sign-in, outbound email, ingress/ACME, and the BYOK AI assistant
+  %[1]s fields [RESOURCE] [flags]                         list form field descriptors (types, flags, visibility) of a resource
   %[1]s git-providers [flags]                             connection status and capabilities for every git provider in one call
   %[1]s github-app status|disconnect|repos|branches|use-as-source [flags]   check/forget a GitHub App connection, browse and use its repos
   %[1]s templates list|get|deploy|install [flags]         browse, deploy and install from the curated service catalog

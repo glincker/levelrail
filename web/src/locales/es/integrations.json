@@ -285,6 +285,28 @@
           "help": "Requiere permisos de administrador de Cloud DNS. No se vuelve a mostrar tras guardarla."
         }
       }
+    },
+    "registryCredential": {
+      "name": {
+        "label": "Nombre",
+        "help": "Se muestra en las listas y se referencia por nombre desde app.yaml."
+      },
+      "registry_host": {
+        "label": "Host del registro",
+        "help": "Nombre de host del registro, por ejemplo ghcr.io."
+      },
+      "username": {
+        "label": "Usuario",
+        "help": "Cuenta usada para descargar imagenes privadas."
+      },
+      "password": {
+        "label": "Contrasena (o token de acceso)",
+        "help": "Se guarda cifrada y nunca se vuelve a mostrar."
+      },
+      "expires_at": {
+        "label": "Caduca (opcional)",
+        "help": "Solo si ya conoce la caducidad. No se puede detectar automaticamente."
+      }
     }
   },
   "logDrain": {

@@ -45,6 +45,9 @@ apps.containers_inspect_timeout
 apps.env_apply_on_set
 apps.max_replicas_per_service
 apps.size_presets
+apps.summary_cache_max_entries
+apps.summary_cache_seconds
+apps.summary_timeout
 apps_run.cpu_limit_millis
 apps_run.max_concurrent_per_app
 apps_run.max_timeout_seconds
@@ -416,6 +419,7 @@ net.outbound_timeout
 network.gc_max_removals
 nextjs.generate_actions_key
 nextjs.memory_floor_mb
+nodes.agent_auto_update
 nodes.agent_buffer_max_bytes
 nodes.agent_buffer_max_items
 nodes.agent_update_health_failures

@@ -60,4 +60,5 @@ export function fieldDescriptorsQueryOptions(resource: string) {
 export const FIELD_RESOURCES = {
   notificationChannel: 'notification-channels',
   dnsProvider: 'dns-providers',
+  registryCredential: 'registry-credentials',
 } as const

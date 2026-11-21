@@ -285,6 +285,28 @@
           "help": "Needs Cloud DNS admin rights. Never shown again after saving."
         }
       }
+    },
+    "registryCredential": {
+      "name": {
+        "label": "Name",
+        "help": "Shown in lists and referenced by name from app.yaml."
+      },
+      "registry_host": {
+        "label": "Registry host",
+        "help": "Hostname of the registry, for example ghcr.io."
+      },
+      "username": {
+        "label": "Username",
+        "help": "Account used to pull private images."
+      },
+      "password": {
+        "label": "Password (or access token)",
+        "help": "Stored encrypted and never shown again."
+      },
+      "expires_at": {
+        "label": "Expires (optional)",
+        "help": "Only if you already know the expiry. It cannot be detected automatically."
+      }
     }
   },
   "logDrain": {

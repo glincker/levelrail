@@ -90,6 +90,9 @@
     "nextRun": "下次运行",
     "lastRun": "上次运行",
     "notScheduled": "未设置计划",
-    "neverRan": "从未运行"
+    "neverRan": "从未运行",
+    "restarts_other": "重启 {{count}} 次",
+    "restartsRising": "重启次数正在增加",
+    "dbSize": "数据库大小 {{size}}"
   }
 }

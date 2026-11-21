@@ -58,11 +58,28 @@ service AgentService {
   // renewed certificate before discarding the old one.
   rpc CheckIdentity(CheckIdentityRequest) returns (CheckIdentityResponse);
 
+  // UpdateCheck tells the calling node which agent version it should run.
+  // The node is the one named by the mTLS client certificate and the request
+  // carries no node id, so a node can never read another node's answer.
+  rpc UpdateCheck(UpdateCheckRequest) returns (UpdateCheckResponse);
+
   // Tunnel carries the bytes of one ingress tunnel, opened by the agent
   // after a TunnelOpenRequest on Session. The first frame is a TunnelHello;
   // authenticated by the same mTLS identity as Session. Sent only to agents
   // advertising "ingress_tunnel".
   rpc Tunnel(stream TunnelFrame) returns (stream TunnelFrame);
+}
+
+message UpdateCheckRequest {}
+
+message UpdateCheckResponse {
+  // action is none, update, rollback or hold (internal/nodeinsight).
+  string action = 1;
+  string channel = 2;
+  string target_version = 3;
+  string reason = 4;
+  // auto_apply mirrors the nodes.agent_auto_update runtime setting.
+  bool auto_apply = 5;
 }
 
 message EnrollRequest {

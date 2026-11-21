@@ -285,6 +285,28 @@
           "help": "Nécessite les droits d'administrateur Cloud DNS. Jamais réaffichée après l'enregistrement."
         }
       }
+    },
+    "registryCredential": {
+      "name": {
+        "label": "Nom",
+        "help": "Affiche dans les listes et reference par nom depuis app.yaml."
+      },
+      "registry_host": {
+        "label": "Hote du registre",
+        "help": "Nom d hote du registre, par exemple ghcr.io."
+      },
+      "username": {
+        "label": "Nom d'utilisateur",
+        "help": "Compte utilise pour recuperer les images privees."
+      },
+      "password": {
+        "label": "Mot de passe (ou jeton d'acces)",
+        "help": "Stocke chiffre et jamais reaffiche."
+      },
+      "expires_at": {
+        "label": "Expire (facultatif)",
+        "help": "Seulement si vous connaissez deja l'expiration. Elle ne peut pas etre detectee automatiquement."
+      }
     }
   },
   "logDrain": {

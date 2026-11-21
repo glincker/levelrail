@@ -11,7 +11,8 @@ import { TONE } from '@/components/kit/tone'
 import { cn } from '@/lib/utils'
 import type { BackendKind } from '../../lib/appKind'
 import { logoIdForImage } from '../../lib/imageLogo'
-import type { AppListEntry } from '../../types/appDetail'
+import type { AppListEntry, AppListSummary } from '../../types/appDetail'
+import { formatBytes } from '../migrationHubFormat'
 import { TemplateLogo } from '../TemplateLogo'
 
 type Glyph = ComponentType<SVGProps<SVGSVGElement>>
@@ -29,6 +30,30 @@ export function KindBadge({ kind }: Readonly<{ kind: BackendKind }>) {
   return (
     <span className="inline-flex shrink-0 items-center rounded border border-border px-1.5 py-px text-xs font-medium text-muted-foreground">
       {t(`kind.badge.${kind}`)}
+    </span>
+  )
+}
+
+// Quiet by design: only shown once a container has restarted, warn tone while it keeps rising.
+export function RestartChip({
+  summary,
+}: Readonly<{ summary?: AppListSummary }>) {
+  const { t } = useTranslation('appRows')
+  const count = summary?.restarts
+  if (!count || count < 1) return null
+  const rising = summary?.restarts_increasing === true
+  return (
+    <span
+      title={rising ? t('kind.restartsRising') : undefined}
+      data-testid="restart-chip"
+      className={cn(
+        'inline-flex shrink-0 items-center rounded border px-1.5 py-px text-xs font-medium',
+        rising
+          ? cn(TONE.warning.border, TONE.warning.text)
+          : 'border-border text-muted-foreground',
+      )}
+    >
+      {t('kind.restarts', { count })}
     </span>
   )
 }
@@ -135,6 +160,7 @@ function CronBody({ app }: Readonly<{ app: AppListEntry }>) {
 }
 
 function DatabaseBody({ app }: Readonly<{ app: AppListEntry }>) {
+  const { t } = useTranslation('appRows')
   const engine = app.image.split('@')[0]?.split('/').pop()?.split(':')[0]
   const failing = app.status.variant === 'destructive'
   return (
@@ -148,6 +174,13 @@ function DatabaseBody({ app }: Readonly<{ app: AppListEntry }>) {
         <Readiness app={app} failing={failing} />
         <Replicas count={app.summary?.replicas} />
       </Row>
+      {app.summary?.db_size_bytes !== undefined ? (
+        <Row>
+          <span data-testid="db-size">
+            {t('kind.dbSize', { size: formatBytes(app.summary.db_size_bytes) })}
+          </span>
+        </Row>
+      ) : null}
     </>
   )
 }

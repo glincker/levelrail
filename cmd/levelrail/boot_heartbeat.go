@@ -33,6 +33,7 @@ func (s *bootState) startHeartbeat() {
 	s.apiRouter.SetHeartbeat(svc)
 	if s.agentServer != nil {
 		s.agentServer.SetSilenceSource(svc.AgentSilenceURL)
+		s.agentServer.SetUpdateDecider(s.apiRouter.DecideAgentUpdate)
 	}
 	go svc.Run(s.ctx)
 	s.startDDNS()

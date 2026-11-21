@@ -1,7 +1,9 @@
 import { useQuery } from '@tanstack/react-query'
 import { useTranslation } from 'react-i18next'
 import {
+  FIELD_RESOURCES,
   backupTargetFieldsQueryOptions,
+  fieldDescriptorsQueryOptions,
   logDrainFieldsQueryOptions,
 } from './fieldDescriptors'
 import { isFieldVisible } from '../types/fieldDescriptor'
@@ -18,6 +20,14 @@ export function useBackupTargetFields() {
 /** useLogDrainFields is the same lookup for the app log drain form. */
 export function useLogDrainFields() {
   return useDescriptorFields(logDrainFieldsQueryOptions(), 'integrations')
+}
+
+/** useRegistryCredentialFields is the same lookup for the registry credential form. */
+export function useRegistryCredentialFields() {
+  return useDescriptorFields(
+    fieldDescriptorsQueryOptions(FIELD_RESOURCES.registryCredential),
+    'integrations',
+  )
 }
 
 function useDescriptorFields(

@@ -6,6 +6,7 @@ import (
 	"strconv"
 	"time"
 
+	"github.com/GLINCKER/levelrail/internal/agentupdate"
 	"github.com/GLINCKER/levelrail/internal/nodeinsight"
 )
 
@@ -16,14 +17,22 @@ type healthTracker struct {
 	h        nodeinsight.VersionHealth
 	stable   time.Duration
 	maxFails int
-	logger   *slog.Logger
+	// probation is how long after an install a rollback may still be judged.
+	probation time.Duration
+	current   string
+	logger    *slog.Logger
 }
 
 func newHealthTracker(dir, current string, stableSeconds int, lookup func(string) (string, bool), logger *slog.Logger) *healthTracker {
-	t := &healthTracker{path: filepath.Join(dir, "version-health.json"), stable: time.Duration(stableSeconds) * time.Second, maxFails: 3, logger: logger}
+	t := &healthTracker{path: filepath.Join(dir, "version-health.json"), stable: time.Duration(stableSeconds) * time.Second, maxFails: 3, probation: 30 * time.Minute, current: current, logger: logger}
 	if v, ok := lookup("APP_NODE_AGENT_UPDATE_HEALTH_FAILURES"); ok {
 		if n, err := strconv.Atoi(v); err == nil && n > 0 {
 			t.maxFails = n
+		}
+	}
+	if v, ok := lookup("APP_NODE_AGENT_UPDATE_PROBATION_SECONDS"); ok {
+		if n, err := strconv.Atoi(v); err == nil && n > 0 {
+			t.probation = time.Duration(n) * time.Second
 		}
 	}
 	if h, err := nodeinsight.LoadVersionHealth(t.path); err == nil {
@@ -41,13 +50,25 @@ func (t *healthTracker) save() {
 }
 
 // sessionEnded records one finished session and returns the rollback decision.
-func (t *healthTracker) sessionEnded(lasted time.Duration) nodeinsight.UpdateDecision {
+// handshook is false when the control plane was never reached (a dial failure
+// or outage says nothing about this binary), so it is not counted at all.
+func (t *healthTracker) sessionEnded(lasted time.Duration, handshook bool) nodeinsight.UpdateDecision {
+	none := nodeinsight.UpdateDecision{Action: nodeinsight.UpdateNone, Channel: "local"}
+	if !handshook {
+		return none
+	}
 	if lasted >= t.stable {
 		t.h.RecordStable()
-	} else {
-		t.h.RecordFailure()
+		agentupdate.ClearMarker(filepath.Dir(t.path))
+		t.save()
+		return none
 	}
+	t.h.RecordFailure()
 	t.save()
+	m, ok := agentupdate.ReadMarker(filepath.Dir(t.path))
+	if !ok || !m.InProbation(t.current, t.probation, time.Now()) || t.h.LastGood != m.From {
+		return none
+	}
 	return nodeinsight.DecideUpdate(nodeinsight.UpdateFacts{
 		Channel: "local", ControlPlane: t.h.Current, AgentVersion: t.h.Current, AgentOnline: true,
 		PreviousGood: t.h.LastGood, HealthFailures: t.h.Failures, MaxHealthFailures: t.maxFails,

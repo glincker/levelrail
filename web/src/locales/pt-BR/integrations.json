@@ -289,6 +289,28 @@
           "help": "Precisa de permissão de administrador do Cloud DNS. Não é exibida novamente após salvar."
         }
       }
+    },
+    "registryCredential": {
+      "name": {
+        "label": "Nome",
+        "help": "Mostrado nas listas e referenciado por nome no app.yaml."
+      },
+      "registry_host": {
+        "label": "Host do registro",
+        "help": "Nome do host do registro, por exemplo ghcr.io."
+      },
+      "username": {
+        "label": "Usuario",
+        "help": "Conta usada para baixar imagens privadas."
+      },
+      "password": {
+        "label": "Senha (ou token de acesso)",
+        "help": "Armazenada criptografada e nunca mostrada novamente."
+      },
+      "expires_at": {
+        "label": "Expira (opcional)",
+        "help": "Somente se voce ja souber a expiracao. Ela nao pode ser detectada automaticamente."
+      }
     }
   },
   "logDrain": {

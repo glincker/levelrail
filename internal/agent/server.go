@@ -56,6 +56,9 @@ type Server struct {
 	logger         *slog.Logger
 	gpuSink        GPUSink // nil is valid: GPU reports are ignored
 	silenceSrc     atomic.Pointer[SilenceSource]
+	updateDecider  atomic.Pointer[UpdateDecider]
+	updateMu       sync.Mutex
+	updateCache    map[string]cachedUpdate
 	hostSink       HostReportSink // nil is valid: host reports are ignored
 	onboardingSink OnboardingSink // nil is valid: onboarding reports are ignored
 	onSession      func(nodeID, remoteIP string)

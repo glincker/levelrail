@@ -5,6 +5,7 @@ const (
 	KeyAgentBufferMaxItems     = "nodes.agent_buffer_max_items"
 	KeyAgentBufferMaxBytes     = "nodes.agent_buffer_max_bytes"
 	KeyAgentUpdateHealthFailed = "nodes.agent_update_health_failures"
+	KeyAgentAutoUpdate         = "nodes.agent_auto_update"
 	KeyNodeDrainStallSeconds   = "nodes.drain_stall_seconds"
 	agentBufferItemsCeiling    = 100000
 	agentBufferBytesCeiling    = 256 << 20
@@ -29,6 +30,12 @@ func init() {
 		Env: "APP_NODE_AGENT_UPDATE_HEALTH_FAILURES", Apply: ApplyLive, CheckValue: intRangeCheck(1, agentUpdateFailuresCeiling),
 		Title:       "Agent update rollback after failures",
 		Description: "Consecutive failed health checks after an agent update before the update check tells the agent to return to its last good version, from 1 to 20.",
+	})
+	Register(Definition{
+		Key: KeyAgentAutoUpdate, Category: CategoryObservability, Kind: KindBool, Default: "false",
+		Env: "APP_NODE_AGENT_AUTO_UPDATE", Apply: ApplyLive,
+		Title:       "Agent automatic update",
+		Description: "When on, agents that check for updates install the control plane version and restart themselves. Off by default: agents then only update when an operator runs levelrail-agent self-update --apply.",
 	})
 	Register(Definition{
 		Key: KeyNodeDrainStallSeconds, Category: CategoryObservability, Kind: KindInt, Default: "600",

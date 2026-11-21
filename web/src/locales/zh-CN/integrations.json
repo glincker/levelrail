@@ -280,6 +280,28 @@
           "help": "需要 Cloud DNS 管理员权限。保存后不再显示。"
         }
       }
+    },
+    "registryCredential": {
+      "name": {
+        "label": "名称",
+        "help": "显示在列表中，并在 app.yaml 中按名称引用。"
+      },
+      "registry_host": {
+        "label": "镜像仓库主机",
+        "help": "镜像仓库的主机名，例如 ghcr.io。"
+      },
+      "username": {
+        "label": "用户名",
+        "help": "用于拉取私有镜像的账户。"
+      },
+      "password": {
+        "label": "密码(或访问令牌)",
+        "help": "加密存储，之后不会再显示。"
+      },
+      "expires_at": {
+        "label": "过期时间(可选)",
+        "help": "仅在已知过期时间时填写，无法自动检测。"
+      }
     }
   },
   "logDrain": {

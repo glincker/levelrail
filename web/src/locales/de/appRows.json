@@ -91,6 +91,10 @@
     "nextRun": "Nächster Lauf",
     "lastRun": "Letzter Lauf",
     "notScheduled": "Nicht geplant",
-    "neverRan": "Noch nie gelaufen"
+    "neverRan": "Noch nie gelaufen",
+    "restarts_one": "{{count}} Neustart",
+    "restarts_other": "{{count}} Neustarts",
+    "restartsRising": "Neustart-Zähler steigt",
+    "dbSize": "Datenbankgröße {{size}}"
   }
 }

@@ -40,6 +40,11 @@ export function NodeVersionSkewCard() {
           ))}
         </ol>
         <p className="text-xs text-muted-foreground">{t('skew.howTo')}</p>
+        <p className="text-xs text-muted-foreground">
+          {data.auto_update
+            ? t('skew.autoUpdate.on')
+            : t('skew.autoUpdate.off')}
+        </p>
       </CardContent>
     </Card>
   )

@@ -263,6 +263,9 @@ func RunSession(ctx context.Context, addr string, id *Identity, rt docker.Runtim
 	if err := stream.Send(&agentpb.AgentMessage{Payload: &agentpb.AgentMessage_Hello{Hello: LocalAgentInfo()}}); err != nil {
 		return fmt.Errorf("agent: send hello: %w", err)
 	}
+	if cfg.onStarted != nil {
+		cfg.onStarted()
+	}
 	var sessionStream agentClientStream = stream
 	if cfg.renewer != nil {
 		renewCtx, stopRenew := context.WithCancel(ctx)
@@ -310,6 +313,7 @@ type sessionConfig struct {
 	onboardingProbe   OnboardingProbe
 	onboardingEvery   time.Duration
 	renewer           *Renewer
+	onStarted         func()
 	fileRoot          string
 	silence           *SilenceWatcher
 }
@@ -337,6 +341,12 @@ func WithBuildRunner(runner BuildRunner) SessionOption {
 // WithMesh enables ApplyMesh and RotateMeshKey on this stream; without it both answer ErrMeshUnavailable.
 func WithMesh(nodeID string, mesh MeshApplier) SessionOption {
 	return func(c *sessionConfig) { c.meshNodeID, c.mesh = nodeID, mesh }
+}
+
+// WithSessionStarted calls fn once the control plane accepted the connection
+// and the hello went out, so callers can tell a real session from a failed dial.
+func WithSessionStarted(fn func()) SessionOption {
+	return func(c *sessionConfig) { c.onStarted = fn }
 }
 
 // WithHeartbeatInterval overrides the Heartbeat cadence; the env var is read by cmd/levelrail-agent, not here.

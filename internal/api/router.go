@@ -831,6 +831,7 @@ type Router struct {
 	jobPings                     *heartbeat.JobPinger             // nil rejects per-job heartbeat URLs
 	monitors                     MonitorService                   // nil is valid: monitor routes return 404 (APP_MONITORS_ENABLED off)
 	parkedRetention              parkedRetentionState             // last retention run, for the dry run's next_run
+	appSummaryCache              summaryCache                     // live restarts and db size for the apps list
 	runtimeSettings              *runtimesettings.Service         // nil only in unit tests of other packages; nil serves env then default
 	changes                      changeBus                        // topic nudges for GET /api/v1/events/changes; the zero value is ready
 	webhookDeliveries            WebhookDeliveryStore             // always set, same "core Store interface" shape as deployAttempts above

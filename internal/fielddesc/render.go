@@ -17,10 +17,20 @@ type FlagSpec struct {
 // FlagSpecs lists each distinct flag once, in field order. Variants that share a wire
 // key share one flag, so the first descriptor carrying the flag supplies its help.
 func (r Resource) FlagSpecs() []FlagSpec {
+	return r.flagSpecs(nil)
+}
+
+// FlagSpecsWhen is FlagSpecs limited to the fields visible for values, so a per provider
+// verb registers only that provider's flags.
+func (r Resource) FlagSpecsWhen(values map[string]string) []FlagSpec {
+	return r.flagSpecs(values)
+}
+
+func (r Resource) flagSpecs(values map[string]string) []FlagSpec {
 	seen := map[string]bool{}
 	var out []FlagSpec
 	for _, f := range r.Fields {
-		if f.Flag == "" || seen[f.Flag] {
+		if f.Flag == "" || seen[f.Flag] || (values != nil && !f.Visible(values)) {
 			continue
 		}
 		seen[f.Flag] = true

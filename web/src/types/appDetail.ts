@@ -314,8 +314,8 @@ export interface AppBindMount {
 export type AppKind = 'web' | 'api' | 'worker' | 'cron' | 'database' | 'static'
 export type AppKindSource = 'spec' | 'probe' | 'heuristic'
 
-// Compact card data from already loaded server state. Restart counts and
-// database size or connections are not collected cheaply, so they are absent.
+// Compact card data. restarts and db_size_bytes are read live through a bounded
+// server cache and are absent when the node did not answer in time.
 export interface AppListSummary {
   ready?: 'true' | 'false' | 'unknown'
   last_deploy_at?: string
@@ -324,6 +324,9 @@ export interface AppListSummary {
   next_run_at?: string
   last_run_at?: string
   last_run_status?: string
+  restarts?: number
+  restarts_increasing?: boolean
+  db_size_bytes?: number
 }
 
 export interface AppListEntry extends AppDetail {

@@ -307,6 +307,7 @@ var Tree = map[string]*Node{
 	"mcp-clients":        {Subs: map[string]*Node{"create": nil, "list": nil, "delete": nil}},
 	"monitors":           {Subs: map[string]*Node{"create": nil, "list": nil, "results": nil, "update": nil, "rotate-token": nil, "delete": nil, "pause": nil, "resume": nil}},
 	"connections":        {Subs: map[string]*Node{"list": nil, "show": nil, "catalog": nil, "bind": nil, "unbind": nil, "bindings": nil}},
+	"fields":             nil,
 	"channels":           {Subs: map[string]*Node{"list": nil, "create": nil, "update": nil, "delete": nil, "test": nil, "deliveries": nil, "quiet-hours": nil}},
 	"push-subscriptions": {Subs: map[string]*Node{"list": nil, "revoke": nil}},
 	"env":                {Subs: map[string]*Node{"set": nil, "unset": nil, "pull": nil, "push": nil}},

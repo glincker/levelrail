@@ -54,6 +54,25 @@ type ServiceHooks struct {
 	PostDeploy string `json:"post_deploy,omitempty"`
 }
 
+// AppListSummary is the compact card data on GET /api/v1/apps. The server uses this same
+// struct, so the API, OpenAPI and CLI share one definition. Absent fields were not collected.
+type AppListSummary struct {
+	// Ready is "true", "false" or "unknown", from the Ready condition.
+	Ready        string     `json:"ready,omitempty"`
+	LastDeployAt *time.Time `json:"last_deploy_at,omitempty"`
+	Replicas     int        `json:"replicas,omitempty"`
+	Jobs         int        `json:"jobs,omitempty"`
+	NextRunAt    *time.Time `json:"next_run_at,omitempty"`
+	LastRunAt    *time.Time `json:"last_run_at,omitempty"`
+	LastRunState string     `json:"last_run_status,omitempty"`
+	// Restarts is Docker's restart count summed over replicas, read live through a bounded cache.
+	Restarts *int `json:"restarts,omitempty"`
+	// RestartsIncreasing is true when Restarts grew since the previous cached read.
+	RestartsIncreasing bool `json:"restarts_increasing,omitempty"`
+	// DBSizeBytes is the database size for database apps Levelrail runs.
+	DBSizeBytes *int64 `json:"db_size_bytes,omitempty"`
+}
+
 // AppResource mirrors internal/api's appResource (apps.go). Field order
 // and JSON tags match exactly, so a response decodes cleanly and a
 // request encodes into exactly what the server expects.
@@ -71,6 +90,8 @@ type AppResource struct {
 	KindSource string `json:"kind_source,omitempty"`
 	// Preview is the list endpoint's thumbnail card with its render state (none, queued, rendering, ready, failed).
 	Preview *AppPreviewCard `json:"preview,omitempty"`
+	// Summary is the list endpoint's compact card data; absent fields were not available.
+	Summary *AppListSummary `json:"summary,omitempty"`
 	// PendingImage is set while a rollout to a new image is in progress or
 	// failed; Image is then the last image confirmed serving.
 	PendingImage string `json:"pending_image,omitempty"`

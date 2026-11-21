@@ -90,6 +90,9 @@
     "nextRun": "次回実行",
     "lastRun": "前回実行",
     "notScheduled": "未スケジュール",
-    "neverRan": "未実行"
+    "neverRan": "未実行",
+    "restarts_other": "再起動 {{count}} 回",
+    "restartsRising": "再起動回数が増えています",
+    "dbSize": "データベースサイズ {{size}}"
   }
 }

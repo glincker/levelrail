@@ -52,6 +52,8 @@ type SkewReport struct {
 	Ahead               int        `json:"ahead"`
 	Unknown             int        `json:"unknown"`
 	Plan                []PlanStep `json:"plan"`
+	// AutoUpdate mirrors the nodes.agent_auto_update runtime setting.
+	AutoUpdate bool `json:"auto_update"`
 }
 
 // Classify compares an agent version with the control plane version.
