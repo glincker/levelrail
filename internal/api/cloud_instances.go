@@ -162,7 +162,7 @@ func (rt *Router) cloudInstanceManager(w http.ResponseWriter, r *http.Request, a
 			writeError(w, http.StatusBadRequest, "no usable credential is stored for this account")
 			return nil, false
 		}
-		return provision.NewAWSInstances(creds, rt.brand.ShortName, provision.AWSInstanceSettings{}), true
+		return provision.NewAWSInstances(creds, rt.brand.ShortName, provision.AWSInstanceSettings{AllowedRegions: allowedRegions(a)}), true
 	}
 	p, ok, status, msg := rt.resolveNodeProvisionerForAccount(r.Context(), a.Provider, a.ID)
 	if !ok {
@@ -197,6 +197,11 @@ func (rt *Router) loadInstance(w http.ResponseWriter, r *http.Request) (store.Cl
 		return a, nil, d, false
 	}
 	if !regionAllowed(a, d.Region) {
+		writeError(w, http.StatusNotFound, "the instance was not found at the provider")
+		return a, nil, d, false
+	}
+	// A compartment outside the account answers 404, the same as an unknown id.
+	if d.CompartmentID != "" && !oracleCompartmentAllowed(a, d.CompartmentID) {
 		writeError(w, http.StatusNotFound, "the instance was not found at the provider")
 		return a, nil, d, false
 	}
@@ -349,6 +354,51 @@ func (rt *Router) checkResizePrice(ctx context.Context, a store.CloudAccount, re
 	return ""
 }
 
+// awsResizeQuota is implemented by the AWS driver; known is false when the quota is unreadable.
+type awsResizeQuota interface {
+	ResizeQuota(ctx context.Context, id, newType string) (limit, projected float64, known bool, err error)
+}
+
+// checkResizeQuota refuses a resize that would pass the provider allowance, with fixed texts.
+// Oracle counts A1 use against the operator limits, AWS reads the vCPU service quota.
+func (rt *Router) checkResizeQuota(ctx context.Context, a store.CloudAccount, im provision.InstanceManager, d provision.InstanceDetail, body cloudInstanceResizeBody) string {
+	switch a.Provider {
+	case "oracle":
+		if !provision.IsOracleA1Shape(d.Shape) {
+			return ""
+		}
+		src, ok := im.(oracleUsageSource)
+		if !ok {
+			return "the Oracle allowance cannot be checked for this account, so the resize is refused"
+		}
+		usage, err := src.OracleUsage(ctx, d.Region)
+		if err != nil {
+			return "the Oracle allowance could not be checked, so the resize is refused"
+		}
+		maxOCPU := rt.oracleLimit(ctx, runtimesettings.KeyProvisionOracleMaxA1OCPU, "APP_PROVISION_ORACLE_MAX_A1_OCPU")
+		maxMem := rt.oracleLimit(ctx, runtimesettings.KeyProvisionOracleMaxA1MemoryGB, "APP_PROVISION_ORACLE_MAX_A1_MEMORY_GB")
+		if usage.A1OCPU-d.OCPUs+body.OCPUs > float64(maxOCPU) {
+			return fmt.Sprintf("Oracle A1 OCPU limit: the resize would pass provision.oracle.max_a1_ocpu (%d)", maxOCPU)
+		}
+		if usage.A1MemoryGB-d.MemoryGB+body.MemoryGB > float64(maxMem) {
+			return fmt.Sprintf("Oracle A1 memory limit: the resize would pass provision.oracle.max_a1_memory_gb (%d)", maxMem)
+		}
+	case "aws":
+		q, ok := im.(awsResizeQuota)
+		if !ok || body.InstanceType == "" {
+			return ""
+		}
+		limit, projected, known, err := q.ResizeQuota(ctx, d.ID, body.InstanceType)
+		switch {
+		case err != nil:
+			return "the vCPU quota could not be checked, so the resize is refused"
+		case known && projected > limit:
+			return fmt.Sprintf("the resize would use %.0f vCPU in the region against a quota of %.0f", projected, limit)
+		}
+	}
+	return ""
+}
+
 func (rt *Router) handleCloudInstanceResize(w http.ResponseWriter, r *http.Request) {
 	var body cloudInstanceResizeBody
 	if err := decodeJSONBody(r, &body); err != nil {
@@ -364,6 +414,10 @@ func (rt *Router) handleCloudInstanceResize(w http.ResponseWriter, r *http.Reque
 		return
 	}
 	if msg := rt.checkResizePrice(r.Context(), a, d.Region, body.InstanceType); msg != "" {
+		writeError(w, http.StatusUnprocessableEntity, msg)
+		return
+	}
+	if msg := rt.checkResizeQuota(r.Context(), a, im, d, body); msg != "" {
 		writeError(w, http.StatusUnprocessableEntity, msg)
 		return
 	}
@@ -479,4 +533,50 @@ func (rt *Router) estimateInstancePrice(ctx context.Context, a store.CloudAccoun
 	}
 	return pe.EstimatePrice(ctx, cloudspend.PriceQuery{ServiceCode: "AmazonEC2", Region: region, HoursPerMonth: 730,
 		Filters: map[string]string{"instanceType": instanceType, "tenancy": "Shared", "operatingSystem": "Linux", "preInstalledSw": "NA", "capacitystatus": "Used"}})
+}
+
+type cloudInstanceEventWire struct {
+	Time    time.Time `json:"time"`
+	Kind    string    `json:"kind"`
+	Status  string    `json:"status"`
+	Message string    `json:"message,omitempty"`
+}
+
+type cloudInstanceEventsWire struct {
+	State  string                   `json:"state"`
+	Since  time.Time                `json:"since"`
+	Events []cloudInstanceEventWire `json:"events"`
+}
+
+// handleCloudInstanceEvents lists provider side events inside the runtime window.
+// A provider without the capability answers 200 with state unsupported and no rows.
+func (rt *Router) handleCloudInstanceEvents(w http.ResponseWriter, r *http.Request) {
+	a, ok := rt.loadCloudAccount(w, r)
+	if !ok {
+		return
+	}
+	days := rt.tunableInt(r.Context(), runtimesettings.KeyCloudInstancesEventsWindowDays, "APP_CLOUD_INSTANCES_EVENTS_WINDOW_DAYS", 7)
+	out := cloudInstanceEventsWire{State: "unsupported", Since: time.Now().UTC().AddDate(0, 0, -days), Events: []cloudInstanceEventWire{}}
+	if a.Provider != "aws" && a.Provider != "oracle" {
+		writeJSON(w, http.StatusOK, out)
+		return
+	}
+	_, im, d, ok := rt.loadInstance(w, r)
+	if !ok {
+		return
+	}
+	if !provision.InstanceCapabilities(im).Supports(provision.VerbEvents) {
+		writeJSON(w, http.StatusOK, out)
+		return
+	}
+	rows, err := im.InstanceEvents(r.Context(), d.ID, out.Since)
+	if err != nil {
+		rt.writeInstanceError(w, err, a.ID)
+		return
+	}
+	out.State = "ok"
+	for _, e := range rows {
+		out.Events = append(out.Events, cloudInstanceEventWire{Time: e.Time, Kind: e.Kind, Status: e.Status, Message: e.Message})
+	}
+	writeJSON(w, http.StatusOK, out)
 }

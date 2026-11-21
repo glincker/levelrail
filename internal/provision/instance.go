@@ -71,6 +71,8 @@ type InstanceDetail struct {
 	Project        string
 	Environment    string
 	ResizeAdvisory string
+	// CompartmentID is set by drivers with compartments so callers can enforce scope.
+	CompartmentID string
 }
 
 // InstanceEvent is one provider-side event or operation on an instance.

@@ -9,6 +9,7 @@ import (
 	"log/slog"
 	"net/http"
 	"regexp"
+	"slices"
 	"strings"
 	"time"
 
@@ -341,6 +342,8 @@ type updateCloudAccountRequest struct {
 	Config map[string]string `json:"config,omitempty"`
 	// ExternalID replaces the sealed value of a role_assumption account.
 	ExternalID string `json:"external_id,omitempty"`
+	// AllowedRegions replaces the region allowlist; an empty list clears it.
+	AllowedRegions *[]string `json:"allowed_regions,omitempty"`
 }
 
 func (rt *Router) handleUpdateCloudAccount(w http.ResponseWriter, r *http.Request) {
@@ -368,11 +371,26 @@ func (rt *Router) handleUpdateCloudAccount(w http.ResponseWriter, r *http.Reques
 		}
 		a.Status = *req.Status
 	}
-	if len(req.Config) > 0 {
-		cfg := map[string]string{}
+	if len(req.Config) > 0 || req.AllowedRegions != nil {
+		cfg := map[string]any{}
 		_ = json.Unmarshal(a.Config, &cfg)
 		for k, v := range req.Config {
+			if k == "allowed_regions" {
+				continue
+			}
 			cfg[k] = v
+		}
+		if req.AllowedRegions != nil {
+			list, status, msg := rt.validAllowedRegions(r.Context(), a, *req.AllowedRegions)
+			if status != 0 {
+				writeError(w, status, msg)
+				return
+			}
+			if len(list) == 0 {
+				delete(cfg, "allowed_regions")
+			} else {
+				cfg["allowed_regions"] = list
+			}
 		}
 		a.Config, _ = json.Marshal(cfg)
 	}
@@ -396,6 +414,33 @@ func (rt *Router) handleUpdateCloudAccount(w http.ResponseWriter, r *http.Reques
 	rt.nodeProviderCatalog.invalidate(a.Provider)
 	rt.providerCaps.invalidate(a.Provider)
 	writeJSON(w, http.StatusOK, rt.toCloudAccountWire(r.Context(), a))
+}
+
+// validAllowedRegions dedupes the list and checks every id against what the provider lists.
+func (rt *Router) validAllowedRegions(ctx context.Context, a store.CloudAccount, ids []string) ([]string, int, string) {
+	if len(ids) == 0 {
+		return nil, 0, ""
+	}
+	cctx, cancel := context.WithTimeout(ctx, nodeProviderTestTimeout)
+	defer cancel()
+	known, status, msg := rt.accountRegions(cctx, a)
+	if status != 0 {
+		return nil, status, msg
+	}
+	valid := map[string]bool{}
+	for _, k := range known {
+		valid[k.ID] = true
+	}
+	out := []string{}
+	for _, id := range ids {
+		if !valid[id] {
+			return nil, http.StatusBadRequest, "allowed_regions has a region the provider does not list for this account"
+		}
+		if !slices.Contains(out, id) {
+			out = append(out, id)
+		}
+	}
+	return out, 0, ""
 }
 
 func (rt *Router) handleDeleteCloudAccount(w http.ResponseWriter, r *http.Request) {
@@ -548,47 +593,51 @@ func (rt *Router) handleCloudAccountRegions(w http.ResponseWriter, r *http.Reque
 	}
 	ctx, cancel := context.WithTimeout(r.Context(), nodeProviderTestTimeout)
 	defer cancel()
+	out, status, msg := rt.accountRegions(ctx, a)
+	if status != 0 {
+		writeError(w, status, msg)
+		return
+	}
+	writeJSON(w, http.StatusOK, out)
+}
+
+// accountRegions lists the regions the credential can see; a non zero status is the error to send.
+func (rt *Router) accountRegions(ctx context.Context, a store.CloudAccount) ([]cloudRegionWire, int, string) {
 	out := []cloudRegionWire{}
 	if isAWSRoleAccount(a) {
 		value, err := rt.accountCredential(ctx, a)
 		if err != nil {
-			writeError(w, http.StatusBadRequest, "no credential is stored for this account")
-			return
+			return nil, http.StatusBadRequest, "no credential is stored for this account"
 		}
 		regions, err := rt.awsProvider().ListRegions(ctx, awsTarget(a, value))
 		if err != nil {
-			writeError(w, http.StatusBadGateway, "could not list regions at the provider")
-			return
+			return nil, http.StatusBadGateway, "could not list regions at the provider"
 		}
 		for _, id := range regions {
 			out = append(out, cloudRegionWire{ID: id, Name: id})
 		}
-		writeJSON(w, http.StatusOK, out)
-		return
+		return out, 0, ""
 	}
 	if isOracleAccount(a) {
 		if ids, err := rt.oracleAccountRegions(ctx, a); err == nil {
 			for _, id := range ids {
 				out = append(out, cloudRegionWire{ID: id, Name: id})
 			}
-			writeJSON(w, http.StatusOK, out)
-			return
+			return out, 0, ""
 		}
 	}
 	p, ok, status, msg := rt.resolveNodeProvisionerForAccount(ctx, a.Provider, a.ID)
 	if !ok {
-		writeError(w, status, msg)
-		return
+		return nil, status, msg
 	}
 	regions, err := p.ListRegions(ctx)
 	if err != nil {
-		writeError(w, http.StatusBadGateway, "could not list regions at the provider")
-		return
+		return nil, http.StatusBadGateway, "could not list regions at the provider"
 	}
 	for _, g := range regions {
 		out = append(out, cloudRegionWire{ID: g.ID, Name: g.Name})
 	}
-	writeJSON(w, http.StatusOK, out)
+	return out, 0, ""
 }
 
 type probeCloudAccountRequest struct {

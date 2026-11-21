@@ -4,6 +4,7 @@ import (
 	"context"
 	"errors"
 	"fmt"
+	"slices"
 	"strings"
 	"time"
 
@@ -62,6 +63,8 @@ type AWSInstanceSettings struct {
 	TagPrefix    string
 	PollInterval time.Duration
 	WaitTimeout  time.Duration
+	// AllowedRegions limits every call; empty means any region.
+	AllowedRegions []string
 }
 
 // AWSInstances implements InstanceManager over EC2.
@@ -73,6 +76,8 @@ type AWSInstances struct {
 	interval time.Duration
 	timeout  time.Duration
 	sleep    func(context.Context, time.Duration) error
+	allowed  []string
+	rawBase  string
 }
 
 var _ InstanceManager = (*AWSInstances)(nil)
@@ -94,7 +99,7 @@ func newAWSInstances(creds AWSCredentials, f ec2ClientFactory, shortName string,
 	}
 	return &AWSInstances{
 		creds: creds, factory: f, legacy: awsShortNameOrFallback(shortName), prefix: s.TagPrefix,
-		interval: s.PollInterval, timeout: s.WaitTimeout, sleep: contextSleep,
+		interval: s.PollInterval, timeout: s.WaitTimeout, sleep: contextSleep, allowed: s.AllowedRegions,
 	}
 }
 
@@ -221,6 +226,9 @@ func applySpec(i *Instance, spec map[string]types.InstanceTypeInfo) {
 func (a *AWSInstances) client(ctx context.Context, region string) (ec2InstanceAPI, error) {
 	if region == "" {
 		region = a.creds.region()
+	}
+	if len(a.allowed) > 0 && !slices.Contains(a.allowed, region) {
+		return nil, classify(ErrInstanceNotFound, "region", errors.New("provision: aws region is not allowed for this account"))
 	}
 	c, err := a.factory.ForRegion(ctx, region)
 	if err != nil {
@@ -575,7 +583,7 @@ func (a *AWSInstances) TerminateInstance(ctx context.Context, id string, keepBoo
 
 // InstanceEvents returns scheduled events from DescribeInstanceStatus.
 func (a *AWSInstances) InstanceEvents(ctx context.Context, id string, since time.Time) ([]InstanceEvent, error) {
-	c, _, iid, _, err := a.fetch(ctx, id)
+	c, region, iid, _, err := a.fetch(ctx, id)
 	if err != nil {
 		return nil, err
 	}
@@ -592,6 +600,10 @@ func (a *AWSInstances) InstanceEvents(ctx context.Context, id string, since time
 			}
 			out = append(out, InstanceEvent{Time: t, Kind: string(e.Code), Status: "scheduled", Message: aws.ToString(e.Description)})
 		}
+	}
+	// CloudTrail is best effort: a credential without it still gets scheduled events.
+	if trail, terr := a.cloudTrailEvents(ctx, region, iid, since); terr == nil {
+		out = append(out, trail...)
 	}
 	return out, nil
 }

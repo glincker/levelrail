@@ -31,6 +31,7 @@ func (rt *Router) registerCloudInstanceRoutes(mux *http.ServeMux) {
 	acct := cloudAccountFromPath
 	mux.HandleFunc("GET /api/v1/cloud-accounts/{id}/instances", rt.requireCloudAccess(db, "view", acct, rt.handleListCloudInstances))
 	mux.HandleFunc("GET /api/v1/cloud-accounts/{id}/instances/{iid}", rt.requireCloudAccess(db, "view", cloudInstanceFromPath, rt.handleGetCloudInstance))
+	mux.HandleFunc("GET /api/v1/cloud-accounts/{id}/instances/{iid}/events", rt.requireCloudAccess(db, "view", cloudInstanceFromPath, rt.handleCloudInstanceEvents))
 	mux.HandleFunc("POST /api/v1/cloud-accounts/{id}/instances/{iid}/actions", rt.requireCloudAccess(db, "operate", cloudInstanceFromPath, rt.handleCloudInstanceAction))
 	mux.HandleFunc("PUT /api/v1/cloud-accounts/{id}/instances/{iid}/tags", rt.requireCloudAccess(db, "operate", cloudInstanceFromPath, rt.handleCloudInstanceTags))
 	mux.HandleFunc("POST /api/v1/cloud-accounts/{id}/instances/{iid}/resize", rt.requireCloudAccess(db, "build", cloudInstanceFromPath, rt.handleCloudInstanceResize))

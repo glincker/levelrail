@@ -2,14 +2,15 @@ package runtimesettings
 
 // Registered keys for cloud account spend and the instance list cache.
 const (
-	KeyCloudSpendEnabled            = "cloud.spend.enabled"
-	KeyCloudSpendCacheTTLMinutes    = "cloud.spend.cache_ttl_minutes"
-	KeyCloudSpendRefreshMinInterval = "cloud.spend.refresh_min_interval_minutes"
-	KeyCloudSpendRefreshPerUserHour = "cloud.spend.refresh_per_user_per_hour"
-	KeyCloudSpendStaleAfterHours    = "cloud.spend.stale_after_hours"
-	KeyCloudSpendAWSCostExplorer    = "cloud.spend.aws_cost_explorer"
-	KeyCloudSpendMaxPages           = "cloud.spend.max_pages"
-	KeyCloudInstancesCacheTTLSecs   = "cloud.instances.cache_ttl_seconds"
+	KeyCloudSpendEnabled              = "cloud.spend.enabled"
+	KeyCloudSpendCacheTTLMinutes      = "cloud.spend.cache_ttl_minutes"
+	KeyCloudSpendRefreshMinInterval   = "cloud.spend.refresh_min_interval_minutes"
+	KeyCloudSpendRefreshPerUserHour   = "cloud.spend.refresh_per_user_per_hour"
+	KeyCloudSpendStaleAfterHours      = "cloud.spend.stale_after_hours"
+	KeyCloudSpendAWSCostExplorer      = "cloud.spend.aws_cost_explorer"
+	KeyCloudSpendMaxPages             = "cloud.spend.max_pages"
+	KeyCloudInstancesCacheTTLSecs     = "cloud.instances.cache_ttl_seconds"
+	KeyCloudInstancesEventsWindowDays = "cloud.instances.events_window_days"
 )
 
 func init() {
@@ -46,4 +47,8 @@ func init() {
 		Key: KeyCloudInstancesCacheTTLSecs, Category: cat, Default: "30", Env: "APP_CLOUD_INSTANCES_CACHE_TTL_SECONDS", Apply: ApplyLive,
 		Title: "Cloud instance list cache", Description: "Seconds a provider instance list is reused before the next provider call. From 1 to 3600.",
 	}, 1, 3600)
+	registerLimit(Definition{
+		Key: KeyCloudInstancesEventsWindowDays, Category: cat, Default: "7", Env: "APP_CLOUD_INSTANCES_EVENTS_WINDOW_DAYS", Apply: ApplyLive,
+		Title: "Cloud instance events window", Description: "Days of provider events shown on an instance. From 1 to 90.",
+	}, 1, 90)
 }

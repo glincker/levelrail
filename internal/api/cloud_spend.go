@@ -124,6 +124,53 @@ func (rt *Router) spendReader(w http.ResponseWriter, r *http.Request, a store.Cl
 	return nil, false
 }
 
+// cloudSpendWire adds the projection and provider budgets next to the month to date report.
+type cloudSpendWire struct {
+	cloudspend.SpendReport
+	Forecast *cloudspend.SpendForecast   `json:"forecast"`
+	Budgets  []cloudspend.ProviderBudget `json:"budgets"`
+}
+
+type spendExtras struct {
+	at       time.Time
+	forecast *cloudspend.SpendForecast
+	budgets  []cloudspend.ProviderBudget
+}
+
+type spendExtrasCache struct {
+	mu   sync.Mutex
+	rows map[string]spendExtras
+}
+
+var spendExtrasCaches sync.Map
+
+func (rt *Router) spendExtrasCache() *spendExtrasCache {
+	v, _ := spendExtrasCaches.LoadOrStore(rt, &spendExtrasCache{rows: map[string]spendExtras{}})
+	return v.(*spendExtrasCache)
+}
+
+// spendWire adds forecast and budgets, cached for the spend cache TTL; a failed read leaves them empty.
+func (rt *Router) spendWire(ctx context.Context, a store.CloudAccount, rd cloudspend.Reader, rep cloudspend.SpendReport, force bool) cloudSpendWire {
+	c := rt.spendExtrasCache()
+	ttl := rt.cloudSpendConfig().CacheTTL
+	c.mu.Lock()
+	ex, hit := c.rows[a.ID]
+	c.mu.Unlock()
+	if !hit || force || time.Since(ex.at) >= ttl {
+		ex = spendExtras{at: time.Now(), budgets: []cloudspend.ProviderBudget{}}
+		if f, err := rd.Forecast(ctx, cloudspend.SpendQuery{AccountID: a.ID}); err == nil {
+			ex.forecast = &f
+		}
+		if b, err := rd.Budgets(ctx, cloudspend.SpendQuery{AccountID: a.ID}); err == nil && b != nil {
+			ex.budgets = b
+		}
+		c.mu.Lock()
+		c.rows[a.ID] = ex
+		c.mu.Unlock()
+	}
+	return cloudSpendWire{SpendReport: rep, Forecast: ex.forecast, Budgets: ex.budgets}
+}
+
 func spendDisabled(a store.CloudAccount) cloudspend.SpendReport {
 	return cloudspend.SpendReport{AccountID: a.ID, Provider: cloudspend.Provider(a.Provider), State: cloudspend.StateDisabled,
 		Totals: []cloudspend.Total{}, ByService: []cloudspend.Line{}, ByProject: []cloudspend.Line{}, ByResource: []cloudspend.Line{}}
@@ -143,7 +190,7 @@ func (rt *Router) handleGetCloudSpend(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 	if !rt.cloudSpendConfig().Enabled {
-		writeJSON(w, http.StatusOK, spendDisabled(a))
+		writeJSON(w, http.StatusOK, cloudSpendWire{SpendReport: spendDisabled(a), Budgets: []cloudspend.ProviderBudget{}})
 		return
 	}
 	rd, ok := rt.spendReader(w, r, a)
@@ -155,7 +202,7 @@ func (rt *Router) handleGetCloudSpend(w http.ResponseWriter, r *http.Request) {
 		rt.writeSpendError(w, err)
 		return
 	}
-	writeJSON(w, http.StatusOK, rep)
+	writeJSON(w, http.StatusOK, rt.spendWire(r.Context(), a, rd, rep, false))
 }
 
 func (rt *Router) handleRefreshCloudSpend(w http.ResponseWriter, r *http.Request) {
@@ -164,7 +211,7 @@ func (rt *Router) handleRefreshCloudSpend(w http.ResponseWriter, r *http.Request
 		return
 	}
 	if !rt.cloudSpendConfig().Enabled {
-		writeJSON(w, http.StatusOK, spendDisabled(a))
+		writeJSON(w, http.StatusOK, cloudSpendWire{SpendReport: spendDisabled(a), Budgets: []cloudspend.ProviderBudget{}})
 		return
 	}
 	rd, ok := rt.spendReader(w, r, a)
@@ -187,7 +234,7 @@ func (rt *Router) handleRefreshCloudSpend(w http.ResponseWriter, r *http.Request
 		return
 	}
 	rt.auditCloud(r, "cloud.spend.refreshed", map[string]any{"account": a.ID})
-	writeJSON(w, http.StatusOK, rep)
+	writeJSON(w, http.StatusOK, rt.spendWire(r.Context(), a, rd, rep, true))
 }
 
 func (rt *Router) handleCloudSpendEstimate(w http.ResponseWriter, r *http.Request) {

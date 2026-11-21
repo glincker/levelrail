@@ -2505,6 +2505,7 @@ Routes that do not fit an existing group.
 | GET | /api/v1/cloud-accounts/aws/control-identity | AbilityRoot | handleAWSControlIdentity |
 | GET | /api/v1/me/cloud-access | Public | handleMeCloudAccess |
 | POST | /api/v1/cloud-accounts/oracle/policy-kit | AbilityRoot | handleOraclePolicyKit |
+| GET | /api/v1/cloud-accounts/{id}/instances/{iid}/events | Public | handleCloudInstanceEvents |
 | POST | /mcp | Public |  |
 
 ## See also

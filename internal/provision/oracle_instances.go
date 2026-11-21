@@ -47,6 +47,7 @@ type ociInstanceDoc struct {
 	Shape              string            `json:"shape"`
 	Region             string            `json:"region"`
 	AvailabilityDomain string            `json:"availabilityDomain"`
+	CompartmentID      string            `json:"compartmentId"`
 	TimeCreated        time.Time         `json:"timeCreated"`
 	FreeformTags       map[string]string `json:"freeformTags"`
 	ShapeConfig        struct {
@@ -143,6 +144,9 @@ func (o *Oracle) locate(ctx context.Context, id string) (*httpClient, string, oc
 			}
 			return nil, "", ociInstanceDoc{}, classifyOracle(err)
 		}
+		if doc.CompartmentID != "" && o.cred.CompartmentOCID != "" && doc.CompartmentID != o.cred.CompartmentOCID {
+			return nil, "", ociInstanceDoc{}, classify(ErrInstanceNotFound, "compartment", errors.New("provision: oracle instance is outside the account compartment"))
+		}
 		return c, region, doc, nil
 	}
 	return nil, "", ociInstanceDoc{}, lastErr
@@ -158,7 +162,7 @@ func (o *Oracle) DescribeInstance(ctx context.Context, id string) (InstanceDetai
 	inst.PublicIPv4 = o.publicIP(ctx, c, id)
 	d := InstanceDetail{
 		Instance: inst, Zone: doc.AvailabilityDomain, ImageID: doc.SourceDetails.ImageID,
-		BootVolumeGB: doc.SourceDetails.BootVolumeSizeInGBs, PrivateIPv4: o.privateIP(ctx, c, id),
+		BootVolumeGB: doc.SourceDetails.BootVolumeSizeInGBs, CompartmentID: doc.CompartmentID, PrivateIPv4: o.privateIP(ctx, c, id),
 	}
 	if doc.ShapeConfig.Ocpus > 0 || strings.Contains(doc.Shape, "Flex") {
 		d.ResizeAdvisory = "resizing a flexible shape reboots the instance"

@@ -14,7 +14,7 @@ type openAPIRoute struct {
 	Description string
 }
 
-// openAPIRoutes holds all 2274 routes known to scripts/gen-api-reference at
+// openAPIRoutes holds all 2275 routes known to scripts/gen-api-reference at
 // generation time. Run `go run ./scripts/gen-api-reference` after changing
 // any routes*.go registration and commit the result.
 var openAPIRoutes = []openAPIRoute{
@@ -1234,6 +1234,7 @@ var openAPIRoutes = []openAPIRoute{
 	{Method: "DELETE", Path: "/api/v1/cloud-accounts/{id}/instances/{iid}", Ability: "Public", Group: "Other", Handler: "handleCloudInstanceTerminate", Description: ""},
 	{Method: "GET", Path: "/api/v1/cloud-accounts/{id}/instances/{iid}", Ability: "Public", Group: "Other", Handler: "handleGetCloudInstance", Description: ""},
 	{Method: "POST", Path: "/api/v1/cloud-accounts/{id}/instances/{iid}/actions", Ability: "Public", Group: "Other", Handler: "handleCloudInstanceAction", Description: ""},
+	{Method: "GET", Path: "/api/v1/cloud-accounts/{id}/instances/{iid}/events", Ability: "Public", Group: "Other", Handler: "handleCloudInstanceEvents", Description: ""},
 	{Method: "POST", Path: "/api/v1/cloud-accounts/{id}/instances/{iid}/resize", Ability: "Public", Group: "Other", Handler: "handleCloudInstanceResize", Description: ""},
 	{Method: "PUT", Path: "/api/v1/cloud-accounts/{id}/instances/{iid}/tags", Ability: "Public", Group: "Other", Handler: "handleCloudInstanceTags", Description: ""},
 	{Method: "POST", Path: "/api/v1/cloud-accounts/{id}/probe", Ability: "AbilityRoot", Group: "Other", Handler: "handleProbeCloudAccount", Description: ""},
