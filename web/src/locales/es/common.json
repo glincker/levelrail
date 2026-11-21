@@ -1317,6 +1317,10 @@
     "auto": "Automático (el menos cargado)",
     "autoHint": "Automático la coloca en el nodo elegible con menos carga. Elige un nodo para fijarla ahí.",
     "picker": {
+      "choose": "Elige un nodo",
+      "cost": "{{amount}}/mes",
+      "freeCpu": "{{value}} CPU libres",
+      "freeMemory": "{{value}} libres",
       "search": "Buscar nodos",
       "empty": "Ningun nodo coincide",
       "local": "Este servidor",

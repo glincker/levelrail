@@ -10,6 +10,8 @@ import { Skeleton } from '@/components/ui/skeleton'
 import { Switch } from '@/components/ui/switch'
 import { toast } from '@/components/ui/toast'
 import { InfoTip } from '../kit/InfoTip'
+import { DeployTargetPicker } from '../DeployTargetPicker'
+import { useDeployTargetsOptional } from '../../queries/deployTargets'
 import { useCanDeploy } from '../../hooks/useCanDeploy'
 import { parseLabels, validateRunnerMode } from '../../lib/buildRunnerFormat'
 import {
@@ -28,6 +30,7 @@ function PreferenceForm({
   const { t } = useTranslation('deploys')
   const canDeploy = useCanDeploy()
   const { data } = useBuildRunners()
+  const targets = useDeployTargetsOptional()
   const save = useSaveAppBuildRunner(appName)
   const clear = useClearAppBuildRunner(appName)
   const [mode, setMode] = useState<RunnerMode>(pref.mode ?? 'auto')
@@ -35,6 +38,12 @@ function PreferenceForm({
   const [pinned, setPinned] = useState(pref.pinned)
   const [labels, setLabels] = useState((pref.labels ?? []).join(', '))
   const nodes = (data?.runners ?? []).filter((r) => r.kind === 'node')
+  // The local server is not a build node, so only remote groups are offered.
+  const nodeIds = new Set(nodes.map((n) => n.id))
+  const pickerGroups = (Array.isArray(targets.data) ? targets.data : [])
+    .filter((g) => g.kind !== 'local')
+    .map((g) => ({ ...g, nodes: g.nodes.filter((n) => nodeIds.has(n.id)) }))
+    .filter((g) => g.nodes.length > 0)
   const error = save.error ?? clear.error
   const busy = save.isPending || clear.isPending
   const problem = validateRunnerMode(mode, nodeId)
@@ -101,23 +110,34 @@ function PreferenceForm({
         {mode === 'node' ? (
           <div className="space-y-1.5">
             <Label htmlFor="runner-pref-node">{t('runnerPref.node')}</Label>
-            <NativeSelect
-              id="runner-pref-node"
-              className="w-full"
-              value={nodeId}
-              disabled={!canDeploy || busy}
-              aria-invalid={problem === 'nodeNeeded'}
-              onChange={(e) => {
-                setNodeId(e.target.value)
-              }}
-            >
-              <option value="">{t('runnerPref.pickNode')}</option>
-              {nodes.map((n) => (
-                <option key={n.id} value={n.id}>
-                  {n.name}
-                </option>
-              ))}
-            </NativeSelect>
+            {pickerGroups.length > 0 ? (
+              <DeployTargetPicker
+                id="runner-pref-node"
+                groups={pickerGroups}
+                value={nodeId}
+                onValueChange={setNodeId}
+                disabled={!canDeploy || busy}
+                placeholder={t('runnerPref.pickNode')}
+              />
+            ) : (
+              <NativeSelect
+                id="runner-pref-node"
+                className="w-full"
+                value={nodeId}
+                disabled={!canDeploy || busy}
+                aria-invalid={problem === 'nodeNeeded'}
+                onChange={(e) => {
+                  setNodeId(e.target.value)
+                }}
+              >
+                <option value="">{t('runnerPref.pickNode')}</option>
+                {nodes.map((n) => (
+                  <option key={n.id} value={n.id}>
+                    {n.name}
+                  </option>
+                ))}
+              </NativeSelect>
+            )}
           </div>
         ) : null}
         <div className="space-y-1.5">

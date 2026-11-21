@@ -11,6 +11,10 @@
     "auto": "Automático (menos carregado)",
     "autoHint": "O automático o coloca no node elegível menos carregado. Escolha um node para fixá-lo lá.",
     "picker": {
+      "choose": "Escolha um nó",
+      "cost": "{{amount}}/mês",
+      "freeCpu": "{{value}} CPU livres",
+      "freeMemory": "{{value}} livres",
       "search": "Buscar nos",
       "empty": "Nenhum no encontrado",
       "local": "Este servidor",

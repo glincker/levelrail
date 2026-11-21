@@ -10,6 +10,9 @@ export interface DeployTargetNode {
   region?: string
   tags?: Record<string, string>
   is_local?: boolean
+  monthly_cost_estimate?: number
+  cost_currency?: string
+  free_capacity?: { cpu_cores?: number; memory_bytes?: number }
 }
 
 export interface DeployTargetGroup {

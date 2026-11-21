@@ -60,4 +60,35 @@ describe('DeployTargetPicker', () => {
     await user.click(screen.getByRole('option', { name: /edge-1/ }))
     expect(onChange).toHaveBeenCalledWith('n1')
   })
+
+  it('shows cost and free capacity hints only when reported', async () => {
+    const user = userEvent.setup()
+    const withHints: DeployTargetGroup[] = [
+      {
+        ...groups[1],
+        nodes: [
+          {
+            ...groups[1].nodes[0],
+            monthly_cost_estimate: 12.5,
+            cost_currency: 'USD',
+            free_capacity: { cpu_cores: 1.5 },
+          },
+        ],
+      },
+      { ...groups[0] },
+    ]
+    render(
+      <DatabasesI18n>
+        <DeployTargetPicker
+          id="t"
+          groups={withHints}
+          value="n1"
+          onValueChange={vi.fn()}
+        />
+      </DatabasesI18n>,
+    )
+    await user.click(screen.getByRole('button'))
+    expect(screen.getByText(/\/mo.*1\.5 CPU free/)).toBeInTheDocument()
+    expect(screen.queryByText(/GiB free/)).toBeNull()
+  })
 })

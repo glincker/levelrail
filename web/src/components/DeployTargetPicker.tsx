@@ -1,6 +1,11 @@
 import { useMemo, useState } from 'react'
 import { useTranslation } from 'react-i18next'
-import type { DeployTargetGroup } from '../types/deployTargets'
+import type {
+  DeployTargetGroup,
+  DeployTargetNode,
+} from '../types/deployTargets'
+import { formatBytes } from '../lib/format'
+import { formatMoney } from '../lib/usageFormat'
 import { BrandIcon, type BrandIconName } from './BrandIcon'
 import { Button } from '@/components/ui/button'
 import { Input } from '@/components/ui/input'
@@ -29,6 +34,9 @@ interface DeployTargetPickerProps {
   value: string
   onValueChange: (value: string) => void
   withAuto?: boolean
+  /** Shown when nothing matches the value instead of the local label. */
+  placeholder?: string
+  disabled?: boolean
 }
 
 // Grouped, searchable node chooser: one group per cloud account, then local and unmanaged.
@@ -38,6 +46,8 @@ export function DeployTargetPicker({
   value,
   onValueChange,
   withAuto = false,
+  placeholder,
+  disabled = false,
 }: DeployTargetPickerProps) {
   const { t } = useTranslation('common')
   const [open, setOpen] = useState(false)
@@ -66,7 +76,36 @@ export function DeployTargetPicker({
   const triggerLabel =
     withAuto && value === AUTO_VALUE
       ? t('nodeSelect.auto')
-      : (current?.name ?? t('nodeSelect.picker.local'))
+      : (current?.name ?? placeholder ?? t('nodeSelect.picker.local'))
+
+  // Cost and free capacity are shown only when the API reported them.
+  const capacityHint = (n: DeployTargetNode): string => {
+    const parts: string[] = []
+    if (n.monthly_cost_estimate !== undefined) {
+      parts.push(
+        t('nodeSelect.picker.cost', {
+          amount: formatMoney(
+            n.monthly_cost_estimate,
+            n.cost_currency ?? 'USD',
+          ),
+        }),
+      )
+    }
+    const free = n.free_capacity
+    if (free?.cpu_cores !== undefined) {
+      parts.push(
+        t('nodeSelect.picker.freeCpu', { value: free.cpu_cores.toFixed(1) }),
+      )
+    }
+    if (free?.memory_bytes !== undefined) {
+      parts.push(
+        t('nodeSelect.picker.freeMemory', {
+          value: formatBytes(free.memory_bytes),
+        }),
+      )
+    }
+    return parts.join(' · ')
+  }
 
   const choose = (v: string) => {
     onValueChange(v)
@@ -88,6 +127,7 @@ export function DeployTargetPicker({
           <Button
             id={id}
             type="button"
+            disabled={disabled}
             variant="outline"
             className="w-full justify-start"
           />
@@ -139,6 +179,7 @@ export function DeployTargetPicker({
                   }}
                   name={n.name}
                   hint={`${t(`nodeSelect.picker.health.${n.health}`)}${n.region ? ` · ${n.region}` : ''}`}
+                  extra={capacityHint(n)}
                 />
               ))}
             </div>
@@ -152,11 +193,13 @@ export function DeployTargetPicker({
 function PickerRow({
   name,
   hint,
+  extra,
   selected,
   onPick,
 }: {
   name: string
   hint?: string
+  extra?: string
   selected: boolean
   onPick: () => void
 }) {
@@ -170,7 +213,10 @@ function PickerRow({
     >
       <span>{name}</span>
       {hint ? (
-        <span className="text-xs text-muted-foreground">{hint}</span>
+        <span className="text-right text-xs text-muted-foreground">
+          {hint}
+          {extra ? <span className="block">{extra}</span> : null}
+        </span>
       ) : null}
     </button>
   )

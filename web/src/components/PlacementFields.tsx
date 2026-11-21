@@ -1,7 +1,13 @@
+import { useEffect, useRef } from 'react'
 import { useTranslation } from 'react-i18next'
 import type { NodeResource } from '../types/nodeDetail'
 import { useDeployTargetsOptional } from '../queries/deployTargets'
 import { DeployTargetPicker } from './DeployTargetPicker'
+import { useAuthUsername } from '../hooks/useAuthUsername'
+import {
+  readLastDeployTarget,
+  writeLastDeployTarget,
+} from '../lib/lastDeployTarget'
 import type { ProjectResource } from '../types/projectDetail'
 import { Field, FieldError, FieldHint, FieldLabel } from '@/components/ui/field'
 import {
@@ -49,11 +55,29 @@ export function NodeSelectField({
 }: NodeSelectFieldProps) {
   const { t } = useTranslation('common')
   const targets = useDeployTargetsOptional()
+  const user = useAuthUsername()
+  const prefilled = useRef(false)
+  const groups = targets.data
+  const isDefault = value === LOCAL_NODE_VALUE || value === AUTO_NODE_VALUE
+  // Prefill once, and only while the form still holds its untouched default.
+  useEffect(() => {
+    if (prefilled.current || !groups || !isDefault) return
+    prefilled.current = true
+    const last = readLastDeployTarget(user, idPrefix)
+    if (last === null || last === value) return
+    const known =
+      (withAuto && last === AUTO_NODE_VALUE) ||
+      groups.flatMap((g) => g.nodes).some((n) => n.id === last && n.schedulable)
+    if (known) onValueChange(last)
+  }, [groups, isDefault, user, idPrefix, value, withAuto, onValueChange])
+  const pick = (v: string) => {
+    writeLastDeployTarget(user, idPrefix, v)
+    onValueChange(v)
+  }
   if (nodes.length === 0) return null
   const id = `${idPrefix}-node`
   const shown =
     !withAuto && value === AUTO_NODE_VALUE ? LOCAL_NODE_VALUE : value
-  const groups = targets.data
   return (
     <Field>
       <FieldLabel htmlFor={id}>Node</FieldLabel>
@@ -62,7 +86,7 @@ export function NodeSelectField({
           id={id}
           groups={groups}
           value={shown ?? LOCAL_NODE_VALUE}
-          onValueChange={onValueChange}
+          onValueChange={pick}
           withAuto={withAuto}
         />
       ) : (

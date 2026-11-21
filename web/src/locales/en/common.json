@@ -11,6 +11,10 @@
     "auto": "Automatic (least loaded)",
     "autoHint": "Automatic puts it on the least loaded eligible node. Pick a node to pin it there.",
     "picker": {
+      "choose": "Choose a node",
+      "cost": "{{amount}}/mo",
+      "freeCpu": "{{value}} CPU free",
+      "freeMemory": "{{value}} free",
       "search": "Search nodes",
       "empty": "No matching nodes",
       "local": "This server",

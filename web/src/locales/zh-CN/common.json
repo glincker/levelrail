@@ -11,6 +11,10 @@
     "auto": "自动（负载最低）",
     "autoHint": "自动模式会把它放在负载最低的可用节点上。选择一个节点可将其固定在该节点。",
     "picker": {
+      "choose": "选择节点",
+      "cost": "{{amount}}/月",
+      "freeCpu": "可用 CPU {{value}}",
+      "freeMemory": "可用 {{value}}",
       "search": "搜索节点",
       "empty": "没有匹配的节点",
       "local": "此服务器",

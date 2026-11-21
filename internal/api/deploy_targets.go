@@ -1,10 +1,15 @@
 package api
 
 import (
+	"context"
+	"math"
 	"net/http"
 	"sort"
+	"strings"
 
 	"github.com/GLINCKER/levelrail/internal/store"
+	"github.com/GLINCKER/levelrail/internal/telemetry"
+	"github.com/GLINCKER/levelrail/internal/usagecost"
 )
 
 // Group kinds for the deploy target picker.
@@ -23,6 +28,17 @@ type deployTargetNode struct {
 	Region      string            `json:"region,omitempty"`
 	Tags        map[string]string `json:"tags,omitempty"`
 	IsLocal     bool              `json:"is_local,omitempty"`
+	// MonthlyCostEstimate is the configured node bill; omitted without one.
+	MonthlyCostEstimate *float64 `json:"monthly_cost_estimate,omitempty"`
+	CostCurrency        string   `json:"cost_currency,omitempty"`
+	// FreeCapacity is omitted when no metric is known for the node.
+	FreeCapacity *deployTargetFreeCapacity `json:"free_capacity,omitempty"`
+}
+
+// deployTargetFreeCapacity holds only the figures that could be derived.
+type deployTargetFreeCapacity struct {
+	CPUCores    *float64 `json:"cpu_cores,omitempty"`
+	MemoryBytes *float64 `json:"memory_bytes,omitempty"`
 }
 
 type deployTargetGroup struct {
@@ -81,8 +97,19 @@ func (rt *Router) handleListDeployTargets(w http.ResponseWriter, r *http.Request
 		}
 	}
 
+	prices := rt.deployTargetPrices(ctx)
+	currency := ""
+	if st := rt.usageStore(); st != nil && len(prices) > 0 {
+		if cfg, cerr := st.GetUsageCostSettings(ctx); cerr == nil {
+			currency = cfg.Currency
+		}
+	}
+	free := rt.deployTargetFreeCapacity(ctx, prices)
+	localID := rt.localNodeID
+
 	local := deployTargetGroup{Kind: deployTargetKindLocal, Label: "local", Nodes: []deployTargetNode{
-		{ID: "", Name: "local", Status: string(store.NodeStatusOnline), Health: "healthy", Schedulable: true, IsLocal: true},
+		{ID: "", Name: "local", Status: string(store.NodeStatusOnline), Health: "healthy", Schedulable: true, IsLocal: true,
+			MonthlyCostEstimate: priceOf(prices, localID), CostCurrency: currencyIf(prices, localID, currency), FreeCapacity: free[localID]},
 	}}
 	byAccount := map[string]*deployTargetGroup{}
 	unmanaged := deployTargetGroup{Kind: deployTargetKindUnmanaged, Label: "unmanaged", Nodes: []deployTargetNode{}}
@@ -90,6 +117,7 @@ func (rt *Router) handleListDeployTargets(w http.ResponseWriter, r *http.Request
 		item := deployTargetNode{
 			ID: n.ID, Name: n.Name, Status: string(n.Status), Health: deployTargetHealth(n),
 			Schedulable: n.Schedulable, Region: n.Region, Tags: labels[n.ID], IsLocal: n.ID == rt.localNodeID && n.ID != "",
+			MonthlyCostEstimate: priceOf(prices, n.ID), CostCurrency: currencyIf(prices, n.ID, currency), FreeCapacity: free[n.ID],
 		}
 		if item.IsLocal {
 			local.Nodes = append(local.Nodes, item)
@@ -120,4 +148,85 @@ func (rt *Router) handleListDeployTargets(w http.ResponseWriter, r *http.Request
 		out = append(out, unmanaged)
 	}
 	writeJSON(w, http.StatusOK, out)
+}
+
+func priceOf(prices map[string]usagecost.NodePrice, id string) *float64 {
+	p, ok := prices[id]
+	if !ok || id == "" || p.MonthlyPrice <= 0 {
+		return nil
+	}
+	v := p.MonthlyPrice
+	return &v
+}
+
+func currencyIf(prices map[string]usagecost.NodePrice, id, currency string) string {
+	if priceOf(prices, id) == nil {
+		return ""
+	}
+	return currency
+}
+
+// deployTargetPrices returns configured node bills; empty when none are set.
+func (rt *Router) deployTargetPrices(ctx context.Context) map[string]usagecost.NodePrice {
+	st := rt.usageStore()
+	if st == nil {
+		return nil
+	}
+	prices, err := st.ListUsageCostNodes(ctx)
+	if err != nil {
+		return nil
+	}
+	return prices
+}
+
+// deployTargetFreeCapacity derives free memory from host reports and free
+// cores from configured vCPUs minus placed CPU use; unknown parts stay nil.
+func (rt *Router) deployTargetFreeCapacity(ctx context.Context, prices map[string]usagecost.NodePrice) map[string]*deployTargetFreeCapacity {
+	out := map[string]*deployTargetFreeCapacity{}
+	if rt.telemetry == nil {
+		return out
+	}
+	entry := func(id string) *deployTargetFreeCapacity {
+		if out[id] == nil {
+			out[id] = &deployTargetFreeCapacity{}
+		}
+		return out[id]
+	}
+	if samples, err := rt.latestByMetric(ctx, telemetry.MetricMemoryAvailableBytes); err == nil {
+		for _, s := range samples {
+			if id, ok := strings.CutPrefix(s.ResourceID, "node:"); ok {
+				v := s.Value
+				entry(id).MemoryBytes = &v
+			}
+		}
+	}
+	if rt.apps != nil {
+		services, serr := rt.apps.ListDesiredServices(ctx)
+		samples, cerr := rt.latestByMetric(ctx, "cpu_percent")
+		if serr == nil && cerr == nil {
+			nodeOf := map[string]string{}
+			for _, svc := range services {
+				id := svc.NodeID
+				if id == "" {
+					id = rt.localNodeID
+				}
+				nodeOf[svc.Name] = id
+			}
+			used := map[string]float64{}
+			for _, s := range samples {
+				if name, ok := strings.CutPrefix(s.ResourceID, "service:"); ok {
+					if id, tracked := nodeOf[name]; tracked {
+						used[id] += s.Value
+					}
+				}
+			}
+			for id, pct := range used {
+				if p, ok := prices[id]; ok && p.VCPUs > 0 {
+					v := math.Max(p.VCPUs-pct/100, 0)
+					entry(id).CPUCores = &v
+				}
+			}
+		}
+	}
+	return out
 }
