@@ -40,6 +40,7 @@ Usage:
   levelrail-cli cloud instances tag ACCOUNT INSTANCE KEY=VALUE...
   levelrail-cli cloud spend ACCOUNT [--refresh]
   levelrail-cli cloud aws link-kit --trusted-principal ARN [--role-name N] [--region R] [--template-url URL] [--guard-policy ARN]
+  levelrail-cli cloud aws ecr|acm|secrets|audit|guard|cleanup-plan ACCOUNT ... (run "cloud aws" for details)
   levelrail-cli cloud oracle policy-kit --group G --compartment NAME_OR_OCID [--policy-name N] [--manage]
 
 The provider credential for "accounts add" is read from LEVELRAIL_CLOUD_CREDENTIAL, never from a flag (for oracle it is the PEM private key).
@@ -111,6 +112,7 @@ Usage:
   levelrail-cli cloud instances tag ACCOUNT INSTANCE KEY=VALUE...
   levelrail-cli cloud spend ACCOUNT [--refresh]
   levelrail-cli cloud aws link-kit --trusted-principal ARN [--role-name N] [--region R] [--template-url URL] [--guard-policy ARN]
+  levelrail-cli cloud aws ecr|acm|secrets|audit|guard|cleanup-plan ACCOUNT ... (run "cloud aws" for details)
   levelrail-cli cloud oracle policy-kit --group G --compartment NAME_OR_OCID [--policy-name N] [--manage]
 
 The provider credential for "accounts add" is read from LEVELRAIL_CLOUD_CREDENTIAL, never from a flag (for oracle it is the PEM private key).

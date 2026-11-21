@@ -2507,6 +2507,18 @@ Routes that do not fit an existing group.
 | POST | /api/v1/cloud-accounts/oracle/policy-kit | AbilityRoot | handleOraclePolicyKit |
 | GET | /api/v1/cloud-accounts/{id}/instances/{iid}/events | Public | handleCloudInstanceEvents |
 | GET | /api/v1/deploy-targets | AbilityRoot | handleListDeployTargets |
+| GET | /api/v1/cloud-accounts/{id}/aws/ecr/repositories | Public | handleAWSECRList |
+| POST | /api/v1/cloud-accounts/{id}/aws/ecr/repositories | Public | handleAWSECRCreate |
+| POST | /api/v1/cloud-accounts/{id}/aws/ecr/login-token | Public | handleAWSECRLoginToken |
+| GET | /api/v1/cloud-accounts/{id}/aws/acm/certificates | Public | handleAWSACMList |
+| POST | /api/v1/cloud-accounts/{id}/aws/acm/certificates | Public | handleAWSACMRequest |
+| GET | /api/v1/cloud-accounts/{id}/aws/secrets | Public | handleAWSSecretsList |
+| POST | /api/v1/cloud-accounts/{id}/aws/secrets | Public | handleAWSSecretsPut |
+| POST | /api/v1/cloud-accounts/{id}/aws/secrets/reveal | Public | handleAWSSecretsReveal |
+| GET | /api/v1/cloud-accounts/{id}/aws/audit | Public | handleAWSAudit |
+| GET | /api/v1/cloud-accounts/{id}/aws/guard | Public | handleAWSGuardStatus |
+| POST | /api/v1/cloud-accounts/{id}/aws/guard/kill-switch | AbilityRoot | handleAWSKillSwitch |
+| GET | /api/v1/cloud-accounts/{id}/aws/cleanup/plan | Public | handleAWSCleanupPlan |
 | POST | /mcp | Public |  |
 
 ## See also

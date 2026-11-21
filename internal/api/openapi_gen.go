@@ -14,7 +14,7 @@ type openAPIRoute struct {
 	Description string
 }
 
-// openAPIRoutes holds all 2276 routes known to scripts/gen-api-reference at
+// openAPIRoutes holds all 2288 routes known to scripts/gen-api-reference at
 // generation time. Run `go run ./scripts/gen-api-reference` after changing
 // any routes*.go registration and commit the result.
 var openAPIRoutes = []openAPIRoute{
@@ -1226,6 +1226,18 @@ var openAPIRoutes = []openAPIRoute{
 	{Method: "DELETE", Path: "/api/v1/cloud-accounts/{id}", Ability: "AbilityRoot", Group: "Other", Handler: "handleDeleteCloudAccount", Description: ""},
 	{Method: "GET", Path: "/api/v1/cloud-accounts/{id}", Ability: "Public", Group: "Other", Handler: "handleGetCloudAccount", Description: ""},
 	{Method: "PATCH", Path: "/api/v1/cloud-accounts/{id}", Ability: "AbilityRoot", Group: "Other", Handler: "handleUpdateCloudAccount", Description: ""},
+	{Method: "GET", Path: "/api/v1/cloud-accounts/{id}/aws/acm/certificates", Ability: "Public", Group: "Other", Handler: "handleAWSACMList", Description: ""},
+	{Method: "POST", Path: "/api/v1/cloud-accounts/{id}/aws/acm/certificates", Ability: "Public", Group: "Other", Handler: "handleAWSACMRequest", Description: ""},
+	{Method: "GET", Path: "/api/v1/cloud-accounts/{id}/aws/audit", Ability: "Public", Group: "Other", Handler: "handleAWSAudit", Description: ""},
+	{Method: "GET", Path: "/api/v1/cloud-accounts/{id}/aws/cleanup/plan", Ability: "Public", Group: "Other", Handler: "handleAWSCleanupPlan", Description: ""},
+	{Method: "POST", Path: "/api/v1/cloud-accounts/{id}/aws/ecr/login-token", Ability: "Public", Group: "Other", Handler: "handleAWSECRLoginToken", Description: ""},
+	{Method: "GET", Path: "/api/v1/cloud-accounts/{id}/aws/ecr/repositories", Ability: "Public", Group: "Other", Handler: "handleAWSECRList", Description: ""},
+	{Method: "POST", Path: "/api/v1/cloud-accounts/{id}/aws/ecr/repositories", Ability: "Public", Group: "Other", Handler: "handleAWSECRCreate", Description: ""},
+	{Method: "GET", Path: "/api/v1/cloud-accounts/{id}/aws/guard", Ability: "Public", Group: "Other", Handler: "handleAWSGuardStatus", Description: ""},
+	{Method: "POST", Path: "/api/v1/cloud-accounts/{id}/aws/guard/kill-switch", Ability: "AbilityRoot", Group: "Other", Handler: "handleAWSKillSwitch", Description: ""},
+	{Method: "GET", Path: "/api/v1/cloud-accounts/{id}/aws/secrets", Ability: "Public", Group: "Other", Handler: "handleAWSSecretsList", Description: ""},
+	{Method: "POST", Path: "/api/v1/cloud-accounts/{id}/aws/secrets", Ability: "Public", Group: "Other", Handler: "handleAWSSecretsPut", Description: ""},
+	{Method: "POST", Path: "/api/v1/cloud-accounts/{id}/aws/secrets/reveal", Ability: "Public", Group: "Other", Handler: "handleAWSSecretsReveal", Description: ""},
 	{Method: "GET", Path: "/api/v1/cloud-accounts/{id}/grants", Ability: "Public", Group: "Other", Handler: "handleListCloudGrants", Description: ""},
 	{Method: "POST", Path: "/api/v1/cloud-accounts/{id}/grants", Ability: "Public", Group: "Other", Handler: "handleCreateCloudGrant", Description: ""},
 	{Method: "DELETE", Path: "/api/v1/cloud-accounts/{id}/grants/{gid}", Ability: "Public", Group: "Other", Handler: "handleDeleteCloudGrant", Description: ""},

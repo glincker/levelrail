@@ -25,6 +25,7 @@ func cloudAccountsUsage(prog string) string {
   %[1]s cloud instances tag ACCOUNT INSTANCE KEY=VALUE...
   %[1]s cloud spend ACCOUNT [--refresh]
   %[1]s cloud aws link-kit --trusted-principal ARN [--role-name N] [--region R] [--template-url URL] [--guard-policy ARN]
+  %[1]s cloud aws ecr|acm|secrets|audit|guard|cleanup-plan ACCOUNT ... (run "cloud aws" for details)
   %[1]s cloud oracle policy-kit --group G --compartment NAME_OR_OCID [--policy-name N] [--manage]
 
 The provider credential for "accounts add" is read from %[2]s, never from a flag (for oracle it is the PEM private key).
@@ -284,8 +285,20 @@ func runCloudSpend(prog string, args []string, stdout, stderr io.Writer, lookupE
 }
 
 func runCloudAWS(prog string, args []string, stdout, stderr io.Writer, lookupEnv func(string) (string, bool)) int {
+	if len(args) > 0 && (args[0] == "help" || args[0] == "-h" || args[0] == "--help") {
+		_, _ = fmt.Fprint(stdout, cloudAccountsUsage(prog), cloudAWSServicesUsage(prog))
+		return exitOK
+	}
+	if len(args) > 0 && strings.HasPrefix(args[0], "-") {
+		// Bare flags belong to link-kit, the original "cloud aws" command.
+		args = append([]string{"link-kit"}, args...)
+	}
+	if len(args) > 0 && isCloudAWSService(args[0]) {
+		return runCloudAWSServices(prog, args[0], args[1:], stdout, stderr, lookupEnv)
+	}
 	if len(args) == 0 || args[0] != "link-kit" {
 		_, _ = fmt.Fprint(stderr, cloudAccountsUsage(prog))
+		_, _ = fmt.Fprint(stderr, cloudAWSServicesUsage(prog))
 		return exitUsage
 	}
 	var principal, role, region, tmpl, guard string
