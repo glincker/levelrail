@@ -59,19 +59,19 @@ func TestCloudAWSServices_SecretsListIsRedactedAndRevealIsAudited(t *testing.T) 
 	rt, db := awsServicesRouter(t, func(c awsxtest.Call, _ int) awsxtest.Reply {
 		switch {
 		case strings.HasSuffix(c.Target, "GetParametersByPath"):
-			return awsxtest.Reply{Body: `{"Parameters":[{"Name":"/app/db","Type":"SecureString","Value":"hunter2"}]}`}
+			return awsxtest.Reply{Body: `{"Parameters":[{"Name":"/levelrail/db","Type":"SecureString","Value":"hunter2"}]}`}
 		case strings.HasSuffix(c.Target, "ListSecrets"):
-			return awsxtest.Reply{Body: `{"SecretList":[{"Name":"prod","ARN":"arn:x"}]}`}
+			return awsxtest.Reply{Body: `{"SecretList":[{"Name":"levelrail/prod","ARN":"arn:x"}]}`}
 		}
 		return awsxtest.Reply{Status: 400, Body: `{"__type":"Bad"}`}
 	})
 	enableAWSFlag(t, rt, runtimesettings.KeyCloudGuardParams)
 	root := loginTestSession(t, rt, db)
 	code, body := teamDo(t, rt, http.MethodGet, awsSvcBase+"secrets", "", withCookie(root))
-	if code != http.StatusOK || strings.Contains(body, "hunter2") || !strings.Contains(body, "[redacted]") || !strings.Contains(body, "/app/db") {
+	if code != http.StatusOK || strings.Contains(body, "hunter2") || !strings.Contains(body, "[redacted]") || !strings.Contains(body, "/levelrail/db") {
 		t.Fatalf("list = %d %s", code, body)
 	}
-	code, body = teamDo(t, rt, http.MethodPost, awsSvcBase+"secrets/reveal", `{"kind":"ssm","name":"/app/db"}`, withCookie(root))
+	code, body = teamDo(t, rt, http.MethodPost, awsSvcBase+"secrets/reveal", `{"kind":"ssm","name":"/levelrail/db"}`, withCookie(root))
 	if code != http.StatusOK || !strings.Contains(body, "hunter2") {
 		t.Fatalf("reveal = %d %s", code, body)
 	}
@@ -110,5 +110,36 @@ func TestCloudAWSServices_KillSwitchIsRootOnly(t *testing.T) {
 	code, body := teamDo(t, rt, http.MethodGet, awsSvcBase+"guard", "", withCookie(root))
 	if code != http.StatusOK || !strings.Contains(body, `"kill_switch":true`) {
 		t.Errorf("guard status = %d %s", code, body)
+	}
+}
+
+func TestCloudAWSServices_NamePrefixScopesSecretsAndParameters(t *testing.T) {
+	var sawPath string
+	rt, db := awsServicesRouter(t, func(c awsxtest.Call, _ int) awsxtest.Reply {
+		if strings.HasSuffix(c.Target, "GetParametersByPath") {
+			sawPath = string(c.Body)
+			return awsxtest.Reply{Body: `{"Parameters":[]}`}
+		}
+		if strings.HasSuffix(c.Target, "ListSecrets") {
+			return awsxtest.Reply{Body: `{"SecretList":[{"Name":"levelrail/a","ARN":"arn:a"},{"Name":"other/b","ARN":"arn:b"}]}`}
+		}
+		return awsxtest.Reply{Status: 400, Body: `{"__type":"Bad"}`}
+	})
+	enableAWSFlag(t, rt, runtimesettings.KeyCloudGuardParams)
+	root := loginTestSession(t, rt, db)
+	code, body := teamDo(t, rt, http.MethodGet, awsSvcBase+"secrets", "", withCookie(root))
+	if code != http.StatusOK || !strings.Contains(sawPath, "/levelrail/") || strings.Contains(body, "other/b") || !strings.Contains(body, "levelrail/a") {
+		t.Fatalf("default list = %d %s path=%s", code, body, sawPath)
+	}
+	for name, c := range map[string]struct{ method, url, body string }{
+		"list path":  {http.MethodGet, awsSvcBase + "secrets?path=/other/", ""},
+		"put":        {http.MethodPost, awsSvcBase + "secrets", `{"name":"/other/x","value":"v"}`},
+		"reveal ssm": {http.MethodPost, awsSvcBase + "secrets/reveal", `{"kind":"ssm","name":"/other/x"}`},
+		"reveal sm":  {http.MethodPost, awsSvcBase + "secrets/reveal", `{"kind":"secretsmanager","name":"other/x"}`},
+	} {
+		code, body := teamDo(t, rt, c.method, c.url, c.body, withCookie(root))
+		if code != http.StatusBadRequest || !strings.Contains(body, "levelrail/") {
+			t.Fatalf("%s = %d %s", name, code, body)
+		}
 	}
 }

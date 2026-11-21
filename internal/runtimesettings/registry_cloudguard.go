@@ -24,6 +24,7 @@ const (
 	KeyCloudGuardKillSwitch    = "cloud.guard.kill_switch"
 	KeyCloudGuardExpiresHours  = "cloud.guard.default_expires_hours"
 	KeyCloudGuardPolicyARN     = "cloud.guard.policy_arn"
+	KeyCloudAWSNamePrefix      = "cloud.aws.name_prefix"
 	cloudGuardMaxUSD           = 1_000_000
 	cloudGuardMaxExpiresHours  = 24 * 365
 )
@@ -66,5 +67,10 @@ func init() {
 	Register(Definition{
 		Key: KeyCloudGuardPolicyARN, Category: cat, Kind: KindString, Default: "", Env: "APP_CLOUD_GUARD_POLICY_ARN", Apply: ApplyLive,
 		Title: "AWS guard policy ARN", Description: "Optional IAM managed deny policy, for example a budget guard. The AWS link kit attaches it to the role when the request names none.",
+	})
+	Register(Definition{
+		Key: KeyCloudAWSNamePrefix, Category: cat, Kind: KindString, Default: "levelrail", Env: "APP_CLOUD_AWS_NAME_PREFIX", Apply: ApplyLive,
+		Title:       "AWS secret and parameter name prefix",
+		Description: "Secrets Manager and SSM parameter names the control plane reads and writes must start with this prefix and a slash. New link kits scope the role policy to it; existing roles keep their old scope until updated.",
 	})
 }

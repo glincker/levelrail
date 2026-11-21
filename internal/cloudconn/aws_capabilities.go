@@ -137,10 +137,10 @@ var awsCapabilities = []Capability{
 			{Actions: []string{"acm:RequestCertificate", "acm:AddTagsToCertificate"}, Resources: []string{all}, Tag: TagRequest},
 			{Actions: []string{"cloudfront:CreateInvalidation"}, Resources: []string{"arn:*:cloudfront::*:distribution/*"}, Global: true},
 			{Actions: []string{"secretsmanager:ListSecrets"}, Resources: []string{all}},
-			// Secrets and parameters are limited to the levelrail/ name prefix; RDS managed passwords use the rds! prefix.
-			{Actions: []string{"secretsmanager:GetSecretValue", "secretsmanager:PutSecretValue"}, Resources: []string{"arn:*:secretsmanager:*:*:secret:levelrail/*"}},
+			// Secrets and parameters are limited to the {name_prefix}/ name prefix (setting cloud.aws.name_prefix); RDS managed passwords use the rds! prefix.
+			{Actions: []string{"secretsmanager:GetSecretValue", "secretsmanager:PutSecretValue"}, Resources: []string{"arn:*:secretsmanager:*:*:secret:{name_prefix}/*"}},
 			{Actions: []string{"secretsmanager:CreateSecret", "secretsmanager:TagResource"}, Resources: []string{"arn:*:secretsmanager:*:*:secret:rds!*"}},
-			{Actions: []string{"ssm:GetParametersByPath", "ssm:PutParameter"}, Resources: []string{"arn:*:ssm:*:*:parameter/levelrail/*"}},
+			{Actions: []string{"ssm:GetParametersByPath", "ssm:PutParameter"}, Resources: []string{"arn:*:ssm:*:*:parameter/{name_prefix}/*"}},
 			// RDS managed master passwords resolve the key through DescribeKey, which has no tag key.
 			{Actions: []string{"kms:DescribeKey"}, Resources: []string{all}},
 		},

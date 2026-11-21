@@ -186,3 +186,14 @@ func TestBoundaryDeniesExposureActionsWithinLimit(t *testing.T) {
 		t.Fatalf("boundary has %d non-whitespace characters, limit is 6144", n)
 	}
 }
+
+func TestRenderPolicyUsesNamePrefix(t *testing.T) {
+	doc, err := RenderPolicy([]string{CapDeploy}, PolicyOptions{NamePrefix: "acme/"})
+	if err != nil {
+		t.Fatal(err)
+	}
+	raw, _ := json.Marshal(doc)
+	if !strings.Contains(string(raw), "secret:acme/*") || !strings.Contains(string(raw), "parameter/acme/*") || strings.Contains(string(raw), "levelrail/*") {
+		t.Fatalf("policy not scoped to acme: %s", raw)
+	}
+}

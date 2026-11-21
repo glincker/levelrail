@@ -805,8 +805,8 @@ func (rt *Router) handleAWSLinkKit(w http.ResponseWriter, r *http.Request) {
 		rt.internalError(w, "api: mint external id failed", err)
 		return
 	}
-	in := cloudconn.TemplateInput{RoleName: req.RoleName, TrustPrincipalARN: req.TrustedPrincipalARN, ExternalID: ext, Capabilities: req.Capabilities, Regions: req.Regions, HostedZoneIDs: req.HostedZoneIDs}
-	opt := cloudconn.PolicyOptions{RoleName: req.RoleName, Regions: req.Regions, HostedZoneIDs: req.HostedZoneIDs}
+	in := cloudconn.TemplateInput{RoleName: req.RoleName, TrustPrincipalARN: req.TrustedPrincipalARN, ExternalID: ext, Capabilities: req.Capabilities, Regions: req.Regions, HostedZoneIDs: req.HostedZoneIDs, NamePrefix: rt.awsNamePrefix()}
+	opt := cloudconn.PolicyOptions{RoleName: req.RoleName, Regions: req.Regions, HostedZoneIDs: req.HostedZoneIDs, NamePrefix: in.NamePrefix}
 	yaml, err := cloudconn.CloudFormationTemplate(in)
 	if err != nil {
 		writeError(w, http.StatusBadRequest, "the link kit inputs are not valid")

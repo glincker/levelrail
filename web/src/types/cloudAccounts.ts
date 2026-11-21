@@ -252,6 +252,7 @@ export interface AwsSecretRow {
 
 export interface AwsSecretsList {
   ssm_parameters: AwsSecretRow[] | null
+  name_prefix?: string
   secrets_manager: AwsSecretRow[] | null
 }
 

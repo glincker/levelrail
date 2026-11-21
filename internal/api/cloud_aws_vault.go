@@ -67,7 +67,7 @@ func (rt *Router) handleAWSVaultKit(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 	kit, err := cloudconn.BuildVaultKit(cloudconn.VaultKitInput{AccountID: req.AccountID, RoleName: req.RoleName, Region: req.Region, Mount: req.VaultMount,
-		VaultRole: req.VaultRole, Namespace: req.Namespace, PrincipalARN: req.PrincipalARN, Capabilities: req.Capabilities, Regions: req.Regions, HostedZones: req.HostedZones})
+		VaultRole: req.VaultRole, Namespace: req.Namespace, PrincipalARN: req.PrincipalARN, Capabilities: req.Capabilities, Regions: req.Regions, HostedZones: req.HostedZones, NamePrefix: rt.awsNamePrefix()})
 	if err != nil {
 		writeError(w, http.StatusBadRequest, "the vault kit inputs are not valid")
 		return

@@ -17,6 +17,7 @@ type VaultKitInput struct {
 	Capabilities []string
 	Regions      []string
 	HostedZones  []string
+	NamePrefix   string
 }
 
 // VaultKit is everything an operator pastes: Vault commands and policy plus the IAM documents.
@@ -59,7 +60,7 @@ func BuildVaultKit(in VaultKitInput) (VaultKit, error) {
 	if strings.ContainsAny(in.Namespace, " \r\n\t'\"") {
 		return VaultKit{}, invalid("vault_namespace is not valid")
 	}
-	opt := PolicyOptions{RoleName: in.RoleName, Regions: in.Regions, HostedZoneIDs: in.HostedZones}
+	opt := PolicyOptions{RoleName: in.RoleName, Regions: in.Regions, HostedZoneIDs: in.HostedZones, NamePrefix: in.NamePrefix}
 	if !roleNameRe.MatchString(opt.filled().RoleName) {
 		return VaultKit{}, invalid("role name must be 1 to 64 IAM name characters")
 	}

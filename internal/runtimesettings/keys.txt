@@ -118,6 +118,7 @@ cleanup.failing_window
 cleanup.interval
 cloud.allow_checksum_only
 cloud.allow_protected_delete
+cloud.aws.name_prefix
 cloud.cloudfront.max_invalidation_paths
 cloud.connections_enabled
 cloud.default_monthly_cost_limit

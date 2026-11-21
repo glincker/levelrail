@@ -5,6 +5,7 @@ import (
 	"encoding/json"
 	"errors"
 	"net/http"
+	"os"
 	"path"
 	"strconv"
 	"strings"
@@ -19,6 +20,7 @@ import (
 	"github.com/GLINCKER/levelrail/internal/awsx/rds"
 	"github.com/GLINCKER/levelrail/internal/awsx/secrets"
 	"github.com/GLINCKER/levelrail/internal/awsx/ssm"
+	"github.com/GLINCKER/levelrail/internal/cloudconn"
 	"github.com/GLINCKER/levelrail/internal/cloudguard"
 	"github.com/GLINCKER/levelrail/internal/cloudspend"
 	"github.com/GLINCKER/levelrail/internal/runtimesettings"
@@ -354,14 +356,34 @@ type ssmParamWire struct {
 	Value string `json:"value"`
 }
 
+// awsNamePrefix is the live secret and parameter name prefix, matching the role policy scope.
+func (rt *Router) awsNamePrefix() string {
+	v := os.Getenv("APP_CLOUD_AWS_NAME_PREFIX")
+	if rt.runtimeSettings != nil {
+		v = rt.runtimeSettings.String(context.Background(), runtimesettings.KeyCloudAWSNamePrefix)
+	}
+	return cloudconn.NormalizeNamePrefix(v)
+}
+
+// writeNamePrefixError names the prefix so the operator knows which setting to change.
+func writeNamePrefixError(w http.ResponseWriter, what, prefix string) {
+	writeError(w, http.StatusBadRequest, what+" must start with the name prefix "+prefix+" (setting cloud.aws.name_prefix)")
+}
+
 func (rt *Router) handleAWSSecretsList(w http.ResponseWriter, r *http.Request) {
 	c, ok := rt.awsCallFor(w, r, "secrets", r.URL.Query().Get("region"))
 	if !ok {
 		return
 	}
+	np := rt.awsNamePrefix()
+	paramRoot := "/" + np + "/"
 	prefix := r.URL.Query().Get("path")
 	if prefix == "" {
-		prefix = "/"
+		prefix = paramRoot
+	}
+	if !strings.HasPrefix(prefix, paramRoot) {
+		writeNamePrefixError(w, "path", paramRoot)
+		return
 	}
 	cl := secrets.New(c.client)
 	params, err := cl.GetParametersByPath(r.Context(), c.region, prefix, true)
@@ -385,9 +407,12 @@ func (rt *Router) handleAWSSecretsList(w http.ResponseWriter, r *http.Request) {
 	}
 	managed := make([]smWire, 0, len(sm))
 	for _, s := range sm {
+		if !strings.HasPrefix(s.Name, np+"/") {
+			continue
+		}
 		managed = append(managed, smWire{Name: s.Name, ARN: s.ARN, Value: awsRedacted})
 	}
-	writeJSON(w, http.StatusOK, map[string]any{"region": c.region, "ssm_parameters": ssm, "secrets_manager": managed})
+	writeJSON(w, http.StatusOK, map[string]any{"region": c.region, "name_prefix": np, "ssm_parameters": ssm, "secrets_manager": managed})
 }
 
 type secretPutBody struct {
@@ -401,6 +426,10 @@ func (rt *Router) handleAWSSecretsPut(w http.ResponseWriter, r *http.Request) {
 	var body secretPutBody
 	if err := decodeJSONBody(r, &body); err != nil || !strings.HasPrefix(body.Name, "/") || body.Value == "" {
 		writeError(w, http.StatusBadRequest, "a parameter name starting with / and a value are required")
+		return
+	}
+	if root := "/" + rt.awsNamePrefix() + "/"; !strings.HasPrefix(body.Name, root) {
+		writeNamePrefixError(w, "name", root)
 		return
 	}
 	c, ok := rt.awsCallFor(w, r, "secrets", body.Region)
@@ -427,6 +456,14 @@ func (rt *Router) handleAWSSecretsReveal(w http.ResponseWriter, r *http.Request)
 	var body secretRevealBody
 	if err := decodeJSONBody(r, &body); err != nil || body.Name == "" || (body.Kind != "ssm" && body.Kind != "secretsmanager") {
 		writeError(w, http.StatusBadRequest, "kind (ssm or secretsmanager) and name are required")
+		return
+	}
+	np := rt.awsNamePrefix()
+	if root := np + "/"; body.Kind == "secretsmanager" && !strings.HasPrefix(body.Name, root) {
+		writeNamePrefixError(w, "name", root)
+		return
+	} else if root = "/" + root; body.Kind == "ssm" && !strings.HasPrefix(body.Name, root) {
+		writeNamePrefixError(w, "name", root)
 		return
 	}
 	c, ok := rt.awsCallFor(w, r, "secrets", body.Region)

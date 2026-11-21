@@ -34,6 +34,8 @@ type PolicyOptions struct {
 	TagValue     string
 	BucketPrefix string
 	RoleName     string
+	// NamePrefix scopes Secrets Manager and SSM parameter names, without slashes.
+	NamePrefix string
 	// HostedZoneIDs scopes Route 53 zone statements by ARN; empty falls back to every zone.
 	HostedZoneIDs []string
 }
@@ -52,8 +54,23 @@ func DefaultPolicyOptions() PolicyOptions {
 	}
 }
 
+// DefaultNamePrefix is the secret and parameter name prefix when the setting is unset or invalid.
+const DefaultNamePrefix = "levelrail"
+
+var namePrefixRe = regexp.MustCompile(`^[A-Za-z0-9_.-]{1,64}$`)
+
+// NormalizeNamePrefix trims slashes and falls back to the default for empty or unsafe values.
+func NormalizeNamePrefix(s string) string {
+	s = strings.Trim(strings.TrimSpace(s), "/")
+	if !namePrefixRe.MatchString(s) {
+		return DefaultNamePrefix
+	}
+	return s
+}
+
 func (o PolicyOptions) filled() PolicyOptions {
 	d := DefaultPolicyOptions()
+	o.NamePrefix = NormalizeNamePrefix(o.NamePrefix)
 	if o.TagKey == "" {
 		o.TagKey = d.TagKey
 	}
@@ -86,7 +103,7 @@ func RenderPolicy(names []string, opt PolicyOptions) (PolicyDocument, error) {
 }
 
 func renderCaps(caps []Capability, opt PolicyOptions) PolicyDocument {
-	rep := strings.NewReplacer("{bucket_prefix}", opt.BucketPrefix, "{self_role}", "arn:*:iam::*:role/"+opt.RoleName)
+	rep := strings.NewReplacer("{bucket_prefix}", opt.BucketPrefix, "{name_prefix}", opt.NamePrefix, "{self_role}", "arn:*:iam::*:role/"+opt.RoleName)
 	doc := PolicyDocument{Version: "2012-10-17", Statement: []PolicyStatement{}}
 	for _, c := range caps {
 		for i, s := range c.Statements {
@@ -194,11 +211,12 @@ type TemplateInput struct {
 	Capabilities      []string
 	Regions           []string
 	BucketPrefix      string
+	NamePrefix        string
 	HostedZoneIDs     []string
 }
 
 func (in TemplateInput) validate() (PolicyOptions, error) {
-	opt := PolicyOptions{Regions: in.Regions, BucketPrefix: in.BucketPrefix, RoleName: in.RoleName, HostedZoneIDs: in.HostedZoneIDs}.filled()
+	opt := PolicyOptions{Regions: in.Regions, BucketPrefix: in.BucketPrefix, NamePrefix: in.NamePrefix, RoleName: in.RoleName, HostedZoneIDs: in.HostedZoneIDs}.filled()
 	if !roleNameRe.MatchString(opt.RoleName) {
 		return opt, invalid("role name must be 1 to 64 IAM name characters")
 	}

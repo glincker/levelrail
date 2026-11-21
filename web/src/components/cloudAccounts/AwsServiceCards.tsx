@@ -180,9 +180,12 @@ export function SecretsBody({ id }: Readonly<{ id: string }>) {
   const { t } = useTranslation('cloudAccounts')
   const list = useAwsSecrets(id, true)
   const put = usePutAwsSecret(id)
-  const [name, setName] = useState('')
+  const [typedName, setTypedName] = useState<string | null>(null)
   const [value, setValue] = useState('')
   const [overwrite, setOverwrite] = useState(false)
+  // Until the operator types, the input shows the server's name prefix so names land in scope.
+  const prefix = list.data?.name_prefix ? `/${list.data.name_prefix}/` : ''
+  const name = typedName ?? prefix
   const rows = [
     ...(list.data?.ssm_parameters ?? []),
     ...(list.data?.secrets_manager ?? []),
@@ -209,7 +212,7 @@ export function SecretsBody({ id }: Readonly<{ id: string }>) {
           placeholder={t('services.secrets.namePlaceholder')}
           aria-label={t('services.secrets.name')}
           onChange={(e) => {
-            setName(e.target.value)
+            setTypedName(e.target.value)
           }}
         />
         <Input
