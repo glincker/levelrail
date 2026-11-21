@@ -230,6 +230,10 @@ func (rt *Router) handleListCloudInstances(w http.ResponseWriter, r *http.Reques
 		writeError(w, http.StatusForbidden, "this region is not allowed for the account")
 		return
 	}
+	if !oracleCompartmentAllowed(a, compartment) {
+		writeError(w, http.StatusForbidden, "this compartment does not belong to the account")
+		return
+	}
 	regions := []string{region}
 	if region == "" && len(allowedRegions(a)) > 0 {
 		regions = allowedRegions(a)

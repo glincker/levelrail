@@ -256,11 +256,19 @@ func (rt *Router) cloudAccountDraft(req createCloudAccountRequest) (store.CloudA
 			return store.CloudAccount{}, "", "method " + method + " is not supported for " + req.Provider
 		}
 		var msg string
-		if value, msg = nodeProviderCredentialValue(req.setNodeProviderCredentialRequest); msg != "" {
+		if req.Provider == cloudconn.ProviderOracle {
+			value, msg = oracleCredentialValueOpt(req.setNodeProviderCredentialRequest, false)
+		} else {
+			value, msg = nodeProviderCredentialValue(req.setNodeProviderCredentialRequest)
+		}
+		if msg != "" {
 			return store.CloudAccount{}, "", msg
 		}
 		if req.Region != "" {
 			cfg["region"] = req.Region
+		}
+		if req.Provider == cloudconn.ProviderOracle {
+			cfg = oracleAccountConfig(req)
 		}
 	}
 	raw, _ := json.Marshal(cfg)
@@ -485,6 +493,9 @@ func (rt *Router) checkCloudAccount(ctx context.Context, a store.CloudAccount, v
 		}
 		return res
 	}
+	if isOracleAccount(a) {
+		return rt.oracleCheckResult(ctx, a, value)
+	}
 	ok, _, scope := rt.testNodeProviderScope(ctx, a.Provider, value)
 	if ok {
 		return cloudCheckResult{OK: true, Class: cloudconn.ClassOK, Message: cloudCheckMessages[cloudconn.ClassOK]}
@@ -555,6 +566,15 @@ func (rt *Router) handleCloudAccountRegions(w http.ResponseWriter, r *http.Reque
 		writeJSON(w, http.StatusOK, out)
 		return
 	}
+	if isOracleAccount(a) {
+		if ids, err := rt.oracleAccountRegions(ctx, a); err == nil {
+			for _, id := range ids {
+				out = append(out, cloudRegionWire{ID: id, Name: id})
+			}
+			writeJSON(w, http.StatusOK, out)
+			return
+		}
+	}
 	p, ok, status, msg := rt.resolveNodeProvisionerForAccount(ctx, a.Provider, a.ID)
 	if !ok {
 		writeError(w, status, msg)
@@ -580,13 +600,17 @@ func (rt *Router) handleProbeCloudAccount(w http.ResponseWriter, r *http.Request
 	if !ok {
 		return
 	}
-	if !isAWSRoleAccount(a) {
-		writeError(w, http.StatusBadRequest, "capability probes are available for aws role_assumption accounts")
+	if !isAWSRoleAccount(a) && !isOracleAccount(a) {
+		writeError(w, http.StatusBadRequest, "capability probes are available for aws role_assumption and oracle accounts")
 		return
 	}
 	var req probeCloudAccountRequest
 	if err := decodeJSONBody(r, &req); err != nil {
 		writeError(w, http.StatusBadRequest, "invalid request body")
+		return
+	}
+	if isOracleAccount(a) {
+		rt.probeOracleAccount(w, r, a, req.Capabilities)
 		return
 	}
 	if _, err := cloudconn.ResolveCapabilities(req.Capabilities); err != nil {

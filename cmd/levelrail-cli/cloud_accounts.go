@@ -18,14 +18,16 @@ func cloudAccountsUsage(prog string) string {
 	return fmt.Sprintf(`Usage:
   %[1]s cloud accounts list|verify|probe|regions|rm|grants [ID]
   %[1]s cloud accounts add ID --provider P [--method M] [--region R] [--role-arn ARN] [--account-id ID] [--external-id X] [--label L] [--team T]
+  %[1]s cloud accounts add ID --provider oracle --tenancy OCID --user OCID --fingerprint FP --compartment OCID --region R [--subnet OCID]
   %[1]s cloud instances list ACCOUNT [--region R]
   %[1]s cloud instances show|start|stop|soft-stop|reboot|soft-reboot|rm ACCOUNT INSTANCE
   %[1]s cloud instances resize ACCOUNT INSTANCE [--type T] [--ocpus N] [--memory-gb N]
   %[1]s cloud instances tag ACCOUNT INSTANCE KEY=VALUE...
   %[1]s cloud spend ACCOUNT [--refresh]
   %[1]s cloud aws link-kit --trusted-principal ARN [--role-name N] [--region R] [--template-url URL] [--guard-policy ARN]
+  %[1]s cloud oracle policy-kit --group G --compartment NAME_OR_OCID [--policy-name N] [--manage]
 
-The provider credential for "accounts add" is read from %[2]s, never from a flag.
+The provider credential for "accounts add" is read from %[2]s, never from a flag (for oracle it is the PEM private key).
 "rm" on an instance terminates it and needs the root ability; add --keep-boot-volume to keep the disk.
 `, prog, cloudCredentialEnv)
 }
@@ -111,7 +113,13 @@ func runCloudAccounts(prog string, args []string, stdout, stderr io.Writer, look
 		})
 	case "add":
 		var provider, method, region, roleARN, accountID, externalID, label, team string
+		var tenancy, user, fingerprint, compartment, subnet string
 		setup := func(fs *flag.FlagSet) {
+			fs.StringVar(&tenancy, "tenancy", "", "oracle tenancy OCID")
+			fs.StringVar(&user, "user", "", "oracle user OCID")
+			fs.StringVar(&fingerprint, "fingerprint", "", "oracle API key fingerprint")
+			fs.StringVar(&compartment, "compartment", "", "oracle compartment OCID")
+			fs.StringVar(&subnet, "subnet", "", "oracle subnet OCID, only needed to provision")
 			fs.StringVar(&provider, "provider", "", "provider name")
 			fs.StringVar(&method, "method", "", "credential method")
 			fs.StringVar(&region, "region", "", "region")
@@ -128,6 +136,11 @@ func runCloudAccounts(prog string, args []string, stdout, stderr io.Writer, look
 			cred, _ := lookupEnv(cloudCredentialEnv)
 			body := cloudRow{"id": pos[0], "provider": provider, "method": method, "region": region, "role_arn": roleARN, "account_id": accountID,
 				"external_id": externalID, "label": label, "team_id": team, "token": cred, "verify": true}
+			if provider == "oracle" {
+				body["tenancy_ocid"], body["user_ocid"], body["fingerprint"] = tenancy, user, fingerprint
+				body["compartment_ocid"], body["subnet_ocid"], body["private_key_pem"] = compartment, subnet, cred
+				delete(body, "token")
+			}
 			var out cloudRow
 			err := c.CloudRequest(ctx, "POST", "", body, &out)
 			return out, func() {
@@ -292,6 +305,44 @@ func runCloudAWS(prog string, args []string, stdout, stderr io.Writer, lookupEnv
 			"region": region, "template_url": tmpl, "guard_policy_arn": guard}, &out)
 		return out, func() {
 			for _, k := range []string{"external_id", "quick_create_url", "terraform", "policy_json"} {
+				if v, ok := out[k]; ok && v != "" {
+					_, _ = fmt.Fprintf(stdout, "# %s\n%v\n\n", k, v)
+				}
+			}
+		}, err
+	})
+}
+
+func runCloudOracle(prog string, args []string, stdout, stderr io.Writer, lookupEnv func(string) (string, bool)) int {
+	if len(args) == 0 {
+		_, _ = fmt.Fprint(stderr, cloudAccountsUsage(prog))
+		return exitUsage
+	}
+	switch args[0] {
+	case "policy-kit":
+		return runCloudOraclePolicyKit(prog, args[1:], stdout, stderr, lookupEnv)
+	}
+	_, _ = fmt.Fprint(stderr, cloudAccountsUsage(prog))
+	return exitUsage
+}
+
+func runCloudOraclePolicyKit(prog string, args []string, stdout, stderr io.Writer, lookupEnv func(string) (string, bool)) int {
+	var group, compartment, name string
+	var manage bool
+	setup := func(fs *flag.FlagSet) {
+		fs.StringVar(&group, "group", "", "OCI group that will hold the user")
+		fs.StringVar(&compartment, "compartment", "", "compartment name or OCID")
+		fs.StringVar(&name, "policy-name", "", "policy name")
+		fs.BoolVar(&manage, "manage", false, "also allow start, stop and provisioning")
+	}
+	return cloudCall(prog, "cloud oracle policy-kit", args, stdout, stderr, lookupEnv, setup, func(c *apiclient.Client, _ []string, _ outputFlags) (any, func(), error) {
+		if group == "" || compartment == "" {
+			return nil, nil, fmt.Errorf("--group and --compartment are required")
+		}
+		var out cloudRow
+		err := c.CloudRequest(context.Background(), "POST", "/oracle/policy-kit", cloudRow{"group_name": group, "compartment": compartment, "policy_name": name, "manage": manage}, &out)
+		return out, func() {
+			for _, k := range []string{"policy_text", "oci_cli"} {
 				if v, ok := out[k]; ok && v != "" {
 					_, _ = fmt.Fprintf(stdout, "# %s\n%v\n\n", k, v)
 				}

@@ -48,8 +48,8 @@ func newOracleFromCreds(c Credentials, cfg func() Config) (Reader, error) {
 	return &OracleReader{
 		cfg: cfg, tenant: c["tenancy_ocid"],
 		signer:     ocisign.Signer{KeyID: ocisign.KeyID(c["tenancy_ocid"], c["user_ocid"], c["fingerprint"]), Key: key},
-		usageBase:  "https://usageapi." + region + ".oraclecloud.com",
-		budgetBase: "https://budget." + region + ".oraclecloud.com",
+		usageBase:  "https://usageapi." + region + ".oci.oraclecloud.com",
+		budgetBase: "https://usage." + region + ".oci.oraclecloud.com",
 	}, nil
 }
 

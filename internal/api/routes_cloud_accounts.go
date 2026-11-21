@@ -11,6 +11,7 @@ func (rt *Router) registerCloudAccountRoutes(mux *http.ServeMux) {
 	mux.HandleFunc("GET /api/v1/cloud-accounts/aws/control-identity", rt.requireAbility(AbilityRoot, rt.handleAWSControlIdentity))
 	mux.HandleFunc("GET /api/v1/me/cloud-access", rt.requireAbilityDecided(AbilityRead, allowAnyAuthenticated, rt.handleMeCloudAccess))
 	mux.HandleFunc("POST /api/v1/cloud-accounts/aws/link-kit", rt.requireAbility(AbilityRoot, rt.handleAWSLinkKit))
+	mux.HandleFunc("POST /api/v1/cloud-accounts/oracle/policy-kit", rt.requireAbility(AbilityRoot, rt.handleOraclePolicyKit))
 	mux.HandleFunc("GET /api/v1/cloud-accounts/{id}", rt.requireCloudAccess(db, "view", cloudAccountFromPath, rt.handleGetCloudAccount))
 	mux.HandleFunc("PATCH /api/v1/cloud-accounts/{id}", rt.requireAbility(AbilityRoot, rt.handleUpdateCloudAccount))
 	mux.HandleFunc("DELETE /api/v1/cloud-accounts/{id}", rt.requireAbility(AbilityRoot, rt.handleDeleteCloudAccount))

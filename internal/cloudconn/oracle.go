@@ -470,9 +470,34 @@ func (p OracleProvider) Check(ctx context.Context, t Target) (string, error) {
 	return p.Checker.Check(ctx, c)
 }
 
-// ListRegions needs a tenancy wide read, which the compartment policy does not grant.
-func (OracleProvider) ListRegions(context.Context, Target) ([]string, error) {
-	return nil, fmt.Errorf("%w: oracle regions", ErrUnsupported)
+// ListRegions lists the regions the tenancy subscribes to. It needs the tenancy read the
+// account policy grants, so a compartment only key gets a clear error instead of a guess.
+func (p OracleProvider) ListRegions(ctx context.Context, t Target) ([]string, error) {
+	rl, ok := p.Checker.(interface {
+		Regions(ctx context.Context, c OracleCredential) ([]string, error)
+	})
+	if !ok {
+		return nil, fmt.Errorf("%w: oracle regions", ErrUnsupported)
+	}
+	c, err := OracleFromTarget(t)
+	if err != nil {
+		return nil, err
+	}
+	return rl.Regions(ctx, c)
+}
+
+// oracleScope renders the compartment part of a policy statement; the tenancy is never accepted.
+func oracleScope(compartment string) (string, error) {
+	switch {
+	case ocidRe.MatchString(compartment):
+		if err := checkOCID("compartment", "compartment", compartment); err != nil {
+			return "", err
+		}
+		return "compartment id " + compartment, nil
+	case policyNameRe.MatchString(compartment) && !strings.EqualFold(compartment, "tenancy") && !strings.EqualFold(compartment, "root"):
+		return "compartment " + compartment, nil
+	}
+	return "", invalid("compartment must be a compartment OCID or name, never the tenancy")
 }
 
 // PolicyStatements returns the least privilege OCI IAM policy the user applies themselves.
@@ -481,17 +506,9 @@ func PolicyStatements(compartment, group string) ([]string, error) {
 	if !policyNameRe.MatchString(group) {
 		return nil, invalid("group must be a plain OCI group name")
 	}
-	var scope string
-	switch {
-	case ocidRe.MatchString(compartment):
-		if err := checkOCID("compartment", "compartment", compartment); err != nil {
-			return nil, err
-		}
-		scope = "compartment id " + compartment
-	case policyNameRe.MatchString(compartment) && !strings.EqualFold(compartment, "tenancy") && !strings.EqualFold(compartment, "root"):
-		scope = "compartment " + compartment
-	default:
-		return nil, invalid("compartment must be a compartment OCID or name, never the tenancy")
+	scope, err := oracleScope(compartment)
+	if err != nil {
+		return nil, err
 	}
 	out := make([]string, 0, 3)
 	for _, res := range []string{"instance-family", "virtual-network-family", "buckets"} {

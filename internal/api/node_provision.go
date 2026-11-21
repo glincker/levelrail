@@ -464,7 +464,7 @@ func (rt *Router) handleCreateNodeProvision(w http.ResponseWriter, r *http.Reque
 	// Live OCI counts are taken before the lock; only pending rows are rechecked under it.
 	oracleUsage := rt.prefetchOracleUsage(r.Context(), provisioner, req.Provider, req.Region, req.Size)
 	nodeProvisionGuardMu.Lock()
-	reason, err := rt.checkOracleAllowance(r.Context(), provisioner, req.Provider, req.Region, req.Size, oracleUsage)
+	reason, err := rt.checkOracleAllowanceFor(r.Context(), provisioner, req.Provider, req.AccountID, req.Region, req.Size, oracleUsage)
 	if err == nil && reason == "" {
 		reason, err = rt.checkProvisionServerCap(r.Context())
 	}
