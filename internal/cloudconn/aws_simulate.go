@@ -24,6 +24,8 @@ type simulateRequest struct {
 	Actions      []string
 	Region       string
 	TagKey       string
+	// Resources maps an action to example resource ARNs; an action without an entry uses "*".
+	Resources map[string][]string
 }
 
 // PolicySimulator answers an action to decision map ("allowed", "implicitDeny", "explicitDeny").
@@ -89,21 +91,41 @@ func (s iamSimulator) Simulate(ctx context.Context, req simulateRequest) (map[st
 	}
 	out := map[string]string{}
 	step := simulateBatch()
-	for i := 0; i < len(req.Actions); i += step {
-		end := min(i+step, len(req.Actions))
-		if err := s.page(ctx, creds, endpoint, signRegion, req, req.Actions[i:end], out); err != nil {
-			return nil, err
+	// One call carries one resource list, so actions are grouped by their resource set.
+	groups := map[string][]string{}
+	var order []string
+	for _, a := range req.Actions {
+		k := strings.Join(req.Resources[a], "\n")
+		if _, ok := groups[k]; !ok {
+			order = append(order, k)
+		}
+		groups[k] = append(groups[k], a)
+	}
+	for _, k := range order {
+		acts := groups[k]
+		var res []string
+		if k != "" {
+			res = strings.Split(k, "\n")
+		}
+		for i := 0; i < len(acts); i += step {
+			end := min(i+step, len(acts))
+			if err := s.page(ctx, creds, endpoint, signRegion, req, acts[i:end], res, out); err != nil {
+				return nil, err
+			}
 		}
 	}
 	return out, nil
 }
 
-func (s iamSimulator) page(ctx context.Context, creds aws.Credentials, endpoint, signRegion string, req simulateRequest, actions []string, out map[string]string) error {
+func (s iamSimulator) page(ctx context.Context, creds aws.Credentials, endpoint, signRegion string, req simulateRequest, actions, resources []string, out map[string]string) error {
 	marker := ""
 	for {
 		form := url.Values{"Action": {"SimulatePrincipalPolicy"}, "Version": {"2010-05-08"}, "PolicySourceArn": {req.PolicySource}}
 		for i, a := range actions {
 			form.Set(fmt.Sprintf("ActionNames.member.%d", i+1), a)
+		}
+		for i, r := range resources {
+			form.Set(fmt.Sprintf("ResourceArns.member.%d", i+1), r)
 		}
 		ctxEntries := [][2]string{
 			{"aws:RequestTag/" + req.TagKey, "true"}, {"aws:ResourceTag/" + req.TagKey, "true"}, {"aws:RequestedRegion", req.Region},

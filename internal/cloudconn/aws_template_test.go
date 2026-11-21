@@ -81,6 +81,16 @@ func TestRenderPolicyFromRegistry(t *testing.T) {
 				t.Fatalf("resource = %v", st.Resource)
 			}
 		}},
+		{"dns zones scoped by ARN without tag", []string{CapDNS}, "Dns2", false, func(t *testing.T, st PolicyStatement) {
+			if len(st.Condition) != 0 || st.Resource[0] != "arn:*:route53:::hostedzone/*" {
+				t.Fatalf("dns statement = %+v", st)
+			}
+		}},
+		{"s3 tag actions use the request tag", []string{CapS3}, "S32", false, func(t *testing.T, st PolicyStatement) {
+			if st.Action[1] != "s3:TagResource" || len(st.Condition["StringEquals"]["aws:RequestTag/levelrail:managed"]) != 1 {
+				t.Fatalf("s3 create statement = %+v", st)
+			}
+		}},
 		{"unknown tier", []string{"billing"}, "", true, nil},
 	}
 	for _, c := range cases {
@@ -116,13 +126,13 @@ func TestRenderPolicyFromRegistry(t *testing.T) {
 
 func TestQuickCreateAndTerraform(t *testing.T) {
 	in := testTemplateInput()
-	u, err := QuickCreateURL(in, "https://example.test/t.yaml", "levelrail-access", "eu-west-1")
+	u, err := QuickCreateURL(in, "https://s3.eu-west-1.amazonaws.com/bkt/t.yaml", "levelrail-access", "eu-west-1")
 	if err != nil {
 		t.Fatal(err)
 	}
 	for _, want := range []string{
-		"https://console.aws.amazon.com/cloudformation/home?region=eu-west-1#/stacks/quickcreate?",
-		"templateURL=https%3A%2F%2Fexample.test%2Ft.yaml", "param_ExternalId=ext-123456", "stackName=levelrail-access",
+		"https://eu-west-1.console.aws.amazon.com/cloudformation/home?region=eu-west-1#/stacks/create/review?",
+		"templateURL=https%3A%2F%2Fs3.eu-west-1.amazonaws.com%2Fbkt%2Ft.yaml", "param_ExternalId=ext-123456", "stackName=levelrail-access",
 	} {
 		if !strings.Contains(u, want) {
 			t.Errorf("url missing %q: %s", want, u)
@@ -130,6 +140,15 @@ func TestQuickCreateAndTerraform(t *testing.T) {
 	}
 	if _, err := QuickCreateURL(in, "http://example.test/t.yaml", "s", "eu-west-1"); err == nil {
 		t.Error("http template url accepted")
+	}
+	if _, err := QuickCreateURL(in, "https://example.test/t.yaml", "s", "eu-west-1"); err == nil {
+		t.Error("non S3 template url accepted")
+	}
+	if _, err := QuickCreateURL(in, "https://bkt.s3.eu-west-1.amazonaws.com/t.yaml", "1bad", "eu-west-1"); err == nil {
+		t.Error("stack name starting with a digit accepted")
+	}
+	if _, err := QuickCreateURL(in, "https://bkt.s3.eu-west-1.amazonaws.com/t.yaml", "ok-stack", "eu-west-1"); err != nil {
+		t.Errorf("virtual hosted s3 url rejected: %v", err)
 	}
 	tf, err := TerraformSnippet(in)
 	if err != nil || !strings.Contains(tf, `"sts:ExternalId" = var.external_id`) || !strings.Contains(tf, "permissions_boundary") {

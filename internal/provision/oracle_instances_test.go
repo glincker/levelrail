@@ -61,8 +61,8 @@ func newInstOracle(t *testing.T, doc string) (*Oracle, *instFakeOCI) {
 			_, _ = w.Write([]byte(f.doc))
 		case strings.HasPrefix(r.URL.Path, "/instances/"):
 			_, _ = w.Write([]byte(`{}`))
-		case r.URL.Path == "/workRequests":
-			_, _ = w.Write([]byte(`[{"operationType":"STOP","status":"SUCCEEDED","timeAccepted":"2026-11-20T10:00:00Z"}]`))
+		case r.URL.Path == "/auditEvents":
+			_, _ = w.Write([]byte(`[{"eventName":"InstanceAction","eventTime":"2026-11-20T10:00:00Z","data":{"resourceId":"` + tInstance + `","response":{"status":"200"}}},{"eventName":"Other","eventTime":"2026-11-20T11:00:00Z","data":{"resourceId":"ocid1.instance.oc1.phx.other"}}]`))
 		default:
 			w.WriteHeader(404)
 		}
@@ -170,11 +170,11 @@ func TestOracleListDescribeEventsAndErrors(t *testing.T) {
 		t.Fatalf("list %+v %v", rows, err)
 	}
 	d, err := o.DescribeInstance(context.Background(), tInstance)
-	if err != nil || d.BootVolumeGB != 50 || d.Zone != "x:PHX-AD-1" {
+	if err != nil || d.BootVolumeGB != 50 || d.Zone != "x:PHX-AD-1" || d.ResizeAdvisory == "" {
 		t.Fatalf("describe %+v %v", d, err)
 	}
 	ev, err := o.InstanceEvents(context.Background(), tInstance, time.Date(2026, 11, 1, 0, 0, 0, 0, time.UTC))
-	if err != nil || len(ev) != 1 || ev[0].Kind != "STOP" {
+	if err != nil || len(ev) != 1 || ev[0].Kind != "InstanceAction" || ev[0].Status != "200" {
 		t.Fatalf("events %+v %v", ev, err)
 	}
 	f.mu.Lock()

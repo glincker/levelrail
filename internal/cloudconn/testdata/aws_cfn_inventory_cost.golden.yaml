@@ -201,7 +201,7 @@ Resources:
               "Effect": "Allow",
               "Action": [
                 "s3:CreateBucket",
-                "s3:PutBucketTagging"
+                "s3:TagResource"
               ],
               "Resource": [
                 "arn:*:s3:::levelrail-*"
@@ -223,15 +223,8 @@ Resources:
                 "s3:GetBucketTagging"
               ],
               "Resource": [
-                "arn:*:s3:::*"
-              ],
-              "Condition": {
-                "StringEquals": {
-                  "aws:ResourceTag/levelrail:managed": [
-                    "true"
-                  ]
-                }
-              }
+                "arn:*:s3:::levelrail-*"
+              ]
             },
             {
               "Sid": "S34",
@@ -244,6 +237,16 @@ Resources:
               ],
               "Resource": [
                 "arn:*:s3:::levelrail-*/*"
+              ]
+            },
+            {
+              "Sid": "S35",
+              "Effect": "Allow",
+              "Action": [
+                "s3:UntagResource"
+              ],
+              "Resource": [
+                "arn:*:s3:::levelrail-*"
               ]
             },
             {
@@ -268,14 +271,7 @@ Resources:
               ],
               "Resource": [
                 "arn:*:route53:::hostedzone/*"
-              ],
-              "Condition": {
-                "StringEquals": {
-                  "aws:ResourceTag/levelrail:managed": [
-                    "true"
-                  ]
-                }
-              }
+              ]
             },
             {
               "Sid": "Destructive1",
@@ -310,15 +306,8 @@ Resources:
                 "s3:DeleteBucket"
               ],
               "Resource": [
-                "arn:*:s3:::*"
-              ],
-              "Condition": {
-                "StringEquals": {
-                  "aws:ResourceTag/levelrail:managed": [
-                    "true"
-                  ]
-                }
-              }
+                "arn:*:s3:::levelrail-*"
+              ]
             },
             {
               "Sid": "Destructive3",
@@ -338,14 +327,7 @@ Resources:
               ],
               "Resource": [
                 "arn:*:route53:::hostedzone/*"
-              ],
-              "Condition": {
-                "StringEquals": {
-                  "aws:ResourceTag/levelrail:managed": [
-                    "true"
-                  ]
-                }
-              }
+              ]
             },
             {
               "Sid": "DenyIdentityChanges",

@@ -117,16 +117,19 @@ var awsCapabilities = []Capability{
 		Name: CapS3, Mutating: true, Summary: "Create and use tagged buckets", Hint: "Add the s3 tier to the stack and update it.",
 		Statements: []CapStatement{
 			{Actions: []string{"s3:ListAllMyBuckets"}, Resources: []string{all}, Global: true},
-			{Actions: []string{"s3:CreateBucket", "s3:PutBucketTagging"}, Resources: []string{"arn:*:s3:::{bucket_prefix}*"}, Tag: TagRequest, Global: true},
-			{Actions: []string{"s3:ListBucket", "s3:GetBucketLocation", "s3:GetBucketTagging"}, Resources: []string{"arn:*:s3:::*"}, Tag: TagResource, Global: true},
+			{Actions: []string{"s3:CreateBucket", "s3:TagResource"}, Resources: []string{"arn:*:s3:::{bucket_prefix}*"}, Tag: TagRequest, Global: true},
+			// S3 ABAC is off per bucket by default, so bucket access is scoped by name prefix, not tag.
+			{Actions: []string{"s3:ListBucket", "s3:GetBucketLocation", "s3:GetBucketTagging"}, Resources: []string{"arn:*:s3:::{bucket_prefix}*"}, Global: true},
 			{Actions: []string{"s3:GetObject", "s3:PutObject", "s3:AbortMultipartUpload", "s3:ListMultipartUploadParts"}, Resources: []string{"arn:*:s3:::{bucket_prefix}*/*"}, Global: true},
+			{Actions: []string{"s3:UntagResource"}, Resources: []string{"arn:*:s3:::{bucket_prefix}*"}, Global: true},
 		},
 	},
 	{
 		Name: CapDNS, Mutating: true, Summary: "Read zones and change records in tagged zones", Hint: "Add the dns tier to the stack and update it.",
 		Statements: []CapStatement{
 			{Actions: []string{"route53:ListHostedZones", "route53:ListHostedZonesByName", "route53:GetChange"}, Resources: []string{all}, Global: true},
-			{Actions: []string{"route53:GetHostedZone", "route53:ListResourceRecordSets", "route53:ChangeResourceRecordSets"}, Resources: []string{"arn:*:route53:::hostedzone/*"}, Tag: TagResource, Global: true},
+			// The hostedzone resource type has no condition keys, so zones are scoped by ARN.
+			{Actions: []string{"route53:GetHostedZone", "route53:ListResourceRecordSets", "route53:ChangeResourceRecordSets"}, Resources: []string{"{hosted_zone_ids}"}, Global: true},
 		},
 	},
 	{
@@ -135,9 +138,9 @@ var awsCapabilities = []Capability{
 			{Actions: []string{
 				"ec2:TerminateInstances", "ec2:DeleteVolume", "ec2:DeleteSecurityGroup", "ec2:DeleteKeyPair", "ec2:ReleaseAddress", "ec2:DetachVolume",
 			}, Resources: []string{all}, Tag: TagResource},
-			{Actions: []string{"s3:DeleteBucket"}, Resources: []string{"arn:*:s3:::*"}, Tag: TagResource, Global: true},
+			{Actions: []string{"s3:DeleteBucket"}, Resources: []string{"arn:*:s3:::{bucket_prefix}*"}, Global: true},
 			{Actions: []string{"s3:DeleteObject"}, Resources: []string{"arn:*:s3:::{bucket_prefix}*/*"}, Global: true},
-			{Actions: []string{"route53:DeleteHostedZone"}, Resources: []string{"arn:*:route53:::hostedzone/*"}, Tag: TagResource, Global: true},
+			{Actions: []string{"route53:DeleteHostedZone"}, Resources: []string{"{hosted_zone_ids}"}, Global: true},
 		},
 	},
 }
@@ -248,7 +251,7 @@ func (p *AWSProvider) ProbeCapabilities(ctx context.Context, t Target, names ...
 		sim := p.simulator(cfg)
 		if got, serr := sim.Simulate(ctx, simulateRequest{
 			PolicySource: src, Actions: allActions(caps), Region: t.Connection.Config.Region,
-			TagKey: DefaultPolicyOptions().TagKey,
+			TagKey: DefaultPolicyOptions().TagKey, Resources: representativeResources(caps, DefaultPolicyOptions(), src, t.Connection.Config.Region),
 		}); serr == nil {
 			res = fromSimulation(caps, got)
 		}
@@ -378,4 +381,65 @@ func dryRunGroupName() string {
 		return v
 	}
 	return "levelrail-permission-probe"
+}
+
+// representativeResources maps each action to concrete example ARNs of the statements that
+// grant it, so scoped statements are not reported as implicit denies against "*".
+func representativeResources(caps []Capability, opt PolicyOptions, principal, region string) map[string][]string {
+	parts := strings.SplitN(principal, ":", 6)
+	if len(parts) != 6 {
+		return nil
+	}
+	partition, account := parts[1], parts[4]
+	out := map[string][]string{}
+	for _, doc := range renderCaps(caps, opt).Statement {
+		for _, a := range doc.Action {
+			for _, r := range doc.Resource {
+				c := concreteARN(r, partition, region, account)
+				if !containsString(out[a], c) {
+					out[a] = append(out[a], c)
+				}
+			}
+		}
+	}
+	return out
+}
+
+func containsString(list []string, v string) bool {
+	for _, x := range list {
+		if x == v {
+			return true
+		}
+	}
+	return false
+}
+
+// concreteARN fills wildcard segments of a policy resource with example values.
+func concreteARN(pattern, partition, region, account string) string {
+	if pattern == all {
+		return all
+	}
+	parts := strings.SplitN(pattern, ":", 6)
+	if len(parts) != 6 {
+		return pattern
+	}
+	parts[1] = partition
+	if parts[3] == "*" && parts[2] != "s3" && parts[2] != "route53" && parts[2] != "iam" {
+		parts[3] = region
+	}
+	if parts[4] == "*" && parts[2] != "s3" && parts[2] != "route53" {
+		parts[4] = account
+	}
+	res := parts[5]
+	switch {
+	case strings.Contains(res, "/*") && strings.HasSuffix(res, "/*"):
+		res = strings.TrimSuffix(res, "*") + "example"
+		if parts[2] == "s3" {
+			res = strings.Replace(res, "*/", "example/", 1)
+		}
+	case strings.HasSuffix(res, "*"):
+		res = strings.TrimSuffix(res, "*") + "example"
+	}
+	parts[5] = res
+	return strings.Join(parts, ":")
 }

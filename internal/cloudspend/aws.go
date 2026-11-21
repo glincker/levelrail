@@ -26,6 +26,7 @@ const (
 	awsBudgetTarget  = "AWSBudgetServiceGateway.DescribeBudgets"
 	awsPriceTarget   = "AWSPriceListService.GetProducts"
 	awsTagHint       = "Activate levelrail:project under Billing, Cost allocation tags. AWS needs up to 24 hours after activation."
+	awsUnavailHint   = "Enable Cost Explorer in the AWS account, or wait up to 24 hours for the first data."
 	awsDisabledHint  = "Turn on cloud.spend.aws_cost_explorer. Each Cost Explorer request is billed by AWS."
 )
 
@@ -153,6 +154,9 @@ type ceResponse struct {
 	} `json:"ResultsByTime"`
 }
 
+// stateDataUnavailable is local to AWS: Cost Explorer is off or has no data yet.
+const stateDataUnavailable = "data_unavailable"
+
 // Spend reads month to date grouped by the project tag and by service in one
 // daily request. It is off unless the Cost Explorer setting is on.
 func (r *AWSReader) Spend(ctx context.Context, q SpendQuery) (SpendReport, error) {
@@ -197,8 +201,8 @@ func (r *AWSReader) readCE(ctx context.Context, rep SpendReport, start, end time
 	for page := 0; page < cfg.pages(); page++ {
 		var out ceResponse
 		if err := r.caller.call(ctx, "ce", awsCETarget+"GetCostAndUsage", req, &out); err != nil {
-			if isTagError(err) {
-				rep.State, rep.FixHint, rep.FetchedAt = StateTagNotActive, awsTagHint, cfg.now()
+			if isDataUnavailable(err) {
+				rep.State, rep.FixHint, rep.FetchedAt = stateDataUnavailable, awsUnavailHint, cfg.now()
 				return rep, nil
 			}
 			return SpendReport{}, err
@@ -240,7 +244,7 @@ func (r *AWSReader) readCE(ctx context.Context, rep SpendReport, start, end time
 	return rep, nil
 }
 
-func isTagError(err error) bool {
+func isDataUnavailable(err error) bool {
 	var pe *ProviderError
 	return errors.As(err, &pe) && pe.Code == "DataUnavailableException"
 }
@@ -385,14 +389,23 @@ func (r *AWSReader) EstimatePrice(ctx context.Context, q PriceQuery) (PriceEstim
 		filters = append(filters, map[string]string{"Type": "TERM_MATCH", "Field": k, "Value": v})
 	}
 	req := map[string]any{"ServiceCode": q.ServiceCode, "Filters": filters, "FormatVersion": "aws_v1", "MaxResults": 100}
-	var resp struct {
-		PriceList []string `json:"PriceList"`
-	}
-	if err := r.caller.call(ctx, "pricing", awsPriceTarget, req, &resp); err != nil {
-		return PriceEstimate{}, err
+	var priceList []string
+	for page := 0; page < r.cfg().pages(); page++ {
+		var resp struct {
+			PriceList []string `json:"PriceList"`
+			NextToken string   `json:"NextToken"`
+		}
+		if err := r.caller.call(ctx, "pricing", awsPriceTarget, req, &resp); err != nil {
+			return PriceEstimate{}, err
+		}
+		priceList = append(priceList, resp.PriceList...)
+		if resp.NextToken == "" {
+			break
+		}
+		req["NextToken"] = resp.NextToken
 	}
 	best, unit := 0.0, ""
-	for _, item := range resp.PriceList {
+	for _, item := range priceList {
 		var p struct {
 			Terms struct {
 				OnDemand map[string]struct {

@@ -34,6 +34,8 @@ type PolicyOptions struct {
 	TagValue     string
 	BucketPrefix string
 	RoleName     string
+	// HostedZoneIDs scopes Route 53 zone statements by ARN; empty falls back to every zone.
+	HostedZoneIDs []string
 }
 
 // DefaultPolicyOptions reads the tag key and bucket prefix from env so an operator can rename them.
@@ -90,6 +92,10 @@ func renderCaps(caps []Capability, opt PolicyOptions) PolicyDocument {
 		for i, s := range c.Statements {
 			st := PolicyStatement{Sid: fmt.Sprintf("%s%d", titleCase(c.Name), i+1), Effect: "Allow", Action: append([]string(nil), s.Actions...)}
 			for _, r := range s.Resources {
+				if r == "{hosted_zone_ids}" {
+					st.Resource = append(st.Resource, hostedZoneARNs(opt.HostedZoneIDs)...)
+					continue
+				}
 				st.Resource = append(st.Resource, rep.Replace(r))
 			}
 			cond := map[string]map[string][]string{}
@@ -118,6 +124,17 @@ func renderCaps(caps []Capability, opt PolicyOptions) PolicyDocument {
 		}
 	}
 	return doc
+}
+
+func hostedZoneARNs(ids []string) []string {
+	if len(ids) == 0 {
+		return []string{"arn:*:route53:::hostedzone/*"}
+	}
+	out := make([]string, 0, len(ids))
+	for _, id := range sortedCopy(ids) {
+		out = append(out, "arn:*:route53:::hostedzone/"+id)
+	}
+	return out
 }
 
 func sortedCopy(in []string) []string {
@@ -159,6 +176,9 @@ func marshalIndent(v any) (string, error) {
 
 var (
 	externalIDRe = regexp.MustCompile(`^[A-Za-z0-9+=,.@:/_-]{2,1000}$`)
+	stackNameRe  = regexp.MustCompile(`^[A-Za-z][A-Za-z0-9-]{0,127}$`)
+	hostedZoneRe = regexp.MustCompile(`^[A-Z0-9]{1,32}$`)
+	s3HostRe     = regexp.MustCompile(`^([a-z0-9][a-z0-9.-]{1,61}\.)?s3[.-]([a-z0-9-]+\.)?amazonaws\.com(\.cn)?$`)
 	roleNameRe   = regexp.MustCompile(`^[A-Za-z0-9+=,.@_-]{1,64}$`)
 	principalRe  = regexp.MustCompile(`^arn:aws[a-z-]*:iam::[0-9]{12}:(root|role/[A-Za-z0-9+=,.@_/-]+|user/[A-Za-z0-9+=,.@_/-]+)$`)
 )
@@ -171,10 +191,11 @@ type TemplateInput struct {
 	Capabilities      []string
 	Regions           []string
 	BucketPrefix      string
+	HostedZoneIDs     []string
 }
 
 func (in TemplateInput) validate() (PolicyOptions, error) {
-	opt := PolicyOptions{Regions: in.Regions, BucketPrefix: in.BucketPrefix, RoleName: in.RoleName}.filled()
+	opt := PolicyOptions{Regions: in.Regions, BucketPrefix: in.BucketPrefix, RoleName: in.RoleName, HostedZoneIDs: in.HostedZoneIDs}.filled()
 	if !roleNameRe.MatchString(opt.RoleName) {
 		return opt, invalid("role name must be 1 to 64 IAM name characters")
 	}
@@ -183,6 +204,11 @@ func (in TemplateInput) validate() (PolicyOptions, error) {
 	}
 	if !externalIDRe.MatchString(in.ExternalID) {
 		return opt, invalid("external id must be 2 to 1000 characters from [A-Za-z0-9+=,.@:/_-]")
+	}
+	for _, z := range in.HostedZoneIDs {
+		if !hostedZoneRe.MatchString(z) {
+			return opt, invalid("hosted zone id %q is not valid", z)
+		}
 	}
 	for _, r := range in.Regions {
 		if !awsRegionRe.MatchString(r) {
@@ -289,15 +315,15 @@ func CloudFormationTemplate(in TemplateInput) (string, error) {
 func consoleHost(region string) string {
 	switch {
 	case strings.HasPrefix(region, "cn-"):
-		return "console.amazonaws.cn"
+		return region + ".console.amazonaws.cn"
 	case strings.HasPrefix(region, "us-gov-"):
-		return "console.amazonaws-us-gov.com"
+		return region + ".console.amazonaws-us-gov.com"
 	}
-	return "console.aws.amazon.com"
+	return region + ".console.aws.amazon.com"
 }
 
 // QuickCreateURL builds the CloudFormation quick-create link. The template must already be
-// hosted at an https URL AWS can read (an S3 object or a Levelrail endpoint).
+// hosted as an S3 object, the only source CloudFormation accepts for templateURL.
 func QuickCreateURL(in TemplateInput, templateURL, stackName, region string) (string, error) {
 	if _, err := in.validate(); err != nil {
 		return "", err
@@ -305,18 +331,18 @@ func QuickCreateURL(in TemplateInput, templateURL, stackName, region string) (st
 	if !awsRegionRe.MatchString(region) {
 		return "", invalid("region must be an AWS region")
 	}
-	if u, err := url.Parse(templateURL); err != nil || u.Scheme != "https" || u.Host == "" {
-		return "", invalid("template url must be https")
+	if u, err := url.Parse(templateURL); err != nil || u.Scheme != "https" || !s3HostRe.MatchString(u.Host) || len(u.Path) < 2 {
+		return "", invalid("template url must be an https S3 object url")
 	}
-	if !roleNameRe.MatchString(stackName) {
-		return "", invalid("stack name must be 1 to 64 plain characters")
+	if !stackNameRe.MatchString(stackName) {
+		return "", invalid("stack name must start with a letter and use letters, digits and hyphens, up to 128 characters")
 	}
 	q := url.Values{}
 	q.Set("templateURL", templateURL)
 	q.Set("stackName", stackName)
 	q.Set("param_TrustedPrincipalArn", in.TrustPrincipalARN)
 	q.Set("param_ExternalId", in.ExternalID)
-	return fmt.Sprintf("https://%s/cloudformation/home?region=%s#/stacks/quickcreate?%s", consoleHost(region), url.QueryEscape(region), q.Encode()), nil
+	return fmt.Sprintf("https://%s/cloudformation/home?region=%s#/stacks/create/review?%s", consoleHost(region), url.QueryEscape(region), q.Encode()), nil
 }
 
 // TerraformSnippet returns the same role, boundary and policy as HCL.

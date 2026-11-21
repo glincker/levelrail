@@ -75,7 +75,7 @@ func TestAWSTagNotActive(t *testing.T) {
 	}
 	f = &fakeAWS{err: map[string]error{awsCETarget + "GetCostAndUsage": &ProviderError{Status: 400, Code: "DataUnavailableException"}}}
 	rep, err := newAWSReader(f, "123", awsCfg(true)).Spend(context.Background(), SpendQuery{AccountID: "a"})
-	if err != nil || rep.State != StateTagNotActive || len(rep.Totals) != 0 {
+	if err != nil || rep.State != stateDataUnavailable || len(rep.Totals) != 0 {
 		t.Fatalf("rep %+v err %v", rep, err)
 	}
 }

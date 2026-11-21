@@ -4,6 +4,7 @@ import (
 	"context"
 	"errors"
 	"net/url"
+	"os"
 	"strconv"
 	"strings"
 	"time"
@@ -159,7 +160,7 @@ func (o *Oracle) DescribeInstance(ctx context.Context, id string) (InstanceDetai
 		Instance: inst, Zone: doc.AvailabilityDomain, ImageID: doc.SourceDetails.ImageID,
 		BootVolumeGB: doc.SourceDetails.BootVolumeSizeInGBs, PrivateIPv4: o.privateIP(ctx, c, id),
 	}
-	if doc.ShapeConfig.Ocpus > 0 {
+	if doc.ShapeConfig.Ocpus > 0 || strings.Contains(doc.Shape, "Flex") {
 		d.ResizeAdvisory = "resizing a flexible shape reboots the instance"
 	}
 	return d, nil
@@ -252,19 +253,45 @@ func (o *Oracle) TerminateInstance(ctx context.Context, id string, keepBootVolum
 	return classifyOracle(c.do(ctx, "DELETE", path, nil, nil))
 }
 
-// InstanceEvents reads work requests for the instance. A service that does not
-// expose them answers 404 and that is an empty list, not a failure.
+// auditClient returns the Audit service client; the shared test base serves it too.
+func (o *Oracle) auditClient(region string) *httpClient {
+	if o.iaasBase != "" {
+		return newHTTPClientWithSigner(o.iaasBase, o.signer)
+	}
+	return newHTTPClientWithSigner("https://audit."+region+".oraclecloud.com/20190901", o.signer)
+}
+
+// oracleAuditWindow is how far back events are read when the caller gives no start time.
+func oracleAuditWindow() time.Duration {
+	if n, err := strconv.Atoi(os.Getenv("APP_PROVISION_ORACLE_AUDIT_WINDOW_HOURS")); err == nil && n > 0 {
+		return time.Duration(n) * time.Hour
+	}
+	return 7 * 24 * time.Hour
+}
+
+// InstanceEvents reads the compartment's Audit events and keeps the ones for this
+// instance, since Core has no work request listing by resource. A 404 is an empty list.
 func (o *Oracle) InstanceEvents(ctx context.Context, id string, since time.Time) ([]InstanceEvent, error) {
-	c, _, _, err := o.locate(ctx, id)
+	_, region, _, err := o.locate(ctx, id)
 	if err != nil {
 		return nil, err
 	}
-	path := "/workRequests?limit=" + strconv.Itoa(oracleListLimit) + "&compartmentId=" + url.QueryEscape(o.cred.CompartmentOCID) + "&resourceId=" + url.QueryEscape(id)
+	end := time.Now().UTC()
+	if since.IsZero() {
+		since = end.Add(-oracleAuditWindow())
+	}
+	path := "/auditEvents?compartmentId=" + url.QueryEscape(o.cred.CompartmentOCID) +
+		"&startTime=" + url.QueryEscape(since.UTC().Format(time.RFC3339)) + "&endTime=" + url.QueryEscape(end.Format(time.RFC3339))
 	rows, err := listAll[struct {
-		OperationType string    `json:"operationType"`
-		Status        string    `json:"status"`
-		TimeAccepted  time.Time `json:"timeAccepted"`
-	}](ctx, c, path)
+		EventName string    `json:"eventName"`
+		EventTime time.Time `json:"eventTime"`
+		Data      struct {
+			ResourceID string `json:"resourceId"`
+			Response   struct {
+				Status string `json:"status"`
+			} `json:"response"`
+		} `json:"data"`
+	}](ctx, o.auditClient(region), path)
 	if err != nil {
 		var pe *ProviderError
 		if errors.As(err, &pe) && pe.Status == 404 {
@@ -274,10 +301,10 @@ func (o *Oracle) InstanceEvents(ctx context.Context, id string, since time.Time)
 	}
 	out := []InstanceEvent{}
 	for _, r := range rows {
-		if r.TimeAccepted.Before(since) {
+		if r.Data.ResourceID != id || r.EventTime.Before(since) {
 			continue
 		}
-		out = append(out, InstanceEvent{Time: r.TimeAccepted, Kind: r.OperationType, Status: r.Status})
+		out = append(out, InstanceEvent{Time: r.EventTime, Kind: r.EventName, Status: r.Data.Response.Status})
 	}
 	return out, nil
 }
