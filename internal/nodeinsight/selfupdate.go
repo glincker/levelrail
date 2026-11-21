@@ -10,11 +10,13 @@ const (
 
 // UpdateFacts is what the control plane knows when an agent asks for its target.
 type UpdateFacts struct {
-	Channel        string
-	ControlPlane   string
-	AgentVersion   string
-	AgentOnline    bool
-	PreviousGood   string
+	Channel      string
+	ControlPlane string
+	AgentVersion string
+	AgentOnline  bool
+	PreviousGood string
+	// RolledBackFrom holds the control plane version this node was rolled back from.
+	RolledBackFrom string
 	HealthFailures int
 	// MaxHealthFailures is the runtime setting after which an update is undone.
 	MaxHealthFailures int
@@ -42,6 +44,10 @@ func DecideUpdate(f UpdateFacts) UpdateDecision {
 	}
 	switch Classify(f.AgentVersion, f.ControlPlane) {
 	case SkewBehind:
+		if f.RolledBackFrom != "" && f.RolledBackFrom == f.ControlPlane {
+			d.Action, d.Reason = UpdateHold, "rolled back from "+f.ControlPlane+"; held until the target changes or the hold is cleared"
+			return d
+		}
 		if !f.AgentOnline {
 			d.Action, d.Reason = UpdateHold, "agent is offline"
 			return d

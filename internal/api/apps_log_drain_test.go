@@ -246,3 +246,29 @@ func TestLogDrainHeader_StoredEncryptedAndNeverEchoed(t *testing.T) {
 		}
 	}
 }
+
+func TestLogDrainHeader_TargetChangeNeedsNewValueAndMissingAppWritesNothing(t *testing.T) {
+	setter := &fakeSecretSetter{}
+	rt, db := newTestRouterWithSecrets(t, setter)
+	cookie := loginTestSession(t, rt, db)
+	seedWebAppForTest(t, db)
+	put := func(app, body string) *httptest.ResponseRecorder {
+		rec := httptest.NewRecorder()
+		rt.Handler().ServeHTTP(rec, authedRequest(t, cookie, http.MethodPut, "/api/v1/apps/"+app+"/log-drain", body))
+		return rec
+	}
+	if rec := put("web", `{"type":"http","target":"https://a.example.com/in","enabled":true,"header_name":"Authorization","header_value":"Bearer one"}`); rec.Code != http.StatusOK {
+		t.Fatalf("first put = %d %s", rec.Code, rec.Body.String())
+	}
+	setter.existsValues = map[string]bool{"logdrain:web/header": true}
+	if rec := put("web", `{"type":"http","target":"https://other.example.com/in","enabled":true,"header_name":"Authorization"}`); rec.Code != http.StatusBadRequest {
+		t.Fatalf("target change without a new value = %d, want 400", rec.Code)
+	}
+	before := len(setter.sets)
+	if rec := put("ghost", `{"type":"http","target":"https://a.example.com/in","enabled":true,"header_name":"Authorization","header_value":"x"}`); rec.Code != http.StatusNotFound {
+		t.Fatalf("missing app = %d, want 404", rec.Code)
+	}
+	if len(setter.sets) != before {
+		t.Errorf("a secret was written for an app that does not exist: %+v", setter.sets)
+	}
+}

@@ -11,9 +11,6 @@ import type {
   AwsControlIdentity,
   AwsLinkKit,
   AwsLinkKitInput,
-  AwsSsoPoll,
-  AwsSsoSelectInput,
-  AwsSsoStart,
   AwsVaultKit,
   AwsVaultKitInput,
   CreateAwsVaultAccountInput,
@@ -416,58 +413,5 @@ export function useStartDigitalOceanOAuth() {
       apiRequest<{ url: string }>(`${BASE}/oauth/digitalocean/start`, {
         fallbackMessage: 'start digitalocean oauth failed',
       }),
-  })
-}
-
-const SSO = `${BASE}/aws/sso`
-
-export function useAwsSsoStart() {
-  return useMutation({
-    mutationFn: (input: { start_url: string; region: string }) =>
-      apiRequest<AwsSsoStart>(`${SSO}/start`, {
-        method: 'POST',
-        body: input,
-        fallbackMessage: 'start aws sso login failed',
-      }),
-  })
-}
-
-export function useAwsSsoRelogin() {
-  return useMutation({
-    mutationFn: (accountId: string) =>
-      apiRequest<AwsSsoStart>(`${SSO}/relogin`, {
-        method: 'POST',
-        body: { account_id: accountId },
-        fallbackMessage: 'start aws sso login failed',
-      }),
-  })
-}
-
-export function useAwsSsoPoll() {
-  const qc = useQueryClient()
-  return useMutation({
-    mutationFn: (sessionId: string) =>
-      apiRequest<AwsSsoPoll>(`${SSO}/poll`, {
-        method: 'POST',
-        body: { session_id: sessionId },
-        fallbackMessage: 'check aws sso login failed',
-      }),
-    onSuccess: (r) => {
-      if (r.account_id)
-        void qc.invalidateQueries({ queryKey: cloudAccountKeys.all })
-    },
-  })
-}
-
-export function useAwsSsoSelect() {
-  const qc = useQueryClient()
-  return useMutation({
-    mutationFn: (input: AwsSsoSelectInput) =>
-      apiRequest<CloudAccount>(`${SSO}/select`, {
-        method: 'POST',
-        body: input,
-        fallbackMessage: 'link aws sso account failed',
-      }),
-    onSuccess: () => qc.invalidateQueries({ queryKey: cloudAccountKeys.all }),
   })
 }

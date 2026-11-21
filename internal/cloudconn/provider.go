@@ -24,7 +24,6 @@ const (
 	AuthStatic         = "static"
 	AuthVaultAWS       = "vault_aws"
 	AuthOAuth          = "oauth"
-	AuthAWSSSO         = "aws_sso"
 )
 
 // Health classes. A check reports one of these and nothing from the provider's own output.

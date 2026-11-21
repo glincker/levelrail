@@ -109,7 +109,7 @@ func (db *DB) GetNotificationChannel(ctx context.Context, id string) (*Notificat
 // ListNotificationChannels returns every channel, oldest first (creation
 // order, the same order the settings page listing them wants).
 func (db *DB) ListNotificationChannels(ctx context.Context) ([]NotificationChannel, error) {
-	rows, err := db.QueryContext(ctx, notificationChannelSelectColumns+` ORDER BY created_at`)
+	rows, err := db.QueryContext(ctx, notificationChannelSelectColumns+` ORDER BY created_at, id`)
 	if err != nil {
 		return nil, fmt.Errorf("alerting: list notification channels: %w", err)
 	}

@@ -482,26 +482,5 @@
       "fail": "失敗",
       "skip": "スキップ"
     }
-  },
-  "sso": {
-    "option": "代わりに AWS SSO でサインイン",
-    "back": "ロールまたは Vault を使う",
-    "title": "AWS SSO でサインイン",
-    "startUrl": "Identity Center の開始 URL",
-    "region": "Identity Center のリージョン",
-    "start": "サインインを開始",
-    "enterCode": "AWS を開いてこのコードを確認してください:",
-    "openBrowser": "AWS のサインインページを開く",
-    "waiting": "ブラウザでの承認を待っています。",
-    "pickRole": "リンクするアカウントとロールを選択してください。",
-    "noAccounts": "このログインに割り当てられたアカウントはありません。",
-    "label": "ラベル (任意)",
-    "link": "アカウントをリンク",
-    "denied": "サインインは拒否または期限切れになりました。もう一度開始してください。",
-    "reloginDone": "再度サインインしました。",
-    "relogin": "再度サインイン",
-    "reloginNeeded": "AWS のサインインが終了しました。このアカウントを使い続けるには再度サインインしてください。",
-    "startUrlExample": "https://d-1234567890.awsapps.com/start",
-    "regionExample": "eu-west-1"
   }
 }

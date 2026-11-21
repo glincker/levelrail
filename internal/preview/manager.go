@@ -11,6 +11,7 @@ import (
 	"net/netip"
 	"net/url"
 	"strconv"
+	"strings"
 	"sync"
 	"time"
 
@@ -284,6 +285,10 @@ func (m *Manager) process(ctx context.Context, j job) {
 		return
 	case err != nil:
 		m.log.Warn("preview: resolve target failed", slog.String("app", j.app), slog.String("error", err.Error()))
+		// Back off like a render so every list read does not retry a failing resolve.
+		m.mu.Lock()
+		m.lastRun[j.app] = m.now()
+		m.mu.Unlock()
 		return
 	}
 	if !j.force {
@@ -405,7 +410,7 @@ func (m *Manager) capture(ctx context.Context, s AppSettings, t Target) captured
 	deadline := time.Now().Add(lv.RenderTimeout)
 	runCtx, cancel := context.WithDeadline(ctx, deadline)
 	defer cancel()
-	shotURL, network, extra := appURL(t, s.Path), t.Network, []string(nil)
+	shotURL, network, extra, onlyHost := appURL(t, s.Path), t.Network, []string(nil), ""
 	if t.PublicURL != "" {
 		u, args, perr := m.publicTarget(runCtx, t.PublicURL, s.Path)
 		if perr != nil {
@@ -413,6 +418,9 @@ func (m *Manager) capture(ctx context.Context, s AppSettings, t Target) captured
 			return fail(StatusFailed, ReasonBlockedTarget, "the public address is not an allowed render target")
 		}
 		shotURL, network, extra = u, publicNetwork, args
+		if pu, e := url.Parse(u); e == nil {
+			onlyHost = strings.ToLower(pu.Hostname())
+		}
 	}
 	browser, release, err := m.acquireBrowser(runCtx, m.browserSpec(t, lv, network, extra), lv.IdleStop)
 	if err != nil {
@@ -424,7 +432,7 @@ func (m *Manager) capture(ctx context.Context, s AppSettings, t Target) captured
 
 	settle := maxSettle + time.Duration(s.WaitMS)*time.Millisecond
 	res, err := m.shooter.Shoot(runCtx, browser.Endpoint(), ShotRequest{
-		URL:   shotURL,
+		URL: shotURL, OnlyHost: onlyHost,
 		Width: m.cfg.ViewportW, Height: m.cfg.ViewportH,
 		Settle:   min(settle, time.Until(deadline)-startupReserve/2),
 		Deadline: deadline,
@@ -437,10 +445,10 @@ func (m *Manager) capture(ctx context.Context, s AppSettings, t Target) captured
 		return fail(StatusFailed, ReasonCaptureFailed, "the browser could not capture the page")
 	}
 	reuse = true
-	rec.HTTPStatus = res.HTTPStatus
 	if t.PublicURL != "" && !sameHostURL(res.FinalURL, shotURL) {
 		return fail(StatusSkipped, ReasonRedirect, "the page redirects away from the app")
 	}
+	rec.HTTPStatus = res.HTTPStatus
 	if reason, detail := res.Classify(s.Path); reason != "" {
 		return fail(StatusSkipped, reason, detail)
 	}

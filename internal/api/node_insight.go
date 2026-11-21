@@ -160,7 +160,7 @@ func (rt *Router) DecideAgentUpdate(ctx context.Context, n *store.Node) nodeinsi
 		facts.AgentVersion = version.Version
 	}
 	vh := rt.agentVersions.Observe(n.ID, facts.AgentVersion, time.Now())
-	facts.PreviousGood = vh.LastGood
+	facts.PreviousGood, facts.RolledBackFrom = vh.LastGood, vh.RolledBackFrom
 	if lister, ok := rt.nodes.(nodeStatusEventLister); ok {
 		if events, err := lister.ListNodeStatusEvents(ctx, n.ID, timelineEventCap); err == nil {
 			in := make([]nodeinsight.Event, 0, len(events))

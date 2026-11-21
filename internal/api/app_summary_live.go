@@ -78,6 +78,14 @@ func (c *summaryCache) put(name string, s liveSignals, now time.Time, maxEntries
 	return s
 }
 
+// summaryCacheKey keeps entries holding a database size apart from those without one.
+func summaryCacheKey(name string, withDBSize bool) string {
+	if withDBSize {
+		return name + "\x00db"
+	}
+	return name
+}
+
 // summaryCacheTTL is the live setting; 0 or less disables live signals.
 func (rt *Router) summaryCacheTTL(ctx context.Context) time.Duration {
 	n := defaultAppsSummaryCacheSeconds
@@ -91,7 +99,8 @@ func (rt *Router) summaryCacheTTL(ctx context.Context) time.Duration {
 
 // liveSummarySignals reads restarts and database size for the given page of apps, within one short deadline.
 // Apps that fail or time out are absent from the result.
-func (rt *Router) liveSummarySignals(ctx context.Context, svcs []store.DesiredService, kinds map[string]string, now time.Time) map[string]liveSignals {
+// withDBSize is true only for callers allowed to see database sizes; the exec never runs otherwise.
+func (rt *Router) liveSummarySignals(ctx context.Context, svcs []store.DesiredService, kinds map[string]string, now time.Time, withDBSize bool) map[string]liveSignals {
 	ttl := rt.summaryCacheTTL(ctx)
 	if ttl <= 0 {
 		return nil
@@ -105,7 +114,7 @@ func (rt *Router) liveSummarySignals(ctx context.Context, svcs []store.DesiredSe
 		if kinds[s.Name] == appKindCron {
 			continue
 		}
-		if sig, ok := rt.appSummaryCache.fresh(s.Name, now, ttl); ok {
+		if sig, ok := rt.appSummaryCache.fresh(summaryCacheKey(s.Name, withDBSize), now, ttl); ok {
 			out[s.Name] = sig
 			continue
 		}
@@ -133,11 +142,11 @@ func (rt *Router) liveSummarySignals(ctx context.Context, svcs []store.DesiredSe
 			case <-fctx.Done():
 				return
 			}
-			sig, ok := rt.fetchLiveSignals(fctx, s, kinds[s.Name])
+			sig, ok := rt.fetchLiveSignals(fctx, s, kinds[s.Name], withDBSize)
 			if !ok {
 				return
 			}
-			sig = rt.appSummaryCache.put(s.Name, sig, time.Now(), maxEntries)
+			sig = rt.appSummaryCache.put(summaryCacheKey(s.Name, withDBSize), sig, time.Now(), maxEntries)
 			mu.Lock()
 			out[s.Name] = sig
 			mu.Unlock()
@@ -157,12 +166,12 @@ func (rt *Router) liveSummarySignals(ctx context.Context, svcs []store.DesiredSe
 	return snap
 }
 
-func (rt *Router) fetchLiveSignals(ctx context.Context, svc store.DesiredService, kind string) (liveSignals, bool) {
+func (rt *Router) fetchLiveSignals(ctx context.Context, svc store.DesiredService, kind string, withDBSize bool) (liveSignals, bool) {
 	var sig liveSignals
 	if n, ok := rt.liveRestarts(ctx, svc); ok {
 		sig.restarts = &n
 	}
-	if kind == appKindDatabase {
+	if withDBSize && kind == appKindDatabase {
 		if size, ok := rt.liveDBSize(ctx, svc.Name); ok {
 			sig.dbSize = &size
 		}

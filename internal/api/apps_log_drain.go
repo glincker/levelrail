@@ -105,8 +105,18 @@ func (rt *Router) handleSetAppLogDrain(w http.ResponseWriter, r *http.Request) {
 		}
 	}
 
+	// Check the app first so no secret is written for a name that does not exist.
+	svc, err := rt.apps.GetDesiredService(r.Context(), name)
+	if errors.Is(err, store.ErrServiceNotFound) {
+		writeError(w, http.StatusNotFound, "app not found")
+		return
+	} else if err != nil {
+		rt.internalError(w, "api: set app log drain failed", err, slog.String("name", name))
+		return
+	}
+
 	drain := store.LogDrain{Type: req.Type, Target: req.Target, Enabled: req.Enabled}
-	if !rt.applyLogDrainHeader(w, r, name, &drain, req) {
+	if !rt.applyLogDrainHeader(w, r, name, &drain, req, svc.LogDrain) {
 		return
 	}
 	if err := rt.apps.UpdateServiceLogDrain(r.Context(), name, &drain); errors.Is(err, store.ErrServiceNotFound) {
@@ -122,7 +132,7 @@ func (rt *Router) handleSetAppLogDrain(w http.ResponseWriter, r *http.Request) {
 
 // applyLogDrainHeader stores or clears the optional auth header and reports whether the request may go on.
 // The value goes only to the secrets store; a blank value keeps what is stored.
-func (rt *Router) applyLogDrainHeader(w http.ResponseWriter, r *http.Request, name string, drain *store.LogDrain, req setLogDrainRequest) bool {
+func (rt *Router) applyLogDrainHeader(w http.ResponseWriter, r *http.Request, name string, drain *store.LogDrain, req setLogDrainRequest, prev *store.LogDrain) bool {
 	ns := store.LogDrainSecretService(name)
 	if req.HeaderName == "" || req.Type != store.LogDrainHTTP {
 		if req.HeaderValue != "" {
@@ -157,6 +167,11 @@ func (rt *Router) applyLogDrainHeader(w http.ResponseWriter, r *http.Request, na
 		}
 		if !have {
 			writeError(w, http.StatusBadRequest, "header_value is required with a new header_name")
+			return false
+		}
+		// A stored value must never follow a changed destination.
+		if prev == nil || prev.Type != req.Type || prev.Target != req.Target {
+			writeError(w, http.StatusBadRequest, "header_value is required when the target changes")
 			return false
 		}
 	} else if err := rt.secrets.SetValueGuarded(r.Context(), ns, store.LogDrainSecretKey, req.HeaderValue, true); err != nil {

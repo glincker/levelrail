@@ -13,6 +13,7 @@ import (
 	"path/filepath"
 	"regexp"
 	"runtime"
+	"strconv"
 	"time"
 
 	"github.com/GLINCKER/levelrail/internal/nodeinsight"
@@ -125,6 +126,10 @@ func Run(ctx context.Context, o Options) (Result, error) {
 	}
 	if o.DataDir != "" {
 		_ = os.Remove(filepath.Join(o.DataDir, failedFile))
+		if d.Action == nodeinsight.UpdateRollback {
+			// Remember the version we left so it is not offered straight back.
+			_ = WriteFailed(o.DataDir, Failed{Target: o.Current, At: time.Now(), Reason: "rolled back after failed health"})
+		}
 	}
 	res.Previous = PrevPath(o.ExePath)
 	res.Action = ActionStaged
@@ -308,6 +313,9 @@ func copyInto(out *os.File, src string) error {
 // fixed argv and no shell.
 type SystemService struct {
 	Name string
+	// Domain is the launchd domain target (gui/501 or system); empty derives
+	// it from where the unit is installed.
+	Domain string
 	// GOOS is overridable for tests.
 	GOOS string
 	Run  func(ctx context.Context, argv []string) error
@@ -326,11 +334,24 @@ func (s SystemService) Argv() ([]string, error) {
 	case "linux":
 		return []string{"systemctl", "restart", s.Name}, nil
 	case "darwin":
-		return []string{"launchctl", "kickstart", "-k", "system/" + s.Name}, nil
+		return []string{"launchctl", "kickstart", "-k", s.launchdDomain() + "/" + s.Name}, nil
 	case "windows":
 		return []string{"powershell", "-NoProfile", "-Command", "Restart-Service -Name '" + s.Name + "'"}, nil
 	}
 	return nil, ErrNoServiceManager
+}
+
+// launchdDomain is gui/<uid> when the unit is a per-user LaunchAgent, else system.
+func (s SystemService) launchdDomain() string {
+	if s.Domain != "" {
+		return s.Domain
+	}
+	if home, err := os.UserHomeDir(); err == nil {
+		if _, serr := os.Stat(filepath.Join(home, "Library", "LaunchAgents", s.Name+".plist")); serr == nil {
+			return "gui/" + strconv.Itoa(os.Getuid())
+		}
+	}
+	return "system"
 }
 
 // Restart runs the restart command.

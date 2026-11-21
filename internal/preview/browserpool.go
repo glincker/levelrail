@@ -34,13 +34,22 @@ func newBrowserPool() *browserPool { return &browserPool{items: map[string]*warm
 
 func (p *browserPool) closeAll() {
 	p.mu.Lock()
-	defer p.mu.Unlock()
+	var victims []Browser
 	for k, w := range p.items {
 		if w.timer != nil {
 			w.timer.Stop()
 		}
-		w.b.Close()
+		victims = append(victims, w.b)
 		delete(p.items, k)
+	}
+	p.mu.Unlock()
+	closeBrowsers(victims)
+}
+
+// closeBrowsers stops containers outside the pool lock, since a stop can be slow.
+func closeBrowsers(bs []Browser) {
+	for _, b := range bs {
+		b.Close()
 	}
 }
 
@@ -51,11 +60,17 @@ func (p *browserPool) count() int {
 	return len(p.items)
 }
 
+// poolKey separates browsers by network and launch args, because a public
+// render pins a host with an arg that must never leak to another app.
+func poolKey(spec docker.BrowserSpec) string {
+	return spec.Network + "\x00" + strings.Join(spec.Command, "\x00")
+}
+
 // acquireBrowser returns a browser on spec.Network and a release func. With
 // idle <= 0 the browser is stopped on release. release(false) always stops it,
 // because a browser that just failed is not worth reusing.
 func (m *Manager) acquireBrowser(ctx context.Context, spec docker.BrowserSpec, idle time.Duration) (Browser, func(bool), error) {
-	key := spec.Network
+	key := poolKey(spec)
 	p := m.pool
 	p.mu.Lock()
 	if w, ok := p.items[key]; ok && !w.busy && idle > 0 {
@@ -68,16 +83,18 @@ func (m *Manager) acquireBrowser(ctx context.Context, spec docker.BrowserSpec, i
 	}
 	// Starting a new browser: stop idle ones of other networks first so warm
 	// browsers never add up in memory.
+	var victims []Browser
 	for k, w := range p.items {
 		if !w.busy {
 			if w.timer != nil {
 				w.timer.Stop()
 			}
-			w.b.Close()
+			victims = append(victims, w.b)
 			delete(p.items, k)
 		}
 	}
 	p.mu.Unlock()
+	closeBrowsers(victims)
 
 	b, err := m.deps.Runner.StartBrowser(ctx, spec)
 	if err != nil {
@@ -88,17 +105,23 @@ func (m *Manager) acquireBrowser(ctx context.Context, spec docker.BrowserSpec, i
 		return b, func(bool) { b.Close() }, nil
 	}
 	p.mu.Lock()
+	var stale Browser
 	if old, ok := p.items[key]; ok {
 		// Another worker pooled a browser for this network meanwhile.
-		if !old.busy {
-			old.b.Close()
-		} else {
+		if old.busy {
 			p.mu.Unlock()
 			return b, func(bool) { b.Close() }, nil
 		}
+		if old.timer != nil {
+			old.timer.Stop()
+		}
+		stale = old.b
 	}
 	p.items[key] = w
 	p.mu.Unlock()
+	if stale != nil {
+		stale.Close()
+	}
 	return b, m.releaser(key, w, idle), nil
 }
 
@@ -106,23 +129,27 @@ func (m *Manager) releaser(key string, w *warmBrowser, idle time.Duration) func(
 	p := m.pool
 	return func(reuse bool) {
 		p.mu.Lock()
-		defer p.mu.Unlock()
 		if !reuse {
 			if p.items[key] == w {
 				delete(p.items, key)
 			}
+			p.mu.Unlock()
 			w.b.Close()
 			return
 		}
 		w.busy = false
 		w.timer = time.AfterFunc(idle, func() {
 			p.mu.Lock()
-			defer p.mu.Unlock()
-			if !w.busy && p.items[key] == w {
+			expired := !w.busy && p.items[key] == w
+			if expired {
 				delete(p.items, key)
+			}
+			p.mu.Unlock()
+			if expired {
 				w.b.Close()
 			}
 		})
+		p.mu.Unlock()
 	}
 }
 

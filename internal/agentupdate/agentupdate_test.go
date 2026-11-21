@@ -7,6 +7,7 @@ import (
 	"fmt"
 	"os"
 	"path/filepath"
+	"strings"
 	"sync"
 	"testing"
 	"time"
@@ -299,5 +300,42 @@ func TestServiceNameDefaultsAndDash(t *testing.T) {
 	}
 	if _, err := (SystemService{Name: "-evil", GOOS: "linux"}).Argv(); err == nil {
 		t.Fatal("leading dash accepted")
+	}
+}
+
+func TestRollbackViaRunRemembersLeftVersion(t *testing.T) {
+	rb := nodeinsight.UpdateDecision{Action: nodeinsight.UpdateRollback, Target: "v0.9.0", Reason: "health"}
+	o, _ := setup(t, &fakeRelease{body: []byte("older")}, rb)
+	o.Apply = true
+	if _, err := Run(context.Background(), o); err != nil {
+		t.Fatal(err)
+	}
+	f, ok := ReadFailed(o.DataDir)
+	if !ok || f.Target != "v1.0.0" {
+		t.Fatalf("failed record = %+v ok=%v, want the version rolled back from", f, ok)
+	}
+}
+
+func TestLaunchdDomainOverrideAndSystemDefault(t *testing.T) {
+	argv, err := SystemService{Name: "com.levelrail.agent", GOOS: "darwin", Domain: "gui/501"}.Argv()
+	if err != nil || argv[3] != "gui/501/com.levelrail.agent" {
+		t.Fatalf("argv = %v err %v", argv, err)
+	}
+	t.Setenv("HOME", t.TempDir())
+	argv, _ = SystemService{Name: "com.levelrail.agent", GOOS: "darwin"}.Argv()
+	if argv[3] != "system/com.levelrail.agent" {
+		t.Errorf("no per-user unit installed, argv = %v", argv)
+	}
+	home := os.Getenv("HOME")
+	agents := filepath.Join(home, "Library", "LaunchAgents")
+	if err := os.MkdirAll(agents, 0o700); err != nil { //nolint:gosec // temp dir in test
+		t.Fatal(err)
+	}
+	if err := os.WriteFile(filepath.Join(agents, "com.levelrail.agent.plist"), []byte("x"), 0o600); err != nil { //nolint:gosec // temp dir in test
+		t.Fatal(err)
+	}
+	argv, _ = SystemService{Name: "com.levelrail.agent", GOOS: "darwin"}.Argv()
+	if !strings.HasPrefix(argv[3], "gui/") {
+		t.Errorf("per-user unit installed, argv = %v", argv)
 	}
 }

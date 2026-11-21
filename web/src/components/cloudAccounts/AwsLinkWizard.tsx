@@ -38,7 +38,6 @@ import { AwsLinkConnectStep } from './AwsLinkConnectStep'
 import { AwsLinkKitStep } from './AwsLinkKitStep'
 import { AwsLinkScopeStep } from './AwsLinkScopeStep'
 import { AwsLinkVaultKitStep } from './AwsLinkVaultKitStep'
-import { AwsSsoLogin } from './AwsSsoLogin'
 
 function messageOf(e: unknown): string {
   return e instanceof Error ? e.message : String(e)
@@ -58,7 +57,6 @@ export function AwsLinkWizard() {
     ? raw
     : { ...raw, trustedPrincipalArn: prefill }
   const [showIssues, setShowIssues] = useState(false)
-  const [sso, setSso] = useState(false)
   const [kit, setKit] = useState<AwsLinkKit | null>(null)
   const [vaultKit, setVaultKit] = useState<AwsVaultKit | null>(null)
   const [account, setAccount] = useState<CloudAccount | null>(null)
@@ -190,33 +188,8 @@ export function AwsLinkWizard() {
       description={t('wizard.description')}
       width="wide"
     >
-      {actions.create && sso ? (
-        <div className="space-y-3">
-          <h2 className="text-sm font-semibold">{t('sso.title')}</h2>
-          <AwsSsoLogin />
-          <Button
-            variant="outline"
-            size="sm"
-            onClick={() => {
-              setSso(false)
-            }}
-          >
-            {t('sso.back')}
-          </Button>
-        </div>
-      ) : actions.create ? (
+      {actions.create ? (
         <div className="space-y-4">
-          {step === 'scope' && !account ? (
-            <Button
-              variant="outline"
-              size="sm"
-              onClick={() => {
-                setSso(true)
-              }}
-            >
-              {t('sso.option')}
-            </Button>
-          ) : null}
           <ol
             aria-label={t('wizard.steps')}
             className="flex flex-wrap gap-x-4 gap-y-1 text-sm"

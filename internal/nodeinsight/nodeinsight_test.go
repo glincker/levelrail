@@ -166,7 +166,7 @@ func TestVersionHealthRollbackFlow(t *testing.T) {
 	if err != nil || back.Current != "1.5.9" || back.LastGood != "1.5.6" {
 		t.Fatalf("%+v %v", back, err)
 	}
-	evs := []Event{{To: "offline", At: now.Add(3 * time.Hour)}, {To: "offline", At: now}, {To: "online", At: now.Add(4 * time.Hour)}}
+	evs := []Event{{To: "offline", At: now.Add(3 * time.Hour)}, {To: "offline", At: now}, {To: "online", At: now.Add(2 * time.Hour)}}
 	if OfflineSince(evs, now.Add(time.Hour)) != 1 {
 		t.Fatal("offline count")
 	}

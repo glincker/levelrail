@@ -97,7 +97,7 @@ type fakeDomainOwners struct {
 	found bool
 }
 
-func (f fakeDomainOwners) DomainOwnerOf(context.Context, string) (string, bool, error) {
+func (f fakeDomainOwners) DomainAppOwnerOf(context.Context, string) (string, bool, error) {
 	return f.owner, f.found, nil
 }
 

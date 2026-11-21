@@ -7,6 +7,7 @@ import (
 	"encoding/xml"
 	"errors"
 	"fmt"
+	"net/url"
 	"os"
 	"path/filepath"
 	"sort"
@@ -81,6 +82,32 @@ func (s Spec) Validate() error {
 		for _, w := range secretWords {
 			if strings.Contains(up, w) {
 				return fmt.Errorf("env %s looks like a secret; keep it in the service env file, not the unit", k)
+			}
+		}
+	}
+	return checkArgs(s.Args)
+}
+
+// checkArgs refuses launch args that carry a credential, since the unit is
+// readable by other local users: secret-named flags with a value, and URLs
+// with userinfo.
+func checkArgs(args []string) error {
+	for i, a := range args {
+		if u, err := url.Parse(a); err == nil && u.Scheme != "" && u.Host != "" && u.User != nil {
+			return errors.New("an argument is a URL with credentials; keep it in the service env file, not the unit")
+		}
+		if !strings.HasPrefix(a, "-") {
+			continue
+		}
+		name, val, hasVal := strings.Cut(strings.TrimLeft(a, "-"), "=")
+		up := strings.ToUpper(name)
+		for _, w := range secretWords {
+			if !strings.Contains(up, w) {
+				continue
+			}
+			nextIsValue := i+1 < len(args) && !strings.HasPrefix(args[i+1], "-")
+			if (hasVal && val != "") || (!hasVal && nextIsValue) {
+				return fmt.Errorf("argument --%s looks like a secret; keep it in the service env file, not the unit", name)
 			}
 		}
 	}
@@ -170,7 +197,7 @@ func (m Manager) Install(ctx context.Context, s Spec) (string, error) {
 	}
 	p := m.path(s.Role)
 	tmp := p + ".tmp"
-	if err := os.WriteFile(tmp, raw, 0o644); err != nil { //nolint:gosec // plist holds no secrets (Validate)
+	if err := os.WriteFile(tmp, raw, 0o600); err != nil {
 		return "", err
 	}
 	if err := os.Rename(tmp, p); err != nil {

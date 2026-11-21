@@ -271,7 +271,9 @@ func (rt *Router) handleListApps(w http.ResponseWriter, r *http.Request) {
 	for _, s := range svcs {
 		kinds[s.Name], _ = classifyApp(kindInputFor(s, jobs[s.Name] != nil))
 	}
-	live := rt.liveSummarySignals(r.Context(), svcs, kinds, time.Now())
+	// Database size comes from the viewer's catalog read, so it needs the viewer's ability.
+	canDBSize := rt.callerHasAbility(r, AbilityReadSensitive)
+	live := rt.liveSummarySignals(r.Context(), svcs, kinds, time.Now(), canDBSize)
 	out := make([]appListResource, 0, len(svcs))
 	for _, s := range svcs {
 		resource := toAppResourceRaw(s)
@@ -303,6 +305,9 @@ func (rt *Router) handleListApps(w http.ResponseWriter, r *http.Request) {
 		}
 		item.Summary = buildAppSummary(item.AppKind, s, conditions, deployedAt, js)
 		applyLiveSignals(item.Summary, live[s.Name])
+		if item.Summary != nil && !canDBSize {
+			item.Summary.DBSizeBytes = nil
+		}
 		out = append(out, item)
 	}
 	w.Header().Set("X-Total-Count", strconv.Itoa(total))

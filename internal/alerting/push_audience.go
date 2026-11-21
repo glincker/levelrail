@@ -45,8 +45,9 @@ func pushAudienceForResource(resourceID string) PushAudience {
 }
 
 // domainOwnerResolver is the optional store surface that names the app holding a domain.
+// It resolves apps only, so a static site that shares an app's name never maps to that app's team.
 type domainOwnerResolver interface {
-	DomainOwnerOf(ctx context.Context, domain string) (owner string, found bool, err error)
+	DomainAppOwnerOf(ctx context.Context, domain string) (owner string, found bool, err error)
 }
 
 // resolvePushAudience maps a domain rule to its owning app's team admins plus root.
@@ -61,8 +62,8 @@ func resolvePushAudience(ctx context.Context, src any, resourceID string) PushAu
 	if !ok {
 		return a
 	}
-	owner, found, err := r.DomainOwnerOf(ctx, domain)
-	// Standalone and parked claims have no app, and a static site name is not an app, so those stay admin-only.
+	owner, found, err := r.DomainAppOwnerOf(ctx, domain)
+	// Standalone, parked and static site claims have no app, so those stay admin-only.
 	if err != nil || !found || owner == store.StandaloneDomainOwner || owner == store.ParkedDomainOwner {
 		return a
 	}

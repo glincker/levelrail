@@ -116,3 +116,16 @@ func TestEveryDescriptorIsComplete(t *testing.T) {
 		}
 	}
 }
+
+func TestNotificationChannelCredentialFieldsAreSecret(t *testing.T) {
+	res, ok := Get(NotificationChannel)
+	if !ok {
+		t.Fatal("registry missing")
+	}
+	want := map[string]bool{"notify_url_webhook": true, "notify_url_gotify": true, "notify_url_ntfy": true, "pushover_api_token": true, "resend_api_key": true, "notify_url_email": false}
+	for _, f := range res.Fields {
+		if w, ok := want[f.ID]; ok && f.Secret != w {
+			t.Errorf("%s secret = %v, want %v", f.ID, f.Secret, w)
+		}
+	}
+}

@@ -44,7 +44,6 @@ Usage:
   levelrail-cli cloud instances tag ACCOUNT INSTANCE KEY=VALUE...
   levelrail-cli cloud spend ACCOUNT [--refresh]
   levelrail-cli cloud aws link-kit --trusted-principal ARN [--role-name N] [--region R] [--template-url URL] [--guard-policy ARN]
-  levelrail-cli cloud aws sso login --start-url URL --sso-region R [--account-id ID --role-name N --name LABEL] | --relogin ACCOUNT
   levelrail-cli cloud aws vault-kit --account-id ID --vault-principal ARN [--role-name N] [--mount M] [--vault-role R] [--namespace NS] [--region R]
   levelrail-cli cloud aws ecr|acm|secrets|rds|snapshots|metrics|logs|idle|audit|guard|cleanup-plan ACCOUNT ... (run "cloud aws" for details)
   levelrail-cli cloud oracle policy-kit --group G --compartment NAME_OR_OCID [--policy-name N] [--manage]
@@ -55,7 +54,7 @@ The provider credential for "accounts add" is read from LEVELRAIL_CLOUD_CREDENTI
 
 ## levelrail-cli cloud aws
 
-Subcommands: acm, audit, cleanup-plan, cloudfront, ecr, elasticache, guard, idle, link-kit, logs, metrics, rds, secrets, snapshots, ssm, sso, vault-kit
+Subcommands: acm, audit, cleanup-plan, cloudfront, ecr, elasticache, guard, idle, link-kit, logs, metrics, rds, secrets, snapshots, ssm, vault-kit
 
 ```
 Usage:
@@ -72,7 +71,6 @@ Usage:
   levelrail-cli cloud instances tag ACCOUNT INSTANCE KEY=VALUE...
   levelrail-cli cloud spend ACCOUNT [--refresh]
   levelrail-cli cloud aws link-kit --trusted-principal ARN [--role-name N] [--region R] [--template-url URL] [--guard-policy ARN]
-  levelrail-cli cloud aws sso login --start-url URL --sso-region R [--account-id ID --role-name N --name LABEL] | --relogin ACCOUNT
   levelrail-cli cloud aws vault-kit --account-id ID --vault-principal ARN [--role-name N] [--mount M] [--vault-role R] [--namespace NS] [--region R]
   levelrail-cli cloud aws ecr|acm|secrets|rds|snapshots|metrics|logs|idle|audit|guard|cleanup-plan ACCOUNT ... (run "cloud aws" for details)
   levelrail-cli cloud oracle policy-kit --group G --compartment NAME_OR_OCID [--policy-name N] [--manage]
@@ -625,14 +623,6 @@ Usage of levelrail-cli cloud aws snapshots:
     	volume ID, for snapshots
 ```
 
-## levelrail-cli cloud aws sso
-
-Subcommands: login
-
-```
-usage: levelrail-cli cloud aws sso login --start-url URL --sso-region R [--account-id ID --role-name N --name LABEL] | --relogin ACCOUNT
-```
-
 ## levelrail-cli cloud connect
 
 Subcommands: oci
@@ -702,7 +692,6 @@ Usage:
   levelrail-cli cloud instances tag ACCOUNT INSTANCE KEY=VALUE...
   levelrail-cli cloud spend ACCOUNT [--refresh]
   levelrail-cli cloud aws link-kit --trusted-principal ARN [--role-name N] [--region R] [--template-url URL] [--guard-policy ARN]
-  levelrail-cli cloud aws sso login --start-url URL --sso-region R [--account-id ID --role-name N --name LABEL] | --relogin ACCOUNT
   levelrail-cli cloud aws vault-kit --account-id ID --vault-principal ARN [--role-name N] [--mount M] [--vault-role R] [--namespace NS] [--region R]
   levelrail-cli cloud aws ecr|acm|secrets|rds|snapshots|metrics|logs|idle|audit|guard|cleanup-plan ACCOUNT ... (run "cloud aws" for details)
   levelrail-cli cloud oracle policy-kit --group G --compartment NAME_OR_OCID [--policy-name N] [--manage]

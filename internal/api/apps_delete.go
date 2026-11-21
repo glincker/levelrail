@@ -245,7 +245,7 @@ func (rt *Router) removeAppCredentials(ctx context.Context, name string, extraNa
 	if rt.secrets == nil {
 		return
 	}
-	namespaces = append(namespaces, name)
+	namespaces = append(namespaces, name, store.LogDrainSecretService(name))
 	for _, ns := range namespaces {
 		if err := rt.secrets.DeleteAll(ctx, ns); err != nil {
 			rt.logger.Warn("api: delete app: remove secrets failed", slog.String("error", err.Error()), slog.String("name", name))

@@ -482,26 +482,5 @@
       "fail": "Error",
       "skip": "Omitido"
     }
-  },
-  "sso": {
-    "option": "Iniciar sesión con AWS SSO",
-    "back": "Usar un rol o Vault",
-    "title": "Iniciar sesión con AWS SSO",
-    "startUrl": "URL de inicio de Identity Center",
-    "region": "Región de Identity Center",
-    "start": "Iniciar sesión",
-    "enterCode": "Abre AWS y confirma este código:",
-    "openBrowser": "Abrir la página de inicio de sesión de AWS",
-    "waiting": "Esperando tu aprobación en el navegador.",
-    "pickRole": "Elige la cuenta y el rol a vincular.",
-    "noAccounts": "Este inicio de sesión no tiene cuentas asignadas.",
-    "label": "Etiqueta (opcional)",
-    "link": "Vincular cuenta",
-    "denied": "El inicio de sesión se rechazó o caducó. Empieza de nuevo.",
-    "reloginDone": "Sesión iniciada de nuevo.",
-    "relogin": "Iniciar sesión de nuevo",
-    "reloginNeeded": "La sesión de AWS terminó. Inicia sesión de nuevo para seguir usando esta cuenta.",
-    "startUrlExample": "https://d-1234567890.awsapps.com/start",
-    "regionExample": "eu-west-1"
   }
 }

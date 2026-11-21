@@ -30,7 +30,6 @@ func cloudAccountsUsage(prog string) string {
   %[1]s cloud instances tag ACCOUNT INSTANCE KEY=VALUE...
   %[1]s cloud spend ACCOUNT [--refresh]
   %[1]s cloud aws link-kit --trusted-principal ARN [--role-name N] [--region R] [--template-url URL] [--guard-policy ARN]
-  %[1]s cloud aws sso login --start-url URL --sso-region R [--account-id ID --role-name N --name LABEL] | --relogin ACCOUNT
   %[1]s cloud aws vault-kit --account-id ID --vault-principal ARN [--role-name N] [--mount M] [--vault-role R] [--namespace NS] [--region R]
   %[1]s cloud aws ecr|acm|secrets|rds|snapshots|metrics|logs|idle|audit|guard|cleanup-plan ACCOUNT ... (run "cloud aws" for details)
   %[1]s cloud oracle policy-kit --group G --compartment NAME_OR_OCID [--policy-name N] [--manage]
@@ -361,8 +360,6 @@ func runCloudAWS(prog string, args []string, stdout, stderr io.Writer, lookupEnv
 	case "link-kit":
 	case "vault-kit":
 		return runCloudAWSVaultKit(prog, args[1:], stdout, stderr, lookupEnv)
-	case "sso":
-		return runCloudAWSSSO(prog, args[1:], stdout, stderr, lookupEnv)
 	default:
 		_, _ = fmt.Fprint(stderr, cloudAccountsUsage(prog))
 		_, _ = fmt.Fprint(stderr, cloudAWSServicesUsage(prog))

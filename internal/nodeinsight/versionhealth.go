@@ -5,6 +5,7 @@ import (
 	"errors"
 	"os"
 	"path/filepath"
+	"sort"
 	"sync"
 	"time"
 )
@@ -16,6 +17,9 @@ type VersionHealth struct {
 	LastGood string    `json:"last_good,omitempty"`
 	Failures int       `json:"failures"`
 	Since    time.Time `json:"since"`
+	// RolledBackFrom is the version this node was returned from; it is not
+	// offered again until the target changes or the hold is cleared.
+	RolledBackFrom string `json:"rolled_back_from,omitempty"`
 }
 
 // Observe records the running version. A version change resets the failure
@@ -25,7 +29,9 @@ func (h *VersionHealth) Observe(version string, now time.Time) {
 	if version == "" || version == h.Current {
 		return
 	}
-	if h.Current != "" && h.Failures == 0 {
+	if h.Current != "" && h.LastGood == version && h.Current != version {
+		h.RolledBackFrom = h.Current
+	} else if h.Current != "" && h.Failures == 0 {
 		h.LastGood = h.Current
 	}
 	h.Current, h.Failures, h.Since = version, 0, now
@@ -91,12 +97,35 @@ func (t *VersionTracker) Observe(id, version string, now time.Time) VersionHealt
 	return *h
 }
 
-// OfflineSince counts transitions to offline at or after since.
+// ClearRolledBack lifts the hold for a node so the version can be offered again.
+func (t *VersionTracker) ClearRolledBack(id string) {
+	t.mu.Lock()
+	defer t.mu.Unlock()
+	if h := t.nodes[id]; h != nil {
+		h.RolledBackFrom = ""
+	}
+}
+
+// OfflineSince counts transitions to offline at or after since, but only after
+// the node has reported online in that window. An offline event with no
+// handshake before it is a control plane restart or a flap, not a bad version.
 func OfflineSince(events []Event, since time.Time) int {
-	n := 0
+	ordered := make([]Event, 0, len(events))
 	for _, e := range events {
-		if e.To == "offline" && !e.At.Before(since) {
-			n++
+		if !e.At.Before(since) {
+			ordered = append(ordered, e)
+		}
+	}
+	sort.SliceStable(ordered, func(i, j int) bool { return ordered[i].At.Before(ordered[j].At) })
+	n, seenOnline := 0, false
+	for _, e := range ordered {
+		switch e.To {
+		case "online":
+			seenOnline = true
+		case "offline":
+			if seenOnline {
+				n++
+			}
 		}
 	}
 	return n
