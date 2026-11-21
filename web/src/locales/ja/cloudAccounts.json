@@ -349,6 +349,27 @@
       "expired": "期限切れ {{when}}",
       "orphan": "未接続の{{kind}}:",
       "nothing": "整理する対象はありません。"
+    },
+    "rds": {
+      "title": "データベース (RDS と Aurora)",
+      "name": "名前",
+      "engine": "エンジン",
+      "class": "インスタンスクラス",
+      "username": "マスターユーザー名",
+      "multiAz": "マルチ AZ (高コスト)",
+      "create": "データベースを作成",
+      "createTitle": "管理対象のデータベースを作成",
+      "createBody": "暗号化、非公開アクセス、停止または削除タイマー、タグ付きで作成します。ガードがクラスとコストを許可する必要があります。",
+      "estimate": "月額およそ {{usd}} USD (インスタンスのみ)。",
+      "noEstimate": "価格の見積もりはありません。",
+      "classBlocked": "このクラスは許可リストにありません。",
+      "passwordNote": "マスターパスワードは AWS が生成し Secrets Manager に保管します。Levelrail は保存しません。",
+      "empty": "このリージョンにデータベースはありません。",
+      "perMonth": "{{usd}} USD/月",
+      "snapshot": "スナップショット",
+      "stop": "停止",
+      "start": "開始",
+      "adopt": "取り込む"
     }
   }
 }

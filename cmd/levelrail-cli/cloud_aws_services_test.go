@@ -29,3 +29,31 @@ func TestCloudAWSServicesCLI(t *testing.T) {
 		t.Fatalf("guard json = %q", js)
 	}
 }
+
+func TestCloudAWSRDSCLI(t *testing.T) {
+	var got string
+	srv := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		w.Header().Set("Content-Type", "application/json")
+		switch r.Method + " " + r.URL.Path {
+		case "GET /api/v1/cloud-accounts/aws-prod/aws/rds/instances":
+			_, _ = w.Write([]byte(`{"instances":[{"id":"db1","engine":"postgres","class":"db.t4g.micro","status":"available","managed":true}]}`))
+		case "POST /api/v1/cloud-accounts/aws-prod/aws/rds/instances/db1/actions":
+			b := make([]byte, 256)
+			n, _ := r.Body.Read(b)
+			got = string(b[:n])
+			w.WriteHeader(http.StatusAccepted)
+			_, _ = w.Write([]byte(`{"id":"db1","action":"stop"}`))
+		default:
+			w.WriteHeader(http.StatusNotFound)
+		}
+	}))
+	defer srv.Close()
+	js, _ := runCLIExpectOK(t, []string{"cloud", "aws", "rds", "list", "aws-prod", "--json", "--api-url", srv.URL})
+	if !strings.Contains(js, `"db1"`) {
+		t.Fatalf("rds list json = %q", js)
+	}
+	runCLIExpectOK(t, []string{"cloud", "aws", "rds", "stop", "aws-prod", "db1", "--api-url", srv.URL})
+	if !strings.Contains(got, `"action":"stop"`) {
+		t.Fatalf("stop body = %q", got)
+	}
+}

@@ -49,6 +49,8 @@ var tenantRoutes = map[string]bool{
 	"GET /api/v1/cloud-accounts/{id}/aws/ecr/repositories":     true,
 	"GET /api/v1/cloud-accounts/{id}/aws/acm/certificates":     true,
 	"GET /api/v1/cloud-accounts/{id}/aws/audit":                true,
+	"GET /api/v1/cloud-accounts/{id}/aws/rds/instances":        true,
+	"GET /api/v1/cloud-accounts/{id}/aws/rds/instances/{rid}":  true,
 	"GET /api/v1/cloud-accounts/{id}/aws/guard":                true,
 	// Each section is replayed through the gate as its own request.
 	"GET /api/v1/shell":                  true,

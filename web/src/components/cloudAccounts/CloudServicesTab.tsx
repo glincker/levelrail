@@ -24,8 +24,15 @@ import { useSetRuntimeSetting } from '../../queries/runtimeSettings'
 import type { AwsServiceName } from '../../types/cloudAccounts'
 import { AcmBody, AuditBody, EcrBody, SecretsBody } from './AwsServiceCards'
 import { ServiceShell, StateLine } from './AwsServiceShared'
+import { RdsCard } from './RdsCard'
 
-const SERVICES: AwsServiceName[] = ['ecr', 'acm', 'secrets', 'cloudtrail']
+const SERVICES: AwsServiceName[] = [
+  'ecr',
+  'acm',
+  'secrets',
+  'rds',
+  'cloudtrail',
+]
 
 function GuardPanel({
   accountId,
@@ -223,6 +230,8 @@ export function CloudServicesTab({
               <AcmBody id={accountId} />
             ) : s === 'secrets' ? (
               <SecretsBody id={accountId} />
+            ) : s === 'rds' ? (
+              <RdsCard id={accountId} canCreate={isRoot} />
             ) : (
               <AuditBody id={accountId} />
             ),

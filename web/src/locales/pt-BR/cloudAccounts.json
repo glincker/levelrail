@@ -349,6 +349,27 @@
       "expired": "Expirou {{when}}",
       "orphan": "{{kind}} sem vínculo:",
       "nothing": "Nada para limpar."
+    },
+    "rds": {
+      "title": "Bancos de dados (RDS e Aurora)",
+      "name": "Nome",
+      "engine": "Motor",
+      "class": "Classe da instância",
+      "username": "Usuário mestre",
+      "multiAz": "Multi-AZ (custo maior)",
+      "create": "Criar banco",
+      "createTitle": "Criar um banco gerenciado",
+      "createBody": "Criado com criptografia, acesso privado, temporizador de parada ou remoção e tags. A proteção precisa permitir a classe e o custo.",
+      "estimate": "Cerca de {{usd}} USD por mês (só a instância).",
+      "noEstimate": "Sem estimativa de preço.",
+      "classBlocked": "Esta classe não está na lista permitida.",
+      "passwordNote": "A senha mestra é gerada pela AWS e fica no Secrets Manager. O Levelrail nunca a armazena.",
+      "empty": "Nenhum banco de dados nesta região.",
+      "perMonth": "{{usd}} USD/mês",
+      "snapshot": "Snapshot",
+      "stop": "Parar",
+      "start": "Iniciar",
+      "adopt": "Adotar"
     }
   }
 }

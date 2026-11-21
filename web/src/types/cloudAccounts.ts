@@ -192,7 +192,7 @@ export interface CloudSpendReport {
   error_code?: string
 }
 
-export type AwsServiceName = 'ecr' | 'acm' | 'secrets' | 'cloudtrail'
+export type AwsServiceName = 'ecr' | 'acm' | 'secrets' | 'rds' | 'cloudtrail'
 
 export interface AwsGuardStatus {
   kill_switch: boolean

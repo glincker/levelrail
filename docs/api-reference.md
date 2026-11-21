@@ -2525,6 +2525,15 @@ Routes that do not fit an existing group.
 | GET | /api/v1/cloud-accounts/{id}/aws/cleanup/plan | Public | handleAWSCleanupPlan |
 | GET | /api/v1/log-drains/field-descriptors | AbilityRead | handleGetLogDrainFields |
 | POST | /api/v1/cloud-accounts/aws/vault-kit | AbilityRoot | handleAWSVaultKit |
+| GET | /api/v1/cloud-accounts/{id}/aws/rds/instances | Public | handleRDSList |
+| GET | /api/v1/cloud-accounts/{id}/aws/rds/clusters | Public | handleRDSClusters |
+| GET | /api/v1/cloud-accounts/{id}/aws/rds/estimate | Public | handleRDSEstimate |
+| GET | /api/v1/cloud-accounts/{id}/aws/rds/snapshots | Public | handleRDSSnapshots |
+| DELETE | /api/v1/cloud-accounts/{id}/aws/rds/snapshots/{sid} | Public | handleRDSSnapshotDelete |
+| GET | /api/v1/cloud-accounts/{id}/aws/rds/instances/{rid} | Public | handleRDSGet |
+| POST | /api/v1/cloud-accounts/{id}/aws/rds/instances/{rid}/actions | Public | handleRDSAction |
+| POST | /api/v1/cloud-accounts/{id}/aws/rds/instances/{rid}/connect-as-database | Public | handleRDSConnectAsDatabase |
+| POST | /api/v1/cloud-accounts/{id}/aws/rds/instances | Public | handleRDSCreate |
 | POST | /mcp | Public |  |
 
 ## See also

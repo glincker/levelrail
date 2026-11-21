@@ -16,6 +16,7 @@ import (
 	"github.com/GLINCKER/levelrail/internal/awsx/acm"
 	"github.com/GLINCKER/levelrail/internal/awsx/cloudtrail"
 	"github.com/GLINCKER/levelrail/internal/awsx/ecr"
+	"github.com/GLINCKER/levelrail/internal/awsx/rds"
 	"github.com/GLINCKER/levelrail/internal/awsx/secrets"
 	"github.com/GLINCKER/levelrail/internal/cloudguard"
 	"github.com/GLINCKER/levelrail/internal/cloudspend"
@@ -39,6 +40,7 @@ var awsServices = map[string]awsServiceDef{
 	"acm":           {runtimesettings.KeyCloudGuardACM, "APP_CLOUD_GUARD_ACM"},
 	"secrets":       {runtimesettings.KeyCloudGuardParams, "APP_CLOUD_GUARD_PARAMS"},
 	"cloudtrail":    {runtimesettings.KeyCloudGuardCloudTrail, "APP_CLOUD_GUARD_CLOUDTRAIL"},
+	"rds":           {runtimesettings.KeyCloudGuardRDS, "APP_CLOUD_GUARD_RDS"},
 }
 
 func (rt *Router) awsServiceOn(svc string) bool {
@@ -560,6 +562,15 @@ func (rt *Router) handleAWSCleanupPlan(w http.ResponseWriter, r *http.Request) {
 		writeAWSError(w, err)
 		return
 	}
+	restop := []map[string]any{}
+	if rt.awsServiceOn(rds.ServiceName) {
+		age := time.Duration(envIntDefault("APP_CLOUD_RDS_RESTOP_AFTER_HOURS", 168)) * time.Hour
+		if items, rerr := rds.New(c.client, c.guard).PlanRestop(r.Context(), c.region, age); rerr == nil {
+			for _, it := range items {
+				restop = append(restop, map[string]any{"id": it.ID, "stopped_at": it.StoppedAt})
+			}
+		}
+	}
 	type expiredWire struct {
 		ARN       string    `json:"arn"`
 		ExpiredAt time.Time `json:"expired_at"`
@@ -580,7 +591,7 @@ func (rt *Router) handleAWSCleanupPlan(w http.ResponseWriter, r *http.Request) {
 		return out
 	}
 	writeJSON(w, http.StatusOK, map[string]any{
-		"dry_run": true, "region": c.region, "expired": exp, "unparsed": nonNilStrings(plan.Unparsed),
+		"dry_run": true, "region": c.region, "expired": exp, "rds_restop": restop, "unparsed": nonNilStrings(plan.Unparsed),
 		"orphans": map[string]any{"volumes": conv(orphans.Volumes), "addresses": conv(orphans.Addresses), "snapshots": conv(orphans.Snapshots)},
 	})
 }

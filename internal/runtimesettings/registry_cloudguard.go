@@ -6,6 +6,7 @@ const (
 	KeyCloudGuardACM           = "cloud.guard.service.acm"
 	KeyCloudGuardParams        = "cloud.guard.service.parameters"
 	KeyCloudGuardCloudTrail    = "cloud.guard.service.cloudtrail"
+	KeyCloudGuardRDS           = "cloud.guard.service.rds"
 	KeyCloudGuardMonthlyCapUSD = "cloud.guard.monthly_cap_usd"
 	KeyCloudGuardAccountCaps   = "cloud.guard.account_caps"
 	KeyCloudGuardPerCreateUSD  = "cloud.guard.per_create_max_usd"
@@ -25,6 +26,7 @@ func init() {
 	flag(KeyCloudGuardACM, "APP_CLOUD_GUARD_ACM", "AWS certificates", "Lets the control plane request ACM certificates.")
 	flag(KeyCloudGuardParams, "APP_CLOUD_GUARD_PARAMS", "AWS parameter store", "Lets the control plane list and write SSM parameters and list Secrets Manager entry names.")
 	flag(KeyCloudGuardCloudTrail, "APP_CLOUD_GUARD_CLOUDTRAIL", "AWS audit events", "Lets the control plane read CloudTrail events for a resource.")
+	flag(KeyCloudGuardRDS, "APP_CLOUD_GUARD_RDS", "AWS databases (RDS and Aurora)", "Lets the control plane list RDS instances and clusters, snapshot, stop, start and adopt them, and create managed ones behind the guard.")
 	registerLimitInt(KeyCloudGuardMonthlyCapUSD, "APP_CLOUD_GUARD_MONTHLY_CAP_USD", "0", "AWS monthly cap (USD)", "Default monthly spend cap per account that blocks new creates. 0 means no cap.", 0, cloudGuardMaxUSD)
 	Register(Definition{
 		Key: KeyCloudGuardAccountCaps, Category: cat, Kind: KindStringList, Default: "", Env: "APP_CLOUD_GUARD_ACCOUNT_CAPS", Apply: ApplyLive,

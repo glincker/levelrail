@@ -5,6 +5,7 @@ export const AWS_SERVICE_SETTING: Record<AwsServiceName, string> = {
   ecr: 'cloud.guard.service.ecr',
   acm: 'cloud.guard.service.acm',
   secrets: 'cloud.guard.service.parameters',
+  rds: 'cloud.guard.service.rds',
   cloudtrail: 'cloud.guard.service.cloudtrail',
 }
 

@@ -349,6 +349,27 @@
       "expired": "Abgelaufen {{when}}",
       "orphan": "Nicht angehängt {{kind}}:",
       "nothing": "Nichts zu bereinigen."
+    },
+    "rds": {
+      "title": "Datenbanken (RDS und Aurora)",
+      "name": "Name",
+      "engine": "Engine",
+      "class": "Instanzklasse",
+      "username": "Master-Benutzername",
+      "multiAz": "Multi-AZ (höhere Kosten)",
+      "create": "Datenbank erstellen",
+      "createTitle": "Verwaltete Datenbank erstellen",
+      "createBody": "Wird verschlüsselt, privat und mit Stopp- oder Abbau-Timer und Tags erstellt. Die Schutzregel muss Klasse und Kosten erlauben.",
+      "estimate": "Etwa {{usd}} USD pro Monat (nur Instanz).",
+      "noEstimate": "Keine Preisschätzung verfügbar.",
+      "classBlocked": "Diese Klasse steht nicht auf der Zulassungsliste.",
+      "passwordNote": "Das Master-Passwort erzeugt AWS und liegt im Secrets Manager. Levelrail speichert es nie.",
+      "empty": "Keine Datenbanken in dieser Region.",
+      "perMonth": "{{usd}} USD/Monat",
+      "snapshot": "Snapshot",
+      "stop": "Stoppen",
+      "start": "Starten",
+      "adopt": "Übernehmen"
     }
   }
 }

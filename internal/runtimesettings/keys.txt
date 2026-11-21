@@ -143,6 +143,7 @@ cloud.guard.service.acm
 cloud.guard.service.cloudtrail
 cloud.guard.service.ecr
 cloud.guard.service.parameters
+cloud.guard.service.rds
 cloud.instances.cache_ttl_seconds
 cloud.instances.events_window_days
 cloud.max_concurrent_plans

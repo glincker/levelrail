@@ -349,6 +349,27 @@
       "expired": "Caducó {{when}}",
       "orphan": "{{kind}} sin asociar:",
       "nothing": "Nada que limpiar."
+    },
+    "rds": {
+      "title": "Bases de datos (RDS y Aurora)",
+      "name": "Nombre",
+      "engine": "Motor",
+      "class": "Clase de instancia",
+      "username": "Usuario maestro",
+      "multiAz": "Multi-AZ (mayor costo)",
+      "create": "Crear base de datos",
+      "createTitle": "Crear una base de datos gestionada",
+      "createBody": "Se crea cifrada, con acceso privado, un temporizador de parada o eliminación y etiquetas. La protección debe permitir la clase y el costo.",
+      "estimate": "Unos {{usd}} USD al mes (solo instancia).",
+      "noEstimate": "No hay estimación de precio.",
+      "classBlocked": "Esta clase no está en la lista permitida.",
+      "passwordNote": "AWS genera la contraseña maestra y la guarda en Secrets Manager. Levelrail nunca la almacena.",
+      "empty": "No hay bases de datos en esta región.",
+      "perMonth": "{{usd}} USD/mes",
+      "snapshot": "Instantánea",
+      "stop": "Detener",
+      "start": "Iniciar",
+      "adopt": "Adoptar"
     }
   }
 }

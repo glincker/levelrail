@@ -466,6 +466,7 @@ These variables only seed the default of a [runtime setting](/runtime-settings).
 | `APP_CLOUD_GUARD_CLOUDTRAIL` | [`cloud.guard.service.cloudtrail`](/runtime-settings#observability) | `false` |
 | `APP_CLOUD_GUARD_ECR` | [`cloud.guard.service.ecr`](/runtime-settings#observability) | `false` |
 | `APP_CLOUD_GUARD_PARAMS` | [`cloud.guard.service.parameters`](/runtime-settings#observability) | `false` |
+| `APP_CLOUD_GUARD_RDS` | [`cloud.guard.service.rds`](/runtime-settings#observability) | `false` |
 | `APP_CLOUD_INSTANCES_CACHE_TTL_SECONDS` | [`cloud.instances.cache_ttl_seconds`](/runtime-settings#observability) | `30` |
 | `APP_CLOUD_INSTANCES_EVENTS_WINDOW_DAYS` | [`cloud.instances.events_window_days`](/runtime-settings#observability) | `7` |
 | `APP_CLOUD_SPEND_AWS_COST_EXPLORER` | [`cloud.spend.aws_cost_explorer`](/runtime-settings#observability) | `false` |

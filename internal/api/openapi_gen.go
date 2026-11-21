@@ -14,7 +14,7 @@ type openAPIRoute struct {
 	Description string
 }
 
-// openAPIRoutes holds all 2294 routes known to scripts/gen-api-reference at
+// openAPIRoutes holds all 2303 routes known to scripts/gen-api-reference at
 // generation time. Run `go run ./scripts/gen-api-reference` after changing
 // any routes*.go registration and commit the result.
 var openAPIRoutes = []openAPIRoute{
@@ -1239,6 +1239,15 @@ var openAPIRoutes = []openAPIRoute{
 	{Method: "POST", Path: "/api/v1/cloud-accounts/{id}/aws/ecr/repositories", Ability: "Public", Group: "Other", Handler: "handleAWSECRCreate", Description: ""},
 	{Method: "GET", Path: "/api/v1/cloud-accounts/{id}/aws/guard", Ability: "Public", Group: "Other", Handler: "handleAWSGuardStatus", Description: ""},
 	{Method: "POST", Path: "/api/v1/cloud-accounts/{id}/aws/guard/kill-switch", Ability: "AbilityRoot", Group: "Other", Handler: "handleAWSKillSwitch", Description: ""},
+	{Method: "GET", Path: "/api/v1/cloud-accounts/{id}/aws/rds/clusters", Ability: "Public", Group: "Other", Handler: "handleRDSClusters", Description: ""},
+	{Method: "GET", Path: "/api/v1/cloud-accounts/{id}/aws/rds/estimate", Ability: "Public", Group: "Other", Handler: "handleRDSEstimate", Description: ""},
+	{Method: "GET", Path: "/api/v1/cloud-accounts/{id}/aws/rds/instances", Ability: "Public", Group: "Other", Handler: "handleRDSList", Description: ""},
+	{Method: "POST", Path: "/api/v1/cloud-accounts/{id}/aws/rds/instances", Ability: "Public", Group: "Other", Handler: "handleRDSCreate", Description: ""},
+	{Method: "GET", Path: "/api/v1/cloud-accounts/{id}/aws/rds/instances/{rid}", Ability: "Public", Group: "Other", Handler: "handleRDSGet", Description: ""},
+	{Method: "POST", Path: "/api/v1/cloud-accounts/{id}/aws/rds/instances/{rid}/actions", Ability: "Public", Group: "Other", Handler: "handleRDSAction", Description: ""},
+	{Method: "POST", Path: "/api/v1/cloud-accounts/{id}/aws/rds/instances/{rid}/connect-as-database", Ability: "Public", Group: "Other", Handler: "handleRDSConnectAsDatabase", Description: ""},
+	{Method: "GET", Path: "/api/v1/cloud-accounts/{id}/aws/rds/snapshots", Ability: "Public", Group: "Other", Handler: "handleRDSSnapshots", Description: ""},
+	{Method: "DELETE", Path: "/api/v1/cloud-accounts/{id}/aws/rds/snapshots/{sid}", Ability: "Public", Group: "Other", Handler: "handleRDSSnapshotDelete", Description: ""},
 	{Method: "GET", Path: "/api/v1/cloud-accounts/{id}/aws/secrets", Ability: "Public", Group: "Other", Handler: "handleAWSSecretsList", Description: ""},
 	{Method: "POST", Path: "/api/v1/cloud-accounts/{id}/aws/secrets", Ability: "Public", Group: "Other", Handler: "handleAWSSecretsPut", Description: ""},
 	{Method: "POST", Path: "/api/v1/cloud-accounts/{id}/aws/secrets/reveal", Ability: "Public", Group: "Other", Handler: "handleAWSSecretsReveal", Description: ""},

@@ -23,6 +23,8 @@ func cloudAWSServicesUsage(prog string) string {
   %[1]s cloud aws secrets list ACCOUNT [--path /P] [--region R]
   %[1]s cloud aws secrets put ACCOUNT /NAME [--overwrite] [--region R]
   %[1]s cloud aws secrets reveal ACCOUNT NAME [--kind ssm|secretsmanager] [--region R]
+  %[1]s cloud aws rds list|show|snapshot|stop|start|adopt|connect ACCOUNT [ID] [--region R]
+  %[1]s cloud aws rds create ACCOUNT ID --engine E --class C [--username U] [--storage GB] [--multi-az] [--cluster] [--confirm] [--env E] [--project P]
   %[1]s cloud aws audit ACCOUNT RESOURCE [--region R]
   %[1]s cloud aws guard ACCOUNT [--kill-switch on|off]
   %[1]s cloud aws cleanup-plan ACCOUNT [--region R]
@@ -34,15 +36,16 @@ Every command takes --json. Every service is off until enabled in runtime settin
 
 func isCloudAWSService(v string) bool {
 	switch v {
-	case "ecr", "acm", "secrets", "audit", "guard", "cleanup-plan":
+	case "ecr", "acm", "secrets", "rds", "audit", "guard", "cleanup-plan":
 		return true
 	}
 	return false
 }
 
 func runCloudAWSServices(prog, verb string, args []string, stdout, stderr io.Writer, lookupEnv func(string) (string, bool)) int {
-	var region, env, project, path, kind, killSwitch string
-	var overwrite bool
+	var region, env, project, path, kind, killSwitch, engine, class, username, dbName string
+	var storage int
+	var overwrite, multiAZ, cluster, confirm bool
 	var alts multiFlag
 	setup := func(fs *flag.FlagSet) {
 		fs.StringVar(&region, "region", "", "AWS region, defaults to the account region")
@@ -52,12 +55,20 @@ func runCloudAWSServices(prog, verb string, args []string, stdout, stderr io.Wri
 		fs.StringVar(&kind, "kind", "ssm", "ssm or secretsmanager")
 		fs.StringVar(&killSwitch, "kill-switch", "", "on or off, root only")
 		fs.BoolVar(&overwrite, "overwrite", false, "overwrite an existing parameter")
+		fs.StringVar(&engine, "engine", "", "database engine, for rds create")
+		fs.StringVar(&class, "class", "", "instance class, for rds create")
+		fs.StringVar(&username, "username", "", "master username, for rds create")
+		fs.StringVar(&dbName, "db-name", "", "initial database name, for rds create")
+		fs.IntVar(&storage, "storage", 20, "allocated storage in GB, for rds create")
+		fs.BoolVar(&multiAZ, "multi-az", false, "Multi-AZ deployment, needs --confirm")
+		fs.BoolVar(&cluster, "cluster", false, "create an Aurora cluster, needs --confirm")
+		fs.BoolVar(&confirm, "confirm", false, "confirm a Multi-AZ or Aurora create")
 		fs.Var(&alts, "alt", "alternative certificate name, repeatable")
 	}
 	label := "cloud aws " + verb
 	return cloudCall(prog, label, args, stdout, stderr, lookupEnv, setup, func(c *apiclient.Client, pos []string, _ outputFlags) (any, func(), error) {
 		sub := ""
-		if verb == "ecr" || verb == "acm" || verb == "secrets" {
+		if verb == "ecr" || verb == "acm" || verb == "secrets" || verb == "rds" {
 			if len(pos) < 1 {
 				return nil, nil, fmt.Errorf("a subcommand is required (see help)")
 			}
@@ -83,6 +94,13 @@ func runCloudAWSServices(prog, verb string, args []string, stdout, stderr io.Wri
 		call := func(method, p string, body any) error { return c.CloudRequest(ctx, method, p, body, &out) }
 		table := func(head []string, key string, keys ...string) func() {
 			return func() { printCloudTable(stdout, head, rowsOf(out[key]), keys...) }
+		}
+		if verb == "rds" {
+			switch sub {
+			case "list", "show", "snapshot", "stop", "start", "adopt", "connect", "create":
+			default:
+				return nil, nil, fmt.Errorf("unknown subcommand %q", sub)
+			}
 		}
 		var err error
 		switch verb + " " + sub {
@@ -132,6 +150,42 @@ func runCloudAWSServices(prog, verb string, args []string, stdout, stderr io.Wri
 			}
 			err = call("POST", base+"secrets/reveal", cloudRow{"kind": kind, "name": rest[0], "region": region})
 			return out, func() { _, _ = fmt.Fprintln(stdout, out["value"]) }, err
+		case "rds list":
+			err = call("GET", withQ(base+"rds/instances"), nil)
+			return out, table([]string{"ID", "ENGINE", "CLASS", "STATUS", "MANAGED", "EST USD/MO"}, "instances", "id", "engine", "class", "status", "managed", "est_monthly_usd"), err
+		case "rds show":
+			if len(rest) < 1 {
+				return nil, nil, fmt.Errorf("an instance ID is required")
+			}
+			err = call("GET", withQ(base+"rds/instances/"+url.PathEscape(rest[0])), nil)
+			return out, func() {
+				printCloudTable(stdout, []string{"ID", "ENGINE", "CLASS", "STATUS", "HOST", "PORT", "MANAGED"}, []cloudRow{out}, "id", "engine", "class", "status", "host", "port", "managed")
+			}, err
+		case "rds snapshot", "rds stop", "rds start", "rds adopt":
+			if len(rest) < 1 {
+				return nil, nil, fmt.Errorf("an instance ID is required")
+			}
+			err = call("POST", base+"rds/instances/"+url.PathEscape(rest[0])+"/actions", cloudRow{"action": sub, "region": region, "env": env, "project": project})
+			return out, func() {
+				printCloudTable(stdout, []string{"ID", "ACTION", "SNAPSHOT"}, []cloudRow{out}, "id", "action", "snapshot_id")
+			}, err
+		case "rds connect":
+			if len(rest) < 1 {
+				return nil, nil, fmt.Errorf("an instance ID is required")
+			}
+			err = call("POST", base+"rds/instances/"+url.PathEscape(rest[0])+"/connect-as-database", cloudRow{"region": region})
+			return out, func() {
+				printCloudTable(stdout, []string{"NAME", "ENGINE", "HOST", "PORT"}, []cloudRow{out}, "name", "engine", "host", "port")
+			}, err
+		case "rds create":
+			if len(rest) < 1 || engine == "" {
+				return nil, nil, fmt.Errorf("an instance ID and --engine are required")
+			}
+			err = call("POST", base+"rds/instances", cloudRow{"id": rest[0], "engine": engine, "class": class, "master_username": username, "db_name": dbName,
+				"allocated_gb": storage, "multi_az": multiAZ, "cluster": cluster, "confirm": confirm, "region": region, "env": env, "project": project})
+			return out, func() {
+				printCloudTable(stdout, []string{"ID", "EST USD/MO"}, []cloudRow{out}, "id", "est_monthly_usd")
+			}, err
 		case "audit ":
 			if len(rest) < 1 {
 				return nil, nil, fmt.Errorf("a resource name is required")

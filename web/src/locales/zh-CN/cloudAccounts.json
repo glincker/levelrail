@@ -349,6 +349,27 @@
       "expired": "已过期 {{when}}",
       "orphan": "未挂载的{{kind}}：",
       "nothing": "无需清理。"
+    },
+    "rds": {
+      "title": "数据库 (RDS 和 Aurora)",
+      "name": "名称",
+      "engine": "引擎",
+      "class": "实例规格",
+      "username": "主用户名",
+      "multiAz": "多可用区 (成本更高)",
+      "create": "创建数据库",
+      "createTitle": "创建受管数据库",
+      "createBody": "创建时启用加密、私有访问、停止或销毁计时器和标签。防护规则需允许该规格和成本。",
+      "estimate": "每月约 {{usd}} 美元 (仅实例)。",
+      "noEstimate": "暂无价格估算。",
+      "classBlocked": "该规格不在允许列表中。",
+      "passwordNote": "主密码由 AWS 生成并保存在 Secrets Manager 中，Levelrail 不会存储。",
+      "empty": "该区域没有数据库。",
+      "perMonth": "{{usd}} 美元/月",
+      "snapshot": "快照",
+      "stop": "停止",
+      "start": "启动",
+      "adopt": "接管"
     }
   }
 }
