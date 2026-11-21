@@ -89,6 +89,8 @@ Usage:
   levelrail-cli cloud aws metrics ACCOUNT INSTANCE [--names CPUUtilization,NetworkIn] [--hours N] [--region R]
   levelrail-cli cloud aws logs groups|events ACCOUNT [GROUP] [--prefix P] [--filter PATTERN] [--hours N] [--limit N] [--region R]
   levelrail-cli cloud aws idle ACCOUNT [--region R]
+  levelrail-cli cloud aws cloudfront list|show|invalidations|invalidate ACCOUNT [DISTRIBUTION] [--path /P]...
+  levelrail-cli cloud aws ssm instances|run|result|session ACCOUNT [COMMAND_ID] [--instance I] [--command C] [--region R]
   levelrail-cli cloud aws audit ACCOUNT RESOURCE [--region R]
   levelrail-cli cloud aws guard ACCOUNT [--kill-switch on|off]
   levelrail-cli cloud aws cleanup-plan ACCOUNT [--region R]

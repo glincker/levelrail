@@ -147,6 +147,8 @@ type attempt struct {
 	contentType string
 	target      string
 	body        []byte
+	// method, path and endpoint are set by REST calls; JSON and Query keep POST on the service root.
+	method, path, endpoint string
 }
 
 // JSON sends one JSON 1.1 call and decodes the response into out (may be nil).
@@ -204,13 +206,22 @@ func (c *Client) do(ctx context.Context, a attempt, parse func([]byte, http.Head
 func (c *Client) once(ctx context.Context, a attempt, parse func([]byte, http.Header) (string, string)) ([]byte, error) {
 	endpoint := c.o.BaseURL
 	if endpoint == "" {
+		endpoint = a.endpoint
+	}
+	if endpoint == "" {
 		endpoint = a.svc.Endpoint(a.region)
 	}
-	req, err := http.NewRequestWithContext(ctx, http.MethodPost, endpoint, bytes.NewReader(a.body))
+	method := a.method
+	if method == "" {
+		method = http.MethodPost
+	}
+	req, err := http.NewRequestWithContext(ctx, method, endpoint+a.path, bytes.NewReader(a.body))
 	if err != nil {
 		return nil, err
 	}
-	req.Header.Set("Content-Type", a.contentType)
+	if a.contentType != "" {
+		req.Header.Set("Content-Type", a.contentType)
+	}
 	if a.target != "" {
 		req.Header.Set("X-Amz-Target", a.target)
 	}

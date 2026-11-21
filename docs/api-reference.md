@@ -2544,9 +2544,14 @@ Routes that do not fit an existing group.
 | GET | /api/v1/cloud-accounts/{id}/aws/idle | Public | handleAWSIdle |
 | GET | /api/v1/cloud-accounts/doctor/preflight | AbilityRoot | handleCloudDoctorPreflight |
 | GET | /api/v1/cloud-accounts/{id}/doctor | Public | handleCloudAccountDoctor |
-| POST | /api/v1/cloud-accounts/{id}/aws/rds/clusters/{cid}/actions | Public | handleRDSClusterAction |
-| GET | /api/v1/cloud-accounts/{id}/aws/rds/cluster-snapshots | Public | handleRDSClusterSnapshots |
-| DELETE | /api/v1/cloud-accounts/{id}/aws/rds/cluster-snapshots/{sid} | Public | handleRDSClusterSnapshotDelete |
+| GET | /api/v1/cloud-accounts/{id}/aws/cloudfront/distributions | Public | handleAWSCFList |
+| GET | /api/v1/cloud-accounts/{id}/aws/cloudfront/distributions/{did} | Public | handleAWSCFGet |
+| GET | /api/v1/cloud-accounts/{id}/aws/cloudfront/distributions/{did}/invalidations | Public | handleAWSCFInvalidations |
+| POST | /api/v1/cloud-accounts/{id}/aws/cloudfront/distributions/{did}/invalidations | Public | handleAWSCFInvalidate |
+| GET | /api/v1/cloud-accounts/{id}/aws/ssm/instances | Public | handleAWSSSMInstances |
+| POST | /api/v1/cloud-accounts/{id}/aws/ssm/commands | AbilityRoot | handleAWSSSMSend |
+| POST | /api/v1/cloud-accounts/{id}/aws/ssm/commands/{cid}/invocation | AbilityRoot | handleAWSSSMInvocation |
+| POST | /api/v1/cloud-accounts/{id}/aws/ssm/sessions | AbilityRoot | handleAWSSSMSession |
 | GET | /api/v1/cloud-accounts/{id}/aws/elasticache/replication-groups | Public | handleElastiCacheGroups |
 | GET | /api/v1/cloud-accounts/{id}/aws/elasticache/replication-groups/{rid} | Public | handleElastiCacheGroup |
 | DELETE | /api/v1/cloud-accounts/{id}/aws/elasticache/replication-groups/{rid} | Public | handleElastiCacheGroupDelete |
@@ -2556,6 +2561,9 @@ Routes that do not fit an existing group.
 | DELETE | /api/v1/cloud-accounts/{id}/aws/elasticache/clusters/{cid} | Public | handleElastiCacheClusterDelete |
 | GET | /api/v1/cloud-accounts/{id}/aws/elasticache/snapshots | Public | handleElastiCacheSnapshots |
 | POST | /api/v1/cloud-accounts/{id}/aws/elasticache/snapshots | Public | handleElastiCacheSnapshotCreate |
+| POST | /api/v1/cloud-accounts/{id}/aws/rds/clusters/{cid}/actions | Public | handleRDSClusterAction |
+| GET | /api/v1/cloud-accounts/{id}/aws/rds/cluster-snapshots | Public | handleRDSClusterSnapshots |
+| DELETE | /api/v1/cloud-accounts/{id}/aws/rds/cluster-snapshots/{sid} | Public | handleRDSClusterSnapshotDelete |
 | POST | /mcp | Public |  |
 
 ## See also

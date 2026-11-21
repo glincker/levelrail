@@ -18,6 +18,7 @@ import (
 	"github.com/GLINCKER/levelrail/internal/awsx/ecr"
 	"github.com/GLINCKER/levelrail/internal/awsx/rds"
 	"github.com/GLINCKER/levelrail/internal/awsx/secrets"
+	"github.com/GLINCKER/levelrail/internal/awsx/ssm"
 	"github.com/GLINCKER/levelrail/internal/cloudguard"
 	"github.com/GLINCKER/levelrail/internal/cloudspend"
 	"github.com/GLINCKER/levelrail/internal/runtimesettings"
@@ -158,7 +159,7 @@ func (rt *Router) awsCallFor(w http.ResponseWriter, r *http.Request, svc, region
 // writeAWSError hides provider messages, which can echo request values.
 func writeAWSError(w http.ResponseWriter, err error) {
 	switch {
-	case errors.Is(err, ecr.ErrRefused), errors.Is(err, acm.ErrRefused):
+	case errors.Is(err, ecr.ErrRefused), errors.Is(err, acm.ErrRefused), errors.Is(err, ssm.ErrRefused):
 		writeError(w, http.StatusConflict, err.Error())
 	case errors.Is(err, context.DeadlineExceeded), errors.Is(err, context.Canceled):
 		writeError(w, http.StatusGatewayTimeout, "the AWS call timed out")

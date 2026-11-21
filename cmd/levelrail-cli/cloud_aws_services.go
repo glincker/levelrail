@@ -33,6 +33,8 @@ func cloudAWSServicesUsage(prog string) string {
   %[1]s cloud aws metrics ACCOUNT INSTANCE [--names CPUUtilization,NetworkIn] [--hours N] [--region R]
   %[1]s cloud aws logs groups|events ACCOUNT [GROUP] [--prefix P] [--filter PATTERN] [--hours N] [--limit N] [--region R]
   %[1]s cloud aws idle ACCOUNT [--region R]
+  %[1]s cloud aws cloudfront list|show|invalidations|invalidate ACCOUNT [DISTRIBUTION] [--path /P]...
+  %[1]s cloud aws ssm instances|run|result|session ACCOUNT [COMMAND_ID] [--instance I] [--command C] [--region R]
   %[1]s cloud aws audit ACCOUNT RESOURCE [--region R]
   %[1]s cloud aws guard ACCOUNT [--kill-switch on|off]
   %[1]s cloud aws cleanup-plan ACCOUNT [--region R]
@@ -44,13 +46,16 @@ Every command takes --json. Every service is off until enabled in runtime settin
 
 func isCloudAWSService(v string) bool {
 	switch v {
-	case "ecr", "acm", "secrets", "rds", "elasticache", "snapshots", "metrics", "logs", "idle", "audit", "guard", "cleanup-plan":
+	case "ecr", "acm", "secrets", "rds", "elasticache", "snapshots", "metrics", "logs", "idle", "audit", "guard", "cleanup-plan", "cloudfront", "ssm":
 		return true
 	}
 	return false
 }
 
 func runCloudAWSServices(prog, verb string, args []string, stdout, stderr io.Writer, lookupEnv func(string) (string, bool)) int {
+	if verb == "cloudfront" || verb == "ssm" {
+		return runCloudAWSCFSSM(prog, verb, args, stdout, stderr, lookupEnv)
+	}
 	var region, env, project, path, kind, killSwitch, engine, class, username, dbName string
 	var storage, hours, limit int
 	var volume, instance, names, prefix, filter, description string

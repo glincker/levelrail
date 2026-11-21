@@ -14,7 +14,7 @@ type openAPIRoute struct {
 	Description string
 }
 
-// openAPIRoutes holds all 2325 routes known to scripts/gen-api-reference at
+// openAPIRoutes holds all 2333 routes known to scripts/gen-api-reference at
 // generation time. Run `go run ./scripts/gen-api-reference` after changing
 // any routes*.go registration and commit the result.
 var openAPIRoutes = []openAPIRoute{
@@ -1235,6 +1235,10 @@ var openAPIRoutes = []openAPIRoute{
 	{Method: "POST", Path: "/api/v1/cloud-accounts/{id}/aws/acm/certificates", Ability: "Public", Group: "Other", Handler: "handleAWSACMRequest", Description: ""},
 	{Method: "GET", Path: "/api/v1/cloud-accounts/{id}/aws/audit", Ability: "Public", Group: "Other", Handler: "handleAWSAudit", Description: ""},
 	{Method: "GET", Path: "/api/v1/cloud-accounts/{id}/aws/cleanup/plan", Ability: "Public", Group: "Other", Handler: "handleAWSCleanupPlan", Description: ""},
+	{Method: "GET", Path: "/api/v1/cloud-accounts/{id}/aws/cloudfront/distributions", Ability: "Public", Group: "Other", Handler: "handleAWSCFList", Description: ""},
+	{Method: "GET", Path: "/api/v1/cloud-accounts/{id}/aws/cloudfront/distributions/{did}", Ability: "Public", Group: "Other", Handler: "handleAWSCFGet", Description: ""},
+	{Method: "GET", Path: "/api/v1/cloud-accounts/{id}/aws/cloudfront/distributions/{did}/invalidations", Ability: "Public", Group: "Other", Handler: "handleAWSCFInvalidations", Description: ""},
+	{Method: "POST", Path: "/api/v1/cloud-accounts/{id}/aws/cloudfront/distributions/{did}/invalidations", Ability: "Public", Group: "Other", Handler: "handleAWSCFInvalidate", Description: ""},
 	{Method: "GET", Path: "/api/v1/cloud-accounts/{id}/aws/cloudwatch/log-events", Ability: "Public", Group: "Other", Handler: "handleCloudWatchLogEvents", Description: ""},
 	{Method: "GET", Path: "/api/v1/cloud-accounts/{id}/aws/cloudwatch/log-groups", Ability: "Public", Group: "Other", Handler: "handleCloudWatchLogGroups", Description: ""},
 	{Method: "GET", Path: "/api/v1/cloud-accounts/{id}/aws/cloudwatch/metrics", Ability: "Public", Group: "Other", Handler: "handleCloudWatchMetrics", Description: ""},
@@ -1272,6 +1276,10 @@ var openAPIRoutes = []openAPIRoute{
 	{Method: "GET", Path: "/api/v1/cloud-accounts/{id}/aws/secrets", Ability: "Public", Group: "Other", Handler: "handleAWSSecretsList", Description: ""},
 	{Method: "POST", Path: "/api/v1/cloud-accounts/{id}/aws/secrets", Ability: "Public", Group: "Other", Handler: "handleAWSSecretsPut", Description: ""},
 	{Method: "POST", Path: "/api/v1/cloud-accounts/{id}/aws/secrets/reveal", Ability: "Public", Group: "Other", Handler: "handleAWSSecretsReveal", Description: ""},
+	{Method: "POST", Path: "/api/v1/cloud-accounts/{id}/aws/ssm/commands", Ability: "AbilityRoot", Group: "Other", Handler: "handleAWSSSMSend", Description: ""},
+	{Method: "POST", Path: "/api/v1/cloud-accounts/{id}/aws/ssm/commands/{cid}/invocation", Ability: "AbilityRoot", Group: "Other", Handler: "handleAWSSSMInvocation", Description: ""},
+	{Method: "GET", Path: "/api/v1/cloud-accounts/{id}/aws/ssm/instances", Ability: "Public", Group: "Other", Handler: "handleAWSSSMInstances", Description: ""},
+	{Method: "POST", Path: "/api/v1/cloud-accounts/{id}/aws/ssm/sessions", Ability: "AbilityRoot", Group: "Other", Handler: "handleAWSSSMSession", Description: ""},
 	{Method: "GET", Path: "/api/v1/cloud-accounts/{id}/doctor", Ability: "Public", Group: "Other", Handler: "handleCloudAccountDoctor", Description: ""},
 	{Method: "GET", Path: "/api/v1/cloud-accounts/{id}/grants", Ability: "Public", Group: "Other", Handler: "handleListCloudGrants", Description: ""},
 	{Method: "POST", Path: "/api/v1/cloud-accounts/{id}/grants", Ability: "Public", Group: "Other", Handler: "handleCreateCloudGrant", Description: ""},

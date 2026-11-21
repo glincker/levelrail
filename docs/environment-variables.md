@@ -456,6 +456,7 @@ These variables only seed the default of a [runtime setting](/runtime-settings).
 | `APP_CONTAINERS_INSPECT_TIMEOUT` | [`apps.containers_inspect_timeout`](/runtime-settings#observability) | `5s` |
 | `APP_AUTOSCALE_GAUGE_MAX_BYTES` | [`autoscale.gauge_max_bytes`](/runtime-settings#observability) | `1048576` |
 | `APP_AUTOSCALE_GAUGE_TIMEOUT` | [`autoscale.gauge_timeout`](/runtime-settings#observability) | `3s` |
+| `APP_CLOUD_CLOUDFRONT_MAX_INVALIDATION_PATHS` | [`cloud.cloudfront.max_invalidation_paths`](/runtime-settings#observability) | `50` |
 | `APP_CLOUD_GUARD_ACCOUNT_CAPS` | [`cloud.guard.account_caps`](/runtime-settings#observability) | empty |
 | `APP_CLOUD_GUARD_DEFAULT_EXPIRES_HOURS` | [`cloud.guard.default_expires_hours`](/runtime-settings#observability) | `168` |
 | `APP_CLOUD_GUARD_IDLE_ALB_MONTH_CENTS` | [`cloud.guard.idle.alb_month_cents`](/runtime-settings#observability) | `1643` |
@@ -469,6 +470,7 @@ These variables only seed the default of a [runtime setting](/runtime-settings).
 | `APP_CLOUD_GUARD_PER_CREATE_MAX_USD` | [`cloud.guard.per_create_max_usd`](/runtime-settings#observability) | `0` |
 | `APP_CLOUD_GUARD_POLICY_ARN` | [`cloud.guard.policy_arn`](/runtime-settings#observability) | empty |
 | `APP_CLOUD_GUARD_ACM` | [`cloud.guard.service.acm`](/runtime-settings#observability) | `false` |
+| `APP_CLOUD_GUARD_CLOUDFRONT` | [`cloud.guard.service.cloudfront`](/runtime-settings#observability) | `false` |
 | `APP_CLOUD_GUARD_CLOUDTRAIL` | [`cloud.guard.service.cloudtrail`](/runtime-settings#observability) | `false` |
 | `APP_CLOUD_GUARD_CLOUDWATCH` | [`cloud.guard.service.cloudwatch`](/runtime-settings#observability) | `false` |
 | `APP_CLOUD_GUARD_EBS` | [`cloud.guard.service.ebs`](/runtime-settings#observability) | `false` |
@@ -476,6 +478,8 @@ These variables only seed the default of a [runtime setting](/runtime-settings).
 | `APP_CLOUD_GUARD_ELASTICACHE` | [`cloud.guard.service.elasticache`](/runtime-settings#observability) | `false` |
 | `APP_CLOUD_GUARD_PARAMS` | [`cloud.guard.service.parameters`](/runtime-settings#observability) | `false` |
 | `APP_CLOUD_GUARD_RDS` | [`cloud.guard.service.rds`](/runtime-settings#observability) | `false` |
+| `APP_CLOUD_GUARD_SSM` | [`cloud.guard.service.ssm`](/runtime-settings#observability) | `false` |
+| `APP_CLOUD_GUARD_SSM_RUN` | [`cloud.guard.service.ssm_run`](/runtime-settings#observability) | `false` |
 | `APP_CLOUD_GUARD_SNAPSHOT_KEEP_DAILY` | [`cloud.guard.snapshot.keep_daily`](/runtime-settings#observability) | `7` |
 | `APP_CLOUD_GUARD_SNAPSHOT_KEEP_WEEKLY` | [`cloud.guard.snapshot.keep_weekly`](/runtime-settings#observability) | `4` |
 | `APP_CLOUD_INSTANCES_CACHE_TTL_SECONDS` | [`cloud.instances.cache_ttl_seconds`](/runtime-settings#observability) | `30` |
@@ -487,6 +491,8 @@ These variables only seed the default of a [runtime setting](/runtime-settings).
 | `APP_CLOUD_SPEND_REFRESH_MIN_INTERVAL_MINUTES` | [`cloud.spend.refresh_min_interval_minutes`](/runtime-settings#observability) | `5` |
 | `APP_CLOUD_SPEND_REFRESH_PER_USER_PER_HOUR` | [`cloud.spend.refresh_per_user_per_hour`](/runtime-settings#observability) | `6` |
 | `APP_CLOUD_SPEND_STALE_AFTER_HOURS` | [`cloud.spend.stale_after_hours`](/runtime-settings#observability) | `72` |
+| `APP_CLOUD_SSM_COMMAND_ALLOWLIST` | [`cloud.ssm.command_allowlist`](/runtime-settings#observability) | empty |
+| `APP_CLOUD_SSM_COMMAND_TIMEOUT_SECONDS` | [`cloud.ssm.command_timeout_seconds`](/runtime-settings#observability) | `60` |
 | `APP_DB_QUERY_MAX_BYTES` | [`database_viewer.max_bytes`](/runtime-settings#observability) | `4194304` |
 | `APP_DB_QUERY_MAX_CELL_BYTES` | [`database_viewer.max_cell_bytes`](/runtime-settings#observability) | `65536` |
 | `APP_DB_QUERY_MAX_ROWS` | [`database_viewer.max_rows`](/runtime-settings#observability) | `1000` |

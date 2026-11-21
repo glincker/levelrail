@@ -118,6 +118,7 @@ cleanup.failing_window
 cleanup.interval
 cloud.allow_checksum_only
 cloud.allow_protected_delete
+cloud.cloudfront.max_invalidation_paths
 cloud.connections_enabled
 cloud.default_monthly_cost_limit
 cloud.engine_cpus
@@ -146,6 +147,7 @@ cloud.guard.monthly_cap_usd
 cloud.guard.per_create_max_usd
 cloud.guard.policy_arn
 cloud.guard.service.acm
+cloud.guard.service.cloudfront
 cloud.guard.service.cloudtrail
 cloud.guard.service.cloudwatch
 cloud.guard.service.ebs
@@ -153,6 +155,8 @@ cloud.guard.service.ecr
 cloud.guard.service.elasticache
 cloud.guard.service.parameters
 cloud.guard.service.rds
+cloud.guard.service.ssm
+cloud.guard.service.ssm_run
 cloud.guard.snapshot.keep_daily
 cloud.guard.snapshot.keep_weekly
 cloud.instances.cache_ttl_seconds
@@ -169,6 +173,8 @@ cloud.spend.max_pages
 cloud.spend.refresh_min_interval_minutes
 cloud.spend.refresh_per_user_per_hour
 cloud.spend.stale_after_hours
+cloud.ssm.command_allowlist
+cloud.ssm.command_timeout_seconds
 cloud.state_max_kb
 compose.depends_on_timeout
 compose.repo_deploy_timeout

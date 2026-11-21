@@ -16,6 +16,7 @@ import (
 // Call is one request the fake server received.
 type Call struct {
 	Target, Body, Auth string
+	Method, Path       string
 }
 
 // Reply is what the fake sends back.
@@ -44,7 +45,7 @@ func New(t *testing.T, h func(c Call, n int) Reply) (*awsx.Client, *Recorder) {
 	rec := &Recorder{}
 	srv := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
 		b, _ := io.ReadAll(r.Body)
-		c := Call{Target: r.Header.Get("X-Amz-Target"), Body: string(b), Auth: r.Header.Get("Authorization")}
+		c := Call{Target: r.Header.Get("X-Amz-Target"), Body: string(b), Auth: r.Header.Get("Authorization"), Method: r.Method, Path: r.URL.RequestURI()}
 		rec.mu.Lock()
 		rec.calls = append(rec.calls, c)
 		n := len(rec.calls)
