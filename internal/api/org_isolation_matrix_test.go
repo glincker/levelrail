@@ -200,7 +200,7 @@ var orgInstanceFamilies = strings.Fields(`
 ai alert-defaults alert-history alert-maintenance-windows alert-silences alert-templates analysis app-types apply apps
 apps-metrics apps-summary archives assets audit-log backup-targets backups benchmarks bitbucket-app build build-cache builders
 build-limits builds cdn certificates changelog cleanup cloud-accounts clusters compliance compose connections control-plane costs dashboards database-catalog
-database-engines database-versions databases deploy-policies deployments deploys diagnose dns dockerhub doctor domains
+database-engines database-versions databases deploy-policies deploy-targets deployments deploys diagnose dns dockerhub doctor domains
 environments event-webhook-deliveries event-webhook-types event-webhooks export external-databases firewall
 firewall-rules fixes flags forgejo-app frameworks function-invocations function-kv functions git git-connections
 git-providers git-sources gitea-app github-app gitlab-app go-live gpus iam images import imports inbox incidents ingress

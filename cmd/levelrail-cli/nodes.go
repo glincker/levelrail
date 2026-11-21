@@ -107,6 +107,8 @@ func runNodes(prog string, args []string, stdout, stderr io.Writer, lookupEnv fu
 		return runNodesGroups(prog, rest, stdout, stderr, lookupEnv)
 	case "labels":
 		return runNodesLabels(prog, rest, stdout, stderr, lookupEnv)
+	case "targets":
+		return runNodesTargets(prog, rest, stdout, stderr, lookupEnv)
 	case "zones":
 		return runNodesZones(prog, rest, stdout, stderr, lookupEnv)
 	case "domains":
@@ -160,6 +162,7 @@ func nodesUsage(prog string) string {
   %[1]s nodes labels <id> [key=value ...] [flags]                    show or replace a node's labels
   %[1]s nodes taint <id> [key[=value]:Effect ...] [--clear]          show or replace the taints that keep workloads off a node
   %[1]s nodes placement <app|database> <name> [key=value ...]        show or set which node labels a resource requires
+  %[1]s nodes targets [flags]                                        deploy targets grouped by cloud account
   %[1]s nodes zones [flags]                                          failure domains with their nodes and workloads
   %[1]s nodes simulate [--cpu M] [--memory MiB] [--count N]          dry run: where new apps would land and why
   %[1]s nodes failure --zone Z | --node ID                           dry run: where workloads go if a zone or node dies

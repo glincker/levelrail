@@ -9,7 +9,19 @@
   },
   "nodeSelect": {
     "auto": "自动（负载最低）",
-    "autoHint": "自动模式会把它放在负载最低的可用节点上。选择一个节点可将其固定在该节点。"
+    "autoHint": "自动模式会把它放在负载最低的可用节点上。选择一个节点可将其固定在该节点。",
+    "picker": {
+      "search": "搜索节点",
+      "empty": "没有匹配的节点",
+      "local": "此服务器",
+      "unmanaged": "未托管",
+      "health": {
+        "healthy": "正常",
+        "offline": "离线",
+        "cordoned": "已隔离",
+        "pending": "待处理"
+      }
+    }
   },
   "draft": {
     "message": "你有一份 {{time}} 保存的未提交草稿。",

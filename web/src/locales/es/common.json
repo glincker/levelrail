@@ -1315,7 +1315,19 @@
   },
   "nodeSelect": {
     "auto": "Automático (el menos cargado)",
-    "autoHint": "Automático la coloca en el nodo elegible con menos carga. Elige un nodo para fijarla ahí."
+    "autoHint": "Automático la coloca en el nodo elegible con menos carga. Elige un nodo para fijarla ahí.",
+    "picker": {
+      "search": "Buscar nodos",
+      "empty": "Ningun nodo coincide",
+      "local": "Este servidor",
+      "unmanaged": "Sin gestionar",
+      "health": {
+        "healthy": "Sano",
+        "offline": "Sin conexion",
+        "cordoned": "Acordonado",
+        "pending": "Pendiente"
+      }
+    }
   },
   "pinnedDigest": {
     "copied": "Digest de la imagen copiado",

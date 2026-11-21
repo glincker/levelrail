@@ -2507,6 +2507,7 @@ Routes that do not fit an existing group.
 | POST | /api/v1/cloud-accounts/oracle/policy-kit | AbilityRoot | handleOraclePolicyKit |
 | GET | /api/v1/cloud-accounts/{id}/instances/{iid}/events | Public | handleCloudInstanceEvents |
 | POST | /mcp | Public |  |
+| GET | /api/v1/deploy-targets | AbilityRoot | handleListDeployTargets |
 
 ## See also
 

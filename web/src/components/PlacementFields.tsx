@@ -1,5 +1,7 @@
 import { useTranslation } from 'react-i18next'
 import type { NodeResource } from '../types/nodeDetail'
+import { useDeployTargetsOptional } from '../queries/deployTargets'
+import { DeployTargetPicker } from './DeployTargetPicker'
 import type { ProjectResource } from '../types/projectDetail'
 import { Field, FieldError, FieldHint, FieldLabel } from '@/components/ui/field'
 import {
@@ -46,38 +48,50 @@ export function NodeSelectField({
   withAuto = false,
 }: NodeSelectFieldProps) {
   const { t } = useTranslation('common')
+  const targets = useDeployTargetsOptional()
   if (nodes.length === 0) return null
   const id = `${idPrefix}-node`
   const shown =
     !withAuto && value === AUTO_NODE_VALUE ? LOCAL_NODE_VALUE : value
+  const groups = targets.data
   return (
     <Field>
       <FieldLabel htmlFor={id}>Node</FieldLabel>
-      <Select
-        value={shown ?? LOCAL_NODE_VALUE}
-        onValueChange={(v) => {
-          onValueChange(v ?? LOCAL_NODE_VALUE)
-        }}
-      >
-        <SelectTrigger id={id} className="w-full">
-          <SelectValue />
-        </SelectTrigger>
-        <SelectContent>
-          {withAuto ? (
-            <SelectItem value={AUTO_NODE_VALUE}>
-              {t('nodeSelect.auto')}
+      {groups && groups.length > 0 ? (
+        <DeployTargetPicker
+          id={id}
+          groups={groups}
+          value={shown ?? LOCAL_NODE_VALUE}
+          onValueChange={onValueChange}
+          withAuto={withAuto}
+        />
+      ) : (
+        <Select
+          value={shown ?? LOCAL_NODE_VALUE}
+          onValueChange={(v) => {
+            onValueChange(v ?? LOCAL_NODE_VALUE)
+          }}
+        >
+          <SelectTrigger id={id} className="w-full">
+            <SelectValue />
+          </SelectTrigger>
+          <SelectContent>
+            {withAuto ? (
+              <SelectItem value={AUTO_NODE_VALUE}>
+                {t('nodeSelect.auto')}
+              </SelectItem>
+            ) : null}
+            <SelectItem value={LOCAL_NODE_VALUE}>
+              This control plane (local)
             </SelectItem>
-          ) : null}
-          <SelectItem value={LOCAL_NODE_VALUE}>
-            This control plane (local)
-          </SelectItem>
-          {nodes.map((node) => (
-            <SelectItem key={node.id} value={node.id}>
-              {node.name}
-            </SelectItem>
-          ))}
-        </SelectContent>
-      </Select>
+            {nodes.map((node) => (
+              <SelectItem key={node.id} value={node.id}>
+                {node.name}
+              </SelectItem>
+            ))}
+          </SelectContent>
+        </Select>
+      )}
       <FieldHint>
         {withAuto
           ? t('nodeSelect.autoHint')

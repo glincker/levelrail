@@ -9,7 +9,19 @@
   },
   "nodeSelect": {
     "auto": "Automático (menos carregado)",
-    "autoHint": "O automático o coloca no node elegível menos carregado. Escolha um node para fixá-lo lá."
+    "autoHint": "O automático o coloca no node elegível menos carregado. Escolha um node para fixá-lo lá.",
+    "picker": {
+      "search": "Buscar nos",
+      "empty": "Nenhum no encontrado",
+      "local": "Este servidor",
+      "unmanaged": "Nao gerenciados",
+      "health": {
+        "healthy": "Saudavel",
+        "offline": "Offline",
+        "cordoned": "Isolado",
+        "pending": "Pendente"
+      }
+    }
   },
   "draft": {
     "message": "Você tem um rascunho não salvo de {{time}}.",

@@ -1307,6 +1307,7 @@ var openAPIRoutes = []openAPIRoute{
 	{Method: "POST", Path: "/api/v1/deploy-policies/check", Ability: "AbilityRead", Group: "Other", Handler: "handleCheckDeployPolicy", Description: ""},
 	{Method: "DELETE", Path: "/api/v1/deploy-policies/{scope}/{id}", Ability: "AbilityRoot", Group: "Other", Handler: "handleDeleteDeployPolicy", Description: ""},
 	{Method: "PUT", Path: "/api/v1/deploy-policies/{scope}/{id}", Ability: "AbilityRoot", Group: "Other", Handler: "handleSetDeployPolicy", Description: ""},
+	{Method: "GET", Path: "/api/v1/deploy-targets", Ability: "AbilityRoot", Group: "Other", Handler: "handleListDeployTargets", Description: ""},
 	{Method: "GET", Path: "/api/v1/deployments", Ability: "AbilityRead", Group: "Other", Handler: "handleListDeployments", Description: ""},
 	{Method: "GET", Path: "/api/v1/deployments/stream", Ability: "AbilityRead", Group: "Other", Handler: "handleDeploymentsStream", Description: ""},
 	{Method: "GET", Path: "/api/v1/deployments/summary", Ability: "AbilityRead", Group: "Other", Handler: "handleDeploymentsSummary", Description: ""},

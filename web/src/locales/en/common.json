@@ -9,7 +9,19 @@
   },
   "nodeSelect": {
     "auto": "Automatic (least loaded)",
-    "autoHint": "Automatic puts it on the least loaded eligible node. Pick a node to pin it there."
+    "autoHint": "Automatic puts it on the least loaded eligible node. Pick a node to pin it there.",
+    "picker": {
+      "search": "Search nodes",
+      "empty": "No matching nodes",
+      "local": "This server",
+      "unmanaged": "Unmanaged",
+      "health": {
+        "healthy": "Healthy",
+        "offline": "Offline",
+        "cordoned": "Cordoned",
+        "pending": "Pending"
+      }
+    }
   },
   "draft": {
     "message": "You have an unsaved draft from {{time}}.",
