@@ -4,6 +4,270 @@ description: Every Levelrail release with highlights, fixes and upgrade notes.
 "og:url": "https://docs.levelrail.com/changelog"
 ---
 
+<Update label="1.5.7" description="2026-11-21">
+**Features**
+
+* add a Pages section to the dashboard
+* add a static site option to the New app screen
+* add builder dialog, builders view, tier badge and run-builds-on setting
+* add domain and DNS setup to Pages sites
+* add levelrail pages CLI for static sites
+* advertise registry build push, scope the push token and reject shared image repos
+* alert when an app fails its health check and when a running image matches an advisory
+* apply the alerts.notify_on_sleep setting live to alert routing
+* apps card view with lazy previews, failure reasons and fix links
+* apps list TLS column, status chip skeletons, tunnel command on welcome
+* apps logs --until and --file, backup target drill core
+* attach a custom domain to a Pages site with easy DNS
+* backup targets get a write and restore drill (API and CLI)
+* branch previews list, CLI and retention for Pages sites
+* brand logo CI picker, file header actions and static site pipeline files
+* bring the app preview back at the top of the overview
+* build a preview only for pull requests carrying a chosen label
+* build fallback is a runtime setting
+* build images on engines without embedded BuildKit
+* build trust in node responses and CLI for node tiers and environment builders
+* builder command group for laptop build-only nodes
+* builder detail, live status and test button in the dashboard
+* builder join tokens carry a build trust tier and enrol build-only personal builders
+* builder trust tier selector on nodes and allowed builders card on environments
+* builder trust tiers and per environment builder allow lists
+* builders command group and builder read model
+* choose the project when installing a template and one computed template count
+* ci deploy card for pages
+* ci deploy tokens and action for pages
+* collapse repeated identical inbox alerts into one row with a count
+* collapsible runtime setting categories with weakened counts
+* compact static site overview with one stat strip and single deploy line
+* control plane only option and build counts in the builders UI
+* crash diagnosis quotes the last log lines and links the resource advisor
+* create a Pages site from a git repository in one call
+* create and read Pages static sites over the API
+* deploy a static site from an archive URL
+* deploy URLs and promote in the Pages recent deploys
+* download a database's logs as a text file
+* explicit control plane choice for build placement
+* export form submissions as CSV, show spam reasons and preview the 404 page
+* fall back to public release pages when the release API is blocked, persist update check state, show list age and unpinned signature
+* get-started order puts first app and domain first, show Cmd K hint at medium width
+* get-started progress ring, domain step first, finished steps collapse
+* git card on the Pages deployments tab
+* git mode in the Pages new site dialog
+* give Pages its own sidebar row
+* import a Railway railway.json or railway.toml into reviewable app documents
+* inbox repeat count in dashboard and CLI, zero-fill metrics for sleeping apps
+* info hovers on the domains status row
+* label manual backups and skip a repeat branch deploy of the same commit
+* learn the newest release tag from a mirror listing for every channel when the release API and github.com are blocked
+* limit a notification channel to one project's apps
+* list a project's apps and databases from the API and CLI
+* live scaled frame in the overview preview for static sites
+* MCP tools for Levelrail Pages (pages read, pages_manage write)
+* observability export presets
+* observability export presets in the dashboard
+* one automatic updates control with a plain check description, window preview and a check-now flag
+* one-call Pages git create, named deploy steps and trigger control
+* optional shared password for a static site, covering its deploy hosts
+* pages build command and output dir overrides are used by static deploys
+* Pages build log cap, retention and per-site dependency cache rules
+* pages ci token and github action polish
+* pages deploy build log endpoint and stream
+* Pages deploy hook row in site settings
+* pages deploy log dialog and failed build tail
+* pages deploy notifications with per-site event filter
+* pages deploys and promote commands
+* pages domain checklist with failure hints in the dashboard
+* pages domain status diagnosis checklist with failure reasons
+* pages hook CLI commands and docs
+* pages import converts hosting rules to _redirects and _headers
+* pages init and deploy from a URL in the CLI
+* pages logs command with follow
+* Pages overview checks and traffic, starter gallery, one domains card
+* pages overview dashboard, tab badges, domain stepper and routes rows
+* Pages password gate in the CLI and docs
+* pages proxy rules parser, validation and rules API
+* pages proxy rules served by the ingress to an app upstream
+* pages redirect tester mirrors server matching
+* pages routes CLI and docs for app proxy rules
+* pages routes editor v2
+* pages routes rules editor and site settings form
+* pages settings and routes list/add/rm in the CLI
+* Pages settings before first publish and static build step names
+* pages site card grid with live thumbnails, hero card, steadier route test button, preview overflow fix
+* pages site checks and traffic endpoints
+* pages site form submissions card
+* pages site hero, live preview and quieter traffic card
+* pages site settings and routing rules write API
+* pages traffic card sparklines with 24h, 7d and 30d toggle
+* pages traffic time series with page, asset and error buckets
+* password protection row and lock badge for Pages sites
+* per-deploy preview URLs for Pages with promote
+* performance presets for Pages sites
+* pin a deployment so retention keeps it
+* privacy-friendly Pages analytics (top pages, referrer hosts, status codes)
+* project export and import archive
+* quiet alerts for sleeping apps and a likely cause in deploy failed notices
+* redesign app resources, health and overview entry points
+* registry push by digest as an opt-in remote build result path
+* reliable automatic updates with visible status, check backoff, alert and signed fallback download
+* repeatable pages smoke script
+* reuse package manager caches across static site builds
+* routes editor v2 with kind chips, proxy rows, live tester and presets
+* same-origin form endpoint and submissions inbox for Pages sites
+* save reusable status page incident templates
+* scheduled cleanup removes unused data by default
+* secret deploy hook for git-connected Pages sites
+* seed Pages sites, forms, previews, drill and new alert rules in the demo
+* serve resized images on Pages sites when enabled
+* set the preview label gate and left-out services from the dashboard
+* show automatic update status in settings with state, reason, checks and manual fallback
+* show the matched zone and suggest listed zones when setting the apps base domain
+* signed build records for remote builders
+* skip previews for draft pull requests and leave chosen services out of a preview
+* sort and pin projects in the projects list
+* split static site traffic into pages, assets, broken links and probes
+* split testing on static sites, image resize limits, link source pages
+* static site overview with thumbnail preview fallback, compact stat bar and recent deploys
+* streamline the Pages publish flow
+* structured DNS zone names and Route 53 permission preflight with minimal IAM policy
+* templates needs-domain filter, last updated date and LibreDB Studio template
+* tighten registry transfer checks and add the registry token exchange seam
+* token sign-in route for local dev and test browsers
+* two column overview hero with the preview top right
+* typescript sdk generated from the api reference
+* webdav and sftp backup targets and restore drill
+* wildcard record for the apps base domain with preview, replace opt-in, CLI and dashboard
+* writable git source trigger mode with a manual option
+
+
+**Bug Fixes**
+
+* add missing locale strings for tonight's web features
+* add pagesSites strings for de and fr
+* add pagesSites strings for ja and es
+* add pagesSites strings for pt-BR
+* add zh-CN settings strings (batch 1 and 2)
+* add zh-CN settings strings (batch 3 and 4)
+* add zh-CN settings strings (batch 5 and 6)
+* advertise dev app links with the real bound ingress port and a localhost name
+* align api and template form checks with current behavior
+* align checks with the current release tip
+* align environment builder routes with the environment grant gate
+* align git trigger mode types and locales with the manual mode so tsc -b passes
+* align tests with the acting janitor default
+* apply builder provenance checks wherever an image is deployed
+* apply image repository checks to every app creation path
+* apply the dashboard trusted proxy setting to the api and doctor
+* cache and single-flight the pages domain diagnosis, make www hint optional
+* cap pages token lifetime with a runtime setting
+* cap password length with a clear error
+* classify new pages and observability routes in guard lists
+* clearer S3 backup target test errors for permissions and region
+* clearing a pages setting override takes effect on the live site
+* correct observability preset endpoints
+* do not replay a stored provider key to a changed base URL
+* drop constant parameters flagged by unparam lint
+* fill missing pt-BR locale strings
+* finish zh-CN locale strings
+* forward protocol-switching requests through the docker guard
+* harden archive URL deploy handling
+* harden pages deploy tokens
+* harden pages deploy tokens further
+* harden pages proxy responses and limits
+* harden project archive import and export
+* harden restore drills
+* harden webdav backup targets
+* harden yaml parsing and pattern checks in the dashboard
+* install the demo write guard before the lazy chrome loads
+* keep cloning built apps working with image repository checks
+* keep crewjam/saml at v0.5.1, v0.6.3 fails the SAML sign-in tests (#1636)
+* keep dev ingress ephemeral port stable across config reloads
+* keep pages proxy scopes and target restrictions current
+* keep registry consumers working when the registry uses token mode
+* keep static phase state apart from steps, batch phase reads and normalise static git inputs
+* keep theauth-go sqlite storage at v0.2.0 until its core release ships (#1635)
+* libredb-studio template binds all interfaces and probes with node or bun fallback
+* list Route 53 records past ones libdns cannot parse, and report DNS failures plainly
+* make project archive limits runtime settings
+* mark the pages hook route as audited in-handler
+* match DNS zones more reliably and name the zones the provider lists
+* match Route 53 zones from the provider's zone list first
+* move remaining control plane secrets out of the app namespace
+* move the dynamic dns secrets out of the app namespace
+* normalize and validate app domains
+* normalize and validate user-facing identifiers
+* pages delete removes the backing app, and the smoke script exercises the real forms path and cleans up apps
+* pages deploy row link button typing and bolder empty state
+* pages import backs up existing rules and matches engine wildcards
+* pages password flag handling
+* pages password preview inheritance and settings validation order
+* pages password row confirm and rollback
+* pages smoke script builds the cli and passes the cli env
+* pages smoke script refreshes the live URL after each deploy
+* pages smoke script reports a missing ability instead of miscounting submissions
+* pick the https listener deterministically for dev links and roll back to an explicit deploy in the smoke script
+* raise the icons chunk budget for the Pages icons
+* recompute node status when the heartbeat recovers after enrollment
+* register builder host commands and refresh overview locale keys
+* register builds runner and record in the command tree
+* remove retained deploy copies and stored push repos when an app is deleted
+* remove the app a failed one-call git static create made
+* renumber build records migration and refresh builds skill reference
+* renumber runner pin migration
+* report blocked automatic updates when no control plane backup is configured
+* report real static build steps for finished attempts
+* require access to the target app for pages proxy rules
+* resolve Route 53 zones from the listed zones for DNS automation (#1631)
+* restore cli command tree, help and skills checks
+* route a published static site at its automatic hostname
+* run Route 53 record automation through the provider API so an unparseable record cannot block writes
+* scope backup drill and project env routes to their owner
+* separate control plane key storage from app secrets
+* serve static sites with clean URLs by default
+* share one trusted proxy list between api and ingress
+* show a root-required state for observability exports
+* show a static site's live address instead of container ports
+* stack the drop zone in the New site dialog
+* stop horizontal scroll in the Pages list and DNS records
+* stop retained deploy copies from coming back after the app is deleted
+* support token auth registry pulls for deploys
+* tie pages deploy hooks to the app and git source lifecycle
+* tighten access rules for observability exports and webdav targets
+* tighten builder enrolment
+* tighten builder placement matching
+* tighten dev sign-in checks
+* tighten image repository ownership checks
+* tighten oauth account linking
+* tighten pages form proxy matching and submission handling
+* tighten pages proxy rule access checks
+* tighten registry transfer
+* tighten server limits and cached route headers
+* translate common appsList TLS and onboarding tunnel keys in all locales
+* translate inbox repeatsTitle in all locales
+* translate previews scope strings in all locales
+* translate templates facts and projects page keys in all locales
+* treat static sites as static in deploy pages and refuse restart and stop
+* type the Pages git test fixtures
+* use the shared trusted proxy list in ingress abuse, geo and redirect policies
+* use token auth for control plane app image pulls
+* validate and escape static rule targets
+* validate archive header parameters and reserve scheduled drill capacity
+* validate domains on static site and go-live paths
+* webdav backup tunables as runtime settings
+* **web:** show readable API errors on firewall and build settings
+* **web:** show readable API errors on the databases pages
+* **web:** show readable API errors on the domains pages
+* **web:** show readable API errors on the new app forms
+
+
+**Performance**
+
+* bring bundle report back within budgets
+* lazy-load api-reference data and restore bundle budget to 194000
+* lazy-load demo chrome and device login dialog, split page tab constants out of first load
+* trim mcp tool descriptions
+</Update>
+
 <Update label="1.5.6" description="2026-11-18">
 **Bug Fixes**
 
