@@ -2570,6 +2570,7 @@ Routes that do not fit an existing group.
 | GET | /api/v1/cloud-accounts/oauth/digitalocean/status | AbilityRoot | handleDOOAuthStatus |
 | GET | /api/v1/cloud-accounts/oauth/digitalocean/start | AbilityRoot | handleDOOAuthStart |
 | GET | /api/v1/cloud-accounts/oauth/digitalocean/callback | AbilityRoot | handleDOOAuthCallback |
+| POST | /api/v1/cloud-accounts/oracle/session-import | AbilityRoot | handleOracleSessionImport |
 | POST | /mcp | Public |  |
 
 ## See also

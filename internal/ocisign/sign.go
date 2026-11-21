@@ -31,6 +31,12 @@ func KeyID(tenancyOCID, userOCID, fingerprint string) string {
 	return tenancyOCID + "/" + userOCID + "/" + fingerprint
 }
 
+// SessionKeyID builds the keyId for a session token login: ST$ plus the JWT. The request
+// is then signed with the session private key, not an API key.
+func SessionKeyID(token string) string {
+	return "ST$" + token
+}
+
 func hasBody(method string) bool {
 	return method == http.MethodPost || method == http.MethodPut || method == http.MethodPatch
 }

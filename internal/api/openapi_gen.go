@@ -14,7 +14,7 @@ type openAPIRoute struct {
 	Description string
 }
 
-// openAPIRoutes holds all 2339 routes known to scripts/gen-api-reference at
+// openAPIRoutes holds all 2340 routes known to scripts/gen-api-reference at
 // generation time. Run `go run ./scripts/gen-api-reference` after changing
 // any routes*.go registration and commit the result.
 var openAPIRoutes = []openAPIRoute{
@@ -1232,6 +1232,7 @@ var openAPIRoutes = []openAPIRoute{
 	{Method: "GET", Path: "/api/v1/cloud-accounts/oauth/digitalocean/start", Ability: "AbilityRoot", Group: "Other", Handler: "handleDOOAuthStart", Description: ""},
 	{Method: "GET", Path: "/api/v1/cloud-accounts/oauth/digitalocean/status", Ability: "AbilityRoot", Group: "Other", Handler: "handleDOOAuthStatus", Description: ""},
 	{Method: "POST", Path: "/api/v1/cloud-accounts/oracle/policy-kit", Ability: "AbilityRoot", Group: "Other", Handler: "handleOraclePolicyKit", Description: ""},
+	{Method: "POST", Path: "/api/v1/cloud-accounts/oracle/session-import", Ability: "AbilityRoot", Group: "Other", Handler: "handleOracleSessionImport", Description: ""},
 	{Method: "DELETE", Path: "/api/v1/cloud-accounts/{id}", Ability: "AbilityRoot", Group: "Other", Handler: "handleDeleteCloudAccount", Description: ""},
 	{Method: "GET", Path: "/api/v1/cloud-accounts/{id}", Ability: "Public", Group: "Other", Handler: "handleGetCloudAccount", Description: ""},
 	{Method: "PATCH", Path: "/api/v1/cloud-accounts/{id}", Ability: "AbilityRoot", Group: "Other", Handler: "handleUpdateCloudAccount", Description: ""},

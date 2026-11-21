@@ -62,6 +62,10 @@ var nodeProviderTestPermissions = map[string]string{
 }
 
 func methodAllowed(provider, method string) bool {
+	// The browser session is a cloud account method only, so it is not in the node provider list.
+	if provider == "oracle" && method == methodOCISession {
+		return true
+	}
 	for _, m := range nodeProviderMethods[provider] {
 		if m == method {
 			return true

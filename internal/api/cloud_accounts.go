@@ -101,6 +101,10 @@ type cloudAccountWire struct {
 	CreatedBy      string          `json:"created_by,omitempty"`
 	CreatedAt      time.Time       `json:"created_at"`
 	UpdatedAt      time.Time       `json:"updated_at"`
+	// Session fields are set only for oci_session accounts and carry no secret.
+	SessionExpiresAt *time.Time `json:"session_expires_at,omitempty"`
+	NeedsRelogin     bool       `json:"needs_relogin,omitempty"`
+	ReloginCommand   string     `json:"relogin_command,omitempty"`
 }
 
 func (rt *Router) toCloudAccountWire(ctx context.Context, a store.CloudAccount) cloudAccountWire {
@@ -114,8 +118,17 @@ func (rt *Router) toCloudAccountWire(ctx context.Context, a store.CloudAccount) 
 	} else if rt.nodeProviderSecrets != nil {
 		linked, _ = rt.nodeProviderSecrets.Exists(ctx, cloudAccountSecretRef(a), store.NodeProviderTokenEnvKey)
 	}
-	return cloudAccountWire{ID: a.ID, Provider: a.Provider, Label: a.DisplayName, Method: a.AuthMethod, Config: cfg, TeamID: a.TeamID,
+	w := cloudAccountWire{ID: a.ID, Provider: a.Provider, Label: a.DisplayName, Method: a.AuthMethod, Config: cfg, TeamID: a.TeamID,
 		Status: a.Status, Linked: linked, LastVerifiedAt: a.LastVerifiedAt, CreatedBy: a.CreatedBy, CreatedAt: a.CreatedAt, UpdatedAt: a.UpdatedAt}
+	if isOracleSessionAccount(a) {
+		if exp, ok := sessionExpiry(a); ok {
+			w.SessionExpiresAt = &exp
+		}
+		if w.NeedsRelogin = oracleSessionNeedsRelogin(a); w.NeedsRelogin {
+			w.ReloginCommand = cloudconn.OracleReloginCommand("")
+		}
+	}
+	return w
 }
 
 // cloudAccountSecretRef is the secrets service name; an account with no ref uses the legacy per provider key.
@@ -218,6 +231,8 @@ type createCloudAccountRequest struct {
 	VaultRole      string `json:"vault_role,omitempty"`
 	VaultNamespace string `json:"vault_namespace,omitempty"`
 	VaultTokenRef  string `json:"vault_token_ref,omitempty"`
+	// ProfileConfig is pasted ~/.oci/config text for oci_session; only tenancy and region are read.
+	ProfileConfig string `json:"profile_config,omitempty"`
 }
 
 func newCloudID(prefix string) (string, error) {
@@ -297,7 +312,10 @@ func (rt *Router) cloudAccountDraft(req createCloudAccountRequest) (store.CloudA
 			return store.CloudAccount{}, "", "method " + method + " is not supported for " + req.Provider
 		}
 		var msg string
-		if req.Provider == cloudconn.ProviderOracle {
+		var sessionExp time.Time
+		if req.Provider == cloudconn.ProviderOracle && method == methodOCISession {
+			value, sessionExp, msg = oracleSessionValue(req)
+		} else if req.Provider == cloudconn.ProviderOracle {
 			value, msg = oracleCredentialValueOpt(req.setNodeProviderCredentialRequest, false)
 		} else {
 			value, msg = nodeProviderCredentialValue(req.setNodeProviderCredentialRequest)
@@ -310,6 +328,9 @@ func (rt *Router) cloudAccountDraft(req createCloudAccountRequest) (store.CloudA
 		}
 		if req.Provider == cloudconn.ProviderOracle {
 			cfg = oracleAccountConfig(req)
+			if method == methodOCISession {
+				cfg[oracleSessionExpKey] = sessionExp.Format(time.RFC3339)
+			}
 		}
 	}
 	raw, _ := json.Marshal(cfg)
@@ -395,6 +416,9 @@ type updateCloudAccountRequest struct {
 	ExternalID string `json:"external_id,omitempty"`
 	// AllowedRegions replaces the region allowlist; an empty list clears it.
 	AllowedRegions *[]string `json:"allowed_regions,omitempty"`
+	// SessionToken and PrivateKeyPEM replace the stored browser session of an oci_session account.
+	SessionToken  string `json:"session_token,omitempty"`
+	PrivateKeyPEM string `json:"private_key_pem,omitempty"`
 }
 
 func (rt *Router) handleUpdateCloudAccount(w http.ResponseWriter, r *http.Request) {
@@ -459,6 +483,17 @@ func (rt *Router) handleUpdateCloudAccount(w http.ResponseWriter, r *http.Reques
 		}
 		if err := rt.nodeProviderSecrets.SetValue(r.Context(), a.CredentialRef, store.NodeProviderTokenEnvKey, req.ExternalID); err != nil {
 			rt.internalError(w, "api: replace cloud account credential failed", err, slog.String("account", a.ID))
+			return
+		}
+	}
+	if req.SessionToken != "" || req.PrivateKeyPEM != "" {
+		if !isOracleSessionAccount(a) || rt.nodeProviderSecrets == nil {
+			writeError(w, http.StatusBadRequest, "session_token and private_key_pem apply only to oracle oci_session accounts")
+			return
+		}
+		var msg string
+		if a, msg = rt.replaceOracleSession(r.Context(), a, req.SessionToken, req.PrivateKeyPEM); msg != "" {
+			writeError(w, http.StatusBadRequest, msg)
 			return
 		}
 	}
@@ -556,6 +591,7 @@ var cloudCheckMessages = map[string]string{
 	cloudconn.ClassConfigInvalid:        "The account settings do not validate.",
 	cloudconn.ClassCredentialUnresolved: "The credential could not be read.",
 	cloudconn.ClassUnknown:              "The check failed for an unclassified reason.",
+	cloudconn.ClassNeedsRelogin:         "The browser session expired or is about to; log in again and replace the session.",
 }
 
 func (rt *Router) awsProvider() *cloudconn.AWSProvider {

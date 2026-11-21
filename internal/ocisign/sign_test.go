@@ -120,3 +120,28 @@ func TestSignerRefusesPlainHTTPAndBodyOnGet(t *testing.T) {
 		t.Fatal("GET with body was signed")
 	}
 }
+
+func TestSessionKeyIDSignsAndVerifies(t *testing.T) {
+	key, err := rsa.GenerateKey(rand.Reader, 2048)
+	if err != nil {
+		t.Fatal(err)
+	}
+	id := SessionKeyID("hdr.payload.sig")
+	if id != "ST$hdr.payload.sig" {
+		t.Fatalf("keyId = %q", id)
+	}
+	srv := newFake(t, &key.PublicKey, id)
+	defer srv.Close()
+	req, _ := http.NewRequest(http.MethodGet, srv.URL+"/20160918/instances", nil)
+	if err := (Signer{KeyID: id, Key: key, AllowInsecure: true}).Sign(req, nil); err != nil {
+		t.Fatal(err)
+	}
+	resp, err := http.DefaultClient.Do(req)
+	if err != nil {
+		t.Fatal(err)
+	}
+	_ = resp.Body.Close()
+	if resp.StatusCode != http.StatusOK {
+		t.Fatalf("got %d", resp.StatusCode)
+	}
+}

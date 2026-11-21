@@ -31,6 +31,7 @@ type OracleStored struct {
 	Region          string `json:"region"`
 	CompartmentOCID string `json:"compartment_ocid"`
 	SubnetOCID      string `json:"subnet_ocid"`
+	SessionToken    string `json:"session_token,omitempty"`
 }
 
 // OracleCredentialFromStored decodes the sealed account value into the credential every
@@ -42,7 +43,7 @@ func OracleCredentialFromStored(raw string) (OracleCredential, error) {
 	}
 	return OracleCredential{
 		TenancyOCID: s.TenancyOCID, CompartmentOCID: s.CompartmentOCID, Region: s.Region,
-		Secret: NewOracleSecret(s.UserOCID, s.Fingerprint, []byte(s.PrivateKeyPEM)),
+		Secret: NewOracleSecret(s.UserOCID, s.Fingerprint, []byte(s.PrivateKeyPEM)), SessionToken: s.SessionToken,
 	}, nil
 }
 
@@ -76,7 +77,11 @@ func NewOracleProber() OracleProber {
 
 // do signs and sends one request and returns the status and a bounded body.
 func (o OracleProber) do(ctx context.Context, c OracleCredential, method, target string, body []byte) (int, []byte, error) {
-	key, err := validateOracleSecret(c.Secret)
+	now := time.Now
+	if o.Now != nil {
+		now = o.Now
+	}
+	key, keyID, err := oracleKeyAndID(c, now())
 	if err != nil {
 		return 0, nil, err
 	}
@@ -91,12 +96,8 @@ func (o OracleProber) do(ctx context.Context, c OracleCredential, method, target
 	if body != nil {
 		req.Header.Set("Content-Type", "application/json")
 	}
-	now := time.Now
-	if o.Now != nil {
-		now = o.Now
-	}
 	sg := ocisign.Signer{
-		KeyID: ocisign.KeyID(c.TenancyOCID, c.Secret.UserOCID, strings.ToLower(c.Secret.Fingerprint)), Key: key, Now: now,
+		KeyID: keyID, Key: key, Now: now,
 		AllowInsecure: strings.HasPrefix(target, "http://"),
 	}
 	if err := sg.Sign(req, body); err != nil {

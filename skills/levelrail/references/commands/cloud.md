@@ -36,6 +36,8 @@ Usage:
   levelrail-cli cloud accounts add ID --provider P [--method M] [--region R] [--role-arn ARN] [--account-id ID] [--external-id X] [--label L] [--team T]
   levelrail-cli cloud accounts add ID --provider oracle --tenancy OCID --user OCID --fingerprint FP --compartment OCID --region R [--subnet OCID]
   levelrail-cli cloud accounts oauth-url digitalocean
+  levelrail-cli cloud accounts add ID --provider oracle --auth oci_session --profile DEFAULT --compartment OCID
+  levelrail-cli cloud accounts relogin ID [--profile DEFAULT]   (run "oci session authenticate" first)
   levelrail-cli cloud instances list ACCOUNT [--region R]
   levelrail-cli cloud instances show|start|stop|soft-stop|reboot|soft-reboot|rm ACCOUNT INSTANCE
   levelrail-cli cloud instances resize ACCOUNT INSTANCE [--type T] [--ocpus N] [--memory-gb N]
@@ -61,6 +63,8 @@ Usage:
   levelrail-cli cloud accounts add ID --provider P [--method M] [--region R] [--role-arn ARN] [--account-id ID] [--external-id X] [--label L] [--team T]
   levelrail-cli cloud accounts add ID --provider oracle --tenancy OCID --user OCID --fingerprint FP --compartment OCID --region R [--subnet OCID]
   levelrail-cli cloud accounts oauth-url digitalocean
+  levelrail-cli cloud accounts add ID --provider oracle --auth oci_session --profile DEFAULT --compartment OCID
+  levelrail-cli cloud accounts relogin ID [--profile DEFAULT]   (run "oci session authenticate" first)
   levelrail-cli cloud instances list ACCOUNT [--region R]
   levelrail-cli cloud instances show|start|stop|soft-stop|reboot|soft-reboot|rm ACCOUNT INSTANCE
   levelrail-cli cloud instances resize ACCOUNT INSTANCE [--type T] [--ocpus N] [--memory-gb N]
@@ -680,6 +684,8 @@ Usage:
   levelrail-cli cloud accounts add ID --provider P [--method M] [--region R] [--role-arn ARN] [--account-id ID] [--external-id X] [--label L] [--team T]
   levelrail-cli cloud accounts add ID --provider oracle --tenancy OCID --user OCID --fingerprint FP --compartment OCID --region R [--subnet OCID]
   levelrail-cli cloud accounts oauth-url digitalocean
+  levelrail-cli cloud accounts add ID --provider oracle --auth oci_session --profile DEFAULT --compartment OCID
+  levelrail-cli cloud accounts relogin ID [--profile DEFAULT]   (run "oci session authenticate" first)
   levelrail-cli cloud instances list ACCOUNT [--region R]
   levelrail-cli cloud instances show|start|stop|soft-stop|reboot|soft-reboot|rm ACCOUNT INSTANCE
   levelrail-cli cloud instances resize ACCOUNT INSTANCE [--type T] [--ocpus N] [--memory-gb N]

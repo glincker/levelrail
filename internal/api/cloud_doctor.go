@@ -431,6 +431,10 @@ func doctorOracleAllowanceStep(enabled bool, a1ocpu, a1mem, micro int) doctorSte
 
 func (rt *Router) doctorOracleAccount(ctx context.Context, a store.CloudAccount) []doctorStep {
 	linked := doctorStep{ID: "oracle.account", Title: "Account with API key", Status: doctorOK, Detail: "An API key is stored for this account."}
+	if oracleSessionNeedsRelogin(a) {
+		return []doctorStep{{ID: "oracle.session", Title: "Browser session", Status: doctorFail,
+			Detail: "The stored session expired or ends within minutes.", Fix: "Run " + cloudconn.OracleReloginCommand("") + ", then replace the session."}}
+	}
 	cred, err := rt.oracleAccountCredential(ctx, a, "")
 	if err != nil {
 		linked.Status, linked.Detail = doctorFail, "No readable API key is stored for this account."

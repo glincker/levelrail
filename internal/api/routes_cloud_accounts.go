@@ -17,6 +17,7 @@ func (rt *Router) registerCloudAccountRoutes(mux *http.ServeMux) {
 	mux.HandleFunc("GET /api/v1/cloud-accounts/oauth/digitalocean/status", rt.requireAbility(AbilityRoot, rt.handleDOOAuthStatus))
 	mux.HandleFunc("GET /api/v1/cloud-accounts/oauth/digitalocean/start", rt.requireAbility(AbilityRoot, rt.handleDOOAuthStart))
 	mux.HandleFunc("GET /api/v1/cloud-accounts/oauth/digitalocean/callback", rt.requireAbility(AbilityRoot, rt.handleDOOAuthCallback))
+	mux.HandleFunc("POST /api/v1/cloud-accounts/oracle/session-import", rt.requireAbility(AbilityRoot, rt.handleOracleSessionImport))
 	mux.HandleFunc("GET /api/v1/cloud-accounts/{id}", rt.requireCloudAccess(db, "view", cloudAccountFromPath, rt.handleGetCloudAccount))
 	mux.HandleFunc("PATCH /api/v1/cloud-accounts/{id}", rt.requireAbility(AbilityRoot, rt.handleUpdateCloudAccount))
 	mux.HandleFunc("DELETE /api/v1/cloud-accounts/{id}", rt.requireAbility(AbilityRoot, rt.handleDeleteCloudAccount))

@@ -24,11 +24,11 @@ type Config struct {
 	VaultTokenRef  string `json:"vault_token_ref,omitempty"`
 }
 
-var validAuth = map[string]bool{AuthOIDCFederation: true, AuthRoleAssumption: true, AuthSecretRef: true, AuthStatic: true, AuthVaultAWS: true, AuthOAuth: true}
+var validAuth = map[string]bool{AuthOIDCFederation: true, AuthRoleAssumption: true, AuthSecretRef: true, AuthStatic: true, AuthVaultAWS: true, AuthOAuth: true, AuthOCISession: true}
 
 // authAllowed lists the methods each provider supports.
 var authAllowed = map[string][]string{
-	ProviderOracle:       {AuthOIDCFederation, AuthSecretRef, AuthStatic},
+	ProviderOracle:       {AuthOIDCFederation, AuthSecretRef, AuthStatic, AuthOCISession},
 	ProviderAWS:          {AuthOIDCFederation, AuthRoleAssumption, AuthSecretRef, AuthStatic, AuthVaultAWS},
 	ProviderAzure:        {AuthOIDCFederation, AuthRoleAssumption, AuthSecretRef, AuthStatic},
 	ProviderGCP:          {AuthOIDCFederation, AuthSecretRef, AuthStatic},
@@ -106,7 +106,7 @@ func validateCredentialRef(authMethod, ref string) error {
 		if _, err := secretsource.ParseRef(ref); err != nil {
 			return invalid("credential_ref must be a valid secret:// reference")
 		}
-	case AuthStatic:
+	case AuthStatic, AuthOCISession:
 		ns, key, ok := strings.Cut(ref, "/")
 		if !ok || ns == "" || key == "" || strings.Contains(key, "/") || strings.HasPrefix(ref, "secret://") {
 			return invalid("static needs a credential_ref of the form NAMESPACE/KEY naming a stored secret")

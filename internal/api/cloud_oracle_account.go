@@ -52,6 +52,9 @@ func (rt *Router) oracleProber() cloudconn.OracleProber {
 
 // oracleCheckResult runs the account's one read-only list call and maps the class to the fixed texts.
 func (rt *Router) oracleCheckResult(ctx context.Context, a store.CloudAccount, value string) cloudCheckResult {
+	if oracleSessionNeedsRelogin(a) {
+		return needsReloginResult()
+	}
 	cred, err := rt.oracleAccountCredential(ctx, a, value)
 	if err != nil {
 		return cloudCheckResult{Class: cloudconn.ClassConfigInvalid, Message: cloudCheckMessages[cloudconn.ClassConfigInvalid]}
@@ -107,6 +110,10 @@ func (rt *Router) handleOraclePolicyKit(w http.ResponseWriter, r *http.Request) 
 
 // probeOracleAccount answers the per capability result for an Oracle account.
 func (rt *Router) probeOracleAccount(w http.ResponseWriter, r *http.Request, a store.CloudAccount, names []string) {
+	if oracleSessionNeedsRelogin(a) {
+		writeCodedError(w, http.StatusConflict, cloudconn.ClassNeedsRelogin, cloudCheckMessages[cloudconn.ClassNeedsRelogin]+" Run: "+cloudconn.OracleReloginCommand(""))
+		return
+	}
 	cred, err := rt.oracleAccountCredential(r.Context(), a, "")
 	if err != nil {
 		writeError(w, http.StatusBadRequest, "no credential is stored for this account")

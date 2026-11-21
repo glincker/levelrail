@@ -136,6 +136,8 @@ type OracleCredential struct {
 	CompartmentOCID string
 	Region          string
 	Secret          OracleSecret
+	// SessionToken switches signing to the browser session scheme; Secret then holds only the session key.
+	SessionToken string
 }
 
 // OracleFromTarget joins the stored settings with the resolved sealed bundle.
@@ -171,6 +173,13 @@ func validateOracleSettings(tenancy, compartment, region string) error {
 
 // ValidateOracle checks every field offline: OCID shapes, region, fingerprint and the key.
 func ValidateOracle(c OracleCredential) error {
+	if c.SessionToken != "" {
+		// An expired session is a relogin state, not a config error, so only shape is checked here.
+		if _, err := ValidateOracleSession(c, time.Time{}); err != nil && !errors.Is(err, ErrSessionExpired) {
+			return err
+		}
+		return nil
+	}
 	if err := validateOracleSettings(c.TenancyOCID, c.CompartmentOCID, c.Region); err != nil {
 		return err
 	}

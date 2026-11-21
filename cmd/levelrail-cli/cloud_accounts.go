@@ -6,6 +6,7 @@ import (
 	"fmt"
 	"io"
 	"net/url"
+	"os"
 	"strings"
 	"text/tabwriter"
 
@@ -21,6 +22,8 @@ func cloudAccountsUsage(prog string) string {
   %[1]s cloud accounts add ID --provider P [--method M] [--region R] [--role-arn ARN] [--account-id ID] [--external-id X] [--label L] [--team T]
   %[1]s cloud accounts add ID --provider oracle --tenancy OCID --user OCID --fingerprint FP --compartment OCID --region R [--subnet OCID]
   %[1]s cloud accounts oauth-url digitalocean
+  %[1]s cloud accounts add ID --provider oracle --auth oci_session --profile DEFAULT --compartment OCID
+  %[1]s cloud accounts relogin ID [--profile DEFAULT]   (run "oci session authenticate" first)
   %[1]s cloud instances list ACCOUNT [--region R]
   %[1]s cloud instances show|start|stop|soft-stop|reboot|soft-reboot|rm ACCOUNT INSTANCE
   %[1]s cloud instances resize ACCOUNT INSTANCE [--type T] [--ocpus N] [--memory-gb N]
@@ -117,8 +120,10 @@ func runCloudAccounts(prog string, args []string, stdout, stderr io.Writer, look
 		})
 	case "add":
 		var provider, method, region, roleARN, accountID, externalID, label, team string
-		var tenancy, user, fingerprint, compartment, subnet string
+		var tenancy, user, fingerprint, compartment, subnet, profile string
 		setup := func(fs *flag.FlagSet) {
+			fs.StringVar(&method, "auth", "", "credential method (alias of --method), oci_session for a browser login")
+			fs.StringVar(&profile, "profile", "DEFAULT", "oci_session: profile in ~/.oci/config")
 			fs.StringVar(&tenancy, "tenancy", "", "oracle tenancy OCID")
 			fs.StringVar(&user, "user", "", "oracle user OCID")
 			fs.StringVar(&fingerprint, "fingerprint", "", "oracle API key fingerprint")
@@ -140,7 +145,16 @@ func runCloudAccounts(prog string, args []string, stdout, stderr io.Writer, look
 			cred, _ := lookupEnv(cloudCredentialEnv)
 			body := cloudRow{"id": pos[0], "provider": provider, "method": method, "region": region, "role_arn": roleARN, "account_id": accountID,
 				"external_id": externalID, "label": label, "team_id": team, "token": cred, "verify": true}
-			if provider == "oracle" {
+			if provider == "oracle" && method == "oci_session" {
+				home, _ := os.UserHomeDir()
+				f, err := readOCIProfile(home, profile)
+				if err != nil {
+					return nil, nil, err
+				}
+				body["profile_config"], body["session_token"], body["private_key_pem"] = f.profileText, f.token, f.keyPEM
+				body["compartment_ocid"] = compartment
+				delete(body, "token")
+			} else if provider == "oracle" {
 				body["tenancy_ocid"], body["user_ocid"], body["fingerprint"] = tenancy, user, fingerprint
 				body["compartment_ocid"], body["subnet_ocid"], body["private_key_pem"] = compartment, subnet, cred
 				delete(body, "token")
@@ -149,6 +163,24 @@ func runCloudAccounts(prog string, args []string, stdout, stderr io.Writer, look
 			err := c.CloudRequest(ctx, "POST", "", body, &out)
 			return out, func() {
 				printCloudTable(stdout, []string{"ID", "PROVIDER", "STATUS"}, []cloudRow{out}, "id", "provider", "status")
+			}, err
+		})
+	case "relogin":
+		var profile string
+		setup := func(fs *flag.FlagSet) { fs.StringVar(&profile, "profile", "DEFAULT", "profile in ~/.oci/config") }
+		return cloudCall(prog, "cloud accounts relogin", rest, stdout, stderr, lookupEnv, setup, func(c *apiclient.Client, pos []string, _ outputFlags) (any, func(), error) {
+			if !needArgs(stderr, prog, pos) {
+				return nil, nil, fmt.Errorf("an account ID is required")
+			}
+			home, _ := os.UserHomeDir()
+			f, err := readOCIProfile(home, profile)
+			if err != nil {
+				return nil, nil, fmt.Errorf("%w (%s)", err, reloginHint(profile))
+			}
+			var out cloudRow
+			err = c.CloudRequest(ctx, "PATCH", idPath(pos), cloudRow{"session_token": f.token, "private_key_pem": f.keyPEM}, &out)
+			return out, func() {
+				printCloudTable(stdout, []string{"ID", "PROVIDER", "STATUS", "SESSION EXPIRES"}, []cloudRow{out}, "id", "provider", "status", "session_expires_at")
 			}, err
 		})
 	case "verify", "probe":
