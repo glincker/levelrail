@@ -75,6 +75,10 @@ These variables only seed the default of a [runtime setting](/runtime-settings).
 | `APP_CLOUD_ENGINE_IMAGE` | [`cloud.engine_image`](/runtime-settings#security) | empty |
 | `APP_CLOUD_ENGINE_NETWORK` | [`cloud.engine_network`](/runtime-settings#security) | empty |
 | `APP_CLOUD_ENGINE_USER` | [`cloud.engine_user`](/runtime-settings#security) | `65532:65532` |
+| `APP_CLOUD_OAUTH_DIGITALOCEAN_CLIENT_ID` | [`cloud.oauth.digitalocean.client_id`](/runtime-settings#security) | empty |
+| `APP_CLOUD_OAUTH_DIGITALOCEAN_CLIENT_SECRET` | [`cloud.oauth.digitalocean.client_secret`](/runtime-settings#security) | empty |
+| `APP_CLOUD_OAUTH_DIGITALOCEAN_REFRESH_LEAD_SECONDS` | [`cloud.oauth.digitalocean.refresh_lead_seconds`](/runtime-settings#security) | `300` |
+| `APP_CLOUD_OAUTH_DIGITALOCEAN_TIMEOUT_SECONDS` | [`cloud.oauth.digitalocean.timeout_seconds`](/runtime-settings#security) | `15` |
 | `APP_CLOUD_REQUIRE_FULL_ESTIMATE` | [`cloud.require_full_estimate`](/runtime-settings#security) | `true` |
 | `APP_CONNECTION_BINDING_RULE_VALUE_MAX_LEN` | [`connections.binding_rule_value_max_len`](/runtime-settings#security) | `512` |
 | `APP_CONNECTION_BINDING_RULES_MAX_BYTES` | [`connections.binding_rules_max_bytes`](/runtime-settings#security) | `4096` |
