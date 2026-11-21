@@ -789,6 +789,9 @@ func (rt *Router) handleAWSLinkKit(w http.ResponseWriter, r *http.Request) {
 		writeError(w, http.StatusBadRequest, "invalid request body")
 		return
 	}
+	if req.GuardPolicyARN == "" {
+		req.GuardPolicyARN = rt.doctorGuardPolicyARN()
+	}
 	if req.GuardPolicyARN != "" && !awsGuardPolicyRe.MatchString(req.GuardPolicyARN) {
 		writeError(w, http.StatusBadRequest, "guard_policy_arn must be an IAM managed policy ARN")
 		return

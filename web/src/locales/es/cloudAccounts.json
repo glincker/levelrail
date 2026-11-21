@@ -421,5 +421,20 @@
         "delete": "Eliminar"
       }
     }
+  },
+  "doctor": {
+    "title": "Preparación",
+    "ready": "Listo",
+    "notReady": "No listo",
+    "rerun": "Ejecutar de nuevo",
+    "running": "Comprobando",
+    "failed": "No se pudo ejecutar la comprobación.",
+    "fix": "Solución",
+    "status": {
+      "ok": "OK",
+      "warn": "Aviso",
+      "fail": "Error",
+      "skip": "Omitido"
+    }
   }
 }

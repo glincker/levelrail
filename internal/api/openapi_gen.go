@@ -14,7 +14,7 @@ type openAPIRoute struct {
 	Description string
 }
 
-// openAPIRoutes holds all 2311 routes known to scripts/gen-api-reference at
+// openAPIRoutes holds all 2313 routes known to scripts/gen-api-reference at
 // generation time. Run `go run ./scripts/gen-api-reference` after changing
 // any routes*.go registration and commit the result.
 var openAPIRoutes = []openAPIRoute{
@@ -1226,6 +1226,7 @@ var openAPIRoutes = []openAPIRoute{
 	{Method: "GET", Path: "/api/v1/cloud-accounts/aws/control-identity", Ability: "AbilityRoot", Group: "Other", Handler: "handleAWSControlIdentity", Description: ""},
 	{Method: "POST", Path: "/api/v1/cloud-accounts/aws/link-kit", Ability: "AbilityRoot", Group: "Other", Handler: "handleAWSLinkKit", Description: ""},
 	{Method: "POST", Path: "/api/v1/cloud-accounts/aws/vault-kit", Ability: "AbilityRoot", Group: "Other", Handler: "handleAWSVaultKit", Description: ""},
+	{Method: "GET", Path: "/api/v1/cloud-accounts/doctor/preflight", Ability: "AbilityRoot", Group: "Other", Handler: "handleCloudDoctorPreflight", Description: ""},
 	{Method: "POST", Path: "/api/v1/cloud-accounts/oracle/policy-kit", Ability: "AbilityRoot", Group: "Other", Handler: "handleOraclePolicyKit", Description: ""},
 	{Method: "DELETE", Path: "/api/v1/cloud-accounts/{id}", Ability: "AbilityRoot", Group: "Other", Handler: "handleDeleteCloudAccount", Description: ""},
 	{Method: "GET", Path: "/api/v1/cloud-accounts/{id}", Ability: "Public", Group: "Other", Handler: "handleGetCloudAccount", Description: ""},
@@ -1259,6 +1260,7 @@ var openAPIRoutes = []openAPIRoute{
 	{Method: "GET", Path: "/api/v1/cloud-accounts/{id}/aws/secrets", Ability: "Public", Group: "Other", Handler: "handleAWSSecretsList", Description: ""},
 	{Method: "POST", Path: "/api/v1/cloud-accounts/{id}/aws/secrets", Ability: "Public", Group: "Other", Handler: "handleAWSSecretsPut", Description: ""},
 	{Method: "POST", Path: "/api/v1/cloud-accounts/{id}/aws/secrets/reveal", Ability: "Public", Group: "Other", Handler: "handleAWSSecretsReveal", Description: ""},
+	{Method: "GET", Path: "/api/v1/cloud-accounts/{id}/doctor", Ability: "Public", Group: "Other", Handler: "handleCloudAccountDoctor", Description: ""},
 	{Method: "GET", Path: "/api/v1/cloud-accounts/{id}/grants", Ability: "Public", Group: "Other", Handler: "handleListCloudGrants", Description: ""},
 	{Method: "POST", Path: "/api/v1/cloud-accounts/{id}/grants", Ability: "Public", Group: "Other", Handler: "handleCreateCloudGrant", Description: ""},
 	{Method: "DELETE", Path: "/api/v1/cloud-accounts/{id}/grants/{gid}", Ability: "Public", Group: "Other", Handler: "handleDeleteCloudGrant", Description: ""},

@@ -421,5 +421,20 @@
         "delete": "Excluir"
       }
     }
+  },
+  "doctor": {
+    "title": "Prontidão",
+    "ready": "Pronto",
+    "notReady": "Não pronto",
+    "rerun": "Executar de novo",
+    "running": "Verificando",
+    "failed": "Não foi possível executar a verificação.",
+    "fix": "Correção",
+    "status": {
+      "ok": "OK",
+      "warn": "Aviso",
+      "fail": "Falha",
+      "skip": "Ignorado"
+    }
   }
 }

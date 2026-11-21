@@ -144,6 +144,7 @@ cloud.guard.instance_types
 cloud.guard.kill_switch
 cloud.guard.monthly_cap_usd
 cloud.guard.per_create_max_usd
+cloud.guard.policy_arn
 cloud.guard.service.acm
 cloud.guard.service.cloudtrail
 cloud.guard.service.cloudwatch

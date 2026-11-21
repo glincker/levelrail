@@ -21,6 +21,7 @@ import {
 import type { CloudVerifyResult } from '../../types/cloudAccounts'
 import { CapabilityResults } from './CapabilityResults'
 import { CloudAccountAccess } from './CloudAccountAccess'
+import { DoctorPanel } from './DoctorPanel'
 import { CloudInstancesTab } from './CloudInstancesTab'
 import { CloudServicesTab } from './CloudServicesTab'
 import { CloudSpendCard } from './CloudSpendCard'
@@ -103,6 +104,7 @@ export function CloudAccountDetail({ id }: Readonly<{ id: string }>) {
           <TabsTrigger value="access">{t('detail.access')}</TabsTrigger>
         </TabsList>
         <TabsContent value="overview" className="space-y-4 pt-2">
+          <DoctorPanel id={id} />
           <dl className="grid gap-x-6 gap-y-2 text-sm sm:grid-cols-2 lg:grid-cols-4">
             <div>
               <dt className="text-xs text-muted-foreground">

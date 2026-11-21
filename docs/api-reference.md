@@ -2542,6 +2542,8 @@ Routes that do not fit an existing group.
 | GET | /api/v1/cloud-accounts/{id}/aws/cloudwatch/log-groups | Public | handleCloudWatchLogGroups |
 | GET | /api/v1/cloud-accounts/{id}/aws/cloudwatch/log-events | Public | handleCloudWatchLogEvents |
 | GET | /api/v1/cloud-accounts/{id}/aws/idle | Public | handleAWSIdle |
+| GET | /api/v1/cloud-accounts/doctor/preflight | AbilityRoot | handleCloudDoctorPreflight |
+| GET | /api/v1/cloud-accounts/{id}/doctor | Public | handleCloudAccountDoctor |
 | POST | /mcp | Public |  |
 
 ## See also

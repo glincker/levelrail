@@ -9,6 +9,7 @@ import { accountStatusState } from '../../lib/cloudAccounts'
 import { formatRelativeTime } from '../../lib/relativeTime'
 import { useCloudAccounts } from '../../queries/cloudAccounts'
 import { CloudProviderMark } from './CloudProviderMark'
+import { DoctorPanel } from './DoctorPanel'
 
 const HEADING =
   'font-(family-name:--glinr-font-display) text-(length:--glinr-type-size-section) leading-(--glinr-type-leading-section) font-(weight:--glinr-type-heading-weight) text-foreground'
@@ -110,6 +111,11 @@ export function CloudAccountsSection() {
                 state={accountStatusState(a.status)}
                 label={t(`status.${a.status}`, { defaultValue: a.status })}
               />
+              {a.last_verified_at ? null : (
+                <div className="basis-full">
+                  <DoctorPanel id={a.id} compact />
+                </div>
+              )}
             </li>
           ))}
         </ul>

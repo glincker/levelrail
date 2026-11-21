@@ -421,5 +421,20 @@
         "delete": "Delete"
       }
     }
+  },
+  "doctor": {
+    "title": "Readiness",
+    "ready": "Ready",
+    "notReady": "Not ready",
+    "rerun": "Run again",
+    "running": "Checking",
+    "failed": "Could not run the readiness check.",
+    "fix": "Fix",
+    "status": {
+      "ok": "OK",
+      "warn": "Warning",
+      "fail": "Fail",
+      "skip": "Skipped"
+    }
   }
 }

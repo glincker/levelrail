@@ -16,6 +16,7 @@ const cloudCredentialEnv = "LEVELRAIL_CLOUD_CREDENTIAL" //nolint:gosec // env va
 
 func cloudAccountsUsage(prog string) string {
 	return fmt.Sprintf(`Usage:
+  %[1]s cloud doctor [--account ID] [--json]
   %[1]s cloud accounts list|verify|probe|regions|rm|grants [ID]
   %[1]s cloud accounts add ID --provider P [--method M] [--region R] [--role-arn ARN] [--account-id ID] [--external-id X] [--label L] [--team T]
   %[1]s cloud accounts add ID --provider oracle --tenancy OCID --user OCID --fingerprint FP --compartment OCID --region R [--subnet OCID]

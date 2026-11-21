@@ -43,6 +43,8 @@ func runCloud(prog string, args []string, stdout, stderr io.Writer, lookupEnv fu
 		return runCloudConnect(prog, args[1:], stdout, stderr, lookupEnv)
 	case "connection":
 		return runCloudConnection(prog, args[1:], stdout, stderr, lookupEnv)
+	case "doctor":
+		return runCloudDoctor(prog, args[1:], stdout, stderr, lookupEnv)
 	case "accounts":
 		return runCloudAccounts(prog, args[1:], stdout, stderr, lookupEnv)
 	case "instances":

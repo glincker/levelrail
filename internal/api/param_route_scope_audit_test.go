@@ -131,6 +131,7 @@ var paramRouteScopeAllowlist = map[string]string{ //nolint:gosec // route names 
 	"GET /api/v1/cloud-accounts/{id}/instances":                                             "requireCloudAccess or requireAbility checks the account grant",
 	"GET /api/v1/cloud-accounts/{id}/instances/{iid}":                                       "requireCloudAccess or requireAbility checks the account grant",
 	"GET /api/v1/cloud-accounts/{id}/instances/{iid}/events":                                "requireCloudAccess or requireAbility checks the account grant",
+	"GET /api/v1/cloud-accounts/{id}/doctor":                                                "requireCloudAccess or requireAbility checks the account grant",
 	"GET /api/v1/cloud-accounts/{id}/regions":                                               "requireCloudAccess or requireAbility checks the account grant",
 	"GET /api/v1/cloud-accounts/{id}/spend":                                                 "requireCloudAccess or requireAbility checks the account grant",
 	"GET /api/v1/cloud-accounts/{id}/spend/estimate":                                        "requireCloudAccess or requireAbility checks the account grant",

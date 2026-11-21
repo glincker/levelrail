@@ -421,5 +421,20 @@
         "delete": "Supprimer"
       }
     }
+  },
+  "doctor": {
+    "title": "Préparation",
+    "ready": "Prêt",
+    "notReady": "Pas prêt",
+    "rerun": "Relancer",
+    "running": "Vérification",
+    "failed": "La vérification n'a pas pu s'exécuter.",
+    "fix": "Correction",
+    "status": {
+      "ok": "OK",
+      "warn": "Alerte",
+      "fail": "Échec",
+      "skip": "Ignoré"
+    }
   }
 }

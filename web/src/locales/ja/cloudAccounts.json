@@ -421,5 +421,20 @@
         "delete": "削除"
       }
     }
+  },
+  "doctor": {
+    "title": "準備状況",
+    "ready": "準備完了",
+    "notReady": "未完了",
+    "rerun": "再実行",
+    "running": "確認中",
+    "failed": "準備状況の確認を実行できませんでした。",
+    "fix": "対処",
+    "status": {
+      "ok": "OK",
+      "warn": "警告",
+      "fail": "失敗",
+      "skip": "スキップ"
+    }
   }
 }

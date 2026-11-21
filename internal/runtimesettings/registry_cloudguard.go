@@ -22,6 +22,7 @@ const (
 	KeyCloudGuardInstanceTypes = "cloud.guard.instance_types"
 	KeyCloudGuardKillSwitch    = "cloud.guard.kill_switch"
 	KeyCloudGuardExpiresHours  = "cloud.guard.default_expires_hours"
+	KeyCloudGuardPolicyARN     = "cloud.guard.policy_arn"
 	cloudGuardMaxUSD           = 1_000_000
 	cloudGuardMaxExpiresHours  = 24 * 365
 )
@@ -60,4 +61,8 @@ func init() {
 		Title: "AWS kill switch", Description: "Pauses every AWS create at once. Reads and existing resources are untouched.",
 	})
 	registerLimitInt(KeyCloudGuardExpiresHours, "APP_CLOUD_GUARD_DEFAULT_EXPIRES_HOURS", "168", "AWS default expiry (hours)", "Hours until a new resource is marked expired in its tags. 0 omits the tag.", 0, cloudGuardMaxExpiresHours)
+	Register(Definition{
+		Key: KeyCloudGuardPolicyARN, Category: cat, Kind: KindString, Default: "", Env: "APP_CLOUD_GUARD_POLICY_ARN", Apply: ApplyLive,
+		Title: "AWS guard policy ARN", Description: "Optional IAM managed deny policy, for example a budget guard. The AWS link kit attaches it to the role when the request names none.",
+	})
 }

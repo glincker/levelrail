@@ -467,6 +467,7 @@ These variables only seed the default of a [runtime setting](/runtime-settings).
 | `APP_CLOUD_GUARD_KILL_SWITCH` | [`cloud.guard.kill_switch`](/runtime-settings#observability) | `false` |
 | `APP_CLOUD_GUARD_MONTHLY_CAP_USD` | [`cloud.guard.monthly_cap_usd`](/runtime-settings#observability) | `0` |
 | `APP_CLOUD_GUARD_PER_CREATE_MAX_USD` | [`cloud.guard.per_create_max_usd`](/runtime-settings#observability) | `0` |
+| `APP_CLOUD_GUARD_POLICY_ARN` | [`cloud.guard.policy_arn`](/runtime-settings#observability) | empty |
 | `APP_CLOUD_GUARD_ACM` | [`cloud.guard.service.acm`](/runtime-settings#observability) | `false` |
 | `APP_CLOUD_GUARD_CLOUDTRAIL` | [`cloud.guard.service.cloudtrail`](/runtime-settings#observability) | `false` |
 | `APP_CLOUD_GUARD_CLOUDWATCH` | [`cloud.guard.service.cloudwatch`](/runtime-settings#observability) | `false` |

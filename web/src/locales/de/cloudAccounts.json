@@ -421,5 +421,20 @@
         "delete": "Löschen"
       }
     }
+  },
+  "doctor": {
+    "title": "Bereitschaft",
+    "ready": "Bereit",
+    "notReady": "Nicht bereit",
+    "rerun": "Erneut prüfen",
+    "running": "Prüfung läuft",
+    "failed": "Die Bereitschaftsprüfung konnte nicht laufen.",
+    "fix": "Lösung",
+    "status": {
+      "ok": "OK",
+      "warn": "Warnung",
+      "fail": "Fehler",
+      "skip": "Übersprungen"
+    }
   }
 }

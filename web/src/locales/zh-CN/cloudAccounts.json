@@ -421,5 +421,20 @@
         "delete": "删除"
       }
     }
+  },
+  "doctor": {
+    "title": "就绪检查",
+    "ready": "就绪",
+    "notReady": "未就绪",
+    "rerun": "重新检查",
+    "running": "检查中",
+    "failed": "无法运行就绪检查。",
+    "fix": "修复",
+    "status": {
+      "ok": "正常",
+      "warn": "警告",
+      "fail": "失败",
+      "skip": "已跳过"
+    }
   }
 }
