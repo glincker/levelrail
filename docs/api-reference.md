@@ -2524,6 +2524,7 @@ Routes that do not fit an existing group.
 | POST | /api/v1/cloud-accounts/{id}/aws/guard/kill-switch | AbilityRoot | handleAWSKillSwitch |
 | GET | /api/v1/cloud-accounts/{id}/aws/cleanup/plan | Public | handleAWSCleanupPlan |
 | GET | /api/v1/log-drains/field-descriptors | AbilityRead | handleGetLogDrainFields |
+| POST | /api/v1/cloud-accounts/aws/vault-kit | AbilityRoot | handleAWSVaultKit |
 | POST | /mcp | Public |  |
 
 ## See also

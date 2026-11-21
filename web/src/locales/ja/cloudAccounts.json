@@ -91,7 +91,11 @@
       "badZones": "Z0123ABCDのようなゾーンIDを使用してください。",
       "badPrincipal": "IAMのroot、ロール、ユーザーのARNを入力してください。",
       "badGuard": "IAMポリシーのARNを入力してください。",
-      "badRegion": "us-east-1のようなリージョンIDを使ってください。"
+      "badRegion": "us-east-1のようなリージョンIDを使ってください。",
+      "badAccountId": "12 桁の AWS アカウント ID を入力してください。",
+      "badVaultAddress": "http または https の Vault アドレスを入力してください。",
+      "badVaultRole": "英数字、ドット、ハイフン、アンダースコアを使用してください。",
+      "badVaultToken": "secret://vault/levelrail#token のような secret:// 参照を入力してください。"
     },
     "kit": {
       "readFirstTitle": "先にポリシーを読む",
@@ -112,6 +116,25 @@
       "go": "作成して確認",
       "retry": "もう一度確認",
       "identity": "アカウント{{account}}。"
+    },
+    "vault": {
+      "use": "短期認証情報に Vault を使う",
+      "hint": "Levelrail は Vault の aws シークレットエンジンから一時キーを読み取ります。アクセスキーは保存されません。",
+      "accountId": "AWS アカウント ID",
+      "address": "Vault のアドレス",
+      "mount": "シークレットエンジンのマウント",
+      "role": "Vault ロール",
+      "namespace": "Vault 名前空間 (任意)",
+      "tokenRef": "Vault トークン参照",
+      "kitTitle": "先に Vault を設定してください",
+      "kitHint": "Vault コマンドを実行し、ポリシーと信頼ポリシーで IAM ロール {{arn}} を作成してから接続します。",
+      "kitFormats": "Vault キットの形式",
+      "tabs": {
+        "commands": "Vault コマンド",
+        "vaultPolicy": "Vault ポリシー",
+        "policy": "IAM ポリシー",
+        "trust": "信頼ポリシー"
+      }
     }
   },
   "probe": {

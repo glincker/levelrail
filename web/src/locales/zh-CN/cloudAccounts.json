@@ -91,7 +91,11 @@
       "badZones": "请使用类似Z0123ABCD的区域ID。",
       "badPrincipal": "请输入 IAM root、角色或用户 ARN。",
       "badGuard": "请输入 IAM 策略 ARN。",
-      "badRegion": "请使用 us-east-1 这样的区域 ID。"
+      "badRegion": "请使用 us-east-1 这样的区域 ID。",
+      "badAccountId": "请输入 12 位 AWS 账户 ID。",
+      "badVaultAddress": "请输入 http 或 https 的 Vault 地址。",
+      "badVaultRole": "请使用字母、数字、点、连字符或下划线。",
+      "badVaultToken": "请输入 secret:// 引用,例如 secret://vault/levelrail#token。"
     },
     "kit": {
       "readFirstTitle": "请先阅读策略",
@@ -112,6 +116,25 @@
       "go": "创建并验证",
       "retry": "重新验证",
       "identity": "账号 {{account}}。"
+    },
+    "vault": {
+      "use": "使用 Vault 获取短期凭证",
+      "hint": "Levelrail 从你的 Vault aws 密钥引擎读取临时密钥,不会存储访问密钥。",
+      "accountId": "AWS 账户 ID",
+      "address": "Vault 地址",
+      "mount": "密钥引擎挂载路径",
+      "role": "Vault 角色",
+      "namespace": "Vault 命名空间(可选)",
+      "tokenRef": "Vault 令牌引用",
+      "kitTitle": "请先配置 Vault",
+      "kitHint": "运行 Vault 命令,使用策略和信任策略创建 IAM 角色 {{arn}},然后连接。",
+      "kitFormats": "Vault 工具包格式",
+      "tabs": {
+        "commands": "Vault 命令",
+        "vaultPolicy": "Vault 策略",
+        "policy": "IAM 策略",
+        "trust": "信任策略"
+      }
     }
   },
   "probe": {

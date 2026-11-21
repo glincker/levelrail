@@ -91,7 +91,11 @@
       "badZones": "Verwende Zonen-IDs wie Z0123ABCD.",
       "badPrincipal": "Gib eine IAM-Root-, Rollen- oder Benutzer-ARN ein.",
       "badGuard": "Gib eine IAM-Richtlinien-ARN ein.",
-      "badRegion": "Nutze eine Regions-ID wie us-east-1."
+      "badRegion": "Nutze eine Regions-ID wie us-east-1.",
+      "badAccountId": "Gib eine 12-stellige AWS-Konto-ID ein.",
+      "badVaultAddress": "Gib eine http- oder https-Vault-Adresse ein.",
+      "badVaultRole": "Nutze Buchstaben, Ziffern, Punkt, Bindestrich oder Unterstrich.",
+      "badVaultToken": "Gib eine secret://-Referenz wie secret://vault/levelrail#token ein."
     },
     "kit": {
       "readFirstTitle": "Richtlinie zuerst lesen",
@@ -112,6 +116,25 @@
       "go": "Anlegen und prüfen",
       "retry": "Erneut prüfen",
       "identity": "Konto {{account}}."
+    },
+    "vault": {
+      "use": "Vault für kurzlebige Zugangsdaten verwenden",
+      "hint": "Levelrail liest temporäre Schlüssel aus deiner Vault-AWS-Secrets-Engine. Es werden keine Zugriffsschlüssel gespeichert.",
+      "accountId": "AWS-Konto-ID",
+      "address": "Vault-Adresse",
+      "mount": "Mount der Secrets Engine",
+      "role": "Vault-Rolle",
+      "namespace": "Vault-Namespace (optional)",
+      "tokenRef": "Vault-Token-Referenz",
+      "kitTitle": "Zuerst Vault konfigurieren",
+      "kitHint": "Führe die Vault-Befehle aus, erstelle die IAM-Rolle {{arn}} mit Richtlinie und Vertrauensrichtlinie und verbinde dann.",
+      "kitFormats": "Vault-Kit-Formate",
+      "tabs": {
+        "commands": "Vault-Befehle",
+        "vaultPolicy": "Vault-Richtlinie",
+        "policy": "IAM-Richtlinie",
+        "trust": "Vertrauensrichtlinie"
+      }
     }
   },
   "probe": {

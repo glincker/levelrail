@@ -22,6 +22,7 @@ const (
 	AuthRoleAssumption = "role_assumption"
 	AuthSecretRef      = "secret_ref"
 	AuthStatic         = "static"
+	AuthVaultAWS       = "vault_aws"
 )
 
 // Health classes. A check reports one of these and nothing from the provider's own output.

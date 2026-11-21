@@ -109,7 +109,9 @@ func (rt *Router) toCloudAccountWire(ctx context.Context, a store.CloudAccount) 
 		cfg = json.RawMessage("{}")
 	}
 	linked := false
-	if rt.nodeProviderSecrets != nil {
+	if isAWSVaultAccount(a) {
+		linked = strings.Contains(string(cfg), "vault_token_ref")
+	} else if rt.nodeProviderSecrets != nil {
 		linked, _ = rt.nodeProviderSecrets.Exists(ctx, cloudAccountSecretRef(a), store.NodeProviderTokenEnvKey)
 	}
 	return cloudAccountWire{ID: a.ID, Provider: a.Provider, Label: a.DisplayName, Method: a.AuthMethod, Config: cfg, TeamID: a.TeamID,
@@ -210,6 +212,12 @@ type createCloudAccountRequest struct {
 	AccountID string `json:"account_id,omitempty"`
 	// ExternalID is the value from the link kit, stored sealed for method role_assumption.
 	ExternalID string `json:"external_id,omitempty"`
+	// Vault fields apply to method vault_aws; the token is only ever a secret:// reference.
+	VaultAddress   string `json:"vault_address,omitempty"`
+	VaultMount     string `json:"vault_mount,omitempty"`
+	VaultRole      string `json:"vault_role,omitempty"`
+	VaultNamespace string `json:"vault_namespace,omitempty"`
+	VaultTokenRef  string `json:"vault_token_ref,omitempty"`
 }
 
 func newCloudID(prefix string) (string, error) {
@@ -224,6 +232,33 @@ func isAWSRoleAccount(a store.CloudAccount) bool {
 	return a.Provider == cloudconn.ProviderAWS && a.AuthMethod == cloudAccountMethodRole
 }
 
+func isAWSVaultAccount(a store.CloudAccount) bool {
+	return a.Provider == cloudconn.ProviderAWS && a.AuthMethod == cloudconn.AuthVaultAWS
+}
+
+// isAWSBrokeredAccount covers the methods that assume a role or lease short lived keys.
+func isAWSBrokeredAccount(a store.CloudAccount) bool {
+	return isAWSRoleAccount(a) || isAWSVaultAccount(a)
+}
+
+func awsVaultAccountConfig(req createCloudAccountRequest) (map[string]string, string) {
+	if req.Region == "" || req.VaultTokenRef == "" {
+		return nil, "region, vault_address, vault_role and vault_token_ref are required for vault_aws"
+	}
+	cc := cloudconn.Config{Region: req.Region, AccountID: req.AccountID, VaultAddress: req.VaultAddress, VaultMount: req.VaultMount,
+		VaultRole: req.VaultRole, VaultNamespace: req.VaultNamespace, VaultTokenRef: req.VaultTokenRef}
+	if err := cloudconn.NewAWSProvider(cloudconn.AWSOptions{}).ValidateConfig(cc, cloudconn.AuthVaultAWS); err != nil {
+		return nil, "the account settings are not valid"
+	}
+	cfg := map[string]string{"region": cc.Region, "vault_address": cc.VaultAddress, "vault_role": cc.VaultRole, "vault_token_ref": cc.VaultTokenRef}
+	for k, v := range map[string]string{"account_id": cc.AccountID, "vault_mount": cc.VaultMount, "vault_namespace": cc.VaultNamespace} {
+		if v != "" {
+			cfg[k] = v
+		}
+	}
+	return cfg, ""
+}
+
 // cloudAccountDraft validates a create body into the row and the sealed credential value.
 func (rt *Router) cloudAccountDraft(req createCloudAccountRequest) (store.CloudAccount, string, string) {
 	if req.Provider == nodeProviderCustom || !isKnownNodeProvider(req.Provider) {
@@ -235,7 +270,12 @@ func (rt *Router) cloudAccountDraft(req createCloudAccountRequest) (store.CloudA
 	cfg := map[string]string{}
 	var value string
 	method := req.Method
-	if req.Provider == cloudconn.ProviderAWS && method == cloudAccountMethodRole {
+	if req.Provider == cloudconn.ProviderAWS && method == cloudconn.AuthVaultAWS {
+		var msg string
+		if cfg, msg = awsVaultAccountConfig(req); msg != "" {
+			return store.CloudAccount{}, "", msg
+		}
+	} else if req.Provider == cloudconn.ProviderAWS && method == cloudAccountMethodRole {
 		if req.RoleARN == "" || req.ExternalID == "" || req.Region == "" {
 			return store.CloudAccount{}, "", "role_arn, external_id and region are required for role_assumption"
 		}
@@ -317,13 +357,23 @@ func (rt *Router) handleCreateCloudAccount(w http.ResponseWriter, r *http.Reques
 	}
 	acct.CredentialRef = cloudAccountSecretPref + acct.ID
 	acct.CreatedBy = rt.nodeProviderActor(r)
+	if isAWSVaultAccount(acct) {
+		tok, err := rt.vaultAccountToken(r.Context(), acct)
+		if err != nil {
+			writeError(w, http.StatusBadRequest, "the vault token reference could not be resolved")
+			return
+		}
+		value = tok
+	}
 	if req.Verify {
 		if res := rt.checkCloudAccount(r.Context(), acct, value); !res.OK {
 			writeJSON(w, http.StatusUnprocessableEntity, res)
 			return
 		}
 	}
-	if err := rt.nodeProviderSecrets.SetValue(r.Context(), acct.CredentialRef, store.NodeProviderTokenEnvKey, value); err != nil {
+	if isAWSVaultAccount(acct) {
+		acct.CredentialRef = ""
+	} else if err := rt.nodeProviderSecrets.SetValue(r.Context(), acct.CredentialRef, store.NodeProviderTokenEnvKey, value); err != nil {
 		rt.internalError(w, "api: seal cloud account credential failed", err, slog.String("account", acct.ID))
 		return
 	}
@@ -371,6 +421,9 @@ func (rt *Router) handleUpdateCloudAccount(w http.ResponseWriter, r *http.Reques
 			return
 		}
 		a.Status = *req.Status
+		if a.Status == store.CloudAccountStatusDisabled {
+			rt.revokeVaultAccount(r.Context(), a)
+		}
 	}
 	if len(req.Config) > 0 || req.AllowedRegions != nil {
 		cfg := map[string]any{}
@@ -464,6 +517,7 @@ func (rt *Router) handleDeleteCloudAccount(w http.ResponseWriter, r *http.Reques
 			}
 		}
 	}
+	rt.revokeVaultAccount(r.Context(), a)
 	if err := st.DeleteCloudAccount(r.Context(), a.ID); err != nil {
 		rt.internalError(w, "api: delete cloud account failed", err, slog.String("account", a.ID))
 		return
@@ -520,7 +574,7 @@ func awsTarget(a store.CloudAccount, credential string) cloudconn.Target {
 
 // checkCloudAccount runs one read-only provider call with the candidate credential value.
 func (rt *Router) checkCloudAccount(ctx context.Context, a store.CloudAccount, value string) cloudCheckResult {
-	if isAWSRoleAccount(a) {
+	if isAWSBrokeredAccount(a) {
 		t := awsTarget(a, value)
 		p := rt.awsProvider()
 		class, err := p.Check(ctx, t)
@@ -556,6 +610,9 @@ func (rt *Router) checkCloudAccount(ctx context.Context, a store.CloudAccount, v
 }
 
 func (rt *Router) accountCredential(ctx context.Context, a store.CloudAccount) (string, error) {
+	if isAWSVaultAccount(a) {
+		return rt.vaultAccountToken(ctx, a)
+	}
 	if rt.nodeProviderSecrets == nil {
 		return "", errors.New("no secrets backend")
 	}
@@ -607,7 +664,7 @@ func (rt *Router) handleCloudAccountRegions(w http.ResponseWriter, r *http.Reque
 // accountRegions lists the regions the credential can see; a non zero status is the error to send.
 func (rt *Router) accountRegions(ctx context.Context, a store.CloudAccount) ([]cloudRegionWire, int, string) {
 	out := []cloudRegionWire{}
-	if isAWSRoleAccount(a) {
+	if isAWSBrokeredAccount(a) {
 		value, err := rt.accountCredential(ctx, a)
 		if err != nil {
 			return nil, http.StatusBadRequest, "no credential is stored for this account"
@@ -652,8 +709,8 @@ func (rt *Router) handleProbeCloudAccount(w http.ResponseWriter, r *http.Request
 	if !ok {
 		return
 	}
-	if !isAWSRoleAccount(a) && !isOracleAccount(a) {
-		writeError(w, http.StatusBadRequest, "capability probes are available for aws role_assumption and oracle accounts")
+	if !isAWSBrokeredAccount(a) && !isOracleAccount(a) {
+		writeError(w, http.StatusBadRequest, "capability probes are available for aws role_assumption, vault_aws and oracle accounts")
 		return
 	}
 	var req probeCloudAccountRequest

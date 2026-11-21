@@ -91,7 +91,11 @@
       "badZones": "Utilisez des ID de zone comme Z0123ABCD.",
       "badPrincipal": "Saisissez un ARN IAM root, rôle ou utilisateur.",
       "badGuard": "Saisissez un ARN de politique IAM.",
-      "badRegion": "Utilisez un id de région comme us-east-1."
+      "badRegion": "Utilisez un id de région comme us-east-1.",
+      "badAccountId": "Saisissez un ID de compte AWS à 12 chiffres.",
+      "badVaultAddress": "Saisissez une adresse Vault http ou https.",
+      "badVaultRole": "Utilisez lettres, chiffres, point, tiret ou tiret bas.",
+      "badVaultToken": "Saisissez une référence secret:// comme secret://vault/levelrail#token."
     },
     "kit": {
       "readFirstTitle": "Lisez d'abord la politique",
@@ -112,6 +116,25 @@
       "go": "Créer et vérifier",
       "retry": "Vérifier à nouveau",
       "identity": "Compte {{account}}."
+    },
+    "vault": {
+      "use": "Utiliser Vault pour des identifiants à courte durée",
+      "hint": "Levelrail lit des clés temporaires depuis le moteur de secrets aws de votre Vault. Aucune clé d'accès n'est stockée.",
+      "accountId": "ID de compte AWS",
+      "address": "Adresse de Vault",
+      "mount": "Montage du moteur de secrets",
+      "role": "Rôle Vault",
+      "namespace": "Namespace Vault (facultatif)",
+      "tokenRef": "Référence du jeton Vault",
+      "kitTitle": "Configurez d'abord Vault",
+      "kitHint": "Exécutez les commandes Vault, créez le rôle IAM {{arn}} avec la politique et la politique de confiance, puis connectez.",
+      "kitFormats": "Formats du kit Vault",
+      "tabs": {
+        "commands": "Commandes Vault",
+        "vaultPolicy": "Politique Vault",
+        "policy": "Politique IAM",
+        "trust": "Politique de confiance"
+      }
     }
   },
   "probe": {

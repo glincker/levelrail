@@ -29,6 +29,14 @@ export interface AwsWizardState {
   region: string
   roleArn: string
   label: string
+  // Vault mode: short lived keys leased from a Vault aws secrets engine.
+  useVault: boolean
+  accountId: string
+  vaultAddress: string
+  vaultMount: string
+  vaultRole: string
+  vaultNamespace: string
+  vaultTokenRef: string
 }
 
 export const INITIAL_WIZARD: AwsWizardState = {
@@ -41,6 +49,13 @@ export const INITIAL_WIZARD: AwsWizardState = {
   region: 'us-east-1',
   roleArn: '',
   label: 'AWS',
+  useVault: false,
+  accountId: '',
+  vaultAddress: '',
+  vaultMount: 'aws',
+  vaultRole: 'levelrail',
+  vaultNamespace: '',
+  vaultTokenRef: '',
 }
 
 const REGION_RE = /^[a-z]{2}(-[a-z]+)+-\d$/
@@ -102,6 +117,10 @@ export type ScopeIssue =
   | 'badPrincipal'
   | 'badGuard'
   | 'badRegion'
+  | 'badAccountId'
+  | 'badVaultAddress'
+  | 'badVaultRole'
+  | 'badVaultToken'
 
 // First step is valid when the kit can be generated; the server re-checks everything.
 export function scopeIssues(s: AwsWizardState): ScopeIssue[] {
@@ -123,6 +142,24 @@ export function scopeIssues(s: AwsWizardState): ScopeIssue[] {
     out.push('badGuard')
   }
   if (!isRegion(s.region)) out.push('badRegion')
+  if (s.useVault) out.push(...vaultIssues(s))
+  return out
+}
+
+const ACCOUNT_RE = /^\d{12}$/
+const VAULT_ROLE_RE = /^[A-Za-z0-9_.-]{1,128}$/
+const SECRET_REF_RE = /^secret:\/\/[^/\s]+\/\S+$/
+
+export function isHttpUrl(value: string): boolean {
+  return /^https?:\/\/[^/\s]+/.test(value.trim())
+}
+
+function vaultIssues(s: AwsWizardState): ScopeIssue[] {
+  const out: ScopeIssue[] = []
+  if (!ACCOUNT_RE.test(s.accountId.trim())) out.push('badAccountId')
+  if (!isHttpUrl(s.vaultAddress)) out.push('badVaultAddress')
+  if (!VAULT_ROLE_RE.test(s.vaultRole.trim())) out.push('badVaultRole')
+  if (!SECRET_REF_RE.test(s.vaultTokenRef.trim())) out.push('badVaultToken')
   return out
 }
 
@@ -133,6 +170,7 @@ export function canLeaveStep(
 ): boolean {
   if (step === 'scope') return scopeIssues(s).length === 0
   if (step === 'kit') return hasKit
+  if (s.useVault) return s.label.trim() !== ''
   return isRoleArn(s.roleArn) && s.label.trim() !== ''
 }
 

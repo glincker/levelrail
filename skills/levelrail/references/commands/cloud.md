@@ -40,6 +40,7 @@ Usage:
   levelrail-cli cloud instances tag ACCOUNT INSTANCE KEY=VALUE...
   levelrail-cli cloud spend ACCOUNT [--refresh]
   levelrail-cli cloud aws link-kit --trusted-principal ARN [--role-name N] [--region R] [--template-url URL] [--guard-policy ARN]
+  levelrail-cli cloud aws vault-kit --account-id ID --vault-principal ARN [--role-name N] [--mount M] [--vault-role R] [--namespace NS] [--region R]
   levelrail-cli cloud aws ecr|acm|secrets|audit|guard|cleanup-plan ACCOUNT ... (run "cloud aws" for details)
   levelrail-cli cloud oracle policy-kit --group G --compartment NAME_OR_OCID [--policy-name N] [--manage]
 
@@ -49,7 +50,7 @@ The provider credential for "accounts add" is read from LEVELRAIL_CLOUD_CREDENTI
 
 ## levelrail-cli cloud aws
 
-Subcommands: acm, audit, cleanup-plan, ecr, guard, link-kit, secrets
+Subcommands: acm, audit, cleanup-plan, ecr, guard, link-kit, secrets, vault-kit
 
 ```
 Usage:
@@ -62,6 +63,7 @@ Usage:
   levelrail-cli cloud instances tag ACCOUNT INSTANCE KEY=VALUE...
   levelrail-cli cloud spend ACCOUNT [--refresh]
   levelrail-cli cloud aws link-kit --trusted-principal ARN [--role-name N] [--region R] [--template-url URL] [--guard-policy ARN]
+  levelrail-cli cloud aws vault-kit --account-id ID --vault-principal ARN [--role-name N] [--mount M] [--vault-role R] [--namespace NS] [--region R]
   levelrail-cli cloud aws ecr|acm|secrets|audit|guard|cleanup-plan ACCOUNT ... (run "cloud aws" for details)
   levelrail-cli cloud oracle policy-kit --group G --compartment NAME_OR_OCID [--policy-name N] [--manage]
 
@@ -256,6 +258,7 @@ Usage:
   levelrail-cli cloud instances tag ACCOUNT INSTANCE KEY=VALUE...
   levelrail-cli cloud spend ACCOUNT [--refresh]
   levelrail-cli cloud aws link-kit --trusted-principal ARN [--role-name N] [--region R] [--template-url URL] [--guard-policy ARN]
+  levelrail-cli cloud aws vault-kit --account-id ID --vault-principal ARN [--role-name N] [--mount M] [--vault-role R] [--namespace NS] [--region R]
   levelrail-cli cloud aws ecr|acm|secrets|audit|guard|cleanup-plan ACCOUNT ... (run "cloud aws" for details)
   levelrail-cli cloud oracle policy-kit --group G --compartment NAME_OR_OCID [--policy-name N] [--manage]
 

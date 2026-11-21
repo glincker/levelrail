@@ -57,6 +57,38 @@ export interface AwsLinkKit {
   guard_policy_arn?: string
 }
 
+export interface AwsVaultKitInput {
+  account_id: string
+  vault_principal_arn: string
+  capabilities: string[]
+  regions: string[]
+  hosted_zone_ids: string[]
+  role_name?: string
+  region?: string
+  vault_mount?: string
+  vault_role?: string
+  vault_namespace?: string
+}
+
+export interface AwsVaultKit {
+  role_arn: string
+  vault_commands: string
+  vault_policy: string
+  policy_json: string
+  trust_policy_json: string
+}
+
+export interface CreateAwsVaultAccountInput {
+  label: string
+  region: string
+  account_id: string
+  vault_address: string
+  vault_mount?: string
+  vault_role: string
+  vault_namespace?: string
+  vault_token_ref: string
+}
+
 export interface CreateAwsRoleAccountInput {
   label: string
   role_arn: string

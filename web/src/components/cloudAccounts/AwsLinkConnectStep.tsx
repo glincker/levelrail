@@ -35,25 +35,27 @@ export function AwsLinkConnectStep({
   return (
     <div className="space-y-3">
       <div className="grid gap-3 sm:grid-cols-[1fr_16rem]">
-        <div className="space-y-1">
-          <Label htmlFor={`${uid}-arn`}>{t('wizard.connect.roleArn')}</Label>
-          <Input
-            id={`${uid}-arn`}
-            value={state.roleArn}
-            disabled={locked}
-            className="font-mono"
-            placeholder={EX_0}
-            aria-invalid={badArn}
-            onChange={(e) => {
-              onChange({ roleArn: e.target.value.trim() })
-            }}
-          />
-          {badArn ? (
-            <p role="alert" className="text-xs text-destructive">
-              {t('wizard.connect.badArn')}
-            </p>
-          ) : null}
-        </div>
+        {state.useVault ? null : (
+          <div className="space-y-1">
+            <Label htmlFor={`${uid}-arn`}>{t('wizard.connect.roleArn')}</Label>
+            <Input
+              id={`${uid}-arn`}
+              value={state.roleArn}
+              disabled={locked}
+              className="font-mono"
+              placeholder={EX_0}
+              aria-invalid={badArn}
+              onChange={(e) => {
+                onChange({ roleArn: e.target.value.trim() })
+              }}
+            />
+            {badArn ? (
+              <p role="alert" className="text-xs text-destructive">
+                {t('wizard.connect.badArn')}
+              </p>
+            ) : null}
+          </div>
+        )}
         <div className="space-y-1">
           <Label htmlFor={`${uid}-label`}>{t('wizard.connect.label')}</Label>
           <Input

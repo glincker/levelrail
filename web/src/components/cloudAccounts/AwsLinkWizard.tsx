@@ -21,12 +21,15 @@ import { principalFromIdentity } from '../../lib/cloudSpend'
 import {
   useAwsControlIdentity,
   useAwsLinkKit,
+  useAwsVaultKit,
   useCreateAwsRoleAccount,
+  useCreateAwsVaultAccount,
   useProbeCloudAccount,
   useVerifyCloudAccount,
 } from '../../queries/cloudAccounts'
 import type {
   AwsLinkKit,
+  AwsVaultKit,
   CloudAccount,
   CloudCapabilityResult,
   CloudVerifyResult,
@@ -34,6 +37,7 @@ import type {
 import { AwsLinkConnectStep } from './AwsLinkConnectStep'
 import { AwsLinkKitStep } from './AwsLinkKitStep'
 import { AwsLinkScopeStep } from './AwsLinkScopeStep'
+import { AwsLinkVaultKitStep } from './AwsLinkVaultKitStep'
 
 function messageOf(e: unknown): string {
   return e instanceof Error ? e.message : String(e)
@@ -54,17 +58,22 @@ export function AwsLinkWizard() {
     : { ...raw, trustedPrincipalArn: prefill }
   const [showIssues, setShowIssues] = useState(false)
   const [kit, setKit] = useState<AwsLinkKit | null>(null)
+  const [vaultKit, setVaultKit] = useState<AwsVaultKit | null>(null)
   const [account, setAccount] = useState<CloudAccount | null>(null)
   const [verify, setVerify] = useState<CloudVerifyResult | null>(null)
   const [probe, setProbe] = useState<CloudCapabilityResult[] | null>(null)
   const [error, setError] = useState<string | null>(null)
   const makeKit = useAwsLinkKit()
   const create = useCreateAwsRoleAccount()
+  const makeVaultKit = useAwsVaultKit()
+  const createVault = useCreateAwsVaultAccount()
   const verifyAccount = useVerifyCloudAccount()
   const probeAccount = useProbeCloudAccount()
   const busy =
     makeKit.isPending ||
+    makeVaultKit.isPending ||
     create.isPending ||
+    createVault.isPending ||
     verifyAccount.isPending ||
     probeAccount.isPending
 
@@ -72,7 +81,10 @@ export function AwsLinkWizard() {
     if (p.trustedPrincipalArn !== undefined) setPrincipalEdited(true)
     setState((s) => ({ ...s, ...p }))
     // Any scope change invalidates the generated kit and its external id.
-    if (step === 'scope') setKit(null)
+    if (step === 'scope') {
+      setKit(null)
+      setVaultKit(null)
+    }
   }
 
   function generate() {
@@ -81,6 +93,32 @@ export function AwsLinkWizard() {
       return
     }
     setError(null)
+    if (state.useVault) {
+      makeVaultKit.mutate(
+        {
+          account_id: state.accountId.trim(),
+          vault_principal_arn: state.trustedPrincipalArn.trim(),
+          capabilities: [...state.capabilities],
+          regions: parseRegions(state.regionsText),
+          hosted_zone_ids: parseZones(state.zonesText),
+          role_name: state.roleName || undefined,
+          region: state.region,
+          vault_mount: state.vaultMount || undefined,
+          vault_role: state.vaultRole,
+          vault_namespace: state.vaultNamespace || undefined,
+        },
+        {
+          onSuccess: (k) => {
+            setVaultKit(k)
+            setStep('kit')
+          },
+          onError: (e) => {
+            setError(messageOf(e))
+          },
+        },
+      )
+      return
+    }
     makeKit.mutate(
       {
         capabilities: [...state.capabilities],
@@ -104,17 +142,28 @@ export function AwsLinkWizard() {
   }
 
   async function connect() {
-    if (!kit) return
+    if (!kit && !vaultKit) return
     setError(null)
     try {
       const created =
         account ??
-        (await create.mutateAsync({
-          label: state.label.trim(),
-          role_arn: state.roleArn.trim(),
-          external_id: kit.external_id,
-          region: state.region,
-        }))
+        (kit && !state.useVault
+          ? await create.mutateAsync({
+              label: state.label.trim(),
+              role_arn: state.roleArn.trim(),
+              external_id: kit.external_id,
+              region: state.region,
+            })
+          : await createVault.mutateAsync({
+              label: state.label.trim(),
+              region: state.region,
+              account_id: state.accountId.trim(),
+              vault_address: state.vaultAddress.trim(),
+              vault_mount: state.vaultMount || undefined,
+              vault_role: state.vaultRole.trim(),
+              vault_namespace: state.vaultNamespace || undefined,
+              vault_token_ref: state.vaultTokenRef.trim(),
+            }))
       setAccount(created)
       const v = await verifyAccount.mutateAsync(created.id)
       setVerify(v)
@@ -167,7 +216,12 @@ export function AwsLinkWizard() {
               showIssues={showIssues}
             />
           ) : null}
-          {step === 'kit' && kit ? <AwsLinkKitStep kit={kit} /> : null}
+          {step === 'kit' && kit && !state.useVault ? (
+            <AwsLinkKitStep kit={kit} />
+          ) : null}
+          {step === 'kit' && vaultKit && state.useVault ? (
+            <AwsLinkVaultKitStep kit={vaultKit} />
+          ) : null}
           {onConnect ? (
             <AwsLinkConnectStep
               state={state}
@@ -209,13 +263,21 @@ export function AwsLinkWizard() {
               ) : null}
               {step === 'scope' ? (
                 <Button size="sm" disabled={busy} onClick={generate}>
-                  {kit ? t('wizard.regenerate') : t('wizard.generate')}
+                  {kit || vaultKit
+                    ? t('wizard.regenerate')
+                    : t('wizard.generate')}
                 </Button>
               ) : null}
               {step === 'kit' ? (
                 <Button
                   size="sm"
-                  disabled={!canLeaveStep('kit', state, kit !== null)}
+                  disabled={
+                    !canLeaveStep(
+                      'kit',
+                      state,
+                      kit !== null || vaultKit !== null,
+                    )
+                  }
                   onClick={() => {
                     setStep(nextStep(step))
                   }}

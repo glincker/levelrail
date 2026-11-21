@@ -91,7 +91,11 @@
       "badZones": "Use zone ids such as Z0123ABCD.",
       "badPrincipal": "Enter an IAM root, role or user ARN.",
       "badGuard": "Enter an IAM policy ARN.",
-      "badRegion": "Use a region id such as us-east-1."
+      "badRegion": "Use a region id such as us-east-1.",
+      "badAccountId": "Enter a 12 digit AWS account id.",
+      "badVaultAddress": "Enter an http or https Vault address.",
+      "badVaultRole": "Use letters, digits, dot, dash or underscore.",
+      "badVaultToken": "Enter a secret:// reference such as secret://vault/levelrail#token."
     },
     "kit": {
       "readFirstTitle": "Read the policy first",
@@ -112,6 +116,25 @@
       "go": "Create and verify",
       "retry": "Verify again",
       "identity": "Account {{account}}."
+    },
+    "vault": {
+      "use": "Use Vault for short lived credentials",
+      "hint": "Levelrail reads temporary keys from your Vault aws secrets engine. No access keys are stored.",
+      "accountId": "AWS account id",
+      "address": "Vault address",
+      "mount": "Secrets engine mount",
+      "role": "Vault role",
+      "namespace": "Vault namespace (optional)",
+      "tokenRef": "Vault token reference",
+      "kitTitle": "Configure Vault first",
+      "kitHint": "Run the Vault commands, create the IAM role {{arn}} with the policy and trust policy, then connect.",
+      "kitFormats": "Vault kit formats",
+      "tabs": {
+        "commands": "Vault commands",
+        "vaultPolicy": "Vault policy",
+        "policy": "IAM policy",
+        "trust": "Trust policy"
+      }
     }
   },
   "probe": {

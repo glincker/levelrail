@@ -120,7 +120,7 @@ func (s *Service) Get(ctx context.Context, name string) (Connection, error) {
 // validate checks a full definition.
 func (s *Service) validate(p Provider, in Input) error {
 	if !validAuth[in.AuthMethod] {
-		return invalid("auth_method must be oidc_federation, role_assumption, secret_ref or static")
+		return invalid("auth_method must be oidc_federation, role_assumption, secret_ref, static or vault_aws")
 	}
 	allowed := false
 	for _, a := range authAllowed[p.Name()] {
@@ -239,7 +239,7 @@ func (s *Service) probe(ctx context.Context, c Connection) string {
 		return ClassConfigInvalid
 	}
 	t := Target{Connection: c}
-	if c.AuthMethod == AuthSecretRef || c.AuthMethod == AuthRoleAssumption {
+	if c.AuthMethod == AuthSecretRef || c.AuthMethod == AuthRoleAssumption || c.AuthMethod == AuthVaultAWS {
 		ref, err := secretsource.ParseRef(c.CredentialRef)
 		if err != nil || s.Sources == nil {
 			return ClassCredentialUnresolved

@@ -11,6 +11,9 @@ import type {
   AwsControlIdentity,
   AwsLinkKit,
   AwsLinkKitInput,
+  AwsVaultKit,
+  AwsVaultKitInput,
+  CreateAwsVaultAccountInput,
   CloudAccessData,
   CloudAccount,
   CloudCapabilityResult,
@@ -102,6 +105,30 @@ export function useAwsLinkKit() {
         body: input,
         fallbackMessage: 'generate link kit failed',
       }),
+  })
+}
+
+export function useAwsVaultKit() {
+  return useMutation({
+    mutationFn: (input: AwsVaultKitInput) =>
+      apiRequest<AwsVaultKit>(`${BASE}/aws/vault-kit`, {
+        method: 'POST',
+        body: input,
+        fallbackMessage: 'generate vault kit failed',
+      }),
+  })
+}
+
+export function useCreateAwsVaultAccount() {
+  const qc = useQueryClient()
+  return useMutation({
+    mutationFn: (input: CreateAwsVaultAccountInput) =>
+      apiRequest<CloudAccount>(BASE, {
+        method: 'POST',
+        body: { provider: 'aws', method: 'vault_aws', ...input },
+        fallbackMessage: 'create cloud account failed',
+      }),
+    onSuccess: () => qc.invalidateQueries({ queryKey: cloudAccountKeys.all }),
   })
 }
 

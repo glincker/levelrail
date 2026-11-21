@@ -18,6 +18,8 @@ import (
 	"github.com/aws/aws-sdk-go-v2/credentials/stscreds"
 	"github.com/aws/aws-sdk-go-v2/service/ec2"
 	"github.com/aws/aws-sdk-go-v2/service/sts"
+
+	"github.com/GLINCKER/levelrail/internal/vault"
 )
 
 var (
@@ -59,6 +61,8 @@ type AWSOptions struct {
 	NewSTS          func(aws.Config) STSAPI
 	NewEC2          func(aws.Config) EC2API
 	NewSimulator    func(aws.Config) PolicySimulator
+	// VaultBroker overrides the shared lease cache used by vault_aws, for tests.
+	VaultBroker *vault.AWSBroker
 }
 
 // AWSProvider is the read-only AWS side: identity, regions and capability probes.
@@ -102,6 +106,8 @@ func (*AWSProvider) ValidateConfig(cfg Config, authMethod string) error {
 		return invalid("role_arn is required for role_assumption")
 	case usesKeys(authMethod) && !awsAllowStatic():
 		return invalid("static access keys are disabled; use role_assumption or set APP_CLOUD_ALLOW_STATIC_KEYS")
+	case authMethod == AuthVaultAWS:
+		return validateVaultConfig(cfg)
 	}
 	return nil
 }
@@ -161,6 +167,15 @@ func (p *AWSProvider) session(ctx context.Context, t Target) (aws.Config, string
 			return aws.Config{}, ClassConfigInvalid, errors.New("cloudconn: aws credential bundle is not valid")
 		}
 		loaders = append(loaders, config.WithCredentialsProvider(credentials.NewStaticCredentialsProvider(keys.AccessKeyID, keys.SecretAccessKey, keys.SessionToken)))
+	}
+	if c.AuthMethod == AuthVaultAWS {
+		if t.Credential.Len() == 0 {
+			return aws.Config{}, ClassCredentialUnresolved, errors.New("cloudconn: no vault token")
+		}
+		if _, class, err := p.VaultKeys(ctx, t); err != nil {
+			return aws.Config{}, class, err
+		}
+		loaders = append(loaders, config.WithCredentialsProvider(p.vaultProvider(t)))
 	}
 	cfg, err := config.LoadDefaultConfig(ctx, loaders...)
 	if err != nil {

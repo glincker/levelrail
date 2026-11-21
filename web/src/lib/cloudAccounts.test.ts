@@ -83,3 +83,46 @@ describe('aws link wizard rules', () => {
     expect(accountStatusState('disabled')).toBe('paused')
   })
 })
+
+describe('vault mode rules', () => {
+  const vault = (over: Partial<AwsWizardState> = {}) =>
+    ready({
+      useVault: true,
+      accountId: '123456789012',
+      vaultAddress: 'https://vault.example.com:8200',
+      vaultTokenRef: 'secret://vault/levelrail#token',
+      ...over,
+    })
+
+  it('accepts a complete vault scope', () => {
+    expect(scopeIssues(vault())).toEqual([])
+  })
+
+  it('flags each missing vault field', () => {
+    const issues = scopeIssues(
+      vault({
+        accountId: '12',
+        vaultAddress: 'vault',
+        vaultRole: '',
+        vaultTokenRef: 'abc',
+      }),
+    )
+    expect(issues).toEqual(
+      expect.arrayContaining([
+        'badAccountId',
+        'badVaultAddress',
+        'badVaultRole',
+        'badVaultToken',
+      ]),
+    )
+  })
+
+  it('does not ask for vault fields when vault is off', () => {
+    expect(scopeIssues(ready())).toEqual([])
+  })
+
+  it('connects with a label alone in vault mode', () => {
+    expect(canLeaveStep('connect', vault(), true)).toBe(true)
+    expect(canLeaveStep('connect', vault({ label: ' ' }), true)).toBe(false)
+  })
+})

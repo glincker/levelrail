@@ -11,6 +11,7 @@ import {
   type ScopeIssue,
 } from '../../lib/cloudAccounts'
 import type { AwsControlIdentity } from '../../types/cloudAccounts'
+import { AwsLinkVaultFields } from './AwsLinkVaultFields'
 
 // Example ARNs and ids, not translatable text.
 const EX_0 = 'eu-west-1, us-east-1'
@@ -40,6 +41,7 @@ export function AwsLinkScopeStep({
 
   return (
     <div className="space-y-4">
+      <AwsLinkVaultFields state={state} onChange={onChange} issues={issues} />
       <fieldset className="space-y-2">
         <legend className="text-sm font-medium">
           {t('wizard.scope.tiers')}
