@@ -7,6 +7,7 @@ const (
 	KeyCloudGuardParams        = "cloud.guard.service.parameters"
 	KeyCloudGuardCloudTrail    = "cloud.guard.service.cloudtrail"
 	KeyCloudGuardRDS           = "cloud.guard.service.rds"
+	KeyCloudGuardElastiCache   = "cloud.guard.service.elasticache"
 	KeyCloudGuardEBS           = "cloud.guard.service.ebs"
 	KeyCloudGuardCloudWatch    = "cloud.guard.service.cloudwatch"
 	KeyCloudGuardIdleCPU       = "cloud.guard.idle.cpu_percent"
@@ -46,6 +47,7 @@ func init() {
 	registerLimitInt(KeyCloudGuardIdleALBCents, "APP_CLOUD_GUARD_IDLE_ALB_MONTH_CENTS", "1643", "AWS load balancer price for savings (cents per month)", "Unit price used to estimate the saving of an idle application load balancer. From 0 to 1000000.", 0, 1000000)
 	registerLimitInt(KeyCloudGuardKeepDaily, "APP_CLOUD_GUARD_SNAPSHOT_KEEP_DAILY", "7", "AWS snapshots to keep (daily)", "Managed snapshots per volume kept for the most recent days when planning cleanup. 0 for both settings keeps everything.", 0, 365)
 	registerLimitInt(KeyCloudGuardKeepWeekly, "APP_CLOUD_GUARD_SNAPSHOT_KEEP_WEEKLY", "4", "AWS snapshots to keep (weekly)", "Managed snapshots per volume kept for the most recent weeks when planning cleanup.", 0, 520)
+	flag(KeyCloudGuardElastiCache, "APP_CLOUD_GUARD_ELASTICACHE", "AWS caches (ElastiCache)", "Lets the control plane list ElastiCache replication groups and clusters, snapshot and reboot managed ones, and delete them with a typed confirm.")
 	registerLimitInt(KeyCloudGuardMonthlyCapUSD, "APP_CLOUD_GUARD_MONTHLY_CAP_USD", "0", "AWS monthly cap (USD)", "Default monthly spend cap per account that blocks new creates. 0 means no cap.", 0, cloudGuardMaxUSD)
 	Register(Definition{
 		Key: KeyCloudGuardAccountCaps, Category: cat, Kind: KindStringList, Default: "", Env: "APP_CLOUD_GUARD_ACCOUNT_CAPS", Apply: ApplyLive,

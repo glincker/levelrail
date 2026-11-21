@@ -374,6 +374,18 @@
       "autoRestart": "Parado, a AWS reinicia após {{days}} dias",
       "deleteSnapshot": "Excluir snapshot"
     },
+    "elasticache": {
+      "title": "Caches (ElastiCache)",
+      "empty": "Nenhum cache nesta região.",
+      "groups": "Grupos de replicação",
+      "clusters": "Clusters de cache",
+      "snapshot": "Snapshot",
+      "reboot": "Reiniciar",
+      "delete": "Excluir",
+      "deleteTitle": "Excluir este cache",
+      "deleteBody": "Isso remove o cache e seus dados. Digite o nome para confirmar. Um snapshot final mantém uma cópia.",
+      "finalSnapshot": "Nome do snapshot final (opcional)"
+    },
     "ebs": {
       "title": "Volumes e snapshots (EBS)",
       "target": "ID da instância ou do volume",

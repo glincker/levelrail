@@ -473,6 +473,7 @@ These variables only seed the default of a [runtime setting](/runtime-settings).
 | `APP_CLOUD_GUARD_CLOUDWATCH` | [`cloud.guard.service.cloudwatch`](/runtime-settings#observability) | `false` |
 | `APP_CLOUD_GUARD_EBS` | [`cloud.guard.service.ebs`](/runtime-settings#observability) | `false` |
 | `APP_CLOUD_GUARD_ECR` | [`cloud.guard.service.ecr`](/runtime-settings#observability) | `false` |
+| `APP_CLOUD_GUARD_ELASTICACHE` | [`cloud.guard.service.elasticache`](/runtime-settings#observability) | `false` |
 | `APP_CLOUD_GUARD_PARAMS` | [`cloud.guard.service.parameters`](/runtime-settings#observability) | `false` |
 | `APP_CLOUD_GUARD_RDS` | [`cloud.guard.service.rds`](/runtime-settings#observability) | `false` |
 | `APP_CLOUD_GUARD_SNAPSHOT_KEEP_DAILY` | [`cloud.guard.snapshot.keep_daily`](/runtime-settings#observability) | `7` |

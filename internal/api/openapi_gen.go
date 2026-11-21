@@ -14,7 +14,7 @@ type openAPIRoute struct {
 	Description string
 }
 
-// openAPIRoutes holds all 2316 routes known to scripts/gen-api-reference at
+// openAPIRoutes holds all 2325 routes known to scripts/gen-api-reference at
 // generation time. Run `go run ./scripts/gen-api-reference` after changing
 // any routes*.go registration and commit the result.
 var openAPIRoutes = []openAPIRoute{
@@ -1245,6 +1245,15 @@ var openAPIRoutes = []openAPIRoute{
 	{Method: "POST", Path: "/api/v1/cloud-accounts/{id}/aws/ecr/login-token", Ability: "Public", Group: "Other", Handler: "handleAWSECRLoginToken", Description: ""},
 	{Method: "GET", Path: "/api/v1/cloud-accounts/{id}/aws/ecr/repositories", Ability: "Public", Group: "Other", Handler: "handleAWSECRList", Description: ""},
 	{Method: "POST", Path: "/api/v1/cloud-accounts/{id}/aws/ecr/repositories", Ability: "Public", Group: "Other", Handler: "handleAWSECRCreate", Description: ""},
+	{Method: "GET", Path: "/api/v1/cloud-accounts/{id}/aws/elasticache/clusters", Ability: "Public", Group: "Other", Handler: "handleElastiCacheClusters", Description: ""},
+	{Method: "DELETE", Path: "/api/v1/cloud-accounts/{id}/aws/elasticache/clusters/{cid}", Ability: "Public", Group: "Other", Handler: "handleElastiCacheClusterDelete", Description: ""},
+	{Method: "GET", Path: "/api/v1/cloud-accounts/{id}/aws/elasticache/clusters/{cid}", Ability: "Public", Group: "Other", Handler: "handleElastiCacheCluster", Description: ""},
+	{Method: "POST", Path: "/api/v1/cloud-accounts/{id}/aws/elasticache/clusters/{cid}/reboot", Ability: "Public", Group: "Other", Handler: "handleElastiCacheReboot", Description: ""},
+	{Method: "GET", Path: "/api/v1/cloud-accounts/{id}/aws/elasticache/replication-groups", Ability: "Public", Group: "Other", Handler: "handleElastiCacheGroups", Description: ""},
+	{Method: "DELETE", Path: "/api/v1/cloud-accounts/{id}/aws/elasticache/replication-groups/{rid}", Ability: "Public", Group: "Other", Handler: "handleElastiCacheGroupDelete", Description: ""},
+	{Method: "GET", Path: "/api/v1/cloud-accounts/{id}/aws/elasticache/replication-groups/{rid}", Ability: "Public", Group: "Other", Handler: "handleElastiCacheGroup", Description: ""},
+	{Method: "GET", Path: "/api/v1/cloud-accounts/{id}/aws/elasticache/snapshots", Ability: "Public", Group: "Other", Handler: "handleElastiCacheSnapshots", Description: ""},
+	{Method: "POST", Path: "/api/v1/cloud-accounts/{id}/aws/elasticache/snapshots", Ability: "Public", Group: "Other", Handler: "handleElastiCacheSnapshotCreate", Description: ""},
 	{Method: "GET", Path: "/api/v1/cloud-accounts/{id}/aws/guard", Ability: "Public", Group: "Other", Handler: "handleAWSGuardStatus", Description: ""},
 	{Method: "POST", Path: "/api/v1/cloud-accounts/{id}/aws/guard/kill-switch", Ability: "AbilityRoot", Group: "Other", Handler: "handleAWSKillSwitch", Description: ""},
 	{Method: "GET", Path: "/api/v1/cloud-accounts/{id}/aws/idle", Ability: "Public", Group: "Other", Handler: "handleAWSIdle", Description: ""},

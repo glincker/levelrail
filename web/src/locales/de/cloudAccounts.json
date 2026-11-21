@@ -374,6 +374,18 @@
       "autoRestart": "Gestoppt, AWS startet es nach {{days}} Tagen neu",
       "deleteSnapshot": "Snapshot löschen"
     },
+    "elasticache": {
+      "title": "Caches (ElastiCache)",
+      "empty": "Keine Caches in dieser Region.",
+      "groups": "Replikationsgruppen",
+      "clusters": "Cache-Cluster",
+      "snapshot": "Snapshot",
+      "reboot": "Neu starten",
+      "delete": "Löschen",
+      "deleteTitle": "Diesen Cache löschen",
+      "deleteBody": "Das entfernt den Cache und seine Daten. Zur Bestätigung den Namen eingeben. Ein finaler Snapshot behält eine Kopie.",
+      "finalSnapshot": "Name des finalen Snapshots (optional)"
+    },
     "ebs": {
       "title": "Volumes und Snapshots (EBS)",
       "target": "Instanz- oder Volume-ID",

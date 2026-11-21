@@ -193,7 +193,14 @@ export interface CloudSpendReport {
 }
 
 export type AwsServiceName =
-  'ecr' | 'acm' | 'secrets' | 'rds' | 'ebs' | 'cloudwatch' | 'cloudtrail'
+  | 'ecr'
+  | 'acm'
+  | 'secrets'
+  | 'rds'
+  | 'elasticache'
+  | 'ebs'
+  | 'cloudwatch'
+  | 'cloudtrail'
 
 export interface AwsGuardStatus {
   kill_switch: boolean

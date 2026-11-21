@@ -374,6 +374,18 @@
       "autoRestart": "Detenido, AWS lo reinicia tras {{days}} días",
       "deleteSnapshot": "Eliminar instantánea"
     },
+    "elasticache": {
+      "title": "Cachés (ElastiCache)",
+      "empty": "No hay cachés en esta región.",
+      "groups": "Grupos de replicación",
+      "clusters": "Clústeres de caché",
+      "snapshot": "Instantánea",
+      "reboot": "Reiniciar",
+      "delete": "Eliminar",
+      "deleteTitle": "Eliminar esta caché",
+      "deleteBody": "Esto elimina la caché y sus datos. Escribe el nombre para confirmar. Una instantánea final conserva una copia.",
+      "finalSnapshot": "Nombre de la instantánea final (opcional)"
+    },
     "ebs": {
       "title": "Volúmenes e instantáneas (EBS)",
       "target": "ID de instancia o volumen",

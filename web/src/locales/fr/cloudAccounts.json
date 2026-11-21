@@ -374,6 +374,18 @@
       "autoRestart": "Arrêté, AWS le redémarre après {{days}} jours",
       "deleteSnapshot": "Supprimer l'instantané"
     },
+    "elasticache": {
+      "title": "Caches (ElastiCache)",
+      "empty": "Aucun cache dans cette région.",
+      "groups": "Groupes de réplication",
+      "clusters": "Clusters de cache",
+      "snapshot": "Instantané",
+      "reboot": "Redémarrer",
+      "delete": "Supprimer",
+      "deleteTitle": "Supprimer ce cache",
+      "deleteBody": "Cela supprime le cache et ses données. Saisissez le nom pour confirmer. Un instantané final garde une copie.",
+      "finalSnapshot": "Nom de l'instantané final (facultatif)"
+    },
     "ebs": {
       "title": "Volumes et instantanés (EBS)",
       "target": "ID d'instance ou de volume",

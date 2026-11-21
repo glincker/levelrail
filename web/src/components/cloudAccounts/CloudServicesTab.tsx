@@ -26,6 +26,7 @@ import { AcmBody, AuditBody, EcrBody, SecretsBody } from './AwsServiceCards'
 import { ServiceShell, StateLine } from './AwsServiceShared'
 import { IdleCard } from './IdleCard'
 import { MetricsCard } from './MetricsCard'
+import { ElastiCacheCard } from './ElastiCacheCard'
 import { RdsCard } from './RdsCard'
 import { SnapshotsCard } from './SnapshotsCard'
 
@@ -34,6 +35,7 @@ const SERVICES: AwsServiceName[] = [
   'acm',
   'secrets',
   'rds',
+  'elasticache',
   'ebs',
   'cloudwatch',
   'cloudtrail',
@@ -237,6 +239,8 @@ export function CloudServicesTab({
               <SecretsBody id={accountId} />
             ) : s === 'rds' ? (
               <RdsCard id={accountId} canCreate={isRoot} />
+            ) : s === 'elasticache' ? (
+              <ElastiCacheCard id={accountId} canDelete={isRoot} />
             ) : s === 'ebs' ? (
               <SnapshotsCard id={accountId} />
             ) : s === 'cloudwatch' ? (

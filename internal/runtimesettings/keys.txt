@@ -150,6 +150,7 @@ cloud.guard.service.cloudtrail
 cloud.guard.service.cloudwatch
 cloud.guard.service.ebs
 cloud.guard.service.ecr
+cloud.guard.service.elasticache
 cloud.guard.service.parameters
 cloud.guard.service.rds
 cloud.guard.snapshot.keep_daily

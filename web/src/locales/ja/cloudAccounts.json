@@ -374,6 +374,18 @@
       "autoRestart": "停止中、{{days}}日後にAWSが再起動します",
       "deleteSnapshot": "スナップショットを削除"
     },
+    "elasticache": {
+      "title": "キャッシュ (ElastiCache)",
+      "empty": "このリージョンにキャッシュはありません。",
+      "groups": "レプリケーショングループ",
+      "clusters": "キャッシュクラスター",
+      "snapshot": "スナップショット",
+      "reboot": "再起動",
+      "delete": "削除",
+      "deleteTitle": "このキャッシュを削除",
+      "deleteBody": "キャッシュとそのデータを削除します。確認のため名前を入力してください。最終スナップショットでコピーを残せます。",
+      "finalSnapshot": "最終スナップショット名 (任意)"
+    },
     "ebs": {
       "title": "ボリュームとスナップショット (EBS)",
       "target": "インスタンスIDまたはボリュームID",

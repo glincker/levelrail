@@ -28,6 +28,7 @@ func cloudAWSServicesUsage(prog string) string {
   %[1]s cloud aws rds cluster-snapshot|cluster-stop|cluster-start ACCOUNT CLUSTER [--region R]
   %[1]s cloud aws rds cluster-snapshot-delete ACCOUNT SNAPSHOT [--region R]
   %[1]s cloud aws rds create ACCOUNT ID --engine E --class C [--username U] [--storage GB] [--multi-az] [--cluster] [--confirm] [--env E] [--project P]
+  %[1]s cloud aws elasticache list|clusters|show|cluster|snapshots|snapshot|reboot|delete|delete-cluster ACCOUNT [ID] [--confirm-id ID] [--final-snapshot NAME] [--region R]
   %[1]s cloud aws snapshots list|create|delete ACCOUNT [SNAPSHOT] [--volume V | --instance I] [--exclude-boot] [--description D] [--region R]
   %[1]s cloud aws metrics ACCOUNT INSTANCE [--names CPUUtilization,NetworkIn] [--hours N] [--region R]
   %[1]s cloud aws logs groups|events ACCOUNT [GROUP] [--prefix P] [--filter PATTERN] [--hours N] [--limit N] [--region R]
@@ -43,7 +44,7 @@ Every command takes --json. Every service is off until enabled in runtime settin
 
 func isCloudAWSService(v string) bool {
 	switch v {
-	case "ecr", "acm", "secrets", "rds", "snapshots", "metrics", "logs", "idle", "audit", "guard", "cleanup-plan":
+	case "ecr", "acm", "secrets", "rds", "elasticache", "snapshots", "metrics", "logs", "idle", "audit", "guard", "cleanup-plan":
 		return true
 	}
 	return false
@@ -54,6 +55,7 @@ func runCloudAWSServices(prog, verb string, args []string, stdout, stderr io.Wri
 	var storage, hours, limit int
 	var volume, instance, names, prefix, filter, description string
 	var excludeBoot bool
+	var confirmID, finalSnapshot string
 	var overwrite, multiAZ, cluster, confirm bool
 	var alts multiFlag
 	setup := func(fs *flag.FlagSet) {
@@ -81,12 +83,14 @@ func runCloudAWSServices(prog, verb string, args []string, stdout, stderr io.Wri
 		fs.IntVar(&limit, "limit", 0, "most rows, for logs")
 		fs.StringVar(&prefix, "prefix", "", "log group name prefix")
 		fs.StringVar(&filter, "filter", "", "log filter pattern")
+		fs.StringVar(&confirmID, "confirm-id", "", "repeat the resource id to confirm an elasticache delete")
+		fs.StringVar(&finalSnapshot, "final-snapshot", "", "final snapshot name for an elasticache delete")
 		fs.Var(&alts, "alt", "alternative certificate name, repeatable")
 	}
 	label := "cloud aws " + verb
 	return cloudCall(prog, label, args, stdout, stderr, lookupEnv, setup, func(c *apiclient.Client, pos []string, _ outputFlags) (any, func(), error) {
 		sub := ""
-		if verb == "ecr" || verb == "acm" || verb == "secrets" || verb == "rds" || verb == "snapshots" || verb == "logs" {
+		if verb == "ecr" || verb == "acm" || verb == "secrets" || verb == "rds" || verb == "elasticache" || verb == "snapshots" || verb == "logs" {
 			if len(pos) < 1 {
 				return nil, nil, fmt.Errorf("a subcommand is required (see help)")
 			}
@@ -112,6 +116,13 @@ func runCloudAWSServices(prog, verb string, args []string, stdout, stderr io.Wri
 		call := func(method, p string, body any) error { return c.CloudRequest(ctx, method, p, body, &out) }
 		table := func(head []string, key string, keys ...string) func() {
 			return func() { printCloudTable(stdout, head, rowsOf(out[key]), keys...) }
+		}
+		if verb == "elasticache" {
+			switch sub {
+			case "list", "clusters", "show", "cluster", "snapshots", "snapshot", "reboot", "delete", "delete-cluster":
+			default:
+				return nil, nil, fmt.Errorf("unknown subcommand %q", sub)
+			}
 		}
 		if verb == "rds" {
 			switch sub {
@@ -244,6 +255,43 @@ func runCloudAWSServices(prog, verb string, args []string, stdout, stderr io.Wri
 			}
 			err = call("POST", base+"secrets/reveal", cloudRow{"kind": kind, "name": rest[0], "region": region})
 			return out, func() { _, _ = fmt.Fprintln(stdout, out["value"]) }, err
+		case "elasticache list":
+			err = call("GET", withQ(base+"elasticache/replication-groups"), nil)
+			return out, table([]string{"ID", "STATUS", "NODE TYPE", "ENDPOINT", "MANAGED"}, "replication_groups", "id", "status", "node_type", "primary_endpoint", "managed"), err
+		case "elasticache clusters":
+			err = call("GET", withQ(base+"elasticache/clusters"), nil)
+			return out, table([]string{"ID", "ENGINE", "STATUS", "NODE TYPE", "GROUP", "MANAGED"}, "clusters", "id", "engine", "status", "node_type", "replication_group_id", "managed"), err
+		case "elasticache snapshots":
+			err = call("GET", withQ(base+"elasticache/snapshots"), nil)
+			return out, table([]string{"NAME", "GROUP", "ENGINE", "STATUS", "SOURCE"}, "snapshots", "name", "replication_group_id", "engine", "status", "source"), err
+		case "elasticache show", "elasticache cluster", "elasticache snapshot", "elasticache reboot", "elasticache delete", "elasticache delete-cluster":
+			if len(rest) < 1 {
+				return nil, nil, fmt.Errorf("an ID is required")
+			}
+			id := url.PathEscape(rest[0])
+			switch sub {
+			case "show":
+				err = call("GET", withQ(base+"elasticache/replication-groups/"+id), nil)
+			case "cluster":
+				err = call("GET", withQ(base+"elasticache/clusters/"+id), nil)
+			case "snapshot":
+				err = call("POST", base+"elasticache/snapshots", cloudRow{"replication_group": rest[0], "region": region, "env": env, "project": project})
+			case "reboot":
+				err = call("POST", withQ(base+"elasticache/clusters/"+id+"/reboot"), cloudRow{})
+			default:
+				q.Set("confirm", confirmID)
+				if finalSnapshot != "" {
+					q.Set("final_snapshot", finalSnapshot)
+				}
+				kind := "replication-groups/"
+				if sub == "delete-cluster" {
+					kind = "clusters/"
+				}
+				err = call("DELETE", withQ(base+"elasticache/"+kind+id), nil)
+			}
+			return out, func() {
+				printCloudTable(stdout, []string{"ID", "STATUS", "ACTION"}, []cloudRow{out}, "id", "status", "action")
+			}, err
 		case "rds list":
 			err = call("GET", withQ(base+"rds/instances"), nil)
 			return out, table([]string{"ID", "ENGINE", "CLASS", "STATUS", "MANAGED", "EST USD/MO"}, "instances", "id", "engine", "class", "status", "managed", "est_monthly_usd"), err

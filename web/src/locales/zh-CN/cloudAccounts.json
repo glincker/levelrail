@@ -374,6 +374,18 @@
       "autoRestart": "已停止,AWS 将在 {{days}} 天后重启",
       "deleteSnapshot": "删除快照"
     },
+    "elasticache": {
+      "title": "缓存 (ElastiCache)",
+      "empty": "此区域没有缓存。",
+      "groups": "复制组",
+      "clusters": "缓存集群",
+      "snapshot": "快照",
+      "reboot": "重启",
+      "delete": "删除",
+      "deleteTitle": "删除此缓存",
+      "deleteBody": "这会删除缓存及其数据。请输入名称确认。最终快照可保留一份副本。",
+      "finalSnapshot": "最终快照名称（可选）"
+    },
     "ebs": {
       "title": "卷和快照 (EBS)",
       "target": "实例 ID 或卷 ID",

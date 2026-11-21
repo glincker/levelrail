@@ -2547,6 +2547,15 @@ Routes that do not fit an existing group.
 | POST | /api/v1/cloud-accounts/{id}/aws/rds/clusters/{cid}/actions | Public | handleRDSClusterAction |
 | GET | /api/v1/cloud-accounts/{id}/aws/rds/cluster-snapshots | Public | handleRDSClusterSnapshots |
 | DELETE | /api/v1/cloud-accounts/{id}/aws/rds/cluster-snapshots/{sid} | Public | handleRDSClusterSnapshotDelete |
+| GET | /api/v1/cloud-accounts/{id}/aws/elasticache/replication-groups | Public | handleElastiCacheGroups |
+| GET | /api/v1/cloud-accounts/{id}/aws/elasticache/replication-groups/{rid} | Public | handleElastiCacheGroup |
+| DELETE | /api/v1/cloud-accounts/{id}/aws/elasticache/replication-groups/{rid} | Public | handleElastiCacheGroupDelete |
+| GET | /api/v1/cloud-accounts/{id}/aws/elasticache/clusters | Public | handleElastiCacheClusters |
+| GET | /api/v1/cloud-accounts/{id}/aws/elasticache/clusters/{cid} | Public | handleElastiCacheCluster |
+| POST | /api/v1/cloud-accounts/{id}/aws/elasticache/clusters/{cid}/reboot | Public | handleElastiCacheReboot |
+| DELETE | /api/v1/cloud-accounts/{id}/aws/elasticache/clusters/{cid} | Public | handleElastiCacheClusterDelete |
+| GET | /api/v1/cloud-accounts/{id}/aws/elasticache/snapshots | Public | handleElastiCacheSnapshots |
+| POST | /api/v1/cloud-accounts/{id}/aws/elasticache/snapshots | Public | handleElastiCacheSnapshotCreate |
 | POST | /mcp | Public |  |
 
 ## See also

@@ -41,6 +41,7 @@ var awsServices = map[string]awsServiceDef{
 	"secrets":       {runtimesettings.KeyCloudGuardParams, "APP_CLOUD_GUARD_PARAMS"},
 	"cloudtrail":    {runtimesettings.KeyCloudGuardCloudTrail, "APP_CLOUD_GUARD_CLOUDTRAIL"},
 	"rds":           {runtimesettings.KeyCloudGuardRDS, "APP_CLOUD_GUARD_RDS"},
+	"elasticache":   {runtimesettings.KeyCloudGuardElastiCache, "APP_CLOUD_GUARD_ELASTICACHE"},
 	"ebs":           {runtimesettings.KeyCloudGuardEBS, "APP_CLOUD_GUARD_EBS"},
 	"cloudwatch":    {runtimesettings.KeyCloudGuardCloudWatch, "APP_CLOUD_GUARD_CLOUDWATCH"},
 }

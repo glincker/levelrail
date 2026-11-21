@@ -51,7 +51,7 @@ The provider credential for "accounts add" is read from LEVELRAIL_CLOUD_CREDENTI
 
 ## levelrail-cli cloud aws
 
-Subcommands: acm, audit, cleanup-plan, ecr, guard, idle, link-kit, logs, metrics, rds, secrets, snapshots, vault-kit
+Subcommands: acm, audit, cleanup-plan, ecr, elasticache, guard, idle, link-kit, logs, metrics, rds, secrets, snapshots, vault-kit
 
 ```
 Usage:
@@ -84,6 +84,7 @@ Usage:
   levelrail-cli cloud aws rds cluster-snapshot|cluster-stop|cluster-start ACCOUNT CLUSTER [--region R]
   levelrail-cli cloud aws rds cluster-snapshot-delete ACCOUNT SNAPSHOT [--region R]
   levelrail-cli cloud aws rds create ACCOUNT ID --engine E --class C [--username U] [--storage GB] [--multi-az] [--cluster] [--confirm] [--env E] [--project P]
+  levelrail-cli cloud aws elasticache list|clusters|show|cluster|snapshots|snapshot|reboot|delete|delete-cluster ACCOUNT [ID] [--confirm-id ID] [--final-snapshot NAME] [--region R]
   levelrail-cli cloud aws snapshots list|create|delete ACCOUNT [SNAPSHOT] [--volume V | --instance I] [--exclude-boot] [--description D] [--region R]
   levelrail-cli cloud aws metrics ACCOUNT INSTANCE [--names CPUUtilization,NetworkIn] [--hours N] [--region R]
   levelrail-cli cloud aws logs groups|events ACCOUNT [GROUP] [--prefix P] [--filter PATTERN] [--hours N] [--limit N] [--region R]
@@ -112,6 +113,8 @@ Usage of levelrail-cli cloud aws acm:
     	create an Aurora cluster, needs --confirm
   -confirm
     	confirm a Multi-AZ or Aurora create
+  -confirm-id string
+    	repeat the resource id to confirm an elasticache delete
   -db-name string
     	initial database name, for rds create
   -description string
@@ -124,6 +127,8 @@ Usage of levelrail-cli cloud aws acm:
     	skip the boot volume, for snapshots create
   -filter string
     	log filter pattern
+  -final-snapshot string
+    	final snapshot name for an elasticache delete
   -hours int
     	window in hours, for metrics and logs events
   -instance string
@@ -182,6 +187,8 @@ Usage of levelrail-cli cloud aws ecr:
     	create an Aurora cluster, needs --confirm
   -confirm
     	confirm a Multi-AZ or Aurora create
+  -confirm-id string
+    	repeat the resource id to confirm an elasticache delete
   -db-name string
     	initial database name, for rds create
   -description string
@@ -194,6 +201,82 @@ Usage of levelrail-cli cloud aws ecr:
     	skip the boot volume, for snapshots create
   -filter string
     	log filter pattern
+  -final-snapshot string
+    	final snapshot name for an elasticache delete
+  -hours int
+    	window in hours, for metrics and logs events
+  -instance string
+    	instance ID, for snapshots create
+  -json
+    	print the result as JSON to stdout and nothing else
+  -kill-switch string
+    	on or off, root only
+  -kind string
+    	ssm or secretsmanager (default "ssm")
+  -limit int
+    	most rows, for logs
+  -multi-az
+    	Multi-AZ deployment, needs --confirm
+  -names string
+    	comma separated metric names, for metrics
+  -output string
+    	output format: json, table, or text (default table; --json is shorthand for --output json)
+  -overwrite
+    	overwrite an existing parameter
+  -path string
+    	SSM path prefix
+  -prefix string
+    	log group name prefix
+  -profile string
+    	named credentials profile to read (overrides APP_PROFILE, default "default")
+  -project string
+    	project tag for new resources
+  -query string
+    	JMESPath expression to filter the result before printing (e.g. "[?status=='running'].name")
+  -region string
+    	AWS region, defaults to the account region
+  -storage int
+    	allocated storage in GB, for rds create (default 20)
+  -token string
+    	API token (overrides LEVELRAIL_TOKEN or APP_API_TOKEN and the credentials file)
+  -username string
+    	master username, for rds create
+  -volume string
+    	volume ID, for snapshots
+```
+
+## levelrail-cli cloud aws elasticache
+
+Subcommands: cluster, clusters, delete, delete-cluster, list, reboot, show, snapshot, snapshots
+
+```
+Usage of levelrail-cli cloud aws elasticache:
+  -alt value
+    	alternative certificate name, repeatable
+  -api-url string
+    	control plane API base URL (overrides LEVELRAIL_API_URL or APP_API_URL and the credentials file, default http://localhost:8080)
+  -class string
+    	instance class, for rds create
+  -cluster
+    	create an Aurora cluster, needs --confirm
+  -confirm
+    	confirm a Multi-AZ or Aurora create
+  -confirm-id string
+    	repeat the resource id to confirm an elasticache delete
+  -db-name string
+    	initial database name, for rds create
+  -description string
+    	snapshot description
+  -engine string
+    	database engine, for rds create
+  -env string
+    	env tag for new resources
+  -exclude-boot
+    	skip the boot volume, for snapshots create
+  -filter string
+    	log filter pattern
+  -final-snapshot string
+    	final snapshot name for an elasticache delete
   -hours int
     	window in hours, for metrics and logs events
   -instance string
@@ -252,6 +335,8 @@ Usage of levelrail-cli cloud aws logs:
     	create an Aurora cluster, needs --confirm
   -confirm
     	confirm a Multi-AZ or Aurora create
+  -confirm-id string
+    	repeat the resource id to confirm an elasticache delete
   -db-name string
     	initial database name, for rds create
   -description string
@@ -264,6 +349,8 @@ Usage of levelrail-cli cloud aws logs:
     	skip the boot volume, for snapshots create
   -filter string
     	log filter pattern
+  -final-snapshot string
+    	final snapshot name for an elasticache delete
   -hours int
     	window in hours, for metrics and logs events
   -instance string
@@ -322,6 +409,8 @@ Usage of levelrail-cli cloud aws rds:
     	create an Aurora cluster, needs --confirm
   -confirm
     	confirm a Multi-AZ or Aurora create
+  -confirm-id string
+    	repeat the resource id to confirm an elasticache delete
   -db-name string
     	initial database name, for rds create
   -description string
@@ -334,6 +423,8 @@ Usage of levelrail-cli cloud aws rds:
     	skip the boot volume, for snapshots create
   -filter string
     	log filter pattern
+  -final-snapshot string
+    	final snapshot name for an elasticache delete
   -hours int
     	window in hours, for metrics and logs events
   -instance string
@@ -392,6 +483,8 @@ Usage of levelrail-cli cloud aws secrets:
     	create an Aurora cluster, needs --confirm
   -confirm
     	confirm a Multi-AZ or Aurora create
+  -confirm-id string
+    	repeat the resource id to confirm an elasticache delete
   -db-name string
     	initial database name, for rds create
   -description string
@@ -404,6 +497,8 @@ Usage of levelrail-cli cloud aws secrets:
     	skip the boot volume, for snapshots create
   -filter string
     	log filter pattern
+  -final-snapshot string
+    	final snapshot name for an elasticache delete
   -hours int
     	window in hours, for metrics and logs events
   -instance string
@@ -462,6 +557,8 @@ Usage of levelrail-cli cloud aws snapshots:
     	create an Aurora cluster, needs --confirm
   -confirm
     	confirm a Multi-AZ or Aurora create
+  -confirm-id string
+    	repeat the resource id to confirm an elasticache delete
   -db-name string
     	initial database name, for rds create
   -description string
@@ -474,6 +571,8 @@ Usage of levelrail-cli cloud aws snapshots:
     	skip the boot volume, for snapshots create
   -filter string
     	log filter pattern
+  -final-snapshot string
+    	final snapshot name for an elasticache delete
   -hours int
     	window in hours, for metrics and logs events
   -instance string
