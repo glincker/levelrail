@@ -283,6 +283,10 @@
       "saveTags": "Save tags",
       "readOnly": "Tags are read only for this instance.",
       "saved": "Tags saved."
+    },
+    "events": {
+      "title": "Events",
+      "none": "No events in this window."
     }
   },
   "services": {
@@ -435,6 +439,31 @@
         "release": "Release",
         "delete": "Delete"
       }
+    },
+    "cloudfront": {
+      "title": "CDN (CloudFront)",
+      "empty": "No distributions.",
+      "disabled": "disabled",
+      "select": "Invalidate",
+      "paths": "Paths to invalidate on {{id}} (one per line)",
+      "pathsHint": "/index.html\n/assets/*",
+      "invalidate": "Invalidate",
+      "created": "Invalidation {{id}} created",
+      "invalidations": "Invalidations",
+      "noInvalidations": "No invalidations yet."
+    },
+    "ssm": {
+      "title": "Managed instances (Systems Manager)",
+      "empty": "No managed instances in this region.",
+      "runTitle": "Run command",
+      "instance": "Instance",
+      "command": "Command",
+      "run": "Run",
+      "session": "Start session",
+      "copyToken": "Copy session token",
+      "status": "Status",
+      "exit": "Exit",
+      "refresh": "Refresh"
     }
   },
   "doctor": {

@@ -283,6 +283,10 @@
       "saveTags": "タグを保存",
       "readOnly": "このインスタンスのタグは読み取り専用です。",
       "saved": "タグを保存しました。"
+    },
+    "events": {
+      "title": "イベント",
+      "none": "この期間のイベントはありません。"
     }
   },
   "services": {
@@ -435,6 +439,31 @@
         "release": "解放",
         "delete": "削除"
       }
+    },
+    "cloudfront": {
+      "title": "CDN (CloudFront)",
+      "empty": "ディストリビューションはありません。",
+      "disabled": "無効",
+      "select": "無効化",
+      "paths": "{{id}} で無効化するパス (1行に1つ)",
+      "pathsHint": "/index.html\n/assets/*",
+      "invalidate": "無効化",
+      "created": "無効化 {{id}} を作成しました",
+      "invalidations": "無効化履歴",
+      "noInvalidations": "無効化はまだありません。"
+    },
+    "ssm": {
+      "title": "管理対象インスタンス (Systems Manager)",
+      "empty": "このリージョンに管理対象インスタンスはありません。",
+      "runTitle": "コマンドを実行",
+      "instance": "インスタンス",
+      "command": "コマンド",
+      "run": "実行",
+      "session": "セッションを開始",
+      "copyToken": "セッショントークンをコピー",
+      "status": "ステータス",
+      "exit": "終了コード",
+      "refresh": "更新"
     }
   },
   "doctor": {

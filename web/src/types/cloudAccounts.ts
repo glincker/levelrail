@@ -201,6 +201,9 @@ export type AwsServiceName =
   | 'ebs'
   | 'cloudwatch'
   | 'cloudtrail'
+  | 'cloudfront'
+  | 'ssm'
+  | 'ssm_run'
 
 export interface AwsGuardStatus {
   kill_switch: boolean

@@ -283,6 +283,10 @@
       "saveTags": "Salvar tags",
       "readOnly": "As tags desta instância são somente leitura.",
       "saved": "Tags salvas."
+    },
+    "events": {
+      "title": "Eventos",
+      "none": "Nenhum evento neste período."
     }
   },
   "services": {
@@ -435,6 +439,31 @@
         "release": "Liberar",
         "delete": "Excluir"
       }
+    },
+    "cloudfront": {
+      "title": "CDN (CloudFront)",
+      "empty": "Nenhuma distribuição.",
+      "disabled": "desativada",
+      "select": "Invalidar",
+      "paths": "Caminhos a invalidar em {{id}} (um por linha)",
+      "pathsHint": "/index.html\n/assets/*",
+      "invalidate": "Invalidar",
+      "created": "Invalidação {{id}} criada",
+      "invalidations": "Invalidações",
+      "noInvalidations": "Nenhuma invalidação ainda."
+    },
+    "ssm": {
+      "title": "Instâncias gerenciadas (Systems Manager)",
+      "empty": "Nenhuma instância gerenciada nesta região.",
+      "runTitle": "Executar comando",
+      "instance": "Instância",
+      "command": "Comando",
+      "run": "Executar",
+      "session": "Iniciar sessão",
+      "copyToken": "Copiar token da sessão",
+      "status": "Status",
+      "exit": "Saída",
+      "refresh": "Atualizar"
     }
   },
   "doctor": {

@@ -283,6 +283,10 @@
       "saveTags": "保存标签",
       "readOnly": "此实例的标签为只读。",
       "saved": "标签已保存。"
+    },
+    "events": {
+      "title": "事件",
+      "none": "此时间段内没有事件。"
     }
   },
   "services": {
@@ -435,6 +439,31 @@
         "release": "释放",
         "delete": "删除"
       }
+    },
+    "cloudfront": {
+      "title": "CDN (CloudFront)",
+      "empty": "没有分发。",
+      "disabled": "已停用",
+      "select": "失效",
+      "paths": "要在 {{id}} 上失效的路径 (每行一个)",
+      "pathsHint": "/index.html\n/assets/*",
+      "invalidate": "失效",
+      "created": "已创建失效请求 {{id}}",
+      "invalidations": "失效记录",
+      "noInvalidations": "暂无失效记录。"
+    },
+    "ssm": {
+      "title": "托管实例 (Systems Manager)",
+      "empty": "此区域没有托管实例。",
+      "runTitle": "运行命令",
+      "instance": "实例",
+      "command": "命令",
+      "run": "运行",
+      "session": "启动会话",
+      "copyToken": "复制会话令牌",
+      "status": "状态",
+      "exit": "退出码",
+      "refresh": "刷新"
     }
   },
   "doctor": {

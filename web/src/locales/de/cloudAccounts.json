@@ -283,6 +283,10 @@
       "saveTags": "Tags speichern",
       "readOnly": "Die Tags dieser Instanz sind schreibgeschützt.",
       "saved": "Tags gespeichert."
+    },
+    "events": {
+      "title": "Ereignisse",
+      "none": "Keine Ereignisse in diesem Zeitraum."
     }
   },
   "services": {
@@ -435,6 +439,31 @@
         "release": "Freigeben",
         "delete": "Löschen"
       }
+    },
+    "cloudfront": {
+      "title": "CDN (CloudFront)",
+      "empty": "Keine Distributionen.",
+      "disabled": "deaktiviert",
+      "select": "Invalidieren",
+      "paths": "Pfade zum Invalidieren auf {{id}} (einer pro Zeile)",
+      "pathsHint": "/index.html\n/assets/*",
+      "invalidate": "Invalidieren",
+      "created": "Invalidierung {{id}} erstellt",
+      "invalidations": "Invalidierungen",
+      "noInvalidations": "Noch keine Invalidierungen."
+    },
+    "ssm": {
+      "title": "Verwaltete Instanzen (Systems Manager)",
+      "empty": "Keine verwalteten Instanzen in dieser Region.",
+      "runTitle": "Befehl ausführen",
+      "instance": "Instanz",
+      "command": "Befehl",
+      "run": "Ausführen",
+      "session": "Sitzung starten",
+      "copyToken": "Sitzungstoken kopieren",
+      "status": "Status",
+      "exit": "Exit",
+      "refresh": "Aktualisieren"
     }
   },
   "doctor": {

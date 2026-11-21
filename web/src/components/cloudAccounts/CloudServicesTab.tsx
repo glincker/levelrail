@@ -26,11 +26,16 @@ import { AcmBody, AuditBody, EcrBody, SecretsBody } from './AwsServiceCards'
 import { ServiceShell, StateLine } from './AwsServiceShared'
 import { IdleCard } from './IdleCard'
 import { MetricsCard } from './MetricsCard'
+import { CloudFrontCard } from './CloudFrontCard'
+import { SsmCard } from './SsmCard'
 import { ElastiCacheCard } from './ElastiCacheCard'
 import { RdsCard } from './RdsCard'
 import { SnapshotsCard } from './SnapshotsCard'
 
-const SERVICES: AwsServiceName[] = [
+// ssm_run is a flag only, with no card of its own.
+type CardService = Exclude<AwsServiceName, 'ssm_run'>
+
+const SERVICES: CardService[] = [
   'ecr',
   'acm',
   'secrets',
@@ -39,6 +44,8 @@ const SERVICES: AwsServiceName[] = [
   'ebs',
   'cloudwatch',
   'cloudtrail',
+  'cloudfront',
+  'ssm',
 ]
 
 function GuardPanel({
@@ -204,7 +211,7 @@ export function CloudServicesTab({
       },
     )
   }
-  const shell = (s: AwsServiceName, body: ReactNode) => (
+  const shell = (s: CardService, body: ReactNode) => (
     <ServiceShell
       key={s}
       id={`aws-service-${s}`}
@@ -248,6 +255,14 @@ export function CloudServicesTab({
                 <MetricsCard id={accountId} />
                 <IdleCard id={accountId} />
               </div>
+            ) : s === 'cloudfront' ? (
+              <CloudFrontCard id={accountId} />
+            ) : s === 'ssm' ? (
+              <SsmCard
+                id={accountId}
+                isRoot={isRoot}
+                runEnabled={enabledOf('ssm_run')}
+              />
             ) : (
               <AuditBody id={accountId} />
             ),

@@ -10,6 +10,7 @@ import {
   SheetHeader,
   SheetTitle,
 } from '@/components/ui/sheet'
+import { CloudInstanceEvents } from './CloudInstanceEvents'
 import { tagsToRows } from '../../lib/cloudInstances'
 import {
   useCloudInstance,
@@ -222,6 +223,9 @@ export function CloudInstanceDrawer({
                 d={d}
                 writable={writable}
               />
+              {d.verbs.includes('events') ? (
+                <CloudInstanceEvents accountId={accountId} instanceId={d.id} />
+              ) : null}
             </>
           ) : null}
         </div>

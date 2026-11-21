@@ -10,6 +10,9 @@ export const AWS_SERVICE_SETTING: Record<AwsServiceName, string> = {
   ebs: 'cloud.guard.service.ebs',
   cloudwatch: 'cloud.guard.service.cloudwatch',
   cloudtrail: 'cloud.guard.service.cloudtrail',
+  cloudfront: 'cloud.guard.service.cloudfront',
+  ssm: 'cloud.guard.service.ssm',
+  ssm_run: 'cloud.guard.service.ssm_run',
 }
 
 // The token is a short lived credential: it goes to the clipboard only, never to the page.
