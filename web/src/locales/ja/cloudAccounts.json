@@ -370,6 +370,56 @@
       "stop": "停止",
       "start": "開始",
       "adopt": "取り込む"
+    },
+    "ebs": {
+      "title": "ボリュームとスナップショット (EBS)",
+      "target": "インスタンスIDまたはボリュームID",
+      "excludeBoot": "ブートボリュームを除外",
+      "create": "スナップショットを作成",
+      "volumes": "ボリューム",
+      "snapshots": "スナップショット",
+      "emptyVolumes": "このリージョンにボリュームはありません。",
+      "emptySnapshots": "このリージョンにスナップショットはありません。",
+      "size": "{{gb}} GB",
+      "expires": "有効期限 {{when}}",
+      "delete": "削除"
+    },
+    "cloudwatch": {
+      "title": "メトリクス、ログ、未使用リソース (CloudWatch)",
+      "instance": "インスタンスID",
+      "names": "メトリクス名 (カンマ区切り)",
+      "load": "読み込み",
+      "noData": "データポイントがありません。",
+      "logs": "ロググループ",
+      "prefix": "グループ名の接頭辞",
+      "filter": "フィルターテキスト",
+      "noGroups": "ロググループがありません。",
+      "retention": "保持期間 {{days}} 日",
+      "retentionNever": "無期限",
+      "view": "表示",
+      "noEvents": "直近1時間のイベントはありません。",
+      "truncated": "最新のイベントのみ表示しています。",
+      "idleTitle": "未使用リソース",
+      "idleNote": "提案のみです。Levelrailは停止、削除、解放を一切行いません。",
+      "idleEmpty": "未使用リソースは見つかりませんでした。",
+      "idleResource": "リソース",
+      "idleKind": "種類",
+      "idleAction": "推奨アクション",
+      "idleSaving": "USD/月",
+      "idleTotal": "削減可能額: 月 {{usd}} USD",
+      "kind": {
+        "ec2_low_cpu": "CPU使用率の低いインスタンス",
+        "ebs_unattached": "未接続のボリューム",
+        "eip_unassociated": "未関連付けのIP",
+        "alb_no_requests": "リクエストのないロードバランサー",
+        "rds_stopped": "停止中のデータベース"
+      },
+      "action": {
+        "stop": "停止",
+        "snapshot_delete": "スナップショット後に削除",
+        "release": "解放",
+        "delete": "削除"
+      }
     }
   }
 }

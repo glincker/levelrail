@@ -25,18 +25,22 @@ func cloudAWSServicesUsage(prog string) string {
   %[1]s cloud aws secrets reveal ACCOUNT NAME [--kind ssm|secretsmanager] [--region R]
   %[1]s cloud aws rds list|show|snapshot|stop|start|adopt|connect ACCOUNT [ID] [--region R]
   %[1]s cloud aws rds create ACCOUNT ID --engine E --class C [--username U] [--storage GB] [--multi-az] [--cluster] [--confirm] [--env E] [--project P]
+  %[1]s cloud aws snapshots list|create|delete ACCOUNT [SNAPSHOT] [--volume V | --instance I] [--exclude-boot] [--description D] [--region R]
+  %[1]s cloud aws metrics ACCOUNT INSTANCE [--names CPUUtilization,NetworkIn] [--hours N] [--region R]
+  %[1]s cloud aws logs groups|events ACCOUNT [GROUP] [--prefix P] [--filter PATTERN] [--hours N] [--limit N] [--region R]
+  %[1]s cloud aws idle ACCOUNT [--region R]
   %[1]s cloud aws audit ACCOUNT RESOURCE [--region R]
   %[1]s cloud aws guard ACCOUNT [--kill-switch on|off]
   %[1]s cloud aws cleanup-plan ACCOUNT [--region R]
 
 Every command takes --json. Every service is off until enabled in runtime settings. "secrets put" reads the value from %[2]s.
-"cleanup-plan" is a dry run and never deletes anything.
+"cleanup-plan" and "idle" are dry runs and never delete or stop anything. "snapshots delete" only removes snapshots created here.
 `, prog, cloudAWSValueEnv)
 }
 
 func isCloudAWSService(v string) bool {
 	switch v {
-	case "ecr", "acm", "secrets", "rds", "audit", "guard", "cleanup-plan":
+	case "ecr", "acm", "secrets", "rds", "snapshots", "metrics", "logs", "idle", "audit", "guard", "cleanup-plan":
 		return true
 	}
 	return false
@@ -44,7 +48,9 @@ func isCloudAWSService(v string) bool {
 
 func runCloudAWSServices(prog, verb string, args []string, stdout, stderr io.Writer, lookupEnv func(string) (string, bool)) int {
 	var region, env, project, path, kind, killSwitch, engine, class, username, dbName string
-	var storage int
+	var storage, hours, limit int
+	var volume, instance, names, prefix, filter, description string
+	var excludeBoot bool
 	var overwrite, multiAZ, cluster, confirm bool
 	var alts multiFlag
 	setup := func(fs *flag.FlagSet) {
@@ -63,12 +69,21 @@ func runCloudAWSServices(prog, verb string, args []string, stdout, stderr io.Wri
 		fs.BoolVar(&multiAZ, "multi-az", false, "Multi-AZ deployment, needs --confirm")
 		fs.BoolVar(&cluster, "cluster", false, "create an Aurora cluster, needs --confirm")
 		fs.BoolVar(&confirm, "confirm", false, "confirm a Multi-AZ or Aurora create")
+		fs.StringVar(&volume, "volume", "", "volume ID, for snapshots")
+		fs.StringVar(&instance, "instance", "", "instance ID, for snapshots create")
+		fs.BoolVar(&excludeBoot, "exclude-boot", false, "skip the boot volume, for snapshots create")
+		fs.StringVar(&description, "description", "", "snapshot description")
+		fs.StringVar(&names, "names", "", "comma separated metric names, for metrics")
+		fs.IntVar(&hours, "hours", 0, "window in hours, for metrics and logs events")
+		fs.IntVar(&limit, "limit", 0, "most rows, for logs")
+		fs.StringVar(&prefix, "prefix", "", "log group name prefix")
+		fs.StringVar(&filter, "filter", "", "log filter pattern")
 		fs.Var(&alts, "alt", "alternative certificate name, repeatable")
 	}
 	label := "cloud aws " + verb
 	return cloudCall(prog, label, args, stdout, stderr, lookupEnv, setup, func(c *apiclient.Client, pos []string, _ outputFlags) (any, func(), error) {
 		sub := ""
-		if verb == "ecr" || verb == "acm" || verb == "secrets" || verb == "rds" {
+		if verb == "ecr" || verb == "acm" || verb == "secrets" || verb == "rds" || verb == "snapshots" || verb == "logs" {
 			if len(pos) < 1 {
 				return nil, nil, fmt.Errorf("a subcommand is required (see help)")
 			}
@@ -102,8 +117,83 @@ func runCloudAWSServices(prog, verb string, args []string, stdout, stderr io.Wri
 				return nil, nil, fmt.Errorf("unknown subcommand %q", sub)
 			}
 		}
+		switch verb + " " + sub {
+		case "snapshots list", "snapshots create", "snapshots delete", "logs groups", "logs events", "metrics ", "idle ":
+		default:
+			if verb == "snapshots" || verb == "logs" {
+				return nil, nil, fmt.Errorf("unknown subcommand %q", sub)
+			}
+		}
 		var err error
 		switch verb + " " + sub {
+		case "snapshots list":
+			if volume != "" {
+				q.Set("volume", volume)
+			}
+			err = call("GET", withQ(base+"ebs/snapshots"), nil)
+			return out, table([]string{"ID", "VOLUME", "STATE", "GB", "MANAGED", "EXPIRES"}, "snapshots", "id", "volume_id", "state", "size_gb", "managed", "expires_at"), err
+		case "snapshots create":
+			if (volume == "") == (instance == "") {
+				return nil, nil, fmt.Errorf("exactly one of --volume or --instance is required")
+			}
+			err = call("POST", base+"ebs/snapshots", cloudRow{"volume_id": volume, "instance_id": instance, "exclude_boot": excludeBoot, "description": description, "region": region, "env": env, "project": project})
+			return out, table([]string{"ID", "VOLUME"}, "snapshots", "id", "volume_id"), err
+		case "snapshots delete":
+			if len(rest) < 1 {
+				return nil, nil, fmt.Errorf("a snapshot ID is required")
+			}
+			err = call("DELETE", withQ(base+"ebs/snapshots/"+url.PathEscape(rest[0])), nil)
+			return out, func() { _, _ = fmt.Fprintln(stdout, "deleted", rest[0]) }, err
+		case "metrics ":
+			if len(rest) < 1 {
+				return nil, nil, fmt.Errorf("an instance ID is required")
+			}
+			q.Set("instance_id", rest[0])
+			if names != "" {
+				q.Set("names", names)
+			}
+			if hours > 0 {
+				q.Set("hours", fmt.Sprint(hours))
+			}
+			err = call("GET", withQ(base+"cloudwatch/metrics"), nil)
+			return out, func() {
+				for _, row := range rowsOf(out["series"]) {
+					pts := rowsOf(row["points"])
+					last := any("-")
+					if len(pts) > 0 {
+						last = pts[len(pts)-1]["v"]
+					}
+					_, _ = fmt.Fprintf(stdout, "%v\t%d points\tlast %v\n", row["name"], len(pts), last)
+				}
+			}, err
+		case "logs groups":
+			if prefix != "" {
+				q.Set("prefix", prefix)
+			}
+			if limit > 0 {
+				q.Set("limit", fmt.Sprint(limit))
+			}
+			err = call("GET", withQ(base+"cloudwatch/log-groups"), nil)
+			return out, table([]string{"GROUP", "RETENTION DAYS", "BYTES"}, "groups", "name", "retention_days", "stored_bytes"), err
+		case "logs events":
+			if len(rest) < 1 {
+				return nil, nil, fmt.Errorf("a log group is required")
+			}
+			q.Set("group", rest[0])
+			if filter != "" {
+				q.Set("filter", filter)
+			}
+			if hours > 0 {
+				q.Set("hours", fmt.Sprint(hours))
+			}
+			if limit > 0 {
+				q.Set("limit", fmt.Sprint(limit))
+			}
+			err = call("GET", withQ(base+"cloudwatch/log-events"), nil)
+			return out, table([]string{"TIME", "STREAM", "MESSAGE"}, "events", "ts", "stream", "message"), err
+		case "idle ":
+			err = call("GET", withQ(base+"idle"), nil)
+			return out, table([]string{"KIND", "ID", "ACTION", "EST USD/MO", "DETAIL"}, "suggestions", "kind", "id", "action", "est_monthly_usd", "detail"), err
 		case "ecr list":
 			err = call("GET", withQ(base+"ecr/repositories"), nil)
 			return out, table([]string{"NAME", "URI", "SCAN"}, "repositories", "name", "uri", "scan_on_push"), err
@@ -209,6 +299,8 @@ func runCloudAWSServices(prog, verb string, args []string, stdout, stderr io.Wri
 			err = call("GET", withQ(base+"cleanup/plan"), nil)
 			return out, func() {
 				printCloudTable(stdout, []string{"EXPIRED ARN", "EXPIRED AT"}, rowsOf(out["expired"]), "arn", "expired_at")
+				printCloudTable(stdout, []string{"SNAPSHOT EXPIRED", "VOLUME"}, rowsOf(out["snapshot_expired"]), "id", "volume_id")
+				printCloudTable(stdout, []string{"IDLE", "ID", "ACTION", "EST USD/MO"}, rowsOf(out["idle"]), "kind", "id", "action", "est_monthly_usd")
 				if o, ok := out["orphans"].(map[string]any); ok {
 					for _, k := range []string{"volumes", "addresses", "snapshots"} {
 						printCloudTable(stdout, []string{strings.ToUpper(k), "DETAIL"}, rowsOf(o[k]), "id", "detail")

@@ -370,6 +370,56 @@
       "stop": "Detener",
       "start": "Iniciar",
       "adopt": "Adoptar"
+    },
+    "ebs": {
+      "title": "Volúmenes e instantáneas (EBS)",
+      "target": "ID de instancia o volumen",
+      "excludeBoot": "Omitir volumen de arranque",
+      "create": "Crear instantánea",
+      "volumes": "Volúmenes",
+      "snapshots": "Instantáneas",
+      "emptyVolumes": "No hay volúmenes en esta región.",
+      "emptySnapshots": "No hay instantáneas en esta región.",
+      "size": "{{gb}} GB",
+      "expires": "caduca {{when}}",
+      "delete": "Eliminar"
+    },
+    "cloudwatch": {
+      "title": "Métricas, registros y recursos inactivos (CloudWatch)",
+      "instance": "ID de instancia",
+      "names": "Nombres de métricas, separados por comas",
+      "load": "Cargar",
+      "noData": "Sin puntos de datos.",
+      "logs": "Grupos de registros",
+      "prefix": "Prefijo del grupo",
+      "filter": "Texto de filtro",
+      "noGroups": "No hay grupos de registros.",
+      "retention": "{{days}} días de retención",
+      "retentionNever": "Conservar siempre",
+      "view": "Ver",
+      "noEvents": "Sin eventos en la última hora.",
+      "truncated": "Solo se muestran los eventos más recientes.",
+      "idleTitle": "Recursos inactivos",
+      "idleNote": "Solo sugerencias. Levelrail no detiene, elimina ni libera nada.",
+      "idleEmpty": "No se encontraron recursos inactivos.",
+      "idleResource": "Recurso",
+      "idleKind": "Tipo",
+      "idleAction": "Acción sugerida",
+      "idleSaving": "USD/mes",
+      "idleTotal": "Ahorro posible: {{usd}} USD al mes",
+      "kind": {
+        "ec2_low_cpu": "Instancia con poca CPU",
+        "ebs_unattached": "Volumen sin adjuntar",
+        "eip_unassociated": "IP sin asociar",
+        "alb_no_requests": "Balanceador sin solicitudes",
+        "rds_stopped": "Base de datos detenida"
+      },
+      "action": {
+        "stop": "Detener",
+        "snapshot_delete": "Instantánea y luego eliminar",
+        "release": "Liberar",
+        "delete": "Eliminar"
+      }
     }
   }
 }

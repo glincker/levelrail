@@ -370,6 +370,56 @@
       "stop": "Parar",
       "start": "Iniciar",
       "adopt": "Adotar"
+    },
+    "ebs": {
+      "title": "Volumes e snapshots (EBS)",
+      "target": "ID da instância ou do volume",
+      "excludeBoot": "Ignorar volume de boot",
+      "create": "Criar snapshot",
+      "volumes": "Volumes",
+      "snapshots": "Snapshots",
+      "emptyVolumes": "Nenhum volume nesta região.",
+      "emptySnapshots": "Nenhum snapshot nesta região.",
+      "size": "{{gb}} GB",
+      "expires": "expira {{when}}",
+      "delete": "Excluir"
+    },
+    "cloudwatch": {
+      "title": "Métricas, logs e recursos ociosos (CloudWatch)",
+      "instance": "ID da instância",
+      "names": "Nomes das métricas, separados por vírgula",
+      "load": "Carregar",
+      "noData": "Sem pontos de dados.",
+      "logs": "Grupos de logs",
+      "prefix": "Prefixo do grupo",
+      "filter": "Texto do filtro",
+      "noGroups": "Nenhum grupo de logs.",
+      "retention": "{{days}} dias de retenção",
+      "retentionNever": "Manter para sempre",
+      "view": "Ver",
+      "noEvents": "Nenhum evento na última hora.",
+      "truncated": "Mostrando apenas os eventos mais recentes.",
+      "idleTitle": "Recursos ociosos",
+      "idleNote": "Apenas sugestões. O Levelrail não para, exclui nem libera nada.",
+      "idleEmpty": "Nenhum recurso ocioso encontrado.",
+      "idleResource": "Recurso",
+      "idleKind": "Tipo",
+      "idleAction": "Ação sugerida",
+      "idleSaving": "USD/mês",
+      "idleTotal": "Economia possível: {{usd}} USD por mês",
+      "kind": {
+        "ec2_low_cpu": "Instância com CPU baixa",
+        "ebs_unattached": "Volume desanexado",
+        "eip_unassociated": "IP não associado",
+        "alb_no_requests": "Balanceador sem requisições",
+        "rds_stopped": "Banco de dados parado"
+      },
+      "action": {
+        "stop": "Parar",
+        "snapshot_delete": "Snapshot e depois excluir",
+        "release": "Liberar",
+        "delete": "Excluir"
+      }
     }
   }
 }

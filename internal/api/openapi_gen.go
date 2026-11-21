@@ -14,7 +14,7 @@ type openAPIRoute struct {
 	Description string
 }
 
-// openAPIRoutes holds all 2303 routes known to scripts/gen-api-reference at
+// openAPIRoutes holds all 2311 routes known to scripts/gen-api-reference at
 // generation time. Run `go run ./scripts/gen-api-reference` after changing
 // any routes*.go registration and commit the result.
 var openAPIRoutes = []openAPIRoute{
@@ -1234,11 +1234,19 @@ var openAPIRoutes = []openAPIRoute{
 	{Method: "POST", Path: "/api/v1/cloud-accounts/{id}/aws/acm/certificates", Ability: "Public", Group: "Other", Handler: "handleAWSACMRequest", Description: ""},
 	{Method: "GET", Path: "/api/v1/cloud-accounts/{id}/aws/audit", Ability: "Public", Group: "Other", Handler: "handleAWSAudit", Description: ""},
 	{Method: "GET", Path: "/api/v1/cloud-accounts/{id}/aws/cleanup/plan", Ability: "Public", Group: "Other", Handler: "handleAWSCleanupPlan", Description: ""},
+	{Method: "GET", Path: "/api/v1/cloud-accounts/{id}/aws/cloudwatch/log-events", Ability: "Public", Group: "Other", Handler: "handleCloudWatchLogEvents", Description: ""},
+	{Method: "GET", Path: "/api/v1/cloud-accounts/{id}/aws/cloudwatch/log-groups", Ability: "Public", Group: "Other", Handler: "handleCloudWatchLogGroups", Description: ""},
+	{Method: "GET", Path: "/api/v1/cloud-accounts/{id}/aws/cloudwatch/metrics", Ability: "Public", Group: "Other", Handler: "handleCloudWatchMetrics", Description: ""},
+	{Method: "GET", Path: "/api/v1/cloud-accounts/{id}/aws/ebs/snapshots", Ability: "Public", Group: "Other", Handler: "handleEBSSnapshots", Description: ""},
+	{Method: "POST", Path: "/api/v1/cloud-accounts/{id}/aws/ebs/snapshots", Ability: "Public", Group: "Other", Handler: "handleEBSSnapshotCreate", Description: ""},
+	{Method: "DELETE", Path: "/api/v1/cloud-accounts/{id}/aws/ebs/snapshots/{sid}", Ability: "Public", Group: "Other", Handler: "handleEBSSnapshotDelete", Description: ""},
+	{Method: "GET", Path: "/api/v1/cloud-accounts/{id}/aws/ebs/volumes", Ability: "Public", Group: "Other", Handler: "handleEBSVolumes", Description: ""},
 	{Method: "POST", Path: "/api/v1/cloud-accounts/{id}/aws/ecr/login-token", Ability: "Public", Group: "Other", Handler: "handleAWSECRLoginToken", Description: ""},
 	{Method: "GET", Path: "/api/v1/cloud-accounts/{id}/aws/ecr/repositories", Ability: "Public", Group: "Other", Handler: "handleAWSECRList", Description: ""},
 	{Method: "POST", Path: "/api/v1/cloud-accounts/{id}/aws/ecr/repositories", Ability: "Public", Group: "Other", Handler: "handleAWSECRCreate", Description: ""},
 	{Method: "GET", Path: "/api/v1/cloud-accounts/{id}/aws/guard", Ability: "Public", Group: "Other", Handler: "handleAWSGuardStatus", Description: ""},
 	{Method: "POST", Path: "/api/v1/cloud-accounts/{id}/aws/guard/kill-switch", Ability: "AbilityRoot", Group: "Other", Handler: "handleAWSKillSwitch", Description: ""},
+	{Method: "GET", Path: "/api/v1/cloud-accounts/{id}/aws/idle", Ability: "Public", Group: "Other", Handler: "handleAWSIdle", Description: ""},
 	{Method: "GET", Path: "/api/v1/cloud-accounts/{id}/aws/rds/clusters", Ability: "Public", Group: "Other", Handler: "handleRDSClusters", Description: ""},
 	{Method: "GET", Path: "/api/v1/cloud-accounts/{id}/aws/rds/estimate", Ability: "Public", Group: "Other", Handler: "handleRDSEstimate", Description: ""},
 	{Method: "GET", Path: "/api/v1/cloud-accounts/{id}/aws/rds/instances", Ability: "Public", Group: "Other", Handler: "handleRDSList", Description: ""},

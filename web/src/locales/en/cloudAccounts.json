@@ -370,6 +370,56 @@
       "stop": "Stop",
       "start": "Start",
       "adopt": "Adopt"
+    },
+    "ebs": {
+      "title": "Volumes and snapshots (EBS)",
+      "target": "Instance or volume id",
+      "excludeBoot": "Skip boot volume",
+      "create": "Create snapshot",
+      "volumes": "Volumes",
+      "snapshots": "Snapshots",
+      "emptyVolumes": "No volumes in this region.",
+      "emptySnapshots": "No snapshots in this region.",
+      "size": "{{gb}} GB",
+      "expires": "expires {{when}}",
+      "delete": "Delete"
+    },
+    "cloudwatch": {
+      "title": "Metrics, logs and idle resources (CloudWatch)",
+      "instance": "Instance id",
+      "names": "Metric names, comma separated",
+      "load": "Load",
+      "noData": "No data points.",
+      "logs": "Log groups",
+      "prefix": "Group name prefix",
+      "filter": "Filter text",
+      "noGroups": "No log groups.",
+      "retention": "{{days}} days retention",
+      "retentionNever": "Keep forever",
+      "view": "View",
+      "noEvents": "No events in the last hour.",
+      "truncated": "Showing the newest events only.",
+      "idleTitle": "Idle resources",
+      "idleNote": "Suggestions only. Nothing is stopped, deleted or released by Levelrail.",
+      "idleEmpty": "No idle resources found.",
+      "idleResource": "Resource",
+      "idleKind": "Type",
+      "idleAction": "Suggested action",
+      "idleSaving": "USD/mo",
+      "idleTotal": "Possible saving: {{usd}} USD per month",
+      "kind": {
+        "ec2_low_cpu": "Low CPU instance",
+        "ebs_unattached": "Unattached volume",
+        "eip_unassociated": "Unassociated IP",
+        "alb_no_requests": "Load balancer, no requests",
+        "rds_stopped": "Stopped database"
+      },
+      "action": {
+        "stop": "Stop",
+        "snapshot_delete": "Snapshot, then delete",
+        "release": "Release",
+        "delete": "Delete"
+      }
     }
   }
 }

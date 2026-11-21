@@ -57,3 +57,36 @@ func TestCloudAWSRDSCLI(t *testing.T) {
 		t.Fatalf("stop body = %q", got)
 	}
 }
+
+func TestCloudAWSOpsCLI(t *testing.T) {
+	srv := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		w.Header().Set("Content-Type", "application/json")
+		switch r.Method + " " + r.URL.Path {
+		case "GET /api/v1/cloud-accounts/aws-prod/aws/ebs/snapshots":
+			_, _ = w.Write([]byte(`{"snapshots":[{"id":"snap-1","volume_id":"vol-1","state":"completed","size_gb":8,"managed":true}]}`))
+		case "GET /api/v1/cloud-accounts/aws-prod/aws/idle":
+			_, _ = w.Write([]byte(`{"dry_run":true,"suggestions":[{"kind":"ebs_unattached","id":"vol-9","action":"snapshot_delete","est_monthly_usd":8}]}`))
+		case "GET /api/v1/cloud-accounts/aws-prod/aws/cloudwatch/metrics":
+			if r.URL.Query().Get("instance_id") != "i-1" {
+				w.WriteHeader(http.StatusBadRequest)
+				return
+			}
+			_, _ = w.Write([]byte(`{"series":[{"name":"CPUUtilization","points":[{"t":"2026-11-21T11:05:00Z","v":3}]}]}`))
+		default:
+			w.WriteHeader(http.StatusNotFound)
+		}
+	}))
+	defer srv.Close()
+	js, _ := runCLIExpectOK(t, []string{"cloud", "aws", "snapshots", "list", "aws-prod", "--json", "--api-url", srv.URL})
+	if !strings.Contains(js, `"snap-1"`) {
+		t.Fatalf("snapshots json = %q", js)
+	}
+	table, _ := runCLIExpectOK(t, []string{"cloud", "aws", "idle", "aws-prod", "--api-url", srv.URL})
+	if !strings.Contains(table, "vol-9") {
+		t.Fatalf("idle table = %q", table)
+	}
+	out, _ := runCLIExpectOK(t, []string{"cloud", "aws", "metrics", "aws-prod", "i-1", "--api-url", srv.URL})
+	if !strings.Contains(out, "CPUUtilization") {
+		t.Fatalf("metrics out = %q", out)
+	}
+}

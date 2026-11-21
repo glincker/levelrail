@@ -24,13 +24,18 @@ import { useSetRuntimeSetting } from '../../queries/runtimeSettings'
 import type { AwsServiceName } from '../../types/cloudAccounts'
 import { AcmBody, AuditBody, EcrBody, SecretsBody } from './AwsServiceCards'
 import { ServiceShell, StateLine } from './AwsServiceShared'
+import { IdleCard } from './IdleCard'
+import { MetricsCard } from './MetricsCard'
 import { RdsCard } from './RdsCard'
+import { SnapshotsCard } from './SnapshotsCard'
 
 const SERVICES: AwsServiceName[] = [
   'ecr',
   'acm',
   'secrets',
   'rds',
+  'ebs',
+  'cloudwatch',
   'cloudtrail',
 ]
 
@@ -232,6 +237,13 @@ export function CloudServicesTab({
               <SecretsBody id={accountId} />
             ) : s === 'rds' ? (
               <RdsCard id={accountId} canCreate={isRoot} />
+            ) : s === 'ebs' ? (
+              <SnapshotsCard id={accountId} />
+            ) : s === 'cloudwatch' ? (
+              <div className="space-y-4">
+                <MetricsCard id={accountId} />
+                <IdleCard id={accountId} />
+              </div>
             ) : (
               <AuditBody id={accountId} />
             ),

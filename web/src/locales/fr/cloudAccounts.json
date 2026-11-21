@@ -370,6 +370,56 @@
       "stop": "Arrêter",
       "start": "Démarrer",
       "adopt": "Adopter"
+    },
+    "ebs": {
+      "title": "Volumes et instantanés (EBS)",
+      "target": "ID d'instance ou de volume",
+      "excludeBoot": "Ignorer le volume de démarrage",
+      "create": "Créer un instantané",
+      "volumes": "Volumes",
+      "snapshots": "Instantanés",
+      "emptyVolumes": "Aucun volume dans cette région.",
+      "emptySnapshots": "Aucun instantané dans cette région.",
+      "size": "{{gb}} Go",
+      "expires": "expire {{when}}",
+      "delete": "Supprimer"
+    },
+    "cloudwatch": {
+      "title": "Métriques, journaux et ressources inactives (CloudWatch)",
+      "instance": "ID d'instance",
+      "names": "Noms des métriques, séparés par des virgules",
+      "load": "Charger",
+      "noData": "Aucun point de données.",
+      "logs": "Groupes de journaux",
+      "prefix": "Préfixe du groupe",
+      "filter": "Texte du filtre",
+      "noGroups": "Aucun groupe de journaux.",
+      "retention": "{{days}} jours de rétention",
+      "retentionNever": "Conserver indéfiniment",
+      "view": "Voir",
+      "noEvents": "Aucun événement dans la dernière heure.",
+      "truncated": "Seuls les événements les plus récents sont affichés.",
+      "idleTitle": "Ressources inactives",
+      "idleNote": "Suggestions uniquement. Levelrail n'arrête, ne supprime et ne libère rien.",
+      "idleEmpty": "Aucune ressource inactive trouvée.",
+      "idleResource": "Ressource",
+      "idleKind": "Type",
+      "idleAction": "Action suggérée",
+      "idleSaving": "USD/mois",
+      "idleTotal": "Économie possible : {{usd}} USD par mois",
+      "kind": {
+        "ec2_low_cpu": "Instance à faible CPU",
+        "ebs_unattached": "Volume détaché",
+        "eip_unassociated": "IP non associée",
+        "alb_no_requests": "Répartiteur sans requêtes",
+        "rds_stopped": "Base de données arrêtée"
+      },
+      "action": {
+        "stop": "Arrêter",
+        "snapshot_delete": "Instantané puis suppression",
+        "release": "Libérer",
+        "delete": "Supprimer"
+      }
     }
   }
 }

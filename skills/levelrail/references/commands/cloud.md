@@ -41,7 +41,7 @@ Usage:
   levelrail-cli cloud spend ACCOUNT [--refresh]
   levelrail-cli cloud aws link-kit --trusted-principal ARN [--role-name N] [--region R] [--template-url URL] [--guard-policy ARN]
   levelrail-cli cloud aws vault-kit --account-id ID --vault-principal ARN [--role-name N] [--mount M] [--vault-role R] [--namespace NS] [--region R]
-  levelrail-cli cloud aws ecr|acm|secrets|rds|audit|guard|cleanup-plan ACCOUNT ... (run "cloud aws" for details)
+  levelrail-cli cloud aws ecr|acm|secrets|rds|snapshots|metrics|logs|idle|audit|guard|cleanup-plan ACCOUNT ... (run "cloud aws" for details)
   levelrail-cli cloud oracle policy-kit --group G --compartment NAME_OR_OCID [--policy-name N] [--manage]
 
 The provider credential for "accounts add" is read from LEVELRAIL_CLOUD_CREDENTIAL, never from a flag (for oracle it is the PEM private key).
@@ -50,7 +50,7 @@ The provider credential for "accounts add" is read from LEVELRAIL_CLOUD_CREDENTI
 
 ## levelrail-cli cloud aws
 
-Subcommands: acm, audit, cleanup-plan, ecr, guard, link-kit, rds, secrets, vault-kit
+Subcommands: acm, audit, cleanup-plan, ecr, guard, idle, link-kit, logs, metrics, rds, secrets, snapshots, vault-kit
 
 ```
 Usage:
@@ -64,7 +64,7 @@ Usage:
   levelrail-cli cloud spend ACCOUNT [--refresh]
   levelrail-cli cloud aws link-kit --trusted-principal ARN [--role-name N] [--region R] [--template-url URL] [--guard-policy ARN]
   levelrail-cli cloud aws vault-kit --account-id ID --vault-principal ARN [--role-name N] [--mount M] [--vault-role R] [--namespace NS] [--region R]
-  levelrail-cli cloud aws ecr|acm|secrets|rds|audit|guard|cleanup-plan ACCOUNT ... (run "cloud aws" for details)
+  levelrail-cli cloud aws ecr|acm|secrets|rds|snapshots|metrics|logs|idle|audit|guard|cleanup-plan ACCOUNT ... (run "cloud aws" for details)
   levelrail-cli cloud oracle policy-kit --group G --compartment NAME_OR_OCID [--policy-name N] [--manage]
 
 The provider credential for "accounts add" is read from LEVELRAIL_CLOUD_CREDENTIAL, never from a flag (for oracle it is the PEM private key).
@@ -79,12 +79,16 @@ Usage:
   levelrail-cli cloud aws secrets reveal ACCOUNT NAME [--kind ssm|secretsmanager] [--region R]
   levelrail-cli cloud aws rds list|show|snapshot|stop|start|adopt|connect ACCOUNT [ID] [--region R]
   levelrail-cli cloud aws rds create ACCOUNT ID --engine E --class C [--username U] [--storage GB] [--multi-az] [--cluster] [--confirm] [--env E] [--project P]
+  levelrail-cli cloud aws snapshots list|create|delete ACCOUNT [SNAPSHOT] [--volume V | --instance I] [--exclude-boot] [--description D] [--region R]
+  levelrail-cli cloud aws metrics ACCOUNT INSTANCE [--names CPUUtilization,NetworkIn] [--hours N] [--region R]
+  levelrail-cli cloud aws logs groups|events ACCOUNT [GROUP] [--prefix P] [--filter PATTERN] [--hours N] [--limit N] [--region R]
+  levelrail-cli cloud aws idle ACCOUNT [--region R]
   levelrail-cli cloud aws audit ACCOUNT RESOURCE [--region R]
   levelrail-cli cloud aws guard ACCOUNT [--kill-switch on|off]
   levelrail-cli cloud aws cleanup-plan ACCOUNT [--region R]
 
 Every command takes --json. Every service is off until enabled in runtime settings. "secrets put" reads the value from LEVELRAIL_AWS_SECRET_VALUE.
-"cleanup-plan" is a dry run and never deletes anything.
+"cleanup-plan" and "idle" are dry runs and never delete or stop anything. "snapshots delete" only removes snapshots created here.
 ```
 
 ## levelrail-cli cloud aws acm
@@ -105,24 +109,40 @@ Usage of levelrail-cli cloud aws acm:
     	confirm a Multi-AZ or Aurora create
   -db-name string
     	initial database name, for rds create
+  -description string
+    	snapshot description
   -engine string
     	database engine, for rds create
   -env string
     	env tag for new resources
+  -exclude-boot
+    	skip the boot volume, for snapshots create
+  -filter string
+    	log filter pattern
+  -hours int
+    	window in hours, for metrics and logs events
+  -instance string
+    	instance ID, for snapshots create
   -json
     	print the result as JSON to stdout and nothing else
   -kill-switch string
     	on or off, root only
   -kind string
     	ssm or secretsmanager (default "ssm")
+  -limit int
+    	most rows, for logs
   -multi-az
     	Multi-AZ deployment, needs --confirm
+  -names string
+    	comma separated metric names, for metrics
   -output string
     	output format: json, table, or text (default table; --json is shorthand for --output json)
   -overwrite
     	overwrite an existing parameter
   -path string
     	SSM path prefix
+  -prefix string
+    	log group name prefix
   -profile string
     	named credentials profile to read (overrides APP_PROFILE, default "default")
   -project string
@@ -137,6 +157,8 @@ Usage of levelrail-cli cloud aws acm:
     	API token (overrides LEVELRAIL_TOKEN or APP_API_TOKEN and the credentials file)
   -username string
     	master username, for rds create
+  -volume string
+    	volume ID, for snapshots
 ```
 
 ## levelrail-cli cloud aws ecr
@@ -157,24 +179,40 @@ Usage of levelrail-cli cloud aws ecr:
     	confirm a Multi-AZ or Aurora create
   -db-name string
     	initial database name, for rds create
+  -description string
+    	snapshot description
   -engine string
     	database engine, for rds create
   -env string
     	env tag for new resources
+  -exclude-boot
+    	skip the boot volume, for snapshots create
+  -filter string
+    	log filter pattern
+  -hours int
+    	window in hours, for metrics and logs events
+  -instance string
+    	instance ID, for snapshots create
   -json
     	print the result as JSON to stdout and nothing else
   -kill-switch string
     	on or off, root only
   -kind string
     	ssm or secretsmanager (default "ssm")
+  -limit int
+    	most rows, for logs
   -multi-az
     	Multi-AZ deployment, needs --confirm
+  -names string
+    	comma separated metric names, for metrics
   -output string
     	output format: json, table, or text (default table; --json is shorthand for --output json)
   -overwrite
     	overwrite an existing parameter
   -path string
     	SSM path prefix
+  -prefix string
+    	log group name prefix
   -profile string
     	named credentials profile to read (overrides APP_PROFILE, default "default")
   -project string
@@ -189,6 +227,78 @@ Usage of levelrail-cli cloud aws ecr:
     	API token (overrides LEVELRAIL_TOKEN or APP_API_TOKEN and the credentials file)
   -username string
     	master username, for rds create
+  -volume string
+    	volume ID, for snapshots
+```
+
+## levelrail-cli cloud aws logs
+
+Subcommands: events, groups
+
+```
+Usage of levelrail-cli cloud aws logs:
+  -alt value
+    	alternative certificate name, repeatable
+  -api-url string
+    	control plane API base URL (overrides LEVELRAIL_API_URL or APP_API_URL and the credentials file, default http://localhost:8080)
+  -class string
+    	instance class, for rds create
+  -cluster
+    	create an Aurora cluster, needs --confirm
+  -confirm
+    	confirm a Multi-AZ or Aurora create
+  -db-name string
+    	initial database name, for rds create
+  -description string
+    	snapshot description
+  -engine string
+    	database engine, for rds create
+  -env string
+    	env tag for new resources
+  -exclude-boot
+    	skip the boot volume, for snapshots create
+  -filter string
+    	log filter pattern
+  -hours int
+    	window in hours, for metrics and logs events
+  -instance string
+    	instance ID, for snapshots create
+  -json
+    	print the result as JSON to stdout and nothing else
+  -kill-switch string
+    	on or off, root only
+  -kind string
+    	ssm or secretsmanager (default "ssm")
+  -limit int
+    	most rows, for logs
+  -multi-az
+    	Multi-AZ deployment, needs --confirm
+  -names string
+    	comma separated metric names, for metrics
+  -output string
+    	output format: json, table, or text (default table; --json is shorthand for --output json)
+  -overwrite
+    	overwrite an existing parameter
+  -path string
+    	SSM path prefix
+  -prefix string
+    	log group name prefix
+  -profile string
+    	named credentials profile to read (overrides APP_PROFILE, default "default")
+  -project string
+    	project tag for new resources
+  -query string
+    	JMESPath expression to filter the result before printing (e.g. "[?status=='running'].name")
+  -region string
+    	AWS region, defaults to the account region
+  -storage int
+    	allocated storage in GB, for rds create (default 20)
+  -token string
+    	API token (overrides LEVELRAIL_TOKEN or APP_API_TOKEN and the credentials file)
+  -username string
+    	master username, for rds create
+  -volume string
+    	volume ID, for snapshots
 ```
 
 ## levelrail-cli cloud aws rds
@@ -209,24 +319,40 @@ Usage of levelrail-cli cloud aws rds:
     	confirm a Multi-AZ or Aurora create
   -db-name string
     	initial database name, for rds create
+  -description string
+    	snapshot description
   -engine string
     	database engine, for rds create
   -env string
     	env tag for new resources
+  -exclude-boot
+    	skip the boot volume, for snapshots create
+  -filter string
+    	log filter pattern
+  -hours int
+    	window in hours, for metrics and logs events
+  -instance string
+    	instance ID, for snapshots create
   -json
     	print the result as JSON to stdout and nothing else
   -kill-switch string
     	on or off, root only
   -kind string
     	ssm or secretsmanager (default "ssm")
+  -limit int
+    	most rows, for logs
   -multi-az
     	Multi-AZ deployment, needs --confirm
+  -names string
+    	comma separated metric names, for metrics
   -output string
     	output format: json, table, or text (default table; --json is shorthand for --output json)
   -overwrite
     	overwrite an existing parameter
   -path string
     	SSM path prefix
+  -prefix string
+    	log group name prefix
   -profile string
     	named credentials profile to read (overrides APP_PROFILE, default "default")
   -project string
@@ -241,6 +367,8 @@ Usage of levelrail-cli cloud aws rds:
     	API token (overrides LEVELRAIL_TOKEN or APP_API_TOKEN and the credentials file)
   -username string
     	master username, for rds create
+  -volume string
+    	volume ID, for snapshots
 ```
 
 ## levelrail-cli cloud aws secrets
@@ -261,24 +389,40 @@ Usage of levelrail-cli cloud aws secrets:
     	confirm a Multi-AZ or Aurora create
   -db-name string
     	initial database name, for rds create
+  -description string
+    	snapshot description
   -engine string
     	database engine, for rds create
   -env string
     	env tag for new resources
+  -exclude-boot
+    	skip the boot volume, for snapshots create
+  -filter string
+    	log filter pattern
+  -hours int
+    	window in hours, for metrics and logs events
+  -instance string
+    	instance ID, for snapshots create
   -json
     	print the result as JSON to stdout and nothing else
   -kill-switch string
     	on or off, root only
   -kind string
     	ssm or secretsmanager (default "ssm")
+  -limit int
+    	most rows, for logs
   -multi-az
     	Multi-AZ deployment, needs --confirm
+  -names string
+    	comma separated metric names, for metrics
   -output string
     	output format: json, table, or text (default table; --json is shorthand for --output json)
   -overwrite
     	overwrite an existing parameter
   -path string
     	SSM path prefix
+  -prefix string
+    	log group name prefix
   -profile string
     	named credentials profile to read (overrides APP_PROFILE, default "default")
   -project string
@@ -293,6 +437,78 @@ Usage of levelrail-cli cloud aws secrets:
     	API token (overrides LEVELRAIL_TOKEN or APP_API_TOKEN and the credentials file)
   -username string
     	master username, for rds create
+  -volume string
+    	volume ID, for snapshots
+```
+
+## levelrail-cli cloud aws snapshots
+
+Subcommands: create, delete, list
+
+```
+Usage of levelrail-cli cloud aws snapshots:
+  -alt value
+    	alternative certificate name, repeatable
+  -api-url string
+    	control plane API base URL (overrides LEVELRAIL_API_URL or APP_API_URL and the credentials file, default http://localhost:8080)
+  -class string
+    	instance class, for rds create
+  -cluster
+    	create an Aurora cluster, needs --confirm
+  -confirm
+    	confirm a Multi-AZ or Aurora create
+  -db-name string
+    	initial database name, for rds create
+  -description string
+    	snapshot description
+  -engine string
+    	database engine, for rds create
+  -env string
+    	env tag for new resources
+  -exclude-boot
+    	skip the boot volume, for snapshots create
+  -filter string
+    	log filter pattern
+  -hours int
+    	window in hours, for metrics and logs events
+  -instance string
+    	instance ID, for snapshots create
+  -json
+    	print the result as JSON to stdout and nothing else
+  -kill-switch string
+    	on or off, root only
+  -kind string
+    	ssm or secretsmanager (default "ssm")
+  -limit int
+    	most rows, for logs
+  -multi-az
+    	Multi-AZ deployment, needs --confirm
+  -names string
+    	comma separated metric names, for metrics
+  -output string
+    	output format: json, table, or text (default table; --json is shorthand for --output json)
+  -overwrite
+    	overwrite an existing parameter
+  -path string
+    	SSM path prefix
+  -prefix string
+    	log group name prefix
+  -profile string
+    	named credentials profile to read (overrides APP_PROFILE, default "default")
+  -project string
+    	project tag for new resources
+  -query string
+    	JMESPath expression to filter the result before printing (e.g. "[?status=='running'].name")
+  -region string
+    	AWS region, defaults to the account region
+  -storage int
+    	allocated storage in GB, for rds create (default 20)
+  -token string
+    	API token (overrides LEVELRAIL_TOKEN or APP_API_TOKEN and the credentials file)
+  -username string
+    	master username, for rds create
+  -volume string
+    	volume ID, for snapshots
 ```
 
 ## levelrail-cli cloud connect
@@ -361,7 +577,7 @@ Usage:
   levelrail-cli cloud spend ACCOUNT [--refresh]
   levelrail-cli cloud aws link-kit --trusted-principal ARN [--role-name N] [--region R] [--template-url URL] [--guard-policy ARN]
   levelrail-cli cloud aws vault-kit --account-id ID --vault-principal ARN [--role-name N] [--mount M] [--vault-role R] [--namespace NS] [--region R]
-  levelrail-cli cloud aws ecr|acm|secrets|rds|audit|guard|cleanup-plan ACCOUNT ... (run "cloud aws" for details)
+  levelrail-cli cloud aws ecr|acm|secrets|rds|snapshots|metrics|logs|idle|audit|guard|cleanup-plan ACCOUNT ... (run "cloud aws" for details)
   levelrail-cli cloud oracle policy-kit --group G --compartment NAME_OR_OCID [--policy-name N] [--manage]
 
 The provider credential for "accounts add" is read from LEVELRAIL_CLOUD_CREDENTIAL, never from a flag (for oracle it is the PEM private key).

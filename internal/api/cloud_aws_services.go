@@ -41,6 +41,8 @@ var awsServices = map[string]awsServiceDef{
 	"secrets":       {runtimesettings.KeyCloudGuardParams, "APP_CLOUD_GUARD_PARAMS"},
 	"cloudtrail":    {runtimesettings.KeyCloudGuardCloudTrail, "APP_CLOUD_GUARD_CLOUDTRAIL"},
 	"rds":           {runtimesettings.KeyCloudGuardRDS, "APP_CLOUD_GUARD_RDS"},
+	"ebs":           {runtimesettings.KeyCloudGuardEBS, "APP_CLOUD_GUARD_EBS"},
+	"cloudwatch":    {runtimesettings.KeyCloudGuardCloudWatch, "APP_CLOUD_GUARD_CLOUDWATCH"},
 }
 
 func (rt *Router) awsServiceOn(svc string) bool {
@@ -571,6 +573,15 @@ func (rt *Router) handleAWSCleanupPlan(w http.ResponseWriter, r *http.Request) {
 			}
 		}
 	}
+	snapExpired, idle := []map[string]any{}, []idleWire{}
+	if rt.awsServiceOn("ebs") {
+		snapExpired = rt.snapshotExpiredPlan(r.Context(), c)
+	}
+	if rt.awsServiceOn("cloudwatch") {
+		if items, ierr := rt.idleSuggestions(r.Context(), c); ierr == nil {
+			idle = items
+		}
+	}
 	type expiredWire struct {
 		ARN       string    `json:"arn"`
 		ExpiredAt time.Time `json:"expired_at"`
@@ -591,7 +602,7 @@ func (rt *Router) handleAWSCleanupPlan(w http.ResponseWriter, r *http.Request) {
 		return out
 	}
 	writeJSON(w, http.StatusOK, map[string]any{
-		"dry_run": true, "region": c.region, "expired": exp, "rds_restop": restop, "unparsed": nonNilStrings(plan.Unparsed),
+		"dry_run": true, "region": c.region, "expired": exp, "rds_restop": restop, "snapshot_expired": snapExpired, "idle": idle, "unparsed": nonNilStrings(plan.Unparsed),
 		"orphans": map[string]any{"volumes": conv(orphans.Volumes), "addresses": conv(orphans.Addresses), "snapshots": conv(orphans.Snapshots)},
 	})
 }

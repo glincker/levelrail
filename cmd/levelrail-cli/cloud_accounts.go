@@ -26,7 +26,7 @@ func cloudAccountsUsage(prog string) string {
   %[1]s cloud spend ACCOUNT [--refresh]
   %[1]s cloud aws link-kit --trusted-principal ARN [--role-name N] [--region R] [--template-url URL] [--guard-policy ARN]
   %[1]s cloud aws vault-kit --account-id ID --vault-principal ARN [--role-name N] [--mount M] [--vault-role R] [--namespace NS] [--region R]
-  %[1]s cloud aws ecr|acm|secrets|rds|audit|guard|cleanup-plan ACCOUNT ... (run "cloud aws" for details)
+  %[1]s cloud aws ecr|acm|secrets|rds|snapshots|metrics|logs|idle|audit|guard|cleanup-plan ACCOUNT ... (run "cloud aws" for details)
   %[1]s cloud oracle policy-kit --group G --compartment NAME_OR_OCID [--policy-name N] [--manage]
 
 The provider credential for "accounts add" is read from %[2]s, never from a flag (for oracle it is the PEM private key).

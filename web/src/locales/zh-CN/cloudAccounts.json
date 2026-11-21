@@ -370,6 +370,56 @@
       "stop": "停止",
       "start": "启动",
       "adopt": "接管"
+    },
+    "ebs": {
+      "title": "卷和快照 (EBS)",
+      "target": "实例 ID 或卷 ID",
+      "excludeBoot": "跳过启动卷",
+      "create": "创建快照",
+      "volumes": "卷",
+      "snapshots": "快照",
+      "emptyVolumes": "此区域没有卷。",
+      "emptySnapshots": "此区域没有快照。",
+      "size": "{{gb}} GB",
+      "expires": "到期 {{when}}",
+      "delete": "删除"
+    },
+    "cloudwatch": {
+      "title": "指标、日志和闲置资源 (CloudWatch)",
+      "instance": "实例 ID",
+      "names": "指标名称，用逗号分隔",
+      "load": "加载",
+      "noData": "没有数据点。",
+      "logs": "日志组",
+      "prefix": "组名前缀",
+      "filter": "过滤文本",
+      "noGroups": "没有日志组。",
+      "retention": "保留 {{days}} 天",
+      "retentionNever": "永久保留",
+      "view": "查看",
+      "noEvents": "最近一小时没有事件。",
+      "truncated": "仅显示最新事件。",
+      "idleTitle": "闲置资源",
+      "idleNote": "仅为建议。Levelrail 不会停止、删除或释放任何资源。",
+      "idleEmpty": "未发现闲置资源。",
+      "idleResource": "资源",
+      "idleKind": "类型",
+      "idleAction": "建议操作",
+      "idleSaving": "USD/月",
+      "idleTotal": "可节省：每月 {{usd}} USD",
+      "kind": {
+        "ec2_low_cpu": "低 CPU 实例",
+        "ebs_unattached": "未挂载的卷",
+        "eip_unassociated": "未关联的 IP",
+        "alb_no_requests": "无请求的负载均衡器",
+        "rds_stopped": "已停止的数据库"
+      },
+      "action": {
+        "stop": "停止",
+        "snapshot_delete": "先快照再删除",
+        "release": "释放",
+        "delete": "删除"
+      }
     }
   }
 }

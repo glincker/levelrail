@@ -370,6 +370,56 @@
       "stop": "Stoppen",
       "start": "Starten",
       "adopt": "Übernehmen"
+    },
+    "ebs": {
+      "title": "Volumes und Snapshots (EBS)",
+      "target": "Instanz- oder Volume-ID",
+      "excludeBoot": "Boot-Volume überspringen",
+      "create": "Snapshot erstellen",
+      "volumes": "Volumes",
+      "snapshots": "Snapshots",
+      "emptyVolumes": "Keine Volumes in dieser Region.",
+      "emptySnapshots": "Keine Snapshots in dieser Region.",
+      "size": "{{gb}} GB",
+      "expires": "läuft ab {{when}}",
+      "delete": "Löschen"
+    },
+    "cloudwatch": {
+      "title": "Metriken, Logs und ungenutzte Ressourcen (CloudWatch)",
+      "instance": "Instanz-ID",
+      "names": "Metriknamen, durch Komma getrennt",
+      "load": "Laden",
+      "noData": "Keine Datenpunkte.",
+      "logs": "Loggruppen",
+      "prefix": "Gruppenpräfix",
+      "filter": "Filtertext",
+      "noGroups": "Keine Loggruppen.",
+      "retention": "{{days}} Tage Aufbewahrung",
+      "retentionNever": "Unbegrenzt",
+      "view": "Anzeigen",
+      "noEvents": "Keine Ereignisse in der letzten Stunde.",
+      "truncated": "Es werden nur die neuesten Ereignisse gezeigt.",
+      "idleTitle": "Ungenutzte Ressourcen",
+      "idleNote": "Nur Vorschläge. Levelrail stoppt, löscht oder gibt nichts frei.",
+      "idleEmpty": "Keine ungenutzten Ressourcen gefunden.",
+      "idleResource": "Ressource",
+      "idleKind": "Typ",
+      "idleAction": "Vorgeschlagene Aktion",
+      "idleSaving": "USD/Monat",
+      "idleTotal": "Mögliche Ersparnis: {{usd}} USD pro Monat",
+      "kind": {
+        "ec2_low_cpu": "Instanz mit geringer CPU-Last",
+        "ebs_unattached": "Nicht angehängtes Volume",
+        "eip_unassociated": "Nicht zugeordnete IP",
+        "alb_no_requests": "Load Balancer ohne Anfragen",
+        "rds_stopped": "Gestoppte Datenbank"
+      },
+      "action": {
+        "stop": "Stoppen",
+        "snapshot_delete": "Snapshot, dann löschen",
+        "release": "Freigeben",
+        "delete": "Löschen"
+      }
     }
   }
 }

@@ -2534,6 +2534,14 @@ Routes that do not fit an existing group.
 | POST | /api/v1/cloud-accounts/{id}/aws/rds/instances/{rid}/actions | Public | handleRDSAction |
 | POST | /api/v1/cloud-accounts/{id}/aws/rds/instances/{rid}/connect-as-database | Public | handleRDSConnectAsDatabase |
 | POST | /api/v1/cloud-accounts/{id}/aws/rds/instances | Public | handleRDSCreate |
+| GET | /api/v1/cloud-accounts/{id}/aws/ebs/volumes | Public | handleEBSVolumes |
+| GET | /api/v1/cloud-accounts/{id}/aws/ebs/snapshots | Public | handleEBSSnapshots |
+| POST | /api/v1/cloud-accounts/{id}/aws/ebs/snapshots | Public | handleEBSSnapshotCreate |
+| DELETE | /api/v1/cloud-accounts/{id}/aws/ebs/snapshots/{sid} | Public | handleEBSSnapshotDelete |
+| GET | /api/v1/cloud-accounts/{id}/aws/cloudwatch/metrics | Public | handleCloudWatchMetrics |
+| GET | /api/v1/cloud-accounts/{id}/aws/cloudwatch/log-groups | Public | handleCloudWatchLogGroups |
+| GET | /api/v1/cloud-accounts/{id}/aws/cloudwatch/log-events | Public | handleCloudWatchLogEvents |
+| GET | /api/v1/cloud-accounts/{id}/aws/idle | Public | handleAWSIdle |
 | POST | /mcp | Public |  |
 
 ## See also
