@@ -18,6 +18,7 @@ const (
 	KeyCloudGuardIdleEBSCents  = "cloud.guard.idle.ebs_gb_month_cents"
 	KeyCloudGuardIdleEIPCents  = "cloud.guard.idle.eip_month_cents"
 	KeyCloudGuardIdleALBCents  = "cloud.guard.idle.alb_month_cents"
+	KeyCloudGuardRestopLead    = "cloud.guard.idle.restop_lead_hours"
 	KeyCloudGuardKeepDaily     = "cloud.guard.snapshot.keep_daily"
 	KeyCloudGuardKeepWeekly    = "cloud.guard.snapshot.keep_weekly"
 	KeyCloudGuardMonthlyCapUSD = "cloud.guard.monthly_cap_usd"
@@ -49,6 +50,7 @@ func init() {
 	registerLimitInt(KeyCloudGuardIdleEBSCents, "APP_CLOUD_GUARD_IDLE_EBS_GB_MONTH_CENTS", "8", "AWS disk price for savings (cents per GB month)", "Unit price used to estimate the saving of an unattached volume. From 0 to 10000.", 0, 10000)
 	registerLimitInt(KeyCloudGuardIdleEIPCents, "APP_CLOUD_GUARD_IDLE_EIP_MONTH_CENTS", "365", "AWS Elastic IP price for savings (cents per month)", "Unit price used to estimate the saving of an unassociated address. From 0 to 100000.", 0, 100000)
 	registerLimitInt(KeyCloudGuardIdleALBCents, "APP_CLOUD_GUARD_IDLE_ALB_MONTH_CENTS", "1643", "AWS load balancer price for savings (cents per month)", "Unit price used to estimate the saving of an idle application load balancer. From 0 to 1000000.", 0, 1000000)
+	registerLimitInt(KeyCloudGuardRestopLead, "APP_CLOUD_GUARD_IDLE_RESTOP_LEAD_HOURS", "24", "AWS stopped database restart warning (hours)", "A stopped managed database cluster that AWS will start again within this many hours is listed as a suggestion to stop it again. From 1 to 168.", 1, 168)
 	registerLimitInt(KeyCloudGuardKeepDaily, "APP_CLOUD_GUARD_SNAPSHOT_KEEP_DAILY", "7", "AWS snapshots to keep (daily)", "Managed snapshots per volume kept for the most recent days when planning cleanup. 0 for both settings keeps everything.", 0, 365)
 	registerLimitInt(KeyCloudGuardKeepWeekly, "APP_CLOUD_GUARD_SNAPSHOT_KEEP_WEEKLY", "4", "AWS snapshots to keep (weekly)", "Managed snapshots per volume kept for the most recent weeks when planning cleanup.", 0, 520)
 	flag(KeyCloudGuardElastiCache, "APP_CLOUD_GUARD_ELASTICACHE", "AWS caches (ElastiCache)", "Lets the control plane list ElastiCache replication groups and clusters, snapshot and reboot managed ones, and delete them with a typed confirm.")

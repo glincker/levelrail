@@ -24,11 +24,13 @@ const (
 	KindEIPFree       = "eip_unassociated"
 	KindALBNoRequests = "alb_no_requests"
 	KindRDSStopped    = "rds_stopped"
+	KindRDSRestart    = "rds_cluster_restart"
 
 	ActionStop           = "stop"
 	ActionSnapshotDelete = "snapshot_delete"
 	ActionRelease        = "release"
 	ActionDelete         = "delete"
+	ActionRestop         = "restop"
 )
 
 // IdleConfig carries the live idle thresholds and the unit prices behind the savings.

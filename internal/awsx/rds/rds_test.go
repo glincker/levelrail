@@ -196,3 +196,22 @@ func TestClusterSnapshotsParseAndDeleteNeedsManaged(t *testing.T) {
 		}
 	}
 }
+
+func TestPlanClusterRestartWindow(t *testing.T) {
+	mgd := `<TagList><Tag><Key>levelrail:managed</Key><Value>true</Value></Tag></TagList>`
+	k := func(id, status, at, tags string) string {
+		return `<DBCluster><DBClusterIdentifier>` + id + `</DBClusterIdentifier><Status>` + status + `</Status><AutomaticRestartTime>` + at + `</AutomaticRestartTime>` + tags + `</DBCluster>`
+	}
+	soon := testNow.Add(10 * time.Hour).Format(time.RFC3339)
+	far := testNow.Add(100 * time.Hour).Format(time.RFC3339)
+	body := `<R><DescribeDBClustersResult><DBClusters>` + k("soon", "stopped", soon, mgd) + k("far", "stopped", far, mgd) +
+		k("running", "available", soon, mgd) + k("foreign", "stopped", soon, "") + `</DBClusters></DescribeDBClustersResult></R>`
+	c, rec := awsxtest.New(t, func(awsxtest.Call, int) awsxtest.Reply { return awsxtest.Reply{Body: body} })
+	plan, err := New(c, guardFor(okCfg())).WithClock(func() time.Time { return testNow }).PlanClusterRestart(context.Background(), "us-east-1", 24*time.Hour)
+	if err != nil || len(plan) != 1 || plan[0].ID != "soon" {
+		t.Fatalf("plan=%+v err=%v", plan, err)
+	}
+	if len(rec.Calls()) != 1 {
+		t.Fatalf("plan must only describe, calls=%d", len(rec.Calls()))
+	}
+}

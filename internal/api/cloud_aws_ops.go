@@ -366,6 +366,13 @@ func (rt *Router) idleSuggestions(ctx context.Context, c awsCall) ([]idleWire, e
 					}
 				}
 			}
+			lead := time.Duration(rt.guardSettingInt(runtimesettings.KeyCloudGuardRestopLead, "APP_CLOUD_GUARD_IDLE_RESTOP_LEAD_HOURS", 24)) * time.Hour
+			if ks, kerr := rds.New(c.client, c.guard).PlanClusterRestart(ctx, c.region, lead); kerr == nil {
+				for _, k := range ks {
+					found = append(found, cloudguard.Suggestion{Kind: cloudguard.KindRDSRestart, ID: k.ID, Action: cloudguard.ActionRestop,
+						Detail: "AWS restarts this stopped cluster at " + k.AutoRestartAt.Format(time.RFC3339)})
+				}
+			}
 		}
 		return found, nil
 	})

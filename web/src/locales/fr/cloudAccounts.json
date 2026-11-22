@@ -446,13 +446,15 @@
         "ebs_unattached": "Volume détaché",
         "eip_unassociated": "IP non associée",
         "alb_no_requests": "Répartiteur sans requêtes",
-        "rds_stopped": "Base de données arrêtée"
+        "rds_stopped": "Base de données arrêtée",
+        "rds_cluster_restart": "La base de données redémarre bientôt"
       },
       "action": {
         "stop": "Arrêter",
         "snapshot_delete": "Instantané puis suppression",
         "release": "Libérer",
-        "delete": "Supprimer"
+        "delete": "Supprimer",
+        "restop": "Arrêter à nouveau"
       }
     },
     "cloudfront": {

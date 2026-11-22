@@ -483,6 +483,7 @@ These variables only seed the default of a [runtime setting](/runtime-settings).
 | `APP_CLOUD_GUARD_IDLE_DAYS` | [`cloud.guard.idle.days`](/runtime-settings#observability) | `7` |
 | `APP_CLOUD_GUARD_IDLE_EBS_GB_MONTH_CENTS` | [`cloud.guard.idle.ebs_gb_month_cents`](/runtime-settings#observability) | `8` |
 | `APP_CLOUD_GUARD_IDLE_EIP_MONTH_CENTS` | [`cloud.guard.idle.eip_month_cents`](/runtime-settings#observability) | `365` |
+| `APP_CLOUD_GUARD_IDLE_RESTOP_LEAD_HOURS` | [`cloud.guard.idle.restop_lead_hours`](/runtime-settings#observability) | `24` |
 | `APP_CLOUD_GUARD_INSTANCE_TYPES` | [`cloud.guard.instance_types`](/runtime-settings#observability) | empty |
 | `APP_CLOUD_GUARD_KILL_SWITCH` | [`cloud.guard.kill_switch`](/runtime-settings#observability) | `false` |
 | `APP_CLOUD_GUARD_LIGHTSAIL_BUNDLES` | [`cloud.guard.lightsail.bundles`](/runtime-settings#observability) | empty |

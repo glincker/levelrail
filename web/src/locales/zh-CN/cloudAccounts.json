@@ -446,13 +446,15 @@
         "ebs_unattached": "未挂载的卷",
         "eip_unassociated": "未关联的 IP",
         "alb_no_requests": "无请求的负载均衡器",
-        "rds_stopped": "已停止的数据库"
+        "rds_stopped": "已停止的数据库",
+        "rds_cluster_restart": "数据库即将自动重启"
       },
       "action": {
         "stop": "停止",
         "snapshot_delete": "先快照再删除",
         "release": "释放",
-        "delete": "删除"
+        "delete": "删除",
+        "restop": "再次停止"
       }
     },
     "cloudfront": {

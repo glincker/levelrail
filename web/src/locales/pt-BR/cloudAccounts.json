@@ -446,13 +446,15 @@
         "ebs_unattached": "Volume desanexado",
         "eip_unassociated": "IP não associado",
         "alb_no_requests": "Balanceador sem requisições",
-        "rds_stopped": "Banco de dados parado"
+        "rds_stopped": "Banco de dados parado",
+        "rds_cluster_restart": "Banco de dados reinicia em breve"
       },
       "action": {
         "stop": "Parar",
         "snapshot_delete": "Snapshot e depois excluir",
         "release": "Liberar",
-        "delete": "Excluir"
+        "delete": "Excluir",
+        "restop": "Parar novamente"
       }
     },
     "cloudfront": {

@@ -426,6 +426,30 @@ func (c *Client) PlanRestop(ctx context.Context, region string, minAge time.Dura
 	return plan, nil
 }
 
+// ClusterRestartItem is a stopped cluster that AWS will start again soon.
+type ClusterRestartItem struct {
+	ID            string
+	StoppedAt     time.Time
+	AutoRestartAt time.Time
+}
+
+// PlanClusterRestart lists managed stopped clusters whose automatic restart falls
+// inside the lead window. It only reports, so the owner can stop them again or act.
+func (c *Client) PlanClusterRestart(ctx context.Context, region string, lead time.Duration) ([]ClusterRestartItem, error) {
+	list, err := c.DescribeDBClusters(ctx, region)
+	if err != nil {
+		return nil, err
+	}
+	var plan []ClusterRestartItem
+	for _, k := range list {
+		if !k.Managed() || k.Status != "stopped" || k.AutoRestartAt.IsZero() || k.AutoRestartAt.Sub(c.now()) > lead {
+			continue
+		}
+		plan = append(plan, ClusterRestartItem{ID: k.ID, StoppedAt: parseTime(k.Tags[StoppedAtTag]), AutoRestartAt: k.AutoRestartAt})
+	}
+	return plan, nil
+}
+
 // Restop stops each planned instance again.
 func (c *Client) Restop(ctx context.Context, region string, items []RestopItem) error {
 	for _, it := range items {

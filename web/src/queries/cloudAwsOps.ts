@@ -69,8 +69,10 @@ export type AwsIdleKind =
   | 'eip_unassociated'
   | 'alb_no_requests'
   | 'rds_stopped'
+  | 'rds_cluster_restart'
 
-export type AwsIdleAction = 'stop' | 'snapshot_delete' | 'release' | 'delete'
+export type AwsIdleAction =
+  'stop' | 'snapshot_delete' | 'release' | 'delete' | 'restop'
 
 export interface AwsIdleSuggestion {
   kind: AwsIdleKind

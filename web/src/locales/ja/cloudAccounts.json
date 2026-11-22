@@ -446,13 +446,15 @@
         "ebs_unattached": "未接続のボリューム",
         "eip_unassociated": "未関連付けのIP",
         "alb_no_requests": "リクエストのないロードバランサー",
-        "rds_stopped": "停止中のデータベース"
+        "rds_stopped": "停止中のデータベース",
+        "rds_cluster_restart": "まもなく自動再起動するデータベース"
       },
       "action": {
         "stop": "停止",
         "snapshot_delete": "スナップショット後に削除",
         "release": "解放",
-        "delete": "削除"
+        "delete": "削除",
+        "restop": "再度停止"
       }
     },
     "cloudfront": {

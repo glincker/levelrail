@@ -154,6 +154,7 @@ cloud.guard.idle.cpu_percent
 cloud.guard.idle.days
 cloud.guard.idle.ebs_gb_month_cents
 cloud.guard.idle.eip_month_cents
+cloud.guard.idle.restop_lead_hours
 cloud.guard.instance_types
 cloud.guard.kill_switch
 cloud.guard.lightsail.bundles

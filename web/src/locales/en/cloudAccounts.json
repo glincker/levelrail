@@ -446,13 +446,15 @@
         "ebs_unattached": "Unattached volume",
         "eip_unassociated": "Unassociated IP",
         "alb_no_requests": "Load balancer, no requests",
-        "rds_stopped": "Stopped database"
+        "rds_stopped": "Stopped database",
+        "rds_cluster_restart": "Database restarts soon"
       },
       "action": {
         "stop": "Stop",
         "snapshot_delete": "Snapshot, then delete",
         "release": "Release",
-        "delete": "Delete"
+        "delete": "Delete",
+        "restop": "Stop again"
       }
     },
     "cloudfront": {
