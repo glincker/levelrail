@@ -137,3 +137,28 @@ func TestWaitReady_ZeroConfigUsesDefaults(t *testing.T) {
 		t.Fatalf("WaitReady() with zero-value Config error = %v", err)
 	}
 }
+
+func TestWaitReady_FirstRetriesBeatSlowInterval(t *testing.T) {
+	var calls atomic.Int32
+	srv := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, _ *http.Request) {
+		if calls.Add(1) < 3 {
+			w.WriteHeader(http.StatusServiceUnavailable)
+			return
+		}
+		w.WriteHeader(http.StatusOK)
+	}))
+	defer srv.Close()
+
+	ctx, cancel := context.WithTimeout(context.Background(), 5*time.Second)
+	defer cancel()
+
+	start := time.Now()
+	lim := Limits{FirstInterval: 10 * time.Millisecond}
+	err := New(srv.Client(), nil, lim).WaitReady(ctx, Target{Addr: hostPort(t, srv)}, Config{Path: "/healthz", Interval: 3 * time.Second, Timeout: 500 * time.Millisecond})
+	if err != nil {
+		t.Fatalf("WaitReady() error = %v", err)
+	}
+	if took := time.Since(start); took > time.Second {
+		t.Errorf("ready took %v, expected the fast warm-up cadence to beat the 3s interval", took)
+	}
+}

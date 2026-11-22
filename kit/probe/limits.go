@@ -11,6 +11,9 @@ type Limits struct {
 	ExecOutputBytes int
 	DefaultTimeout  time.Duration
 	DefaultInterval time.Duration
+	// FirstInterval is the first WaitReady retry delay; it doubles up to the
+	// probe interval. Zero takes DefaultFirstInterval.
+	FirstInterval time.Duration
 }
 
 // Defaults applied by Limits' zero fields. MaxRedirects matches net/http's
@@ -20,6 +23,7 @@ const (
 	DefaultExecOutputBytes = 512
 	DefaultTimeout         = 2 * time.Second
 	DefaultInterval        = 2 * time.Second
+	DefaultFirstInterval   = 250 * time.Millisecond
 )
 
 // Environment variables LimitsFromEnv reads.
