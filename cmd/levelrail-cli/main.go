@@ -47,6 +47,15 @@ func runDispatch(prog string, args []string, stdout, stderr io.Writer, lookupEnv
 	args, debug := extractDebugFlag(args)
 	args, noColorFlag = extractNoColorFlag(args)
 	args, insecureHTTP := extractInsecureHTTPFlag(args)
+	var noInput bool
+	args, noInput = extractNoInputFlag(args)
+	ciMode = ciMode || noInput
+	var reqErr error
+	args, reqErr = extractRequestBoundFlags(args, rawLookupEnv)
+	if reqErr != nil {
+		_, _ = fmt.Fprintln(stderr, reqErr)
+		return exitUsage
+	}
 	// Always set so a previous run() in this process never leaks the opt-in.
 	apiclient.SetInsecureHTTP(insecureHTTP)
 	args, scopeFlags = extractScopeFlags(expandOutputShorthand(args))

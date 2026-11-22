@@ -102,6 +102,15 @@ func WithRejectedCredentialFix(msg string) Option {
 	return func(c *Client) { c.rejectedFix = msg }
 }
 
+// WithTimeout bounds every request of the client; zero or negative keeps the default.
+func WithTimeout(d time.Duration) Option {
+	return func(c *Client) {
+		if d > 0 {
+			c.hc.Timeout = d
+		}
+	}
+}
+
 // NewClient builds a Client. baseURL should not have a trailing slash
 // (trimmed defensively if it does). The timeout is long, not the usual
 // few seconds a typical REST call would use: POST .../builds is

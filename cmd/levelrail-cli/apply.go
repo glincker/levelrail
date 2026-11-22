@@ -1,7 +1,6 @@
 package main
 
 import (
-	"bufio"
 	"context"
 	"errors"
 	"flag"
@@ -13,7 +12,6 @@ import (
 
 	"github.com/GLINCKER/levelrail/internal/apiclient"
 	"github.com/GLINCKER/levelrail/internal/iac"
-	"golang.org/x/term"
 )
 
 // Exit codes of apply, diff and export. They follow terraform's
@@ -223,19 +221,11 @@ func confirmApply(stderr io.Writer, af *applyFlags, plan iac.Plan) error {
 			return errors.New("stdin holds the files, so confirmation is not possible: pass --yes")
 		}
 	}
-	if f, ok := stdinSource.(*os.File); !ok || !term.IsTerminal(int(f.Fd())) { //nolint:gosec // a terminal file descriptor always fits an int
-		return errors.New("not a terminal: pass --yes to apply without confirmation")
-	}
 	q := fmt.Sprintf("Apply %d change(s)", plan.Summary.Create+plan.Summary.Update+plan.Summary.Delete)
 	if plan.Summary.Delete > 0 {
 		q += fmt.Sprintf(", including %d DELETION(S)", plan.Summary.Delete)
 	}
-	_, _ = fmt.Fprintf(stderr, "%s? [y/N] ", q)
-	line, _ := bufio.NewReader(stdinSource).ReadString('\n')
-	if a := strings.ToLower(strings.TrimSpace(line)); a != "y" && a != "yes" {
-		return errors.New("cancelled")
-	}
-	return nil
+	return confirmAction(stdinSource, stderr, q, false, "--yes")
 }
 
 func exportUsage(prog string) string {

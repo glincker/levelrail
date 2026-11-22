@@ -14,7 +14,7 @@ Usage:
   levelrail-cli completion install [--shell bash|zsh|fish]   write the script and print the line to add
 
 Completes command and subcommand names for the CLI's full command tree
-(apps, databases, channels, and so on), plus the global flags (--json --output --query --token --api-url --debug --insecure-http --no-color -h --help).
+(apps, databases, channels, and so on), plus the global flags (--json --output --query --token --api-url --debug --insecure-http --no-color --no-input --api-timeout --api-retries -h --help).
 After deploy, logs, apps get and similar verbs it also offers real app names
 from the server, and real profile, project and environment names after
 --profile, --project and --env. Server answers are cached for a few seconds
