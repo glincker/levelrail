@@ -1472,6 +1472,9 @@ func (c *Controller) createAndStart(ctx context.Context, name string, desired *s
 			spec.DNS = spec.DNS[:limit]
 		}
 	}
+	// The pull runs beside the network and mesh setup below instead of after it.
+	waitPrePull := c.startPrePull(ctx, spec)
+	defer waitPrePull()
 	meshHosts, err := c.databaseExtraHosts(ctx, desired)
 	if err != nil {
 		return fmt.Errorf("database mesh hosts: %w", err)
@@ -1492,6 +1495,7 @@ func (c *Controller) createAndStart(ctx context.Context, name string, desired *s
 	if ct != nil {
 		spec.OnPull = ct.onPull
 	}
+	waitPrePull()
 	stopWatch := c.watchLifecycle(ctx, tr, name, c.effectiveReadyBudget(desired))
 	id, err := c.createContainer(ctx, spec)
 	ct.created(id, err)
@@ -1520,6 +1524,31 @@ func (c *Controller) createAndStart(ctx context.Context, name string, desired *s
 		return err
 	}
 	return nil
+}
+
+// startPrePull begins pulling spec.Image on the node while the rest of the
+// create path runs, and returns a wait that is safe to call more than once.
+// Failures are ignored: Create pulls again and reports the real error.
+func (c *Controller) startPrePull(ctx context.Context, spec docker.ContainerSpec) func() {
+	noop := func() {}
+	puller, ok := c.runtime.(docker.ImagePuller)
+	// The local daemon keeps its traced pull in Create; only remote nodes gain from overlap.
+	if _, local := c.runtime.(*docker.Client); local {
+		return noop
+	}
+	// Username and password logins are not sent to agents, so those pulls stay with Create.
+	if !ok || spec.Image == "" || (spec.RegistryAuth != nil && spec.RegistryAuth.Bearer == "") {
+		return noop
+	}
+	auth := spec.RegistryAuth
+	done := make(chan struct{})
+	go func() {
+		defer close(done)
+		if err := puller.PullImage(ctx, spec.Image, auth); err != nil {
+			slog.Debug("application: image pre-pull skipped", slog.String("image", spec.Image), slog.Any("error", err))
+		}
+	}()
+	return func() { <-done }
 }
 
 // appendStreamPorts adds stream bindings, skipping one that an existing
