@@ -54,6 +54,8 @@ apps.bundle_import_max_entry_bytes
 apps.containers_inspect_timeout
 apps.env_apply_on_set
 apps.max_replicas_per_service
+apps.resources_max_io_bps
+apps.resources_max_net_mbit
 apps.size_presets
 apps.summary_cache_max_entries
 apps.summary_cache_seconds

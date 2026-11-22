@@ -1,14 +1,13 @@
 package api
 
 import (
+	"context"
 	"errors"
 	"fmt"
 	"net/http"
-	"os"
-	"strconv"
-	"strings"
 
 	"github.com/GLINCKER/levelrail/internal/compose"
+	"github.com/GLINCKER/levelrail/internal/runtimesettings"
 	"github.com/GLINCKER/levelrail/internal/store"
 )
 
@@ -47,33 +46,27 @@ func validateServiceResources(r *store.ServiceResources) error {
 	if limit := compose.MaxShmBytes(); r.ShmSizeBytes > limit {
 		return resourcesError{fmt.Sprintf("resources.shm_size_bytes %d is above the %d byte limit (APP_COMPOSE_MAX_SHM_BYTES)", r.ShmSizeBytes, limit)}
 	}
-	for _, c := range []struct {
-		name, env string
-		v         int64
-	}{
-		{"io_read_bps", envMaxIOBps, r.IOReadBps},
-		{"io_write_bps", envMaxIOBps, r.IOWriteBps},
-		{"net_mbit", envMaxNetMbit, r.NetMbit},
-	} {
-		if limit := envInt64Cap(c.env); limit > 0 && c.v > limit {
-			return resourcesError{fmt.Sprintf("resources.%s %d is above the %d limit (%s)", c.name, c.v, limit, c.env)}
-		}
-	}
 	return nil
 }
 
-// Optional operator caps for the throughput fields; unset or invalid means no cap.
-const (
-	envMaxIOBps   = "APP_RESOURCES_MAX_IO_BPS"
-	envMaxNetMbit = "APP_RESOURCES_MAX_NET_MBIT"
-)
-
-func envInt64Cap(name string) int64 {
-	v, err := strconv.ParseInt(strings.TrimSpace(os.Getenv(name)), 10, 64)
-	if err != nil || v < 1 {
-		return 0
+// checkThroughputCaps rejects io and net values above the live operator ceilings; 0 means no ceiling.
+func (rt *Router) checkThroughputCaps(ctx context.Context, r *store.ServiceResources) error {
+	if r == nil || rt.runtimeSettings == nil {
+		return nil
 	}
-	return v
+	for _, c := range []struct {
+		name, key string
+		v         int64
+	}{
+		{"io_read_bps", runtimesettings.KeyAppsMaxIOBps, r.IOReadBps},
+		{"io_write_bps", runtimesettings.KeyAppsMaxIOBps, r.IOWriteBps},
+		{"net_mbit", runtimesettings.KeyAppsMaxNetMbit, r.NetMbit},
+	} {
+		if limit := int64(rt.runtimeSettings.Int(ctx, c.key)); limit > 0 && c.v > limit {
+			return resourcesError{fmt.Sprintf("resources.%s %d is above the %d limit (setting %s)", c.name, c.v, limit, c.key)}
+		}
+	}
+	return nil
 }
 
 func writeAppInvalid(w http.ResponseWriter, err error) {

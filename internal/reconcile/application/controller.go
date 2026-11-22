@@ -2977,6 +2977,9 @@ func toContainerSpec(name string, desired *store.DesiredService) (docker.Contain
 			NanoCPUs:        desired.Resources.NanoCPUs,
 			SwapMemoryBytes: desired.Resources.SwapMemoryBytes,
 			CPUSetCPUs:      desired.Resources.CPUSetCPUs,
+			IOReadBps:       desired.Resources.IOReadBps,
+			IOWriteBps:      desired.Resources.IOWriteBps,
+			NetMbit:         desired.Resources.NetMbit,
 		}
 		if g := desired.Resources.GPU; g != nil {
 			spec.GPU = &docker.GPURequest{Count: g.Count, DeviceIDs: g.DeviceIDs}

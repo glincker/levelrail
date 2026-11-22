@@ -4080,3 +4080,19 @@ func TestController_Reconcile_DirectExposureOnPrivatePublishedPort_BindsOnce(t *
 		t.Errorf("settled passes created containers: createCalls = %d, want 1", rt.createCalls)
 	}
 }
+
+func TestController_Reconcile_ThroughputCapsReachContainerSpec(t *testing.T) {
+	rt := newFakeRuntime(0)
+	desired := &store.DesiredService{
+		Name: "web", Image: "nginx:1", Port: 80,
+		Resources: &store.ServiceResources{IOReadBps: 1 << 20, IOWriteBps: 2 << 20, NetMbit: 50},
+	}
+	c := New("web", &fakeStore{svc: desired}, rt)
+	if _, err := c.Reconcile(context.Background()); err != nil {
+		t.Fatalf("Reconcile() error = %v", err)
+	}
+	got := rt.lastCreateSpec.Resources
+	if got == nil || got.IOReadBps != 1<<20 || got.IOWriteBps != 2<<20 || got.NetMbit != 50 {
+		t.Errorf("created ContainerSpec.Resources = %+v, want io and net caps copied", got)
+	}
+}

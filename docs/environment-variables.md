@@ -244,6 +244,8 @@ These variables only seed the default of a [runtime setting](/runtime-settings).
 | `APP_IMAGE_KEEP` | [`app.image_keep`](/runtime-settings#deploys) | `0` |
 | `APP_ENV_APPLY_ON_SET` | [`apps.env_apply_on_set`](/runtime-settings#deploys) | `false` |
 | `APP_MAX_REPLICAS_PER_SERVICE` | [`apps.max_replicas_per_service`](/runtime-settings#deploys) | `100` |
+| `APP_RESOURCES_MAX_IO_BPS` | [`apps.resources_max_io_bps`](/runtime-settings#deploys) | `0` |
+| `APP_RESOURCES_MAX_NET_MBIT` | [`apps.resources_max_net_mbit`](/runtime-settings#deploys) | `0` |
 | `APP_SIZE_PRESETS` | [`apps.size_presets`](/runtime-settings#deploys) | `small=0.5:512Mi,medium=1:1Gi,large=2:2Gi,xlarge=4:4Gi` |
 | `APP_RUN_CPU_LIMIT_MILLIS` | [`apps_run.cpu_limit_millis`](/runtime-settings#deploys) | `0` |
 | `APP_RUN_MAX_CONCURRENT_PER_APP` | [`apps_run.max_concurrent_per_app`](/runtime-settings#deploys) | `3` |
