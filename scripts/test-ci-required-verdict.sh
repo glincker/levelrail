@@ -12,7 +12,7 @@ cd "$(git rev-parse --show-toplevel)" || exit 2
 fail=0
 checks=0
 
-jobs="changes plan build-vet lint kit tfprovider test-go test-api test-rest web-check web-test install-sh install-cli-macos install-cli-windows release-pacing"
+jobs="changes plan build-vet cross-compile lint kit tfprovider test-go test-api test-rest web-check web-test install-sh install-cli-macos install-cli-windows release-pacing"
 
 needs_json() {
 	local spec="$*" job doc='{}' kv key val

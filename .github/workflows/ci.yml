@@ -224,8 +224,10 @@ jobs:
           cache-prefix: go-build
           save: ${{ env.CI_SAVE_CACHE == 'true' }}
 
+      # Only the planner scripts and their tests can break these, so PRs run
+      # them when those files change; pushes and the nightly keep full coverage.
       - name: Planner table tests
-        if: needs.plan.outputs.scope != 'none' || needs.changes.outputs.planner == 'true'
+        if: needs.changes.outputs.planner == 'true' || github.event_name == 'push' || github.event_name == 'schedule'
         run: |
           scripts/test-ci-go-plan.sh
           scripts/test-ci-changes.sh
@@ -259,6 +261,40 @@ jobs:
         if: needs.plan.outputs.scope != 'none' && needs.changes.outputs.draft != 'true'
         run: scripts/code-gen-check.sh
 
+      # tools/ is its own module, so the package list above never reaches it.
+      - name: Release notes generator
+        if: needs.changes.outputs.tools == 'true'
+        run: go -C tools vet ./releasenotes/ && go -C tools test ./releasenotes/
+
+  # Own job so the compile runs beside build-vet instead of after it.
+  cross-compile:
+    name: Cross-compile
+    needs: [changes, plan]
+    if: ${{ !cancelled() && needs.plan.result != 'skipped' }}
+    runs-on: ${{ vars.CI_RUNNER || 'ubuntu-latest' }}
+    timeout-minutes: 15
+    steps:
+      - name: Planning passed
+        if: needs.plan.result != 'success'
+        run: |
+          echo "::error::Detect changed areas: ${{ needs.changes.result }}, Plan Go work: ${{ needs.plan.result }}"
+          exit 1
+
+      - name: Checkout
+        uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+
+      - name: Set up Go (cached)
+        if: needs.plan.outputs.scope != 'none'
+        uses: ./.github/actions/setup-go-cached
+        with:
+          remote-cache-bucket: ${{ vars.GOCACHE_BUCKET }}
+          remote-cache-region: ${{ vars.GOCACHE_REGION || 'us-east-1' }}
+          remote-cache-key-id: ${{ secrets.GOCACHE_KEY_ID }}
+          remote-cache-secret: ${{ secrets.GOCACHE_SECRET }}
+          remote-cache-endpoint: ${{ vars.GOCACHE_ENDPOINT }}
+          cache-prefix: go-build-cross
+          save: ${{ env.CI_SAVE_CACHE == 'true' }}
+
       # release.yml ships the CLI for these targets; a unix-only call in a
       # shared package otherwise only fails at tag time.
       - name: Cross-compile CLI (windows, darwin)
@@ -279,11 +315,6 @@ jobs:
         run: |
           GOOS=darwin GOARCH=arm64 go build -o /dev/null ./cmd/levelrail-agent
           GOOS=darwin GOARCH=amd64 go build -o /dev/null ./cmd/levelrail-agent
-
-      # tools/ is its own module, so the package list above never reaches it.
-      - name: Release notes generator
-        if: needs.changes.outputs.tools == 'true'
-        run: go -C tools vet ./releasenotes/ && go -C tools test ./releasenotes/
 
   # Lanes come from scripts/ci-go-plan.sh: internal/api sharded by test
   # name when it is affected, Docker-backed packages with bounded -p, the
@@ -999,7 +1030,7 @@ jobs:
   # failed or was cancelled. A skipped job had no work for this change.
   ci-required:
     name: CI required
-    needs: [changes, plan, build-vet, lint, kit, tfprovider, test-go, test-api, test-rest, web-check, web-test, install-sh, install-cli-macos, install-cli-windows, release-pacing]
+    needs: [changes, plan, build-vet, cross-compile, lint, kit, tfprovider, test-go, test-api, test-rest, web-check, web-test, install-sh, install-cli-macos, install-cli-windows, release-pacing]
     if: always()
     runs-on: ${{ vars.CI_RUNNER || 'ubuntu-latest' }}
     timeout-minutes: 3

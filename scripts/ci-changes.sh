@@ -62,6 +62,10 @@ for f in "${files[@]}"; do
 		go=true go_full=true
 		reasons+=("Go setup action changed: $f")
 		;;
+	scripts/ci-go-plan.sh)
+		go=true go_full=true planner=true
+		reasons+=("Go planner changed: $f")
+		;;
 	scripts/ci-*.sh | scripts/affected-go-packages.sh | scripts/go-test-groups.sh | scripts/ci-guards.txt | \
 		scripts/ci-heavy-packages.txt | scripts/check-coverage.sh | scripts/check-changed-file-coverage.sh | \
 		scripts/merge-coverprofiles.sh | scripts/check-lane-results.sh | scripts/check-migration-versions.sh | \
