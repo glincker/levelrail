@@ -59,6 +59,8 @@ export type AlertRuleKind =
   | 'database_disk_high'
   | 'database_connections_high'
   | 'database_down'
+  | 'backup_failed'
+  | 'app_unhealthy'
   | 'database_backup_stale'
   | 'domain_traffic_drop'
   | 'parked_domain_cert_expiry'

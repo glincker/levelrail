@@ -89,5 +89,16 @@
     "minRequestsHelp": "Skip the check when yesterday had fewer requests than this, so quiet domains do not alert.",
     "daysLabel": "Days left",
     "daysHelp": "Fires when a parked domain's certificate has fewer days left than this."
+  },
+  "emailQuick": {
+    "label": "Your email address",
+    "placeholder": "you@example.com",
+    "hint": "One address gets alerts when something is down, a backup fails or disk space runs low.",
+    "submit": "Email me about problems",
+    "submitting": "Setting up...",
+    "invalid": "Enter a valid email address",
+    "channelName": "Owner email",
+    "done": "Email alerts are on",
+    "failed": "Could not set up email alerts"
   }
 }

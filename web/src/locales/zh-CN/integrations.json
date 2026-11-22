@@ -204,6 +204,14 @@
         "label": "消息接口 URL",
         "help": "发送内容：应用名称、镜像/标签、成功或失败，失败时还包括错误信息。不会发送应用的其他任何信息。"
       },
+      "notify_url_matrix": {
+        "label": "Matrix homeserver URL",
+        "help": "Homeserver URL with room (the internal room id, starts with !) and token (the bot access token) as query parameters."
+      },
+      "notify_url_zulip": {
+        "label": "Zulip server URL",
+        "help": "Server URL with the bot email and API key as user:password, plus a stream and optional topic query parameter. Percent-encode the @ in the bot email."
+      },
       "pushover_user_key": {
         "label": "Pushover 用户密钥",
         "help": "Pushover 控制台中显示的用户密钥。"

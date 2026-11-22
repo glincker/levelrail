@@ -1,5 +1,14 @@
 {
   "missing": [
+    "alertSetup:emailQuick.channelName",
+    "alertSetup:emailQuick.done",
+    "alertSetup:emailQuick.failed",
+    "alertSetup:emailQuick.hint",
+    "alertSetup:emailQuick.invalid",
+    "alertSetup:emailQuick.label",
+    "alertSetup:emailQuick.placeholder",
+    "alertSetup:emailQuick.submit",
+    "alertSetup:emailQuick.submitting",
     "backups:restoreWizard.checkData",
     "backups:restoreWizard.checkLink",
     "backups:restoreWizard.checkOpen",

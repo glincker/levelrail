@@ -126,6 +126,8 @@ export type BrandIconName =
   | 'pushover'
   | 'lark'
   | 'gotify'
+  | 'matrix-org'
+  | 'zulip'
   | 'doppler'
   | 'infisical'
   | 'vault'
@@ -288,6 +290,8 @@ const LOADERS: Record<
   pushover: () => import('@thesvg/react/pushover-badge'),
   lark: () => import('@thesvg/react/lark-badge'),
   gotify: () => import('@thesvg/react/gotify'),
+  'matrix-org': () => import('@thesvg/react/matrix-org'),
+  zulip: () => import('@thesvg/react/zulip'),
   doppler: () => import('@thesvg/react/doppler'),
   infisical: () => import('@thesvg/react/infisical'),
   vault: () => import('@thesvg/react/vault'),

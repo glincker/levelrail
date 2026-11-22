@@ -213,6 +213,14 @@
         "label": "URL do endpoint de mensagens",
         "help": "Enviado: nome do app, imagem/tag, sucesso ou falha e, em caso de falha, a mensagem de erro. Nada mais sobre seu app."
       },
+      "notify_url_matrix": {
+        "label": "Matrix homeserver URL",
+        "help": "Homeserver URL with room (the internal room id, starts with !) and token (the bot access token) as query parameters."
+      },
+      "notify_url_zulip": {
+        "label": "Zulip server URL",
+        "help": "Server URL with the bot email and API key as user:password, plus a stream and optional topic query parameter. Percent-encode the @ in the bot email."
+      },
       "pushover_user_key": {
         "label": "User Key do Pushover",
         "help": "Sua user key, disponível no painel do Pushover."

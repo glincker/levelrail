@@ -80,7 +80,7 @@ Connects a new notification channel.
 
 Flags:
   --name string                        display name for the channel (required)
-  --kind string                        channel kind: generic, slack, discord, telegram, email, pushover, pagerduty, teams, resend, ntfy, gotify, mattermost, lark, rocketchat, opsgenie, webex, googlechat (required)
+  --kind string                        channel kind: generic, slack, discord, telegram, email, pushover, pagerduty, teams, resend, ntfy, gotify, mattermost, lark, rocketchat, opsgenie, webex, googlechat, matrix, zulip (required)
   --notify-url string                  destination (webhook URL, Telegram sendMessage URL with chat_id and an optional message_thread_id topic, email address, or PagerDuty routing key)
   --pushover-user-key string           Pushover User Key (--kind pushover only, an alternative to --notify-url)
   --pushover-api-token string          Pushover Application API Token (--kind pushover only, an alternative to --notify-url)

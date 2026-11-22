@@ -204,6 +204,14 @@
         "label": "メッセージ送信先URL",
         "help": "送信される内容は、アプリ名、イメージ/タグ、成功または失敗、失敗時のエラーメッセージのみです。アプリについてそれ以外は送信しません。"
       },
+      "notify_url_matrix": {
+        "label": "Matrix homeserver URL",
+        "help": "Homeserver URL with room (the internal room id, starts with !) and token (the bot access token) as query parameters."
+      },
+      "notify_url_zulip": {
+        "label": "Zulip server URL",
+        "help": "Server URL with the bot email and API key as user:password, plus a stream and optional topic query parameter. Percent-encode the @ in the bot email."
+      },
       "pushover_user_key": {
         "label": "Pushover ユーザーキー",
         "help": "Pushover ダッシュボードに表示されるユーザーキーです。"

@@ -161,6 +161,10 @@ func NewNotifier(client *http.Client, sender email.Sender, pushSender PushSender
 		build = notifyWebex
 	case NotifyGoogleChat:
 		build = notifyGoogleChat
+	case NotifyMatrix:
+		build = notifyMatrix
+	case NotifyZulip:
+		build = notifyZulip
 	}
 	return httpNotifier{client: client, url: r.NotifyURL, build: build}
 }

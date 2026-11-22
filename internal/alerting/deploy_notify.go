@@ -324,6 +324,8 @@ func sendDeployOutcome(ctx context.Context, client *http.Client, sender email.Se
 		return postJSON(ctx, client, t.NotifyURL, webexPayload{Markdown: deployText(t.NotifyKind, ev)})
 	case NotifyGoogleChat:
 		return postJSON(ctx, client, t.NotifyURL, googleChatPayload{Text: deployText(t.NotifyKind, ev)})
+	case NotifyMatrix, NotifyZulip:
+		return sendChatText(ctx, client, t.NotifyKind, t.NotifyURL, deployText(t.NotifyKind, ev))
 	case NotifyOpsgenie:
 		key, err := parseOpsgenieCreds(t.NotifyURL)
 		if err != nil {

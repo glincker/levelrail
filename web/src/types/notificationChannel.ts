@@ -19,6 +19,8 @@ export type NotificationChannelKind =
   | 'opsgenie'
   | 'webex'
   | 'googlechat'
+  | 'matrix'
+  | 'zulip'
   | 'webpush'
 
 export interface NotificationChannel {

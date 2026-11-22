@@ -114,6 +114,8 @@ const (
 	NotifyOpsgenie   NotifyKind = "opsgenie"
 	NotifyWebex      NotifyKind = "webex"
 	NotifyGoogleChat NotifyKind = "googlechat"
+	NotifyMatrix     NotifyKind = "matrix"
+	NotifyZulip      NotifyKind = "zulip"
 	NotifyWebpush    NotifyKind = "webpush"
 )
 

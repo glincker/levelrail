@@ -22,6 +22,8 @@ export const NOTIFICATION_CHANNEL_KIND_ORDER = [
   'resend',
   'ntfy',
   'gotify',
+  'matrix',
+  'zulip',
   'webpush',
 ] as const
 
@@ -86,6 +88,15 @@ export const CHANNEL_KIND_META: Record<
   googlechat: {
     placeholder: 'https://chat.googleapis.com/v1/spaces/.../messages?key=...',
     href: 'https://developers.google.com/workspace/chat/quickstart/webhooks',
+  },
+  matrix: {
+    placeholder: 'https://matrix.example.com/?room=!abc:example.com&token=...',
+    href: 'https://spec.matrix.org/latest/client-server-api/',
+  },
+  zulip: {
+    placeholder:
+      'https://bot%40example.com:API_KEY@zulip.example.com/?stream=ops&topic=alerts',
+    href: 'https://zulip.com/api/send-message',
   },
   // No destination URL at all: BrowserPushField renders in its place
   // below, and resolveNotifyUrl always sends "" for this kind.

@@ -51,7 +51,7 @@ func ClampReleaseNotes(s string, limit int) string {
 func releaseNotesLong(k NotifyKind) bool {
 	switch k {
 	case NotifySlack, NotifyMattermost, NotifyRocketChat, NotifyWebex,
-		NotifyGoogleChat, NotifyTeams, NotifyEmail, NotifyResend:
+		NotifyGoogleChat, NotifyTeams, NotifyEmail, NotifyResend, NotifyMatrix, NotifyZulip:
 		return true
 	}
 	return false

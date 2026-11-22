@@ -5,7 +5,7 @@ const NotificationChannel = "notification-channels"
 
 func init() {
 	webhook := []string{"slack", "discord", "telegram", "teams", "mattermost", "lark", "rocketchat", "webex", "googlechat", "generic"}
-	kinds := []string{"slack", "discord", "telegram", "teams", "mattermost", "lark", "rocketchat", "webex", "googlechat", "generic", "email", "pushover", "pagerduty", "opsgenie", "resend", "ntfy", "gotify", "webpush"}
+	kinds := []string{"slack", "discord", "telegram", "teams", "mattermost", "lark", "rocketchat", "webex", "googlechat", "generic", "email", "pushover", "pagerduty", "opsgenie", "resend", "ntfy", "gotify", "webpush", "matrix", "zulip"}
 	when := func(k ...string) []Condition { return []Condition{{Field: "kind", Equals: k}} }
 	f := func(id, key string, t Type, req bool, show []Condition, flag, doc string) Field {
 		p := "integrations:fields.notificationChannel." + id
@@ -35,6 +35,8 @@ func init() {
 		ph(f("notify_url_email", "notify_url", TypeString, true, when("email"), "", "destination email address"), "ops@example.com", ""),
 		ph(sec(f("notify_url_ntfy", "notify_url", TypeString, true, when("ntfy"), "", "ntfy topic URL")), "https://ntfy.sh/my-topic", "https://docs.ntfy.sh/publish/"),
 		ph(sec(f("notify_url_gotify", "notify_url", TypeString, true, when("gotify"), "", "Gotify message endpoint URL")), "https://gotify.example.com/message?token=...", "https://gotify.net/docs/pushmsg"),
+		ph(sec(f("notify_url_matrix", "notify_url", TypeString, true, when("matrix"), "", "Matrix homeserver URL with room (internal room id) and token (bot access token) query parameters")), "https://matrix.example.com/?room=!abc:example.com&token=...", "https://spec.matrix.org/latest/client-server-api/"),
+		ph(sec(f("notify_url_zulip", "notify_url", TypeString, true, when("zulip"), "", "Zulip server URL with the bot email and API key as user:password and a stream (optional topic) query parameter")), "https://bot%40example.com:API_KEY@zulip.example.com/?stream=ops&topic=alerts", "https://zulip.com/api/send-message"),
 		ph(sec(f("pushover_user_key", "pushover_user_key", TypeString, true, when("pushover"), "pushover-user-key", "Pushover User Key (an alternative to notify-url)")), "uQiRzpo4DXghDmr9QzzfQu27cmVRsG", ""),
 		ph(sec(f("pushover_api_token", "pushover_api_token", TypeString, true, when("pushover"), "pushover-api-token", "Pushover Application API Token (an alternative to notify-url)")), "azGDORePK8gMaC0QOYAMyEEuzJnyUi", "https://pushover.net/api#registration"),
 		ph(sec(f("pagerduty_routing_key", "pagerduty_routing_key", TypeString, true, when("pagerduty"), "pagerduty-routing-key", "PagerDuty Events API v2 Integration/Routing Key (an alternative to notify-url)")), "a1b2c3d4e5f6a1b2c3d4e5f6a1b2c3d4", "https://support.pagerduty.com/docs/services-and-integrations#events-api-v2"),

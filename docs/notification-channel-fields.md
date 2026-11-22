@@ -16,6 +16,8 @@ The dashboard form, the CLI flags and the API all read one field registry, serve
 | `notify_url` (notify_url_email) | string | yes | `kind` is email | none | destination email address |
 | `notify_url` (notify_url_ntfy) | string, write only | yes | `kind` is ntfy | none | ntfy topic URL |
 | `notify_url` (notify_url_gotify) | string, write only | yes | `kind` is gotify | none | Gotify message endpoint URL |
+| `notify_url` (notify_url_matrix) | string, write only | yes | `kind` is matrix | none | Matrix homeserver URL with room (internal room id) and token (bot access token) query parameters |
+| `notify_url` (notify_url_zulip) | string, write only | yes | `kind` is zulip | none | Zulip server URL with the bot email and API key as user:password and a stream (optional topic) query parameter |
 | `pushover_user_key` (pushover_user_key) | string, write only | yes | `kind` is pushover | `--pushover-user-key` | Pushover User Key (an alternative to notify-url) |
 | `pushover_api_token` (pushover_api_token) | string, write only | yes | `kind` is pushover | `--pushover-api-token` | Pushover Application API Token (an alternative to notify-url) |
 | `pagerduty_routing_key` (pagerduty_routing_key) | string, write only | yes | `kind` is pagerduty | `--pagerduty-routing-key` | PagerDuty Events API v2 Integration/Routing Key (an alternative to notify-url) |

@@ -238,6 +238,8 @@ func sendTextNotification(ctx context.Context, client *http.Client, sender email
 		return postJSON(ctx, client, notifyURL, webexPayload{Markdown: testText})
 	case NotifyGoogleChat:
 		return postJSON(ctx, client, notifyURL, googleChatPayload{Text: testText})
+	case NotifyMatrix, NotifyZulip:
+		return sendChatText(ctx, client, kind, notifyURL, testText)
 	case NotifyOpsgenie:
 		key, err := parseOpsgenieCreds(notifyURL)
 		if err != nil {

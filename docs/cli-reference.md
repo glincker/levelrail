@@ -1114,7 +1114,7 @@ levelrail-cli channels test <id> [flags]
 levelrail-cli channels deliveries <id> [flags]
 levelrail-cli channels quiet-hours <id> [--start HH:MM --end HH:MM [--timezone Z] | --clear]
 ```
-Valid `--kind` values: `generic`, `slack`, `discord`, `telegram`, `email`, `pushover`, `pagerduty`, `teams`, `resend`, `ntfy`, `gotify`, `mattermost`, `lark`, `rocketchat`, `opsgenie`, `webex`, `googlechat`. For `telegram`, add `&message_thread_id=N` to the sendMessage URL to post into one forum topic. `update` fully replaces a channel's configuration. `--notify-device-login` opts a channel into a link-only notice when a CLI login is waiting. `test` sends a real test message; `deliveries` lists a channel's recorded send history, newest first. See [Email notifications](/email-notifications).
+Valid `--kind` values: `generic`, `slack`, `discord`, `telegram`, `email`, `pushover`, `pagerduty`, `teams`, `resend`, `ntfy`, `gotify`, `mattermost`, `lark`, `rocketchat`, `opsgenie`, `webex`, `googlechat`, `matrix`, `zulip`. For `telegram`, add `&message_thread_id=N` to the sendMessage URL to post into one forum topic. `update` fully replaces a channel's configuration. `--notify-device-login` opts a channel into a link-only notice when a CLI login is waiting. `test` sends a real test message; `deliveries` lists a channel's recorded send history, newest first. See [Email notifications](/email-notifications).
 
 ## Connections
 
