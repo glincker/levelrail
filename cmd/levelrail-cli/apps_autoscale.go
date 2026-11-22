@@ -7,11 +7,13 @@ import (
 	"fmt"
 	"io"
 	"net/http"
+	"strconv"
 	"strings"
 	"text/tabwriter"
 	"time"
 
 	"github.com/GLINCKER/levelrail/internal/apiclient"
+	"github.com/GLINCKER/levelrail/internal/autoscale"
 )
 
 const noAutoscaleMessage = "no autoscale policy is set for this app"
@@ -35,6 +37,10 @@ set flags:
   --stabilization D           a lower count must hold this long before it is applied (default 5m)
   --max-step-up N             most replicas added at once (default 4)
   --max-step-down N           most replicas removed at once (default 1)
+  --schedule SPEC             raise the minimum in a time window, repeatable; SPEC is
+                              "DAYS START-END min=N [TIMEZONE]", e.g. "mon-fri 08:00-20:00 min=3 Europe/Berlin"
+                              (DAYS: daily, mon-fri, or a list like mon,wed,fri; replaces the saved windows)
+  --clear-schedules           remove every scheduled window
 
 While a policy is set the autoscaler owns the replica count. Manual replica
 edits are refused; clear the policy first to set replicas by hand.
@@ -64,21 +70,93 @@ type autoscaleFlags struct {
 	metric                                     *string
 	target                                     *float64
 	upCool, downCool, stabilize                *time.Duration
+	schedules                                  *multiFlag
+	clearSchedules                             *bool
+}
+
+var weekdayNames = []string{"sun", "mon", "tue", "wed", "thu", "fri", "sat"}
+
+func expandDays(spec string) ([]string, error) {
+	spec = strings.ToLower(spec)
+	if spec == "daily" || spec == "*" {
+		return nil, nil
+	}
+	index := func(n string) int {
+		for i, d := range weekdayNames {
+			if d == n {
+				return i
+			}
+		}
+		return -1
+	}
+	var out []string
+	for _, part := range strings.Split(spec, ",") {
+		lo, hi, isRange := strings.Cut(part, "-")
+		a := index(lo)
+		b := a
+		if isRange {
+			b = index(hi)
+		}
+		if a < 0 || b < 0 {
+			return nil, fmt.Errorf("%q is not a day or range like mon-fri", part)
+		}
+		for i := a; ; i = (i + 1) % 7 {
+			out = append(out, weekdayNames[i])
+			if i == b {
+				break
+			}
+		}
+	}
+	return out, nil
+}
+
+// parseScheduleSpec reads "DAYS START-END min=N [TIMEZONE]".
+func parseScheduleSpec(spec string) (autoscale.Schedule, error) {
+	var s autoscale.Schedule
+	fields := strings.Fields(spec)
+	if len(fields) < 3 || len(fields) > 4 {
+		return s, fmt.Errorf("--schedule %q: want \"DAYS START-END min=N [TIMEZONE]\"", spec)
+	}
+	days, err := expandDays(fields[0])
+	if err != nil {
+		return s, fmt.Errorf("--schedule %q: %w", spec, err)
+	}
+	start, end, ok := strings.Cut(fields[1], "-")
+	if !ok {
+		return s, fmt.Errorf("--schedule %q: the window must look like 08:00-20:00", spec)
+	}
+	n, found := strings.CutPrefix(fields[2], "min=")
+	floor, convErr := strconv.Atoi(n)
+	if !found || convErr != nil {
+		return s, fmt.Errorf("--schedule %q: the floor must look like min=3", spec)
+	}
+	s = autoscale.Schedule{Days: days, Start: start, End: end, MinReplicas: floor}
+	if len(fields) == 4 {
+		s.Timezone = fields[3]
+	}
+	if err := s.Validate(); err != nil {
+		return s, fmt.Errorf("--schedule %q: %w", spec, err)
+	}
+	return s, nil
 }
 
 func bindAutoscaleFlags(fs *flag.FlagSet) autoscaleFlags {
+	sched := &multiFlag{}
+	fs.Var(sched, "schedule", `raise the minimum in a time window: "DAYS START-END min=N [TIMEZONE]", repeatable (set)`)
 	return autoscaleFlags{
-		min:       fs.Int("min", 0, "fewest replicas (set)"),
-		max:       fs.Int("max", 0, "most replicas (set)"),
-		metric:    fs.String("metric", "", "cpu_percent, memory_percent, requests_per_replica or gauge:NAME (set)"),
-		target:    fs.Float64("target", 0, "value to hold the metric at (set)"),
-		upTol:     fs.Int("scale-up-tolerance", 0, "scale up only above target plus this percent (set)"),
-		downTol:   fs.Int("scale-down-tolerance", 0, "scale down only below target minus this percent (set)"),
-		upCool:    fs.Duration("scale-up-cooldown", 0, "wait between scale ups (set)"),
-		downCool:  fs.Duration("scale-down-cooldown", 0, "wait after any change before scaling down (set)"),
-		stabilize: fs.Duration("stabilization", 0, "a lower count must hold this long before it is applied (set)"),
-		stepUp:    fs.Int("max-step-up", 0, "most replicas added at once (set)"),
-		stepDown:  fs.Int("max-step-down", 0, "most replicas removed at once (set)"),
+		schedules:      sched,
+		clearSchedules: fs.Bool("clear-schedules", false, "remove every scheduled window (set)"),
+		min:            fs.Int("min", 0, "fewest replicas (set)"),
+		max:            fs.Int("max", 0, "most replicas (set)"),
+		metric:         fs.String("metric", "", "cpu_percent, memory_percent, requests_per_replica or gauge:NAME (set)"),
+		target:         fs.Float64("target", 0, "value to hold the metric at (set)"),
+		upTol:          fs.Int("scale-up-tolerance", 0, "scale up only above target plus this percent (set)"),
+		downTol:        fs.Int("scale-down-tolerance", 0, "scale down only below target minus this percent (set)"),
+		upCool:         fs.Duration("scale-up-cooldown", 0, "wait between scale ups (set)"),
+		downCool:       fs.Duration("scale-down-cooldown", 0, "wait after any change before scaling down (set)"),
+		stabilize:      fs.Duration("stabilization", 0, "a lower count must hold this long before it is applied (set)"),
+		stepUp:         fs.Int("max-step-up", 0, "most replicas added at once (set)"),
+		stepDown:       fs.Int("max-step-down", 0, "most replicas removed at once (set)"),
 	}
 }
 
@@ -145,6 +223,7 @@ func buildAutoscaleUpdate(ctx context.Context, client *Client, app string, fs *f
 			ScaleUpTolerancePct: cur.ScaleUpTolerancePct, ScaleDownTolerancePct: cur.ScaleDownTolerancePct,
 			ScaleUpCooldownSecs: cur.ScaleUpCooldownSecs, ScaleDownCooldownSecs: cur.ScaleDownCooldownSecs,
 			StabilizationSecs: cur.StabilizationSecs, MaxStepUp: cur.MaxStepUp, MaxStepDown: cur.MaxStepDown,
+			Schedules: cur.Schedules,
 		}
 	case errors.As(err, &apiErr) && apiErr.StatusCode == http.StatusNotFound:
 		upd.MinReplicas = 1
@@ -173,6 +252,19 @@ func buildAutoscaleUpdate(ctx context.Context, client *Client, app string, fs *f
 	if given["target"] {
 		upd.Target = *f.target
 	}
+	if given["clear-schedules"] && *f.clearSchedules {
+		upd.Schedules = nil
+	}
+	if given["schedule"] {
+		upd.Schedules = nil
+		for _, spec := range *f.schedules {
+			sc, err := parseScheduleSpec(spec)
+			if err != nil {
+				return upd, err
+			}
+			upd.Schedules = append(upd.Schedules, sc)
+		}
+	}
 	if upd.MaxReplicas == 0 || upd.Metric == "" || upd.Target == 0 {
 		return upd, errors.New("a new policy needs --max, --metric and --target")
 	}
@@ -181,6 +273,20 @@ func buildAutoscaleUpdate(ctx context.Context, client *Client, app string, fs *f
 
 func printAppAutoscale(out io.Writer, s apiclient.AppAutoscale) {
 	_, _ = fmt.Fprintf(out, "%s: %d to %d replicas on %s, target %g\n", s.App, s.MinReplicas, s.MaxReplicas, s.Metric, s.Target)
+	if s.EffectiveMin > s.MinReplicas {
+		_, _ = fmt.Fprintf(out, "  floor       %d now, raised by a schedule from the base of %d\n", s.EffectiveMin, s.MinReplicas)
+	}
+	for _, w := range s.Schedules {
+		days := "daily"
+		if len(w.Days) > 0 {
+			days = strings.Join(w.Days, ",")
+		}
+		zone := w.Timezone
+		if zone == "" {
+			zone = "UTC"
+		}
+		_, _ = fmt.Fprintf(out, "  schedule    %s %s-%s %s, minimum %d\n", days, w.Start, w.End, zone, w.MinReplicas)
+	}
 	if s.EffectiveMax < s.MaxReplicas {
 		_, _ = fmt.Fprintf(out, "  limited to  %d by the operator's global maximum\n", s.EffectiveMax)
 	}

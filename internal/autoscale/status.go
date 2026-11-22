@@ -23,6 +23,7 @@ const (
 // Status is one app's policy with its live position and condition.
 type Status struct {
 	Policy
+	EffectiveMin int        `json:"effective_min"`
 	EffectiveMax int        `json:"effective_max"`
 	Current      int        `json:"current"`
 	Desired      int        `json:"desired"`
@@ -61,7 +62,7 @@ func (c *Controller) Status(ctx context.Context, app string) (Status, error) {
 		return Status{}, fmt.Errorf("autoscale: load history: %w", err)
 	}
 	current = max(current, 1)
-	out := Status{Policy: p, EffectiveMax: p.MaxReplicas, Current: current, Desired: current}
+	out := Status{Policy: p, EffectiveMin: p.EffectiveMin(c.now()), EffectiveMax: p.MaxReplicas, Current: current, Desired: current}
 	if c.Ceiling > 0 && c.Ceiling < out.EffectiveMax {
 		out.EffectiveMax = c.Ceiling
 	}

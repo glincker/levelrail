@@ -19,6 +19,17 @@ export interface AutoscaleCondition {
   message: string
 }
 
+export type AutoscaleDay = 'mon' | 'tue' | 'wed' | 'thu' | 'fri' | 'sat' | 'sun'
+
+/** A window that raises the minimum replicas; no days means every day. */
+export interface AutoscaleScheduleWindow {
+  days?: AutoscaleDay[]
+  start: string
+  end: string
+  timezone?: string
+  min_replicas: number
+}
+
 export interface AutoscalePolicyFields {
   min_replicas: number
   max_replicas: number
@@ -31,10 +42,12 @@ export interface AutoscalePolicyFields {
   stabilization_secs: number
   max_step_up: number
   max_step_down: number
+  schedules?: AutoscaleScheduleWindow[]
 }
 
 export interface Autoscale extends AutoscalePolicyFields {
   app: string
+  effective_min: number
   effective_max: number
   current: number
   desired: number

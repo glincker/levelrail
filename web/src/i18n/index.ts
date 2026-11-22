@@ -73,6 +73,7 @@ export const NAMESPACES = [
   'backupPins',
   'alertEscalation',
   'alertRunbook',
+  'autoscaleSchedule',
   'sleepHistory',
   'forms',
   'gitBuild',

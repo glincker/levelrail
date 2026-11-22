@@ -9,6 +9,12 @@ import type {
   AutoscaleMetric,
   AutoscalePolicyFields,
 } from '../../queries/autoscale'
+import { AutoscaleSchedules } from './AutoscaleSchedules'
+import {
+  buildSchedules,
+  toScheduleDrafts,
+  type ScheduleDraft,
+} from './scheduleDrafts'
 
 const METRICS: AutoscaleMetric[] = [
   'cpu_percent',
@@ -33,6 +39,7 @@ interface Draft {
   stabilization: string
   stepUp: string
   stepDown: string
+  schedules: ScheduleDraft[]
 }
 
 const emptyAdvanced = {
@@ -43,6 +50,7 @@ const emptyAdvanced = {
   stabilization: '',
   stepUp: '',
   stepDown: '',
+  schedules: [] as ScheduleDraft[],
 }
 
 function minutes(secs: number): string {
@@ -71,6 +79,7 @@ function toDraft(policy: Autoscale | null): Draft {
     stabilization: minutes(policy.stabilization_secs),
     stepUp: String(policy.max_step_up),
     stepDown: String(policy.max_step_down),
+    schedules: toScheduleDrafts(policy.schedules),
   }
 }
 
@@ -89,7 +98,7 @@ function toSeconds(raw: string): number | null {
 
 type Build =
   | { fields: AutoscalePolicyFields }
-  | { error: 'replicas' | 'target' | 'advanced' }
+  | { error: 'replicas' | 'target' | 'advanced' | 'schedules' }
 
 function build(d: Draft): Build {
   const min = whole(d.min, 1, 1000)
@@ -118,8 +127,11 @@ function build(d: Draft): Build {
   ) {
     return { error: 'advanced' }
   }
+  const schedules = buildSchedules(d.schedules, max)
+  if (schedules === null) return { error: 'schedules' }
   return {
     fields: {
+      ...(schedules.length > 0 ? { schedules } : {}),
       min_replicas: min,
       max_replicas: max,
       metric: d.metric,
@@ -185,6 +197,7 @@ export function AutoscaleForm({
   onCancel: () => void
 }) {
   const { t } = useTranslation('autoscale')
+  const { t: tSchedule } = useTranslation('autoscaleSchedule')
   const [draft, setDraft] = useState(() => toDraft(policy))
   const [error, setError] = useState<string | null>(null)
   const set = (patch: Partial<Draft>) => setDraft((d) => ({ ...d, ...patch }))
@@ -193,7 +206,11 @@ export function AutoscaleForm({
     e.preventDefault()
     const built = build(draft)
     if ('error' in built) {
-      setError(t(`form.error.${built.error}`))
+      setError(
+        built.error === 'schedules'
+          ? tSchedule('error')
+          : t(`form.error.${built.error}`),
+      )
       return
     }
     setError(null)
@@ -318,6 +335,10 @@ export function AutoscaleForm({
           />
         </div>
       </details>
+      <AutoscaleSchedules
+        drafts={draft.schedules}
+        onChange={(schedules) => set({ schedules })}
+      />
       {shown ? (
         <Alert variant="destructive" role="alert">
           <AlertDescription>{shown}</AlertDescription>

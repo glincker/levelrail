@@ -1,0 +1,23 @@
+{
+  "title": "Scheduled minimums",
+  "help": "Raise the minimum replicas during a time window, for example on weekdays from 08:00 to 20:00. Outside every window the base minimum applies again.",
+  "add": "Add a window",
+  "remove": "Remove window {{n}}",
+  "window": "Window {{n}}",
+  "days": "Days",
+  "start": "From",
+  "end": "Until",
+  "timezone": "Time zone",
+  "timezoneHelp": "A name such as Europe/Berlin. Empty means UTC.",
+  "min": "Minimum during the window",
+  "day": {
+    "mon": "Mon",
+    "tue": "Tue",
+    "wed": "Wed",
+    "thu": "Thu",
+    "fri": "Fri",
+    "sat": "Sat",
+    "sun": "Sun"
+  },
+  "error": "Check the schedule windows: use times like 08:00, a different start and end, a known time zone, and a minimum no higher than the maximum."
+}

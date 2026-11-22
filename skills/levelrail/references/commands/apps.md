@@ -347,6 +347,10 @@ set flags:
   --stabilization D           a lower count must hold this long before it is applied (default 5m)
   --max-step-up N             most replicas added at once (default 4)
   --max-step-down N           most replicas removed at once (default 1)
+  --schedule SPEC             raise the minimum in a time window, repeatable; SPEC is
+                              "DAYS START-END min=N [TIMEZONE]", e.g. "mon-fri 08:00-20:00 min=3 Europe/Berlin"
+                              (DAYS: daily, mon-fri, or a list like mon,wed,fri; replaces the saved windows)
+  --clear-schedules           remove every scheduled window
 
 While a policy is set the autoscaler owns the replica count. Manual replica
 edits are refused; clear the policy first to set replicas by hand.
