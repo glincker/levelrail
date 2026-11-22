@@ -364,7 +364,7 @@ var Tree = map[string]*Node{
 		"cordon": nil, "uncordon": nil, "bulk": nil, "drain": nil, "workloads": nil, "set-labels": nil,
 		"health": nil, "patch-status": nil, "patch": {Subs: map[string]*Node{"preview": nil, "apply": nil, "runs": nil}}, "events": nil, "doctor": nil, "timeline": nil, "version-skew": nil, "agent-update": nil, "metrics": nil, "resource-usage": nil,
 		"capacity-forecast": nil, "thresholds": {Subs: map[string]*Node{"get": nil, "set": nil}}, "capacity": nil, "cleanup": nil,
-		"add": nil, "move": nil, "moves": nil, "drains": nil, "resources": nil, "labels": nil, "taint": nil, "zones": nil, "simulate": nil, "failure": nil, "failure-policy": {Subs: map[string]*Node{"get": nil, "set": nil}}, "lost": nil, "failure-resolve": nil, "placement": nil, "allocations": nil, "connectivity": nil,
+		"add": nil, "move": nil, "moves": nil, "drains": nil, "resources": nil, "labels": nil, "taint": nil, "zones": nil, "simulate": nil, "failure": nil, "failure-policy": {Subs: map[string]*Node{"get": nil, "set": nil}}, "lost": nil, "failure-resolve": nil, "placement": nil, "allocations": nil, "pools": nil, "connectivity": nil,
 		"mesh": nil, "rotate-key": nil, "rejoin-mesh": nil, "reenroll-token": nil, "revoke-cert": nil, "security": nil,
 		"cert":           {Subs: map[string]*Node{"renew": nil, "drill": nil}},
 		"providers":      {Subs: map[string]*Node{"list": nil, "set-credential": nil, "connect": nil, "regions": nil, "sizes": nil, "servers": nil, "test": nil, "capabilities": nil, "disconnect": nil}},

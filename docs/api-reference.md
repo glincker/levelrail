@@ -807,6 +807,9 @@ Endpoints for:
 | POST | /api/v1/apps/{name}/restore-to-node | AbilityWriteSensitive | handleAppRestoreToNode |
 | POST | /api/v1/apps/{name}/rollout/pause | AbilityDeploy | handlePauseRollout |
 | POST | /api/v1/apps/{name}/rollout/resume | AbilityDeploy | handleResumeRollout |
+| PUT | /api/v1/apps/{name}/pool | AbilityRoot | handleSetAppPool |
+| GET | /api/v1/apps/{name}/warm | AbilityRead | handleGetAppWarm |
+| PUT | /api/v1/apps/{name}/warm | AbilityRoot | handleSetAppWarm |
 | GET | /api/v1/apps/{name}/notes | AbilityRead |  |
 | PUT | /api/v1/apps/{name}/notes | AbilityWrite |  |
 
@@ -2622,6 +2625,9 @@ Routes that do not fit an existing group.
 | GET | /api/v1/recently-deleted | AbilityRead | handleListRecentlyDeleted |
 | POST | /api/v1/recently-deleted/{kind}/{name}/restore | AbilityWrite | handleRestoreRecentlyDeleted |
 | GET | /api/v1/builds/farm | AbilityRead | handleBuildFarmSummary |
+| GET | /api/v1/node-pools | AbilityRoot | handleListNodePools |
+| PUT | /api/v1/node-pools/{name} | AbilityRoot | handleSetNodePool |
+| DELETE | /api/v1/node-pools/{name} | AbilityRoot | handleDeleteNodePool |
 | POST | /mcp | Public |  |
 
 ## See also

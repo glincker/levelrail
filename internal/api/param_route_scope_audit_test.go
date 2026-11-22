@@ -420,6 +420,8 @@ var paramRouteScopeAllowlist = map[string]string{ //nolint:gosec // route names 
 	"GET /api/v1/nodes/{id}/drains":                                                         "requireAbility, handler checks scope: handleListNodeDrains",
 	"GET /api/v1/nodes/{id}/events":                                                         "requireAbility, handler checks scope: handleListNodeEvents",
 	"GET /api/v1/nodes/{id}/health":                                                         "requireAbility, handler checks scope: handleGetNodeHealth",
+	"PUT /api/v1/node-pools/{name}":                                                         "requireAbility root, instance-wide pool: handleSetNodePool",
+	"DELETE /api/v1/node-pools/{name}":                                                      "requireAbility root, instance-wide pool: handleDeleteNodePool",
 	"GET /api/v1/nodes/{id}/labels":                                                         "requireAbility, handler checks scope: handleGetNodeLabels",
 	"GET /api/v1/nodes/{id}/metrics":                                                        "requireAbility, handler checks scope: handleQueryNodeMetrics",
 	"GET /api/v1/nodes/{id}/onboarding":                                                     "requireAbility, handler checks scope: handleGetNodeOnboarding",

@@ -205,7 +205,7 @@ environments event-webhook-deliveries event-webhook-types event-webhooks export 
 firewall-rules fixes flags forgejo-app frameworks function-invocations function-kv functions git git-connections
 git-providers git-sources gitea-app github-app gitlab-app go-live gpus health-presets iam images import imports inbox incidents ingress
 instance integrations invites jobs loadbalancers local-mode log-archive log-drains logs mail maintenance mcp me mesh migration migrations
-mobile model-cache model-catalog model-endpoints models monitors network network-shares node-drains node-moves
+mobile model-cache model-catalog model-endpoints models monitors network network-shares node-drains node-moves node-pools
 node-providers node-provisions nodes notification-channels observability onboarding openapi.json organizations package-registries pages
 pipeline-runs pipelines plugin-keys plugin-marketplace plugin-panels plugins preflight previews private-networks
 project-templates projects prometheus recently-deleted registry registry-credentials registry-vendors resilience roles scheduled-maintenance scim

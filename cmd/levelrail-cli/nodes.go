@@ -139,6 +139,8 @@ func runNodes(prog string, args []string, stdout, stderr io.Writer, lookupEnv fu
 		return runNodesAllocations(prog, rest, stdout, stderr, lookupEnv)
 	case "placement":
 		return runNodesPlacement(prog, rest, stdout, stderr, lookupEnv)
+	case "pools":
+		return runNodesPools(prog, rest, stdout, stderr, lookupEnv)
 	case "connectivity":
 		return runNodesConnectivity(prog, rest, stdout, stderr, lookupEnv)
 	default:
