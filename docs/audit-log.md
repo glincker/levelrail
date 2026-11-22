@@ -23,7 +23,7 @@ levelrail-cli audit-log --since 7d --actor alice --export csv --output-file audi
 
 ## Export
 
-The Export CSV button, `GET /api/v1/audit-log?format=csv` and `--export csv` use the same filter parameters. A single API request returns at most 200 rows (the page size); when more match, the response carries the header `X-Audit-Truncated: true`. The dashboard button is labelled with that cap and exports the latest 200 matching rows. The CLI export pages with `before` until the filter is exhausted, so it writes every matching row. Use it for complete exports.
+The Export CSV button, `GET /api/v1/audit-log?format=csv` and `--export csv` use the same filter parameters. A single API request returns at most 200 rows (the page size); when more match, the response carries the header `X-Audit-Truncated: true`. The dashboard button and the CLI export both page with `before` until the filter is exhausted, so they write every matching row.
 
 ## Verify the chain
 

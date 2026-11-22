@@ -61,7 +61,9 @@
     "anyMethod": "Toute méthode",
     "actorLabel": "Filtrer par acteur",
     "actorPlaceholder": "Nom de l'acteur",
-    "exportCsv": "Exporter en CSV ({{count}} dernières lignes)"
+    "exportCsv": "Exporter en CSV (toutes les lignes)",
+    "exporting": "Export en cours...",
+    "exportFailed": "L'export a échoué. Réessayez."
   },
   "anchor": {
     "title": "Ancre d'audit",

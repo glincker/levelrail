@@ -151,6 +151,24 @@
       "started": "Rollback to {{version}} started. The dashboard reconnects when the control plane is back."
     }
   },
+  "smoke": {
+    "title": "Post-upgrade smoke check",
+    "run": "Run smoke check",
+    "running": "Checking...",
+    "error": "Smoke check could not run: {{message}}",
+    "item": {
+      "apps": "Apps are up",
+      "domains": "Domains resolve",
+      "certificates": "Certificates are valid",
+      "backups": "Backups are current"
+    },
+    "status": {
+      "pass": "pass",
+      "warn": "warning",
+      "fail": "fail",
+      "skipped": "skipped"
+    }
+  },
   "verify": {
     "title": "Verify after an upgrade or rollback",
     "description": "Runs the control plane's own health checks and reports the result. Run it once the service is back.",

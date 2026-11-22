@@ -39,7 +39,19 @@
     "forms:recipes.title",
     "gitSource:network.hideMore",
     "gitSource:network.showMore",
-    "pagesSites:dashDrop.prompt"
+    "pagesSites:dashDrop.prompt",
+    "updates:smoke.error",
+    "updates:smoke.item.apps",
+    "updates:smoke.item.backups",
+    "updates:smoke.item.certificates",
+    "updates:smoke.item.domains",
+    "updates:smoke.run",
+    "updates:smoke.running",
+    "updates:smoke.status.fail",
+    "updates:smoke.status.pass",
+    "updates:smoke.status.skipped",
+    "updates:smoke.status.warn",
+    "updates:smoke.title"
   ],
   "knownIssues": []
 }

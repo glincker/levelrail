@@ -152,6 +152,117 @@ export function auditLogExportURL(
   return `/api/v1/audit-log?${params.toString()}`
 }
 
+// parseCsv reads RFC 4180 text, quoted fields may hold commas and newlines.
+export function parseCsv(text: string): string[][] {
+  const rows: string[][] = []
+  let row: string[] = []
+  let field = ''
+  let quoted = false
+  for (let i = 0; i < text.length; i++) {
+    const c = text[i]
+    if (quoted) {
+      if (c === '"' && text[i + 1] === '"') {
+        field += '"'
+        i++
+      } else if (c === '"') {
+        quoted = false
+      } else {
+        field += c
+      }
+    } else if (c === '"') {
+      quoted = true
+    } else if (c === ',') {
+      row.push(field)
+      field = ''
+    } else if (c === '\n' || c === '\r') {
+      if (c === '\r' && text[i + 1] === '\n') i++
+      row.push(field)
+      rows.push(row)
+      row = []
+      field = ''
+    } else {
+      field += c
+    }
+  }
+  if (field !== '' || row.length > 0) {
+    row.push(field)
+    rows.push(row)
+  }
+  return rows
+}
+
+function csvCell(v: string): string {
+  return /[",\r\n]/.test(v) ? `"${v.replace(/"/g, '""')}"` : v
+}
+
+const CSV_ID_COLUMN = 0
+const CSV_TIME_COLUMN = 9
+
+// One nanosecond past a fixed-width audit timestamp, so the exclusive
+// `before` cursor re-reads rows tied with the last one (deduped by id).
+export function nextAuditCursor(createdAt: string): string | null {
+  const m = /^(.*\.)(\d{9})Z$/.exec(createdAt)
+  const head = m?.[1]
+  const frac = m?.[2]
+  if (!head || !frac) return null
+  const bumped = (BigInt(frac) + 1n).toString().padStart(9, '0')
+  if (bumped.length > 9) {
+    const t = Date.parse(head.slice(0, -1) + 'Z')
+    if (Number.isNaN(t)) return null
+    return new Date(t + 1000).toISOString().replace('.000Z', '.000000000Z')
+  }
+  return `${head}${bumped}Z`
+}
+
+// fetchAuditLogCsvAll pages the CSV export with `before` until the server
+// stops reporting X-Audit-Truncated, so the download holds every match.
+export async function fetchAuditLogCsvAll(
+  opts: Omit<AuditLogQueryOptions, 'limit' | 'before'> = {},
+): Promise<string> {
+  let before: string | undefined
+  let header: string[] | null = null
+  const seen = new Set<string>()
+  const out: string[][] = []
+  for (;;) {
+    const params = buildAuditLogParams({
+      ...opts,
+      limit: AUDIT_LOG_EXPORT_LIMIT,
+      before,
+    })
+    params.set('format', 'csv')
+    const res = await fetch(`/api/v1/audit-log?${params.toString()}`)
+    if (!res.ok) {
+      throw new ApiError(
+        res.status,
+        await readErrorMessage(res, `export audit log failed: ${res.status}`),
+      )
+    }
+    const recs = parseCsv(await res.text())
+    if (recs.length === 0) break
+    header ??= recs[0] ?? null
+    let added = 0
+    for (const r of recs.slice(1)) {
+      const id = r[CSV_ID_COLUMN]
+      if (id !== undefined && r.length > CSV_TIME_COLUMN && !seen.has(id)) {
+        seen.add(id)
+        out.push(r)
+        added++
+      }
+    }
+    const more = res.headers.get('X-Audit-Truncated') === 'true'
+    if (!more || recs.length < 2) break
+    const cursor = nextAuditCursor(
+      recs[recs.length - 1]?.[CSV_TIME_COLUMN] ?? '',
+    )
+    if (!cursor || added === 0) {
+      throw new Error('export incomplete: could not advance past a page')
+    }
+    before = cursor
+  }
+  const all = header ? [header, ...out] : out
+  return all.map((r) => r.map(csvCell).join(',')).join('\r\n') + '\r\n'
+}
+
 export function auditLogQueryOptions(before?: string, clientKind?: string) {
   return queryOptions({
     queryKey: [...auditLogKeys.list(before), clientKind ?? null] as const,
