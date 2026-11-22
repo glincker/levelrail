@@ -87,3 +87,30 @@ func TestStepCounterDedupesAndIgnoresFailures(t *testing.T) {
 		t.Fatalf("total=%d cached=%d", s.total(), s.cached)
 	}
 }
+
+func TestComputeFleetSummary(t *testing.T) {
+	now := time.Date(2026, 11, 22, 10, 30, 0, 0, time.UTC)
+	runs := []Run{
+		{Status: RunSuccess, StartedAt: now.Add(-30 * time.Minute), Duration: 90 * time.Minute, QueueWait: 10 * time.Second, CachedSteps: 3, TotalSteps: 4},
+		{Status: RunFailed, StartedAt: now.Add(-20 * time.Minute), Duration: 30 * time.Minute, QueueWait: 30 * time.Second},
+		{Status: RunCanceled, StartedAt: now.Add(-10 * time.Minute), Duration: time.Hour, QueueWait: time.Hour},
+		{Status: RunSuccess, StartedAt: now.Add(-48 * time.Hour), Duration: time.Minute},
+	}
+	s := ComputeFleetSummary(runs, now, 2)
+	if s.Builds != 2 || s.BuildsPerHour != 1 || len(s.Buckets) != 2 {
+		t.Fatalf("summary = %+v", s)
+	}
+	if s.WaitP50Sec != 20 || s.WaitP95Sec != 29 {
+		t.Fatalf("wait p50/p95 = %v/%v", s.WaitP50Sec, s.WaitP95Sec)
+	}
+	if !s.CacheKnown || s.CacheHitRatio != 0.75 {
+		t.Fatalf("cache = %v %v", s.CacheKnown, s.CacheHitRatio)
+	}
+	// Hour 10:00 holds 60m of the first build and 30m of the failed one.
+	if got := s.Buckets[1].AvgSlots; got < 1.49 || got > 1.51 || s.Buckets[0].AvgSlots != 0 {
+		t.Fatalf("bucket slots = %v %v", s.Buckets[0].AvgSlots, got)
+	}
+	if s.PeakSlots < 1.49 {
+		t.Fatalf("peak = %v", s.PeakSlots)
+	}
+}

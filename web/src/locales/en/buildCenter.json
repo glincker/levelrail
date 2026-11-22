@@ -117,5 +117,18 @@
       "bounded": "Record limit reached, the rest follows next build",
       "partial": "Stopped early, what was freed is kept"
     }
+  },
+  "farm": {
+    "title": "Build farm, last {{hours}} hours",
+    "builds": "{{count}} builds, {{perHour}} per hour",
+    "waitP50": "Queue wait p50",
+    "waitP95": "Queue wait p95",
+    "cache": "Cache hit rate",
+    "cacheUnknown": "No data",
+    "peak": "Peak slots in use",
+    "slotsOf": "{{peak}} of {{total}} per node",
+    "chart": "Slots in use per hour, {{peak}} at the peak",
+    "seconds": "{{value}} s",
+    "sizeHint": "Peak close to the slot limit or a long p95 wait means the farm needs another node or more slots."
   }
 }

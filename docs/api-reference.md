@@ -2618,6 +2618,7 @@ Routes that do not fit an existing group.
 | GET | /api/v1/alert-defaults/digest-preview | AbilityRead | handleAlertDigestPreview |
 | GET | /api/v1/recently-deleted | AbilityRead | handleListRecentlyDeleted |
 | POST | /api/v1/recently-deleted/{kind}/{name}/restore | AbilityWrite | handleRestoreRecentlyDeleted |
+| GET | /api/v1/builds/farm | AbilityRead | handleBuildFarmSummary |
 | POST | /mcp | Public |  |
 
 ## See also

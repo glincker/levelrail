@@ -10,6 +10,7 @@ import { useBuildRunners } from '../../queries/buildRunners'
 import { dismissBanner, isBannerDismissed } from '@/lib/bannerDismissal'
 import { RunnerCard } from './RunnerCard'
 import { RunnerStrip } from './RunnerStrip'
+import { FarmSummaryCard } from './FarmSummaryCard'
 
 const ADD_NODE_HINT_ID = 'deploys.add-build-node'
 
@@ -129,13 +130,16 @@ export function RunnersPanel({
           }
         />
       ) : runners.length > 0 ? (
-        <CardGrid min="md">
-          {runners.map((r) => (
-            <li key={r.id} className="flex">
-              <RunnerCard runner={r} />
-            </li>
-          ))}
-        </CardGrid>
+        <>
+          <FarmSummaryCard />
+          <CardGrid min="md">
+            {runners.map((r) => (
+              <li key={r.id} className="flex">
+                <RunnerCard runner={r} />
+              </li>
+            ))}
+          </CardGrid>
+        </>
       ) : null}
     </section>
   )

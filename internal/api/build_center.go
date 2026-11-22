@@ -482,3 +482,56 @@ func withDeployID(r *http.Request) *http.Request {
 	r.SetPathValue("deployId", r.PathValue("id"))
 	return r
 }
+
+const (
+	farmSummaryDefaultHours = 24
+	farmSummaryMaxHours     = 168
+)
+
+type farmSummaryResponse struct {
+	build.FleetSummary
+	Hours int `json:"hours"`
+	// SlotsTotal is the configured concurrent builds per node, the line to size against.
+	SlotsTotal int `json:"slots_total"`
+}
+
+// handleBuildFarmSummary handles GET /api/v1/builds/farm: builds per hour,
+// queue wait percentiles, cache hit rate and slots in use over the last hours.
+func (rt *Router) handleBuildFarmSummary(w http.ResponseWriter, r *http.Request) {
+	if !rt.buildCenterReady(w) {
+		return
+	}
+	hours := queryIntOr(r, "hours", farmSummaryDefaultHours)
+	if hours <= 0 || hours > farmSummaryMaxHours {
+		hours = farmSummaryDefaultHours
+	}
+	stored, err := rt.buildPerf.ListAllBuildRuns(r.Context(), buildCenterMaxLimit)
+	if err != nil {
+		rt.internalError(w, "api: build farm summary failed", err)
+		return
+	}
+	visible, err := rt.visibleAppNames(r)
+	if err != nil {
+		rt.internalError(w, "api: build farm summary failed", err)
+		return
+	}
+	allowed := map[string]bool{}
+	for _, n := range visible {
+		allowed[n] = true
+	}
+	runs := make([]build.Run, 0, len(stored))
+	for _, s := range stored {
+		if visible != nil && !allowed[s.App] {
+			continue
+		}
+		runs = append(runs, build.Run{
+			App: s.App, Tag: s.Tag, StartedAt: s.StartedAt,
+			Duration: time.Duration(s.DurationMS) * time.Millisecond, QueueWait: time.Duration(s.QueueWaitMS) * time.Millisecond,
+			Status: build.RunStatus(s.Status), CachedSteps: s.CachedSteps, TotalSteps: s.TotalSteps,
+		})
+	}
+	writeJSON(w, http.StatusOK, farmSummaryResponse{
+		FleetSummary: build.ComputeFleetSummary(runs, time.Now(), hours), Hours: hours,
+		SlotsTotal: rt.buildLimitsView(r.Context()).Effective.MaxConcurrent,
+	})
+}
