@@ -50,3 +50,19 @@ func TestCollectorDueAtSlowsWhenIdle(t *testing.T) {
 		t.Fatal("idle tick past idleInterval skipped, want due")
 	}
 }
+
+func TestCollectorIntervalFollowsSetting(t *testing.T) {
+	c := NewCollector(&fakeStatsSource{}, nil, 15*time.Second, nil)
+	if got := c.currentInterval(); got != 15*time.Second {
+		t.Fatalf("default interval = %v, want 15s", got)
+	}
+	live := 60 * time.Second
+	c.SetIntervalFunc(func() time.Duration { return live })
+	if got := c.currentInterval(); got != live {
+		t.Fatalf("interval = %v, want %v", got, live)
+	}
+	live = 0
+	if got := c.currentInterval(); got != 15*time.Second {
+		t.Fatalf("zero setting = %v, want the boot interval", got)
+	}
+}

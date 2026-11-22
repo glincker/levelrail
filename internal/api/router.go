@@ -220,6 +220,7 @@ type Router struct {
 	// same "this package never reads the environment directly"
 	// convention WithSessionTTL's own doc comment establishes.
 	requestLogThresholds    requestLogThresholds
+	slowRequests            slowRequestRing     // latest requests over the slow threshold, shown on the health page
 	presence                *telemetry.Presence // nil is valid: touches are no-ops
 	alertRules              AlertRules          // nil is valid: alert rule routes return 501, same shape as secrets/telemetry above
 	lb                      lbDeps              // zero value is valid: load balancer routes return 501

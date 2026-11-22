@@ -49,7 +49,9 @@ type Collector struct {
 	// presence and idleInterval slow polling while nobody watches; nil presence keeps the fixed cadence.
 	presence     *Presence
 	idleInterval time.Duration
-	now          func() time.Time
+	// intervalFn, when set, is read before every wait so a saved setting applies without a restart.
+	intervalFn func() time.Duration
+	now        func() time.Time
 
 	// prevCPU replaces a one-shot stats response's own PreCPUStats (see
 	// docker.ContainerStats.CPUPercent): a container's first sample
@@ -92,12 +94,27 @@ func (c *Collector) SetPresence(p *Presence, idle time.Duration) {
 	c.presence, c.idleInterval = p, idle
 }
 
+// SetIntervalFunc makes Run read its sampling interval from fn before each wait. Call before Run.
+func (c *Collector) SetIntervalFunc(fn func() time.Duration) { c.intervalFn = fn }
+
+func (c *Collector) currentInterval() time.Duration {
+	if c.intervalFn != nil {
+		if d := c.intervalFn(); d > 0 {
+			return d
+		}
+	}
+	return c.interval
+}
+
 // dueAt reports whether a tick should collect: always with a viewer, else only once idleInterval passed since the last run.
 func (c *Collector) dueAt(last time.Time) bool {
-	if c.presence == nil || c.idleInterval <= c.interval || c.presence.Active() {
+	every := c.currentInterval()
+	// Idle polling stays a multiple of the live interval so a slower base never idles faster.
+	idle := max(c.idleInterval, 4*every)
+	if c.presence == nil || idle <= every || c.presence.Active() {
 		return true
 	}
-	return c.now().Sub(last) >= c.idleInterval
+	return c.now().Sub(last) >= idle
 }
 
 // CollectOnce polls every target once and writes whatever succeeded.
@@ -174,15 +191,16 @@ func (c *Collector) pruneCPUCache(targets []Target) {
 // principle every reconcile.Controller already follows, applied here to
 // "what should be collected" instead of "what should be running."
 func (c *Collector) Run(ctx context.Context, targetsFunc func(context.Context) ([]Target, error)) error {
-	ticker := time.NewTicker(c.interval)
-	defer ticker.Stop()
+	timer := time.NewTimer(c.currentInterval())
+	defer timer.Stop()
 	var last time.Time
 
 	for {
 		select {
 		case <-ctx.Done():
 			return ctx.Err()
-		case <-ticker.C:
+		case <-timer.C:
+			timer.Reset(c.currentInterval())
 			if !c.dueAt(last) {
 				continue
 			}

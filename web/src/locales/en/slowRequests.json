@@ -1,0 +1,5 @@
+{
+  "title": "Slow requests over {{ms}} ms",
+  "none": "No request has crossed the slow threshold since the last start.",
+  "hint": "Change the threshold in Settings, Runtime settings (api.slow_request_threshold). It applies to the next request."
+}

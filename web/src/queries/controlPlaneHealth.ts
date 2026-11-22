@@ -162,6 +162,17 @@ export interface CPHealth {
   }
   idle_footprint?: IdleFootprint
   findings: CPHealthFinding[]
+  slow_request_threshold_ms?: number
+  slow_requests?: CPHealthSlowRequest[]
+}
+
+export interface CPHealthSlowRequest {
+  at: string
+  method: string
+  route: string
+  status: number
+  duration_ms: number
+  breakdown?: string
 }
 
 // Older servers serialize empty slices as null; the page expects arrays.
@@ -169,6 +180,7 @@ export function normalizeCPHealth(h: CPHealth): CPHealth {
   return {
     ...h,
     findings: h.findings ?? [],
+    slow_requests: h.slow_requests ?? [],
     db: { ...h.db, recent_slow: h.db?.recent_slow ?? [] },
     reconcile: h.reconcile && {
       ...h.reconcile,

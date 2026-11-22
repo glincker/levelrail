@@ -52,6 +52,12 @@ func (s *bootState) startTelemetry() {
 	collector := telemetry.NewCollector(&multiNodeStatsSource{local: client, registry: agentRegistry}, telemetryDB, metricsCollectionInterval, logger)
 	presence := telemetry.NewPresence(metricsPresenceWindow)
 	collector.SetPresence(presence, metricsIdleInterval)
+	collector.SetIntervalFunc(func() time.Duration {
+		if s.apiRouter == nil {
+			return metricsCollectionInterval
+		}
+		return s.apiRouter.RuntimeSettings().Duration(context.Background(), runtimesettings.KeyMetricsSampleInterval)
+	})
 	if s.apiRouter != nil {
 		s.apiRouter.SetPresence(presence)
 	}
