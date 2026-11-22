@@ -500,7 +500,7 @@ func TestUp_PlainDirectoryFallsBackToUpload(t *testing.T) {
 	if code != 0 {
 		t.Fatalf("exit = %d, want 0; stderr: %s", code, errb.String())
 	}
-	if !strings.Contains(errb.String(), "not connected to git") {
+	if !strings.Contains(errb.String(), "no git remote, uploading 1 files (0.0 MB), honoring .gitignore") {
 		t.Fatalf("want one line of guidance about the upload, got %q", errb.String())
 	}
 }

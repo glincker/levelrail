@@ -12,6 +12,7 @@ import (
 	"strings"
 	"time"
 
+	"github.com/GLINCKER/levelrail/internal/runtimesettings"
 	"github.com/GLINCKER/levelrail/internal/sourceupload"
 	"github.com/GLINCKER/levelrail/internal/spec"
 	"github.com/GLINCKER/levelrail/internal/store"
@@ -20,12 +21,10 @@ import (
 const (
 	uploadURLPrefix = "upload://"
 
-	envUploadMaxBytes     = "APP_UPLOAD_MAX_BYTES"
 	envUploadMaxFiles     = "APP_UPLOAD_MAX_FILES"
 	envUploadMaxExtracted = "APP_UPLOAD_MAX_EXTRACTED_BYTES"
 	envUploadRetention    = "APP_UPLOAD_RETENTION"
 
-	defaultUploadMaxBytes     int64 = 512 << 20
 	defaultUploadMaxFiles     int64 = 50000
 	defaultUploadMaxExtracted int64 = 2 << 30
 	defaultUploadRetention          = 7 * 24 * time.Hour
@@ -121,9 +120,9 @@ func (rt *Router) handleUploadSource(w http.ResponseWriter, r *http.Request) {
 		rt.internalError(w, "api: upload source: load app failed", err, slog.String("name", name))
 		return
 	}
-	limit := envInt64Positive(envUploadMaxBytes, defaultUploadMaxBytes)
+	limit := int64(rt.runtimeSettings.Limit(r.Context(), runtimesettings.KeyUploadMaxBytes))
 	if r.ContentLength > limit {
-		writeError(w, http.StatusRequestEntityTooLarge, fmt.Sprintf("upload is larger than the %d byte limit (%s)", limit, envUploadMaxBytes))
+		writeError(w, http.StatusRequestEntityTooLarge, fmt.Sprintf("upload is larger than the %d byte limit (%s)", limit, runtimesettings.KeyUploadMaxBytes))
 		return
 	}
 	rt.CleanupUploads(r.Context())

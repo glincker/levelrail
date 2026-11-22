@@ -16,6 +16,9 @@ const (
 
 func ruleOOMKilled(in Input, lines []line) *Cause {
 	f := in.Facts
+	if f.BuildFailed {
+		return nil
+	}
 	var ev []Signal
 	conf := ""
 	switch {
@@ -96,7 +99,7 @@ func ruleMissingEnv(in Input, lines []line) *Cause {
 	var ev []Signal
 	add := func(l line, name string) {
 		name = strings.ToUpper(name)
-		if seen[name] || have[name] || len(name) < 3 {
+		if seen[name] || have[name] || len(name) < 3 || (in.Facts.BuildFailed && isPublicEnvName(name)) {
 			return
 		}
 		seen[name] = true

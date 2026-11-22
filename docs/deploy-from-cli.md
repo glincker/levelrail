@@ -81,7 +81,7 @@ levelrail-cli deploy --env LOG_LEVEL=info --build-env NODE_ENV=production
 
 | Setting | Default | Where |
 | --- | --- | --- |
-| `APP_UPLOAD_MAX_BYTES` | 512 MiB (compressed) | CLI and control plane |
+| `APP_UPLOAD_MAX_BYTES` | 512 MiB (compressed) | CLI, and seeds the live `deploy.upload_max_bytes` runtime setting on the control plane |
 | `APP_UPLOAD_MAX_FILES` | 50000 files | control plane |
 | `APP_UPLOAD_MAX_EXTRACTED_BYTES` | 2 GiB after extraction | control plane |
 | `APP_UPLOAD_RETENTION` | 168h | control plane |

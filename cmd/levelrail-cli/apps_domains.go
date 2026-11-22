@@ -101,13 +101,14 @@ func runAppsDomainsChange(prog, verb string, args []string, stdout, stderr io.Wr
 	fs, tokenFlagP, apiURLFlagP, profileFlagP, jsonOutP, outputFlagP, queryFlagP := apiFlagSet(prog, label, "print the result as JSON to stdout and nothing else", stderr)
 	var envFlag, dnsFlag string
 	var replace, removeDNS, wait bool
-	var timeout time.Duration
+	var timeout, poll time.Duration
 	fs.StringVar(&envFlag, "env", "", "change this environment's domain set (id, name or kind) instead of the app's default set")
 	if verb == "add" {
 		fs.StringVar(&dnsFlag, "dns", "", "automatic DNS record: auto (default), off or preview (shows what would be created)")
 		fs.BoolVar(&replace, "replace", false, "overwrite a conflicting A/AAAA/CNAME record instead of reporting it")
 		fs.BoolVar(&wait, "wait", false, "print each go-live step and wait until the domain is live")
-		fs.DurationVar(&timeout, "timeout", defaultGoLiveWait, "how long --wait polls before exiting non-zero")
+		fs.DurationVar(&timeout, "timeout", 0, "how long --wait polls before exiting non-zero (default: runtime setting domains.wait_timeout)")
+		fs.DurationVar(&poll, "poll", 0, "how often --wait polls (default: runtime setting domains.wait_poll)")
 	} else {
 		fs.BoolVar(&removeDNS, "remove-dns", false, "also delete the DNS records Levelrail created for these domains")
 	}
@@ -155,16 +156,17 @@ func runAppsDomainsChange(prog, verb string, args []string, stdout, stderr io.Wr
 	if code != exitOK || !wait || verb != "add" {
 		return code
 	}
-	return waitAddedDomains(context.Background(), client, edited.GoLive, timeout, stdout, jsonOut)
+	ctx := context.Background()
+	return waitAddedDomains(ctx, client, edited.GoLive, resolveWaitOptions(ctx, client, prog, timeout, poll), stdout, jsonOut)
 }
 
 // waitAddedDomains polls every added domain until live; non-zero when any is
 // not live within timeout.
-func waitAddedDomains(ctx context.Context, client *Client, runs []apiclient.GoLiveResult, timeout time.Duration, stdout io.Writer, quiet bool) int {
+func waitAddedDomains(ctx context.Context, client *Client, runs []apiclient.GoLiveResult, opts waitOptions, stdout io.Writer, quiet bool) int {
 	code := exitOK
 	for _, run := range runs {
 		_, _ = fmt.Fprintf(stdout, "%s\n", run.Domain)
-		final, err := waitGoLive(ctx, client, run, timeout, stdout, quiet)
+		final, err := waitGoLive(ctx, client, run, opts, stdout, quiet)
 		if err != nil || final.State != goLiveStateLive {
 			code = exitAPIError
 		}

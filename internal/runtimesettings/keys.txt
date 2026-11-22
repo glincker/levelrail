@@ -254,6 +254,7 @@ deploy.previous_release_hold
 deploy.procfile_default_port
 deploy.receipt_approval_window
 deploy.stable_window
+deploy.upload_max_bytes
 deploy.watch_window
 deploys.coalesce_window
 deploys.registry_push_debounce
@@ -307,6 +308,8 @@ domains.rollback_window_minutes
 domains.tuning_max_stream_seconds
 domains.tuning_max_timeout_seconds
 domains.tuning_min_timeout_seconds
+domains.wait_poll
+domains.wait_timeout
 domains.www_mode
 errors.dedup_hours
 errors.dedup_max
@@ -596,6 +599,7 @@ security.protected_silence_max_days
 security.trust_loopback_forwarded_headers
 security.webhook_replay_protection
 security.webhook_replay_window
+setup.https_issuing_window_minutes
 shell.section_timeout
 sizing.cpu_margin_pct
 sizing.lookback

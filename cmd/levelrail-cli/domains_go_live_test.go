@@ -15,10 +15,9 @@ import (
 
 func fastGoLivePolling(t *testing.T) {
 	t.Helper()
-	oldSleep, oldInterval := goLiveSleep, goLivePollInterval
+	oldSleep := goLiveSleep
 	goLiveSleep = func(time.Duration) {}
-	goLivePollInterval = time.Millisecond
-	t.Cleanup(func() { goLiveSleep, goLivePollInterval = oldSleep, oldInterval })
+	t.Cleanup(func() { goLiveSleep = oldSleep })
 }
 
 // goLiveServer answers PATCH domains, then GET go-live with pending for
@@ -29,6 +28,8 @@ func goLiveServer(t *testing.T, pendingPolls int32, liveState string, patchBody 
 	return httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
 		w.Header().Set("Content-Type", "application/json")
 		switch {
+		case strings.HasPrefix(r.URL.Path, "/api/v1/settings/runtime/"):
+			http.NotFound(w, r)
 		case r.Method == http.MethodPatch && r.URL.Path == "/api/v1/apps/web/domains":
 			if patchBody != nil {
 				_ = json.NewDecoder(r.Body).Decode(patchBody)
@@ -74,7 +75,7 @@ func TestRun_AppsDomainsAddWaitReachesLive(t *testing.T) {
 		t.Errorf("request = %+v, want dns=auto replace=true add=[app.example.com]", body)
 	}
 	out := stdout.String()
-	if !strings.Contains(out, "dns app.example.com: created") || !strings.Contains(out, "live at https://app.example.com") {
+	if !strings.Contains(out, "dns app.example.com: created") || !strings.Contains(out, "https://app.example.com OK") {
 		t.Errorf("stdout = %q, want the dns result and the live url", out)
 	}
 }

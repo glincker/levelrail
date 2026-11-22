@@ -110,3 +110,18 @@ func TestApplyDiagnosisFixRoundTripsUnknownFields(t *testing.T) {
 		t.Fatal("manual fix must not apply")
 	}
 }
+
+func TestPatchAppMapStartCommand(t *testing.T) {
+	app := decodeApp(t, `{"name":"web","port":3000}`)
+	if _, err := PatchAppMap(app, []DiagnosisChange{{Field: "command", NeedsInput: true}}, map[string]string{"command": "npm run start:prod"}); err != nil {
+		t.Fatal(err)
+	}
+	cmd, _ := app["command"].([]any)
+	if len(cmd) != 3 || cmd[2] != "npm run start:prod" {
+		t.Fatalf("command = %v", app["command"])
+	}
+	stale := decodeApp(t, `{"name":"web","command":["node","x.js"]}`)
+	if _, err := PatchAppMap(stale, []DiagnosisChange{{Field: "command", NeedsInput: true}}, map[string]string{"command": "x"}); !errors.Is(err, ErrFixStale) {
+		t.Fatalf("err = %v", err)
+	}
+}

@@ -1714,6 +1714,7 @@ Levelrail ${VERSION} installed and running next to your existing proxy.
   Ingress:    http :${HTTP_PORT}, https :${HTTPS_PORT} (point your proxy at these)
   Dashboard:  127.0.0.1:${DASHBOARD_PORT} only, not exposed on the network
 
+HTTPS was not issued here: your proxy owns ports 80 and 443, so terminate TLS there.
 Open the dashboard through an SSH tunnel from your own machine:
   ssh -L ${DASHBOARD_PORT}:127.0.0.1:${DASHBOARD_PORT} root@${host}
   then browse to ${login}
@@ -1749,6 +1750,15 @@ The token file is ${DATA_DIR}/setup-token. Enter the token on the sign-in page.
 EOF
 }
 
+# best_link asks the installed binary for the best dashboard link. Empty
+# output (old binary, no database yet, any failure) keeps the plain links.
+best_link() {
+	[ -n "$token" ] && [ -n "$PUBLIC_IP" ] || return 0
+	APP_DATA_DIR="$DATA_DIR" APP_PUBLIC_HOST="$PUBLIC_IP" APP_HTTP_ADDR=":${DASHBOARD_PORT}" \
+		APP_INGRESS_HTTP_ADDR=":${HTTP_PORT}" APP_INGRESS_HTTPS_ADDR=":${HTTPS_PORT}" \
+		"$BIN_PATH" setup-token 2>/dev/null | grep -E '^(open|note|next): ' || true
+}
+
 print_summary() {
 	token=""
 	token_hidden=0
@@ -1768,6 +1778,11 @@ print_summary() {
 	log ""
 	log "Open the dashboard:"
 	if [ -n "$PUBLIC_IP" ]; then
+		best="$(best_link)"
+		if [ -n "$best" ]; then
+			printf '%s\n' "$best" | sed -e 's/^open: /  Best link:  /' -e 's/^note: /  Why not HTTPS:  /' -e 's/^next: /  Next step:  /' | while IFS= read -r l; do log "$l"; done
+			log ""
+		fi
 		# Cloud networks that open only 80 and 443 leave the dashboard port closed, so the tunnel comes first.
 		log "  Through an SSH tunnel (works even when only ports 80 and 443 are open):"
 		log "    ssh -L ${DASHBOARD_PORT}:127.0.0.1:${DASHBOARD_PORT} <user>@${PUBLIC_IP}"

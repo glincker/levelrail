@@ -10,6 +10,7 @@ import (
 	"net/http"
 	"os"
 
+	"github.com/GLINCKER/levelrail/internal/runtimesettings"
 	"github.com/GLINCKER/levelrail/internal/sourceupload"
 )
 
@@ -57,7 +58,7 @@ func (rt *Router) spoolZip(r *http.Request, limit int64, files *[]*os.File) (sou
 		return sourceupload.ZipResult{}, http.StatusBadRequest, "could not read the upload, try again"
 	}
 	if n > limit {
-		return sourceupload.ZipResult{}, http.StatusRequestEntityTooLarge, fmt.Sprintf("zip is larger than the %d byte limit (%s)", limit, envUploadMaxBytes)
+		return sourceupload.ZipResult{}, http.StatusRequestEntityTooLarge, fmt.Sprintf("zip is larger than the %d byte limit (%s)", limit, runtimesettings.KeyUploadMaxBytes)
 	}
 	tgz, err := spool.Create("drop-tgz")
 	if err != nil {

@@ -41,7 +41,7 @@ type upResult struct {
 func runUp(prog string, args []string, stdout, stderr io.Writer, lookupEnv func(string) (string, bool), stdin io.Reader) int {
 	fs, tokenP, apiURLP, profileP, jsonOutP, outputP, queryP := apiFlagSet(prog, "up", "print the result as JSON to stdout and nothing else", stderr)
 	var f upFlags
-	var dryRun, yes, allowUnpushed, noWait bool
+	var dryRun, yes, allowUnpushed, noWait, noUpload bool
 	var timeoutStr string
 	f.secrets = map[string]string{}
 	fs.StringVar(&f.name, "name", "", "app name (default: the directory name)")
@@ -62,6 +62,7 @@ func runUp(prog string, args []string, stdout, stderr io.Writer, lookupEnv func(
 	fs.Var(stringMapFlag(f.secrets), "secret", "secret env var as KEY=VALUE, repeatable, for a required secret the app spec declares")
 	fs.BoolVar(&dryRun, "dry-run", false, "print the inferred settings and the exact commands, change nothing")
 	fs.BoolVar(&allowUnpushed, "allow-unpushed", false, "build even when the remote branch lacks your local commit")
+	fs.BoolVar(&noUpload, "no-upload", false, "never upload the folder; require a git remote or --repo instead")
 	fs.BoolVar(&noWait, "no-wait", false, "return once the build is started instead of waiting for the deploy to become healthy")
 	fs.StringVar(&timeoutStr, "timeout", defaultDeployUploadWait, "stop waiting for the deploy after this long (the deploy itself keeps running)")
 	fs.BoolVar(&yes, "yes", false, "do not ask for confirmation on a terminal")
@@ -95,8 +96,14 @@ func runUp(prog string, args []string, stdout, stderr io.Writer, lookupEnv func(
 	}
 
 	gitSrc := detectGitAt(dir)
-	if f.repo == "" && gitSrc.RepoURL == "" && upUploadCompatible(f, noWait) {
-		_, _ = fmt.Fprintf(stderr, "%s is not connected to git, so its files are uploaded as they are (same as \"%s deploy %s\")\n", dir, prog, dir)
+	if decideUpSource(f, gitSrc.RepoURL != "", noUpload, noWait) == upSourceUpload {
+		if !jsonOut {
+			maxBytes, merr := uploadMaxBytes(lookupEnv)
+			if merr != nil {
+				return reportError(stdout, stderr, jsonOut, merr)
+			}
+			printUpUploadNotice(context.Background(), stderr, dir, maxBytes)
+		}
 		return runDeployUpload(prog, upAsDeployArgs(f, dir, dryRun, yes, timeoutStr, tokenFlag, apiURLFlag, profileFlag, jsonOut, of), stdout, stderr, lookupEnv, stdin)
 	}
 
@@ -480,8 +487,10 @@ It then follows the first deploy until the app is healthy and exits like
 "deploy": 0 healthy, %[6]d not healthy, %[7]d timed out. --no-wait returns
 as soon as the build is started. The branch must be pushed first.
 A directory without a git remote is uploaded instead, like "%[1]s deploy dir",
-with a one-line notice (only when none of --with, --domain, --replicas,
---strategy, --memory, --cpu, --ref, --secret or --no-wait is given).
+honoring .gitignore, after one line saying how many files and MB (only when none
+of --with, --domain, --replicas, --strategy, --memory, --cpu, --ref, --secret or
+--no-wait is given). --dry-run prints that line and uploads nothing; --no-upload
+refuses the upload and asks for a git remote or --repo.
 Running it again updates the same app and rebuilds; nothing is duplicated.
 Every value is printed with where it came from. Precedence: flag, app
 spec, detection, default.
@@ -500,6 +509,7 @@ Flags:
   --repo string       git repository URL (default: the remote "origin")
   --ref string        git branch (default: the current branch, then main)
   --secret KEY=VALUE  secret env var, repeatable, for a required secret the spec declares
+  --no-upload         never upload the folder; require a git remote or --repo
   --allow-unpushed    build even when the remote branch lacks your local commit
   --no-wait           return once the build is started instead of waiting for a healthy deploy
   --timeout string    stop waiting after this long, the deploy keeps running (default %[5]s)

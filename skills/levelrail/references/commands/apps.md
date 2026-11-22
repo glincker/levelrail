@@ -784,6 +784,7 @@ Usage:
   levelrail-cli apps deploys list <name> [flags]                          real, row-per-attempt deploy history, newest first
   levelrail-cli apps deploys attempts <name> [--fail-on-error]            alias of list; exit 7 when the latest attempt failed
   levelrail-cli apps deploys wait <name> [deploy-id] [--timeout 10m]      block until a deploy is healthy or fails, exit 7 when it does not succeed
+  levelrail-cli apps deploys explain <name> [deploy-id] [flags]          why a deploy failed, the evidence and a fix as a diff (nothing applied)
   levelrail-cli apps deploys show <name> [deploy-id] [flags]              one deploy attempt with its structured failure (newest by default)
   levelrail-cli apps deploys compare <name> --from ID [--to ID] [flags]   diff two deploy attempts, or one against the current live state
   levelrail-cli apps deploys release-notes <name> --from ID [--to ID]   markdown release notes from the commits between two deploys

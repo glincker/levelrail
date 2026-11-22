@@ -80,11 +80,15 @@ On a terminal, `up` asks for confirmation before it changes anything. Pass `--ye
 
 If a step fails partway, `up` stops and says what to run next. For example, if the database exists but connecting it fails, no build starts, and the message names `levelrail-cli apps connect` and says re-running `up` is safe.
 
+## No git remote
+
+In a folder with no git remote, `up` uploads the files instead and says so first: `no git remote, uploading 128 files (4.2 MB), honoring .gitignore`. The server then builds the uploaded copy with the Dockerfile or detected stack. `--dry-run` prints the same line and sends nothing. This works only without `--with`, `--domain`, `--replicas`, `--strategy`, `--memory`, `--cpu`, `--ref`, `--secret` and `--no-wait`; add those later with `apps` commands. The size limit is the live setting `deploy.upload_max_bytes` (see [runtime settings](/runtime-settings)).
+
 ## If this fails
 
 | Message | What to do |
 | --- | --- |
-| `no git remote "origin" found in ., so the server has nothing to build from; add one (git remote add origin URL) and push, or pass --repo URL` | Add the remote and push your branch, or pass `--repo`. |
+| `no git remote "origin" found in ., so the server has nothing to build from; add one (git remote add origin URL) and push, or pass --repo URL` | Add the remote and push your branch, or pass `--repo`. This shows when you pass `--no-upload` or a flag the upload cannot honor. |
 | `app "shop" is set up but the build did not start, re-run "levelrail-cli up" to retry` | The app exists and nothing is built yet. Run `levelrail-cli up` again. |
 | `app "shop" and database "shop-postgres" exist but connecting them failed, no build was started` | Run the `apps connect` command the message prints, or run `levelrail-cli up` again. |
 | `app "shop" is deployed but adding domain "shop.example.com" failed` | Run the `apps domains add` command the message prints. The app is already running. |
@@ -103,6 +107,7 @@ If the build itself fails, the app still exists. Run `levelrail-cli apps diagnos
 | `--repo`, `--ref` | Build a different repository or branch. |
 | `--secret KEY=VALUE` | Give a secret that your `app.yaml` declares as required. |
 | `--dry-run`, `--yes` | Print the plan only, or skip the confirmation prompt. |
+| `--no-upload` | Never upload the folder. Without a git remote, `up` stops and asks for one (or `--repo`). |
 
 For anything `up` does not cover, use the commands it expands to: [`apps create`](/cli-reference), `apps scale`, `apps connect`, `apps domains add`. An `app.yaml` in the project replaces detection, and flags still override it.
 
