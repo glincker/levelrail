@@ -141,7 +141,7 @@ export function useResetRolloutPolicy(appName: string) {
 /** POST pause holds the rolling deploy before its next wave; resume lets it continue. */
 export function useHoldRollout(appName: string) {
   const queryClient = useQueryClient()
-  return useMutation<RolloutProgress, ApiError, 'pause' | 'resume'>({
+  return useMutation<RolloutProgress, ApiError, 'pause' | 'resume' | 'abort'>({
     mutationFn: async (verb) => {
       const res = await fetch(
         `/api/v1/apps/${encodeURIComponent(appName)}/rollout/${verb}`,

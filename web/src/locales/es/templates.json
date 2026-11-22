@@ -395,5 +395,15 @@
       "cap_add": "Añade capacidades de Linux a un contenedor.",
       "net_admin": "Puede cambiar la configuración de red dentro del contenedor."
     }
+  },
+  "deployButton": {
+    "title": "Botón de despliegue",
+    "hint": "Añade un botón de despliegue con un clic para esta plantilla en un README o una página.",
+    "markdown": "Markdown",
+    "html": "HTML",
+    "card": "Etiquetas de tarjeta social",
+    "markdownLabel": "Fragmento Markdown del botón",
+    "htmlLabel": "Fragmento HTML del botón",
+    "cardLabel": "Fragmento de metaetiquetas de tarjeta social"
   }
 }

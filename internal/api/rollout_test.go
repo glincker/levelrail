@@ -73,3 +73,14 @@ func TestRolloutPauseAndResumeEndpoints(t *testing.T) {
 		t.Fatalf("second resume = %d, want 409", rec.Code)
 	}
 }
+
+func TestRolloutAbortWithoutEarlierDeploy(t *testing.T) {
+	rt, db, cookie := newSafetyRouter(t, inspectResolver{})
+	if err := db.SaveDesiredService(context.Background(), store.DesiredService{Name: "abortapp", Image: "nginx:1", Port: 80, Replicas: 3, Strategy: "rolling"}); err != nil {
+		t.Fatal(err)
+	}
+	rec := serve(rt, authedRequest(t, cookie, http.MethodPost, "/api/v1/apps/abortapp/rollout/abort", ""))
+	if rec.Code != http.StatusConflict {
+		t.Fatalf("abort with no earlier deploy = %d %s, want 409", rec.Code, rec.Body.String())
+	}
+}

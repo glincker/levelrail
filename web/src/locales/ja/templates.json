@@ -385,5 +385,15 @@
       "cap_add": "1つのコンテナに、Linuxケイパビリティを追加します。",
       "net_admin": "コンテナ内のネットワーク設定を変更できます。"
     }
+  },
+  "deployButton": {
+    "title": "デプロイボタン",
+    "hint": "このテンプレートのワンクリックデプロイボタンを README やページに追加します。",
+    "markdown": "Markdown",
+    "html": "HTML",
+    "card": "ソーシャルカードのタグ",
+    "markdownLabel": "デプロイボタンの Markdown スニペット",
+    "htmlLabel": "デプロイボタンの HTML スニペット",
+    "cardLabel": "ソーシャルカード meta タグのスニペット"
   }
 }

@@ -2,6 +2,7 @@ import {
   LayersGlassIcon,
   PauseGlassIcon,
   PlayGlassIcon,
+  RewindGlassIcon,
 } from '@thesvg/ui-react'
 import { useTranslation } from 'react-i18next'
 import { Button } from '@/components/ui/button'
@@ -30,15 +31,14 @@ export function RolloutCountsPanel({ appName }: { appName: string }) {
   if (!data || data.strategy !== 'rolling' || !p) return null
   const policy = data.policy
   const paused = p.paused === true
-  const toggle = () =>
-    hold.mutate(paused ? 'resume' : 'pause', {
-      onError: (err) =>
-        toast.add({
-          title: tHold('failed'),
-          description: err.message,
-          type: 'error',
-        }),
+  const onHoldError = (err: Error) =>
+    toast.add({
+      title: tHold('failed'),
+      description: err.message,
+      type: 'error',
     })
+  const toggle = () =>
+    hold.mutate(paused ? 'resume' : 'pause', { onError: onHoldError })
   return (
     <section
       aria-label={t('rollout.counts.title')}
@@ -77,6 +77,19 @@ export function RolloutCountsPanel({ appName }: { appName: string }) {
             <PauseGlassIcon className="size-4" aria-hidden="true" />
           )}
           {paused ? tHold('resume') : tHold('pause')}
+        </Button>
+      ) : null}
+      {p.active && paused ? (
+        <Button
+          type="button"
+          size="sm"
+          variant="ghost"
+          disabled={hold.isPending}
+          title={tHold('abortHint')}
+          onClick={() => hold.mutate('abort', { onError: onHoldError })}
+        >
+          <RewindGlassIcon className="size-4" aria-hidden="true" />
+          {tHold('abort')}
         </Button>
       ) : null}
       {policy ? (

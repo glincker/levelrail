@@ -1,0 +1,10 @@
+{
+  "pause": "Pausar rollout",
+  "resume": "Retomar rollout",
+  "pausedBadge": "Pausado",
+  "pausedHint": "Retido antes da onda {{wave}}. Retome para continuar ou aborte para reverter.",
+  "pauseHint": "Pausa antes da próxima onda; as ondas já iniciadas terminam primeiro.",
+  "failed": "Não foi possível alterar o rollout",
+  "abort": "Abortar e reverter",
+  "abortHint": "Volta ao deploy anterior bem-sucedido e libera a pausa."
+}

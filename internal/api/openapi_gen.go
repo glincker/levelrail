@@ -14,7 +14,7 @@ type openAPIRoute struct {
 	Description string
 }
 
-// openAPIRoutes holds all 2397 routes known to scripts/gen-api-reference at
+// openAPIRoutes holds all 2398 routes known to scripts/gen-api-reference at
 // generation time. Run `go run ./scripts/gen-api-reference` after changing
 // any routes*.go registration and commit the result.
 var openAPIRoutes = []openAPIRoute{
@@ -453,6 +453,7 @@ var openAPIRoutes = []openAPIRoute{
 	{Method: "DELETE", Path: "/api/v1/apps/{name}/rollout", Ability: "AbilityDeploy", Group: "Apps CRUD / Lifecycle / Deploy", Handler: "handleDeleteRollout", Description: ""},
 	{Method: "GET", Path: "/api/v1/apps/{name}/rollout", Ability: "AbilityRead", Group: "Apps CRUD / Lifecycle / Deploy", Handler: "handleGetRollout", Description: ""},
 	{Method: "PUT", Path: "/api/v1/apps/{name}/rollout", Ability: "AbilityDeploy", Group: "Apps CRUD / Lifecycle / Deploy", Handler: "handlePutRollout", Description: ""},
+	{Method: "POST", Path: "/api/v1/apps/{name}/rollout/abort", Ability: "AbilityDeploy", Group: "Apps CRUD / Lifecycle / Deploy", Handler: "handleAbortRollout", Description: ""},
 	{Method: "POST", Path: "/api/v1/apps/{name}/rollout/pause", Ability: "AbilityDeploy", Group: "Apps CRUD / Lifecycle / Deploy", Handler: "handlePauseRollout", Description: ""},
 	{Method: "POST", Path: "/api/v1/apps/{name}/rollout/resume", Ability: "AbilityDeploy", Group: "Apps CRUD / Lifecycle / Deploy", Handler: "handleResumeRollout", Description: ""},
 	{Method: "GET", Path: "/api/v1/apps/{name}/rollout/state", Ability: "AbilityRead", Group: "Apps CRUD / Lifecycle / Deploy", Handler: "handleGetRolloutState", Description: ""},

@@ -1,0 +1,10 @@
+{
+  "pause": "Rollout pausieren",
+  "resume": "Rollout fortsetzen",
+  "pausedBadge": "Pausiert",
+  "pausedHint": "Vor Welle {{wave}} angehalten. Fortsetzen oder abbrechen und zurückrollen.",
+  "pauseHint": "Pausiert vor der nächsten Welle; bereits gestartete Wellen laufen zu Ende.",
+  "failed": "Rollout konnte nicht geändert werden",
+  "abort": "Abbrechen und zurückrollen",
+  "abortHint": "Rollt auf das vorherige erfolgreiche Deploy zurück und hebt die Pause auf."
+}

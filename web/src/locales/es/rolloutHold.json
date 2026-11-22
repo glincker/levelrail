@@ -1,0 +1,10 @@
+{
+  "pause": "Pausar despliegue gradual",
+  "resume": "Reanudar despliegue gradual",
+  "pausedBadge": "En pausa",
+  "pausedHint": "Detenido antes de la oleada {{wave}}. Reanuda para continuar o aborta para revertir.",
+  "pauseHint": "Se pausa antes de la siguiente oleada; las ya iniciadas terminan primero.",
+  "failed": "No se pudo cambiar el despliegue gradual",
+  "abort": "Abortar y revertir",
+  "abortHint": "Vuelve al despliegue anterior correcto y libera la pausa."
+}

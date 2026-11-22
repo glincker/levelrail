@@ -812,6 +812,7 @@ Endpoints for:
 | PUT | /api/v1/apps/{name}/warm | AbilityRoot | handleSetAppWarm |
 | GET | /api/v1/apps/{name}/notes | AbilityRead |  |
 | PUT | /api/v1/apps/{name}/notes | AbilityWrite |  |
+| POST | /api/v1/apps/{name}/rollout/abort | AbilityDeploy | handleAbortRollout |
 
 </Accordion>
 

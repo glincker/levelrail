@@ -120,6 +120,10 @@ curl -fsSL https://levelrail.com/install.sh | sudo sh -s -- --template <id>
 
 The flag only changes the final message of the installer: it prints `<dashboard-url>/apps/new?deploy=1&template=<id>`, which the reader opens after creating the admin account. Nothing is deployed until they press Deploy. The same value can be set with `LEVELRAIL_TEMPLATE`.
 
+## Snippets from a template page
+
+Every template page has a Deploy button card with copyable Markdown, HTML and social card tags that point at `https://levelrail.com/deploy?template=<id>`. Paste the Markdown into a README, the HTML into a page, or the card tags into the page head so a shared link previews the button. The template id must be a lowercase DNS-style id (letters, digits and hyphens).
+
 ## Security
 
 - The button never carries secrets. Environment variable values are not read from a link, even if someone puts one there; only names are accepted.

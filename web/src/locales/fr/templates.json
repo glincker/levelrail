@@ -405,5 +405,15 @@
       "cap_add": "Ajoute des capacités Linux à un conteneur.",
       "net_admin": "Peut modifier les paramètres réseau dans le conteneur."
     }
+  },
+  "deployButton": {
+    "title": "Bouton de déploiement",
+    "hint": "Ajoutez à un README ou à une page un bouton de déploiement en un clic pour ce modèle.",
+    "markdown": "Markdown",
+    "html": "HTML",
+    "card": "Balises de carte sociale",
+    "markdownLabel": "Extrait Markdown du bouton",
+    "htmlLabel": "Extrait HTML du bouton",
+    "cardLabel": "Extrait des balises meta de carte sociale"
   }
 }

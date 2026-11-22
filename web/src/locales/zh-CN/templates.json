@@ -385,5 +385,15 @@
       "cap_add": "为一个容器添加 Linux capability。",
       "net_admin": "可以更改容器内的网络设置。"
     }
+  },
+  "deployButton": {
+    "title": "部署按钮",
+    "hint": "将此模板的一键部署按钮添加到 README 或页面。",
+    "markdown": "Markdown",
+    "html": "HTML",
+    "card": "社交卡片标签",
+    "markdownLabel": "部署按钮的 Markdown 代码片段",
+    "htmlLabel": "部署按钮的 HTML 代码片段",
+    "cardLabel": "社交卡片 meta 标签代码片段"
   }
 }

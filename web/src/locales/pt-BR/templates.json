@@ -405,5 +405,15 @@
       "cap_add": "Adiciona capabilities do Linux a um container.",
       "net_admin": "Pode alterar configurações de rede dentro do container."
     }
+  },
+  "deployButton": {
+    "title": "Botão de deploy",
+    "hint": "Adicione um botão de deploy de um clique para este template em um README ou página.",
+    "markdown": "Markdown",
+    "html": "HTML",
+    "card": "Tags de cartão social",
+    "markdownLabel": "Trecho Markdown do botão",
+    "htmlLabel": "Trecho HTML do botão",
+    "cardLabel": "Trecho de meta tags de cartão social"
   }
 }

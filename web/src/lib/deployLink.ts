@@ -245,3 +245,25 @@ export function buildDeployButtonUrl(
 export function deployButtonMarkdown(url: string): string {
   return `[![Deploy to Levelrail](${DEPLOY_BUTTON_BADGE})](${url})`
 }
+
+/** Deploy page URL that opens the new-app form on a catalog template; null for an invalid id. */
+export function templateDeployUrl(templateId: string): string | null {
+  if (!isValidAppName(templateId)) return null
+  return `${DEPLOY_BUTTON_PAGE}?template=${encodeURIComponent(templateId)}`
+}
+
+/** HTML snippet for pages that do not render Markdown. */
+export function deployButtonHtml(url: string): string {
+  return `<a href="${url}"><img src="${DEPLOY_BUTTON_BADGE}" alt="Deploy to Levelrail"></a>`
+}
+
+/** Open Graph and Twitter card tags so a shared link shows the deploy button as its preview. */
+export function deployButtonCardTags(url: string, title: string): string {
+  const esc = title.replace(/&/g, '&amp;').replace(/"/g, '&quot;')
+  return [
+    `<meta property="og:title" content="${esc}">`,
+    `<meta property="og:url" content="${url}">`,
+    `<meta property="og:image" content="${DEPLOY_BUTTON_BADGE}">`,
+    '<meta name="twitter:card" content="summary_large_image">',
+  ].join('\n')
+}
