@@ -117,6 +117,7 @@ build.cache_budget_reserved_mb
 build.cache_reclaim_max_records
 build.cache_reclaim_timeout
 build.cpu_percent
+build.fair_share
 build.memory_percent
 build.reuse_unchanged
 build.runner_min_disk_free_mb

@@ -282,6 +282,7 @@ These variables only seed the default of a [runtime setting](/runtime-settings).
 | `APP_BUILD_CACHE_RECLAIM_MAX_RECORDS` | [`build.cache_reclaim_max_records`](/runtime-settings#deploys) | `50` |
 | `APP_BUILD_CACHE_RECLAIM_TIMEOUT` | [`build.cache_reclaim_timeout`](/runtime-settings#deploys) | `2m` |
 | `APP_BUILD_CPU_PERCENT` | [`build.cpu_percent`](/runtime-settings#deploys) | `75` |
+| `APP_BUILD_FAIR_SHARE` | [`build.fair_share`](/runtime-settings#deploys) | `true` |
 | `APP_BUILD_MEMORY_PERCENT` | [`build.memory_percent`](/runtime-settings#deploys) | `60` |
 | `APP_BUILD_NEXT_MIN_FREE_MEMORY_MIB` | [`build.next_min_free_memory_mib`](/runtime-settings#deploys) | `2048` |
 | `APP_BUILD_PERSONAL_IN_PRODUCTION` | [`build.personal_builders_in_production`](/runtime-settings#deploys) | `false` |

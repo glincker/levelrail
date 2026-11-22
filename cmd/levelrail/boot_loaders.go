@@ -271,10 +271,17 @@ func loadBuilder(ctx context.Context, logger *slog.Logger, db *store.DB, telemet
 				o(r)
 			}
 		})
+	fairSettings := runtimesettings.New(db, os.LookupEnv)
 	limiter = build.NewLimiter(router, limitsSource,
 		build.WithMemoryGuard(memGuard, hostMemoryMB),
 		build.WithRunRecorder(api.BuildRunRecorder(db)), build.WithLimiterLogger(logger),
 		build.WithDecider(router.Decide), build.WithImageSizer(router.ImageSize),
+		build.WithFairShare(func(ctx context.Context, app string) string {
+			if svc, err := db.GetDesiredService(ctx, app); err == nil && svc != nil {
+				return svc.ProjectID
+			}
+			return ""
+		}, func(c context.Context) bool { return fairSettings.Bool(c, runtimesettings.KeyBuildFairShare) }),
 		build.WithCgroupProvisioner(build.NewCgroupProvisioner(os.Getenv(build.EnvBuildCgroupRoot))))
 	return deploy.New(limiter, db, deployOpts...), limiter, closer, nil
 }
