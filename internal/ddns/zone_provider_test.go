@@ -49,3 +49,14 @@ func TestZoneProviderRejectsBadInput(t *testing.T) {
 		t.Fatal("unknown provider accepted")
 	}
 }
+
+func TestSettingsAcceptGoDaddyPreset(t *testing.T) {
+	s := DefaultSettings(func(string) string { return "" })
+	s.Provider = ProviderGoDaddy
+	if err := s.validate(); err != nil {
+		t.Fatalf("godaddy provider rejected: %v", err)
+	}
+	if _, err := NewGoDaddy("home.example.com", "nosecret"); err == nil {
+		t.Fatal("godaddy credential without a secret accepted")
+	}
+}

@@ -369,7 +369,7 @@ func (rt *Router) deleteAppIfOrphaned(ctx context.Context, appID string) bool {
 func reservedSecretNamespace(name string) bool {
 	switch name {
 	case store.EmailSettingsSecretsKey(), sysEmailSecretsNS, store.VaultSecretsKey(), store.AIAssistantSecretsKey(),
-		store.CloudflareTunnelSecretsKey(), store.CloudflareDNSSecretsKey(), store.GoogleCloudDNSSecretsKey(), store.DNSTokenSecretsKey(dnszones.ProviderDigitalOcean), store.DNSTokenSecretsKey(dnszones.ProviderHetzner), store.DNSTokenSecretsKey(dnszones.ProviderAzure), store.DNSTokenSecretsKey(dnszones.ProviderPorkbun), store.DNSTokenSecretsKey(dnszones.ProviderDeSEC), store.DNSTokenSecretsKey(dnszones.ProviderGoDaddy),
+		store.CloudflareTunnelSecretsKey(), store.CloudflareDNSSecretsKey(), store.GoogleCloudDNSSecretsKey(), store.DNSTokenSecretsKey(dnszones.ProviderDigitalOcean), store.DNSTokenSecretsKey(dnszones.ProviderHetzner), store.DNSTokenSecretsKey(dnszones.ProviderAzure), store.DNSTokenSecretsKey(dnszones.ProviderPorkbun), store.DNSTokenSecretsKey(dnszones.ProviderDeSEC), store.DNSTokenSecretsKey(dnszones.ProviderGoDaddy), store.DNSTokenSecretsKey(dnszones.ProviderNamecheap),
 		store.RegistrySettingsSecretsKey(), store.Route53DNSSecretsKey():
 		return true
 	}

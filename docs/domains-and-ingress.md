@@ -487,7 +487,11 @@ Moving a live domain from another server? DNS-01 lets the certificate be issued 
 
 ## GoDaddy DNS
 
-GoDaddy is a token-style DNS provider next to DigitalOcean, Hetzner, Porkbun and deSEC. Store the credential as `key:secret`, an API key pair created in the GoDaddy developer portal (a production key, not an OTE test key). It lists your active domains as zones and manages records and DNS-01 challenge records. Each change replaces only the one name and type it targets, so other records stay as they are. GoDaddy rejects TTLs below 600 seconds, so smaller values are raised to 600. SRV records and creating or deleting zones are not available through this provider. Namecheap is not supported yet because its API replaces every record of a domain in one call.
+GoDaddy is a token-style DNS provider next to DigitalOcean, Hetzner, Porkbun and deSEC. Store the credential as `key:secret`, an API key pair created in the GoDaddy developer portal (a production key, not an OTE test key). It lists your active domains as zones and manages records and DNS-01 challenge records. Each change replaces only the one name and type it targets, so other records stay as they are. GoDaddy rejects TTLs below 600 seconds, so smaller values are raised to 600. SRV records and creating or deleting zones are not available through this provider.
+
+## Namecheap DNS
+
+Namecheap is a token-style DNS provider next to GoDaddy. Store the credential as `apiuser:apikey:clientip`: your Namecheap API user, its API key, and the public IP of this control plane, which must be on the API whitelist in your Namecheap account. It lists the domains of the account as zones and manages records and DNS-01 challenge records. Namecheap replaces every record of a domain in one call, so each change first reads all current records, merges the one record set and writes everything back. A change is refused when the read fails or returns no records, so a bad read can never wipe a domain. The domain must use Namecheap nameservers. SRV records and creating or deleting zones are not available through this provider. The lowest TTL is 60 seconds.
 
 ## Wildcard domains: DNS-01 providers
 

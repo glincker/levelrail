@@ -2170,7 +2170,7 @@ levelrail-cli settings ingress https enable [--email EMAIL] [--staging] [--wait 
 levelrail-cli settings ingress dns01 show|enable|disable [flags]
 levelrail-cli settings ingress cloudflare show|set --preset none|cloudflare [--confirm-weakening] [flags]
 levelrail-cli settings ddns show|enable|disable|status [flags]
-levelrail-cli settings ddns set [--provider generic|duckdns|porkbun|desec] [--domains LIST] [--target URL|TOKEN] [flags]
+levelrail-cli settings ddns set [--provider generic|duckdns|porkbun|desec|godaddy] [--domains LIST] [--target URL|TOKEN] [flags]
 levelrail-cli settings edge get [flags]
 levelrail-cli settings edge set [--trusted-proxies LIST] [--max-body SIZE] [--max-header SIZE] [--read-header-timeout DUR] [--idle-timeout DUR] [flags]
 levelrail-cli settings edge fix [flags]

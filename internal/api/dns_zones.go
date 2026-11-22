@@ -139,7 +139,7 @@ func (rt *Router) resolveRoute53ZoneProvider(ctx context.Context) (dnszones.Prov
 
 func providerNames(m map[string]dnszones.Provider) []string {
 	names := make([]string, 0, len(m))
-	for _, n := range []string{dnszones.ProviderCloudflare, dnszones.ProviderRoute53, dnszones.ProviderGoogleCloud, dnszones.ProviderDigitalOcean, dnszones.ProviderHetzner, dnszones.ProviderAzure, dnszones.ProviderPorkbun, dnszones.ProviderDeSEC, dnszones.ProviderGoDaddy} {
+	for _, n := range []string{dnszones.ProviderCloudflare, dnszones.ProviderRoute53, dnszones.ProviderGoogleCloud, dnszones.ProviderDigitalOcean, dnszones.ProviderHetzner, dnszones.ProviderAzure, dnszones.ProviderPorkbun, dnszones.ProviderDeSEC, dnszones.ProviderGoDaddy, dnszones.ProviderNamecheap} {
 		if _, ok := m[n]; ok {
 			names = append(names, n)
 		}

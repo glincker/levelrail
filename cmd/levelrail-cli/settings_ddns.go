@@ -38,7 +38,7 @@ func runSettingsDDNS(prog string, args []string, stdout, stderr io.Writer, looku
 func settingsDDNSUsage(prog string) string {
 	return fmt.Sprintf(`Usage:
   %[1]s settings ddns show [flags]
-  %[1]s settings ddns set [--provider generic|duckdns|porkbun|desec] [--domains LIST] [--target URL|TOKEN | --clear-target] [tuning flags] [flags]
+  %[1]s settings ddns set [--provider generic|duckdns|porkbun|desec|godaddy] [--domains LIST] [--target URL|TOKEN | --clear-target] [tuning flags] [flags]
   %[1]s settings ddns enable|disable [flags]
   %[1]s settings ddns status [flags]
 
@@ -46,7 +46,7 @@ Keeps a DNS record pointed at this host's public IPv4. The stored setting
 wins and applies at once, no restart; APP_DDNS_* env values are only the
 defaults used until something is stored.
 
-The target (generic: an update URL containing {ip}; duckdns and desec: the token; porkbun: apikey:secretapikey) is
+The target (generic: an update URL containing {ip}; duckdns and desec: the token; porkbun and godaddy: key:secret) is
 stored encrypted and only its host is shown. Pass --target - to read it from
 stdin, or set %[5]s, to keep it out of shell history. --clear-target removes
 the stored target; an empty --target is refused so a clear is never silent.
@@ -75,9 +75,9 @@ func runSettingsDDNSVerb(prog, verb string, args []string, stdout, stderr io.Wri
 	fs, tokenFlagP, apiURLFlagP, profileFlagP, jsonOutP, outputFlagP, queryFlagP := apiFlagSet(prog, "settings ddns "+verb, "print the result as JSON to stdout and nothing else", stderr)
 	var f ddnsFlags
 	if verb == "set" {
-		fs.StringVar(&f.provider, "provider", "", "generic, duckdns, porkbun or desec")
-		fs.StringVar(&f.domains, "domains", "", "hostnames to update, comma separated (DuckDNS names, or full hostnames for porkbun and desec)")
-		fs.StringVar(&f.target, "target", "", "update URL (generic), token (duckdns, desec) or apikey:secretapikey (porkbun), - reads stdin")
+		fs.StringVar(&f.provider, "provider", "", "generic, duckdns, porkbun, desec or godaddy")
+		fs.StringVar(&f.domains, "domains", "", "hostnames to update, comma separated (DuckDNS names, or full hostnames for porkbun, desec and godaddy)")
+		fs.StringVar(&f.target, "target", "", "update URL (generic), token (duckdns, desec) or key:secret (porkbun, godaddy), - reads stdin")
 		fs.BoolVar(&f.clearTarget, "clear-target", false, "remove the stored update target")
 		fs.StringVar(&f.probeURLs, "probe-urls", "", "comma separated public IP probe URLs")
 		fs.StringVar(&f.interval, "interval", "", "check interval, e.g. 5m")
