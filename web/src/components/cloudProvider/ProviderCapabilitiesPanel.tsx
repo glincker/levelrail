@@ -1,3 +1,4 @@
+import { isProviderConnected } from '../../lib/providerConnectionState'
 import { useTranslation } from 'react-i18next'
 import {
   CircleCheckGlassIcon,
@@ -147,6 +148,8 @@ export function ProviderCapabilitiesPanel({
   const hasProbe = !!data && data.capabilities.length > 0
   const missing = data?.capabilities.some((c) => c.state === 'missing') ?? false
 
+  // Data here reads the legacy credential, so an account-only provider has nothing to show.
+  if (!connected && isProviderConnected(resource)) return null
   let body
   if (!connected) {
     body = (

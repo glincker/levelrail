@@ -349,6 +349,10 @@
     "attention": "Prüfung nötig",
     "relogin": "Neu anmelden nötig",
     "managed": "Standard",
-    "legacyHint": "Die ältere einzelne Zugangsdaten-Variante unten bleibt aus Kompatibilitätsgründen bestehen; verwalte diesen Anbieter über seine Konten."
+    "legacyHint": "Die ältere einzelne Zugangsdaten-Variante unten bleibt aus Kompatibilitätsgründen bestehen; verwalte diesen Anbieter über seine Konten.",
+    "manageShort": "Verwalten",
+    "addAnother": "Weiteres Konto hinzufügen",
+    "verified": "Zuletzt geprüft",
+    "useCredential": "Stattdessen einzelne Zugangsdaten nutzen"
   }
 }

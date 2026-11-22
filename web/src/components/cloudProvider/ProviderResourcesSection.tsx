@@ -1,3 +1,4 @@
+import { isProviderConnected } from '../../lib/providerConnectionState'
 import { useState } from 'react'
 import { Link } from '@tanstack/react-router'
 import { useTranslation } from 'react-i18next'
@@ -80,6 +81,8 @@ export function ProviderResourcesSection({
       : null
   const totals = totalByCurrency(shown)
 
+  // Data here reads the legacy credential, so an account-only provider has nothing to show.
+  if (!connected && isProviderConnected(resource)) return null
   let body
   if (!connected) {
     body = (

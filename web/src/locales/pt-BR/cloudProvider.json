@@ -349,6 +349,10 @@
     "attention": "Requer atenção",
     "relogin": "Requer novo login",
     "managed": "Padrão",
-    "legacyHint": "A credencial única antiga abaixo é mantida por compatibilidade; gerencie este provedor pelas contas dele."
+    "legacyHint": "A credencial única antiga abaixo é mantida por compatibilidade; gerencie este provedor pelas contas dele.",
+    "manageShort": "Gerenciar",
+    "addAnother": "Adicionar outra conta",
+    "verified": "Última verificação",
+    "useCredential": "Usar uma credencial única"
   }
 }

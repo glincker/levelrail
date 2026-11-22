@@ -101,12 +101,13 @@ type nodeProviderResource struct {
 
 // nodeProviderAccount is the safe summary of one cloud account under a provider.
 type nodeProviderAccount struct {
-	ID           string `json:"id"`
-	Label        string `json:"label"`
-	Status       string `json:"status"`
-	AuthMethod   string `json:"auth_method"`
-	Region       string `json:"region,omitempty"`
-	NeedsRelogin bool   `json:"needs_relogin"`
+	ID             string     `json:"id"`
+	Label          string     `json:"label"`
+	Status         string     `json:"status"`
+	AuthMethod     string     `json:"auth_method"`
+	Region         string     `json:"region,omitempty"`
+	NeedsRelogin   bool       `json:"needs_relogin"`
+	LastVerifiedAt *time.Time `json:"last_verified_at,omitempty"`
 	// Managed marks the "<provider>-default" account mirrored from the legacy credential.
 	Managed bool `json:"managed"`
 }
@@ -211,7 +212,7 @@ func (rt *Router) attachNodeProviderAccounts(r *http.Request, out []nodeProvider
 		}
 		_ = json.Unmarshal(w.Config, &cfg)
 		out[i].Accounts = append(out[i].Accounts, nodeProviderAccount{ID: a.ID, Label: a.DisplayName, Status: a.Status,
-			AuthMethod: a.AuthMethod, Region: cfg.Region, NeedsRelogin: w.NeedsRelogin, Managed: a.ID == store.DefaultCloudAccountID(a.Provider)})
+			AuthMethod: a.AuthMethod, Region: cfg.Region, NeedsRelogin: w.NeedsRelogin, LastVerifiedAt: w.LastVerifiedAt, Managed: a.ID == store.DefaultCloudAccountID(a.Provider)})
 		if a.Status == store.CloudAccountStatusActive {
 			out[i].Connected = true
 		}

@@ -1,3 +1,4 @@
+import { isProviderConnected } from '../../lib/providerConnectionState'
 import { Link } from '@tanstack/react-router'
 import { useTranslation } from 'react-i18next'
 import { Alert, AlertDescription } from '@/components/ui/alert'
@@ -105,6 +106,8 @@ export function ProviderSpendSection({
   const failed = spend.error
   const status = failed && 'status' in failed ? failed.status : 0
 
+  // Data here reads the legacy credential, so an account-only provider has nothing to show.
+  if (!connected && isProviderConnected(resource)) return null
   let body
   if (!connected) {
     body = (

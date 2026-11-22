@@ -349,6 +349,10 @@
     "attention": "需要关注",
     "relogin": "需要重新登录",
     "managed": "默认",
-    "legacyHint": "下方较早的单一凭据为兼容而保留,请通过账户管理此提供商。"
+    "legacyHint": "下方较早的单一凭据为兼容而保留,请通过账户管理此提供商。",
+    "manageShort": "管理",
+    "addAnother": "添加其他账户",
+    "verified": "上次验证",
+    "useCredential": "改用单一凭据"
   }
 }

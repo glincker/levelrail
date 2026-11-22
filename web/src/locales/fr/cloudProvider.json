@@ -349,6 +349,10 @@
     "attention": "À vérifier",
     "relogin": "Reconnexion requise",
     "managed": "Par défaut",
-    "legacyHint": "L'ancien identifiant unique ci-dessous est conservé pour la compatibilité ; gérez ce fournisseur via ses comptes."
+    "legacyHint": "L'ancien identifiant unique ci-dessous est conservé pour la compatibilité ; gérez ce fournisseur via ses comptes.",
+    "manageShort": "Gérer",
+    "addAnother": "Ajouter un autre compte",
+    "verified": "Dernière vérification",
+    "useCredential": "Utiliser un identifiant unique"
   }
 }

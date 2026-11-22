@@ -21,6 +21,7 @@ export interface NodeProviderAccount {
   auth_method: string
   region?: string
   needs_relogin: boolean
+  last_verified_at?: string
   managed: boolean
 }
 

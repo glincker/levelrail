@@ -5,6 +5,7 @@ import { PageTemplate } from '@/components/shell/PageTemplate'
 import { PageBanner } from '../../components/PageBanner'
 import { LazyCloudProvidersDiagram } from '../../components/banners/LazyPass3Diagrams'
 import { pickStringSearch } from '../../lib/urlDialog'
+import { isProviderConnected } from '../../lib/providerConnectionState'
 import {
   nodeProviderListQueryOptions,
   useNodeProviders,
@@ -50,7 +51,7 @@ function NodeProvidersSettingsSkeleton() {
 function NodeProvidersSettingsPage() {
   const { t } = useTranslation('settings')
   const providers = useNodeProviders().data
-  const connected = providers?.some((p) => p.has_token) ?? false
+  const connected = providers?.some(isProviderConnected) ?? false
   const size = connected ? 'compact' : 'hero'
 
   return (
