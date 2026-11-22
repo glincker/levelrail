@@ -55,14 +55,14 @@ func (rt *Router) handlePutAlertDefaultsSettings(w http.ResponseWriter, r *http.
 		writeError(w, http.StatusNotImplemented, "runtime settings are not available")
 		return
 	}
-	var req struct {
+	type alertDefaultsReq struct {
 		Enabled           *bool   `json:"enabled"`
 		CrashloopRestarts *int    `json:"crashloop_restarts"`
 		ErrorRatePercent  *int    `json:"error_rate_percent"`
 		DigestSchedule    *string `json:"digest_schedule"`
 	}
-	if err := json.NewDecoder(http.MaxBytesReader(w, r.Body, 1<<10)).Decode(&req); err != nil {
-		writeError(w, http.StatusBadRequest, "body must be JSON with any of enabled, crashloop_restarts, error_rate_percent, digest_schedule")
+	req, ok := decodeJSON[alertDefaultsReq](w, r, 1<<10, decodeMessage("body must be JSON with any of enabled, crashloop_restarts, error_rate_percent, digest_schedule"))
+	if !ok {
 		return
 	}
 	ctx, actor := r.Context(), rt.eventActor(r)

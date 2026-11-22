@@ -89,22 +89,12 @@ func (rt *Router) resolveDNSZoneProviders(ctx context.Context) (map[string]dnszo
 			}
 		}
 	}
-	if rt.route53DNSCredentialResolver != nil && rt.route53DNS != nil {
-		s, err := rt.route53DNS.GetRoute53DNSSettings(ctx)
-		if err != nil {
-			return nil, fmt.Errorf("api: get route53 dns settings: %w", err)
-		}
-		if s.Enabled {
-			key := store.Route53DNSSecretsKey()
-			id, err1 := rt.route53DNSCredentialResolver.Resolve(ctx, key, store.Route53DNSAccessKeyIDEnvKey)
-			secret, err2 := rt.route53DNSCredentialResolver.Resolve(ctx, key, store.Route53DNSSecretAccessKeyEnvKey)
-			if err := errors.Join(err1, err2); err != nil {
-				return nil, fmt.Errorf("api: resolve route53 credentials: %w", err)
-			}
-			if id != "" && secret != "" {
-				out[dnszones.ProviderRoute53] = dnszones.NewRoute53(id, secret, s.Region, s.HostedZoneID)
-			}
-		}
+	r53, err := rt.resolveRoute53ZoneProvider(ctx)
+	if err != nil {
+		return nil, err
+	}
+	if r53 != nil {
+		out[dnszones.ProviderRoute53] = r53
 	}
 	key, err := rt.googleCloudDNSKey(ctx)
 	if err != nil {
@@ -118,6 +108,30 @@ func (rt *Router) resolveDNSZoneProviders(ctx context.Context) (map[string]dnszo
 		out[dnszones.ProviderGoogleCloud] = p
 	}
 	return out, nil
+}
+
+// resolveRoute53ZoneProvider is nil when Route53 is not connected.
+func (rt *Router) resolveRoute53ZoneProvider(ctx context.Context) (dnszones.Provider, error) {
+	if rt.route53DNSCredentialResolver == nil || rt.route53DNS == nil {
+		return nil, nil
+	}
+	s, err := rt.route53DNS.GetRoute53DNSSettings(ctx)
+	if err != nil {
+		return nil, fmt.Errorf("api: get route53 dns settings: %w", err)
+	}
+	if !s.Enabled {
+		return nil, nil
+	}
+	key := store.Route53DNSSecretsKey()
+	id, err1 := rt.route53DNSCredentialResolver.Resolve(ctx, key, store.Route53DNSAccessKeyIDEnvKey)
+	secret, err2 := rt.route53DNSCredentialResolver.Resolve(ctx, key, store.Route53DNSSecretAccessKeyEnvKey)
+	if err := errors.Join(err1, err2); err != nil {
+		return nil, fmt.Errorf("api: resolve route53 credentials: %w", err)
+	}
+	if id == "" || secret == "" {
+		return nil, nil
+	}
+	return dnszones.NewRoute53(id, secret, s.Region, s.HostedZoneID), nil
 }
 
 func providerNames(m map[string]dnszones.Provider) []string {
