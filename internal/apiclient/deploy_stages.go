@@ -17,6 +17,8 @@ type DeployStage struct {
 	Vertices       int        `json:"vertices"`
 	CachedVertices int        `json:"cached_vertices"`
 	LogBytes       int64      `json:"log_bytes"`
+	MissStep       string     `json:"miss_step,omitempty"`
+	MissCause      string     `json:"miss_cause,omitempty"`
 }
 
 // DeployStages is the build stage view of one deploy attempt.

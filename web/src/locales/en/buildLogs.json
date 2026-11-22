@@ -1,0 +1,20 @@
+{
+  "cacheMiss": {
+    "title": "Why the cache missed",
+    "body": "The first step to miss in the {{stage}} stage was {{step}}. {{cause}}",
+    "cause": {
+      "base_changed": "The base image changed, so every step after it rebuilt. Pin the base image digest to control when that happens.",
+      "arg_changed": "A build argument changed. Steps that read it cannot reuse the cache.",
+      "source_changed": "Files copied into the image changed. Copy only what an install needs first, then the rest after it.",
+      "copy_before_install": "An earlier COPY changed before the install ran. Copy the lockfile and manifest alone before the install step.",
+      "earlier_step_changed": "An earlier step changed, which invalidates every step after it.",
+      "step_changed": "The step itself or its inputs changed."
+    }
+  },
+  "logSearch": {
+    "allTime": "Search all time",
+    "allTimeActive": "Searching all time",
+    "backToHour": "Back to last hour",
+    "hint": "Showing the last hour for a fast first search."
+  }
+}

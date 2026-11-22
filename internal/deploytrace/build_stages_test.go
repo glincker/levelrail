@@ -111,3 +111,28 @@ func TestNilStageTrackerIsSafe(_ *testing.T) {
 	tracker.Observe(context.Background(), StageObs{Step: "x"})
 	tracker.Finish(context.Background())
 }
+
+func TestStageTrackerNamesFirstMissAndCause(t *testing.T) {
+	sink := &stageSink{}
+	tracker := NewStageTracker(New(sink, "att3", nil), func() int { return 2 })
+	ctx := context.Background()
+	tracker.Observe(ctx, StageObs{Step: "[internal] load metadata for docker.io/library/node:20", Completed: true, Cached: true})
+	tracker.Observe(ctx, StageObs{Step: "[2/5] COPY . .", Completed: true})
+	tracker.Observe(ctx, StageObs{Step: "[3/5] RUN npm ci", Completed: true})
+	tracker.Observe(ctx, StageObs{Step: "[4/5] RUN npm run build", Completed: true})
+	tracker.Finish(ctx)
+
+	by := map[string]StageView{}
+	for _, v := range StagesFromRows(sink.list()) {
+		by[v.Stage] = v
+	}
+	if v := by[StageInstall]; v.MissCause != CauseCopyBefore || v.MissStep != "[3/5] RUN npm ci" {
+		t.Errorf("install miss = %q %q", v.MissCause, v.MissStep)
+	}
+	if v := by[StageBuild]; v.MissCause != CauseSourceChanged && v.MissCause != CauseEarlierStep {
+		t.Errorf("build miss cause = %q", v.MissCause)
+	}
+	if got := MissCause("[1/5] FROM docker.io/library/node:20", StageSource, false, false); got != CauseBaseChanged {
+		t.Errorf("FROM cause = %q", got)
+	}
+}

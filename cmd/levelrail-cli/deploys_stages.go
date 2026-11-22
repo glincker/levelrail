@@ -81,6 +81,9 @@ func printDeployStagesHuman(out io.Writer, res apiclient.DeployStages) {
 		cache := "-"
 		if s.Cache != "" {
 			cache = fmt.Sprintf("%s (%d/%d)", s.Cache, s.CachedVertices, s.Vertices)
+			if s.MissStep != "" {
+				cache += fmt.Sprintf(" first miss: %s (%s)", s.MissStep, s.MissCause)
+			}
 		}
 		dur := (time.Duration(s.DurationMS) * time.Millisecond).Round(time.Millisecond).String()
 		if s.EndedAt == nil {

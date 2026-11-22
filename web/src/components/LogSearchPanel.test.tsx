@@ -1,6 +1,9 @@
 import { render, screen } from '@testing-library/react'
 import userEvent from '@testing-library/user-event'
 import { QueryClientProvider } from '@tanstack/react-query'
+import i18next from 'i18next'
+import { I18nextProvider, initReactI18next } from 'react-i18next'
+import buildLogsEn from '../locales/en/buildLogs.json'
 import { afterEach, describe, expect, it, vi } from 'vitest'
 import { LogSearchPanel } from './LogSearchPanel'
 import { LogLevelGutter } from './LogLevelChips'
@@ -32,6 +35,15 @@ const ENTRIES: LogEntry[] = [
   logEntry('hello', 'info'),
   logEntry('plain'),
 ]
+
+const buildLogsI18n = i18next.createInstance()
+void buildLogsI18n.use(initReactI18next).init({
+  lng: 'en',
+  ns: ['buildLogs'],
+  defaultNS: 'buildLogs',
+  resources: { en: { buildLogs: buildLogsEn } },
+  interpolation: { escapeValue: false },
+})
 
 afterEach(() => {
   vi.unstubAllGlobals()
@@ -128,5 +140,41 @@ describe('LogSearchPanel level filter', () => {
     expect(
       screen.getByText('Showing 2 of 5 loaded (9 in range)'),
     ).toBeInTheDocument()
+  })
+
+  it('searches the last hour first and all time on request', async () => {
+    const fetchMock = vi.fn<
+      (input: string, init?: RequestInit) => Promise<Response>
+    >(() =>
+      Promise.resolve({
+        ok: true,
+        status: 200,
+        json: () => Promise.resolve({ entries: ENTRIES, total: 5 }),
+      } as unknown as Response),
+    )
+    vi.stubGlobal('fetch', fetchMock)
+    render(
+      <QueryClientProvider client={createTestQueryClient()}>
+        <I18nextProvider i18n={buildLogsI18n}>
+          <LogSearchPanel appName="web" />
+        </I18nextProvider>
+      </QueryClientProvider>,
+    )
+    await screen.findByText('Showing 5 of 5')
+    const fromOf = (url: string) =>
+      Date.parse(new URL(url, 'http://x').searchParams.get('from') ?? '')
+    const searches = () =>
+      fetchMock.mock.calls
+        .map((c) => c[0])
+        .filter((u) => u.includes('/api/v1/apps/web/logs?'))
+    const first = searches()[0] ?? ''
+    expect(Date.now() - fromOf(first)).toBeLessThan(61 * 60 * 1000)
+
+    await userEvent.click(
+      await screen.findByRole('button', { name: 'Search all time' }),
+    )
+    await screen.findByRole('button', { name: 'Back to last hour' })
+    const last = searches().at(-1) ?? ''
+    expect(fromOf(last)).toBe(0)
   })
 })

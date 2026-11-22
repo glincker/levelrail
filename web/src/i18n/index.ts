@@ -185,6 +185,7 @@ export const NAMESPACES = [
   'cloudProvider',
   'cloudAccounts',
   'slowRequests',
+  'buildLogs',
 ] as const
 
 void i18n
