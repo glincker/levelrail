@@ -16,6 +16,8 @@ export const CHANGE_TOPIC_KEYS = {
   compose: [['compose'], ['apps', 'summary']],
   nodes: [['nodes', 'list']],
   domains: [['domains']],
+  databases: [['databases', 'list']],
+  incidents: [['incidents']],
   alerts: [],
 } as const satisfies Record<string, readonly (readonly string[])[]>
 

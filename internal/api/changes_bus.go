@@ -16,10 +16,12 @@ const (
 	changeLoadBalancers
 	changeScheduledTasks
 	changeCompose
+	changeDatabases
+	changeIncidents
 	changeTopicCount
 )
 
-var changeTopicNames = [changeTopicCount]string{"apps", "nodes", "alerts", "domains", "loadbalancers", "scheduled_tasks", "compose"}
+var changeTopicNames = [changeTopicCount]string{"apps", "nodes", "alerts", "domains", "loadbalancers", "scheduled_tasks", "compose", "databases", "incidents"}
 
 // changeEvent carries the resource name only so the stream can check read
 // access; the name never leaves the server.

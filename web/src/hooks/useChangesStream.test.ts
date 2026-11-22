@@ -17,6 +17,8 @@ import { composeKeys } from '../queries/composeStack'
 import { loadBalancerListKeys } from '../queries/loadBalancers'
 import { nodeKeys } from '../queries/nodes'
 import { domainKeys } from '../queries/domains'
+import { databaseKeys } from '../queries/databases'
+import { incidentKeys } from '../queries/incidents'
 import { alertRuleKeys } from '../queries/alerts'
 import { pollMs, setChangeStreamHealthy, topicPollMs } from '../lib/pollTier'
 
@@ -69,6 +71,8 @@ describe('useChangesStream', () => {
     expect(CHANGE_TOPIC_KEYS.compose).toContainEqual(composeKeys.all)
     expect(CHANGE_TOPIC_KEYS.nodes).toEqual([nodeKeys.list()])
     expect(CHANGE_TOPIC_KEYS.domains).toEqual([domainKeys.all])
+    expect(CHANGE_TOPIC_KEYS.databases).toEqual([databaseKeys.list()])
+    expect(CHANGE_TOPIC_KEYS.incidents).toEqual([incidentKeys.all])
   })
 
   it('invalidates compose and load balancer lists on their topics', () => {

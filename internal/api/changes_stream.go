@@ -36,9 +36,15 @@ func (rt *Router) changeFilterFor(r *http.Request) (changeFilter, error) {
 	return changeFilter{abilities: abilities, policies: policies, scope: scope}, nil
 }
 
+// topicOnly marks topics whose resources are not apps, so access cannot be
+// checked per name and only callers that read the whole topic are nudged.
+func topicOnly(t changeTopic) bool {
+	return t == changeNodes || t == changeDatabases || t == changeIncidents
+}
+
 func (f changeFilter) allows(ev changeEvent) bool {
-	if ev.topic == changeNodes {
-		return f.allowsTopic(changeNodes)
+	if topicOnly(ev.topic) {
+		return f.allowsTopic(ev.topic)
 	}
 	if f.ownerUnknown(ev) {
 		// A name with no owner row (just created elsewhere, or deleted) is only safe for an all teams caller.
@@ -50,7 +56,7 @@ func (f changeFilter) allows(ev changeEvent) bool {
 // ownerUnknown is true when team scoping applies but the owner map loaded
 // at the last refresh has no row for the app.
 func (f changeFilter) ownerUnknown(ev changeEvent) bool {
-	return ev.topic != changeNodes && f.scope.teams != nil && f.scope.appOwner[ev.name] == nil
+	return !topicOnly(ev.topic) && f.scope.teams != nil && f.scope.appOwner[ev.name] == nil
 }
 
 // allowsTopic is used for coalesced overflow, where the resource name is

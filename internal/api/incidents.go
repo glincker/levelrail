@@ -264,6 +264,7 @@ func (rt *Router) transitionIncident(w http.ResponseWriter, r *http.Request, to,
 		return
 	}
 	rt.addInternalNote(r, inc.ID, note, now)
+	rt.changes.Publish(changeIncidents, inc.ID)
 	writeJSON(w, http.StatusOK, incidentStateResource{ID: inc.ID, InternalState: to})
 }
 

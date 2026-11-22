@@ -440,6 +440,7 @@ func (rt *Router) handleCreateDatabase(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 	rt.recordCreatePlacement(r.Context(), cp, req.NodeID)
+	rt.changes.Publish(changeDatabases, req.Name)
 	rt.nudgeReconciler()
 	writeJSON(w, http.StatusCreated, req)
 }
@@ -524,6 +525,7 @@ func (rt *Router) handleDeleteDatabase(w http.ResponseWriter, r *http.Request) {
 	if !purge {
 		rt.rememberDeleted(context.WithoutCancel(r.Context()), r, store.RecentlyDeletedDatabase, name, existing, rt.lastBackupRef(r.Context(), name))
 	}
+	rt.changes.Publish(changeDatabases, name)
 	rt.nudgeReconciler()
 	if terr := rt.runDatabaseTeardown(r.Context(), name, existing.NodeID, purge); terr != nil {
 		writeJSON(w, http.StatusAccepted, map[string]string{
