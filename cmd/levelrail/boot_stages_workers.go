@@ -641,6 +641,7 @@ func (s *bootState) serve() error {
 	rs, rsCtx := s.apiRouter.RuntimeSettings(), context.Background()
 	engine.SetBootPasses(bootPassDelays(logger, rs.List(rsCtx, runtimesettings.KeyBootRechecks)), rs.Duration(rsCtx, runtimesettings.KeyBootEventRecheck))
 	engine.SetResyncSource(resyncFromSettings(rsCtx, rs))
+	engine.SetEventDrivenSource(func() bool { return rs.Bool(rsCtx, runtimesettings.KeyReconcileEventDriven) })
 	engineErr := engine.Run(ctx, events, resyncInterval)
 
 	drainCtx, drainCancel := context.WithTimeout(context.Background(), envDurationOr(logger, shutdownDrainEnv, defaultShutdownDrain))

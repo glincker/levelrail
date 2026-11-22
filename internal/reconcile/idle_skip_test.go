@@ -53,3 +53,25 @@ func TestEventDrivenSkipsQuietAppsOnly(t *testing.T) {
 		t.Fatalf("full resync pass: web=%d api=%d, want 4 and 3", web.n.Load(), api.n.Load())
 	}
 }
+
+func TestEventDrivenSettingAppliesLive(t *testing.T) {
+	web := &settledCtl{name: "application/web"}
+	e := NewEngine(testLogger())
+	e.SetSource(func(context.Context) ([]Controller, error) { return []Controller{web}, nil })
+	e.SetKeyed(func(n string) bool { return strings.HasPrefix(n, "application/") })
+	var on atomic.Bool
+	on.Store(true)
+	e.SetEventDrivenSource(on.Load)
+	ctx := context.Background()
+
+	e.ReconcileAll(ctx)
+	e.ReconcileAll(ctx)
+	if web.n.Load() != 1 {
+		t.Fatalf("setting on: web=%d, want 1", web.n.Load())
+	}
+	on.Store(false)
+	e.ReconcileAll(ctx)
+	if web.n.Load() != 2 {
+		t.Fatalf("setting off must run a full pass: web=%d, want 2", web.n.Load())
+	}
+}

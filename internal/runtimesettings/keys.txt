@@ -563,6 +563,7 @@ quota.default_max_cpu
 quota.default_max_databases
 quota.default_max_memory_mb
 quota.default_max_previews
+reconcile.event_driven
 reconcile.resync_seconds
 registry.dockerhub.limit_warn_percent
 registry.dockerhub.limits_cache_seconds

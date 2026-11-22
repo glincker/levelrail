@@ -23,7 +23,18 @@ type dirtySet struct {
 // SetEventDriven makes a pass skip each per-service controller that settled,
 // saw no Docker event, no nudge and no requeue since its last run, and ran
 // within the full resync window. Call it before Run.
-func (e *Engine) SetEventDriven(on bool) { e.eventDriven = on }
+func (e *Engine) SetEventDriven(on bool) { e.eventDriven.Store(on) }
+
+// SetEventDrivenSource makes every pass re-read the on/off choice, so flipping
+// the runtime setting applies live. Off means a full pass, as before.
+func (e *Engine) SetEventDrivenSource(f func() bool) { e.eventDrivenSource = f }
+
+func (e *Engine) eventDrivenOn() bool {
+	if e.eventDrivenSource != nil {
+		return e.eventDrivenSource()
+	}
+	return e.eventDriven.Load()
+}
 
 func (e *Engine) markAllDirty() {
 	e.dmu.Lock()
@@ -63,8 +74,8 @@ func (e *Engine) takeDirty() dirtySet {
 }
 
 // idleSkippable reports whether c may be left alone this pass.
-func (e *Engine) idleSkippable(c Controller, d dirtySet) bool {
-	if !e.eventDriven || d.all || e.keyed == nil {
+func (e *Engine) idleSkippable(c Controller, d dirtySet, on bool) bool {
+	if !on || d.all || e.keyed == nil {
 		return false
 	}
 	name := c.Name()

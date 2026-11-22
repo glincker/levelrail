@@ -104,10 +104,11 @@ type Engine struct {
 	qmu        sync.Mutex
 	queue      *keyQueue
 
-	eventDriven bool
-	dmu         sync.Mutex
-	dirty       dirtySet
-	idle        map[string]idleState
+	eventDriven       atomic.Bool
+	eventDrivenSource func() bool
+	dmu               sync.Mutex
+	dirty             dirtySet
+	idle              map[string]idleState
 }
 
 // Source dynamically supplies the current set of controllers to reconcile,
@@ -325,10 +326,11 @@ func (e *Engine) ReconcileAll(ctx context.Context) {
 		return
 	}
 	dirty := e.takeDirty()
+	eventDriven := e.eventDrivenOn()
 	n += len(dynamic)
 	for _, c := range dynamic {
 		live[c.Name()] = struct{}{}
-		if e.idleSkippable(c, dirty) {
+		if e.idleSkippable(c, dirty, eventDriven) {
 			continue
 		}
 		if e.concurrent(c.Name()) {
