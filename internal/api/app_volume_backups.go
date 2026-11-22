@@ -118,6 +118,7 @@ func (rt *Router) handleListVolumeBackupHistory(w http.ResponseWriter, r *http.R
 		}
 		out = append(out, res)
 	}
+	rt.attachBackupPins(r.Context(), out)
 	writeJSON(w, http.StatusOK, out)
 }
 

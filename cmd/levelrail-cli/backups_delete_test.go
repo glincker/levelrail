@@ -70,3 +70,20 @@ func TestRun_BackupsDelete_Help(t *testing.T) {
 		t.Errorf("stderr = %q, want usage text", stderr)
 	}
 }
+
+func TestRun_BackupsPinAndUnpin(t *testing.T) {
+	srv, gotPath, gotMethod := newNoContentEchoServer(t)
+	defer srv.Close()
+
+	stdout, _ := runCLIExpectOK(t, []string{"backups", "pin", "mydb", "bkh_1", "--api-url", srv.URL})
+	if *gotMethod != http.MethodPut || *gotPath != "/api/v1/databases/mydb/backups/bkh_1/pin" {
+		t.Errorf("pin request = %s %s", *gotMethod, *gotPath)
+	}
+	if !strings.Contains(stdout, "pinned") {
+		t.Errorf("stdout = %q, want a pinned confirmation", stdout)
+	}
+	runCLIExpectOK(t, []string{"backups", "unpin", "mydb", "bkh_1", "--api-url", srv.URL})
+	if *gotMethod != http.MethodDelete {
+		t.Errorf("unpin method = %s, want DELETE", *gotMethod)
+	}
+}

@@ -1215,6 +1215,7 @@ type BackupHistoryResource struct {
 	FinishedAt     string `json:"finished_at,omitempty"`
 	ChecksumSHA256 string `json:"checksum_sha256,omitempty"`
 	Label          string `json:"label,omitempty"`
+	Pinned         bool   `json:"pinned,omitempty"`
 }
 
 // BackupVerificationResource mirrors internal/api's

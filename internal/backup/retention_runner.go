@@ -16,6 +16,11 @@ type GFSStore interface {
 	DeleteBackupHistory(ctx context.Context, id string) error
 }
 
+// pinReader is optional on the GFS store so a fake need not implement it.
+type pinReader interface {
+	PinnedBackups(ctx context.Context, ids []string) (map[string]bool, error)
+}
+
 // pruneGFS removes the succeeded backups of one volume that its daily,
 // weekly and monthly policy no longer wants, objects first and rows after, so
 // a failed object delete leaves a row the next run retries.
@@ -37,9 +42,24 @@ func (s *Scheduler) pruneGFS(ctx context.Context, v store.ServiceVolumeBackupCon
 		s.log().Error("backup: scheduled volume retention: list backups failed", slog.String("service_volume", label), slog.String("error", err.Error()))
 		return
 	}
+	pinned := map[string]bool{}
+	if pr, ok := s.GFS.(pinReader); ok {
+		ids := make([]string, len(rows))
+		for i, h := range rows {
+			ids[i] = h.ID
+		}
+		if pinned, err = pr.PinnedBackups(ctx, ids); err != nil {
+			// Never prune when pins are unreadable: a pinned backup must not be lost to a read error.
+			s.log().Error("backup: scheduled volume retention: read pins failed", slog.String("service_volume", label), slog.String("error", err.Error()))
+			return
+		}
+	}
 	items := make([]RetentionItem, 0, len(rows))
 	byID := make(map[string]store.BackupHistory, len(rows))
 	for _, h := range rows {
+		if pinned[h.ID] {
+			continue
+		}
 		at, perr := time.Parse(time.RFC3339, h.StartedAt)
 		if perr != nil {
 			s.log().Warn("backup: scheduled volume retention: skipping backup with unreadable start time",

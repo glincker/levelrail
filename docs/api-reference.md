@@ -1515,6 +1515,8 @@ Endpoints for:
 | POST | /api/v1/databases/{name}/backup-schedule/pause | AbilityWriteSensitive | handlePauseBackupSchedule |
 | POST | /api/v1/databases/{name}/backup-schedule/resume | AbilityWriteSensitive | handleResumeBackupSchedule |
 | POST | /api/v1/backups/drill | AbilityWriteSensitive | handleBackupDrillLatest |
+| PUT | /api/v1/databases/{name}/backups/{historyId}/pin | AbilityWriteSensitive | handlePinBackup |
+| DELETE | /api/v1/databases/{name}/backups/{historyId}/pin | AbilityWriteSensitive | handleUnpinBackup |
 
 ## App Volume Backups / Restore
 
@@ -1552,6 +1554,8 @@ Endpoints for:
 | POST | /api/v1/apps/{name}/volumes/{volume}/backup-schedule/pause | AbilityWriteSensitive | handlePauseVolumeBackupSchedule |
 | POST | /api/v1/apps/{name}/volumes/{volume}/backup-schedule/resume | AbilityWriteSensitive | handleResumeVolumeBackupSchedule |
 | GET | /api/v1/apps/{name}/volumes/{volume}/size-history | AbilityRead | handleVolumeSizeHistory |
+| PUT | /api/v1/apps/{name}/volumes/{volume}/backups/{historyId}/pin | AbilityWriteSensitive | handlePinVolumeBackup |
+| DELETE | /api/v1/apps/{name}/volumes/{volume}/backups/{historyId}/pin | AbilityWriteSensitive | handleUnpinVolumeBackup |
 
 ## App Storage / Database Attach
 

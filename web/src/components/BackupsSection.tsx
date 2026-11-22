@@ -32,6 +32,7 @@ import {
 } from '../queries/backupHistory'
 import { RestoreBackupDialog } from './RestoreBackupDialog'
 import { DeleteBackupDialog } from './DeleteBackupDialog'
+import { PinBackupButton } from './PinBackupButton'
 import { RestoreHistoryTable } from './RestoreHistoryTable'
 import { CloneRestoreDialog } from './CloneRestoreDialog'
 import { CloneRestoreHistoryTable } from './CloneRestoreHistoryTable'
@@ -400,7 +401,12 @@ export function BackupHistoryTableView({
         renderActions={(record) => (
           <div className="flex flex-wrap items-center justify-end gap-2">
             {record.status === 'succeeded' ? renderActions(record) : null}
-            {record.status !== 'running' ? renderDeleteAction(record) : null}
+            {record.status === 'succeeded' ? (
+              <PinBackupButton record={record} />
+            ) : null}
+            {record.status !== 'running' && !record.pinned
+              ? renderDeleteAction(record)
+              : null}
           </div>
         )}
       />

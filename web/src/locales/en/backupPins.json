@@ -1,0 +1,10 @@
+{
+  "pin": "Keep forever",
+  "unpin": "Release",
+  "pinHint": "Pinned backups are never pruned or deleted",
+  "unpinHint": "Pinned: retention and delete skip this backup",
+  "pinnedToast": "Backup pinned. Retention will never remove it.",
+  "unpinnedToast": "Backup unpinned. Retention applies to it again.",
+  "pinFailed": "Could not pin the backup.",
+  "unpinFailed": "Could not unpin the backup."
+}

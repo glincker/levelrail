@@ -36,6 +36,8 @@ func (rt *Router) registerBackupRoutes(mux *http.ServeMux) {
 	// AbilityRoot tier restore below uses, since nothing here touches a
 	// live database's own data. See handleDeleteBackup's own doc comment.
 	mux.HandleFunc("DELETE /api/v1/databases/{name}/backups/{historyId}", rt.requireAbilityForResource(AbilityWriteSensitive, databaseResourceFromPath, rt.handleDeleteBackup))
+	mux.HandleFunc("PUT /api/v1/databases/{name}/backups/{historyId}/pin", rt.requireAbilityForResource(AbilityWriteSensitive, databaseResourceFromPath, rt.handlePinBackup))
+	mux.HandleFunc("DELETE /api/v1/databases/{name}/backups/{historyId}/pin", rt.requireAbilityForResource(AbilityWriteSensitive, databaseResourceFromPath, rt.handleUnpinBackup))
 
 	// Backup verification: re-download a succeeded backup and confirm it
 	// is still intact (checksum, size, and a lightweight structural
@@ -119,6 +121,8 @@ func (rt *Router) registerBackupRoutes(mux *http.ServeMux) {
 	mux.HandleFunc("GET /api/v1/apps/{name}/volumes/{volume}/backups", rt.requireAbilityForResource(AbilityRead, appResourceFromPath, rt.handleListVolumeBackupHistory))
 	mux.HandleFunc("GET /api/v1/apps/{name}/volumes/{volume}/backups/{historyId}/download", rt.requireAbilityForResource(AbilityReadSensitive, appResourceFromPath, rt.handleDownloadVolumeBackup))
 	mux.HandleFunc("DELETE /api/v1/apps/{name}/volumes/{volume}/backups/{historyId}", rt.requireAbilityForResource(AbilityWriteSensitive, appResourceFromPath, rt.handleDeleteVolumeBackup))
+	mux.HandleFunc("PUT /api/v1/apps/{name}/volumes/{volume}/backups/{historyId}/pin", rt.requireAbilityForResource(AbilityWriteSensitive, appResourceFromPath, rt.handlePinVolumeBackup))
+	mux.HandleFunc("DELETE /api/v1/apps/{name}/volumes/{volume}/backups/{historyId}/pin", rt.requireAbilityForResource(AbilityWriteSensitive, appResourceFromPath, rt.handleUnpinVolumeBackup))
 	mux.HandleFunc("POST /api/v1/apps/{name}/volumes/{volume}/backups/{historyId}/verify", rt.requireAbilityForResource(AbilityWriteSensitive, appResourceFromPath, rt.handleVerifyVolumeBackup))
 	mux.HandleFunc("GET /api/v1/apps/{name}/volumes/{volume}/backups/{historyId}/verifications", rt.requireAbilityForResource(AbilityRead, appResourceFromPath, rt.handleListVolumeBackupVerifications))
 	mux.HandleFunc("GET /api/v1/apps/{name}/volumes/{volume}/export", rt.requireAbilityForResource(AbilityWriteSensitive, appResourceFromPath, rt.handleExportVolume))

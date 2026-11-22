@@ -206,6 +206,8 @@ type backupHistoryResource struct {
 	HookOutput string `json:"hook_output,omitempty"`
 	// Label is the operator's short name for a manual backup, empty when none was given.
 	Label string `json:"label,omitempty"`
+	// Pinned is true when the backup is kept forever: retention and delete skip it.
+	Pinned bool `json:"pinned,omitempty"`
 }
 
 func toBackupHistoryResource(h store.BackupHistory) backupHistoryResource {
@@ -366,6 +368,7 @@ func (rt *Router) handleListBackupHistory(w http.ResponseWriter, r *http.Request
 		out = append(out, toBackupHistoryResource(h))
 	}
 	rt.attachBackupLabels(r.Context(), out)
+	rt.attachBackupPins(r.Context(), out)
 	writeJSON(w, http.StatusOK, out)
 }
 
@@ -400,6 +403,7 @@ func (rt *Router) handleListAllBackups(w http.ResponseWriter, r *http.Request) {
 		out = append(out, toBackupHistoryResource(h))
 	}
 	rt.attachBackupLabels(r.Context(), out)
+	rt.attachBackupPins(r.Context(), out)
 	writeJSON(w, http.StatusOK, out)
 }
 

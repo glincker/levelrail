@@ -14,7 +14,7 @@ type openAPIRoute struct {
 	Description string
 }
 
-// openAPIRoutes holds all 2377 routes known to scripts/gen-api-reference at
+// openAPIRoutes holds all 2381 routes known to scripts/gen-api-reference at
 // generation time. Run `go run ./scripts/gen-api-reference` after changing
 // any routes*.go registration and commit the result.
 var openAPIRoutes = []openAPIRoute{
@@ -88,6 +88,8 @@ var openAPIRoutes = []openAPIRoute{
 	{Method: "POST", Path: "/api/v1/apps/{name}/volumes/{volume}/backups", Ability: "AbilityWriteSensitive", Group: "App Volume Backups / Restore", Handler: "handleTriggerVolumeBackup", Description: ""},
 	{Method: "DELETE", Path: "/api/v1/apps/{name}/volumes/{volume}/backups/{historyId}", Ability: "AbilityWriteSensitive", Group: "App Volume Backups / Restore", Handler: "handleDeleteVolumeBackup", Description: ""},
 	{Method: "GET", Path: "/api/v1/apps/{name}/volumes/{volume}/backups/{historyId}/download", Ability: "AbilityReadSensitive", Group: "App Volume Backups / Restore", Handler: "handleDownloadVolumeBackup", Description: ""},
+	{Method: "DELETE", Path: "/api/v1/apps/{name}/volumes/{volume}/backups/{historyId}/pin", Ability: "AbilityWriteSensitive", Group: "App Volume Backups / Restore", Handler: "handleUnpinVolumeBackup", Description: ""},
+	{Method: "PUT", Path: "/api/v1/apps/{name}/volumes/{volume}/backups/{historyId}/pin", Ability: "AbilityWriteSensitive", Group: "App Volume Backups / Restore", Handler: "handlePinVolumeBackup", Description: ""},
 	{Method: "GET", Path: "/api/v1/apps/{name}/volumes/{volume}/backups/{historyId}/verifications", Ability: "AbilityRead", Group: "App Volume Backups / Restore", Handler: "handleListVolumeBackupVerifications", Description: ""},
 	{Method: "POST", Path: "/api/v1/apps/{name}/volumes/{volume}/backups/{historyId}/verify", Ability: "AbilityWriteSensitive", Group: "App Volume Backups / Restore", Handler: "handleVerifyVolumeBackup", Description: ""},
 	{Method: "GET", Path: "/api/v1/apps/{name}/volumes/{volume}/clone-restores", Ability: "AbilityRead", Group: "App Volume Backups / Restore", Handler: "handleListVolumeCloneRestores", Description: ""},
@@ -785,6 +787,8 @@ var openAPIRoutes = []openAPIRoute{
 	{Method: "POST", Path: "/api/v1/databases/{name}/backups", Ability: "AbilityWriteSensitive", Group: "Database Backups / Restore / Clone Restore", Handler: "handleTriggerBackup", Description: "Backup history and manual trigger, per database. Trigger needs AbilityWriteSensitive: it starts real work against a live bucket using a previously-stored credential, the same sensitivity class creating or deleting the backup target itself already carries. History listing is ordinary AbilityRead."},
 	{Method: "DELETE", Path: "/api/v1/databases/{name}/backups/{historyId}", Ability: "AbilityWriteSensitive", Group: "Database Backups / Restore / Clone Restore", Handler: "handleDeleteBackup", Description: "Delete one specific archived backup on demand, rather than waiting for retention (BackupRetain/BackupRetainDays above) to age it out. AbilityWriteSensitive, matching the manual trigger route above: this destroys a real stored artifact, the same sensitivity class as triggering a backup or deleting the backup target itself, not the AbilityRoot tier restore below uses, since nothing here touches a live database's own data. See handleDeleteBackup's own doc comment."},
 	{Method: "GET", Path: "/api/v1/databases/{name}/backups/{historyId}/download", Ability: "AbilityReadSensitive", Group: "Database Backups / Restore / Clone Restore", Handler: "handleDownloadBackup", Description: "Backup download streams the dump bytes: AbilityReadSensitive, since it is a read but exposes a full database. Not AbilityRoot: unlike restore it destroys nothing."},
+	{Method: "DELETE", Path: "/api/v1/databases/{name}/backups/{historyId}/pin", Ability: "AbilityWriteSensitive", Group: "Database Backups / Restore / Clone Restore", Handler: "handleUnpinBackup", Description: ""},
+	{Method: "PUT", Path: "/api/v1/databases/{name}/backups/{historyId}/pin", Ability: "AbilityWriteSensitive", Group: "Database Backups / Restore / Clone Restore", Handler: "handlePinBackup", Description: ""},
 	{Method: "GET", Path: "/api/v1/databases/{name}/backups/{historyId}/verifications", Ability: "AbilityRead", Group: "Database Backups / Restore / Clone Restore", Handler: "handleListBackupVerifications", Description: ""},
 	{Method: "POST", Path: "/api/v1/databases/{name}/backups/{historyId}/verify", Ability: "AbilityWriteSensitive", Group: "Database Backups / Restore / Clone Restore", Handler: "handleVerifyBackup", Description: "Backup verification: re-download a succeeded backup and confirm it is still intact (checksum, size, and a lightweight structural check), without ever attempting a live restore. AbilityWriteSensitive for the trigger, matching the manual backup trigger route above exactly (see handleVerifyBackup's own doc comment for why); listing past attempts is ordinary AbilityRead, matching history listing above."},
 	{Method: "GET", Path: "/api/v1/databases/{name}/clone-restores", Ability: "AbilityRead", Group: "Database Backups / Restore / Clone Restore", Handler: "handleListCloneRestores", Description: ""},

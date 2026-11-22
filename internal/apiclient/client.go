@@ -1848,6 +1848,15 @@ func (c *Client) DeleteBackup(ctx context.Context, name, historyID string) error
 	return c.do(ctx, http.MethodDelete, "/api/v1/databases/"+PathEscape(name)+"/backups/"+PathEscape(historyID), nil, nil)
 }
 
+// SetBackupPinned calls PUT (pin) or DELETE (unpin) on /api/v1/databases/{name}/backups/{historyId}/pin.
+func (c *Client) SetBackupPinned(ctx context.Context, name, historyID string, pinned bool) error {
+	method := http.MethodDelete
+	if pinned {
+		method = http.MethodPut
+	}
+	return c.do(ctx, method, "/api/v1/databases/"+PathEscape(name)+"/backups/"+PathEscape(historyID)+"/pin", nil, nil)
+}
+
 // TriggerRestore calls POST /api/v1/databases/{name}/restore: overwrites
 // name's live data in place from a previously succeeded backup attempt.
 // The single most destructive call this Client makes; callers must gate
