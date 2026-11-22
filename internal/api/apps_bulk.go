@@ -13,6 +13,7 @@ import (
 	"sync"
 	"time"
 
+	"github.com/GLINCKER/levelrail/internal/runtimesettings"
 	"github.com/GLINCKER/levelrail/internal/store"
 )
 
@@ -62,6 +63,12 @@ type bulkAppsRequest struct {
 	ConfirmNames []string `json:"confirm_names,omitempty"`
 	// ConfirmCount must equal the resolved target count for a large disruptive action.
 	ConfirmCount int `json:"confirm_count,omitempty"`
+	// BatchSize runs targets in waves of this many apps; 0 keeps one parallel pass.
+	BatchSize int `json:"batch_size,omitempty"`
+	// PauseSeconds waits between waves, capped by the bulk.max_pause_seconds setting.
+	PauseSeconds int `json:"pause_seconds,omitempty"`
+	// HaltOnFail stops before the next wave once a wave has an error; the rest are skipped.
+	HaltOnFail bool `json:"halt_on_fail,omitempty"`
 }
 
 type bulkAppResult struct {
@@ -147,19 +154,7 @@ func (rt *Router) handleBulkApps(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	results := make([]bulkAppResult, len(names))
-	sem := make(chan struct{}, envIntDefault("APP_BULK_CONCURRENCY", 4))
-	var wg sync.WaitGroup
-	for i, name := range names {
-		wg.Add(1)
-		sem <- struct{}{}
-		go func() {
-			defer wg.Done()
-			defer func() { <-sem }()
-			results[i] = rt.applyBulkOne(r.Context(), r, principal, ability, req, name)
-		}()
-	}
-	wg.Wait()
+	results := rt.runBulkWaves(r.Context(), r, principal, ability, req, names)
 
 	counts := map[string]int{}
 	for _, res := range results {
@@ -169,6 +164,72 @@ func (rt *Router) handleBulkApps(w http.ResponseWriter, r *http.Request) {
 		rt.nudgeReconciler()
 	}
 	writeJSON(w, http.StatusMultiStatus, bulkAppsResponse{Action: req.Action, DryRun: req.DryRun, Results: results, Counts: counts})
+}
+
+// runBulkWaves applies the action in waves of req.BatchSize (all at once when 0), pausing
+// between waves and, with HaltOnFail, skipping the remaining waves after a failed one.
+func (rt *Router) runBulkWaves(ctx context.Context, r *http.Request, p bulkPrincipal, ability string, req bulkAppsRequest, names []string) []bulkAppResult {
+	results := make([]bulkAppResult, len(names))
+	size := req.BatchSize
+	if size <= 0 || size > len(names) {
+		size = len(names)
+	}
+	pause := time.Duration(min(max(req.PauseSeconds, 0), rt.bulkMaxPauseSeconds(ctx))) * time.Second
+	for start := 0; start < len(names); start += size {
+		end := min(start+size, len(names))
+		if start > 0 && pause > 0 && !req.DryRun {
+			select {
+			case <-time.After(pause):
+			case <-ctx.Done():
+				bulkMarkSkipped(results, names, start, "stopped: request canceled during the pause between waves")
+				return results
+			}
+		}
+		rt.runBulkWave(ctx, r, p, ability, req, names, results, start, end)
+		if req.HaltOnFail && end < len(names) && bulkWaveFailed(results[start:end]) {
+			bulkMarkSkipped(results, names, end, "not started: an earlier wave failed (halt on fail)")
+			break
+		}
+	}
+	return results
+}
+
+func (rt *Router) runBulkWave(ctx context.Context, r *http.Request, p bulkPrincipal, ability string, req bulkAppsRequest, names []string, results []bulkAppResult, start, end int) {
+	sem := make(chan struct{}, envIntDefault("APP_BULK_CONCURRENCY", 4))
+	var wg sync.WaitGroup
+	for i := start; i < end; i++ {
+		wg.Add(1)
+		sem <- struct{}{}
+		go func() {
+			defer wg.Done()
+			defer func() { <-sem }()
+			results[i] = rt.applyBulkOne(ctx, r, p, ability, req, names[i])
+		}()
+	}
+	wg.Wait()
+}
+
+func bulkWaveFailed(wave []bulkAppResult) bool {
+	for _, res := range wave {
+		if res.Status == bulkStatusError {
+			return true
+		}
+	}
+	return false
+}
+
+// bulkMarkSkipped fills every unset result from index from onward with a skipped row.
+func bulkMarkSkipped(results []bulkAppResult, names []string, from int, msg string) {
+	for i := from; i < len(results); i++ {
+		results[i] = bulkAppResult{Name: names[i], Status: bulkStatusSkipped, Message: msg}
+	}
+}
+
+func (rt *Router) bulkMaxPauseSeconds(ctx context.Context) int {
+	if rt.runtimeSettings == nil {
+		return 0
+	}
+	return rt.runtimeSettings.Int(ctx, runtimesettings.KeyBulkMaxPauseSeconds)
 }
 
 func validateBulkValue(req bulkAppsRequest) error {

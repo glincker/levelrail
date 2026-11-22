@@ -17,6 +17,9 @@ type BulkAppsRequest struct {
 	DryRun       bool     `json:"dry_run,omitempty"`
 	ConfirmNames []string `json:"confirm_names,omitempty"`
 	ConfirmCount int      `json:"confirm_count,omitempty"`
+	BatchSize    int      `json:"batch_size,omitempty"`
+	PauseSeconds int      `json:"pause_seconds,omitempty"`
+	HaltOnFail   bool     `json:"halt_on_fail,omitempty"`
 }
 
 // BulkAppResult is one app's outcome in a bulk response.

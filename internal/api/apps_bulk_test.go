@@ -148,3 +148,32 @@ func TestBulkApps_SelectByTagAndMissingApp(t *testing.T) {
 		t.Errorf("missing app = %+v", resp)
 	}
 }
+
+func TestBulkApps_WavesHaltOnFail(t *testing.T) {
+	rt, db := newTestRouter(t)
+	cookie := loginTestSession(t, rt, db)
+	for _, n := range []string{"a", "b", "c", "d"} {
+		seedScheduledTaskApp(t, db, n)
+	}
+	_, resp := bulkCall(t, rt, cookie, `{"action":"stop","names":["a","b","c","d"],"batch_size":2,"pause_seconds":1,"halt_on_fail":true}`)
+	if len(resp.Results) != 4 {
+		t.Fatalf("results = %+v", resp.Results)
+	}
+	for _, res := range resp.Results {
+		if res.Name == "" {
+			t.Errorf("result without a name: %+v", res)
+		}
+	}
+	if resp.Counts[bulkStatusOK] != 4 {
+		t.Errorf("no failure, every wave should run: %+v", resp.Counts)
+	}
+	failed := []bulkAppResult{{Status: bulkStatusOK}, {Status: bulkStatusError}}
+	if !bulkWaveFailed(failed) {
+		t.Error("an error row should fail the wave")
+	}
+	rows := make([]bulkAppResult, 3)
+	bulkMarkSkipped(rows, []string{"x", "y", "z"}, 1, "later")
+	if rows[0].Name != "" || rows[1].Name != "y" || rows[2].Status != bulkStatusSkipped {
+		t.Errorf("skip fill = %+v", rows)
+	}
+}

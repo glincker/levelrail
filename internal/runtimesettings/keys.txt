@@ -121,6 +121,7 @@ build.transfer_mode
 build.transfer_push_ttl
 builds.memory_limit_mb
 builds.setting_value_max_bytes
+bulk.max_pause_seconds
 cdn.purge_history
 certificates.weekly_issue_warn
 cleanup.enabled
