@@ -407,6 +407,10 @@ default note where the schema has one, and adds port, env, health, domains, repl
 and resources as commented-out lines. --out FILE writes only app.yaml there, or to
 stdout when FILE is "-" (nothing else is printed); --force overwrites an existing FILE.
 
+--name, --port, --health and --domain set the app name, container port, readiness path and
+domain written to app.yaml (each is asked on a terminal when omitted). --deploy runs "up" in
+the project directory once the files are written.
+
 --api-url (or the active profile) is written into AGENTS.md and .mcp.json when known.
 --mcp-binary overrides the MCP server binary name.
 `, prog)
