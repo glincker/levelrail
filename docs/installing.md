@@ -757,6 +757,13 @@ sudo sh install.sh uninstall --purge
 <Warning>
 `--purge` deletes all app and deploy state, and the master key every stored secret is encrypted with.
 </Warning>
+
+Add `--dry-run` to `install`, `upgrade`, `uninstall` or `uninstall --purge` to see the plan first. It prints the version, paths, ports, the systemd unit that would be written, what uninstall keeps and what `--purge` would delete, then exits 0. It needs no root and changes nothing.
+
+```bash
+sh install.sh install --dry-run
+sh install.sh uninstall --purge --dry-run
+```
 </Tab>
 <Tab title="Docker">
 ```bash

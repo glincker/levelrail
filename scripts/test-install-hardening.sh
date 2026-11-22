@@ -81,6 +81,56 @@ out="$(run sh /root/install.sh uninstall)"
 expect "never installed" "$out" "Nothing to remove"
 refute "never installed" "$out" "Removed the"
 
+echo "== --dry-run plans install, upgrade and uninstall without root and changes nothing"
+run_user() {
+	docker exec -u nobody "$name" env PATH="/fake:/usr/local/sbin:/usr/local/bin:/usr/sbin:/usr/bin:/sbin:/bin" \
+		LEVELRAIL_MIN_DISK_GB=1 LEVELRAIL_NO_COSIGN=1 LEVELRAIL_VERSION=v9.9.9 "$@" 2>&1
+}
+tree_sum() { in_ct 'find /etc/systemd /usr/local/bin /var/lib/levelrail-data -type f 2>/dev/null | sort | xargs -r sha256sum | sha256sum'; }
+in_ct 'cp /root/install.sh /tmp/install.sh && chmod 644 /tmp/install.sh
+mkdir -p /var/lib/levelrail-data /etc/systemd/system && echo keep > /var/lib/levelrail-data/master.key'
+before="$(tree_sum)"
+for m in "install" "upgrade" "uninstall" "uninstall --purge"; do
+	rc=0
+	# shellcheck disable=SC2086 # the mode and flags are separate words on purpose
+	out="$(run_user sh /tmp/install.sh $m --dry-run)" || rc=$?
+	[ "$rc" -eq 0 ] || { echo "FAIL dry-run $m: exit $rc: $out"; exit 1; }
+	expect "dry-run $m" "$out" "Dry run:"
+	refute "dry-run $m" "$out" "must run as root"
+	[ "$before" = "$(tree_sum)" ] || { echo "FAIL dry-run $m changed files"; exit 1; }
+done
+out="$(run_user sh /tmp/install.sh install --dry-run)"
+expect "dry-run install" "$out" "v9.9.9"
+expect "dry-run install" "$out" "/etc/systemd/system/levelrail.service"
+expect "dry-run install" "$out" "ExecStart=/usr/local/bin/levelrail"
+out="$(run_user sh /tmp/install.sh uninstall --purge --dry-run)"
+expect "dry-run purge" "$out" "--purge would also delete /var/lib/levelrail-data"
+out="$(run_user sh /tmp/install.sh uninstall --dry-run)"
+expect "dry-run uninstall" "$out" "Would keep: /var/lib/levelrail-data"
+rc=0
+out="$(run_user sh /tmp/install.sh install)" || rc=$?
+[ "$rc" -ne 0 ] || { echo "FAIL a real install must still need root"; exit 1; }
+expect "real install" "$out" "must run as root"
+
+echo "== --template is validated and only changes the final message"
+# shellcheck disable=SC2016 # a literal command substitution is the point of this case
+for bad in 'Bad' 'a_b' 'a;b' 'a b' '$(id)' 'a/b' "$(printf 'a%.0s' $(seq 65))"; do
+	rc=0
+	out="$(run sh /root/install.sh check --template "$bad")" || rc=$?
+	[ "$rc" -ne 0 ] || { echo "FAIL template '$bad' was accepted"; exit 1; }
+	expect "template '$bad'" "$out" "--template"
+done
+out="$(run env LEVELRAIL_TEMPLATE='x;y' sh /root/install.sh check)" && { echo "FAIL env template accepted"; exit 1; }
+expect "env template" "$out" "LEVELRAIL_TEMPLATE"
+out="$(run sh /root/install.sh install --template n8n-queue --dry-run)"
+expect "template dry-run" "$out" "n8n-queue (only changes the final message)"
+# shellcheck disable=SC2016 # the function body is sourced and expands inside the container
+out="$(in_ct 'sed -n "/^print_template_link()/,/^}/p" /root/install.sh > /tmp/ptl.sh
+log() { printf "%s\n" "$*"; }
+TEMPLATE_ID=n8n-queue PUBLIC_IP=203.0.113.9 COEXIST_ACTIVE=0 DASHBOARD_SCHEME=http DASHBOARD_PORT=8080
+. /tmp/ptl.sh; print_template_link')"
+expect "template link" "$out" "http://203.0.113.9:8080/apps/new?deploy=1&template=n8n-queue"
+
 echo "== upgrade to an older schema is refused before anything changes"
 fake_bin /usr/local/bin/levelrail v0.6.0 1010
 fake_bin /root/old v0.5.1 795

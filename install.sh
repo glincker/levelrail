@@ -7,6 +7,7 @@
 # Usage: install.sh [install|check|upgrade|retain|install-cosign|uninstall|protect] [--force] [--purge] [--dry-run]
 #                   [--coexist|--no-coexist] [--yes] [--no-cosign] [--http-port N]
 #                   [--https-port N] [--domain HOST] [--profile minimal|standard|suite]
+#                   [--template ID]
 #   install    (default) preflight checks, then install or repair. Safe to re-run.
 #   check      (also --check) read-only server readiness report: who holds ports
 #              80/443, Docker version and isolation, exposed Docker API, disk,
@@ -27,6 +28,11 @@
 #              prints it and needs no root. install and upgrade do this too.
 #   uninstall  remove the service, unit, and binary. Data is kept unless
 #              --purge is given.
+#   --dry-run  with install, upgrade, uninstall (and --purge) or protect: print
+#              the plan and exit 0. Needs no root and changes nothing.
+#   --template ID  only changes the final message: it prints the dashboard link
+#              that opens the new-app form on this catalog template (same as
+#              LEVELRAIL_TEMPLATE). Lowercase letters, digits and hyphens.
 #   --force    continue even if a preflight check fails.
 #   --coexist  run behind a proxy that already holds ports 80/443: ingress on
 #              8088/8443, dashboard on loopback only. Chosen automatically
@@ -217,6 +223,7 @@ Usage: install.sh [install|check|upgrade|retain|install-cosign|uninstall|protect
                   [--coexist|--no-coexist] [--yes] [--no-cosign] [--http-port N]
                   [--https-port N] [--domain HOST] [--email ADDRESS]
                   [--profile minimal|standard|suite] [--runtime auto|docker|podman|existing]
+                  [--template ID]
   install    (default) preflight checks, then install or repair
   check      (also --check) read-only readiness report and recommended mode
   protect    write the out-of-memory protection drop-in on an existing install
@@ -225,6 +232,10 @@ Usage: install.sh [install|check|upgrade|retain|install-cosign|uninstall|protect
   retain     download and verify LEVELRAIL_VERSION and keep it for rollback
   install-cosign  install cosign so release signatures can be verified
   uninstall  remove the service, unit, and binary (data kept unless --purge)
+  --dry-run  with install, upgrade, uninstall (--purge) or protect: print the
+             plan, exit 0, need no root and change nothing
+  --template  print the dashboard link that opens the new-app form on this
+             catalog template (also LEVELRAIL_TEMPLATE): letters a-z, digits, hyphen
   --force    continue even if a preflight check fails
   --coexist  ingress on 8088/8443 and dashboard on loopback, for a server
              whose ports 80/443 an existing proxy already holds (chosen
@@ -250,13 +261,14 @@ EOF
 
 MODE="install"
 DRY_RUN=0
+TEMPLATE_ID="${LEVELRAIL_TEMPLATE:-}"
 FORCE=0
 PURGE=0
 while [ "$#" -gt 0 ]; do
 	arg="$1"
 	shift
 	case "$arg" in
-	--http-port | --https-port | --domain | --email | --profile | --runtime)
+	--http-port | --https-port | --domain | --email | --profile | --runtime | --template)
 		[ "$#" -gt 0 ] || fatal "$arg needs a value"
 		arg="$arg=$1"
 		shift
@@ -284,6 +296,7 @@ while [ "$#" -gt 0 ]; do
 		HTTPS_PORT_PINNED=1
 		;;
 	--domain=*) DOMAIN_HINT="${arg#*=}" ;;
+	--template=*) TEMPLATE_ID="${arg#*=}" ;;
 	--email=*) EMAIL_HINT="${arg#*=}" ;;
 	--runtime=*)
 		RUNTIME_CHOICE="${arg#*=}"
@@ -361,11 +374,23 @@ case "$SERVER_PROFILE" in
 '' | minimal | standard | suite) ;;
 *) fatal "--profile must be minimal, standard or suite, got: $SERVER_PROFILE" ;;
 esac
+# The id is only printed inside a URL, never run, but keep it to a strict pattern.
+case "$TEMPLATE_ID" in
+*[!a-z0-9-]*) fatal "--template (LEVELRAIL_TEMPLATE) may only contain lowercase letters, digits and hyphens: $TEMPLATE_ID" ;;
+esac
+[ "${#TEMPLATE_ID}" -le 64 ] || fatal "--template (LEVELRAIL_TEMPLATE) must be at most 64 characters"
+case "$MODE" in
+retain | install-cosign) [ "$DRY_RUN" -eq 0 ] || fatal "--dry-run is not supported for ${MODE}" ;;
+esac
 case "${LEVELRAIL_VERSION:-}" in
 *[!A-Za-z0-9._+-]*) fatal "LEVELRAIL_VERSION may only contain letters, digits, dot, dash, plus and underscore" ;;
 esac
 
-if [ "$MODE" != "check" ] && { [ "$MODE" != "protect" ] || [ "$DRY_RUN" -eq 0 ]; } && [ "$(id -u)" -ne 0 ]; then
+# A dry run only prints, so it never needs root.
+NEED_ROOT=1
+[ "$MODE" != "check" ] || NEED_ROOT=0
+[ "$DRY_RUN" -eq 0 ] || NEED_ROOT=0
+if [ "$NEED_ROOT" -eq 1 ] && [ "$(id -u)" -ne 0 ]; then
 	if [ -f "$0" ]; then fatal "must run as root, e.g.: sudo sh $0"; fi
 	fatal "must run as root: download install.sh from the release, verify it against checksums.txt, then run sudo sh install.sh"
 fi
@@ -1759,6 +1784,17 @@ best_link() {
 		"$BIN_PATH" setup-token 2>/dev/null | grep -E '^(open|note|next): ' || true
 }
 
+# print_template_link only prints text: the id was validated to [a-z0-9-] above.
+print_template_link() {
+	[ -n "$TEMPLATE_ID" ] || return 0
+	tpl_host="${PUBLIC_IP:-<server-ip>}"
+	[ "$COEXIST_ACTIVE" -ne 1 ] || tpl_host="127.0.0.1"
+	case "$tpl_host" in *:*) tpl_host="[$tpl_host]" ;; esac
+	log "After you create the admin account, deploy the ${TEMPLATE_ID} template:"
+	log "  ${DASHBOARD_SCHEME}://${tpl_host}:${DASHBOARD_PORT}/apps/new?deploy=1&template=${TEMPLATE_ID}"
+	log ""
+}
+
 print_summary() {
 	token=""
 	token_hidden=0
@@ -1770,6 +1806,7 @@ print_summary() {
 	if [ "$COEXIST_ACTIVE" -eq 1 ]; then
 		print_coexist_summary
 		[ "$token_hidden" -ne 1 ] || print_token_hidden
+		print_template_link
 		return 0
 	fi
 
@@ -1817,6 +1854,7 @@ After enabling HTTPS, run: levelrail-cli settings dashboard-url set --url https:
 
 EOF
 	fi
+	print_template_link
 	cat <<EOF
 IMPORTANT: back up ${DATA_DIR}/master.key somewhere safe. Every stored
 secret is encrypted with it, and it cannot be recovered if lost.
@@ -2190,6 +2228,95 @@ do_uninstall() {
 	fi
 	log "Docker and any app containers it runs were left untouched."
 }
+
+# plan_version prints the release a real run would pick. The lookup is a
+# read-only GET, and a failure is reported instead of aborting the plan.
+plan_version() {
+	if [ -n "${LEVELRAIL_BINARY_FILE:-}" ]; then
+		printf 'local file %s (not signature or checksum verified)' "$LEVELRAIL_BINARY_FILE"
+		return 0
+	fi
+	if [ -n "${LEVELRAIL_BINARY_URL:-}" ]; then
+		printf 'binary from %s' "$LEVELRAIL_BINARY_URL"
+		return 0
+	fi
+	pv="$( (resolve_version >/dev/null 2>&1 && printf '%s' "$VERSION") || true)"
+	if [ -n "$pv" ]; then printf '%s' "$pv"; else printf 'the newest release (the lookup failed here, it is retried on a real run)'; fi
+}
+
+plan_common() {
+	detect_arch
+	[ -n "$GOARCH" ] || fatal "unsupported architecture: $(uname -m)"
+	load_settings
+	[ "$COEXIST" -eq 0 ] || apply_coexist
+	log "Dry run: ${MODE}. Nothing is downloaded, written, started or removed, and no root is needed."
+	log ""
+}
+
+plan_install_like() {
+	[ -n "$SOCKET_ACTIVATION" ] || SOCKET_ACTIVATION=1
+	plan_common
+	log "Version:          $(plan_version) (linux/${GOARCH})"
+	log "Binary:           ${BIN_PATH}"
+	log "Data directory:   ${DATA_DIR}"
+	log "Ports:            dashboard ${DASHBOARD_BIND:-0.0.0.0}:${DASHBOARD_PORT}, ingress HTTP ${HTTP_PORT}, HTTPS ${HTTPS_PORT}"
+	[ "$COEXIST_ACTIVE" -eq 0 ] || log "Mode:             coexist (dashboard on loopback, another proxy keeps 80/443)"
+	log "Profile:          ${SERVER_PROFILE:-standard}"
+	log "Container runtime: ${RUNTIME_CHOICE}$(command -v docker >/dev/null 2>&1 || printf ' (Docker is installed if missing)')"
+	[ "$MODE" != "install" ] || [ "$NO_COSIGN" -eq 1 ] || log "Cosign:           ${COSIGN_BIN} is installed if missing"
+	[ "$MODE" != "install" ] || log "CLI:              levelrail-cli is installed next to the binary"
+	[ "$MODE" != "upgrade" ] || log "Rollback copies:  previous binaries are kept in ${RELEASES_DIR} (last 3)"
+	[ -z "$TEMPLATE_ID" ] || log "Template:         ${TEMPLATE_ID} (only changes the final message)"
+	log ""
+	log "Files that would be written:"
+	log "  ${UNIT_PATH}"
+	if [ "$SOCKET_ACTIVATION" = "1" ]; then
+		log "  /etc/systemd/system/${HTTP_SOCKET_UNIT} (listens on ${HTTP_PORT})"
+		log "  /etc/systemd/system/${HTTPS_SOCKET_UNIT} (listens on ${HTTPS_PORT})"
+	fi
+	log "  ${DROPIN_PATH}, ${RESTART_POLICY_PATH}"
+	[ "${LEVELRAIL_PROTECT:-1}" = "0" ] || log "  ${PROTECT_PATH}"
+	log ""
+	log "The systemd unit would be:"
+	render_unit
+	log ""
+	log "Then: systemctl daemon-reload, enable and restart ${SERVICE_NAME}, wait for it to become healthy."
+}
+
+plan_uninstall() {
+	cli_path="${LEVELRAIL_CLI_INSTALL_DIR:-/usr/local/bin}/levelrail-cli"
+	log "Dry run: uninstall. Nothing is removed, and no root is needed."
+	log ""
+	log "Would stop and disable ${SERVICE_NAME}, then remove:"
+	log "  ${UNIT_PATH}, the socket units, and the drop-ins in ${DROPIN_DIR}"
+	log "  ${BIN_PATH} and ${BIN_PATH}.pre-upgrade"
+	log "  ${cli_path}"
+	log "  ${RELEASES_DIR} (retained releases)"
+	log ""
+	log "Would keep: Docker and every app container it runs."
+	if [ "$PURGE" -eq 1 ]; then
+		log "--purge would also delete ${DATA_DIR} (database, master key, certificates, all app and deploy state)."
+		[ ! -e "$COSIGN_MARK" ] || log "--purge would also remove ${COSIGN_BIN}, which this installer installed."
+	else
+		log "Would keep: ${DATA_DIR} (database, master key, certificates). --purge would delete it."
+	fi
+}
+
+dry_run_plan() {
+	case "$MODE" in
+	install | upgrade) plan_install_like ;;
+	uninstall) plan_uninstall ;;
+	esac
+}
+
+if [ "$DRY_RUN" -eq 1 ]; then
+	case "$MODE" in
+	install | upgrade | uninstall)
+		dry_run_plan
+		exit 0
+		;;
+	esac
+fi
 
 case "$MODE" in
 install) do_install ;;
