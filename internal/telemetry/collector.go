@@ -127,6 +127,22 @@ func (c *Collector) dueAt(last time.Time) bool {
 // count; a partial failure is not treated as this tick failing overall,
 // since the successful samples were still written.
 func (c *Collector) CollectOnce(ctx context.Context, targets []Target) error {
+	return c.collect(ctx, targets, true)
+}
+
+// watchedOnly keeps the targets whose resource was viewed recently.
+func (c *Collector) watchedOnly(targets []Target) []Target {
+	var out []Target
+	for _, t := range targets {
+		if c.presence.ResourceActive(t.ResourceID) {
+			out = append(out, t)
+		}
+	}
+	return out
+}
+
+// collect is CollectOnce; prune is false for a partial set so unwatched apps keep their CPU baseline.
+func (c *Collector) collect(ctx context.Context, targets []Target, prune bool) error {
 	now := time.Now()
 	samples := make([]Sample, 0, len(targets)*7) // 7 metrics per container, see sampleValues
 	var errs []error
@@ -145,7 +161,9 @@ func (c *Collector) CollectOnce(ctx context.Context, targets []Target) error {
 		errs = append(errs, fmt.Errorf("write samples: %w", err))
 	}
 
-	c.pruneCPUCache(targets)
+	if prune {
+		c.pruneCPUCache(targets)
+	}
 	return errors.Join(errs...)
 }
 
@@ -201,16 +219,24 @@ func (c *Collector) Run(ctx context.Context, targetsFunc func(context.Context) (
 			return ctx.Err()
 		case <-timer.C:
 			timer.Reset(c.currentInterval())
-			if !c.dueAt(last) {
-				continue
+			due := c.dueAt(last)
+			if due {
+				last = c.now()
 			}
-			last = c.now()
 			targets, err := targetsFunc(ctx)
 			if err != nil {
 				c.logger.Error("telemetry: list collection targets failed", slog.String("error", err.Error()))
 				continue // try again next tick rather than stopping the collector over one bad listing
 			}
-			if err := c.CollectOnce(ctx, targets); err != nil {
+			prune := due
+			if !due {
+				// Idle fleet: still sample the apps someone has open at the live cadence.
+				targets = c.watchedOnly(targets)
+				if len(targets) == 0 {
+					continue
+				}
+			}
+			if err := c.collect(ctx, targets, prune); err != nil {
 				c.logger.Warn("telemetry: collection tick had errors", slog.String("error", err.Error()))
 			}
 		}

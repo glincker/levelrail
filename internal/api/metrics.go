@@ -112,6 +112,7 @@ func (rt *Router) queryResourceMetrics(w http.ResponseWriter, r *http.Request, l
 		return
 	}
 
+	rt.touchResource(resourceID)
 	metric := r.URL.Query().Get("metric")
 	if metric == "" {
 		writeError(w, http.StatusBadRequest, "metric query parameter is required")
