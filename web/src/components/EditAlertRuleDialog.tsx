@@ -91,6 +91,7 @@ export function EditAlertRuleDialog({
 }) {
   const { t } = useTranslation('observability')
   const { t: tAlert } = useTranslation('alertSetup')
+  const { t: tRegression } = useTranslation('alertRegression')
   const [open, setOpen] = useState(false)
   const updateRule = useUpdateAlertRule(appName)
   const channelsQuery = useNotificationChannelsOptional()
@@ -247,6 +248,10 @@ export function EditAlertRuleDialog({
             <AlertKindGuidance kind="email_delivery_failing" />
           ) : kind === 'cleanup_failing' ? (
             <AlertKindGuidance kind="cleanup_failing" />
+          ) : kind === 'deploy_duration_regression' ? (
+            <p className="text-sm text-muted-foreground">
+              {tRegression('hint')}
+            </p>
           ) : kind === 'deploy_failed' ||
             kind === 'job_failing' ||
             kind === 'monitor_down' ? (

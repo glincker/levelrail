@@ -124,6 +124,11 @@ export const ALERT_KIND_OPTIONS: {
   { value: 'domain_traffic_drop', Icon: GaugeGlassIcon },
   { value: 'parked_domain_cert_expiry', Icon: ShieldAlertGlassIcon },
   { value: 'domain_registration_expiry', Icon: GlobeGlassIcon },
+  {
+    value: 'deploy_duration_regression',
+    label: 'Deploy duration regression',
+    Icon: GaugeGlassIcon,
+  },
 ]
 
 export const ALERT_COMPARATOR_OPTIONS: { value: Comparator; label: string }[] =
@@ -171,6 +176,7 @@ export const alertRuleFormSchema = z
       'domain_traffic_drop',
       'parked_domain_cert_expiry',
       'domain_registration_expiry',
+      'deploy_duration_regression',
     ]),
     metric: z.string().trim(),
     comparator: z.enum(['>', '<', '>=', '<=']),
@@ -210,6 +216,7 @@ export const alertRuleFormSchema = z
       data.kind === 'deploy_failed' ||
       data.kind === 'job_failing' ||
       data.kind === 'monitor_down' ||
+      data.kind === 'deploy_duration_regression' ||
       data.kind === 'budget_threshold'
     ) {
       return

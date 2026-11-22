@@ -101,6 +101,7 @@ import type backups from '../locales/en/backups.json'
 import type backupPins from '../locales/en/backupPins.json'
 import type alertEscalation from '../locales/en/alertEscalation.json'
 import type alertRunbook from '../locales/en/alertRunbook.json'
+import type alertRegression from '../locales/en/alertRegression.json'
 import type autoscaleSchedule from '../locales/en/autoscaleSchedule.json'
 import type appBulkScale from '../locales/en/appBulkScale.json'
 import type sleepHistory from '../locales/en/sleepHistory.json'
@@ -273,6 +274,7 @@ declare module 'i18next' {
       backupPins: typeof backupPins
       alertEscalation: typeof alertEscalation
       alertRunbook: typeof alertRunbook
+      alertRegression: typeof alertRegression
       autoscaleSchedule: typeof autoscaleSchedule
       appBulkScale: typeof appBulkScale
       sleepHistory: typeof sleepHistory

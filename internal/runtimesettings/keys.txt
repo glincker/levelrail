@@ -21,6 +21,9 @@ alerts.default_5xx_percent
 alerts.default_crashloop_restarts
 alerts.defaults_enabled
 alerts.digest_schedule
+alerts.duration_regression_baseline
+alerts.duration_regression_percent
+alerts.duration_regression_recent
 alerts.notify_on_sleep
 alerts.renotify_interval
 api.apps_metrics_max

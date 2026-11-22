@@ -51,3 +51,13 @@ func (db *DB) ListFailedDeploysSince(ctx context.Context, since time.Time) ([]Fa
 	}
 	return out, nil
 }
+
+// ListRecentSucceededDeployAttempts returns the newest succeeded attempts that have a finish
+// time, newest first, so callers can derive per-app deploy durations.
+func (db *DB) ListRecentSucceededDeployAttempts(ctx context.Context, limit int) ([]DeployAttempt, error) {
+	if limit <= 0 || limit > buildRunsListMaxRows*4 {
+		limit = buildRunsListMaxRows * 4
+	}
+	return db.queryDeployAttempts(ctx, "succeeded", `status = ? AND finished_at IS NOT NULL AND finished_at <> '' ORDER BY started_at DESC LIMIT ?`,
+		DeployAttemptStatusSucceeded, limit)
+}

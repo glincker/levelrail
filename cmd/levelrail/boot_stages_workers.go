@@ -182,6 +182,14 @@ func (s *bootState) startAlerting() {
 			Baseline: live.Int(c, runtimesettings.KeyBackupSizeAnomalyBaseline),
 		}
 	})
+	alertingEngine.SetDurationRegression(durationAlertSource{db: db}, func(c context.Context) alerting.DurationRegressionPolicy {
+		live := apiRouter.RuntimeSettings()
+		return alerting.DurationRegressionPolicy{
+			Percent:  live.Int(c, runtimesettings.KeyAlertsDurationRegressionPercent),
+			Recent:   live.Int(c, runtimesettings.KeyAlertsDurationRegressionRecent),
+			Baseline: live.Int(c, runtimesettings.KeyAlertsDurationRegressionBaseline),
+		}
+	})
 	alertingEngine.SetRegistryRefresh(registryRefreshSource{db: db})
 	alertingEngine.SetDNSCredentials(apiRouter)
 	alertingEngine.SetNodeCertThresholds(nodeCertThresholds())
