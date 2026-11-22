@@ -415,6 +415,11 @@ func (rt *Router) handleCreateNodeProvision(w http.ResponseWriter, r *http.Reque
 		return
 	}
 
+	if status, msg := preflightEC2Create(r.Context(), provisioner, provision.CreateOpts{Region: req.Region, Size: req.Size, Name: req.Name}); status != 0 {
+		writeError(w, status, msg)
+		return
+	}
+
 	var bootstrapBody string
 	if req.BootstrapScriptID != "" {
 		if rt.bootstrapScripts == nil {

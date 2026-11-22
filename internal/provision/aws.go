@@ -5,6 +5,7 @@ import (
 	"encoding/base64"
 	"encoding/json"
 	"fmt"
+	"sort"
 
 	"github.com/aws/aws-sdk-go-v2/aws"
 	awsconfig "github.com/aws/aws-sdk-go-v2/config"
@@ -79,6 +80,39 @@ type AWS struct {
 	creds     AWSCredentials
 	shortName string
 	client    func(ctx context.Context, region string) (ec2API, error)
+	guard     EC2CreateGuard
+}
+
+// EC2CreateRequest is what the create guard sees before any AWS call.
+type EC2CreateRequest struct {
+	Region, InstanceType, Name, ProvisionID string
+}
+
+// EC2CreateGuard decides one EC2 create and returns the full tag set to apply.
+// It returns a *GuardRefusal to refuse.
+type EC2CreateGuard func(ctx context.Context, req EC2CreateRequest) (map[string]string, error)
+
+// GuardRefusal is a guard decision that stops a create before any cloud call.
+type GuardRefusal struct{ Code, Message string }
+
+func (e *GuardRefusal) Error() string {
+	return "provision: create refused (" + e.Code + "): " + e.Message
+}
+
+// SetCreateGuard injects the mandatory create guard; without one every create is refused.
+func (a *AWS) SetCreateGuard(g EC2CreateGuard) { a.guard = g }
+
+// PreflightCreate runs the guard alone so callers can refuse with a 4xx before queueing work.
+func (a *AWS) PreflightCreate(ctx context.Context, opts CreateOpts) error {
+	_, err := a.authorizeCreate(ctx, opts)
+	return err
+}
+
+func (a *AWS) authorizeCreate(ctx context.Context, opts CreateOpts) (map[string]string, error) {
+	if a.guard == nil {
+		return nil, &GuardRefusal{Code: "guard_missing", Message: "EC2 creates need the cloud create guard, which is not configured."}
+	}
+	return a.guard(ctx, EC2CreateRequest{Region: opts.Region, InstanceType: opts.Size, Name: opts.Name, ProvisionID: opts.ProvisionID})
 }
 
 // NewAWS returns an AWS provisioner authenticating with creds.
@@ -211,6 +245,10 @@ func (a *AWS) CreateServer(ctx context.Context, opts CreateOpts) (serverID, ipAd
 	if opts.Region == "" {
 		return "", "", fmt.Errorf("provision: aws create server: region is required")
 	}
+	tags, err := a.authorizeCreate(ctx, opts)
+	if err != nil {
+		return "", "", err
+	}
 	client, err := a.client(ctx, opts.Region)
 	if err != nil {
 		return "", "", fmt.Errorf("provision: aws create server: %w", err)
@@ -262,13 +300,7 @@ func (a *AWS) CreateServer(ctx context.Context, opts CreateOpts) (serverID, ipAd
 				DeleteOnTermination: aws.Bool(true),
 			},
 		}},
-		TagSpecifications: []types.TagSpecification{{
-			ResourceType: types.ResourceTypeInstance,
-			Tags: []types.Tag{
-				{Key: aws.String("Name"), Value: aws.String(opts.Name)},
-				{Key: aws.String(awsManagedTagKey), Value: aws.String(awsShortNameOrFallback(a.shortName))},
-			},
-		}},
+		TagSpecifications: awsCreateTagSpecs(tags, a.shortName),
 	})
 	if err != nil {
 		return "", "", fmt.Errorf("provision: aws run instances: %w", err)
@@ -328,4 +360,26 @@ func (a *AWS) DeleteServer(ctx context.Context, id string) error {
 	}
 	cleanupDedicatedSecurityGroups(ctx, client, instanceID, groupIDs)
 	return nil
+}
+
+// awsCreateTagSpecs puts the same tags on the instance, its root volume and its network
+// interface so nothing the create makes is left unmanaged.
+func awsCreateTagSpecs(tags map[string]string, shortName string) []types.TagSpecification {
+	list := make([]types.Tag, 0, len(tags)+1)
+	list = append(list, types.Tag{Key: aws.String(awsManagedTagKey), Value: aws.String(awsShortNameOrFallback(shortName))})
+	keys := make([]string, 0, len(tags))
+	for k := range tags {
+		if k != awsManagedTagKey {
+			keys = append(keys, k)
+		}
+	}
+	sort.Strings(keys)
+	for _, k := range keys {
+		list = append(list, types.Tag{Key: aws.String(k), Value: aws.String(tags[k])})
+	}
+	return []types.TagSpecification{
+		{ResourceType: types.ResourceTypeInstance, Tags: list},
+		{ResourceType: types.ResourceTypeVolume, Tags: list},
+		{ResourceType: types.ResourceTypeNetworkInterface, Tags: list},
+	}
 }

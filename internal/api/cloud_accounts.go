@@ -982,6 +982,7 @@ func (rt *Router) resolveNodeProvisionerForAccount(ctx context.Context, provider
 	if err != nil {
 		return nil, false, http.StatusInternalServerError, "internal error"
 	}
+	rt.armEC2CreateGuard(provisioner, acct)
 	return provisioner, true, 0, ""
 }
 

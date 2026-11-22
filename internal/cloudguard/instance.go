@@ -19,9 +19,9 @@ type InstanceInput struct {
 	Meta                                       TagMeta
 }
 
-// RunInstance creates one EC2 instance. The guard decides first and the mandatory
-// tags go on the RunInstances call itself, so the instance is never untagged.
-func RunInstance(ctx context.Context, c *awsx.Client, g *Guard, in InstanceInput) (string, error) {
+// Authorize runs the guard for one EC2 create and returns the full tag set to apply.
+// A refusal carries the guard code and message so callers can answer with a clear 4xx.
+func (g *Guard) Authorize(ctx context.Context, in InstanceInput) (map[string]string, Decision) {
 	base := map[string]string{}
 	if in.Name != "" {
 		base["Name"] = in.Name
@@ -29,6 +29,13 @@ func RunInstance(ctx context.Context, c *awsx.Client, g *Guard, in InstanceInput
 	tags := InjectTags(g.cfg(), base, in.Meta)
 	d := g.Check(ctx, CreateRequest{Account: in.Account, Service: "ec2", Resource: in.Name,
 		InstanceType: in.Type, EstimatedMonthlyUSD: in.EstimatedMonthlyUSD, Tags: tags})
+	return tags, d
+}
+
+// RunInstance creates one EC2 instance. The guard decides first and the mandatory
+// tags go on the RunInstances call itself, so the instance is never untagged.
+func RunInstance(ctx context.Context, c *awsx.Client, g *Guard, in InstanceInput) (string, error) {
+	tags, d := g.Authorize(ctx, in)
 	if !d.Allowed {
 		return "", errors.Join(ErrRefused, errors.New(d.Message))
 	}
