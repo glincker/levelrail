@@ -187,7 +187,8 @@ describe('backups page', () => {
 
     await user.click(await screen.findByRole('radio', { name: /Local disk/ }))
 
-    expect(screen.getByRole('alert')).toHaveTextContent(/lost with the machine/)
+    const warning = await screen.findByText(/lost with the machine/)
+    expect(warning.closest('[role="alert"]')).not.toBeNull()
   })
 
   it('leads with coverage and one action, and lists every resource with its state', async () => {
