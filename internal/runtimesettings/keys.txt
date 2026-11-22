@@ -75,6 +75,7 @@ backup.default_retention_hours
 backup.hook_max_output_bytes
 backup.hook_timeout_seconds
 backup.local_root
+backup.run_window
 backup.sftp_allow_private_networks
 backup.sftp_connect_timeout
 backup.sftp_idle_timeout
@@ -84,6 +85,7 @@ backup.sftp_max_entries
 backup.sftp_scan_per_minute
 backup.size_anomaly_baseline
 backup.size_anomaly_percent
+backup.upload_kb_per_sec
 backup.webdav_allow_private_networks
 backup.webdav_header_timeout
 backup.webdav_idle_timeout

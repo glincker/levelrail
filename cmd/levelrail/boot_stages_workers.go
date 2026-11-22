@@ -332,6 +332,12 @@ func (s *bootState) startSchedulers() {
 		scheduler.DefaultRetentionHours = func(ctx context.Context) int {
 			return s.apiRouter.RuntimeSettings().Int(ctx, runtimesettings.KeyBackupDefaultRetentionHours)
 		}
+		scheduler.RunWindow = func(ctx context.Context) string {
+			return s.apiRouter.RuntimeSettings().String(ctx, runtimesettings.KeyBackupRunWindow)
+		}
+		backup.SetUploadLimit(func() int {
+			return s.apiRouter.RuntimeSettings().Int(context.Background(), runtimesettings.KeyBackupUploadKBPerSec)
+		})
 		scheduler.ComposeServices = newComposeServiceBackupRunner(db, client, agentRegistry, backupRunner)
 		scheduler.BaseBackups = newBaseBackupRunner(db, secretsManager, client, backupRunner, logger)
 		walShip := newWALShipScheduler(db, client, backupRunner, func(nodeID string) bool {
