@@ -301,8 +301,10 @@ These variables only seed the default of a [runtime setting](/runtime-settings).
 | `APP_BULK_CONFIRM_ABOVE` | [`bulk.confirm_above`](/runtime-settings#deploys) | `10` |
 | `APP_BULK_MAX_APPS` | [`bulk.max_apps`](/runtime-settings#deploys) | `200` |
 | `APP_BULK_MAX_RESOURCES` | [`bulk.max_resources`](/runtime-settings#deploys) | `500` |
+| `APP_CANARY_ALERT_RULE_ID` | [`canary.alert_rule_id`](/runtime-settings#deploys) | empty |
 | `APP_CANARY_INTERVAL` | [`canary.interval`](/runtime-settings#deploys) | `5m` |
 | `APP_CANARY_MAX_ERROR_RATE` | [`canary.max_error_rate`](/runtime-settings#deploys) | `0.02` |
+| `APP_CANARY_MAX_HEALTH_FAILURES` | [`canary.max_health_failures`](/runtime-settings#deploys) | `1` |
 | `APP_CANARY_MAX_P95_RATIO` | [`canary.max_p95_ratio`](/runtime-settings#deploys) | `1.5` |
 | `APP_CANARY_MIN_REQUESTS` | [`canary.min_requests`](/runtime-settings#deploys) | `30` |
 | `APP_CANARY_P95_FLOOR_MS` | [`canary.p95_floor_ms`](/runtime-settings#deploys) | `50` |

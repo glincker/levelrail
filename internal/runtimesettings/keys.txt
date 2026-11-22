@@ -138,8 +138,10 @@ bulk.confirm_above
 bulk.max_apps
 bulk.max_pause_seconds
 bulk.max_resources
+canary.alert_rule_id
 canary.interval
 canary.max_error_rate
+canary.max_health_failures
 canary.max_p95_ratio
 canary.min_requests
 canary.p95_floor_ms

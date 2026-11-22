@@ -74,6 +74,8 @@ setting that was never saved.
 | `canary.min_requests` | `30` | Canary requests needed before a stage is judged. |
 | `canary.p95_floor_ms` | `50` | Latency ratio is ignored below this p95. |
 | `canary.tick` | `15s` | How often the reconciler runs. |
+| `canary.max_health_failures` | `1` | Rolls back once the canary's liveness probe has failed this many times in a row. 0 turns it off. |
+| `canary.alert_rule_id` | empty | Rolls back while this alert rule is firing. Empty turns it off. |
 
 An app overrides them in `app.yaml`. A deploy saves the block, and `canary
 start` without `--weight` then runs staged with it:

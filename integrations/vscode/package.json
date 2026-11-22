@@ -1,0 +1,42 @@
+{
+  "name": "levelrail-vscode",
+  "displayName": "Levelrail",
+  "description": "List apps, deploy and tail deploy logs from the editor.",
+  "version": "0.1.0",
+  "private": true,
+  "license": "Apache-2.0",
+  "publisher": "levelrail",
+  "engines": { "vscode": "^1.85.0" },
+  "categories": ["Other"],
+  "main": "./dist/extension.js",
+  "activationEvents": ["onView:levelrail.apps", "onCommand:levelrail.setToken"],
+  "contributes": {
+    "configuration": {
+      "title": "Levelrail",
+      "properties": {
+        "levelrail.apiUrl": {
+          "type": "string",
+          "default": "",
+          "description": "Base URL of your Levelrail control plane, for example https://levelrail.example.com."
+        }
+      }
+    },
+    "viewsContainers": {
+      "activitybar": [{ "id": "levelrail", "title": "Levelrail", "icon": "media/icon.svg" }]
+    },
+    "views": { "levelrail": [{ "id": "levelrail.apps", "name": "Apps" }] },
+    "commands": [
+      { "command": "levelrail.setToken", "title": "Levelrail: Set API token" },
+      { "command": "levelrail.refresh", "title": "Levelrail: Refresh apps" },
+      { "command": "levelrail.deploy", "title": "Levelrail: Deploy app" },
+      { "command": "levelrail.tailLogs", "title": "Levelrail: Tail deploy logs" }
+    ]
+  },
+  "scripts": {
+    "build": "tsc -p tsconfig.json"
+  },
+  "devDependencies": {
+    "@types/vscode": "1.85.0",
+    "typescript": "5.6.3"
+  }
+}

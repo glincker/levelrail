@@ -295,3 +295,28 @@ func TestReconcilerIgnoresManualAndPausedAndUnroutedCanaries(t *testing.T) {
 		t.Fatal("paused or manual canaries must not be acted on")
 	}
 }
+
+func TestBreachHealthAndAlertSignals(t *testing.T) {
+	lim := testLimits()
+	lim.MaxHealthFailures, lim.AlertRuleID = 2, "rule-1"
+	base := Input{Policy: testPolicy(), Limits: lim}
+
+	if b, _ := Breach(Input{Policy: base.Policy, Limits: lim, HealthFailures: 1}); b {
+		t.Fatal("one failure under a limit of two must not breach")
+	}
+	in := base
+	in.HealthFailures = 2
+	if b, why := Breach(in); !b || why == "" {
+		t.Fatalf("health failures at the limit must breach with a reason, got %v %q", b, why)
+	}
+	in = base
+	in.AlertFiring = true
+	if b, _ := Breach(in); !b {
+		t.Fatal("a firing alert rule must breach even with no traffic")
+	}
+	off := base
+	off.Limits.AlertRuleID, off.AlertFiring = "", true
+	if b, _ := Breach(off); b {
+		t.Fatal("no configured rule means the alert signal is ignored")
+	}
+}

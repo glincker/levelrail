@@ -17,6 +17,7 @@ import (
 	"github.com/GLINCKER/levelrail/internal/auditanchor"
 	"github.com/GLINCKER/levelrail/internal/autoscale"
 	"github.com/GLINCKER/levelrail/internal/backup"
+	"github.com/GLINCKER/levelrail/internal/canary"
 	"github.com/GLINCKER/levelrail/internal/changes"
 	"github.com/GLINCKER/levelrail/internal/cpbackup"
 	"github.com/GLINCKER/levelrail/internal/dbaccess"
@@ -161,6 +162,7 @@ func (s *bootState) startAlerting() {
 		db, backupMissingGracePeriod(logger), alertingNewNotifier, logger)
 	appHealth := alerting.NewAppHealthTracker()
 	alertingEngine.SetAppHealth(appHealth)
+	canary.SetDefaultSignals(alerting.NewCanarySignals(appHealth, alertingDB))
 	s.liveness().SetObserver(func(container, service string, unhealthy bool, failures int, at time.Time) {
 		appHealth.Record(container, service, unhealthy, failures, at)
 	})

@@ -5,6 +5,7 @@ import (
 	"fmt"
 	"log/slog"
 	"sync"
+	"sync/atomic"
 	"time"
 
 	"github.com/GLINCKER/levelrail/internal/store"
@@ -65,6 +66,23 @@ type Stats interface {
 type Actions interface {
 	Promote(ctx context.Context, rel store.CanaryRelease) error
 	Rollback(ctx context.Context, rel store.CanaryRelease, reason string) error
+}
+
+// Signals are the extra rollback inputs beyond edge traffic. Both are optional.
+type Signals interface {
+	HealthFailures(service string) uint64
+	AlertFiring(ctx context.Context, ruleID string) bool
+}
+
+var defaultSignals atomic.Pointer[Signals]
+
+// SetDefaultSignals installs the health and alert source; nil removes it.
+func SetDefaultSignals(s Signals) {
+	if s == nil {
+		defaultSignals.Store(nil)
+		return
+	}
+	defaultSignals.Store(&s)
 }
 
 type window struct {
@@ -184,6 +202,12 @@ func (r *Reconciler) reconcileOne(ctx context.Context, rel store.CanaryRelease, 
 	}
 	w := r.windowFor(rel, pair, totals)
 	in := r.input(rel, w, totals)
+	if sig := defaultSignals.Load(); sig != nil {
+		in.HealthFailures = (*sig).HealthFailures(rel.CanaryService)
+		if in.Limits.AlertRuleID != "" {
+			in.AlertFiring = (*sig).AlertFiring(ctx, in.Limits.AlertRuleID)
+		}
+	}
 	d := Decide(in)
 	switch d.Action {
 	case Advance:

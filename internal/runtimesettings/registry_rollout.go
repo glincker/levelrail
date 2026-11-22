@@ -25,21 +25,25 @@ const (
 	SettingCanaryP95FloorMS  = "canary.p95_floor_ms"
 	KeyCanaryTick            = "canary.tick"
 	KeyCanarySticky          = "canary.sticky"
+	KeyCanaryMaxHealthFails  = "canary.max_health_failures"
+	KeyCanaryAlertRuleID     = "canary.alert_rule_id"
 )
 
 // rolloutEnvKeys maps each env name the policy packages read to its setting.
 var rolloutEnvKeys = map[string]string{
-	rolloutpolicy.EnvMaxSurge:       KeyRolloutMaxSurge,
-	rolloutpolicy.EnvMaxUnavailable: KeyRolloutMaxUnavailable,
-	rolloutpolicy.EnvMinAvailable:   KeyRolloutMinAvailable,
-	canarypolicy.EnvStages:          KeyCanaryStages,
-	canarypolicy.EnvInterval:        KeyCanaryInterval,
-	canarypolicy.EnvMaxErrorRate:    KeyCanaryMaxErrorRate,
-	canarypolicy.EnvMaxP95Ratio:     SettingCanaryMaxP95Ratio,
-	canarypolicy.EnvMinRequests:     KeyCanaryMinRequests,
-	canarypolicy.EnvP95FloorMS:      SettingCanaryP95FloorMS,
-	canarypolicy.EnvTick:            KeyCanaryTick,
-	canarypolicy.EnvSticky:          KeyCanarySticky,
+	rolloutpolicy.EnvMaxSurge:         KeyRolloutMaxSurge,
+	rolloutpolicy.EnvMaxUnavailable:   KeyRolloutMaxUnavailable,
+	rolloutpolicy.EnvMinAvailable:     KeyRolloutMinAvailable,
+	canarypolicy.EnvStages:            KeyCanaryStages,
+	canarypolicy.EnvInterval:          KeyCanaryInterval,
+	canarypolicy.EnvMaxErrorRate:      KeyCanaryMaxErrorRate,
+	canarypolicy.EnvMaxP95Ratio:       SettingCanaryMaxP95Ratio,
+	canarypolicy.EnvMinRequests:       KeyCanaryMinRequests,
+	canarypolicy.EnvP95FloorMS:        SettingCanaryP95FloorMS,
+	canarypolicy.EnvTick:              KeyCanaryTick,
+	canarypolicy.EnvSticky:            KeyCanarySticky,
+	canarypolicy.EnvMaxHealthFailures: KeyCanaryMaxHealthFails,
+	canarypolicy.EnvAlertRuleID:       KeyCanaryAlertRuleID,
 }
 
 func rolloutValueCheck(canonical string) error {
@@ -129,6 +133,18 @@ func init() {
 }
 
 func init() {
+	Register(Definition{
+		Key: KeyCanaryMaxHealthFails, Category: CategoryDeploys, Kind: KindInt, Default: "1",
+		Env: canarypolicy.EnvMaxHealthFailures, Apply: ApplyLive, CheckValue: intRangeCheck(0, 1000),
+		Title:       "Canary rollback on health check failures",
+		Description: "Rolls a canary back once its liveness probe has failed this many times in a row, from 0 to 1000. 0 turns the check off. The next reconcile tick uses a changed value.",
+	})
+	Register(Definition{
+		Key: KeyCanaryAlertRuleID, Category: CategoryDeploys, Kind: KindString, Default: "",
+		Env: canarypolicy.EnvAlertRuleID, Apply: ApplyLive,
+		Title:       "Canary rollback alert rule",
+		Description: "ID of an alert rule that rolls a running canary back while it is firing. Empty turns the check off. The next reconcile tick uses a changed value.",
+	})
 	Register(Definition{
 		Key: KeyCanarySticky, Category: CategoryDeploys, Kind: KindBool, Default: "true",
 		Env: canarypolicy.EnvSticky, Apply: ApplyLive,
