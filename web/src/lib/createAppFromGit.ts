@@ -262,3 +262,49 @@ export async function connectGitSourceFor(
   })
   return { resource, autoRegistered: false }
 }
+
+// One env var the repo documents, shown as a fill-in row on the create form.
+export interface EnvHintRow {
+  name: string
+  value: string
+  secret: boolean
+}
+
+// Adds a blank row for each required hint not already present, keeping
+// anything the user already typed when the scan result refreshes.
+export function mergeEnvHintRows(
+  rows: EnvHintRow[],
+  hints: readonly { name: string; required: boolean; looks_secret: boolean }[],
+): EnvHintRow[] {
+  const known = new Set(rows.map((r) => r.name))
+  const added = hints
+    .filter((h) => h.required && !known.has(h.name))
+    .map((h) => ({ name: h.name, value: '', secret: h.looks_secret }))
+  return added.length > 0 ? [...rows, ...added] : rows
+}
+
+// Required rows that are still empty block the deploy.
+export function missingEnvRows(rows: readonly EnvHintRow[]): string[] {
+  return rows.filter((r) => r.value.trim() === '').map((r) => r.name)
+}
+
+// Splits filled rows into plain env and encrypted secrets for POST /api/v1/apps.
+export function envPayloadFrom(rows: readonly EnvHintRow[]): {
+  env?: Record<string, string>
+  secrets?: Record<string, string>
+  secret_env?: string[]
+} {
+  const env: Record<string, string> = {}
+  const secrets: Record<string, string> = {}
+  for (const r of rows) {
+    if (r.value.trim() === '') continue
+    if (r.secret) secrets[r.name] = r.value
+    else env[r.name] = r.value
+  }
+  const secretNames = Object.keys(secrets)
+  return {
+    env: Object.keys(env).length > 0 ? env : undefined,
+    secrets: secretNames.length > 0 ? secrets : undefined,
+    secret_env: secretNames.length > 0 ? secretNames : undefined,
+  }
+}

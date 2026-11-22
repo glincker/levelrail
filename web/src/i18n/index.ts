@@ -103,6 +103,7 @@ export const NAMESPACES = [
   'runtimeSettings',
   'newApp',
   'getStarted',
+  'appSetup',
   'onboarding',
   'usage',
   'costs',
