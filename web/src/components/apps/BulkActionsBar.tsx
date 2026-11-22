@@ -1,5 +1,5 @@
 import '@/styles/material.css'
-import { useEffect, useId, useState } from 'react'
+import { useEffect, useId, useMemo, useState } from 'react'
 import { useTranslation } from 'react-i18next'
 import { useQueryClient } from '@tanstack/react-query'
 import {
@@ -25,10 +25,16 @@ import {
   type BulkAction,
   type BulkAppResult,
   type BulkResponse,
+  parseScaleValue,
 } from '../../queries/appsBulk'
 import { appKeys } from '../../queries/apps'
 
-const PRIMARY: { value: BulkAction; icon: typeof PlayGlassIcon }[] = [
+type OwnAction = 'scale' | 'rollback'
+
+const PRIMARY: {
+  value: Exclude<BulkAction, OwnAction>
+  icon: typeof PlayGlassIcon
+}[] = [
   { value: 'restart', icon: RefreshCwGlassIcon },
   { value: 'redeploy', icon: RocketGlassIcon },
   { value: 'stop', icon: PauseGlassIcon },
@@ -41,13 +47,19 @@ const MORE: { value: BulkAction; needsValue: boolean }[] = [
   { value: 'remove-tag', needsValue: true },
   { value: 'set-environment', needsValue: true },
   { value: 'move-to-project', needsValue: true },
+  { value: 'scale', needsValue: true },
+  { value: 'rollback', needsValue: false },
   { value: 'delete', needsValue: false },
 ]
 
 type ValueAction =
   'add-tag' | 'remove-tag' | 'set-environment' | 'move-to-project'
 
-const DISRUPTIVE = new Set<BulkAction>(['stop', 'delete'])
+const DISRUPTIVE = new Set<BulkAction>(['stop', 'delete', 'rollback'])
+
+// Labels of the scale and rollback verbs live in their own namespace.
+const isOwnAction = (a: BulkAction): a is OwnAction =>
+  a === 'scale' || a === 'rollback'
 
 const STATUS_STYLE: Record<BulkAppResult['status'], string> = {
   ok: 'text-tone-success',
@@ -96,9 +108,13 @@ function BulkDialog({
   names: string[]
   onClose: (applied: boolean) => void
 }) {
-  const { t } = useTranslation('appRows')
+  const { t } = useTranslation(['appRows', 'appBulkScale'])
   const queryClient = useQueryClient()
   const inputId = useId()
+  const scaleFields = useMemo(
+    () => (action === 'scale' ? parseScaleValue(value) : null) ?? {},
+    [action, value],
+  )
   const [plan, setPlan] = useState<BulkResponse | null>(null)
   const [applied, setApplied] = useState<BulkResponse | null>(null)
   const [error, setError] = useState<string | null>(null)
@@ -107,7 +123,13 @@ function BulkDialog({
 
   useEffect(() => {
     let live = true
-    postBulk({ action, names, value: value || undefined, dry_run: true })
+    postBulk({
+      action,
+      names,
+      value: value || undefined,
+      ...scaleFields,
+      dry_run: true,
+    })
       .then((res) => {
         if (live) setPlan(res)
       })
@@ -117,12 +139,14 @@ function BulkDialog({
     return () => {
       live = false
     }
-  }, [action, names, value])
+  }, [action, names, value, scaleFields])
 
   const targets = (plan?.results ?? [])
     .filter((r) => r.status === 'would_apply')
     .map((r) => r.name)
-  const label = t(`bulkBar.action.${action}`)
+  const label = isOwnAction(action)
+    ? t(`appBulkScale:action.${action}`)
+    : t(`bulkBar.action.${action}`)
   const confirmed = typed.trim() === String(targets.length)
 
   const apply = async () => {
@@ -133,6 +157,7 @@ function BulkDialog({
         action,
         names: targets,
         value: value || undefined,
+        ...scaleFields,
         confirm_count: targets.length,
         confirm_names: action === 'delete' ? targets : undefined,
       })
@@ -186,12 +211,16 @@ function BulkDialog({
                   className="mt-0.5 size-5 shrink-0 text-tone-warning"
                   aria-hidden="true"
                 />
-                {t(
-                  `bulkBar.warning.${action === 'delete' ? 'delete' : 'stop'}`,
-                  {
-                    count: targets.length,
-                  },
-                )}
+                {action === 'rollback'
+                  ? t('appBulkScale:warning.rollback', {
+                      count: targets.length,
+                    })
+                  : t(
+                      `bulkBar.warning.${action === 'delete' ? 'delete' : 'stop'}`,
+                      {
+                        count: targets.length,
+                      },
+                    )}
               </p>
             ) : null}
             {targets.length > 0 ? (
@@ -266,12 +295,17 @@ export function BulkActionsBar({
   canAct: boolean
   onClear: () => void
 }) {
-  const { t } = useTranslation('appRows')
+  const { t } = useTranslation(['appRows', 'appBulkScale'])
   const [pending, setPending] = useState<BulkAction | null>(null)
   const [more, setMore] = useState<BulkAction | ''>('')
   const [value, setValue] = useState('')
   const count = selected.length
   const moreSpec = MORE.find((m) => m.value === more)
+  const valueLabel = moreSpec?.needsValue
+    ? moreSpec.value === 'scale'
+      ? t('appBulkScale:value.scale')
+      : t(`bulkBar.value.${moreSpec.value as ValueAction}`)
+    : ''
 
   return (
     <>
@@ -317,15 +351,22 @@ export function BulkActionsBar({
             <option value="">{t('bulkBar.more')}</option>
             {MORE.map((m) => (
               <option key={m.value} value={m.value}>
-                {t(`bulkBar.action.${m.value}`)}
+                {isOwnAction(m.value)
+                  ? t(`appBulkScale:action.${m.value}`)
+                  : t(`bulkBar.action.${m.value}`)}
               </option>
             ))}
           </select>
           {moreSpec?.needsValue ? (
             <Input
               value={value}
-              aria-label={t(`bulkBar.value.${moreSpec.value as ValueAction}`)}
-              placeholder={t(`bulkBar.value.${moreSpec.value as ValueAction}`)}
+              aria-label={valueLabel}
+              placeholder={valueLabel}
+              title={
+                moreSpec.value === 'scale'
+                  ? t('appBulkScale:hint.scale')
+                  : undefined
+              }
               className="h-8 w-full sm:w-44"
               onChange={(e) => {
                 setValue(e.target.value)
@@ -337,7 +378,13 @@ export function BulkActionsBar({
               type="button"
               size="sm"
               variant={more === 'delete' ? 'destructive' : 'outline'}
-              disabled={!canAct || (moreSpec?.needsValue && !value.trim())}
+              disabled={
+                !canAct ||
+                (moreSpec?.needsValue &&
+                  (more === 'scale'
+                    ? parseScaleValue(value) === null
+                    : !value.trim()))
+              }
               onClick={() => {
                 setPending(more)
               }}

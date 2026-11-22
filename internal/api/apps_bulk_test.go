@@ -1,6 +1,7 @@
 package api
 
 import (
+	"context"
 	"encoding/json"
 	"net/http"
 	"net/http/httptest"
@@ -175,5 +176,37 @@ func TestBulkApps_WavesHaltOnFail(t *testing.T) {
 	bulkMarkSkipped(rows, []string{"x", "y", "z"}, 1, "later")
 	if rows[0].Name != "" || rows[1].Name != "y" || rows[2].Status != bulkStatusSkipped {
 		t.Errorf("skip fill = %+v", rows)
+	}
+}
+
+func TestBulkApps_ScaleAndRollback(t *testing.T) {
+	rt, db := newTestRouter(t)
+	cookie := loginTestSession(t, rt, db)
+	seedScheduledTaskApp(t, db, "a-app")
+	seedScheduledTaskApp(t, db, "b-app")
+
+	if code, _ := bulkCall(t, rt, cookie, `{"action":"scale","names":["a-app"]}`); code != http.StatusBadRequest {
+		t.Fatalf("scale without a count = %d, want 400", code)
+	}
+	code, resp := bulkCall(t, rt, cookie, `{"action":"scale","names":["a-app","b-app"],"replicas":3}`)
+	if code != http.StatusMultiStatus {
+		t.Fatalf("scale status = %d, want 207", code)
+	}
+	for name, st := range bulkStatuses(resp) {
+		if st != bulkStatusOK {
+			t.Errorf("scale %s = %q, want ok", name, st)
+		}
+		svc, err := db.GetDesiredService(context.Background(), name)
+		if err != nil || svc.Replicas != 3 {
+			t.Errorf("%s replicas = %v err=%v, want 3", name, svc, err)
+		}
+	}
+	_, resp = bulkCall(t, rt, cookie, `{"action":"scale","names":["a-app"],"replicas":3}`)
+	if got := bulkStatuses(resp)["a-app"]; got != bulkStatusSkipped {
+		t.Errorf("rescale to same count = %q, want skipped", got)
+	}
+	_, resp = bulkCall(t, rt, cookie, `{"action":"rollback","names":["a-app"]}`)
+	if got := bulkStatuses(resp)["a-app"]; got != bulkStatusSkipped {
+		t.Errorf("rollback without history = %q, want skipped", got)
 	}
 }

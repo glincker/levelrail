@@ -127,7 +127,11 @@ build.transfer_mode
 build.transfer_push_ttl
 builds.memory_limit_mb
 builds.setting_value_max_bytes
+bulk.concurrency
+bulk.confirm_above
+bulk.max_apps
 bulk.max_pause_seconds
+bulk.max_resources
 canary.interval
 canary.max_error_rate
 canary.max_p95_ratio

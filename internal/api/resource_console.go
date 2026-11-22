@@ -13,6 +13,7 @@ import (
 	"strings"
 	"time"
 
+	"github.com/GLINCKER/levelrail/internal/runtimesettings"
 	"github.com/GLINCKER/levelrail/internal/store"
 )
 
@@ -318,7 +319,7 @@ func (rt *Router) handleBulkResourceTags(w http.ResponseWriter, r *http.Request)
 		writeError(w, http.StatusBadRequest, "resources is required")
 		return
 	}
-	if maxN := envIntDefault("APP_BULK_MAX_RESOURCES", 500); len(req.Resources) > maxN {
+	if maxN := rt.bulkLimit(r.Context(), runtimesettings.KeyBulkMaxResources); len(req.Resources) > maxN {
 		writeError(w, http.StatusBadRequest, fmt.Sprintf("too many resources (%d, max %d)", len(req.Resources), maxN))
 		return
 	}

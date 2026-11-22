@@ -9,12 +9,16 @@ import (
 )
 
 type bulkAppsInput struct {
-	Action      string   `json:"action" jsonschema:"one of redeploy, restart, stop, start, add-tag, remove-tag, set-environment, move-to-project"`
-	Names       []string `json:"names,omitempty" jsonschema:"app names to act on; alternatively select by tag or environment"`
-	Tag         string   `json:"tag,omitempty" jsonschema:"select every app carrying this tag"`
-	Environment string   `json:"environment,omitempty" jsonschema:"select every app in this environment (name or ID)"`
-	Value       string   `json:"value,omitempty" jsonschema:"the tag, environment or project ID for add-tag, remove-tag, set-environment and move-to-project"`
-	DryRun      bool     `json:"dry_run,omitempty" jsonschema:"list what would be applied and change nothing"`
+	Action       string   `json:"action" jsonschema:"one of redeploy, restart, stop, start, add-tag, remove-tag, set-environment, move-to-project, scale, rollback"`
+	Names        []string `json:"names,omitempty" jsonschema:"app names to act on; alternatively select by tag or environment"`
+	Tag          string   `json:"tag,omitempty" jsonschema:"select every app carrying this tag"`
+	Environment  string   `json:"environment,omitempty" jsonschema:"select every app in this environment (name or ID)"`
+	Value        string   `json:"value,omitempty" jsonschema:"the tag, environment or project ID for add-tag, remove-tag, set-environment and move-to-project"`
+	DryRun       bool     `json:"dry_run,omitempty" jsonschema:"list what would be applied and change nothing"`
+	Replicas     *int     `json:"replicas,omitempty" jsonschema:"scale: replicas for apps without autoscale"`
+	MinReplicas  *int     `json:"min_replicas,omitempty" jsonschema:"scale: autoscale minimum for autoscaled apps, with max_replicas"`
+	MaxReplicas  *int     `json:"max_replicas,omitempty" jsonschema:"scale: autoscale maximum for autoscaled apps, with min_replicas"`
+	ConfirmCount int      `json:"confirm_count,omitempty" jsonschema:"number of target apps, needed to restart, stop, redeploy or roll back more apps than the confirm limit"`
 }
 
 type bulkDeleteAppsInput struct {
@@ -35,6 +39,7 @@ func registerBulkAppTools(server *mcp.Server, client *apiclient.Client) {
 		}
 		resp, err := client.BulkApps(ctx, apiclient.BulkAppsRequest{
 			Action: in.Action, Names: in.Names, Tag: in.Tag, Environment: in.Environment, Value: in.Value, DryRun: in.DryRun,
+			Replicas: in.Replicas, MinReplicas: in.MinReplicas, MaxReplicas: in.MaxReplicas, ConfirmCount: in.ConfirmCount,
 		})
 		if err != nil {
 			return nil, apiclient.BulkAppsResponse{}, fmt.Errorf("bulk apps %q: %w", in.Action, err)

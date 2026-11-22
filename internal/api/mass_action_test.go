@@ -22,11 +22,13 @@ func TestBulkNeedsCountConfirm(t *testing.T) {
 		{bulkActionRestart, 11, true},
 		{bulkActionStop, 11, true},
 		{bulkActionRedeploy, 50, true},
+		{bulkActionRollback, 11, true},
+		{bulkActionScale, 50, false},
 		{bulkActionAddTag, 50, false},
 		{bulkActionDelete, 50, false},
 	}
 	for _, tc := range tests {
-		if got := bulkNeedsCountConfirm(tc.action, tc.n); got != tc.want {
+		if got := bulkNeedsCountConfirm(tc.action, tc.n, 10); got != tc.want {
 			t.Errorf("bulkNeedsCountConfirm(%s, %d) = %v, want %v", tc.action, tc.n, got, tc.want)
 		}
 	}

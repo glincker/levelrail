@@ -6,7 +6,8 @@ import type { BulkRequest, BulkResponse } from '../../queries/appsBulk'
 import { BulkActionsBar } from './BulkActionsBar'
 
 const postBulk = vi.fn<(req: BulkRequest) => Promise<BulkResponse>>()
-vi.mock('../../queries/appsBulk', () => ({
+vi.mock('../../queries/appsBulk', async (importOriginal) => ({
+  ...(await importOriginal<typeof import('../../queries/appsBulk')>()),
   postBulk: (req: BulkRequest) => postBulk(req),
 }))
 
@@ -72,5 +73,36 @@ describe('BulkActionsBar', () => {
       true,
     )
     expect(screen.getByText(/read-only/)).toBeTruthy()
+  })
+
+  it('scales with a replica count or an autoscale range from one field', async () => {
+    postBulk.mockImplementation((req) =>
+      Promise.resolve({
+        action: req.action,
+        dry_run: req.dry_run ?? false,
+        counts: {},
+        results: [{ name: 'web', status: 'would_apply' }],
+      }),
+    )
+    renderBar()
+    fireEvent.change(screen.getByLabelText('More actions'), {
+      target: { value: 'scale' },
+    })
+    const field = screen.getByLabelText('Replicas (3) or min-max (2-6)')
+    const review = screen.getByRole('button', { name: 'Review' })
+    fireEvent.change(field, { target: { value: 'many' } })
+    expect(review).toHaveProperty('disabled', true)
+    fireEvent.change(field, { target: { value: '2-6' } })
+    fireEvent.click(review)
+    await waitFor(() => {
+      expect(postBulk).toHaveBeenCalledWith(
+        expect.objectContaining({
+          action: 'scale',
+          min_replicas: 2,
+          max_replicas: 6,
+          dry_run: true,
+        }),
+      )
+    })
   })
 })

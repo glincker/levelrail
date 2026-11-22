@@ -20,6 +20,9 @@ type BulkAppsRequest struct {
 	BatchSize    int      `json:"batch_size,omitempty"`
 	PauseSeconds int      `json:"pause_seconds,omitempty"`
 	HaltOnFail   bool     `json:"halt_on_fail,omitempty"`
+	Replicas     *int     `json:"replicas,omitempty"`
+	MinReplicas  *int     `json:"min_replicas,omitempty"`
+	MaxReplicas  *int     `json:"max_replicas,omitempty"`
 }
 
 // BulkAppResult is one app's outcome in a bulk response.

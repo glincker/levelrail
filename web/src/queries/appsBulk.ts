@@ -12,6 +12,8 @@ export type BulkAction =
   | 'set-environment'
   | 'move-to-project'
   | 'delete'
+  | 'scale'
+  | 'rollback'
 
 export interface BulkRequest {
   action: BulkAction
@@ -20,6 +22,9 @@ export interface BulkRequest {
   dry_run?: boolean
   confirm_names?: string[]
   confirm_count?: number
+  replicas?: number
+  min_replicas?: number
+  max_replicas?: number
 }
 
 export interface BulkAppResult {
@@ -61,4 +66,24 @@ export function useBulkApps() {
       }
     },
   })
+}
+
+export type ScaleFields = Pick<
+  BulkRequest,
+  'replicas' | 'min_replicas' | 'max_replicas'
+>
+
+/** Reads "3" as a replica count and "2-6" as autoscale bounds; null when neither fits. */
+export function parseScaleValue(raw: string): ScaleFields | null {
+  const text = raw.trim()
+  const range = /^(\d+)\s*-\s*(\d+)$/.exec(text)
+  if (range) {
+    const min = Number(range[1])
+    const max = Number(range[2])
+    return min >= 1 && max >= min
+      ? { min_replicas: min, max_replicas: max }
+      : null
+  }
+  if (/^\d+$/.test(text) && Number(text) >= 1) return { replicas: Number(text) }
+  return null
 }

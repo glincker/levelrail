@@ -297,6 +297,10 @@ These variables only seed the default of a [runtime setting](/runtime-settings).
 | `APP_BUILD_TRANSFER_PUSH_TTL` | [`build.transfer_push_ttl`](/runtime-settings#deploys) | `45m` |
 | `APP_BUILD_MEMORY_MB` | [`builds.memory_limit_mb`](/runtime-settings#deploys) | `0` |
 | `APP_BUILD_SETTING_VALUE_MAX_BYTES` | [`builds.setting_value_max_bytes`](/runtime-settings#deploys) | `128` |
+| `APP_BULK_CONCURRENCY` | [`bulk.concurrency`](/runtime-settings#deploys) | `4` |
+| `APP_BULK_CONFIRM_ABOVE` | [`bulk.confirm_above`](/runtime-settings#deploys) | `10` |
+| `APP_BULK_MAX_APPS` | [`bulk.max_apps`](/runtime-settings#deploys) | `200` |
+| `APP_BULK_MAX_RESOURCES` | [`bulk.max_resources`](/runtime-settings#deploys) | `500` |
 | `APP_CANARY_INTERVAL` | [`canary.interval`](/runtime-settings#deploys) | `5m` |
 | `APP_CANARY_MAX_ERROR_RATE` | [`canary.max_error_rate`](/runtime-settings#deploys) | `0.02` |
 | `APP_CANARY_MAX_P95_RATIO` | [`canary.max_p95_ratio`](/runtime-settings#deploys) | `1.5` |

@@ -16,7 +16,7 @@ func runAppsBulk(prog string, args []string, stdout, stderr io.Writer, lookupEnv
 	fs.Usage = func() { _, _ = fmt.Fprint(stderr, appsBulkUsage(prog)) }
 	var tag, env, names string
 	var dryRun, yes, haltOnFail bool
-	var batch, pause int
+	var batch, pause, replicas, minReplicas, maxReplicas int
 	fs.StringVar(&tag, "tag", "", "select every app carrying this tag")
 	fs.StringVar(&env, "env", "", "select every app in this environment (name or ID)")
 	fs.StringVar(&names, "names", "", "comma-separated app names to act on")
@@ -24,6 +24,9 @@ func runAppsBulk(prog string, args []string, stdout, stderr io.Writer, lookupEnv
 	fs.IntVar(&batch, "batch", 0, "apply in waves of this many apps (0 runs them all in one pass)")
 	fs.IntVar(&pause, "pause", 0, "seconds to wait between waves")
 	fs.BoolVar(&haltOnFail, "halt-on-fail", false, "stop before the next wave when a wave has a failure")
+	fs.IntVar(&replicas, "replicas", 0, "scale: set this many replicas on apps without autoscale")
+	fs.IntVar(&minReplicas, "min", 0, "scale: set the autoscale minimum (use with --max) on autoscaled apps")
+	fs.IntVar(&maxReplicas, "max", 0, "scale: set the autoscale maximum (use with --min) on autoscaled apps")
 	fs.BoolVar(&yes, "yes", false, "skip the confirmation prompt")
 
 	tokenFlag, apiURLFlag, profileFlag, jsonOut, of, exitCode, ok := parseAPIFlags(fs, args, apiFlagPtrs{tokenFlagP, apiURLFlagP, profileFlagP, jsonOutP, outputFlagP, queryFlagP}, prog, stderr)
@@ -38,6 +41,12 @@ func runAppsBulk(prog string, args []string, stdout, stderr io.Writer, lookupEnv
 	req := apiclient.BulkAppsRequest{Action: rest[0], Tag: tag, Environment: env, DryRun: dryRun, BatchSize: batch, PauseSeconds: pause, HaltOnFail: haltOnFail}
 	if len(rest) == 2 {
 		req.Value = rest[1]
+	}
+	if replicas > 0 {
+		req.Replicas = &replicas
+	}
+	if minReplicas > 0 || maxReplicas > 0 {
+		req.MinReplicas, req.MaxReplicas = &minReplicas, &maxReplicas
 	}
 	for _, n := range strings.Split(names, ",") {
 		if n = strings.TrimSpace(n); n != "" {
@@ -110,16 +119,19 @@ func appsBulkUsage(prog string) string {
       [--batch N] [--pause SECONDS] [--halt-on-fail]
 
 Actions: redeploy, restart, stop, start, add-tag <tag>, remove-tag <tag>,
-set-environment <env>, move-to-project <project-id>, delete.
+set-environment <env>, move-to-project <project-id>, delete,
+scale (--replicas N, or --min N --max M for autoscaled apps), rollback (each app
+goes back to its previous release; apps without one are skipped).
 
 Each app is authorized separately; denied apps are listed, not hidden, and
 do not fail the rest. Without --yes the targets are shown and confirmed
-first. restart, stop and redeploy of more than 10 apps (APP_BULK_CONFIRM_ABOVE)
+first. restart, stop, redeploy and rollback of more than 10 apps (setting bulk.confirm_above)
 are also confirmed by count server side. delete always lists the exact apps it removes. redeploy skips apps in
 protected environments (deploy those individually).
 
 Flags:
   --tag string, --env string, --names string   select target apps
+  --replicas N, --min N, --max M                scale targets
   --dry-run                                     show what would happen, change nothing
   --yes                                         skip the confirmation prompt
   --token, --api-url, --profile, --json, --output, --query   as for other commands

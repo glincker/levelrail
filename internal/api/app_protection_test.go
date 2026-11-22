@@ -54,7 +54,7 @@ func TestAppLockPutRequiresReason(t *testing.T) {
 
 func TestProtectBulkRestartSkipsProtected(t *testing.T) {
 	rt := &Router{apps: &fakeProtectApps{p: &store.AppProtection{Reason: "demo week"}}}
-	status, msg := rt.runBulkAction(context.Background(), bulkAppsRequest{Action: bulkActionRestart}, store.DesiredService{Name: "web"})
+	status, msg := rt.runBulkAction(context.Background(), nil, bulkAppsRequest{Action: bulkActionRestart}, store.DesiredService{Name: "web"})
 	if status != bulkStatusSkipped || !strings.Contains(msg, "demo week") {
 		t.Fatalf("got %s %q, want skipped with reason", status, msg)
 	}
