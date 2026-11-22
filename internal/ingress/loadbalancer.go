@@ -81,7 +81,10 @@ type LBRoute struct {
 	Weights []int
 	Policy  string
 	// CookieName is the sticky-session cookie for the cookie policy.
-	CookieName            string
+	CookieName string
+	// StickyCookie pins a visitor to the upstream the weighted policy first
+	// chose for them, so a canary does not flip releases mid session.
+	StickyCookie          string
 	Retries               int
 	TryDuration           string
 	TryInterval           string
@@ -105,7 +108,11 @@ func (lb *LBRoute) selectionPolicy() *SelectionPolicy {
 		if len(lb.Weights) == 0 {
 			return nil
 		}
-		return &SelectionPolicy{Policy: LBPolicyWeighted, Weights: lb.Weights}
+		weighted := &SelectionPolicy{Policy: LBPolicyWeighted, Weights: lb.Weights}
+		if lb.StickyCookie != "" {
+			return &SelectionPolicy{Policy: LBPolicyCookie, Name: lb.StickyCookie, Fallback: weighted}
+		}
+		return weighted
 	case LBPolicyCookie:
 		name := lb.CookieName
 		if name == "" {

@@ -3,8 +3,11 @@ package ingress
 import (
 	"context"
 	"log/slog"
+	"strconv"
 	"testing"
+	"time"
 
+	"github.com/GLINCKER/levelrail/internal/canarypolicy"
 	"github.com/GLINCKER/levelrail/internal/store"
 )
 
@@ -29,6 +32,13 @@ func canaryFixture(weight int, seedCanary bool) (*fakeApplier, *Controller) {
 }
 
 func TestController_Canary_SplitsTrafficByWeight(t *testing.T) {
+	canarypolicy.SetLiveEnv(func(k string) string {
+		if k == canarypolicy.EnvSticky {
+			return "false"
+		}
+		return ""
+	})
+	t.Cleanup(func() { canarypolicy.SetLiveEnv(nil) })
 	applier, c := canaryFixture(20, true)
 	if _, err := c.Reconcile(context.Background()); err != nil {
 		t.Fatal(err)
@@ -40,6 +50,38 @@ func TestController_Canary_SplitsTrafficByWeight(t *testing.T) {
 	w := rp.LoadBalancing.SelectionPolicy.Weights
 	if rp.LoadBalancing.SelectionPolicy.Policy != "weighted_round_robin" || len(w) != 2 || w[0] != 80 || w[1] != 20 {
 		t.Errorf("policy = %+v", rp.LoadBalancing.SelectionPolicy)
+	}
+}
+
+func TestController_Canary_StickyCookiePerAppAndRelease(t *testing.T) {
+	t.Cleanup(func() { canarypolicy.SetLiveEnv(nil) })
+	for name, tc := range map[string]struct {
+		sticky string
+		want   bool
+	}{"default on": {"", true}, "off": {"false", false}} {
+		t.Run(name, func(t *testing.T) {
+			canarypolicy.SetLiveEnv(func(k string) string {
+				if k == canarypolicy.EnvSticky {
+					return tc.sticky
+				}
+				return ""
+			})
+			applier, c := canaryFixture(20, true)
+			if _, err := c.Reconcile(context.Background()); err != nil {
+				t.Fatal(err)
+			}
+			sp := proxyHandler(t, applier).LoadBalancing.SelectionPolicy
+			if !tc.want {
+				if sp.Policy != "weighted_round_robin" {
+					t.Fatalf("policy = %+v, want plain weighted", sp)
+				}
+				return
+			}
+			if sp.Policy != "cookie" || sp.Name != "lr_canary_web_"+strconv.FormatInt(time.Time{}.Unix(), 10) ||
+				sp.Fallback == nil || sp.Fallback.Policy != "weighted_round_robin" || sp.Fallback.Weights[1] != 20 {
+				t.Fatalf("policy = %+v", sp)
+			}
+		})
 	}
 }
 

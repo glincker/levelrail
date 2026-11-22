@@ -15,10 +15,16 @@ stable release until you promote.
   the same environment variables and secrets, running the new image. It does
   not appear in the apps list and has no domains of its own.
 - Ingress splits each request between the app and the canary by weight (1 to
-  99 percent). The split is per request, not per user, so one visitor can see
+  99 percent). Without stickiness the split is per request, so one visitor can see
   both releases. The split follows a repeating cycle of 100 requests, so a
   weight of 20 sends exactly 20 of every 100 requests to the canary. A handful
   of requests may all land on one release.
+- Visitors are sticky by default. The first response sets a cookie scoped to
+  the app and the canary (`lr_canary_<app>_<id>`), and that visitor keeps the
+  release they were given, so nobody flips between releases mid session. A
+  weight change moves new visitors only. A new canary of the same app uses a
+  new cookie. Turn it off with the `canary.sticky` setting to split every
+  request by weight.
 - A canary that is not running or not ready receives no traffic, so a bad
   image cannot take the app down. Weight 0 pauses the canary without removing it.
 - **Promote** deploys the canary image to the app through the normal deploy

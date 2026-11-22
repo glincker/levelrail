@@ -307,6 +307,7 @@ These variables only seed the default of a [runtime setting](/runtime-settings).
 | `APP_CANARY_MIN_REQUESTS` | [`canary.min_requests`](/runtime-settings#deploys) | `30` |
 | `APP_CANARY_P95_FLOOR_MS` | [`canary.p95_floor_ms`](/runtime-settings#deploys) | `50` |
 | `APP_CANARY_STAGES` | [`canary.stages`](/runtime-settings#deploys) | `10,25,50,100` |
+| `APP_CANARY_STICKY` | [`canary.sticky`](/runtime-settings#deploys) | `true` |
 | `APP_CANARY_TICK` | [`canary.tick`](/runtime-settings#deploys) | `15s` |
 | `APP_CLOUD_DEFAULT_MONTHLY_COST_LIMIT` | [`cloud.default_monthly_cost_limit`](/runtime-settings#deploys) | `0` |
 | `APP_CLOUD_ENGINE_CPUS` | [`cloud.engine_cpus`](/runtime-settings#deploys) | `1` |

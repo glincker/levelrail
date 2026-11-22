@@ -21,6 +21,7 @@ const (
 	EnvMinRequests  = "APP_CANARY_MIN_REQUESTS"
 	EnvP95FloorMS   = "APP_CANARY_P95_FLOOR_MS"
 	EnvTick         = "APP_CANARY_TICK"
+	EnvSticky       = "APP_CANARY_STICKY"
 )
 
 const (
@@ -93,6 +94,13 @@ func DefaultLimits(getenv func(string) string) Limits {
 		l.Tick = d
 	}
 	return l
+}
+
+// StickyEnabled reports whether ingress pins a visitor to one release by
+// cookie. It is on unless the setting says otherwise.
+func StickyEnabled(getenv func(string) string) bool {
+	v, err := strconv.ParseBool(strings.TrimSpace(getenv(EnvSticky)))
+	return err != nil || v
 }
 
 var liveEnv atomic.Pointer[func(string) string]

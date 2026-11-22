@@ -24,6 +24,7 @@ const (
 	KeyCanaryMinRequests     = "canary.min_requests"
 	SettingCanaryP95FloorMS  = "canary.p95_floor_ms"
 	KeyCanaryTick            = "canary.tick"
+	KeyCanarySticky          = "canary.sticky"
 )
 
 // rolloutEnvKeys maps each env name the policy packages read to its setting.
@@ -38,6 +39,7 @@ var rolloutEnvKeys = map[string]string{
 	canarypolicy.EnvMinRequests:     KeyCanaryMinRequests,
 	canarypolicy.EnvP95FloorMS:      SettingCanaryP95FloorMS,
 	canarypolicy.EnvTick:            KeyCanaryTick,
+	canarypolicy.EnvSticky:          KeyCanarySticky,
 }
 
 func rolloutValueCheck(canonical string) error {
@@ -123,6 +125,15 @@ func init() {
 		Env: canarypolicy.EnvTick, Apply: ApplyLive, CheckValue: durationRangeCheck(time.Second, time.Hour),
 		Title:       "Canary reconcile interval",
 		Description: "How often the canary reconciler checks running canaries, from 1s to 1h. The next tick uses a changed value.",
+	})
+}
+
+func init() {
+	Register(Definition{
+		Key: KeyCanarySticky, Category: CategoryDeploys, Kind: KindBool, Default: "true",
+		Env: canarypolicy.EnvSticky, Apply: ApplyLive,
+		Title:       "Canary sticky visitors",
+		Description: "When on, a visitor keeps the release (stable or canary) they were first sent to, through a cookie scoped to the app and canary. Raising the weight then moves new visitors only. When off, every request is split by weight. Applied on the next ingress reconcile.",
 	})
 }
 

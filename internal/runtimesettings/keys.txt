@@ -138,6 +138,7 @@ canary.max_p95_ratio
 canary.min_requests
 canary.p95_floor_ms
 canary.stages
+canary.sticky
 canary.tick
 cdn.purge_history
 certificates.weekly_issue_warn
