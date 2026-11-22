@@ -17,6 +17,9 @@ func RegistrySettingsSecretsKey() string {
 // RegistryPasswordEnvKey is the fixed envKey used within that namespace.
 const RegistryPasswordEnvKey = "password"
 
+// RegistryProxyPasswordEnvKey is the secret holding the upstream password in proxy mode.
+const RegistryProxyPasswordEnvKey = "proxy_password" //nolint:gosec // secret name, not a credential
+
 // RegistrySettings is the single platform-wide row: whether the operator
 // wants Levelrail's built-in container registry running, the hostname it
 // should be reachable at, and the generated login username. No password
@@ -35,6 +38,9 @@ type RegistrySettings struct {
 	// password when the registry is first enabled.
 	Username  string
 	CreatedAt string
+	// ProxyRemoteURL turns the registry into a pull-through cache of this one upstream; empty means a normal registry.
+	ProxyRemoteURL string
+	ProxyUsername  string
 }
 
 // GetRegistrySettings returns the single registry_settings row. Always
@@ -46,11 +52,13 @@ func (db *DB) GetRegistrySettings(ctx context.Context) (RegistrySettings, error)
 		host      sql.NullString
 		username  sql.NullString
 		createdAt sql.NullString
+		proxyURL  sql.NullString
+		proxyUser sql.NullString
 		enabled   int
 	)
 	err := db.QueryRowContext(ctx, `
-		SELECT enabled, host, username, created_at FROM registry_settings WHERE id = 1
-	`).Scan(&enabled, &host, &username, &createdAt)
+		SELECT enabled, host, username, created_at, proxy_remote_url, proxy_username FROM registry_settings WHERE id = 1
+	`).Scan(&enabled, &host, &username, &createdAt, &proxyURL, &proxyUser)
 	if err != nil {
 		return RegistrySettings{}, fmt.Errorf("store: get registry settings: %w", err)
 	}
@@ -58,6 +66,8 @@ func (db *DB) GetRegistrySettings(ctx context.Context) (RegistrySettings, error)
 	s.Host = host.String
 	s.Username = username.String
 	s.CreatedAt = createdAt.String
+	s.ProxyRemoteURL = proxyURL.String
+	s.ProxyUsername = proxyUser.String
 	return s, nil
 }
 
@@ -70,12 +80,14 @@ func (db *DB) UpdateRegistrySettings(ctx context.Context, s RegistrySettings) er
 		enabled = 1
 	}
 	_, err := db.ExecContext(ctx, `
-		UPDATE registry_settings SET enabled = ?, host = ?, username = ?, created_at = ? WHERE id = 1
+		UPDATE registry_settings SET enabled = ?, host = ?, username = ?, created_at = ?, proxy_remote_url = ?, proxy_username = ? WHERE id = 1
 	`,
 		enabled,
 		sql.NullString{String: s.Host, Valid: s.Host != ""},
 		sql.NullString{String: s.Username, Valid: s.Username != ""},
 		sql.NullString{String: s.CreatedAt, Valid: s.CreatedAt != ""},
+		sql.NullString{String: s.ProxyRemoteURL, Valid: s.ProxyRemoteURL != ""},
+		sql.NullString{String: s.ProxyUsername, Valid: s.ProxyUsername != ""},
 	)
 	if err != nil {
 		return fmt.Errorf("store: update registry settings: %w", err)

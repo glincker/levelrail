@@ -23,6 +23,7 @@ var consumerTokenModeNotes = map[string]string{
 	"internal/api/doctor_registry.go":              "ok: settings only, no credential",
 	"internal/api/registry_catalog.go":             "ok: catalog and tag browse mint a bearer in token mode",
 	"internal/api/registry_credentials.go":         "ok: host exemption check only, no credential use",
+	"internal/api/registry_prune.go":               "ok: tag prune is off in token mode, no delete scope is minted",
 	"internal/api/registry_settings.go":            "ok: generates the password, which token mode ignores",
 	"internal/api/standalone_domains_safety.go":    "ok: host comparison only",
 	"internal/api/store_interfaces_settings.go":    "ok: interface declaration",
