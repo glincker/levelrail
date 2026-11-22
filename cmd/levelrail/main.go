@@ -49,7 +49,7 @@ const (
 	// Bounded so a live agent Session stream cannot stall exit until systemd SIGKILLs the process.
 	agentGRPCShutdownTimeout = 5 * time.Second
 
-	// Not env-configurable: resolution changes the stored sample shape, retention does not.
+	// Boot default; metrics.sample_interval overrides it live for the container collector.
 	metricsCollectionInterval = 15 * time.Second
 	// Idle polling and the viewer window scale off the base interval so one number tunes the cadence.
 	metricsIdleInterval   = 4 * metricsCollectionInterval

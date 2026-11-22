@@ -934,7 +934,7 @@ graph LR
     style E fill:#9f9
 ```
 
-**Metrics collection.** `internal/telemetry.Collector` samples every running container's Docker stats every 15 seconds (`metricsCollectionInterval` in `cmd/levelrail/main.go`). Samples are stored under resource IDs:
+**Metrics collection.** `internal/telemetry.Collector` samples every running container's Docker stats every 15 seconds by default (the `metrics.sample_interval` runtime setting, 5 seconds to 5 minutes, applies live). Samples are stored under resource IDs:
 
 | Resource ID | Used for |
 | --- | --- |

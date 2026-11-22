@@ -182,6 +182,7 @@ export const NAMESPACES = [
   'clusters',
   'cloudProvider',
   'cloudAccounts',
+  'slowRequests',
 ] as const
 
 void i18n

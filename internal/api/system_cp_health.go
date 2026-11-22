@@ -110,6 +110,9 @@ type cpHealthResource struct {
 	Thresholds cphealth.Thresholds  `json:"thresholds"`
 	Findings   []cphealth.Finding   `json:"findings"`
 	Status     string               `json:"status"`
+
+	SlowRequestThresholdMS float64            `json:"slow_request_threshold_ms"`
+	SlowRequests           []slowRequestEntry `json:"slow_requests"`
 }
 
 type cpRuntime struct {
@@ -188,6 +191,8 @@ func (rt *Router) cpHealthSnapshot() (cpHealthResource, bool) {
 		Streams: cpStreams{Active: rt.cpHealth.streams.Load(), Cap: rt.cpHealth.streamCap()},
 	}
 	res.Spool = spool.Usage()
+	res.SlowRequestThresholdMS = durMS(rt.liveSlowThreshold())
+	res.SlowRequests = rt.slowRequests.snapshot()
 	proc := footprint.ReadProc()
 	res.Footprint = cpFootprint{
 		RSSBytes: proc.RSSBytes, Threads: proc.Threads, OpenFDs: proc.OpenFDs, CPUPercent: proc.CPUPercent,

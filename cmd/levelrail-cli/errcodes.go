@@ -34,7 +34,12 @@ type jsonError struct {
 	APICode   string `json:"api_code,omitempty"`
 	RequestID string `json:"request_id,omitempty"`
 	Fix       string `json:"fix,omitempty"`
+	// FixCommand is Fix as argv so an agent can run the remedy without parsing prose.
+	FixCommand []string `json:"fix_command,omitempty"`
 }
+
+// pendingSignInFix is set when a client is built with no saved login; a 401 then carries it as fix_command.
+var pendingSignInFix []string
 
 func errorCodeFor(status int) (code, hint string) {
 	switch {
@@ -66,6 +71,9 @@ func newJSONError(err error) jsonError {
 		out.HTTPStatus = apiErr.StatusCode
 		out.APICode, out.RequestID, out.Fix = apiErr.Code, apiErr.RequestID, apiErr.Fix
 		out.Code, out.Hint = errorCodeFor(apiErr.StatusCode)
+		if apiErr.StatusCode == http.StatusUnauthorized {
+			out.FixCommand = pendingSignInFix
+		}
 		if apiErr.RetryAfter > 0 {
 			out.RetryAfter = apiErr.RetryAfter.Round(time.Second).String()
 		}

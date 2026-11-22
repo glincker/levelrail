@@ -173,6 +173,7 @@ func apiClientFromFlags(prog, apiURLFlag, tokenFlag, profileFlag string, lookupE
 		}
 	}
 	if token == "" {
+		pendingSignInFix = signInFixArgv(prog, profile, apiURL)
 		return NewClient(apiURL, token, apiclient.WithNoCredentialsFix(notSignedInFix(prog, profile, apiURL)))
 	}
 	return NewClient(apiURL, token, apiclient.WithRejectedCredentialFix(nextStepLine(prog, profile, apiURL)))

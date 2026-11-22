@@ -23,6 +23,9 @@
     "attention": "Needs attention",
     "unknown": "Unknown"
   },
+  "dashDrop": {
+    "prompt": "Drop a built site folder or zip to publish it"
+  },
   "new": {
     "title": "New site",
     "name": "Name",

@@ -137,7 +137,7 @@ func (rt *Router) Handler() http.Handler {
 		h = hstsDBOverrideMiddleware(rt)(h)
 	}
 	h = panicRecoveryMiddleware(rt.logger)(h)
-	h = requestLoggingMiddleware(rt.logger, rt.requestLogThresholds)(h)
+	h = requestLoggingMiddlewareLive(rt.logger, rt.requestLogThresholds, rt.liveSlowThreshold, &rt.slowRequests)(h)
 	h = requestIDMiddleware(h)
 	if rt.demo != nil {
 		h = rt.demoGate(h)

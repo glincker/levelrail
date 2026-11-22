@@ -56,3 +56,16 @@ func TestWriteJSONErrorKeepsErrorField(t *testing.T) {
 		t.Errorf("got %v", got)
 	}
 }
+
+func TestJSONErrorFixCommandOnUnauthorized(t *testing.T) {
+	pendingSignInFix = signInFixArgv("levelrail", "default", "http://127.0.0.1:8080")
+	t.Cleanup(func() { pendingSignInFix = nil })
+	got := newJSONError(&apiError{StatusCode: 401, Message: "not signed in"})
+	want := []string{"levelrail", "login", "--api-url", "http://127.0.0.1:8080", "--profile", "default"}
+	if fmt.Sprint(got.FixCommand) != fmt.Sprint(want) {
+		t.Errorf("fix_command = %v, want %v", got.FixCommand, want)
+	}
+	if other := newJSONError(&apiError{StatusCode: 404, Message: "gone"}); other.FixCommand != nil {
+		t.Errorf("404 must not carry fix_command: %v", other.FixCommand)
+	}
+}

@@ -61,4 +61,12 @@ describe('errorText', () => {
     const out = errorText(new DOMException('t', 'TimeoutError'))
     expect(out.title).toBe('The request timed out')
   })
+
+  it('explains a build failure and keeps the raw text', () => {
+    const out = errorText(
+      new ApiError(500, 'write /var/lib/x: no space left on device'),
+    )
+    expect(out.message).toBe('The server is out of disk space.')
+    expect(out.raw).toBe('write /var/lib/x: no space left on device')
+  })
 })

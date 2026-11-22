@@ -468,6 +468,7 @@ These variables only seed the default of a [runtime setting](/runtime-settings).
 | `APP_ALERTS_RENOTIFY_INTERVAL` | [`alerts.renotify_interval`](/runtime-settings#observability) | `0` |
 | `APP_APPS_METRICS_MAX` | [`api.apps_metrics_max`](/runtime-settings#observability) | `200` |
 | `LEVELRAIL_EXPENSIVE_READ_TTL_SECONDS` | [`api.expensive_read_ttl`](/runtime-settings#observability) | `0` |
+| `APP_SLOW_REQUEST_THRESHOLD` | [`api.slow_request_threshold`](/runtime-settings#observability) | `500ms` |
 | `APP_APP_METRICS_MAX_BODY_BYTES` | [`app_metrics.max_body_bytes`](/runtime-settings#observability) | `1048576` |
 | `APP_APP_METRICS_MAX_LABEL_BYTES` | [`app_metrics.max_label_bytes`](/runtime-settings#observability) | `65536` |
 | `APP_APP_METRICS_MAX_LABELS` | [`app_metrics.max_labels`](/runtime-settings#observability) | `10` |
