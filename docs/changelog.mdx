@@ -4,6 +4,142 @@ description: Every Levelrail release with highlights, fixes and upgrade notes.
 "og:url": "https://docs.levelrail.com/changelog"
 ---
 
+<Update label="1.5.9" description="2026-11-22">
+**release**
+
+* v1.5.9, nodes, rollouts, DNS and CLI polish (#1671)
+
+
+**Features**
+
+* add dotnet, bun, deno and java framework presets
+* advisor card on the app overview with preview and apply
+* alert links to logs and deploys, per channel message template
+* alert on backups far smaller than usual and serve the doctor report from cache with refresh=1
+* alert when a DNS provider credential is revoked or lacks zone rights, list idle apps with sleep savings on the cost page
+* Angular, Vue CLI, SolidStart, Qwik, VitePress, MkDocs, Zola, Gatsby and Phoenix presets
+* apps bulk --project selector with server-side project filter
+* attach a runbook link or note to an alert rule, shown in notifications and the Inbox
+* backup run window and upload speed cap as live settings
+* build cache age prune, warm base images, node pools in the dashboard
+* build farm summary card with builds per hour, queue wait and slot use
+* bulk scale and rollback for apps, bulk limits as live runtime settings
+* bulk set-memory, set-cpu and set-env with quota check and before/after dry run
+* canary health and alert rollback signals, editor extension
+* clean up disk on remote nodes through their agent
+* cli default output, ndjson, template, prompt and empty-list hints
+* CLI error and hint polish from the real-run QA pass
+* cli error next-step footers and stranded memory report
+* cli link, shared --dry-run, completion install, command search, app.yaml default app, --json fields
+* CLI profile management and all-profiles read verbs
+* CLI short and user aliases, watch on status and list verbs
+* dashboard DNS provider coverage, docs links and update toggle clarity
+* databases and incidents topics on the shared change stream
+* deploy duration regression alert with the stage that grew and live percent settings
+* deploy history and node event retention with a per-app row limit
+* DigitalOcean, Hetzner and Azure DNS providers for zones, records and DNS-01
+* disk IO caps and bandwidth setting for app containers
+* DNS provider follow-ups
+* docs --json lists flags and examples per command, docs --format man emits man pages
+* domain registration expiry alert and major upgrade go/no-go check
+* edit log alert rules in place from the dashboard
+* error explanations with raw text, dashboard site drop, fix_command in CLI JSON errors
+* escalate an unread alert to a second channel after a per-rule delay
+* event driven reconcile as a live runtime setting, default on
+* fair build queue across projects with a live build.fair_share setting
+* fast warm-up cadence for the first readiness probe retries
+* global --api-timeout and --api-retries, --no-input and a shared confirm helper
+* GoDaddy DNS provider and shared-layer aware image reclaim estimate
+* guided control plane move, render.yaml Blueprint importer, bulk node actions
+* help glossary page, copy support details and apps list grouping
+* hide secret-looking env values in bulk set-env results
+* hot API routes and costliest statements on control plane health
+* hover glossary Term for jargon in app overview, domains and nodes
+* image auto-update follows the newest tag inside a semver range
+* image update review line and crash loop backoff view
+* interactive app picker when the app name is omitted, flag value completion for output, status, kind and context
+* keyset cursor paging for deploy attempts, builds and node events
+* keyset cursor paging for the apps list
+* live metrics sample interval and slow request threshold, slow request list on health page
+* live stream cap setting and app gauge autoscale form
+* login --with-token from stdin, doctor --bundle support zip, tab completion of app, project, env and profile names
+* measured cutover gap on the deploy timeline with live window settings
+* monthly app uptime report and notes for skipped releases
+* name the first cache miss and likely cause per build stage, add search all time to log search
+* node dependency cache cap and image bloat warning with grown layer
+* node pools and per-app image warm targets
+* noisy neighbor attribution and guided init with launch card
+* off-server backup nudge, plain impact list in confirm dialogs, restore check-your-app step
+* offline fly.toml and netlify.toml importers
+* offline import of app platform specs and service YAML
+* one click build memory suggestion after an OOM build
+* one confirm rule for apps delete, bulk, doctor, fixes, apply and revoke
+* one-address email alerts in quick setup and built-in Matrix and Zulip channels
+* optional node id on uptime monitors with validation
+* origin certificate expiry guidance and slow upstream hint
+* per-app IO and network caps reach containers and are live settings
+* per-app IO and network limit fields, per-app metrics presence
+* per-command flag completion and PowerShell completion
+* pin a backup to keep it forever, skipped by retention, pruning and delete
+* Porkbun and deSEC DNS providers, copyable record fields in the registrar guide
+* post-deploy watch ignores deliberate sleep and wake
+* post-upgrade smoke tour and full audit CSV export from the dashboard
+* pre-pull images on remote nodes and batch remote container lookups
+* pre-pull the image on the target node before a move or drain stops the source
+* prefill required env vars from repo on git create form and add per-app next-step banner
+* quota defaults as live runtime settings and live usage in the quota card
+* record matched route patterns for slow and hot API routes
+* registry retention, pull-through cache mode and garbage collection report
+* remembered More options folds on create forms and form recipes (contact, newsletter, feedback)
+* renew certificate with reason and surface the CA error
+* repeat unread alerts on a live interval setting
+* restore an app to a chosen node from its latest backups
+* restore preview and backup schedules that pause during import and restore
+* restore to a new server wizard on the Backups page
+* reuse the built image for an unchanged commit and skip low-disk build nodes
+* rolling zone drain, canary agent updates, stranded capacity report
+* rollout abort and template deploy snippets, repo import
+* rollout and canary defaults as runtime settings, pause and resume for rolling deploys
+* scheduled autoscale minimums with time zone windows
+* show RAM fit on template cards and per-template after-install steps
+* skip quiet apps in reconcile passes until an event or change, end readiness early on a wrong app port
+* sleep wake timing warning, pre-wake on open, optimistic stop and start
+* staggered bulk actions with batch size, pause and halt on fail
+* sticky canary visitors by cookie with a live canary.sticky setting
+* storage use by part with one click prune in control plane health, add to home screen card with push step on mobile
+* team build minutes in usage export and terminal pager for long output
+* terraform DNS and catalog coverage, CLI undo hints
+* tui fuzzy jump palette and confirmed scale and env edit
+* turn uptime monitors on from Settings without a restart, add dns and ping monitor kinds
+* undo window for deleted apps and databases, OOM card with one-click memory raise
+* vacation freeze switch that pauses deploys and jobs for N days and lifts itself
+* web image update version range and warm image targets
+* zone drain dialog option and per node memory report in the what-if view
+
+
+**Bug Fixes**
+
+* authorize resource refs in bulk rollback and monitor create
+* document init prompt flags in usage
+* org isolation class for the recently deleted routes
+* pass the preflight guards after the batch landed
+* register config context commands in the command tree
+* renumber the image update range migration
+* renumber the registry proxy migration
+* resolve Route 53 zones from the listed zones for DNS automation
+* scope --template rewrite to read verbs and exempt plain config verbs from json
+* scope the DNS provider settings routes
+* skip cli next-step footer when the error already carries guidance
+* type the app gauge autoscale metric
+* type the DNS provider credential field labels
+
+
+**Performance**
+
+* lazy brand logo mount and width-aware chart point budget
+* lazy-load route error fallback to bring first load under budget
+</Update>
+
 <Update label="1.5.8" description="2026-11-22">
 **Features**
 
