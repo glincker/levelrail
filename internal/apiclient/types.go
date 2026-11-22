@@ -20,6 +20,10 @@ type ServiceResources struct {
 	NanoCPUs        int64  `json:"nano_cpus,omitempty"`
 	SwapMemoryBytes int64  `json:"swap_memory_bytes,omitempty"`
 	CPUSetCPUs      string `json:"cpuset_cpus,omitempty"`
+	// IOReadBps and IOWriteBps cap disk throughput in bytes per second; NetMbit caps bandwidth. 0 is unlimited.
+	IOReadBps  int64 `json:"io_read_bps,omitempty"`
+	IOWriteBps int64 `json:"io_write_bps,omitempty"`
+	NetMbit    int64 `json:"net_mbit,omitempty"`
 	// ReadOnlyRootfs is the per-app read-only root choice; nil inherits.
 	ReadOnlyRootfs *bool `json:"read_only_rootfs,omitempty"`
 }

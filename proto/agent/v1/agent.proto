@@ -508,6 +508,9 @@ message Resources {
   int64 nano_cpus = 2;
   int64 swap_memory_bytes = 3;
   string cpuset_cpus = 4;
+  int64 io_read_bps = 5;
+  int64 io_write_bps = 6;
+  int64 net_mbit = 7;
 }
 
 message VolumeMount {

@@ -22,6 +22,12 @@ description: The allowlisted container options a service can set under runtime, 
 
 Counts and sizes are bounded by the `runtime.*` [runtime settings](/runtime-settings#deploys), for example `runtime.dns_max`, `runtime.ulimit_count_max` and `runtime.tmpfs_max`. Change them in Settings, with the CLI or the API and they apply to the next deploy or edit without a restart. The `APP_RUNTIME_*` variables only seed the defaults.
 
+## Disk and network limits
+
+`resources.io_read_bps` and `resources.io_write_bps` cap an app's disk read and write rate in bytes per second, and `resources.net_mbit` records a bandwidth cap in megabits per second. `0` or unset is unlimited, and an operator ceiling may apply (`APP_RESOURCES_MAX_IO_BPS`, `APP_RESOURCES_MAX_NET_MBIT`).
+
+The disk caps apply to the block device behind the Docker data root, on the node that runs the container (local and agent nodes alike), when the container is created. If the device cannot be resolved, such as on network or overlay storage, the caps are skipped and the app still starts. Docker has no bandwidth control, so `net_mbit` is stored and shown but not enforced yet. Set them with `levelrail-cli apps scale <app> --io-read 50Mi --io-write 20Mi --net-mbit 100`.
+
 ## Change them without editing the spec
 
 `GET /api/v1/apps/{name}/services/{service}/runtime` returns the options, the keys that can be changed this way, the live limits and a `revision`. `PUT` to the same path takes an object with any of `tmpfs`, `ulimits`, `init`, `stop_timeout`, `extra_hosts`, `dns`, `sysctls` and `pids_limit`; a key left out or set to `null` is cleared. Send the revision as `If-Match`: a missing header gets 428 and a stale one 412. A bad value gets 422 with an `errors` object naming each bad key. `{service}` is the app name, or a compose service name. Reading needs the read ability, writing the sensitive-write ability, and a change is recorded in the app timeline and recreates the container.

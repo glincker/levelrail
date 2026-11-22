@@ -3626,6 +3626,9 @@ type Resources struct {
 	NanoCpus        int64                  `protobuf:"varint,2,opt,name=nano_cpus,json=nanoCpus,proto3" json:"nano_cpus,omitempty"`
 	SwapMemoryBytes int64                  `protobuf:"varint,3,opt,name=swap_memory_bytes,json=swapMemoryBytes,proto3" json:"swap_memory_bytes,omitempty"`
 	CpusetCpus      string                 `protobuf:"bytes,4,opt,name=cpuset_cpus,json=cpusetCpus,proto3" json:"cpuset_cpus,omitempty"`
+	IoReadBps       int64                  `protobuf:"varint,5,opt,name=io_read_bps,json=ioReadBps,proto3" json:"io_read_bps,omitempty"`
+	IoWriteBps      int64                  `protobuf:"varint,6,opt,name=io_write_bps,json=ioWriteBps,proto3" json:"io_write_bps,omitempty"`
+	NetMbit         int64                  `protobuf:"varint,7,opt,name=net_mbit,json=netMbit,proto3" json:"net_mbit,omitempty"`
 	unknownFields   protoimpl.UnknownFields
 	sizeCache       protoimpl.SizeCache
 }
@@ -3686,6 +3689,27 @@ func (x *Resources) GetCpusetCpus() string {
 		return x.CpusetCpus
 	}
 	return ""
+}
+
+func (x *Resources) GetIoReadBps() int64 {
+	if x != nil {
+		return x.IoReadBps
+	}
+	return 0
+}
+
+func (x *Resources) GetIoWriteBps() int64 {
+	if x != nil {
+		return x.IoWriteBps
+	}
+	return 0
+}
+
+func (x *Resources) GetNetMbit() int64 {
+	if x != nil {
+		return x.NetMbit
+	}
+	return 0
 }
 
 type VolumeMount struct {
@@ -9608,13 +9632,17 @@ const file_proto_agent_v1_agent_proto_rawDesc = "" +
 	"\x0econtainer_port\x18\x01 \x01(\x05R\rcontainerPort\x12\x1b\n" +
 	"\thost_port\x18\x02 \x01(\x05R\bhostPort\x12\x1a\n" +
 	"\bprotocol\x18\x03 \x01(\tR\bprotocol\x12\x17\n" +
-	"\ahost_ip\x18\x04 \x01(\tR\x06hostIp\"\x98\x01\n" +
+	"\ahost_ip\x18\x04 \x01(\tR\x06hostIp\"\xf5\x01\n" +
 	"\tResources\x12!\n" +
 	"\fmemory_bytes\x18\x01 \x01(\x03R\vmemoryBytes\x12\x1b\n" +
 	"\tnano_cpus\x18\x02 \x01(\x03R\bnanoCpus\x12*\n" +
 	"\x11swap_memory_bytes\x18\x03 \x01(\x03R\x0fswapMemoryBytes\x12\x1f\n" +
 	"\vcpuset_cpus\x18\x04 \x01(\tR\n" +
-	"cpusetCpus\"H\n" +
+	"cpusetCpus\x12\x1e\n" +
+	"\vio_read_bps\x18\x05 \x01(\x03R\tioReadBps\x12 \n" +
+	"\fio_write_bps\x18\x06 \x01(\x03R\n" +
+	"ioWriteBps\x12\x19\n" +
+	"\bnet_mbit\x18\a \x01(\x03R\anetMbit\"H\n" +
 	"\vVolumeMount\x12\x12\n" +
 	"\x04name\x18\x01 \x01(\tR\x04name\x12%\n" +
 	"\x0econtainer_path\x18\x02 \x01(\tR\rcontainerPath\"\xca\v\n" +
