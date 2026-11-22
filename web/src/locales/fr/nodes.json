@@ -93,6 +93,7 @@
   },
   "phase": {
     "preflight": "Contrôles préalables",
+    "prepull": "Pré-téléchargement de l'image sur le nœud cible",
     "stop_source": "Arrêt sur le node source",
     "copy_volumes": "Copie des volumes",
     "place": "Démarrage sur le node cible",

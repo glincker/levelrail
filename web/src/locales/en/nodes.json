@@ -93,6 +93,7 @@
   },
   "phase": {
     "preflight": "Preflight checks",
+    "prepull": "Pre-pulling the image on the target",
     "stop_source": "Stopping on the source node",
     "copy_volumes": "Copying volumes",
     "place": "Starting on the target node",

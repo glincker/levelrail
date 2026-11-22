@@ -93,6 +93,7 @@
   },
   "phase": {
     "preflight": "预检",
+    "prepull": "在目标节点上预拉取镜像",
     "stop_source": "在源节点上停止",
     "copy_volumes": "复制卷",
     "place": "在目标节点上启动",

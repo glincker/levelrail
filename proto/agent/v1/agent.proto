@@ -355,6 +355,9 @@ message AgentRequest {
     // Cleanup previews or runs the safe capacity cleanup on this node's own
     // Docker. Sent only to agents advertising "node_cleanup".
     CleanupRequest cleanup = 29;
+    // PullImage pulls one image into the node's own store ahead of a move.
+    // Sent only to agents advertising "image_pull".
+    PullImageRequest pull_image = 30;
   }
 }
 
@@ -470,6 +473,13 @@ message LogLine {
 
 message LogsResponse {
   repeated LogLine lines = 1;
+}
+
+// PullImageRequest names one image. registry_bearer is the same short-lived
+// built-in registry token CreateRequest carries; a stored login never crosses the wire.
+message PullImageRequest {
+  string ref = 1;
+  string registry_bearer = 2;
 }
 
 message RemoveVolumeRequest {

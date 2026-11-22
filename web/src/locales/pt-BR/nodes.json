@@ -93,6 +93,7 @@
   },
   "phase": {
     "preflight": "Verificações preliminares",
+    "prepull": "Pré-baixando a imagem no nó de destino",
     "stop_source": "Parando no node de origem",
     "copy_volumes": "Copiando volumes",
     "place": "Iniciando no node de destino",

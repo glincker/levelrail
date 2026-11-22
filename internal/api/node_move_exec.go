@@ -9,13 +9,16 @@ import (
 	"strings"
 	"time"
 
+	"github.com/GLINCKER/levelrail/internal/agent"
 	"github.com/GLINCKER/levelrail/internal/backup"
+	"github.com/GLINCKER/levelrail/internal/docker"
 	"github.com/GLINCKER/levelrail/internal/gpu"
 	"github.com/GLINCKER/levelrail/internal/models"
 	"github.com/GLINCKER/levelrail/internal/nodemove"
 	"github.com/GLINCKER/levelrail/internal/reconcile"
 	"github.com/GLINCKER/levelrail/internal/reconcile/application"
 	"github.com/GLINCKER/levelrail/internal/reconcile/database"
+	"github.com/GLINCKER/levelrail/internal/runtimesettings"
 	"github.com/GLINCKER/levelrail/internal/store"
 )
 
@@ -88,6 +91,55 @@ func (e *moveExecutor) Preflight(ctx context.Context, m store.NodeMove) error {
 		}
 	}
 	return nil
+}
+
+// PrePull pulls the image onto the target while the source still serves, so a
+// large image adds no downtime. Images that a pull on the target cannot
+// reproduce (built here, or behind a stored login) are skipped.
+func (e *moveExecutor) PrePull(ctx context.Context, m store.NodeMove) (string, error) {
+	rs := e.rt.RuntimeSettings()
+	if !rs.Bool(ctx, runtimesettings.KeyNodeMovePrepull) {
+		return "pre-pull is turned off", nil
+	}
+	var ref string
+	if m.Kind == store.NodeMoveKindDatabase {
+		db, err := e.rt.databases.GetDesiredDatabase(ctx, m.Resource)
+		if err != nil {
+			return "", err
+		}
+		ref = database.ImageRef(db.Engine, db.Version)
+	} else {
+		svc, err := e.rt.apps.GetDesiredService(ctx, m.Resource)
+		if err != nil {
+			return "", err
+		}
+		switch {
+		case svc.Image == "":
+			return "no image to pull", nil
+		case svc.ImageID != "" && svc.ImageIDRef == svc.Image:
+			return "image was built on the control plane, so it is not pulled", nil
+		case svc.RegistryCredentialID != "":
+			return "image needs a stored registry login, so the target pulls it on start", nil
+		}
+		ref = svc.Image
+	}
+	runtime, err := e.rt.execRuntime(m.ToNodeID)
+	if err != nil {
+		return "", fmt.Errorf("resolve target runtime: %w", err)
+	}
+	puller, ok := runtime.(docker.ImagePuller)
+	if !ok {
+		return "target node cannot pre-pull", nil
+	}
+	pullCtx, cancel := context.WithTimeout(ctx, rs.Duration(ctx, runtimesettings.KeyNodeMovePrepullTimeout))
+	defer cancel()
+	if err := puller.PullImage(pullCtx, ref, nil); err != nil {
+		if errors.Is(err, agent.ErrAgentLacksCapability) {
+			return "target agent is too old to pre-pull", nil
+		}
+		return "", err
+	}
+	return "pulled " + ref + " on the target node", nil
 }
 
 // prepareCrossNode allocates dbName's mesh port when a connection to it

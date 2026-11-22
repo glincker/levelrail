@@ -93,6 +93,7 @@
   },
   "phase": {
     "preflight": "Vorabprüfungen",
+    "prepull": "Image auf dem Zielknoten vorab laden",
     "stop_source": "Auf dem Quell-Node wird gestoppt",
     "copy_volumes": "Volumes werden kopiert",
     "place": "Auf dem Ziel-Node wird gestartet",

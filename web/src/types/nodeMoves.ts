@@ -3,6 +3,7 @@ export type NodeMoveKind = 'app' | 'database'
 
 export type NodeMovePhase =
   | 'preflight'
+  | 'prepull'
   | 'stop_source'
   | 'copy_volumes'
   | 'place'

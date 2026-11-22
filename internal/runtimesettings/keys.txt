@@ -482,6 +482,8 @@ net.outbound_timeout
 network.gc_max_removals
 nextjs.generate_actions_key
 nextjs.memory_floor_mb
+node_move.prepull
+node_move.prepull_timeout
 nodes.agent_auto_update
 nodes.agent_buffer_max_bytes
 nodes.agent_buffer_max_items
